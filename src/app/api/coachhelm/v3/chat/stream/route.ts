@@ -95,7 +95,7 @@ function coachScreenLoaders(sb: Sb, who: { team_id: string; coach_id: string; ti
     teamStats: orNull((w) => loadTeamStats({ teamId, window: w === 'season' ? 'season' : 'last10', filter: filterForFigureWindow(w) })),
     roster: orNull(() => loadRoster({ teamId, coachId: who.coach_id })),
     teamRounds: orNull(() => loadTeamRounds({ teamId })),
-    qualifierList: orNull(() => loadQualifierList({ role: 'coach', teamId, playerId: null, mode: 'all' })),
+    qualifierList: orNull(() => loadQualifierList({ role: 'coach', teamId, playerId: null })),
     qualifierBoard: orNull((qualifierId) => loadQualifierDetail({ role: 'coach', teamId, playerId: null, qualifierId })),
     roundReview: orNull((roundId) => loadRoundReview(roundId, { role: 'coach', teamId })),
     // Tournaments are behind golf_tournaments_v1: with the flag off the loader is not bound at all, and a read through it answers
@@ -118,7 +118,7 @@ function playerScreenLoaders(sb: Sb, who: { team_id: string; player_id: string; 
     playerFigures: orNull((ids, window) => loadPlayersFigures(sb, { timezone }, ids.filter(own), window)),
     puttBands: orNull(async (id, window) => (own(id) ? loadPlayerPuttBands(sb, { timezone }, id, window) : null)),
     playerStats: orNull(async (playerId, w) => (own(playerId) ? loadPlayerProfile({ viewer: 'player', teamId, playerId, window: w === 'season' ? 'season' : 'last10', filter: filterForFigureWindow(w) }) : null)),
-    qualifierList: orNull(() => loadQualifierList({ role: 'player', teamId, playerId: who.player_id, mode: 'all' })),
+    qualifierList: orNull(() => loadQualifierList({ role: 'player', teamId, playerId: who.player_id })),
     qualifierBoard: orNull((qualifierId) => loadQualifierDetail({ role: 'player', teamId, playerId: who.player_id, qualifierId })),
     myRounds: orNull(() => loadRoundsLibrary({ playerId: who.player_id, teamId })),
     // The Round page judges the round against the viewer; the tool has already checked the round is the player's own.

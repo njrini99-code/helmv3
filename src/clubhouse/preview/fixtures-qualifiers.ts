@@ -272,7 +272,7 @@ export function previewDetail(index: number, role: 'coach' | 'player' = 'coach',
 /** Detail samples by name: live (Pinehurst), upcoming (Conference), selected (Fall invitational), completed (Preseason), spring (three rounds). */
 export const DETAIL_INDEX: Record<string, number> = { live: 0, upcoming: 1, selected: 2, completed: 3, spring: 4 };
 
-export function previewList(role: 'coach' | 'player' = 'coach', mode: 'all' | 'mine' = 'all', viewer: keyof typeof P = 'jonah'): ChQList {
+export function previewList(role: 'coach' | 'player' = 'coach', viewer: keyof typeof P = 'jonah'): ChQList {
   const items: ChQListItem[] = SAMPLES.map((s, i) => {
     const d = previewDetail(i, role, viewer);
     const me = [...d.board!.rows, ...d.board!.unscored].find((r) => r.playerId === d.viewerPlayerId);
@@ -310,9 +310,8 @@ export function previewList(role: 'coach' | 'player' = 'coach', mode: 'all' | 'm
           : null,
     };
   });
-  const visible = mode === 'mine' ? items.filter((i) => i.mine?.entered) : items;
-  // As the loader: a player's head opens with the squad and the season.
-  return { role, mode, items: role === 'player' ? [...visible.filter((i) => i.mine?.entered), ...visible.filter((i) => !i.mine?.entered)] : visible, listError: false, standingsError: false, ...(role === 'player' ? { teamLabel: 'Varsity · 2026–27' } : {}) };
+  // As the loader: a player's own qualifiers first (D-30), and their head opens with the squad and the season.
+  return { role, items: role === 'player' ? [...items.filter((i) => i.mine?.entered), ...items.filter((i) => !i.mine?.entered)] : items, listError: false, standingsError: false, ...(role === 'player' ? { teamLabel: 'Varsity · 2026–27' } : {}) };
 }
 
 const ROSTER = Object.entries(P)

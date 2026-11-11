@@ -20,7 +20,7 @@
  *   teamRounds         loadTeamRounds({ teamId })                                     src/clubhouse/data/team-rounds.ts
  *   myRounds           loadRoundsLibrary({ playerId, teamId })                        src/clubhouse/data/rounds.ts
  *                        a player only: their own Rounds page, bound to the signed-in player's id
- *   qualifierList      loadQualifierList({ role, teamId, playerId, mode: 'all' })     src/clubhouse/data/qualifiers.ts
+ *   qualifierList      loadQualifierList({ role, teamId, playerId })     src/clubhouse/data/qualifiers.ts
  *   qualifierBoard     loadQualifierDetail({ role, teamId, playerId, qualifierId })   src/clubhouse/data/qualifiers.ts
  *   roundReview        loadRoundReview(roundId, viewer)                               src/clubhouse/data/round-review.ts
  *                        viewer: { role: 'coach', teamId } or { role: 'player', playerId, teamId }

@@ -207,7 +207,7 @@ export const CH_REBUILT_ROUTES: Record<ChRole, readonly string[]> = {
     '/golf/dashboard/team-hub',
     ...SETTINGS_ROUTES,
   ],
-  player: ['/golf/dashboard', '/golf/dashboard/coachhelm', '/golf/dashboard/calendar', '/golf/dashboard/team-hub', '/golf/dashboard/messages', '/golf/dashboard/roster', '/golf/dashboard/rounds', '/golf/dashboard/rounds/new', '/golf/dashboard/rounds/recover', '/golf/dashboard/classes', '/golf/dashboard/stats', '/golf/dashboard/qualifiers', '/golf/dashboard/my-qualifiers', ...SETTINGS_ROUTES],
+  player: ['/golf/dashboard', '/golf/dashboard/coachhelm', '/golf/dashboard/calendar', '/golf/dashboard/team-hub', '/golf/dashboard/messages', '/golf/dashboard/roster', '/golf/dashboard/rounds', '/golf/dashboard/rounds/new', '/golf/dashboard/rounds/recover', '/golf/dashboard/classes', '/golf/dashboard/stats', '/golf/dashboard/qualifiers', ...SETTINGS_ROUTES],
 };
 
 /**
@@ -253,9 +253,11 @@ export const CH_ALIASED_ROUTES: Readonly<Record<ChRole, readonly RegExp[]>> = ((
     [/^\/golf\/dashboard\/coachhelm\/(chat|qualifying\/[^/]+)$/, both],
     [/^\/golf\/dashboard\/coachhelm\/genome\/[^/]+$/, ['coach']],
     [/^\/golf\/dashboard\/rounds\/[^/]+\/review$/, both],
-    // Rebuilt for one role and moved for the other (My qualifiers to a coach's Qualifiers, a player's Team stats to their
-    // Stats, What's new and Live to Home): the segment must render for its redirect to run.
-    [/^\/golf\/dashboard\/my-qualifiers$/, ['coach']],
+    // My qualifiers is retired in Clubhouse (owner, 2026-11-11): players have one Qualifiers page with their own listed
+    // first, so the address opens Qualifiers for both roles.
+    [/^\/golf\/dashboard\/my-qualifiers$/, both],
+    // Rebuilt for one role and moved for the other (a player's Team stats to their Stats, What's new and Live to Home):
+    // the segment must render for its redirect to run.
     [/^\/golf\/dashboard\/(stats\/team|whats-new|live)$/, ['player']],
   ];
   return { coach: rows.filter(([, r]) => r.includes('coach')).map(([re]) => re), player: rows.filter(([, r]) => r.includes('player')).map(([re]) => re) };

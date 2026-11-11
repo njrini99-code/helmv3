@@ -42,5 +42,15 @@
     "id": 130623,
     "removedAt": "2026-11-07",
     "reason": "CH-13254 belonged to the old Ask action card, deleted when coachhelm_ask_v2 was retired; the Ask v2 card has its own codes"
+  },
+  {
+    "id": 90406,
+    "removedAt": "2026-11-11",
+    "reason": "CH-09306 was the empty state of a player's My qualifiers list, retired when players got one Qualifiers page (owner, 2026-11-11); /my-qualifiers opens /qualifiers"
+  },
+  {
+    "id": 90632,
+    "removedAt": "2026-11-11",
+    "reason": "CH-09222 was the failed entries read on a player's My qualifiers list, retired when players got one Qualifiers page (owner, 2026-11-11); on /qualifiers a failed entries read is CH-09202"
   }
 ]

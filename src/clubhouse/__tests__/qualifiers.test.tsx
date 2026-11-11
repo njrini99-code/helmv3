@@ -66,7 +66,7 @@ import { buildBoard, lineGapText, roundPars, sampleNote, stageNoteText, validate
 import { firstName } from '../lib/names';
 import { LIVE_SELECTION_WRITES, runEditPlan, selectionReason, startSelecting, type ChQSelectionWrites, type ChQWrites } from '../screens/qualifiers/writes';
 import { DETAIL_INDEX, PLAYER_ID, PREVIEW_COURSES, PREVIEW_TEES, previewCreateForm, previewDetail, previewEditForm, previewList, previewSelection } from '../preview/fixtures-qualifiers';
-import { isRebuilt } from '../shell/nav';
+import { isAliased, isRebuilt } from '../shell/nav';
 import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
 import { ToastProvider } from '../ui/Toast';
 import './dialog-polyfill';
@@ -105,7 +105,7 @@ function fakeWrites(over: Partial<Record<keyof ChQWrites, Mock>> = {}): FakeWrit
 const fail = async () => ({ success: false, error: 'nope' });
 const never = () => new Promise<never>(() => {});
 const detail = (name: keyof typeof DETAIL_INDEX = 'live', role: 'coach' | 'player' = 'coach', over: Partial<ChQDetail> = {}): ChQDetail => ({ ...previewDetail(DETAIL_INDEX[name]!, role), ...over });
-const list = (role: 'coach' | 'player' = 'coach', mode: 'all' | 'mine' = 'all', over: Partial<ChQList> = {}): ChQList => ({ ...previewList(role, mode), ...over });
+const list = (role: 'coach' | 'player' = 'coach', over: Partial<ChQList> = {}): ChQList => ({ ...previewList(role), ...over });
 /**
  * What the route does with the loader's result: the standings as `data`, the courses and cards beside them. They are awaited and handed
  * over already kept (a page whose courses are still coming suspends, and the streaming tests below are the ones that render that).
@@ -454,7 +454,7 @@ describe('Qualifiers · the loader', () => {
 
   it('CH-09201 a failed list read is a notice, never "no qualifiers"', async () => {
     tables.current = { golf_qualifiers: { error: { message: 'boom' } } };
-    const data = await loadQualifierList({ role: 'coach', teamId: 't1', playerId: null, mode: 'all' });
+    const data = await loadQualifierList({ role: 'coach', teamId: 't1', playerId: null });
     expect(data.listError).toBe(true);
     expect(logServer).toHaveBeenCalledWith('qualifiers', 'list', expect.anything(), 'qualifiers');
     wrap(<QualifiersList data={data} />);
@@ -464,7 +464,7 @@ describe('Qualifiers · the loader', () => {
 
   it('CH-09202 entries that do not load leave counts and leaders out, not zero', async () => {
     tables.current = { golf_qualifiers: { data: [Q] }, golf_qualifier_entries: { error: { message: 'boom' } }, golf_rounds: { data: rounds } };
-    const data = await loadQualifierList({ role: 'coach', teamId: 't1', playerId: null, mode: 'all' });
+    const data = await loadQualifierList({ role: 'coach', teamId: 't1', playerId: null });
     expect(data.standingsError).toBe(true);
     expect(data.items[0]!.leaders).toEqual([]);
     wrap(<QualifiersList data={data} />);
@@ -472,32 +472,30 @@ describe('Qualifiers · the loader', () => {
     expect(document.querySelector('.ch-qf-lead')).toBeNull();
   });
 
-  it('90106 a player list puts their own qualifiers first, with where they stand; mine keeps only those', async () => {
+  it('90106 a player list puts their own qualifiers first, with where they stand', async () => {
     const other = { ...Q, id: 'q2', name: 'Other', start_date: '2026-10-01' };
     tables.current = { golf_qualifiers: { data: [other, Q] }, golf_qualifier_entries: { data: entries }, golf_rounds: { data: rounds } };
-    const all = await loadQualifierList({ role: 'player', teamId: 't1', playerId: 'p2', mode: 'all' });
+    const all = await loadQualifierList({ role: 'player', teamId: 't1', playerId: 'p2' });
     expect(all.items.map((i) => i.id)).toEqual(['q1', 'q2']);
     // Live, so the next round (2, at the qualifier's course with none set for it); the squad confirmed, and Bea not on it.
     expect(all.items[0]!.mine).toEqual({ entered: true, position: '2', toPar: 2, played: 1, next: { round: 2, course: 'Finley GC' }, squad: false });
     expect(all.items[1]!.mine?.entered).toBe(false);
-    const mine = await loadQualifierList({ role: 'player', teamId: 't1', playerId: 'p2', mode: 'mine' });
-    expect(mine.items.map((i) => i.id)).toEqual(['q1']);
   });
 
   it('a player’s list carries the squad and the season for its head; a failed team read leaves it out, logged, and a coach’s list never reads it', async () => {
     const base = { golf_qualifiers: { data: [Q] }, golf_qualifier_entries: { data: entries }, golf_rounds: { data: rounds } };
     tables.current = { ...base, golf_teams: { data: { name: ' Varsity ' } } };
-    const named = await loadQualifierList({ role: 'player', teamId: 't1', playerId: 'p2', mode: 'mine' });
+    const named = await loadQualifierList({ role: 'player', teamId: 't1', playerId: 'p2' });
     expect(named.teamLabel).toMatch(/^Varsity · \d{4}–\d{2}$/);
     const read: string[] = [];
     tables.gate = (t) => void read.push(t);
-    const coach = await loadQualifierList({ role: 'coach', teamId: 't1', playerId: null, mode: 'all' });
+    const coach = await loadQualifierList({ role: 'coach', teamId: 't1', playerId: null });
     tables.gate = undefined;
     expect(coach.teamLabel).toBeUndefined();
     expect(read).not.toContain('golf_teams');
     logServer.mockClear();
     tables.current = { ...base, golf_teams: { error: { message: 'boom' } } };
-    const failed = await loadQualifierList({ role: 'player', teamId: 't1', playerId: 'p2', mode: 'mine' });
+    const failed = await loadQualifierList({ role: 'player', teamId: 't1', playerId: 'p2' });
     expect(failed.teamLabel).toBeNull();
     expect(failed.items.map((i) => i.id)).toEqual(['q1']);
     expect(logServer).toHaveBeenCalledWith('qualifiers', 'team', expect.anything(), 'qualifiers');
@@ -515,19 +513,19 @@ describe('Qualifiers · the loader', () => {
         return { data: [{ qualifier_id: 'q1' }] };
       },
     };
-    const list = await loadQualifierList({ role: 'player', teamId: 't1', playerId: 'p2', mode: 'mine' });
+    const list = await loadQualifierList({ role: 'player', teamId: 't1', playerId: 'p2' });
     expect(list.items[0]!.mine).toMatchObject({ next: { round: 2, course: 'Hope Valley CC' }, squad: true });
     // Only their own row is asked for, never the squad.
     expect(asked[0]!.find(([k, a]) => k === 'eq' && a[0] === 'player_id')?.[1][1]).toBe('p2');
     expect(list.items[0]!.leaders.find((l) => l.playerId === 'p2')?.isYou).toBe(true);
     expect(list.items[0]!.leaders.find((l) => l.playerId === 'p1')?.isYou).toBeUndefined();
     tables.current = { ...tables.current, golf_qualifier_selections: { error: { message: 'boom' } }, golf_qualifier_round_courses: { error: { message: 'boom' } } };
-    const failed = await loadQualifierList({ role: 'player', teamId: 't1', playerId: 'p2', mode: 'mine' });
+    const failed = await loadQualifierList({ role: 'player', teamId: 't1', playerId: 'p2' });
     // Unknown, never "not selected"; the course falls back to the qualifier's.
     expect(failed.items[0]!.mine).toMatchObject({ next: { round: 2, course: 'Finley GC' }, squad: null });
     expect(logServer).toHaveBeenCalledWith('qualifiers', 'ownSelections', expect.anything(), 'qualifiers');
     // A coach is never asked for theirs.
-    const coach = await loadQualifierList({ role: 'coach', teamId: 't1', playerId: null, mode: 'all' });
+    const coach = await loadQualifierList({ role: 'coach', teamId: 't1', playerId: null });
     expect(coach.items[0]!.mine).toBeNull();
     expect(coach.items[0]!.leaders.some((l) => l.isYou)).toBe(false);
   });
@@ -623,7 +621,7 @@ describe('Qualifiers · the loader', () => {
       return { ...counts };
     };
     const open = { ...Q, selection_state: 'open' };
-    expect(await asked({ golf_qualifiers: { data: [open] }, golf_qualifier_entries: { data: entries }, golf_rounds: { data: rounds } }, () => loadQualifierList({ role: 'coach', teamId: 't1', playerId: null, mode: 'all' }))).toEqual({
+    expect(await asked({ golf_qualifiers: { data: [open] }, golf_qualifier_entries: { data: entries }, golf_rounds: { data: rounds } }, () => loadQualifierList({ role: 'coach', teamId: 't1', playerId: null }))).toEqual({
       golf_qualifiers: 1,
       golf_qualifier_entries: 1,
       golf_rounds: 1,
@@ -722,35 +720,10 @@ describe('Qualifiers · a failed read is never an empty (owner rule 1, 2026-10-0
   const rounds = [{ id: 'r1', qualifier_id: 'q1', player_id: 'p1', qualifier_round_number: 1, total_score: 70, score_to_par: -2, round_date: '2026-09-22', course_name: 'Finley GC', holes_played: 18 }];
   const miss = { error: { message: 'boom' } };
 
-  it('CH-09222 /my-qualifiers: a failed entries read is a notice with Try again, never "You aren’t entered in any qualifiers", and never a count of zero', async () => {
-    const user = userEvent.setup();
-    tables.current = { golf_qualifiers: { data: [Q] }, golf_qualifier_entries: miss, golf_rounds: { data: rounds } };
-    const data = await loadQualifierList({ role: 'player', teamId: 't1', playerId: 'p1', mode: 'mine' });
-    expect(data).toMatchObject({ entriesError: true, items: [] });
-    wrap(<QualifiersList data={data} />);
-    await expectCode('CH-09222', /Your qualifiers didn’t load/);
-    expect(code('CH-09306')).toBeNull();
-    // The counts failed: the eyebrow is the name alone, never dashes (the pills carry the counts, and there are none to show).
-    expect(document.querySelector('.ch-qf-eyebrow')!.textContent).toBe('My qualifiers');
-    expect(document.body.textContent).not.toMatch(/— active|— concluded/);
-    router.refresh.mockClear();
-    await user.click(within(code('CH-09222') as HTMLElement).getByRole('button', { name: /Try again/ }));
-    expect(router.refresh).toHaveBeenCalledTimes(1);
-  });
-
-  it('CH-09306 a player really entered in nothing still reads the empty copy, once the entries read answered', async () => {
-    tables.current = { golf_qualifiers: { data: [Q] }, golf_qualifier_entries: { data: [] }, golf_rounds: { data: [] } };
-    const data = await loadQualifierList({ role: 'player', teamId: 't1', playerId: 'p1', mode: 'mine' });
-    expect(data.entriesError).toBe(false);
-    wrap(<QualifiersList data={data} />);
-    expect(code('CH-09306')).not.toBeNull();
-    expect(code('CH-09222')).toBeNull();
-  });
-
   it('CH-09202 the hero says nothing about where you stand when the standings did not load: not "You aren’t entered", not "no rounds in yet"', async () => {
     const standing = async (failed: 'golf_qualifier_entries' | 'golf_rounds') => {
       tables.current = { golf_qualifiers: { data: [Q] }, golf_qualifier_entries: { data: entries }, golf_rounds: { data: rounds }, [failed]: miss };
-      const data = await loadQualifierList({ role: 'player', teamId: 't1', playerId: 'p1', mode: 'all' });
+      const data = await loadQualifierList({ role: 'player', teamId: 't1', playerId: 'p1' });
       const view = wrap(<QualifiersList data={data} />);
       await expectCode('CH-09202');
       const hero = document.querySelector('.ch-qf-hero')!;
@@ -858,7 +831,7 @@ describe('Qualifiers · list', () => {
   });
 
   it('CH-09301 a team with no qualifiers: the coach can create one, a player is told who does', () => {
-    const { unmount } = wrap(<QualifiersList data={list('coach', 'all', { items: [] })} />);
+    const { unmount } = wrap(<QualifiersList data={list('coach', { items: [] })} />);
     expect(code('CH-09301')!.textContent).toMatch(/No qualifiers yet/);
     expect(within(code('CH-09301') as HTMLElement).getByRole('link', { name: 'New qualifier' })).toBeTruthy();
     // One primary per screen: the header's New qualifier steps aside (D-71).
@@ -867,14 +840,9 @@ describe('Qualifiers · list', () => {
     expect(document.querySelector('.ch-qf-eyebrow')!.textContent).toBe('Qualifiers');
     expect(document.querySelector('.ch-qf-eyebrow')!.classList.contains('is-bare')).toBe(true);
     unmount();
-    wrap(<QualifiersList data={list('player', 'all', { items: [] })} />);
+    wrap(<QualifiersList data={list('player', { items: [] })} />);
     expect(code('CH-09301')!.textContent).toMatch(/Your coach’s qualifiers show here/);
     expect(screen.queryByRole('link', { name: 'New qualifier' })).toBeNull();
-  });
-
-  it('CH-09306 a player entered in nothing', () => {
-    wrap(<QualifiersList data={list('player', 'mine', { items: [] })} />);
-    expect(code('CH-09306')!.textContent).toMatch(/You aren’t entered in any qualifiers/);
   });
 
   it('CH-09302 CH-09303 CH-09701 filters: no match offers Clear, a search with nothing concluded says so, pills tap', async () => {
@@ -900,18 +868,14 @@ describe('Qualifiers · list', () => {
   });
 
   it('a player’s head opens with the squad and the season, not the page’s name a third time; a coach’s, and a team that didn’t load, name the page', () => {
-    const { unmount } = wrap(<QualifiersList data={list('player', 'mine')} />);
-    expect(screen.getByRole('heading', { level: 1, name: 'My qualifiers' })).toBeTruthy();
-    expect(document.querySelector('.ch-qf-eyebrow')!.textContent).toBe('Varsity · 2026–27');
-    unmount();
     const all = wrap(<QualifiersList data={list('player')} />);
     expect(screen.getByRole('heading', { level: 1, name: 'Qualifiers' })).toBeTruthy();
     expect(document.querySelector('.ch-qf-eyebrow')!.textContent).toBe('Varsity · 2026–27');
     all.unmount();
-    const bare = wrap(<QualifiersList data={list('player', 'mine', { teamLabel: null })} />);
-    expect(document.querySelector('.ch-qf-eyebrow')!.textContent).toBe('My qualifiers');
+    const bare = wrap(<QualifiersList data={list('player', { teamLabel: null })} />);
+    expect(document.querySelector('.ch-qf-eyebrow')!.textContent).toBe('Qualifiers');
     bare.unmount();
-    wrap(<QualifiersList data={list('coach', 'all', { teamLabel: 'Varsity · 2026–27' })} />);
+    wrap(<QualifiersList data={list('coach', { teamLabel: 'Varsity · 2026–27' })} />);
     expect(document.querySelector('.ch-qf-eyebrow')!.textContent).toBe('Qualifiers');
   });
 
@@ -1524,12 +1488,8 @@ describe('Qualifiers · the list comes back as it was left, and Back is a real B
     expect(searchBox().value).toBe('spring');
     again.unmount();
 
-    // Another team, and a player's own list, open on the defaults.
-    const other = wrap(scoped(`${LIST_URL}\u0000t2`, <QualifiersList data={list()} />));
-    expect(pill(/^All/)).toBe('true');
-    expect(searchBox().value).toBe('');
-    other.unmount();
-    wrap(scoped(`/golf/dashboard/my-qualifiers\u0000t1`, <QualifiersList data={list('player', 'mine')} />));
+    // Another team opens on the defaults.
+    wrap(scoped(`${LIST_URL}\u0000t2`, <QualifiersList data={list()} />));
     expect(pill(/^All/)).toBe('true');
     expect(searchBox().value).toBe('');
   });
@@ -2954,7 +2914,7 @@ describe('Qualifiers · phone (docs/clubhouse/phone/qualifiers.md)', () => {
     expect(within(document.querySelector('.ch-qfs-foot') as HTMLElement).getByRole('button', { name: 'Start selecting' })).toBeTruthy();
   });
 
-  it('91904 the list is a section root topped by its title (no "‹ More"), and a player’s own list reads My qualifiers', async () => {
+  it('91904 the list is a section root topped by its title (no "‹ More"), for a coach and a player alike', async () => {
     const first = inPhone(<QualifiersList data={list()} />);
     let top = screen.getByTestId('phone-top');
     // One h1 per screen (P009-D6): the bar names the screen as text; the page draws its own h1.
@@ -2963,10 +2923,11 @@ describe('Qualifiers · phone (docs/clubhouse/phone/qualifiers.md)', () => {
     expect(document.querySelectorAll('h1')).toHaveLength(1);
     expect(within(top).queryByRole('button', { name: 'Back to More' })).toBeNull();
     first.unmount();
-    inPhone(<QualifiersList data={list('player', 'mine')} />);
+    inPhone(<QualifiersList data={list('player')} />);
     top = screen.getByTestId('phone-top');
     // One h1 per screen (P009-D6): the bar names the screen as text; the page draws its own h1.
-    expect(top.textContent).toContain('My qualifiers');
+    expect(top.textContent).toContain('Qualifiers');
+    expect(top.textContent).not.toContain('My qualifiers');
     expect(within(top).queryByRole('heading')).toBeNull();
     expect(document.querySelectorAll('h1')).toHaveLength(1);
   });
@@ -3047,7 +3008,6 @@ describe('Qualifiers · the route (who reaches which address)', () => {
     seed();
     const screens = [
       ['list', QualifiersList],
-      ['mine', QualifiersList],
       ['new', QualifierForm],
       ['edit', QualifierForm],
       ['detail', QualifierDetail],
@@ -3065,21 +3025,18 @@ describe('Qualifiers · the route (who reaches which address)', () => {
     expect((sel.props.data as unknown as ChQSelectionData).candidates.map((c) => c.name)).toEqual(['Ann X', 'Bea X']);
   });
 
-  it('90106 /my-qualifiers lists only the qualifiers a player is entered in, and a coach on it sees the whole list', async () => {
-    const twoQualifiers = { golf_qualifiers: { data: [Q, { ...Q, id: OTHER, name: 'Other', start_date: '2026-10-05' }] }, golf_qualifier_entries: { data: [entries[1], entries[2]] } };
-    // Bea (p2) is entered in the first only; Ann (p1) in the second.
+  it('90106 My qualifiers is retired: the one list puts a player’s own first, and the old address is on its way to Qualifiers for both roles', async () => {
+    const twoQualifiers = { golf_qualifiers: { data: [{ ...Q, id: OTHER, name: 'Other', start_date: '2026-10-05' }, Q] }, golf_qualifier_entries: { data: [entries[1], entries[2]] } };
+    // Bea (p2) is entered in the first only; Ann (p1) in the second. Bea's own comes first, whatever the list order.
     asPlayer();
     seed(twoQualifiers);
-    const mine = (await route('mine')).props.data as unknown as ChQList;
-    expect([mine.mode, mine.items.map((i) => i.id)]).toEqual(['mine', [QID]]);
     const all = (await route('list')).props.data as unknown as ChQList;
-    expect([all.mode, all.items.map((i) => i.id)]).toEqual(['all', [QID, OTHER]]);
-    asCoach();
-    seed(twoQualifiers);
-    const coach = (await route('mine')).props.data as unknown as ChQList;
-    expect([coach.mode, coach.items.map((i) => i.id).sort()]).toEqual(['all', [QID, OTHER].sort()]);
-    // Inside the Clubhouse frame a coach is not offered this address: it is a rebuilt route for players only, so the shell shows its not-rebuilt page (10401).
-    expect([isRebuilt('/golf/dashboard/my-qualifiers', 'player'), isRebuilt('/golf/dashboard/my-qualifiers', 'coach')]).toEqual([true, false]);
+    expect(all.items.map((i) => [i.id, i.mine?.entered])).toEqual([[QID, true], [OTHER, false]]);
+    // The old address is no screen of its own for either role: the frame treats it as an address on its way (nav.ts), and the page redirects.
+    for (const role of ['player', 'coach'] as const) expect([role, isRebuilt('/golf/dashboard/my-qualifiers', role), isAliased('/golf/dashboard/my-qualifiers', role)]).toEqual([role, false, true]);
+    const page = readFileSync(join(process.cwd(), 'src/app/golf/(dashboard)/dashboard/my-qualifiers/page.tsx'), 'utf8');
+    expect(page).toContain("redirectToClubhouse({ coach: '/golf/dashboard/qualifiers', player: '/golf/dashboard/qualifiers' })");
+    expect(page).not.toContain('ClubhouseQualifiersRoute');
   });
 
   it('90803 CH-09311 a player on /new, /edit or /selection gets the coach-only page with a way back, and nothing is read for them', async () => {
@@ -3109,7 +3066,7 @@ describe('Qualifiers · the route (who reaches which address)', () => {
     expect(resolveClubhouseTeam).not.toHaveBeenCalled();
     vi.mocked(getGolfSessionProfile).mockResolvedValue({ coach: { id: 'c1' }, player: null } as never);
     vi.mocked(resolveClubhouseTeam).mockResolvedValue(null);
-    for (const view of ['list', 'mine', 'new', 'edit', 'selection', 'detail'] as const) {
+    for (const view of ['list', 'new', 'edit', 'selection', 'detail'] as const) {
       const { unmount } = wrap((await route(view, QID)) as never);
       // CONS-10: the one no-team state, with its one way on.
       expect([view, code('CH-09309')!.textContent]).toEqual([view, 'You aren’t on a team yet' + 'Qualifiers fill in once your team is set up.' + 'Open team settings']);
@@ -3543,10 +3500,10 @@ describe('Qualifiers · when a write is slow or refused, and when a read did not
     };
     const shown = (node: ReactNode) => wrap(node).unmount;
     // The list.
-    let unmount = shown(<QualifiersList data={list('coach', 'all', { items: [], listError: true })} />);
+    let unmount = shown(<QualifiersList data={list('coach', { items: [], listError: true })} />);
     await tryAgain('CH-09201');
     unmount();
-    unmount = shown(<QualifiersList data={list('coach', 'all', { standingsError: true })} />);
+    unmount = shown(<QualifiersList data={list('coach', { standingsError: true })} />);
     await tryAgain('CH-09202');
     unmount();
     // The detail: the field, the scores, the scorecards, the courses and the confirmed squad.

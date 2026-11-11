@@ -197,12 +197,12 @@ describe('P009-B2 an honest Live state', () => {
   });
 
   it('D3 on the list: a live qualifier past its end says what it waits on on its card; with no day it stays Live', () => {
-    const { unmount } = wrap(<QualifiersList data={{ ...previewList('coach', 'all'), today: '2026-10-08' }} />);
+    const { unmount } = wrap(<QualifiersList data={{ ...previewList('coach'), today: '2026-10-08' }} />);
     expect(within(document.querySelector('.ch-qf-hero') as HTMLElement).getByText('Waiting on 11 rounds')).toBeTruthy();
     // The year is dropped inside the current season (D11).
     expect(document.querySelector('.ch-qf-hero .ch-qf-meta')!.textContent).toMatch(/Sep 22 – Oct 1(?!,)/);
     unmount();
-    wrap(<QualifiersList data={previewList('coach', 'all')} />);
+    wrap(<QualifiersList data={previewList('coach')} />);
     expect(document.querySelector('.ch-qf-hero .ch-qf-status')!.textContent).toBe('Live');
     expect(document.querySelector('.ch-qf-hero .ch-qf-meta')!.textContent).toMatch(/Sep 22 – Oct 1, 2026/);
   });
@@ -280,7 +280,7 @@ describe('P009-A1 standings on hand-hung plates', () => {
   });
 
   it('the list’s live card: the leaders on plates with their movement', () => {
-    wrap(<QualifiersList data={previewList('coach', 'all')} />);
+    wrap(<QualifiersList data={previewList('coach')} />);
     const lead = document.querySelector('.ch-qf-lead') as HTMLElement;
     expect(lead.querySelectorAll('.ch-qf-plate.is-card').length).toBe(5);
     expect(lead.querySelector('.ch-qf-move.is-gain')).not.toBeNull();

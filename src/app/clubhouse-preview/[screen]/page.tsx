@@ -1,4 +1,5 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
+import { retiredPreviewHref } from '@/clubhouse/preview/retired';
 import { longNames, rewriteDeep } from '@/clubhouse/preview/stress';
 import { ClubhouseFrame } from '@/clubhouse/shell/ClubhouseFrame';
 import { HeroToneProvider } from '@/clubhouse/ui/PageHero';
@@ -205,7 +206,7 @@ import { ChClockProvider } from '@/clubhouse/lib/use-clock';
  *   /clubhouse-preview/calendar-player
  *   /clubhouse-preview/messages ?state=empty | rail | failed | thread-failed | loading | loading-route | files-failed | add-failed
  *   /clubhouse-preview/settings ?state=player | noteam | failed | partial | assistant | failwrites | loading, &section=
- *   /clubhouse-preview/qualifiers ?state=empty | failed | partial | loading  (and qualifiers-player, my-qualifiers ?state=empty)
+ *   /clubhouse-preview/qualifiers ?state=empty | failed | partial | loading  (and qualifiers-player; my-qualifiers is retired and opens qualifiers-player)
  *   /clubhouse-preview/qualifier ?q=live | upcoming | selected | completed | spring, &state=failed | scores | partial | failwrites | loading
  *   /clubhouse-preview/qualifier-player ?q=…   /clubhouse-preview/qualifier-new, qualifier-edit ?state=failed | noroster | courses | failwrites | loading
  *   /clubhouse-preview/qualifier-selection ?q=standings | picking | picked | selected, &state=failwrites
@@ -245,6 +246,9 @@ export default async function ClubhousePreview({
 }) {
   if (process.env.NODE_ENV === 'production') notFound();
   const { screen } = await params;
+  // A retired screen's address opens the page that replaced it (preview/retired.ts), never a 404 and never the old design.
+  const moved = retiredPreviewHref(screen, await searchParams);
+  if (moved) redirect(moved);
   const qc = (await searchParams as { qc?: string }).qc;
   const { viewer: viewerParam, open: openParam, read: readParam, all: allParam, play, station, state, view, date, event, bell, new: isNew, section, q, tab, teams, tone, at, round, ask, live } = await searchParams;
   // The header lab (/clubhouse-preview/header-lab) renders a page with one of the hero tones.
@@ -256,8 +260,8 @@ export default async function ClubhousePreview({
     if (state === 'partial') return { ...d, holesError: true, coursesError: true, par: null, selectionsError: true, selections: null };
     return d;
   };
-  const qList = (role: 'coach' | 'player', mode: 'all' | 'mine') => {
-    const l = previewList(role, mode);
+  const qList = (role: 'coach' | 'player') => {
+    const l = previewList(role);
     if (state === 'empty') return { ...l, items: [] };
     if (state === 'failed') return { ...l, items: [], listError: true };
     if (state === 'partial') return { ...l, standingsError: true, items: l.items.map((i) => ({ ...i, leaders: [] })) };
@@ -530,15 +534,11 @@ export default async function ClubhousePreview({
     },
     qualifiers: {
       path: '/golf/dashboard/qualifiers',
-      node: state === 'loading' ? <QualifiersSkeleton /> : <QualifiersList data={qList('coach', 'all')} />,
+      node: state === 'loading' ? <QualifiersSkeleton /> : <QualifiersList data={qList('coach')} />,
     },
     'qualifiers-player': {
       path: '/golf/dashboard/qualifiers',
-      node: state === 'loading' ? <QualifiersSkeleton /> : <QualifiersList data={qList('player', 'all')} />,
-    },
-    'my-qualifiers': {
-      path: '/golf/dashboard/my-qualifiers',
-      node: state === 'loading' ? <QualifiersSkeleton mode="mine" /> : <QualifiersList data={qList('player', 'mine')} />,
+      node: state === 'loading' ? <QualifiersSkeleton /> : <QualifiersList data={qList('player')} />,
     },
     qualifier: {
       path: '/golf/dashboard/qualifiers/00000000-0000-4000-8000-0000000000a1',

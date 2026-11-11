@@ -96,15 +96,13 @@ export interface ChQListItem {
 
 export interface ChQList {
   role: Role;
-  mode: 'all' | 'mine';
   items: ChQListItem[];
   /** The qualifiers didn't load: shown as a notice, never as "no qualifiers". */
   listError: boolean;
   /** Entries or rounds didn't load: counts and leaders are missing, not zero. */
   standingsError: boolean;
   /**
-   * The entries didn't load: who is entered is unknown, so a player's own list (/my-qualifiers) is a failed read and
-   * never "you aren't entered in any qualifiers". Left out of a fixture, it is false.
+   * The entries didn't load: who is entered is unknown. Left out of a fixture, it is false.
    */
   entriesError?: boolean;
   /**
@@ -325,7 +323,7 @@ async function readScorecards(supabase: Supabase, roundIds: string[]): Promise<{
 }
 
 /** The team's qualifiers, newest first. `mine` keeps only the ones the player is entered in. */
-export async function loadQualifierList(input: { role: Role; teamId: string; playerId: string | null; mode: 'all' | 'mine' }): Promise<ChQList> {
+export async function loadQualifierList(input: { role: Role; teamId: string; playerId: string | null }): Promise<ChQList> {
   const supabase = await createClient();
   const now = new Date();
   // The class year turns on 1 August in the team's zone (decision 9); read beside the page's other reads.
@@ -342,7 +340,7 @@ export async function loadQualifierList(input: { role: Role; teamId: string; pla
     .limit(1000);
   if (listRes.error) {
     chLogServer('qualifiers', 'list', listRes.error, 'qualifiers');
-    return { role: input.role, mode: input.mode, items: [], listError: true, standingsError: false, entriesError: false, ...(labelRead ? { teamLabel: await labelRead } : {}) };
+    return { role: input.role, items: [], listError: true, standingsError: false, entriesError: false, ...(labelRead ? { teamLabel: await labelRead } : {}) };
   }
   const qs = (listRes.data ?? []) as QRow[];
   const ids = qs.map((q) => q.id);
@@ -410,10 +408,9 @@ export async function loadQualifierList(input: { role: Role; teamId: string; pla
     };
   });
 
-  const visible = input.mode === 'mine' ? items.filter((i) => i.mine?.entered) : items;
-  // A player's own qualifiers come first within the list order (D-30).
-  const ordered = input.role === 'player' ? [...visible.filter((i) => i.mine?.entered), ...visible.filter((i) => !i.mine?.entered)] : visible;
-  return { role: input.role, mode: input.mode, items: ordered, listError: false, standingsError, entriesError: entries.error, today: endDayFor(now), ...(labelRead ? { teamLabel: await labelRead } : {}) };
+  // A player's own qualifiers come first within the list order (D-30): theirs is the one Qualifiers page (My qualifiers is retired).
+  const ordered = input.role === 'player' ? [...items.filter((i) => i.mine?.entered), ...items.filter((i) => !i.mine?.entered)] : items;
+  return { role: input.role, items: ordered, listError: false, standingsError, entriesError: entries.error, today: endDayFor(now), ...(labelRead ? { teamLabel: await labelRead } : {}) };
 }
 
 /** "Varsity · 2026–27": the team's name and the season that is on in its zone (the one season format, F-0002). Null when the name didn't load. */

@@ -8,8 +8,7 @@
     "/golf/dashboard/qualifiers/new",
     "/golf/dashboard/qualifiers/[id]",
     "/golf/dashboard/qualifiers/[id]/edit",
-    "/golf/dashboard/qualifiers/[id]/selection",
-    "/golf/dashboard/my-qualifiers"
+    "/golf/dashboard/qualifiers/[id]/selection"
   ],
   "roles": [
     "coach",

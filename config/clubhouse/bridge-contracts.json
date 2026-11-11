@@ -9777,7 +9777,7 @@
     "category": 1,
     "item": 5,
     "name": "ADDRESSES_RENDER_IN_PLACE",
-    "meaning": "Each address renders its own screen in place, never as a redirect (D-23): /qualifiers and /my-qualifiers the list, /qualifiers/[id] the detail, /qualifiers/new and /qualifiers/[id]/edit the form, and /qualifiers/[id]/selection Manage selections.",
+    "meaning": "Each address renders its own screen in place, never as a redirect (D-23): /qualifiers the list, /qualifiers/[id] the detail, /qualifiers/new and /qualifiers/[id]/edit the form, and /qualifiers/[id]/selection Manage selections. The one exception is /my-qualifiers, retired on 2026-11-11 (owner): it opens /qualifiers.",
     "status": "implemented",
     "where": "src/clubhouse/routes/qualifiers.tsx#ClubhouseQualifiersRoute",
     "tests": [
@@ -9790,9 +9790,9 @@
     "category": 1,
     "item": 6,
     "name": "MY_QUALIFIERS_ARE_THE_PLAYERS_OWN",
-    "meaning": "/my-qualifiers lists only the qualifiers the player is entered in, /qualifiers puts a player's own first with where they stand, and a coach who is given /my-qualifiers gets the whole list (the Clubhouse frame does not offer it to coaches: the shell shows its not-rebuilt page there).",
+    "meaning": "Players have one Qualifiers page: /qualifiers puts a player's own first with where they stand. My qualifiers is retired (owner, 2026-11-11): /my-qualifiers opens /qualifiers for a coach and a player, and is no screen of its own.",
     "status": "implemented",
-    "where": "src/clubhouse/routes/qualifiers.tsx#ClubhouseQualifiersRoute; src/clubhouse/data/qualifiers.ts#loadQualifierList",
+    "where": "src/clubhouse/data/qualifiers.ts#loadQualifierList; src/app/golf/(dashboard)/dashboard/my-qualifiers/page.tsx; src/clubhouse/shell/nav.ts#CH_ALIASED_ROUTES",
     "tests": [
       "src/clubhouse/__tests__/qualifiers.test.tsx"
     ]
@@ -9985,17 +9985,6 @@
     "name": "THE_ROSTER_HAS_NO_ACTIVE_PLAYERS",
     "chCode": "CH-09305",
     "meaning": "The roster has no active players (form)",
-    "status": "implemented",
-    "catalog": "docs/clubhouse/catalog/qualifiers.md"
-  },
-  {
-    "id": 90406,
-    "page": "P009",
-    "category": 4,
-    "item": 6,
-    "name": "A_PLAYER_ISNT_ENTERED_IN_ANY_QUALIFIER",
-    "chCode": "CH-09306",
-    "meaning": "A player isn't entered in any qualifier (/my-qualifiers)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/qualifiers.md"
   },
@@ -10572,17 +10561,6 @@
     "name": "THE_COACHS_PICK_NOTES_DONT_LOAD",
     "chCode": "CH-09221",
     "meaning": "The coach's pick notes don't load (detail, coach, confirmed squad)",
-    "status": "implemented",
-    "catalog": "docs/clubhouse/catalog/qualifiers.md"
-  },
-  {
-    "id": 90632,
-    "page": "P009",
-    "category": 6,
-    "item": 32,
-    "name": "A_PLAYERS_ENTRIES_DONT_LOAD_ON_MY",
-    "chCode": "CH-09222",
-    "meaning": "A player's entries don't load on /my-qualifiers",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/qualifiers.md"
   },
@@ -11201,7 +11179,7 @@
     "category": 19,
     "item": 4,
     "name": "PHONE_LIST",
-    "meaning": "On the phone the list's top bar reads ‹ More and the title (Qualifiers, or My qualifiers on a player's own list); the list itself is the desktop list with phone CSS.",
+    "meaning": "On the phone the list's top bar reads the title, Qualifiers, for a coach and a player alike; the list itself is the desktop list with phone CSS.",
     "status": "implemented",
     "where": "src/clubhouse/screens/qualifiers/QualifiersList.tsx (PhoneTop)",
     "tests": [

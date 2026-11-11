@@ -41,15 +41,13 @@ const opened = (id: string, from: 'hero' | 'card') => (e: MouseEvent) => {
   if (isPlainClick(e)) noteOpenedFromList(id);
 };
 
-/** Qualifiers list, coach and player. `mine` is a player's own entries (/my-qualifiers). */
+/** Qualifiers list, coach and player: the one list (a player's own entries come first, D-30; My qualifiers is retired). */
 const ROW_KEYS: readonly ChPageKey[] = [{ label: 'Move between qualifiers', keys: ['Up', 'Down'] }];
 
 export function QualifiersList({ data, live }: { data: ChQList; live?: Record<string, ChQLiveLine> }) {
   const { refresh, refreshing } = useRefresh();
   usePageKeys('Qualifiers', ROW_KEYS);
   const coach = data.role === 'coach';
-  // A player's own list is only as good as the entries read: without it nothing says who they are entered in.
-  const mineUnknown = data.mode === 'mine' && !!data.entriesError;
   // The filter and the search come back when the coach returns to the list (Back from a qualifier, the sidebar, a tab): the shell keeps
   // them for this tab under the page and the team (`useChSessionState`), and the list's place comes back through RouteFrame (owner rule 8).
   const [filter, setFilter] = useChSessionState<Filter>('filter', 'all');
@@ -75,13 +73,13 @@ export function QualifiersList({ data, live }: { data: ChQList; live?: Record<st
     setFilter(f);
   };
 
-  const title = coach ? 'Lineup decisions' : data.mode === 'mine' ? 'My qualifiers' : 'Qualifiers';
-  const lede = listLede(coach, data.mode);
+  const title = coach ? 'Lineup decisions' : 'Qualifiers';
+  const lede = listLede(coach);
 
   return (
     <main className="ch-qf ch-qf--list" data-canopy="">
       {/* Phone (board 01): Qualifiers opens from More (D-66), so the top bar goes back there. */}
-      <PhoneTop heading={false} title={data.mode === 'mine' ? 'My qualifiers' : 'Qualifiers'} start />
+      <PhoneTop heading={false} title="Qualifiers" start />
       <header className="ch-qf-head" data-canopy-head="tight">
         <div>
           {/* The filter pills below carry the active and concluded counts, so the eyebrow is the page's name alone (no second copy
@@ -89,7 +87,7 @@ export function QualifiersList({ data, live }: { data: ChQList; live?: Record<st
               squad and the season instead, as the Tournaments head; the name again only when the team didn't load. The phone's
               top bar already names the page, so it has none. */}
           <span className="ch-qf-eyebrow ch-num is-bare">
-            <span className="ch-qf-eyebrow__k">{(!coach && data.teamLabel) || (data.mode === 'mine' ? 'My qualifiers' : 'Qualifiers')}</span>
+            <span className="ch-qf-eyebrow__k">{(!coach && data.teamLabel) || 'Qualifiers'}</span>
           </span>
           <LargeTitle>{title}</LargeTitle>
           <p>{lede}</p>
@@ -112,40 +110,21 @@ export function QualifiersList({ data, live }: { data: ChQList; live?: Record<st
           onRetry={refresh}
           retrying={refreshing}
         />
-      ) : mineUnknown ? (
-        <InlineNotice
-          code="CH-09222"
-          title="Your qualifiers didn’t load"
-          body="Which qualifiers you’re entered in didn’t load, so none are shown rather than a wrong list. Nothing has changed. Try again."
-          onRetry={refresh}
-          retrying={refreshing}
-        />
       ) : data.items.length === 0 ? (
-        data.mode === 'mine' ? (
-          <EmptyState
-            size="page"
-            code="CH-09306"
-            icon={Medal}
-            title="You aren’t entered in any qualifiers"
-            body="Qualifiers your coach enters you in show here, with your rounds and where you stand."
-            action={<Button href={LIST}>See the team’s qualifiers</Button>}
-          />
-        ) : (
-          <EmptyState
-            size="page"
-            code="CH-09301"
-            icon={Medal}
-            title="No qualifiers yet"
-            body={coach ? 'Set up a qualifier to rank players across counted rounds and pick your lineup.' : 'Your coach’s qualifiers show here once they’re set up.'}
-            action={
-              coach ? (
-                <Button variant="primary" leftIcon={Plus} href={`${LIST}/new`}>
-                  New qualifier
-                </Button>
-              ) : undefined
-            }
-          />
-        )
+        <EmptyState
+          size="page"
+          code="CH-09301"
+          icon={Medal}
+          title="No qualifiers yet"
+          body={coach ? 'Set up a qualifier to rank players across counted rounds and pick your lineup.' : 'Your coach’s qualifiers show here once they’re set up.'}
+          action={
+            coach ? (
+              <Button variant="primary" leftIcon={Plus} href={`${LIST}/new`}>
+                New qualifier
+              </Button>
+            ) : undefined
+          }
+        />
       ) : (
         <>
           <div className="ch-qf-tools">

@@ -161,7 +161,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P006 | 4 | 5 | 3 | 10 | 14 | 58 | 1 | 8 | 1 | 2 | 7 | 3 | 2 | 2 | 1 | 7 | 3 | 10 | 1 | 1 | 1 |  | 1 | 1 |  | 146 |
 | P007 | 2 | 11 | 1 | 11 | 6 | 48 | 1 | 2 | 2 | 1 | 4 | 2 | 1 | 2 | 1 | 9 | 5 | 6 | 1 | 1 | 1 |  | 2 | 1 |  | 121 |
 | P008 | 2 | 1 | 3 | 6 | 15 | 44 | 3 | 10 | 3 | 3 | 8 | 6 | 2 | 2 | 1 | 9 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 138 |
-| P009 | 7 | 7 | 4 | 13 | 14 | 35 | 8 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 3 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 139 |
+| P009 | 7 | 7 | 4 | 12 | 14 | 34 | 8 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 3 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 137 |
 | P010 | 3 | 10 |  | 16 | 10 | 25 | 1 | 4 | 1 |  | 4 | 1 | 1 | 2 | 1 | 2 | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 90 |
 | P011 | 16 | 15 |  | 26 | 11 | 44 | 22 | 5 | 2 |  | 24 | 2 | 1 | 4 | 4 | 4 | 11 | 11 | 3 | 1 | 1 |  | 1 | 2 |  | 210 |
 | P012 | 3 | 3 |  | 8 | 19 | 22 | 3 | 3 | 2 |  | 5 | 1 |  | 4 | 4 | 2 | 5 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 96 |
@@ -1070,8 +1070,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 90102 |  | 01 Default / core UI | `DETAIL_READY` | implemented | A qualifier opens with its status pill and name, five facts (dates, entrants, rounds submitted, course, spots), the leaderboard, and beside it the selections, the course per round and the scoring rules; a coach also gets round-by-round scores, Manage selections, Edit qualifier and Close or Reopen. |
 | 90103 |  | 01 Default / core UI | `FORM_READY` | implemented | Create opens with the whole active roster ticked, three rounds, a five-player squad and one coach's pick; Edit opens with the qualifier's own values, round courses and entrants. |
 | 90104 |  | 01 Default / core UI | `SELECTION_READY` | implemented | Manage selections opens with the qualifier's name and squad line, the three steps (Standings, Coach's picks, Squad confirmed) with the current one marked, the places on score now, the rest of the field, the coach's picks with their open slots, and the one primary action for the next step. |
-| 90105 |  | 01 Default / core UI | `ADDRESSES_RENDER_IN_PLACE` | implemented | Each address renders its own screen in place, never as a redirect (D-23): /qualifiers and /my-qualifiers the list, /qualifiers/[id] the detail, /qualifiers/new and /qualifiers/[id]/edit the form, and /qualifiers/[id]/selection Manage selections. |
-| 90106 |  | 01 Default / core UI | `MY_QUALIFIERS_ARE_THE_PLAYERS_OWN` | implemented | /my-qualifiers lists only the qualifiers the player is entered in, /qualifiers puts a player's own first with where they stand, and a coach who is given /my-qualifiers gets the whole list (the Clubhouse frame does not offer it to coaches: the shell shows its not-rebuilt page there). |
+| 90105 |  | 01 Default / core UI | `ADDRESSES_RENDER_IN_PLACE` | implemented | Each address renders its own screen in place, never as a redirect (D-23): /qualifiers the list, /qualifiers/[id] the detail, /qualifiers/new and /qualifiers/[id]/edit the form, and /qualifiers/[id]/selection Manage selections. The one exception is /my-qualifiers, retired on 2026-11-11 (owner): it opens /qualifiers. |
+| 90106 |  | 01 Default / core UI | `MY_QUALIFIERS_ARE_THE_PLAYERS_OWN` | implemented | Players have one Qualifiers page: /qualifiers puts a player's own first with where they stand. My qualifiers is retired (owner, 2026-11-11): /my-qualifiers opens /qualifiers for a coach and a player, and is no screen of its own. |
 | 90107 |  | 01 Default / core UI | `SELECTION_ADDRESS_OUTSIDE_THE_CLUBHOUSE` | implemented | With the Clubhouse off, /qualifiers/[id]/selection sends a coach to the CoachHelm qualifying workspace and a player to the qualifier, and a signed-out visitor to login; with it on, the route gets the address. |
 | 90201 | CH-09401 | 02 Initial loading / skeleton | `THE_LIST_IS_LOADING` | implemented | The list is loading |
 | 90202 | CH-09402 | 02 Initial loading / skeleton | `A_QUALIFIER_IS_LOADING` | implemented | A qualifier is loading |
@@ -1089,7 +1089,6 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 90403 | CH-09303 | 04 Empty | `NOTHING_HAS_CONCLUDED_YET` | implemented | Nothing has concluded yet |
 | 90404 | CH-09304 | 04 Empty | `NO_ROUND_IS_IN_YET` | implemented | No round is in yet |
 | 90405 | CH-09305 | 04 Empty | `THE_ROSTER_HAS_NO_ACTIVE_PLAYERS` | implemented | The roster has no active players (form) |
-| 90406 | CH-09306 | 04 Empty | `A_PLAYER_ISNT_ENTERED_IN_ANY_QUALIFIER` | implemented | A player isn't entered in any qualifier (/my-qualifiers) |
 | 90407 | CH-09308 | 04 Empty | `A_ROUND_HAS_NO_HOLE_BY_HOLE` | implemented | A round has no hole-by-hole card |
 | 90408 | CH-09309 | 04 Empty | `NOT_ON_A_TEAM` | implemented | Not on a team |
 | 90409 | CH-09312 | 04 Empty | `THE_COURSE_SEARCH_MATCHES_NOTHING` | implemented | The course search matches nothing |
@@ -1142,7 +1141,6 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 90629 | CH-09009 | 06 Server / system error | `THE_SQUAD_IS_CONFIRMED_BUT_TELLING_THE` | implemented | The squad is confirmed but telling the players failed |
 | 90630 | CH-09010 | 06 Server / system error | `GIVING_OR_TAKING_BACK_A_PLACE_AT` | implemented | Giving or taking back a place at a tied cut fails |
 | 90631 | CH-09221 | 06 Server / system error | `THE_COACHS_PICK_NOTES_DONT_LOAD` | implemented | The coach's pick notes don't load (detail, coach, confirmed squad) |
-| 90632 | CH-09222 | 06 Server / system error | `A_PLAYERS_ENTRIES_DONT_LOAD_ON_MY` | implemented | A player's entries don't load on /my-qualifiers |
 | 90633 | CH-09220 | 06 Server / system error | `A_REFRESH_OF_A_QUALIFIERS_STANDINGS_FAILS` | implemented | A refresh of a qualifier's standings fails after they were showing (a live update, a write's re-read, Try again) |
 | 90634 | CH-09223 | 06 Server / system error | `THE_PLAYERS_ROUNDS_PANEL_CRASHES` | implemented | The player's rounds panel crashes (desktop, beside the leaderboard) |
 | 90635 | CH-09224 | 06 Server / system error | `EDIT_AN_ENTRANT_WHOSE_PROFILE_CANNOT_BE` | implemented | Edit: an entrant whose profile cannot be read (injured, redshirt or inactive: the profile read admits active members only) |
@@ -1194,7 +1192,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 91901 |  | 19 Responsive layout | `PHONE_DETAIL` | implemented | At 820px and below a qualifier is one column: two facts (rounds in, spots), the leaderboard as cards that open a player's rounds in a sheet, the confirmed squad above it, and Close and Reopen behind Edit; round-by-round stays on desktop. |
 | 91902 |  | 19 Responsive layout | `PHONE_FORM` | implemented | On the phone the form's Cancel and Create (Save when editing) sit in the top bar and the tab bar steps aside; Create runs the same checks as the page's button, and Cancel asks before discarding changes. |
 | 91903 |  | 19 Responsive layout | `PHONE_SELECTION` | implemented | On the phone Manage selections has its own top bar (Selections, with a way back to the qualifier) and the one primary action in a foot at the bottom of the page. |
-| 91904 |  | 19 Responsive layout | `PHONE_LIST` | implemented | On the phone the list's top bar reads ‹ More and the title (Qualifiers, or My qualifiers on a player's own list); the list itself is the desktop list with phone CSS. |
+| 91904 |  | 19 Responsive layout | `PHONE_LIST` | implemented | On the phone the list's top bar reads the title, Qualifiers, for a coach and a player alike; the list itself is the desktop list with phone CSS. |
 | 92001 |  | 20 Keyboard / input | `FIRST_PROBLEM_TAKES_FOCUS` | implemented | When Create or Save finds problems nothing is sent and focus moves to the first problem in reading order (name, dates, rounds, the one-round confirmation, players, squad, picks), not the last. |
 | 92002 |  | 20 Keyboard / input | `ENTER_SUBMITS_THE_FORM` | implemented | Enter in a field of the form submits it, and a form with a problem shows the problem instead of sending. |
 | 92003 |  | 20 Keyboard / input | `SCORECARDS_OPEN_FROM_THE_KEYBOARD` | implemented | A leaderboard row's scorecards open from a button that takes Enter and Space and says whether it is expanded; the row itself is not a tab stop. |
@@ -2188,3 +2186,5 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 - 130613: CH-13051 belonged to the old Ask action card, deleted when coachhelm_ask_v2 was retired; the Ask v2 card has its own codes (2026-11-07)
 - 130622: CH-13253 belonged to the old Ask action card, deleted when coachhelm_ask_v2 was retired; the Ask v2 card has its own codes (2026-11-07)
 - 130623: CH-13254 belonged to the old Ask action card, deleted when coachhelm_ask_v2 was retired; the Ask v2 card has its own codes (2026-11-07)
+- 90406: CH-09306 was the empty state of a player's My qualifiers list, retired when players got one Qualifiers page (owner, 2026-11-11); /my-qualifiers opens /qualifiers (2026-11-11)
+- 90632: CH-09222 was the failed entries read on a player's My qualifiers list, retired when players got one Qualifiers page (owner, 2026-11-11); on /qualifiers a failed entries read is CH-09202 (2026-11-11)

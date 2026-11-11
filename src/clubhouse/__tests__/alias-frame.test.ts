@@ -41,11 +41,12 @@ describe('old addresses Clubhouse moved (Simulator, 2026-10-14)', () => {
     expect(isAliased('/golf/dashboard')).toBe(false);
   });
 
-  it('a coach on the player-only My qualifiers address moves on rather than standing on "not rebuilt"; Rounds is theirs now (Team rounds)', () => {
+  it('My qualifiers is retired: the address moves on to Qualifiers for a coach and a player, never "not rebuilt"; Rounds is a coach’s now (Team rounds)', () => {
     const a = '/golf/dashboard/my-qualifiers';
-    expect(isRebuilt(a, 'player'), a).toBe(true);
-    expect(isRebuilt(a, 'coach'), a).toBe(false);
-    expect(isAliased(a), a).toBe(true);
+    for (const role of ['coach', 'player'] as const) {
+      expect(isRebuilt(a, role), a).toBe(false);
+      expect(isAliased(a, role), a).toBe(true);
+    }
     expect(isRebuilt('/golf/dashboard/rounds', 'coach')).toBe(true);
     expect(isAliased('/golf/dashboard/rounds')).toBe(false);
     // Not their children: a coach's /rounds/new and a round's page are their own screens.

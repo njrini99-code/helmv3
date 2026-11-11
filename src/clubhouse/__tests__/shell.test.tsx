@@ -1035,8 +1035,8 @@ describe('Shell · phone chrome', () => {
     expect(title.textContent).toBe('Notifications');
     expect(title.firstElementChild!.className).toBe('ch-sr-only');
     view.unmount();
-    // My qualifiers is the player's: a coach there gets the not-rebuilt notice under the plain bar, once the alias has had
-    // its CH_ALIAS_WAIT_MS to redirect (A30: an old address on its way somewhere draws a blank canvas first).
+    // My qualifiers is retired (it opens Qualifiers): a coach there gets the not-rebuilt notice under the plain bar, once the alias has
+    // had its CH_ALIAS_WAIT_MS to redirect (A30: an old address on its way somewhere draws a blank canvas first).
     vi.useFakeTimers();
     try {
       render(
@@ -1072,7 +1072,6 @@ describe('Shell · phone chrome', () => {
       ['/golf/dashboard/roster', 'player'],
       ['/golf/dashboard/stats', 'player'],
       ['/golf/dashboard/qualifiers', 'player'],
-      ['/golf/dashboard/my-qualifiers', 'player'],
       ['/golf/dashboard/classes', 'player'],
       ['/golf/dashboard/settings/', 'player'],
     ] as const)
