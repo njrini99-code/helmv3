@@ -439,13 +439,6 @@ export function RoundSetup({ ports, liveShare, qualifiers, today, backHref, onSt
               {liveShare && <LiveShareField type={form.type} ports={liveShare} />}
             </div>
           </section>
-
-          <p className="ch-rsu-note">
-            <Icon icon={ChartColumn} size={15} />
-            <span>
-              <b>Tracked on every shot:</b> driving, approach proximity, putting, scrambling and penalties. Use your rangefinder for accurate distances.
-            </span>
-          </p>
         </div>
 
         <div className="ch-rsu-col">
@@ -496,6 +489,13 @@ export function RoundSetup({ ports, liveShare, qualifiers, today, backHref, onSt
               <p>Your scorecard appears here once you pick a course and tees.</p>
             </section>
           )}
+          {/* Under the scorecard, not under Round details: there the sticky dock cut its second line on a desktop. */}
+          <p className="ch-rsu-note">
+            <Icon icon={ChartColumn} size={15} />
+            <span>
+              <b>Tracked on every shot:</b> driving, approach proximity, putting, scrambling and penalties. Use your rangefinder for accurate distances.
+            </span>
+          </p>
         </div>
       </div>
 
