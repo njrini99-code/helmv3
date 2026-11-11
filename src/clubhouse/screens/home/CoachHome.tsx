@@ -1,19 +1,16 @@
 'use client';
 
-import { DeskNext, DeskRounds, DeskToday } from './HomeDeskCrh';
+import { DeskHead, DeskNext, DeskRounds, DeskToday, DeskTodayFirst } from './HomeDeskCrh';
 import { CALENDAR } from './event-links';
 import { CalendarPlus, ChevronRight, Flag, Sparkles, UserPlus } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo } from 'react';
 import type { ChCoachHome } from '../../data/home';
-import { Button } from '../../ui/Button';
-import { EmptyState } from '../../ui/States';
 import { Icon } from '../../ui/Icon';
 import { useChPhone } from '../../lib/use-phone';
 import { useNow } from '../../lib/use-now';
 import { rebuiltHref } from '../../shell/nav';
 import { SectionBoundary } from '../../ui/SectionBoundary';
-import { Week } from './Week';
 import { LatestRound } from './LatestRound';
 import { CRH_PART_FAILED, CrhFailedCard, Form, HomePhone, WeekStrip } from './HomePhone';
 import { coachFailedParts } from './model';
@@ -51,7 +48,7 @@ function CoachHomeBody({ data, now, live }: { data: ChCoachHome; now?: string; l
   const ticking = useMemo(() => (now ? new Date(now) : clockNow), [now, clockNow]);
   // A page left open past the team's midnight reads itself again, so "today" is today (desktop and phone).
   useHomeDayRollover(data.clock, now !== undefined);
-  if (isFirstRun(data)) return <HomeFirstRun data={data} phone={phone} />;
+  if (isFirstRun(data)) return <HomeFirstRun data={data} phone={phone} now={now} ticking={ticking} />;
   if (phone) return <HomePhone data={data} now={now} live={live} />;
   // Two or more failed reads are told once under the head, with one Try again; each part keeps its title (CH-1209).
   const failed = coachFailedParts(data, true);
@@ -164,12 +161,36 @@ export function isFirstRun(data: ChCoachHome): boolean {
   );
 }
 
+/** The three first steps, as the phone board and the desk's card both list them (06 11.2). */
+function SetupRows({ roster }: { roster: string | null }) {
+  return (
+    <>
+      {[
+        { icon: UserPlus, title: 'Invite players', sub: 'They join with a link', href: roster ?? '/golf/dashboard/roster' },
+        { icon: CalendarPlus, title: 'Add your season', sub: 'Practices, qualifiers and tournaments', href: '/golf/dashboard/calendar?new=1' },
+        { icon: Flag, title: 'Post the first round', sub: 'Stats fill in from there', href: '/golf/dashboard/rounds' },
+      ].map((r) => (
+        <Link key={r.title} href={r.href} className="ch-hm-setup__r" data-ch-press="">
+          <span className="ch-hm-setup__ic">
+            <Icon icon={r.icon} size={18} />
+          </span>
+          <span>
+            <b>{r.title}</b>
+            <span>{r.sub}</span>
+          </span>
+          <Icon icon={ChevronRight} size={16} />
+        </Link>
+      ))}
+    </>
+  );
+}
+
 /**
- * The v2 first-run page empty state (gh-states.jsx, EMPTY.home.coach; D-71): the two first steps, under the same framed
- * head as the loaded page on desktop (states audit, 2026-10-08) and the Ledger's page intro on the phone (`--first`).
- * Once the calendar has something this week, the week sits above them.
+ * The first run (gh-states.jsx, EMPTY.home.coach; D-71): the three first steps under the loaded page's own head, the green
+ * hero on the phone and the hero card on a desk, so a new team's Home is the same page with less on it. Once the calendar
+ * has something this week it shows as it does on the loaded page: the week on the phone, Up next and Today on a desk.
  */
-function HomeFirstRun({ data, phone }: { data: ChCoachHome; phone: boolean; }) {
+function HomeFirstRun({ data, phone, now, ticking }: { data: ChCoachHome; phone: boolean; /** Preview and tests: the frozen clock (ISO). */ now?: string; ticking: Date | null }) {
   // Opens Roster's invite sheet, not only the page (Roster reads `?invite=1` once).
   const roster = rebuiltHref('/golf/dashboard/roster?invite=1');
   const events = data.week.days.some((d) => d.eventCount > 0);
@@ -190,61 +211,35 @@ function HomeFirstRun({ data, phone }: { data: ChCoachHome; phone: boolean; }) {
           {events && <WeekStrip calendar days={data.week.days} note={data.phone.weekNote} />}
           <section className="ch-hm-setup" aria-labelledby="ch-hm-setup-t" data-ch-code="CH-2308">
             <h2 id="ch-hm-setup-t">Get your team set up</h2>
-            {[
-              { icon: UserPlus, title: 'Invite players', sub: 'They join with a link', href: roster ?? '/golf/dashboard/roster' },
-              { icon: CalendarPlus, title: 'Add your season', sub: 'Practices, qualifiers and tournaments', href: '/golf/dashboard/calendar?new=1' },
-              { icon: Flag, title: 'Post the first round', sub: 'Stats fill in from there', href: '/golf/dashboard/rounds' },
-            ].map((r) => (
-              <Link key={r.title} href={r.href} className="ch-hm-setup__r" data-ch-press="">
-                <span className="ch-hm-setup__ic">
-                  <Icon icon={r.icon} size={18} />
-                </span>
-                <span>
-                  <b>{r.title}</b>
-                  <span>{r.sub}</span>
-                </span>
-                <Icon icon={ChevronRight} size={16} />
-              </Link>
-            ))}
+            <SetupRows roster={roster} />
           </section>
         </div>
       </main>
     );
+  // Up next is the hero's and Today lists the rest of the day, as on the loaded page; with nothing on today the card offers the first event.
+  const todayRest = data.phone.today.filter((e) => e.id !== data.phone.next?.id);
   return (
-    <main className="ch-h-main ch-h-main--first" data-canopy="">
-      <header className="ch-h-head" data-canopy-head="">
-        <span className="ch-h-head__date">{data.todayLabel}</span>
-        <h1 className="ch-display">{data.greeting}</h1>
+    <main className="ch-h-main ch-h-main--desk" data-ch-crh="on">
+      <header className="ch-h-herocard">
+        <div>
+          <span className="ch-h-head__date">{data.todayLabel}</span>
+          <h1 className="ch-display">Welcome to Clubhouse</h1>
+          <p className="ch-h-head__sub ch-dh-brief">
+            <Icon icon={Sparkles} size={14} />
+            {events ? 'Add your players and this week fills in with who’s going.' : 'Set up your team and your first week shows here.'}
+          </p>
+          {/* What is waiting on the coach (join requests above all) shows on the first run too. */}
+          <CoachQueue queue={data.queue} phone />
+        </div>
+        {data.phone.next && <DeskNext e={data.phone.next} now={now ? new Date(now) : null} />}
       </header>
-      {/* What is waiting on the coach (join requests above all) shows on the first run too. */}
-      <CoachQueue queue={data.queue} phone={phone} />
-      {events &&
-        (phone ? (
-          <WeekStrip calendar days={data.week.days} note={data.phone.weekNote} />
-        ) : (
-          <div className="ch-h-sheet ch-sheet is-solo">
-            <Week week={data.week} />
-          </div>
-        ))}
-      <EmptyState
-        size="page"
-        code="CH-2308"
-        shape="time"
-        title="Your season starts here"
-        body={`Add your players${events ? '' : ' and your first event'}. Home then fills itself in with replies, the rounds your players post and the leaderboard.`}
-        action={
-          roster ? (
-            <Button variant="primary" leftIcon={UserPlus} href={roster}>
-              Invite players
-            </Button>
-          ) : undefined
-        }
-        secondaryAction={
-          <Button leftIcon={CalendarPlus} href="/golf/dashboard/calendar?new=1">
-            New event
-          </Button>
-        }
-      />
+      <div className="ch-h-grid">
+        <section className="ch-dh-card ch-hm-setup" aria-labelledby="ch-hm-setup-t" data-ch-code="CH-2308">
+          <DeskHead id="ch-hm-setup-t" title="Get your team set up" href={null} link="" />
+          <SetupRows roster={roster} />
+        </section>
+        {todayRest.length > 0 ? <DeskToday events={todayRest} now={ticking} /> : !data.phone.next ? <DeskTodayFirst /> : null}
+      </div>
     </main>
   );
 }

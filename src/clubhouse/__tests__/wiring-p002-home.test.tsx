@@ -61,7 +61,8 @@ describe('P002 · 20103 first run: Invite players opens the invite sheet', () =>
   ])('%s: the link is /golf/dashboard/roster?invite=1', (_, phone) => {
     window.matchMedia = media(phone);
     wrap();
-    expect(screen.getByRole('link', { name: 'Invite players' }).getAttribute('href')).toBe('/golf/dashboard/roster?invite=1');
+    // The first step is a row now (its name is followed by what it does), on the desk as on the phone.
+    expect(screen.getByRole('link', { name: /^Invite players/ }).getAttribute('href')).toBe('/golf/dashboard/roster?invite=1');
   });
 });
 

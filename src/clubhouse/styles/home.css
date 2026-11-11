@@ -5540,6 +5540,34 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     gap: 16px;
     padding: 24px 32px 40px;
   }
+  /* The first run with nothing ahead has no Up next: the words take the hero. */
+  .ch-h-herocard > :only-child {
+    grid-column: 1 / -1;
+  }
+  /* The first steps in a desk card: the card's own head, a hairline from the 16 inset between the steps, and each step shares the
+     card's height beside a taller Today, so no blank band sits under the last. */
+  .ch-dh-card.ch-hm-setup h2 {
+    padding: 0;
+  }
+  .ch-dh-card.ch-hm-setup .ch-hm-setup__r {
+    position: relative;
+    flex: 1;
+  }
+  .ch-dh-card.ch-hm-setup .ch-hm-setup__r + .ch-hm-setup__r::before {
+    position: absolute;
+    inset: 0 0 auto 16px;
+    height: var(--ch-hairline-w);
+    background: var(--ch-separator);
+    content: '';
+  }
+  @media (hover: hover) {
+    .ch-dh-card.ch-hm-setup .ch-hm-setup__r {
+      transition: background-color var(--ch-dur-quick) var(--ch-ease);
+    }
+    .ch-dh-card.ch-hm-setup .ch-hm-setup__r:hover {
+      background: var(--ch-bg-subtle);
+    }
+  }
   .ch-h-herocard .ch-hm-queue {
     display: grid;
     gap: 8px;

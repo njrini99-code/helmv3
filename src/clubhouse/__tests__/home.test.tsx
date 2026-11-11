@@ -80,6 +80,7 @@ import {
   PREVIEW_HOME_LEGS_TOUR_FAILED,
   PREVIEW_HOME_LEGS_NO_HOLES,
   PREVIEW_HOME_NOW,
+  PREVIEW_HOME_EVENTS_ONLY,
   PREVIEW_HOME_NO_EVENTS,
   PREVIEW_HOME_QUEUE_FAILED,
 } from '../preview/fixtures';
@@ -421,12 +422,24 @@ describe('Home · first run (v2 page empty state, D-71)', () => {
       phone: { next: null, today: [], form: null, weekNote: null },
     };
     wrap(<CoachHome data={empty} />);
-    expect(code('CH-2308')!.textContent).toMatch(/Your season starts here/);
-    expect(screen.getByRole('link', { name: 'Invite players' }).getAttribute('href')).toBe('/golf/dashboard/roster?invite=1');
-    // The verb every other New event uses (CH-2308's secondary), and the head's own actions (with its N key) step aside.
-    expect(screen.getByRole('link', { name: 'New event' }).getAttribute('href')).toBe('/golf/dashboard/calendar?new=1');
+    // The first steps are the desk's own card, the three the phone lists, each a link to where it is done.
+    const setup = code('CH-2308') as HTMLElement;
+    expect(setup.tagName).toBe('SECTION');
+    expect(setup.closest('.ch-dh-card')).not.toBeNull();
+    expect(within(setup).getByRole('heading', { name: 'Get your team set up' })).toBeTruthy();
+    expect(within(setup).getByRole('link', { name: /^Invite players/ }).getAttribute('href')).toBe('/golf/dashboard/roster?invite=1');
+    expect(within(setup).getByRole('link', { name: /^Add your season/ }).getAttribute('href')).toBe('/golf/dashboard/calendar?new=1');
+    expect(within(setup).getByRole('link', { name: /^Post the first round/ }).getAttribute('href')).toBe('/golf/dashboard/rounds');
+    // The verb every other New event uses, once, in Today's empty card; the head's own actions (with its N key) step aside.
+    const add = screen.getByRole('link', { name: 'New event' });
+    expect(add.getAttribute('href')).toBe('/golf/dashboard/calendar?new=1');
     expect(screen.getAllByRole('link', { name: /New event/ })).toHaveLength(1);
-    expect(within(code('CH-2308')!.closest('main')!.querySelector(':scope > header') as HTMLElement).queryByRole('link')).toBeNull();
+    expect(add.closest('[data-ch-code="CH-2301"]')).not.toBeNull();
+    const head = setup.closest('main')!.querySelector(':scope > header') as HTMLElement;
+    expect(head.querySelector('.ch-h-head__actions')).toBeNull();
+    expect(within(head).queryByRole('button')).toBeNull();
+    // What the head links to is only what is waiting on the coach.
+    for (const link of within(head).queryAllByRole('link')) expect(link.closest('.ch-hm-queue')).not.toBeNull();
   });
 
   it('CH-2308 the first run opens under the same framed head as the loaded page', () => {
@@ -437,10 +450,30 @@ describe('Home · first run (v2 page empty state, D-71)', () => {
       leaderboard: { rows: [], scorecards: 0, rosterSize: 0, error: false },
       phone: { next: null, today: [], form: null, weekNote: null },
     };
+    // The loaded page's head is the green hero card (not the canopy it was on 8 Oct), so the first run's is too.
+    const loaded = wrap(<CoachHome data={PREVIEW_HOME} now={PREVIEW_HOME_NOW} />);
+    const loadedMain = loaded.container.querySelector('main')!;
+    const loadedHead = loadedMain.querySelector(':scope > header')!;
+    expect(loadedHead.className).toBe('ch-h-herocard');
+    loaded.unmount();
     wrap(<CoachHome data={empty} />);
     const main = code('CH-2308')!.closest('main')!;
-    expect(main.hasAttribute('data-canopy')).toBe(true);
-    expect(main.querySelector(':scope > header')!.hasAttribute('data-canopy-head')).toBe(true);
+    expect(main.className).toBe(loadedMain.className);
+    expect(main.getAttribute('data-ch-crh')).toBe(loadedMain.getAttribute('data-ch-crh'));
+    const head = main.querySelector(':scope > header')!;
+    expect(head.className).toBe(loadedHead.className);
+    expect(within(head as HTMLElement).getByRole('heading', { level: 1, name: 'Welcome to Clubhouse' })).toBeTruthy();
+  });
+
+  it('CH-2308 with something on today the first run lists the rest of the day, and the next event sits in the hero', () => {
+    const { container } = wrap(<CoachHome data={PREVIEW_HOME_EVENTS_ONLY} now={PREVIEW_HOME_NOW} />);
+    const next = PREVIEW_HOME_EVENTS_ONLY.phone.next!;
+    expect(container.querySelector('.ch-h-herocard__next')!.textContent).toContain(next.title);
+    const today = screen.getByRole('heading', { name: 'Today' }).closest('.ch-dh-card') as HTMLElement;
+    expect(within(today).queryByText(next.title)).toBeNull();
+    expect(today.querySelectorAll('.ch-dh-rows--today > li').length).toBe(PREVIEW_HOME_EVENTS_ONLY.phone.today.filter((e) => e.id !== next.id).length);
+    expect(screen.queryByText('Nothing on the calendar today')).toBeNull();
+    expect(screen.getByText('Add your players and this week fills in with who’s going.')).toBeTruthy();
   });
 
   it('a failed read is never taken for a first run', () => {
