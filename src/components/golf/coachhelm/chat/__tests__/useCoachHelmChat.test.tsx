@@ -1,3 +1,4 @@
+import * as React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { encodeChatEvent, type ChatEvent, type ChatUIMessage } from '@/lib/coachhelm/v3/chat/engine/protocol';
@@ -165,6 +166,16 @@ describe('useCoachHelmChat', () => {
     act(() => result.current.send('How is Avery scoring?'));
     await waitFor(() => expect(result.current.status).toBe('error'));
     expect(describeChatError(result.current.error).recovery).toBe('retry');
+  });
+
+  it('under React StrictMode (every component mounts twice in development) a question just asked is still answered', async () => {
+    fetchMock.mockResolvedValueOnce(sse(answer('Avery is at 71.4.')));
+    const { result } = renderHook(() => useCoachHelmChat(), { wrapper: React.StrictMode });
+    act(() => result.current.send('How is Avery scoring?'));
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect((fetchMock.mock.calls[0]![1]!.signal as AbortSignal).aborted).toBe(false);
+    expect(result.current.messages.at(-1)!.parts.at(-1)).toEqual({ type: 'text', text: 'Avery is at 71.4.' });
   });
 
   it('a new chat clears the thread, the conversation and the failure', async () => {

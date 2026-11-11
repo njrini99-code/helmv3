@@ -149,13 +149,19 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
     flushTimer.current = setTimeout(flush, RENDER_INTERVAL_MS);
   }, [flush]);
 
-  React.useEffect(
-    () => () => {
-      inFlight.current?.abort();
-      if (flushTimer.current) clearTimeout(flushTimer.current);
-    },
-    [],
-  );
+  // Leaving the page stops the answer. The stop is deferred by a tick and called off if the component mounts again at once:
+  // React's StrictMode unmounts and remounts every component in development, and that must not cancel a question just asked.
+  const leaving = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  React.useEffect(() => {
+    if (leaving.current) clearTimeout(leaving.current);
+    leaving.current = null;
+    return () => {
+      leaving.current = setTimeout(() => {
+        inFlight.current?.abort();
+        if (flushTimer.current) clearTimeout(flushTimer.current);
+      }, 0);
+    };
+  }, []);
 
   const run = React.useCallback(
     async (outgoing: Outgoing) => {
