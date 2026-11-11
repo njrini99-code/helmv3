@@ -6,6 +6,7 @@ import { publishPracticePlan } from '@/app/golf/actions/practice-publish';
 import { savePracticePlan } from '@/app/golf/actions/practice-plans';
 import { pathFor, type PlanBodyV2 } from '@/lib/coachhelm/v3/practice-plan/model';
 import { formatWith } from '../../lib/dates';
+import { plural } from '../../lib/plural';
 import { Button } from '../../ui/Button';
 import { Modal } from '../../ui/Modal';
 import { Switch } from '../../ui/Switch';
@@ -38,7 +39,7 @@ export function shiftBody(body: PlanBodyV2, index: number, by: -5 | 5): PlanBody
 
 /** Where a block is, in a word or two: its place, its stations, or its holes. */
 function blockWhere(b: PlanBodyV2['variants']['main']['blocks'][number]): string {
-  if (b.kind === 'stations') return `${b.stations.length} ${b.stations.length === 1 ? 'station' : 'stations'}`;
+  if (b.kind === 'stations') return plural(b.stations.length, 'station');
   if (b.kind === 'course') return `Holes ${b.holeFrom} to ${b.holeTo}`;
   return b.place;
 }
