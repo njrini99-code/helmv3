@@ -190,6 +190,22 @@ describe('Practice home', () => {
     const bare = render(<PracticeHome data={{ ...HOME, firstRun: false, upNext: { ...up, rows: up.rows.map(({ min: _m, ...r }) => r) } }} />);
     expect(bare.container.querySelector('.ch-prc-day')).toBeNull();
   });
+  it('the plan Up next draws is not listed again under Drafts; another draft still is', () => {
+    const up = { title: 'Thursday practice', when: 'Thu, Nov 5', rows: [{ time: '2:00', title: 'Warm-up', place: 'Range', min: 30 }], state: 'Draft' as const, planHref: null, editHref: '/plan/b/edit', eventId: null };
+    const thursday = { id: 'b', day: 'Thu, Nov 5', title: 'Thursday practice', time: '2:00 to 5:00 PM', line: '', state: 'Draft' as const, href: '/plan/b/edit' };
+    const friday = { id: 'f', day: 'Fri, Nov 6', title: 'Friday practice', time: '2:00 to 4:30 PM', line: '', state: 'Draft' as const, href: '/plan/f/edit' };
+    const only = render(<PracticeHome data={{ ...HOME, firstRun: false, upNext: up, drafts: [thursday] }} />);
+    expect(screen.getAllByText('Thursday practice')).toHaveLength(1);
+    expect(screen.queryByRole('heading', { name: 'Drafts' })).toBeNull();
+    expect(screen.queryByRole('list', { name: 'Drafts' })).toBeNull();
+    // With nothing left to list, Up next keeps the page's one column.
+    expect(only.container.querySelector('.ch-prc-home')!.classList.contains('has-plans')).toBe(false);
+    only.unmount();
+    render(<PracticeHome data={{ ...HOME, firstRun: false, upNext: up, drafts: [thursday, friday] }} />);
+    const list = screen.getByRole('list', { name: 'Drafts' });
+    expect(within(list).getAllByRole('link').map((a) => a.getAttribute('href'))).toEqual(['/plan/f/edit']);
+    expect(screen.getAllByText('Thursday practice')).toHaveLength(1);
+  });
   it('a past plan reads Ended, and edits not yet published are said on the row', () => {
     render(<PracticeHome data={{ ...HOME, firstRun: false, published: [{ id: 'c', day: 'Tue', title: 'Tune-up', time: '3:00', line: '', state: 'Updated', href: '/c', edits: true }], drafts: [{ id: 'd', day: 'Wed', title: 'Old', time: '3:00', line: '', state: 'Done', href: '/d' }] }} />);
     expect(screen.getByText('Edits not published')).toBeTruthy();
@@ -199,7 +215,7 @@ describe('Practice home', () => {
 
 describe('the player’s Practice', () => {
   const data: ChPlayerPracticeHome = {
-    next: { planHref: '/p', title: 'Thursday practice', when: '2:00 to 5:00 PM', context: 'Thursday · Group B', focus: 'Putts inside 6 feet.', group: { name: 'B', me: 'Jonah', mates: ['Eli', 'Owen'] }, stops: [{ time: '2:00', place: 'Range', line: 'Warm-up' }, { time: '2:30', place: 'Green, back', line: 'Lag ladder', now: true }, { time: '2:50', place: 'Chipping green', line: 'Up and down', next: true }, { time: '3:10', place: 'Green, front', line: 'Clock drill' }, { time: '3:30', place: 'To the course', line: '' }] },
+    next: { planHref: '/p', title: 'Thursday practice', when: '2:00 to 5:00 PM', context: 'Thursday', focus: 'Putts inside 6 feet.', group: { name: 'B', me: 'Jonah', mates: ['Eli', 'Owen'] }, stops: [{ time: '2:00', place: 'Range', line: 'Warm-up' }, { time: '2:30', place: 'Green, back', line: 'Lag ladder', now: true }, { time: '2:50', place: 'Chipping green', line: 'Up and down', next: true }, { time: '3:10', place: 'Green, front', line: 'Clock drill' }, { time: '3:30', place: 'To the course', line: '' }] },
     week: [],
     upcoming: [],
     past: [],
@@ -207,7 +223,10 @@ describe('the player’s Practice', () => {
   it('leads with their own next practice: focus, their group, and the stop that is on now', () => {
     render(<PlayerPracticeHome data={data} />);
     expect(screen.getByText('Putts inside 6 feet.')).toBeTruthy();
+    // Their group is said once, on the card: the line under the title is the day alone.
     expect(screen.getByText('Group B')).toBeTruthy();
+    expect(screen.getAllByText(/Group B/)).toHaveLength(1);
+    expect(document.querySelector('.ch-prc-h__line')?.textContent).toBe('Thursday');
     const stops = screen.getByLabelText('Your stops');
     expect(within(stops).queryByText('Range')).toBeNull();
     expect(within(stops).getByText('Now')).toBeTruthy();

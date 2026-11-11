@@ -123,7 +123,9 @@ export function PracticeHome({ data, openNew = false, previewSheet = false, temp
   // The day to scale: each block as wide as its minutes. A plan read without lengths draws no strip rather than a guessed one.
   // Coloured by kind of work as the builder's is, when the plan was read with its drills; else a stretch a row, plain.
   const segs: DaySeg[] = up?.day ? up.day.map((d, i) => ({ id: String(i), ...d })) : up && up.rows.every((r) => typeof r.min === 'number') ? up.rows.map((r, i) => ({ id: String(i), min: r.min ?? 0 })) : [];
-  const listed = !data.firstRun && data.drafts.length + data.published.length + data.past.length > 0;
+  // The plan Up next draws is not listed again under Drafts: its name, day and blocks are already on the page, with the key that opens it.
+  const drafts = up?.editHref ? data.drafts.filter((r) => r.href !== up.editHref) : data.drafts;
+  const listed = !data.firstRun && drafts.length + data.published.length + data.past.length > 0;
   const more = up ? Math.max(0, up.rows.length - UP_NEXT_ROWS) : 0;
   return (
     <main className={'ch-page ch-prc' + (phone ? ' is-phone' : '')} data-ch="practice" aria-labelledby="ch-prc-title">
@@ -236,7 +238,8 @@ export function PracticeHome({ data, openNew = false, previewSheet = false, temp
               </div>
             </section>
           ) : (
-            <EmptyState shape="week" title="No practices this week" body="Add one on the calendar, then plan it here." action={<Button href="/golf/dashboard/calendar">Go to Calendar</Button>} code="CH-13396" />
+            // The week's tiles already say there is no practice on each day: this says only what to do about it.
+            <EmptyState shape="week" title="Add a practice on the calendar" body="Then plan it here." action={<Button href="/golf/dashboard/calendar">Go to Calendar</Button>} code="CH-13396" />
           )}
         </>
       )}
@@ -245,10 +248,10 @@ export function PracticeHome({ data, openNew = false, previewSheet = false, temp
 
       {listed && (
         <div className="ch-prc-home__plans">
-          {data.drafts.length > 0 && (
+          {drafts.length > 0 && (
             <section className="ch-prc-sec" aria-labelledby="ch-prc-drafts">
               <h2 id="ch-prc-drafts">Drafts</h2>
-              <PlanRows rows={data.drafts} label="Drafts" />
+              <PlanRows rows={drafts} label="Drafts" />
             </section>
           )}
           {data.published.length > 0 && (

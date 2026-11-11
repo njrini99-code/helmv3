@@ -744,9 +744,12 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
               Delete draft
             </Button>
           )}
-          <Button variant="primary" disabled={check.errors.length > 0} onClick={() => setConfirm(true)}>
-            {publishLabel}
-          </Button>
+          {/* A Mac's head already holds Publish, on every step: one key, not two. A phone has no head, so its key is here. */}
+          {phone && (
+            <Button variant="primary" disabled={check.errors.length > 0} onClick={() => setConfirm(true)}>
+              {publishLabel}
+            </Button>
+          )}
         </div>
       </section>
       <PracticePlanSheet plan={sheetModel} />

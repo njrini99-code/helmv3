@@ -103,9 +103,13 @@ describe('the landing', () => {
     expect(screen.queryByText('Drafts')).toBeNull();
     expect(screen.getAllByRole('button', { name: /New plan/ }).length).toBeGreaterThan(0);
   });
-  it('CH-13396 a coach with plans and no practice this week is told so, and the plans still list', () => {
+  it('CH-13396 a coach with plans and no practice coming is told what to do about it, and the plans still list', () => {
     render(<PracticeHome data={{ ...HOME, firstRun: false, past: [{ id: 'a', day: 'Tue', title: 'Old', time: '3:00', line: '', state: 'Done', href: '/x' }] }} />);
-    expect(screen.getByText(/No practices this week/)).toBeTruthy();
+    // The week's tiles say "No practice" day by day: the words under them don't say it again.
+    expect(screen.getByText('Add a practice on the calendar')).toBeTruthy();
+    expect(screen.getByText('Then plan it here.')).toBeTruthy();
+    expect(screen.queryByText(/No practices? this week/)).toBeNull();
+    expect(screen.getByRole('link', { name: 'Go to Calendar' }).getAttribute('href')).toBe('/golf/dashboard/calendar');
     expect(screen.getByRole('button', { name: /Past plans \(1\)/ })).toBeTruthy();
   });
   it('CH-13397 a player with nothing published is told so, with no New plan', () => {
@@ -248,14 +252,15 @@ describe('the builder', () => {
   it('Review refuses to publish an empty plan and links the problem', () => {
     show(data({ step: 'review' }), {});
     expect(screen.getByText(/Fix 1 problem to publish/)).toBeTruthy();
-    expect((screen.getAllByRole('button', { name: 'Publish' })[0] as HTMLButtonElement).disabled).toBe(true);
+    // One Publish key on a Mac, the head's: Review's own strip doesn't draw a second.
+    expect((screen.getByRole('button', { name: 'Publish' }) as HTMLButtonElement).disabled).toBe(true);
   });
 
   it('CH-13081 Publish confirms first, then publishes the saved version and tells who', async () => {
     publish.mockResolvedValue({ success: true, version: 4, recipients: 3, documentId: null, firstPublish: true });
     const base = emptyBody('Lakeside', ROSTER.map((r) => r.id), false);
     show(data({ body: addBlock(base, makeBlock('team', base, 't')), step: 'review' }));
-    fireEvent.click(screen.getAllByRole('button', { name: 'Publish' })[0]!);
+    fireEvent.click(screen.getByRole('button', { name: 'Publish' }));
     expect(publish).not.toHaveBeenCalled();
     vi.useFakeTimers({ shouldAdvanceTime: true });
     try {
@@ -275,7 +280,7 @@ describe('the builder', () => {
   it('Undo inside the 8 second hold publishes nothing and tells nobody', async () => {
     const base = emptyBody('Lakeside', ROSTER.map((r) => r.id), false);
     show(data({ body: addBlock(base, makeBlock('team', base, 't')), step: 'review' }));
-    fireEvent.click(screen.getAllByRole('button', { name: 'Publish' })[0]!);
+    fireEvent.click(screen.getByRole('button', { name: 'Publish' }));
     vi.useFakeTimers({ shouldAdvanceTime: true });
     try {
       fireEvent.click(screen.getByRole('button', { name: /Publish to 3 people/, hidden: true }));

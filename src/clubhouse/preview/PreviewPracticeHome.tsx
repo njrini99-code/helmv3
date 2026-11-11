@@ -61,7 +61,7 @@ const PLAYER: ChPlayerPracticeHome = {
     planHref: '/golf/dashboard/practice/plan/c',
     title: 'Thursday practice',
     when: '2:00 to 5:00 PM · Lakeside Golf Club',
-    context: 'Thursday · Group B',
+    context: 'Thursday',
     focus: 'Putts inside 6 feet and speed from long range. Finish under pressure.',
     group: { name: 'B', me: 'Jonah', mates: ['Eli', 'Owen'] },
     stops: [

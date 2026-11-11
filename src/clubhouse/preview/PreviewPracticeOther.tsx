@@ -79,7 +79,7 @@ export function PreviewPracticePlayer({ state }: { state?: string }) {
       <PlayerPractice
         everyone={sheet}
         data={{
-          context: 'Thursday · Group B',
+          context: 'Thursday',
           title: 'Thursday practice',
           when: '2:00 to 5:00 PM · Lakeside Golf Club',
           focus: 'Putts inside 6 feet and speed from long range. Finish under pressure.',

@@ -127,7 +127,8 @@ export async function loadPlayerPractice(planId: string, playerId: string, now: 
   return {
     status: 'ready',
     data: {
-      context: [day, group ? `Group ${group.name}` : null].filter(Boolean).join(' · '),
+      // The day only: the player's group is said once, on the card under it ("Group B · with Eli and Owen").
+      context: day,
       title: row.title || 'Practice plan',
       when: [end ? `${clockOf(start)} to ${clockOf(end)}` : clockOf(start), body.place || ctx.event.location].filter(Boolean).join(' · '),
       focus: body.focus,
