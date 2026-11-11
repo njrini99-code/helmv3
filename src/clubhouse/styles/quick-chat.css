@@ -66,14 +66,16 @@ html[data-fw-theme='dark'] .ch-qcs {
 .ch-qck.is-desk .hkey__flag { top: 4px; right: 4px; box-shadow: 0 0 0 2px var(--ch-workspace); }
 /* The key's name: on a tab root's bar and a wide desk, a label beside the mark, so it is a way in without knowing the wheel or the chord.
    A pushed page's bar, a narrow desk and a very narrow phone keep the plain mark (06 S-KEY). A pushed bar is one with a back link: its title is
-   centred and the name would run under it (Player stats, design review 10 Nov 2026). */
+   centred and the name would run under it (Player stats, design review 10 Nov 2026). Every bar without one is a tab root's, its title at the left
+   with room beside it, whether or not the bar swipes between sections: the name was tied to that swipe, so What's new had the plain mark while
+   the other roots had the name, and a root lost it for as long as a pushed screen covered it. */
 .ch-qck .hkey__label { display: none; position: relative; white-space: nowrap; font: var(--ch-type-13-medium); letter-spacing: var(--ch-track-13); }
 .ch-qck .hkey .ch-qc-keys { display: none; position: relative; }
 @media (max-width: 820px) and (min-width: 360px) {
-  .ch-topbar[data-sections]:not(:has(.ch-pbar__back)) .ch-qck.keyslot { width: auto; }
-  .ch-topbar[data-sections]:not(:has(.ch-pbar__back)) .ch-qck .hkey { display: inline-flex; width: auto; gap: 4px; padding: 0 12px 0 8px; color: var(--ch-qc-a-frame-ink); }
-  .ch-topbar[data-sections]:not(:has(.ch-pbar__back)) .ch-qck .hkey__label { display: inline; }
-  .ch-topbar[data-sections]:not(:has(.ch-pbar__back)) .ch-qck .hkey__flag { top: 4px; right: 4px; }
+  .ch-topbar:not(:has(.ch-pbar__back)) .ch-qck.keyslot { width: auto; }
+  .ch-topbar:not(:has(.ch-pbar__back)) .ch-qck .hkey { display: inline-flex; width: auto; gap: 4px; padding: 0 12px 0 8px; color: var(--ch-qc-a-frame-ink); }
+  .ch-topbar:not(:has(.ch-pbar__back)) .ch-qck .hkey__label { display: inline; }
+  .ch-topbar:not(:has(.ch-pbar__back)) .ch-qck .hkey__flag { top: 4px; right: 4px; }
 }
 @media (min-width: 1100px) {
   .ch-qck.is-desk.keyslot { width: auto; display: inline-flex; align-items: center; margin-right: 4px; }
