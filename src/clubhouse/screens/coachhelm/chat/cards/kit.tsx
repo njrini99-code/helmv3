@@ -322,7 +322,7 @@ export function Delivery({ proposal, phase, density, children }: { proposal: Act
     <figure className="ch-akc-words ch-akc-delivery">
       <figcaption>
         {caption}
-        {how && <span aria-label="How it arrives"> · {how}</span>}
+        {how && ` · ${how}`}
         {each.length > 1 && '. Each person’s is their own.'}
       </figcaption>
       {forms.length > 1 && <Segmented label="How it arrives" size="sm" value={channel} options={forms.map((f, i) => ({ value: String(i), label: channelChip(f.channel) }))} onChange={setChannel} />}
