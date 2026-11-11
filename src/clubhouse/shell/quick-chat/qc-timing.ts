@@ -14,5 +14,7 @@ export const DRAG_SLOP_PX = 10;
 export const DRAG_CLOSE_SHARE = 0.3;
 /** px per ms. */
 export const DRAG_FLING = 0.5;
+/** A finger still for this long before it lifts has no speed left to throw the sheet with. */
+export const DRAG_REST_MS = 80;
 /** Today's thread is read on warm; starts are held back this long after open so they cannot flash before a thread. */
 export const RESTORE_GRACE_MS = 120;

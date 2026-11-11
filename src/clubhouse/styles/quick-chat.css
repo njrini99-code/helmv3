@@ -456,7 +456,8 @@ html[data-fw-theme='dark'] .ch-qck.is-desk .hkey__disc { background: rgb(107 187
 /* Moment 1. The frame: a sheet hung from the bar on the phone, a panel anchored to the key on a desk. Its size never
    changes while it is open; the pour is a transform from the key's centre (useQcMotion). */
 .ch-qcs .qc { position: fixed; z-index: calc(var(--ch-z-popover) + 1); top: var(--ch-qc-top, 62px); display: flex; flex-direction: column; overflow: hidden; outline: 0; background: var(--ch-qc-a-pglass); -webkit-backdrop-filter: blur(var(--ch-glass-blur)); backdrop-filter: blur(var(--ch-glass-blur)); box-shadow: var(--ch-qc-shadow-14); }
-.ch-qcs.is-phone .qc { left: max(8px, env(safe-area-inset-left)); right: max(8px, env(safe-area-inset-right)); bottom: calc(8px + env(safe-area-inset-bottom)); border-radius: var(--ch-radius-panel-phone); }
+/* On the phone the sheet is nearly the whole screen: its ground is close to solid, so no word of the page reads through it. */
+.ch-qcs.is-phone .qc { background: color-mix(in srgb, var(--ch-bg-page) 94%, transparent); left: max(8px, env(safe-area-inset-left)); right: max(8px, env(safe-area-inset-right)); bottom: calc(8px + env(safe-area-inset-bottom)); border-radius: var(--ch-radius-panel-phone); }
 .ch-qcs.is-desk .qc { right: 14px; width: min(432px, calc(100vw - 28px)); height: min(640px, calc(100dvh - var(--ch-qc-top, 62px) - 22px)); min-height: min(360px, calc(100dvh - var(--ch-qc-top, 62px) - 22px)); border-radius: var(--ch-radius-panel); }
 @media (prefers-reduced-transparency: reduce) { .ch-qcs .qc { background: var(--ch-card-bg); -webkit-backdrop-filter: none; backdrop-filter: none; } }
 :where(html[data-reduce-transparency]) .ch-qcs .qc { background: var(--ch-card-bg); -webkit-backdrop-filter: none; backdrop-filter: none; }

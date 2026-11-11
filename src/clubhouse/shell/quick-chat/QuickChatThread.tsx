@@ -547,6 +547,13 @@ function AssistantTurn({ turn, online, stopped, failed = false, onSend, onApprov
         if (b.kind === 'proposal') return <TaskCard key={b.key} view={b.view} online={online} onSend={onSend} onApprove={onApprove} onDeny={onDeny} onOpen={onOpen} onPhase={onPhase} />;
         if (b.kind === 'plan') return <PlanTask key={b.key} plan={b.plan} online={online} onOpen={onOpen} />;
         if (b.kind === 'brief') return <QuickAsk key={b.key} brief={b.brief} onSend={onSend} />;
+        // The card is the record of its own receipt; a receipt with no card in this turn says its one line.
+        if (b.kind === 'receipt')
+          return turn.blocks.some((x) => x.kind === 'proposal') ? null : (
+            <p className="say quiet" key={b.key}>
+              {b.receipt.summary}
+            </p>
+          );
         // A chart or a table the panel doesn't draw isn't dropped silently (QC-1).
         return (
           <p className="say quiet qc-handoff" key={b.key}>

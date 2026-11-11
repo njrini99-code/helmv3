@@ -14,7 +14,7 @@ import { Icon } from '../../ui/Icon';
 import type { ChAskSheetChat } from '../AskSheet';
 import { HelmMark, useQcCtx } from './qc-context';
 import { useQcSeam } from './qc-seam';
-import { DRAG_CLOSE_SHARE, DRAG_FLING, DRAG_SLOP_PX } from './qc-timing';
+import { DRAG_CLOSE_SHARE, DRAG_FLING, DRAG_REST_MS, DRAG_SLOP_PX } from './qc-timing';
 import { QuickChatThread } from './QuickChatThread';
 import { readTodayThread } from './earlier-today';
 import { dragCloses, useQcMotion } from './useQcMotion';
@@ -137,6 +137,12 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
       });
       if (fine || summoned) field.current?.focus({ preventScroll: true });
       else el.focus({ preventScroll: true });
+      // The panel owns one history entry: Back closes it and the page behind does not navigate (MQ-1-9). Pushed in the
+      // frame the pour is created in, so the router's own work is done before the first frame and never lands inside the pour.
+      if (mounted.current && entry.current === null) {
+        entry.current = ++entrySeq;
+        window.history.pushState({ ...(window.history.state as object | null), chQc: entry.current }, '');
+      }
     } else if (shown) {
       releaseInert.current?.();
       releaseInert.current = null;
@@ -155,13 +161,15 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
   }, [open, phone]);
   useEffect(() => () => releaseInert.current?.(), []);
 
-  // The panel owns one history entry: Back closes it and the page behind does not navigate (MQ-1-9). Pushed after the
-  // frame the pour starts in, never during render or layout: the router hears of every push.
+  // A panel that is open when the shell first draws (a preview state) takes its entry once the router has mounted.
+  const mounted = useRef(false);
   useEffect(() => {
+    mounted.current = true;
     if (!open || entry.current !== null) return;
     entry.current = ++entrySeq;
     window.history.pushState({ ...(window.history.state as object | null), chQc: entry.current }, '');
-  }, [open]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once, on mount
+  }, []);
   useEffect(() => {
     if (!open) return;
     const onPop = () => {
@@ -258,7 +266,12 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
             if (Math.abs(dy) < DRAG_SLOP_PX) return;
             d.on = true;
             d.y0 += Math.sign(dy) * DRAG_SLOP_PX;
-            e.currentTarget.setPointerCapture(e.pointerId);
+            // A pointer the browser no longer has cannot be captured; the drag still follows its moves.
+            try {
+              e.currentTarget.setPointerCapture(e.pointerId);
+            } catch {
+              // Not capturable: nothing to do.
+            }
           }
           const dt = e.timeStamp - d.t;
           if (dt > 0) d.v = (e.clientY - d.y) / dt;
@@ -272,10 +285,12 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
           drag.current = null;
           if (!d?.on || !el) return;
           const dy = e.clientY - d.y0;
-          if (dragCloses(dy, d.v, el.offsetHeight, DRAG_CLOSE_SHARE, DRAG_FLING)) {
+          // A finger that rested before it lifted is not a fling: its last speed is stale.
+          const v = e.timeStamp - d.t > DRAG_REST_MS ? 0 : d.v;
+          if (dragCloses(dy, v, el.offsetHeight, DRAG_CLOSE_SHARE, DRAG_FLING)) {
             haptic('commit');
             onClose();
-          } else motion.dragBack(el, scrim.current, dy, d.v);
+          } else motion.dragBack(el, scrim.current, dy, v);
         },
         onPointerCancel: () => {
           const d = drag.current;
