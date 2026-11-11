@@ -57,6 +57,11 @@
 -- closed that reveals a group's existence and title, not its contents. Narrowing it is a product decision (report).
 -- Changing is_team_channel on an existing row is closed by 20261107090100 (column grants and identity guard), not here.
 --
+-- LOCKS (pg_locks after each statement, local stack 2026-11-10): ACCESS EXCLUSIVE on golf_conversation_participants,
+-- then on golf_conversations, each once (DROP / CREATE POLICY needs it; no weaker lock is taken first on either table).
+-- Reads and writes of each table wait from its lock to the commit, a few milliseconds once both are granted;
+-- lock_timeout gives up after 3s with nothing changed. Apply off-peak and run it again if it times out.
+--
 -- ORDER: independent of the four 202611070900xx files and of any app deploy; can be applied first. Apply before
 -- 20261110090200 (it trusts is_team_channel). Needs 20261017003000 (applied to production 2026-10-21), which the
 -- precondition below checks.

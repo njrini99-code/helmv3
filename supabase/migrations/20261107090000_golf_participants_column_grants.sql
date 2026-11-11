@@ -33,6 +33,11 @@
 -- Not touched: policies (unchanged), the AFTER triggers (golf_participants_read_mark, *_read_marks_on_leave and, once
 -- 20261031150000 is applied, the pin triggers; all SECURITY DEFINER or unaffected by column grants).
 --
+-- LOCKS (pg_locks after each statement, local stack 2026-11-10): SHARE ROW EXCLUSIVE on golf_conversation_participants,
+-- once, from CREATE OR REPLACE TRIGGER. Writes to the table wait for the few milliseconds the file takes; reads do not
+-- wait and are not waited for. GRANT and REVOKE take no table lock. (DROP TRIGGER IF EXISTS, which an earlier draft
+-- used, takes ACCESS EXCLUSIVE even when the trigger does not exist.)
+--
 -- ORDER: first of the Messages package. Independent of the others; apply before 20261031150000 (pins) so its triggers sit on
 -- the hardened table. No app deploy is needed before or after.
 --
@@ -110,9 +115,7 @@ END $$;
 
 REVOKE ALL ON FUNCTION public.golf_participants_identity_guard() FROM PUBLIC, anon;
 
-DROP TRIGGER IF EXISTS golf_participants_identity_guard
-ON public.golf_conversation_participants;
-CREATE TRIGGER golf_participants_identity_guard
+CREATE OR REPLACE TRIGGER golf_participants_identity_guard
 BEFORE UPDATE ON public.golf_conversation_participants
 FOR EACH ROW
 WHEN (

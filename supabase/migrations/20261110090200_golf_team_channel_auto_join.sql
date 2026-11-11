@@ -38,6 +38,12 @@
 --   * Leaving is untouched: going inactive or being removed from the team does not remove the participant row, here or
 --     in any other conversation.
 --
+-- LOCKS (pg_locks after each statement, local stack 2026-11-10): SHARE ROW EXCLUSIVE on golf_team_members, then on
+-- golf_team_coach_staff, each once, from CREATE OR REPLACE TRIGGER. Roster and staff writes wait for the few
+-- milliseconds the file takes; reads do not wait and are not waited for, which matters on golf_team_members: nearly
+-- every Golf policy reads it. (DROP TRIGGER IF EXISTS, which an earlier draft used, takes ACCESS EXCLUSIVE even when
+-- the trigger does not exist.)
+--
 -- ORDER: after 20261110090000 and 20261107090100, and the precondition below refuses to run without them. These triggers
 -- trust is_team_channel: 20261110090000 lets only a coach of the team create a flagged row, and 20261107090100 stops a
 -- member changing the flag on an existing one. Without both, a player could flag a conversation of their own and have
@@ -135,9 +141,7 @@ END $$;
 REVOKE ALL ON FUNCTION helm_private.golf_team_channel_join_member()
 FROM public, anon, authenticated;
 
-DROP TRIGGER IF EXISTS golf_team_members_join_team_channel
-ON public.golf_team_members;
-CREATE TRIGGER golf_team_members_join_team_channel
+CREATE OR REPLACE TRIGGER golf_team_members_join_team_channel
 AFTER INSERT OR UPDATE OF status ON public.golf_team_members
 FOR EACH ROW
 WHEN (new.status = 'active')
@@ -171,9 +175,7 @@ END $$;
 REVOKE ALL ON FUNCTION helm_private.golf_team_channel_join_staff()
 FROM public, anon, authenticated;
 
-DROP TRIGGER IF EXISTS golf_team_coach_staff_join_team_channel
-ON public.golf_team_coach_staff;
-CREATE TRIGGER golf_team_coach_staff_join_team_channel
+CREATE OR REPLACE TRIGGER golf_team_coach_staff_join_team_channel
 AFTER INSERT ON public.golf_team_coach_staff
 FOR EACH ROW
 EXECUTE FUNCTION helm_private.golf_team_channel_join_staff();

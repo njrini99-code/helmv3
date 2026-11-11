@@ -53,6 +53,21 @@
 -- Not changed (follow-up, report): any team player can INSERT a conversation with is_team_channel = true (the policy only
 -- checks team membership). That is a separate decision for the owner; see the report.
 --
+-- LOCKS (pg_locks after each statement, local stack 2026-11-10). Two table locks, each taken once, at the top:
+--   golf_messages       SHARE ROW EXCLUSIVE (what CREATE OR REPLACE TRIGGER needs): writes wait, reads do not.
+--   golf_conversations  ACCESS EXCLUSIVE (what DROP / CREATE POLICY needs): reads and writes wait.
+-- GRANT and REVOKE take no table lock. An earlier draft took them as it went, conversations first, then messages, and
+-- its DROP TRIGGER IF EXISTS took ACCESS EXCLUSIVE on both tables even where the trigger did not exist.
+-- Why messages first: a send holds its lock on golf_messages while its foreign-key check reads golf_conversations. If
+-- this file held golf_conversations and then waited for golf_messages, a send that arrived while it waited would
+-- deadlock with it (reproduced on a scratch database; Postgres cancels one of the two after deadlock_timeout). With
+-- golf_messages first, a send waits at golf_messages holding nothing this file needs.
+-- While this file waits for golf_conversations (a long read of it is what makes it wait), reads of golf_conversations
+-- and writes to golf_messages queue behind it; lock_timeout ends that after 3s with nothing changed. Apply off-peak
+-- and run it again if it times out.
+-- The locks sit in a DO block because `supabase db reset` refuses a top-level LOCK TABLE ("can only be used in
+-- transaction blocks": it sends the file as one pipeline, not inside BEGIN).
+--
 -- ORDER: after 20261107090000. No app deploy is needed before or after.
 --
 -- VERIFY: select 1 where not has_table_privilege('authenticated', 'public.golf_conversations', 'UPDATE') and not has_table_privilege('authenticated', 'public.golf_messages', 'UPDATE') and not has_table_privilege('anon', 'public.golf_conversations', 'SELECT') and not has_table_privilege('anon', 'public.golf_messages', 'SELECT');
@@ -117,6 +132,14 @@ BEGIN
   END LOOP;
 END $$;
 
+-- 0. Both table locks, once, messages first (see LOCKS in the header) -----------
+
+DO $$
+BEGIN
+  LOCK TABLE public.golf_messages IN SHARE ROW EXCLUSIVE MODE;
+  LOCK TABLE public.golf_conversations IN ACCESS EXCLUSIVE MODE;
+END $$;
+
 -- 1. Grants ------------------------------------------------------------------
 
 REVOKE UPDATE ON public.golf_conversations FROM PUBLIC, anon, authenticated;
@@ -161,8 +184,7 @@ END $$;
 
 REVOKE ALL ON FUNCTION public.golf_conversations_identity_guard() FROM PUBLIC, anon;
 
-DROP TRIGGER IF EXISTS golf_conversations_identity_guard ON public.golf_conversations;
-CREATE TRIGGER golf_conversations_identity_guard
+CREATE OR REPLACE TRIGGER golf_conversations_identity_guard
 BEFORE UPDATE ON public.golf_conversations
 FOR EACH ROW
 WHEN (
@@ -199,8 +221,7 @@ END $$;
 
 REVOKE ALL ON FUNCTION public.golf_messages_identity_guard() FROM PUBLIC, anon;
 
-DROP TRIGGER IF EXISTS golf_messages_identity_guard ON public.golf_messages;
-CREATE TRIGGER golf_messages_identity_guard
+CREATE OR REPLACE TRIGGER golf_messages_identity_guard
 BEFORE UPDATE ON public.golf_messages
 FOR EACH ROW
 WHEN (

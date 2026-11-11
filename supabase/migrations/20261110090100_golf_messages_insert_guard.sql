@@ -52,6 +52,11 @@
 --     columns yet; decide them with the pins work.
 --   * kinds 'practice', 'event', 'rsvp', 'travel': no writer exists at either version; the redesign owns that decision.
 --
+-- LOCKS (pg_locks after each statement, local stack 2026-11-10): SHARE ROW EXCLUSIVE on golf_messages, once, from CREATE
+-- OR REPLACE TRIGGER. Sends, edits and deletes wait for the few milliseconds the file takes; reads do not wait and are
+-- not waited for. (DROP TRIGGER IF EXISTS, which an earlier draft used, takes ACCESS EXCLUSIVE even when the trigger
+-- does not exist.)
+--
 -- ORDER: independent of every other file; no app deploy before or after. Sits naturally after 20261107090100.
 --
 -- VERIFY: select 1 from pg_trigger where tgrelid = 'public.golf_messages'::regclass and tgname = 'golf_messages_insert_guard' and not tgisinternal and (tgtype & 2) = 2 and (tgtype & 4) = 4 and (tgtype & 16) = 0 and tgenabled = 'O';
@@ -125,8 +130,7 @@ END $$;
 
 REVOKE ALL ON FUNCTION public.golf_messages_insert_guard() FROM public, anon;
 
-DROP TRIGGER IF EXISTS golf_messages_insert_guard ON public.golf_messages;
-CREATE TRIGGER golf_messages_insert_guard
+CREATE OR REPLACE TRIGGER golf_messages_insert_guard
 BEFORE INSERT ON public.golf_messages
 FOR EACH ROW
 EXECUTE FUNCTION public.golf_messages_insert_guard();
