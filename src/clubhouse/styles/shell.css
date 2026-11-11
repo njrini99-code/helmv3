@@ -2329,9 +2329,16 @@ html[data-ch-ua-pop] .ch-pscreen::after {
     background: var(--ch-grouped-bg);
     box-shadow: var(--ch-elevation-framed);
   }
+  /* Opaque. The bar was its paper at 88% over the page with the glass blur behind it, and the blur did not hide what
+     scrolled under: "Today", "Calendar" and a card's figures stayed legible behind the breadcrumb, the search and the
+     bell (design review, 10 Nov 2026, every 1440 still; WebKit). It is now that paper mixed with the page at the same
+     strength, so at rest it is the colour it was, and nothing under it shows; the scroll edge below it (data-scrolled)
+     still says content has gone under. */
   .ch-topbar {
     border-bottom-color: rgb(110 98 62 / 0.08);
-    background: color-mix(in oklab, var(--ch-topbar-paper) 88%, transparent);
+    background: color-mix(in srgb, var(--ch-topbar-paper) 88%, var(--ch-grouped-bg));
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
   }
 }
 
@@ -2650,8 +2657,9 @@ html[data-fw-theme='dark'] .ch-bellp__row:focus-visible {
   html[data-fw-theme='dark'] .ch-canvas {
     box-shadow: var(--ch-elevation-framed), 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
   }
+  /* Opaque at night too (see the light bar above): the workspace over the page, nothing let through. */
   html[data-fw-theme='dark'] .ch-topbar {
-    background: color-mix(in oklab, var(--ch-workspace) 88%, transparent);
+    background: color-mix(in srgb, var(--ch-workspace) 88%, var(--ch-grouped-bg));
   }
   html[data-fw-theme='dark'] [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] {
     box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule-soft);
