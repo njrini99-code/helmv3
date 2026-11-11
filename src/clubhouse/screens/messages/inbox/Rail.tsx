@@ -88,7 +88,7 @@ export function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) 
             />
           </div>
         ) : (api.convsLoading && !api.convs.length) || api.annLoading ? (
-          <InboxSkeleton layout="rail" />
+          <InboxSkeleton layout="rail" labelled={!!api.pins?.ids.length} />
         ) : firstRun ? null : !api.convs.length ? (
           <EmptyState
             code="CH-7301"

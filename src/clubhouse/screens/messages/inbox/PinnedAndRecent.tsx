@@ -7,8 +7,9 @@ import { ListPresence } from '../../../ui/ListPresence';
 
 /**
  * The rail's flat "Pinned" and "Recent" labels over rows (no cards on the rail; the phone draws cards). A label with no
- * rows under it is left out (MSG-123). Rows glide to their new places together when a filter changes and new ones fade in
- * (`arrive="inbox"`, MOT-LIST-4); `cut`: the leaving rows go in one frame.
+ * rows under it is left out (MSG-123), and so is "Recent" when nothing is pinned: a label tells two lists apart, and over
+ * the only list it told nothing (the section keeps its name for a screen reader). Rows glide to their new places together
+ * when a filter changes and new ones fade in (`arrive="inbox"`, MOT-LIST-4); `cut`: the leaving rows go in one frame.
  */
 export function PinnedAndRecent({ api, list, row, cut = false }: { api: ChMessagesApi; list: ChConv[]; row: (c: ChConv) => ReactNode; cut?: boolean }) {
   const pinnedRows = api.pins ? pinnedThreads(list, api.pins.ids) : [];
@@ -27,7 +28,7 @@ export function PinnedAndRecent({ api, list, row, cut = false }: { api: ChMessag
       )}
       {recent.length > 0 && (
         <section className="ch-ms-sec" aria-label="Recent">
-          <div className="ch-ms-sec__l">Recent</div>
+          {pinnedRows.length > 0 && <div className="ch-ms-sec__l">Recent</div>}
           <div className="ch-ms-sec__card">
             <ListPresence arrive="inbox" cut={cut}>
               {recent.map(row)}

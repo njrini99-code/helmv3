@@ -28,8 +28,12 @@ function Rows() {
   );
 }
 
-/** `card`: the phone's Recent card with its header bar. `rail`: the desktop's flat list under a label placeholder. */
-export function InboxSkeleton({ layout, code = 'CH-7402' }: { layout: 'card' | 'rail'; code?: string }) {
+/**
+ * `card`: the phone's Recent card with its header bar. `rail`: the desktop's flat list. The rail labels its lists only
+ * when something is pinned (PinnedAndRecent), so the label's placeholder is drawn only then (`labelled`): with nothing
+ * pinned, which is what the route skeleton assumes, the rows wait where the conversations land.
+ */
+export function InboxSkeleton({ layout, code = 'CH-7402', labelled = false }: { layout: 'card' | 'rail'; code?: string; labelled?: boolean }) {
   if (layout === 'card') {
     return (
       <section className="ch-msv-card ch-inb-skel" role="status" aria-label="Loading conversations" data-ch-code={code}>
@@ -42,9 +46,11 @@ export function InboxSkeleton({ layout, code = 'CH-7402' }: { layout: 'card' | '
   }
   return (
     <div className="ch-inb-skel is-rail" role="status" aria-label="Loading conversations" data-ch-code={code}>
-      <p className="ch-ms-sec__l" aria-hidden="true">
-        <span className="ch-inb-sk is-label" />
-      </p>
+      {labelled && (
+        <p className="ch-ms-sec__l" aria-hidden="true">
+          <span className="ch-inb-sk is-label" />
+        </p>
+      )}
       <Rows />
     </div>
   );
