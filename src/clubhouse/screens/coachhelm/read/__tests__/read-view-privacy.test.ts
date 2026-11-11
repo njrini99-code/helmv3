@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { readHref } from '../../../../data/coachhelm-views-shape';
-import { assignStateOf, readCauseOf, toChReadDetail, toChReadView, whatProse, type ChReadDetail } from '../../../../data/coachhelm-read-view-shape';
+import { assignStateOf, readCauseOf, splitOf, toChReadDetail, toChReadView, whatProse, type ChReadDetail } from '../../../../data/coachhelm-read-view-shape';
 import { rangeWords } from '../../../../data/coachhelm-engine-shape';
 import { diveCounts, toChDeepInsight, type ChDeepDive } from '../../../../data/coachhelm-dive-shape';
 import { toChInsight } from '../../../../data/coachhelm-map';
@@ -388,5 +388,62 @@ describe('the trend, the round notes and the hole scores', () => {
     // The one name on a player's page is their own coach's, for Message Coach Reyes.
     expect(v.coach).toEqual({ name: 'Coach Reyes', userId: 'user-coach-reyes' });
     expect(previewReadView('penalties', 'coach').coach).toBeUndefined();
+  });
+});
+
+/** B5: the split under a counted cause is arithmetic on counts the read already states, and only when that arithmetic is sound. */
+describe('the split under a counted cause', () => {
+  const step = { label: 'Off the tee', n: 17, of: 23, statement: '17 of 23 penalties came off the tee' };
+
+  it('the narrowing’s first step over the read’s rounds, beside everything else', () => {
+    expect(splitOf(step, 23, 21)).toEqual([
+      { label: 'Off the tee, per round', value: '0.8', n: 17 },
+      { label: 'Everywhere else, per round', value: '0.3', n: 6 },
+    ]);
+  });
+
+  it('nothing when the step counts other events than the cause, states no count, or the read is not a count over rounds', () => {
+    expect(splitOf(step, 20, 21)).toBeNull();
+    expect(splitOf({ ...step, of: null }, 23, 21)).toBeNull();
+    expect(splitOf({ ...step, n: null }, 23, 21)).toBeNull();
+    expect(splitOf(step, 23, null)).toBeNull();
+    expect(splitOf(step, 23, 0)).toBeNull();
+    expect(splitOf(undefined, 23, 21)).toBeNull();
+    expect(splitOf({ ...step, n: 23 }, 23, 21)).toEqual([{ label: 'Off the tee, per round', value: '1.1', n: 23 }]);
+  });
+
+  it('Eli’s penalties carry it (1.1 a round over 21 rounds is the 23 the cause counts); a rate read and a likely cause carry none', () => {
+    const c = previewReadView('penalties', 'coach').read!.cause;
+    expect(c?.state === 'counted' && c.split).toEqual([
+      { label: 'Off the tee, per round', value: '0.8', n: 17 },
+      { label: 'Everywhere else, per round', value: '0.3', n: 6 },
+    ]);
+    for (const q of ['putts', 'approach']) expect(JSON.stringify(previewReadView(q, 'coach').read!.cause), q).not.toContain('"split":[');
+  });
+
+  it('a read whose figure is not the cause’s events over its rounds draws no split', () => {
+    // The shared penalties row: 1.1 a round over 21 rounds. A cause over 23 events is that figure; one over 40 is not, so its step is no rate over these rounds.
+    const row = (events: number): EvidenceInsight => {
+      const r = penalties(HELM_PLAYERS.eli.id, 'in-pen');
+      const narrowing = { steps: [{ passed: true, label: 'Off the tee', statement: `17 of ${events} penalties came off the tee` }], stopped_at: null };
+      const cause = { state: 'observed_sequence', population: 'penalties', path: ['Driver off the tee'], occurrences: 14, denominator: events, example_holes: [], event_strokes: null };
+      return { ...r, evidence: { ...r.evidence, cause, diagnosis: { ...r.evidence.diagnosis, basis: { narrowing, checked: [] } } } as unknown as EvidenceInsight['evidence'] };
+    };
+    const splitFor = (events: number) => {
+      const c = detail('coach', row(events)).cause;
+      return c?.state === 'counted' ? (c.split ?? null) : 'not counted';
+    };
+    expect(splitFor(23)).toEqual([
+      { label: 'Off the tee, per round', value: '0.8', n: 17 },
+      { label: 'Everywhere else, per round', value: '0.3', n: 6 },
+    ]);
+    expect(splitFor(40)).toBeNull();
+  });
+
+  it('a player’s split is their own counts, from the steps their copy keeps, and names no one else', () => {
+    const c = previewReadView('penalties', 'player').read!.cause;
+    const said = JSON.stringify(c);
+    expect(said).not.toMatch(/Team pool|teammate|Coach/);
+    if (c?.state === 'counted' && c.split) for (const x of c.split) expect(x.label).toMatch(/per round$/);
   });
 });

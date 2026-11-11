@@ -25,7 +25,7 @@ export function PreviewCoachHelmRead({ state, viewer, q }: { state?: string; vie
   const built = previewReadView(q, role, state === 'gone', state);
   const stressed = state === 'stress' ? rewriteDeep(built, manyHoles) : built;
   const view: typeof built =
-    state === 'partfail' || state === 'rounds-failed' ? { ...stressed, failed: { ...stressed.failed, rounds: true } } : state === 'no-rounds' && stressed.read ? { ...stressed, read: { ...stressed.read, rounds: { total: 0, list: [] } } } : stressed;
+    state === 'partfail' || state === 'rounds-failed' ? { ...stressed, failed: { ...stressed.failed, rounds: true }, read: stressed.read && { ...stressed.read, cause: stressed.read.cause?.state === 'counted' ? { ...stressed.read.cause, holes: [] } : stressed.read.cause } } : state === 'no-rounds' && stressed.read ? { ...stressed, read: { ...stressed.read, rounds: { total: 0, list: [] } } } : stressed;
   const voice: ChViewVoice = role === 'coach' ? { role: 'coach', ...previewReadHead(q) } : { role: 'player' };
   useEffect(() => {
     const act = state === 'assigning' ? 'assign' : state === 'dismissed' ? 'dismiss' : null;

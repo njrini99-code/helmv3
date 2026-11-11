@@ -31,7 +31,7 @@ export interface ChFunnelStep {
 }
 
 export type ChReadCause =
-  | { state: 'counted'; track: 2; path: string[]; count: string; eventStrokes: number | null; /** `toPar`: the hole's score against par ("+1"), when the hole is on file. */ holes: Array<ChDiveHole & { toPar?: string | null }> }
+  | { state: 'counted'; track: 2; path: string[]; count: string; eventStrokes: number | null; /** `toPar`: the hole's score against par ("+1"), when the hole is on file. */ holes: Array<ChDiveHole & { toPar?: string | null }>; /** The narrowing's first step as a rate a round, and the rest (`splitOf`). */ split?: ChReadSplit[] | null }
   | { state: 'likely'; track: 1; arms: Array<{ label: string; failures: number; n: number }>; verdict: string | null; range: string | null }
   | {
       state: 'not_traced';
@@ -41,6 +41,30 @@ export type ChReadCause =
       reason: string | null;
       text: string | null;
     };
+
+export interface ChReadSplit {
+  /** "Off the tee, per round". */
+  label: string;
+  /** "0.8". */
+  value: string;
+  /** How many of the counted events it is. */
+  n: number;
+}
+
+/**
+ * The split under a counted cause: the narrowing's first step as a rate a round, beside everything else ("17 of 23 penalties came off
+ * the tee" over 21 rounds is 0.8 a round off the tee and 0.3 everywhere else). Only arithmetic on counts the read already states, and
+ * only when it is sound: the read's figure is a count a round, its sample is rounds, and the step counts the same events the cause does.
+ */
+export function splitOf(step: ChFunnelStep | undefined, events: number | null, rounds: number | null): ChReadSplit[] | null {
+  if (!step || step.n == null || step.of == null || events == null || rounds == null || rounds <= 0) return null;
+  if (step.of !== events || step.n > step.of || step.n <= 0) return null;
+  const rest = step.of - step.n;
+  return [
+    { label: `${step.label}, per round`, value: formatFixed(step.n / rounds, 1), n: step.n },
+    ...(rest > 0 ? [{ label: 'Everywhere else, per round', value: formatFixed(rest / rounds, 1), n: rest }] : []),
+  ];
+}
 
 export interface ChReadDetail {
   insight: ChInsight;
@@ -337,12 +361,21 @@ export function toChReadDetail(raw: EvidenceInsight, deep: ChDeepInsight, role: 
   const tourRef = tourLine?.value != null ? { label: tourLine.label ?? tour, value: tourLine.value } : base.compare?.tour != null ? { label: tour, value: base.compare.tour } : null;
   const { trend, noteOf } = trendOf(raw, base.evidence.label || raw.evidence.metric_label, tourRef, calls.pictures ? extras : null);
   const builtCause = readCauseOf(cause, deep.where, role, support?.range ?? null);
+  // A count a round over a sample of rounds (the penalty read) whose own figure is the cause's events over those rounds (1.1 over 21
+  // rounds is the 23 the cause counts): the only case a step's count is also a rate a round.
+  const causeEvents = num(cause?.denominator);
+  const figure = num(ev.your_value);
+  const roundsCounted =
+    raw.evidence.unit === 'count' && /\brounds?$/.test(base.evidence.sample) && sampleN != null && causeEvents != null && figure != null && Math.abs(figure * sampleN - causeEvents) <= sampleN * 0.05 + 1e-9
+      ? sampleN
+      : null;
   const shownCause: ChReadCause | null =
-    builtCause?.state === 'counted' && extras
+    builtCause?.state === 'counted'
       ? {
           ...builtCause,
+          split: splitOf((role === 'coach' ? funnel?.steps : playerSteps)?.[0], causeEvents, roundsCounted),
           holes: builtCause.holes.map((h) => {
-            const toPar = holeToPar(extras.holes, h.key.slice(0, h.key.lastIndexOf(':')), h.hole);
+            const toPar = extras ? holeToPar(extras.holes, h.key.slice(0, h.key.lastIndexOf(':')), h.hole) : null;
             return { ...h, toPar: toPar == null ? null : formatToPar(toPar) };
           }),
         }

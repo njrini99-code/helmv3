@@ -352,8 +352,21 @@ export function Cause({ d, voice, pictures }: { d: ChReadDetail; voice: ChViewVo
           </ol>
         )}
         {pictures && <Steps d={d} />}
-        {(c.count || c.eventStrokes != null) && (
+        {(c.split?.length || c.count || c.eventStrokes != null) && (
           <div className="ch-hd-dx">
+            {c.split && c.split.length > 0 && (
+              <dl className="ch-hd-dx__d">
+                {c.split.map((x) => (
+                  <div key={x.label}>
+                    <dt>{x.label}</dt>
+                    <dd className="ch-num">
+                      {x.value}
+                      <em> · {x.n} counted</em>
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            )}
             <p className="ch-hd-dx__r ch-num">
               {c.count ? `${c.count} went this way.` : ''}
               {c.eventStrokes != null ? ` On average one cost about ${formatFixed(Math.abs(c.eventStrokes), 1)} strokes.` : ''}
@@ -402,9 +415,19 @@ export function Cause({ d, voice, pictures }: { d: ChReadDetail; voice: ChViewVo
 }
 
 /** Where it happened: the holes a counted path was recorded on (the Deep dive's rows), newest first. Only with a counted cause. */
-export function Where({ d }: { d: ChReadDetail }) {
+export function Where({ d, failed = false }: { d: ChReadDetail; /** The rounds the holes are on did not load. */ failed?: boolean }) {
+  const { refresh, refreshing } = useRefresh();
   const c = d.cause;
-  if (!c || c.state !== 'counted' || c.holes.length === 0) return null;
+  if (!c || c.state !== 'counted') return null;
+  // Only this part failed: the cause above is current, and the way to recover is in the card it belongs to.
+  if (c.holes.length === 0 && failed) {
+    return (
+      <Card sec="where" title="Where it happened">
+        <InlineNotice code="CH-13281" title="Couldn’t load where it happened" body="The cause above is current. The holes it was counted on didn’t come through." onRetry={refresh} retrying={refreshing} />
+      </Card>
+    );
+  }
+  if (c.holes.length === 0) return null;
   return (
     <Card sec="where" title="Where it happened" aside={c.count || undefined}>
       <ol className="ch-hd-rounds ch-hr-holes">

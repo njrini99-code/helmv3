@@ -39,7 +39,7 @@
 .ch-hr .ch-hl-cact { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0; }
 .ch-hr .ch-hl-cact > .ch-hl-cact__m { flex: 1 0 100%; margin: 0; }
 /* The phone: the primary takes the row; the quiet keys share the next one evenly, as one group. */
-.ch-hr.is-phone .ch-hl-cact > .ch-btn { flex: 1 1 0; justify-content: center; }
+.ch-hr.is-phone .ch-hl-cact > .ch-btn { flex: 1 1 0; justify-content: center; min-height: 44px; }
 .ch-hr.is-phone .ch-hl-cact > .ch-btn--primary { flex: 1 0 100%; }
 .ch-hr.is-phone [data-ch-read-actions] .ch-hl-prop { margin-top: 0; }
 .ch-hr-done { display: inline-flex; flex: 1 1 0; align-items: center; gap: 6px; min-width: 0; margin: 0; color: var(--ch-text-secondary); }
@@ -87,7 +87,7 @@
 .ch-hr-since b { font: var(--ch-type-14-medium); color: var(--ch-text-primary); }
 /* how it has moved: the line across the card, its caption under it */
 .ch-hr-sec .ch-hd-strip__chart { display: block; width: 100%; max-width: 320px; }
-.ch-hr-sec .ch-hd-strip__chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.ch-hr-sec .ch-hd-strip__chart svg { display: block; width: 100%; height: auto; }
 .ch-hr-sec .ch-hd-tr { margin: 0; padding: 0; list-style: none; }
 .ch-hr-sec .ch-hd-strip { display: flex; flex-direction: column; align-items: stretch; gap: 8px; padding: 0; border: 0; }
 .ch-hr-sec .ch-hd-tr__k { font: var(--ch-type-13-medium); color: var(--ch-text-tertiary); }
@@ -108,6 +108,7 @@
 .ch-hr-sec .ch-hd-dx__d dd { margin: 0; font: var(--ch-type-17-strong); color: var(--ch-text-primary); }
 .ch-hr-sec .ch-hd-dx__d dd em { font: var(--ch-type-13); font-style: normal; color: var(--ch-text-tertiary); }
 .ch-hr-sec .ch-hd-dx__r { margin: 0; font: var(--ch-type-14); color: var(--ch-text-secondary); }
+.ch-hr-sec .ch-hd-dx__d + .ch-hd-dx__r { margin-top: 10px; }
 
 /* rows: rounds and holes, flush in the card, the course on a second line under a hole's path */
 .ch-hr-sec .ch-hd-rounds { margin: -4px 0 -8px; padding: 0; }

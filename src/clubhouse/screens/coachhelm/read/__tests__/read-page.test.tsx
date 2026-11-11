@@ -377,6 +377,31 @@ describe('every state looks its own', () => {
     expect(router.refresh).toHaveBeenCalledTimes(1);
   });
 
+  it('the holes behind a counted cause that did not load say so in their own card, with Try again; the count above stays', async () => {
+    show('penalties', 'coach', { over: (v) => ({ ...v, failed: { ...v.failed, rounds: true }, read: v.read && { ...v.read, cause: v.read.cause?.state === 'counted' ? { ...v.read.cause, holes: [] } : v.read.cause } }) });
+    const card = sec('where') as HTMLElement;
+    expect(card.textContent).toContain('Couldn’t load where it happened');
+    expect(card.querySelector('ol.ch-hr-holes')).toBeNull();
+    expect((sec('cause') as HTMLElement).textContent).toContain('went this way');
+    await userEvent.click(within(card).getByRole('button', { name: 'Try again' }));
+    expect(router.refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it('with the rounds loaded, a counted cause with no holes on file draws no Where card at all', () => {
+    show('penalties', 'coach', { over: (v) => ({ ...v, read: v.read && { ...v.read, cause: v.read.cause?.state === 'counted' ? { ...v.read.cause, holes: [] } : v.read.cause } }) });
+    expect(sec('where')).toBeNull();
+  });
+
+  it('the split under a counted cause is two labelled figures, each with its count', () => {
+    show('penalties', 'coach');
+    const dl = (sec('cause') as HTMLElement).querySelector('dl.ch-hd-dx__d') as HTMLElement;
+    expect([...dl.querySelectorAll('dt')].map((x) => x.textContent)).toEqual(['Off the tee, per round', 'Everywhere else, per round']);
+    expect([...dl.querySelectorAll('dd')].map((x) => x.textContent)).toEqual(['0.8 · 17 counted', '0.3 · 6 counted']);
+    cleanup();
+    show('putts', 'coach');
+    expect((sec('cause') as HTMLElement | null)?.querySelector('dl.ch-hd-dx__d') ?? null).toBeNull();
+  });
+
   it('loading is the page’s own shape: the green head with four label rows, two actions and the first card', () => {
     for (const phone of [true, false]) {
       device.phone = phone;

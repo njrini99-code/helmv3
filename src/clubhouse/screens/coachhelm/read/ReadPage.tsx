@@ -267,7 +267,7 @@ export function ReadPage({
   const measured = <Measured d={read} voice={voice} pictures={pictures} />;
   const moved = <Moved d={read} />;
   const cause = <Cause d={read} voice={voice} pictures={pictures} />;
-  const where = <Where d={read} />;
+  const where = <Where d={read} failed={data.failed.rounds} />;
   const rounds = <Rounds d={read} failed={data.failed.rounds} voice={voice} />;
   const tail = (
     <>
