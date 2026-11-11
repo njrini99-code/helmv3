@@ -1067,6 +1067,24 @@ html[data-fw-theme='dark'] .ch-ev-bar.is-held {
   .ch-ev--group .ch-ev__who[data-covered] {
     display: none;
   }
+  /* A short block with room for two title lines (45 minutes: 37px, two lines of 18) takes them: "Putting ladder",
+     "Travel briefing" and "1:1 with Jonah" ended at "Putting lad…" on one. Its time is already gone here. */
+  .ch-ev.ch-ev--short.ch-ev--two .ch-ev__t {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    flex: 1;
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: normal;
+  }
+  /* A short block another lies over across its one row: the title goes to the top, under the 4px a cascaded block
+     keeps there, clear of that block. (On the title: a block cannot answer its own container query.) */
+  .ch-ev--short.is-pinned .ch-ev__t {
+    align-self: flex-start;
+    margin-top: var(--ch-space-1);
+  }
 }
 /* An event block's time in whole parts (views.tsx): "8:00", " AM", " – 9:30 AM", " · Finley GC". One line shows; a part
    that doesn't fit wraps out of sight with every part after it, so the block keeps the longest start of its time that

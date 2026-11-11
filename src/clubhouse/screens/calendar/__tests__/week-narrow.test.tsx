@@ -206,3 +206,39 @@ describe('a block another lies over shows whole lines only', () => {
     expect(css.slice(at)).toMatch(/^\.ch-ev\.is-covered \.ch-ev__w \{\s*height: var\(--ch-ev-room\);\s*\}\s*\.ch-ev--group \.ch-ev__who\[data-covered\] \{\s*display: none;/);
   });
 });
+
+/** Wed and Thu at 1440px: "Putting ladder", "Travel briefing" and "1:1 with Jonah" are 45 minutes, 37px, and were cut on one line. */
+describe('a 45-minute block takes two title lines in a narrow column', () => {
+  const block = (c: HTMLElement, id: string) => c.querySelector<HTMLElement>(`[data-ev-id="${id}"]`)!;
+
+  it('37px holds two lines of 18; half an hour stays one row', () => {
+    const { container } = grid([ev({ id: 'ladder', type: 'practice', start: 17.5, end: 18.25 }), ev({ id: 'call', type: 'meeting', start: 18.25, end: 18.75 })]);
+    expect(block(container, 'ladder').style.height).toBe('37px');
+    expect(block(container, 'ladder').className).toContain('ch-ev--short ch-ev--two');
+    expect(block(container, 'call').className).toContain('ch-ev--short');
+    expect(block(container, 'call').className).not.toContain('ch-ev--two');
+  });
+
+  it('a cascaded one takes them too, on top of the block it overlaps', () => {
+    const { container } = grid([ev({ id: 'game', type: 'practice', start: 15.5, end: 17 }), ev({ id: 'one', type: 'meeting', start: 16.75, end: 17.5 })]);
+    expect(block(container, 'one').className).toContain('ch-ev--two');
+    expect(block(container, 'one').className).toContain('ch-ev--lane');
+  });
+
+  it('under a block that lies over its second line it stays one row, at the top, clear of that block', () => {
+    const { container } = grid([ev({ id: 'lineup', type: 'meeting', start: 9, end: 9.75 }), ev({ id: 'wedges', type: 'practice', start: 9.5, end: 10.5 })]);
+    const b = block(container, 'lineup');
+    expect(b.className).not.toContain('ch-ev--two');
+    expect(b.className).toContain('is-pinned');
+    expect(block(container, 'wedges').className).not.toContain('is-pinned');
+  });
+
+  it('the rules live in the narrow column, and outrank the cascaded short title’s one line', () => {
+    const at = css.indexOf('.ch-ev.ch-ev--short.ch-ev--two .ch-ev__t {');
+    expect(at).toBeGreaterThan(-1);
+    const open = css.lastIndexOf('@container', at);
+    expect(css.slice(open, css.indexOf('{', open)).trim()).toBe('@container (max-width: 97.98px)');
+    expect(css.slice(at, css.indexOf('}', at))).toMatch(/-webkit-line-clamp: 2;[\s\S]*white-space: normal;/);
+    expect(css).toMatch(/\.ch-ev--short\.is-pinned \.ch-ev__t \{\s*align-self: flex-start;\s*margin-top: var\(--ch-space-1\);/);
+  });
+});

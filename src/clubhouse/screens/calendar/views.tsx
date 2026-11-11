@@ -235,6 +235,13 @@ export function EventBlock({
   // (calendar.css, .ch-ev.is-covered .ch-ev__w): never a line cut off at the other block's side.
   const room = cover != null && cover < end ? Math.max(titleLine, (Math.max(cover, start) - start) * hh - 2 - top0) : null;
   const held = Math.floor((h - top0 - (marked ? 2 + timeLine : 4) + 0.5) / titleLine);
+  // A short block is one row, its title and (in a wide column) its time. In the narrow column the time is already gone,
+  // and 45 minutes (37px) holds two title lines of 18: the title takes them there (calendar.css, .ch-ev--two) instead of
+  // ending at "Putting lad…". Not where a round's pill or a change's glyph sits on the first line's end, and not under
+  // a block that lies over the second line. Under one that lies over the row itself, the row goes to the top (`pinned`).
+  const over = short && cover != null && cover < end ? (Math.max(cover, start) - start) * hh - 2 : null;
+  const two = short && !pill && !showChg && h >= 2 * titleLine && (over == null || over >= (h + 2 * titleLine) / 2);
+  const pinned = over != null && !two && over < (h + titleLine) / 2;
   const solo = Math.max(1, Math.min(3, held, room != null ? Math.floor((room + 0.5) / titleLine) : 3));
   const words = (
     <>
@@ -265,7 +272,7 @@ export function EventBlock({
       type="button"
       data-print-visible
       // CH-6801: a button named with its title, time and any overlap. CH-6601: it lifts on hover and marks its selection.
-      className={`ch-ev ch-ev--${e.cancelled ? 'other' : e.type}${tier === 'sliver' ? ' ch-ev--sliver' : ''}${e.cancelled ? ' is-cancelled' : ''}${short ? ' ch-ev--short' : ''}${shared ? ' ch-ev--lane' : ''}${under ? ' ch-ev--under' : ''}${lines ? ' ch-ev--wrap' : ''}${pill ? ' has-round' : ''}${sel ? ' is-sel' : ''}${drag ? ' is-draggable' : ''}${state ? ` is-${state}` : ''}${marked ? ' has-mark' : ''}${room != null ? ' is-covered' : ''}${past && !state ? ' is-past' : ''}`}
+      className={`ch-ev ch-ev--${e.cancelled ? 'other' : e.type}${tier === 'sliver' ? ' ch-ev--sliver' : ''}${e.cancelled ? ' is-cancelled' : ''}${short ? ' ch-ev--short' : ''}${two ? ' ch-ev--two' : ''}${pinned ? ' is-pinned' : ''}${shared ? ' ch-ev--lane' : ''}${under ? ' ch-ev--under' : ''}${lines ? ' ch-ev--wrap' : ''}${pill ? ' has-round' : ''}${sel ? ' is-sel' : ''}${drag ? ' is-draggable' : ''}${state ? ` is-${state}` : ''}${marked ? ' has-mark' : ''}${room != null ? ' is-covered' : ''}${past && !state ? ' is-past' : ''}`}
       data-ev-id={state === 'card' ? undefined : e.id}
       style={{ top, height: h, left: box.left, width: box.width, zIndex: under || state === 'card' ? undefined : shared ? lane + 1 : undefined, ...(lines ? { '--ch-ev-lines': lines } : {}), ...(give ? { '--ch-ev-solo': solo } : {}), ...(room != null ? { '--ch-ev-room': `${room}px` } : {}) } as CSSProperties}
       aria-label={`${rl.name}${rl.spoken}, ${rangeLabel(e, clock)}${past && !state ? ', ended' : ''}${flagged ? ', schedule overlap' : ''}${e.cancelled ? ', cancelled' : ''}${mark?.aria ?? ''}${drag ? '. Alt and the arrow keys move it; add Shift to change its length' : ''}`}
