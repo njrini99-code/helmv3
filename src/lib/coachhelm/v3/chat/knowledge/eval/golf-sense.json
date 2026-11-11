@@ -1,5 +1,5 @@
 {
- "about": "Golf-sense questions for CoachHelm chat. Each question says what a correct answer must state (facts), must not state (forbid), and which reads it should use (readers; an empty list means it can be answered from the prompt or the reference). Placeholders in braces are filled from the staging roster by the harness: {player}, {player2} (two active players with rounds), {new_player} (a player with fewer than three shot-tracked rounds), {teammate} (for a player's turn: any other player on the team). A fact is a phrase the answer must match; these questions test meaning and direction, so no figure is expected here (the data questions in scripts/coachhelm/ask-eval.mjs check figures).",
+ "about": "Golf-sense questions for CoachHelm chat. Each question says what a correct answer must state (facts), must not state (forbid), and which reads it should use (readers; an empty list means it can be answered from the prompt or the reference). Placeholders in braces are filled from the staging roster by the harness: {player}, {player2} (two active players with rounds), {new_player} (a player with fewer than three shot-tracked rounds), {no_shots_player} (a player with hole-by-hole rounds and no logged shots), {teammate} (for a player's turn: any other player on the team). A fact is a phrase the answer must match; these questions test meaning and direction, so no figure is expected here (the data questions in scripts/coachhelm/ask-eval.mjs check figures).",
  "patterns": {
   "tour_figure_from_memory": {
    "re": "\\b(tour|pga|lpga|division (i{1,3}|[123])|d[123]|college|scratch)\\b[^.\\n]{0,40}\\b(average[sd]?|avg|makes?|hits?|shoots?|is about|is around|is roughly)\\b[^.\\n]{0,25}\\d",
@@ -60,6 +60,21 @@
    "re": "\\b(you should (take|play|pick|travel)|I would (take|play|pick)|my lineup (is|would be)|leave .{2,30} at home)\\b",
    "flags": "i",
    "why": "Choosing the lineup for the coach."
+  },
+  "names_pga_unprompted": {
+   "re": "\\bPGA\\b",
+   "flags": "",
+   "why": "Names the PGA Tour when no read named a tour. The harness skips this for a men's team whose standards read named it; for a women's team it always applies."
+  },
+  "sign_as_verdict": {
+   "re": "\\b(bad|poor|weak|below average|struggling|a problem)\\b[^.\\n]{0,40}\\bbecause\\b[^.\\n]{0,40}\\bnegative\\b|\\bnegative\\b[^.\\n]{0,25}\\b(so|which means|meaning)\\b[^.\\n]{0,30}\\b(bad|poor|weak|struggling|needs work)\\b",
+   "flags": "i",
+   "why": "Reads the sign of a strokes gained figure as a verdict."
+  },
+  "estimate_as_tour_gap": {
+   "re": "\\b(estimate[sd]?|scorecard)\\b[^.\\n]{0,80}\\b(behind|below|short of|gap to|against)\\b[^.\\n]{0,20}\\btour\\b",
+   "flags": "i",
+   "why": "Treats a scorecard estimate as a measured gap to the Tour."
   }
  },
  "questions": [
@@ -1719,6 +1734,391 @@
     }
    ],
    "note": "get_season is the season figure (SOURCES B2); get_rounds averages include practice."
+  },
+  {
+   "id": "sg-why-all-negative",
+   "area": "strokes_gained",
+   "viewer": "coach",
+   "ask": "Why are all my players negative in strokes gained? Is something wrong with the numbers?",
+   "readers": [
+    "get_team_stats"
+   ],
+   "facts": [
+    {
+     "label": "measured against Tour players",
+     "kind": "phrase",
+     "re": "\\btour\\b",
+     "flags": "i"
+    },
+    {
+     "label": "a college player is expected to be negative; it is normal",
+     "kind": "phrase",
+     "re": "\\b(expected|normal|not a (failure|problem)|nothing wrong)\\b",
+     "flags": "i"
+    },
+    {
+     "label": "points to what does carry meaning: parts against each other, the team, the trend",
+     "kind": "phrase",
+     "re": "\\b(team|teammates|each other|trend|earlier|which part|where)\\b",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "Reads the sign of a strokes gained figure as a verdict.",
+     "pattern": "sign_as_verdict"
+    },
+    {
+     "label": "A negative strokes gained figure called bad on its own.",
+     "pattern": "negative_sg_called_bad"
+    },
+    {
+     "label": "A Tour or level figure may be stated only when a standards read returned it in this turn (get_reference, topic standards). The scorer skips this pattern when that read ran.",
+     "pattern": "tour_figure_from_memory"
+    },
+    {
+     "label": "A verdict on a player instead of the measure.",
+     "pattern": "label"
+    },
+    {
+     "label": "Names the PGA Tour when no read named a tour. The harness skips this for a men's team whose standards read named it; for a women's team it always applies.",
+     "pattern": "names_pga_unprompted"
+    }
+   ],
+   "note": "The owner's question. What the yardstick is, why negative is normal, and what to read instead."
+  },
+  {
+   "id": "sg-is-minus-two-bad",
+   "area": "strokes_gained",
+   "viewer": "coach",
+   "ask": "{player} is at minus two total. Is that bad?",
+   "readers": [
+    "get_player_stats",
+    "get_team_stats"
+   ],
+   "facts": [
+    {
+     "label": "not bad on its own: it is the gap to a Tour player on the same holes",
+     "kind": "phrase",
+     "re": "\\btour\\b",
+     "flags": "i"
+    },
+    {
+     "label": "sets it beside the team or his own earlier rounds before judging",
+     "kind": "phrase",
+     "re": "\\b(team|teammates|earlier|previous|his own)\\b",
+     "flags": "i"
+    },
+    {
+     "label": "gives the figure with its window and how many rounds it rests on",
+     "kind": "phrase",
+     "re": "\\b(over|across|in|from)\\b[^.\\n]{0,25}\\b(last|past|this season|\\d+)\\b[^.\\n]{0,25}\\brounds?\\b|\\(\\d+ rounds?\\)|\\bn\\s?=\\s?\\d+",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "Reads the sign of a strokes gained figure as a verdict.",
+     "pattern": "sign_as_verdict"
+    },
+    {
+     "label": "A negative strokes gained figure called bad on its own.",
+     "pattern": "negative_sg_called_bad"
+    },
+    {
+     "label": "A 'good' threshold from memory.",
+     "pattern": "good_threshold_from_memory"
+    },
+    {
+     "label": "A verdict on a player instead of the measure.",
+     "pattern": "label"
+    },
+    {
+     "label": "Names the PGA Tour when no read named a tour. The harness skips this for a men's team whose standards read named it; for a women's team it always applies.",
+     "pattern": "names_pga_unprompted"
+    }
+   ],
+   "note": "A figure is judged by comparison, never by its sign. No 'good' threshold from memory."
+  },
+  {
+   "id": "sg-best-putter-all-negative",
+   "area": "strokes_gained",
+   "viewer": "coach",
+   "ask": "Who is our best putter?",
+   "readers": [
+    "get_team_stats"
+   ],
+   "facts": [
+    {
+     "label": "the highest strokes gained putting on the team",
+     "kind": "phrase",
+     "re": "strokes gained putting",
+     "flags": "i"
+    },
+    {
+     "label": "names the player the ranking puts first, with the window and sample",
+     "kind": "phrase",
+     "re": "\\b(first|highest|leads?|best)\\b",
+     "flags": "i"
+    },
+    {
+     "label": "gives the figure with its window and how many rounds it rests on",
+     "kind": "phrase",
+     "re": "\\b(over|across|in|from)\\b[^.\\n]{0,25}\\b(last|past|this season|\\d+)\\b[^.\\n]{0,25}\\brounds?\\b|\\(\\d+ rounds?\\)|\\bn\\s?=\\s?\\d+",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "Reads the sign of a strokes gained figure as a verdict.",
+     "pattern": "sign_as_verdict"
+    },
+    {
+     "label": "A verdict on a player instead of the measure.",
+     "pattern": "label"
+    }
+   ],
+   "note": "The best on the team is the highest figure, even when every figure is negative. get_team_stats ranked on strokes gained putting; not putts per round."
+  },
+  {
+   "id": "sg-why-tour",
+   "area": "strokes_gained",
+   "viewer": "coach",
+   "ask": "Why do you compare college kids to Tour pros? Wouldn't a D1 average make more sense?",
+   "readers": [],
+   "facts": [
+    {
+     "label": "the Tour is where every shot is measured; nothing like it is published for college golf",
+     "kind": "phrase",
+     "re": "\\b(measured|published|no (college|d1)|isn't (a |any )?(college|published))\\b",
+     "flags": "i"
+    },
+    {
+     "label": "one fixed yardstick keeps players, teams and seasons comparable",
+     "kind": "phrase",
+     "re": "\\b(comparable|same yardstick|same standard|same scale|fixed)\\b",
+     "flags": "i"
+    },
+    {
+     "label": "offers the team comparison as the one to read",
+     "kind": "phrase",
+     "re": "\\bteam\\b",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "A Tour or level figure may be stated only when a standards read returned it in this turn (get_reference, topic standards). The scorer skips this pattern when that read ran.",
+     "pattern": "tour_figure_from_memory"
+    }
+   ],
+   "note": "Why the Tour is the yardstick: only what the repo records and what is true in general. No invented D1 figure."
+  },
+  {
+   "id": "sg-womens-benchmark",
+   "area": "strokes_gained",
+   "viewer": "coach",
+   "ask": "We're a women's team. Are our strokes gained numbers measured against the PGA Tour men?",
+   "readers": [
+    "get_reference"
+   ],
+   "facts": [
+    {
+     "label": "measured against a women's Tour baseline: the same expected-strokes curve scaled for the women's game",
+     "kind": "phrase",
+     "re": "\\bwomen'?s\\b[^.\\n]{0,60}\\b(baseline|benchmark|scaled|scale)\\b|\\bscaled\\b",
+     "flags": "i"
+    },
+    {
+     "label": "zero still means Tour level for the team",
+     "kind": "phrase",
+     "re": "\\b(tour level|tour benchmark|zero)\\b",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "A Tour or level figure may be stated only when a standards read returned it in this turn (get_reference, topic standards). The scorer skips this pattern when that read ran.",
+     "pattern": "tour_figure_from_memory"
+    }
+   ],
+   "note": "Run on a women's team, or as written on a men's team (the answer then says what would apply). The prompt states both cases; get_reference team_settings can confirm the team's baseline."
+  },
+  {
+   "id": "sg-what-it-is-not",
+   "area": "strokes_gained",
+   "viewer": "coach",
+   "ask": "{player} is minus three total. So he'd shoot three over on Tour?",
+   "readers": [],
+   "facts": [
+    {
+     "label": "no: it is not a prediction and not the gap to a Tour scoring average",
+     "kind": "phrase",
+     "re": "\\b(no|not)\\b",
+     "flags": "i"
+    },
+    {
+     "label": "it is the same holes from the same tees; Tour setups are longer and harder",
+     "kind": "phrase",
+     "re": "\\b(same holes|same tees|same course|longer|harder|setups?)\\b",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "A promised result.",
+     "pattern": "promise"
+    },
+    {
+     "label": "A Tour or level figure may be stated only when a standards read returned it in this turn (get_reference, topic standards). The scorer skips this pattern when that read ran.",
+     "pattern": "tour_figure_from_memory"
+    }
+   ],
+   "note": "What the total is not."
+  },
+  {
+   "id": "sg-estimate-limits",
+   "area": "caution",
+   "viewer": "coach",
+   "ask": "{no_shots_player} never logs shots, but he has strokes gained numbers. Can I trust his approach figure?",
+   "readers": [
+    "get_player_stats"
+   ],
+   "facts": [
+    {
+     "label": "without shots it is an estimate from the scorecard",
+     "kind": "phrase",
+     "re": "\\b(estimate[sd]?|scorecard)\\b",
+     "flags": "i"
+    },
+    {
+     "label": "not to be read by part of the game, nor compared with a measured figure",
+     "kind": "phrase",
+     "re": "\\b(not|can't|cannot|don't)\\b[^.\\n]{0,60}\\b(part|approach|compare|measured)\\b",
+     "flags": "i"
+    },
+    {
+     "label": "leans on score, greens, putts or scrambling instead",
+     "kind": "phrase",
+     "re": "\\b(greens|putts|scrambling|scor)",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "Treats a scorecard estimate as a measured gap to the Tour.",
+     "pattern": "estimate_as_tour_gap"
+    },
+    {
+     "label": "A verdict on a player instead of the measure.",
+     "pattern": "label"
+    }
+   ],
+   "note": "How far an estimated figure goes. {no_shots_player}: a player with hole-by-hole rounds and no logged shots."
+  },
+  {
+   "id": "sg-player-what-my-number-means",
+   "area": "strokes_gained",
+   "viewer": "player",
+   "ask": "What does minus one point eight in approach actually mean for me?",
+   "readers": [
+    "get_player_stats"
+   ],
+   "facts": [
+    {
+     "label": "measured against Tour players from the same spots",
+     "kind": "phrase",
+     "re": "\\btour\\b",
+     "flags": "i"
+    },
+    {
+     "label": "expected for a college player; not a failure",
+     "kind": "phrase",
+     "re": "\\b(expected|normal|not a (failure|bad))\\b",
+     "flags": "i"
+    },
+    {
+     "label": "says what their own figures show: which part is furthest behind, or the trend",
+     "kind": "phrase",
+     "re": "\\byour\\b[^.\\n]{0,80}\\b(part|approach|putting|trend|earlier|rounds)\\b",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "A player's answer names a teammate (the harness substitutes a real teammate's name).",
+     "pattern": "teammate_named"
+    },
+    {
+     "label": "Reads the sign of a strokes gained figure as a verdict.",
+     "pattern": "sign_as_verdict"
+    },
+    {
+     "label": "A negative strokes gained figure called bad on its own.",
+     "pattern": "negative_sg_called_bad"
+    },
+    {
+     "label": "A Tour or level figure may be stated only when a standards read returned it in this turn (get_reference, topic standards). The scorer skips this pattern when that read ran.",
+     "pattern": "tour_figure_from_memory"
+    },
+    {
+     "label": "Names the PGA Tour when no read named a tour. The harness skips this for a men's team whose standards read named it; for a women's team it always applies.",
+     "pattern": "names_pga_unprompted"
+    }
+   ],
+   "note": "The same honesty for a player, from their own figures only. The harness substitutes the player's real figure for the one in the question."
+  },
+  {
+   "id": "sg-player-everything-negative",
+   "area": "strokes_gained",
+   "viewer": "player",
+   "ask": "Everything on my strokes gained is red. Am I just not good enough?",
+   "readers": [
+    "get_player_stats"
+   ],
+   "facts": [
+    {
+     "label": "the number is against Tour players, and a college player is expected to be behind them",
+     "kind": "phrase",
+     "re": "\\btour\\b",
+     "flags": "i"
+    },
+    {
+     "label": "which part is furthest behind, and which way it is moving",
+     "kind": "phrase",
+     "re": "\\b(furthest|most|biggest|largest|trend|moving|earlier)\\b",
+     "flags": "i"
+    },
+    {
+     "label": "second person",
+     "kind": "phrase",
+     "re": "\\byou(r)?\\b",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "A player's answer names a teammate (the harness substitutes a real teammate's name).",
+     "pattern": "teammate_named"
+    },
+    {
+     "label": "A verdict on a player instead of the measure.",
+     "pattern": "label"
+    },
+    {
+     "label": "A promised result.",
+     "pattern": "promise"
+    },
+    {
+     "label": "A guess at a body or a state of mind.",
+     "pattern": "body_or_medical"
+    },
+    {
+     "label": "Names the PGA Tour when no read named a tour. The harness skips this for a men's team whose standards read named it; for a women's team it always applies.",
+     "pattern": "names_pga_unprompted"
+    }
+   ],
+   "note": "A player who reads the sign as a verdict on themself. Plain, and encouraging only where the data has earned it."
   }
  ]
 }

@@ -56,9 +56,37 @@ describe('the golf block of the cached prompt', () => {
   it('teaches the two directions that are easy to get backwards, in words', () => {
     const text = golfBlock('ask');
     expect(text).toMatch(/lower is better, and a negative to par is under par/);
-    expect(text).toMatch(/zero means Tour level, and a negative figure is normal for a college player/);
-    expect(text).toMatch(/Example in words: a total of minus two/);
+    expect(text).toMatch(/Zero means "as a Tour player would have done from the same spots"/);
+    expect(text).toMatch(/a college player is expected to be negative, often by several strokes a round and in most parts of the game\. That is normal, not a failure\./);
+    expect(text).toMatch(/The right reading, in words: approach at minus one and a half with putting close to zero/);
+    expect(text).toMatch(/The wrong reading: "his approach play is bad", or sorting players into good and bad by the sign/);
     expect(text).toMatch(/Putts per round: lower is better, but it misleads/);
+  });
+
+  it('explains strokes gained well enough to answer "why is everything negative?": what, against what, why, and what it is not', () => {
+    for (const s of SURFACES) {
+      const text = golfBlock(s);
+      // What: the three-step sum, by part, and what zero means.
+      expect(text).toMatch(/Subtract the strokes expected from where the shot finished\. Subtract the one stroke just played\./);
+      expect(text).toMatch(/the four parts add up to the round's total/);
+      // Against what, and how to name it without naming the wrong tour.
+      expect(text).toMatch(/Say "against the Tour benchmark" or "Tour level"\. Name a tour \("PGA Tour", "LPGA Tour"\) only when a read named it/);
+      // Why.
+      expect(text).toMatch(/Why the Tour\. It is the level where every shot is measured[^\n]+one fixed yardstick keeps every player, team and season comparable/);
+      // What a negative figure is and is not.
+      expect(text).toMatch(/Never call a negative figure bad, poor or a weakness on its own\./);
+      expect(text).toMatch(/It is not a handicap, not a score against par and not a prediction of a score\./);
+      expect(text).toMatch(/The total is not the gap to a Tour scoring average/);
+      // How far an estimate goes.
+      expect(text).toMatch(/Do not read one part of the game from it, do not compare it with a measured figure, and do not call it a gap to the Tour\./);
+    }
+    // The comparisons that carry meaning: the team first for a coach; never the team for a player.
+    expect(golfBlock('ask')).toMatch(/The player against the team and against teammates, for the same window\. Everyone is on the same yardstick, so the comparison is fair\. A coach reads this one first\./);
+    expect(golfBlock('ask')).toMatch(/The best putter on a team is the one with the highest strokes gained putting, even when it is negative\./);
+    const playerSg = golfBlock('player').slice(golfBlock('player').indexOf('## Strokes gained'), golfBlock('player').indexOf('## Ball striking'));
+    expect(playerSg).not.toMatch(/teammate|against the team|his approach/i);
+    expect(playerSg).toMatch(/When a player asks why everything is negative, say it plainly/);
+    expect(playerSg).toMatch(/"you putt near Tour level, and most of your gap is on approach shots/);
   });
 
   it('says what it must not do', () => {
@@ -93,7 +121,8 @@ describe('the golf block of the cached prompt', () => {
     const player = tokens(golfBlock('player'));
     console.info(`golf block: coach ${coach} tokens, player ${player} tokens (characters / 4)`);
     expect(coach).toBeGreaterThan(2_400);
-    expect(coach).toBeLessThan(3_600);
+    // Raised from 3,600 on 10 Nov 2026 with the lead's allowance of about 3,900 for the strokes gained rework.
+    expect(coach).toBeLessThan(4_000);
     expect(player).toBeLessThan(coach);
   });
 });

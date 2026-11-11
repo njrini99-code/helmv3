@@ -1,6 +1,6 @@
 # Golf-sense eval for CoachHelm chat
 
-`golf-sense.json` holds 60 questions a college coach or player really asks, written to test whether the assistant
+`golf-sense.json` holds 69 questions a college coach or player really asks, written to test whether the assistant
 reads golf figures the way a coach's analyst would. They complement the data questions in
 `scripts/coachhelm/ask-eval.mjs`, which check that figures are right; these check meaning, direction and caution.
 
@@ -17,7 +17,7 @@ Each question: `id`, `area`, `viewer` (`coach` or `player`), `ask`, `readers`, `
 - `readers`: the reads a correct turn uses, as the harness records them in `toolCalls`. Any one of them counts
   unless the note says both. An empty list means the prompt or the reference answers it and no read of team data
   is required.
-- Placeholders `{player}`, `{player2}`, `{new_player}`, `{teammate}` are filled from the staging roster.
+- Placeholders `{player}`, `{player2}`, `{new_player}`, `{no_shots_player}`, `{teammate}` are filled from the staging roster.
 
 ## To run it later
 

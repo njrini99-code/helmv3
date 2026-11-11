@@ -24,29 +24,65 @@ const says = (sentence: string) => expect(block).toContain(sentence);
 const round = { status: 'completed', is_test: false, holes_played: 18, total_score: 74, front_nine: 37, back_nine: 37, total_putts: 31 };
 
 describe('the app definitions the golf block states', () => {
-  it('strokes gained is measured against Tour level, matched to the team: two baselines, by gender', () => {
+  const sql = read('supabase/schemas/functions/public.sql');
+  const fnBody = (name: string, nth = 0) => {
+    const marker = `CREATE OR REPLACE FUNCTION "public"."${name}"(`;
+    let at = -1;
+    for (let i = 0; i <= nth; i += 1) at = sql.indexOf(marker, at + 1);
+    return sql.slice(at, sql.indexOf('$$;', at));
+  };
+
+  it('strokes gained is measured against the Tour benchmark, matched to the team: two baselines, by gender, and no other', () => {
     says(APP_DEFINITIONS.sgBaseline);
+    says(APP_DEFINITIONS.sgNoOtherBaseline);
     expect(SG_BASELINE_OPTIONS.map((o) => o.key)).toEqual(['pga_tour', 'womens']);
     expect(defaultSgBaseline('mens')).toBe('pga_tour');
     expect(defaultSgBaseline('womens')).toBe('womens');
+    expect(defaultSgBaseline(null)).toBe('pga_tour');
     const checks = parseChecks(read('supabase/schemas/golf/10_tables.sql'));
     expect(checks['golf_team_settings.sg_baseline']).toEqual(['pga_tour', 'womens']);
     // The database picks the scale from the team's gender when no baseline is set.
-    expect(read('supabase/schemas/functions/public.sql')).toMatch(/sg_baseline_scale\(COALESCE\(v_baseline, CASE WHEN v_gender = 'womens' THEN 'womens' ELSE 'pga_tour' END\)\)/);
+    expect(sql).toMatch(/sg_baseline_scale\(COALESCE\(v_baseline, CASE WHEN v_gender = 'womens' THEN 'womens' ELSE 'pga_tour' END\)\)/);
+    // "The same expected-strokes curve scaled for the women's game": one curve, multiplied by the baseline's scale, and the men's scale is one.
+    expect(SG_BASELINE_OPTIONS.find((o) => o.key === 'pga_tour')!.scale).toBe(1);
+    expect(SG_BASELINE_OPTIONS.find((o) => o.key === 'womens')!.scale).toBeGreaterThan(1);
+    expect(fnBody('sg_baseline_scale')).toMatch(/WHEN 'pga_tour' THEN 1\.000\s+WHEN 'womens'\s+THEN 1\.\d+\s+ELSE 1\.000/);
+    expect(fnBody('sg_expected_strokes', 1)).toMatch(/RETURN v_es \* COALESCE\(p_scale, 1\.0\);/);
     // The Stats page draws no Tour figure beside strokes gained: zero is Tour level.
     expect(read('src/clubhouse/data/stats-player.ts')).toMatch(/Strokes gained against the Tour \(its benchmark is zero by definition\)/);
+    // The removal is recorded where the baselines are defined.
+    expect(read('src/lib/golf/sg-benchmarks.ts')).toMatch(/Strokes-gained baselines are PGA Tour \(men\) and LPGA \(women\) ONLY\. NCAA\s+\/\/ division \(D1\/D2\/D3\) and scratch scales were removed 2026-06-22/);
   });
 
-  it('strokes gained is worked out from shots when there are any, and estimated from the scorecard when there are none', () => {
-    says('with shots logged, a round\'s strokes gained is worked out shot by shot. With holes scored but no shots logged, it is a rough estimate from the scorecard.');
-    const sql = read('supabase/schemas/functions/public.sql');
-    const fn = sql.slice(sql.indexOf('CREATE OR REPLACE FUNCTION "public"."recalculate_round_strokes_gained"'));
-    const body = fn.slice(0, fn.indexOf('ALTER FUNCTION "public"."recalculate_round_strokes_gained"'));
-    expect(body).toMatch(/IF v_shot_count > 0 THEN/);
-    expect(body).toMatch(/ELSE\s+SELECT sg_off_tee, sg_approach, sg_around_green, sg_putting\s+INTO[^;]+FROM sg_estimate_from_holes\(p_round_id\);/);
-    // The four areas, and the total as their sum.
+  it('a shot\'s strokes gained is expected before, less expected after, less the stroke; the parts add up to the total', () => {
+    says(APP_DEFINITIONS.sgFormula);
+    says(APP_DEFINITIONS.sgTotal);
+    says('the four parts add up to the round\'s total');
+    const body = fnBody('recalculate_round_strokes_gained');
+    expect(body).toMatch(/sg_expected_strokes\(lie_before_norm,dist_before_yards,v_scale\) END AS exp_before/);
+    expect(body).toMatch(/category='approach' AND has_after THEN exp_before-exp_after-1 END/);
+    // A holed shot leaves nothing expected, so a hole's shots sum to (expected from the tee) less (strokes taken): the total is against the same holes from the same tees.
+    expect(body).toMatch(/WHEN is_holed THEN 0 WHEN dist_after_yards>0 THEN sg_expected_strokes\(lie_after_norm,dist_after_yards,v_scale\) ELSE 0 END AS exp_after/);
     expect(body).toMatch(/WHEN shot_type='putting' THEN 'putting'\s+WHEN shot_type='tee' THEN 'off_tee'\s+WHEN shot_type='around_green' THEN 'around_green'\s+ELSE 'approach'/);
     expect(body).toMatch(/v_sg_total := ROUND\(\(COALESCE\(v_sg_off_tee,0\)\+COALESCE\(v_sg_approach,0\)\+COALESCE\(v_sg_around,0\)\+COALESCE\(v_sg_putting,0\)\)/);
+  });
+
+  it('with no shots logged it is an estimate from the scorecard, which is not measured against the Tour and is not marked', () => {
+    says('With shots logged, a round\'s strokes gained is measured shot by shot as above.');
+    says(APP_DEFINITIONS.sgEstimate);
+    says(APP_DEFINITIONS.sgEstimateUnmarked);
+    const body = fnBody('recalculate_round_strokes_gained');
+    expect(body).toMatch(/IF v_shot_count > 0 THEN/);
+    expect(body).toMatch(/ELSE\s+SELECT sg_off_tee, sg_approach, sg_around_green, sg_putting\s+INTO[^;]+FROM sg_estimate_from_holes\(p_round_id\);/);
+    // The estimate reads the hole card only (fairway, green, putts, up-and-down, sand save) and never the expected-strokes curve or the team's scale.
+    const estimate = fnBody('sg_estimate_from_holes');
+    expect(estimate).toMatch(/FROM golf_holes h/);
+    for (const column of ['h.putts', 'h.fairway_hit', 'h.gir', 'h.up_and_down', 'h.sand_save']) expect(estimate).toContain(column);
+    expect(estimate).not.toMatch(/sg_expected_strokes|sg_scale_for_player|golf_shots/);
+    // No column on a round or its stat line says whether its strokes gained was measured or estimated.
+    const schema = read('src/lib/types/database.ts');
+    const rowOf = (table: string) => schema.slice(schema.indexOf(`      ${table}: {\n        Row: {`), schema.indexOf('        Insert: {', schema.indexOf(`      ${table}: {\n        Row: {`)));
+    for (const table of ['golf_rounds', 'golf_round_stats_cache']) expect(rowOf(table)).not.toMatch(/estimat|sg_source|sg_method|sg_basis/i);
   });
 
   it('a tee shot on a par 3 is logged as an approach shot', () => {
@@ -166,7 +202,7 @@ describe('the direction of every catalogued metric', () => {
   const SAID: Record<string, RegExp> = {
     scoring_average: /Score is strokes; to par is strokes against the course's par\. For both, lower is better/,
     scoring_average_vs_par: /For both, lower is better, and a negative to par is under par/,
-    sg_total: /A shot that leaves the player better off than the reference gains strokes; a worse one loses them\. Positive is better\./,
+    sg_total: /What is left is what that shot gained or lost against a Tour player\. Positive is better\./,
     sg_putting: /Positive is better\./,
     sg_approach: /Positive is better\./,
     sg_tee: /Positive is better\./,

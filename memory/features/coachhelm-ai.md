@@ -843,7 +843,8 @@ are byte-identical for every team, day and conversation and sit after the policy
 - **Golf** (`knowledge/golf.ts`): what each figure means and which way is good, how the figures relate, college
   golf, from a number to something to do, where to be careful, and what the assistant does not do (a swing or body
   diagnosis, medical advice, a label on a player, a promise, a figure from memory). It states this app's own
-  definitions: strokes gained against Tour level by the team's gender, a counted round, the windows, the season from
+  definitions: strokes gained (the per-shot sum, the Tour benchmark by the team's gender and why it is the yardstick,
+  why a college player's figures are negative and what to read instead, what a scorecard estimate cannot support), a counted round, the windows, the season from
   1 August, which figures need hole-by-hole scoring or logged shots, how a qualifier is ranked, how team figures pool.
   `knowledge/SOURCES.md` gives the `file:line` behind each and lists every place the app defines one thing two ways;
   `knowledge/__tests__/app-definitions.test.ts` fails when the code and the text part ways. It contains no benchmark,
@@ -859,7 +860,8 @@ are byte-identical for every team, day and conversation and sit after the policy
   the prompt names the topics. The research document's men's Tour tables are withheld (a Tour or level figure comes
   only from topic standards, which uses the team's own tour), as are sections with unsourced college figures, vendor
   claims and a body-and-swing causal chain; four unsourced sentences are cut from sections that are otherwise served.
-- **The golf-sense eval** (`knowledge/eval/golf-sense.json`): sixty questions with what a correct answer must and must
+- **The golf-sense eval** (`knowledge/eval/golf-sense.json`): 69 questions (nine of them on what a Tour-based
+  strokes gained figure means and why) with what a correct answer must and must
   not state and which reads it should use, in the shape `scripts/coachhelm/ask-eval.mjs` scores. Not yet run: a run
   is a live spend against staging and needs the owner's approval.
 - When a read tool is added, renamed or removed, or the allowlist changes: update `data-map.source.ts` and run

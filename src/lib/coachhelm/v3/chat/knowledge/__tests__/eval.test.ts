@@ -14,9 +14,10 @@ const questions = golfSenseQuestions();
 const AREAS = ['strokes_gained', 'scoring', 'ball_striking', 'short_game', 'putting', 'mistakes', 'relations', 'college', 'courses', 'windows', 'action', 'caution', 'limits', 'data'];
 
 describe('the golf-sense eval set', () => {
-  it('has 40 to 60 questions with unique ids, for a coach and for a player', () => {
-    expect(questions.length).toBeGreaterThanOrEqual(40);
-    expect(questions.length).toBeLessThanOrEqual(60);
+  // Sixty from the first pass, plus nine on what a Tour-based strokes gained figure means (the owner's follow-up, 10 Nov 2026).
+  it('has 60 to 70 questions with unique ids, for a coach and for a player', () => {
+    expect(questions.length).toBeGreaterThanOrEqual(60);
+    expect(questions.length).toBeLessThanOrEqual(70);
     expect(new Set(questions.map((q) => q.id)).size).toBe(questions.length);
     expect(questions.filter((q) => q.viewer === 'player').length).toBeGreaterThanOrEqual(5);
   });
@@ -66,5 +67,15 @@ describe('the golf-sense eval set', () => {
     const careful =
       'Eli is losing the most in approach over his last 10 rounds (10 rounds), about a stroke more than the team in the same window. Zero is Tour level, so a negative figure is normal for a college player. Approach shots from long range are finishing farther from the hole than the team\'s. It is early to call it a pattern; the same figure after a few more rounds will tell. The choice of who travels is yours.';
     for (const name of EVAL_PATTERN_NAMES) if (name !== 'teammate_named') expect(re(name).test(careful), name).toBe(false);
+    // The owner's follow-up: the sign is never a verdict, an estimate is never a gap to the Tour, and no tour is named unprompted.
+    expect(re('sign_as_verdict').test('His approach number is negative, which means poor iron play.')).toBe(true);
+    expect(re('estimate_as_tour_gap').test('From the scorecard estimate he is about two behind the Tour in approach.')).toBe(true);
+    expect(re('names_pga_unprompted').test('Your numbers are against the PGA Tour.')).toBe(true);
+    const explained =
+      'Nothing is wrong with the numbers. Strokes gained here is measured against the Tour benchmark, and Tour players are the best in the world, so a college player is expected to be negative in most parts of the game. Read where each player gives up the most, and how they stand against the team in the same window.';
+    for (const name of ['sign_as_verdict', 'estimate_as_tour_gap', 'names_pga_unprompted', 'negative_sg_called_bad', 'tour_figure_from_memory', 'label']) expect(re(name).test(explained), name).toBe(false);
+    // The understanding has its own questions, for a coach and for a player.
+    const ids = questions.map((q) => q.id);
+    for (const id of ['sg-why-all-negative', 'sg-is-minus-two-bad', 'sg-best-putter-all-negative', 'sg-why-tour', 'sg-womens-benchmark', 'sg-what-it-is-not', 'sg-estimate-limits', 'sg-player-what-my-number-means', 'sg-player-everything-negative']) expect(ids).toContain(id);
   });
 });
