@@ -6,7 +6,7 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react
 import { updateGolfEvent } from '@/app/golf/actions/calendar-events';
 import { deletePracticePlan } from '@/app/golf/actions/practice-plans';
 import { publishPracticePlan } from '@/app/golf/actions/practice-publish';
-import { changeLines, diffVersions, mixMinutes, validatePlan, type PlanBlock, type PlanBodyV2, type PlanWhy } from '@/lib/coachhelm/v3/practice-plan/model';
+import { changeLines, diffVersions, validatePlan, type PlanBlock, type PlanBodyV2, type PlanWhy } from '@/lib/coachhelm/v3/practice-plan/model';
 import type { ChBankDrill, ChBuilderData } from '../../../data/practice-home-shape';
 import { offsetMinutesFor } from '@/lib/golf/timezone';
 import { formatWallClock, formatWith, isoDay } from '../../../lib/dates';
@@ -116,8 +116,6 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
   const rib = ribbon(total, windowMin);
   const kinds = useMemo(() => new Map(drills.map((d) => [d.ref, d.kind])), [drills]);
   const drillOf = useMemo(() => new Map(drills.map((d) => [d.ref, d])), [drills]);
-  const mix = useMemo(() => mixMinutes(body, kinds), [body, kinds]);
-  const mixAll = mix.skill + mix.random + mix.pressure;
   const names = useMemo(() => new Map(data.roster.map((p) => [p.id, p.name])), [data.roster]);
   const check = useMemo(() => validatePlan(body, { eventStart: new Date(data.start), eventEnd: data.end ? new Date(data.end) : undefined, zone: data.zone, names }), [body, data.start, data.end, data.zone, names]);
   const slots = useMemo(() => drillSlots(body), [body]);
@@ -349,6 +347,9 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
   const ghostMin = ghosts.reduce((n, g) => n + g.block.len, 0);
   const openMin = windowMin == null ? 0 : Math.max(0, windowMin - total - ghostMin);
   const daySegs: DaySeg[] = [...blocks.flatMap((b) => blockSegs(b, false)), ...ghosts.flatMap((g) => blockSegs(g.block, true)), ...(openMin > 0 ? [{ id: 'open', min: openMin, tone: 'open' as const }] : [])];
+  // The legend counts the same clock minutes the strip draws (a rotation's hour is shared between its stations), so the two can't disagree.
+  const kindMin = { skill: 0, random: 0, pressure: 0 };
+  for (const seg of daySegs) if (seg.tone === 'skill' || seg.tone === 'random' || seg.tone === 'pressure') kindMin[seg.tone] += Math.round(seg.min);
   const ribbonBar = (
     <div className="ch-prc-ribbon" aria-live="polite" data-ch-code="CH-13896">
       <div className="ch-prc-ribbon__w">
@@ -358,11 +359,9 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
         <span className={'ch-num' + (rib.over ? ' is-over' : '')}>{ghostMin > 0 ? `${fmtMinutes(ghostMin)} suggested` : rib.rest}</span>
       </div>
       <DayStrip segs={daySegs} />
-      {mixAll > 0 && (
+      {kindMin.skill + kindMin.random + kindMin.pressure > 0 && (
         <p className="ch-prc-ribbon__mix ch-num">
-          <span data-tone="skill">Skill {fmtMinutes(mix.skill)}</span>
-          <span data-tone="random">Random {fmtMinutes(mix.random)}</span>
-          <span data-tone="pressure">Pressure {fmtMinutes(mix.pressure)}</span>
+          {(['skill', 'random', 'pressure'] as const).map((k) => (kindMin[k] > 0 ? <span key={k} data-tone={k}>{kindLabel(k)} {fmtMinutes(kindMin[k])}</span> : null))}
         </p>
       )}
     </div>
