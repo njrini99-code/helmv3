@@ -170,6 +170,19 @@ describe('every task', () => {
     expect(blind.summary).not.toMatch(/Nothing was saved/);
   });
 
+  it('publish_artifact: the card says in plain words that players will see it, and how many', async () => {
+    const tool = all().find((t) => t.name === 'publish_artifact')!;
+    const roster = [person(P1, 'Eli Brandt'), person('00000000-0000-4000-8000-0000000000a2', 'Maya Ortiz'), person('00000000-0000-4000-8000-0000000000a3', 'Noah Kim')];
+    const proposal = await tool.plan(ctx({ ...coach, roster }), tool.input.parse(SAMPLES.publish_artifact));
+    expect(proposal.action).toBe('Publish to 3 players');
+    expect(proposal.facts[0]).toMatchObject({ label: 'Who can see it', value: 'Players on Rini University will be able to see this: all 3 active players.' });
+    expect(proposal.notifications).toEqual(['Players on Rini University will be able to see this in Documents (all 3 active players), once the Undo window closes. Nobody gets a notification.']);
+    // One player is still said as one.
+    const one = await tool.plan(ctx(), tool.input.parse(SAMPLES.publish_artifact));
+    expect(one.facts[0]?.value).toBe('Players on Rini University will be able to see this: the 1 active player.');
+    expect(world.actionCalls).toEqual([]);
+  });
+
   it('a card for the same words on a later request is its own message', async () => {
     const { sendGolfMessage } = await import('@/app/actions/messages');
     vi.mocked(sendGolfMessage).mockClear();
