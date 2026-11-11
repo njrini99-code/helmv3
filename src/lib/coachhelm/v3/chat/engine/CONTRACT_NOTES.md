@@ -1540,4 +1540,3 @@ E39. **After the reruns at a863b56cc1 (11 Nov 2026).** Again outside the engine,
   the question: it now passes `groundingCheck` whole. Two were "18 holes". One answer's figures were what its code had
   printed: `ground()` in `turn.ts` adds `codeOutputsOf(state.messages)` to the reads the check sees. The check still
   only logs.
-
