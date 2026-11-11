@@ -74,6 +74,10 @@ export const LOOK = {
       { key: 'Appears', value: 'His Home, under Focus' },
     ] as const,
     hold: { total: 8, left: 6, line: 'Saves in 6 seconds, then Jonah is told.' },
+    /* The focus itself, as Jonah's Home will show it (direction A draws this, never the fields above as a table). */
+    focus: { title: 'Downhill putts, 4 to 6 feet', goal: 'Make 7 of 10 in two practices', review: 'Review Tue, Oct 14', from: 'From Coach Reyes' },
+    told: 'Jonah is told when it saves. It appears on his Home, under Focus.',
+    lands: 'It appears on his Home, under Focus.',
   },
   foot: 'CoachHelm reads Finley University data only. Check the numbers before you act on them.',
 } as const;

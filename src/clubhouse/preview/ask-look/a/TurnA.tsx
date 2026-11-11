@@ -1,6 +1,7 @@
 'use client';
 
 import { ChevronRight } from 'lucide-react';
+import { Avatar } from '../../../ui/Avatar';
 import { Badge } from '../../../ui/Badge';
 import { Button } from '../../../ui/Button';
 import { Icon } from '../../../ui/Icon';
@@ -220,36 +221,34 @@ function PinDrawing() {
   );
 }
 
+/**
+ * The task as a pin sheet (owner, 11 Nov: "these tables look like ass"): the card is the focus itself, set the way Jonah's
+ * Home will show it, and one quiet line says who is told and where it appears. No label and value rows.
+ */
 function PinSheet({ holding }: { holding: boolean }) {
   const { task } = LOOK;
-  const before = task.fields.slice(0, 4);
-  const after = task.fields.slice(4);
+  const { focus } = task;
   return (
-    <article className="ch-look-leaf ch-look-a-task" aria-label={task.title}>
+    <article className="ch-look-leaf ch-look-a-task" aria-label={`${task.kind}: ${focus.title}`}>
       <header className="ch-look-leaf__head">
         <span>{task.kind}</span>
         <Badge tone={holding ? 'warning' : 'neutral'}>{holding ? 'Holding' : 'Not saved'}</Badge>
       </header>
       <div className="ch-look-a-task__top">
-        <h3 className="ch-look-a-task__t">{task.title}</h3>
+        <div className="ch-look-a-task__thing">
+          <p className="ch-look-a-task__who">
+            <Avatar name={LOOK.player} size="xs" />
+            {LOOK.player}
+          </p>
+          <h3 className="ch-look-a-task__t">{focus.title}</h3>
+          <p className="ch-look-a-task__goal">{focus.goal}</p>
+          <p className="ch-num ch-look-a-task__when">
+            {focus.review} · {focus.from}
+          </p>
+        </div>
         <PinDrawing />
       </div>
-      <dl className="ch-look-a-task__rows">
-        {before.map((f) => (
-          <div key={f.key}>
-            <dt>{f.key}</dt>
-            <dd>{f.value}</dd>
-          </div>
-        ))}
-      </dl>
-      <dl className="ch-look-a-task__rows is-after">
-        {after.map((f) => (
-          <div key={f.key}>
-            <dt>{f.key}</dt>
-            <dd>{f.value}</dd>
-          </div>
-        ))}
-      </dl>
+      <p className="ch-look-a-task__told">{holding ? task.lands : task.told}</p>
       {holding ? (
         <footer className="ch-look-a-task__foot is-hold">
           <HoldRing left={task.hold.left} total={task.hold.total} />

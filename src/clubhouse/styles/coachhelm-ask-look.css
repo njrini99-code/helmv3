@@ -667,7 +667,7 @@
 }
 .ch-look-a-task__top {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: var(--ch-space-4);
   margin-top: var(--ch-space-5);
@@ -721,43 +721,44 @@
   stroke: var(--ch-ink-900);
   stroke-width: 1.25;
 }
-.ch-look-a-task__rows {
-  margin: var(--ch-space-4) 0 0;
-  border-top: var(--ch-hairline-w) solid var(--ch-separator-strong);
-}
-.ch-look-a-task__rows > div {
+.ch-look-a-task__thing {
   display: grid;
-  grid-template-columns: 76px minmax(0, 1fr);
-  align-items: baseline;
-  gap: var(--ch-space-3);
-  padding: var(--ch-space-3) 0;
-  border-bottom: var(--ch-hairline-w) solid var(--ch-separator);
+  gap: var(--ch-space-1);
+  min-width: 0;
 }
-.ch-look-a-task__rows dt {
+.ch-look .ch-look-a-task__who {
+  display: flex;
+  align-items: center;
+  gap: var(--ch-space-2);
+  margin: 0 0 var(--ch-space-1);
+  color: var(--ch-text-secondary);
+  font: var(--ch-type-13-medium);
+}
+.ch-look .ch-look-a-task__goal {
+  margin: 0;
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+  text-wrap: pretty;
+}
+.ch-look .ch-look-a-task__when {
+  margin: 0;
   color: var(--ch-text-secondary);
   font: var(--ch-type-13);
 }
-.ch-look-a-task__rows dd {
-  margin: 0;
-  font: var(--ch-type-15-medium);
-  letter-spacing: var(--ch-track-15);
-}
-.ch-look-a-task__rows.is-after {
-  margin-top: var(--ch-space-1);
-  border-top: 1px solid var(--ch-ink-rule);
-}
-.ch-look-a-task__rows.is-after > div:last-child {
-  border-bottom: 0;
-}
-.ch-look-a-task__rows.is-after dd {
+/* The one quiet line: who is told, and where it appears. */
+.ch-look .ch-look-a-task__told {
+  margin: var(--ch-space-5) 0 0;
+  padding-top: var(--ch-space-3);
+  border-top: var(--ch-hairline-w) solid var(--ch-separator-strong);
   color: var(--ch-text-secondary);
-  font: var(--ch-type-15);
+  font: var(--ch-type-13);
+  text-wrap: pretty;
 }
 .ch-look-a-task__foot {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   gap: var(--ch-space-2);
-  margin-top: var(--ch-space-2);
+  margin-top: var(--ch-space-4);
 }
 .ch-look-a-task__foot.is-hold {
   grid-template-columns: auto minmax(0, 1fr) auto;
