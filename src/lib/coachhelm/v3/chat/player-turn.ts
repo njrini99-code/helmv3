@@ -39,18 +39,18 @@ export async function runPlayerTurn(
     ctx = await resolvePlayerChatContext(sb);
   } catch (err) {
     const status = err instanceof CoachContextError ? err.status : 500;
-    return NextResponse.json({ error: 'Ask could not load.' }, { status });
+    return NextResponse.json({ error: 'Ask could not load.', ...(status === 401 ? { kind: 'signed_out' } : status === 403 || status === 404 ? { kind: 'off' } : {}) }, { status });
   }
   // CoachHelm switched off for the player or their team answers nothing here, as for a coach. The gate fails closed on a lookup error.
   const helmGate = await isCoachHelmEnabledForPlayer(ctx.player_id);
-  if (!helmGate.effectivelyEnabled) return NextResponse.json({ error: 'CoachHelm is off for your team.' }, { status: 403 });
+  if (!helmGate.effectivelyEnabled) return NextResponse.json({ error: 'CoachHelm is off for your team.', kind: 'off' }, { status: 403 });
   const [rl, bucket] = await Promise.all([checkRateLimit(`coachhelm:chat:player:${ctx.player_id}`, RATE_LIMITS.API_GENERAL), readBucket(ctx.player_id, ctx.timezone)]);
-  if (!rl.allowed) return NextResponse.json({ error: 'Too many requests. Please slow down.' }, { status: 429 });
-  if (!bucket) return NextResponse.json({ error: 'Ask is off for your team.' }, { status: 403 });
+  if (!rl.allowed) return NextResponse.json({ error: 'Too many requests. Please slow down.', kind: 'rate' }, { status: 429 });
+  if (!bucket) return NextResponse.json({ error: 'Ask is off for your team.', kind: 'off' }, { status: 403 });
   const conversationId = `player-${ctx.player_id}`;
   if (bucket === 'out') {
     const events: ChatEvent[] = [
-      { type: 'message_start', conversation_id: conversationId, message_id: crypto.randomUUID(), resumed: false },
+      { type: 'message_start', conversation_id: conversationId, message_id: crypto.randomUUID(), resumed: false, started_at: new Date().toISOString() },
       { type: 'part', part: { type: 'data-allowance', id: 'allowance', data: { state: 'out' } } },
       { type: 'done', status: 'complete' },
     ];
@@ -101,6 +101,7 @@ export async function runPlayerTurn(
       maxSteps: PLAYER_MAX_STEPS,
       features: chatFeatures(),
       turnNote: context.line,
+      screen: context.screen?.place ? { screen: context.screen.screen, label: context.screen.place.name } : null,
       requestSignal: signal,
       store: null,
       clientTurnId: body.clientTurnId,

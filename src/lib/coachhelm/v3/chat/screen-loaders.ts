@@ -228,7 +228,8 @@ export interface TournamentsScreen {
     name: string;
     startDate: string;
     endDate: string;
-    format: string;
+    /** As the screen holds it: how many play, how many count, over how many holes (`TourFormat`). */
+    format: { kind: string; players: number; counting: number; holes: number };
     kind: string;
     status: string;
     cancelled?: boolean;

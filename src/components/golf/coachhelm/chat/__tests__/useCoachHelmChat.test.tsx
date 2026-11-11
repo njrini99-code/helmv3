@@ -108,6 +108,74 @@ describe('useCoachHelmChat', () => {
     expect(bodyOf(2)).toMatchObject({ decision: { key: KEY, approved: false } });
   });
 
+  it('keeps what the server says about the turn: when it began, the screen it resolved, and that the model is thinking', async () => {
+    let release: () => void = () => {};
+    const held = new Promise<void>((resolve) => (release = resolve));
+    const encoder = new TextEncoder();
+    const body = new ReadableStream<Uint8Array>({
+      async start(controller) {
+        controller.enqueue(encoder.encode(encodeChatEvent({ type: 'message_start', conversation_id: CONVERSATION, message_id: 'a1', resumed: false, started_at: '2026-11-10T12:00:00.000Z', context: { screen: 'roster', label: 'Roster' } })));
+        controller.enqueue(encoder.encode(encodeChatEvent({ type: 'phase', phase: 'thinking' })));
+        await held;
+        controller.enqueue(encoder.encode(encodeChatEvent({ type: 'text_delta', delta: 'Avery.' })));
+        controller.enqueue(encoder.encode(encodeChatEvent({ type: 'done', status: 'complete', duration_ms: 1200 })));
+        controller.close();
+      },
+    });
+    fetchMock.mockResolvedValueOnce(new Response(body, { headers: { 'content-type': 'text/event-stream' } }));
+    const { result } = renderHook(() => useCoachHelmChat());
+    act(() => result.current.send('Who is this?'));
+    await waitFor(() => expect(result.current.phase).toBe('thinking'));
+    // Thinking is not yet an answer arriving.
+    expect(result.current.status).toBe('submitted');
+    release();
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    expect(result.current.phase).toBeNull();
+    expect(result.current.messages.at(-1)).toMatchObject({ id: 'a1', metadata: { started_at: '2026-11-10T12:00:00.000Z', context: { screen: 'roster', label: 'Roster' } }, parts: [{ type: 'text', text: 'Avery.' }] });
+  });
+
+  it('a card withdrawn by a new question is marked in the earlier message that holds it', async () => {
+    fetchMock.mockResolvedValueOnce(
+      sse([
+        { type: 'message_start', conversation_id: CONVERSATION, message_id: 'a2', resumed: false },
+        { type: 'decision', key: KEY, approved: false, reason: 'superseded', message_id: 'a-card' },
+        { type: 'text_delta', delta: 'Blake is at 74.' },
+        { type: 'done', status: 'complete' },
+      ]),
+    );
+    const { result } = renderHook(() => useCoachHelmChat({ initialMessages: [waitingCard], conversationId: CONVERSATION }));
+    act(() => result.current.send('Actually, how is Blake?'));
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    const card = result.current.messages.find((m) => m.id === 'a-card')!.parts.find((p) => p.type === 'tool-create_focus_area');
+    expect(card).toMatchObject({ state: 'output-denied', approval: { id: KEY, approved: false, reason: 'superseded' } });
+    expect(result.current.messages.at(-1)!.parts).toEqual([{ type: 'text', text: 'Blake is at 74.' }]);
+  });
+
+  it('every failure carries its kind: the server’s on a stream or a refusal, the browser’s own for a dropped connection', async () => {
+    const { result } = renderHook(() => useCoachHelmChat({ initialMessages: [waitingCard], conversationId: CONVERSATION }));
+    const kindAfter = async (arrange: () => void, act_: () => void) => {
+      arrange();
+      act(act_);
+      await waitFor(() => expect(result.current.status).toBe('error'));
+      return result.current.error?.kind;
+    };
+    const stream = (kind: 'truncated' | undefined) => sse([{ type: 'message_start', conversation_id: CONVERSATION, message_id: `m-${Math.random()}`, resumed: false }, { type: 'error', message: 'A sentence.', action: 'none', ...(kind ? { kind } : {}) }, { type: 'done', status: 'failed' }]);
+    expect(await kindAfter(() => fetchMock.mockResolvedValueOnce(stream('truncated')), () => result.current.send('One'))).toBe('truncated');
+    // A server that names no kind (an older deployment) is a model fault.
+    expect(await kindAfter(() => fetchMock.mockResolvedValueOnce(stream(undefined)), () => result.current.send('Two'))).toBe('model');
+    const refusal = (status: number, body: Record<string, unknown>) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
+    expect(await kindAfter(() => fetchMock.mockResolvedValueOnce(refusal(429, { error: 'Limit reached.', reason: 'budget_gated', kind: 'budget' })), () => result.current.send('Three'))).toBe('budget');
+    expect(await kindAfter(() => fetchMock.mockResolvedValueOnce(refusal(429, { error: 'Too many requests. Please slow down.' })), () => result.current.send('Four'))).toBe('rate');
+    expect(await kindAfter(() => fetchMock.mockResolvedValueOnce(refusal(401, { error: 'Unauthorized' })), () => result.current.send('Five'))).toBe('signed_out');
+    expect(await kindAfter(() => fetchMock.mockResolvedValueOnce(refusal(404, { error: 'Conversation not found', kind: 'gone' })), () => result.current.send('Six'))).toBe('gone');
+    // The connection dropped: an answer that never arrived is `lost`, a Confirm whose response was lost is `card_retry`.
+    expect(await kindAfter(() => fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch')), () => result.current.send('Seven'))).toBe('lost');
+    expect(await kindAfter(() => fetchMock.mockRejectedValueOnce(new TypeError('Load failed')), () => result.current.approve(KEY))).toBe('card_retry');
+    const online = vi.spyOn(window.navigator, 'onLine', 'get').mockReturnValue(false);
+    expect(await kindAfter(() => fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch')), () => result.current.send('Eight'))).toBe('offline');
+    online.mockRestore();
+  });
+
   it('a caller that supplies no screen sends none', async () => {
     fetchMock.mockResolvedValueOnce(sse(answer('One.')));
     const { result } = renderHook(() => useCoachHelmChat());

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyChatEvent, createChatEventParser, encodeChatEvent, eventsForStoredParts, pendingDecisionKeys, textOfParts, type ChatEvent, type ChatUIMessage } from '../protocol';
+import { applyChatEvent, CHAT_ERROR_KINDS, createChatEventParser, encodeChatEvent, eventsForStoredParts, isChatErrorKind, pendingDecisionKeys, textOfParts, turnMetaOf, type ChatEvent, type ChatUIMessage } from '../protocol';
 
 const empty = (): ChatUIMessage => ({ id: 'a1', role: 'assistant', parts: [] });
 const fold = (events: ChatEvent[], from: ChatUIMessage = empty()) => events.reduce(applyChatEvent, from);
@@ -71,6 +71,46 @@ describe('the reducer both ends fold the stream with', () => {
       { type: 'data-progress', id: 'note-1', data: { label: 'Comparing the last five rounds with the season', tool: 'note', state: 'done', done: 'Comparing the last five rounds with the season' } },
       { type: 'text', text: 'Done.' },
     ]);
+  });
+
+  it('a card withdrawn by a new question says so on the stored part, and replays so; a Cancel the coach pressed does not', () => {
+    const waiting = fold([{ type: 'decision_needed', key: 'k', tool: 'create_task', tool_use_id: 'tu_1' }]);
+    const withdrawn = fold([{ type: 'decision', key: 'k', approved: false, reason: 'superseded', message_id: 'm1' }], waiting);
+    expect(withdrawn.parts[0]).toMatchObject({ state: 'output-denied', approval: { id: 'k', approved: false, reason: 'superseded' } });
+    expect(eventsForStoredParts(withdrawn.parts).at(-1)).toEqual({ type: 'decision', key: 'k', approved: false, reason: 'superseded' });
+
+    const cancelled = fold([{ type: 'decision', key: 'k', approved: false }], waiting);
+    expect(cancelled.parts[0]).toMatchObject({ approval: { id: 'k', approved: false } });
+    expect((cancelled.parts[0] as unknown as { approval: object }).approval).not.toHaveProperty('reason');
+    // A Confirm is never "superseded", whatever an event claims.
+    const confirmed = fold([{ type: 'decision', key: 'k', approved: true, reason: 'superseded' }], waiting);
+    expect((confirmed.parts[0] as unknown as { approval: object }).approval).toEqual({ id: 'k', approved: true });
+  });
+
+  it('a finished read keeps its detail and its picture on the progress row; the thinking phase is never a part', () => {
+    const picture = { kind: 'sg', rows: [] };
+    const message = fold([
+      { type: 'phase', phase: 'thinking' },
+      { type: 'read_started', id: 'progress-1', label: 'Reading the team', tool: 'get_team_stats' },
+      { type: 'read_finished', id: 'progress-1', label: 'Reading the team', tool: 'get_team_stats', state: 'done', detail: '38 rounds', picture },
+    ]);
+    expect(message.parts).toEqual([{ type: 'data-progress', id: 'progress-1', data: { label: 'Reading the team', tool: 'get_team_stats', state: 'done', done: 'Reading the team', detail: '38 rounds', picture } }]);
+  });
+
+  it('a turn’s stored facts are read back from its meta part; a thread stored before it had one reads as none', () => {
+    const meta = { started_at: '2026-11-10T12:00:00.000Z', duration_ms: 2100, reads: 3 };
+    const message = fold([{ type: 'text_delta', delta: 'Hi.' }, { type: 'part', part: { type: 'data-turn-meta', id: 'turn-meta', data: { ...meta, duration_ms: 900 } } }, { type: 'part', part: { type: 'data-turn-meta', id: 'turn-meta', data: meta } }]);
+    // Written again in place each time the turn is stored: one part, the latest facts.
+    expect(message.parts.filter((p) => p.type === 'data-turn-meta')).toHaveLength(1);
+    expect(turnMetaOf(message.parts)).toEqual(meta);
+    expect(turnMetaOf([{ type: 'text', text: 'An answer stored in October.' }])).toBeNull();
+    expect(turnMetaOf([{ type: 'data-turn-meta', id: 'turn-meta', data: { started_at: 5 } }])).toBeNull();
+  });
+
+  it('the kinds of failure are a closed set', () => {
+    expect([...CHAT_ERROR_KINDS].sort()).toEqual(['budget', 'card_gone', 'card_retry', 'declined', 'gone', 'lost', 'model', 'off', 'offline', 'rate', 'signed_out', 'truncated']);
+    expect(isChatErrorKind('truncated')).toBe(true);
+    expect(isChatErrorKind('something_else')).toBe(false);
   });
 
   it('returns the same message when an event changes nothing, and withdraws only the words of the step in progress', () => {

@@ -9,7 +9,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { asTools, cited, codeToolUse, fakeDb, fakeModel, linesTool, newToolLog, readEvents, readTool, rejected, serverCode, taskTool, text, textOf, thinking, toolUse, type FakeDb, type FakeModel, type ToolLog } from './helpers';
-import type { ChatTool } from '@/lib/coachhelm/v3/chat/engine/tool';
+import type { ChatTool, ReadTool } from '@/lib/coachhelm/v3/chat/engine/tool';
 import type { ChatEvent } from '@/lib/coachhelm/v3/chat/engine/protocol';
 
 vi.mock('server-only', () => ({}));
@@ -21,6 +21,10 @@ const h = vi.hoisted(() => ({
   modelFactory: null as null | (() => unknown),
   features: null as unknown,
   notes: null as null | { tone: 'straight' | 'detailed' | 'team_talk'; facts: Array<{ id: string; text: string }> },
+  clubhouse: true,
+  flags: new Set<string>(),
+  loadRoundReview: vi.fn(async (..._args: unknown[]): Promise<unknown> => ({ kind: 'notFound' })),
+  loadTournamentsHome: vi.fn(async (..._args: unknown[]): Promise<unknown> => ({ kind: 'not_set_up' })),
   tools: [] as unknown[],
   playerTools: [] as unknown[],
   role: 'coach' as 'coach' | 'player',
@@ -43,7 +47,10 @@ vi.mock('@/lib/auth/rate-limit', () => ({ checkRateLimit: vi.fn(async () => ({ a
 vi.mock('@/lib/coachhelm/v3/llm/budget', () => ({ checkBudget: h.checkBudget, recordSpend: vi.fn(async () => {}) }));
 vi.mock('@/lib/server-error-logger', () => ({ logServerError: h.logServerError, logServerEvent: h.logServerEvent }));
 vi.mock('@/lib/observability/metrics', () => ({ recordAi: vi.fn() }));
-vi.mock('@/clubhouse/gate', () => ({ isClubhouseFor: vi.fn(async () => true), isClubhouseForTeam: vi.fn(() => false) }));
+vi.mock('@/clubhouse/gate', () => ({ isClubhouseFor: vi.fn(async () => true), isClubhouseForTeam: vi.fn(() => h.clubhouse) }));
+vi.mock('@/lib/flags/is-enabled', () => ({ isFlagEnabled: (flag: string) => h.flags.has(flag) }));
+vi.mock('@/clubhouse/data/round-review', () => ({ loadRoundReview: h.loadRoundReview }));
+vi.mock('@/clubhouse/data/tournaments', () => ({ loadTournamentsHome: h.loadTournamentsHome, tourContext: vi.fn(async (team: unknown) => ({ team })) }));
 // The Clubhouse screens' loaders the route binds for the tools. Stand-ins here: what matters is which the route binds for whom, and with what.
 vi.mock('@/clubhouse/data/player-figures', () => ({ loadPlayersFigures: h.loadPlayersFigures, loadPlayerPuttBands: vi.fn(async () => null), filterForFigureWindow: vi.fn(() => ({})) }));
 vi.mock('@/clubhouse/data/qualifiers', () => ({ loadQualifierList: vi.fn(async () => null), loadQualifierDetail: vi.fn(async () => null) }));
@@ -62,7 +69,10 @@ vi.mock('@/lib/coachhelm/v3/chat/context/notes', () => ({
 }));
 // The screen-context resolver is CONTEXT's and has its own tests; here it is the line the engine must place and store.
 vi.mock('@/lib/coachhelm/v3/chat/context/screen-context', () => ({
-  turnContext: vi.fn(async (_sb: unknown, _who: unknown, raw: { screen?: string } | null) => ({ line: raw?.screen ? `Today is Tuesday 10 November 2026. The coach is on ${raw.screen}.` : 'Today is Tuesday 10 November 2026.', screen: null })),
+  turnContext: vi.fn(async (_sb: unknown, _who: unknown, raw: { screen?: string } | null) => ({
+    line: raw?.screen ? `Today is Tuesday 10 November 2026. The coach is on ${raw.screen}.` : 'Today is Tuesday 10 November 2026.',
+    screen: raw?.screen ? { screen: raw.screen.toLowerCase(), place: { name: raw.screen } } : null,
+  })),
 }));
 vi.mock('@/lib/coachhelm/v3/chat/player-allowance', () => ({ readBucket: vi.fn(async () => 'ok'), recordPlayerSpend: vi.fn(async () => {}) }));
 vi.mock('@/lib/coachhelm/v3/chat/player-context', () => ({
@@ -94,6 +104,8 @@ import { POST } from '../route';
 import { restoreUIMessages } from '@/lib/coachhelm/v3/chat/restore';
 import { CHAT_FEATURES, MissingModelKeyError, plainFeatures } from '@/lib/coachhelm/v3/chat/engine/model';
 import { cancelHeld } from '@/lib/coachhelm/v3/chat/undo-hold';
+import { getRound } from '@/lib/coachhelm/v3/chat/readers-direct';
+import { turnMetaOf } from '@/lib/coachhelm/v3/chat/engine/protocol';
 
 const MESSAGES = 'golf_coachhelm_chat_messages';
 /** The app's own line for the turn, as the system message after the coach's words. */
@@ -114,7 +126,17 @@ function setup(opts: { modelColumns?: boolean; holdColumn?: boolean } = {}) {
   h.modelFactory = null;
   h.features = null;
   h.notes = null;
-  const coachTools: ChatTool[] = asTools(readTool('get_player_stats', log, 71.4), readTool('get_team_stats', log, 74.2), taskTool('create_focus_area', log), linesTool('get_rounds', log, ['Scoring avg: 74.2 | team 75.1', 'Putts per round: 31.4']));
+  h.clubhouse = true;
+  h.flags = new Set();
+  const coachTools: ChatTool[] = asTools(
+    readTool('get_player_stats', log, 71.4),
+    readTool('get_team_stats', log, 74.2),
+    taskTool('create_focus_area', log),
+    linesTool('get_rounds', log, ['Scoring avg: 74.2 | team 75.1', 'Putts per round: 31.4']),
+    // The real reader, so the route's binding of the Round page is what answers it.
+    getRound as unknown as ChatTool,
+    readTool('find_in_app', log, 0),
+  );
   const playerTools: ChatTool[] = asTools(readTool('get_my_stats', log, 73.1), taskTool('create_focus_area', log));
   h.toolsFor.mockImplementation((surface: string) => (surface === 'player' ? playerTools : coachTools));
 }
@@ -203,6 +225,8 @@ describe('a plain answer', () => {
       ['get_team_stats', true, true],
       ['create_focus_area', true, true],
       ['get_rounds', true, true],
+      ['get_round', true, true],
+      ['find_in_app', true, true],
     ]);
     expect((request.tools as Array<{ input_schema: { additionalProperties?: boolean } }>).every((t) => t.input_schema.additionalProperties === false)).toBe(true);
   });
@@ -254,7 +278,7 @@ describe('reads', () => {
     const [row] = assistantRows();
     expect(row!.status).toBe('complete');
     expect((row!.model_messages as unknown[]).length).toBe(5);
-    expect((row!.ui_parts as Array<{ type: string }>).map((p) => p.type)).toEqual(['data-progress', 'data-progress', 'data-evidence', 'data-evidence', 'text']);
+    expect((row!.ui_parts as Array<{ type: string }>).map((p) => p.type)).toEqual(['data-progress', 'data-progress', 'data-evidence', 'data-evidence', 'text', 'data-turn-meta']);
   });
 
   it('an input the schema rejects is never run: the model is told, as an error result', async () => {
@@ -285,7 +309,7 @@ describe('reads', () => {
     expect(events.some((e) => e.type === 'evidence')).toBe(false);
     expect(events.find((e) => e.type === 'part')).toEqual({ type: 'part', part: { type: 'data-brief', id: 'brief-1', data: { questions: ['How long?'] } } });
     const [row] = assistantRows();
-    expect((row!.ui_parts as Array<{ type: string }>).map((p) => p.type)).toEqual(['text', 'data-progress', 'data-brief']);
+    expect((row!.ui_parts as Array<{ type: string }>).map((p) => p.type)).toEqual(['text', 'data-progress', 'data-brief', 'data-turn-meta']);
     // The stored turn ends with the tool's result, so the call is answered and the next question simply follows it.
     const stored = row!.model_messages as Array<{ role: string; content: unknown }>;
     expect(stored.map((m) => m.role)).toEqual(['user', 'system', 'assistant', 'user']);
@@ -749,6 +773,12 @@ describe('a task', () => {
     ]);
     expect(JSON.stringify((sent[3]!.content as unknown[])[0])).not.toContain('Blake');
     expect(sent[4]).toEqual(sys);
+    // The browser is told the card was withdrawn, and in which message it sits: a fact, not something to infer from position.
+    const cardRow = assistantRows()[0]!;
+    expect(events.find((e) => e.type === 'decision')).toEqual({ type: 'decision', key, approved: false, reason: 'superseded', message_id: cardRow.id });
+    expect((cardRow.ui_parts as Array<{ type: string; approval?: unknown }>).find((p) => p.type === 'tool-create_focus_area')?.approval).toEqual({ id: key, approved: false, reason: 'superseded' });
+    const reloaded = restoreUIMessages((db.tables[MESSAGES] ?? []) as never).find((m) => m.id === cardRow.id)!;
+    expect(reloaded.parts.find((p) => p.type === 'tool-create_focus_area')).toMatchObject({ state: 'output-denied', approval: { reason: 'superseded' } });
     expect(runs()[0]!.status).toBe('denied');
     expect(log.commits).toHaveLength(0);
 
@@ -758,7 +788,7 @@ describe('a task', () => {
     expect((first!.ui_parts as Array<{ type: string; state?: string }>).find((p) => p.type === 'tool-create_focus_area')?.state).toBe('output-denied');
     expect(second).toMatchObject({ status: 'complete', content: 'Blake is at 74.' });
     const late = await decide(conversationId, key, true);
-    expect(late.events.find((e) => e.type === 'decision')).toEqual({ type: 'decision', key, approved: false });
+    expect(late.events.find((e) => e.type === 'decision')).toEqual({ type: 'decision', key, approved: false, reason: 'superseded' });
     expect(log.commits).toHaveLength(0);
   });
 
@@ -961,6 +991,201 @@ describe('a conversation written by the previous stack', () => {
     // Its card carries an approval id of the old SDK, which names nothing the server holds: it is not offered again.
     const restored = restoreUIMessages((db.tables[MESSAGES] ?? []) as never);
     expect(restored.some((m) => m.parts.some((p) => p.type.startsWith('tool-')))).toBe(false);
+  });
+});
+
+describe('the screens the tools read through', () => {
+  const ROUND = '3f0e7c1a-2b4d-4c6e-8f10-1a2b3c4d5e6f';
+  const review = {
+    id: ROUND, playerId: 'player-a', playerName: 'Avery Lane', date: '2026-11-08', course: 'Pine Hill', type: 'qualifying', holesPlayed: 18, score: 71, toPar: -1,
+    front: { score: 35, toPar: -1 }, back: { score: 36, toPar: 0 }, putts: 29, fairways: { hit: 10, of: 14 }, greens: { hit: 13, of: 18 },
+    strokesGained: null, recap: null, notes: null, coachNote: null, holes: [], holesError: false,
+  };
+
+  it('get_round reads the Round page through the route’s binding, as the signed-in coach of that team', async () => {
+    h.loadRoundReview.mockResolvedValueOnce({ kind: 'ok', review });
+    const model = script({ content: [toolUse('tu_1', 'get_round', { round_id: ROUND })] }, { content: [text('Avery shot 71.')] });
+    const { events } = await ask('How did Avery play on Saturday?');
+    expect(done(events)?.status).toBe('complete');
+    expect(h.loadRoundReview).toHaveBeenLastCalledWith(ROUND, { role: 'coach', teamId: 'team-1' });
+    const [result] = lastRequestMessages(model)[3]!.content as Array<{ is_error?: boolean; content: Array<{ type: string; content: Array<{ text: string }> }> }>;
+    expect(result!.is_error).toBeUndefined();
+    expect(result!.content[0]!.type).toBe('search_result');
+    const lines = result!.content[0]!.content.map((b) => b.text).join('\n');
+    expect(lines).toContain('Pine Hill');
+    expect(lines).toContain('71');
+    expect(lines).toContain('29 putts');
+  });
+
+  it('a Round page that throws is a read that could not be made, never a round with nothing in it', async () => {
+    h.loadRoundReview.mockRejectedValueOnce(new Error('database down'));
+    script({ content: [toolUse('tu_1', 'get_round', { round_id: ROUND })] }, { content: [text('I could not read that round.')] });
+    const { events } = await ask('How did Avery play on Saturday?');
+    const finished = events.find((e) => e.type === 'read_finished') as { state: string };
+    expect(finished.state).toBe('failed');
+    const evidence = events.find((e) => e.type === 'evidence') as { part: { data: { envelope: { coverage: string; coverage_note: string } } } };
+    expect(evidence.part.data.envelope.coverage).toBe('unavailable');
+    expect(evidence.part.data.envelope.coverage_note).toContain('could not be read');
+  });
+
+  it('a loader the route has not bound reads as unavailable too, so a missing binding is visible and not wrong', async () => {
+    const unbound = await getRound.run({ sb: db.client as never, who: { coach_id: 'coach-1', user_id: 'user-1', team_id: 'team-1', team_name: 'Test Team', timezone: 'America/New_York', roster: [] } as never, conversationId: 'c', surface: 'ask', loaders: {}, signal: new AbortController().signal, reads: new Map() }, { round_id: ROUND });
+    expect(unbound.coverage).toBe('unavailable');
+    expect(unbound.measurements).toEqual([]);
+    expect(unbound.coverage_note).toContain('not connected');
+  });
+
+  it('the Tournaments page is bound only while its flag is on', async () => {
+    script({ content: [toolUse('tu_1', 'get_team_stats', {})] }, { content: [text('74.2.')] });
+    await ask('Team?');
+    expect(log.reads.at(-1)!.loaders.roundReview).toBeTypeOf('function');
+    expect(log.reads.at(-1)!.loaders.tournaments).toBeUndefined();
+
+    h.flags.add('golf_tournaments_v1');
+    script({ content: [toolUse('tu_2', 'get_team_stats', {})] }, { content: [text('74.2.')] });
+    await ask('Team?');
+    const tournaments = log.reads.at(-1)!.loaders.tournaments!;
+    h.loadTournamentsHome.mockResolvedValueOnce({ kind: 'ready', data: { players: [], events: [], errors: {} } });
+    expect(await tournaments()).toMatchObject({ kind: 'ready' });
+    expect(h.loadTournamentsHome).toHaveBeenLastCalledWith({ team: { role: 'coach', teamId: 'team-1' } });
+  });
+
+  it('a player’s Round page is asked for as that player', async () => {
+    h.role = 'player';
+    script({ content: [toolUse('tu_1', 'get_my_stats', {})] }, { content: [text('73.1.')] });
+    await ask('How am I scoring?');
+    const load = log.reads.at(-1)!.loaders.roundReview!;
+    await load(ROUND);
+    expect(h.loadRoundReview).toHaveBeenLastCalledWith(ROUND, { role: 'player', playerId: 'player-me', teamId: 'team-1' });
+    expect(log.reads.at(-1)!.loaders.tournaments).toBeUndefined();
+  });
+});
+
+describe('find_in_app, which answers with Clubhouse addresses', () => {
+  const names = (model: FakeModel) => (model.requests[0]!.tools as Array<{ name: string }>).map((t) => t.name);
+
+  it('is offered to a team with Clubhouse on, and the screen the chat was opened from is told to the model', async () => {
+    const model = script({ content: [text('It is on Roster.')] });
+    await ask('Where do I set the lineup?', null, { screen: { screen: 'Roster' } });
+    expect(names(model)).toContain('find_in_app');
+    expect(lastRequestMessages(model)[1]!.content).toBe('Today is Tuesday 10 November 2026. The coach is on Roster.');
+  });
+
+  it('is not offered to a team without it; a call naming it is answered as an error, not a crash; and the screen is not named', async () => {
+    h.clubhouse = false;
+    const model = script({ content: [toolUse('tu_1', 'find_in_app', {})] }, { content: [text('Look under Roster.')] });
+    const { events } = await ask('Where do I set the lineup?', null, { screen: { screen: 'Roster' } });
+    expect(names(model)).toEqual(['get_player_stats', 'get_team_stats', 'create_focus_area', 'get_rounds', 'get_round']);
+    expect(done(events)?.status).toBe('complete');
+    expect(log.reads).toHaveLength(0);
+    expect((lastRequestMessages(model)[3]!.content as unknown[])[0]).toEqual({ type: 'tool_result', tool_use_id: 'tu_1', content: 'There is no tool named find_in_app.', is_error: true });
+    // The place names are Clubhouse's: without it the line is the date alone, and nothing is echoed for a chip.
+    expect(lastRequestMessages(model)[1]!.content).toBe(TODAY);
+    expect((events[0] as { context?: unknown }).context).toBeNull();
+    // The list without the tool is the same bytes on every request, so it caches on its own.
+    const again = script({ content: [text('74.2.')] });
+    await ask('Team?');
+    expect(again.requests[0]!.tools).toEqual(model.requests[0]!.tools);
+  });
+});
+
+describe('what the thread is told about a turn besides its words', () => {
+  it('when it started, the screen it was asked from, that the model is thinking, how long it took and how many reads it made', async () => {
+    script({ content: [toolUse('tu_1', 'get_team_stats', {}), toolUse('tu_2', 'get_rounds', {})] }, { content: [text('74.2.')] });
+    const { events } = await ask('Team?', null, { screen: { screen: 'Stats' } });
+
+    const start = events[0] as { type: string; started_at: string; context: unknown };
+    expect(start.type).toBe('message_start');
+    expect(new Date(start.started_at).toISOString()).toBe(start.started_at);
+    expect(start.context).toEqual({ screen: 'stats', label: 'Stats' });
+    // "Thinking" is the server's word: sent before each model call, before anything of the answer.
+    expect(events[1]).toEqual({ type: 'phase', phase: 'thinking' });
+    expect(events.filter((e) => e.type === 'phase')).toHaveLength(2);
+    const end = done(events) as { status: string; duration_ms: number };
+    expect(end.duration_ms).toBeGreaterThanOrEqual(0);
+
+    // Stored with the turn, so a restored thread can say "2 reads · 1s".
+    const [row] = assistantRows();
+    const meta = turnMetaOf(row!.ui_parts as never)!;
+    expect(meta).toMatchObject({ started_at: start.started_at, reads: 2 });
+    expect(meta.duration_ms).toBeGreaterThanOrEqual(0);
+    expect(meta).not.toHaveProperty('declined');
+    expect((row!.ui_parts as Array<{ type: string }>).some((p) => p.type === 'phase')).toBe(false);
+    const restored = restoreUIMessages((db.tables[MESSAGES] ?? []) as never).at(-1)!;
+    expect(turnMetaOf(restored.parts)).toEqual(meta);
+    // The same part reaches the browser on the stream, so the live turn and the restored one agree.
+    expect(events.some((e) => e.type === 'part' && e.part.type === 'data-turn-meta')).toBe(true);
+  });
+
+  it('a card’s turn keeps the time it began across the decision, and its duration adds up over both requests', async () => {
+    script({ content: [toolUse('tu_task', 'create_focus_area', { title: 'Wedges' })] });
+    const proposed = await ask('Make a wedge focus area');
+    const waiting = turnMetaOf(assistantRows()[0]!.ui_parts as never)!;
+    script({ content: [text('Done.')] });
+    const { events } = await decide(conversationOf(proposed.events), keyOf(proposed.events), true);
+    const after = turnMetaOf(assistantRows()[0]!.ui_parts as never)!;
+    expect(after.started_at).toBe(waiting.started_at);
+    // The second request waited the Undo window out.
+    expect(after.duration_ms).toBeGreaterThanOrEqual(waiting.duration_ms + HOLD_MS - 20);
+    expect((events[0] as { started_at: string }).started_at >= waiting.started_at).toBe(true);
+  });
+
+  it('a turn the model declined says so in its stored facts, since it is a complete turn and not an error', async () => {
+    script({ content: [], stop_reason: 'refusal', category: 'cyber' });
+    const { events } = await ask('Something the model declines');
+    expect(events.some((e) => e.type === 'error')).toBe(false);
+    expect(turnMetaOf(assistantRows()[0]!.ui_parts as never)).toMatchObject({ declined: true });
+  });
+
+  it('a finished read says what it covered: the tool’s own words, else its sample; and a picture when the tool draws one', async () => {
+    const picture = { kind: 'sg', title: 'Strokes gained a round, team', rows: [{ label: 'Putting', value: -0.4 }] };
+    const sampled = { ...readTool('get_sampled', log, 74.2) } as ReadTool<{ player_id?: string }>;
+    sampled.run = async () => ({ summary: 'Scoring', measurements: [{ metric_id: 'scoring_avg', metric_label: 'Scoring avg', unit: 'score', value: 74.2, entity: { kind: 'team', id: 'team-1', label: 'Team' }, window_start: '2026-08-01', window_end: '2026-11-10', sample_size: 1412, sample_unit: 'rounds', as_of: '2026-11-10T12:00:00.000Z' }] as never, series: [], coverage: 'complete', coverage_note: null, as_of: '2026-11-10T12:00:00.000Z' });
+    const told = { ...readTool('get_told', log, 1) } as ReadTool<{ player_id?: string }>;
+    told.run = async () => ({ summary: 'Putting', measurements: [], series: [], coverage: 'complete', coverage_note: null, as_of: '2026-11-10T12:00:00.000Z', progress_detail: '38 rounds', progress_picture: picture });
+    h.toolsFor.mockImplementation(() => asTools(sampled, told, readTool('get_bare', log, 1)));
+    const model = script({ content: [toolUse('tu_1', 'get_sampled', {}), toolUse('tu_2', 'get_told', {}), toolUse('tu_3', 'get_bare', {})] }, { content: [text('Here.')] });
+    const { events } = await ask('Team?');
+
+    const rows = events.filter((e) => e.type === 'read_finished') as Array<{ tool: string; detail?: string; picture?: unknown }>;
+    expect(rows.find((r) => r.tool === 'get_sampled')).toMatchObject({ detail: '1,412 rounds' });
+    expect(rows.find((r) => r.tool === 'get_told')).toMatchObject({ detail: '38 rounds', picture });
+    expect(rows.find((r) => r.tool === 'get_bare')).not.toHaveProperty('detail');
+    // On the stored row too, in the shape the thread already reads.
+    const stored = (assistantRows()[0]!.ui_parts as Array<{ type: string; data?: { tool?: string; detail?: string; picture?: unknown } }>).filter((p) => p.type === 'data-progress');
+    expect(stored.find((p) => p.data?.tool === 'get_told')?.data).toMatchObject({ state: 'done', detail: '38 rounds', picture });
+    // None of it is the model's business.
+    expect(JSON.stringify(model.requests[1]!.messages)).not.toContain('38 rounds');
+    expect(JSON.stringify(model.requests[1]!.messages)).not.toContain('Strokes gained a round');
+  });
+});
+
+describe('a failure names its kind', () => {
+  it('on the stream: a model fault, an answer cut off at its length limit, a card that is gone', async () => {
+    script({ content: [text('Avery')], fail: new Error('upstream exploded') });
+    const fault = await ask('How is Avery scoring?');
+    expect(fault.events.find((e) => e.type === 'error')).toMatchObject({ kind: 'model', action: 'retry' });
+    // The stored failure keeps the kind, so a restored turn shows the notice the live one did.
+    const restored = restoreUIMessages((db.tables[MESSAGES] ?? []) as never).at(-1)!;
+    expect(restored.parts[0]).toMatchObject({ type: 'data-turn-incomplete', data: { kind: 'model' } });
+
+    script({ content: [toolUse('tu_1', 'get_team_stats', {})], stop_reason: 'max_tokens' });
+    const cut = await ask('Everything about everyone?');
+    expect(cut.events.find((e) => e.type === 'error')).toMatchObject({ kind: 'truncated', action: 'none' });
+
+    const gone = await decide(conversationOf(cut.events), 'a-key-nobody-holds', true);
+    expect(gone.events.find((e) => e.type === 'error')).toMatchObject({ kind: 'card_gone', action: 'none' });
+  });
+
+  it('in a refused request’s body: the budget, a conversation that is gone', async () => {
+    h.checkBudget.mockResolvedValue({ allowed: false, fallback_reason: 'budget_gated' });
+    const budget = await ask('How is Avery scoring?');
+    expect(await budget.response.json()).toMatchObject({ kind: 'budget', reason: 'budget_gated' });
+    h.checkBudget.mockResolvedValue({ allowed: false, fallback_reason: 'budget_disabled' });
+    expect(await (await ask('How is Avery scoring?')).response.json()).toMatchObject({ kind: 'off' });
+    h.checkBudget.mockResolvedValue({ allowed: true });
+    db.tables.golf_coachhelm_chat_conversations = [{ id: '7b0c8c5e-5d0e-4d58-9d0b-0d2d1f1f4a11', coach_id: 'someone-else' }];
+    expect(await (await ask('Hello', '7b0c8c5e-5d0e-4d58-9d0b-0d2d1f1f4a11')).response.json()).toMatchObject({ kind: 'gone' });
   });
 });
 

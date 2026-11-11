@@ -138,6 +138,8 @@ async function streamOnce(deps: LoopDeps, state: LoopState, answerOnly: boolean)
     const notes = new Map<number, string>();
     let previousBlock: string | null = null;
     try {
+      // The server's own word for the wait before the first event of a model call.
+      deps.emit({ type: 'phase', phase: 'thinking' });
       const stream = deps.model.stream(request, { signal: deps.signal });
       for await (const event of stream) {
         if (event.type === 'content_block_start') {
@@ -209,12 +211,20 @@ const invalidInput = (issues: ReadonlyArray<{ path: PropertyKey[]; message: stri
     .join('; ')}. Call it again with a corrected input.`,
 });
 
+/** What a read covered, in a few words, when the tool does not say: its first measurement's sample ("10 rounds", "1 round"). */
+function sampleDetail(envelope: ToolEnvelope): string | null {
+  const m = envelope.measurements?.[0];
+  if (!m || !m.sample_size || !m.sample_unit) return null;
+  const unit = String(m.sample_unit);
+  return `${m.sample_size.toLocaleString('en-US')} ${m.sample_size === 1 ? unit.replace(/s$/, '') : unit}`;
+}
+
 async function runRead(deps: LoopDeps, state: LoopState, tool: ReadTool<unknown>, input: unknown, progressId: string, refNumber: number, programmatic: boolean): Promise<{ result: StoredToolResult; endTurn: boolean }> {
   const label = safeLabel(tool, input);
   deps.emit({ type: 'read_started', id: progressId, label, tool: tool.name });
   try {
     // `model_text` stays on the envelope: the grounding check reads the lines the model was shown.
-    const { parts, evidence, end_turn, ...envelope } = await tool.run({ ...deps.toolContext, reads: state.reads }, input);
+    const { parts, evidence, end_turn, progress_detail, progress_picture, ...envelope } = await tool.run({ ...deps.toolContext, reads: state.reads }, input);
     const isEvidence = evidence !== false;
     const ref = `e${refNumber}`;
     if (isEvidence) {
@@ -222,7 +232,16 @@ async function runRead(deps: LoopDeps, state: LoopState, tool: ReadTool<unknown>
       deps.emit({ type: 'evidence', part: { type: 'data-evidence', id: `evidence-${ref}`, data: { tool: tool.name, envelope, ref } } });
     }
     for (const part of parts ?? []) deps.emit(eventForPart(part));
-    deps.emit({ type: 'read_finished', id: progressId, label, tool: tool.name, state: envelope.coverage === 'unavailable' ? 'failed' : 'done' });
+    const detail = (typeof progress_detail === 'string' && progress_detail.trim()) || sampleDetail(envelope);
+    deps.emit({
+      type: 'read_finished',
+      id: progressId,
+      label,
+      tool: tool.name,
+      state: envelope.coverage === 'unavailable' ? 'failed' : 'done',
+      ...(detail ? { detail: detail.slice(0, 80) } : {}),
+      ...(progress_picture === undefined || progress_picture === null ? {} : { picture: progress_picture }),
+    });
 
     const lines = typeof envelope.model_text === 'string' && envelope.model_text.trim() ? envelope.model_text : null;
     let content: StoredToolResult['content'];

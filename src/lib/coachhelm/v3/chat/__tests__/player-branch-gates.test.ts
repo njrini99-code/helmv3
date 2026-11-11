@@ -34,7 +34,7 @@ describe('the player turn’s gates', () => {
     m.readBucket.mockResolvedValue(null);
     const res = await runPlayerTurn(sb, { text: 'How am I putting?', clientTurnId: 't1' }, signal, () => ({}));
     expect(res.status).toBe(403);
-    expect(await res.json()).toEqual({ error: 'CoachHelm is off for your team.' });
+    expect(await res.json()).toEqual({ error: 'CoachHelm is off for your team.', kind: 'off' });
     expect(m.isCoachHelmEnabledForPlayer).toHaveBeenCalledWith('me');
     expect(m.readBucket).not.toHaveBeenCalled();
   });

@@ -81,6 +81,13 @@ export type ToolResult = ToolEnvelope & {
    * chip, the `reads` map and the grounding check.
    */
   model_text?: string;
+  /**
+   * A few words for the finished progress row, on what was read: "38 rounds", "1,412 putts". Left out, the engine uses
+   * the first measurement's sample ("10 rounds") when the read has one. Never a figure the answer should state.
+   */
+  progress_detail?: string;
+  /** A small drawing for the finished progress row, in the shape the thread's read pictures take (`practice-pictures.ts`). Not sent to the model. */
+  progress_picture?: unknown;
 };
 
 interface ToolBase<I> {
