@@ -3464,6 +3464,14 @@ html[data-fw-theme='dark'] .ch-qf-board .ch-badge {
   .ch-qf--list[data-canopy] .ch-qf-sec.is-done .ch-qf-card h3 {
     font-size: calc(15 * var(--ch-type-k));
   }
+  /* A player's list (owner, 2026-11-11: near-black titles): Active, Also active and Concluded are sibling sections, so their
+     titles are one style, the section title in ink. They were green 20px, ink 20px and a smaller 16px. */
+  .ch-qf--list.is-player[data-canopy] .ch-qf-sec.is-focus > h2,
+  .ch-qf--list.is-player[data-canopy] .ch-qf-sec.is-done > h2 {
+    font: var(--ch-type-section);
+    letter-spacing: var(--ch-track-section);
+    color: var(--ch-text-primary);
+  }
 }
 
 /* A canvas of 800px or less (821–1040px windows with the full sidebar): three columns left the name as little as 93px

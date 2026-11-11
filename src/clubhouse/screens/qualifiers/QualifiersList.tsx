@@ -77,7 +77,7 @@ export function QualifiersList({ data, live }: { data: ChQList; live?: Record<st
   const lede = listLede(coach);
 
   return (
-    <main className="ch-qf ch-qf--list" data-canopy="">
+    <main className={'ch-qf ch-qf--list' + (coach ? '' : ' is-player')} data-canopy="">
       {/* Phone (board 01): Qualifiers opens from More (D-66), so the top bar goes back there. */}
       <PhoneTop heading={false} title="Qualifiers" start />
       <header className="ch-qf-head" data-canopy-head="tight">
