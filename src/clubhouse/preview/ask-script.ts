@@ -56,6 +56,8 @@ export interface AskScript {
   commit?: 'saved' | 'failed' | 'slow';
   /** The first attempt's ending, when a retry is to succeed: the script's `turn` is what the retry gets. */
   firstAttempt?: Flow;
+  /** The receipt the held write ends with, for a script built by `taskScript` (left out: the focus-area fixture's). */
+  receipt?: ActionReceipt;
 }
 
 const PACE = {
@@ -390,6 +392,42 @@ function scripts(pace: AskPace): Record<string, AskScript> {
   };
 }
 
+/**
+ * A task of any kind, end to end, for the card previews (CAPABILITIES, quick chat): the lead sentence, the card, then Confirm
+ * (the hold, then `receipt` on the same stream, as the engine sends it) or Cancel. `commit` chooses how the held write ends.
+ */
+export function taskScript(o: { question: string; lead: string; proposal: ActionProposal & { tool: string }; receipt: ActionReceipt; commit?: AskScript['commit']; pace?: AskPace; /** Said after Confirm, while the write is held. */ held?: string }): AskScript {
+  const pace = o.pace ?? 'real';
+  const p = PACE[pace];
+  const key = o.proposal.idempotency_key;
+  const start = (): Timed => ({ at: p.connect, event: { type: 'message_start', conversation_id: 'c-scripted', message_id: 'a-resumed', resumed: true } });
+  const heldEvent = (): ChatEvent =>
+    eventForPart(receiptPart(key, { status: 'held', held_until: new Date(Date.now() + SCRIPTED_HOLD_MS).toISOString(), action: o.proposal.action, summary: o.proposal.summary, created: [], notifications: [], partial_failures: [], retryable: false, at: new Date().toISOString() }));
+  const failed = o.commit === 'failed';
+  const finalEvent = (): ChatEvent => eventForPart(receiptPart(key, failed ? { ...ASK_RECEIPT_FAILED, action: o.proposal.action } : { ...o.receipt, at: new Date().toISOString() }));
+  const after = p.connect + p.tool + SCRIPTED_HOLD_MS + (o.commit === 'slow' ? 1600 : 0);
+  return {
+    question: o.question,
+    commit: o.commit,
+    receipt: o.receipt,
+    turn: {
+      events: timeline(pace, [{ kind: 'text', text: o.lead }, { kind: 'reads', reads: [{ id: 'k1', label: 'Drafting it', tool: o.proposal.tool }] }, { kind: 'part', part: proposalPart(o.proposal) }, { kind: 'decision', key, tool: o.proposal.tool }], { status: 'awaiting_decision' }),
+    },
+    confirm: {
+      events: [
+        start(),
+        { at: p.connect + 10, event: { type: 'decision', key, approved: true } },
+        { at: p.connect + p.tool, event: heldEvent },
+        ...(o.held ? timeline(pace, [{ kind: 'wait', ms: p.tool }, { kind: 'text', text: o.held }], { noStart: true }).filter((e) => typeof e.event === 'function' || (e.event.type !== 'done' && e.event.type !== 'usage')) : []),
+        // The hold is waited out inside the request and the real result arrives on the same stream, under the same part id.
+        { at: after, event: finalEvent },
+        { at: after + 40, event: { type: 'done', status: failed ? 'failed' : 'complete' } },
+      ],
+    },
+    cancel: { events: [start(), { at: p.connect + 10, event: { type: 'decision', key, approved: false } }, ...timeline(pace, [{ kind: 'text', text: 'No problem. Nothing was created.' }], { noStart: true })] },
+  };
+}
+
 export const ASK_SCRIPT_NAMES = ['quick', 'jonah', 'long', 'late', 'readfail', 'empty', 'discard', 'task', 'taskfail', 'taskslow', 'tasklost', 'lost', 'retry', 'model', 'declined', 'truncated', 'budget', 'off', 'rate', 'gone', 'signedout', 'player', 'isl-one', 'isl-three', 'isl-team', 'isl-fail', 'isl-chart', 'isl-draft', 'isl-open', 'lumpy'] as const;
 export type AskScriptName = (typeof ASK_SCRIPT_NAMES)[number];
 
@@ -456,7 +494,8 @@ export function installScriptedChat(script: AskScript, opts: { until?: number | 
   // The held write, as the server would keep it: when it commits, and whether Undo got there first.
   const hold: { until: number | null; undone: boolean; saved: boolean } = { until: null, undone: false, saved: false };
   const proposal = ASK_PROPOSAL;
-  const final = (): ActionReceipt => (script.commit === 'failed' ? { ...ASK_RECEIPT_FAILED, action: proposal.action } : { ...ASK_RECEIPT_DONE, at: new Date().toISOString() });
+  const final = (): ActionReceipt =>
+    script.commit === 'failed' ? { ...ASK_RECEIPT_FAILED, action: script.receipt?.action ?? proposal.action } : { ...(script.receipt ?? ASK_RECEIPT_DONE), at: new Date().toISOString() };
   const json = (data: unknown, status = 200) => new Response(JSON.stringify(data), { status, headers: { 'content-type': 'application/json' } });
 
   const scripted: typeof fetch = async (input, init) => {

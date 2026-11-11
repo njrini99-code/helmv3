@@ -2,7 +2,8 @@ import { act, cleanup, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useCoachHelmChat } from '@/components/golf/coachhelm/chat/useCoachHelmChat';
 import { pendingDecisionKeys, type ChatUIPart } from '@/lib/coachhelm/v3/chat/engine/protocol';
-import { ASK_SCRIPT_NAMES, askScript, installScriptedChat, partsOfScript, SCRIPTED_CHAT_ENDPOINT, SCRIPTED_HOLD_MS } from '../ask-script';
+import { ASK_SCRIPT_NAMES, askScript, installScriptedChat, partsOfScript, SCRIPTED_CHAT_ENDPOINT, SCRIPTED_HOLD_MS, taskScript } from '../ask-script';
+import { ASK_PROPOSAL, ASK_RECEIPT_DONE } from '../fixtures-ask-thread';
 
 /** The harness is only worth having if it drives the REAL hook: these play scripts through `useCoachHelmChat` and its reducer. */
 describe('the scripted-turn harness', () => {
@@ -82,6 +83,27 @@ describe('the scripted-turn harness', () => {
     const after = (await (await fetch(`/api/coachhelm/v3/chat/actions/${key}`)).json()) as { receipt: { status: string } };
     expect(after.receipt.status).toBe('completed');
     expect((await fetch(`/api/coachhelm/v3/chat/actions/${key}`, { method: 'DELETE' })).status).toBe(409);
+  });
+
+  it('taskScript: any card, and the real result arrives on the Confirm\'s own stream under the held receipt\'s part id', async () => {
+    const proposal = { ...ASK_PROPOSAL, idempotency_key: 'k-task-script', action: 'Create task', summary: 'Give Theo a task.' };
+    const receipt = { ...ASK_RECEIPT_DONE, action: 'Create task', summary: 'Created a task for Theo.' };
+    restore = installScriptedChat(taskScript({ question: 'Give Theo a task', lead: 'Here is the task.', proposal, receipt, pace: 'fast' }));
+    const { result } = renderHook(() => useCoachHelmChat({ endpoint: SCRIPTED_CHAT_ENDPOINT }));
+    act(() => result.current.send('Give Theo a task'));
+    await run(3000);
+    const [key] = pendingDecisionKeys(result.current.messages[result.current.messages.length - 1]);
+    expect(key).toBe('k-task-script');
+    act(() => result.current.approve(key!));
+    await run(1200);
+    const receipts = () => partsOf(result).filter((p) => p.type === 'data-action-receipt');
+    expect((receipts()[0]?.data as { status: string }).status).toBe('held');
+    expect(result.current.busy).toBe(true);
+    await run(SCRIPTED_HOLD_MS + 500);
+    // One receipt part, replaced in place: the card never sees two.
+    expect(receipts()).toHaveLength(1);
+    expect(receipts()[0]?.data).toMatchObject({ status: 'completed', summary: 'Created a task for Theo.' });
+    expect(result.current.busy).toBe(false);
   });
 
   it('failures reach the hook as they would from the server: a dropped stream, a failed model, a refusal', async () => {
