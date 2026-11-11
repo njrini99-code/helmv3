@@ -162,6 +162,11 @@ const Body = z
      * the caller's own team before a word of it reaches the model; anything it cannot use is dropped, never an error.
      */
     screen: z.unknown().optional(),
+    /**
+     * A thing in an earlier answer that the coach tapped and is asking about: `{ evidence_ref, key }`. Resolved against the reads this
+     * conversation has stored and nothing else (`engine/about.ts`); a reference that names nothing stored is ignored, never an error.
+     */
+    about: z.unknown().optional(),
   })
   .transform((body, ctx): { conversation_id: string | null; client_turn_id: string; surface: ChatSurface; input: TurnInput; screen: unknown } => {
     const base = { conversation_id: body.conversation_id ?? null, client_turn_id: body.client_turn_id, surface: (body.surface ?? 'ask') as ChatSurface, screen: body.screen ?? null };
@@ -176,7 +181,7 @@ const Body = z
       ctx.addIssue({ code: 'custom', message: 'Send a message or a decision.' });
       return z.NEVER;
     }
-    return { ...base, input: { kind: 'message', text } };
+    return { ...base, input: { kind: 'message', text, ...(body.about === undefined || body.about === null ? {} : { about: body.about }) } };
   });
 
 /** The last user message of a previous-client thread, if that is what the thread ends in. A thread ending in the assistant was that client's approval resubmit, which this server no longer takes. */

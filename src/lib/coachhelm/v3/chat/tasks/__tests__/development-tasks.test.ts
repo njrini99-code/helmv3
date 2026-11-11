@@ -130,6 +130,21 @@ describe('set_goal_state', () => {
   });
 });
 
+describe('set_goal_state: editing the reason before Confirm', () => {
+  it('a close offers its reason and an edit plans again; a pause offers nothing; the state and the goal are never fields', async () => {
+    const { sb, writes } = db();
+    const p = stored(await setGoalState.plan(toolCtx(sb, coachWho()), { goal_id: GOAL, state: 'abandoned', reason: 'Switching to a putting goal' }));
+    expect(p.editable?.map((f) => [f.key, f.label, f.value])).toEqual([['reason', 'Reason kept with the goal', 'Switching to a putting goal']]);
+    const q = await setGoalState.revise!(toolCtx(sb, coachWho()), p, { reason: 'Injury: back in spring' });
+    expect(fact(q, 'Reason kept with the goal')).toBe('Injury: back in spring');
+    expect(writes).toEqual([]);
+    expect(a.abandonGoal).not.toHaveBeenCalled();
+    await expect(setGoalState.revise!(toolCtx(sb, coachWho()), p, { state: 'paused' })).rejects.toThrow('That cannot be changed on this card. Ask for it in words instead.');
+    await expect(setGoalState.revise!(toolCtx(sb, playerWho(), 'player'), p, { reason: 'x' })).rejects.toThrow('Only a coach can do that.');
+    expect((await setGoalState.plan(toolCtx(sb, coachWho()), { goal_id: GOAL, state: 'paused', reason: null })).editable).toBeUndefined();
+  });
+});
+
 describe('mark_signal_handled', () => {
   it('the card says the player will see “Acknowledged” on their own page, and writes nothing', async () => {
     const { sb, writes } = db();
@@ -182,7 +197,20 @@ describe('dismiss_signal', () => {
     expect(a.dismissInsight).not.toHaveBeenCalled();
     expect(fact(p, 'The player sees')).toBe('It also disappears from Avery Lane’s own CoachHelm page. No notification is sent.');
     expect(fact(p, 'The record')).toBe('The signal is kept, not deleted.');
+    expect(fact(p, 'Bringing it back')).toBe('Only with Undo, in the few seconds after you confirm. After that no screen brings it back: the CoachHelm board’s own Undo works only for a signal dismissed on that board.');
+    expect(p.undo).toEqual({ window: true, after: fact(p, 'Bringing it back') });
     expect([p.recipients, p.delivery]).toEqual([[], null]);
+  });
+
+  it('that is still how the app’s restore is reached: one caller, the Undo beside a signal dismissed on the board in that visit', () => {
+    const read = (f: string) => readFileSync(join(process.cwd(), f), 'utf8');
+    expect(read('src/clubhouse/screens/coachhelm/writes.ts')).toContain("undo: (insightId, lifecycle) => reactivateInsight(insightId, lifecycle, 'dismiss'),");
+    const board = read('src/clubhouse/screens/coachhelm/parts.tsx');
+    // The board remembers what it dismissed in its own state, and its Undo takes the signal from there.
+    expect(board).toContain('if (normalise(res).success) setDismissed((d) => ({ ...d, [t.ins.id]: true }));');
+    expect(board).toContain('const res = await writes.undo(t.ins.id, t.ins.lifecycle);');
+    // Nothing in Fairway's screens or the Clubhouse data loaders calls the restore.
+    for (const f of ['src/clubhouse/data/coachhelm.ts', 'src/components/golf/coachhelm/triage/TriageDesk.tsx']) expect(read(f)).not.toContain('reactivateInsight(');
   });
 
   it('that sentence is still the app’s one visibility rule: a dismissed signal is shown to nobody', () => {

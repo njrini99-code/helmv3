@@ -267,6 +267,8 @@ const CancelInput = z.strictObject({
   reason: z.string().min(1).max(200).nullable(),
 });
 type CancelInput = z.infer<typeof CancelInput>;
+/** What the coach can change on the card itself: the reason players are given. A blank is no reason. */
+const cancelEdits = editing(CancelInput, { reason: 'Reason' });
 const CancelStored = z.object({ event_id: z.string().uuid(), title: z.string(), reason: z.string().nullable(), detail: z.string(), told: z.number().int().nonnegative() });
 
 /** The cancellation notice's one line, as `fanOutEventCancelled` writes it. */
@@ -341,10 +343,15 @@ export const cancelEvent: TaskTool<CancelInput, StoredProposal> = {
           : null,
       undo: { window: true, after: 'Restore it on the Calendar. People already told stay told.' },
       lands: { kind: 'event', home: '/golf/dashboard/calendar', day: event.all_day ? event.start_time.slice(0, 10) : wallClock(event.start_time, zone).date },
+      editable: cancelEdits.fields(input, { reason }),
       tool: 'cancel_event',
-      input: { event_id: event.id, title: event.title, reason, detail, told },
+      input: { event_id: event.id, title: event.title, reason, detail, told, asked: input },
       planned_at: now(),
     };
+  },
+  revise: async (ctx, proposal, edits) => {
+    coachOnly(ctx);
+    return cancelEvent.plan(ctx, cancelEdits.merge(proposal, edits));
   },
   commit: async (ctx, proposal) => {
     const name = 'cancel_event';

@@ -48,6 +48,7 @@ const createTravelItinerarySchema = z.object({
   gear_list: z.string().max(2000).optional(),
   notes: z.string().max(5000).optional(),
   created_by: z.string().uuid().optional(),
+  requestId: z.string().uuid().optional(),
 });
 
 const updateTravelItinerarySchema = z.object({
@@ -101,6 +102,11 @@ export interface CreateTravelItineraryInput {
   gear_list?: string;
   notes?: string;
   created_by?: string;
+  /**
+   * Optional. A uuid that becomes the itinerary's id, so the same request sent twice (a retry after a lost response)
+   * answers with the first trip and never makes a second. Left out, nothing changes.
+   */
+  requestId?: string;
 }
 
 export interface UpdateTravelItineraryInput {
@@ -228,6 +234,7 @@ async function createGolfTravelItineraryImpl(input: CreateTravelItineraryInput) 
     const { data, error } = await (supabase as any)
       .from('golf_travel_itineraries')
       .insert({
+        ...(validatedData.requestId ? { id: validatedData.requestId } : {}),
         team_id: validatedData.team_id,
         event_id: validatedData.event_id || null,
         event_name: validatedData.event_name,
@@ -251,6 +258,18 @@ async function createGolfTravelItineraryImpl(input: CreateTravelItineraryInput) 
       })
       .select()
       .single();
+
+    // The same request again: the trip it made the first time is the answer (the id is the request's, and it is this team's).
+    if (error?.code === '23505' && validatedData.requestId) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: first } = await (supabase as any)
+        .from('golf_travel_itineraries')
+        .select('*')
+        .eq('id', validatedData.requestId)
+        .eq('team_id', validatedData.team_id)
+        .maybeSingle();
+      if (first) return { success: true, data: first };
+    }
 
     if (error) {
       return {

@@ -29,7 +29,7 @@ import { keyOf } from '../action-planners';
 import type { ActionReceipt, ProposalFact } from '../action-types';
 import { CoachContextError, type CoachChatContext } from '../context';
 import { isPlayerContext, type ChatTool, type TaskTool, type ToolContext } from '../engine/tool';
-import { asPlayers, unreached, type StoredProposal } from './kit';
+import { asPlayers, editing, unreached, type StoredProposal } from './kit';
 
 /** What every task here returns from `plan`, in the shape TOOLS's tasks use: the card, the tool, the input the write will use, and when it was planned. JSON-safe. */
 export type EventTaskProposal = StoredProposal;
@@ -84,6 +84,11 @@ const ReminderInput = z.strictObject({
   player_ids: z.array(z.string().uuid()).max(80),
 });
 type ReminderInput = z.infer<typeof ReminderInput>;
+/**
+ * What the coach can change on the card itself: who gets it. The field shows the players the card names; an edited
+ * list is those players and nobody else (`recipients: 'named'`), chosen from the active roster and checked by `plan`.
+ */
+const reminderEdits = editing(ReminderInput, { player_ids: 'To' });
 
 const ReminderStored = z.object({ event_id: z.string().uuid(), player_ids: z.array(z.string().uuid()).min(1), title: z.string(), message: z.string() });
 type ReminderStored = z.infer<typeof ReminderStored>;
@@ -160,10 +165,16 @@ export const sendEventReminder: TaskTool<ReminderInput, EventTaskProposal> = {
       not_reached: unreached(who.roster.filter((p) => ids.includes(p.id) && !reachable.has(p.id))),
       delivery: { channels: ['in_app'], title: words.title, body: words.message },
       undo: { window: true, after: 'A reminder that has gone out cannot be taken back.' },
+      editable: reminderEdits.fields(input, { player_ids: to.map((p) => p.id) }, who.roster.map((p) => ({ id: p.id, name: p.name }))),
       tool: 'send_event_reminder',
-      input: stored,
+      input: { ...stored, asked: input },
       planned_at: now(),
     };
+  },
+  revise: async (ctx, proposal, edits) => {
+    coachOnly(ctx);
+    const merged = reminderEdits.merge(proposal, edits);
+    return sendEventReminder.plan(ctx, 'player_ids' in edits ? { ...merged, recipients: 'named' } : merged);
   },
   commit: async (ctx, proposal) => {
     const name = 'send_event_reminder';
@@ -192,14 +203,23 @@ export const sendEventReminder: TaskTool<ReminderInput, EventTaskProposal> = {
         : failed(name, 'The reminder may or may not have gone out: the send did not confirm. Sending it again is safe, nobody gets it twice.', true, reason);
     }
     const sent = result.data?.sent ?? 0;
-    const short = ids.length - sent;
+    // Who the action wrote the reminder for (`sentPlayerIds`: active on the event's team, with an account). It is who was
+    // written to, not proof of delivery. An answer without it (an older one) leaves the receipt with the count alone.
+    const written = (result.data as { sentPlayerIds?: unknown } | undefined)?.sentPlayerIds;
+    const reached = Array.isArray(written) ? new Set(written.filter((id): id is string => typeof id === 'string')) : null;
+    const nameOf = (id: string) => who.roster.find((p) => p.id === id)?.name ?? 'A player';
+    const got = reached ? ids.filter((id) => reached.has(id)).map(nameOf) : null;
+    const missed = reached ? ids.filter((id) => !reached.has(id)).map(nameOf) : null;
+    const short = missed ? missed.length : ids.length - sent;
+    const WHY = 'not on the team now, or no account yet';
     return {
       status: sent === 0 ? 'failed' : short > 0 ? 'partial' : 'completed',
       action: name,
       summary: sent === 0 ? 'The reminder reached nobody: none of those players could be sent a notification. Nothing was sent.' : `The reminder about ${event.title} went to ${plural(sent, 'player')}.`,
       created: sent > 0 ? [{ kind: 'reminder', count: sent, href: `/golf/dashboard/calendar?event=${event.id}`, label: event.title }] : [],
-      notifications: sent > 0 ? [{ channel: 'in-app', recipients: sent, status: 'sent' }] : [],
-      partial_failures: short > 0 && sent > 0 ? [`${plural(short, 'player')} of the ${ids.length} on the card did not get it.`] : [],
+      notifications: sent > 0 ? [{ channel: 'in-app', recipients: sent, status: 'sent', ...(got && got.length ? { to: got } : {}) }] : [],
+      ...(missed && missed.length && sent > 0 ? { missed: missed.map((n) => ({ name: n, reason: WHY })) } : {}),
+      partial_failures: short > 0 && sent > 0 ? [missed ? `${list(missed)} did not get it: ${WHY}.` : `${plural(short, 'player')} of the ${ids.length} on the card did not get it.`] : [],
       retryable: sent === 0,
       at: now(),
     };

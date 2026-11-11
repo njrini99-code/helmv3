@@ -99,7 +99,12 @@ export interface UseCoachHelmChatResult {
   addContext: (chip: ChatContextChip) => void;
   removeContext: (id: string) => void;
 
-  send: (text: string) => void;
+  /**
+   * Ask. `about`: the coach tapped a thing in an earlier answer and is asking about it: the read it came from (the evidence part's
+   * `ref`) and the element (`key`, in the forms `engine/about.ts` lists). The server resolves it against the conversation's stored
+   * reads; the answering message's `metadata.about` says what it accepted (null: nothing).
+   */
+  send: (text: string, options?: { about?: { evidence_ref: string; key: string } }) => void;
   stop: () => void;
   retry: () => void;
   newConversation: () => void;
@@ -139,7 +144,7 @@ function refusal(status: number, body: string): Error {
 }
 
 type Outgoing =
-  | { kind: 'message'; text: string; key: string }
+  | { kind: 'message'; text: string; key: string; about?: { evidence_ref: string; key: string } }
   | { kind: 'decision'; key: string; approved: boolean }
   | { kind: 'revise'; key: string; edits: Record<string, unknown> }
   | { kind: 'approve_all'; keys: string[] };
@@ -160,7 +165,7 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
   const inFlight = React.useRef<AbortController | null>(null);
   const flushTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   // The last question and the key it was sent under, so a retry dedupes against the turn it is retrying.
-  const lastQuestion = React.useRef<{ text: string; key: string } | null>(null);
+  const lastQuestion = React.useRef<{ text: string; key: string; about?: { evidence_ref: string; key: string } } | null>(null);
   // The last decision sent, so a Confirm whose response was lost can be sent again: the server runs a key at most once.
   const lastDecision = React.useRef<{ key: string; approved: boolean } | null>(null);
   // A Confirm keeps its request open through the Undo window, so a coach with several cards presses the next one while the first
@@ -235,7 +240,7 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
           } else {
             target = event.message_id;
             // When the turn began and the screen the server resolved for it, kept on the message for the thread to draw.
-            const metadata: ChatMessageMetadata = { ...(event.started_at ? { started_at: event.started_at } : {}), ...(event.context === undefined ? {} : { context: event.context }) };
+            const metadata: ChatMessageMetadata = { ...(event.started_at ? { started_at: event.started_at } : {}), ...(event.context === undefined ? {} : { context: event.context }), ...(event.about === undefined ? {} : { about: event.about }) };
             thread.current = [...thread.current, { id: event.message_id, role: 'assistant', parts: [], ...(Object.keys(metadata).length > 0 ? { metadata } : {}) }];
           }
           return;
@@ -270,7 +275,7 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
             client_turn_id: outgoing.kind === 'message' ? outgoing.key : newKey(),
             ...(surface ? { surface } : {}),
             ...(outgoing.kind === 'message'
-              ? { message: outgoing.text, ...(screen.current ? { screen: screen.current } : {}) }
+              ? { message: outgoing.text, ...(screen.current ? { screen: screen.current } : {}), ...(outgoing.about ? { about: outgoing.about } : {}) }
               : // The revision of the card as this browser holds it goes with every answer or edit, so the server never confirms or
                 // edits a card other than the one on screen.
                 outgoing.kind === 'approve_all'
@@ -325,13 +330,14 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
   );
 
   const send = React.useCallback(
-    (text: string) => {
+    (text: string, options?: { about?: { evidence_ref: string; key: string } }) => {
       const trimmed = text.trim();
       if (!trimmed || inFlight.current) return;
       // Context is prefixed as visible text, so the transcript records exactly
       // what the model was told — no invisible side channel.
       const prefix = context.length > 0 ? `[Context: ${context.map((c) => `${c.kind.replace('_', ' ')} ${c.label}`).join('; ')}]\n` : '';
-      const question = { text: prefix + trimmed, key: newKey() };
+      // What was tapped goes with the question, and with a retry of it.
+      const question = { text: prefix + trimmed, key: newKey(), ...(options?.about ? { about: options.about } : {}) };
       lastQuestion.current = question;
       lastDecision.current = null;
       thread.current = [...thread.current, { id: `user-${question.key}`, role: 'user', parts: [{ type: 'text', text: question.text }] }];

@@ -134,9 +134,10 @@ export function editing<I extends Record<string, unknown>>(schema: z.ZodType<I>,
     /**
      * The fields for the card. `shown` is what each holds after the change, where the input itself says only what
      * changes. `kinds` names a field's kind where the schema's pattern does not give it away (a 24-hour time).
+     * `people` is who a list of players is chosen from.
      */
-    fields: (asked: I, shown: Readonly<Record<string, unknown>> = {}): EditableField[] =>
-      editableFields(schema, keys, { ...asked, ...shown }, { labels: { ...labels } }).map((f) => (kinds[f.key] ? { ...f, type: kinds[f.key]! } : f)),
+    fields: (asked: I, shown: Readonly<Record<string, unknown>> = {}, people?: ReadonlyArray<{ id: string; name: string }>): EditableField[] =>
+      editableFields(schema, keys, { ...asked, ...shown }, { labels: { ...labels }, ...(people ? { people } : {}) }).map((f) => (kinds[f.key] ? { ...f, type: kinds[f.key]! } : f)),
     /** The tool's input with the coach's edits, or a sentence the coach can read. */
     merge: (proposal: { input: unknown }, edits: Record<string, unknown>): I => {
       const before = schema.safeParse((proposal.input as { asked?: unknown } | null)?.asked);

@@ -99,6 +99,13 @@ interface ToolBase<I> {
   input: z.ZodType<I>;
   /** The human progress row, e.g. "Reading Eli's last 8 rounds". Never a tool name. Must not throw. */
   progress: (input: I) => string;
+  /**
+   * This tool's input is a draft the coach should watch being written (a practice plan's blocks, a message's words). `fields`
+   * are the top-level input fields to show as the model writes them. The engine shows only what is finished: a whole value, the
+   * finished items of a list, words up to the last whole word (`engine/draft.ts`). Nothing shown is trusted: the complete input
+   * is still validated by `input` before the tool runs, and a draft that fails is shown as failed.
+   */
+  draft?: { fields: readonly string[] };
 }
 
 export interface ReadTool<I> extends ToolBase<I> {

@@ -1127,3 +1127,103 @@ E29. **Several proposals in one turn.** One answer may ask for several tasks. Ea
        the instant the window closes, a card's own ring-end request (`commitHeldNow`) can take that one row before
        the batch does; that card is then written by that request, out of order, and the batch reports its result.
        (3) A batch holds one request open for the window plus every write; the route's limit is 120 seconds.
+
+C13. (CONTEXT.) Three more CONTEXT cards take one edit before Confirm, the same way as C12: the `reason` on
+`cancel_event` (the words players are sent are planned again from it), the `reason` on `set_goal_state` when the state
+is `abandoned` (a pause or a resume offers nothing, so `editable` is absent there), and the `reasoning` on
+`set_qualifier_coach_pick`. Six CONTEXT cards now have `revise`; `send_event_reminder`, `record_attendance`,
+`set_focus_area_status`, `mark_signal_handled`, `dismiss_signal` and `record_focus_outcome` do not, and E28 answers
+`fixed` for them.
+
+C14. (CONTEXT, last of this tranche.) `send_event_reminder`'s card offers one field, `player_ids` (kind `people`,
+label "To", options the active roster, value the players the card names). An edit means those players and nobody
+else: `revise` plans again with `recipients: 'named'`, so the roster check, the staff check and the account check all
+run on the new list. `recipients` itself is not a field. Its stored input now carries `asked` beside what the send
+uses. Seven CONTEXT cards have `revise`.
+
+`dismiss_signal`: the card gained the fact "Bringing it back", and `undo.after` says the same: only the Undo window
+brings it back. `reactivateInsight` has one caller, the Undo beside a signal dismissed on the Clubhouse CoachHelm
+board during that visit (`src/clubhouse/screens/coachhelm/parts.tsx`, local state); a dismissed signal is hidden from
+every reader, so no screen can offer it again. A test reads those two files.
+
+PLANS, for P10: please add `sentPlayerIds: string[]` to what `sendEventReminderToPlayers` returns (additive, beside the
+count). With it the receipt's `missed` can name who the send did not reach; today the action returns a count and a
+coach's session cannot read players' notification rows.
+
+
+## 2026-11-11 (ENGINE): asking about a thing that was tapped
+
+E30. **`about` on a new message.** Request: `{ ..., message, about: { evidence_ref, key } }`. `evidence_ref` is the
+     `ref` of an evidence part of THIS conversation (`e3`); `key` names one element of that read:
+     `metric:<metric_id>`, `metric:<metric_id>@<entity_id>`, `entity:<entity_id>`,
+     `point:<metric_id>@<entity_id>#<at>` (the entity may be left out), `row:<id>` (a row of the read's `detail`
+     whose `id` or any `*_id` field is `<id>`: a round, a qualifier, a tournament) and `row:hole:<n>`.
+     - It is resolved in `engine/about.ts` against the reads the conversation has stored (`collectReads`) and nothing
+       else. The model is told in one line of the turn's system message, after the date and the screen line, built
+       only from the stored read: its summary and window, and the element's own labels, value and sample (a row: its
+       scalar fields). The browser's `key` only chooses among stored elements; none of its text is passed on. Stored
+       strings are flattened to one line and cut short.
+     - **Ignored, never an error**: a reference that is not that shape, a read this conversation does not hold
+       (another conversation's `e3` is not this one's), or an element the read does not have. The message is then
+       answered as any other.
+     - `message_start.about` is sent only when the request carried one: the reference accepted, or `null` when it was
+       ignored. The hook keeps it as `message.metadata.about` and takes it as `send(text, { about })`; a retry of the
+       question carries it again.
+     - A player's Ask has no stored reads, so a reference there resolves to nothing.
+     - **For the reviewer**: the reads this resolves against are stored in a column the coach can write
+       (`ui_parts`), as the stored model messages are. So this line can carry text a coach put into their own stored
+       read into a system message of their own conversation. It adds nothing to what editing `model_messages`
+       already allows, and no check that matters (the Confirm, the seal, row-level security on every read) is the
+       model's to waive.
+     - **For CAPABILITIES and the UI**: a component that lets a thing be tapped sends the evidence part's `ref` and a
+       key in one of the forms above. For anything not reachable that way, tell me what the element is and I add a
+       form; do not send words.
+
+## 2026-11-11 (PLANS): request ids on four more actions, and why three need none
+
+P14. `createGolfTravelItinerary`, `createGolfQualifier`, `createGoal` and `saveTextDocument` take an optional
+`requestId` (a uuid; it becomes the row's id). The same request sent twice answers with the first row: no second
+trip, qualifier, goal or document, no second set of entries, no second notification, no second stored file. A row
+with that id that belongs to another team (or another player, for a goal) is never returned: the call fails as a
+plain insert failure would. Left out, the insert is what it was. `create_trip`, `create_qualifier`, `create_goal`
+and `publish_artifact` pass the card's request id (`flowRequestId`); their content-based `written` look stays as
+well, so a card first tried before this change is still found.
+
+The other three were left alone because each already refuses its own repeat inside the action:
+`createTask` and `createEnrichedAnnouncement` answer a same-content repeat within two minutes with the first row
+("a retry after a lost response"), and `createFocusArea` refuses a second active focus area on the same metric for
+the player. A focus area with no metric has no such guard; the card's own look (`written`) is what stops a repeat.
+
+Not done: `npm run build` (not allowed on this laptop). The change adds an optional field to four existing server
+actions and exports nothing new. Test: `src/app/golf/actions/__tests__/request-id-trip-qualifier-goal-document.test.ts`.
+
+
+## 2026-11-11 (ENGINE): a draft shown as it is written
+
+E31. **Drafts.** A tool says its input is a draft with one member on the contract (`ToolBase.draft`, so a read such as
+     `show_visual` can have it as well as a task):
+     ```ts
+     draft?: { fields: readonly string[] };   // top-level input fields to show while the model writes them
+     ```
+     **PLANS: nothing is a draft until a tool says so.** Mark the tools whose input the coach should watch being
+     written (the practice plan's blocks, a message's or an announcement's words) and list the fields. Only top-level
+     fields; a field inside an object is shown when its object is complete.
+     - **What is shown is always finished** (`engine/draft.ts`, tested at every cut of an input): a complete value is
+       shown whole; a list still being written is its finished items, never half an item; words still being written
+       stop at the last whole word, never half a word or half an escape; a number or an object appears when it is
+       complete. A field is only ever shown growing.
+     - **Events**: `{ type: 'draft_delta', id, tool, fields, open? }`. `id` is the tool call's id, the same for the
+       whole draft. `fields` holds only the fields that changed since the last event, each with its WHOLE value so far
+       (replace, do not append). `open` is the field being written now (null on the last one). At most one every
+       150 ms (`DRAFT_INTERVAL_MS`) plus one when the input is complete; input that arrives all at once is shown once.
+       Then `{ type: 'draft_done', id, state: 'done' | 'failed' }`, exactly once per draft that was shown.
+     - **`done`** is sent just before what the draft became: a task's `proposal` (after the input passed the tool's
+       schema and the planner), or a read's result. **`failed`**: the schema did not accept the input, the planner
+       refused it, the model was cut off at its length limit mid-input, the call was retried or declined, or a
+       fallback dropped it. Nothing shown as a draft has been validated; a card can only come from a complete input
+       that passed `input` and `plan`, exactly as before.
+     - **Reducer**: a part `{ type: 'data-draft', id: 'draft-<id>', data: ChatDraft }` with
+       `ChatDraft = { tool, fields, open, state: 'writing' | 'failed' }`, fields merged across events. On `done` the
+       part is removed (the card or the read takes its place in the same flush); on `failed` it stays with
+       `state: 'failed'`. It is not replayed on reload.
+     - A call made by the model's code is never a draft (the code writes no input the coach could watch).

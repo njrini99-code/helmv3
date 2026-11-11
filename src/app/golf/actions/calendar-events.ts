@@ -1313,10 +1313,16 @@ export async function respondToEvent(
  * by a distinct notification_type. Use admin client because notifications are
  * inserted on behalf of other users.
  */
+/**
+ * `sentPlayerIds` names who the reminder was written for: the asked players who are active on the event's team and
+ * have an account. A player left out of it was not reminded. `sent` is their count, as before.
+ */
+type EventReminderSent = { sent: number; sentPlayerIds: string[] };
+
 async function sendEventReminderToPlayersImpl(
   eventId: string,
   playerIds: string[],
-): Promise<ActionResult<{ sent: number }>> {
+): Promise<ActionResult<EventReminderSent>> {
   if (!eventId || playerIds.length === 0) {
     return { success: false, error: 'Event id and at least one player required' };
   }
@@ -1385,7 +1391,7 @@ async function sendEventReminderToPlayersImpl(
       .map((m) => m.player_id)
       .filter((id): id is string => Boolean(id));
     if (allowedPlayerIds.length === 0) {
-      return { success: true, data: { sent: 0 } };
+      return { success: true, data: { sent: 0, sentPlayerIds: [] } };
     }
 
     const { data: players, error: playersError } = await supabase
@@ -1401,11 +1407,13 @@ async function sendEventReminderToPlayersImpl(
       return { success: false, error: "Couldn't confirm who to notify, so nothing was sent. Please try again." };
     }
 
-    const userIds = (players ?? [])
+    const reached = (players ?? []).filter((p) => Boolean(p.user_id));
+    const userIds = reached
       .map((p) => p.user_id)
       .filter((u): u is string => Boolean(u));
+    const sentPlayerIds = reached.map((p) => p.id);
     if (userIds.length === 0) {
-      return { success: true, data: { sent: 0 } };
+      return { success: true, data: { sent: 0, sentPlayerIds: [] } };
     }
 
     // In the team's zone (F-0001): the server runs in UTC.
@@ -1446,7 +1454,7 @@ async function sendEventReminderToPlayersImpl(
 
     revalidatePath('/golf/dashboard/calendar');
     revalidatePath('/golf/dashboard/notifications');
-    return { success: true, data: { sent: userIds.length } };
+    return { success: true, data: { sent: userIds.length, sentPlayerIds } };
   } catch (err) {
     await logServerError(`sendEventReminderToPlayers error: ${describeError(err)}`, {
       action: 'sendEventReminderToPlayers',
@@ -1464,7 +1472,7 @@ const observedSendEventReminderToPlayers = withAdminObserved(
 export async function sendEventReminderToPlayers(
   eventId: string,
   playerIds: string[],
-): Promise<ActionResult<{ sent: number }>> {
+): Promise<ActionResult<EventReminderSent>> {
   return observedSendEventReminderToPlayers(eventId, playerIds);
 }
 /**

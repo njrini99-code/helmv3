@@ -110,6 +110,22 @@ describe('the reducer both ends fold the stream with', () => {
     expect(applyChatEvent(before, { type: 'decision_reopened', key: 'other', reason: 'batch_stopped' })).toBe(before);
   });
 
+  it('a draft fills in field by field in one part, gives way when it is accepted, and stays as failed when it is not', () => {
+    const writing = fold([
+      { type: 'text_delta', delta: 'Here is Tuesday.' },
+      { type: 'draft_delta', id: 'tu_1', tool: 'create_practice', fields: { title: 'Tuesday' }, open: 'blocks' },
+      { type: 'draft_delta', id: 'tu_1', tool: 'create_practice', fields: { blocks: [{ name: 'Lag putting' }] }, open: 'blocks' },
+      { type: 'draft_delta', id: 'tu_1', tool: 'create_practice', fields: { blocks: [{ name: 'Lag putting' }, { name: 'Wedges' }], note: 'Bring a' }, open: 'note' },
+    ]);
+    expect(writing.parts).toEqual([
+      { type: 'text', text: 'Here is Tuesday.' },
+      { type: 'data-draft', id: 'draft-tu_1', data: { tool: 'create_practice', fields: { title: 'Tuesday', blocks: [{ name: 'Lag putting' }, { name: 'Wedges' }], note: 'Bring a' }, open: 'note', state: 'writing' } },
+    ]);
+    expect(applyChatEvent(writing, { type: 'draft_done', id: 'tu_1', state: 'done' }).parts).toEqual([{ type: 'text', text: 'Here is Tuesday.' }]);
+    expect(applyChatEvent(writing, { type: 'draft_done', id: 'tu_1', state: 'failed' }).parts[1]).toMatchObject({ type: 'data-draft', data: { open: null, state: 'failed', fields: { title: 'Tuesday' } } });
+    expect(applyChatEvent(writing, { type: 'draft_done', id: 'other', state: 'done' })).toBe(writing);
+  });
+
   it('a finished read keeps its detail and its picture on the progress row; the thinking phase is never a part', () => {
     const picture = { kind: 'sg', rows: [] };
     const message = fold([

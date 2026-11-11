@@ -54,6 +54,8 @@ async function requirePlayerAccess(ctx: ToolContext, who: CoachChatContext, play
 }
 
 const NO_NOTICE = 'No notification is sent.';
+/** What is true of a signal dismissed from the chat once the Undo window has closed. */
+const BRING_BACK = 'Only with Undo, in the few seconds after you confirm. After that no screen brings it back: the CoachHelm board’s own Undo works only for a signal dismissed on that board.';
 
 // ---------------------------------------------------------------------------------------------------------------------
 // set_focus_area_status
@@ -147,6 +149,8 @@ const GoalInput = z.strictObject({
   reason: z.string().min(1).max(300).nullable(),
 });
 type GoalInput = z.infer<typeof GoalInput>;
+/** What the coach can change on the card itself: the reason kept with the goal. The state is the request, so it is not a field. */
+const goalEdits = editing(GoalInput, { reason: 'Reason kept with the goal' });
 const GoalStored = z.object({ goal_id: z.string().uuid(), state: z.enum(GOAL_STATES), reason: z.string().nullable(), title: z.string(), player: z.string() });
 
 async function goalRow(ctx: ToolContext, id: string) {
@@ -201,10 +205,16 @@ export const setGoalState: TaskTool<GoalInput, StoredProposal> = {
       ...NOTHING_SENT,
       visible_note: facts[facts.length - 1]!.value,
       undo: { window: true, after: input.state === 'abandoned' ? 'A closed goal is not reopened here; set a new goal.' : input.state === 'paused' ? 'Resume it.' : 'Pause it again.' },
+      // The reason is only kept, and only shown, when a goal is closed.
+      ...(input.state === 'abandoned' ? { editable: goalEdits.fields(input, { reason }) } : {}),
       tool: 'set_goal_state',
-      input: { goal_id: row.id, state: input.state, reason, title, player: player.name },
+      input: { goal_id: row.id, state: input.state, reason, title, player: player.name, asked: input },
       planned_at: now(),
     };
+  },
+  revise: async (ctx, proposal, edits) => {
+    coachOnly(ctx);
+    return setGoalState.plan(ctx, goalEdits.merge(proposal, edits));
   },
   commit: async (ctx, proposal) => {
     const name = 'set_goal_state';
@@ -336,6 +346,8 @@ export const dismissSignal: TaskTool<SignalInput, StoredProposal> = {
       { label: 'After', value: 'Dismissed. It leaves your board and is not counted as acted on.' },
       { label: player ? 'The player sees' : 'Players see', value: sees },
       { label: 'The record', value: 'The signal is kept, not deleted.' },
+      // The app's restore (`reactivateInsight`) is called from one place: the Undo beside a signal just dismissed on the CoachHelm board, in that visit (`src/clubhouse/screens/coachhelm/parts.tsx`). No screen lists dismissed signals.
+      { label: 'Bringing it back', value: BRING_BACK },
     ];
     return {
       action: 'Dismiss a signal',
@@ -346,7 +358,7 @@ export const dismissSignal: TaskTool<SignalInput, StoredProposal> = {
       missing: [],
       ...NOTHING_SENT,
       visible_note: sees,
-      undo: { window: true, after: 'It is not brought back from the chat.' },
+      undo: { window: true, after: BRING_BACK },
       idempotency_key: keyOf(['dismiss_signal', row.id]),
       tool: 'dismiss_signal',
       input: { insight_id: row.id, title: row.title, about },

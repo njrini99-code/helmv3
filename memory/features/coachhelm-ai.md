@@ -150,6 +150,11 @@ entries are history. The tool list and the prompt are described where the tools 
   first kept turn the coach's standing notes (`context/notes.ts`) are sent as one `{ role: 'system' }` message
   straight after the coach's message and stored with the turn. A decision request sends none. The coach's own words
   are never inside a `tool_result` and never in the same block as the app's.
+- **Asking about a thing that was tapped.** A new message may carry `about: { evidence_ref, key }`: a typed
+  reference to one element of a read this conversation stored (a figure, a player in a read, a point of a trend, a
+  round, a hole). `engine/about.ts` resolves it against the conversation's stored reads only and adds one line to the
+  turn's system message, built from the stored read. A reference that names nothing stored is ignored. The browser
+  never sends words for it.
 - **Refusals.** `stop_reason: 'refusal'` is an answer, not a fault: words already streamed are withdrawn, the coach
   gets one sentence they can act on, the turn is stored `complete` with that sentence as the reply (the model's
   refused content is not kept), and `stop_details.category` is in the turn's log line (`refusalCategory`).
@@ -260,6 +265,11 @@ entries are history. The tool list and the prompt are described where the tools 
   stored). An edited card carries `revision`; a Confirm or an edit names the revision on screen, and one that names
   another is answered with the card as it stands and writes nothing, so a card changed in one tab cannot be confirmed
   from a stale copy in another. The plan that is committed is the one the ledger row held when it was claimed.
+- **A draft is shown as it is written.** A tool whose input is a draft (`ToolBase.draft.fields`) has those fields
+  streamed to the thread while the model writes them (`draft_delta`, at most every 150 ms): whole values, the
+  finished items of a list, words up to the last whole word, never a half-written item (`engine/draft.ts`). Nothing
+  shown is validated; the complete input still passes the tool's schema and planner before any card exists, and a
+  draft that fails either ends as failed in front of the coach (`draft_done`).
 - **Several cards in one answer.** Each task the model asks for is its own sealed ledger row and card, decided on its
   own in any order; the model is asked for closing words once, after the last decision. "Approve all"
   (`approve_all: { cards: [{ key, revision }] }`) confirms the named cards in the order proposed after ONE shared Undo
@@ -974,9 +984,12 @@ route and the registry is in `engine/CONTRACT_NOTES.md`, sections C1 to C7.
   action's permission check first in `plan`, and reads back before a receipt says nothing was saved. Each card says
   what the player will see on their own pages, established from the page's code and held by a test that reads it
   (a focus area's value shows, an entry's note does not; an outcome completes the focus area and credits the signal
-  it came from, and if that second half fails the receipt is `partial`). Three of the cards can be edited in place
+  it came from, and if that second half fails the receipt is `partial`). Seven of the cards can be edited in place
   before Confirm (`editable` and `revise`, through `editing` in `tasks/kit.ts`): `update_event` (date, start, end,
-  place, title), `set_task_reminder` (date, time) and `log_focus_progress` (value, note). An edit is merged into the
+  place, title), `set_task_reminder` (date, time), `log_focus_progress` (value, note), who gets a
+  `send_event_reminder` (chosen from the active roster), and the reason on `cancel_event`, on closing a goal with
+  `set_goal_state`, and on `set_qualifier_coach_pick`. `dismiss_signal`'s card says that after the Undo window no
+  screen brings the signal back (the app's restore is reached only from the board's own Undo). An edit is merged into the
   input the card was planned from, held to the tool's own schema, and planned again with every read and check; the
   thing the card is about (the event, the task, the focus area) is never a field. `cancel_event` is
   the app's soft cancellation and never the row delete; `update_event` and `cancel_event` act on one date, as the

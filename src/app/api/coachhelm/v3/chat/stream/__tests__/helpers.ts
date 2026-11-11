@@ -196,6 +196,8 @@ export interface ScriptedStep {
   category?: string;
   /** The code execution container the response names. */
   container?: string;
+  /** Milliseconds between the pieces of a tool input, to script a model that takes a while to write one. */
+  pace?: number;
   /** Thinking blocks the API reports it dropped from the request (`input_transformations`). */
   droppedThinking?: number;
   usage?: Partial<{ input_tokens: number; output_tokens: number; cache_read_input_tokens: number; cache_creation_input_tokens: number; cache_creation: { ephemeral_1h_input_tokens: number; ephemeral_5m_input_tokens: number }; iterations: Array<Record<string, unknown>> }>;
@@ -225,11 +227,14 @@ export function fakeModel(steps: Array<ScriptedStep | ((request: ModelRequest) =
         if (signal.aborted) throw new Error('Request was aborted.');
         if (step.reject) throw step.reject;
         for (const [index, block] of step.content.entries()) {
-          if ((block.type as string) === 'server_tool_use') {
-            // The model's code arrives as the API sends it: an empty input at the start, then the JSON in pieces.
+          if ((block.type as string) === 'server_tool_use' || block.type === 'tool_use') {
+            // A tool's input (and the model's code) arrives as the API sends it: an empty input at the start, then the JSON in pieces.
             const json = JSON.stringify((block as unknown as { input: unknown }).input);
             yield { type: 'content_block_start', index, content_block: { ...block, input: {} } } as ModelStreamEvent;
-            for (let i = 0; i < json.length; i += 9) yield { type: 'content_block_delta', index, delta: { type: 'input_json_delta', partial_json: json.slice(i, i + 9) } } as ModelStreamEvent;
+            for (let i = 0; i < json.length; i += 9) {
+              if (step.pace) await new Promise((resolve) => setTimeout(resolve, step.pace));
+              yield { type: 'content_block_delta', index, delta: { type: 'input_json_delta', partial_json: json.slice(i, i + 9) } } as ModelStreamEvent;
+            }
             yield { type: 'content_block_stop', index } as ModelStreamEvent;
             continue;
           }

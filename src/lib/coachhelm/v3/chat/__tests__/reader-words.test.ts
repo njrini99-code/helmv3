@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { CoachChatContext } from '../context';
 import type { PlayerChatContext, ReadTool, ToolContext, ToolResult } from '../engine/tool';
 import { nowIso, type Measurement, type ToolEnvelope } from '../provenance';
-import { failed, fieldWords, inWords, plain, together, withText } from '../reader-kit';
+import { failed, fieldWords, inWords, notice, plain, together, withText } from '../reader-kit';
 import { toolsFor } from '../registry';
 import type { ScreenLoaders, TournamentsLoad } from '../screen-loaders';
 import { person, pgrst, type Tables } from './pgrst-double';
@@ -120,6 +120,12 @@ describe('a read in words', () => {
 
   it('says what could not be read, in a sentence', () => {
     expect((failed('the schedule', 'This read is a player’s.') as ToolResult).model_text).toBe('Could not read the schedule.\nCoverage: unavailable. This read is a player’s.');
+  });
+
+  it('a notice with only a sentence sends the sentence; one that carries detail is still sent whole', () => {
+    expect(notice('The draft is ready to open in Messages. Nothing was sent.').model_text).toBe('The draft is ready to open in Messages. Nothing was sent.');
+    expect(notice('Not drawn: the read has no such figure.', { refused: true })).toMatchObject({ model_text: 'Not drawn: the read has no such figure.', coverage: 'unavailable' });
+    expect(notice('The tables.', { detail: { dictionary: [] } }).model_text).toBeUndefined();
   });
 
   it('several reads answered as one keep each part under its label', () => {

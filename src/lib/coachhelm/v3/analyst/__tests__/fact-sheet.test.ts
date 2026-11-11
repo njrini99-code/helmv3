@@ -389,6 +389,7 @@ describe('the builder', () => {
       rounds: [...rows.rounds].reverse(),
       roundCache: [...rows.roundCache].reverse(),
       holes: [...rows.holes].reverse(),
+      shots: [...rows.shots].reverse(),
     });
     expect(shuffled).toEqual(first);
     expect(first.map((s) => s.player_id)).toEqual(['a', 'b']);

@@ -18,6 +18,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import { CoachContextError } from '../context';
 import type { ToolEnvelope } from '../provenance';
 import { addUsage, buildModelRequest, isModelApiError, isPlain, isRejectedRequest, plainFeatures, type ChatFeatures, type ModelClient, type ModelMessage, type ModelProfile, type ModelResponse, type SearchResultBlock, type SystemPrompt, type ToolResultBlock, type ToolUseBlock, type UsageTotals } from './model';
+import { partialInput } from './draft';
 import { COMPUTED_PART, eventForPart, type ChatComputed, type ChatEvent } from './protocol';
 import { proposeTask, type TaskDeps } from './tasks';
 import type { ChatTool, ReadTool, TaskTool, ToolContext } from './tool';
@@ -72,6 +73,8 @@ export interface LoopState {
   codeRow?: string | null;
   /** What that run of the code has done so far: the reads it called, and the method line its code began with. In memory only. */
   codeRun?: { refs: string[]; method: string | null; wide: boolean } | null;
+  /** Tool calls whose input is being shown as a draft and has not been settled yet, by tool_use id. In memory only. */
+  drafts?: Set<string>;
 }
 
 export interface LoopDeps {
@@ -192,6 +195,18 @@ interface Call {
   streamedText: boolean;
 }
 
+/** How often a draft is read from the input so far and shown, at most. */
+export const DRAFT_INTERVAL_MS = 150;
+
+/** A draft is over: accepted (what it became follows) or not. Says so once, and only for a draft that was shown. */
+function endDraft(deps: LoopDeps, state: LoopState, id: string, ok: boolean): void {
+  if (!state.drafts?.delete(id)) return;
+  deps.emit({ type: 'draft_done', id, state: ok ? 'done' : 'failed' });
+}
+function endDrafts(deps: LoopDeps, state: LoopState, ok: boolean, keep: ReadonlySet<string> = new Set()): void {
+  for (const id of [...(state.drafts ?? [])]) if (!keep.has(id)) endDraft(deps, state, id, ok);
+}
+
 /** One streamed model call, with the features given. Only an unparseable tool input is retried here (twice). */
 async function streamOnce(deps: LoopDeps, state: LoopState, answerOnly: boolean): Promise<Call> {
   const request = buildModelRequest({ tools: deps.tools, system: deps.system, messages: state.messages, profile: state.profile, features: state.features, answerOnly, container: state.container });
@@ -205,6 +220,25 @@ async function streamOnce(deps: LoopDeps, state: LoopState, answerOnly: boolean)
     // The model's code as it is written, only to read the method line it may begin with.
     let codeBlock: number | null = null;
     let codeInput = '';
+    // Tool calls whose input is a draft, by content block: the input so far, when it was last shown, and what was shown.
+    const drafting = new Map<number, { id: string; tool: string; fields: readonly string[]; json: string; at: number; shown: Record<string, string> }>();
+    const showDraft = (index: number, last: boolean) => {
+      const draft = drafting.get(index);
+      if (!draft || (!last && Date.now() - draft.at < DRAFT_INTERVAL_MS)) return;
+      draft.at = Date.now();
+      const { fields, open } = partialInput(draft.json, draft.fields);
+      const changed: Record<string, unknown> = {};
+      for (const [name, value] of Object.entries(fields)) {
+        const text = JSON.stringify(value);
+        // Only ever more of a field than was shown before: a piece that momentarily reads as less is passed over.
+        if (text === draft.shown[name] || text.length < (draft.shown[name]?.length ?? 0)) continue;
+        draft.shown[name] = text;
+        changed[name] = value;
+      }
+      if (Object.keys(changed).length === 0) return;
+      (state.drafts ??= new Set()).add(draft.id);
+      deps.emit({ type: 'draft_delta', id: draft.id, tool: draft.tool, fields: changed, open: last ? null : open });
+    };
     try {
       // The server's own word for the wait before the first event of a model call.
       deps.emit({ type: 'phase', phase: 'thinking' });
@@ -237,6 +271,12 @@ async function streamOnce(deps: LoopDeps, state: LoopState, answerOnly: boolean)
             state.codeRow = null;
             state.codeRun = null;
           }
+          // A tool whose input is a draft: what the model writes is shown as it is written (never from its code, which writes none).
+          if (block.type === 'tool_use') {
+            const use = event.content_block as { id: string; name: string; caller?: { type?: string } };
+            const tool = deps.tools.find((t) => t.name === use.name);
+            if (tool?.draft?.fields.length && (!use.caller || use.caller.type === 'direct')) drafting.set(event.index, { id: use.id, tool: tool.name, fields: tool.draft.fields, json: '', at: 0, shown: {} });
+          }
           // Words either side of a thinking block or a tool call are separate paragraphs. Two text blocks in a row are one sentence the
           // API split where a citation begins or ends: nothing may be put between them.
           // A refusal fallback's marker: the substitute's next words continue the sentence the first model began, whatever the model
@@ -257,6 +297,9 @@ async function streamOnce(deps: LoopDeps, state: LoopState, answerOnly: boolean)
             if (ref && state.reads.has(ref)) cited.set(event.index, [...new Set([...(cited.get(event.index) ?? []), ref])]);
           } else if (delta.type === 'input_json_delta' && event.index === codeBlock) {
             codeInput += delta.partial_json;
+          } else if (delta.type === 'input_json_delta' && drafting.has(event.index)) {
+            drafting.get(event.index)!.json += delta.partial_json;
+            showDraft(event.index, false);
           } else if (delta.type === 'thinking_delta' && state.features.progressNotes && delta.thinking) {
             // With `display: 'updates'` the only thinking text the API returns is the model's short note on what it is doing.
             notes.set(event.index, `${notes.get(event.index) ?? ''}${delta.thinking}`);
@@ -270,6 +313,8 @@ async function streamOnce(deps: LoopDeps, state: LoopState, answerOnly: boolean)
             }
             codeBlock = null;
           }
+          // The input is complete: the draft is shown whole (it is checked and planned once the model's message has ended).
+          showDraft(event.index, true);
           const refs = cited.get(event.index);
           if (refs?.length) deps.emit({ type: 'text_delta', delta: refs.map((ref) => ` [${ref}]`).join('') });
           const note = notes.get(event.index);
@@ -278,6 +323,8 @@ async function streamOnce(deps: LoopDeps, state: LoopState, answerOnly: boolean)
       }
       return { response: await stream.finalMessage(), streamedText };
     } catch (err) {
+      // Whatever was being drafted in this call never became anything.
+      endDrafts(deps, state, false);
       if (deps.signal.aborted || isModelApiError(err) || isRejectedRequest(err) || attempt >= 2) {
         if (streamedText && !deps.signal.aborted) deps.emit({ type: 'text_discard' });
         throw err;
@@ -393,6 +440,8 @@ async function runTask(deps: LoopDeps, state: LoopState, tool: TaskTool<unknown>
     return { result: { is_error: true, content: `Not prepared: ${proposed.message}` }, task: null };
   }
   const key = proposed.proposal.idempotency_key;
+  // The draft gives way to the card it became.
+  endDraft(deps, state, block.id, true);
   deps.emit({ type: 'proposal', part: { type: 'data-action-proposal', id: `proposal-${key}`, data: proposed.proposal } });
   deps.emit({ type: 'read_finished', id: progressId, label, tool: tool.name, state: 'done' });
   return { result: null, task: { key, tool: tool.name, tool_use_id: block.id } };
@@ -423,6 +472,7 @@ export async function runModelLoop(deps: LoopDeps, state: LoopState): Promise<Lo
 
     // A refusal can arrive after words were streamed and can cut a tool call off mid-input: the content is not read.
     if (response.stop_reason === 'refusal') {
+      endDrafts(deps, state, false);
       if (streamedText) deps.emit({ type: 'text_discard' });
       return { kind: 'refusal', category: (response.stop_details as { category?: string | null } | null | undefined)?.category ?? null };
     }
@@ -430,7 +480,10 @@ export async function runModelLoop(deps: LoopDeps, state: LoopState): Promise<Lo
     // What is kept of the turn, and so which tool calls are answered: everything, unless a refusal fallback took over part-way.
     const content = echoable(response.content);
     const toolUses = content.filter(isToolUse);
-    if (toolUses.length > 0 && response.stop_reason === 'max_tokens') return { kind: 'truncated' };
+    // A draft whose tool call is not kept (cut off at the length limit, or left behind by a fallback) became nothing.
+    const cutOff = toolUses.length > 0 && response.stop_reason === 'max_tokens';
+    endDrafts(deps, state, false, cutOff ? undefined : new Set(toolUses.map((b) => b.id)));
+    if (cutOff) return { kind: 'truncated' };
 
     // Exactly what the API returned, in order.
     const assistant: ModelMessage = { role: 'assistant', content };
@@ -462,6 +515,8 @@ export async function runModelLoop(deps: LoopDeps, state: LoopState): Promise<Lo
           // A truncated or loosely parsed input can still be valid JSON: nothing runs on input the schema does not accept.
           const parsed = tool.input.safeParse(block.input);
           if (!parsed.success) {
+            // A draft the coach watched being written, and the schema does not accept: it ends as failed, in front of them.
+            endDraft(deps, state, block.id, false);
             results[block.id] = invalidInput(parsed.error.issues);
             return;
           }
@@ -471,11 +526,14 @@ export async function runModelLoop(deps: LoopDeps, state: LoopState): Promise<Lo
               return;
             }
             const ran = await runRead(deps, state, tool, parsed.data, progressId, refNumber, isProgrammatic(block));
+            endDraft(deps, state, block.id, !ran.result.is_error);
             results[block.id] = ran.result;
             if (ran.endTurn) endTurn = true;
             return;
           }
           const planned = await runTask(deps, state, tool, parsed.data, block, progressId, codeWaiting);
+          // (An accepted draft is ended inside `runTask`, just before its card.) One that could not be planned failed.
+          endDraft(deps, state, block.id, false);
           if (planned.result) results[block.id] = planned.result;
           if (planned.task) tasks.push(planned.task);
         }),

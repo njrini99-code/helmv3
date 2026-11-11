@@ -19,11 +19,28 @@ const src = (path: string) => readFileSync(join(process.cwd(), path), 'utf8');
 
 describe('the words on the card are the words that are sent', () => {
   it('an event invitation is the push the fan-out sends', () => {
-    const d = eventInviteDelivery('Short-game practice');
+    const d = eventInviteDelivery({ title: 'Short-game practice', date: '2026-11-12', location: 'Range' });
     expect({ title: d.title, body: d.body }).toEqual((({ title, body }) => ({ title, body }))(generatePushPayload('event_rsvp_reminder', { eventName: 'Short-game practice', eventId: 'x' })));
     expect(d.body).toBe('Please RSVP for Short-game practice');
     // The fan-out sends that payload type with the event's own title.
     expect(src('src/lib/calendar/fan-out.ts')).toContain("sendBulkPushNotification('event_rsvp_reminder', userIds, {\n        eventName: p.title,");
+  });
+
+  it('an event invitation: the bell row and the email\u2019s subject as the fan-out and the template write them', () => {
+    const d = eventInviteDelivery({ title: 'Short-game practice', date: '2026-11-12', location: 'Range' });
+    expect(d.variants).toEqual([{ channel: 'in_app', title: 'New event: Short-game practice', body: '2026-11-12 at Range' }]);
+    expect(eventInviteDelivery({ title: 'Short-game practice', date: '2026-11-12', location: null }).variants?.[0]?.body).toBe('2026-11-12');
+    expect(d.note).toContain('\u201cRSVP needed: Short-game practice\u201d');
+    // The bell row's two lines, and the day the action hands the fan-out.
+    const fanOut = src('src/lib/calendar/fan-out.ts');
+    expect(fanOut).toContain('title: p.inAppTitle ?? `New event: ${p.title}`,');
+    expect(fanOut).toContain("message: p.inAppMessage ?? `${p.dateLabel}${p.location ? ` at ${p.location}` : ''}`,");
+    const action = src('src/app/golf/actions/calendar-events.ts');
+    expect(action).toContain('dateLabel: validatedData.startDate,');
+    expect(action).toContain("location: validatedData.location || '',");
+    // The email the fan-out sends is the reply reminder, and this is its subject.
+    expect(fanOut).toContain("sendEmailNotification('event_rsvp_reminder', u.id, u.email, {\n            eventName: p.title,");
+    expect(src('src/lib/notifications/email.ts')).toContain('subject: `RSVP needed: ${eventName}`,');
   });
 
   it('a repeating practice: the same push, and the bell row as the action writes it', () => {
