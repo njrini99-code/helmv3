@@ -1470,7 +1470,9 @@ button.ch-more__row[disabled] {
     left: 50%;
     display: flex;
     align-items: center;
-    max-width: 52%;
+    /* Centred in the bar, so its room is twice the way from the centre to whatever stands at the right: ui/PhoneBar.tsx
+       measures that (an action can be any width) and gives it here. Never more than 52% of the bar. */
+    max-width: min(52%, var(--ch-pbar-title-max, 52%));
     height: 44px;
     margin: 0;
     overflow: hidden;
@@ -1499,6 +1501,12 @@ button.ch-more__row[disabled] {
     flex: 1;
     max-width: none;
     transform: none;
+  }
+  /* The shell's bar with the CoachHelm key in it (quick-chat.css): the key and the action's slot, 44px each and 4px
+     apart, stand 8px in from the edge, and the title ends 8px before them. This holds from the first paint and for the
+     shell's stand-in; the measured room replaces it once the page's bar is in. */
+  .ch-topbar:has(.ch-qck) .ch-pbar__title {
+    --ch-pbar-title-max: calc(100% - 216px);
   }
   .ch-pbar__lead {
     display: flex;

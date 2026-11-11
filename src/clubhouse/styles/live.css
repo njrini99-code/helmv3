@@ -503,6 +503,11 @@ section.ch-lv-card {
 .ch-lv--phone {
   padding: var(--ch-space-2) var(--ch-page-x-phone) var(--ch-space-8);
 }
+/* The phone's feed line, the first thing under the bar (LiveViewPhone.tsx). */
+.ch-lv-feed {
+  display: flex;
+  margin-bottom: var(--ch-space-2);
+}
 .ch-lv--desk {
   max-width: var(--ch-measure-page);
   margin: 0 auto;
