@@ -129,6 +129,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/classes.css",
+        "src/clubhouse/styles/coachhelm-ask-cards.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-file.css",
         "src/clubhouse/styles/coachhelm-plan.css",
@@ -145,7 +146,6 @@
         "src/clubhouse/styles/onboard.css",
         "src/clubhouse/styles/practice.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/quick-chat.css",
         "src/clubhouse/styles/recruiting.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds-setup.css",
@@ -183,6 +183,7 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/practice.css",
         "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/quick-chat.css",
         "src/clubhouse/styles/recruiting.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds-setup.css",
@@ -207,6 +208,8 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/classes.css",
+        "src/clubhouse/styles/coachhelm-ask-cards.css",
+        "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-file.css",
         "src/clubhouse/styles/coachhelm-read.css",
         "src/clubhouse/styles/coachhelm-team.css",
@@ -221,7 +224,6 @@
         "src/clubhouse/styles/popup-lab.css",
         "src/clubhouse/styles/practice.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/quick-chat.css",
         "src/clubhouse/styles/recruiting.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds-setup.css",
@@ -247,7 +249,12 @@
       "exports": [
         "PreviewAsk"
       ],
-      "styles": [],
+      "styles": [
+        "src/clubhouse/styles/coachhelm-ask-v2.css",
+        "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/quick-chat.css",
+        "src/clubhouse/styles/ui.css"
+      ],
       "examples": [],
       "fixture": "Contextual module"
     },
@@ -271,6 +278,64 @@
         "PreviewBell"
       ],
       "styles": [],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/preview/PreviewChatCapabilities.tsx",
+      "group": "preview",
+      "exports": [
+        "PreviewChatCapabilities"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/coachhelm-ask-cards.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages-details.css",
+        "src/clubhouse/styles/messages-inbox.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/stats-redesign.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/ui.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/preview/PreviewChatStudioPlates.tsx",
+      "group": "preview",
+      "exports": [
+        "BatchPlate",
+        "StudioSection",
+        "StudioSpecimenView",
+        "WORKSPACE_SEQUENCES",
+        "WorkspacePlate"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/coachhelm-ask-cards.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages-details.css",
+        "src/clubhouse/styles/messages-inbox.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/stats-redesign.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/ui.css"
+      ],
       "examples": [],
       "fixture": "Contextual module"
     },
@@ -475,7 +540,23 @@
       "exports": [
         "PreviewQuickChat"
       ],
-      "styles": [],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages-details.css",
+        "src/clubhouse/styles/messages-inbox.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/stats-redesign.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/ui.css"
+      ],
       "examples": [],
       "fixture": "Contextual module"
     },
@@ -871,6 +952,7 @@
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages-overlays.css",
         "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/quick-chat.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds-setup.css",
         "src/clubhouse/styles/rounds-track.css",
@@ -957,6 +1039,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/classes.css",
+        "src/clubhouse/styles/coachhelm-ask-cards.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-file.css",
         "src/clubhouse/styles/coachhelm-plan.css",
@@ -970,7 +1053,6 @@
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/onboard.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/quick-chat.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds-setup.css",
         "src/clubhouse/styles/rounds-track.css",
@@ -1117,6 +1199,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/classes.css",
+        "src/clubhouse/styles/coachhelm-ask-cards.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-file.css",
         "src/clubhouse/styles/coachhelm-plan.css",
@@ -1130,7 +1213,6 @@
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/onboard.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/quick-chat.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds-setup.css",
         "src/clubhouse/styles/rounds-track.css",
@@ -1214,6 +1296,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/classes.css",
+        "src/clubhouse/styles/coachhelm-ask-cards.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-file.css",
         "src/clubhouse/styles/coachhelm-plan.css",
@@ -1227,7 +1310,6 @@
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/onboard.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/quick-chat.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds-setup.css",
         "src/clubhouse/styles/rounds-track.css",
@@ -1401,6 +1483,7 @@
         "src/clubhouse/styles/messages-overlays.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/quick-chat.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds-setup.css",
         "src/clubhouse/styles/rounds-track.css",
@@ -1464,6 +1547,7 @@
         "src/clubhouse/styles/messages-overlays.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/quick-chat.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds-setup.css",
         "src/clubhouse/styles/rounds-track.css",
@@ -1929,12 +2013,7 @@
       ],
       "styles": [
         "src/clubhouse/styles/classes.css",
-        "src/clubhouse/styles/coachhelm.css",
-        "src/clubhouse/styles/hub.css",
-        "src/clubhouse/styles/practice.css",
-        "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/tournaments-review.css",
-        "src/clubhouse/styles/ui.css"
+        "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1951,7 +2030,6 @@
         "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/classes.css",
         "src/clubhouse/styles/coachhelm.css",
-        "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/hub.css",
@@ -2130,11 +2208,9 @@
       "file": "src/clubhouse/screens/classes/parts.tsx",
       "group": "screens",
       "exports": [
-        "AddTile",
         "ClassCard",
         "CoachNote",
-        "SyncStatus",
-        "TimetableHead"
+        "SyncStatus"
       ],
       "styles": [
         "src/clubhouse/styles/base.css",
@@ -2169,6 +2245,7 @@
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm-dive.css",
+        "src/clubhouse/styles/coachhelm-read.css",
         "src/clubhouse/styles/coachhelm-track.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
@@ -2211,6 +2288,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-dive.css",
+        "src/clubhouse/styles/coachhelm-read.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/shell.css"
       ],
@@ -2231,6 +2309,7 @@
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm-file.css",
+        "src/clubhouse/styles/coachhelm-read.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -2285,6 +2364,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/coachhelm-read.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -2335,6 +2415,7 @@
       ],
       "styles": [
         "src/clubhouse/styles/coachhelm-dive.css",
+        "src/clubhouse/styles/coachhelm-read.css",
         "src/clubhouse/styles/coachhelm.css"
       ],
       "examples": [],
@@ -2349,6 +2430,7 @@
       ],
       "styles": [
         "src/clubhouse/styles/coachhelm-file.css",
+        "src/clubhouse/styles/coachhelm-read.css",
         "src/clubhouse/styles/coachhelm.css"
       ],
       "examples": [],
@@ -2590,7 +2672,284 @@
       "styles": [
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
-        "src/clubhouse/styles/coachhelm-thread.css"
+        "src/clubhouse/styles/coachhelm-thread.css",
+        "src/clubhouse/styles/quick-chat.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/coachhelm/chat/cards/ApproveAll.tsx",
+      "group": "screens",
+      "exports": [
+        "ApproveAll"
+      ],
+      "styles": [
+        "src/clubhouse/styles/coachhelm-ask-cards.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/coachhelm/chat/cards/answers.tsx",
+      "group": "screens",
+      "exports": [
+        "AppLinkRow",
+        "CoachNoteChip",
+        "NotTracked",
+        "WORKED_OUT_ICON",
+        "WorkedOut"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/coachhelm-ask-cards.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages-details.css",
+        "src/clubhouse/styles/messages-inbox.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/stats-redesign.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/ui.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/coachhelm/chat/cards/bodies-people.tsx",
+      "group": "screens",
+      "exports": [
+        "AnnouncementBody",
+        "AvailabilityBody",
+        "DrillBody",
+        "FocusBody",
+        "GoalBody",
+        "MessageBody",
+        "PlanBody",
+        "PublishDocBody",
+        "PublishPlanBody",
+        "RecruitBody",
+        "RoundNoteBody",
+        "TaskBody"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/coachhelm-ask-cards.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages-details.css",
+        "src/clubhouse/styles/messages-inbox.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/stats-redesign.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/ui.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/coachhelm/chat/cards/bodies-schedule.tsx",
+      "group": "screens",
+      "exports": [
+        "AttendanceBody",
+        "BlockedBody",
+        "BreakBody",
+        "EventBody",
+        "LineupBody",
+        "LockBody",
+        "QualifierBody",
+        "ReminderBody",
+        "SeriesBody",
+        "TermBody",
+        "TripBody"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/coachhelm-ask-cards.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages-details.css",
+        "src/clubhouse/styles/messages-inbox.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/stats-redesign.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/ui.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/coachhelm/chat/cards/drafts.tsx",
+      "group": "screens",
+      "exports": [
+        "BriefBody",
+        "DocBody",
+        "HandoffBody"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/coachhelm-ask-cards.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages-details.css",
+        "src/clubhouse/styles/messages-inbox.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/stats-redesign.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/ui.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/coachhelm/chat/cards/edit.tsx",
+      "group": "screens",
+      "exports": [
+        "EditForm"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/coachhelm-ask-cards.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages-details.css",
+        "src/clubhouse/styles/messages-inbox.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/practice.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/recruiting.css",
+        "src/clubhouse/styles/roster.css",
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/settings.css",
+        "src/clubhouse/styles/stats-redesign.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/ui.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/coachhelm/chat/cards/index.tsx",
+      "group": "screens",
+      "exports": [
+        "ApproveAll",
+        "ApproveAllProps",
+        "BODY_TOOLS",
+        "BatchPhase",
+        "BatchPlan",
+        "CARD_PHASES",
+        "CARD_TOOLS",
+        "CardBody",
+        "CardBodyProps",
+        "CardCopy",
+        "CardDensity",
+        "CardPerson",
+        "CardPhase",
+        "EditableField",
+        "Reach",
+        "WaitingCard"
+      ],
+      "styles": [],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/coachhelm/chat/cards/kit.tsx",
+      "group": "screens",
+      "exports": [
+        "Body",
+        "Bubble",
+        "Change",
+        "Clamp",
+        "DateTile",
+        "Delivery",
+        "Diff",
+        "Fold",
+        "Meta",
+        "NoWords",
+        "Notice",
+        "People",
+        "Quote",
+        "ReachRow",
+        "Rows",
+        "Warning"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/coachhelm-ask-cards.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages-details.css",
+        "src/clubhouse/styles/messages-inbox.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/stats-redesign.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/ui.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/coachhelm/chat/island/ActivityIsland.tsx",
+      "group": "screens",
+      "exports": [
+        "ActivityIsland"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/coachhelm-ask-v2.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages-details.css",
+        "src/clubhouse/styles/messages-inbox.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/quick-chat.css",
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats-redesign.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2616,8 +2975,10 @@
         "AnswerCard"
       ],
       "styles": [
+        "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
-        "src/clubhouse/styles/coachhelm-thread.css"
+        "src/clubhouse/styles/coachhelm-thread.css",
+        "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2637,18 +2998,13 @@
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-thread.css",
         "src/clubhouse/styles/coachhelm.css",
-        "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages-details.css",
         "src/clubhouse/styles/messages-inbox.css",
         "src/clubhouse/styles/messages.css",
-        "src/clubhouse/styles/practice.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/recruiting.css",
-        "src/clubhouse/styles/roster.css",
-        "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-desk.css",
@@ -2831,6 +3187,33 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/screens/coachhelm/chat/parts/SaveCard.tsx",
+      "group": "screens",
+      "exports": [
+        "SaveCard"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/coachhelm-ask-v2.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages-details.css",
+        "src/clubhouse/styles/messages-inbox.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/stats-redesign.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/ui.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/screens/coachhelm/chat/parts/Sources.tsx",
       "group": "screens",
       "exports": [
@@ -2883,12 +3266,134 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/screens/coachhelm/chat/parts/TaskCard.tsx",
+      "group": "screens",
+      "exports": [
+        "TaskCard"
+      ],
+      "styles": [
+        "src/clubhouse/styles/coachhelm-ask-v2.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/screens/coachhelm/chat/parts/ToolCard.tsx",
       "group": "screens",
       "exports": [
         "ToolSkeleton"
       ],
       "styles": [],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/coachhelm/chat/parts/TurnNotice.tsx",
+      "group": "screens",
+      "exports": [
+        "TurnNotice"
+      ],
+      "styles": [
+        "src/clubhouse/styles/coachhelm-ask-v2.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/coachhelm/chat/parts/Work.tsx",
+      "group": "screens",
+      "exports": [
+        "LiveDot",
+        "ReadList",
+        "WorkLine"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/coachhelm-ask-v2.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages-details.css",
+        "src/clubhouse/styles/messages-inbox.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/stats-redesign.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/ui.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/coachhelm/chat/studio/ask.tsx",
+      "group": "screens",
+      "exports": [
+        "AskKey",
+        "OpenKey"
+      ],
+      "styles": [
+        "src/clubhouse/styles/coachhelm-ask-cards.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/coachhelm/chat/studio/components.tsx",
+      "group": "screens",
+      "exports": [
+        "ActionPreview",
+        "AppLink",
+        "Comparison",
+        "DistanceProfile",
+        "Document",
+        "Figure",
+        "Note",
+        "PracticePlan",
+        "QualifierBoard",
+        "RankingList",
+        "Receipt",
+        "Round",
+        "Schedule",
+        "StrokesGained",
+        "Table",
+        "TrendFigure"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/coachhelm-ask-cards.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages-details.css",
+        "src/clubhouse/styles/messages-inbox.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats-redesign.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/ui.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/coachhelm/chat/studio/registry.tsx",
+      "group": "screens",
+      "exports": [
+        "STUDIO_COMPONENTS",
+        "Studio"
+      ],
+      "styles": [
+        "src/clubhouse/styles/coachhelm-ask-cards.css"
+      ],
       "examples": [],
       "fixture": "Contextual module"
     },
@@ -3104,6 +3609,7 @@
         "src/clubhouse/styles/messages-inbox.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-desk.css",
@@ -3129,6 +3635,7 @@
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm-dive.css",
+        "src/clubhouse/styles/coachhelm-read.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -3172,6 +3679,7 @@
         "src/clubhouse/styles/messages-overlays.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/quick-chat.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds-setup.css",
         "src/clubhouse/styles/rounds-track.css",
@@ -3203,9 +3711,7 @@
       "exports": [
         "PlanPageActions"
       ],
-      "styles": [
-        "src/clubhouse/styles/practice.css"
-      ],
+      "styles": [],
       "examples": [],
       "fixture": "Contextual module"
     },
@@ -3314,16 +3820,6 @@
       "fixture": "Contextual module"
     },
     {
-      "file": "src/clubhouse/screens/coachhelm/read/ReadLadder.tsx",
-      "group": "screens",
-      "exports": [
-        "ReadLadder"
-      ],
-      "styles": [],
-      "examples": [],
-      "fixture": "Contextual module"
-    },
-    {
       "file": "src/clubhouse/screens/coachhelm/read/ReadPage.tsx",
       "group": "screens",
       "exports": [
@@ -3332,40 +3828,67 @@
       ],
       "styles": [
         "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/coachhelm-dive.css",
         "src/clubhouse/styles/coachhelm-read.css",
+        "src/clubhouse/styles/coachhelm-standing.css",
+        "src/clubhouse/styles/coachhelm-views.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages-details.css",
+        "src/clubhouse/styles/messages-inbox.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats-redesign.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
     },
     {
-      "file": "src/clubhouse/screens/coachhelm/read/ReadsRail.tsx",
+      "file": "src/clubhouse/screens/coachhelm/read/actions.tsx",
       "group": "screens",
       "exports": [
-        "ReadsRail"
+        "CoachActions",
+        "LIVE_READ_WRITES",
+        "PlayerActions",
+        "READ_HOLD_MS"
       ],
       "styles": [
-        "src/clubhouse/styles/coachhelm-read.css"
+        "src/clubhouse/styles/coachhelm-read.css",
+        "src/clubhouse/styles/coachhelm.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
     },
     {
-      "file": "src/clubhouse/screens/coachhelm/read/cards.tsx",
+      "file": "src/clubhouse/screens/coachhelm/read/parts.tsx",
       "group": "screens",
       "exports": [
-        "DoCard",
-        "MovedCard",
-        "ReadHeadline",
-        "RoundsCard",
-        "SureCard",
-        "WhereCard",
-        "WhyCard"
+        "Cause",
+        "Corrections",
+        "Measured",
+        "Moved",
+        "NextReads",
+        "Plan",
+        "ReadHead",
+        "ReadsRail",
+        "Rounds",
+        "Sure",
+        "Week",
+        "Where"
       ],
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/coachhelm-dive.css",
         "src/clubhouse/styles/coachhelm-read.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
@@ -3375,6 +3898,7 @@
         "src/clubhouse/styles/messages-inbox.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-desk.css",
@@ -3437,6 +3961,16 @@
         "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/coachhelm/team/HoleMotion.tsx",
+      "group": "screens",
+      "exports": [
+        "HoleMotion"
+      ],
+      "styles": [],
       "examples": [],
       "fixture": "Contextual module"
     },
@@ -3624,7 +4158,8 @@
         "Chevron",
         "Coin",
         "Notice",
-        "ReadRow"
+        "ReadRow",
+        "ReadWorthContext"
       ],
       "styles": [],
       "examples": [],
@@ -3640,6 +4175,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-dive.css",
+        "src/clubhouse/styles/coachhelm-read.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/shell.css"
       ],
@@ -3657,6 +4193,7 @@
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm-dive.css",
+        "src/clubhouse/styles/coachhelm-read.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -3685,6 +4222,7 @@
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm-dive.css",
+        "src/clubhouse/styles/coachhelm-read.css",
         "src/clubhouse/styles/coachhelm-standing.css",
         "src/clubhouse/styles/coachhelm-views.css",
         "src/clubhouse/styles/coachhelm.css",
@@ -3757,6 +4295,7 @@
         "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm-brief.css",
         "src/clubhouse/styles/coachhelm-dive.css",
+        "src/clubhouse/styles/coachhelm-read.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -3798,6 +4337,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-dive.css",
+        "src/clubhouse/styles/coachhelm-read.css",
         "src/clubhouse/styles/coachhelm-standing.css",
         "src/clubhouse/styles/coachhelm-views.css",
         "src/clubhouse/styles/coachhelm.css",
@@ -3849,6 +4389,7 @@
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm-dive.css",
+        "src/clubhouse/styles/coachhelm-read.css",
         "src/clubhouse/styles/coachhelm-track.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
@@ -4060,6 +4601,7 @@
         "Today",
         "UpNext",
         "UpNextRow",
+        "WeekDays",
         "WeekStrip"
       ],
       "styles": [
@@ -4340,7 +4882,8 @@
         "SkeletonPhoneHero"
       ],
       "styles": [
-        "src/clubhouse/styles/home.css"
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -4745,7 +5288,6 @@
       ],
       "styles": [
         "src/clubhouse/styles/messages-overlays.css",
-        "src/clubhouse/styles/messages-thread.css",
         "src/clubhouse/styles/messages.css"
       ],
       "examples": [],
@@ -4775,6 +5317,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/messages-details.css",
+        "src/clubhouse/styles/messages-overlays.css",
         "src/clubhouse/styles/messages-thread.css",
         "src/clubhouse/styles/messages.css"
       ],
@@ -4975,6 +5518,7 @@
       "exports": [
         "ClassStatusCard",
         "ConversationSearch",
+        "DETAILS_LEAVING",
         "MUTE_CHOICES",
         "MembersCard",
         "MuteMenu",
@@ -5000,6 +5544,7 @@
         "src/clubhouse/styles/messages-thread.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/quick-chat.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds-setup.css",
         "src/clubhouse/styles/rounds-track.css",
@@ -5128,6 +5673,7 @@
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages-details.css",
         "src/clubhouse/styles/messages-inbox.css",
+        "src/clubhouse/styles/messages-overlays.css",
         "src/clubhouse/styles/messages-thread.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -5153,6 +5699,8 @@
         "src/clubhouse/styles/auth.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/classes.css",
+        "src/clubhouse/styles/coachhelm-ask-cards.css",
+        "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-file.css",
         "src/clubhouse/styles/coachhelm-plan.css",
         "src/clubhouse/styles/coachhelm-read.css",
@@ -5166,7 +5714,6 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/onboard.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/quick-chat.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds-setup.css",
         "src/clubhouse/styles/rounds-track.css",
@@ -5202,6 +5749,7 @@
         "src/clubhouse/styles/messages-thread.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/quick-chat.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds-setup.css",
         "src/clubhouse/styles/rounds-track.css",
@@ -5415,6 +5963,7 @@
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages-overlays.css",
         "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/quick-chat.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds-setup.css",
         "src/clubhouse/styles/rounds-track.css",
@@ -5478,6 +6027,7 @@
         "src/clubhouse/styles/messages-thread.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/quick-chat.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds-setup.css",
         "src/clubhouse/styles/rounds-track.css",
@@ -5522,6 +6072,7 @@
         "SheetRow"
       ],
       "styles": [
+        "src/clubhouse/styles/messages-details.css",
         "src/clubhouse/styles/messages.css"
       ],
       "examples": [],
@@ -5579,9 +6130,6 @@
         "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
-        "src/clubhouse/styles/coachhelm-plan.css",
-        "src/clubhouse/styles/coachhelm-read.css",
-        "src/clubhouse/styles/coachhelm-team.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
@@ -5593,8 +6141,8 @@
         "src/clubhouse/styles/messages-overlays.css",
         "src/clubhouse/styles/messages-thread.css",
         "src/clubhouse/styles/messages.css",
-        "src/clubhouse/styles/onboard.css",
         "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/quick-chat.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds-setup.css",
         "src/clubhouse/styles/rounds-track.css",
@@ -5634,7 +6182,6 @@
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm-plan.css",
-        "src/clubhouse/styles/coachhelm-read.css",
         "src/clubhouse/styles/coachhelm-team.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
@@ -5750,8 +6297,10 @@
       ],
       "styles": [
         "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/messages-overlays.css",
         "src/clubhouse/styles/messages-thread.css",
-        "src/clubhouse/styles/messages.css"
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -5762,19 +6311,6 @@
       "exports": [
         "MessageText",
         "ReplyQuote"
-      ],
-      "styles": [
-        "src/clubhouse/styles/messages-thread.css",
-        "src/clubhouse/styles/messages.css"
-      ],
-      "examples": [],
-      "fixture": "Contextual module"
-    },
-    {
-      "file": "src/clubhouse/screens/messages/thread/NewDivider.tsx",
-      "group": "screens",
-      "exports": [
-        "NewDivider"
       ],
       "styles": [
         "src/clubhouse/styles/messages-thread.css",
@@ -5821,6 +6357,8 @@
         "src/clubhouse/styles/auth.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/classes.css",
+        "src/clubhouse/styles/coachhelm-ask-cards.css",
+        "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-file.css",
         "src/clubhouse/styles/coachhelm-read.css",
         "src/clubhouse/styles/coachhelm-team.css",
@@ -5835,7 +6373,6 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/onboard.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/quick-chat.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds-setup.css",
         "src/clubhouse/styles/rounds-track.css",
@@ -6046,6 +6583,33 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/screens/practice/DayStrip.tsx",
+      "group": "screens",
+      "exports": [
+        "DayStrip"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages-details.css",
+        "src/clubhouse/styles/messages-inbox.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/practice.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/stats-redesign.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/ui.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/screens/practice/LibraryPages.tsx",
       "group": "screens",
       "exports": [
@@ -6070,6 +6634,7 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/recruiting.css",
         "src/clubhouse/styles/roster.css",
+        "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
@@ -6086,7 +6651,25 @@
         "NewPlanSheet"
       ],
       "styles": [
-        "src/clubhouse/styles/practice.css"
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages-details.css",
+        "src/clubhouse/styles/messages-inbox.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/practice.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/roster.css",
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/stats-redesign.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -6128,6 +6711,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/coachhelm-plan.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -6176,14 +6760,24 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/screens/practice/PracticeSheet.tsx",
+      "group": "screens",
+      "exports": [
+        "PracticeSheet"
+      ],
+      "styles": [
+        "src/clubhouse/styles/practice.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/screens/practice/PracticeTabs.tsx",
       "group": "screens",
       "exports": [
         "PracticeTabs"
       ],
-      "styles": [
-        "src/clubhouse/styles/practice.css"
-      ],
+      "styles": [],
       "examples": [],
       "fixture": "Contextual module"
     },
@@ -6291,6 +6885,7 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/recruiting.css",
         "src/clubhouse/styles/roster.css",
+        "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
@@ -7139,6 +7734,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/classes.css",
+        "src/clubhouse/styles/component-playground.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/ui.css"
@@ -7894,6 +8490,7 @@
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/classes.css",
+        "src/clubhouse/styles/coachhelm-ask-cards.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-file.css",
         "src/clubhouse/styles/coachhelm-plan.css",
@@ -7911,7 +8508,6 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/onboard.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/quick-chat.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds-setup.css",
         "src/clubhouse/styles/rounds-track.css",
@@ -7995,6 +8591,7 @@
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/classes.css",
+        "src/clubhouse/styles/coachhelm-ask-cards.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-dive.css",
         "src/clubhouse/styles/coachhelm-file.css",
@@ -8015,7 +8612,6 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/onboard.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/quick-chat.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds-setup.css",
         "src/clubhouse/styles/rounds-track.css",
@@ -8062,6 +8658,8 @@
         "src/clubhouse/styles/auth.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/classes.css",
+        "src/clubhouse/styles/coachhelm-ask-cards.css",
+        "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-file.css",
         "src/clubhouse/styles/coachhelm-plan.css",
         "src/clubhouse/styles/coachhelm-read.css",
@@ -8075,7 +8673,6 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/onboard.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/quick-chat.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds-setup.css",
         "src/clubhouse/styles/rounds-track.css",
@@ -8104,6 +8701,7 @@
         "src/clubhouse/styles/auth.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/classes.css",
+        "src/clubhouse/styles/coachhelm-ask-cards.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-file.css",
         "src/clubhouse/styles/coachhelm-plan.css",
@@ -8117,7 +8715,6 @@
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/onboard.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/quick-chat.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds-setup.css",
         "src/clubhouse/styles/rounds-track.css",
@@ -8176,6 +8773,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/classes.css",
+        "src/clubhouse/styles/coachhelm-ask-cards.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-file.css",
         "src/clubhouse/styles/coachhelm-plan.css",
@@ -8190,7 +8788,6 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/onboard.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/quick-chat.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds-setup.css",
         "src/clubhouse/styles/rounds-track.css",
@@ -8242,6 +8839,7 @@
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/classes.css",
+        "src/clubhouse/styles/coachhelm-ask-cards.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-file.css",
         "src/clubhouse/styles/coachhelm-plan.css",
@@ -8259,7 +8857,6 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/onboard.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/quick-chat.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds-setup.css",
         "src/clubhouse/styles/rounds-track.css",
@@ -8655,6 +9252,7 @@
         "src/clubhouse/styles/messages-overlays.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/quick-chat.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds-setup.css",
         "src/clubhouse/styles/rounds-track.css",
@@ -9244,16 +9842,6 @@
         "ShsTeamSkeleton"
       ],
       "styles": [
-        "src/clubhouse/styles/base.css",
-        "src/clubhouse/styles/calendar.css",
-        "src/clubhouse/styles/coachhelm-ask.css",
-        "src/clubhouse/styles/controls.css",
-        "src/clubhouse/styles/home.css",
-        "src/clubhouse/styles/messages-inbox.css",
-        "src/clubhouse/styles/messages.css",
-        "src/clubhouse/styles/recruiting.css",
-        "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css"
       ],
@@ -9304,6 +9892,8 @@
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/classes.css",
+        "src/clubhouse/styles/coachhelm-ask-cards.css",
+        "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-file.css",
         "src/clubhouse/styles/coachhelm-plan.css",
         "src/clubhouse/styles/coachhelm-read.css",
@@ -9321,7 +9911,6 @@
         "src/clubhouse/styles/onboard.css",
         "src/clubhouse/styles/practice.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/quick-chat.css",
         "src/clubhouse/styles/recruiting.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds-setup.css",
@@ -10474,6 +11063,8 @@
         "src/clubhouse/styles/auth.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/classes.css",
+        "src/clubhouse/styles/coachhelm-ask-cards.css",
+        "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
         "src/clubhouse/styles/coachhelm-file.css",
         "src/clubhouse/styles/coachhelm-plan.css",
@@ -10520,6 +11111,7 @@
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/classes.css",
+        "src/clubhouse/styles/coachhelm-ask-cards.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
         "src/clubhouse/styles/coachhelm-file.css",
@@ -10658,6 +11250,7 @@
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages-overlays.css",
         "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/quick-chat.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds-setup.css",
         "src/clubhouse/styles/rounds-track.css",
@@ -10685,6 +11278,7 @@
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages-overlays.css",
         "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/quick-chat.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds-setup.css",
         "src/clubhouse/styles/rounds-track.css",
@@ -10753,6 +11347,7 @@
         "src/clubhouse/styles/messages-overlays.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/quick-chat.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds-setup.css",
         "src/clubhouse/styles/rounds-track.css",
@@ -10858,6 +11453,7 @@
         "src/clubhouse/styles/messages-thread.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/quick-chat.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds-setup.css",
         "src/clubhouse/styles/rounds-track.css",
@@ -11060,6 +11656,7 @@
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages-overlays.css",
         "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/quick-chat.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds-setup.css",
         "src/clubhouse/styles/rounds-track.css",
@@ -11082,6 +11679,8 @@
         "src/clubhouse/styles/auth.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/classes.css",
+        "src/clubhouse/styles/coachhelm-ask-cards.css",
+        "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-file.css",
         "src/clubhouse/styles/coachhelm-read.css",
         "src/clubhouse/styles/coachhelm-team.css",
@@ -11262,12 +11861,29 @@
       "fixture": "Contextual module"
     },
     {
-      "file": "src/clubhouse/shell/quick-chat/QuickAsk.tsx",
+      "file": "src/clubhouse/shell/quick-chat/LandingSlot.tsx",
       "group": "shell",
       "exports": [
-        "QuickAsk"
+        "LandingSlot"
       ],
-      "styles": [],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages-details.css",
+        "src/clubhouse/styles/messages-inbox.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/quick-chat.css",
+        "src/clubhouse/styles/stats-redesign.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/ui.css"
+      ],
       "examples": [],
       "fixture": "Contextual module"
     },
@@ -11297,58 +11913,29 @@
       ],
       "styles": [
         "src/clubhouse/styles/base.css",
-        "src/clubhouse/styles/calendar.css",
-        "src/clubhouse/styles/class-awareness.css",
-        "src/clubhouse/styles/coachhelm-ask-v2.css",
-        "src/clubhouse/styles/coachhelm-ask.css",
-        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/classes.css",
         "src/clubhouse/styles/command.css",
+        "src/clubhouse/styles/component-playground.css",
         "src/clubhouse/styles/controls.css",
-        "src/clubhouse/styles/goals.css",
-        "src/clubhouse/styles/home.css",
-        "src/clubhouse/styles/hub.css",
-        "src/clubhouse/styles/messages-details.css",
-        "src/clubhouse/styles/messages-inbox.css",
-        "src/clubhouse/styles/messages-overlays.css",
-        "src/clubhouse/styles/messages.css",
-        "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/quick-chat.css",
-        "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds-setup.css",
         "src/clubhouse/styles/rounds-track.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats-redesign.css",
-        "src/clubhouse/styles/stats.css",
-        "src/clubhouse/styles/tokens.css",
-        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
     },
     {
-      "file": "src/clubhouse/shell/quick-chat/TaskCard.tsx",
+      "file": "src/clubhouse/shell/quick-chat/QuickChatThread.tsx",
       "group": "shell",
       "exports": [
-        "TaskCard"
+        "QuickChatThread"
       ],
       "styles": [
         "src/clubhouse/styles/base.css",
-        "src/clubhouse/styles/calendar.css",
-        "src/clubhouse/styles/class-awareness.css",
-        "src/clubhouse/styles/coachhelm.css",
-        "src/clubhouse/styles/goals.css",
-        "src/clubhouse/styles/home.css",
-        "src/clubhouse/styles/hub.css",
-        "src/clubhouse/styles/messages-details.css",
-        "src/clubhouse/styles/messages-inbox.css",
-        "src/clubhouse/styles/messages.css",
-        "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats-redesign.css",
-        "src/clubhouse/styles/stats.css",
-        "src/clubhouse/styles/tournaments-desk.css",
-        "src/clubhouse/styles/ui.css"
+        "src/clubhouse/styles/coachhelm-ask-v2.css",
+        "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -11369,44 +11956,6 @@
       "group": "shell",
       "exports": [
         "QcSeam"
-      ],
-      "styles": [],
-      "examples": [],
-      "fixture": "Contextual module"
-    },
-    {
-      "file": "src/clubhouse/shell/quick-chat/visuals/PlanTask.tsx",
-      "group": "shell",
-      "exports": [
-        "PlanTask"
-      ],
-      "styles": [
-        "src/clubhouse/styles/base.css",
-        "src/clubhouse/styles/calendar.css",
-        "src/clubhouse/styles/class-awareness.css",
-        "src/clubhouse/styles/coachhelm.css",
-        "src/clubhouse/styles/goals.css",
-        "src/clubhouse/styles/home.css",
-        "src/clubhouse/styles/hub.css",
-        "src/clubhouse/styles/messages-details.css",
-        "src/clubhouse/styles/messages-inbox.css",
-        "src/clubhouse/styles/messages.css",
-        "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/stats-redesign.css",
-        "src/clubhouse/styles/stats.css",
-        "src/clubhouse/styles/tournaments-desk.css",
-        "src/clubhouse/styles/ui.css"
-      ],
-      "examples": [],
-      "fixture": "Contextual module"
-    },
-    {
-      "file": "src/clubhouse/shell/quick-chat/visuals/visuals.tsx",
-      "group": "shell",
-      "exports": [
-        "EventVisual",
-        "MessageVisual",
-        "QualifierVisual"
       ],
       "styles": [],
       "examples": [],
@@ -11447,17 +11996,16 @@
       "group": "ui",
       "exports": [
         "AVATAR_SIZES",
+        "AVATAR_SMALL",
         "AVATAR_TONES",
         "AVATAR_TYPE",
         "Avatar"
       ],
       "styles": [
         "src/clubhouse/styles/coachhelm-plan.css",
-        "src/clubhouse/styles/coachhelm-read.css",
         "src/clubhouse/styles/coachhelm-team.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/hub.css",
-        "src/clubhouse/styles/messages-inbox.css",
         "src/clubhouse/styles/messages-thread.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/onboard.css",
@@ -11481,6 +12029,7 @@
       ],
       "styles": [
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm-ask-cards.css",
         "src/clubhouse/styles/coachhelm-team.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -11505,6 +12054,8 @@
         "src/clubhouse/styles/auth.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/classes.css",
+        "src/clubhouse/styles/coachhelm-ask-cards.css",
+        "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-file.css",
         "src/clubhouse/styles/coachhelm-read.css",
         "src/clubhouse/styles/coachhelm-team.css",
@@ -11517,7 +12068,6 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/onboard.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/quick-chat.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds-setup.css",
         "src/clubhouse/styles/rounds-track.css",
@@ -11610,6 +12160,7 @@
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages-overlays.css",
         "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/quick-chat.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds-setup.css",
         "src/clubhouse/styles/rounds-track.css",
@@ -11671,6 +12222,8 @@
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/classes.css",
+        "src/clubhouse/styles/coachhelm-ask-cards.css",
+        "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-file.css",
         "src/clubhouse/styles/coachhelm-plan.css",
         "src/clubhouse/styles/coachhelm-read.css",
@@ -11687,7 +12240,6 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/onboard.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/quick-chat.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds-setup.css",
         "src/clubhouse/styles/rounds-track.css",
@@ -11890,6 +12442,7 @@
         "src/clubhouse/styles/messages-overlays.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/quick-chat.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds-setup.css",
         "src/clubhouse/styles/rounds-track.css",
@@ -11915,6 +12468,8 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/classes.css",
+        "src/clubhouse/styles/coachhelm-ask-cards.css",
+        "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-file.css",
         "src/clubhouse/styles/coachhelm-plan.css",
         "src/clubhouse/styles/coachhelm-read.css",
@@ -12026,8 +12581,10 @@
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages-details.css",
         "src/clubhouse/styles/messages-inbox.css",
+        "src/clubhouse/styles/messages-thread.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds-setup.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
@@ -12088,6 +12645,7 @@
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages-overlays.css",
         "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/quick-chat.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds-setup.css",
         "src/clubhouse/styles/rounds-track.css",
@@ -12142,6 +12700,7 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/practice.css",
         "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/quick-chat.css",
         "src/clubhouse/styles/recruiting.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds-setup.css",
@@ -12318,6 +12877,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/coachhelm-ask-cards.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
         "src/clubhouse/styles/coachhelm-file.css",
@@ -12354,6 +12914,7 @@
       ],
       "styles": [
         "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/coachhelm-ask-cards.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/settings.css",
@@ -12495,8 +13056,6 @@
         "Surface"
       ],
       "styles": [
-        "src/clubhouse/styles/class-awareness.css",
-        "src/clubhouse/styles/classes.css",
         "src/clubhouse/styles/component-playground.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/settings.css",
@@ -12571,6 +13130,8 @@
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/classes.css",
+        "src/clubhouse/styles/coachhelm-ask-cards.css",
+        "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-file.css",
         "src/clubhouse/styles/coachhelm-plan.css",
         "src/clubhouse/styles/coachhelm-read.css",
@@ -12587,7 +13148,6 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/onboard.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/quick-chat.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds-setup.css",
         "src/clubhouse/styles/rounds-track.css",
@@ -12636,6 +13196,7 @@
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages-overlays.css",
         "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/quick-chat.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds-setup.css",
         "src/clubhouse/styles/rounds-track.css",
@@ -14030,8 +14591,6 @@
         "ch-btn",
         "ch-cl",
         "ch-cl-2",
-        "ch-cl-add",
-        "ch-cl-add__plus",
         "ch-cl-card",
         "ch-cl-card2",
         "ch-cl-card__code",
@@ -14039,6 +14598,7 @@
         "ch-cl-card__f",
         "ch-cl-card__flex",
         "ch-cl-card__loc",
+        "ch-cl-card__n",
         "ch-cl-card__name",
         "ch-cl-card__prof",
         "ch-cl-card__term",
@@ -14049,10 +14609,8 @@
         "ch-cl-danger",
         "ch-cl-daypick",
         "ch-cl-deck",
-        "ch-cl-delall",
         "ch-cl-detail",
         "ch-cl-dgrid",
-        "ch-cl-dgrid__h",
         "ch-cl-dgrid__side",
         "ch-cl-dhero",
         "ch-cl-dhero__n",
@@ -14106,8 +14664,6 @@
         "ch-cl-rv__x",
         "ch-cl-sec",
         "ch-cl-side",
-        "ch-cl-sk-acts",
-        "ch-cl-sk-class",
         "ch-cl-sk-crh",
         "ch-cl-sk-crh__card",
         "ch-cl-sk-crh__term",
@@ -14116,16 +14672,9 @@
         "ch-cl-sk-dcrh__deck",
         "ch-cl-sk-dcrh__grid",
         "ch-cl-sk-dcrh__h",
+        "ch-cl-sk-dcrh__label",
         "ch-cl-sk-dcrh__stack",
-        "ch-cl-sk-dcrh__term",
-        "ch-cl-sk-desk",
-        "ch-cl-sk-h",
-        "ch-cl-sk-head",
-        "ch-cl-sk-line",
-        "ch-cl-sk-note",
-        "ch-cl-sk-phone",
-        "ch-cl-sk-row",
-        "ch-cl-sk-sec",
+        "ch-cl-sk-dcrh__title",
         "ch-cl-sync",
         "ch-cl-sync__st",
         "ch-cl-t-clay",
@@ -14172,12 +14721,9 @@
         "ch-cl-tr__btn",
         "ch-cl-tr__dot",
         "ch-cl-tr__t",
-        "ch-cl-tt__bar",
-        "ch-cl-tthead",
-        "ch-cl-tthead__days",
-        "ch-cl-tthead__evs",
-        "ch-cl-tthead__lead",
         "ch-cl-wk",
+        "ch-cl-yours",
+        "ch-cl-yours__h",
         "ch-modal",
         "ch-skel",
         "ch-surface--card"
@@ -14339,23 +14885,8 @@
           "scope": "@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) → .ch-cl[data-canopy]"
         },
         {
-          "name": "--ch-cl-codew",
-          "value": "92px",
-          "scope": "@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) → @container chcl (max-width: 640px) → .ch-cl[data-canopy] .ch-cl-deck"
-        },
-        {
           "name": "--ch-classes-shadow-1",
           "value": "0 0 0 4px rgb(123 199 154 / 0.28), 0 2px 6px rgb(0 0 0 / 0.4)",
-          "scope": ".ch-app"
-        },
-        {
-          "name": "--ch-classes-shadow-2",
-          "value": "inset 0 0 0 var(--ch-hairline-w) var(--ch-cl-tb), 0 1px 2px rgb(28 25 18 / 0.06)",
-          "scope": ".ch-app"
-        },
-        {
-          "name": "--ch-classes-shadow-3",
-          "value": "0 1px 2px rgb(28 25 18 / 0.12), 0 0 0 var(--ch-hairline-w) var(--ch-cl-tb)",
           "scope": ".ch-app"
         },
         {
@@ -14366,21 +14897,6 @@
         {
           "name": "--ch-classes-x2",
           "value": "inset 0 1px 3px rgb(0 0 0 / 0.35), 0 1px 0 rgb(255 255 255 / 0.08)",
-          "scope": "[data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-classes-x3",
-          "value": "inset 0 0 0 1.5px var(--ch-cl-tf)",
-          "scope": "[data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-classes-x4",
-          "value": "inset 0 0 0 var(--ch-hairline-w) var(--ch-cl-tb)",
-          "scope": "[data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-classes-x5",
-          "value": "inset 0 0 0 1px color-mix(in srgb, var(--ch-cl-tb) 70%, transparent)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -14402,6 +14918,219 @@
           "name": "--ch-cl-team-mark",
           "value": "var(--ch-hero-mint-strong)",
           "scope": "html[data-fw-theme='dark'] .ch-cl[data-ch-crh='on']"
+        },
+        {
+          "name": "--ch-cl-ring-today",
+          "value": "var(--ch-green-600)",
+          "scope": ".ch-cl"
+        },
+        {
+          "name": "--ch-cl-ring-today",
+          "value": "var(--ch-hero-mint-strong)",
+          "scope": "html[data-fw-theme='dark'] .ch-cl"
+        }
+      ]
+    },
+    {
+      "file": "src/clubhouse/styles/coachhelm-ask-cards.css",
+      "classes": [
+        "ch-akc",
+        "ch-akc-after",
+        "ch-akc-all",
+        "ch-akc-all__list",
+        "ch-akc-all__top",
+        "ch-akc-all__tx",
+        "ch-akc-board",
+        "ch-akc-brief",
+        "ch-akc-bubble",
+        "ch-akc-change",
+        "ch-akc-chips",
+        "ch-akc-clamp",
+        "ch-akc-clamp__t",
+        "ch-akc-days",
+        "ch-akc-days__month",
+        "ch-akc-days__text",
+        "ch-akc-delivery",
+        "ch-akc-delivery__how",
+        "ch-akc-diff",
+        "ch-akc-drill",
+        "ch-akc-drill__goal",
+        "ch-akc-drill__hd",
+        "ch-akc-edit",
+        "ch-akc-edit__fixed",
+        "ch-akc-edit__item",
+        "ch-akc-edit__keys",
+        "ch-akc-edit__lede",
+        "ch-akc-edit__list",
+        "ch-akc-edit__pair",
+        "ch-akc-edit__people",
+        "ch-akc-edit__toggle",
+        "ch-akc-editkey",
+        "ch-akc-event",
+        "ch-akc-event__tx",
+        "ch-akc-event__where",
+        "ch-akc-focus",
+        "ch-akc-fold",
+        "ch-akc-gap",
+        "ch-akc-goal",
+        "ch-akc-goal__now",
+        "ch-akc-goal__target",
+        "ch-akc-goal__unit",
+        "ch-akc-goal__who",
+        "ch-akc-lineup",
+        "ch-akc-lineup__n",
+        "ch-akc-link",
+        "ch-akc-link__ico",
+        "ch-akc-meta",
+        "ch-akc-missed",
+        "ch-akc-noted",
+        "ch-akc-noted__tx",
+        "ch-akc-notice",
+        "ch-akc-notice__app",
+        "ch-akc-notice__tx",
+        "ch-akc-nowords",
+        "ch-akc-page",
+        "ch-akc-people",
+        "ch-akc-people__all",
+        "ch-akc-people__chev",
+        "ch-akc-people__coins",
+        "ch-akc-people__gap",
+        "ch-akc-people__line",
+        "ch-akc-people__more",
+        "ch-akc-people__names",
+        "ch-akc-plan",
+        "ch-akc-plan__why",
+        "ch-akc-poll",
+        "ch-akc-qual",
+        "ch-akc-qual__seats",
+        "ch-akc-quote",
+        "ch-akc-reach",
+        "ch-akc-reach__lede",
+        "ch-akc-reach__top",
+        "ch-akc-roll",
+        "ch-akc-row",
+        "ch-akc-row__src",
+        "ch-akc-row__unset",
+        "ch-akc-rows",
+        "ch-akc-series",
+        "ch-akc-series__rule",
+        "ch-akc-span",
+        "ch-akc-span__name",
+        "ch-akc-span__rule",
+        "ch-akc-span__run",
+        "ch-akc-subject",
+        "ch-akc-task",
+        "ch-akc-task__box",
+        "ch-akc-term",
+        "ch-akc-term__bar",
+        "ch-akc-term__dates",
+        "ch-akc-thread",
+        "ch-akc-thread__before",
+        "ch-akc-thread__mine",
+        "ch-akc-tile",
+        "ch-akc-trip",
+        "ch-akc-trip__end",
+        "ch-akc-trip__leg",
+        "ch-akc-trip__route",
+        "ch-akc-trip__when",
+        "ch-akc-untracked",
+        "ch-akc-warn",
+        "ch-akc-words",
+        "ch-akc-worked",
+        "ch-akc-worked__how",
+        "ch-akc-worked__read",
+        "ch-akg",
+        "ch-akg--one",
+        "ch-akg-asked",
+        "ch-akg-batch",
+        "ch-akg-card",
+        "ch-akg-card__body",
+        "ch-akg-card__btns",
+        "ch-akg-card__ft",
+        "ch-akg-card__hd",
+        "ch-akg-card__ico",
+        "ch-akg-card__line",
+        "ch-akg-card__tt",
+        "ch-akg-card__why",
+        "ch-akg-form",
+        "ch-akg-forms",
+        "ch-akg-isl",
+        "ch-akg-mark",
+        "ch-akg-note",
+        "ch-akg-plain",
+        "ch-akg-rcpt",
+        "ch-akg-rcpt__acts",
+        "ch-akg-rcpt__tx",
+        "ch-akg-ring",
+        "ch-akg-spec",
+        "ch-akg-spec__bar",
+        "ch-akg-spec__col",
+        "ch-akg-spec__hd",
+        "ch-akg-spec__stage",
+        "ch-akg-told",
+        "ch-akg-words",
+        "ch-akg-work",
+        "ch-akg__group",
+        "ch-akg__intro",
+        "ch-akg__nav",
+        "ch-aks",
+        "ch-aks-ask",
+        "ch-aks-board",
+        "ch-aks-board__cut",
+        "ch-aks-board__head",
+        "ch-aks-board__name",
+        "ch-aks-board__row",
+        "ch-aks-board__rows",
+        "ch-aks-chip",
+        "ch-aks-cmp",
+        "ch-aks-cmp__dot",
+        "ch-aks-cmp__table",
+        "ch-aks-cmp__who",
+        "ch-aks-cmp__wrap",
+        "ch-aks-fig",
+        "ch-aks-fig__cell",
+        "ch-aks-fig__label",
+        "ch-aks-fig__list",
+        "ch-aks-fig__ref",
+        "ch-aks-fig__sub",
+        "ch-aks-fig__value",
+        "ch-aks-foot",
+        "ch-aks-k",
+        "ch-aks-line",
+        "ch-aks-none",
+        "ch-aks-note",
+        "ch-aks-open",
+        "ch-aks-part",
+        "ch-aks-rank__list",
+        "ch-aks-rank__n",
+        "ch-aks-rank__row",
+        "ch-aks-rank__val",
+        "ch-aks-rank__who",
+        "ch-aks-record__row",
+        "ch-aks-round__card",
+        "ch-aks-round__group",
+        "ch-aks-row",
+        "ch-aks-sched__bar",
+        "ch-aks-sched__clash",
+        "ch-aks-sched__day",
+        "ch-aks-sched__days",
+        "ch-aks-sched__event",
+        "ch-aks-sched__tx",
+        "ch-aks-sg__label",
+        "ch-aks-sg__row",
+        "ch-aks-sg__val",
+        "ch-aks-title",
+        "ch-aks-track",
+        "ch-badge",
+        "ch-btn",
+        "ch-seg",
+        "ch-select"
+      ],
+      "tokens": [
+        {
+          "name": "--ch-aks-cols",
+          "value": "20px minmax(0, 1fr) 44px 52px",
+          "scope": ".ch-aks-board__rows"
         }
       ]
     },
@@ -14417,22 +15146,30 @@
         "ch-ak-holes",
         "ch-ak-home",
         "ch-ak-hs",
+        "ch-ak-islhost",
         "ch-ak-jump",
+        "ch-ak-keep",
         "ch-ak-knows",
         "ch-ak-knows__err",
+        "ch-ak-live",
         "ch-ak-lock",
         "ch-ak-lu",
         "ch-ak-mark",
         "ch-ak-meter",
         "ch-ak-miss",
         "ch-ak-nb",
+        "ch-ak-needs",
+        "ch-ak-notice",
         "ch-ak-out",
         "ch-ak-outwrap",
+        "ch-ak-page",
         "ch-ak-pane",
+        "ch-ak-pend",
         "ch-ak-pollp",
         "ch-ak-push",
         "ch-ak-putts",
         "ch-ak-qual",
+        "ch-ak-reads",
         "ch-ak-rec",
         "ch-ak-root",
         "ch-ak-route",
@@ -14442,22 +15179,32 @@
         "ch-ak-see",
         "ch-ak-settings",
         "ch-ak-stopped",
+        "ch-ak-sv",
         "ch-ak-swap",
+        "ch-ak-task__body",
         "ch-ak-th",
         "ch-ak-tk",
         "ch-ak-top",
         "ch-ak-turn",
+        "ch-ak-vis",
         "ch-ak-wk",
+        "ch-ak-wl",
         "ch-ak-worked",
         "ch-ask-cmp",
         "ch-ask-cmp__box",
         "ch-ask-cmp__send",
         "ch-ask-dock",
+        "ch-ask-head",
+        "ch-ask-head__t",
         "ch-ask-main",
+        "ch-ask-scroll",
+        "ch-btn",
         "ch-btn--primary",
         "ch-cpv-pub",
+        "ch-isl",
         "ch-root",
         "ch-seg__b",
+        "ch-th--phone",
         "ch-th-col",
         "ch-th-prose",
         "ch-th-user"
@@ -14572,6 +15319,31 @@
           "name": "--ch-text-on-accent",
           "value": "var(--ch-ask-on-accent)",
           "scope": ".ch-ak-th, .ch-ak-pane, .ch-ak-push, .ch-ak-root .ch-ask-cmp"
+        },
+        {
+          "name": "--ch-rm-animation",
+          "value": "var(--ch-dur-crossfade-rm)",
+          "scope": "@media (prefers-reduced-motion: reduce) → .ch-ak-sv, .ch-ak-sv .list"
+        },
+        {
+          "name": "--ch-rm-animation",
+          "value": "var(--ch-dur-crossfade-rm)",
+          "scope": "@media (prefers-reduced-motion: reduce) → .ch-ak-reads.is-live .rd, .ch-ak-reads.is-still, .ch-ak-notice, .ch-ak-wl .t, .ch-ak-th[data-v3] .ch-ak-turn.is-settling .chips .chip"
+        },
+        {
+          "name": "--ch-rm-animation",
+          "value": "var(--ch-dur-crossfade-rm)",
+          "scope": "@media (prefers-reduced-motion: reduce) → .ch-ak-th[data-v3] .conf.is-arriving, .ch-ak-th[data-v3] .receipt, .ch-ak-th[data-v3] .told.is-live"
+        },
+        {
+          "name": "--ch-rm-animation",
+          "value": "var(--ch-dur-crossfade-rm)",
+          "scope": "@media (prefers-reduced-motion: reduce) → .ch-isl, .ch-isl .st, .ch-isl .hd .t, .ch-isl .st .dt, .ch-isl .subj .face, .ch-isl .subj .tag"
+        },
+        {
+          "name": "--ch-rm-animation",
+          "value": "var(--ch-dur-crossfade-rm)",
+          "scope": "@media (prefers-reduced-motion: reduce) → .ch-isl.is-leaving"
         }
       ]
     },
@@ -15014,7 +15786,7 @@
         },
         {
           "name": "--ch-hf-a-accent",
-          "value": "var(--ch-accent)",
+          "value": "var(--ch-green-600)",
           "scope": ".ch-hf"
         },
         {
@@ -15029,12 +15801,12 @@
         },
         {
           "name": "--ch-hf-a-shadow",
-          "value": "var(--ch-elevation-lifted)",
+          "value": "var(--ch-card-shadow)",
           "scope": ".ch-hf"
         },
         {
           "name": "--ch-hf-a-feat",
-          "value": "var(--ch-frame)",
+          "value": "var(--ch-feature-bg)",
           "scope": ".ch-hf"
         },
         {
@@ -15134,32 +15906,27 @@
         },
         {
           "name": "--ch-file-shadow-3",
-          "value": "0 1px 2px rgb(11 58 37 / 0.2), 0 14px 30px -18px rgb(11 58 37 / 0.6)",
+          "value": "var(--ch-feature-shadow)",
           "scope": ".ch-hf"
         },
         {
           "name": "--ch-file-shadow-4",
-          "value": "0 0 0 var(--ch-hairline-w) var(--ch-hf-a-ring), 0 6px 18px -8px rgb(28 25 18 / 0.3)",
+          "value": "0 0 0 var(--ch-hairline-w) var(--ch-hf-a-ring), var(--ch-elevation-bubblet)",
           "scope": ".ch-hf"
         },
         {
           "name": "--ch-file-shadow-5",
-          "value": "inset 0 0 0 999px rgb(255 255 255 / 0.05), 0 1px 2px rgb(11 58 37 / 0.2), 0 14px 30px -18px rgb(11 58 37 / 0.6)",
+          "value": "inset 0 0 0 999px color-mix(in srgb, var(--ch-ivory-0) 5%, transparent), var(--ch-feature-shadow)",
           "scope": ".ch-hf"
         },
         {
           "name": "--ch-file-shadow-6",
-          "value": "0 0 0 var(--ch-hairline-w) var(--ch-hf-a-ring), 0 1px 2px rgb(28 25 18 / 0.06)",
+          "value": "var(--ch-crh-btn-shadow)",
           "scope": ".ch-hf"
         },
         {
           "name": "--ch-file-shadow-7",
-          "value": "0 1px 2px rgb(11 58 37 / 0.3)",
-          "scope": ".ch-hf"
-        },
-        {
-          "name": "--ch-file-x1",
-          "value": "inset 0 1px 2px rgb(28 25 18 / 0.06)",
+          "value": "var(--ch-elevation-pill-on)",
           "scope": ".ch-hf"
         }
       ]
@@ -15606,280 +16373,108 @@
     {
       "file": "src/clubhouse/styles/coachhelm-read.css",
       "classes": [
-        "ch-avatar",
         "ch-btn",
         "ch-btn--primary",
+        "ch-hd-dos__h",
+        "ch-hd-dx",
+        "ch-hd-dx__d",
+        "ch-hd-dx__r",
+        "ch-hd-it",
+        "ch-hd-main",
+        "ch-hd-meas",
+        "ch-hd-meas__s",
+        "ch-hd-meas__v",
+        "ch-hd-plan",
+        "ch-hd-plan__b",
+        "ch-hd-plan__i",
+        "ch-hd-plan__ic",
+        "ch-hd-plan__w",
+        "ch-hd-r",
+        "ch-hd-r__c",
+        "ch-hd-rail",
+        "ch-hd-read",
+        "ch-hd-read__lvl",
+        "ch-hd-rounds",
+        "ch-hd-strip",
+        "ch-hd-strip__c",
+        "ch-hd-strip__chart",
+        "ch-hd-tr",
+        "ch-hd-tr__k",
+        "ch-hl",
+        "ch-hl-bars",
+        "ch-hl-cact",
+        "ch-hl-cact__m",
+        "ch-hl-cx",
+        "ch-hl-ev",
+        "ch-hl-ev__f",
+        "ch-hl-ev__l",
+        "ch-hl-focus__k",
+        "ch-hl-path",
+        "ch-hl-path__l",
+        "ch-hl-pri",
+        "ch-hl-prop",
+        "ch-hl-row",
+        "ch-hl-week__t",
+        "ch-hl-why",
         "ch-hr",
-        "ch-hr-acts",
-        "ch-hr-checkedh",
-        "ch-hr-col",
-        "ch-hr-correct",
-        "ch-hr-desk",
-        "ch-hr-deskbar",
-        "ch-hr-foot2",
-        "ch-hr-more",
-        "ch-hr-morekey",
-        "ch-hr-plainp",
-        "ch-hr-rail",
-        "ch-hr-railh",
-        "ch-hr-swr",
-        "ch-hr-topar"
+        "ch-hr-aside",
+        "ch-hr-bars",
+        "ch-hr-body",
+        "ch-hr-cx",
+        "ch-hr-done",
+        "ch-hr-dos",
+        "ch-hr-holes",
+        "ch-hr-list",
+        "ch-hr-next",
+        "ch-hr-next__h",
+        "ch-hr-p",
+        "ch-hr-page",
+        "ch-hr-panel",
+        "ch-hr-path",
+        "ch-hr-sec",
+        "ch-hr-since",
+        "ch-hr-skel",
+        "ch-hr-skelhead",
+        "ch-hr-stack",
+        "ch-hr-step",
+        "ch-hr-sure",
+        "ch-hr-surecard",
+        "ch-hr-surekey",
+        "ch-hr-tabs",
+        "ch-hr-tail",
+        "ch-hr-trace",
+        "ch-hr-week"
       ],
       "tokens": [
         {
-          "name": "--ch-hr-bg",
-          "value": "var(--ch-bg-page)",
+          "name": "--ch-hr-st-warn",
+          "value": "var(--ch-feature-loss)",
           "scope": ".ch-hr"
         },
         {
-          "name": "--ch-hr-card",
-          "value": "var(--ch-card-bg)",
+          "name": "--ch-hr-st-warn-bg",
+          "value": "color-mix(in srgb, var(--ch-feature-loss) 12%, transparent)",
           "scope": ".ch-hr"
         },
         {
-          "name": "--ch-hr-well",
-          "value": "#f6f4ee",
+          "name": "--ch-hr-st-good",
+          "value": "var(--ch-feature-gain)",
           "scope": ".ch-hr"
         },
         {
-          "name": "--ch-hr-ink",
-          "value": "#1c1b18",
+          "name": "--ch-hr-st-good-bg",
+          "value": "color-mix(in srgb, var(--ch-feature-gain) 12%, transparent)",
           "scope": ".ch-hr"
         },
         {
-          "name": "--ch-hr-ink-2",
-          "value": "#46433d",
-          "scope": ".ch-hr"
+          "name": "--ch-hd-fig",
+          "value": "var(--ch-chart-gain)",
+          "scope": ".ch-hr-page .ch-hd-meas.is-gain,\n.ch-hr-page .ch-hd-tr li.is-gain"
         },
         {
-          "name": "--ch-hr-ink-3",
-          "value": "#5f5c55",
-          "scope": ".ch-hr"
-        },
-        {
-          "name": "--ch-hr-gain",
-          "value": "#14613d",
-          "scope": ".ch-hr"
-        },
-        {
-          "name": "--ch-hr-loss",
-          "value": "#9a5700",
-          "scope": ".ch-hr"
-        },
-        {
-          "name": "--ch-hr-flag",
-          "value": "#b3261e",
-          "scope": ".ch-hr"
-        },
-        {
-          "name": "--ch-hr-accent",
-          "value": "#155a39",
-          "scope": ".ch-hr"
-        },
-        {
-          "name": "--ch-hr-sep",
-          "value": "rgb(28 27 24 / 0.1)",
-          "scope": ".ch-hr"
-        },
-        {
-          "name": "--ch-hr-ring",
-          "value": "rgb(28 27 24 / 0.07)",
-          "scope": ".ch-hr"
-        },
-        {
-          "name": "--ch-hr-gain-fill",
-          "value": "#1f6b45",
-          "scope": ".ch-hr"
-        },
-        {
-          "name": "--ch-hr-loss-fill",
-          "value": "#b86f0c",
-          "scope": ".ch-hr"
-        },
-        {
-          "name": "--ch-hr-neutral-fill",
-          "value": "#6b675f",
-          "scope": ".ch-hr"
-        },
-        {
-          "name": "--ch-hr-track",
-          "value": "#ebe5d8",
-          "scope": ".ch-hr"
-        },
-        {
-          "name": "--ch-hr-zero",
-          "value": "#5f5c55",
-          "scope": ".ch-hr"
-        },
-        {
-          "name": "--ch-hr-feat",
-          "value": "#0b3a25",
-          "scope": ".ch-hr"
-        },
-        {
-          "name": "--ch-hr-f-ink",
-          "value": "#f4f1e8",
-          "scope": ".ch-hr"
-        },
-        {
-          "name": "--ch-hr-f-ink-2",
-          "value": "#d3d9cb",
-          "scope": ".ch-hr"
-        },
-        {
-          "name": "--ch-hr-f-gain",
-          "value": "#8fd3aa",
-          "scope": ".ch-hr"
-        },
-        {
-          "name": "--ch-hr-f-loss",
-          "value": "#edb867",
-          "scope": ".ch-hr"
-        },
-        {
-          "name": "--ch-hr-f-track",
-          "value": "rgb(244 241 232 / 0.18)",
-          "scope": ".ch-hr"
-        },
-        {
-          "name": "--ch-hr-press",
-          "value": "rgb(28 27 24 / 0.05)",
-          "scope": ".ch-hr"
-        },
-        {
-          "name": "--ch-hr-shadow",
-          "value": "var(--ch-card-shadow)",
-          "scope": ".ch-hr"
-        },
-        {
-          "name": "--ch-hr-k",
-          "value": "var(--ch-type-k, 1)",
-          "scope": ".ch-hr"
-        },
-        {
-          "name": "--ch-hr-sans",
-          "value": "var(--ch-font-sans)",
-          "scope": ".ch-hr"
-        },
-        {
-          "name": "--ch-hr-ease",
-          "value": "var(--ch-ease)",
-          "scope": ".ch-hr"
-        },
-        {
-          "name": "--ch-hr-spring",
-          "value": "var(--ch-ease-spring-smooth)",
-          "scope": ".ch-hr"
-        },
-        {
-          "name": "--ch-hr-well",
-          "value": "#141815",
-          "scope": "html[data-fw-theme='dark'] .ch-hr"
-        },
-        {
-          "name": "--ch-hr-ink",
-          "value": "#f1ecdf",
-          "scope": "html[data-fw-theme='dark'] .ch-hr"
-        },
-        {
-          "name": "--ch-hr-ink-2",
-          "value": "#d0c9b8",
-          "scope": "html[data-fw-theme='dark'] .ch-hr"
-        },
-        {
-          "name": "--ch-hr-ink-3",
-          "value": "#ada697",
-          "scope": "html[data-fw-theme='dark'] .ch-hr"
-        },
-        {
-          "name": "--ch-hr-gain",
-          "value": "#7cc79b",
-          "scope": "html[data-fw-theme='dark'] .ch-hr"
-        },
-        {
-          "name": "--ch-hr-loss",
-          "value": "#e7ae57",
-          "scope": "html[data-fw-theme='dark'] .ch-hr"
-        },
-        {
-          "name": "--ch-hr-flag",
-          "value": "#f28b7d",
-          "scope": "html[data-fw-theme='dark'] .ch-hr"
-        },
-        {
-          "name": "--ch-hr-accent",
-          "value": "#7cc79b",
-          "scope": "html[data-fw-theme='dark'] .ch-hr"
-        },
-        {
-          "name": "--ch-hr-sep",
-          "value": "rgb(241 236 223 / 0.1)",
-          "scope": "html[data-fw-theme='dark'] .ch-hr"
-        },
-        {
-          "name": "--ch-hr-ring",
-          "value": "rgb(255 255 255 / 0.06)",
-          "scope": "html[data-fw-theme='dark'] .ch-hr"
-        },
-        {
-          "name": "--ch-hr-gain-fill",
-          "value": "#4fa877",
-          "scope": "html[data-fw-theme='dark'] .ch-hr"
-        },
-        {
-          "name": "--ch-hr-loss-fill",
-          "value": "#e09a35",
-          "scope": "html[data-fw-theme='dark'] .ch-hr"
-        },
-        {
-          "name": "--ch-hr-neutral-fill",
-          "value": "#a39d90",
-          "scope": "html[data-fw-theme='dark'] .ch-hr"
-        },
-        {
-          "name": "--ch-hr-track",
-          "value": "#2c322d",
-          "scope": "html[data-fw-theme='dark'] .ch-hr"
-        },
-        {
-          "name": "--ch-hr-zero",
-          "value": "#ada697",
-          "scope": "html[data-fw-theme='dark'] .ch-hr"
-        },
-        {
-          "name": "--ch-hr-feat",
-          "value": "#123d29",
-          "scope": "html[data-fw-theme='dark'] .ch-hr"
-        },
-        {
-          "name": "--ch-hr-press",
-          "value": "rgb(241 236 223 / 0.06)",
-          "scope": "html[data-fw-theme='dark'] .ch-hr"
-        },
-        {
-          "name": "--ch-read-shadow-1",
-          "value": "0 1px 2px rgba(0,0,0,.18)",
-          "scope": ".ch-hr"
-        },
-        {
-          "name": "--ch-read-shadow-2",
-          "value": "var(--ch-elevation-reading)",
-          "scope": ".ch-hr"
-        },
-        {
-          "name": "--ch-read-shadow-3",
-          "value": "0 10px 24px -14px rgba(5,30,18,.55)",
-          "scope": ".ch-hr"
-        },
-        {
-          "name": "--ch-read-x1",
-          "value": "inset 0 1px 2px rgb(28 25 18/.07)",
-          "scope": ".ch-hr"
-        },
-        {
-          "name": "--ch-hr-cap-size",
-          "value": "calc(12px * min(var(--ch-hr-k, 1), 1.2))",
-          "scope": ".ch-hr"
+          "name": "--ch-rm-animation",
+          "value": "var(--ch-dur-crossfade-rm)",
+          "scope": "@media (prefers-reduced-motion: reduce) → .ch-hr-sure:not([hidden])"
         }
       ]
     },
@@ -16011,278 +16606,38 @@
       ],
       "tokens": [
         {
-          "name": "--ch-tb-bg",
-          "value": "var(--ch-bg-page)",
-          "scope": ".ch-htb"
+          "name": "--ch-coin",
+          "value": "var(--ch-yr-sr)",
+          "scope": ".ch-htb .scn[data-year='sr'],\n.ch-htb .hudsvg [data-year='sr']"
         },
         {
-          "name": "--ch-tb-card",
-          "value": "var(--ch-card-bg)",
-          "scope": ".ch-htb"
+          "name": "--ch-coin",
+          "value": "var(--ch-yr-jr)",
+          "scope": ".ch-htb .scn[data-year='jr'],\n.ch-htb .hudsvg [data-year='jr']"
         },
         {
-          "name": "--ch-tb-well",
-          "value": "#f6f4ee",
-          "scope": ".ch-htb"
+          "name": "--ch-coin",
+          "value": "var(--ch-yr-so)",
+          "scope": ".ch-htb .scn[data-year='so'],\n.ch-htb .hudsvg [data-year='so']"
         },
         {
-          "name": "--ch-tb-ink",
-          "value": "#1c1b18",
-          "scope": ".ch-htb"
+          "name": "--ch-coin",
+          "value": "var(--ch-yr-fr)",
+          "scope": ".ch-htb .scn[data-year='fr'],\n.ch-htb .hudsvg [data-year='fr']"
         },
         {
-          "name": "--ch-tb-ink-2",
-          "value": "#46433d",
-          "scope": ".ch-htb"
+          "name": "--ch-htb-chip",
+          "value": "clamp(calc(20% - 2px), calc((300 * var(--ch-type-k) - 100%) * 999), calc(50% - 1px))",
+          "scope": ".ch-htb .stchips"
         },
         {
-          "name": "--ch-tb-ink-3",
-          "value": "#5f5c55",
-          "scope": ".ch-htb"
-        },
-        {
-          "name": "--ch-tb-gain",
-          "value": "#14613d",
-          "scope": ".ch-htb"
-        },
-        {
-          "name": "--ch-tb-loss",
-          "value": "#9a5700",
-          "scope": ".ch-htb"
-        },
-        {
-          "name": "--ch-tb-accent",
-          "value": "#155a39",
-          "scope": ".ch-htb"
-        },
-        {
-          "name": "--ch-tb-sep",
-          "value": "rgb(28 27 24 / 0.1)",
-          "scope": ".ch-htb"
-        },
-        {
-          "name": "--ch-tb-ring",
-          "value": "rgb(28 27 24 / 0.07)",
-          "scope": ".ch-htb"
-        },
-        {
-          "name": "--ch-tb-gain-fill",
-          "value": "#1f6b45",
-          "scope": ".ch-htb"
-        },
-        {
-          "name": "--ch-tb-loss-fill",
-          "value": "#b86f0c",
-          "scope": ".ch-htb"
-        },
-        {
-          "name": "--ch-tb-neutral-fill",
-          "value": "#6b675f",
-          "scope": ".ch-htb"
-        },
-        {
-          "name": "--ch-tb-track",
-          "value": "#ebe5d8",
-          "scope": ".ch-htb"
-        },
-        {
-          "name": "--ch-tb-zero",
-          "value": "#5f5c55",
-          "scope": ".ch-htb"
-        },
-        {
-          "name": "--ch-tb-champ",
-          "value": "#dccda6",
-          "scope": ".ch-htb"
-        },
-        {
-          "name": "--ch-tb-feat",
-          "value": "#0b3a25",
-          "scope": ".ch-htb"
-        },
-        {
-          "name": "--ch-tb-f-ink",
-          "value": "#f4f1e8",
-          "scope": ".ch-htb"
-        },
-        {
-          "name": "--ch-tb-f-ink-2",
-          "value": "#d3d9cb",
-          "scope": ".ch-htb"
-        },
-        {
-          "name": "--ch-tb-f-gain",
-          "value": "#8fd3aa",
-          "scope": ".ch-htb"
-        },
-        {
-          "name": "--ch-tb-f-loss",
-          "value": "#edb867",
-          "scope": ".ch-htb"
-        },
-        {
-          "name": "--ch-tb-tint-acc",
-          "value": "rgb(21 90 57 / 0.1)",
-          "scope": ".ch-htb"
-        },
-        {
-          "name": "--ch-tb-tint-loss",
-          "value": "rgb(154 87 0 / 0.11)",
-          "scope": ".ch-htb"
-        },
-        {
-          "name": "--ch-tb-loss-on-tint",
-          "value": "#8a4d00",
-          "scope": ".ch-htb"
-        },
-        {
-          "name": "--ch-tb-shadow",
-          "value": "var(--ch-card-shadow)",
-          "scope": ".ch-htb"
-        },
-        {
-          "name": "--ch-tb-shadow-lg",
-          "value": "var(--ch-shadow-lg)",
-          "scope": ".ch-htb"
-        },
-        {
-          "name": "--ch-tb-scrim",
-          "value": "rgb(14 12 8 / 0.34)",
-          "scope": ".ch-htb"
-        },
-        {
-          "name": "--ch-tb-k",
-          "value": "var(--ch-type-k, 1)",
-          "scope": ".ch-htb"
-        },
-        {
-          "name": "--ch-tb-edge",
-          "value": "var(--ch-page-x-phone, 16px)",
-          "scope": ".ch-htb"
-        },
-        {
-          "name": "--ch-tb-sans",
-          "value": "var(--ch-font-sans)",
-          "scope": ".ch-htb"
-        },
-        {
-          "name": "--ch-tb-ease",
-          "value": "var(--ch-ease)",
-          "scope": ".ch-htb"
-        },
-        {
-          "name": "--ch-tb-spring",
-          "value": "var(--ch-ease-spring-smooth)",
-          "scope": ".ch-htb"
-        },
-        {
-          "name": "--ch-tb-spring-o",
-          "value": "var(--ch-ease-spring)",
-          "scope": ".ch-htb"
-        },
-        {
-          "name": "--ch-tb-well",
-          "value": "#141815",
-          "scope": "html[data-fw-theme='dark'] .ch-htb"
-        },
-        {
-          "name": "--ch-tb-ink",
-          "value": "#f1ecdf",
-          "scope": "html[data-fw-theme='dark'] .ch-htb"
-        },
-        {
-          "name": "--ch-tb-ink-2",
-          "value": "#d0c9b8",
-          "scope": "html[data-fw-theme='dark'] .ch-htb"
-        },
-        {
-          "name": "--ch-tb-ink-3",
-          "value": "#ada697",
-          "scope": "html[data-fw-theme='dark'] .ch-htb"
-        },
-        {
-          "name": "--ch-tb-gain",
-          "value": "#7cc79b",
-          "scope": "html[data-fw-theme='dark'] .ch-htb"
-        },
-        {
-          "name": "--ch-tb-loss",
-          "value": "#e7ae57",
-          "scope": "html[data-fw-theme='dark'] .ch-htb"
-        },
-        {
-          "name": "--ch-tb-accent",
-          "value": "#7cc79b",
-          "scope": "html[data-fw-theme='dark'] .ch-htb"
-        },
-        {
-          "name": "--ch-tb-sep",
-          "value": "rgb(241 236 223 / 0.1)",
-          "scope": "html[data-fw-theme='dark'] .ch-htb"
-        },
-        {
-          "name": "--ch-tb-ring",
-          "value": "rgb(255 255 255 / 0.06)",
-          "scope": "html[data-fw-theme='dark'] .ch-htb"
-        },
-        {
-          "name": "--ch-tb-gain-fill",
-          "value": "#4fa877",
-          "scope": "html[data-fw-theme='dark'] .ch-htb"
-        },
-        {
-          "name": "--ch-tb-loss-fill",
-          "value": "#e09a35",
-          "scope": "html[data-fw-theme='dark'] .ch-htb"
-        },
-        {
-          "name": "--ch-tb-neutral-fill",
-          "value": "#a39d90",
-          "scope": "html[data-fw-theme='dark'] .ch-htb"
-        },
-        {
-          "name": "--ch-tb-track",
-          "value": "#2c322d",
-          "scope": "html[data-fw-theme='dark'] .ch-htb"
-        },
-        {
-          "name": "--ch-tb-zero",
-          "value": "#ada697",
-          "scope": "html[data-fw-theme='dark'] .ch-htb"
-        },
-        {
-          "name": "--ch-tb-feat",
-          "value": "#123d29",
-          "scope": "html[data-fw-theme='dark'] .ch-htb"
-        },
-        {
-          "name": "--ch-tb-tint-acc",
-          "value": "rgb(124 199 155 / 0.14)",
-          "scope": "html[data-fw-theme='dark'] .ch-htb"
-        },
-        {
-          "name": "--ch-tb-tint-loss",
-          "value": "rgb(231 174 87 / 0.14)",
-          "scope": "html[data-fw-theme='dark'] .ch-htb"
-        },
-        {
-          "name": "--ch-tb-loss-on-tint",
-          "value": "#e7ae57",
-          "scope": "html[data-fw-theme='dark'] .ch-htb"
-        },
-        {
-          "name": "--ch-tb-scrim",
-          "value": "rgb(0 0 0 / 0.5)",
-          "scope": "html[data-fw-theme='dark'] .ch-htb"
-        },
-        {
-          "name": "--ch-tb-rail",
+          "name": "--ch-htb-rail",
           "value": "clamp(320px,30%,440px)",
           "scope": ".ch-htb .dgrid"
         },
         {
-          "name": "--ch-tb-edge",
-          "value": "20px",
+          "name": "--ch-page-x-phone",
+          "value": "var(--ch-space-5)",
           "scope": ".ch-htb .insp"
         },
         {
@@ -16291,39 +16646,14 @@
           "scope": ".ch-htb-sheet"
         },
         {
-          "name": "--ch-team-shadow-1",
-          "value": "var(--ch-elevation-card)",
-          "scope": ".ch-htb"
-        },
-        {
-          "name": "--ch-team-shadow-2",
-          "value": "0 14px 30px -18px rgba(5,30,18,.6)",
-          "scope": ".ch-htb"
-        },
-        {
-          "name": "--ch-team-shadow-3",
-          "value": "var(--ch-tb-shadow-lg)",
-          "scope": ".ch-htb"
-        },
-        {
-          "name": "--ch-team-shadow-4",
-          "value": "-1px 0 0 var(--ch-tb-sep),var(--ch-tb-shadow-lg)",
-          "scope": ".ch-htb"
-        },
-        {
-          "name": "--ch-team-x1",
-          "value": "inset 0 1px 2px rgb(28 25 18/.05)",
-          "scope": ".ch-htb"
+          "name": "--ch-rm-animation",
+          "value": "var(--ch-dur-crossfade-rm)",
+          "scope": "@media (prefers-reduced-motion: reduce) → .ch-htb .story"
         },
         {
           "name": "--ch-chart-gain",
-          "value": "var(--ch-tb-f-gain)",
+          "value": "var(--ch-feature-gain)",
           "scope": ".ch-htb .stn,\n.ch-htb .stchips"
-        },
-        {
-          "name": "--ch-team-shadow-1",
-          "value": "0 0 0 1px var(--ch-tb-ring)",
-          "scope": "html[data-fw-theme='dark'] .ch-htb"
         }
       ]
     },
@@ -16358,9 +16688,14 @@
         "ch-th-ans__body",
         "ch-th-at",
         "ch-th-bar",
+        "ch-th-bar--bench",
         "ch-th-bar__label",
+        "ch-th-bar__refs",
+        "ch-th-bar__swatch",
+        "ch-th-bar__tick",
         "ch-th-bar__track",
         "ch-th-bar__val",
+        "ch-th-bar__zero",
         "ch-th-bars",
         "ch-th-card",
         "ch-th-chip",
@@ -16387,6 +16722,7 @@
         "ch-th-cv__kind",
         "ch-th-cv__lede",
         "ch-th-cv__note",
+        "ch-th-cv__refs",
         "ch-th-cv__src",
         "ch-th-cv__title",
         "ch-th-dir",
@@ -17125,6 +17461,7 @@
         "ch-dh-card__h",
         "ch-dh-card__t",
         "ch-dh-clash",
+        "ch-dh-dot",
         "ch-dh-failed",
         "ch-dh-legs",
         "ch-dh-legs__l",
@@ -17138,9 +17475,12 @@
         "ch-dh-rows__a",
         "ch-dh-rows__b",
         "ch-dh-score",
+        "ch-dh-spark",
         "ch-dh-time",
         "ch-empty",
         "ch-es",
+        "ch-es--page",
+        "ch-es__copy",
         "ch-fgr__note",
         "ch-h-agenda",
         "ch-h-agenda__a",
@@ -17154,6 +17494,7 @@
         "ch-h-agenda__txt",
         "ch-h-card",
         "ch-h-card--none",
+        "ch-h-col",
         "ch-h-day",
         "ch-h-day--event",
         "ch-h-day--today",
@@ -17279,6 +17620,7 @@
         "ch-hm-form__fill",
         "ch-hm-form__head",
         "ch-hm-form__line",
+        "ch-hm-form__span",
         "ch-hm-form__svg",
         "ch-hm-form__top",
         "ch-hm-hero",
@@ -17297,8 +17639,10 @@
         "ch-hm-legs__list",
         "ch-hm-legs__note",
         "ch-hm-legs__notices",
+        "ch-hm-legs__part",
         "ch-hm-legs__r",
         "ch-hm-legs__s",
+        "ch-hm-legs__sep",
         "ch-hm-legs__sg",
         "ch-hm-legs__who",
         "ch-hm-link",
@@ -17349,6 +17693,9 @@
         "ch-hm-sk-crh",
         "ch-hm-sk-crh__body",
         "ch-hm-sk-crh__hero",
+        "ch-hm-sk-form__figs",
+        "ch-hm-sk-form__in",
+        "ch-hm-sk-form__top",
         "ch-hm-skel",
         "ch-hm-skel__act",
         "ch-hm-skel__bar",
@@ -17384,6 +17731,7 @@
         "ch-num",
         "ch-ph-acts",
         "ch-ph-asks",
+        "ch-ph-asks__dot",
         "ch-ph-asks__k",
         "ch-ph-asks__p",
         "ch-ph-asks__v",
@@ -17510,11 +17858,6 @@
         {
           "name": "--ch-home-x1",
           "value": "inset 0 0 0 var(--ch-hairline-w) rgb(255 255 255 / 0.14)",
-          "scope": "[data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-home-x2",
-          "value": "var(--ch-elevation-reading)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -17968,11 +18311,11 @@
         "ch-msp-new",
         "ch-msp-page",
         "ch-msp-panel",
+        "ch-msp-prof",
+        "ch-msp-row",
         "ch-msp-tiles",
         "ch-msp-to__in",
         "ch-msv-consearch",
-        "ch-msv-empty__cta",
-        "ch-msv-empty__ghost",
         "ch-msv-hello__s",
         "ch-msv-member__to",
         "ch-msv-ptile",
@@ -18047,7 +18390,6 @@
     {
       "file": "src/clubhouse/styles/messages-inbox.css",
       "classes": [
-        "ch-avatar",
         "ch-inb",
         "ch-inb--phone",
         "ch-inb--rail",
@@ -18131,36 +18473,6 @@
           "name": "--ch-inb-ink-3",
           "value": "var(--ch-crh-ink4)",
           "scope": "[data-ch-ms-v2] .ch-inb,\n.ch-inb-skelpage"
-        },
-        {
-          "name": "--ch-av-size",
-          "value": "62px",
-          "scope": "[data-ch-ms-v2] .ch-inb--phone .ch-msv-pin .ch-avatar"
-        },
-        {
-          "name": "--ch-av-type",
-          "value": "calc(62px * 0.38)",
-          "scope": "[data-ch-ms-v2] .ch-inb--phone .ch-msv-pin .ch-avatar"
-        },
-        {
-          "name": "--ch-av-size",
-          "value": "44px",
-          "scope": "[data-ch-ms-v2] .ch-inb--phone .ch-ms-row .ch-avatar"
-        },
-        {
-          "name": "--ch-av-type",
-          "value": "calc(44px * 0.38)",
-          "scope": "[data-ch-ms-v2] .ch-inb--phone .ch-ms-row .ch-avatar"
-        },
-        {
-          "name": "--ch-av-size",
-          "value": "40px",
-          "scope": "[data-ch-ms-v2] .ch-inb--rail .ch-ms-row .ch-avatar"
-        },
-        {
-          "name": "--ch-av-type",
-          "value": "calc(40px * 0.38)",
-          "scope": "[data-ch-ms-v2] .ch-inb--rail .ch-ms-row .ch-avatar"
         }
       ]
     },
@@ -18171,6 +18483,7 @@
         "ch-modal__head",
         "ch-modal__panel",
         "ch-modal__titles",
+        "ch-ms-comp__field",
         "ch-ms-msg",
         "ch-ms-msg__fail",
         "ch-ms-msg__na",
@@ -18233,9 +18546,19 @@
           "scope": ".ch-msv-hoverbar"
         },
         {
-          "name": "--ch-mso-rx-halo",
-          "value": "0 0 0 2px var(--ch-grouped-bg), 0 0 0 3px color-mix(in srgb, var(--ch-bubble-mine-fill) 20%, transparent)",
-          "scope": ".ch-ms-react"
+          "name": "--ch-mso-rx-page",
+          "value": "0 0 0 2px var(--ch-grouped-bg)",
+          "scope": ".ch-ms-reacts"
+        },
+        {
+          "name": "--ch-mso-rx-page-own",
+          "value": "0 0 0 4px var(--ch-grouped-bg)",
+          "scope": ".ch-ms-reacts"
+        },
+        {
+          "name": "--ch-mso-rx-pale",
+          "value": "color-mix(in srgb, var(--ch-bubble-mine-fill) 20%, transparent)",
+          "scope": ".ch-ms-reacts"
         }
       ]
     },
@@ -18244,17 +18567,11 @@
       "classes": [
         "ch-avatar",
         "ch-ms-bub",
-        "ch-ms-bub--file",
         "ch-ms-comp",
-        "ch-ms-comp__field",
         "ch-ms-day",
-        "ch-ms-msg",
-        "ch-ms-msg__col",
         "ch-ms-msg__fail",
-        "ch-ms-msg__stack",
         "ch-ms-msgs",
         "ch-ms-quote",
-        "ch-ms-reacts",
         "ch-ms-scroll",
         "ch-ms-th",
         "ch-ms-th__who",
@@ -18262,13 +18579,13 @@
         "ch-msp-composer",
         "ch-msp-thread",
         "ch-msp-who",
+        "ch-msp-whobox",
         "ch-msv-bname",
         "ch-msv-datepill",
         "ch-msv-datepillspot",
         "ch-msv-edited",
         "ch-msv-hello",
         "ch-msv-jump",
-        "ch-msv-plus__key",
         "ch-msv-time",
         "ch-msv-typing",
         "ch-pbar",
@@ -18383,8 +18700,10 @@
         "ch-ms-rail__title",
         "ch-ms-reactbar",
         "ch-ms-reactbar__b",
+        "ch-ms-reacts",
         "ch-ms-row",
         "ch-ms-row__bot",
+        "ch-ms-row__hint",
         "ch-ms-row__main",
         "ch-ms-row__mute",
         "ch-ms-row__poll",
@@ -18460,8 +18779,6 @@
         "ch-msv-datepill",
         "ch-msv-dot",
         "ch-msv-empty",
-        "ch-msv-empty__cta",
-        "ch-msv-empty__ghost",
         "ch-msv-empty__illo",
         "ch-msv-files",
         "ch-msv-frow",
@@ -18496,7 +18813,6 @@
         "ch-msv-sheet",
         "ch-msv-sk",
         "ch-msv-srow",
-        "ch-msv-suggest__h",
         "ch-msv-suggest__r",
         "ch-msv-tail",
         "ch-msv-time",
@@ -18544,14 +18860,19 @@
       ],
       "tokens": [
         {
-          "name": "--ch-av-size",
-          "value": "44px",
-          "scope": ".ch-ms-row .ch-avatar"
-        },
-        {
           "name": "--ch-ms-measure",
           "value": "816px",
           "scope": ".ch-ms,\n.ch-msp"
+        },
+        {
+          "name": "--ch-ms-comp-ring",
+          "value": "0 0 0 1.5px color-mix(in oklab, var(--ch-accent-ink) 55%, transparent)",
+          "scope": ".ch-ms-comp__field"
+        },
+        {
+          "name": "--ch-ms-send-drop",
+          "value": "0 2px 6px -2px color-mix(in srgb, var(--ch-bubble-mine-fill) 50%, transparent)",
+          "scope": ".ch-ms-send"
         },
         {
           "name": "--ch-notice-fill",
@@ -19383,23 +19704,30 @@
         "ch-prb-when",
         "ch-prc",
         "ch-prc-add",
+        "ch-prc-areas",
+        "ch-prc-ask",
+        "ch-prc-ask__q",
         "ch-prc-bank",
-        "ch-prc-bank__chips",
         "ch-prc-bank__none",
         "ch-prc-bank__q",
         "ch-prc-block",
         "ch-prc-block__d",
         "ch-prc-block__main",
+        "ch-prc-block__mn",
+        "ch-prc-block__s",
         "ch-prc-block__t",
         "ch-prc-block__tm",
+        "ch-prc-block__why",
         "ch-prc-blocks",
         "ch-prc-card",
         "ch-prc-cards",
         "ch-prc-changed",
         "ch-prc-checks",
-        "ch-prc-chip",
-        "ch-prc-chipb",
-        "ch-prc-chips",
+        "ch-prc-confirm",
+        "ch-prc-day",
+        "ch-prc-day__bar",
+        "ch-prc-day__ends",
+        "ch-prc-dfacts",
         "ch-prc-disc",
         "ch-prc-drill",
         "ch-prc-empty",
@@ -19415,16 +19743,18 @@
         "ch-prc-fields__len",
         "ch-prc-fields__two",
         "ch-prc-first",
+        "ch-prc-first__a",
         "ch-prc-fold",
+        "ch-prc-fold__m",
         "ch-prc-fold__said",
         "ch-prc-fold__t",
-        "ch-prc-formatlink",
         "ch-prc-gb",
         "ch-prc-gb__a",
         "ch-prc-gb__mn",
         "ch-prc-gb__s",
         "ch-prc-gb__tm",
         "ch-prc-gb__top",
+        "ch-prc-gcard",
         "ch-prc-ghosts",
         "ch-prc-glance",
         "ch-prc-group",
@@ -19435,8 +19765,6 @@
         "ch-prc-h__a",
         "ch-prc-h__line",
         "ch-prc-list",
-        "ch-prc-mark",
-        "ch-prc-mix",
         "ch-prc-more",
         "ch-prc-new",
         "ch-prc-new__err",
@@ -19444,20 +19772,26 @@
         "ch-prc-next",
         "ch-prc-next__a",
         "ch-prc-next__k",
+        "ch-prc-next__more",
         "ch-prc-next__none",
         "ch-prc-next__rows",
+        "ch-prc-next__w",
         "ch-prc-none",
         "ch-prc-note",
+        "ch-prc-open",
         "ch-prc-opt",
         "ch-prc-opt__r",
         "ch-prc-opt__t",
-        "ch-prc-past",
-        "ch-prc-planacts",
+        "ch-prc-planbar",
+        "ch-prc-planbar__a",
+        "ch-prc-planbar__s",
         "ch-prc-planpage",
         "ch-prc-player",
         "ch-prc-probs",
         "ch-prc-review",
         "ch-prc-ribbon",
+        "ch-prc-ribbon__mix",
+        "ch-prc-ribbon__w",
         "ch-prc-row",
         "ch-prc-row__e",
         "ch-prc-row__l",
@@ -19467,24 +19801,24 @@
         "ch-prc-rows",
         "ch-prc-run",
         "ch-prc-run__a",
-        "ch-prc-run__g",
         "ch-prc-run__h",
         "ch-prc-run__now",
         "ch-prc-save",
         "ch-prc-sec",
         "ch-prc-sec__h",
-        "ch-prc-seen",
         "ch-prc-seenlist",
+        "ch-prc-sheetform",
         "ch-prc-slot",
         "ch-prc-slot__d",
         "ch-prc-slot__t",
         "ch-prc-slot__w",
         "ch-prc-slots",
         "ch-prc-stale",
+        "ch-prc-start",
+        "ch-prc-starts",
         "ch-prc-step",
         "ch-prc-strip",
         "ch-prc-strip__a",
-        "ch-prc-tabs",
         "ch-prc-tile",
         "ch-prc-tile__d",
         "ch-prc-tile__it",
@@ -19492,6 +19826,8 @@
         "ch-prc-timeform",
         "ch-prc-tmpl",
         "ch-prc-tmpl__go",
+        "ch-prc-today",
+        "ch-prc-today__go",
         "ch-prc-week",
         "ch-prt-board",
         "ch-prt-board__h",
@@ -19501,6 +19837,8 @@
         "ch-prt-card__bring",
         "ch-prt-card__deck",
         "ch-prt-cards",
+        "ch-prt-count",
+        "ch-prt-cut",
         "ch-prt-dia",
         "ch-prt-drills",
         "ch-prt-foot",
@@ -19994,91 +20332,25 @@
       "file": "src/clubhouse/styles/quick-chat.css",
       "classes": [
         "ch-badge",
-        "ch-btn",
         "ch-grab",
         "ch-grab--hit",
+        "ch-isl",
+        "ch-landmark",
+        "ch-landslot",
+        "ch-landslot__s",
+        "ch-landslot__t",
+        "ch-landslot__tint",
+        "ch-landtag",
+        "ch-qc-kbd",
         "ch-qc-keys",
         "ch-qck",
         "ch-qcs",
+        "ch-root",
+        "ch-th",
         "ch-topbar",
         "ch-topbar__actions"
       ],
       "tokens": [
-        {
-          "name": "--ch-qc-k",
-          "value": "1",
-          "scope": ".ch-qcs"
-        },
-        {
-          "name": "--ch-qc-a-page",
-          "value": "var(--ch-bg-page)",
-          "scope": ".ch-qcs"
-        },
-        {
-          "name": "--ch-qc-a-card",
-          "value": "#fffefb",
-          "scope": ".ch-qcs"
-        },
-        {
-          "name": "--ch-qc-a-well",
-          "value": "#f6f4ee",
-          "scope": ".ch-qcs"
-        },
-        {
-          "name": "--ch-qc-a-ink",
-          "value": "var(--ch-text-primary)",
-          "scope": ".ch-qcs"
-        },
-        {
-          "name": "--ch-qc-a-ink-2",
-          "value": "#46433d",
-          "scope": ".ch-qcs"
-        },
-        {
-          "name": "--ch-qc-a-ink-3",
-          "value": "#5f5c55",
-          "scope": ".ch-qcs"
-        },
-        {
-          "name": "--ch-qc-a-accent",
-          "value": "var(--ch-accent)",
-          "scope": ".ch-qcs"
-        },
-        {
-          "name": "--ch-qc-a-accent-ink",
-          "value": "var(--ch-text-on-accent)",
-          "scope": ".ch-qcs"
-        },
-        {
-          "name": "--ch-qc-a-accent-text",
-          "value": "#155a39",
-          "scope": ".ch-qcs"
-        },
-        {
-          "name": "--ch-qc-a-tint",
-          "value": "rgb(21 90 57 / 0.1)",
-          "scope": ".ch-qcs"
-        },
-        {
-          "name": "--ch-qc-a-loss",
-          "value": "#9a5700",
-          "scope": ".ch-qcs"
-        },
-        {
-          "name": "--ch-qc-a-loss-tint",
-          "value": "rgb(154 87 0 / 0.08)",
-          "scope": ".ch-qcs"
-        },
-        {
-          "name": "--ch-qc-a-sep",
-          "value": "rgb(28 27 24 / 0.1)",
-          "scope": ".ch-qcs"
-        },
-        {
-          "name": "--ch-qc-a-ring",
-          "value": "rgb(28 27 24 / 0.07)",
-          "scope": ".ch-qcs"
-        },
         {
           "name": "--ch-qc-a-frame",
           "value": "var(--ch-frame)",
@@ -20097,61 +20369,6 @@
         {
           "name": "--ch-qc-a-champ",
           "value": "var(--ch-champagne-300)",
-          "scope": ".ch-qcs"
-        },
-        {
-          "name": "--ch-qc-a-champ-ink",
-          "value": "#725b2c",
-          "scope": ".ch-qcs"
-        },
-        {
-          "name": "--ch-qc-a-skel",
-          "value": "var(--ch-skel-base)",
-          "scope": ".ch-qcs"
-        },
-        {
-          "name": "--ch-qc-a-yr-sr",
-          "value": "#1f6b45",
-          "scope": ".ch-qcs"
-        },
-        {
-          "name": "--ch-qc-a-yr-jr",
-          "value": "#3d6787",
-          "scope": ".ch-qcs"
-        },
-        {
-          "name": "--ch-qc-a-yr-so",
-          "value": "#86672c",
-          "scope": ".ch-qcs"
-        },
-        {
-          "name": "--ch-qc-a-yr-fr",
-          "value": "#9a4a35",
-          "scope": ".ch-qcs"
-        },
-        {
-          "name": "--ch-qc-a-block",
-          "value": "#1f6b45",
-          "scope": ".ch-qcs"
-        },
-        {
-          "name": "--ch-qc-a-block-ink",
-          "value": "#f4f1e8",
-          "scope": ".ch-qcs"
-        },
-        {
-          "name": "--ch-qc-a-seg1",
-          "value": "#155a39",
-          "scope": ".ch-qcs"
-        },
-        {
-          "name": "--ch-qc-a-seg2",
-          "value": "#23704a",
-          "scope": ".ch-qcs"
-        },
-        {
-          "name": "--ch-qc-a-seg3",
-          "value": "#2f7d55",
           "scope": ".ch-qcs"
         },
         {
@@ -20165,129 +20382,9 @@
           "scope": ".ch-qcs"
         },
         {
-          "name": "--ch-qc-a-veil",
-          "value": "rgb(242 240 233 / 0.42)",
-          "scope": ".ch-qcs"
-        },
-        {
           "name": "--ch-qc-a-pshadow",
           "value": "0 0 0 0.5px rgb(28 25 18 / 0.12), 0 36px 72px -26px rgb(28 25 18 / 0.4), 0 12px 28px -12px rgb(28 25 18 / 0.18)",
           "scope": ".ch-qcs"
-        },
-        {
-          "name": "--ch-qc-a-tile",
-          "value": "#fffefb",
-          "scope": ".ch-qcs"
-        },
-        {
-          "name": "--ch-qc-a-tile-ring",
-          "value": "rgb(28 27 24 / 0.07)",
-          "scope": ".ch-qcs"
-        },
-        {
-          "name": "--ch-qc-a-shadow",
-          "value": "var(--ch-elevation-reading)",
-          "scope": ".ch-qcs"
-        },
-        {
-          "name": "--ch-qc-a-card",
-          "value": "#191e1a",
-          "scope": "html[data-fw-theme='dark'] .ch-qcs"
-        },
-        {
-          "name": "--ch-qc-a-well",
-          "value": "#141815",
-          "scope": "html[data-fw-theme='dark'] .ch-qcs"
-        },
-        {
-          "name": "--ch-qc-a-ink-2",
-          "value": "#d0c9b8",
-          "scope": "html[data-fw-theme='dark'] .ch-qcs"
-        },
-        {
-          "name": "--ch-qc-a-ink-3",
-          "value": "#ada697",
-          "scope": "html[data-fw-theme='dark'] .ch-qcs"
-        },
-        {
-          "name": "--ch-qc-a-accent-text",
-          "value": "#7cc79b",
-          "scope": "html[data-fw-theme='dark'] .ch-qcs"
-        },
-        {
-          "name": "--ch-qc-a-tint",
-          "value": "rgb(124 199 155 / 0.12)",
-          "scope": "html[data-fw-theme='dark'] .ch-qcs"
-        },
-        {
-          "name": "--ch-qc-a-loss",
-          "value": "#e7ae57",
-          "scope": "html[data-fw-theme='dark'] .ch-qcs"
-        },
-        {
-          "name": "--ch-qc-a-loss-tint",
-          "value": "rgb(231 174 87 / 0.12)",
-          "scope": "html[data-fw-theme='dark'] .ch-qcs"
-        },
-        {
-          "name": "--ch-qc-a-sep",
-          "value": "rgb(241 236 223 / 0.1)",
-          "scope": "html[data-fw-theme='dark'] .ch-qcs"
-        },
-        {
-          "name": "--ch-qc-a-ring",
-          "value": "rgb(255 255 255 / 0.06)",
-          "scope": "html[data-fw-theme='dark'] .ch-qcs"
-        },
-        {
-          "name": "--ch-qc-a-champ-ink",
-          "value": "#cdbb8e",
-          "scope": "html[data-fw-theme='dark'] .ch-qcs"
-        },
-        {
-          "name": "--ch-qc-a-yr-sr",
-          "value": "#2a7a51",
-          "scope": "html[data-fw-theme='dark'] .ch-qcs"
-        },
-        {
-          "name": "--ch-qc-a-yr-jr",
-          "value": "#46739a",
-          "scope": "html[data-fw-theme='dark'] .ch-qcs"
-        },
-        {
-          "name": "--ch-qc-a-yr-so",
-          "value": "#88692e",
-          "scope": "html[data-fw-theme='dark'] .ch-qcs"
-        },
-        {
-          "name": "--ch-qc-a-yr-fr",
-          "value": "#a3533e",
-          "scope": "html[data-fw-theme='dark'] .ch-qcs"
-        },
-        {
-          "name": "--ch-qc-a-block",
-          "value": "#4fa877",
-          "scope": "html[data-fw-theme='dark'] .ch-qcs"
-        },
-        {
-          "name": "--ch-qc-a-block-ink",
-          "value": "#0e120f",
-          "scope": "html[data-fw-theme='dark'] .ch-qcs"
-        },
-        {
-          "name": "--ch-qc-a-seg1",
-          "value": "#4fa877",
-          "scope": "html[data-fw-theme='dark'] .ch-qcs"
-        },
-        {
-          "name": "--ch-qc-a-seg2",
-          "value": "#7cc79b",
-          "scope": "html[data-fw-theme='dark'] .ch-qcs"
-        },
-        {
-          "name": "--ch-qc-a-seg3",
-          "value": "#9dd6b4",
-          "scope": "html[data-fw-theme='dark'] .ch-qcs"
         },
         {
           "name": "--ch-qc-a-pglass",
@@ -20300,39 +20397,9 @@
           "scope": "html[data-fw-theme='dark'] .ch-qcs"
         },
         {
-          "name": "--ch-qc-a-veil",
-          "value": "rgb(14 18 15 / 0.5)",
-          "scope": "html[data-fw-theme='dark'] .ch-qcs"
-        },
-        {
           "name": "--ch-qc-a-pshadow",
           "value": "0 0 0 0.5px rgb(237 231 216 / 0.14), 0 36px 72px -26px rgb(0 0 0 / 0.85), 0 12px 28px -12px rgb(0 0 0 / 0.5)",
           "scope": "html[data-fw-theme='dark'] .ch-qcs"
-        },
-        {
-          "name": "--ch-qc-a-tile",
-          "value": "#1f2520",
-          "scope": "html[data-fw-theme='dark'] .ch-qcs"
-        },
-        {
-          "name": "--ch-qc-a-tile-ring",
-          "value": "rgb(255 255 255 / 0.06)",
-          "scope": "html[data-fw-theme='dark'] .ch-qcs"
-        },
-        {
-          "name": "--ch-qc-a-shadow",
-          "value": "var(--ch-elevation-reading)",
-          "scope": "html[data-fw-theme='dark'] .ch-qcs"
-        },
-        {
-          "name": "--ch-qc-tc",
-          "value": "var(--ch-qc-a-accent-text)",
-          "scope": ".ch-qcs .tile"
-        },
-        {
-          "name": "--ch-qc-k",
-          "value": "1",
-          "scope": ".ch-qck"
         },
         {
           "name": "--ch-qc-a-frame",
@@ -20353,86 +20420,6 @@
           "name": "--ch-qc-a-champ",
           "value": "var(--ch-champagne-300)",
           "scope": ".ch-qck"
-        },
-        {
-          "name": "--ch-qc-a-accent",
-          "value": "var(--ch-accent)",
-          "scope": ".ch-qck"
-        },
-        {
-          "name": "--ch-qc-a-accent-ink",
-          "value": "var(--ch-text-on-accent)",
-          "scope": ".ch-qck"
-        },
-        {
-          "name": "--ch-qc-a-accent-text",
-          "value": "var(--ch-ask-accent)",
-          "scope": ".ch-qck"
-        },
-        {
-          "name": "--ch-qc-a-tint",
-          "value": "color-mix(in oklab, var(--ch-ask-accent) 12%, transparent)",
-          "scope": ".ch-qck"
-        },
-        {
-          "name": "--ch-qc-a-champ-ink",
-          "value": "var(--ch-champagne-ink)",
-          "scope": ".ch-qck"
-        },
-        {
-          "name": "--ch-qc-a-page",
-          "value": "var(--ch-bg-page)",
-          "scope": ".ch-qck"
-        },
-        {
-          "name": "--ch-qc-shadow-1",
-          "value": "var(--ch-shadow-float)",
-          "scope": ".ch-qcs, .ch-qck"
-        },
-        {
-          "name": "--ch-qc-shadow-2",
-          "value": "0 0 0 var(--ch-hairline-w) var(--ch-qc-a-ring), 0 1px 2px rgb(28 25 18 / 0.05), 0 10px 24px -14px rgb(28 25 18 / 0.2)",
-          "scope": ".ch-qcs, .ch-qck"
-        },
-        {
-          "name": "--ch-qc-shadow-3",
-          "value": "0 6px 14px -8px rgb(11 58 37 / 0.6)",
-          "scope": ".ch-qcs, .ch-qck"
-        },
-        {
-          "name": "--ch-qc-shadow-4",
-          "value": "0 0 0 var(--ch-hairline-w) var(--ch-qc-a-ring), 0 4px 10px -6px rgb(28 25 18 / 0.25)",
-          "scope": ".ch-qcs, .ch-qck"
-        },
-        {
-          "name": "--ch-qc-shadow-5",
-          "value": "inset 0 var(--ch-hairline-w) 0 rgb(255 255 255 / 0.2), 0 4px 10px -6px rgb(11 58 37 / 0.6)",
-          "scope": ".ch-qcs, .ch-qck"
-        },
-        {
-          "name": "--ch-qc-shadow-6",
-          "value": "0 0 0 var(--ch-hairline-w) var(--ch-qc-a-ring), 0 10px 24px -14px rgb(28 25 18 / 0.2)",
-          "scope": ".ch-qcs, .ch-qck"
-        },
-        {
-          "name": "--ch-qc-shadow-7",
-          "value": "0 0 0 var(--ch-hairline-w) var(--ch-qc-a-ring), 0 6px 12px -6px rgb(28 25 18 / 0.35)",
-          "scope": ".ch-qcs, .ch-qck"
-        },
-        {
-          "name": "--ch-qc-shadow-8",
-          "value": "var(--ch-qc-a-pshadow)",
-          "scope": ".ch-qcs, .ch-qck"
-        },
-        {
-          "name": "--ch-qc-shadow-9",
-          "value": "inset 0 var(--ch-hairline-w) 0 rgb(255 255 255 / 0.18), 0 4px 10px -4px rgb(11 58 37 / 0.5)",
-          "scope": ".ch-qcs, .ch-qck"
-        },
-        {
-          "name": "--ch-qc-shadow-10",
-          "value": "0 0 0 var(--ch-hairline-w) var(--ch-qc-a-tile-ring), 0 1px 2px rgb(28 25 18 / 0.04), 0 8px 18px -12px rgb(28 25 18 / 0.18)",
-          "scope": ".ch-qcs, .ch-qck"
         },
         {
           "name": "--ch-qc-shadow-11",
@@ -20452,11 +20439,6 @@
         {
           "name": "--ch-qc-shadow-14",
           "value": "inset 0 var(--ch-hairline-w) 0 var(--ch-qc-a-pglass-hi), var(--ch-qc-a-pshadow)",
-          "scope": ".ch-qcs, .ch-qck"
-        },
-        {
-          "name": "--ch-quick-chat-x1",
-          "value": "-0.5px -0.5px 0 rgb(28 25 18 / 0.08)",
           "scope": ".ch-qcs, .ch-qck"
         }
       ]
@@ -20800,14 +20782,11 @@
         "ch-rsm-trend__empty",
         "ch-rsm-trend__lg",
         "ch-rsx",
-        "ch-rsx-act",
-        "ch-rsx-acts",
         "ch-rsx-badge",
         "ch-rsx-chart",
         "ch-rsx-chip",
         "ch-rsx-code",
         "ch-rsx-code__v",
-        "ch-rsx-coin",
         "ch-rsx-facts",
         "ch-rsx-figs",
         "ch-rsx-figs__f",
@@ -20821,7 +20800,6 @@
         "ch-rsx-none",
         "ch-rsx-panel",
         "ch-rsx-prof",
-        "ch-rsx-prow",
         "ch-rsx-prow__in",
         "ch-rsx-req",
         "ch-rsx-req__coins",
@@ -20931,56 +20909,6 @@
           "scope": "[data-ch-crh='on'] .ch-rs-tcard"
         },
         {
-          "name": "--ch-av-size",
-          "value": "30px",
-          "scope": "[data-ch-crh='on'] .ch-rs-tcard__coins .ch-avatar"
-        },
-        {
-          "name": "--ch-av-type",
-          "value": "12px",
-          "scope": "[data-ch-crh='on'] .ch-rs-tcard__coins .ch-avatar"
-        },
-        {
-          "name": "--ch-av-size",
-          "value": "26px",
-          "scope": "[data-ch-crh='on'] .ch-rs-ldr__p .ch-avatar"
-        },
-        {
-          "name": "--ch-av-type",
-          "value": "12px",
-          "scope": "[data-ch-crh='on'] .ch-rs-ldr__p .ch-avatar"
-        },
-        {
-          "name": "--ch-av-size",
-          "value": "calc(32 * min(var(--ch-type-k), 1.2px))",
-          "scope": "@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) → [data-ch-crh='on'] .ch-rsx-coin .ch-avatar,\n  [data-ch-crh='on'] .ch-rsx-prow .ch-avatar,\n  [data-ch-crh='on'] .ch-rsx-rq .ch-avatar,\n  [data-ch-crh='on'] .ch-rsx-req__coins .ch-avatar"
-        },
-        {
-          "name": "--ch-av-type",
-          "value": "calc(12 * min(var(--ch-type-k), 1.2px))",
-          "scope": "@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) → [data-ch-crh='on'] .ch-rsx-coin .ch-avatar,\n  [data-ch-crh='on'] .ch-rsx-prow .ch-avatar,\n  [data-ch-crh='on'] .ch-rsx-rq .ch-avatar,\n  [data-ch-crh='on'] .ch-rsx-req__coins .ch-avatar"
-        },
-        {
-          "name": "--ch-av-size",
-          "value": "76px",
-          "scope": "@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) → [data-ch-crh='on'] .ch-rsx-head .ch-avatar"
-        },
-        {
-          "name": "--ch-av-type",
-          "value": "26px",
-          "scope": "@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) → [data-ch-crh='on'] .ch-rsx-head .ch-avatar"
-        },
-        {
-          "name": "--ch-av-size",
-          "value": "calc(32 * min(var(--ch-type-k), 1.2px))",
-          "scope": "@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) → [data-ch-crh='on'] .ch-rsx-req__coins .ch-avatar"
-        },
-        {
-          "name": "--ch-av-type",
-          "value": "calc(12 * min(var(--ch-type-k), 1.2px))",
-          "scope": "@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) → [data-ch-crh='on'] .ch-rsx-req__coins .ch-avatar"
-        },
-        {
           "name": "--ch-roster-x1",
           "value": "inset 0 0 0 var(--ch-hairline-w) var(--ch-on-green-mark)",
           "scope": "[data-ui='clubhouse']"
@@ -20988,11 +20916,6 @@
         {
           "name": "--ch-roster-x2",
           "value": "0 0 0 2px var(--ch-frame)",
-          "scope": "[data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-roster-x3",
-          "value": "0 0 0 1px color-mix(in srgb, var(--ch-rs-y, var(--ch-chart-flat)) 34%, transparent), var(--ch-elevation-lifted)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -22348,6 +22271,11 @@
           "scope": ".ch-notice--danger"
         },
         {
+          "name": "--ch-notice-fill",
+          "value": "var(--ch-card-bg)",
+          "scope": "@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) → .ch-notice[data-ch-bare]"
+        },
+        {
           "name": "--ch-notice-ink",
           "value": "var(--ch-on-green-ink)",
           "scope": ".ch-feat .ch-notice--danger"
@@ -22443,8 +22371,11 @@
         "ch-sf__n",
         "ch-sf__open",
         "ch-shs",
+        "ch-shs--desk",
+        "ch-shs--desk-team",
         "ch-shs-ah",
         "ch-shs-ah__meta",
+        "ch-shs-also",
         "ch-shs-anote",
         "ch-shs-avgline",
         "ch-shs-ax",
@@ -22457,6 +22388,7 @@
         "ch-shs-chart",
         "ch-shs-chev",
         "ch-shs-cmp",
+        "ch-shs-cmp-h",
         "ch-shs-cmp-row",
         "ch-shs-cmp-track",
         "ch-shs-ctl",
@@ -22471,13 +22403,24 @@
         "ch-shs-d-sheet--body",
         "ch-shs-d-slot",
         "ch-shs-db",
+        "ch-shs-dctl",
         "ch-shs-delta",
+        "ch-shs-desk",
+        "ch-shs-desk__det",
+        "ch-shs-desk__dett",
+        "ch-shs-desk__sum",
         "ch-shs-dev",
+        "ch-shs-dhead",
+        "ch-shs-dhead__act",
+        "ch-shs-dhead__id",
+        "ch-shs-dhead__row",
         "ch-shs-dlink",
         "ch-shs-drow",
+        "ch-shs-early-key",
         "ch-shs-empty",
         "ch-shs-empty__ic",
         "ch-shs-empty__t",
+        "ch-shs-failed",
         "ch-shs-feat",
         "ch-shs-feature",
         "ch-shs-few",
@@ -22519,6 +22462,7 @@
         "ch-shs-loss",
         "ch-shs-m3",
         "ch-shs-m4",
+        "ch-shs-mean-label",
         "ch-shs-mini-cap",
         "ch-shs-mini-key",
         "ch-shs-mr",
@@ -22559,7 +22503,6 @@
         "ch-shs-skel",
         "ch-shs-skel--blk",
         "ch-shs-skel--cap",
-        "ch-shs-skel--f",
         "ch-shs-skel--hero",
         "ch-shs-skel--meta",
         "ch-shs-skel--t",
@@ -22568,8 +22511,6 @@
         "ch-shs-skel-card--d",
         "ch-shs-skel-f",
         "ch-shs-skel-sec",
-        "ch-shs-skel-seg",
-        "ch-shs-skel-seg--team",
         "ch-shs-skey",
         "ch-shs-spark",
         "ch-shs-spark__cap",
@@ -22598,9 +22539,12 @@
         "ch-shs-yg__notice",
         "ch-shs-zero",
         "ch-spm-head",
+        "ch-st--shs",
+        "ch-st-head__act",
         "ch-st-updating",
         "ch-stm-panel",
         "ch-stm-panel__h",
+        "ch-sv-mix",
         "ch-sw-last",
         "ch-topbar"
       ],
@@ -22864,6 +22808,21 @@
           "name": "--ch-border-focus",
           "value": "var(--ch-on-green-plate)",
           "scope": ".ch-shs-feature,\n.ch-shs-chart"
+        },
+        {
+          "name": "--ch-sv-mix-fill",
+          "value": "var(--ch-chart-par)",
+          "scope": ".ch-shs .ch-sv-mix .is-par,\n.ch-shs-screen .ch-sv-mix .is-par"
+        },
+        {
+          "name": "--ch-sv-mix-fill",
+          "value": "var(--ch-chart-bogey)",
+          "scope": ".ch-shs .ch-sv-mix .is-bogey,\n.ch-shs-screen .ch-sv-mix .is-bogey"
+        },
+        {
+          "name": "--ch-sv-mix-ink",
+          "value": "var(--ch-ink-950)",
+          "scope": ".ch-shs .ch-sv-mix .is-bogey,\n.ch-shs-screen .ch-sv-mix .is-bogey"
         }
       ]
     },
@@ -24109,7 +24068,7 @@
         },
         {
           "name": "--ch-workspace",
-          "value": "#f5f0e4",
+          "value": "#f2f0e9",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -24349,7 +24308,7 @@
         },
         {
           "name": "--ch-bg-page",
-          "value": "#ebe7dc",
+          "value": "#f2f0e9",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -25168,6 +25127,11 @@
           "scope": "[data-ui='clubhouse']"
         },
         {
+          "name": "--ch-lead-serif-m",
+          "value": "1.15",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
           "name": "--ch-wdth-display",
           "value": "'wdth' 96",
           "scope": "[data-ui='clubhouse']"
@@ -25719,7 +25683,7 @@
         },
         {
           "name": "--ch-elevation-card",
-          "value": "0 0 0 1px rgb(28 25 18 / 0.07), 0 1px 2px rgb(28 25 18 / 0.04), 0 8px 20px -10px rgb(28 25 18 / 0.1)",
+          "value": "inset var(--ch-light-rim-x) 1px 0 var(--ch-light-rim), 0 0 0 1px var(--ch-card-ring),\n    var(--ch-light-drift-near) 1px 2px rgb(28 25 18 / 0.06), var(--ch-light-drift-mid) 6px 14px -6px rgb(28 25 18 / 0.12),\n    var(--ch-light-drift) 22px 40px -22px rgb(28 25 18 / 0.22)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -25769,17 +25733,17 @@
         },
         {
           "name": "--ch-elevation-reading",
-          "value": "inset var(--ch-light-rim-x) 1px 0 var(--ch-light-rim), 0 0 0 1px rgb(28 25 18 / 0.085),\n    var(--ch-light-drift-near) 1px 2px rgb(28 25 18 / 0.08), var(--ch-light-drift-mid) 8px 18px -10px rgb(28 25 18 / 0.16),\n    var(--ch-light-drift) 22px 40px -24px rgb(28 25 18 / 0.18)",
+          "value": "var(--ch-elevation-card)",
           "scope": "[data-ui='clubhouse']"
         },
         {
           "name": "--ch-elevation-lifted",
-          "value": "inset var(--ch-light-rim-x) 1px 0 var(--ch-light-rim), 0 0 0 1px rgb(28 25 18 / 0.1),\n    var(--ch-light-drift-near) 1px 3px rgb(28 25 18 / 0.12), var(--ch-light-drift-mid) 12px 24px -10px rgb(28 25 18 / 0.26),\n    var(--ch-light-drift) 30px 52px -22px rgb(28 25 18 / 0.3)",
+          "value": "var(--ch-elevation-card)",
           "scope": "[data-ui='clubhouse']"
         },
         {
           "name": "--ch-elevation-cast",
-          "value": "var(--ch-light-drift-near) 1px 2px rgb(28 25 18 / 0.06),\n    var(--ch-light-drift-mid) 8px 18px -10px rgb(28 25 18 / 0.16), var(--ch-light-drift) 22px 40px -24px rgb(28 25 18 / 0.18)",
+          "value": "var(--ch-light-drift-near) 1px 2px rgb(28 25 18 / 0.06),\n    var(--ch-light-drift-mid) 6px 14px -6px rgb(28 25 18 / 0.12), var(--ch-light-drift) 22px 40px -22px rgb(28 25 18 / 0.22)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -25924,7 +25888,7 @@
         },
         {
           "name": "--ch-card-shadow",
-          "value": "var(--ch-elevation-lifted)",
+          "value": "var(--ch-elevation-card)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -26034,7 +25998,7 @@
         },
         {
           "name": "--ch-feature-shadow",
-          "value": "0 1px 2px rgb(11 30 20 / 0.2), 0 10px 24px -14px rgb(11 30 20 / 0.5)",
+          "value": "var(--ch-elevation-feature)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -26269,7 +26233,7 @@
         },
         {
           "name": "--ch-card-shadow-flat",
-          "value": "0 0 0 1px rgb(28 27 24 / 0.07), 0 1px 2px rgb(28 25 18 / 0.05), 0 8px 20px -12px rgb(28 25 18 / 0.12)",
+          "value": "var(--ch-elevation-card)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -26399,7 +26363,7 @@
         },
         {
           "name": "--ch-crh-card-shadow",
-          "value": "var(--ch-elevation-lifted)",
+          "value": "var(--ch-elevation-card)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -26424,12 +26388,12 @@
         },
         {
           "name": "--ch-feature-bg",
-          "value": "radial-gradient(120% 90% at 100% 0%, rgb(123 199 154 / 0.14), transparent 60%), var(--ch-green-800)",
+          "value": "var(--ch-green-800)",
           "scope": "[data-ui='clubhouse']"
         },
         {
           "name": "--ch-elevation-feature",
-          "value": "0 0 0 1px #082b1c, 0 14px 28px -18px rgb(11 58 37 / 0.7)",
+          "value": "0 1px 2px rgb(8 43 28 / 0.2), 0 14px 30px -18px rgb(8 43 28 / 0.6)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -26465,6 +26429,16 @@
         {
           "name": "--ch-elevation-pill-on",
           "value": "0 1px 2px rgb(21 90 57 / 0.32)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-elevation-badge",
+          "value": "0 2px 6px -2px rgb(28 25 18 / 0.25)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-elevation-bubblet",
+          "value": "0 4px 10px -4px rgb(28 25 18 / 0.18)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -26973,6 +26947,11 @@
           "scope": "[data-ui='clubhouse']"
         },
         {
+          "name": "--ch-dur-station-pulse",
+          "value": "2400ms",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
           "name": "--ch-ease-typing",
           "value": "cubic-bezier(0.45, 0, 0.55, 1)",
           "scope": "[data-ui='clubhouse']"
@@ -27118,11 +27097,6 @@
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
-          "name": "--ch-card-shadow-flat",
-          "value": "0 0 0 1px rgb(255 255 255 / 0.06), inset 0 1px 0 rgb(255 255 255 / 0.04)",
-          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
-        },
-        {
           "name": "--ch-bubble-mine-ink",
           "value": "#f4eedd",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
@@ -27150,11 +27124,6 @@
         {
           "name": "--ch-card-ring",
           "value": "rgb(255 255 255 / 0.06)",
-          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-card-shadow",
-          "value": "var(--ch-elevation-lifted)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
@@ -27210,11 +27179,6 @@
         {
           "name": "--ch-feature-flat-tint",
           "value": "#315643",
-          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-feature-shadow",
-          "value": "0 0 0 1px rgb(255 255 255 / 0.06)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
@@ -27350,11 +27314,6 @@
         {
           "name": "--ch-warn-ring",
           "value": "rgb(231 174 87 / 0.24)",
-          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-crh-card-shadow",
-          "value": "var(--ch-elevation-lifted)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
@@ -27584,7 +27543,7 @@
         },
         {
           "name": "--ch-workspace",
-          "value": "#131814",
+          "value": "#0e120f",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
@@ -28033,13 +27992,8 @@
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
-          "name": "--ch-elevation-reading",
-          "value": "inset var(--ch-light-rim-x) 1px 0 var(--ch-light-rim), 0 0 0 1px rgb(255 255 255 / 0.06),\n    var(--ch-light-drift-near) 1px 2px rgb(0 0 0 / 0.35), var(--ch-light-drift-mid) 8px 18px -10px rgb(0 0 0 / 0.5),\n    var(--ch-light-drift) 22px 40px -24px rgb(0 0 0 / 0.5)",
-          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-elevation-lifted",
-          "value": "inset var(--ch-light-rim-x) 1px 0 var(--ch-light-rim), 0 0 0 1px rgb(255 255 255 / 0.09),\n    var(--ch-light-drift-near) 1px 3px rgb(0 0 0 / 0.45), var(--ch-light-drift-mid) 12px 24px -10px rgb(0 0 0 / 0.65),\n    var(--ch-light-drift) 30px 52px -22px rgb(0 0 0 / 0.65)",
+          "name": "--ch-elevation-card",
+          "value": "inset var(--ch-light-rim-x) 1px 0 var(--ch-light-rim), 0 0 0 1px var(--ch-card-ring),\n    var(--ch-light-drift-near) 1px 2px rgb(0 0 0 / 0.35), var(--ch-light-drift-mid) 8px 18px -10px rgb(0 0 0 / 0.5),\n    var(--ch-light-drift) 22px 40px -24px rgb(0 0 0 / 0.5)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
@@ -28165,6 +28119,16 @@
         {
           "name": "--ch-elevation-pill-on",
           "value": "0 1px 2px rgb(0 0 0 / 0.4)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-elevation-badge",
+          "value": "0 2px 6px -2px rgb(0 0 0 / 0.5)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-elevation-bubblet",
+          "value": "0 4px 10px -4px rgb(0 0 0 / 0.45)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
@@ -28415,11 +28379,6 @@
         {
           "name": "--ch-ivory-50",
           "value": "#f3efe6",
-          "scope": "@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) → [data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-bg-page",
-          "value": "#ede9df",
           "scope": "@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) → [data-ui='clubhouse']"
         },
         {
@@ -28714,6 +28673,11 @@
         },
         {
           "name": "--ch-dur-story",
+          "value": "0ms",
+          "scope": "[data-ui='clubhouse'][data-motion='off'],\n[data-motion='off'] [data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-dur-station-pulse",
           "value": "0ms",
           "scope": "[data-ui='clubhouse'][data-motion='off'],\n[data-motion='off'] [data-ui='clubhouse']"
         },
@@ -29854,6 +29818,7 @@
         "ch-shs-tp",
         "ch-surface",
         "ch-surface--card",
+        "ch-surface--feature",
         "ch-surface--flat",
         "ch-surface__actions",
         "ch-surface__body",
@@ -29946,6 +29911,11 @@
           "name": "--ch-av-floor",
           "value": "12px",
           "scope": "@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) → .ch-avatar"
+        },
+        {
+          "name": "--ch-av-floor",
+          "value": "0px",
+          "scope": ".ch-avatar[data-small]"
         },
         {
           "name": "--ch-av-bg",
@@ -30163,16 +30133,6 @@
           "scope": "@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) → html[data-fw-theme='dark'] .ch-avatar[data-tone]"
         },
         {
-          "name": "--ch-feature-bg",
-          "value": "var(--ch-green-800)",
-          "scope": ".ch-app[data-ch-refresh='on']"
-        },
-        {
-          "name": "--ch-feature-bg",
-          "value": "#123d29",
-          "scope": "html[data-fw-theme='dark'] .ch-app[data-ch-refresh='on']"
-        },
-        {
           "name": "--ch-group-inset",
           "value": "calc(16px + var(--ch-av-size, 32px) + 12px)",
           "scope": ".ch-group"
@@ -30181,11 +30141,6 @@
           "name": "--ch-border-focus",
           "value": "var(--ch-accent-ink)",
           "scope": "[data-ui='clubhouse'] main[data-ch-crh='on']"
-        },
-        {
-          "name": "--ch-ui-x1",
-          "value": "var(--ch-elevation-lifted)",
-          "scope": "[data-ui='clubhouse']"
         },
         {
           "name": "--ch-ui-x2",
@@ -30378,6 +30333,10 @@
     {
       "name": "coachhelm-ask",
       "href": "/clubhouse-preview/coachhelm-ask"
+    },
+    {
+      "name": "coachhelm-capabilities",
+      "href": "/clubhouse-preview/coachhelm-capabilities"
     },
     {
       "name": "coachhelm-practice-home",

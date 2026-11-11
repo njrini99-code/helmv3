@@ -390,6 +390,8 @@
      -label-s onto the step roles render exactly as before (S1 item 5). A ratio, so it follows a rule's own font-size. */
   --ch-lead-caption: 1.4;
   --ch-lead-label: 1.3;
+  /* The old serif-m leading, for a 22 strong headline that keeps it (the read's desktop head; S1 item 5's recipe). */
+  --ch-lead-serif-m: 1.15;
   /* Two widths only (B1): 96 for display text, 88 for dense numbers and condensed titles. */
   --ch-wdth-display: 'wdth' 96;
   --ch-wdth-dense: 'wdth' 88;
@@ -979,6 +981,8 @@
   --ch-dur-typing: 1200ms;
   --ch-dur-typing-step: 160ms;
   --ch-dur-story: 5200ms;
+  /* The selected station's ring on Team's hole (M-TEAM-06): one slow pulse, played twice, then still. */
+  --ch-dur-station-pulse: 2400ms;
   --ch-ease-typing: cubic-bezier(0.45, 0, 0.55, 1);
   /* Skeletons wait this long before showing, then fade in over base. */
   /* 0: a route load on a phone runs past any delay, so a delay only added a blank frame before the skeleton (F-37). */
@@ -1434,6 +1438,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-dur-typing: 0ms;
   --ch-dur-typing-step: 0ms;
   --ch-dur-story: 0ms;
+  --ch-dur-station-pulse: 0ms;
 }
 
 /* The page crossfade's timings (RouteFrame's <ViewTransition>, shell.css). The view-transition pseudo-elements hang off
@@ -1488,12 +1493,13 @@ html:has([data-ui='clubhouse']),
 html:has([data-ui='clubhouse']) body {
   background: #0a331f;
 }
-/* The phone page itself (--ch-bg-page at phone width), so a rubber-band past either end shows no paler band under the
-   page (visual pass 2026-10-28; it was #f4f1e8). The sign-in and onboarding screens keep their own lighter ivory. */
+/* The phone page itself (--ch-bg-page, one value at every width since 2026-11-10), so a rubber-band past either end
+   shows no other band under the page (it was #ede9df, the phone-only page colour that is gone). The sign-in and
+   onboarding screens keep their own lighter ivory. */
 @media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   html:has([data-ui='clubhouse']),
   html:has([data-ui='clubhouse']) body {
-    background: #ede9df;
+    background: #f2f0e9;
   }
   html:has(:is(.ch-au, .ch-ox)),
   html:has(:is(.ch-au, .ch-ox)) body {

@@ -1,4 +1,5 @@
 import { Skeleton } from '../../ui/States';
+import { LargeTitle } from '../../ui/LargeTitle';
 import '../../styles/classes.css';
 import { CrhSkelCard } from '../../ui/CrhSkelCard';
 
@@ -44,7 +45,7 @@ export function ClassesSkeleton() {
       </div>
       {/* Phone: the large title, the term line, the term card, then Today and Your classes as named cards. */}
       <div className="ch-cl-sk-crh" aria-hidden="true">
-        <p className="ch-large-title ch-cl-title">Classes</p>
+        <LargeTitle as="p" hidden className="ch-cl-title">Classes</LargeTitle>
         <Skeleton width={190} height={15} />
         <span className="ch-cl-sk-crh__term">
           {['38%', '62%', '100%', '54%'].map((w, i) => (

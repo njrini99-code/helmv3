@@ -468,6 +468,7 @@ Light and dark: every colour is a token; the question bubble is the sent tint, t
 ## Requests (not built here; typed stubs stand in)
 
 Engine and protocol:
+
 1. `read_finished.detail` for every read that has one ("38 rounds", "1,412 putts"): the event has the field; the
    contract notes say tools do not fill it yet (`progress_detail`).
 2. The final receipt on the stream when a hold ends (TOOLS' note 6: wait out the hold inside the Confirm request), so
@@ -497,6 +498,7 @@ Engine and protocol:
    out" is CAPABILITIES' body.
 
 Shared files (coordinator):
+
 1. `ui/Button`: a `busy` state that keeps the button's width and shows the sweep (the card's primary draws its own
    capsule today).
 2. A shared "marked row" treatment for a row that just landed (`ST-8.landed`): tint and "New" tag fading over

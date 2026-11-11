@@ -228,12 +228,19 @@ async function createGolfQualifierImpl(data: GolfQualifierInput): Promise<Action
     // The same request again: the qualifier it made the first time is the answer (the id is the request's, and it is
     // this team's). A failed first attempt takes its row back out, so a row that is still here was made whole.
     if (qualifierError?.code === '23505' && requestId) {
-      const { data: first } = await supabase
+      const { data: first, error: firstError } = await supabase
         .from('golf_qualifiers')
         .select('id')
         .eq('id', requestId)
         .eq('team_id', orgTeamId)
         .maybeSingle();
+      // A failed look falls through to the "failed to create" answer below; it is recorded so it is not read as "no first qualifier".
+      if (firstError) {
+        await logServerError(`createGolfQualifier request lookup failed: ${describeError(firstError)}`, {
+          action: 'createGolfQualifier.requestLookup',
+          featureArea: 'qualifiers',
+        }, 'warning');
+      }
       if (first) return { success: true, data: { qualifierId: first.id } };
     }
 

@@ -4,6 +4,8 @@ import { createClient } from '@/lib/supabase/server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { practiceTables, type TeamDrillRow } from '@/lib/golf/practice-db';
 import { isPracticeMissing } from '@/lib/golf/practice-errors';
+import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 import type { PracticeResult } from './practice-plans';
 
 export interface DrillInput {
@@ -44,7 +46,9 @@ async function createTeamDrillImpl(input: DrillInput): Promise<PracticeResult<{ 
   const { data, error } = await practiceTables(sb).from('golf_team_drills').insert({ ...(input.requestId ? { id: input.requestId } : {}), team_id: input.teamId, name: input.name.trim(), area: input.area, kind: input.kind, minutes: input.minutes, setup: input.setup ?? '', goal: input.goal ?? '', created_by: userId } as never).select('id').maybeSingle();
   // The same request again: the drill it made the first time is the answer (the id is the request's, and it is this team's).
   if (error?.code === '23505' && input.requestId) {
-    const { data: first } = await practiceTables(sb).from('golf_team_drills').select('id').eq('id', input.requestId).eq('team_id', input.teamId).maybeSingle();
+    const { data: first, error: firstError } = await practiceTables(sb).from('golf_team_drills').select('id').eq('id', input.requestId).eq('team_id', input.teamId).maybeSingle();
+    // A failed look falls through to the "couldn't save" answer below; it is recorded here so it is not read as "no first drill".
+    if (firstError) await logServerError(`practice library: request lookup failed after a duplicate drill: ${describeError(firstError)}`, { action: 'practiceLibrary.createTeamDrill.requestLookup', featureArea: 'practice' }, 'warning');
     if (first) return { success: true, id: (first as { id: string }).id };
   }
   if (error || !data) return { success: false, error: 'Couldn’t save the drill. It wasn’t added to the plan.', code: 'CH-17006', unavailable: isPracticeMissing(error?.code) };

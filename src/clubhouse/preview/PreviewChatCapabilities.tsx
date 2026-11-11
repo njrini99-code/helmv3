@@ -25,6 +25,7 @@ import { CAP_ROSTER, CAP_TASKS, CAP_TEAM, capTask, type CapTask } from './fixtur
 import { PP_PLAN_PART } from './fixtures-practice-plan';
 import { studioSpecimen } from './fixtures-chat-studio';
 import { BatchPlate, StudioSection, StudioSpecimenView, WORKSPACE_SEQUENCES, WorkspacePlate, isWorkspaceSequence, type WorkspaceSequence } from './PreviewChatStudioPlates';
+import { TERMS } from '../lib/glossary';
 
 /**
  * Every capability of the CoachHelm chat in one page (docs/clubhouse/coachhelm-chat-v3/CAPABILITIES.md): each task's
@@ -348,7 +349,7 @@ const HANDOFF_BOARD: AskHandoffData = { kind: 'board', players: [CAP_ROSTER[1]!.
 const BRIEF: AskBriefData = {
   title: 'Thursday’s practice',
   questions: [
-    { id: 'focus', title: 'What should it work on?', why: 'The team lost most strokes here over the last 8 rounds.', options: [{ id: 'putt', label: 'Putting inside 8 feet', hint: 'from the read' }, { id: 'app', label: 'Approach, 150 to 175' }, { id: 'short', label: 'Short game' }], pick: ['putt'] },
+    { id: 'focus', title: 'What should it work on?', why: 'The team lost most strokes here over the last 8 rounds.', options: [{ id: 'putt', label: 'Putting inside 8 feet', hint: 'from the read' }, { id: 'app', label: 'Approach, 150 to 175' }, { id: 'short', label: TERMS.shortGame.long }], pick: ['putt'] },
     { id: 'len', title: 'How long?', options: [{ id: '90', label: '90 minutes' }, { id: '150', label: '2.5 hours', hint: 'your usual' }, { id: '180', label: '3 hours' }], pick: ['150'] },
     { id: 'who', title: 'Who is there?', multi: true, options: [{ id: 'all', label: 'All 8' }, { id: 'travel', label: 'Travel squad, 6' }], pick: ['all'] },
   ],

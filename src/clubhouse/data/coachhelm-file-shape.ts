@@ -9,7 +9,7 @@ import type { ChDeepInsight, ChDiveCleared } from './coachhelm-dive-shape';
 import type { ChLadder } from './coachhelm-ladder-shape';
 import type { ChCoachPlayerHead } from './coachhelm-views-shape';
 import type { ChHelmLifecycle } from './coachhelm-shape';
-import { formatSigned, formatFixed } from '../lib/format';
+import { changeTone, formatSigned, formatFixed } from '../lib/format';
 import { plural } from '../lib/plural';
 import type { ChFigures, ChLegKey } from './figure-window';
 import type { ChSgMix } from './stats-sg-mix';
@@ -116,18 +116,19 @@ export function toChFileSgOver(fig: ChFigures, team: { legs: ReadonlyArray<numbe
   const teamLegs = team && team.ready.size >= FILE_TEAM_FLOOR ? team.legs : null;
   const out: ChFileSgRow[] = FILE_LEGS.map((a, i) => {
     const value = fig.legs[a.key];
-    const printed = value == null ? 0 : Number(value.toFixed(1));
-    return { id: a.id, label: a.label, strokes: value, figure: value == null ? '—' : formatSigned(value), tone: value == null || printed === 0 ? 'none' : printed > 0 ? 'gain' : 'loss', team: value == null ? null : (teamLegs?.[i] ?? null) };
+    // The tone of the figure as it prints: a leg that prints 0.0 has none (lib/format's changeTone, the one owner).
+    const toned = changeTone(value, false, 1);
+    return { id: a.id, label: a.label, strokes: value, figure: value == null ? '—' : formatSigned(value), tone: toned === 'is-gain' ? 'gain' : toned === 'is-loss' ? 'loss' : 'none', team: value == null ? null : (teamLegs?.[i] ?? null) };
   });
   const known = out.filter((r) => r.strokes != null);
   const worst = known.length ? known.reduce((x, y) => ((y.strokes as number) < (x.strokes as number) ? y : x)) : null;
   const costs = (v: number) => formatFixed(Math.abs(v), 1);
   let note: string | null = null;
-  if (worst && Number((worst.strokes as number).toFixed(1)) < 0) {
+  if (worst && Number(formatFixed(worst.strokes as number, 1)) < 0) {
     note = `Against the Tour, ${worst.label.toLowerCase()} costs ${who.you ? 'you' : who.first} ${costs(worst.strokes as number)} a round`;
     // "Against the team" only when the player is behind the team there, and by a figure that prints.
     const gap = worst.team == null ? null : (worst.strokes as number) - worst.team;
-    note += gap != null && Number(gap.toFixed(1)) < 0 ? `; against the team, ${costs(gap)}.` : '.';
+    note += gap != null && Number(formatFixed(gap, 1)) < 0 ? `; against the team, ${costs(gap)}.` : '.';
   }
   // No figure at all: either no round was posted hole by hole, or there are fewer than the three such rounds a figure needs. The card
   // used to give the first reason for both, which told a player with two hole-by-hole rounds that those rounds were missing.

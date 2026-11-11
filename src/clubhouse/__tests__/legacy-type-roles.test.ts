@@ -43,7 +43,7 @@ const LEGACY_ROLE: Record<string, number> = {
   'styles/controls.css': 5,
   'styles/home.css': 8,
   'styles/hub.css': 2,
-  'styles/messages.css': 6,
+  'styles/messages.css': 5,
   'styles/qualifiers.css': 7,
   'styles/roster.css': 7,
   'styles/rounds-setup.css': 3,

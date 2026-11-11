@@ -502,7 +502,7 @@
   border-radius: 999px;
   background: var(--ch-card-bg);
   /* A pill is too small for the card recipe's ambient layer: a hairline ring and the shared badge drop. */
-  box-shadow: 0 0 0 1px var(--ch-border-hairline), var(--ch-elevation-badge);
+  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline), var(--ch-elevation-badge);
   color: var(--ch-text-tertiary);
   font: var(--ch-type-13-medium);
 }

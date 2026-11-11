@@ -76,6 +76,7 @@ No new token is requested. Thresholds that are not motions (300 ms hold-back, 40
 are named constants in `src/clubhouse/screens/coachhelm/chat/turn-timing.ts`.
 
 **Rules.**
+
 - Transform and opacity only. Two documented exceptions, both paint-only on a mark under 24px with no layout: the
   countdown ring's `stroke-dashoffset`, and a check's `stroke-dashoffset` as it draws. The label shimmer moves
   `background-position` on clipped text (paint-only, existing). Nothing animates width, height, top, left, margin,
@@ -280,6 +281,7 @@ delay.
 ## How each moment is checked
 
 For every row: the harness URL for the moment (build report), then in WebKit
+
 1. `document.getAnimations().map(a => [a.effect.target.className, Object.keys(a.effect.getKeyframes()[0] ?? {}),
    a.effect.getTiming().duration])` at three points in the moment: only `transform`, `opacity`, the two exceptions;
 2. a frame sequence at 60 fps across the moment: the first and last frames match the states in SPEC.md, and no frame

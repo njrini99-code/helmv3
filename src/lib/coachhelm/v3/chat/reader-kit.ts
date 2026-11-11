@@ -187,7 +187,9 @@ const FIELD_WORDS: Record<string, string> = {
 /** "avg_to_par" is "average to par": a field's name as words, so no column name reaches the model to be repeated. */
 export const fieldWords = (key: string): string =>
   key
-    .split(/_+|(?<=[a-z])(?=[A-Z])/)
+    // No lookbehind (iOS before 16.4 cannot parse one): mark the lower-to-upper seam first, then split on the marks.
+    .replace(/([a-z])(?=[A-Z])/g, '$1_')
+    .split(/_+/)
     .filter(Boolean)
     .map((w) => FIELD_WORDS[w.toLowerCase()] ?? w.toLowerCase().replace(/^(\d+)(ft|yds?)$/, (_m, n: string, unit: string) => `${n} ${unit === 'ft' ? 'feet' : 'yards'}`))
     .join(' ');
@@ -198,7 +200,7 @@ const CODED = /(^|_)(status|state|kind|type|category|role|direction|basis|level|
 /** A band's or a metric's own label ("150-175 yd", "SG: Putting") is the app's to write in words. */
 const BAND = /(^|_)(band|bands|bucket|range|label|metric)$/;
 /** "playerId" and "player_id" are the same field. */
-const snake = (key: string): string => key.replace(/(?<=[a-z0-9])(?=[A-Z])/g, '_').toLowerCase();
+const snake = (key: string): string => key.replace(/([a-z0-9])(?=[A-Z])/g, '$1_').toLowerCase();
 /** The field a row is about: it leads the line without its name. */
 const LEADS = new Set(['player', 'player_name', 'name', 'title', 'label']);
 type Scalar = string | number | boolean | null;

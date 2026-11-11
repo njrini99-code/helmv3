@@ -113,7 +113,7 @@ export function HoleMotion({
       return;
     }
     const { width, height } = el.getBoundingClientRect();
-    const frames = flight.frames.map((f) => ({ offset: f.offset, transform: `translate3d(${(f.x * width).toFixed(2)}px, ${(f.y * height).toFixed(2)}px, 0)` }));
+    const frames = flight.frames.map((f) => ({ offset: f.offset, transform: `translate3d(${Math.round(f.x * width * 100) / 100}px, ${Math.round(f.y * height * 100) / 100}px, 0)` }));
     const total = FLIGHT_MS + LAND_HOLD_MS + LAND_FADE_MS;
     const all: Animation[] = [];
     let done = false;

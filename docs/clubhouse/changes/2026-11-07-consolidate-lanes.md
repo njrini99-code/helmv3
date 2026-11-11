@@ -13,7 +13,7 @@ Held items:     none
 
 The Ask, Practice, Messages, Stats, Root cause, Home/Classes/Roster and motion-token
 lanes that were built on branches from 5 and 6 Nov are merged onto main as of
-#2495. Shared pieces they changed: `lib/motion.ts` (motion on tokens), the new
+\#2495. Shared pieces they changed: `lib/motion.ts` (motion on tokens), the new
 `lib/type-k.ts`, `ui/sheet-keyboard.ts` (sheets fit Safari's keyboard) and the
 styles for controls, base, tokens, messages, quick chat and Practice.
 

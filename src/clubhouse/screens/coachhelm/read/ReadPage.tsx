@@ -83,7 +83,7 @@ export function ReadSkeleton() {
   );
   if (phone) {
     return (
-      <main className="ch-hl ch-hv ch-hr is-phone" aria-busy="true" aria-label="Loading this read" data-ch-arrive="crossfade">
+      <main className="ch-hl ch-hv ch-hr ch-hr-page is-phone" aria-busy="true" aria-label="Loading this read" data-ch-arrive="crossfade">
         <PhoneTop back={{ label: 'CoachHelm', onBack: () => router.back() }} title="Read" />
         <div className="ch-hr-skel" aria-hidden="true">
           {dos}
@@ -96,7 +96,7 @@ export function ReadSkeleton() {
     );
   }
   return (
-    <main className="ch-hl ch-hv ch-hr is-desk" aria-busy="true" aria-label="Loading this read" data-ch-arrive="crossfade">
+    <main className="ch-hl ch-hv ch-hr ch-hr-page is-desk" aria-busy="true" aria-label="Loading this read" data-ch-arrive="crossfade">
       <div className="ch-hr-skel" aria-hidden="true">
         <div className="ch-hr-skelhead">
           <SkelLine width={90} line={18} bar={11} />
@@ -225,7 +225,7 @@ export function ReadPage({
     />
   );
   const frame = (body: ReactNode, state: string) => (
-    <main className={'ch-hl ch-hv ch-hr ' + (phone ? 'is-phone' : 'is-desk')} data-ch-screen="coachhelm-read" data-ch-read-state={state} data-ch-read-viewer={voice.role} aria-labelledby={phone ? 'ch-hr-bar-t' : undefined} aria-label={phone ? undefined : 'CoachHelm read'}>
+    <main className={'ch-hl ch-hv ch-hr ch-hr-page ' + (phone ? 'is-phone' : 'is-desk')} data-ch-screen="coachhelm-read" data-ch-read-state={state} data-ch-read-viewer={voice.role} aria-labelledby={phone ? 'ch-hr-bar-t' : undefined} aria-label={phone ? undefined : 'CoachHelm read'}>
       {bar}
       {body}
     </main>

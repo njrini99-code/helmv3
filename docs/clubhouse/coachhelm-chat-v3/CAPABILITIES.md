@@ -180,7 +180,6 @@ What they get; `publish`. `publish_artifact`: Who can see it, Goes to, Words. `s
 not get it, They see, How, When. `record_attendance`: Event, Present (n), Late (n), No-show (n), Changes a mark
 already recorded, Not marked, Players are told. An unknown label is drawn as a plain row, so a new fact is never lost.
 
-
 ### 0.8 Edit mode: changing a card before Confirm
 
 A plan may declare fields a coach can change without asking again (`proposal.editable`, engine E28, PLANS P11). The
@@ -260,6 +259,7 @@ each when it is present and keeps its honest "not shown here" line when it is ab
 
 Whether each planner fills each field is the plans worker's ledger, not this file's. The body's rule does not depend
 on it.
+
 ---
 
 ## A. Tasks
@@ -540,7 +540,6 @@ catalog's.
   which marks were saved: look at the event in the Calendar. Saving again is safe, it writes the same marks."
 - **Requests.** E-24 (whether a player can see their own mark).
 
-
 ## A, continued. Tasks that change something that exists (A23 to A32)
 
 These ten change or close a thing rather than make one. They share one body (`PlanBody`): reach first, then the
@@ -598,7 +597,7 @@ the proof and the undo are the same small thing, in the thread, where it happene
 
 ## D. Reads and answers
 
-A figure in an answer carries a marker (` [e3]`, drawn as a chip, SPEC ST-5.chip). Tapping it opens the read it came
+A figure in an answer carries a marker (a space, then `[e3]`; drawn as a chip, SPEC ST-5.chip). Tapping it opens the read it came
 from (sheet on the phone, panel on desktop, SPEC Moment 6). Every read opens with the same head, so a coach always
 knows what they are looking at before the numbers: **what was read** ("Putting by distance"), **whose** (a player,
 the team), **the window and the sample** ("Last 8 rounds · Sep 1 to Sep 29 · 212 putts"), and **as of**. A sample
@@ -862,11 +861,11 @@ then.
 | E-3 | `create_event` | `notes` is written as the event's description and is not on the card | a `Notes` fact |
 | E-4 | `create_recurring_practice` | The end time is written and not shown; no `visual`, so quick chat cannot draw the dates | an `Ends` fact; `visual: { kind: 'series', title, dates: string[], start, end, where }` |
 | E-5 | `add_blocked_time` | `end_date` is written and not shown | `When` to carry the range |
-| E-6 | `add_team_break` | Whether players see a break | `visible_to: 'coaches' | 'team'` on the proposal (wanted on every task) |
+| E-6 | `add_team_break` | Whether players see a break | `visible_to: 'coaches' \| 'team'` on the proposal (wanted on every task) |
 | E-7 | `save_team_term` | Whether it replaces a term of the same name | a `Replaces` fact when it does |
 | E-8 | `create_trip` | Flight info, hotel address, hotel phone, the confirmation number itself and notes are written and not shown | one fact each |
 | E-9 | `create_qualifier` | Description and end date are written and not shown; the entry deadline is only in `visual` | facts |
-| E-10 | `create_goal` | No baseline, no unit, no direction: a target of 1.2 cannot be judged | `visual.goal` to gain `current: number | null`, `unit`, `better: 'up' | 'down'` |
+| E-10 | `create_goal` | No baseline, no unit, no direction: a target of 1.2 cannot be judged | `visual.goal` to gain `current: number \| null`, `unit`, `better: 'up' \| 'down'` |
 | E-11 | `create_focus_area`, `create_task` | `description` is written and not shown | a `Details` fact |
 | E-12 | `add_team_break`, `save_team_term`, `create_goal`, `add_round_note`, `set_availability_note`, `create_drill`, `publish_artifact`, `lock_lineup` | The receipt has no `href`, so there is no Open | `created[0].href` to the thing's home |
 | E-13 | `create_event`, `create_qualifier`, `create_goal`, `create_recurring_practice` (without RSVP it is right to be empty) | The receipt's `notifications` is empty although players are told, so "Told 6 by push" cannot be shown | `notifications: [{ channel, recipients, status }]` from the action's own result |
@@ -881,7 +880,7 @@ then.
 | E-22 | `lock_lineup` | Nothing about what is locked ("Tournament: As set") | the tournament's name and the seats, read in `prepare` |
 | E-23 | `send_event_reminder` | A partial receipt gives a count of who was missed, not names | `partial_failures` by name |
 | E-24 | `record_attendance` | Whether a player can see their own mark | `visible_to` (E-6) |
-| E-25 | the loop | Nothing says a calculation ran, what it covered or how | a `read_started` / `read_finished` pair for the code step with label "Working it out across the team" and a detail; a part `data-computed: { id, method: string, players: number, reads: number, window: string | null, table?: { columns, rows } }` |
+| E-25 | the loop | Nothing says a calculation ran, what it covered or how | a `read_started` / `read_finished` pair for the code step with label "Working it out across the team" and a detail; a part `data-computed: { id, method: string, players: number, reads: number, window: string \| null, table?: { columns, rows } }` |
 | E-26 | readers | "Not tracked" is prose only | `coverage: 'not_tracked'` with `coverage_note` and `nearest: string[]` on the envelope |
 | E-27 | every task | After Undo the stored receipt is still `held` (CONTRACT_NOTES E5) | a `cancelled` receipt status, so a restored card is Undone without asking the ledger |
 

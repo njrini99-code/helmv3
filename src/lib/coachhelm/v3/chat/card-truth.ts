@@ -406,7 +406,10 @@ export async function seenPublish(sb: Sb, ctx: CoachChatContext, planId: string,
   let coaches: CardPerson[] = [];
   const coachesOut: CardNotReached[] = [];
   if (coachIds.length) {
-    const [staff, rows] = await Promise.all([sb.from('golf_team_coach_staff').select('coach_id').eq('team_id', ctx.team_id).in('coach_id', coachIds), sb.from('golf_coaches').select('id, user_id, full_name').in('id', coachIds)]);
+    const [staff, rows] = await Promise.all([
+      sb.from('golf_team_coach_staff').select('coach_id').eq('team_id', ctx.team_id).in('coach_id', coachIds),
+      sb.from('golf_coaches').select('id, user_id, full_name').in('id', coachIds),
+    ]);
     if (staff.error || rows.error) throw new CardReadError('The coaches on this plan could not be read just now, so nothing was prepared. Try again in a moment.');
     const onStaff = new Set((staff.data ?? []).map((s) => s.coach_id));
     for (const c of rows.data ?? []) {

@@ -386,7 +386,7 @@ export function Form({ form }: { form: ChTeamForm; }) {
           <path d={`${d} L${x(pts.length - 1)},${H} L${x(0)},${H} Z`} className="ch-hm-form__fill" />
           <path d={d} className="ch-hm-form__line" vectorEffect="non-scaling-stroke" />
           {/* The last point: a zero-length round stroke, so it stays a circle when the desktop card stretches the plot to its height. */}
-          <path d={`M${x(pts.length - 1).toFixed(1)},${y(pts[pts.length - 1]!).toFixed(1)} h0.01`} className="ch-hm-form__dot" vectorEffect="non-scaling-stroke" />
+          <path d={`M${Math.round(x(pts.length - 1) * 10) / 10},${Math.round(y(pts[pts.length - 1]!) * 10) / 10} h0.01`} className="ch-hm-form__dot" vectorEffect="non-scaling-stroke" />
         </svg>
       )}
       <dl className="ch-hm-form__figs">

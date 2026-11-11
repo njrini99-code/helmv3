@@ -12,7 +12,7 @@ is off, 2 craft, 1 nit.
 ## Worst first
 
 | # | Score | Where | What differs | Checked in |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | 1 | 5 | Plan page, coach (run `?state=draft`, `edited`) | A draft shows nothing that says so: the bar is Edit and Share on an empty page, and the only word is in the sheet's footer. Published and edited-after-publish differ by one grey line beside the buttons. The three states must never be confused. | `CoachPlanBar.tsx` |
 | 2 | 5 | Print | A failed drills read is turned into "this plan has no drills": `loadPlanDrills(planId).catch(() => [])`. The loader throws on purpose ("the caller decides what a print without its appendix is"); the studio then silently offers no appendix and the coach prints a plan that looks whole. | `routes/practice.tsx` PracticePrintRoute; `data/practice-plan.ts:136-153` |
 | 3 | 5 | `practice.css` | Two generations of rules. `.ch-prc-chip`, `.ch-prc-card`, `.ch-prc-sec` and `.ch-prc-facts` are each defined twice with different values (lines 41, 111, 185, 983 and again 1163 to 1181). The later filter-chip rule gives every state mark a 36px pill, a pointer cursor and a hit area, so "Draft" and "Updated" look like buttons. Two raw `rgb()` values (574, 584). | `styles/practice.css` |
@@ -36,7 +36,7 @@ is off, 2 craft, 1 nit.
 ## Found in the later captures (library, print)
 
 | # | Score | Where | What differs | Checked in |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | 20 | 5 | A drill, phone | Edit, Archive and Copy to your bank are not on the page: the header's actions are hidden on a phone and the bar carries none. | `practice.css` `.ch-prc-h__a { display: none }`, `LibraryPages.tsx` DrillPage |
 | 21 | 5 | Groups preview | Every saved group reads "0 players" (the same Map fixture fault as row 4). | `preview/PreviewPracticeHome.tsx` |
 | 22 | 2 | A drill | The facts card has an empty band under its last row (the two `.ch-prc-facts` rules). | `practice.css` |
@@ -46,6 +46,7 @@ is off, 2 craft, 1 nit.
 Closed: 1 to 11, 13 to 17, 20 to 22. The mix legend now counts the same clock minutes the strip draws.
 
 Open, in order:
+
 - 12: the New plan sheet still asks nothing when Ask CoachHelm is picked; the helper asks in the builder.
 - 14 (part): Run's group rows still give the clock in both columns.
 - 18: no class-time read exists for the helper's third fact; nothing is invented.
@@ -56,6 +57,7 @@ Open, in order:
 ## Round two (10 to 11 Nov)
 
 Closed since the list above:
+
 - 12: New plan's Ask CoachHelm asks how long and what to work on, and both go into the helper's first message.
 - 14: Run gives the clock once a row.
 - 19: `builder?state=new` is gone.
@@ -65,7 +67,7 @@ Closed since the list above:
 Found by looking at the captures and the printed file, and fixed:
 
 | # | Score | Where | What was wrong | Fix |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | 23 | 5 | Every form, desktop | New plan, New drill, Save group and the move question were phone sheets with no desktop form: unstyled on a Mac. | `PracticeSheet` (the shared `FormSheet` on a phone, the shared `Modal` on a desk) |
 | 24 | 5 | Print, on paper | The print root sits outside the Clubhouse root, so the font variables were missing and the plan printed in one size of system type. | the root carries the font class (`PrintPlan.tsx`) |
 | 25 | 5 | Print, on paper | Every piece was set a hair taller than the sheet inside the print margin, so each footer printed alone on a sheet of its own: 12 sheets for a plan the studio called 6. | pieces stop short of the sheet (`min-height: 9.3in`) |
@@ -77,9 +79,9 @@ Found by looking at the captures and the printed file, and fixed:
 | 31 | 2 | Builder, desktop | The stale bar ran to the page edge and its lower edge sat under the inspector. | the board's margin, above and below |
 
 Still open:
+
 - 18: no class-time read exists for the helper's third fact; nothing is invented.
 - The printed coach copy is large: a three-hour plan with a rotation takes two sheets for the schedule and one for drills, bring and notes. The sheet's print density belongs to `screens/coachhelm/plan/sheet/**`.
 - Landscape paper for the range board. It needs a mechanism that holds in Safari (there is none in CSS today); until then the board prints portrait.
 - "Save as PDF" (`sharePlanPdf`) cuts between rows by the same rule as print; its file was not opened and looked at.
 - The shared Segmented clips "Templates" at the largest Text Size on a phone; a secondary Button on the green helper card is a dark key in dark. Both are shared-primitive requests.
-

@@ -3,6 +3,7 @@
  * that imports this; the live harness (`scripts/coachhelm/ask-eval.mjs`) reads the same JSON when the owner approves a run.
  */
 import data from './golf-sense.json';
+import { splitSentencesBefore } from '../../../../../utils/sentences';
 
 export interface EvalFact {
   label: string;
@@ -40,9 +41,13 @@ export const EVAL_GLOBAL_FORBID: readonly string[] = data.global_forbid;
 /** First names that are also everyday words: lower-case, they are not a name written wrongly. */
 const EVERYDAY_WORDS = new Set(['will', 'grant', 'chase', 'hunter', 'mark', 'bill', 'drew', 'rich', 'may', 'rose', 'lane', 'reed', 'art', 'dean', 'miles', 'chance', 'ace', 'bo', 'sky', 'jay', 'pat', 'sandy', 'summer', 'hope', 'faith', 'grace', 'joy']);
 const escapeRe = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-/** `Eli Brandt` → a pattern for the same letters in any other casing ("eli brandt", "ELI BRANDT", "Eli brandt"), never the name as stored. */
+/**
+ * `Eli Brandt` → a pattern for the same letters in any other casing ("eli brandt", "ELI BRANDT", "Eli brandt"), never the name as stored.
+ * The name must not follow a letter; that is written as "the start, or one character that is not a letter" (which the match then
+ * includes) because iOS before 16.4 cannot parse a lookbehind.
+ */
 const miscasedSource = (stored: string) =>
-  `(?<![A-Za-z])(?!${escapeRe(stored)}(?![A-Za-z]))${[...stored].map((ch) => (/[A-Za-z]/.test(ch) ? `[${ch.toLowerCase()}${ch.toUpperCase()}]` : escapeRe(ch))).join('')}(?![A-Za-z])`;
+  `(?:^|[^A-Za-z])(?!${escapeRe(stored)}(?![A-Za-z]))${[...stored].map((ch) => (/[A-Za-z]/.test(ch) ? `[${ch.toLowerCase()}${ch.toUpperCase()}]` : escapeRe(ch))).join('')}(?![A-Za-z])`;
 
 /**
  * A pattern that matches a stored proper name written with the wrong capitals: a player as the roster has them, a course
@@ -60,7 +65,7 @@ export function properNounPattern(names: { people?: readonly string[]; places?: 
 export function sentenceCount(answer: string): number {
   return answer
     .split(/\n+/)
-    .flatMap((line) => line.split(/(?<=[.!?])\s+(?=[A-Z"“])/))
+    .flatMap((line) => splitSentencesBefore(line, 'A-Z"“'))
     .filter((part) => /[A-Za-z]/.test(part)).length;
 }
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { SkelLine, Skeleton } from '../../ui/States';
+import { LargeTitle } from '../../ui/LargeTitle';
 import { useClubhouseRole } from '../../shell/context';
 import '../../styles/roster.css';
 
@@ -126,7 +127,7 @@ function RosterPhoneSkeletonCrh() {
     <div className="ch-rsm-skel ch-rsm-page">
       {/* What is already known stays: the title is the real word, and the list is named. Only the figures wait. */}
       <div className="ch-rsm-head" aria-hidden="true">
-        <p className="ch-large-title">Roster</p>
+        <LargeTitle as="p" hidden>Roster</LargeTitle>
         <Skeleton width={150} height={15} />
       </div>
       <div className="ch-rs-tcard ch-rs-tcard--skel" aria-hidden="true">

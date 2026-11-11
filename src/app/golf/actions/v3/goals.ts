@@ -293,12 +293,18 @@ async function createGoalImpl(input: CreateGoalInput): Promise<ActionResult> {
     // The same request again: the goal it made the first time is the answer (the id is the request's, and it is this
     // player's). The player was told then, so nobody is told twice.
     if (error?.code === '23505' && input.requestId) {
-      const { data: first } = await supabase
+      const { data: first, error: firstError } = await supabase
         .from('golf_goals')
         .select('id')
         .eq('id', input.requestId)
         .eq('player_id', player_id)
         .maybeSingle();
+      // A failed look falls through to the createGoal failure below; it is recorded so it is not read as "no first goal".
+      if (firstError) {
+        await logServerError(`createGoal: request lookup failed after a duplicate goal: ${firstError.message}`, {
+          action: 'v3.goals.create',
+        }, 'warning');
+      }
       if (first) return { ok: true, goal_id: first.id, warning };
     }
 
