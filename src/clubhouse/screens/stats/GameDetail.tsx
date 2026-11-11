@@ -599,7 +599,7 @@ export function GameDetail({
               <p className="ch-sv-mix-none">No holes scored yet.</p>
             ) : (
               <div className="ch-sv-mix">
-                <div className="ch-shs-stack is-detail" aria-hidden="true" data-ch-grow="">
+                <div className="ch-shs-stack is-detail" aria-hidden="true">
                   {AVERAGE_ROUND.map(([key]) => (dist[key] > 0 ? <span key={key} className={`is-${key}`} style={{ flexGrow: dist[key], background: 'var(--ch-sv-mix-fill)' }} /> : null))}
                 </div>
                 <div className="ch-shs-skey">
@@ -670,7 +670,7 @@ export function GameDetail({
           <ShsCard title="Where drives finish" meta="Par 4s and 5s">
             {s.fairwayOpportunities > 0 ? (
               <>
-                <div className="ch-shs-stack is-detail" aria-hidden="true" data-ch-grow="">
+                <div className="ch-shs-stack is-detail" aria-hidden="true">
                   {driveSplit.map((d) => (
                     <span key={d.label} className={d.cls} style={{ flexGrow: d.share }} />
                   ))}

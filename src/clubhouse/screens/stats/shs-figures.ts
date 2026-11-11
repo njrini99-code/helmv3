@@ -149,6 +149,8 @@ export function scoringChange(data: ChPlayerProfile): ShsChange {
 }
 
 export interface ShsCompareBar {
+  /** The one measure both bars show ("Putts per round"), named above them. */
+  measure: string;
   label: string;
   value: number;
   /** Width, 0 to 100: 30% plus 70% of the scaled value (04 "What changed"). */
@@ -162,14 +164,14 @@ export interface ShsCompareBar {
 export function changeBars(data: ChPlayerProfile, subject?: string): ShsCompareBar[] {
   const list = scores(data);
   if (list.length < 4) return [];
-  const pair = (nowLabel: string, now: number, wasLabel: string, was: number, tone: ShsTone, unit = ''): ShsCompareBar[] => {
+  const pair = (measure: string, nowLabel: string, now: number, wasLabel: string, was: number, tone: ShsTone, unit = ''): ShsCompareBar[] => {
     // A rate's bars share a 0 floor; a score's start 6 strokes under the lower one, so a stroke still reads.
     const lo = unit === '%' ? 0 : Math.min(now, was) - 6;
     const hi = Math.max(now, was);
     const width = (v: number) => 30 + (70 * (v - lo)) / (hi - lo || 1);
     return [
-      { label: nowLabel, value: now, width: width(now), tone, unit },
-      { label: wasLabel, value: was, width: width(was), tone: 'was', unit },
+      { measure, label: nowLabel, value: now, width: width(now), tone, unit },
+      { measure, label: wasLabel, value: was, width: width(was), tone: 'was', unit },
     ];
   };
   if (hasPrevious(data)) {
@@ -177,14 +179,14 @@ export function changeBars(data: ChPlayerProfile, subject?: string): ShsCompareB
     // The bars show what the sentence above them names (its largest change), and scoring when it names nothing.
     const named = subject ? c.rows.find((r) => r.label === subject) : undefined;
     const row = named ?? c.rows.find((r) => r.lowerIsBetter && /scor/i.test(r.label));
-    if (row?.last != null && row.previous != null) return pair(`Last ${c.lastRounds}`, row.last, `${c.previousRounds} before`, row.previous, changeTone(row.last - row.previous, row.se, row.lowerIsBetter), row.unit ?? '');
+    if (row?.last != null && row.previous != null) return pair(row.label, `Last ${c.lastRounds}`, row.last, `${c.previousRounds} before`, row.previous, changeTone(row.last - row.previous, row.se, row.lowerIsBetter), row.unit ?? '');
   }
   const half = Math.floor(list.length / 2);
   const first = mean(list.slice(0, half));
   const newest = mean(list.slice(list.length - half));
   const halves = halvesChange(list, 'score');
   if (first == null || newest == null) return [];
-  return pair(`Newest ${half}`, newest, `First ${half}`, first, changeTone(halves?.delta, halves?.se, true));
+  return pair('Scoring avg', `Newest ${half}`, newest, `First ${half}`, first, changeTone(halves?.delta, halves?.se, true));
 }
 
 /** "Strongest: Off the tee. Biggest leak: Approach, 1.2 a round." */

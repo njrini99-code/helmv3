@@ -923,7 +923,7 @@ describe('Stats player · network', () => {
       router.push.mockImplementation(() => new Promise(() => {}));
       show(player({ window: 'last10' }));
       const checked = () =>
-        within(screen.getByRole('radiogroup', { name: 'Window' }))
+        within(screen.getByRole('radiogroup', { name: 'Rounds shown' }))
           .getAllByRole('radio')
           .filter((r) => r.getAttribute('aria-checked') === 'true')
           .map((r) => r.textContent);

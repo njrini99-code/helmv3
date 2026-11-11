@@ -446,7 +446,7 @@ describe('Stats team · network', () => {
 
 describe('Stats team · a change in flight, and the last choice wins', () => {
   const checked = () =>
-    within(screen.getByRole('radiogroup', { name: 'Window' }))
+    within(screen.getByRole('radiogroup', { name: 'Rounds shown' }))
       .getAllByRole('radio')
       .filter((r) => r.getAttribute('aria-checked') === 'true')
       .map((r) => r.textContent);

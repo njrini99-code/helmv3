@@ -50,29 +50,24 @@
   align-items: center;
   gap: 8px;
 }
+/* One row answers "which rounds": Last 5, 10, 20, Season, Qualifiers, then All time (WindowSwitch). The two words take the width
+   they need and the short choices share the rest, none narrower than its own label; a phone too narrow for all six scrolls the
+   well rather than clip a word. */
 .ch-shs-ctl .ch-seg {
   flex: 1;
   min-width: 0;
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1.3fr 1.6fr;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(max-content, 1fr);
   gap: 4px;
   padding: 4px;
   border-radius: var(--ch-radius-lg);
   min-height: calc(40 * var(--ch-type-k));
-}
-/* The span switch (This season | All time) shares the row styling but has two choices, not the window's five. */
-.ch-shs-ctl .ch-span {
-  flex: 1;
-  min-width: 0;
-}
-.ch-shs .ch-shs-ctl .ch-span .ch-seg {
-  grid-template-columns: 1fr 1fr;
-  overflow-x: visible;
-}
-.ch-shs-ctl.is-custom .ch-seg {
-  grid-template-columns: 1fr 1fr 1fr 1.3fr 1.6fr 1.3fr;
   overflow-x: auto;
   scrollbar-width: none;
+}
+.ch-shs-ctl .ch-seg::-webkit-scrollbar {
+  display: none;
 }
 .ch-shs-ctl .ch-seg[data-more] {
   -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent);
@@ -81,7 +76,7 @@
 .ch-shs-ctl .ch-seg__b {
   position: relative;
   min-height: calc(32 * var(--ch-type-k));
-  padding: 0 2px;
+  padding: 0 6px;
   border-radius: var(--ch-radius-md);
   font: var(--ch-type-14-medium);
   white-space: nowrap;
@@ -221,11 +216,7 @@
   margin-left: auto;
 }
 .ch-shs.is-big .ch-shs-ctl .ch-seg {
-  grid-template-columns: none;
-  grid-auto-flow: column;
   grid-auto-columns: max-content;
-  overflow-x: auto;
-  scrollbar-width: none;
 }
 .ch-shs.is-big .ch-shs-ctl .ch-seg__b {
   padding: 0 12px;
@@ -426,6 +417,16 @@
   display: grid;
   gap: 8px;
   margin-top: 12px;
+}
+.ch-shs-cmp-h {
+  font: var(--ch-type-13-medium);
+  color: var(--ch-shs-s-ink-2);
+}
+.ch-shs-also {
+  margin: 12px 0 0;
+  font: var(--ch-type-13);
+  color: var(--ch-shs-s-ink-2);
+  text-wrap: pretty;
 }
 .ch-shs-cmp-row {
   display: grid;
@@ -981,9 +982,6 @@
   flex-direction: column;
   gap: 12px;
   animation: ch-shs-skelin var(--ch-dur-base) var(--ch-ease) backwards;
-}
-.ch-shs-skel--f {
-  background: var(--ch-feature-track);
 }
 .ch-shs-skel--hero {
   width: 42%;
@@ -1911,9 +1909,6 @@ p.ch-shs-mini-cap {
 .ch-shs-sumfoot.is-pad {
   margin: 8px 16px 12px;
 }
-.ch-shs-skel-seg--team {
-  display: block;
-}
 
 .ch-shs-card.is-waiting :is(.ch-shs-tour, .ch-shs-rib .dot, .ch-shs-db .track) {
   transition: opacity var(--ch-dur-release) var(--ch-ease);
@@ -1985,12 +1980,6 @@ p.ch-shs-mini-cap {
 
 .ch-shs-skel-sec {
   display: contents;
-}
-.ch-shs-skel-seg {
-  flex: 1;
-  display: block;
-  min-height: calc(40 * var(--ch-type-k));
-  border-radius: var(--ch-radius-lg);
 }
 .ch-shs-skel-f {
   display: block;
@@ -2307,11 +2296,25 @@ p.ch-shs-mini-cap {
 }
 /* STATS-1: a coach's header on a player's Stats sits on the page edge. */
 .ch-shs .ch-spm-head { padding-inline: var(--ch-page-x-phone); }
-/* STATS-10: the glance tiles go two across before a label would overflow. */
+/* STATS-10: three across, as drawn, on every current iPhone (a 343pt card at 375); two across only on a card too narrow for
+   "Scrambling" in a third of it (a 320pt phone), where the three-column rules step aside. */
 .ch-shs-card { container-type: inline-size; }
-@container (max-width: 360px) {
+@container (max-width: 320px) {
   .ch-shs-glance { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .ch-shs-glance > * { min-width: 0; overflow-wrap: anywhere; }
+  .ch-shs-gc::before,
+  .ch-shs-gc::after { display: none; }
+}
+/* The scoring mix on the redesigned page wears the lane's scoring colours (tokens.css): par the quiet ivory and bogey the scorecard's
+   tan, which is a golf colour and not the loss amber, so the key's bogey swatch is no longer a grey that reads as "no data". */
+.ch-shs .ch-sv-mix .is-par,
+.ch-shs-screen .ch-sv-mix .is-par {
+  --ch-sv-mix-fill: var(--ch-chart-par);
+}
+.ch-shs .ch-sv-mix .is-bogey,
+.ch-shs-screen .ch-sv-mix .is-bogey {
+  --ch-sv-mix-fill: var(--ch-chart-bogey);
+  --ch-sv-mix-ink: var(--ch-ink-950);
 }
 /* STATS-14: Left and Right read apart without colour. */
 .ch-shs-stack > * + * { box-shadow: inset 2px 0 0 var(--ch-card-bg); }

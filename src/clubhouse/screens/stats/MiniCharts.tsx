@@ -29,7 +29,7 @@ export function MiniDiverging({ rows, ready = true, fixedScale }: { rows: Readon
             <span className="lab">{r.label}</span>
             <span className="ch-shs-rail" aria-hidden="true">
               <span className="ch-shs-zero" />
-              {bar && <span className={`ch-shs-bar ch-shs-fill-${tone}${early ? ' is-early' : ''}`} data-ch-grow="" style={{ left: `${bar.left}%`, width: `${bar.width}%`, transformOrigin: `${(r.value ?? 0) >= 0 ? '0' : '100%'} 50%` }} />}
+              {bar && <span className={`ch-shs-bar ch-shs-fill-${tone}${early ? ' is-early' : ''}`} style={{ left: `${bar.left}%`, width: `${bar.width}%`, transformOrigin: `${(r.value ?? 0) >= 0 ? '0' : '100%'} 50%` }} />}
             </span>
             <span className={`val${tone === 'flat' ? '' : ` ch-shs-${tone}`}${r.value == null ? ' ch-shs-none' : ''}`}>{formatSigned(r.value)}</span>
           </div>
@@ -64,7 +64,7 @@ export function MiniRails({ rows, caption }: { rows: readonly MiniRailRow[]; cap
           <div className="ch-shs-mr" key={r.label}>
             <span className="l">{r.label}</span>
             <span className="ch-shs-hrail" aria-hidden="true">
-              {r.value != null && <i className={`ch-shs-fill-${railTone(r.value, r.tour)}${r.early ? ' is-early' : ''}`} data-ch-grow="" style={{ width: `${Math.max(0, Math.min(100, r.value))}%` }} />}
+              {r.value != null && <i className={`ch-shs-fill-${railTone(r.value, r.tour)}${r.early ? ' is-early' : ''}`} style={{ width: `${Math.max(0, Math.min(100, r.value))}%` }} />}
               {r.tour != null && <span className="ch-shs-tour" style={{ left: `${Math.max(0, Math.min(100, r.tour))}%` }} />}
             </span>
             <span className={'v ch-num' + (r.value == null ? ' ch-shs-none' : '')}>{r.value == null ? <NoData /> : `${Math.round(r.value)}%`}</span>
@@ -101,7 +101,7 @@ export function HBars({ rows, tourKey = false }: { rows: readonly HBarRow[]; tou
               {sub && <small>{sub}</small>}
             </span>
             <span className="ch-shs-hrail" aria-hidden="true">
-              {r.value != null && <i className={`ch-shs-fill-${r.early ? 'flat is-early' : railTone(r.value, r.tour)}`} data-ch-grow="" style={{ width: `${Math.max(0, Math.min(100, r.value))}%` }} />}
+              {r.value != null && <i className={`ch-shs-fill-${r.early ? 'flat is-early' : railTone(r.value, r.tour)}`} style={{ width: `${Math.max(0, Math.min(100, r.value))}%` }} />}
               {r.tour != null && <span className="ch-shs-tour" style={{ left: `${Math.max(0, Math.min(100, r.tour))}%` }} />}
             </span>
             <span className={'v ch-num' + (r.value == null ? ' ch-shs-none' : '')}>{r.value == null ? <NoData /> : `${Math.round(r.value)}%`}</span>
@@ -152,7 +152,7 @@ export function RoundTicker({ rounds }: { rounds: readonly TickerRound[] }) {
   return (
     <svg className="ch-shs-tick" viewBox="0 0 300 64" preserveAspectRatio="none" aria-hidden="true">
       {tickerBars(rounds).map((b) => (
-        <rect key={b.id} className={b.best ? 'is-best' : 'is-flat'} data-ch-grow-y="" x={b.x} y={b.y} width={b.w} height={b.h} rx="2.5" />
+        <rect key={b.id} className={b.best ? 'is-best' : 'is-flat'} x={b.x} y={b.y} width={b.w} height={b.h} rx="2.5" />
       ))}
     </svg>
   );

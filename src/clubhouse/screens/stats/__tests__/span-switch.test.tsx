@@ -84,11 +84,15 @@ describe('Home’s switch', () => {
 });
 
 describe('Team stats’ switch', () => {
-  it('the season is the default: no param, the window switch beside it', () => {
+  it('one control answers "which rounds": the windows of the season, then All time, in one radio group', () => {
     render(shell(<StatsTeam data={team(filterFor('last10'))} />));
-    expect(radio('This season')!.getAttribute('aria-checked')).toBe('true');
-    expect(radio('Last 10')).not.toBeNull();
-    expect(radio('Season')).not.toBeNull();
+    const group = screen.getByRole('radiogroup', { name: 'Rounds shown' });
+    expect([...group.querySelectorAll('[role="radio"]')].map((r) => r.getAttribute('aria-label') ?? r.textContent)).toEqual(['Last 5', 'Last 10', 'Last 20', 'Season', 'Qualifiers', 'All time']);
+    expect(screen.getAllByRole('radiogroup', { name: 'Rounds shown' })).toHaveLength(1);
+    // The season is the default: a window is lit and All time is not; the old second switch is gone.
+    expect(radio('Last 10')!.getAttribute('aria-checked')).toBe('true');
+    expect(radio('All time')!.getAttribute('aria-checked')).toBe('false');
+    expect(radio('This season')).toBeNull();
   });
 
   it('choosing All time pushes ?range=all, and keeps the window the address names', async () => {
@@ -102,15 +106,16 @@ describe('Team stats’ switch', () => {
     expect(lastPush()![0]).toBe('/golf/dashboard/stats?window=qualifiers&range=all');
   });
 
-  it('on All time the page says so, the window switch steps aside (All time has no window), and the season brings back the window it left', async () => {
+  it('on All time the row says so and no window is lit (All time has no window); choosing a window comes back to the season on it', async () => {
     const user = userEvent.setup();
     render(shell(<StatsTeam data={team(withSpan(filterFor('qualifiers'), 'all'))} />));
     expect(radio('All time')!.getAttribute('aria-checked')).toBe('true');
-    expect(radio('Last 10')).toBeNull();
-    expect(radio('Qualifiers')).toBeNull();
-    await user.click(radio('This season')!);
-    // The window the address carried is back, and the param is gone.
+    for (const name of ['Last 5', 'Last 10', 'Last 20', 'Season', 'Qualifiers']) expect(radio(name)!.getAttribute('aria-checked')).toBe('false');
+    await user.click(radio('Qualifiers')!);
+    // The window chosen, and the param is gone.
     expect(lastPush()).toEqual(['/golf/dashboard/stats?window=qualifiers', { scroll: false }]);
+    await user.click(radio('Last 20')!);
+    expect(lastPush()![0]).not.toContain('range=all');
   });
 
   it('a window chosen after All time keeps ?range=all (the filter carries it through every change)', () => {
@@ -125,14 +130,15 @@ describe('a player’s Stats switch', () => {
   it('choosing All time pushes ?range=all with the player; the season takes it off', async () => {
     const user = userEvent.setup();
     render(shell(<StatsPlayer data={player(filterFor('season'))} coachId="c1" />));
-    expect(radio('This season')!.getAttribute('aria-checked')).toBe('true');
+    expect(radio('Season')!.getAttribute('aria-checked')).toBe('true');
+    expect(screen.getAllByRole('radiogroup', { name: 'Rounds shown' })).toHaveLength(1);
     await user.click(radio('All time')!);
     expect(lastPush()![0]).toBe(`/golf/dashboard/stats?player=${PREVIEW_PLAYER.id}&window=season&range=all`);
     cleanup();
     render(shell(<StatsPlayer data={player(withSpan(filterFor('season'), 'all'))} coachId="c1" />));
     expect(radio('All time')!.getAttribute('aria-checked')).toBe('true');
-    expect(radio('Last 10')).toBeNull();
-    await user.click(radio('This season')!);
+    expect(radio('Last 10')!.getAttribute('aria-checked')).toBe('false');
+    await user.click(radio('Season')!);
     expect(lastPush()![0]).toBe(`/golf/dashboard/stats?player=${PREVIEW_PLAYER.id}&window=season`);
   });
 });

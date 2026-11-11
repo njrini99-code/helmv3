@@ -5,15 +5,19 @@ import { ShsPlayerSkeleton, ShsTeamSkeleton } from './ShsSkeleton';
 import { useClubhouseRole } from '../../shell/context';
 import { StatsProfileSkeleton, StatsSkeleton } from './StatsSkeleton';
 import { useChPhone } from '../../lib/use-phone';
+import { parseFilter } from '../../data/stats-filter';
 
 /** `/stats` loads a profile for a player (their own) or for a coach with `?player=` (CH-5403); otherwise the team page (CH-4401). */
 export function StatsRouteSkeleton() {
-  const player = useSearchParams().get('player');
+  const params = useSearchParams();
+  const player = params.get('player');
   const role = useClubhouseRole();
   const profile = role === 'player' || !!player;
   // The phone draws the phone page's own skeleton (F-44), never the desktop one.
   const phone = useChPhone();
-  if (phone) return profile ? <ShsPlayerSkeleton /> : <ShsTeamSkeleton />;
+  // The address already names the window, so the loading page draws the real switch on it.
+  const filter = parseFilter(Object.fromEntries(params));
+  if (phone) return profile ? <ShsPlayerSkeleton filter={filter} /> : <ShsTeamSkeleton filter={filter} />;
 
   return profile ? <StatsProfileSkeleton coach={role === 'coach'} /> : <StatsSkeleton />;
 }

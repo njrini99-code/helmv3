@@ -42,7 +42,8 @@ import { useStatsDetail, type StatsArrivalState } from './use-stats-detail';
 
 const TITLE: Readonly<Record<StatsTeamDetailId, string>> = { tscore: 'Team scoring', tgame: 'Team game', tplayers: 'Players' };
 
-const windowDays = (data: ChTeamStats) => (data.window === 'last10' && !isFiltered(data.filter) ? `Last ${data.last} round days` : windowShort(data.filter));
+/** "10 round days": the unit is a day the team played, never a calendar day, and it stays short enough to sit beside the card's title on one line. */
+const windowDays = (data: ChTeamStats) => (data.window === 'last10' && !isFiltered(data.filter) ? `${data.last} round days` : windowShort(data.filter));
 
 
 /** "Sam gains the most; Lee loses the most", and "loses the least" when everyone is below zero (08 criterion 57). */
@@ -67,7 +68,8 @@ function changeBits(data: ChTeamStats): { chip: string | null; tone: ShsTone; di
     chip: `${formatFixed(Math.abs(f.delta), f.digits)} ${f.delta < 0 ? 'lower' : 'higher'}`,
     tone: t === 'is-gain' ? 'gain' : t === 'is-loss' ? 'loss' : 'flat',
     direction: f.delta < 0 ? 'down' : f.delta > 0 ? 'up' : 'flat',
-    words: f.context || `than the ${data.last} before`,
+    // One phrasing with My stats ("0.9 lower than the 10 before"); the loader's own reason, when it gives one, stays as written.
+    words: f.context ? f.context.replace(/^vs (?:the )?previous (\d+)$/i, 'than the $1 before') : `than the ${data.last} before`,
   };
 }
 
@@ -316,7 +318,7 @@ function PlayerRow({ rank, name, value }: { rank: string; name: string; value: n
       <span className="nm">{name}</span>
       <span className="ch-shs-rail" aria-hidden="true">
         <span className="ch-shs-zero" />
-        {bar && <span className={`ch-shs-bar ch-shs-fill-${tone}`} data-ch-grow="" style={{ left: `${bar.left}%`, width: `${bar.width}%`, transformOrigin: `${(value ?? 0) >= 0 ? '0' : '100%'} 50%` }} />}
+        {bar && <span className={`ch-shs-bar ch-shs-fill-${tone}`} style={{ left: `${bar.left}%`, width: `${bar.width}%`, transformOrigin: `${(value ?? 0) >= 0 ? '0' : '100%'} 50%` }} />}
       </span>
       <span className={`val${tone === 'flat' ? '' : ` ch-shs-${tone}`}`}>{formatSigned(value)}</span>
     </div>
@@ -437,7 +439,7 @@ function TeamGameDetail({ data }: { data: ChTeamStats }) {
               <span className="lab">{r.label}</span>
               <span className="ch-shs-rail">
                 <span className="ch-shs-zero" />
-                {bar && <span className={`ch-shs-bar ch-shs-fill-${tone}`} data-ch-grow="" style={{ left: `${bar.left}%`, width: `${bar.width}%`, transformOrigin: `${(r.value ?? 0) >= 0 ? '0' : '100%'} 50%` }} />}
+                {bar && <span className={`ch-shs-bar ch-shs-fill-${tone}`} style={{ left: `${bar.left}%`, width: `${bar.width}%`, transformOrigin: `${(r.value ?? 0) >= 0 ? '0' : '100%'} 50%` }} />}
               </span>
               <span className={`val${tone === 'flat' ? '' : ` ch-shs-${tone}`}`}>{formatSigned(r.value)}</span>
             </button>

@@ -8,9 +8,8 @@ import { createContext, useContext, useEffect, useId, useMemo, useState, useTran
 import { useRouter } from 'next/navigation';
 import type { ChHalves, ChLeg, ChTeamStats } from '../../data/stats-team';
 import { LEGS_LIST } from './legs';
-import { basisWords, clearFilters, filterFor, isFiltered, isWindowChange, hasRange, statsHref, rangeOf, withScope, withSpan, type ChFilter, type ChRange } from '../../data/stats-filter';
+import { basisWords, clearFilters, filterFor, isFiltered, isWindowChange, hasRange, statsHref, rangeOf, type ChFilter, type ChRange } from '../../data/stats-filter';
 import type { ChSpan } from '../../data/span';
-import { SpanSwitch } from '../../ui/SpanSwitch';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
@@ -32,7 +31,7 @@ import { firstValue, gappedPath, lastValue } from '../../lib/chart';
 import { changeInk, changeTone, formatFixed, formatSigned, NO_DATA } from '../../lib/format';
 import { deltaTone, deltaWords, halvesTone } from '../../lib/stats-signal';
 import { sgBaseline, sgScale } from '../../lib/sg';
-import { changeWords, UpdatingNote, WindowSwitch } from './WindowSwitch';
+import { changeWords, UpdatingNote, WindowSwitch, withPick, type ChScope } from './WindowSwitch';
 import { FilterEmpty, StatsFilter } from './StatsFilter';
 import { gridPeek, legDetailHref, teamPlayerHref } from './links';
 import { PlayerPeek } from '../../ui/PlayerPeek';
@@ -63,16 +62,10 @@ export type ChTeamCharts = Pick<ChTeamStats, 'window' | 'filter' | 'weeks' | 'we
 /** The filter in force and the one way to change it: the frame's offline refusal and slow notice, then the new address. */
 const GoFilter = createContext<{ filter: ChFilter; go: (next: ChFilter) => void; shown: ChRange; span: ChSpan }>({ filter: filterFor(), go: () => {}, shown: 'last10', span: 'season' });
 
-/** The frame's window change (offline refusal, slow notice, then the new window), for the phone view. */
-export function useGoWindow() {
-  const { filter, go } = useContext(GoFilter);
-  return (r: ChRange) => go(withScope(filter, r));
-}
-
-/** The span the figures are on (This season, All time): the one being loaded, from the tap, as the window is, and the way to change it. */
-export function useSpan(): [ChSpan, (s: ChSpan) => void] {
+/** The span the figures are on (This season, All time): the one being loaded, from the tap, as the window is, and the one way to choose a window or All time. */
+export function useScope(): [ChSpan, (v: ChScope) => void] {
   const { filter, go, span } = useContext(GoFilter);
-  return [span, (s) => go(withSpan(filter, s))];
+  return [span, (v) => go(withPick(filter, v))];
 }
 
 /** The window the switch shows: the one being loaded, from the tap, not from when its figures land (F-55). */
@@ -85,27 +78,20 @@ export function useShownWindow(): ChRange {
  * whole page (the page re-rendered every chart in the click, 40ms in the Simulator audit, 2026-10-14).
  */
 export function PhoneWindowSwitch({ custom, hook, rows, beside }: { custom: boolean; hook?: string; rows?: boolean; beside?: ReactNode }) {
-  const go = useGoWindow();
-  const [span, setSpan] = useSpan();
+  const [span, pick] = useScope();
   const shown = useShownWindow();
-  const spanSwitch = <SpanSwitch value={span} onChange={setSpan} hook={hook ? `${hook}-span` : undefined} />;
-  // All time is no window: the switch comes back with the season.
-  const windowSwitch = span === 'season' && <WindowSwitch value={shown} onChange={go} custom={custom} hook={hook} />;
-  // The summary stacks them (as My stats does): one row each, or the five windows run off a phone beside the span switch.
+  // One row for "which rounds", as My stats has: the windows of the season, then All time, then the filter.
+  const one = <WindowSwitch value={shown} span={span} onScope={pick} custom={custom} hook={hook} />;
   if (rows)
     return (
-      <>
-        <div className="ch-shs-ctl__row">{spanSwitch}</div>
-        <div className="ch-shs-ctl__row">
-          {windowSwitch}
-          {beside}
-        </div>
-      </>
+      <div className="ch-shs-ctl__row">
+        {one}
+        {beside}
+      </div>
     );
   return (
     <>
-      {spanSwitch}
-      {windowSwitch}
+      {one}
       {beside}
     </>
   );
@@ -164,8 +150,7 @@ export function StatsTeamFrame({ filter: current, phone, children }: { filter: C
 
 /** The header's window switch and Export. */
 export function TeamHeadActions({ filter, teamName, grid }: { filter: ChFilter; teamName: string; grid: ChTeamStats['grid'] | null }) {
-  const go = useGoWindow();
-  const [span, setSpan] = useSpan();
+  const [span, pick] = useScope();
   const shown = useShownWindow();
   const toast = useToast();
   const exportCsv = (rows: ChTeamStats['grid']) => {
@@ -187,9 +172,7 @@ export function TeamHeadActions({ filter, teamName, grid }: { filter: ChFilter; 
   };
   return (
     <div className="ch-st-head__act">
-      <SpanSwitch value={span} onChange={setSpan} />
-      {/* All time is no window: the switch comes back with the season. */}
-      {span === 'season' && <WindowSwitch value={shown} onChange={go} custom={hasRange(filter)} />}
+      <WindowSwitch value={shown} span={span} onScope={pick} custom={hasRange(filter)} />
       {/* Never export a half-loaded window: the page passes no grid then. */}
       {grid && grid.length > 0 && (
         <Button variant="ghost" leftIcon={Download} onClick={() => exportCsv(grid)} className="ch-btn--flush-end">
@@ -202,7 +185,7 @@ export function TeamHeadActions({ filter, teamName, grid }: { filter: ChFilter; 
 
 /** The empty window's way out. */
 export function ShowSeason() {
-  const go = useGoWindow();
+  const [, go] = useScope();
   // The page empty's one primary action (CH-4301, CH-4302).
   return (
     <Button variant="primary" leftIcon={CalendarRange} onClick={() => go('season')}>

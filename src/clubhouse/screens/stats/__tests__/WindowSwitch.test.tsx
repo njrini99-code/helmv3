@@ -6,7 +6,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../../lib/haptics', () => ({ haptic: vi.fn() }));
 
-import { WindowSwitch } from '../WindowSwitch';
+import { WindowSwitch, withPick } from '../WindowSwitch';
+import { filterFor, rangeOf, withSpan } from '../../../data/stats-filter';
 
 afterEach(cleanup);
 
@@ -34,6 +35,34 @@ describe('WindowSwitch · the range in rounds', () => {
     expect(screen.getByRole('radio', { name: 'Custom' }).getAttribute('aria-checked')).toBe('true');
     screen.getByRole('radio', { name: 'Last 5' }).click();
     expect(onChange).toHaveBeenCalledWith('last5');
+  });
+
+  it('as the page’s one control it ends in All time, which is no window: chosen, no window is lit; a window comes back through the same callback', () => {
+    const onScope = vi.fn();
+    const { rerender } = render(<WindowSwitch value="last10" span="season" onScope={onScope} />);
+    expect(screen.getAllByRole('radio').map((r) => r.getAttribute('aria-label') ?? r.textContent)).toEqual(['Last 5', 'Last 10', 'Last 20', 'Season', 'Qualifiers', 'All time']);
+    expect(screen.getByRole('radio', { name: 'Last 10' }).getAttribute('aria-checked')).toBe('true');
+    screen.getByRole('radio', { name: 'All time' }).click();
+    expect(onScope).toHaveBeenLastCalledWith('all');
+    rerender(<WindowSwitch value="last10" span="all" onScope={onScope} />);
+    expect(screen.getByRole('radio', { name: 'All time' }).getAttribute('aria-checked')).toBe('true');
+    expect(screen.getAllByRole('radio').filter((r) => r.getAttribute('aria-checked') === 'true')).toHaveLength(1);
+    screen.getByRole('radio', { name: 'Season' }).click();
+    expect(onScope).toHaveBeenLastCalledWith('season');
+  });
+
+  it('withPick: All time keeps the window the address names; a window is this season’s', () => {
+    expect(withPick(filterFor('qualifiers'), 'all')).toEqual(withSpan(filterFor('qualifiers'), 'all'));
+    expect(withPick(withSpan(filterFor('last10'), 'all'), 'season')).toEqual(filterFor('season'));
+    expect(withPick(withSpan(filterFor('last10'), 'all'), 'last20').span).toBeUndefined();
+    expect(rangeOf(withPick(withSpan(filterFor('last10'), 'all'), 'last20'))).toBe('last20');
+  });
+
+  it('the phone row is one well: no second switch stacked on it, and a word never clips (the well scrolls instead)', () => {
+    const css = readFileSync(join(process.cwd(), 'src/clubhouse/styles/stats-redesign.css'), 'utf8');
+    expect(css).not.toContain('.ch-span');
+    expect(css).toMatch(/\.ch-shs-ctl \.ch-seg \{[^}]*grid-auto-columns: minmax\(max-content, 1fr\);[^}]*overflow-x: auto;/);
+    for (const file of ['StatsPlayerPhoneShs.tsx', 'StatsTeamIslands.tsx', 'StatsPlayer.tsx']) expect(readFileSync(join(process.cwd(), 'src/clubhouse/screens/stats', file), 'utf8')).not.toContain('SpanSwitch');
   });
 
   it('the stylesheet hides the word only in the phone row (820px and below), never on a wider screen', () => {

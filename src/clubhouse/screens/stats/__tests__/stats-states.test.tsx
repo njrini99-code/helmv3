@@ -10,6 +10,7 @@ vi.mock('@/app/golf/actions/development', () => ({ createFocusArea: vi.fn(), acc
 import { PREVIEW_PLAYER_SHS_SELF, previewShsPlayer } from '../../../preview/fixtures-stats-redesign';
 import { PREVIEW_TEAM_STATS } from '../../../preview/fixtures-stats';
 import { ShsPlayerSkeleton, ShsTeamSkeleton } from '../ShsSkeleton';
+import { filterFor } from '../../../data/stats-filter';
 import { asDesktop, asPhone, cards, painted, resetAddress, showPlayer, showTeam } from './_shs-harness';
 
 const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
@@ -37,19 +38,24 @@ describe('loading', () => {
     expect([...document.querySelectorAll('.ch-shs-sech')].map((h) => h.textContent)).toEqual(['Overview', 'Your game', 'Rounds', 'Development']);
   });
 
-  it('the window switch is inert and the bars are hidden from assistive tech', () => {
-    render(<ShsPlayerSkeleton />);
-    expect(document.querySelector('.ch-shs-ctl')!.hasAttribute('inert')).toBe(true);
+  it('the window switch is the real control on the address’s choice, held inert, and the bars are hidden from assistive tech', () => {
+    render(<ShsPlayerSkeleton filter={filterFor('season')} />);
+    const ctl = document.querySelector('.ch-shs-ctl')!;
+    expect(ctl.hasAttribute('inert')).toBe(true);
+    // Not a grey bar standing in for the switch: the control itself, so nothing changes shape when the figures land.
+    expect(ctl.querySelector('.ch-shs-skel, .ch-shs-skel-seg')).toBeNull();
+    expect([...ctl.querySelectorAll('[role="radio"]')].map((r) => r.getAttribute('aria-label') ?? r.textContent)).toEqual(['Last 5', 'Last 10', 'Last 20', 'Season', 'Qualifiers', 'All time']);
+    expect(ctl.querySelector('[role="radio"][aria-checked="true"]')!.textContent).toBe('Season');
     const bars = document.querySelectorAll('.ch-shs-skel');
     expect(bars.length).toBeGreaterThan(5);
     for (const b of bars) expect(b.getAttribute('aria-hidden')).toBe('true');
   });
 
-  it('the feature card is one block and carries no meta bar', () => {
+  it('the green card waits plain: its title, no bar and no sheen on the green', () => {
     render(<ShsPlayerSkeleton />);
     const feature = document.querySelector('.ch-shs-skel-card.ch-shs-feature')!;
-    expect(feature.querySelector('.ch-shs-skel--meta')).toBeNull();
-    expect(feature.querySelectorAll('.ch-shs-skel')).toHaveLength(1);
+    expect(feature.querySelector('h3')!.textContent).toBe('Scoring average');
+    expect(feature.querySelectorAll('.ch-shs-skel')).toHaveLength(0);
   });
 
   it('Team Stats keeps CH-4401 on the container', () => {

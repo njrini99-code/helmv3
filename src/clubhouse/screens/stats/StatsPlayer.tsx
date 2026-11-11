@@ -7,8 +7,7 @@ import { useRouter } from 'next/navigation';
 import { createFocusArea } from '@/app/golf/actions/development';
 import type { ChPlayerProfile } from '../../data/stats-player';
 import type { ChReadsSource } from './GameDetail';
-import { basisWords, clearFilters, HOLES_ADJ, hasRange, per18, type ChHoles, isFiltered, isWindowChange, statsHref, rangeOf, withScope, withSpan, type ChFilter, type ChRange } from '../../data/stats-filter';
-import { SpanSwitch } from '../../ui/SpanSwitch';
+import { basisWords, clearFilters, HOLES_ADJ, hasRange, per18, type ChHoles, isFiltered, isWindowChange, statsHref, rangeOf, type ChFilter } from '../../data/stats-filter';
 import { Avatar } from '../../ui/Avatar';
 import { Button, IconButton } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
@@ -44,7 +43,7 @@ import { FocusLoop } from './FocusLoop';
 import { ProposalAnswer } from './ProposalAnswer';
 import { GoalSetButton, GoalStatus, GoalSuggestions } from './Goals';
 import { StatsPlayerPhoneShs } from './StatsPlayerPhoneShs';
-import { changeWords, UpdatingNote, WindowSwitch } from './WindowSwitch';
+import { changeWords, UpdatingNote, WindowSwitch, withPick } from './WindowSwitch';
 import { useChSessionState } from '../../lib/session-state';
 import { CACHE_ERROR, countWords, FORM_STEADY, shotsWords } from './notes';
 import { PlayerStage } from './PlayerStage';
@@ -176,7 +175,6 @@ export function StatsPlayer({ data, coachId, initialTab, initialArea, reads }: {
     setLoading(next);
     go(data.id, next);
   };
-  const changeWindow = (r: ChRange) => changeFilter(withScope(data.filter, r));
   // Row 15: once the window has settled, the windows either side are fetched whole when idle, so a switch to one is instant.
   useIdleFetchAhead(loading || pending ? [] : windowsAhead(data.filter).map((f) => href(data.id, f)));
   const filterCodes = { empty: 'CH-5320', pickEmpty: 'CH-5321', pickCap: 'CH-5322', range: 'CH-5102', holes: 'CH-5323' };
@@ -233,7 +231,6 @@ export function StatsPlayer({ data, coachId, initialTab, initialArea, reads }: {
           messageHref={messageHref}
           windowShown={rangeOf(loading ?? data.filter)}
           spanShown={(loading ?? data.filter).span ?? 'season'}
-          onWindow={changeWindow}
           onFilter={changeFilter}
           onBackToTeam={() => go(null, data.filter)}
           onAddFocus={coach && coachId ? () => setFocusOpen(true) : null}
@@ -339,9 +336,7 @@ export function StatsPlayer({ data, coachId, initialTab, initialArea, reads }: {
             ))}
           </div>
           {/* The switch moves on the tap: the window being loaded, not the one whose figures are still showing (F-55). */}
-          <SpanSwitch value={(loading ?? data.filter).span ?? 'season'} onChange={(v) => changeFilter(withSpan(data.filter, v))} />
-          {/* All time is no window: the switch comes back with the season. */}
-          {(loading ?? data.filter).span !== 'all' && <WindowSwitch value={rangeOf(loading ?? data.filter)} onChange={changeWindow} custom={hasRange(data.filter)} />}
+          <WindowSwitch value={rangeOf(loading ?? data.filter)} span={(loading ?? data.filter).span ?? 'season'} onScope={(v) => changeFilter(withPick(data.filter, v))} custom={hasRange(data.filter)} />
         </div>
 
         {showFilter && <StatsFilter filter={data.filter} options={data.filterOptions} count={w.rounds} onChange={changeFilter} codes={filterCodes} />}
