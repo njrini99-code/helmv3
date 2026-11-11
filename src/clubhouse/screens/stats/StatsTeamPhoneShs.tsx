@@ -202,18 +202,7 @@ export function StatsTeamPhoneShs({
                   <h2 className="ch-shs-sech">Overview</h2>
                   <SectionBoundary surface="stats.team.figures" label="Team figures" code="CH-4204">
                     {data.cacheError && <RetryNotice code="CH-4202" title="Some team figures didn’t load" body="Scoring is correct; greens, putts and scrambling are missing." covered={covered} />}
-                    <SummaryCard feature go="tscore" onOpen={() => go('tscore')} icon="flag" title="Scoring average" meta={windowDays(data)} ariaLabel={`Team scoring average ${scoringFigure(data) ? figureValue(scoringFigure(data)!) : 'no value'}. Open details`}>
-                      <div className="ch-shs-figs">
-                        <div className="ch-shs-figline">
-                          <span className="ch-shs-fig">{scoringFigure(data) ? figureValue(scoringFigure(data)!) : <NoData />}</span>
-                          {toPar(data) && <span className="ch-shs-fig-sub">{toPar(data)}</span>}
-                        </div>
-                        <div className="ch-shs-delta">
-                          <Change data={data} />
-                        </div>
-                      </div>
-                      {days.length >= 2 ? <TeamFeatureChart days={days} mean={mean} /> : <p className="ch-shs-anote">The trend draws once the team has rounds on a second day.</p>}
-                    </SummaryCard>
+                    <TeamScoringCard data={data} days={days} mean={mean} onOpen={() => go('tscore')} />
                   </SectionBoundary>
                   {below && (
                     <>
@@ -233,12 +222,14 @@ export function StatsTeamPhoneShs({
     </>
   );
   const ready = !data.roundsError && !noRounds;
+  // Each drill reads the page's figures as it draws, so each sits in a boundary of its own: one that cannot be drawn says so in its
+  // place and the page stands (CH-4204, CH-4206), as the cards beside it do.
   const drill = (id: StatsTeamDetailId) => (
-    <>
+    <SectionBoundary key={id} surface={`stats.team.detail.${id}`} label={TITLE[id]} code={id === 'tscore' ? 'CH-4204' : 'CH-4206'}>
       {id === 'tscore' && <TeamScoringDetail data={data} covered={covered} days={days} mean={mean} beside={desk} />}
       {id === 'tgame' && <TeamGameDetail data={data} />}
       {id === 'tplayers' && <TeamPlayersDetail data={data} />}
-    </>
+    </SectionBoundary>
   );
 
   if (desk)
@@ -325,6 +316,29 @@ function TeamFailedCard({ seen }: { /** The page's data: a new copy means the re
         Try again
       </Button>
     </section>
+  );
+}
+
+/**
+ * The Overview card. Its own component, so the boundary around it holds everything it reads: a figures list that is not one crashes
+ * this card (CH-4204), never the page. Looking the figure up while the page built the card's props answered /stats with a 500.
+ */
+function TeamScoringCard({ data, days, mean, onOpen }: { data: ChTeamStats; days: ReadonlyArray<{ label: string; score: number; n?: number; date?: string }>; mean: number | null; onOpen: () => void }) {
+  const f = scoringFigure(data);
+  const par = toPar(data);
+  return (
+    <SummaryCard feature go="tscore" onOpen={onOpen} icon="flag" title="Scoring average" meta={windowDays(data)} ariaLabel={`Team scoring average ${f ? figureValue(f) : 'no value'}. Open details`}>
+      <div className="ch-shs-figs">
+        <div className="ch-shs-figline">
+          <span className="ch-shs-fig">{f ? figureValue(f) : <NoData />}</span>
+          {par && <span className="ch-shs-fig-sub">{par}</span>}
+        </div>
+        <div className="ch-shs-delta">
+          <Change data={data} />
+        </div>
+      </div>
+      {days.length >= 2 ? <TeamFeatureChart days={days} mean={mean} /> : <p className="ch-shs-anote">The trend draws once the team has rounds on a second day.</p>}
+    </SummaryCard>
   );
 }
 

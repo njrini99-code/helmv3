@@ -222,6 +222,21 @@ describe('desktop Team stats is the bento with its drill beside it', () => {
     pushes.mockRestore();
   });
 
+  it('a figures list that is not one crashes its own sections, never the page: each card and the drill say so in place', async () => {
+    // /clubhouse-preview/stats?state=crash answered 500: the Scoring average card looked its figure up while the page built the
+    // card's props, and the drill read it with no boundary at all.
+    const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
+    render(shell(<StatsTeam data={{ ...PREVIEW_TEAM_STATS, figures: null as never, bests: null as never }} />));
+    await waitFor(() => expect(pane()).not.toBeNull());
+    expect(screen.getAllByText('Team figures couldn’t be shown').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Strokes gained by leg couldn’t be shown').length).toBeGreaterThan(0);
+    expect(within(pane()!).getByText('Team scoring couldn’t be shown')).toBeTruthy();
+    // What does not read the figures still draws.
+    expect(cards().map((c) => c.dataset.go)).toEqual(['tplayers']);
+    expect(screen.getByRole('heading', { level: 1, name: 'Team stats' })).toBeTruthy();
+    quiet.mockRestore();
+  });
+
   it('rounds that did not load are said across the page, with no cards and no pane', async () => {
     render(shell(<StatsTeam data={{ ...PREVIEW_TEAM_STATS, roundsError: true }} />));
     await waitFor(() => expect(document.querySelector('.ch-shs-desk.is-alone')).not.toBeNull());
