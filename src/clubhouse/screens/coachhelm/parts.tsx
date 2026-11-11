@@ -270,9 +270,11 @@ export function BoardPartial({ missing, what, focus = true }: { missing: ChBoard
  *  player puts "CoachHelm" there instead, and the player's name as the `title` (spec A). */
 /** `below`: one more line under the sentence, inside the header (the coach's "Since you were last here", D4). */
 /** `asideLevel="title"`: the aside sits on the title's line (the coach board's keys), not at the foot of the header's lines. */
-export function Head({ who, title = 'CoachHelm', children, aside, asideLevel, below, phone = false }: { who?: ReactNode; title?: ReactNode; children: ReactNode; aside?: ReactNode; asideLevel?: 'title'; below?: ReactNode; phone?: boolean }) {
+/** `tight`: the shell's tight page head (no double rule over the title), which a player's own CoachHelm takes with the page's canvas,
+ *  as their other pages do; the coach's pages keep the full head on the bright sheet. */
+export function Head({ who, title = 'CoachHelm', children, aside, asideLevel, below, phone = false, tight = false }: { who?: ReactNode; title?: ReactNode; children: ReactNode; aside?: ReactNode; asideLevel?: 'title'; below?: ReactNode; phone?: boolean; tight?: boolean }) {
   return (
-    <header className={'ch-hl-h' + (aside ? ' has-aside' : '') + (aside && asideLevel === 'title' ? ' is-aside-title' : '')} data-canopy-head="">
+    <header className={'ch-hl-h' + (aside ? ' has-aside' : '') + (aside && asideLevel === 'title' ? ' is-aside-title' : '')} data-canopy-head={tight ? 'tight' : ''}>
       {who && <span className="ch-hl-role">{who}</span>}
       {/* The phone's one large title (owner decision 4: the same 34 semibold sans as every section root, not the desktop's serif). */}
       {phone ? (

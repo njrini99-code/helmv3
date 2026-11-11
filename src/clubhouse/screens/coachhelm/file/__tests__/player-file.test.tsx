@@ -185,6 +185,30 @@ describe('the player page (S-BOARD, W-LNS-14, W-LNS-15)', () => {
     expect(screen.queryByRole('button', { name: /Assign/ })).toBeNull();
   });
 
+  it('on a desk the page opens with the player’s CoachHelm head: the page title, the line, and the views inside the head', () => {
+    render(<YourWeek load={{ status: 'ready', data: week('default') }} />, { wrapper: Wrap });
+    const main = screen.getByRole('main');
+    // The canopy is what gives the head the page title's style (shell.css), and the tight head has no rule over the title.
+    expect(main.getAttribute('data-canopy')).toBe('');
+    const head = main.querySelector('header.ch-hl-h') as HTMLElement;
+    expect(head.getAttribute('data-canopy-head')).toBe('tight');
+    const title = within(head).getByRole('heading', { level: 1, name: 'Your week' });
+    expect(main.getAttribute('aria-labelledby')).toBe(title.id);
+    expect(head.textContent).toMatch(/21 rounds · refreshed/);
+    // The views stand in the head's own aside (inside the page's gutter), never in the 300px box that ran them to the page's edge.
+    expect(within(head.querySelector('.ch-hl-h__aside') as HTMLElement).getByRole('radiogroup', { name: 'CoachHelm view' })).toBeTruthy();
+    expect(main.querySelector('.dhead, .aseg')).toBeNull();
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
+  });
+
+  it('What’s working says its figure once: the title carries it, and the line under it is the area and how firm the read is', () => {
+    render(<YourWeek load={{ status: 'ready', data: week('default') }} />, { wrapper: Wrap });
+    const row = within(screen.getByRole('region', { name: 'What’s working' })).getByRole('button');
+    expect(row.querySelector('b')!.textContent).toBe('Double bogey-or-worse rate: 1.6%');
+    expect(row.querySelector('small')!.textContent).toBe('Course and scoring · Solid read');
+    expect(row.textContent!.match(/1\.6%/g)).toHaveLength(1);
+  });
+
   it('draws no dot for another player on the field card', () => {
     render(<YourWeek load={{ status: 'ready', data: week('default') }} />, { wrapper: Wrap });
     expect(document.querySelector('.dots')).not.toBeNull();

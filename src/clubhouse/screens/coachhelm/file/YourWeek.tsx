@@ -15,6 +15,7 @@ import { PhoneTop } from '../../../shell/phone-chrome';
 import { Icon } from '../../../ui/Icon';
 import { Modal } from '../../../ui/Modal';
 import { GonePanel, ReadPanel } from '../team/panels';
+import { Head } from '../parts';
 import { ProposalRow } from '../Proposals';
 import { useViewSwitch } from '../use-view-switch';
 import { PlayerHelmTabs } from '../views/PlayerHelmTabs';
@@ -68,18 +69,26 @@ export function YourWeek({ load, writes = LIVE_PLAYER_WRITES }: { load: ChViewLo
   const penalties = open && /penalt/i.test(`${open.base.metric} ${open.base.title}`) ? data.penalties : null;
   const left = [feat, <PlanCard key="plan" plan={cards.plan} lens="player" first="" />, cards.sg && <SgCard key="sg" sg={cards.sg} who="You" standingHref={null} />];
   const right = [<WorkingCard key="w" list={cards.working} onOpen={setOpenRead} />, cards.field && <FieldCard key="f" field={cards.field} />, <ReadsCard key="r" cards={cards} lens="player" onOpen={setOpenRead} moreLine={moreReadsLine(cards.more) || undefined} />];
+  const line = [data.rounds != null ? `${data.rounds} rounds` : null, data.refreshed ? `refreshed ${data.refreshed}` : null].filter(Boolean).join(' · ');
   return (
-    <main className={'ch-hf' + (phone ? ' is-phone' : ' is-desk')} aria-labelledby="ch-hf-week" data-ch="your-week" aria-busy={sw.pending || undefined}>
+    // On a desk the page takes the canopy for its head alone: the player's CoachHelm head (parts.tsx Head, tight), the page title,
+    // the line and the views inside the page's gutter, as the board's. The phone keeps its large title under the chip row.
+    <main className={'ch-hf' + (phone ? ' is-phone' : ' is-desk')} aria-labelledby={phone ? 'ch-hf-week' : 'ch-hl-title'} data-ch="your-week" data-canopy={phone ? undefined : ''} aria-busy={sw.pending || undefined}>
       {phone && <PhoneTop start title="CoachHelm" />}
       {phone && tabs}
       <div className="dfile">
-        <div className="dhead is-week">
-          <div>
-            <LargeTitle id="ch-hf-week">Your week</LargeTitle>
-            <p className="ch-num">{[data.rounds != null ? `${data.rounds} rounds` : null, data.refreshed ? `refreshed ${data.refreshed}` : null].filter(Boolean).join(' · ')}</p>
+        {phone ? (
+          <div className="dhead is-week">
+            <div>
+              <LargeTitle id="ch-hf-week">Your week</LargeTitle>
+              <p className="ch-num">{line}</p>
+            </div>
           </div>
-          {!phone && <div className="aseg">{tabs}</div>}
-        </div>
+        ) : (
+          <Head title="Your week" tight aside={tabs}>
+            <span className="ch-num">{line}</span>
+          </Head>
+        )}
         <div className="ch-hf-flow">
           {empty ? (
             <section className="card">

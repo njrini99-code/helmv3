@@ -1711,6 +1711,28 @@ html:not([data-fw-theme='dark']) .ch-hl {
       var(--ch-elevation-cast);
   }
 }
+/* A player's own CoachHelm (the Board, Standing and the Deep dive, and their skeletons) sits on the page's canvas, as
+   their every other page does (fix wave 2026-11-11: the sheet read as a lighter panel inside the page, with its own
+   rounded top and a double rule over the title). Those pages take the shell's tight head (parts.tsx Head, `tight`), so
+   the head is what names them here. No role line stands over a player's title, so the page opens where Calendar and
+   Settings do and the title lands on every page's line. The coach's pages keep the sheet and the full head. */
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
+  .ch-hl[data-canopy]:has(> [data-canopy-head='tight']) {
+    padding-top: var(--ch-page-top-no-eyebrow);
+  }
+  html:not([data-fw-theme='dark']) .ch-hl[data-canopy]:has(> [data-canopy-head='tight']) {
+    margin-top: 0;
+    margin-bottom: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  /* Its loading head is drawn at the loaded lines' heights (CoachHelmSkeleton, Skeletons), so it is not held to the full
+     head's 159px: the page would drop by the difference when the read lands. */
+  .ch-hl[aria-busy='true'][data-canopy] > .ch-hl-h[data-canopy-head='tight'] {
+    min-height: 0;
+  }
+}
 /* Inside a green board the ledger's heading ink is the board's own, not the page's darker step. */
 .ch-hl .ch-scoreboard {
   --ch-ledger-ink: var(--ch-text-primary);

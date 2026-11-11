@@ -502,6 +502,9 @@ export function ReadsCard({ cards, lens, fa, onOpen, moreLine }: { cards: ChFile
 export function WorkingCard({ list, onOpen }: { list: ChDeepInsight[]; onOpen: (id: string) => void }) {
   const d = list[0];
   if (!d) return null;
+  // The second line as the reads rows say theirs: the area, the figure, and how firm the read is. A title that already states the
+  // figure ("Double bogey-or-worse rate: 1.6%") is not followed by it again.
+  const meta = [AREA[d.area] ?? 'Course and scoring', d.base.title.includes(d.base.value) ? null : d.base.value, d.base.evidence.read?.word].filter(Boolean).join(' · ');
   return (
     <section className="card" aria-labelledby="ch-hf-working">
       <CardHead id="ch-hf-working" title="What’s working" meta="Top strength" />
@@ -510,7 +513,7 @@ export function WorkingCard({ list, onOpen }: { list: ChDeepInsight[]; onOpen: (
           <Badge tone="positive">Working</Badge>
           <span className="r__t">
             <b className="l2 ch-num">{d.base.title}</b>
-            <small className="ch-num">{d.base.value}</small>
+            <small className="ch-num">{meta}</small>
           </span>
         </button>
       </div>

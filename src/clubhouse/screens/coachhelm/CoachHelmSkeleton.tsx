@@ -175,7 +175,8 @@ export function CoachHelmSkeleton({ view, chained, active }: { view: 'coach' | '
       ) : (
         // Each line at the loaded line's height (the role 18, the title 48, the line 21, "Since you were last here" 32), so the
         // head is the loaded head's 195px (coach) and the strip sits where the page puts it.
-        <header className="ch-hl-h has-aside" data-canopy-head="">
+        // A player's head is the tight one on the page's canvas, as the loaded page's (Head's `tight`).
+        <header className="ch-hl-h has-aside" data-canopy-head={coach ? '' : 'tight'}>
           {/* The role line is the coach's only (Head). */}
           {coach && <SkelLine line={18} bar={11} width={40} />}
           <SkelLine line={48} bar={38} width={196} />

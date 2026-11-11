@@ -72,7 +72,7 @@ export function PlayerBoard({ data, writes = LIVE_PLAYER_WRITES, coursePlanReads
     <main className={'ch-hl' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hl-title" aria-busy={sw.pending || undefined} data-canopy={phone ? undefined : ''} {...sw.enter}>
       {phone && <PhoneTop start title="CoachHelm" />}
       {phone && tabs}
-      <Head phone={phone} aside={!phone ? tabs : undefined}>
+      <Head phone={phone} tight aside={!phone ? tabs : undefined}>
         {data.rounds === 0 ? 'One thing to work on each week, from the rounds you post.' : 'One thing to work on this week, based on the rounds you’ve posted.'}
       </Head>
 

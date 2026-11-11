@@ -58,8 +58,8 @@ function Chrome({ label, code, view, chained, brief = 2, coach, children }: { la
           </span>
         </header>
       ) : (
-        // The player's own: the title, and the brief's two lines beside the views (48 and 42: a 166px head).
-        <header className="ch-hl-h has-aside" data-canopy-head="">
+        // The player's own: the title, and the brief's two lines beside the views (48 and 42), under the tight head as the page's.
+        <header className="ch-hl-h has-aside" data-canopy-head="tight">
           <SkelLine line={48} bar={38} width={196} />
           <span className="ch-hv-sk-brief">
             <SkelLine line={21} bar={13} width="96%" />

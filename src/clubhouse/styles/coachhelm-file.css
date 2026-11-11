@@ -51,6 +51,13 @@
 /* The failed file is one card: it keeps the reading width at any desk size, where the ready file's two columns take the page. */
 .ch-hf.is-desk.is-failed .ch-hf-flow { max-width: var(--ch-measure-reading); }
 .ch-hf .dhead.is-week { margin-bottom: 24px; }
+/* Your week on a desk (fix wave 2026-11-11): the page's own measure and gutters, and the player's CoachHelm head over the
+   cards (parts.tsx Head: the page title, the line, the views inside the gutter). It was a 15px title 24px in, with the views
+   run to the page's edge. The page is the head's container, so the views drop under the line on a narrow desk as the board's. */
+.ch-hf.is-desk[data-ch='your-week'] { container: chhl / inline-size; padding-bottom: 0; }
+.ch-hf.is-desk[data-ch='your-week'] .dfile { max-width: var(--ch-measure-page); margin: 0 auto; padding: var(--ch-page-top-no-eyebrow) var(--ch-page-gutter) var(--ch-page-bottom); }
+/* The board's own head rows (coachhelm.css, .ch-hl[data-canopy] > .ch-hl-h), so the line sits as close under the title here. */
+.ch-hf.is-desk[data-ch='your-week'] .ch-hl-h { row-gap: 4px; margin-bottom: var(--ch-gap-section); }
 .ch-hf.is-phone .dhead.is-week { margin-top: 20px; display: block; }
 .ch-hf.is-phone .dhead.is-week p { margin-top: 4px; }
 .ch-hf .feat { color: var(--ch-hf-a-feat-1); }
