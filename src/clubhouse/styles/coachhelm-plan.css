@@ -1152,17 +1152,6 @@ html[data-fw-theme='dark'] .ch-cpv-vz {
   font: var(--ch-type-14);
   color: var(--ch-text-secondary);
 }
-.ch-cpv .art.cur {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 12px 16px;
-  font: var(--ch-type-15);
-  letter-spacing: var(--ch-track-15);
-}
-.ch-cpv .art.cur .m {
-  color: var(--ch-text-secondary);
-}
 .ch-cpv .smpw {
   position: relative;
   display: grid;
@@ -1736,20 +1725,31 @@ html[data-fw-theme='dark'] .ch-cpv-vz {
 
 /* Plan format: the page edge every other page uses; the desk head. */
 .ch-cpv-fmt { padding-inline: var(--ch-page-x-phone); }
-.ch-cpv-fmt__back {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  min-height: 44px;
-  color: var(--ch-text-secondary);
-  font: var(--ch-type-15);
-  letter-spacing: var(--ch-track-15);
-  text-decoration: none;
+/* The format, then what it learns: one column on a phone. */
+.ch-cpv-fmt__cols {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  min-width: 0;
 }
-.ch-cpv-fmt__t {
+/* The format in use, the card's caption. */
+.ch-cpv .fcur {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 2px 12px;
   margin: 0;
-  font: var(--ch-type-28-strong);
-  letter-spacing: var(--ch-track-28);
+  padding: 12px 16px;
+  border-top: var(--ch-hairline-w) solid var(--ch-separator);
+  font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-text-secondary);
+}
+.ch-cpv .fcur b {
+  font: var(--ch-type-13-medium);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-text-primary);
 }
 /* PP-10: the fan fits its card, whatever the width; a title stops at two lines; +N sits under the fan. */
 .ch-cpv-vz[data-vz='dr'] { container-type: inline-size; display: grid; gap: 8px; }
@@ -1819,7 +1819,24 @@ html[data-fw-theme='dark'] .ch-cpv-vz {
 .ch-cpv-pub .avs .more { align-self: center; margin-inline-start: 4px; font: var(--ch-type-12-strong); letter-spacing: var(--ch-track-12); color: var(--ch-text-secondary); }
 /* PP-30: a player's page keeps the page width on a Mac. */
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
-  .ch-cpv-ply, .ch-cpv-fmt { max-width: var(--ch-measure-reading); margin-inline: auto; }
+  .ch-cpv-ply { max-width: var(--ch-measure-reading); margin-inline: auto; }
+  /* Plan format is a Practice page: the page's width, edge and head (practice.css), its two cards side by side. */
+  .ch-cpv-fmt {
+    gap: 20px;
+    align-content: start;
+    max-width: var(--ch-measure-page);
+    margin: 0 auto;
+    padding: var(--ch-page-top-coachhelm) var(--ch-page-gutter) var(--ch-page-bottom);
+  }
+  .ch-cpv-fmt > .ch-backlink { margin-block-end: -12px; }
+  .ch-cpv-fmt__cols { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 20px; }
+  /* The key hugs its label, beside what it does; the hint lines up under the words. */
+  .ch-cpv-fmt .fintro { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+  .ch-cpv-fmt .fintro .art-h { padding-block: 16px; }
+  .ch-cpv-fmt .fintro .acts.is-pad { grid-area: 1 / 2; padding: 16px 16px 16px 4px; }
+  .ch-cpv-fmt .fintro .acts .is-wide { width: auto; }
+  .ch-cpv-fmt .fintro :is(.fhint, .inert, .fcur) { grid-column: 1 / -1; }
+  .ch-cpv-fmt .fintro .fhint { padding-inline-start: 60px; text-align: start; }
 }
 /* MOB-PRAC-2: the print copy is for paper, never for the page under the app. */
 @media screen { .ch-cp-print-root { display: none; } }

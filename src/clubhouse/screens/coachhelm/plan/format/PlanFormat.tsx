@@ -2,8 +2,7 @@
 
 import { Button } from '../../../../ui/Button';
 
-import { Camera, Check, ChevronLeft, CircleCheck, Clock, FileText, Image as ImageIcon, Undo2, Users } from 'lucide-react';
-import Link from 'next/link';
+import { Camera, Check, CircleCheck, Clock, FileText, Image as ImageIcon, Undo2, Users } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useRef, useState, type ChangeEvent } from 'react';
 import { readPlanFormat, setPlanFormat, undoPlanFormat, type FormatSections, type PriorFormat } from '@/app/golf/actions/coachhelm-plan-format';
@@ -12,6 +11,8 @@ import { FormSheet } from '../../../../ui/FormSheet';
 import { Icon } from '../../../../ui/Icon';
 import { useChPhone } from '../../../../lib/use-phone';
 import { PhoneTop } from '../../../../shell/phone-chrome';
+import { LargeTitle } from '../../../../ui/LargeTitle';
+import { BackLink } from '../../../../ui/Section';
 import { plural } from '../../../../lib/plural';
 import { useUndoWindow } from '../useUndoWindow';
 
@@ -137,17 +138,26 @@ export function PlanFormat({ teamId = '', initial = { k: 'empty' }, current = 'G
     </section>
   );
   const shownName = view.k === 'set' ? view.file.replace(/\.[^.]+$/, '') : name;
+  // The format in use, as the card's own caption: it was a card of its own for one line.
+  const curLine = (
+    <p className="fcur">
+      Current format <b>{shownName}</b>
+    </p>
+  );
   return (
-    <main className="ch-page ch-cpv ch-cpv-fmt" data-ch="plan-format">
+    <main className="ch-page ch-cpv ch-cpv-fmt" data-ch="plan-format" aria-labelledby={phone ? undefined : 'ch-cpv-fmt-title'}>
       {phone ? (
         <PhoneTop title="Plan format" back={{ label: 'Practice', onBack: () => router.push('/golf/dashboard/practice') }} />
       ) : (
-        <Link href="/golf/dashboard/practice" className="ch-cpv-fmt__back">
-          <Icon icon={ChevronLeft} size={16} />
-          Practice
-        </Link>
+        <>
+          <BackLink href="/golf/dashboard/practice">Practice</BackLink>
+          <header className="ch-prc-h">
+            <LargeTitle id="ch-cpv-fmt-title">Plan format</LargeTitle>
+          </header>
+        </>
       )}
-      {!phone && <h1 className="ch-cpv-fmt__t">Plan format</h1>}
+      {/* The format on the left, what it learns beside it; one under the other on a phone. */}
+      <div className="ch-cpv-fmt__cols">
       {view.k === 'reading' && (
         <section className="art">
           <header className="art-h">
@@ -164,6 +174,7 @@ export function PlanFormat({ teamId = '', initial = { k: 'empty' }, current = 'G
             <i className="dot" />
             Reading {view.file}
           </div>
+          {curLine}
         </section>
       )}
       {view.k === 'found' && (
@@ -197,6 +208,7 @@ export function PlanFormat({ teamId = '', initial = { k: 'empty' }, current = 'G
               Use this format
             </Button>
           </div>
+          {curLine}
         </section>
       )}
       {view.k === 'set' && (
@@ -235,6 +247,7 @@ export function PlanFormat({ teamId = '', initial = { k: 'empty' }, current = 'G
               </button>
             )}
           </div>
+          {curLine}
         </section>
       )}
       {(view.k === 'empty' || view.k === 'failed') && (
@@ -259,13 +272,11 @@ export function PlanFormat({ teamId = '', initial = { k: 'empty' }, current = 'G
             </Button>
           </div>
           <div className="fhint">A PDF, a photo of a printed sheet, or a Word or Excel file.</div>
+          {curLine}
         </section>
       )}
       {learns}
-      <section className="art cur">
-        <span>Current format</span>
-        <span className="m">{shownName}</span>
-      </section>
+      </div>
       <FormSheet open={sheet} onClose={() => setSheet(false)} title="Upload a plan" actionLabel="Done" onAction={() => setSheet(false)}>
         <div className="ch-cpv ch-cpv-sheet">
           {/* The three ways in differ: any file, the photo library, the camera itself. In the sheet: outside a modal they're inert. */}
