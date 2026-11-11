@@ -106,8 +106,8 @@
 .ch-cpv,
 .ch-cpv-full {
   --ch-pl-cpv-track: #ebe5d8;
-  --ch-pl-cpv-skill: #3d6787;
-  --ch-pl-cpv-random: #6e5487;
+  --ch-pl-cpv-skill: var(--ch-yr-so);
+  --ch-pl-cpv-random: var(--ch-plan-group-d);
   --ch-pl-cpv-pressure: #1f6b45;
   --ch-pl-cpv-ga: #1f6b45;
   --ch-pl-cpv-gb: var(--ch-yr-so);
@@ -125,8 +125,8 @@
 html[data-fw-theme='dark'] .ch-cpv,
 html[data-fw-theme='dark'] .ch-cpv-full {
   --ch-pl-cpv-track: #2c322d;
-  --ch-pl-cpv-skill: #6e9bc0;
-  --ch-pl-cpv-random: #b49acb;
+  --ch-pl-cpv-skill: var(--ch-champagne-500);
+  --ch-pl-cpv-random: var(--ch-plan-group-d-night);
   --ch-pl-cpv-pressure: #4fa877;
   --ch-pl-cpv-ga: #4fa877;
   --ch-pl-cpv-gb: var(--ch-champagne-500);

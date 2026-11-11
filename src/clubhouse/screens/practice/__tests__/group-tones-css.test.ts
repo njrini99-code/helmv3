@@ -73,3 +73,40 @@ describe('a plan’s group tones', () => {
     expect(sheetPalette.match(/--ch-pl-g(?:[ABC]-t|t):\s*#[0-9A-F]{6}/g)).toHaveLength(6);
   });
 });
+
+/**
+ * The kinds of work (skill, random, pressure) wear the same family: ochre, slate and green on the day strip, its key and Ask's plan card.
+ * A kind is a bar or a square with its word and a group is a disc with its letter, so colour never has to tell the two apart.
+ */
+describe('the kinds of work', () => {
+  const bare = (css: string) => css.replace(/\/\*[\s\S]*?\*\//g, '');
+  const strip = bare(practice.slice(practice.indexOf('.ch-prc-day__bar i[data-tone='), practice.indexOf('.ch-prc-day__ends')));
+  const key = bare(practice.slice(practice.indexOf('.ch-prc-ribbon__mix span::before'), practice.indexOf('.ch-prc-save {')));
+
+  it('are never the blue and purple, on the strip, its key or Ask’s card', () => {
+    for (const css of [strip, key]) expect(css).not.toMatch(/--ch-(run|plan)-group-[bc]\b/);
+    expect(plan).not.toMatch(/--ch-pl-cpv-(skill|random|pressure):\s*#(3d6787|6e5487|6e9bc0|b49acb)/i);
+  });
+
+  it('are ochre, slate and green by day and their lit values at night, the same on the strip and its key', () => {
+    const day = { skill: '--ch-yr-so', random: '--ch-plan-group-d', pressure: '--ch-run-group-a' };
+    const night = { skill: '--ch-champagne-500', random: '--ch-plan-group-d-night' };
+    for (const [kind, token] of Object.entries(day)) expect(strip).toContain(`.ch-prc-day__bar i[data-tone='${kind}'] { background: var(${token}); }`);
+    for (const [kind, token] of Object.entries(night)) expect(strip).toContain(`html[data-fw-theme='dark'] .ch-prc-day__bar i[data-tone='${kind}'] { background: var(${token}); }`);
+    // The key's first square is skill; random and pressure name themselves.
+    expect(key).toMatch(/\.ch-prc-ribbon__mix span::before \{[^}]*background: var\(--ch-yr-so\);/);
+    expect(key).toContain(".ch-prc-ribbon__mix [data-tone='random']::before { background: var(--ch-plan-group-d); }");
+    expect(key).toContain("html[data-fw-theme='dark'] .ch-prc-ribbon__mix span::before { background: var(--ch-champagne-500); }");
+    expect(key).toContain("html[data-fw-theme='dark'] .ch-prc-ribbon__mix [data-tone='random']::before { background: var(--ch-plan-group-d-night); }");
+    expect(key).toContain("html[data-fw-theme='dark'] .ch-prc-ribbon__mix [data-tone='pressure']::before { background: var(--ch-run-group-a); }");
+    expect(plan).toContain('--ch-pl-cpv-skill: var(--ch-yr-so);');
+    expect(plan).toContain('--ch-pl-cpv-random: var(--ch-plan-group-d);');
+    expect(plan).toContain('--ch-pl-cpv-skill: var(--ch-champagne-500);');
+    expect(plan).toContain('--ch-pl-cpv-random: var(--ch-plan-group-d-night);');
+  });
+
+  it('stand 3:1 off the card they are drawn on, by day and at night', () => {
+    for (const fill of [hex('--ch-yr-so'), hex('--ch-plan-group-d'), hex('--ch-run-group-a')]) expect(contrast(fill, '#fffefb'), fill).toBeGreaterThanOrEqual(3);
+    for (const fill of [hex('--ch-champagne-500', true), hex('--ch-plan-group-d-night'), hex('--ch-run-group-a', true)]) expect(contrast(fill, hex('--ch-card-bg', true)), fill).toBeGreaterThanOrEqual(3);
+  });
+});

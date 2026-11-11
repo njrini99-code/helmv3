@@ -90,9 +90,13 @@
   /* 60% keeps a plain block 3:1 against the card in both themes (3.2 light, 4.5 dark). */
   background: color-mix(in srgb, var(--ch-text-tertiary) 60%, var(--ch-card-bg));
 }
-.ch-prc-day__bar i[data-tone='skill'] { background: var(--ch-run-group-b); }
-.ch-prc-day__bar i[data-tone='random'] { background: var(--ch-run-group-c); }
+/* The kinds of work wear the groups' family of tones (owner, 11 Nov 2026): skill ochre, random slate, pressure green, never blue or purple.
+   A kind is a bar or a square with its word; a group is a disc with its letter, so the two are never told apart by colour alone. */
+.ch-prc-day__bar i[data-tone='skill'] { background: var(--ch-yr-so); }
+.ch-prc-day__bar i[data-tone='random'] { background: var(--ch-plan-group-d); }
 .ch-prc-day__bar i[data-tone='pressure'] { background: var(--ch-run-group-a); }
+html[data-fw-theme='dark'] .ch-prc-day__bar i[data-tone='skill'] { background: var(--ch-champagne-500); }
+html[data-fw-theme='dark'] .ch-prc-day__bar i[data-tone='random'] { background: var(--ch-plan-group-d-night); }
 /* A suggestion is an outline, in the accent ink that holds 3:1 on the card in light and dark. */
 .ch-prc-day__bar i[data-tone='ghost'] {
   background: none;
@@ -591,10 +595,13 @@ span.ch-prc-tile__it {
   width: 8px;
   height: 8px;
   border-radius: var(--ch-radius-mark);
-  background: var(--ch-run-group-b);
+  background: var(--ch-yr-so);
 }
-.ch-prc-ribbon__mix [data-tone='random']::before { background: var(--ch-run-group-c); }
+.ch-prc-ribbon__mix [data-tone='random']::before { background: var(--ch-plan-group-d); }
 .ch-prc-ribbon__mix [data-tone='pressure']::before { background: var(--ch-run-group-a); }
+html[data-fw-theme='dark'] .ch-prc-ribbon__mix span::before { background: var(--ch-champagne-500); }
+html[data-fw-theme='dark'] .ch-prc-ribbon__mix [data-tone='random']::before { background: var(--ch-plan-group-d-night); }
+html[data-fw-theme='dark'] .ch-prc-ribbon__mix [data-tone='pressure']::before { background: var(--ch-run-group-a); }
 .ch-prc-save {
   min-height: 16px;
   font: var(--ch-type-12);
