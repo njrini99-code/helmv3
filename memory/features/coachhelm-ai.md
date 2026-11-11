@@ -885,10 +885,10 @@ replacement is `src/lib/coachhelm/v3/chat/TOOLS.md`.
   registered for the context work (`find_in_app`, `save_note`, `remove_note` and the twelve task tools of
   `chat/tasks/list.ts`, from `chat/context/**` and `chat/tasks/**`, always last in their group), the same list on
   the Ask tab and in the practice helper so they share one cached prefix; quick chat has `send_message` in place of
-  `publish_artifact` and no `write_artifact`, `draft_message` or `draft_poll`. A player has 10, all reads. Tool
+  `publish_artifact` and no `write_artifact`, `draft_message` or `draft_poll`. A player has 11, all reads. Tool
   definitions plus the whole cached policy are 21,870 tokens on Ask by characters / 4, and 22,284 with the flag on
   (26,063 before, measured the same way); `__tests__/registry-size.test.ts` is the measurement and holds three
-  lines: 12,000 for the registry's own tools and rules (11,997 on 10 Nov), 26,000 for the whole cached prefix, and
+  lines: 12,300 for the registry's own tools and rules (12,233 on 11 Nov), 26,000 for the whole cached prefix, and
   24,000 with the flag on, past which rarely used tasks are to be deferred behind tool search.
 - **The cached policy** is `policyBlock(surface)` in `chat/instructions.ts`: this file's rules (`rulesBlock`), then
   golf as the app measures it, then where things are in the data (`knowledgeBlocks` from `chat/knowledge/`), in that
@@ -936,6 +936,32 @@ replacement is `src/lib/coachhelm/v3/chat/TOOLS.md`.
   surfaces, one for a player); `teamBlock(who)` has the team, its timezone and the roster with ids in a fixed order.
   Neither holds a date, a screen, the coach's notes or a count: those reach the model as a system message after the
   coach's message, and the policy tells it to expect them there. There are no output formats to parse.
+- **A player's own rounds** (`chat/my-rounds.ts`, offered to a player as `get_rounds`): their own Rounds page
+  (`loadRoundsLibrary`, bound by the route as `myRounds` for the signed-in player's id and no other; the tool takes no
+  player id and answers nothing in a coach's chat). It states how many rounds were recorded in a range, how many are
+  finished and how many still in progress, how many count in an average, the count for each kind, and the newest
+  finished ones. Before it a player's Ask could only read the Stats page, which leaves practice out, so "how many
+  rounds have I recorded since 1 September" was answered 7 where the player had recorded 14 (11 Nov 2026).
+- **A filtered read says what the filter left out.** `get_goals` narrowed to one state also counts the visible goals in
+  the other states ("1 active goal for the team. 5 other goals are not active: 1 achieved, 4 missed."), because the
+  chat asks for active goals and a coach was told only one goal was visible.
+- **A short answer still carries what was asked**: the prompt's rule 3 ("Give each thing the question asked for: every
+  figure, name, course or count it names. Never drop one to stay short").
+- **Saying the point a question turns on** (the golf block's first line, coach and player): "When a question turns on a
+  point made here, say that point in one plain sentence, even if the team's data does not show the case." In the first
+  full eval run most golf-sense misses were answers that corrected the coach's premise from the data and never said the
+  point itself (one round is not a trend, a negative to par is under par, a short qualifier card ranks below a
+  complete one). With it: putts per round is always given with greens hit beside it; a tie for the last qualifying
+  place stays a tie until the coach chooses (SOURCES A6); who plays is the coach's call; and a Tour or level figure
+  comes only from a read made in the turn (the prompt's Figures rule 6).
+- **How long an answer is** (the prompt's "Answering", coach and player alike): the answer in the first sentence with
+  its figure, at most four sentences in all as one short paragraph (an offer of a next step is one of the four), more
+  only when the coach asks for more; no heading, table, bold or label with a colon at the start of a line; a list only
+  when a list or a ranking was asked for; nothing written before or between reads; a window shared by several figures
+  said once; every name as the roster or the read stores it, capitals included. Written after the first full eval run
+  (11 Nov 2026: 44 of 99 answers broke a writing rule, 30 of them by length and 13 with bold lead-ins, under the
+  earlier "answer, then at most three supporting points"). The size brake on the registry's own tools and rules is
+  12,300 (`__tests__/registry-size.test.ts`; Ask measures about 12,260).
 - **Strict tool use** (`chat/strict-input.ts`): every registered tool's input is shown to the model as a closed
   object with every field required and optional fields nullable, with no length or range keywords; the tool's own
   zod schema validates behind it, so no bound is lost. A new tool needs only an ordinary zod object. That is

@@ -65,6 +65,27 @@ describe('get_goals', () => {
     expect((e.detail as { visibility: string }).visibility).toMatch(/shared/);
   });
 
+  it('a read narrowed to one state says how many visible goals are in the other states, so one active goal is never "the only goal"', async () => {
+    // Staging, 11 Nov 2026: one active goal, one achieved, four missed, and the coach was told only one goal was visible.
+    const rows = [goal('g1', 'p1'), goal('g2', 'p1', { state: 'achieved' }), ...['g3', 'g4', 'g5', 'g6'].map((id) => goal(id, 'p2', { state: 'missed' })), goal('g7', 'other', { state: 'missed' })];
+    const e = await getGoals(pgrst({ golf_goals: { rows } }).sb, ctx, { state: 'active', limit: 40 });
+    expect(e.summary).toBe('1 active goal for the team. 5 other goals are not active: 1 achieved, 4 missed.');
+    expect(e.detail).toMatchObject({ other_states: { achieved: 1, missed: 4 }, goals_in_every_state: 6 });
+    expect((e.detail as { goals: unknown[] }).goals).toHaveLength(1);
+    expect(e.coverage).toBe('complete');
+    // No active goal, but others: not "empty", and the sentence says what there is.
+    const none = await getGoals(pgrst({ golf_goals: { rows: rows.slice(1) } }).sb, ctx, { state: 'active', limit: 40 });
+    expect(none.summary).toBe('No active goals visible for the team. 5 other goals are not active: 1 achieved, 4 missed.');
+    expect(none.coverage).toBe('partial');
+    // Asked for every state, nothing is left out and nothing is counted twice.
+    const all = await getGoals(pgrst({ golf_goals: { rows } }).sb, ctx, { state: 'all', limit: 40 });
+    expect(all.summary).toBe('6 goals for the team.');
+    expect(all.detail).not.toHaveProperty('other_states');
+    // Nothing else there: the plain sentence, and truly empty stays empty.
+    expect((await getGoals(pgrst({ golf_goals: { rows: [goal('g1', 'p1')] } }).sb, ctx, { state: 'active', limit: 40 })).summary).toBe('1 active goal for the team.');
+    expect((await getGoals(pgrst({ golf_goals: { rows: [] } }).sb, ctx, { state: 'active', limit: 40 })).coverage).toBe('empty');
+  });
+
   it('never uses the service client and refuses a player off the roster', async () => {
     const { sb } = pgrst({ golf_goals: { rows: [] } });
     await expect(getGoals(sb, ctx, { player_id: 'p9', state: 'all', limit: 5 })).rejects.toMatchObject({ status: 403 });

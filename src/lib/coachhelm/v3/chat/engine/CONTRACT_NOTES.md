@@ -1503,3 +1503,24 @@ rewrote the whole cached prefix, which is what made a first turn cost $0.27 to $
   `registry-tools.test.ts` (the real registry, every surface) and the route suite (three model calls, one prefix).
 - **PLANS / CONTEXT:** nothing to change. `strict-input.ts` still decides the shape the model is shown; the tool's own
   zod schema, run by the engine before `run`/`plan`, is now the only check on an input, so keep every bound in it.
+
+E38. **After the first full eval run (11 Nov 2026; 100 questions at d08890c5a9).** Three changes outside the engine,
+made by ENGINE at the overnight lead's direction; their owners should know.
+- **The prompt's "Answering"** (`instructions.ts`): at most four sentences in one paragraph, the answer first, no
+  heading, table, bold or label with a colon, nothing written before or between reads, each thing asked for is given,
+  names as stored. The size brake on the registry's own tools and rules is now 12,300 (the lead's earlier allowance).
+- **A player has `get_rounds`** (`my-rounds.ts`): their own Rounds page through a new loader, `myRounds`, bound for a
+  player only. A player's tool list is now eleven reads; the data map's player text names it.
+- **`get_goals` counts what its state filter left out** (`team-reads.ts`).
+- **The golf block** (`knowledge/golf.ts`, 3,994 of its 4,000): its first line now tells the model to say the point a
+  question turns on even when the data does not show the case; putts per round is given with greens hit; a tie for the
+  last qualifying place waits for the coach; the lineup is "their call". The prompt's Figures rule 6 says a Tour or
+  level figure comes only from a read made in the turn.
+- **For the eval's owner (KNOWLEDGE): five scorer lines loosened** (overnight lead's decision, 11 Nov 2026; nothing else
+  in the scorer changed). `golf-sense.json`: the coach's choice also matches "the choice is yours", "the choice stays
+  with you", "your choice" (`lineup-who`, `qualifier-tie`); "normally" matches where "normal" did
+  (`sg-why-all-negative`, `sg-player-what-my-number-means`). `ask-eval-score.mjs`: a Tour or level figure is not "from
+  memory" when a read of the turn returned it, which is known from the ledger's list of figures found in no read
+  (`scoreSense(..., { unmatched })`; unknown, only `get_reference` lifts the guard, as before). `ask-eval.mjs`: a data
+  question can carry `readings`; `window-tyler-last3-rounds` (practice in or out) and `sum-rounds-by-type-since-sep1`
+  (finished, or with rounds in progress) pass on either, and only when the answer says which rounds it counted.

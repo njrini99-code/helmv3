@@ -54,7 +54,7 @@ export const THINGS: readonly MapThing[] = [
     means: 'One per round a player posted: the day, the kind, 9 or 18 holes, the course and tees, score, to par, putts, greens, fairways, penalties, and strokes gained in total and by area.',
     readers: ['get_player_stats', 'get_rounds', 'get_round', 'get_season'],
     backing: ['golf_rounds', 'golf_round_stats_cache'],
-    player: { means: 'Your rounds: the day, the kind, the course, score, to par, putts, greens, fairways and strokes gained.', readers: ['get_player_stats', 'get_round', 'get_season'] },
+    player: { means: 'Your rounds: the day, the kind, the course, score, to par, putts, greens, fairways and strokes gained.', readers: ['get_player_stats', 'get_rounds', 'get_round', 'get_season'] },
   },
   {
     id: 'holes',
@@ -152,7 +152,7 @@ export const THINGS: readonly MapThing[] = [
 export const READER_GUIDE: ReadonlyArray<{ reader: string; use: string; player?: string }> = [
   { reader: 'get_player_stats', use: 'how a player is playing over a window, players compared, where a player trails the team; sections add the rounds, putting by distance, approach by distance, and hole figures (toughest holes, pressure gap).', player: 'how you are playing over a window; sections add your rounds, putting by distance, approach by distance and hole figures.' },
   { reader: 'get_team_stats', use: 'the team\'s figures for a window, the team average, every player ranked on one measure, team putting by distance.' },
-  { reader: 'get_rounds', use: 'which rounds were played, by player, kind and dates, with counts and averages. Its averages include practice rounds unless you give a kind.' },
+  { reader: 'get_rounds', use: 'which rounds were played, by player, kind and dates, with counts and averages. Its averages include practice rounds unless you give a kind.', player: 'how many rounds you recorded and which, by kind and dates, practice and rounds in progress included. Use it to count or list rounds; your Stats figures leave practice out.' },
   { reader: 'get_round', use: 'one round hole by hole, with its birdies, bogeys, putts and scoring by par counted.', player: 'one of your rounds hole by hole.' },
   { reader: 'get_shots', use: 'logged approach shots: where misses go, distance left, lies, by club or yardage.', player: 'your logged approach shots: where misses go and distance left.' },
   { reader: 'get_season', use: 'scoring this season for the team and each player, practice left out; and this season against last. This is the season figure.', player: 'your scoring this season, and this season against last.' },

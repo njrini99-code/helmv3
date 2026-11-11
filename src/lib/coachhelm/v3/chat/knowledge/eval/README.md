@@ -40,3 +40,12 @@ In `ask-eval.mjs`, after the roster is read: load the JSON, fill the placeholder
 rules the data questions do not have: the `tour_figure_from_memory` pattern is skipped when the turn called
 `get_reference` (the figure was read, not remembered), and `readers` is scored against the turn's tool calls.
 Run it against staging only, with the owner's approval of the spend.
+
+## Loosened after the first full run (11 Nov 2026)
+
+Five lines failed answers a coach would call right, and were loosened by the overnight lead's decision; nothing else
+changed. The coach's choice also matches "the choice is yours" and "the choice stays with you". "Normally" matches where
+"normal" did. A Tour or level figure counts as read when any read of the turn returned it: the harness passes the
+ledger's list of figures found in no read, and only a Tour figure on that list is "from memory" (with no ledger row,
+only `get_reference` lifts the guard). In the harness, `window-tyler-last3-rounds` and `sum-rounds-by-type-since-sep1`
+pass on either reading of which rounds count, and only when the answer says which.

@@ -18,6 +18,8 @@
  *                        filter: filterForFigureWindow(w) })                          src/clubhouse/data/stats-team.ts
  *   roster             loadRoster({ teamId, coachId })                                src/clubhouse/data/roster.ts
  *   teamRounds         loadTeamRounds({ teamId })                                     src/clubhouse/data/team-rounds.ts
+ *   myRounds           loadRoundsLibrary({ playerId, teamId })                        src/clubhouse/data/rounds.ts
+ *                        a player only: their own Rounds page, bound to the signed-in player's id
  *   qualifierList      loadQualifierList({ role, teamId, playerId, mode: 'all' })     src/clubhouse/data/qualifiers.ts
  *   qualifierBoard     loadQualifierDetail({ role, teamId, playerId, qualifierId })   src/clubhouse/data/qualifiers.ts
  *   roundReview        loadRoundReview(roundId, viewer)                               src/clubhouse/data/round-review.ts
@@ -162,6 +164,15 @@ export interface TeamRoundRow {
   player: string;
 }
 
+/**
+ * Rounds, a player's own page (`loadRoundsLibrary`): every finished round they posted, practice included, and the ones still in
+ * progress (the page reads at most 20 of those). `rounds.error`: the list did not load; it is never "no rounds".
+ */
+export interface MyRoundsScreen {
+  rounds: { list: Array<Omit<TeamRoundRow, 'playerId' | 'player'> & { totalOnly?: boolean }>; error: boolean; unscored?: number };
+  unfinished: { list: Array<{ id: string; date: string; course: string; type: TeamRoundRow['type']; holes: number }>; error: boolean };
+}
+
 /** Rounds, the team's list (`loadTeamRounds`). */
 export interface TeamRoundsScreen {
   seasonStart: string;
@@ -276,6 +287,8 @@ export interface ScreenLoaders {
   roster?: () => Promise<RosterScreen | null>;
   /** The Rounds page's team list. */
   teamRounds?: () => Promise<TeamRoundsScreen | null>;
+  /** The signed-in player's own Rounds page. Bound for a player only. */
+  myRounds?: () => Promise<MyRoundsScreen | null>;
   /** The Qualifiers list. */
   qualifierList?: () => Promise<QualifierListScreen | null>;
   /** One qualifier's board. */

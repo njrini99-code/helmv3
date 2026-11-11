@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { describe, expect, it, vi } from 'vitest';
 import type { CoachChatContext } from '../context';
 import { CoachContextError } from '../context';
@@ -450,8 +451,12 @@ describe('what each surface is offered', () => {
 
   it('a player is offered reads of their own data and nothing that writes, ranks or reads the team', () => {
     const tools = toolsFor('player', maya);
-    expect(names(tools)).toEqual(['get_player_stats', 'get_round', 'get_shots', 'get_season', 'get_schedule', 'get_coachhelm', 'get_reference', 'summarise_data', 'show_visual', 'find_in_app']);
+    expect(names(tools)).toEqual(['get_player_stats', 'get_rounds', 'get_round', 'get_shots', 'get_season', 'get_schedule', 'get_coachhelm', 'get_reference', 'summarise_data', 'show_visual', 'find_in_app']);
     expect(tools.every((t) => t.kind === 'read')).toBe(true);
+    // get_rounds here is the player's own Rounds page (`my-rounds.ts`), not the team's: it takes no player id at all.
+    const rounds = tools.find((t) => t.name === 'get_rounds')!;
+    expect(rounds.description).toMatch(/^Your own rounds from your Rounds page/);
+    expect(JSON.stringify(z.toJSONSchema(rounds.input, { io: 'input', unrepresentable: 'any' }))).not.toMatch(/player/);
     // The session decides, whatever surface the request names.
     expect(names(toolsFor('ask', maya))).toEqual(names(tools));
     expect(toolsFor('player', coach)).toEqual([]);

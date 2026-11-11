@@ -168,17 +168,39 @@ describe('how answers read', () => {
     expect(rules.split('\nWrong:')[0]).not.toMatch(/\d \(\d+ rounds?\)/);
   });
 
-  it('an answer is the answer first, then at most three points, with no bold labels and no list nobody asked for', () => {
+  it('an answer is the answer first and at most four plain sentences, with no heading, bold, label or table, and no list nobody asked for', () => {
+    // The first full run of the eval (11 Nov 2026): 44 of 99 answers broke a writing rule, 30 of them by length, 13 with bold lead-ins.
     const rules = rulesBlock('ask');
-    expect(rules).toMatch(/Put the answer in the first sentence: answer the question that was asked/);
-    expect(rules).toMatch(/Then give at most three supporting points, one sentence each, the biggest gap first/);
+    expect(rules).toMatch(/Put the answer in the first sentence: answer the question that was asked, with its figure/);
+    expect(rules).toMatch(/Write at most four sentences in all, as one short paragraph\. An offer of a next step counts as one of the four; make one only when the data points to an obvious one/);
     expect(rules).toMatch(/do not walk through every area/);
-    expect(rules).toMatch(/no bold labels\. Write a list only when the coach asked for a list or a ranking/);
-    expect(rules).toMatch(/End with at most one offer of a next step/);
+    // Short never means leaving out what was asked for (the first full run dropped a course, a count and a comparison player).
+    expect(rules).toMatch(/Give each thing the question asked for: every figure, name, course or count it names\. Never drop one to stay short/);
+    expect(rulesBlock('player')).toMatch(/Give each thing they asked for, such as a count, a score or a course/);
+    expect(rules).toMatch(/Write more than four sentences only when the coach asks for more \("in detail", "everything on him"\), and still in plain sentences/);
+    expect(rules).toMatch(/No heading, no table, no bold, no emoji, and no label with a colon at the start of a line/);
+    expect(rules).toMatch(/A table or a breakdown belongs in a card or a visual, not in your words/);
+    expect(rules).toMatch(/Write a list only when the coach asked for a list or a ranking/);
+    expect(rules).toMatch(/Write nothing before or between your reads \("Let me check"\), because it stays in the answer/);
+    expect(rules).toMatch(/When several figures share one window, say the window once/);
     expect(rules).toMatch(/When the coach asks for the full breakdown \("show me every area"\), call show_visual\. Do not write it out/);
     // The rules follow themselves: nothing in them is bold.
     expect(rules).not.toMatch(/\*\*/);
-    expect(rulesBlock('player')).toMatch(/at most three supporting points, one sentence each\. No bold labels, and a list only when they asked for one/);
+    // A small sample is said once, under "How your answers read"; its duplicate under "When data is missing" is gone.
+    expect(rules.match(/sample is small/g)).toHaveLength(1);
+    const player = rulesBlock('player');
+    expect(player).toMatch(/Write at most four sentences in all, as one short paragraph/);
+    expect(player).toMatch(/no heading, no table, no bold, no label with a colon at the start of a line, and a list only when they asked for one/);
+    expect(player).toMatch(/Write more only when they ask for more/);
+  });
+
+  it('a Tour or level figure comes from a read made in the turn, never from memory', () => {
+    expect(rulesBlock('ask')).toMatch(/A Tour or level figure comes only from a read made in this turn, never from memory\. It is a reference point, not this team's result, so say which it is/);
+  });
+
+  it('a name is written as it is stored, capitals included, even when it looks like ordinary words', () => {
+    expect(rulesBlock('ask')).toMatch(/Write every name exactly as the roster or the read gives it, capitals included: a player, a course, an event, a drill/);
+    expect(rulesBlock('player')).toMatch(/Write every name exactly as the read gives it, capitals included/);
   });
 
   it('a date is written as a coach says it, and the rule holds no stamp itself', () => {

@@ -31,6 +31,12 @@ export const close = (a, v, tol, decimals) => {
 };
 
 export function score(question, text) {
+  // A question some rounds can be counted two ways (`readings`: practice in or out, finished or in progress) is scored on each
+  // reading with its shared facts, and the better one stands. Which rounds were counted is itself a shared, required fact.
+  if (question.readings?.length) {
+    const each = question.readings.map((facts) => score({ ...question, readings: undefined, facts: [...question.facts, ...facts] }, text));
+    return each.reduce((best, s) => (s.allRight && !best.allRight ? s : !s.allRight && best.allRight ? best : s.wrong + s.missing < best.wrong + best.missing ? s : best));
+  }
   const nums = numbersIn(text);
   const lower = text.toLowerCase();
   const results = [];
@@ -238,16 +244,36 @@ export function golfSenseQuestions(data, names = {}, stored = {}, everyday = EVE
 /** The writing rules alone, for a question that is not from the file (the data questions): every answer is held to them. */
 export const writingRules = (data, stored = {}) => golfSenseQuestions({ ...data, questions: [{ id: 'writing', area: '', viewer: 'coach', ask: '', readers: [], facts: [], forbid: [], note: '' }] }, {}, stored)[0].writing;
 
+/** Every figure inside each match of a guard, the last one read whole: the guard's pattern stops at a figure's first digits. */
+export function figuresAt(re, text) {
+  const all = new RegExp(re.source, re.flags.includes('g') ? re.flags : `${re.flags}g`);
+  const out = [];
+  for (const m of text.matchAll(all)) {
+    let end = m.index + m[0].length;
+    while (end < text.length && (/\d/.test(text[end]) || (text[end] === '.' && /\d/.test(text[end + 1] ?? '')))) end += 1;
+    out.push(...(text.slice(m.index, end).match(/\d+(?:\.\d+)?/g) ?? []));
+  }
+  return out;
+}
+const sameFigure = (token, figure) => {
+  const a = Number(String(token).replace(/[^\d.\u2212-]/g, '').replace('\u2212', '-'));
+  const b = Number(figure);
+  return Number.isFinite(a) && Number.isFinite(b) && Math.abs(Math.abs(a) - Math.abs(b)) < 1e-9;
+};
+
 /**
  * The two columns a golf-sense answer is scored on, and the reads it used against the reads it should have.
  *   golf sense  every fact matches and none of the question's own guards does. A Tour figure is not "from memory" when the turn
- *               read the reference (`get_reference`), so that guard is skipped then.
+ *               read the reference (`get_reference`), or when a read of the turn returned that figure: `read.unmatched` is the
+ *               ledger's list of the answer's figures found in none of the turn's reads, and a Tour sentence whose figure is not
+ *               on it was read (the Stats read prints Tour marks beside a player's own). Unknown (`null`): only `get_reference` lifts it.
  *   writing     none of the writing rules matches, and the answer is no longer than `style.max_sentences` where the question has one.
  *   reads       any one of `readers` was used; an empty list means no read of team data is needed.
  */
-export function scoreSense(question, text, tools, rules = question.writing ?? []) {
+export function scoreSense(question, text, tools, rules = question.writing ?? [], read = {}) {
   const missing = (question.facts ?? []).filter((f) => f.kind === 'phrase' && !f.re.test(text)).map((f) => f.label);
-  const said = (question.forbid ?? []).filter((f) => f.re.test(text) && !(f.pattern === 'tour_figure_from_memory' && tools.includes('get_reference'))).map((f) => f.label);
+  const tourFigureWasRead = (f) => tools.includes('get_reference') || (Array.isArray(read.unmatched) && tools.length > 0 && figuresAt(f.re, text).every((figure) => !read.unmatched.some((token) => sameFigure(token, figure))));
+  const said = (question.forbid ?? []).filter((f) => f.re.test(text) && !(f.pattern === 'tour_figure_from_memory' && tourFigureWasRead(f))).map((f) => f.label);
   const broken = rules.filter((f) => f.re.test(text)).map((f) => f.pattern);
   const sentences = sentenceCount(text);
   if (question.style?.max_sentences && sentences > question.style.max_sentences) broken.push(`longer than ${question.style.max_sentences} sentences (${sentences})`);
