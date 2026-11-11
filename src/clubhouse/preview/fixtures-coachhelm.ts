@@ -269,14 +269,6 @@ export const PREVIEW_HELM_PLAYER_PROPOSED: ChPlayerHelm = {
     error: false,
   },
 };
-/** The proposals did not load; the insights did. */
-export const PREVIEW_HELM_PLAYER_PROPOSALS_FAILED: ChPlayerHelm = { ...PREVIEW_HELM_PLAYER, proposals: { list: [], error: true } };
-/** Rounds posted, no insight yet. */
-export const PREVIEW_HELM_PLAYER_EMPTY: ChPlayerHelm = { off: null, proposals: NO_PROPOSALS, insights: { list: [], error: false }, rounds: 3 };
-/** No round posted at all. */
-export const PREVIEW_HELM_PLAYER_NO_ROUNDS: ChPlayerHelm = { off: null, proposals: NO_PROPOSALS, insights: { list: [], error: false }, rounds: 0 };
-export const PREVIEW_HELM_PLAYER_FAILED: ChPlayerHelm = { off: null, proposals: NO_PROPOSALS, insights: { list: [], error: true }, rounds: null };
-export const PREVIEW_HELM_PLAYER_OFF: ChPlayerHelm = { off: { reason: null }, proposals: NO_PROPOSALS, insights: { list: [], error: false }, rounds: null };
 /** Only strengths: nothing needs work. */
 export const PREVIEW_HELM_PLAYER_WORKING: ChPlayerHelm = { off: null, proposals: NO_PROPOSALS, insights: { list: [chTour(bigNumber(jonah), ME)], error: false }, rounds: null };
 
@@ -343,20 +335,6 @@ export const PREVIEW_HELM_PLAYER_MANY: ChPlayerHelm = {
     error: false,
   },
   rounds: null,
-};
-
-/** `?state=zero`: the zero-estimate read leads (its "Projected impact: ~0.00 strokes per round" sits under Why we think this), then the placeholder-cause reads. */
-export const PREVIEW_HELM_PLAYER_ZERO: ChPlayerHelm = {
-  ...PREVIEW_HELM_PLAYER_MANY,
-  insights: { list: [chTour(MANY_FINDINGS[0]!, ME), chTour(MANY_FINDINGS[1]!, ME), chTour(penalties(jonah), ME), chSlope(jonah, ME), chTour(bigNumber(jonah), ME)], error: false },
-};
-/** `?state=stale`: current reads first, then the one older than the player's newest round (Out of date). */
-export const PREVIEW_HELM_PLAYER_STALE: ChPlayerHelm = {
-  ...PREVIEW_HELM_PLAYER_MANY,
-  insights: {
-    list: [chSlope(jonah, ME), chTour(penalties(jonah), ME), toChInsight(MANY_STALE, { tour: PREVIEW_TOUR, viewer: ME, newestRound: MANY_NEWEST_ROUND }), chTour(bigNumber(jonah), ME)],
-    error: false,
-  },
 };
 
 const PULSE_ITEMS: PulseItem[] = [

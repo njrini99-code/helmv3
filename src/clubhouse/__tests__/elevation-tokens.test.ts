@@ -124,7 +124,6 @@ const RAW_SHADOW: Record<string, number> = {
   'styles/calendar.css': 28,
   'styles/classes.css': 13,
   'styles/coachhelm-ask.css': 1,
-  'styles/coachhelm-dive.css': 1,
   'styles/coachhelm-profile.css': 5,
   'styles/coachhelm-standing.css': 1,
   'styles/coachhelm-thread.css': 1,

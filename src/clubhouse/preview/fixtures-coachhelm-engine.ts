@@ -3,7 +3,7 @@ import { projectInsightForPlayer } from '@/lib/coachhelm/delivery/player-project
 import type { InsightCause } from '@/lib/coachhelm/v2/insights/types';
 import type { FocusAreaVerdict } from '@/lib/coachhelm/v3/verdicts/verdict';
 import { toChDeepInsight, toDiveCleared, type ChDeepDive, type ChDiveCleared } from '../data/coachhelm-dive-shape';
-import { shapeReadsLifecycle, type ChCorrectionAnswer, type ChCorrectionsInput, type ChEngineFlags, type ChVerdictRow } from '../data/coachhelm-engine-shape';
+import { shapeReadsLifecycle, type ChCorrectionsInput, type ChEngineFlags, type ChVerdictRow } from '../data/coachhelm-engine-shape';
 import { toChInsight } from '../data/coachhelm-map';
 import { firstName, sortCoachPlayers, type ChCoachHelmData, type ChCoachPlayer, type ChPlayerHelm } from '../data/coachhelm-shape';
 import { speak, type ChViewer } from '../data/coachhelm-voice';
@@ -312,25 +312,6 @@ const coachEngineBoard = (cx: ChCorrectionsInput | null = null): ChCoachHelmData
   },
 });
 export const PREVIEW_HELM_COACH_ENGINE: ChCoachHelmData = coachEngineBoard();
-
-/**
- * The correction chips on the coach's cards (03 §7.2, `coachhelm_corrections_v1` on and the table there), every engine flag on.
- * `?state=corrections` draws them unanswered; `corrections-<chip>` draws each card with that answer already recorded, as the
- * loader reads it back after a reload; `corrections-later` is a read held back with both rounds to go. The not-available state
- * the loader finds (the HELD table missing) draws no chips at all, which is `?state=engine`; `corrections-unavailable` draws the
- * chips and answers every tap "not available", so the chips go, and `corrections-failed` fails every save, so the answer rolls back.
- */
-const coachCx = (latest: ChCorrectionAnswer | null, laterRounds: number | null = null): ChCorrectionsInput => ({ role: 'coach', latest, laterRounds });
-export const PREVIEW_HELM_COACH_CORRECTIONS: Record<string, ChCoachHelmData> = {
-  corrections: coachEngineBoard(coachCx(null)),
-  'corrections-notthis': coachEngineBoard(coachCx({ kind: 'not_this', reason: 'not_important' })),
-  'corrections-wrongcause': coachEngineBoard(coachCx({ kind: 'wrong_cause', reason: null })),
-  'corrections-already': coachEngineBoard(coachCx({ kind: 'already_on_it', reason: null })),
-  'corrections-later': coachEngineBoard(coachCx({ kind: 'snooze', reason: null }, 2)),
-  'corrections-good': coachEngineBoard(coachCx({ kind: 'confirm', reason: null })),
-  'corrections-unavailable': coachEngineBoard(coachCx(null)),
-  'corrections-failed': coachEngineBoard(coachCx(null)),
-};
 
 const ME: ChViewer = { role: 'player' };
 /** What the player's feed hands the page: the support pass's keys are dropped on the server (`delivery/player-projection.ts`). */

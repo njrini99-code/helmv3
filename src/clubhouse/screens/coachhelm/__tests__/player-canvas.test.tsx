@@ -20,8 +20,7 @@ describe('a player’s CoachHelm sits on the page canvas', () => {
     expect(container.querySelector('header')!.getAttribute('data-canopy-head')).toBe('');
   });
 
-  it('the player’s Board, views and their skeletons ask for it', () => {
-    expect(src('screens/coachhelm/PlayerBoard.tsx')).toMatch(/<Head phone=\{phone\} tight aside=/);
+  it('the player’s views and their skeletons ask for it', () => {
     // The views' frame is also a coach's view of one player, which keeps the full head.
     expect(src('screens/coachhelm/views/Frame.tsx')).toMatch(/<Head phone=\{phone\} tight=\{!coach\} aside=/);
     expect(src('screens/coachhelm/CoachHelmSkeleton.tsx')).toMatch(/className="ch-hl-h has-aside" data-canopy-head=\{coach \? '' : 'tight'\}/);

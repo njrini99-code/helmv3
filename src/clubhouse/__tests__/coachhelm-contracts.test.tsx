@@ -1,6 +1,5 @@
 import { LazyMotion, domAnimation } from 'motion/react';
-import { cleanup, render, screen, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { cleanup, render, screen } from '@testing-library/react';
 import { Suspense, type ReactElement } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { readWaves } from './read-waves';
@@ -46,16 +45,13 @@ import { loadCoachCoachHelm, loadPlayerCoachHelm } from '../data/coachhelm';
 import { RouteScope } from '../lib/session-state';
 import { PLAYER_HELM_DEVELOPMENT_HREF, playerHelmDrill } from '../data/coachhelm-views-shape';
 import { ClubhouseCoachHelmRoute } from '../routes/coachhelm';
-import { PlayerBoard } from '../screens/coachhelm/PlayerBoard';
 import { Standing } from '../screens/coachhelm/views/Standing';
 import { DeepDive } from '../screens/coachhelm/views/DeepDive';
-import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
 import { ToastProvider } from '../ui/Toast';
-import { bigNumber, HELM_PLAYERS, PREVIEW_HELM_PLAYER, penalties, slope } from '../preview/fixtures-coachhelm';
+import { bigNumber, HELM_PLAYERS, penalties, slope } from '../preview/fixtures-coachhelm';
 import { diveLoad, gameLoad, PREVIEW_DIVE, PREVIEW_GAME, PREVIEW_STANDING, standingLoad } from '../preview/fixtures-coachhelm-views';
 
 const on = { userEnabled: true, teamEnabled: true, effectivelyEnabled: true, disabledReason: null, disabledBy: null } as const;
-const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
 /** The page's route and team, as the shell frames it (`RouteFrame`): what a screen's kept state is stored under. */
 const SCOPE = '/golf/dashboard/coachhelm\u0000team-1';
 const wrap = (node: React.ReactNode) => (
@@ -73,14 +69,6 @@ const wrap = (node: React.ReactNode) => (
 /** Browser says offline (or back online), for the length of one test. */
 function setOnline(online: boolean) {
   Object.defineProperty(navigator, 'onLine', { value: online, configurable: true });
-}
-/** The phone breakpoint on or off. */
-function phoneWidth(phone: boolean) {
-  const real = window.matchMedia;
-  window.matchMedia = ((q: string) => ({ ...real(q), matches: phone && q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
-  return () => {
-    window.matchMedia = real;
-  };
 }
 
 beforeEach(() => {
@@ -162,85 +150,12 @@ describe('130104 the Fairway drills’ addresses (?view=) land on a screen that 
 describe('130608 a failed gate lookup is a failed read, not off', () => {
   const p1 = 'pl-jonah';
 
-  it('130608 the player: a gate whose reason says the lookup failed, or one that throws, is "Your insights didn’t load" and is logged as gate, and nothing else is read', async () => {
-    vi.mocked(isCoachHelmEnabledForPlayer).mockResolvedValueOnce({ ...on, effectivelyEnabled: false, disabledBy: null, disabledReason: 'Player record lookup failed' });
-    const failed = await loadPlayerCoachHelm({ playerId: p1 });
-    expect(failed).toMatchObject({ off: null, insights: { list: [], error: true } });
-    expect(logServer).toHaveBeenCalledWith('coachhelm', 'gate', expect.anything(), 'coachhelm');
-    logServer.mockClear();
-    vi.mocked(isCoachHelmEnabledForPlayer).mockRejectedValueOnce(new Error('gate down'));
-    expect((await loadPlayerCoachHelm({ playerId: p1 })).insights.error).toBe(true);
-    expect(logServer).toHaveBeenCalledWith('coachhelm', 'gate', expect.anything(), 'coachhelm');
-    expect(getInsightsForPlayer).not.toHaveBeenCalled();
-    cleanup();
-    render(wrap(<PlayerBoard data={failed} />));
-    expect(code('CH-13201')!.textContent).toMatch(/Your insights didn’t load/);
-    expect(code('CH-13304')).toBeNull();
-  });
-
   it('130608 the gate is asked first: a gate that says off reads nothing, and a global switch is off, not a failure', async () => {
     vi.mocked(isCoachHelmEnabledForPlayer).mockResolvedValueOnce({ ...on, effectivelyEnabled: false, disabledBy: null, disabledReason: 'CoachHelm is disabled globally' });
     const d = await loadPlayerCoachHelm({ playerId: p1 });
     expect(d.off).toEqual({ reason: null });
     expect(d.insights.error).toBe(false);
     expect(logServer).not.toHaveBeenCalledWith('coachhelm', 'gate', expect.anything(), 'coachhelm');
-  });
-});
-
-// ── 131901: the phone layout ───────────────────────────────────────────────
-
-describe('131901 at 820px and below CoachHelm is the phone build, not a shrunken desktop', () => {
-  /** The shell's phone top bar, where the page's PhoneTop renders. */
-  function SlotHost() {
-    const { setSlot } = usePhoneChromeState();
-    return <div ref={setSlot} data-testid="phone-top" />;
-  }
-  const inFrame = (node: React.ReactNode) =>
-    render(
-      <LazyMotion features={domAnimation}>
-        <ToastProvider>
-          <PhoneChromeProvider>
-            <div className="ch-root" data-ui="clubhouse">
-              <SlotHost />
-              {node}
-            </div>
-          </PhoneChromeProvider>
-        </ToastProvider>
-      </LazyMotion>,
-    );
-
-  it('131901 the player: the same, and the boards, writes and states are the desktop’s', () => {
-    const restore = phoneWidth(true);
-    try {
-      inFrame(<PlayerBoard data={PREVIEW_HELM_PLAYER} />);
-      expect(document.querySelector('.ch-hl.is-phone')).not.toBeNull();
-      expect(within(screen.getByTestId('phone-top')).getByRole('heading', { level: 1, name: 'CoachHelm' })).toBeTruthy();
-      expect(document.querySelector('.ch-hl-focus')).not.toBeNull();
-    } finally {
-      restore();
-    }
-  });
-
-  it('131901 choosing an insight on the player’s phone brings the focus into view; on a wider screen the page stays where it is', async () => {
-    const u = userEvent.setup();
-    const scroll = vi.fn();
-    const real = Element.prototype.scrollIntoView;
-    Element.prototype.scrollIntoView = scroll as never;
-    try {
-      const restore = phoneWidth(true);
-      render(wrap(<PlayerBoard data={PREVIEW_HELM_PLAYER} />));
-      await u.click(within(screen.getByRole('region', { name: 'What’s working' })).getAllByRole('button')[0]!);
-      expect(scroll).toHaveBeenCalledWith({ block: 'start' });
-      restore();
-      cleanup();
-      sessionStorage.clear();
-      scroll.mockClear();
-      render(wrap(<PlayerBoard data={PREVIEW_HELM_PLAYER} />));
-      await u.click(within(screen.getByRole('region', { name: 'What’s working' })).getAllByRole('button')[0]!);
-      expect(scroll).not.toHaveBeenCalled();
-    } finally {
-      Element.prototype.scrollIntoView = real;
-    }
   });
 });
 

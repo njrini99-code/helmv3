@@ -1,6 +1,6 @@
 import { LazyMotion, domAnimation } from 'motion/react';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
-import { cleanup, render, screen, within } from '@testing-library/react';
+import { cleanup, render, screen } from '@testing-library/react';
 import { Suspense } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { resolved } from './route-view';
@@ -32,11 +32,8 @@ import { isCoachHelmEnabledForCoach, isCoachHelmEnabledForPlayer } from '@/lib/c
 import { getCoachProgramPulse } from '@/lib/coachhelm/v3/chat/request-cache';
 import { loadCoachCoachHelm, loadCoachHelmGate, loadPlayerCoachHelm } from '../data/coachhelm';
 import { loadAskCoachHelm } from '../data/coachhelm-chat';
-import { toChInsight } from '../data/coachhelm-map';
-import type { ChInsight, ChPlayerHelm } from '../data/coachhelm-shape';
 import { ClubhouseCoachHelmRoute } from '../routes/coachhelm';
-import { PlayerBoard } from '../screens/coachhelm/PlayerBoard';
-import { bigNumber, breakBias, HELM_PLAYERS, parType, penalties, PREVIEW_TOUR, puttBalanced, slope, teeInconclusive } from '../preview/fixtures-coachhelm';
+import { bigNumber, HELM_PLAYERS, parType, penalties, puttBalanced, slope, teeInconclusive } from '../preview/fixtures-coachhelm';
 import { ToastProvider } from '../ui/Toast';
 
 const jonah = HELM_PLAYERS.jonah;
@@ -328,45 +325,5 @@ describe('CH13-20 the Ask address respects the CoachHelm switch, as the board do
     render(wrap(await resolved(await ClubhouseCoachHelmRoute({ view: 'ask' }))));
     expect(screen.getByTestId('ask').getAttribute('data-status')).toBe('failed');
     expect(loadAskCoachHelm).not.toHaveBeenCalled();
-  });
-});
-
-// ── The screens ────────────────────────────────────────────────────────────
-
-const chTop = (i: EvidenceInsight, extra: Parameters<typeof toChInsight>[1] = {}): ChInsight => toChInsight(i, { tour: PREVIEW_TOUR, ...extra });
-const playerData = (...list: ChInsight[]): ChPlayerHelm => ({ off: null, proposals: { list: [], error: false }, insights: { list, error: false }, rounds: null });
-const focus = () => within(document.querySelector('.ch-hl-focus') as HTMLElement);
-/** The stance word in the card's eyebrow (D8: a word, never a pill); null when the eyebrow says none. */
-const pill = () => ({ textContent: /· (Priority|Working|Note|Out of date|Assigned|Acknowledged)$/.exec(document.querySelector('.ch-hl-focus .ch-hl-focus__k')!.textContent ?? '')?.[1] ?? null });
-
-describe('the cards, on screen', () => {
-
-  it('CH13-16 on the player’s board an acknowledged insight’s row and card say so', () => {
-    render(wrap(<PlayerBoard data={playerData(chTop(penalties(jonah.id)), chTop({ ...slope(jonah.id), status: 'acknowledged' }))} />));
-    expect(pill().textContent).toBe('Priority');
-    expect(within(screen.getByRole('region', { name: 'Also worth knowing' })).getByRole('button').textContent).toContain('Acknowledged');
-  });
-
-  it('CH13-3 the player’s board puts a current finding first and the out-of-date one after it, marked', () => {
-    const stale = chTop(refreshedOn(slope(jonah.id), '2026-09-28T02:30:43Z'), { newestRound: '2026-09-30' });
-    render(wrap(<PlayerBoard data={playerData(stale, chTop(penalties(jonah.id)))} />));
-    expect(focus().getByRole('heading', { level: 2 }).textContent).toBe('Penalty strokes: 1.1 per round');
-    expect(within(screen.getByRole('region', { name: 'Also worth knowing' })).getByRole('button').textContent).toContain('Out of date');
-  });
-
-  it('CH-13905 CH13-9 the card says when the read was made, and the sample in the generator’s own unit', () => {
-    const own = refreshedOn({ ...slope(jonah.id), evidence: { ...slope(jonah.id).evidence, metric: 'something_unlisted', sample_n: 26, detail: { sample_unit: 'rounds', downhill_pct: 58, level_pct: 81 } } }, '2026-09-30T02:30:43Z');
-    render(wrap(<PlayerBoard data={playerData(chTop(own))} />));
-    expect(code('CH-13905')!.textContent).toBe('As of Sep 30');
-    expect(focus().getByText('26 rounds')).toBeTruthy();
-  });
-
-  it('CH13-10 the read says Solid, Early or Thin, never Strong or Fair', () => {
-    render(wrap(<PlayerBoard data={playerData(chTop(slope(jonah.id)))} />));
-    expect(focus().getByText('Solid read')).toBeTruthy();
-    expect(document.body.textContent).not.toMatch(/Strong read|Fair read/);
-    cleanup();
-    render(wrap(<PlayerBoard data={playerData(chTop(breakBias(jonah.id)))} />));
-    expect(focus().getByText('Early read')).toBeTruthy();
   });
 });

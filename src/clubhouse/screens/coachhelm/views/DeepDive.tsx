@@ -23,7 +23,7 @@ import { SectionBoundary } from '../../../ui/SectionBoundary';
 import { EmptyState } from '../../../ui/States';
 import { BoardPartial, Evidence, FocusActions, useFocusActions, type ChFocusActions } from '../parts';
 import { LIVE_COACHHELM_WRITES, type ChCoachHelmWrites } from '../writes';
-import { coachHelmLinks } from '../PlayerBoard';
+import { coachHelmLinks } from '../links';
 import { useHydrated } from '../use-hydrated';
 import { HelmOff, PlayerHelmFrame } from './Frame';
 import { SerifText } from '../../../ui/SerifText';

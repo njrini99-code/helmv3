@@ -112,22 +112,3 @@ export function WhyAudit({ lines, code = 'CH-13991' }: { lines: readonly ChAudit
     </div>
   );
 }
-
-/** Reads the recheck found cleared (04 example 5): one line each, under their own heading. */
-export function ClearedLines({ lines, code = 'CH-13992' }: { lines: readonly string[] | undefined; code?: string }) {
-  if (!lines || lines.length === 0) return null;
-  return (
-    <section className="ch-hl-cleared" aria-label="Cleared" data-ch-code={code}>
-      <h3>
-        Cleared <span className="ch-num">{lines.length}</span>
-      </h3>
-      <ul>
-        {lines.map((l) => (
-          <li key={l} className="ch-num">
-            {l}
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-}

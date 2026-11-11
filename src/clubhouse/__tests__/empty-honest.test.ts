@@ -43,7 +43,6 @@ const ALLOW_LEGACY: Record<string, number> = {
   'screens/calendar/Calendar.tsx': 1,
   'screens/calendar/CalendarPhone.tsx': 2,
   'screens/classes/ImportSchedule.tsx': 2,
-  'screens/coachhelm/PlayerBoard.tsx': 1,
   'screens/coachhelm/views/DeepDive.tsx': 4,
   'screens/coachhelm/views/TrackRecord.tsx': 1,
   'screens/home/PlayerGame.tsx': 2,

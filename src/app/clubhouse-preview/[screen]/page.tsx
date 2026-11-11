@@ -120,8 +120,6 @@ import { RecruitingSkeleton } from '@/clubhouse/screens/recruiting/RecruitingSke
 import { PREVIEW_RECRUITING, PREVIEW_RECRUITING_EMPTY, PREVIEW_RECRUITING_FAILED } from '@/clubhouse/preview/fixtures-recruiting';
 import '@/clubhouse/styles/recruiting.css';
 import { CoachHelmSkeleton } from '@/clubhouse/screens/coachhelm/CoachHelmSkeleton';
-import { PREVIEW_HELM_PLAYER, PREVIEW_HELM_PLAYER_EMPTY, PREVIEW_HELM_PLAYER_FAILED, PREVIEW_HELM_PLAYER_MANY, PREVIEW_HELM_PLAYER_STALE, PREVIEW_HELM_PLAYER_ZERO, PREVIEW_HELM_PLAYER_NO_ROUNDS, PREVIEW_HELM_PLAYER_OFF, PREVIEW_HELM_PLAYER_PROPOSALS_FAILED, PREVIEW_HELM_PLAYER_PROPOSED, PREVIEW_HELM_PLAYER_WORKING } from '@/clubhouse/preview/fixtures-coachhelm';
-import { PreviewCoachHelmPlayer } from '@/clubhouse/preview/PreviewCoachHelmPlayer';
 import { PreviewAsk } from '@/clubhouse/preview/PreviewAsk';
 import { PreviewChatCapabilities } from '@/clubhouse/preview/PreviewChatCapabilities';
 import { PreviewCoachHelmViews } from '@/clubhouse/preview/PreviewCoachHelmViews';
@@ -130,7 +128,6 @@ import { PREVIEW_TRACK_RECORD, PREVIEW_TRACK_RECORD_EARLY, PREVIEW_TRACK_RECORD_
 import { TrackRecord } from '@/clubhouse/screens/coachhelm/views/TrackRecord';
 import { PREVIEW_MONDAY_BRIEF, PREVIEW_MONDAY_BRIEF_EMPTY } from '@/clubhouse/preview/fixtures-coachhelm-brief';
 import { MondayBrief } from '@/clubhouse/screens/coachhelm/views/MondayBrief';
-import { PREVIEW_HELM_PLAYER_ENGINE } from '@/clubhouse/preview/fixtures-coachhelm-engine';
 import '@/clubhouse/styles/coachhelm.css';
 import '@/clubhouse/styles/coachhelm-ask.css';
 import '@/clubhouse/styles/coachhelm-views.css';
@@ -189,8 +186,7 @@ import { ChClockProvider } from '@/clubhouse/lib/use-clock';
  *   /clubhouse-preview/qualifier-player ?q=…   /clubhouse-preview/qualifier-new, qualifier-edit ?state=failed | noroster | courses | failwrites | loading
  *   /clubhouse-preview/qualifier-selection ?q=standings | picking | picked | selected, &state=failwrites
  *   /clubhouse-preview/coachhelm   retired (the signal-list board): opens coachhelm-team, the coach's CoachHelm Team page
- *   /clubhouse-preview/coachhelm-player ?state=engine   (every engine flag on, CoachHelm surfaces A)
- *   /clubhouse-preview/coachhelm-player ?state=empty | norounds | working | failed | off | loading | proposed | failproposal | proposalsfailed   (Jonah)
+ *   /clubhouse-preview/coachhelm-player ?state=accepted | noplan | proposed | seen | declined | early | empty | failed | loading | failwrites   (a player's CoachHelm, Your week; the older player board is retired), &view=standing | deep-dive | profile for their views (states as coachhelm-views)
  *   /clubhouse-preview/coachhelm-practice-print ?state=norotation | nodrills | draft | unread | long | cards   (unread: the drills read failed; long: a 14-drill appendix switched on)
  *   /clubhouse-preview/coachhelm-practice-run ?state=draft | edited
  *   /clubhouse-preview/coachhelm-practice-library ?tab=drills | drill | groups | templates &state=empty | library
@@ -576,16 +572,14 @@ export default async function ClubhousePreview({
           />
         ),
     },
+    // What a player really gets (owner, 2026-11-11): Your week, and Standing or the Deep dive for ?view=. The older player board is retired.
     'coachhelm-player': {
       path: '/golf/dashboard/coachhelm',
       node:
-        state === 'loading' ? (
-          <CoachHelmSkeleton view="player" />
+        view === 'standing' || view === 'deep-dive' || view === 'profile' ? (
+          <PreviewCoachHelmViews view={view} state={state} insight={q} />
         ) : (
-          <PreviewCoachHelmPlayer
-            state={state}
-            data={{ engine: PREVIEW_HELM_PLAYER_ENGINE, many: PREVIEW_HELM_PLAYER_MANY, stale: PREVIEW_HELM_PLAYER_STALE, zero: PREVIEW_HELM_PLAYER_ZERO, empty: PREVIEW_HELM_PLAYER_EMPTY, norounds: PREVIEW_HELM_PLAYER_NO_ROUNDS, working: PREVIEW_HELM_PLAYER_WORKING, failed: PREVIEW_HELM_PLAYER_FAILED, off: PREVIEW_HELM_PLAYER_OFF, proposed: PREVIEW_HELM_PLAYER_PROPOSED, failproposal: PREVIEW_HELM_PLAYER_PROPOSED, proposalsfailed: PREVIEW_HELM_PLAYER_PROPOSALS_FAILED }[state ?? ''] ?? PREVIEW_HELM_PLAYER}
-          />
+          <PreviewCoachHelmPlayerFile state={state} viewer="player" />
         ),
     },
     'coachhelm-ask': {

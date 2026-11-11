@@ -192,11 +192,10 @@
       "service": null,
       "data": [],
       "bridge": {
-        "loadFailedPlayer": 130604,
         "recovery": 131402
       },
       "tests": [
-        "src/clubhouse/__tests__/coachhelm.test.tsx"
+        "src/clubhouse/__tests__/coachhelm-retry.test.tsx"
       ]
     }
   ],

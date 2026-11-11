@@ -175,14 +175,14 @@ describe('IntentSheet (W-LNS-8)', () => {
 describe('the player page (S-BOARD, W-LNS-14, W-LNS-15)', () => {
   const week = (state: string): ChPlayerWeek => previewPlayerWeek(state);
 
-  it('holds no coach plan, no track record, no dismissed read and no More menu', () => {
+  it('130801 holds no coach plan, no track record, no dismissed read, no More menu and no coach control (Assign, Dismiss, Undo)', () => {
     render(<YourWeek load={{ status: 'ready', data: week('default') }} />, { wrapper: Wrap });
     const text = document.body.textContent ?? '';
     expect(text).toContain('Your week');
     expect(text).not.toContain(NOTE);
     expect(text).not.toContain('Fairways hit on par 5s');
     expect(screen.queryByRole('button', { name: /More for/ })).toBeNull();
-    expect(screen.queryByRole('button', { name: /Assign/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Assign|Dismiss|Undo|Share/ })).toBeNull();
   });
 
   it('on a desk the page opens with the player’s CoachHelm head: the page title, the line, and the views inside the head', () => {

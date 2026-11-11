@@ -38,7 +38,6 @@ import type { ChDeepDive } from '../data/coachhelm-dive-shape';
 import type { ChViewLoad } from '../data/coachhelm-views-shape';
 import { markAppRunning, RouteScope } from '../lib/session-state';
 import { ClubhouseCoachHelmRoute } from '../routes/coachhelm';
-import { PlayerBoard } from '../screens/coachhelm/PlayerBoard';
 import { DeepDive } from '../screens/coachhelm/views/DeepDive';
 import { ToastProvider } from '../ui/Toast';
 
@@ -56,7 +55,6 @@ const wrap = (node: ReactNode) => (
   </LazyMotion>
 );
 const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
-const focusHeading = () => within(document.querySelector('.ch-hl-focus') as HTMLElement).getByRole('heading', { level: 2 }).textContent;
 const escapeRe = (s: string) => new RegExp(s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
 const replaceState = vi.spyOn(window.history, 'replaceState');
 const pushState = vi.spyOn(window.history, 'pushState');
@@ -76,40 +74,6 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   window.history.replaceState(null, '', '/');
-});
-
-describe('CH-13911 the player’s board returns to the read the player picked', () => {
-  const list = PREVIEW_HELM_PLAYER.insights.list;
-  const show = () => render(wrap(<PlayerBoard data={PREVIEW_HELM_PLAYER} />));
-  const row = (title: string) => screen.getByRole('button', { name: escapeRe(title) });
-
-  it('a pick is kept for the tab and writes nothing to the address or the history; a remount opens on it', async () => {
-    const u = userEvent.setup();
-    const first = show();
-    const picked = list[1]!;
-    await u.click(row(picked.title));
-    expect(stored()).toHaveLength(1);
-    expect(historyWrites()).toBe(0);
-    expect(window.location.search).toBe('');
-    expect(routerCalls()).toBe(0);
-    first.unmount();
-    show();
-    expect(focusHeading()).toBe(picked.title);
-    expect(code('CH-13909')).toBeNull();
-  });
-
-  it('the board reads no ?insight= from the address (that names a read on the Deep dive only), and a refresh keeps the pick', async () => {
-    const u = userEvent.setup();
-    window.history.replaceState(null, '', `/golf/dashboard/coachhelm?insight=${list[2]!.id}`);
-    replaceState.mockClear();
-    const view = show();
-    expect(focusHeading()).toBe(list[0]!.title);
-    await u.click(row(list[1]!.title));
-    view.rerender(wrap(<PlayerBoard data={{ ...PREVIEW_HELM_PLAYER }} />));
-    expect(focusHeading()).toBe(list[1]!.title);
-    expect(window.location.search).toBe(`?insight=${list[2]!.id}`);
-    expect(historyWrites()).toBe(0);
-  });
 });
 
 describe('CH-13911 the Deep dive returns to the read that was open', () => {
@@ -204,26 +168,6 @@ describe('CH-13911 the Deep dive returns to the read that was open', () => {
 });
 
 describe('CH-13911 a switch of view never carries the last view’s pick, and the address is not what a screen reads', () => {
-  const dive = PREVIEW_DIVE.list;
-  const insights = PREVIEW_HELM_PLAYER.insights.list;
-  const diveHeading = () => within(document.querySelector('.ch-hd-main') as HTMLElement).getByRole('heading', { level: 2 }).textContent;
-
-  it('Board with a read picked, then the Deep dive: it opens on its first read (the tab links carry no ?insight=), and the other way round', async () => {
-    const u = userEvent.setup();
-    const board1 = render(wrap(<PlayerBoard data={PREVIEW_HELM_PLAYER} />));
-    await u.click(screen.getByRole('button', { name: escapeRe(insights[1]!.title) }));
-    board1.unmount();
-    // The next view mounts before the address commits: the old view's ?insight= is still in it, and is not read.
-    window.history.replaceState(null, '', `/golf/dashboard/coachhelm?insight=${dive[2]!.base.id}`);
-    const view = render(wrap(<DeepDive load={{ status: 'ready', data: PREVIEW_DIVE }} initialId={null} />));
-    expect(diveHeading()).toBe(dive[0]!.base.title);
-    expect(code('CH-13910')).toBeNull();
-    await u.click(within(screen.getByRole('navigation', { name: 'Your insights' })).getByRole('button', { name: escapeRe(dive[1]!.base.title) }));
-    view.unmount();
-    render(wrap(<PlayerBoard data={PREVIEW_HELM_PLAYER} />));
-    expect(focusHeading()).toBe(insights[1]!.title);
-    expect(code('CH-13909')).toBeNull();
-  });
 
   it('the route hands only the Deep dive the read ?insight= names; the Board and the other views get none', async () => {
     session.current = { userId: 'u2', role: 'player', coach: null, player: { id: 'pl-jonah' } };
@@ -269,16 +213,6 @@ describe('CH-13911 a kept pick is never drawn while the screen hydrates', () => 
     act(() => root?.unmount());
     host.remove();
   }
-
-  it('the player’s board', async () => {
-    const u = userEvent.setup();
-    const target = PREVIEW_HELM_PLAYER.insights.list[1]!;
-    await hydratesCleanly(
-      () => <PlayerBoard data={PREVIEW_HELM_PLAYER} />,
-      () => u.click(screen.getByRole('button', { name: escapeRe(target.title) })),
-      (host) => expect(within(host.querySelector('.ch-hl-focus') as HTMLElement).getByRole('heading', { level: 2 }).textContent).toBe(target.title),
-    );
-  });
 
   it('the Deep dive', async () => {
     const u = userEvent.setup();

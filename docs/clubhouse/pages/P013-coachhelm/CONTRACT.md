@@ -84,7 +84,7 @@ counts. Tested in `coachhelm-standing.test.tsx` and
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 130101 | — | `COACHHELM_OPENS_FOR_THE_ROLE` | One address gives a coach the coach's board and a player the player's, from the session (a coach who also has a player profile is a coach here). A player's page is the header (the Player chip, CoachHelm, one line), one focus card, Also worth knowing (at most two findings, three with the focus), Working (at most one strength), a count of the reads left to the Deep dive ("6 more reads in the Deep dive", a tap that opens it; not drawn when the board shows every read) and a closing note (reads update as rounds are posted, and coaches see the same insights). A coach's page is the header (the Coach chip and the count of players with an open signal), the program pulse (up to six rows), By player, the chosen player's focus with Assign as focus and Dismiss, and a count of players with no insight yet. Everything is read on the server before first paint. |
+| 130101 | — | `COACHHELM_OPENS_FOR_THE_ROLE` | One address gives a coach their CoachHelm (the Team page, the drawn golf hole, with Ask beside it) and a player theirs (Your week, with Standing and the Deep dive beside it), from the session: a coach who also has a player profile is a coach here, and a player's page needs no team. The older boards that once opened here (the coach's signal list, the player's focus board) were retired on 2026-11-11. |
 | 130102 | — | `THE_FOCUS_IS_THE_TOP_INSIGHT_THAT_IS_NOT_WORKING` | The player's focus card is the insight the person picked or, without a pick, the top-ranked finding that is current (a read older than the newest round, and a card that states no finding, do not lead), in the delivery feed's own order. The picked insight leaves both lists and the one it replaced joins them; the board holds at most three findings (the focus counted when it is one, so Also worth knowing has at most two) and one strength (a picked strength is that one), in the feed's own order, never re-ranked (NEEDS_MAX, WORKING_MAX). A measured zero (a strokes-gained baseline whose strokes_impact prints as 0.0, coachhelm-strokes.ts) is not one of the board's open reads; any other zero is no estimate and the read stays. Every read the board does not show (past the caps, or a measured zero) is counted in the line that opens the Deep dive, which lists them all, so the count and the lists add up to the Deep dive's reads (a note is in neither). No strokes-a-round figure is drawn from strokes_impact unless it is a real estimate (sg_baseline or peer_delta, non-zero at one decimal: strokesAtStake), and the miner's own "Projected impact: ~0.00 strokes per round." sentence is not drawn when its figure is zero or the row has no estimate (withoutZeroImpact; the stored text is untouched). With only strengths there is no focus and CH-13303 says nothing needs work, and names What's working only when it is drawn. On the coach's board the focus is the chosen player's top insight. |
 | 130103 | — | `PLAYERS_ARE_ORDERED_MOST_PRESSING_FIRST` | The coach's By player list is ordered by how pressing each player's top insight is (Priority, then Worth closing, then Minor; a strength last, whatever its own priority), then by how many open signals the player has, then by name. A strength, and a top read that is out of date, come after the findings, and a card that states no finding comes last. The first player's focus is open when the page opens, and picking a player (a toggle, aria-pressed) shows that player's focus. |
 | 130104 | — | `FAIRWAY_DRILL_LINKS_SAY_NOT_REBUILT` | The Fairway drills' addresses (where /my-development, /my-game-profile, /my-standing and the focus-area cards send people) land on a screen that exists: ?view=development redirects to Stats' Development tab (/golf/dashboard/stats?tab=dev), and ?view=profile, ?view=standing and ?view=deep-dive are the player's own Game profile, Standing and Deep dive, built for the signed-in player alone (the loader takes the session's player id and nothing from the address). None of them says "not rebuilt yet" any more (the name is the contract's original, kept because Bridge IDs are append-only). ?view=insights, no view and any other value draw the board. A coach's ?view=profile, standing or deep-dive with no ?player= is their own board; with ?player=<golf_players.id> it is the coach's view of that player (spec A, 2026-10-21, which supersedes Q-76's "a coach's equivalents are not asked for"), read only once the id is checked against the coach's team (130807). A player's ?player= means nothing: their views read the session's id. |
@@ -142,9 +142,6 @@ filter, so it has no filtered empty state.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 130401 | CH-13301 | `PLAYER_NO_ROUND_POSTED_YET` | Player: no round posted yet (the lede reads "One thing to work on each week, from the rounds you post.") |
-| 130402 | CH-13302 | `PLAYER_ROUNDS_POSTED_NO_INSIGHT_YET` | Player: rounds posted, no insight yet |
-| 130403 | CH-13303 | `PLAYER_EVERY_INSIGHT_IS_A_STRENGTH` | Player: every insight is a strength |
 | 130404 | CH-13304 | `PLAYER_COACHHELM_IS_OFF_FOR_THEM` | Player: CoachHelm is off for them (the board, and Standing and Deep dive, which say the same, answered at once and with no sub-navigation) |
 | 130405 | CH-13305 | `COACH_COACHHELM_IS_OFF` | Coach: CoachHelm is off (by them, by the team, or globally) |
 | 130408 | CH-13308 | `COACH_NOT_ON_A_TEAM` | Coach: not on a team |
@@ -175,7 +172,6 @@ filter, so it has no filtered empty state.
 | 130436 | CH-13395 | `PRACTICE_NEW_PLAN_AND_SOMEONE_WITH_NO` | Practice: New plan, and someone with no team |
 | 130437 | CH-13396 | `PRACTICE_A_COACHS_FIRST_PLAN_OR_NO` | Practice: a coach's first plan, or no practice this week |
 | 130438 | CH-13397 | `PRACTICE_A_PLAYER_WITH_NOTHING_PUBLISHED` | Practice: a player with nothing published |
-| 130460 | CH-13333 | `PLAYER_NO_COURSE_HAS_THREE_OF_THEIR` | Player: no course has three of their countable rounds yet, or the course picked has fewer than three (chs-21) |
 
 ## 05 — Validation
 
@@ -210,12 +206,10 @@ the whole change again, follow-ups included (131401).
 | 130601 | CH-13001 | `ASSIGN_AS_FOCUS_FAILS` | Assign as focus fails |
 | 130602 | CH-13002 | `DISMISS_FAILS` | Dismiss fails |
 | 130603 | CH-13003 | `UNDO_FAILS` | Undo fails |
-| 130604 | CH-13201 | `THE_PLAYERS_INSIGHTS_DONT_LOAD` | The player's insights don't load (the read fails, throws, comes back empty while insights are on file, or the gate lookup fails) |
 | 130607 | CH-13204 | `A_SECTION_CRASHES_WHILE_DRAWING` | A section crashes while drawing |
 | 130608 | — | `A_FAILED_GATE_LOOKUP_IS_A_FAILED_READ_NOT_OFF` | The gate that says CoachHelm is off is asked first. A gate that throws, or whose reason says the lookup failed, is a failed read and not off: a player gets Your insights didn't load (CH-13201) and a coach gets the roster flagged as failed (CH-13202); it is logged as gate. Fixed since: on a coach's gate failure the pulse is still read and drawn beside the CH-13202 notice, never the empty line (coachhelm-contracts.test.tsx). |
 | 130609 | CH-13004 | `A_PLAYERS_ACCEPT_OF_A_PROPOSED_FOCUS` | A player's Accept of a proposed focus area fails |
 | 130610 | CH-13005 | `A_PLAYERS_DECLINE_OF_A_PROPOSED_FOCUS` | A player's Decline of a proposed focus area fails (written when its Undo toast goes, CH-13912) |
-| 130611 | CH-13205 | `THE_PLAYERS_PROPOSED_FOCUS_AREAS_DONT_LOAD` | The player's proposed focus areas don't load (the read fails, or the team they are read through can't be read) |
 | 130612 | CH-13050 | `ASK_AN_ACTION_COACHHELM_PROPOSED_FAILS_AFTER` | Ask: An action CoachHelm proposed fails after Confirm |
 | 130614 | CH-13221 | `ASK_THE_CHAT_CONTEXT_DOES_NOT_LOAD` | Ask: The chat context (the program) does not load, or its roster read fails |
 | 130615 | CH-13222 | `ASK_THE_CHAT_LIST_DOES_NOT_LOAD` | Ask: The chat list does not load |
@@ -248,7 +242,6 @@ the whole change again, follow-ups included (131401).
 | 130648 | CH-13083 | `PRACTICE_A_NEW_DRILL_SAVED` | Practice: a new drill saved |
 | 130649 | CH-13084 | `PRACTICE_OFFLINE_WHILE_EDITING` | Practice: offline while editing |
 | 130650 | CH-13008 | `REMOVE_FOCUS_ON_A_READ_FAILS` | Remove focus on a read fails (written when its Undo toast goes) |
-| 130660 | CH-13233 | `PLAYER_THEIR_OWN_COURSE_PLAN_DOESNT_LOAD` | Player: their own course plan (chs-21) doesn't load: the courses or the plan read fails or throws |
 
 ## 07 — Network / offline
 
@@ -280,7 +273,6 @@ its own.
 | 130715 | CH-13981 | `DEEP_DIVE_AN_ADDRESS_NAMES_A_READ` | Deep dive: an address names a read (`?view=deep-dive&insight=<id>`) |
 | 130716 | CH-13982 | `DEEP_DIVE_A_CAUSE_IS_A_HYPOTHESIS` | Deep dive: a cause is a hypothesis |
 | 130717 | CH-13907 | `COACH_THE_PLAYER_DECLINED_A_FOCUS_MADE` | Coach: the player declined a focus made from the top card, and none stands now |
-| 130719 | CH-13909 | `PLAYER_THE_READ_THE_PLAYER_HAD_PICKED` | Player: the read the player had picked is no longer on the refreshed board |
 | 130720 | CH-13910 | `DEEP_DIVE_THE_READ_THAT_WAS_OPEN` | Deep dive: the read that was open is no longer on the page after a refresh |
 | 130721 | CH-13911 | `COACH_PLAYER_COMING_BACK_TO_THE_PAGE` | Coach, player: coming back to the page (Back, a reload, a link) after leaving it |
 | 130722 | CH-13924 | `ASK_COMING_BACK_TO_THE_PAGE_AFTER` | Ask: coming back to the page after leaving it |
@@ -301,7 +293,6 @@ its own.
 | 130739 | CH-13970 | `COACH_PLAYER_CORRECTION_CHIPS` | Coach, player: correction chips |
 | 130740 | CH-13971 | `COACH_PLAYER_ANSWER_RECORDED` | Coach, player: answer recorded |
 | 130741 | CH-13972 | `COACH_READ_HELD_BACK` | Coach: read held back |
-| 130742 | CH-13940 | `COACH_PLAYER_THE_PATH_LINE` | Coach, player: the path line (design call D2) |
 | 130746 | CH-13936 | `MONDAY_BRIEF_COACHHELM_IS_OFF_FOR_THE` | Monday brief: CoachHelm is off for the team |
 | 130747 | CH-13937 | `MONDAY_BRIEF_A_READ_IT_IS_MADE` | Monday brief: a read it is made from failed |
 | 130749 | CH-13939 | `MONDAY_BRIEF_THE_COUNTS_LINE` | Monday brief: the counts line |
@@ -316,7 +307,6 @@ its own.
 | 130761 | CH-13914 | `ASK_AN_ANSWER_NAMES_A_PLAYERS_READS` | Ask (coach): an answer names a player's reads (chs-39) |
 | 130762 | CH-13915 | `STANDING_HOW_YOU_PLAY` | Standing: How you play (chs-37) |
 | 130763 | CH-13916 | `PLAYER_THEIR_OWN_COURSE_PLAN_OFFERED_BY` | Player: their own Course plan (chs-21 / par-14, `coachhelm_course_plan_v1`), offered by the loader while the flag is on |
-| 130764 | CH-13917 | `PLAYER_THE_PLAN_FOR_THE_COURSE_THEY` | Player: the plan for the course they picked |
 | 130781 | CH-13984 | `BRIEF_THIS_WEEKS_OPEN_READS` | Brief: this week's open reads |
 | 130782 | CH-13985 | `BRIEF_WHAT_PLAYERS_ARE_WORKING_ON` | Brief: what players are working on |
 | 130783 | CH-13986 | `BRIEF_HOW_THE_READS_HAVE_HELD` | Brief: how the reads have held |
@@ -342,7 +332,7 @@ proves they can never differ.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 130801 | — | `CONTROLS_FOLLOW_THE_ROLE` | The coach's controls (Assign as focus, Dismiss, Undo) exist only on the coach's board. The player's board has no write of any kind and is never drawn Assign, Dismiss, Undo or Share, and neither board has a Share button: no action sits behind it. |
+| 130801 | — | `CONTROLS_FOLLOW_THE_ROLE` | The coach's controls (Assign as focus, Dismiss, Undo) exist only on the coach's pages. A player's CoachHelm (Your week) is never drawn Assign, Dismiss, Undo or Share: the one thing a player writes is their answer to a proposal, Accept or Decline. No page has a Share button: no action sits behind it. |
 | 130802 | — | `A_COACH_READS_ONLY_THE_TEAMS_ACTIVE_PLAYERS` | A coach's board reads only the active members of the team the shell resolved (golf_team_members, team_id and status active), whichever other teams the coach staffs; only those ids reach the visible-insights read, the top-insight read (one per player) and the focus-area read. A coach session with no resolved team, or one that is not a coach team, gets the no-team page (CH-13308) and no player is read. The program pulse is the coach's own (getCoachProgramPulse, which resolves its team through the coach chat context), not a read of this page's team id. |
 | 130803 | — | `A_PLAYER_READS_ONLY_THEIR_OWN_INSIGHTS` | A player's board is built from the session's own player id and nothing else: the gate, the feed (up to 30), the dismissal read and the rounds count are that player's, with or without a team, and no team read or teammate's insight reaches it. |
 | 130804 | — | `SERVER_ACTIONS_ARE_THE_GATE` | Every write is checked again by its server action, whatever the board shows: dismissInsight and reactivateInsight refuse a caller who is not a coach of the insight's team (verifyInsightAccess; an insight with no team is refused) and update only that team's row; createFocusAreaFromInsightV2 refuses a caller who fails verifyPlayerAccess for the player (a coach of the player's team, or the player themself, whose own use would make an active focus with no proposal and is not reachable from this board) and refuses a second active focus on the same metric with ACTIVE_FOCUS_DUPLICATE_ERROR. Run in coachhelm-actions-contracts.test.ts against the real actions. |
@@ -426,7 +416,7 @@ an insight back in the state it had (131403).
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 131401 | — | `RETRY_FINISHES_THE_JOB` | The error toast's Retry runs the same write again with the same arguments, and when it lands everything the button would have done follows, because the follow-ups live inside the action: Assign shows the chip, Dismiss the notice, Undo the returned action row. Every control of the row waits while any of the three is running. |
-| 131402 | — | `TRY_AGAIN_REREADS_THE_PAGE` | Try again on a failed-read notice (CH-13201, CH-13202, CH-13203) has the server read the whole page again (router.refresh); no section re-reads itself and nothing retries a read on its own. |
+| 131402 | — | `TRY_AGAIN_REREADS_THE_PAGE` | Try again on a failed-read notice has the server read the whole page again (router.refresh, through useRefresh); no section re-reads itself and nothing retries a read on its own. |
 | 131403 | — | `UNDO_RESTORES_THE_STATE_THE_INSIGHT_HAD` | Undo calls reactivateInsight with the lifecycle state the insight had when it was dismissed (detected, matured, addressed or resolved), so it returns to the feed where it was rather than always as new. The dismissed notice stays until it has landed. |
 
 From the shell (P001): 11401 ROUTE_TRY_AGAIN, 11402 TOAST_RETRY.
@@ -481,7 +471,6 @@ On the v2 grammar (D-70): selection for choosing a player or an insight
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 131701 | CH-13701 | `A_PLAYER_OR_AN_INSIGHT_ROW_IS` | A player or an insight row is picked |
 | 131702 | CH-13702 | `ASSIGN_AS_FOCUS_IS_TAPPED` | Assign as focus is tapped |
 | 131703 | CH-13703 | `DISMISS_IS_TAPPED` | Dismiss is tapped |
 | 131704 | CH-13704 | `ACCEPT_OR_DECLINE_IS_TAPPED` | Accept or Decline is tapped |
@@ -522,10 +511,6 @@ CH-1842, 11825 CH-1816.
 | --- | --- | --- | --- |
 | 131801 | CH-13801 | `A_SCREEN_READER_MOVES_THROUGH_THE_PAGE` | A screen reader moves through the page |
 | 131802 | CH-13802 | `A_GAUGE` | A gauge |
-| 131803 | CH-13803 | `AN_INSIGHT_OR_PLAYER_ROW` | An insight or player row |
-| 131804 | CH-13804 | `WHY_WE_THINK_THIS` | Why we think this |
-| 131805 | CH-13805 | `CHOOSING_ANOTHER_INSIGHT_OR_PLAYER` | Choosing another insight or player |
-| 131806 | CH-13806 | `PRIORITY` | Priority |
 | 131807 | — | `NO_AXE_VIOLATIONS_IN_THE_AXE_PREVIEW_STATES` | No axe violations in the ten preview states clubhouse:a11y walks for CoachHelm (the coach's default, assigned, empty, failed, off and loading; the player's default, empty, norounds and failed), at 1280px and 390px: 20 runs, clean on 2026-09-30 as reported by the lead in PROGRESS.md. Checked by npm run clubhouse:a11y (CH_A11Y_PAGES in scripts/clubhouse/a11y.mjs), not by a unit test. Not walked: the coach's noroster, pulsefailed, quiet, failwrites, failundo and duplicate states and the player's working, off and loading states. |
 | 131808 | CH-13807 | `THE_PLAYERS_PROPOSED_FOCUS_AREAS` | The player's proposed focus areas |
 | 131809 | CH-13820 | `ASK_THE_CHAT_PAGE` | Ask: The chat page |
@@ -561,7 +546,7 @@ both roles. The pill row and the sheet-free layout are CSS and are not tested.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 131901 | — | `PHONE_LAYOUT` | At 820px and below CoachHelm is the phone build, never a shrunken desktop: the page takes the phone frame, the shell's top bar reads CoachHelm, and the boards, writes and states are the desktop's. Separately, when the page's container is 640px wide or less the coach's players are a row of pills that scrolls sideways. Choosing an insight on the player's phone brings the focus into view; on a wider screen the page stays where it is. |
+| 131901 | — | `PHONE_LAYOUT` | At 820px and below CoachHelm is the phone build, never a shrunken desktop: the page takes its phone frame, the shell's top bar reads CoachHelm, and the views are a row of chips that scrolls sideways. The pages' writes and states are the desktop's. |
 
 From the shell (P001): 11901 PHONE_CHROME.
 

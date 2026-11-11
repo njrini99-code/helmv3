@@ -15889,11 +15889,11 @@
     "category": 1,
     "item": 1,
     "name": "COACHHELM_OPENS_FOR_THE_ROLE",
-    "meaning": "One address gives a coach the coach's board and a player the player's, from the session (a coach who also has a player profile is a coach here). A player's page is the header (the Player chip, CoachHelm, one line), one focus card, Also worth knowing (at most two findings, three with the focus), Working (at most one strength), a count of the reads left to the Deep dive (\"6 more reads in the Deep dive\", a tap that opens it; not drawn when the board shows every read) and a closing note (reads update as rounds are posted, and coaches see the same insights). A coach's page is the header (the Coach chip and the count of players with an open signal), the program pulse (up to six rows), By player, the chosen player's focus with Assign as focus and Dismiss, and a count of players with no insight yet. Everything is read on the server before first paint.",
+    "meaning": "One address gives a coach their CoachHelm (the Team page, the drawn golf hole, with Ask beside it) and a player theirs (Your week, with Standing and the Deep dive beside it), from the session: a coach who also has a player profile is a coach here, and a player's page needs no team. The older boards that once opened here (the coach's signal list, the player's focus board) were retired on 2026-11-11.",
     "status": "implemented",
-    "where": "src/clubhouse/screens/coachhelm/PlayerBoard.tsx#PlayerBoard; src/clubhouse/screens/coachhelm/CoachBoard.tsx#CoachBoard; src/clubhouse/routes/coachhelm.tsx#ClubhouseCoachHelmRoute",
+    "where": "src/clubhouse/routes/coachhelm.tsx#ClubhouseCoachHelmRoute; src/clubhouse/screens/coachhelm/team/TeamBoard.tsx#TeamBoard; src/clubhouse/screens/coachhelm/file/YourWeek.tsx#YourWeek",
     "tests": [
-      "src/clubhouse/__tests__/coachhelm.test.tsx"
+      "src/clubhouse/__tests__/wiring-p013-route.test.tsx"
     ]
   },
   {
@@ -16103,39 +16103,6 @@
     "name": "RECHECK_RUNNING",
     "chCode": "CH-13406",
     "meaning": "Re-check running",
-    "status": "implemented",
-    "catalog": "docs/clubhouse/catalog/coachhelm.md"
-  },
-  {
-    "id": 130401,
-    "page": "P013",
-    "category": 4,
-    "item": 1,
-    "name": "PLAYER_NO_ROUND_POSTED_YET",
-    "chCode": "CH-13301",
-    "meaning": "Player: no round posted yet (the lede reads \"One thing to work on each week, from the rounds you post.\")",
-    "status": "implemented",
-    "catalog": "docs/clubhouse/catalog/coachhelm.md"
-  },
-  {
-    "id": 130402,
-    "page": "P013",
-    "category": 4,
-    "item": 2,
-    "name": "PLAYER_ROUNDS_POSTED_NO_INSIGHT_YET",
-    "chCode": "CH-13302",
-    "meaning": "Player: rounds posted, no insight yet",
-    "status": "implemented",
-    "catalog": "docs/clubhouse/catalog/coachhelm.md"
-  },
-  {
-    "id": 130403,
-    "page": "P013",
-    "category": 4,
-    "item": 3,
-    "name": "PLAYER_EVERY_INSIGHT_IS_A_STRENGTH",
-    "chCode": "CH-13303",
-    "meaning": "Player: every insight is a strength",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -16483,17 +16450,6 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
-    "id": 130460,
-    "page": "P013",
-    "category": 4,
-    "item": 60,
-    "name": "PLAYER_NO_COURSE_HAS_THREE_OF_THEIR",
-    "chCode": "CH-13333",
-    "meaning": "Player: no course has three of their countable rounds yet, or the course picked has fewer than three (chs-21)",
-    "status": "implemented",
-    "catalog": "docs/clubhouse/catalog/coachhelm.md"
-  },
-  {
     "id": 130501,
     "page": "P013",
     "category": 5,
@@ -16560,17 +16516,6 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
-    "id": 130604,
-    "page": "P013",
-    "category": 6,
-    "item": 4,
-    "name": "THE_PLAYERS_INSIGHTS_DONT_LOAD",
-    "chCode": "CH-13201",
-    "meaning": "The player's insights don't load (the read fails, throws, comes back empty while insights are on file, or the gate lookup fails)",
-    "status": "implemented",
-    "catalog": "docs/clubhouse/catalog/coachhelm.md"
-  },
-  {
     "id": 130607,
     "page": "P013",
     "category": 6,
@@ -16613,17 +16558,6 @@
     "name": "A_PLAYERS_DECLINE_OF_A_PROPOSED_FOCUS",
     "chCode": "CH-13005",
     "meaning": "A player's Decline of a proposed focus area fails (written when its Undo toast goes, CH-13912)",
-    "status": "implemented",
-    "catalog": "docs/clubhouse/catalog/coachhelm.md"
-  },
-  {
-    "id": 130611,
-    "page": "P013",
-    "category": 6,
-    "item": 11,
-    "name": "THE_PLAYERS_PROPOSED_FOCUS_AREAS_DONT_LOAD",
-    "chCode": "CH-13205",
-    "meaning": "The player's proposed focus areas don't load (the read fails, or the team they are read through can't be read)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -17013,17 +16947,6 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
-    "id": 130660,
-    "page": "P013",
-    "category": 6,
-    "item": 60,
-    "name": "PLAYER_THEIR_OWN_COURSE_PLAN_DOESNT_LOAD",
-    "chCode": "CH-13233",
-    "meaning": "Player: their own course plan (chs-21) doesn't load: the courses or the plan read fails or throws",
-    "status": "implemented",
-    "catalog": "docs/clubhouse/catalog/coachhelm.md"
-  },
-  {
     "id": 130701,
     "page": "P013",
     "category": 7,
@@ -17209,17 +17132,6 @@
     "name": "COACH_THE_PLAYER_DECLINED_A_FOCUS_MADE",
     "chCode": "CH-13907",
     "meaning": "Coach: the player declined a focus made from the top card, and none stands now",
-    "status": "implemented",
-    "catalog": "docs/clubhouse/catalog/coachhelm.md"
-  },
-  {
-    "id": 130719,
-    "page": "P013",
-    "category": 7,
-    "item": 19,
-    "name": "PLAYER_THE_READ_THE_PLAYER_HAD_PICKED",
-    "chCode": "CH-13909",
-    "meaning": "Player: the read the player had picked is no longer on the refreshed board",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -17444,17 +17356,6 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
-    "id": 130742,
-    "page": "P013",
-    "category": 7,
-    "item": 42,
-    "name": "COACH_PLAYER_THE_PATH_LINE",
-    "chCode": "CH-13940",
-    "meaning": "Coach, player: the path line (design call D2)",
-    "status": "implemented",
-    "catalog": "docs/clubhouse/catalog/coachhelm.md"
-  },
-  {
     "id": 130746,
     "page": "P013",
     "category": 7,
@@ -17616,18 +17517,7 @@
     "name": "PLAYER_THEIR_OWN_COURSE_PLAN_OFFERED_BY",
     "chCode": "CH-13916",
     "meaning": "Player: their own Course plan (chs-21 / par-14, `coachhelm_course_plan_v1`), offered by the loader while the flag is on",
-    "status": "implemented",
-    "catalog": "docs/clubhouse/catalog/coachhelm.md"
-  },
-  {
-    "id": 130764,
-    "page": "P013",
-    "category": 7,
-    "item": 64,
-    "name": "PLAYER_THE_PLAN_FOR_THE_COURSE_THEY",
-    "chCode": "CH-13917",
-    "meaning": "Player: the plan for the course they picked",
-    "status": "implemented",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
@@ -17746,11 +17636,11 @@
     "category": 8,
     "item": 1,
     "name": "CONTROLS_FOLLOW_THE_ROLE",
-    "meaning": "The coach's controls (Assign as focus, Dismiss, Undo) exist only on the coach's board. The player's board has no write of any kind and is never drawn Assign, Dismiss, Undo or Share, and neither board has a Share button: no action sits behind it.",
+    "meaning": "The coach's controls (Assign as focus, Dismiss, Undo) exist only on the coach's pages. A player's CoachHelm (Your week) is never drawn Assign, Dismiss, Undo or Share: the one thing a player writes is their answer to a proposal, Accept or Decline. No page has a Share button: no action sits behind it.",
     "status": "implemented",
-    "where": "src/clubhouse/screens/coachhelm/PlayerBoard.tsx#PlayerBoard; src/clubhouse/screens/coachhelm/CoachBoard.tsx#CoachBoard; src/clubhouse/routes/coachhelm.tsx#ClubhouseCoachHelmRoute",
+    "where": "src/clubhouse/screens/coachhelm/file/YourWeek.tsx#YourWeek; src/clubhouse/screens/coachhelm/parts.tsx#FocusActions; src/clubhouse/routes/coachhelm.tsx#ClubhouseCoachHelmRoute",
     "tests": [
-      "src/clubhouse/__tests__/coachhelm.test.tsx"
+      "src/clubhouse/screens/coachhelm/file/__tests__/player-file.test.tsx"
     ]
   },
   {
@@ -17936,11 +17826,11 @@
     "category": 14,
     "item": 2,
     "name": "TRY_AGAIN_REREADS_THE_PAGE",
-    "meaning": "Try again on a failed-read notice (CH-13201, CH-13202, CH-13203) has the server read the whole page again (router.refresh); no section re-reads itself and nothing retries a read on its own.",
+    "meaning": "Try again on a failed-read notice has the server read the whole page again (router.refresh, through useRefresh); no section re-reads itself and nothing retries a read on its own.",
     "status": "implemented",
-    "where": "src/clubhouse/screens/coachhelm/PlayerBoard.tsx#PlayerBoard; src/clubhouse/screens/coachhelm/CoachBoard.tsx#CoachBoard; src/clubhouse/ui/Notices.tsx#InlineNotice",
+    "where": "src/clubhouse/lib/use-refresh.ts#useRefresh; src/clubhouse/ui/RefreshNotice.tsx#RefreshNotice; src/clubhouse/ui/Notices.tsx#InlineNotice",
     "tests": [
-      "src/clubhouse/__tests__/coachhelm.test.tsx"
+      "src/clubhouse/__tests__/coachhelm-retry.test.tsx"
     ]
   },
   {
@@ -18030,17 +17920,6 @@
     "name": "ASK_THE_PHONE_DRAWER_IS_DRAGGED",
     "chCode": "CH-13621",
     "meaning": "Ask: The phone drawer is dragged",
-    "status": "implemented",
-    "catalog": "docs/clubhouse/catalog/coachhelm.md"
-  },
-  {
-    "id": 131701,
-    "page": "P013",
-    "category": 17,
-    "item": 1,
-    "name": "A_PLAYER_OR_AN_INSIGHT_ROW_IS",
-    "chCode": "CH-13701",
-    "meaning": "A player or an insight row is picked",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -18174,50 +18053,6 @@
     "chCode": "CH-13802",
     "meaning": "A gauge",
     "status": "reserved",
-    "catalog": "docs/clubhouse/catalog/coachhelm.md"
-  },
-  {
-    "id": 131803,
-    "page": "P013",
-    "category": 18,
-    "item": 3,
-    "name": "AN_INSIGHT_OR_PLAYER_ROW",
-    "chCode": "CH-13803",
-    "meaning": "An insight or player row",
-    "status": "implemented",
-    "catalog": "docs/clubhouse/catalog/coachhelm.md"
-  },
-  {
-    "id": 131804,
-    "page": "P013",
-    "category": 18,
-    "item": 4,
-    "name": "WHY_WE_THINK_THIS",
-    "chCode": "CH-13804",
-    "meaning": "Why we think this",
-    "status": "implemented",
-    "catalog": "docs/clubhouse/catalog/coachhelm.md"
-  },
-  {
-    "id": 131805,
-    "page": "P013",
-    "category": 18,
-    "item": 5,
-    "name": "CHOOSING_ANOTHER_INSIGHT_OR_PLAYER",
-    "chCode": "CH-13805",
-    "meaning": "Choosing another insight or player",
-    "status": "reserved",
-    "catalog": "docs/clubhouse/catalog/coachhelm.md"
-  },
-  {
-    "id": 131806,
-    "page": "P013",
-    "category": 18,
-    "item": 6,
-    "name": "PRIORITY",
-    "chCode": "CH-13806",
-    "meaning": "Priority",
-    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
@@ -18412,11 +18247,11 @@
     "category": 19,
     "item": 1,
     "name": "PHONE_LAYOUT",
-    "meaning": "At 820px and below CoachHelm is the phone build, never a shrunken desktop: the page takes the phone frame, the shell's top bar reads CoachHelm, and the boards, writes and states are the desktop's. Separately, when the page's container is 640px wide or less the coach's players are a row of pills that scrolls sideways. Choosing an insight on the player's phone brings the focus into view; on a wider screen the page stays where it is.",
+    "meaning": "At 820px and below CoachHelm is the phone build, never a shrunken desktop: the page takes its phone frame, the shell's top bar reads CoachHelm, and the views are a row of chips that scrolls sideways. The pages' writes and states are the desktop's.",
     "status": "implemented",
-    "where": "src/clubhouse/screens/coachhelm/CoachBoard.tsx#CoachBoard (phone); src/clubhouse/screens/coachhelm/PlayerBoard.tsx#PlayerBoard (phone, pick); src/clubhouse/lib/use-phone.ts#useChPhone",
+    "where": "src/clubhouse/screens/coachhelm/file/YourWeek.tsx#YourWeek (phone); src/clubhouse/screens/coachhelm/views/PlayerHelmTabs.tsx#PlayerHelmTabs; src/clubhouse/lib/use-phone.ts#useChPhone",
     "tests": [
-      "src/clubhouse/__tests__/coachhelm-contracts.test.tsx"
+      "src/clubhouse/__tests__/coachhelm-views.test.tsx"
     ]
   },
   {

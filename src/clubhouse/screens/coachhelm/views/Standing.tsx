@@ -13,7 +13,7 @@ import { Icon } from '../../../ui/Icon';
 import { PageRefreshNotice, RefreshNotice } from '../../../ui/RefreshNotice';
 import { SectionBoundary } from '../../../ui/SectionBoundary';
 import { EmptyState } from '../../../ui/States';
-import { coachHelmLinks } from '../PlayerBoard';
+import { coachHelmLinks } from '../links';
 import { HelmOff, PlayerHelmFrame } from './Frame';
 import { HowYouPlay } from './HowYouPlay';
 import { KeepReading } from './KeepReading';

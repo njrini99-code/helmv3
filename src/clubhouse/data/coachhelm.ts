@@ -375,7 +375,14 @@ export async function loadPlayerHelmGate(playerId: string): Promise<PlayerHelmGa
   return { status: 'off', reason };
 }
 
-/** The player's own CoachHelm. Their insights are their own, with or without a team. */
+/**
+ * RETIRED PAGE (owner, 2026-11-11): the loader of the player's old CoachHelm board, which no page draws any more. A player's
+ * CoachHelm is Your week, read by `loadPlayerYourWeek` (data/coachhelm-file.ts). Nothing calls this outside its tests; it is kept
+ * only because those tests also pin the helpers the surviving loaders share (the gate, `loadProposals`, `roundsToGo`). Do not
+ * build on it, and do not fix a page bug here.
+ *
+ * What it read: the player's own insights, with or without a team.
+ */
 export async function loadPlayerCoachHelm(input: { playerId: string }): Promise<ChPlayerHelm> {
   const supabase = await createClient();
   const noProposals: ChPlayerHelm['proposals'] = { list: [], error: false };

@@ -1,56 +1,17 @@
 'use client';
 
-import { useId, useState, type ReactNode } from 'react';
-import { Archive, Check, ChevronDown, ChevronRight, ChevronUp, Flag } from 'lucide-react';
+import { useState, type ReactNode } from 'react';
+import { Archive, Check, Flag } from 'lucide-react';
 import { ACTIVE_FOCUS_DUPLICATE_ERROR } from '@/lib/coachhelm/focus-areas/duplicate-guard';
-import { stanceOf, type ChBoardMissing, type ChHelmAssigned, type ChHelmEvidence, type ChInsight } from '../../data/coachhelm-shape';
-import { NARROWING_PREFIX, type ChPathLine } from '../../data/coachhelm-path';
+import { type ChBoardMissing, type ChHelmAssigned, type ChHelmEvidence, type ChInsight } from '../../data/coachhelm-shape';
 import { haptic } from '../../lib/haptics';
 import { normalise, useAction } from '../../lib/use-action';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { RefreshNotice } from '../../ui/RefreshNotice';
-import { SerifText } from '../../ui/SerifText';
 import { useToast } from '../../ui/Toast';
-import { CorrectionChips, ReadLater } from './Corrections';
-import { EngineState, WhyAudit } from './EngineState';
 import type { ChCoachHelmWrites } from './writes';
 import { LargeTitle } from '../../ui/LargeTitle';
-
-/**
- * The path line (design call D2): the card's second line, inside the card, in one fixed grammar: what was seen · count of
- * denominator · rounds · firmness word. Words only: no glyph, no percent of confidence. A narrowing the engine stored is drawn as
- * its steps ("175+ yd › long par 4s › short-right"), prefixed "Observed, not a cause:"; none is drawn when none was stored.
- */
-export function PathLine({ path }: { path: ChPathLine | null }) {
-  if (!path) return null;
-  return (
-    <div className={'ch-hl-path is-' + path.tier} data-ch-code="CH-13940">
-      <p className="ch-hl-path__l ch-num">
-        {[path.seen, path.count, path.rounds].filter(Boolean).join(' · ')}
-        {' · '}
-        <b>{path.firmness}</b>
-      </p>
-      {path.narrowing && (
-        <p className="ch-hl-path__n">
-          <span>{NARROWING_PREFIX}</span>
-          <span className="ch-hl-path__chips">
-            {path.narrowing.map((step, i) => (
-              <span key={step} className="ch-hl-path__chip">
-                {i > 0 && (
-                  <span className="ch-hl-path__sep" aria-hidden="true">
-                    ›
-                  </span>
-                )}
-                <span className="ch-hl-path__step">{step}</span>
-              </span>
-            ))}
-          </span>
-        </p>
-      )}
-    </div>
-  );
-}
 
 /** "Tour 0.3": a comparison that ends in its figure, split so the figure sits in the ledger's figure column like the read's own. */
 const LEDGER_FIGURE = /^(.+?)\s+([+\u2212]?\d[\d.,]*(?:%| yd| ft)?)$/;
@@ -114,135 +75,6 @@ export function Evidence({ ev, who }: { ev: ChHelmEvidence; who?: string }) {
         </div>
       )}
     </div>
-  );
-}
-
-/**
- * The one insight the page is about (helm3.jsx `Focus`): the category, the
- * claim, its path line (D2: the card's second line), its first sentence, the
- * evidence ledger, "This week" flush under it and "Why we think this".
- * Re-mounted per insight (key), so each opens with its reasoning closed.
- * CH-13804: the reasoning is a disclosure button that names what it controls.
- * Priority is the By player order, not a badge (D8 cuts the pill): the
- * eyebrow says where the read stands in a word only when that is news
- * (`eyebrowStance`).
- */
-export function FocusCard({ ins, who, assigned, defaultOpen = false }: { ins: ChInsight; who?: string; assigned?: ChHelmAssigned | null; defaultOpen?: boolean }) {
-  const [why, setWhy] = useState(defaultOpen);
-  const id = useId();
-  const cx = ins.engine?.corrections;
-  // Show later (coachhelm_corrections_v1): the read is held back, its title and when it comes back left in its place.
-  const [held, setHeld] = useState<number | null>(cx?.laterRounds ?? null);
-  return (
-    <article className="ch-hl-focus" aria-labelledby={`${id}-t`}>
-      {/* The claim. On the phone it is the screen's one green feature card (the Mobile clubhouse pass, 2026-10-08), and
-          the evidence, the drill and the reasoning sit flush under it; on desktop the wrapper draws nothing. */}
-      <div className="ch-hl-focus__head">
-        <p className="ch-hl-focus__k">{[who, ins.category, eyebrowStance(ins, assigned)].filter(Boolean).join(' · ')}</p>
-        <h2 id={`${id}-t`}>
-          <SerifText text={ins.title} />
-        </h2>
-        {held == null && <PathLine path={ins.path} />}
-        {held == null && ins.lede && <p className="ch-hl-lede ch-num">{ins.lede}</p>}
-      </div>
-      {held != null ? (
-        <ReadLater rounds={held} />
-      ) : (
-        <>
-          {/* CH-13903: a read from before the newest round is never drawn as current. */}
-          {ins.stale && (
-            <p className="ch-hl-stale" role="note" data-ch-code="CH-13903">
-              A round played {ins.stale.newestRound} isn’t in this read yet, so it may not match the rounds posted since.
-            </p>
-          )}
-          {/* What the engine now knows (each part only with its flag on): how sure, the cause, its status, its focus area's verdict. */}
-          <EngineState engine={ins.engine} />
-          {/* Desktop: the figures sit in a compact well with the drill and the reasoning beside it (fix wave 2026-11-11: a
-              two-row table ran 770px wide). On the phone both wrappers draw nothing and the card reads top to bottom as before. */}
-          <div className="ch-hl-evwhy">
-          <Evidence ev={ins.evidence} who={who} />
-          <div className="ch-hl-evwhy__side">
-          {/* This week, flush under the evidence: the second action, not a second card (the drill well is cut). */}
-          {ins.week && (
-            <div className="ch-hl-week">
-              <p className="ch-hl-week__t">
-                <span className="ch-hl-week__k">This week</span>
-                {ins.week.title && (
-                  <>
-                    {' '}
-                    <b>{ins.week.title}</b>
-                    {ins.week.meta && <em> · {ins.week.meta}</em>}
-                  </>
-                )}
-              </p>
-              {ins.week.text && <p>{ins.week.text}</p>}
-            </div>
-          )}
-          {ins.why && (
-            <>
-              <button type="button" className="ch-hl-why" onClick={() => setWhy((v) => !v)} aria-expanded={why} aria-controls={`${id}-why`}>
-                <span>Why we think this</span>
-                <Icon icon={why ? ChevronUp : ChevronDown} size={15} />
-              </button>
-              <p id={`${id}-why`} className="ch-hl-why__b ch-num" hidden={!why}>
-                {ins.why}
-              </p>
-            </>
-          )}
-          </div>
-          </div>
-          <WhyAudit lines={ins.engine?.audit} />
-        </>
-      )}
-      {/* The correction chips, under the audit (03 §7.2), only when the loader put them on the card. */}
-      {cx && <CorrectionChips c={cx} held={held} onHeld={setHeld} />}
-    </article>
-  );
-}
-
-/**
- * The stance in the eyebrow, as a word and never a pill: Priority for a high finding still open, and Working, Note, Out of date,
- * Assigned or Acknowledged (CH-13806: never colour alone). A medium or low finding says nothing: its place in the order says it.
- */
-function eyebrowStance(ins: ChInsight, assigned: ChHelmAssigned | null | undefined): string | null {
-  const stance = stanceOf(ins, assigned);
-  return stance.cls === 'medium' || stance.cls === 'low' ? null : stance.word;
-}
-
-/**
- * One row of "Also worth knowing" or "What’s working" (helm3.jsx `Row`). Choosing it
- * puts it in the focus card (CH-13701: a selection tap). CH-13803: one button
- * named for its category, title, value and priority. CH-13602: on desktop it
- * takes the Ledger row tint on hover (quick) and a deeper tint on press.
- */
-export function InsightRow({ ins, onPick }: { ins: ChInsight; onPick: () => void }) {
-  const stance = stanceOf(ins);
-  return (
-    <button
-      type="button"
-      className="ch-hl-row"
-      onClick={() => {
-        haptic('select');
-        onPick();
-      }}
-    >
-      <span className={'ch-hl-row__d is-' + stance.cls} aria-hidden="true" />
-      <span className="ch-hl-row__b">
-        <em>{ins.category}</em>
-        <b className="ch-num">{ins.title}</b>
-        <span className="ch-sr-only">{stance.word}</span>
-      </span>
-      <span className="ch-hl-row__v ch-num">
-        {ins.value}
-        {ins.value && ins.valueUnit && (
-          <>
-            {' '}
-            <small>{ins.valueUnit}</small>
-          </>
-        )}
-      </span>
-      <Icon icon={ChevronRight} size={15} />
-    </button>
   );
 }
 

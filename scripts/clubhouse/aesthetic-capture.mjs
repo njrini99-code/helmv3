@@ -93,8 +93,9 @@ export const FAMILIES = {
     page: 'P013',
     route: '/golf/dashboard/coachhelm',
     shots: [
-      { surface: 'insights', role: 'coach', state: 'assigned', url: '/clubhouse-preview/coachhelm?state=assigned' },
-      { surface: 'insights', role: 'player', state: 'default', url: '/clubhouse-preview/coachhelm-player' },
+      // The coach's Team page (the drawn hole) and the player's Your week: the older boards are retired (owner, 2026-11-11).
+      { surface: 'team', role: 'coach', state: 'default', url: '/clubhouse-preview/coachhelm-team' },
+      { surface: 'your-week', role: 'player', state: 'default', url: '/clubhouse-preview/coachhelm-player' },
       { surface: 'player-file', role: 'coach', state: 'default', url: '/clubhouse-preview/coachhelm-player-file' },
     ],
   },

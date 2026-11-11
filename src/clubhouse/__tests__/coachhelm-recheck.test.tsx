@@ -21,9 +21,7 @@ const refreshTeam = vi.hoisted(() => vi.fn());
 vi.mock('@/app/golf/actions/insights-coachhelm', () => ({ refreshTeamAnalysisAsCoach: refreshTeam }));
 
 import { COACHHELM_ENGINE_RATE_LIMITED } from '@/lib/auth/action-rate-limit-messages';
-import { PREVIEW_HELM_PLAYER } from '../preview/fixtures-coachhelm';
 import { RECHECK_DONE, RECHECK_FAILED, RECHECK_QUIET, RECHECK_RATE_LIMITED } from '../preview/fixtures-coachhelm-recheck';
-import { PlayerBoard } from '../screens/coachhelm/PlayerBoard';
 import { RecheckReads, recheckDoneLine, recheckRunningLabel } from '../screens/coachhelm/Recheck';
 import { LIVE_RECHECK_WRITES, type ChRecheckResult, type ChRecheckWrites } from '../screens/coachhelm/writes';
 import { ToastProvider } from '../ui/Toast';
@@ -55,12 +53,6 @@ describe('Re-check reads (CH-13944)', () => {
     expect(btn.className).toContain('ch-btn--secondary');
     expect(btn.className).not.toContain('ch-btn--primary');
     expect(code('CH-13944')).not.toBeNull();
-  });
-
-  it('CH-13944: a player never sees it', () => {
-    render(wrap(<PlayerBoard data={PREVIEW_HELM_PLAYER} />));
-    expect(screen.queryByRole('button', { name: /re-check/i })).toBeNull();
-    expect(code('CH-13944')).toBeNull();
   });
 
   it('CH-13406: running says how many players it is re-checking, and a second tap sends nothing', async () => {

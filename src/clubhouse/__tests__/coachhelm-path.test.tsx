@@ -1,5 +1,5 @@
-import { LazyMotion, domAnimation } from 'motion/react';
-import { cleanup, render } from '@testing-library/react';
+
+import { cleanup } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 /**
@@ -19,24 +19,10 @@ import type { InsightCause, InsightEvidence } from '@/lib/coachhelm/v2/insights/
 import { withoutPlaceholderCause } from '@/lib/coachhelm/reads/placeholder-cause';
 import { toChInsight } from '../data/coachhelm-map';
 import { NOT_TRACED_SHOT_BY_SHOT, pathLineFor, pathLineText } from '../data/coachhelm-path';
-import { PlayerBoard } from '../screens/coachhelm/PlayerBoard';
 import { HELM_PLAYERS, penalties, PREVIEW_TOUR, slope } from '../preview/fixtures-coachhelm';
 import { PREVIEW_HELM_COACH_FALLBACK, PREVIEW_HELM_COACH_NARROWING, PREVIEW_HELM_COACH_PATH } from '../preview/fixtures-coachhelm-path';
-import { ToastProvider } from '../ui/Toast';
 
 afterEach(cleanup);
-
-const wrap = (node: React.ReactNode) => (
-  <LazyMotion features={domAnimation}>
-    <ToastProvider>
-      <div className="ch-root" data-ui="clubhouse">
-        {node}
-      </div>
-    </ToastProvider>
-  </LazyMotion>
-);
-const card = () => document.querySelector('.ch-hl-focus') as HTMLElement;
-const path = () => card().querySelector('[data-ch-code="CH-13940"]') as HTMLElement | null;
 const flat = (t: string | null | undefined) => (t ?? '').replace(/\u00a0/g, ' ');
 const COACH = { role: 'coach', first: 'Eli' } as const;
 
@@ -131,14 +117,5 @@ describe('the path line (D2), from the stored evidence', () => {
     expect(withoutPlaceholderCause('You average 1.1. Penalties per Round is off its benchmark. Likely cause inferred from the aggregate, not a measured shot sequence. Keep going.')).toBe('You average 1.1. Keep going.');
     expect(withoutPlaceholderCause('Greens is off its benchmark — likely cause inferred from the aggregate, not a measured shot sequence')).toBe('');
     expect(withoutPlaceholderCause('Nothing to take out here.')).toBe('Nothing to take out here.');
-  });
-});
-
-describe('the coach Board, on screen', () => {
-
-  it('the player’s own board draws the same path line, in their voice, with no inferred cause', () => {
-    const mine = toChInsight(penalties(HELM_PLAYERS.jonah.id), { tour: PREVIEW_TOUR, viewer: { role: 'player' } });
-    render(wrap(<PlayerBoard data={{ off: null, proposals: { list: [], error: false }, insights: { list: [mine], error: false }, rounds: null }} />));
-    expect(flat(path()!.textContent)).toBe(`Penalties per round · 21 rounds · ${NOT_TRACED_SHOT_BY_SHOT}`);
   });
 });

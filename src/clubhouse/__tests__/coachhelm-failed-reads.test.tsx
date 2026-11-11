@@ -34,13 +34,12 @@ vi.mock('@/lib/coachhelm/v3/counterfactual/player-cohort-loader', () => ({ loadP
 import { isCoachHelmEnabledForCoach, isCoachHelmEnabledForPlayer } from '@/lib/coachhelm/v2/gate';
 import { getProgramPulse } from '@/lib/coachhelm/v3/chat/program-pulse';
 import { createClient } from '@/lib/supabase/server';
-import { loadCoachCoachHelm, loadPlayerCoachHelm } from '../data/coachhelm';
+import { loadCoachCoachHelm } from '../data/coachhelm';
 import { pulseLanded } from './coachhelm-pulse';
 import { loadAskCoachHelm } from '../data/coachhelm-chat';
 import { loadPlayerDeepDive } from '../data/coachhelm-dive';
 import { loadPlayerStanding } from '../data/coachhelm-standing';
-import { pulseItemsThatStand, pulseMissing, type ChCoachHelmData, type ChPlayerHelm, type ChPulse } from '../data/coachhelm-shape';
-import { PlayerBoard } from '../screens/coachhelm/PlayerBoard';
+import { pulseItemsThatStand, pulseMissing, type ChCoachHelmData, type ChPulse } from '../data/coachhelm-shape';
 import { DeepDive } from '../screens/coachhelm/views/DeepDive';
 import { Standing } from '../screens/coachhelm/views/Standing';
 import { AskHomeV2 } from '../screens/coachhelm/chat/Home';
@@ -151,63 +150,6 @@ describe('the coach’s board, with a read beside the top card failed', () => {
       expect(pulseItemsThatStand(items, ['events']).map((i) => i.id)).not.toContain('prep-gap');
       expect(pulseMissing(['events', 'attendance', 'rounds', 'signals'])).toEqual(['schedule', 'rounds']);
     });
-  });
-});
-
-// ── The player's board and Deep dive ───────────────────────────────────────
-
-describe('the player’s board, with a read beside the cards failed', () => {
-  const p1 = jonah.id;
-  const top = refreshedOn(slope(p1), '2026-09-28T02:30:43Z');
-  const tablesOf = (over: Record<string, unknown> = {}) =>
-    ({
-      golf_team_members: { data: { team_id: 't1', golf_teams: { gender: 'mens' } } },
-      golf_pga_standards: { data: [{ metric_id: 'penalty_rate_per_round', pga_tour_value: 0.3 }] },
-      golf_drills: { data: [{ id: 'dr-ladder', description: 'Start 2 ft below the hole.' }] },
-      golf_player_focus_areas: { data: [] },
-      golf_rounds: { data: [countable(p1, '2026-09-30')] },
-      ...over,
-    }) as typeof tables.current;
-  const show = (d: ChPlayerHelm) => render(wrap(<PlayerBoard data={d} />));
-  beforeEach(() => {
-    vi.mocked(isCoachHelmEnabledForPlayer).mockResolvedValue({ ...on });
-    delivery.feed.mockResolvedValue([top, bigNumber(p1, 'in-dbl')]);
-    tables.current = tablesOf();
-  });
-
-  it('every read landing marks nothing missing', async () => {
-    const d = await loadPlayerCoachHelm({ playerId: p1 });
-    expect(d.missing).toBeUndefined();
-    show(d);
-    expect(code('CH-13208')).toBeNull();
-  });
-
-  it('CH-13208 each read failing, in turn, is said on the board: the drills, which cards have a focus, how current each is, the Tour', async () => {
-    const cases: Array<[string, Record<string, unknown>, RegExp]> = [
-      ['drills', { golf_drills: { error: { message: 'boom' } } }, /drill text is missing/],
-      ['assigned', { golf_player_focus_areas: { error: { message: 'boom' } } }, /already have a focus could not be checked/],
-      ['newest', { golf_rounds: { error: { message: 'boom' } } }, /may be out of date/],
-      ['tour', { golf_pga_standards: { error: { message: 'boom' } } }, /Tour comparison unavailable/],
-    ];
-    for (const [key, over, said] of cases) {
-      cleanup();
-      tables.current = tablesOf(over);
-      const d = await loadPlayerCoachHelm({ playerId: p1 });
-      expect(d.insights.error, key).toBe(false);
-      expect(d.missing, key).toMatchObject({ [key]: true });
-      show(d);
-      expect(code('CH-13208')?.textContent, key).toMatch(said);
-    }
-  });
-
-  it('CH-13208 a team read that failed is the Tour unavailable as well as the proposals not loading (CH-13205), never "no comparison"', async () => {
-    tables.current = tablesOf({ golf_team_members: { error: { message: 'boom' } } });
-    const d = await loadPlayerCoachHelm({ playerId: p1 });
-    expect(d.proposals.error).toBe(true);
-    expect(d.missing).toMatchObject({ tour: true });
-    show(d);
-    expect(code('CH-13205')).not.toBeNull();
-    expect(code('CH-13208')?.textContent).toMatch(/Tour comparison unavailable/);
   });
 });
 
