@@ -695,7 +695,9 @@ export default async function ClubhousePreview({
       <ClubhouseFrame
         userData={screen === 'coachhelm-player' || screen === 'coachhelm-views' ? { ...PREVIEW_PLAYER_USER, name: 'Jonah Okafor' } : user}
         // &round=1: the player has a round in progress (P001-C1: the dock's Resume accessory, the sidebar's card).
-        shell={{ ...PREVIEW_SHELL, ...(round ? { roundInProgress: PREVIEW_ROUND_IN_PROGRESS } : {}), ...(qc ? { askAvailable: true } : {}) }}
+        // Tournaments is in the menu here as it is in the app (golf_tournaments_v1 is on in every environment; the dashboard layout
+        // sets the same field): the Team group, after Qualifiers, for coaches and players. Without it the preview's menu had no way in.
+        shell={{ ...PREVIEW_SHELL, tournaments: true, ...(round ? { roundInProgress: PREVIEW_ROUND_IN_PROGRESS } : {}), ...(qc ? { askAvailable: true } : {}) }}
         pathname={entry.path}
         // The preview's own query, as the live shell hands the frame the address's: `&section=` and a coach's `&player=` decide the phone bar (CH-1402).
         search={new URLSearchParams(Object.entries(await searchParams).filter((kv): kv is [string, string] => typeof kv[1] === 'string')).toString()}
