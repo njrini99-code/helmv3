@@ -205,27 +205,70 @@ export async function claimForExecution(
   return { kind: 'claimed', run_id: (claimed as { id: string }).id };
 }
 
-/** Record that the coach declined. Kept as evidence, not discarded. */
+/** Record that the coach declined (or asked something else instead). Kept as evidence, not discarded. False when the row could not be updated. */
 export async function recordDenial(
   sb: Sb,
   args: { coach_id: string; idempotency_key: string },
-): Promise<void> {
-  await fromUntyped(sb, TABLE)
+): Promise<boolean> {
+  const { error } = await fromUntyped(sb, TABLE)
     .update({ status: 'denied', decided_at: new Date().toISOString() })
     .eq('coach_id', args.coach_id)
     .eq('idempotency_key', args.idempotency_key)
     .in('status', ['proposed']);
+  return !error;
 }
 
-/** Record the outcome. The receipt is stored so a retry can return it verbatim. */
+/**
+ * What the ledger holds for a proposal the rebuilt engine recorded (`proposed_input`). `proposal` is the plan the coach
+ * was shown and the one `commit` is given. `resume` is only written on a database without the model-message columns:
+ * the turn's own model messages and decision state, so Confirm still continues the same turn there.
+ */
+export interface StoredProposal {
+  v: 2;
+  input: unknown;
+  proposal: unknown;
+  resume?: unknown;
+}
+
+export const isStoredProposal = (value: unknown): value is StoredProposal =>
+  Boolean(value) && typeof value === 'object' && (value as { v?: unknown }).v === 2 && 'proposal' in (value as object);
+
+/** One ledger row by its key, the coach's own. Null when there is none or it could not be read. */
+export async function readRun(
+  sb: Sb,
+  args: { coach_id: string; idempotency_key: string },
+): Promise<{ id: string; status: ActionRunStatus; tool_name: string; proposed_input: unknown; result: ActionReceipt | null } | null> {
+  const { data, error } = await fromUntyped(sb, TABLE)
+    .select('id, status, tool_name, proposed_input, result')
+    .eq('coach_id', args.coach_id)
+    .eq('idempotency_key', args.idempotency_key)
+    .maybeSingle();
+  if (error || !data) return null;
+  return data as unknown as { id: string; status: ActionRunStatus; tool_name: string; proposed_input: unknown; result: ActionReceipt | null };
+}
+
+/** Replace what a still-undecided row holds (the resume state of its turn). Only a `proposed` row is touched. */
+export async function updateProposedInput(
+  sb: Sb,
+  args: { coach_id: string; idempotency_key: string; proposed_input: StoredProposal },
+): Promise<boolean> {
+  const { error } = await fromUntyped(sb, TABLE)
+    .update({ proposed_input: args.proposed_input as never })
+    .eq('coach_id', args.coach_id)
+    .eq('idempotency_key', args.idempotency_key)
+    .eq('status', 'proposed');
+  return !error;
+}
+
+/** Record the outcome. The receipt is stored so a retry can return it verbatim. False when the row could not be updated: the caller logs it, because the write itself has happened. */
 export async function recordOutcome(
   sb: Sb,
   args: {
     run_id: string;
     receipt: ActionReceipt;
   },
-): Promise<void> {
-  await fromUntyped(sb, TABLE)
+): Promise<boolean> {
+  const { error } = await fromUntyped(sb, TABLE)
     .update({
       status: args.receipt.status === 'failed' ? 'failed' : 'completed',
       result: args.receipt as never,
@@ -235,6 +278,7 @@ export async function recordOutcome(
       completed_at: new Date().toISOString(),
     })
     .eq('id', args.run_id);
+  return !error;
 }
 
 /**
