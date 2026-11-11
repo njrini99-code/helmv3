@@ -198,6 +198,15 @@ describe('get_rounds: the Rounds page\'s list, with the adding up done here', ()
     const expected = Math.round((list.filter((r) => r.playerId === ELI && r.countable && r.holes === 18).reduce((s, r) => s + r.score, 0) / 20) * 10) / 10;
     expect(eli?.avg_score).toBe(expected);
     expect(out.measurements.find((m) => m.entity.id === ELI)).toMatchObject({ value: expected, sample_size: 20, source: 'Rounds page' });
+    // The Rounds page's season line counts practice rounds; the Roster's season average does not. The read says which this is, when it gives it.
+    const season = textOf(out).split('\n').find((line) => line.startsWith('This season'));
+    if (season) expect(season).toMatch(/every round type with practice rounds included: .*The season scoring average that leaves practice out is get_season's\.$/);
+  });
+
+  it('labels the Rounds page\'s season line as every round type, and points to get_season for the season average', async () => {
+    const page = roundsPage([roundRow(1), roundRow(2)]);
+    const out = await tool().run(ctxFor(coach, { teamRounds: async () => ({ ...page, season: { ...page.season, rounds: 2, players: 1, avg: 73.5, underPar: 0, best: null } }) }), { list: 10 });
+    expect(textOf(out)).toMatch(/This season \(since [^)]+\), as the Rounds page shows it, every round type with practice rounds included: 2 full rounds by 1 player, average 73\.5, 0 under par\. The season scoring average that leaves practice out is get_season's\./);
   });
 
   it('never lists a round of someone who is not on the roster', async () => {
@@ -222,13 +231,19 @@ describe('get_season and get_qualifiers: the screen\'s own figures and order', (
     expect((await read<{ compare_last_season: boolean }>(coach, 'get_season').run(ctxFor(coach, { roster: async () => ({ ...roster, statsError: true }) }), { compare_last_season: false })).coverage).toBe('unavailable');
   });
 
-  it('a qualifier board keeps the board\'s order and says who is a round short', async () => {
-    const board: QualifierBoardScreen = { id: 'q1', name: 'Fall qualifier', status: 'in_progress', selectionState: 'open', startDate: '2026-09-25', endDate: '2026-09-26', numRounds: 2, squad: 5, picks: 1, entrants: 3, board: { rows: [{ playerId: MAYA, name: 'Maya Ortiz', position: 1, tied: false, played: 2, toPar: 3, total: 147, avg: 73.5, shortRounds: 0, state: 'qualifying' }, { playerId: ELI, name: 'Eli Brandt', position: 2, tied: false, played: 1, toPar: -1, total: 71, avg: 71, shortRounds: 1, state: null }], unscored: [{ playerId: NOAH, name: 'Noah Kim' }] }, selections: null, entriesError: false, roundsError: false };
+  it('a qualifier board keeps the board\'s order and says who has fewer rounds than the leaders', async () => {
+    const board: QualifierBoardScreen = { id: 'q1', name: 'Fall qualifier', status: 'in_progress', selectionState: 'open', startDate: '2026-09-25', endDate: '2026-09-26', numRounds: 2, squad: 5, picks: 1, entrants: 3, board: { rows: [{ playerId: MAYA, name: 'Maya Ortiz', position: 1, tied: false, played: 2, toPar: 3, total: 147, avg: 73.5, shortRounds: 0, state: 'qualifying' }, { playerId: ELI, name: 'Eli Brandt', position: 2, tied: false, played: 1, toPar: -1, total: 71, avg: 71, shortRounds: 0, state: null }], unscored: [{ playerId: NOAH, name: 'Noah Kim' }] }, selections: null, entriesError: false, roundsError: false };
     const qualifierBoard = vi.fn(async () => board);
     const out = await read<{ qualifier_id?: string; limit: number }>(coach, 'get_qualifiers').run(ctxFor(coach, { qualifierBoard }), { qualifier_id: '00000000-0000-4000-8000-00000000aaaa', limit: 5 });
     // Eli is under par but a round short: the board ranks him below the full card, and so does the read.
     expect((out.detail as { standings: Array<{ player: string; position: string }> }).standings.map((s) => [s.player, s.position])).toEqual([['Maya Ortiz', '1'], ['Eli Brandt', '2']]);
-    expect(textOf(out)).toContain('1 short, ranked below full cards');
+    expect(textOf(out)).toContain('Eli Brandt: -1 to par, 71 strokes over 1 round (fewer rounds than the leaders, so ranked below every complete card)');
+    expect(textOf(out)).not.toMatch(/Maya Ortiz: [^\n]*ranked below/);
+    expect((out.detail as { standings: Array<{ fewer_rounds_than_leaders: boolean }> }).standings.map((s) => s.fewer_rounds_than_leaders)).toEqual([false, true]);
+    // The board's `shortRounds` is a different fact (a counted round that was not 18 holes) and is said as that, never as a missed round.
+    const nine = { ...board, board: { ...board.board!, rows: board.board!.rows.map((r) => (r.playerId === MAYA ? { ...r, shortRounds: 1 } : r)) } };
+    const withNine = textOf(await read<{ qualifier_id?: string; limit: number }>(coach, 'get_qualifiers').run(ctxFor(coach, { qualifierBoard: async () => nine }), { qualifier_id: '00000000-0000-4000-8000-00000000aaaa', limit: 5 }));
+    expect(withNine).toContain('Maya Ortiz: +3 to par, 147 strokes over 2 rounds (1 of the rounds not 18 holes)');
     expect(textOf(out)).toContain('No score yet: Noah Kim');
     expect((await read<{ qualifier_id?: string; limit: number }>(coach, 'get_qualifiers').run(ctxFor(coach, { qualifierBoard: async () => ({ ...board, roundsError: true }) }), { qualifier_id: '00000000-0000-4000-8000-00000000aaaa', limit: 5 })).coverage).toBe('unavailable');
   });

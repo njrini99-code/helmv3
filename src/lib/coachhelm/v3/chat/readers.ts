@@ -10,6 +10,7 @@ import { z } from 'zod';
 import type { ReadTool, ToolContext, ToolResult } from './engine/tool';
 import { compareSeasons } from './engine-reads';
 import { nowIso, type Measurement, type ToolEnvelope } from './provenance';
+import { boardOrder } from '../qualifying/ranking';
 import { TEAM_FIGURES_KEY } from './read-tools';
 import { empty, failed, nameOf, ownOr, ownOrOne, part, playerOf, round, say, teamOf, together, withText } from './reader-kit';
 import { screenLoaders, STATS_WINDOWS, type PlayerStatsScreen, type StatsComparisonRow, type StatsWindow, type TeamRoundRow } from './screen-loaders';
@@ -378,7 +379,7 @@ async function runRounds(ctx: ToolContext, input: RoundsInput): Promise<ToolResu
   const lines = [
     `${scope}: ${list.length} rounds (${days[0]} to ${days[days.length - 1]}), ${counted.length} of them full rounds that count in an average. Source: Rounds page.`,
     pooled === null ? null : `Average of those ${counted.length} rounds: ${say(pooled, '', 1)}.`,
-    whole && page.season.avg !== null ? `This season (since ${page.seasonStart}), as the Rounds page shows it: ${page.season.rounds} rounds by ${page.season.players} players, average ${say(page.season.avg, '', 1)}, ${page.season.underPar} under par${page.season.best ? `, best ${page.season.best.score} by ${page.season.best.player} at ${page.season.best.course}` : ''}.` : null,
+    whole && page.season.avg !== null ? `This season (since ${page.seasonStart}), as the Rounds page shows it, every round type with practice rounds included: ${page.season.rounds} full rounds by ${page.season.players} ${page.season.players === 1 ? 'player' : 'players'}, average ${say(page.season.avg, '', 1)}, ${page.season.underPar} under par${page.season.best ? `, best ${page.season.best.score} by ${page.season.best.player} at ${page.season.best.course}` : ''}. The season scoring average that leaves practice out is get_season's.` : null,
     'Per player, lowest average first:',
     ...per.map((p) => `  ${p.player}: ${p.rounds} rounds, ${p.counted} full rounds counted${p.avg_score === null ? ', no average' : `, average score ${p.avg_score}`}${p.avg_to_par === null ? '' : `, average to par ${say(p.avg_to_par, '', 1, true)}`}${p.avg_putts === null ? '' : `, average putts ${p.avg_putts}`}${p.best === null ? '' : `, best ${p.best}`} [player ${p.player_id}]`),
     shown.length ? `Newest ${shown.length} of ${list.length}:` : null,
@@ -477,20 +478,24 @@ async function runQualifiers(ctx: ToolContext, input: QualifiersInput): Promise<
     if (!q) return failed('that qualifier', 'It could not be read, or it is not one of this team\'s.');
     if (q.entriesError || q.roundsError || !q.board) return failed(`the board for ${q.name}`, 'The entries or rounds could not be read.');
     const rows = q.board.rows;
+    // The board's own rule (`qualifying/ranking.ts`): a card with fewer rounds than the most anyone has played ranks below every complete
+    // card. The row's `shortRounds` is something else: how many of the player's counted rounds were not 18 holes.
+    const behind = boardOrder(rows).short;
+    const cardNote = (r: (typeof rows)[number]) => [behind(r) ? 'fewer rounds than the leaders, so ranked below every complete card' : null, r.shortRounds > 0 ? `${r.shortRounds} of the rounds not 18 holes` : null].filter(Boolean).join('; ') || null;
     const picked = new Map((q.selections ?? []).map((s) => [s.playerId, s]));
     return withText(
       {
         summary: `${q.name}: the board, ${rows.length} with a score.`,
-        measurements: rows.flatMap((r) => (r.toPar === null ? [] : [{ metric_id: 'qualifier_to_par', metric_label: 'Qualifier total to par', unit: 'score' as const, value: r.toPar, entity: { kind: 'player' as const, id: r.playerId, label: r.name }, window_start: q.startDate, window_end: q.endDate, sample_size: r.played, sample_unit: 'rounds' as const, as_of: nowIso(), coverage: 'complete' as const, coverage_note: r.shortRounds > 0 ? `${r.shortRounds} round short` : null, source: 'Qualifiers board', method: 'board_order', denominator: null, benchmark: null, direction: 'lower_better' as const }])),
+        measurements: rows.flatMap((r) => (r.toPar === null ? [] : [{ metric_id: 'qualifier_to_par', metric_label: 'Qualifier total to par', unit: 'score' as const, value: r.toPar, entity: { kind: 'player' as const, id: r.playerId, label: r.name }, window_start: q.startDate, window_end: q.endDate, sample_size: r.played, sample_unit: 'rounds' as const, as_of: nowIso(), coverage: 'complete' as const, coverage_note: cardNote(r), source: 'Qualifiers board', method: 'board_order', denominator: null, benchmark: null, direction: 'lower_better' as const }])),
         series: [],
-        detail: { qualifier_id: q.id, name: q.name, status: q.status, selection: q.selectionState, rounds_planned: q.numRounds, squad: q.squad, coach_picks: q.picks, entrants: q.entrants, standings: rows.map((r) => ({ position: r.position === null ? null : `${r.tied ? 'T' : ''}${r.position}`, player_id: r.playerId, player: r.name, rounds: r.played, total: r.total, to_par: r.toPar, avg_score: r.avg === null ? null : round(r.avg, 1), rounds_short: r.shortRounds, state: r.state, selected: picked.get(r.playerId)?.type ?? null, reason: picked.get(r.playerId)?.reasoning ?? null })), no_score_yet: q.board.unscored.map((u) => u.name) },
+        detail: { qualifier_id: q.id, name: q.name, status: q.status, selection: q.selectionState, rounds_planned: q.numRounds, squad: q.squad, coach_picks: q.picks, entrants: q.entrants, standings: rows.map((r) => ({ position: r.position === null ? null : `${r.tied ? 'T' : ''}${r.position}`, player_id: r.playerId, player: r.name, rounds: r.played, total: r.total, to_par: r.toPar, avg_score: r.avg === null ? null : round(r.avg, 1), fewer_rounds_than_leaders: behind(r), rounds_not_18_holes: r.shortRounds, state: r.state, selected: picked.get(r.playerId)?.type ?? null, reason: picked.get(r.playerId)?.reasoning ?? null })), no_score_yet: q.board.unscored.map((u) => u.name) },
         coverage: 'complete',
         coverage_note: null,
         as_of: nowIso(),
       },
       [
         `${q.name} (${q.status}, ${q.startDate}${q.endDate ? ` to ${q.endDate}` : ''}): ${q.numRounds} rounds, squad of ${q.squad} with ${q.picks} coach picks, ${q.entrants} entered. In the board's own order. Source: Qualifiers board.`,
-        ...rows.map((r) => `  ${r.position === null ? '-' : `${r.tied ? 'T' : ''}${r.position}`} ${r.name}: ${r.toPar === null ? 'no total' : `${say(r.toPar, '', 0, true)} to par, ${r.total} strokes`} over ${r.played} rounds${r.shortRounds > 0 ? ` (${r.shortRounds} short, ranked below full cards)` : ''}${r.state ? `, ${r.state}` : ''}${picked.has(r.playerId) ? `, selected (${picked.get(r.playerId)!.type === 'coach_pick' ? 'coach pick' : 'on score'}${picked.get(r.playerId)!.reasoning ? `: ${picked.get(r.playerId)!.reasoning}` : ''})` : ''} [player ${r.playerId}]`),
+        ...rows.map((r) => `  ${r.position === null ? '-' : `${r.tied ? 'T' : ''}${r.position}`} ${r.name}: ${r.toPar === null ? 'no total' : `${say(r.toPar, '', 0, true)} to par, ${r.total} strokes`} over ${r.played} ${r.played === 1 ? 'round' : 'rounds'}${cardNote(r) ? ` (${cardNote(r)})` : ''}${r.state ? `, ${r.state}` : ''}${picked.has(r.playerId) ? `, selected (${picked.get(r.playerId)!.type === 'coach_pick' ? 'coach pick' : 'on score'}${picked.get(r.playerId)!.reasoning ? `: ${picked.get(r.playerId)!.reasoning}` : ''})` : ''} [player ${r.playerId}]`),
         q.board.unscored.length ? `No score yet: ${q.board.unscored.map((u) => u.name).join(', ')}.` : null,
       ],
     );
