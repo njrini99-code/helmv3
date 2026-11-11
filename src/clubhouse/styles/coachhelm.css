@@ -2138,3 +2138,12 @@ html:not([data-fw-theme='dark']) .ch-hl {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* A short CoachHelm page (an empty Monday brief, an empty Track record) still fills the workspace: its sheet runs to the
+   foot of the window instead of stopping under a few lines with the frame's grey below it (fix wave 2026-11-11). The
+   28px is the frame's inset above and below the sheet and the gap under the top bar. */
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
+  .ch-hl[data-canopy]:is(.ch-hmb, .ch-htr) {
+    min-height: calc(100dvh - var(--ch-topbar-h) - 28px);
+  }
+}
