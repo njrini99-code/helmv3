@@ -1,24 +1,36 @@
 /**
- * Live evaluation of CoachHelm Ask against STAGING data. Run by hand; never in CI. It costs money.
+ * Live evaluation of CoachHelm chat against STAGING data. Run by hand; never in CI. It costs money.
  *
  *   node scripts/coachhelm/ask-eval.mjs                       dry run: computes every expected answer from staging
- *                                                             by plain queries (free), prints the plan and a cost estimate
+ *                                                             by plain queries (free), prints the plan and a cost estimate.
+ *                                                             No model is called and nothing is written.
  *   node scripts/coachhelm/ask-eval.mjs --apply               asks the questions on the dev server and scores the answers
  *
- * Why it calls the dev server over HTTP instead of the turn function: the route is where the grounding audit, the
+ * Why it calls the dev server over HTTP instead of the turn function: the route is where the gates, the budget, the
  * conversation, the tools' Supabase client (RLS as the real coach or player) and the player branch all live. A direct call
  * would have to rebuild those and could pass while the route fails. The cost is a signed-in session, which --apply mints
  * for the staging coach and for Cole Bennett (a magic-link token via the admin API, no email sent), or takes from --cookie.
  *
- * Each question carries an expected answer computed independently of Ask: the facts (numbers, names, dates, phrases it
- * must state) and anything it must not say. A fact is `correct` when the answer states it (numbers within rounding; a
- * figure written without its minus sign counts), `wrong` when the answer states a different value where the fact's
- * `claim` pattern finds one, and `missing` otherwise. The verdict is the route's own: accepted, rejected (the grounding
- * audit withheld the answer) or incomplete (the stream broke). A rejected turn whose stored text has every fact right is a
- * wrong rejection. The report lists those first.
+ * It speaks the chat's wire protocol (src/lib/coachhelm/v3/chat/engine/protocol.ts): one POST per question,
+ * `{ conversation_id: null, client_turn_id, surface: 'ask', message }` for the coach and `{ client_turn_id, message }` for the
+ * player, and the answer comes back as server-sent `ChatEvent`s. Each question is its own new conversation.
  *
- * Writes: staging conversation and ledger rows (what any Ask turn writes), a magic-link token on the demo coach's and Cole
- * Bennett's auth users (the sign-in, unless --cookie is given; no email is sent), and the markdown report. Nothing else.
+ * Two sets of questions:
+ *   data        an expected answer computed here, independently of the chat: the facts (numbers, names, dates, phrases it must
+ *               state) and anything it must not say. A fact is `correct` when the answer states it (numbers within rounding; a
+ *               figure written without its minus sign counts), `wrong` when the answer states a different value where the fact's
+ *               `claim` pattern finds one, and `missing` otherwise.
+ *   golf-sense  src/lib/coachhelm/v3/chat/knowledge/eval/golf-sense.json: whether a figure is read the way a coach's analyst
+ *               would read it. No figure is expected; each answer passes or fails on meaning, and on the reads it used.
+ * Every answer, from either set, is also held to the writing rules of that file, in a column of its own.
+ *
+ * The verdict is the engine's own: complete, card (stopped at a card waiting for Confirm), declined, failed, stopped or
+ * incomplete (the stream ended without saying how). No answer is withheld, so there is no "rejected": whether a complete
+ * answer's figures all matched its reads is the ledger's `verified`, reported beside the verdict.
+ *
+ * Writes (only with --apply): staging conversation and ledger rows (what any chat turn writes), a magic-link token on the demo
+ * coach's and Cole Bennett's auth users (the sign-in, unless --cookie is given; no email is sent), and the markdown report.
+ * Nothing else: no question is a decision, so no card is ever confirmed and no task runs.
  * The report defaults to the OS temp dir: pass --out <file> to put it elsewhere.
  * Never run against production: it refuses unless the Supabase URL is the staging project.
  */
@@ -30,32 +42,39 @@ import { config } from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
 import { createServerClient } from '@supabase/ssr';
 import { cliGuard } from '../lib/cli-guard.mjs';
-import { readFileSync, statSync } from 'node:fs';
-import { applyStreamLine, captureFixture, citationsFromLedger, citationsFromLog, citesFromLog, newStreamState, score, summariseLogSlice } from './ask-eval-score.mjs';
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { answerText, applyEvent, captureFixture, eventReader, golfSenseQuestions, newTurnState, reportLines, score, scoreSense, verdictOf, writingRules } from './ask-eval-score.mjs';
 import { fetchAllRows } from './fetch-all-rows.mjs';
 
 const STAGING_REF = 'ybmwektreyrwjscxlogv';
 const DEMO_TEAM_ID = '6ecdd1a6-63fe-4beb-b094-00118f334163';
 const DEFAULT_BASE = 'http://localhost:3100';
 const FALLBACK_TURN_COST_USD = 0.12;
+const DEFAULT_MAX_USD = 25;
+const GOLF_SENSE_FILE = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', 'src/lib/coachhelm/v3/chat/knowledge/eval/golf-sense.json');
 
 const cli = cliGuard({
   name: 'scripts/coachhelm/ask-eval.mjs',
   summary:
-    'Ask CoachHelm Ask ~21 real questions on the local dev server against the staging demo team, score each answer against an expected answer computed from staging data, and write a markdown report. Dry run by default (free); --apply spends model budget.',
-  usage: '[--base-url <url>] [--only <id,id>] [--out <file>] [--server-log <file>] [--capture-dir <dir>] [--cookie <header>] [--player-cookie <header>] [--list]',
+    'Ask CoachHelm chat about 100 real questions on the local dev server against the staging demo team (the data questions, scored against an expected answer computed from staging data, and the golf-sense questions), and write a markdown report. Dry run by default (free, no model call); --apply spends model budget.',
+  usage: '[--env-file <file>] [--base-url <url>] [--set data|golf-sense|all] [--only <id,id>] [--max-usd <n>] [--names key=Name,...] [--out <file>] [--capture-dir <dir>] [--cookie <header>] [--player-cookie <header>] [--list]',
   options: [
-    ['--base-url <url>', `Dev server (default ${DEFAULT_BASE}). It must run on the staging env and have Clubhouse on for the demo team.`],
+    ['--base-url <url>', `Dev server (default ${DEFAULT_BASE}). It must run on the staging env, with ANTHROPIC_API_KEY, CoachHelm on for the demo team and a daily budget that covers the run.`],
+    ['--env-file <file>', 'The staging env file to read (default: .env.local in the current directory). It must name the staging project, or the script refuses.'],
+    ['--set <name>', 'Which questions: data, golf-sense, or all (default all).'],
     ['--only <ids>', 'Comma-separated question ids (see --list).'],
+    ['--max-usd <n>', `Stop asking once the ledger says this much was spent, or the next turn could pass it (default ${DEFAULT_MAX_USD}). The report covers what ran.`],
+    ['--names <pairs>', 'Override a golf-sense placeholder: player=Full Name,player2=...,new_player=...,no_shots_player=...,teammate=... (the dry run prints the ones it picked).'],
     ['--out <file>', 'Report path (default: <tmpdir>/ask-eval-<random>/ask-eval-<timestamp>.md, a directory made for this run).'],
-    ['--capture-dir <dir>', "Also write each turn as a replay-suite fixture (JSON: question, answer text, the reads' envelopes, tool calls, verdict) to <dir>/<question id>.json. A player's turn is stored nowhere else until HM3. Copy the files you want into src/lib/coachhelm/v3/chat/__tests__/fixtures/ask-turns-player/ and label them."],
-    ['--server-log <file>', "The dev server's log. An accepted turn's citation counts (cited, verified, unresolved, mismatched, invalid) exist only in its v3.chat.stream.citations event; a rejected turn's are in the ledger."],
+    ['--capture-dir <dir>', "Also write each turn as a replay-suite fixture (JSON: question, answer text, the reads' envelopes, the reads by name, verdict) to <dir>/<question id>.json. A player's turn is stored nowhere else until HM3. Copy the files you want into src/lib/coachhelm/v3/chat/__tests__/fixtures/ask-turns-player/ and label them."],
     ['--cookie <header>', 'Cookie header of a signed-in demo coach (or ASK_EVAL_COOKIE). Skips the magic-link sign-in.'],
     ['--player-cookie <header>', 'Cookie header of a signed-in Cole Bennett (or ASK_EVAL_PLAYER_COOKIE).'],
     ['--list', 'Print the question ids and exit.'],
   ],
   writes: true,
-  secrets: '.env.local in the current directory (staging URL, anon key, service key); never printed',
+  secrets: '--env-file, or .env.local in the current directory (staging URL, publishable key, service key); never printed',
 });
 
 const argv = process.argv.slice(2);
@@ -64,13 +83,13 @@ const flag = (name) => {
   return i >= 0 ? argv[i + 1] : undefined;
 };
 
-config({ path: join(process.cwd(), '.env.local'), quiet: true });
+config({ path: flag('--env-file') ?? join(process.cwd(), '.env.local'), quiet: true });
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 const ref = url ? new URL(url).hostname.split('.')[0] : '';
 if (ref !== STAGING_REF || !serviceKey) {
-  console.error(`Refusing to run: NEXT_PUBLIC_SUPABASE_URL must be the staging project (${STAGING_REF}). Got "${ref || 'none'}".`);
+  console.error(`Refusing to run: NEXT_PUBLIC_SUPABASE_URL must be the staging project (${STAGING_REF}) and SUPABASE_SERVICE_ROLE_KEY must be set. Got project "${ref || 'none'}". Pass --env-file <a staging env file>.`);
   process.exit(1);
 }
 const sb = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
@@ -446,9 +465,61 @@ function buildQuestions() {
   return q;
 }
 
-const questions = buildQuestions();
+// ------------------------- the golf-sense questions -------------------------
+
+// Which of a player's rounds have logged shots: the two placeholders below are about that. Read in pages, a hundred rounds at a
+// time (a longer id list does not fit in the request line).
+const scoringIds = roster.flatMap((p) => scoring(p.id).map((r) => r.id));
+const shotRounds = new Set();
+for (let i = 0; i < scoringIds.length; i += 100) {
+  const ids = scoringIds.slice(i, i + 100);
+  for (const row of await fetchAllRows((from, to) => sb.from('golf_shots').select('id, round_id').in('round_id', ids).order('id', { ascending: true }).range(from, to), 'shots')) shotRounds.add(row.round_id);
+}
+const tracked = (pid) => scoring(pid).filter((r) => shotRounds.has(r.id)).length;
+const byRounds = roster.filter((p) => scoring(p.id).length > 0).sort((a, b) => scoring(b.id).length - scoring(a.id).length || a.name.localeCompare(b.name));
+const trackers = byRounds.filter((p) => tracked(p.id) >= 3);
+const overrides = Object.fromEntries((flag('--names') ?? '').split(',').filter(Boolean).map((pair) => pair.split('=').map((x) => x.trim())));
+/** Who stands in each placeholder: two players with shot-tracked rounds, one who has just started tracking, one who never logs shots, and a teammate of the player who asks. */
+const names = {
+  player: (trackers[0] ?? byRounds[0])?.name,
+  player2: (trackers[1] ?? byRounds[1])?.name,
+  new_player: byRounds.find((p) => tracked(p.id) >= 1 && tracked(p.id) < 3)?.name,
+  no_shots_player: byRounds.find((p) => tracked(p.id) === 0)?.name,
+  teammate: byRounds.find((p) => p.name !== 'Cole Bennett')?.name,
+  ...overrides,
+};
+for (const key of Object.keys(names)) if (!names[key]) delete names[key];
+const sense = JSON.parse(readFileSync(GOLF_SENSE_FILE, 'utf8'));
+// The team's own names as they are stored, which the writing rules hold an answer to: the roster, the courses its rounds were played
+// on, and its competitions ("the fall invitational" fails where the record says "Fall Invitational"). Only competitions: a practice
+// or a meeting is titled in everyday words ("Practice"), and holding an answer to their capitals would fail the word itself.
+const namesOf = async (table, column, only) =>
+  (await fetchAllRows((from, to) => only(sb.from(table).select(`id, ${column}`).eq('team_id', DEMO_TEAM_ID)).order('id', { ascending: true }).range(from, to), table)).map((row) => row[column]);
+const eventNames = [
+  ...(await namesOf('golf_events', 'title', (q) => q.in('event_type', ['tournament', 'qualifier', 'match']))),
+  ...(await namesOf('golf_qualifiers', 'name', (q) => q)),
+  ...(await namesOf('golf_tournaments', 'name', (q) => q)),
+];
+const stored = { people: roster.map((p) => p.name), places: [...new Set([...real.map((r) => r.course_name), ...eventNames].map((n) => String(n ?? '').trim()).filter(Boolean))] };
+const writing = writingRules(sense, stored);
+const senseQuestions = golfSenseQuestions(sense, names, stored);
+
+const which = flag('--set') ?? 'all';
+if (!['data', 'golf-sense', 'all'].includes(which)) {
+  console.error(`--set must be data, golf-sense or all. Got "${which}".`);
+  process.exit(1);
+}
+const questions = [...(which === 'golf-sense' ? [] : buildQuestions()), ...(which === 'data' ? [] : senseQuestions)];
 const only = flag('--only')?.split(',');
-const picked = only ? questions.filter((x) => only.includes(x.id)) : questions;
+const wanted = only ? questions.filter((x) => only.includes(x.id)) : questions;
+// A question whose placeholder has nobody to stand in it is not asked: it would test nothing.
+const skipped = wanted.filter((x) => x.unfilled?.length);
+const picked = wanted.filter((x) => !x.unfilled?.length);
+const maxUsd = Number(flag('--max-usd') ?? DEFAULT_MAX_USD);
+if (!Number.isFinite(maxUsd) || maxUsd <= 0) {
+  console.error('--max-usd must be a positive number.');
+  process.exit(1);
+}
 
 if (argv.includes('--list')) {
   for (const x of questions) console.log(`${x.id.padEnd(34)} ${x.category.padEnd(11)} ${x.viewer}  ${x.ask}`);
@@ -471,12 +542,17 @@ for (const x of picked) {
   console.log(`- ${x.id} [${x.category}, ${x.viewer}] ${x.ask}`);
   for (const f of x.facts) console.log(`    expects ${f.label}${f.optional ? ' (optional)' : ''}`);
   for (const f of x.forbid ?? []) console.log(`    forbids ${f.label}`);
+  if (x.golfSense) console.log(`    reads ${x.readers.length ? x.readers.join(' or ') : 'none needed'}${x.style?.max_sentences ? `; at most ${x.style.max_sentences} sentences` : ''}`);
 }
-console.log(`\nCost estimate: ${picked.length} turns x about $${median.toFixed(2)} (median of ${history.length} past staging turns; p90 $${p90.toFixed(2)}) = about $${(picked.length * median).toFixed(2)}, up to $${(picked.length * p90).toFixed(2)}.`);
+if (which !== 'data') console.log(`\nGolf-sense names: ${Object.entries(names).map(([k, v]) => `{${k}} = ${v}`).join(', ') || 'none'}. Override with --names.`);
+for (const x of skipped) console.log(`not asked: ${x.id} (nobody on the staging roster fits {${x.unfilled.join('}, {')}}; name one with --names)`);
+console.log(`Every answer is also held to ${writing.length} writing rules (${writing.map((r) => r.pattern).join(', ')}).`);
+console.log(`Names an answer must write as stored: the ${stored.people.length} players, and ${stored.places.length} courses and competitions (${stored.places.slice(0, 12).join('; ')}${stored.places.length > 12 ? '; ...' : ''}).`);
+console.log(`\nCost estimate: ${picked.length} turns x about $${median.toFixed(2)} (median of ${history.length} past staging turns, which ran on the previous engine; p90 $${p90.toFixed(2)}) = about $${(picked.length * median).toFixed(2)}, up to $${(picked.length * p90).toFixed(2)}. It stops at $${maxUsd.toFixed(2)} (--max-usd).`);
 console.log(`Time estimate: ${Math.round((picked.length * 45) / 60)} to ${Math.round((picked.length * 90) / 60)} minutes (one question at a time).`);
-console.log(`It uses the dev server at ${base} (must run on this staging env with Clubhouse on for the demo team) and writes staging conversation rows.`);
+console.log(`It uses the dev server at ${base} (must run on this staging env, with ANTHROPIC_API_KEY, CoachHelm on for the demo team and a daily budget that covers the run) and writes staging conversation rows.`);
 if (!cli.apply) {
-  console.log('\n[dry-run] nothing was asked. Re-run with --apply to run it.');
+  console.log('\n[dry-run] nothing was asked and no model was called. Re-run with --apply to run it.');
   process.exit(0);
 }
 
@@ -508,156 +584,111 @@ const playerCookie = wantsPlayer ? flag('--player-cookie') ?? process.env.ASK_EV
 
 async function readStream(res) {
   const decoder = new TextDecoder();
-  let buffer = '';
-  const state = newStreamState();
-  for await (const chunk of res.body) {
-    buffer += decoder.decode(chunk, { stream: true });
-    let nl;
-    while ((nl = buffer.indexOf('\n')) >= 0) {
-      applyStreamLine(state, buffer.slice(0, nl));
-      buffer = buffer.slice(nl + 1);
-    }
-  }
-  applyStreamLine(state, buffer);
+  const read = eventReader();
+  const state = newTurnState();
+  for await (const chunk of res.body) for (const ev of read(decoder.decode(chunk, { stream: true }))) applyEvent(state, ev);
   return state;
 }
 
-async function ledgerCost(viewerKey, id, since) {
+async function ledgerRows(viewerKey, id, since) {
   await new Promise((r) => setTimeout(r, 2500));
-  const rows = must(await sb.from('golf_coachhelm_llm_calls').select('cost_usd, verified, citations').eq(viewerKey, id).gte('created_at', since).order('created_at', { ascending: false }).limit(5), 'ledger row');
+  const rows = must(await sb.from('golf_coachhelm_llm_calls').select('cost_usd, verified, citations, model_id, prompt_tokens, completion_tokens').eq(viewerKey, id).gte('created_at', since).order('created_at', { ascending: false }).limit(5), 'ledger row');
   return { cost: rows.reduce((a, r) => a + Number(r.cost_usd ?? 0), 0), rows };
 }
 
 const captureDir = flag('--capture-dir');
-const serverLogPath = flag('--server-log');
-// Read again for every question: the dev server keeps appending to it.
-const readServerLog = () => (serverLogPath ? readFileSync(serverLogPath, 'utf8') : null);
 const report = [];
-for (const question of picked) {
-  const cookie = question.viewer === 'player' ? playerCookie : coachCookie;
-  const startedAt = new Date();
-  const t0 = Date.now();
-  const logStart = serverLogPath ? statSync(serverLogPath).size : 0;
-  let verdict;
-  let text = '';
-  let note = '';
-  let conversationId = null;
-  let flagged = [];
-  let tools = [];
-  let citations = null;
-  let state = newStreamState();
-  try {
-    const res = await fetch(`${base}/api/coachhelm/v3/chat/stream`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', cookie },
-      body: JSON.stringify({ messages: [{ id: randomUUID(), role: 'user', parts: [{ type: 'text', text: question.ask }] }], client_turn_id: randomUUID() }),
-    });
-    conversationId = res.headers.get('x-conversation-id');
-    if (!res.ok) {
-      note = `HTTP ${res.status}: ${(await res.text()).slice(0, 200)}`;
+let spent = 0;
+let dearest = median;
+let stoppedBecause = '';
+// Whatever goes wrong part-way, the answers already paid for are still written to the report.
+try {
+  for (const question of picked) {
+    if (spent + dearest > maxUsd) {
+      stoppedBecause = `Stopped before ${question.id}: $${spent.toFixed(2)} spent and the next turn could pass the $${maxUsd.toFixed(2)} cap (--max-usd).`;
+      break;
+    }
+    const cookie = question.viewer === 'player' ? playerCookie : coachCookie;
+    const startedAt = new Date();
+    const t0 = Date.now();
+    let verdict;
+    let text = '';
+    let note;
+    let state = newTurnState();
+    try {
+      const res = await fetch(`${base}/api/coachhelm/v3/chat/stream`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', cookie },
+        body: JSON.stringify(question.viewer === 'player' ? { client_turn_id: randomUUID(), message: question.ask } : { conversation_id: null, client_turn_id: randomUUID(), surface: 'ask', message: question.ask }),
+      });
+      if (!res.ok) {
+        const refusal = await res.json().catch(() => ({}));
+        note = `HTTP ${res.status}: ${String(refusal.error ?? '').slice(0, 200)}${refusal.kind ? ` (${refusal.kind})` : ''}`;
+        verdict = 'error';
+        // These two stop the run: every later question would be refused the same way.
+        if (res.status === 401) stoppedBecause = `Stopped at ${question.id}: the server at ${base} did not accept the staging sign-in (HTTP 401). It is not running on the staging env.`;
+        else if (res.status === 429 && (refusal.kind === 'budget' || refusal.kind === 'off')) stoppedBecause = `Stopped at ${question.id}: the ${question.viewer}'s daily budget is spent or off on the server (HTTP 429, ${refusal.kind}). Raise COACHHELM_DEFAULT_DAILY_BUDGET_USD in the dev server's env for the run.`;
+      } else {
+        state = await readStream(res);
+        state.conversationId ??= res.headers.get('x-conversation-id');
+        text = answerText(state);
+        verdict = verdictOf(state);
+        note = state.error ? `${state.error}${state.errorKind ? ` (${state.errorKind})` : ''}` : '';
+      }
+    } catch (err) {
       verdict = 'error';
-    } else {
-      const streamed = await readStream(res);
-      text = streamed.text;
-      tools = streamed.tools;
-      state = streamed;
-      if (streamed.flag) {
-        verdict = 'rejected';
-        flagged = streamed.flag.unmatched_tokens ?? [];
-      } else if (streamed.incomplete || streamed.error) {
-        verdict = 'incomplete';
-        note = streamed.error ?? '';
-      } else verdict = 'accepted';
+      note = err instanceof Error ? err.message : String(err);
     }
-  } catch (err) {
-    verdict = 'error';
-    note = err instanceof Error ? err.message : String(err);
-  }
-  const seconds = (Date.now() - t0) / 1000;
-
-  // A coach's rejected or broken turn keeps the text it would have shown, in the stored row.
-  if (question.viewer === 'coach' && conversationId && verdict !== 'accepted' && verdict !== 'error') {
-    const row = must(await sb.from('golf_coachhelm_chat_messages').select('content, ui_parts').eq('conversation_id', conversationId).eq('role', 'assistant').order('created_at', { ascending: false }).limit(1), 'stored turn')[0];
-    if (row?.content) text = row.content.replace(/\n*_Some figures[\s\S]*$/, '');
-    const flag = (row?.ui_parts ?? []).find((p) => p?.type === 'data-grounding-flag');
-    if (flag?.data?.unmatched_tokens) flagged = flag.data.unmatched_tokens;
-  }
-  // A player's answer is never withheld; the ledger says whether the audit found anything.
-  let cost = 0;
-  try {
-    const ledger = await ledgerCost(question.viewer === 'player' ? 'player_id' : 'coach_id', question.viewer === 'player' ? byName('Cole Bennett').id : coach.id, startedAt.toISOString());
-    cost = ledger.cost;
-    citations = citationsFromLedger(ledger.rows[0]);
-    if (question.viewer === 'player' && ledger.rows[0] && ledger.rows[0].verified === false) {
-      verdict = 'rejected';
-      flagged = ledger.rows[0].citations?.unmatched_tokens ?? [];
+    const seconds = (Date.now() - t0) / 1000;
+    if (stoppedBecause) {
+      report.push({ question, verdict, text, seconds, cost: 0, scored: null, sense: null, note, tools: [], grounded: null, model: null });
+      break;
     }
-  } catch (err) {
-    note += ` ledger: ${err instanceof Error ? err.message : err}`;
+  
+    let cost = 0;
+    let grounded = null;
+    let unmatched = [];
+    let model = null;
+    try {
+      const ledger = await ledgerRows(question.viewer === 'player' ? 'player_id' : 'coach_id', question.viewer === 'player' ? byName('Cole Bennett').id : coach.id, startedAt.toISOString());
+      cost = ledger.cost;
+      spent += cost;
+      dearest = Math.max(dearest, cost);
+      // The figures-against-reads check, which only logs: false means a figure in the answer was in none of the turn's reads.
+      grounded = ledger.rows[0] ? ledger.rows[0].verified !== false : null;
+      unmatched = ledger.rows[0]?.citations?.unmatched_tokens ?? [];
+      model = [...new Set(ledger.rows.map((r) => r.model_id).filter(Boolean))].join(' + ') || null;
+    } catch (err) {
+      note += ` ledger: ${err instanceof Error ? err.message : err}`;
+    }
+    const answered = verdict !== 'error' && text.trim() !== '';
+    // The data questions are scored on their facts; the golf-sense questions on meaning and reads; every answer on the writing rules.
+    const scored = answered && !question.golfSense ? score(question, text) : null;
+    const sense = answered ? scoreSense(question.golfSense ? question : { readers: [] }, text, state.tools, writing) : null;
+    report.push({ question, verdict, text, seconds, cost, scored, sense, note, tools: state.tools, failedReads: state.failedReads, grounded, unmatched, model });
+    if (captureDir && verdict !== 'error') {
+      const who = question.viewer === 'player' ? [byName('Cole Bennett')] : roster;
+      const fixture = captureFixture({
+        id: `${question.viewer}-${question.id}`, surface: question.viewer, team: team.name, timezone: team.timezone,
+        roster: who.map((p) => ({ id: p.id, name: p.name, first_name: p.first, last_name: p.name.slice(p.first.length).trim() || null })),
+        ask: question.ask, askedAt: startedAt.toISOString(), answeredAt: new Date().toISOString(), text, state, cost, base, cites: null,
+        // The fixture's words are the replay suite's: accepted, or rejected with why.
+        verdict: verdict !== 'complete' ? 'incomplete' : grounded === false ? 'rejected' : 'accepted', flagged: unmatched,
+      });
+      mkdirSync(captureDir, { recursive: true });
+      writeFileSync(join(captureDir, `${fixture.id}.json`), `${JSON.stringify(fixture, null, 1)}\n`);
+    }
+    const marks = question.golfSense ? `sense ${sense ? (sense.sense.pass ? 'pass' : 'FAIL') : '-'}  reads ${sense ? (sense.reads.pass ? 'ok' : 'FAIL') : '-'}` : `correct ${scored?.correct ?? '-'} wrong ${scored?.wrong ?? '-'} missing ${scored?.missing ?? '-'}`;
+    console.log(`${verdict.padEnd(10)} ${question.id.padEnd(34)} ${marks}  writing ${sense ? (sense.writing.pass ? 'pass' : 'FAIL') : '-'}  ${seconds.toFixed(1)}s  $${cost.toFixed(3)}  (total $${spent.toFixed(2)})`);
   }
-  const serverLog = readServerLog();
-  if (!citations && serverLog) citations = citationsFromLog(serverLog, conversationId);
-  const logged = serverLog ? summariseLogSlice(Buffer.from(serverLog).subarray(logStart).toString()) : null;
-  // Final-pass counts: the last [ask:citations] line of the question (a repair prints a second one).
-  const finalCounts = logged?.citationLines.at(-1) ?? null;
-  const repairRan = Boolean(state.repair) || (logged?.repairActions ?? 0) > 0 || (logged?.citationLines.length ?? 0) > 1;
-  const path = verdict === 'accepted' ? (repairRan ? 'repaired' : 'first pass') : verdict === 'error' ? 'error' : repairRan ? 'rejected after repair' : verdict;
-  const scored = verdict === 'error' ? null : score(question, text);
-  report.push({ question, verdict, text, flagged, seconds, cost, scored, note, tools, citations, logged, finalCounts, repairRan, path });
-  if (captureDir && verdict !== 'error') {
-    const who = question.viewer === 'player' ? [byName('Cole Bennett')] : roster;
-    const fixture = captureFixture({
-      id: `${question.viewer}-${question.id}`, surface: question.viewer, team: team.name, timezone: team.timezone,
-      roster: who.map((p) => ({ id: p.id, name: p.name, first_name: p.first, last_name: p.name.slice(p.first.length).trim() || null })),
-      ask: question.ask, askedAt: startedAt.toISOString(), answeredAt: new Date().toISOString(), text, state, verdict, flagged, cost, base,
-      cites: serverLog ? citesFromLog(serverLog, text, question.viewer, conversationId) : null,
-    });
-    mkdirSync(captureDir, { recursive: true });
-    writeFileSync(join(captureDir, `${fixture.id}.json`), `${JSON.stringify(fixture, null, 1)}\n`);
-  }
-  console.log(`${path.padEnd(22)} ${question.id}  ${citations ? `cites ${citations.cites}/ok ${citations.verified}/mismatch ${citations.mismatched}  ` : ''}correct ${scored?.correct ?? '-'} wrong ${scored?.wrong ?? '-'} missing ${scored?.missing ?? '-'}  ${seconds.toFixed(1)}s  $${cost.toFixed(3)}`);
+} catch (err) {
+  stoppedBecause = `Stopped after ${report.length} questions: ${err instanceof Error ? err.message : String(err)}`;
 }
+if (stoppedBecause) console.log(`\n${stoppedBecause}`);
 
 // ------------------------- report -------------------------
 
-const count = (fn) => report.filter(fn).length;
-const wrongRejections = report.filter((r) => r.verdict === 'rejected' && r.scored?.allRight);
-const wrongAccepts = report.filter((r) => r.verdict === 'accepted' && r.scored && !r.scored.allRight);
-const lines = [];
-lines.push(`# Ask evaluation, ${new Date().toISOString()}`, '');
-lines.push(`Server ${base}, staging ${ref}, team ${team.name}. ${report.length} questions, total cost $${report.reduce((a, r) => a + r.cost, 0).toFixed(2)}, total time ${report.reduce((a, r) => a + r.seconds, 0).toFixed(0)}s.`, '');
-lines.push(`Verdicts: accepted ${count((r) => r.verdict === 'accepted')}, rejected ${count((r) => r.verdict === 'rejected')}, incomplete ${count((r) => r.verdict === 'incomplete')}, error ${count((r) => r.verdict === 'error')}.`);
-const coachTurns = report.filter((r) => r.question.viewer === 'coach' && r.finalCounts);
-const sum = (k) => coachTurns.reduce((a, r) => a + Number(r.finalCounts[k] ?? 0), 0);
-lines.push(`Paths: first pass ${count((r) => r.path === 'first pass')}, repaired ${count((r) => r.path === 'repaired')}, rejected after repair ${count((r) => r.path === 'rejected after repair')}, rejected without repair ${count((r) => r.path === 'rejected')}. Repair ran on ${count((r) => r.repairRan)} questions.`);
-if (coachTurns.length) lines.push(`Cite coverage over ${coachTurns.length} coach turns (final pass): ${sum('cited')} of ${sum('figures')} figures cited (${sum('figures') ? ((100 * sum('cited')) / sum('figures')).toFixed(1) : 'n/a'}%), ${sum('fallback_passed')} passed by the text heuristics, ${sum('cites')} cites: ${sum('verified')} verified, ${sum('unresolved')} unresolved, ${sum('mismatched')} mismatched, ${sum('invalid')} invalid.`);
-lines.push(`Fully right answers: ${count((r) => r.scored?.allRight)} of ${report.length}. Wrong rejections (rejected, every fact right): ${wrongRejections.length}. Accepted but not fully right: ${wrongAccepts.length}.`, '');
-lines.push('| Question | Category | Viewer | Path | Verdict | Correct | Wrong | Missing | Time | Cost | Cited | Verified | Unresolved | Mismatched | Invalid | summarise_data |', '|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|');
-for (const r of report) lines.push(`| ${r.question.id} | ${r.question.category} | ${r.question.viewer} | ${r.path} | ${r.verdict} | ${r.scored?.correct ?? '-'} | ${r.scored?.wrong ?? '-'} | ${r.scored?.missing ?? '-'} | ${r.seconds.toFixed(1)}s | $${r.cost.toFixed(3)} | ${r.citations ? `${r.citations.cited} | ${r.citations.verified} | ${r.citations.unresolved} | ${r.citations.mismatched} | ${r.citations.invalid}` : 'n/a | n/a | n/a | n/a | n/a'} | ${r.tools.includes('summarise_data') ? 'yes' : 'no'} |`);
-lines.push('', "Citation counts: a rejected turn's are read from the ledger; an accepted turn's only from the server log (pass --server-log), otherwise n/a. Cited = figures a verified cite stood for; Verified, Unresolved, Mismatched and Invalid count the cites by outcome.");
-if (wrongRejections.length) {
-  lines.push('', '## Wrong rejections', '');
-  for (const r of wrongRejections) lines.push(`- ${r.question.id}: flagged ${JSON.stringify(r.flagged)}`);
-}
-if (wrongAccepts.length) {
-  lines.push('', '## Accepted but not fully right', '');
-  for (const r of wrongAccepts) lines.push(`- ${r.question.id}: ${r.scored.results.filter((x) => x.status !== 'correct' && !x.optional).map((x) => `${x.status} ${x.label}${x.detail ? ` (${x.detail})` : ''}`).join('; ')}`);
-}
-lines.push('', '## Per question', '');
-for (const r of report) {
-  lines.push(`### ${r.question.id} (${r.verdict})`, '', `Q: ${r.question.ask}`, '');
-  if (r.question.note) lines.push(`Note: ${r.question.note}`, '');
-  if (r.note) lines.push(`Run note: ${r.note}`, '');
-  if (r.flagged.length) lines.push(`Audit flagged: ${JSON.stringify(r.flagged)}`, '');
-  if (r.tools.length) lines.push(`Tools: ${r.tools.join(', ')}`, '');
-  if (r.citations) lines.push(`Citations: ${JSON.stringify(r.citations)}`, '');
-  if (r.repairRan) {
-    const first = r.logged?.citationLines[0];
-    lines.push(`Repair ran (${r.path}). First pass, from the dev log: ${first ? `${first.figures} figures, ${first.cited} cited, ${first.fallback_passed} by heuristics, ${first.cites} cites (${first.verified} verified, ${first.unresolved} unresolved, ${first.mismatched} mismatched)` : 'no [ask:citations] line'}. Cites not verified: ${r.logged?.notVerified.length ? r.logged.notVerified.map((c) => `${c.v} ${c.key} for ${c.subject}: ${c.status}${c.why ? ` (${c.why})` : ''}`).join('; ') : 'none logged'}. The dev logger does not print the refused figures; they are in the withheld first answer only.`, '');
-  }
-  for (const x of r.scored?.results ?? []) lines.push(`- ${x.status}${x.optional ? ' (optional)' : ''}: ${x.label}${x.detail ? ` [${x.detail}]` : ''}`);
-  lines.push('', '> ' + (r.text.trim().replace(/\n/g, '\n> ') || '(no text)'), '');
-}
+const lines = reportLines({ report, asked: picked.length, skipped: skipped.map((x) => x.id), base, ref, team: team.name, maxUsd, stoppedBecause, at: new Date().toISOString() });
 // The default lands in a directory this run creates for itself (random name, owner-only): a fixed path under the shared temp dir is
 // one another local user could put a link at first. With --out the caller chose the place, and its directory is made if missing.
 const chosen = flag('--out');

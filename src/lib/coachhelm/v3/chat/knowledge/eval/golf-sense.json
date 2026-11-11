@@ -77,19 +77,19 @@
    "why": "Treats a scorecard estimate as a measured gap to the Tour."
   },
   "sample_notation": {
-   "re": "\\b[nN]\\s?[=:−–-]\\s?\\d|\\(\\s?[nN]\\s?[=:]?\\s?\\d+\\s?\\)|\\(\\d+\\s?(?:rds?|r)\\)|\\bsample size\\s?[:=]",
+   "re": "\\b[nN]\\s?[=:−–-]\\s?\\d|\\(\\s?[nN]\\s?[=:]?\\s?\\d+\\s?\\)|\\(\\d+\\s?(?:rds?|r)\\)|\\bsample size\\s?[:=]|(?<=[A-Za-z%\\d])\\s?\\(\\d{1,3}\\)",
    "flags": "",
-   "why": "The sample written as notation (n=4, N-4, (n 4)). Say it in words: over 4 rounds."
+   "why": "The sample written as notation (n=4, N-4, (n 4), a bare count in brackets). Say it in words: over 4 rounds."
   },
   "heading_or_table": {
-   "re": "^\\s{0,3}#{1,6}\\s|^\\s*\\*\\*[^*\\n]{1,60}\\*\\*:?\\s*$|^[A-Z][A-Z0-9 :&/-]{5,}$|^(?:[A-Z][a-z]+:? ){2,}[A-Z][a-z]+:?\\s*$|^\\s*\\|.+\\|\\s*$",
+   "re": "^\\s{0,3}#{1,6}\\s|^\\s*\\*\\*[^*\\n]{1,60}\\*\\*:?\\s*$|^[A-Z][A-Z0-9 :&/-]{5,}$|^(?:[A-Z][a-z]+:? ){2,}[A-Z][a-z]+:?\\s*$|^\\s*\\|.+\\|\\s*$|^\\s*(?:[-*•]\\s+|\\d+[.)]\\s+)?\\*\\*[^*\\n]{1,60}(?::\\*\\*|\\*\\*:)",
    "flags": "m",
-   "why": "A heading (markdown, bold line, ALL CAPS or Title Case) or a table. An answer is a few plain sentences."
+   "why": "A heading (markdown, bold line, ALL CAPS or Title Case), a bold label at the start of a line or list item (\"- **Overall:** ...\"), or a table. An answer is a few plain sentences."
   },
   "abbreviation": {
-   "re": "\\b(?:SG|GIR|FIR|FW|OTT|ARG|APP|T2G|UD|HCP|YTD|avg|pct|vs|yds?|rds?|approx|stdev)\\b|\\bw/|\\d\\+?\\s?(?:ft|yd)\\b|\\b(?:ft|yd)\\b\\.?",
+   "re": "\\b(?:SG|GIR|FIR|FW|OTT|ARG|APP|T2G|UD|HCP|YTD|avg|pct|vs|yds?|rds?|approx|stdev)\\b|\\bw/|\\d\\+?\\s?(?:ft|yd)\\b|\\b(?:ft|yd)\\b\\.?|\\bL\\d{1,2}\\b",
    "flags": "",
-   "why": "An abbreviation a coach would not say aloud (SG, GIR, avg, vs, yds, ft). Write strokes gained, greens in regulation, average, against, and a distance in words: from 3 to 5 feet, inside 10 feet, 281 yards."
+   "why": "An abbreviation a coach would not say aloud (SG, GIR, avg, vs, yds, ft, L10). Write strokes gained, greens in regulation, average, against, last 10 rounds, and a distance in words: from 3 to 5 feet, inside 10 feet, 281 yards."
   },
   "wrong_case": {
    "re": "Strokes Gained|Greens [Ii]n Regulation|Scoring Average|Fairways Hit|Putts Per Round|Make Rate|Off [Tt]he Tee|Around [Tt]he Green|\\b(?:the|against|PGA|LPGA) tour\\b",
@@ -105,6 +105,16 @@
    "re": "\\b(?:pga|Pga|lpga|Lpga|ncaa|Ncaa|naia|Naia|njcaa|Njcaa)\\b|\\b(?:PGA|LPGA|Pga|Lpga) tour\\b|\\bdivision (?:i{1,3}|[1-3])\\b",
    "flags": "",
    "why": "A proper noun not capitalised as it is written: PGA Tour, LPGA Tour, NCAA, Division I, and a player's, course's or event's name exactly as the team's records have it. The harness adds the team's own names (see properNounPattern)."
+  },
+  "ascii_minus": {
+   "re": "(?<![\\w−–-])-\\d",
+   "flags": "",
+   "why": "A hyphen for a minus sign (-0.31). The reads give a real minus sign (−0.31): copy the figure as it is."
+  },
+  "numeric_date": {
+   "re": "\\b\\d{4}-\\d{2}-\\d{2}\\b|\\b\\d{1,2}/\\d{1,2}/\\d{2,4}\\b",
+   "flags": "",
+   "why": "A date as digits (2026-05-18, 5/18/26). Say it as a coach would: 18 May, between 18 May and 21 October."
   }
  },
  "questions": [
@@ -150,7 +160,10 @@
      "pattern": "tour_figure_from_memory"
     }
    ],
-   "note": "Direction of strokes gained and what it is measured against here."
+   "note": "Direction of strokes gained and what it is measured against here.",
+   "style": {
+    "max_sentences": 6
+   }
   },
   {
    "id": "sg-where-are-the-strokes",
@@ -233,7 +246,10 @@
     }
    ],
    "forbid": [],
-   "note": "App definition (SOURCES A1)."
+   "note": "App definition (SOURCES A1).",
+   "style": {
+    "max_sentences": 6
+   }
   },
   {
    "id": "sg-total-vs-areas",
@@ -320,7 +336,10 @@
     }
    ],
    "forbid": [],
-   "note": "App definition (SOURCES A1): hole-based estimate when no shots are logged."
+   "note": "App definition (SOURCES A1): hole-based estimate when no shots are logged.",
+   "style": {
+    "max_sentences": 6
+   }
   },
   {
    "id": "sg-vs-tour-meaning",
@@ -358,7 +377,10 @@
      "pattern": "tour_figure_from_memory"
     }
    ],
-   "note": "The same definition for a player, with no teammate comparison."
+   "note": "The same definition for a player, with no teammate comparison.",
+   "style": {
+    "max_sentences": 6
+   }
   },
   {
    "id": "putts-misleading",
@@ -445,7 +467,10 @@
      "pattern": "label"
     }
    ],
-   "note": "Fairways ignore distance and how bad the miss was."
+   "note": "Fairways ignore distance and how bad the miss was.",
+   "style": {
+    "max_sentences": 6
+   }
   },
   {
    "id": "scrambling-read",
@@ -550,9 +575,9 @@
    ],
    "facts": [
     {
-     "label": "names a distance band from the read, in words (from 5 to 10 feet, inside 5 feet, 25 feet and out)",
+     "label": "names a distance band from the read, in words (from 5 to 10 feet, inside 5 feet, 25 feet and beyond)",
      "kind": "phrase",
-     "re": "\\b(?:from|inside|within|beyond|outside|over|past)\\s+\\d+(?:\\s+(?:to|and)\\s+\\d+)?\\s+(?:feet|yards)\\b|\\b\\d+\\s+(?:to|and)\\s+\\d+\\s+(?:feet|yards)\\b|\\b\\d+\\s+(?:feet|yards)\\s+(?:and|or)\\s+(?:out|in|more|longer|closer)\\b",
+     "re": "\\b(?:from|inside|within|beyond|outside|over|past)\\s+\\d+(?:\\s+(?:to|and)\\s+\\d+)?\\s+(?:feet|yards)\\b|\\b\\d+\\s+(?:to|and)\\s+\\d+\\s+(?:feet|yards)\\b|\\b\\d+\\s+(?:feet|yards)\\s+(?:and|or)\\s+(?:beyond|out|in|more|longer|closer|farther|further)\\b",
      "flags": "i"
     },
     {
@@ -590,7 +615,10 @@
      "pattern": "tour_figure_from_memory"
     }
    ],
-   "note": "A lower-is-better stat."
+   "note": "A lower-is-better stat.",
+   "style": {
+    "max_sentences": 6
+   }
   },
   {
    "id": "proximity-compare-bands",
@@ -620,7 +648,10 @@
      "pattern": "swing_diagnosis"
     }
    ],
-   "note": "Compare a band only with the same band."
+   "note": "Compare a band only with the same band.",
+   "style": {
+    "max_sentences": 6
+   }
   },
   {
    "id": "penalties-cost",
@@ -734,7 +765,10 @@
      "pattern": "teammate_named"
     }
    ],
-   "note": "A negative to par is under par."
+   "note": "A negative to par is under par.",
+   "style": {
+    "max_sentences": 6
+   }
   },
   {
    "id": "consistency",
@@ -786,7 +820,10 @@
      "pattern": "tour_figure_from_memory"
     }
    ],
-   "note": "The research finding, stated without a figure unless get_reference returned one."
+   "note": "The research finding, stated without a figure unless get_reference returned one.",
+   "style": {
+    "max_sentences": 6
+   }
   },
   {
    "id": "few-greens-scrambling",
@@ -848,7 +885,10 @@
      "pattern": "weather_guess"
     }
    ],
-   "note": "One bad round is an event."
+   "note": "One bad round is an event.",
+   "style": {
+    "max_sentences": 6
+   }
   },
   {
    "id": "back-nine-fade",
@@ -884,7 +924,10 @@
      "pattern": "label"
     }
    ],
-   "note": "Front and back nines are on the round rows; averaging them is summarise_data's job."
+   "note": "Front and back nines are on the round rows; averaging them is summarise_data's job.",
+   "style": {
+    "max_sentences": 6
+   }
   },
   {
    "id": "trend-small-change",
@@ -967,7 +1010,10 @@
      "pattern": "label"
     }
    ],
-   "note": "Easy to get backwards."
+   "note": "Easy to get backwards.",
+   "style": {
+    "max_sentences": 6
+   }
   },
   {
    "id": "career-vs-window",
@@ -991,7 +1037,10 @@
      "pattern": "label"
     }
    ],
-   "note": "SOURCES B4: the stats cache counts practice rounds; Stats does not."
+   "note": "SOURCES B4: the stats cache counts practice rounds; Stats does not.",
+   "style": {
+    "max_sentences": 6
+   }
   },
   {
    "id": "team-format",
@@ -1131,7 +1180,10 @@
     }
    ],
    "forbid": [],
-   "note": "Nothing is final until the coach confirms."
+   "note": "Nothing is final until the coach confirms.",
+   "style": {
+    "max_sentences": 6
+   }
   },
   {
    "id": "home-course",
@@ -1166,7 +1218,10 @@
      "pattern": "weather_guess"
     }
    ],
-   "note": "Home and away, and course difficulty."
+   "note": "Home and away, and course difficulty.",
+   "style": {
+    "max_sentences": 6
+   }
   },
   {
    "id": "rating-slope",
@@ -1214,7 +1269,10 @@
      "pattern": "weather_guess"
     }
    ],
-   "note": "Do not explain a round by weather nobody recorded."
+   "note": "Do not explain a round by weather nobody recorded.",
+   "style": {
+    "max_sentences": 6
+   }
   },
   {
    "id": "season-start",
@@ -1254,7 +1312,10 @@
     }
    ],
    "forbid": [],
-   "note": "App definition (SOURCES A3)."
+   "note": "App definition (SOURCES A3).",
+   "style": {
+    "max_sentences": 6
+   }
   },
   {
    "id": "nine-hole-rounds",
@@ -1271,7 +1332,10 @@
     }
    ],
    "forbid": [],
-   "note": "App definition (SOURCES A2)."
+   "note": "App definition (SOURCES A2).",
+   "style": {
+    "max_sentences": 6
+   }
   },
   {
    "id": "total-only",
@@ -1381,7 +1445,10 @@
      "pattern": "label"
     }
    ],
-   "note": "How to tell whether it worked; early if few rounds since."
+   "note": "How to tell whether it worked; early if few rounds since.",
+   "style": {
+    "max_sentences": 6
+   }
   },
   {
    "id": "how-fast",
@@ -1458,7 +1525,10 @@
      "pattern": "body_or_medical"
     }
    ],
-   "note": "No medical guess. Driving distance needs logged tee shots."
+   "note": "No medical guess. Driving distance needs logged tee shots.",
+   "style": {
+    "max_sentences": 6
+   }
   },
   {
    "id": "clutch",
@@ -1482,7 +1552,10 @@
      "pattern": "label"
     }
    ],
-   "note": "The measure, not the label."
+   "note": "The measure, not the label.",
+   "style": {
+    "max_sentences": 6
+   }
   },
   {
    "id": "promise-score",
@@ -1588,7 +1661,10 @@
      "pattern": "teammate_named"
     }
    ],
-   "note": "Privacy: a player never gets a teammate's figure."
+   "note": "Privacy: a player never gets a teammate's figure.",
+   "style": {
+    "max_sentences": 6
+   }
   },
   {
    "id": "player-rank",
@@ -1815,7 +1891,10 @@
      "pattern": "names_pga_unprompted"
     }
    ],
-   "note": "The owner's question. What the yardstick is, why negative is normal, and what to read instead."
+   "note": "The owner's question. What the yardstick is, why negative is normal, and what to read instead.",
+   "style": {
+    "max_sentences": 6
+   }
   },
   {
    "id": "sg-is-minus-two-bad",
@@ -1868,7 +1947,10 @@
      "pattern": "names_pga_unprompted"
     }
    ],
-   "note": "A figure is judged by comparison, never by its sign. No 'good' threshold from memory."
+   "note": "A figure is judged by comparison, never by its sign. No 'good' threshold from memory.",
+   "style": {
+    "max_sentences": 6
+   }
   },
   {
    "id": "sg-best-putter-all-negative",
@@ -1972,7 +2054,10 @@
      "pattern": "tour_figure_from_memory"
     }
    ],
-   "note": "Run on a women's team, or as written on a men's team (the answer then says what would apply). The prompt states both cases; get_reference team_settings can confirm the team's baseline."
+   "note": "Run on a women's team, or as written on a men's team (the answer then says what would apply). The prompt states both cases; get_reference team_settings can confirm the team's baseline.",
+   "style": {
+    "max_sentences": 6
+   }
   },
   {
    "id": "sg-what-it-is-not",
@@ -2044,7 +2129,10 @@
      "pattern": "label"
     }
    ],
-   "note": "How far an estimated figure goes. {no_shots_player}: a player with hole-by-hole rounds and no logged shots."
+   "note": "How far an estimated figure goes. {no_shots_player}: a player with hole-by-hole rounds and no logged shots.",
+   "style": {
+    "max_sentences": 6
+   }
   },
   {
    "id": "sg-player-what-my-number-means",
@@ -2148,7 +2236,10 @@
      "pattern": "names_pga_unprompted"
     }
    ],
-   "note": "A player who reads the sign as a verdict on themself. Plain, and encouraging only where the data has earned it."
+   "note": "A player who reads the sign as a verdict on themself. Plain, and encouraging only where the data has earned it.",
+   "style": {
+    "max_sentences": 6
+   }
   },
   {
    "id": "write-how-is-he-putting",
@@ -2362,9 +2453,9 @@
    ],
    "facts": [
     {
-     "label": "the band in words: from 5 to 10 feet, inside 5 feet, 25 feet and out",
+     "label": "the band in words: from 5 to 10 feet, inside 5 feet, 25 feet and beyond",
      "kind": "phrase",
-     "re": "\\b(?:from|inside|within|beyond|outside|over|past)\\s+\\d+(?:\\s+(?:to|and)\\s+\\d+)?\\s+(?:feet|yards)\\b|\\b\\d+\\s+(?:to|and)\\s+\\d+\\s+(?:feet|yards)\\b|\\b\\d+\\s+(?:feet|yards)\\s+(?:and|or)\\s+(?:out|in|more|longer|closer)\\b",
+     "re": "\\b(?:from|inside|within|beyond|outside|over|past)\\s+\\d+(?:\\s+(?:to|and)\\s+\\d+)?\\s+(?:feet|yards)\\b|\\b\\d+\\s+(?:to|and)\\s+\\d+\\s+(?:feet|yards)\\b|\\b\\d+\\s+(?:feet|yards)\\s+(?:and|or)\\s+(?:beyond|out|in|more|longer|closer|farther|further)\\b",
      "flags": "i"
     },
     {
@@ -2441,6 +2532,8 @@
   "wrong_case",
   "sentence_start_case",
   "proper_noun_case",
-  "names_internals"
+  "names_internals",
+  "ascii_minus",
+  "numeric_date"
  ]
 }

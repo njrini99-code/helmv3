@@ -19,12 +19,12 @@ as it is two entry points. Each was set against the tools in `../tasks.ts`, `../
 |---|---|---|
 | Found | 304 | |
 | Performed by a tool TOOLS built | 21 | The 20 task tools in `../tasks.ts`, plus `sendGolfPoll` through `draft_poll` (the coach sends it in Messages). Every flow in TASK_FIELDS §4 is among them. |
-| Performed by a tool in this folder | 19 | Ten task tools over seventeen actions, and the two note tools over two. |
+| Performed by a tool in this folder | 21 | Twelve task tools over nineteen actions, and the two note tools over two. |
 | Performed by the chat's own cards | 12 | Save draft, Undo, folders, the tone switch, the player's Request more: a button on a card calls the action; the model does not. |
 | Left to the app on purpose | 83 | The never-list below. |
 | A player's own action | 21 | Player Ask has no writes (owner's call, AGENT_KIT lane 4). |
 | Not a request anyone makes | 42 | Read state, generation, caches, bookkeeping. |
-| Left for later | 106 | Below, in order, each with its reason. |
+| Left for later | 104 | Below, in order, each with its reason. |
 
 ## The test a task tool must pass (the brief's, all three)
 
@@ -50,6 +50,8 @@ for before a receipt says nothing was saved (`kit.ts`, `settle`). `list.ts` is t
 | `set_goal_state` | `pauseGoal`, `resumeGoal`, `abandonGoal` (`golf/actions/v3/goals.ts`), after `verifyPlayerAccess`. | Player, goal, state before and after, the reason kept on a close. | Nobody; the card says what changes among the player's goals. |
 | `mark_signal_handled` | `acknowledgeInsight` (`golf/actions/insights-feed.ts`), after `verifyInsightAccess`. | The signal and whom it is about. | Nobody; the card says the signal will read "Acknowledged" on the player's own CoachHelm page. Established from the code: the player's board and Deep dive are built by `toChInsight`, which sets `acknowledged` from the row's status, and `stanceOf` draws the word. A test pins those lines. |
 | `dismiss_signal` | `dismissInsight` (`golf/actions/insights-feed.ts`), after `verifyInsightAccess`. The row is kept. | The signal and whom it is about. | Nobody; the card says the signal also disappears from the player's own CoachHelm page. Established from the code: the app has one visibility rule for signals (`lib/coachhelm/v3/insight-visibility.ts`), which drops a dismissed one for every reader, and the player's page reads through it. A test pins those lines. |
+| `log_focus_progress` | `updateFocusAreaProgress` (`golf/actions/development.ts`), after `verifyPlayerAccess`. A note alone keeps the value. | Player, focus area, value before and after, the target, the note word for word, and whether the app measures this value from rounds (it then writes the value itself and can replace a typed one). | Nobody; the card says the player sees the value on their own page and that an entry's note is saved but not drawn by the focus area card. |
+| `record_focus_outcome` | `recordFocusAreaOutcome` (`golf/actions/development.ts`), after `verifyPlayerAccess`. It completes the focus area and credits the signal it came from. Refused once an outcome is recorded, as the app's card hides the choice then. | Player, focus area, the outcome in the Deep dive's words, that it completes the focus area, and whether a signal is credited. | Nobody; the card says the focus area shows as completed and the signal can read the outcome on the player's own CoachHelm page. If the signal half fails the receipt is `partial` and confirming again finishes it. |
 | `set_qualifier_coach_pick` | `setQualifierCoachPick` (`golf/actions/v3/qualifying.ts`), after `verifyTeamAccess`. No score or standing changes. | Qualifier, player, pick places used, the coach's reason and that only coaches read it. | Nobody. The card says what players can see: nothing until the selection is confirmed, or the pick on the board at once when it already is (`clubhouse/data/qualifiers.ts` reads selections only in state `selected`). |
 | `set_task_reminder` | `setTaskReminder` (`golf/actions/tasks.ts`), after the staff check the action makes. It queues the in-app reminder only. | The task, the time (reminders go out hourly), any reminder it replaces. | Everyone the task is assigned to who has an account, finished or not, and the coach who assigned it, at that time: by name, with the reminder's title and body word for word (traced through `task-reminders.ts` and pinned by a test). |
 | `save_note`, `remove_note` (`../context/notes.ts`; not tasks) | `saveCoachFact`, `deleteCoachFact` (`golf/actions/coachhelm-ask.ts`) | A chip, not a card: a note is the coach's own and saves at once. | Nobody; players never see notes. |
@@ -72,15 +74,20 @@ The model is told to say where the thing is done (`find_in_app` gives the place)
 - **Settings that change what every figure means**: the strokes-gained baseline, CoachHelm's priorities, team settings.
 - **Anything a player could use to see or change another player's data**: no player tool writes at all.
 
-## Asked for and not possible: the app has no such action for a coach
+## App gaps: three things a coach asks for that the app itself cannot do
 
-- **Edit a task, reassign it, change its due date.** `golf/actions/tasks.ts` has create, delete, reminders and
-  templates and no update of a task. There is nothing to wrap, and writing the row from the chat would be a new write
-  path.
-- **Mark a task done, or reopen it, as the coach.** `completeTask` and `uncompleteTask` resolve the caller as a
-  player and change that player's own assignment. A coach calling them is refused ("Player not found").
-- **Change the groups of a published practice.** Groups live in the plan's body and are saved by the builder's own
-  save (`savePracticePlan`), with the whole body; there is no action for "move Eli to group 2".
+These are gaps in the app, not in the chat. Each needs a server action the app does not have; the chat adds no write
+path of its own, so none of them is a tool until the action exists. The list is written to be handed to the owner.
+
+| A coach asks | The missing action | What exists today |
+| --- | --- | --- |
+| "Change that task: new title, new due date, give it to Avery instead" | **A coach's update of a task**: title, description, due date and assignees of an existing `golf_tasks` row, with the assignment rows added and removed to match and the people affected told. | `src/app/golf/actions/tasks.ts` exports `createTask`, `createRecurringTask`, `deleteTask`, `setTaskReminder`, `clearTaskReminder` and the template actions. Nothing updates a task. |
+| "Mark Avery's task done" / "reopen it" | **A coach's completion of a task for a named player**, and its undo. | `completeTask` and `uncompleteTask` (the same file) resolve the caller as a player and change that player's own assignment. A coach calling either is refused with "Player not found". |
+| "Move Eli to group 2 in Thursday's practice" | **A change to the groups of a published practice plan** that leaves the rest of the plan alone and tells the players whose group changed. | Groups live inside the plan's body. `savePracticePlan` (`src/app/golf/actions/practice-plans.ts`) saves the whole body from the builder; there is no action for one player's group, and a whole-body save from the chat could overwrite an edit made in the builder. |
+
+The chat has no tool for any of the three, so it can offer no card for them. `find_in_app` can name the screen
+where the nearest thing lives (Team Hub Tasks, the practice builder), and `set_task_reminder` covers the one change
+to an existing task the app does have.
 
 ## Left for later, in order
 
@@ -90,8 +97,12 @@ the reasons below are the real ones.
 
 1. **Clear a task's reminder** (`clearTaskReminder`): it deletes the queued reminder rows, so it stays with the
    app; `set_task_reminder` can move one.
-2. **Team patterns** (`dismissPattern`, `markPatternAddressed`, `reopenPattern`): the pattern half of the signal
-   actions. Not traced: who sees a team pattern and what a dismissal hides.
+2. **Team patterns**: traced, and there is nothing to build. What the chat calls a team pattern (`get_coachhelm`,
+   part `patterns`) is worked out at read time from the signals several players share (`computeTeamPatterns`); it is
+   not a row, so it has no state to dismiss or mark. `dismissPattern`, `markPatternAddressed` and `reopenPattern`
+   act on something else: a stored pattern of the older engine (`golf_patterns_v2`, one player each), shown on the
+   older triage desk. No chat read returns one, so the chat never has one to name, and reading them into the chat
+   would put the older engine's output back in front of a coach, which is the owner's call, not a tool's.
 3. **Qualifier selection beyond a pick**: confirm (`confirmQualifierSelection` tells the team, and its notice is
    composed by the selection service at confirm time, so the card cannot show the words first), a place at a tied cut
    (`chooseQualifierTiePlace`), taking a pick back, opening and closing (`advanceSelectionState`,
@@ -99,7 +110,9 @@ the reasons below are the real ones.
 4. **Take a published plan down** (`takeDownPracticePlan`): who is told comes back from the take-down RPC only after
    it has run, so the card cannot name them first.
 5. **A repeating series as a series** (`editRecurringEvent`, "this and following"): needs the scope on the card.
-6. **Focus areas and goals, the rest**: edit a focus area, log progress, record an outcome, a team goal.
+6. **Focus areas and goals, the rest**: edit a focus area (`updateFocusArea`: title, target, dates; wants the
+   before and after on the card), its criteria and practice log, a team goal, and accepting or dismissing a
+   suggested goal (needs a reader of suggestions). Progress and outcome are built.
 7. **Recruits** (`updateRecruit`): needs a recruit reader first; recruits are outside every read tool on purpose.
 8. **Messages** (new group thread, add a member, close a poll, edit a message), **trips** (edit; expenses and budget
    are money and want an owner call), **practice library** (groups, templates, drill edits), **round reviews**
@@ -203,9 +216,9 @@ the reasons below are the real ones.
 | `declineFocusArea` | `golf/actions/development.ts` | none: a player’s own action | a player’s own answer |
 | `deleteFocusArea` | `golf/actions/development.ts` | none, on purpose | deletes or removes something |
 | `reactivateFocusArea` | `golf/actions/development.ts` | **built now** | set_focus_area_status |
-| `recordFocusAreaOutcome` | `golf/actions/development.ts` | none yet | Record how a focus area ended. |
+| `recordFocusAreaOutcome` | `golf/actions/development.ts` | **built now** | record_focus_outcome |
 | `updateFocusArea` | `golf/actions/development.ts` | none yet | Edit a focus area. |
-| `updateFocusAreaProgress` | `golf/actions/development.ts` | none yet | Log progress on a focus area. |
+| `updateFocusAreaProgress` | `golf/actions/development.ts` | **built now** | log_focus_progress |
 | `createDocument` | `golf/actions/documents.ts` | none yet | A document from a file; the chat has no file. publish_artifact covers text. |
 | `createGolfDocument` | `golf/actions/documents.ts` | none yet | A document from a file. |
 | `deleteDocument` | `golf/actions/documents.ts` | none, on purpose | deletes or removes something |
@@ -253,9 +266,9 @@ the reasons below are the real ones.
 | `completeCoachOnboarding` | `golf/actions/onboarding.ts` | none, on purpose | onboarding |
 | `completePlayerOnboarding` | `golf/actions/onboarding.ts` | none, on purpose | onboarding |
 | `ensurePlayerRecord` | `golf/actions/onboarding.ts` | none, on purpose | onboarding |
-| `dismissPattern` | `golf/actions/pattern-management.ts` | none yet | Dismiss a team pattern. |
-| `markPatternAddressed` | `golf/actions/pattern-management.ts` | none yet | Mark a pattern addressed. |
-| `reopenPattern` | `golf/actions/pattern-management.ts` | none yet | Reopen a pattern. |
+| `dismissPattern` | `golf/actions/pattern-management.ts` | none yet | A stored pattern of the older engine (`golf_patterns_v2`), not a team pattern. No chat read returns one, so the chat has no pattern to name; see “Left for later”. |
+| `markPatternAddressed` | `golf/actions/pattern-management.ts` | none yet | A stored pattern of the older engine (`golf_patterns_v2`), not a team pattern. No chat read returns one, so the chat has no pattern to name; see “Left for later”. |
+| `reopenPattern` | `golf/actions/pattern-management.ts` | none yet | A stored pattern of the older engine (`golf_patterns_v2`), not a team pattern. No chat read returns one, so the chat has no pattern to name; see “Left for later”. |
 | `rateInsightAsPlayer` | `golf/actions/player-feedback.ts` | none: a player’s own action | a player’s own rating |
 | `markAnnouncementsSeen` | `golf/actions/player-notifications.ts` | none: not a request | bookkeeping the app does by itself (read state, generation, caches); nobody asks for it |
 | `markTravelSeen` | `golf/actions/player-notifications.ts` | none: not a request | bookkeeping the app does by itself (read state, generation, caches); nobody asks for it |

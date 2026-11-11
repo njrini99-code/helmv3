@@ -151,6 +151,59 @@ describe('useCoachHelmChat', () => {
     expect(result.current.messages.at(-1)!.parts).toEqual([{ type: 'text', text: 'Blake is at 74.' }]);
   });
 
+  it('a Confirm whose connection was lost: the next answer brings the card and its receipt up to date in the earlier message', async () => {
+    const receipt = { type: 'data-action-receipt' as const, id: `receipt-${KEY}`, data: { idempotency_key: KEY, status: 'completed', summary: 'Created the focus area.' } };
+    fetchMock.mockResolvedValueOnce(
+      sse([
+        { type: 'message_start', conversation_id: CONVERSATION, message_id: 'a2', resumed: false },
+        { type: 'decision', key: KEY, approved: true, message_id: 'a-card' },
+        { type: 'receipt', part: receipt, message_id: 'a-card' },
+        { type: 'text_delta', delta: 'Blake is at 74.' },
+        { type: 'done', status: 'complete' },
+      ]),
+    );
+    const { result } = renderHook(() => useCoachHelmChat({ initialMessages: [waitingCard], conversationId: CONVERSATION }));
+    act(() => result.current.send('How is Blake?'));
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    const earlier = result.current.messages.find((m) => m.id === 'a-card')!.parts;
+    expect(earlier.find((p) => p.type === 'tool-create_focus_area')).toMatchObject({ state: 'approval-responded', approval: { id: KEY, approved: true } });
+    expect(earlier.find((p) => p.type === 'data-action-receipt')).toEqual(receipt);
+    // Nothing of the earlier card lands in the new answer.
+    expect(result.current.messages.at(-1)!.parts).toEqual([{ type: 'text', text: 'Blake is at 74.' }]);
+  });
+
+  it('an edit to a waiting card sends only the changed fields, replaces the card in place, and the Confirm that follows says which card was on screen', async () => {
+    const revised = { type: 'data-action-proposal' as const, id: `proposal-${KEY}`, data: { idempotency_key: KEY, tool: 'create_focus_area', summary: 'Create the other one.', revision: 1 } };
+    fetchMock
+      .mockResolvedValueOnce(
+        sse([
+          { type: 'message_start', conversation_id: CONVERSATION, message_id: 'a-card', resumed: true },
+          { type: 'proposal', part: revised },
+          { type: 'part', part: { type: 'data-card-revision', id: `revision-${KEY}`, data: { key: KEY, accepted: true } } },
+          { type: 'done', status: 'awaiting_decision' },
+        ]),
+      )
+      .mockResolvedValueOnce(sse([{ type: 'message_start', conversation_id: CONVERSATION, message_id: 'a-card', resumed: true }, { type: 'decision', key: KEY, approved: true }, { type: 'done', status: 'complete' }]));
+    const { result } = renderHook(() => useCoachHelmChat({ initialMessages: [waitingCard], conversationId: CONVERSATION }));
+
+    act(() => result.current.revise!(KEY, { title: 'The other one' }));
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    // A card never edited carries no revision, and the request says nothing of one.
+    expect(bodyOf(0)).toMatchObject({ conversation_id: CONVERSATION, decision: { key: KEY, edits: { title: 'The other one' } } });
+    expect(bodyOf(0).decision).not.toHaveProperty('revision');
+    expect(bodyOf(0)).not.toHaveProperty('message');
+    // One message, one card, replaced in place and still waiting; the notice sits beside it.
+    expect(result.current.messages).toHaveLength(1);
+    const parts = result.current.messages[0]!.parts;
+    expect(parts.filter((p) => p.type === 'data-action-proposal')).toEqual([revised]);
+    expect(parts.find((p) => p.type === 'data-card-revision')).toMatchObject({ data: { key: KEY, accepted: true } });
+    expect(parts.find((p) => p.type === 'tool-create_focus_area')).toMatchObject({ state: 'approval-requested' });
+
+    act(() => result.current.approve(KEY));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    expect(bodyOf(1).decision).toEqual({ key: KEY, approved: true, revision: 1 });
+  });
+
   it('every failure carries its kind: the server’s on a stream or a refusal, the browser’s own for a dropped connection', async () => {
     const { result } = renderHook(() => useCoachHelmChat({ initialMessages: [waitingCard], conversationId: CONVERSATION }));
     const kindAfter = async (arrange: () => void, act_: () => void) => {
@@ -210,6 +263,90 @@ describe('useCoachHelmChat', () => {
     expect(parts.find((p) => p.type === 'tool-create_focus_area')).toMatchObject({ state: 'approval-responded', approval: { id: KEY, approved: true } });
     expect(parts.find((p) => p.type === 'data-action-receipt')).toMatchObject({ id: `receipt-${KEY}`, data: { status: 'held' } });
     expect(parts.at(-1)).toEqual({ type: 'text', text: ' It is held for a few seconds.' });
+  });
+
+  it('a second card pressed while the first Confirm is still open is not lost: it is sent when the first has finished, and a repeat press is sent once', async () => {
+    const KEY2 = 'task:team-1:Range:def';
+    const twoCards: ChatUIMessage = {
+      ...waitingCard,
+      parts: [
+        ...waitingCard.parts,
+        { type: 'data-action-proposal', id: `proposal-${KEY2}`, data: { idempotency_key: KEY2, tool: 'create_task', summary: 'Create the task.', revision: 2 } },
+        { type: 'tool-create_task', toolCallId: 'tu_2', state: 'approval-requested', input: {}, approval: { id: KEY2 } },
+      ],
+    };
+    // The first Confirm's response stays open (its Undo window) until the test lets it finish.
+    let finishFirst: () => void = () => undefined;
+    const encoder = new TextEncoder();
+    const first = new Response(
+      new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(encoder.encode(encodeChatEvent({ type: 'message_start', conversation_id: CONVERSATION, message_id: 'a-card', resumed: true }) + encodeChatEvent({ type: 'decision', key: KEY, approved: true })));
+          finishFirst = () => {
+            controller.enqueue(encoder.encode(encodeChatEvent({ type: 'done', status: 'awaiting_decision' })));
+            controller.close();
+          };
+        },
+      }),
+      { headers: { 'content-type': 'text/event-stream', 'x-conversation-id': CONVERSATION } },
+    );
+    fetchMock
+      .mockResolvedValueOnce(first)
+      .mockResolvedValueOnce(sse([{ type: 'message_start', conversation_id: CONVERSATION, message_id: 'a-card', resumed: true }, { type: 'decision', key: KEY2, approved: true }, { type: 'done', status: 'complete' }]));
+    const { result } = renderHook(() => useCoachHelmChat({ initialMessages: [twoCards], conversationId: CONVERSATION }));
+
+    act(() => result.current.approve(KEY));
+    await waitFor(() => expect(result.current.messages[0]!.parts.find((p) => p.type === 'tool-create_focus_area')).toMatchObject({ state: 'approval-responded' }));
+    // Pressed twice while the first is open, and the first pressed again: one request each, no more.
+    act(() => result.current.approve(KEY2));
+    act(() => result.current.approve(KEY2));
+    act(() => result.current.approve(KEY));
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    act(() => finishFirst());
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    expect(bodyOf(1).decision).toEqual({ key: KEY2, approved: true, revision: 2 });
+    expect(result.current.messages[0]!.parts.find((p) => p.type === 'tool-create_task')).toMatchObject({ state: 'approval-responded' });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('approve all names every waiting card with the revision on screen, and a card the batch reopens waits again', async () => {
+    const KEY2 = 'task:team-1:Range:def';
+    const twoCards: ChatUIMessage = {
+      ...waitingCard,
+      parts: [
+        ...waitingCard.parts,
+        { type: 'data-action-proposal', id: `proposal-${KEY2}`, data: { idempotency_key: KEY2, tool: 'create_task', summary: 'Create the task.', revision: 2 } },
+        { type: 'tool-create_task', toolCallId: 'tu_2', state: 'approval-requested', input: {}, approval: { id: KEY2 } },
+      ],
+    };
+    const held = (key: string) => ({ type: 'receipt' as const, part: { type: 'data-action-receipt' as const, id: `receipt-${key}`, data: { status: 'held', held_until: '2026-11-10T12:00:08Z' } } });
+    fetchMock.mockResolvedValueOnce(
+      sse([
+        { type: 'message_start', conversation_id: CONVERSATION, message_id: 'a-card', resumed: true },
+        { type: 'decision', key: KEY, approved: true },
+        held(KEY),
+        { type: 'decision', key: KEY2, approved: true },
+        held(KEY2),
+        { type: 'receipt', part: { type: 'data-action-receipt', id: `receipt-${KEY}`, data: { status: 'failed', summary: 'Could not create that.' } } },
+        { type: 'decision_reopened', key: KEY2, reason: 'batch_stopped' },
+        { type: 'done', status: 'awaiting_decision' },
+      ]),
+    );
+    const { result } = renderHook(() => useCoachHelmChat({ initialMessages: [twoCards], conversationId: CONVERSATION }));
+    act(() => result.current.approveAll!());
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    expect(bodyOf(0)).toMatchObject({ conversation_id: CONVERSATION, approve_all: { cards: [{ key: KEY }, { key: KEY2, revision: 2 }] } });
+    expect(bodyOf(0)).not.toHaveProperty('decision');
+    const parts = result.current.messages[0]!.parts;
+    expect(parts.find((p) => p.type === 'tool-create_focus_area')).toMatchObject({ state: 'approval-responded' });
+    expect(parts.find((p) => p.type === 'tool-create_task')).toMatchObject({ state: 'approval-requested', approval: { id: KEY2 } });
+    expect(parts.filter((p) => p.type === 'data-action-receipt').map((p) => [p.id, (p.data as { status: string }).status])).toEqual([[`receipt-${KEY}`, 'failed']]);
+    // Nothing waiting: nothing is sent.
+    const { result: none } = renderHook(() => useCoachHelmChat({ initialMessages: [], conversationId: CONVERSATION }));
+    act(() => none.current.approveAll!());
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it('Cancel sends approved false for the same key', async () => {

@@ -17,8 +17,8 @@
 import { logServerError } from '@/lib/server-error-logger';
 import { CoachContextError } from '../context';
 import type { ToolEnvelope } from '../provenance';
-import { addUsage, buildModelRequest, isModelApiError, isPlain, isRejectedRequest, plainFeatures, type ChatFeatures, type ModelClient, type ModelMessage, type ModelResponse, type SearchResultBlock, type SystemPrompt, type ToolResultBlock, type ToolUseBlock, type UsageTotals } from './model';
-import { eventForPart, type ChatEvent } from './protocol';
+import { addUsage, buildModelRequest, isModelApiError, isPlain, isRejectedRequest, plainFeatures, type ChatFeatures, type ModelClient, type ModelMessage, type ModelProfile, type ModelResponse, type SearchResultBlock, type SystemPrompt, type ToolResultBlock, type ToolUseBlock, type UsageTotals } from './model';
+import { COMPUTED_PART, eventForPart, type ChatComputed, type ChatEvent } from './protocol';
 import { proposeTask, type TaskDeps } from './tasks';
 import type { ChatTool, ReadTool, TaskTool, ToolContext } from './tool';
 
@@ -61,6 +61,8 @@ export interface LoopState {
   nextRef: number;
   nextProgress: number;
   /** What requests are sent with. Starts as the deployment's features; becomes the plain set if the API rejects a request. */
+  /** The model this turn runs on and its settings. Fixed for the turn. */
+  profile: ModelProfile;
   features: ChatFeatures;
   /** True once a request was rejected and retried plain, for the turn's log line. */
   degraded: boolean;
@@ -68,6 +70,8 @@ export interface LoopState {
   container: string | null;
   /** The progress row of the model's code while it runs. In memory only. */
   codeRow?: string | null;
+  /** What that run of the code has done so far: the reads it called, and the method line its code began with. In memory only. */
+  codeRun?: { refs: string[]; method: string | null; wide: boolean } | null;
 }
 
 export interface LoopDeps {
@@ -94,6 +98,29 @@ export type LoopStop =
   | { kind: 'error'; error: unknown };
 
 const isToolUse = (block: ModelResponse['content'][number]): block is ToolUseBlock => block.type === 'tool_use';
+
+/** The text of a progress block that stands in for work a cut-off response did not finish: not a note for the coach. */
+const INTERRUPTED_NOTE = 'This part of the response was interrupted before it finished.';
+
+/**
+ * The one case where an assistant turn is not kept exactly as returned. When a refusal fallback took over part-way, the
+ * turn holds a `fallback` block, and the API requires that what the model that declined left before the LAST such block
+ * is not sent back: its thinking, its tool calls (which are never run and get no result) and any server tool call
+ * without its result. Text before the boundary, everything after it and the marker itself are kept. A turn with no
+ * `fallback` block is returned untouched.
+ */
+export function echoable(content: ModelResponse['content']): ModelResponse['content'] {
+  const boundary = content.map((b) => b.type as string).lastIndexOf('fallback');
+  if (boundary === -1) return content;
+  const answered = new Set(content.flatMap((b) => (typeof (b as { tool_use_id?: unknown }).tool_use_id === 'string' ? [(b as { tool_use_id: string }).tool_use_id] : [])));
+  return content.filter((block, index) => {
+    if (index >= boundary) return true;
+    const type = block.type as string;
+    if (type === 'thinking' || type === 'redacted_thinking' || type === 'tool_use') return false;
+    if (type === 'server_tool_use') return answered.has((block as { id: string }).id);
+    return true;
+  });
+}
 
 /** A tool call made by the model's code in the sandbox, not by the model directly. Its result goes to the code. */
 const isProgrammatic = (block: ToolUseBlock): boolean => Boolean(block.caller && block.caller.type !== 'direct');
@@ -125,7 +152,40 @@ function searchResult(ref: string, title: string, text: string): SearchResultBlo
   return [{ type: 'search_result', source: `${READ_SOURCE}${ref}`, title: title.trim().slice(0, 200) || 'Read', content: (lines.length > 0 ? lines : [title.trim() || 'No data.']).map((line) => ({ type: 'text', text: line })), citations: { enabled: true } }];
 }
 
-const CODE_LABEL = 'Working it out';
+/** The model's code, as the thread names it: arithmetic on figures already read, or reads across more than one player. */
+const CODE_LABEL = 'Working out the figures';
+const CODE_LABEL_WIDE = 'Working it out across the team';
+
+/** The players a set of reads measured, by id. */
+function playersOf(envelopes: ToolEnvelope[]): Set<string> {
+  const ids = new Set<string>();
+  for (const envelope of envelopes) {
+    for (const m of [...(envelope.measurements ?? []), ...(envelope.series ?? [])]) if (m.entity?.kind === 'player') ids.add(m.entity.id);
+  }
+  return ids;
+}
+
+/**
+ * The sentence the model's code may begin with, `# Method: ...`: how it works the figure out, for the coach. Only that marked line
+ * is ever lifted, and not when it names a tool or anything that reads as code: the coach never sees code or a tool name.
+ */
+export function methodOf(code: unknown, toolNames: readonly string[]): string | null {
+  if (typeof code !== 'string') return null;
+  const line = /^\s*#\s*Method:\s*(.+)$/im.exec(code)?.[1]?.trim();
+  if (!line || line.length > 240) return null;
+  if (/[`_{}()[\]=<>]/.test(line) || toolNames.some((name) => line.toLowerCase().includes(name.toLowerCase()))) return null;
+  return /[.!?]$/.test(line) ? line : `${line}.`;
+}
+
+/** What one finished run of the model's code covered: the `data-computed` part's data. */
+export function computedOf(run: { refs: string[]; method: string | null }, reads: Map<string, ToolEnvelope>): ChatComputed {
+  const envelopes = run.refs.map((ref) => reads.get(ref)).filter((e): e is ToolEnvelope => Boolean(e));
+  const windows = new Set(envelopes.map((e) => e.window_label?.trim() || null));
+  const [only] = [...windows];
+  // Reads run side by side and finish in any order; their refs were reserved in the order the code asked for them.
+  const refs = [...run.refs].sort((a, b) => Number(a.slice(1)) - Number(b.slice(1)));
+  return { refs, reads: run.refs.length, players: playersOf(envelopes).size, window: windows.size === 1 && only ? only : null, ...(run.method ? { method: run.method } : {}) };
+}
 
 interface Call {
   response: ModelResponse;
@@ -134,13 +194,17 @@ interface Call {
 
 /** One streamed model call, with the features given. Only an unparseable tool input is retried here (twice). */
 async function streamOnce(deps: LoopDeps, state: LoopState, answerOnly: boolean): Promise<Call> {
-  const request = buildModelRequest({ tools: deps.tools, system: deps.system, messages: state.messages, features: state.features, answerOnly, container: state.container });
+  const request = buildModelRequest({ tools: deps.tools, system: deps.system, messages: state.messages, profile: state.profile, features: state.features, answerOnly, container: state.container });
   for (let attempt = 0; ; attempt += 1) {
     let streamedText = false;
     // Per content block: the reads its sentences cite, and (only with progress notes on) the model's own note.
     const cited = new Map<number, string[]>();
     const notes = new Map<number, string>();
     let previousBlock: string | null = null;
+    let continues = false;
+    // The model's code as it is written, only to read the method line it may begin with.
+    let codeBlock: number | null = null;
+    let codeInput = '';
     try {
       // The server's own word for the wait before the first event of a model call.
       deps.emit({ type: 'phase', phase: 'thinking' });
@@ -150,17 +214,39 @@ async function streamOnce(deps: LoopDeps, state: LoopState, answerOnly: boolean)
           // The model's own code, in Anthropic's sandbox: one progress row from the moment it starts until its result is back, with the
           // reads it calls listed under it as they run.
           const block = event.content_block as { type: string; name?: string };
-          if (block.type === 'server_tool_use' && String(block.name ?? '').endsWith('code_execution') && !state.codeRow) {
-            state.codeRow = `progress-${(state.nextProgress += 1)}`;
-            deps.emit({ type: 'read_started', id: state.codeRow, label: CODE_LABEL, tool: 'code_execution' });
+          if (block.type === 'server_tool_use' && String(block.name ?? '').endsWith('code_execution')) {
+            codeBlock = event.index;
+            codeInput = '';
+            if (!state.codeRow) {
+              state.codeRow = `progress-${(state.nextProgress += 1)}`;
+              state.codeRun = { refs: [], method: null, wide: false };
+              deps.emit({ type: 'read_started', id: state.codeRow, label: CODE_LABEL, tool: 'code_execution' });
+            }
           } else if (block.type.endsWith('code_execution_tool_result') && state.codeRow) {
-            deps.emit({ type: 'read_finished', id: state.codeRow, label: CODE_LABEL, tool: 'code_execution', state: 'done' });
+            // The run is over: its row closes saying how many reads it covered, and a part records what it worked from.
+            const computed = computedOf(state.codeRun ?? { refs: [], method: null }, state.reads);
+            deps.emit({
+              type: 'read_finished',
+              id: state.codeRow,
+              label: state.codeRun?.wide ? CODE_LABEL_WIDE : CODE_LABEL,
+              tool: 'code_execution',
+              state: 'done',
+              ...(computed.reads > 0 ? { detail: `${computed.reads} ${computed.reads === 1 ? 'read' : 'reads'}` } : {}),
+            });
+            deps.emit({ type: 'part', part: { type: COMPUTED_PART, id: `computed-${state.codeRow}`, data: computed } });
             state.codeRow = null;
+            state.codeRun = null;
           }
           // Words either side of a thinking block or a tool call are separate paragraphs. Two text blocks in a row are one sentence the
           // API split where a citation begins or ends: nothing may be put between them.
-          if (event.content_block.type === 'text' && streamedText && previousBlock !== 'text') deps.emit({ type: 'text_delta', delta: '\n\n' });
-          previousBlock = event.content_block.type;
+          // A refusal fallback's marker: the substitute's next words continue the sentence the first model began, whatever the model
+          // that declined left between (its thinking, a tool call that is never run).
+          if ((event.content_block.type as string) === 'fallback') continues = true;
+          else if (event.content_block.type === 'text') {
+            if (streamedText && previousBlock !== 'text' && !continues) deps.emit({ type: 'text_delta', delta: '\n\n' });
+            continues = false;
+          }
+          if ((event.content_block.type as string) !== 'fallback') previousBlock = event.content_block.type;
         } else if (event.type === 'content_block_delta') {
           const delta = event.delta;
           if (delta.type === 'text_delta' && delta.text) {
@@ -169,15 +255,25 @@ async function streamOnce(deps: LoopDeps, state: LoopState, answerOnly: boolean)
           } else if (delta.type === 'citations_delta') {
             const ref = refOfSource((delta.citation as { source?: unknown }).source);
             if (ref && state.reads.has(ref)) cited.set(event.index, [...new Set([...(cited.get(event.index) ?? []), ref])]);
+          } else if (delta.type === 'input_json_delta' && event.index === codeBlock) {
+            codeInput += delta.partial_json;
           } else if (delta.type === 'thinking_delta' && state.features.progressNotes && delta.thinking) {
             // With `display: 'updates'` the only thinking text the API returns is the model's short note on what it is doing.
             notes.set(event.index, `${notes.get(event.index) ?? ''}${delta.thinking}`);
           }
         } else if (event.type === 'content_block_stop') {
+          if (event.index === codeBlock && state.codeRun) {
+            try {
+              state.codeRun.method = methodOf((JSON.parse(codeInput || '{}') as { code?: unknown }).code, deps.tools.map((t) => t.name));
+            } catch {
+              // No method line can be read from input that did not parse; the run is unaffected.
+            }
+            codeBlock = null;
+          }
           const refs = cited.get(event.index);
           if (refs?.length) deps.emit({ type: 'text_delta', delta: refs.map((ref) => ` [${ref}]`).join('') });
           const note = notes.get(event.index);
-          if (note?.trim()) deps.emit({ type: 'note', id: `note-${(state.nextProgress += 1)}`, text: note });
+          if (note?.trim() && note.trim() !== INTERRUPTED_NOTE) deps.emit({ type: 'note', id: `note-${(state.nextProgress += 1)}`, text: note });
         }
       }
       return { response: await stream.finalMessage(), streamedText };
@@ -246,6 +342,14 @@ async function runRead(deps: LoopDeps, state: LoopState, tool: ReadTool<unknown>
       // `via: 'code'`: the model's code asked for this read. Its answer then cites no read, so this is how the thread knows which
       // reads a computed figure came from.
       deps.emit({ type: 'evidence', part: { type: 'data-evidence', id: `evidence-${ref}`, data: { tool: tool.name, envelope, ref, ...(programmatic ? { via: 'code' } : {}) } } });
+      if (programmatic && state.codeRun && state.codeRow) {
+        state.codeRun.refs.push(ref);
+        // Once its reads cover a second player the row says so. Said once, and only because a read showed it.
+        if (!state.codeRun.wide && playersOf(state.codeRun.refs.map((r) => state.reads.get(r)).filter((e): e is ToolEnvelope => Boolean(e))).size > 1) {
+          state.codeRun.wide = true;
+          deps.emit({ type: 'read_started', id: state.codeRow, label: CODE_LABEL_WIDE, tool: 'code_execution' });
+        }
+      }
     }
     for (const part of parts ?? []) deps.emit(eventForPart(part));
     const detail = (typeof progress_detail === 'string' && progress_detail.trim()) || sampleDetail(envelope);
@@ -314,7 +418,7 @@ export async function runModelLoop(deps: LoopDeps, state: LoopState): Promise<Lo
       return deps.signal.aborted ? { kind: 'aborted' } : { kind: 'error', error: err };
     }
     state.steps += 1;
-    addUsage(state.usage, response);
+    addUsage(state.usage, response, state.profile.modelId);
     if (response.container?.id) state.container = response.container.id;
 
     // A refusal can arrive after words were streamed and can cut a tool call off mid-input: the content is not read.
@@ -323,11 +427,13 @@ export async function runModelLoop(deps: LoopDeps, state: LoopState): Promise<Lo
       return { kind: 'refusal', category: (response.stop_details as { category?: string | null } | null | undefined)?.category ?? null };
     }
 
-    const toolUses = response.content.filter(isToolUse);
+    // What is kept of the turn, and so which tool calls are answered: everything, unless a refusal fallback took over part-way.
+    const content = echoable(response.content);
+    const toolUses = content.filter(isToolUse);
     if (toolUses.length > 0 && response.stop_reason === 'max_tokens') return { kind: 'truncated' };
 
     // Exactly what the API returned, in order.
-    const assistant: ModelMessage = { role: 'assistant', content: response.content };
+    const assistant: ModelMessage = { role: 'assistant', content };
     state.messages.push(assistant);
     state.appended.push(assistant);
 

@@ -47,6 +47,8 @@ const REPLAYABLE = new Set([
   'data-coach-note',
   // When the turn began, how long it took and how many reads it made (`engine/protocol.ts`, `ChatTurnMeta`). Drawn by nobody that does not know it.
   'data-turn-meta',
+  // What a run of the model's code covered: the reads behind a figure it worked out (`ChatComputed`).
+  'data-computed',
   // The live grounding flag (route.ts's `execute`, N15) is written into the
   // persisted assistant turn's `ui_parts` the same way a receipt is. Without
   // it here, the flag showed only during the original streaming session —

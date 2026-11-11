@@ -36,7 +36,8 @@ export interface ActionRun {
 
 /** Outcome of trying to claim a run for execution. */
 export type ClaimResult =
-  | { kind: 'claimed'; run_id: string }
+  /** `proposed_input`: what the row held at the instant it was claimed. From then on a card can no longer be edited, so this is the plan to run. */
+  | { kind: 'claimed'; run_id: string; proposed_input?: unknown }
   /** A prior run already finished under this key — return its receipt verbatim. */
   | { kind: 'already_completed'; receipt: ActionReceipt }
   /** A run exists and is mid-flight. Do NOT start a second execution. */
@@ -197,12 +198,22 @@ export async function claimForExecution(
     .update({ status: 'approved', decided_at: new Date().toISOString() })
     .eq('id', row.id)
     .in('status', ['proposed', 'denied', 'failed'])
-    .select('id')
+    .select('id, proposed_input')
     .maybeSingle();
 
   if (claimErr) return { kind: 'error', message: claimErr.message };
   if (!claimed) return { kind: 'in_flight' };
-  return { kind: 'claimed', run_id: (claimed as { id: string }).id };
+  const taken = claimed as { id: string; proposed_input?: unknown };
+  return { kind: 'claimed', run_id: taken.id, proposed_input: taken.proposed_input };
+}
+
+/**
+ * Hand a claim back without running anything: the card turned out not to be the one the coach confirmed (it was edited between
+ * the press and the claim). Only a row this claim still holds is touched. False when it could not be handed back.
+ */
+export async function releaseClaim(sb: Sb, args: { run_id: string }): Promise<boolean> {
+  const { data, error } = await fromUntyped(sb, TABLE).update({ status: 'proposed', decided_at: null }).eq('id', args.run_id).eq('status', 'approved').select('id');
+  return !error && Array.isArray(data) && data.length > 0;
 }
 
 /** Record that the coach declined (or asked something else instead). Kept as evidence, not discarded. False when the row could not be updated. */
@@ -260,6 +271,24 @@ export async function updateProposedInput(
     .eq('idempotency_key', args.idempotency_key)
     .eq('status', 'proposed');
   return !error;
+}
+
+/**
+ * Put a revised plan in place of the one a card holds. Only a row that is still `proposed` is written, and the caller is told
+ * whether one was: a card the coach has since confirmed, cancelled or left behind keeps the plan that was decided on.
+ */
+export async function replaceProposal(
+  sb: Sb,
+  args: { coach_id: string; idempotency_key: string; proposed_input: StoredProposal },
+): Promise<'replaced' | 'not_proposed' | 'error'> {
+  const { data, error } = await fromUntyped(sb, TABLE)
+    .update({ proposed_input: args.proposed_input as never })
+    .eq('coach_id', args.coach_id)
+    .eq('idempotency_key', args.idempotency_key)
+    .eq('status', 'proposed')
+    .select('id');
+  if (error) return 'error';
+  return Array.isArray(data) && data.length > 0 ? 'replaced' : 'not_proposed';
 }
 
 /** Record the outcome. The receipt is stored so a retry can return it verbatim. False when the row could not be updated: the caller logs it, because the write itself has happened. */

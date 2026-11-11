@@ -574,3 +574,104 @@ describe('a card stored before cards held what the server read', () => {
     expect(world.actionCalls).toEqual([]);
   });
 });
+
+/**
+ * A coach can change a card before confirming. The card says which fields, with the task's own limits; `revise` plans
+ * again from the stored input plus the edits, with every read and check `plan` makes, and writes nothing.
+ */
+describe('a card the coach can edit', () => {
+  const P2 = '00000000-0000-4000-8000-000000000002';
+  const two: CoachChatContext = { ...coach, roster: [person(P1, 'Eli Brandt'), person(P2, 'Maya Ortiz')] };
+  type Revisable = Task & { revise: (c: ToolContext, p: TaskProposal, edits: Record<string, unknown>) => Promise<TaskProposal> };
+  const tool = (name: string) => all().find((t) => t.name === name) as Revisable;
+  const card = (name: string, input: unknown = SAMPLES[name], who: CoachChatContext = coach) => tool(name).plan(ctx(who), tool(name).input.parse(input));
+  const field = (p: TaskProposal, key: string) => p.editable?.find((f) => f.key === key);
+  const factOf = (p: TaskProposal, label: string) => p.facts.find((f) => f.label === label)?.value;
+
+  it('every task can be revised, and never offers the thing the card is about, the team or the coach as a field', async () => {
+    const NEVER = /^(tournament_id|plan_id|conversation_id|round_id|player_id|metric_id|version|team_id|coach_id|from_insight_id|label)$/;
+    for (const t of all()) {
+      expect(typeof (t as Revisable).revise, t.name).toBe('function');
+      const proposal = await card(t.name);
+      for (const f of proposal.editable ?? []) {
+        expect(f.key, `${t.name} offers ${f.key}`).not.toMatch(t.name === 'add_team_break' ? /^(team_id|coach_id)$/ : NEVER);
+        // Every field is a key of the task's own input, so its limits are the ones the server holds it to.
+        expect(Object.keys((t.input as unknown as { shape: object }).shape), `${t.name}.${f.key}`).toContain(f.key);
+      }
+    }
+    // A lineup's seats and a lock are not form fields: nothing on those cards is editable in place.
+    expect((await card('lock_lineup')).editable ?? []).toEqual([]);
+    expect((await card('set_lineup')).editable ?? []).toEqual([]);
+    expect(world.actionCalls).toEqual([]);
+  });
+
+  it('each field carries its type and the task’s own limits', async () => {
+    const event = await card('create_event', { ...(SAMPLES.create_event as object), notes: 'Bring wedges', invite_player_ids: [P1] }, two);
+    expect(field(event, 'title')).toMatchObject({ type: 'text', value: 'Team practice', required: true, max_length: 200, label: 'Title' });
+    expect(field(event, 'date')).toMatchObject({ type: 'date', value: '2026-11-12', label: 'When' });
+    expect(field(event, 'start')).toMatchObject({ type: 'time', value: '15:00' });
+    expect(field(event, 'notes')).toMatchObject({ type: 'long_text', value: 'Bring wedges', max_length: 5000, required: false });
+    expect(field(event, 'event_type')).toMatchObject({ type: 'choice', value: 'practice', options: expect.arrayContaining([{ value: 'meeting', label: 'Meeting' }]) });
+    expect(field(event, 'requires_rsvp')).toMatchObject({ type: 'toggle', value: false });
+    expect(field(event, 'invite_player_ids')).toMatchObject({ type: 'people', value: [P1], options: [{ value: P1, label: 'Eli Brandt' }, { value: P2, label: 'Maya Ortiz' }] });
+    const goal = await card('create_goal');
+    expect(goal.editable?.map((f) => f.key)).toEqual(['target_value', 'window_days', 'mode']);
+    expect(field(goal, 'window_days')).toMatchObject({ type: 'number', value: 30, min: 7, max: 365, step: 1 });
+    const series = await card('create_recurring_practice');
+    expect(field(series, 'occurrence_count')).toMatchObject({ type: 'number', value: 4, min: 1, max: 26 });
+    expect(field(series, 'first_date')).toMatchObject({ type: 'date', value: (series.visual as { dates: string[] }).dates[0] });
+    // The whole roster is shown as the people it is.
+    expect(field(await card('create_task', SAMPLES.create_task, two), 'assign_to_player_ids')).toMatchObject({ type: 'people', value: [P1, P2] });
+  });
+
+  it('an edit plans again: the new card is built by the planner, with what the server reads, and nothing is written', async () => {
+    world.tables.golf_players = [{ id: P1, user_id: 'u-p1' }, { id: P2, user_id: 'u-p2' }];
+    const first = await card('create_event', { ...(SAMPLES.create_event as object), invite_player_ids: [P1], requires_rsvp: true }, two);
+    const next = await tool('create_event').revise(ctx(two), first, { start: '16:00', end: '17:30', location: 'Short-game area', invite_player_ids: [P1, P2] });
+    expect(factOf(next, 'When')).toBe('2026-11-12, 16:00 to 17:30');
+    expect(factOf(next, 'Where')).toBe('Short-game area');
+    expect(next.recipients?.map((p) => p.name)).toEqual(['Eli Brandt', 'Maya Ortiz']);
+    expect(field(next, 'start')?.value).toBe('16:00');
+    expect((next.input as { seen: { people: unknown[] } }).seen.people).toHaveLength(2);
+    // Clearing an optional field with null; the untouched fields stay.
+    const cleared = await tool('create_event').revise(ctx(two), next, { location: null });
+    expect(factOf(cleared, 'Where')).toBe('Not set');
+    expect(factOf(cleared, 'When')).toBe('2026-11-12, 16:00 to 17:30');
+    // The planned tasks too: six practices is six dates, and a task's due date moves.
+    const series = await tool('create_recurring_practice').revise(ctx(), await card('create_recurring_practice'), { occurrence_count: 6, end_time: '17:00' });
+    expect((series.visual as { dates: string[] }).dates).toHaveLength(6);
+    expect(factOf(series, 'Ends')).toBe('17:00');
+    const task = await tool('create_task').revise(ctx(two), await card('create_task', SAMPLES.create_task, two), { due_date: '2026-11-20', assign_to_player_ids: [P2] });
+    expect(factOf(task, 'Assigned to')).toBe('Maya Ortiz');
+    expect(task.missing).toEqual([]);
+    const message = await tool('send_message').revise(ctx(), await card('send_message'), { content: 'See you at four.' });
+    expect(message.visual).toMatchObject({ draft: 'See you at four.', thread: 'Team' });
+    expect(world.actionCalls).toEqual([]);
+    expect(world.dbWrites).toEqual([]);
+  });
+
+  it('refuses an edit the card did not offer, a value the task’s own schema does not take, and anything plan itself would refuse', async () => {
+    const event = await card('create_event', SAMPLES.create_event, two);
+    await expect(tool('create_event').revise(ctx(two), event, { team_id: 'another-team' })).rejects.toThrow(/Team cannot be changed on this card/);
+    await expect(tool('send_message').revise(ctx(), await card('send_message'), { conversation_id: P2 })).rejects.toThrow(/cannot be changed on this card/);
+    await expect(tool('lock_lineup').revise(ctx(), await card('lock_lineup'), { tournament_id: P2 })).rejects.toThrow(/cannot be changed on this card/);
+    await expect(tool('create_event').revise(ctx(two), event, { title: 'x'.repeat(201) })).rejects.toThrow(/^Title: /);
+    await expect(tool('create_event').revise(ctx(two), event, { date: 'tomorrow' })).rejects.toThrow(/^Date: /);
+    await expect(tool('create_goal').revise(ctx(), await card('create_goal'), { window_days: 3 })).rejects.toThrow(/^Window days: /);
+    // The planner's own checks still run: the end before the start, and a player who is not on the roster.
+    await expect(tool('create_event').revise(ctx(two), event, { start: '16:00', end: '15:00' })).rejects.toThrow(/The end has to be after the start/);
+    await expect(tool('create_event').revise(ctx(two), event, { invite_player_ids: ['00000000-0000-4000-8000-0000000000ee'] })).rejects.toBeInstanceOf(CoachContextError);
+    // And a player can revise nothing.
+    await expect(tool('create_event').revise(ctx({ ...coach, player_id: P1 }), event, { title: 'Mine now' })).rejects.toBeInstanceOf(CoachContextError);
+    expect(world.actionCalls).toEqual([]);
+  });
+
+  it('a revised card commits like any other, and what it writes is what it shows', async () => {
+    const { createGolfEvent } = await import('@/app/golf/actions/calendar-events');
+    vi.mocked(createGolfEvent).mockClear();
+    const next = await tool('create_event').revise(ctx(), await card('create_event'), { title: 'Wedge practice', location: 'Range' });
+    const receipt = await tool('create_event').commit(ctx(), { ...next, idempotency_key: 'revised-card' });
+    expect(receipt.status).toBe('completed');
+    expect(vi.mocked(createGolfEvent).mock.calls[0]?.[0]).toMatchObject({ title: 'Wedge practice', location: 'Range', startDate: '2026-11-12' });
+  });
+});

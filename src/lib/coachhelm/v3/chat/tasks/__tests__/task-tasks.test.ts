@@ -104,3 +104,28 @@ describe('set_task_reminder', () => {
     expect(taskTaskTools().map((t) => [t.name, t.kind])).toEqual([['set_task_reminder', 'task']]);
   });
 });
+
+describe('set_task_reminder: editing the card before Confirm', () => {
+  it('the card offers the day and the time, and an edit plans again with the staff check and no write', async () => {
+    const { sb, writes } = db();
+    const p = stored(await setTaskReminderTool.plan(toolCtx(sb, coach()), input));
+    expect(p.editable?.map((f) => [f.key, f.label, f.type, f.value, f.required])).toEqual([['date', 'Date', 'date', '2026-11-12', true], ['time', 'Time', 'time', '19:00', true]]);
+    const q = await setTaskReminderTool.revise!(toolCtx(sb, coach()), p, { time: '07:30' });
+    expect(fact(q, 'Reminder')).toBe('Thu, Nov 12 at 7:30 AM, or within the hour after: reminders go out hourly.');
+    expect((q.input as { at: string; asked: unknown }).at).toBe('2026-11-12T12:30:00.000Z');
+    expect((q.input as { asked: unknown }).asked).toEqual({ ...input, time: '07:30' });
+    expect(writes).toEqual([]);
+    expect(a.setTaskReminder).not.toHaveBeenCalled();
+    // The same permission as the first card: someone no longer on the staff cannot edit their way to a new one.
+    await expect(setTaskReminderTool.revise!(toolCtx(db({ staff: false }).sb, coach()), p, { time: '07:30' })).rejects.toThrow('Only this team’s coaches can do that.');
+  });
+
+  it('refuses the task as a field, a blank, a time that is not one, and a player', async () => {
+    const { sb } = db();
+    const p = stored(await setTaskReminderTool.plan(toolCtx(sb, coach()), input));
+    await expect(setTaskReminderTool.revise!(toolCtx(sb, coach()), p, { task_id: FOREIGN })).rejects.toThrow('That cannot be changed on this card. Ask for it in words instead.');
+    await expect(setTaskReminderTool.revise!(toolCtx(sb, coach()), p, { time: '' })).rejects.toThrow('Time is not a value this card can take.');
+    await expect(setTaskReminderTool.revise!(toolCtx(sb, coach()), p, { date: 'tomorrow' })).rejects.toThrow('Date is not a value this card can take.');
+    await expect(setTaskReminderTool.revise!(toolCtx(sb, playerWho(), 'player'), p, { time: '07:30' })).rejects.toThrow('Only a coach can do that.');
+  });
+});

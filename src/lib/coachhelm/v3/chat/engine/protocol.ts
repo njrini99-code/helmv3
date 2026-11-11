@@ -77,6 +77,42 @@ export interface ChatTurnMeta {
   declined?: true;
 }
 
+/**
+ * `data-computed`: the model worked a figure out in code. One part per run of its code, sent when the run ends and stored with the
+ * turn. Figures in such an answer carry no read markers (a read the code calls cannot be cited), so this is how the answer shows
+ * its work: the reads the code called are the evidence parts named in `refs` (each also says `via: 'code'`).
+ */
+export const COMPUTED_PART = 'data-computed' as const;
+export interface ChatComputed {
+  /** Evidence refs of the reads the code called, in the order it asked for them. Empty when it only did arithmetic on figures already read. */
+  refs: string[];
+  /** How many reads that is. */
+  reads: number;
+  /** How many different players those reads measured. */
+  players: number;
+  /** The window the reads share, in the reads' own words ("Last 8 rounds"); null when they differ or give none. */
+  window: string | null;
+  /** One sentence on how it was worked out, in the model's own plain words, when its code began with one (`# Method: ...`). */
+  method?: string;
+}
+
+/**
+ * `data-card-revision`: the answer to an edit of a waiting card (or to a Confirm of a card that had changed), sent beside the
+ * card's `proposal` part as it now stands. Part id `revision-<key>`. It is for the live thread only: it is not stored, so a reload
+ * shows the card and no stale notice.
+ */
+export const CARD_REVISION_PART = 'data-card-revision' as const;
+export interface ChatCardRevision {
+  key: string;
+  /** True: the edit was made and the card beside this is the new one. False: the card beside this is unchanged. */
+  accepted: boolean;
+  /** Why not. `invalid`: the edit itself (`reason` says what); `changed`: the card was edited somewhere else; `decided`: it is no
+   *  longer waiting; `fixed`: nothing on it can be edited; `gone`: there is no such card. */
+  kind?: 'invalid' | 'changed' | 'decided' | 'fixed' | 'gone';
+  /** A sentence the coach can read. */
+  reason?: string;
+}
+
 export function turnMetaOf(parts: readonly ChatUIPart[]): ChatTurnMeta | null {
   const data = parts.find((p) => p.type === TURN_META_PART)?.data as Partial<ChatTurnMeta> | undefined;
   return data && typeof data.started_at === 'string' && typeof data.duration_ms === 'number' ? { started_at: data.started_at, duration_ms: data.duration_ms, reads: typeof data.reads === 'number' ? data.reads : 0, ...(data.declined ? { declined: true as const } : {}) } : null;
@@ -98,8 +134,9 @@ export type ChatEvent =
   | { type: 'read_finished'; id: string; label: string; tool: string; state: 'done' | 'failed'; detail?: string; picture?: unknown }
   /** A short progress note in the model's own words (never its reasoning). Drawn as a finished progress row. */
   | { type: 'note'; id: string; text: string }
-  /** A part of the answer that is not prose. The four named kinds are the ones the brief lists; `part` is every other stored data part. */
-  | { type: 'evidence' | 'visual' | 'proposal' | 'receipt' | 'part'; part: WireDataPart }
+  /** A part of the answer that is not prose. The four named kinds are the ones the brief lists; `part` is every other stored data part.
+   *  `message_id`: the part belongs to an EARLIER message, not the one this response is writing (how an earlier card ended). */
+  | { type: 'evidence' | 'visual' | 'proposal' | 'receipt' | 'part'; part: WireDataPart; message_id?: string }
   /** The turn is waiting on the coach: the card for `key` is live. */
   | { type: 'decision_needed'; key: string; tool: string; tool_use_id: string }
   /**
@@ -108,6 +145,11 @@ export type ChatEvent =
    * `message_id` names it.
    */
   | { type: 'decision'; key: string; approved: boolean; reason?: 'superseded'; message_id?: string }
+  /**
+   * The card for `key` waits for the coach again. It was confirmed as part of an "approve all", an earlier card of that batch
+   * failed, and so this one was not run: nothing was written for it. Its held receipt is withdrawn with it.
+   */
+  | { type: 'decision_reopened'; key: string; reason: 'batch_stopped' }
   | { type: 'usage'; input_tokens: number; output_tokens: number; cache_read_input_tokens: number }
   /** A sentence a coach can act on. Never provider text. */
   | { type: 'error'; message: string; action: ChatErrorAction; kind?: ChatErrorKind }
@@ -217,6 +259,15 @@ export function applyChatEvent(message: ChatUIMessage, event: ChatEvent): ChatUI
             ? { ...p, state: event.approved ? 'approval-responded' : 'output-denied', approval: { id: event.key, approved: event.approved, ...(event.reason && !event.approved ? { reason: event.reason } : {}) } }
             : p,
         ),
+      };
+    }
+    case 'decision_reopened': {
+      if (!parts.some((p) => isDecisionPartFor(p, event.key))) return message;
+      return {
+        ...message,
+        parts: parts
+          .filter((p) => !(p.type === 'data-action-receipt' && p.id === `receipt-${event.key}`))
+          .map((p) => (isDecisionPartFor(p, event.key) ? { ...p, state: 'approval-requested', approval: { id: event.key } } : p)),
       };
     }
     default:

@@ -113,6 +113,14 @@ export interface FlowDef<I> {
   plan: (ctx: CoachChatContext, input: I) => FlowCard;
   run: (ctx: CoachChatContext, input: I, attempt: FlowAttempt) => Promise<FlowResult>;
   /**
+   * The keys of `input` a coach may change on the card before confirming (`ActionProposal.editable`). Each one's type
+   * and limits come from `input` itself. Never the thing the card is about (a tournament, a round, a thread, a plan,
+   * the player a goal or note belongs to). Left out: nothing is editable in place.
+   */
+  editable?: readonly string[];
+  /** The card's own label for an editable key, where it is not the key in words. */
+  editLabels?: Record<string, string>;
+  /**
    * The stored input's schema, when `prepare` adds what the server read (`seen`). `commit` parses the stored input with
    * it, so what the coach was shown comes back with the card. Left out, `input` is used. The model never sees this one.
    */
@@ -228,6 +236,8 @@ type EventStored = z.infer<typeof eventInput> & { seen?: { people: SeenPeople } 
 const eventDone = (i: z.infer<typeof eventInput>): FlowDone => ({ summary: `${i.title} is on the calendar.`, kind: 'event', label: i.title, href: `/golf/dashboard/calendar?date=${i.date}` });
 const eventFlow: FlowDef<EventStored> = {
   name: 'create_event',
+  editable: ['title', 'event_type', 'date', 'start', 'end', 'location', 'notes', 'invite_player_ids', 'requires_rsvp'],
+  editLabels: { event_type: 'Type', date: 'When', start: 'Starts', end: 'Ends', location: 'Where', notes: 'Notes', invite_player_ids: 'Invited', requires_rsvp: 'Replies' },
   landed: { table: 'golf_events', done: eventDone },
   description: 'Add one event to the team calendar, including a single practice. Ask for the type if two fit, the start if timed, the end if timed and not a practice, and who is invited to a meeting. A practice needs only its start: the card shows the usual length.',
   input: eventInput,
@@ -281,6 +291,8 @@ const eventFlow: FlowDef<EventStored> = {
 const tripInput = z.object({ event_name: z.string().min(1).max(200), destination: z.string().min(1).max(200), transportation_type: z.enum(['bus', 'van', 'flight', 'carpool']), departure_date: DATE, departure_time: TIME.optional(), departure_location: z.string().max(500).optional(), return_date: DATE.optional(), return_time: TIME.optional(), flight_info: z.string().max(1000).optional(), hotel_name: z.string().max(200).optional(), hotel_address: z.string().max(500).optional(), hotel_phone: z.string().max(50).optional(), hotel_confirmation: z.string().max(100).optional(), room_assignments: z.string().max(2000).optional(), uniform_requirements: z.string().max(1000).optional(), gear_list: z.array(z.string().max(200).regex(/^[^,]*$/, 'One item, no comma')).max(50).optional(), notes: z.string().max(5000).optional() });
 const tripFlow: FlowDef<z.infer<typeof tripInput>> = {
   name: 'create_trip',
+  editable: ['event_name', 'destination', 'transportation_type', 'departure_date', 'departure_time', 'departure_location', 'return_date', 'return_time', 'flight_info', 'hotel_name', 'hotel_address', 'hotel_phone', 'hotel_confirmation', 'room_assignments', 'uniform_requirements', 'gear_list', 'notes'],
+  editLabels: { event_name: 'Trip', transportation_type: 'How', departure_date: 'Leaves', departure_time: 'Leaves at', departure_location: 'From', return_date: 'Back', return_time: 'Back at', flight_info: 'Flight', hotel_name: 'Hotel', hotel_confirmation: 'Confirmation number', room_assignments: 'Rooms', uniform_requirements: 'Uniform', gear_list: 'Gear' },
   written: (sb, ctx, i, { since }) => rowSince(sb, 'golf_travel_itineraries', { team_id: ctx.team_id, event_name: i.event_name, destination: i.destination, departure_date: i.departure_date }, since),
   done: (_ctx, i) => ({ summary: `The trip to ${i.destination} is added.`, kind: 'trip', label: i.event_name, href: '/golf/dashboard/travel' }),
   description: 'Add a trip. Ask for transport and a firm leave date if not said.',
@@ -326,6 +338,8 @@ const qualifierInput = z.object({ name: z.string().min(1).max(200), description:
 type QualifierStored = z.infer<typeof qualifierInput> & { seen?: { people: SeenPeople } };
 const qualifierFlow: FlowDef<QualifierStored> = {
   name: 'create_qualifier',
+  editable: ['name', 'description', 'start_date', 'end_date', 'num_rounds', 'selection_slots_total', 'selection_slots_coach_pick', 'player_ids', 'rules', 'entry_deadline'],
+  editLabels: { start_date: 'Starts', end_date: 'Ends', num_rounds: 'Rounds', selection_slots_total: 'Squad', selection_slots_coach_pick: 'Coach picks', player_ids: 'Players' },
   written: (sb, ctx, i, { since }) => rowSince(sb, 'golf_qualifiers', { team_id: ctx.team_id, name: i.name, start_date: i.start_date }, since),
   done: (_ctx, i) => ({ summary: `${i.name} is set.`, kind: 'qualifier', label: i.name, href: '/golf/dashboard/qualifiers' }),
   description: 'Set a qualifier. Ask for rounds, squad size and coach picks if not said.',
@@ -381,6 +395,8 @@ const goalHref = (playerId: string) => `/golf/dashboard/roster?player=${playerId
 const withUnit = (value: number, unit: string): string => (unit === 'percent' || unit === '%' ? `${value}%` : unit ? `${value} ${unit}` : `${value}`);
 const goalFlow: FlowDef<GoalStored> = {
   name: 'create_goal',
+  editable: ['target_value', 'window_days', 'mode'],
+  editLabels: { target_value: 'Target', window_days: 'By', mode: 'How' },
   written: (sb, _ctx, i, { since }) => rowSince(sb, 'golf_goals', { player_id: i.player_id, metric_id: i.metric_id, target_value: i.target_value }, since),
   done: (ctx, i) => ({ summary: `The goal is set for ${requireRosterPlayer(ctx, i.player_id).name}.`, kind: 'goal', href: goalHref(i.player_id) }),
   description: 'Give a player a goal on one of eight stats. Ask which stat if unclear, by when, and whether it is assigned or suggested.',
@@ -453,6 +469,8 @@ const NOTE_MOVED = 'The note on this round changed after this card was made, so 
 const roundHref = (roundId: string) => `/golf/dashboard/rounds/${roundId}`;
 const noteFlow: FlowDef<NoteInput> = {
   name: 'add_round_note',
+  editable: ['note'],
+  editLabels: { note: 'Adding' },
   description: 'Add a coach note to a round, under any earlier note, which stays. The player always sees it.',
   input: noteInput,
   stored: noteStored,
@@ -650,6 +668,8 @@ const blockInput = z.object({ title: z.string().min(1).max(200), date: DATE, end
 const blockDone = (i?: { date?: string }): FlowDone => ({ summary: 'That time is blocked.', kind: 'blocked_time', href: i?.date ? `/golf/dashboard/calendar?date=${i.date}` : '/golf/dashboard/calendar' });
 const blockFlow: FlowDef<z.infer<typeof blockInput>> = {
   name: 'add_blocked_time',
+  editable: ['title', 'date', 'end_date', 'start', 'end'],
+  editLabels: { date: 'First day', end_date: 'Last day', start: 'From', end: 'To' },
   landed: { table: 'golf_coach_blocked_time', done: blockDone },
   description: 'Block off the coach’s own time. Players never see it.',
   input: blockInput,
@@ -669,6 +689,8 @@ const breakInput = z.object({ first_day: DATE, last_day: DATE, label: z.string()
 const breakDone = (i: z.infer<typeof breakInput>): FlowDone => ({ summary: `${i.label} is on the calendar.`, kind: 'break', label: i.label, href: `/golf/dashboard/calendar?date=${i.first_day}` });
 const breakFlow: FlowDef<z.infer<typeof breakInput>> = {
   name: 'add_team_break',
+  editable: ['first_day', 'last_day', 'label'],
+  editLabels: {},
   // The break's row id is this card's request id (the action keeps it), so a second run finds the first one's row.
   landed: { table: 'golf_class_exceptions', done: breakDone },
   description: 'A team break from class, 21 days at most.',
@@ -698,6 +720,8 @@ const termInput = z.object({ name: z.string().min(1).max(40), classes_start: DAT
 type TermStored = z.infer<typeof termInput> & { seen?: { others: number } };
 const termFlow: FlowDef<TermStored> = {
   name: 'save_team_term',
+  editable: ['name', 'classes_start', 'classes_end', 'exams_end'],
+  editLabels: { classes_start: 'Classes start', classes_end: 'Classes end', exams_end: 'Exams end' },
   // The term's row id is this card's request id (the action keeps it), so the look is exact.
   landed: { table: 'golf_team_terms', done: (i) => ({ summary: `${i.name} is saved.`, kind: 'term', label: i.name, href: '/golf/dashboard/settings?section=team' }) },
   description: 'Save a term. Ask for any date not given; never infer from a school calendar.',
@@ -745,6 +769,8 @@ type AvailStored = z.infer<typeof availInput> & { existing?: string };
 const AVAIL_MOVED = 'The note saved for this player changed after this card was made, so what it would replace is not what you saw. Nothing was changed. Ask to save the note again.';
 const availFlow: FlowDef<AvailStored> = {
   name: 'set_availability_note',
+  editable: ['note'],
+  editLabels: { note: 'Note' },
   description: 'A coach-only note on a player’s availability; it replaces any earlier note.',
   input: availInput,
   stored: availInput.extend({ existing: z.string().optional() }),
@@ -782,6 +808,8 @@ const recruitInput = z.object({ first_name: z.string().min(1).max(120), last_nam
 const recruitDone = (): FlowDone => ({ summary: 'The recruit is added.', kind: 'recruit', href: '/golf/dashboard/recruiting' });
 const recruitFlow: FlowDef<z.infer<typeof recruitInput>> = {
   name: 'create_recruit',
+  editable: ['first_name', 'last_name', 'grad_year', 'email', 'phone', 'hometown', 'state', 'notes', 'status'],
+  editLabels: { grad_year: 'Grad year' },
   landed: { table: 'golf_recruits', done: recruitDone },
   description: 'Add a recruit. Ask for a grad year if a grade was given. Coach only.',
   input: recruitInput,
@@ -812,6 +840,8 @@ type MessageStored = z.infer<typeof messageInput> & { seen?: z.infer<typeof Seen
 const messageHref = (conversationId: string) => `/golf/dashboard/messages?conversation=${conversationId}`;
 const messageFlow: FlowDef<MessageStored> = {
   name: 'send_message',
+  editable: ['content'],
+  editLabels: { content: 'Message' },
   written: (sb, _ctx, _i, { requestId }) => rowSince(sb, 'golf_messages', { id: requestId }, null),
   done: (_ctx, i) => ({ summary: `Sent to ${i.seen?.title ?? 'the thread'}.`, kind: 'message', label: i.seen?.title, href: messageHref(i.conversation_id) }),
   description: 'Send a message to one thread the coach is in, found with find_thread. It sends after the coach presses Send and the Undo window.',
@@ -875,6 +905,8 @@ const KIND_WORDS: Record<z.infer<typeof drillInput>['kind'], string> = { skill: 
 /** TASK_FIELDS 5.14: one drill bank, N-00's `golf_team_drills`. Registered only with the practice plans flag, which waits on that held migration. */
 export const drillFlow: FlowDef<z.infer<typeof drillInput>> = {
   name: 'create_drill',
+  editable: ['name', 'area', 'kind', 'minutes', 'setup', 'goal'],
+  editLabels: { minutes: 'Length' },
   // The drill's row id is this card's request id (the action keeps it), so the look is exact.
   landed: { table: 'golf_team_drills', done: (i) => ({ summary: `${i.name} is in the drill bank.`, kind: 'drill', label: i.name, href: DRILLS_HREF }) },
   description: 'Add a new drill to the team drill bank. Players see it only when a published plan uses it.',
@@ -905,6 +937,8 @@ const DOCUMENTS_HREF = '/golf/dashboard/team-hub?tab=docs';
 /** Publish from the artifact pane (ask/06 E-FPICK): the same hold as every write. The document opens for players; nothing else is sent. */
 const publishArtifactFlow: FlowDef<z.infer<typeof publishArtifactInput>> = {
   name: 'publish_artifact',
+  editable: ['title', 'body'],
+  editLabels: { body: 'Words' },
   written: (sb, ctx, i, { since }) => rowSince(sb, 'golf_documents', { team_id: ctx.team_id, title: i.title }, since),
   done: (_ctx, i) => ({ summary: `${i.title} is in Documents.`, kind: 'document', label: i.title, href: DOCUMENTS_HREF }),
   description: 'Publish a piece written with write_artifact to Documents, where every player on the team can open it. Use its latest words unchanged.',

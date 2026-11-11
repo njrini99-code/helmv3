@@ -23,8 +23,21 @@ function ctxFor(who: CoachChatContext | PlayerChatContext, loaders: ScreenLoader
   const db = pgrst(tables);
   return { sb: db.sb, who, conversationId: 'conv-1', surface: 'player_id' in who ? 'player' : 'ask', loaders, signal: new AbortController().signal, reads: new Map(), db };
 }
-const read = <I = never>(who: CoachChatContext | PlayerChatContext, name: string) => toolsFor('player_id' in who ? 'player' : 'ask', who).find((t) => t.name === name) as ReadTool<I>;
 const textOf = (r: ToolResult) => (r as ToolResult & { model_text?: string }).model_text ?? '';
+/** Every line any reader in this file hands the model, so the last test can hold all of it to how a coach reads. */
+const SEEN_TEXT: Array<{ tool: string; text: string }> = [];
+const read = <I = never>(who: CoachChatContext | PlayerChatContext, name: string) => {
+  const tool = toolsFor('player_id' in who ? 'player' : 'ask', who).find((t) => t.name === name) as ReadTool<I> | undefined;
+  if (!tool) return tool as unknown as ReadTool<I>;
+  return {
+    ...tool,
+    run: async (c: ToolContext, i: I) => {
+      const r = await tool.run(c, i);
+      SEEN_TEXT.push({ tool: name, text: [r.summary, textOf(r), r.coverage_note ?? ''].join('\n') });
+      return r;
+    },
+  } as ReadTool<I>;
+};
 
 function statsPage(name: string, over: Partial<PlayerStatsScreen> = {}): PlayerStatsScreen {
   return {
@@ -63,12 +76,12 @@ describe('get_player_stats: the figure in chat is the figure on the Stats page',
     expect(out.measurements.find((m) => m.metric_id === 'gir_pct')?.benchmark?.value).toBe(66);
     expect(out.measurements.find((m) => m.metric_id === 'sg_approach')).toMatchObject({ value: -0.31, sample_size: 9 });
     expect(out.window_label).toBe('last 20 rounds');
-    expect(textOf(out)).toContain('Eli Brandt, Scoring avg, last 20 rounds: 74.2 (n=10 rounds) | team average 75.1');
-    expect(textOf(out)).toContain('Eli Brandt, Greens in regulation, last 20 rounds: 61% (n=10 rounds) | team average 58% | Tour 66%');
-    expect(textOf(out)).toContain('Eli Brandt, SG approach, last 20 rounds: -0.31 (n=9 rounds) | team average +0.05');
+    expect(textOf(out)).toContain('Eli Brandt, scoring average, last 20 rounds: 74.2, over 10 rounds | team average 75.1');
+    expect(textOf(out)).toContain('Eli Brandt, greens in regulation, last 20 rounds: 61%, over 10 rounds | team average 58% | Tour 66%');
+    expect(textOf(out)).toContain('Eli Brandt, strokes gained approach, last 20 rounds: \u22120.31 against the Tour benchmark, over 9 rounds | team average +0.05');
     // A figure with no value yet is said to be missing with its reason, never printed as zero.
     expect(out.measurements.some((m) => m.metric_id === 'sand_save_pct')).toBe(false);
-    expect(textOf(out)).toContain('Eli Brandt, Sand saves, last 20 rounds: no figure yet (Needs 10 chances.)');
+    expect(textOf(out)).toContain('Eli Brandt, sand saves, last 20 rounds: no figure yet, needs 10 chances.');
   });
 
   it('works out the gaps to the team, worst first, so the model does not', async () => {
@@ -98,7 +111,7 @@ describe('get_player_stats: the figure in chat is the figure on the Stats page',
     expect(side.find((c) => c.metric === 'Greens in regulation')).toMatchObject({ best_first: [{ player: 'Eli Brandt', value: 61 }, { player: 'Maya Ortiz', value: 55 }], gap: 6 });
     // A measure only one of them has is not compared.
     expect(side.some((c) => c.metric === 'Scrambling')).toBe(false);
-    expect(textOf(out)).toContain('Scoring avg: Maya Ortiz 73.9; Eli Brandt 74.2. Gap first to last: 0.3.');
+    expect(textOf(out)).toContain('Scoring average: Maya Ortiz 73.9; Eli Brandt 74.2. Gap first to last: 0.3.');
   });
 
   it('one of two players failing is partial and names who is missing', async () => {
@@ -112,7 +125,7 @@ describe('get_player_stats: the figure in chat is the figure on the Stats page',
     const out = await read<{ player_ids: string[]; window: string; sections: string[] }>(coach, 'get_player_stats').run(ctxFor(coach, { playerStats: async () => statsPage('Eli Brandt') }), { player_ids: [ELI], window: 'season', sections: ['rounds', 'putting'] });
     expect((out.detail as { rounds: unknown[] }).rounds).toHaveLength(20);
     expect(textOf(out)).toContain('(20 of 30)');
-    expect(textOf(out)).toContain('5–10 ft 9 of 14 (64%, Tour 56%)');
+    expect(textOf(out)).toContain('from 5 to 10 feet, 9 of 14 made, 64% against the Tour\u2019s 56%');
   });
 
   it('refuses a player who is not on the coach\'s roster before any read', async () => {
@@ -146,16 +159,43 @@ const teamPage = (over: Partial<TeamStatsScreen> = {}): TeamStatsScreen => ({
   ...over,
 });
 
+describe('every strokes-gained line names what it is measured against', () => {
+  const stats = (who: CoachChatContext, page: PlayerStatsScreen) => read<{ player_ids: string[]; window: string; sections: string[] }>(who, 'get_player_stats').run(ctxFor(who, { playerStats: async () => page }), { player_ids: [ELI], window: 'last10', sections: ['rounds'] });
+  const sgLines = (text: string) => text.split('\n').filter((l) => /strokes gained/.test(l));
+
+  it('the Tour benchmark for a men\u2019s team or one with no gender set, in every line that carries a strokes-gained figure', async () => {
+    for (const who of [coach, { ...coach, gender: 'mens' }]) {
+      const lines = sgLines(textOf(await stats(who, statsPage('Eli Brandt'))));
+      expect(lines.length).toBeGreaterThan(3);
+      for (const line of lines) expect(line).toContain('against the Tour benchmark');
+    }
+  });
+
+  it('the women\u2019s Tour baseline for a women\u2019s team, chosen the way the calculation chooses it; what the loader says it used wins', async () => {
+    const womens = { ...coach, gender: 'womens' };
+    for (const line of sgLines(textOf(await stats(womens, statsPage('Eli Brandt'))))) expect(line).toContain('against the women\u2019s Tour baseline');
+    for (const line of sgLines(textOf(await stats(womens, statsPage('Eli Brandt', { sgBaseline: 'pga_tour' }))))) expect(line).toContain('against the Tour benchmark');
+  });
+
+  it('says how many rounds had shots logged only when the Stats page says', async () => {
+    const page = statsPage('Eli Brandt');
+    expect(textOf(await stats(coach, page))).not.toMatch(/shot-tracked/);
+    const tracked = textOf(await stats(coach, { ...page, win: { ...page.win, sgShotRounds: 6 } }));
+    expect(tracked).toContain('strokes gained approach, last 10 rounds: \u22120.31 against the Tour benchmark, over 9 rounds, 6 of 9 shot-tracked, the rest estimated from the scorecard');
+    expect(textOf(await stats(coach, { ...page, win: { ...page.win, sgShotRounds: 9 } }))).toContain('over 9 rounds, all 9 shot-tracked');
+  });
+});
+
 describe('putting by distance: a band nobody putted from is "no attempts", never 0%', () => {
   const bands = [{ label: '3–5 ft', made: 18, attempts: 20, bench: 88 }, { label: '20–30 ft', made: 0, attempts: 0, bench: 7 }, { label: '30+ ft', made: 0, attempts: 6, bench: 3 }];
   type Putting = { profile: { buckets: Array<{ label: string; attempts: number; rate: number | null }> }; putt_bands: Array<{ band: string; attempts: number; make_pct: number | null }> };
   const check = (out: ToolResult, detail: Putting) => {
     const line = textOf(out).split('\n').find((l) => /utting by distance/.test(l)) ?? '';
-    expect(line).toContain('20–30 ft no attempts');
-    expect(line).not.toMatch(/20–30 ft [^;]*%/);
+    expect(line).toContain('from 20 to 30 feet, no attempts');
+    expect(line).not.toMatch(/from 20 to 30 feet[^;]*%/);
     expect(line).not.toContain('0 of 0');
     // A band that was putted from and never holed is a real 0%, and is said as one.
-    expect(line).toContain('30+ ft 0 of 6 (0%, Tour 3%)');
+    expect(line).toContain('30 feet and beyond, 0 of 6 made, 0% against the Tour\u2019s 3%');
     expect(detail.putt_bands.map((b) => [b.band, b.make_pct])).toEqual([['3–5 ft', 90], ['20–30 ft', null], ['30+ ft', 0]]);
     // The putting picture draws from `rate`: null, so the empty band is drawn as empty and not as a bar at zero.
     expect(detail.profile.buckets.map((b) => b.rate)).toEqual([90, null, 0]);
@@ -186,7 +226,7 @@ describe('get_team_stats: one team average, places already worked out', () => {
     expect(out.measurements.find((m) => m.entity.kind === 'team' && m.metric_id === 'scoring_average')).toMatchObject({ value: 75.1, sample_size: 28, source: 'Team Stats page' });
     const ranking = (out.detail as { ranking: Array<{ player: string; place: number | null; value: number | null }> }).ranking;
     expect(ranking).toEqual([expect.objectContaining({ player: 'Eli Brandt', place: 1, value: 0.4 }), expect.objectContaining({ player: 'Maya Ortiz', place: 1, value: 0.4 }), expect.objectContaining({ player: 'Noah Kim', place: null, value: null })]);
-    expect(textOf(out)).toContain('3–5 ft 40 of 50 (80%, Tour 88%)');
+    expect(textOf(out)).toContain('from 3 to 5 feet, 40 of 50 made, 80% against the Tour\u2019s 88%');
   });
 
   it('ranks a lower-is-better column the right way round', async () => {
@@ -230,13 +270,13 @@ describe('get_rounds: the Rounds page\'s list, with the adding up done here', ()
     expect(out.measurements.find((m) => m.entity.id === ELI)).toMatchObject({ value: expected, sample_size: 20, source: 'Rounds page' });
     // The Rounds page's season line counts practice rounds; the Roster's season average does not. The read says which this is, when it gives it.
     const season = textOf(out).split('\n').find((line) => line.startsWith('This season'));
-    if (season) expect(season).toMatch(/every round type with practice rounds included: .*The season scoring average that leaves practice out is get_season's\.$/);
+    if (season) expect(season).toMatch(/every round type with practice rounds included: .*The season scoring average that leaves practice rounds out comes from the season read\.$/);
   });
 
   it('labels the Rounds page\'s season line as every round type, and points to get_season for the season average', async () => {
     const page = roundsPage([roundRow(1), roundRow(2)]);
     const out = await tool().run(ctxFor(coach, { teamRounds: async () => ({ ...page, season: { ...page.season, rounds: 2, players: 1, avg: 73.5, underPar: 0, best: null } }) }), { list: 10 });
-    expect(textOf(out)).toMatch(/This season \(since [^)]+\), as the Rounds page shows it, every round type with practice rounds included: 2 full rounds by 1 player, average 73\.5, 0 under par\. The season scoring average that leaves practice out is get_season's\./);
+    expect(textOf(out)).toMatch(/This season \(since [^)]+\), as the Rounds page shows it, every round type with practice rounds included: 2 full rounds by 1 player, average 73\.5, 0 under par\. The season scoring average that leaves practice rounds out comes from the season read\./);
   });
 
   it('never lists a round of someone who is not on the roster', async () => {
@@ -267,7 +307,7 @@ describe('get_season and get_qualifiers: the screen\'s own figures and order', (
     const out = await read<{ qualifier_id?: string; limit: number }>(coach, 'get_qualifiers').run(ctxFor(coach, { qualifierBoard }), { qualifier_id: '00000000-0000-4000-8000-00000000aaaa', limit: 5 });
     // Eli is under par but a round short: the board ranks him below the full card, and so does the read.
     expect((out.detail as { standings: Array<{ player: string; position: string }> }).standings.map((s) => [s.player, s.position])).toEqual([['Maya Ortiz', '1'], ['Eli Brandt', '2']]);
-    expect(textOf(out)).toContain('Eli Brandt: -1 to par, 71 strokes over 1 round (fewer rounds than the leaders, so ranked below every complete card)');
+    expect(textOf(out)).toContain('Eli Brandt: \u22121 to par, 71 strokes over 1 round (fewer rounds than the leaders, so ranked below every complete card)');
     expect(textOf(out)).not.toMatch(/Maya Ortiz: [^\n]*ranked below/);
     expect((out.detail as { standings: Array<{ fewer_rounds_than_leaders: boolean }> }).standings.map((s) => s.fewer_rounds_than_leaders)).toEqual([false, true]);
     // The board's `shortRounds` is a different fact (a counted round that was not 18 holes) and is said as that, never as a missed round.
@@ -317,7 +357,7 @@ describe('get_round: the Round page\'s round, with its counting done here', () =
     const text = textOf(out);
     expect(text).toContain('Eli Brandt, Pine Hill on 2026-11-02: 74 (+2 to par) over 18 holes, front nine 36, back nine 38. Source: Round page.');
     expect(text).toContain('2 birdies or better');
-    expect(text).toContain('approach -0.42');
+    expect(text).toContain('approach \u22120.42');
     expect(text).toContain('The coach\'s note on the round: "Good patience."');
   });
 
@@ -375,7 +415,7 @@ describe('get_tournaments: the Tournaments page, newest first, with the adding u
     expect(list[1]!.players.map((p) => [p.player, p.total, p.to_par])).toEqual([['Maya Ortiz', 142, -2], ['Eli Brandt', 144, 0]]);
     const text = textOf(out);
     expect(text).toContain('Fall Opener (2026-09-12 to 2026-09-13, complete): lineup locked, 5 of 5 set, the team finished T3 of 12, 2 rounds. Source: Tournaments page.');
-    expect(text).toContain('Fall Opener, Maya Ortiz: 142 over 2 rounds (-2 to par); by round 70, 72');
+    expect(text).toContain('Fall Opener, Maya Ortiz: 142 over 2 rounds (\u22122 to par); by round 70, 72');
     // No tournament table was read by the chat itself.
     expect(ctx.db.calls).toEqual([]);
   });
@@ -396,7 +436,7 @@ describe('what each surface is offered', () => {
 
   it('a coach keeps every capability, on fewer tools', () => {
     const ask = toolsFor('ask', coach);
-    expect(names(ask)).toEqual(['get_player_stats', 'get_team_stats', 'get_rounds', 'get_round', 'get_shots', 'get_season', 'get_qualifiers', 'get_schedule', 'get_coachhelm', 'get_practice', 'get_reference', 'query_team_data', 'summarise_data', 'show_visual', 'find_thread', 'find_in_app', 'save_note', 'remove_note', 'write_artifact', 'ask_practice_brief', 'draft_practice_plan', 'draft_message', 'draft_poll', 'draft_board', 'create_event', 'create_trip', 'create_qualifier', 'create_goal', 'add_round_note', 'add_blocked_time', 'add_team_break', 'save_team_term', 'set_availability_note', 'create_recruit', 'create_recurring_practice', 'create_focus_area', 'create_task', 'create_team_announcement', 'create_drill', 'publish_practice_plan', 'publish_artifact', 'send_event_reminder', 'record_attendance', 'update_event', 'cancel_event', 'set_focus_area_status', 'set_goal_state', 'mark_signal_handled', 'set_qualifier_coach_pick', 'set_task_reminder', 'dismiss_signal']);
+    expect(names(ask)).toEqual(['get_player_stats', 'get_team_stats', 'get_rounds', 'get_round', 'get_shots', 'get_season', 'get_qualifiers', 'get_schedule', 'get_coachhelm', 'get_practice', 'get_reference', 'query_team_data', 'summarise_data', 'show_visual', 'find_thread', 'find_in_app', 'save_note', 'remove_note', 'write_artifact', 'ask_practice_brief', 'draft_practice_plan', 'draft_message', 'draft_poll', 'draft_board', 'create_event', 'create_trip', 'create_qualifier', 'create_goal', 'add_round_note', 'add_blocked_time', 'add_team_break', 'save_team_term', 'set_availability_note', 'create_recruit', 'create_recurring_practice', 'create_focus_area', 'create_task', 'create_team_announcement', 'create_drill', 'publish_practice_plan', 'publish_artifact', 'send_event_reminder', 'record_attendance', 'update_event', 'cancel_event', 'set_focus_area_status', 'set_goal_state', 'mark_signal_handled', 'set_qualifier_coach_pick', 'set_task_reminder', 'dismiss_signal', 'log_focus_progress', 'record_focus_outcome']);
     expect(new Set(names(ask)).size).toBe(ask.length);
   });
 
@@ -486,5 +526,31 @@ describe('a player cannot reach a teammate\'s figure or a coach-only field', () 
     expect(playerStats).toHaveBeenCalledWith(MAYA, 'season');
     expect(out.measurements).toHaveLength(1);
     expect(out.measurements[0]).toMatchObject({ value: 74.6, sample_size: 14, entity: { id: MAYA } });
+  });
+});
+
+/**
+ * What the model reads it repeats. So no line a reader hands it may hold statistics notation or an abbreviation a coach
+ * would not say aloud: the sample is in words ("over 10 rounds"), a distance is in feet or yards, an average is an
+ * average. This runs over every line every reader produced in the tests above.
+ */
+describe('how reader lines read', () => {
+  const BANNED: Array<[string, RegExp]> = [
+    ['a sample as n=4, n: 4 or N-4', /\bn\s*[=:-]\s*\d/i],
+    ['a bare count in brackets', /\(\s*\d[\d,]*\s*\)/],
+    ['ft for feet', /\d\s?ft\b|\bft\b/],
+    ['yd for yards', /\d\s?yds?\b|\byds?\b/],
+    ['avg for average', /\bavg\b/i],
+    ['pct for percent', /\bpct\b/i],
+    ['L10 for the last 10 rounds', /\bL\d+\b/],
+    ['SG for strokes gained', /\bSG\b/],
+    ['a hyphen for a minus sign before a figure', /(^|[\s:(|])-\d/m],
+    ['a column or table name', /\b[a-z]+_[a-z_]+\b/],
+  ];
+  it('no reader hands the model notation, an abbreviation or a column name', () => {
+    expect(SEEN_TEXT.length).toBeGreaterThan(25);
+    const found: string[] = [];
+    for (const { tool, text } of SEEN_TEXT) for (const line of text.split('\n')) for (const [what, re] of BANNED) if (re.test(line)) found.push(`${tool}: ${what}: ${line.slice(0, 200)}`);
+    expect([...new Set(found)]).toEqual([]);
   });
 });

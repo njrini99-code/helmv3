@@ -8,8 +8,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { NextRequest } from 'next/server';
 import { z } from 'zod';
-import { asTools, cited, codeToolUse, fakeDb, fakeModel, linesTool, newToolLog, readEvents, readTool, rejected, serverCode, taskTool, text, textOf, thinking, toolUse, type FakeDb, type FakeModel, type ToolLog } from './helpers';
-import type { ChatTool, ReadTool } from '@/lib/coachhelm/v3/chat/engine/tool';
+import { asTools, cited, codeToolUse, fakeDb, fakeModel, fallbackHop, linesTool, progressNote, newToolLog, readEvents, readTool, rejected, serverCode, taskTool, text, textOf, thinking, toolUse, type FakeDb, type FakeModel, type ToolLog } from './helpers';
+import type { ChatTool, ReadTool, TaskTool } from '@/lib/coachhelm/v3/chat/engine/tool';
 import type { ChatEvent } from '@/lib/coachhelm/v3/chat/engine/protocol';
 
 vi.mock('server-only', () => ({}));
@@ -20,6 +20,7 @@ const h = vi.hoisted(() => ({
   model: null as unknown,
   modelFactory: null as null | (() => unknown),
   features: null as unknown,
+  modelId: null as string | null,
   notes: null as null | { tone: 'straight' | 'detailed' | 'team_talk'; facts: Array<{ id: string; text: string }> },
   clubhouse: true,
   flags: new Set<string>(),
@@ -90,14 +91,18 @@ vi.mock('@/lib/coachhelm/v3/chat/context', async (original) => {
 });
 vi.mock('@/lib/coachhelm/v3/chat/engine/model', async (original) => {
   const real = await original<typeof import('@/lib/coachhelm/v3/chat/engine/model')>();
-  return { ...real, anthropicModelClient: () => (h.modelFactory ? h.modelFactory() : h.model), chatFeatures: (surface?: 'ask' | 'quick_chat' | 'practice_helper' | 'player') => h.features ?? real.chatFeatures(surface) };
+  type Surface = 'ask' | 'quick_chat' | 'practice_helper' | 'player';
+  // `h.model_id` runs every surface on one model, as the engine's own override constant does for the eval.
+  const profileFor = (surface?: Surface) => real.profileFor(surface, (h.modelId as 'claude-sonnet-5-5' | 'claude-haiku-5-5' | null) ?? null);
+  return { ...real, anthropicModelClient: () => (h.modelFactory ? h.modelFactory() : h.model), profileFor, chatFeatures: (surface?: Surface) => h.features ?? profileFor(surface).features };
 });
 // The real hold, with a 250 ms window instead of 8 s so a test can watch it release.
 const HOLD_MS = 250;
 const afterHold = () => new Promise((resolve) => setTimeout(resolve, HOLD_MS + 150));
 vi.mock('@/lib/coachhelm/v3/chat/undo-hold', async (original) => {
   const real = await original<typeof import('@/lib/coachhelm/v3/chat/undo-hold')>();
-  return { ...real, holdForExecution: (sb: never, args: { run_id: string }) => real.holdForExecution(sb, { ...args, now: Date.now() - real.UNDO_HOLD_MS + HOLD_MS }) };
+  // A shorter window, measured from the moment the caller names (a batch names one moment for all its cards).
+  return { ...real, holdForExecution: (sb: never, args: { run_id: string; now?: number }) => real.holdForExecution(sb, { ...args, now: (args.now ?? Date.now()) - real.UNDO_HOLD_MS + HOLD_MS }) };
 });
 
 import { POST } from '../route';
@@ -107,6 +112,7 @@ import { cancelHeld } from '@/lib/coachhelm/v3/chat/undo-hold';
 import { listConversations, resetSurfaceColumnCheck } from '@/lib/coachhelm/v3/chat/persistence';
 import { getRound } from '@/lib/coachhelm/v3/chat/readers-direct';
 import { turnMetaOf } from '@/lib/coachhelm/v3/chat/engine/protocol';
+import { proposalSeal } from '@/lib/coachhelm/v3/chat/engine/tasks';
 
 const MESSAGES = 'golf_coachhelm_chat_messages';
 /** The app's own line for the turn, as the system message after the coach's words. */
@@ -127,6 +133,7 @@ function setup(opts: { modelColumns?: boolean; holdColumn?: boolean; surfaceColu
   h.role = 'coach';
   h.modelFactory = null;
   h.features = null;
+  h.modelId = null;
   h.notes = null;
   h.clubhouse = true;
   h.flags = new Set();
@@ -203,15 +210,17 @@ describe('a plain answer', () => {
     ]);
 
     const request = model.requests[0]!;
-    expect(request.model).toBe('claude-haiku-5-5');
+    // A coach's surfaces run on Claude Sonnet 5.5: effort medium, adaptive thinking, the model's own notes between tool calls,
+    // and the server-side refusal fallback.
+    expect(request.model).toBe('claude-sonnet-5-5');
     expect(request.max_tokens).toBe(16000);
-    expect(request.thinking).toEqual({ type: 'adaptive', block_binding: { prefix_mismatch_behavior: 'drop_block' } });
-    // This model's default effort is medium: high is sent on every request.
-    expect(request.output_config).toEqual({ effort: 'high' });
+    expect(request.thinking).toEqual({ type: 'adaptive', block_binding: { prefix_mismatch_behavior: 'drop_block' }, display: 'updates' });
+    expect(request.output_config).toEqual({ effort: 'medium' });
     expect(request.tool_choice).toEqual({ type: 'auto' });
-    // There is no server-side fallback on this model, and nothing it rejects is sent.
-    for (const never of ['fallbacks', 'temperature', 'top_p', 'top_k']) expect(request).not.toHaveProperty(never);
-    expect(request.betas).toEqual(['thinking-binding-controls-2026-08-01', 'compact-2026-01-12']);
+    expect(request.fallbacks).toBe('default');
+    // Nothing this model rejects is sent.
+    for (const never of ['temperature', 'top_p', 'top_k']) expect(request).not.toHaveProperty(never);
+    expect(request.betas).toEqual(['thinking-binding-controls-2026-08-01', 'thinking-display-updates-2026-08-18', 'compact-2026-01-12', 'server-side-fallback-2026-07-01']);
     expect(request.context_management).toEqual({ edits: [{ type: 'compact_20260112' }] });
     // Nothing that changes with the day is in the prompt: the date is the system message after the coach's words.
     expect(JSON.stringify(request.system)).not.toContain('November');
@@ -251,7 +260,7 @@ describe('a plain answer', () => {
     ]);
     expect(assistantRows()).toHaveLength(2);
     // The stored thinking block goes back unchanged, with the instruction to drop it rather than fail if the prompt has changed since.
-    expect(model.requests[0]!.thinking).toEqual({ type: 'adaptive', block_binding: { prefix_mismatch_behavior: 'drop_block' } });
+    expect(model.requests[0]!.thinking).toMatchObject({ type: 'adaptive', block_binding: { prefix_mismatch_behavior: 'drop_block' } });
   });
 });
 
@@ -339,6 +348,128 @@ describe('reads', () => {
   });
 });
 
+describe('the model a surface runs on', () => {
+  const ledger = () => ((h.admin as unknown as FakeDb).tables.golf_coachhelm_llm_calls ?? []) as Array<{ model_id: string; cost_usd: number; prompt_tokens: number; completion_tokens: number; player_id?: string | null }>;
+  const turnLog = () => (h.logServerEvent.mock.calls.map((c) => c as unknown[]).filter((c) => c[0] === 'chat/stream: turn').at(-1)![1] as { extra: Record<string, unknown> }).extra;
+
+  it('every coach surface is Claude Sonnet 5.5 and is billed and logged at its rates; a player’s Ask is Claude Haiku 5.5 at high with no fallbacks parameter', async () => {
+    const before = h.checkBudget.mock.calls.length;
+    for (const surface of ['ask', 'quick_chat', 'practice_helper']) {
+      const model = script({ content: [text('74.2.')], usage: { input_tokens: 1000, output_tokens: 200, cache_read_input_tokens: 20_000, cache_creation_input_tokens: 0 } });
+      await ask('Team?', null, { surface });
+      expect(model.requests[0]).toMatchObject({ model: 'claude-sonnet-5-5', output_config: { effort: 'medium' }, fallbacks: 'default' });
+    }
+    expect(ledger()).toHaveLength(3);
+    expect(ledger().at(-1)).toMatchObject({ model_id: 'anthropic/claude-sonnet-5-5', prompt_tokens: 21_000, completion_tokens: 200 });
+    // 1,000 fresh at $2, 20,000 read at $0.20, 200 out at $10, per million.
+    expect(ledger().at(-1)!.cost_usd).toBeCloseTo((1000 * 2 + 20_000 * 0.2 + 200 * 10) / 1e6, 9);
+    expect(turnLog()).toMatchObject({ model: 'anthropic/claude-sonnet-5-5', fallbackModel: null });
+    // The budget gate reserves a worst-case turn at the same model's rates: 12,000 in at $2 and 2,500 out at $10, per million.
+    const reserved = (h.checkBudget.mock.calls as unknown as Array<[unknown, string, number]>).slice(before).map((call) => call[2]);
+    expect(reserved).toHaveLength(3);
+    for (const usd of reserved) expect(usd).toBeCloseTo((12_000 * 2 + 2500 * 10) / 1e6, 9);
+
+    h.role = 'player';
+    const player = script({ content: [text('73.1.')], usage: { input_tokens: 1000, output_tokens: 200, cache_read_input_tokens: 5000, cache_creation_input_tokens: 0 } });
+    await ask('How am I scoring?');
+    expect(player.requests[0]).toMatchObject({ model: 'claude-haiku-5-5', output_config: { effort: 'high' } });
+    expect(player.requests[0]).not.toHaveProperty('fallbacks');
+    expect(player.requests[0]!.betas).toEqual(['thinking-binding-controls-2026-08-01', 'compact-2026-01-12']);
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    const row = ledger().at(-1)!;
+    expect(row).toMatchObject({ model_id: 'anthropic/claude-haiku-5-5', player_id: 'player-me' });
+    expect(row.cost_usd).toBeCloseTo((1000 * 0.1 + 5000 * 0.01 + 200 * 0.5) / 1e6, 9);
+  });
+
+  it('a conversation stored on Haiku continues on Sonnet: its thinking blocks go back unchanged, and a block the API drops is counted, not fatal', async () => {
+    h.modelId = 'claude-haiku-5-5';
+    const before = script({ content: [thinking('sig-haiku'), text('71.4.')] });
+    const first = await ask('How is Avery scoring?');
+    expect(before.requests[0]!.model).toBe('claude-haiku-5-5');
+
+    h.modelId = null;
+    const after = script({ content: [thinking('sig-sonnet'), text('Blake is at 74.')], droppedThinking: 1 });
+    const second = await ask('And Blake?', conversationOf(first.events));
+    expect(done(second.events)?.status).toBe('complete');
+    expect(after.requests[0]!.model).toBe('claude-sonnet-5-5');
+    // Sonnet 5.5 reads Haiku 5.5's blocks; what it cannot verify the API drops because the request asks it to.
+    expect((lastRequestMessages(after)[2]!.content as unknown[])[0]).toEqual(thinking('sig-haiku'));
+    expect(after.requests[0]!.thinking).toMatchObject({ block_binding: { prefix_mismatch_behavior: 'drop_block' } });
+    expect((turnLog().calls as Array<{ dropped_thinking: number; model: string }>).map((c) => [c.model, c.dropped_thinking])).toEqual([['claude-sonnet-5-5', 1]]);
+
+    // And back again (the eval's override): the stored Sonnet block is sent as stored too. Nothing is stripped here.
+    h.modelId = 'claude-haiku-5-5';
+    const back = script({ content: [text('Both are under 75.')] });
+    await ask('Compare them', conversationOf(first.events));
+    expect(back.requests[0]!.model).toBe('claude-haiku-5-5');
+    expect((lastRequestMessages(back)[5]!.content as unknown[])[0]).toEqual(thinking('sig-sonnet'));
+  });
+
+  it('a refusal fallback part-way through: the words carry on, the declining model’s tool call is never run, what is kept can be sent back, and both attempts are billed', async () => {
+    const model = script(
+      {
+        content: [thinking('sig-a'), text('Looking at '), toolUse('tu_dropped', 'get_player_stats', {}), fallbackHop(), thinking('sig-b'), text('the team’s rounds.'), toolUse('tu_kept', 'get_team_stats', {})],
+        model: 'claude-sonnet-5',
+        usage: {
+          input_tokens: 900, output_tokens: 300, cache_read_input_tokens: 0, cache_creation_input_tokens: 0,
+          iterations: [
+            { type: 'message', model: 'claude-sonnet-5-5', input_tokens: 1000, output_tokens: 40, cache_read_input_tokens: 20_000, cache_creation_input_tokens: 0 },
+            { type: 'fallback_message', model: 'claude-sonnet-5', input_tokens: 900, output_tokens: 300, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
+          ],
+        },
+      },
+      { content: [text('74.2.')], usage: { input_tokens: 100, output_tokens: 20, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 } },
+    );
+    const { events } = await ask('How is the team scoring?');
+    expect(done(events)?.status).toBe('complete');
+    // Nothing already shown is withdrawn, and the substitute's words continue the sentence.
+    expect(events.some((e) => e.type === 'text_discard' || e.type === 'error')).toBe(false);
+    expect(textOf(events)).toBe('Looking at the team’s rounds.74.2.');
+    // Only the tool call after the boundary is run and answered.
+    expect(log.reads.map((r) => r.tool)).toEqual(['get_team_stats']);
+    const sent = lastRequestMessages(model);
+    expect((sent[2]!.content as Array<{ type: string }>).map((b) => b.type)).toEqual(['text', 'fallback', 'thinking', 'text', 'tool_use']);
+    expect((sent[3]!.content as Array<{ tool_use_id: string }>).map((b) => b.tool_use_id)).toEqual(['tu_kept']);
+    // Stored as it will be replayed.
+    expect(((assistantRows()[0]!.model_messages as Array<{ content: Array<{ type: string }> }>)[2]!.content).map((b) => b.type)).toEqual(['text', 'fallback', 'thinking', 'text', 'tool_use']);
+    // Billed per attempt, each at its own model's rate, and the log says a substitute answered.
+    expect(ledger().at(-1)!.cost_usd).toBeCloseTo((1000 * 2 + 20_000 * 0.2 + 40 * 10 + 900 * 2 + 300 * 10 + 100 * 2 + 20 * 10) / 1e6, 9);
+    expect(turnLog()).toMatchObject({ fallbackModel: 'claude-sonnet-5', status: 'complete' });
+  });
+
+  it('when the substitute declines too, the turn is still a complete one with a sentence, and the category is logged', async () => {
+    const model = script({ content: [fallbackHop()], stop_reason: 'refusal', category: 'cyber', model: 'claude-sonnet-5', usage: { input_tokens: 10, output_tokens: 0, iterations: [{ type: 'message', model: 'claude-sonnet-5-5', input_tokens: 1000, output_tokens: 0 }, { type: 'fallback_message', model: 'claude-sonnet-5', input_tokens: 1000, output_tokens: 0 }] } });
+    const { events } = await ask('Something both models decline');
+    expect(model.requests).toHaveLength(1);
+    expect(done(events)?.status).toBe('complete');
+    expect(events.some((e) => e.type === 'error')).toBe(false);
+    expect(assistantRows()[0]!.content).toContain('I can’t help with that one.');
+    expect(turnLog()).toMatchObject({ refusalCategory: 'cyber', fallbackModel: 'claude-sonnet-5' });
+  });
+
+  it('the model’s own notes between tool calls reach the thread as finished progress rows, never as answer text; a cut-off response’s stand-in is not a note', async () => {
+    script(
+      { content: [progressNote('Pulling the team’s last ten rounds.'), toolUse('tu_1', 'get_team_stats', {})] },
+      { content: [progressNote('This part of the response was interrupted before it finished.'), text('74.2.')] },
+    );
+    const { events } = await ask('How is the team scoring?');
+    const notes = events.filter((e) => e.type === 'note') as Array<{ text: string }>;
+    expect(notes.map((n) => n.text)).toEqual(['Pulling the team’s last ten rounds.']);
+    expect(textOf(events)).toBe('74.2.');
+    const [row] = assistantRows();
+    expect(row!.content).toBe('74.2.');
+    expect((row!.ui_parts as Array<{ type: string; data?: { tool?: string; label?: string } }>).filter((p) => p.type === 'data-progress' && p.data?.tool === 'note').map((p) => p.data?.label)).toEqual(['Pulling the team’s last ten rounds.']);
+    // The blocks themselves are stored and go back unchanged, like any thinking block.
+    expect(((row!.model_messages as Array<{ content: unknown[] }>)[2]!.content)[0]).toEqual(progressNote('Pulling the team’s last ten rounds.'));
+
+    // A player's model does not send them, and none are shown.
+    h.role = 'player';
+    const player = script({ content: [text('73.1.')] });
+    await ask('How am I scoring?');
+    expect(player.requests[0]!.thinking).not.toHaveProperty('display');
+  });
+});
+
 describe('what a read tells the model, and how an answer points back at it', () => {
   type SearchResult = { type: string; source: string; title: string; content: Array<{ type: string; text: string }>; citations: { enabled: boolean } };
   const resultOf = (model: FakeModel) => (lastRequestMessages(model)[3]!.content as Array<{ type: string; tool_use_id: string; content: unknown }>)[0]!;
@@ -410,18 +541,19 @@ describe('the optional request features', () => {
     expect(textOf(events)).toBe('74.2.');
     expect(events.some((e) => e.type === 'error')).toBe(false);
     expect(model.requests).toHaveLength(3);
-    expect(model.requests[0]!.betas).toEqual(['thinking-binding-controls-2026-08-01', 'compact-2026-01-12']);
+    expect(model.requests[0]!.betas).toEqual(['thinking-binding-controls-2026-08-01', 'thinking-display-updates-2026-08-18', 'compact-2026-01-12', 'server-side-fallback-2026-07-01']);
     // The retry, and every later call of the turn, carries no beta and nothing a beta or `strict` added.
     for (const request of model.requests.slice(1)) {
       expect(request).not.toHaveProperty('betas');
+      expect(request).not.toHaveProperty('fallbacks');
       expect(request).not.toHaveProperty('context_management');
       expect(request.thinking).toEqual({ type: 'adaptive' });
       expect((request.tools as Array<{ strict?: boolean }>).some((t) => t.strict !== undefined)).toBe(false);
       // The plain request has no code tool either, and no read says it may be called from code.
       expect(JSON.stringify(request.tools)).not.toMatch(/code_execution|allowed_callers/);
       // What is not optional is unchanged.
-      expect(request.model).toBe('claude-haiku-5-5');
-      expect(request.output_config).toEqual({ effort: 'high' });
+      expect(request.model).toBe('claude-sonnet-5-5');
+      expect(request.output_config).toEqual({ effort: 'medium' });
       expect(request.messages.slice(0, 2)).toEqual([{ role: 'user', content: 'How is the team scoring?' }, sys]);
     }
     const logged = h.logServerError.mock.calls.map((c) => c as unknown[]).find((c) => (c[1] as { action?: string })?.action === 'v3.chat.stream.degraded');
@@ -564,6 +696,12 @@ describe('the model’s code calling the reads (on for a coach, off for a player
     // The thread: one row for the code, from its start until its result is back, and a row for each read under it.
     const rows = events.flatMap((e) => (e.type === 'read_started' || e.type === 'read_finished' ? [`${e.type}:${e.tool}`] : []));
     expect(rows).toEqual(['read_started:code_execution', 'read_started:get_team_stats', 'read_finished:get_team_stats', 'read_finished:code_execution']);
+    // The code's row is named for what it is doing, and closes saying how many reads it covered.
+    expect(events.find((e) => e.type === 'read_started' && e.tool === 'code_execution')).toMatchObject({ label: 'Working out the figures' });
+    expect(events.find((e) => e.type === 'read_finished' && e.tool === 'code_execution')).toMatchObject({ label: 'Working out the figures', detail: '1 read', state: 'done' });
+    // And a part records what the run worked from. No method: the code did not begin with one.
+    const computed = events.filter((e) => e.type === 'part' && e.part.type === 'data-computed') as Array<{ part: { id: string; data: unknown } }>;
+    expect(computed.map((e) => e.part.data)).toEqual([{ refs: ['e2'], reads: 1, players: 0, window: null }]);
     // The evidence says the code asked for it: that is how the thread knows which reads a computed figure came from.
     const evidence = events.filter((e) => e.type === 'evidence') as Array<{ part: { data: { tool: string; ref: string; via?: string } } }>;
     // (Refs are reserved in call order before anything runs, so the call that was refused took e1.)
@@ -576,6 +714,50 @@ describe('the model’s code calling the reads (on for a coach, off for a player
     const stored = row!.model_messages as Array<{ role: string; content: Array<{ type: string }> }>;
     expect(stored[2]!.content.map((b) => b.type)).toEqual(['server_tool_use', 'tool_use', 'tool_use']);
     expect(stored[4]!.content.map((b) => b.type)).toEqual(['code_execution_tool_result', 'text']);
+  });
+
+  it('a figure worked out across players says so: the row is renamed once a second player is read, and a stored part names the reads, the players, the window and the method', async () => {
+    const stats = { ...readTool('get_player_stats', log, 0) } as ReadTool<{ player_id?: string }>;
+    stats.run = async (_ctx, input) => ({
+      summary: 'Putting',
+      measurements: [{ metric_id: 'putts_per_round', metric_label: 'Putts per round', unit: 'count', value: 30.5, entity: { kind: 'player', id: String(input.player_id), label: 'A player' }, window_start: null, window_end: null, sample_size: 8, sample_unit: 'rounds', as_of: '2026-11-10T12:00:00.000Z', coverage: 'complete', coverage_note: null, source: 'golf_rounds', method: 'mean', denominator: null, benchmark: null, direction: 'lower_better' }],
+      series: [],
+      coverage: 'complete',
+      coverage_note: null,
+      as_of: '2026-11-10T12:00:00.000Z',
+      window_label: 'Last 8 rounds',
+    });
+    h.toolsFor.mockImplementation(() => asTools(stats, readTool('get_team_stats', log, 74.2)));
+    const code = "# Method: Averaged each player's putts per round over their last 8 rounds, then ranked them\nrows = [await get_player_stats({'player_id': p}) for p in players]";
+    script(
+      { content: [serverCode('srvtoolu_1', code), codeToolUse('tu_1', 'get_player_stats', { player_id: 'p1' }), codeToolUse('tu_2', 'get_player_stats', { player_id: 'p2' }), codeToolUse('tu_3', 'get_player_stats', { player_id: 'p1' })], container: 'container_1' },
+      { content: [{ type: 'code_execution_tool_result', tool_use_id: 'srvtoolu_1', content: { type: 'code_execution_result', stdout: '30.1', stderr: '', return_code: 0, content: [] } } as never, text('Avery putts best.')] },
+    );
+    const { events } = await ask('Who putts best?');
+
+    const codeRows = events.filter((e) => (e.type === 'read_started' || e.type === 'read_finished') && e.tool === 'code_execution') as Array<{ type: string; id: string; label: string; detail?: string }>;
+    // One row, renamed exactly once, when a read showed a second player.
+    expect(codeRows.map((e) => `${e.type}:${e.label}`)).toEqual(['read_started:Working out the figures', 'read_started:Working it out across the team', 'read_finished:Working it out across the team']);
+    expect(new Set(codeRows.map((e) => e.id)).size).toBe(1);
+    expect(codeRows.at(-1)).toMatchObject({ detail: '3 reads' });
+    const part = events.find((e) => e.type === 'part' && e.part.type === 'data-computed') as { part: { id: string; data: unknown } };
+    expect(part.part).toEqual({
+      type: 'data-computed',
+      id: `computed-${codeRows[0]!.id}`,
+      data: { refs: ['e1', 'e2', 'e3'], reads: 3, players: 2, window: 'Last 8 rounds', method: "Averaged each player's putts per round over their last 8 rounds, then ranked them." },
+    });
+    // It comes after the run's reads and before the words that use the figure.
+    const order = events.map((e) => (e.type === 'part' ? e.part.type : e.type));
+    expect(order.lastIndexOf('evidence')).toBeLessThan(order.indexOf('data-computed'));
+    expect(order.indexOf('data-computed')).toBeLessThan(order.indexOf('text_delta'));
+    // Stored with the turn, and still there after a reload; the stored row reads as finished under its last name.
+    const [row] = assistantRows();
+    const stored = row!.ui_parts as Array<{ type: string; id?: string; data?: { label?: string; state?: string; detail?: string } }>;
+    expect(stored.filter((p) => p.type === 'data-computed')).toEqual([part.part]);
+    expect(stored.filter((p) => p.type === 'data-progress' && p.id === codeRows[0]!.id).map((p) => p.data)).toMatchObject([{ label: 'Working it out across the team', state: 'done', detail: '3 reads' }]);
+    expect(restoreUIMessages((db.tables[MESSAGES] ?? []) as never).at(-1)!.parts.find((p) => p.type === 'data-computed')).toMatchObject({ data: { reads: 3, players: 2 } });
+    // The model is never sent the part.
+    expect(turnMetaOf(row!.ui_parts as never)).toMatchObject({ reads: 3 });
   });
 
   it('a card is not prepared while the code is waiting on a read: the model is told to ask for it on its own afterwards', async () => {
@@ -683,6 +865,34 @@ describe('a task', () => {
     expect(row!.pending_decision).toMatchObject({ order: ['tu_task'], tasks: [{ tool: 'create_focus_area', tool_use_id: 'tu_task' }], steps: 1 });
     // The assistant message that asked is stored as returned: the tool call waits for its result.
     expect((row!.model_messages as Array<{ role: string }>).map((m) => m.role)).toEqual(['user', 'system', 'assistant']);
+  });
+
+  it('a Confirm whose connection was lost: the next question’s stream says how the card ended, addressed to the message that holds it', async () => {
+    const { conversationId, key } = await propose();
+    script({ content: [text('Done: the putting focus area is created.')] });
+    // The Confirm runs to its end on the server; this browser never reads its response.
+    await decide(conversationId, key, true);
+    const cardRow = assistantRows()[0]!;
+    expect(runs()[0]!.status).toBe('completed');
+
+    script({ content: [text('Blake is at 74.')] });
+    const { events } = await ask('How is Blake scoring?', conversationId);
+    const about = events.filter((e) => (e.type === 'decision' || e.type === 'receipt') && 'message_id' in e) as Array<{ type: string; message_id: string; approved?: boolean; part?: { id: string; data: { status: string } } }>;
+    expect(about.map((e) => [e.type, e.message_id])).toEqual([['decision', cardRow.id], ['receipt', cardRow.id]]);
+    expect(about[0]).toMatchObject({ key, approved: true });
+    expect(about[1]!.part).toMatchObject({ id: `receipt-${key}`, data: { status: 'completed' } });
+    // Before a word of the new answer, and never folded into it.
+    expect(events.findIndex((e) => e.type === 'receipt')).toBeLessThan(events.findIndex((e) => e.type === 'text_delta'));
+    const newRow = assistantRows().at(-1)!;
+    expect(newRow.id).not.toBe(cardRow.id);
+    expect((newRow.ui_parts as Array<{ type: string }>).some((p) => p.type === 'data-action-receipt' || p.type.startsWith('tool-'))).toBe(false);
+    // Nothing is written twice and the model is not asked about it again.
+    expect(log.commits).toHaveLength(1);
+
+    // A message that follows one with no card says nothing about earlier cards.
+    script({ content: [text('Casey is at 76.')] });
+    const next = await ask('And Casey?', conversationId);
+    expect(next.events.some((e) => (e.type === 'decision' || e.type === 'receipt'))).toBe(false);
   });
 
   it('confirmed: shown as held at once, written when the Undo window closes in the same request, and only then does the model close', async () => {
@@ -871,6 +1081,8 @@ describe('a task', () => {
     expect(JSON.stringify((sent[3]!.content as unknown[])[0])).not.toContain('Blake');
     expect(sent[4]).toEqual(sys);
     // The browser is told the card was withdrawn, and in which message it sits: a fact, not something to infer from position.
+    // It is told before anything of the new answer.
+    expect(events.findIndex((e) => e.type === 'decision')).toBeLessThan(events.findIndex((e) => e.type === 'text_delta'));
     const cardRow = assistantRows()[0]!;
     expect(events.find((e) => e.type === 'decision')).toEqual({ type: 'decision', key, approved: false, reason: 'superseded', message_id: cardRow.id });
     expect((cardRow.ui_parts as Array<{ type: string; approval?: unknown }>).find((p) => p.type === 'tool-create_focus_area')?.approval).toEqual({ id: key, approved: false, reason: 'superseded' });
@@ -936,6 +1148,398 @@ describe('a task', () => {
     expect(result).toMatchObject({ is_error: true });
     expect(result!.content).toContain('Nothing was written');
     expect(done(events)?.status).toBe('complete');
+  });
+});
+
+describe('several cards in one turn', () => {
+  type Needed = { key: string; tool: string; tool_use_id: string };
+  const failing = (name: string): TaskTool<{ title: string }> => ({
+    ...taskTool(name, log),
+    commit: async (_ctx, proposal) => {
+      log.commits.push(proposal);
+      return { status: 'failed', action: proposal.action, summary: 'Could not create that. Nothing was saved.', created: [], notifications: [], partial_failures: [], retryable: true, at: '2026-11-10T12:00:09.000Z' };
+    },
+  });
+  /** One answer that asks for three things: a focus area, a task and an event, in that order. */
+  const three = async (second: TaskTool<{ title: string }> = taskTool('create_task', log)) => {
+    h.toolsFor.mockImplementation(() => asTools(taskTool('create_focus_area', log), second, taskTool('create_event', log), readTool('get_team_stats', log, 74.2)));
+    script({ content: [text('Three things.'), toolUse('tu_a', 'create_focus_area', { title: 'A' }), toolUse('tu_b', 'create_task', { title: 'B' }), toolUse('tu_c', 'create_event', { title: 'C' })] });
+    const { events } = await ask('Set up the week');
+    const needed = events.filter((e) => e.type === 'decision_needed') as unknown as Needed[];
+    return { events, conversationId: conversationOf(events), keys: needed.map((n) => n.key), needed };
+  };
+  const approveAll = (conversation_id: string, cards: Array<{ key: string; revision?: number }>) => post({ conversation_id, approve_all: { cards } });
+  const statusOf = (key: string) => runs().find((r) => r.idempotency_key === key)!.status;
+  /** Resolves once every card of the batch is inside the shared Undo window. */
+  const untilAllHeld = async (): Promise<void> => {
+    for (let i = 0; i < 100 && runs().some((r) => r.status !== 'held'); i += 1) await new Promise((resolve) => setTimeout(resolve, 2));
+  };
+  const titles = () => log.commits.map((c) => (c as { summary: string }).summary.replace(/^Create the focus area "(.*)"\.$/, '$1'));
+  const cardStates = () => Object.fromEntries((assistantRows()[0]!.ui_parts as Array<{ type: string; state?: string; approval?: { id: string } }>).filter((p) => p.type.startsWith('tool-')).map((p) => [p.approval!.id, p.state]));
+
+  it('each is its own sealed card and ledger row; they are decided one at a time in any order, and the model closes once, after the last', async () => {
+    const { events, conversationId, keys, needed } = await three();
+    expect(needed.map((n) => [n.tool, n.tool_use_id])).toEqual([['create_focus_area', 'tu_a'], ['create_task', 'tu_b'], ['create_event', 'tu_c']]);
+    expect(new Set(keys).size).toBe(3);
+    expect(events.filter((e) => e.type === 'proposal')).toHaveLength(3);
+    expect(done(events)?.status).toBe('awaiting_decision');
+    expect(runs()).toHaveLength(3);
+    for (const run of runs()) expect(run).toMatchObject({ status: 'proposed', proposed_input: { seal: expect.stringMatching(/^[0-9a-f]{64}$/) } });
+    expect(new Set(runs().map((r) => (r.proposed_input as { seal: string }).seal)).size).toBe(3);
+    expect((assistantRows()[0]!.pending_decision as { tasks: unknown[] }).tasks).toHaveLength(3);
+
+    // The second card first. No model step is scripted: asking the model now would fail the request.
+    h.model = fakeModel([]);
+    const second = await decide(conversationId, keys[1]!, true);
+    expect(second.events.some((e) => e.type === 'error')).toBe(false);
+    expect(done(second.events)?.status).toBe('awaiting_decision');
+    expect(titles()).toEqual(['B']);
+    // The third is cancelled. Still one card waiting, still no closing words.
+    const third = await decide(conversationId, keys[2]!, false);
+    expect(done(third.events)?.status).toBe('awaiting_decision');
+    expect(cardStates()).toEqual({ [keys[0]!]: 'approval-requested', [keys[1]!]: 'approval-responded', [keys[2]!]: 'output-denied' });
+
+    // The first card last: now the model is told what happened to all three, in the order it asked.
+    const model = script({ content: [text('Two are set up; the event was left out.')] });
+    const first = await decide(conversationId, keys[0]!, true);
+    expect(done(first.events)?.status).toBe('complete');
+    expect(model.requests).toHaveLength(1);
+    const results = lastRequestMessages(model).at(-1)!.content as Array<{ type: string; tool_use_id: string; content: string }>;
+    expect(results.map((r) => [r.tool_use_id, r.content.split('.')[0]])).toEqual([['tu_a', 'Committed'], ['tu_b', 'Committed'], ['tu_c', 'Declined by the coach']]);
+    expect(titles()).toEqual(['B', 'A']);
+    expect(keys.map(statusOf)).toEqual(['completed', 'completed', 'denied']);
+    expect(assistantRows()).toHaveLength(1);
+    expect(assistantRows()[0]).toMatchObject({ status: 'complete', pending_decision: null });
+  });
+
+  it('approve all: one shared Undo window, then written in the order proposed, and the model closes once', async () => {
+    const { conversationId, keys } = await three();
+    const model = script({ content: [text('All three are set up.')] });
+    // Listed backwards: the order written is the order proposed.
+    const pending = approveAll(conversationId, [...keys].reverse().map((key) => ({ key })));
+    await untilAllHeld();
+    // Inside the window every card is held, nothing is written and the model has not been asked.
+    expect(keys.map(statusOf)).toEqual(['held', 'held', 'held']);
+    expect(new Set(runs().map((r) => r.run_at)).size).toBe(1);
+    expect(log.commits).toHaveLength(0);
+    expect(model.requests).toHaveLength(0);
+
+    const { events } = await pending;
+    const decisions = events.filter((e) => e.type === 'decision') as Array<{ key: string; approved: boolean }>;
+    expect(decisions).toEqual(keys.map((key) => ({ type: 'decision', key, approved: true })));
+    const receipts = events.filter((e) => e.type === 'receipt') as Array<{ part: { id: string; data: { status: string; held_until?: string } } }>;
+    // Three held receipts with one time on them, before anything is written; then each card's own outcome, in order.
+    expect(receipts.map((r) => [r.part.id, r.part.data.status])).toEqual([...keys.map((k) => [`receipt-${k}`, 'held']), ...keys.map((k) => [`receipt-${k}`, 'completed'])]);
+    expect(new Set(receipts.slice(0, 3).map((r) => r.part.data.held_until)).size).toBe(1);
+    expect(titles()).toEqual(['A', 'B', 'C']);
+    expect(keys.map(statusOf)).toEqual(['completed', 'completed', 'completed']);
+    expect(done(events)?.status).toBe('complete');
+    expect(model.requests).toHaveLength(1);
+    const results = lastRequestMessages(model).at(-1)!.content as Array<{ tool_use_id: string; content: string }>;
+    expect(results.map((r) => [r.tool_use_id, r.content.split('.')[0]])).toEqual([['tu_a', 'Committed'], ['tu_b', 'Committed'], ['tu_c', 'Committed']]);
+    expect(assistantRows()[0]).toMatchObject({ status: 'complete', pending_decision: null });
+  });
+
+  it('approve all stops at the first failure: the cards after it are not run and wait for the coach again', async () => {
+    const { conversationId, keys } = await three(failing('create_task'));
+    h.model = fakeModel([]);
+    const { events } = await approveAll(conversationId, keys.map((key) => ({ key })));
+
+    expect(events.some((e) => e.type === 'error')).toBe(false);
+    // The first was written, the second failed, the third was never run.
+    expect(titles()).toEqual(['A', 'B']);
+    expect(keys.map(statusOf)).toEqual(['completed', 'failed', 'proposed']);
+    expect(receiptStates(events)).toEqual(['held', 'held', 'held', 'completed', 'failed']);
+    expect(events.filter((e) => e.type === 'decision_reopened')).toEqual([{ type: 'decision_reopened', key: keys[2], reason: 'batch_stopped' }]);
+    // Nothing closes yet: one card still waits, and it is stored that way, with no receipt left on it.
+    expect(done(events)?.status).toBe('awaiting_decision');
+    expect(cardStates()).toEqual({ [keys[0]!]: 'approval-responded', [keys[1]!]: 'approval-responded', [keys[2]!]: 'approval-requested' });
+    const stored = assistantRows()[0]!;
+    expect((stored.ui_parts as Array<{ type: string; id?: string }>).filter((p) => p.type === 'data-action-receipt').map((p) => p.id)).toEqual([`receipt-${keys[0]}`, `receipt-${keys[1]}`]);
+    expect((stored.pending_decision as { tasks: Array<{ key: string }> }).tasks.map((t) => t.key)).toEqual([keys[2]]);
+    expect(restoreUIMessages((db.tables[MESSAGES] ?? []) as never).at(-1)!.parts.find((p) => p.type === 'tool-create_event')).toMatchObject({ state: 'approval-requested' });
+
+    // The coach confirms the last one on its own: it is written, and only now is the model told about all three.
+    const model = script({ content: [text('The task failed; the other two are set up.')] });
+    const last = await decide(conversationId, keys[2]!, true);
+    expect(done(last.events)?.status).toBe('complete');
+    expect(titles()).toEqual(['A', 'B', 'C']);
+    const results = lastRequestMessages(model).at(-1)!.content as Array<{ tool_use_id: string; content: string; is_error?: boolean }>;
+    expect(results.map((r) => [r.tool_use_id, r.content.split('.')[0], r.is_error === true])).toEqual([['tu_a', 'Committed', false], ['tu_b', 'Failed', true], ['tu_c', 'Committed', false]]);
+  });
+
+  it('approve all: a card the coach undoes in the window is skipped, is not a failure, and the rest are written', async () => {
+    const { conversationId, keys } = await three();
+    const model = script({ content: [text('Two are set up; one was undone.')] });
+    const pending = approveAll(conversationId, keys.map((key) => ({ key })));
+    await untilAllHeld();
+    expect(await cancelHeld(db.client as never, { coach_id: 'coach-1', idempotency_key: keys[1]! })).toBe('cancelled');
+    const { events } = await pending;
+    expect(titles()).toEqual(['A', 'C']);
+    expect(keys.map(statusOf)).toEqual(['completed', 'cancelled', 'completed']);
+    expect(events.some((e) => e.type === 'decision_reopened')).toBe(false);
+    expect(receiptStates(events).slice(3)).toEqual(['completed', 'cancelled', 'completed']);
+    expect(done(events)?.status).toBe('complete');
+    const results = lastRequestMessages(model).at(-1)!.content as Array<{ tool_use_id: string; content: string }>;
+    expect(results[1]).toMatchObject({ tool_use_id: 'tu_b', content: 'The coach pressed Undo before it was written. Nothing was written.' });
+  });
+
+  it('approve all confirms nothing when one card is not the one on screen, and only the cards named', async () => {
+    const { conversationId, keys } = await three();
+    h.model = fakeModel([]);
+    // A revision the stored card does not have (as if it had been edited and this tab had not seen it, the other way round).
+    const stale = await approveAll(conversationId, [{ key: keys[0]! }, { key: keys[1]!, revision: 3 }]);
+    expect((stale.events.find((e) => e.type === 'part' && e.part.type === 'data-card-revision') as { part: { data: unknown } }).part.data).toMatchObject({ key: keys[1], accepted: false, kind: 'changed' });
+    expect(stale.events.some((e) => e.type === 'decision' || e.type === 'receipt')).toBe(false);
+    expect(done(stale.events)?.status).toBe('awaiting_decision');
+    expect(keys.map(statusOf)).toEqual(['proposed', 'proposed', 'proposed']);
+    expect(log.commits).toHaveLength(0);
+
+    // Two of the three: the third is not touched and still waits, so the model is not asked yet.
+    const two = await approveAll(conversationId, [{ key: keys[0]! }, { key: keys[2]! }]);
+    expect(titles()).toEqual(['A', 'C']);
+    expect(keys.map(statusOf)).toEqual(['completed', 'proposed', 'completed']);
+    expect(done(two.events)?.status).toBe('awaiting_decision');
+
+    // Asked again for cards that are no longer waiting: each is answered with what is stored, and nothing is written twice.
+    const again = await approveAll(conversationId, [{ key: keys[0]! }, { key: keys[2]! }]);
+    expect(again.events.filter((e) => e.type === 'decision')).toHaveLength(2);
+    expect(receiptStates(again.events)).toEqual(['completed', 'completed']);
+    expect(done(again.events)?.status).toBe('complete');
+    expect(log.commits).toHaveLength(2);
+  });
+
+  it('a body that names a card twice, or mixes a batch with a decision or a message, is refused', async () => {
+    const { conversationId, keys } = await three();
+    expect((await post({ conversation_id: conversationId, approve_all: { cards: [{ key: keys[0] }, { key: keys[0] }] } })).response.status).toBe(400);
+    expect((await post({ conversation_id: conversationId, approve_all: { cards: [] } })).response.status).toBe(400);
+    expect((await post({ conversation_id: conversationId, approve_all: { cards: [{ key: keys[0] }] }, decision: { key: keys[1], approved: true } })).response.status).toBe(400);
+    expect((await post({ conversation_id: conversationId, approve_all: { cards: [{ key: keys[0] }] }, message: 'and also' })).response.status).toBe(400);
+    expect((await post({ approve_all: { cards: [{ key: keys[0] }] } })).response.status).toBe(404);
+    expect(log.commits).toHaveLength(0);
+  });
+});
+
+describe('a card the coach edits before confirming', () => {
+  type Card = { idempotency_key: string; tool: string; summary: string; revision?: number; editable?: Array<{ key: string; value: unknown }>; input?: { title: string } };
+  const revisions: Array<Record<string, unknown>> = [];
+  /** A task whose card offers its title for editing, as PLANS's tasks do: `revise` plans again from the stored plan and the edits. */
+  const editable = (): TaskTool<{ title: string }> => {
+    const base = taskTool('create_focus_area', log);
+    const plan: TaskTool<{ title: string }>['plan'] = async (ctx, input) => ({ ...(await base.plan(ctx, input)), input, editable: [{ key: 'title', label: 'Title', type: 'text', value: input.title, required: true, max_length: 40 }] }) as never;
+    return {
+      ...base,
+      plan,
+      revise: async (ctx, _proposal, edits) => {
+        revisions.push(edits);
+        if (Object.keys(edits).some((k) => k !== 'title')) throw new Error('Team cannot be changed on this card. Ask for it in words instead.');
+        const title = String(edits.title ?? '');
+        if (!title || title.length > 40) throw new Error('Title: keep it to 40 characters or fewer.');
+        return plan(ctx, { title });
+      },
+    };
+  };
+  const revise = (conversation_id: string, key: string, edits: Record<string, unknown>, revision?: number) => post({ conversation_id, decision: { key, edits, ...(revision === undefined ? {} : { revision }) } });
+  const confirm = (conversation_id: string, key: string, revision?: number) => post({ conversation_id, decision: { key, approved: true, ...(revision === undefined ? {} : { revision }) } });
+  const cardOf = (events: ChatEvent[]) => (events.find((e) => e.type === 'proposal') as { part: { id: string; data: Card } } | undefined)?.part;
+  const verdictOf = (events: ChatEvent[]) => (events.find((e) => e.type === 'part' && e.part.type === 'data-card-revision') as { part: { id: string; data: Record<string, unknown> } } | undefined)?.part;
+  const stored = () => runs()[0]!.proposed_input as { input: unknown; proposal: Card; seal: string };
+  const propose = async () => {
+    revisions.length = 0;
+    h.toolsFor.mockImplementation(() => asTools(editable(), readTool('get_team_stats', log, 74.2)));
+    script({ content: [text('Here is the focus area.'), toolUse('tu_task', 'create_focus_area', { title: 'Putting from 6 feet' })] });
+    const { events } = await ask('Make a putting focus area');
+    return { conversationId: conversationOf(events), key: keyOf(events), card: cardOf(events)!.data };
+  };
+
+  it('plans the card again with no model call: same key, sealed again, stored in place, and Confirm writes the edited plan', async () => {
+    const { conversationId, key, card } = await propose();
+    expect(card.editable).toMatchObject([{ key: 'title', value: 'Putting from 6 feet' }]);
+    const sealBefore = stored().seal;
+    const cardRow = assistantRows()[0]!;
+
+    // No step is scripted: a model call here would fail the request.
+    h.model = fakeModel([]);
+    const { events } = await revise(conversationId, key, { title: 'Putting from 8 feet' });
+    expect(events.some((e) => e.type === 'error')).toBe(false);
+    expect(events[0]).toMatchObject({ type: 'message_start', resumed: true, message_id: cardRow.id });
+    expect(cardOf(events)).toMatchObject({ id: `proposal-${key}`, data: { idempotency_key: key, tool: 'create_focus_area', summary: 'Create the focus area "Putting from 8 feet".', revision: 1 } });
+    expect(verdictOf(events)).toEqual({ type: 'data-card-revision', id: `revision-${key}`, data: { key, accepted: true } });
+    expect(done(events)?.status).toBe('awaiting_decision');
+    expect(revisions).toEqual([{ title: 'Putting from 8 feet' }]);
+
+    // The ledger: still one row, still waiting, the new plan under a new seal; what the model asked for is kept as asked.
+    expect(runs()).toHaveLength(1);
+    expect(runs()[0]).toMatchObject({ status: 'proposed', idempotency_key: key });
+    expect(stored().proposal).toMatchObject({ summary: 'Create the focus area "Putting from 8 feet".', revision: 1, idempotency_key: key });
+    expect(stored().seal).not.toBe(sealBefore);
+    expect(stored().input).toEqual({ title: 'Putting from 6 feet' });
+    // The stored turn: the card replaced in place, still waiting, and no notice kept for a reload to show.
+    const row = assistantRows()[0]!;
+    const parts = row.ui_parts as Array<{ type: string; id?: string; data?: Card }>;
+    expect(parts.filter((p) => p.type === 'data-action-proposal')).toHaveLength(1);
+    expect(parts.find((p) => p.type === 'data-action-proposal')!.data).toMatchObject({ summary: 'Create the focus area "Putting from 8 feet".', revision: 1 });
+    expect(parts.some((p) => p.type === 'data-card-revision')).toBe(false);
+    expect(row.pending_decision).toMatchObject({ tasks: [{ tool: 'create_focus_area', tool_use_id: 'tu_task' }] });
+    expect(assistantRows()).toHaveLength(1);
+
+    // Confirm, saying which card was on screen: the edited plan is what is written, and the model is told so.
+    const model = script({ content: [text('Done.')] });
+    const confirmed = await confirm(conversationId, key, 1);
+    expect(receiptStates(confirmed.events)).toEqual(['held', 'completed']);
+    expect(log.commits).toHaveLength(1);
+    expect(log.commits[0]).toMatchObject({ summary: 'Create the focus area "Putting from 8 feet".', idempotency_key: key });
+    expect(JSON.stringify(lastRequestMessages(model).at(-1))).toContain('Committed.');
+  });
+
+  it('an edit the task refuses leaves the card exactly as it was, with the task’s own sentence', async () => {
+    const { conversationId, key, card } = await propose();
+    const before = JSON.stringify(stored());
+    h.model = fakeModel([]);
+
+    const tooLong = await revise(conversationId, key, { title: 'x'.repeat(41) });
+    expect(verdictOf(tooLong.events)!.data).toEqual({ key, accepted: false, kind: 'invalid', reason: 'Title: keep it to 40 characters or fewer.' });
+    expect(cardOf(tooLong.events)!.data).toEqual(card);
+    expect(done(tooLong.events)?.status).toBe('awaiting_decision');
+
+    const notOffered = await revise(conversationId, key, { team_id: 'another-team' });
+    expect(verdictOf(notOffered.events)!.data).toMatchObject({ accepted: false, kind: 'invalid', reason: 'Team cannot be changed on this card. Ask for it in words instead.' });
+
+    expect(JSON.stringify(stored())).toBe(before);
+    expect(runs()[0]!.status).toBe('proposed');
+    expect((assistantRows()[0]!.ui_parts as Array<{ type: string; data?: Card }>).find((p) => p.type === 'data-action-proposal')!.data).toEqual(card);
+    expect(log.commits).toHaveLength(0);
+    // The card can still be confirmed as it stands.
+    script({ content: [text('Done.')] });
+    await confirm(conversationId, key);
+    expect(log.commits).toMatchObject([{ summary: 'Create the focus area "Putting from 6 feet".' }]);
+  });
+
+  it('a body that is not an edit or an answer is refused before anything is read', async () => {
+    const { conversationId, key } = await propose();
+    expect((await post({ conversation_id: conversationId, decision: { key, approved: true, edits: { title: 'Both' } } })).response.status).toBe(400);
+    expect((await post({ conversation_id: conversationId, decision: { key } })).response.status).toBe(400);
+    expect((await post({ conversation_id: conversationId, decision: { key, edits: { title: 'x'.repeat(30_000) } } })).response.status).toBe(400);
+    expect((await post({ decision: { key, edits: { title: 'No conversation' } } })).response.status).toBe(404);
+    expect(revisions).toHaveLength(0);
+  });
+
+  it('an edit after Confirm changes nothing: not during the Undo window, and not once it is written', async () => {
+    const { conversationId, key, card } = await propose();
+    script({ content: [text('Done.')] });
+    const pending = confirm(conversationId, key);
+    await untilHeld();
+    // Inside the Undo window the plan is the one the coach confirmed.
+    const during = await revise(conversationId, key, { title: 'Chipping' });
+    expect(verdictOf(during.events)!.data).toMatchObject({ accepted: false, kind: 'decided' });
+    expect(cardOf(during.events)!.data).toEqual(card);
+    expect(done(during.events)?.status).toBe('complete');
+    await pending;
+    expect(log.commits).toMatchObject([{ summary: 'Create the focus area "Putting from 6 feet".' }]);
+
+    const after = await revise(conversationId, key, { title: 'Chipping' });
+    expect(verdictOf(after.events)!.data).toMatchObject({ accepted: false, kind: 'decided' });
+    expect(revisions).toHaveLength(0);
+    expect(stored().proposal).toEqual(card);
+    expect(runs()[0]!.status).toBe('completed');
+    expect(log.commits).toHaveLength(1);
+  });
+
+  it('two tabs: a card edited in one cannot be confirmed or edited from the stale copy in the other', async () => {
+    const { conversationId, key } = await propose();
+    h.model = fakeModel([]);
+    // Tab A edits. Tab B still shows the first card.
+    await revise(conversationId, key, { title: 'Putting from 8 feet' });
+
+    // Tab B confirms what it sees (the unedited card, with or without saying so): nothing is written, and it is shown the card as it stands.
+    for (const seen of [undefined, 0]) {
+      const stale = await confirm(conversationId, key, seen);
+      expect(verdictOf(stale.events)!.data).toMatchObject({ accepted: false, kind: 'changed' });
+      expect(cardOf(stale.events)!.data).toMatchObject({ summary: 'Create the focus area "Putting from 8 feet".', revision: 1 });
+      expect(stale.events.some((e) => e.type === 'decision' || e.type === 'receipt')).toBe(false);
+      expect(done(stale.events)?.status).toBe('awaiting_decision');
+    }
+    expect(log.commits).toHaveLength(0);
+    expect(runs()[0]!.status).toBe('proposed');
+
+    // Tab B edits from its stale copy: refused the same way, and tab A's edit stands.
+    const staleEdit = await revise(conversationId, key, { title: 'Chipping' }, 0);
+    expect(verdictOf(staleEdit.events)!.data).toMatchObject({ accepted: false, kind: 'changed' });
+    expect(stored().proposal).toMatchObject({ summary: 'Create the focus area "Putting from 8 feet".', revision: 1 });
+
+    // Now looking at the current card, tab B edits again and confirms: one write, of the card on its screen.
+    const second = await revise(conversationId, key, { title: 'Putting from 10 feet' }, 1);
+    expect(cardOf(second.events)!.data).toMatchObject({ revision: 2 });
+    script({ content: [text('Done.')] });
+    await confirm(conversationId, key, 2);
+    expect(log.commits).toMatchObject([{ summary: 'Create the focus area "Putting from 10 feet".' }]);
+    expect(log.commits).toHaveLength(1);
+  });
+
+  it('an edit that lands between a Confirm’s read and its claim: the claim is handed back and nothing is written', async () => {
+    const { conversationId, key } = await propose();
+    const client = (db as FakeDb).client as { from: (table: string) => { update: (values: Record<string, unknown>) => unknown } };
+    const realFrom = client.from;
+    let slipped = false;
+    // The other tab's edit, landing at the last moment before this Confirm takes the row: a plan this server sealed, revision 1.
+    client.from = (table: string) => {
+      const builder = realFrom(table);
+      const realUpdate = builder.update.bind(builder);
+      builder.update = (values: Record<string, unknown>) => {
+        if (table === RUNS && values.status === 'approved' && !slipped) {
+          slipped = true;
+          const row = runs()[0]!;
+          const proposal = { ...(row.proposed_input as { proposal: Card }).proposal, summary: 'Create the focus area "Chipping".', revision: 1 };
+          row.proposed_input = { ...(row.proposed_input as object), proposal, seal: proposalSeal('coach-1', key, proposal) };
+        }
+        return realUpdate(values);
+      };
+      return builder;
+    };
+    try {
+      h.model = fakeModel([]);
+      const raced = await confirm(conversationId, key);
+      expect(slipped).toBe(true);
+      expect(verdictOf(raced.events)!.data).toMatchObject({ accepted: false, kind: 'changed' });
+      expect(cardOf(raced.events)!.data).toMatchObject({ summary: 'Create the focus area "Chipping".', revision: 1 });
+      expect(log.commits).toHaveLength(0);
+      // Handed back: the card waits again and can be confirmed as it now stands.
+      expect(runs()[0]!.status).toBe('proposed');
+      script({ content: [text('Done.')] });
+      await confirm(conversationId, key, 1);
+      expect(log.commits).toMatchObject([{ summary: 'Create the focus area "Chipping".' }]);
+    } finally {
+      client.from = realFrom;
+    }
+  });
+
+  it('a plan edited by hand in the ledger still fails the seal, edited card or not', async () => {
+    const { conversationId, key } = await propose();
+    h.model = fakeModel([]);
+    await revise(conversationId, key, { title: 'Putting from 8 feet' });
+    // The coach's own row is theirs to write (the ledger's policy allows it): a plan changed there is not this server's.
+    const row = runs()[0]!;
+    row.proposed_input = { ...(row.proposed_input as object), proposal: { ...stored().proposal, summary: 'Create the focus area "Everyone".' } };
+    const forged = await confirm(conversationId, key, 1);
+    expect(receiptStates(forged.events)).toEqual(['failed']);
+    expect(log.commits).toHaveLength(0);
+    // And it cannot be edited back into a sealed card either.
+    const edit = await revise(conversationId, key, { title: 'Putting' }, 1);
+    expect(verdictOf(edit.events)!.data).toMatchObject({ accepted: false });
+    expect(revisions).toHaveLength(1);
+  });
+
+  it('a card with nothing to edit says so and is left alone', async () => {
+    // The plain task of this suite offers no fields and has no `revise`.
+    script({ content: [toolUse('tu_task', 'create_focus_area', { title: 'Putting from 6 feet' })] });
+    const { events } = await ask('Make a putting focus area');
+    const conversationId = conversationOf(events);
+    const key = keyOf(events);
+    h.model = fakeModel([]);
+    const { events: answer } = await revise(conversationId, key, { title: 'Other' });
+    expect(verdictOf(answer)!.data).toMatchObject({ accepted: false, kind: 'fixed' });
+    expect(done(answer)?.status).toBe('awaiting_decision');
+    expect(runs()[0]!.status).toBe('proposed');
   });
 });
 

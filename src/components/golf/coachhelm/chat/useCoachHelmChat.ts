@@ -28,6 +28,7 @@
 
 import * as React from 'react';
 import {
+  pendingDecisionKeys,
   applyChatEvent,
   createChatEventParser,
   type ChatEvent,
@@ -109,14 +110,41 @@ export interface UseCoachHelmChatResult {
    */
   approve: (approvalId: string) => void;
   deny: (approvalId: string) => void;
+  /**
+   * Change fields on a waiting card (`edits` by the keys its `editable` lists). The card comes back as it then stands, with a
+   * `data-card-revision` part beside it saying whether the edit was made. Optional in the type only because a preview builds this
+   * result by hand; the hook always returns it.
+   */
+  revise?: (approvalId: string, edits: Record<string, unknown>) => void;
+  /**
+   * Confirm several waiting cards at once (the keys given, or every card waiting in the thread). Written in the order proposed after
+   * one shared Undo window; the first failure stops the batch and the cards after it wait again. Optional in the type as `revise` is.
+   */
+  approveAll?: (approvalIds?: string[]) => void;
 }
 
 /** A refused request, in the shape `describeChatError` reads (a status and the response body). */
+/** The revision of a card's proposal as the thread holds it; nothing for a card never edited. */
+function revisionSeen(messages: readonly ChatUIMessage[], key: string): { revision?: number } {
+  for (const message of messages) {
+    const part = message.parts.find((p) => p.type === 'data-action-proposal' && p.id === `proposal-${key}`);
+    const revision = (part?.data as { revision?: unknown } | undefined)?.revision;
+    if (typeof revision === 'number' && revision > 0) return { revision };
+  }
+  return {};
+}
+
 function refusal(status: number, body: string): Error {
   return Object.assign(new Error(body || `Request failed (${status})`), { statusCode: status, responseBody: body });
 }
 
-type Outgoing = { kind: 'message'; text: string; key: string } | { kind: 'decision'; key: string; approved: boolean };
+type Outgoing =
+  | { kind: 'message'; text: string; key: string }
+  | { kind: 'decision'; key: string; approved: boolean }
+  | { kind: 'revise'; key: string; edits: Record<string, unknown> }
+  | { kind: 'approve_all'; keys: string[] };
+/** The card a card request is about (the first of a batch): its message is the one the response folds into. */
+const cardKeyOf = (outgoing: Exclude<Outgoing, { kind: 'message' }>): string => (outgoing.kind === 'approve_all' ? (outgoing.keys[0] ?? '') : outgoing.key);
 
 export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoachHelmChatResult {
   const [conversationId, setConversationId] = React.useState<string | null>(options.conversationId ?? null);
@@ -135,6 +163,11 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
   const lastQuestion = React.useRef<{ text: string; key: string } | null>(null);
   // The last decision sent, so a Confirm whose response was lost can be sent again: the server runs a key at most once.
   const lastDecision = React.useRef<{ key: string; approved: boolean } | null>(null);
+  // A Confirm keeps its request open through the Undo window, so a coach with several cards presses the next one while the first
+  // is still open. Those presses are kept and sent in the order pressed, one request at a time.
+  const flight = React.useRef<Outgoing | null>(null);
+  const cardQueue = React.useRef<Array<Exclude<Outgoing, { kind: 'message' }>>>([]);
+  const beginCard = React.useRef<(outgoing: Exclude<Outgoing, { kind: 'message' }>) => void>(() => undefined);
   const endpoint = options.endpoint ?? STREAM_ENDPOINT;
   const surface = options.surface;
   // Read when a message is sent, so the screen is the one the coach is on at that moment.
@@ -186,6 +219,7 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
       inFlight.current?.abort();
       const abort = new AbortController();
       inFlight.current = abort;
+      flight.current = outgoing;
       setError(undefined);
       setStatus('submitted');
 
@@ -194,7 +228,8 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
       const fold = (event: ChatEvent) => {
         if (event.type === 'message_start') {
           adoptConversation(event.conversation_id);
-          const holder = outgoing.kind === 'decision' ? thread.current.find((m) => m.role === 'assistant' && m.parts.some((p) => (p as { approval?: { id?: unknown } }).approval?.id === outgoing.key)) : undefined;
+          const cardKey = outgoing.kind !== 'message' ? cardKeyOf(outgoing) : null;
+          const holder = cardKey ? thread.current.find((m) => m.role === 'assistant' && m.parts.some((p) => (p as { approval?: { id?: unknown } }).approval?.id === cardKey)) : undefined;
           if (event.resumed && holder) {
             target = holder.id;
           } else {
@@ -214,10 +249,12 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
           return;
         }
         if (event.type === 'done' || event.type === 'usage' || !target) return;
+        // How a card in an earlier message ended (withdrawn because the coach asked something else, or settled by a Confirm whose
+        // connection was lost): the event names that message, and it is not the start of this answer.
+        const earlier = (event.type === 'decision' || event.type === 'receipt') && event.message_id ? event.message_id : null;
         // The first thing of the answer itself ends the wait.
-        setPhase(null);
-        // A card withdrawn because the coach asked something else sits in an earlier message: the event names it.
-        const id = event.type === 'decision' && event.message_id ? event.message_id : target;
+        if (!earlier) setPhase(null);
+        const id = earlier ?? target;
         thread.current = thread.current.map((m) => (m.id === id ? applyChatEvent(m, event) : m));
       };
 
@@ -232,7 +269,13 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
             conversation_id: conversation.current,
             client_turn_id: outgoing.kind === 'message' ? outgoing.key : newKey(),
             ...(surface ? { surface } : {}),
-            ...(outgoing.kind === 'message' ? { message: outgoing.text, ...(screen.current ? { screen: screen.current } : {}) } : { decision: { key: outgoing.key, approved: outgoing.approved } }),
+            ...(outgoing.kind === 'message'
+              ? { message: outgoing.text, ...(screen.current ? { screen: screen.current } : {}) }
+              : // The revision of the card as this browser holds it goes with every answer or edit, so the server never confirms or
+                // edits a card other than the one on screen.
+                outgoing.kind === 'approve_all'
+                ? { approve_all: { cards: outgoing.keys.map((key) => ({ key, ...revisionSeen(thread.current, key) })) } }
+                : { decision: { key: outgoing.key, ...(outgoing.kind === 'decision' ? { approved: outgoing.approved } : { edits: outgoing.edits }), ...revisionSeen(thread.current, outgoing.key) } }),
           }),
         });
         const minted = response.headers.get('x-conversation-id');
@@ -262,14 +305,19 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
         // A refused request carries its kind (the server's, or the status's). Anything else here is a connection that dropped:
         // the device is offline, a Confirm's response was lost, or an answer was cut off.
         const kind: ChatFailureKind =
-          typeof (failure as { statusCode?: unknown }).statusCode === 'number' ? chatErrorKind(failure) : typeof navigator !== 'undefined' && navigator.onLine === false ? 'offline' : outgoing.kind === 'decision' ? 'card_retry' : 'lost';
+          typeof (failure as { statusCode?: unknown }).statusCode === 'number' ? chatErrorKind(failure) : typeof navigator !== 'undefined' && navigator.onLine === false ? 'offline' : outgoing.kind !== 'message' ? 'card_retry' : 'lost';
         setError(Object.assign(failure, { kind }));
       } finally {
         if (inFlight.current === abort) {
           inFlight.current = null;
+          flight.current = null;
           setPhase(null);
           flush();
           setStatus(failed ? 'error' : 'ready');
+          // The next card the coach pressed meanwhile. After a failure they are dropped: the coach sees what failed and decides again.
+          const next = failed ? undefined : cardQueue.current.shift();
+          if (failed) cardQueue.current = [];
+          if (next) beginCard.current(next);
         }
       }
     },
@@ -318,16 +366,20 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
   }, [run]);
 
   const stop = React.useCallback(() => {
+    cardQueue.current = [];
     inFlight.current?.abort();
     inFlight.current = null;
+    flight.current = null;
     setPhase(null);
     flush();
     setStatus('ready');
   }, [flush]);
 
   const newConversation = React.useCallback(() => {
+    cardQueue.current = [];
     inFlight.current?.abort();
     inFlight.current = null;
+    flight.current = null;
     conversation.current = null;
     lastQuestion.current = null;
     lastDecision.current = null;
@@ -349,13 +401,52 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
     setContext((prev) => prev.filter((c) => c.id !== id));
   }, []);
 
+  /** Send a card request now, or keep it until the card request in flight has finished. Ignored while an answer is streaming. */
+  const pressCard = React.useCallback(
+    (outgoing: Exclude<Outgoing, { kind: 'message' }>) => {
+      const same = (other: Outgoing | null) => Boolean(other) && JSON.stringify(other) === JSON.stringify(outgoing);
+      if (inFlight.current) {
+        if (flight.current?.kind !== 'message' && !same(flight.current) && !cardQueue.current.some(same)) cardQueue.current.push(outgoing);
+        return;
+      }
+      beginCard.current(outgoing);
+    },
+    [],
+  );
+  React.useEffect(() => {
+    beginCard.current = (outgoing) => {
+      // Only a decision can be tried again as it was: an edit or a batch is pressed again by the coach.
+      lastDecision.current = outgoing.kind === 'decision' ? { key: outgoing.key, approved: outgoing.approved } : null;
+      void run(outgoing);
+    };
+  }, [run]);
+
   const decide = React.useCallback(
     (approvalId: string, approved: boolean) => {
-      if (!approvalId || inFlight.current) return;
-      lastDecision.current = { key: approvalId, approved };
-      void run({ kind: 'decision', key: approvalId, approved });
+      if (!approvalId) return;
+      pressCard({ kind: 'decision', key: approvalId, approved });
     },
-    [run],
+    [pressCard],
+  );
+  /** Change fields on a waiting card. The server plans it again and sends the card as it then stands, with a `data-card-revision` part saying whether the edit was made. */
+  const revise = React.useCallback(
+    (approvalId: string, edits: Record<string, unknown>) => {
+      if (!approvalId) return;
+      pressCard({ kind: 'revise', key: approvalId, edits });
+    },
+    [pressCard],
+  );
+  /**
+   * Confirm several waiting cards at once: the ones given, or every card still waiting in the thread. The server writes them in
+   * the order they were proposed after one shared Undo window, and stops at the first that fails (the rest wait again).
+   */
+  const approveAll = React.useCallback(
+    (approvalIds?: string[]) => {
+      const keys = approvalIds ?? thread.current.flatMap((m) => pendingDecisionKeys(m));
+      if (keys.length === 0) return;
+      pressCard({ kind: 'approve_all', keys: [...new Set(keys)] });
+    },
+    [pressCard],
   );
   const approve = React.useCallback((approvalId: string) => decide(approvalId, true), [decide]);
   const deny = React.useCallback((approvalId: string) => decide(approvalId, false), [decide]);
@@ -378,6 +469,8 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
     newConversation,
     approve,
     deny,
+    revise,
+    approveAll,
   };
 }
 

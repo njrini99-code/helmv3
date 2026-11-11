@@ -67,9 +67,11 @@ describe('the on-demand golf reference, by topic', () => {
     expect(d.topics?.every((t) => t.headings.length > 0)).toBe(true);
   });
 
-  it('tells the model the notes are in shorthand and the answer is not', () => {
+  it('tells the model how to credit a figure, and never by chapter or section number', () => {
     const note = getGolfReference({ topic: 'what_moves_score' }).coverage_note ?? '';
-    expect(note).toMatch(/written in shorthand \(SG, GIR, FW, HCP, ft, yds\): in an answer write strokes gained, greens in regulation, fairways, handicap, feet and yards in full/);
+    expect(note).toMatch(/say it is from published research or name the publisher the text names \(such as Shot Scope or Broadie\)\. Never cite a chapter, a section or this reference by number\./);
+    // The text is served written out (reference-plain.ts), so the note no longer has shorthand to translate.
+    expect(note).not.toMatch(/shorthand|\bSG\b|\bGIR\b/);
   });
 
   it('is named in the prompt topic by topic, so the model knows what it can look up', () => {

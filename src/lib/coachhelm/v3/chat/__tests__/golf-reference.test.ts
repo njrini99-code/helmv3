@@ -40,7 +40,7 @@ describe('get_golf_reference', () => {
 
   it('finds college baselines and the pressure gap by their own words', () => {
     expect(searchGolfReference('college scoring averages')[0]?.section.chapter).toMatch(/College/);
-    expect(searchGolfReference('tournament pressure')[0]?.section.chapter).toMatch(/Pressure|Causal/);
+    expect(searchGolfReference('tournament pressure')[0]?.section.chapter).toMatch(/pressure|causal/i);
   });
 
   it('says so, with the chapters, when it has nothing', () => {
@@ -90,7 +90,7 @@ describe('get_golf_reference', () => {
 
     it('lists the figures that have a citable source, with the source named', () => {
       const t = text('published college baselines strokes gained NCAA D1 championship field');
-      expect(t).toMatch(/Published College Baselines/);
+      expect(t).toMatch(/Published college baselines/);
       expect(t).toMatch(/2\.3 strokes per round better/);
       expect(t).toMatch(/datagolf\.com\/true-strokes-gained-am/);
       expect(t).toMatch(/shot-quality index/i);
@@ -100,7 +100,7 @@ describe('get_golf_reference', () => {
     it('says plainly what is not published, so no division fills a missing figure from another or from the Tour', () => {
       const t = text('published college baselines not published no college figure');
       expect(t).toMatch(/Not published \(no college figure\)/);
-      expect(t).toMatch(/Division II, Division III, NAIA and JUCO/);
+      expect(t).toMatch(/Division II, Division III, NAIA and junior college/);
       expect(t).toMatch(/leave them unset/);
     });
 

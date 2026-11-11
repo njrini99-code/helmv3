@@ -38,7 +38,7 @@ import { linkProposalsToMessage } from '@/lib/coachhelm/v3/chat/action-runs';
 import { CoachContextError, resolveCoachChatContext, type CoachChatContext } from '@/lib/coachhelm/v3/chat/context';
 import { firstTurnNotes, readStandingNotes, toneSentence } from '@/lib/coachhelm/v3/chat/context/notes';
 import { turnContext } from '@/lib/coachhelm/v3/chat/context/screen-context';
-import { CHAT_MAX_STEPS, CHAT_MODEL_LEDGER_ID, LONG_PROMPT_TOKENS, MissingModelKeyError, anthropicModelClient, callPromptTokens, chatFeatures, promptTokens, turnCostUsd } from '@/lib/coachhelm/v3/chat/engine/model';
+import { CHAT_MAX_STEPS, MissingModelKeyError, anthropicModelClient, callPromptTokens, chatFeatures, onLongCard, profileFor, promptTokens, turnCostUsd } from '@/lib/coachhelm/v3/chat/engine/model';
 import { CHAT_STREAM_CONTENT_TYPE, encodeChatEvent, eventsForStoredParts, pendingDecisionKeys, type ChatErrorAction, type ChatErrorKind, type ChatEvent, type ChatScreenEcho } from '@/lib/coachhelm/v3/chat/engine/protocol';
 import { loadConversation, type LoadedConversation, type TurnRow } from '@/lib/coachhelm/v3/chat/engine/store';
 import { chatTurnResponse, type TurnInput, type TurnSummary } from '@/lib/coachhelm/v3/chat/engine/turn';
@@ -122,8 +122,8 @@ function playerScreenLoaders(sb: Sb, who: { team_id: string; player_id: string; 
 }
 
 
-/** Worst-case one-turn spend, for the pre-flight gate only. What is billed is what the API reports. */
-const CHAT_TURN_COST_ESTIMATE_USD = estimateCostUsd(CHAT_MODEL_LEDGER_ID, 12000, 2500);
+/** Worst-case one-turn spend at the rates of the model the surface runs on, for the pre-flight gate only. What is billed is what the API reports. */
+const turnCostEstimateUsd = (ledgerId: string): number => estimateCostUsd(ledgerId, 12000, 2500);
 
 const Body = z
   .object({
@@ -132,8 +132,29 @@ const Body = z
     surface: z.enum(['ask', 'quick_chat', 'practice_helper']).optional(),
     /** The coach's new message. */
     message: z.string().trim().min(1).max(8000).optional(),
-    /** The coach's answer to a waiting card, by its ledger key. */
-    decision: z.object({ key: z.string().min(1).max(200), approved: z.boolean() }).optional(),
+    /**
+     * About a waiting card, by its ledger key. With `approved`: the coach's answer to it. With `edits`: the coach changed fields on
+     * it (`{ [field key]: value }`, the fields the card's `editable` lists), which plans the card again and calls no model.
+     * `revision`: the revision of the card on the coach's screen, as its proposal part carries it.
+     */
+    decision: z
+      .object({
+        key: z.string().min(1).max(200),
+        approved: z.boolean().optional(),
+        edits: z.record(z.string().min(1).max(100), z.unknown()).optional(),
+        revision: z.number().int().min(0).max(100_000).optional(),
+      })
+      .refine((d) => (d.approved === undefined) !== (d.edits === undefined), 'Send approved or edits, not both.')
+      .refine((d) => d.edits === undefined || (Object.keys(d.edits).length <= 40 && JSON.stringify(d.edits).length <= 20_000), 'Too many edits.')
+      .optional(),
+    /**
+     * "Approve all": confirm these waiting cards of one turn. They are written in the order they were proposed, after one shared Undo
+     * window, and the first failure stops the batch (the cards after it wait again). `revision` as on a `decision`.
+     */
+    approve_all: z
+      .object({ cards: z.array(z.object({ key: z.string().min(1).max(200), revision: z.number().int().min(0).max(100_000).optional() })).min(1).max(20) })
+      .refine((a) => new Set(a.cards.map((c) => c.key)).size === a.cards.length, 'A card is listed twice.')
+      .optional(),
     /** A tab still running the previous client sends its whole thread. Only its last user message is read, as the new message. */
     messages: z.array(z.unknown()).optional(),
     /**
@@ -144,9 +165,14 @@ const Body = z
   })
   .transform((body, ctx): { conversation_id: string | null; client_turn_id: string; surface: ChatSurface; input: TurnInput; screen: unknown } => {
     const base = { conversation_id: body.conversation_id ?? null, client_turn_id: body.client_turn_id, surface: (body.surface ?? 'ask') as ChatSurface, screen: body.screen ?? null };
-    if (body.decision && !body.message) return { ...base, input: { kind: 'decision', ...body.decision } };
+    if (body.approve_all && !body.message && !body.decision) return { ...base, input: { kind: 'approve_all', cards: body.approve_all.cards.map((c) => ({ key: c.key, ...(c.revision === undefined ? {} : { revision: c.revision }) })) } };
+    if (body.decision && !body.message && !body.approve_all) {
+      const { key, approved, edits, revision } = body.decision;
+      const seen = revision === undefined ? {} : { revision };
+      return { ...base, input: edits !== undefined ? { kind: 'revise', key, edits, ...seen } : { kind: 'decision', key, approved: approved === true, ...seen } };
+    }
     const text = body.message ?? lastUserText(body.messages);
-    if (!text || body.decision) {
+    if (!text || body.decision || body.approve_all) {
       ctx.addIssue({ code: 'custom', message: 'Send a message or a decision.' });
       return z.NEVER;
     }
@@ -186,10 +212,10 @@ const refuse = (status: number, error: string, kind: ChatErrorKind | null, extra
 const kindForStatus = (status: number): ChatErrorKind | null => (status === 401 ? 'signed_out' : status === 403 || status === 404 ? 'off' : null);
 
 /** Log one failed model call. A provider or account fault is logged under a stable code so every retry of one outage is one incident. */
-function logModelError(error: unknown): void {
+function logModelError(error: unknown, ledgerId: string): void {
   const fault = classifyProviderFault(error);
   const raw = describeError(error);
-  recordAi({ feature: 'coachhelm_chat', action: 'v3.chat.stream.model', model: CHAT_MODEL_LEDGER_ID, provider: fault?.provider, outcome: 'failure', errorCode: fault?.code, runtime: process.env.NEXT_RUNTIME ?? 'nodejs' });
+  recordAi({ feature: 'coachhelm_chat', action: 'v3.chat.stream.model', model: ledgerId, provider: fault?.provider, outcome: 'failure', errorCode: fault?.code, runtime: process.env.NEXT_RUNTIME ?? 'nodejs' });
   if (error instanceof MissingModelKeyError) {
     void logServerError('chat/stream: ANTHROPIC_API_KEY is not set; chat cannot answer', { action: 'v3.chat.stream.model', errorCode: 'missing_model_key', feature: 'coachhelm_chat' });
     return;
@@ -260,7 +286,7 @@ export async function POST(req: NextRequest) {
     checkRateLimit(`coachhelm:chat:${ctx.coach_id}`, RATE_LIMITS.API_GENERAL),
     earlyConversationId ? getConversation(supabase, earlyConversationId) : null,
     earlyConversationId ? loadConversation(supabase, earlyConversationId).catch((err: unknown) => (err instanceof Error ? err : new Error('history'))) : null,
-    earlyConversationId ? null : checkBudget(admin, ctx.coach_id, CHAT_TURN_COST_ESTIMATE_USD),
+    earlyConversationId ? null : checkBudget(admin, ctx.coach_id, turnCostEstimateUsd(profileFor(parsed.success ? parsed.data.surface : 'ask').ledgerId)),
   ]);
   // CoachHelm switched off (globally, for the coach or for the team) answers nothing here either; the gate fails closed on a lookup error.
   if (!helmGate.effectivelyEnabled) return refuse(403, 'CoachHelm is off for your team.', 'off');
@@ -284,14 +310,14 @@ export async function POST(req: NextRequest) {
       const answered = loaded.rows.find((r) => r.role === 'assistant' && r.client_turn_id === clientTurnId && r.status !== 'failed');
       if (answered) return storedTurnResponse(answered, conversationId);
     }
-  } else if (input.kind === 'decision') {
+  } else if (input.kind !== 'message') {
     return refuse(404, 'Conversation not found', 'gone');
   }
 
   // The budget gate runs before anything is created, so an exhausted budget leaves no orphan conversation or user turn. A decision is not
   // gated: the card was offered under the budget, and refusing its Confirm would strand an action the coach has already been shown.
   if (input.kind === 'message') {
-    const gate = earlyGate ?? (await checkBudget(admin, ctx.coach_id, CHAT_TURN_COST_ESTIMATE_USD));
+    const gate = earlyGate ?? (await checkBudget(admin, ctx.coach_id, turnCostEstimateUsd(profileFor(surface).ledgerId)));
     if (!gate.allowed) {
       const message =
         gate.fallback_reason === 'budget_unresolved'
@@ -337,6 +363,8 @@ export async function POST(req: NextRequest) {
     const line = [where.line, toneSentence(knows)].filter(Boolean).join(' ');
     turnNote = [firstTurn ? firstTurnNotes(knows) : null, line].filter(Boolean).join('\n\n');
   }
+  // The model this surface runs on. A coach's three surfaces share one, so a conversation never changes model between them.
+  const profile = profileFor(surface);
   // The registry registers `find_in_app` for everyone; a team without Clubhouse is not offered it. That is two tool lists per surface,
   // each the same bytes on every request, so each is cached on its own.
   const tools = toolsFor(surface, ctx).filter((tool) => clubhouseOn || tool.name !== 'find_in_app');
@@ -352,8 +380,8 @@ export async function POST(req: NextRequest) {
       if (summary.messageId && summary.proposalKeys.length > 0) {
         await linkProposalsToMessage(supabase, { coach_id: ctx.coach_id, message_id: summary.messageId, idempotency_keys: summary.proposalKeys }).catch(() => undefined);
       }
-      if (summary.error) logModelError(summary.error);
-      await recordTurn({ admin, ctx, conversationId: convId, summary });
+      if (summary.error) logModelError(summary.error, profile.ledgerId);
+      await recordTurn({ admin, ctx, conversationId: convId, summary, ledgerId: profile.ledgerId });
     });
   };
 
@@ -365,6 +393,7 @@ export async function POST(req: NextRequest) {
       toolContext: { sb: supabase, who: ctx, conversationId: convId, surface, loaders: coachScreenLoaders(supabase, ctx) },
       tasks: { coachId: ctx.coach_id, teamId: ctx.team_id, timezone: ctx.timezone, defer: later },
       maxSteps: CHAT_MAX_STEPS,
+      profile,
       features: chatFeatures(surface),
       turnNote,
       screen: screenEcho,
@@ -385,26 +414,27 @@ export async function POST(req: NextRequest) {
  * answer several times over. Carries model, latency, cost, cache use and the grounding check's result; no player name,
  * no prompt text, no database value.
  */
-async function recordTurn(args: { admin: ReturnType<typeof createAdminClient>; ctx: CoachChatContext; conversationId: string; summary: TurnSummary }): Promise<void> {
-  const { admin, ctx, conversationId, summary } = args;
+async function recordTurn(args: { admin: ReturnType<typeof createAdminClient>; ctx: CoachChatContext; conversationId: string; summary: TurnSummary; ledgerId: string }): Promise<void> {
+  const { admin, ctx, conversationId, summary, ledgerId } = args;
   const { usage } = summary;
   if (usage.calls.length === 0) return;
   const input = promptTokens(usage);
   try {
-    const cost = input + usage.output > 0 ? turnCostUsd(usage) : CHAT_TURN_COST_ESTIMATE_USD;
+    const cost = input + usage.output > 0 ? turnCostUsd(usage) : turnCostEstimateUsd(ledgerId);
     await admin.from('golf_coachhelm_llm_calls').insert(
-      buildChatLlmCallRow({ coachId: ctx.coach_id, conversationId, modelId: CHAT_MODEL_LEDGER_ID, promptTokens: input, completionTokens: usage.output, costUsd: cost, grounded: summary.grounded, unmatchedTokens: summary.unmatched }),
+      buildChatLlmCallRow({ coachId: ctx.coach_id, conversationId, modelId: ledgerId, promptTokens: input, completionTokens: usage.output, costUsd: cost, grounded: summary.grounded, unmatchedTokens: summary.unmatched }),
     );
     await recordSpend(admin, { coach_id: ctx.coach_id, task: 'coach_chat', cost_usd: cost });
   } catch {
     // Never fail a coach's answer because accounting hiccuped.
   }
   if (summary.status !== 'failed') {
-    recordAi({ feature: 'coachhelm_chat', action: 'v3.chat.stream.model', model: CHAT_MODEL_LEDGER_ID, outcome: 'success', durationMs: summary.totalMs, inputTokens: input, outputTokens: usage.output, runtime: process.env.NEXT_RUNTIME ?? 'nodejs' });
+    recordAi({ feature: 'coachhelm_chat', action: 'v3.chat.stream.model', model: ledgerId, outcome: 'success', durationMs: summary.totalMs, inputTokens: input, outputTokens: usage.output, runtime: process.env.NEXT_RUNTIME ?? 'nodejs' });
   }
   // A prompt past 100K tokens is billed at five times the rate: it should not happen, so it is said when it does.
-  const longest = Math.max(0, ...usage.calls.map(callPromptTokens));
-  if (longest > LONG_PROMPT_TOKENS) {
+  // (Only a model with a second rate card can be on it: Claude Haiku 5.5 past 100K prompt tokens.)
+  const longest = Math.max(0, ...usage.calls.filter(onLongCard).map(callPromptTokens));
+  if (longest > 0) {
     void logServerError('chat/stream: a request went over 100K prompt tokens and was billed on the long-prompt rate card', { action: 'v3.chat.stream.long_prompt', feature: 'coachhelm_chat', handled: true, skipSentry: true, extra: { conversationId, promptTokens: longest } }, 'warning');
   }
   // One line per turn for the eval: how long the coach waited for the first word, what the cache saved on each call, whether the figures matched the reads.
@@ -414,7 +444,7 @@ async function recordTurn(args: { admin: ReturnType<typeof createAdminClient>; c
       action: 'v3.chat.stream.turn',
       featureArea: 'coachhelm',
       skipSentry: true,
-      extra: { conversationId, coachId: ctx.coach_id, status: summary.status, stop: summary.stop, firstTextMs: summary.firstTextMs, totalMs: summary.totalMs, calls: usage.calls, grounded: summary.grounded, unmatchedCount: summary.unmatched.length, refusalCategory: summary.refusalCategory, degraded: summary.degraded },
+      extra: { conversationId, coachId: ctx.coach_id, status: summary.status, stop: summary.stop, firstTextMs: summary.firstTextMs, totalMs: summary.totalMs, calls: usage.calls, grounded: summary.grounded, unmatchedCount: summary.unmatched.length, refusalCategory: summary.refusalCategory, degraded: summary.degraded, model: ledgerId, fallbackModel: summary.fallbackModel },
     },
     'info',
   ).catch(() => undefined);

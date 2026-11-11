@@ -18,7 +18,7 @@ const definition = (t: ChatTool) => JSON.stringify({ name: t.name, description: 
 const tokens = (chars: number) => Math.round(chars / 4);
 
 /** The tools another worker owns and TOOLS only registers (CONTEXT's, `context/**` and `tasks/**`). Their size is theirs; it counts toward the whole prefix. */
-const REGISTERED_FOR_OTHERS = new Set(['find_in_app', 'save_note', 'remove_note', 'send_event_reminder', 'record_attendance', 'update_event', 'cancel_event', 'set_focus_area_status', 'set_goal_state', 'mark_signal_handled', 'set_qualifier_coach_pick', 'set_task_reminder', 'dismiss_signal']);
+const REGISTERED_FOR_OTHERS = new Set(['find_in_app', 'save_note', 'remove_note', 'send_event_reminder', 'record_attendance', 'update_event', 'cancel_event', 'set_focus_area_status', 'set_goal_state', 'mark_signal_handled', 'set_qualifier_coach_pick', 'set_task_reminder', 'dismiss_signal', 'log_focus_progress', 'record_focus_outcome']);
 
 function sizeOf(surface: ChatSurface, who: CoachChatContext | PlayerChatContext) {
   const tools = toolsFor(surface, who);
@@ -51,6 +51,21 @@ describe('the cached prefix: tool definitions and policy', () => {
     expect(size.own).toBeLessThan(12_000);
     // 26,000 by the lead's decision of 10 Nov 2026 (was 21,000): the knowledge blocks carry what strokes gained means and the writing rules.
     expect(size.total).toBeLessThan(26_000);
+  });
+
+  it('holds with the tournaments flag on too (three more tools), and stays clear of 24,000, where the next step is deferring rarely used tasks behind tool search', () => {
+    flags.tournaments = true;
+    try {
+      for (const surface of ['ask', 'quick_chat'] as const) {
+        const size = sizeOf(surface, coach);
+        console.info(`prefix ${surface}, tournaments on: ${size.tools} tools = ${size.total}; own tools and rules ${size.own}`);
+        // The flag adds get_tournaments, set_lineup and lock_lineup (about 420 tokens): the same brake, moved by what they weigh.
+        expect(size.own).toBeLessThan(12_500);
+        expect(size.total).toBeLessThan(24_000);
+      }
+    } finally {
+      flags.tournaments = false;
+    }
   });
 
   it('the Ask tab and the practice helper send the same definitions, so they share one cache entry', () => {

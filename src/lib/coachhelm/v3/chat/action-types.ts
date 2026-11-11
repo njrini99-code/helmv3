@@ -28,9 +28,9 @@
  * agent-tools.confirm-gate.test.ts is what keeps it in step with the tool set.
  * ========================================================================== */
 
-import type { CardDelivery, CardNotReached, CardPerson, CardUndo, CardVisibility, ReceiptMissed } from './card-types';
+import type { CardDelivery, CardNotReached, CardPerson, CardUndo, CardVisibility, EditableField, ReceiptMissed } from './card-types';
 
-export type { CardDelivery, CardNotReached, CardPerson, CardUndo, CardVisibility, ReceiptMissed } from './card-types';
+export type { CardDelivery, CardNotReached, CardPerson, CardUndo, CardVisibility, EditableField, ReceiptMissed } from './card-types';
 
 export type ActionClass = 'read' | 'draft' | 'confirm' | 'destructive';
 
@@ -126,6 +126,12 @@ export interface ActionProposal {
   visible_note?: string;
   /** Whether it can be taken back: the Undo window, and where it is reversed afterwards (or that it cannot be). */
   undo?: CardUndo;
+  /**
+   * The fields the coach may change on the card before confirming, each with its type and limits. Absent or empty:
+   * nothing on this card is editable in place. An edit goes to the task's `revise`, which plans again; it is never
+   * applied to the card by the browser.
+   */
+  editable?: EditableField[];
 }
 
 /** `kind` is one of the page's own row kinds: task, event, blocked_time, focus_area, announcement, message, qualifier, trip, recruit, lineup, plan. */

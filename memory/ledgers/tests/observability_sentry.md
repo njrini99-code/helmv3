@@ -117,7 +117,7 @@ current total, which may include pre-existing cases untouched by this work.
 
 ## 2026-09-02 — Deliverable 5: AI observability, all 5 production call sites
 
-- `src/app/api/coachhelm/v3/chat/stream/route.test.ts` (4) — new file.
+- `src/app/api/coachhelm/v3/chat/stream/route.test.ts` (this file was removed in the 2026-11-10 CoachHelm chat rebuild) (4) — new file.
   Pins `experimental_telemetry` opt-in with `recordInputs`/`recordOutputs`
   explicitly `false`, `Sentry.setConversationId` tagging the turn with the
   opaque server-generated id, and `recordAi` success/failure. The

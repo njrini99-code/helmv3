@@ -130,6 +130,12 @@ export interface TaskTool<I, P extends ActionProposal = ActionProposal> extends 
   commit: (ctx: ToolContext, proposal: P) => Promise<ActionReceipt>;
   /** `true`: no Undo window, it writes on Confirm (locking a lineup). The card must say so. */
   immediate?: boolean;
+  /**
+   * The card again, with the coach's edits to the fields it offered (`proposal.editable`). It plans afresh from the stored proposal
+   * and the edits: the same reads and checks as `plan`, no write, no model. Throw an `Error` whose message the coach can read when
+   * an edit cannot be made; the card then stays as it was. Left out: nothing on this task's card can be changed in place.
+   */
+  revise?: (ctx: ToolContext, proposal: P, edits: Record<string, unknown>) => Promise<P>;
 }
 
 // The registry holds tools of every input type; `any` is the only type every `ReadTool<I>` and `TaskTool<I, P>` is assignable to.

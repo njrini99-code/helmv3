@@ -775,3 +775,355 @@ this team) and a test.
 P10. For CONTEXT: E-23 is your `send_event_reminder`. The receipt shape is ready (`missed: [{ name, reason }]`,
 `notifications[].to`); your commit knows `ids` and `sent` but not which ids were missed, because
 `sendEventReminderToPlayers` returns a count. With `data.sentPlayerIds` from the action you can name them.
+
+
+## 2026-11-11 (ENGINE): a model per surface, and the eval harness on the wire protocol
+
+E20. **Model profiles** (`engine/model.ts`). `MODEL_PROFILES` holds one `ModelProfile` per model (`modelId`, `ledgerId`,
+     `effort`, `features`); `SURFACE_MODEL` says which model a surface runs on; `profileFor(surface)` is the one
+     lookup the route and the player turn use. Today: `ask`, `quick_chat`, `practice_helper` on Claude Sonnet 5.5
+     (`claude-sonnet-5-5`, effort `medium`); `player` on Claude Haiku 5.5 (`claude-haiku-5-5`, effort `high`, exactly as
+     before). Switching a surface is one line in `SURFACE_MODEL`. `CHAT_MODEL_OVERRIDE` (null) puts every surface on one
+     model when set, for an eval run: set it, run, set it back. A player never gets `programmaticReads`, whichever
+     model. Gone: `CHAT_MODEL_ID`, `CHAT_MODEL_LEDGER_ID`, `CHAT_EFFORT`, `CHAT_PRICING`; `CHAT_FEATURES` is the coach
+     profile's features and `chatFeatures(surface)` the surface's. `llm/types.ts`: `MODEL_FOR_TASK.coach_chat` is
+     `anthropic/claude-sonnet-5-5`, `PLAYER_CHAT_MODEL` is `anthropic/claude-haiku-5-5`.
+     **`player_chat` is a constant, not a `ComposeTask`.** The ledger's `task` column has a CHECK that lists the four
+     tasks, so a new task key needs a migration; a player's turn is still written `task: 'coach_chat'` with the Haiku
+     id as its `model_id`. The same will hold for any other new ledger key (the suggestions call).
+     **For PLANS and KNOWLEDGE**: the prompt header says it was written for Haiku at high effort. Nothing in it is wrong
+     for Sonnet 5.5; it is simply read by both now, so a rule should not name the model.
+
+E21. **What differs on Sonnet 5.5** (source: the `claude-api` skill's model-migration notes, section "Migrating to
+     Claude Sonnet 5.5", and the installed SDK's types):
+     - `thinking` is adaptive and never `disabled` (a 400 on this model); `tool_choice` is never forced (a 400); effort
+       is `medium` (the model's default is `high`; `medium` is the documented starting point for multistep tool use).
+     - `thinking.display: 'updates'` is ON (`progressNotes`, beta `thinking-display-updates-2026-08-18`). The model's
+       thinking comes back as short progress updates; the loop sends each as a `note` event (the app's reducer already
+       draws it as a progress row) and drops the API's "This part of the response was interrupted before it finished."
+       sentinel. Full thinking is still never sent to the browser. Off for Haiku.
+     - **Server-side refusal fallback is ON** (`refusalFallback`: `fallbacks: 'default'`, beta
+       `server-side-fallback-2026-07-01`). When Sonnet 5.5 declines for one of the categories the API retries, the API
+       answers with a substitute model in the same response. What the loop does with that response:
+       a `fallback` content block marks the handover; text already streamed stays and the continuation is not started
+       as a new paragraph; when the turn is echoed back, everything the declining model left before the LAST `fallback`
+       block that the API will not accept again is dropped (`echoable()`: `thinking`, `redacted_thinking`, `tool_use`,
+       and a `server_tool_use` without its result), and the tool calls the loop runs are the ones after it; usage is
+       read per attempt from `usage.iterations` (the top-level `usage` covers only the last attempt), so a fallback
+       attempt is billed at the substitute model's rates; the substitute's id is in the turn's log line
+       (`fallbackModel`). If the substitute declines too, `stop_reason` is `refusal` and the turn is the same declined
+       turn as before. Not verified against the live API: `fallbacks` together with the code tool
+       (`programmaticReads`). If the API rejects the pair it is a 400, and the existing retry sends the call plain.
+     - The reject-then-plain retry (`plainFeatures`) also drops `fallbacks` and the notes.
+
+E22. **Cost** (`CHAT_RATES`, `ratesFor`, `callCostUsd`). Each attempt is priced at the rates of the model that ran
+     it: Sonnet 5.5 and Sonnet 5 at $2 in / $10 out per million tokens, one rate card; Haiku 5.5 at $0.10 / $0.50 up to
+     100K prompt tokens and $0.50 / $2.50 above (`onLongCard`). Cache multipliers are the same for both: read 0.1x
+     input, 5-minute write 1.25x, 1-hour write 2x. **That makes a Sonnet 5.5 cache read $0.20 per million, as the
+     migration notes give it; the lead's message said $0.10 (0.05x). One number in `CACHE_MULTIPLIERS`/`CHAT_RATES`
+     if the price page says otherwise.** The ledger row's `model_id` is the profile's (the model asked for); the
+     budget gate reserves 12,000 in and 2,500 out at that model's rates (about $0.049 a turn on Sonnet 5.5 against
+     $0.0025 on Haiku 5.5), so a coach's daily budget buys about a twentieth of the turns the gate allowed on Haiku.
+
+E23. **A conversation whose model changes** (a deploy that edits `SURFACE_MODEL`; a coach's three surfaces share one
+     model, so moving between them changes nothing). History is still sent back exactly as stored. Sonnet 5.5 reads
+     the thinking blocks Haiku 5.5 wrote, so Haiku to Sonnet replays whole. The other way, and for any block a model
+     cannot verify, `drop_block` makes the API leave the block out instead of rejecting the request; the count is in
+     the turn's log line (`calls[].dropped_thinking`) and nothing is rewritten in the store. Route test: "a
+     conversation stored on Haiku continues on Sonnet". A conversation that holds code-tool blocks may not replay on
+     the plain retry; that case is unchanged from E16.
+
+E24. **The eval harness** (`scripts/coachhelm/ask-eval.mjs`, pure half `ask-eval-score.mjs`) now speaks the wire
+     protocol. One POST per question, a new conversation each: `{ conversation_id: null, client_turn_id, surface:
+     'ask', message }` as the coach, `{ client_turn_id, message }` as the player. It folds `ChatEvent`s the way
+     `applyChatEvent` does (a `text_discard` drops the words since the last non-text part) and scores the answer with
+     the read markers (` [e3]`) taken out. Verdicts are the engine's: `complete`, `card`, `declined` (from
+     `data-turn-meta`), `failed`, `stopped`, `incomplete`; there is no "rejected", and the ledger's `verified` is
+     reported beside the verdict as "figures matched". It asks the data questions and KNOWLEDGE's golf-sense
+     questions (K6): golf sense, reads and writing are three columns, the writing rules are held against every answer,
+     `tour_figure_from_memory` is skipped when the turn called `get_reference`, and a read the model's code made counts
+     by the read's own name (the evidence part's `tool`). The compile of `golf-sense.json` is a plain-JavaScript copy
+     of `knowledge/eval/index.ts` (a `.mjs` script cannot import it); `scripts/coachhelm/__tests__/ask-eval-score.test.ts`
+     holds the two to the same questions, patterns, sentence count and everyday-word list, so **KNOWLEDGE: a change to
+     `index.ts` fails that test until the copy follows.** The protocol carries no tool input, so a captured fixture's
+     `tools[].input` is null. It is a dry run unless `--apply` is passed: the dry run reads staging (free), prints the
+     plan and calls no model. `--max-usd` (default 25) stops the run before the ledger total can pass it; a 401 or a
+     spent budget stops it at once; the report is written whatever stops it. Gone with the old audit: the citation
+     and repair columns and `--server-log`.
+
+## 2026-11-11 (KNOWLEDGE): the golf reference is served in plain words; one export for TOOLS; one gap in the harness
+
+K7. `get_reference` (topic golf) now hands the model text with the shorthand written out and every pointer to the
+    research document removed (`knowledge/reference-plain.ts`; the document itself is unchanged). The coverage note
+    no longer explains shorthand: it says how to credit a figure (published research, or the publisher the text
+    names) and never by chapter or section number. Size by topic, characters / 4, before and after: strokes_gained
+    713 and 762, what_moves_score 761 and 825, college_golf 1,093 and 1,128, course_management 684 and 721,
+    lies_and_conditions 738 and 784, holes_and_courses 391 and 481, pressure 417 and 427, improvement 392 and 407,
+    sources 1,325 and 1,325. This is a read result, so the cached prefix is the same bytes as before.
+K8. **TOOLS:** `stripSelfReferences(text)` is exported from `knowledge/reference-plain.ts`. Stored insights carry
+    "Per Research doc §4" and "(Research doc §9)" in their bodies (the insight rules write it, for example
+    `v3/composite/rules/pressure-decel-chain.ts:100`; the feed strips it at `golf/actions/insight-delivery.ts:1630`).
+    A reader that returns an insight's stored text to the model (`get_coachhelm`) should pass the text through it,
+    or the model will quote the phrase to a coach. It changes nothing else in the text: it tidies only at a cut.
+K9. **ENGINE:** the harness does what K6 asks (the seven writing rules against every answer, the data questions
+    included; `style.max_sentences`; writing as its own column and rule counts in the report). One gap: `stored.places`
+    is the course names of the staging rounds only (`ask-eval.mjs:494`). Event and qualifier names are not in it, so
+    "the fall invitational" for a stored "Fall Invitational" passes. Recommended: add the team's event and qualifier
+    names from the same staging read to `places`.
+
+## 2026-11-11 (PLANS): a card the coach can edit, `editable` and `revise` (for ENGINE to build the request path)
+
+P11. The contract addition, built on TOOLS's side and waiting for ENGINE's request path and re-sealing.
+
+On the proposal (`ActionProposal.editable?: EditableField[]`, type in `../card-types.ts`):
+```ts
+interface EditableField {
+  key: string;      // the key an edit is sent under
+  label: string;    // the label of the fact this field shows as on the card
+  type: 'text' | 'long_text' | 'date' | 'time' | 'datetime' | 'number' | 'choice' | 'toggle' | 'people' | 'list';
+  value: string | number | boolean | string[] | null;   // as it stands, in the shape an edit sends back
+  required: boolean;                                    // true: it cannot be cleared
+  options?: Array<{ value: string; label: string }>;    // choice: the allowed values. people: the roster (value = player id)
+  max_length?: number; min_length?: number;             // text, long_text; list: per item
+  min?: number; max?: number; step?: number;            // number
+  min_items?: number; max_items?: number;               // people, list
+}
+```
+date is `YYYY-MM-DD`, time is `HH:mm` (24 hour, team time), datetime an ISO instant. Types and limits are read from the
+task's own zod schema, so a value the field accepts is a value the server accepts. Absent or `[]`: nothing on the card
+is editable in place (`set_lineup`, `lock_lineup`; an older stored card).
+
+On the task (every task from `taskTools()` has it; type `RevisableTask<I>` in `../tasks.ts`; please add the optional
+member to `TaskTool` in `tool.ts` so CONTEXT's tasks can grow one too):
+```ts
+revise?: (ctx: ToolContext, proposal: P, edits: Record<string, unknown>) => Promise<P>;
+```
+- `edits` is `{ [EditableField.key]: value }` for the fields the coach changed only. `null` or `''` clears an optional
+  field. A key the card did not offer is refused.
+- It merges the edits into the stored input, validates the result with the tool's own schema, and runs the same
+  planner as `plan`: the same reads (roster, accounts, thread, tournament, note), the same checks, the same card
+  shape. It calls no model and writes nothing.
+- It throws an `Error` whose message the coach can read ("Title: Too big…", "The end has to be after the start.",
+  "Team cannot be changed on this card. Ask for it in words instead."). On a throw the card stays exactly as it was.
+- The proposal it returns has the PLANNER's `idempotency_key` (an edit to a title changes it). ENGINE: keep the card's
+  own key (the one `scopedKey` made for that `tool_use`), write the new proposal over the ledger row while it is still
+  `proposed`, and seal it again. A card that is held, approved or done is not revisable: refuse before calling `revise`.
+- Never editable, by construction: the coach, the team, and the thing a card is about (tournament, round, thread, plan,
+  the player a goal, focus area or note belongs to, a goal's stat). `__tests__/registry-tasks.test.ts` holds every
+  task to that list.
+- What the model is told: nothing at the time of the edit. When the coach confirms, the tool_result already states
+  what was committed (the receipt's summary), which is the edited card. If you want the model to know the card
+  changed before Confirm, the new proposal's `summary` and `facts` are the words to give it.
+- A whole-team task or team update that is edited becomes a card for exactly the people it lists (the `people` field
+  holds them), so "everyone" is fixed at the people the coach saw.
+
+## 2026-11-11 (ENGINE): a computed answer shows its work; an earlier card's ending on the next stream
+
+E25. **An answer worked out in code says so** (the catalogue's E-25; all additive).
+     - The code's progress row (`tool: 'code_execution'`) is labelled "Working out the figures". When a read the code
+       calls shows a second player, the same row (same `id`) is sent once more as `read_started` with the label
+       "Working it out across the team". It closes with that label and `detail: "14 reads"` (no detail when the code
+       called none).
+     - When the run ends, one part: `{ type: 'part', part: { type: 'data-computed', id: 'computed-<row id>', data } }`
+       with `data: ChatComputed` (`engine/protocol.ts`, `COMPUTED_PART`):
+       `refs: string[]` (the evidence refs of the reads the code called, in the order it asked for them),
+       `reads: number`, `players: number` (different players those reads measured), `window: string | null` (the
+       reads' own `window_label` when they all share one), `method?: string`. Stored with the turn and replayed on
+       reload (`REPLAYABLE`). The reads themselves are the `data-evidence` parts with `via: 'code'`, as before.
+     - Against the catalogue's proposed shape: `players`, `reads`, `window` are as written there; `refs` is added;
+       `method` is optional; `table` is not sent. The code's printed output is free text the engine does not parse,
+       and a table rebuilt from it would be a guess.
+     - **`method` and PLANS**: the engine lifts one line and only one: a comment in the model's code that begins
+       `# Method:`. It is dropped when it names a tool, holds anything that reads as code (an underscore, a bracket,
+       a backtick, `=`), or runs past 240 characters. The model does not write that line today, so `method` is
+       absent until the prompt asks for it. A sentence for `instructions.ts`, if you want the "How this was worked
+       out" line: "When you calculate in code, begin the code with one comment line `# Method:` followed by one plain
+       sentence a coach could read, saying what you did with which figures. No tool or field names in it."
+
+E26. **How an earlier card ended is said on the next answer's stream.** `decision` already carried `message_id`; the
+     part events (`evidence`, `visual`, `proposal`, `receipt`, `part`) now take an optional `message_id` too, and the
+     engine uses it for `receipt`. At the start of a new message's response, for the assistant message just before
+     it, the engine sends each card's recorded `decision` and each `data-action-receipt` as `receipt`, both with
+     `message_id` naming that earlier message. That covers a Confirm whose connection dropped (the write went on in
+     the request, the browser never heard) and, as before, a card withdrawn because the coach asked something else
+     (`reason: 'superseded'`). A browser that already has them folds them again and nothing changes (parts upsert by
+     id). The hook routes `decision` and `receipt` events that carry `message_id` to that message and does not treat
+     them as the start of the new answer. Nothing is sent when the earlier message holds no card.
+
+E27. **KNOWLEDGE's K9 is in the harness, narrowed.** `stored.places` is now the staging rounds' course names plus the
+     names of the team's competitions: `golf_events.title` where `event_type` is tournament, qualifier or match,
+     `golf_qualifiers.name` and `golf_tournaments.name`. Practices, meetings and travel are left out on purpose: they
+     are titled in everyday words ("Practice"), and the rule would then fail the word "practice" wherever an answer
+     used it. The dry run prints the names it will hold answers to.
+
+## 2026-11-11 (PLANS): the studio's one list, for CAPABILITIES and the renderer
+
+P12. `../visuals/studio-kinds.ts` exports `STUDIO_KINDS`: sixteen components (`figure`, `comparison`, `ranking`,
+`trend`, `round`, `strokes_gained`, `distance_profile`, `schedule`, `qualifier_board`, `practice_plan`, `document`,
+`app_link`, `note`, `action_preview`, `receipt`, `table`), each with what it draws and every schema kind it draws:
+`block:<type>` (a resolved `show_visual` block), `scene:<kind>`, `part:<data-type>`, `read:<tool>`.
+`studioKindOf('block:ranking')` answers `'ranking'`.
+- Schema side, tested (`../visuals/__tests__/studio-kinds.test.ts`): every block `ResolvedBlock` can hold, every scene,
+  every `data-…` part written anywhere in the chat library and every registered read is claimed by exactly one
+  component, and the list names nothing that does not exist. `SHELL_PARTS` (`data-progress`, `data-turn-meta`,
+  `data-turn-incomplete`, `data-allowance`) are the shell's; `CONTAINER_PARTS` (`data-visual-composition`,
+  `data-visual-artifact`) only hold blocks and a scene.
+- Component side (CAPABILITIES, `src/clubhouse/screens/coachhelm/chat/studio/**`): import `STUDIO_KINDS` and assert the
+  registry's keys are exactly `STUDIO_KINDS.map((k) => k.kind)`, each with a full and a compact size. The list is in
+  `src/lib`, which Clubhouse may import; `src/lib` never imports the registry.
+- The set is CAPABILITIES's to decide. To merge, split or rename a component, change the list (or tell PLANS) and both
+  tests move together. To drop a form: say which `block:` has no component worth its place and PLANS takes it out of
+  what the model can ask `show_visual` for (the resolved type stays, so stored conversations still draw).
+- `table`, the fallback: planned as `{ type: 'table', ref, metricIds? }` in the model's spec and
+  `{ type: 'table', measurements: Measurement[] }` resolved (each row a measurement: who, what, the figure, the
+  sample). It is in the list (`PLANNED_BLOCKS`) and NOT yet in `ResolvedBlock`, because `CoachComposition.tsx`'s
+  switch is exhaustive and would not compile without its case. The renderer already has the parts
+  (`FigureBlock` with `measurementTable`); when the case is in, PLANS adds the block to the schema and to
+  `show_visual`'s description in one commit.
+K10. **ENGINE, nothing to change:** `golf-sense.json` gained an eighth writing rule (`ascii_minus`: "-0.31" where the
+    reads give "−0.31"), wider `heading_or_table` (a bold label at the start of a line or list item, as in the first
+    live answer), `abbreviation` ("L10") and `sample_notation` (a bare count in brackets), and
+    `style.max_sentences: 6` on the 27 questions that end in a yes/no question. The harness reads all of it from the
+    file. `index.ts` is unchanged, so the copy test still holds (run: exit 0).
+K11. **ENGINE, nothing to change:** a ninth writing rule, `numeric_date`, fails a date written as digits in an answer
+    ("2026-05-18", "5/18/26"). It is in `global_forbid`, so the harness holds it against every answer from the file.
+
+C11. (CONTEXT, 10 Nov, late.) Two more CONTEXT tasks, appended last, after `dismiss_signal`:
+`log_focus_progress({ focus_area_id, value, note })` wraps `updateFocusAreaProgress` (a null `value` keeps the current
+one when only a note is added) and `record_focus_outcome({ focus_area_id, outcome })` wraps `recordFocusAreaOutcome`.
+
+- Neither sends anything. `recipients` is `[]`, `delivery` is null and `visible_note` carries what the player sees.
+- **ENGINE: `record_focus_outcome` can return a `partial` receipt.** The app's action writes the focus area first and
+  the signal it came from second, and reports the second failing. The receipt then has `status: 'partial'`,
+  `partial_failures` with one sentence, and `created[0]` as usual. Confirming the same card again is safe: the look
+  finds the signal half missing and runs the action again. Nothing new is asked of the contract.
+- Team patterns are not a tool: a team pattern is computed at read time and has no row to act on, and the three
+  pattern actions act on the older engine's stored patterns, which no chat read returns (`../tasks/INVENTORY.md`).
+- In INVENTORY.md the heading C10 points to as "Asked for and not possible" is now "App gaps: three things a coach
+  asks for that the app itself cannot do".
+- Prefix after these two (characters / 4): Ask 21,870 with the tournaments flag off and 22,284 with it on; quick chat
+  21,353 and 21,767. The stop line is 24,000 with the flag on.
+
+
+## 2026-11-11 (ENGINE): a card the coach can edit (the request path for PLANS's `editable` and `revise`)
+
+E28. **Editing a waiting card.** All additive; a browser that knows nothing of it behaves as before.
+     - **Request**: `{ conversation_id, client_turn_id, decision: { key, edits, revision? } }`. `edits` is
+       `{ [EditableField.key]: value }` for the fields the coach changed. A `decision` carries `approved` or `edits`,
+       never both (400). At most 40 keys and 20,000 characters. It is not budget-gated: no model is called.
+     - **What happens**: the engine reads the ledger row, checks this server's seal, calls the task's
+       `revise(ctx, storedProposal, edits)`, gives the result the card's OWN key (`scopedKey`'s, not the planner's),
+       sets `revision` (1 for the first edit, then 2, ...), seals it again and writes it over the row with one
+       conditional update that only touches a row still `proposed` (`replaceProposal` in `../action-runs.ts`). The
+       stored turn's card part is replaced in place and the turn goes on waiting. `proposed_input.input` (what the
+       model asked for) is kept as asked. `TaskTool.revise?` is on the contract (`tool.ts`), so CONTEXT's tasks can
+       have one.
+     - **Response**: `message_start` (`resumed: true`, the message holding the card), the card as it now stands
+       (`proposal`, part id `proposal-<key>`, so it replaces the one on screen), then one part
+       `{ type: 'data-card-revision', id: 'revision-<key>', data: ChatCardRevision }`, then `done`.
+       `ChatCardRevision` (`protocol.ts`): `{ key, accepted: boolean, kind?: 'invalid' | 'changed' | 'decided' |
+       'fixed' | 'gone', reason?: string }`. `accepted: false` always comes with the card UNCHANGED and a `reason` the
+       coach can read: `invalid` is the task's own sentence ("Title: ..."); `changed` the card was edited somewhere
+       else; `decided` it is held, written, cancelled or withdrawn; `fixed` it offers nothing to edit (or the task has
+       no `revise`); `gone` there is no such card. `done.status` is `awaiting_decision` unless the card turned out to
+       be answered. The notice part is for the live thread only: it is not stored, so a reload shows no stale notice.
+     - **`revision` and two tabs.** The card's proposal carries `revision` once edited (absent before). Every Confirm
+       and every edit should send the `revision` of the card on screen (the hook does: `approve`, `deny`, `revise`).
+       A Confirm or an edit whose `revision` is not the stored one (a missing one counts as 0) changes nothing and is
+       answered with the stored card and `kind: 'changed'`. So a card edited in one tab cannot be confirmed from the
+       stale copy in another, and an old tab cannot confirm an edited card at all. The same check runs again on the
+       row as it was at the instant of the claim (`claimForExecution` now returns `proposed_input`); if an edit slipped
+       in between the read and the claim, the claim is handed back (`releaseClaim`) and nothing is written. After the
+       claim the plan cannot change: the plan that is committed is the claimed one.
+     - **The hook**: `revise(approvalId, edits)` (optional in the result type for the same reason `phase` is:
+       `src/clubhouse/preview/PreviewQuickChat.tsx` builds a result by hand).
+     - **For the UI**: draw the notice from the `data-card-revision` part of the card's message; clear it when the
+       coach edits again or a `decision` for the key arrives. `accepted: true` needs no notice.
+     - **What the model is told**: nothing at the time of the edit. On Confirm the tool result states what was
+       committed (the receipt's summary), which is the edited card (PLANS P11).
+
+C12. (CONTEXT, 10 Nov, late.) Three CONTEXT cards can be edited before Confirm, on E28 and PLANS's `editable`:
+`update_event` (`new_date`, `new_start`, `new_end`, `new_location`, `new_title`), `set_task_reminder` (`date`, `time`)
+and `log_focus_progress` (`value`, `note`). Each has `revise` and puts `editable` on its proposal.
+
+- These tools store what the write needs, not the model's input, so the input a card was planned from is kept beside
+  it as `proposal.input.asked` and an edit is merged into that (`editing` in `../tasks/kit.ts`; `reviseInput` could
+  not be used because these schemas are strict and take null, not an absent key). The merged input is held to the
+  tool's own schema and `plan` runs again: the same reads, permission checks and refusals. It throws `EditRefused`
+  (`../editable.ts`) with a sentence the coach can read.
+- `update_event`'s fields show the event as it will be (the day, both times, the place, the title), not only what the
+  model asked to change. A blank is null, which this tool reads as "leave that part as it is".
+- Field kinds come from `editableFields`; the two 24-hour times are named `time` by the tool because their pattern is
+  stricter than the one `editableFields` recognises. **PLANS: if you want that recognised in `editable.ts` instead,
+  the pattern is `^([01]\d|2[0-3]):[0-5]\d$`.**
+- The other nine CONTEXT cards offer nothing to edit (no `revise`), so E28 answers `fixed` for them.
+- Nothing here is in the cached prefix: the sizes in C11 stand.
+
+## 2026-11-11 (PLANS): the reads with no lines of their own are now read out in words
+
+P13. Before this, only the Stats, Rounds, Round, Qualifiers and Tournaments readers set `model_text`; every other
+read reached the model as the envelope's JSON, field names included (`avg_score`, `gir_pct`, `team_n`), which is the
+notation the answer rules forbid it to repeat. Now:
+
+- `plain(envelope, against?)` (`reader-kit.ts`) gives a read lines when it wrote none: each measurement as
+  "Eli Brandt, strokes gained approach: −0.31 strokes against the Tour benchmark, over 9 rounds | Team average: …",
+  then `detail` field by field with the field's name in words (`fieldWords`). A row leads with who or what it is
+  about and ends with what a later call must be given exactly, in brackets: `[player <uuid>]`, `[event <uuid>]`,
+  `[ref team:<uuid>]`, `[metric gir_pct]`. The app's own codes (`in_progress`, `sg_putting` under a status, kind,
+  type, metric or similar field) become words; a band's and a metric's label go through `coachWords`.
+- Stored words are not rewritten: a note, a reflection, a title, a description pass through exactly as stored.
+- `together` builds its `model_text` from its parts (a part's own lines if it has them, otherwise `plain`), each
+  under its label. `failed()` carries a sentence, so a refused or failed read is no longer JSON either.
+- Used by: get_shots, get_schedule (coach and player), get_coachhelm (coach and player), get_practice,
+  get_tournaments with notes, get_season with the comparison, and get_reference for metric_definitions, standards,
+  course, documents and team_settings.
+- Still JSON, on purpose: query_team_data and summarise_data (their field names are what the model passes back),
+  get_reference data_dictionary (it is the list of those names), get_reference golf (KNOWLEDGE's text), and the
+  notices (show_visual, the drafts). **ENGINE: nothing to change; `loop.ts` already prefers `model_text`.**
+- **KNOWLEDGE**: the prompt can say that an id in square brackets at the end of a read's line is for the next call
+  and is never written in an answer. I have not added that sentence; the size test leaves three tokens.
+- Test: `__tests__/reader-words.test.ts` runs these readers over a team with rows in every table they read and fails
+  on the same tokens as the hand-written lines, on JSON, and on any field name in the read sources that `fieldWords`
+  would leave abbreviated.
+
+
+## 2026-11-11 (ENGINE): several cards in one turn, and "approve all"
+
+E29. **Several proposals in one turn.** One answer may ask for several tasks. Each is planned on its own, gets its own
+     sealed ledger row and its own card (`proposal` then `decision_needed`, in the order the model asked), and is
+     decided on its own: `decision: { key, approved }` for any of them, in any order. A decision that leaves another
+     card waiting ends `done: awaiting_decision` and calls no model. When the last one is decided the model is asked
+     for its closing words once, with every card's result in the order it asked. Nothing new was needed in the engine
+     for this; it is now tested (`several cards in one turn`).
+     - **"Approve all"**: `{ conversation_id, client_turn_id, approve_all: { cards: [{ key, revision? }] } }` (1 to
+       20 cards, each once; not together with `message` or `decision`). The cards named that are still waiting are
+       confirmed IN THE ORDER PROPOSED, whatever order the request lists them in. A card not named is not touched.
+     - **The hold for a batch is one shared Undo window.** Every card that can be held is held until the same moment
+       (the same `run_at` on every row, the same `held_until` on every receipt). Undo is still each card's own (the
+       action route's Undo for its key); a screen that offers "Undo all" calls it for each key. When the window
+       closes the batch is taken in one update (`takeHeldMany`), then written one card at a time. A card the coach
+       undid is skipped and is not a failure (its receipt is `cancelled`). A task that writes on Confirm
+       (`immediate`) has no window and is written in its turn.
+     - **The first failure stops the batch.** A card that fails (it could not be started, could not be held, or its
+       commit returned `failed`) ends the run: the cards after it are NOT run, their rows go back to `proposed`, and
+       each is announced with a new event `{ type: 'decision_reopened', key, reason: 'batch_stopped' }`. The reducer
+       puts that card back to waiting (`state: 'approval-requested'`, `approval: { id }`) and removes its held
+       receipt. The turn then ends `awaiting_decision`, stored that way; the coach confirms or cancels the rest
+       knowing what failed, and only then is the model told about all of them. A browser that does not know the
+       event shows those cards as held until it reloads; the stored state is right.
+     - **Nothing is confirmed over a stale card.** If any named card is not the revision the request says is on
+       screen, no row is touched: the response is each such card as it stands with a `data-card-revision` part
+       (`kind: 'changed'`) and `done: awaiting_decision`.
+     - **Events of a batch**, in order: `message_start` (resumed), then for each card going ahead `decision` (approved)
+       and its `receipt` (held), all before the window; after it each card's own `receipt` (completed, failed,
+       cancelled) or `decision_reopened`; then the model's words if every card of the turn is now decided.
+     - **Hook**: `approveAll(keys?)` (every waiting card in the thread when no keys are given). Card presses made
+       while another card's request is still open (a Confirm stays open through its Undo window) are queued and sent
+       one at a time in the order pressed; a repeat of the same press is sent once; after a failed request the queue
+       is dropped. A press while an answer is streaming is ignored, as before.
+     - **Limits, deliberately left**: (1) two decision requests open at the same time on one turn (two tabs) each
+       store their own view of what still waits, so neither may ask the model for closing words; the next message
+       settles it from the ledger (`settleAbandonedTask`) and tells the model then. Nothing is written twice. (2) At
+       the instant the window closes, a card's own ring-end request (`commitHeldNow`) can take that one row before
+       the batch does; that card is then written by that request, out of order, and the batch reports its result.
+       (3) A batch holds one request open for the window plus every write; the route's limit is 120 seconds.

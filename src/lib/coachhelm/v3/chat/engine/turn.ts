@@ -18,13 +18,22 @@ import type { ToolEnvelope } from '../provenance';
 import { stripReadMarkers } from '../read-markers';
 import { defaultGroundingCheck, type GroundingCheck } from './grounding';
 import { runModelLoop, toolResultsMessage, type LoopState, type LoopStop, type PendingDecision } from './loop';
-import { CHAT_FEATURES, emptyUsage, type ChatFeatures, type ModelClient, type ModelMessage, type SystemPrompt, type ToolResultBlock, type UsageTotals } from './model';
-import { applyChatEvent, CHAT_STREAM_CONTENT_TYPE, encodeChatEvent, textOfParts, TURN_META_PART, turnMetaOf, type ChatErrorAction, type ChatErrorKind, type ChatEvent, type ChatScreenEcho, type ChatTurnMeta, type ChatTurnStatus, type ChatUIMessage, type ChatUIPart, type WireDataPart } from './protocol';
+import { emptyUsage, fallbackModelOf, profileFor, type ChatFeatures, type ModelClient, type ModelMessage, type ModelProfile, type SystemPrompt, type ToolResultBlock, type UsageTotals } from './model';
+import { applyChatEvent, CARD_REVISION_PART, CHAT_STREAM_CONTENT_TYPE, encodeChatEvent, eventsForStoredParts, textOfParts, TURN_META_PART, turnMetaOf, type ChatCardRevision, type ChatErrorAction, type ChatErrorKind, type ChatEvent, type ChatScreenEcho, type ChatTurnMeta, type ChatTurnStatus, type ChatUIMessage, type ChatUIPart, type WireDataPart } from './protocol';
 import { buildHistory, collectReads, findOpenDecision, saveCardState, saveResumeToLedger, saveTurn, type LoadedConversation, type OpenDecision } from './store';
-import { declineTask, settleAbandonedTask, startConfirm, type DecisionOutcome, type TaskDeps } from './tasks';
+import { declineTask, reviseTask, settleAbandonedTask, startConfirm, startConfirmAll, type DecisionOutcome, type TaskDeps } from './tasks';
 import type { ChatTool, TaskTool, ToolContext } from './tool';
 
-export type TurnInput = { kind: 'message'; text: string } | { kind: 'decision'; key: string; approved: boolean };
+/**
+ * `revision` (a decision or an edit): the revision of the card the coach was looking at, as its `proposal` part carries it.
+ * `revise`: the coach changed fields on a waiting card; no model is called.
+ */
+export type TurnInput =
+  | { kind: 'message'; text: string }
+  | { kind: 'decision'; key: string; approved: boolean; revision?: number }
+  | { kind: 'revise'; key: string; edits: Record<string, unknown>; revision?: number }
+  /** "Approve all": confirm these waiting cards of one turn, in the order they were proposed (not the order listed here). */
+  | { kind: 'approve_all'; cards: Array<{ key: string; revision?: number }> };
 
 export interface TurnSummary {
   status: ChatTurnStatus;
@@ -46,6 +55,8 @@ export interface TurnSummary {
   refusalCategory: string | null;
   /** True when the API rejected a request with optional features and the turn went on with plain requests. */
   degraded: boolean;
+  /** The substitute model that answered when a refusal fallback did; null otherwise. */
+  fallbackModel: string | null;
 }
 
 export interface TurnDeps {
@@ -58,7 +69,9 @@ export interface TurnDeps {
   /** Null where tasks are not offered (the player's Ask). */
   tasks: TaskDeps | null;
   maxSteps: number;
-  /** What requests are sent with. Left out, the deployment's (`CHAT_FEATURES`). */
+  /** The model the surface runs on and its settings. Left out, a coach surface's. */
+  profile?: ModelProfile;
+  /** What requests are sent with. Left out, the profile's own. */
   features?: ChatFeatures;
   /**
    * What the app tells the model about THIS turn: today's date, the screen the chat was opened from, and on a
@@ -185,6 +198,7 @@ async function runTurn(deps: TurnDeps, input: TurnInput, signal: AbortSignal, se
         error,
         refusalCategory,
         degraded: state.degraded,
+        fallbackModel: fallbackModelOf(usage),
       });
     } catch {
       // Accounting never fails a turn.
@@ -205,15 +219,66 @@ async function runTurn(deps: TurnDeps, input: TurnInput, signal: AbortSignal, se
 
   const open = deps.store ? await findOpenDecision(sb, loaded, coachId).catch(() => null) : null;
   const { reads, nextRef } = collectReads(loaded);
-  const state: LoopState = { messages: [], appended: [], steps: 0, usage, reads, nextRef, nextProgress: 0, features: deps.features ?? CHAT_FEATURES, degraded: false, container: null };
+  const profile = deps.profile ?? profileFor('ask');
+  const state: LoopState = { messages: [], appended: [], steps: 0, usage, reads, nextRef, nextProgress: 0, profile, features: deps.features ?? profile.features, degraded: false, container: null };
   /** The assistant row this request writes: the waiting turn (a decision), or a failed attempt a retry replaces. */
   let rowId: string | undefined;
 
-  // ── A decision on a waiting card ────────────────────────────────────────────────────────────────────────────────
-  if (input.kind === 'decision') {
-    const task = open?.pending?.tasks.find((t) => t.key === input.key);
+  const proposalPart = (key: string, proposal: unknown): WireDataPart => ({ type: 'data-action-proposal', id: `proposal-${key}`, data: proposal });
+  const revisionPart = (data: ChatCardRevision): WireDataPart => ({ type: CARD_REVISION_PART, id: `revision-${data.key}`, data });
+
+  // ── An edit to a waiting card ───────────────────────────────────────────────────────────────────────────────────
+  // No model is called and nothing is written to the domain: the task plans again and the stored plan is replaced. The response is
+  // the card as it now stands and whether the edit was made.
+  if (input.kind === 'revise') {
+    const key = input.key;
+    const task = open?.pending?.tasks.find((t) => t.key === key);
+    const holder = task && open ? open.row : [...loaded.rows].reverse().find((r) => r.role === 'assistant' && (r.ui_parts ?? []).some((p) => p.type === 'data-action-proposal' && p.id === `proposal-${key}`));
+    send({ type: 'message_start', conversation_id: conversationId, message_id: holder?.id ?? crypto.randomUUID(), resumed: true });
+    const shown = holder?.ui_parts?.find((p) => p.type === 'data-action-proposal' && p.id === `proposal-${key}`);
+    if (!deps.tasks || !open || !task) {
+      // The card is not waiting (answered, withdrawn, or never there): it is shown as stored and nothing is touched.
+      if (shown) send({ type: 'proposal', part: proposalPart(key, shown.data) });
+      const card = holder?.ui_parts?.find((p) => p.type.startsWith('tool-') && (p as { approval?: { id?: unknown } }).approval?.id === key) as { approval?: { approved?: unknown } } | undefined;
+      // Drawn as waiting, but its turn could not be found this time (a read that failed for a moment): say so, and leave it waiting.
+      const unread = Boolean(shown && card && typeof card.approval?.approved !== 'boolean');
+      const verdict: ChatCardRevision = unread
+        ? { key, accepted: false, kind: 'invalid', reason: 'That change could not be made just now. The card is as it was.' }
+        : shown
+          ? { key, accepted: false, kind: 'decided', reason: 'This card has already been answered, so it can no longer be changed.' }
+          : { key, accepted: false, kind: 'gone', reason: 'This card can no longer be changed. Ask for it again.' };
+      send({ type: 'part', part: revisionPart(verdict) });
+      send({ type: 'done', status: unread ? 'awaiting_decision' : 'complete' });
+      return;
+    }
+    const tool = deps.tools.find((t): t is TaskTool<unknown> => t.kind === 'task' && t.name === task.tool);
+    const result = await reviseTask(deps.tasks, tool, { ...toolContext, reads }, key, input.edits, input.revision);
+    const current = result.proposal ?? shown?.data;
+    if (result.ok) {
+      // The stored card is replaced in place, and the turn goes on waiting. If this save fails the ledger still holds the new plan:
+      // a reload then shows the old card, and its Confirm is answered with the new one (its revision no longer matches).
+      const parts = applyChatEvent({ id: open.row.id, role: 'assistant', parts: open.row.ui_parts ?? [] }, { type: 'proposal', part: proposalPart(key, result.proposal) }).parts;
+      await saveCardState(sb, loaded.mode, open.row.id, parts, { stillWaiting: true }).catch((err) => {
+        void logServerError(`chat/stream: revised card not stored: ${err instanceof Error ? err.message : 'unknown'}`, { action: 'v3.chat.stream.persist' }, 'warning');
+      });
+    }
+    if (current) send({ type: 'proposal', part: proposalPart(key, current) });
+    send({ type: 'part', part: revisionPart(result.ok ? { key, accepted: true } : { key, accepted: false, kind: result.kind, reason: result.reason }) });
+    // A card that turned out to be answered already is not waiting; every other outcome leaves it waiting.
+    send({ type: 'done', status: !result.ok && (result.kind === 'decided' || result.kind === 'gone') ? 'complete' : 'awaiting_decision' });
+    return;
+  }
+
+  // ── A decision on a waiting card, or on several at once ─────────────────────────────────────────────────────────
+  if (input.kind === 'decision' || input.kind === 'approve_all') {
+    const wantedKeys = input.kind === 'decision' ? [input.key] : input.cards.map((c) => c.key);
+    // In the order proposed, whatever order the request lists them in.
+    const wanted = open?.pending?.tasks.filter((t) => wantedKeys.includes(t.key)) ?? [];
+    const task = wanted[0];
     if (!deps.tasks || !open || !open.pending || !task) {
-      await answerStaleDecision(deps, loaded, open, input.key, send);
+      // Nothing listed is waiting any more: each card is answered with what is stored for it, and nothing is changed.
+      if (input.kind === 'decision') await answerStaleDecision(deps, loaded, open, input.key, send);
+      else await answerStaleBatch(deps, loaded, wantedKeys, send);
       return;
     }
     const pending: PendingDecision = open.pending;
@@ -224,7 +289,8 @@ async function runTurn(deps: TurnDeps, input: TurnInput, signal: AbortSignal, se
     earlier = turnMetaOf(before);
     send({ type: 'message_start', conversation_id: conversationId, message_id: ui.id, resumed: true, started_at: startedAt });
 
-    const tool = deps.tools.find((t): t is TaskTool<unknown> => t.kind === 'task' && t.name === task.tool);
+    const toolFor = (name: string) => deps.tools.find((t): t is TaskTool<unknown> => t.kind === 'task' && t.name === name);
+    const tool = toolFor(task.tool);
     const ctx: ToolContext = { ...toolContext, reads };
     // Whatever happens to the closing words, a turn whose card the coach has answered is stored as complete.
     const store = async (appended: ModelMessage[], stillPending: PendingDecision | null) => {
@@ -238,38 +304,80 @@ async function runTurn(deps: TurnDeps, input: TurnInput, signal: AbortSignal, se
       }
     };
 
-    let outcome: DecisionOutcome;
-    if (!input.approved) {
-      outcome = await declineTask(deps.tasks, ctx, task.key, 'declined');
-      emit({ type: 'decision', key: task.key, approved: false });
-    } else {
-      const started = await startConfirm(deps.tasks, tool, ctx, task.key);
-      if (started.kind === 'in_flight') {
-        // The request that confirmed first is still inside the Undo window (or writing). It owns the card, the model's closing words
-        // and the stored row: this one shows what is stored and changes nothing, so the two can never write over each other.
-        send({ type: 'decision', key: task.key, approved: true });
-        const shown = before.find((p) => p.type === 'data-action-receipt' && p.id === `receipt-${task.key}`);
-        if (shown) send({ type: 'receipt', part: receiptPart(task.key, shown.data) });
-        send({ type: 'done', status: 'complete' });
+    // What this request settled: each card's tool call gets its result. A card left waiting (or reopened) is not among them.
+    const settled: Array<{ key: string; tool_use_id: string; outcome: DecisionOutcome }> = [];
+    if (input.kind === 'approve_all') {
+      const seen = new Map(input.cards.map((c) => [c.key, c.revision]));
+      const batch = await startConfirmAll(deps.tasks, ctx, wanted.map((t) => ({ key: t.key, tool: toolFor(t.tool), seen: seen.get(t.key) })));
+      if (batch.kind === 'changed') {
+        // A card in the batch is not the one on the coach's screen. Nothing at all is confirmed.
+        for (const card of batch.cards) {
+          send({ type: 'proposal', part: proposalPart(card.key, card.proposal) });
+          send({ type: 'part', part: revisionPart({ key: card.key, accepted: false, kind: 'changed', reason: 'This card was changed somewhere else. This is how it stands now. Nothing was confirmed.' }) });
+        }
+        send({ type: 'done', status: 'awaiting_decision' });
         return;
       }
-      emit({ type: 'decision', key: task.key, approved: true });
-      if (started.kind === 'held') {
-        // The coach sees "held, Undo until ..." at once, and it is stored at once: a reload during the window shows the same card.
-        emit({ type: 'receipt', part: receiptPart(task.key, started.receipt) });
-        await store(open.appended, pending);
-        // The open request waits the window out and writes. It does not stop waiting if the browser goes away.
-        outcome = await started.finish();
-      } else {
-        outcome = started.outcome;
+      // At once, in the order proposed: each card that is going ahead says so, and a held one shows the shared Undo time.
+      for (const card of batch.cards) {
+        if (card.state === 'skipped') continue;
+        emit({ type: 'decision', key: card.key, approved: true });
+        if (card.state === 'held') emit({ type: 'receipt', part: receiptPart(card.key, card.receipt) });
       }
+      if (batch.cards.some((c) => c.state === 'held' || c.state === 'queued')) await store(open.appended, pending);
+      // The open request waits the window out and writes them in order. It does not stop if the browser goes away.
+      for (const end of await batch.finish()) {
+        if ('reopened' in end) {
+          emit({ type: 'decision_reopened', key: end.key, reason: 'batch_stopped' });
+          continue;
+        }
+        if (end.outcome.receipt) emit({ type: 'receipt', part: receiptPart(end.key, end.outcome.receipt) });
+        const done = wanted.find((t) => t.key === end.key);
+        if (done) settled.push({ key: end.key, tool_use_id: done.tool_use_id, outcome: end.outcome });
+      }
+    } else {
+      let outcome: DecisionOutcome;
+      if (!input.approved) {
+        outcome = await declineTask(deps.tasks, ctx, task.key, 'declined');
+        emit({ type: 'decision', key: task.key, approved: false });
+      } else {
+        const started = await startConfirm(deps.tasks, tool, ctx, task.key, input.revision);
+        if (started.kind === 'changed') {
+          // The card on the coach's screen is not the stored one (it was edited in another tab). Nothing is confirmed: they are shown
+          // the card as it stands and can confirm that.
+          send({ type: 'proposal', part: proposalPart(task.key, started.proposal) });
+          send({ type: 'part', part: revisionPart({ key: task.key, accepted: false, kind: 'changed', reason: 'This card was changed somewhere else. This is how it stands now. Nothing was confirmed.' }) });
+          send({ type: 'done', status: 'awaiting_decision' });
+          return;
+        }
+        if (started.kind === 'in_flight') {
+          // The request that confirmed first is still inside the Undo window (or writing). It owns the card, the model's closing words
+          // and the stored row: this one shows what is stored and changes nothing, so the two can never write over each other.
+          send({ type: 'decision', key: task.key, approved: true });
+          const shown = before.find((p) => p.type === 'data-action-receipt' && p.id === `receipt-${task.key}`);
+          if (shown) send({ type: 'receipt', part: receiptPart(task.key, shown.data) });
+          send({ type: 'done', status: 'complete' });
+          return;
+        }
+        emit({ type: 'decision', key: task.key, approved: true });
+        if (started.kind === 'held') {
+          // The coach sees "held, Undo until ..." at once, and it is stored at once: a reload during the window shows the same card.
+          emit({ type: 'receipt', part: receiptPart(task.key, started.receipt) });
+          await store(open.appended, pending);
+          // The open request waits the window out and writes. It does not stop waiting if the browser goes away.
+          outcome = await started.finish();
+        } else {
+          outcome = started.outcome;
+        }
+      }
+      if (outcome.receipt) emit({ type: 'receipt', part: receiptPart(task.key, outcome.receipt) });
+      settled.push({ key: task.key, tool_use_id: task.tool_use_id, outcome });
     }
-    if (outcome.receipt) emit({ type: 'receipt', part: receiptPart(task.key, outcome.receipt) });
 
     const next: PendingDecision = {
       ...pending,
-      results: { ...pending.results, [task.tool_use_id]: { content: outcome.result, ...(outcome.isError ? { is_error: true } : {}) } },
-      tasks: pending.tasks.filter((t) => t.key !== task.key),
+      results: { ...pending.results, ...Object.fromEntries(settled.map((s) => [s.tool_use_id, { content: s.outcome.result, ...(s.outcome.isError ? { is_error: true } : {}) }])) },
+      tasks: pending.tasks.filter((t) => !settled.some((s) => s.key === t.key)),
     };
 
     if (next.tasks.length > 0) {
@@ -306,6 +414,9 @@ async function runTurn(deps: TurnDeps, input: TurnInput, signal: AbortSignal, se
 
   // A card still waiting when the coach asks something else is a Cancel: the model is told so before the new question.
   const declined: ToolResultBlock[] = [];
+  // The message before this one, if it holds cards: how each of them ended is sent again below.
+  const lastRow = loaded.rows.filter((r) => r.role === 'assistant' && r.client_turn_id !== deps.clientTurnId).at(-1);
+  let priorCards: { id: string; parts: readonly ChatUIPart[] } | null = lastRow ? { id: lastRow.id, parts: (lastRow.ui_parts ?? []) as ChatUIPart[] } : null;
   if (open && deps.tasks) {
     const ctx: ToolContext = { ...toolContext, reads };
     let cards: ChatUIMessage = { id: open.row.id, role: 'assistant', parts: open.row.ui_parts ?? [] };
@@ -316,9 +427,7 @@ async function runTurn(deps: TurnDeps, input: TurnInput, signal: AbortSignal, se
       if (outcome.declined) {
         // Nobody pressed Cancel: the card was withdrawn because the coach asked something else. The browser is told which message
         // holds it, and the stored card says so too, so a reload draws "withdrawn" as a fact and not from its position.
-        const withdrawn: ChatEvent = { type: 'decision', key, approved: false, reason: 'superseded' };
-        cards = applyChatEvent(cards, withdrawn);
-        send({ ...withdrawn, message_id: open.row.id });
+        cards = applyChatEvent(cards, { type: 'decision', key, approved: false, reason: 'superseded' });
       } else if (outcome.receipt) cards = applyChatEvent(cards, { type: 'receipt', part: receiptPart(key, outcome.receipt) });
       const task = open.pending?.tasks.find((t) => t.key === key);
       if (task) results[task.tool_use_id] = { content: outcome.result, ...(outcome.isError ? { is_error: true } : {}) };
@@ -330,6 +439,15 @@ async function runTurn(deps: TurnDeps, input: TurnInput, signal: AbortSignal, se
     if (loaded.mode === 'columns' && open.pending && open.row.model_messages) {
       const answer = toolResultsMessage({ order: open.pending.order, results });
       declined.push(...(answer.content as ToolResultBlock[]));
+    }
+    priorCards = { id: open.row.id, parts: cards.parts };
+  }
+  // How the cards of the message before this one ended, addressed to that message. The browser usually knows. It does not when the
+  // Confirm that settled a card lost its connection (the write went on without it), or when the card was withdrawn just now: these
+  // few events bring that card up to date without a reload. They change nothing in a browser that already has them.
+  if (priorCards) {
+    for (const event of eventsForStoredParts(priorCards.parts)) {
+      if (event.type === 'decision' || event.type === 'receipt') send({ ...event, message_id: priorCards.id });
     }
   }
 
@@ -442,6 +560,17 @@ function ground(deps: TurnDeps, ui: ChatUIMessage, reads: ReadonlyMap<string, To
  * response): the stored answer is sent again and nothing runs twice. Or its turn cannot be continued: the coach is told
  * plainly and the card is withdrawn.
  */
+/** "Approve all" over cards none of which is waiting any more: each is answered with what is stored for it. Nothing is changed. */
+async function answerStaleBatch(deps: TurnDeps, loaded: LoadedConversation, keys: string[], send: (event: ChatEvent) => void): Promise<void> {
+  const holds = (key: string) => (p: ChatUIPart) => p.type.startsWith('tool-') && (p as { approval?: { id?: unknown } }).approval?.id === key;
+  const row = [...loaded.rows].reverse().find((r) => r.role === 'assistant' && keys.some((key) => (r.ui_parts ?? []).some(holds(key))));
+  send({ type: 'message_start', conversation_id: deps.toolContext.conversationId, message_id: row?.id ?? crypto.randomUUID(), resumed: true });
+  for (const event of eventsForStoredParts(row?.ui_parts ?? [])) {
+    if ((event.type === 'decision' && keys.includes(event.key)) || (event.type === 'receipt' && keys.some((key) => event.part.id === `receipt-${key}`))) send(event);
+  }
+  send({ type: 'done', status: 'complete' });
+}
+
 async function answerStaleDecision(deps: TurnDeps, loaded: LoadedConversation, open: OpenDecision | null, key: string, send: (event: ChatEvent) => void): Promise<void> {
   const conversationId = deps.toolContext.conversationId;
   const row = [...loaded.rows].reverse().find((r) => r.role === 'assistant' && (r.ui_parts ?? []).some((p) => p.type.startsWith('tool-') && (p as { approval?: { id?: unknown } }).approval?.id === key));

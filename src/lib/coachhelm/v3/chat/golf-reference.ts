@@ -1,5 +1,6 @@
 import { GOLF_REFERENCE_SECTIONS } from './golf-reference.generated';
 import type { GolfReferenceSection } from './golf-reference-split';
+import { plainHeading, plainText } from './knowledge/reference-plain';
 import { isServed, referenceTopic, REFERENCE_TOPICS, servedText, topicOfSection } from './knowledge/reference-topics';
 import { nowIso, type ToolEnvelope } from './provenance';
 
@@ -12,6 +13,10 @@ import { nowIso, type ToolEnvelope } from './provenance';
  * What is served, and under which topic name, is decided in `knowledge/reference-topics.ts`: the Tour tables are withheld
  * (the standards table is the one source of a Tour figure), and a few unsourced sentences are cut. `topic` is either one of
  * those topic names, which returns that topic in reading order, or a few words, which are searched for.
+ *
+ * The document is written in shorthand ("SG:APP", "GIR", "25+ ft", "vs") and cites itself by section. What is served is
+ * that text written out in the words an answer may use, with the self-references removed and the headings in sentence
+ * case (`knowledge/reference-plain.ts`). The document and the generated module are untouched; ids are the document's.
  */
 
 export const REFERENCE_SOURCE = 'CoachHelm golf reference (sourced research, compiled 2026-05-24)';
@@ -22,13 +27,23 @@ const STOPWORDS = new Set(['the', 'a', 'an', 'of', 'and', 'or', 'to', 'in', 'on'
 /** A word the question uses → words the document uses for it. */
 const SYNONYMS: Record<string, string[]> = {
   sg: ['strokes', 'gained'],
+  // The served text is written out, so a question in shorthand is matched to the full words.
+  gir: ['greens', 'regulation'],
+  fw: ['fairway'],
+  hcp: ['handicap'],
+  ott: ['tee'],
+  arg: ['around', 'green'],
+  '3-putt': ['three-putt'],
+  '3-putts': ['three-putt'],
+  d1: ['division', 'college'],
+  juco: ['junior', 'college'],
   putting: ['putt', 'putts'],
   putter: ['putt'],
   lag: ['lag', 'putt'],
   tour: ['tour', 'pga'],
   pro: ['tour', 'pga'],
-  college: ['college', 'd1', 'ncaa'],
-  ncaa: ['college', 'd1'],
+  college: ['college', 'division', 'ncaa'],
+  ncaa: ['college', 'division'],
   chipping: ['around', 'green', 'short'],
   short: ['around', 'green'],
   scrambling: ['scrambling', 'up-and-down'],
@@ -67,7 +82,7 @@ function tokens(text: string): string[] {
 }
 
 /** The sections the assistant may be handed, each with its cuts applied. */
-export const SERVED_SECTIONS: readonly GolfReferenceSection[] = GOLF_REFERENCE_SECTIONS.filter((s) => isServed(s.id)).map((s) => ({ ...s, text: servedText(s.id, s.text) }));
+export const SERVED_SECTIONS: readonly GolfReferenceSection[] = GOLF_REFERENCE_SECTIONS.filter((s) => isServed(s.id)).map((s) => ({ ...s, chapter: plainHeading(s.chapter), heading: plainHeading(s.heading), text: plainText(servedText(s.id, s.text)) }));
 const SERVED_BY_ID = new Map(SERVED_SECTIONS.map((s) => [s.id, s]));
 
 // A section is also found by its topic's own words ("course management", "pressure"), which the prompt names.
@@ -129,8 +144,7 @@ export function getGolfReference(input: { topic: string }): ToolEnvelope {
     series: [],
     detail: { kind: 'reference', not_team_data: true, reference, ...(more.length ? { more_in_this_topic: more } : {}) },
     coverage: 'complete',
-    // The research text is written in shorthand; the answer is not (owner, 10 Nov 2026: no notation or abbreviation a coach would not say aloud).
-    coverage_note: `Reference figures are published research, not this team’s results: name the source when you use one. These notes are written in shorthand (SG, GIR, FW, HCP, ft, yds): in an answer write strokes gained, greens in regulation, fairways, handicap, feet and yards in full.${more.length ? ' More headings are in this topic: ask with a heading’s words to read one.' : ''}`,
+    coverage_note: `Reference figures are published research, not this team’s results. When you use one, say it is from published research or name the publisher the text names (such as Shot Scope or Broadie). Never cite a chapter, a section or this reference by number.${more.length ? ' More headings are in this topic: ask with a heading’s words to read one.' : ''}`,
     as_of: nowIso(),
   };
 }

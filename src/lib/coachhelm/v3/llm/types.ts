@@ -13,9 +13,12 @@
  * like the Haiku entry: the direct-key path strips `anthropic/` and hands the
  * rest to the Anthropic API, whose id is `claude-sonnet-5-5`.
  *
- * 2026-11-10 — coach_chat moved to Claude Haiku 5.5 (owner decision), which the
- * chat engine runs at effort `high` (`chat/engine/model.ts`, where each call is
- * priced on the model's two rate cards). Other tasks are unchanged.
+ * 2026-11-10 — the chat engine picks its model by surface from a profile
+ * (`chat/engine/model.ts`): coach_chat (Ask, quick chat, the practice helper)
+ * is Claude Sonnet 5.5; the player's Ask is Claude Haiku 5.5
+ * (`PLAYER_CHAT_MODEL`). For a few hours that day coach_chat was Haiku 5.5.
+ * Each call is priced in the engine at the rate of the model that ran it.
+ * Other tasks are unchanged.
  *
  * 2026-09-23 — round_review_narrative added (Package 8, owner decision).
  * Its own task key, deliberately NOT a reuse of round_review (round-recap.ts's
@@ -41,7 +44,7 @@ export type ComposeTask = 'round_review' | 'hero_narrative' | 'coach_chat' | 'ro
 export const MODEL_FOR_TASK: Record<ComposeTask, string> = {
   round_review: 'anthropic/claude-haiku-4-5',
   hero_narrative: 'anthropic/claude-haiku-4-5',
-  coach_chat: 'anthropic/claude-haiku-5-5',
+  coach_chat: 'anthropic/claude-sonnet-5-5',
   round_review_narrative: 'anthropic/claude-haiku-4-5',
 };
 
@@ -51,6 +54,13 @@ export const MODEL_FOR_TASK: Record<ComposeTask, string> = {
  * until 10 Nov 2026; it keeps the model it ran on then, so the chat's move to Claude Haiku 5.5 does not move it unseen.
  */
 export const PLAN_FORMAT_MODEL = 'anthropic/claude-sonnet-5-5';
+
+/**
+ * The player's read-only Ask (`chat/engine/model.ts`, the `player` surface). Its own model, beside `coach_chat`'s.
+ * Not a `ComposeTask`: the ledger's `task` column has a CHECK that lists the tasks, so a player's turn is still
+ * written with `task: 'coach_chat'` and this id as its `model_id`.
+ */
+export const PLAYER_CHAT_MODEL = 'anthropic/claude-haiku-5-5';
 
 /**
  * Per-task fallback priority on budget exhaustion (Part XI.4).

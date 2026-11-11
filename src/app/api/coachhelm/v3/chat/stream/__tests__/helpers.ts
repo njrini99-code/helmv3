@@ -176,7 +176,11 @@ export const cited = (value: string, ref: string): Block =>
   ({ type: 'text', text: value, citations: [{ type: 'search_result_location', source: `read:${ref}`, title: 'Read', cited_text: 'x', search_result_index: 0, start_block_index: 0, end_block_index: 1 }] }) as Block;
 /** A tool call made by the model's code in Anthropic's sandbox (programmatic tool calling). */
 export const codeToolUse = (id: string, name: string, input: unknown, runId = 'srvtoolu_1'): Block => ({ type: 'tool_use', id, name, input, caller: { type: 'code_execution_20260120', tool_id: runId } }) as Block;
-export const serverCode = (id = 'srvtoolu_1'): Block => ({ type: 'server_tool_use', id, name: 'code_execution', input: { code: 'rows = await get_team_stats({})' } }) as unknown as Block;
+export const serverCode = (id = 'srvtoolu_1', code = 'rows = await get_team_stats({})'): Block => ({ type: 'server_tool_use', id, name: 'code_execution', input: { code } }) as unknown as Block;
+/** The marker the API puts where a model that declined hands over to its substitute (server-side refusal fallback). */
+export const fallbackHop = (to = 'claude-sonnet-5', category = 'cyber'): Block => ({ type: 'fallback', from: { model: 'claude-sonnet-5-5' }, to: { model: to }, trigger: { type: 'refusal', category } }) as unknown as Block;
+/** A progress note in the model's own words, as `thinking.display: 'updates'` returns it: a thinking block with text. */
+export const progressNote = (words: string, signature = 'sig-note'): Block => ({ type: 'thinking', thinking: words, signature }) as Block;
 /** The API refusing a request as malformed, as the SDK surfaces it. */
 export const rejected = (message = 'thinking.block_binding: Extra inputs are not permitted'): Error =>
   Anthropic.APIError.generate(400, { type: 'error', error: { type: 'invalid_request_error', message } }, message, new Headers());
@@ -194,7 +198,9 @@ export interface ScriptedStep {
   container?: string;
   /** Thinking blocks the API reports it dropped from the request (`input_transformations`). */
   droppedThinking?: number;
-  usage?: Partial<{ input_tokens: number; output_tokens: number; cache_read_input_tokens: number; cache_creation_input_tokens: number; cache_creation: { ephemeral_1h_input_tokens: number; ephemeral_5m_input_tokens: number } }>;
+  usage?: Partial<{ input_tokens: number; output_tokens: number; cache_read_input_tokens: number; cache_creation_input_tokens: number; cache_creation: { ephemeral_1h_input_tokens: number; ephemeral_5m_input_tokens: number }; iterations: Array<Record<string, unknown>> }>;
+  /** The model that produced the message, when it is not the one the request named (a refusal fallback). */
+  model?: string;
   /** Awaited before anything streams; lets a test abort the request while the model is "thinking". */
   gate?: Promise<void>;
 }
@@ -219,6 +225,14 @@ export function fakeModel(steps: Array<ScriptedStep | ((request: ModelRequest) =
         if (signal.aborted) throw new Error('Request was aborted.');
         if (step.reject) throw step.reject;
         for (const [index, block] of step.content.entries()) {
+          if ((block.type as string) === 'server_tool_use') {
+            // The model's code arrives as the API sends it: an empty input at the start, then the JSON in pieces.
+            const json = JSON.stringify((block as unknown as { input: unknown }).input);
+            yield { type: 'content_block_start', index, content_block: { ...block, input: {} } } as ModelStreamEvent;
+            for (let i = 0; i < json.length; i += 9) yield { type: 'content_block_delta', index, delta: { type: 'input_json_delta', partial_json: json.slice(i, i + 9) } } as ModelStreamEvent;
+            yield { type: 'content_block_stop', index } as ModelStreamEvent;
+            continue;
+          }
           if (block.type !== 'text') {
             // Every block opens and closes on the wire, whether or not anything in it is streamed to the coach.
             yield { type: 'content_block_start', index, content_block: block.type === 'thinking' ? { ...block, thinking: '' } : block } as ModelStreamEvent;
@@ -246,7 +260,7 @@ export function fakeModel(steps: Array<ScriptedStep | ((request: ModelRequest) =
             id: `msg_${requests.length}`,
             type: 'message',
             role: 'assistant',
-            model: 'claude-haiku-5-5',
+            model: step.model ?? request.model,
             content: step.content,
             stop_reason: step.stop_reason ?? (step.content.some((b) => b.type === 'tool_use') ? 'tool_use' : 'end_turn'),
             stop_sequence: null,

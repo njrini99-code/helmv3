@@ -244,8 +244,9 @@ export async function saveTurn(sb: Sb, mode: StoreMode, turn: TurnWrite): Promis
 }
 
 /** Update the cards of an earlier row (a card declined by a newer question) without touching what the model was shown. */
-export async function saveCardState(sb: Sb, mode: StoreMode, id: string, ui_parts: ChatUIPart[]): Promise<void> {
-  const values = mode === 'columns' ? { ui_parts: ui_parts as never, pending_decision: null } : { ui_parts: ui_parts as never };
+export async function saveCardState(sb: Sb, mode: StoreMode, id: string, ui_parts: ChatUIPart[], options: { stillWaiting?: boolean } = {}): Promise<void> {
+  // `stillWaiting`: the card was edited, not answered, so the turn goes on waiting for the coach.
+  const values = mode === 'columns' && !options.stillWaiting ? { ui_parts: ui_parts as never, pending_decision: null } : { ui_parts: ui_parts as never };
   const { error } = await fromUntyped(sb, TABLE).update(values).eq('id', id);
   if (error) throw new Error(`chat card not saved: ${error.message}`);
 }

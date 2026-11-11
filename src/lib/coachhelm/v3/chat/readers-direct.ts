@@ -24,7 +24,7 @@ import { getClassTimes, getDrillBank, getPlanFormat } from './practice-reads';
 import { nowIso, type Measurement, type ToolEnvelope } from './provenance';
 import { getFocusAreas, getOpenTasks, getPlayerInsights, getTeamTravel } from './read-tools';
 import { findNotTracked } from './not-tracked';
-import { empty, failed, nameOf, notice, notTracked, ownOrOne, part, playerOf, say, teamOf, together, withText } from './reader-kit';
+import { empty, failed, nameOf, notice, notTracked, ownOrOne, part, plain, playerOf, say, sgAgainst, teamOf, together, withText } from './reader-kit';
 import { screenLoaders, STATS_WINDOWS } from './screen-loaders';
 import { getProximityByBand, getShotPattern } from './shot-reads';
 import { SummariseInputCoach, SummariseInputPlayer, summariseData, type SummariseInput } from './summarise-data';
@@ -131,8 +131,8 @@ export const getRound: ReadTool<{ round_id: string }> = {
       withText(envelope, [
         `${where}: ${r.score ?? 'no total'}${r.toPar === null ? '' : ` (${say(r.toPar, '', 0, true)} to par)`} over ${r.holesPlayed} holes${r.front.score === null ? '' : `, front nine ${r.front.score}`}${r.back.score === null ? '' : `, back nine ${r.back.score}`}. Source: Round page.`,
         [r.putts === null ? null : `${r.putts} putts`, of(r.greens, 'greens hit'), of(r.fairways, 'fairways hit')].filter(Boolean).join(', ') || null,
-        sg?.total == null ? null : `${where}, strokes gained: total ${say(sg.total, '', 2, true)}${sg.tee == null ? '' : `, off the tee ${say(sg.tee, '', 2, true)}`}${sg.approach == null ? '' : `, approach ${say(sg.approach, '', 2, true)}`}${sg.around == null ? '' : `, around the green ${say(sg.around, '', 2, true)}`}${sg.putting == null ? '' : `, putting ${say(sg.putting, '', 2, true)}`}.`,
-        tallies ? `${where}, counted over ${tallies.holes_scored} holes: ${tallies.birdies_or_better} birdies or better, ${tallies.pars} pars, ${tallies.bogeys} bogeys, ${tallies.doubles_or_worse} doubles or worse${tallies.three_putts === null ? '' : `, ${tallies.three_putts} three-putts, ${tallies.one_putts} one-putts`}, ${tallies.penalty_strokes} penalty strokes. To par on par 3s ${say(tallies.par3.to_par, '', 0, true)} (${tallies.par3.holes} holes), par 4s ${say(tallies.par4.to_par, '', 0, true)} (${tallies.par4.holes}), par 5s ${say(tallies.par5.to_par, '', 0, true)} (${tallies.par5.holes}).` : null,
+        sg?.total == null ? null : `${where}, strokes gained ${sgAgainst(ctx, r.sgBaseline)}: total ${say(sg.total, '', 2, true)}${sg.tee == null ? '' : `, off the tee ${say(sg.tee, '', 2, true)}`}${sg.approach == null ? '' : `, approach ${say(sg.approach, '', 2, true)}`}${sg.around == null ? '' : `, around the green ${say(sg.around, '', 2, true)}`}${sg.putting == null ? '' : `, putting ${say(sg.putting, '', 2, true)}`}.`,
+        tallies ? `${where}, counted over ${tallies.holes_scored} holes: ${tallies.birdies_or_better} birdies or better, ${tallies.pars} pars, ${tallies.bogeys} bogeys, ${tallies.doubles_or_worse} doubles or worse${tallies.three_putts === null ? '' : `, ${tallies.three_putts} three-putts, ${tallies.one_putts} one-putts`}, ${tallies.penalty_strokes} penalty strokes. To par on the ${tallies.par3.holes} par 3s ${say(tallies.par3.to_par, '', 0, true)}, on the ${tallies.par4.holes} par 4s ${say(tallies.par4.to_par, '', 0, true)}, on the ${tallies.par5.holes} par 5s ${say(tallies.par5.to_par, '', 0, true)}.` : null,
         holes.length ? `Hole by hole (hole, par, score, putts): ${holes.map((h) => `${h.hole_number}: par ${h.par ?? '?'}, ${h.score ?? 'no score'}${h.putts === null ? '' : `, ${h.putts} putts`}`).join('; ')}.` : null,
         r.notes ? `The player's note on the round: "${r.notes}"` : null,
         r.coachNote ? `The coach's note on the round: "${r.coachNote}"` : null,
@@ -151,8 +151,8 @@ export const getShots: ReadTool<ShotsInput> = {
   run: async (ctx, input) => {
     const player_id = ownOrOne(ctx, input.player_id);
     const who = teamOf(ctx);
-    if (input.bands?.length) return asOwn(ctx, await getProximityByBand(ctx.sb, who, { player_id, bands: input.bands, since_days: input.since_days }));
-    return asOwn(ctx, await getShotPattern(ctx.sb, who, { player_id, club_type: input.club_type, from_yards: input.from_yards, to_yards: input.to_yards, since_days: input.since_days, mode: 'approach' }));
+    if (input.bands?.length) return plain(asOwn(ctx, await getProximityByBand(ctx.sb, who, { player_id, bands: input.bands, since_days: input.since_days })), sgAgainst(ctx));
+    return plain(asOwn(ctx, await getShotPattern(ctx.sb, who, { player_id, club_type: input.club_type, from_yards: input.from_yards, to_yards: input.to_yards, since_days: input.since_days, mode: 'approach' })), sgAgainst(ctx));
   },
 };
 
@@ -197,7 +197,7 @@ export const getTournamentsTool: ReadTool<{ limit: number; notes: boolean }> = {
     const who = teamOf(ctx);
     const home = await part('tournaments', () => tournamentsHome(ctx, input.limit));
     if (!input.notes) return home[1];
-    return together('', [home, await part('notes', () => getTournamentNotes(ctx.sb, who, { limit: Math.min(input.limit, 8) }))]);
+    return together('', [home, await part('notes', () => getTournamentNotes(ctx.sb, who, { limit: Math.min(input.limit, 8) }))], sgAgainst(ctx));
   },
 };
 
@@ -222,7 +222,7 @@ export const getSchedule: ReadTool<ScheduleInput> = {
     if (input.include.includes('travel')) parts.push(await part('travel', () => getTeamTravel(ctx.sb, who)));
     if (input.include.includes('classes')) parts.push(await part('classes', () => getClassTimes(ctx.sb, who, { date: input.class_date ?? from.slice(0, 10) })));
     if (input.include.includes('attendance')) parts.push(await part('attendance', () => getAttendanceSummary(ctx.sb, who, { player_id: ownOrOne(ctx, input.player_id) })));
-    return together('', parts);
+    return together('', parts, sgAgainst(ctx));
   },
 };
 
@@ -236,7 +236,7 @@ export const getMySchedule: ReadTool<{ days_ahead: number }> = {
   run: async (ctx, input) => {
     const me = playerOf(ctx);
     if (!me) return failed('the schedule', 'This read is a player\'s.');
-    return myUpcomingEvents(ctx.sb, teamOf(ctx), me, input);
+    return plain(await myUpcomingEvents(ctx.sb, teamOf(ctx), me, input));
   },
 };
 
@@ -256,7 +256,7 @@ export const getCoachHelm: ReadTool<CoachHelmInput> = {
   run: async (ctx, input) => {
     const who = teamOf(ctx);
     const player_id = ownOrOne(ctx, input.player_id);
-    const needsPlayer = async (label: string, run: (id: string) => Promise<ToolEnvelope>) => part(label, () => (player_id ? run(player_id) : Promise.resolve(failed(label, 'This part needs a player_id.'))));
+    const needsPlayer = async (label: string, run: (id: string) => Promise<ToolEnvelope>) => part(label, () => (player_id ? run(player_id) : Promise.resolve(failed(label, 'This part is about one player: say which.'))));
     const parts: Array<readonly [string, ToolEnvelope]> = [];
     for (const what of [...new Set(input.what)]) {
       if (what === 'signals') parts.push(await needsPlayer('signals', (id) => getPlayerInsights(ctx.sb, who, { player_id: id, limit: 5 })));
@@ -267,7 +267,7 @@ export const getCoachHelm: ReadTool<CoachHelmInput> = {
       else if (what === 'goals') parts.push(await part('goals', () => getGoals(ctx.sb, who, { player_id, state: 'active', limit: 40 })));
       else parts.push(await part('tasks', () => getOpenTasks(ctx.sb, who)));
     }
-    return together('', parts);
+    return together('', parts, sgAgainst(ctx));
   },
 };
 
@@ -284,7 +284,7 @@ export const getMyCoachHelm: ReadTool<{ what: Array<'reads' | 'focus_areas'> }> 
     const parts: Array<readonly [string, ToolEnvelope]> = [];
     if (input.what.includes('reads')) parts.push(await part('reads', () => myReads(ctx.sb, me)));
     if (input.what.includes('focus_areas')) parts.push(await part('focus areas', async () => inSecondPerson(await getFocusAreas(ctx.sb, teamOf(ctx), { player_id: me }), nameOf(ctx, me))));
-    return together('', parts);
+    return together('', parts, sgAgainst(ctx));
   },
 };
 
@@ -308,7 +308,7 @@ export const getPracticeTool: ReadTool<PracticeInput> = {
       else if (what === 'drill_bank') parts.push(await part('drill bank', () => getDrillBank(ctx.sb, who, { category: input.category })));
       else parts.push(await part('plan format', () => getPlanFormat(ctx.sb, who)));
     }
-    return together('', parts);
+    return together('', parts, sgAgainst(ctx));
   },
 };
 
@@ -328,19 +328,19 @@ async function runReference(ctx: ToolContext, input: ReferenceInput): Promise<To
       // Something the app does not record is answered as that, with the nearest thing it does record, before any golf text.
       return ((hit) => (hit ? notTracked(hit) : getGolfReference({ topic: input.about as string })))(findNotTracked(input.about));
     case 'metric_definitions':
-      return getMetricDefinitions(ctx.sb, { metric_ids: input.metric_ids, category: input.category });
+      return plain(await getMetricDefinitions(ctx.sb, { metric_ids: input.metric_ids, category: input.category }));
     case 'standards': {
-      if (!input.metric_ids?.length) return failed('the standards', 'Name the metric_ids to compare.');
+      if (!input.metric_ids?.length) return failed('the standards', 'Name the metrics to compare.');
       const source = benchmarkSource(ctx.sb, who.team_id, { ctx: who, figures: screenLoaders(ctx).playerFigures, role: me ? 'player' : 'coach' });
       const player_id = ownOrOne(ctx, input.player_id);
-      return asOwn(ctx, withoutTeamRow(await getBenchmarks(ctx.sb, who, source, { metric_ids: input.metric_ids, levels: input.levels, player_id, window: input.window }, me ? { role: 'player', playerId: me } : { role: 'coach' })));
+      return plain(asOwn(ctx, withoutTeamRow(await getBenchmarks(ctx.sb, who, source, { metric_ids: input.metric_ids, levels: input.levels, player_id, window: input.window }, me ? { role: 'player', playerId: me } : { role: 'coach' }))), sgAgainst(ctx));
     }
     case 'course':
-      return me || !input.course_id ? failed('the course', 'Give a course_id (from a round or query_team_data).') : getCourse(ctx.sb, who, { course_id: input.course_id });
+      return me || !input.course_id ? failed('the course', 'Give a course id (from a round or the team\'s records).') : plain(await getCourse(ctx.sb, who, { course_id: input.course_id }));
     case 'documents':
-      return me ? failed('Documents', 'This part is the coach\'s.') : getDocuments(ctx.sb, who, { folder: input.folder, limit: 30 });
+      return me ? failed('Documents', 'This part is the coach\'s.') : plain(await getDocuments(ctx.sb, who, { folder: input.folder, limit: 30 }));
     case 'team_settings':
-      return me ? failed('the team settings', 'This part is the coach\'s.') : getTeamSeasonSettings(ctx.sb, who);
+      return me ? failed('the team settings', 'This part is the coach\'s.') : plain(await getTeamSeasonSettings(ctx.sb, who));
     default:
       return me ? failed('the data dictionary', 'This part is the coach\'s.') : notice('The tables and columns query_team_data can read, with their units.', { detail: { dictionary: describeQueryTables({ tournamentsOn: tournamentsOn() }) } });
   }

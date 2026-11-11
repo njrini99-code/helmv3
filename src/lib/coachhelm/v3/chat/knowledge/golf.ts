@@ -45,7 +45,7 @@ The shots are added up by part of the game, and the four parts add up to the rou
 Zero means "as a Tour player would have done from the same spots". The total says how many strokes more or fewer the player took than a Tour player would be expected to take on the same holes from the same tees. It is per round.
 
 The yardstick. Here every strokes gained figure is measured against the Tour benchmark, matched to the team: the men's Tour baseline for a men's team, and for a women's team the same expected-strokes curve scaled for the women's game. There is no college, division or scratch baseline in the app.
-Say "against the Tour benchmark" or "Tour level". Name a tour ("PGA Tour", "LPGA Tour") only when a read named it, because the wrong name misleads a women's team.
+A read line names the yardstick with its figure: "against the Tour benchmark", or for a women's team "against the women's Tour baseline". Use the line's words, or "Tour level". Name a tour ("PGA Tour", "LPGA Tour") only when a read named it, because the wrong name misleads a women's team.
 Why the Tour. It is the level where every shot is measured, so the expected strokes are real. Nothing like it is published for college golf. And one fixed yardstick keeps every player, team and season comparable: a figure does not move because a setting changed.
 `;
 
@@ -75,7 +75,7 @@ const SG_LIMITS = `
 What it is not. It is not a handicap, not a score against par and not a prediction of a score. The total is not the gap to a Tour scoring average, because Tour events are played on longer, harder setups; it is the same holes from the same tees. It shows where strokes go, not why.
 It moves a lot on a few rounds. A strokes gained figure needs at least three rounds that have one, and the read gives the count: say it in words, such as "over his last 10 rounds".
 Measured and estimated. With shots logged, a round's strokes gained is measured shot by shot as above. With holes scored but no shots logged, the app stores a rough estimate from the scorecard (fairways, greens, putts, up-and-downs). The estimate is not measured against the Tour, so it is not on the same scale as a measured figure. Use it only loosely, as the direction of that player's own rounds. Do not read one part of the game from it, do not compare it with a measured figure, and do not call it a gap to the Tour.
-The reads do not say which rounds were estimated. The sign that a player does not log shots is a read with no make rate by distance and no proximity for them. Then say their strokes gained is a rough estimate, and lean on score, greens, putts and scrambling.
+A round's record does not say whether its figure was measured or estimated. When a read line can tell, it says how many of the rounds were shot-tracked and that the rest were estimated from the scorecard: pass that on with the figure. When a line does not say, the sign that a player does not log shots is a read with no make rate by distance and no proximity for them. Then say their strokes gained is a rough estimate, and lean on score, greens, putts and scrambling.
 A round posted as a total only has no strokes gained at all.
 When it is measured, strokes gained tells you more than the older stats because it accounts for where each shot started. Use it first.
 `;
@@ -211,7 +211,7 @@ export const APP_DEFINITIONS = {
   sgTotal: 'The total says how many strokes more or fewer the player took than a Tour player would be expected to take on the same holes from the same tees.',
   sgFloor: 'A strokes gained figure needs at least three rounds that have one',
   sgEstimate: 'With holes scored but no shots logged, the app stores a rough estimate from the scorecard (fairways, greens, putts, up-and-downs). The estimate is not measured against the Tour',
-  sgEstimateUnmarked: 'The reads do not say which rounds were estimated.',
+  sgEstimateUnmarked: 'A round\'s record does not say whether its figure was measured or estimated.',
   countedRound: 'A round counts when it is finished, 9 or 18 holes, fully scored and plausible. Test rounds never count.',
   practiceOut: 'The Stats and Roster figures leave practice rounds out and use 18-hole rounds.',
   totalOnly: 'A round posted as a total only counts in scores (average, to par, best round, trend) and in nothing else.',

@@ -57,3 +57,36 @@ export interface ReceiptMissed {
   name: string;
   reason: string;
 }
+
+/**
+ * One field of a card the coach may change before confirming. The type and the limits are the task's own validation
+ * (its zod schema), so a value this accepts is a value the server accepts. `value` is the field as it stands, in the
+ * shape an edit sends it back.
+ *   text, long_text   a string (`max_length`)
+ *   date              `YYYY-MM-DD`
+ *   time              `HH:mm`, 24 hour, the team's local time
+ *   datetime          an ISO instant
+ *   number            (`min`, `max`, `step`)
+ *   choice            one of `options[].value`
+ *   toggle            true or false
+ *   people            roster player ids, each one of `options[].value` (`min_items`, `max_items`)
+ *   list              short strings (`max_items`, each up to `max_length`)
+ */
+export interface EditableField {
+  /** The key an edit is sent under: `edits[key] = value`. `null` clears an optional field. */
+  key: string;
+  /** The label of the fact this field shows as on the card. */
+  label: string;
+  type: 'text' | 'long_text' | 'date' | 'time' | 'datetime' | 'number' | 'choice' | 'toggle' | 'people' | 'list';
+  value: string | number | boolean | string[] | null;
+  /** True: it cannot be cleared. */
+  required: boolean;
+  options?: Array<{ value: string; label: string }>;
+  max_length?: number;
+  min_length?: number;
+  min?: number;
+  max?: number;
+  step?: number;
+  min_items?: number;
+  max_items?: number;
+}
