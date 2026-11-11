@@ -203,14 +203,23 @@ export const sendEventReminder: TaskTool<ReminderInput, EventTaskProposal> = {
         : failed(name, 'The reminder may or may not have gone out: the send did not confirm. Sending it again is safe, nobody gets it twice.', true, reason);
     }
     const sent = result.data?.sent ?? 0;
-    const short = ids.length - sent;
+    // Who the action wrote the reminder for (`sentPlayerIds`: active on the event's team, with an account). It is who was
+    // written to, not proof of delivery. An answer without it (an older one) leaves the receipt with the count alone.
+    const written = (result.data as { sentPlayerIds?: unknown } | undefined)?.sentPlayerIds;
+    const reached = Array.isArray(written) ? new Set(written.filter((id): id is string => typeof id === 'string')) : null;
+    const nameOf = (id: string) => who.roster.find((p) => p.id === id)?.name ?? 'A player';
+    const got = reached ? ids.filter((id) => reached.has(id)).map(nameOf) : null;
+    const missed = reached ? ids.filter((id) => !reached.has(id)).map(nameOf) : null;
+    const short = missed ? missed.length : ids.length - sent;
+    const WHY = 'not on the team now, or no account yet';
     return {
       status: sent === 0 ? 'failed' : short > 0 ? 'partial' : 'completed',
       action: name,
       summary: sent === 0 ? 'The reminder reached nobody: none of those players could be sent a notification. Nothing was sent.' : `The reminder about ${event.title} went to ${plural(sent, 'player')}.`,
       created: sent > 0 ? [{ kind: 'reminder', count: sent, href: `/golf/dashboard/calendar?event=${event.id}`, label: event.title }] : [],
-      notifications: sent > 0 ? [{ channel: 'in-app', recipients: sent, status: 'sent' }] : [],
-      partial_failures: short > 0 && sent > 0 ? [`${plural(short, 'player')} of the ${ids.length} on the card did not get it.`] : [],
+      notifications: sent > 0 ? [{ channel: 'in-app', recipients: sent, status: 'sent', ...(got && got.length ? { to: got } : {}) }] : [],
+      ...(missed && missed.length && sent > 0 ? { missed: missed.map((n) => ({ name: n, reason: WHY })) } : {}),
+      partial_failures: short > 0 && sent > 0 ? [missed ? `${list(missed)} did not get it: ${WHY}.` : `${plural(short, 'player')} of the ${ids.length} on the card did not get it.`] : [],
       retryable: sent === 0,
       at: now(),
     };

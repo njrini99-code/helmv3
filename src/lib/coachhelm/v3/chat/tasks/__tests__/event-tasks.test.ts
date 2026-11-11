@@ -197,6 +197,43 @@ describe('send_event_reminder: the send', () => {
     expect(rows.size).toBe(2);
   });
 
+  it('when the action says who it wrote to, the receipt names who got it and who on the card did not, and why', async () => {
+    const { sb } = db();
+    actions.sendEventReminderToPlayers.mockResolvedValue({ success: true, data: { sent: 1, sentPlayerIds: [AVERY] } });
+    const p = JSON.parse(JSON.stringify(await sendEventReminder.plan(toolCtx(sb, coach()), { event_id: EVENT, recipients: 'invited', player_ids: [] })));
+    const r = await sendEventReminder.commit(toolCtx(sb, coach()), p);
+    expect(r).toMatchObject({
+      status: 'partial',
+      summary: 'The reminder about Team practice went to 1 player.',
+      notifications: [{ channel: 'in-app', recipients: 1, status: 'sent', to: ['Avery Lane'] }],
+      missed: [{ name: 'Blake Ortiz', reason: 'not on the team now, or no account yet' }],
+      partial_failures: ['Blake Ortiz did not get it: not on the team now, or no account yet.'],
+    });
+    // Everyone written to: the names are there and nobody is listed as missed.
+    actions.sendEventReminderToPlayers.mockResolvedValue({ success: true, data: { sent: 2, sentPlayerIds: [AVERY, BLAKE] } });
+    const all = await sendEventReminder.commit(toolCtx(sb, coach()), p);
+    expect(all).toMatchObject({ status: 'completed', notifications: [{ recipients: 2, to: ['Avery Lane', 'Blake Ortiz'] }], partial_failures: [] });
+    expect(all.missed).toBeUndefined();
+    // An id the card did not carry is never named, whatever the action answers.
+    actions.sendEventReminderToPlayers.mockResolvedValue({ success: true, data: { sent: 2, sentPlayerIds: [AVERY, BLAKE, STRANGER] } });
+    expect(JSON.stringify(await sendEventReminder.commit(toolCtx(sb, coach()), p))).not.toContain(STRANGER);
+  });
+
+  it('an answer without the list, or with nobody reached, reads as before: a count, and no names', async () => {
+    const { sb } = db();
+    const p = JSON.parse(JSON.stringify(await sendEventReminder.plan(toolCtx(sb, coach()), { event_id: EVENT, recipients: 'invited', player_ids: [] })));
+    actions.sendEventReminderToPlayers.mockResolvedValue({ success: true, data: { sent: 1 } });
+    const old = await sendEventReminder.commit(toolCtx(sb, coach()), p);
+    expect(old).toMatchObject({ status: 'partial', notifications: [{ channel: 'in-app', recipients: 1, status: 'sent' }], partial_failures: ['1 player of the 2 on the card did not get it.'] });
+    expect([old.missed, (old.notifications[0] as { to?: string[] }).to]).toEqual([undefined, undefined]);
+    actions.sendEventReminderToPlayers.mockResolvedValue({ success: true, data: { sent: 0, sentPlayerIds: [] } });
+    const none = await sendEventReminder.commit(toolCtx(sb, coach()), p);
+    expect(none).toMatchObject({ status: 'failed', summary: 'The reminder reached nobody: none of those players could be sent a notification. Nothing was sent.', notifications: [], partial_failures: [] });
+    expect(none.missed).toBeUndefined();
+    // The action's answer is still what the app's file says it is.
+    expect(readFileSync(join(process.cwd(), 'src/app/golf/actions/calendar-events.ts'), 'utf8')).toContain('type EventReminderSent = { sent: number; sentPlayerIds: string[] };');
+  });
+
   it('a second commit of the same card lands on the same rows: nobody is reminded twice', async () => {
     const { sb } = db();
     const rows = outbox();
