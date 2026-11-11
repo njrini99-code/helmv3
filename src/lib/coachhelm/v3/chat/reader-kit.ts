@@ -7,6 +7,7 @@
  */
 import { isPlayerContext, type ToolContext, type ToolResult } from './engine/tool';
 import { requireRosterPlayer, type CoachChatContext } from './context';
+import { defaultSgBaseline, type SgBaselineKey } from '@/lib/golf/sg-benchmarks';
 import { nowIso, unavailableEnvelope, type CoverageState, type Measurement, type ToolEnvelope } from './provenance';
 
 /** The session's context in the shape the existing reads take. */
@@ -72,9 +73,58 @@ export const round = (v: number, digits: number): number => {
 export function say(value: number | null, unit: Measurement['unit'] | '%' | ' ft' | '', digits = 1, signed = false): string {
   if (value === null) return 'no figure';
   const v = round(value, digits);
-  const body = `${signed && v > 0 ? '+' : ''}${v.toFixed(digits)}`;
-  return unit === 'percent' || unit === '%' ? `${body}%` : unit === 'feet' || unit === ' ft' ? `${body} ft` : body;
+  // A real minus sign, and the unit as a word: the model repeats what it reads.
+  const body = `${signed && v > 0 ? '+' : ''}${v.toFixed(digits)}`.replace(/^-/, '\u2212');
+  return unit === 'percent' || unit === '%' ? `${body}%` : unit === 'feet' || unit === ' ft' ? `${body} feet` : body;
 }
+
+/** A whole-number score against par, as a coach says it: "2 over par", "level par", "1 under par". */
+export const toParWords = (toPar: number): string => (Math.round(toPar) === 0 ? 'level par' : `${Math.abs(Math.round(toPar))} ${toPar > 0 ? 'over' : 'under'} par`);
+
+/** The sample behind a figure, in the sentence, in words: "over 10 rounds". Never "(n=10)". */
+export const sampleWords = (n: number, unit = 'round', many = `${unit}s`): string => `over ${n.toLocaleString('en-US')} ${n === 1 ? unit : many}`;
+
+/** A page's own label as it reads inside a sentence: "SG approach" is "strokes gained approach", "Scoring avg" is "scoring average". */
+export const spoken = (label: string): string => {
+  const words = coachWords(label);
+  return /^[A-Z][a-z]/.test(words) ? `${words[0]!.toLowerCase()}${words.slice(1)}` : words;
+};
+
+/**
+ * What the model reads it repeats, so every line it is handed is written the way a coach should read it. This is the
+ * one place all reader text passes (`withText`): it turns statistics notation and the screens' short labels into
+ * words. Readers write their lines in words to begin with; this holds whatever a screen's own label still carries.
+ */
+export function coachWords(text: string): string {
+  const range = (unit: string, word: string) => (t: string) =>
+    t
+      .replace(new RegExp(`(\\d+(?:\\.\\d+)?)\\s?[\u2013-]\\s?(\\d+(?:\\.\\d+)?)\\s?${unit}s?\\b`, 'g'), word === 'feet' ? 'from $1 to $2 feet' : `$1 to $2 ${word}`)
+      .replace(new RegExp(`(\\d+(?:\\.\\d+)?)\\+\\s?${unit}s?\\b`, 'g'), `$1 ${word} and beyond`)
+      .replace(new RegExp(`<\\s?(\\d+(?:\\.\\d+)?)\\s?${unit}s?\\b`, 'g'), `inside $1 ${word}`)
+      .replace(new RegExp(`(\\d)\\s?${unit}s?\\b`, 'g'), `$1 ${word}`);
+  return range('yd', 'yards')(range('ft', 'feet')(text))
+    .replace(/\(n\s*[=:]\s*([\d,]+)\s*([a-z ]*?)\)/gi, (_m, n: string, unit: string) => `over ${n}${unit.trim() ? ` ${unit.trim()}` : ''}`)
+    .replace(/\bSG:?\s+/g, 'strokes gained ')
+    .replace(/\bavg\b/gi, 'average')
+    .replace(/\bpct\b/gi, 'percent')
+    .replace(/\bvs\.?\s+(?=previous\b)/g, 'against the ')
+    .replace(/\bvs\.?\s+/g, 'against ')
+    .replace(/(^|[\s:(|,;])-(?=\d)/gm, '$1\u2212');
+}
+
+/** The yardstick strokes gained is measured against, in the words the golf block of the prompt uses. */
+const SG_BASELINE_WORDS: Record<SgBaselineKey, string> = { pga_tour: 'the Tour benchmark', womens: 'the women\u2019s Tour baseline' };
+/**
+ * "against the Tour benchmark", for a line that carries a strokes-gained figure. From the loader when it says which
+ * baseline it used; otherwise the team's default, chosen by the same function the calculation uses (`defaultSgBaseline`).
+ */
+export function sgAgainst(ctx: ToolContext, fromLoader?: SgBaselineKey | null): string {
+  const gender = ctx.who.gender === 'womens' ? 'womens' : ctx.who.gender === 'mens' ? 'mens' : null;
+  return `against ${SG_BASELINE_WORDS[fromLoader ?? defaultSgBaseline(gender)]}`;
+}
+/** ", 6 of 10 shot-tracked, the rest estimated from the scorecard", when the loader says how many rounds had shots logged. Nothing until it does. */
+export const shotTracked = (tracked: number | undefined, of: number): string =>
+  tracked === undefined || of <= 0 ? '' : tracked >= of ? `, all ${of} shot-tracked` : `, ${tracked} of ${of} shot-tracked, the rest estimated from the scorecard`;
 
 /**
  * Several reads answered as one. Each part keeps its own measurements and its own detail under its label. A part that
@@ -112,5 +162,5 @@ export async function part(label: string, run: () => Promise<ToolEnvelope>): Pro
  */
 export function withText<E extends ToolEnvelope>(envelope: E, lines: ReadonlyArray<string | null | false | undefined>): E & { model_text: string } {
   const text = [envelope.summary, ...lines.filter((l): l is string => typeof l === 'string' && l.length > 0), envelope.coverage === 'complete' ? null : `Coverage: ${envelope.coverage}${envelope.coverage_note ? `. ${envelope.coverage_note}` : ''}`].filter(Boolean).join('\n');
-  return { ...envelope, model_text: text };
+  return { ...envelope, model_text: coachWords(text) };
 }

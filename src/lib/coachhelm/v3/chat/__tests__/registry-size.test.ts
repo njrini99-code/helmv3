@@ -53,6 +53,21 @@ describe('the cached prefix: tool definitions and policy', () => {
     expect(size.total).toBeLessThan(26_000);
   });
 
+  it('holds with the tournaments flag on too (three more tools), and stays clear of 24,000, where the next step is deferring rarely used tasks behind tool search', () => {
+    flags.tournaments = true;
+    try {
+      for (const surface of ['ask', 'quick_chat'] as const) {
+        const size = sizeOf(surface, coach);
+        console.info(`prefix ${surface}, tournaments on: ${size.tools} tools = ${size.total}; own tools and rules ${size.own}`);
+        // The flag adds get_tournaments, set_lineup and lock_lineup (about 420 tokens): the same brake, moved by what they weigh.
+        expect(size.own).toBeLessThan(12_500);
+        expect(size.total).toBeLessThan(24_000);
+      }
+    } finally {
+      flags.tournaments = false;
+    }
+  });
+
   it('the Ask tab and the practice helper send the same definitions, so they share one cache entry', () => {
     expect(toolsFor('ask', coach).map(definition)).toEqual(toolsFor('practice_helper', coach).map(definition));
     expect(policyBlock('ask')).toBe(policyBlock('practice_helper'));

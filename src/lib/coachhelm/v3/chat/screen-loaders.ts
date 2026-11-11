@@ -84,7 +84,20 @@ export interface StatsRoundRow {
 /** Stats, one player (`loadPlayerProfile`). */
 export interface PlayerStatsScreen {
   name: string;
-  win: { rounds: number; avg: number | null; toPar: number | null; sgPerRound: number | null; sgRounds: number; sgLegs: Legs; holeRounds: number; lastRoundDate: string | null };
+  win: {
+    rounds: number;
+    avg: number | null;
+    toPar: number | null;
+    sgPerRound: number | null;
+    sgRounds: number;
+    sgLegs: Legs;
+    holeRounds: number;
+    lastRoundDate: string | null;
+    /** How many of `sgRounds` had shots logged; the rest are estimated from the scorecard. Optional until the Stats loader exposes it: absent, nothing is printed. */
+    sgShotRounds?: number;
+  };
+  /** The baseline this page's strokes gained is measured against, as the loader chose it (`SgBaselineKey`). Optional: absent, the reader takes the team's default from its gender. */
+  sgBaseline?: 'pga_tour' | 'womens';
   season: { rounds: number; avg: number | null; toPar: number | null };
   teamAvg: number | null;
   puttBands: StatsPuttBand[] | null;
@@ -117,6 +130,9 @@ export interface TeamStatsScreen {
   putting: { bands: StatsPuttBand[]; putts: number } | null;
   bests: Array<{ label: string; playerId: string; name: string; value: string; meta: string }>;
   sgRounds: number;
+  /** As on `PlayerStatsScreen`: how many of `sgRounds` had shots logged, and the baseline the loader used. Both optional. */
+  sgShotRounds?: number;
+  sgBaseline?: 'pga_tour' | 'womens';
   roundsError: boolean;
   cacheError: boolean;
   puttsError: boolean;
@@ -197,6 +213,8 @@ export interface QualifierBoardScreen {
 
 /** The Round page (`loadRoundReview`): one round as the review draws it. */
 export interface RoundReviewScreen {
+  /** The baseline this round's strokes gained is measured against, as the loader chose it. Optional. */
+  sgBaseline?: 'pga_tour' | 'womens';
   id: string;
   playerId: string;
   playerName: string | null;

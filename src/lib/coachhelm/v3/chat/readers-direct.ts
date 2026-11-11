@@ -24,7 +24,7 @@ import { getClassTimes, getDrillBank, getPlanFormat } from './practice-reads';
 import { nowIso, type Measurement, type ToolEnvelope } from './provenance';
 import { getFocusAreas, getOpenTasks, getPlayerInsights, getTeamTravel } from './read-tools';
 import { findNotTracked } from './not-tracked';
-import { empty, failed, nameOf, notice, notTracked, ownOrOne, part, playerOf, say, teamOf, together, withText } from './reader-kit';
+import { empty, failed, nameOf, notice, notTracked, ownOrOne, part, playerOf, say, sgAgainst, teamOf, together, withText } from './reader-kit';
 import { screenLoaders, STATS_WINDOWS } from './screen-loaders';
 import { getProximityByBand, getShotPattern } from './shot-reads';
 import { SummariseInputCoach, SummariseInputPlayer, summariseData, type SummariseInput } from './summarise-data';
@@ -131,8 +131,8 @@ export const getRound: ReadTool<{ round_id: string }> = {
       withText(envelope, [
         `${where}: ${r.score ?? 'no total'}${r.toPar === null ? '' : ` (${say(r.toPar, '', 0, true)} to par)`} over ${r.holesPlayed} holes${r.front.score === null ? '' : `, front nine ${r.front.score}`}${r.back.score === null ? '' : `, back nine ${r.back.score}`}. Source: Round page.`,
         [r.putts === null ? null : `${r.putts} putts`, of(r.greens, 'greens hit'), of(r.fairways, 'fairways hit')].filter(Boolean).join(', ') || null,
-        sg?.total == null ? null : `${where}, strokes gained: total ${say(sg.total, '', 2, true)}${sg.tee == null ? '' : `, off the tee ${say(sg.tee, '', 2, true)}`}${sg.approach == null ? '' : `, approach ${say(sg.approach, '', 2, true)}`}${sg.around == null ? '' : `, around the green ${say(sg.around, '', 2, true)}`}${sg.putting == null ? '' : `, putting ${say(sg.putting, '', 2, true)}`}.`,
-        tallies ? `${where}, counted over ${tallies.holes_scored} holes: ${tallies.birdies_or_better} birdies or better, ${tallies.pars} pars, ${tallies.bogeys} bogeys, ${tallies.doubles_or_worse} doubles or worse${tallies.three_putts === null ? '' : `, ${tallies.three_putts} three-putts, ${tallies.one_putts} one-putts`}, ${tallies.penalty_strokes} penalty strokes. To par on par 3s ${say(tallies.par3.to_par, '', 0, true)} (${tallies.par3.holes} holes), par 4s ${say(tallies.par4.to_par, '', 0, true)} (${tallies.par4.holes}), par 5s ${say(tallies.par5.to_par, '', 0, true)} (${tallies.par5.holes}).` : null,
+        sg?.total == null ? null : `${where}, strokes gained ${sgAgainst(ctx, r.sgBaseline)}: total ${say(sg.total, '', 2, true)}${sg.tee == null ? '' : `, off the tee ${say(sg.tee, '', 2, true)}`}${sg.approach == null ? '' : `, approach ${say(sg.approach, '', 2, true)}`}${sg.around == null ? '' : `, around the green ${say(sg.around, '', 2, true)}`}${sg.putting == null ? '' : `, putting ${say(sg.putting, '', 2, true)}`}.`,
+        tallies ? `${where}, counted over ${tallies.holes_scored} holes: ${tallies.birdies_or_better} birdies or better, ${tallies.pars} pars, ${tallies.bogeys} bogeys, ${tallies.doubles_or_worse} doubles or worse${tallies.three_putts === null ? '' : `, ${tallies.three_putts} three-putts, ${tallies.one_putts} one-putts`}, ${tallies.penalty_strokes} penalty strokes. To par on the ${tallies.par3.holes} par 3s ${say(tallies.par3.to_par, '', 0, true)}, on the ${tallies.par4.holes} par 4s ${say(tallies.par4.to_par, '', 0, true)}, on the ${tallies.par5.holes} par 5s ${say(tallies.par5.to_par, '', 0, true)}.` : null,
         holes.length ? `Hole by hole (hole, par, score, putts): ${holes.map((h) => `${h.hole_number}: par ${h.par ?? '?'}, ${h.score ?? 'no score'}${h.putts === null ? '' : `, ${h.putts} putts`}`).join('; ')}.` : null,
         r.notes ? `The player's note on the round: "${r.notes}"` : null,
         r.coachNote ? `The coach's note on the round: "${r.coachNote}"` : null,

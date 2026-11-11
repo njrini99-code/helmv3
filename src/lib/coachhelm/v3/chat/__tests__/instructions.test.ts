@@ -153,3 +153,40 @@ describe('the team block', () => {
     expect(block).toBe('You are talking with Maya, who plays for Rini University. The team\'s timezone is America/New_York. A season runs from 1 August to 31 July.');
   });
 });
+
+describe('how answers read', () => {
+  it('the coach’s rules say the sample goes in the sentence in words, and give a right and a wrong example', () => {
+    const rules = rulesBlock('ask');
+    expect(rules).toContain('# How your answers read');
+    expect(rules).toMatch(/Say the sample in words, inside the sentence, every time you give a figure/);
+    expect(rules).toMatch(/Never "n=10", "N-4", "\(10\)" or any other notation/);
+    expect(rules).toMatch(/Write "strokes gained" in lower case and name its yardstick as the read does: "against the Tour benchmark"/);
+    expect(rules).toMatch(/Never "ft", "yd", "avg", "SG", "GIR" or "L10"/);
+    expect(rules).toMatch(/Use sentence case\. No Title Case, no word in capitals, no heading on a short answer/);
+    expect(rules).toMatch(/\nRight: "[^\n]*against the Tour benchmark over his last 9 rounds[^\n]*"\nWrong: "[^\n]*\(n=9\)[^\n]*"/);
+    // The rules' own examples follow the rule: no figure in them carries a bracketed sample.
+    expect(rules.split('\nWrong:')[0]).not.toMatch(/\d \(\d+ rounds?\)/);
+  });
+
+  it('the player’s rules carry the same rule in one line', () => {
+    const rules = rulesBlock('player');
+    expect(rules).toMatch(/in words, inside the sentence/);
+    expect(rules).toMatch(/Never "n=10", "\(10\)", "ft", "yd", "avg" or "SG"/);
+    expect(rules).not.toMatch(/74\.2 \(10 rounds\)/);
+  });
+});
+
+describe('the team block says which baseline strokes gained is measured against', () => {
+  const base: CoachChatContext = { coach_id: 'c1', user_id: 'u1', team_id: 't1', team_name: 'Rini University', timezone: 'America/New_York', roster: [] };
+  it('the Tour benchmark for a men’s team, the women’s Tour baseline for a women’s team, and nothing when the team has no gender set', () => {
+    expect(teamBlock({ ...base, gender: 'mens' })).toContain('This team’s strokes gained is measured against the Tour benchmark.');
+    expect(teamBlock({ ...base, gender: 'womens' })).toContain('This team’s strokes gained is measured against the women’s Tour baseline, the same expected-strokes curve scaled for the women’s game.');
+    for (const who of [base, { ...base, gender: null }, { ...base, gender: 'mixed' }]) expect(teamBlock(who)).not.toMatch(/measured against/);
+  });
+
+  it('a player is told the same about their own team, and the line is the same bytes on every call', () => {
+    const player = { ...base, gender: 'womens', roster: [{ id: 'p1', name: 'Maya Ortiz', first_name: 'Maya', last_name: 'Ortiz', graduation_year: null }], player_id: 'p1' };
+    expect(teamBlock(player)).toContain('measured against the women’s Tour baseline');
+    expect(teamBlock(player)).toBe(teamBlock({ ...player }));
+  });
+});

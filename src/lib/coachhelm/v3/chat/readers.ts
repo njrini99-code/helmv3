@@ -12,7 +12,7 @@ import { compareSeasons } from './engine-reads';
 import { nowIso, type Measurement, type ToolEnvelope } from './provenance';
 import { boardOrder } from '../qualifying/ranking';
 import { TEAM_FIGURES_KEY } from './read-tools';
-import { empty, failed, nameOf, ownOr, ownOrOne, part, playerOf, round, say, teamOf, together, withText } from './reader-kit';
+import { coachWords, empty, failed, nameOf, ownOr, ownOrOne, part, playerOf, round, sampleWords, say, sgAgainst, shotTracked, spoken, teamOf, toParWords, together, withText } from './reader-kit';
 import { screenLoaders, STATS_WINDOWS, type PlayerStatsScreen, type StatsComparisonRow, type StatsWindow, type TeamRoundRow } from './screen-loaders';
 
 const PlayerId = z.string().uuid();
@@ -95,30 +95,35 @@ export function gapsToTeam(rows: readonly StatsComparisonRow[]): Array<{ label: 
  * reads as a player who missed everything from there.
  */
 const bandWords = (b: { label: string; made: number; attempts: number; bench: number | null }): string =>
-  b.attempts > 0 ? `${b.label} ${b.made} of ${b.attempts} (${round((b.made / b.attempts) * 100, 0)}%${b.bench === null ? '' : `, Tour ${round(b.bench, 0)}%`})` : `${b.label} no attempts`;
+  b.attempts > 0 ? `${coachWords(b.label)}, ${b.made} of ${b.attempts} made, ${round((b.made / b.attempts) * 100, 0)}%${b.bench === null ? '' : ` against the Tour\u2019s ${round(b.bench, 0)}%`}` : `${coachWords(b.label)}, no attempts`;
 
 const SECTIONS = ['rounds', 'putting', 'approach', 'holes'] as const;
 type Section = (typeof SECTIONS)[number];
 const ROUNDS_LISTED = 20;
 
-function playerLines(page: PlayerStatsScreen, name: string, window: StatsWindow, sections: readonly Section[]): { lines: string[]; detail: Record<string, unknown> } {
+function playerLines(page: PlayerStatsScreen, name: string, window: StatsWindow, sections: readonly Section[], against: string): { lines: string[]; detail: Record<string, unknown> } {
   const { start, end } = windowDates(page);
-  const lines = [`${name}, ${WINDOW_WORDS[window]}: ${page.win.rounds} rounds${start && end ? ` (${start} to ${end})` : ''}, strokes gained over ${page.win.sgRounds}. Source: ${SOURCE_STATS}.`];
+  // Every line with a strokes-gained figure names its yardstick itself, and how many of its rounds had shots logged when the page says.
+  const tracked = shotTracked(page.win.sgShotRounds, page.win.sgRounds);
+  const lines = [`${name}, ${WINDOW_WORDS[window]}: ${page.win.rounds} rounds${start && end ? `, from ${start} to ${end}` : ''}; strokes gained is measured ${against} on ${page.win.sgRounds} of them${tracked}. Source: ${SOURCE_STATS}.`];
   // Each line stands on its own (who, what, which rounds, how many): it is what gets quoted, and a small model copies a labelled figure more reliably than it reads a table.
   for (const row of page.comparisons) {
     const signed = row.signed || row.label.startsWith('SG ');
-    const what = `${name}, ${row.label}, ${WINDOW_WORDS[window]}`;
+    const what = `${name}, ${spoken(row.label)}, ${WINDOW_WORDS[window]}`;
     if (row.you === null) {
-      if (row.floor) lines.push(`${what}: no figure yet (${row.floor})`);
+      if (row.floor) lines.push(`${what}: no figure yet, ${row.floor.charAt(0).toLowerCase()}${row.floor.slice(1).replace(/\.$/, '')}.`);
       continue;
     }
     const digits = Math.max(row.digits, signed ? 2 : 0);
     const n = row.label.startsWith('SG ') ? page.win.sgRounds : page.win.rounds;
-    lines.push(`${what}: ${say(row.you, row.unit, digits, signed)} (n=${n} rounds)${row.team === null ? '' : ` | team average ${say(row.team, row.unit, digits, signed)}`}${row.bench === null ? '' : ` | Tour ${say(row.bench, row.unit, row.digits, signed)}`}${row.early ? ` (${row.early})` : ''}`);
+    const sg = row.label.startsWith('SG ');
+    lines.push(`${what}: ${say(row.you, row.unit, digits, signed)}${sg ? ` ${against}` : ''}, ${sampleWords(n)}${sg ? tracked : ''}${row.early ? `, ${row.early}` : ''}${row.team === null ? '' : ` | team average ${say(row.team, row.unit, digits, signed)}`}${row.bench === null ? '' : ` | Tour ${say(row.bench, row.unit, row.digits, signed)}`}`);
   }
   const gaps = gapsToTeam(page.comparisons);
   const detail: Record<string, unknown> = { window: WINDOW_WORDS[window], rounds: page.win.rounds, gaps_to_team: gaps };
-  if (gaps.length) lines.push(`${name}, furthest behind the team average, largest gap first: ${gaps.slice(0, 5).map((g) => `${g.label} (${g.you}${g.unit} against ${g.team}${g.unit}, ${g.gap > 0 ? '+' : ''}${g.gap}${g.unit})`).join('; ')}.`);
+  const unitWord = (u: string) => (u === '%' ? '%' : u === 'ft' ? ' feet' : '');
+  const figure = (v: number, u: string, signed = false) => `${signed && v > 0 ? '+' : ''}${v}`.replace(/^-/, '\u2212') + unitWord(u);
+  if (gaps.length) lines.push(`${name}, furthest behind the team average, largest gap first: ${gaps.slice(0, 5).map((g) => `${spoken(g.label)}${g.label.startsWith('SG ') ? `, measured ${against},` : ','} ${figure(g.you, g.unit)} to the team\u2019s ${figure(g.team, g.unit)}, a gap of ${figure(g.gap, g.unit, true)}`).join('; ')}.`);
   if (sections.includes('putting')) {
     if (page.extra.puttsError || !page.puttBands) lines.push('Putting by distance: could not be read.');
     else {
@@ -126,14 +131,14 @@ function playerLines(page: PlayerStatsScreen, name: string, window: StatsWindow,
       // The shape the putting block of a visual draws (visuals/compile-composition.ts).
       detail.profile = { buckets: page.puttBands.map((b) => ({ id: slug(b.label), label: b.label, attempts: b.attempts, made: b.made, rate: b.attempts ? round((b.made / b.attempts) * 100, 1) : null })) };
       detail.putt_bands = page.puttBands.map((b) => ({ band: b.label, made: b.made, attempts: b.attempts, make_pct: b.attempts ? round((b.made / b.attempts) * 100, 0) : null, tour_pct: b.bench }));
-      lines.push(`Putting by distance (made of attempts): ${page.puttBands.map(bandWords).join('; ')}.`);
+      lines.push(`Putting by distance, putts made of putts tried: ${page.puttBands.map(bandWords).join('; ')}.`);
     }
   }
   if (sections.includes('approach')) {
     if (page.extra.approachError || !page.extra.approach) lines.push('Approach by distance: could not be read.');
     else {
       detail.approach_bands = page.extra.approach.map((b) => ({ band: b.label, avg_feet_left: b.belowFloor ? null : b.value, shots: b.shots, tour_feet: b.bench, green_hit_pct: b.greenHitPct }));
-      lines.push(`Approach by distance (average feet left): ${page.extra.approach.map((b) => `${b.label} ${b.belowFloor || b.value === null ? `too few shots (${b.shots})` : `${round(b.value, 0)} ft over ${b.shots} shots${b.bench === null ? '' : `, Tour ${round(b.bench, 0)} ft`}`}`).join('; ')}.`);
+      lines.push(`Approach by distance, average feet left to the hole: ${page.extra.approach.map((b) => `${coachWords(b.label)}, ${b.belowFloor || b.value === null ? `too few shots to say, ${b.shots} so far` : `${round(b.value, 0)} feet ${sampleWords(b.shots, 'shot')}${b.bench === null ? '' : `, against the Tour\u2019s ${round(b.bench, 0)} feet`}`}`).join('; ')}.`);
     }
   }
   if (sections.includes('holes')) {
@@ -152,7 +157,7 @@ function playerLines(page: PlayerStatsScreen, name: string, window: StatsWindow,
     const listed = page.rounds.slice(0, ROUNDS_LISTED);
     detail.rounds = listed.map((r) => ({ round_id: r.id, date: r.iso?.slice(0, 10) ?? r.date, course: r.course, type: r.type, holes: r.holes, score: r.score, to_par: r.toPar, putts: r.putts, gir_pct: r.girPct === null ? null : round(r.girPct, 0), fairways_pct: r.fairwaysPct === null ? null : round(r.fairwaysPct, 0), sg_total: r.sg === null ? null : round(r.sg, 2) }));
     lines.push(`Rounds, newest first${page.rounds.length > listed.length ? ` (${listed.length} of ${page.rounds.length})` : ''}:`);
-    for (const r of listed) lines.push(`  ${r.iso?.slice(0, 10) ?? r.date} ${r.course}${r.holes === 9 ? ' (9 holes)' : ''}: ${r.score}${r.toPar === null ? '' : ` (${say(r.toPar, '', 0, true)})`}${r.putts === null ? '' : `, ${r.putts} putts`}${r.girPct === null ? '' : `, greens ${round(r.girPct, 0)}%`}${r.sg === null ? '' : `, SG ${say(r.sg, '', 2, true)}`}${r.type ? `, ${r.type}` : ''} [round ${r.id}]`);
+    for (const r of listed) lines.push(`  ${r.iso?.slice(0, 10) ?? r.date} ${r.course}${r.holes === 9 ? ' (9 holes)' : ''}: ${r.score}${r.toPar === null ? '' : `, ${toParWords(r.toPar)}`}${r.putts === null ? '' : `, ${r.putts} putts`}${r.girPct === null ? '' : `, greens ${round(r.girPct, 0)}%`}${r.sg === null ? '' : `, strokes gained ${say(r.sg, '', 2, true)} ${against}`}${r.type ? `, ${r.type}` : ''} [round ${r.id}]`);
   }
   return { lines, detail };
 }
@@ -184,7 +189,7 @@ async function runPlayerStats(ctx: ToolContext, input: PlayerStatsInput): Promis
   const read = ids.flatMap((id, i) => (pages[i] ? [{ id, name: nameOf(ctx, id), page: pages[i] as PlayerStatsScreen }] : []));
   const missing = ids.filter((_, i) => !pages[i]).map((id) => nameOf(ctx, id));
   if (read.length === 0) return failed(`the Stats page for ${missing.join(', ')}`, 'The Stats page could not be read.');
-  const built = read.map((p) => ({ ...p, ...playerLines(p.page, p.name, input.window, input.sections) }));
+  const built = read.map((p) => ({ ...p, ...playerLines(p.page, p.name, input.window, input.sections, sgAgainst(ctx, p.page.sgBaseline)) }));
   const compared = read.length > 1 ? sideBySide(read) : [];
   const comparedLines = compared.length ? [`Side by side, ${WINDOW_WORDS[input.window]}, best first on each measure:`, ...compared.map((c) => `  ${c.metric}: ${c.best_first.map((x) => `${x.player} ${x.value}${c.unit}`).join('; ')}. Gap first to last: ${c.gap}${c.unit}.`)] : [];
   const broken = read.filter((p) => p.page.roundsError || p.page.statsError || p.page.cacheError).map((p) => p.name);
@@ -255,19 +260,21 @@ async function runTeamStats(ctx: ToolContext, input: TeamStatsInput): Promise<To
   const team = { kind: 'team' as const, id: who.team_id, label: who.team_name };
   const base = { window_start: null, window_end: null, as_of: nowIso(), coverage: 'complete' as const, coverage_note: null, source: 'Team Stats page', method: 'team_stats_window', denominator: null, benchmark: null };
   const measurements: Measurement[] = [];
-  const lines = [`${who.team_name}, ${words}: ${page.activeCount} active players, ${page.roundCount} rounds in the window, strokes gained over ${page.sgRounds}. Source: Team Stats page.`];
+  const against = sgAgainst(ctx, page.sgBaseline);
+  const tracked = shotTracked(page.sgShotRounds, page.sgRounds);
+  const lines = [`${who.team_name}, ${words}: ${page.activeCount} active players, ${page.roundCount} rounds in the window; strokes gained is measured ${against} on ${page.sgRounds} of them${tracked}. Source: Team Stats page.`];
   const teamFigureIds: Record<string, string> = { sg: 'sg_total', score: 'scoring_average', gir: 'gir_pct', putts: 'putts_per_round', scramble: 'scrambling_pct', birdies: 'birdies_per_round' };
   for (const f of page.figures) {
     if (f.value === null) continue;
     const signed = f.key === 'sg';
     measurements.push({ ...base, metric_id: teamFigureIds[f.key] ?? slug(f.label), metric_label: f.label, unit: f.unit === '%' ? 'percent' : f.key === 'sg' ? 'strokes' : f.key === 'score' ? 'score' : 'count', value: round(f.value, Math.max(f.digits, signed ? 2 : 0)), entity: team, sample_size: page.roundCount, sample_unit: 'rounds', direction: f.lowerIsBetter ? 'lower_better' : 'higher_better' });
-    lines.push(`${who.team_name} team average, ${f.label}, ${words}: ${say(f.value, f.unit, Math.max(f.digits, signed ? 2 : 0), signed)} (n=${page.roundCount} rounds)${f.delta === null ? '' : ` (${say(f.delta, f.unit, Math.max(f.digits, 1), true)} ${f.context})`}`);
+    lines.push(`${who.team_name} team average, ${spoken(f.label)}, ${words}: ${say(f.value, f.unit, Math.max(f.digits, signed ? 2 : 0), signed)}${signed ? ` ${against}, ${sampleWords(page.sgRounds)}${tracked}` : `, ${sampleWords(page.roundCount)}`}${f.delta === null ? '' : `, ${say(f.delta, f.unit, Math.max(f.digits, 1), true)} ${f.context}`}`);
   }
   page.legTotals.forEach((v, i) => {
     const label = LEG_LABELS[i];
     if (v === null || !label) return;
     measurements.push({ ...base, metric_id: metricIdOf(label), metric_label: label, unit: 'strokes', value: round(v, 2), entity: team, sample_size: page.sgRounds, sample_unit: 'rounds', direction: 'higher_better' });
-    lines.push(`${who.team_name} team average, ${label}, ${words}: ${say(v, '', 2, true)} (n=${page.sgRounds} rounds)`);
+    lines.push(`${who.team_name} team average, ${spoken(label)}, ${words}: ${say(v, '', 2, true)} ${against}, ${sampleWords(page.sgRounds)}${tracked}`);
   });
 
   const detail: Record<string, unknown> = { window: words, active_players: page.activeCount, rounds: page.roundCount };
@@ -305,7 +312,7 @@ async function runTeamStats(ctx: ToolContext, input: TeamStatsInput): Promise<To
   if (order.length) {
     const placed = order.filter((r) => r.place !== null).length;
     lines.push(`Players ranked on ${RANK_LABEL[rankBy]}, ${words}, best first (${LOWER_BETTER.has(rankBy) ? 'lower' : 'higher'} is better), ${placed} with a figure:`);
-    for (const r of order) lines.push(`  ${r.place === null ? 'no place' : `place ${r.place} of ${placed}`}: ${r.name}, ${RANK_LABEL[rankBy]} ${r.value === null ? `no figure (${r.rounds} rounds)` : `${say(r.value, isPct ? '%' : '', digits, rankBy.startsWith('sg_'))} (n=${r.rounds} rounds)`} [player ${r.id}]`);
+    for (const r of order) lines.push(`  ${r.place === null ? 'no place' : `place ${r.place} of ${placed}`}: ${r.name}, ${spoken(RANK_LABEL[rankBy])} ${r.value === null ? `no figure, ${r.rounds} ${r.rounds === 1 ? 'round' : 'rounds'} played` : `${say(r.value, isPct ? '%' : '', digits, rankBy.startsWith('sg_'))}${rankBy.startsWith('sg_') ? ` ${against}` : ''}, ${sampleWords(r.rounds)}`} [player ${r.id}]`);
   }
   if (input.putting) {
     if (page.puttsError || !page.putting) lines.push('Team putting by distance: could not be read.');
@@ -386,11 +393,11 @@ async function runRounds(ctx: ToolContext, input: RoundsInput): Promise<ToolResu
   const lines = [
     `${scope}: ${list.length} rounds (${days[0]} to ${days[days.length - 1]}), ${counted.length} of them full rounds that count in an average. Source: Rounds page.`,
     pooled === null ? null : `Average of those ${counted.length} rounds: ${say(pooled, '', 1)}.`,
-    whole && page.season.avg !== null ? `This season (since ${page.seasonStart}), as the Rounds page shows it, every round type with practice rounds included: ${page.season.rounds} full rounds by ${page.season.players} ${page.season.players === 1 ? 'player' : 'players'}, average ${say(page.season.avg, '', 1)}, ${page.season.underPar} under par${page.season.best ? `, best ${page.season.best.score} by ${page.season.best.player} at ${page.season.best.course}` : ''}. The season scoring average that leaves practice out is get_season's.` : null,
+    whole && page.season.avg !== null ? `This season (since ${page.seasonStart}), as the Rounds page shows it, every round type with practice rounds included: ${page.season.rounds} full rounds by ${page.season.players} ${page.season.players === 1 ? 'player' : 'players'}, average ${say(page.season.avg, '', 1)}, ${page.season.underPar} under par${page.season.best ? `, best ${page.season.best.score} by ${page.season.best.player} at ${page.season.best.course}` : ''}. The season scoring average that leaves practice rounds out comes from the season read.` : null,
     'Per player, lowest average first:',
     ...per.map((p) => `  ${p.player}: ${p.rounds} rounds, ${p.counted} full rounds counted${p.avg_score === null ? ', no average' : `, average score ${p.avg_score}`}${p.avg_to_par === null ? '' : `, average to par ${say(p.avg_to_par, '', 1, true)}`}${p.avg_putts === null ? '' : `, average putts ${p.avg_putts}`}${p.best === null ? '' : `, best ${p.best}`} [player ${p.player_id}]`),
     shown.length ? `Newest ${shown.length} of ${list.length}:` : null,
-    ...shown.map((r) => `  ${r.date.slice(0, 10)} ${r.player}, ${r.course}${r.holes === 9 ? ' (9 holes)' : ''}: ${r.score}${r.toPar === null ? '' : ` (${say(r.toPar, '', 0, true)})`}${r.type ? `, ${r.type}` : ''} [round ${r.id}]`),
+    ...shown.map((r) => `  ${r.date.slice(0, 10)} ${r.player}, ${r.course}${r.holes === 9 ? ' (9 holes)' : ''}: ${r.score}${r.toPar === null ? '' : `, ${toParWords(r.toPar)}`}${r.type ? `, ${r.type}` : ''} [round ${r.id}]`),
   ];
   const envelope: ToolEnvelope = {
     summary: `${list.length} rounds: ${scope}.`,
@@ -447,7 +454,7 @@ async function seasonNow(ctx: ToolContext, playerId: string | undefined): Promis
     [
       `This season${page.season ? ` (${page.season})` : ''}: full rounds that count since 1 August, practice left out. Source: Roster page.`,
       page.teamAvg === null || playerId ? null : `${who.team_name} team scoring average this season: ${say(page.teamAvg, '', 1)}.`,
-      ...order.map((p) => `  ${p.place === null ? 'no place' : `place ${p.place}`}: ${p.name}, scoring average this season ${p.value === null ? 'none yet (no rounds)' : `${say(p.value, '', 1)} (n=${p.rounds} rounds)`}${p.sgPerRound === null ? '' : `, strokes gained ${say(p.sgPerRound, '', 2, true)} a round`}, form ${p.form} [player ${p.id}]`),
+      ...order.map((p) => `  ${p.place === null ? 'no place' : `place ${p.place}`}: ${p.name}, scoring average this season ${p.value === null ? 'none yet (no rounds)' : `${say(p.value, '', 1)} ${sampleWords(p.rounds)}`}${p.sgPerRound === null ? '' : `, strokes gained ${say(p.sgPerRound, '', 2, true)} a round ${sgAgainst(ctx)}`}, form ${p.form} [player ${p.id}]`),
     ],
   );
 }
@@ -501,7 +508,7 @@ async function runQualifiers(ctx: ToolContext, input: QualifiersInput): Promise<
         as_of: nowIso(),
       },
       [
-        `${q.name} (${q.status}, ${q.startDate}${q.endDate ? ` to ${q.endDate}` : ''}): ${q.numRounds} rounds, squad of ${q.squad} with ${q.picks} coach picks, ${q.entrants} entered. In the board's own order. Source: Qualifiers board.`,
+        `${q.name}, ${q.status.replace(/_/g, ' ')}, ${q.startDate}${q.endDate ? ` to ${q.endDate}` : ''}: ${q.numRounds} rounds, squad of ${q.squad} with ${q.picks} coach picks, ${q.entrants} entered. In the board's own order. Source: Qualifiers board.`,
         ...rows.map((r) => `  ${r.position === null ? '-' : `${r.tied ? 'T' : ''}${r.position}`} ${r.name}: ${r.toPar === null ? 'no total' : `${say(r.toPar, '', 0, true)} to par, ${r.total} strokes`} over ${r.played} ${r.played === 1 ? 'round' : 'rounds'}${cardNote(r) ? ` (${cardNote(r)})` : ''}${r.state ? `, ${r.state}` : ''}${picked.has(r.playerId) ? `, selected (${picked.get(r.playerId)!.type === 'coach_pick' ? 'coach pick' : 'on score'}${picked.get(r.playerId)!.reasoning ? `: ${picked.get(r.playerId)!.reasoning}` : ''})` : ''} [player ${r.playerId}]`),
         q.board.unscored.length ? `No score yet: ${q.board.unscored.map((u) => u.name).join(', ')}.` : null,
       ],
@@ -522,7 +529,7 @@ async function runQualifiers(ctx: ToolContext, input: QualifiersInput): Promise<
       coverage_note: page.standingsError ? 'The standings could not be read; the leaders are missing.' : null,
       as_of: nowIso(),
     },
-    items.flatMap((q) => [`${q.name} (${q.status}, ${q.startDate}): ${q.numRounds} rounds, squad of ${q.squad} with ${q.picks} coach picks, ${q.entrants} entered, ${q.submitted} cards in [qualifier ${q.id}]`, q.leaders.length ? `  Leaders: ${q.leaders.map((l) => `${l.position} ${l.name} ${l.toPar === null ? '' : say(l.toPar, '', 0, true)} (${l.played} rounds)`).join('; ')}` : null]),
+    items.flatMap((q) => [`${q.name}, ${q.status.replace(/_/g, ' ')}, ${q.startDate}: ${q.numRounds} rounds, squad of ${q.squad} with ${q.picks} coach picks, ${q.entrants} entered, ${q.submitted} cards in [qualifier ${q.id}]`, q.leaders.length ? `  Leaders: ${q.leaders.map((l) => `${l.position} ${l.name} ${l.toPar === null ? '' : say(l.toPar, '', 0, true)} (${l.played} rounds)`).join('; ')}` : null]),
   );
 }
 
