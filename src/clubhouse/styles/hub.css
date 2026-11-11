@@ -2960,9 +2960,10 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   gap: 16px;
   min-width: 0;
   padding: 20px 24px 16px;
-  border-radius: var(--ch-radius-lg);
-  background: var(--ch-bg-surface);
-  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-ledger-rule-strong);
+  /* The one card recipe, Home's own (owner, 11 Nov): the flat white face and the card's cast, not an outlined ivory tile. */
+  border-radius: var(--ch-radius-card);
+  background: var(--ch-card-bg);
+  box-shadow: var(--ch-card-shadow);
 }
 .ch-hw__h {
   display: flex;
@@ -4014,9 +4015,6 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   margin: 0;
 }
 
-html[data-fw-theme='dark'] .ch-hw {
-  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-ledger-rule-strong);
-}
 html[data-fw-theme='dark'] .ch-hw--dark {
   box-shadow: var(--ch-elevation-feature);
 }

@@ -37,3 +37,24 @@ describe('Team Hub, Tasks and the week on a phone', () => {
     expect(css.slice(at, css.indexOf('}', at))).toContain('min-height: 44px');
   });
 });
+
+describe('Team Hub’s tiles are the white raised card Home uses (owner, 11 Nov)', () => {
+  it('a tile takes the one card recipe: the flat card face, the card’s cast and its corner', () => {
+    const tile = rule('.ch-hw');
+    expect(tile).toContain('background: var(--ch-card-bg)');
+    expect(tile).toContain('box-shadow: var(--ch-card-shadow)');
+    expect(tile).toContain('border-radius: var(--ch-radius-card)');
+    expect(tile).not.toContain('--ch-ledger-rule-strong');
+  });
+
+  it('no theme redraws the outline: the recipe’s tokens carry the night card', () => {
+    expect(css).not.toMatch(/html\[data-fw-theme='dark'\] \.ch-hw \{/);
+  });
+
+  it('the green trip tile keeps the feature recipe over it', () => {
+    const feature = rule('.ch-hw--dark');
+    expect(feature).toContain('background: var(--ch-feature-bg)');
+    expect(feature).toContain('box-shadow: var(--ch-elevation-feature)');
+    expect(css.indexOf('\n.ch-hw--dark {')).toBeGreaterThan(css.indexOf('\n.ch-hw {'));
+  });
+});
