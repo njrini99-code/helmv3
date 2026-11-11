@@ -29,7 +29,8 @@ import { keyOf } from '../action-planners';
 import type { ProposalFact } from '../action-types';
 import type { CoachChatContext } from '../context';
 import type { ChatTool, TaskTool, ToolContext } from '../engine/tool';
-import { coachOnly, done, failed, list, now, plural, settle, wallClock, withAccounts, type StoredProposal } from './kit';
+import type { CardPerson } from '../card-types';
+import { asPlayers, coachOnly, done, failed, list, now, plural, settle, unreached, wallClock, withAccounts, type StoredProposal } from './kit';
 
 interface EventRow {
   id: string;
@@ -76,11 +77,13 @@ async function invitedTo(ctx: ToolContext, who: CoachChatContext, eventId: strin
 }
 
 /** The names on the card, in roster order, and those with no account, who cannot be reached. */
-async function reachable(ctx: ToolContext, who: CoachChatContext, ids: readonly string[]): Promise<{ to: string[]; cannot: string[] }> {
+async function reachable(ctx: ToolContext, who: CoachChatContext, ids: readonly string[]): Promise<{ to: string[]; cannot: string[]; people: CardPerson[]; missed: ReturnType<typeof unreached> }> {
   const accounts = await withAccounts(ctx, ids);
   if (!accounts) throw new Error('Who can be told could not be confirmed just now, so nothing was prepared. Try again in a moment.');
   const on = who.roster.filter((p) => ids.includes(p.id));
-  return { to: on.filter((p) => accounts.has(p.id)).map((p) => p.name), cannot: on.filter((p) => !accounts.has(p.id)).map((p) => p.name) };
+  const yes = on.filter((p) => accounts.has(p.id));
+  const no = on.filter((p) => !accounts.has(p.id));
+  return { to: yes.map((p) => p.name), cannot: no.map((p) => p.name), people: asPlayers(yes), missed: unreached(no) };
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -105,6 +108,7 @@ const UpdateStored = z.object({
   expect: z.object({ start: z.string(), end: z.string().nullable(), location: z.string().nullable(), title: z.string() }),
   summary: z.string(),
   told: z.number().int().nonnegative(),
+  day: z.string().optional(),
 });
 
 const addDays = (day: string, n: number): string => {
@@ -183,8 +187,9 @@ export const updateEvent: TaskTool<UpdateInput, StoredProposal> = {
 
     // Who hears: the app tells an event's invited players of a change only when the event asks for replies.
     const invited = event.requires_rsvp === true ? await invitedTo(ctx, who, event.id) : { roster: [], others: 0, anyNotified: false };
-    const { to, cannot } = await reachable(ctx, who, invited.roster);
+    const { to, cannot, people, missed } = await reachable(ctx, who, invited.roster);
     const told = event.requires_rsvp === true ? to.length + invited.others : 0;
+    const day = allDay ? startIso.slice(0, 10) : wallClock(startIso, zone).date;
     const words = { title: `Event updated: ${title}`, message: whenWords(startIso, event.all_day, zone, location) };
     const endWords = (iso: string | null) => (iso && !allDay ? `, until ${new Intl.DateTimeFormat('en-US', { timeZone: zone, hour: 'numeric', minute: '2-digit' }).format(new Date(iso))}` : '');
     const facts: ProposalFact[] = [
@@ -212,8 +217,13 @@ export const updateEvent: TaskTool<UpdateInput, StoredProposal> = {
       notifications: told > 0 ? [`${plural(told, 'invited player')} ${told === 1 ? 'gets' : 'get'} an in-app notification: “${words.title}”, “${words.message}”.`] : [],
       missing: [],
       idempotency_key: keyOf(['update_event', event.id, startIso, endIso ?? '', location ?? '', title]),
+      recipients: told > 0 ? people : [],
+      not_reached: told > 0 ? missed : [],
+      delivery: told > 0 ? { channels: ['in_app'], title: words.title, body: words.message, ...(invited.others ? { note: `${plural(invited.others, 'invited player')} no longer on the active roster ${invited.others === 1 ? 'is' : 'are'} told too.` } : {}) } : null,
+      undo: { window: true, after: 'Move it back on the Calendar. A notice that has gone out stays sent.' },
+      lands: { kind: 'event', home: '/golf/dashboard/calendar', day },
       tool: 'update_event',
-      input: { event_id: event.id, payload, expect: { start: startIso, end: endIso, location: location ?? null, title }, summary, told },
+      input: { event_id: event.id, payload, expect: { start: startIso, end: endIso, location: location ?? null, title }, summary, told, day },
       planned_at: now(),
     };
   },
@@ -223,7 +233,7 @@ export const updateEvent: TaskTool<UpdateInput, StoredProposal> = {
     const parsed = UpdateStored.safeParse(proposal.input);
     if (!parsed.success) return failed(name, 'This card could not be read back, so it was not run. Nothing was changed.', false);
     const s = parsed.data;
-    const href = `/golf/dashboard/calendar?event=${s.event_id}`;
+    const href = `/golf/dashboard/calendar?${s.day ? `date=${s.day}&` : ''}event=${s.event_id}`;
     return settle({
       action: name,
       nothing: 'Nothing was changed.',
@@ -235,7 +245,7 @@ export const updateEvent: TaskTool<UpdateInput, StoredProposal> = {
       },
       write: () => updateGolfEvent(s.event_id, s.payload as GolfEventUpdateInput),
       refusal: (a) => (a.code === 'stale' ? 'The event was changed by someone else after this card was made. Ask for the change again' : a.code === 'gone' ? 'The event was cancelled or deleted after this card was made' : null),
-      receipt: () => done(name, s.summary, [{ kind: 'event', count: 1, href, label: s.expect.title }], s.told > 0 ? [{ channel: 'in-app', recipients: s.told, status: 'queued' }] : []),
+      receipt: () => done(name, s.summary, [{ kind: 'event', count: 1, id: s.event_id, href, label: s.expect.title }], s.told > 0 ? [{ channel: 'in-app', recipients: s.told, status: 'queued' }] : []),
     });
   },
 };
@@ -273,13 +283,15 @@ export const cancelEvent: TaskTool<CancelInput, StoredProposal> = {
     // the whole active team too unless it is a meeting or an event with a sent invite list.
     let to: string[] = [];
     let cannot: string[] = [];
+    let people: CardPerson[] = [];
+    let missed: ReturnType<typeof unreached> = [];
     let others = 0;
     let wholeTeam = false;
     if (event.requires_rsvp === true) {
       const invited = await invitedTo(ctx, who, event.id);
       wholeTeam = !(event.event_type === 'meeting' || invited.anyNotified);
       const ids = wholeTeam ? who.roster.map((p) => p.id) : invited.roster;
-      ({ to, cannot } = await reachable(ctx, who, ids));
+      ({ to, cannot, people, missed } = await reachable(ctx, who, ids));
       others = invited.others;
     }
     const told = to.length + others;
@@ -307,6 +319,20 @@ export const cancelEvent: TaskTool<CancelInput, StoredProposal> = {
       missing: [],
       impact: told > 0 ? `${plural(told, 'player')} will be told it is off.` : undefined,
       idempotency_key: keyOf(['cancel_event', event.id, reason ?? '']),
+      recipients: people,
+      not_reached: missed,
+      delivery:
+        told > 0
+          ? {
+              channels: ['in_app', 'email'],
+              title: `Cancelled: ${event.title}`,
+              body: detail,
+              variants: [{ channel: 'email', title: `Event cancelled: ${event.title}`, body: `This event has been cancelled. ${detail}` }],
+              note: `The e-mail goes to each of them who has an address on their account.${others ? ` ${plural(others, 'invited player')} no longer on the active roster ${others === 1 ? 'is' : 'are'} told too.` : ''}`,
+            }
+          : null,
+      undo: { window: true, after: 'Restore it on the Calendar. People already told stay told.' },
+      lands: { kind: 'event', home: '/golf/dashboard/calendar', day: event.all_day ? event.start_time.slice(0, 10) : wallClock(event.start_time, zone).date },
       tool: 'cancel_event',
       input: { event_id: event.id, title: event.title, reason, detail, told },
       planned_at: now(),
@@ -325,7 +351,7 @@ export const cancelEvent: TaskTool<CancelInput, StoredProposal> = {
       return failed(name, 'The event could not be read just now. Nothing was cancelled.', true);
     }
     if (!current) return failed(name, 'That event is no longer on your team’s calendar. Nothing was cancelled.', false);
-    const receipt = () => done(name, `${s.title} is cancelled. It stays on the calendar marked cancelled.`, [{ kind: 'event', count: 1, href: `/golf/dashboard/calendar?event=${s.event_id}`, label: s.title }], s.told > 0 ? [{ channel: 'in-app', recipients: s.told, status: 'queued' }, { channel: 'email', recipients: s.told, status: 'queued' }] : []);
+    const receipt = () => done(name, `${s.title} is cancelled. It stays on the calendar marked cancelled.`, [{ kind: 'event', count: 1, id: s.event_id, href: `/golf/dashboard/calendar?event=${s.event_id}`, label: s.title }], s.told > 0 ? [{ channel: 'in-app', recipients: s.told, status: 'queued' }, { channel: 'email', recipients: s.told, status: 'queued' }] : []);
     if (current.status !== 'cancelled') {
       // What players would now be told must still be what the card showed.
       const zone = await zoneOf(ctx, who);

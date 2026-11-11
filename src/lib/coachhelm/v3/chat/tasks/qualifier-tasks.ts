@@ -22,7 +22,7 @@ import { keyOf } from '../action-planners';
 import type { ProposalFact } from '../action-types';
 import { CoachContextError, type CoachChatContext } from '../context';
 import type { ChatTool, TaskTool, ToolContext } from '../engine/tool';
-import { coachOnly, done, failed, list, now, rosterPlayer, settle, type StoredProposal } from './kit';
+import { NOTHING_SENT, coachOnly, done, failed, list, now, rosterPlayer, settle, type StoredProposal } from './kit';
 
 const PickInput = z.strictObject({
   qualifier_id: z.string().uuid(),
@@ -85,6 +85,10 @@ export const setQualifierPick: TaskTool<PickInput, StoredProposal> = {
       notifications: [],
       missing: [],
       idempotency_key: keyOf(['set_qualifier_coach_pick', q.id, player.id]),
+      ...NOTHING_SENT,
+      visible_to: confirmed ? 'team' : 'coaches',
+      visible_note: `${facts[5]!.value} The reason is only ever shown to coaches.`,
+      undo: { window: true, after: 'Take the pick back on the Qualifiers screen.' },
       tool: 'set_qualifier_coach_pick',
       input: { qualifier_id: q.id, player_id: player.id, reasoning, qualifier: q.name, player: player.name },
       planned_at: now(),

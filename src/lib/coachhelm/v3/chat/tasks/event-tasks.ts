@@ -26,12 +26,13 @@ import { sendEventReminderToPlayers } from '@/app/golf/actions/calendar-events';
 import { resolveTeamTimeZone } from '@/lib/calendar/availability';
 import { formatNoticeWhen } from '@/lib/calendar/timezone';
 import { keyOf } from '../action-planners';
-import type { ActionProposal, ActionReceipt, ProposalFact } from '../action-types';
+import type { ActionReceipt, ProposalFact } from '../action-types';
 import { CoachContextError, type CoachChatContext } from '../context';
 import { isPlayerContext, type ChatTool, type TaskTool, type ToolContext } from '../engine/tool';
+import { asPlayers, unreached, type StoredProposal } from './kit';
 
 /** What every task here returns from `plan`, in the shape TOOLS's tasks use: the card, the tool, the input the write will use, and when it was planned. JSON-safe. */
-export type EventTaskProposal = ActionProposal & { tool: string; input: unknown; planned_at: string };
+export type EventTaskProposal = StoredProposal;
 
 const now = () => new Date().toISOString();
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
@@ -155,6 +156,10 @@ export const sendEventReminder: TaskTool<ReminderInput, EventTaskProposal> = {
       notifications: [`${plural(to.length, 'player')} ${to.length === 1 ? 'gets' : 'get'} an in-app notification: “${words.title}”, “${words.message}”.`],
       missing: [],
       idempotency_key: keyOf(['send_event_reminder', event.id, input.recipients, to.map((p) => p.id.slice(0, 8)).sort().join('')]),
+      recipients: asPlayers(to),
+      not_reached: unreached(who.roster.filter((p) => ids.includes(p.id) && !reachable.has(p.id))),
+      delivery: { channels: ['in_app'], title: words.title, body: words.message },
+      undo: { window: true, after: 'A reminder that has gone out cannot be taken back.' },
       tool: 'send_event_reminder',
       input: stored,
       planned_at: now(),
@@ -276,6 +281,9 @@ export const recordAttendance: TaskTool<AttendanceInput, EventTaskProposal> = {
       notifications: [],
       missing: [],
       idempotency_key: keyOf(['record_attendance', event.id, marks.map((m) => `${m.player_id.slice(0, 8)}${m.mark[0]}`).join('')]),
+      recipients: [],
+      delivery: null,
+      undo: { window: true, after: 'Change a mark on the event in the Calendar.' },
       tool: 'record_attendance',
       input: stored,
       planned_at: now(),

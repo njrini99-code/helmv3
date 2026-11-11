@@ -27,7 +27,7 @@ import { keyOf } from '../action-planners';
 import type { ProposalFact } from '../action-types';
 import { CoachContextError, type CoachChatContext } from '../context';
 import type { ChatTool, TaskTool, ToolContext } from '../engine/tool';
-import { coachOnly, done, failed, now, rosterPlayer, settle, type StoredProposal } from './kit';
+import { NOTHING_SENT, coachOnly, done, failed, now, rosterPlayer, settle, type StoredProposal } from './kit';
 
 /** The action's own gate for anything about one player, asked the way the action asks it. */
 async function requirePlayerAccess(ctx: ToolContext, who: CoachChatContext, playerId: string): Promise<void> {
@@ -90,6 +90,9 @@ export const setFocusAreaStatus: TaskTool<FocusInput, StoredProposal> = {
       notifications: [],
       missing: [],
       idempotency_key: keyOf(['set_focus_area_status', row.id, input.status]),
+      ...NOTHING_SENT,
+      visible_note: facts[facts.length - 1]!.value,
+      undo: { window: true, after: input.status === 'completed' ? 'Reopen it here or on the player’s development page.' : 'Mark it completed again.' },
       tool: 'set_focus_area_status',
       input: { focus_area_id: row.id, status: input.status, title: row.title, player: player.name },
       planned_at: now(),
@@ -110,7 +113,7 @@ export const setFocusAreaStatus: TaskTool<FocusInput, StoredProposal> = {
         return row === undefined ? null : row?.status === s.status;
       },
       write: () => (s.status === 'completed' ? completeFocusArea(s.focus_area_id) : reactivateFocusArea(s.focus_area_id)),
-      receipt: () => done(name, `${s.player}’s focus area “${s.title}” is ${s.status === 'completed' ? 'completed' : 'active again'}. ${NO_NOTICE}`, [{ kind: 'focus_area', count: 1, label: s.title }]),
+      receipt: () => done(name, `${s.player}’s focus area “${s.title}” is ${s.status === 'completed' ? 'completed' : 'active again'}. ${NO_NOTICE}`, [{ kind: 'focus_area', count: 1, id: s.focus_area_id, label: s.title }]),
     });
   },
 };
@@ -179,6 +182,9 @@ export const setGoalState: TaskTool<GoalInput, StoredProposal> = {
       notifications: [],
       missing: [],
       idempotency_key: keyOf(['set_goal_state', row.id, input.state]),
+      ...NOTHING_SENT,
+      visible_note: facts[facts.length - 1]!.value,
+      undo: { window: true, after: input.state === 'abandoned' ? 'A closed goal is not reopened here; set a new goal.' : input.state === 'paused' ? 'Resume it.' : 'Pause it again.' },
       tool: 'set_goal_state',
       input: { goal_id: row.id, state: input.state, reason, title, player: player.name },
       planned_at: now(),
@@ -204,7 +210,7 @@ export const setGoalState: TaskTool<GoalInput, StoredProposal> = {
         const r = (await call()) as { ok?: boolean; success?: boolean; error?: string };
         return { success: r.ok === true || r.success === true, error: r.error };
       },
-      receipt: () => done(name, `${s.player}’s goal “${s.title}” is ${s.state === 'paused' ? 'paused' : s.state === 'active' ? 'active again' : 'closed'}. ${NO_NOTICE}`, [{ kind: 'goal', count: 1, label: s.title }]),
+      receipt: () => done(name, `${s.player}’s goal “${s.title}” is ${s.state === 'paused' ? 'paused' : s.state === 'active' ? 'active again' : 'closed'}. ${NO_NOTICE}`, [{ kind: 'goal', count: 1, id: s.goal_id, label: s.title }]),
     });
   },
 };
@@ -259,6 +265,9 @@ export const markSignalHandled: TaskTool<SignalInput, StoredProposal> = {
       notifications: [],
       missing: [],
       idempotency_key: keyOf(['mark_signal_handled', row.id]),
+      ...NOTHING_SENT,
+      visible_note: facts[facts.length - 1]!.value,
+      undo: { window: true, after: 'It is not reopened from the chat; the CoachHelm board shows it as handled.' },
       tool: 'mark_signal_handled',
       input: { insight_id: row.id, title: row.title, about },
       planned_at: now(),
@@ -279,7 +288,7 @@ export const markSignalHandled: TaskTool<SignalInput, StoredProposal> = {
         return row === undefined ? null : row?.status === 'acknowledged';
       },
       write: () => acknowledgeInsight(s.insight_id),
-      receipt: () => done(name, `“${s.title}” is marked handled. ${NO_NOTICE}`, [{ kind: 'signal', count: 1, href: '/golf/dashboard/coachhelm', label: s.title }]),
+      receipt: () => done(name, `“${s.title}” is marked handled. ${NO_NOTICE}`, [{ kind: 'signal', count: 1, id: s.insight_id, href: '/golf/dashboard/coachhelm', label: s.title }]),
     });
   },
 };

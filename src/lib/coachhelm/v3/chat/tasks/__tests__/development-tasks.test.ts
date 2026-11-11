@@ -54,6 +54,7 @@ describe('set_focus_area_status', () => {
     expect([fact(p, 'Player'), fact(p, 'Now'), fact(p, 'After')]).toEqual(['Avery Lane', 'Active', 'Completed']);
     expect(fact(p, 'The player sees')).toBe('It shows as completed on their development page. No notification is sent.');
     expect(p.notifications).toEqual([]);
+    expect([p.recipients, p.delivery, p.visible_note]).toEqual([[], null, 'It shows as completed on their development page. No notification is sent.']);
     // The action's own gate was asked, for this player and this signed-in user.
     expect(a.verifyPlayerAccess).toHaveBeenCalledWith(AVERY, COACH_USER, sb);
   });

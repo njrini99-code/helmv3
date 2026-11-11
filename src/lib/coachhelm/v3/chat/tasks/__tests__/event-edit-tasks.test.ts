@@ -51,6 +51,9 @@ describe('update_event: the card', () => {
     expect(p.notifications).toEqual(['2 invited players get an in-app notification: “Event updated: Team practice”, “Thu, Nov 12 at 4:00 PM at Pine Hills GC”.']);
     // What the action will be sent: the Calendar's own move shape, with the version the card read.
     expect((p.input as { payload: unknown }).payload).toEqual({ startDate: '2026-11-12', startTime: '16:00', endDate: '2026-11-12', endTime: '18:30', allDay: false, timezoneOffset: 300, endTimezoneOffset: 300, expectedUpdatedAt: '2026-11-01T00:00:00Z' });
+    expect(p.recipients?.map((r) => r.name)).toEqual(['Avery Lane', 'Blake Ortiz']);
+    expect(p.delivery).toEqual({ channels: ['in_app'], title: 'Event updated: Team practice', body: 'Thu, Nov 12 at 4:00 PM at Pine Hills GC' });
+    expect(p.lands).toEqual({ kind: 'event', home: '/golf/dashboard/calendar', day: '2026-11-12' });
     expect(stored(p)).toEqual(p);
   });
 
@@ -67,6 +70,7 @@ describe('update_event: the card', () => {
     expect(fact(p, 'Told')).toMatch(/^Nobody is notified: this event does not ask for replies/);
     expect(fact(p, 'Series')).toBe('Only this date changes. The other dates of the series stay as they are.');
     expect(p.notifications).toEqual([]);
+    expect([p.recipients, p.delivery]).toEqual([[], null]);
   });
 
   it('an all-day event moves by day and refuses a time', async () => {
@@ -115,7 +119,7 @@ describe('update_event: the write', () => {
     expect(actions.updateGolfEvent).toHaveBeenCalledExactlyOnceWith(EVENT, (p.input as { payload: unknown }).payload);
     expect(writes).toEqual([]);
     expect(r).toMatchObject({ status: 'completed', summary: 'Team practice is now Thu, Nov 12 at 4:00 PM at Pine Hills GC.', notifications: [{ channel: 'in-app', recipients: 2, status: 'queued' }] });
-    expect(r.created[0]).toMatchObject({ kind: 'event', href: `/golf/dashboard/calendar?event=${EVENT}` });
+    expect(r.created[0]).toMatchObject({ kind: 'event', id: EVENT, href: `/golf/dashboard/calendar?date=2026-11-12&event=${EVENT}` });
   });
 
   it('a second commit of the same card finds the event already moved and does not call the action again', async () => {
@@ -175,6 +179,10 @@ describe('cancel_event', () => {
     expect(fact(p, 'By e-mail they get')).toMatch(/^Event cancelled: Team practice\nThis event has been cancelled\. Thu, Nov 12 at 3:00 PM at Pine Hills GC — Course is closed for frost\n/);
     expect(fact(p, 'What happens')).toMatch(/stays on the calendar marked cancelled/);
     expect(fact(p, 'When')).toMatch(/cannot be un-told/);
+    expect(p.recipients?.map((r) => r.name)).toEqual(['Avery Lane', 'Blake Ortiz']);
+    expect(p.not_reached).toEqual([{ id: CASEY, name: 'Casey Moss', role: 'player', reason: 'no account yet' }]);
+    expect(p.delivery).toMatchObject({ channels: ['in_app', 'email'], title: 'Cancelled: Team practice', body: 'Thu, Nov 12 at 3:00 PM at Pine Hills GC — Course is closed for frost', variants: [{ channel: 'email', title: 'Event cancelled: Team practice', body: 'This event has been cancelled. Thu, Nov 12 at 3:00 PM at Pine Hills GC — Course is closed for frost' }] });
+    expect(p.undo).toEqual({ window: true, after: 'Restore it on the Calendar. People already told stay told.' });
     expect(stored(p)).toEqual(p);
   });
 

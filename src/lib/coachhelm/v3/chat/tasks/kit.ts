@@ -13,11 +13,31 @@
  */
 import 'server-only';
 import type { ActionProposal, ActionReceipt } from '../action-types';
+import type { CardDelivery, CardNotReached, CardPerson, CardUndo, CardVisibility } from '../card-types';
 import { CoachContextError, type CoachChatContext } from '../context';
 import { isPlayerContext, type ToolContext } from '../engine/tool';
 
 /** What every task here returns from `plan`: the card, the tool, the input the write will use, and when it was planned. JSON-safe. The same shape as TOOLS's `TaskProposal`. */
-export type StoredProposal = ActionProposal & { tool: string; input: unknown; planned_at: string };
+export type StoredProposal = ActionProposal & CardExtras & { tool: string; input: unknown; planned_at: string };
+
+/**
+ * What a card says for certain beyond its facts (`../card-types.ts`): who is sent something, who on the card is not
+ * reached, the words they get, who can see the result, and how it is taken back. Declared here as well as on
+ * `ActionProposal` so these tools fill the fields whichever commit of the contract they are built against.
+ */
+export interface CardExtras {
+  recipients?: CardPerson[];
+  not_reached?: CardNotReached[];
+  delivery?: CardDelivery | null;
+  visible_to?: CardVisibility;
+  visible_note?: string;
+  undo?: CardUndo;
+}
+
+/** Nothing is sent to anyone: an empty list and no words, which the card draws as "nobody is told". */
+export const NOTHING_SENT = { recipients: [] as CardPerson[], delivery: null } as const;
+export const asPlayers = (players: ReadonlyArray<{ id: string; name: string }>): CardPerson[] => players.map((p) => ({ id: p.id, name: p.name, role: 'player' as const }));
+export const unreached = (players: ReadonlyArray<{ id: string; name: string }>, reason = 'no account yet'): CardNotReached[] => players.map((p) => ({ id: p.id, name: p.name, role: 'player' as const, reason }));
 
 export const now = () => new Date().toISOString();
 export const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;

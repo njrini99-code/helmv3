@@ -40,6 +40,7 @@ describe('set_qualifier_coach_pick', () => {
     expect(fact(p, 'Who can read the reason')).toBe('Coaches only. It is never shown to players.');
     expect(fact(p, 'Players see')).toMatch(/^Nothing yet\. The squad shows on the qualifier’s board only after you confirm the selection/);
     expect(fact(p, 'Scores')).toBe('No score or standing changes.');
+    expect([p.recipients, p.delivery, p.visible_to]).toEqual([[], null, 'coaches']);
     expect(a.verifyTeamAccess).toHaveBeenCalledWith(TEAM, COACH_USER, sb);
   });
 
