@@ -1,65 +1,63 @@
 'use client';
 
-import { Skeleton } from '../../ui/States';
+import { SkelLine, Skeleton } from '../../ui/States';
 import { LargeTitle } from '../../ui/LargeTitle';
 import { useClubhouseRole } from '../../shell/context';
 import '../../styles/roster.css';
 
 /**
- * Route loading for Roster: the page in its final slots, the coach's or the player's; on a phone, the list's rows (switched
- * in CSS, since this renders on the server). Join requests are drawn only when there are some, so the skeleton leaves them
- * out and they push the table down when they come.
+ * Route loading for Roster: header with its two actions, where the team sits, the toolbar and six face cards in their
+ * final slots; on a phone, the list's rows (switched in CSS, since this renders on the server). Join requests and Needs a
+ * look are drawn only when there are some, so the skeleton leaves them out and they push the grid down when they come.
  */
 export function RosterSkeleton() {
-  // Both desktop pages are the lane's (Roster.tsx, TeamRoster.tsx); a player's has no actions, leaders or panel.
+  // The coach's desktop page in the lane is its own shape (Roster.tsx); a player's keeps the face cards.
   const role = useClubhouseRole();
+  const coachCrh = role !== 'player';
   return (
-    <main className="ch-rs ch-rsx ch-rsd" aria-busy="true" aria-label="Loading roster" data-ch-code="CH-3401" data-ch-crh="on">
-      {role !== 'player' ? <RosterDeskSkeletonCrh /> : <TeamDeskSkeletonCrh />}
+    <main className={'ch-rs' + ' ch-rsx' + (coachCrh ? ' ch-rsd' : '')} data-canopy={coachCrh ? undefined : ''} aria-busy="true" aria-label="Loading roster" data-ch-code="CH-3401" data-ch-crh="on">
+      {coachCrh ? <RosterDeskSkeletonCrh /> : <div className="ch-rs-skel-desk">
+        <header className="ch-rs-head" data-canopy-head="tight" data-canopy-tight-always="">
+          <div>
+            <Skeleton width={180} height={30} radius={15} />
+            <Skeleton width={280} height={40} radius={10} />
+            <Skeleton width={340} height={15} />
+          </div>
+          {/* Export and Invite players, at their loaded widths. */}
+          <div className="ch-rs-head__act">
+            <Skeleton width={92} height={36} radius={10} />
+            <Skeleton width={130} height={36} radius={10} />
+          </div>
+        </header>
+        {/* Where the team sits (RosterSpread) in its own frame: the heading's two lines and a one-lane plot with its axis. */}
+        <section className="ch-rs-sp" aria-hidden="true">
+          <div className="ch-rs-sp__h">
+            <SkelLine line={22.8} bar={17} width={190} />
+            <SkelLine line={19.6} bar={12} width={460} />
+          </div>
+          <div className="ch-rs-sp__plot" style={{ display: 'flex', alignItems: 'flex-end', height: 104 }}>
+            <Skeleton width="100%" height={12} />
+          </div>
+        </section>
+        <div className="ch-rs-bar">
+          <Skeleton width={320} height={36} radius={10} />
+          <Skeleton width={360} height={34} radius={12} />
+        </div>
+        <div className="ch-rs-faces">
+          {Array.from({ length: 6 }, (_, i) => (
+            <div key={i} className="ch-rs-face" style={{ cursor: 'default' }}>
+              <Skeleton width={76} height={76} radius={38} />
+              <Skeleton width={120} height={16} />
+              <Skeleton width={140} height={12} />
+              <Skeleton width={150} height={30} radius={8} />
+              <Skeleton width="100%" height={48} radius={10} />
+            </div>
+          ))}
+        </div>
+      </div>}
       {/* The phone page's own classes, so the eyebrow, the title, the sort and each row land where the loaded page puts them. */}
       <RosterPhoneSkeletonCrh />
     </main>
-  );
-}
-
-/** The player's desktop page in waiting (TeamRoster): the head, the green season card across the page, the toolbar and the table. */
-function TeamDeskSkeletonCrh() {
-  return (
-    <div className="ch-rs-skel-desk">
-      <header className="ch-rs-head">
-        <div>
-          <Skeleton width={180} height={14} />
-          <Skeleton width={150} height={40} radius={10} />
-          <Skeleton width={200} height={15} />
-        </div>
-      </header>
-      <div className="ch-rs-top" aria-hidden="true">
-        <div className="ch-rs-tcard ch-rs-tcard--skel">
-          <Skeleton width={150} height={14} />
-          <Skeleton width="100%" height={10} />
-          <Skeleton width={70} height={12} />
-          <Skeleton width={320} height={12} />
-        </div>
-      </div>
-      {/* The coaches' line: a team has a coach, so its slot is held. */}
-      <div className="ch-rs-staff" aria-hidden="true">
-        <Skeleton width={420} height={28} radius={14} />
-      </div>
-      <div className="ch-rs-bar">
-        <Skeleton width={320} height={36} radius={10} />
-        <Skeleton width={300} height={34} radius={12} />
-      </div>
-      <div className="ch-rs-list ch-rs-list--team" aria-hidden="true">
-        {Array.from({ length: 7 }, (_, i) => (
-          <div key={i} className="ch-rs-sk-row">
-            <Skeleton width={40} height={40} radius={20} />
-            <Skeleton width={130} height={15} />
-            <Skeleton width={170} height={26} radius={13} />
-            <Skeleton width={34} height={14} />
-          </div>
-        ))}
-      </div>
-    </div>
   );
 }
 

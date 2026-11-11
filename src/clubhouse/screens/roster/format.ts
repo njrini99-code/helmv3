@@ -133,10 +133,7 @@ const YEAR_WORD: Record<ChYearKey, [one: string, many: string]> = {
   fr: ['Freshman', 'Freshmen'],
 };
 
-/** The legend's short word, where the card is too narrow for the long one on one line. */
-const YEAR_SHORT: Record<ChYearKey, string> = { sr: 'Sr', jr: 'Jr', so: 'So', fr: 'Fr' };
-
-export type ClassMixRow = { key: ChYearKey; count: number; label: string; short: string };
+export type ClassMixRow = { key: ChYearKey; count: number; label: string };
 
 /** The class mix in year order: one row per year, a year with none included (the legend shows 0, as drawn). An unknown year is not counted. */
 export function classMix(players: ReadonlyArray<{ gradYear: number | null }>, clock: RosterClock): ClassMixRow[] {
@@ -145,7 +142,7 @@ export function classMix(players: ReadonlyArray<{ gradYear: number | null }>, cl
     const k = yearKeyOf(p.gradYear, clock);
     if (k) counts[k] += 1;
   }
-  return YEAR_ORDER.map((key) => ({ key, count: counts[key], label: YEAR_WORD[key][counts[key] === 1 ? 0 : 1], short: YEAR_SHORT[key] }));
+  return YEAR_ORDER.map((key) => ({ key, count: counts[key], label: YEAR_WORD[key][counts[key] === 1 ? 0 : 1] }));
 }
 
 export interface RosterTeamFigures {

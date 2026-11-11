@@ -48,10 +48,7 @@ export function RosterTeamCard(props: Props) {
             {mix.map((m) => (
               <span key={m.key} data-year={m.key}>
                 <i />
-                <b className="ch-num">{m.count}</b>
-                {/* One line at any width: the short word in a narrow card, the long one where the card runs the page. */}
-                <span className="ch-rs-mix__s">{m.short}</span>
-                <span className="ch-rs-mix__w">{m.label}</span>
+                <b className="ch-num">{m.count}</b> {m.label}
               </span>
             ))}
           </span>

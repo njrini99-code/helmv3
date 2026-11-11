@@ -19,7 +19,6 @@ import { NoData } from '../../ui/NoData';
 import { TERMS } from '../../lib/glossary';
 import { useChPhone } from '../../lib/use-phone';
 import { TeamRosterPhoneCrh } from './TeamRosterPhoneCrh';
-import { RosterTeamCard } from './RosterTeamCard';
 import { useHomeDayRollover } from '../home/use-day-rollover';
 import { yearKeyOf, yearLineOf, type RosterClock } from './format';
 import { sortTeammates, type TeamSort } from './team';
@@ -35,9 +34,7 @@ const VIEW_KEY = 'ch-roster-view';
  * The player's Roster (owner, 2026-10-01: "the same thing as coach except they can't click"): the coach's screen
  * with nothing to open and nothing to do. No card or row is a link or a button, there is no invite, export, join
  * request, player panel or "needs a look", and a teammate shows what Fairway's player roster did (name, class year
- * and handicap), never scores. Search, the layout and the sort only change what this screen lists. On a desktop it is
- * the coach's page in order: the season card the phone has, the coaches on one line, then the table, which is the layout
- * a player starts on.
+ * and handicap), never scores. Search, the layout and the sort only change what this screen lists.
  */
 function TeamDayRollover({ clock }: { clock: RosterClock }) {
   useHomeDayRollover(clock, !clock);
@@ -49,7 +46,7 @@ export function TeamRoster({ data }: { data: ChPlayerRoster; }) {
   const phone = useChPhone();
   const [q, setQ] = useState('');
   const [sort, setSort] = useState<TeamSort>('name');
-  const [view, setView] = useState<View>('list');
+  const [view, setView] = useState<View>('faces');
 
   useEffect(() => {
     try {
@@ -89,10 +86,10 @@ export function TeamRoster({ data }: { data: ChPlayerRoster; }) {
   }
 
   return (
-    // The coach's desktop page (`.ch-rsd`): its gutters, head, season card and table, so player and coach read as one product.
-    <main className="ch-rs ch-rsd" data-ch-crh="on">
+    // The coach's page material (P003 #1): the framed head and the Ledger, so player and coach read as one product.
+    <main className="ch-rs" data-canopy="" data-ch-crh="on">
       <TeamDayRollover clock={data.clock} />
-      <header className="ch-rs-head">
+      <header className="ch-rs-head" data-canopy-head="tight" data-canopy-tight-always="">
         <div>
           <span className="ch-rs-team">
             <span className="ch-rs-team__name">{[data.teamName, data.season].filter(Boolean).join(' · ')}</span>
@@ -105,12 +102,6 @@ export function TeamRoster({ data }: { data: ChPlayerRoster; }) {
           )}
         </div>
       </header>
-
-      {!data.playersError && players.length > 0 && (
-        <div className="ch-rs-top">
-          <RosterTeamCard viewer="player" season={data.season} players={players} clock={data.clock} />
-        </div>
-      )}
 
       <TeamCoaches coaches={data.coaches} />
 
@@ -185,26 +176,33 @@ export function TeamRoster({ data }: { data: ChPlayerRoster; }) {
 }
 
 /**
- * The team's coaches above the search field (wave 7): one line of name and role, plain text like every row here (CH-3808).
- * Left out when the staff didn't load (logged) or the team has none on record.
+ * The team's coaches above the players (wave 7): name and role in the roster's own Ledger, plain text like every row here
+ * (CH-3808). Left out when the staff didn't load (logged) or the team has none on record.
  */
 function TeamCoaches({ coaches }: { coaches: ChPlayerRoster['coaches'] }) {
   if (!coaches?.length) return null;
   return (
-    <div className="ch-rs-staff" data-ch-code="CH-3808">
-      <span className="ch-rs-staff__k" id="ch-rs-staff-k">
-        {pluralWord(coaches.length, 'Coach', 'Coaches')}
-      </span>
-      <ul aria-labelledby="ch-rs-staff-k">
-        {coaches.map((c) => (
-          <li key={c.id}>
-            <Avatar name={c.name} size="sm" />
-            <b>{c.name}</b>
-            <span>{c.role}</span>
-          </li>
-        ))}
-      </ul>
-    </div>
+    <SideScroll className="ch-rs-list ch-rs-list--team ch-rs-coaches ch-sheet" role="table" aria-label="Coaches" data-ch-code="CH-3808">
+      <div className="ch-rs-row ch-rs-row--head ch-well-soft" role="row">
+        <span role="columnheader">Coach</span>
+        <span role="columnheader">Role</span>
+      </div>
+      {coaches.map((c) => (
+        <div key={c.id} role="row" className="ch-rs-row">
+          <span role="cell" className="ch-rs-who__cell">
+            <span className="ch-rs-who ch-rs-who--static">
+              <Avatar name={c.name} size="lg" />
+              <span>
+                <b>{c.name}</b>
+              </span>
+            </span>
+          </span>
+          <span role="cell" className="ch-rs-num2">
+            {c.role}
+          </span>
+        </div>
+      ))}
+    </SideScroll>
   );
 }
 
@@ -244,7 +242,7 @@ function TeammateList({ rows, view, q, onClearSearch, clock }: { rows: ChTeammat
   }
   return (
     <SideScroll className="ch-rs-list ch-rs-list--team ch-sheet" role="table" aria-label="Roster" data-ch-code="CH-3807">
-      <div className="ch-rs-row ch-rs-row--head" role="row">
+      <div className="ch-rs-row ch-rs-row--head ch-well-soft" role="row">
         <span role="columnheader">Player</span>
         <span role="columnheader">Class</span>
         <span role="columnheader" className="r">
@@ -256,22 +254,14 @@ function TeammateList({ rows, view, q, onClearSearch, clock }: { rows: ChTeammat
           <span role="cell" className="ch-rs-who__cell">
             <span className="ch-rs-who ch-rs-who--static">
               <Avatar name={p.name} id={p.id} size="lg" year={yearKeyOf(p.gradYear, clock)} />
-              <span className="ch-rs-who__n">
+              <span>
                 <b>{p.name}</b>
-                {p.isYou && <span className="ch-rsx-chip">You</span>}
+                {p.isYou && <span className="ch-rs-who__m">You</span>}
               </span>
             </span>
           </span>
           <span role="cell" className="ch-rs-num2">
-            {/* The coach's year chip, in the tone the season card's bar gives that year. */}
-            {yearLineOf(p.gradYear, clock) ? (
-              <span className="ch-rs-ychip" data-year={yearKeyOf(p.gradYear, clock) ?? undefined}>
-                <i aria-hidden="true" />
-                {yearLineOf(p.gradYear, clock)}
-              </span>
-            ) : (
-              <NoData />
-            )}
+            {(yearLineOf(p.gradYear, clock)) ?? <NoData />}
           </span>
           <span role="cell" className="r ch-num ch-rs-num2">
             {formatHcp(p.handicap)}
