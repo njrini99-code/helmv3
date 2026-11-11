@@ -168,11 +168,24 @@ Board: `Player - Rounds - Mobile.html`, the tracking frames.
   (red only under par), the hole number until then, the current hole lit ivory,
   each in a 44 x 44 hit area. It scrolls sideways edge to edge and keeps the
   current hole in view.
-- The hole stacks above the entry, with a smaller map and a 76px distance.
+- The hole stacks above the entry and takes whatever height the entry card
+  leaves: the drawn hole at its own shape with the figures on it where there
+  is room, the smaller numeral and readout on a shorter stage, and the hole
+  and the readout side by side on a small phone, the whole hole always drawn.
+  The page has nothing to scroll.
 - The entry card sits directly on the action bar (Undo, Penalty, Next shot) at
-  the foot, above the home indicator, in every state; the hero above takes the
-  slack, so picking a result grows the card upward and the drawn hole does not
-  move. Quick distances fill the row at 44px.
+  the foot, above the home indicator, and keeps one height through a hole
+  (owner, 2026-11-11: nothing moves under the thumb). A result that asks for
+  more (a miss direction, a missed putt's tags) folds into the heading of that
+  question, "Miss direction · Rough · Change", and the question takes the place
+  the results had; both are in the card from the first frame, the one not in
+  use hidden and inert, so neither the pick nor the answer changes the card.
+  A result that asks nothing more (the fairway from the tee, the green, holed)
+  stays lit in the grid. For one base beat after a fold the place takes no tap,
+  so a double tap cannot land on the keys that have just arrived. The distance
+  row is held in the same way before a result and for a holed ball, and the
+  shot's length takes "Required"'s place in its heading. On the phone the miss
+  grid drops its two captions. Quick distances fill the row at 44px.
 - The round's save line (CH-11901) is a quiet line beside the distance readout
   (or the holed score), never a pill under the top bar.
 - Sheets (penalty, change a shot, leave this shot, exit, scorecard, round

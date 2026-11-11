@@ -79,6 +79,9 @@ const BLOCKER_ID = 'ch-rt-blocker';
  */
 export function ShotEntry(p: ShotEntryProps) {
   const [confirmedKey, setConfirmedKey] = useState<string | null>(null);
+  // The shot whose result is being changed (the fold's way back): held by shot, so it never carries to the next one.
+  const [changingAt, setChangingAt] = useState<string | null>(null);
+  const shotKey = `${p.currentHole.number}:${p.currentShot}`;
   const meters = p.pref === 'meters';
   const result = p.resultOfShot === 'penalty' ? null : (p.resultOfShot as ShotResult | null);
   const input: ShotEntryInput = {
@@ -115,6 +118,17 @@ export function ShotEntry(p: ShotEntryProps) {
   const teeMiss = p.isTeeShot && !!result && ['rough', 'sand', 'other'].includes(result);
   const approachMiss = p.isApproachOrAroundGreen && !!result && !['green', 'hole'].includes(result);
   const puttMissed = p.isPutting && !!result && result !== 'hole';
+  // The result's place holds one of two faces, both always in the card so the place keeps the taller one's height: the
+  // results to pick from, or, once a result that asks something more is picked, that question with the pick folded into
+  // its heading ("Rough · Change"). A result that asks nothing more (fairway from the tee, the green, holed) stays lit in
+  // the grid. Nothing below moves either way (owner, 2026-11-11: nothing moves under the thumb).
+  const face: 'pick' | 'follow' = (teeMiss || approachMiss || puttMissed) && changingAt !== shotKey ? 'follow' : 'pick';
+  const [turned, setTurned] = useState({ key: shotKey, face, count: 0 });
+  if (turned.key !== shotKey) setTurned({ key: shotKey, face, count: 0 });
+  else if (turned.face !== face) setTurned({ key: shotKey, face, count: turned.count + 1 });
+  const turn = turned.key === shotKey && turned.count > 0 ? (turned.count % 2 ? 'a' : 'b') : undefined;
+  const resultLabel = p.isPutting ? 'Putt result' : 'Shot result';
+  const followLabel = p.isPutting ? 'What happened' : 'Miss direction';
 
   const shotYards = (() => {
     if (!p.distanceAfterShot || distanceInvalid || holed) return null;
@@ -184,137 +198,160 @@ export function ShotEntry(p: ShotEntryProps) {
           </Sec>
         )}
 
-        <Sec label={p.isPutting ? 'Putt result' : 'Shot result'}>
-          <Seg
-            label={p.isPutting ? 'Putt result' : 'Shot result'}
-            cols={3}
-            value={result}
-            onChange={(v) => p.onResultSelect(v)}
-            options={shotResultOptions({ isPutting: p.isPutting, isTeeShot: p.isTeeShot, par: p.currentHole.par, currentShot: p.currentShot }).map((o) => ({
-              value: o.value,
-              label: RESULT_LABEL[o.value],
-              note: o.note,
-              rare: o.rare,
-            }))}
-          />
-          {!noticeAtDistance && notice}
-          {p.tapIn && p.onTapIn && <TapIn plan={p.tapIn} pref={p.pref} onTapIn={p.onTapIn} />}
-        </Sec>
-
-        {teeMiss && (
-          <Sec label="Miss direction">
-            <Seg
-              label="Miss direction"
-              value={p.missDirection as 'left' | 'right' | null}
-              onChange={(v) => p.dispatch({ type: 'SET_MISS_DIRECTION', payload: v })}
-              options={[
-                { value: 'left', label: 'Left' },
-                { value: 'right', label: 'Right' },
-              ]}
-            />
-          </Sec>
-        )}
-        {approachMiss && (
-          <Sec label="Miss direction">
-            <div className="ch-rt-amissw">
-              <span className="ch-rt-amiss__k">Behind the green</span>
-              <div className="ch-rt-amiss" role="radiogroup" aria-label="Where it missed the green" {...roving}>
-                {APPROACH_GRID.map(([v, l]) =>
-                  v === null ? (
-                    <span key="green" className="ch-rt-amiss__g" aria-hidden="true">
-                      <i />
-                    </span>
-                  ) : (
+        <div className="ch-rt-slot" data-face={face} data-turn={turn}>
+          <div className="ch-rt-face" data-face="pick" inert={face !== 'pick' || undefined} aria-hidden={face !== 'pick' || undefined}>
+            <Sec label={resultLabel}>
+              <Seg
+                label={resultLabel}
+                cols={3}
+                value={result}
+                onChange={(v) => {
+                  setChangingAt(null);
+                  p.onResultSelect(v);
+                }}
+                options={shotResultOptions({ isPutting: p.isPutting, isTeeShot: p.isTeeShot, par: p.currentHole.par, currentShot: p.currentShot }).map((o) => ({
+                  value: o.value,
+                  label: RESULT_LABEL[o.value],
+                  note: o.note,
+                  rare: o.rare,
+                }))}
+              />
+              {p.tapIn && p.onTapIn ? <TapIn plan={p.tapIn} pref={p.pref} onTapIn={p.onTapIn} /> : p.isPutting && p.onTapIn ? <div className="ch-rt-tapin is-held" aria-hidden="true" /> : null}
+            </Sec>
+          </div>
+          {/* The follow-up is in the card from the first frame, hidden and inert until its result is picked: it is what
+              holds the place's height, so the pick grows nothing. */}
+          <div className="ch-rt-face" data-face="follow" inert={face !== 'follow' || undefined} aria-hidden={face !== 'follow' || undefined}>
+            <section className="ch-rt-sec ch-rt-follow" aria-label={followLabel}>
+              <div className="ch-rt-sec__h">
+                <span>{followLabel}</span>
+                {p.isPutting && <em className="ch-rt-hint">Optional</em>}
+                <button type="button" className="ch-rt-pick" aria-label={`${resultLabel}: ${result ? RESULT_LABEL[result] : 'none'}. Change`} onClick={() => setChangingAt(shotKey)}>
+                  <b>{result ? RESULT_LABEL[result] : RESULT_LABEL.fairway}</b>
+                  <span>Change</span>
+                </button>
+              </div>
+              {p.isTeeShot && (
+                <Seg
+                  label="Miss direction"
+                  value={p.missDirection as 'left' | 'right' | null}
+                  onChange={(v) => p.dispatch({ type: 'SET_MISS_DIRECTION', payload: v })}
+                  options={[
+                    { value: 'left', label: 'Left' },
+                    { value: 'right', label: 'Right' },
+                  ]}
+                />
+              )}
+              {p.isApproachOrAroundGreen && (
+                <div className="ch-rt-amissw">
+                  <span className="ch-rt-amiss__k">Behind the green</span>
+                  <div className="ch-rt-amiss" role="radiogroup" aria-label="Where it missed the green" {...roving}>
+                    {APPROACH_GRID.map(([v, l]) =>
+                      v === null ? (
+                        <span key="green" className="ch-rt-amiss__g" aria-hidden="true">
+                          <i />
+                        </span>
+                      ) : (
+                        <button
+                          key={v}
+                          type="button"
+                          role="radio"
+                          aria-checked={p.approachMissDirection === v}
+                          onClick={() => {
+                            haptic('select');
+                            p.dispatch({ type: 'SET_APPROACH_MISS', payload: { direction: v } });
+                          }}
+                        >
+                          {l}
+                        </button>
+                      ),
+                    )}
+                  </div>
+                  <span className="ch-rt-amiss__k">You · short of the green</span>
+                </div>
+              )}
+              {p.isPutting && (
+                <div className="ch-rt-tags" role="group" aria-label="How the putt missed">
+                  {PUTT_TAGS.map(([tag, label]) => (
                     <button
-                      key={v}
+                      key={tag}
                       type="button"
-                      role="radio"
-                      aria-checked={p.approachMissDirection === v}
+                      aria-pressed={p.puttMissTags.includes(tag)}
                       onClick={() => {
                         haptic('select');
-                        p.dispatch({ type: 'SET_APPROACH_MISS', payload: { direction: v } });
+                        p.dispatch({ type: 'SET_PUTT_MISS_TAGS', payload: togglePuttMissTag(p.puttMissTags, tag) });
                       }}
                     >
-                      {l}
+                      {label}
                     </button>
-                  ),
-                )}
-              </div>
-              <span className="ch-rt-amiss__k">You · short of the green</span>
-            </div>
-          </Sec>
-        )}
-        {puttMissed && (
-          <Sec label="What happened" hint="Optional">
-            <div className="ch-rt-tags" role="group" aria-label="How the putt missed">
-              {PUTT_TAGS.map(([tag, label]) => (
+                  ))}
+                </div>
+              )}
+            </section>
+          </div>
+        </div>
+        {!noticeAtDistance && notice}
+
+        {/* Held from the first frame, hidden and inert until a result is picked, so the card neither grows on the pick nor
+            shrinks on Next shot (F-0019, F-0020); and held the same way once the ball is holed, which asks no distance,
+            so Holed takes no height off the card either. Layout only: the field, its value and its dispatches are unchanged. */}
+        <Sec
+          label={distLabel}
+          hint="Required"
+          // Once the box holds a distance the heading says how far the shot went, where "Required" was: a line of its own
+          // under the box grew the card as the quick pick was tapped (review 3, A.2).
+          aside={
+            shotYards != null && shotYards > 0 ? (
+              <em className="ch-rt-shotlen">
+                Shot distance <b>~{meters ? `${yardsToDisplay(shotYards, 'meters')} m` : `${shotYards} yds`}</b>
+              </em>
+            ) : undefined
+          }
+          tint
+          htmlFor={DIST_ID}
+          reserved={!result || holed}
+        >
+          <div className="ch-rt-dist">
+            {/* CH-11807: labelled by its section, aria-invalid with its message when it isn't a number. */}
+            <input
+              id={DIST_ID}
+              ref={p.distanceInputRef}
+              type="text"
+              inputMode={meters ? 'decimal' : 'numeric'}
+              autoComplete="off"
+              enterKeyHint="done"
+              placeholder="0"
+              aria-invalid={distanceInvalid || undefined}
+              aria-describedby={distanceInvalid ? 'ch-rt-dist-err' : undefined}
+              value={p.distanceAfterShot}
+              onChange={(e) => p.dispatch({ type: 'SET_DISTANCE_AFTER', payload: cleanDistance(e.target.value) })}
+            />
+            <em>{unitWord}</em>
+            <div className="ch-rt-quick" role="group" aria-label="Quick distances">
+              {quickPicks(afterUnit === 'feet' ? (p.isPutting ? 'putt' : 'feet') : p.isTeeShot ? 'tee' : 'approach', p.pref).map((q) => (
                 <button
-                  key={tag}
+                  key={q}
                   type="button"
-                  aria-pressed={p.puttMissTags.includes(tag)}
+                  aria-pressed={p.distanceAfterShot === String(q)}
                   onClick={() => {
                     haptic('select');
-                    p.dispatch({ type: 'SET_PUTT_MISS_TAGS', payload: togglePuttMissTag(p.puttMissTags, tag) });
+                    p.dispatch({ type: 'SET_DISTANCE_AFTER', payload: String(q) });
+                    p.dispatch({ type: 'SET_DISTANCE_AFTER_UNIT', payload: afterUnit });
                   }}
                 >
-                  {label}
+                  {q}
                 </button>
               ))}
             </div>
-          </Sec>
-        )}
-
-        {/* Held from the first frame, hidden and inert until a result is picked, so the card neither grows on the pick nor
-            shrinks on Next shot (F-0019, F-0020). Layout only: the field, its value and its dispatches are unchanged. */}
-        {!holed && (
-          <Sec label={distLabel} hint="Required" tint htmlFor={DIST_ID} reserved={!result}>
-            <div className="ch-rt-dist">
-              {/* CH-11807: labelled by its section, aria-invalid with its message when it isn't a number. */}
-              <input
-                id={DIST_ID}
-                ref={p.distanceInputRef}
-                type="text"
-                inputMode={meters ? 'decimal' : 'numeric'}
-                autoComplete="off"
-                enterKeyHint="done"
-                placeholder="0"
-                aria-invalid={distanceInvalid || undefined}
-                aria-describedby={distanceInvalid ? 'ch-rt-dist-err' : undefined}
-                value={p.distanceAfterShot}
-                onChange={(e) => p.dispatch({ type: 'SET_DISTANCE_AFTER', payload: cleanDistance(e.target.value) })}
-              />
-              <em>{unitWord}</em>
-              <div className="ch-rt-quick" role="group" aria-label="Quick distances">
-                {quickPicks(afterUnit === 'feet' ? (p.isPutting ? 'putt' : 'feet') : p.isTeeShot ? 'tee' : 'approach', p.pref).map((q) => (
-                  <button
-                    key={q}
-                    type="button"
-                    aria-pressed={p.distanceAfterShot === String(q)}
-                    onClick={() => {
-                      haptic('select');
-                      p.dispatch({ type: 'SET_DISTANCE_AFTER', payload: String(q) });
-                      p.dispatch({ type: 'SET_DISTANCE_AFTER_UNIT', payload: afterUnit });
-                    }}
-                  >
-                    {q}
-                  </button>
-                ))}
-              </div>
-            </div>
-            {distanceInvalid && (
-              // CH-11104: a distance that isn't a number says so under the box.
-              <p className="ch-rt-error" id="ch-rt-dist-err" data-ch-code="CH-11104">
-                Enter the distance as a number, like {afterUnit === 'feet' ? (meters ? 3 : 10) : meters ? 137 : 150}.
-              </p>
-            )}
-            {shotYards != null && shotYards > 0 && (
-              <p className="ch-rt-shotlen">
-                Shot distance <b>~{meters ? `${yardsToDisplay(shotYards, 'meters')} m` : `${shotYards} yds`}</b>
-              </p>
-            )}
-            {noticeAtDistance && notice}
-          </Sec>
-        )}
+          </div>
+          {distanceInvalid && (
+            // CH-11104: a distance that isn't a number says so under the box.
+            <p className="ch-rt-error" id="ch-rt-dist-err" data-ch-code="CH-11104">
+              Enter the distance as a number, like {afterUnit === 'feet' ? (meters ? 3 : 10) : meters ? 137 : 150}.
+            </p>
+          )}
+          {noticeAtDistance && notice}
+        </Sec>
 
         {p.currentShot >= 12 && (
           // CH-11106: the 15-stroke limit, from shot 12.

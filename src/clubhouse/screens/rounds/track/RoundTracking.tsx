@@ -117,6 +117,11 @@ export function RoundTracking(props: RoundTrackingProps) {
   useWakeLock();
   const { distancePref } = useDistanceUnits();
   const [courseOpen, setCourseOpen] = useState(false);
+  // The stage above the shot log takes the screen's spare height on a phone. While the log is open the stage keeps the
+  // height it had, so the log's rows open downward from a line that stays where it was tapped (the page scrolls to
+  // them, as it did) instead of the stage giving its height up and the line jumping.
+  const stageRef = useRef<HTMLDivElement>(null);
+  const [stageHeld, setStageHeld] = useState<number | null>(null);
   const hole = t.currentHole;
   // The engine says "saved" for two seconds, then goes quiet. The line stays on "Round saved" for as long as what is on
   // screen is exactly what the server acknowledged: the same hole and the same shot list (the engine replaces the list
@@ -239,6 +244,7 @@ export function RoundTracking(props: RoundTrackingProps) {
         <div className="ch-rt-body">
           <section className="ch-rt-hero" aria-label={`Hole ${hole.number}`}>
             {/* Board 3: the drawn hole is the hero; tapping it opens the course view (board 3b). */}
+            <div className="ch-rt-hero__stage" ref={stageRef} style={stageHeld != null ? { flex: `0 0 ${stageHeld}px` } : undefined}>
             <button type="button" className="ch-rt-hero__map" aria-haspopup="dialog" aria-label={`Course view of hole ${hole.number}`} onClick={() => setCourseOpen(true)}>
               <HoleMap hole={hole} shots={t.shotHistory} pending={!holedOut} frame="wide" />
               <HoleMap hole={hole} shots={t.shotHistory} pending={!holedOut} frame="tall" />
@@ -299,8 +305,10 @@ export function RoundTracking(props: RoundTrackingProps) {
                 )}
               </div>
             </div>
+            </div>
             {/* Mid-hole a recorded shot opens from the log (Fairway's shot pills); once holed, the hole review is the one way in. */}
             <ShotLog
+              onOpenChange={(open) => setStageHeld(open ? (stageRef.current?.getBoundingClientRect().height ?? null) : null)}
               shots={t.shotHistory}
               pref={distancePref}
               onEdit={holedOut ? undefined : t.handleEditShot}

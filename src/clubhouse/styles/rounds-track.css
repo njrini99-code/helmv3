@@ -261,6 +261,11 @@ button.ch-rt-strip__h {
   flex-direction: column;
   min-width: 0;
 }
+/* The hole's drawing and the figures set on it. A box on the phone only (the phone block): on the desk the two are the
+   hero's own columns. */
+.ch-rt-hero__stage {
+  display: contents;
+}
 .ch-rt-hero__k {
   display: flex;
   align-items: center;
@@ -943,6 +948,91 @@ path.ch-rt-map__shot {
   box-shadow: none;
 }
 
+/* The result's place (owner, 2026-11-11: nothing moves under the thumb). It holds two faces: the results to pick from,
+   and what a picked result asks next, with the pick folded into that question's heading ("Rough · Change"). On the desk
+   the face not in use takes no room, as the miss grid took none before it was mounted; the phone block stacks the two in
+   one place so the card keeps one height. */
+.ch-rt-slot {
+  position: relative;
+  min-width: 0;
+}
+.ch-rt-face {
+  min-width: 0;
+}
+.ch-rt-face[inert] {
+  display: none;
+}
+/* The place has just turned to its other face: for one base beat it takes no tap, so a second tap of a double tap
+   lands on nothing instead of on the control that has just arrived under the thumb. A state, not a movement. */
+.ch-rt-slot[data-turn]::after {
+  position: absolute;
+  inset: 0;
+  visibility: hidden;
+  content: '';
+  --ch-rm-animation: var(--ch-dur-base);
+}
+.ch-rt-slot[data-turn='a']::after {
+  animation: ch-rt-turn-a var(--ch-dur-base) step-end;
+}
+.ch-rt-slot[data-turn='b']::after {
+  animation: ch-rt-turn-b var(--ch-dur-base) step-end;
+}
+@keyframes ch-rt-turn-a {
+  from {
+    visibility: visible;
+  }
+}
+@keyframes ch-rt-turn-b {
+  from {
+    visibility: visible;
+  }
+}
+/* The arriving face's rise on a phone (the phone block), the same 6px a swap's incoming copy travels. */
+@keyframes ch-rt-face-in {
+  from {
+    transform: translateY(6px);
+  }
+}
+.ch-rt-follow .ch-rt-sec__h {
+  justify-content: flex-start;
+  gap: 8px;
+}
+/* The pick and its way back, one control at the heading's right end: a 44px target held inside the heading's line. */
+.ch-rt-pick {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  margin: -12px 0 -12px auto;
+  font: var(--ch-type-13-strong);
+  line-height: var(--ch-lead-tight);
+  color: var(--ch-green-700);
+}
+.ch-rt-pick b {
+  padding: 6px 12px;
+  border-radius: var(--ch-radius-md);
+  font: var(--ch-type-14-strong);
+  line-height: var(--ch-lead-tight);
+  background: var(--ch-seg-on-bg);
+  color: var(--ch-seg-on-ink);
+  box-shadow: var(--ch-seg-on-shadow);
+}
+.ch-root .ch-rt-pick:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+.ch-rt-pick[data-ch-pressed] b {
+  opacity: 0.86;
+}
+@media (hover: hover) {
+  .ch-rt-pick:active b {
+    opacity: 0.86;
+  }
+}
+
 /* The distance box */
 .ch-rt-dist {
   display: flex;
@@ -1003,9 +1093,11 @@ path.ch-rt-map__shot {
   box-shadow: none;
 }
 .ch-rt-shotlen {
-  margin: 8px 0 0;
+  margin: 0 0 0 8px;
   font: var(--ch-type-13);
   line-height: var(--ch-lead-tight);
+  font-style: normal;
+  white-space: nowrap;
   color: var(--ch-text-tertiary);
 }
 .ch-rt-shotlen b {
@@ -1021,6 +1113,11 @@ path.ch-rt-map__shot {
   margin: 8px 0 0;
 }
 .ch-rt-tapin > .ch-btn {
+  min-height: 44px;
+}
+/* Its place on a putt once it has nothing to offer (a result is picked): the line's height, empty, so the results above
+   it do not resize. */
+.ch-rt-tapin.is-held {
   min-height: 44px;
 }
 .ch-rt-tapin__w {
@@ -2534,18 +2631,16 @@ path.ch-rt-map__shot {
     gap: 0;
     padding-top: 8px;
   }
-  /* The hero takes whatever height the entry leaves, so the entry sheet always sits on the dock (board 3). The drawn
-     hole, its readout and the shot log sit centred in that green field (owner, 2026-10-08: "center this, way too much
-     white space"), so spare height splits evenly above and below instead of pooling as a band under the log. */
+  /* The hero takes whatever height the entry leaves, so the entry sheet always sits on the dock (board 3) and the page
+     has nothing to scroll: the entry card keeps its height (owner, 2026-11-11) and the hero gives or takes the rest.
+     The stage holds the drawn hole at its own shape, centred, with the figures set on it (owner, 2026-10-08: "center
+     this, way too much white space"); where the stage is shorter than the drawing, the whole hole is drawn smaller at
+     the right (HoleMap's wide frame fits, it never crops) and the figures step down (the container rules below). */
   .ch-rt-hero {
     position: static;
-    display: grid;
-    flex: 1 0 auto;
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas:
-      'stage'
-      'log';
-    align-content: center;
+    display: flex;
+    flex: 1 1 0;
+    flex-direction: column;
     gap: 0;
     margin: 0 -12px;
     padding: 0;
@@ -2553,10 +2648,24 @@ path.ch-rt-map__shot {
     background: var(--ch-green-900);
     box-shadow: none;
   }
+  .ch-rt-hero__stage {
+    position: relative;
+    display: grid;
+    flex: 1 1 0;
+    /* The least the stage can be: the hole and the readout side by side at their small size. Below it the page
+       scrolls, as it did. */
+    min-height: calc(44px + 34 * var(--ch-type-k));
+    /* One cell the height of the stage, so the drawing and the figures can be held to it. */
+    grid-template: minmax(0, 1fr) / minmax(0, 1fr);
+    container: chrtstage / size;
+  }
   .ch-rt-hero__map {
     position: relative;
-    grid-area: stage;
+    grid-area: 1 / 1;
+    align-self: center;
     width: 100%;
+    max-height: 100%;
+    aspect-ratio: 390 / 252;
     border-radius: 0;
     filter: none;
   }
@@ -2570,6 +2679,11 @@ path.ch-rt-map__shot {
   }
   .ch-rt-hero__map .ch-rt-map--wide {
     display: block;
+    width: 100%;
+    height: 100%;
+    aspect-ratio: auto;
+    /* Its ground runs past the drawing (HoleMap), so a hole drawn smaller has no edge on its left. */
+    overflow: visible;
   }
   .ch-rt-hero__map .ch-rt-map--tall {
     display: none;
@@ -2577,7 +2691,11 @@ path.ch-rt-map__shot {
   .ch-rt-hero__main {
     position: relative;
     z-index: 1;
-    grid-area: stage;
+    grid-area: 1 / 1;
+    align-self: center;
+    width: 100%;
+    max-height: 100%;
+    aspect-ratio: 390 / 252;
     justify-content: space-between;
     gap: 12px;
     padding: 8px 20px 8px;
@@ -2694,11 +2812,53 @@ path.ch-rt-map__shot {
   .ch-rt-hero__done span:not(.ch-score) {
     color: var(--ch-on-green-ink-soft);
   }
+  /* A stage too short for the full-size figures (most phones once the app's bars are counted): the smaller numeral and
+     readout of the short-phone design (wave 9, owner decision E). The thresholds leave room for larger text. */
+  @container chrtstage (max-height: 223px) {
+    .ch-rt-hero__main {
+      gap: 6px;
+      padding: 4px 20px 4px;
+    }
+    .ch-rt-hero__k {
+      gap: 4px;
+    }
+    .ch-rt-hno {
+      font-size: calc(40 * var(--ch-type-k));
+    }
+    .ch-rt-hero__dist b {
+      font-size: calc(38 * var(--ch-type-k));
+    }
+    .ch-rt-hero__done b {
+      font-size: calc(22 * var(--ch-type-k));
+    }
+  }
+  /* Shorter still (a small phone): the hole and the readout stand side by side, and the save line takes the corner. */
+  @container chrtstage (max-height: 165px) {
+    .ch-rt-hero__main {
+      flex-direction: row;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 24px;
+    }
+    .ch-rt-hero__k,
+    .ch-rt-hero__foot {
+      flex: none;
+    }
+    .ch-rt-hmeta {
+      white-space: nowrap;
+    }
+    .ch-rt-hero__foot > .ch-rt-sync {
+      position: absolute;
+      right: 20px;
+      bottom: 4px;
+      margin: 0;
+    }
+  }
 
   /* The one-line shot log, on the green. */
   .ch-rt-hero > .ch-rt-log,
   .ch-rt-hero > .ch-rt-log.is-empty {
-    grid-area: log;
+    flex: none;
     margin: 2px 20px 0;
   }
   .ch-rt-log {
@@ -2764,6 +2924,10 @@ path.ch-rt-map__shot {
   .ch-rt-card {
     display: flex;
     flex-direction: column;
+    /* One height through a hole (owner, 2026-11-11): the tee shot's card is the tallest of the three (its club row, its
+       results, the distance row), so the approach and the putt take its height and Next shot changes what the card
+       holds, not where it stands. A card that needs more (larger text, the putt's break and slope open) grows. */
+    min-height: calc(298px + 43 * var(--ch-type-k));
     padding: 16px 16px 12px;
     border-radius: var(--ch-radius-card);
     background: var(--ch-ivory-100);
@@ -2773,17 +2937,101 @@ path.ch-rt-map__shot {
       var(--ch-elevation-feature);
   }
   .ch-rt-sec,
+  .ch-rt-slot,
   .ch-rt-card > .ch-rt-sec:first-child {
     padding: 0 0 12px;
     border-bottom: var(--ch-hairline-w) solid var(--ch-ivory-300);
     border-radius: 0;
   }
-  .ch-rt-sec + .ch-rt-sec {
+  .ch-rt-card > * + .ch-rt-sec,
+  .ch-rt-card > * + .ch-rt-slot {
     padding-top: 12px;
   }
   .ch-rt-card > .ch-rt-sec:last-of-type {
     padding-bottom: 0;
     border-bottom: 0;
+  }
+  /* The result's place: its two faces share one cell, so it is as tall as the taller and neither the pick nor the
+     answer changes the card's height. The face not in use is held hidden and inert (ShotEntry). The one arriving
+     settles in as a swap's incoming copy does (the base fade and the settle spring's 6px rise, only after a turn, never
+     on first paint); the one leaving fades where it stands over the quick beat and is never moved, so the key just
+     tapped stays under the thumb until it is gone. Opacity and transform only. The place also takes the card's spare
+     height, so the distance row under it sits at the same height on every shot. */
+  .ch-rt-slot {
+    display: grid;
+    flex: 1 0 auto;
+  }
+  .ch-rt-face {
+    grid-area: 1 / 1;
+    display: flex;
+    flex-direction: column;
+    transition: opacity var(--ch-dur-base) var(--ch-ease);
+  }
+  .ch-rt-face[inert] {
+    display: flex;
+    visibility: hidden;
+    opacity: 0;
+    transition:
+      opacity var(--ch-dur-quick) var(--ch-ease),
+      visibility 0s linear var(--ch-dur-quick);
+  }
+  .ch-rt-slot[data-turn] .ch-rt-face:not([inert]) {
+    animation: ch-rt-face-in var(--ch-dur-spring-settle) var(--ch-ease-spring-settle) backwards;
+  }
+  .ch-rt-face > .ch-rt-sec {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    padding: 0;
+    border-bottom: 0;
+  }
+  /* The results fill their place: where the follow-up is the taller face (the miss grid), the keys take its height. */
+  .ch-rt-face[data-face='pick'] [role='radiogroup'] {
+    flex: 1;
+    grid-auto-rows: minmax(46px, 1fr);
+  }
+  .ch-rt-follow > [role='radiogroup'] {
+    flex: 1;
+  }
+  /* The folded heading is one 44px row: what is asked now on the left, the pick and Change on the right. */
+  .ch-rt-follow .ch-rt-sec__h {
+    min-height: 44px;
+    margin-bottom: 2px;
+  }
+  .ch-rt-pick {
+    margin: 0 0 0 auto;
+    font: var(--ch-type-14-strong);
+    line-height: var(--ch-lead-tight);
+  }
+  .ch-rt-pick b {
+    padding: 8px 12px;
+    border-radius: var(--ch-radius-lg);
+    font: var(--ch-type-15-strong);
+    letter-spacing: var(--ch-track-15);
+    line-height: var(--ch-lead-tight);
+    background: var(--ch-green-800);
+    color: var(--ch-on-green-ink);
+    box-shadow: var(--ch-elevation-control);
+  }
+  /* The miss grid without its two captions (its keys say long and short), on 44px rows across the card. */
+  .ch-rt-follow .ch-rt-amissw {
+    align-items: stretch;
+  }
+  .ch-rt-follow .ch-rt-amiss__k {
+    display: none;
+  }
+  .ch-rt-follow .ch-rt-amissw > [role='radiogroup'] {
+    grid-template-rows: repeat(3, 44px);
+    max-width: none;
+  }
+  /* The putt's four tags as one row of equal keys: as pills they wrapped to a second row under 400px. */
+  .ch-rt-follow .ch-rt-tags {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .ch-rt-follow .ch-rt-tags button {
+    padding: 0 4px;
+    text-align: center;
   }
   .ch-rt-sec.is-tint {
     background: none;
@@ -2932,7 +3180,7 @@ path.ch-rt-map__shot {
   }
   .ch-rt-shotlen {
     font-size: calc(13 * var(--ch-type-k));
-    color: var(--ch-ink-600);
+    color: var(--ch-ink-500);
   }
   .ch-rt-shotlen b {
     color: var(--ch-ink-900);
@@ -3085,48 +3333,27 @@ path.ch-rt-map__shot {
     visibility: hidden;
   }
   /* Held hidden, the row takes the rule above it too: a hairline over an empty band reads as a section with nothing in it. */
-  .ch-rt-card .ch-rt-sec:has(+ .ch-rt-sec.is-reserved) {
+  .ch-rt-card .ch-rt-sec:has(+ .ch-rt-sec.is-reserved),
+  .ch-rt-card .ch-rt-slot:has(+ .ch-rt-sec.is-reserved) {
     border-bottom-color: transparent;
   }
 }
 
 /* Short phones (wave 9, owner decision E; 375 x 667, an iPhone SE): the field order stays (rounds.md, "Tap in on the
-   phone"), so the hole hero gives the height back instead. A smaller numeral and readout, and the drawn hole at the
-   right at a smaller scale (its whole shape still shows), bring a putt's Putt result onto the first screen. Taller
-   phones and the desktop are untouched. */
+   phone"), so the hole hero gives the height back instead. The smaller numeral and readout and the hole drawn smaller
+   at the right now follow the stage's own height (the container rules in the phone block), on any phone; here only the
+   screen's own gaps tighten. */
 @media (max-height: 700px) {
   @container chrt (max-width: 640px) {
     .ch-rt-body {
       padding-top: 4px;
     }
-    .ch-rt-hero__map {
-      justify-self: end;
-      width: 54%;
-    }
-    /* Its left edge dissolves into the field too, as its top and bottom do. */
-    .ch-rt-hero__map::after {
-      background:
-        linear-gradient(90deg, var(--ch-green-900), transparent 24%),
-        linear-gradient(180deg, var(--ch-green-900), transparent 26%, transparent 66%, var(--ch-green-900));
-    }
     .ch-rt-panel {
       margin-top: 6px;
     }
-    .ch-rt-hero__main {
-      gap: 6px;
-      padding: 2px 20px 4px;
-    }
-    .ch-rt-hero__k {
-      gap: 4px;
-    }
-    .ch-rt-hno {
-      font-size: calc(40 * var(--ch-type-k));
-    }
-    .ch-rt-hero__dist b {
-      font-size: calc(38 * var(--ch-type-k));
-    }
-    .ch-rt-hero__done b {
-      font-size: calc(22 * var(--ch-type-k));
+    .ch-rt-card {
+      min-height: calc(294px + 43 * var(--ch-type-k));
+      padding: 12px 16px 12px;
     }
   }
 }
