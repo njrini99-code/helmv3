@@ -5,8 +5,8 @@ vi.mock('server-only', () => ({}));
 vi.mock('@/lib/server-error-logger', () => ({ logServerError: vi.fn(async () => {}) }));
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => { throw new Error('the service client must not be used'); } }));
 
-import { applyComparisons, benchmarkSource, SOURCED_LEVEL_FIGURES, getBenchmarks, getMetricDefinitions, levelFromDivision, STANDING_ID_BY_CHAT_ID, tourForGender } from '../benchmark-reads';
-import { readFigure, type ToolEnvelope } from '../provenance';
+import { benchmarkSource, SOURCED_LEVEL_FIGURES, getBenchmarks, getMetricDefinitions, levelFromDivision, STANDING_ID_BY_CHAT_ID, tourForGender } from '../benchmark-reads';
+import { type ToolEnvelope } from '../provenance';
 import { auditNumericClaims, collectEnvelopeNumbers } from './grounded';
 import { person, pgrst, type Tables } from './pgrst-double';
 import { withSourcedLevels } from './level-figures-fixture';
@@ -292,68 +292,10 @@ describe('benchmarks in the audit', () => {
     }
   });
 
-
-});
-
-describe('applyComparisons', () => {
-  const base = (over: Partial<ToolEnvelope>): ToolEnvelope => ({ summary: 'ok', measurements: [], series: [], detail: { window: 'cache' }, coverage: 'complete', coverage_note: null, as_of: '2026-11-07T00:00:00Z', ...over });
-  const fig = (metric_id: string, kind: 'player' | 'team' | 'round' = 'player', id = 'p1', value = 58.3) => readFigure({ metric_id, metric_label: metric_id, unit: 'percent', value, entity: { kind, id: kind === 'player' ? id : 'x', label: 'Owen Carter' }, window_start: null, window_end: null, sample_size: 40, sample_unit: 'rounds', source: 'rounds', method: 'm' });
-
-  it('puts the three references on a player’s measurement, level first, and grades the chip against the level', async () => {
-    const { sb } = pgrst(tables());
-    const out = await applyComparisons(base({ measurements: [fig('gir_pct')] }), benchmarkSource(sb, 'team-1', { ctx }));
-    const m = out.measurements[0]!;
-    expect(m.comparisons!.map((c) => [c.kind, c.value])).toEqual([['level', 50], ['team', 54.6], ['tour', 66]]);
-    expect(m.comparisons![0]).toMatchObject({ label: 'Division III average', place_percent: 30 });
-    expect(m.comparisons![1]).toMatchObject({ place: 3, place_of: 7, place_percent: null });
-    expect(m.benchmark).toEqual({ source: 'Division III average 2024', version: '2024', value: 50, omitted_for_cohort: false });
-  });
-
-  it('gives a team-level figure the level and the Tour only', async () => {
-    const { sb } = pgrst(tables());
-    const out = await applyComparisons(base({ measurements: [fig('gir_pct', 'team')] }), benchmarkSource(sb, 'team-1', { ctx }));
-    expect(out.measurements[0]!.comparisons!.map((c) => c.kind)).toEqual(['level', 'tour']);
-  });
-
-  it('with too few players with a figure the team average is listed as missing, and the Tour stands in for a missing level without hiding that it is missing', async () => {
-    const { sb } = pgrst(tables());
-    // p9 has no standing; sg_putting has no published college average.
-    const out = await applyComparisons(base({ measurements: [fig('sg_putting', 'player', 'p9', -0.4)] }), benchmarkSource(sb, 'team-1', { ctx }));
-    const m = out.measurements[0]!;
-    expect(m.comparisons!.map((c) => [c.kind, c.value])).toEqual([['level', null], ['team', null], ['tour', 0]]);
-    expect(m.comparisons![0]!.note).toBeTruthy();
-    expect(m.comparisons![1]!.note).toMatch(/Fewer than 5 players/);
-    expect(m.benchmark).toMatchObject({ source: 'PGA Tour 2024', value: 0 });
-  });
-
-  it('leaves a metric the standards do not cover, a round, an unavailable read and a benchmark already carried alone', async () => {
-    const { sb } = pgrst(tables());
-    const own = { ...fig('gir_pct'), benchmark: { source: 'x', version: '1', value: 9, omitted_for_cohort: false } };
-    const out = await applyComparisons(base({ measurements: [fig('putts_per_round'), fig('gir_pct', 'round'), own] }), benchmarkSource(sb, 'team-1', { ctx }));
-    expect(out.measurements[0]!.comparisons).toBeUndefined();
-    expect(out.measurements[1]!.comparisons).toBeUndefined();
-    expect(out.measurements[2]!.benchmark!.value).toBe(9);
-    const down = base({ coverage: 'unavailable', measurements: [fig('gir_pct')] });
-    expect(await applyComparisons(down, benchmarkSource(sb, 'team-1', { ctx }))).toBe(down);
-  });
-
-  it('reads the team’s level, tour and standards once for the turn, and the standing once per read', async () => {
-    const { sb, of } = pgrst(tables());
-    const src = benchmarkSource(sb, 'team-1', { ctx });
-    await applyComparisons(base({ measurements: [fig('gir_pct')] }), src);
-    await applyComparisons(base({ measurements: [fig('gir_pct')] }), src);
-    expect(of('golf_pga_standards').filter((c) => c.method === 'select')).toHaveLength(1);
-    expect(of('golf_team_seasons').filter((c) => c.method === 'select')).toHaveLength(1);
-    expect(of('golf_player_standing').filter((c) => c.method === 'select')).toHaveLength(2);
-  });
-
 });
 
 describe('a standing that could not be read is not a player with no standing', () => {
-  const base = (over: Partial<ToolEnvelope>): ToolEnvelope => ({ summary: 'ok', measurements: [], series: [], detail: { window: 'cache' }, coverage: 'complete', coverage_note: null, as_of: '2026-11-07T00:00:00Z', ...over });
-  const fig = (metric_id: string, id = 'p1', value = 58.3) => readFigure({ metric_id, metric_label: metric_id, unit: 'percent', value, entity: { kind: 'player', id, label: 'Owen Carter' }, window_start: null, window_end: null, sample_size: 40, sample_unit: 'rounds', source: 'rounds', method: 'm' });
   const down = (): Tables => ({ ...tables(), golf_player_standing: { error: { code: '57014', message: 'canceling statement due to statement timeout' } } });
-  const refs = (e: ToolEnvelope) => e.measurements[0]!.comparisons!;
 
   it('the source answers null for a failed read and an empty map for a player with no rows', async () => {
     const failed = benchmarkSource(pgrst(down()).sb, 'team-1', { ctx });
@@ -369,44 +311,6 @@ describe('a standing that could not be read is not a player with no standing', (
     await benchmarkSource(pgrst(down()).sb, 'team-1', { ctx }).standing(['p1'], ['gir_pct']);
     expect(vi.mocked(logServerError)).toHaveBeenCalledTimes(1);
     expect(vi.mocked(logServerError).mock.calls[0]![1]).toMatchObject({ action: 'coachhelm.ask.benchmarks', errorCode: '57014', handled: true });
-  });
-
-  it('a coach’s figure: the level says it could not be read, where a player with no standing is told there is no college figure', async () => {
-    // sg_putting has no published college figure, so its level can only come from the standing.
-    const unread = refs(await applyComparisons(base({ measurements: [fig('sg_putting', 'p1', -0.4)] }), benchmarkSource(pgrst(down()).sb, 'team-1', { ctx })));
-    expect(unread.map((c) => [c.kind, c.value])).toEqual([['level', null], ['team', null], ['tour', 0]]);
-    expect(unread[0]).toMatchObject({ label: 'Division III average', missing_reason: 'could not be read', place_percent: null, place_of: null });
-    expect(unread[0]!.note).toMatch(/could not be read/);
-
-    // The same figure for a player the read worked for and found nothing: a different answer, as it should be.
-    const none = refs(await applyComparisons(base({ measurements: [fig('sg_putting', 'p9', -0.4)] }), benchmarkSource(pgrst(tables()).sb, 'team-1', { ctx })));
-    expect(none[0]).toMatchObject({ missing_reason: 'no college figure' });
-  });
-
-  it('a coach’s figure keeps what does not rest on the standing: the published level, the team’s windowed average and rank, the Tour', async () => {
-    const out = refs(await applyComparisons(base({ measurements: [fig('gir_pct')] }), benchmarkSource(pgrst(down()).sb, 'team-1', { ctx })));
-    expect(out.map((c) => [c.kind, c.value])).toEqual([['level', 50], ['team', 54.6], ['tour', 66]]);
-    // The place among college players is the standing's: unread, it is not stated.
-    expect(out[0]).toMatchObject({ place_percent: null, place_of: null });
-    expect(out[1]).toMatchObject({ place: 3, place_of: 7 });
-  });
-
-  it('a player’s team average is the standing row: unread, it is not "no team average yet"', async () => {
-    const solo = { ...ctx, roster: [person('p1', 'Owen Carter')] };
-    const unread = refs(await applyComparisons(base({ measurements: [fig('sg_putting', 'p1', -0.4)] }), benchmarkSource(pgrst(down()).sb, 'team-1', { ctx: solo, role: 'player' })));
-    expect(unread[1]).toMatchObject({ kind: 'team', value: null, missing_reason: 'could not be read' });
-
-    const none = refs(await applyComparisons(base({ measurements: [fig('sg_putting', 'p1', -0.4)] }), benchmarkSource(pgrst(tables()).sb, 'team-1', { ctx: solo, role: 'player' })));
-    expect(none[1]).toMatchObject({ kind: 'team', value: null, missing_reason: 'no team average yet' });
-  });
-
-  it('the Tour is not compared, and not blamed on the measure, for a figure whose basis only the standing row knows', async () => {
-    const unread = refs(await applyComparisons(base({ measurements: [fig('approach_proximity_50_125ft', 'p1', 29)] }), benchmarkSource(pgrst(down()).sb, 'team-1', { ctx })));
-    expect(unread.find((c) => c.kind === 'tour')).toMatchObject({ value: null, missing_reason: 'could not be read' });
-
-    // Read, and on the green-only basis: the existing answer.
-    const read = refs(await applyComparisons(base({ measurements: [fig('approach_proximity_50_125ft', 'p1', 29)] }), benchmarkSource(pgrst(tables()).sb, 'team-1', { ctx })));
-    expect(read.find((c) => c.kind === 'tour')).toMatchObject({ value: null, missing_reason: 'not compared' });
   });
 });
 

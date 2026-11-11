@@ -36,7 +36,6 @@ const clip = (text: string | null | undefined): string | null => {
   return t.length <= TEXT_CAP ? t : `${t.slice(0, TEXT_CAP).replace(/\s+\S*$/, '')} …`;
 };
 const round1 = (n: number): number => Math.round(n * 10) / 10;
-const pct = (num: number | null, den: number | null): number | null => (num != null && den != null && den > 0 ? round1((num / den) * 100) : null);
 
 const names = (ctx: CoachChatContext): Map<string, string> => new Map(ctx.roster.map((p) => [p.id, p.name]));
 
@@ -183,130 +182,6 @@ export async function getFocusPractice(sb: Sb, ctx: CoachChatContext, input: { p
   const capped = areas.rows.length >= ROW_CAP || sessions.rows.length >= ROW_CAP || criteria.rows.length >= ROW_CAP;
   const note = [partialParts.length ? `${partialParts.join(' and ')} could not be read.` : null, capped ? `A list was cut at ${ROW_CAP} rows.` : null].filter(Boolean).join(' ') || null;
   return envelope(`${rows.length} focus area${rows.length === 1 ? '' : 's'}${player ? ` for ${player.name}` : ''}, with practice logged in the last ${days} days.`, { window_days: days, focus_areas: rows }, note ? 'partial' : 'complete', note);
-}
-
-// ---------------------------------------------------------------------------
-// Per-round stat lines
-// ---------------------------------------------------------------------------
-
-/** One player's recent rounds as stat lines: score, putts, greens, fairways, penalties, scoring mix and strokes gained by area, per round. */
-export async function getRoundStats(sb: Sb, ctx: CoachChatContext, input: { player_id: string; last_n: number }): Promise<ToolEnvelope> {
-  const player = requireRosterPlayer(ctx, input.player_id);
-  const limit = Math.min(Math.max(input.last_n, 1), 20);
-  const rounds = await sb.from('golf_rounds').select('id, round_date, course_name, round_type, holes_played, total_score, score_to_par').eq('player_id', player.id).eq('is_test', false).eq('status', 'completed').order('round_date', { ascending: false }).limit(limit);
-  if (rounds.error) {
-    await failed('getRoundStats rounds failed', 'coachhelm.ask.roundStats', ctx, rounds.error);
-    return unavailableEnvelope(`Could not read ${player.name}’s rounds.`, 'The rounds query failed.');
-  }
-  const list = rounds.data ?? [];
-  if (list.length === 0) return envelope(`${player.name} has no completed rounds on record.`, { player_id: player.id, rounds: [] }, 'empty');
-  const cache = await sb
-    .from('golf_round_stats_cache')
-    .select('round_id, total_score, score_to_par, total_putts, greens_hit, greens_total, fairways_hit, fairways_total, penalty_strokes, one_putts, three_putts, birdies, pars, bogeys, double_bogeys, triple_plus, eagles, scramble_attempts, scrambles_converted, sand_attempts, sand_saves, driving_distance_avg, strokes_gained_total, strokes_gained_tee, strokes_gained_approach, strokes_gained_around_green, strokes_gained_putting')
-    .eq('player_id', player.id)
-    .in('round_id', list.map((r) => r.id));
-  if (cache.error) {
-    await failed('getRoundStats cache failed', 'coachhelm.ask.roundStats', ctx, cache.error);
-    return unavailableEnvelope(`Could not read ${player.name}’s round stat lines.`, 'The round stats query failed.');
-  }
-  const byRound = new Map((cache.data ?? []).map((c) => [c.round_id, c]));
-  const lines = list.map((r) => {
-    const c = byRound.get(r.id);
-    return {
-      round_id: r.id,
-      date: r.round_date,
-      course: r.course_name,
-      round_type: r.round_type,
-      holes: r.holes_played,
-      total_score: c?.total_score ?? r.total_score,
-      to_par: c?.score_to_par ?? r.score_to_par,
-      has_stat_line: !!c,
-      ...(c
-        ? {
-            putts: c.total_putts,
-            greens_hit: c.greens_hit,
-            greens_total: c.greens_total,
-            gir_percent: pct(c.greens_hit, c.greens_total),
-            fairways_hit: c.fairways_hit,
-            fairways_total: c.fairways_total,
-            fairway_percent: pct(c.fairways_hit, c.fairways_total),
-            penalty_strokes: c.penalty_strokes,
-            one_putts: c.one_putts,
-            three_putts: c.three_putts,
-            eagles: c.eagles,
-            birdies: c.birdies,
-            pars: c.pars,
-            bogeys: c.bogeys,
-            double_bogeys: c.double_bogeys,
-            triple_or_worse: c.triple_plus,
-            scrambles: c.scramble_attempts ? `${c.scrambles_converted ?? 0} of ${c.scramble_attempts}` : null,
-            sand_saves: c.sand_attempts ? `${c.sand_saves ?? 0} of ${c.sand_attempts}` : null,
-            driving_distance_avg: c.driving_distance_avg,
-            sg_total: c.strokes_gained_total,
-            sg_tee: c.strokes_gained_tee,
-            sg_approach: c.strokes_gained_approach,
-            sg_around_green: c.strokes_gained_around_green,
-            sg_putting: c.strokes_gained_putting,
-          }
-        : {}),
-    };
-  });
-  const without = lines.filter((l) => !l.has_stat_line).length;
-  return envelope(`${player.name}’s last ${lines.length} round${lines.length === 1 ? '' : 's'} as stat lines.`, { player_id: player.id, player: player.name, rounds: lines }, without ? 'partial' : 'complete', without ? `${without} of ${lines.length} rounds have no stat line yet, so they show only the score.` : null);
-}
-
-// ---------------------------------------------------------------------------
-// Qualifier entries and selections
-// ---------------------------------------------------------------------------
-
-/** Each qualifier's entries (position, rounds, totals) and who was selected, with the coach's recorded reason. */
-export async function getQualifierEntries(sb: Sb, ctx: CoachChatContext, input: { limit: number }): Promise<ToolEnvelope> {
-  const limit = Math.min(Math.max(input.limit, 1), 8);
-  const quals = await sb.from('golf_qualifiers').select('id, name, course_name, start_date, end_date, status, num_rounds, spots_available, selection_state, selection_slots_total, selection_slots_coach_pick').eq('team_id', ctx.team_id).eq('is_test', false).order('start_date', { ascending: false }).limit(limit);
-  if (quals.error) {
-    await failed('getQualifierEntries failed', 'coachhelm.ask.qualifierEntries', ctx, quals.error);
-    return unavailableEnvelope('Could not read qualifiers.', 'The qualifiers query failed.');
-  }
-  const list = quals.data ?? [];
-  if (list.length === 0) return envelope('No qualifiers yet.', { qualifiers: [] }, 'empty');
-  const qids = list.map((q) => q.id);
-  const [entries, picks] = await Promise.all([
-    sb.from('golf_qualifier_entries').select('qualifier_id, player_id, position, is_tied, rounds_completed, total_score, total_to_par, status').in('qualifier_id', qids).limit(ROW_CAP),
-    sb.from('golf_qualifier_selections').select('qualifier_id, player_id, selection_type, selected_at, coach_reasoning').in('qualifier_id', qids).limit(ROW_CAP),
-  ]);
-  if (entries.error) {
-    await failed('getQualifierEntries entries failed', 'coachhelm.ask.qualifierEntries', ctx, entries.error);
-    return unavailableEnvelope('Could not read qualifier entries.', 'The entries query failed.');
-  }
-  const who = names(ctx);
-  const onRoster = (id: string) => who.has(id);
-  const qualifiers = list.map((q) => ({
-    qualifier_id: q.id,
-    name: q.name,
-    course: q.course_name,
-    start_date: q.start_date,
-    end_date: q.end_date,
-    status: q.status,
-    rounds: q.num_rounds,
-    spots: q.spots_available,
-    selection_state: q.selection_state,
-    selection_slots: q.selection_slots_total,
-    coach_pick_slots: q.selection_slots_coach_pick,
-    entries: (entries.data ?? [])
-      .filter((e) => e.qualifier_id === q.id && onRoster(e.player_id))
-      .sort((a, b) => (a.position ?? 999) - (b.position ?? 999))
-      .map((e) => ({ player_id: e.player_id, player: who.get(e.player_id), position: e.position, tied: e.is_tied === true, rounds_completed: e.rounds_completed, total_score: e.total_score, total_to_par: e.total_to_par, status: e.status })),
-    ...(picks.error
-      ? {}
-      : {
-          selections: (picks.data ?? [])
-            .filter((s) => s.qualifier_id === q.id && onRoster(s.player_id))
-            .map((s) => ({ player_id: s.player_id, player: who.get(s.player_id), selection_type: s.selection_type, selected_at: s.selected_at, reason: clip(s.coach_reasoning) })),
-        }),
-  }));
-  const capped = (entries.data ?? []).length >= ROW_CAP || (picks.data ?? []).length >= ROW_CAP;
-  const note = [picks.error ? 'The selections could not be read.' : null, capped ? `A list was cut at ${ROW_CAP} rows.` : null].filter(Boolean).join(' ') || null;
-  return envelope(`${qualifiers.length} qualifier${qualifiers.length === 1 ? '' : 's'}, most recent first, with entries and selections.`, { qualifiers }, note ? 'partial' : 'complete', note);
 }
 
 // ---------------------------------------------------------------------------

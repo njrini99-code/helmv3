@@ -2,8 +2,6 @@ import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('server-only', () => ({}));
 vi.mock('../lib/track-server', () => ({ chLogServer: vi.fn() }));
-
-import { seasonScoringEnvelope } from '@/lib/coachhelm/v3/chat/season-reads';
 import { playerFiguresOver } from '../data/player-figures';
 import { countsForScoring, type ChRound } from '../data/season';
 import { roundsInFilter } from '../data/stats-common';
@@ -64,16 +62,5 @@ describe('Ask reads a player’s round-based figures as Stats does', () => {
     expect(season.window_start).toBe('2026-08-21');
     expect(season.rounds).toBeLessThan(rounds.length);
     expect(season.putts_per_round).not.toBeCloseTo(last10.putts_per_round!, 3);
-  });
-
-  it('one scope, one window: the season’s figures and the season scoring read count the same rounds', () => {
-    const seasonRounds = rounds.filter((r) => r.round_date >= START);
-    const scoring = seasonScoringEnvelope({ team_id: 't', team_name: 'T', roster: [] } as never, seasonRounds as never, { id: 'cole', name: 'Cole' }, { start: START, today: '2026-11-08' });
-    const avg = scoring.measurements.find((m) => m.metric_id === 'season_scoring_average')!;
-    // The scoring read leaves the nine-hole round out; Stats' season figure counts it per 18. Put the 18-hole rounds through both.
-    const eighteen = playerFiguresOver(rounds.filter((r) => r.holes_played === 18), filterFor('season'), START);
-    expect(eighteen.rounds).toBe(avg.sample_size);
-    expect(eighteen.scoring_average).toBeCloseTo(avg.value!, 1);
-    expect(avg.window_start).toBe(START);
   });
 });

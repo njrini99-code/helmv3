@@ -5,7 +5,7 @@ vi.mock('server-only', () => ({}));
 vi.mock('@/lib/server-error-logger', () => ({ logServerError: vi.fn(async () => {}) }));
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => { throw new Error('the service client must not be used'); } }));
 
-import { getAttendanceSummary, getFocusPractice, getGoals, getQualifierEntries, getRoundStats, getTeamSeasonSettings, getTournamentNotes, ROW_CAP } from '../team-reads';
+import { getAttendanceSummary, getFocusPractice, getGoals, getTeamSeasonSettings, getTournamentNotes, ROW_CAP } from '../team-reads';
 import { person, pgrst } from './pgrst-double';
 
 const ctx: CoachChatContext = { coach_id: 'c1', user_id: 'u1', team_id: 'team-1', team_name: 'Varsity', timezone: 'America/New_York', roster: [person('p1', 'Owen Carter'), person('p2', 'Cole Bennett')] };
@@ -109,64 +109,6 @@ describe('get_focus_practice', () => {
     const row = (e.detail as { focus_areas: Array<Record<string, unknown>> }).focus_areas[0]!;
     expect(row.sessions_in_window).toBeUndefined();
     expect(row.criteria_total).toBe(2);
-  });
-});
-
-describe('get_round_stats', () => {
-  const rounds = [
-    { id: 'r1', player_id: 'p1', round_date: '2026-10-05', course_name: 'West Pines', round_type: 'tournament', holes_played: 18, total_score: 74, score_to_par: 2, status: 'completed', is_test: false },
-    { id: 'r2', player_id: 'p1', round_date: '2026-10-01', course_name: 'West Pines', round_type: 'practice', holes_played: 18, total_score: 71, score_to_par: -1, status: 'completed', is_test: false },
-    { id: 'r3', player_id: 'p1', round_date: '2026-09-20', course_name: 'Test', round_type: 'practice', holes_played: 18, total_score: 60, score_to_par: -12, status: 'completed', is_test: true },
-    { id: 'r4', player_id: 'p2', round_date: '2026-10-06', course_name: 'Other', round_type: 'practice', holes_played: 18, total_score: 90, score_to_par: 18, status: 'completed', is_test: false },
-  ];
-  const cache = [{ round_id: 'r1', player_id: 'p1', total_score: 74, score_to_par: 2, total_putts: 31, greens_hit: 9, greens_total: 18, fairways_hit: 7, fairways_total: 14, penalty_strokes: 1, scramble_attempts: 8, scrambles_converted: 4, sand_attempts: 0, sand_saves: 0, strokes_gained_total: -1.2 }];
-
-  it('is one roster player’s completed, non-test rounds with their stat lines and derived rates', async () => {
-    const { sb, of } = pgrst({ golf_rounds: { rows: rounds }, golf_round_stats_cache: { rows: cache } });
-    const e = await getRoundStats(sb, ctx, { player_id: 'p1', last_n: 5 });
-    expect(eqs(of('golf_rounds'))).toEqual(expect.arrayContaining([['player_id', 'p1'], ['is_test', false], ['status', 'completed']]));
-    expect(eqs(of('golf_round_stats_cache'))).toContainEqual(['player_id', 'p1']);
-    const d = e.detail as { player_id: string; rounds: Array<Record<string, unknown>> };
-    expect(d.player_id).toBe('p1');
-    expect(d.rounds.map((r) => r.round_id)).toEqual(['r1', 'r2']);
-    expect(d.rounds[0]).toMatchObject({ putts: 31, gir_percent: 50, fairway_percent: 50, scrambles: '4 of 8', sg_total: -1.2 });
-    expect(d.rounds[1]).toMatchObject({ has_stat_line: false, total_score: 71 });
-    expect(e.coverage).toBe('partial');
-    expect(e.coverage_note).toMatch(/1 of 2 rounds have no stat line/);
-  });
-
-  it('refuses a player off the roster before any query, and caps the rounds', async () => {
-    const { sb, calls } = pgrst({ golf_rounds: { rows: rounds } });
-    await expect(getRoundStats(sb, ctx, { player_id: 'stranger', last_n: 5 })).rejects.toMatchObject({ status: 403 });
-    expect(calls).toEqual([]);
-    const ok = pgrst({ golf_rounds: { rows: rounds }, golf_round_stats_cache: { rows: [] } });
-    await getRoundStats(ok.sb, ctx, { player_id: 'p1', last_n: 500 });
-    expect(ok.of('golf_rounds').some((c) => c.method === 'limit' && c.args[0] === 20)).toBe(true);
-  });
-});
-
-describe('get_qualifier_entries', () => {
-  const tables = {
-    golf_qualifiers: { rows: [{ id: 'q1', team_id: 'team-1', is_test: false, name: 'Fall Qualifying', course_name: 'West Pines', start_date: '2026-08-22', end_date: '2026-08-25', status: 'completed', num_rounds: 2, spots_available: 5, selection_state: 'final', selection_slots_total: 5, selection_slots_coach_pick: 1 }, { id: 'q2', team_id: 'team-2', is_test: false, name: 'Elsewhere', start_date: '2026-08-22' }] },
-    golf_qualifier_entries: { rows: [{ qualifier_id: 'q1', player_id: 'p2', position: 2, is_tied: false, rounds_completed: 2, total_score: 150, total_to_par: 6, status: 'entered' }, { qualifier_id: 'q1', player_id: 'p1', position: 1, is_tied: true, rounds_completed: 2, total_score: 144, total_to_par: 0, status: 'entered' }, { qualifier_id: 'q1', player_id: 'gone', position: 3, is_tied: false, rounds_completed: 2, total_score: 160, total_to_par: 16, status: 'entered' }] },
-    golf_qualifier_selections: { rows: [{ qualifier_id: 'q1', player_id: 'p1', selection_type: 'auto', selected_at: '2026-08-26T00:00:00Z', coach_reasoning: 'Led the board.' }] },
-  };
-
-  it('lists the team’s qualifiers with entries in board order and the selections, for roster players only', async () => {
-    const { sb, of } = pgrst(tables);
-    const e = await getQualifierEntries(sb, ctx, { limit: 3 });
-    expect(eqs(of('golf_qualifiers'))).toContainEqual(['team_id', 'team-1']);
-    const q = (e.detail as { qualifiers: Array<{ name: string; entries: Array<{ player_id: string }>; selections: Array<{ reason: string }> }> }).qualifiers;
-    expect(q).toHaveLength(1);
-    expect(q[0]!.entries.map((x) => x.player_id)).toEqual(['p1', 'p2']);
-    expect(q[0]!.selections[0]!.reason).toBe('Led the board.');
-  });
-
-  it('is partial when the selections cannot be read, and unavailable when the qualifiers cannot', async () => {
-    const e = await getQualifierEntries(pgrst({ ...tables, golf_qualifier_selections: { error: { message: 'down' } } }).sb, ctx, { limit: 3 });
-    expect(e.coverage).toBe('partial');
-    expect((e.detail as { qualifiers: Array<Record<string, unknown>> }).qualifiers[0]!.selections).toBeUndefined();
-    expect((await getQualifierEntries(pgrst({ golf_qualifiers: { error: { message: 'down' } } }).sb, ctx, { limit: 3 })).coverage).toBe('unavailable');
   });
 });
 

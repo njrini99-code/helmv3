@@ -9,7 +9,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import { ALL_METRIC_SPECS, getMetricSpec } from './metrics-catalog';
 import { getTeamMetricRanking, type FigureWindow, type PlayerFiguresSource } from './read-tools';
 import { requireRosterPlayer, type CoachChatContext } from './context';
-import { nowIso, unavailableEnvelope, type BenchmarkRef, type Comparison, type Measurement, type MeasurementSeries, type ToolEnvelope } from './provenance';
+import { nowIso, unavailableEnvelope, type Comparison, type ToolEnvelope } from './provenance';
 
 type Sb = SupabaseClient<Database>;
 
@@ -399,14 +399,6 @@ export function comparisonsFor(a: { metricId: string; std: StandardRow | undefin
   return out;
 }
 
-/** What a chip grades against: the level where there is a value, else the Tour. */
-function gradeAgainst(comparisons: readonly Comparison[], season: string, ownValue: number | null): BenchmarkRef | null {
-  // The level is over all recorded rounds: a figure over a window is not graded against it (the Tour is the yardstick then).
-  const sameBasis = (x: Comparison) => x.your_value === null || x.your_value === undefined || (ownValue !== null && round2(ownValue) === x.your_value);
-  const c = comparisons.find((x) => x.kind === 'level' && x.value !== null && sameBasis(x)) ?? comparisons.find((x) => x.kind === 'tour' && x.value !== null);
-  return c && c.value !== null ? { source: c.label.endsWith('Helm') ? c.label : `${c.label} ${season}`, version: season, value: c.value, omitted_for_cohort: false } : null;
-}
-
 const NO_WINDOW: TeamRef = { kind: 'missing', reason: 'window not stated', note: 'The window this figure was read over is not stated, so no team comparison is made.' };
 
 /**
@@ -422,69 +414,6 @@ async function teamRefFor(source: BenchmarkSource, chatId: string, window: Cohor
     return standingUnread ? { kind: 'missing', reason: STANDING_UNREAD_REASON, note: STANDING_UNREAD_NOTE } : teamRefFromStanding(standing);
   }
   return teamRefFromCohort(local ?? (await source.cohort(chatId, window)), playerId, window);
-}
-
-/** The roster's values from a team-ranking read itself, so a comparison on it and the ranking can never disagree. */
-function cohortOfRanking(envelope: ToolEnvelope, metricId: string): Cohort | null {
-  const d = envelope.detail as { team_ranking?: boolean; window?: CohortWindow; direction?: Cohort['direction']; team_figure?: { value: number | null; method: 'pooled' | 'mean' } } | undefined;
-  if (!d?.team_ranking || !d.window) return null;
-  const values = new Map<string, number>();
-  for (const m of envelope.measurements) if (m.metric_id === metricId && m.entity.kind === 'player' && typeof m.value === 'number') values.set(m.entity.id, m.value);
-  return { window: d.window, direction: d.direction ?? null, values, team: d.team_figure ? { value: d.team_figure.value, method: d.team_figure.method } : null };
-}
-
-/**
- * Put the three references on the measurements a read returned, and `benchmark` (the level, else the Tour) for a chip or a trend line to grade
- * against. Series carry `benchmark` only. A metric the standards do not cover is left alone; a failed read of the team's level, tour or
- * standards leaves the envelope as it was. A failed read of the players' standing keeps the references that do not rest on it (a coach's team
- * average, the Tour) and lists the ones that do as "could not be read".
- */
-export async function applyComparisons(envelope: ToolEnvelope, source: BenchmarkSource): Promise<ToolEnvelope> {
-  try {
-    if (envelope.coverage === 'unavailable' || (envelope.measurements.length === 0 && envelope.series.length === 0)) return envelope;
-    const mapped = (x: Measurement | MeasurementSeries) => x.entity.kind !== 'round' && STANDING_ID_BY_CHAT_ID(x.metric_id);
-    const candidates = [...envelope.measurements, ...envelope.series].filter(mapped);
-    if (candidates.length === 0) return envelope;
-    const [teamLevel, standards] = await Promise.all([source.level(), source.standards()]);
-    const tour = standards ? await source.tour() : null;
-    if (!tour || !standards) return envelope;
-    const ids = [...new Set(candidates.flatMap((x) => (x.entity.kind === 'player' ? [STANDING_ID_BY_CHAT_ID(x.metric_id) as string] : [])))];
-    const players = [...new Set(candidates.filter((x) => x.entity.kind === 'player').map((x) => x.entity.id))];
-    const standingRead = players.length && ids.length ? await source.standing(players, ids) : new Map<string, StandingLite>();
-    // Null: the standing could not be read. The comparisons that rest on it say so; they do not read as "this player has no standing".
-    const standingUnread = standingRead === null;
-    const standing = standingRead ?? new Map<string, StandingLite>();
-    const divisions = teamLevel && ids.length ? await source.divisionCohort(teamLevel, tour, ids) : null;
-    const detailWindow = (envelope.detail as { window?: CohortWindow } | undefined)?.window ?? null;
-    // A value from the stats cache is over all recorded rounds whatever window the read was asked for; any other is over the read's window.
-    const windowOf = (m: Measurement | MeasurementSeries): CohortWindow | null => ('source' in m && m.source === 'stats cache' ? 'cache' : detailWindow);
-    const comparisonsOf = async (x: Measurement | MeasurementSeries) => {
-      const id = STANDING_ID_BY_CHAT_ID(x.metric_id) as string;
-      const std = standards.get(id);
-      const row = x.entity.kind === 'player' ? (standing.get(`${x.entity.id}|${id}`) ?? null) : null;
-      const w = windowOf(x);
-      const local = w && w === detailWindow ? cohortOfRanking(envelope, x.metric_id) : null;
-      const team = x.entity.kind === 'player' ? await teamRefFor(source, x.metric_id, w, x.entity.id, row, local, standingUnread) : NO_WINDOW;
-      return { std, list: comparisonsFor({ metricId: id, std, tour, teamLevel, standing: row, team, teamFigure: x.entity.kind !== 'player', divisionCohort: divisions?.get(id) ?? null, standingUnread }) };
-    };
-    const measurements = await Promise.all(
-      envelope.measurements.map(async (m) => {
-        if (!mapped(m)) return m;
-        const { std, list } = await comparisonsOf(m);
-        return { ...m, comparisons: list, benchmark: m.benchmark ?? gradeAgainst(list, std?.season ?? '', m.value) };
-      }),
-    );
-    const series = await Promise.all(
-      envelope.series.map(async (x) => {
-        if (!mapped(x) || x.benchmark) return x;
-        const { std, list } = await comparisonsOf(x);
-        return { ...x, benchmark: gradeAgainst(list, std?.season ?? '', null) };
-      }),
-    );
-    return { ...envelope, measurements, series };
-  } catch {
-    return envelope;
-  }
 }
 
 /**
@@ -521,7 +450,6 @@ interface StandingRow {
   basis: string | null;
   computed_at: string;
 }
-
 
 export interface BenchmarkInput {
   metric_ids: string[];
