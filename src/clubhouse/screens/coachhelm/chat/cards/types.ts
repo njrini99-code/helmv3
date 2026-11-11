@@ -42,6 +42,36 @@ export interface CardBodyProps {
   team?: string;
   /** A row tap asks for the change in words. Absent, or once Confirm is pressed: rows are not buttons. */
   onAsk?: (text: string) => void;
+  /**
+   * Edit mode (CAPABILITIES 0.8). The plan declares which fields may change (`proposal.editable`); the body edits each
+   * with the app's own control and hands the shell only the fields that changed. The shell sends them, and the server's
+   * re-planned, re-sealed proposal replaces this one. Absent: the card offers no edit, whatever the plan declares.
+   */
+  onEdit?: (patch: Record<string, unknown>) => void;
+  /** An edit is with the server: the form is still, its key says so. */
+  editing?: boolean;
+  /** The server refused the last edit, in a sentence the coach can read. The card is unchanged; the form keeps what was typed. */
+  editError?: string | null;
+  /** The form is open with changes not yet sent, so the shell holds Confirm: what is on screen is not what would be confirmed. */
+  onEditOpen?: (open: boolean) => void;
+}
+
+/** A field the coach may change on a waiting card, as the plan declares it (CONTRACT_NOTES, PLANS P11). */
+export interface EditableField {
+  key: string;
+  /** The label of the fact this field shows as on the card. */
+  label: string;
+  type: 'text' | 'long_text' | 'date' | 'time' | 'datetime' | 'number' | 'choice' | 'toggle' | 'people' | 'list';
+  value: string | number | boolean | string[] | null;
+  required: boolean;
+  options?: Array<{ value: string; label: string }>;
+  max_length?: number;
+  min_length?: number;
+  min?: number;
+  max?: number;
+  step?: number;
+  min_items?: number;
+  max_items?: number;
 }
 
 /** How far a task travels: the three levels of CAPABILITIES 0.3. */

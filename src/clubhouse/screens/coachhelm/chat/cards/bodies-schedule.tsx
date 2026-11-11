@@ -9,7 +9,7 @@ import { Button } from '../../../../ui/Button';
 import { Icon } from '../../../../ui/Icon';
 import type { CardCopy } from './catalog';
 import { clockRange, countedFact, dayWords, daysBetween, factOf, namesIn, peopleOf, plural, restOf, stampWords, valueOf } from './facts';
-import { Body, Change, DateTile, Fold, NoWords, Notice, People, ReachRow, Rows, Warning, tense } from './kit';
+import { Body, Change, DateTile, Delivery, Fold, Meta, NoWords, Notice, People, ReachRow, Rows, Warning, tense } from './kit';
 import { isOpen, isSaved, type CardBodyProps, type CardPerson } from './types';
 
 /** The bodies of the tasks that put something on the calendar or act on an event (CAPABILITIES.md A1 to A7, A19 to A22). */
@@ -40,8 +40,8 @@ export function EventBody(props: BodyProps) {
         ? `On ${plural(invited.length, 'player')}’ calendars. Nobody is told.`
         : 'On the team’s calendar. Nobody is told.';
   return (
-    <Body label={lede} phase={phase} density={density} tool={props.tool}>
-      <ReachRow copy={copy} phase={phase} lede={lede}>
+    <Body label={lede} card={props}>
+      <ReachRow copy={copy} phase={phase} lede={lede} proposal={p} density={density}>
         <People people={invited} total={n} density={density} everyone={!!roster?.length && invited.length === roster.length} />
       </ReachRow>
       {cal && (
@@ -58,9 +58,11 @@ export function EventBody(props: BodyProps) {
           {valueOf(p, 'Type') && <Badge>{titleCase(valueOf(p, 'Type')!)}</Badge>}
         </div>
       )}
-      {copy.reach === 'sends' && <NoWords channel={p.notifications.join(' ')} phase={phase} />}
+      <Delivery proposal={p} phase={phase} density={density}>
+        {copy.reach === 'sends' && <NoWords channel={p.notifications.join(' ')} phase={phase} />}
+      </Delivery>
       <Fold density={density}>
-        <Rows facts={restOf(p, ['When', 'Type', 'Where', 'Invited'])} density={density} subject={p.summary} onAsk={ask(props)} />
+        <Rows facts={restOf(p, ['When', 'Type', 'Where', 'Invited', ...(p.not_reached ? ['Will not get it'] : [])])} density={density} subject={p.summary} onAsk={ask(props)} />
       </Fold>
     </Body>
   );
@@ -119,23 +121,28 @@ export function SeriesBody(props: BodyProps) {
   const { proposal: p, copy, phase, density, roster } = props;
   const people = peopleOf(p, roster);
   const n = copy.told || people.length;
-  const dates = (valueOf(p, 'Dates') ?? '').split(' · ').filter(Boolean);
+  // The plan's own list of days when it carries one; else the planner's sentence of dates, read back.
+  const series = p.visual?.kind === 'series' ? p.visual : null;
+  const dates = series ? series.dates.map((d) => dayWords(d)) : (valueOf(p, 'Dates') ?? '').split(' · ').filter(Boolean);
   const lede =
     copy.reach === 'sends'
       ? tense(phase, { will: `Sends to ${plural(n, 'player')} and asks each for a reply`, did: `Sent to ${plural(n, 'player')}, who are asked to reply`, not: `Not sent. It would have gone to ${plural(n, 'player')}.` })
       : `On ${plural(people.length, 'player')}’ calendars. Nobody is told.`;
   return (
-    <Body label={lede} phase={phase} density={density} tool={props.tool}>
-      <ReachRow copy={copy} phase={phase} lede={lede}>
+    <Body label={lede} card={props}>
+      <ReachRow copy={copy} phase={phase} lede={lede} proposal={p} density={density}>
         <People people={people} density={density} everyone={!!roster?.length && people.length === roster.length} />
       </ReachRow>
       <div className="ch-akc-series">
-        <p className="ch-akc-series__rule">{valueOf(p, 'Repeats')}</p>
+        <p className="ch-akc-series__rule">{valueOf(p, 'Repeats') ?? series?.title}</p>
+        {series && <Meta parts={[clockRange(series.start, series.end), series.where]} />}
         <DayTiles dates={dates} limit={density === 'compact' ? 4 : null} />
       </div>
-      {copy.reach === 'sends' && <NoWords channel={`${p.notifications.join('. ')}.`} phase={phase} />}
+      <Delivery proposal={p} phase={phase} density={density}>
+        {copy.reach === 'sends' && <NoWords channel={`${p.notifications.join('. ')}.`} phase={phase} />}
+      </Delivery>
       <Fold density={density}>
-        <Rows facts={restOf(p, ['Repeats', 'Dates', 'Occurrences', 'Invites'])} density={density} subject={p.summary} onAsk={ask(props)} />
+        <Rows facts={restOf(p, ['Repeats', 'Dates', 'Occurrences', 'Invites', ...(p.not_reached ? ['Will not get it'] : [])])} density={density} subject={p.summary} onAsk={ask(props)} />
       </Fold>
     </Body>
   );
@@ -147,17 +154,19 @@ export function SeriesBody(props: BodyProps) {
 
 export function BlockedBody(props: BodyProps) {
   const { proposal: p, copy, phase, density } = props;
-  const [day, hours] = (valueOf(p, 'When') ?? '').split(', ');
+  // "2026-11-13, 13:00 to 15:00", or with a last day: "2026-11-13 to 2026-11-14, all day".
+  const [days = '', hours] = (valueOf(p, 'When') ?? '').split(', ');
+  const [day, lastDay] = days.split(' to ');
   const [from, to] = (hours ?? '').split(' to ');
   const lede = 'Only you see this. It is not on any player’s calendar.';
   return (
-    <Body label={lede} phase={phase} density={density} tool={props.tool}>
-      <ReachRow copy={copy} phase={phase} lede={lede} />
+    <Body label={lede} card={props}>
+      <ReachRow copy={copy} phase={phase} lede={lede} proposal={p} density={density} />
       <div className="ch-akc-event">
         {day && <DateTile iso={day} />}
         <div className="ch-akc-event__tx">
           <b className="ch-num">{to ? clockRange(from, to) : 'All day'}</b>
-          {day && <span>{dayWords(day, true)}</span>}
+          {day && <span>{lastDay ? `${dayWords(day)} to ${dayWords(lastDay)}` : dayWords(day, true)}</span>}
         </div>
       </div>
       <Rows facts={restOf(p, ['When'])} density={density} subject={p.summary} onAsk={ask(props)} />
@@ -170,8 +179,8 @@ export function BreakBody(props: BodyProps) {
   const [first, last] = (valueOf(p, 'Dates') ?? '').split(' to ');
   const lede = p.notifications[0] ?? 'Nobody is told.';
   return (
-    <Body label={lede} phase={phase} density={density} tool={props.tool}>
-      <ReachRow copy={copy} phase={phase} lede={lede} />
+    <Body label={lede} card={props}>
+      <ReachRow copy={copy} phase={phase} lede={lede} proposal={p} density={density} />
       <div className="ch-akc-span">
         {first && last && (
           <div className="ch-akc-span__run" role="img" aria-label={`${dayWords(first, true)} to ${dayWords(last, true)}, ${plural(daysBetween(first, last), 'day')}`}>
@@ -198,8 +207,8 @@ export function TermBody(props: BodyProps) {
   const classDays = start && end ? daysBetween(start, end) : 0;
   const examDays = end && exams ? Math.max(1, daysBetween(end, exams) - 1) : 0;
   return (
-    <Body label={lede} phase={phase} density={density} tool={props.tool}>
-      <ReachRow copy={copy} phase={phase} lede={lede} />
+    <Body label={lede} card={props}>
+      <ReachRow copy={copy} phase={phase} lede={lede} proposal={p} density={density} />
       <div className="ch-akc-term">
         {start && end && exams && (
           <>
@@ -252,8 +261,8 @@ export function TripBody(props: BodyProps) {
   const told = p.notifications[0] ?? '';
   const lede = 'Players see it as new travel. Nobody is told.';
   return (
-    <Body label={lede} phase={phase} density={density} tool={props.tool}>
-      <ReachRow copy={copy} phase={phase} lede={lede} />
+    <Body label={lede} card={props}>
+      <ReachRow copy={copy} phase={phase} lede={lede} proposal={p} density={density} />
       {trip && (
         <div className="ch-akc-trip">
           <div className="ch-akc-trip__route" role="img" aria-label={`${how.word} from ${trip.from ?? 'a place not set'} to ${trip.to}`}>
@@ -317,10 +326,10 @@ export function QualifierBody(props: BodyProps) {
   const n = copy.told || field.length;
   const lede = tense(phase, { will: `Sends to ${plural(n, 'player')}: a push and an email`, did: `Sent to ${plural(n, 'player')}: a push and an email`, not: `Not sent. It would have gone to ${plural(n, 'player')}.` });
   const earned = q ? Math.max(0, q.total - q.picks) : 0;
-  const extra: ProposalFact[] = q?.deadline ? [{ label: 'Entry deadline', value: dayWords(q.deadline) }] : [];
+  const extra: ProposalFact[] = q?.deadline && !factOf(p, 'Entry deadline') ? [{ label: 'Entry deadline', value: dayWords(q.deadline) }] : [];
   return (
-    <Body label={lede} phase={phase} density={density} tool={props.tool}>
-      <ReachRow copy={copy} phase={phase} lede={lede}>
+    <Body label={lede} card={props}>
+      <ReachRow copy={copy} phase={phase} lede={lede} proposal={p} density={density}>
         <People people={field} total={q?.field} density={density} />
       </ReachRow>
       {q && (
@@ -340,9 +349,11 @@ export function QualifierBody(props: BodyProps) {
           </div>
         </div>
       )}
-      <NoWords channel={p.notifications.join(' ')} phase={phase} />
+      <Delivery proposal={p} phase={phase} density={density}>
+        <NoWords channel={p.notifications.join(' ')} phase={phase} />
+      </Delivery>
       <Fold density={density}>
-        <Rows facts={[...restOf(p, ['Starts', 'Rounds', 'Squad', 'Players']).filter((f) => f.value !== 'Not set'), ...extra]} density={density} subject={p.summary} onAsk={ask(props)} />
+        <Rows facts={[...restOf(p, ['Starts', 'Rounds', 'Squad', 'Players', ...(p.not_reached ? ['Will not get it'] : [])]).filter((f) => f.value !== 'Not set'), ...extra]} density={density} subject={p.summary} onAsk={ask(props)} />
       </Fold>
     </Body>
   );
@@ -352,58 +363,83 @@ export function QualifierBody(props: BodyProps) {
 // A19, A20. A lineup, and locking it
 // ---------------------------------------------------------------------------------------------------------------------
 
+type Seats = Extract<NonNullable<ActionProposal['visual']>, { kind: 'lineup' }>;
+
+function SeatList({ seats, roster, label }: { seats: Seats['seats']; roster?: readonly CardPerson[]; label: string }) {
+  return (
+    <ol aria-label={label}>
+      {seats.map((s) => (
+        <li key={s.name}>
+          <span className="ch-akc-lineup__n ch-num">{s.slot ?? '–'}</span>
+          <Avatar name={s.name} id={s.id ?? personFor(roster, s.name).id} size="xs" />
+          <span>
+            {s.name}
+            {s.role === 'individual' && <small> · individual</small>}
+            {s.reasoning && <small className="ch-akc-lineup__why">{s.reasoning}</small>}
+          </span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+function Seating({ visual, roster }: { visual: Seats; roster?: readonly CardPerson[] }) {
+  const playing = visual.seats.filter((s) => !s.alternate);
+  const alternates = visual.seats.filter((s) => s.alternate);
+  return (
+    <div className="ch-akc-lineup">
+      {visual.tournament && <p className="ch-akc-subject">{[visual.tournament.name, visual.tournament.end ? `${dayWords(visual.tournament.date)} to ${dayWords(visual.tournament.end)}` : dayWords(visual.tournament.date)].join(' · ')}</p>}
+      <SeatList seats={playing} roster={roster} label="Lineup" />
+      {alternates.length > 0 && (
+        <>
+          <small>{alternates.length === 1 ? 'Alternate' : 'Alternates'}</small>
+          <SeatList seats={alternates} roster={roster} label="Alternates" />
+        </>
+      )}
+    </div>
+  );
+}
+
 export function LineupBody(props: BodyProps) {
   const { proposal: p, copy, phase, density, roster } = props;
-  const seats = p.visual?.kind === 'lineup' ? p.visual.seats : [];
+  const visual = p.visual?.kind === 'lineup' ? p.visual : null;
   const lede = p.notifications[0] ?? 'Nobody is told.';
-  const playing = seats.filter((s) => !s.alternate);
-  const alternates = seats.filter((s) => s.alternate);
-  const Seat = ({ s }: { s: (typeof seats)[number] }) => (
-    <li>
-      <span className="ch-akc-lineup__n ch-num">{s.slot ?? '–'}</span>
-      <Avatar name={s.name} id={personFor(roster, s.name).id} size="xs" />
-      <span>{s.name}</span>
-    </li>
-  );
+  // Who comes in and who goes out, when the plan carries the lineup saved now.
+  const before = visual?.replaces;
+  const names = (list: ReadonlyArray<{ name: string; alternate: boolean }>) => list.filter((s) => !s.alternate).map((s) => s.name);
+  const comesIn = visual && before ? names(visual.seats).filter((n) => !names(before).includes(n)) : [];
+  const goesOut = visual && before ? names(before).filter((n) => !names(visual.seats).includes(n)) : [];
   return (
-    <Body label={lede} phase={phase} density={density} tool={props.tool}>
-      <ReachRow copy={copy} phase={phase} lede={lede} />
-      <div className="ch-akc-lineup">
-        <ol aria-label="Lineup">
-          {playing.map((s) => (
-            <Seat key={s.name} s={s} />
-          ))}
-        </ol>
-        {alternates.length > 0 && (
-          <>
-            <small>{alternates.length === 1 ? 'Alternate' : 'Alternates'}</small>
-            <ol aria-label="Alternates">
-              {alternates.map((s) => (
-                <Seat key={s.name} s={s} />
-              ))}
-            </ol>
-          </>
-        )}
-      </div>
-      <p className="ch-akc-gap">The plan does not say which tournament, or what lineup this replaces.</p>
+    <Body label={lede} card={props}>
+      <ReachRow copy={copy} phase={phase} lede={lede} proposal={p} density={density} />
+      {visual && <Seating visual={visual} roster={roster} />}
+      {before && before.length === 0 && <Change>No lineup is saved yet. This is the first.</Change>}
+      {before && before.length > 0 && (
+        <Change>
+          <b>Replaces the lineup saved now.</b> {comesIn.length || goesOut.length ? [comesIn.length ? `In: ${comesIn.join(', ')}.` : null, goesOut.length ? `Out: ${goesOut.join(', ')}.` : null].filter(Boolean).join(' ') : 'The same players, in a new order.'}
+        </Change>
+      )}
+      {!visual?.tournament && <p className="ch-akc-gap">The plan does not say which tournament, or what lineup this replaces.</p>}
     </Body>
   );
 }
 
 export function LockBody(props: BodyProps) {
-  const { proposal: p, copy, phase, density } = props;
-  const blind = (factOf(p, 'Tournament')?.value ?? 'As set') === 'As set';
+  const { proposal: p, copy, phase, density, roster } = props;
+  const visual = p.visual?.kind === 'lineup' ? p.visual : null;
   const lede = isSaved(phase) ? 'Locked. Nobody was told.' : 'Nobody is told.';
   return (
-    <Body label="This locks the moment you press. There is no Undo." phase={phase} density={density} tool={props.tool}>
-      {!isSaved(phase) && (
+    <Body label="This locks the moment you press. There is no Undo." card={props}>
+      {/* A card whose plan carries `undo` gets this warning from the frame; an older one gets it here. */}
+      {!p.undo && !isSaved(phase) && (
         <Warning first>
           <b>This locks the moment you press.</b> There is no Undo.
         </Warning>
       )}
-      <ReachRow copy={copy} phase={phase} lede={lede} />
-      {p.notifications[0] && <p className="ch-akc-meta">{p.notifications[0]}</p>}
-      {blind && <p className="ch-akc-gap">The plan does not show the lineup. Open the tournament to check it first.</p>}
+      <ReachRow copy={copy} phase={phase} lede={lede} proposal={p} density={density} />
+      {visual && <Seating visual={visual} roster={roster} />}
+      {p.impact ? <p className="ch-akc-meta">{p.impact}</p> : p.notifications[0] && <p className="ch-akc-meta">{p.notifications[0]}</p>}
+      {!visual && <p className="ch-akc-gap">The plan does not show the lineup. Open the tournament to check it first.</p>}
     </Body>
   );
 }
@@ -421,16 +457,18 @@ export function ReminderBody(props: BodyProps) {
   const missed = valueOf(p, 'Will not get it');
   const lede = tense(phase, { will: `Sends to ${plural(n, 'player')}, in the app`, did: `Sent to ${plural(n, 'player')}, in the app`, not: `Not sent. It would have gone to ${plural(n, 'player')}.` });
   return (
-    <Body label={lede} phase={phase} density={density} tool={props.tool}>
-      <ReachRow copy={copy} phase={phase} lede={lede}>
+    <Body label={lede} card={props}>
+      <ReachRow copy={copy} phase={phase} lede={lede} proposal={p} density={density}>
         <People people={people} total={n} density={density} />
-        {missed && (
+        {missed && !p.not_reached && (
           <p className="ch-akc-missed">
             <b>Will not get it:</b> {missed}
           </p>
         )}
       </ReachRow>
-      {title && <Notice title={title} body={rest.join('\n')} caption={tense(phase, { will: 'What each of them gets', did: 'What each of them got', not: 'What they would have got' })} density={density} />}
+      <Delivery proposal={p} phase={phase} density={density}>
+        {title && <Notice title={title} body={rest.join('\n')} caption={tense(phase, { will: 'What each of them gets', did: 'What each of them got', not: 'What they would have got' })} density={density} />}
+      </Delivery>
       <Fold density={density}>
         <Rows facts={restOf(p, ['To', 'Will not get it', 'They see', 'When'])} density={density} subject={p.summary} onAsk={ask(props)} />
       </Fold>
@@ -454,8 +492,8 @@ export function AttendanceBody(props: BodyProps) {
   const changes = valueOf(p, 'Changes a mark already recorded');
   const left = valueOf(p, 'Not marked');
   return (
-    <Body label={lede} phase={phase} density={density} tool={props.tool}>
-      <ReachRow copy={copy} phase={phase} lede={lede} />
+    <Body label={lede} card={props}>
+      <ReachRow copy={copy} phase={phase} lede={lede} proposal={p} density={density} />
       {valueOf(p, 'Event') && <p className="ch-akc-subject">{valueOf(p, 'Event')}</p>}
       <div className="ch-akc-roll">
         {MARKS.map(({ word, tone }) => {

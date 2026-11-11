@@ -1,11 +1,16 @@
 import {
+  AlarmClock,
   BellRing,
+  CalendarClock,
   CalendarOff,
   CalendarPlus,
   CalendarRange,
+  CalendarX,
+  CheckCheck,
   ClipboardCheck,
   ClipboardList,
   Dumbbell,
+  EyeOff,
   FileText,
   Flag,
   GraduationCap,
@@ -19,12 +24,14 @@ import {
   StickyNote,
   Target,
   Trophy,
+  UserCheck,
   UserPlus,
   Users,
   type LucideIcon,
 } from 'lucide-react';
 import type { ActionProposal } from '@/lib/coachhelm/v3/chat/action-types';
 import { countedFact, namesIn, plural, tellsSomebody, valueOf } from './facts';
+import { reachOf } from './truth';
 import type { Reach } from './types';
 
 /**
@@ -54,6 +61,8 @@ export interface CardCopy {
   home: string | null;
   /** Writes on the press: no hold, no Undo. */
   immediate: boolean;
+  /** The quiet key beside the primary. "Cancel", except where that word is the action itself. */
+  dismiss: string;
 }
 
 interface Row {
@@ -71,6 +80,7 @@ interface Row {
   undone?: string;
   home: string | null;
   immediate?: boolean;
+  dismiss?: string;
 }
 
 const players = (p: ActionProposal): number => p.affects.filter((a) => a.kind === 'player').length;
@@ -101,6 +111,17 @@ const ROWS: Record<string, Row> = {
   set_lineup: { head: 'Tournament lineup', icon: Users, primary: 'Set lineup', busy: 'Setting…', badge: 'Set', reach: 'private', mark: 'Nobody is told', undone: 'Undone. The earlier lineup is as it was.', home: 'the tournament' },
   lock_lineup: { head: 'Lock the lineup', icon: Lock, primary: 'Lock the lineup', busy: 'Locking…', badge: 'Locked', reach: 'private', mark: 'Nobody is told', home: null, immediate: true },
   send_event_reminder: { head: 'Event reminder', icon: BellRing, primary: 'Send reminder', busy: 'Sending…', badge: 'Sent', reach: 'sends', told: (p) => countedFact(p, 'To')?.count ?? players(p), verb: 'sent', undone: 'Undone. Nothing was sent.', home: 'the event' },
+  // CONTEXT's tasks on things that already exist (tasks/*.ts). Each card carries its own reach, words and way back.
+  update_event: { head: 'Change an event', icon: CalendarClock, primary: 'Change the event', busy: 'Changing…', badge: 'Changed', reach: sendsWhenTold, told: toldInLine, undone: 'Undone. The event is as it was, and nobody was told.', home: 'Calendar' },
+  cancel_event: { head: 'Cancel an event', icon: CalendarX, primary: 'Cancel the event', busy: 'Cancelling…', badge: 'Cancelled', reach: sendsWhenTold, told: toldInLine, undone: 'Undone. The event is still on, and nobody was told.', home: 'Calendar', dismiss: 'Keep the event' },
+  set_focus_area_status: { head: 'Focus area', icon: Flag, primary: (p) => (/completed/i.test(valueOf(p, 'After') ?? '') ? 'Mark completed' : 'Reopen'), busy: 'Saving…', badge: 'Saved', reach: 'visible', undone: 'Undone. The focus area is as it was.', home: null },
+  set_goal_state: { head: 'Goal', icon: Target, primary: (p) => `${p.summary.split(' ')[0] ?? 'Update'} the goal`, busy: 'Saving…', badge: 'Saved', reach: 'visible', undone: 'Undone. The goal is as it was.', home: null },
+  mark_signal_handled: { head: 'Signal', icon: CheckCheck, primary: 'Mark handled', busy: 'Saving…', badge: 'Handled', reach: 'visible', undone: 'Undone. The signal is still open.', home: 'CoachHelm' },
+  dismiss_signal: { head: 'Signal', icon: EyeOff, primary: 'Dismiss the signal', busy: 'Dismissing…', badge: 'Dismissed', reach: 'visible', undone: 'Undone. The signal is still on your board.', home: null, dismiss: 'Keep it' },
+  set_qualifier_coach_pick: { head: 'Coach’s pick', icon: UserCheck, primary: 'Make the pick', busy: 'Saving…', badge: 'Picked', reach: 'private', mark: 'Coaches only', undone: 'Undone. No pick was made.', home: 'the selection' },
+  set_task_reminder: { head: 'Task reminder', icon: AlarmClock, primary: 'Set the reminder', busy: 'Setting…', badge: 'Set', reach: 'sends', told: (p) => countedFact(p, 'To')?.count ?? players(p), undone: 'Undone. No reminder was set.', home: 'the task' },
+  log_focus_progress: { head: 'Focus area progress', icon: Flag, primary: 'Log progress', busy: 'Saving…', badge: 'Logged', reach: 'visible', undone: 'Undone. The focus area is as it was.', home: null },
+  record_focus_outcome: { head: 'Focus area outcome', icon: Flag, primary: 'Record the outcome', busy: 'Saving…', badge: 'Recorded', reach: 'visible', undone: 'Undone. No outcome was recorded.', home: null },
   record_attendance: { head: 'Attendance', icon: ListChecks, primary: 'Save attendance', busy: 'Saving…', badge: 'Saved', reach: 'private', mark: 'Nothing is sent', undone: 'Undone. No marks were saved.', home: 'the event' },
 };
 
@@ -119,11 +140,15 @@ export function cardCopy(tool: string, proposal: ActionProposal): CardCopy {
   const row = ROWS[tool];
   if (!row) {
     // A task this table has not met: the plan's own words, and the cautious reading of its reach.
-    const told = toldInLine(proposal);
-    return { head: proposal.action, icon: ClipboardCheck, primary: 'Confirm', busy: 'Working…', badge: 'Done', reach: tellsSomebody(proposal) ? 'sends' : 'private', mark: tellsSomebody(proposal) ? 'Sends' : 'Nobody is told', told, hold: holdLine('saved', told), undone: 'Undone. Nothing was saved, and nobody was told.', untouched: 'Nothing was saved.', home: null, immediate: false };
+    const truth = reachOf(proposal, tellsSomebody(proposal) ? 'sends' : 'private');
+    const told = truth.reach === 'sends' ? (proposal.recipients?.length ?? toldInLine(proposal)) : 0;
+    return { head: proposal.action, icon: ClipboardCheck, primary: 'Confirm', busy: 'Working…', badge: 'Done', reach: truth.reach, mark: truth.mark ?? (truth.reach === 'sends' ? 'Sends' : truth.reach === 'visible' ? MARK.visible : 'Nobody is told'), told, hold: holdLine('saved', told), undone: 'Undone. Nothing was saved, and nobody was told.', untouched: 'Nothing was saved.', home: null, immediate: proposal.undo?.window === false, dismiss: 'Cancel' };
   }
-  const reach = typeof row.reach === 'function' ? row.reach(proposal) : row.reach;
-  const told = reach === 'sends' ? (row.told?.(proposal) ?? 0) : 0;
+  // The plan's own word on who is sent something and who can see it outranks the catalogue's reading of an older card.
+  const read = typeof row.reach === 'function' ? row.reach(proposal) : row.reach;
+  const truth = reachOf(proposal, read);
+  const reach = truth.reach;
+  const told = reach === 'sends' ? (proposal.recipients?.length ?? row.told?.(proposal) ?? 0) : 0;
   const verb = row.verb ?? 'saved';
   return {
     head: row.head,
@@ -132,13 +157,14 @@ export function cardCopy(tool: string, proposal: ActionProposal): CardCopy {
     busy: row.busy,
     badge: row.badge,
     reach,
-    mark: reach === 'private' ? (row.mark ?? MARK.private) : MARK[reach],
+    mark: truth.mark ?? (reach === 'private' ? (row.mark ?? MARK.private) : MARK[reach]),
     told,
     hold: holdLine(verb, told),
     undone: row.undone ?? 'Undone. Nothing was saved, and nobody was told.',
     untouched: verb === 'saved' ? 'Nothing was saved.' : `Nothing was ${verb}.`,
     home: row.home,
-    immediate: !!row.immediate,
+    immediate: proposal.undo ? !proposal.undo.window : !!row.immediate,
+    dismiss: row.dismiss ?? 'Cancel',
   };
 }
 

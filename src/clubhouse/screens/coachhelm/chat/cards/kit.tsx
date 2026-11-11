@@ -1,15 +1,19 @@
 'use client';
 
-import { ArrowLeftRight, Bell, ChevronDown, Eye, LockKeyhole, Send, TriangleAlert, type LucideIcon } from 'lucide-react';
+import { ArrowDown, ArrowLeftRight, Bell, ChevronDown, Eye, LockKeyhole, Pencil, Send, TriangleAlert, Undo2, type LucideIcon } from 'lucide-react';
 import { useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
-import type { ProposalFact } from '@/lib/coachhelm/v3/chat/action-types';
+import type { ActionProposal, ProposalFact } from '@/lib/coachhelm/v3/chat/action-types';
 import { Avatar } from '../../../../ui/Avatar';
 import { Badge, type BadgeTone } from '../../../../ui/Badge';
 import { Button } from '../../../../ui/Button';
 import { Icon } from '../../../../ui/Icon';
+import { Segmented } from '../../../../ui/Segmented';
+import { Select } from '../../../../ui/Select';
 import type { CardCopy } from './catalog';
+import { EditForm } from './edit';
 import { count, dayParts, dayWords } from './facts';
-import { isSaved, isWithdrawn, type CardDensity, type CardPerson, type CardPhase, type Reach } from './types';
+import { channelChip, channelWords, editableOf, recipientWords } from './truth';
+import { isSaved, isWithdrawn, type CardBodyProps, type CardDensity, type CardPerson, type CardPhase, type Reach } from './types';
 
 /**
  * The parts every card body is made of (CAPABILITIES.md 0.2 to 0.5): reach, people, words in the reader's frame, the
@@ -27,13 +31,24 @@ export function tense(phase: CardPhase, words: { will: string; did?: string; not
   return words.will;
 }
 
+/** The reach sentence: from the plan when it lists who is sent something, else the body's own reading of an older card. */
+export function reachLine(copy: CardCopy, phase: CardPhase, proposal: ActionProposal | undefined, lede: string): string {
+  if (proposal?.recipients === undefined) return (copy.reach !== 'sends' && proposal?.visible_note) || lede;
+  if (copy.reach !== 'sends') return proposal.visible_note ?? lede;
+  const who = recipientWords(proposal.recipients);
+  const how = proposal.delivery?.channels.length ? `: ${channelWords(proposal.delivery.channels)}` : '';
+  return tense(phase, { will: `Sends to ${who}${how}`, did: `Sent to ${who}${how}`, not: `Not sent. It would have gone to ${who}.` });
+}
+
 /**
- * Who is affected and how far it travels. Always the first thing in a body. `lede` is the sentence ("Sends to 6
- * players, in the app"); the mark says which of the three levels it is, and turns neutral once nothing went anywhere.
+ * Who is affected and how far it travels. Always the first thing in a body. The mark says which of the three levels it
+ * is, and turns neutral once nothing went anywhere. With a plan that lists its recipients, the sentence, the people and
+ * anyone who will not be reached are the plan's; without one, `lede` and `children` are the body's reading of the card.
  */
-export function ReachRow({ copy, phase, lede, children }: { copy: CardCopy; phase: CardPhase; lede: string; children?: ReactNode }) {
+export function ReachRow({ copy, phase, lede, proposal, density = 'full', children }: { copy: CardCopy; phase: CardPhase; lede: string; proposal?: ActionProposal; density?: CardDensity; children?: ReactNode }) {
   const withdrawn = isWithdrawn(phase) && copy.reach === 'sends';
   const mark = withdrawn ? 'Not sent' : copy.reach === 'sends' && isSaved(phase) ? 'Sent' : copy.mark;
+  const listed = proposal?.recipients;
   return (
     <div className="ch-akc-reach" data-reach={copy.reach} data-withdrawn={withdrawn ? '' : undefined}>
       <div className="ch-akc-reach__top">
@@ -41,9 +56,14 @@ export function ReachRow({ copy, phase, lede, children }: { copy: CardCopy; phas
           <Icon icon={REACH_ICON[copy.reach]} size={12} />
           {mark}
         </Badge>
-        <p className="ch-akc-reach__lede">{lede}</p>
+        <p className="ch-akc-reach__lede">{reachLine(copy, phase, proposal, lede)}</p>
       </div>
-      {children}
+      {listed === undefined ? children : listed.length > 0 && <People people={listed} density={density} label={listed.some((p) => p.role === 'coach') ? 'people' : 'players'} />}
+      {proposal?.not_reached?.map((n) => (
+        <p key={n.id} className="ch-akc-missed">
+          <b>Will not get it:</b> {n.name} ({n.reason})
+        </p>
+      ))}
     </div>
   );
 }
@@ -294,11 +314,128 @@ export function Fold({ density, label = 'details', children }: { density: CardDe
   );
 }
 
-/** The frame of every body: one group, named by what it is about, in the density and state it is drawn in. */
-export function Body({ label, phase, density, tool, children }: { label: string; phase: CardPhase; density: CardDensity; tool: string; children: ReactNode }) {
+/**
+ * What a recipient receives, exactly: the plan's own `delivery`, built by the code that sends it. Where a channel words
+ * it differently the coach can switch channel; where each person gets their own words, whose. `children` is what an
+ * older card without `delivery` draws in its place. A plan that says nothing is sent draws nothing here.
+ */
+export function Delivery({ proposal, phase, density, children }: { proposal: ActionProposal; phase: CardPhase; density: CardDensity; children?: ReactNode }) {
+  const d = proposal.delivery;
+  const [channel, setChannel] = useState('0');
+  const [whose, setWhose] = useState<string | null>(null);
+  if (d === undefined) return <>{children}</>;
+  if (d === null) return null;
+  const forms = [{ channel: d.channels[0] ?? 'in_app', title: d.title, body: d.body }, ...(d.variants ?? [])];
+  const form = forms[Number(channel)] ?? forms[0]!;
+  const each = d.each ?? [];
+  const person = each.find((e) => e.id === whose) ?? each[0];
+  const first = (proposal.recipients?.[0]?.name ?? '').split(' ')[0];
+  const who = person ? person.name.split(' ')[0] : proposal.recipients?.length === 1 ? first : null;
+  const caption = who ? tense(phase, { will: `What ${who} gets`, did: `What ${who} got`, not: `What ${who} would have got` }) : tense(phase, { will: 'What each of them gets', did: 'What each of them got', not: 'What they would have got' });
   return (
-    <div className="ch-akc" role="group" aria-label={label} data-ch-card-body={tool} data-density={density} data-phase={phase}>
+    <figure className="ch-akc-words ch-akc-delivery">
+      <figcaption>
+        {caption}
+        {each.length > 1 && '. Each person’s is their own.'}
+      </figcaption>
+      {forms.length > 1 ? (
+        <Segmented label="How it arrives" size="sm" value={channel} options={forms.map((f, i) => ({ value: String(i), label: channelChip(f.channel) }))} onChange={setChannel} />
+      ) : (
+        d.channels.length > 0 && (
+          <ul className="ch-akc-delivery__how" aria-label="How it arrives">
+            {d.channels.map((c) => (
+              <li key={c}>
+                <Badge>{channelChip(c)}</Badge>
+              </li>
+            ))}
+          </ul>
+        )
+      )}
+      {each.length > 1 && <Select label="Whose words" value={person?.id ?? ''} options={each.map((e) => ({ value: e.id, label: e.name }))} onChange={setWhose} />}
+      <div className="ch-akc-notice">
+        <span className="ch-akc-notice__app" aria-hidden="true">
+          <Icon icon={Bell} size={14} />
+        </span>
+        <div className="ch-akc-notice__tx">
+          <b>{form.title}</b>
+          <Clamp text={channel === '0' && person ? person.body : form.body} lines={linesFor(density)} density={density} />
+        </div>
+      </div>
+      {d.note && <p className="ch-akc-meta">{d.note}</p>}
+    </figure>
+  );
+}
+
+/** What changes: how it stands now, and how it will stand. The one place a card shows both. */
+export function Diff({ now, after }: { now: string; after: string }) {
+  return (
+    <div className="ch-akc-diff" role="group" aria-label="What changes">
+      <p className="is-now">
+        <small>Now</small>
+        <span>{now}</span>
+      </p>
+      <Icon icon={ArrowDown} size={14} />
+      <p className="is-after">
+        <small>After</small>
+        <b>{after}</b>
+      </p>
+    </div>
+  );
+}
+
+const lowerList = (labels: readonly string[]): string => {
+  const l = labels.map((x) => x.charAt(0).toLowerCase() + x.slice(1));
+  return l.length <= 1 ? (l[0] ?? '') : `${l.slice(0, -1).join(', ')} and ${l[l.length - 1]}`;
+};
+
+/**
+ * The frame of every body: one group, named by its reach sentence, in the density and state it is drawn in. It also
+ * holds what every card says the same way when the plan carries it: that a write has no Undo (first), how it is taken
+ * back afterwards (last), who a send missed, and the way into edit mode.
+ */
+export function Body({ label, card, children }: { label: string; card: CardBodyProps & { copy: CardCopy }; children: ReactNode }) {
+  const { proposal: p, phase, density, receipt } = card;
+  const fields = editableOf(p);
+  const canEdit = phase === 'proposed' && !!card.onEdit && fields.length > 0;
+  // Open for one version of the plan: the server's re-planned card closes the form by being a new version; a refused edit does not.
+  const version = `${p.idempotency_key}:${(p as { revision?: number }).revision ?? 0}`;
+  const [openFor, setOpenFor] = useState<string | null>(null);
+  const open = canEdit && openFor === version;
+  const setOpen = (next: boolean) => {
+    setOpenFor(next ? version : null);
+    card.onEditOpen?.(next);
+  };
+  const missed = receipt?.missed ?? [];
+  return (
+    <div className="ch-akc" role="group" aria-label={reachLine(card.copy, phase, p, label)} data-ch-card-body={card.tool} data-density={density} data-phase={phase} data-editing={open ? '' : undefined}>
+      {p.undo?.window === false && !isSaved(phase) && !isWithdrawn(phase) && (
+        <Warning first>
+          <b>This happens the moment you press.</b> There is no Undo.
+        </Warning>
+      )}
       {children}
+      {missed.length > 0 && (
+        <p className="ch-akc-missed">
+          <b>Did not get it:</b> {missed.map((m) => `${m.name} (${m.reason})`).join(', ')}
+        </p>
+      )}
+      {p.undo?.after && !isWithdrawn(phase) && (
+        <p className="ch-akc-after">
+          <Icon icon={Undo2} size={14} />
+          <span>
+            <b>{p.undo.window ? 'After the 8 seconds:' : 'Afterwards:'}</b> {p.undo.after}
+          </span>
+        </p>
+      )}
+      {canEdit && !open && (
+        <div className="ch-akc-editkey">
+          <Button variant="secondary" size="sm" leftIcon={Pencil} onClick={() => setOpen(true)}>
+            Edit
+          </Button>
+          <small>You can change the {lowerList(fields.map((f) => f.label))}.</small>
+        </div>
+      )}
+      {open && <EditForm fields={fields} busy={!!card.editing} error={card.editError ?? null} onSubmit={(patch) => card.onEdit?.(patch)} onClose={() => setOpen(false)} />}
     </div>
   );
 }

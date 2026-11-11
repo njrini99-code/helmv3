@@ -5,7 +5,7 @@
  * and the receipts its `commit` returns. Nothing here reaches a server.
  */
 import type { ActionProposal, ActionReceipt } from '@/lib/coachhelm/v3/chat/action-types';
-import type { CardPerson } from '../screens/coachhelm/chat/cards';
+import type { CardPerson, EditableField } from '../screens/coachhelm/chat/cards';
 
 export const CAP_TEAM = 'Demo University Golf';
 
@@ -51,7 +51,7 @@ const LONG_BODY =
 const DOC_BODY =
   'Eli Brandt: fall review\n\nScoring. Eli’s average over his last 8 counting rounds is 73.4, down from 75.1 over the 8 before. The gain is almost all on the greens.\n\nPutting. From 4 to 8 feet he made 61% (22 of 36), up from 47%. From outside 20 feet he three-putted 4 times in 8 rounds.\n\nApproach. He leaves it 31 feet on average from 150 to 175 yards, which is 6 feet longer than the team. This is the next place to work.\n\nPlan. Keep the short-putt ladder twice a week. Add a 150 to 175 yard distance-control block on Tuesdays through the end of the month, then re-read after the Ridgeline qualifier.';
 
-export const CAP_TASKS: CapTask[] = [
+const BASE_TASKS: CapTask[] = [
   {
     tool: 'create_event',
     name: 'Add one event',
@@ -570,7 +570,7 @@ export const CAP_TASKS: CapTask[] = [
     },
     saved: done('send_event_reminder', 'The reminder about Short-game practice went to 5 players.', [{ kind: 'reminder', count: 5, href: '/golf/dashboard/calendar?event=ev-short', label: 'Short-game practice' }], [{ channel: 'in-app', recipients: 5, status: 'sent' }]),
     failed: failed('send_event_reminder', 'The event changed after this card was made, so the reminder would no longer say what you approved. Nothing was sent. Ask for the reminder again.', false),
-    partial: { status: 'partial', action: 'send_event_reminder', summary: 'The reminder about Short-game practice went to 4 players.', created: [{ kind: 'reminder', count: 4, href: '/golf/dashboard/calendar?event=ev-short', label: 'Short-game practice' }], notifications: [{ channel: 'in-app', recipients: 4, status: 'sent' }], partial_failures: ['1 player of the 5 on the card did not get it.'], retryable: false, at: AT },
+    partial: { status: 'partial', action: 'send_event_reminder', summary: 'The reminder about Short-game practice went to 4 players.', created: [{ kind: 'reminder', count: 4, href: '/golf/dashboard/calendar?event=ev-short', label: 'Short-game practice' }], notifications: [{ channel: 'in-app', recipients: 4, status: 'sent' }], partial_failures: ['1 player of the 5 on the card did not get it.'], missed: [{ name: 'Sam Whitfield', reason: 'notifications turned off' }], retryable: false, at: AT },
     variants: {
       one: {
         label: 'One player',
@@ -625,6 +625,488 @@ export const CAP_TASKS: CapTask[] = [
     failed: failed('record_attendance', 'Failed to save attendance. I could not check which marks were saved: look at the event in the Calendar. Saving again is safe, it writes the same marks.'),
     partial: { status: 'partial', action: 'record_attendance', summary: 'Attendance is saved for 5 players at Short-game practice, and not for Jonah Okafor and Sam Whitfield.', created: [{ kind: 'attendance', count: 5, href: '/golf/dashboard/calendar?event=ev-short', label: 'Short-game practice' }], notifications: [], partial_failures: ['Jonah Okafor: Failed to save attendance.', 'Sam Whitfield: Failed to save attendance.'], error: 'Failed to save attendance.', retryable: true, at: AT },
   },
+];
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// The plan as the server now builds it (CONTRACT_NOTES, PLANS P1 to P11): who is sent something by id and name, the
+// exact words, who can see it, how it is taken back, and what may be edited. Each task's typical card carries these;
+// the card as it was stored before 11 Nov is kept as the case "older", so both forms stay drawn.
+// ---------------------------------------------------------------------------------------------------------------------
+
+type Truth = Partial<ActionProposal> & { editable?: EditableField[] };
+const asPlayers = (people: readonly CardPerson[]) => people.map((p) => ({ id: p.id, name: p.name, role: 'player' as const }));
+const COACHES = [{ id: 'c-maya', name: 'Maya Reyes', role: 'coach' as const }, { id: 'c-dana', name: 'Dana Reyes', role: 'coach' as const }];
+const rosterOptions = CAP_ROSTER.map((p) => ({ value: p.id, label: p.name }));
+const owen = CAP_ROSTER[7]!;
+
+const TRUTH: Record<string, Truth> = {
+  create_event: {
+    affects: affects(six),
+    recipients: asPlayers(six),
+    not_reached: [],
+    delivery: { channels: ['push', 'in_app', 'email'], title: 'You’re invited: Short-game practice', body: 'Thu, Nov 12, 3:00 PM at Short-game area, Ridgeline GC. Tap to reply.', variants: [{ channel: 'in_app', title: 'New event: Short-game practice', body: 'Thu, Nov 12, 3:00 PM at Short-game area, Ridgeline GC' }], note: 'The email is the same invitation in the app’s own layout. A player who has turned a channel off does not get it there.' },
+    visible_to: 'team',
+    undo: { window: true, after: 'Change or cancel it on the Calendar. An invitation that has gone out stays sent.' },
+    editable: [
+      { key: 'title', label: 'Title', type: 'text', value: 'Short-game practice', required: true, max_length: 200 },
+      { key: 'date', label: 'Day', type: 'date', value: '2026-11-12', required: true },
+      { key: 'start', label: 'Start', type: 'time', value: '15:00', required: false },
+      { key: 'end', label: 'End', type: 'time', value: '17:30', required: false },
+      { key: 'location', label: 'Place', type: 'text', value: 'Short-game area, Ridgeline GC', required: false, max_length: 500 },
+      { key: 'requires_rsvp', label: 'Ask for replies', type: 'toggle', value: true, required: true },
+      { key: 'invite_player_ids', label: 'Invited', type: 'people', value: six.map((p) => p.id), required: false, options: rosterOptions },
+    ],
+  },
+  create_recurring_practice: {
+    visual: { kind: 'series', title: 'Team practice', dates: ['2026-11-11', '2026-11-13', '2026-11-18', '2026-11-20', '2026-11-25', '2026-12-02', '2026-12-04', '2026-12-09'], start: '15:00', end: '17:30', where: 'Ridgeline GC, practice tee' },
+    recipients: asPlayers(CAP_ROSTER.slice(0, 7)),
+    not_reached: [{ ...asPlayers([owen])[0]!, reason: 'no account yet' }],
+    delivery: { channels: ['push', 'in_app', 'email'], title: 'You’re invited: Team practice', body: 'Every Tuesday and Thursday at 3:00 PM, from Tue, Nov 11. Reply by Mon, Nov 10, 6:00 PM.', note: 'One invitation covers all 8 dates.' },
+    visible_to: 'team',
+    undo: { window: true, after: 'Each practice is its own event on the Calendar: change or cancel them there.' },
+  },
+  add_blocked_time: { recipients: [], delivery: null, visible_to: 'only_you', visible_note: 'Only you see this. It is not on any player’s calendar.', undo: { window: true, after: 'Delete it on the Calendar.' } },
+  add_team_break: { recipients: [], delivery: null, visible_to: 'team', visible_note: 'Players see these days as free of class on the team calendar. Nobody is told.', undo: { window: true, after: 'Remove the break in Settings.' } },
+  save_team_term: { recipients: [], delivery: null, visible_to: 'coaches', visible_note: 'Coaches only. It sets which weeks count as in term for class conflicts.', undo: { window: true, after: 'Change or remove the term in Settings.' } },
+  create_trip: { recipients: [], delivery: null, visible_to: 'team', visible_note: 'Every player and coach sees it in Travel, the hotel confirmation number included. Nobody is told.', undo: { window: true, after: 'Change or delete the trip in Travel.' } },
+  create_qualifier: {
+    affects: affects(CAP_ROSTER),
+    recipients: asPlayers(CAP_ROSTER.slice(0, 7)),
+    not_reached: [{ ...asPlayers([owen])[0]!, reason: 'no account yet' }],
+    delivery: { channels: ['push', 'email'], title: 'New qualifier: Sandhills qualifier', body: '3 rounds from Tue, Nov 17. Enter by Sun, Nov 15.', note: 'The email adds the rules in full.' },
+    visible_to: 'team',
+    undo: { window: true, after: 'Change or delete it in Qualifiers. Players already told stay told.' },
+  },
+  create_goal: {
+    visual: { kind: 'goal', player: 'Eli Brandt', stat: 'Strokes gained putting', target: 0.4, days: 30, current: -0.1, unit: 'strokes a round', better: 'up' },
+    affects: affects([CAP_ROSTER[0]!]),
+    recipients: asPlayers([CAP_ROSTER[0]!]),
+    delivery: { channels: ['push'], title: 'New goal from your coach', body: 'Strokes gained putting: reach +0.4 a round in 30 days.' },
+    visible_to: 'recipients',
+    undo: { window: true, after: 'Pause or close the goal from the chat or from Eli’s page.' },
+  },
+  create_focus_area: {
+    recipients: asPlayers([CAP_ROSTER[1]!]),
+    delivery: { channels: ['in_app'], title: 'New focus area from your coach', body: 'Lag putting from outside 20 feet. Open it to accept.' },
+    visible_to: 'recipients',
+    undo: { window: true, after: 'Mark it completed from the chat or on Jonah’s page.' },
+  },
+  create_task: {
+    recipients: asPlayers(CAP_ROSTER.slice(0, 4)),
+    delivery: { channels: ['in_app'], title: 'New task', body: 'Post your Ridgeline practice round hole by hole. Due Fri, Nov 14.' },
+    visible_to: 'recipients',
+    undo: { window: true, after: 'Edit or delete the task in Team Hub.' },
+    editable: [
+      { key: 'title', label: 'Task', type: 'text', value: 'Post your Ridgeline practice round hole by hole', required: true, max_length: 160 },
+      { key: 'due_date', label: 'Due', type: 'date', value: '2026-11-14', required: false },
+      { key: 'priority', label: 'Priority', type: 'choice', value: 'high', required: true, options: [{ value: 'low', label: 'Low' }, { value: 'medium', label: 'Medium' }, { value: 'high', label: 'High' }] },
+      { key: 'assign_to_player_ids', label: 'Assigned to', type: 'people', value: CAP_ROSTER.slice(0, 4).map((p) => p.id), required: false, options: rosterOptions },
+    ],
+  },
+  create_team_announcement: {
+    recipients: asPlayers(CAP_ROSTER),
+    delivery: { channels: ['in_app'], title: 'Thursday moves to 3:30', body: 'Practice on Thursday starts at 3:30, not 3:00. The range is closed until then for a junior clinic. Same place, same plan: short game first, then nine holes.' },
+    visible_to: 'team',
+    undo: { window: true, after: 'It stays in every player’s Announcements. It cannot be recalled from the chat.' },
+    editable: [
+      { key: 'title', label: 'Title', type: 'text', value: 'Thursday moves to 3:30', required: true, max_length: 120 },
+      { key: 'body', label: 'Message', type: 'long_text', value: 'Practice on Thursday starts at 3:30, not 3:00. The range is closed until then for a junior clinic. Same place, same plan: short game first, then nine holes.', required: true, max_length: 2000 },
+      { key: 'urgency', label: 'Urgency', type: 'choice', value: 'normal', required: true, options: [{ value: 'low', label: 'Low' }, { value: 'normal', label: 'Normal' }, { value: 'high', label: 'High' }, { value: 'urgent', label: 'Urgent' }] },
+      { key: 'requires_acknowledgement', label: 'Each player must acknowledge it', type: 'toggle', value: false, required: true },
+    ],
+  },
+  add_round_note: {
+    visual: { kind: 'note', player: 'Priya Natarajan', note: 'Three of your four bogeys came after a missed green long. From 150 in, take one less club and play to the front number this week.', round: { course: 'Ridgeline GC', date: '2026-11-08', score: 74 } },
+    recipients: [],
+    delivery: null,
+    visible_to: 'recipients',
+    visible_note: 'Priya Natarajan will see this note on the round. No notification is sent.',
+    undo: { window: true, after: 'Edit the note on the round.' },
+  },
+  set_availability_note: { recipients: [], delivery: null, visible_to: 'coaches', visible_note: 'Coaches only. Sam never sees this.', undo: { window: true, after: 'Change the note on Sam’s row in the Roster.' } },
+  create_recruit: { recipients: [], delivery: null, visible_to: 'coaches', visible_note: 'Coaches only. Players never see recruits.', undo: { window: true, after: 'Edit or remove the recruit in Recruiting.' } },
+  create_drill: { recipients: [], delivery: null, visible_to: 'coaches', visible_note: 'Coaches only, until a published plan uses it. Nobody is told.', undo: { window: true, after: 'Edit or remove it in the drill bank.' } },
+  publish_practice_plan: {
+    publish: { heading: 'Publish Thursday short game?', coins: six.map((p) => ({ name: p.name })), coinsMore: 2, tellsLine: '8 players and 2 coaches, push and bell', folder: 'Practice plans', teamChat: true, sample: { player: 'Eli', title: 'Thursday short game', body: 'Thu 3:00 PM at the short-game area. You start at Station 2, bunkers.' }, people: [...asPlayers(CAP_ROSTER), ...COACHES], chatPost: 'Thursday short game is published. Thu, Nov 12 · 3:00 to 5:30 PM. Open the plan in the app.' },
+    recipients: [...asPlayers(CAP_ROSTER), ...COACHES],
+    delivery: {
+      channels: ['push', 'in_app'],
+      title: 'Thursday short game',
+      body: 'Thu 3:00 PM at the short-game area. You start at Station 2, bunkers.',
+      each: [
+        ...CAP_ROSTER.map((p, i) => ({ id: p.id, name: p.name, body: `Thu 3:00 PM at the short-game area. You start at Station ${(i % 3) + 1}, ${['putting green', 'bunkers', 'chipping area'][i % 3]}.` })),
+        ...COACHES.map((c) => ({ id: c.id, name: c.name, body: 'Thu 3:00 PM at the short-game area. 8 players, 3 stations.' })),
+      ],
+    },
+    visible_to: 'team',
+    undo: { window: true, after: 'Unpublish it from the plan. People already told stay told.' },
+  },
+  publish_artifact: { affects: affects(CAP_ROSTER), recipients: [], delivery: null, visible_to: 'team', visible_note: 'All 8 active players can open it in Documents. Nobody gets a notification.', undo: { window: true, after: 'Hide or delete it in Documents.' } },
+  send_message: {
+    visual: { kind: 'msg', conversationId: 'c-travel', thread: 'Travel squad', count: 6, last: 'Sofia: are we in the navy or the white polos Friday?', draft: 'Navy polos Friday, white on Saturday. Vans leave the lower lot at 6:30. Bring rain gear.', members: six.map((p) => p.name) },
+    recipients: asPlayers(six),
+    delivery: { channels: ['message'], title: 'Travel squad', body: 'Navy polos Friday, white on Saturday. Vans leave the lower lot at 6:30. Bring rain gear.' },
+    visible_to: 'recipients',
+    undo: { window: true, after: 'Delete the message in the thread. People who have read it have read it.' },
+    editable: [{ key: 'content', label: 'Message', type: 'long_text', value: 'Navy polos Friday, white on Saturday. Vans leave the lower lot at 6:30. Bring rain gear.', required: true, max_length: 2000 }],
+  },
+  set_lineup: {
+    visual: {
+      kind: 'lineup',
+      tournament: { id: 't-sandhills', name: 'Sandhills Invitational', date: '2026-11-14', end: '2026-11-16' },
+      seats: [
+        { slot: 1, name: 'Sofia Alvarez', alternate: false, role: 'lineup', reasoning: 'Lowest average over the last 8 counting rounds.' },
+        { slot: 2, name: 'Eli Brandt', alternate: false, role: 'lineup' },
+        { slot: 3, name: 'Jonah Okafor', alternate: false, role: 'lineup' },
+        { slot: 4, name: 'Ava Lindqvist', alternate: false, role: 'lineup' },
+        { slot: 5, name: 'Priya Natarajan', alternate: false, role: 'lineup', reasoning: 'Won the qualifier’s last round by two.' },
+        { slot: null, name: 'Owen Park', alternate: true, role: 'alternate' },
+      ],
+      replaces: [
+        { slot: 1, name: 'Sofia Alvarez', alternate: false },
+        { slot: 2, name: 'Eli Brandt', alternate: false },
+        { slot: 3, name: 'Ava Lindqvist', alternate: false },
+        { slot: 4, name: 'Jonah Okafor', alternate: false },
+        { slot: 5, name: 'Owen Park', alternate: false },
+      ],
+    },
+    recipients: [],
+    delivery: null,
+    visible_to: 'coaches',
+    visible_note: 'Coaches only until the lineup is locked. Nobody is told.',
+    undo: { window: true, after: 'Set it again, any time before it is locked.' },
+  },
+  lock_lineup: {
+    visual: {
+      kind: 'lineup',
+      locking: true,
+      tournament: { id: 't-sandhills', name: 'Sandhills Invitational', date: '2026-11-14', end: '2026-11-16' },
+      seats: [
+        { slot: 1, name: 'Sofia Alvarez', alternate: false },
+        { slot: 2, name: 'Eli Brandt', alternate: false },
+        { slot: 3, name: 'Jonah Okafor', alternate: false },
+        { slot: 4, name: 'Ava Lindqvist', alternate: false },
+        { slot: 5, name: 'Priya Natarajan', alternate: false },
+        { slot: null, name: 'Owen Park', alternate: true },
+      ],
+    },
+    recipients: [],
+    delivery: null,
+    visible_to: 'team',
+    visible_note: 'Players see the locked lineup on the tournament. Nobody is told.',
+    impact: 'Locking fixes these five and the alternate for the event. Substitutions only work if the event allows them.',
+    undo: { window: false, after: 'A locked lineup cannot be unlocked.' },
+  },
+  send_event_reminder: {
+    recipients: asPlayers(CAP_ROSTER.slice(0, 5)),
+    not_reached: [{ ...asPlayers([owen])[0]!, reason: 'no account yet' }],
+    delivery: { channels: ['in_app'], title: 'Reminder: Short-game practice', body: 'Thu, Nov 12, 3:00 PM at Short-game area, Ridgeline GC' },
+    visible_to: 'recipients',
+    undo: { window: true, after: 'A reminder that has gone out cannot be taken back.' },
+  },
+  record_attendance: { recipients: [], delivery: null, visible_to: 'coaches', visible_note: 'Coaches only. Nothing is sent to players.', undo: { window: true, after: 'Change any mark on the event in the Calendar.' } },
+};
+
+/** Tasks on something that already exists (`tasks/*.ts`), in the shape their planners return. */
+const MORE_TASKS: CapTask[] = [
+  {
+    tool: 'update_event',
+    name: 'Move or change an event',
+    ref: 'A23',
+    surface: 'Ask and quick chat',
+    proposal: {
+      action: 'Change an event',
+      summary: 'Change Short-game practice to Fri, Nov 13, 3:30 PM at Short-game area, Ridgeline GC.',
+      facts: [
+        { label: 'Event', value: 'Short-game practice' },
+        { label: 'Now', value: 'Thu, Nov 12, 3:00 PM at Short-game area, Ridgeline GC, until 5:30 PM' },
+        { label: 'After', value: 'Fri, Nov 13, 3:30 PM at Short-game area, Ridgeline GC, until 6:00 PM' },
+        { label: 'Series', value: 'Only this date changes. The other dates of the series stay as they are.' },
+        { label: 'Told (5)', value: list(CAST.slice(0, 5)) },
+        { label: 'Will not be told', value: 'Owen Park (no account yet)' },
+        { label: 'They see', value: 'Event changed: Short-game practice\nNow Fri, Nov 13, 3:30 PM at Short-game area, Ridgeline GC' },
+        { label: 'How', value: 'A notification in the app that opens the event.' },
+        { label: 'When', value: 'When the Undo window closes, a few seconds after you confirm.' },
+      ],
+      affects: [{ kind: 'event', id: 'ev-short', label: 'Short-game practice' }],
+      notifications: ['5 players get an in-app notification: “Event changed: Short-game practice”.'],
+      missing: [],
+      idempotency_key: 'update_event:ev-short:2026-11-13:15:30',
+      recipients: asPlayers(CAP_ROSTER.slice(0, 5)),
+      not_reached: [{ ...asPlayers([owen])[0]!, reason: 'no account yet' }],
+      delivery: { channels: ['in_app'], title: 'Event changed: Short-game practice', body: 'Now Fri, Nov 13, 3:30 PM at Short-game area, Ridgeline GC' },
+      undo: { window: true, after: 'Move it back on the Calendar. A notice that has gone out stays sent.' },
+      ...({
+        editable: [
+          { key: 'new_date', label: 'Day', type: 'date', value: '2026-11-13', required: false },
+          { key: 'new_start', label: 'Start', type: 'time', value: '15:30', required: false },
+          { key: 'new_end', label: 'End', type: 'time', value: '18:00', required: false },
+          { key: 'new_location', label: 'Place', type: 'text', value: 'Short-game area, Ridgeline GC', required: false, max_length: 500 },
+          { key: 'new_title', label: 'Title', type: 'text', value: 'Short-game practice', required: false, max_length: 200 },
+        ] satisfies EditableField[],
+      } as object),
+    },
+    saved: done('update_event', 'Short-game practice is now Fri, Nov 13, 3:30 PM.', [{ kind: 'event', count: 1, id: 'ev-short', href: '/golf/dashboard/calendar?date=2026-11-13&event=ev-short', label: 'Short-game practice' }], [{ channel: 'in-app', recipients: 5, status: 'queued' }]),
+    failed: { ...failed('update_event', 'The event was changed by someone else after this card was made. Nothing was changed. Ask for it again.', false), error: 'card_out_of_date' },
+  },
+  {
+    tool: 'cancel_event',
+    name: 'Cancel an event',
+    ref: 'A24',
+    surface: 'Ask and quick chat',
+    proposal: {
+      action: 'Cancel an event',
+      summary: 'Cancel Short-game practice on Thu, Nov 12, 3:00 PM.',
+      facts: [
+        { label: 'Event', value: 'Short-game practice · Thu, Nov 12, 3:00 PM at Short-game area, Ridgeline GC' },
+        { label: 'Reason', value: 'Frost delay; the short-game area is closed.' },
+        { label: 'What happens', value: 'It stays on the calendar marked cancelled, and every reply is kept. It can be restored on the Calendar.' },
+        { label: 'Told (5)', value: list(CAST.slice(0, 5)) },
+        { label: 'Will not be told', value: 'Owen Park (no account yet)' },
+        { label: 'In the app they see', value: 'Cancelled: Short-game practice\nThu, Nov 12, 3:00 PM. Frost delay; the short-game area is closed.' },
+        { label: 'By e-mail they get', value: 'Event cancelled: Short-game practice\nThis event has been cancelled. Thu, Nov 12, 3:00 PM. Frost delay; the short-game area is closed.\nSent to each of them who has an e-mail address on their account.' },
+        { label: 'When', value: 'When the Undo window closes, a few seconds after you confirm. After that, the people told cannot be un-told.' },
+      ],
+      affects: [{ kind: 'event', id: 'ev-short', label: 'Short-game practice' }],
+      notifications: ['5 players are told in the app and by e-mail.'],
+      missing: [],
+      idempotency_key: 'cancel_event:ev-short',
+      recipients: asPlayers(CAP_ROSTER.slice(0, 5)),
+      not_reached: [{ ...asPlayers([owen])[0]!, reason: 'no account yet' }],
+      delivery: { channels: ['in_app', 'email'], title: 'Cancelled: Short-game practice', body: 'Thu, Nov 12, 3:00 PM. Frost delay; the short-game area is closed.', variants: [{ channel: 'email', title: 'Event cancelled: Short-game practice', body: 'This event has been cancelled. Thu, Nov 12, 3:00 PM. Frost delay; the short-game area is closed.' }], note: 'The email goes to each of them who has an address on their account.' },
+      undo: { window: true, after: 'Restore it on the Calendar. People already told stay told.' },
+    },
+    saved: done('cancel_event', 'Short-game practice is cancelled. It stays on the calendar marked cancelled.', [{ kind: 'event', count: 1, id: 'ev-short', href: '/golf/dashboard/calendar?event=ev-short', label: 'Short-game practice' }], [{ channel: 'in-app', recipients: 5, status: 'queued' }, { channel: 'email', recipients: 5, status: 'queued' }]),
+    failed: failed('cancel_event', 'That didn’t go through. Nothing was changed.'),
+  },
+  {
+    tool: 'set_focus_area_status',
+    name: 'Complete or reopen a focus area',
+    ref: 'A25',
+    surface: 'Ask and quick chat',
+    proposal: {
+      action: 'Complete a focus area',
+      summary: 'Mark Jonah Okafor’s focus area “Lag putting from outside 20 feet” as completed.',
+      facts: [{ label: 'Player', value: 'Jonah Okafor' }, { label: 'Focus area', value: 'Lag putting from outside 20 feet' }, { label: 'Now', value: 'Active' }, { label: 'After', value: 'Completed' }, { label: 'The player sees', value: 'It shows as completed on their development page. No notification is sent.' }],
+      affects: affects([CAP_ROSTER[1]!]),
+      notifications: [],
+      missing: [],
+      idempotency_key: 'set_focus_area_status:fa-jonah:completed',
+      recipients: [],
+      delivery: null,
+      visible_to: 'recipients',
+      visible_note: 'It shows as completed on their development page. No notification is sent.',
+      undo: { window: true, after: 'Reopen it here or on the player’s development page.' },
+    },
+    saved: done('set_focus_area_status', 'Jonah Okafor’s focus area “Lag putting from outside 20 feet” is completed. No notification is sent.', [{ kind: 'focus_area', count: 1, id: 'fa-jonah', label: 'Lag putting from outside 20 feet' }]),
+    failed: failed('set_focus_area_status', 'That didn’t go through. Nothing was changed.'),
+  },
+  {
+    tool: 'set_goal_state',
+    name: 'Pause, resume or close a goal',
+    ref: 'A26',
+    surface: 'Ask and quick chat',
+    proposal: {
+      action: 'Pause a goal',
+      summary: 'Pause Eli Brandt’s goal “Strokes gained putting, 30-day goal”.',
+      facts: [{ label: 'Player', value: 'Eli Brandt' }, { label: 'Goal', value: 'Strokes gained putting, 30-day goal' }, { label: 'Now', value: 'Active' }, { label: 'After', value: 'Paused' }, { label: 'The player sees', value: 'It shows as paused and stops counting rounds. No notification is sent.' }],
+      affects: affects([CAP_ROSTER[0]!]),
+      notifications: [],
+      missing: [],
+      idempotency_key: 'set_goal_state:g-eli:paused',
+      recipients: [],
+      delivery: null,
+      visible_to: 'recipients',
+      visible_note: 'It shows as paused and stops counting rounds. No notification is sent.',
+      undo: { window: true, after: 'Resume it.' },
+    },
+    saved: done('set_goal_state', 'Eli Brandt’s goal “Strokes gained putting, 30-day goal” is paused. No notification is sent.', [{ kind: 'goal', count: 1, id: 'g-eli', label: 'Strokes gained putting, 30-day goal' }]),
+    failed: failed('set_goal_state', 'That didn’t go through. Nothing was changed.'),
+  },
+  {
+    tool: 'mark_signal_handled',
+    name: 'Mark a signal handled',
+    ref: 'A27',
+    surface: 'Ask and quick chat',
+    proposal: {
+      action: 'Mark a signal handled',
+      summary: 'Mark “Three putts from outside 20 feet” as handled.',
+      facts: [{ label: 'Signal', value: 'Three putts from outside 20 feet' }, { label: 'About', value: 'Jonah Okafor' }, { label: 'After', value: 'Handled. It no longer reads as an open priority on your board.' }, { label: 'The player sees', value: 'On Jonah Okafor’s own CoachHelm page this signal reads “Acknowledged” in place of its priority. No notification is sent.' }],
+      affects: affects([CAP_ROSTER[1]!]),
+      notifications: [],
+      missing: [],
+      idempotency_key: 'mark_signal_handled:sig-1',
+      recipients: [],
+      delivery: null,
+      visible_to: 'recipients',
+      visible_note: 'On Jonah Okafor’s own CoachHelm page this signal reads “Acknowledged” in place of its priority. No notification is sent.',
+      undo: { window: true, after: 'It is not reopened from the chat; the CoachHelm board shows it as handled.' },
+    },
+    saved: done('mark_signal_handled', '“Three putts from outside 20 feet” is marked handled. No notification is sent.', [{ kind: 'signal', count: 1, id: 'sig-1', href: '/golf/dashboard/coachhelm', label: 'Three putts from outside 20 feet' }]),
+    failed: failed('mark_signal_handled', 'That didn’t go through. Nothing was changed.'),
+  },
+  {
+    tool: 'dismiss_signal',
+    name: 'Dismiss a signal',
+    ref: 'A28',
+    surface: 'Ask and quick chat',
+    proposal: {
+      action: 'Dismiss a signal',
+      summary: 'Dismiss “Fairways hit fell over three rounds”.',
+      facts: [{ label: 'Signal', value: 'Fairways hit fell over three rounds' }, { label: 'About', value: 'The team' }, { label: 'After', value: 'Dismissed. It leaves your board and is not counted as acted on.' }, { label: 'Players see', value: 'Nothing changes for players. No notification is sent.' }, { label: 'The record', value: 'The signal is kept, not deleted.' }],
+      affects: [{ kind: 'team', id: 'team-demo', label: CAP_TEAM }],
+      notifications: [],
+      missing: [],
+      idempotency_key: 'dismiss_signal:sig-2',
+      recipients: [],
+      delivery: null,
+      visible_to: 'coaches',
+      visible_note: 'Nothing changes for players. No notification is sent.',
+      undo: { window: true, after: 'It is not brought back from the chat.' },
+    },
+    saved: done('dismiss_signal', '“Fairways hit fell over three rounds” is dismissed. No notification is sent.', [{ kind: 'signal', count: 1, id: 'sig-2', label: 'Fairways hit fell over three rounds' }]),
+    failed: failed('dismiss_signal', 'That didn’t go through. Nothing was changed.'),
+  },
+  {
+    tool: 'set_qualifier_coach_pick',
+    name: 'Make a coach’s pick',
+    ref: 'A29',
+    surface: 'Ask and quick chat',
+    proposal: {
+      action: 'Make a coach’s pick',
+      summary: 'Make Theo Marchetti a coach’s pick for Sandhills qualifier.',
+      facts: [
+        { label: 'Qualifier', value: 'Sandhills qualifier' },
+        { label: 'Coach’s pick', value: 'Theo Marchetti' },
+        { label: 'Pick places', value: '1 of 1 used after this' },
+        { label: 'Reason', value: 'Two top-three finishes at Pinehurst as a junior, and the best wedge numbers on the team this month.' },
+        { label: 'Who can read the reason', value: 'Coaches only. It is never shown to players.' },
+        { label: 'Players see', value: 'Nothing yet. The squad shows on the qualifier’s board only after you confirm the selection on the Qualifiers screen. No notification is sent.' },
+        { label: 'Scores', value: 'No score or standing changes.' },
+      ],
+      affects: affects([CAP_ROSTER[3]!]),
+      notifications: [],
+      missing: [],
+      idempotency_key: 'set_qualifier_coach_pick:q-sandhills:p-theo',
+      recipients: [],
+      delivery: null,
+      visible_to: 'coaches',
+      visible_note: 'Nothing yet. The squad shows on the qualifier’s board only after you confirm the selection on the Qualifiers screen. No notification is sent. The reason is only ever shown to coaches.',
+      undo: { window: true, after: 'Take the pick back on the Qualifiers screen.' },
+    },
+    saved: done('set_qualifier_coach_pick', 'Theo Marchetti is a coach’s pick for Sandhills qualifier. The selection is not confirmed by this.', [{ kind: 'qualifier_pick', count: 1, href: '/golf/dashboard/qualifiers/q-sandhills/selection', label: 'Sandhills qualifier' }]),
+    failed: failed('set_qualifier_coach_pick', 'That didn’t go through. Nothing was changed.'),
+  },
+  {
+    tool: 'set_task_reminder',
+    name: 'Set a reminder on a task',
+    ref: 'A30',
+    surface: 'Ask and quick chat',
+    proposal: {
+      action: 'Set a task reminder',
+      summary: 'Remind 4 players about “Post your Ridgeline practice round hole by hole” on Thu, Nov 13, 6:00 PM.',
+      facts: [
+        { label: 'Task', value: 'Post your Ridgeline practice round hole by hole' },
+        { label: 'Reminder', value: 'Thu, Nov 13, 6:00 PM, or within the hour after: reminders go out hourly.' },
+        { label: 'To (4)', value: list(CAST.slice(0, 4)) },
+        { label: 'They see', value: 'Task Reminder\nPost your Ridgeline practice round hole by hole is due Fri, Nov 14.' },
+        { label: 'Who gets it', value: 'Everyone the task is assigned to, including players who have already finished it.' },
+      ],
+      affects: affects(CAP_ROSTER.slice(0, 4)),
+      notifications: ['4 players get an in-app reminder.'],
+      missing: [],
+      idempotency_key: 'set_task_reminder:task-ridgeline:2026-11-13:18:00',
+      recipients: asPlayers(CAP_ROSTER.slice(0, 4)),
+      not_reached: [],
+      delivery: { channels: ['in_app'], title: 'Task Reminder', body: 'Post your Ridgeline practice round hole by hole is due Fri, Nov 14.', note: 'It goes to everyone the task is assigned to, including players who have already finished it.' },
+      undo: { window: true, after: 'Change or clear the reminder on the task in Team Hub, any time before it goes out.' },
+      ...({
+        editable: [
+          { key: 'date', label: 'Day', type: 'date', value: '2026-11-13', required: true },
+          { key: 'time', label: 'Time', type: 'time', value: '18:00', required: true },
+        ] satisfies EditableField[],
+      } as object),
+    },
+    saved: done('set_task_reminder', 'The reminder for “Post your Ridgeline practice round hole by hole” is set for Thu, Nov 13, 6:00 PM. It has not gone out yet.', [{ kind: 'task_reminder', count: 1, id: 'task-ridgeline', href: '/golf/dashboard/team-hub?tab=tasks&task=task-ridgeline', label: 'Post your Ridgeline practice round hole by hole' }], [{ channel: 'in-app', recipients: 4, status: 'queued' }]),
+    failed: failed('set_task_reminder', 'That didn’t go through. Nothing was changed.'),
+  },
+  {
+    tool: 'log_focus_progress',
+    name: 'Log progress on a focus area',
+    ref: 'A31',
+    surface: 'Ask and quick chat',
+    proposal: {
+      action: 'Log progress on a focus area',
+      summary: 'Set Jonah Okafor’s focus area “Lag putting from outside 20 feet” to 1.8, with a note.',
+      facts: [
+        { label: 'Player', value: 'Jonah Okafor' },
+        { label: 'Focus area', value: 'Lag putting from outside 20 feet' },
+        { label: 'Now', value: '2.4' },
+        { label: 'After', value: '1.8' },
+        { label: 'Target', value: '1.2' },
+        { label: 'Note', value: 'Two rounds without a three putt from outside 30 feet. Keep the ladder twice a week.' },
+        { label: 'Tracking', value: 'Three putts a round, over 8 rounds.' },
+        { label: 'The player sees', value: 'The new value and your note on the focus area, on their development page. No notification is sent.' },
+      ],
+      affects: affects([CAP_ROSTER[1]!]),
+      notifications: [],
+      missing: [],
+      idempotency_key: 'log_focus_progress:fa-jonah:1.8',
+      recipients: [],
+      delivery: null,
+      visible_to: 'recipients',
+      visible_note: 'The new value and your note on the focus area, on their development page. No notification is sent.',
+      undo: { window: true, after: 'Log the earlier value again. A saved note is not removed from the chat.' },
+      ...({
+        editable: [
+          { key: 'value', label: 'Value', type: 'number', value: 1.8, required: true, min: 0, step: 0.1 },
+          { key: 'note', label: 'Note', type: 'long_text', value: 'Two rounds without a three putt from outside 30 feet. Keep the ladder twice a week.', required: false, max_length: 600 },
+        ] satisfies EditableField[],
+      } as object),
+    },
+    saved: done('log_focus_progress', 'Jonah Okafor’s focus area “Lag putting from outside 20 feet” is at 1.8. The note is saved with it. No notification is sent.', [{ kind: 'focus_area', count: 1, id: 'fa-jonah', label: 'Lag putting from outside 20 feet' }]),
+    failed: failed('log_focus_progress', 'That didn’t go through. Nothing was changed.'),
+  },
+  {
+    tool: 'record_focus_outcome',
+    name: 'Record a focus area’s outcome',
+    ref: 'A32',
+    surface: 'Ask and quick chat',
+    proposal: {
+      action: 'Record a focus area’s outcome',
+      summary: 'Record “Improved” for Jonah Okafor’s focus area “Lag putting from outside 20 feet” and mark it completed.',
+      facts: [
+        { label: 'Player', value: 'Jonah Okafor' },
+        { label: 'Focus area', value: 'Lag putting from outside 20 feet' },
+        { label: 'Outcome', value: 'Improved' },
+        { label: 'Status', value: 'Active now. Recording an outcome marks it completed.' },
+        { label: 'CoachHelm', value: 'The outcome is added to the signal this focus area came from, so later reads know what worked.' },
+        { label: 'The player sees', value: 'It shows as completed on their development page. The outcome word is yours alone. No notification is sent.' },
+      ],
+      affects: affects([CAP_ROSTER[1]!]),
+      notifications: [],
+      missing: [],
+      idempotency_key: 'record_focus_outcome:fa-jonah:improved',
+      recipients: [],
+      delivery: null,
+      visible_to: 'recipients',
+      visible_note: 'It shows as completed on their development page. The outcome word is yours alone. No notification is sent.',
+      undo: { window: true, after: 'A recorded outcome is not changed from the chat. The focus area can be reopened.' },
+    },
+    saved: done('record_focus_outcome', '“Improved” is recorded for Jonah Okafor’s focus area “Lag putting from outside 20 feet”, and it is completed. No notification is sent.', [{ kind: 'focus_area', count: 1, id: 'fa-jonah', label: 'Lag putting from outside 20 feet' }]),
+    failed: failed('record_focus_outcome', 'That didn’t go through. Nothing was changed.'),
+    partial: { status: 'partial', action: 'record_focus_outcome', summary: '“Improved” is recorded on Jonah Okafor’s focus area “Lag putting from outside 20 feet”, and it is completed, but it could not be added to the signal it came from. Confirm again to add it there.', created: [{ kind: 'focus_area', count: 1, id: 'fa-jonah', label: 'Lag putting from outside 20 feet' }], notifications: [], partial_failures: ['The signal it came from was not updated.'], retryable: true, at: AT },
+  },
+];
+
+export const CAP_TASKS: CapTask[] = [
+  ...BASE_TASKS.map((t): CapTask => {
+    const truth = TRUTH[t.tool];
+    if (!truth) return t;
+    return { ...t, proposal: { ...t.proposal, ...truth } as ActionProposal, variants: { ...t.variants, older: { label: 'A card stored before 11 Nov', proposal: t.proposal } } };
+  }),
+  ...MORE_TASKS,
 ];
 
 export const capTask = (tool: string | undefined): CapTask | undefined => CAP_TASKS.find((t) => t.tool === tool);

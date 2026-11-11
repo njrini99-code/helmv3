@@ -33,7 +33,7 @@ describe('the capabilities gallery · Play runs the real sequence at real timing
     expect(badge()).toBe('Assigned');
     expect(document.querySelector('.ch-akg-mark[data-tone="ok"]')).toBeTruthy();
     expect(screen.getByText('Told 4 in the app')).toBeTruthy();
-    expect(screen.getByText('Sent to 4 players, in the app')).toBeTruthy();
+    expect(screen.getByText('Sent to 4 players: a notice in the app')).toBeTruthy();
   });
 
   it('Undo at 3 seconds: nothing saved, nobody told, and it can be put back', () => {

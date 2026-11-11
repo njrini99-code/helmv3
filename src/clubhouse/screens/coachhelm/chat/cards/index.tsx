@@ -1,13 +1,14 @@
 'use client';
 
 import type { ComponentType } from 'react';
-import { AnnouncementBody, AvailabilityBody, DrillBody, FocusBody, GenericBody, GoalBody, MessageBody, PublishDocBody, PublishPlanBody, RecruitBody, RoundNoteBody, TaskBody } from './bodies-people';
+import { AnnouncementBody, AvailabilityBody, DrillBody, FocusBody, GoalBody, MessageBody, PlanBody, PublishDocBody, PublishPlanBody, RecruitBody, RoundNoteBody, TaskBody } from './bodies-people';
 import { AttendanceBody, BlockedBody, BreakBody, EventBody, LineupBody, LockBody, QualifierBody, ReminderBody, SeriesBody, TermBody, TripBody, type BodyProps } from './bodies-schedule';
 import { cardCopy } from './catalog';
 import type { CardBodyProps } from './types';
 
 export { CARD_TOOLS, cardCopy, type CardCopy } from './catalog';
-export { CARD_PHASES, isOpen, isSaved, isWithdrawn, type CardBodyProps, type CardDensity, type CardPerson, type CardPhase, type Reach } from './types';
+export { CARD_PHASES, isOpen, isSaved, isWithdrawn, type CardBodyProps, type CardDensity, type CardPerson, type CardPhase, type EditableField, type Reach } from './types';
+export { editableOf, isOutOfDate } from './truth';
 
 /** One body per capability (CAPABILITIES.md, section A). A tool with no body of its own draws the generic one: its reach and every fact. */
 const BODIES: Record<string, ComponentType<BodyProps>> = {
@@ -33,6 +34,17 @@ const BODIES: Record<string, ComponentType<BodyProps>> = {
   lock_lineup: LockBody,
   send_event_reminder: ReminderBody,
   record_attendance: AttendanceBody,
+  // Tasks on something that already exists: the plan carries who, what changes and the words, and one body draws them all.
+  update_event: PlanBody,
+  cancel_event: PlanBody,
+  set_focus_area_status: PlanBody,
+  set_goal_state: PlanBody,
+  mark_signal_handled: PlanBody,
+  dismiss_signal: PlanBody,
+  set_qualifier_coach_pick: PlanBody,
+  set_task_reminder: PlanBody,
+  log_focus_progress: PlanBody,
+  record_focus_outcome: PlanBody,
 };
 
 /** The tools with a body of their own. */
@@ -43,6 +55,6 @@ export const BODY_TOOLS: readonly string[] = Object.keys(BODIES);
  * buttons, the ring, the receipt). This draws no button of the shell's, starts no timer and makes no request.
  */
 export function CardBody(props: CardBodyProps) {
-  const Body = BODIES[props.tool] ?? GenericBody;
+  const Body = BODIES[props.tool] ?? PlanBody;
   return <Body {...props} copy={cardCopy(props.tool, props.proposal)} />;
 }

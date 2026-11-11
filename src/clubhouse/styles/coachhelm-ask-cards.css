@@ -193,6 +193,41 @@
 .ch-akc-fold > .ch-btn { align-self: flex-start; }
 .ch-akc-fold > div { display: flex; flex-direction: column; gap: 8px; width: 100%; }
 
+/* ---------- what the plan says for certain: the delivery, what changes, how it is taken back ---------- */
+.ch-akc-delivery { gap: 8px; }
+.ch-akc-delivery > .ch-seg, .ch-akc-delivery > .ch-select { align-self: flex-start; max-width: 100%; }
+.ch-akc-delivery__how { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.ch-akc-diff { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; padding: 12px; border-radius: var(--ch-radius-md); background: var(--ch-well-bg-flat); box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline); }
+.ch-akc-diff > p { display: grid; grid-template-columns: calc(44 * var(--ch-type-k)) minmax(0, 1fr); gap: 8px; align-items: baseline; margin: 0; font: var(--ch-type-14); overflow-wrap: anywhere; }
+.ch-akc-diff small { font: var(--ch-type-12); color: var(--ch-text-tertiary); }
+.ch-akc-diff > .is-now > span { color: var(--ch-text-secondary); text-decoration: line-through; text-decoration-color: var(--ch-border-strong); }
+.ch-akc-diff > .is-after > b { font: var(--ch-type-15-strong); }
+.ch-akc-diff > svg { margin-inline-start: calc(52 * var(--ch-type-k)); color: var(--ch-text-tertiary); }
+.ch-akc-after { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; margin: 0; font: var(--ch-type-13); color: var(--ch-text-secondary); }
+.ch-akc-after > svg { margin-top: 2px; color: var(--ch-text-tertiary); }
+.ch-akc-after b { color: var(--ch-text-primary); }
+.ch-akc-goal__now { font: var(--ch-type-17-strong); color: var(--ch-text-secondary); }
+.ch-akc-goal__unit { font: var(--ch-type-14); color: var(--ch-text-secondary); letter-spacing: 0; }
+.ch-akc-lineup li > span:last-child { display: flex; flex-direction: column; min-width: 0; padding: 6px 0; }
+.ch-akc-lineup li small { font: var(--ch-type-12); color: var(--ch-text-tertiary); }
+
+/* ---------- edit mode: the plan's editable fields, each in the app's own control ---------- */
+.ch-akc-editkey { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; padding-top: 12px; border-top: var(--ch-hairline-w) solid var(--ch-separator); }
+.ch-akc-editkey > small { flex: 1 1 16ch; font: var(--ch-type-13); color: var(--ch-text-tertiary); }
+.ch-akc-edit { display: flex; flex-direction: column; gap: 12px; padding: 12px; border-radius: var(--ch-radius-md); background: var(--ch-well-bg-flat); box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-control); }
+.ch-akc-edit > * { min-width: 0; margin: 0; }
+.ch-akc-edit__lede, .ch-akc-edit__fixed { font: var(--ch-type-13); color: var(--ch-text-secondary); }
+.ch-akc-edit__fixed { color: var(--ch-text-tertiary); }
+.ch-akc-edit fieldset { padding: 0; border: 0; }
+.ch-akc-edit legend { display: flex; align-items: baseline; gap: 8px; width: 100%; padding: 0; margin-bottom: 6px; }
+.ch-akc-edit__pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(132px, 1fr)); gap: 8px; }
+.ch-akc-edit__toggle { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; }
+.ch-akc-edit__people > div { display: grid; grid-template-columns: repeat(auto-fill, minmax(152px, 1fr)); gap: 4px 12px; }
+.ch-akc-edit__list { display: flex; flex-direction: column; gap: 6px; }
+.ch-akc-edit__list > .ch-btn { align-self: flex-start; }
+.ch-akc-edit__item { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 6px; margin-bottom: 6px; }
+.ch-akc-edit__keys { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+
 /* ---------- the small things an answer can carry: a link, a note, a calculation, "not tracked" ---------- */
 .ch-akc-link { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 44px; padding: 8px 12px; border-radius: var(--ch-radius-md); background: var(--ch-well-bg-flat); box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline); color: var(--ch-text-primary); text-decoration: none; }
 .ch-akc-link > span:nth-child(2) { display: flex; flex-direction: column; min-width: 0; }
