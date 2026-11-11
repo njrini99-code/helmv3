@@ -1343,7 +1343,7 @@
     line-height: var(--ch-lead-tight);
     letter-spacing: var(--ch-track-20);
     font-variation-settings: 'wdth' 88;
-    color: var(--ch-ledger-ink);
+    color: var(--ch-text-primary);
   }
   .ch-hb-card__h h2 svg {
     color: var(--ch-ledger-eyebrow);
@@ -1541,7 +1541,7 @@
     font: var(--ch-type-22-strong);
     line-height: var(--ch-lead-tight);
     letter-spacing: var(--ch-track-22);
-    color: var(--ch-ledger-ink);
+    color: var(--ch-text-primary);
   }
   .ch-hb-list > .ch-hb-ann p {
     font-size: calc(15 * var(--ch-type-k));
@@ -1568,7 +1568,7 @@
     line-height: var(--ch-lead-tight);
     letter-spacing: var(--ch-track-20);
     font-variation-settings: 'wdth' 88;
-    color: var(--ch-ledger-ink);
+    color: var(--ch-text-primary);
   }
   .ch-hb-pass.is-big .ch-hb-pass__main > b {
     font-size: calc(22 * var(--ch-type-k));
@@ -1988,7 +1988,7 @@
   }
   .ch-hb[data-canopy] .ch-hb-ann h3 {
     font-size: calc(28 * var(--ch-type-k));
-    color: var(--ch-ledger-ink);
+    color: var(--ch-text-primary);
   }
   .ch-hb[data-canopy] .ch-hb-ann h3 > span,
   .ch-hb[data-canopy] .ch-hb-pass__main > b > span {
@@ -2022,7 +2022,7 @@
     font: var(--ch-type-22-strong);
     line-height: var(--ch-lead-tight);
     letter-spacing: var(--ch-track-22);
-    color: var(--ch-ledger-ink);
+    color: var(--ch-text-primary);
   }
   .ch-hb[data-canopy] .ch-hb-pass.is-big .ch-hb-pass__main {
     padding-right: 32px;
@@ -2396,7 +2396,7 @@ html[data-fw-theme='dark'] .ch-hb-chip {
   .ch-hb-margin__t {
     font: var(--ch-type-15-strong);
     letter-spacing: var(--ch-track-15);
-    color: var(--ch-ledger-ink);
+    color: var(--ch-text-primary);
     text-wrap: balance;
   }
   .ch-hb-margin__n {

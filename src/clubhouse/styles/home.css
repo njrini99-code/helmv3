@@ -89,6 +89,13 @@
 .ch-h-main--desk[data-canopy] > .ch-h-head h1 {
   margin: 0;
 }
+/* Player Home is the owner's 28 Oct version, held as built: its greeting and its section titles keep the forest ink while
+   every other page's take the near-black (tokens.css --ch-title-ink; shell.css, main[data-canopy] h2; owner 11 Nov 2026).
+   Whether it follows them is the owner's call. */
+.ch-h-main[data-canopy] {
+  --ch-title-ink: var(--ch-ledger-ink);
+  --ch-section-ink: var(--ch-ledger-ink);
+}
 .ch-h-main--desk[data-canopy] > .ch-h-head .ch-h-head__sub {
   max-width: none;
 }

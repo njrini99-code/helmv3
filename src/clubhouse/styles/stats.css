@@ -3756,7 +3756,7 @@
     border-bottom-color: var(--ch-ledger-rule);
   }
   .ch-st[data-canopy] .ch-yb__head h2 {
-    color: var(--ch-ledger-ink);
+    color: var(--ch-text-primary);
   }
   .ch-st[data-canopy] :is(.ch-sgt,
 .ch-lg) {
@@ -3914,7 +3914,7 @@
     font: var(--ch-type-20-strong);
     letter-spacing: var(--ch-track-20);
     font-variation-settings: 'wdth' 88;
-    color: var(--ch-ledger-ink);
+    color: var(--ch-text-primary);
   }
   .ch-stm .ch-stm-chart__t {
     stroke: var(--ch-workspace);
@@ -4051,7 +4051,7 @@
     font: var(--ch-type-20-strong);
     letter-spacing: var(--ch-track-20);
     font-variation-settings: 'wdth' 88;
-    color: var(--ch-ledger-ink);
+    color: var(--ch-text-primary);
   }
   .ch-stm .ch-gd.is-phone .ch-gm__figs {
     margin: 0;

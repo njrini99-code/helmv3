@@ -2151,7 +2151,8 @@ html[data-ch-ua-pop] .ch-pscreen::after {
 /* The page head (owner, 2026-10-07: "match the bundle", the Coach Home design handoff). A page opts in with
    main[data-canopy] and marks its title block data-canopy-head; on desktop the block is the opening of the ivory
    workspace, not a band: a double hairline above, one below, a small engraved date or section line, a heavy sans
-   title in forest ink with a letterpress edge, one sentence, and the page's actions on the right. */
+   title in the title ink (--ch-title-ink, near-black on every page: owner, 11 Nov 2026) with a letterpress edge, one
+   sentence, and the page's actions on the right. */
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] {
     position: relative;
@@ -2185,14 +2186,18 @@ html[data-ch-ua-pop] .ch-pscreen::after {
   /* The CoachHelm read's desktop head has no canopy either, and its player's name was the old light 52px hero face: it is a
      page title too (fix wave 2026-11-11). Named by its screen attribute: a shared sheet that names .ch-hr-page makes the
      class everyone's, and coachhelm-read.css anchors its rules on it (clubhouse:check, class owners). */
+  /* Any other head that keeps its own layout marks its h1 data-ch-page-title and gets the same title (Classes; owner,
+     11 Nov 2026: one title style from one place). The title's size, face, tracking, ink and edge are set here and nowhere
+     else; a page's own rule only places it. */
   [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] h1,
   [data-ui='clubhouse'] main[data-ch-crh='on'].ch-rsd .ch-rs-head h1,
-  [data-ui='clubhouse'] main[data-ch-screen='coachhelm-read'].is-desk .ch-hl-h h1 {
+  [data-ui='clubhouse'] main[data-ch-screen='coachhelm-read'].is-desk .ch-hl-h h1,
+  [data-ui='clubhouse'] main h1[data-ch-page-title] {
     margin: 0;
     font: 600 calc(44 * var(--ch-type-k))/1.08 var(--ch-font-sans);
     letter-spacing: -0.036em;
     font-variation-settings: 'wdth' 88;
-    color: var(--ch-ledger-ink);
+    color: var(--ch-title-ink);
     text-shadow: 0 1px 0 rgb(255 255 255 / 0.9), 0 -1px 0 rgb(28 25 18 / 0.18);
   }
   /* P001-D5: not tracked (letterspaced mixed case read as a mistake); colour and the double rule carry the hierarchy. */
@@ -2230,7 +2235,7 @@ html[data-ch-ua-pop] .ch-pscreen::after {
 
 /* The Ledger (owner, 2026-10-07: "flush, not so card heavy", Ledger chosen over one sheet or quiet cards). Inside
    the framed workspace a page's sections sit on the canvas: a reading sheet loses its fill, ring and shadow, and the
-   section headings take the head's heavy sans in forest ink. A real object (the scorecard, a well, a form field, a
+   section headings take the head's heavy sans in ink. A real object (the scorecard, a well, a form field, a
    dialog) keeps its own material. Phone keeps its approved boards. */
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   [data-ui='clubhouse'] main[data-canopy] {
@@ -2247,8 +2252,12 @@ html[data-ch-ua-pop] .ch-pscreen::after {
   :where([data-ui='clubhouse'] main[data-canopy]) :where(h3) {
     letter-spacing: var(--ch-track-card-title);
   }
+  /* A section's title is near-black, as the page's title is (owner, 11 Nov 2026): the page's primary ink, which the phone's
+     section titles and Qualifiers' already were. It was the forest ink, so a page's sections were green on a desk and ink
+     on the phone, and green beside ink where a page set one of them itself. --ch-section-ink is a page's way to hold
+     another ink (Player Home, held as built); no token sets it. */
   [data-ui='clubhouse'] main[data-canopy] h2 {
-    color: var(--ch-ledger-ink);
+    color: var(--ch-section-ink, var(--ch-text-primary));
   }
   /* Digits that SerifText set apart inside a serif heading join the sans heading at its own size and weight. */
   [data-ui='clubhouse'] main[data-canopy] .ch-serif-num {
@@ -2676,7 +2685,8 @@ html[data-fw-theme='dark'] .ch-bellp__row:focus-visible {
   }
   /* The letterpress edge at night: the lit lip under the letters becomes a shadow, never a white halo. */
   html[data-fw-theme='dark'] [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] h1,
-  html[data-fw-theme='dark'] [data-ui='clubhouse'] main[data-ch-crh='on'].ch-rsd .ch-rs-head h1 {
+  html[data-fw-theme='dark'] [data-ui='clubhouse'] main[data-ch-crh='on'].ch-rsd .ch-rs-head h1,
+  html[data-fw-theme='dark'] [data-ui='clubhouse'] main h1[data-ch-page-title] {
     text-shadow: 0 1px 0 rgb(0 0 0 / 0.5);
   }
   html[data-fw-theme='dark'] [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] .ch-btn--secondary {
@@ -3072,7 +3082,8 @@ html[data-fw-theme='dark'] .ch-offline {
    hero's bar and desktop are untouched. The scroll edge: a soft shade under the bar once content has scrolled under
    it (data-scrolled), drawn on ::before because ::after is the sheet's lip.
    The title itself is one style everywhere (owner decision 4, 2026-10-24; CONS-27): .ch-large-title (ui/LargeTitle.tsx)
-   on the large-title role, 34 semibold sans with its 41 leading, the dense width and the forest ink. No screen sets its
+   on the large-title role, 34 semibold sans with its 41 leading, the dense width and the title ink (--ch-title-ink,
+   near-black on every page: owner, 11 Nov 2026). No screen sets its
    own size, face, tracking or colour for it; a screen's rule only places it (padding, a rule above). A skeleton's
    title block is the same class with a bar in its one line, so the page lands without the title moving (CONS-13). */
 @media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
@@ -3081,7 +3092,7 @@ html[data-fw-theme='dark'] .ch-offline {
     font: var(--ch-type-large-title);
     letter-spacing: var(--ch-track-large-title);
     font-variation-settings: var(--ch-wdth-dense);
-    color: var(--ch-ledger-ink);
+    color: var(--ch-title-ink);
     text-wrap: balance;
   }
   [data-ui='clubhouse'] .ch-large-title--skel > .ch-skel {

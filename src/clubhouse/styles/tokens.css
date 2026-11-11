@@ -673,6 +673,11 @@
      the plain rule's 1.2:1, so sections separate by value as well as by line. Structure, never text. */
   --ch-ledger-rule-strong: rgb(110 98 62 / 0.42);
   --ch-ledger-ink: rgb(18 59 41 / 0.9);
+  /* The page title's ink (owner, 11 Nov 2026: page titles are near-black on every page). One value, read by the one title
+     rule on each width (shell.css: .ch-large-title on the phone, the page head's h1 on a desk) and by the kit's PageIntro.
+     It is Qualifiers' title ink, the deepest forest step, taken to every page; a page never sets its own title colour. At
+     night it is the Ledger's ink, as every title already was. */
+  --ch-title-ink: var(--ch-green-900);
   /* 5:1 or better on the canvas, the page and cards (was #7a6b3f, 4.25:1 on the page). */
   --ch-ledger-eyebrow: #5f5230;
   --ch-ledger-row-hover: rgb(110 98 62 / 0.05);
@@ -1272,6 +1277,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-ledger-rule-soft: rgb(205 187 142 / 0.08);
   --ch-ledger-rule-strong: rgb(205 187 142 / 0.42);
   --ch-ledger-ink: rgb(226 238 229 / 0.94);
+  --ch-title-ink: var(--ch-ledger-ink);
   --ch-ledger-eyebrow: #c9b88a;
   --ch-ledger-row-hover: rgb(205 187 142 / 0.06);
   --ch-ledger-rule-double: 3px double rgb(205 187 142 / 0.22);

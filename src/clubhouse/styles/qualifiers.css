@@ -1809,7 +1809,7 @@
     line-height: var(--ch-lead-tight);
     letter-spacing: var(--ch-track-28);
     font-variation-settings: 'wdth' 88;
-    color: var(--ch-ledger-ink);
+    color: var(--ch-title-ink);
     overflow-wrap: anywhere;
   }
   .ch-qfm-head p {
@@ -1902,7 +1902,7 @@
     font: var(--ch-type-20-strong);
     letter-spacing: var(--ch-track-20);
     font-variation-settings: 'wdth' 88;
-    color: var(--ch-ledger-ink);
+    color: var(--ch-text-primary);
   }
   .ch-qfm .ch-qf-panel__head p {
     margin-top: 4px;
@@ -2243,7 +2243,7 @@
     font: var(--ch-type-20-strong);
     letter-spacing: var(--ch-track-20);
     font-variation-settings: 'wdth' 88;
-    color: var(--ch-ledger-ink);
+    color: var(--ch-text-primary);
   }
   /* A player's row tints under the finger over the press beat; a course row sits on a seam. */
   .ch-qf--form .ch-qf-players {

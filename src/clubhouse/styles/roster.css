@@ -1280,7 +1280,7 @@ a.ch-rs-peek__dev:focus-visible,
     font: var(--ch-type-section);
     letter-spacing: var(--ch-track-section);
     font-variation-settings: 'wdth' 88;
-    color: var(--ch-ledger-ink);
+    color: var(--ch-text-primary);
   }
 
   /* A row's tint reaches 12px past the text on each side, so the names and figures stay on the page's edge (CH-3602). */
@@ -1431,7 +1431,7 @@ a.ch-rs-peek__dev:focus-visible,
     font: var(--ch-type-28-strong);
     line-height: var(--ch-lead-tight);
     letter-spacing: var(--ch-track-28);
-    color: var(--ch-ledger-ink);
+    color: var(--ch-text-primary);
     font-variation-settings: 'wdth' 88;
     text-wrap: balance;
   }
@@ -1510,7 +1510,7 @@ a.ch-rs-peek__dev:focus-visible,
     font: var(--ch-type-20-strong);
     letter-spacing: var(--ch-track-20);
     font-variation-settings: 'wdth' 88;
-    color: var(--ch-ledger-ink);
+    color: var(--ch-text-primary);
   }
   .ch-rsm-panel__h > span {
     font: var(--ch-type-13);
@@ -1644,7 +1644,7 @@ a.ch-rs-peek__dev:focus-visible,
     font: var(--ch-type-20-strong);
     letter-spacing: var(--ch-track-20);
     font-variation-settings: 'wdth' 88;
-    color: var(--ch-ledger-ink);
+    color: var(--ch-text-primary);
   }
   /* The facts as rows on seams, not a box. */
   .ch-rsm-facts {
@@ -1680,7 +1680,7 @@ a.ch-rs-peek__dev:focus-visible,
     font: var(--ch-type-20-strong);
     letter-spacing: var(--ch-track-20);
     font-variation-settings: 'wdth' 88;
-    color: var(--ch-ledger-ink);
+    color: var(--ch-text-primary);
   }
 
   /* Join requests: one flat row at the top of the list (owner, 2026-10-08: the card is no longer the default unit of
@@ -2067,7 +2067,7 @@ a.ch-rs-peek__dev:focus-visible,
 
     font-variant-numeric: tabular-nums;
     letter-spacing: var(--ch-track-20);
-    color: var(--ch-ledger-ink);
+    color: var(--ch-text-primary);
   }
   .ch-rs[data-canopy] .ch-rs-req__head > span:last-child {
     font: var(--ch-type-13);

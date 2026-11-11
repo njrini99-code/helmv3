@@ -1083,7 +1083,7 @@
     line-height: var(--ch-lead-tight);
     letter-spacing: var(--ch-track-28);
     font-variation-settings: 'wdth' 88;
-    color: var(--ch-ledger-ink);
+    color: var(--ch-text-primary);
     overflow-wrap: anywhere;
   }
   .ch-recm-hero > span > span {
@@ -1234,7 +1234,7 @@
     font: var(--ch-type-section);
     letter-spacing: var(--ch-track-section);
     font-variation-settings: 'wdth' 88;
-    color: var(--ch-ledger-ink);
+    color: var(--ch-text-primary);
   }
   .ch-recm-det .ch-rec-sec__head {
     align-items: baseline;
@@ -1546,7 +1546,7 @@
   .ch-rec[data-canopy] .ch-rec-pipe__sum b {
     font: var(--ch-type-20-strong);
     letter-spacing: var(--ch-track-20);
-    color: var(--ch-ledger-ink);
+    color: var(--ch-text-primary);
   }
   .ch-rec[data-canopy] .ch-rec-pipe__sum span {
     font: var(--ch-type-13);

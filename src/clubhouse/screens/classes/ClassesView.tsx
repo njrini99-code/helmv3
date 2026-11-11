@@ -413,7 +413,7 @@ export function ClassesView({ data, writes, statusWrites }: { data: ChClassesPag
                 </LargeTitleContext>
             </>
           ) : (
-            <h1 id="ch-cl-title">Classes</h1>
+            <h1 id="ch-cl-title" data-ch-page-title="">Classes</h1>
           )}
         </div>
         {/* The head keeps its actions when the classes didn't load (owner decision, 2026-10-08: a failed read keeps the head and its

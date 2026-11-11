@@ -60,15 +60,15 @@
   align-items: center;
   justify-content: space-between;
 }
-/* The rail's title in the heavy sans and forest ink of every page head (states audit c9: it kept the display serif's
-   loose tracking after the serif went). */
+/* The rail's title in the heavy sans and the title ink of every page head (states audit c9: it kept the display serif's
+   loose tracking after the serif went; owner, 11 Nov 2026: near-black, as every page's title). */
 .ch-ms-rail__title h1 {
   margin: 0;
   font: var(--ch-type-34-strong);
   line-height: var(--ch-lead-tight);
   letter-spacing: var(--ch-track-34);
   font-variation-settings: 'wdth' 88;
-  color: var(--ch-ledger-ink);
+  color: var(--ch-title-ink);
 }
 .ch-ms-rail__body {
   display: flex;
@@ -1522,7 +1522,7 @@
     line-height: var(--ch-lead-tight);
     letter-spacing: var(--ch-track-section);
     font-variation-settings: 'wdth' 88;
-    color: var(--ch-ledger-ink);
+    color: var(--ch-text-primary);
   }
   /* The conversations' dates are the ledger's engraved date line (the board's "Tuesday, 14 October"): quieter than a
      section's title, so Today and This week read as entries in one list, not four more sections. */
@@ -1851,7 +1851,7 @@
     line-height: var(--ch-lead-tight);
     letter-spacing: -0.038em;
     font-variation-settings: 'wdth' 88;
-    color: var(--ch-ledger-ink);
+    color: var(--ch-text-primary);
     text-wrap: balance;
   }
   .ch-msp-prof p {
@@ -1931,7 +1931,7 @@
     line-height: var(--ch-lead-tight);
     letter-spacing: var(--ch-track-20);
     font-variation-settings: 'wdth' 88;
-    color: var(--ch-ledger-ink);
+    color: var(--ch-text-primary);
   }
   /* A 44px target around the text. */
   .ch-msp-row {
@@ -2255,7 +2255,7 @@
     line-height: var(--ch-lead-tight);
     letter-spacing: -0.038em;
     font-variation-settings: 'wdth' 88;
-    color: var(--ch-ledger-ink);
+    color: var(--ch-title-ink);
   }
   .ch-msp-ann .ch-ms-ann__body {
     font: var(--ch-type-16);
@@ -2278,7 +2278,7 @@
     line-height: var(--ch-lead-tight);
     letter-spacing: var(--ch-track-section);
     font-variation-settings: 'wdth' 88;
-    color: var(--ch-ledger-ink);
+    color: var(--ch-text-primary);
   }
   .ch-msp-ann .ch-ms-ann__task,
   .ch-msp-ann .ch-ms-mem {

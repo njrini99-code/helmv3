@@ -3120,7 +3120,7 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
     font-variant-numeric: tabular-nums;
     letter-spacing: var(--ch-track-20);
     font-variation-settings: 'wdth' 88;
-    color: var(--ch-ledger-ink);
+    color: var(--ch-text-primary);
   }
   .ch-calm-dayk span {
     font: var(--ch-type-13);
@@ -3561,7 +3561,7 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
     line-height: var(--ch-lead-tight);
     letter-spacing: var(--ch-track-20);
     font-variation-settings: 'wdth' 88;
-    color: var(--ch-ledger-ink);
+    color: var(--ch-text-primary);
   }
   .ch-calm .ch-ag__when.is-today b {
     color: var(--ch-green-600);

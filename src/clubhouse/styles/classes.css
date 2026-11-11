@@ -1273,7 +1273,7 @@
     font: var(--ch-type-20-strong);
     letter-spacing: var(--ch-track-20);
     font-variation-settings: 'wdth' 88;
-    color: var(--ch-ledger-ink);
+    color: var(--ch-text-primary);
   }
   .ch-cl.is-phone .ch-cl-today ul {
     gap: 0;
@@ -1327,7 +1327,7 @@
     font: var(--ch-type-20-strong);
     letter-spacing: var(--ch-track-20);
     font-variation-settings: 'wdth' 88;
-    color: var(--ch-ledger-ink);
+    color: var(--ch-text-primary);
   }
   .ch-cl.is-phone .ch-cl-over__ic {
     width: 26px;
@@ -2292,11 +2292,10 @@ html[data-fw-theme='dark'] .ch-cl-ok__ic {
 .ch-cl[data-ch-crh='on']:not(.is-phone) .ch-cl-h {
   align-items: flex-end;
 }
+/* The title's face, size, ink and letterpress edge are the shared page title's (shell.css, h1[data-ch-page-title]): it was
+   its own 34px in plain ink. This rule only places it under the term line. */
 .ch-cl[data-ch-crh='on']:not(.is-phone) .ch-cl-h h1 {
   margin: 6px 0 0;
-  font: var(--ch-type-34-strong);
-  letter-spacing: var(--ch-track-large-title);
-  color: var(--ch-text-primary);
 }
 .ch-cl[data-ch-crh='on'] .ch-cl-term.is-desk {
   grid-template-columns: auto minmax(0, 1fr) auto;

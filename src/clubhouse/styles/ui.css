@@ -736,7 +736,8 @@
   margin: 0;
   font: var(--ch-type-section);
   letter-spacing: var(--ch-track-section);
-  color: var(--ch-ledger-ink);
+  /* Near-black, as the page's title is (owner, 11 Nov 2026; shell.css, main[data-canopy] h2). */
+  color: var(--ch-section-ink, var(--ch-text-primary));
 }
 .ch-sec__meta {
   font: var(--ch-type-13);
@@ -1080,7 +1081,7 @@ button.ch-feat {
   line-height: var(--ch-lead-tight);
   letter-spacing: -0.038em;
   font-variation-settings: 'wdth' 88;
-  color: var(--ch-ledger-ink);
+  color: var(--ch-title-ink);
 }
 .ch-intro__brief {
   margin: 0;
@@ -1667,7 +1668,8 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   font: var(--ch-type-28-strong);
   line-height: var(--ch-lead-tight);
   letter-spacing: -0.02em;
-  color: var(--ch-forest-800);
+  /* Near-black, as every section title (owner, 11 Nov 2026): it was forest green on the phone and the Ledger's ink on a desk. */
+  color: var(--ch-section-ink, var(--ch-text-primary));
 }
 .ch-zn__id h2::after {
   content: '';
