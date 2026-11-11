@@ -13,7 +13,8 @@ import { buildPollPayload } from '@/lib/golf/message-polls';
 import { teamPatternEnabled } from '@/lib/coachhelm/v3/team-pattern/flag';
 import type { ChatDataPart, ReadTool, ToolContext, ToolResult } from './engine/tool';
 import { getDocuments, getPractice, getTeamPatterns } from './ask-reads';
-import { BENCHMARK_LEVELS, benchmarkSource, DEFINITION_CATEGORIES, getBenchmarks, getMetricDefinitions } from './benchmark-reads';
+import { BENCHMARK_LEVELS, BENCHMARK_METRIC_IDS, benchmarkSource, DEFINITION_CATEGORIES, getBenchmarks, getMetricDefinitions } from './benchmark-reads';
+import { METRIC_IDS } from './metrics-catalog';
 import { DraftBoardInput, DraftMessageInput, DraftPollInput, WriteArtifactInput } from './create-tools';
 import { getCalendar, getCourse, getRootCauses } from './engine-reads';
 import { getGolfReference } from './golf-reference';
@@ -261,7 +262,9 @@ async function runReference(ctx: ToolContext, input: ReferenceInput): Promise<To
   }
 }
 
-const referenceFields = { about: z.string().min(2).max(120).optional().describe('golf: the subject in a few words.'), metric_ids: z.array(z.string().max(60)).max(12).optional(), category: z.enum(DEFINITION_CATEGORIES).optional(), levels: z.array(z.enum(BENCHMARK_LEVELS)).min(1).max(6).optional(), window: z.enum(STATS_WINDOWS).optional() };
+/** The metrics a standard or a definition can be asked for by id: a closed list, so the model cannot misspell one. Others are reached by category. */
+const REFERENCE_METRIC_IDS = [...new Set([...METRIC_IDS, ...BENCHMARK_METRIC_IDS])] as [string, ...string[]];
+const referenceFields = { about: z.string().min(2).max(120).optional().describe('golf: the subject in a few words.'), metric_ids: z.array(z.enum(REFERENCE_METRIC_IDS)).max(12).optional(), category: z.enum(DEFINITION_CATEGORIES).optional().describe('metric_definitions: every metric of one kind.'), levels: z.array(z.enum(BENCHMARK_LEVELS)).min(1).max(6).optional(), window: z.enum(STATS_WINDOWS).optional() };
 export const getReference: ReadTool<ReferenceInput> = {
   kind: 'read',
   name: 'get_reference',

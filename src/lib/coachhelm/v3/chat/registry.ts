@@ -36,13 +36,33 @@ import {
   summariseDataTool,
   writeArtifact,
 } from './readers-direct';
+import { strictInput } from './strict-input';
 import { taskTools } from './tasks';
 
 export type { TaskProposal } from './tasks';
 
+// One instance of each, so a tool is the same object, and the same bytes, on every request.
+const QUERY_TEAM_DATA = queryTeamDataTool();
+const SUMMARISE_COACH = summariseDataTool(false);
+const SUMMARISE_PLAYER = summariseDataTool(true);
+
+/**
+ * A tool as it is registered: its input in the shape strict tool use takes (`strict-input.ts`). The tool's own schema
+ * still does the validating behind it. Built once per tool.
+ */
+const registered = new WeakMap<ChatTool, ChatTool>();
+function strict(tool: ChatTool): ChatTool {
+  let out = registered.get(tool);
+  if (!out) {
+    out = { ...tool, input: strictInput(tool.input) } as ChatTool;
+    registered.set(tool, out);
+  }
+  return out;
+}
+
 /** A player's Ask: reads of their own data and a visual of them. */
 function playerTools(): ChatTool[] {
-  return [getMyStats, getRound, getShots, getMySeason, getMySchedule, getMyCoachHelm, getMyReference, summariseDataTool(true), showVisual];
+  return [getMyStats, getRound, getShots, getMySeason, getMySchedule, getMyCoachHelm, getMyReference, SUMMARISE_PLAYER, showVisual];
 }
 
 function coachTools(surface: Exclude<ChatSurface, 'player'>): ChatTool[] {
@@ -61,8 +81,8 @@ function coachTools(surface: Exclude<ChatSurface, 'player'>): ChatTool[] {
     getCoachHelm,
     getPracticeTool,
     getReference,
-    queryTeamDataTool(),
-    summariseDataTool(false),
+    QUERY_TEAM_DATA,
+    SUMMARISE_COACH,
     showVisual,
     findThread,
   ];
@@ -73,8 +93,8 @@ function coachTools(surface: Exclude<ChatSurface, 'player'>): ChatTool[] {
 
 export const toolsFor: ToolsFor = (surface: ChatSurface, who: ToolContext['who']): ChatTool[] => {
   // The session decides, not the surface name: a player's context never gets a coach's list, and a coach's context never gets the player's.
-  if (isPlayerContext(who) || surface === 'player') return isPlayerContext(who) ? playerTools() : [];
-  return coachTools(surface);
+  if (isPlayerContext(who) || surface === 'player') return isPlayerContext(who) ? playerTools().map(strict) : [];
+  return coachTools(surface).map(strict);
 };
 
 /** The names of the tools that write, for anything that must tell a task from a read without the list in hand (the confirm gate's tests, the UI's card pairing). */

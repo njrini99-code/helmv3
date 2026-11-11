@@ -61,11 +61,12 @@ describe('get_player_stats: the figure in chat is the figure on the Stats page',
     expect(out.measurements.find((m) => m.metric_id === 'gir_pct')?.benchmark?.value).toBe(66);
     expect(out.measurements.find((m) => m.metric_id === 'sg_approach')).toMatchObject({ value: -0.31, sample_size: 9 });
     expect(out.window_label).toBe('last 20 rounds');
-    expect(textOf(out)).toContain('Scoring avg: 74.2 | team 75.1');
-    expect(textOf(out)).toContain('Greens in regulation: 61% | team 58% | Tour 66%');
+    expect(textOf(out)).toContain('Eli Brandt, Scoring avg, last 20 rounds: 74.2 (n=10 rounds) | team average 75.1');
+    expect(textOf(out)).toContain('Eli Brandt, Greens in regulation, last 20 rounds: 61% (n=10 rounds) | team average 58% | Tour 66%');
+    expect(textOf(out)).toContain('Eli Brandt, SG approach, last 20 rounds: -0.31 (n=9 rounds) | team average +0.05');
     // A figure with no value yet is said to be missing with its reason, never printed as zero.
     expect(out.measurements.some((m) => m.metric_id === 'sand_save_pct')).toBe(false);
-    expect(textOf(out)).toContain('Sand saves: no figure yet (Needs 10 chances.)');
+    expect(textOf(out)).toContain('Eli Brandt, Sand saves, last 20 rounds: no figure yet (Needs 10 chances.)');
   });
 
   it('works out the gaps to the team, worst first, so the model does not', async () => {
@@ -84,6 +85,18 @@ describe('get_player_stats: the figure in chat is the figure on the Stats page',
     // A player who really has no rounds in the window is empty, which is a different sentence.
     const none = await tool.run(ctxFor(coach, { playerStats: async () => statsPage('Eli Brandt', { win: { ...statsPage('x').win, rounds: 0 }, comparisons: [], rounds: [] }) }), input);
     expect(none.coverage).toBe('empty');
+  });
+
+  it('sets several players side by side itself, best first on each measure, with the gap', async () => {
+    const pages: Record<string, PlayerStatsScreen> = { [ELI]: statsPage('Eli Brandt'), [MAYA]: statsPage('Maya Ortiz', { comparisons: [{ label: 'Scoring avg', group: 'Scoring', you: 73.94, team: 75.1, bench: null, unit: '', digits: 1, lowerIsBetter: true }, { label: 'Greens in regulation', group: 'Approach', you: 55, team: 58, bench: 66, unit: '%', digits: 0, lowerIsBetter: false }] }) };
+    const out = await read<{ player_ids: string[]; window: string; sections: string[] }>(coach, 'get_player_stats').run(ctxFor(coach, { playerStats: async (id) => pages[id] ?? null }), { player_ids: [ELI, MAYA], window: 'last10', sections: [] });
+    const side = (out.detail as { side_by_side: Array<{ metric: string; best_first: Array<{ player: string; value: number }>; gap: number }> }).side_by_side;
+    // Lower is better for scoring, higher for greens: the order follows the measure, not the order the players were named in.
+    expect(side.find((c) => c.metric === 'Scoring avg')).toMatchObject({ best_first: [{ player: 'Maya Ortiz', value: 73.9 }, { player: 'Eli Brandt', value: 74.2 }], gap: 0.3 });
+    expect(side.find((c) => c.metric === 'Greens in regulation')).toMatchObject({ best_first: [{ player: 'Eli Brandt', value: 61 }, { player: 'Maya Ortiz', value: 55 }], gap: 6 });
+    // A measure only one of them has is not compared.
+    expect(side.some((c) => c.metric === 'Scrambling')).toBe(false);
+    expect(textOf(out)).toContain('Scoring avg: Maya Ortiz 73.9; Eli Brandt 74.2. Gap first to last: 0.3.');
   });
 
   it('one of two players failing is partial and names who is missing', async () => {
@@ -249,7 +262,8 @@ describe('a player cannot reach a teammate\'s figure or a coach-only field', () 
     const playerStats = vi.fn(async (_id: string, _window: string) => statsPage('Maya Ortiz'));
     const mine = read<Record<string, unknown>>(maya, 'get_player_stats');
     // The player's schema has no player field at all.
-    expect(mine.input.safeParse({ player_ids: [ELI], window: 'last10' }).data).not.toHaveProperty('player_ids');
+    expect(mine.input.safeParse({ player_ids: [ELI], window: 'last10', sections: null }).success).toBe(false);
+    expect(mine.input.safeParse({ window: 'last10', sections: null }).success).toBe(true);
     await mine.run(ctxFor(maya, { playerStats }), { player_ids: [ELI], window: 'last10', sections: [] });
     // And the coach's tool, run in a player's session, still reads only the caller.
     await read<Record<string, unknown>>(coach, 'get_player_stats').run(ctxFor(maya, { playerStats }), { player_ids: [ELI, NOAH], window: 'last10', sections: [] });

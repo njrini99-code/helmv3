@@ -96,17 +96,21 @@ const ROUNDS_LISTED = 20;
 function playerLines(page: PlayerStatsScreen, name: string, window: StatsWindow, sections: readonly Section[]): { lines: string[]; detail: Record<string, unknown> } {
   const { start, end } = windowDates(page);
   const lines = [`${name}, ${WINDOW_WORDS[window]}: ${page.win.rounds} rounds${start && end ? ` (${start} to ${end})` : ''}, strokes gained over ${page.win.sgRounds}. Source: ${SOURCE_STATS}.`];
+  // Each line stands on its own (who, what, which rounds, how many): it is what gets quoted, and a small model copies a labelled figure more reliably than it reads a table.
   for (const row of page.comparisons) {
     const signed = row.signed || row.label.startsWith('SG ');
+    const what = `${name}, ${row.label}, ${WINDOW_WORDS[window]}`;
     if (row.you === null) {
-      if (row.floor) lines.push(`${row.label}: no figure yet (${row.floor})`);
+      if (row.floor) lines.push(`${what}: no figure yet (${row.floor})`);
       continue;
     }
-    lines.push(`${row.label}: ${say(row.you, row.unit, Math.max(row.digits, signed ? 2 : 0), signed)}${row.team === null ? '' : ` | team ${say(row.team, row.unit, Math.max(row.digits, signed ? 2 : 0), signed)}`}${row.bench === null ? '' : ` | Tour ${say(row.bench, row.unit, row.digits, signed)}`}${row.early ? ` (${row.early})` : ''}`);
+    const digits = Math.max(row.digits, signed ? 2 : 0);
+    const n = row.label.startsWith('SG ') ? page.win.sgRounds : page.win.rounds;
+    lines.push(`${what}: ${say(row.you, row.unit, digits, signed)} (n=${n} rounds)${row.team === null ? '' : ` | team average ${say(row.team, row.unit, digits, signed)}`}${row.bench === null ? '' : ` | Tour ${say(row.bench, row.unit, row.digits, signed)}`}${row.early ? ` (${row.early})` : ''}`);
   }
   const gaps = gapsToTeam(page.comparisons);
   const detail: Record<string, unknown> = { window: WINDOW_WORDS[window], rounds: page.win.rounds, gaps_to_team: gaps };
-  if (gaps.length) lines.push(`Furthest behind the team, largest gap first: ${gaps.slice(0, 5).map((g) => `${g.label} (${g.gap > 0 ? '+' : ''}${g.gap}${g.unit})`).join('; ')}.`);
+  if (gaps.length) lines.push(`${name}, furthest behind the team average, largest gap first: ${gaps.slice(0, 5).map((g) => `${g.label} (${g.you}${g.unit} against ${g.team}${g.unit}, ${g.gap > 0 ? '+' : ''}${g.gap}${g.unit})`).join('; ')}.`);
   if (sections.includes('putting')) {
     if (page.extra.puttsError || !page.puttBands) lines.push('Putting by distance: could not be read.');
     else {
@@ -145,6 +149,22 @@ function playerLines(page: PlayerStatsScreen, name: string, window: StatsWindow,
   return { lines, detail };
 }
 
+/** Players set side by side on every Stats row at least two of them have, best first, with the gap from first to last. The model sorts nothing. */
+export function sideBySide(players: ReadonlyArray<{ name: string; page: PlayerStatsScreen }>): Array<{ metric: string; unit: string; best_first: Array<{ player: string; value: number }>; gap: number }> {
+  const labels = [...new Set(players.flatMap((p) => p.page.comparisons.map((r) => r.label)))];
+  return labels.flatMap((label) => {
+    const rows = players.flatMap((p) => {
+      const row = p.page.comparisons.find((r) => r.label === label);
+      return row && row.you !== null ? [{ player: p.name, row, value: row.you }] : [];
+    });
+    if (rows.length < 2) return [];
+    const first = rows[0]!.row;
+    const digits = Math.max(first.digits, first.label.startsWith('SG ') ? 2 : 0);
+    const ordered = [...rows].sort((a, b) => (first.lowerIsBetter ? a.value - b.value : b.value - a.value)).map((r) => ({ player: r.player, value: round(r.value, digits) }));
+    return [{ metric: label, unit: first.unit.trim(), best_first: ordered, gap: round(Math.abs(ordered[0]!.value - ordered[ordered.length - 1]!.value), Math.max(digits, 1)) }];
+  });
+}
+
 type PlayerStatsInput = { player_ids?: string[]; window: StatsWindow; sections: Section[] };
 
 async function runPlayerStats(ctx: ToolContext, input: PlayerStatsInput): Promise<ToolResult> {
@@ -157,6 +177,8 @@ async function runPlayerStats(ctx: ToolContext, input: PlayerStatsInput): Promis
   const missing = ids.filter((_, i) => !pages[i]).map((id) => nameOf(ctx, id));
   if (read.length === 0) return failed(`the Stats page for ${missing.join(', ')}`, 'The Stats page could not be read.');
   const built = read.map((p) => ({ ...p, ...playerLines(p.page, p.name, input.window, input.sections) }));
+  const compared = read.length > 1 ? sideBySide(read) : [];
+  const comparedLines = compared.length ? [`Side by side, ${WINDOW_WORDS[input.window]}, best first on each measure:`, ...compared.map((c) => `  ${c.metric}: ${c.best_first.map((x) => `${x.player} ${x.value}${c.unit}`).join('; ')}. Gap first to last: ${c.gap}${c.unit}.`)] : [];
   const broken = read.filter((p) => p.page.roundsError || p.page.statsError || p.page.cacheError).map((p) => p.name);
   const noRounds = read.every((p) => p.page.win.rounds === 0);
   const notes = [missing.length ? `Could not read: ${missing.join(', ')}.` : null, broken.length ? `Some of the page failed to load for ${broken.join(', ')}; a missing figure there is unread, not zero.` : null].filter(Boolean);
@@ -164,13 +186,13 @@ async function runPlayerStats(ctx: ToolContext, input: PlayerStatsInput): Promis
     summary: `${read.map((p) => p.name).join(', ')}: Stats, ${WINDOW_WORDS[input.window]}.`,
     measurements: read.flatMap((p) => statMeasurements(p.page, p)),
     series: [],
-    detail: read.length === 1 ? { player_id: read[0]!.id, ...built[0]!.detail } : { players: built.map((b) => ({ player_id: b.id, player: b.name, ...b.detail })) },
+    detail: read.length === 1 ? { player_id: read[0]!.id, ...built[0]!.detail } : { players: built.map((b) => ({ player_id: b.id, player: b.name, ...b.detail })), side_by_side: compared },
     coverage: notes.length ? 'partial' : noRounds ? 'empty' : 'complete',
     coverage_note: notes.length ? notes.join(' ') : noRounds ? `No rounds that count in ${WINDOW_WORDS[input.window]}.` : null,
     as_of: nowIso(),
     window_label: WINDOW_WORDS[input.window],
   };
-  return withText(envelope, built.flatMap((b) => [...b.lines, '']));
+  return withText(envelope, [...built.flatMap((b) => [...b.lines, '']), ...comparedLines]);
 }
 
 const sectionsField = z.array(z.enum(SECTIONS)).max(4).default([]).describe('Only when needed: rounds (each with its figures and id), putting (make rate by distance), approach (feet left by distance), holes (toughest holes, pressure gap).');
@@ -231,13 +253,13 @@ async function runTeamStats(ctx: ToolContext, input: TeamStatsInput): Promise<To
     if (f.value === null) continue;
     const signed = f.key === 'sg';
     measurements.push({ ...base, metric_id: teamFigureIds[f.key] ?? slug(f.label), metric_label: f.label, unit: f.unit === '%' ? 'percent' : f.key === 'sg' ? 'strokes' : f.key === 'score' ? 'score' : 'count', value: round(f.value, Math.max(f.digits, signed ? 2 : 0)), entity: team, sample_size: page.roundCount, sample_unit: 'rounds', direction: f.lowerIsBetter ? 'lower_better' : 'higher_better' });
-    lines.push(`Team ${f.label}: ${say(f.value, f.unit, Math.max(f.digits, signed ? 2 : 0), signed)}${f.delta === null ? '' : ` (${say(f.delta, f.unit, Math.max(f.digits, 1), true)} ${f.context})`}`);
+    lines.push(`${who.team_name} team average, ${f.label}, ${words}: ${say(f.value, f.unit, Math.max(f.digits, signed ? 2 : 0), signed)} (n=${page.roundCount} rounds)${f.delta === null ? '' : ` (${say(f.delta, f.unit, Math.max(f.digits, 1), true)} ${f.context})`}`);
   }
   page.legTotals.forEach((v, i) => {
     const label = LEG_LABELS[i];
     if (v === null || !label) return;
     measurements.push({ ...base, metric_id: metricIdOf(label), metric_label: label, unit: 'strokes', value: round(v, 2), entity: team, sample_size: page.sgRounds, sample_unit: 'rounds', direction: 'higher_better' });
-    lines.push(`Team ${label}: ${say(v, '', 2, true)}`);
+    lines.push(`${who.team_name} team average, ${label}, ${words}: ${say(v, '', 2, true)} (n=${page.sgRounds} rounds)`);
   });
 
   const detail: Record<string, unknown> = { window: words, active_players: page.activeCount, rounds: page.roundCount };
@@ -260,7 +282,7 @@ async function runTeamStats(ctx: ToolContext, input: TeamStatsInput): Promise<To
       });
       const pooled = figures.get(TEAM_FIGURES_KEY);
       const teamValue = !pooled ? null : rankBy === 'putts_per_round' ? pooled.putts_per_round : rankBy === 'gir_pct' ? pooled.gir_pct : pooled.fairway_pct;
-      if (teamValue !== null && !page.figures.some((f) => teamFigureIds[f.key] === rankBy && f.value !== null)) lines.push(`Team ${RANK_LABEL[rankBy]}: ${say(teamValue, rankBy === 'putts_per_round' ? '' : '%', 1)}`);
+      if (teamValue !== null && !page.figures.some((f) => teamFigureIds[f.key] === rankBy && f.value !== null)) lines.push(`${who.team_name} team average, ${RANK_LABEL[rankBy]}, ${words}: ${say(teamValue, rankBy === 'putts_per_round' ? '' : '%', 1)}`);
     }
   }
   const isPct = rankBy === 'gir_pct' || rankBy === 'driving_accuracy_pct';
@@ -273,8 +295,9 @@ async function runTeamStats(ctx: ToolContext, input: TeamStatsInput): Promise<To
     measurements.push({ ...base, metric_id: rankBy, metric_label: RANK_LABEL[rankBy], unit: isPct ? 'percent' : rankBy.startsWith('sg_') ? 'strokes' : rankBy === 'scoring_average' ? 'score' : 'count', value: round(r.value, digits), entity: { kind: 'player', id: r.id, label: r.name }, sample_size: r.rounds, sample_unit: 'rounds', direction: LOWER_BETTER.has(rankBy) ? 'lower_better' : 'higher_better' });
   }
   if (order.length) {
-    lines.push(`Players by ${RANK_LABEL[rankBy]}, best first (${LOWER_BETTER.has(rankBy) ? 'lower' : 'higher'} is better):`);
-    for (const r of order) lines.push(`  ${r.place === null ? '-' : `${r.place}.`} ${r.name}: ${r.value === null ? `no figure (${r.rounds} rounds)` : `${say(r.value, isPct ? '%' : '', digits, rankBy.startsWith('sg_'))} over ${r.rounds} rounds`} [player ${r.id}]`);
+    const placed = order.filter((r) => r.place !== null).length;
+    lines.push(`Players ranked on ${RANK_LABEL[rankBy]}, ${words}, best first (${LOWER_BETTER.has(rankBy) ? 'lower' : 'higher'} is better), ${placed} with a figure:`);
+    for (const r of order) lines.push(`  ${r.place === null ? 'no place' : `place ${r.place} of ${placed}`}: ${r.name}, ${RANK_LABEL[rankBy]} ${r.value === null ? `no figure (${r.rounds} rounds)` : `${say(r.value, isPct ? '%' : '', digits, rankBy.startsWith('sg_'))} (n=${r.rounds} rounds)`} [player ${r.id}]`);
   }
   if (input.putting) {
     if (page.puttsError || !page.putting) lines.push('Team putting by distance: could not be read.');
@@ -356,8 +379,8 @@ async function runRounds(ctx: ToolContext, input: RoundsInput): Promise<ToolResu
     `${scope}: ${list.length} rounds (${days[0]} to ${days[days.length - 1]}), ${counted.length} of them full rounds that count in an average. Source: Rounds page.`,
     pooled === null ? null : `Average of those ${counted.length} rounds: ${say(pooled, '', 1)}.`,
     whole && page.season.avg !== null ? `This season (since ${page.seasonStart}), as the Rounds page shows it: ${page.season.rounds} rounds by ${page.season.players} players, average ${say(page.season.avg, '', 1)}, ${page.season.underPar} under par${page.season.best ? `, best ${page.season.best.score} by ${page.season.best.player} at ${page.season.best.course}` : ''}.` : null,
-    'Per player (rounds, full rounds counted, average score, average to par, average putts, best):',
-    ...per.map((p) => `  ${p.player}: ${p.rounds}, ${p.counted}, ${p.avg_score ?? 'no average'}, ${p.avg_to_par === null ? '-' : say(p.avg_to_par, '', 1, true)}, ${p.avg_putts ?? '-'}, ${p.best ?? '-'} [player ${p.player_id}]`),
+    'Per player, lowest average first:',
+    ...per.map((p) => `  ${p.player}: ${p.rounds} rounds, ${p.counted} full rounds counted${p.avg_score === null ? ', no average' : `, average score ${p.avg_score}`}${p.avg_to_par === null ? '' : `, average to par ${say(p.avg_to_par, '', 1, true)}`}${p.avg_putts === null ? '' : `, average putts ${p.avg_putts}`}${p.best === null ? '' : `, best ${p.best}`} [player ${p.player_id}]`),
     shown.length ? `Newest ${shown.length} of ${list.length}:` : null,
     ...shown.map((r) => `  ${r.date.slice(0, 10)} ${r.player}, ${r.course}${r.holes === 9 ? ' (9 holes)' : ''}: ${r.score}${r.toPar === null ? '' : ` (${say(r.toPar, '', 0, true)})`}${r.type ? `, ${r.type}` : ''} [round ${r.id}]`),
   ];
@@ -415,8 +438,8 @@ async function seasonNow(ctx: ToolContext, playerId: string | undefined): Promis
     { summary: `${playerId ? nameOf(ctx, playerId) : who.team_name}: this season${page.season ? ` (${page.season})` : ''}.`, measurements, series: [], detail: { season: page.season, team_average: playerId ? undefined : page.teamAvg === null ? null : round(page.teamAvg, 1), players: order.map((p) => ({ place: p.place, player_id: p.id, player: p.name, rounds: p.rounds, scoring_average: p.value === null ? null : round(p.value, 1), sg_per_round: p.sgPerRound === null ? null : round(p.sgPerRound, 2), form: p.form })) }, coverage: 'complete', coverage_note: null, as_of: nowIso(), window_label: 'this season' },
     [
       `This season${page.season ? ` (${page.season})` : ''}: full rounds that count since 1 August, practice left out. Source: Roster page.`,
-      page.teamAvg === null || playerId ? null : `Team scoring average: ${say(page.teamAvg, '', 1)}.`,
-      ...order.map((p) => `  ${p.place === null ? '-' : `${p.place}.`} ${p.name}: ${p.value === null ? 'no rounds yet' : `${say(p.value, '', 1)} over ${p.rounds} rounds`}${p.sgPerRound === null ? '' : `, SG ${say(p.sgPerRound, '', 2, true)} a round`}, form ${p.form} [player ${p.id}]`),
+      page.teamAvg === null || playerId ? null : `${who.team_name} team scoring average this season: ${say(page.teamAvg, '', 1)}.`,
+      ...order.map((p) => `  ${p.place === null ? 'no place' : `place ${p.place}`}: ${p.name}, scoring average this season ${p.value === null ? 'none yet (no rounds)' : `${say(p.value, '', 1)} (n=${p.rounds} rounds)`}${p.sgPerRound === null ? '' : `, strokes gained ${say(p.sgPerRound, '', 2, true)} a round`}, form ${p.form} [player ${p.id}]`),
     ],
   );
 }
