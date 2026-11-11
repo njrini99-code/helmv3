@@ -554,7 +554,7 @@ function Item({ i, on, onPick, dismissed = false }: { i: ChDeepInsight; on: bool
       >
         <span className="ch-hd-it__d" aria-hidden="true" />
         <span className="ch-hd-it__b">
-          <b>{i.base.title}</b>
+          <b className="ch-num">{i.base.title}</b>
           <em>
             <span>{dismissed ? 'Dismissed' : i.stance.word}</span>
             {i.firmness && <span className="ch-hd-it__f"> · {i.firmness}</span>}
@@ -581,7 +581,7 @@ function ClearedRow({ c }: { c: ChDiveCleared }) {
     <li className="ch-hd-cl">
       <span className="ch-hd-it__d" aria-hidden="true" />
       <span className="ch-hd-cl__b">
-        <b>{c.title}</b>
+        <b className="ch-num">{c.title}</b>
         <em>{c.word}</em>
         {c.line && <span className="ch-num">{c.line}</span>}
       </span>

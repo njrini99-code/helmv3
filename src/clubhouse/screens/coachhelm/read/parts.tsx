@@ -670,7 +670,7 @@ export function NextReads({ view, current, voice, hrefOf }: { view: ChReadView; 
               <span className={'ch-hl-row__d is-' + r.cls} aria-hidden="true" />
               <span className="ch-hl-row__b">
                 <em>{r.category}</em>
-                <b>{r.title}</b>
+                <b className="ch-num">{r.title}</b>
                 <span className="ch-sr-only">{r.word}</span>
               </span>
               <span className="ch-hl-row__v ch-num">
@@ -712,7 +712,7 @@ export function ReadsRail({ view, current, voice, hrefOf, said }: { view: ChRead
                   <Link className={'ch-hd-it is-' + (now === 'Assigned' ? 'done' : r.cls) + (r.id === current ? ' is-on' : '')} href={hrefOf(r.id)} replace scroll={false} aria-current={r.id === current ? 'true' : undefined}>
                     <span className="ch-hd-it__d" aria-hidden="true" />
                     <span className="ch-hd-it__b">
-                      <b>{r.title}</b>
+                      <b className="ch-num">{r.title}</b>
                       <em>
                         <span>{now ?? r.word}</span>
                         {r.firm && <span className="ch-hd-it__f"> · {r.firm}</span>}

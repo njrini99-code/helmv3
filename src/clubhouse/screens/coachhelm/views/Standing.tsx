@@ -238,7 +238,7 @@ function LadderRow({ r, open, onToggle, readsFailed, voice }: { r: ChLadderRow; 
             <ul>
               {r.causes.map((c) => (
                 <li key={c.id}>
-                  <a href={diveReadHref(c.id, voice)}>{c.title}</a>
+                  <a className="ch-num" href={diveReadHref(c.id, voice)}>{c.title}</a>
                   {c.line && <p>{c.line}</p>}
                   {c.firmness && <em>{c.firmness}</em>}
                 </li>

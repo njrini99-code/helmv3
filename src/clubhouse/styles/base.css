@@ -355,11 +355,12 @@ html[data-ch-vt-hold] [data-ui='clubhouse'] main[aria-busy='true'][aria-label^='
   /* Titles are sans now (2026-10-07), so the digits SerifText sets apart take the title's own size and weight. */
   font-size: inherit;
   font-style: normal;
-  /* Proportional figures at the serif's own weight: tabular figures padded every 1 to a full width, so "1.1" in a
-     headline read as a typewriter's, heavier than the words around it. Tables keep their tabular figures. */
   font-weight: inherit;
-  font-variant-numeric: lining-nums proportional-nums;
-  letter-spacing: -0.01em;
+  /* The numeric style, as `.ch-num`: tabular figures at no tracking. Instrument Sans kerns a proportional 1 hard against a
+     full stop, and a heading's negative tracking closed what was left, so "1.1 per round" read as "11 per round"
+     (fix wave 2026-11-11). A tabular 1 keeps its own width, so the point keeps its room at every heading size. */
+  font-variant-numeric: lining-nums tabular-nums;
+  letter-spacing: 0;
 }
 
 /* Dark: globals.css gives every h1–h6 Tailwind's warm-900 ink (near-black), which a Clubhouse heading with no colour of

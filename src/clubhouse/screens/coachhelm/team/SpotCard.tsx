@@ -122,7 +122,7 @@ export function SpotCard({
                     return p ? <Coin key={id} player={p} small /> : null;
                   })}
                 </div>
-                <b>{row.title}</b>
+                <b className="ch-num">{row.title}</b>
                 <span>
                   {row.members}
                   {row.next ? ` · common step: ${row.next}` : ''}

@@ -143,7 +143,7 @@ export function FocusCard({ ins, who, assigned, defaultOpen = false }: { ins: Ch
           <SerifText text={ins.title} />
         </h2>
         {held == null && <PathLine path={ins.path} />}
-        {held == null && ins.lede && <p className="ch-hl-lede">{ins.lede}</p>}
+        {held == null && ins.lede && <p className="ch-hl-lede ch-num">{ins.lede}</p>}
       </div>
       {held != null ? (
         <ReadLater rounds={held} />
@@ -180,7 +180,7 @@ export function FocusCard({ ins, who, assigned, defaultOpen = false }: { ins: Ch
                 <span>Why we think this</span>
                 <Icon icon={why ? ChevronUp : ChevronDown} size={15} />
               </button>
-              <p id={`${id}-why`} className="ch-hl-why__b" hidden={!why}>
+              <p id={`${id}-why`} className="ch-hl-why__b ch-num" hidden={!why}>
                 {ins.why}
               </p>
             </>
@@ -223,7 +223,7 @@ export function InsightRow({ ins, onPick }: { ins: ChInsight; onPick: () => void
       <span className={'ch-hl-row__d is-' + stance.cls} aria-hidden="true" />
       <span className="ch-hl-row__b">
         <em>{ins.category}</em>
-        <b>{ins.title}</b>
+        <b className="ch-num">{ins.title}</b>
         <span className="ch-sr-only">{stance.word}</span>
       </span>
       <span className="ch-hl-row__v ch-num">

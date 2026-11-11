@@ -36,7 +36,7 @@ export function ReadRow({ player, read, onOpen }: { player: ChTeamPlayer; read: 
     <button type="button" className="rd tapp" data-ch-press-scale=".97" onClick={() => onOpen(read.id)}>
       <Coin player={player} />
       <span>
-        <b>
+        <b className="ch-num">
           {player.first}: {read.title}
         </b>
         <span className="ev">

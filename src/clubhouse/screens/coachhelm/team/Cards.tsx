@@ -127,7 +127,7 @@ export function WorkingCard({ working, proposed, failed, onRetry }: { working: r
             <div className="wk" key={w.id}>
               <Ring v={w.progress ? ringValue(w.progress) : 0} />
               <div>
-                <b>
+                <b className="ch-num">
                   {w.who.split(' ')[0]} · {w.title}
                 </b>
                 {w.line && <span>{w.line}</span>}
@@ -139,7 +139,7 @@ export function WorkingCard({ working, proposed, failed, onRetry }: { working: r
             <div className="wk" key={read.id}>
               <Ring v={0} proposed />
               <div>
-                <b>
+                <b className="ch-num">
                   {player.first} · {read.title}
                 </b>
                 <span>

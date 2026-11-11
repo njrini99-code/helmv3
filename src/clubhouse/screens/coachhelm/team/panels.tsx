@@ -172,8 +172,8 @@ export function ReadPanel({
   return (
     <>
       {coach ? <Head lead={<Coin player={player} />} name={player.name} line={`${areaName(read)} · ${player.rounds === 0 ? 'no counted rounds yet' : `last ${plural(player.rounds, 'round')}`}`} onClose={onClose} /> : <Head lead={null} name={areaName(read)} line="" onClose={onClose} />}
-      <h3>{read.title}</h3>
-      <p className="lede">{read.lede}</p>
+      <h3 className="ch-num">{read.title}</h3>
+      <p className="lede ch-num">{read.lede}</p>
       <div className="evs">
         {read.stale && <Badge>Out of date</Badge>}
         {word && <Badge tone={word === 'Solid read' ? 'positive' : 'neutral'}>{word}</Badge>}

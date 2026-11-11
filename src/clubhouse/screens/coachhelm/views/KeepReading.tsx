@@ -13,7 +13,7 @@ export function KeepReading({ id, line, items, title = 'Keep reading' }: { id: s
       {items.map((i) => (
         <Link key={i.href} className="ch-hv-link" href={i.href}>
           <span>
-            <b>{i.title}</b>
+            <b className="ch-num">{i.title}</b>
             <em>{i.note}</em>
           </span>
           <Icon icon={ArrowRight} size={16} />

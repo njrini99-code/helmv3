@@ -198,7 +198,7 @@ export function CoachBoard({
                       <Avatar name={p.name} id={p.id} size={phone ? 28 : 34} />
                       <span>
                         <b>{p.name}</b>
-                        <em>{dismissed[p.top.id] ? 'Dismissed' : p.top.title}</em>
+                        <em className="ch-num">{dismissed[p.top.id] ? 'Dismissed' : p.top.title}</em>
                       </span>
                       {/* No open signal draws no count: a "0" beside a signal line read as a contradiction (P013 D12). */}
                       {open[i] ? <span className="ch-hl-pl__c ch-num">{open[i]}</span> : null}
@@ -369,7 +369,7 @@ function SinceLine({ pulse }: { pulse: ChPulse }) {
         <ul className="ch-hl-since__l">
           {pulse.rows.map((r) => (
             <li key={r.id} className={'is-' + r.tone}>
-              <b>{r.headline}</b> <span>{r.evidence}</span>
+              <b className="ch-num">{r.headline}</b> <span className="ch-num">{r.evidence}</span>
             </li>
           ))}
         </ul>
@@ -409,7 +409,7 @@ function NotEnoughLine({ data }: { data: ChNotEnough }) {
           {data.players.flatMap((p) =>
             p.reads.map((r) => (
               <li key={r.id}>
-                <b>{p.name}</b> · <span>{r.title}</span>
+                <b>{p.name}</b> · <span className="ch-num">{r.title}</span>
                 {r.watching && <span className="ch-hl-ney__w ch-num">{r.watching}</span>}
               </li>
             )),

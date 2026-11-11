@@ -51,7 +51,7 @@ export function Row({ r }: { r: ChBriefRow }) {
     <li className={'ch-hmb-row is-' + r.kind} data-ch-code={r.kind === 'team_pattern' ? 'CH-13934' : 'CH-13933'}>
       <div className="ch-hmb-row__main">
         <span className="ch-hmb-row__who">{r.who}</span>
-        <b className="ch-hmb-row__t">{r.title}</b>
+        <b className="ch-hmb-row__t ch-num">{r.title}</b>
         <span className="ch-hmb-row__m ch-num">
           <em>{r.tag}</em>
           {r.strokes && <span> · {r.strokes}</span>}

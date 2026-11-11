@@ -98,7 +98,7 @@ export function FeatureCard({
         <div className="feat__k">{playerKicker(stage, coach)}</div>
       )}
       <h3 className="feat__t">
-        <button type="button" className="feat__open" aria-label={`Open the read: ${b.title}`} onClick={onOpen}>
+        <button type="button" className="feat__open ch-num" aria-label={`Open the read: ${b.title}`} onClick={onOpen}>
           {b.title}
         </button>
       </h3>
@@ -127,7 +127,7 @@ export function FeatureCard({
           <span>Tour</span>
         </div>
       </div>
-      <p className="feat__p">
+      <p className="feat__p ch-num">
         {b.lede}
         {d.closes && (
           <>
@@ -432,7 +432,7 @@ function readRow(d: ChDeepInsight, lens: FileLens, assigned: boolean, onOpen: (i
     <button type="button" className="r" key={d.base.id} data-ch-hf-read={d.base.id} onClick={() => onOpen(d.base.id)}>
       <Badge tone={CHIP_TONE[tone] ?? 'neutral'}>{stance.word}</Badge>
       <span className="r__t">
-        <b className="l2">{d.base.title}</b>
+        <b className="l2 ch-num">{d.base.title}</b>
         <small>{[area, d.base.value, firm].filter(Boolean).join(' · ')}</small>
       </span>
       <span className="r__e">
@@ -476,7 +476,7 @@ export function ReadsCard({ cards, lens, fa, onOpen, moreLine }: { cards: ChFile
                   <Icon icon={X} size={16} />
                 </span>
                 <span className="r__t">
-                  <b>Dismissed: {x.title}</b>
+                  <b className="ch-num">Dismissed: {x.title}</b>
                 </span>
                 <button
                   type="button"
@@ -509,7 +509,7 @@ export function WorkingCard({ list, onOpen }: { list: ChDeepInsight[]; onOpen: (
         <button type="button" className="r" data-ch-hf-read={d.base.id} onClick={() => onOpen(d.base.id)}>
           <Badge tone="positive">Working</Badge>
           <span className="r__t">
-            <b className="l2">{d.base.title}</b>
+            <b className="l2 ch-num">{d.base.title}</b>
             <small>{d.base.value}</small>
           </span>
         </button>
@@ -598,7 +598,7 @@ export function TrackCard({ track, first }: { track: ChFileTrack; first: string 
                 <div className="r static" key={r.id}>
                   <Badge tone={r.word === 'Improved' ? 'positive' : 'neutral'}>{r.word}</Badge>
                   <span className="r__t">
-                    <b>{r.title}</b>
+                    <b className="ch-num">{r.title}</b>
                     {r.meta && <small className="ch-num">{r.meta}</small>}
                   </span>
                 </div>
