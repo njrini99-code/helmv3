@@ -12,9 +12,9 @@ import type { StripItem, TaskFigures } from './hub-summary';
  */
 
 /**
- * The strip: figures that open the tab they count. A figure with no tab is plain text. It is one line that scrolls
- * sideways when the figures outgrow it (the clipped edge fades), so its height never depends on what it says and the
- * loading skeleton can hold it.
+ * The strip: figures that open the tab they count. A figure with no tab is plain text. On a desktop it is one line that
+ * scrolls sideways when the figures outgrow it (the clipped edge fades). On a phone it wraps to a second line instead
+ * (hub.css): a second sideways scroller over the tabs cut a figure mid-word at the screen's edge.
  */
 export function HubStrip({ items, onOpen }: { items: StripItem[]; onOpen: (tab: ChHubTab) => void }) {
   const edges = useHScroll<HTMLUListElement>();

@@ -32,7 +32,7 @@ import { TripEditSheet } from './trip-edit';
 import { uploadRefusal } from './upload-rules';
 import { LIVE_HUB_WRITES, type ChHubWrites } from './writes';
 import { useToast } from '../../ui/Toast';
-import { useHScroll } from '../../ui/use-hscroll';
+import { useHScroll, useKeepInView } from '../../ui/use-hscroll';
 import '../../styles/hub.css';
 import { ListPresence } from '../../ui/ListPresence';
 import { LargeTitle } from '../../ui/LargeTitle';
@@ -156,21 +156,9 @@ export function TeamHub({
   const tabsEdges = useHScroll<HTMLDivElement>(tabsRef);
   const reduced = useChReducedMotion();
   useSlidePlate(tabsRef, '[aria-selected="true"] > .ch-hb-tabs__bar', tab, { reduced, kind: 'smooth' });
-  // The chosen tab is always in view in the phone's sideways strip: Tasks, opened from the strip or a link, sat past the
-  // screen's edge with only a sliver of its underline showing. The first paint jumps there; a later change glides.
-  const tabsShown = useRef(false);
-  useEffect(() => {
-    const strip = tabsRef.current;
-    const on = strip?.querySelector<HTMLElement>('[aria-selected="true"]');
-    const first = !tabsShown.current;
-    tabsShown.current = true;
-    if (!strip || !on || strip.scrollWidth <= strip.clientWidth) return;
-    const s = strip.getBoundingClientRect();
-    const b = on.getBoundingClientRect();
-    const edge = 16;
-    const by = b.left < s.left + edge ? b.left - s.left - edge : b.right > s.right - edge ? b.right - s.right + edge : 0;
-    if (by) strip.scrollTo({ left: strip.scrollLeft + by, behavior: first || reduced ? 'auto' : 'smooth' });
-  }, [tab, reduced]);
+  // The chosen tab is always whole in the phone's sideways strip (ui/use-hscroll.ts): Tasks, opened from the strip or a
+  // link, sat past the screen's edge, and again once the type settled wider than the first paint drew it.
+  useKeepInView(tabsRef, '[aria-selected="true"]', tab, reduced);
   const [replies, setReplies] = useState(() => new Map<string, ChRsvp>());
   const [acked, setAcked] = useState(() => new Set<string>());
   const [pendingWrites, setPendingWrites] = useState(() => new Set<string>());
