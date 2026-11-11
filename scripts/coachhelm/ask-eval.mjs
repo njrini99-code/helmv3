@@ -644,7 +644,7 @@ try {
       report.push({ question, verdict, text, seconds, cost: 0, scored: null, sense: null, note, tools: [], grounded: null, model: null });
       break;
     }
-  
+
     let cost = 0;
     let grounded = null;
     let unmatched = [];

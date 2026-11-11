@@ -180,4 +180,3 @@ settings, and everything a player does.
 Every tool in the registry is passed through `strictInput` (`strict-input.ts`) when it is listed, so a new tool only
 needs an ordinary zod object for its input: optional fields, bounds and defaults are fine, and the model is shown the
 strict form of it.
-
