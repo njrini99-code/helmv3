@@ -271,7 +271,7 @@ export function Moved({ d }: { d: ChReadDetail }) {
           <Line
             className="ch-hd-strip__chart"
             interactive={false}
-            label={`${t.label}. ${w.said}.`}
+            label={`${t.label}. ${w.said}.${t.lowerBetter === true ? ' Lower is better, so the line rises as it improves.' : ''}`}
             points={vals.map((y, i) => ({ x: String(i + 1), y }))}
             lowerIsBetter={t.lowerBetter === true}
             domain={hi === lo ? [lo - 1, hi + 1] : [lo, hi]}
@@ -284,6 +284,8 @@ export function Moved({ d }: { d: ChReadDetail }) {
           />
           <span className="ch-hd-strip__c ch-num" data-ch-read-trend={win}>
             <b>{w.said}</b>
+            {/* The chart draws better upward (ui/charts/Line lowerIsBetter); a flipped axis is said, as Ask's evidence chart says it. */}
+            {t.lowerBetter === true && <em data-ch-read-dir="">Lower is better, so the line rises as it improves</em>}
             {t.ref && (
               <em>
                 Dashed line: {t.ref.label} {t.ref.display}

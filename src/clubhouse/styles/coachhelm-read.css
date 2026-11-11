@@ -41,7 +41,17 @@
 /* The phone: the primary takes the row; the quiet keys share the next one evenly, as one group. */
 .ch-hr.is-phone .ch-hl-cact > .ch-btn { flex: 1 1 0; justify-content: center; min-height: 44px; }
 .ch-hr.is-phone .ch-hl-cact > .ch-btn--primary { flex: 1 0 100%; }
+/* Dismissed: the line keeps the row and Undo sits at its end, at its own width. */
+.ch-hr.is-phone .ch-hl-cact > .ch-hr-done { flex: 1 1 0; min-width: 0; }
+.ch-hr.is-phone .ch-hl-cact[data-ch-read-actions='dismissed'] > .ch-btn { flex: 0 0 auto; }
 .ch-hr.is-phone [data-ch-read-actions] .ch-hl-prop { margin-top: 0; }
+/* Where this goes, on the phone: the state word sits under the title, so a long focus title keeps the row's width. */
+.ch-hr.is-phone .ch-hd-plan__i { grid-template-columns: 34px minmax(0, 1fr); gap: 8px 12px; }
+.ch-hr.is-phone .ch-hd-plan__i.is-link { grid-template-columns: 34px minmax(0, 1fr) 16px; }
+.ch-hr.is-phone .ch-hd-plan__ic { grid-column: 1; grid-row: 1; }
+.ch-hr.is-phone .ch-hd-plan__b { grid-column: 2; grid-row: 1; }
+.ch-hr.is-phone .ch-hd-plan__w { grid-column: 2; grid-row: 2; justify-self: start; }
+.ch-hr.is-phone .ch-hd-plan__i.is-link > svg { grid-column: 3; grid-row: 1 / span 2; }
 .ch-hr-done { display: inline-flex; flex: 1 1 0; align-items: center; gap: 6px; min-width: 0; margin: 0; color: var(--ch-text-secondary); }
 
 /* ---------- the phone's three tabs: the Segmented control, full width ---------- */
@@ -144,6 +154,9 @@
 /* is this right: the chips flush on the page, at the end */
 .ch-hr-cx { margin: 8px 0 0; }
 .ch-hr-cx .ch-hl-cx { margin: 0; padding: 0; border: 0; }
+/* A chip's hit area (`.ch-hl-cx__c::after`, absolute) must be measured from the chip. The shared rule sets `position: relative` and then
+   `all: unset`, which takes it back; flush on this page the area then filled the whole page and took every tap (the tabs, Assign). */
+.ch-hr-cx .ch-hl-cx__c { position: relative; }
 
 /* more on this player: the board's rows, in one Surface like Home's lists */
 .ch-hr-next { display: flex; flex-direction: column; gap: 12px; margin-top: 32px; }

@@ -392,6 +392,16 @@ describe('every state looks its own', () => {
     expect(sec('where')).toBeNull();
   });
 
+  it('a lower-is-better trend says its axis is flipped, in words beside the chart; a phone plan row puts its state word under the title', () => {
+    show('penalties', 'coach');
+    const card = sec('moved') as HTMLElement;
+    expect(card.querySelector('[data-ch-read-dir]')?.textContent).toBe('Lower is better, so the line rises as it improves');
+    // The drawing itself is hidden from assistive tech (a row's spark); the words beside it carry the figure and the direction.
+    expect(card.querySelector('.ch-hd-strip__chart svg')?.getAttribute('aria-hidden')).toBe('true');
+    const css = readFileSync(join(process.cwd(), 'src/clubhouse/styles/coachhelm-read.css'), 'utf8');
+    expect(css).toMatch(/\.ch-hr\.is-phone \.ch-hd-plan__w \{ grid-column: 2; grid-row: 2; justify-self: start; \}/);
+  });
+
   it('the split under a counted cause is two labelled figures, each with its count', () => {
     show('penalties', 'coach');
     const dl = (sec('cause') as HTMLElement).querySelector('dl.ch-hd-dx__d') as HTMLElement;
@@ -470,6 +480,11 @@ describe('the lane stylesheet', () => {
     expect(rules.match(/#[0-9a-fA-F]{3,8}\b/g)).toBeNull();
     expect(rules.match(/\brgba?\(/g)).toBeNull();
     expect(rules).not.toContain('!important');
+  });
+
+  it('a correction chip’s hit area is measured from the chip, so it cannot cover the page and take the tabs’ and Assign’s taps', () => {
+    // Seen in WebKit, 10 Nov: `document.elementFromPoint` at the Cause tab returned a chip. jsdom has no layout, so the rule is held here.
+    expect(rules).toMatch(/\.ch-hr-cx \.ch-hl-cx__c \{ position: relative; \}/);
   });
 
   it('names only ch- classes, and is a fraction of the 1,324 lines it replaced', () => {

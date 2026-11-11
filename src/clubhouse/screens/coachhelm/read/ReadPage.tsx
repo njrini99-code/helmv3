@@ -78,7 +78,7 @@ export function ReadSkeleton() {
   if (phone) {
     return (
       <main className="ch-hl ch-hv ch-hr is-phone" aria-busy="true" aria-label="Loading this read" data-ch-arrive="crossfade">
-        <PhoneTop back={{ label: 'CoachHelm', onBack: () => router.back() }} title="CoachHelm" />
+        <PhoneTop back={{ label: 'CoachHelm', onBack: () => router.back() }} title="Read" />
         <div className="ch-hr-skel" aria-hidden="true">
           {dos}
           <div className="ch-hr-tabs">
