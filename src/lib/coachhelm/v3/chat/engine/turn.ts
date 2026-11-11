@@ -19,9 +19,11 @@ import { stripReadMarkers } from '../read-markers';
 import { aboutLine } from './about';
 import { defaultGroundingCheck, type GroundingCheck } from './grounding';
 import { runModelLoop, toolResultsMessage, type LoopState, type LoopStop, type PendingDecision } from './loop';
-import { emptyUsage, fallbackModelOf, profileFor, type ChatFeatures, type ModelClient, type ModelMessage, type ModelProfile, type SystemPrompt, type ToolResultBlock, type UsageTotals } from './model';
+import { emptyUsage, fallbackModelOf, profileFor, type ChatFeatures, type FeatureGroup, type ModelClient, type ModelMessage, type ModelProfile, type SystemPrompt, type ToolResultBlock, type UsageTotals } from './model';
 import { applyChatEvent, CARD_REVISION_PART, CHAT_STREAM_CONTENT_TYPE, encodeChatEvent, eventsForStoredParts, textOfParts, TURN_META_PART, turnMetaOf, type ChatCardRevision, type ChatErrorAction, type ChatErrorKind, type ChatEvent, type ChatScreenEcho, type ChatTurnMeta, type ChatTurnStatus, type ChatUIMessage, type ChatUIPart, type WireDataPart } from './protocol';
+import { suggestFor } from './suggestions';
 import { buildHistory, collectReads, findOpenDecision, saveCardState, saveResumeToLedger, saveTurn, type LoadedConversation, type OpenDecision } from './store';
+import { lastRowNumberOf, lastSeqOf, workOf } from './steps';
 import { declineTask, reviseTask, settleAbandonedTask, startConfirm, startConfirmAll, type DecisionOutcome, type TaskDeps } from './tasks';
 import type { ChatTool, TaskTool, ToolContext } from './tool';
 
@@ -55,8 +57,10 @@ export interface TurnSummary {
   error: unknown;
   /** The API's category when the model declined (`cyber`, `bio`, `frontier_llm`, `general_harms`), for the log. */
   refusalCategory: string | null;
-  /** True when the API rejected a request with optional features and the turn went on with plain requests. */
+  /** True when the API rejected a request and the turn went on without one or more feature groups. */
   degraded: boolean;
+  /** Those groups, in the order they were given up (`engine/model.ts`, `FEATURE_GROUPS`). Empty on a turn that ran as configured. */
+  featuresDropped: FeatureGroup[];
   /** The substitute model that answered when a refusal fallback did; null otherwise. */
   fallbackModel: string | null;
 }
@@ -96,7 +100,15 @@ export interface TurnDeps {
   preface?: WireDataPart[];
   /** Bookkeeping after the turn is stored: cost, logs. Its failure never costs the coach the answer. */
   onFinished: (summary: TurnSummary) => void | Promise<void>;
+  /**
+   * The call that asked for what to ask next was made (`engine/suggestions.ts`): what it cost, how many suggestions passed
+   * the checks, and whether the call itself failed. Called only when a call was made. Its failure costs nothing.
+   */
+  onSuggested?: (result: { usage: UsageTotals; kept: number; failed: boolean }) => void | Promise<void>;
 }
+
+/** How long the call for what to ask next may take before it is given up: it holds the response open, never the answer. */
+export const SUGGESTIONS_TIMEOUT_MS = 8_000;
 
 const REFUSAL_NOTE = 'I can’t help with that one. Try asking it another way, or ask me about your team, your players or your schedule.';
 const TRUNCATED_NOTE = 'That answer ran too long to finish. Ask for a smaller piece of it.';
@@ -183,8 +195,12 @@ async function runTurn(deps: TurnDeps, input: TurnInput, signal: AbortSignal, se
   let messageId: string | null = null;
   let refusalCategory: string | null = null;
   const finish = async (status: ChatTurnStatus, stop: TurnSummary['stop'], error: unknown, grounding: { grounded: boolean; unmatched: string[] }, before: readonly ChatUIPart[]) => {
-    send({ type: 'usage', input_tokens: usage.input + usage.cacheRead + usage.cacheWrite, output_tokens: usage.output, cache_read_input_tokens: usage.cacheRead });
-    send({ type: 'done', status, duration_ms: Date.now() - started });
+    // `features_dropped`: the request features this turn had to give up to be accepted. Names only, never the API's words.
+    const gaveUp = state.dropped.map((d) => d.group);
+    send({ type: 'usage', input_tokens: usage.input + usage.cacheRead + usage.cacheWrite, output_tokens: usage.output, cache_read_input_tokens: usage.cacheRead, cache_creation_input_tokens: usage.cacheWrite, ...(gaveUp.length > 0 ? { features_dropped: gaveUp } : {}) });
+    // The turn's work, beside its whole duration: how many steps, and for how long at least one of them was running.
+    const work = workOf(ui.parts);
+    send({ type: 'done', status, duration_ms: Date.now() - started, ...(work.steps > 0 ? { work } : {}) });
     const earlier = new Set(proposalKeysOf(before));
     try {
       await deps.onFinished({
@@ -199,7 +215,8 @@ async function runTurn(deps: TurnDeps, input: TurnInput, signal: AbortSignal, se
         proposalKeys: proposalKeysOf(ui.parts).filter((k) => !earlier.has(k)),
         error,
         refusalCategory,
-        degraded: state.degraded,
+        degraded: state.dropped.length > 0,
+        featuresDropped: state.dropped.map((d) => d.group),
         fallbackModel: fallbackModelOf(usage),
       });
     } catch {
@@ -208,21 +225,62 @@ async function runTurn(deps: TurnDeps, input: TurnInput, signal: AbortSignal, se
   };
   const fail = (message: string, action: ChatErrorAction, kind: ChatErrorKind) => send({ type: 'error', message, action, kind });
 
+  /**
+   * What to ask next. Runs AFTER `done` has gone out, on a turn that completed with an answer: the coach is never kept waiting
+   * for it and can already ask something else (which ends this). One small call; what comes back is checked against the caller's
+   * own tools and the things the assistant never does (`engine/suggestions.ts`); what passes is sent as the one event that may
+   * follow `done` and stored with the turn. Whatever goes wrong here, the turn has already ended well.
+   */
+  const suggest = async (question: string): Promise<void> => {
+    if (!state.features.suggestions || signal.aborted) return;
+    const answer = wordsOf(ui.parts);
+    if (!question.trim() || !answer) return;
+    let model: ModelClient;
+    try {
+      model = deps.model();
+    } catch {
+      return;
+    }
+    const within = AbortSignal.any([signal, AbortSignal.timeout(SUGGESTIONS_TIMEOUT_MS)]);
+    const asked = await suggestFor(model, within, { question, answer, tools: deps.tools, surface: deps.toolContext.surface });
+    if (asked.usage.calls.length > 0) {
+      try {
+        await deps.onSuggested?.({ usage: asked.usage, kept: asked.suggestions.length, failed: asked.failed });
+      } catch {
+        // Accounting never fails a turn.
+      }
+    }
+    // The coach has moved on (asked something else, or left): these belong to an answer that is no longer the last.
+    if (asked.suggestions.length === 0 || signal.aborted) return;
+    const event: ChatEvent = { type: 'suggestions', items: asked.suggestions };
+    ui = applyChatEvent(ui, event);
+    send(event);
+    const row = rowId ?? messageId;
+    if (!deps.store || !row) return;
+    // Only the drawn parts change: the model's own record of the turn never holds a suggestion.
+    await saveCardState(sb, loaded.mode, row, ui.parts, { stillWaiting: true }).catch((err) => {
+      void logServerError(`chat/stream: suggestions not stored: ${err instanceof Error ? err.message : 'unknown'}`, { action: 'v3.chat.stream.persist', handled: true }, 'warning');
+    });
+  };
+
   // Facts about the turn that are not the answer, kept as one part so they are stored with it and restored with it. Written again
   // (in place) each time the turn is stored: `earlier` is what requests before this one already spent on the same turn.
   const readNames = new Set(deps.tools.filter((t) => t.kind === 'read').map((t) => t.name));
   let earlier: ChatTurnMeta | null = null;
   let refused = false;
   const stamp = () => {
-    const reads = ui.parts.filter((p) => p.type === 'data-progress' && readNames.has(String((p.data as { tool?: unknown } | undefined)?.tool)) && (p.data as { state?: unknown }).state !== undefined).length;
-    const meta: ChatTurnMeta = { started_at: earlier?.started_at ?? startedAt, duration_ms: (earlier?.duration_ms ?? 0) + (Date.now() - started), reads, ...(refused || earlier?.declined ? { declined: true as const } : {}) };
+    const finished = (p: ChatUIPart) => ['done', 'failed'].includes(String((p.data as { state?: unknown } | undefined)?.state));
+    const reads = ui.parts.filter((p) => p.type === 'data-progress' && readNames.has(String((p.data as { tool?: unknown } | undefined)?.tool)) && finished(p)).length;
+    // The steps are the turn's own rows, earlier requests' included, so these two need no adding up.
+    const work = workOf(ui.parts);
+    const meta: ChatTurnMeta = { started_at: earlier?.started_at ?? startedAt, duration_ms: (earlier?.duration_ms ?? 0) + (Date.now() - started), reads, ...(work.steps > 0 ? work : {}), ...(refused || earlier?.declined ? { declined: true as const } : {}) };
     emit({ type: 'part', part: { type: TURN_META_PART, id: 'turn-meta', data: meta } });
   };
 
   const open = deps.store ? await findOpenDecision(sb, loaded, coachId).catch(() => null) : null;
   const { reads, nextRef } = collectReads(loaded);
   const profile = deps.profile ?? profileFor('ask');
-  const state: LoopState = { messages: [], appended: [], steps: 0, usage, reads, nextRef, nextProgress: 0, profile, features: deps.features ?? profile.features, degraded: false, container: null };
+  const state: LoopState = { messages: [], appended: [], steps: 0, usage, reads, nextRef, nextProgress: 0, profile, features: deps.features ?? profile.features, dropped: [], container: null };
   /** The assistant row this request writes: the waiting turn (a decision), or a failed attempt a retry replaces. */
   let rowId: string | undefined;
 
@@ -289,6 +347,9 @@ async function runTurn(deps: TurnDeps, input: TurnInput, signal: AbortSignal, se
     const before = open.row.ui_parts ?? [];
     ui = { id: open.row.id, role: 'assistant', parts: before };
     earlier = turnMetaOf(before);
+    // This request's steps are numbered on from the turn's stored ones, and never take a stored step's id (which would replace it).
+    state.seq = lastSeqOf(before);
+    state.nextProgress = lastRowNumberOf(before);
     send({ type: 'message_start', conversation_id: conversationId, message_id: ui.id, resumed: true, started_at: startedAt });
 
     const toolFor = (name: string) => deps.tools.find((t): t is TaskTool<unknown> => t.kind === 'task' && t.name === name);
@@ -406,6 +467,8 @@ async function runTurn(deps: TurnDeps, input: TurnInput, signal: AbortSignal, se
       void logServerError(`chat/stream: closing words after a decision did not arrive (${stop.kind})`, { action: 'v3.chat.stream.decision_tail', handled: true }, 'warning');
     }
     await finish('complete', stop.kind, error, ground(deps, ui, reads, ''), before);
+    // After the closing words of a turn whose cards are all answered: what to do next, from the question that began the turn.
+    if (stop.kind === 'complete') await suggest(loaded.rows.find((r) => r.role === 'user' && r.client_turn_id !== null && r.client_turn_id === open.row.client_turn_id)?.content ?? '');
     return;
   }
 
@@ -497,6 +560,7 @@ async function runTurn(deps: TurnDeps, input: TurnInput, signal: AbortSignal, se
     const saved = await store('complete', null, null);
     if (!saved) fail(NOT_SAVED_NOTE, 'retry', 'lost');
     await finish('complete', stop.kind, null, ground(deps, ui, reads, question), []);
+    if (saved) await suggest(question);
     return;
   }
   if (stop.kind === 'awaiting_decision') {

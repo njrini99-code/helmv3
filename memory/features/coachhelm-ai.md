@@ -58,6 +58,7 @@ The feature currently spans two generations:
 - `src/lib/coachhelm/v2/**`
 - `src/lib/coachhelm/v3/**`
 - `src/lib/coachhelm/v3/chat/engine/**`: the chat turn engine on `@anthropic-ai/sdk` (see "CoachHelm chat: the engine").
+- `src/lib/coachhelm/v3/analyst/**`: the analyst, the first slice of the insight engine's replacement. A typed fact sheet per player (35 measures over last 10 / previous 10 / season, measured and estimated strokes gained kept apart, team blocks coach-only), `findNotable` (one season priority per player traced to a band and a counted pattern, at most three tested signals), and a read-only dry run (`scripts/coachhelm/analyst-dry-run.ts`, refuses production). Pure; not wired to any surface, cron or table yet. Contract: `src/lib/coachhelm/v3/analyst/README.md`.
 - `src/app/api/coachhelm/v3/chat/stream/route.ts`: the chat endpoint; it binds the Clubhouse screens' loaders for the tools.
 
 ## Core Data
@@ -105,14 +106,37 @@ entries are history. The tool list and the prompt are described where the tools 
   (`CHAT_MAX_STEPS`), 8 for a player.
 - **Optional features are one object per profile** (`ChatFeatures`; `chatFeatures(surface)`), each a field that turns
   it off: `dropStaleThinking` (`thinking.block_binding.prefix_mismatch_behavior: 'drop_block'`, beta
-  `thinking-binding-controls-2026-08-01`), `strictTools` (`strict: true`; the engine still validates every input with
-  zod), `citations` (below), `compaction` (`compact_20260112` at the default trigger, beta `compact-2026-01-12`),
+  `thinking-binding-controls-2026-08-01`), `strictTools` (`strict: true` on the tools named in `STRICT_TOOLS`; off, the list is empty, see
+  below; the engine validates every input with zod either way), `citations` (below), `compaction` (`compact_20260112` at the default trigger, beta `compact-2026-01-12`),
   `programmaticReads` (below), and on Sonnet 5.5 only `progressNotes` (`thinking.display: 'updates'`, beta
   `thinking-display-updates-2026-08-18`: the model's short progress updates reach the thread as `note` events) and
-  `refusalFallback` (next item). Built and off: `taskBudgetTokens` (null). If the API rejects a request (HTTP 400)
-  that carries any of them, the loop sends that call once more as a plain request (no beta, no `strict`, no code
-  tool, no `fallbacks`), keeps the rest of the turn plain, completes the turn and logs `v3.chat.stream.degraded` as
-  an error: the coach loses the feature, not the answer.
+  `refusalFallback` (next item). Built and off: `taskBudgetTokens` (null).
+- **A rejected request gives up one feature group at a time** (`FEATURE_GROUPS` in `engine/model.ts`:
+  `progress_notes`, `refusal_fallback`, `task_budget`, `strict_tools`, `compaction`, `programmatic_reads`,
+  `thinking_binding`). On an HTTP 400 the loop gives up the group the API's message names (when it names exactly one
+  the request carried), otherwise the next in that order, sends the call again, and the rest of the turn runs without
+  that group; the coach loses the feature, not the answer. A 400 that carries the API's own error code (an account,
+  billing or key fault) is not retried. Each rejection is logged as an error under `v3.chat.stream.degraded`
+  (`errorCode: chat_feature_rejected`) with the status, the error type and the API's message (300 characters, ids
+  removed, nothing of the request) in the line itself. What a turn gave up is on the `usage` event
+  (`features_dropped`, group names only), in the turn's log line (`featuresDropped`) and in the ledger row
+  (`citations.features_dropped`). **A turn that gave something up did not run as configured**: the eval calls it
+  `degraded`, never `complete`, and `--require-features` stops the run on the first one. First live run, 10 Nov 2026:
+  every request was rejected and retried plain, because every tool was sent `strict` (next item).
+- **No tool is sent `strict`, on any surface** (`STRICT_TOOLS` in `engine/model.ts` is empty, so `strictTools` is off
+  in both profiles and `strict_tools` is in no request's groups). The API refused these tools twice on live requests:
+  on 10 Nov 2026 for the documented per-request counts (at most 20 strict tools, 24 optional parameters and 16
+  parameters with a union type, summed over every strict tool; a coach's request held 33 and 72 unions), and on 11 Nov
+  2026, cut to those counts, with "The compiled grammar is too large, which would cause performance issues. Simplify
+  your tool schemas or reduce the number of strict tools." The engine checks every input with the tool's own zod
+  schema before it runs and answers a bad one with a tool error, so nothing is unchecked. A tool comes back to
+  `strict` only by name in `STRICT_TOOLS`, after a live request with exactly that set was accepted (the eval's
+  `--require-features`); `strictToolNames` then cuts the list to the per-request counts, which are necessary and not
+  sufficient.
+- **Every request of a turn carries the same tool definitions and system blocks, byte for byte.** They depend only on
+  the surface's tool list and the features, never on the step, a waiting container or the answer-only step
+  (`tool_choice: none` with the tools still listed), so the cached prefix is written once. Only a group the API
+  rejected changes them.
 - **Refusal fallback (Sonnet 5.5 only).** Requests carry `fallbacks: 'default'` (beta
   `server-side-fallback-2026-07-01`): when the model declines for a category the API retries, the API answers with a
   substitute model inside the same response. The loop keeps the words already streamed, drops from the echoed turn
@@ -129,8 +153,8 @@ entries are history. The tool list and the prompt are described where the tools 
   `programmaticReads` in each model profile's features in `engine/model.ts` (a player's is always off). What does not change: every read the code calls is validated
   by the tool's zod schema, runs with the signed-in coach's session client under row-level security and the same
   ownership checks, and its envelope reaches the store, the evidence parts (marked `via: 'code'`) and the grounding
-  check. A task can never be called from code, and no card is prepared while code is waiting on a read. Reads are not
-  `strict` while this is on (the API does not allow both); tasks stay strict. An answer computed in code carries no
+  check. A task can never be called from code, and no card is prepared while code is waiting on a read. A read the
+  code may call can never be `strict` (the API does not allow both); today no tool is. An answer computed in code carries no
   citation markers; its sources are the turn's `via: 'code'` evidence parts. Each run of the code also leaves one
   `data-computed` part (`ChatComputed`: the reads it called by evidence ref, how many, how many players, the window
   they share, and a method sentence when the code began with a `# Method:` line), stored with the turn; its progress
@@ -265,6 +289,32 @@ entries are history. The tool list and the prompt are described where the tools 
   stored). An edited card carries `revision`; a Confirm or an edit names the revision on screen, and one that names
   another is answered with the card as it stands and writes nothing, so a card changed in one tab cannot be confirmed
   from a stale copy in another. The plan that is committed is the one the ledger row held when it was claimed.
+- **Steps of work.** Each read, calculation and draft is a step: a `data-progress` row (`ChatStep`) with its kind,
+  its state, clock readings for when it began and ended, who it is about (players only from the caller's own roster
+  and named from it; a player's steps name only that player), what it counted, the read it produced
+  (`evidence_ref`, openable as soon as the step is done) and, for a read the model's code called, the step it ran
+  under. Every step event carries the turn's sequence number, and each state change is sent once. A running
+  calculation re-sends its tally at most every 250 ms. Nothing is estimated and no step is announced before it is
+  running. `done.work` and `data-turn-meta` give the turn's step count and the time at least one step was running.
+  The rows are stored with the turn; `restoreUIMessages(rows, { steps: true })` keeps them on reload. A tool declares
+  its own step (`ToolBase.step`: a kind, or `{ kind, doneLabel(input, result), subjects(input, ctx) }`): the finished
+  row's wording (`done_label`) is the tool's own sentence or is not sent, and what a tool says its step is about is
+  checked against the caller's roster and team before it is sent (on a player's turn, only the player). A step lists at
+  most twelve subjects and says how many more there are (`subjects_more`).
+- **What to ask next.** After a coach's turn has completed and `done` has gone out, one small call (Claude Haiku
+  5.5, effort `low`, no tools, a fixed JSON shape; `engine/suggestions.ts`) asks for two to four follow-ups from the
+  question and the answer: each `{ label, prompt, kind: read | compare | action }`. They are checked before anything is
+  shown: an action must name a task tool this caller actually has; nothing the assistant never does (deleting, removing
+  a person, roles, accounts and sign-in, anything sent outside the team, settings that change what figures mean); no
+  tool or table name; fewer than two left is none. What passes is sent as a `suggestions` event, the one event that may
+  follow `done`, and stored on the turn as a `data-suggestions` part (never in the model's own record of the
+  conversation). Tapping one sends its `prompt` as the next message and nothing else: an action it leads to is planned,
+  shown and confirmed like any other. Not asked for on a turn that waits on a card, failed, was stopped or was
+  declined, and never for a player (`features.suggestions`). The call has eight seconds, holds only the tail of the
+  response open, and ends when the coach asks something else. Its cost is a ledger row under `chat_suggestions` and
+  the same key in the day's budget; without the held migration `20261111090000` the ledger refuses the key, no row is
+  written, and the cost is in the budget only. The same migration lets a player's turn be written as `player_chat`
+  (it is `coach_chat` with a `player_id` until then). `chat/ledger.ts` does both fallbacks.
 - **A draft is shown as it is written.** A tool whose input is a draft (`ToolBase.draft.fields`) has those fields
   streamed to the thread while the model writes them (`draft_delta`, at most every 150 ms): whole values, the
   finished items of a list, words up to the last whole word, never a half-written item (`engine/draft.ts`). Nothing
@@ -888,7 +938,8 @@ replacement is `src/lib/coachhelm/v3/chat/TOOLS.md`.
   coach's message, and the policy tells it to expect them there. There are no output formats to parse.
 - **Strict tool use** (`chat/strict-input.ts`): every registered tool's input is shown to the model as a closed
   object with every field required and optional fields nullable, with no length or range keywords; the tool's own
-  zod schema validates behind it, so no bound is lost. A new tool needs only an ordinary zod object.
+  zod schema validates behind it, so no bound is lost. A new tool needs only an ordinary zod object. That is
+  the shape the model is shown; NO tool is sent with `strict: true` (above), so the zod check is the only gate.
 - **What a read says to the model**: one figure per line, each naming whose it is, what it is, the window and the
   sample ("Eli Brandt, Scoring avg, last 10 rounds: 74.2 (n=10 rounds) | team average 75.1"). Several players in one
   `get_player_stats` call are set side by side by the reader, best first with the gap.

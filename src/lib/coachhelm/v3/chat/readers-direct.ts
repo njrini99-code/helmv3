@@ -24,7 +24,7 @@ import { getClassTimes, getDrillBank, getPlanFormat } from './practice-reads';
 import { nowIso, type Measurement, type ToolEnvelope } from './provenance';
 import { getFocusAreas, getOpenTasks, getPlayerInsights, getTeamTravel } from './read-tools';
 import { findNotTracked } from './not-tracked';
-import { empty, failed, nameOf, notice, notTracked, ownOrOne, part, plain, playerOf, say, sgAgainst, teamOf, together, withText } from './reader-kit';
+import { empty, failed, nameOf, notice, notTracked, ownOrOne, part, plain, playerOf, say, sgAgainst, teamOf, together, withText, wordsFor } from './reader-kit';
 import { screenLoaders, STATS_WINDOWS } from './screen-loaders';
 import { getProximityByBand, getShotPattern } from './shot-reads';
 import { SummariseInputCoach, SummariseInputPlayer, summariseData, type SummariseInput } from './summarise-data';
@@ -121,7 +121,7 @@ export const getRound: ReadTool<{ round_id: string }> = {
       summary: `${where}${r.holesPlayed === 9 ? ' (9 holes)' : ''}.`,
       measurements,
       series: [],
-      detail: { player_id: r.playerId, kind: 'hole_strip', round: { round_id: r.id, date: day, course: r.course, type: r.type, holes_played: r.holesPlayed, total: r.score, to_par: r.toPar, front: r.front.score, back: r.back.score, putts: r.putts, fairways: r.fairways, greens: r.greens, strokes_gained: sg }, holes, tallies, recap: r.recap, player_note: r.notes, coach_note: r.coachNote },
+      detail: { player_id: r.playerId, kind: 'hole_strip', round: { round_id: r.id, ...(playerOf(ctx) ? {} : { href: `/golf/dashboard/rounds/${r.id}` }), date: day, course: r.course, type: r.type, holes_played: r.holesPlayed, total: r.score, to_par: r.toPar, front: r.front.score, back: r.back.score, putts: r.putts, fairways: r.fairways, greens: r.greens, strokes_gained: sg }, holes, tallies, recap: r.recap, player_note: r.notes, coach_note: r.coachNote },
       coverage: r.holesError ? 'partial' : 'complete',
       coverage_note: r.holesError ? 'The holes could not be read; the totals are the round\'s own.' : holes.length ? null : 'This round was posted as a total, with no holes.',
       as_of: nowIso(),
@@ -151,8 +151,8 @@ export const getShots: ReadTool<ShotsInput> = {
   run: async (ctx, input) => {
     const player_id = ownOrOne(ctx, input.player_id);
     const who = teamOf(ctx);
-    if (input.bands?.length) return plain(asOwn(ctx, await getProximityByBand(ctx.sb, who, { player_id, bands: input.bands, since_days: input.since_days })), sgAgainst(ctx));
-    return plain(asOwn(ctx, await getShotPattern(ctx.sb, who, { player_id, club_type: input.club_type, from_yards: input.from_yards, to_yards: input.to_yards, since_days: input.since_days, mode: 'approach' })), sgAgainst(ctx));
+    if (input.bands?.length) return plain(asOwn(ctx, await getProximityByBand(ctx.sb, who, { player_id, bands: input.bands, since_days: input.since_days })), wordsFor(ctx));
+    return plain(asOwn(ctx, await getShotPattern(ctx.sb, who, { player_id, club_type: input.club_type, from_yards: input.from_yards, to_yards: input.to_yards, since_days: input.since_days, mode: 'approach' })), wordsFor(ctx));
   },
 };
 
@@ -197,7 +197,7 @@ export const getTournamentsTool: ReadTool<{ limit: number; notes: boolean }> = {
     const who = teamOf(ctx);
     const home = await part('tournaments', () => tournamentsHome(ctx, input.limit));
     if (!input.notes) return home[1];
-    return together('', [home, await part('notes', () => getTournamentNotes(ctx.sb, who, { limit: Math.min(input.limit, 8) }))], sgAgainst(ctx));
+    return together('', [home, await part('notes', () => getTournamentNotes(ctx.sb, who, { limit: Math.min(input.limit, 8) }))], wordsFor(ctx));
   },
 };
 
@@ -222,7 +222,7 @@ export const getSchedule: ReadTool<ScheduleInput> = {
     if (input.include.includes('travel')) parts.push(await part('travel', () => getTeamTravel(ctx.sb, who)));
     if (input.include.includes('classes')) parts.push(await part('classes', () => getClassTimes(ctx.sb, who, { date: input.class_date ?? from.slice(0, 10) })));
     if (input.include.includes('attendance')) parts.push(await part('attendance', () => getAttendanceSummary(ctx.sb, who, { player_id: ownOrOne(ctx, input.player_id) })));
-    return together('', parts, sgAgainst(ctx));
+    return together('', parts, wordsFor(ctx));
   },
 };
 
@@ -236,7 +236,7 @@ export const getMySchedule: ReadTool<{ days_ahead: number }> = {
   run: async (ctx, input) => {
     const me = playerOf(ctx);
     if (!me) return failed('the schedule', 'This read is a player\'s.');
-    return plain(await myUpcomingEvents(ctx.sb, teamOf(ctx), me, input));
+    return plain(await myUpcomingEvents(ctx.sb, teamOf(ctx), me, input), wordsFor(ctx));
   },
 };
 
@@ -267,7 +267,7 @@ export const getCoachHelm: ReadTool<CoachHelmInput> = {
       else if (what === 'goals') parts.push(await part('goals', () => getGoals(ctx.sb, who, { player_id, state: 'active', limit: 40 })));
       else parts.push(await part('tasks', () => getOpenTasks(ctx.sb, who)));
     }
-    return together('', parts, sgAgainst(ctx));
+    return together('', parts, wordsFor(ctx));
   },
 };
 
@@ -284,7 +284,7 @@ export const getMyCoachHelm: ReadTool<{ what: Array<'reads' | 'focus_areas'> }> 
     const parts: Array<readonly [string, ToolEnvelope]> = [];
     if (input.what.includes('reads')) parts.push(await part('reads', () => myReads(ctx.sb, me)));
     if (input.what.includes('focus_areas')) parts.push(await part('focus areas', async () => inSecondPerson(await getFocusAreas(ctx.sb, teamOf(ctx), { player_id: me }), nameOf(ctx, me))));
-    return together('', parts, sgAgainst(ctx));
+    return together('', parts, wordsFor(ctx));
   },
 };
 
@@ -308,7 +308,7 @@ export const getPracticeTool: ReadTool<PracticeInput> = {
       else if (what === 'drill_bank') parts.push(await part('drill bank', () => getDrillBank(ctx.sb, who, { category: input.category })));
       else parts.push(await part('plan format', () => getPlanFormat(ctx.sb, who)));
     }
-    return together('', parts, sgAgainst(ctx));
+    return together('', parts, wordsFor(ctx));
   },
 };
 
@@ -328,19 +328,19 @@ async function runReference(ctx: ToolContext, input: ReferenceInput): Promise<To
       // Something the app does not record is answered as that, with the nearest thing it does record, before any golf text.
       return ((hit) => (hit ? notTracked(hit) : getGolfReference({ topic: input.about as string })))(findNotTracked(input.about));
     case 'metric_definitions':
-      return plain(await getMetricDefinitions(ctx.sb, { metric_ids: input.metric_ids, category: input.category }));
+      return plain(await getMetricDefinitions(ctx.sb, { metric_ids: input.metric_ids, category: input.category }), wordsFor(ctx));
     case 'standards': {
       if (!input.metric_ids?.length) return failed('the standards', 'Name the metrics to compare.');
       const source = benchmarkSource(ctx.sb, who.team_id, { ctx: who, figures: screenLoaders(ctx).playerFigures, role: me ? 'player' : 'coach' });
       const player_id = ownOrOne(ctx, input.player_id);
-      return plain(asOwn(ctx, withoutTeamRow(await getBenchmarks(ctx.sb, who, source, { metric_ids: input.metric_ids, levels: input.levels, player_id, window: input.window }, me ? { role: 'player', playerId: me } : { role: 'coach' }))), sgAgainst(ctx));
+      return plain(asOwn(ctx, withoutTeamRow(await getBenchmarks(ctx.sb, who, source, { metric_ids: input.metric_ids, levels: input.levels, player_id, window: input.window }, me ? { role: 'player', playerId: me } : { role: 'coach' }))), wordsFor(ctx));
     }
     case 'course':
-      return me || !input.course_id ? failed('the course', 'Give a course id (from a round or the team\'s records).') : plain(await getCourse(ctx.sb, who, { course_id: input.course_id }));
+      return me || !input.course_id ? failed('the course', 'Give a course id (from a round or the team\'s records).') : plain(await getCourse(ctx.sb, who, { course_id: input.course_id }), wordsFor(ctx));
     case 'documents':
-      return me ? failed('Documents', 'This part is the coach\'s.') : plain(await getDocuments(ctx.sb, who, { folder: input.folder, limit: 30 }));
+      return me ? failed('Documents', 'This part is the coach\'s.') : plain(await getDocuments(ctx.sb, who, { folder: input.folder, limit: 30 }), wordsFor(ctx));
     case 'team_settings':
-      return me ? failed('the team settings', 'This part is the coach\'s.') : plain(await getTeamSeasonSettings(ctx.sb, who));
+      return me ? failed('the team settings', 'This part is the coach\'s.') : plain(await getTeamSeasonSettings(ctx.sb, who), wordsFor(ctx));
     default:
       return me ? failed('the data dictionary', 'This part is the coach\'s.') : notice('The tables and columns query_team_data can read, with their units.', { detail: { dictionary: describeQueryTables({ tournamentsOn: tournamentsOn() }) } });
   }
@@ -430,19 +430,20 @@ export const summariseDataTool = (player: boolean): ReadTool<z.infer<typeof Summ
 /**
  * What the model is shown of show_visual's input: one flat block shape instead of eleven variants. Each scene is parsed
  * again with its own strict schema in `run` (`CompositionSpecV2`, `VisualSpec`), and a refusal says what to fix.
+ *
+ * Two forms the strict schema still resolves are no longer offered (the studio's set, CONTRACT_NOTES P12 and P15):
+ * `note`, because a sentence is the answer's job, and `headline`, because a kpis of one figure draws as the same large
+ * figure. Conversations stored with either still draw.
  */
 const VisualBlock = z.object({
-  type: z.enum(['headline', 'kpis', 'trend', 'bars', 'split', 'compare', 'note', 'miss_pattern', 'putt_profile', 'season_compare', 'hole_strip']),
+  type: z.enum(['kpis', 'trend', 'bars', 'split', 'compare', 'miss_pattern', 'putt_profile', 'season_compare', 'hole_strip']),
   ref: z.string().optional().describe('The evidence_ref the block draws from.'),
   refs: z.array(z.string()).max(6).optional().describe('split and compare: the reads set side by side.'),
   metricId: z.string().optional(),
   metricIds: z.array(z.string()).max(8).optional(),
-  label: z.string().optional().describe('headline: a few words.'),
   reference: z.enum(['average', 'benchmark', 'none']).optional().describe('trend: the line it is read against.'),
   order: z.enum(['best_first', 'as_read']).optional(),
   highlight: z.string().optional().describe('bars: a player id or band label to emphasise.'),
-  kind: z.enum(['measured', 'association', 'hypothesis']).optional().describe('note: what the sentence is.'),
-  text: z.string().optional().describe('note: one sentence, no digits.'),
 });
 const ShowVisualModelInput = z.object({
   kind: z.enum(['compose', 'sg_anatomy']),
@@ -458,7 +459,7 @@ export const showVisual: ReadTool<z.infer<typeof ShowVisualModelInput>> = {
   kind: 'read',
   name: 'show_visual',
   description:
-    'Draw one visual from reads already made; the server copies the figures in, so titles, ledes, labels and notes are words with no digits. kind "compose": a title, an optional lede, and blocks in order: headline (one figure set large), kpis (up to six figures from one read), trend (one metric over rounds), bars (distance bands, or players on one metric; best_first ranks them), split (signed figures either side of zero, such as strokes gained by area), compare (players across the same metrics), note (one sentence), and four drawn from a read that holds them: putt_profile, miss_pattern, season_compare, hole_strip. kind "sg_anatomy": one player\'s four strokes gained areas. If it is refused, fix what it names once or answer in words.',
+    'Draw one visual from reads already made; the server copies the figures in, so the title and the lede are words with no digits. kind "compose": a title, an optional lede, and blocks in order: kpis (one figure set large, or up to six from one read), trend (one metric over rounds), bars (distance bands, or players on one metric; best_first ranks them), split (signed figures either side of zero, such as strokes gained by area), compare (players across the same metrics), and four drawn from a read that holds them: putt_profile, miss_pattern, season_compare, hole_strip. kind "sg_anatomy": one player\'s four strokes gained areas. If it is refused, fix what it names once or answer in words.',
   input: ShowVisualModelInput,
   progress: () => 'Building the visual',
   run: async (ctx, input) => {
@@ -504,6 +505,7 @@ export const writeArtifact: ReadTool<z.infer<typeof WriteArtifactInput>> = {
   description: 'Write a long piece the coach will keep (a player report, a lineup, a round recap) as a document beside the chat. Pass the artifact_id it returned to revise it. Every figure must come from a read. It stays in this chat until the coach publishes it.',
   input: WriteArtifactInput,
   progress: () => 'Writing it up',
+  draft: { fields: ['title', 'body'] },
   run: async (_ctx, { artifact_id, kind, title, body }) => {
     const artifactId = artifact_id ?? randomUUID();
     return notice('It is on screen as a card the coach can open. Say one line about it; do not repeat it.', { detail: { artifact_id: artifactId }, parts: [{ type: 'data-artifact', id: partId(`artifact-${artifactId}`), data: { artifactId, kind, title, versionId: randomUUID(), at: new Date().toISOString(), body } }] });
@@ -516,6 +518,7 @@ export const draftMessage: ReadTool<z.infer<typeof DraftMessageInput>> = {
   description: 'Open a draft in Messages, for one thread found with find_thread or for named players. Sends nothing: the coach presses Send there.',
   input: DraftMessageInput,
   progress: () => 'Drafting the message',
+  draft: { fields: ['content'] },
   run: async (ctx, { conversation_id, player_ids, content }) => {
     if (conversation_id) {
       const { data, error } = await ctx.sb.from('golf_conversations').select('id, title').eq('team_id', ctx.who.team_id).eq('id', conversation_id).maybeSingle();
@@ -613,6 +616,7 @@ export const draftPracticePlan: ReadTool<z.infer<typeof PlanDraftModelInput>> = 
   description: 'Write a practice plan draft as a card, after reading the drill bank and the plan format and after the coach\'s answers. Saves nothing: Save and Publish are the coach\'s presses. Use only drills from the drill bank, and make the block lengths add up to the minutes asked. A number in a Because must come from a read.',
   input: PlanDraftModelInput,
   progress: () => 'Drafting the practice plan',
+  draft: { fields: ['title', 'blocks'] },
   run: async (ctx, input) => {
     const strict = PracticeDraftInput.safeParse(input);
     if (!strict.success) return notice(`Not drafted: ${strict.error.issues.slice(0, 3).map((i) => `${i.path.join('.')} ${i.message}`).join('; ')}.`, { refused: true });

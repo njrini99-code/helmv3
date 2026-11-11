@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { CoachChatContext } from '../context';
 import { CoachContextError } from '../context';
 import type { ChatTool, PlayerChatContext, ReadTool, ToolContext, ToolResult } from '../engine/tool';
+import { dayWords } from '../reader-kit';
 import { toolsFor } from '../registry';
 import type { PlayerStatsScreen, QualifierBoardScreen, RosterScreen, RoundReviewLoad, RoundReviewScreen, ScreenLoaders, TeamRoundRow, TeamRoundsScreen, TeamStatsScreen, TournamentsLoad } from '../screen-loaders';
 import { person, pgrst, type Tables } from './pgrst-double';
@@ -355,7 +356,8 @@ describe('get_round: the Round page\'s round, with its counting done here', () =
     expect(detail.holes[0]).toMatchObject({ hole_number: 1, par: 4, score: 3 });
     expect(detail.tallies).toMatchObject({ birdies_or_better: 2, bogeys: 2, doubles_or_worse: 1, three_putts: 1, penalty_strokes: 1 });
     const text = textOf(out);
-    expect(text).toContain('Eli Brandt, Pine Hill on 2026-11-02: 74 (+2 to par) over 18 holes, front nine 36, back nine 38. Source: Round page.');
+    // The day as a coach says it ("2 November", with the year once the season has turned): never the stamp.
+    expect(text).toContain(`Eli Brandt, Pine Hill on ${dayWords('2026-11-02')}: 74 (+2 to par) over 18 holes, front nine 36, back nine 38. Source: Round page.`);
     expect(text).toContain('2 birdies or better');
     expect(text).toContain('approach \u22120.42');
     expect(text).toContain('The coach\'s note on the round: "Good patience."');
@@ -414,7 +416,7 @@ describe('get_tournaments: the Tournaments page, newest first, with the adding u
     // Lowest total first: Maya 142, Eli 144.
     expect(list[1]!.players.map((p) => [p.player, p.total, p.to_par])).toEqual([['Maya Ortiz', 142, -2], ['Eli Brandt', 144, 0]]);
     const text = textOf(out);
-    expect(text).toContain('Fall Opener (2026-09-12 to 2026-09-13, complete): lineup locked, 5 of 5 set, the team finished T3 of 12, 2 rounds. Source: Tournaments page.');
+    expect(text).toContain(`Fall Opener (${dayWords('2026-09-12')} to ${dayWords('2026-09-13')}, complete): lineup locked, 5 of 5 set, the team finished T3 of 12, 2 rounds. Source: Tournaments page.`);
     expect(text).toContain('Fall Opener, Maya Ortiz: 142 over 2 rounds (\u22122 to par); by round 70, 72');
     // No tournament table was read by the chat itself.
     expect(ctx.db.calls).toEqual([]);
@@ -546,6 +548,7 @@ describe('how reader lines read', () => {
     ['SG for strokes gained', /\bSG\b/],
     ['a hyphen for a minus sign before a figure', /(^|[\s:(|])-\d/m],
     ['a column or table name', /\b[a-z]+_[a-z_]+\b/],
+    ['a date as a stamp', /(?<![\w-])\d{4}-\d{2}-\d{2}(?![\w-])/],
   ];
   it('no reader hands the model notation, an abbreviation or a column name', () => {
     expect(SEEN_TEXT.length).toBeGreaterThan(25);

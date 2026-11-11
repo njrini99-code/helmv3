@@ -45,10 +45,12 @@ describe('the cached prefix: tool definitions and policy', () => {
     ['practice_helper', coach],
     ['quick_chat', coach],
     ['player', player],
-  ] as const)('%s stays under 26,000 tokens, and its own tools and rules under 12,000', (surface, who) => {
+  ] as const)('%s stays under 26,000 tokens, and its own tools and rules under 12,150', (surface, who) => {
     const size = sizeOf(surface, who);
     console.info(`prefix ${surface}: ${size.tools} tools, ${size.toolTokens} tokens of definitions + ${size.policyTokens} of policy (${size.rulesTokens} of rules, the rest golf and the data map) = ${size.total}; own tools and rules ${size.own}; largest ${size.largest.map(([n, t]) => `${n} ${t}`).join(', ')}`);
-    expect(size.own).toBeLessThan(12_000);
+    // 12,150 since 11 Nov 2026 (was 12,000; the lead allowed up to 12,300) for the rules on how an answer is shaped, dates, bracketed ids
+    // and "not tracked". Most of their cost was paid by withdrawing two show_visual forms; Ask measures 12,076.
+    expect(size.own).toBeLessThan(12_150);
     // 26,000 by the lead's decision of 10 Nov 2026 (was 21,000): the knowledge blocks carry what strokes gained means and the writing rules.
     expect(size.total).toBeLessThan(26_000);
   });

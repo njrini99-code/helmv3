@@ -38,7 +38,7 @@ import { linkProposalsToMessage } from '@/lib/coachhelm/v3/chat/action-runs';
 import { CoachContextError, resolveCoachChatContext, type CoachChatContext } from '@/lib/coachhelm/v3/chat/context';
 import { firstTurnNotes, readStandingNotes, toneSentence } from '@/lib/coachhelm/v3/chat/context/notes';
 import { turnContext } from '@/lib/coachhelm/v3/chat/context/screen-context';
-import { CHAT_MAX_STEPS, MissingModelKeyError, anthropicModelClient, callPromptTokens, chatFeatures, onLongCard, profileFor, promptTokens, turnCostUsd } from '@/lib/coachhelm/v3/chat/engine/model';
+import { CHAT_MAX_STEPS, MissingModelKeyError, anthropicModelClient, callPromptTokens, chatFeatures, onLongCard, profileFor, promptTokens, turnCostUsd, type UsageTotals } from '@/lib/coachhelm/v3/chat/engine/model';
 import { CHAT_STREAM_CONTENT_TYPE, encodeChatEvent, eventsForStoredParts, pendingDecisionKeys, type ChatErrorAction, type ChatErrorKind, type ChatEvent, type ChatScreenEcho } from '@/lib/coachhelm/v3/chat/engine/protocol';
 import { loadConversation, type LoadedConversation, type TurnRow } from '@/lib/coachhelm/v3/chat/engine/store';
 import { chatTurnResponse, type TurnInput, type TurnSummary } from '@/lib/coachhelm/v3/chat/engine/turn';
@@ -52,7 +52,9 @@ import { toolsFor } from '@/lib/coachhelm/v3/chat/registry';
 import { sweepHeld } from '@/lib/coachhelm/v3/chat/undo-hold';
 import { checkBudget, recordSpend } from '@/lib/coachhelm/v3/llm/budget';
 import { buildChatLlmCallRow } from '@/lib/coachhelm/v3/llm/chat-call-row';
-import { estimateCostUsd } from '@/lib/coachhelm/v3/llm/types';
+import { CHAT_SUGGESTIONS_TASK, estimateCostUsd } from '@/lib/coachhelm/v3/llm/types';
+import { writeChatLedgerRow } from '@/lib/coachhelm/v3/chat/ledger';
+import { suggestionsModel } from '@/lib/coachhelm/v3/chat/engine/suggestions';
 import { isFlagEnabled } from '@/lib/flags/is-enabled';
 import { recordAi } from '@/lib/observability/metrics';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
@@ -408,10 +410,26 @@ export async function POST(req: NextRequest) {
       describeError: describeTurnError,
       checkGrounding: ({ text, reads }) => checkGrounding(text, reads),
       onFinished,
+      onSuggested: (result) => later(() => recordSuggestions({ admin, ctx, conversationId: convId, ...result })),
     },
     input,
     { 'x-conversation-id': convId },
   );
+}
+
+/**
+ * Record the call that asked what to ask next: a ledger row under its own task key (`chat_suggestions`) and the same
+ * key in the day's budget, so the feature's cost can be read apart from the answers'. `verified`: at least two
+ * suggestions passed the checks and were shown. Where the database does not take the key yet (the held migration
+ * 20261111090000) no row is written; the spend is still counted, under its own key. No suggestion text is recorded.
+ */
+async function recordSuggestions(args: { admin: ReturnType<typeof createAdminClient>; ctx: CoachChatContext; conversationId: string; usage: UsageTotals; kept: number; failed: boolean }): Promise<void> {
+  const { admin, ctx, conversationId, usage, kept } = args;
+  const cost = turnCostUsd(usage);
+  const row = { ...buildChatLlmCallRow({ coachId: ctx.coach_id, conversationId, modelId: suggestionsModel().ledgerId, promptTokens: promptTokens(usage), completionTokens: usage.output, costUsd: cost, grounded: kept > 0 }), citations: null };
+  // The row and the day's spend are written apart: a ledger that fails must not leave the spend uncounted.
+  await writeChatLedgerRow(admin, row, CHAT_SUGGESTIONS_TASK, null).catch(() => undefined);
+  await recordSpend(admin, { coach_id: ctx.coach_id, task: CHAT_SUGGESTIONS_TASK, cost_usd: cost }).catch(() => undefined);
 }
 
 /**
@@ -427,7 +445,7 @@ async function recordTurn(args: { admin: ReturnType<typeof createAdminClient>; c
   try {
     const cost = input + usage.output > 0 ? turnCostUsd(usage) : turnCostEstimateUsd(ledgerId);
     await admin.from('golf_coachhelm_llm_calls').insert(
-      buildChatLlmCallRow({ coachId: ctx.coach_id, conversationId, modelId: ledgerId, promptTokens: input, completionTokens: usage.output, costUsd: cost, grounded: summary.grounded, unmatchedTokens: summary.unmatched }),
+      buildChatLlmCallRow({ coachId: ctx.coach_id, conversationId, modelId: ledgerId, promptTokens: input, completionTokens: usage.output, costUsd: cost, grounded: summary.grounded, unmatchedTokens: summary.unmatched, featuresDropped: summary.featuresDropped }),
     );
     await recordSpend(admin, { coach_id: ctx.coach_id, task: 'coach_chat', cost_usd: cost });
   } catch {
@@ -449,7 +467,7 @@ async function recordTurn(args: { admin: ReturnType<typeof createAdminClient>; c
       action: 'v3.chat.stream.turn',
       featureArea: 'coachhelm',
       skipSentry: true,
-      extra: { conversationId, coachId: ctx.coach_id, status: summary.status, stop: summary.stop, firstTextMs: summary.firstTextMs, totalMs: summary.totalMs, calls: usage.calls, grounded: summary.grounded, unmatchedCount: summary.unmatched.length, refusalCategory: summary.refusalCategory, degraded: summary.degraded, model: ledgerId, fallbackModel: summary.fallbackModel },
+      extra: { conversationId, coachId: ctx.coach_id, status: summary.status, stop: summary.stop, firstTextMs: summary.firstTextMs, totalMs: summary.totalMs, calls: usage.calls, grounded: summary.grounded, unmatchedCount: summary.unmatched.length, refusalCategory: summary.refusalCategory, degraded: summary.degraded, featuresDropped: summary.featuresDropped, model: ledgerId, fallbackModel: summary.fallbackModel },
     },
     'info',
   ).catch(() => undefined);

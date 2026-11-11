@@ -252,7 +252,7 @@ describe('(b) stands out in the team', () => {
 });
 
 describe('(c) biggest cost', () => {
-  // Measured strokes gained over the last 10 rounds: off the tee -0.5, approach -3.0, around the green -0.5, putting -0.5.
+  // Measured strokes gained over the season (here ten rounds): off the tee -0.5, approach -3.0, around the green -0.5, putting -0.5.
   const costly: Legs = { tee: -0.5, approach: -3, around: -0.5, putting: -0.5 };
   const fx = new TeamFixture().player('subject', tenRounds(2, costly));
   const n = read(fx);
@@ -263,8 +263,8 @@ describe('(c) biggest cost', () => {
     expect(r.rule).toBe('biggest_cost');
     expect(r.compared).toEqual({
       with: 'own_other_areas',
-      player: { value: -3, attempts: 10, rounds: 10, window: 'last10' },
-      against: { value: -0.5, attempts: 10, rounds: 10, window: 'last10' },
+      player: { value: -3, attempts: 10, rounds: 10, window: 'season' },
+      against: { value: -0.5, attempts: 10, rounds: 10, window: 'season' },
     });
     // Round by round, approach minus the mean of the other three: -2.5 plus
     //   -0.6667, 0.2667, 0.7, -0.4667, 0, 0.1667, -0.5667, 0.4333, 0.0333, 0.1   (zero-sum)

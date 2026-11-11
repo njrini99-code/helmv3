@@ -154,7 +154,12 @@ export class TeamFixture {
       id: `${id}-s${String(this.shots.length).padStart(6, '0')}`,
       round_id: id,
       hole_id: `${id}-h1`,
+      hole_number: 1,
+      shot_number: this.shots.length,
       shot_type: null,
+      club_type: null,
+      is_penalty: null,
+      miss_direction: null,
       lie_before: null,
       distance_to_hole_before: null,
       distance_unit_before: null,
@@ -163,12 +168,13 @@ export class TeamFixture {
       result: null,
       lie_after: null,
       putt_made: null,
+      putt_distance_feet: null,
       ...s,
     });
     // One usable tee shot, so the round's strokes gained counts as measured.
     this.shots.push(shot({ shot_type: 'tee', lie_before: 'tee', distance_to_hole_before: 400, distance_unit_before: 'yards', distance_to_hole_after: 150, distance_unit_after: 'yards', result: 'fairway', lie_after: 'fairway' }));
     for (const [feet, made] of spec.putts ?? []) {
-      this.shots.push(shot({ shot_type: 'putting', lie_before: 'green', distance_to_hole_before: feet, distance_unit_before: 'feet', distance_to_hole_after: made ? 0 : 2, distance_unit_after: 'feet', result: made ? 'hole' : 'green', lie_after: 'green', putt_made: made }));
+      this.shots.push(shot({ shot_type: 'putting', lie_before: 'green', distance_to_hole_before: feet, distance_unit_before: 'feet', distance_to_hole_after: made ? 0 : 2, distance_unit_after: 'feet', result: made ? 'hole' : 'green', lie_after: 'green', putt_made: made, putt_distance_feet: feet }));
     }
     for (const [yards, leave, green] of spec.approaches ?? []) {
       this.shots.push(shot({ shot_type: 'approach', lie_before: 'fairway', distance_to_hole_before: yards, distance_unit_before: 'yards', distance_to_hole_after: leave, distance_unit_after: 'feet', result: green ? 'green' : 'rough', lie_after: green ? 'green' : 'rough' }));

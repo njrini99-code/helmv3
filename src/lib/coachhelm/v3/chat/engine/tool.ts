@@ -23,6 +23,7 @@ import type { ActionProposal, ActionReceipt } from '../action-types';
 import type { CoachChatContext } from '../context';
 import type { ToolEnvelope } from '../provenance';
 import type { ScreenLoaders } from '../screen-loaders';
+import type { ChatStepKind, ChatStepSubject } from './protocol';
 
 export type ChatSurface = 'ask' | 'quick_chat' | 'practice_helper' | 'player';
 
@@ -90,6 +91,26 @@ export type ToolResult = ToolEnvelope & {
   progress_picture?: unknown;
 };
 
+/** What a tool declares about its own step (`ToolBase.step`). Every member is optional; none may throw (a throw is treated as not declared). */
+export interface StepDescriptor<I> {
+  /** The step's mark. Left out: `read` for a read, `draft` for a task. */
+  kind?: ChatStepKind;
+  /**
+   * The finished row's label, past tense, in the tool's own words: "Read Eli's last 8 rounds" for a `progress` of "Reading Eli's
+   * last 8 rounds". `result` is what the read returned, or null for a task. Full words, as any text a coach reads. Left out, the
+   * finished row keeps the running label and the screen words it as it can.
+   */
+  doneLabel?: (input: I, result: ToolEnvelope | null) => string;
+  /**
+   * Who or what the step is about that the engine cannot see for itself: an event, a qualifier, a tournament, a plan, a document
+   * the tool looked up under the caller's own session (`ctx.sb`), or a player by id. The engine already names the players in
+   * `player_id` / `player_ids` and the players, team and rounds a read's figures are about, and it checks every person again: a
+   * player is kept only if on the caller's own roster and is named as the roster names them, a team only if it is the caller's,
+   * and a signed-in player's step is only ever about themselves. Called once, before the tool runs.
+   */
+  subjects?: (input: I, ctx: ToolContext) => readonly ChatStepSubject[];
+}
+
 interface ToolBase<I> {
   /** snake_case and stable: it is in stored conversations and in the ledger. */
   name: string;
@@ -99,6 +120,13 @@ interface ToolBase<I> {
   input: z.ZodType<I>;
   /** The human progress row, e.g. "Reading Eli's last 8 rounds". Never a tool name. Must not throw. */
   progress: (input: I) => string;
+  /**
+   * What this tool says about its own step in the thread's list of work. A kind on its own (`read`, the default for a read;
+   * `find`, `compare`, `calculate`, `visual`; `draft`, the default for a task; `check`), or a `StepDescriptor` that also gives the
+   * finished row's wording and who or what the step is about. The engine never works any of this out from a tool's name or by
+   * rewording a label: what a tool does not declare is simply not sent.
+   */
+  step?: ChatStepKind | StepDescriptor<I>;
   /**
    * This tool's input is a draft the coach should watch being written (a practice plan's blocks, a message's words). `fields`
    * are the top-level input fields to show as the model writes them. The engine shows only what is finished: a whole value, the

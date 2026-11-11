@@ -12,9 +12,10 @@
 --   no existing column, policy, grant or index changes, and every row valid
 --   today stays valid (both columns are NULL on every existing row).
 --   ADD COLUMN with no default is a catalog-only change; the constraints are
---   added NOT VALID and validated in a second statement, so the table is not
---   held under an ACCESS EXCLUSIVE lock while it is scanned. The table is
---   small (hundreds of rows).
+--   added NOT VALID and validated in a second statement. Both run in the one
+--   transaction db:apply gives the file, so the lock ADD CONSTRAINT takes is
+--   held until that transaction commits: the scan is of a small table
+--   (hundreds of rows, milliseconds) and lock_timeout bounds the wait at 3s.
 --
 -- What: the model's own record of each chat turn, so the server, not the
 --   browser, is what the model is replayed from.
@@ -30,9 +31,12 @@
 --      last assistant message already have a result and which wait
 --      ({ order, results, tasks, steps }). NULL when nothing waits.
 --
--- RLS: unchanged. The table's one policy chat_messages_coach_only (FOR ALL,
---   through the conversation's coach) already scopes both columns to the
---   owning coach, exactly as it scopes ui_parts. Grants unchanged (table
+-- RLS: unchanged. This migration adds, drops and alters no policy. The coach
+--   policy chat_messages_coach_only (FOR ALL, through the conversation's
+--   coach) already scopes both columns to the owning coach, exactly as it
+--   scopes ui_parts. (The held 20261101090200 adds player policies to the
+--   same table; whether it has been applied makes no difference here, so
+--   nothing below counts the table's policies.) Grants unchanged (table
 --   level). A coach can therefore read and write their own rows' new columns
 --   with their own session, as they can ui_parts today: that is a self-only
 --   surface (it steers only their own model; every write the chat makes still
@@ -57,12 +61,14 @@
 -- VERIFY:   and is_nullable = 'YES') = 2;
 -- VERIFY: select 1 where (select count(*) from pg_catalog.pg_constraint
 -- VERIFY:   where conrelid = 'public.golf_coachhelm_chat_messages'::regclass
--- VERIFY:   and conname in ('golf_coachhelm_chat_messages_model_messages_array',
+-- VERIFY:   and conname in (
+-- VERIFY:   'golf_coachhelm_chat_messages_model_messages_array',
 -- VERIFY:   'golf_coachhelm_chat_messages_pending_decision_object')
 -- VERIFY:   and convalidated) = 2;
--- VERIFY: select 1 where (select count(*) from pg_catalog.pg_policies where
+-- VERIFY: select 1 where exists (select 1 from pg_catalog.pg_policies where
 -- VERIFY:   schemaname = 'public' and tablename =
--- VERIFY:   'golf_coachhelm_chat_messages') = 1;
+-- VERIFY:   'golf_coachhelm_chat_messages' and policyname =
+-- VERIFY:   'chat_messages_coach_only' and cmd = 'ALL');
 -- VERIFY: select 1 where not has_table_privilege('anon',
 -- VERIFY:   'public.golf_coachhelm_chat_messages', 'SELECT');
 --
@@ -81,9 +87,10 @@
 --   card waiting for Confirm at that moment can no longer be confirmed and
 --   says so.
 
--- squawk-ignore transaction-nesting
-BEGIN;
-SET LOCAL lock_timeout = '3s';
+-- No BEGIN or COMMIT in this file: db:apply runs the whole file and its ledger
+-- row in one transaction, and a COMMIT here would close that transaction
+-- before the ledger row is written.
+SET lock_timeout = '3s';
 
 ALTER TABLE public.golf_coachhelm_chat_messages
 ADD COLUMN IF NOT EXISTS model_messages jsonb NULL;
@@ -128,6 +135,3 @@ VALIDATE CONSTRAINT golf_coachhelm_chat_messages_model_messages_array;
 
 ALTER TABLE public.golf_coachhelm_chat_messages
 VALIDATE CONSTRAINT golf_coachhelm_chat_messages_pending_decision_object;
-
--- squawk-ignore transaction-nesting
-COMMIT;

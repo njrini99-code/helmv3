@@ -428,6 +428,111 @@ describe('useCoachHelmChat', () => {
     expect(describeChatError(result.current.error).recovery).toBe('retry');
   });
 
+  describe('what to ask next (the one event that may follow done)', () => {
+    const ITEMS = [
+      { label: 'Avery from 6 to 10 feet', prompt: 'How does Avery putt from 6 to 10 feet?', kind: 'read' as const },
+      { label: 'Against the team', prompt: 'How does that compare with the team?', kind: 'compare' as const },
+    ];
+    /** A response whose body the test writes piece by piece, as the server does when it sends suggestions after `done`. */
+    const open = () => {
+      let controller!: ReadableStreamDefaultController<Uint8Array>;
+      const body = new ReadableStream<Uint8Array>({ start: (c) => void (controller = c) });
+      const encoder = new TextEncoder();
+      return {
+        response: new Response(body, { headers: { 'content-type': 'text/event-stream', 'x-conversation-id': CONVERSATION } }),
+        push: (events: ChatEvent[]) => controller.enqueue(encoder.encode(events.map(encodeChatEvent).join(''))),
+        close: () => controller.close(),
+        fail: () => controller.error(new TypeError('network error')),
+      };
+    };
+    const signalOf = (call: number) => fetchMock.mock.calls[call]![1]!.signal as AbortSignal;
+
+    it('the turn is over at done: the coach can type while the suggestions are still on their way, and they land under the answer', async () => {
+      const stream = open();
+      fetchMock.mockResolvedValueOnce(stream.response);
+      const { result } = renderHook(() => useCoachHelmChat());
+      act(() => result.current.send('How is Avery putting?'));
+      await act(async () => stream.push(answer('Avery is at 71.4.')));
+      // `done` has arrived and the stream is still open: ready, not busy, and nothing suggested yet.
+      await waitFor(() => expect(result.current.status).toBe('ready'));
+      expect(result.current.busy).toBe(false);
+      expect(result.current.suggestions).toEqual([]);
+
+      await act(async () => stream.push([{ type: 'suggestions', items: ITEMS }]));
+      await waitFor(() => expect(result.current.suggestions).toEqual(ITEMS));
+      expect(result.current.status).toBe('ready');
+      expect(result.current.messages.at(-1)!.parts.at(-1)).toEqual({ type: 'data-suggestions', id: 'suggestions', data: { items: ITEMS } });
+      // Anything else after `done` is not this protocol's and is not folded in.
+      await act(async () => stream.push([{ type: 'text_delta', delta: ' Late words.' }]));
+      await act(async () => stream.close());
+      expect(JSON.stringify(result.current.messages)).not.toContain('Late words');
+      expect(result.current.error).toBeUndefined();
+      expect(result.current.status).toBe('ready');
+    });
+
+    it('tapping one is only a message: its prompt is sent as the next question, and the suggestions are gone while it is asked', async () => {
+      fetchMock.mockResolvedValueOnce(sse([...answer('Avery is at 71.4.'), { type: 'suggestions', items: ITEMS }]));
+      const { result } = renderHook(() => useCoachHelmChat());
+      act(() => result.current.send('How is Avery putting?'));
+      await waitFor(() => expect(result.current.suggestions).toEqual(ITEMS));
+
+      const next = open();
+      fetchMock.mockResolvedValueOnce(next.response);
+      act(() => result.current.send(result.current.suggestions![1]!.prompt));
+      expect(result.current.suggestions).toEqual([]);
+      expect(bodyOf(1)).toMatchObject({ conversation_id: CONVERSATION, message: 'How does that compare with the team?' });
+      expect(bodyOf(1)).not.toHaveProperty('decision');
+      // The new answer has none of its own yet; the earlier answer's stay with it in the thread and are not drawn as current.
+      await act(async () => next.push(answer('Second in the team.').map((e) => (e.type === 'message_start' ? { ...e, message_id: 'a2' } : e))));
+      await waitFor(() => expect(result.current.status).toBe('ready'));
+      expect(result.current.suggestions).toEqual([]);
+      await act(async () => next.close());
+    });
+
+    it('a question asked before they arrive ends the wait for them: the old response is let go and nothing late is drawn', async () => {
+      const first = open();
+      fetchMock.mockResolvedValueOnce(first.response).mockResolvedValueOnce(sse(answer('Two.').map((e) => (e.type === 'message_start' ? { ...e, message_id: 'a2' } : e))));
+      const { result } = renderHook(() => useCoachHelmChat());
+      act(() => result.current.send('How is Avery putting?'));
+      await act(async () => first.push(answer('One.')));
+      await waitFor(() => expect(result.current.status).toBe('ready'));
+      expect(signalOf(0).aborted).toBe(false);
+
+      act(() => result.current.send('And Blake?'));
+      // The first response, still open for its suggestions, is aborted by the new question.
+      expect(signalOf(0).aborted).toBe(true);
+      await waitFor(() => expect(result.current.status).toBe('ready'));
+      expect(result.current.messages.map((m) => m.role)).toEqual(['user', 'assistant', 'user', 'assistant']);
+      expect(result.current.suggestions).toEqual([]);
+      expect(JSON.stringify(result.current.messages)).not.toContain('data-suggestions');
+      expect(result.current.error).toBeUndefined();
+    });
+
+    it('a connection lost after done costs only the suggestions: the answer is not a failure', async () => {
+      const stream = open();
+      fetchMock.mockResolvedValueOnce(stream.response);
+      const { result } = renderHook(() => useCoachHelmChat());
+      act(() => result.current.send('How is Avery putting?'));
+      await act(async () => stream.push(answer('Avery is at 71.4.')));
+      await waitFor(() => expect(result.current.status).toBe('ready'));
+      await act(async () => stream.fail());
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      expect(result.current.status).toBe('ready');
+      expect(result.current.error).toBeUndefined();
+      expect(result.current.suggestions).toEqual([]);
+    });
+
+    it('a restored thread shows the last answer’s stored suggestions, and only the last answer’s', async () => {
+      const withThem = (id: string, items: typeof ITEMS): ChatUIMessage => ({ id, role: 'assistant', parts: [{ type: 'text', text: 'An answer.' }, { type: 'data-suggestions', id: 'suggestions', data: { items } }] });
+      const earlier = withThem('a0', [ITEMS[1]!, ITEMS[0]!]);
+      const { result } = renderHook(() => useCoachHelmChat({ initialMessages: [earlier, { id: 'u1', role: 'user', parts: [{ type: 'text', text: 'Next' }] }, withThem('a1', ITEMS)] }));
+      expect(result.current.suggestions).toEqual(ITEMS);
+      // A thread that ends in the coach's own message, or in an answer without any, has none.
+      const { result: other } = renderHook(() => useCoachHelmChat({ initialMessages: [earlier, { id: 'u1', role: 'user', parts: [{ type: 'text', text: 'Next' }] }] }));
+      expect(other.current.suggestions).toEqual([]);
+    });
+  });
+
   it('under React StrictMode (every component mounts twice in development) a question just asked is still answered', async () => {
     fetchMock.mockResolvedValueOnce(sse(answer('Avery is at 71.4.')));
     const { result } = renderHook(() => useCoachHelmChat(), { wrapper: React.StrictMode });

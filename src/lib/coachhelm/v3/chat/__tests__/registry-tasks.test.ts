@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ActionReceipt } from '../action-types';
 import type { CoachChatContext } from '../context';
@@ -478,6 +480,9 @@ describe('the card is the truth', () => {
     expect(card.notifications[0]).toMatch(/^1 player gets a push/);
     expect(factOf(card, 'Will not get it')).toBe('Maya Ortiz (no account yet)');
     expect(card.delivery).toMatchObject({ title: 'New Qualifier Posted', body: 'Fall qualifier' });
+    // Who can see it is the read rule's answer (any coach or player of the team), not the narrower list a player is shown.
+    expect(card).toMatchObject({ visible_to: 'team', visible_note: expect.stringMatching(/listed in Qualifiers for the players in it .* Any player on the team is allowed to see it/) });
+    expect(readFileSync(join(process.cwd(), 'supabase/schemas/policies/golf.sql'), 'utf8')).toContain('CREATE POLICY "golf_qualifiers_select_team" ON "public"."golf_qualifiers" FOR SELECT USING (("public"."is_golf_team_coach"("team_id") OR "public"."is_golf_team_player"("team_id")));');
     const receipt = await tool('create_qualifier').commit(ctx(two), { ...card, idempotency_key: 'q-1' });
     expect(receipt.notifications[0]).toMatchObject({ recipients: 1, to: ['Eli Brandt'] });
     expect(receipt.missed).toEqual([{ name: 'Maya Ortiz', reason: 'no account yet' }]);

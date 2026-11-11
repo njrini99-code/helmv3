@@ -110,7 +110,8 @@ describe('CoachHelm read tools — sourced envelope contracts', () => {
             insight_type: 'trend',
             category: 'putting',
             title: 'Inside six feet',
-            content: 'Conversion improved.',
+            // The stored body ends with the generators' two template sentences: neither is a finding, so neither is handed over.
+            content: 'Conversion improved. Make rate is off its benchmark. Likely cause inferred from the aggregate, not a measured shot sequence. Target make rate in the next practice block.',
             // strokes_impact/confidence/metric are the eligibility floor
             // `mapRowToRankable` (insight-delivery-ranking.ts) applies — a row
             // missing any of them can't be scored, so it can't be ranked into
@@ -118,9 +119,14 @@ describe('CoachHelm read tools — sourced envelope contracts', () => {
             evidence: {
               metric_label: 'Make rate',
               your_value_display: '82%',
+              comparison_label: 'Team average',
+              comparison_value: 74,
+              sample_n: 38,
+              window_end: '2026-08-16',
               strokes_impact: 0.6,
               confidence: 0.8,
               metric: 'putts_made_5_10ft_pct',
+              diagnosis: { root_cause: 'Make rate is off its benchmark. Likely cause inferred from the aggregate, not a measured shot sequence', recommended_action: 'Target make rate in the next practice block' },
             },
             lifecycle_state: 'detected',
             status: 'active',
@@ -143,9 +149,15 @@ describe('CoachHelm read tools — sourced envelope contracts', () => {
         content: 'Conversion improved.',
         metric_label: 'Make rate',
         value_display: '82%',
+        // What the read measured (the lead's decision of 11 Nov 2026): what it is read against, its sample and its window's end.
+        comparison_label: 'Team average',
+        comparison_value: 74,
+        sample_size: 38,
+        window_end: '2026-08-16',
         created_at: '2026-08-17T12:00:00Z',
       },
     ]);
+    expect(JSON.stringify(envelope)).not.toMatch(/off its benchmark|next practice block|root_cause|recommended_action/);
   });
 
   it('ranks by the canonical composite, not DB/array order (A6 revert-check)', async () => {

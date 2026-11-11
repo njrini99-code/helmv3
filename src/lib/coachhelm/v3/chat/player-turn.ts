@@ -14,9 +14,19 @@ import { chatTurnResponse, type TurnSummary } from './engine/turn';
 import type { PlayerChatContext, ScreenLoaders } from './engine/tool';
 import { checkGrounding } from './grounding';
 import { instructionBlocks } from './instructions';
+import { buildChatLlmCallRow } from '@/lib/coachhelm/v3/llm/chat-call-row';
+import { PLAYER_CHAT_TASK } from '@/lib/coachhelm/v3/llm/types';
+import { writeChatLedgerRow } from './ledger';
 import { readBucket, recordPlayerSpend } from './player-allowance';
 import { resolvePlayerChatContext } from './player-context';
 import { toolsFor } from './registry';
+
+/** The ledger's refusal of a player's row has been logged by this process. */
+let ledgerFaultSaid = false;
+/** For tests: forget that the ledger fault was logged. */
+export const resetPlayerLedgerFault = (): void => {
+  ledgerFaultSaid = false;
+};
 
 const describePlayerError = (): { message: string; action: ChatErrorAction } => ({ message: 'CoachHelm couldn’t finish that answer. Please try again.', action: 'retry' });
 
@@ -69,21 +79,28 @@ export async function runPlayerTurn(
       const usd = turnCostUsd(summary.usage);
       await recordPlayerSpend({ playerId: ctx.player_id, teamId: ctx.team_id, zone: ctx.timezone, usd }).catch(() => undefined);
       try {
-        const { error } = await createAdminClient()
-          .from('golf_coachhelm_llm_calls')
-          .insert({
-            task: 'coach_chat',
-            player_id: ctx.player_id,
-            coach_id: null,
-            model_id: profile.ledgerId,
-            prompt_tokens: promptTokens(summary.usage),
-            completion_tokens: summary.usage.output,
-            cost_usd: usd,
-            grounded: summary.grounded,
-          } as never);
-        if (error) throw new Error(error.message);
+        // The same row a coach's turn writes, with the player in place of the coach. A player's turn has no stored conversation,
+        // so the row is keyed by the turn's own id (opaque, minted by the browser).
+        const row = buildChatLlmCallRow({
+          coachId: null,
+          playerId: ctx.player_id,
+          conversationId: body.clientTurnId,
+          modelId: profile.ledgerId,
+          promptTokens: promptTokens(summary.usage),
+          completionTokens: summary.usage.output,
+          costUsd: usd,
+          grounded: summary.grounded,
+          unmatchedTokens: summary.unmatched,
+          featuresDropped: summary.featuresDropped,
+        });
+        // Under the player's own task key where the database takes it; as `coach_chat`, as it always was, where it does not yet.
+        await writeChatLedgerRow(createAdminClient(), row, PLAYER_CHAT_TASK, 'coach_chat');
       } catch (err) {
-        void logServerError(`player ask: llm ledger failed: ${err instanceof Error ? err.message : 'unknown'}`, { action: 'coachhelm.ask.player' }, 'warning');
+        // Said once per process: a ledger that refuses the row refuses every row, and one line is enough to act on.
+        if (!ledgerFaultSaid) {
+          ledgerFaultSaid = true;
+          void logServerError(`player ask: llm ledger failed: ${err instanceof Error ? err.message : 'unknown'}`, { action: 'coachhelm.ask.player' }, 'warning');
+        }
       }
     };
     try {

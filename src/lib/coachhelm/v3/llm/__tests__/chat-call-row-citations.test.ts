@@ -18,3 +18,18 @@ describe('buildChatLlmCallRow: citation counts', () => {
     expect(row.citations).toMatchObject({ reason: 'verification_failed', unmatched_tokens: ['8'], citation_stats: stats });
   });
 });
+
+describe('buildChatLlmCallRow: a turn that ran without part of its configuration', () => {
+  it('records the feature groups the turn gave up, accepted or not, and nothing on a turn that gave up none', () => {
+    expect(buildChatLlmCallRow({ ...base, grounded: true, featuresDropped: ['strict_tools'] }).citations).toEqual({ reason: 'grounded', unmatched_tokens: [], features_dropped: ['strict_tools'] });
+    expect(buildChatLlmCallRow({ ...base, grounded: true, citationStats: stats, featuresDropped: ['progress_notes', 'strict_tools'] }).citations).toEqual({ reason: 'grounded', unmatched_tokens: [], citation_stats: stats, features_dropped: ['progress_notes', 'strict_tools'] });
+    expect(buildChatLlmCallRow({ ...base, grounded: false, unmatchedTokens: ['8'], featuresDropped: ['compaction'] }).citations).toEqual({ reason: 'verification_failed', unmatched_tokens: ['8'], features_dropped: ['compaction'] });
+    expect(buildChatLlmCallRow({ ...base, grounded: true, featuresDropped: [] }).citations).toBeNull();
+    // Whether the answer was grounded is still the only thing `verified` says.
+    expect(buildChatLlmCallRow({ ...base, grounded: true, featuresDropped: ['strict_tools'] }).verified).toBe(true);
+  });
+  it('a player’s own turn carries the player and no coach', () => {
+    expect(buildChatLlmCallRow({ ...base, coachId: null, playerId: 'p', grounded: true })).toMatchObject({ task: 'coach_chat', coach_id: null, player_id: 'p', prompt_hash: '1234567890abcdef' });
+    expect(buildChatLlmCallRow({ ...base, grounded: true }).player_id).toBeNull();
+  });
+});

@@ -1227,3 +1227,279 @@ E31. **Drafts.** A tool says its input is a draft with one member on the contrac
        part is removed (the card or the read takes its place in the same flush); on `failed` it stays with
        `state: 'failed'`. It is not replayed on reload.
      - A call made by the model's code is never a draft (the code writes no input the coach could watch).
+
+
+## 2026-11-11 (ENGINE): the steps of a turn, for the activity island
+
+E32. **Steps.** Built to the shape in `docs/clubhouse/coachhelm-chat-v3/SPEC.md`, Requests 8: the fields are on the
+     `data-progress` part, typed as `ChatStep` in `protocol.ts`. Everything is optional and additive; a row stored
+     before a field existed still draws, and a browser that knows none of it sees the same two events as before.
+     - **Events.** `read_started` and `read_finished` carry the step's facts; a new `step_update { id, label?, ... }`
+       carries a running step's news (only the fields that changed; `subjects` whole). The facts:
+       `state` (`read_started`: `'active'`, or `'waiting'` for a step really queued; `read_finished`: `done` /
+       `failed`), `kind`, `parent_id`, `subjects`, `count`, `covers`, `evidence_ref`, `started_at`, `ended_at`, `seq`,
+       and `done_label` on `read_finished`. The reducer keeps what a step said while it ran on its finished row.
+     - **`seq`**: the turn's sequence number, on every step event (`read_started`, `step_update`, `read_finished`,
+       `note`). It starts at 1 and rises by one per event, in the order sent; a request that continues a turn (a
+       decision) counts on from the stored rows. Each state change of a step is sent exactly once: one start, one
+       finish. (The code step's rename is now a `step_update`, not a second `read_started`.)
+     - **`kind`**: `'read' | 'find' | 'compare' | 'calculate' | 'visual' | 'draft' | 'check'`. The engine sends `read`
+       for a read, `draft` for a task being planned and `calculate` for the model's code. **PLANS/CONTEXT: a tool sets
+       its own with `ToolBase.step`** (`find_in_app`: `'find'`; `show_visual`: `'visual'`; `summarise_data`:
+       `'calculate'` or `'compare'`; a task that checks recipients: `'check'`). It only chooses the mark.
+     - **`subjects`**: `[{ kind, id, label }]`, at most 12, in the order they became known. A player is sent only if
+       they are on the caller's own roster and is named from that roster, never from what a read called them; the
+       team only if it is the caller's; a round (coach only) as the read named it. A signed-in player's roster is
+       themselves, so their steps name only them. Known from the tool's input (`player_id`, `player_ids`) when the
+       step starts, and from what the read measured when it ends.
+     - **`count`** `{ n, unit, more }`: on a finished read, what it counted (its first figure's sample: 38 rounds),
+       `more: false`. On the code step while it runs, the reads it has made so far (`unit: 'reads'`, `more: true`),
+       re-sent at most every 250 ms (`STEP_UPDATE_INTERVAL_MS`), then the final tally. **`covers`** `{ n, of, unit }`:
+       on the code step, how many of the roster's players its reads have measured ("9 of 12 players").
+     - **`evidence_ref`** on `read_finished`: the read it produced. Its `evidence` event is always sent BEFORE the
+       `read_finished`, so the step can be opened the moment it says done, while the rest of the turn goes on.
+       **`parent_id`**: a read the model's code called names the code's step.
+     - **`started_at` / `ended_at`**: clock readings (ISO). Nothing is estimated and no percentage exists.
+     - **`waiting` is in the type and the reducer and the engine never sends it today.** A message's tool calls are
+       run side by side, so nothing queues: a step is known and started in the same instant. It will be sent the day
+       something really waits its turn. Nothing is announced that is not already running.
+     - **The turn's work**: `done.work = { steps, working_ms }`, and the same two in `data-turn-meta` (`steps`,
+       `working_ms`) for a reload. `steps` counts the turn's rows that are work (not notes), over every request that
+       worked on the turn. `working_ms` is the time at least one step was running (overlapping steps are not added
+       up), so it is less than `duration_ms`, which also holds the model's own time and any wait on the coach.
+     - **Stored and reloaded.** The steps are the turn's stored `data-progress` rows: what the browser folds from the
+       stream equals what is stored, row for row (tested). `restoreUIMessages(rows, { steps: true })` keeps them on a
+       reload; the default still drops them, because a thread that draws rows positionally (Fairway's) would redraw
+       old turns' rows. **Clubhouse's loader (`src/clubhouse/data/coachhelm-chat.ts:113`) should pass
+       `{ steps: true }`** for "open an earlier turn's steps"; that file is not mine.
+     - **A bug this found and fixed**: a request that continued a turn restarted its row ids at `progress-1`, so its
+       first step REPLACED the turn's first stored step. A continued turn now numbers its rows on from the stored
+       ones (`lastRowNumberOf`).
+     - Steps are events beside the text: nothing waits on them and no text passes through them.
+
+## 2026-11-11 (PLANS): the studio's agreed set, dates in words, stored reads without template text, drafts
+
+P15. **The studio set (for CAPABILITIES and UX).** `STUDIO_KINDS` is now the sixteen CAPABILITIES named, in registry
+order: figure, comparison, ranking, trend, round, strokes_gained, distance_profile, schedule, qualifier_board,
+practice_plan, document, app_link, note, on_record, action, table.
+- `action` draws `data-action-proposal`, `data-action-receipt`, `data-handoff` and `data-card-revision` (one object
+  from proposed to saved or undone). `document` keeps `data-artifact`. `on_record` draws `get_coachhelm`. `note` keeps
+  `block:note` (stored conversations only), `data-coach-note` and `get_reference`. `table` also claims ENGINE's
+  `data-computed`.
+- Shell parts, no component: `data-progress`, `data-turn-meta`, `data-turn-incomplete`, `data-allowance`, and two I
+  placed there without being told, so say if they belong elsewhere: `data-draft` and `data-suggestions`.
+- The schema test now also finds parts named as constants (`X_PART = 'data-…'`), which is how ENGINE writes them.
+- `show_visual` no longer offers `note` or `headline` (a kpis of one figure is the large single figure). The strict
+  schema still resolves both, so stored conversations draw. Nine blocks and `sg_anatomy` remain.
+- `table` is still planned only: `ResolvedBlock` gets `{ type: 'table', measurements }` in the same change that gives
+  `chat/visual/CoachComposition.tsx` its case (UX's file; asked).
+
+P16. **Edit mode, the two questions CAPABILITIES asked.**
+- A `people` field's `options` are always the session's whole active roster, in the order the session holds it; its
+  `value` is the ids the card names. Sort by label on your side if you want it alphabetical.
+- A field's `label` is the fact's label exactly where the card has a fact for that one field (an event's `Type`,
+  `Where`, `Notes`, `Invited`, `Replies`; a trip's `Leaves`, `Back`). Where one fact holds several fields (an event's
+  `When` is the day and both times) only the day carries the fact's label and the times are `Starts` and `Ends`, with
+  no fact of their own. A field the task gave no label is its own name in words. So the "Edit" list under the subject
+  is the right place for anything without a matching fact.
+- Fact values still carry days as stamps (`2026-11-12`). I left them so one formatter on the card side decides how a
+  card writes a day; the lead is asked to pick one form for cards and answers (cards "Thu, Nov 12", answers "18 May").
+
+P17. **Dates in what the model reads.** Every reader's `model_text` and `summary` say a day as "18 May" (the year only
+outside this season, 1 August to 31 July) and an instant as "Thursday 12 November, 3:00 pm" on the team's clock
+(`dayWords`, `instantWords`, `datesInWords`, `wordsFor(ctx)` in `reader-kit.ts`). An instant with no clock to read it
+on is left as it came. A date inside stored words (a note) is left as written. `detail` and `measurements` keep their
+stamps: components and `summarise_data` read those. The prompt has the matching rule, and both sweep tests fail a stamp.
+
+P18. **Stored reads (`get_coachhelm`).** `stored-text.ts`: a stored insight's words are handed over without the
+research pointer, the placeholder cause ("… is off its benchmark. Likely cause inferred from the aggregate …", both
+stored spellings) and the fallback action ("Target … in the next practice block"). Signals now carry what was
+measured: `metric_label`, `value_display`, `comparison_label`, `comparison_value`, `sample_size`, `window_end`.
+A cause whose text is only the placeholder has `text: null`. No insight rule and no stored row was changed.
+
+P19. **Drafts (ENGINE E31).** Marked: `write_artifact` (title, body), `draft_message` (content),
+`draft_practice_plan` (title, blocks), `publish_artifact` (title, body), `create_team_announcement` (title, body),
+and `send_message` (content) for when it is registered.
+
+P20. **For UX and QUICK-CHAT, said again in one place.** A receipt with `error: 'card_out_of_date'` is never
+retryable: show its sentence, no "Try again", and offer "Ask again", which sends the coach's original request as a
+new turn (the world changed, so the card must be planned again). `error: 'card_not_checked'` with `retryable: true`
+may be tried again as it is. A published practice plan's address is `/golf/dashboard/practice/plan/<id>`.
+
+P21. **The qualifier card** now says `visible_to: 'team'`: the read rule lets any coach or player of the team see a
+qualifier, though a player's own list shows only the ones they are in. The card's note says both.
+
+P22. **Not added: the `# Method:` line (E25).** It fits (Ask's own tools and rules would be about 12,116 against the
+12,150 brake) and waits on the lead's yes.
+
+## 2026-11-11 (PLANS): what three reads hold, for the studio's adapters (CAPABILITIES E-31, E-34)
+
+P23. The shapes below are each read's `detail` as it is today; CAPABILITIES writes the adapter. Days and instants in
+`detail` are stamps (`2026-11-12`, `2026-11-12T20:00:00Z`); only `summary` and `model_text` say them in words.
+
+- `get_schedule` (coach): one part gives `detail` directly; with `include`, `detail` is keyed by part and the
+  calendar is `detail.events`. The calendar part is
+  `{ zone, from, to, events: [{ id, title, event_type, start_time, end_time, location, status, href, replies?, in_class? }] }`.
+  `replies` is there only when the event asks for them and they could be read:
+  `{ accepted, maybe, declined, pending, checked_in }` (counts). `in_class` is the names of players with a class
+  during the event, absent when class times could not be read. Events are not grouped by day: group on `start_time`
+  in `zone`. A player's `get_schedule` is `{ timezone, events: [{ event_id, title, event_type, starts_at, ends_at,
+  location, requires_rsvp, rsvp_deadline, my_rsvp }] }` with no `href`.
+- `get_qualifiers` with one qualifier:
+  `{ qualifier_id, href, name, status, selection, rounds_planned, squad, coach_picks, entrants, standings: [{ position,
+  player_id, player, rounds, total, to_par, avg_score, fewer_rounds_than_leaders, rounds_not_18_holes, state, selected,
+  reason }], no_score_yet: [name] }`. `position` is a string ("T3") or null; the read holds `squad` and `coach_picks`
+  but does not say where the board draws its cut, so take that from the board's own rule and not from me; per-round
+  scores are not in it (`rounds` is how many were played), so `StudioBoardRow.rounds` cannot be filled
+  from this read yet. Say if you want them and I add `round_scores` beside `rounds`. The list form is
+  `{ qualifiers: [{ qualifier_id, href, name, status, start_date, end_date, course, rounds_planned, squad, coach_picks,
+  entrants, cards_in, leaders }] }`.
+- `get_round`: `{ player_id, kind: 'hole_strip', round: { round_id, href?, date, course, type, holes_played, total,
+  to_par, front, back, putts, fairways, greens, strokes_gained }, holes: [{ hole_number, par, score, putts,
+  penalty_strokes, gir }], tallies, recap, player_note, coach_note }`. `href` is there for a coach only.
+  `get_rounds` rows are `{ round_id, href, date, player, player_id, course, type, holes, score, to_par, putts }`.
+- Addresses: an event `/golf/dashboard/calendar?event=<id>`, a round `/golf/dashboard/rounds/<id>`, a qualifier
+  `/golf/dashboard/qualifiers/<id>`. A player row carries `player_id` and no address: the player page's address is
+  yours. `href` is never read out to the model.
+
+E33. **A rejected request, and `strict` as a budget (11 Nov 2026, after the first live run).** Every live request had
+been rejected (HTTP 400) and answered only by the plain retry, so no optional feature had ever run. Cause found
+without a live call: every tool was sent `strict: true`, and the API limits strict use per REQUEST (structured
+outputs, "Schema complexity limits": 20 strict tools, 24 optional parameters, 16 parameters with a union type, summed
+over all strict tools). A coach's request held 33 strict tools and 72 unions; a player's 10 and 56.
+- `strictToolNames(tools, features)` chooses the strict tools within the three limits: tasks before reads, each in
+  the registry's order, a tool that would pass a limit is skipped and the next is tried. `modelToolsFor` builds the
+  list; `modelToolFor(tool, features, strict?)` is one tool. Same list and features, same names (the tools are cached
+  bytes). Today that is 20 of a coach's 33 direct-only tools and 8 of a player's 10 reads.
+- **PLANS / CONTEXT:** the order of the registry is now the order of priority for `strict`. `strict-input.ts` shows
+  every optional field as required-and-nullable, which costs a union each (16 a request). An optional field left
+  optional costs from the other limit (24). Using both would let about 40 optional fields be strict in one request
+  instead of 16; say if you want the engine to count differently. Nothing else changes for a tool: the engine's zod
+  check runs on every input, strict or not.
+- **The ladder.** `FEATURE_GROUPS`, in the order they are given up: `progress_notes`, `refusal_fallback`,
+  `task_budget`, `strict_tools`, `compaction`, `programmatic_reads`, `thinking_binding`. On a 400 the loop drops the
+  group the API's message names when it names exactly one the request carries (`groupToDrop`), otherwise the next in
+  order, and sends the call again; at most one request per group. A 400 with the API's `error_code` (account,
+  billing, key) is not retried. `plainFeatures` is every group off.
+- **Where a drop is recorded.** `LoopState.dropped` (group, status, type, code, message); `TurnSummary.featuresDropped`
+  and `degraded`; the `usage` event's `features_dropped` (names only: the API's words never go to a browser); the log
+  line `v3.chat.stream.degraded`, whose MESSAGE holds the status, type and the API's words, because off production
+  the logger prints the message and no `extra`; the turn's log line; the ledger row's `citations.features_dropped`.
+- **The eval.** A turn with `features_dropped` is `degraded`, never `complete`, and is never counted right.
+  `--require-features` stops the run at the first one (exit 1, after its cost is read); `--server-log <file>` puts the
+  API's reason in the question's run note.
+- **Not verifiable without a live call, in the order I would suspect them next:** (1) a strict tool in the same
+  request as the code tool: the programmatic-calling page says "Tools with `strict: true` are not supported with
+  programmatic calling", which I read as per tool (ours are never both) but may be per request; (2)
+  `fallbacks: 'default'` on a request that also carries a `role: 'system'` message and `display: 'updates'`, neither
+  of which the substitute model (Claude Sonnet 5) accepts as a direct request; (3) `strict` beside
+  `eager_input_streaming` on one tool. Each would show as one named drop in the log, and the turn would still answer.
+- **The player's ledger row** was never written: the insert named a `grounded` column that does not exist and left
+  out `prompt_hash` and `verified` (both NOT NULL). It is now the same row a coach's turn writes
+  (`buildChatLlmCallRow` with `coachId: null, playerId`), keyed by the turn's own id; a ledger that refuses it is
+  logged once per process.
+
+E34. **After the first live run: the close listeners, the cost of the first turn, the two held migrations (11 Nov 2026).**
+- **`MaxListenersExceededWarning: 11 close listeners added to [ServerResponse]`.** Not the chat code. The chat never
+  sees the response: the only thing it listens to is the request's abort signal, one listener a request, removed when
+  the turn ends (`engine/turn.ts`; pinned by "what a turn hangs on the request" in the route suite: one listener for
+  nine model calls, for a rejected-and-retried call, and for a request the browser left). The `close` listeners on a
+  dev response are each added once per response: Next 16.3.8's dev stack adds about seven (`router-server.js:262`,
+  `:358`, `next-dev-server.js:389`, the route template's `signalFromNodeResponse`, `pipe-readable.js` twice), `after()`
+  two (`after-context.js:35`, `:126`, however many times `after()` is called), and Sentry's http integration three or
+  four (`@sentry/core` `server-subscription.js:88`, `:240`, `record-request-session.js:17`, `@sentry/node-core`
+  `httpServerSpansIntegration.js:106`). That is past Node's default of ten on any streaming route handler that calls
+  `after()` under `next dev` with Sentry on. Node prints the warning once per emitter, at the eleventh, so "11" is not a
+  count that grows. Nothing to fix here; read from the installed sources, not measured on a running server.
+- **The first coach turn's $0.274.** The staging ledger row: 68,373 prompt tokens, 473 output tokens. Output is $0.005.
+  The input is billed at $3.95 a million tokens on average, which is the one-hour cache-write rate ($4): nearly every
+  prompt token of the turn was a cache WRITE. Two calls of about 33,000 prompt tokens each wrote the prefix twice. That
+  only fits one sequence: the FIRST request, with every feature on, was accepted and wrote the prefix (about $0.13);
+  the SECOND request (the one that carries the read's result) was rejected; its plain retry has different tool
+  definitions, so it could read nothing of the first write and wrote the whole prefix again (about $0.13, plus the read's
+  result). A rejected request returns no usage and is not billed. The third turn ($0.033, 71,307 prompt tokens) read
+  both prefixes from the cache. So the rejection doubled the first turn's cost, and what the API objects to is
+  something only the second request of a turn carries: a `tool_result` holding a `search_result` block with citations on
+  (beside strict tools), the echoed assistant turn's thinking blocks, or, on a coach surface, the code tool's container.
+  This is an inference from totals (the per-call split is logged only in production); the next run's log line names it.
+  The `usage` event now also carries `cache_creation_input_tokens`, and the eval report prints each turn's prompt,
+  cache-read, cache-written and output tokens, so a cost can be split without the ledger.
+- **`20261110120000` and `20261110130000`.** Neither holds its own `BEGIN`/`COMMIT` any more (`db:apply` runs the file
+  and its ledger row in one transaction; `SET lock_timeout`, as `20261107090400` does). `20261110120000` no longer
+  counts the table's policies in its VERIFY or its pgTAP (the held `20261101090200` adds four to the same table): both
+  assert that `chat_messages_coach_only` is still there, FOR ALL. Not run here (pgTAP runs in CI). The other held Ask
+  migrations (`20261101090000`, `20261101090200`) also hold their own `BEGIN`/`COMMIT`; they are not this worker's.
+
+E35. **Steps, reconciled with the coordinator's contract (11 Nov 2026).** The wire stays as built in E32
+(`read_started`, `step_update`, `read_finished` folding into one `data-progress` part per step id): the island reads
+the part, not the event name, and the part carries every field of the contract's single `step` event (id, parent_id,
+kind, state, label, done_label, detail, subjects, count, covers, evidence_ref, started_at, ended_at, tool). What this
+adds, to meet the contract's rules:
+- **A tool declares its own step** (`ToolBase.step`, `engine/tool.ts`): a kind on its own, or a `StepDescriptor`:
+  `{ kind?, doneLabel?(input, result), subjects?(input, ctx) }`. The engine never infers a kind from a name and never
+  rewords a label. **PLANS / CONTEXT, yours to fill in:** no registered tool declares anything yet (every step is
+  `read` or `draft` and no finished row has its own wording). `doneLabel` is the past-tense row ("Read Eli's last 8
+  rounds"); `result` is the read's envelope, or null for a task. `subjects` is for what the engine cannot see: an
+  event, a qualifier, a tournament, a plan, a document, each as `{ kind, id, label, avatar_url? }`.
+- **`done_label` is sent only when the tool declared one** (and on the engine's own code step: "Worked out the
+  figures", "Worked it out across the team"). chat-ux: when it is absent the row has only `label`; `pastOf()` on the
+  screen is then your fallback, and it can go once every tool declares its own.
+- **Subjects.** The engine still names the players in `player_id` / `player_ids` and the players, team and rounds a
+  read's figures are about. A declared subject is checked: a player only if on the caller's roster, named as the
+  roster names them; a team only if the caller's; a thing as the tool gives it. On a player's turn only the player
+  themself is ever sent, whatever a tool declares. `avatar_url` is passed on only from a tool's declaration and only
+  as an https or app address; the engine looks none up (the roster in a chat context holds no face).
+- **`subjects_more`**: a step sends at most twelve subjects and, when there are more, how many more. A new optional
+  field on the part and on the three events.
+- **Not sent, because it would not be true:** `count` while a read is running (no read is incremental; the count
+  arrives with `done`), and `waiting` (nothing is queued: tool calls of one response start together).
+- **Words.** `engine/__tests__/step-words.test.ts` sweeps every registered tool's running label and declared finished
+  label for the writing rules (full words, no notation, no tool or column name, no trailing full stop).
+
+E36. **Suggestions (D4, 11 Nov 2026).**
+- **Wire.** `{ type: 'suggestions'; items: Array<{ label; prompt; kind: 'read' | 'compare' | 'action' }> }`. It is the
+  one event that may come AFTER `done`, a second or two later, and only on a coach's turn that completed with an
+  answer (never `awaiting_decision`, failed, stopped or declined; never a player). An empty list withdraws them.
+  Stored and restored as the part `{ type: 'data-suggestions', id: 'suggestions', data: { items } }`, last in the
+  message; a retried turn that already has its answer is sent them again from the store. `suggestionsOf(parts)` reads
+  them.
+- **For chat-ux and the quick chat.** `useCoachHelmChat().suggestions` is the last answer's, and only while it is the
+  last thing in the thread and nothing is being asked; it is `[]` otherwise. `status` is already `ready` when they
+  arrive, so draw them as something that appears under a finished answer, not as part of the wait. Tapping one is
+  `send(suggestion.prompt)` and nothing else. `kind` is for the chip's mark: an `action` suggestion still leads to a
+  card the coach confirms. Earlier answers keep their stored part; do not draw it.
+- **The checks** (`checkSuggestions`): an `action` must name, in a field the browser never sees, one of the task tools
+  in THIS caller's tool list; nothing matching the never-list (from `tasks/INVENTORY.md`, "Left to the app on
+  purpose"); no tool or snake_case name in the words; label 3 to 60 characters, prompt 8 to 300; no duplicates; at most
+  four; fewer than two is none. A suggestion that fails is dropped, never repaired. **PLANS:** the never-list here is a
+  pattern over the words, written from INVENTORY.md; if that list changes, `NEVER` in `engine/suggestions.ts` should.
+- **The call.** `suggestionsModel()` is the player profile's model whatever the surface's own; `output_config:
+  { effort: 'low', format: json_schema }`, `max_tokens` 2000, no tools, no betas, the question and the answer as data
+  in one user message. It is not a feature group: it is its own request, made after the turn is stored, so nothing of
+  the turn can fail with it. `SUGGESTIONS_TIMEOUT_MS` 8000. Not verified against the live API.
+- **Cost.** `TurnDeps.onSuggested({ usage, kept, failed })`; the route writes a ledger row `task: 'chat_suggestions'`
+  (`verified`: at least two were shown) and counts the spend under the same key. `chat/ledger.ts`
+  (`writeChatLedgerRow`) tries a row under its own key and, where the CHECK refuses it (23514), remembers that for the
+  process and uses the fallback: `coach_chat` for a player's turn, no row for suggestions. Held migration
+  `20261111090000_coachhelm_llm_calls_chat_tasks.sql` (rollback, pgTAP and the declarative schema with it; not
+  applied, not run).
+- **The eval.** A coach question now costs one more small call (about $0.0002) and its response stays open a moment
+  longer; the report's time is the turn's own duration and its "figures matched" comes from the answer's row.
+- **The hook.** `done` now ends the turn for the coach (status, the in-flight guard, the next queued card) while the
+  rest of the response is still read; a new question, Stop, a new chat or leaving the page ends that read. A
+  connection lost after `done` is not a failure.
+
+E37. **No tool is sent `strict` (11 Nov 2026, after the second live run).** The budget of E33 kept a request within the
+API's documented counts and the API still rejected it: "The compiled grammar is too large, which would cause
+performance issues. Simplify your tool schemas or reduce the number of strict tools." The retry without strict tools
+rewrote the whole cached prefix, which is what made a first turn cost $0.27 to $0.36.
+- `STRICT_TOOLS` (`engine/model.ts`) is the list of tools that may be sent strict, and it is EMPTY. Both profiles'
+  `strictTools` is `STRICT_TOOLS.size > 0`, so it is false and `strict_tools` is in no request's groups: the ladder
+  has nothing to give up there. What E33 says about which tools are strict today (20 of 33, 8 of 10) no longer holds.
+- The budget stays (`strictToolNames(tools, features, allowed)`, `'any'` for the budget alone) for the day a short
+  list is tried; a name is added only after a live request with exactly that set was accepted.
+- Every request of a turn carries identical tool definitions and system blocks: they are built from the tool list and
+  the features only. The answer-only step keeps the tools and sends `tool_choice: none`. Tests: `model.test.ts`,
+  `registry-tools.test.ts` (the real registry, every surface) and the route suite (three model calls, one prefix).
+- **PLANS / CONTEXT:** nothing to change. `strict-input.ts` still decides the shape the model is shown; the tool's own
+  zod schema, run by the engine before `run`/`plan`, is now the only check on an input, so keep every bound in it.

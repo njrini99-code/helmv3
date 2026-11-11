@@ -119,7 +119,8 @@ export interface TeammateFigure {
 export interface TeamDistribution {
   /** A player never sees a teammate's figures: drop this block (`withoutCoachOnly`) before anything reaches a player. */
   audience: 'coach_only';
-  window: 'last10';
+  /** Each teammate's own last 10 rounds, or each teammate's season (the strokes-gained areas only, for the priority). */
+  window: 'last10' | 'season';
   /** Teammates with a value at the measure's floor, ordered by player id. */
   teammates: TeammateFigure[];
   n: number;
@@ -167,6 +168,8 @@ export interface MeasureFact {
   season: WindowFigure;
   /** Null when the sheet was built without teammates. */
   team: TeamDistribution | null;
+  /** The four strokes-gained areas only: the teammates' spread over the SEASON, which the priority is read against. Coach-only. */
+  team_season?: TeamDistribution | null;
   /** Null where the Tour has no figure on the same basis. */
   tour: TourFigure | null;
   /**
@@ -189,6 +192,54 @@ export interface RoundStrokesGained {
   putting: number | null;
 }
 
+/** One counted pattern inside a band: a share or an average, with the count behind it. Never inferred. */
+export interface PatternFact {
+  id: string;
+  label: string;
+  unit: 'percent' | 'feet';
+  /** Null when the shot rows cannot support it: see `not_traced`. */
+  value: number | null;
+  /** A share: `count` of `of`. An average: both are the number of shots averaged. */
+  count: number;
+  of: number;
+  /** Wilson 95% range of a share, in percent. */
+  range95?: { low: number; high: number };
+  basis: 'counted_from_shots';
+  /** Why there is no value: too few shots, or the column is empty on too many of them. */
+  not_traced?: string;
+  /** The same pattern's median over the teammates who have it traced. Coach-only. */
+  team?: { audience: 'coach_only'; median: number | null; teammates: number };
+}
+
+/** One band of an area over the season: how many strokes a round it gains or loses, and the counted patterns behind it. */
+export interface BandFact {
+  band: string;
+  label: string;
+  /** Shots (and penalty strokes) valued in the band. */
+  shots: number;
+  /** Rounds with at least one of them. */
+  rounds: number;
+  /** Mean over every measured round of the round's strokes gained from this band (0 when it had no shot there), with its 95% range. Null with no shot. */
+  strokes_gained_per_round: { value: number; low: number | null; high: number | null } | null;
+  strokes_gained_per_shot: number | null;
+  patterns: PatternFact[];
+}
+
+/**
+ * One strokes-gained area split into its bands over the season's measured rounds, from per-shot strokes gained
+ * (`shotSgForRound`, the port of the database function that wrote the stored round figures).
+ */
+export interface AreaBreakdown {
+  area_measure_id: string;
+  window: 'season';
+  measured_rounds: number;
+  /** Each measured round's strokes gained and shot count per band, newest first. */
+  rounds: Array<{ round_id: string; date: string; strokes_gained: Record<string, number>; shots: Record<string, number> }>;
+  bands: BandFact[];
+  /** The same patterns over the whole area (every band together; par-5 lay-ups left out), for when no one band stands out. */
+  overall: PatternFact[];
+}
+
 export interface FactSheet {
   version: 1;
   team_id: string;
@@ -203,6 +254,10 @@ export interface FactSheet {
   windows: { last10: WindowRef; previous10: WindowRef | null; season: WindowRef };
   /** The last 10 rounds' stored strokes gained, newest first, each marked measured or estimated. */
   strokes_gained_by_round: RoundStrokesGained[];
+  /** The same for every round of the season window. */
+  strokes_gained_by_round_season: RoundStrokesGained[];
+  /** Where inside each strokes-gained area the strokes go this season, counted from shots (breakdown.ts). */
+  breakdowns: AreaBreakdown[];
   measures: MeasureFact[];
   /** Things a reader must know about the data behind this sheet ("4 of the last 10 rounds have no shots logged"). */
   notes: string[];
@@ -210,5 +265,10 @@ export interface FactSheet {
 
 /** A fact sheet with every coach-only block removed: what may travel toward a player. */
 export function withoutCoachOnly(sheet: FactSheet): FactSheet {
-  return { ...sheet, measures: sheet.measures.map((m) => ({ ...m, team: null })) };
+  const strip = ({ team: _team, ...p }: PatternFact): PatternFact => p;
+  return {
+    ...sheet,
+    measures: sheet.measures.map((m) => ({ ...m, team: null, ...(m.team_season !== undefined ? { team_season: null } : {}) })),
+    breakdowns: sheet.breakdowns.map((a) => ({ ...a, overall: a.overall.map(strip), bands: a.bands.map((b) => ({ ...b, patterns: b.patterns.map(strip) })) })),
+  };
 }

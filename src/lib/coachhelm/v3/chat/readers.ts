@@ -12,7 +12,7 @@ import { compareSeasons } from './engine-reads';
 import { nowIso, type Measurement, type ToolEnvelope } from './provenance';
 import { boardOrder } from '../qualifying/ranking';
 import { TEAM_FIGURES_KEY } from './read-tools';
-import { coachWords, empty, failed, nameOf, ownOr, ownOrOne, part, playerOf, round, sampleWords, say, sgAgainst, shotTracked, spoken, teamOf, toParWords, together, withText } from './reader-kit';
+import { coachWords, empty, failed, nameOf, ownOr, ownOrOne, part, playerOf, round, sampleWords, say, sgAgainst, shotTracked, spoken, teamOf, toParWords, together, withText, wordsFor } from './reader-kit';
 import { screenLoaders, STATS_WINDOWS, type PlayerStatsScreen, type StatsComparisonRow, type StatsWindow, type TeamRoundRow } from './screen-loaders';
 
 const PlayerId = z.string().uuid();
@@ -403,7 +403,7 @@ async function runRounds(ctx: ToolContext, input: RoundsInput): Promise<ToolResu
     summary: `${list.length} rounds: ${scope}.`,
     measurements,
     series: [],
-    detail: { scope, rounds_total: list.length, counted_rounds: counted.length, average_of_counted: pooled === null ? null : round(pooled, 1), per_player: per, rounds: shown.map((r) => ({ round_id: r.id, date: r.date.slice(0, 10), player: r.player, player_id: r.playerId, course: r.course, type: r.type, holes: r.holes, score: r.score, to_par: r.toPar, putts: r.putts })) },
+    detail: { scope, rounds_total: list.length, counted_rounds: counted.length, average_of_counted: pooled === null ? null : round(pooled, 1), per_player: per, rounds: shown.map((r) => ({ round_id: r.id, href: `/golf/dashboard/rounds/${r.id}`, date: r.date.slice(0, 10), player: r.player, player_id: r.playerId, course: r.course, type: r.type, holes: r.holes, score: r.score, to_par: r.toPar, putts: r.putts })) },
     coverage: page.rosterError ? 'partial' : 'complete',
     coverage_note: page.rosterError ? 'The roster could not be read in full, so some names may be missing.' : (page.rounds.unscored ?? 0) > 0 ? `${page.rounds.unscored} rounds have no score yet and are left out.` : null,
     as_of: nowIso(),
@@ -471,7 +471,7 @@ export const getSeason: ReadTool<SeasonInput> = {
     if (!input.compare_last_season) return now[1];
     // No screen draws last season beside this one; this is the chat library's own read and says so in its source.
     const last = await part('against last season', () => compareSeasons(ctx.sb, teamOf(ctx), { player_id: id }));
-    const both = together('', [now, last], sgAgainst(ctx));
+    const both = together('', [now, last], wordsFor(ctx));
     // The season block of a visual draws from the comparison's own detail, so it stays at the top level.
     return last[1].coverage === 'unavailable' || !last[1].detail || typeof last[1].detail !== 'object' ? both : { ...both, detail: { ...(last[1].detail as Record<string, unknown>), this_season: now[1].detail ?? null } };
   },
@@ -502,7 +502,7 @@ async function runQualifiers(ctx: ToolContext, input: QualifiersInput): Promise<
         summary: `${q.name}: the board, ${rows.length} with a score.`,
         measurements: rows.flatMap((r) => (r.toPar === null ? [] : [{ metric_id: 'qualifier_to_par', metric_label: 'Qualifier total to par', unit: 'score' as const, value: r.toPar, entity: { kind: 'player' as const, id: r.playerId, label: r.name }, window_start: q.startDate, window_end: q.endDate, sample_size: r.played, sample_unit: 'rounds' as const, as_of: nowIso(), coverage: 'complete' as const, coverage_note: cardNote(r), source: 'Qualifiers board', method: 'board_order', denominator: null, benchmark: null, direction: 'lower_better' as const }])),
         series: [],
-        detail: { qualifier_id: q.id, name: q.name, status: q.status, selection: q.selectionState, rounds_planned: q.numRounds, squad: q.squad, coach_picks: q.picks, entrants: q.entrants, standings: rows.map((r) => ({ position: r.position === null ? null : `${r.tied ? 'T' : ''}${r.position}`, player_id: r.playerId, player: r.name, rounds: r.played, total: r.total, to_par: r.toPar, avg_score: r.avg === null ? null : round(r.avg, 1), fewer_rounds_than_leaders: behind(r), rounds_not_18_holes: r.shortRounds, state: r.state, selected: picked.get(r.playerId)?.type ?? null, reason: picked.get(r.playerId)?.reasoning ?? null })), no_score_yet: q.board.unscored.map((u) => u.name) },
+        detail: { qualifier_id: q.id, href: `/golf/dashboard/qualifiers/${q.id}`, name: q.name, status: q.status, selection: q.selectionState, rounds_planned: q.numRounds, squad: q.squad, coach_picks: q.picks, entrants: q.entrants, standings: rows.map((r) => ({ position: r.position === null ? null : `${r.tied ? 'T' : ''}${r.position}`, player_id: r.playerId, player: r.name, rounds: r.played, total: r.total, to_par: r.toPar, avg_score: r.avg === null ? null : round(r.avg, 1), fewer_rounds_than_leaders: behind(r), rounds_not_18_holes: r.shortRounds, state: r.state, selected: picked.get(r.playerId)?.type ?? null, reason: picked.get(r.playerId)?.reasoning ?? null })), no_score_yet: q.board.unscored.map((u) => u.name) },
         coverage: 'complete',
         coverage_note: null,
         as_of: nowIso(),
@@ -524,7 +524,7 @@ async function runQualifiers(ctx: ToolContext, input: QualifiersInput): Promise<
       summary: `${items.length} qualifier${items.length === 1 ? '' : 's'}, in the Qualifiers page's order.`,
       measurements: [],
       series: [],
-      detail: { qualifiers: items.map((q) => ({ qualifier_id: q.id, name: q.name, status: q.status, start_date: q.startDate, end_date: q.endDate, course: q.course, rounds_planned: q.numRounds, squad: q.squad, coach_picks: q.picks, entrants: q.entrants, cards_in: q.submitted, leaders: q.leaders.map((l) => ({ position: l.position, player_id: l.playerId, player: l.name, rounds: l.played, to_par: l.toPar })) })) },
+      detail: { qualifiers: items.map((q) => ({ qualifier_id: q.id, href: `/golf/dashboard/qualifiers/${q.id}`, name: q.name, status: q.status, start_date: q.startDate, end_date: q.endDate, course: q.course, rounds_planned: q.numRounds, squad: q.squad, coach_picks: q.picks, entrants: q.entrants, cards_in: q.submitted, leaders: q.leaders.map((l) => ({ position: l.position, player_id: l.playerId, player: l.name, rounds: l.played, to_par: l.toPar })) })) },
       coverage: page.standingsError ? 'partial' : 'complete',
       coverage_note: page.standingsError ? 'The standings could not be read; the leaders are missing.' : null,
       as_of: nowIso(),

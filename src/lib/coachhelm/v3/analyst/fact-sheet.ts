@@ -12,7 +12,9 @@
  */
 import { seasonStartDate } from '@/lib/coachhelm/v3/chat/season-rule';
 import { tourFor } from '@/lib/golf/benchmarks/tour';
-import { MEASURES, cacheForFigures, hasMeasuredStrokesGained, screenStrokesGained, type MeasureDef, type TourContext, type WindowData } from './measures';
+import { effectiveSgBaseline, sgBaselineScale } from '@/lib/golf/sg-benchmarks';
+import { areaBreakdowns, withTeamMedians } from './breakdown';
+import { MEASURES, STROKES_GAINED_AREA_IDS, cacheForFigures, hasMeasuredStrokesGained, screenStrokesGained, type MeasureDef, type TourContext, type WindowData } from './measures';
 import { countedRounds, cutWindows, dayIn, figureRounds, holeRounds, readSince, windowRef, type CountedRound, type PlayerWindows } from './rounds';
 import type { AnalystSources, HoleRow, RoundCacheRow, RoundRow, ShotRow, TeamRow, TourStandardRow } from './sources';
 import { MAD_TO_SD, median, medianAbsoluteDeviation } from './stats';
@@ -146,12 +148,15 @@ function computeFigures(cut: PlayerCut, look: Lookups): PlayerFigures {
 
 const r4 = (n: number): number => Math.round(n * 1e4) / 1e4;
 
-/** The team's spread on one measure over each teammate's own last 10 rounds, without the player the sheet is about. */
-export function teamDistribution(measureId: string, playerId: string, all: ReadonlyMap<string, PlayerFigures>): TeamDistribution {
+/** The measures that also carry the teammates' season spread: the four strokes-gained areas the priority chooses among. */
+const SEASON_TEAM_IDS: ReadonlySet<string> = new Set(STROKES_GAINED_AREA_IDS);
+
+/** The team's spread on one measure over each teammate's own last 10 rounds (or season), without the player the sheet is about. */
+export function teamDistribution(measureId: string, playerId: string, all: ReadonlyMap<string, PlayerFigures>, window: 'last10' | 'season' = 'last10'): TeamDistribution {
   const teammates = [...all]
     .filter(([id]) => id !== playerId)
     .flatMap(([id, f]) => {
-      const fig = f.current.get(measureId);
+      const fig = (window === 'season' ? f.season : f.current).get(measureId);
       return fig && fig.value != null ? [{ player_id: id, value: fig.value, attempts: fig.sample.attempts, rounds: fig.sample.rounds }] : [];
     })
     .sort((a, b) => a.player_id.localeCompare(b.player_id));
@@ -160,7 +165,7 @@ export function teamDistribution(measureId: string, playerId: string, all: Reado
   const mad = medianAbsoluteDeviation(values);
   return {
     audience: 'coach_only',
-    window: 'last10',
+    window,
     teammates,
     n: teammates.length,
     median: med == null ? null : r4(med),
@@ -171,8 +176,8 @@ export function teamDistribution(measureId: string, playerId: string, all: Reado
   };
 }
 
-function strokesGainedByRound(last10: readonly CountedRound[], look: Lookups): RoundStrokesGained[] {
-  return holeRounds(last10)
+function strokesGainedByRound(rounds: readonly CountedRound[], look: Lookups): RoundStrokesGained[] {
+  return holeRounds(rounds)
     .filter((r) => r.strokes_gained_total != null)
     .map((r) => ({
       round_id: r.id,
@@ -213,6 +218,21 @@ export function assembleFactSheets(rows: TeamRows): FactSheet[] {
   const look = lookups(rows);
   const cuts = new Map(playerIds.map((id) => [id, cutPlayer(id, byPlayer.get(id) ?? [], seasonStart)]));
   const figures = new Map(playerIds.map((id) => [id, computeFigures(cuts.get(id)!, look)]));
+  // The strokes-gained baseline: the team's own setting when it is one of the two, else its gender's
+  // (the database's sg_scale_for_player rule), so per-shot figures are on the scale the stored round figures are.
+  const setting = team.sg_baseline === 'pga_tour' || team.sg_baseline === 'womens' ? team.sg_baseline : null;
+  const baseline = effectiveSgBaseline(setting, tour === 'lpga' ? 'womens' : 'mens');
+  const breakdowns = new Map(
+    playerIds.map((id) => [
+      id,
+      areaBreakdowns({
+        rounds: holeRounds(cuts.get(id)!.counted.season).filter((r) => look.measuredRoundIds.has(r.id)),
+        shotsByRound: look.shotsByRound,
+        holesByRound: look.holesByRound,
+        scale: sgBaselineScale(baseline),
+      }),
+    ]),
+  );
 
   return playerIds.map((playerId): FactSheet => {
     const cut = cuts.get(playerId)!;
@@ -234,6 +254,7 @@ export function assembleFactSheets(rows: TeamRows): FactSheet[] {
         previous: mine.previous.get(def.id) ?? null,
         season: mine.season.get(def.id)!,
         team: playerIds.length > 1 ? teamDistribution(def.id, playerId, figures) : null,
+        ...(SEASON_TEAM_IDS.has(def.id) ? { team_season: playerIds.length > 1 ? teamDistribution(def.id, playerId, figures, 'season') : null } : {}),
         tour: def.tour(tourCtx),
         ...(screen ? { screen } : {}),
       };
@@ -247,13 +268,15 @@ export function assembleFactSheets(rows: TeamRows): FactSheet[] {
       timezone: team.timezone,
       season_start: seasonStart,
       tour,
-      strokes_gained_baseline: tour === 'lpga' ? 'womens' : 'pga_tour',
+      strokes_gained_baseline: baseline,
       windows: {
         last10: ref('last10', cut.counted.last10),
         previous10: cut.counted.previous10 ? ref('previous10', cut.counted.previous10) : null,
         season: ref('season', cut.counted.season),
       },
       strokes_gained_by_round: sg,
+      strokes_gained_by_round_season: strokesGainedByRound(cut.counted.season, look),
+      breakdowns: withTeamMedians(breakdowns.get(playerId)!, playerIds.filter((id) => id !== playerId).map((id) => breakdowns.get(id)!)),
       measures,
       notes: notesFor(cut, sg),
     };

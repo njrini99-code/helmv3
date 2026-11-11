@@ -142,6 +142,8 @@ export interface FlowDef<I> {
   written?: (sb: Sb, ctx: CoachChatContext, input: I, at: { since: string; requestId: string }) => Promise<boolean | null>;
   /** What the receipt says when `written` finds the row. */
   done?: (ctx: CoachChatContext, input: I) => FlowDone;
+  /** Top-level input fields the coach watches being written (`TaskTool.draft`, engine E31): the words of a message, the body of a document. */
+  draft?: readonly string[];
   /** The table whose row id is `requestId`: an action that failed after that row exists is recorded as done, never offered again. */
   landed?: { table: 'golf_events' | 'golf_coach_blocked_time' | 'golf_recruits' | 'golf_team_drills' | 'golf_class_exceptions' | 'golf_team_terms'; done: (input: I) => FlowDone };
 }
@@ -373,9 +375,10 @@ const qualifierFlow: FlowDef<QualifierStored> = {
       recipients,
       not_reached,
       delivery,
-      // Certain: the players in it (their notice opens it) and the coaches. Whether a player outside the field can open it is the Qualifiers page's own rule, not claimed here.
-      visible_to: 'recipients',
-      visible_note: 'The players in it and this team’s coaches see it in Qualifiers.',
+      // The read rule is the team's (`golf_qualifiers_select_team`: a coach or a player of the team), wider than the list a player is
+      // shown (`getPlayerQualifiers` lists the qualifiers they are entered in). The card says both, and claims the wider one.
+      visible_to: 'team',
+      visible_note: 'It is listed in Qualifiers for the players in it and this team’s coaches. Any player on the team is allowed to see it.',
       key: ['qualifier', i.name, i.start_date, i.player_ids.join(',')],
     };
   },
@@ -840,6 +843,7 @@ type MessageStored = z.infer<typeof messageInput> & { seen?: z.infer<typeof Seen
 const messageHref = (conversationId: string) => `/golf/dashboard/messages?conversation=${conversationId}`;
 const messageFlow: FlowDef<MessageStored> = {
   name: 'send_message',
+  draft: ['content'],
   editable: ['content'],
   editLabels: { content: 'Message' },
   written: (sb, _ctx, _i, { requestId }) => rowSince(sb, 'golf_messages', { id: requestId }, null),
@@ -937,6 +941,7 @@ const DOCUMENTS_HREF = '/golf/dashboard/team-hub?tab=docs';
 /** Publish from the artifact pane (ask/06 E-FPICK): the same hold as every write. The document opens for players; nothing else is sent. */
 const publishArtifactFlow: FlowDef<z.infer<typeof publishArtifactInput>> = {
   name: 'publish_artifact',
+  draft: ['title', 'body'],
   editable: ['title', 'body'],
   editLabels: { body: 'Words' },
   written: (sb, ctx, i, { since }) => rowSince(sb, 'golf_documents', { team_id: ctx.team_id, title: i.title }, since),

@@ -63,6 +63,54 @@ export interface ChatScreenEcho {
   label: string;
 }
 
+/** What kind of work a step is: it chooses the step's mark in the thread. */
+export type ChatStepKind = 'read' | 'find' | 'compare' | 'calculate' | 'visual' | 'draft' | 'check';
+/** Someone or something a step is about. Only ever a player from the caller's own roster, the caller's team, or a round the caller's own read returned. */
+export interface ChatStepSubject {
+  kind: 'player' | 'team' | 'round' | 'event' | 'qualifier' | 'tournament' | 'plan' | 'document';
+  id: string;
+  label: string;
+  /** A face for the subject, only when the tool that declared it already holds one the caller may see. The engine never looks one up. */
+  avatar_url?: string | null;
+}
+/**
+ * A step of work: the data of a `data-progress` part (part id = the step's id, stable for the step's life). Every field but
+ * `label` and `tool` is optional, so a row stored before a field existed still draws. Nothing in it is estimated.
+ */
+export interface ChatStep {
+  /** The step in people's words while it runs ("Reading Eli's last 8 rounds"). */
+  label: string;
+  /** The tool's name, or `code_execution` for the model's code, or `note` for a progress note. Never drawn. */
+  tool: string;
+  /** `waiting`: really queued, not yet started. `active`: running. Absent on a row stored before states were sent while running. */
+  state?: 'waiting' | 'active' | 'done' | 'failed';
+  /** (older name of `done_label`, kept on the part for screens that read it) */
+  done?: string;
+  /** The label once finished, when it differs. */
+  done_label?: string;
+  /** A few words on what it found ("38 rounds"). */
+  detail?: string;
+  picture?: unknown;
+  kind?: ChatStepKind;
+  /** The step this one ran under: a read the model's code called names the code's step. */
+  parent_id?: string;
+  /** Who it is about, in the order they became known, twelve at most. Re-sent whole when it grows. */
+  subjects?: readonly ChatStepSubject[];
+  /** How many more it is about than `subjects` lists. Absent when `subjects` is all of them. */
+  subjects_more?: number;
+  /** What it has counted. `more: true` while it is still counting. */
+  count?: { n: number; unit: string; more: boolean };
+  /** How much of a known whole it has covered ("9 of 12 players"). */
+  covers?: { n: number; of: number; unit: string };
+  /** The read it produced, openable from the moment the step is done. */
+  evidence_ref?: string;
+  /** Clock readings (ISO). */
+  started_at?: string;
+  ended_at?: string;
+  /** The turn's sequence number of the last event that changed this step. Rises by one with every step event of the turn. */
+  seq?: number;
+}
+
 /**
  * `data-draft`: a draft while the model writes it, in the live thread (part id `draft-<id>`). It is removed when the draft is
  * accepted (what it became takes its place) and kept as `failed` when it is not. Never replayed on reload.
@@ -95,6 +143,10 @@ export interface ChatTurnMeta {
   duration_ms: number;
   /** Reads the turn finished, failed ones included. */
   reads: number;
+  /** Steps of work the turn had (reads, calculations, drafts), over every request that worked on it. Absent on a turn stored before steps were counted. */
+  steps?: number;
+  /** For how long at least one step was running. Not the turn's duration: the model's own time and any wait on the coach are not in it. */
+  working_ms?: number;
   /** The model declined to answer and the words are the app's sentence. */
   declined?: true;
 }
@@ -135,9 +187,33 @@ export interface ChatCardRevision {
   reason?: string;
 }
 
+/**
+ * What to ask next, under a finished answer (`engine/suggestions.ts`): two to four, written after the turn is done. Tapping one sends
+ * its `prompt` as the coach's next message and nothing else: a suggestion runs nothing, and an action it leads to is planned, shown
+ * and confirmed like any other. They belong to the LAST answer only: once a newer message exists they are history and are not drawn.
+ */
+export interface ChatSuggestion {
+  /** A few words for the chip. */
+  label: string;
+  /** What is sent as the next message when it is tapped. */
+  prompt: string;
+  /** `read`: a follow-up about the data. `compare`: the same thing against someone or something else. `action`: something to set up. */
+  kind: 'read' | 'compare' | 'action';
+}
+export const SUGGESTIONS_PART = 'data-suggestions' as const;
+const isSuggestion = (value: unknown): value is ChatSuggestion => {
+  const s = value as Partial<ChatSuggestion> | null;
+  return Boolean(s) && typeof s!.label === 'string' && typeof s!.prompt === 'string' && (s!.kind === 'read' || s!.kind === 'compare' || s!.kind === 'action');
+};
+/** The suggestions a message carries; none when it has none, or when what is stored is not in the shape. */
+export function suggestionsOf(parts: readonly ChatUIPart[]): ChatSuggestion[] {
+  const items = (parts.find((p) => p.type === SUGGESTIONS_PART)?.data as { items?: unknown } | undefined)?.items;
+  return Array.isArray(items) ? items.filter(isSuggestion) : [];
+}
+
 export function turnMetaOf(parts: readonly ChatUIPart[]): ChatTurnMeta | null {
   const data = parts.find((p) => p.type === TURN_META_PART)?.data as Partial<ChatTurnMeta> | undefined;
-  return data && typeof data.started_at === 'string' && typeof data.duration_ms === 'number' ? { started_at: data.started_at, duration_ms: data.duration_ms, reads: typeof data.reads === 'number' ? data.reads : 0, ...(data.declined ? { declined: true as const } : {}) } : null;
+  return data && typeof data.started_at === 'string' && typeof data.duration_ms === 'number' ? { started_at: data.started_at, duration_ms: data.duration_ms, reads: typeof data.reads === 'number' ? data.reads : 0, ...(typeof data.steps === 'number' ? { steps: data.steps } : {}), ...(typeof data.working_ms === 'number' ? { working_ms: data.working_ms } : {}), ...(data.declined ? { declined: true as const } : {}) } : null;
 }
 
 export type ChatEvent =
@@ -151,12 +227,19 @@ export type ChatEvent =
   | { type: 'text_delta'; delta: string }
   /** The words of the step in progress are withdrawn (the model declined mid-sentence). Rare. */
   | { type: 'text_discard' }
-  /** A read or a draft has started: the progress row. `label` is for people; `tool` is kept for the stored part's shape and is never drawn. */
-  | { type: 'read_started'; id: string; label: string; tool: string }
+  /**
+   * A step has started (or, with `state: 'waiting'`, is really queued): the progress row. `label` is for people; `tool` is kept for
+   * the stored part's shape and is never drawn. The step fields are those of `ChatStep`. `seq` is the turn's sequence number: it
+   * rises by one with every step event (`read_started`, `step_update`, `read_finished`, `note`), so a screen can tell their order and
+   * that it has missed none; each change of a step's state is sent exactly once.
+   */
+  | ({ type: 'read_started'; id: string; label: string; tool: string; state?: 'waiting' | 'active' } & StepFields)
+  /** A running step has learned something: who it is about, how much it has counted or covered, or a truer label. Only the fields that changed; `subjects` whole. */
+  | ({ type: 'step_update'; id: string; label?: string } & StepFields)
   /** `detail`: a few words on what was read ("38 rounds"). `picture`: a small drawing for the row, in the shape the thread's read pictures take. */
-  | { type: 'read_finished'; id: string; label: string; tool: string; state: 'done' | 'failed'; detail?: string; picture?: unknown }
+  | ({ type: 'read_finished'; id: string; label: string; tool: string; state: 'done' | 'failed'; detail?: string; picture?: unknown; done_label?: string } & StepFields)
   /** A short progress note in the model's own words (never its reasoning). Drawn as a finished progress row. */
-  | { type: 'note'; id: string; text: string }
+  | { type: 'note'; id: string; text: string; seq?: number }
   /**
    * A draft as the model writes it (a tool whose input is a draft: `ToolBase.draft`). `id` is the same for every event of one
    * draft. `fields`: the fields that changed since the last event, each with its WHOLE value so far (a list: its finished items;
@@ -181,11 +264,32 @@ export type ChatEvent =
    * failed, and so this one was not run: nothing was written for it. Its held receipt is withdrawn with it.
    */
   | { type: 'decision_reopened'; key: string; reason: 'batch_stopped' }
-  | { type: 'usage'; input_tokens: number; output_tokens: number; cache_read_input_tokens: number }
+  /**
+   * `features_dropped`: sent only when the turn could not run as configured: the request feature groups the API rejected and the
+   * turn went on without (`engine/model.ts`, `FEATURE_GROUPS`). For the eval and the log, never drawn.
+   */
+  /** `input_tokens` is every prompt token of the turn's calls; `cache_read_input_tokens` and `cache_creation_input_tokens` are the parts of it read from and written to the cache. */
+  | { type: 'usage'; input_tokens: number; output_tokens: number; cache_read_input_tokens: number; cache_creation_input_tokens?: number; features_dropped?: string[] }
   /** A sentence a coach can act on. Never provider text. */
   | { type: 'error'; message: string; action: ChatErrorAction; kind?: ChatErrorKind }
-  /** Last event of every response. `duration_ms`: what this request took. */
-  | { type: 'done'; status: ChatTurnStatus; duration_ms?: number };
+  /**
+   * The turn is over: the coach can ask the next thing. `duration_ms`: what this request took. `work`: the turn's steps and for how
+   * long at least one was running (`duration_ms` is the whole turn, the model's own time included). The last event of a response,
+   * except that one `suggestions` event may follow it.
+   */
+  | { type: 'done'; status: ChatTurnStatus; duration_ms?: number; work?: { steps: number; working_ms: number } }
+  /**
+   * What to ask next, for the answer this response wrote. The ONE event that may come after `done` (a second or two after, on a
+   * turn that completed; never on a turn that waits, failed, was stopped or was declined), so nothing waits on it. Stored with the
+   * turn as a `data-suggestions` part. An empty list withdraws them.
+   */
+  | { type: 'suggestions'; items: ChatSuggestion[] };
+
+/** The facts a step event may carry beyond its label. All optional. */
+type StepFields = Pick<ChatStep, 'kind' | 'parent_id' | 'subjects' | 'subjects_more' | 'count' | 'covers' | 'evidence_ref' | 'started_at' | 'ended_at' | 'seq'>;
+const STEP_FIELDS = ['kind', 'parent_id', 'subjects', 'subjects_more', 'count', 'covers', 'evidence_ref', 'started_at', 'ended_at', 'seq'] as const;
+/** The step facts an event carries, and nothing else of it. */
+const stepFieldsOf = (event: StepFields): StepFields => Object.fromEntries(STEP_FIELDS.flatMap((k) => (event[k] === undefined ? [] : [[k, event[k]]]))) as StepFields;
 
 export const CHAT_STREAM_CONTENT_TYPE = 'text/event-stream; charset=utf-8';
 
@@ -257,19 +361,38 @@ export function applyChatEvent(message: ChatUIMessage, event: ChatEvent): ChatUI
       const last = parts[parts.length - 1];
       return last && last.type === 'text' ? { ...message, parts: parts.slice(0, -1) } : message;
     }
-    case 'read_started':
-      return { ...message, parts: upsertDataPart(parts, { type: 'data-progress', id: event.id, data: { label: event.label, tool: event.tool } }) };
-    case 'read_finished':
-      return {
-        ...message,
-        parts: upsertDataPart(parts, {
-          type: 'data-progress',
-          id: event.id,
-          data: { label: event.label, tool: event.tool, state: event.state, done: event.label, ...(event.detail ? { detail: event.detail } : {}), ...(event.picture === undefined || event.picture === null ? {} : { picture: event.picture }) },
-        }),
+    case 'read_started': {
+      const data: ChatStep = { label: event.label, tool: event.tool, ...(event.state ? { state: event.state } : {}), ...stepFieldsOf(event) };
+      return { ...message, parts: upsertDataPart(parts, { type: 'data-progress', id: event.id, data }) };
+    }
+    case 'step_update': {
+      const row = parts.find((p) => p.type === 'data-progress' && p.id === event.id);
+      if (!row) return message;
+      const data: ChatStep = { ...(row.data as ChatStep), ...(event.label ? { label: event.label } : {}), ...stepFieldsOf(event) };
+      return { ...message, parts: upsertDataPart(parts, { type: 'data-progress', id: event.id, data }) };
+    }
+    case 'read_finished': {
+      // What the step said about itself while it ran (who it is about, when it began) stays on the finished row.
+      const earlier = parts.find((p) => p.type === 'data-progress' && p.id === event.id)?.data as ChatStep | undefined;
+      const data: ChatStep = {
+        ...(earlier ? stepFieldsOf(earlier) : {}),
+        label: event.label,
+        tool: event.tool,
+        state: event.state,
+        done: event.done_label ?? event.label,
+        ...(event.done_label ? { done_label: event.done_label } : {}),
+        ...(event.detail ? { detail: event.detail } : {}),
+        ...(event.picture === undefined || event.picture === null ? {} : { picture: event.picture }),
+        ...stepFieldsOf(event),
       };
-    case 'note':
-      return event.text.trim() ? { ...message, parts: upsertDataPart(parts, { type: 'data-progress', id: event.id, data: { label: event.text.trim(), tool: 'note', state: 'done', done: event.text.trim() } }) } : message;
+      return { ...message, parts: upsertDataPart(parts, { type: 'data-progress', id: event.id, data }) };
+    }
+    case 'note': {
+      const words = event.text.trim();
+      if (!words) return message;
+      const data: ChatStep = { label: words, tool: 'note', state: 'done', done: words, ...(event.seq === undefined ? {} : { seq: event.seq }) };
+      return { ...message, parts: upsertDataPart(parts, { type: 'data-progress', id: event.id, data }) };
+    }
     case 'evidence':
     case 'visual':
     case 'proposal':
@@ -305,6 +428,11 @@ export function applyChatEvent(message: ChatUIMessage, event: ChatEvent): ChatUI
       // A finished draft gives way to what it became (the card, the read). A failed one stays, saying so.
       if (event.state === 'done') return { ...message, parts: parts.filter((_, i) => i !== at) };
       return { ...message, parts: parts.map((p, i) => (i === at ? { ...p, data: { ...(p.data as ChatDraft), open: null, state: 'failed' } } : p)) };
+    }
+    case 'suggestions': {
+      const items = event.items.filter(isSuggestion);
+      if (items.length === 0) return parts.some((p) => p.type === SUGGESTIONS_PART) ? { ...message, parts: parts.filter((p) => p.type !== SUGGESTIONS_PART) } : message;
+      return { ...message, parts: upsertDataPart(parts, { type: SUGGESTIONS_PART, id: 'suggestions', data: { items } }) };
     }
     case 'decision_reopened': {
       if (!parts.some((p) => isDecisionPartFor(p, event.key))) return message;
@@ -359,6 +487,11 @@ export function eventsForStoredParts(parts: readonly ChatUIPart[]): ChatEvent[] 
   for (const part of parts) {
     if (part.type === 'text') {
       events.push({ type: 'text_delta', delta: String(part.text ?? '') });
+      continue;
+    }
+    if (part.type === SUGGESTIONS_PART) {
+      const items = suggestionsOf([part]);
+      if (items.length > 0) events.push({ type: 'suggestions', items });
       continue;
     }
     if (part.type.startsWith('data-') && part.type !== 'data-progress') {

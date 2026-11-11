@@ -5,12 +5,13 @@
  * (with and without the held columns), the action ledger and the Undo hold. Only the model, the database, the tool set
  * and the session are stand-ins (helpers.ts).
  */
+import Anthropic from '@anthropic-ai/sdk';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { asTools, cited, codeToolUse, fakeDb, fakeModel, fallbackHop, linesTool, progressNote, newToolLog, readEvents, readTool, rejected, serverCode, taskTool, text, textOf, thinking, toolUse, type FakeDb, type FakeModel, type ToolLog } from './helpers';
 import type { ChatTool, ReadTool, TaskTool } from '@/lib/coachhelm/v3/chat/engine/tool';
-import type { ChatEvent } from '@/lib/coachhelm/v3/chat/engine/protocol';
+import { applyChatEvent, type ChatEvent, type ChatUIMessage } from '@/lib/coachhelm/v3/chat/engine/protocol';
 
 vi.mock('server-only', () => ({}));
 
@@ -20,6 +21,8 @@ const h = vi.hoisted(() => ({
   model: null as unknown,
   modelFactory: null as null | (() => unknown),
   features: null as unknown,
+  /** Off for the suite: the call for what to ask next is one more model call after every completed coach turn. Its own tests turn it on. */
+  suggestions: false,
   modelId: null as string | null,
   notes: null as null | { tone: 'straight' | 'detailed' | 'team_talk'; facts: Array<{ id: string; text: string }> },
   clubhouse: true,
@@ -94,7 +97,7 @@ vi.mock('@/lib/coachhelm/v3/chat/engine/model', async (original) => {
   type Surface = 'ask' | 'quick_chat' | 'practice_helper' | 'player';
   // `h.model_id` runs every surface on one model, as the engine's own override constant does for the eval.
   const profileFor = (surface?: Surface) => real.profileFor(surface, (h.modelId as 'claude-sonnet-5-5' | 'claude-haiku-5-5' | null) ?? null);
-  return { ...real, anthropicModelClient: () => (h.modelFactory ? h.modelFactory() : h.model), profileFor, chatFeatures: (surface?: Surface) => h.features ?? profileFor(surface).features };
+  return { ...real, anthropicModelClient: () => (h.modelFactory ? h.modelFactory() : h.model), profileFor, chatFeatures: (surface?: Surface) => ({ ...((h.features as typeof real.CHAT_FEATURES | null) ?? profileFor(surface).features), ...(h.suggestions ? {} : { suggestions: false }) }) };
 });
 // The real hold, with a 250 ms window instead of 8 s so a test can watch it release.
 const HOLD_MS = 250;
@@ -107,6 +110,9 @@ vi.mock('@/lib/coachhelm/v3/chat/undo-hold', async (original) => {
 
 import { POST } from '../route';
 import { restoreUIMessages } from '@/lib/coachhelm/v3/chat/restore';
+import { resetPlayerLedgerFault } from '@/lib/coachhelm/v3/chat/player-turn';
+import { resetLedgerTasks } from '@/lib/coachhelm/v3/chat/ledger';
+import { recordSpend } from '@/lib/coachhelm/v3/llm/budget';
 import { CHAT_FEATURES, MissingModelKeyError, plainFeatures } from '@/lib/coachhelm/v3/chat/engine/model';
 import { cancelHeld } from '@/lib/coachhelm/v3/chat/undo-hold';
 import { listConversations, resetSurfaceColumnCheck } from '@/lib/coachhelm/v3/chat/persistence';
@@ -126,6 +132,7 @@ let turn = 0;
 
 function setup(opts: { modelColumns?: boolean; holdColumn?: boolean; surfaceColumn?: boolean } = {}) {
   resetSurfaceColumnCheck();
+  resetLedgerTasks();
   db = fakeDb(opts);
   h.db = db;
   h.admin = fakeDb();
@@ -133,6 +140,7 @@ function setup(opts: { modelColumns?: boolean; holdColumn?: boolean; surfaceColu
   h.role = 'coach';
   h.modelFactory = null;
   h.features = null;
+  h.suggestions = false;
   h.modelId = null;
   h.notes = null;
   h.clubhouse = true;
@@ -231,18 +239,19 @@ describe('a plain answer', () => {
       { type: 'text', text: 'TEAM BLOCK', cache_control: { type: 'ephemeral' } },
     ]);
     expect(request.cache_control).toEqual({ type: 'ephemeral' });
-    // A coach's reads may be called from the model's code, so they cannot be strict (the engine validates every input itself);
-    // a task is direct-only and strict; the code tool is last.
+    // A coach's reads may be called from the model's code; a task is direct-only; no tool is strict (the engine validates
+    // every input itself); the code tool is last.
     expect((request.tools as Array<{ name: string; eager_input_streaming?: boolean; strict?: boolean; allowed_callers?: string[] }>).map((t) => [t.name, t.eager_input_streaming ?? null, t.strict ?? null, t.allowed_callers?.length ?? 0])).toEqual([
       ['get_player_stats', true, null, 2],
       ['get_team_stats', true, null, 2],
-      ['create_focus_area', true, true, 0],
+      ['create_focus_area', true, null, 0],
       ['get_rounds', true, null, 2],
       ['get_round', true, null, 2],
       ['find_in_app', true, null, 2],
       ['code_execution', null, null, 0],
     ]);
-    expect((request.tools as Array<{ name: string; input_schema?: { additionalProperties?: boolean } }>).find((t) => t.name === 'create_focus_area')!.input_schema!.additionalProperties).toBe(false);
+    // The schema goes as the tool wrote it (no strict transform): the engine's own check is what holds an input to it.
+    expect((request.tools as Array<{ name: string; input_schema?: unknown }>).find((t) => t.name === 'create_focus_area')!.input_schema).toEqual({ type: 'object', properties: { title: { type: 'string', minLength: 1 } }, required: ['title'] });
   });
 
   it('the next question replays the stored messages, thinking included, and appends', async () => {
@@ -533,34 +542,151 @@ describe('what a read tells the model, and how an answer points back at it', () 
 });
 
 describe('the optional request features', () => {
-  it('a request the API rejects is sent once more as a plain request, the turn completes, and the rejection is logged to be fixed', async () => {
-    const model = script({ content: [], reject: rejected() }, { content: [toolUse('tu_1', 'get_team_stats', {})] }, { content: [text('74.2.')] });
+  const ALL_BETAS = ['thinking-binding-controls-2026-08-01', 'thinking-display-updates-2026-08-18', 'compact-2026-01-12', 'server-side-fallback-2026-07-01'];
+  const strictOf = (request: FakeModel['requests'][number]) => (request.tools as Array<{ name: string; strict?: boolean }>).filter((t) => t.strict).map((t) => t.name);
+  const usageOf = (events: ChatEvent[]) => events.find((e) => e.type === 'usage') as { features_dropped?: string[] };
+  const degradedLogs = () => h.logServerError.mock.calls.map((c) => c as unknown[]).filter((c) => (c[1] as { action?: string })?.action === 'v3.chat.stream.degraded');
+  const turnLogExtra = () => (h.logServerEvent.mock.calls.map((c) => c as unknown[]).find((c) => c[0] === 'chat/stream: turn')![1] as { extra: { degraded: boolean; featuresDropped: string[] } }).extra;
+  const ledgerRows = () => ((h.admin as unknown as FakeDb).tables.golf_coachhelm_llm_calls ?? []) as Array<{ citations: { features_dropped?: string[] } | null }>;
+
+  it('a request the API rejects gives up the ONE feature its message names, the turn completes with everything else on, and the rejection is logged with the API’s own words', async () => {
+    const model = script({ content: [], reject: rejected('fallbacks: Input should be a valid list') }, { content: [toolUse('tu_1', 'get_team_stats', {})] }, { content: [text('74.2.')] });
     const { events } = await ask('How is the team scoring?');
 
     expect(done(events)?.status).toBe('complete');
     expect(textOf(events)).toBe('74.2.');
     expect(events.some((e) => e.type === 'error')).toBe(false);
     expect(model.requests).toHaveLength(3);
-    expect(model.requests[0]!.betas).toEqual(['thinking-binding-controls-2026-08-01', 'thinking-display-updates-2026-08-18', 'compact-2026-01-12', 'server-side-fallback-2026-07-01']);
-    // The retry, and every later call of the turn, carries no beta and nothing a beta or `strict` added.
+    // As configured, the request carried the refusal fallback and its header; no tool was strict.
+    expect(model.requests[0]!.betas).toEqual(ALL_BETAS);
+    expect(model.requests[0]!.fallbacks).toBe('default');
+    expect(strictOf(model.requests[0]!)).toEqual([]);
+    // The retry, and every later call of the turn, has no fallback and is otherwise the same request, tools included.
     for (const request of model.requests.slice(1)) {
-      expect(request).not.toHaveProperty('betas');
       expect(request).not.toHaveProperty('fallbacks');
-      expect(request).not.toHaveProperty('context_management');
-      expect(request.thinking).toEqual({ type: 'adaptive' });
-      expect((request.tools as Array<{ strict?: boolean }>).some((t) => t.strict !== undefined)).toBe(false);
-      // The plain request has no code tool either, and no read says it may be called from code.
-      expect(JSON.stringify(request.tools)).not.toMatch(/code_execution|allowed_callers/);
-      // What is not optional is unchanged.
+      expect(request.betas).toEqual(ALL_BETAS.filter((beta) => beta !== 'server-side-fallback-2026-07-01'));
+      expect(JSON.stringify(request.tools)).toBe(JSON.stringify(model.requests[0]!.tools));
+      expect(JSON.stringify(request.system)).toBe(JSON.stringify(model.requests[0]!.system));
+      expect(request.context_management).toEqual({ edits: [{ type: 'compact_20260112' }] });
+      expect(request.thinking).toEqual({ type: 'adaptive', block_binding: { prefix_mismatch_behavior: 'drop_block' }, display: 'updates' });
+      expect(JSON.stringify(request.tools)).toMatch(/code_execution_20260120/);
+      expect((request.tools as Array<{ name: string }>).map((t) => t.name)).toEqual((model.requests[0]!.tools as Array<{ name: string }>).map((t) => t.name));
       expect(request.model).toBe('claude-sonnet-5-5');
       expect(request.output_config).toEqual({ effort: 'medium' });
       expect(request.messages.slice(0, 2)).toEqual([{ role: 'user', content: 'How is the team scoring?' }, sys]);
     }
-    const logged = h.logServerError.mock.calls.map((c) => c as unknown[]).find((c) => (c[1] as { action?: string })?.action === 'v3.chat.stream.degraded');
-    expect(logged).toBeTruthy();
-    expect(logged![2]).toBe('error');
-    const turnLog = h.logServerEvent.mock.calls.map((c) => c as unknown[]).find((c) => c[0] === 'chat/stream: turn');
-    expect((turnLog![1] as { extra: { degraded: boolean } }).extra.degraded).toBe(true);
+    // One log line, an error to be fixed, and the reason is in the line itself: the status, the type, what was given up, what the API said.
+    const logged = degradedLogs();
+    expect(logged).toHaveLength(1);
+    expect(logged[0]![0]).toBe('chat/stream: the API rejected a request (400 invalid_request_error) and it was sent again without refusal_fallback: fallbacks: Input should be a valid list');
+    expect(logged[0]![1]).toMatchObject({ errorCode: 'chat_feature_rejected', handled: true, extra: { dropped: 'refusal_fallback', alreadyDropped: [], status: 400, errorType: 'invalid_request_error', model: 'claude-sonnet-5-5' } });
+    expect(logged[0]![2]).toBe('error');
+    // Nothing of the request is in it.
+    expect(JSON.stringify(logged[0])).not.toContain('How is the team scoring');
+    // The turn says what it ran without: on the wire (names only), in its log line and in its ledger row.
+    expect(usageOf(events).features_dropped).toEqual(['refusal_fallback']);
+    expect(JSON.stringify(events)).not.toContain('Input should be a valid list');
+    expect(turnLogExtra()).toMatchObject({ degraded: true, featuresDropped: ['refusal_fallback'] });
+    expect(ledgerRows()).toHaveLength(1);
+    expect(ledgerRows()[0]!.citations).toMatchObject({ features_dropped: ['refusal_fallback'] });
+  });
+
+  it('no tool is sent strict, and every request of a turn carries the same tool definitions and system blocks, so the prefix is written once', async () => {
+    // 11 Nov 2026, live: twenty strict tools were answered "The compiled grammar is too large", and the retry without them rewrote the prefix.
+    const model = script({ content: [toolUse('tu_1', 'get_team_stats', {})] }, { content: [toolUse('tu_2', 'get_team_stats', {})] }, { content: [text('74.2.')] });
+    const { events } = await ask('How is the team scoring?');
+    expect(done(events)?.status).toBe('complete');
+    expect(model.requests).toHaveLength(3);
+    for (const request of model.requests) {
+      expect(strictOf(request)).toEqual([]);
+      expect(JSON.stringify(request.tools)).not.toContain('"strict"');
+      expect(JSON.stringify(request.tools)).toBe(JSON.stringify(model.requests[0]!.tools));
+      expect(JSON.stringify(request.system)).toBe(JSON.stringify(model.requests[0]!.system));
+      expect(request.betas).toEqual(ALL_BETAS);
+      expect(request.tool_choice).toEqual({ type: 'auto' });
+    }
+    expect(degradedLogs()).toEqual([]);
+    expect(usageOf(events)).not.toHaveProperty('features_dropped');
+  });
+
+  it('a turn that runs as configured says nothing was given up: no field on the wire, none in the ledger row', async () => {
+    script({ content: [text('74.2.')] });
+    const { events } = await ask('How is the team scoring?');
+    expect(done(events)?.status).toBe('complete');
+    expect(usageOf(events)).not.toHaveProperty('features_dropped');
+    // The turn's tokens: every prompt token, and the parts of it read from and written to the cache.
+    expect(usageOf(events)).toMatchObject({ input_tokens: 1000, output_tokens: 20, cache_read_input_tokens: 900, cache_creation_input_tokens: 0 });
+    expect(degradedLogs()).toEqual([]);
+    expect(turnLogExtra()).toMatchObject({ degraded: false, featuresDropped: [] });
+    expect(JSON.stringify(ledgerRows()[0])).not.toContain('features_dropped');
+  });
+
+  it('a rejection that names nothing gives the features up one at a time, in order, down to the plain request', async () => {
+    const order = ['progress_notes', 'refusal_fallback', 'compaction', 'programmatic_reads', 'thinking_binding'];
+    const model = script(...order.map(() => ({ content: [], reject: rejected('messages.1: something the request does not say') })), { content: [text('74.2.')] });
+    const { events } = await ask('How is the team scoring?');
+
+    expect(done(events)?.status).toBe('complete');
+    expect(textOf(events)).toBe('74.2.');
+    expect(model.requests).toHaveLength(6);
+    expect(usageOf(events).features_dropped).toEqual(order);
+    expect(degradedLogs().map((c) => (c[1] as { extra: { dropped: string } }).extra.dropped)).toEqual(order);
+    expect((degradedLogs()[2]![1] as { extra: { alreadyDropped: string[] } }).extra.alreadyDropped).toEqual(['progress_notes', 'refusal_fallback']);
+    // Each rung drops one thing and keeps the rest.
+    expect(model.requests[1]!.betas).toEqual(['thinking-binding-controls-2026-08-01', 'compact-2026-01-12', 'server-side-fallback-2026-07-01']);
+    expect(model.requests[1]!.thinking).toEqual({ type: 'adaptive', block_binding: { prefix_mismatch_behavior: 'drop_block' } });
+    expect(model.requests[2]).not.toHaveProperty('fallbacks');
+    expect(model.requests[2]!.context_management).toBeDefined();
+    expect(model.requests[3]).not.toHaveProperty('context_management');
+    expect(JSON.stringify(model.requests[3]!.tools)).toMatch(/code_execution_20260120/);
+    // Until the code tool goes, the tools are the same bytes on every rung: no tool is strict, so nothing else rewrites them.
+    for (const request of model.requests.slice(0, 4)) expect(JSON.stringify(request.tools)).toBe(JSON.stringify(model.requests[0]!.tools));
+    expect(JSON.stringify(model.requests[4]!.tools)).not.toMatch(/code_execution|allowed_callers/);
+    expect(model.requests[4]!.betas).toEqual(['thinking-binding-controls-2026-08-01']);
+    // The last request carries no beta and nothing a beta added. What is not optional is unchanged.
+    const plain = model.requests[5]!;
+    expect(plain).not.toHaveProperty('betas');
+    expect(plain).not.toHaveProperty('fallbacks');
+    expect(plain).not.toHaveProperty('context_management');
+    expect(plain.thinking).toEqual({ type: 'adaptive' });
+    expect((plain.tools as Array<{ strict?: boolean }>).some((t) => t.strict !== undefined)).toBe(false);
+    expect(plain.model).toBe('claude-sonnet-5-5');
+    expect(plain.output_config).toEqual({ effort: 'medium' });
+    expect(plain.messages.slice(0, 2)).toEqual([{ role: 'user', content: 'How is the team scoring?' }, sys]);
+  });
+
+  it('when the plain request is rejected too the turn fails with a sentence, and nothing is tried twice', async () => {
+    const model = script(...Array.from({ length: 6 }, () => ({ content: [], reject: rejected('messages: invalid') })));
+    const { events } = await ask('How is the team scoring?');
+    expect(model.requests).toHaveLength(6);
+    expect(done(events)?.status).toBe('failed');
+    expect((events.find((e) => e.type === 'error') as { message: string }).message).not.toContain('invalid');
+    expect(usageOf(events).features_dropped).toHaveLength(5);
+  });
+
+  it('a rejection that carries the API’s own error code (an account, billing or key fault) gives up nothing and is not retried', async () => {
+    const held = Anthropic.APIError.generate(400, { type: 'error', error: { type: 'invalid_request_error', message: 'The organization is on hold.', details: { error_code: 'organization_on_hold' } } }, undefined, new Headers());
+    const model = script({ content: [], reject: held });
+    const { events } = await ask('How is the team scoring?');
+    expect(model.requests).toHaveLength(1);
+    expect(done(events)?.status).toBe('failed');
+    expect(degradedLogs()).toEqual([]);
+    expect(usageOf(events)).not.toHaveProperty('features_dropped');
+  });
+
+  it('a player’s rejected request gives up its own groups: the turn answers and its ledger row says what it ran without', async () => {
+    h.role = 'player';
+    const model = script({ content: [], reject: rejected('context_management: Extra inputs are not permitted') }, { content: [text('You are averaging 73.1.')] });
+    const { events } = await ask('How am I scoring?');
+    expect(done(events)?.status).toBe('complete');
+    expect(model.requests[0]!.betas).toEqual(['thinking-binding-controls-2026-08-01', 'compact-2026-01-12']);
+    expect(strictOf(model.requests[0]!)).toEqual([]);
+    expect(model.requests[0]!.context_management).toBeDefined();
+    expect(model.requests[1]).not.toHaveProperty('context_management');
+    expect(model.requests[1]!.betas).toEqual(['thinking-binding-controls-2026-08-01']);
+    expect(JSON.stringify(model.requests[1]!.tools)).toBe(JSON.stringify(model.requests[0]!.tools));
+    expect(usageOf(events).features_dropped).toEqual(['compaction']);
+    expect(ledgerRows()[0]!.citations).toMatchObject({ features_dropped: ['compaction'] });
   });
 
   it('a plain request that is rejected is not retried: the coach gets a sentence and the turn is stored failed', async () => {
@@ -728,17 +854,17 @@ describe('the model’s code calling the reads (on for a coach, off for a player
     await ask('How am I scoring?');
     const tools = player.requests[0]!.tools as Array<{ name: string; strict?: boolean; allowed_callers?: string[] }>;
     expect(tools.map((t) => t.name)).toEqual(['get_my_stats', 'create_focus_area']);
-    expect(tools.every((t) => t.strict === true && t.allowed_callers === undefined)).toBe(true);
+    expect(tools.every((t) => t.strict === undefined && t.allowed_callers === undefined)).toBe(true);
   });
 
-  it('with it off the request has no code tool, every tool is strict, and the turn works the same', async () => {
+  it('with it off the request has no code tool, no tool the code may call, still no strict tool, and the turn works the same', async () => {
     h.features = { ...CHAT_FEATURES, programmaticReads: false };
     const model = script({ content: [toolUse('tu_1', 'get_team_stats', {})] }, { content: [text('74.2.')] });
     const { events } = await ask('How is the team scoring?');
     expect(done(events)?.status).toBe('complete');
     const tools = model.requests[0]!.tools as Array<{ name: string; strict?: boolean; allowed_callers?: string[] }>;
     expect(tools.some((t) => t.name === 'code_execution')).toBe(false);
-    expect(tools.every((t) => t.strict === true && t.allowed_callers === undefined)).toBe(true);
+    expect(tools.every((t) => t.strict === undefined && t.allowed_callers === undefined)).toBe(true);
   });
 
   it('a read the code calls is validated, runs as the signed-in coach, and is still a row, a piece of evidence and a stored read', async () => {
@@ -756,7 +882,7 @@ describe('the model’s code calling the reads (on for a coach, off for a player
     expect(rows).toEqual(['read_started:code_execution', 'read_started:get_team_stats', 'read_finished:get_team_stats', 'read_finished:code_execution']);
     // The code's row is named for what it is doing, and closes saying how many reads it covered.
     expect(events.find((e) => e.type === 'read_started' && e.tool === 'code_execution')).toMatchObject({ label: 'Working out the figures' });
-    expect(events.find((e) => e.type === 'read_finished' && e.tool === 'code_execution')).toMatchObject({ label: 'Working out the figures', detail: '1 read', state: 'done' });
+    expect(events.find((e) => e.type === 'read_finished' && e.tool === 'code_execution')).toMatchObject({ label: 'Working out the figures', done_label: 'Worked out the figures', detail: '1 read', state: 'done' });
     // And a part records what the run worked from. No method: the code did not begin with one.
     const computed = events.filter((e) => e.type === 'part' && e.part.type === 'data-computed') as Array<{ part: { id: string; data: unknown } }>;
     expect(computed.map((e) => e.part.data)).toEqual([{ refs: ['e2'], reads: 1, players: 0, window: null }]);
@@ -788,16 +914,31 @@ describe('the model’s code calling the reads (on for a coach, off for a player
     h.toolsFor.mockImplementation(() => asTools(stats, readTool('get_team_stats', log, 74.2)));
     const code = "# Method: Averaged each player's putts per round over their last 8 rounds, then ranked them\nrows = [await get_player_stats({'player_id': p}) for p in players]";
     script(
-      { content: [serverCode('srvtoolu_1', code), codeToolUse('tu_1', 'get_player_stats', { player_id: 'p1' }), codeToolUse('tu_2', 'get_player_stats', { player_id: 'p2' }), codeToolUse('tu_3', 'get_player_stats', { player_id: 'p1' })], container: 'container_1' },
+      { content: [serverCode('srvtoolu_1', code), codeToolUse('tu_1', 'get_player_stats', { player_id: 'player-a' }), codeToolUse('tu_2', 'get_player_stats', { player_id: 'player-b' }), codeToolUse('tu_3', 'get_player_stats', { player_id: 'player-a' })], container: 'container_1' },
       { content: [{ type: 'code_execution_tool_result', tool_use_id: 'srvtoolu_1', content: { type: 'code_execution_result', stdout: '30.1', stderr: '', return_code: 0, content: [] } } as never, text('Avery putts best.')] },
     );
     const { events } = await ask('Who putts best?');
 
     const codeRows = events.filter((e) => (e.type === 'read_started' || e.type === 'read_finished') && e.tool === 'code_execution') as Array<{ type: string; id: string; label: string; detail?: string }>;
-    // One row, renamed exactly once, when a read showed a second player.
-    expect(codeRows.map((e) => `${e.type}:${e.label}`)).toEqual(['read_started:Working out the figures', 'read_started:Working it out across the team', 'read_finished:Working it out across the team']);
+    // One row, started and finished once each, and renamed exactly once (an update to the running step), when a read showed a second player.
+    expect(codeRows.map((e) => `${e.type}:${e.label}`)).toEqual(['read_started:Working out the figures', 'read_finished:Working it out across the team']);
     expect(new Set(codeRows.map((e) => e.id)).size).toBe(1);
     expect(codeRows.at(-1)).toMatchObject({ detail: '3 reads' });
+    const updates = events.filter((e) => e.type === 'step_update') as Array<{ id: string; label?: string; count?: unknown; covers?: unknown; subjects?: Array<{ label: string }> }>;
+    expect(updates.every((u) => u.id === codeRows[0]!.id)).toBe(true);
+    expect(updates.filter((u) => u.label !== undefined).map((u) => u.label)).toEqual(['Working it out across the team']);
+    // While it runs it says how far it has got; when it ends, the whole of it: three reads, both players of a roster of two, by name.
+    expect(updates[0]).toMatchObject({ count: { unit: 'reads', more: true } });
+    expect(codeRows.at(-1)).toMatchObject({
+      kind: 'calculate',
+      count: { n: 3, unit: 'reads', more: false },
+      covers: { n: 2, of: 2, unit: 'players' },
+      subjects: [{ kind: 'player', id: 'player-a', label: 'Avery Lane' }, { kind: 'player', id: 'player-b', label: 'Blake Reed' }],
+    });
+    // The reads the code called sit under it.
+    const children = events.filter((e) => e.type === 'read_started' && e.tool === 'get_player_stats') as Array<{ parent_id?: string; subjects?: unknown }>;
+    expect(children.map((c) => c.parent_id)).toEqual([codeRows[0]!.id, codeRows[0]!.id, codeRows[0]!.id]);
+    expect(children[1]!.subjects).toEqual([{ kind: 'player', id: 'player-b', label: 'Blake Reed' }]);
     const part = events.find((e) => e.type === 'part' && e.part.type === 'data-computed') as { part: { id: string; data: unknown } };
     expect(part.part).toEqual({
       type: 'data-computed',
@@ -812,7 +953,7 @@ describe('the model’s code calling the reads (on for a coach, off for a player
     const [row] = assistantRows();
     const stored = row!.ui_parts as Array<{ type: string; id?: string; data?: { label?: string; state?: string; detail?: string } }>;
     expect(stored.filter((p) => p.type === 'data-computed')).toEqual([part.part]);
-    expect(stored.filter((p) => p.type === 'data-progress' && p.id === codeRows[0]!.id).map((p) => p.data)).toMatchObject([{ label: 'Working it out across the team', state: 'done', detail: '3 reads' }]);
+    expect(stored.filter((p) => p.type === 'data-progress' && p.id === codeRows[0]!.id).map((p) => p.data)).toMatchObject([{ label: 'Working it out across the team', done_label: 'Worked it out across the team', state: 'done', detail: '3 reads' }]);
     expect(restoreUIMessages((db.tables[MESSAGES] ?? []) as never).at(-1)!.parts.find((p) => p.type === 'data-computed')).toMatchObject({ data: { reads: 3, players: 2 } });
     // The model is never sent the part.
     expect(turnMetaOf(row!.ui_parts as never)).toMatchObject({ reads: 3 });
@@ -840,7 +981,7 @@ describe('the model’s code calling the reads (on for a coach, off for a player
     await ask('Remember that qualifying is 54 holes');
     expect(log.reads).toHaveLength(0);
     const sent = model.requests[0]!.tools as Array<{ name: string; strict?: boolean; allowed_callers?: string[] }>;
-    expect(sent.find((t) => t.name === 'save_note')).toMatchObject({ strict: true });
+    expect(sent.find((t) => t.name === 'save_note')).not.toHaveProperty('strict');
     expect(sent.find((t) => t.name === 'save_note')).not.toHaveProperty('allowed_callers');
     const reply = model.requests[1]!.messages.at(-1) as { content: Array<{ is_error?: boolean; content: string }> };
     expect(reply.content[0]).toMatchObject({ is_error: true, content: 'This cannot be called from code. Call it directly. Nothing was changed.' });
@@ -867,10 +1008,10 @@ describe('the model’s code calling the reads (on for a coach, off for a player
     const [first, second] = model.requests;
     const tools = first!.tools as Array<{ name: string; type?: string; strict?: boolean; allowed_callers?: string[] }>;
     expect(tools.at(-1)).toEqual({ type: 'code_execution_20260120', name: 'code_execution' });
-    // Reads may be called from code, and so cannot be strict; a task is only ever asked for directly, and stays strict.
+    // Reads may be called from code; a task is only ever asked for directly. Neither is strict.
     expect(tools.find((t) => t.name === 'get_team_stats')).toMatchObject({ allowed_callers: ['direct', 'code_execution_20260120'] });
     expect(tools.find((t) => t.name === 'get_team_stats')).not.toHaveProperty('strict');
-    expect(tools.find((t) => t.name === 'create_focus_area')).toMatchObject({ strict: true });
+    expect(tools.find((t) => t.name === 'create_focus_area')).not.toHaveProperty('strict');
     expect(tools.find((t) => t.name === 'create_focus_area')).not.toHaveProperty('allowed_callers');
     expect(first).not.toHaveProperty('container');
 
@@ -1206,6 +1347,180 @@ describe('a task', () => {
     expect(result).toMatchObject({ is_error: true });
     expect(result!.content).toContain('Nothing was written');
     expect(done(events)?.status).toBe('complete');
+  });
+});
+
+describe('the steps of a turn', () => {
+  type StepEvent = { type: 'read_started' | 'step_update' | 'read_finished' | 'note'; id: string; seq?: number; state?: string; kind?: string; tool?: string; started_at?: string; ended_at?: string; subjects?: Array<{ kind: string; id: string; label: string }>; count?: unknown; evidence_ref?: string; parent_id?: string };
+  const stepEvents = (events: ChatEvent[]) => events.filter((e) => e.type === 'read_started' || e.type === 'step_update' || e.type === 'read_finished' || e.type === 'note') as unknown as StepEvent[];
+  const measured = (name: string, players: Array<[string, string]>) => {
+    const tool = { ...readTool(name, log, 0) } as ReadTool<{ player_id?: string }>;
+    tool.run = async () => {
+      await new Promise((resolve) => setTimeout(resolve, 12));
+      return read;
+    };
+    const read = ({
+      summary: 'Putting',
+      measurements: players.map(([id, label]) => ({ metric_id: 'sg_putting', metric_label: 'Strokes gained putting', unit: 'strokes', value: -0.4, entity: { kind: 'player', id, label }, window_start: null, window_end: null, sample_size: 8, sample_unit: 'rounds', as_of: '2026-11-10T12:00:00.000Z', coverage: 'complete', coverage_note: null, source: 'golf_rounds', method: 'mean', denominator: null, benchmark: null, direction: 'higher_better' })),
+      series: [],
+      coverage: 'complete',
+      coverage_note: null,
+      as_of: '2026-11-10T12:00:00.000Z',
+    }) as never;
+    return tool;
+  };
+
+  it('each step says what it is, when it ran, who it is about and what it produced; the events are numbered in the order sent', async () => {
+    // One read names a player in its input; the other turns out to be about two players, one of whom is not on this coach's roster.
+    h.toolsFor.mockImplementation(() => asTools(measured('get_player_stats', [['player-a', 'someone else’s label']]), measured('get_team_stats', [['player-b', 'B'], ['not-on-this-roster', 'A stranger']]), { ...taskTool('create_focus_area', log), step: 'check' } as never));
+    script({ content: [toolUse('tu_1', 'get_player_stats', { player_id: 'player-a' }), toolUse('tu_2', 'get_team_stats', {})] }, { content: [text('Blake putts best.')] });
+    const before = Date.now();
+    const { events } = await ask('Who putts best?');
+    const steps = stepEvents(events);
+
+    // Numbered 1, 2, 3, ... in the order they were sent: nothing missing, nothing twice.
+    expect(steps.map((s) => s.seq)).toEqual(steps.map((_, i) => i + 1));
+    // Each step starts once and finishes once.
+    for (const id of new Set(steps.map((s) => s.id))) expect(steps.filter((s) => s.id === id).map((s) => s.type)).toEqual(['read_started', 'read_finished']);
+    const [a, b] = ['get_player_stats', 'get_team_stats'].map((tool) => ({ start: steps.find((s) => s.type === 'read_started' && s.tool === tool)!, end: steps.find((s) => s.type === 'read_finished' && s.tool === tool)! }));
+    expect(a!.start).toMatchObject({ state: 'active', kind: 'read' });
+    expect(a!.end).toMatchObject({ state: 'done', kind: 'read', evidence_ref: 'e1', count: { n: 8, unit: 'rounds', more: false } });
+    // Real clock readings: it began during this request and ended no earlier than it began.
+    expect(Date.parse(a!.start.started_at!)).toBeGreaterThanOrEqual(before - 5);
+    expect(a!.end.started_at).toBe(a!.start.started_at);
+    expect(Date.parse(a!.end.ended_at!)).toBeGreaterThanOrEqual(Date.parse(a!.start.started_at!));
+    // Who it is about: known from the input before it ran, and named from the coach's roster, never from what the read called them.
+    expect(a!.start.subjects).toEqual([{ kind: 'player', id: 'player-a', label: 'Avery Lane' }]);
+    expect(a!.end.subjects).toEqual([{ kind: 'player', id: 'player-a', label: 'Avery Lane' }]);
+    // Known only once it returned; and someone who is not on this coach's roster is never sent.
+    expect(b!.start).not.toHaveProperty('subjects');
+    expect(b!.end.subjects).toEqual([{ kind: 'player', id: 'player-b', label: 'Blake Reed' }]);
+    expect(JSON.stringify(steps)).not.toContain('stranger');
+    // The read a step produced is already on the stream when the step says it is done.
+    const order = events.map((e) => (e.type === 'evidence' ? `evidence:${(e.part.data as { ref: string }).ref}` : e.type === 'read_finished' ? `finished:${(e as unknown as StepEvent).evidence_ref}` : null)).filter(Boolean);
+    expect(order.indexOf('evidence:e1')).toBeLessThan(order.indexOf('finished:e1'));
+    expect(order.indexOf('evidence:e2')).toBeLessThan(order.indexOf('finished:e2'));
+
+    // The turn's work, beside its whole duration, on the last event and in the stored facts.
+    const last = events.find((e) => e.type === 'done') as { duration_ms: number; work?: { steps: number; working_ms: number } };
+    expect(last.work!.steps).toBe(2);
+    // The two reads ran side by side for about 12 ms each: the time worked is the time something was running, not the sum.
+    expect(last.work!.working_ms).toBeGreaterThanOrEqual(10);
+    expect(last.work!.working_ms).toBeLessThanOrEqual(last.duration_ms);
+    const [row] = assistantRows();
+    expect(turnMetaOf(row!.ui_parts as never)).toMatchObject({ reads: 2, steps: 2 });
+  });
+
+  it('a tool’s own words finish its step, and what it says the step is about is sent with it; a tool that declares nothing sends neither', async () => {
+    const declared = {
+      ...measured('get_player_stats', [['player-a', 'A']]),
+      step: {
+        kind: 'compare',
+        doneLabel: (input: { player_id?: string }, result: { measurements: unknown[] } | null) => `Compared ${input.player_id === 'player-a' ? 'Avery' : 'someone'} with the team (${result?.measurements.length ?? 0} figures)`,
+        subjects: () => [{ kind: 'event', id: 'ev-1', label: 'Fall Invitational' }, { kind: 'player', id: 'not-on-this-roster', label: 'A stranger' }],
+      },
+    };
+    h.toolsFor.mockImplementation(() => asTools(declared as never, measured('get_team_stats', [['player-b', 'B']]), { ...taskTool('create_focus_area', log), step: { doneLabel: (input: { title: string }) => `Drafted the focus area ${input.title}` } } as never));
+    script({ content: [toolUse('tu_1', 'get_player_stats', { player_id: 'player-a' }), toolUse('tu_2', 'get_team_stats', {})] }, { content: [toolUse('tu_3', 'create_focus_area', { title: 'Lag putting' })] });
+    const { events } = await ask('How does Avery compare, and set a focus area?');
+    const steps = stepEvents(events) as unknown as Array<StepEvent & { done_label?: string; label?: string }>;
+    const of = (tool: string, type: string) => steps.find((s) => s.tool === tool && s.type === type)!;
+
+    // Declared: the kind, the finished wording (the tool's own sentence, with what the read returned), and the event it is about.
+    expect(of('get_player_stats', 'read_started')).toMatchObject({ kind: 'compare', subjects: [{ kind: 'player', id: 'player-a', label: 'Avery Lane' }, { kind: 'event', id: 'ev-1', label: 'Fall Invitational' }] });
+    expect(of('get_player_stats', 'read_started')).not.toHaveProperty('done_label');
+    expect(of('get_player_stats', 'read_finished')).toMatchObject({ kind: 'compare', label: 'Reading get player stats', done_label: 'Compared Avery with the team (1 figures)' });
+    expect(JSON.stringify(steps)).not.toContain('stranger');
+    // Not declared: the finished row carries the running label and no other wording. Nothing is made from the label or the name.
+    expect(of('get_team_stats', 'read_finished')).toMatchObject({ kind: 'read', label: 'Reading get team stats' });
+    expect(of('get_team_stats', 'read_finished')).not.toHaveProperty('done_label');
+    // A task's step is finished in the task's own words too.
+    expect(of('create_focus_area', 'read_finished')).toMatchObject({ kind: 'draft', state: 'done', done_label: 'Drafted the focus area Lag putting' });
+    // Stored as sent: the row a reload draws says the same.
+    const stored = (assistantRows()[0]!.ui_parts as Array<{ type: string; data?: { tool?: string; done_label?: string; done?: string } }>).find((p) => p.type === 'data-progress' && p.data?.tool === 'get_player_stats')!;
+    expect(stored.data).toMatchObject({ done_label: 'Compared Avery with the team (1 figures)', done: 'Compared Avery with the team (1 figures)' });
+  });
+
+  it('a step about more than twelve people or things sends twelve and the number of the rest', async () => {
+    const rounds = Array.from({ length: 30 }, (_, i) => [`round-${i}`, `Round ${i + 1}`] as [string, string]);
+    const many = measured('get_team_stats', []);
+    many.run = async () => ({
+      summary: 'Rounds',
+      measurements: rounds.map(([id, label]) => ({ metric_id: 'score', metric_label: 'Score', unit: 'strokes', value: 72, entity: { kind: 'round', id, label }, window_start: null, window_end: null, sample_size: 1, sample_unit: 'rounds', as_of: '2026-11-10T12:00:00.000Z', coverage: 'complete', coverage_note: null, source: 'Rounds' })),
+      series: [],
+      coverage: 'complete',
+      coverage_note: null,
+      as_of: '2026-11-10T12:00:00.000Z',
+    }) as never;
+    h.toolsFor.mockImplementation(() => asTools(many));
+    script({ content: [toolUse('tu_1', 'get_team_stats', {})] }, { content: [text('Thirty rounds.')] });
+    const { events } = await ask('Show the rounds');
+    const end = (stepEvents(events) as unknown as Array<StepEvent & { subjects_more?: number }>).find((s) => s.type === 'read_finished')!;
+    expect(end.subjects).toHaveLength(12);
+    expect(end.subjects!.map((s) => s.label)).toEqual(rounds.slice(0, 12).map(([, label]) => label));
+    expect(end.subjects_more).toBe(18);
+    const stored = (assistantRows()[0]!.ui_parts as Array<{ type: string; data?: { subjects?: unknown[]; subjects_more?: number } }>).find((p) => p.type === 'data-progress')!;
+    expect(stored.data!.subjects).toHaveLength(12);
+    expect(stored.data!.subjects_more).toBe(18);
+  });
+
+  it('what the browser folds from the stream is what is stored, step for step, and a reload can bring the steps back', async () => {
+    h.toolsFor.mockImplementation(() => asTools(measured('get_player_stats', [['player-a', 'A']]), readTool('get_team_stats', log, 74.2)));
+    script({ content: [toolUse('tu_1', 'get_player_stats', { player_id: 'player-a' }), toolUse('tu_2', 'get_team_stats', {})] }, { content: [text('Here.')] });
+    const { events } = await ask('How are we putting?');
+    const folded = events.reduce(applyChatEvent, { id: 'x', role: 'assistant', parts: [] } as ChatUIMessage);
+    const progress = (parts: readonly { type: string }[]) => parts.filter((p) => p.type === 'data-progress');
+    const stored = assistantRows()[0]!.ui_parts as Array<{ type: string; id?: string; data?: Record<string, unknown> }>;
+    expect(progress(folded.parts)).toEqual(progress(stored));
+    expect(progress(stored)).toHaveLength(2);
+    for (const step of progress(stored) as typeof stored) expect(step.data).toMatchObject({ state: 'done', kind: 'read', started_at: expect.any(String), ended_at: expect.any(String), seq: expect.any(Number) });
+    // A reload keeps them only for a thread that asks (one that can open an earlier turn's steps).
+    const rows = (db.tables[MESSAGES] ?? []) as never;
+    expect(restoreUIMessages(rows).at(-1)!.parts.some((p) => p.type === 'data-progress')).toBe(false);
+    expect(progress(restoreUIMessages(rows, { steps: true }).at(-1)!.parts)).toEqual(progress(stored));
+  });
+
+  it('a step that fails says so with the same facts; a draft of a card is a step of the kind its tool names; a note is numbered with the steps', async () => {
+    const broken = { ...readTool('get_team_stats', log, 0) } as ReadTool<{ player_id?: string }>;
+    broken.run = async () => Promise.reject(new Error('boom'));
+    h.toolsFor.mockImplementation(() => asTools(broken, { ...taskTool('create_focus_area', log), step: 'check' } as never));
+    script({ content: [progressNote('Checking the team first.'), toolUse('tu_1', 'get_team_stats', { player_id: 'player-b' }), toolUse('tu_task', 'create_focus_area', { title: 'Putting' })] });
+    const { events } = await ask('Make a putting focus area');
+    const steps = stepEvents(events);
+    expect(steps.map((s) => s.seq)).toEqual(steps.map((_, i) => i + 1));
+    expect(steps[0]).toMatchObject({ type: 'note', seq: 1 });
+    const failed = steps.find((s) => s.type === 'read_finished' && s.tool === 'get_team_stats')!;
+    expect(failed).toMatchObject({ state: 'failed', kind: 'read', subjects: [{ id: 'player-b', label: 'Blake Reed' }], started_at: expect.any(String), ended_at: expect.any(String) });
+    expect(failed).not.toHaveProperty('evidence_ref');
+    expect(steps.find((s) => s.type === 'read_finished' && s.tool === 'create_focus_area')).toMatchObject({ state: 'done', kind: 'check' });
+    // A note is not a step of work: it is not counted.
+    expect((events.find((e) => e.type === 'done') as { work?: { steps: number } }).work).toMatchObject({ steps: 2 });
+  });
+
+  it('a decision that continues the turn numbers its steps on from the stored ones, and the work is the whole turn’s', async () => {
+    h.toolsFor.mockImplementation(() => asTools(measured('get_player_stats', [['player-a', 'A']]), taskTool('create_focus_area', log)));
+    script({ content: [toolUse('tu_1', 'get_player_stats', { player_id: 'player-a' })] }, { content: [toolUse('tu_task', 'create_focus_area', { title: 'Putting' })] });
+    const first = await ask('Look at Avery, then make a putting focus area');
+    const firstSeqs = stepEvents(first.events).map((s) => s.seq!);
+    expect(firstSeqs).toEqual([1, 2, 3, 4]);
+
+    // After the card is confirmed the model reads once more before it closes.
+    script({ content: [toolUse('tu_2', 'get_player_stats', { player_id: 'player-a' })] }, { content: [text('Done, and Avery is unchanged.')] });
+    const second = await decide(conversationOf(first.events), keyOf(first.events), true);
+    expect(stepEvents(second.events).map((s) => s.seq)).toEqual([5, 6]);
+    expect((second.events.find((e) => e.type === 'done') as { work?: { steps: number } }).work).toMatchObject({ steps: 3 });
+    expect(turnMetaOf(assistantRows()[0]!.ui_parts as never)).toMatchObject({ steps: 3, reads: 2 });
+  });
+
+  it('a player’s steps name only the player', async () => {
+    h.role = 'player';
+    h.toolsFor.mockImplementation(() => asTools(measured('get_my_stats', [['player-me', 'Me'], ['player-a', 'A teammate']])));
+    script({ content: [toolUse('tu_1', 'get_my_stats', { player_id: 'player-a' })] }, { content: [text('73.1.')] });
+    const { events } = await ask('How am I putting?');
+    const steps = stepEvents(events);
+    expect(steps.find((s) => s.type === 'read_started')).not.toHaveProperty('subjects');
+    expect(steps.find((s) => s.type === 'read_finished')!.subjects).toEqual([{ kind: 'player', id: 'player-me', label: 'Eli Stone' }]);
+    expect(JSON.stringify(steps)).not.toContain('player-a');
   });
 });
 
@@ -1800,6 +2115,279 @@ describe('a turn that does not finish', () => {
   });
 });
 
+describe('what to ask next', () => {
+  type Suggestion = { label: string; prompt: string; kind: string; tool?: string | null };
+  const s = (label: string, prompt: string, kind = 'read', tool: string | null = null): Suggestion => ({ label, prompt, kind, tool });
+  const GOOD = [
+    s('Avery from 6 to 10 feet', 'How does Avery putt from 6 to 10 feet over the last 8 rounds?'),
+    s('Against the team', 'How does Avery’s putting compare with the rest of the team this season?', 'compare'),
+    s('Set a putting focus area', 'Set up a putting focus area for Avery from 6 to 10 feet.', 'action', 'create_focus_area'),
+  ];
+  const suggested = (...items: Suggestion[]) => ({ content: [text(JSON.stringify({ suggestions: items }))], usage: { input_tokens: 900, output_tokens: 120, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 } });
+  const shown = (events: ChatEvent[]) => events.filter((e) => e.type === 'suggestions') as Array<{ type: 'suggestions'; items: Array<{ label: string; prompt: string; kind: string }> }>;
+  const ledger = () => ((h.admin as unknown as FakeDb).tables.golf_coachhelm_llm_calls ?? []) as Array<{ task: string; model_id: string; cost_usd: number; prompt_tokens: number; completion_tokens: number; verified: boolean; citations: unknown; coach_id: string; prompt_hash: string }>;
+  const storedParts = () => (assistantRows().at(-1)!.ui_parts ?? []) as Array<{ type: string; id?: string; data?: { items?: unknown[] } }>;
+  /** The calls that asked for suggestions: the only requests that ask for a fixed output shape. */
+  const asked = (model: FakeModel) => model.requests.filter((r) => (r.output_config as { format?: unknown } | undefined)?.format !== undefined);
+  beforeEach(() => {
+    h.suggestions = true;
+    vi.mocked(recordSpend).mockClear();
+  });
+
+  it('follows a completed answer, after done: checked, sent as the last event, stored with the turn, and never in what the model is replayed', async () => {
+    const model = script({ content: [text('Avery loses 0.4 strokes a round on the greens.')] }, suggested(...GOOD));
+    const { events } = await ask('How is Avery putting?');
+
+    // The turn was over before any of it: `done` first, then the one event that may follow it.
+    expect(done(events)?.status).toBe('complete');
+    expect(events.map((e) => e.type).slice(-2)).toEqual(['done', 'suggestions']);
+    expect(shown(events)).toEqual([{ type: 'suggestions', items: GOOD.map(({ label, prompt, kind }) => ({ label, prompt, kind })) }]);
+    // The call: the small model, low effort, no tools, the question and the answer as data, only this coach's own actions offered.
+    expect(model.requests).toHaveLength(2);
+    const call = model.requests[1]!;
+    expect(call).toMatchObject({ model: 'claude-haiku-5-5', output_config: { effort: 'low', format: { type: 'json_schema' } } });
+    expect(call).not.toHaveProperty('tools');
+    expect(call).not.toHaveProperty('betas');
+    const content = String((call.messages[0] as { content: unknown }).content);
+    expect(content).toContain('<question>\nHow is Avery putting?\n</question>');
+    expect(content).toContain('<answer>\nAvery loses 0.4 strokes a round on the greens.\n</answer>');
+    expect(content).toContain('- create_focus_area:');
+    expect(content).not.toContain('get_player_stats');
+    // Stored with the turn, as a part of its own; the answer's words are untouched.
+    const part = storedParts().find((p) => p.type === 'data-suggestions')!;
+    expect(part).toMatchObject({ id: 'suggestions', data: { items: GOOD.map(({ label, prompt, kind }) => ({ label, prompt, kind })) } });
+    expect(assistantRows().at(-1)!.content).toBe('Avery loses 0.4 strokes a round on the greens.');
+    // What the browser folds from the stream is what is stored.
+    const folded = events.reduce(applyChatEvent, { id: 'x', role: 'assistant', parts: [] } as ChatUIMessage);
+    expect(folded.parts.find((p) => p.type === 'data-suggestions')).toEqual(part);
+    // The model's own record of the conversation never holds a suggestion: the next turn is not told what was suggested.
+    expect(JSON.stringify(assistantRows().at(-1)!.model_messages)).not.toContain('6 to 10 feet');
+    // A reload brings them back with the thread.
+    expect(restoreUIMessages((db.tables[MESSAGES] ?? []) as never).at(-1)!.parts.find((p) => p.type === 'data-suggestions')).toEqual(part);
+  });
+
+  it('its cost is a ledger row under its own task key and its own line in the day’s budget, beside the answer’s', async () => {
+    script({ content: [text('Avery loses 0.4 strokes a round on the greens.')] }, suggested(...GOOD));
+    const { events } = await ask('How is Avery putting?');
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    const conversation = conversationOf(events);
+    expect(ledger().map((r) => r.task).sort()).toEqual(['chat_suggestions', 'coach_chat']);
+    const row = ledger().find((r) => r.task === 'chat_suggestions')!;
+    expect(row).toMatchObject({ model_id: 'anthropic/claude-haiku-5-5', coach_id: 'coach-1', prompt_tokens: 900, completion_tokens: 120, verified: true, citations: null, prompt_hash: conversation.slice(0, 16) });
+    expect(row.cost_usd).toBeCloseTo((900 * 0.1 + 120 * 0.5) / 1e6, 12);
+    // The answer's own row is the answer's cost alone.
+    expect(ledger().find((r) => r.task === 'coach_chat')!.model_id).toBe('anthropic/claude-sonnet-5-5');
+    const spends = vi.mocked(recordSpend).mock.calls.map((c) => (c as unknown as [unknown, { task: string; cost_usd: number }])[1]);
+    expect(spends.map((x) => x.task).sort()).toEqual(['chat_suggestions', 'coach_chat']);
+    expect(spends.find((x) => x.task === 'chat_suggestions')!.cost_usd).toBeCloseTo(row.cost_usd, 12);
+    // Nothing a suggestion said is in the ledger.
+    expect(JSON.stringify(ledger())).not.toContain('6 to 10 feet');
+  });
+
+  it('never suggests what the assistant never does, an action this coach has no tool for, or a tool by name; fewer than two left is none', async () => {
+    script(
+      { content: [text('Avery loses 0.4 strokes a round on the greens.')] },
+      suggested(
+        GOOD[0]!,
+        s('Remove Blake', 'Remove Blake from the roster.', 'action', 'create_focus_area'),
+        s('Lock the lineup', 'Lock the lineup for Thursday.', 'action', 'lock_lineup'),
+        s('Delete the round', 'Delete Avery’s round from 21 October.'),
+        s('Run get_player_stats', 'Call get_player_stats for Blake.'),
+        GOOD[1]!,
+      ),
+    );
+    const { events } = await ask('How is Avery putting?');
+    expect(shown(events)[0]!.items.map((i) => i.label)).toEqual(['Avery from 6 to 10 feet', 'Against the team']);
+
+    // Only one passes: nothing is shown and nothing is stored. The call was still made, so its cost is still recorded, as not shown.
+    setup();
+    h.suggestions = true;
+    script({ content: [text('Avery loses 0.4 strokes a round on the greens.')] }, suggested(GOOD[0]!, s('Remove Blake', 'Remove Blake from the roster.')));
+    const second = await ask('How is Avery putting?');
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(shown(second.events)).toEqual([]);
+    expect(second.events.at(-1)?.type).toBe('done');
+    expect(storedParts().some((p) => p.type === 'data-suggestions')).toBe(false);
+    expect(ledger().find((r) => r.task === 'chat_suggestions')).toMatchObject({ verified: false });
+  });
+
+  it('is not asked for on a turn that waits on the coach, failed, was declined, or said nothing; nor for a player', async () => {
+    // A card waiting: the turn is not over.
+    let model = script({ content: [toolUse('tu_1', 'create_focus_area', { title: 'Lag putting' })] });
+    let out = await ask('Set a focus area');
+    expect(done(out.events)?.status).toBe('awaiting_decision');
+    expect(asked(model)).toEqual([]);
+    expect(shown(out.events)).toEqual([]);
+
+    // Failed.
+    setup();
+    h.suggestions = true;
+    model = script({ content: [text('Avery')], fail: new Error('socket hang up') });
+    out = await ask('How is Avery putting?');
+    expect(done(out.events)?.status).toBe('failed');
+    expect(asked(model)).toEqual([]);
+
+    // Declined by the model: a complete turn whose words are the app's sentence. Nothing follows it.
+    setup();
+    h.suggestions = true;
+    model = script({ content: [], stop_reason: 'refusal', category: 'general_harms' });
+    out = await ask('Something it will not answer');
+    expect(done(out.events)?.status).toBe('complete');
+    expect(asked(model)).toEqual([]);
+    expect(shown(out.events)).toEqual([]);
+
+    // A player's Ask: off, on whichever model.
+    setup();
+    h.suggestions = true;
+    h.role = 'player';
+    model = script({ content: [text('Your scoring has been steady.')] });
+    out = await ask('How am I scoring?');
+    expect(done(out.events)?.status).toBe('complete');
+    expect(asked(model)).toEqual([]);
+    expect(shown(out.events)).toEqual([]);
+  });
+
+  it('a call that fails, is refused or comes back unusable changes nothing: the answer stands and no event follows done', async () => {
+    for (const step of [{ content: [], reject: new Error('503') }, { content: [], stop_reason: 'refusal' as const, category: 'general_harms' }, { content: [text('not json at all')] }, { content: [text('{"suggestions":[{"label":"Half')], stop_reason: 'max_tokens' as const }]) {
+      setup();
+      h.suggestions = true;
+      h.logServerError.mockClear();
+      const model = script({ content: [text('Avery loses 0.4 strokes a round on the greens.')] }, step);
+      const { events } = await ask('How is Avery putting?');
+      expect(done(events)?.status).toBe('complete');
+      expect(events.at(-1)?.type).toBe('done');
+      expect(events.some((e) => e.type === 'error')).toBe(false);
+      expect(model.requests).toHaveLength(2);
+      expect(storedParts().some((p) => p.type === 'data-suggestions')).toBe(false);
+      expect(assistantRows().at(-1)!.status).toBe('complete');
+    }
+  });
+
+  it('follows the closing words of a turn whose card was answered, from the question that began the turn', async () => {
+    const model = script({ content: [toolUse('tu_1', 'create_focus_area', { title: 'Lag putting' })] }, { content: [text('Done: the focus area is set.')] }, suggested(GOOD[0]!, GOOD[1]!));
+    const first = await ask('Set a lag putting focus area for Avery');
+    const conversation = conversationOf(first.events);
+    const { events } = await decide(conversation, keyOf(first.events), true);
+    expect(done(events)?.status).toBe('complete');
+    expect(events.map((e) => e.type).slice(-2)).toEqual(['done', 'suggestions']);
+    const content = String((model.requests[2]!.messages[0] as { content: unknown }).content);
+    expect(content).toContain('<question>\nSet a lag putting focus area for Avery\n</question>');
+    expect(content).toContain('Done: the focus area is set.');
+    // Stored on the same message the card and the closing words are on.
+    expect(assistantRows()).toHaveLength(1);
+    expect(storedParts().find((p) => p.type === 'data-suggestions')!.data!.items).toHaveLength(2);
+  });
+
+  it('a browser that has left before they arrive gets none, and none are stored', async () => {
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    script({ content: [text('Avery loses 0.4 strokes a round on the greens.')] }, { ...suggested(...GOOD), gate });
+    const controller = new AbortController();
+    const pending = post({ message: 'How is Avery putting?', conversation_id: null }, controller.signal);
+    // Wait for the answer to be stored (the turn is done), then leave while the suggestions are still being written.
+    for (let i = 0; i < 100 && assistantRows().length === 0; i += 1) await new Promise((resolve) => setTimeout(resolve, 5));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    controller.abort();
+    release();
+    const { events } = await pending;
+    expect(done(events)?.status).toBe('complete');
+    expect(shown(events)).toEqual([]);
+    expect(storedParts().some((p) => p.type === 'data-suggestions')).toBe(false);
+    expect(assistantRows().at(-1)!.status).toBe('complete');
+  });
+
+  it('on a database that does not take the task key yet, no row is written, the spend is still counted under its own key, and the key is not tried again', async () => {
+    h.admin = fakeDb({ chatTasks: false });
+    for (const question of ['How is Avery putting?', 'And Blake?']) {
+      script({ content: [text('Avery loses 0.4 strokes a round on the greens.')] }, suggested(...GOOD));
+      const { events } = await ask(question);
+      expect(shown(events)).toHaveLength(1);
+    }
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    // The answers' rows are there; no suggestions row, and never one written under the answers' key.
+    expect(ledger().map((r) => r.task)).toEqual(['coach_chat', 'coach_chat']);
+    expect(ledger().every((r) => r.model_id === 'anthropic/claude-sonnet-5-5')).toBe(true);
+    const spends = vi.mocked(recordSpend).mock.calls.map((c) => (c as unknown as [unknown, { task: string }])[1].task);
+    expect(spends.filter((t) => t === 'chat_suggestions')).toHaveLength(2);
+  });
+
+  it('a retried turn that already has its answer is sent its stored suggestions again, without a second call', async () => {
+    const model = script({ content: [text('Avery loses 0.4 strokes a round on the greens.')] }, suggested(...GOOD));
+    const first = await post({ message: 'How is Avery putting?', conversation_id: null, client_turn_id: 'turn-suggest-1' });
+    const again = await post({ message: 'How is Avery putting?', conversation_id: conversationOf(first.events), client_turn_id: 'turn-suggest-1' });
+    expect(model.requests).toHaveLength(2);
+    expect(shown(again.events)).toEqual(shown(first.events));
+    expect(done(again.events)?.status).toBe('complete');
+  });
+
+  it('with the switch off nothing is asked for and nothing follows done', async () => {
+    h.suggestions = false;
+    const model = script({ content: [text('Avery loses 0.4 strokes a round on the greens.')] });
+    const { events } = await ask('How is Avery putting?');
+    expect(model.requests).toHaveLength(1);
+    expect(events.at(-1)?.type).toBe('done');
+  });
+});
+
+describe('what a turn hangs on the request', () => {
+  // The dev server once warned "11 close listeners added to [ServerResponse]" on this route. The chat code never sees the response:
+  // the only thing it listens to is the request's abort signal, once a request, however many model calls and reads the turn makes.
+  const counted = () => {
+    const controller = new AbortController();
+    const signal = controller.signal;
+    const live = new Set<unknown>();
+    let added = 0;
+    const add = signal.addEventListener.bind(signal);
+    const remove = signal.removeEventListener.bind(signal);
+    signal.addEventListener = ((type: string, listener: EventListener, options?: AddEventListenerOptions) => {
+      added += 1;
+      live.add(listener);
+      add(type, listener, options);
+    }) as typeof signal.addEventListener;
+    signal.removeEventListener = ((type: string, listener: EventListener) => {
+      live.delete(listener);
+      remove(type, listener);
+    }) as typeof signal.removeEventListener;
+    return { controller, signal, added: () => added, live: () => live.size };
+  };
+
+  it('one listener on the request’s signal for a turn of many model calls, and none left when the turn ends', async () => {
+    const steps = Array.from({ length: 8 }, (_, i) => ({ content: [toolUse(`tu_${i}`, 'get_team_stats', {})] }));
+    const model = script(...steps, { content: [text('74.2.')] });
+    const request = counted();
+    const { events } = await post({ message: 'How is the team scoring?', conversation_id: null }, request.signal);
+    expect(done(events)?.status).toBe('complete');
+    expect(model.requests).toHaveLength(9);
+    expect(request.added()).toBe(1);
+    expect(request.live()).toBe(0);
+  });
+
+  it('the same when the API rejects requests on the way: a retried call adds nothing', async () => {
+    const model = script({ content: [], reject: rejected('messages.1: unclear') }, { content: [], reject: rejected('messages.1: unclear') }, { content: [toolUse('tu_1', 'get_team_stats', {})] }, { content: [text('74.2.')] });
+    const request = counted();
+    const { events } = await post({ message: 'How is the team scoring?', conversation_id: null }, request.signal);
+    expect(done(events)?.status).toBe('complete');
+    expect(model.requests).toHaveLength(4);
+    expect(request.added()).toBe(1);
+    expect(request.live()).toBe(0);
+  });
+
+  it('a request the browser left is let go of too', async () => {
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    script({ content: [text('74.2.')], gate });
+    const request = counted();
+    const pending = post({ message: 'How is the team scoring?', conversation_id: null }, request.signal);
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    request.controller.abort();
+    release();
+    const { events } = await pending;
+    expect(done(events)?.status).toBe('stopped');
+    expect(request.added()).toBe(1);
+    expect(request.live()).toBe(0);
+  });
+});
+
 describe('a database without the new migration', () => {
   beforeEach(() => setup({ modelColumns: false }));
 
@@ -2137,6 +2725,74 @@ describe('a player’s turn', () => {
     await loaders.playerStats!('player-me', 'season');
     expect(h.loadPlayerProfile.mock.calls.at(-1)?.[0]).toMatchObject({ viewer: 'player', playerId: 'player-me', teamId: 'team-1', window: 'season' });
     expect(db.tables[MESSAGES] ?? []).toHaveLength(0);
+  });
+
+  it('writes the model-call ledger row a coach’s turn writes, with the player in place of the coach and every column the table requires', async () => {
+    // An answer with no figure in it, so the grounding check has nothing to object to and the row is the plain one.
+    script({ content: [text('Your scoring has been steady.')], usage: { input_tokens: 1000, output_tokens: 200, cache_read_input_tokens: 0 } });
+    await post({ message: 'How am I scoring?', conversation_id: null, client_turn_id: '3f6c2a10-7b1e-4c55-9d2a-0a1b2c3d4e5f' });
+    const rows = ((h.admin as unknown as FakeDb).tables.golf_coachhelm_llm_calls ?? []) as Array<Record<string, unknown>>;
+    expect(rows).toHaveLength(1);
+    const { id: _id, created_at: _at, ...row } = rows[0]!;
+    // Exactly the table's columns (`src/lib/types/database.ts`): `prompt_hash` and `verified` are NOT NULL, and there is no `grounded`.
+    expect(row).toEqual({
+      // The player's own task key, where the database takes it (the held migration 20261111090000; the next test is without it).
+      task: 'player_chat',
+      coach_id: null,
+      player_id: 'player-me',
+      // The turn's own id, cut short: opaque, and nothing of the player or the question.
+      prompt_hash: '3f6c2a10-7b1e-4c',
+      model_id: 'anthropic/claude-haiku-5-5',
+      prompt_tokens: 1000,
+      completion_tokens: 200,
+      cost_usd: (1000 * 0.1 + 200 * 0.5) / 1e6,
+      citations: null,
+      verified: true,
+      fallback_to_template: false,
+    });
+    expect(h.logServerError.mock.calls.some((c) => String((c as unknown[])[0]).includes('llm ledger failed'))).toBe(false);
+  });
+
+  it('on a database that does not take the player’s task key yet, the row is written as coach_chat as it always was, and the key is not tried again', async () => {
+    h.admin = fakeDb({ chatTasks: false });
+    const admin = h.admin.client as { from: (table: string) => { insert: (row: unknown) => unknown } };
+    const real = admin.from.bind(admin);
+    const tried: string[] = [];
+    admin.from = (table: string) => {
+      const builder = real(table);
+      if (table !== 'golf_coachhelm_llm_calls') return builder;
+      const insert = builder.insert.bind(builder);
+      builder.insert = (row: unknown) => {
+        tried.push(String((row as { task: string }).task));
+        return insert(row);
+      };
+      return builder;
+    };
+    for (const question of ['How am I scoring?', 'And my putting?']) {
+      script({ content: [text('Your scoring has been steady.')] });
+      await ask(question);
+    }
+    const rows = ((h.admin as unknown as FakeDb).tables.golf_coachhelm_llm_calls ?? []) as Array<{ task: string; player_id: string }>;
+    expect(rows.map((r) => [r.task, r.player_id])).toEqual([['coach_chat', 'player-me'], ['coach_chat', 'player-me']]);
+    // Refused once, remembered for the life of the process.
+    expect(tried).toEqual(['player_chat', 'coach_chat', 'coach_chat']);
+    expect(h.logServerError.mock.calls.some((c) => String((c as unknown[])[0]).includes('llm ledger failed'))).toBe(false);
+  });
+
+  it('a ledger that refuses the row is said once per process, not once per turn, and the player still gets the answer', async () => {
+    resetPlayerLedgerFault();
+    const admin = h.admin.client as { from: (table: string) => unknown };
+    const real = admin.from.bind(admin);
+    admin.from = (table: string) => (table === 'golf_coachhelm_llm_calls' ? { insert: async () => ({ error: { message: 'new row violates check constraint' } }) } : real(table));
+    const said = () => h.logServerError.mock.calls.map((c) => c as unknown[]).filter((c) => String(c[0]).includes('llm ledger failed'));
+    for (const question of ['How am I scoring?', 'And my putting?']) {
+      script({ content: [text('You are averaging 73.1.')] });
+      const { events } = await ask(question);
+      expect(done(events)?.status).toBe('complete');
+    }
+    expect(said()).toHaveLength(1);
+    expect(said()[0]![2]).toBe('warning');
+    resetPlayerLedgerFault();
   });
 
   it('cannot make a change: a task call is refused before it is planned, and no ledger row is written', async () => {

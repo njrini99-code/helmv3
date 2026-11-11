@@ -49,6 +49,8 @@ const REPLAYABLE = new Set([
   'data-turn-meta',
   // What a run of the model's code covered: the reads behind a figure it worked out (`ChatComputed`).
   'data-computed',
+  // What to ask next, written after the answer (`ChatSuggestion`). Every message's come back; the thread draws the last answer's only.
+  'data-suggestions',
   // The live grounding flag (route.ts's `execute`, N15) is written into the
   // persisted assistant turn's `ui_parts` the same way a receipt is. Without
   // it here, the flag showed only during the original streaming session —
@@ -115,7 +117,11 @@ function isCardDecision(p: unknown, cardKeys: ReadonlySet<string>): boolean {
  * Progress parts are deliberately NOT replayed. "Reading 28 recorded rounds" is
  * true while it is happening and misleading a day later.
  */
-export function restoreUIMessages(messages: ChatMessage[]): UIMessage[] {
+/**
+ * `steps`: also keep each turn's steps of work (its `data-progress` rows), for a thread that can open an earlier turn's steps.
+ * Off by default: a thread that draws a row as running while its turn streams would otherwise redraw old turns' rows.
+ */
+export function restoreUIMessages(messages: ChatMessage[], options: { steps?: boolean } = {}): UIMessage[] {
   const out: UIMessage[] = [];
 
   for (const row of messages) {
@@ -133,10 +139,10 @@ export function restoreUIMessages(messages: ChatMessage[]): UIMessage[] {
           Boolean(p) &&
           typeof p === 'object' &&
           typeof (p as { type?: unknown }).type === 'string' &&
-          (REPLAYABLE.has((p as { type: string }).type) || isCardDecision(p, cardKeys)),
+          (REPLAYABLE.has((p as { type: string }).type) || isCardDecision(p, cardKeys) || (options.steps === true && (p as { type: string }).type === 'data-progress')),
       );
-      // The turn's meta alone is not something to draw.
-      if (parts.some((p) => p.type !== 'data-turn-meta')) {
+      // The turn's meta and its steps alone are not something to draw.
+      if (parts.some((p) => p.type !== 'data-turn-meta' && p.type !== 'data-progress')) {
         out.push({
           id: row.id,
           role: row.role === 'user' ? 'user' : 'assistant',
