@@ -158,6 +158,8 @@ in `create-tools.ts`, `practice-draft.ts`, `action-planners.ts` and `practice-pl
 | Send a message to a thread | `send_message` (quick chat only) | `sendGolfMessage` |
 | Set a tournament lineup | `set_lineup` (flag `golf_tournaments_v1`) | `setTournamentEntries` |
 | Lock a tournament lineup, no Undo | `lock_lineup` (same flag) | `lockTournamentLineup` |
+| Remind players about an event | `send_event_reminder` (CONTEXT's, `tasks/event-tasks.ts`) | `sendEventReminderToPlayers` |
+| Mark who came to an event | `record_attendance` (CONTEXT's, `tasks/event-tasks.ts`) | `markAttendance` |
 
 Drafts that write nothing and hand the coach a card (read tools, not tasks): a practice plan (`draft_practice_plan`,
 after `ask_practice_brief`), a long document (`write_artifact`), a message, poll or board opened in Messages
