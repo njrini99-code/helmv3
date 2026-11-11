@@ -198,7 +198,8 @@ END $$;
 -- 1. A player whose roster row becomes active ---------------------------------
 
 CREATE OR REPLACE FUNCTION helm_private.golf_team_channel_join_member()
-RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER
+RETURNS trigger LANGUAGE plpgsql
+SECURITY DEFINER
 SET search_path = ''
 AS $$
 BEGIN
@@ -239,7 +240,8 @@ EXECUTE FUNCTION helm_private.golf_team_channel_join_member();
 -- 2. A coach who is put on the team's staff -----------------------------------
 
 CREATE OR REPLACE FUNCTION helm_private.golf_team_channel_join_staff()
-RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER
+RETURNS trigger LANGUAGE plpgsql
+SECURITY DEFINER
 SET search_path = ''
 AS $$
 BEGIN

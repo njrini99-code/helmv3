@@ -148,7 +148,8 @@ END $$;
 CREATE OR REPLACE FUNCTION public.golf_conversation_team_link_ok(
     p_conversation_id uuid
 )
-RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER
+RETURNS boolean LANGUAGE sql STABLE
+SECURITY DEFINER
 SET search_path = ''
 AS $$
   SELECT NOT EXISTS (

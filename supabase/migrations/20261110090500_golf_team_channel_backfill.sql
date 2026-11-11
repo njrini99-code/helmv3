@@ -169,7 +169,8 @@ CREATE OR REPLACE FUNCTION helm_private.golf_team_channel_backfill()
 RETURNS TABLE (
     channels_created integer, rows_added integer, rows_removed integer
 )
-LANGUAGE plpgsql SECURITY DEFINER
+LANGUAGE plpgsql
+SECURITY DEFINER
 SET search_path = ''
 AS $$
 DECLARE

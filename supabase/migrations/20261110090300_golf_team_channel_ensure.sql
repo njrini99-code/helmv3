@@ -182,7 +182,8 @@ ON public.golf_conversations (team_id) WHERE is_team_channel;
 -- 2. The team's channel, created when there is none ---------------------------
 
 CREATE OR REPLACE FUNCTION helm_private.golf_ensure_team_channel(p_team_id uuid)
-RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER
+RETURNS uuid LANGUAGE plpgsql
+SECURITY DEFINER
 SET search_path = ''
 AS $$
 DECLARE
@@ -271,7 +272,8 @@ FROM public, anon, authenticated;
 -- Same names and triggers as 20261110090200; only the bodies change.
 
 CREATE OR REPLACE FUNCTION helm_private.golf_team_channel_join_member()
-RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER
+RETURNS trigger LANGUAGE plpgsql
+SECURITY DEFINER
 SET search_path = ''
 AS $$
 DECLARE
@@ -309,7 +311,8 @@ REVOKE ALL ON FUNCTION helm_private.golf_team_channel_join_member()
 FROM public, anon, authenticated;
 
 CREATE OR REPLACE FUNCTION helm_private.golf_team_channel_join_staff()
-RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER
+RETURNS trigger LANGUAGE plpgsql
+SECURITY DEFINER
 SET search_path = ''
 AS $$
 DECLARE

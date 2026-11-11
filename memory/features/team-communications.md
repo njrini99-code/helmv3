@@ -399,7 +399,7 @@ production). Until they are applied the paragraph above is the whole truth: only
 a channel, and nothing adds or removes a member when the roster changes.
 
 - `20261110090200` + `20261110090300`: a team has at most one channel (unique index on `team_id WHERE
-  is_team_channel`). `helm_private.golf_ensure_team_channel(team)` creates it the first time a player becomes active
+  is_team_channel`). The ensure function that `20261110090300` adds in `helm_private` creates it the first time a player becomes active
   or a coach is staffed, owned by the primary coach (else the coach staffed first), titled `<team name> — Team
   Channel`, and fills it from the roster. A team with no coach has no channel.
 - `20261110090400`: a person whose last role on a team ends (roster row no longer `active` or deleted, staff row

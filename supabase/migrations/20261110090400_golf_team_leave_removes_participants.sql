@@ -154,7 +154,8 @@ END $$;
 CREATE OR REPLACE FUNCTION helm_private.golf_team_remove_departed(
     p_team_id uuid, p_user_id uuid
 )
-RETURNS integer LANGUAGE plpgsql SECURITY DEFINER
+RETURNS integer LANGUAGE plpgsql
+SECURITY DEFINER
 SET search_path = ''
 AS $$
 DECLARE
@@ -204,7 +205,8 @@ FROM public, anon, authenticated;
 -- 2. A player who stops being active, or whose roster row is deleted ----------
 
 CREATE OR REPLACE FUNCTION helm_private.golf_team_chats_leave_member()
-RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER
+RETURNS trigger LANGUAGE plpgsql
+SECURITY DEFINER
 SET search_path = ''
 AS $$
 DECLARE
@@ -243,7 +245,8 @@ EXECUTE FUNCTION helm_private.golf_team_chats_leave_member();
 -- 3. A coach who comes off the staff ------------------------------------------
 
 CREATE OR REPLACE FUNCTION helm_private.golf_team_chats_leave_staff()
-RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER
+RETURNS trigger LANGUAGE plpgsql
+SECURITY DEFINER
 SET search_path = ''
 AS $$
 DECLARE
