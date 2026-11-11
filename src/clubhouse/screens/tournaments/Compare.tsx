@@ -320,9 +320,11 @@ function ScopeCard({
       <div className="ch-tour-cmp-scope__top">
         <Face scope={scope} side={side} names={names} />
         <ScopeTitle scope={scope} names={names} />
+        {/* The side the timeline edits says so on its header line, beside its outline: a row of its own under the
+            controls made that card's summary sit a line lower than the other's. */}
+        {target && <span className="ch-tour-chip is-ok ch-tour-cmp-scope__edit">Timeline edits {side.toUpperCase()}</span>}
       </div>
       <ScopeControls side={side} scope={scope} onChange={onChange} players={players} finished={finished} range={range} phone={false} />
-      {target && <span className="ch-tour-chip is-ok">Timeline edits {side.toUpperCase()}</span>}
       <SummaryLine summary={summary} side={side} />
     </section>
   );

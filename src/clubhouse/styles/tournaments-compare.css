@@ -118,6 +118,14 @@
   align-items: center;
   gap: 16px;
 }
+.ch-tour-cmp-scope__top > .ch-tour-cmp-title {
+  min-width: 0;
+}
+.ch-tour-cmp-scope__edit {
+  flex: none;
+  align-self: flex-start;
+  margin-left: auto;
+}
 .ch-tour-cmp-swap {
   align-self: center;
   justify-self: center;
@@ -310,10 +318,13 @@
   /* Visual pass 2026-10-28: practice marks reach 3:1 as graphics (ink-300 was 2.1:1 on the card). */
   background: var(--ch-ink-400);
 }
+/* The plot stands in from the left by a gutter that holds the two words for its scale ("Better than rating" over
+   "Worse"): inside the plot they sat under this season's dots, at the right, and could not be read. */
 .ch-tour-cmp-tl__track {
+  --ch-tour-cmp-tl-gutter: 112px;
   position: relative;
   height: 104px;
-  margin: 0 8px;
+  margin: 0 8px 0 calc(8px + var(--ch-tour-cmp-tl-gutter));
   touch-action: none;
   user-select: none;
 }
@@ -358,7 +369,9 @@
 }
 .ch-tour-cmp-tl__yk {
   position: absolute;
-  right: 6px;
+  right: 100%;
+  margin-right: 12px;
+  white-space: nowrap;
   font: var(--ch-type-11);
   letter-spacing: var(--ch-track-11);
   line-height: var(--ch-lead-tight);
