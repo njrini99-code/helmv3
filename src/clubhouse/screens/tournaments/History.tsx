@@ -90,10 +90,10 @@ function HistoryReady({ data, search, phone }: { data: ChTourHistoryData; search
         actions={
           <>
             <TourViewSwitch current="history" phone={phone} />
-            {/* On a phone Add event is the head's quiet key on Events, Compare and History alike (owner, 11 Nov 2026): the
-                three are one page under one switch, and the key under it turned green on this view alone. */}
+            {/* Add event is the head's quiet key on Events, Compare and History alike, on a phone and a desk (owner,
+                11 Nov 2026): the three are one page under one switch, so the key beside it never turns green on one view. */}
             {!empty && (
-              <Button variant={phone ? 'secondary' : 'primary'} leftIcon={Plus} href={paths.newEvent()}>
+              <Button leftIcon={Plus} href={paths.newEvent()}>
                 Add event
               </Button>
             )}

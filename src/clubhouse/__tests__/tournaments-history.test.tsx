@@ -87,10 +87,13 @@ describe('History, desktop', () => {
     expect(plain(riverside)).toContain('Theo, Sofia, Ava, Will, Jonah');
   });
 
-  it('keeps one primary action, Add event, beside the switch', () => {
+  it('keeps Add event as the quiet key beside the switch, as on Events: no green key in the head', () => {
     const c = draw(data, search());
     const head = c.querySelector('.ch-tour-head') as HTMLElement;
-    expect(head.querySelectorAll('.ch-btn--primary')).toHaveLength(1);
+    const add = within(head).getByRole('link', { name: 'Add event' });
+    expect(add.className).toContain('ch-btn--secondary');
+    expect(add.getAttribute('href')).toContain('/tournaments/new');
+    expect(head.querySelectorAll('.ch-btn--primary')).toHaveLength(0);
     expect(within(head).getByRole('radiogroup', { name: 'Tournaments view' })).toBeInTheDocument();
   });
 });

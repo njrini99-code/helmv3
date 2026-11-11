@@ -250,7 +250,7 @@ function CompareReady({ data, search, phone, embedded }: { data: ChTourCompareDa
             actions={
               <>
                 <TourViewSwitch current="compare" phone={phone} />
-                <Button variant={phone ? 'secondary' : 'primary'} leftIcon={Plus} href={paths.newEvent()}>
+                <Button leftIcon={Plus} href={paths.newEvent()}>
                   Add event
                 </Button>
               </>
