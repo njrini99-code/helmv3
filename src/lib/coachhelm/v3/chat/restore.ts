@@ -22,7 +22,7 @@
  * this override (#1997 review) — see `restoreFailedTurn`'s doc comment.
  * ========================================================================== */
 
-import type { ChatUIMessage as UIMessage } from './engine/protocol';
+import { isChatErrorKind, type ChatUIMessage as UIMessage } from './engine/protocol';
 import type { ChatMessage } from './types';
 import { STREAM_INCOMPLETE_NOTE } from './verdict';
 
@@ -45,6 +45,8 @@ const REPLAYABLE = new Set([
   // A link button to a screen of the app (`find_in_app`) and the chip for a note saved or removed: both are part of what the turn did.
   'data-app-link',
   'data-coach-note',
+  // When the turn began, how long it took and how many reads it made (`engine/protocol.ts`, `ChatTurnMeta`). Drawn by nobody that does not know it.
+  'data-turn-meta',
   // The live grounding flag (route.ts's `execute`, N15) is written into the
   // persisted assistant turn's `ui_parts` the same way a receipt is. Without
   // it here, the flag showed only during the original streaming session —
@@ -131,7 +133,8 @@ export function restoreUIMessages(messages: ChatMessage[]): UIMessage[] {
           typeof (p as { type?: unknown }).type === 'string' &&
           (REPLAYABLE.has((p as { type: string }).type) || isCardDecision(p, cardKeys)),
       );
-      if (parts.length > 0) {
+      // The turn's meta alone is not something to draw.
+      if (parts.some((p) => p.type !== 'data-turn-meta')) {
         out.push({
           id: row.id,
           role: row.role === 'user' ? 'user' : 'assistant',
@@ -178,7 +181,7 @@ export function restoreUIMessages(messages: ChatMessage[]): UIMessage[] {
 function restoreFailedTurn(row: ChatMessage): UIMessage {
   const parts = Array.isArray(row.ui_parts) ? row.ui_parts : [];
   const verdictPart = parts.find(
-    (p): p is { type: string; id?: unknown; data?: { note?: unknown } } =>
+    (p): p is { type: string; id?: unknown; data?: { note?: unknown; kind?: unknown } } =>
       Boolean(p) && typeof p === 'object' && VERDICT_PART_TYPES.has((p as { type?: unknown }).type as string),
   );
   const note =
@@ -194,7 +197,8 @@ function restoreFailedTurn(row: ChatMessage): UIMessage {
     id: row.id,
     role: 'assistant',
     parts: [
-      { type: partType, id: 'restored-verdict', data: { note } },
+      // `kind` (turns stored from 10 Nov 2026) lets the thread pick the notice the live turn showed.
+      { type: partType, id: 'restored-verdict', data: { note, ...(isChatErrorKind(verdictPart?.data?.kind) ? { kind: verdictPart.data.kind } : {}) } },
       ...actionParts,
     ] as UIMessage['parts'],
   };

@@ -180,10 +180,24 @@ entries are history. The tool list and the prompt are described where the tools 
   it is planned) and loaders bound to the player's own id. Nothing is stored for a player yet (player conversations
   are the held migration `20261101090200`), so each player question is answered on its own; the browser's copy of the
   thread is not replayed to the model.
-- **Wire protocol** (`engine/protocol.ts`, server-sent events): `message_start`, `text_delta`, `text_discard`,
-  `read_started`, `read_finished`, `note`, `evidence`, `visual`, `proposal`, `receipt`, `part`, `decision_needed`,
-  `decision`, `usage`, `error`, `done`. `useCoachHelmChat` keeps its interface, takes an optional `screen` it passes on
-  with each new message (no caller supplies one yet), and is the only client of the protocol.
+- **Wire protocol** (`engine/protocol.ts`, server-sent events): `message_start` (with `started_at` and the resolved
+  screen as `context`), `phase` (`thinking`, before each model call), `text_delta`, `text_discard`, `read_started`,
+  `read_finished` (with `detail` and `picture` when the read has them), `note`, `evidence`, `visual`, `proposal`,
+  `receipt`, `part`, `decision_needed`, `decision` (`reason: 'superseded'` and `message_id` when a new question
+  withdrew a card in an earlier message), `usage`, `error` (with `kind`), `done` (with `duration_ms`). Every addition is
+  an optional field; there is no version marker and an older stored thread restores unchanged. `useCoachHelmChat`
+  keeps its interface, adds `phase` and `error.kind`, keeps `started_at` and `context` on the message's `metadata`,
+  takes an optional `screen` it passes on with each new message (no caller supplies one yet), and is the only client
+  of the protocol.
+- **A failure's kind** is a closed set (`ChatErrorKind`): the server names it on the stream (`model`, `truncated`,
+  `lost`, `card_retry`, `card_gone`) and in a refused request's body (`budget`, `off`, `rate`, `signed_out`, `gone`);
+  the hook names a dropped connection (`offline`, `lost`, `card_retry`). A refusal by the model is not a failure.
+- **A turn's facts** are stored as the part `data-turn-meta`: `started_at`, `duration_ms` (summed over the requests
+  that worked on the turn), `reads`, and `declined` when the model refused.
+- **Screens bound for the tools** (`stream/route.ts`, the only file that may import a Clubhouse loader): Stats, Team
+  Stats, Roster, Rounds, Qualifiers, the Round page (`roundReview`) and, while `golf_tournaments_v1` is on, the
+  Tournaments home. An unbound or failing loader reads as unavailable, never as empty. `find_in_app` is offered, and
+  the browser's `screen` is used, only where Clubhouse is on for the team.
 - **Hold release**: the Confirm request itself, as above. The fallbacks for a function that died mid-window are
   unchanged: the card's own `GET /api/coachhelm/v3/chat/actions/[key]` when its ring ends, and a sweep on the coach's
   next chat request. A held row is rebuilt from the stored, sealed proposal (`held-runner.ts`). There is still no cron.

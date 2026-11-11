@@ -74,6 +74,31 @@ describe('restoreUIMessages — status: complete (or legacy null), unaffected', 
     expect(restored!.parts).toEqual([{ type: 'text', text: 'It is on Roster.' }, link, note]);
   });
 
+  it('keeps a turn’s stored facts, and a thread stored before they existed restores exactly as it did', () => {
+    const meta = { type: 'data-turn-meta', id: 'turn-meta', data: { started_at: '2026-11-10T12:00:00.000Z', duration_ms: 2100, reads: 3 } };
+    const now = assistantRow({ id: 'new', status: 'complete', ui_parts: [{ type: 'text', text: '74.2.' }, meta] });
+    // Stored in October: no meta part, and a declined card with no reason on it.
+    const card = { type: 'tool-create_focus_area', toolCallId: 'tu_1', state: 'output-denied', input: {}, approval: { id: 'k', approved: false } };
+    const proposal = { type: 'data-action-proposal', id: 'proposal-k', data: { idempotency_key: 'k', summary: 'Create it.' } };
+    const before = assistantRow({ id: 'old', status: 'complete', ui_parts: [{ type: 'text', text: 'Here is the plan.' }, proposal, card] });
+
+    const [old, fresh] = restoreUIMessages([before, now]);
+
+    expect(old!.parts).toEqual([{ type: 'text', text: 'Here is the plan.' }, proposal, card]);
+    expect(fresh!.parts).toEqual([{ type: 'text', text: '74.2.' }, meta]);
+  });
+
+  it('a row holding nothing but its facts draws nothing, and a failed turn restores the kind of its failure', () => {
+    const meta = { type: 'data-turn-meta', id: 'turn-meta', data: { started_at: '2026-11-10T12:00:00.000Z', duration_ms: 400, reads: 0 } };
+    expect(restoreUIMessages([assistantRow({ status: 'complete', content: '', ui_parts: [meta] })])).toEqual([]);
+
+    const failed = assistantRow({ status: 'failed', ui_parts: [meta, { type: 'data-turn-incomplete', id: 'turn-verdict', data: { note: 'That answer ran too long to finish.', kind: 'truncated' } }] });
+    expect(restoreUIMessages([failed])[0]!.parts).toEqual([{ type: 'data-turn-incomplete', id: 'restored-verdict', data: { note: 'That answer ran too long to finish.', kind: 'truncated' } }]);
+    // A name that is not one of the kinds is dropped, not passed on.
+    const odd = assistantRow({ status: 'failed', ui_parts: [{ type: 'data-turn-incomplete', id: 'turn-verdict', data: { note: 'x', kind: 'nonsense' } }] });
+    expect(restoreUIMessages([odd])[0]!.parts).toEqual([{ type: 'data-turn-incomplete', id: 'restored-verdict', data: { note: 'x' } }]);
+  });
+
   it('a legacy row (status null, no ui_parts) still renders from content as a completed answer', () => {
     const row = assistantRow({ status: null, ui_parts: null, content: 'Legacy answer text.' });
 

@@ -23,11 +23,13 @@ import * as Sentry from '@sentry/nextjs';
 import { filterForFigureWindow, loadPlayerPuttBands, loadPlayersFigures } from '@/clubhouse/data/player-figures';
 import { loadQualifierDetail, loadQualifierList } from '@/clubhouse/data/qualifiers';
 import { loadRoster } from '@/clubhouse/data/roster';
+import { loadRoundReview } from '@/clubhouse/data/round-review';
 import { loadPlayerProfile } from '@/clubhouse/data/stats-player';
 import { loadTeamStats } from '@/clubhouse/data/stats-team';
 import { loadTeamRounds } from '@/clubhouse/data/team-rounds';
 import { loadTeamStrokesGained } from '@/clubhouse/data/team-sg';
-import { isClubhouseFor } from '@/clubhouse/gate';
+import { loadTournamentsHome, tourContext } from '@/clubhouse/data/tournaments';
+import { isClubhouseFor, isClubhouseForTeam } from '@/clubhouse/gate';
 import { classifyProviderFault, providerFaultSeverity } from '@/lib/admin/provider-fault';
 import { drainCollapsedCount, shouldEmit } from '@/lib/admin/emit-throttle';
 import { checkRateLimit, RATE_LIMITS } from '@/lib/auth/rate-limit';
@@ -37,7 +39,7 @@ import { CoachContextError, resolveCoachChatContext, type CoachChatContext } fro
 import { firstTurnNotes, readStandingNotes, toneSentence } from '@/lib/coachhelm/v3/chat/context/notes';
 import { turnContext } from '@/lib/coachhelm/v3/chat/context/screen-context';
 import { CHAT_MAX_STEPS, CHAT_MODEL_LEDGER_ID, LONG_PROMPT_TOKENS, MissingModelKeyError, anthropicModelClient, callPromptTokens, chatFeatures, promptTokens, turnCostUsd } from '@/lib/coachhelm/v3/chat/engine/model';
-import { CHAT_STREAM_CONTENT_TYPE, encodeChatEvent, eventsForStoredParts, pendingDecisionKeys, type ChatErrorAction, type ChatEvent } from '@/lib/coachhelm/v3/chat/engine/protocol';
+import { CHAT_STREAM_CONTENT_TYPE, encodeChatEvent, eventsForStoredParts, pendingDecisionKeys, type ChatErrorAction, type ChatErrorKind, type ChatEvent, type ChatScreenEcho } from '@/lib/coachhelm/v3/chat/engine/protocol';
 import { loadConversation, type LoadedConversation, type TurnRow } from '@/lib/coachhelm/v3/chat/engine/store';
 import { chatTurnResponse, type TurnInput, type TurnSummary } from '@/lib/coachhelm/v3/chat/engine/turn';
 import type { ChatSurface, ScreenLoaders } from '@/lib/coachhelm/v3/chat/engine/tool';
@@ -51,6 +53,7 @@ import { sweepHeld } from '@/lib/coachhelm/v3/chat/undo-hold';
 import { checkBudget, recordSpend } from '@/lib/coachhelm/v3/llm/budget';
 import { buildChatLlmCallRow } from '@/lib/coachhelm/v3/llm/chat-call-row';
 import { estimateCostUsd } from '@/lib/coachhelm/v3/llm/types';
+import { isFlagEnabled } from '@/lib/flags/is-enabled';
 import { recordAi } from '@/lib/observability/metrics';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -91,6 +94,10 @@ function coachScreenLoaders(sb: Sb, who: { team_id: string; coach_id: string; ti
     teamRounds: orNull(() => loadTeamRounds({ teamId })),
     qualifierList: orNull(() => loadQualifierList({ role: 'coach', teamId, playerId: null, mode: 'all' })),
     qualifierBoard: orNull((qualifierId) => loadQualifierDetail({ role: 'coach', teamId, playerId: null, qualifierId })),
+    roundReview: orNull((roundId) => loadRoundReview(roundId, { role: 'coach', teamId })),
+    // Tournaments are behind golf_tournaments_v1: with the flag off the loader is not bound at all, and a read through it answers
+    // "could not be read", never an empty season.
+    ...(isFlagEnabled('golf_tournaments_v1') ? { tournaments: orNull(async () => loadTournamentsHome(await tourContext({ role: 'coach', teamId }))) } : {}),
   };
 }
 
@@ -109,6 +116,8 @@ function playerScreenLoaders(sb: Sb, who: { team_id: string; player_id: string; 
     playerStats: orNull(async (playerId, w) => (own(playerId) ? loadPlayerProfile({ viewer: 'player', teamId, playerId, window: w === 'season' ? 'season' : 'last10', filter: filterForFigureWindow(w) }) : null)),
     qualifierList: orNull(() => loadQualifierList({ role: 'player', teamId, playerId: who.player_id, mode: 'all' })),
     qualifierBoard: orNull((qualifierId) => loadQualifierDetail({ role: 'player', teamId, playerId: who.player_id, qualifierId })),
+    // The Round page judges the round against the viewer; the tool has already checked the round is the player's own.
+    roundReview: orNull((roundId) => loadRoundReview(roundId, { role: 'player', playerId: who.player_id, teamId })),
   };
 }
 
@@ -164,12 +173,17 @@ const MISSING_KEY = 'CoachHelm is not set up on this server yet. Please tell sup
  * of which belongs in a browser, so the sentence comes from one shared classifier (the schedule importer and the Bridge
  * use the same one) or is the generic line.
  */
-function describeTurnError(error: unknown): { message: string; action: ChatErrorAction } {
-  if (error instanceof MissingModelKeyError) return { message: MISSING_KEY, action: 'none' };
+function describeTurnError(error: unknown): { message: string; action: ChatErrorAction; kind: ChatErrorKind } {
+  if (error instanceof MissingModelKeyError) return { message: MISSING_KEY, action: 'none', kind: 'model' };
   const fault = classifyProviderFault(error);
-  if (fault) return { message: fault.summary, action: 'retry' };
-  return { message: GENERIC_FAILURE, action: 'retry' };
+  if (fault) return { message: fault.summary, action: 'retry', kind: 'model' };
+  return { message: GENERIC_FAILURE, action: 'retry', kind: 'model' };
 }
+
+/** A refused request: a sentence, and the kind the screen picks its notice by (`ChatErrorKind`). */
+const refuse = (status: number, error: string, kind: ChatErrorKind | null, extra: Record<string, unknown> = {}) => NextResponse.json({ error, ...(kind ? { kind } : {}), ...extra }, { status });
+/** 401 is a session that ended; 403 and "no active team" are an account that may not use this. */
+const kindForStatus = (status: number): ChatErrorKind | null => (status === 401 ? 'signed_out' : status === 403 || status === 404 ? 'off' : null);
 
 /** Log one failed model call. A provider or account fault is logged under a stable code so every retry of one outage is one incident. */
 function logModelError(error: unknown): void {
@@ -227,10 +241,10 @@ export async function POST(req: NextRequest) {
     // and the player turn confirms a player row and runs the team gate itself.
     if (err instanceof CoachContextError && err.reason === 'not_a_coach' && (await isClubhouseFor('player'))) {
       const body = Body.safeParse(await req.json().catch(() => null));
-      if (!body.success || body.data.input.kind !== 'message') return NextResponse.json({ error: 'Bad request' }, { status: 400 });
+      if (!body.success || body.data.input.kind !== 'message') return refuse(400, 'Bad request', null);
       return runPlayerTurn(supabase, { text: body.data.input.text, clientTurnId: body.data.client_turn_id, screen: body.data.screen }, req.signal, (who) => playerScreenLoaders(supabase, who));
     }
-    if (err instanceof CoachContextError) return NextResponse.json({ error: err.message }, { status: err.status });
+    if (err instanceof CoachContextError) return refuse(err.status, err.message, kindForStatus(err.status));
     await logServerError('chat/stream: context resolution failed', { action: 'v3.chat.stream.ctx' });
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });
   }
@@ -249,16 +263,16 @@ export async function POST(req: NextRequest) {
     earlyConversationId ? null : checkBudget(admin, ctx.coach_id, CHAT_TURN_COST_ESTIMATE_USD),
   ]);
   // CoachHelm switched off (globally, for the coach or for the team) answers nothing here either; the gate fails closed on a lookup error.
-  if (!helmGate.effectivelyEnabled) return NextResponse.json({ error: 'CoachHelm is off for your team.' }, { status: 403 });
-  if (!parsed.success) return NextResponse.json({ error: 'Bad request' }, { status: 400 });
-  if (!rl.allowed) return NextResponse.json({ error: 'Too many requests. Please slow down.' }, { status: 429 });
+  if (!helmGate.effectivelyEnabled) return refuse(403, 'CoachHelm is off for your team.', 'off');
+  if (!parsed.success) return refuse(400, 'Bad request', null);
+  if (!rl.allowed) return refuse(429, 'Too many requests. Please slow down.', 'rate');
 
   const { input, client_turn_id: clientTurnId, surface } = parsed.data;
   let conversationId = parsed.data.conversation_id;
   // A conversation with no rows yet is assumed to have the model-message columns; the first write finds out and falls back if not.
   let loaded: LoadedConversation = { mode: 'columns', rows: [] };
   if (conversationId) {
-    if (!existing || existing.coach_id !== ctx.coach_id) return NextResponse.json({ error: 'Conversation not found' }, { status: 404 });
+    if (!existing || existing.coach_id !== ctx.coach_id) return refuse(404, 'Conversation not found', 'gone');
     if (loadedOrError instanceof Error || !loadedOrError) {
       // Without the stored turns the model would answer with no memory of the conversation, and a Confirm could not find its card.
       await logServerError(`chat/stream: history could not be read: ${loadedOrError instanceof Error ? loadedOrError.message : 'none'}`, { action: 'v3.chat.stream.history' });
@@ -271,7 +285,7 @@ export async function POST(req: NextRequest) {
       if (answered) return storedTurnResponse(answered, conversationId);
     }
   } else if (input.kind === 'decision') {
-    return NextResponse.json({ error: 'Conversation not found' }, { status: 404 });
+    return refuse(404, 'Conversation not found', 'gone');
   }
 
   // The budget gate runs before anything is created, so an exhausted budget leaves no orphan conversation or user turn. A decision is not
@@ -285,7 +299,8 @@ export async function POST(req: NextRequest) {
           : gate.fallback_reason === 'budget_disabled'
             ? 'AI analysis is switched off for your program. An administrator can turn it on in coaching settings.'
             : 'You have reached today’s analysis limit for your program. It resets tomorrow.';
-      return NextResponse.json({ error: message, reason: gate.fallback_reason ?? 'budget_gated' }, { status: 429 });
+      // Switched off for the program is "off"; a limit reached (or settings that could not be checked) is "budget".
+      return refuse(429, message, gate.fallback_reason === 'budget_disabled' ? 'off' : 'budget', { reason: gate.fallback_reason ?? 'budget_gated' });
     }
   }
 
@@ -307,17 +322,24 @@ export async function POST(req: NextRequest) {
   // answered turn) the coach's standing notes go to the model as a system message after the coach's own, and are stored with the turn.
   // A decision request sends none: its turn already has its line.
   const blocks = instructionBlocks(surface, ctx);
+  // Clubhouse for this coach's team, by the check its pages use. It decides two things here, both because the names are Clubhouse's:
+  // whether the screen the browser names is told to the model, and whether `find_in_app` (which answers with Clubhouse addresses) is offered.
+  const clubhouseOn = isClubhouseForTeam(ctx.team_id);
   let turnNote: string | null = null;
+  let screenEcho: ChatScreenEcho | null = null;
   if (input.kind === 'message') {
     // Neither read throws; without the notes migration there are simply no notes and no tone.
-    const [where, knows] = await Promise.all([turnContext(supabase, ctx, parsed.data.screen), readStandingNotes(supabase, ctx, isNewConversation ? null : convId)]);
+    const [where, knows] = await Promise.all([turnContext(supabase, ctx, clubhouseOn ? parsed.data.screen : null), readStandingNotes(supabase, ctx, isNewConversation ? null : convId)]);
+    screenEcho = where.screen?.place ? { screen: where.screen.screen, label: where.screen.place.name } : null;
     // "First" is the first turn that stays in the stored history: a failed first attempt leaves only its question behind, so its retry
     // still carries the notes.
     const firstTurn = !loaded.rows.some((r) => r.role === 'assistant' && r.status !== 'failed');
     const line = [where.line, toneSentence(knows)].filter(Boolean).join(' ');
     turnNote = [firstTurn ? firstTurnNotes(knows) : null, line].filter(Boolean).join('\n\n');
   }
-  const tools = toolsFor(surface, ctx);
+  // The registry registers `find_in_app` for everyone; a team without Clubhouse is not offered it. That is two tool lists per surface,
+  // each the same bytes on every request, so each is cached on its own.
+  const tools = toolsFor(surface, ctx).filter((tool) => clubhouseOn || tool.name !== 'find_in_app');
 
   // Opaque and server-generated, never derived from who the coach or their players are: safe as Sentry's conversation key.
   Sentry.setConversationId(convId);
@@ -345,6 +367,7 @@ export async function POST(req: NextRequest) {
       maxSteps: CHAT_MAX_STEPS,
       features: chatFeatures(),
       turnNote,
+      screen: screenEcho,
       requestSignal: req.signal,
       store: { loaded, coachId: ctx.coach_id },
       clientTurnId,

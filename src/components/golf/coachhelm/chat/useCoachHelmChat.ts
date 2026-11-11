@@ -31,8 +31,10 @@ import {
   applyChatEvent,
   createChatEventParser,
   type ChatEvent,
+  type ChatMessageMetadata,
   type ChatUIMessage,
 } from '@/lib/coachhelm/v3/chat/engine/protocol';
+import { chatErrorKind, type ChatFailureKind } from '@/lib/coachhelm/v3/chat/error-message';
 
 const STREAM_ENDPOINT = '/api/coachhelm/v3/chat/stream';
 /** Re-render the thread at most this often while an answer streams: per-token renders made long answers stutter on an iPhone. */
@@ -81,7 +83,13 @@ export interface UseCoachHelmChatOptions {
 export interface UseCoachHelmChatResult {
   messages: ChatUIMessage[];
   status: 'ready' | 'submitted' | 'streaming' | 'error';
-  error: Error | undefined;
+  /** The failure, when there is one. Always carries `kind` (`ChatFailureKind`): pick the notice by it, not by the sentence. */
+  error: (Error & { kind?: ChatFailureKind; action?: string }) | undefined;
+  /**
+   * `thinking` while the model has been called and nothing of the answer has arrived. The server's word, not a guess.
+   * The hook always sets it; it is optional in the type only so a hand-built result (a preview, a test) need not.
+   */
+  phase?: 'thinking' | null;
   /** True while a turn is in flight — drives the composer's stop affordance. */
   busy: boolean;
   conversationId: string | null;
@@ -116,6 +124,7 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
   const [messages, setMessages] = React.useState<ChatUIMessage[]>(options.initialMessages ?? []);
   const [status, setStatus] = React.useState<UseCoachHelmChatResult['status']>('ready');
   const [error, setError] = React.useState<Error | undefined>(undefined);
+  const [phase, setPhase] = React.useState<'thinking' | null>(null);
 
   // The thread as of the last event, ahead of what React has drawn: events fold in here and are flushed on a timer.
   const thread = React.useRef<ChatUIMessage[]>(messages);
@@ -190,16 +199,25 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
             target = holder.id;
           } else {
             target = event.message_id;
-            thread.current = [...thread.current, { id: event.message_id, role: 'assistant', parts: [] }];
+            // When the turn began and the screen the server resolved for it, kept on the message for the thread to draw.
+            const metadata: ChatMessageMetadata = { ...(event.started_at ? { started_at: event.started_at } : {}), ...(event.context === undefined ? {} : { context: event.context }) };
+            thread.current = [...thread.current, { id: event.message_id, role: 'assistant', parts: [], ...(Object.keys(metadata).length > 0 ? { metadata } : {}) }];
           }
           return;
         }
+        if (event.type === 'phase') {
+          setPhase(event.phase);
+          return;
+        }
         if (event.type === 'error') {
-          setError(Object.assign(new Error(event.message), { action: event.action }));
+          setError(Object.assign(new Error(event.message), { action: event.action, kind: event.kind ?? 'model' }));
           return;
         }
         if (event.type === 'done' || event.type === 'usage' || !target) return;
-        const id = target;
+        // The first thing of the answer itself ends the wait.
+        setPhase(null);
+        // A card withdrawn because the coach asked something else sits in an earlier message: the event names it.
+        const id = event.type === 'decision' && event.message_id ? event.message_id : target;
         thread.current = thread.current.map((m) => (m.id === id ? applyChatEvent(m, event) : m));
       };
 
@@ -231,7 +249,7 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
             if (event.type === 'error') failed = true;
             if (event.type === 'done') finished = true;
             fold(event);
-            if (event.type !== 'message_start') setStatus((s) => (s === 'submitted' ? 'streaming' : s));
+            if (event.type !== 'message_start' && event.type !== 'phase') setStatus((s) => (s === 'submitted' ? 'streaming' : s));
           }
           scheduleFlush();
         }
@@ -240,10 +258,16 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
       } catch (err) {
         if (abort.signal.aborted) return;
         failed = true;
-        setError(err instanceof Error ? err : new Error(''));
+        const failure = err instanceof Error ? err : new Error('');
+        // A refused request carries its kind (the server's, or the status's). Anything else here is a connection that dropped:
+        // the device is offline, a Confirm's response was lost, or an answer was cut off.
+        const kind: ChatFailureKind =
+          typeof (failure as { statusCode?: unknown }).statusCode === 'number' ? chatErrorKind(failure) : typeof navigator !== 'undefined' && navigator.onLine === false ? 'offline' : outgoing.kind === 'decision' ? 'card_retry' : 'lost';
+        setError(Object.assign(failure, { kind }));
       } finally {
         if (inFlight.current === abort) {
           inFlight.current = null;
+          setPhase(null);
           flush();
           setStatus(failed ? 'error' : 'ready');
         }
@@ -296,6 +320,7 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
   const stop = React.useCallback(() => {
     inFlight.current?.abort();
     inFlight.current = null;
+    setPhase(null);
     flush();
     setStatus('ready');
   }, [flush]);
@@ -312,6 +337,7 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
     setMessages([]);
     // The old thread's failure must not follow the coach into the new one.
     setError(undefined);
+    setPhase(null);
     setStatus('ready');
   }, []);
 
@@ -340,6 +366,7 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
     messages,
     status,
     error,
+    phase,
     busy,
     conversationId,
     context,

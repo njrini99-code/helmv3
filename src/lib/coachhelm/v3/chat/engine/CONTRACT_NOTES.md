@@ -456,3 +456,52 @@ Nothing else of CONTEXT's depends on the shell: the notes and the two event task
     read directly; never do arithmetic in the answer; a task is never called from code, the task tool is called
     directly so the coach gets the card. The player's policy does not mention code. ENGINE: if the tool is offered
     under another name than `code_execution`, or you need other words, say so here and TOOLS changes the sentences.
+
+
+## 2026-11-10 night (ENGINE): loaders, find_in_app, and what the chat screens asked the protocol for
+
+E12. `roundReview` and `tournaments` are bound in the route (TOOLS item 12). Coach: `loadRoundReview(roundId, { role:
+     'coach', teamId })`; player: `{ role: 'player', playerId, teamId }`; `tournaments` for a coach only and only while
+     `golf_tournaments_v1` is on (unbound otherwise, which reads as unavailable). One correction to
+     `../screen-loaders.ts`, found by binding it: a tournament's `format` on the screen is an object
+     (`{ kind, players, counting, holes }`, `TourFormat`), not a string. The type and the two fixture lines in
+     `registry-readers.test.ts` say so now; `get_tournaments` passes it through to `detail.format` unchanged.
+
+E13. `find_in_app` is dropped by name in the route when Clubhouse is not on for the coach's team
+     (`isClubhouseForTeam`), and the browser's `screen` is ignored then too (CONTEXT C7). The registry still registers it.
+     A player only reaches this route with Clubhouse on (`isClubhouseFor('player')`), so a player's list always has it.
+
+E14. `ToolResult.progress_detail?: string` and `ToolResult.progress_picture?: unknown` (was ENGINE item 12). The engine
+     sends them on `read_finished` as `detail` and `picture`, and the stored `data-progress` part carries both, in the
+     shape the thread already reads. Neither goes to the model. A read that sets no `progress_detail` gets its first
+     measurement's sample ("1,412 rounds", "1 round"), which is the old `detailFor`. No tool sets `progress_picture`
+     yet: `practice-pictures.ts` is keyed by tool names that no longer exist. TOOLS: return
+     `progress_picture: practicePicture(...)`'s `picture` from the reads that should draw one.
+
+E15. Protocol, all additive (there is no version marker in the reducer; every new field is optional and an old
+     stored thread restores exactly as before, tested in `src/test/coachhelm/v3/chat-restore.test.ts`):
+     - `message_start.started_at` (ISO, when this request began work) and `message_start.context`
+       (`{ screen, label } | null`: the screen id and the app map's name for it; null when none was sent, none passed
+       the checks, or Clubhouse is off). The hook keeps both on the assistant message's `metadata`
+       (`ChatMessageMetadata`).
+     - `{ type: 'phase', phase: 'thinking' }` before each model call. Not stored. The hook exposes `phase`
+       (`'thinking' | null`), cleared by the first event of the answer. Status stays `submitted` while thinking.
+     - `read_finished.detail`, `read_finished.picture` (E14).
+     - `decision.reason: 'superseded'` and `decision.message_id` when a new question withdraws a waiting card: the
+       event is sent on the new question's stream and names the EARLIER message that holds the card. The stored card
+       becomes `approval: { id, approved: false, reason: 'superseded' }`. A Cancel the coach pressed has no `reason`.
+     - `error.kind`, one of `ChatErrorKind` (`engine/protocol.ts`). Sent on the stream: `model`, `truncated`, `lost`
+       (the answer could not be saved), `card_retry`, `card_gone`. In a refused request's JSON body (`{ error, kind }`):
+       `budget`, `off`, `rate`, `signed_out`, `gone`. Set by the hook itself: `offline`, `lost` (dropped connection),
+       `card_retry` (a decision whose response was lost). `useCoachHelmChat().error.kind` is always set;
+       `chatErrorKind(error)` in `../error-message.ts` gives the same answer for any error object. A stored failed turn
+       keeps it: `data-turn-incomplete.data.kind`.
+     - `declined` is in the set and is never sent: a refusal is a complete turn (E6). It is marked instead in the
+       turn's meta part, `declined: true`.
+     - `done.duration_ms` (this request) and the stored part `data-turn-meta` (id `turn-meta`):
+       `{ started_at, duration_ms, reads, declined? }`. `started_at` is the turn's and does not move when its card is
+       decided; `duration_ms` adds up over the requests that worked on the turn (the Undo window included); `reads`
+       counts finished read rows, failed ones included. `turnMetaOf(parts)` reads it; a thread stored before 10 Nov
+       2026 has none. It is in `REPLAYABLE`.
+     - The final receipt arrives on the Confirm's own stream when the hold ends (E5), so a card need not poll.
+
