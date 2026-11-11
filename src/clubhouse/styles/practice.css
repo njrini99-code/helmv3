@@ -844,6 +844,14 @@ html[data-fw-theme='dark'] .ch-prc-feat .ch-btn--secondary[data-ch-pressed]:not(
 html[data-fw-theme='dark'] .ch-prc-feat .ch-btn--secondary:focus-visible {
   box-shadow: 0 0 0 2px var(--ch-feature-bg), 0 0 0 4px var(--ch-border-focus-on-dark);
 }
+/* Keyboard focus on the green card is the champagne ring, as Hub's and Tournaments' green cards draw it (CONS-36): the page's green ring was
+   green on green by day, 1.5:1, around the text key and around the white one. */
+.ch-prc-feat :focus-visible {
+  outline-color: var(--ch-border-focus-on-dark);
+}
+.ch-root .ch-prc-feat .ch-btn:focus-visible {
+  box-shadow: 0 0 0 2px var(--ch-feature-bg), 0 0 0 4px var(--ch-border-focus-on-dark);
+}
 .ch-prc-feat__more {
   min-height: 44px;
   border: 0;
@@ -1189,6 +1197,8 @@ html[data-fw-theme='dark'] :is(.ch-prc-group.is-d .ch-prc-disc, .ch-prc-disc.g-D
 html[data-fw-theme='dark'] :is(.ch-prc-group.is-e .ch-prc-disc, .ch-prc-disc.g-E) { background: var(--ch-plan-group-e-night); }
 html[data-fw-theme='dark'] :is(.ch-prc-group.is-f .ch-prc-disc, .ch-prc-disc.g-F) { background: var(--ch-ink-700); }
 .ch-prc-player {
+  /* A short name ("Eli") is still a 44pt target. */
+  min-width: 44px;
   min-height: 44px;
   padding: 0 12px;
   border: 0;
@@ -1744,6 +1754,11 @@ main.ch-prc-planpage > .ch-backlink {
   font: var(--ch-type-13);
   letter-spacing: var(--ch-track-13);
 }
+/* Only the name and its line make room for the card's ⋯: what the template is and its blocks run to the card's own inset, rule and all. */
+.ch-prc-tmpl__go > small,
+.ch-prc-tmpl__go > .ch-prc-glance {
+  margin-inline-end: -32px;
+}
 .ch-prc-glance {
   display: grid;
   gap: 2px;
@@ -1861,6 +1876,15 @@ main.ch-prc-planpage > .ch-backlink {
   }
   .ch-prc-run__a > span {
     grid-column: 1 / -1;
+  }
+  /* A print option's switch is drawn 40 by 23; a finger gets 44 by 44 around it, the shared reach (controls.css). */
+  .ch-prt-opt .ch-switch {
+    position: relative;
+  }
+  .ch-prt-opt .ch-switch::after {
+    content: '';
+    position: absolute;
+    inset: min(0px, calc(50% - 22px));
   }
 }
 @media (max-width: 820px) and (min-width: 414px) {

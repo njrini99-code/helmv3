@@ -18,6 +18,7 @@ import { PhoneIconAction } from '../../../ui/PhoneBar';
 import { Button } from '../../../ui/Button';
 import { ActionSheet } from '../../../ui/FormSheet';
 import { PracticeSheet } from '../PracticeSheet';
+import { wholeFacts } from '../facts';
 import { Switch } from '../../../ui/Switch';
 import { TimeField } from '../../../ui/TimeField';
 import { Icon } from '../../../ui/Icon';
@@ -357,7 +358,7 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
   );
   const whenLine = (
     <div className="ch-prb-when">
-      <span className="ch-num">{data.meta}</span>
+      <span className="ch-num">{wholeFacts(data.meta)}</span>
       <Button variant="ghost" size="sm" onClick={() => setMoving(moveFrom())} aria={{ label: 'Change the practice time' }}>
         Change
       </Button>
@@ -426,7 +427,7 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
       <span className={'ch-prc-fold__m' + (helper.k === 'running' ? ' is-working' : '')} aria-hidden="true">
         <Icon icon={ShipWheel} size={16} />
       </span>
-      <span className="ch-prc-fold__t">
+      <span className="ch-prc-fold__t ch-num">
         <b>CoachHelm</b>
         {helper.k === 'running' && ' · building suggestions'}
         {helper.k === 'ghosts' && (phone ? ` · ${plural(ghosts.length, 'suggestion')}` : ` · ${plural(ghosts.length, 'suggestion')}. Nothing is in the plan until you keep it.`)}
@@ -557,9 +558,9 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
                   <b>{b.title}</b>
                   <span className="ch-prc-block__s">
                     <Icon icon={KIND_ICON[b.kind]} size={14} />
-                    <span>{blockSub(b)}</span>
+                    <span className="ch-num">{wholeFacts(blockSub(b))}</span>
                   </span>
-                  {drillNames.length > 0 && <span className="ch-prc-block__d">{drillNames.join(' · ')}</span>}
+                  {drillNames.length > 0 && <span className="ch-prc-block__d">{wholeFacts(drillNames.join(' · '))}</span>}
                   {why[b.id]?.because && (
                     <span className="ch-prc-block__why">
                       <b>Because</b> {why[b.id]!.because}
@@ -727,7 +728,7 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
             </ul>
           </>
         ) : (
-          <p>{data.status === 'published' ? 'Players whose day changed will be told.' : `${peopleLine} will be told.`}</p>
+          <p className="ch-num">{data.status === 'published' ? 'Players whose day changed will be told.' : `${peopleLine} will be told.`}</p>
         )}
         {check.warnings.length > 0 && (
           <ul className="ch-prc-probs is-warn">
@@ -827,7 +828,7 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
             <dl className="ch-prc-facts">
               <div>
                 <dt>When</dt>
-                <dd className="ch-num">{data.meta}</dd>
+                <dd className="ch-num">{wholeFacts(data.meta)}</dd>
               </div>
               <div>
                 <dt>Tells</dt>
@@ -980,7 +981,7 @@ function PracticeFields({ title, body, onFocus, onPlace }: { title: string; body
         <label className="ch-field__label" htmlFor="ch-prb-focus">
           Focus
         </label>
-        <textarea id="ch-prb-focus" className="ch-input" rows={2} maxLength={140} value={body.focus} onChange={(e) => onFocus(e.target.value)} />
+        <textarea id="ch-prb-focus" className="ch-textarea" rows={2} maxLength={140} value={body.focus} onChange={(e) => onFocus(e.target.value)} />
       </div>
       <div className="ch-field">
         <label className="ch-field__label" htmlFor="ch-prb-place">

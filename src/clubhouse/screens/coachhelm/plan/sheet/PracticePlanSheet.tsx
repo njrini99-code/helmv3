@@ -34,7 +34,7 @@ export function PracticePlanSheet({ plan, density = 'phone', part = 'all', draft
         <section>
           <h3 className="pp-h">
             {named(o, 'Groups')}
-            {plan.copy === 'coach' && <span>{plan.playersLine}</span>}
+            {plan.copy === 'coach' && <span className="ch-num">{plan.playersLine}</span>}
           </h3>
           <div className="pp-groups">
             {plan.groups.map((g) => (
@@ -96,7 +96,7 @@ export function PracticePlanSheet({ plan, density = 'phone', part = 'all', draft
         </span>
         <span className="pp-date">
           <span>{plan.dayWord}</span>
-          <b>{plan.dayNum}</b>
+          <b className="ch-num">{plan.dayNum}</b>
           {plan.monthWord && <span>{plan.monthWord}</span>}
         </span>
       </header>
@@ -106,7 +106,7 @@ export function PracticePlanSheet({ plan, density = 'phone', part = 'all', draft
         {plan.meta.map((m) => (
           <div key={m.label}>
             <dt>{m.label}</dt>
-            <dd>{m.label === 'Coaches' ? <Names value={m.value} /> : m.value}</dd>
+            <dd className={m.label === 'Time' ? 'ch-num' : undefined}>{m.label === 'Coaches' ? <Names value={m.value} /> : m.value}</dd>
           </div>
         ))}
       </dl>
@@ -143,14 +143,14 @@ function Schedule({ plan, title }: { plan: PlanSheetModel; title: string }) {
       <section>
         <h3 className="pp-h">
           {title}
-          <span>{plan.totalLine}</span>
+          <span className="ch-num">{plan.totalLine}</span>
         </h3>
         <div className="sched">
           {plan.rows.map((r) => (
             <div className="drow" key={r.id}>
               <span className="pt">
-                <b>{r.start}</b>
-                <span>{r.mins} min</span>
+                <b className="ch-num">{r.start}</b>
+                <span className="ch-num">{r.mins} min</span>
               </span>
               <div>
                 <div className="pn">{r.title}</div>
@@ -159,7 +159,7 @@ function Schedule({ plan, title }: { plan: PlanSheetModel; title: string }) {
                   <div className="pp-rot" style={{ ['--ch-pp-turns' as string]: r.rotation.turns.length }}>
                     <span className="h">Station</span>
                     {r.rotation.turns.map((t) => (
-                      <span className="h" key={t}>
+                      <span className="h ch-num" key={t}>
                         {t}
                       </span>
                     ))}
@@ -174,7 +174,7 @@ function Schedule({ plan, title }: { plan: PlanSheetModel; title: string }) {
                 ) : (
                   <div className="pp-who">
                     {r.who.map((w) => (
-                      <span key={w.letter + w.text} className={`g-${w.letter}`}>
+                      <span key={w.letter + w.text} className={`ch-num g-${w.letter}`}>
                         <Gd letter={w.letter} />
                         {w.text}
                       </span>

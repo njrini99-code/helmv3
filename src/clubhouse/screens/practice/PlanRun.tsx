@@ -143,10 +143,10 @@ export function PlanRun({ planId, title, version, body, start, zone, serverNow }
         </ul>
         <div className="ch-prc-run__a" role="group" aria-label="Shift the rest of practice">
           <span>Shift the rest</span>
-          <Button onClick={() => setMoving(-5)} aria={{ label: '5 min earlier' }}>
+          <Button className="ch-num" onClick={() => setMoving(-5)} aria={{ label: '5 min earlier' }}>
             5 min earlier
           </Button>
-          <Button onClick={() => setMoving(5)} aria={{ label: 'Shift the rest 5 min later' }}>
+          <Button className="ch-num" onClick={() => setMoving(5)} aria={{ label: 'Shift the rest 5 min later' }}>
             5 min later
           </Button>
         </div>

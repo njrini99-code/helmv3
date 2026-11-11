@@ -7,6 +7,7 @@ import { copyPlanBody, savePracticePlan } from '@/app/golf/actions/practice-plan
 import type { PlanBodyV2 } from '@/lib/coachhelm/v3/practice-plan/model';
 import type { ChPracticeEvent } from '../../data/practice-home-shape';
 import { PracticeSheet } from './PracticeSheet';
+import { wholeFacts } from './facts';
 import { Icon } from '../../ui/Icon';
 import { useToast } from '../../ui/Toast';
 import { TERMS } from '../../lib/glossary';
@@ -23,8 +24,8 @@ function Option({ on, title, line, disabled, onPick }: { on: boolean; title: str
   return (
     <button type="button" className={'ch-prc-opt' + (on ? ' is-on' : '')} role="radio" aria-checked={on} disabled={disabled} onClick={onPick}>
       <span className="ch-prc-opt__t">
-        <b>{title}</b>
-        <span>{line}</span>
+        <b className="ch-num">{title}</b>
+        <span className="ch-num">{wholeFacts(line)}</span>
       </span>
       <span className="ch-prc-opt__r" aria-hidden="true">
         {on && <Icon icon={Check} size={14} />}

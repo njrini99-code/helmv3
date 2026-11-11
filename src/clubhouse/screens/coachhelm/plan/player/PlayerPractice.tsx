@@ -12,6 +12,7 @@ import { Icon } from '../../../../ui/Icon';
 import { LargeTitle } from '../../../../ui/LargeTitle';
 import { Segmented } from '../../../../ui/Segmented';
 import { EmptyState } from '../../../../ui/States';
+import { wholeFacts } from '../../../practice/facts';
 
 export interface PlayerStop {
   time: string;
@@ -77,7 +78,7 @@ export function PlayerPractice({ data, everyone, planId = null }: { data: Player
           </span>
           <div className="hd">
             <span className="t">{data.title}</span>
-            <span className="m">{data.when}</span>
+            <span className="m ch-num">{wholeFacts(data.when)}</span>
           </div>
         </header>
         {data.focus && <div className="focus">{data.focus}</div>}
@@ -114,7 +115,7 @@ export function PlayerPractice({ data, everyone, planId = null }: { data: Player
               <span className="tm ch-num">{s.time}</span>
               <div>
                 <div className="pl">{s.place}</div>
-                <div className="dr">{s.line}</div>
+                <div className="dr">{wholeFacts(s.line)}</div>
               </div>
               {s.now ? <span className="now">Now</span> : s.next ? <span className="nx">Next</span> : <span />}
             </div>

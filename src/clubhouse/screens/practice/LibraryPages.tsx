@@ -274,7 +274,7 @@ export function DrillPage({ teamId, drill, preview = false }: { teamId: string; 
             <label className="ch-field__label" htmlFor="ch-prc-d-s">
               Set-up
             </label>
-            <textarea id="ch-prc-d-s" className="ch-input" rows={3} maxLength={1000} value={setup} onChange={(e) => setSetup(e.target.value)} />
+            <textarea id="ch-prc-d-s" className="ch-textarea" rows={3} maxLength={1000} value={setup} onChange={(e) => setSetup(e.target.value)} />
           </div>
           <div className="ch-field">
             <label className="ch-field__label" htmlFor="ch-prc-d-g">

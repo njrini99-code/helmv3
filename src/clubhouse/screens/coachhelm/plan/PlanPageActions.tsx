@@ -11,6 +11,7 @@ import { PhoneIconAction } from '../../../ui/PhoneBar';
 import { BackLink } from '../../../ui/Section';
 import { recordPracticePlanOpen } from '@/app/golf/actions/practice-plans';
 import { useToast } from '../../../ui/Toast';
+import { wholeFacts } from '../../practice/facts';
 import { printPlan, sharePlanPdf } from './PrintPlan';
 import type { PlanSheetModel } from './sheet/plan-sheet-model';
 
@@ -68,7 +69,7 @@ export function PlanPageActions({ plan, playerPlanId, editHref = null, coachBar 
           <header className="ch-prc-h ch-prc-planhead">
             <div>
               <LargeTitle id="ch-prc-plan-title">{plan.title}</LargeTitle>
-              {when && <p className="ch-prc-h__line ch-num">{when}</p>}
+              {when && <p className="ch-prc-h__line ch-num">{wholeFacts(when)}</p>}
             </div>
             <div className="ch-prc-h__a">
               {editHref && <Button href={editHref}>Edit</Button>}

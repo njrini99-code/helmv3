@@ -16,6 +16,7 @@ import { LargeTitle } from '../../ui/LargeTitle';
 import { EmptyState } from '../../ui/States';
 import { Badge, type BadgeTone } from '../../ui/Badge';
 import { DayLegend, DayStrip, type DaySeg } from './DayStrip';
+import { wholeFacts } from './facts';
 import { NewPlanSheet, type NewPlanStart } from './NewPlanSheet';
 
 /** The state's word and tone. A past plan reads "Ended" (05 S-PRC.past); the tone never carries the meaning alone. */
@@ -51,7 +52,7 @@ export function WeekStrip({ week, onPlan }: { week: ChPracticeTile[]; onPlan?: (
         <div key={t.key} role="listitem" className={'ch-prc-tile' + (t.today ? ' is-today' : '') + (t.items.length ? '' : ' is-off')} aria-current={t.today ? 'date' : undefined}>
           <span className="ch-prc-tile__d ch-num">
             <span>{t.day}</span>
-            <b>{t.date}</b>
+            <b className="ch-num">{t.date}</b>
           </span>
           {t.items.length === 0 && <span className="ch-prc-tile__none">No practice</span>}
           {t.items.map((it, i) => {
@@ -93,7 +94,7 @@ export function PlanRows({ rows, label }: { rows: ChPracticeRow[]; label: string
                 <StateChip state={r.state} />
               </span>
               <span className="ch-prc-row__w ch-num">
-                {r.day} · {r.time}
+                {wholeFacts(`${r.day} · ${r.time}`)}
               </span>
               {r.line && <span className="ch-prc-row__l ch-num">{r.line}</span>}
               {r.edits && <span className="ch-prc-row__e">Edits not published</span>}
@@ -201,7 +202,7 @@ export function PracticeHome({ data, openNew = false, previewSheet = false, temp
                 {up.state ? <StateChip state={up.state} /> : <StateChip state="No plan" />}
               </div>
               <h2 id="ch-prc-next">{up.title}</h2>
-              <p className="ch-prc-next__w ch-num">{up.when}</p>
+              <p className="ch-prc-next__w ch-num">{wholeFacts(up.when)}</p>
               {up.rows.length > 0 ? (
                 <>
                   <DayStrip segs={segs} />
@@ -258,7 +259,7 @@ export function PracticeHome({ data, openNew = false, previewSheet = false, temp
           )}
           {data.past.length > 0 && (
             <section className="ch-prc-sec">
-              <button type="button" className="ch-prc-open" aria-expanded={pastOpen} onClick={() => setPastOpen((v) => !v)}>
+              <button type="button" className="ch-prc-open ch-num" aria-expanded={pastOpen} onClick={() => setPastOpen((v) => !v)}>
                 Past plans ({data.past.length})
                 <Icon icon={ChevronRight} size={16} />
               </button>

@@ -187,7 +187,7 @@ function PocketCard({ plan, group, qr, draft }: { plan: PlanSheetModel; group: P
         </span>
       </header>
       <h3>{plan.title}</h3>
-      <p className="ch-prt-card__deck">{[time, place].filter(Boolean).join(' · ')}</p>
+      <p className="ch-prt-card__deck ch-num">{[time, place].filter(Boolean).join(' · ')}</p>
       <ol>
         {stopsFor(plan, group.letter).map((s) => (
           <li key={s.id}>
@@ -475,7 +475,7 @@ export function PrintStudio({ plan, drills, planHref, draft = false, drillsUnrea
             ))}
           </GroupList>
           <p className="ch-prt-count ch-num" role="status" data-ch="print-count">
-            <b>{printSummary(counted)}</b>
+            <b className="ch-num">{printSummary(counted)}</b>
             {spilled.length > 0 && <span>{spilled.join(' and ')} {spilled.length === 1 ? 'runs' : 'run'} past one sheet. Each break falls between rows, shown on the paper.</span>}
             {appendix > 2 && <span>The drills appendix alone is {appendix} sheets.</span>}
             {draft && <span>Every sheet says Draft.</span>}

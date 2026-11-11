@@ -1513,6 +1513,11 @@ html[data-fw-theme='dark'] .ch-cpv-vz {
   right: 4px;
   top: 4px;
 }
+/* The header strip is shorter than its tag, so the tag hangs over the line under it: the strip sits above that line, or the line's ring cut
+   "Header" to "eader". */
+.ch-cpv .smp.found .sh1 {
+  z-index: 1;
+}
 .ch-cpv-pub .tells {
   display: block;
 }

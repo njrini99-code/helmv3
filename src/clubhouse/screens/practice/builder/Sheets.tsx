@@ -122,7 +122,7 @@ export function BlockFields({ block, body, onChange, onRemove }: { block: PlanBl
         <label className="ch-field__label" htmlFor={`${id}-n`}>
           Note <span className="ch-field__opt">Optional</span>
         </label>
-        <textarea id={`${id}-n`} className="ch-input" rows={2} maxLength={280} value={block.note} onChange={(e) => set({ note: e.target.value })} />
+        <textarea id={`${id}-n`} className="ch-textarea" rows={2} maxLength={280} value={block.note} onChange={(e) => set({ note: e.target.value })} />
       </div>
       {onRemove && (
         <Button variant="ghost" leftIcon={Trash2} onClick={onRemove}>

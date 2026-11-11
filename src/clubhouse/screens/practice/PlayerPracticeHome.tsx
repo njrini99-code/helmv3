@@ -9,6 +9,7 @@ import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { LargeTitle } from '../../ui/LargeTitle';
 import { EmptyState } from '../../ui/States';
+import { wholeFacts } from './facts';
 import { PlanRows, WeekStrip } from './PracticeHome';
 
 /** How many of the player's stops the home card shows before "Open plan": the one on now, the next, and one more. */
@@ -43,7 +44,7 @@ export function PlayerPracticeHome({ data }: { data: ChPlayerPracticeHome }) {
               </span>
               <div className="hd">
                 <span className="t">{next.title}</span>
-                <span className="m ch-num">{next.when}</span>
+                <span className="m ch-num">{wholeFacts(next.when)}</span>
               </div>
             </header>
             {next.focus && <div className="focus">{next.focus}</div>}
@@ -68,7 +69,7 @@ export function PlayerPracticeHome({ data }: { data: ChPlayerPracticeHome }) {
                   <span className="tm ch-num">{s.time}</span>
                   <div>
                     <div className="pl">{s.place}</div>
-                    {s.line && <div className="dr">{s.line}</div>}
+                    {s.line && <div className="dr">{wholeFacts(s.line)}</div>}
                   </div>
                   {s.now ? <span className="now">Now</span> : s.next ? <span className="nx">Next</span> : <span />}
                 </div>
