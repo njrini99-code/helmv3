@@ -14,6 +14,8 @@ export interface TaskPhaseMeta {
   tool: string;
   label: string;
   day?: string | null;
+  /** The player the thing belongs to, when it lives on one player's page. */
+  subject?: string | null;
   heldUntil?: string | null;
   /** The saved row's id, when the receipt carries one. */
   id?: string | null;
@@ -175,9 +177,9 @@ export function useLandingDriver({ pathname, open, mode, canRecede, recede, anno
       if (phase === 'held') {
         const home = LANDING_HOMES[meta.tool];
         touched.current = false;
-        holdLanding({ key, tool: meta.tool, label: meta.label, day: meta.day, heldUntil: meta.heldUntil ?? null, before: home && isLandingHome(home, live.current.pathname) ? rowKeys(document, home.kind) : null });
+        holdLanding({ key, tool: meta.tool, label: meta.label, day: meta.day, subject: meta.subject, heldUntil: meta.heldUntil ?? null, before: home && isLandingHome(home, live.current.pathname) ? rowKeys(document, home.kind) : null });
       } else if (phase === 'saved') {
-        saveLanding({ key, tool: meta.tool, label: meta.label, id: meta.id, day: meta.day });
+        saveLanding({ key, tool: meta.tool, label: meta.label, id: meta.id, day: meta.day, subject: meta.subject });
         // Saved for a home the coach is not on: it waits for Open, and not for ever.
         setTimeout(() => (runs.current.has(key) ? undefined : forgetLanding(key)), LANDING_UNSEEN_MS);
       }

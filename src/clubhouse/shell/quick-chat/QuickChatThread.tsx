@@ -25,7 +25,7 @@ import { QuickAsk } from './QuickAsk';
 import { qcContext, qcScreen, quickStarts, type QuickStart } from './starts';
 import { TaskCard } from './TaskCard';
 import { useDictation } from './useDictation';
-import { useLandingDriver } from './use-landing-driver';
+import { useLandingDriver, type TaskPhase, type TaskPhaseMeta } from './use-landing-driver';
 import { PlanTask } from './visuals/PlanTask';
 
 const TURNS_SHOWN = 30;
@@ -154,11 +154,12 @@ export function QuickChatThread({ chat: useChatImpl, conversationId, initialMess
   const lastReceipt = assistant?.blocks.flatMap((b) => (b.kind === 'proposal' ? [b.view.receipt] : b.kind === 'receipt' ? [b.receipt] : [])).find(Boolean) ?? null;
   const receiptStatus = lastReceipt?.status;
   const heldUntil = receiptStatus === 'held' ? (lastReceipt?.held_until ?? null) : null;
-  const sawStatus = useRef(receiptStatus);
+  /** What the card in this sitting last said. The stored receipt stays `held` until the thread is read again, so the card is the truth. */
+  const [card, setCard] = useState<{ phase: TaskPhase; until: string | null } | null>(null);
   const [clock, tick] = useState(0);
   useEffect(() => {
-    const was = sawStatus.current;
-    sawStatus.current = receiptStatus;
+    const until = card ? (card.phase === 'held' ? card.until : null) : heldUntil;
+    const left = until ? Math.ceil((Date.parse(until) - Date.now()) / SECOND_MS) : 0;
     if (pendingId) {
       setRun({ state: 'wait', label: 'Needs your OK' });
       if (open) return;
@@ -170,23 +171,26 @@ export function QuickChatThread({ chat: useChatImpl, conversationId, initialMess
       return () => clearTimeout(t);
     }
     if (chat.busy) return setRun({ state: 'work', label: stepLabel });
-    if (receiptStatus === 'failed') return setRun({ state: 'failed', label: 'Didn’t go through' });
-    if (heldUntil) {
+    if (card?.phase === 'failed' || (!card && receiptStatus === 'failed')) return setRun({ state: 'failed', label: 'Didn’t go through' });
+    if (left > 0) {
       // The hold's clock on the pill, from the server's instant: "Saves in 5".
-      const left = Math.max(0, Math.ceil((Date.parse(heldUntil) - Date.now()) / SECOND_MS));
-      setRun({ state: 'wait', label: left ? `Saves in ${left}` : 'Saving…' });
+      setRun({ state: 'wait', label: `Saves in ${left}` });
       const t = setTimeout(() => tick((n) => n + 1), SECOND_MS);
       return () => clearTimeout(t);
     }
-    // Only a save the coach did not see land is said on the key; reopening and closing a finished thread says nothing.
-    if (receiptStatus === 'completed' && was && was !== 'completed') {
+    if (card?.phase === 'held') return setRun({ state: 'work', label: 'Saving…' });
+    // Only a save made in this sitting is said on the key; reopening and closing a finished thread says nothing.
+    if (card?.phase === 'saved') {
       setRun({ state: 'done', label: 'Added' });
-      const t = setTimeout(() => setRun({ state: 'idle', label: '' }), PILL_REST_MS);
+      const t = setTimeout(() => {
+        setRun({ state: 'idle', label: '' });
+        setCard(null);
+      }, PILL_REST_MS);
       return () => clearTimeout(t);
     }
     setRun({ state: 'idle', label: '' });
     return undefined;
-  }, [pendingId, chat.busy, stepLabel, receiptStatus, heldUntil, open, setRun, setFlag, clock]);
+  }, [pendingId, chat.busy, stepLabel, receiptStatus, heldUntil, card, open, setRun, setFlag, clock]);
   // An answer that finished with the panel away has not been read: reopened, the thread shows the top of its page.
   const wasBusy = useRef(chat.busy);
   useEffect(() => {
@@ -206,7 +210,7 @@ export function QuickChatThread({ chat: useChatImpl, conversationId, initialMess
   const fieldFocusAt = useRef(0);
   const state = useRef({ text, busy: chat.busy });
   state.current = { text, busy: chat.busy };
-  const onPhase = useLandingDriver({
+  const land = useLandingDriver({
     pathname,
     open,
     mode,
@@ -215,6 +219,10 @@ export function QuickChatThread({ chat: useChatImpl, conversationId, initialMess
     recede: onClose,
     announce: setLandedLine,
   });
+  const onPhase = (key: string, phase: TaskPhase, meta: TaskPhaseMeta) => {
+    setCard({ phase, until: meta.heldUntil ?? null });
+    land(key, phase, meta);
+  };
 
   /** MO-2-3: the starts step back for the question; the one that was tapped has become it. */
   const [stepping, setStepping] = useState<{ rows: QuickStart[]; from: string | null } | null>(null);
@@ -368,7 +376,15 @@ export function QuickChatThread({ chat: useChatImpl, conversationId, initialMess
                 <span ref={chipEl} className="qc-chip" role="group" aria-label={`Asking about ${chip.label.replace(/\s·\s/g, ', ')}`}>
                   <Badge tone="neutral">
                     <Icon icon={MapPin} size={13} className="qc-chip__pin" />
-                    <span className="qc-chip__l">{chip.label}</span>
+                    {chip.playerName && chip.label.endsWith(chip.playerName) && chip.label.length > chip.playerName.length ? (
+                      // A long trail gives way in its screen part; the name is never cut.
+                      <>
+                        <span className="qc-chip__l">{chip.label.slice(0, -chip.playerName.length).replace(/\s·\s$/, '')}</span>
+                        <span className="qc-chip__n">· {chip.playerName}</span>
+                      </>
+                    ) : (
+                      <span className="qc-chip__l">{chip.label}</span>
+                    )}
                     <button type="button" className="qc-chip__x" aria-label="Remove" disabled={chat.busy} onClick={dropChip}>
                       <Icon icon={X} size={13} />
                     </button>

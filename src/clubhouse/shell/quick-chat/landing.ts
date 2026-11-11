@@ -26,6 +26,8 @@ export interface Landing {
   id: string | null;
   /** ISO day, for things that live on a date. */
   day: string | null;
+  /** The player it belongs to, for things that live on one player's page (a focus area). */
+  subject: string | null;
   phase: LandingPhase;
   heldUntil: string | null;
   /** `data-ch-row` values of this kind in the page when the hold began: the one that is new afterwards is the row. */
@@ -39,7 +41,7 @@ export interface Landing {
  */
 export const LANDING_HOMES: Readonly<Record<string, { kind: LandingKind; homes: readonly string[]; place: string }>> = {
   create_task: { kind: 'task', homes: ['/golf/dashboard/team-hub', '/golf/dashboard/tasks', '/golf/dashboard/team'], place: 'Tasks' },
-  create_goal: { kind: 'focus_area', homes: ['/golf/dashboard/intelligence'], place: 'Focus areas' },
+  create_goal: { kind: 'focus_area', homes: ['/golf/dashboard/stats', '/golf/dashboard/intelligence'], place: 'Focus areas' },
   create_event: { kind: 'event', homes: ['/golf/dashboard/calendar'], place: 'Calendar' },
   create_recurring_practice: { kind: 'event', homes: ['/golf/dashboard/calendar'], place: 'Calendar' },
   create_blocked_time: { kind: 'blocked_time', homes: ['/golf/dashboard/calendar'], place: 'Calendar' },
@@ -81,16 +83,16 @@ const path = (href: string) => (href.split(/[?#]/)[0] ?? '').replace(/\/$/, '');
 export const isLandingHome = (l: Pick<Landing, 'homes'>, pathname: string): boolean => l.homes.includes(path(pathname));
 
 /** The hold began: the page may show where the thing will be. A tool with no home on any screen starts nothing. */
-export function holdLanding(a: { key: string; tool: string; label: string; day?: string | null; heldUntil: string | null; before?: readonly string[] | null }): Landing | null {
+export function holdLanding(a: { key: string; tool: string; label: string; day?: string | null; subject?: string | null; heldUntil: string | null; before?: readonly string[] | null }): Landing | null {
   const home = LANDING_HOMES[a.tool];
   if (!home) return null;
-  const landing: Landing = { key: a.key, kind: home.kind, homes: home.homes, place: home.place, label: a.label, id: null, day: a.day ?? null, phase: 'held', heldUntil: a.heldUntil, before: a.before ?? null, savedAt: null };
+  const landing: Landing = { key: a.key, kind: home.kind, homes: home.homes, place: home.place, label: a.label, id: null, day: a.day ?? null, subject: a.subject ?? null, phase: 'held', heldUntil: a.heldUntil, before: a.before ?? null, savedAt: null };
   set([...landings.filter((l) => l.key !== a.key), landing]);
   return landing;
 }
 
 /** The write is in. Also the way in for a receipt that was never held here (Ask's Open): it starts at `saved`. */
-export function saveLanding(a: { key: string; tool?: string; label?: string; id?: string | null; day?: string | null; at?: number }): Landing | null {
+export function saveLanding(a: { key: string; tool?: string; label?: string; id?: string | null; day?: string | null; subject?: string | null; at?: number }): Landing | null {
   const at = a.at ?? Date.now();
   const had = landings.find((l) => l.key === a.key);
   if (had) {
@@ -99,7 +101,7 @@ export function saveLanding(a: { key: string; tool?: string; label?: string; id?
   }
   const home = a.tool ? LANDING_HOMES[a.tool] : undefined;
   if (!home) return null;
-  const landing: Landing = { key: a.key, kind: home.kind, homes: home.homes, place: home.place, label: a.label ?? '', id: a.id ?? null, day: a.day ?? null, phase: 'saved', heldUntil: null, before: null, savedAt: at };
+  const landing: Landing = { key: a.key, kind: home.kind, homes: home.homes, place: home.place, label: a.label ?? '', id: a.id ?? null, day: a.day ?? null, subject: a.subject ?? null, phase: 'saved', heldUntil: null, before: null, savedAt: at };
   set([...landings, landing]);
   return landing;
 }

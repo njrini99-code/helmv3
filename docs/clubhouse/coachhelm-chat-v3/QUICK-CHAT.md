@@ -393,3 +393,88 @@ As MOTION.md's six steps, plus for these moments:
 4. the page's `scrollY` before open and after close: equal, except after MO-8-3;
 5. with the panel open: `document.activeElement` stays inside the panel or on the key through a full Tab cycle, and
    the canvas carries `inert`.
+
+---
+
+## Build notes (10 Nov 2026, after the first build)
+
+### Where it is
+
+| Piece | File |
+| --- | --- |
+| The frame: pour, scrim, inert others, focus, history entry, drag, keyboard ride, header | `src/clubhouse/shell/quick-chat/QuickChatSession.tsx`, `useQcMotion.ts` |
+| The conversation: hook, starts, thread, chip, composer, the key's pill | `QuickChatThread.tsx` |
+| Context and starts per screen | `starts.ts` |
+| The landing signal, row finding, the comfort band, the mark | `landing.ts` |
+| The pending slot | `LandingSlot.tsx` |
+| The driver (re-read, bring into view, recede, hide the slot before paint, mark when seen) | `use-landing-driver.ts` |
+| Thresholds and timer lengths | `qc-timing.ts` |
+| Today's thread read | `earlier-today.ts` (`readTodayThread`) |
+| Styles | `src/clubhouse/styles/quick-chat.css`, the block headed "Quick chat v3" |
+| Preview | `src/clubhouse/preview/PreviewQuickChat.tsx`, `fixtures-quick-chat.ts` |
+
+### Decided while building (each differs from, or adds to, the text above)
+
+1. **The panel's history entry is popped when the close has ended**, not when it starts. A reopen inside the 220 ms of
+   a close keeps the entry it had; popping at the start raced the browser's own asynchronous Back.
+2. **The key's pill follows the card, not the stored receipt.** The hook's messages keep the `held` receipt after the
+   write (the final one arrives by the card's own poll until SPEC request 2 lands), so "Saves in 5", "Saving…" and
+   "Added" are driven from the card's phase.
+3. **A landing has a `subject`** (the player's id) beside `day`, so a one-player page shows only that player's slot:
+   `<LandingSlot kind="focus_area" subject={playerId} />`.
+4. **The slot reads the shell's pathname from the quick chat's context**, which is the browser's in the app and the
+   screen's own in a preview.
+5. **The starts sit at the foot of the open page**, on the composer they feed; the one that is tapped rises to the top
+   as the question. (The first build had them under the header, with the page's space under them: the hand and the
+   eye are at the composer.)
+6. **The chip truncates in its screen part** and never in the name, by drawing the two as separate runs.
+7. **In WebKit's default Tab mode** (text fields only) Tab moves between the composer and the browser's own chrome;
+   no element of the page behind is reached. With full keyboard access on, the order is the one in "Focus".
+
+### Stand-ins (named, to be replaced, none hidden)
+
+| Stand-in | For | Replace when |
+| --- | --- | --- |
+| The inherited `Steps`, `AssistantTurn` and `TaskCard` in this folder | The Ask lane's shared thread pieces at compact size (work line, read list, the card with the countdown ring and "Not saved yet", turn notice, Rule P's scroller) | The lead exports them. The inherited card still says "Added" and shows a check during the hold, which contradicts the slot's "Not saved yet"; the shared card fixes that |
+| `.ub[data-new]` rising 10px on settle | The lead's MO-3-4 from a foreign source rect | It is exported |
+| `LANDING_HOMES` (tool name to kind, home and place) | `lands` on the proposal | Engine request 3 |
+| Row found as "the one new row of its kind", or by its title | `created[].id` | Engine request 1 |
+| `BEAT_MS` in `qc-timing.ts` | The lead's `chat/turn-timing.ts` | It lands |
+| `PreviewLandingHost` in `PreviewQuickChat.tsx` | A screen that has taken the hooks: it stamps the Team Hub's task rows, places the slot, and plays the loader's part by adding the saved row 520 ms after the save | The Hub takes its two lines |
+
+### The one-line hooks each screen needs (none is in a file this lane owns)
+
+| Screen | File | Hook |
+| --- | --- | --- |
+| Team Hub, tasks | `screens/hub/parts.tsx`, `TaskRow`'s `PresenceRow` and the `.ch-hb-tasks` list in `Tasks` | `data-ch-row={`task:${t.id}`}` on the row; `data-ch-row-tag=""` on its title `<b>`; `<LandingSlot kind="task" />` as the list's first child |
+| Team Hub, announcements | `screens/hub/parts.tsx`, `Announcement`'s `PresenceRow` and its list | `data-ch-row={`announcement:${a.id}`}`; `<LandingSlot kind="announcement" />` at the head |
+| Team Hub, travel | `screens/hub/parts.tsx` (`TripPass`), `widgets.tsx` (`TripTile`) | `data-ch-row={`trip:${id}`}`; `<LandingSlot kind="trip" />` at the head |
+| Calendar | the day's agenda list and the event chip in `screens/calendar/**` | `data-ch-row={`event:${id}`}` (and `blocked_time:${id}`) on each event; `<LandingSlot kind="event" day={isoDay} />` in each visible day |
+| A player's focus areas | `screens/stats/StatsPlayer.tsx` (and its phone twin) | `data-ch-row={`focus_area:${id}`}`; `<LandingSlot kind="focus_area" subject={playerId} />` at the head |
+| Qualifiers | `screens/qualifiers/QualifiersList.tsx` | `data-ch-row={`qualifier:${id}`}`; `<LandingSlot kind="qualifier" />` at the head |
+| Recruiting | the board's row or card in `screens/recruiting/**` | `data-ch-row={`recruit:${id}`}`; `<LandingSlot kind="recruit" />` at the head of its column |
+| Messages | none | Its own outgoing bubble is the landing |
+
+The Hub's task row already has a wash for a task a notification named (`is-focus`): the landing's mark is the same idea
+arriving by a different road, and the coordinator may prefer to fold the two into one class when the mark's rules move
+to `ui.css`.
+
+### Preview URLs (no sign-in, no model call)
+
+Base `http://127.0.0.1:3100/clubhouse-preview/`. Any coach screen takes `?qc=<state>`; `&qcopen=0` starts closed so
+the pour can be driven from the key.
+
+| Moment | URL |
+| --- | --- |
+| 1. Summon, from the key | `roster?qc=hello&qcopen=0`, then the key or Cmd/Ctrl+J |
+| 1. Open on the empty start, with a chip | `roster?qc=hello`, `calendar?qc=hello`, `stats?qc=hello` |
+| 1. No chip (nothing to read) | `home?qc=hello` |
+| 1. Phone, keyboard up (a block stands where the keyboard would be) | `calendar?qc=hello-kb` at 390x844 |
+| 1. Live pill | `roster?qc=live`, `roster?qc=live-work` |
+| 2. Starts per screen; tap one to see them step back | `roster?qc=hello`, `calendar?qc=hello`, `qualifiers?qc=hello`, `hub?qc=hello`, `messages?qc=hello` |
+| 8. Landing on the thing's home: Confirm, 8 s hold with the slot, save, recede, mark | `hub?tab=tasks&qc=land` (`land-fast` holds 1.6 s) |
+| 8. Undo during the hold | `hub?tab=tasks&qc=land`, Confirm, then Undo |
+| 8. A failed write | `hub?tab=tasks&qc=land-fail` |
+| 8. Home is elsewhere (no slot, no recede, Open travels) | `roster?qc=land-fast` |
+| 9. Reopened later the same day | `hub?tab=tasks&qc=today`, `roster?qc=today` |
+| Inherited task states | `calendar?qc=confirm-cal`, `receipt-cal`, `told-cal`, `failed-cal`, `undone-cal`, and the `msg`, `qual`, `plan` sets |

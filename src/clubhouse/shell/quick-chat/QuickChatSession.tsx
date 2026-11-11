@@ -144,11 +144,12 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
         el.hidden = true;
         if (scrim.current) scrim.current.hidden = true;
         setShown(false);
+        // Its history entry goes when the close has ended: a reopen before then keeps the entry it had.
+        const mine = entry.current;
+        entry.current = null;
+        if (mine !== null && !leaving.current && (window.history.state as { chQc?: number } | null)?.chQc === mine) window.history.back();
       });
       if (!leaving.current) keyRef.current?.querySelector<HTMLElement>('[data-ch-qc-key]')?.focus({ preventScroll: true });
-      const mine = entry.current;
-      entry.current = null;
-      if (mine !== null && !leaving.current && (window.history.state as { chQc?: number } | null)?.chQc === mine) window.history.back();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- runs on the toggle
   }, [open, phone]);

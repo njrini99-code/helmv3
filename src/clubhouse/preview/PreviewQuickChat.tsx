@@ -102,7 +102,9 @@ function PreviewLandingHost() {
       row.removeAttribute('data-ch-landed');
       const title = row.querySelector('b:not(.ch-num)');
       if (title) title.textContent = label;
-      row.querySelectorAll('div > span').forEach((n) => (n.textContent = 'Eli Brandt · due Fri 14 Nov'));
+      row.querySelectorAll(':scope > div > span').forEach((n) => (n.textContent = 'Eli Brandt · due Fri 14 Nov'));
+      const progress = row.querySelector('.ch-hb-prog b');
+      if (progress) progress.textContent = '0/1';
       host.after(row);
     }, REREAD_MS);
     return () => clearTimeout(t);

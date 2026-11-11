@@ -1,10 +1,11 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { CH_EASE, CH_FADE_MS, chSpringCurve } from '../../lib/motion';
 import { useChMotionMode } from '../../lib/reduced-motion';
 import { isLandingHome, useLandings, type LandingKind } from './landing';
+import { QcCtx } from './qc-context';
 import { BEAT_MS, SECOND_MS } from './qc-timing';
 
 const ease = `cubic-bezier(${CH_EASE.join(',')})`;
@@ -25,13 +26,15 @@ function useSecondsLeft(until: string | null): number | null {
 /**
  * Where a row the chat is making will be (QUICK-CHAT.md `ST-8.pending`): a screen puts one where a new row of `kind`
  * would appear, and it draws nothing unless a write of that kind is held, or saved and not yet in the page, for this
- * page. A day-shaped screen passes the `day` its list is for. It is not the row: dashed, secondary ink, and it says
+ * page. A day-shaped screen passes the `day` its list is for, a one-player page the `subject` (that player's id). It is not the row: dashed, secondary ink, and it says
  * "Not saved yet".
  */
-export function LandingSlot({ kind, day, as: Tag = 'div' }: { kind: LandingKind; day?: string; as?: 'div' | 'li' }) {
-  const pathname = usePathname() ?? '';
+export function LandingSlot({ kind, day, subject, as: Tag = 'div' }: { kind: LandingKind; day?: string; subject?: string; as?: 'div' | 'li' }) {
+  // The shell's pathname where the shell gives one (in a preview it is the screen's own, not the preview route's).
+  const browser = usePathname() ?? '';
+  const pathname = useContext(QcCtx)?.pathname ?? browser;
   const mode = useChMotionMode();
-  const landing = useLandings().find((l) => l.kind === kind && l.phase !== 'landed' && isLandingHome(l, pathname) && (day === undefined || l.day === day)) ?? null;
+  const landing = useLandings().find((l) => l.kind === kind && l.phase !== 'landed' && isLandingHome(l, pathname) && (day === undefined || l.day === day) && (subject === undefined || l.subject === subject)) ?? null;
   const seconds = useSecondsLeft(landing?.phase === 'held' ? landing.heldUntil : null);
   const el = useRef<HTMLElement | null>(null);
   const key = landing?.key ?? null;

@@ -516,7 +516,8 @@ html[data-fw-theme='dark'] .ch-qck.is-desk .hkey__disc { background: rgb(107 187
 .ch-qcs .qc-chip { display: inline-flex; min-width: 0; max-width: 100%; }
 .ch-qcs .qc-chip .ch-badge { display: inline-flex; align-items: center; gap: 4px; min-width: 0; max-width: 100%; padding-right: 2px; }
 .ch-qcs .qc-chip__pin { flex: none; color: var(--ch-text-secondary); }
-.ch-qcs .qc-chip__l { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ch-qcs .qc-chip__l { min-width: 2ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ch-qcs .qc-chip__n { flex: none; white-space: nowrap; }
 .ch-qcs .qc-chip__x { position: relative; flex: none; display: grid; place-items: center; width: 20px; height: 20px; padding: 0; border: 0; border-radius: 50%; background: none; color: var(--ch-text-secondary); cursor: pointer; }
 .ch-qcs .qc-chip__x::after { content: ''; position: absolute; inset: -12px; }
 .ch-qcs .qc-chip__x:disabled { opacity: 0.4; cursor: default; }

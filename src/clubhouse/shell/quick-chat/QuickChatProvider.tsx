@@ -77,7 +77,7 @@ export function QuickChatProvider({ plans = false, pathname, search, enabled, ch
     if (open) setFlag(false);
   }, [open]);
 
-  const value = useMemo(() => ({ on: on && !onCoachHelm, open, setOpen, toggle, warm, run, setRun, flag, setFlag, keyRef, session, setSession }), [on, onCoachHelm, open, toggle, warm, run, flag, session]);
+  const value = useMemo(() => ({ pathname, on: on && !onCoachHelm, open, setOpen, toggle, warm, run, setRun, flag, setFlag, keyRef, session, setSession }), [pathname, on, onCoachHelm, open, toggle, warm, run, flag, session]);
   const legacy = useMemo(() => ({ open, setOpen, warm, available: on && !onCoachHelm }), [open, warm, on, onCoachHelm]);
   return (
     <QcCtx.Provider value={value}>

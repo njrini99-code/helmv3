@@ -97,7 +97,7 @@ export function TaskCard({ view, online, onSend, onApprove, onDeny, onOpen, onPh
       return;
     }
     // Only a change the coach watched is an event: a card drawn from a stored thread lands nothing.
-    const meta: TaskPhaseMeta = { tool: view.tool, label: title, day: visual?.kind === 'cal' ? visual.date : visual?.kind === 'qual' ? visual.start : null, heldUntil: phase.k === 'held' ? phase.until : null };
+    const meta: TaskPhaseMeta = { tool: view.tool, label: title, day: visual?.kind === 'cal' ? visual.date : visual?.kind === 'qual' ? visual.start : null, subject: view.proposal.affects.find((a) => a.kind === 'player')?.id ?? null, heldUntil: phase.k === 'held' ? phase.until : null };
     if (phase.k === 'held') onPhase?.(key, 'held', meta);
     else if (phase.k === 'done' && before !== 'done') onPhase?.(key, 'saved', meta);
     else if (phase.k === 'undone' || phase.k === 'failed') onPhase?.(key, phase.k, meta);
