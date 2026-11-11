@@ -15601,3 +15601,78 @@ BEGIN
 END $$;
 
 ALTER FUNCTION "public"."golf_typing_topic_allowed"("p_topic" "text") OWNER TO "postgres";
+
+
+-- Applied to production 2026-10-21 by 20261017003000 and missing from this mirror until 2026-11-10
+-- (golf_participants_insert_v2, branch 2).
+CREATE OR REPLACE FUNCTION "public"."golf_user_in_conversation_team_audience"("p_conversation_id" "uuid", "p_user_id" "uuid") RETURNS boolean
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+  select exists (
+    select 1
+      from public.golf_conversations c
+     where c.id = p_conversation_id
+       and c.team_id is not null
+       and (
+         exists (
+           select 1
+             from public.golf_team_members gtm
+             join public.golf_players gp on gp.id = gtm.player_id
+            where gtm.team_id = c.team_id
+              and gtm.status = 'active'
+              and gp.user_id = p_user_id
+         )
+         or exists (
+           select 1
+             from public.golf_team_coach_staff gtcs
+             join public.golf_coaches gc on gc.id = gtcs.coach_id
+            where gtcs.team_id = c.team_id
+              and gc.user_id = p_user_id
+         )
+       )
+  );
+$$;
+
+ALTER FUNCTION "public"."golf_user_in_conversation_team_audience"("p_conversation_id" "uuid", "p_user_id" "uuid") OWNER TO "postgres";
+
+COMMENT ON FUNCTION "public"."golf_user_in_conversation_team_audience"("p_conversation_id" "uuid", "p_user_id" "uuid") IS 'True when p_user_id is on the conversation''s team roster (active rows) or a coach staffed on that team. Bounds who a conversation''s creator may add while it is formed (golf_participants_insert_v2, branch 2). Definer rights avoid re-entering RLS on golf_conversation_participants.';
+
+
+-- Messages privacy fixes (HELD 20261110090100): what a client session may put on a new message
+CREATE OR REPLACE FUNCTION "public"."golf_messages_insert_guard"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+BEGIN
+  -- Client sessions only. service_role, the table owner and definer functions pass
+  -- (the demo seed back-dates messages; a server may one day post a system notice).
+  IF current_user NOT IN ('authenticated', 'anon') THEN
+    RETURN NEW;
+  END IF;
+
+  -- 1. The date is the server's: the same value the column default gives every send.
+  NEW.created_at := now();
+
+  -- 2. A system notice is not a client's to send.
+  IF NEW.kind = 'system' THEN
+    RAISE EXCEPTION 'A system message cannot be sent from a client session'
+      USING ERRCODE = '42501';
+  END IF;
+
+  -- 3. A reply quotes a message in its own conversation. Read as the sender (RLS
+  --    applies): a member sees every message of the conversation they are sending in.
+  IF NEW.reply_to_id IS NOT NULL AND NOT EXISTS (
+    SELECT 1
+    FROM public.golf_messages AS r
+    WHERE r.id = NEW.reply_to_id
+      AND r.conversation_id = NEW.conversation_id
+  ) THEN
+    RAISE EXCEPTION 'A reply must quote a message in the same conversation'
+      USING ERRCODE = '42501';
+  END IF;
+
+  RETURN NEW;
+END $$;
+
+ALTER FUNCTION "public"."golf_messages_insert_guard"() OWNER TO "postgres";

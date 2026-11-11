@@ -1719,3 +1719,11 @@ REVOKE ALL ON FUNCTION "public"."golf_messages_identity_guard"() FROM PUBLIC, "a
 REVOKE ALL ON FUNCTION "public"."golf_typing_topic_allowed"("p_topic" "text") FROM PUBLIC, "anon";
 GRANT ALL ON FUNCTION "public"."golf_typing_topic_allowed"("p_topic" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."golf_typing_topic_allowed"("p_topic" "text") TO "service_role";
+
+-- 20261017003000 (applied 2026-10-21; missing from this mirror until 2026-11-10)
+REVOKE ALL ON FUNCTION "public"."golf_user_in_conversation_team_audience"("p_conversation_id" "uuid", "p_user_id" "uuid") FROM PUBLIC, "anon";
+GRANT ALL ON FUNCTION "public"."golf_user_in_conversation_team_audience"("p_conversation_id" "uuid", "p_user_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."golf_user_in_conversation_team_audience"("p_conversation_id" "uuid", "p_user_id" "uuid") TO "service_role";
+
+-- Messages privacy fixes (HELD 20261110090100)
+REVOKE ALL ON FUNCTION "public"."golf_messages_insert_guard"() FROM PUBLIC, "anon";
