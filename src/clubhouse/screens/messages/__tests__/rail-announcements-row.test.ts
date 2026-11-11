@@ -61,6 +61,13 @@ describe('Messages rail · Announcements is a row on the rail’s grid', () => {
     expect(decls(`${RAIL} .ch-ms-sec.is-ann::before`)).toEqual({});
   });
 
+  it('on the phone too, an opened announcement keeps its count beside its lines, never as a bar under them', () => {
+    const PHONE = '[data-ch-ms-v2] .ch-inb--phone';
+    expect(decls(`${PHONE} .ch-ms-row.is-ann .ch-ms-row__bot`)).toEqual(decls(`${RAIL} .ch-ms-row.is-ann .ch-ms-row__bot`));
+    expect(decls(`${PHONE} .ch-ms-row.is-ann .ch-ms-row__bot`)).toMatchObject({ display: 'flex', 'align-items': 'center' });
+    expect(decls(`${PHONE} .ch-ms-row.is-ann .ch-ms-row__bot > span:first-child`)).toMatchObject({ flex: '1', 'min-width': '0' });
+  });
+
   it('the phone’s fold is still the card at the page edge', () => {
     expect(decls('[data-ch-ms-v2] .ch-inb--phone .ch-ms-sec.is-ann')).toMatchObject({ margin: '0 var(--ch-page-x-phone) var(--ch-space-3)' });
   });

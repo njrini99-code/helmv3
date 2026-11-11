@@ -176,6 +176,17 @@
   -webkit-line-clamp: 2;
   line-clamp: 2;
 }
+/* An opened announcement that waits on you keeps its count beside its lines, as the rail's does: under them the pill
+   stretched into a bar the width of the row. */
+[data-ch-ms-v2] .ch-inb--phone .ch-ms-row.is-ann .ch-ms-row__bot {
+  display: flex;
+  align-items: center;
+  gap: var(--ch-space-2);
+}
+[data-ch-ms-v2] .ch-inb--phone .ch-ms-row.is-ann .ch-ms-row__bot > span:first-child {
+  flex: 1;
+  min-width: 0;
+}
 /* Nothing here (MSG-108): the body under the header. */
 [data-ch-ms-v2] .ch-inb .ch-inb-note {
   margin: 0;
