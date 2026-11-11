@@ -85,9 +85,11 @@ export function QualifiersList({ data, live }: { data: ChQList; live?: Record<st
       <header className="ch-qf-head" data-canopy-head="tight">
         <div>
           {/* The filter pills below carry the active and concluded counts, so the eyebrow is the page's name alone (no second copy
-              of the counts, and no dashes when they failed to load). The phone's top bar already names the page, so it has none. */}
+              of the counts, and no dashes when they failed to load). A player's title is that same name, so their eyebrow is the
+              squad and the season instead, as the Tournaments head; the name again only when the team didn't load. The phone's
+              top bar already names the page, so it has none. */}
           <span className="ch-qf-eyebrow ch-num is-bare">
-            <span className="ch-qf-eyebrow__k">{data.mode === 'mine' ? 'My qualifiers' : 'Qualifiers'}</span>
+            <span className="ch-qf-eyebrow__k">{(!coach && data.teamLabel) || (data.mode === 'mine' ? 'My qualifiers' : 'Qualifiers')}</span>
           </span>
           <LargeTitle>{title}</LargeTitle>
           <p>{lede}</p>
@@ -209,8 +211,7 @@ export function QualifiersList({ data, live }: { data: ChQList; live?: Record<st
                 {hero && (
                   <section className="ch-qf-sec is-focus" aria-labelledby="ch-qf-now">
                     <h2 id="ch-qf-now">Active</h2>
-                    <Hero item={hero} standingsError={data.standingsError} today={data.today} line={live?.[hero.id]} />
-                    <PlayNext item={hero} standingsError={data.standingsError} today={data.today} />
+                    <HeroWithNext item={hero} standingsError={data.standingsError} today={data.today} line={live?.[hero.id]} />
                   </section>
                 )}
                 {rest.length > 0 && (
@@ -295,18 +296,28 @@ function Mine({ item }: { item: ChQListItem }) {
 }
 
 /**
- * A live qualifier's next round for you, as its own link under the card (the card is one link already): round setup with this
- * qualifier chosen. Not past the qualifier's last day, and not before round setup is rebuilt for players.
+ * The live qualifier's card. With a round of yours still to play it stands in a box that carries the card's material, and the round
+ * is the action at the card's foot (the ivory key on the phone's green) with the way to the board beside it. The card is one link
+ * already, so the foot is its sibling, never inside it: round setup with this qualifier chosen. The card's link still covers the
+ * whole box, so "View leaderboard" at the foot is its words, not a second link. Not past the qualifier's last day, and not before
+ * round setup is rebuilt for players.
  */
-function PlayNext({ item, standingsError, today }: { item: ChQListItem; standingsError: boolean; today?: string }) {
+function HeroWithNext({ item, standingsError, today, line }: { item: ChQListItem; standingsError: boolean; today?: string; line?: ChQLiveLine }) {
   const next = item.mine?.next;
   const href = playRoundHref(item.id);
-  if (!next || !href || standingsError || endedOf(item, standingsError, today)) return null;
+  if (!next || !href || standingsError || endedOf(item, standingsError, today)) return <Hero item={item} standingsError={standingsError} today={today} line={line} />;
   return (
-    <div className="ch-qf-play" data-ch-code="CH-09906">
-      <Button size="sm" variant="secondary" leftIcon={Play} href={href}>
-        {[`Play round ${next.round}`, next.course].filter(Boolean).join(' · ')}
-      </Button>
+    <div className="ch-qf-herobox">
+      <Hero item={item} standingsError={standingsError} today={today} line={line} foot />
+      <div className="ch-qf-herobox__foot" data-ch-code="CH-09906">
+        <Button variant="primary" leftIcon={Play} href={href} className="ch-qf-herobox__go">
+          {[`Play round ${next.round}`, next.course].filter(Boolean).join(' · ')}
+        </Button>
+        <span className="ch-qf-cta ch-qf-herobox__more" aria-hidden="true">
+          {ctaLabel(item.status)}
+          <Icon icon={ArrowRight} size={16} />
+        </span>
+      </div>
     </div>
   );
 }
@@ -315,7 +326,7 @@ function PlayNext({ item, standingsError, today }: { item: ChQListItem; standing
 const endedOf = (item: ChQListItem, standingsError: boolean, today: string | undefined) =>
   endedLive({ status: item.status, endDate: item.endDate, today, entrants: item.entrants, numRounds: item.numRounds, submitted: standingsError ? null : item.submitted });
 
-function Hero({ item, standingsError, today, line }: { item: ChQListItem; standingsError: boolean; today?: string; line?: ChQLiveLine }) {
+function Hero({ item, standingsError, today, line, foot = false }: { item: ChQListItem; standingsError: boolean; today?: string; line?: ChQLiveLine; foot?: boolean }) {
   const press = usePressPrefetch();
   const live = item.status === 'in_progress' && !standingsError && item.leaders.length > 0;
   const ended = endedOf(item, standingsError, today);
@@ -330,10 +341,13 @@ function Hero({ item, standingsError, today, line }: { item: ChQListItem; standi
         <Meta startDate={item.startDate} endDate={item.endDate} squad={item.squad} course={item.course} today={today} />
         <LiveLine line={line} />
         {!standingsError && <Mine item={item} />}
-        <span className="ch-qf-cta">
-          {ctaLabel(item.status)}
-          <Icon icon={ArrowRight} size={16} />
-        </span>
+        {/* With a foot under the card, the foot carries this link's words. */}
+        {!foot && (
+          <span className="ch-qf-cta">
+            {ctaLabel(item.status)}
+            <Icon icon={ArrowRight} size={16} />
+          </span>
+        )}
       </div>
       {live && (
         <div className="ch-qf-lead ch-scoreboard">

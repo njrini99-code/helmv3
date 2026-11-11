@@ -3586,6 +3586,10 @@ html[data-fw-theme='dark'] .ch-qf-dots i {
     position: sticky;
     top: calc(var(--ch-topbar-h) + 24px);
   }
+  /* Leading the rail (a player's own rounds), it scrolls with the sections under it: held, they would slide beneath it. */
+  .ch-qf[data-canopy] .ch-qf-col > .ch-qf-prounds:not(:last-child) {
+    position: static;
+  }
 }
 /* The rounds as a showcase on the team board's green: the total to par large, a raised tile a round with its score and
    plate, the best round lit with a mint rule, the rounds still to play a dashed tile. */
@@ -3749,10 +3753,148 @@ a.ch-qf-prounds__r.is-play:focus-visible {
   outline: 2px solid var(--ch-border-focus-on-dark);
   outline-offset: 2px;
 }
-/* The list's way to the same round, under the live qualifier's card. */
-.ch-qf-play {
+/* The list's way to the same round: the action at the foot of the live qualifier's card (CH-09906). The card is one link
+   and a link cannot hold another, so the box takes the card's material and holds the link and the foot as siblings. The
+   link's ::after covers the whole box: a press anywhere but the key opens the qualifier, as the card did before, and
+   "View leaderboard" at the foot is that link's words (the pointer passes through the foot to it). */
+.ch-qf-herobox {
+  position: relative;
   display: flex;
-  margin-top: 4px;
+  flex-direction: column;
+  gap: 24px;
+  padding: 24px 32px;
+  border-radius: var(--ch-radius-card);
+  background: var(--ch-sheet-bg);
+  box-shadow: var(--ch-elevation-reading);
+  transition: box-shadow var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-qf .ch-qf-herobox > .ch-qf-hero,
+.ch-qf--list[data-canopy] .ch-qf-herobox > .ch-qf-hero,
+.ch-qf--list[data-canopy] .ch-qf-herobox > .ch-qf-hero:hover {
+  position: static;
+  margin: 0;
+  padding: 0;
+  /* The box's corners, handed down to the ::after that covers it. */
+  border-radius: inherit;
+  background: none;
+  box-shadow: none;
+  outline: none;
+}
+.ch-qf .ch-qf-herobox > .ch-qf-hero::after {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  content: '';
+}
+/* The ring is the card's, not the link's inner box. */
+.ch-root .ch-qf-herobox > .ch-qf-hero:focus-visible::after {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+.ch-qf-herobox__foot {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 24px;
+  padding-top: 20px;
+  border-top: var(--ch-hairline-w) solid var(--ch-ledger-rule-soft);
+  pointer-events: none;
+}
+.ch-qf-herobox__foot > .ch-btn {
+  pointer-events: auto;
+}
+.ch-qf-herobox__foot > .ch-btn > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ch-qf-herobox__more {
+  margin-top: 0;
+}
+@media (hover: hover) {
+  .ch-qf-herobox:has(> .ch-qf-hero:hover) .ch-qf-herobox__more svg {
+    transform: translateX(2px);
+  }
+}
+/* Desktop: the focus sheet of the Active section (the list's own hero, above), with the foot across both columns. */
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
+  .ch-qf--list[data-canopy] .ch-qf-herobox {
+    padding: 32px 32px 24px;
+    border-radius: var(--ch-radius-xl);
+    background: var(--ch-bg-surface);
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, var(--ch-green-fill-600) 30%, transparent),
+      var(--ch-elevation-board);
+  }
+  @media (hover: hover) {
+    .ch-qf--list[data-canopy] .ch-qf-herobox:has(> .ch-qf-hero:hover) {
+      box-shadow:
+        inset 0 0 0 1px color-mix(in srgb, var(--ch-green-fill-600) 45%, transparent),
+        var(--ch-elevation-board-hover);
+    }
+    .ch-qf-herobox:has(> .ch-qf-hero:hover) .ch-qf-herobox__more {
+      color: var(--ch-forest-800);
+    }
+    :where(html[data-fw-theme='dark']) .ch-qf-herobox:has(> .ch-qf-hero:hover) .ch-qf-herobox__more {
+      color: var(--ch-green-700);
+    }
+  }
+}
+/* Phone: the feature card's green, the round on the ivory key across the card, the way to the board under it. */
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
+  .ch-qf-herobox {
+    gap: 12px;
+    border-radius: var(--ch-radius-lg);
+    /* The way to the board is 44px to the finger and 20px drawn: the foot's own height is most of the card's bottom margin. */
+    padding: 16px 16px 4px;
+    background: var(--ch-feature-bg);
+    box-shadow: var(--ch-elevation-feature);
+    color: var(--ch-on-green-ink);
+  }
+  .ch-qf-herobox__foot {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+    padding-top: 16px;
+    border-top-color: var(--ch-stage-rule);
+  }
+  /* On the card's green the one action is the ivory key with forest ink (the plate stays light at night), written from
+     the box down so it outranks the shared primary key's own face. */
+  .ch-qf-herobox .ch-qf-herobox__go,
+  .ch-qf-herobox .ch-qf-herobox__go:hover:not(:disabled):not(:focus-visible) {
+    min-height: 44px;
+    justify-content: center;
+    background: var(--ch-on-green-plate);
+    color: var(--ch-green-800);
+    text-shadow: none;
+    box-shadow: var(--ch-on-dark-primary-shadow);
+  }
+  .ch-qf-herobox .ch-qf-herobox__go[data-ch-pressed]:not(:disabled) {
+    background: var(--ch-on-green-plate);
+    filter: brightness(0.94);
+  }
+  @media (hover: hover) {
+    .ch-qf-herobox .ch-qf-herobox__go:active:not(:disabled) {
+      background: var(--ch-on-green-plate);
+      filter: brightness(0.94);
+    }
+  }
+  /* Focus on the green is the on-dark ring alone. */
+  .ch-root .ch-qf-herobox .ch-qf-herobox__go:focus-visible {
+    outline: 2px solid var(--ch-border-focus-on-dark);
+    outline-offset: 2px;
+    box-shadow: none;
+  }
+  .ch-root .ch-qf-herobox > .ch-qf-hero:focus-visible::after {
+    outline-color: var(--ch-border-focus-on-dark);
+  }
+  .ch-qf-herobox .ch-qf-herobox__more {
+    justify-content: center;
+    min-height: 44px;
+    color: var(--ch-on-green-ink);
+  }
 }
 /* You on the live leaders: the board's mint on your name's tag, and the row a shade lighter. */
 .ch-scoreboard .ch-qf-lead__r.is-me {

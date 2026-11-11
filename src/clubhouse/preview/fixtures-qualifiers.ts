@@ -311,7 +311,8 @@ export function previewList(role: 'coach' | 'player' = 'coach', mode: 'all' | 'm
     };
   });
   const visible = mode === 'mine' ? items.filter((i) => i.mine?.entered) : items;
-  return { role, mode, items: role === 'player' ? [...visible.filter((i) => i.mine?.entered), ...visible.filter((i) => !i.mine?.entered)] : visible, listError: false, standingsError: false };
+  // As the loader: a player's head opens with the squad and the season.
+  return { role, mode, items: role === 'player' ? [...visible.filter((i) => i.mine?.entered), ...visible.filter((i) => !i.mine?.entered)] : visible, listError: false, standingsError: false, ...(role === 'player' ? { teamLabel: 'Varsity · 2026–27' } : {}) };
 }
 
 const ROSTER = Object.entries(P)

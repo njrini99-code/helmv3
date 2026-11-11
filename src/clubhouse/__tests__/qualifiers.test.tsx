@@ -484,6 +484,25 @@ describe('Qualifiers · the loader', () => {
     expect(mine.items.map((i) => i.id)).toEqual(['q1']);
   });
 
+  it('a player’s list carries the squad and the season for its head; a failed team read leaves it out, logged, and a coach’s list never reads it', async () => {
+    const base = { golf_qualifiers: { data: [Q] }, golf_qualifier_entries: { data: entries }, golf_rounds: { data: rounds } };
+    tables.current = { ...base, golf_teams: { data: { name: ' Varsity ' } } };
+    const named = await loadQualifierList({ role: 'player', teamId: 't1', playerId: 'p2', mode: 'mine' });
+    expect(named.teamLabel).toMatch(/^Varsity · \d{4}–\d{2}$/);
+    const read: string[] = [];
+    tables.gate = (t) => void read.push(t);
+    const coach = await loadQualifierList({ role: 'coach', teamId: 't1', playerId: null, mode: 'all' });
+    tables.gate = undefined;
+    expect(coach.teamLabel).toBeUndefined();
+    expect(read).not.toContain('golf_teams');
+    logServer.mockClear();
+    tables.current = { ...base, golf_teams: { error: { message: 'boom' } } };
+    const failed = await loadQualifierList({ role: 'player', teamId: 't1', playerId: 'p2', mode: 'mine' });
+    expect(failed.teamLabel).toBeNull();
+    expect(failed.items.map((i) => i.id)).toEqual(['q1']);
+    expect(logServer).toHaveBeenCalledWith('qualifiers', 'team', expect.anything(), 'qualifiers');
+  });
+
   it('CH-09906 CH-09907 wave 7: a player’s own squad result, their next round at its own course, and "You" on the leaders; a failed read is the plain line', async () => {
     const asked: Array<Array<[string, unknown[]]>> = [];
     tables.current = {
@@ -880,6 +899,30 @@ describe('Qualifiers · list', () => {
     expect(screen.getAllByText('You’re entered · no rounds in yet').length).toBeGreaterThan(0);
   });
 
+  it('a player’s head opens with the squad and the season, not the page’s name a third time; a coach’s, and a team that didn’t load, name the page', () => {
+    const { unmount } = wrap(<QualifiersList data={list('player', 'mine')} />);
+    expect(screen.getByRole('heading', { level: 1, name: 'My qualifiers' })).toBeTruthy();
+    expect(document.querySelector('.ch-qf-eyebrow')!.textContent).toBe('Varsity · 2026–27');
+    unmount();
+    const all = wrap(<QualifiersList data={list('player')} />);
+    expect(screen.getByRole('heading', { level: 1, name: 'Qualifiers' })).toBeTruthy();
+    expect(document.querySelector('.ch-qf-eyebrow')!.textContent).toBe('Varsity · 2026–27');
+    all.unmount();
+    const bare = wrap(<QualifiersList data={list('player', 'mine', { teamLabel: null })} />);
+    expect(document.querySelector('.ch-qf-eyebrow')!.textContent).toBe('My qualifiers');
+    bare.unmount();
+    wrap(<QualifiersList data={list('coach', 'all', { teamLabel: 'Varsity · 2026–27' })} />);
+    expect(document.querySelector('.ch-qf-eyebrow')!.textContent).toBe('Qualifiers');
+  });
+
+  it('with no round of yours to play, the live card is the plain link with its own words and no foot', () => {
+    const base = list('player');
+    wrap(<QualifiersList data={{ ...base, items: base.items.map((i) => (i.mine ? { ...i, mine: { ...i.mine, next: null } } : i)) }} />);
+    expect(document.querySelector('.ch-qf-herobox')).toBeNull();
+    expect(screen.queryByRole('link', { name: /Play round/ })).toBeNull();
+    expect((document.querySelector('a.ch-qf-hero') as HTMLElement).textContent).toMatch(/Pinehurst qualifier.*View leaderboard/);
+  });
+
   it('CH-09906 CH-09907 wave 7: the live card offers your next round (outside the card’s own link), marks you on the leaders, and a confirmed squad says if you made it', () => {
     wrap(<QualifiersList data={list('player')} />);
     const play = screen.getByRole('link', { name: 'Play round 3 · Hope Valley CC' });
@@ -887,6 +930,18 @@ describe('Qualifiers · list', () => {
     // Never a link inside the card's link.
     expect(play.closest('.ch-qf-hero, .ch-qf-card')).toBeNull();
     expect(code('CH-09906')).not.toBeNull();
+    // It is the action at the card's foot: the box holds the card's link and the foot as siblings, and the round is the foot's key.
+    const box = document.querySelector('.ch-qf-herobox') as HTMLElement;
+    const hero = box.querySelector(':scope > a.ch-qf-hero') as HTMLAnchorElement;
+    const foot = box.querySelector(':scope > .ch-qf-herobox__foot') as HTMLElement;
+    expect(hero.getAttribute('href')).toBe('/golf/dashboard/qualifiers/10000000-0000-4000-8000-000000000001');
+    expect(foot).toBe(code('CH-09906'));
+    expect(play.closest('.ch-qf-herobox__foot')).toBe(foot);
+    expect(play.classList.contains('ch-btn--primary')).toBe(true);
+    // "View leaderboard" stands beside the key as the card link's words: said once, and never a second link to the same place.
+    expect(within(foot).getByText('View leaderboard').closest('[aria-hidden="true"]')).not.toBeNull();
+    expect(hero.textContent).not.toMatch(/View leaderboard/);
+    expect(within(box).getAllByRole('link')).toHaveLength(2);
     const me = document.querySelector('.ch-qf-lead__r.is-me')!;
     expect(me.textContent).toMatch(/Jonah Okafor\s*You/);
     expect(document.querySelectorAll('.ch-qf-lead__r.is-me')).toHaveLength(1);
@@ -1040,7 +1095,14 @@ describe('Qualifiers · one qualifier', () => {
     const play = within(rounds).getByRole('link', { name: /^Play round 3\W*Hope Valley CC$/ });
     expect(play.getAttribute('href')).toBe('/golf/dashboard/rounds/new?qualifier=10000000-0000-4000-8000-000000000001');
     expect(within(rounds).queryByText('Still to play')).toBeNull();
+    // Your rounds lead a player's rail, over the course list (it sat under it, cut at the fold); a coach's rail leads with the squad.
+    const rail = () => [...document.querySelectorAll('.ch-qf-body > .ch-qf-col:last-child > *')].map((el) => el.getAttribute('aria-labelledby'));
+    expect(rail().slice(0, 2)).toEqual(['ch-qf-prounds', 'ch-qf-courses']);
     unmount();
+    const asCoach = wrap(<QualifierDetail data={detail('live', 'coach')} writes={fakeWrites()} live={false} />);
+    expect(rail().indexOf('ch-qf-courses')).toBeLessThan(rail().indexOf('ch-qf-prounds'));
+    expect(rail()[0]).toBe('ch-qf-sel');
+    asCoach.unmount();
     // Past its last day it has ended: no way into a round.
     const ended = wrap(<QualifierDetail data={detail('live', 'player', { today: '2026-10-09' })} writes={fakeWrites()} live={false} />);
     expect(screen.queryByRole('link', { name: /Play round/ })).toBeNull();
