@@ -1516,10 +1516,11 @@ made by ENGINE at the overnight lead's direction; their owners should know.
   question turns on even when the data does not show the case; putts per round is given with greens hit; a tie for the
   last qualifying place waits for the coach; the lineup is "their call". The prompt's Figures rule 6 says a Tour or
   level figure comes only from a read made in the turn.
-- **For the eval's owner (KNOWLEDGE).** Scorer lines that failed answers a coach would call right, left as they are:
-  "the choice is yours" and "The choice stays with you" do not match `your (call|decision|choice)`; "normally below"
-  and "what you'd expect" do not match `expected|normal`; a Tour make rate quoted from `get_player_stats` (the read
-  returned it, the figure check matched) is flagged as "from memory" because only `get_reference` lifts that guard;
-  `window-tyler-last3-rounds` expects the newest three rounds without practice while the question says "last 3
-  rounds"; `sum-rounds-by-type-since-sep1` counts rounds in progress as played.
-
+- **For the eval's owner (KNOWLEDGE): five scorer lines loosened** (overnight lead's decision, 11 Nov 2026; nothing else
+  in the scorer changed). `golf-sense.json`: the coach's choice also matches "the choice is yours", "the choice stays
+  with you", "your choice" (`lineup-who`, `qualifier-tie`); "normally" matches where "normal" did
+  (`sg-why-all-negative`, `sg-player-what-my-number-means`). `ask-eval-score.mjs`: a Tour or level figure is not "from
+  memory" when a read of the turn returned it, which is known from the ledger's list of figures found in no read
+  (`scoreSense(..., { unmatched })`; unknown, only `get_reference` lifts the guard, as before). `ask-eval.mjs`: a data
+  question can carry `readings`; `window-tyler-last3-rounds` (practice in or out) and `sum-rounds-by-type-since-sep1`
+  (finished, or with rounds in progress) pass on either, and only when the answer says which rounds it counted.

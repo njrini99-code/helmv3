@@ -5,7 +5,7 @@ import { encodeChatEvent, type ChatEvent } from '@/lib/coachhelm/v3/chat/engine/
 import { EVAL_GLOBAL_FORBID, golfSenseQuestions as compiled, sentenceCount as sentencesOf } from '@/lib/coachhelm/v3/chat/knowledge/eval';
 import senseData from '@/lib/coachhelm/v3/chat/knowledge/eval/golf-sense.json';
 // @ts-expect-error -- plain .mjs helper, scripts/ is outside tsconfig.
-import { EVERYDAY_WORDS, answerText, applyEvent, captureFixture, citesFromLog, dateRe, eventReader, golfSenseQuestions, newTurnState, rejectionsFromLog, reportLines, score, scoreSense, sentenceCount, verdictOf, writingRules } from '../ask-eval-score.mjs';
+import { EVERYDAY_WORDS, answerText, applyEvent, captureFixture, citesFromLog, dateRe, eventReader, figuresAt, golfSenseQuestions, newTurnState, rejectionsFromLog, reportLines, score, scoreSense, sentenceCount, verdictOf, writingRules } from '../ask-eval-score.mjs';
 
 const owen = {
   facts: [
@@ -209,6 +209,64 @@ describe('ask-eval golf-sense questions', () => {
     const text = 'Zero is Tour level. The Tour average is 4 feet closer.';
     expect(scoreSense(question, text, ['get_player_stats'], []).sense.said).toEqual(['a Tour figure from memory']);
     expect(scoreSense(question, text, ['get_player_stats', 'get_reference'], []).sense.pass).toBe(true);
+  });
+
+  // Loosened on 11 Nov 2026 after the first full run, by the overnight lead's decision: five lines failed answers a coach would call right.
+  it('a Tour figure a read of the turn returned is not "from memory": only a figure found in none of the reads is', () => {
+    const real = { readers: ['get_player_stats'], facts: [], forbid: golfSenseQuestions(senseData, { player: 'Cole Bennett' }).find((q: { id: string }) => q.id === 'make-rate-bands').forbid };
+    const text = 'From 10 to 15 feet he made 6 of 30. The Tour makes 36% and 15% from those ranges.';
+    // The ledger's check found every figure of the answer in the turn's reads (the Stats read prints Tour marks).
+    expect(scoreSense(real, text, ['get_player_stats'], [], { unmatched: [] }).sense.said).toEqual([]);
+    // The Tour figure itself is the one no read returned: from memory.
+    expect(scoreSense(real, text, ['get_player_stats'], [], { unmatched: ['36%'] }).sense.said).toHaveLength(1);
+    // Another figure of the answer was unmatched, not the Tour one: the guard is still lifted.
+    expect(scoreSense(real, text, ['get_player_stats'], [], { unmatched: ['30'] }).sense.said).toEqual([]);
+    // The ledger row was not read, or no read ran at all: unknown, so only the standards read lifts it, as before.
+    expect(scoreSense(real, text, ['get_player_stats'], [], { unmatched: null }).sense.said).toHaveLength(1);
+    expect(scoreSense(real, text, ['get_player_stats'], []).sense.said).toHaveLength(1);
+    expect(scoreSense(real, text, [], [], { unmatched: [] }).sense.said).toHaveLength(1);
+    expect(scoreSense(real, text, ['get_reference'], [], { unmatched: ['36%'] }).sense.said).toEqual([]);
+    expect(scoreSense(real, text, ['get_player_stats'], [], { unmatched: ['15%'] }).sense.said).toHaveLength(1);
+    // Every figure of the Tour sentence is looked at, and a decimal is read whole.
+    expect(figuresAt(real.forbid.find((f: { pattern: string }) => f.pattern === 'tour_figure_from_memory').re, text)).toEqual(['36', '15']);
+    expect(figuresAt(/tour average is \d/i, 'The Tour average is 29.5 putts. The tour average is 4 feet.')).toEqual(['29.5', '4']);
+  });
+
+  it('accepts the coach’s choice and "normally" in the words answers really used', () => {
+    const facts = (id: string) => golfSenseQuestions(senseData, { player: 'Cole Bennett', player2: 'Jackson Hale' }).find((q: { id: string }) => q.id === id).facts as Array<{ label: string; re: RegExp }>;
+    const fact = (id: string, label: RegExp) => facts(id).find((f) => label.test(f.label))!.re;
+    const lineup = fact('lineup-who', /leaves the choice to the coach/);
+    for (const said of ['Here is how the players stand now, and the choice is yours.', 'That is your call.', 'It is up to you.', 'The decision rests with you.']) expect(lineup.test(said), said).toBe(true);
+    expect(lineup.test('I would weigh the qualifier most.')).toBe(false);
+    const tie = fact('qualifier-tie', /tie at the cut/);
+    for (const said of ['The choice stays with you.', 'It stays a tie until you choose.', 'Your pick.', 'The coach decides.']) expect(tie.test(said), said).toBe(true);
+    expect(tie.test('The lower score on the last round gets it.')).toBe(false);
+    for (const id of ['sg-why-all-negative', 'sg-player-what-my-number-means']) {
+      const normal = fact(id, /expected/);
+      expect(normal.test('A college player is normally below that.')).toBe(true);
+      expect(normal.test('That is normal.')).toBe(true);
+      expect(normal.test('His numbers are poor.')).toBe(false);
+    }
+  });
+
+  it('a question with two readings passes on either, and only when the answer says which rounds it counted', () => {
+    const q = {
+      facts: [{ label: 'says whether the counts are finished rounds or include rounds in progress', kind: 'phrase', re: /\b(finished|completed|in progress|unfinished|not finished)\b/i }],
+      readings: [[3, 16, 7], [3, 16, 4]].map((counts) => ['tournament', 'qualifier', 'practice'].map((t, i) => ({ label: `${t} ${counts[i]}`, kind: 'number', value: counts[i] }))),
+    };
+    expect(score(q, 'The team has 3 tournament, 16 qualifier and 4 practice rounds finished since 1 September.').allRight).toBe(true);
+    expect(score(q, 'The team recorded 3 tournament, 16 qualifier and 7 practice rounds, three of the practice rounds still in progress.').allRight).toBe(true);
+    // The right count without saying which rounds were counted does not pass, on either reading.
+    const silent = score(q, 'The team has played 3 tournament, 16 qualifier and 4 practice rounds.');
+    expect(silent.allRight).toBe(false);
+    expect(silent.results.filter((r: { status: string }) => r.status === 'missing').map((r: { label: string }) => r.label)).toEqual(['says whether the counts are finished rounds or include rounds in progress']);
+    expect(score(q, 'The team has played 3 tournament, 16 qualifier and 7 practice rounds.').allRight).toBe(false);
+    // A count that fits neither reading is still missing, whatever the answer says.
+    const neither = score(q, 'The team finished 3 tournament, 16 qualifier and 5 practice rounds.');
+    expect(neither.allRight).toBe(false);
+    expect(neither.missing).toBe(1);
+    // A question with one reading is scored exactly as before.
+    expect(score({ facts: [{ label: 'rounds', kind: 'number', value: 23 }] }, 'The team has played 23 rounds.').allRight).toBe(true);
   });
 
   it('needs no read when the question lists none, and leaves the code step out of the reads used', () => {

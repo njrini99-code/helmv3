@@ -1104,7 +1104,7 @@
     {
      "label": "leaves the choice to the coach",
      "kind": "phrase",
-     "re": "\\b(your (call|decision|choice)|up to you|you decide)\\b",
+     "re": "\\b(your (call|decision|choice)|up to you|you decide|(choice|call|decision) (is|stays|remains|rests) (yours|with you)|yours to (make|decide))\\b",
      "flags": "i"
     }
    ],
@@ -1151,7 +1151,7 @@
     {
      "label": "a tie at the cut stays until the coach chooses",
      "kind": "phrase",
-     "re": "\\b(you (choose|decide)|your (call|pick|decision)|coach)\\b",
+     "re": "\\b(you (choose|decide)|your (call|pick|decision|choice)|(choice|call|decision|pick) (is|stays|remains|rests) (yours|with you)|coach)\\b",
      "flags": "i"
     }
    ],
@@ -1859,7 +1859,7 @@
     {
      "label": "a college player is expected to be negative; it is normal",
      "kind": "phrase",
-     "re": "\\b(expected|normal|not a (failure|problem)|nothing wrong)\\b",
+     "re": "\\b(expected|normal(ly)?|not a (failure|problem)|nothing wrong)\\b",
      "flags": "i"
     },
     {
@@ -2152,7 +2152,7 @@
     {
      "label": "expected for a college player; not a failure",
      "kind": "phrase",
-     "re": "\\b(expected|normal|not a (failure|bad))\\b",
+     "re": "\\b(expected|normal(ly)?|not a (failure|bad))\\b",
      "flags": "i"
     },
     {

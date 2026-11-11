@@ -312,14 +312,19 @@ function buildQuestions() {
       { label: `rounds (${masonSep.length})`, kind: 'number', value: masonSep.length, optional: true },
     ],
   });
+  // "Last 3 rounds" can be read with practice rounds or without. Either passes, and only when the answer says which it counted.
+  const roundFacts = (rs) => [
+    ...rs.map((r) => ({ label: `${r.round_date} score ${r.total_score}`, kind: 'number', value: r.total_score })),
+    ...[...new Set(rs.map((r) => r.course_name))].map((c) => ({ label: `course ${c}`, kind: 'text', value: c })),
+  ];
   const tyler3 = lastN(tyler.id, 3);
+  const tyler3All = real.filter((r) => r.player_id === tyler.id && r.status === 'completed').slice(0, 3);
   q.push({
     id: 'window-tyler-last3-rounds', category: 'window', viewer: 'coach',
     ask: 'Show Tyler Hayes\'s last 3 rounds with the score and course.',
-    facts: [
-      ...tyler3.map((r) => ({ label: `${r.round_date} score ${r.total_score}`, kind: 'number', value: r.total_score })),
-      ...[...new Set(tyler3.map((r) => r.course_name))].map((c) => ({ label: `course ${c}`, kind: 'text', value: c })),
-    ],
+    facts: [{ label: 'says whether practice rounds are counted', kind: 'phrase', re: /\bpractice\b/i }],
+    readings: [roundFacts(tyler3), roundFacts(tyler3All)],
+    note: 'Either the newest three without practice or the newest three of every kind, when the answer says which.',
   });
   const coleAug = real.filter((r) => r.player_id === cole.id && r.round_date >= '2026-08-01');
   q.push({
@@ -408,12 +413,10 @@ function buildQuestions() {
   q.push({
     id: 'sum-rounds-by-type-since-sep1', category: 'count (summarise_data)', viewer: 'coach',
     ask: 'How many tournament, qualifier and practice rounds has the team played since September 1?',
-    facts: [
-      { label: `tournament ${byType('tournament').length}`, kind: 'number', value: byType('tournament').length },
-      { label: `qualifier ${byType('qualifier').length}`, kind: 'number', value: byType('qualifier').length },
-      { label: `practice ${byType('practice').length}`, kind: 'number', value: byType('practice').length },
-    ],
-    note: 'Recorded rounds, test-flagged ones left out; in-progress practice rounds are included.',
+    facts: [{ label: 'says whether the counts are finished rounds or include rounds in progress', kind: 'phrase', re: /\b(finished|completed|in progress|unfinished|not finished)\b/i }],
+    // Every round recorded, or the finished ones only: either passes, when the answer says which.
+    readings: [byType, (t) => sepDone.filter((r) => r.round_type === t)].map((of) => ['tournament', 'qualifier', 'practice'].map((t) => ({ label: `${t} ${of(t).length}`, kind: 'number', value: of(t).length }))),
+    note: 'Test-flagged rounds left out. Recorded rounds (in-progress practice included) or finished rounds only, when the answer says which.',
   });
   const tp = roster.map((p) => ({ p, n: sep.filter((r) => r.player_id === p.id).reduce((a, r) => a + threePutts(r.id), 0) })).sort((a, b) => b.n - a.n);
   q.push({
@@ -547,6 +550,7 @@ console.log(`\n${picked.length} questions (${picked.filter((x) => x.viewer === '
 for (const x of picked) {
   console.log(`- ${x.id} [${x.category}, ${x.viewer}] ${x.ask}`);
   for (const f of x.facts) console.log(`    expects ${f.label}${f.optional ? ' (optional)' : ''}`);
+  for (const [i, reading] of (x.readings ?? []).entries()) for (const f of reading) console.log(`    expects, reading ${i + 1} of ${x.readings.length}: ${f.label}`);
   for (const f of x.forbid ?? []) console.log(`    forbids ${f.label}`);
   if (x.golfSense) console.log(`    reads ${x.readers.length ? x.readers.join(' or ') : 'none needed'}${x.style?.max_sentences ? `; at most ${x.style.max_sentences} sentences` : ''}`);
 }
@@ -712,7 +716,8 @@ try {
     const answered = verdict !== 'error' && text.trim() !== '';
     // The data questions are scored on their facts; the golf-sense questions on meaning and reads; every answer on the writing rules.
     const scored = answered && !question.golfSense ? score(question, text) : null;
-    const sense = answered ? scoreSense(question.golfSense ? question : { readers: [] }, text, state.tools, writing) : null;
+    // `unmatched` is known only when the answer's ledger row was read: without it, only the standards read lifts the Tour-figure guard.
+    const sense = answered ? scoreSense(question.golfSense ? question : { readers: [] }, text, state.tools, writing, { unmatched: grounded === null ? null : unmatched }) : null;
     report.push({ question, verdict, text, seconds, cost, scored, sense, note, tools: state.tools, failedReads: state.failedReads, dropped: state.dropped, tokens: state.tokens, grounded, unmatched, model });
     if (captureDir && verdict !== 'error') {
       const who = question.viewer === 'player' ? [byName('Cole Bennett')] : roster;
