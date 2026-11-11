@@ -1095,13 +1095,20 @@ export async function loadPlayerTournaments(ctx: TourCtx, eventId: string | null
       });
     };
     const mineOf = (e: ChTourEvent) => {
-      const scored = ownRounds(e).filter((p) => p.total != null);
-      return scored.length ? { place: null, total: scored.reduce((s, p) => s + (p.total ?? 0), 0), rounds: scored.length } : null;
+      const own = ownRounds(e);
+      const scored = own.filter((p) => p.total != null);
+      if (!scored.length) return null;
+      // Round by round for the list's table, from the same own rows: a round with no score of theirs stays null.
+      const scores = e.rounds.map((r) => {
+        const p = own.find((x) => x.roundEventId === r.roundEventId);
+        return { number: r.number, total: p?.total ?? null, toPar: p?.toPar ?? null };
+      });
+      return { place: null, total: scored.reduce((s, p) => s + (p.total ?? 0), 0), toPar: scored.reduce((s, p) => s + (p.toPar ?? 0), 0), rounds: scored.length, scores };
     };
     const list = read.events
       .filter((e) => e.seasonId === season && !e.cancelled)
       .sort((a, b) => (a.status === 'complete') === (b.status === 'complete') ? (a.status === 'complete' ? b.startDate.localeCompare(a.startDate) : a.startDate.localeCompare(b.startDate)) : a.status === 'complete' ? 1 : -1)
-      .map((e) => ({ eventId: e.id, name: e.name, startDate: e.startDate, endDate: e.endDate, courseName: read.courses[e.courseIds[0] ?? '']?.name ?? '', status: e.status, mine: mineOf(e) }));
+      .map((e) => ({ eventId: e.id, name: e.name, startDate: e.startDate, endDate: e.endDate, courseName: read.courses[e.courseIds[0] ?? '']?.name ?? '', status: e.status, days: e.rounds.map((r) => ({ number: r.number, date: r.date, firstTeeAt: r.firstTeeAt })), mine: mineOf(e) }));
     const open = eventId ? read.events.find((e) => e.id === eventId) : null;
     if (eventId && !open) return { kind: 'missing' };
     // Their reflection and the notes their coach shared with them (the policies return only those).

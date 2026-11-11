@@ -1125,12 +1125,16 @@ export function tourFixture(state: ChTourPreviewState): ChTourFixture {
   const mineIn = (e: ChTourEvent) => {
     const rows = e.playerRounds.filter((p) => p.playerId === 'jonah');
     if (!rows.length) return null;
-    return { place: null, total: sum(rows.map((p) => p.total ?? 0)), rounds: rows.length };
+    const scores = e.rounds.map((r) => {
+      const p = rows.find((x) => x.roundNumber === r.number);
+      return { number: r.number, total: p?.total ?? null, toPar: p?.toPar ?? null };
+    });
+    return { place: null, total: sum(rows.map((p) => p.total ?? 0)), toPar: sum(rows.map((p) => p.toPar ?? 0)), rounds: rows.length, scores };
   };
   const list = [...all]
     .filter((e) => e.seasonId === '2026-27')
     .sort((a, b) => (a.status === 'complete') === (b.status === 'complete') ? (a.status === 'complete' ? b.startDate.localeCompare(a.startDate) : a.startDate.localeCompare(b.startDate)) : a.status === 'complete' ? 1 : -1)
-    .map((e) => ({ eventId: e.id, name: e.name, startDate: e.startDate, endDate: e.endDate, courseName: COURSES[e.courseIds[0]!]?.name ?? '', status: e.status, mine: e.status === 'complete' ? mineIn(e) : null }));
+    .map((e) => ({ eventId: e.id, name: e.name, startDate: e.startDate, endDate: e.endDate, courseName: COURSES[e.courseIds[0]!]?.name ?? '', status: e.status, days: e.rounds.map((r) => ({ number: r.number, date: r.date, firstTeeAt: r.firstTeeAt })), mine: e.status === 'complete' ? mineIn(e) : null }));
   const seasonRounds = pool.filter((r) => r.playerId === 'jonah' && r.date >= '2026-08-01');
   const per18 = (ctx: ChTourCompareRound['context']) => {
     const rs = seasonRounds.filter((r) => r.context === ctx && r.holes === 18);

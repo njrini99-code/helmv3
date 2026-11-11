@@ -936,8 +936,13 @@ export interface ChTourPlayerData {
     endDate: string;
     courseName: string;
     status: ChTourEvent['status'];
-    /** The player’s own line: their total over `rounds` scored rounds. Team counting is not theirs to read (D-85). */
-    mine: { place: string | null; total: number | null; rounds: number } | null;
+    /** The event's days in round order, each with its first tee where one is set: the card for the next event reads them. */
+    days: Array<{ number: number; date: string; firstTeeAt: string | null }>;
+    /**
+     * The player’s own line: their total over `rounds` scored rounds, that total against par, and each round's own score in
+     * round order (null where they have none). Team counting is not theirs to read (D-85).
+     */
+    mine: { place: string | null; total: number | null; toPar: number | null; rounds: number; scores: Array<{ number: number; total: number | null; toPar: number | null }> } | null;
   }>;
   /** The open event; null on the list. */
   event: ChTourPlayerEvent | null;

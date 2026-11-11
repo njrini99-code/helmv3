@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { tourFixture } from '../preview/fixtures-tournaments';
 import { PlayerEvent } from '../screens/tournaments/PlayerEvent';
+import { formatToPar, inDays, teamToday } from '../screens/tournaments/format';
 import type { ChTourLoad, ChTourPlayerData } from '../screens/tournaments/types';
 
 const nav = vi.hoisted(() => ({ refresh: vi.fn(), push: vi.fn() }));
@@ -31,17 +32,90 @@ const draw = (d: ChTourPlayerData, opts: { phone?: boolean; load?: ChTourLoad } 
 const unwritten = (d: ChTourPlayerData): ChTourPlayerData => ({ ...d, event: { ...d.event!, reflection: { state: 'unwritten', body: '', updatedAt: null } } });
 
 describe('PlayerEvent, the list', () => {
-  it('lists the season’s events, coming up first, each a link to the event with the player’s own line', () => {
+  const links = (c: HTMLElement) => [...c.querySelectorAll<HTMLAnchorElement>('a[href^="/golf/dashboard/tournaments/"]')];
+  const coming = fx.list.list.filter((x) => x.status !== 'complete');
+  const played = fx.list.list.filter((x) => x.status === 'complete');
+
+  it('lists the season’s events, coming up first, each a link to its event', () => {
     const c = draw(fx.list);
     expect(c.querySelector('[data-ch-tour-view="player"] h1')?.textContent).toBe('Tournaments');
-    const rows = c.querySelectorAll('.ch-tour-pl-row');
-    expect(rows).toHaveLength(fx.list.list.length);
-    const first = fx.list.list[0]!;
-    expect(rows[0]).toHaveAttribute('href', `/golf/dashboard/tournaments/${first.eventId}`);
-    const played = fx.list.list.find((x) => x.mine);
-    if (played) expect(c.textContent).toMatch(new RegExp(`${played.mine!.total} in ${played.mine!.rounds} round`));
+    expect(links(c).map((a) => a.getAttribute('href'))).toEqual(fx.list.list.map((x) => `/golf/dashboard/tournaments/${x.eventId}`));
     // Teammates and the team are not on the player’s list: no place, no counting.
     expect(c.textContent).not.toMatch(/counted|dropped/i);
+  });
+
+  it('draws the next event as the one green card: where, when, how far off, and each day with its first tee', () => {
+    const c = draw(fx.list);
+    const next = coming[0]!;
+    const card = c.querySelector('.ch-tour-pl-next')!;
+    expect(c.querySelectorAll('.ch-feat')).toHaveLength(1);
+    expect(card).toHaveAttribute('href', `/golf/dashboard/tournaments/${next.eventId}`);
+    // The link's name is what the card says (no label over it), so the days and tee times are read too.
+    expect(card).not.toHaveAttribute('aria-label');
+    expect(card.querySelector('.ch-feat__title')?.textContent).toBe(next.name);
+    expect(card.querySelector('.ch-feat__kicker')?.textContent).toContain(next.courseName);
+    expect(card.querySelector('.ch-feat__chip')?.textContent).toBe(inDays(teamToday(fx.list.now, fx.list.team.timezone), next.startDate));
+    const days = card.querySelectorAll('.ch-tour-pl-next__day');
+    expect(days).toHaveLength(next.days.length);
+    expect(days[0]?.textContent).toMatch(/^Round 1.*First tee \d{1,2}:\d{2} [AP]M$/);
+    // The rest of the calendar follows it, a row an event.
+    expect(c.querySelectorAll('.ch-tour-pl-later .ch-lgr__row')).toHaveLength(coming.length - 1);
+    cleanup();
+    // A day with no tee time says so, and an event with no days yet says that instead of an empty card.
+    const noTee = draw({ ...fx.list, list: fx.list.list.map((x) => (x === next ? { ...x, days: x.days.map((d) => ({ ...d, firstTeeAt: null })) } : x)) });
+    expect(noTee.querySelector('.ch-tour-pl-next__day')?.textContent).toContain('Tee time not set');
+    cleanup();
+    const noDays = draw({ ...fx.list, list: fx.list.list.map((x) => (x === next ? { ...x, days: [] } : x)) });
+    expect(noDays.querySelector('.ch-tour-pl-next')?.textContent).toContain('Your coach hasn’t added the days yet.');
+  });
+
+  it('desktop: the events played are a table of the player’s own numbers, a column a round, then the total and the to-par', () => {
+    const c = draw(fx.list);
+    expect(c.querySelector('.ch-tour-pl-body--list')?.classList.contains('is-two')).toBe(true);
+    const table = within(c).getByRole('table', { name: 'Events played' });
+    const rounds = Math.max(...played.map((x) => x.days.length));
+    expect(within(table).getAllByRole('columnheader').map((h) => h.textContent)).toEqual(['Event', ...Array.from({ length: rounds }, (_, i) => `R${i + 1}`), 'Total', 'To par', 'Open']);
+    const rows = within(table).getAllByRole('row').slice(1);
+    expect(rows).toHaveLength(played.length);
+    const first = played[0]!;
+    const cells = within(rows[0]!).getAllByRole('cell').map((x) => x.textContent);
+    expect(cells[0]).toContain(first.name);
+    expect(cells.slice(1, 1 + first.days.length)).toEqual(first.mine!.scores.map((r) => String(r.total)));
+    expect(cells[1 + rounds]).toBe(String(first.mine!.total));
+    expect(cells[2 + rounds]).toBe(formatToPar(first.mine!.toPar));
+    // The total is the rounds added up, and the to-par theirs against par: nothing of the team's.
+    expect(first.mine!.scores.reduce((sum, r) => sum + (r.total ?? 0), 0)).toBe(first.mine!.total);
+  });
+
+  it('desktop: a round the player has no score for is a dash, and an event with none of theirs shows no total', () => {
+    const first = played[0]!;
+    const gap = { ...first, mine: { ...first.mine!, scores: first.mine!.scores.map((r, i) => (i === 1 ? { ...r, total: null, toPar: null } : r)) } };
+    const c = draw({ ...fx.list, list: fx.list.list.map((x) => (x === first ? gap : x === played[1] ? { ...x, mine: null } : x)) });
+    const rows = within(within(c).getByRole('table', { name: 'Events played' })).getAllByRole('row').slice(1);
+    expect(within(rows[0]!).getAllByRole('cell')[2]?.textContent).toBe('—No score');
+    expect(within(rows[1]!).getAllByRole('cell').slice(1, -1).every((x) => x.textContent === '—No score')).toBe(true);
+  });
+
+  it('phone: the card stands on the canvas, and a played row gives the total and the to-par over the rounds played', () => {
+    const c = draw(fx.list, { phone: true });
+    expect(c.querySelector('.ch-sec .ch-tour-pl-next')).toBeNull();
+    expect(c.querySelector('.ch-tour-pl-next')).not.toBeNull();
+    expect(c.querySelector('[role="table"]')).toBeNull();
+    const rows = c.querySelectorAll('.ch-tour-pl-row');
+    expect(rows).toHaveLength(played.length);
+    const first = played[0]!;
+    expect(rows[0]?.querySelector('.ch-tour-pl-row__r')?.textContent).toBe(`${first.mine!.total} · ${formatToPar(first.mine!.toPar)}${first.mine!.rounds} rounds`);
+    // Where and when are separate facts, so the line wraps between them and never onto a lone dot.
+    expect([...rows[0]!.querySelectorAll('.ch-tour-pl-bits > span > span')].map((x) => x.textContent)).toEqual([expect.stringMatching(/^[A-Z][a-z]{2} \d/), first.courseName]);
+    expect(links(c)).toHaveLength(fx.list.list.length);
+  });
+
+  it('with only one of the two to show, the list keeps one column', () => {
+    expect(draw({ ...fx.list, list: coming }).querySelector('.ch-tour-pl-body--list')?.classList.contains('is-two')).toBe(false);
+    cleanup();
+    const c = draw({ ...fx.list, list: played });
+    expect(c.querySelector('.ch-tour-pl-body--list')?.classList.contains('is-two')).toBe(false);
+    expect(c.querySelector('.ch-feat')).toBeNull();
   });
 
   it('says there are no tournaments yet (CH-16390), never a failure', () => {
