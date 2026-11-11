@@ -955,3 +955,28 @@ E27. **KNOWLEDGE's K9 is in the harness, narrowed.** `stored.places` is now the 
      `golf_qualifiers.name` and `golf_tournaments.name`. Practices, meetings and travel are left out on purpose: they
      are titled in everyday words ("Practice"), and the rule would then fail the word "practice" wherever an answer
      used it. The dry run prints the names it will hold answers to.
+
+## 2026-11-11 (PLANS): the studio's one list, for CAPABILITIES and the renderer
+
+P12. `../visuals/studio-kinds.ts` exports `STUDIO_KINDS`: sixteen components (`figure`, `comparison`, `ranking`,
+`trend`, `round`, `strokes_gained`, `distance_profile`, `schedule`, `qualifier_board`, `practice_plan`, `document`,
+`app_link`, `note`, `action_preview`, `receipt`, `table`), each with what it draws and every schema kind it draws:
+`block:<type>` (a resolved `show_visual` block), `scene:<kind>`, `part:<data-type>`, `read:<tool>`.
+`studioKindOf('block:ranking')` answers `'ranking'`.
+- Schema side, tested (`../visuals/__tests__/studio-kinds.test.ts`): every block `ResolvedBlock` can hold, every scene,
+  every `data-…` part written anywhere in the chat library and every registered read is claimed by exactly one
+  component, and the list names nothing that does not exist. `SHELL_PARTS` (`data-progress`, `data-turn-meta`,
+  `data-turn-incomplete`, `data-allowance`) are the shell's; `CONTAINER_PARTS` (`data-visual-composition`,
+  `data-visual-artifact`) only hold blocks and a scene.
+- Component side (CAPABILITIES, `src/clubhouse/screens/coachhelm/chat/studio/**`): import `STUDIO_KINDS` and assert the
+  registry's keys are exactly `STUDIO_KINDS.map((k) => k.kind)`, each with a full and a compact size. The list is in
+  `src/lib`, which Clubhouse may import; `src/lib` never imports the registry.
+- The set is CAPABILITIES's to decide. To merge, split or rename a component, change the list (or tell PLANS) and both
+  tests move together. To drop a form: say which `block:` has no component worth its place and PLANS takes it out of
+  what the model can ask `show_visual` for (the resolved type stays, so stored conversations still draw).
+- `table`, the fallback: planned as `{ type: 'table', ref, metricIds? }` in the model's spec and
+  `{ type: 'table', measurements: Measurement[] }` resolved (each row a measurement: who, what, the figure, the
+  sample). It is in the list (`PLANNED_BLOCKS`) and NOT yet in `ResolvedBlock`, because `CoachComposition.tsx`'s
+  switch is exhaustive and would not compile without its case. The renderer already has the parts
+  (`FigureBlock` with `measurementTable`); when the case is in, PLANS adds the block to the schema and to
+  `show_visual`'s description in one commit.
