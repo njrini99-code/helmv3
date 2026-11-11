@@ -456,6 +456,9 @@ export const drillFlow: FlowDef<z.infer<typeof drillInput>> = {
 
 const ARTIFACT_MAX = 8000;
 const publishArtifactInput = z.object({ title: z.string().min(1).max(120), body: z.string().min(1).max(ARTIFACT_MAX), players: z.number().int().min(1) });
+/** How many players a team-wide document reaches, in words a coach reads on the card. */
+const activePlayers = (n: number) => (n === 0 ? 'nobody is on the active roster yet' : n === 1 ? 'the 1 active player' : `all ${n} active players`);
+
 /** Publish from the artifact pane (ask/06 E-FPICK): the same hold as every write. The document opens for players; nothing else is sent. */
 const publishArtifactFlow: FlowDef<z.infer<typeof publishArtifactInput>> = {
   name: 'publish_artifact',
@@ -466,8 +469,9 @@ const publishArtifactFlow: FlowDef<z.infer<typeof publishArtifactInput>> = {
   plan: (ctx, i) => ({
     action: `Publish to ${ctx.roster.length} ${ctx.roster.length === 1 ? 'player' : 'players'}`,
     summary: i.title,
-    facts: [fact('Goes to', 'Documents', false), fact('Words', i.body, false)],
-    notifications: ['Every player on the team can open it in Documents, after an 8 second Undo. Nobody gets a notification.'],
+    // The coach confirms knowing who can read it: the card says so in plain words, with the count, before anything else.
+    facts: [fact('Who can see it', `Players on ${ctx.team_name} will be able to see this: ${activePlayers(ctx.roster.length)}.`, false), fact('Goes to', 'Documents', false), fact('Words', i.body, false)],
+    notifications: [`Players on ${ctx.team_name} will be able to see this in Documents (${activePlayers(ctx.roster.length)}), once the Undo window closes. Nobody gets a notification.`],
     key: ['publish_artifact', i.title, createHash('sha256').update(i.body).digest('hex')],
   }),
   run: async (ctx, i) => {

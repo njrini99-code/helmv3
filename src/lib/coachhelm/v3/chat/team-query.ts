@@ -56,11 +56,6 @@ export function describeQueryTables(opts: { tournamentsOn: boolean }): string {
   return `${describeRoundLines()}\n${tables}\n\n${describeDictionary()}`;
 }
 
-/** The tables the reader offers, by name, for the tool's description. The columns and units come from `describeQueryTables`, on request. */
-export function queryTableNames(opts: { tournamentsOn: boolean }): string[] {
-  return [ROUND_LINES, ...TEAM_QUERY_TABLE_NAMES.filter((t) => opts.tournamentsOn || !looseRule(t)?.flag)];
-}
-
 export async function queryTeamData(sb: Sb, ctx: CoachChatContext, input: TeamQueryInput, opts: { tournamentsOn: boolean }): Promise<ToolEnvelope> {
   if (input.table === ROUND_LINES) return queryRoundLines(sb, ctx, input);
   const rule = looseRule(input.table);

@@ -9,7 +9,6 @@ import { playerTitle } from '@/lib/coachhelm/reads/player-cause';
 import type { CoachChatContext } from './context';
 import { nowIso, unavailableEnvelope, type ToolEnvelope } from './provenance';
 import { readUpcomingEventRows, replyOf } from './read-tools';
-import { getRoundDetail } from './shot-reads';
 
 type Sb = SupabaseClient<Database>;
 
@@ -44,12 +43,14 @@ export async function myUpcomingEvents(sb: Sb, ctx: CoachChatContext, playerId: 
   return { summary: `${events.length} event${events.length === 1 ? '' : 's'} in the next ${days} days.`, measurements: [], series: [], detail: { timezone: ctx.timezone, events }, coverage: mine.error ? 'partial' : 'complete', coverage_note: mine.error ? 'Your replies could not be read.' : null, as_of: nowIso() };
 }
 
-/** One of this player's own rounds. The owner is checked first, so a teammate's round id reads as no round at all: neither its holes nor that it exists. */
-export async function myRoundDetail(sb: Sb, ctx: CoachChatContext, playerId: string, input: { round_id: string }): Promise<ToolEnvelope> {
-  const own = await sb.from('golf_rounds').select('id').eq('id', input.round_id).eq('player_id', playerId).maybeSingle();
-  if (own.error) return unavailableEnvelope('Could not read that round.', 'The round query failed.');
-  if (!own.data) return { summary: 'That round is not one of yours.', measurements: [], series: [], coverage: 'empty', coverage_note: 'No round of yours with that id.', as_of: nowIso() };
-  return getRoundDetail(sb, ctx, input);
+/**
+ * Is this round the player's own? Checked before the round is loaded, so a teammate's round id reads as no round at all: neither its
+ * holes nor that it exists. Null when the check itself failed.
+ */
+export async function ownsRound(sb: Sb, playerId: string, roundId: string): Promise<boolean | null> {
+  const own = await sb.from('golf_rounds').select('id').eq('id', roundId).eq('player_id', playerId).maybeSingle();
+  if (own.error) return null;
+  return !!own.data;
 }
 
 /**

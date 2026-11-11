@@ -45,6 +45,8 @@ export type ChatEvent =
   /** A read or a draft has started: the progress row. `label` is for people; `tool` is kept for the stored part's shape and is never drawn. */
   | { type: 'read_started'; id: string; label: string; tool: string }
   | { type: 'read_finished'; id: string; label: string; tool: string; state: 'done' | 'failed'; detail?: string }
+  /** A short progress note in the model's own words (never its reasoning). Drawn as a finished progress row. */
+  | { type: 'note'; id: string; text: string }
   /** A part of the answer that is not prose. The four named kinds are the ones the brief lists; `part` is every other stored data part. */
   | { type: 'evidence' | 'visual' | 'proposal' | 'receipt' | 'part'; part: WireDataPart }
   /** The turn is waiting on the coach: the card for `key` is live. */
@@ -138,6 +140,8 @@ export function applyChatEvent(message: ChatUIMessage, event: ChatEvent): ChatUI
           data: { label: event.label, tool: event.tool, state: event.state, done: event.label, ...(event.detail ? { detail: event.detail } : {}) },
         }),
       };
+    case 'note':
+      return event.text.trim() ? { ...message, parts: upsertDataPart(parts, { type: 'data-progress', id: event.id, data: { label: event.text.trim(), tool: 'note', state: 'done', done: event.text.trim() } }) } : message;
     case 'evidence':
     case 'visual':
     case 'proposal':

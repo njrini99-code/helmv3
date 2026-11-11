@@ -58,6 +58,12 @@ export interface UseCoachHelmChatOptions {
   /** Which surface is asking: it decides the tools the server offers. Left out, the Ask tab. */
   surface?: 'ask' | 'quick_chat' | 'practice_helper';
   conversationId?: string | null;
+  /**
+   * Where the chat was opened from and what is selected there (a screen id and the ids on it), sent with each new
+   * message so "how is he putting" on a player's page needs no name. The server checks every id against the caller's
+   * own team and drops what it cannot use. Left out, nothing is sent.
+   */
+  screen?: Record<string, unknown> | null;
   /** Messages restored from durable history, already in UI part form. */
   initialMessages?: ChatUIMessage[];
   /** Chips the host page suggests. The coach may remove any of them. */
@@ -122,6 +128,9 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
   const lastDecision = React.useRef<{ key: string; approved: boolean } | null>(null);
   const endpoint = options.endpoint ?? STREAM_ENDPOINT;
   const surface = options.surface;
+  // Read when a message is sent, so the screen is the one the coach is on at that moment.
+  const screen = React.useRef(options.screen ?? null);
+  screen.current = options.screen ?? null;
 
   const onConversationId = options.onConversationId;
   /**
@@ -205,7 +214,7 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
             conversation_id: conversation.current,
             client_turn_id: outgoing.kind === 'message' ? outgoing.key : newKey(),
             ...(surface ? { surface } : {}),
-            ...(outgoing.kind === 'message' ? { message: outgoing.text } : { decision: { key: outgoing.key, approved: outgoing.approved } }),
+            ...(outgoing.kind === 'message' ? { message: outgoing.text, ...(screen.current ? { screen: screen.current } : {}) } : { decision: { key: outgoing.key, approved: outgoing.approved } }),
           }),
         });
         const minted = response.headers.get('x-conversation-id');

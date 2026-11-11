@@ -64,6 +64,16 @@ describe('restoreUIMessages — status: complete (or legacy null), unaffected', 
     expect(part.data).toEqual(artifact);
   });
 
+  it('replays the link to a screen and the chip for a saved note: both are part of what the turn did', () => {
+    const link = { type: 'data-app-link', id: 'app-link-roster', data: { label: 'Open Roster', href: '/golf/dashboard/roster', place: 'roster' } };
+    const note = { type: 'data-coach-note', id: 'coach-note-n1', data: { op: 'saved', note_id: 'n1', text: 'Lead with the number.' } };
+    const row = assistantRow({ status: 'complete', ui_parts: [{ type: 'text', text: 'It is on Roster.' }, link, note] });
+
+    const [restored] = restoreUIMessages([row]);
+
+    expect(restored!.parts).toEqual([{ type: 'text', text: 'It is on Roster.' }, link, note]);
+  });
+
   it('a legacy row (status null, no ui_parts) still renders from content as a completed answer', () => {
     const row = assistantRow({ status: null, ui_parts: null, content: 'Legacy answer text.' });
 

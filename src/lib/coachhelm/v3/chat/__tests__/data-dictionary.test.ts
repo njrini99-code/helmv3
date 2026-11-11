@@ -1,5 +1,9 @@
+import { readdirSync, readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { columnUnits, columnWithUnit, DATA_DICTIONARY, DATA_READING_PROMPT, DATA_QUIRKS, describeDictionary, noteFor, ROUND_LINES_COLUMNS, ROUND_LINES_DICTIONARY, UNKNOWN_ENTRIES } from '../data-dictionary';
+import { SG_BASELINE_OPTIONS } from '@/lib/golf/sg-benchmarks';
+import { parseChecks } from '../knowledge/data-map-build';
+import { columnUnits, columnWithUnit, DATA_DICTIONARY, DATA_QUIRKS, describeDictionary, noteFor, ROUND_LINES_COLUMNS, ROUND_LINES_DICTIONARY, UNKNOWN_ENTRIES } from '../data-dictionary';
 import { TEAM_QUERY_TABLE_NAMES, TEAM_QUERY_TABLES, looseRule } from '../team-query-allowlist';
 
 describe('the data dictionary', () => {
@@ -64,7 +68,9 @@ describe('the data dictionary', () => {
     expect(q).toMatch(/total only/);
     expect(q).toMatch(/practice, qualifier or tournament/);
     expect(q).toMatch(/9-hole round/);
-    expect(q).toMatch(/not always against the Tour/);
+    // Strokes gained is Tour level for every team since 2026-06-22 (sg-benchmarks.ts): the dictionary said "not always against the Tour" until 2026-11-10.
+    expect(q).toMatch(/against Tour level for the team/);
+    expect(q).not.toMatch(/not always against the Tour|chosen baseline/);
     expect(q).toMatch(/"15\.3 ft", never "15\.3"/);
   });
 
@@ -91,11 +97,27 @@ describe('the data dictionary', () => {
     expect(Object.keys(TEAM_QUERY_TABLES).length).toBe(Object.keys(DATA_DICTIONARY).length);
   });
 
-  it('has a compact prompt that says the unit, the sign, the empty value and the cut, in under 900 characters', () => {
-    expect(DATA_READING_PROMPT).toMatch(/"15\.3 ft"/);
-    expect(DATA_READING_PROMPT).toMatch(/negative strokes-gained/);
-    expect(DATA_READING_PROMPT).toMatch(/never zero/);
-    expect(DATA_READING_PROMPT).toMatch(/first N of M rows/);
-    expect(DATA_READING_PROMPT.length).toBeLessThan(900);
+  it('says strokes gained is against Tour level, with exactly the baselines the code and the schema allow', () => {
+    const keys = SG_BASELINE_OPTIONS.map((o) => o.key);
+    expect(keys).toEqual(['pga_tour', 'womens']);
+    const note = noteFor('golf_team_settings', 'sg_baseline')!;
+    for (const k of keys) expect(note.values).toContain(k);
+    expect(note.values).not.toMatch(/scratch|ncaa|d1|d2|d3/);
+    for (const col of ['strokes_gained_total', 'strokes_gained_putting']) expect(noteFor('golf_rounds', col)!.means).toMatch(/against Tour level for the team/);
+    expect(noteFor('golf_rounds', 'strokes_gained_total')!.sign).toMatch(/zero is Tour level/i);
+  });
+
+  it('gives no value list the schema mirror contradicts', () => {
+    const dir = resolve(process.cwd(), 'supabase/schemas/golf');
+    const checks = parseChecks(readdirSync(dir).filter((f) => f.endsWith('.sql')).map((f) => readFileSync(resolve(dir, f), 'utf8')).join('\n'));
+    // Every column the schema constrains to a list and the dictionary gives a list for: the dictionary names only values the constraint allows.
+    const exact: Array<[string, string]> = [['golf_team_settings', 'sg_baseline'], ['golf_focus_area_criteria', 'source'], ['golf_focus_area_practice_sessions', 'logged_by_role'], ['golf_tournament_rounds', 'status'], ['golf_goals', 'state'], ['golf_team_seasons', 'division'], ['golf_event_attendance', 'attendance_status'], ['golf_qualifiers', 'selection_state'], ['golf_qualifier_selections', 'selection_type'], ['golf_tournament_entries', 'role']];
+    for (const [table, column] of exact) {
+      const allowed = checks[`${table}.${column}`];
+      expect(allowed, `${table}.${column} has a CHECK list in the schema mirror`).toBeTruthy();
+      const named = (noteFor(table, column)!.values ?? '').split(',').map((v) => v.trim().split(' ')[0]!).filter(Boolean);
+      expect(named.length, `${table}.${column} lists its values`).toBeGreaterThan(0);
+      for (const v of named) expect(allowed, `${table}.${column} value ${v}`).toContain(v);
+    }
   });
 });

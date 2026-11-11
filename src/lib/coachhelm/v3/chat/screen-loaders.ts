@@ -20,6 +20,13 @@
  *   teamRounds         loadTeamRounds({ teamId })                                     src/clubhouse/data/team-rounds.ts
  *   qualifierList      loadQualifierList({ role, teamId, playerId, mode: 'all' })     src/clubhouse/data/qualifiers.ts
  *   qualifierBoard     loadQualifierDetail({ role, teamId, playerId, qualifierId })   src/clubhouse/data/qualifiers.ts
+ *   roundReview        loadRoundReview(roundId, viewer)                               src/clubhouse/data/round-review.ts
+ *                        viewer: { role: 'coach', teamId } or { role: 'player', playerId, teamId }
+ *   tournaments        loadTournamentsHome(await tourContext({ role: 'coach', teamId }))  src/clubhouse/data/tournaments.ts
+ *                        coach only, and only while golf_tournaments_v1 is on
+ *
+ * Not bound, and why: a course. The Course page's loader (`loadCourseHistory`) is one player's history at a course, keyed by the Rounds
+ * page's course key and a window; `get_reference` topic course answers the team's scoring by hole for a course id, which no screen draws.
  *
  * `viewer` and `role` are the signed-in person's: a player's Stats page has no team column and a player's qualifier
  * board is the one a player sees, so the screen's own privacy rule travels with the loader.
@@ -188,6 +195,53 @@ export interface QualifierBoardScreen {
   roundsError: boolean;
 }
 
+/** The Round page (`loadRoundReview`): one round as the review draws it. */
+export interface RoundReviewScreen {
+  id: string;
+  playerId: string;
+  playerName: string | null;
+  date: string;
+  course: string;
+  type: string | null;
+  holesPlayed: number;
+  score: number | null;
+  toPar: number | null;
+  front: { score: number | null; toPar: number | null };
+  back: { score: number | null; toPar: number | null };
+  putts: number | null;
+  fairways: { hit: number; of: number } | null;
+  greens: { hit: number; of: number } | null;
+  strokesGained: { total: number | null; tee: number | null; approach: number | null; around: number | null; putting: number | null } | null;
+  recap: string | null;
+  notes: string | null;
+  coachNote: string | null;
+  holes: Array<{ n: number; par: number | null; yards: number | null; score: number | null; putts: number | null; fairway: boolean | null; gir: boolean | null; penalties: number }>;
+  holesError: boolean;
+}
+export type RoundReviewLoad = { kind: 'ok'; review: RoundReviewScreen } | { kind: 'notFound' } | { kind: 'inProgress' } | { kind: 'error' };
+
+/** The Tournaments season home (`loadTournamentsHome`): every event of the seasons shown, oldest first. */
+export interface TournamentsScreen {
+  players: Array<{ id: string; name: string }>;
+  events: Array<{
+    id: string;
+    name: string;
+    startDate: string;
+    endDate: string;
+    format: string;
+    kind: string;
+    status: string;
+    cancelled?: boolean;
+    legacy: boolean;
+    rounds: Array<{ number: number; date: string; status: string; par: number }>;
+    playerRounds: Array<{ roundNumber: number; playerId: string; total: number | null; toPar: number | null; status: string }>;
+    finish: { place: string; placeN: number; of: number } | null;
+    lineup: { status: string; set: number; of: number };
+  }>;
+  errors: { events?: true };
+}
+export type TournamentsLoad = { kind: 'ready'; data: TournamentsScreen } | { kind: 'not_set_up' } | { kind: 'missing' } | { kind: 'failed' };
+
 export interface ScreenLoaders {
   /** Stats' per-player figures for a window, with the team's pooled figures beside them. */
   playerFigures?: PlayerFiguresSource;
@@ -207,6 +261,10 @@ export interface ScreenLoaders {
   qualifierList?: () => Promise<QualifierListScreen | null>;
   /** One qualifier's board. */
   qualifierBoard?: (qualifierId: string) => Promise<QualifierBoardScreen | null>;
+  /** One round as the Round page draws it, for the signed-in viewer. */
+  roundReview?: (roundId: string) => Promise<RoundReviewLoad | null>;
+  /** The Tournaments season home. */
+  tournaments?: () => Promise<TournamentsLoad | null>;
 }
 
 /** The loaders on a tool context, whatever the engine's own (narrower) declaration of them says. */

@@ -19,7 +19,7 @@ describe('the registry’s tools as the model is given them', () => {
   it.each(surfaces)('%s: every tool converts, with a valid unique name and an object schema', (surface, who) => {
     const tools = toolsFor(surface, who as never);
     expect(tools.length).toBeGreaterThan(0);
-    const defs = tools.map(modelToolFor);
+    const defs = tools.map((tool) => modelToolFor(tool));
     const names = defs.map((d) => d.name);
     expect(new Set(names).size).toBe(names.length);
     for (const def of defs) {

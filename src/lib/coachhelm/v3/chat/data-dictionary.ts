@@ -36,8 +36,9 @@ export interface ColumnNote {
 const c = (unit: Unit, means: string, extra: Omit<ColumnNote, 'unit' | 'means'> = {}): ColumnNote => ({ unit, means, ...extra });
 
 const ID = c('id', 'An internal id; never shown to a coach.');
-const SG_SIGN = 'Positive gains strokes on the baseline; negative loses strokes to it.';
-const SG_BASELINE = 'strokes gained against the team’s chosen baseline (golf_team_settings.sg_baseline: the PGA Tour for a men’s team by default, the women’s scale for a women’s team), not against the Tour by default';
+const SG_SIGN = 'Positive gains strokes on the baseline; negative loses strokes to it. Zero is Tour level, so a negative figure is normal for a college player.';
+// Tour level only since 2026-06-22 (src/lib/golf/sg-benchmarks.ts): the men’s Tour curve for a men’s team, the same curve scaled for a women’s team. No division or scratch baseline exists.
+const SG_BASELINE = 'strokes gained against Tour level for the team (the men’s Tour baseline for a men’s team, the women’s baseline for a women’s team)';
 const NO_DETAIL = 'the round has no hole-by-hole detail (a total-only round), or it is not finished';
 const SG_NULL = 'the round has no hole or shot detail to compute it from (a total-only round) or is not finished';
 const WRITTEN_BY_CACHE = 'Recomputed from the player’s completed rounds.';
@@ -211,7 +212,7 @@ export const DATA_DICTIONARY = {
     focus_area_id: ID,
     practiced_at: c('time', 'When the practice was done.'),
     reps: c('count', 'Repetitions logged.', { null_when: 'reps were not counted' }),
-    logged_by_role: c('code', 'Whether a coach or the player logged it. The value list is not fixed in the schema.'),
+    logged_by_role: c('code', 'Whether a coach or the player logged it.', { values: 'player, coach' }),
   },
   golf_focus_area_criteria: {
     id: ID,
@@ -219,7 +220,7 @@ export const DATA_DICTIONARY = {
     label: c('text', 'The criterion, as worded.'),
     met: c('flag', 'Whether the criterion has been met.'),
     met_at: c('time', 'When it was met.', { null_when: 'not met yet' }),
-    source: c('code', 'What marked it met (a coach, the player or a measurement). The value list is not fixed in the schema.'),
+    source: c('code', 'What marked it met: a coach, or the engine from a measurement.', { values: 'coach, engine' }),
   },
   golf_qualifiers: {
     id: ID,
@@ -296,8 +297,8 @@ export const DATA_DICTIONARY = {
     scoring_format: c('text', 'The scoring format the team uses.', { null_when: 'not set' }),
     handicap_system: c('text', 'The handicap system the team uses.', { null_when: 'not set' }),
     default_tees: c('text', 'The tees used by default.', { null_when: 'not set' }),
-    sg_baseline: c('code', 'The reference strokes gained is measured against.', { values: 'pga_tour, womens, scratch, ncaa_d1, ncaa_d2, ncaa_d3', null_when: 'not chosen (a men’s team then uses pga_tour, a women’s team womens)' }),
-    sg_benchmark_level: c('code', 'The level the strokes-gained benchmark line is drawn at.', { values: 'pga_tour, scratch, ncaa_d1, ncaa_d2, ncaa_d3, break_80, break_90, break_100' }),
+    sg_baseline: c('code', 'The Tour-level reference strokes gained is measured against.', { values: 'pga_tour (men’s), womens', null_when: 'not chosen (a men’s team then uses pga_tour, a women’s team womens)' }),
+    sg_benchmark_level: c('code', 'An older display setting for a benchmark line. It is NOT what strokes gained is measured against (that is sg_baseline, Tour level).', { values: 'pga_tour, scratch, ncaa_d1, ncaa_d2, ncaa_d3, break_80, break_90, break_100' }),
     timezone: c('code', 'The team’s time zone (an IANA name).', { null_when: 'not set' }),
   },
   golf_practice_sessions: {
@@ -329,7 +330,7 @@ export const DATA_DICTIONARY = {
     tournament_id: ID,
     round_number: c('count', 'Which round of the tournament (1 is first).'),
     round_event_id: ID,
-    status: c('code', 'Where the round is. The value list is not fixed in the schema.'),
+    status: c('code', 'Where the round is.', { values: 'upcoming, live, suspended_weather, suspended_other, final' }),
     first_tee_at: c('time', 'The first tee time, stored in UTC.', { null_when: 'no tee times yet' }),
     course_label: c('text', 'The course for this round.', { null_when: 'not set' }),
   },
@@ -387,7 +388,7 @@ export const DATA_QUIRKS: readonly string[] = [
   'An unfinished round has no stat line and no strokes gained; only completed rounds count in any average.',
   'A 9-hole round has about half the strokes of an 18-hole round: do not average them together; holes_played says which.',
   'golf_round_stats_cache.updated_at and every other updated_at is when a row was last recomputed, not when anything was played; order rounds by round_date (or use round_lines).',
-  'Strokes gained is measured against the team’s chosen baseline (golf_team_settings.sg_baseline), not always against the Tour.',
+  'Strokes gained is measured against Tour level for the team (the men’s Tour baseline, or the women’s baseline for a women’s team): zero is Tour level and a college player is normally negative. A round with shots logged has it measured shot by shot; a round scored hole by hole without shots has an estimate from the scorecard.',
   'Distances: shot and driving distances are yards; putt distances and approach proximity are feet. Say the unit in the answer ("15.3 ft", never "15.3").',
   'Sign: negative strokes gained loses strokes to the baseline; negative score to par is under par (better). Lower is better for score, putts, three-putts, penalties and proximity; higher is better for GIR, fairways, scrambling, make rates and percentiles.',
 ];
@@ -431,13 +432,3 @@ export function describeDictionary(): string {
     '- An empty column is "not recorded", never zero. Each read carries the unit of its columns (detail.units); use it in the answer.',
   ].join('\n');
 }
-
-/**
- * The compact version for the system prompt (Ask v2): what to do with a row of data, in four sentences. The full dictionary rides with the
- * tool (`describeQueryTables`); the prompt only has to make the model use it.
- */
-export const DATA_READING_PROMPT =
-  'Reading rows: every column of a query_team_data or round_lines read has a unit (detail.units, and in brackets in the tool description), and you say it with the figure: "15.3 ft", "281 yards", "61%", "34 putts", never a bare number. ' +
-  'A negative strokes-gained figure loses strokes to the baseline; a negative score to par is under par; lower is better for score, putts, three-putts, penalties and proximity. ' +
-  'An empty value was not recorded: it is never zero, and a round posted as a total only has no holes, putts or strokes gained. ' +
-  'When a read says it showed the first N of M rows (coverage partial), say so in the answer and offer to narrow it. Prefer round_lines for any question about rounds.';

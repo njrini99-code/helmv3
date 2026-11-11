@@ -36,12 +36,17 @@ the tie-breaker.
    rewrite an answer.
 7. **A task never runs without the coach's Confirm**, and the closing words repeat what the tool result
    says happened (held for Undo, committed, cancelled, failed). The receipt card is the record.
-8. **Model settings live in one place** (`src/lib/coachhelm/v3/llm/types.ts` and the engine's request
-   builder): the model id, effort, max output, the refusal fallback, cache breakpoints. Changing the
-   model or effort is an owner decision; measure it on the eval first.
-9. **The prompt prefix is stable.** Tools in a fixed order, the policy block identical for every team,
-   then the team block, dates to the day. Anything volatile goes after the last cache breakpoint.
-   Check `cache_read_input_tokens` in the ledger after a prompt or tool change.
+8. **Model settings live in one place** (`src/lib/coachhelm/v3/llm/types.ts` and `engine/model.ts`): the model id
+   (Claude Haiku 5.5), the effort (`high`, sent explicitly because this model defaults to `medium`), max output, the
+   cache breakpoints, and every optional feature as one field of `CHAT_FEATURES` with a tested off path. This model
+   has no server-side refusal fallback: never send `fallbacks`; a refusal is a complete turn with a sentence the coach
+   can act on. Changing the model or effort is an owner decision; measure it on the eval first.
+9. **The prompt prefix is stable, byte for byte.** Tools in a fixed order, the policy, golf and data-map blocks
+   identical for every team, then the team block (team, season rule, timezone, roster). Nothing that changes during
+   a conversation's life goes in `system` or `tools`: today's date, the screen the coach is on and the coach's notes
+   travel as a `{ role: 'system' }` message after the user's message and are stored with the turn. A changed prefix
+   invalidates replayed thinking blocks; `drop_block` keeps a deploy from breaking stored conversations. Check
+   `cache_read_input_tokens` in the ledger after a prompt or tool change.
 10. **Privacy.** Every read uses the signed-in session client, so row-level security applies. A player
     tool overwrites the player id with the caller's own. Thinking is never sent to the browser. No
     prompt, answer, name or figure goes to Sentry or a log.

@@ -65,7 +65,7 @@ export interface ChatDataPart {
 
 /**
  * What a read tool returns: the envelope, plus the few things an envelope cannot say. A bare `ToolEnvelope` is a valid
- * `ToolResult`. Only the envelope fields (and its `evidence_ref`) are sent to the model; `parts` go to the coach.
+ * `ToolResult`. The model is sent `model_text` when there is one, otherwise the envelope; `parts` go to the coach.
  */
 export type ToolResult = ToolEnvelope & {
   /** Extra UI parts, streamed and stored in order after the read finishes. Tools do not write to the stream. */
@@ -74,6 +74,13 @@ export type ToolResult = ToolEnvelope & {
   evidence?: boolean;
   /** `true` when the turn must stop after this step for the coach to answer (the practice brief). */
   end_turn?: boolean;
+  /**
+   * The read as the model should be given it: finished, labelled lines ("Scoring avg: 74.2 | team 75.1"), one fact a
+   * line. When set, these lines are what the model reads instead of the envelope's JSON (about a seventh of the
+   * tokens), and each line is a unit the model can cite. The envelope, `model_text` included, still goes to the evidence
+   * chip, the `reads` map and the grounding check.
+   */
+  model_text?: string;
 };
 
 interface ToolBase<I> {

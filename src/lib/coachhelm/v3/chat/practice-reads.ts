@@ -7,7 +7,6 @@ import { practiceTables, type TeamDrillRow } from '@/lib/golf/practice-db';
 import { isPracticeMissing } from '@/lib/golf/practice-errors';
 import { toClassDay } from '@/lib/golf/class-day-shape';
 import { LIBRARY_DRILL_KINDS } from '@/lib/coachhelm/v3/practice-plan/library-kinds';
-import { getShotPattern } from './shot-reads';
 
 type Sb = SupabaseClient<Database>;
 const env = (summary: string, detail: Record<string, unknown>, coverage: ToolEnvelope['coverage'] = 'complete', note: string | null = null): ToolEnvelope => ({ summary, measurements: [], series: [], detail, coverage, coverage_note: note, as_of: nowIso() });
@@ -102,8 +101,4 @@ export async function getTeamStrokesGained(source: TeamSgSource | undefined, tea
     ...env(`Team strokes gained, the average per round over ${WINDOW_WORDS[window]}, from ${from}.`, detail, lean ? 'partial' : 'complete', lean ? `Only ${from}, so this is a lean read.` : null),
     measurements,
   };
-}
-
-export async function getTeamPuttingProfile(sb: Sb, ctx: CoachChatContext, input: { rounds: number }): Promise<ToolEnvelope> {
-  return getShotPattern(sb, ctx, { mode: 'putting', since_days: Math.max(14, input.rounds * 7) });
 }

@@ -8,7 +8,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { NextRequest } from 'next/server';
 import { z } from 'zod';
-import { asTools, fakeDb, fakeModel, newToolLog, readEvents, readTool, taskTool, text, textOf, thinking, toolUse, type FakeDb, type FakeModel, type ToolLog } from './helpers';
+import { asTools, cited, codeToolUse, fakeDb, fakeModel, linesTool, newToolLog, readEvents, readTool, rejected, serverCode, taskTool, text, textOf, thinking, toolUse, type FakeDb, type FakeModel, type ToolLog } from './helpers';
 import type { ChatTool } from '@/lib/coachhelm/v3/chat/engine/tool';
 import type { ChatEvent } from '@/lib/coachhelm/v3/chat/engine/protocol';
 
@@ -19,6 +19,8 @@ const h = vi.hoisted(() => ({
   admin: null as unknown as { client: unknown },
   model: null as unknown,
   modelFactory: null as null | (() => unknown),
+  features: null as unknown,
+  notes: null as null | { tone: 'straight' | 'detailed' | 'team_talk'; facts: Array<{ id: string; text: string }> },
   tools: [] as unknown[],
   playerTools: [] as unknown[],
   role: 'coach' as 'coach' | 'player',
@@ -52,7 +54,16 @@ vi.mock('@/clubhouse/data/team-rounds', () => ({ loadTeamRounds: vi.fn(async () 
 vi.mock('@/clubhouse/data/team-sg', () => ({ loadTeamStrokesGained: vi.fn(async () => null) }));
 vi.mock('@/lib/coachhelm/v3/chat/registry', () => ({ toolsFor: h.toolsFor }));
 vi.mock('@/lib/coachhelm/v3/chat/instructions', () => ({ instructionBlocks: vi.fn((surface: string) => (surface === 'player' ? { policy: 'PLAYER POLICY', team: 'PLAYER BLOCK' } : { policy: 'POLICY', team: 'TEAM BLOCK' })) }));
-vi.mock('@/lib/coachhelm/v3/chat/ask-knows', () => ({ readAskKnows: vi.fn(async () => null), knowsSection: vi.fn(() => '') }));
+// CONTEXT's notes: what is read is a stand-in, the sentences are short stand-ins too. Where they are placed is what this suite checks.
+vi.mock('@/lib/coachhelm/v3/chat/context/notes', () => ({
+  readStandingNotes: vi.fn(async () => h.notes),
+  firstTurnNotes: (knows: typeof h.notes) => (knows && knows.facts.length > 0 ? `NOTES: ${knows.facts.map((f) => f.text).join(' | ')}` : null),
+  toneSentence: (knows: typeof h.notes) => (knows ? `Tone: ${knows.tone}.` : null),
+}));
+// The screen-context resolver is CONTEXT's and has its own tests; here it is the line the engine must place and store.
+vi.mock('@/lib/coachhelm/v3/chat/context/screen-context', () => ({
+  turnContext: vi.fn(async (_sb: unknown, _who: unknown, raw: { screen?: string } | null) => ({ line: raw?.screen ? `Today is Tuesday 10 November 2026. The coach is on ${raw.screen}.` : 'Today is Tuesday 10 November 2026.', screen: null })),
+}));
 vi.mock('@/lib/coachhelm/v3/chat/player-allowance', () => ({ readBucket: vi.fn(async () => 'ok'), recordPlayerSpend: vi.fn(async () => {}) }));
 vi.mock('@/lib/coachhelm/v3/chat/player-context', () => ({
   resolvePlayerChatContext: vi.fn(async () => ({ coach_id: '', user_id: 'user-9', team_id: 'team-1', team_name: 'Test Team', timezone: 'America/New_York', roster: [{ id: 'player-me', name: 'Eli Stone' }], player_id: 'player-me' })),
@@ -69,10 +80,10 @@ vi.mock('@/lib/coachhelm/v3/chat/context', async (original) => {
 });
 vi.mock('@/lib/coachhelm/v3/chat/engine/model', async (original) => {
   const real = await original<typeof import('@/lib/coachhelm/v3/chat/engine/model')>();
-  return { ...real, anthropicModelClient: () => (h.modelFactory ? h.modelFactory() : h.model) };
+  return { ...real, anthropicModelClient: () => (h.modelFactory ? h.modelFactory() : h.model), chatFeatures: () => h.features ?? real.CHAT_FEATURES };
 });
-// The real hold, with a 150 ms window instead of 8 s so a test can watch it release.
-const HOLD_MS = 150;
+// The real hold, with a 250 ms window instead of 8 s so a test can watch it release.
+const HOLD_MS = 250;
 const afterHold = () => new Promise((resolve) => setTimeout(resolve, HOLD_MS + 150));
 vi.mock('@/lib/coachhelm/v3/chat/undo-hold', async (original) => {
   const real = await original<typeof import('@/lib/coachhelm/v3/chat/undo-hold')>();
@@ -81,9 +92,13 @@ vi.mock('@/lib/coachhelm/v3/chat/undo-hold', async (original) => {
 
 import { POST } from '../route';
 import { restoreUIMessages } from '@/lib/coachhelm/v3/chat/restore';
-import { MissingModelKeyError } from '@/lib/coachhelm/v3/chat/engine/model';
+import { CHAT_FEATURES, MissingModelKeyError, plainFeatures } from '@/lib/coachhelm/v3/chat/engine/model';
+import { cancelHeld } from '@/lib/coachhelm/v3/chat/undo-hold';
 
 const MESSAGES = 'golf_coachhelm_chat_messages';
+/** The app's own line for the turn, as the system message after the coach's words. */
+const TODAY = 'Today is Tuesday 10 November 2026.';
+const sys = { role: 'system', content: TODAY };
 const RUNS = 'golf_coachhelm_action_runs';
 
 let db: FakeDb;
@@ -97,7 +112,9 @@ function setup(opts: { modelColumns?: boolean; holdColumn?: boolean } = {}) {
   log = newToolLog();
   h.role = 'coach';
   h.modelFactory = null;
-  const coachTools: ChatTool[] = asTools(readTool('get_player_stats', log, 71.4), readTool('get_team_stats', log, 74.2), taskTool('create_focus_area', log));
+  h.features = null;
+  h.notes = null;
+  const coachTools: ChatTool[] = asTools(readTool('get_player_stats', log, 71.4), readTool('get_team_stats', log, 74.2), taskTool('create_focus_area', log), linesTool('get_rounds', log, ['Scoring avg: 74.2 | team 75.1', 'Putts per round: 31.4']));
   const playerTools: ChatTool[] = asTools(readTool('get_my_stats', log, 73.1), taskTool('create_focus_area', log));
   h.toolsFor.mockImplementation((surface: string) => (surface === 'player' ? playerTools : coachTools));
 }
@@ -124,10 +141,17 @@ const assistantRows = () => (db.tables[MESSAGES] ?? []).filter((r) => r.role ===
 const keyOf = (events: ChatEvent[]): string => (events.find((e) => e.type === 'decision_needed') as { key: string }).key;
 const runs = () => db.tables[RUNS] ?? [];
 const lastRequestMessages = (model: FakeModel) => model.requests.at(-1)!.messages as Array<{ role: string; content: unknown }>;
+const receiptStates = (events: ChatEvent[]): string[] => events.flatMap((e) => (e.type === 'receipt' ? [(e.part.data as { status: string }).status] : []));
+/** Resolves once the ledger row is inside its Undo window: the moment a coach could press Undo or lose their connection. */
+const untilHeld = async (): Promise<void> => {
+  for (let i = 0; i < 100 && runs()[0]?.status !== 'held'; i += 1) await new Promise((resolve) => setTimeout(resolve, 5));
+  expect(runs()[0]?.status).toBe('held');
+};
 
 beforeEach(() => {
   setup();
   h.logServerError.mockClear();
+  h.logServerEvent.mockClear();
   h.checkBudget.mockResolvedValue({ allowed: true });
 });
 
@@ -147,31 +171,40 @@ describe('a plain answer', () => {
     const [row] = assistantRows();
     expect(assistantRows()).toHaveLength(1);
     expect(row).toMatchObject({ status: 'complete', content: 'Avery is averaging 71.4 over the last ten rounds.', pending_decision: null });
+    // The stored turn: the coach's words, the app's line for the turn as a system message, and the model's content exactly as returned.
     expect(row!.model_messages).toEqual([
       { role: 'user', content: 'How is Avery scoring?' },
+      sys,
       { role: 'assistant', content: [thinking('sig-1'), text('Avery is averaging 71.4 over the last ten rounds.')] },
     ]);
 
     const request = model.requests[0]!;
-    expect(request.model).toBe('claude-sonnet-5-5');
+    expect(request.model).toBe('claude-haiku-5-5');
     expect(request.max_tokens).toBe(16000);
     expect(request.thinking).toEqual({ type: 'adaptive', block_binding: { prefix_mismatch_behavior: 'drop_block' } });
-    expect(request.output_config).toEqual({ effort: 'medium' });
+    // This model's default effort is medium: high is sent on every request.
+    expect(request.output_config).toEqual({ effort: 'high' });
     expect(request.tool_choice).toEqual({ type: 'auto' });
-    expect(request.fallbacks).toBe('default');
-    expect(request.betas).toContain('server-side-fallback-2026-07-01');
-    expect(request).not.toHaveProperty('temperature');
+    // There is no server-side fallback on this model, and nothing it rejects is sent.
+    for (const never of ['fallbacks', 'temperature', 'top_p', 'top_k']) expect(request).not.toHaveProperty(never);
+    expect(request.betas).toEqual(['thinking-binding-controls-2026-08-01', 'compact-2026-01-12']);
+    expect(request.context_management).toEqual({ edits: [{ type: 'compact_20260112' }] });
+    // Nothing that changes with the day is in the prompt: the date is the system message after the coach's words.
+    expect(JSON.stringify(request.system)).not.toContain('November');
+    expect(request.messages).toEqual([{ role: 'user', content: 'How is Avery scoring?' }, sys]);
     // Cache order: tools, then the policy block (one hour), then the team's block; the tail is cached by the request-level marker.
     expect(request.system).toEqual([
       { type: 'text', text: 'POLICY', cache_control: { type: 'ephemeral', ttl: '1h' } },
       { type: 'text', text: 'TEAM BLOCK', cache_control: { type: 'ephemeral' } },
     ]);
     expect(request.cache_control).toEqual({ type: 'ephemeral' });
-    expect((request.tools as Array<{ name: string; eager_input_streaming?: boolean }>).map((t) => [t.name, t.eager_input_streaming])).toEqual([
-      ['get_player_stats', true],
-      ['get_team_stats', true],
-      ['create_focus_area', true],
+    expect((request.tools as Array<{ name: string; eager_input_streaming?: boolean; strict?: boolean }>).map((t) => [t.name, t.eager_input_streaming, t.strict])).toEqual([
+      ['get_player_stats', true, true],
+      ['get_team_stats', true, true],
+      ['create_focus_area', true, true],
+      ['get_rounds', true, true],
     ]);
+    expect((request.tools as Array<{ input_schema: { additionalProperties?: boolean } }>).every((t) => t.input_schema.additionalProperties === false)).toBe(true);
   });
 
   it('the next question replays the stored messages, thinking included, and appends', async () => {
@@ -182,10 +215,14 @@ describe('a plain answer', () => {
 
     expect(lastRequestMessages(model)).toEqual([
       { role: 'user', content: 'How is Avery scoring?' },
+      sys,
       { role: 'assistant', content: [thinking('sig-1'), text('71.4.')] },
       { role: 'user', content: 'And Blake?' },
+      sys,
     ]);
     expect(assistantRows()).toHaveLength(2);
+    // The stored thinking block goes back unchanged, with the instruction to drop it rather than fail if the prompt has changed since.
+    expect(model.requests[0]!.thinking).toEqual({ type: 'adaptive', block_binding: { prefix_mismatch_behavior: 'drop_block' } });
   });
 });
 
@@ -205,15 +242,18 @@ describe('reads', () => {
     expect(refs.sort()).toEqual(['e1', 'e2']);
 
     const sent = lastRequestMessages(model);
-    expect(sent).toHaveLength(3);
-    const results = sent[2]!.content as Array<{ type: string; tool_use_id: string; content: string }>;
+    expect(sent.map((m) => m.role)).toEqual(['user', 'system', 'assistant', 'user']);
+    type Result = { type: string; tool_use_id: string; content: Array<{ type: string; source: string; title: string; content: Array<{ type: string; text: string }>; citations: { enabled: boolean } }> };
+    const results = sent[3]!.content as Result[];
     expect(results.map((r) => [r.type, r.tool_use_id])).toEqual([['tool_result', 'tu_1'], ['tool_result', 'tu_2']]);
-    expect(JSON.parse(results[0]!.content)).toMatchObject({ summary: 'get_player_stats is 71.4', evidence_ref: 'e1' });
-    expect(JSON.parse(results[1]!.content)).toMatchObject({ evidence_ref: 'e2' });
+    // Each read goes back as a search result the model can cite, named by the read's own ref.
+    expect(results[0]!.content).toHaveLength(1);
+    expect(results[0]!.content[0]).toMatchObject({ type: 'search_result', source: 'read:e1', title: 'get_player_stats is 71.4', citations: { enabled: true } });
+    expect(results[1]!.content[0]).toMatchObject({ type: 'search_result', source: 'read:e2' });
 
     const [row] = assistantRows();
     expect(row!.status).toBe('complete');
-    expect((row!.model_messages as unknown[]).length).toBe(4);
+    expect((row!.model_messages as unknown[]).length).toBe(5);
     expect((row!.ui_parts as Array<{ type: string }>).map((p) => p.type)).toEqual(['data-progress', 'data-progress', 'data-evidence', 'data-evidence', 'text']);
   });
 
@@ -221,7 +261,7 @@ describe('reads', () => {
     const model = script({ content: [toolUse('tu_1', 'get_player_stats', { player_id: 42 })] }, { content: [text('I could not read that.')] });
     await ask('Avery?');
     expect(log.reads).toHaveLength(0);
-    const [result] = lastRequestMessages(model)[2]!.content as Array<{ is_error?: boolean; content: string }>;
+    const [result] = lastRequestMessages(model)[3]!.content as Array<{ is_error?: boolean; content: string }>;
     expect(result!.is_error).toBe(true);
     expect(result!.content).toContain('player_id');
   });
@@ -248,25 +288,257 @@ describe('reads', () => {
     expect((row!.ui_parts as Array<{ type: string }>).map((p) => p.type)).toEqual(['text', 'data-progress', 'data-brief']);
     // The stored turn ends with the tool's result, so the call is answered and the next question simply follows it.
     const stored = row!.model_messages as Array<{ role: string; content: unknown }>;
-    expect(stored.map((m) => m.role)).toEqual(['user', 'assistant', 'user']);
-    const [result] = stored[2]!.content as Array<{ type: string; content: string }>;
+    expect(stored.map((m) => m.role)).toEqual(['user', 'system', 'assistant', 'user']);
+    const [result] = stored[3]!.content as Array<{ type: string; content: string }>;
     expect(result!.type).toBe('tool_result');
     expect(JSON.parse(result!.content)).not.toHaveProperty('evidence_ref');
     expect(JSON.parse(result!.content)).not.toHaveProperty('parts');
 
     const next = script({ content: [text('Here is the plan.')] });
     await ask('Ninety minutes', conversationOf(events));
-    expect(lastRequestMessages(next).map((m) => m.role)).toEqual(['user', 'assistant', 'user', 'user']);
+    expect(lastRequestMessages(next).map((m) => m.role)).toEqual(['user', 'system', 'assistant', 'user', 'user', 'system']);
   });
 
   it('after the last allowed step the model gets one call with no tools to answer from what it has', async () => {
-    const reads = Array.from({ length: 8 }, (_, i) => ({ content: [toolUse(`tu_${i}`, 'get_team_stats', {})] }));
+    const reads = Array.from({ length: 12 }, (_, i) => ({ content: [toolUse(`tu_${i}`, 'get_team_stats', {})] }));
     const model = script(...reads, { content: [text('Here is what I found.')] });
     const { events } = await ask('Everything?');
-    expect(model.requests).toHaveLength(9);
-    expect(model.requests[7]!.tool_choice).toEqual({ type: 'auto' });
-    expect(model.requests[8]!.tool_choice).toEqual({ type: 'none' });
+    expect(model.requests).toHaveLength(13);
+    expect(model.requests[11]!.tool_choice).toEqual({ type: 'auto' });
+    expect(model.requests[12]!.tool_choice).toEqual({ type: 'none' });
     expect(done(events)?.status).toBe('complete');
+  });
+});
+
+describe('what a read tells the model, and how an answer points back at it', () => {
+  type SearchResult = { type: string; source: string; title: string; content: Array<{ type: string; text: string }>; citations: { enabled: boolean } };
+  const resultOf = (model: FakeModel) => (lastRequestMessages(model)[3]!.content as Array<{ type: string; tool_use_id: string; content: unknown }>)[0]!;
+
+  it('a read with finished lines goes back as those lines, one citable block each, not as the envelope’s JSON', async () => {
+    const model = script({ content: [toolUse('tu_1', 'get_rounds', {})] }, { content: [text('74.2.')] });
+    const { events } = await ask('How is the team scoring?');
+    expect(resultOf(model).content).toEqual([
+      {
+        type: 'search_result',
+        source: 'read:e1',
+        title: 'get_rounds: 2 figures',
+        content: [{ type: 'text', text: 'Scoring avg: 74.2 | team 75.1' }, { type: 'text', text: 'Putts per round: 31.4' }],
+        citations: { enabled: true },
+      } satisfies SearchResult,
+    ]);
+    // The whole envelope still reaches the thread and the store, lines included: the grounding check reads what the model was shown.
+    const evidence = events.find((e) => e.type === 'evidence') as { part: { data: { ref: string; envelope: { summary: string; model_text: string } } } };
+    expect(evidence.part.data).toMatchObject({ ref: 'e1', envelope: { summary: 'get_rounds: 2 figures', model_text: 'Scoring avg: 74.2 | team 75.1\nPutts per round: 31.4' } });
+  });
+
+  it('a sentence the API says drew on a read gets that read’s marker in the thread; a sentence is not broken where the API splits it', async () => {
+    const model = script(
+      { content: [toolUse('tu_1', 'get_rounds', {})] },
+      // With citations on, the API splits one sentence into text blocks where the cited words begin and end.
+      { content: [thinking('sig-2'), text('The team is scoring '), cited('74.2 a round', 'e1'), text('. Putting is the gap: '), cited('31.4 putts', 'e9'), text('.')] },
+    );
+    const { events } = await ask('How is the team scoring?');
+    // e9 names no read of this conversation: no marker is invented for it.
+    expect(textOf(events)).toBe('The team is scoring 74.2 a round [e1]. Putting is the gap: 31.4 putts.');
+    const [row] = assistantRows();
+    // The marker is the thread's, not prose: the stored words do not carry it, and the model's own content is kept exactly as returned.
+    expect(row!.content).toBe('The team is scoring 74.2 a round. Putting is the gap: 31.4 putts.');
+    const stored = row!.model_messages as Array<{ role: string; content: unknown }>;
+    expect(stored.at(-1)!.content).toEqual([thinking('sig-2'), text('The team is scoring '), cited('74.2 a round', 'e1'), text('. Putting is the gap: '), cited('31.4 putts', 'e9'), text('.')]);
+    expect(JSON.stringify(stored)).not.toContain('[e1]');
+
+    // On the next question the cited blocks go back unchanged.
+    const next = script({ content: [text('Blake is at 74.')] });
+    await ask('And Blake?', conversationOf(events));
+    expect(lastRequestMessages(next)[4]!.content).toEqual(stored.at(-1)!.content);
+    expect(model.requests).toHaveLength(2);
+  });
+
+  it('words either side of a tool call are separate paragraphs', async () => {
+    script({ content: [text('Let me look.'), toolUse('tu_1', 'get_team_stats', {})] }, { content: [text('First.'), thinking('sig-3'), text('Second.')] });
+    const { events } = await ask('Team?');
+    expect(textOf(events)).toBe('Let me look.First.\n\nSecond.');
+  });
+
+  it('with citations off a read goes back as text that names its ref', async () => {
+    h.features = { ...CHAT_FEATURES, citations: false };
+    const lines = script({ content: [toolUse('tu_1', 'get_rounds', {})] }, { content: [text('74.2.')] });
+    await ask('How is the team scoring?');
+    expect(resultOf(lines).content).toBe('[e1] Scoring avg: 74.2 | team 75.1\nPutts per round: 31.4');
+
+    const plain = script({ content: [toolUse('tu_2', 'get_team_stats', {})] }, { content: [text('74.2.')] });
+    await ask('And the team?');
+    expect(JSON.parse(resultOf(plain).content as string)).toMatchObject({ summary: 'get_team_stats is 74.2', evidence_ref: 'e1' });
+  });
+});
+
+describe('the optional request features', () => {
+  it('a request the API rejects is sent once more as a plain request, the turn completes, and the rejection is logged to be fixed', async () => {
+    const model = script({ content: [], reject: rejected() }, { content: [toolUse('tu_1', 'get_team_stats', {})] }, { content: [text('74.2.')] });
+    const { events } = await ask('How is the team scoring?');
+
+    expect(done(events)?.status).toBe('complete');
+    expect(textOf(events)).toBe('74.2.');
+    expect(events.some((e) => e.type === 'error')).toBe(false);
+    expect(model.requests).toHaveLength(3);
+    expect(model.requests[0]!.betas).toEqual(['thinking-binding-controls-2026-08-01', 'compact-2026-01-12']);
+    // The retry, and every later call of the turn, carries no beta and nothing a beta or `strict` added.
+    for (const request of model.requests.slice(1)) {
+      expect(request).not.toHaveProperty('betas');
+      expect(request).not.toHaveProperty('context_management');
+      expect(request.thinking).toEqual({ type: 'adaptive' });
+      expect((request.tools as Array<{ strict?: boolean }>).some((t) => t.strict !== undefined)).toBe(false);
+      // What is not optional is unchanged.
+      expect(request.model).toBe('claude-haiku-5-5');
+      expect(request.output_config).toEqual({ effort: 'high' });
+      expect(request.messages.slice(0, 2)).toEqual([{ role: 'user', content: 'How is the team scoring?' }, sys]);
+    }
+    const logged = h.logServerError.mock.calls.map((c) => c as unknown[]).find((c) => (c[1] as { action?: string })?.action === 'v3.chat.stream.degraded');
+    expect(logged).toBeTruthy();
+    expect(logged![2]).toBe('error');
+    const turnLog = h.logServerEvent.mock.calls.map((c) => c as unknown[]).find((c) => c[0] === 'chat/stream: turn');
+    expect((turnLog![1] as { extra: { degraded: boolean } }).extra.degraded).toBe(true);
+  });
+
+  it('a plain request that is rejected is not retried: the coach gets a sentence and the turn is stored failed', async () => {
+    h.features = plainFeatures(CHAT_FEATURES);
+    const model = script({ content: [], reject: rejected('messages: invalid') });
+    const { events } = await ask('How is the team scoring?');
+    expect(model.requests).toHaveLength(1);
+    expect(model.requests[0]).not.toHaveProperty('betas');
+    expect(done(events)?.status).toBe('failed');
+    expect((events.find((e) => e.type === 'error') as { message: string }).message).not.toContain('invalid');
+  });
+
+  it('with every optional feature off the request is the plain one and the turn works the same', async () => {
+    h.features = { ...plainFeatures(CHAT_FEATURES), citations: false, programmaticReads: false };
+    const model = script({ content: [toolUse('tu_1', 'get_team_stats', {})] }, { content: [text('74.2.')] });
+    const { events } = await ask('How is the team scoring?');
+    expect(done(events)?.status).toBe('complete');
+    const [request] = model.requests;
+    expect(Object.keys(request!).sort()).toEqual(['cache_control', 'max_tokens', 'messages', 'model', 'output_config', 'system', 'thinking', 'tool_choice', 'tools']);
+    expect(request!.thinking).toEqual({ type: 'adaptive' });
+    expect((request!.tools as Array<{ type?: string }>).some((t) => t.type === 'code_execution_20260120')).toBe(false);
+  });
+
+  it('a stored thinking block is replayed unchanged when nothing before it changed, and dropped by the API (not failed) when the prompt did: both answer', async () => {
+    script({ content: [thinking('sig-1'), text('71.4.')] });
+    const first = await ask('How is Avery scoring?');
+    const id = conversationOf(first.events);
+
+    // Unchanged prompt: the block goes back exactly as stored.
+    const same = script({ content: [thinking('sig-2'), text('Blake is at 74.')] });
+    const second = await ask('And Blake?', id);
+    expect(done(second.events)?.status).toBe('complete');
+    expect((lastRequestMessages(same)[2]!.content as unknown[])[0]).toEqual(thinking('sig-1'));
+    expect(same.requests[0]!.thinking).toMatchObject({ block_binding: { prefix_mismatch_behavior: 'drop_block' } });
+    const calls = () => (h.logServerEvent.mock.calls.map((c) => c as unknown[]).filter((c) => c[0] === 'chat/stream: turn').at(-1)![1] as { extra: { calls: Array<{ dropped_thinking: number }> } }).extra.calls;
+    expect(calls().map((c) => c.dropped_thinking)).toEqual([0]);
+
+    // The prompt changed between turns (a deploy, a roster edit). The stored blocks are still sent as stored: it is the API that drops
+    // them, because the request asks it to, and says how many. The turn answers, and the count is in the turn's log line.
+    const { instructionBlocks } = await import('@/lib/coachhelm/v3/chat/instructions');
+    vi.mocked(instructionBlocks).mockReturnValueOnce({ policy: 'POLICY, REWRITTEN', team: 'TEAM BLOCK' } as never);
+    const changed = script({ content: [text('Both are under 75.')], droppedThinking: 2 });
+    const third = await ask('Compare them', id);
+    expect(done(third.events)?.status).toBe('complete');
+    expect((changed.requests[0]!.system as Array<{ text: string }>)[0]!.text).toBe('POLICY, REWRITTEN');
+    expect((lastRequestMessages(changed)[2]!.content as unknown[])[0]).toEqual(thinking('sig-1'));
+    expect((lastRequestMessages(changed)[5]!.content as unknown[])[0]).toEqual(thinking('sig-2'));
+    expect(changed.requests[0]!.thinking).toMatchObject({ block_binding: { prefix_mismatch_behavior: 'drop_block' } });
+    expect(calls().map((c) => c.dropped_thinking)).toEqual([2]);
+  });
+});
+
+describe('the screen the chat was opened from', () => {
+  it('is told to the model as a system message after the coach’s words, with the date, and is stored with the turn', async () => {
+    const model = script({ content: [text('You are on Roster.')] });
+    const { events } = await ask('What am I looking at?', null, { screen: { screen: 'Roster' } });
+    const line = 'Today is Tuesday 10 November 2026. The coach is on Roster.';
+    expect(lastRequestMessages(model)).toEqual([{ role: 'user', content: 'What am I looking at?' }, { role: 'system', content: line }]);
+    // Never in the prompt (it would break the cache and every stored thinking block), never in the coach's own block.
+    expect(JSON.stringify(model.requests[0]!.system)).not.toContain('Roster');
+    expect((assistantRows()[0]!.model_messages as unknown[])[1]).toEqual({ role: 'system', content: line });
+
+    // The next turn keeps the earlier line where it was and adds its own after the new question.
+    const next = script({ content: [text('Now Stats.')] });
+    await ask('And now?', conversationOf(events), { screen: { screen: 'Stats' } });
+    expect(lastRequestMessages(next).map((m) => (m.role === 'system' ? m.content : m.role))).toEqual(['user', line, 'assistant', 'user', 'Today is Tuesday 10 November 2026. The coach is on Stats.']);
+  });
+});
+
+describe('the coach’s standing notes and the conversation’s tone', () => {
+  it('the notes go once, with the first turn; the tone goes with every turn; both after the coach’s words and both stored', async () => {
+    h.notes = { tone: 'detailed', facts: [{ id: 'n1', text: 'Qualifying is 54 holes, low four count.' }] };
+    const first = script({ content: [text('Noted.')] });
+    const { events } = await ask('How does qualifying work?');
+    const firstNote = `NOTES: Qualifying is 54 holes, low four count.\n\n${TODAY} Tone: detailed.`;
+    expect(lastRequestMessages(first)).toEqual([{ role: 'user', content: 'How does qualifying work?' }, { role: 'system', content: firstNote }]);
+    expect(JSON.stringify(first.requests[0]!.system)).not.toContain('54 holes');
+
+    // The tone switch moved between turns: the next turn's line says so. The notes are not sent again; the first turn's stay where they were.
+    h.notes = { tone: 'straight', facts: [{ id: 'n1', text: 'Qualifying is 54 holes, low four count.' }] };
+    const second = script({ content: [text('74.')] });
+    await ask('And Blake?', conversationOf(events));
+    expect(lastRequestMessages(second).map((m) => (m.role === 'system' ? m.content : m.role))).toEqual(['user', firstNote, 'assistant', 'user', `${TODAY} Tone: straight.`]);
+  });
+
+  it('a first turn that failed is retried with the notes: they belong to the first turn that is kept', async () => {
+    h.notes = { tone: 'straight', facts: [{ id: 'n1', text: 'Lead with the number.' }] };
+    script({ content: [text('Par')], fail: new Error('socket closed') });
+    const failed = await post({ message: 'How is Avery scoring?', conversation_id: null, client_turn_id: 'first-try' });
+    expect(done(failed.events)?.status).toBe('failed');
+    const model = script({ content: [text('71.4.')] });
+    await post({ message: 'How is Avery scoring?', conversation_id: conversationOf(failed.events), client_turn_id: 'first-try' });
+    expect(lastRequestMessages(model)).toEqual([{ role: 'user', content: 'How is Avery scoring?' }, { role: 'system', content: `NOTES: Lead with the number.\n\n${TODAY} Tone: straight.` }]);
+  });
+});
+
+describe('programmatic tool calling (off unless its constant is on)', () => {
+  beforeEach(() => {
+    h.features = { ...CHAT_FEATURES, programmaticReads: true };
+  });
+
+  it('offers the code tool, lets the model’s code call reads only, and answers a pending call with tool_result blocks alone', async () => {
+    const model = script(
+      { content: [serverCode(), codeToolUse('tu_1', 'get_team_stats', {}), codeToolUse('tu_2', 'get_rounds', {})], container: 'container_1' },
+      { content: [text('74.2, on 31.4 putts.')] },
+    );
+    const { events } = await ask('How is the team scoring?');
+    expect(done(events)?.status).toBe('complete');
+
+    const [first, second] = model.requests;
+    const tools = first!.tools as Array<{ name: string; type?: string; strict?: boolean; allowed_callers?: string[] }>;
+    expect(tools.at(-1)).toEqual({ type: 'code_execution_20260120', name: 'code_execution' });
+    // Reads may be called from code, and so cannot be strict; a task is only ever asked for directly, and stays strict.
+    expect(tools.find((t) => t.name === 'get_team_stats')).toMatchObject({ allowed_callers: ['direct', 'code_execution_20260120'] });
+    expect(tools.find((t) => t.name === 'get_team_stats')).not.toHaveProperty('strict');
+    expect(tools.find((t) => t.name === 'create_focus_area')).toMatchObject({ strict: true });
+    expect(tools.find((t) => t.name === 'create_focus_area')).not.toHaveProperty('allowed_callers');
+    expect(first).not.toHaveProperty('container');
+
+    // The reply to a pending programmatic call: only tool_result blocks, each a plain string, with the container it runs in.
+    expect(second!.container).toBe('container_1');
+    const reply = second!.messages.at(-1) as { role: string; content: Array<{ type: string; tool_use_id: string; content: unknown }> };
+    expect(reply.role).toBe('user');
+    expect(reply.content.map((b) => [b.type, b.tool_use_id, typeof b.content])).toEqual([['tool_result', 'tu_1', 'string'], ['tool_result', 'tu_2', 'string']]);
+    expect(reply.content[1]!.content).toBe('[e2] Scoring avg: 74.2 | team 75.1\nPutts per round: 31.4');
+    expect(JSON.parse(reply.content[0]!.content as string)).toMatchObject({ evidence_ref: 'e1' });
+    // The same tools go back with it.
+    expect(second!.tools).toEqual(first!.tools);
+    // The reads still reach the thread as evidence.
+    expect(events.filter((e) => e.type === 'evidence')).toHaveLength(2);
+  });
+
+  it('a change asked for from code is refused: nothing is planned, no card, no ledger row', async () => {
+    const model = script({ content: [serverCode(), codeToolUse('tu_1', 'create_focus_area', { title: 'From code' })], container: 'container_1' }, { content: [text('I will ask for that directly.')] });
+    const { events } = await ask('Make a focus area');
+    expect(log.plans).toHaveLength(0);
+    expect(runs()).toHaveLength(0);
+    expect(events.some((e) => e.type === 'proposal' || e.type === 'decision_needed')).toBe(false);
+    const reply = model.requests[1]!.messages.at(-1) as { content: Array<{ is_error?: boolean; content: string }> };
+    expect(reply.content[0]).toMatchObject({ is_error: true });
+    expect(reply.content[0]!.content).toContain('Nothing was written');
   });
 });
 
@@ -293,58 +565,140 @@ describe('a task', () => {
     expect(row!.status).toBe('complete');
     expect(row!.pending_decision).toMatchObject({ order: ['tu_task'], tasks: [{ tool: 'create_focus_area', tool_use_id: 'tu_task' }], steps: 1 });
     // The assistant message that asked is stored as returned: the tool call waits for its result.
-    expect((row!.model_messages as Array<{ role: string }>).map((m) => m.role)).toEqual(['user', 'assistant']);
+    expect((row!.model_messages as Array<{ role: string }>).map((m) => m.role)).toEqual(['user', 'system', 'assistant']);
   });
 
-  it('confirmed: held for Undo, the model is told it is held, the same row is completed, then the stored plan is committed once', async () => {
+  it('confirmed: shown as held at once, written when the Undo window closes in the same request, and only then does the model close', async () => {
     const { conversationId, key } = await propose();
-    const model = script({ content: [text('It is held for a few seconds; the card shows when it goes through.')] });
+    let atClose: { commits: number; status: unknown } | null = null;
+    const model = script(() => {
+      // By the time the model is asked for its closing words, the write has happened and the ledger says so.
+      atClose = { commits: log.commits.length, status: runs()[0]!.status };
+      return { content: [text('Done: the putting focus area is created.')] };
+    });
     const { events } = await decide(conversationId, key, true);
 
     expect(events[0]).toMatchObject({ type: 'message_start', resumed: true });
     expect(events.find((e) => e.type === 'decision')).toEqual({ type: 'decision', key, approved: true });
+    // The card is "held, Undo until ..." before anything else, then the receipt of what was written, then the words.
     const receipt = (events.find((e) => e.type === 'receipt') as { part: { id: string; data: { status: string; held_until: string } } }).part;
     expect(receipt.id).toBe(`receipt-${key}`);
-    expect(receipt.data.status).toBe('held');
+    expect(receipt.data.held_until).toMatch(/^\d{4}-\d\d-\d\dT/);
+    expect(receiptStates(events)).toEqual(['held', 'completed']);
+    const order = events.map((e) => e.type);
+    expect(order.lastIndexOf('receipt')).toBeLessThan(order.indexOf('text_delta'));
+    expect(atClose).toEqual({ commits: 1, status: 'completed' });
     expect(done(events)?.status).toBe('complete');
-    expect(textOf(events)).toContain('held');
 
-    // The decision continues the SAME assistant turn: its tool_use gets a tool_result, and no new question is asked.
+    // The decision continues the SAME assistant turn: its tool_use gets a tool_result that says what happened, and no new question is asked.
     const sent = lastRequestMessages(model);
-    expect(sent.map((m) => m.role)).toEqual(['user', 'assistant', 'user']);
-    const [result] = sent[2]!.content as Array<{ type: string; tool_use_id: string; content: string }>;
-    expect(result).toMatchObject({ type: 'tool_result', tool_use_id: 'tu_task' });
-    expect(result!.content).toMatch(/^Held until \d\d:\d\d:\d\d/);
-    expect(result!.content).toContain('not done yet');
+    expect(sent.map((m) => m.role)).toEqual(['user', 'system', 'assistant', 'user']);
+    expect(sent[3]!.content).toEqual([{ type: 'tool_result', tool_use_id: 'tu_task', content: 'Committed. Created the focus area.' }]);
 
     // One assistant row for the whole exchange, stored complete, nothing waiting.
     expect(assistantRows()).toHaveLength(1);
     const [row] = assistantRows();
     expect(row).toMatchObject({ status: 'complete', pending_decision: null });
     expect(row!.content).toContain('Here is the focus area.');
-    expect(row!.content).toContain('held for a few seconds');
-    expect((row!.model_messages as Array<{ role: string }>).map((m) => m.role)).toEqual(['user', 'assistant', 'user', 'assistant']);
+    expect(row!.content).toContain('focus area is created');
+    expect((row!.model_messages as Array<{ role: string }>).map((m) => m.role)).toEqual(['user', 'system', 'assistant', 'user', 'assistant']);
     expect((row!.ui_parts as Array<{ type: string }>).some((p) => p.type === 'data-turn-incomplete')).toBe(false);
+    expect((row!.ui_parts as Array<{ type: string; data?: { status?: string } }>).filter((p) => p.type === 'data-action-receipt').map((p) => p.data?.status)).toEqual(['completed']);
 
-    // Nothing is written during the hold; after it, the plan the coach saw is committed exactly once.
-    expect(log.commits).toHaveLength(0);
-    expect(runs()[0]!.status).toBe('held');
-    await afterHold();
+    // The plan the coach saw is committed exactly once, and nothing runs again afterwards.
     expect(log.commits).toHaveLength(1);
     expect(log.commits[0]).toMatchObject({ summary: 'Create the focus area "Putting from 6 feet".', idempotency_key: key });
     expect(log.plans).toHaveLength(1);
     expect(runs()[0]).toMatchObject({ status: 'completed', result: { status: 'completed', summary: 'Created the focus area.' } });
+    await afterHold();
+    expect(log.commits).toHaveLength(1);
+  });
+
+  it('Undo inside the window: nothing is written, the model is told it was undone, and the turn ends on the same row', async () => {
+    const { conversationId, key } = await propose();
+    const model = script({ content: [text('Undone: nothing was created.')] });
+    const pending = decide(conversationId, key, true);
+    await untilHeld();
+    // While it is held the stored turn already shows the held card: a reload during the window draws the same thing.
+    const during = assistantRows()[0]!;
+    expect(during.pending_decision).not.toBeNull();
+    expect((during.ui_parts as Array<{ type: string; data?: { status?: string } }>).find((p) => p.type === 'data-action-receipt')?.data?.status).toBe('held');
+    expect(model.requests).toHaveLength(0);
+    // The card's Undo, as the action route runs it.
+    expect(await cancelHeld(db.client as never, { coach_id: 'coach-1', idempotency_key: key })).toBe('cancelled');
+
+    const { events } = await pending;
+    expect(receiptStates(events)).toEqual(['held']);
+    expect(done(events)?.status).toBe('complete');
+    expect(log.commits).toHaveLength(0);
+    expect(runs()[0]!.status).toBe('cancelled');
+    expect(lastRequestMessages(model)[3]!.content).toEqual([{ type: 'tool_result', tool_use_id: 'tu_task', content: 'The coach pressed Undo before it was written. Nothing was written.' }]);
+    expect(assistantRows()).toHaveLength(1);
+    expect(assistantRows()[0]).toMatchObject({ status: 'complete', pending_decision: null });
+    await afterHold();
+    expect(log.commits).toHaveLength(0);
+  });
+
+  it('the connection dropping inside the window does not lose the write: it lands exactly once and a reload shows the receipt', async () => {
+    const { conversationId, key } = await propose();
+    const model = script({ content: [text('never asked for')] });
+    const abort = new AbortController();
+    const pending = post({ conversation_id: conversationId, decision: { key, approved: true } }, abort.signal);
+    await untilHeld();
+    abort.abort();
+    await pending;
+    await afterHold();
+
+    expect(log.commits).toHaveLength(1);
+    expect(runs()[0]).toMatchObject({ status: 'completed', result: { status: 'completed' } });
+    // Nobody is there to read closing words, so none are paid for.
+    expect(model.requests).toHaveLength(0);
+    // The turn is stored complete with what happened, for the reload and for the model's next turn.
+    const [row] = assistantRows();
+    expect(row).toMatchObject({ status: 'complete', pending_decision: null });
+    const stored = row!.model_messages as Array<{ role: string; content: unknown }>;
+    expect(stored.map((m) => m.role)).toEqual(['user', 'system', 'assistant', 'user']);
+    expect(stored[3]!.content).toEqual([{ type: 'tool_result', tool_use_id: 'tu_task', content: 'Committed. Created the focus area.' }]);
+    const restored = restoreUIMessages((db.tables[MESSAGES] ?? []) as never);
+    const card = restored.at(-1)!.parts.find((p) => p.type === 'data-action-receipt') as unknown as { data: { status: string; summary: string } };
+    expect(card.data).toMatchObject({ status: 'completed', summary: 'Created the focus area.' });
+    expect(restored.at(-1)!.parts.some((p) => p.type === 'data-turn-incomplete')).toBe(false);
+
+    // The next question is told what happened, not asked to guess.
+    const next = script({ content: [text('Yes, it was created.')] });
+    await ask('Did that go through?', conversationId);
+    expect(lastRequestMessages(next).map((m) => m.role)).toEqual(['user', 'system', 'assistant', 'user', 'user', 'system']);
+    expect(log.commits).toHaveLength(1);
+  });
+
+  it('a second Confirm while the first is still inside the window starts nothing: one write, one closing call, one row', async () => {
+    const { conversationId, key } = await propose();
+    const model = script({ content: [text('Done.')] });
+    const first = decide(conversationId, key, true);
+    await untilHeld();
+    const second = await decide(conversationId, key, true);
+    expect(second.events.find((e) => e.type === 'decision')).toEqual({ type: 'decision', key, approved: true });
+    expect(receiptStates(second.events)).toEqual(['held']);
+    expect(done(second.events)?.status).toBe('complete');
+    expect(model.requests).toHaveLength(0);
+
+    const { events } = await first;
+    expect(receiptStates(events)).toEqual(['held', 'completed']);
+    expect(model.requests).toHaveLength(1);
+    expect(log.commits).toHaveLength(1);
+    expect(assistantRows()).toHaveLength(1);
+    expect(assistantRows()[0]).toMatchObject({ status: 'complete', pending_decision: null });
   });
 
   it('a second Confirm of the same card runs nothing twice and is answered from the stored turn', async () => {
     const { conversationId, key } = await propose();
-    script({ content: [text('Held.')] });
+    script({ content: [text('Done.')] });
     await decide(conversationId, key, true);
     const model = script();
     const { events } = await decide(conversationId, key, true);
     expect(model.requests).toHaveLength(0);
     expect(events.find((e) => e.type === 'decision')).toEqual({ type: 'decision', key, approved: true });
-    expect(events.some((e) => e.type === 'receipt')).toBe(true);
+    expect(receiptStates(events)).toEqual(['completed']);
     expect(done(events)?.status).toBe('complete');
     await afterHold();
     expect(log.commits).toHaveLength(1);
@@ -359,7 +713,7 @@ describe('a task', () => {
     expect(log.commits).toHaveLength(1);
     const receipt = (events.find((e) => e.type === 'receipt') as { part: { data: { status: string; summary: string } } }).part.data;
     expect(receipt).toMatchObject({ status: 'completed', summary: 'Created the focus area. Undo isn’t on here yet.' });
-    const [result] = lastRequestMessages(model)[2]!.content as Array<{ content: string }>;
+    const [result] = lastRequestMessages(model)[3]!.content as Array<{ content: string }>;
     expect(result!.content).toMatch(/^Committed\./);
     expect(runs()[0]!.status).toBe('completed');
   });
@@ -372,7 +726,7 @@ describe('a task', () => {
     expect(events.find((e) => e.type === 'decision')).toEqual({ type: 'decision', key, approved: false });
     expect(events.some((e) => e.type === 'receipt')).toBe(false);
     expect(done(events)?.status).toBe('complete');
-    const [result] = lastRequestMessages(model)[2]!.content as Array<{ content: string }>;
+    const [result] = lastRequestMessages(model)[3]!.content as Array<{ content: string }>;
     expect(result!.content).toBe('Declined by the coach. Nothing was written.');
     await afterHold();
     expect(log.commits).toHaveLength(0);
@@ -381,18 +735,20 @@ describe('a task', () => {
     expect(assistantRows()[0]).toMatchObject({ status: 'complete', pending_decision: null });
   });
 
-  it('a new message while the card waits counts as Cancel: the model is told the card was declined before the new question', async () => {
+  it('a new message while the card waits counts as Cancel: the card’s result, then the coach’s words as their own block, never inside the result', async () => {
     const { conversationId, key } = await propose();
     const model = script({ content: [text('Blake is at 74.')] });
     const { events } = await ask('Actually, how is Blake scoring?', conversationId);
 
     expect(done(events)?.status).toBe('complete');
     const sent = lastRequestMessages(model);
-    expect(sent.map((m) => m.role)).toEqual(['user', 'assistant', 'user']);
-    expect(sent[2]!.content).toEqual([
+    expect(sent.map((m) => m.role)).toEqual(['user', 'system', 'assistant', 'user', 'system']);
+    expect(sent[3]!.content).toEqual([
       { type: 'tool_result', tool_use_id: 'tu_task', content: 'The coach asked something else instead of confirming. Nothing was written.' },
       { type: 'text', text: 'Actually, how is Blake scoring?' },
     ]);
+    expect(JSON.stringify((sent[3]!.content as unknown[])[0])).not.toContain('Blake');
+    expect(sent[4]).toEqual(sys);
     expect(runs()[0]!.status).toBe('denied');
     expect(log.commits).toHaveLength(0);
 
@@ -414,10 +770,10 @@ describe('a task', () => {
     expect(card).toMatchObject({ state: 'approval-requested', approval: { id: key } });
     expect(restored.at(-1)!.parts.some((p) => p.type === 'data-action-proposal')).toBe(true);
 
-    script({ content: [text('Held.')] });
+    script({ content: [text('Done.')] });
     const { events } = await decide(conversationId, card.approval.id, true);
     expect(done(events)?.status).toBe('complete');
-    expect(events.some((e) => e.type === 'receipt')).toBe(true);
+    expect(receiptStates(events)).toEqual(['held', 'completed']);
     const after = restoreUIMessages((db.tables[MESSAGES] ?? []) as never);
     expect(after.at(-1)!.parts.find((p) => p.type === 'tool-create_focus_area')).toMatchObject({ state: 'approval-responded', approval: { id: key, approved: true } });
   });
@@ -435,7 +791,7 @@ describe('a task', () => {
     expect(runs()[0]!.status).toBe('proposed');
     const receipt = (events.find((e) => e.type === 'receipt') as { part: { data: { status: string } } }).part.data;
     expect(receipt.status).toBe('failed');
-    const [result] = lastRequestMessages(model)[2]!.content as Array<{ is_error?: boolean; content: string }>;
+    const [result] = lastRequestMessages(model)[3]!.content as Array<{ is_error?: boolean; content: string }>;
     expect(result).toMatchObject({ is_error: true });
     expect(result!.content).toContain('Nothing was written');
     expect(h.logServerError.mock.calls.some((c) => String((c as unknown[])[0]).includes('seal'))).toBe(true);
@@ -449,7 +805,7 @@ describe('a task', () => {
     const model = script({ content: [toolUse('tu_task', 'create_focus_area', { title: 'Wedges' })] }, { content: [text('I could not prepare that.')] });
     const { events } = await ask('Make a wedge focus area');
     expect(events.some((e) => e.type === 'proposal' || e.type === 'decision_needed')).toBe(false);
-    const [result] = lastRequestMessages(model)[2]!.content as Array<{ is_error?: boolean; content: string }>;
+    const [result] = lastRequestMessages(model)[3]!.content as Array<{ is_error?: boolean; content: string }>;
     expect(result).toMatchObject({ is_error: true });
     expect(result!.content).toContain('Nothing was written');
     expect(done(events)?.status).toBe('complete');
@@ -476,23 +832,30 @@ describe('a retried client_turn_id', () => {
     const model = script({ content: [text('71.4.')] });
     const again = await post({ message: 'How is Avery scoring?', conversation_id: conversationOf(first.events), client_turn_id: 'retry-me' });
     expect(done(again.events)?.status).toBe('complete');
-    expect(lastRequestMessages(model)).toEqual([{ role: 'user', content: 'How is Avery scoring?' }]);
+    expect(lastRequestMessages(model)).toEqual([{ role: 'user', content: 'How is Avery scoring?' }, sys]);
     expect(assistantRows()).toHaveLength(1);
     expect(assistantRows()[0]).toMatchObject({ status: 'complete', content: '71.4.' });
   });
 });
 
 describe('a turn that does not finish', () => {
-  it('a refusal withdraws the words, tells the coach in a sentence, and leaves only the question in the stored history', async () => {
-    script({ content: [text('I can')], stop_reason: 'refusal' });
+  it('a refusal is an answer: the half-streamed words are withdrawn, the coach gets a sentence they can act on, the turn is stored complete, and the category is logged', async () => {
+    const model = script({ content: [text('I can')], stop_reason: 'refusal', category: 'general_harms' });
     const { events } = await ask('Something the model declines');
+    const sentence = 'I can’t help with that one. Try asking it another way, or ask me about your team, your players or your schedule.';
     expect(events.some((e) => e.type === 'text_discard')).toBe(true);
-    expect(events.find((e) => e.type === 'error')).toEqual({ type: 'error', message: 'CoachHelm can’t help with that one. Try asking it another way.', action: 'none' });
-    expect(done(events)?.status).toBe('failed');
+    expect(events.some((e) => e.type === 'error')).toBe(false);
+    expect(done(events)?.status).toBe('complete');
+    // There is no server-side fallback on this model: one call, and the app handles the refusal itself.
+    expect(model.requests).toHaveLength(1);
     const [row] = assistantRows();
-    expect(row).toMatchObject({ status: 'failed', content: '' });
-    expect(row!.model_messages).toEqual([{ role: 'user', content: 'Something the model declines' }]);
-    expect((row!.ui_parts as Array<{ type: string }>).at(-1)).toMatchObject({ type: 'data-turn-incomplete' });
+    expect(row).toMatchObject({ status: 'complete', content: sentence });
+    expect((row!.ui_parts as Array<{ type: string; text?: string }>).filter((p) => p.type === 'text').map((p) => p.text)).toEqual([sentence]);
+    expect((row!.ui_parts as Array<{ type: string }>).some((p) => p.type === 'data-turn-incomplete')).toBe(false);
+    // The model's refused content is not kept; the sentence stands as the reply, so the next turn follows an assistant message.
+    expect(row!.model_messages).toEqual([{ role: 'user', content: 'Something the model declines' }, sys, { role: 'assistant', content: [{ type: 'text', text: sentence }] }]);
+    const logged = h.logServerEvent.mock.calls.map((c) => c as unknown[]).find((c) => c[0] === 'chat/stream: turn');
+    expect((logged![1] as { extra: { refusalCategory: string } }).extra).toMatchObject({ refusalCategory: 'general_harms' });
   });
 
   it('a model error mid-stream gives the coach a sentence without provider text and stores the turn as failed', async () => {
@@ -533,6 +896,7 @@ describe('a turn that does not finish', () => {
     expect(done(events)?.status ?? 'stopped').toBe('stopped');
     const [row] = assistantRows();
     expect(row).toMatchObject({ status: 'failed' });
+    // A failed turn leaves only the question: its system message would otherwise sit before another user message, which the API rejects.
     expect(row!.model_messages).toEqual([{ role: 'user', content: 'Team?' }]);
   });
 });
@@ -553,6 +917,7 @@ describe('a database without the new migration', () => {
       { role: 'user', content: 'How is Avery scoring?' },
       { role: 'assistant', content: '71.4.' },
       { role: 'user', content: 'And Blake?' },
+      sys,
     ]);
   });
 
@@ -563,15 +928,15 @@ describe('a database without the new migration', () => {
     const key = keyOf(proposed.events);
     expect((runs()[0]!.proposed_input as { resume?: unknown }).resume).toBeTruthy();
 
-    const model = script({ content: [text('Held.')] });
+    const model = script({ content: [text('Done.')] });
     const { events } = await decide(conversationOf(proposed.events), key, true);
     expect(done(events)?.status).toBe('complete');
+    expect(receiptStates(events)).toEqual(['held', 'completed']);
     const sent = lastRequestMessages(model);
-    expect(sent.map((m) => m.role)).toEqual(['user', 'assistant', 'user']);
-    expect(sent[1]!.content).toEqual([thinking('sig-p'), toolUse('tu_task', 'create_focus_area', { title: 'Putting from 6 feet' })]);
-    expect((sent[2]!.content as Array<{ tool_use_id: string }>)[0]!.tool_use_id).toBe('tu_task');
+    expect(sent.map((m) => m.role)).toEqual(['user', 'system', 'assistant', 'user']);
+    expect(sent[2]!.content).toEqual([thinking('sig-p'), toolUse('tu_task', 'create_focus_area', { title: 'Putting from 6 feet' })]);
+    expect(sent[3]!.content).toEqual([{ type: 'tool_result', tool_use_id: 'tu_task', content: 'Committed. Created the focus area.' }]);
     expect(assistantRows()).toHaveLength(1);
-    await afterHold();
     expect(log.commits).toHaveLength(1);
   });
 });
@@ -591,6 +956,7 @@ describe('a conversation written by the previous stack', () => {
       { role: 'user', content: 'Make a putting focus area' },
       { role: 'assistant', content: 'Here is the plan.\n[Proposed, not confirmed: Create the focus area.]' },
       { role: 'user', content: 'Did that go through?' },
+      sys,
     ]);
     // Its card carries an approval id of the old SDK, which names nothing the server holds: it is not offered again.
     const restored = restoreUIMessages((db.tables[MESSAGES] ?? []) as never);
@@ -659,7 +1025,7 @@ describe('a player’s turn', () => {
     expect(log.plans).toHaveLength(0);
     expect(runs()).toHaveLength(0);
     expect(events.some((e) => e.type === 'proposal' || e.type === 'decision_needed')).toBe(false);
-    const [result] = lastRequestMessages(model)[2]!.content as Array<{ is_error?: boolean; content: string }>;
+    const [result] = lastRequestMessages(model)[3]!.content as Array<{ is_error?: boolean; content: string }>;
     expect(result).toMatchObject({ is_error: true, content: 'Changes cannot be made from here. Nothing was written.' });
   });
 
