@@ -660,12 +660,15 @@ path.ch-rt-map__shot {
   font: var(--ch-type-14-strong);
   line-height: var(--ch-lead-tight);
 }
+/* B5: the last shot, on one line that ends on a whole word. It wraps where a line would and only its first line shows, so a
+   shot that does not fit drops its last facts, never part of a word (an ellipsis cut "→ gr…" and "10 ft le…"); ShotLog
+   keeps each fact whole and behind its mark. The open log has the shot in full. */
 .ch-rt-log__t em {
+  display: block;
+  max-height: 1lh;
   overflow: hidden;
   font: var(--ch-type-12);
   font-style: normal;
-  white-space: nowrap;
-  text-overflow: ellipsis;
   color: var(--ch-text-tertiary);
 }
 .ch-rt-log__chev {
@@ -2311,14 +2314,20 @@ path.ch-rt-map__shot {
     outline: 2px solid var(--ch-border-focus-on-dark);
     outline-offset: 2px;
   }
+  /* B11: a long course name takes a second line before it is cut ("Pinehurst Resort & Country Club No. 2" fits whole
+     between Exit and Card at 375 and up); only a third line's worth ends in an ellipsis. One line was "Pinehurst Resort &
+     Countr…". */
   .ch-rt-top__c h1 {
+    display: -webkit-box;
     margin: 0;
     overflow: hidden;
     color: var(--ch-on-green-ink);
     max-width: 100%;
     font-size: calc(15 * var(--ch-type-k));
-    white-space: nowrap;
-    text-overflow: ellipsis;
+    text-wrap: balance;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
   }
   .ch-rt-top__c span {
     color: var(--ch-on-green-ink-soft);

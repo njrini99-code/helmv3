@@ -156,6 +156,19 @@ export function TrackStrip({ holes, current, onJump, startHole = 1 }: { holes: R
   );
 }
 
+const NBSP = '\u00A0';
+/**
+ * The collapsed log's line for the last shot ("Last: Tee · Driver → fairway · 142 yds left"), spaced so the line can only
+ * end between facts or between the words of the shot's name: "Last:" holds its first word, and each mark ("·", "→") holds
+ * the fact after it, whose own words hold together. The line shows what fits of it, whole (rounds-track.css, B5).
+ */
+export function lastShotWords(shot: ShotRecord, pref: DistancePreference): string {
+  const fact = (s: string) => s.split(' ').join(NBSP);
+  const title = shotTitle(shot).split(' · ').join(` ·${NBSP}`);
+  const finish = shot.isPenalty ? '' : ` →${NBSP}${shotFinish(shot, pref).split(' · ').map(fact).join(` ·${NBSP}`)}`;
+  return `Last:${NBSP}${title}${finish}`;
+}
+
 /** Where a shot finished, as the log and the map colour it. */
 export function lieClass(shot: ShotRecord): string {
   if (shot.isPenalty) return 'is-penalty';
@@ -371,7 +384,7 @@ export function ShotLog({
     );
   const last = shots[shots.length - 1]!;
   const penalties = shots.filter((s) => s.isPenalty).length;
-  const lastText = last.isPenalty ? shotTitle(last) : `${shotTitle(last)} → ${shotFinish(last, pref)}`;
+  const lastText = lastShotWords(last, pref);
   return (
     <div className={'ch-rt-log' + (open ? ' is-open' : '')}>
       <button type="button" className="ch-rt-log__h" aria-expanded={open} aria-controls={bodyId} onClick={() => setOpen(!open)}>
@@ -389,7 +402,7 @@ export function ShotLog({
           </b>
           {/* The new line settles in on the next shot instead of swapping in place (F-0020); at once under reduced motion. */}
           <Swap swapKey={shots.length} inline>
-            <em>Last: {lastText}</em>
+            <em>{lastText}</em>
           </Swap>
         </span>
         <Icon icon={ChevronDown} size={16} className="ch-rt-log__chev" />
