@@ -225,6 +225,9 @@ describe('the model request', () => {
     // The API's message names one group the request carries: that one goes.
     expect(groupToDrop(SONNET.features, 'tools: Too many strict tools (33). The maximum number of strict tools is 20.')).toBe('strict_tools');
     expect(groupToDrop(SONNET.features, 'Schema is too complex for compilation.')).toBe('strict_tools');
+    // Structured outputs and citations do not go together, and strict tools are the request's only structured output.
+    expect(groupToDrop(SONNET.features, 'Structured outputs cannot be used when citations are enabled.')).toBe('strict_tools');
+    expect(groupToDrop(chatFeatures('player'), 'messages.3.content.0.tool_result.content.0.search_result.citations: not supported with this request')).toBe('strict_tools');
     expect(groupToDrop(SONNET.features, 'thinking.block_binding: Extra inputs are not permitted')).toBe('thinking_binding');
     expect(groupToDrop(SONNET.features, 'Unexpected value(s) `compact-2026-01-12` for the `anthropic-beta` header.')).toBe('compaction');
     expect(groupToDrop(SONNET.features, 'fallbacks: Input should be a valid list')).toBe('refusal_fallback');

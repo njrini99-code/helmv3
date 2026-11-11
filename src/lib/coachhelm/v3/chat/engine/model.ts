@@ -193,7 +193,9 @@ const GROUPS: Record<FeatureGroup, { on: (f: ChatFeatures) => boolean; off: Part
   progress_notes: { on: (f) => f.progressNotes, off: { progressNotes: false }, named: /thinking-display-updates|display/i },
   refusal_fallback: { on: (f) => f.refusalFallback, off: { refusalFallback: false }, named: /fallback/i },
   task_budget: { on: (f) => f.taskBudgetTokens !== null, off: { taskBudgetTokens: null }, named: /task[-_]budget/i },
-  strict_tools: { on: (f) => f.strictTools, off: { strictTools: false }, named: /strict|schema is too complex|optional parameters|union|grammar|additionalProperties/i },
+  // `strict` is the only structured-output feature a chat request carries, and structured outputs are what the API documents as
+  // incompatible with citations (every read goes back with citations on): a message about either is about this group.
+  strict_tools: { on: (f) => f.strictTools, off: { strictTools: false }, named: /strict|structured.outputs?|citations?|schema is too complex|optional parameters|union|grammar|additionalProperties/i },
   compaction: { on: (f) => f.compaction, off: { compaction: false }, named: /context_management|compact/i },
   programmatic_reads: { on: (f) => f.programmaticReads, off: { programmaticReads: false }, named: /allowed_callers|code_execution|programmatic|container/i },
   thinking_binding: { on: (f) => f.dropStaleThinking, off: { dropStaleThinking: false }, named: /block_binding|thinking-binding-controls|prefix_mismatch/i },
