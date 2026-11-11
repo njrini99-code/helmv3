@@ -358,6 +358,46 @@ Same thread, same motion, a narrower world.
 
 ---
 
+## The studio: the shell's states (specified 10 Nov; NOT built yet unless a line says so)
+
+The owner's studio direction, as the thread's shell will carry it. Card bodies are CAPABILITIES'; these are the
+shell's states and they use only MOTION's vocabulary. The engine's parts exist (`data-draft`, `data-card-revision`,
+`data-computed`); the shell does not draw the first two yet.
+
+- **A draft appearing as it is written** (`ST-S.draft`, part `data-draft`). Reverses "a card arrives whole" for
+  drafts only. The card's frame arrives once, at its final width, when the first field does; each field appears
+  when the server sends it, in the card's own field order, the field being written carrying the live dot after its
+  last word (the same sign as pending text). Nothing is staged on a timer: a field the server has not sent is not
+  on screen, and there is no skeleton for it. The primary is absent until the draft is accepted and becomes the
+  proposal (same part position, so the card does not move); a draft that fails keeps what it showed and says so in
+  the card's amber line. The island's step ("Drafting the focus area") is the same event seen from above.
+- **An edit in flight** (`ST-S.editing`, part `data-card-revision`). The coach changes a waiting card by saying so or
+  by a control in the body (`onEdit`). At once: the changed field dims to 60% and carries the live dot; Confirm is
+  held (not disabled-looking: it reads "Updating") so a stale card cannot be confirmed. The revision replaces the
+  field in place with a quick cross-fade; a field that changed keeps a "Changed" tag for one live period
+  (`--ch-dur-live`). A refused edit restores the field and says why in one line under it.
+- **Several previews in one turn** (`ST-S.many`). Each card is decided on its own and keeps its own hold and Undo.
+  Above the first, one row: "3 drafts to check" and **Approve all**, which exists only when every card is waiting
+  and none has been edited since it was last read. It is safe by construction: it asks once ("Save all 3?" in the
+  row itself, never a modal), then confirms them in order through the same request each card would make, and each
+  card shows its own held ring; one Undo row offers "Undo all" for the shared hold and each card keeps its own.
+  A card that fails does not stop the others and is named in the row.
+- **The acknowledgement** (`ST-S.ack`). When a hold ends, the card's receipt is the record (built, Moment 7). In
+  the thread nothing else is added: no toast, no second sentence. The island says "Done" if it is on screen.
+- **Suggested actions** (`ST-S.suggest`; the engine's end-of-turn event and the empty start). They are the
+  follow-up chips (built for follow-ups, MO-5-7): they arrive one beat after the turn settles, together, never
+  while words are arriving, and never push anything (their row's space is reserved by the last page's minimum
+  height). Tapping one is a prompt leaving from the thing touched (MO-3-4, built). When the next question is sent
+  by any means the remaining chips fade in the frame of the send; they do not come back for an older turn.
+- **Gestures as prompts** (`ST-S.askable`). Anything that can be asked about (a figure in a card, a row of a read, a
+  face) carries `ch-ak-askable` and a `data-ask-ref`: on a pointer it shows the hover wash and an "Ask about this"
+  tooltip; on touch a long press (500 ms, cancelled by 8px of movement, so it never fights scroll or a tap) lifts
+  it one step (`scale 1.02`, press tokens) with the `select` haptic and puts "About: Jonah's approach" as a chip on
+  the composer, which takes focus. Nothing is sent until the coach sends. One feedback, everywhere; no swipe
+  gestures on rows (they belong to scroll and to Back).
+- **Copy.** Sentence case everywhere. A sample is said in words ("8 rounds", "4 of his last 10"), never notation:
+  no "N-4", no "n=8". Durations are "6s", "1m 12s". No "Thinking".
+
 ## Sizes, both viewports
 
 | | Phone 390 | Desktop 1440 |
