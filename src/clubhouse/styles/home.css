@@ -2293,7 +2293,7 @@
   flex-direction: column;
   padding: 2px 4px;
   border-radius: var(--ch-radius-lg);
-  background: var(--ch-well-soft-bg);
+  background: var(--ch-well-bg-flat);
   box-shadow: var(--ch-well-soft-shadow);
 }
 .ch-ph-nines.ch-scoreboard {
@@ -4176,7 +4176,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   margin-top: 20px;
   padding: 6px 16px;
   border-radius: var(--ch-radius-md);
-  background: var(--ch-well-soft-bg);
+  background: var(--ch-well-bg-flat);
   box-shadow: var(--ch-well-soft-shadow);
 }
 .ch-h-queue__k {
@@ -4376,7 +4376,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     margin: 0 0 16px;
     padding: 12px;
     border-radius: var(--ch-radius-md);
-    background: var(--ch-well-soft-bg);
+    background: var(--ch-well-bg-flat);
     box-shadow: var(--ch-well-soft-shadow);
     font: var(--ch-type-13);
     font-variant-numeric: tabular-nums;
@@ -5686,8 +5686,10 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     gap: 24px;
     padding-inline: var(--ch-page-x-phone);
   }
-  .ch-hm-sk-form > :not(b) {
-    margin: 12px 16px 0;
+  .ch-hm-sk-form__in {
+    display: grid;
+    gap: 12px;
+    padding: 12px 16px;
   }
   .ch-hm-sk-form__top {
     display: flex;
@@ -5697,7 +5699,6 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   .ch-hm-sk-form__figs {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    padding-bottom: 12px;
   }
 }
 

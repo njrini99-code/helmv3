@@ -241,7 +241,7 @@ export function RosterPhoneCrh({
                         padded={false}
                         title="Active"
                         actions={<span className="ch-rsx-meta ch-num">{plural(playing.length, 'player')}</span>}
-                        footerNote="Bars are the last five rounds this season. Green beats the team average."
+                        footerNote={data.statsError ? undefined : 'Bars are the last five rounds this season. Green beats the team average.'}
                       >
                         <GroupList>
                           {playing.map((p) => (

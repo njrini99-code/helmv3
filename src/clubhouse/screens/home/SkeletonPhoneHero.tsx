@@ -67,6 +67,7 @@ export function SkeletonCrhCards() {
           {/* Team scoring in its own shape: the average, the line, then the three figures, so the card does not change form when it lands. */}
           <div className="ch-crh-skcard ch-hm-sk-form" aria-hidden="true">
             <b>Team scoring</b>
+            <span className="ch-hm-sk-form__in">
             <span className="ch-hm-sk-form__top">
               <Skeleton width={96} height={34} radius={8} />
               <Skeleton width={84} height={13} />
@@ -76,6 +77,7 @@ export function SkeletonCrhCards() {
               {[0, 1, 2].map((k) => (
                 <Skeleton key={k} width={56} height={30} radius={8} />
               ))}
+            </span>
             </span>
           </div>
           <CrhSkelCard title="The team’s game" rows={2} />

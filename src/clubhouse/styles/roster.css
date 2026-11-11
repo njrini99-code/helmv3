@@ -327,11 +327,10 @@
 .ch-rs-face__av {
   margin: 2px 0 4px;
   border-radius: 50%;
-  box-shadow: 0 0 0 3px #fffefb, 0 0 0 4px rgb(28 25 18 / 0.1), 0 6px 14px -4px rgb(28 25 18 / 0.3),
-    0 14px 24px -12px rgb(28 25 18 / 0.35);
+  box-shadow: 0 0 0 3px var(--ch-card-bg), var(--ch-elevation-badge);
 }
 .ch-rs-face.is-sel .ch-rs-face__av {
-  box-shadow: 0 0 0 3px #fffefb, 0 0 0 5px var(--ch-green-600), 0 8px 18px -6px rgb(11 58 37 / 0.4);
+  box-shadow: 0 0 0 3px var(--ch-card-bg), 0 0 0 5px var(--ch-green-600);
 }
 .ch-rs-face__av .ch-avatar {
   font-size: 22px;
@@ -368,8 +367,8 @@
   margin-top: 4px;
   padding: 8px 0;
   border-radius: var(--ch-radius-md);
-  background: var(--ch-well-soft-bg);
-  box-shadow: var(--ch-well-soft-shadow);
+  background: var(--ch-well-bg-flat);
+  box-shadow: inset 0 var(--ch-hairline-w) 2px var(--ch-separator);
 }
 .ch-rs-face__figs span {
   display: flex;
@@ -2108,35 +2107,7 @@ a.ch-rs-peek__dev:focus-visible,
     gap: 0;
     overflow: hidden;
   }
-  /* P003-A1: one ruled ledger lit by the hour. Each hairline carries a 1px rim of the shell's light on its sun-facing
-     side (the top, and the side the sun is on: --ch-light-rim-x is 0 at noon), so the grid reads as one sheet under
-     one sun. The rims are on the rules, never on a figure, and they are gone in dark, Increase Contrast and noon's
-     side light. */
-  .ch-rs[data-canopy] .ch-rs-face {
-    padding: 24px 20px 24px;
-    border-radius: 0;
-    background: none;
-    box-shadow:
-      -1px 0 0 var(--ch-ledger-rule-soft),
-      0 -1px 0 var(--ch-ledger-rule-soft),
-      inset 0 1px 0 var(--ch-light-rim-soft),
-      inset var(--ch-light-rim-x) 0 0 var(--ch-light-rim-soft);
-    transform: none;
-    transition: background-color var(--ch-dur-quick) var(--ch-ease);
-  }
   @media (hover: hover) {
-    .ch-rs[data-canopy] .ch-rs-face:not(.ch-rs-face--static):hover {
-      padding: 24px 20px 24px;
-      border-radius: 0;
-      background: none;
-      box-shadow:
-        -1px 0 0 var(--ch-ledger-rule-soft),
-        0 -1px 0 var(--ch-ledger-rule-soft),
-        inset 0 1px 0 var(--ch-light-rim-soft),
-        inset var(--ch-light-rim-x) 0 0 var(--ch-light-rim-soft);
-      transform: none;
-      transition: background-color var(--ch-dur-quick) var(--ch-ease);
-    }
   }
   @media (hover: hover) {
     .ch-rs[data-canopy] .ch-rs-face:not(.ch-rs-face--static):hover {
@@ -2177,8 +2148,8 @@ a.ch-rs-peek__dev:focus-visible,
   .ch-rs[data-canopy] .ch-rs-face:not(.ch-rs-face--static):hover {
     padding: 24px 20px 24px;
     border-radius: var(--ch-radius-card);
-    background: linear-gradient(180deg, var(--ch-ivory-0) 0%, var(--ch-bg-surface) 42%, var(--ch-ivory-50) 100%);
-    box-shadow: 0 0 0 1px rgb(176 149 96 / 0.55), inset 0 1px 0 var(--ch-light-rim), inset 0 -3px 0 rgb(28 25 18 / 0.05), var(--ch-elevation-face);
+    background: var(--ch-card-bg);
+    box-shadow: var(--ch-card-shadow);
     transition:
       box-shadow var(--ch-dur-base) var(--ch-ease),
       transform var(--ch-dur-base) var(--ch-ease),
@@ -2186,8 +2157,8 @@ a.ch-rs-peek__dev:focus-visible,
   }
   @media (hover: hover) {
     .ch-rs[data-canopy] .ch-rs-face:not(.ch-rs-face--static):hover {
-      transform: translateY(-8px);
-      box-shadow: 0 0 0 1px var(--ch-champagne-500), inset 0 1px 0 var(--ch-light-rim), var(--ch-elevation-face-hover);
+      transform: translateY(-2px);
+      box-shadow: var(--ch-elevation-reading-hover);
     }
   }
   .ch-rs[data-canopy] .ch-rs-face:not(.ch-rs-face--static)[data-ch-pressed] {
@@ -2204,19 +2175,6 @@ a.ch-rs-peek__dev:focus-visible,
   .ch-rs[data-canopy] .ch-rs-face.is-sel:hover {
     background: var(--ch-green-50);
     box-shadow: 0 0 0 2px var(--ch-green-600), var(--ch-elevation-choice-hover);
-  }
-  /* The indented border: a second hairline frame set 7px inside the tile's edge, so the portrait sits in a recess. */
-  .ch-rs[data-canopy] .ch-rs-face::before {
-    position: absolute;
-    inset: 7px;
-    border: 1px solid rgb(176 149 96 / 0.6);
-    border-radius: var(--ch-radius-lg);
-    box-shadow: inset 0 1px 2px rgb(28 25 18 / 0.06);
-    content: '';
-    pointer-events: none;
-  }
-  .ch-rs[data-canopy] .ch-rs-face.is-sel::before {
-    border-color: var(--ch-champagne-500);
   }
   .ch-rs[data-canopy] .ch-rs-face__name {
     color: var(--ch-ink-950);
@@ -3103,7 +3061,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
     color: var(--ch-crh-ink2);
     display: -webkit-box;
     -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
+    -webkit-line-clamp: 3;
   }
   [data-ch-crh='on'] .ch-rsx-row__b .is-warning,
   [data-ch-crh='on'] .ch-rsx-row__b .is-loss {
@@ -3499,7 +3457,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
     color: var(--ch-crh-ink2);
     display: -webkit-box;
     -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
+    -webkit-line-clamp: 3;
   }
   [data-ch-crh='on'] .ch-rsx-row__b .is-warning,
   [data-ch-crh='on'] .ch-rsx-row__b .is-loss {
