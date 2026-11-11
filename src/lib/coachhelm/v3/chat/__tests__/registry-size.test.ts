@@ -17,8 +17,8 @@ const player: PlayerChatContext = { ...coach, player_id: 'p1' };
 const definition = (t: ChatTool) => JSON.stringify({ name: t.name, description: t.description, input_schema: z.toJSONSchema(t.input, { io: 'input', unrepresentable: 'any' }) });
 const tokens = (chars: number) => Math.round(chars / 4);
 
-/** The tools another worker owns and TOOLS only registers (CONTEXT's, `context/**`). Their size is theirs; it counts toward the whole prefix. */
-const REGISTERED_FOR_OTHERS = new Set(['find_in_app', 'save_note', 'remove_note']);
+/** The tools another worker owns and TOOLS only registers (CONTEXT's, `context/**` and `tasks/**`). Their size is theirs; it counts toward the whole prefix. */
+const REGISTERED_FOR_OTHERS = new Set(['find_in_app', 'save_note', 'remove_note', 'send_event_reminder', 'record_attendance']);
 
 function sizeOf(surface: ChatSurface, who: CoachChatContext | PlayerChatContext) {
   const tools = toolsFor(surface, who);

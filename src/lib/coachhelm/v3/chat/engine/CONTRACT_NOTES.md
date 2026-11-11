@@ -250,3 +250,31 @@ import { eventTaskTools } from './tasks/event-tasks';
   (`../context/__tests__/strict-shape.test.ts`). They are written as closed objects with every field required and
   nullable where optional, so they are strict with or without the wrapper.
 - Nothing in any description or schema changes between requests: no date, no count, no name, no flag.
+
+## 2026-11-10 night (TOOLS), follow-ups
+
+12. Two more loaders for the route to bind (`../screen-loaders.ts` has the types and the header lists them):
+    ```ts
+    roundReview: (roundId) => loadRoundReview(roundId, isPlayer ? { role: 'player', playerId, teamId } : { role: 'coach', teamId }),
+    tournaments: async () => loadTournamentsHome(await tourContext({ role: 'coach', teamId })),   // coach only, and only when golf_tournaments_v1 is on
+    ```
+    `get_round` and `get_tournaments` read nothing of their own now. Unbound, each answers "could not be read"
+    (`unavailable`), never an empty round or an empty season, so a missing binding is visible and not wrong.
+    A player's `get_round` checks the round is theirs with the session client before `roundReview` is called, and
+    drops a round whose `playerId` is not theirs after it.
+13. A course cannot be bound. `loadCourseHistory` (the Course page) is one player's history at a course, keyed by the
+    Rounds page's course key with a window; `get_reference` topic course answers the team's scoring to par by hole
+    for a `course_id`, which no screen draws.
+14. Registered from CONTEXT, as C2 to C4 ask: `find_in_app` after `find_thread`, then `save_note` and `remove_note`
+    (coach reads); `find_in_app` last for a player; `send_event_reminder` and `record_attendance` after every other
+    task. `TASK_TOOL_NAMES` lists the two tasks and not the two note tools. One policy line for each is in.
+15. The team block now holds the team, its timezone, the rule for when a season runs ("from 1 August to 31 July")
+    and the roster. No date, no notes, no count. The date line is CONTEXT's `turnContext(...).line`; TOOLS exports
+    no second one. `instructionBlocks`'s third argument is still accepted and ignored: stop passing it when convenient.
+16. Strict schemas: every registered tool on every surface, CONTEXT's five included, converts to a strict JSON Schema
+    (closed objects, every property required, optionals nullable, no bounds or patterns). None cannot.
+    `../__tests__/strict-input.test.ts` runs `strictProblems` over all of them. ENGINE can set `strict: true`.
+17. Prefix by characters / 4: Ask and the practice helper 13,023 (43 tools: 11,334 of definitions, 1,690 of rules),
+    quick chat 12,532 (40), player 3,862 (10). KNOWLEDGE's golf block and data map are not in `policyBlock` yet:
+    their export names have not been appended here. When they are, the order is rules, golf, data map.
+

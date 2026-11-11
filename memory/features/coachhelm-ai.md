@@ -701,14 +701,19 @@ Ask's wider reads) describe the previous tool set and are history; the mapping f
 replacement is `src/lib/coachhelm/v3/chat/TOOLS.md`.
 
 - **The list** is `toolsFor(surface, who)` in `chat/registry.ts`, on the contract in `chat/engine/tool.ts`. A coach
-  has 38 tools (41 with `golf_tournaments_v1`; the previous stack had 67 and 71), the same list on the Ask tab and in
+  has 43 tools (46 with `golf_tournaments_v1`; the previous stack had 67 and 71), five of them registered for the
+  context work (`find_in_app`, `save_note`, `remove_note`, `send_event_reminder`, `record_attendance`, from
+  `chat/context/**` and `chat/tasks/**`, always last in their group), the same list on the Ask tab and in
   the practice helper so they share one cached prefix; quick chat has `send_message` in place of `publish_artifact`
-  and no `write_artifact`, `draft_message` or `draft_poll`. A player has 9, all reads. Tool definitions plus the
-  policy are 11,615 tokens on Ask by characters / 4 (26,063 before, measured the same way);
-  `__tests__/registry-size.test.ts` is the measurement and holds the 12,000 ceiling.
+  and no `write_artifact`, `draft_message` or `draft_poll`. A player has 10, all reads. Tool definitions plus the
+  policy are 13,023 tokens on Ask by characters / 4 (26,063 before, measured the same way);
+  `__tests__/registry-size.test.ts` is the measurement and holds two ceilings: 12,000 for the registry's own tools
+  and rules (11,804 today) and 19,000 for the whole cached prefix.
 - **One number, one source.** `get_player_stats`, `get_team_stats`, `get_rounds`, `get_season` and `get_qualifiers`
-  (`chat/readers.ts`) do not compute their figures: they call the Clubhouse screen's own loader for the window asked
-  (`loadPlayerProfile`, `loadTeamStats`, `loadTeamRounds`, `loadRoster`, `loadQualifierList` / `loadQualifierDetail`)
+  (`chat/readers.ts`), and `get_round` and `get_tournaments` (`chat/readers-direct.ts`), do not compute their
+  figures: they call the Clubhouse screen's own loader for the window asked
+  (`loadPlayerProfile`, `loadTeamStats`, `loadTeamRounds`, `loadRoster`, `loadQualifierList` / `loadQualifierDetail`,
+  `loadRoundReview`, `loadTournamentsHome`)
   and label what it returned. The route binds those loaders (`chat/screen-loaders.ts` lists each binding; `src/lib`
   does not import `src/clubhouse`). There is one team average, Team Stats'. Places in a ranking, gaps to the team
   and per-player counts and averages over the Rounds list are worked out in the reader, so the model adds nothing
@@ -754,11 +759,16 @@ replacement is `src/lib/coachhelm/v3/chat/TOOLS.md`.
   ids, ordinals and small counts are not figures. It only logs. Against the 165 hand-labelled staging turns it
   finds 141 of the 142 accepted answers grounded and flags 3 of the 22 rejected ones; the other 19 are a wrong
   place, a wrong tally or a figure given to the wrong player, which the readers now answer at the source.
-- Still on disk and no longer registered (delete with their tests): the second implementations in `read-tools.ts`
-  (`getPlayerMetric`, `getTeamMetricRanking`, `getPlayerTrend`, `getRecentRounds`, `getTeamRounds`,
-  `getQualifiers`, `getPuttingDistanceProfile`, `comparePlayers`, `getPlayerWeakestAreas`, `getTeamOverview`),
-  `getTeamStrokesGained` / `getTeamPuttingProfile` in `practice-reads.ts`, `getRoundStats` / `getQualifierEntries`
-  in `team-reads.ts` and `metrics-catalog.ts`'s cache columns. The model cannot reach them.
+- The second implementations are deleted (2026-11-10): the per-figure reads in `read-tools.ts` (player metric,
+  trend, putting profile, comparison, weakest areas, recent rounds, team rounds, tournaments, qualifiers, upcoming
+  events, team overview), `getRoundStats` / `getQualifierEntries` in `team-reads.ts`, `getRoundDetail` in
+  `shot-reads.ts`, `getTeamPuttingProfile` in `practice-reads.ts` and `applyComparisons` in `benchmark-reads.ts`,
+  with their tests. What is left in those files is read by a registered tool or by a screen:
+  `getTeamMetricRanking` feeds the level comparison in `get_reference`, and `getTeamStrokesGained` is the Clubhouse
+  practice home's. A course is the one read with no screen behind it: the Course page's loader is one player's
+  history, so the team's scoring by hole for a course stays the chat's own read (`getCourse`).
+- A document published to the team (`publish_artifact`) says on its card, before Confirm, "Players on <team> will be
+  able to see this" with the active player count.
 - Tests: `chat/__tests__/registry-readers.test.ts`, `registry-tasks.test.ts`, `registry-size.test.ts`,
   `instructions.test.ts`, `strict-input.test.ts`, `grounding-fixtures.test.ts`.
 
