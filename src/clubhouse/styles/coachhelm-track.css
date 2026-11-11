@@ -130,11 +130,13 @@
 .ch-htr-rung.is-none .ch-htr-rung__w,
 .ch-htr-fam.is-none .ch-htr-fam__n {
   font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-text-secondary);
 }
 .ch-htr-rung.is-none .ch-htr-rung__l,
 .ch-htr-fam.is-none .ch-htr-fam__l {
   font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-text-tertiary);
 }
 
