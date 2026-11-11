@@ -62,7 +62,8 @@ export function ZoneBig({ value, unit, tone, settle = false }: { value: string; 
   return (
     <span className={'ch-znbig ch-num' + (tone ? ` is-${tone === 'good' ? 'gain' : 'loss'}` : '') + (settle ? ' is-settle' : '')}>
       {value}
-      {unit && <small>{unit}</small>}
+      {/* A dash has no unit: "— %" read as a figure that had lost its number. */}
+      {unit && /\d/.test(value) && <small>{unit}</small>}
     </span>
   );
 }

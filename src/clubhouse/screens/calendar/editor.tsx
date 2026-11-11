@@ -874,15 +874,20 @@ export function EventEditor({
               {rsvp ? 'Invited players are notified and reply Going, Maybe or Can’t.' : 'Off: no replies asked and no notification. It still shows on their calendars.'}
             </p>
           </div>
-          {!tracked && !allDay && !multiTimed && invited.length > 0 && (
-            <div>
+          {/* Always here on a desk, the same height: the block coming and going moved the whole dialog under the pointer. */}
+          {!tracked && (
+            <div className={'ch-cal-ftb' + (allDay || multiTimed || !invited.length ? ' is-idle' : '')}>
               <div className="ch-in__sechead" style={{ marginBottom: 8 }}>
                 <span className="ch-ed__lbl" style={{ margin: 0 }}>
-                  Find a time · {dowOf(date)} {dayNum(date)}
+                  {allDay || multiTimed || !invited.length ? 'Find a time' : `Find a time · ${dowOf(date)} ${dayNum(date)}`}
                 </span>
-                <span>Drag the band, or use the arrow keys</span>
+                {!allDay && !multiTimed && invited.length > 0 && <span>Drag the band, or use the arrow keys</span>}
               </div>
-              <FindTime rows={invited} events={events} date={date} win={win} setWin={setWin} ignoreId={base?.id} people={byId} />
+              {allDay || multiTimed || !invited.length ? (
+                <p className="ch-cal-ftb__idle">{allDay ? 'An all-day event has no time to find.' : multiTimed ? 'An event over several days has no time to find.' : 'Invite players to compare their schedules here.'}</p>
+              ) : (
+                <FindTime rows={invited} events={events} date={date} win={win} setWin={setWin} ignoreId={base?.id} people={byId} />
+              )}
             </div>
           )}
           {tracked ? (

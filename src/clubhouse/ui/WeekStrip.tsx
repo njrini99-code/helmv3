@@ -132,7 +132,7 @@ export function WeekStrip({
                 {face}
               </button>
             ) : d.href ? (
-              <Link href={d.href} className={cls} tabIndex={live ? undefined : -1}>
+              <Link prefetch={false} href={d.href} className={cls} tabIndex={live ? undefined : -1}>
                 {face}
                 <span className="ch-sr-only">{d.label}</span>
               </Link>

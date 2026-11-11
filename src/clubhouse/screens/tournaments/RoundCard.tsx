@@ -46,7 +46,7 @@ export function RoundCard({ round }: { round: ChRoundCardData }) {
   const clock = useChClock();
   const cancelled = round.status === 'cancelled';
   return (
-    <Link href={round.href} className="ch-tfx-card" data-status={round.status} aria-label={roundCardName(round, clock)}>
+    <Link prefetch={false} href={round.href} className="ch-tfx-card" data-status={round.status} aria-label={roundCardName(round, clock)}>
       <span className="ch-tfx-card__top" aria-hidden="true">
         <span>{`${shortDay(round.date)} · Round ${round.roundNo}`}</span>
         <span className="ch-tfx-card__status">

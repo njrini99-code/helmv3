@@ -1,3 +1,4 @@
+import { tidyCourseName } from '../lib/course-name';
 import { isScoreCountable, isTotalOnlyCountable, recordedPutts } from './round-scope';
 import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
 
@@ -125,7 +126,7 @@ export function roundType(t: string | null): ChRoundType | null {
   return t === 'practice' || t === 'tournament' || t === 'qualifier' ? t : null;
 }
 
-export const courseName = (name: string | null) => name?.trim() || 'Course not recorded';
+export const courseName = (name: string | null) => tidyCourseName(name) || 'Course not recorded';
 
 export type ChRoundListRow = {
   id: string;

@@ -12,13 +12,13 @@ export function CalendarSkeleton() {
           <Skeleton width={240} height={14} />
         </div>
         <div className="ch-cal-tools">
-          <Skeleton width={40} height={40} radius={11} />
-          <Skeleton width={140} height={40} radius={11} />
+          <Skeleton width={36} height={36} radius={11} />
+          <Skeleton width={145} height={36} radius={11} />
         </div>
       </header>
       <div className="ch-cal-bar">
-        <Skeleton width={357} height={38} radius={12} />
-        <Skeleton width={313} height={48} radius={14} />
+        <Skeleton width={348} height={38} radius={12} />
+        <Skeleton width={333} height={48} radius={14} />
         <div className="ch-cal-legend" aria-hidden="true">
           <Skeleton width={333} height={18} radius={9} />
         </div>
@@ -44,10 +44,10 @@ export function CalendarSkeleton() {
       <div className="ch-calm-skel">
         <div className="ch-intro ch-calm-head">
           {/* The eyebrow's 13px type at its 15.6px line, so the title row lands where it loads. */}
-          <SkelLine line={15.6} bar={9} width={124} />
+          <SkelLine line={18} bar={9} width={124} />
           <span className="ch-intro__row">
-            <SkelLine line={34} bar={26} width={150} />
-            <Skeleton width={160} height={40} radius={12} />
+            <SkelLine line={37} bar={26} width={120} />
+            <Skeleton width={213} height={42} radius={12} />
           </span>
         </div>
         <div className="ch-calm-skel__week">
