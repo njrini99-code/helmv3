@@ -15,7 +15,7 @@ const SCROLL_QUIET_MS = 300;
 /**
  * Whether the board's rows slide to their new ranks on this render (P009-B1). Only when a re-read changed the ranked
  * order (`rankOrderChanged`, against the order last drawn), and never with reduced motion or Animations off, mid-scroll,
- * with a scorecard tray or a sheet open (`held`, or any dialog on the page). Nothing else on the board animates: the
+ * with a scorecard tray or a sheet open (`held`, or any dialog up on the page). Nothing else on the board animates: the
  * plates take their new values at once (owner 2026-10-08: no digit rolling, no count-ups).
  *
  * The answer feeds each row's `<ViewTransition update>`: the slide rides the refresh's own transition, and a refresh
@@ -32,5 +32,11 @@ export function useRankSlide(order: readonly string[], held: boolean): boolean {
   if (!changed || reduced || held) return false;
   // Only reached on a client re-render (the first render has no previous order), so the document is there to ask.
   if (performance.now() - scrolledAt < SCROLL_QUIET_MS) return false;
-  return !document.querySelector("[role='dialog'], dialog[open]");
+  return !document.querySelector(DIALOG_UP);
 }
+
+/**
+ * A dialog that is up. One that is mounted but put away is not: the phone's notification drop (shell/Bell.tsx) stays
+ * rendered, inert and hidden, so opening it only moves it, and counted here it stopped every slide on the phone.
+ */
+const DIALOG_UP = "[role='dialog']:not([inert], [aria-hidden='true']), dialog[open]";

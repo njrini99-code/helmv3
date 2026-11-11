@@ -338,6 +338,26 @@ describe('P009-B1 rows move only when the standings change', () => {
     expect(result.current).toBe(false);
   });
 
+  it('a dialog that is mounted but put away does not hold the slide: the phone’s notification drop is always there, hidden and inert', async () => {
+    // Past the scroll-quiet window: the test above ends on a scroll, which holds the slide for 300ms on its own.
+    await new Promise((r) => setTimeout(r, 320));
+    // shell/Bell.tsx keeps the phone's drop rendered (role="dialog", inert, aria-hidden) so opening it only moves it.
+    // Counted as "a dialog up", it stopped every slide on the phone.
+    const drop = document.body.appendChild(document.createElement('div'));
+    drop.setAttribute('role', 'dialog');
+    drop.setAttribute('aria-hidden', 'true');
+    drop.setAttribute('inert', '');
+    const { result, rerender } = renderHook(({ order }: { order: string[] }) => useRankSlide(order, false), { initialProps: { order: ['a', 'b'] } });
+    rerender({ order: ['b', 'a'] });
+    expect(result.current).toBe(true);
+    // Opened, it is a dialog up like any other, and the rows stay put under it.
+    drop.removeAttribute('aria-hidden');
+    drop.removeAttribute('inert');
+    rerender({ order: ['a', 'b'] });
+    expect(result.current).toBe(false);
+    drop.remove();
+  });
+
   it('with Animations off the rows never slide', () => {
     prefs.showAnimations = false;
     const { result, rerender } = renderHook(({ order }: { order: string[] }) => useRankSlide(order, false), { initialProps: { order: ['a', 'b'] } });
