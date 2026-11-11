@@ -29,7 +29,7 @@ import { keyOf } from '../action-planners';
 import type { ActionReceipt, ProposalFact } from '../action-types';
 import { CoachContextError, type CoachChatContext } from '../context';
 import { isPlayerContext, type ChatTool, type TaskTool, type ToolContext } from '../engine/tool';
-import { asPlayers, unreached, type StoredProposal } from './kit';
+import { asPlayers, editing, unreached, type StoredProposal } from './kit';
 
 /** What every task here returns from `plan`, in the shape TOOLS's tasks use: the card, the tool, the input the write will use, and when it was planned. JSON-safe. */
 export type EventTaskProposal = StoredProposal;
@@ -84,6 +84,11 @@ const ReminderInput = z.strictObject({
   player_ids: z.array(z.string().uuid()).max(80),
 });
 type ReminderInput = z.infer<typeof ReminderInput>;
+/**
+ * What the coach can change on the card itself: who gets it. The field shows the players the card names; an edited
+ * list is those players and nobody else (`recipients: 'named'`), chosen from the active roster and checked by `plan`.
+ */
+const reminderEdits = editing(ReminderInput, { player_ids: 'To' });
 
 const ReminderStored = z.object({ event_id: z.string().uuid(), player_ids: z.array(z.string().uuid()).min(1), title: z.string(), message: z.string() });
 type ReminderStored = z.infer<typeof ReminderStored>;
@@ -160,10 +165,16 @@ export const sendEventReminder: TaskTool<ReminderInput, EventTaskProposal> = {
       not_reached: unreached(who.roster.filter((p) => ids.includes(p.id) && !reachable.has(p.id))),
       delivery: { channels: ['in_app'], title: words.title, body: words.message },
       undo: { window: true, after: 'A reminder that has gone out cannot be taken back.' },
+      editable: reminderEdits.fields(input, { player_ids: to.map((p) => p.id) }, who.roster.map((p) => ({ id: p.id, name: p.name }))),
       tool: 'send_event_reminder',
-      input: stored,
+      input: { ...stored, asked: input },
       planned_at: now(),
     };
+  },
+  revise: async (ctx, proposal, edits) => {
+    coachOnly(ctx);
+    const merged = reminderEdits.merge(proposal, edits);
+    return sendEventReminder.plan(ctx, 'player_ids' in edits ? { ...merged, recipients: 'named' } : merged);
   },
   commit: async (ctx, proposal) => {
     const name = 'send_event_reminder';

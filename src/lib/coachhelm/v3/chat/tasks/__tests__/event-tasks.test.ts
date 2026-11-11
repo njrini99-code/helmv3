@@ -64,7 +64,8 @@ describe('send_event_reminder: the card', () => {
     expect(fact(p, 'When')).toMatch(/Undo window/);
     expect(p.notifications).toEqual([`2 players get an in-app notification: “${WORDS.title}”, “${WORDS.message}”.`]);
     expect(p.affects.filter((a) => a.kind === 'player').map((a) => a.label)).toEqual(['Avery Lane', 'Blake Ortiz']);
-    expect(p.input).toEqual({ event_id: EVENT, player_ids: [AVERY, BLAKE], ...WORDS });
+    // What the write will use, and beside it what was asked, so an edit on the card starts from the request.
+    expect(p.input).toEqual({ event_id: EVENT, player_ids: [AVERY, BLAKE], ...WORDS, asked: { event_id: EVENT, recipients: 'invited', player_ids: [] } });
     // The same, as the fields the card draws from: people by id and name, who is not reached and why, the words.
     expect(p.recipients).toEqual([{ id: AVERY, name: 'Avery Lane', role: 'player' }, { id: BLAKE, name: 'Blake Ortiz', role: 'player' }]);
     expect(p.not_reached).toEqual([{ id: CASEY, name: 'Casey Moss', role: 'player', reason: 'no account yet' }]);
@@ -98,6 +99,44 @@ describe('send_event_reminder: the card', () => {
     expect(src).toMatch(/const message = event\.location\s*\?\s*`\$\{timeStr\} at \$\{event\.location\}`\s*:\s*timeStr;/);
     expect(src).toContain('title: `Reminder: ${event.title}`,');
     expect(src).toContain("notification_type: 'event_reminder_manual' as const,");
+  });
+});
+
+describe('send_event_reminder: editing who gets it before Confirm', () => {
+  const asked = { event_id: EVENT, recipients: 'invited' as const, player_ids: [] };
+  const card = (p: EventTaskProposal) => JSON.parse(JSON.stringify(p)) as EventTaskProposal;
+
+  it('the card offers the players it names, chosen from the active roster and from nobody else', async () => {
+    const p = await sendEventReminder.plan(toolCtx(db().sb, coach()), asked);
+    expect(p.editable?.map((f) => [f.key, f.label, f.type, f.value])).toEqual([['player_ids', 'To', 'people', [AVERY, BLAKE]]]);
+    expect(p.editable?.[0]?.options).toEqual([{ value: AVERY, label: 'Avery Lane' }, { value: BLAKE, label: 'Blake Ortiz' }, { value: CASEY, label: 'Casey Moss' }]);
+    expect(JSON.stringify(p.editable)).not.toContain(STRANGER);
+  });
+
+  it('an edited list is those players and nobody else, planned again with the staff check; nothing is sent', async () => {
+    const { sb, writes } = db();
+    const p = card(await sendEventReminder.plan(toolCtx(sb, coach()), asked));
+    const q = await sendEventReminder.revise!(toolCtx(sb, coach()), p, { player_ids: [BLAKE] });
+    expect(fact(q, 'To (1)')).toBe('Blake Ortiz');
+    expect((q.input as { player_ids: string[]; asked: unknown }).player_ids).toEqual([BLAKE]);
+    expect((q.input as { asked: unknown }).asked).toEqual({ event_id: EVENT, recipients: 'named', player_ids: [BLAKE] });
+    expect(fact(q, 'They see')).toBe(`${WORDS.title}\n${WORDS.message}`);
+    expect(writes).toEqual([]);
+    expect(actions.sendEventReminderToPlayers).not.toHaveBeenCalled();
+    // Someone with no account is said, as on the first card.
+    const withCasey = await sendEventReminder.revise!(toolCtx(sb, coach()), p, { player_ids: [BLAKE, CASEY] });
+    expect(fact(withCasey, 'Will not get it')).toBe('Casey Moss (no account yet)');
+    await expect(sendEventReminder.revise!(toolCtx(db({ staff: false }).sb, coach()), p, { player_ids: [BLAKE] })).rejects.toThrow(/Only this team’s coaches/);
+  });
+
+  it('refuses someone off the roster, an empty list, the event as a field, and a player', async () => {
+    const { sb } = db();
+    const p = card(await sendEventReminder.plan(toolCtx(sb, coach()), asked));
+    await expect(sendEventReminder.revise!(toolCtx(sb, coach()), p, { player_ids: [STRANGER] })).rejects.toThrow('One of those players is not on your active roster.');
+    await expect(sendEventReminder.revise!(toolCtx(sb, coach()), p, { player_ids: [] })).rejects.toThrow('Name at least one player to remind.');
+    await expect(sendEventReminder.revise!(toolCtx(sb, coach()), p, { event_id: FOREIGN_EVENT })).rejects.toThrow('That cannot be changed on this card. Ask for it in words instead.');
+    await expect(sendEventReminder.revise!(toolCtx(sb, coach()), p, { recipients: 'invited' })).rejects.toThrow('That cannot be changed on this card. Ask for it in words instead.');
+    await expect(sendEventReminder.revise!(toolCtx(sb, playerWho(), 'player'), p, { player_ids: [BLAKE] })).rejects.toThrow('Only a coach can do that.');
   });
 });
 

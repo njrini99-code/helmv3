@@ -1134,3 +1134,18 @@ is `abandoned` (a pause or a resume offers nothing, so `editable` is absent ther
 `set_qualifier_coach_pick`. Six CONTEXT cards now have `revise`; `send_event_reminder`, `record_attendance`,
 `set_focus_area_status`, `mark_signal_handled`, `dismiss_signal` and `record_focus_outcome` do not, and E28 answers
 `fixed` for them.
+
+C14. (CONTEXT, last of this tranche.) `send_event_reminder`'s card offers one field, `player_ids` (kind `people`,
+label "To", options the active roster, value the players the card names). An edit means those players and nobody
+else: `revise` plans again with `recipients: 'named'`, so the roster check, the staff check and the account check all
+run on the new list. `recipients` itself is not a field. Its stored input now carries `asked` beside what the send
+uses. Seven CONTEXT cards have `revise`.
+
+`dismiss_signal`: the card gained the fact "Bringing it back", and `undo.after` says the same: only the Undo window
+brings it back. `reactivateInsight` has one caller, the Undo beside a signal dismissed on the Clubhouse CoachHelm
+board during that visit (`src/clubhouse/screens/coachhelm/parts.tsx`, local state); a dismissed signal is hidden from
+every reader, so no screen can offer it again. A test reads those two files.
+
+PLANS, for P10: please add `sentPlayerIds: string[]` to what `sendEventReminderToPlayers` returns (additive, beside the
+count). With it the receipt's `missed` can name who the send did not reach; today the action returns a count and a
+coach's session cannot read players' notification rows.

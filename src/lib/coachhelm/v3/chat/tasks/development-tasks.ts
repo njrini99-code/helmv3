@@ -54,6 +54,8 @@ async function requirePlayerAccess(ctx: ToolContext, who: CoachChatContext, play
 }
 
 const NO_NOTICE = 'No notification is sent.';
+/** What is true of a signal dismissed from the chat once the Undo window has closed. */
+const BRING_BACK = 'Only with Undo, in the few seconds after you confirm. After that no screen brings it back: the CoachHelm board’s own Undo works only for a signal dismissed on that board.';
 
 // ---------------------------------------------------------------------------------------------------------------------
 // set_focus_area_status
@@ -344,6 +346,8 @@ export const dismissSignal: TaskTool<SignalInput, StoredProposal> = {
       { label: 'After', value: 'Dismissed. It leaves your board and is not counted as acted on.' },
       { label: player ? 'The player sees' : 'Players see', value: sees },
       { label: 'The record', value: 'The signal is kept, not deleted.' },
+      // The app's restore (`reactivateInsight`) is called from one place: the Undo beside a signal just dismissed on the CoachHelm board, in that visit (`src/clubhouse/screens/coachhelm/parts.tsx`). No screen lists dismissed signals.
+      { label: 'Bringing it back', value: BRING_BACK },
     ];
     return {
       action: 'Dismiss a signal',
@@ -354,7 +358,7 @@ export const dismissSignal: TaskTool<SignalInput, StoredProposal> = {
       missing: [],
       ...NOTHING_SENT,
       visible_note: sees,
-      undo: { window: true, after: 'It is not brought back from the chat.' },
+      undo: { window: true, after: BRING_BACK },
       idempotency_key: keyOf(['dismiss_signal', row.id]),
       tool: 'dismiss_signal',
       input: { insight_id: row.id, title: row.title, about },

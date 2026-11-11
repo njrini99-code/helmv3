@@ -974,10 +974,12 @@ route and the registry is in `engine/CONTRACT_NOTES.md`, sections C1 to C7.
   action's permission check first in `plan`, and reads back before a receipt says nothing was saved. Each card says
   what the player will see on their own pages, established from the page's code and held by a test that reads it
   (a focus area's value shows, an entry's note does not; an outcome completes the focus area and credits the signal
-  it came from, and if that second half fails the receipt is `partial`). Six of the cards can be edited in place
+  it came from, and if that second half fails the receipt is `partial`). Seven of the cards can be edited in place
   before Confirm (`editable` and `revise`, through `editing` in `tasks/kit.ts`): `update_event` (date, start, end,
-  place, title), `set_task_reminder` (date, time), `log_focus_progress` (value, note), and the reason on
-  `cancel_event`, on closing a goal with `set_goal_state`, and on `set_qualifier_coach_pick`. An edit is merged into the
+  place, title), `set_task_reminder` (date, time), `log_focus_progress` (value, note), who gets a
+  `send_event_reminder` (chosen from the active roster), and the reason on `cancel_event`, on closing a goal with
+  `set_goal_state`, and on `set_qualifier_coach_pick`. `dismiss_signal`'s card says that after the Undo window no
+  screen brings the signal back (the app's restore is reached only from the board's own Undo). An edit is merged into the
   input the card was planned from, held to the tool's own schema, and planned again with every read and check; the
   thing the card is about (the event, the task, the focus area) is never a field. `cancel_event` is
   the app's soft cancellation and never the row delete; `update_event` and `cancel_event` act on one date, as the
