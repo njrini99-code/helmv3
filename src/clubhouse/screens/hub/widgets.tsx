@@ -725,20 +725,23 @@ export function TasksTile({ data, figures, isDone, covered, onAssign, onFocus, o
             <>
               <dl className="ch-hw-figs">
                 <div>
-                  <dt>done</dt>
-                  <dd className="ch-num">{figures.done}</dd>
-                </div>
-                <div>
-                  <dt>left</dt>
-                  <dd className="ch-num">{figures.left}</dd>
+                  <dt>open</dt>
+                  <dd className="ch-num">{figures.open}</dd>
                 </div>
                 <div className={figures.overdue > 0 ? 'is-warn' : undefined}>
                   <dt>overdue</dt>
                   <dd className="ch-num">{figures.overdue}</dd>
                 </div>
+                <div>
+                  <dt>complete</dt>
+                  <dd className="ch-num">{figures.complete}</dd>
+                </div>
               </dl>
-              <span className="ch-hw-track" role="img" aria-label={`${figures.done} of ${total} done`}>
+              <span className="ch-hw-track" role="img" aria-label={`${figures.done} of ${total} player assignments done`}>
                 <i style={{ '--ch-hw-p': total ? figures.done / total : 0 } as CSSProperties} />
+              </span>
+              <span className="ch-hw-figs-note ch-num">
+                {figures.done} of {total} player assignments done
               </span>
             </>
           )}
