@@ -49,7 +49,8 @@ function withOneRound(p: ChPlayerProfile): ChPlayerProfile {
     rounds: [only],
     win: { ...p.win, rounds: 1, sgRounds: 1, effRounds: 1, effSgRounds: 1, avg: only.score, toPar: only.toPar, sgPerRound: null, formChange: null, trend: [only.score] },
     sgChange: { delta: null, context: '' },
-    extra: { ...p.extra, compare: null },
+    // One round is one point on every per-round line too, so the drill says "A line needs two rounds" and draws no trend.
+    extra: { ...p.extra, compare: null, series: Object.fromEntries(Object.entries(p.extra.series).map(([k, v]) => [k, Array.isArray(v) ? v.slice(-1) : v])) as typeof p.extra.series },
   };
 }
 
