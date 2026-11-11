@@ -1058,3 +1058,30 @@ and `log_focus_progress` (`value`, `note`). Each has `revise` and puts `editable
   the pattern is `^([01]\d|2[0-3]):[0-5]\d$`.**
 - The other nine CONTEXT cards offer nothing to edit (no `revise`), so E28 answers `fixed` for them.
 - Nothing here is in the cached prefix: the sizes in C11 stand.
+
+## 2026-11-11 (PLANS): the reads with no lines of their own are now read out in words
+
+P13. Before this, only the Stats, Rounds, Round, Qualifiers and Tournaments readers set `model_text`; every other
+read reached the model as the envelope's JSON, field names included (`avg_score`, `gir_pct`, `team_n`), which is the
+notation the answer rules forbid it to repeat. Now:
+
+- `plain(envelope, against?)` (`reader-kit.ts`) gives a read lines when it wrote none: each measurement as
+  "Eli Brandt, strokes gained approach: −0.31 strokes against the Tour benchmark, over 9 rounds | Team average: …",
+  then `detail` field by field with the field's name in words (`fieldWords`). A row leads with who or what it is
+  about and ends with what a later call must be given exactly, in brackets: `[player <uuid>]`, `[event <uuid>]`,
+  `[ref team:<uuid>]`, `[metric gir_pct]`. The app's own codes (`in_progress`, `sg_putting` under a status, kind,
+  type, metric or similar field) become words; a band's and a metric's label go through `coachWords`.
+- Stored words are not rewritten: a note, a reflection, a title, a description pass through exactly as stored.
+- `together` builds its `model_text` from its parts (a part's own lines if it has them, otherwise `plain`), each
+  under its label. `failed()` carries a sentence, so a refused or failed read is no longer JSON either.
+- Used by: get_shots, get_schedule (coach and player), get_coachhelm (coach and player), get_practice,
+  get_tournaments with notes, get_season with the comparison, and get_reference for metric_definitions, standards,
+  course, documents and team_settings.
+- Still JSON, on purpose: query_team_data and summarise_data (their field names are what the model passes back),
+  get_reference data_dictionary (it is the list of those names), get_reference golf (KNOWLEDGE's text), and the
+  notices (show_visual, the drafts). **ENGINE: nothing to change; `loop.ts` already prefers `model_text`.**
+- **KNOWLEDGE**: the prompt can say that an id in square brackets at the end of a read's line is for the next call
+  and is never written in an answer. I have not added that sentence; the size test leaves three tokens.
+- Test: `__tests__/reader-words.test.ts` runs these readers over a team with rows in every table they read and fails
+  on the same tokens as the hand-written lines, on JSON, and on any field name in the read sources that `fieldWords`
+  would leave abbreviated.
