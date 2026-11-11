@@ -119,7 +119,8 @@ draft_poll, draft_board. Quick chat has no write_artifact, draft_message or draf
 |---|---|
 | ask, practice_helper | all reads, all tasks except send_message, all drafts (one list, so one cached prefix) |
 | quick_chat | all reads, all tasks with send_message in place of publish_artifact, draft_practice_plan, ask_practice_brief, draft_board |
-| player | get_player_stats, get_rounds, get_round, get_shots, get_season, get_schedule, get_coachhelm, get_reference, summarise_data, show_visual; own id forced, own rounds only, no team figures beyond what the player's own Stats page shows |
+| player | get_player_stats, get_round, get_shots, get_season, get_schedule, get_coachhelm, get_reference, summarise_data, show_visual; own id forced, own rounds only, no team figures beyond what the player's own Stats page shows |
 
-Count: 67 (72 with flags) before; 42 (45 with the tournaments flag) after on Ask, 10 for a player (16 before).
-Sizes are in the report and in `__tests__/registry-size.test.ts`.
+Count as built: 38 on Ask (41 with the tournaments flag) against 67 (71) before; 35 on quick chat; 9 for a player
+(16 before; `get_rounds` is not offered to a player, whose rounds come from their own Stats page).
+Tool definitions plus policy, characters / 4: 26,063 before, under 12,000 after (`__tests__/registry-size.test.ts`).

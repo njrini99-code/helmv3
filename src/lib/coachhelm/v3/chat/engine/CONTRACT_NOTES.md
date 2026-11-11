@@ -29,3 +29,31 @@ Changes to `tool.ts` against the contract in the rebuild brief, with the reason 
 10. The prompt comes from `instructionBlocks(surface, who, { today, notes })` as `{ policy, team }`; the engine sends them as two cached system blocks in that order.
 11. The grounding check is TOOLS's `checkGrounding(text, reads)` (`../grounding.ts`), called after the turn with the conversation's reads. `engine/grounding.ts` is only the default when none is handed in.
 12. Not on the contract yet: a detail line for a finished progress row ("38 rounds") and the practice picture. The old `progressEnd` added them from the envelope. If TOOLS wants them back, add `progress_detail?: string` to `ToolResult` and the engine will send it on `read_finished` (the event already has a `detail` field).
+
+## 2026-11-10 (TOOLS)
+
+1. `ScreenLoaders` is defined in `../screen-loaders.ts` (TOOLS) and re-exported by `tool.ts`. Its header lists the
+   Clubhouse function the route binds to each field. Every field is optional; a tool whose loader is missing or
+   returns null answers with an `unavailable` read.
+2. Requested, not yet in `tool.ts` or `loop.ts`: `ToolResult.model_text?: string`. The screen readers set it: the read
+   as labelled lines ("Scoring avg: 74.2 | team 75.1", places, gaps), about a seventh of the envelope's JSON. Wanted
+   behaviour: when a result has `model_text`, the tool_result content is `[<evidence_ref>] <model_text>` and the
+   envelope (with `model_text` kept on it) still goes to the evidence chip, the `reads` map and the grounding check.
+   Until then `model_text` rides inside the JSON as one more field: correct, but each Stats read costs the model
+   roughly 3,000 tokens where 400 would do.
+3. Every `P` TOOLS returns is `ActionProposal & { tool: string; input: unknown; planned_at: string }`, JSON-safe.
+   `commit` needs all three back unchanged: `input` is what is written, `planned_at` bounds the look for an earlier
+   attempt's row, and `idempotency_key` (as rewritten by the engine) is the seed of every downstream request id.
+4. `commit` never touches the ledger. It returns `completed`, or `failed` with a `summary` that says either
+   "Nothing was saved." (it looked) or "I could not check whether anything was saved: look in <place> before trying
+   again." (it could not look; `retryable` is false). The engine should pass that sentence to the model as it is.
+5. `lock_lineup` refuses while the coach's own `set_lineup` for the same tournament is held or running. It finds it
+   in the ledger under `proposed_input->proposal->input->>tournament_id` (and the old top-level shape).
+6. Hold release, proposed (ENGINE owns `undo-hold.ts`): wait out the hold inside the Confirm request instead of in
+   `after()`. The request is already open to stream the closing words: emit the held receipt, `await releaseHeld(...)`
+   in the request, emit the final receipt, append the tool_result with what really happened (committed, undone,
+   failed) and only then ask the model for its closing words. The write then never depends on `after()` surviving or
+   on the coach's next request, and the stored sentence can no longer say "done" about something the coach undid.
+   Keep `after()` only as the fallback for a browser that disconnects during the hold (do not abort the wait on the
+   request signal), keep the card's GET and the sweep, and run the sweep on any signed-in coach page load, not only
+   on a chat request. A cron cannot do these writes: each action reads the coach from the session.

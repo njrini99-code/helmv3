@@ -694,6 +694,66 @@ entries are history. The tool list and the prompt are described where the tools 
   get it on their next re-analyze. Contract:
   `docs/architecture/coachhelm-evidence-contract.md` "Coach voice".
 
+### CoachHelm chat: the tools, the prompt and the grounding check (rebuilt 2026-11-10)
+
+This section is the current truth for what the chat can read and do. The two sections after it (whole-team reads,
+Ask's wider reads) describe the previous tool set and are history; the mapping from every old tool to its
+replacement is `src/lib/coachhelm/v3/chat/TOOLS.md`.
+
+- **The list** is `toolsFor(surface, who)` in `chat/registry.ts`, on the contract in `chat/engine/tool.ts`. A coach
+  has 38 tools (41 with `golf_tournaments_v1`; the previous stack had 67 and 71), the same list on the Ask tab and in
+  the practice helper so they share one cached prefix; quick chat has `send_message` in place of `publish_artifact`
+  and no `write_artifact`, `draft_message` or `draft_poll`. A player has 9, all reads. Tool definitions plus the
+  policy are 11,991 tokens on Ask by characters / 4 (26,063 before, measured the same way);
+  `__tests__/registry-size.test.ts` is the measurement and holds the 12,000 ceiling.
+- **One number, one source.** `get_player_stats`, `get_team_stats`, `get_rounds`, `get_season` and `get_qualifiers`
+  (`chat/readers.ts`) do not compute their figures: they call the Clubhouse screen's own loader for the window asked
+  (`loadPlayerProfile`, `loadTeamStats`, `loadTeamRounds`, `loadRoster`, `loadQualifierList` / `loadQualifierDetail`)
+  and label what it returned. The route binds those loaders (`chat/screen-loaders.ts` lists each binding; `src/lib`
+  does not import `src/clubhouse`). There is one team average, Team Stats'. Places in a ranking, gaps to the team
+  and per-player counts and averages over the Rounds list are worked out in the reader, so the model adds nothing
+  up. A loader that is missing or fails is an `unavailable` read, never an empty one.
+- **Read directly** through the session client, because no screen computes them (`chat/readers-direct.ts`): one
+  round (`get_round`, with its tallies counted), logged approach shots (`get_shots`), tournaments, the schedule
+  with replies, travel and attendance (`get_schedule`), CoachHelm's signals, causes, focus areas, goals and tasks
+  (`get_coachhelm`), practice (`get_practice`), reference (`get_reference`), and `query_team_data` with its
+  allowlist, team scope and 200-row bound unchanged. Its column dictionary is no longer in its description:
+  `get_reference` with topic `data_dictionary` returns it. `summarise_data` and `show_visual` are unchanged in
+  what they do; the model is shown one flat input shape for each and the strict schemas still validate in `run`.
+  Not yet on a screen loader, in this order: one round (`loadRoundReview`), a course (`course-history.ts`),
+  tournaments (`loadTournamentsHome`), last season beside this one (no screen draws it).
+- **A player** gets `get_player_stats`, `get_round`, `get_shots`, `get_season`, `get_schedule`, `get_coachhelm`,
+  `get_reference`, `summarise_data` and `show_visual`. Every reader takes the player from the session
+  (`reader-kit.ts` `ownOr`), whatever id the model sends; a round is checked for ownership before its holes are
+  read; the schedule carries the caller's own reply only; the figures come from the player's own Stats page, which
+  has no team column; CoachHelm's reads come back as titles. No task tool is offered and every task refuses a
+  player's context.
+- **Tasks** (`chat/tasks.ts`): `plan` builds the card with the planner that will run it and writes nothing;
+  `commit` runs the stored proposal after Confirm and the Undo window. `commit` first looks for the row an earlier
+  attempt of the same card left, writes, and on a failure looks again before the receipt says nothing was saved.
+  The look is exact where the server action takes a request id derived from the proposal's key (`create_event`,
+  `add_blocked_time`, `create_recruit`, `send_message`); elsewhere it is the card's natural key among rows made
+  since the card was planned. When the look cannot be made the receipt says so and is not offered for retry.
+  `add_team_break`, `set_availability_note`, `add_round_note`, the lineup pair and `publish_practice_plan` have no
+  look of their own (the note and the lineup are safe to repeat by how their actions work; a break is not).
+  Receipt notification lines of the four older tasks are still the planner's prediction, not what the fan-out did.
+- **The prompt** (`chat/instructions.ts`): `policyBlock(surface)` is the same text for every team and day (one for
+  the coach surfaces, one for a player); `teamBlock(who, { today, notes })` has the team, the timezone, the date to
+  the day, the season's start, the roster with ids and the coach's standing notes. There are no output formats to
+  parse and no rules about a checker.
+- **The grounding check** is `chat/grounding.ts` (`checkGrounding(text, reads, question)`): the numbers in the
+  answer against every number in the conversation's reads and the differences between their figures; dates, times,
+  ids, ordinals and small counts are not figures. It only logs. Against the 165 hand-labelled staging turns it
+  finds 141 of the 142 accepted answers grounded and flags 3 of the 22 rejected ones; the other 19 are a wrong
+  place, a wrong tally or a figure given to the wrong player, which the readers now answer at the source.
+- Still on disk and no longer registered (delete with their tests): the second implementations in `read-tools.ts`
+  (`getPlayerMetric`, `getTeamMetricRanking`, `getPlayerTrend`, `getRecentRounds`, `getTeamRounds`,
+  `getQualifiers`, `getPuttingDistanceProfile`, `comparePlayers`, `getPlayerWeakestAreas`, `getTeamOverview`),
+  `getTeamStrokesGained` / `getTeamPuttingProfile` in `practice-reads.ts`, `getRoundStats` / `getQualifierEntries`
+  in `team-reads.ts` and `metrics-catalog.ts`'s cache columns. The model cannot reach them.
+- Tests: `chat/__tests__/registry-readers.test.ts`, `registry-tasks.test.ts`, `registry-size.test.ts`,
+  `instructions.test.ts`, `grounding-fixtures.test.ts`.
+
 ### Coach chat read tools: whole-team reads (2026-10-25)
 
 `get_team_rounds`, `get_tournaments` and `get_qualifiers`
