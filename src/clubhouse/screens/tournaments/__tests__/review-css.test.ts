@@ -32,3 +32,17 @@ describe('the review’s notes on a phone', () => {
     expect(desk).toMatch(/border-radius:\s*var\(--ch-radius-card\)/);
   });
 });
+
+describe('Link rounds on a phone', () => {
+  it('its two lists sit flush in their section’s card: no card, corners or inset of their own inside it', () => {
+    const lists = rule('.ch-tour-links.is-phone .ch-tour-links-list,\n.ch-tour-links.is-phone .ch-tour-links-miss');
+    expect(lists).toMatch(/box-shadow:\s*none/);
+    expect(lists).toMatch(/border-radius:\s*0/);
+    expect(rule('.ch-tour-links.is-phone .ch-tour-links-row,\n.ch-tour-links.is-phone .ch-tour-links-miss__row')).toMatch(/padding-inline:\s*0/);
+  });
+
+  it('a list that ends the card leaves 16 under its last row: 4 here and the row’s own 12', () => {
+    expect(rule('.ch-tour-links.is-phone .ch-sec__head ~ .ch-tour-links-list:last-child,\n.ch-tour-links.is-phone .ch-sec__head ~ .ch-tour-links-miss:last-child')).toMatch(/padding-bottom:\s*4px/);
+    expect(rule('.ch-tour-links-row')).toMatch(/padding:\s*12px 16px/);
+  });
+});

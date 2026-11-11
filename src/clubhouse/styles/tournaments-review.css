@@ -354,6 +354,24 @@
   grid-template-columns: minmax(0, 1fr);
   gap: 12px;
 }
+/* On a phone the section is already the card (ui.css): the rows sit flush in it, on the heading's inset, with no card,
+   corners or inset of their own inside it, as the review's notes and the player's rounds do. Before, each list was a
+   second card inside the section's: its rows 32 in against the heading's 16 (the pickers 294 wide in a 358 card), and
+   the card ended 28 under its last key. A list that ends the card keeps 4 of the card's 16, the rest being its last
+   row's own 12. */
+.ch-tour-links.is-phone .ch-tour-links-list,
+.ch-tour-links.is-phone .ch-tour-links-miss {
+  border-radius: 0;
+  box-shadow: none;
+}
+.ch-tour-links.is-phone .ch-tour-links-row,
+.ch-tour-links.is-phone .ch-tour-links-miss__row {
+  padding-inline: 0;
+}
+.ch-tour-links.is-phone .ch-sec__head ~ .ch-tour-links-list:last-child,
+.ch-tour-links.is-phone .ch-sec__head ~ .ch-tour-links-miss:last-child {
+  padding-bottom: 4px;
+}
 .ch-tour-links-row__who {
   display: flex;
   align-items: center;
