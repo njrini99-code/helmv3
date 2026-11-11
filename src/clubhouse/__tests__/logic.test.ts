@@ -337,13 +337,10 @@ describe('home model', () => {
   });
   it('never calls the team on track while an active player has no 18-hole round this season (A2)', () => {
     const on: H.ChSublineRow = { name: 'Theo Marchetti', status: 'improving', quietDays: 2 };
-    expect(H.homeSubline([on], { roundsError: false, nextCompetition: null, unposted: [{ name: 'Ava Lin' }] })).toBe(
-      'Everyone with enough rounds is on track. Ava has no 18-hole round this season.',
-    );
+    // The wording still says "with enough rounds", but a player with no rounds is never a sentence of their own (HOME-S5).
+    expect(H.homeSubline([on], { roundsError: false, nextCompetition: null, unposted: [{ name: 'Ava Lin' }] })).toBe('Everyone with enough rounds is on track.');
     const three = ['Ava Lin', 'Bo Park', 'Cy Dunn'].map((name) => ({ name }));
-    expect(H.homeSubline([on], { roundsError: false, nextCompetition: null, unposted: three })).toBe(
-      'Everyone with enough rounds is on track. 3 players have no 18-hole round this season.',
-    );
+    expect(H.homeSubline([on], { roundsError: false, nextCompetition: null, unposted: three })).toBe('Everyone with enough rounds is on track.');
     // An injured player without rounds is not news; nobody with a row leaves it to the board's empty state.
     expect(H.homeSubline([on], { roundsError: false, nextCompetition: null, unposted: [{ name: 'Ava Lin', availability: 'injured' }] })).toBe('The team is on track.');
     expect(H.homeSubline([], { roundsError: false, nextCompetition: null, unposted: three })).toBeNull();

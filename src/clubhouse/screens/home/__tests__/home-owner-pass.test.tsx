@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { homeSubline } from '../model';
 
 /**
  * Coach Home, the owner pass of 6 Nov (HOME-S1 to S10), as far as it still applies to the page: the release branch has since moved the
@@ -58,5 +59,14 @@ describe('Coach Home, the owner pass: the desktop', () => {
     expect(rest).not.toContain('text-align: center');
     expect(rest).not.toContain('place-content: center');
     expect(rest).toContain('font: var(--ch-type-13)');
+  });
+});
+
+describe('Coach Home, the owner pass: the brief', () => {
+  it('makes no sentence of a player with no rounds (HOME-S5)', () => {
+    const on = { name: 'Theo Marchetti', status: 'improving', quietDays: 2 } as never;
+    const line = homeSubline([on], { roundsError: false, nextCompetition: null, unposted: [{ name: 'Audit Testplayer' }] });
+    expect(line).toBe('Everyone with enough rounds is on track.');
+    expect(line).not.toMatch(/Audit|no 18-hole/);
   });
 });

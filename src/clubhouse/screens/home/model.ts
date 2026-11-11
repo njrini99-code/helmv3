@@ -100,7 +100,7 @@ export function homeSubline(
   opts: {
     roundsError: boolean;
     nextCompetition: { title: string; when: string } | null;
-    /** Active players with no 18-hole round this season: no leaderboard row, so never "on track" either. */
+    /** Active players with no 18-hole round this season: no leaderboard row, so never "on track" either, and never a sentence of their own (HOME-S5). */
     unposted?: Pick<ChSublineRow, 'name' | 'availability'>[];
   },
 ): string | null {
@@ -126,14 +126,6 @@ export function homeSubline(
   // A no-break space ahead of a title's dot keeps "· Pinehurst No. 2" from opening a line.
   if (opts.nextCompetition) out.push(`${opts.nextCompetition.title.replace(/ · /g, '\u00a0· ')} is ${opts.nextCompetition.when}.`);
   if (flagged.length > 0 && onTrack.length > 0) out.push(partial ? 'The others with enough rounds are on track.' : 'The rest of the team is on track.');
-  // With no rows at all the leaderboard's own empty state says it.
-  if (unposted.length > 0 && rows.length > 0) {
-    out.push(
-      unposted.length <= 2
-        ? `${list(unposted.map((r) => firstName(r.name)))} ${unposted.length === 1 ? 'has' : 'have'} no 18-hole round this season.`
-        : `${unposted.length} players have no 18-hole round this season.`,
-    );
-  }
   return out.length ? out.join(' ') : null;
 }
 
