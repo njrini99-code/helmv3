@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PP_PLAN_PART } from '../../../preview/fixtures-practice-plan';
-import { currentBlockIndex, PlanRun, runWindowOpen, shiftBody } from '../PlanRun';
+import { currentBlockIndex, PlanRun, restOfPractice, runWindowOpen, shiftBody } from '../PlanRun';
 
 const save = vi.fn();
 const publish = vi.fn();
@@ -45,6 +45,21 @@ describe('the Run window', () => {
   });
 });
 
+describe('the rest of practice', () => {
+  const start = new Date('2026-11-05T19:00:00Z');
+  const clock = (d: Date) => d.toISOString().slice(11, 16);
+  it('lists every block after the one under way, each at its own start', () => {
+    const rest = restOfPractice(body, start, 0, clock);
+    expect(rest.map((r) => r.title)).toEqual(body.variants.main.blocks.slice(1).map((b) => b.title));
+    expect(rest[0]).toMatchObject({ time: '19:30', line: '3 stations · 60 min' });
+    expect(rest[1]!.time).toBe('20:30');
+  });
+  it('a block named for where it is says so once, and the last block leaves nothing', () => {
+    expect(restOfPractice(body, start, 0, clock).find((r) => r.title === 'Holes 1 to 6')!.line).toBe('60 min');
+    expect(restOfPractice(body, start, body.variants.main.blocks.length - 1, clock)).toEqual([]);
+  });
+});
+
 describe('PlanRun', () => {
   const now = Date.now();
   const props = { planId: 'p1', title: 'Plan', version: 3, body, zone: 'America/New_York', serverNow: now };
@@ -62,6 +77,17 @@ describe('PlanRun', () => {
       expect(new Set(clocks).size).toBe(clocks.length);
     }
     expect(screen.getByText(/^Rotate in \d+ min$/)).toBeTruthy(); // 35 minutes in: the putting rotation
+  });
+  it('draws what is left beside Now: the blocks after this one, and when practice ends', () => {
+    render(<PlanRun {...props} start={new Date(now - 35 * MIN)} />);
+    const rest = screen.getByRole('group', { name: 'Up next' });
+    expect([...rest.querySelectorAll('li b')].map((b) => b.textContent)).toEqual(['Move', 'Holes 1 to 6', 'Pressure finish', 'Wrap']);
+    expect(rest.textContent).toMatch(/Ends \d{1,2}:\d{2}/);
+    expect(rest.textContent).not.toContain('Putting rotation');
+  });
+  it('says so on the last block instead of drawing an empty list', () => {
+    render(<PlanRun {...props} start={new Date(now - 178 * MIN)} />);
+    expect(screen.getByText('This is the last block.')).toBeTruthy();
   });
   it('saves and republishes in one step, quietly unless the coach says to tell players', async () => {
     render(<PlanRun {...props} start={new Date(now - 35 * MIN)} />);

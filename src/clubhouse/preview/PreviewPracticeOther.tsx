@@ -2,6 +2,7 @@
 
 import { CoachPlanBar, type ChPlanStatus } from '../screens/practice/CoachPlanBar';
 import { PlanRun } from '../screens/practice/PlanRun';
+import { PlanPageActions } from '../screens/coachhelm/plan/PlanPageActions';
 import { PrintStudio, type PrintDrill } from '../screens/practice/PrintStudio';
 import { Button } from '../ui/Button';
 
@@ -128,10 +129,18 @@ export function PreviewPracticeRun({ state }: { state?: string }) {
   const status: ChPlanStatus = { planId: 'preview', title: PP_PLAN_PART.title, version: 3, status: state === 'draft' ? 'draft' : 'published', edited: state === 'edited', seen: state === 'draft' ? null : { names: ['Sofia', 'Maya', 'Lena', 'Eli', 'Jonah', 'Owen'], of: 9 } };
   // Twenty minutes in, so the first rotation is under way however long the preview has been open.
   const now = Date.now();
+  // The plan page as its route draws it: the head, the status line, Run in its window, then the sheet.
+  const start = new Date(now - 20 * 60_000);
+  const plan = toSheetModel({ body: PP_PLAN_PART.draft.body, why: PP_PLAN_PART.draft.why, title: PP_PLAN_PART.title, team: 'Demo University Golf', start, end: new Date(start.getTime() + 180 * 60_000), zone: 'America/New_York', coaches: PP_COACHES, names: PP_NAMES, state: state === 'draft' ? 'Draft · Only coaches' : 'Published' }, 'coach');
   return (
-    <main className="ch-page ch-prc" data-ch="practice">
-      <CoachPlanBar status={status} />
-      {state !== 'draft' && <PlanRun planId="preview" title={status.title} version={status.version} body={PP_PLAN_PART.draft.body} start={new Date(now - 20 * 60_000)} zone="America/New_York" serverNow={now} />}
+    <main className="ch-page ch-prc-planpage" data-ch="practice-plan" aria-labelledby="ch-prc-plan-title">
+      <PlanPageActions
+        plan={plan}
+        playerPlanId={null}
+        printHref="/clubhouse-preview/coachhelm-practice-print"
+        coachBar={<CoachPlanBar status={status} after={state !== 'draft' ? <PlanRun planId="preview" title={status.title} version={status.version} body={PP_PLAN_PART.draft.body} start={start} zone="America/New_York" serverNow={now} /> : null} />}
+      />
+      <PracticePlanSheet plan={plan} />
     </main>
   );
 }

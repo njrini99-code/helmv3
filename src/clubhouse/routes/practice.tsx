@@ -181,8 +181,7 @@ export async function PracticePlanRoute({ planId }: { planId: string }) {
   }
   return (
     <main className="ch-page ch-prc-planpage" data-ch="practice-plan" aria-labelledby="ch-prc-plan-title">
-      <PlanPageActions plan={load.plan} playerPlanId={player ? planId : null} printHref={player ? null : `/golf/dashboard/practice/print/${planId}`} coachBar={!player && load.coach ? <CoachPlanBar status={load.coach.status} /> : null} />
-      {!player && load.coach?.start && load.coach.status.status === 'published' && <PlanRun planId={planId} title={load.coach.status.title} version={load.coach.status.version} body={load.coach.body} start={load.coach.start} zone={load.coach.zone} serverNow={Date.now()} />}
+      <PlanPageActions plan={load.plan} playerPlanId={player ? planId : null} printHref={player ? null : `/golf/dashboard/practice/print/${planId}`} coachBar={!player && load.coach ? <CoachPlanBar status={load.coach.status} after={load.coach.start && load.coach.status.status === 'published' ? <PlanRun planId={planId} title={load.coach.status.title} version={load.coach.status.version} body={load.coach.body} start={load.coach.start} zone={load.coach.zone} serverNow={Date.now()} /> : null} /> : null} />
       <PracticePlanSheet plan={load.plan} />
     </main>
   );

@@ -2,7 +2,7 @@
 
 import { ChevronDown, Pencil, Printer } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { postPracticePlanToChat } from '@/app/golf/actions/coachhelm-practice-plans';
 import { takeDownPracticePlan } from '@/app/golf/actions/practice-publish';
 import { Avatar } from '../../ui/Avatar';
@@ -23,8 +23,11 @@ export interface ChPlanStatus {
   seen: { names: string[]; of: number } | null;
 }
 
-/** The coach's line on the plan page (N-00 4.11, 4.15): what state the plan is in, said in words, then Seen by, Edit, Print and, once published, Share with Take down. */
-export function CoachPlanBar({ status }: { status: ChPlanStatus }) {
+/**
+ * The coach's line on the plan page (N-00 4.11, 4.15): what state the plan is in, said in words, with who has seen it, then Edit, Print and, once
+ * published, Share with Take down. `after` is what the page draws under the status (Run, in its window).
+ */
+export function CoachPlanBar({ status, after = null }: { status: ChPlanStatus; after?: ReactNode }) {
   const router = useRouter();
   const toast = useToast();
   const phone = useChPhone();
@@ -61,45 +64,59 @@ export function CoachPlanBar({ status }: { status: ChPlanStatus }) {
     : status.edited
       ? { key: 'edited', word: 'Edits not published', tone: 'info', line: 'Players still have the plan as you last published it.' }
       : { key: 'live', word: 'Published', tone: 'positive', line: 'Players have this plan.' };
-  return (
-    <section className="ch-prc-planbar" data-state={state.key} aria-label="Plan status">
-      <div className="ch-prc-planbar__s">
-        <Badge tone={state.tone} dot>
-          {state.word}
-        </Badge>
-        <p>{state.line}</p>
-      </div>
-      <div className="ch-prc-planbar__a">
-        {status.seen && (
-          <Button variant="ghost" size="sm" className="ch-num" onClick={() => setSeenOpen(true)}>
-            Seen by {status.seen.names.length} of {status.seen.of}
-          </Button>
-        )}
-        <Button variant={state.key === 'live' ? 'secondary' : 'primary'} leftIcon={Pencil} href={`${base}/edit`}>
-          Edit
+  // Seen by belongs to the status, so it reads on the status line: "Published · Seen by 6 of 9".
+  const said = (
+    <div className="ch-prc-planbar__s">
+      <Badge tone={state.tone} dot>
+        {state.word}
+      </Badge>
+      {/* On a phone a published plan's line is its word and who has seen it; the sentence that repeats the word is still read aloud. */}
+      <p className={phone && state.key === 'live' ? 'ch-sr-only' : undefined}>{state.line}</p>
+      {status.seen && (
+        <Button variant="ghost" size="sm" className="ch-num" onClick={() => setSeenOpen(true)}>
+          Seen by {status.seen.names.length} of {status.seen.of}
         </Button>
-        {/* Print is its own key: here on a Mac, in the top bar on a phone. A draft has nobody to share with, so it has no Share. */}
-        {!phone && (
-          <Button leftIcon={Printer} href={`/golf/dashboard/practice/print/${status.planId}`}>
-            Print
-          </Button>
-        )}
-        {published && (
-          <Menu
-            label="Share"
-            trigger={(p) => (
-              <Button variant="secondary" rightIcon={ChevronDown} menu={p}>
-                Share
-              </Button>
-            )}
-            items={[
-              { label: 'Send to team chat', onSelect: () => void toChat() },
-              { label: 'Copy link', onSelect: () => void copyLink() },
-              { label: 'Take down', danger: true, onSelect: () => setDownOpen(true) },
-            ]}
-          />
-        )}
-      </div>
+      )}
+    </div>
+  );
+  const keys = (
+    <div className="ch-prc-planbar__a">
+      <Button variant={state.key === 'live' ? 'secondary' : 'primary'} leftIcon={Pencil} href={`${base}/edit`}>
+        Edit
+      </Button>
+      {/* Print is its own key: here on a Mac, in the top bar on a phone. A draft has nobody to share with, so it has no Share. */}
+      {!phone && (
+        <Button leftIcon={Printer} href={`/golf/dashboard/practice/print/${status.planId}`}>
+          Print
+        </Button>
+      )}
+      {published && (
+        <Menu
+          label="Share"
+          trigger={(p) => (
+            <Button variant="secondary" rightIcon={ChevronDown} menu={p}>
+              Share
+            </Button>
+          )}
+          items={[
+            { label: 'Send to team chat', onSelect: () => void toChat() },
+            { label: 'Copy link', onSelect: () => void copyLink() },
+            { label: 'Take down', danger: true, onSelect: () => setDownOpen(true) },
+          ]}
+        />
+      )}
+    </div>
+  );
+  // On a Mac the keys end the status line and Run follows. On a phone Run comes first, under the status, and the keys after it:
+  // during practice the coach needs Now before Edit and Share.
+  return (
+    <>
+      <section className="ch-prc-planbar" data-state={state.key} aria-label="Plan status">
+        {said}
+        {!phone && keys}
+      </section>
+      {after}
+      {phone && keys}
       <Modal open={seenOpen} onClose={() => setSeenOpen(false)} title="Seen by" width={420} detent={0.62}>
         <ul className="ch-prc-seenlist">
           {(status.seen?.names ?? []).map((n) => (
@@ -129,6 +146,6 @@ export function CoachPlanBar({ status }: { status: ChPlanStatus }) {
       >
         <Switch label="Tell players" checked={tell} onChange={setTell} />
       </Modal>
-    </section>
+    </>
   );
 }

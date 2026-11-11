@@ -38,6 +38,17 @@ describe('CoachPlanBar', () => {
     render(<CoachPlanBar status={{ ...base, status: 'draft', seen: null }} />);
     expect(screen.queryByRole('button', { name: /Seen by/ })).toBeNull();
   });
+  it('a draft has nobody to share with: Edit and Print, no Share', () => {
+    render(<CoachPlanBar status={{ ...base, status: 'draft', seen: null }} />);
+    expect(screen.queryByRole('button', { name: 'Share' })).toBeNull();
+    expect(screen.getByRole('link', { name: 'Print' }).getAttribute('href')).toBe('/golf/dashboard/practice/print/p1');
+  });
+  it('draws what the page hands it under the status', () => {
+    const { container } = render(<CoachPlanBar status={base} after={<div data-testid="run" />} />);
+    const bar = container.querySelector('.ch-prc-planbar')!;
+    expect(bar.compareDocumentPosition(screen.getByTestId('run')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(bar.contains(screen.getByRole('button', { name: 'Seen by 2 of 9' }))).toBe(true);
+  });
   it('edits through the builder', () => {
     render(<CoachPlanBar status={base} />);
     expect(screen.getByRole('link', { name: 'Edit' }).getAttribute('href')).toBe('/golf/dashboard/practice/plan/p1/edit');
