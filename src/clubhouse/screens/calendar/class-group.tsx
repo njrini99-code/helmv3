@@ -151,7 +151,8 @@ export function ClassGroupBlock({
         type="button"
         data-print-visible
         className={`ch-ev ch-ev--class ch-ev--group ch-ev--fill-${fill}${short ? ' ch-ev--short' : ''}${lanes > 1 ? ' ch-ev--lane' : ''}${sel || open ? ' is-sel' : ''}`}
-        style={{ top, height: h, left: box.left, width: box.width, zIndex: lanes > 1 ? lane + 1 : undefined }}
+        // Selected, it gives up its lane's z-index and comes forward by its class, as an event block does.
+        style={{ top, height: h, left: box.left, width: box.width, zIndex: lanes > 1 && !(sel || open) ? lane + 1 : undefined }}
         aria-label={`Class: ${names.length} players, ${fmtHour(g.start, true, clock)} to ${fmtHour(g.until, true, clock)}. ${names.join(', ')}`}
         aria-haspopup="dialog"
         aria-expanded={open}

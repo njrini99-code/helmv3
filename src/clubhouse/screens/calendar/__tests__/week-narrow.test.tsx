@@ -262,3 +262,30 @@ describe('the desktop week takes the full width', () => {
     expect(css.match(/\.ch-cal-body\[data-view='(?!week')/)).toBeNull();
   });
 });
+
+/** Owner, 2026-11-11: a later lane lay over the selected or focused block's ring (Wed 1440: 22 of 110 edge points under "1:1 with Jonah"). */
+describe('a selected or focused cascaded block comes forward', () => {
+  const pair = [ev({ id: 'game', type: 'practice', start: 15.5, end: 17 }), ev({ id: 'one', type: 'meeting', start: 16.75, end: 17.5 })];
+  const at = (selId: string | null) =>
+    render(<TimeGrid dates={[DAY]} events={pair} people={new Map()} now={{ date: '2026-10-20', hour: 12 }} selId={selId} flagged={new Set()} onSelect={() => {}} onDay={() => {}} />);
+  const block = (c: HTMLElement, id: string) => c.querySelector<HTMLElement>(`[data-ev-id="${id}"]`)!;
+
+  it('at rest each keeps its lane’s place, the later one on top', () => {
+    const { container } = at(null);
+    expect(block(container, 'game').style.zIndex).toBe('1');
+    expect(block(container, 'one').style.zIndex).toBe('2');
+  });
+
+  it('selected, the earlier one gives up its lane’s inline place, so its class puts it over the other', () => {
+    const { container } = at('game');
+    expect(block(container, 'game').className).toContain('is-sel');
+    expect(block(container, 'game').style.zIndex).toBe('');
+    expect(block(container, 'one').style.zIndex).toBe('2');
+    // The class's place is above the first four lanes (a lane's place is its number plus one).
+    expect(css).toMatch(/\n\.ch-ev\.is-sel \{\s*z-index: 5;/);
+  });
+
+  it('with keyboard focus it comes forward over the inline place, and over a selected block', () => {
+    expect(css).toMatch(/\n\.ch-ev--lane:focus-visible \{\s*z-index: 6 !important;\s*\}/);
+  });
+});

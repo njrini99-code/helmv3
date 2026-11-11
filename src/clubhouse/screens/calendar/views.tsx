@@ -274,7 +274,9 @@ export function EventBlock({
       // CH-6801: a button named with its title, time and any overlap. CH-6601: it lifts on hover and marks its selection.
       className={`ch-ev ch-ev--${e.cancelled ? 'other' : e.type}${tier === 'sliver' ? ' ch-ev--sliver' : ''}${e.cancelled ? ' is-cancelled' : ''}${short ? ' ch-ev--short' : ''}${two ? ' ch-ev--two' : ''}${pinned ? ' is-pinned' : ''}${shared ? ' ch-ev--lane' : ''}${under ? ' ch-ev--under' : ''}${lines ? ' ch-ev--wrap' : ''}${pill ? ' has-round' : ''}${sel ? ' is-sel' : ''}${drag ? ' is-draggable' : ''}${state ? ` is-${state}` : ''}${marked ? ' has-mark' : ''}${room != null ? ' is-covered' : ''}${past && !state ? ' is-past' : ''}`}
       data-ev-id={state === 'card' ? undefined : e.id}
-      style={{ top, height: h, left: box.left, width: box.width, zIndex: under || state === 'card' ? undefined : shared ? lane + 1 : undefined, ...(lines ? { '--ch-ev-lines': lines } : {}), ...(give ? { '--ch-ev-solo': solo } : {}), ...(room != null ? { '--ch-ev-room': `${room}px` } : {}) } as CSSProperties}
+      // A cascaded block's lane is its inline z-index. The selected one gives it up, so its class brings it forward
+      // (calendar.css, .ch-ev.is-sel) and its whole ring shows over the block that lay on it.
+      style={{ top, height: h, left: box.left, width: box.width, zIndex: under || state === 'card' || sel ? undefined : shared ? lane + 1 : undefined, ...(lines ? { '--ch-ev-lines': lines } : {}), ...(give ? { '--ch-ev-solo': solo } : {}), ...(room != null ? { '--ch-ev-room': `${room}px` } : {}) } as CSSProperties}
       aria-label={`${rl.name}${rl.spoken}, ${rangeLabel(e, clock)}${past && !state ? ', ended' : ''}${flagged ? ', schedule overlap' : ''}${e.cancelled ? ', cancelled' : ''}${mark?.aria ?? ''}${drag ? '. Alt and the arrow keys move it; add Shift to change its length' : ''}`}
       aria-pressed={sel}
       aria-hidden={state === 'card' || undefined}

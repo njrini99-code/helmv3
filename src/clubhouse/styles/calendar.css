@@ -945,6 +945,11 @@ html[data-fw-theme='dark'] .ch-ev-bar.is-held {
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
 }
+/* A cascaded block's lane is an inline z-index (views.tsx), so a later lane lay over the focused block's ring. With
+   keyboard focus it comes forward, over a selected one too; only !important outranks an inline style. */
+.ch-ev--lane:focus-visible {
+  z-index: 6 !important;
+}
 /* P006-B3: a coach's event can be picked up and moved in 15-minute steps. The block held steps back, a dashed ghost
    shows where it would land, and an invitee's clash there lights amber. */
 .ch-ev.is-draggable {
