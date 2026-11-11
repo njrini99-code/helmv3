@@ -1,3 +1,4 @@
+import { tidyCourseName } from '../lib/course-name';
 import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
 import { recordedPutts } from './round-scope';
 import type { ChSgTour } from '../lib/sg';
@@ -315,7 +316,7 @@ export function toReview(
     playerName: input.playerName,
     ...(input.coachView === undefined ? {} : { coachView: input.coachView }),
     date: r.round_date.slice(0, 10),
-    course: r.course_name?.trim() || 'Course not recorded',
+    course: tidyCourseName(r.course_name) || 'Course not recorded',
     tee: teeLabel(r.tees_played),
     teeColor: teeColorFor(r.tees_played),
     type: roundType(r.round_type),

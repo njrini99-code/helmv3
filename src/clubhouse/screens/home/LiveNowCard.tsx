@@ -104,7 +104,7 @@ export function LiveNowCard({
         )}
       </header>
       {(variant === 'qualifier' ? [] : events).map((e) => (
-        <Link key={e.tournamentId} href={`/golf/dashboard/tournaments/${e.tournamentId}/live`} className="ch-lv-eventrow" data-ch-code="CH-16685">
+        <Link prefetch={false} key={e.tournamentId} href={`/golf/dashboard/tournaments/${e.tournamentId}/live`} className="ch-lv-eventrow" data-ch-code="CH-16685">
           <span className="ch-lv-dot" aria-hidden="true" />
           <span>{LIVE_COPY.tournamentLive(e.name)}</span>
           <Icon icon={ChevronRight} size={16} />

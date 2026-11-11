@@ -34,7 +34,9 @@ const pct = (v: number) => `${v.toFixed(2)}%`;
 export function TeamRank({ data, phone = false }: { data: TeamRankData; phone?: boolean }) {
   const router = useRouter();
   const [stored, setMetric] = useChSessionState<TeamRankMetric>('team-rank-metric', 'sg');
-  const metric = metricDef(stored).value;
+  // Rounds posted as totals have no strokes gained to rank: the plot ranks what they do have, and the menu offers only that.
+  const noSg = data.grid.every((g) => g.total == null && g.legs.every((v) => v == null));
+  const metric = noSg ? 'score' : metricDef(stored).value;
   const def = metricDef(metric);
   const rows = teamRankRows(data.grid, metric);
   const mean = teamMeanFor(metric, data.team, data.legTotals);
@@ -104,7 +106,7 @@ export function TeamRank({ data, phone = false }: { data: TeamRankData; phone?: 
 
   const menu = (
     <span className="ch-sv-tr__menu">
-      <Select<TeamRankMetric> label="Rank players by" value={metric} options={TEAM_RANK_METRICS.map((m) => ({ value: m.value, label: m.label }))} onChange={setMetric} />
+      <Select<TeamRankMetric> label="Rank players by" value={metric} options={(noSg ? TEAM_RANK_METRICS.filter((m) => m.value === 'score') : TEAM_RANK_METRICS).map((m) => ({ value: m.value, label: m.label }))} onChange={setMetric} />
     </span>
   );
   const sub = `${sg ? 'Per round' : 'Per 18 holes'} · ${basis(data.filter)}${sg ? '' : ' · lower is better, so better is to the right'}`;

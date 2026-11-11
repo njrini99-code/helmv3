@@ -63,7 +63,7 @@ export function PlayerRounds({ data, openRow, ownOnly = false }: { data: ChQDeta
             // Your next round in a live qualifier opens round setup on it (wave 7); the round's course streams in after the board.
             return (
               <li key={n}>
-                <Link href={playHref} className="ch-qf-prounds__r is-todo is-play" data-ch-code="CH-09906">
+                <Link prefetch={false} href={playHref} className="ch-qf-prounds__r is-todo is-play" data-ch-code="CH-09906">
                   {/* Named "Play round 3", then the course: the chip repeats the number, so it is not read. */}
                   <span className="ch-qf-prounds__n" aria-hidden="true">
                     R{n}
@@ -178,7 +178,7 @@ const KINDS: Array<{ key: string; label: string; test: (d: number) => boolean }>
  */
 function RoundVisual({ round, holes, field }: { round: ChQRound; holes: ChQHole[] | undefined; field: number[] }) {
   const full = (
-    <Link href={`/golf/dashboard/rounds/${round.id}`} className="ch-qf-rv__link">
+    <Link prefetch={false} href={`/golf/dashboard/rounds/${round.id}`} className="ch-qf-rv__link">
       Open the full round
       <Icon icon={ArrowRight} size={14} />
     </Link>

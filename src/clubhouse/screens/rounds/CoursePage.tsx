@@ -69,7 +69,7 @@ export function CoursePage({ history: h, playerName, playerId, initialHole }: { 
               </>
             );
             return f.roundId ? (
-              <Link key={f.label} className="ch-ch-fig__c is-link" href={reviewHref(f.roundId)} aria-label={`${f.label}: ${f.value}, ${f.sub}. Open the round`}>
+              <Link prefetch={false} key={f.label} className="ch-ch-fig__c is-link" href={reviewHref(f.roundId)} aria-label={`${f.label}: ${f.value}, ${f.sub}. Open the round`}>
                 {body}
               </Link>
             ) : (

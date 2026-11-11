@@ -135,7 +135,7 @@ export function StatsSkeleton() {
 /** The trend: the headline's label, its large figure and change, the plot as tall as a team of eight (the usual one), and the note's line, so the tape below lands where it will be. */
 function TrendSkeleton() {
   return (
-    <div className="ch-sgt" aria-hidden="true">
+    <div className="ch-sgt ch-st-skel-sgt" aria-hidden="true">
       <div className="ch-sgt__hero">
         <div className="ch-sgt__big">
           <Skeleton width={190} height={14} />
@@ -157,7 +157,7 @@ function TrendSkeleton() {
 /** The tape: five cells at the loaded cell's rows (label, value, change, weekly line). */
 export function TapeSkeleton() {
   return (
-    <div className="ch-tp" aria-hidden="true">
+    <div className="ch-tp ch-st-skel-tp" aria-hidden="true">
       {Array.from({ length: 5 }, (_, i) => (
         <div key={i} className="ch-tp__c">
           <Skeleton width={110} height={13} />

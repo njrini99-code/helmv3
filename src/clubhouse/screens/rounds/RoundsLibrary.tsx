@@ -83,7 +83,7 @@ export function groupRounds(list: ChLibraryRound[], by: Group, q: string): Array
 function GroupHead({ href, name, children }: { href: string | null; name: string; children: ReactNode }) {
   if (!href) return <div className="ch-rd-grp__h">{children}</div>;
   return (
-    <Link className="ch-rd-grp__h is-link" href={href} aria-label={`${name}: your history here`}>
+    <Link prefetch={false} className="ch-rd-grp__h is-link" href={href} aria-label={`${name}: your history here`}>
       {children}
       <Icon icon={ChevronRight} size={16} className="ch-rd-grp__go" />
     </Link>
@@ -270,7 +270,7 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
                         </button>
                       </Tooltip>
                       {href && (
-                        <Link href={href} className="ch-rd-more__go" onClick={() => haptic('press')}>
+                        <Link prefetch={false} href={href} className="ch-rd-more__go" onClick={() => haptic('press')}>
                           {r.readyToSubmit ? 'Post' : 'Continue'}
                         </Link>
                       )}
