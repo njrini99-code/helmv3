@@ -594,8 +594,11 @@ CREATE POLICY "golf_confidence_calibration_service_role_all" ON "public"."golf_c
 
 CREATE POLICY "golf_conversations_insert_team_channel_coach" ON "public"."golf_conversations" AS RESTRICTIVE FOR INSERT WITH CHECK ((("is_team_channel" IS NOT TRUE) OR (("team_id" IS NOT NULL) AND "public"."is_golf_team_coach"("team_id"))));
 
--- Team link on participant INSERT (HELD 20261110090600): only someone on the team adds a member to its channel or team chats
+-- Team link on participant INSERT and DELETE (HELD 20261110090600): only someone on the team adds a member to its
+-- channel or team chats, or removes another member from them; your own row you can always delete
 CREATE POLICY "golf_participants_insert_team_link" ON "public"."golf_conversation_participants" AS RESTRICTIVE FOR INSERT WITH CHECK ("public"."golf_conversation_team_link_ok"("conversation_id"));
+
+CREATE POLICY "golf_participants_delete_team_link" ON "public"."golf_conversation_participants" AS RESTRICTIVE FOR DELETE USING ((("user_id" = ( SELECT "auth"."uid"() AS "uid")) OR "public"."golf_conversation_team_link_ok"("conversation_id")));
 
 CREATE POLICY "golf_conversations_insert_v2" ON "public"."golf_conversations" FOR INSERT TO "authenticated" WITH CHECK ((("created_by" = ( SELECT "auth"."uid"() AS "uid")) AND (("team_id" IS NULL) OR "public"."is_golf_team_coach"("team_id") OR "public"."is_golf_team_player"("team_id"))));
 

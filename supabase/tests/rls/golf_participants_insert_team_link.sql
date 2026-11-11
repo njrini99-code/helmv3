@@ -15,7 +15,7 @@
 BEGIN;
 \ir _helpers.sql
 
-SELECT plan(12);
+SELECT plan(20);
 
 CREATE FUNCTION public.a8_in(p_conversation uuid, p_user uuid) RETURNS integer
 LANGUAGE sql AS $f$
@@ -75,7 +75,9 @@ BEGIN
     ('00000000-0000-0000-0000-0000000a8501', '00000000-0000-0000-0000-0000000a8c01', '00000000-0000-0000-0000-0000000a8201', true,  false, 'Travel squad'),
     ('00000000-0000-0000-0000-0000000a8502', '00000000-0000-0000-0000-0000000a8b09', '00000000-0000-0000-0000-0000000a8201', true,  false, 'Players'),
     ('00000000-0000-0000-0000-0000000a8503', '00000000-0000-0000-0000-0000000a8c02', '00000000-0000-0000-0000-0000000a8201', true,  false, 'Short game'),
-    ('00000000-0000-0000-0000-0000000a8504', '00000000-0000-0000-0000-0000000a8c01', NULL,                                   false, false, NULL);
+    ('00000000-0000-0000-0000-0000000a8504', '00000000-0000-0000-0000-0000000a8c01', NULL,                                   false, false, NULL),
+    -- 8507 a group C1 created and is STILL in: a row the leave trigger did not reach (or 20261110090400 not applied).
+    ('00000000-0000-0000-0000-0000000a8507', '00000000-0000-0000-0000-0000000a8c01', '00000000-0000-0000-0000-0000000a8201', true,  false, 'Still in it');
   INSERT INTO public.golf_conversation_participants (conversation_id, user_id) VALUES
     ('00000000-0000-0000-0000-0000000a8500', '00000000-0000-0000-0000-0000000a8c02'),
     ('00000000-0000-0000-0000-0000000a8500', '00000000-0000-0000-0000-0000000a8b01'),
@@ -84,7 +86,10 @@ BEGIN
     ('00000000-0000-0000-0000-0000000a8501', '00000000-0000-0000-0000-0000000a8b02'),
     ('00000000-0000-0000-0000-0000000a8502', '00000000-0000-0000-0000-0000000a8b01'),
     ('00000000-0000-0000-0000-0000000a8503', '00000000-0000-0000-0000-0000000a8c02'),
-    ('00000000-0000-0000-0000-0000000a8503', '00000000-0000-0000-0000-0000000a8b01');
+    ('00000000-0000-0000-0000-0000000a8503', '00000000-0000-0000-0000-0000000a8b01'),
+    ('00000000-0000-0000-0000-0000000a8507', '00000000-0000-0000-0000-0000000a8c01'),
+    ('00000000-0000-0000-0000-0000000a8507', '00000000-0000-0000-0000-0000000a8b01'),
+    ('00000000-0000-0000-0000-0000000a8507', '00000000-0000-0000-0000-0000000a8b02');
 END $$;
 SET LOCAL session_replication_role = origin;
 
@@ -177,6 +182,54 @@ SELECT lives_ok(
     VALUES ('00000000-0000-0000-0000-0000000a8504', '00000000-0000-0000-0000-0000000a8c01')$$,
   'a conversation with no team is not a team chat: its creator still adds their own row');
 RESET ROLE;
+
+-- ---------------------------------------------------------------------------
+-- The same rule for DELETE: a creator who is no longer on the team removes nobody but themself
+-- (security review 2026-11-10, item 3). golf_participants_delete lets a creator who is still IN a team chat remove
+-- its other members; nothing asked whether that creator is still on the team.
+-- ---------------------------------------------------------------------------
+SELECT ok(
+  EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'golf_conversation_participants'
+      AND policyname = 'golf_participants_delete_team_link'
+      AND permissive = 'RESTRICTIVE' AND cmd = 'DELETE'
+      AND position('golf_conversation_team_link_ok' IN qual) > 0
+      AND position('auth.uid()' IN qual) > 0),
+  'a restrictive DELETE policy: your own row, or a team conversation''s row while you are on the team');
+SET LOCAL ROLE authenticated;
+SET LOCAL request.jwt.claims TO '{"sub": "00000000-0000-0000-0000-0000000a8c01", "role": "authenticated"}';
+SELECT lives_ok(
+  $$DELETE FROM public.golf_conversation_participants
+    WHERE conversation_id = '00000000-0000-0000-0000-0000000a8507' AND user_id = '00000000-0000-0000-0000-0000000a8b01'$$,
+  'a former coach''s removal of a member raises nothing (the row is filtered out)');
+SELECT lives_ok(
+  $$DELETE FROM public.golf_conversation_participants
+    WHERE conversation_id = '00000000-0000-0000-0000-0000000a8507' AND user_id = '00000000-0000-0000-0000-0000000a8c01'$$,
+  'a former coach can still leave a group they are in');
+RESET ROLE;
+SELECT is(
+  public.a8_in('00000000-0000-0000-0000-0000000a8507', '00000000-0000-0000-0000-0000000a8b01'),
+  1, 'the member the former coach tried to remove is still in the group');
+SELECT is(
+  public.a8_in('00000000-0000-0000-0000-0000000a8507', '00000000-0000-0000-0000-0000000a8c01'),
+  0, 'and the former coach is out of it');
+SET LOCAL ROLE authenticated;
+SET LOCAL request.jwt.claims TO '{"sub": "00000000-0000-0000-0000-0000000a8c02", "role": "authenticated"}';
+SELECT lives_ok(
+  $$DELETE FROM public.golf_conversation_participants
+    WHERE conversation_id = '00000000-0000-0000-0000-0000000a8503' AND user_id = '00000000-0000-0000-0000-0000000a8b01'$$,
+  'a coach on the staff removes a player from a group they created');
+SET LOCAL request.jwt.claims TO '{"sub": "00000000-0000-0000-0000-0000000a8b02", "role": "authenticated"}';
+SELECT lives_ok(
+  $$DELETE FROM public.golf_conversation_participants
+    WHERE conversation_id = '00000000-0000-0000-0000-0000000a8501' AND user_id = '00000000-0000-0000-0000-0000000a8b02'$$,
+  'a player leaves a group');
+RESET ROLE;
+SELECT is(
+  public.a8_in('00000000-0000-0000-0000-0000000a8503', '00000000-0000-0000-0000-0000000a8b01')
+  + public.a8_in('00000000-0000-0000-0000-0000000a8501', '00000000-0000-0000-0000-0000000a8b02'),
+  0, 'both of those rows are gone');
 
 SELECT * FROM finish();
 ROLLBACK;
