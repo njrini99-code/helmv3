@@ -3,7 +3,6 @@
 import { ChartColumn, Check, ChevronRight, CircleAlert, Copy, Ellipsis, RotateCw, UserCheck, UserMinus, UserPlus, Users, UserX } from 'lucide-react';
 import { AnimatePresence } from 'motion/react';
 import { useChReducedMotion } from '../../lib/reduced-motion';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react';
 import { useChSessionState } from '../../lib/session-state';
@@ -18,6 +17,8 @@ import { InlineNotice } from '../../ui/Notices';
 import { LargeTitle, LargeTitleContext } from '../../ui/LargeTitle';
 import { ListPresence, PresenceRow } from '../../ui/ListPresence';
 import { Modal } from '../../ui/Modal';
+import { MenuSheet } from '../../ui/ContextMenu';
+import type { MenuItem } from '../../ui/Menu';
 import { PageRefreshNotice } from '../../ui/RefreshNotice';
 import { PhoneBar, PhoneIconAction } from '../../ui/PhoneBar';
 import { PlayerPeek } from '../../ui/PlayerPeek';
@@ -33,7 +34,6 @@ import { rebuiltHref } from '../../shell/nav';
 import { PhoneScreen } from '../../shell/PhoneScreen';
 import { PhoneTop } from '../../shell/phone-chrome';
 import { useDeepLinkSheet } from '../../shell/use-deep-link-sheet';
-import { usePressPrefetch } from '../../shell/use-prefetch-tabs';
 import { classNoteFor, NO_CLASS_LINES, type RosterClassLine, type RosterClassLines } from './class-line';
 import { lastFive, rosterFailedParts, rosterPeek, rowNote, yearKeyOf, yearLineOf, type RosterClock } from './format';
 import type { AvailabilityControl, NoteSaved } from './RosterPeek';
@@ -543,27 +543,13 @@ export function RequestsSheetCrh({ open, atRest, onClose, data, jr, clock }: { o
 /** The profile's more button (05 S-ROSTER.profile-actions): today's rows in a restyled sheet. */
 function PlayerActionsCrh({ p, onClose, onRemove, onStatus }: { p: ChRosterPlayer | undefined; onClose: () => void; onRemove: (p: ChRosterPlayer) => void; onStatus: (p: ChRosterPlayer) => void }) {
   const statsHref = p ? rebuiltHref(`/golf/dashboard/stats?player=${p.id}`) : null;
-  const press = usePressPrefetch();
-  return (
-    <Modal open={!!p} onClose={onClose} title={p?.name ?? 'Player'}>
-      {p && (
-        <div className="ch-surface ch-surface--card ch-rsx-acts">
-          {statsHref && (
-            <Link href={statsHref} className="ch-rsx-act" {...press(statsHref)}>
-              <Icon icon={ChartColumn} size={16} />
-              <b>View stats</b>
-            </Link>
-          )}
-          <button type="button" className="ch-rsx-act" onClick={() => onStatus(p)}>
-            <Icon icon={p.status === 'active' ? UserX : UserCheck} size={16} />
-            <b>{p.status === 'active' ? 'Mark inactive' : 'Mark active'}</b>
-          </button>
-          <button type="button" className="ch-rsx-act is-danger" onClick={() => onRemove(p)}>
-            <Icon icon={UserMinus} size={16} />
-            <b>Remove from team</b>
-          </button>
-        </div>
-      )}
-    </Modal>
-  );
+  // The shared sheet of actions (ui MenuSheet), not a list drawn here: its rows, its keys and its destructive row are the app's own.
+  const items: MenuItem[] = !p
+    ? []
+    : [
+        ...(statsHref ? [{ label: 'View stats', icon: ChartColumn, href: statsHref } satisfies MenuItem] : []),
+        { label: p.status === 'active' ? 'Mark inactive' : 'Mark active', icon: p.status === 'active' ? UserX : UserCheck, onSelect: () => onStatus(p) },
+        { label: 'Remove from team', icon: UserMinus, danger: true, onSelect: () => onRemove(p) },
+      ];
+  return <MenuSheet open={!!p} title={p?.name ?? 'Player'} label="Player actions" items={items} onClose={onClose} />;
 }

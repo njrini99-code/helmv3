@@ -2,6 +2,7 @@
 
 import { TriangleAlert } from 'lucide-react';
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 import type { ChCoachHome, ChHomeEvent } from '../../data/home';
 import { TYPE_LABEL } from '../calendar/model';
 import { TYPE_ICON } from '../calendar/views';
@@ -11,6 +12,7 @@ import { EmptyState } from '../../ui/States';
 import { useChClockText } from '../../lib/use-clock';
 import { formatToPar } from '../../lib/format';
 import { Avatar } from '../../ui/Avatar';
+import { FormLine, FormRange } from '../../ui/FormLine';
 import { rebuiltHref } from '../../shell/nav';
 
 /** The rows Latest rounds shows (06 11). */
@@ -66,7 +68,7 @@ function DeskHead({ id, title, href, link }: { id: string; title: string; href: 
  * Today: the rest of the day, with Up next in the hero, so no event is drawn twice. Each row opens its event. A day with nothing on it
  * says so; the week lives on Calendar.
  */
-export function DeskToday({ events, now }: { events: readonly ChHomeEvent[]; now: Date | null }) {
+export function DeskToday({ events, now, week }: { events: readonly ChHomeEvent[]; now: Date | null; /** The week's days under the rows (CoachHome passes WeekDays), so the card says what is coming as well as what is left today. */ week?: ReactNode }) {
   const t12 = useChClockText();
   const t = now?.getTime();
   return (
@@ -82,6 +84,7 @@ export function DeskToday({ events, now }: { events: readonly ChHomeEvent[]; now
               <li key={e.id}>
                 <Link href={eventHref(e)} className="ch-dh-rows__a">
                   <span className="ch-dh-time ch-num">{e.allDay ? 'All day' : t12(e.startLabel)}</span>
+                  <i className={`ch-dh-dot is-${e.type}`} aria-hidden="true" />
                   <span className="ch-dh-rows__b">
                     <b>{e.title}</b>
                     {e.location && <span>{e.location}</span>}
@@ -100,26 +103,37 @@ export function DeskToday({ events, now }: { events: readonly ChHomeEvent[]; now
           })}
         </ul>
       )}
+      {week && <div className="ch-dh-week">{week}</div>}
     </section>
   );
 }
 
 /**
  * Latest rounds: the newest four, not tappable (06 11), the score in a well over its to-par. A failed or empty read takes today's
- * section, in the caller. No sparkline: a round row carries no per-round line of its own, and a trend counts other rounds.
+ * section, in the caller. Beside the score, the player's last rounds as a word-sized line (the phone's own, from the same
+ * rows), on one range down the list; it is left out when that read failed or the player has fewer than three rounds.
+ * `wide`: the card runs the page's width, so its rows sit two across.
  */
-export function DeskRounds({ rounds }: { rounds: ChCoachHome['latestRounds']['rounds'] }) {
+export function DeskRounds({ rounds, trends = null, wide = false }: { rounds: ChCoachHome['latestRounds']['rounds']; trends?: ChCoachHome['leaderboard']['rows'] | null; wide?: boolean }) {
+  const shown = rounds.slice(0, DESK_ROUNDS);
+  const trendOf = new Map((trends ?? []).map((p) => [p.playerId, p.trend]));
   return (
     <section className="ch-dh-card" aria-labelledby="ch-dh-rounds">
       <DeskHead id="ch-dh-rounds" title="Latest rounds" href={rebuiltHref('/golf/dashboard/stats')} link="Team stats" />
-      <ul className="ch-dh-rows ch-dh-rows--rounds">
-        {rounds.slice(0, DESK_ROUNDS).map((r) => (
+      <FormRange trends={shown.map((r) => trendOf.get(r.playerId))} earlyBelow={3}>
+      <ul className={'ch-dh-rows ch-dh-rows--rounds' + (wide && shown.length > 1 ? ' is-wide' : '')}>
+        {shown.map((r) => (
           <li key={r.id}>
             <Avatar name={r.playerName} id={r.playerId} size="sm" />
             <span className="ch-dh-rows__b">
               <b>{r.playerName}</b>
               <span>{r.meta}</span>
             </span>
+            {(trendOf.get(r.playerId)?.length ?? 0) >= 3 && (
+              <span className="ch-dh-spark" aria-hidden="true">
+                <FormLine data={trendOf.get(r.playerId)!} width={72} height={20} earlyBelow={3} bare label={`${r.playerName}, last ${trendOf.get(r.playerId)!.length} rounds`} />
+              </span>
+            )}
             <span className={'ch-dh-score ch-num' + (r.toPar != null && r.toPar < 0 ? ' is-under' : '')}>
               <b>{r.score}</b>
               <em>{formatToPar(r.toPar)}</em>
@@ -127,6 +141,7 @@ export function DeskRounds({ rounds }: { rounds: ChCoachHome['latestRounds']['ro
           </li>
         ))}
       </ul>
+      </FormRange>
       {rounds.length < DESK_ROUNDS && <p className="ch-dh-rest">New rounds show here as players post them.</p>}
     </section>
   );

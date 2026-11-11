@@ -15,7 +15,7 @@ import { rebuiltHref } from '../../shell/nav';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { Week } from './Week';
 import { LatestRound } from './LatestRound';
-import { CRH_PART_FAILED, CrhFailedCard, Form, HomePhone, WeekStrip } from './HomePhone';
+import { CRH_PART_FAILED, CrhFailedCard, Form, HomePhone, WeekDays, WeekStrip } from './HomePhone';
 import { coachFailedParts } from './model';
 import { CoachQueue } from './CoachQueue';
 import { ClassHomeLine } from './ClassHomeLine';
@@ -28,8 +28,8 @@ import { NoTeam } from '../../ui/NoTeam';
 import '../../styles/home.css';
 
 /** The latest round's pane. Its own component, so a malformed read throws inside the section's boundary (CH-2206) and not in the page above it. */
-function DeskLatest({ data, covered }: { data: ChCoachHome['latestRounds']; covered: boolean }) {
-  return data.rounds.length === 0 ? <LatestRound data={data} covered={covered} /> : <DeskRounds rounds={data.rounds} />;
+function DeskLatest({ data, covered, trends = null, wide = false }: { data: ChCoachHome['latestRounds']; covered: boolean; trends?: ChCoachHome['leaderboard']['rows'] | null; wide?: boolean }) {
+  return data.rounds.length === 0 ? <LatestRound data={data} covered={covered} /> : <DeskRounds rounds={data.rounds} trends={trends} wide={wide} />;
 }
 
 /**
@@ -86,17 +86,18 @@ function CoachHomeBody({ data, now, live }: { data: ChCoachHome; now?: string; l
             </div>
           </SectionBoundary>
         )}
-        {/* The phone's design laid out wider: the day, then the team, then the rounds. Leaderboards live on Roster and Stats, the week on Calendar.
-            With no Today card (Up next is the whole day) the latest rounds sit beside Team scoring, so no card stretches the width alone. */}
+        {/* The phone's design laid out wider: the day and the week beside Team scoring at one height, the team's game across the
+            page (its four parts need the width), then the latest rounds across the page, two to a row. Leaderboards live on Roster
+            and Stats (one place per number). With no Today card (Up next is the whole day) the latest rounds sit beside Team scoring. */}
         {showToday ? (
           <>
-            <div className="ch-h-grid">
+            <div className="ch-h-grid is-level">
             {(data.week.error || todayRest.length > 0 || !data.phone.next) && (
               <SectionBoundary surface="home.today" label="Today" code="CH-2214">
                 {data.week.error ? (
                   <CrhFailedCard id="ch-dh-today-failed" title="Today" href={CALENDAR} link="Calendar" code="CH-2201" what="Today didn’t load" body="Your events are safe. Try again." />
                 ) : (
-                  <DeskToday events={todayRest} now={ticking} />
+                  <DeskToday events={todayRest} now={ticking} week={<WeekDays days={data.week.days} note={data.phone.weekNote} />} />
                 )}
               </SectionBoundary>
             )}
@@ -108,7 +109,6 @@ function CoachHomeBody({ data, now, live }: { data: ChCoachHome; now?: string; l
               <CrhFailedCard id="ch-dh-form-failed" title="Team scoring" href={rebuiltHref('/golf/dashboard/stats')} link="Team stats" code="CH-2211" what="Scoring didn’t load" body="Your rounds are safe. Try again in a moment." />
             ) : null}
             </div>
-            <div className="ch-h-grid">
             {data.phone.form && data.legs && !noRounds && (
               <SectionBoundary surface="home.legs" label="The team’s game" code="CH-2221">
                 <TeamLegsPhone legs={data.legs} covered={covered} />
@@ -116,10 +116,9 @@ function CoachHomeBody({ data, now, live }: { data: ChCoachHome; now?: string; l
             )}
             {!noRounds && !data.latestRounds.error && (
               <SectionBoundary surface="home.latestRound" label="The latest round" code="CH-2206">
-                <DeskLatest data={data.latestRounds} covered={covered} />
+                <DeskLatest data={data.latestRounds} covered={covered} trends={data.leaderboard.error ? null : data.leaderboard.rows} wide />
               </SectionBoundary>
             )}
-            </div>
           </>
         ) : (
           <>
@@ -133,7 +132,7 @@ function CoachHomeBody({ data, now, live }: { data: ChCoachHome; now?: string; l
             ) : null}
             {!noRounds && !data.latestRounds.error && (
               <SectionBoundary surface="home.latestRound" label="The latest round" code="CH-2206">
-                <DeskLatest data={data.latestRounds} covered={covered} />
+                <DeskLatest data={data.latestRounds} covered={covered} trends={data.leaderboard.error ? null : data.leaderboard.rows} />
               </SectionBoundary>
             )}
             </div>

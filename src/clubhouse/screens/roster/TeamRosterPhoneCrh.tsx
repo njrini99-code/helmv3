@@ -64,23 +64,6 @@ export function TeamRosterPhoneCrh({ data, onRetry }: { data: ChPlayerRoster; on
         ) : (
           <>
             <RosterTeamCard viewer="player" season={data.season} players={data.players} clock={clock} />
-            {!!data.coaches?.length && (
-              <div className="ch-rsx-sec is-tight">
-                <Surface variant="card" level={2} padded={false} title="Coaches" actions={<span className="ch-rsx-meta ch-num">{data.coaches.length}</span>}>
-                  <GroupList>
-                    {data.coaches.map((c) => (
-                      <GroupRow key={c.id} className="ch-rsx-prow">
-                        <Avatar name={c.name} size="md" />
-                        <span className="ch-rsx-row__b">
-                          <b>{c.name}</b>
-                          <span>{c.role}</span>
-                        </span>
-                      </GroupRow>
-                    ))}
-                  </GroupList>
-                </Surface>
-              </div>
-            )}
             {/* Directly above the players it sorts, not riding over the coaches (CRH-30). */}
             {!solo && (
               <div className="ch-stickybar ch-rsx-sort">
@@ -115,6 +98,24 @@ export function TeamRosterPhoneCrh({ data, onRetry }: { data: ChPlayerRoster; on
                 </Surface>
               </div>
             </SectionBoundary>
+            {/* Coaches come after the players: the sort sits directly over what it sorts, and nothing rides between them. */}
+            {!!data.coaches?.length && (
+              <div className="ch-rsx-sec is-tight">
+                <Surface variant="card" level={2} padded={false} title="Coaches" actions={<span className="ch-rsx-meta ch-num">{data.coaches.length}</span>}>
+                  <GroupList>
+                    {data.coaches.map((c) => (
+                      <GroupRow key={c.id} className="ch-rsx-prow">
+                        <Avatar name={c.name} size="md" />
+                        <span className="ch-rsx-row__b">
+                          <b>{c.name}</b>
+                          <span>{c.role}</span>
+                        </span>
+                      </GroupRow>
+                    ))}
+                  </GroupList>
+                </Surface>
+              </div>
+            )}
           </>
         )}
       </div>

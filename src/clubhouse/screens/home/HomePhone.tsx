@@ -359,13 +359,16 @@ export function Form({ form }: { form: ChTeamForm; }) {
     <section className="ch-hm-form" aria-labelledby="ch-hm-form">
       <div className="ch-hm-form__head">
           <h2>Team scoring</h2>
-          <HomeSpanSwitch span={form.span ?? 'season'} />
           {rebuiltHref('/golf/dashboard/stats') && (
             <Link href={rebuiltHref('/golf/dashboard/stats') as string} className="ch-hm-link">
               Team stats
             </Link>
           )}
         </div>
+      {/* The window picker has a row of its own: between the title and the link it wrapped both to two lines on a phone. */}
+      <div className="ch-hm-form__span">
+        <HomeSpanSwitch span={form.span ?? 'season'} />
+      </div>
       <div className="ch-hm-form__top">
         <span>
           {/* The lane: the label is real text, not the old rule's ::after (06 §11.2). */}
@@ -418,6 +421,16 @@ export function WeekStrip({ days, note, children, calendar = false }: { calendar
           </Link>
         )}
       </div>
+      <WeekDays days={days} note={note} />
+      {children}
+    </section>
+  );
+}
+
+/** The week's seven days and the line under them, without a card: the phone's This week card and the desktop's Today card both hold it. */
+export function WeekDays({ days, note }: { days: ChCoachHome['week']['days']; note: ChCoachHome['phone']['weekNote'] }) {
+  return (
+    <>
       <DayStrip
         label="This week"
         className="ch-hm-week"
@@ -437,8 +450,7 @@ export function WeekStrip({ days, note, children, calendar = false }: { calendar
           <b>{note.weekday}</b> {note.title}
         </p>
       )}
-      {children}
-    </section>
+    </>
   );
 }
 
@@ -520,14 +532,14 @@ function Rounds({ years, data, trends, onOpen, covered }: { years?: Record<strin
                       onOpen(r);
                     }}
                   >
-                    <Avatar name={r.playerName} id={r.playerId} size="md" year={years?.[r.playerId] ?? null} />
+                    <Avatar name={r.playerName} id={r.playerId} size="sm" year={years?.[r.playerId] ?? null} />
                     <span className="ch-hm-rd__b">
                       <b>{r.playerName}</b>
                       <RoundMeta meta={r.meta} />
                     </span>
                     {(trendOf.get(r.playerId)?.length ?? 0) >= 3 && (
                       <span className="ch-hm-rd__spark" aria-hidden="true">
-                        <FormLine data={trendOf.get(r.playerId)!} width={64} height={18} earlyBelow={3} bare label={`${r.playerName}, last ${trendOf.get(r.playerId)!.length} rounds: ${trendOf.get(r.playerId)!.join(', ')}`} />
+                        <FormLine data={trendOf.get(r.playerId)!} width={48} height={18} earlyBelow={3} bare label={`${r.playerName}, last ${trendOf.get(r.playerId)!.length} rounds: ${trendOf.get(r.playerId)!.join(', ')}`} />
                       </span>
                     )}
                     <span className={'ch-hm-score ch-num' + (r.toPar != null && r.toPar < 0 ? ' is-under' : '')}>

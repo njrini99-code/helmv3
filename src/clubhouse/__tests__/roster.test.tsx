@@ -661,6 +661,273 @@ describe('Roster · behaviour contracts (P003, docs/clubhouse/pages/P003-roster/
 });
 
 /** Audit A6, A9, A10, A12 (Home, Roster, Hub data truth): one quiet rule, no dropped edit, an honest chip, one handicap. */
+/**
+ * The redesigned Roster (classes-roster-home): what each failure and edge state does, driven as a coach drives it on a
+ * phone, where a player is a pushed profile, its actions are the bar's More sheet, and each change asks or says so.
+ */
+describe('Roster · the redesigned screens: changes, failures and edge states', () => {
+  const realMatchMedia = window.matchMedia;
+  beforeEach(() => {
+    profile.rebuilt = true;
+    window.matchMedia = ((q: string) => ({
+      matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)',
+      media: q,
+      onchange: null,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false,
+    })) as never;
+    window.history.replaceState(null, '', '/golf/dashboard/roster?player=theo');
+  });
+  afterEach(() => {
+    window.matchMedia = realMatchMedia;
+    window.history.replaceState(null, '', '/');
+    vi.restoreAllMocks();
+  });
+  function SlotHost() {
+    const { setSlot } = usePhoneChromeState();
+    return <div ref={setSlot} data-testid="phone-top" />;
+  }
+  const phone = (data: ChRoster) =>
+    render(
+      <LazyMotion features={domAnimation}>
+        <ToastProvider>
+          <PhoneChromeProvider>
+            <div className="ch-root" data-ui="clubhouse">
+              <SlotHost />
+              <Roster data={data} />
+            </div>
+          </PhoneChromeProvider>
+        </ToastProvider>
+      </LazyMotion>,
+    );
+  const later = <T,>() => {
+    let resolve!: (v: T) => void;
+    const promise = new Promise<T>((r) => (resolve = r));
+    return { promise, resolve };
+  };
+  /** The profile's More sheet, then one of its rows. */
+  async function act1(user: ReturnType<typeof userEvent.setup>, item: string) {
+    await user.click(screen.getByRole('button', { name: 'Player actions' }));
+    await user.click(await screen.findByRole('menuitem', { name: item }));
+  }
+  const removeDialog = () => screen.getByRole('dialog', { name: 'Remove player?' });
+  const statusDialog = () => screen.getByRole('dialog', { name: 'Mark player inactive?' });
+  const note = () => screen.getByRole('textbox', { name: /Coach.s note/ }) as HTMLTextAreaElement;
+
+  it('30101 the phone Roster opens from the server\u2019s first answer: the team card, the join requests row and every active player, with nothing fetched', () => {
+    window.history.replaceState(null, '', '/golf/dashboard/roster');
+    phone(roster());
+    expect(document.querySelector('.ch-rs-tcard')).not.toBeNull();
+    for (const p of PREVIEW_ROSTER.players.filter((x) => x.status === 'active')) expect(screen.getAllByRole('button', { name: new RegExp('^' + p.name) }).length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: /join request/i })).toBeTruthy();
+    expect(actions.requests).not.toHaveBeenCalled();
+    expect(router.refresh).not.toHaveBeenCalled();
+  });
+
+  it('CH-3501 Remove from team asks first: it names the player and the team, says what is kept, and Keep Theo sends nothing', async () => {
+    const user = userEvent.setup();
+    phone(roster());
+    await act1(user, 'Remove from team');
+    const d = removeDialog();
+    expect(d.textContent).toMatch(/Remove Theo Marchetti from /);
+    expect(d.textContent).toMatch(/Their account and stats are not deleted/);
+    await user.click(within(d).getByRole('button', { name: 'Keep Theo' }));
+    expect(actions.remove).not.toHaveBeenCalled();
+    expect(screen.getByRole('heading', { level: 2, name: 'Theo Marchetti' })).toBeTruthy();
+  });
+
+  it('CH-3402 31704 30901 a remove in flight reads Removing and cannot be pressed twice; it warns on the press, and when it lands it says so once and the profile is gone', async () => {
+    const user = userEvent.setup();
+    const held = later<{ success: boolean }>();
+    actions.remove.mockReturnValue(held.promise);
+    phone(roster());
+    await act1(user, 'Remove from team');
+    await user.click(within(removeDialog()).getByRole('button', { name: 'Remove player' }));
+    await expectCode('CH-3402', /Removing…/);
+    expect(hapticSpy).toHaveBeenCalledWith('warning');
+    const busy = code('CH-3402')!.closest('button') as HTMLButtonElement;
+    expect(busy.disabled || busy.getAttribute('aria-busy') === 'true' || busy.getAttribute('aria-disabled') === 'true').toBe(true);
+    await user.click(busy).catch(() => undefined);
+    expect(actions.remove).toHaveBeenCalledTimes(1);
+    expect(actions.remove).toHaveBeenCalledWith(theo.id);
+    await act(async () => held.resolve({ success: true }));
+    expect(await screen.findByText(/^Theo Marchetti removed from /)).toBeTruthy();
+    await waitFor(() => expect(screen.queryByRole('heading', { level: 2, name: 'Theo Marchetti' })).toBeNull());
+    expect(hapticSpy).toHaveBeenCalledWith('success');
+    expect(hapticSpy.mock.calls.filter((c) => c[0] === 'success')).toHaveLength(1);
+  });
+
+  it('CH-3001 30803 31403 32301 a removal the server refuses says so and keeps the player and the question; the failure is reported; Retry on the toast removes them and closes the question', async () => {
+    const user = userEvent.setup();
+    actions.remove.mockResolvedValue({ success: false, error: 'This player has a saved round in progress' });
+    phone(roster());
+    await act1(user, 'Remove from team');
+    await user.click(within(removeDialog()).getByRole('button', { name: 'Remove player' }));
+    await expectCode('CH-3001', /Couldn’t remove Theo Marchetti/);
+    expect(removeDialog().hasAttribute('open')).toBe(true);
+    expect(screen.getByRole('heading', { level: 2, name: 'Theo Marchetti' })).toBeTruthy();
+    expect(hapticSpy).toHaveBeenCalledWith('error');
+    expect(vi.mocked(chReport).mock.calls.some((c) => (c[1] as { surface?: string; action?: string })?.surface === 'roster' && (c[1] as { action?: string })?.action === 'roster.removePlayer')).toBe(true);
+
+    actions.remove.mockResolvedValue({ success: true });
+    await user.click(within(code('CH-3001') as HTMLElement).getByRole('button', { name: /Retry|Try again/ }));
+    expect(await screen.findByText(/^Theo Marchetti removed from /)).toBeTruthy();
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Remove player?' })?.hasAttribute('open') ?? false).toBe(false));
+    expect(actions.remove).toHaveBeenCalledTimes(2);
+  });
+
+  it('30701 offline, a removal is refused before anything is sent, and the player stays', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(window.navigator, 'onLine', 'get').mockReturnValue(false);
+    phone(roster());
+    await act1(user, 'Remove from team');
+    await user.click(within(removeDialog()).getByRole('button', { name: 'Remove player' }));
+    await expectCode('CH-1903');
+    expect(actions.remove).not.toHaveBeenCalled();
+    expect(screen.getByRole('heading', { level: 2, name: 'Theo Marchetti' })).toBeTruthy();
+  });
+
+  it('CH-3502 Mark inactive asks first, says what it changes, is not a destructive button, and Cancel sends nothing', async () => {
+    const user = userEvent.setup();
+    phone(roster());
+    await act1(user, 'Mark inactive');
+    const d = statusDialog();
+    await expectCode('CH-3502');
+    expect(d.textContent).toMatch(/Move Theo Marchetti to Inactive on /);
+    expect(d.textContent).toMatch(/leave team rankings and averages/);
+    expect(within(d).getByRole('button', { name: 'Mark inactive' }).className).not.toMatch(/danger/);
+    hapticSpy.mockClear();
+    await user.click(within(d).getByRole('button', { name: 'Cancel' }));
+    expect(actions.status).not.toHaveBeenCalled();
+    expect(hapticSpy).not.toHaveBeenCalledWith('warning');
+  });
+
+  it('CH-3404 a status change in flight reads Saving, cannot be pressed again, and Cancel waits', async () => {
+    const user = userEvent.setup();
+    const held = later<{ success: boolean }>();
+    actions.status.mockReturnValue(held.promise);
+    phone(roster());
+    await act1(user, 'Mark inactive');
+    await user.click(within(statusDialog()).getByRole('button', { name: 'Mark inactive' }));
+    await expectCode('CH-3404', /Saving…/);
+    expect((within(statusDialog()).getByRole('button', { name: 'Cancel' }) as HTMLButtonElement).disabled).toBe(true);
+    await user.click(code('CH-3404')!.closest('button')!).catch(() => undefined);
+    expect(actions.status).toHaveBeenCalledTimes(1);
+    expect(actions.status).toHaveBeenCalledWith(theo.id, 'inactive');
+    await act(async () => held.resolve({ success: true }));
+    expect(await screen.findByText('Theo Marchetti marked inactive')).toBeTruthy();
+  });
+
+  it('CH-3008 a status change the server refuses says so, keeps the question open and the player active', async () => {
+    const user = userEvent.setup();
+    actions.status.mockResolvedValue({ success: false });
+    phone(roster());
+    await act1(user, 'Mark inactive');
+    await user.click(within(statusDialog()).getByRole('button', { name: 'Mark inactive' }));
+    await expectCode('CH-3008', /Couldn’t mark Theo Marchetti inactive/);
+    expect(code('CH-3008')!.textContent).toMatch(/Nothing changed on the roster/);
+    expect(statusDialog().hasAttribute('open')).toBe(true);
+    expect(screen.queryByText('Theo Marchetti marked inactive')).toBeNull();
+  });
+
+  it('CH-3004 31201 a note that does not save says so, stays in the field, and leaving the field again saves it', async () => {
+    const user = userEvent.setup();
+    actions.intent.mockResolvedValue({ ok: false });
+    phone(roster());
+    await user.type(note(), 'Lag putting drills');
+    await user.tab();
+    await expectCode('CH-3004', /Couldn’t save your note about Theo/);
+    expect(code('CH-3004')!.textContent).toMatch(/Your text is still in the field/);
+    expect(note().value).toBe('Lag putting drills');
+    actions.intent.mockResolvedValue({ ok: true });
+    await user.click(note());
+    await user.tab();
+    expect(await screen.findByText('Note saved for Theo')).toBeTruthy();
+    expect(actions.intent).toHaveBeenLastCalledWith({ player_id: theo.id, notes: 'Lag putting drills' });
+  });
+
+  it('32001 the note saves on leaving the field only when its trimmed text changed, and an emptied note saves as no note', async () => {
+    const user = userEvent.setup();
+    actions.intent.mockResolvedValue({ ok: true });
+    phone(roster());
+    // Focus and leave with nothing typed: nothing is sent.
+    await user.click(note());
+    await user.tab();
+    expect(actions.intent).not.toHaveBeenCalled();
+    await user.type(note(), '  Wedges  ');
+    await user.tab();
+    await waitFor(() => expect(actions.intent).toHaveBeenCalledTimes(1));
+    expect(actions.intent).toHaveBeenLastCalledWith({ player_id: theo.id, notes: 'Wedges' });
+    // Only spaces added: the trimmed text is the same, so nothing is sent.
+    await user.type(note(), ' ');
+    await user.tab();
+    expect(actions.intent).toHaveBeenCalledTimes(1);
+    await user.clear(note());
+    await user.tab();
+    await waitFor(() => expect(actions.intent).toHaveBeenCalledTimes(2));
+    expect(actions.intent).toHaveBeenLastCalledWith({ player_id: theo.id, notes: null });
+  });
+
+  it('CH-3101 a note near its 2,000 limit counts down, and typing stops at the limit', async () => {
+    const user = userEvent.setup();
+    phone(roster());
+    expect(code('CH-3101')).toBeNull();
+    await act(async () => {
+      note().focus();
+    });
+    await user.paste('a'.repeat(1850));
+    await expectCode('CH-3101', /150 characters left/);
+    await user.paste('b'.repeat(400));
+    expect(note().value.length).toBe(2000);
+    await expectCode('CH-3101', /That’s the limit: 2,000 characters\./);
+  });
+
+  it('CH-3209 when this coach\u2019s notes did not load the field is read-only and says why, so a blank field can never save over a real note', async () => {
+    const user = userEvent.setup();
+    phone(roster({ notesError: true } as Partial<ChRoster>));
+    await expectCode('CH-3209', /Your notes didn’t load/);
+    expect(note().readOnly || note().disabled).toBe(true);
+    await user.click(note());
+    await user.tab();
+    expect(actions.intent).not.toHaveBeenCalled();
+  });
+
+  it('CH-3002 CH-3003 31301 a join request leaves the list the moment it is decided and comes back in its place when the server refuses; each failure names the player', async () => {
+    const [grace, owen] = PREVIEW_ROSTER.requests as [(typeof PREVIEW_ROSTER.requests)[number], (typeof PREVIEW_ROSTER.requests)[number]];
+    const held = later<{ success: boolean; error?: string }>();
+    actions.accept.mockReturnValue(held.promise);
+    const { result } = renderHook(() => useJoinRequests('Varsity', PREVIEW_ROSTER.requests), {
+      wrapper: ({ children }) => <ToastProvider>{children}</ToastProvider>,
+    });
+    const ids = () => result.current.reqs.map((r) => r.id);
+    const before = ids();
+    let run!: Promise<unknown>;
+    act(() => {
+      run = result.current.decide(grace, true) as Promise<unknown>;
+    });
+    // Gone at once, before the server has answered.
+    await waitFor(() => expect(ids()).toEqual(before.filter((id) => id !== grace.id)));
+    await act(async () => {
+      held.resolve({ success: false, error: 'withdrawn' });
+      await run;
+    });
+    await expectCode('CH-3002', new RegExp('Couldn’t approve ' + grace.name));
+    expect(ids()).toEqual(before);
+
+    actions.reject.mockResolvedValue({ success: false, error: 'nope' });
+    await act(async () => {
+      await result.current.decide(owen, false);
+    });
+    await expectCode('CH-3003', new RegExp('Couldn’t decline ' + owen.name + '’s request'));
+    expect(ids()).toEqual(before);
+    expect(hapticSpy).toHaveBeenCalledWith('error');
+  });
+
+});
+
 describe('Roster · data truth', () => {
   const NY = 'America/New_York';
   const summary = (over: Record<string, unknown> = {}) =>
