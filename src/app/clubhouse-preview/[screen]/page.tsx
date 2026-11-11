@@ -669,7 +669,8 @@ export default async function ClubhousePreview({
       node: <PreviewPracticeThread state={state} />,
     },
     'coachhelm-practice-plan': {
-      path: '/golf/dashboard/coachhelm',
+      // The plan page is Practice's (routes/practice.tsx); only its card is drawn in Ask.
+      path: state === 'card' || state === 'stress' ? '/golf/dashboard/coachhelm' : '/golf/dashboard/practice/plan/preview',
       node: <PreviewPracticePlan state={state} copy={(await searchParams as { copy?: string }).copy === 'player' ? 'player' : 'coach'} />,
     },
     'coachhelm-ask-v2': {

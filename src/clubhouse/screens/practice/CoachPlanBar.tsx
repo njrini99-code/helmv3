@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronDown, Pencil } from 'lucide-react';
+import { ChevronDown, Pencil, Printer } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { postPracticePlanToChat } from '@/app/golf/actions/coachhelm-practice-plans';
@@ -12,6 +12,7 @@ import { Menu } from '../../ui/Menu';
 import { Modal } from '../../ui/Modal';
 import { Switch } from '../../ui/Switch';
 import { useToast } from '../../ui/Toast';
+import { useChPhone } from '../../lib/use-phone';
 
 export interface ChPlanStatus {
   planId: string;
@@ -22,10 +23,11 @@ export interface ChPlanStatus {
   seen: { names: string[]; of: number } | null;
 }
 
-/** The coach's bar on the plan page (N-00 4.11, 4.15): what state the plan is in, said in words, then Edit, Share, Seen by and Take down. */
+/** The coach's line on the plan page (N-00 4.11, 4.15): what state the plan is in, said in words, then Seen by, Edit, Print and, once published, Share with Take down. */
 export function CoachPlanBar({ status }: { status: ChPlanStatus }) {
   const router = useRouter();
   const toast = useToast();
+  const phone = useChPhone();
   const [seenOpen, setSeenOpen] = useState(false);
   const [downOpen, setDownOpen] = useState(false);
   const [tell, setTell] = useState(true);
@@ -76,19 +78,27 @@ export function CoachPlanBar({ status }: { status: ChPlanStatus }) {
         <Button variant={state.key === 'live' ? 'secondary' : 'primary'} leftIcon={Pencil} href={`${base}/edit`}>
           Edit
         </Button>
-        <Menu
-          label="Share"
-          trigger={(p) => (
-            <Button variant="secondary" rightIcon={ChevronDown} menu={p}>
-              Share
-            </Button>
-          )}
-          items={[
-            ...(published ? [{ label: 'Send to team chat', onSelect: () => void toChat() }, { label: 'Copy link', onSelect: () => void copyLink() }] : []),
-            { label: 'Print or save as PDF', href: `/golf/dashboard/practice/print/${status.planId}` },
-            ...(published ? [{ label: 'Take down', danger: true, onSelect: () => setDownOpen(true) }] : []),
-          ]}
-        />
+        {/* Print is its own key: here on a Mac, in the top bar on a phone. A draft has nobody to share with, so it has no Share. */}
+        {!phone && (
+          <Button leftIcon={Printer} href={`/golf/dashboard/practice/print/${status.planId}`}>
+            Print
+          </Button>
+        )}
+        {published && (
+          <Menu
+            label="Share"
+            trigger={(p) => (
+              <Button variant="secondary" rightIcon={ChevronDown} menu={p}>
+                Share
+              </Button>
+            )}
+            items={[
+              { label: 'Send to team chat', onSelect: () => void toChat() },
+              { label: 'Copy link', onSelect: () => void copyLink() },
+              { label: 'Take down', danger: true, onSelect: () => setDownOpen(true) },
+            ]}
+          />
+        )}
       </div>
       <Modal open={seenOpen} onClose={() => setSeenOpen(false)} title="Seen by" width={420} detent={0.62}>
         <ul className="ch-prc-seenlist">

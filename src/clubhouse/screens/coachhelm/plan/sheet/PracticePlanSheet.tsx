@@ -10,6 +10,18 @@ const DEFAULT_ORDER: Array<{ key: PlanSheetSection; name: string }> = [
 
 const Gd = ({ letter }: { letter: string }) => <i className={`gd g-${letter}`}>{letter}</i>;
 
+/** A cell of names breaks between them, never inside one: "Coach Lin," then "Coach Rivera". It reads and copies as the same text. */
+const Names = ({ value }: { value: string }) => (
+  <>
+    {value.split(', ').map((name, i, all) => (
+      <Fragment key={`${name}-${i}`}>
+        <span className="pp-co">{i < all.length - 1 ? `${name},` : name}</span>
+        {i < all.length - 1 ? ' ' : null}
+      </Fragment>
+    ))}
+  </>
+);
+
 /** The one printed plan: Ask's pane, the phone's full plan, the plan page, Documents, the PDF. The coach's Why lines are drawn only when the model has them. */
 export function PracticePlanSheet({ plan, density = 'phone', part = 'all', draft = false }: { plan: PlanSheetModel; density?: 'pane' | 'phone' | 'print'; part?: 'all' | 'schedule' | 'rest'; draft?: boolean }) {
   const first = part !== 'rest';
@@ -94,7 +106,7 @@ export function PracticePlanSheet({ plan, density = 'phone', part = 'all', draft
         {plan.meta.map((m) => (
           <div key={m.label}>
             <dt>{m.label}</dt>
-            <dd>{m.value}</dd>
+            <dd>{m.label === 'Coaches' ? <Names value={m.value} /> : m.value}</dd>
           </div>
         ))}
       </dl>

@@ -1329,32 +1329,59 @@ html[data-fw-theme='dark'] :is(.ch-prc-group.is-f .ch-prc-disc, .ch-prc-disc.g-F
   padding: 20px 24px 40px;
 }
 
-/* The plan page: its sheet at the page's own edge, under the coach's bar. */
+/* The plan page: a reading column the width of its sheet. Back, the plan's name and day, the coach's status line and keys, then the paper. */
 main.ch-prc-planpage {
   display: grid;
-  gap: 12px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
   align-content: start;
-  max-width: var(--ch-measure-reading);
+  box-sizing: border-box;
+  max-width: calc(var(--ch-measure-reading) + 2 * var(--ch-page-gutter));
   margin: 0 auto;
   padding: var(--ch-page-top-coachhelm) var(--ch-page-gutter) var(--ch-page-bottom);
+  color: var(--ch-text-primary);
 }
+/* The back link sits on its title: half the page's gap. */
+main.ch-prc-planpage > .ch-backlink {
+  margin-block-end: -8px;
+}
+.ch-prc-planhead {
+  flex-wrap: nowrap;
+}
+.ch-prc-planhead > :first-child {
+  min-width: 0;
+}
+.ch-prc-planhead .ch-large-title {
+  text-wrap: balance;
+}
+.ch-prc-planhead .ch-prc-h__a {
+  flex: none;
+  flex-wrap: nowrap;
+}
+/* The coach's status, one line under the title: what state the plan is in, in words, with its keys at the line's end. */
 .ch-prc-planbar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 12px 16px;
-  padding: 12px 16px;
-  border-radius: var(--ch-radius-lg);
-  background: var(--ch-card-bg);
-  box-shadow: var(--ch-card-shadow);
+  gap: 8px 16px;
 }
 .ch-prc-planbar__s {
-  display: grid;
+  display: flex;
   flex: 1 1 220px;
-  gap: 4px;
-  justify-items: start;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
   min-width: 0;
+}
+/* A player's two keys on a phone, side by side. */
+.ch-prc-planacts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ch-prc-planacts > .is-fill {
+  flex: 1 1 0;
 }
 .ch-prc-planbar__s p {
   margin: 0;

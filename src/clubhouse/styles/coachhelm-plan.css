@@ -1830,6 +1830,12 @@ html[data-fw-theme='dark'] .ch-cpv-vz {
   .ch-cp-sheet .pp-two { grid-template-columns: minmax(0, 1fr); }
 }
 .ch-cp-sheet .pp-h span { font: var(--ch-type-14); letter-spacing: var(--ch-track-14); color: var(--ch-pl-ink-3); }
+/* On a page the sheet is a sheet of paper: reading width, centred, however wide the window (the pane, the print studio and paper size themselves). */
+@media screen {
+  .ch-cp-sheet[data-density='phone'] { box-sizing: border-box; width: 100%; max-width: var(--ch-measure-reading); margin-inline: auto; }
+}
+/* Coaches break between names, never inside one. */
+.ch-cp-sheet .pp-meta .pp-co { display: inline-block; max-width: 100%; }
 .ch-cp-sheet .pp-why .neg { color: var(--ch-pl-loss); font: var(--ch-type-13-strong); letter-spacing: var(--ch-track-13); }
 .ch-cpv-ply .stop { grid-template-columns: calc(52 * var(--ch-type-k)) minmax(0, 1fr) auto; }
 .ch-cpv .blk { grid-template-columns: calc(54 * var(--ch-type-k)) minmax(0, 1fr); }
