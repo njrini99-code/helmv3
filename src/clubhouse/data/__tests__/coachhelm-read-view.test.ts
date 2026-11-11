@@ -133,37 +133,45 @@ describe('roundWindowOf, the engine’s range rule', () => {
   });
 });
 
-describe('READ-S4 the page’s reads run side by side', () => {
-  it('the coach’s team switcher is read while the feed is still out', async () => {
-    let release: (v: EvidenceInsight[]) => void = () => {};
-    delivery.coach.mockReturnValue(new Promise((r) => (release = r)));
-    const started: string[] = [];
-    tables.gate = (t) => void started.push(t);
-    const loading = loadCoachRead({ scope, insightId: 'in-27' });
-    await vi.waitFor(() => expect(started).toContain('golf_team_members'));
-    expect(delivery.coach).toHaveBeenCalledTimes(1);
-    release([read({ source_round_ids: ['r1'] })]);
-    const out = await loading;
-    if (out.status !== 'ready') throw new Error(out.status);
-    expect(out.data.team).toEqual([{ id: PID, name: 'Jonah Okafor' }]);
-    expect(out.data.read).not.toBeNull();
-  });
+/** The rounds a trend is drawn from: four countable rounds with their stats rows (the penalty read's per-round source). */
+const SERIES = ['2026-09-07', '2026-09-14', '2026-09-21', '2026-09-28'].map((round_date, i) => ({ id: `s${i + 1}`, round_date, course_name: 'Hilltop', total_score: 74, score_to_par: 2, holes_played: 18, front_nine: 37, back_nine: 37, total_putts: 31, strokes_gained_total: 0.4, total_penalties: i }));
+const SERIES_CACHE = SERIES.map((r, i) => ({ round_id: r.id, strokes_gained_total: 0.4, penalty_strokes: i }));
 
-  it('a failed team read costs only the switcher', async () => {
-    tables.current.golf_players = { error: { message: 'boom' } };
-    delivery.coach.mockResolvedValue([read({ source_round_ids: ['r1'] })]);
+describe('the read’s own rounds, read beside it', () => {
+  it('the trend is the metric round by round from the player’s rounds, and no team switcher is on the payload', async () => {
+    tables.current.golf_rounds = { data: SERIES };
+    tables.current.golf_round_stats_cache = { data: SERIES_CACHE };
+    delivery.coach.mockResolvedValue([read({ source_round_ids: ['s1'] })]);
     const out = await loadCoachRead({ scope, insightId: 'in-27' });
     if (out.status !== 'ready') throw new Error(out.status);
-    expect(out.data.team).toEqual([]);
-    expect(out.data.read).not.toBeNull();
+    expect('team' in out.data).toBe(false);
+    expect(out.data.read?.trend?.last.values).toEqual([0, 1, 2, 3]);
+    expect(out.data.read?.trend?.last.said).toBe('1.5 a round over the last 4 rounds');
+    expect(out.data.read?.rounds.list[0]?.note ?? null).toBeNull();
   });
 
-  it('a thrown team read does not take the page down', async () => {
+  it('a thrown read of the rounds costs only the trend: the read is whole', async () => {
+    tables.current.golf_rounds = { data: SERIES };
     tables.gate = (t) => {
-      if (t === 'golf_team_members') throw new Error('boom');
+      if (t === 'golf_round_stats_cache') throw new Error('boom');
     };
-    delivery.coach.mockResolvedValue([read({ source_round_ids: ['r1'] })]);
+    delivery.coach.mockResolvedValue([read({ source_round_ids: ['s1'] })]);
     const out = await loadCoachRead({ scope, insightId: 'in-27' });
-    expect(out.status).toBe('ready');
+    if (out.status !== 'ready') throw new Error(out.status);
+    expect(out.data.read).not.toBeNull();
+    expect(out.data.read?.trend).toBeNull();
+  });
+
+  it('a player’s page learns who their coach is, and a failed lookup leaves it off', async () => {
+    tables.current.golf_team_members = { data: { team_id: TEAM, golf_teams: { created_by: 'co-1', organization_id: 'org-1' } } };
+    tables.current.golf_coaches = { data: [{ id: 'co-2', user_id: 'u-2', full_name: 'Dana Reyes' }, { id: 'co-1', user_id: 'u-1', full_name: 'Maya Reyes' }] };
+    delivery.player.mockResolvedValue([read({ source_round_ids: ['r1'] })]);
+    const out = await loadPlayerRead({ playerId: PID, insightId: 'in-27' });
+    if (out.status !== 'ready') throw new Error(out.status);
+    expect(out.data.coach).toEqual({ userId: 'u-1', name: 'Coach Reyes' });
+    tables.current.golf_coaches = { error: { message: 'boom' } };
+    const again = await loadPlayerRead({ playerId: PID, insightId: 'in-27' });
+    if (again.status !== 'ready') throw new Error(again.status);
+    expect(again.data.coach).toBeUndefined();
   });
 });

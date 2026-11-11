@@ -44,6 +44,7 @@ export function PreviewCoachHelmRead({ state, viewer, q }: { state?: string; vie
         hrefOf={hrefOf}
         writes={{ assign: () => (state === 'assigning' ? never() : wait(ok)), dismiss: () => wait(ok, state === 'dismissed' ? 0 : 400), undo: () => wait(ok) }}
         playerWrites={{ accept: () => wait(ok, 900), decline: () => wait(ok) }}
+        readWrites={{ removeFocus: () => wait(ok), recheck: () => wait({ success: true, insightsCreated: 1 }, 1200) }}
       />
     </CorrectionWritesProvider>
   );

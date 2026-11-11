@@ -25,7 +25,7 @@ import { messageCoachHref } from '../../home/player-links';
 import { Head, useFocusActions } from '../parts';
 import { HelmOff } from '../views/Frame';
 import { LIVE_COACHHELM_WRITES, LIVE_PLAYER_WRITES, type ChCoachHelmWrites, type ChPlayerWrites } from '../writes';
-import { CoachActions, PlayerActions } from './actions';
+import { CoachActions, LIVE_READ_WRITES, PlayerActions, READ_HOLD_MS, type ChReadWrites, type ReadHeld } from './actions';
 import { Cause, Corrections, Measured, Moved, NextReads, Plan, ReadHead, readOrder, ReadsRail, Rounds, Sure, Week, Where } from './parts';
 
 /**
@@ -118,12 +118,18 @@ export function ReadPage({
   voice,
   writes = LIVE_COACHHELM_WRITES,
   playerWrites = LIVE_PLAYER_WRITES,
+  readWrites = LIVE_READ_WRITES,
+  holdMs = READ_HOLD_MS,
   hrefOf,
 }: {
   load: ChViewLoad<ChReadView>;
   voice: ChViewVoice;
   writes?: ChCoachHelmWrites;
   playerWrites?: ChPlayerWrites;
+  /** Remove focus and Re-check now: the read page's own two writes. */
+  readWrites?: ChReadWrites;
+  /** How long Assign and Remove focus wait behind Undo. */
+  holdMs?: number;
   /** Where another of this player's reads opens. The page's own address by default; the preview passes its own. */
   hrefOf?: (insightId: string) => string;
 }) {
@@ -139,6 +145,10 @@ export function ReadPage({
   const short = read ? shortOf(read.insight.title) : null;
   usePageCrumbs(coach ? ['CoachHelm', coach.name, ...(short ? [short] : [])] : ['CoachHelm', ...(short ? [short] : [])]);
   const to = useCallback((insightId: string) => (hrefOf ? hrefOf(insightId) : readHref(coach ? coach.playerId : null, insightId)), [hrefOf, coach]);
+
+  // A write waiting behind its Undo is this read's alone: another read never shows it.
+  const [heldFor, setHeldFor] = useState<{ id: string; kind: ReadHeld }>({ id, kind: null });
+  const held: ReadHeld = heldFor.id === id ? heldFor.kind : null;
 
   // The tab is the read's: another read opens on Measured.
   const [tab, setTab] = useState<{ id: string; tab: Tab }>({ id, tab: 'measured' });
@@ -171,7 +181,7 @@ export function ReadPage({
     return () => window.removeEventListener('keydown', onKey);
   }, [phone, at, step]);
 
-  const messageHref = coach ? rebuiltHref(`/golf/dashboard/messages?player=${encodeURIComponent(coach.playerId)}`, 'coach') : rebuiltHref(messageCoachHref(null), 'player');
+  const messageHref = coach ? rebuiltHref(`/golf/dashboard/messages?player=${encodeURIComponent(coach.playerId)}`, 'coach') : rebuiltHref(messageCoachHref(data?.coach?.userId ?? null), 'player');
   const askHref = read ? askAboutReadHref({ insightId: read.insight.id, title: read.insight.title, first: coach?.first }) : null;
   const dismissTarget = read && coach ? { playerId: coach.playerId, first: coach.first, ins: read.insight } : null;
   const canDismiss = !!dismissTarget && !fa.dismissed[id];
@@ -190,7 +200,7 @@ export function ReadPage({
   const bar = phone && (
     <PhoneTop
       back={{ label: 'CoachHelm', onBack: () => router.push(backHref) }}
-      title={coach ? coach.name : (short ?? 'CoachHelm')}
+      title={coach ? coach.name : (read?.insight.category ?? 'CoachHelm')}
       titleId="ch-hr-bar-t"
       action={
         read ? (
@@ -239,11 +249,15 @@ export function ReadPage({
   }
 
   const pictures = data.calls.pictures;
-  const mine = fa.assigned[id] ?? read.insight.assigned;
+  const mine = held === 'assign' ? 'proposed' : held === 'remove' ? null : (fa.assigned[id] ?? read.insight.assigned);
   // What this visit changed shows on the head's pill and the list at once; the stance the page loaded stays otherwise.
-  const shown = coach && fa.assigned[id] && !read.insight.assigned ? { ...read, stance: 'Assigned', stanceCls: 'done' } : read;
+  const shown = coach && mine && !read.insight.assigned ? { ...read, stance: 'Assigned', stanceCls: 'done' } : read;
   const head = <ReadHead d={shown} voice={voice} />;
-  const actions = coach ? <CoachActions d={read} coach={coach} fa={fa} missing={data.missing} messageHref={messageHref} /> : <PlayerActions d={read} askHref={askHref} messageHref={messageHref} writes={playerWrites} />;
+  const actions = coach ? (
+    <CoachActions key={id} d={read} coach={coach} fa={fa} writes={readWrites} missing={data.missing} messageHref={messageHref} held={held} onHeld={(kind) => setHeldFor({ id, kind })} holdMs={holdMs} />
+  ) : (
+    <PlayerActions d={read} askHref={askHref} messageHref={messageHref} coachName={data.coach?.name ?? null} coachUserId={data.coach?.userId ?? null} writes={playerWrites} />
+  );
   const dossier = (
     <article className="ch-hd-dos ch-hr-dos" aria-labelledby="ch-hr-title">
       {head}
@@ -259,11 +273,11 @@ export function ReadPage({
     <>
       <Sure d={read} voice={voice} pictures={pictures} />
       <Week d={read} />
-      <Plan d={read} voice={voice} failed={data.failed.plans} proposed={!!coach && mine === 'proposed' && !read.insight.assigned} />
+      <Plan d={read} voice={voice} failed={data.failed.plans} proposed={!!coach && mine === 'proposed' && !read.insight.assigned} removed={held === 'remove'} />
       <Corrections d={read} />
     </>
   );
-  const state = fa.dismissed[id] ? 'dismissed' : fa.here('assign', id) ? 'assigning' : read.insight.stale ? 'stale' : mine ? (coach ? 'assigned' : mine === 'proposed' ? 'proposed' : 'focus') : 'open';
+  const state = fa.dismissed[id] ? 'dismissed' : fa.here('assign', id) ? 'assigning' : held === 'remove' ? 'removed' : read.insight.stale ? 'stale' : mine ? (coach ? 'assigned' : mine === 'proposed' ? 'proposed' : 'focus') : 'open';
 
   if (phone) {
     const hasCause = !!read.cause || !!(read.legacy && (read.legacy.drivers.length > 0 || read.legacy.reason));
@@ -319,7 +333,7 @@ export function ReadPage({
         <span className="ch-num">{coach ? coach.line : `${plural(data.counts.insights, 'read')} on your game`}</span>
       </Head>
       <div className="ch-hd">
-        <ReadsRail view={data} current={id} voice={voice} hrefOf={to} said={(rid) => (fa.dismissed[rid] ? 'Dismissed' : fa.assigned[rid] ? 'Assigned' : null)} />
+        <ReadsRail view={data} current={id} voice={voice} hrefOf={to} said={(rid) => (fa.dismissed[rid] ? 'Dismissed' : fa.assigned[rid] || (rid === id && held === 'assign') ? 'Assigned' : null)} />
         <div className="ch-hd-main">
           {/* Read to read: the rail and the header stay still; the main column swaps (the old one fades, the new one rises 6px). */}
           <Swap swapKey={id}>

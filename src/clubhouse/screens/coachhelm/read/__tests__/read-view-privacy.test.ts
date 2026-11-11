@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { readHref } from '../../../../data/coachhelm-views-shape';
-import { assignStateOf, readCauseOf, toChReadDetail, toChReadView, type ChReadDetail } from '../../../../data/coachhelm-read-view-shape';
+import { assignStateOf, readCauseOf, toChReadDetail, toChReadView, whatProse, type ChReadDetail } from '../../../../data/coachhelm-read-view-shape';
 import { rangeWords } from '../../../../data/coachhelm-engine-shape';
 import { diveCounts, toChDeepInsight, type ChDeepDive } from '../../../../data/coachhelm-dive-shape';
 import { toChInsight } from '../../../../data/coachhelm-map';
@@ -280,7 +280,8 @@ describe('a player’s read never carries the team pool, a teammate or a coach-o
     expect(valuesUnder(v, COACH_KEYS)).toEqual([]);
     expect(v.read?.headline.ladder?.lines.map((l) => l.source)).toEqual(['tour']);
     expect(v.read?.insight.compare?.team ?? null).toBeNull();
-    expect(v.read?.four.what).toContain('Compared with Tour 0.3');
+    expect(v.read?.four.what).toContain('Tour is 0.3.');
+    expect(v.read?.four.what).not.toMatch(/pool/i);
     expect(v.read?.sure.checked).toEqual([]);
     expect(v.read?.sure.rung).toBeNull();
     expect(v.read?.cause?.state).toBe('not_traced');
@@ -310,5 +311,82 @@ describe('a player’s read never carries the team pool, a teammate or a coach-o
       for (const name of ['Eli', 'Jonah', 'Priya', 'Theo']) expect(json.includes(name), `${q}: ${name}`).toBe(false);
       if (q !== 'putts') expect(coach).toContain('Team pool');
     }
+  });
+});
+
+/** A2: the What line is a sentence a coach would say, from the fields the read already carries and no new figure. */
+describe('the What line as prose', () => {
+  const base = { subject: 'Penalties per round', value: '1.1 a round', sample: '21 rounds', benchmark: 'Compared with Tour 0.3', worth: null };
+
+  it('opens with the generator’s own sentence when it states the figure, then the comparison by name', () => {
+    expect(whatProse({ ...base, lede: 'Across all 21 rounds on file Eli is averaging 1.1 penalty strokes per round.' })).toBe('Across all 21 rounds on file Eli is averaging 1.1 penalty strokes per round. Tour is 0.3.');
+  });
+
+  it('says the sample only when the sentence did not, and what closing the gap is worth only when the row estimates it', () => {
+    const said = whatProse({ lede: 'From 4–6 ft, Jonah is making 58% of downhill putts vs 81% of level putts, a 23-point gap.', subject: 'Make rate', value: '23 pts gap', sample: '75 putts', benchmark: null, worth: 'Closing the gap to the Tour is worth about 0.4 strokes a round.' });
+    expect(said).toBe('From 4–6 ft, Jonah is making 58% of downhill putts vs 81% of level putts, a 23-point gap. Over 75 putts. Closing the gap to the Tour is worth about 0.4 strokes a round.');
+  });
+
+  it('falls back to the label and the figure when the sentence does not carry the figure, and never doubles a full stop', () => {
+    expect(whatProse({ ...base, lede: 'Penalties are costing strokes.' })).toBe('Penalties per round: 1.1 a round over 21 rounds. Tour is 0.3.');
+    expect(whatProse({ ...base, lede: '' })).toBe('Penalties per round: 1.1 a round over 21 rounds. Tour is 0.3.');
+  });
+
+  it('a comparison in other words is said as written; a coach’s team line keeps its count', () => {
+    expect(whatProse({ ...base, lede: '', benchmark: 'Team pool 0.7 a round (186 rounds)' })).toContain('Team pool 0.7 a round (186 rounds).');
+    expect(whatProse({ ...base, lede: '', benchmark: 'Compared with your right-to-left make % (same band) 51%' })).toContain('Your right-to-left make % (same band) is 51%.');
+  });
+
+  it('each preview read, for each viewer: a sentence, in their voice, with no log punctuation and no confidence word', () => {
+    for (const q of ['penalties', 'putts', 'approach']) {
+      const coach = previewReadView(q, 'coach').read!.four.what;
+      const player = previewReadView(q, 'player').read!.four.what;
+      for (const what of [coach, player]) {
+        expect(what, q).not.toMatch(/\(\d+ (rounds|putts|approaches)\)/);
+        expect(what, q).not.toMatch(/Solid read|Early read|Thin read/);
+        expect(what, q).not.toMatch(/\.\./);
+      }
+      expect(player, q).toMatch(/\byou\b|\byou’re\b|\byour\b/i);
+      expect(player, q).not.toMatch(/pool|Eli|Jonah|Priya/);
+    }
+    expect(previewReadView('penalties', 'coach').read!.four.what).toBe('Across all 21 rounds on file Eli is averaging 1.1 penalty strokes per round. Tour is 0.3.');
+    expect(previewReadView('approach', 'player').read!.four.what).toBe('From 175+ yd you’re hitting 43% of greens over 28 approaches. Tour is 52%.');
+  });
+});
+
+/** B1, B4, B5, B6: what the page reads beside the read is the player's own rounds, for either viewer, and nothing of anyone else. */
+describe('the trend, the round notes and the hole scores', () => {
+  it('Eli’s penalties, round by round: the last eight and the season agree with the read’s own 23 over 21', () => {
+    const d = previewReadView('penalties', 'coach').read!;
+    expect(d.trend?.last.values).toEqual([2, 1, 3, 0, 1, 0, 3, 2]);
+    expect(d.trend?.last.said).toBe('1.5 a round over the last 8 rounds');
+    expect(d.trend?.season?.values.length).toBe(10);
+    expect(d.trend?.ref).toEqual({ label: 'Tour', value: 0.3, display: '0.3' });
+    expect(d.trend?.lowerBetter).toBe(true);
+    expect(d.rounds.list.map((r) => r.note ?? null)).toEqual(['2 penalties', '3 penalties', null, '1 penalty', null, '3 penalties', '1 penalty', '2 penalties']);
+    expect(d.cause?.state === 'counted' && d.cause.holes.map((h) => h.toPar)).toEqual(['+1', '+2', '+1', '+1', '+1']);
+  });
+
+  it('a metric with no per-round source has no trend and no notes: the registry’s word, not a guess', () => {
+    for (const q of ['putts', 'approach']) {
+      const d = previewReadView(q, 'coach').read!;
+      expect(d.trend, q).toBeNull();
+      expect(d.rounds.list.every((r) => !r.note), q).toBe(true);
+    }
+  });
+
+  it('a stale read counts the rounds played since it was made; a current one counts none', () => {
+    expect(previewReadView('penalties', 'coach', false, 'stale').read!.headline.newer).toBe(2);
+    expect(previewReadView('penalties', 'coach').read!.headline.newer).toBeNull();
+  });
+
+  it('a player gets the same trend from their own rounds, and still no pool, teammate or coach-only field', () => {
+    const v = previewReadView('penalties', 'player');
+    expect(v.read?.trend?.last.values).toEqual([2, 1, 3, 0, 1, 0, 3, 2]);
+    const json = JSON.stringify(v);
+    expect(json).not.toMatch(/Team pool|teammate/);
+    // The one name on a player's page is their own coach's, for Message Coach Reyes.
+    expect(v.coach).toEqual({ name: 'Coach Reyes', userId: 'user-coach-reyes' });
+    expect(previewReadView('penalties', 'coach').coach).toBeUndefined();
   });
 });

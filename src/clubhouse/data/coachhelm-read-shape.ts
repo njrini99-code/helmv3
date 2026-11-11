@@ -154,11 +154,11 @@ export function writeUpFor(text: string, traced: boolean): string | null {
 
 /**
  * "Compared with the Tour 0.3": the comparison the card draws (the gauge's, or the slope read's own label), only when it has a name.
- * A read carrying a team pool as its primary comparison (written only with `coachhelm_team_pool_v1` on) says the team line instead,
- * "Team pool 72% (240 putts)": one pooled number and its count, never a teammate.
+ * A coach's read carrying a team pool as its primary comparison (written only with `coachhelm_team_pool_v1` on) says the team line
+ * instead, "Team pool 72% (240 putts)": one pooled number and its count, never a teammate. A player's never does (10 Nov 2026).
  */
 export function benchmarkOf(raw: EvidenceInsight, base: ChInsight, say: (t: string) => string, team = true): string | null {
-  // `team: false` (the read page, for a player): the comparison the card draws, never the pooled line.
+  // `team: false` (a player's copy, on every surface): the comparison the card draws, never the pooled line. The team pool is the coach's.
   const pool = team ? teamPoolLine(raw.evidence) : null;
   if (pool) return pool;
   const g = base.evidence.gauge;
@@ -220,7 +220,7 @@ export function toChRead(raw: EvidenceInsight, base: ChInsight, inputs: ChReadIn
       subject: base.evidence.label || say(ev.metric_label),
       value,
       sample: sampleOf(ev, base.evidence.sample),
-      benchmark: benchmarkOf(raw, base, say),
+      benchmark: benchmarkOf(raw, base, say, inputs.role === 'coach'),
       strokes: strokesOf(ev, inputs.closes),
       word: base.evidence.read?.word ?? null,
     },

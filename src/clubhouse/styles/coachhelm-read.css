@@ -37,11 +37,10 @@
 
 /* ---------- actions, on the page's paper under the card ---------- */
 .ch-hr .ch-hl-cact { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0; }
-.ch-hr .ch-hl-cact > .ch-hd-msg { margin-left: auto; }
 .ch-hr .ch-hl-cact > .ch-hl-cact__m { flex: 1 0 100%; margin: 0; }
-.ch-hr.is-phone .ch-hl-cact > .ch-btn { min-height: 44px; }
-.ch-hr.is-phone .ch-hl-cact > .ch-btn--primary { flex: 1 0 100%; justify-content: center; }
-.ch-hr.is-phone .ch-hl-cact > .ch-btn--ghost { padding-left: 4px; }
+/* The phone: the primary takes the row; the quiet keys share the next one evenly, as one group. */
+.ch-hr.is-phone .ch-hl-cact > .ch-btn { flex: 1 1 0; justify-content: center; }
+.ch-hr.is-phone .ch-hl-cact > .ch-btn--primary { flex: 1 0 100%; }
 .ch-hr.is-phone [data-ch-read-actions] .ch-hl-prop { margin-top: 0; }
 .ch-hr-done { display: inline-flex; flex: 1 1 0; align-items: center; gap: 6px; min-width: 0; margin: 0; color: var(--ch-text-secondary); }
 
@@ -83,7 +82,12 @@
 .ch-hr.is-desk .ch-hr-bars li { grid-template-columns: minmax(120px, 28%) minmax(0, 1fr) 48px; }
 .ch-hr-bars b svg { vertical-align: -2px; color: var(--ch-green-fill-600); }
 
-/* how it has moved: the change and the figure it is read against */
+/* since it was first seen: the stored before and after, one quiet row under the measure */
+.ch-hr-since { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; margin: 0; font: var(--ch-type-13); color: var(--ch-text-tertiary); }
+.ch-hr-since b { font: var(--ch-type-14-medium); color: var(--ch-text-primary); }
+/* how it has moved: the line across the card, its caption under it */
+.ch-hr-sec .ch-hd-strip__chart { display: block; width: 100%; max-width: 320px; }
+.ch-hr-sec .ch-hd-strip__chart svg { display: block; width: 100%; height: auto; overflow: visible; }
 .ch-hr-sec .ch-hd-tr { margin: 0; padding: 0; list-style: none; }
 .ch-hr-sec .ch-hd-strip { display: flex; flex-direction: column; align-items: stretch; gap: 8px; padding: 0; border: 0; }
 .ch-hr-sec .ch-hd-tr__k { font: var(--ch-type-13-medium); color: var(--ch-text-tertiary); }
@@ -111,10 +115,10 @@
 .ch-hr-sec .ch-hd-r { align-items: center; }
 .ch-hr-sec .ch-hd-r__c { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .ch-hr-sec .ch-hd-r__c em { font: var(--ch-type-12); font-style: normal; color: var(--ch-text-tertiary); }
-.ch-hr-holes .ch-hd-r { grid-template-columns: 52px minmax(0, 1fr); }
-.ch-hr-holes .ch-hd-r.is-link { grid-template-columns: 52px minmax(0, 1fr) 16px; }
-.ch-hr.is-desk .ch-hr-holes .ch-hd-r { grid-template-columns: 64px minmax(0, 1fr); }
-.ch-hr.is-desk .ch-hr-holes .ch-hd-r.is-link { grid-template-columns: 64px minmax(0, 1fr) 16px; }
+.ch-hr-holes .ch-hd-r { grid-template-columns: 52px minmax(0, 1fr) 48px; }
+.ch-hr-holes .ch-hd-r.is-link { grid-template-columns: 52px minmax(0, 1fr) 48px 16px; }
+.ch-hr.is-desk .ch-hr-holes .ch-hd-r { grid-template-columns: 64px minmax(0, 1fr) 54px; }
+.ch-hr.is-desk .ch-hr-holes .ch-hd-r.is-link { grid-template-columns: 64px minmax(0, 1fr) 54px 16px; }
 
 /* how sure: the Surface is the disclosure */
 .ch-hr-surecard { padding: 4px 16px; }

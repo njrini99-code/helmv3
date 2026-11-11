@@ -11,6 +11,8 @@ import { plural } from '../../../lib/plural';
 import { useRefresh } from '../../../lib/use-refresh';
 import { rebuiltHref } from '../../../shell/nav';
 import { Icon } from '../../../ui/Icon';
+import { Line } from '../../../ui/charts/Line';
+import { Segmented } from '../../../ui/Segmented';
 import { InlineNotice } from '../../../ui/Notices';
 import { SerifText } from '../../../ui/SerifText';
 import { Surface } from '../../../ui/Surface';
@@ -27,11 +29,11 @@ const pct = (a: number, b: number) => (b > 0 ? Math.max(0, Math.min(100, (a / b)
 const bare = (t: string) => t.trim().replace(/[.!?…]+$/, '');
 
 /** One section of the read: a Surface with its title, and a quiet figure at the right of its head. */
-function Card({ sec, title, aside, children }: { sec: string; title: string; aside?: ReactNode; children: ReactNode }) {
+function Card({ sec, title, aside, control, children }: { sec: string; title: string; aside?: ReactNode; /** A control in the head's actions (the trend's window switch), in place of the quiet figure. */ control?: ReactNode; children: ReactNode }) {
   return (
     <div className="ch-hr-sec" data-ch-read-sec={sec}>
       {/* The Surface is the design system's, untouched: the section's own stack sits inside its body. */}
-      <Surface id={`ch-hr-${sec}`} title={title} actions={aside ? <span className="ch-hr-aside ch-num">{aside}</span> : undefined}>
+      <Surface id={`ch-hr-${sec}`} title={title} actions={control ?? (aside ? <span className="ch-hr-aside ch-num">{aside}</span> : undefined)}>
         <div className="ch-hr-body">{children}</div>
       </Surface>
     </div>
@@ -120,7 +122,7 @@ export function ReadHead({ d, voice }: { d: ChReadDetail; voice: ChViewVoice }) 
         <div className="ch-hl-path is-out_of_date" role="note" data-ch-code="CH-13903">
           <p className="ch-hl-path__l ch-num">
             {d.four.through ? `${d.four.through} · ` : ''}
-            <b>A round played {b.stale.newestRound} isn’t counted yet</b>
+            <b>{d.headline.newer && d.headline.newer > 0 ? `${plural(d.headline.newer, 'newer round')} ${d.headline.newer === 1 ? 'isn’t' : 'aren’t'} counted yet` : `A round played ${b.stale.newestRound} isn’t counted yet`}</b>
           </p>
         </div>
       )}
@@ -212,6 +214,13 @@ export function Measured({ d, voice, pictures }: { d: ChReadDetail; voice: ChVie
       ) : (
         !(pictures && ev.bars) && foot && <div className="ch-hl-ev">{foot}</div>
       )}
+      {/* The change the engine stored, as one quiet row: a before and an after are not a trend, so they get no card of their own. */}
+      {d.moved && (
+        <p className={'ch-hr-since ch-num is-' + d.moved.tone} data-ch-read-since="">
+          <span>Since it was first seen</span>
+          <b>{d.moved.text}</b>
+        </p>
+      )}
     </Card>
   );
 }
@@ -219,23 +228,65 @@ export function Measured({ d, voice, pictures }: { d: ChReadDetail; voice: ChVie
 // ── How it has moved ─────────────────────────────────────────────────────────
 
 /**
- * How it has moved: the change the engine stored, in the stat's own unit, with the Tour's figure beside it. The engine stores the two
- * ends of the change and no round-by-round series, so no line is drawn (see the lane notes: "Can't match as drawn").
+ * How it has moved: the read's own metric round by round, oldest to newest, on the one line chart (ui/charts/Line), with the Tour's
+ * figure dashed across it. Drawn in place at first paint (Q-153: no draw-in); the window switch glides the line and swaps the caption.
+ * Only when the read's metric has a per-round source and three rounds carry it; a before and an after alone are the quiet row in
+ * What was measured, never a card with one line in it.
  */
 export function Moved({ d }: { d: ChReadDetail }) {
-  const m = d.moved;
-  if (!m) return null;
-  const tour = d.headline.ladder?.lines.find((l) => l.source === 'tour') ?? null;
+  const t = d.trend;
+  const [win, setWin] = useState<'last' | 'season'>('last');
+  if (!t) return null;
+  const w = win === 'season' && t.season ? t.season : t.last;
+  const vals = w.values;
+  const all = t.ref ? [...vals, t.ref.value] : vals;
+  const lo = Math.min(...all);
+  const hi = Math.max(...all);
+  const first = vals[0] as number;
+  const last = vals[vals.length - 1] as number;
+  const tone = t.lowerBetter == null || first === last ? 'is-plain' : last < first === t.lowerBetter ? 'is-good' : 'is-warn';
   return (
-    <Card sec="moved" title="How it has moved">
+    <Card
+      sec="moved"
+      title="How it has moved"
+      control={
+        t.season ? (
+          <Segmented
+            size="sm"
+            label="Rounds shown"
+            value={win}
+            options={[
+              { value: 'last', label: `Last ${t.last.values.length}` },
+              { value: 'season', label: 'Season' },
+            ]}
+            onChange={setWin}
+            hook="read-window"
+          />
+        ) : undefined
+      }
+    >
       <ul className="ch-hd-tr">
-        <li className={'ch-hd-strip ' + (m.tone === 'good' ? 'is-good' : m.tone === 'warn' ? 'is-warn' : 'is-plain')}>
-          <span className="ch-hd-tr__k">{d.measured.label}, since it was first seen</span>
-          <span className="ch-hd-strip__c ch-num">
-            <b>{m.text}</b>
-            {tour && (
+        <li className={'ch-hd-strip ' + tone}>
+          <span className="ch-hd-tr__k">{t.label}</span>
+          <Line
+            className="ch-hd-strip__chart"
+            interactive={false}
+            label={`${t.label}. ${w.said}.`}
+            points={vals.map((y, i) => ({ x: String(i + 1), y }))}
+            lowerIsBetter={t.lowerBetter === true}
+            domain={hi === lo ? [lo - 1, hi + 1] : [lo, hi]}
+            baseline={t.ref ? { value: t.ref.value, dashed: true } : undefined}
+            axis={false}
+            ends={false}
+            marks="trail"
+            width={320}
+            height={64}
+          />
+          <span className="ch-hd-strip__c ch-num" data-ch-read-trend={win}>
+            <b>{w.said}</b>
+            {t.ref && (
               <em>
-                {tour.label} {tour.display}
+                Dashed line: {t.ref.label} {t.ref.display}
               </em>
             )}
           </span>
@@ -367,6 +418,7 @@ export function Where({ d }: { d: ChReadDetail }) {
                   {h.course ?? 'Round'}, hole {h.hole}
                 </em>
               </span>
+              <span className={'ch-hd-r__p ch-num is-' + (!h.toPar ? 'none' : h.toPar === 'E' ? 'even' : h.toPar.startsWith('−') ? 'under' : 'over')}>{h.toPar ?? ''}</span>
             </>
           );
           return (
@@ -389,7 +441,7 @@ export function Where({ d }: { d: ChReadDetail }) {
 
 // ── Rounds ───────────────────────────────────────────────────────────────────
 
-function RoundRow({ r }: { r: ChDiveRound }) {
+function RoundRow({ r, note }: { r: ChDiveRound; note?: string | null }) {
   const tone = r.toPar == null ? 'none' : r.toPar === 'E' ? 'even' : r.toPar.startsWith('−') ? 'under' : 'over';
   const body = (
     <>
@@ -397,6 +449,7 @@ function RoundRow({ r }: { r: ChDiveRound }) {
       <span className="ch-hd-r__c">
         {r.course ?? 'Round'}
         {r.nine ? ' · 9 holes' : ''}
+        {note && <em className="ch-num">{note}</em>}
       </span>
       <span className="ch-hd-r__s ch-num">{r.score}</span>
       <span className={'ch-hd-r__p ch-num is-' + tone}>{r.toPar ?? '—'}</span>
@@ -429,7 +482,7 @@ export function Rounds({ d, failed, voice }: { d: ChReadDetail; failed: boolean;
       ) : list.length > 0 ? (
         <ol className="ch-hd-rounds">
           {list.map((r) => (
-            <RoundRow key={r.id} r={r} />
+            <RoundRow key={r.id} r={r} note={r.note} />
           ))}
         </ol>
       ) : (
@@ -510,10 +563,11 @@ export function Week({ d }: { d: ChReadDetail }) {
  * Where this goes: the focus area or goal made from the read (the Deep dive's plan rows), or one line that it is in none. `proposed`:
  * a coach assigned it on this visit, so it is waiting on the player, before the page has read the new focus area back.
  */
-export function Plan({ d, voice, failed, proposed }: { d: ChReadDetail; voice: ChViewVoice; failed: boolean; proposed: boolean }) {
+export function Plan({ d, voice, failed, proposed, removed = false }: { d: ChReadDetail; voice: ChViewVoice; failed: boolean; proposed: boolean; /** The coach took the focus back on this visit (held behind Undo). */ removed?: boolean }) {
   const { refresh, refreshing } = useRefresh();
   const coach = voice.role === 'coach';
-  const { focus, goal } = d.todo.plan;
+  const goal = d.todo.plan.goal;
+  const focus = removed && d.todo.plan.focus?.fromThis ? null : d.todo.plan.focus;
   const b = d.insight;
   const now = b.value ? `Now ${b.value}${b.valueUnit ? ` ${b.valueUnit}` : ''}` : null;
   const href = coach ? rebuiltHref(`/golf/dashboard/stats?player=${encodeURIComponent(voice.playerId)}&tab=dev`, 'coach') : rebuiltHref(PLAYER_HELM_DEVELOPMENT_HREF, 'player');

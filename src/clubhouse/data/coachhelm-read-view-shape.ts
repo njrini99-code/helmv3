@@ -1,6 +1,9 @@
-import { formatFixed } from '../lib/format';
+import { formatFixed, formatToPar } from '../lib/format';
+import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
+import { dayOf, refreshedDay } from './coachhelm-classify';
+import { formatComparison } from './coachhelm-map';
+import { holeToPar, readPoints, roundNote, roundsAfter, TREND_LAST, TREND_MIN, windowFigure, type ChReadExtras } from './coachhelm-read-extras-shape';
 import { namesWithheldArm } from '@/lib/coachhelm/reads/player-cause';
-import { teamPoolLine } from '@/lib/coachhelm/reads/team-pool-line';
 import { confidenceTier } from '@/lib/coachhelm/confidence-label';
 import { sureSentence } from '@/lib/coachhelm/shared/confidence-reason';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
@@ -9,8 +12,7 @@ import type { ChDeepDive, ChDeepInsight, ChDiveHole, ChDivePlan, ChDiveRound, Ch
 import { areaOf as diveAreaOf, DIVE_AREAS } from './coachhelm-dive-shape';
 import type { ChBoardMissing, ChInsight, ChHelmWeek } from './coachhelm-shape';
 import type { ChEngineVerdict } from './coachhelm-engine-shape';
-import { benchmarkOf, readLines, type ChReadNext, type ChReadWhy } from './coachhelm-read-shape';
-import { speak } from './coachhelm-voice';
+import { strokesLine, type ChReadNext, type ChReadWhy } from './coachhelm-read-shape';
 
 /** The CoachHelm read as its own view, pure and client-safe (coachhelm-read 02-PLAN 3.5). Every field is nullable: a card draws only when its data is on the read. */
 export interface ChBenchmarkLadder {
@@ -29,7 +31,7 @@ export interface ChFunnelStep {
 }
 
 export type ChReadCause =
-  | { state: 'counted'; track: 2; path: string[]; count: string; eventStrokes: number | null; holes: ChDiveHole[] }
+  | { state: 'counted'; track: 2; path: string[]; count: string; eventStrokes: number | null; /** `toPar`: the hole's score against par ("+1"), when the hole is on file. */ holes: Array<ChDiveHole & { toPar?: string | null }> }
   | { state: 'likely'; track: 1; arms: Array<{ label: string; failures: number; n: number }>; verdict: string | null; range: string | null }
   | {
       state: 'not_traced';
@@ -46,8 +48,8 @@ export interface ChReadDetail {
   /** The stance pill's class (`ChStance.cls`): high, medium, low, ok, done, stale, note. */
   stanceCls: string;
   /**
-   * The head's four lines (7 Nov design): What as one sentence in the viewer's voice, the Why with its basis, Next and the day the read
-   * runs through. The Deep dive's own (`coachhelm-read-shape.ts`); a player's What never names the team pool.
+   * The head's four lines (7 Nov design): What as a sentence a coach would say (`whatProse`), the Why with its basis, Next and the day
+   * the read runs through. The parts are the Deep dive's own (`coachhelm-read-shape.ts`); a player's What never names the team pool.
    */
   four: { what: string; why: ChReadWhy; next: ChReadNext; through: string | null };
   /** What was measured: the number, its label and the window it covers. */
@@ -61,6 +63,8 @@ export interface ChReadDetail {
     worth: { strokes: string; to: 'team' | 'tour' | 'self'; estimated: boolean } | null;
     foot: { sample: string; firm: string | null; rung: string | null; through: string | null };
     stale: string | null;
+    /** How many rounds were played after the read was last made; null when it is current or the rounds did not load. */
+    newer: number | null;
   };
   funnel: { steps: ChFunnelStep[]; stopped: boolean } | null;
   cause: ChReadCause | null;
@@ -68,8 +72,29 @@ export interface ChReadDetail {
   legacy: ChDeepInsight['diagnosis'];
   sure: { word: string | null; rows: Array<{ k: 'Sample' | 'Recent' | 'Shot record'; have: number; need: number; text: string }>; checked: string[]; rung: { word: string; range: string | null } | null };
   moved: { from: number; to: number; text: string; tone: string; ref: { label: string; value: number } | null; theme: ChDiveTheme | null; through: string | null } | null;
-  rounds: { total: number; list: Array<ChDiveRound & { counted: number }> };
+  /**
+   * The read's own metric round by round, oldest to newest (`coachhelm-read-extras-shape.ts`): the newest eight, and the season when
+   * it holds other rounds. Null when the metric has no per-round source or under three rounds carry it: no line is then drawn.
+   */
+  trend: ChReadTrend | null;
+  /** `note`: what the read's metric was in that round ("2 penalties", "9 of 14 fairways"), when it has a per-round source. */
+  rounds: { total: number; list: Array<ChDiveRound & { counted: number; note?: string | null }> };
   todo: { drill: ChHelmWeek | null; worth: string | null; startsFrom: string | null; verdict: ChEngineVerdict | null; plan: ChDivePlan };
+}
+
+export interface ChReadTrendWindow {
+  values: number[];
+  /** "1.5 a round over the last 8 rounds": the window's own figure, said. */
+  said: string;
+}
+export interface ChReadTrend {
+  /** "Penalties per round, oldest to newest". */
+  label: string;
+  lowerBetter: boolean | null;
+  /** The Tour's figure, dashed across the plot. */
+  ref: { label: string; value: number; display: string } | null;
+  last: ChReadTrendWindow;
+  season: ChReadTrendWindow | null;
 }
 
 export interface ChReadsRailRow {
@@ -87,8 +112,8 @@ export interface ChReadsRailRow {
 }
 
 export interface ChReadView {
-  /** Coach only, Mac rail: the team, to change player from the read (S-READ-DESK.rail). Never set for a player. */
-  team?: Array<{ id: string; name: string }>;
+  /** A player's page only: the coach "Message Coach Reyes" opens a thread with. Absent when it did not load, and for a coach. */
+  coach?: { name: string | null; userId: string };
   head: { playerId: string | null; name: string; first: string };
   area: string;
   read: ChReadDetail | null;
@@ -187,6 +212,41 @@ export function readCauseOf(cause: Record<string, unknown> | null | undefined, w
   };
 }
 
+const endStop = (t: string): string => (/[.!?…][”"’)]?$/.test(t.trim()) ? t.trim() : `${t.trim()}.`);
+/** "Compared with Tour 0.3": a comparison that ends in its figure. */
+const NAMED_FIGURE = /^Compared with (.+?) ([+\u2212-]?\d[\d.,]*(?:%| yd| ft| pts)?)$/;
+
+/**
+ * The What line as a sentence a coach would say (7 Nov design), from what the read already carries and nothing else:
+ *   1. the generator's own first sentence, already in the viewer's voice and, for a player, without a guessed cause (`ChInsight.lede`),
+ *      when it states the read's figure; else the label and the figure ("Penalties per round: 1.1 a round over 21 rounds.");
+ *   2. the sample, when that sentence did not say it ("Over 75 putts.");
+ *   3. the comparison by name ("Tour is 0.3."), or the stored comparison line as written;
+ *   4. what closing the gap is worth, only when the row carries a real estimate.
+ * No number is computed here and none is said twice. The confidence word stays on the measure and under How sure.
+ */
+export function whatProse(p: { lede: string; subject: string; value: string; sample: string | null; benchmark: string | null; worth: string | null }): string {
+  const lede = p.lede.trim();
+  const figure = p.value.match(/\d+(?:\.\d+)?/)?.[0] ?? null;
+  const told = !!lede && (!figure || lede.includes(figure));
+  const count = p.sample?.match(/\d[\d,]*/)?.[0] ?? null;
+  const out: string[] = [];
+  if (told) {
+    out.push(endStop(lede));
+    if (p.sample && count && !lede.includes(count)) out.push(`Over ${p.sample}.`);
+  } else {
+    const head = p.value ? `${p.subject}: ${p.value}` : p.subject;
+    out.push(endStop(p.sample ? `${head} over ${p.sample}` : head));
+  }
+  if (p.benchmark) {
+    const m = NAMED_FIGURE.exec(p.benchmark.trim());
+    const name = m ? m[1]!.replace(/^the /i, '') : null;
+    out.push(m && name ? `${name.charAt(0).toUpperCase()}${name.slice(1)} is ${m[2]}.` : endStop(p.benchmark));
+  }
+  if (p.worth) out.push(endStop(p.worth));
+  return out.join(' ');
+}
+
 function checkedLabels(lines: readonly string[] | undefined, role: 'coach' | 'player'): string[] {
   // What CoachHelm checked is the coach's (7 Nov design, "How sure"): a player's payload carries none of it.
   if (role !== 'coach') return [];
@@ -205,7 +265,42 @@ function checkedLabels(lines: readonly string[] | undefined, role: 'coach' | 'pl
 
 const WORTH_TO: Record<string, 'team' | 'tour'> = { team: 'team', tour: 'tour' };
 
-export function toChReadDetail(raw: EvidenceInsight, deep: ChDeepInsight, role: 'coach' | 'player', first: string, calls: ChReadCalls, themes: Record<string, ChDiveTheme>, tour: string = 'Tour'): ChReadDetail {
+/** A figure of the read's own metric, as the ladder says it: a whole percent, a signed stroke figure, else one decimal under ten. */
+function figureOf(ev: EvidenceInsight['evidence'], v: number): string {
+  if (ev.unit === 'percent') return `${Math.round(v)}%`;
+  if (ev.unit === 'strokes') return formatComparison(v, 'strokes');
+  return formatFixed(v, Math.abs(v) < 10 ? 1 : 0);
+}
+
+/** The trend, from the player's own rounds; null when the metric has no per-round source (the registry's word) or too few rounds. */
+export function trendOf(raw: EvidenceInsight, label: string, ref: { label: string; value: number } | null, extras: ChReadExtras | null | undefined): { trend: ChReadTrend | null; noteOf: (roundId: string) => string | null } {
+  const none = { trend: null, noteOf: () => null };
+  const got = extras ? readPoints(raw.evidence.metric, extras) : null;
+  if (!extras || !got) return none;
+  const byId = new Map(got.points.map((p) => [p.id, p]));
+  const noteOf = (roundId: string) => roundNote(got.def, byId.get(roundId));
+  const last = got.points.slice(-TREND_LAST);
+  const lastFigure = windowFigure(got.def, last);
+  if (last.length < TREND_MIN || lastFigure == null) return { trend: null, noteOf };
+  const season = got.points.filter((p) => p.date >= extras.seasonSince);
+  const seasonFigure = windowFigure(got.def, season);
+  const perRoundUnit = raw.evidence.unit === 'count' ? ' a round' : '';
+  const dir = raw.evidence.polarity ?? getMetricRenderConfig(raw.evidence.metric)?.direction;
+  // The season is its own window only when it is not the same rounds as the last eight.
+  const differs = season.length >= TREND_MIN && (season.length !== last.length || season[0]?.id !== last[0]?.id);
+  return {
+    noteOf,
+    trend: {
+      label: `${label}, oldest to newest`,
+      lowerBetter: dir === 'lower_better' ? true : dir === 'higher_better' ? false : null,
+      ref: ref ? { ...ref, display: figureOf(raw.evidence, ref.value) } : null,
+      last: { values: last.map((p) => p.value), said: `${figureOf(raw.evidence, lastFigure)}${perRoundUnit} over the last ${last.length} rounds` },
+      season: differs && seasonFigure != null ? { values: season.map((p) => p.value), said: `${figureOf(raw.evidence, seasonFigure)}${perRoundUnit} across the season, ${season.length} rounds` } : null,
+    },
+  };
+}
+
+export function toChReadDetail(raw: EvidenceInsight, deep: ChDeepInsight, role: 'coach' | 'player', first: string, calls: ChReadCalls, themes: Record<string, ChDiveTheme>, tour: string = 'Tour', extras: ChReadExtras | null = null): ChReadDetail {
   const ev = raw.evidence as unknown as Record<string, unknown>;
   const base = deep.base;
   const cause = ev.cause as Record<string, unknown> | null | undefined;
@@ -235,17 +330,33 @@ export function toChReadDetail(raw: EvidenceInsight, deep: ChDeepInsight, role: 
   const funnel = funnelAllowed ? funnelOf(diagnosis?.basis?.narrowing) : null;
   // Call 2 gives a player the observed funnel; Q3 stays either way, so a step that is an arm of a likely cause is not on their copy.
   const playerSteps = funnel?.steps.filter((s) => !namesWithheldArm(`${s.label} ${s.statement}`, ev)) ?? [];
-  // The team pool is the coach's. A player's read is built without it: the What line takes the comparison the card draws, and the
-  // board card's pooled figure (`compare.team`, the coach's read sheet) is not on their copy.
-  const player = role === 'player';
-  const pooled = player && teamPoolLine(raw.evidence) != null;
-  const what = pooled ? { ...deep.read.what, benchmark: benchmarkOf(raw, base, (t) => speak(t, { role: 'player' }), false) } : deep.read.what;
-  const insight: ChInsight = player && base.compare?.team != null ? { ...base, compare: { ...base.compare, team: null } } : base;
+  // The team pool is the coach's. A player's What line is already built without it (`toChRead`), and the board card's pooled figure
+  // (`compare.team`, the coach's read sheet) is not on their copy.
+  const insight: ChInsight = role === 'player' && base.compare?.team != null ? { ...base, compare: { ...base.compare, team: null } } : base;
+  const w = deep.read.what;
+  const tourRef = tourLine?.value != null ? { label: tourLine.label ?? tour, value: tourLine.value } : base.compare?.tour != null ? { label: tour, value: base.compare.tour } : null;
+  const { trend, noteOf } = trendOf(raw, base.evidence.label || raw.evidence.metric_label, tourRef, calls.pictures ? extras : null);
+  const builtCause = readCauseOf(cause, deep.where, role, support?.range ?? null);
+  const shownCause: ChReadCause | null =
+    builtCause?.state === 'counted' && extras
+      ? {
+          ...builtCause,
+          holes: builtCause.holes.map((h) => {
+            const toPar = holeToPar(extras.holes, h.key.slice(0, h.key.lastIndexOf(':')), h.hole);
+            return { ...h, toPar: toPar == null ? null : formatToPar(toPar) };
+          }),
+        }
+      : builtCause;
   return {
     insight,
     stance: deep.stance.word,
     stanceCls: deep.stance.cls,
-    four: { what: readLines({ ...deep.read, what }, tour, undefined, role).what, why: deep.read.why, next: deep.read.next, through: deep.read.when.through },
+    four: {
+      what: whatProse({ lede: base.lede, subject: w.subject, value: w.value, sample: base.evidence.sample || null, benchmark: base.evidence.bars ? null : w.benchmark, worth: w.strokes ? strokesLine(w.strokes, tour, undefined, role) : null }),
+      why: deep.read.why,
+      next: deep.read.next,
+      through: deep.read.when.through,
+    },
     measured: deep.measured,
     headline: {
       title: base.title,
@@ -256,9 +367,10 @@ export function toChReadDetail(raw: EvidenceInsight, deep: ChDeepInsight, role: 
       worth: deep.closes ? { strokes: deep.closes.strokes, to: WORTH_TO[deep.closes.anchor] ?? 'self', estimated: base.stakes != null } : null,
       foot: { sample: base.evidence.sample, firm: base.evidence.read?.word ?? null, rung: role === 'coach' ? (support?.word ?? null) : null, through: base.evidence.asOf },
       stale: base.stale ? `A newer round (${base.stale.newestRound}) is not in this read yet. It is re-read overnight.` : null,
+      newer: base.stale && extras ? roundsAfter(refreshedDay(raw) ?? dayOf(raw.evidence.window_end), extras) : null,
     },
     funnel: role === 'coach' || !funnel ? funnel : playerSteps.length ? { ...funnel, steps: playerSteps } : null,
-    cause: readCauseOf(cause, deep.where, role, support?.range ?? null),
+    cause: shownCause,
     legacy: cause ? null : deep.diagnosis,
     sure: {
       word: base.evidence.read?.word ?? null,
@@ -267,9 +379,10 @@ export function toChReadDetail(raw: EvidenceInsight, deep: ChDeepInsight, role: 
       rung: role === 'coach' && support?.word ? { word: support.word, range: support.range ?? null } : null,
     },
     moved: movement && deep.movement ? { from: movement.from, to: movement.to, text: deep.movement.text, tone: String(deep.movement.tone), ref: tourLine?.value != null ? { label: tourLine.label ?? 'Tour', value: tourLine.value } : null, theme, through: base.evidence.asOf } : null,
+    trend,
     rounds: {
       total: deep.rounds.total,
-      list: deep.rounds.list.map((r) => ({ ...r, counted: (deep.where?.holes ?? []).filter((h) => h.key.startsWith(r.id)).length })),
+      list: deep.rounds.list.map((r) => ({ ...r, counted: (deep.where?.holes ?? []).filter((h) => h.key.startsWith(r.id)).length, note: noteOf(r.id) })),
     },
     todo: { drill: base.week, worth: deep.closes?.strokes ?? null, startsFrom: base.value || null, verdict: (base.engine?.verdict as ChEngineVerdict | undefined) ?? null, plan: deep.plan },
   };
@@ -298,14 +411,14 @@ export function railOf(list: readonly ChDeepInsight[], role: 'coach' | 'player',
   })).filter((g) => g.rows.length > 0);
 }
 
-export function toChReadView(dive: ChDeepDive, raw: ReadonlyMap<string, EvidenceInsight>, insightId: string, role: 'coach' | 'player', head: ChReadView['head'], calls: ChReadCalls): ChReadView {
+export function toChReadView(dive: ChDeepDive, raw: ReadonlyMap<string, EvidenceInsight>, insightId: string, role: 'coach' | 'player', head: ChReadView['head'], calls: ChReadCalls, extras: ChReadExtras | null = null): ChReadView {
   const deep = dive.list.find((i) => i.base.id === insightId) ?? null;
   const row = raw.get(insightId) ?? null;
   const areaLabel = deep ? (DIVE_AREAS.find((a) => a.id === diveAreaOf(deep.cat))?.label ?? '') : '';
   return {
     head,
     area: areaLabel,
-    read: deep && row ? toChReadDetail(row, deep, role, head.first, calls, dive.themes, dive.tour) : null,
+    read: deep && row ? toChReadDetail(row, deep, role, head.first, calls, dive.themes, dive.tour, extras) : null,
     rail: railOf(dive.list, role, raw),
     counts: { insights: dive.counts.insights ?? dive.list.length, needs: dive.counts.needs ?? 0 },
     ...(dive.missing ? { missing: dive.missing } : {}),

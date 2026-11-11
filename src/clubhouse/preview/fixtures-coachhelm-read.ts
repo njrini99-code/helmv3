@@ -3,9 +3,10 @@ import { diveCounts, orderDive, toChDeepInsight, type ChDeepDive, type DiveFocus
 import { toChInsight } from '../data/coachhelm-map';
 import { speak } from '../data/coachhelm-voice';
 import { READ_CALLS } from '../data/coachhelm-read-calls';
+import type { ChReadExtras, ReadCacheRow, ReadRoundRow } from '../data/coachhelm-read-extras-shape';
 import { toChReadView, type ChReadView } from '../data/coachhelm-read-view-shape';
 import type { ChHelmAssigned } from '../data/coachhelm-shape';
-import { CAST, type CastPlayer } from './cast';
+import { CAST, CAST_COACH, type CastPlayer } from './cast';
 import { HELM_PLAYERS, PREVIEW_TOUR, bigNumber, breakBias, penalties, slope } from './fixtures-coachhelm';
 
 /**
@@ -20,6 +21,9 @@ import { HELM_PLAYERS, PREVIEW_TOUR, bigNumber, breakBias, penalties, slope } fr
  * Who each read is about, their class year and their rounds on file are the shared cast's (`preview/cast.ts`): Eli 21 rounds, Jonah 18,
  * Priya 16. The ids are `HELM_PLAYERS`', which the base rows are built with.
  */
+
+export const READ_PREVIEW_KEYS = ['penalties', 'putts', 'approach'] as const;
+export type ReadPreviewKey = (typeof READ_PREVIEW_KEYS)[number];
 
 type Ev = EvidenceInsight['evidence'];
 const more = (raw: EvidenceInsight, evidence: Record<string, unknown>, rest: Partial<EvidenceInsight> = {}): EvidenceInsight => ({ ...raw, ...rest, evidence: { ...raw.evidence, ...evidence } as unknown as Ev });
@@ -126,13 +130,52 @@ const roundsOf = (q: string): Map<string, DiveRoundRow> => {
   return new Map(rounds.map(([round_date, course_name, total_score, score_to_par, holes], i) => [`${who}-r${i + 1}`, { id: `${who}-r${i + 1}`, round_date, course_name, total_score, score_to_par, holes_played: holes ?? 18 }]));
 };
 
+/**
+ * Eli's penalties round by round, so the trend, the rounds list and the read agree: 23 over 21 rounds (1.1 a round). The newest
+ * eight are the listed rounds (2, 3, 0, 1, 0, 3, 1, 2, newest first: 12); the thirteen before them hold the other 11.
+ */
+const ELI_PENALTIES_LISTED = [2, 3, 0, 1, 0, 3, 1, 2];
+const ELI_PENALTIES_EARLIER = [1, 0, 2, 1, 0, 1, 2, 0, 1, 1, 0, 1, 1];
+/** The score on each hole the counted path names. */
+const ELI_HOLES = [{ round_id: 'eli-r1', hole_number: 7, score: 5, par: 4 }, { round_id: 'eli-r2', hole_number: 14, score: 6, par: 4 }, { round_id: 'eli-r2', hole_number: 3, score: 5, par: 4 }, { round_id: 'eli-r4', hole_number: 11, score: 5, par: 4 }, { round_id: 'eli-r6', hole_number: 7, score: 6, par: 5 }];
+
+const roundRow = (id: string, round_date: string, total_score: number, score_to_par: number, holes: number, penalties: number): ReadRoundRow => ({
+  id,
+  round_date,
+  holes_played: holes,
+  total_score,
+  front_nine: holes === 18 ? Math.floor(total_score / 2) : total_score,
+  back_nine: holes === 18 ? Math.ceil(total_score / 2) : null,
+  total_putts: holes === 18 ? 31 : 16,
+  score_to_par,
+  strokes_gained_total: 0.4,
+  strokes_gained_tee: 0.1,
+  strokes_gained_approach: 0.1,
+  strokes_gained_around_green: 0.1,
+  strokes_gained_putting: 0.1,
+  total_penalties: penalties,
+});
+
+/**
+ * What the page reads beside the read: the player's rounds with their stats rows. `stale`: two rounds played after the read was last
+ * made. The season starts 1 August, as `seasonStartDate` says it.
+ */
+function extrasOf(key: ReadPreviewKey, stale: boolean): ChReadExtras {
+  const { who, rounds } = ROUND_SEEDS[key]!;
+  const listed = rounds.map(([date, , score, toPar, holes], i) => roundRow(`${who}-r${i + 1}`, date, score, toPar, holes ?? 18, key === 'penalties' ? (ELI_PENALTIES_LISTED[i] ?? 0) : 0));
+  // Twice a week through June and July, back from the first week of August.
+  const earlier = key === 'penalties' ? ELI_PENALTIES_EARLIER.map((n, i) => roundRow(`eli-r${9 + i}`, new Date(Date.UTC(2026, 7, 6) - i * 3.5 * 86_400_000).toISOString().slice(0, 10), 74 + (i % 4), 2 + (i % 4), 18, n)) : [];
+  const newer = stale ? [roundRow(`${who}-n1`, '2026-10-03', 73, 1, 18, 1), roundRow(`${who}-n2`, '2026-10-01', 75, 3, 18, 0)] : [];
+  const all = [...newer, ...listed, ...earlier];
+  const cache: ReadCacheRow[] = all.map((r) => ({ round_id: r.id, strokes_gained_total: r.strokes_gained_total, penalty_strokes: r.total_penalties }));
+  return { rounds: all, cache, holes: key === 'penalties' ? ELI_HOLES : [], seasonSince: '2026-08-01' };
+}
+
 const DRILL_TEXT: Record<string, string> = {
   'in-slope': 'Rehearse a downhill-only ladder: start 2 ft below the hole and add a foot at a time, focused on dying the ball into the front of the cup rather than a firm strike.',
   'in-approach': 'Alternate 4- and 5-iron to a 30-yard-wide target at 175, 185 and 195 yards. Count greens out of 15, and log the number.',
 };
 
-export const READ_PREVIEW_KEYS = ['penalties', 'putts', 'approach'] as const;
-export type ReadPreviewKey = (typeof READ_PREVIEW_KEYS)[number];
 const keyOf = (q: string | undefined): ReadPreviewKey => ((READ_PREVIEW_KEYS as readonly string[]).includes(q ?? '') ? (q as ReadPreviewKey) : 'penalties');
 
 /**
@@ -166,7 +209,9 @@ export function previewReadView(q: string | undefined, role: 'coach' | 'player',
   const dive: ChDeepDive = { list, tour: 'Tour', rounds: null, themes: {}, roundsFailed: false, plansFailed: false, themesFailed: false, counts: diveCounts(list) };
   const head = { playerId: role === 'coach' ? owner.id : null, name: role === 'coach' ? owner.name : 'You', first: role === 'coach' ? first : 'You' };
   // The team pool call is on, as production has it with coachhelm_team_pool_v1 on: a coach's ladder carries it, a player's never does.
-  return toChReadView(dive, new Map([raw, ...others].map((r) => [r.id, r])), gone ? 'gone' : raw.id, role, head, { ...READ_CALLS, teamPool: true });
+  const view = toChReadView(dive, new Map([raw, ...others].map((r) => [r.id, r])), gone ? 'gone' : raw.id, role, head, { ...READ_CALLS, teamPool: true }, extrasOf(key, state === 'stale'));
+  // A player's page knows who their coach is (the shared cast's head coach), for Message Coach Reyes.
+  return role === 'player' ? { ...view, coach: { name: CAST_COACH.formal, userId: 'user-coach-reyes' } } : view;
 }
 
 /** Who a coach's preview is about, as the route's scope would say it. */

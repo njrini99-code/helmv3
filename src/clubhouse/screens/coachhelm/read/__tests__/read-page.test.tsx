@@ -24,6 +24,7 @@ import { previewReadHead, previewReadView } from '../../../../preview/fixtures-c
 import type { ChViewLoad, ChViewVoice } from '../../../../data/coachhelm-views-shape';
 import type { ChReadView } from '../../../../data/coachhelm-read-view-shape';
 import type { ChCoachHelmWrites } from '../../writes';
+import type { ChReadWrites } from '../actions';
 import { ReadPage, ReadSkeleton } from '../ReadPage';
 import '../../../../__tests__/dialog-polyfill';
 
@@ -37,7 +38,10 @@ const coachVoice = (q: string): ChViewVoice => ({ role: 'coach', ...previewReadH
 const PLAYER: ChViewVoice = { role: 'player' };
 const writesSpy = (over: Partial<ChCoachHelmWrites> = {}): ChCoachHelmWrites => ({ assign: vi.fn(async () => ({ success: true })), dismiss: vi.fn(async () => ({ success: true })), undo: vi.fn(async () => ({ success: true })), ...over });
 
-function show(q: string, role: 'coach' | 'player', opts: { state?: string; load?: ChViewLoad<ChReadView>; writes?: ChCoachHelmWrites; over?: (v: ChReadView) => ChReadView } = {}) {
+const readWritesSpy = (): ChReadWrites => ({ removeFocus: vi.fn(async () => ({ success: true })), recheck: vi.fn(async () => ({ success: true, insightsCreated: 1 })) });
+const lastRead = { writes: readWritesSpy() };
+
+function show(q: string, role: 'coach' | 'player', opts: { state?: string; load?: ChViewLoad<ChReadView>; writes?: ChCoachHelmWrites; over?: (v: ChReadView) => ChReadView; holdMs?: number } = {}) {
   const Wrap = ({ children }: { children: ReactNode }) => (
     <LazyMotion features={domAnimation}>
       <ToastProvider>{children}</ToastProvider>
@@ -47,7 +51,8 @@ function show(q: string, role: 'coach' | 'player', opts: { state?: string; load?
   const load = opts.load ?? ({ status: 'ready', data: opts.over ? opts.over(built) : built } as const);
   const writes = opts.writes ?? writesSpy();
   const hrefOf = (id: string) => `/read/${id}`;
-  render(<ReadPage load={load} voice={role === 'coach' ? coachVoice(q) : PLAYER} writes={writes} playerWrites={{ accept: vi.fn(async () => ({ success: true })), decline: vi.fn(async () => ({ success: true })) }} hrefOf={hrefOf} />, { wrapper: Wrap });
+  lastRead.writes = readWritesSpy();
+  render(<ReadPage load={load} voice={role === 'coach' ? coachVoice(q) : PLAYER} writes={writes} playerWrites={{ accept: vi.fn(async () => ({ success: true })), decline: vi.fn(async () => ({ success: true })) }} readWrites={lastRead.writes} holdMs={opts.holdMs ?? 60} hrefOf={hrefOf} />, { wrapper: Wrap });
   return writes;
 }
 const main = () => screen.getByRole('main');
@@ -76,7 +81,10 @@ describe('the read’s structure', () => {
     expect(primaries[0]?.textContent).toContain('Assign as focus');
     const row = within(head.nextElementSibling as HTMLElement);
     expect(row.getByRole('button', { name: 'Dismiss' })).toBeTruthy();
-    expect(row.getByRole('link', { name: 'Message Eli' }).getAttribute('href')).toContain('messages?player=pl-eli');
+    const message = row.getByRole('link', { name: 'Message Eli' });
+    expect(message.getAttribute('href')).toContain('messages?player=pl-eli');
+    // One group of the real keys: Dismiss and Message are the same quiet Button, side by side after the primary.
+    expect([...(head.nextElementSibling as HTMLElement).children].map((n) => n.className.replace(/\s+/g, ' ').trim())).toEqual(['ch-btn ch-btn--primary', 'ch-btn ch-btn--ghost', 'ch-btn ch-btn--ghost']);
   });
 
   it('desktop draws every section open, in the design’s order, and no tabs', () => {
@@ -178,24 +186,63 @@ describe('desktop: the player’s reads beside the read', () => {
 });
 
 describe('a coach acts on the read', () => {
-  it('Assign sends one write for this player; the row, the pill, the list and the plan then say so', async () => {
-    const writes = show('penalties', 'coach');
+  it('Assign turns the row, the pill, the list and the plan at once, and saves nothing while Undo is offered', async () => {
+    const writes = show('penalties', 'coach', { holdMs: 5000 });
     await userEvent.click(screen.getByRole('button', { name: 'Assign as focus' }));
-    expect(writes.assign).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(writes.assign).mock.calls[0]?.[0]).toMatchObject({ playerId: 'pl-eli', insightId: 'in-pen' });
-    await waitFor(() => expect(main().getAttribute('data-ch-read-state')).toBe('assigned'));
+    expect(main().getAttribute('data-ch-read-state')).toBe('assigned');
+    expect(writes.assign).not.toHaveBeenCalled();
     expect(screen.queryByRole('button', { name: 'Assign as focus' })).toBeNull();
     expect(main().querySelector('header.ch-hd-dos__h .ch-hl-pri')?.textContent).toBe('Assigned');
     expect(sec('plan')?.textContent).toContain('Proposed to Eli just now');
+    expect(main().querySelector('[data-ch-read-actions="assigned"]')?.textContent).toContain('Eli is told when Undo closes.');
     expect(within(screen.getByRole('navigation', { name: 'Eli’s reads' })).getByRole('link', { current: true }).textContent).toContain('Assigned');
+    // Undo is the write never sent: the key comes back and nothing was saved.
+    await userEvent.click(screen.getByRole('button', { name: 'Undo' }));
+    expect(main().getAttribute('data-ch-read-state')).toBe('open');
+    expect(screen.getByRole('button', { name: 'Assign as focus' })).toBeTruthy();
+    expect(writes.assign).not.toHaveBeenCalled();
   });
 
-  it('a refused Assign leaves the button and says so (CH-13001)', async () => {
-    show('penalties', 'coach', { writes: writesSpy({ assign: vi.fn(async () => ({ success: false, error: 'nope' })) }) });
+  it('when Undo closes, one write goes for this player and the read stays assigned', async () => {
+    const writes = show('penalties', 'coach', { holdMs: 40 });
     await userEvent.click(screen.getByRole('button', { name: 'Assign as focus' }));
-    await waitFor(() => expect(document.querySelector('[data-ch-code="CH-13001"]')).toBeTruthy());
-    expect(screen.getByRole('button', { name: 'Assign as focus' })).toBeTruthy();
+    await waitFor(() => expect(writes.assign).toHaveBeenCalledTimes(1), { timeout: 4000 });
+    expect(vi.mocked(writes.assign).mock.calls[0]?.[0]).toMatchObject({ playerId: 'pl-eli', insightId: 'in-pen' });
+    await waitFor(() => expect(main().querySelector('[data-ch-read-actions="assigned"]')?.textContent).toContain('Eli sees it as a proposal'));
+    expect(main().getAttribute('data-ch-read-state')).toBe('assigned');
+  });
+
+  it('a refused Assign puts the key back and says so (CH-13001)', async () => {
+    show('penalties', 'coach', { holdMs: 40, writes: writesSpy({ assign: vi.fn(async () => ({ success: false, error: 'nope' })) }) });
+    await userEvent.click(screen.getByRole('button', { name: 'Assign as focus' }));
+    await waitFor(() => expect(document.querySelector('[data-ch-code="CH-13001"]')).toBeTruthy(), { timeout: 4000 });
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Assign as focus' })).toBeTruthy());
     expect(main().getAttribute('data-ch-read-state')).toBe('open');
+  });
+
+  it('leaving the page while Undo is offered sends the held write at once', async () => {
+    const writes = show('penalties', 'coach', { holdMs: 5000 });
+    await userEvent.click(screen.getByRole('button', { name: 'Assign as focus' }));
+    expect(writes.assign).not.toHaveBeenCalled();
+    fireEvent(window, new Event('pagehide'));
+    await waitFor(() => expect(writes.assign).toHaveBeenCalledTimes(1));
+  });
+
+  it('Remove focus is offered on a focus made from this read, waits behind Undo, then deletes that focus area and reads the page again', async () => {
+    show('penalties', 'coach', { state: 'assigned', holdMs: 40 });
+    await userEvent.click(screen.getByRole('button', { name: 'Remove focus' }));
+    expect(main().getAttribute('data-ch-read-state')).toBe('removed');
+    expect(sec('plan')?.textContent).toContain('Not part of a focus or goal yet.');
+    await waitFor(() => expect(lastRead.writes.removeFocus).toHaveBeenCalledWith('fa-read'), { timeout: 4000 });
+    await waitFor(() => expect(router.refresh).toHaveBeenCalledTimes(1));
+  });
+
+  it('Undo on Remove focus deletes nothing', async () => {
+    show('penalties', 'coach', { state: 'assigned', holdMs: 5000 });
+    await userEvent.click(screen.getByRole('button', { name: 'Remove focus' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Undo' }));
+    expect(main().getAttribute('data-ch-read-state')).toBe('assigned');
+    expect(lastRead.writes.removeFocus).not.toHaveBeenCalled();
   });
 
   it('Dismiss writes once, leaves the read readable with one line and Undo, and Undo restores the row', async () => {
@@ -265,14 +312,29 @@ describe('a player on their own read', () => {
 });
 
 describe('every state looks its own', () => {
-  it('stale says which round is missing, under the claim, and offers no Assign (CH-13903, CH-13906)', () => {
+  it('stale counts the newer rounds under the claim, and Re-check now takes Assign’s place (CH-13903, CH-13906)', async () => {
     show('penalties', 'coach', { state: 'stale' });
     expect(main().getAttribute('data-ch-read-state')).toBe('stale');
     const note = main().querySelector('header.ch-hd-dos__h [data-ch-code="CH-13903"]');
-    expect(note?.textContent).toContain('A round played Oct 3 isn’t counted yet');
+    expect(note?.textContent).toContain('2 newer rounds aren’t counted yet');
     expect(screen.queryByRole('button', { name: 'Assign as focus' })).toBeNull();
     expect(main().querySelector('[data-ch-code="CH-13906"]')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Dismiss' })).toBeTruthy();
+    // The coach's own re-check of this one player, then the page reads its data again.
+    const primaries = main().querySelectorAll('.ch-btn--primary');
+    expect(primaries.length).toBe(1);
+    await userEvent.click(screen.getByRole('button', { name: 'Re-check now' }));
+    expect(lastRead.writes.recheck).toHaveBeenCalledWith('pl-eli');
+    await waitFor(() => expect(router.refresh).toHaveBeenCalledTimes(1));
+  });
+
+  it('a stale read with the rounds unread still names the day, and a player is offered no re-check', () => {
+    show('penalties', 'coach', { state: 'stale', over: (v) => ({ ...v, read: v.read && { ...v.read, headline: { ...v.read.headline, newer: null } } }) });
+    expect(main().querySelector('[data-ch-code="CH-13903"]')?.textContent).toContain('A round played Oct 3 isn’t counted yet');
+    cleanup();
+    show('putts', 'player', { state: 'stale' });
+    expect(screen.queryByRole('button', { name: 'Re-check now' })).toBeNull();
+    expect(main().querySelector('[data-ch-code="CH-13903"]')).toBeTruthy();
   });
 
   it('assigned on load: the row is Message, the plan shows the focus', () => {
@@ -331,6 +393,47 @@ describe('every state looks its own', () => {
       expect(!!el.querySelector('.ch-hd-rail')).toBe(!phone);
       cleanup();
     }
+  });
+});
+
+describe('how it has moved', () => {
+  it('is the read’s metric round by round on the one line chart, with a window switch that swaps the caption', async () => {
+    show('penalties', 'coach');
+    const card = sec('moved') as HTMLElement;
+    expect(card.querySelector('.ch-line')).toBeTruthy();
+    expect(card.textContent).toContain('Penalties per round, oldest to newest');
+    expect(card.textContent).toContain('1.5 a round over the last 8 rounds');
+    expect(card.textContent).toContain('Dashed line: Tour 0.3');
+    const win = within(card).getByRole('radiogroup', { name: 'Rounds shown' });
+    expect(within(win).getAllByRole('radio').map((b) => b.textContent)).toEqual(['Last 8', 'Season']);
+    await userEvent.click(within(win).getByRole('radio', { name: 'Season' }));
+    await waitFor(() => expect(card.textContent).toContain('across the season, 10 rounds'));
+    // Drawn in place: the chart asks for no draw-in.
+    expect(card.querySelector('[data-draw]')).toBeNull();
+  });
+
+  it('a before and an after alone are a quiet row under the measure, never a card', () => {
+    show('approach', 'coach');
+    expect(sec('moved')).toBeNull();
+    expect(sec('measured')?.querySelector('[data-ch-read-since]')?.textContent).toContain('From 34% to 43%, up 9 pts');
+  });
+
+  it('the rounds list says what the metric was in each round, and a counted hole its score', () => {
+    show('penalties', 'coach');
+    expect(sec('rounds')?.textContent).toContain('3 penalties');
+    expect(sec('where')?.textContent).toContain('+2');
+  });
+});
+
+describe('a player’s way to their coach', () => {
+  it('Message names the coach and opens the thread with them', () => {
+    show('penalties', 'player');
+    expect(screen.getByRole('link', { name: 'Message Coach Reyes' }).getAttribute('href')).toBe('/golf/dashboard/messages?user=user-coach-reyes');
+  });
+
+  it('with no coach on the page it is Message your coach, to Messages', () => {
+    show('penalties', 'player', { over: (v) => ({ ...v, coach: undefined }) });
+    expect(screen.getByRole('link', { name: 'Message your coach' }).getAttribute('href')).toBe('/golf/dashboard/messages');
   });
 });
 
