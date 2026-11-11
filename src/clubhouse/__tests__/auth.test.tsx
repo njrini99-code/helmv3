@@ -647,10 +647,11 @@ describe('the front door flag chooses the page, and only the page', () => {
   });
 });
 
+// The fixture's own day (PREVIEW_AUTH_NOW, Wednesday 14 October 2026), so its "last here" is the Sunday before.
 const welcome = (data = PREVIEW_WELCOME_COACH, navigate = vi.fn()) => ({
   navigate,
   ui: (
-    <FixedClock.Provider value={new Date(2025, 9, 14, 8, 30)}>
+    <FixedClock.Provider value={new Date(2026, 9, 14, 8, 30)}>
       <WelcomeStage>
         <Welcome data={data} navigate={navigate} />
       </WelcomeStage>
