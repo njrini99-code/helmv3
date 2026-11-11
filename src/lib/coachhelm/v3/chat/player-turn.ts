@@ -99,7 +99,7 @@ export async function runPlayerTurn(
       toolContext: { sb, who: ctx, conversationId, surface: 'player', loaders: loadersFor(ctx) },
       tasks: null,
       maxSteps: PLAYER_MAX_STEPS,
-      features: chatFeatures(),
+      features: chatFeatures('player'),
       turnNote: context.line,
       screen: context.screen?.place ? { screen: context.screen.screen, label: context.screen.place.name } : null,
       requestSignal: signal,

@@ -307,7 +307,7 @@ export async function POST(req: NextRequest) {
   const isNewConversation = !conversationId;
   try {
     if (!conversationId && input.kind === 'message') {
-      conversationId = (await createConversation(supabase, { coach_id: ctx.coach_id, title: input.text.slice(0, 60) || 'New conversation' })).id;
+      conversationId = (await createConversation(supabase, { coach_id: ctx.coach_id, title: input.text.slice(0, 60) || 'New conversation', surface: surface === 'player' ? null : surface })).id;
     }
     if (!conversationId) throw new Error('conversation id unresolved');
     if (input.kind === 'message') await upsertUserTurn(supabase, { conversation_id: conversationId, content: input.text, client_turn_id: clientTurnId });
@@ -365,7 +365,7 @@ export async function POST(req: NextRequest) {
       toolContext: { sb: supabase, who: ctx, conversationId: convId, surface, loaders: coachScreenLoaders(supabase, ctx) },
       tasks: { coachId: ctx.coach_id, teamId: ctx.team_id, timezone: ctx.timezone, defer: later },
       maxSteps: CHAT_MAX_STEPS,
-      features: chatFeatures(),
+      features: chatFeatures(surface),
       turnNote,
       screen: screenEcho,
       requestSignal: req.signal,

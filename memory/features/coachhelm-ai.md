@@ -102,13 +102,24 @@ entries are history. The tool list and the prompt are described where the tools 
   player.
 - **Optional features are one object, `CHAT_FEATURES`**, each a field that turns it off: `dropStaleThinking`
   (`thinking.block_binding.prefix_mismatch_behavior: 'drop_block'`, beta `thinking-binding-controls-2026-08-01`),
-  `strictTools` (`strict: true` on every tool; the engine still validates every input with zod), `citations` (below),
-  `compaction` (`compact_20260112` at the default trigger, beta `compact-2026-01-12`). Built and off:
-  `taskBudgetTokens` (null), `progressNotes` (`thinking.display: 'updates'`), `programmaticReads` (the model's code
-  calling the read tools; off because results would pass through a container Anthropic retains for up to 30 days,
-  an owner decision for a team of minors). If the API rejects a request (HTTP 400) that carries any of them, the loop
-  sends that call once more as a plain request (no beta, no `strict`), keeps the rest of the turn plain, completes the
-  turn and logs `v3.chat.stream.degraded` as an error: the coach loses the feature, not the answer.
+  `strictTools` (`strict: true`; the engine still validates every input with zod), `citations` (below),
+  `compaction` (`compact_20260112` at the default trigger, beta `compact-2026-01-12`), `programmaticReads` (below).
+  Built and off: `taskBudgetTokens` (null), `progressNotes` (`thinking.display: 'updates'`). If the API rejects a
+  request (HTTP 400) that carries any of them, the loop sends that call once more as a plain request (no beta, no
+  `strict`, no code tool), keeps the rest of the turn plain, completes the turn and logs `v3.chat.stream.degraded`
+  as an error: the coach loses the feature, not the answer.
+- **The model's code calls the reads (programmatic tool calling): ON for Ask, quick chat and the practice helper,
+  OFF for a player.** The model may write code that calls the read tools in Anthropic's code execution sandbox and
+  works a figure out there, so a question across many players or rounds is one model call instead of one per read.
+  **With this on, the results of those reads (players' names and figures) pass through Anthropic's code execution
+  container. Anthropic retains that container's data for up to 30 days and the feature is not eligible for zero data
+  retention. The owner chose this on 10 Nov 2026** ("It's not minors. Turn it on."). The switch is
+  `CHAT_FEATURES.programmaticReads` in `engine/model.ts`. What does not change: every read the code calls is validated
+  by the tool's zod schema, runs with the signed-in coach's session client under row-level security and the same
+  ownership checks, and its envelope reaches the store, the evidence parts (marked `via: 'code'`) and the grounding
+  check. A task can never be called from code, and no card is prepared while code is waiting on a read. Reads are not
+  `strict` while this is on (the API does not allow both); tasks stay strict. An answer computed in code carries no
+  citation markers; its sources are the turn's `via: 'code'` evidence parts.
 - **Stored model messages are exactly what the API returned**, appended only: thinking blocks with their signatures,
   text (with the API's citation objects) and tool calls in order, each tool-result message, and the per-turn system
   message. Thinking is never sent to the browser. A thinking block is valid only while `system`, `tools` and every
@@ -192,6 +203,16 @@ entries are history. The tool list and the prompt are described where the tools 
 - **A failure's kind** is a closed set (`ChatErrorKind`): the server names it on the stream (`model`, `truncated`,
   `lost`, `card_retry`, `card_gone`) and in a refused request's body (`budget`, `off`, `rate`, `signed_out`, `gone`);
   the hook names a dropped connection (`offline`, `lost`, `card_retry`). A refusal by the model is not a failure.
+- **An undone card** is stored as a receipt with `status: 'cancelled'` ("Undone. Nothing was written."); a turn undone
+  before 10 Nov 2026 still holds its `held` receipt and the card's own GET says what became of it.
+- **Where a task lands.** A proposal says where its row will appear (`lands: { kind, home, day? }`), and a receipt's
+  `created[]` names the row it wrote (`id`, `ids`) with a link to the thing itself where the app has one, so the page
+  behind quick chat can keep a place for the row and mark it. Ids are set where the app's own action returns the row
+  (events, blocked time, recruits, tasks, team updates, a practice series, qualifiers) and left out elsewhere.
+- **The surface a conversation was started on** is stored on the conversation (`surface`, held migration
+  `20261110130000`) and returned by `GET /api/coachhelm/v3/chat/conversations`. Without the migration it is null.
+- **Reading a sample plan's layout** (`coachhelm-plan-format.ts`) is not a chat turn. It runs on `PLAN_FORMAT_MODEL`
+  (`anthropic/claude-sonnet-5-5`), the model it ran on before the chat moved, not on `coach_chat`'s.
 - **A turn's facts** are stored as the part `data-turn-meta`: `started_at`, `duration_ms` (summed over the requests
   that worked on the turn), `reads`, and `declined` when the model refused.
 - **Screens bound for the tools** (`stream/route.ts`, the only file that may import a Clubhouse loader): Stats, Team

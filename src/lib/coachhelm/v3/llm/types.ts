@@ -46,6 +46,13 @@ export const MODEL_FOR_TASK: Record<ComposeTask, string> = {
 };
 
 /**
+ * Reading a sample practice plan's layout (`src/app/golf/actions/coachhelm-plan-format.ts`): one structured call on an
+ * image or a PDF through the AI SDK, not a chat turn and not a budgeted compose task. It used `coach_chat`'s model
+ * until 10 Nov 2026; it keeps the model it ran on then, so the chat's move to Claude Haiku 5.5 does not move it unseen.
+ */
+export const PLAN_FORMAT_MODEL = 'anthropic/claude-sonnet-5-5';
+
+/**
  * Per-task fallback priority on budget exhaustion (Part XI.4).
  * Lower number = higher priority (stays on LLM longer).
  *   round_review (1) > coach_chat (2) > hero_narrative (3) >

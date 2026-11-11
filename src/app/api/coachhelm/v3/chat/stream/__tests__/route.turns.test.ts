@@ -90,7 +90,7 @@ vi.mock('@/lib/coachhelm/v3/chat/context', async (original) => {
 });
 vi.mock('@/lib/coachhelm/v3/chat/engine/model', async (original) => {
   const real = await original<typeof import('@/lib/coachhelm/v3/chat/engine/model')>();
-  return { ...real, anthropicModelClient: () => (h.modelFactory ? h.modelFactory() : h.model), chatFeatures: () => h.features ?? real.CHAT_FEATURES };
+  return { ...real, anthropicModelClient: () => (h.modelFactory ? h.modelFactory() : h.model), chatFeatures: (surface?: 'ask' | 'quick_chat' | 'practice_helper' | 'player') => h.features ?? real.chatFeatures(surface) };
 });
 // The real hold, with a 250 ms window instead of 8 s so a test can watch it release.
 const HOLD_MS = 250;
@@ -104,6 +104,7 @@ import { POST } from '../route';
 import { restoreUIMessages } from '@/lib/coachhelm/v3/chat/restore';
 import { CHAT_FEATURES, MissingModelKeyError, plainFeatures } from '@/lib/coachhelm/v3/chat/engine/model';
 import { cancelHeld } from '@/lib/coachhelm/v3/chat/undo-hold';
+import { listConversations, resetSurfaceColumnCheck } from '@/lib/coachhelm/v3/chat/persistence';
 import { getRound } from '@/lib/coachhelm/v3/chat/readers-direct';
 import { turnMetaOf } from '@/lib/coachhelm/v3/chat/engine/protocol';
 
@@ -117,7 +118,8 @@ let db: FakeDb;
 let log: ToolLog;
 let turn = 0;
 
-function setup(opts: { modelColumns?: boolean; holdColumn?: boolean } = {}) {
+function setup(opts: { modelColumns?: boolean; holdColumn?: boolean; surfaceColumn?: boolean } = {}) {
+  resetSurfaceColumnCheck();
   db = fakeDb(opts);
   h.db = db;
   h.admin = fakeDb();
@@ -220,15 +222,18 @@ describe('a plain answer', () => {
       { type: 'text', text: 'TEAM BLOCK', cache_control: { type: 'ephemeral' } },
     ]);
     expect(request.cache_control).toEqual({ type: 'ephemeral' });
-    expect((request.tools as Array<{ name: string; eager_input_streaming?: boolean; strict?: boolean }>).map((t) => [t.name, t.eager_input_streaming, t.strict])).toEqual([
-      ['get_player_stats', true, true],
-      ['get_team_stats', true, true],
-      ['create_focus_area', true, true],
-      ['get_rounds', true, true],
-      ['get_round', true, true],
-      ['find_in_app', true, true],
+    // A coach's reads may be called from the model's code, so they cannot be strict (the engine validates every input itself);
+    // a task is direct-only and strict; the code tool is last.
+    expect((request.tools as Array<{ name: string; eager_input_streaming?: boolean; strict?: boolean; allowed_callers?: string[] }>).map((t) => [t.name, t.eager_input_streaming ?? null, t.strict ?? null, t.allowed_callers?.length ?? 0])).toEqual([
+      ['get_player_stats', true, null, 2],
+      ['get_team_stats', true, null, 2],
+      ['create_focus_area', true, true, 0],
+      ['get_rounds', true, null, 2],
+      ['get_round', true, null, 2],
+      ['find_in_app', true, null, 2],
+      ['code_execution', null, null, 0],
     ]);
-    expect((request.tools as Array<{ input_schema: { additionalProperties?: boolean } }>).every((t) => t.input_schema.additionalProperties === false)).toBe(true);
+    expect((request.tools as Array<{ name: string; input_schema?: { additionalProperties?: boolean } }>).find((t) => t.name === 'create_focus_area')!.input_schema!.additionalProperties).toBe(false);
   });
 
   it('the next question replays the stored messages, thinking included, and appends', async () => {
@@ -412,6 +417,8 @@ describe('the optional request features', () => {
       expect(request).not.toHaveProperty('context_management');
       expect(request.thinking).toEqual({ type: 'adaptive' });
       expect((request.tools as Array<{ strict?: boolean }>).some((t) => t.strict !== undefined)).toBe(false);
+      // The plain request has no code tool either, and no read says it may be called from code.
+      expect(JSON.stringify(request.tools)).not.toMatch(/code_execution|allowed_callers/);
       // What is not optional is unchanged.
       expect(request.model).toBe('claude-haiku-5-5');
       expect(request.output_config).toEqual({ effort: 'high' });
@@ -518,9 +525,82 @@ describe('the coach’s standing notes and the conversation’s tone', () => {
   });
 });
 
-describe('programmatic tool calling (off unless its constant is on)', () => {
-  beforeEach(() => {
-    h.features = { ...CHAT_FEATURES, programmaticReads: true };
+describe('the model’s code calling the reads (on for a coach, off for a player)', () => {
+  it('is on for every coach surface by default and off for a player', async () => {
+    expect(CHAT_FEATURES.programmaticReads).toBe(true);
+    for (const surface of ['ask', 'quick_chat', 'practice_helper']) {
+      const model = script({ content: [text('74.2.')] });
+      await ask('Team?', null, { surface });
+      expect((model.requests[0]!.tools as Array<{ name: string }>).at(-1)!.name).toBe('code_execution');
+    }
+    h.role = 'player';
+    const player = script({ content: [text('73.1.')] });
+    await ask('How am I scoring?');
+    const tools = player.requests[0]!.tools as Array<{ name: string; strict?: boolean; allowed_callers?: string[] }>;
+    expect(tools.map((t) => t.name)).toEqual(['get_my_stats', 'create_focus_area']);
+    expect(tools.every((t) => t.strict === true && t.allowed_callers === undefined)).toBe(true);
+  });
+
+  it('with it off the request has no code tool, every tool is strict, and the turn works the same', async () => {
+    h.features = { ...CHAT_FEATURES, programmaticReads: false };
+    const model = script({ content: [toolUse('tu_1', 'get_team_stats', {})] }, { content: [text('74.2.')] });
+    const { events } = await ask('How is the team scoring?');
+    expect(done(events)?.status).toBe('complete');
+    const tools = model.requests[0]!.tools as Array<{ name: string; strict?: boolean; allowed_callers?: string[] }>;
+    expect(tools.some((t) => t.name === 'code_execution')).toBe(false);
+    expect(tools.every((t) => t.strict === true && t.allowed_callers === undefined)).toBe(true);
+  });
+
+  it('a read the code calls is validated, runs as the signed-in coach, and is still a row, a piece of evidence and a stored read', async () => {
+    script(
+      { content: [serverCode(), codeToolUse('tu_bad', 'get_player_stats', { player_id: 42 }), codeToolUse('tu_ok', 'get_team_stats', {})], container: 'container_1' },
+      { content: [{ type: 'code_execution_tool_result', tool_use_id: 'srvtoolu_1', content: { type: 'code_execution_result', stdout: '74.2', stderr: '', return_code: 0, content: [] } } as never, text('The team averages 74.2.')] },
+    );
+    const { events } = await ask('How is the team scoring?');
+    expect(done(events)?.status).toBe('complete');
+    // The input the code sent is checked by the same schema as a direct call: the bad one never ran.
+    expect(log.reads.map((r) => r.tool)).toEqual(['get_team_stats']);
+    expect(log.reads[0]!.who).toMatchObject({ coach_id: 'coach-1', team_id: 'team-1' });
+    // The thread: one row for the code, from its start until its result is back, and a row for each read under it.
+    const rows = events.flatMap((e) => (e.type === 'read_started' || e.type === 'read_finished' ? [`${e.type}:${e.tool}`] : []));
+    expect(rows).toEqual(['read_started:code_execution', 'read_started:get_team_stats', 'read_finished:get_team_stats', 'read_finished:code_execution']);
+    // The evidence says the code asked for it: that is how the thread knows which reads a computed figure came from.
+    const evidence = events.filter((e) => e.type === 'evidence') as Array<{ part: { data: { tool: string; ref: string; via?: string } } }>;
+    // (Refs are reserved in call order before anything runs, so the call that was refused took e1.)
+    expect(evidence.map((e) => e.part.data)).toMatchObject([{ tool: 'get_team_stats', ref: 'e2', via: 'code' }]);
+    // Stored with the turn, and counted as the turn's read; the code row is not a read.
+    const [row] = assistantRows();
+    expect(turnMetaOf(row!.ui_parts as never)).toMatchObject({ reads: 1 });
+    expect((row!.ui_parts as Array<{ type: string; data?: { via?: string } }>).find((p) => p.type === 'data-evidence')?.data?.via).toBe('code');
+    // The model's own blocks (its code, the code's result) are kept exactly as returned and go back on the next turn.
+    const stored = row!.model_messages as Array<{ role: string; content: Array<{ type: string }> }>;
+    expect(stored[2]!.content.map((b) => b.type)).toEqual(['server_tool_use', 'tool_use', 'tool_use']);
+    expect(stored[4]!.content.map((b) => b.type)).toEqual(['code_execution_tool_result', 'text']);
+  });
+
+  it('a card is not prepared while the code is waiting on a read: the model is told to ask for it on its own afterwards', async () => {
+    const model = script(
+      { content: [toolUse('tu_task', 'create_focus_area', { title: 'Wedges' }), serverCode(), codeToolUse('tu_1', 'get_team_stats', {})], container: 'container_1' },
+      { content: [text('I will prepare that next.')] },
+    );
+    const { events } = await ask('Compare everyone, then make a wedge focus area');
+    expect(events.some((e) => e.type === 'proposal' || e.type === 'decision_needed')).toBe(false);
+    expect(log.plans).toHaveLength(0);
+    expect(runs()).toHaveLength(0);
+    const reply = model.requests[1]!.messages.at(-1) as { content: Array<{ tool_use_id: string; is_error?: boolean; content: string }> };
+    expect(reply.content.find((b) => b.tool_use_id === 'tu_task')).toMatchObject({ is_error: true });
+    expect(reply.content.find((b) => b.tool_use_id === 'tu_task')!.content).toContain('on its own after the code has finished');
+    expect(done(events)?.status).toBe('complete');
+  });
+
+  it('a request the API rejects with the code tool on is sent again without it, and the turn completes', async () => {
+    h.features = { ...plainFeatures(CHAT_FEATURES), citations: true, programmaticReads: true };
+    const model = script({ content: [], reject: rejected('tools.6: code_execution_20260120 is not available') }, { content: [text('74.2.')] });
+    const { events } = await ask('How is the team scoring?');
+    expect(done(events)?.status).toBe('complete');
+    expect(model.requests).toHaveLength(2);
+    expect(JSON.stringify(model.requests[0]!.tools)).toContain('code_execution');
+    expect(JSON.stringify(model.requests[1]!.tools)).not.toMatch(/code_execution|allowed_callers/);
   });
 
   it('offers the code tool, lets the model’s code call reads only, and answers a pending call with tool_result blocks alone', async () => {
@@ -652,7 +732,11 @@ describe('a task', () => {
     expect(await cancelHeld(db.client as never, { coach_id: 'coach-1', idempotency_key: key })).toBe('cancelled');
 
     const { events } = await pending;
-    expect(receiptStates(events)).toEqual(['held']);
+    // The card's last word on the stream, and in the stored turn, is that it was undone: a reload does not show it as still held.
+    expect(receiptStates(events)).toEqual(['held', 'cancelled']);
+    const undone = (assistantRows()[0]!.ui_parts as Array<{ type: string; data?: { status?: string; summary?: string; created?: unknown[] } }>).filter((p) => p.type === 'data-action-receipt');
+    expect(undone).toHaveLength(1);
+    expect(undone[0]!.data).toMatchObject({ status: 'cancelled', summary: 'Undone. Nothing was written.', created: [] });
     expect(done(events)?.status).toBe('complete');
     expect(log.commits).toHaveLength(0);
     expect(runs()[0]!.status).toBe('cancelled');
@@ -1075,7 +1159,7 @@ describe('find_in_app, which answers with Clubhouse addresses', () => {
     h.clubhouse = false;
     const model = script({ content: [toolUse('tu_1', 'find_in_app', {})] }, { content: [text('Look under Roster.')] });
     const { events } = await ask('Where do I set the lineup?', null, { screen: { screen: 'Roster' } });
-    expect(names(model)).toEqual(['get_player_stats', 'get_team_stats', 'create_focus_area', 'get_rounds', 'get_round']);
+    expect(names(model)).toEqual(['get_player_stats', 'get_team_stats', 'create_focus_area', 'get_rounds', 'get_round', 'code_execution']);
     expect(done(events)?.status).toBe('complete');
     expect(log.reads).toHaveLength(0);
     expect((lastRequestMessages(model)[3]!.content as unknown[])[0]).toEqual({ type: 'tool_result', tool_use_id: 'tu_1', content: 'There is no tool named find_in_app.', is_error: true });
@@ -1186,6 +1270,32 @@ describe('a failure names its kind', () => {
     h.checkBudget.mockResolvedValue({ allowed: true });
     db.tables.golf_coachhelm_chat_conversations = [{ id: '7b0c8c5e-5d0e-4d58-9d0b-0d2d1f1f4a11', coach_id: 'someone-else' }];
     expect(await (await ask('Hello', '7b0c8c5e-5d0e-4d58-9d0b-0d2d1f1f4a11')).response.json()).toMatchObject({ kind: 'gone' });
+  });
+});
+
+describe('the surface a conversation was started on', () => {
+  it('is stored with a new conversation and listed with it, so quick chat can list its own threads', async () => {
+    script({ content: [text('74.2.')] });
+    await ask('Team?', null, { surface: 'quick_chat' });
+    script({ content: [text('74.2.')] });
+    await ask('Team?');
+    expect((db.tables.golf_coachhelm_chat_conversations ?? []).map((c) => c.surface)).toEqual(['quick_chat', 'ask']);
+    expect((await listConversations(db.client as never)).map((c) => c.surface).sort()).toEqual(['ask', 'quick_chat']);
+  });
+
+  it('on a database without the column the conversation is still created and lists with no surface, and the column is not asked for again', async () => {
+    setup({ surfaceColumn: false });
+    script({ content: [text('74.2.')] });
+    const { events } = await ask('Team?', null, { surface: 'quick_chat' });
+    expect(done(events)?.status).toBe('complete');
+    const [row] = db.tables.golf_coachhelm_chat_conversations ?? [];
+    expect(row).toBeTruthy();
+    expect(row).not.toHaveProperty('surface');
+    expect((await listConversations(db.client as never)).map((c) => c.surface)).toEqual([null]);
+    // A second conversation goes straight to the plain insert.
+    script({ content: [text('74.2.')] });
+    expect(done((await ask('Again?', null, { surface: 'quick_chat' })).events)?.status).toBe('complete');
+    expect(db.tables.golf_coachhelm_chat_conversations).toHaveLength(2);
   });
 });
 

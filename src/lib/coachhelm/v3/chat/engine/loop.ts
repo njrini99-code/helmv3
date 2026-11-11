@@ -66,6 +66,8 @@ export interface LoopState {
   degraded: boolean;
   /** The code execution container of a programmatic call in progress. */
   container: string | null;
+  /** The progress row of the model's code while it runs. In memory only. */
+  codeRow?: string | null;
 }
 
 export interface LoopDeps {
@@ -123,6 +125,8 @@ function searchResult(ref: string, title: string, text: string): SearchResultBlo
   return [{ type: 'search_result', source: `${READ_SOURCE}${ref}`, title: title.trim().slice(0, 200) || 'Read', content: (lines.length > 0 ? lines : [title.trim() || 'No data.']).map((line) => ({ type: 'text', text: line })), citations: { enabled: true } }];
 }
 
+const CODE_LABEL = 'Working it out';
+
 interface Call {
   response: ModelResponse;
   streamedText: boolean;
@@ -143,6 +147,16 @@ async function streamOnce(deps: LoopDeps, state: LoopState, answerOnly: boolean)
       const stream = deps.model.stream(request, { signal: deps.signal });
       for await (const event of stream) {
         if (event.type === 'content_block_start') {
+          // The model's own code, in Anthropic's sandbox: one progress row from the moment it starts until its result is back, with the
+          // reads it calls listed under it as they run.
+          const block = event.content_block as { type: string; name?: string };
+          if (block.type === 'server_tool_use' && String(block.name ?? '').endsWith('code_execution') && !state.codeRow) {
+            state.codeRow = `progress-${(state.nextProgress += 1)}`;
+            deps.emit({ type: 'read_started', id: state.codeRow, label: CODE_LABEL, tool: 'code_execution' });
+          } else if (block.type.endsWith('code_execution_tool_result') && state.codeRow) {
+            deps.emit({ type: 'read_finished', id: state.codeRow, label: CODE_LABEL, tool: 'code_execution', state: 'done' });
+            state.codeRow = null;
+          }
           // Words either side of a thinking block or a tool call are separate paragraphs. Two text blocks in a row are one sentence the
           // API split where a citation begins or ends: nothing may be put between them.
           if (event.content_block.type === 'text' && streamedText && previousBlock !== 'text') deps.emit({ type: 'text_delta', delta: '\n\n' });
@@ -229,7 +243,9 @@ async function runRead(deps: LoopDeps, state: LoopState, tool: ReadTool<unknown>
     const ref = `e${refNumber}`;
     if (isEvidence) {
       state.reads.set(ref, envelope);
-      deps.emit({ type: 'evidence', part: { type: 'data-evidence', id: `evidence-${ref}`, data: { tool: tool.name, envelope, ref } } });
+      // `via: 'code'`: the model's code asked for this read. Its answer then cites no read, so this is how the thread knows which
+      // reads a computed figure came from.
+      deps.emit({ type: 'evidence', part: { type: 'data-evidence', id: `evidence-${ref}`, data: { tool: tool.name, envelope, ref, ...(programmatic ? { via: 'code' } : {}) } } });
     }
     for (const part of parts ?? []) deps.emit(eventForPart(part));
     const detail = (typeof progress_detail === 'string' && progress_detail.trim()) || sampleDetail(envelope);
@@ -259,10 +275,12 @@ async function runRead(deps: LoopDeps, state: LoopState, tool: ReadTool<unknown>
   }
 }
 
-async function runTask(deps: LoopDeps, state: LoopState, tool: TaskTool<unknown>, input: unknown, block: ToolUseBlock, progressId: string): Promise<{ result: StoredToolResult | null; task: PendingTask | null }> {
+async function runTask(deps: LoopDeps, state: LoopState, tool: TaskTool<unknown>, input: unknown, block: ToolUseBlock, progressId: string, codeWaiting: boolean): Promise<{ result: StoredToolResult | null; task: PendingTask | null }> {
   if (!deps.tasks) return { result: { is_error: true, content: 'Changes cannot be made from here. Nothing was written.' }, task: null };
   // A change is only ever asked for by the model itself, where it can be planned, shown and confirmed: never from its code.
   if (isProgrammatic(block)) return { result: { is_error: true, content: 'A change cannot be made from code. Ask for it directly, once, and the coach will be shown it to confirm. Nothing was written.' }, task: null };
+  // A card cannot wait on the coach while the model's code waits on a read: the code would be left hanging for as long as the coach takes.
+  if (codeWaiting) return { result: { is_error: true, content: 'Not prepared: your code is still running. Ask for this change on its own after the code has finished. Nothing was written.' }, task: null };
   const label = safeLabel(tool, input);
   deps.emit({ type: 'read_started', id: progressId, label, tool: tool.name });
   const proposed = await proposeTask(deps.tasks, tool, { ...deps.toolContext, reads: state.reads }, input, block.id);
@@ -326,6 +344,7 @@ export async function runModelLoop(deps: LoopDeps, state: LoopState): Promise<Lo
     });
     const results: Record<string, StoredToolResult> = {};
     const tasks: PendingTask[] = [];
+    const codeWaiting = toolUses.some(isProgrammatic);
     let endTurn = false;
     try {
       await Promise.all(
@@ -346,7 +365,7 @@ export async function runModelLoop(deps: LoopDeps, state: LoopState): Promise<Lo
             if (ran.endTurn) endTurn = true;
             return;
           }
-          const planned = await runTask(deps, state, tool, parsed.data, block, progressId);
+          const planned = await runTask(deps, state, tool, parsed.data, block, progressId, codeWaiting);
           if (planned.result) results[block.id] = planned.result;
           if (planned.task) tasks.push(planned.task);
         }),

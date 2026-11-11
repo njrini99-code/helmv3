@@ -30,6 +30,8 @@ COMMENT ON TABLE "public"."golf_coachhelm_action_runs" IS 'Audit + idempotency l
 
 COMMENT ON TABLE "public"."golf_coachhelm_chat_conversations" IS 'v3 W32 coach chat thread. Per Part XII coach-only (player chat deferred to v2). pinned + archived_at drive the history UX sort.';
 
+COMMENT ON COLUMN "public"."golf_coachhelm_chat_conversations"."surface" IS 'CoachHelm chat: the surface the conversation was started on (ask, quick_chat, practice_helper). Written once at creation. NULL on conversations created before 20261110130000.';
+
 COMMENT ON TABLE "public"."golf_coachhelm_chat_messages" IS 'v3 W32 coach chat messages. Append-only. tool_calls + tool_results are jsonb so the agent can replay/inspect a turn without re-running the model.';
 
 COMMENT ON COLUMN "public"."golf_coachhelm_chat_messages"."ui_parts" IS 'AI SDK UIMessage parts for this message (text, tool calls, typed data parts, approvals, receipts). Lets a reload reproduce charts/mentions/approvals instead of only the prose in content.';

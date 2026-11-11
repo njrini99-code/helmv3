@@ -364,7 +364,9 @@ CREATE TABLE IF NOT EXISTS "public"."golf_coachhelm_chat_conversations" (
     "pinned" boolean DEFAULT false NOT NULL,
     "archived_at" timestamp with time zone,
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
-    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "surface" "text",
+    CONSTRAINT "golf_coachhelm_chat_conversations_surface_known" CHECK ((("surface" IS NULL) OR ("surface" = ANY (ARRAY['ask'::"text", 'quick_chat'::"text", 'practice_helper'::"text"]))))
 );
 
 ALTER TABLE "public"."golf_coachhelm_chat_conversations" OWNER TO "postgres";

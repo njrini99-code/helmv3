@@ -343,7 +343,7 @@ E7. `strict: true` is set by the engine on every tool (`modelToolFor`), on the s
     beta, the turn completes, and `v3.chat.stream.degraded` is logged as an error. Until someone turns the feature off
     in `CHAT_FEATURES`, every turn then pays one rejected round trip (no tokens are billed for a 400).
 
-E8. Programmatic tool calling is built behind `CHAT_FEATURES.programmaticReads`, OFF. With it on: the
+E8. (Superseded by E16: ON for the coach surfaces since the owner's decision of 10 Nov 2026.) Programmatic tool calling is built behind `CHAT_FEATURES.programmaticReads`, OFF. With it on: the
     `code_execution_20260120` tool is offered; READ tools get `allowed_callers: ['direct', 'code_execution_20260120']`
     and lose `strict` (the two cannot be combined); a read called from code is answered with a plain string; the reply
     to a pending call holds only `tool_result` blocks and names the container; a task asked for from code is refused.
@@ -504,4 +504,69 @@ E15. Protocol, all additive (there is no version marker in the reducer; every ne
        counts finished read rows, failed ones included. `turnMetaOf(parts)` reads it; a thread stored before 10 Nov
        2026 has none. It is in `REPLAYABLE`.
      - The final receipt arrives on the Confirm's own stream when the hold ends (E5), so a card need not poll.
+
+
+## 2026-11-10 late night (ENGINE): the model's code is on; an undone card; where a task lands
+
+E16. **Programmatic tool calling is ON for Ask, quick chat and the practice helper, OFF for a player** (owner, 10 Nov
+     2026: "It's not minors. Turn it on."). `CHAT_FEATURES.programmaticReads` is the one switch;
+     `chatFeatures(surface)` gives a player the same features without it.
+     - The request: `{ type: 'code_execution_20260120', name: 'code_execution' }` is the LAST tool; every READ has
+       `allowed_callers: ['direct', 'code_execution_20260120']` and no `strict`; every TASK is direct-only and strict.
+       The list and its order are the registry's, the same bytes on every request (`engine/__tests__/registry-tools.test.ts`
+       builds it twice, and again three weeks later). Measured as sent (JSON of tools and system, characters / 4,
+       tournaments flag off): Ask and the practice helper 21,251, quick chat 20,739, player 8,118; with the switch off
+       the coach surfaces are about 380 smaller. Anthropic adds the code tool's own instructions on its side.
+     - Every read the code calls goes through the same path as a direct one: the tool's zod schema first (an input
+       that fails it is an `is_error` result and nothing runs), the same session client, the same ownership checks,
+       the same `ScreenLoaders`. Its envelope reaches the `reads` map, the store and `checkGrounding`.
+     - A task called from code is refused (`is_error`, nothing planned, no ledger row). A task asked for directly in
+       the same response as a call from code is refused too, with "ask for this change on its own after the code has
+       finished": a card never waits on the coach while the code waits on a read.
+     - **How the thread learns which reads fed a computed answer.** Three things, all on the stream and all stored:
+       (1) a progress row for the code itself, `tool: 'code_execution'`, label "Working it out", open from the code's
+       start until its result is back; (2) the usual progress row for each read the code calls, between those two;
+       (3) each such read's evidence part carries `data.via: 'code'` beside `tool`, `envelope` and `ref`. An answer
+       computed in code has no citations (the code is handed text, and what it prints is not a read), so no `[eN]`
+       marker is drawn for it: the `via: 'code'` evidence parts of the turn are its sources. The grounding check will
+       log a computed figure as unmatched when it appears in no read; that is expected and logs only.
+     - Fallback: if the API rejects a request, the retry is plain: no beta, no `strict`, **no code tool**. A
+       conversation that already holds a call from the model's code may not replay without the tool; then the plain
+       request fails too and the coach gets the ordinary failure sentence.
+     - For TOOLS (`instructions.ts`): the four sentences added in `2a3ea8988e` ("If you have code_execution ...") are
+       the wording the engine needs. The model sees the tool under the name `code_execution`. Nothing else is asked.
+     - What it means for the data, recorded in the feature doc: read results pass through Anthropic's code execution
+       container and its retention applies.
+
+E17. `ActionReceipt.status` has `cancelled`: the coach pressed Undo inside the window and nothing was written. The
+     Confirm's stream ends `receipt(held)`, `receipt(cancelled)`, then the closing words, and the stored turn holds
+     the cancelled receipt (`summary: 'Undone. Nothing was written.'`, `created: []`). A card left behind that the
+     ledger says was undone gets the same receipt. Old stored turns are unchanged: one that was undone before 10 Nov
+     still holds its `held` receipt and the card's own GET answers 409 `cancelled`, as before.
+     **For whoever owns the cards**: three places today treat any receipt that is not `failed` or `held` as done
+     (`src/clubhouse/screens/coachhelm/chat/parts/ConfirmCard.tsx:129`, `src/clubhouse/shell/quick-chat/TaskCard.tsx:46`,
+     `src/components/golf/coachhelm/chat/ActionCards.tsx:183`). Until they read `cancelled`, a RELOADED undone card is
+     drawn as done with the words "Undone. Nothing was written." The live card is right, because Undo is its own state.
+
+E18. What quick chat's landing design asked for (`docs/clubhouse/coachhelm-chat-v3/QUICK-CHAT.md`, Requests 1 to 4):
+     - `ActionReceipt.created[].id` and `.ids`: the row the task wrote, and every row when it wrote several. Set
+       today for: `create_event`, `add_blocked_time`, `create_recruit` (the row's id is the request id),
+       `create_task`, `create_team_announcement`, `create_recurring_practice` (one calendar row that repeats: one id)
+       and `create_qualifier`. NOT set where the app's own action does not return the row: `create_focus_area`,
+       `create_goal`, `create_trip`, and a second commit of a card found by its natural key. Those land as
+       `ST-8.not-found` (nothing marked). Ids are only of rows the confirming coach wrote; nothing here reaches a player.
+     - `created[].href` goes to the thing where the app has an address for it: an event is
+       `/golf/dashboard/calendar?date=<day>&event=<id>`, blocked time the Calendar on its day, a qualifier its own
+       page, a focus area the player (`/golf/dashboard/roster?player=<id>`). Tasks and announcements stay on their section.
+     - `ActionProposal.lands: { kind, home, day? }` (`ActionLanding`), set at plan time by `landsFor(tool, input)` in
+       `../tasks.ts`: `kind` is the page's row kind (event, blocked_time, task, announcement, trip, qualifier, recruit,
+       focus_area, message, lineup, plan), `home` a path of this app, `day` an ISO day where the thing lives on one.
+       Left out for a task that adds no row to a list.
+     - `GET /api/coachhelm/v3/chat/conversations` rows carry `surface` (`ask`, `quick_chat`, `practice_helper`, or
+       null). It needs the held migration `20261110130000_coachhelm_chat_conversation_surface.sql`; without it every
+       row lists `surface: null` and nothing fails.
+     **For CONTEXT (`../tasks/event-tasks.ts`)**: nothing is required. `send_event_reminder` and `record_attendance`
+     add no row to a list, so they need no `lands`. If a task of yours ever writes a row a page lists, return
+     `created: [{ kind, count, id, ids, href }]` with the row's own id and a link to the thing, and add its case to
+     `landsFor`. `done(...)` in `../tasks/kit.ts` already passes `created` through unchanged.
 
