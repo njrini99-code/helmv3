@@ -3355,14 +3355,11 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
     gap: 16px;
     padding: 24px 32px 40px;
   }
+  /* The title's face, size, forest ink and letterpress edge are the shared page title's (shell.css, with the canopy head's
+     rule); only the older head's gradient fill is undone here. */
   [data-ch-crh='on'].ch-rsd .ch-rs-head h1 {
-    margin: 4px 0;
-    font: var(--ch-type-34-strong);
-    letter-spacing: var(--ch-track-large-title);
-    color: var(--ch-text-primary);
     -webkit-text-fill-color: currentcolor;
     background: none;
-    text-shadow: none;
   }
   [data-ch-crh='on'].ch-rsd .ch-rs-head p {
     margin: 0;

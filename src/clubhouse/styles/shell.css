@@ -2180,7 +2180,10 @@ html[data-ch-ua-pop] .ch-pscreen::after {
   .ch-root[data-ui] main[data-canopy] [data-canopy-head='tight']::before {
     content: none;
   }
-  [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] h1 {
+  /* Roster's desktop head keeps its own layout (no rules, no band) but its title is the same title: one page name, one
+     style, on every page (design review, 10 Nov 2026). */
+  [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] h1,
+  [data-ui='clubhouse'] main[data-ch-crh='on'].ch-rsd .ch-rs-head h1 {
     margin: 0;
     font: 600 calc(44 * var(--ch-type-k))/1.08 var(--ch-font-sans);
     letter-spacing: -0.036em;
@@ -2668,7 +2671,8 @@ html[data-fw-theme='dark'] .ch-bellp__row:focus-visible {
     border-bottom-color: var(--ch-ledger-rule-soft);
   }
   /* The letterpress edge at night: the lit lip under the letters becomes a shadow, never a white halo. */
-  html[data-fw-theme='dark'] [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] h1 {
+  html[data-fw-theme='dark'] [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] h1,
+  html[data-fw-theme='dark'] [data-ui='clubhouse'] main[data-ch-crh='on'].ch-rsd .ch-rs-head h1 {
     text-shadow: 0 1px 0 rgb(0 0 0 / 0.5);
   }
   html[data-fw-theme='dark'] [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] .ch-btn--secondary {
