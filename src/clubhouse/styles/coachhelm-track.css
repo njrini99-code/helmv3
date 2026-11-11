@@ -2,9 +2,46 @@
    docs/clubhouse/pages/P013-coachhelm/CONTRACT.md and supercharge 02 §9, 03 §7.3. Words and counts; the bar is the same count drawn,
    with the target as a thin line. */
 
-.ch-htr-body {
+.ch-htr-body,
+.ch-htr-col {
   display: grid;
   gap: 16px;
+  min-width: 0;
+}
+.ch-htr-col {
+  align-content: start;
+}
+/* Desktop: the season and its levels on the left, the families and the staff's corrections on the right, so the page is
+   not the phone's column stretched across the sheet (fix wave 2026-11-11). */
+@container chhl (min-width: 900px) {
+  .ch-htr-body {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
+/* The season's one figure, as the Team view's record card sets it: the count, then what it counts. */
+.ch-htr-fig {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+}
+/* Under the column, so the space wins over the scope's own `p` reset. */
+.ch-htr-col .ch-htr-fig {
+  margin-bottom: 12px;
+}
+.ch-htr-fig b {
+  font: var(--ch-type-34-medium);
+  font-variation-settings: var(--ch-wdth-display);
+  letter-spacing: var(--ch-track-34);
+  color: var(--ch-text-primary);
+  white-space: nowrap;
+}
+.ch-htr-fig span {
+  font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-text-secondary);
 }
 
 .ch-htr-prog {
@@ -12,6 +49,13 @@
   font: var(--ch-type-17-medium);
   letter-spacing: var(--ch-track-17);
   color: var(--ch-text-primary);
+}
+/* Under the figure the sentence is the supporting line, not a second headline. */
+.ch-htr-prog.is-under {
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-text-secondary);
+  text-wrap: pretty;
 }
 .ch-htr-note,
 .ch-htr-corr {
@@ -21,8 +65,11 @@
   color: var(--ch-text-secondary);
 }
 .ch-htr-note {
-  margin-top: 8px;
   color: var(--ch-text-tertiary);
+  text-wrap: pretty;
+}
+.ch-htr-col .ch-htr-note {
+  margin-top: 8px;
 }
 
 /* The five-level strip: word, the count line, the bar with its target, and what the line stands on. */
@@ -73,6 +120,23 @@
 .ch-htr-rung.is-warn .ch-htr-rung__s {
   color: var(--ch-warning-600);
 }
+/* Nothing to judge yet: the row is quieter (its word lighter, a dash where the count would be), and what it has so far
+   sits under the dash, where a judged row says its target. */
+.ch-htr-rung.is-none {
+  grid-template-areas:
+    'w l .'
+    'w s s';
+}
+.ch-htr-rung.is-none .ch-htr-rung__w,
+.ch-htr-fam.is-none .ch-htr-fam__n {
+  font: var(--ch-type-15-medium);
+  color: var(--ch-text-secondary);
+}
+.ch-htr-rung.is-none .ch-htr-rung__l,
+.ch-htr-fam.is-none .ch-htr-fam__l {
+  font: var(--ch-type-15);
+  color: var(--ch-text-tertiary);
+}
 
 .ch-htr-bar {
   grid-area: bar;
@@ -80,7 +144,8 @@
   display: block;
   height: 8px;
   border-radius: 999px;
-  background: var(--ch-border-subtle);
+  /* The warm track every CoachHelm bar sits on (the Team view's), not a cool grey rule colour. */
+  background: var(--ch-chart-track);
 }
 .ch-htr-bar__fill {
   position: absolute;
@@ -156,7 +221,17 @@
       's s';
     row-gap: 8px;
   }
+  .ch-htr-rung.is-none {
+    grid-template-areas:
+      'w l'
+      's s';
+    row-gap: 4px;
+  }
   .ch-htr-rung__l {
     text-align: right;
+  }
+  .ch-htr-fig b {
+    font: var(--ch-type-28-medium);
+    letter-spacing: var(--ch-track-28);
   }
 }
