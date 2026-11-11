@@ -2,7 +2,8 @@
 
 import { ChevronRight } from 'lucide-react';
 import { useId, type CSSProperties, type ReactNode } from 'react';
-import { NO_DATA, changeTone } from '../../../../lib/format';
+import { changeTone } from '../../../../lib/format';
+import { NoData } from '../../../../ui/NoData';
 import { Nine, type ChNineHole } from '../../../../ui/Nine';
 import { ScrollRegion } from '../../../../ui/ScrollRegion';
 import { PlanCard } from '../../plan/PlanCard';
@@ -338,12 +339,12 @@ export function DistanceProfile(p: StudioProps<'distance_profile'>) {
         <Head title="Make rate by distance" aside="Made" />
         <ul className="ch-aks-rows" aria-label="Make rate by distance">
           {buckets.map((b) => {
-            const rate = b.rate == null ? NO_DATA : `${Math.round(b.rate)}%`;
+            const rate = b.rate == null ? null : `${Math.round(b.rate)}%`;
             return (
               <li key={b.id} className="ch-aks-row">
                 <AskKey target={t} id={b.id} className="ch-aks-dist__row" words={`Ask about this: putts from ${b.label}${b.rate == null ? '' : `, ${rate}`}`}>
                   <span className="ch-aks-dist__band">{b.label}</span>
-                  <b className="ch-aks-dist__val ch-num">{rate}</b>
+                  <b className="ch-aks-dist__val ch-num">{rate ?? <NoData />}</b>
                   <small className="ch-aks-rank__of ch-num"> {plural(b.attempts, 'putt')}</small>
                   {/* The season's rate in words under the figure: it was a tick on a track, which had to be decoded. */}
                   {b.season_rate != null && (
@@ -481,16 +482,16 @@ export function QualifierBoard(p: StudioProps<'qualifier_board'>) {
         </li>
         {rows.map((r, i) => (
           <li key={r.id} className="ch-aks-row" data-in={cut != null && i < cut ? '' : undefined} data-cut={cut != null && i === cut - 1 && i < rows.length - 1 ? '' : undefined}>
-            <AskKey target={t} id={r.id} className="ch-aks-board__row" label={`Place ${i + 1}, ${r.name}, ${r.total}, ${r.toPar === 'E' ? 'level par' : `${r.toPar} to par`}. Ask about it.`} words={`Ask about this: ${r.name} in ${title}, ${r.toPar === 'E' ? 'level par' : r.toPar}`}>
+            <AskKey target={t} id={r.id} className="ch-aks-board__row" label={`Place ${i + 1}, ${r.name}, ${r.total ?? 'no total yet'}${r.toPar == null ? '' : `, ${r.toPar === 'E' ? 'level par' : `${r.toPar} to par`}`}. Ask about it.`} words={`Ask about this: ${r.name} in ${title}${r.toPar == null ? '' : `, ${r.toPar === 'E' ? 'level par' : r.toPar}`}`}>
               <span className="ch-aks-rank__n ch-num">{i + 1}</span>
               <b className="ch-aks-board__name">{r.name}</b>
               {rounds.map((label, ri) => (
                 <span key={label} className="is-num ch-num">
-                  {r.rounds[ri] ?? NO_DATA}
+                  {r.rounds[ri] || <NoData label="Not played" />}
                 </span>
               ))}
-              <span className="is-num ch-num">{r.total}</span>
-              <b className="is-num ch-num">{r.toPar}</b>
+              <span className="is-num ch-num">{r.total ?? <NoData />}</span>
+              <b className="is-num ch-num">{r.toPar ?? <NoData />}</b>
             </AskKey>
             <OpenKey href={r.href} label={`Open ${r.name}’s rounds`} />
             {cut != null && i === cut - 1 && i < rows.length - 1 && (

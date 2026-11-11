@@ -96,9 +96,10 @@ export interface StudioBoardRow {
   name: string;
   /** Each round as printed ("71"), a dash for one not played. */
   rounds: string[];
-  total: string;
-  /** "-3", "E", "+4". */
-  toPar: string;
+  /** Null when the read has no total yet: drawn as <NoData />. */
+  total: string | null;
+  /** "-3", "E", "+4"; null when there is no total. */
+  toPar: string | null;
   href?: string | null;
 }
 

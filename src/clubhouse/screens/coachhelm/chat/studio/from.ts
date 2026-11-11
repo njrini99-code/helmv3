@@ -16,7 +16,7 @@ import {
   type AskTable,
 } from '../../../../data/coachhelm-chat-thread';
 import { formatClock, isoDay } from '../../../../lib/dates';
-import { NO_DATA, changeTone, formatToPar } from '../../../../lib/format';
+import { changeTone, formatToPar } from '../../../../lib/format';
 import { plural } from '../../../../lib/plural';
 import { rebuiltHref } from '../../../../shell/nav';
 import type { StudioBoardRow, StudioDay, StudioEvent, StudioFigure, StudioHole, StudioLeg, StudioPart, StudioTone } from './types';
@@ -246,7 +246,7 @@ function boardOf(d: Rec | null): StudioPart | null {
     if (!r || !id || !player) continue;
     const total = numOf(r.total);
     const toPar = numOf(r.to_par);
-    rows.push({ id, name: player, rounds: [], total: total === null ? NO_DATA : String(total), toPar: toPar === null ? NO_DATA : formatToPar(toPar, 0) });
+    rows.push({ id, name: player, rounds: [], total: total === null ? null : String(total), toPar: toPar === null ? null : formatToPar(toPar, 0) });
   }
   if (rows.length === 0) return null;
   const squad = numOf(d.squad);
