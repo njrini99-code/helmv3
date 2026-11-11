@@ -579,7 +579,7 @@ describe('the Standing screen', () => {
     show(standingLoad(toChStanding(STANDING_ROWS, ok)));
     const life = screen.getByRole('heading', { name: 'Greens in regulation' }).closest('li')!;
     expect(life.querySelector('.ch-hs-n')).toBeNull();
-    expect(screen.getByText('All time · 14 rounds · Scoring average 77.2 · Refreshed Sep 29')).toBeTruthy();
+    expect(screen.getByText('All time · 14 rounds · Scoring average 77.2, practice included · Refreshed Sep 29')).toBeTruthy();
   });
 
   it('the track is decoration, hidden from assistive tech: every number is in the text beside it', () => {
