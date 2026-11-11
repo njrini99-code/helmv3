@@ -168,3 +168,14 @@ describe('Team Stats, figures outside the big values are tabular too', () => {
     expect(metas.every((m) => m.classList.contains('ch-num'))).toBe(true);
   });
 });
+
+describe('Team Stats, The round’s note', () => {
+  it('keeps each separator with the words before it, so a wrapped line never starts with the dot', async () => {
+    asDesktop();
+    showTeam(TEAM);
+    await waitFor(() => expect([...document.querySelectorAll('.ch-shs-anote')].some((p) => p.textContent!.includes('countable rounds only'))).toBe(true));
+    const note = [...document.querySelectorAll('.ch-shs-anote')].find((p) => p.textContent!.includes('countable rounds only'))!;
+    expect(note.textContent).toContain('Varsity · 7 active players · countable rounds only.');
+    expect(note.textContent).not.toMatch(/ · /);
+  });
+});

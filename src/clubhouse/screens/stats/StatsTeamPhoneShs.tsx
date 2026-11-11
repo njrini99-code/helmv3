@@ -474,7 +474,8 @@ function TeamScoringDetail({
   beside?: boolean;
 }) {
   const f = scoringFigure(data);
-  const context = `${data.teamName} · ${data.activeCount} active ${pluralWord(data.activeCount, 'player')} · countable rounds only.`;
+  // The separators keep to the words before them, as the page head's do: a wrapped line never starts with the dot.
+  const context = `${data.teamName}\u00a0· ${data.activeCount} active ${pluralWord(data.activeCount, 'player')}\u00a0· countable rounds only.`;
   // Today's trend reading, on the card that now draws the trend. One round day is a point, not a trend.
   const trend = days.length >= 2 ? teamTrendReading(data, days.length) : null;
   return (
