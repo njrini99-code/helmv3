@@ -10,16 +10,17 @@ const a = vi.hoisted(() => ({
   resumeGoal: vi.fn(),
   abandonGoal: vi.fn(),
   acknowledgeInsight: vi.fn(),
+  dismissInsight: vi.fn(),
   verifyPlayerAccess: vi.fn(),
   verifyInsightAccess: vi.fn(),
 }));
 vi.mock('@/app/golf/actions/development', () => ({ completeFocusArea: a.completeFocusArea, reactivateFocusArea: a.reactivateFocusArea }));
 vi.mock('@/app/golf/actions/v3/goals', () => ({ pauseGoal: a.pauseGoal, resumeGoal: a.resumeGoal, abandonGoal: a.abandonGoal }));
-vi.mock('@/app/golf/actions/insights-feed', () => ({ acknowledgeInsight: a.acknowledgeInsight }));
+vi.mock('@/app/golf/actions/insights-feed', () => ({ acknowledgeInsight: a.acknowledgeInsight, dismissInsight: a.dismissInsight }));
 vi.mock('@/lib/auth/verify-player-access', () => ({ verifyPlayerAccess: a.verifyPlayerAccess, verifyInsightAccess: a.verifyInsightAccess }));
 
 import { AVERY, COACH_USER, OTHER_TEAM, STRANGER, TEAM, coachWho, fakeSb, playerWho, toolCtx } from '../../context/__tests__/fake-sb';
-import { developmentTools, markSignalHandled, setFocusAreaStatus, setGoalState } from '../development-tasks';
+import { developmentTools, dismissSignal, markSignalHandled, setFocusAreaStatus, setGoalState } from '../development-tasks';
 import type { StoredProposal } from '../kit';
 
 const FOCUS = '60000000-0000-4000-8000-000000000001';
@@ -170,6 +171,46 @@ describe('mark_signal_handled', () => {
     expect((await markSignalHandled.commit(toolCtx(sb, coachWho()), p)).summary).toBe('Operation failed. Please try again. Nothing was changed.');
     tables.golf_coach_insights = { error: { message: 'timeout' } };
     expect((await markSignalHandled.commit(toolCtx(sb, coachWho()), p)).summary).toMatch(/I could not check whether it went through: look in the CoachHelm board/);
+  });
+});
+
+describe('dismiss_signal', () => {
+  it('the card says it leaves the player’s own page too, that the record is kept, and writes nothing', async () => {
+    const { sb, writes } = db();
+    const p = await dismissSignal.plan(toolCtx(sb, coachWho()), { insight_id: SIGNAL });
+    expect(writes).toEqual([]);
+    expect(a.dismissInsight).not.toHaveBeenCalled();
+    expect(fact(p, 'The player sees')).toBe('It also disappears from Avery Lane’s own CoachHelm page. No notification is sent.');
+    expect(fact(p, 'The record')).toBe('The signal is kept, not deleted.');
+    expect([p.recipients, p.delivery]).toEqual([[], null]);
+  });
+
+  it('that sentence is still the app’s one visibility rule: a dismissed signal is shown to nobody', () => {
+    const src = readFileSync(join(process.cwd(), 'src/lib/coachhelm/v3/insight-visibility.ts'), 'utf8');
+    expect(src).toContain(".neq('status', 'dismissed') as Q;");
+    expect(src).toContain("export const VISIBLE_LIFECYCLE_STATES = ['detected', 'matured', 'addressed', 'resolved'] as const;");
+    // And the player's page comes through that rule.
+    expect(readFileSync(join(process.cwd(), 'src/clubhouse/data/coachhelm.ts'), 'utf8')).toContain("applyInsightVisibility(supabase.from('golf_coach_insights')");
+  });
+
+  it('dismisses through the app’s action once; refuses one already dismissed, another team’s, a player, and a coach the app would refuse', async () => {
+    const { sb, tables, writes } = db();
+    a.dismissInsight.mockImplementation(async (id: string) => (set(tables, 'golf_coach_insights', id, { status: 'dismissed' }), { success: true }));
+    const p = stored(await dismissSignal.plan(toolCtx(sb, coachWho()), { insight_id: SIGNAL }));
+    expect(await dismissSignal.commit(toolCtx(sb, coachWho()), p)).toMatchObject({ status: 'completed', summary: '“Three-putts are up” is dismissed. No notification is sent.' });
+    expect((await dismissSignal.commit(toolCtx(sb, coachWho()), p)).status).toBe('completed');
+    expect(a.dismissInsight).toHaveBeenCalledExactlyOnceWith(SIGNAL);
+    expect(writes).toEqual([]);
+    await expect(dismissSignal.plan(toolCtx(sb, coachWho()), { insight_id: SIGNAL })).rejects.toThrow('That signal is already dismissed.');
+    await expect(dismissSignal.plan(toolCtx(sb, coachWho()), { insight_id: FOREIGN_SIGNAL })).rejects.toThrow('That signal is not one of your team’s.');
+    await expect(dismissSignal.plan(toolCtx(db().sb, playerWho(), 'player'), { insight_id: SIGNAL })).rejects.toThrow('Only a coach can do that.');
+    a.verifyInsightAccess.mockResolvedValue({ allowed: false, reason: 'denied' });
+    await expect(dismissSignal.plan(toolCtx(db().sb, coachWho()), { insight_id: SIGNAL })).rejects.toThrow('That signal is not one of your team’s.');
+    const other = db();
+    a.verifyInsightAccess.mockResolvedValue({ allowed: true, teamId: TEAM });
+    const q = stored(await dismissSignal.plan(toolCtx(other.sb, coachWho()), { insight_id: SIGNAL }));
+    a.dismissInsight.mockResolvedValue({ success: false, error: 'Insight not found' });
+    expect((await dismissSignal.commit(toolCtx(other.sb, coachWho()), q)).summary).toBe('Insight not found. Nothing was changed.');
   });
 });
 

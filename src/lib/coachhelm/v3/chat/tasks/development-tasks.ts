@@ -4,6 +4,7 @@
  *   set_focus_area_status   mark a focus area achieved, or reopen it: `completeFocusArea`, `reactivateFocusArea`.
  *   set_goal_state          pause, resume or close a goal: `pauseGoal`, `resumeGoal`, `abandonGoal`.
  *   mark_signal_handled     mark a CoachHelm signal as dealt with: `acknowledgeInsight`.
+ *   dismiss_signal          take a signal the coach does not want off the boards: `dismissInsight`.
  *
  * None of these sends anything. What each card must say instead is what the player will see on their own pages,
  * because all three change something the player can read:
@@ -14,13 +15,15 @@
  *     `src/clubhouse/data/coachhelm-player.ts` and `coachhelm-dive.ts`; `stanceOf` draws the word).
  *
  * Permission is the action's own, made first in `plan` with the same exported function the action calls
- * (`verifyPlayerAccess`, `verifyInsightAccess`), so no card is shown to someone the action would refuse. Dismissing a
- * signal is not here: see INVENTORY.md.
+ * (`verifyPlayerAccess`, `verifyInsightAccess`), so no card is shown to someone the action would refuse.
+ *
+ * A dismissed signal is shown to nobody: the app's one visibility rule (`lib/coachhelm/v3/insight-visibility.ts`) drops
+ * `status = 'dismissed'` for every reader, the player's own page included, and that card says so.
  */
 import 'server-only';
 import { z } from 'zod';
 import { completeFocusArea, reactivateFocusArea } from '@/app/golf/actions/development';
-import { acknowledgeInsight } from '@/app/golf/actions/insights-feed';
+import { acknowledgeInsight, dismissInsight } from '@/app/golf/actions/insights-feed';
 import { abandonGoal, pauseGoal, resumeGoal } from '@/app/golf/actions/v3/goals';
 import { verifyInsightAccess, verifyPlayerAccess } from '@/lib/auth/verify-player-access';
 import { keyOf } from '../action-planners';
@@ -293,7 +296,74 @@ export const markSignalHandled: TaskTool<SignalInput, StoredProposal> = {
   },
 };
 
-/** In a fixed order (the order is part of the cached prefix). Coach surfaces only. */
+export const dismissSignal: TaskTool<SignalInput, StoredProposal> = {
+  kind: 'task',
+  name: 'dismiss_signal',
+  description: 'Dismiss one CoachHelm signal the coach says is wrong or not wanted. It leaves the coach’s board and the player’s own page; the record is kept. Use mark_signal_handled instead when the coach has dealt with it. Nothing is sent.',
+  input: SignalInput,
+  progress: () => 'Preparing to dismiss the signal',
+  plan: async (ctx, input) => {
+    const who = coachOnly(ctx);
+    const access = await verifyInsightAccess(input.insight_id, who.user_id, ctx.sb as never);
+    if (!access.allowed) {
+      if (access.reason === 'unavailable') throw new Error('Your access to this signal could not be checked just now. Try again in a moment.');
+      throw new CoachContextError('That signal is not one of your team’s.', 403);
+    }
+    const row = await signalRow(ctx, who, input.insight_id);
+    if (!row) throw new CoachContextError('That signal is not one of your team’s.', 403);
+    if (row.status === 'dismissed') throw new Error('That signal is already dismissed.');
+    const player = row.player_id ? who.roster.find((p) => p.id === row.player_id) : null;
+    if (row.player_id && !player) throw new Error('That signal is about a player who is not on your active roster.');
+    const about = player?.name ?? 'The team';
+    // The app has one visibility rule for signals (`lib/coachhelm/v3/insight-visibility.ts`): a dismissed one is shown to nobody, coach or player.
+    const sees = player ? `It also disappears from ${player.name}’s own CoachHelm page. ${NO_NOTICE}` : `It disappears for everyone who could see it. ${NO_NOTICE}`;
+    const facts: ProposalFact[] = [
+      { label: 'Signal', value: row.title },
+      { label: 'About', value: about },
+      { label: 'After', value: 'Dismissed. It leaves your board and is not counted as acted on.' },
+      { label: player ? 'The player sees' : 'Players see', value: sees },
+      { label: 'The record', value: 'The signal is kept, not deleted.' },
+    ];
+    return {
+      action: 'Dismiss a signal',
+      summary: `Dismiss “${row.title}”.`,
+      facts,
+      affects: player ? [{ kind: 'player', id: player.id, label: player.name }] : [{ kind: 'team', id: who.team_id, label: who.team_name }],
+      notifications: [],
+      missing: [],
+      ...NOTHING_SENT,
+      visible_note: sees,
+      undo: { window: true, after: 'It is not brought back from the chat.' },
+      idempotency_key: keyOf(['dismiss_signal', row.id]),
+      tool: 'dismiss_signal',
+      input: { insight_id: row.id, title: row.title, about },
+      planned_at: now(),
+    };
+  },
+  commit: async (ctx, proposal) => {
+    const name = 'dismiss_signal';
+    const who = coachOnly(ctx);
+    const parsed = SignalStored.safeParse(proposal.input);
+    if (!parsed.success) return failed(name, 'This card could not be read back, so it was not run. Nothing was changed.', false);
+    const s = parsed.data;
+    return settle({
+      action: name,
+      nothing: 'Nothing was changed.',
+      where: 'the CoachHelm board',
+      look: async () => {
+        const row = await signalRow(ctx, who, s.insight_id).catch(() => undefined);
+        return row === undefined ? null : row?.status === 'dismissed';
+      },
+      write: () => dismissInsight(s.insight_id),
+      receipt: () => done(name, `“${s.title}” is dismissed. ${NO_NOTICE}`, [{ kind: 'signal', count: 1, id: s.insight_id, label: s.title }]),
+    });
+  },
+};
+
+/**
+ * In a fixed order (the order is part of the cached prefix). Coach surfaces only. `dismiss_signal` was added after the
+ * others were registered, so it is listed apart and appended last by `list.ts`.
+ */
 export function developmentTools(): ChatTool[] {
   return [setFocusAreaStatus, setGoalState, markSignalHandled] as ChatTool[];
 }

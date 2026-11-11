@@ -648,3 +648,8 @@ K6. `knowledge/eval/golf-sense.json` is plain data (an `.mjs` harness can read i
       `EVAL_PLACEHOLDERS`, and the types `EvalQuestion`, `EvalFact`, `EvalForbid`.
     The report should show, per question: golf sense pass or fail with the labels that failed; writing pass or fail
     with the rule names that failed; the reads used against the reads expected.
+
+C10. A tenth CONTEXT task, appended last: `dismiss_signal({ insight_id })` wraps `dismissInsight`
+(`golf/actions/insights-feed.ts`). Nothing is sent; its card says the signal also disappears from the player's own
+page, which is the app's one visibility rule (`lib/coachhelm/v3/insight-visibility.ts`). The row is kept. Whole prefix
+after it, characters / 4: Ask 21,214 with the tournaments flag off and 21,628 with it on; quick chat 20,697 and 21,111.

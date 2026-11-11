@@ -909,9 +909,9 @@ route and the registry is in `engine/CONTRACT_NOTES.md`, sections C1 to C7.
   a system message on a conversation's first turn; the tone goes with every turn. Without held migration
   20261101090100 there are no notes and nothing fails. A player has none. Anthropic's memory tool is not used
   (CONTRACT_NOTES C3 says why).
-- **What it can do after a thing exists.** Nine task tools on the contract (`tasks/list.ts` is their order):
+- **What it can do after a thing exists.** Ten task tools on the contract (`tasks/list.ts` is their order):
   `send_event_reminder`, `record_attendance`, `update_event`, `cancel_event`, `set_focus_area_status`,
-  `set_goal_state`, `mark_signal_handled`, `set_qualifier_coach_pick`, `set_task_reminder`. Each wraps the app's own action, makes that
+  `set_goal_state`, `mark_signal_handled`, `set_qualifier_coach_pick`, `set_task_reminder`, `dismiss_signal`. Each wraps the app's own action, makes that
   action's permission check first in `plan`, and reads back before a receipt says nothing was saved. `cancel_event` is
   the app's soft cancellation and never the row delete; `update_event` and `cancel_event` act on one date, as the
   Calendar does for "this date only". Where something is sent the card names who gets it and shows the words, and a

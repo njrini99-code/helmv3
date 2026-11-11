@@ -19,12 +19,12 @@ as it is two entry points. Each was set against the tools in `../tasks.ts`, `../
 |---|---|---|
 | Found | 304 | |
 | Performed by a tool TOOLS built | 21 | The 20 task tools in `../tasks.ts`, plus `sendGolfPoll` through `draft_poll` (the coach sends it in Messages). Every flow in TASK_FIELDS §4 is among them. |
-| Performed by a tool in this folder | 17 | Nine task tools over fifteen actions, and the two note tools over two. |
+| Performed by a tool in this folder | 19 | Ten task tools over seventeen actions, and the two note tools over two. |
 | Performed by the chat's own cards | 12 | Save draft, Undo, folders, the tone switch, the player's Request more: a button on a card calls the action; the model does not. |
 | Left to the app on purpose | 83 | The never-list below. |
 | A player's own action | 21 | Player Ask has no writes (owner's call, AGENT_KIT lane 4). |
 | Not a request anyone makes | 42 | Read state, generation, caches, bookkeeping. |
-| Left for later | 108 | Below, in order, each with its reason. |
+| Left for later | 106 | Below, in order, each with its reason. |
 
 ## The test a task tool must pass (the brief's, all three)
 
@@ -49,6 +49,7 @@ for before a receipt says nothing was saved (`kit.ts`, `settle`). `list.ts` is t
 | `set_focus_area_status` | `completeFocusArea`, `reactivateFocusArea` (`golf/actions/development.ts`), after `verifyPlayerAccess`. | Player, focus area, status before and after. | Nobody; the card says it shows on the player's development page. |
 | `set_goal_state` | `pauseGoal`, `resumeGoal`, `abandonGoal` (`golf/actions/v3/goals.ts`), after `verifyPlayerAccess`. | Player, goal, state before and after, the reason kept on a close. | Nobody; the card says what changes among the player's goals. |
 | `mark_signal_handled` | `acknowledgeInsight` (`golf/actions/insights-feed.ts`), after `verifyInsightAccess`. | The signal and whom it is about. | Nobody; the card says the signal will read "Acknowledged" on the player's own CoachHelm page. Established from the code: the player's board and Deep dive are built by `toChInsight`, which sets `acknowledged` from the row's status, and `stanceOf` draws the word. A test pins those lines. |
+| `dismiss_signal` | `dismissInsight` (`golf/actions/insights-feed.ts`), after `verifyInsightAccess`. The row is kept. | The signal and whom it is about. | Nobody; the card says the signal also disappears from the player's own CoachHelm page. Established from the code: the app has one visibility rule for signals (`lib/coachhelm/v3/insight-visibility.ts`), which drops a dismissed one for every reader, and the player's page reads through it. A test pins those lines. |
 | `set_qualifier_coach_pick` | `setQualifierCoachPick` (`golf/actions/v3/qualifying.ts`), after `verifyTeamAccess`. No score or standing changes. | Qualifier, player, pick places used, the coach's reason and that only coaches read it. | Nobody. The card says what players can see: nothing until the selection is confirmed, or the pick on the board at once when it already is (`clubhouse/data/qualifiers.ts` reads selections only in state `selected`). |
 | `set_task_reminder` | `setTaskReminder` (`golf/actions/tasks.ts`), after the staff check the action makes. It queues the in-app reminder only. | The task, the time (reminders go out hourly), any reminder it replaces. | Everyone the task is assigned to who has an account, finished or not, and the coach who assigned it, at that time: by name, with the reminder's title and body word for word (traced through `task-reminders.ts` and pinned by a test). |
 | `save_note`, `remove_note` (`../context/notes.ts`; not tasks) | `saveCoachFact`, `deleteCoachFact` (`golf/actions/coachhelm-ask.ts`) | A chip, not a card: a note is the coach's own and saves at once. | Nobody; players never see notes. |
@@ -89,8 +90,8 @@ the reasons below are the real ones.
 
 1. **Clear a task's reminder** (`clearTaskReminder`): it deletes the queued reminder rows, so it stays with the
    app; `set_task_reminder` can move one.
-2. **Dismiss a signal** (`dismissInsight`, `dismissSignal`, patterns). What a player's own page does with a signal the
-   coach dismissed was not established, so the card could not say what the player sees.
+2. **Team patterns** (`dismissPattern`, `markPatternAddressed`, `reopenPattern`): the pattern half of the signal
+   actions. Not traced: who sees a team pattern and what a dismissal hides.
 3. **Qualifier selection beyond a pick**: confirm (`confirmQualifierSelection` tells the team, and its notice is
    composed by the selection service at confirm time, so the card cannot show the words first), a place at a tied cut
    (`chooseQualifierTiePlace`), taking a pick back, opening and closing (`advanceSelectionState`,
@@ -232,7 +233,7 @@ the reasons below are the real ones.
 | `refreshTeamAnalysisAsCoach` | `golf/actions/insights-coachhelm.ts` | none: not a request | bookkeeping the app does by itself (read state, generation, caches); nobody asks for it |
 | `updateTeamCoachHelmSettings` | `golf/actions/insights-coachhelm.ts` | none, on purpose | team settings |
 | `acknowledgeInsight` | `golf/actions/insights-feed.ts` | **built now** | mark_signal_handled |
-| `dismissInsight` | `golf/actions/insights-feed.ts` | none yet | Dismiss a signal. Not built: what a player’s own page does with a signal the coach dismissed was not established, so the card could not say what the player sees. |
+| `dismissInsight` | `golf/actions/insights-feed.ts` | **built now** | dismiss_signal |
 | `generateTeamInsights` | `golf/actions/insights-feed.ts` | none: not a request | bookkeeping the app does by itself (read state, generation, caches); nobody asks for it |
 | `rateInsight` | `golf/actions/insights-feed.ts` | none yet | Rate a signal. |
 | `reactivateInsight` | `golf/actions/insights-feed.ts` | none yet | Bring a signal back. |
@@ -242,7 +243,7 @@ the reasons below are the real ones.
 | `recordInteraction` | `golf/actions/insights-player-analysis.ts` | none: not a request | bookkeeping the app does by itself (read state, generation, caches); nobody asks for it |
 | `verifyPlayerAccessForInsights` | `golf/actions/insights-shared.ts` | none: not a request | bookkeeping the app does by itself (read state, generation, caches); nobody asks for it |
 | `acknowledgeInsight` | `golf/actions/intelligence-dashboard.ts` | none yet | The older entry point to the same change; mark_signal_handled uses the one in insights-feed.ts. |
-| `dismissInsight` | `golf/actions/intelligence-dashboard.ts` | none yet | Dismiss a signal. Not built: what a player’s own page does with a signal the coach dismissed was not established, so the card could not say what the player sees. |
+| `dismissInsight` | `golf/actions/intelligence-dashboard.ts` | none yet | The older entry point to the same change; dismiss_signal uses the one in insights-feed.ts. |
 | `generateTeamCorrelations` | `golf/actions/intelligence-dashboard.ts` | none: not a request | bookkeeping the app does by itself (read state, generation, caches); nobody asks for it |
 | `deleteGolfMessageAttachment` | `golf/actions/message-attachments.ts` | none, on purpose | deletes or removes something |
 | `sendGolfMessageWithAttachments` | `golf/actions/message-attachments.ts` | none yet | A message with files; the chat has no files to attach. |
@@ -322,7 +323,7 @@ the reasons below are the real ones.
 | `extractClassesFromScheduleImage` | `golf/actions/schedule-image.ts` | none: a player’s own action | a player’s classes |
 | `deleteShot` | `golf/actions/shot-actions.ts` | none, on purpose | deletes or removes something |
 | `updateShot` | `golf/actions/shot-actions.ts` | none: a player’s own action | editing their own round |
-| `dismissSignal` | `golf/actions/signal-groups.ts` | none yet | Dismiss a signal. |
+| `dismissSignal` | `golf/actions/signal-groups.ts` | **built now** | dismiss_signal (for an insight it is the same write) |
 | `reviewSignal` | `golf/actions/signal-groups.ts` | **built now** | mark_signal_handled (for an insight it is the same write) |
 | `verifyPlayerAccess` | `golf/actions/stats-data.ts` | none: not a request | bookkeeping the app does by itself (read state, generation, caches); nobody asks for it |
 | `markStatsStaleAction` | `golf/actions/stats.ts` | none: not a request | bookkeeping the app does by itself (read state, generation, caches); nobody asks for it |
