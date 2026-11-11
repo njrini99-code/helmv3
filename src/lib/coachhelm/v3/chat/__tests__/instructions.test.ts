@@ -93,9 +93,16 @@ describe('the team block', () => {
     expect(teamBlock(coach({ roster: [] }))).toContain('The team has no active players yet.');
   });
 
+  it('says when a season runs, as a rule and not as a date that turns', () => {
+    const block = teamBlock(coach());
+    expect(block).toContain('A season runs from 1 August to 31 July.');
+    // Nothing that changes within the conversation's life: no year, no "today", no count of players.
+    expect(block).not.toMatch(/\b20\d\d\b|[Tt]oday|\d+ (active )?players/);
+  });
+
   it('a player\'s block names only them: no roster, no ids', () => {
     const player: PlayerChatContext = { ...coach({ roster: [person(MAYA, 'Maya Ortiz')] }), player_id: MAYA };
     const block = teamBlock(player);
-    expect(block).toBe('You are talking with Maya, who plays for Rini University. The team\'s timezone is America/New_York.');
+    expect(block).toBe('You are talking with Maya, who plays for Rini University. The team\'s timezone is America/New_York. A season runs from 1 August to 31 July.');
   });
 });

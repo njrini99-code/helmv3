@@ -3,11 +3,13 @@ import type { CoachChatContext } from '../context';
 import { CoachContextError } from '../context';
 import type { ChatTool, PlayerChatContext, ReadTool, ToolContext, ToolResult } from '../engine/tool';
 import { toolsFor } from '../registry';
-import type { PlayerStatsScreen, QualifierBoardScreen, RosterScreen, ScreenLoaders, TeamRoundRow, TeamRoundsScreen, TeamStatsScreen } from '../screen-loaders';
+import type { PlayerStatsScreen, QualifierBoardScreen, RosterScreen, RoundReviewLoad, RoundReviewScreen, ScreenLoaders, TeamRoundRow, TeamRoundsScreen, TeamStatsScreen, TournamentsLoad } from '../screen-loaders';
 import { person, pgrst, type Tables } from './pgrst-double';
 
 vi.mock('server-only', () => ({}));
-vi.mock('@/lib/flags/is-enabled', () => ({ isFlagEnabled: () => false }));
+// Production has golf_tournaments_v1 off; the tournaments tests turn it on for themselves.
+const flags = vi.hoisted(() => ({ tournaments: false }));
+vi.mock('@/lib/flags/is-enabled', () => ({ isFlagEnabled: (name: string) => name === 'golf_tournaments_v1' && flags.tournaments }));
 
 const ELI = '00000000-0000-4000-8000-000000000001';
 const MAYA = '00000000-0000-4000-8000-000000000002';
@@ -232,12 +234,124 @@ describe('get_season and get_qualifiers: the screen\'s own figures and order', (
   });
 });
 
+function roundPage(over: Partial<RoundReviewScreen> = {}): RoundReviewScreen {
+  const pars = [4, 3, 5, 4, 4, 3, 4, 5, 4, 4, 4, 3, 5, 4, 4, 3, 4, 5];
+  // Two birdies, two bogeys, one double: 74 on a par 72, with one three-putt.
+  const over_ = new Map([[1, -1], [7, -1], [4, 1], [12, 1], [16, 2]]);
+  return {
+    id: 'round-1', playerId: ELI, playerName: 'Eli Brandt', date: '2026-11-02', course: 'Pine Hill', type: 'tournament', holesPlayed: 18, score: 74, toPar: 2,
+    front: { score: 36, toPar: 0 }, back: { score: 38, toPar: 2 }, putts: 31, fairways: { hit: 9, of: 14 }, greens: { hit: 11, of: 18 },
+    strokesGained: { total: 0.84, tee: 0.31, approach: -0.42, around: 0.2, putting: 0.75 },
+    recap: null, notes: 'Wind on the back nine.', coachNote: 'Good patience.',
+    holes: pars.map((par, i) => ({ n: i + 1, par, yards: 400, score: par + (over_.get(i + 1) ?? 0), putts: i + 1 === 16 ? 3 : i + 1 === 1 ? 1 : 2, fairway: par === 3 ? null : true, gir: !over_.has(i + 1) || (over_.get(i + 1) ?? 0) < 0, penalties: i + 1 === 16 ? 1 : 0 })),
+    holesError: false,
+    ...over,
+  };
+}
+
+describe('get_round: the Round page\'s round, with its counting done here', () => {
+  const tool = () => read<{ round_id: string }>(coach, 'get_round');
+
+  it('quotes the page\'s totals and strokes gained, and counts the holes itself', async () => {
+    const roundReview = vi.fn(async (): Promise<RoundReviewLoad> => ({ kind: 'ok', review: roundPage() }));
+    const ctx = ctxFor(coach, { roundReview });
+    const out = await tool().run(ctx, { round_id: 'round-1' });
+    expect(roundReview).toHaveBeenCalledWith('round-1');
+    // The chat made no round or hole read of its own.
+    expect(ctx.db.of('golf_rounds')).toHaveLength(0);
+    expect(ctx.db.of('golf_holes')).toHaveLength(0);
+    const value = (id: string) => out.measurements.find((m) => m.metric_id === id)?.value;
+    expect([value('total_score'), value('score_to_par'), value('putts'), value('sg_total'), value('sg_approach')]).toEqual([74, 2, 31, 0.84, -0.42]);
+    expect(out.measurements.every((m) => m.source === 'Round page' && m.entity.id === ELI)).toBe(true);
+    const detail = out.detail as { kind: string; holes: Array<{ hole_number: number; par: number; score: number }>; tallies: { birdies_or_better: number; bogeys: number; doubles_or_worse: number; three_putts: number; penalty_strokes: number } };
+    // The shape the hole strip draws from.
+    expect(detail.kind).toBe('hole_strip');
+    expect(detail.holes).toHaveLength(18);
+    expect(detail.holes[0]).toMatchObject({ hole_number: 1, par: 4, score: 3 });
+    expect(detail.tallies).toMatchObject({ birdies_or_better: 2, bogeys: 2, doubles_or_worse: 1, three_putts: 1, penalty_strokes: 1 });
+    const text = textOf(out);
+    expect(text).toContain('Eli Brandt, Pine Hill on 2026-11-02: 74 (+2 to par) over 18 holes, front nine 36, back nine 38. Source: Round page.');
+    expect(text).toContain('2 birdies or better');
+    expect(text).toContain('approach -0.42');
+    expect(text).toContain('The coach\'s note on the round: "Good patience."');
+  });
+
+  it('a round the page could not read is unavailable; one not on the team or still being played is empty', async () => {
+    const run = async (load: RoundReviewLoad | null | 'throws') => (await tool().run(ctxFor(coach, { roundReview: async () => { if (load === 'throws') throw new Error('down'); return load; } }), { round_id: 'r' })).coverage;
+    expect(await run({ kind: 'error' })).toBe('unavailable');
+    expect(await run(null)).toBe('unavailable');
+    expect(await run('throws')).toBe('unavailable');
+    expect(await run({ kind: 'notFound' })).toBe('empty');
+    expect(await run({ kind: 'inProgress' })).toBe('empty');
+    // No page bound: said as a failure, never as a round with no holes.
+    expect((await tool().run(ctxFor(coach), { round_id: 'r' })).coverage).toBe('unavailable');
+  });
+
+  it('holes that failed leave the totals standing and say so', async () => {
+    const out = await tool().run(ctxFor(coach, { roundReview: async () => ({ kind: 'ok', review: roundPage({ holes: [], holesError: true }) }) }), { round_id: 'round-1' });
+    expect(out.coverage).toBe('partial');
+    expect(out.coverage_note).toMatch(/holes could not be read/);
+    expect(out.measurements.find((m) => m.metric_id === 'total_score')?.value).toBe(74);
+  });
+});
+
+describe('get_tournaments: the Tournaments page, newest first, with the adding up done here', () => {
+  const home = (): TournamentsLoad => ({
+    kind: 'ready',
+    data: {
+      players: [{ id: ELI, name: 'Eli Brandt' }, { id: MAYA, name: 'Maya Ortiz' }],
+      errors: {},
+      events: [
+        { id: 'ev-old', name: 'Fall Opener', startDate: '2026-09-12', endDate: '2026-09-13', format: 'stroke', kind: 'tournament', status: 'complete', legacy: false, rounds: [{ number: 1, date: '2026-09-12', status: 'final', par: 72 }, { number: 2, date: '2026-09-13', status: 'final', par: 72 }], playerRounds: [{ roundNumber: 1, playerId: ELI, total: 73, toPar: 1, status: 'final' }, { roundNumber: 2, playerId: ELI, total: 71, toPar: -1, status: 'final' }, { roundNumber: 1, playerId: MAYA, total: 70, toPar: -2, status: 'final' }, { roundNumber: 2, playerId: MAYA, total: 72, toPar: 0, status: 'final' }], finish: { place: 'T3', placeN: 3, of: 12 }, lineup: { status: 'locked', set: 5, of: 5 } },
+        { id: 'ev-new', name: 'Pine Hill Invitational', startDate: '2026-11-20', endDate: '2026-11-21', format: 'stroke', kind: 'tournament', status: 'upcoming', legacy: false, rounds: [{ number: 1, date: '2026-11-20', status: 'scheduled', par: 72 }], playerRounds: [], finish: null, lineup: { status: 'draft', set: 3, of: 5 } },
+      ],
+    },
+  });
+  const tool = () => {
+    flags.tournaments = true;
+    const found = read<{ limit: number; notes: boolean }>(coach, 'get_tournaments');
+    flags.tournaments = false;
+    return found;
+  };
+
+  it('is not offered while the tournaments flag is off', () => {
+    expect(toolsFor('ask', coach).some((t) => t.name === 'get_tournaments')).toBe(false);
+  });
+
+  it('lists the page\'s events newest first and adds each player\'s rounds up', async () => {
+    const tournaments = vi.fn(async () => home());
+    const ctx = ctxFor(coach, { tournaments });
+    const out = await tool().run(ctx, { limit: 6, notes: false });
+    expect(out.coverage).toBe('complete');
+    const list = (out.detail as { tournaments: Array<{ name: string; lineup: string; team_place: string | null; players: Array<{ player: string; total: number | null; to_par: number | null }> }> }).tournaments;
+    expect(list.map((t) => t.name)).toEqual(['Pine Hill Invitational', 'Fall Opener']);
+    expect(list[0]).toMatchObject({ lineup: 'draft', team_place: null, players: [] });
+    // Lowest total first: Maya 142, Eli 144.
+    expect(list[1]!.players.map((p) => [p.player, p.total, p.to_par])).toEqual([['Maya Ortiz', 142, -2], ['Eli Brandt', 144, 0]]);
+    const text = textOf(out);
+    expect(text).toContain('Fall Opener (2026-09-12 to 2026-09-13, complete): lineup locked, 5 of 5 set, the team finished T3 of 12, 2 rounds. Source: Tournaments page.');
+    expect(text).toContain('Fall Opener, Maya Ortiz: 142 over 2 rounds (-2 to par); by round 70, 72');
+    // No tournament table was read by the chat itself.
+    expect(ctx.db.calls).toEqual([]);
+  });
+
+  it('a failed page is unavailable, and a team with none set up is empty', async () => {
+    const run = async (load: TournamentsLoad | null) => (await tool().run(ctxFor(coach, { tournaments: async () => load }), { limit: 6, notes: false })).coverage;
+    expect(await run({ kind: 'failed' })).toBe('unavailable');
+    expect(await run(null)).toBe('unavailable');
+    expect(await run({ kind: 'not_set_up' })).toBe('empty');
+    const partial = home();
+    if (partial.kind === 'ready') partial.data.errors = { events: true };
+    expect(await run(partial)).toBe('unavailable');
+  });
+});
+
 describe('what each surface is offered', () => {
   const names = (tools: ChatTool[]) => tools.map((t) => t.name);
 
   it('a coach keeps every capability, on fewer tools', () => {
     const ask = toolsFor('ask', coach);
-    expect(names(ask)).toEqual(['get_player_stats', 'get_team_stats', 'get_rounds', 'get_round', 'get_shots', 'get_season', 'get_qualifiers', 'get_schedule', 'get_coachhelm', 'get_practice', 'get_reference', 'query_team_data', 'summarise_data', 'show_visual', 'find_thread', 'write_artifact', 'ask_practice_brief', 'draft_practice_plan', 'draft_message', 'draft_poll', 'draft_board', 'create_event', 'create_trip', 'create_qualifier', 'create_goal', 'add_round_note', 'add_blocked_time', 'add_team_break', 'save_team_term', 'set_availability_note', 'create_recruit', 'create_recurring_practice', 'create_focus_area', 'create_task', 'create_team_announcement', 'create_drill', 'publish_practice_plan', 'publish_artifact']);
+    expect(names(ask)).toEqual(['get_player_stats', 'get_team_stats', 'get_rounds', 'get_round', 'get_shots', 'get_season', 'get_qualifiers', 'get_schedule', 'get_coachhelm', 'get_practice', 'get_reference', 'query_team_data', 'summarise_data', 'show_visual', 'find_thread', 'find_in_app', 'save_note', 'remove_note', 'write_artifact', 'ask_practice_brief', 'draft_practice_plan', 'draft_message', 'draft_poll', 'draft_board', 'create_event', 'create_trip', 'create_qualifier', 'create_goal', 'add_round_note', 'add_blocked_time', 'add_team_break', 'save_team_term', 'set_availability_note', 'create_recruit', 'create_recurring_practice', 'create_focus_area', 'create_task', 'create_team_announcement', 'create_drill', 'publish_practice_plan', 'publish_artifact']);
     expect(new Set(names(ask)).size).toBe(ask.length);
   });
 
@@ -249,7 +363,7 @@ describe('what each surface is offered', () => {
 
   it('a player is offered reads of their own data and nothing that writes, ranks or reads the team', () => {
     const tools = toolsFor('player', maya);
-    expect(names(tools)).toEqual(['get_player_stats', 'get_round', 'get_shots', 'get_season', 'get_schedule', 'get_coachhelm', 'get_reference', 'summarise_data', 'show_visual']);
+    expect(names(tools)).toEqual(['get_player_stats', 'get_round', 'get_shots', 'get_season', 'get_schedule', 'get_coachhelm', 'get_reference', 'summarise_data', 'show_visual', 'find_in_app']);
     expect(tools.every((t) => t.kind === 'read')).toBe(true);
     // The session decides, whatever surface the request names.
     expect(names(toolsFor('ask', maya))).toEqual(names(tools));
@@ -270,12 +384,34 @@ describe('a player cannot reach a teammate\'s figure or a coach-only field', () 
     expect(playerStats.mock.calls.map((c) => c[0])).toEqual([MAYA, MAYA]);
   });
 
-  it('a teammate\'s round reads as no round at all, and its holes are never fetched', async () => {
-    const ctx = ctxFor(maya, {}, { golf_rounds: { rows: [{ id: 'round-eli', player_id: ELI, team_id: 'team-1', round_date: '2026-10-01', course_name: 'Pine Hill', total_score: 70, score_to_par: -2 }] }, golf_holes: { rows: [{ round_id: 'round-eli', hole_number: 1, par: 4, score: 3, putts: 1, penalty_strokes: 0, gir: true }] } });
+  it('a teammate\'s round reads as no round at all, and the Round page is never asked for it', async () => {
+    const roundReview = vi.fn(async (): Promise<RoundReviewLoad> => ({ kind: 'ok', review: roundPage({ id: 'round-eli', playerId: ELI, playerName: 'Eli Brandt' }) }));
+    const ctx = ctxFor(maya, { roundReview }, { golf_rounds: { rows: [{ id: 'round-eli', player_id: ELI, team_id: 'team-1', round_date: '2026-10-01', course_name: 'Pine Hill', total_score: 70, score_to_par: -2 }] } });
     const out = await read<{ round_id: string }>(maya, 'get_round').run(ctx, { round_id: 'round-eli' });
     expect(out.coverage).toBe('empty');
     expect(JSON.stringify(out)).not.toContain('Pine Hill');
+    expect(JSON.stringify(out)).not.toContain('Eli');
+    expect(roundReview).not.toHaveBeenCalled();
     expect(ctx.db.of('golf_holes')).toHaveLength(0);
+    // The check is on the caller's own id, whatever the model sent.
+    expect(ctx.db.of('golf_rounds').some((c) => c.method === 'eq' && c.args[0] === 'player_id' && c.args[1] === MAYA)).toBe(true);
+  });
+
+  it('and if the page ever handed back someone else\'s round, it is still not shown', async () => {
+    const roundReview = vi.fn(async (): Promise<RoundReviewLoad> => ({ kind: 'ok', review: roundPage({ id: 'round-x', playerId: ELI, playerName: 'Eli Brandt' }) }));
+    const ctx = ctxFor(maya, { roundReview }, { golf_rounds: { rows: [{ id: 'round-x', player_id: MAYA }] } });
+    const out = await read<{ round_id: string }>(maya, 'get_round').run(ctx, { round_id: 'round-x' });
+    expect(out.coverage).toBe('empty');
+    expect(JSON.stringify(out)).not.toContain('Eli');
+  });
+
+  it('a player\'s own round is read from the Round page and worded to them', async () => {
+    const roundReview = vi.fn(async (): Promise<RoundReviewLoad> => ({ kind: 'ok', review: roundPage({ id: 'round-m', playerId: MAYA, playerName: 'Maya Ortiz', coachNote: null }) }));
+    const ctx = ctxFor(maya, { roundReview }, { golf_rounds: { rows: [{ id: 'round-m', player_id: MAYA }] } });
+    const out = await read<{ round_id: string }>(maya, 'get_round').run(ctx, { round_id: 'round-m' });
+    expect(roundReview).toHaveBeenCalledWith('round-m');
+    expect(out.coverage).toBe('complete');
+    expect(out.measurements.find((m) => m.metric_id === 'total_score')?.value).toBe(74);
   });
 
   it('the player\'s CoachHelm and reference readers do not offer the coach\'s parts', async () => {

@@ -12,6 +12,8 @@
  *              No task, no team-wide read, no allowlisted table reader.
  */
 import { isFlagEnabled } from '@/lib/flags/is-enabled';
+import { findInApp, findInAppForPlayer } from './context/find-in-app';
+import { noteTools } from './context/notes';
 import { isPlayerContext, type ChatSurface, type ChatTool, type ToolContext, type ToolsFor } from './engine/tool';
 import { getMyStats, getMySeason, getPlayerStats, getQualifiers, getRounds, getSeason, getTeamStats } from './readers';
 import {
@@ -62,10 +64,11 @@ function strict(tool: ChatTool): ChatTool {
 
 /** A player's Ask: reads of their own data and a visual of them. */
 function playerTools(): ChatTool[] {
-  return [getMyStats, getRound, getShots, getMySeason, getMySchedule, getMyCoachHelm, getMyReference, SUMMARISE_PLAYER, showVisual];
+  // CONTEXT's reader (`context/find-in-app.ts`) is last, so everything before it keeps its place in the cached prefix.
+  return [getMyStats, getRound, getShots, getMySeason, getMySchedule, getMyCoachHelm, getMyReference, SUMMARISE_PLAYER, showVisual, findInAppForPlayer];
 }
 
-function coachTools(surface: Exclude<ChatSurface, 'player'>): ChatTool[] {
+function coachTools(surface: Exclude<ChatSurface, 'player'>, who: ToolContext['who']): ChatTool[] {
   const quickChat = surface === 'quick_chat';
   const reads: ChatTool[] = [
     getPlayerStats,
@@ -85,6 +88,10 @@ function coachTools(surface: Exclude<ChatSurface, 'player'>): ChatTool[] {
     SUMMARISE_COACH,
     showVisual,
     findThread,
+    // CONTEXT's tools (`context/**`), after every reader of ours. The two note tools save the coach's own standing note at once: they are
+    // reads on the contract (no card), and are not in TASK_TOOL_NAMES.
+    findInApp,
+    ...noteTools(who),
   ];
   // Quick chat's card is the coach's Send, so it sends and does not hand a draft to Messages or keep a document.
   const drafts: ChatTool[] = quickChat ? [askPracticeBrief, draftPracticePlan, draftBoard] : [writeArtifact, askPracticeBrief, draftPracticePlan, draftMessage, draftPoll, draftBoard];
@@ -94,7 +101,7 @@ function coachTools(surface: Exclude<ChatSurface, 'player'>): ChatTool[] {
 export const toolsFor: ToolsFor = (surface: ChatSurface, who: ToolContext['who']): ChatTool[] => {
   // The session decides, not the surface name: a player's context never gets a coach's list, and a coach's context never gets the player's.
   if (isPlayerContext(who) || surface === 'player') return isPlayerContext(who) ? playerTools().map(strict) : [];
-  return coachTools(surface).map(strict);
+  return coachTools(surface, who).map(strict);
 };
 
 /** The names of the tools that write, for anything that must tell a task from a read without the list in hand (the confirm gate's tests, the UI's card pairing). */
