@@ -92,7 +92,7 @@
 -- takes no table lock, and no trigger is created or dropped.
 --
 -- ORDER: after 20261110090200 (it replaces that file's two functions and keeps
--- its triggers), which itself needs 20261110090000 and 20261107090100. The
+-- its triggers), which itself needs 20261110090050 and 20261107090100. The
 -- precondition below refuses to run without them, and refuses to build the
 -- index while any team has two channels. No app deploy is needed before or
 -- after. Then 20261110090400, then 20261110090500.
@@ -103,7 +103,10 @@
 -- VERIFY: select 1 where (select count(*) from pg_trigger where not tgisinternal and tgenabled = 'O' and ((tgrelid = 'public.golf_team_members'::regclass and tgname = 'golf_team_members_join_team_channel') or (tgrelid = 'public.golf_team_coach_staff'::regclass and tgname = 'golf_team_coach_staff_join_team_channel'))) = 2; -- noqa: LT05
 -- VERIFY: select 1 where not exists (select 1 from public.golf_conversations where is_team_channel and team_id is not null group by team_id having count(*) > 1); -- noqa: LT05
 --
--- ROLLBACK: the file
+-- ROLLBACK: ORDER: roll back 20261110090500 first (drop its function, which
+-- calls the ensure function), then this file, then 20261110090200. Then, and
+-- only then, the files those two trust (20261110090050, 20261107090100,
+-- 20261110090700). 20261110090400 and 20261110090600 can stay. The file is
 -- supabase/rollbacks/20261110090300_golf_team_channel_ensure.rollback.sql
 -- (one transaction: puts back the two function bodies of 20261110090200, then
 -- drops the ensure function and the index). Channels created in the meantime
@@ -147,7 +150,7 @@ BEGIN
       AND permissive = 'RESTRICTIVE'
   ) THEN
     RAISE EXCEPTION
-      'apply 20261110090000 first: any player can still create a team channel';
+      'apply 20261110090050 first: any player can still create a team channel';
   END IF;
   IF has_column_privilege(
        'authenticated', 'public.golf_conversations', 'is_team_channel',

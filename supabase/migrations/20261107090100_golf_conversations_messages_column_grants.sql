@@ -48,7 +48,7 @@
 --      a client still sets every column the INSERT policies do not check.
 --      Closed elsewhere: created_at, kind = 'system' and reply_to_id on a new
 --      message (20261110090100); is_team_channel = true on a new conversation
---      (20261110090000). Still the caller's choice on INSERT after all seven
+--      (20261110090050). Still the caller's choice on INSERT after all the
 --      files: pinned_at, pinned_by, edited_at, is_deleted and read on a new
 --      message; title, is_team_chat, created_at and updated_at on a new
 --      conversation.
@@ -92,7 +92,7 @@
 --
 -- Not closed by this file: INSERT, beyond created_by (see point 1). In
 -- particular any team player can still INSERT a conversation with
--- is_team_channel = true until 20261110090000 is applied, and a sender still
+-- is_team_channel = true until 20261110090050 is applied, and a sender still
 -- chooses created_at, kind and reply_to_id of a new message until
 -- 20261110090100 is applied.
 --
@@ -104,7 +104,8 @@
 --                       reads and writes wait.
 -- GRANT and REVOKE take no table lock. An earlier draft took them as it went,
 -- conversations first, then messages, and its DROP TRIGGER IF EXISTS took
--- ACCESS EXCLUSIVE on both tables even where the trigger did not exist.
+-- ACCESS EXCLUSIVE on both tables wherever the trigger existed, so on every
+-- re-apply (on a first apply, with nothing to drop, only a brief ACCESS SHARE).
 -- Why messages first: a send holds its lock on golf_messages while its
 -- foreign-key check reads golf_conversations. If this file held
 -- golf_conversations and then waited for golf_messages, a send that arrived
@@ -131,7 +132,10 @@
 -- VERIFY: select 1 where has_table_privilege('authenticated', 'public.golf_conversations', 'SELECT') and has_table_privilege('authenticated', 'public.golf_conversations', 'INSERT') and has_table_privilege('authenticated', 'public.golf_conversations', 'DELETE') and has_table_privilege('authenticated', 'public.golf_messages', 'SELECT') and has_table_privilege('authenticated', 'public.golf_messages', 'INSERT') and has_table_privilege('authenticated', 'public.golf_messages', 'DELETE'); -- noqa: LT05
 --
 -- ROLLBACK: (one transaction; re-opens the holes, use only to restore a broken
--- writer while a fix is prepared):
+-- writer while a fix is prepared). ORDER: roll back 20261110090500's function,
+-- 20261110090300 and 20261110090200 first, in that order. While they are live
+-- they trust is_team_channel, and restoring UPDATE lets any member set it on a
+-- conversation of their own:
 --   drop trigger if exists golf_messages_identity_guard
 --     on public.golf_messages;
 --   drop trigger if exists golf_conversations_identity_guard

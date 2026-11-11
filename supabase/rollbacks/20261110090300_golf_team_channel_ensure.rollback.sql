@@ -3,8 +3,12 @@
 --
 -- Puts back the two trigger function bodies of 20261110090200 (a new member
 -- joins the channel only if the team has one), then drops the ensure function
--- and the unique index. If 20261110090400 / 20261110090500 are applied, roll
--- those back first: the backfill calls the ensure function.
+-- and the unique index.
+-- ORDER: roll back 20261110090500 first (drop
+-- helm_private.golf_team_channel_backfill(): it calls the ensure function),
+-- then this file, then 20261110090200, and only after those the files they
+-- trust (20261110090050, 20261107090100, 20261110090700). 20261110090400 and
+-- 20261110090600 do not depend on this file and can stay.
 --
 -- Not undone: channels created while the file was applied stay, with the
 -- people in them. Nothing marks them as created by a trigger except a title

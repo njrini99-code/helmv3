@@ -90,7 +90,9 @@
 -- EXCLUSIVE on golf_messages, once, from CREATE OR REPLACE TRIGGER. Sends,
 -- edits and deletes wait for the few milliseconds the file takes; reads do not
 -- wait and are not waited for. (DROP TRIGGER IF EXISTS, which an earlier draft
--- used, takes ACCESS EXCLUSIVE even when the trigger does not exist.)
+-- used, takes ACCESS EXCLUSIVE whenever the trigger exists, so on every
+-- re-apply; on a first apply, with nothing to drop, only a brief ACCESS SHARE.
+-- CREATE OR REPLACE TRIGGER takes SHARE ROW EXCLUSIVE in both cases.)
 --
 -- ORDER: independent of every other file; no app deploy before or after. Sits
 -- naturally after 20261107090100.

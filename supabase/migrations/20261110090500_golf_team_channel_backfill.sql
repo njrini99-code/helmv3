@@ -116,7 +116,9 @@
 -- VERIFY: select 1 from pg_proc where oid = 'helm_private.golf_team_channel_backfill()'::regprocedure and prosecdef and proconfig = array['search_path=""'] and not has_function_privilege('anon', oid, 'EXECUTE') and not has_function_privilege('authenticated', oid, 'EXECUTE'); -- noqa: LT05
 --
 -- ROLLBACK (one transaction; <ts> is the timestamp the NOTICE printed, which
--- every row this file wrote carries as created_at or joined_at):
+-- every row this file wrote carries as created_at or joined_at). ORDER: this
+-- file goes first of the channel files, before 20261110090300 (its function
+-- calls that file's ensure function) and 20261110090200:
 --   Can be undone:
 --     -- channels this file created that still have no message (their
 --     -- participant rows go with them, ON DELETE CASCADE)

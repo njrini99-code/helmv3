@@ -111,8 +111,9 @@
 -- VERIFY: select 1 where (select count(*) from pg_proc where oid in ('helm_private.golf_team_remove_departed(uuid, uuid)'::regprocedure, 'helm_private.golf_team_chats_leave_member()'::regprocedure, 'helm_private.golf_team_chats_leave_staff()'::regprocedure) and prosecdef and proconfig = array['search_path=""'] and not has_function_privilege('anon', oid, 'EXECUTE') and not has_function_privilege('authenticated', oid, 'EXECUTE')) = 3; -- noqa: LT05
 -- VERIFY: select 1 where (select count(*) from pg_trigger where not tgisinternal and tgenabled = 'O' and tgname in ('golf_team_members_join_team_channel', 'golf_team_coach_staff_join_team_channel')) = 2; -- noqa: LT05
 --
--- ROLLBACK (one transaction; people already removed stay removed: nothing
--- records who they were, so put them back by hand or from a backup):
+-- ROLLBACK: (one transaction; people already removed stay removed: nothing
+-- records who they were, so put them back by hand or from a backup). ORDER:
+-- nothing has to be rolled back first; no other file calls these functions:
 --   drop trigger if exists golf_team_coach_staff_leave_team_chats
 --     on public.golf_team_coach_staff;
 --   drop trigger if exists golf_team_members_delete_leave_team_chats

@@ -64,23 +64,48 @@
 -- EXCLUSIVE on golf_team_members, then on golf_team_coach_staff, each once,
 -- from CREATE OR REPLACE TRIGGER. Roster and staff writes wait for the few
 -- milliseconds the file takes; reads do not wait and are not waited for, which
--- matters on golf_team_members: nearly every Golf policy reads it. (DROP
--- TRIGGER IF EXISTS, which an earlier draft used, takes ACCESS EXCLUSIVE even
--- when the trigger does not exist.)
+-- matters on golf_team_members: nearly every Golf policy reads it. The
+-- precondition reads golf_conversations, golf_team_coach_staff and golf_coaches
+-- (ACCESS SHARE, which waits for and blocks nothing but a schema change). (DROP
+-- TRIGGER IF EXISTS, which an earlier draft used, takes ACCESS EXCLUSIVE
+-- whenever the trigger exists, so on every re-apply; on a first apply, with
+-- nothing to drop, it takes only a brief ACCESS SHARE. CREATE OR REPLACE
+-- TRIGGER takes SHARE ROW EXCLUSIVE in both cases.)
 --
--- ORDER: after 20261110090000 and 20261107090100, and the precondition below
+-- ORDER: after 20261110090050 and 20261107090100, and the precondition below
 -- refuses to run without them. These triggers trust is_team_channel:
--- 20261110090000 lets only a coach of the team create a flagged row, and
+-- 20261110090050 lets only a coach of the team create a flagged row, and
 -- 20261107090100 stops a member changing the flag on an existing one. Without
 -- both, a player could flag a conversation of their own and have every new team
--- member delivered into it. No app deploy is needed before or after.
+-- member delivered into it. Apply 20261110090700 before this file too: it
+-- bounds who a coach may put on a roster, and from this file on a roster row
+-- carries its player into the team channel. (That one is not a precondition:
+-- its name sorts later, and a fresh `supabase db reset` applies files by name.)
+-- No app deploy is needed before or after.
+--
+-- The precondition also refuses to run (security review 2026-11-10, item 5;
+-- migration review, should-fix 2) when:
+--   * a row flagged is_team_channel has no team, or a creator who is not a
+--     staffed coach of its team. Such a row was flagged before the two files
+--     above closed the flag, and its creator would receive every new member.
+--   * a team has two flagged rows (20261110090300 makes that impossible; here
+--     it would put a new member in both).
+--   * golf_team_members.status is not public.team_member_status. The trigger
+--     functions compare status with that type outside their exception block,
+--     so with another type every roster write that sets a status would fail.
+--   Production, read-only, 2026-11-10: 1 channel, team set, creator staffed on
+--   that team, no team with two; status is team_member_status.
 --
 -- VERIFY: select 1 from pg_trigger where tgrelid = 'public.golf_team_members'::regclass and tgname = 'golf_team_members_join_team_channel' and not tgisinternal and tgenabled = 'O' and (tgtype & 2) = 0 and (tgtype & 4) = 4 and (tgtype & 16) = 16; -- noqa: LT05
 -- VERIFY: select 1 from pg_trigger where tgrelid = 'public.golf_team_coach_staff'::regclass and tgname = 'golf_team_coach_staff_join_team_channel' and not tgisinternal and tgenabled = 'O' and (tgtype & 2) = 0 and (tgtype & 4) = 4; -- noqa: LT05
 -- VERIFY: select 1 where (select count(*) from pg_proc where oid in ('helm_private.golf_team_channel_join_member()'::regprocedure, 'helm_private.golf_team_channel_join_staff()'::regprocedure) and prosecdef and proconfig = array['search_path=""'] and not has_function_privilege('anon', oid, 'EXECUTE') and not has_function_privilege('authenticated', oid, 'EXECUTE')) = 2; -- noqa: LT05
 --
 -- ROLLBACK: (one transaction; rows the triggers added stay, and can be told
--- apart by nothing: remove them by hand if needed):
+-- apart by nothing: remove them by hand if needed). ORDER: roll back
+-- 20261110090500's function and then 20261110090300 (its rollback file) first:
+-- 20261110090300 replaced these two function bodies and its ensure function is
+-- what they call. This file is rolled back BEFORE 20261110090050,
+-- 20261107090100 and 20261110090700, whose rules it trusts:
 --   drop trigger if exists golf_team_coach_staff_join_team_channel
 --     on public.golf_team_coach_staff;
 --   drop trigger if exists golf_team_members_join_team_channel
@@ -96,12 +121,23 @@
 SET LOCAL lock_timeout = '3s';
 
 DO $$
+DECLARE
+  v_bad integer;
 BEGIN
   IF to_regclass('public.golf_team_members') IS NULL
      OR to_regclass('public.golf_team_coach_staff') IS NULL
      OR to_regclass('public.golf_conversations') IS NULL
      OR to_regclass('public.golf_conversation_participants') IS NULL THEN
     RAISE EXCEPTION 'a roster or conversation table is missing';
+  END IF;
+  -- The trigger functions compare status with this type outside their
+  -- exception block: with another type every roster write would fail.
+  IF (SELECT a.atttypid FROM pg_attribute AS a
+      WHERE a.attrelid = 'public.golf_team_members'::regclass
+        AND a.attname = 'status' AND NOT a.attisdropped)
+     IS DISTINCT FROM to_regtype('public.team_member_status')::oid THEN
+    RAISE EXCEPTION
+      'golf_team_members.status is not public.team_member_status';
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_namespace WHERE nspname = 'helm_private') THEN
     RAISE EXCEPTION 'schema helm_private is missing';
@@ -123,7 +159,7 @@ BEGIN
       AND permissive = 'RESTRICTIVE'
   ) THEN
     RAISE EXCEPTION
-      'apply 20261110090000 first: any player can still create a team channel';
+      'apply 20261110090050 first: any player can still create a team channel';
   END IF;
   IF has_column_privilege(
        'authenticated', 'public.golf_conversations', 'is_team_channel',
@@ -132,6 +168,30 @@ BEGIN
        'anon', 'public.golf_conversations', 'is_team_channel', 'UPDATE') THEN
     RAISE EXCEPTION
       'apply 20261107090100 first: a member can still set is_team_channel';
+  END IF;
+  -- The flag can be trusted from now on. The rows that already carry it were
+  -- written before that: check them too.
+  SELECT count(*) INTO v_bad
+  FROM public.golf_conversations AS c
+  WHERE c.is_team_channel
+    AND (c.team_id IS NULL
+      OR NOT EXISTS (
+        SELECT 1
+        FROM public.golf_team_coach_staff AS s
+        INNER JOIN public.golf_coaches AS gc ON s.coach_id = gc.id
+        WHERE s.team_id = c.team_id AND gc.user_id = c.created_by));
+  IF v_bad > 0 THEN
+    RAISE EXCEPTION
+      '% team channel row(s) have no team or a creator who is not a staffed coach of it: fix or unflag them first',
+      v_bad;
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM public.golf_conversations
+    WHERE is_team_channel AND team_id IS NOT NULL
+    GROUP BY team_id HAVING count(*) > 1
+  ) THEN
+    RAISE EXCEPTION
+      'a team has two team channels: merge or unflag one before this file';
   END IF;
 END $$;
 

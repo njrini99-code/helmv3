@@ -97,6 +97,12 @@ BEGIN
   ON CONFLICT DO NOTHING;
 END $$;
 SET LOCAL session_replication_role = origin;
+-- The coach adds these players the way acceptJoinRequest does: each has a pending join request for that team
+-- (20261110090700 refuses a coach's roster INSERT without one).
+INSERT INTO public.golf_team_join_requests (team_id, player_id, status) VALUES
+  ('00000000-0000-0000-0000-0000000a4201', '00000000-0000-0000-0000-0000000a4401', 'pending'),
+  ('00000000-0000-0000-0000-0000000a4201', '00000000-0000-0000-0000-0000000a4402', 'pending'),
+  ('00000000-0000-0000-0000-0000000a4201', '00000000-0000-0000-0000-0000000a4406', 'pending');
 
 -- ---------------------------------------------------------------------------
 -- Structure

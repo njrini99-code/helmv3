@@ -120,6 +120,17 @@ INSERT INTO public.golf_conversations (id, created_by, team_id, is_team_chat, is
 INSERT INTO public.golf_conversation_participants (conversation_id, user_id) VALUES
   ('00000000-0000-0000-0000-0000000a5500', '00000000-0000-0000-0000-0000000a5c01');
 SET LOCAL session_replication_role = origin;
+-- The coach adds these players the way acceptJoinRequest does: each has a pending join request for that team
+-- (20261110090700 refuses a coach's roster INSERT without one).
+INSERT INTO public.golf_team_join_requests (team_id, player_id, status) VALUES
+  ('00000000-0000-0000-0000-0000000a5201', '00000000-0000-0000-0000-0000000a5406', 'pending'),
+  ('00000000-0000-0000-0000-0000000a5205', '00000000-0000-0000-0000-0000000a5409', 'pending');
+-- A coach reads (and so approves) join requests of teams in their own organization. Coach One is staffed on team
+-- Five, so team Five moves into Org One; it is the women's team there (one team per organization and gender).
+SET LOCAL session_replication_role = replica;
+UPDATE public.golf_teams SET organization_id = '00000000-0000-0000-0000-0000000a5101', gender = 'womens'
+WHERE id = '00000000-0000-0000-0000-0000000a5205';
+SET LOCAL session_replication_role = origin;
 
 -- ---------------------------------------------------------------------------
 -- Structure

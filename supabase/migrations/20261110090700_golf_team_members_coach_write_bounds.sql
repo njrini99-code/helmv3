@@ -67,7 +67,12 @@
 --   player INSERT policy was dropped (#1257). Its only caller passes the code.
 --   It would pass today only for a login that is a staffed coach of the team
 --   AND owns the player profile; after this file that needs a pending request
---   too. Production has no such login (2026-11-10).
+--   too. Production has 1 such login (2026-11-10); its roster row already
+--   exists, and joinGolfTeam returns early for a player already on the team.
+--   One staff row of production's 21 belongs to a coach whose organization is
+--   not the team's. That coach cannot read the team's join requests, so
+--   acceptJoinRequest already answers "Request not found" for them; this file
+--   changes nothing they can do in the app.
 --
 -- The fix:
 --   1. golf_team_join_requests_identity_guard, BEFORE UPDATE, client sessions

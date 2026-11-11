@@ -3,7 +3,9 @@
 -- Apply: npm run db:apply -- \
 --   supabase/migrations/20261110090000_golf_team_chat_self_join.sql
 -- Risk: LOW-MEDIUM. No data changes. It narrows who may INSERT their own
--- participant row and who may create a conversation flagged is_team_channel.
+-- participant row. (Who may create a conversation flagged is_team_channel was
+-- this file's second half until the migration review of 2026-11-10; it is now
+-- 20261110090050, so that each file locks one table. See LOCKS.)
 -- Every participant insert the app makes is made by the conversation's creator
 -- (sweep below), so no app flow loses a write; a caller outside the app that
 -- joined a team chat by itself would now get 42501.
@@ -27,13 +29,6 @@
 --   do it again after the coach removes them. Many members are minors.
 --   Production holds 10 is_team_chat conversations, 8 of them with a team (the
 --   ones this reaches), one of which is a team channel.
---   Related, deferred by the 20261107090100 header:
---   golf_conversations_insert_v2 lets any team player INSERT a conversation
---   with is_team_channel = true (and any signed-in user with team_id NULL).
---   Such a row lists first for everyone its creator adds (the list RPC orders
---   by is_team_channel) and they cannot hide it (conversation-hide.ts refuses a
---   channel). Once 20261110090200 is applied the flag also decides where new
---   team members are put, so who may set it matters more.
 --
 -- Who uses the self-join half today: nobody. 20260807080000 kept it "for the
 -- TEAM CHAT bootstrap, letting a team member join their squad's group chat",
@@ -74,43 +69,36 @@
 --      a player who joins a team is in its channel is met by 20261110090200, a
 --      trigger on the roster that runs with definer rights and needs no policy
 --      branch.
---   2. golf_conversations_insert_team_channel_coach, a RESTRICTIVE INSERT
---      policy: a row with is_team_channel = true needs a team_id the caller
---      coaches (is_golf_team_coach). Restrictive and separate on purpose:
---      20261107090100 drops and recreates the permissive
---      golf_conversations_insert_v2, so a clause added there would be undone by
---      whichever of the two files ran second. A restrictive policy is ANDed
---      with it in either order. The service role bypasses RLS, so the seed
---      script is unaffected; no app code sets the flag.
 --   golf_conversation_on_my_team() is left in place (the rollback needs it).
 --
 -- Not changed: golf_conversations_select_v2 still shows team-chat rows (id,
 -- title) to the whole team; with the insert closed that reveals a group's
 -- existence and title, not its contents. Narrowing it is a product decision
--- (report). Changing is_team_channel on an existing row is closed by
--- 20261107090100 (column grants and identity guard), not here.
+-- (report). Creating a row flagged is_team_channel is closed by 20261110090050,
+-- and changing the flag on an existing row by 20261107090100.
 --
--- LOCKS (pg_locks after each statement, local stack 2026-11-10): ACCESS
--- EXCLUSIVE on golf_conversation_participants, then on golf_conversations, each
--- once (DROP / CREATE POLICY needs it; no weaker lock is taken first on either
--- table). Reads and writes of each table wait from its lock to the commit, a
--- few milliseconds once both are granted; lock_timeout gives up after 3s with
+-- LOCKS (pg_locks before commit, local stack 2026-11-10): ACCESS EXCLUSIVE on
+-- golf_conversation_participants, once (DROP / CREATE POLICY needs it), and
+-- nothing stronger than ACCESS SHARE anywhere else (golf_conversations, taken
+-- when the new policy's EXISTS subqueries are parsed; it conflicts with no
+-- reader or writer). Reads and writes of the participants table wait from the
+-- lock to the commit, a few milliseconds; lock_timeout gives up after 3s with
 -- nothing changed. Apply off-peak and run it again if it times out.
+-- Until the migration review of 2026-11-10 this file went on to take ACCESS
+-- EXCLUSIVE on golf_conversations as well. Every inbox read locks
+-- conversations first and participants second, the opposite order, so the two
+-- could deadlock. That statement is now its own file, 20261110090050.
 --
--- ORDER: independent of the four 202611070900xx files and of any app deploy;
--- can be applied first. Apply before 20261110090200 (it trusts
--- is_team_channel). Needs 20261017003000 (applied to production 2026-10-21),
--- which the precondition below checks.
+-- ORDER: independent of the four 202611070900xx files, of 20261110090050 and
+-- of any app deploy; can be applied first. Needs 20261017003000 (applied to
+-- production 2026-10-21), which the precondition below checks.
 --
 -- VERIFY: select 1 from pg_policies where schemaname = 'public' and tablename = 'golf_conversation_participants' and policyname = 'golf_participants_insert_v2' and cmd = 'INSERT' and position('golf_conversation_on_my_team' in with_check) = 0 and position('golf_conversation_created_by_me' in with_check) > 0; -- noqa: LT05
 -- VERIFY: select 1 from pg_policies where schemaname = 'public' and tablename = 'golf_conversation_participants' and policyname = 'golf_participants_insert_v2' and position('golf_conversation_has_other_participant' in with_check) > 0 and position('golf_user_in_conversation_team_audience' in with_check) > 0 and position('golf_user_on_conversation_team' in with_check) > 0; -- noqa: LT05
--- VERIFY: select 1 from pg_policies where schemaname = 'public' and tablename = 'golf_conversations' and policyname = 'golf_conversations_insert_team_channel_coach' and permissive = 'RESTRICTIVE' and cmd = 'INSERT' and position('is_team_channel' in with_check) > 0 and position('is_golf_team_coach' in with_check) > 0; -- noqa: LT05
--- VERIFY: select 1 from pg_policies where schemaname = 'public' and tablename = 'golf_conversations' and policyname = 'golf_conversations_insert_v2' and cmd = 'INSERT' and permissive = 'PERMISSIVE'; -- noqa: LT05
 --
 -- ROLLBACK: (one transaction; re-opens the hole, use only to restore a broken
--- writer while a fix is prepared):
---   drop policy if exists golf_conversations_insert_team_channel_coach
---     on public.golf_conversations;
+-- writer while a fix is prepared). ORDER: nothing has to be rolled back first;
+-- no other file depends on this policy's text:
 --   drop policy if exists golf_participants_insert_v2
 --     on public.golf_conversation_participants;
 --   create policy golf_participants_insert_v2
@@ -164,19 +152,11 @@ BEGIN
     RAISE EXCEPTION
       'golf_conversations / golf_conversation_participants are missing';
   END IF;
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_schema = 'public' AND table_name = 'golf_conversations'
-      AND column_name = 'is_team_channel'
-  ) THEN
-    RAISE EXCEPTION 'golf_conversations.is_team_channel is missing';
-  END IF;
   FOREACH v_fn IN ARRAY ARRAY[
       'public.golf_conversation_created_by_me(uuid)',
       'public.golf_conversation_has_other_participant(uuid)',
       'public.golf_user_in_conversation_team_audience(uuid, uuid)',
-      'public.golf_user_on_conversation_team(uuid, uuid)',
-      'public.is_golf_team_coach(uuid)'] LOOP
+      'public.golf_user_on_conversation_team(uuid, uuid)'] LOOP
     IF to_regprocedure(v_fn) IS NULL THEN
       RAISE EXCEPTION '% is missing', v_fn;
     END IF;
@@ -196,7 +176,7 @@ BEGIN
   END IF;
 END $$;
 
--- 1. Nobody adds themself to a conversation someone else created --------------
+-- Nobody adds themself to a conversation someone else created -----------------
 
 DROP POLICY IF EXISTS golf_participants_insert_v2
 ON public.golf_conversation_participants;
@@ -246,17 +226,4 @@ WITH CHECK (
             golf_conversation_participants.user_id
         )
     )
-);
-
--- 2. Only a coach of the team creates its team channel ------------------------
-
-DROP POLICY IF EXISTS golf_conversations_insert_team_channel_coach
-ON public.golf_conversations;
-CREATE POLICY golf_conversations_insert_team_channel_coach
-ON public.golf_conversations
-AS RESTRICTIVE
-FOR INSERT
-WITH CHECK (
-    is_team_channel IS NOT TRUE
-    OR (team_id IS NOT NULL AND public.is_golf_team_coach(team_id))
 );

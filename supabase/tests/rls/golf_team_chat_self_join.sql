@@ -1,4 +1,6 @@
--- pgTAP contract for 20261110090000_golf_team_chat_self_join.sql (security review 2026-11-10, item A2).
+-- pgTAP contract for 20261110090000_golf_team_chat_self_join.sql (security review 2026-11-10, item A2) and for
+-- 20261110090050_golf_conversations_team_channel_coach_only.sql, which was that file's second statement until the
+-- migration review split it by table. One fixture, both policies.
 --
 -- The exploit, as P1, an active player on the coach's team who is NOT in the coach's group:
 --   * read the group's id (golf_conversations_select_v2 shows every team-chat row to the whole team);
