@@ -1862,8 +1862,10 @@ html:not([data-fw-theme='dark']) .ch-hl {
   inset: -4px 0;
 }
 .ch-hl-cx__c {
-  position: relative;
   all: unset;
+  /* After the reset, not before it: `all: unset` clears `position`, and the chip's 44px hit area (its ::after) was then
+     measured from the nearest positioned ancestor, so one chip could take every tap on the card or page. */
+  position: relative;
   box-sizing: border-box;
   cursor: pointer;
   display: inline-flex;
