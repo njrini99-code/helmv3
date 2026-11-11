@@ -1,16 +1,18 @@
 'use client';
 
-import type { UIMessage } from 'ai';
 import { useEffect, useMemo, useRef } from 'react';
 import { useCoachHelmChat } from '@/components/golf/coachhelm/chat/useCoachHelmChat';
 import type { AskBriefData } from '../../../data/coachhelm-chat-thread';
 import type { PlanPartData } from '../../coachhelm/plan/PlanCard';
 import { PlanIntake } from '../../coachhelm/plan/PlanIntake';
 
-const partsOf = (m: UIMessage) => m.parts as Array<{ type: string; data?: unknown; text?: string }>;
+/** A message as this file reads it: the chat hook's (the engine's `ChatUIMessage`) or the AI SDK's `UIMessage`, by shape. */
+type RunMessage = { role: string; parts: ReadonlyArray<unknown> };
+
+const partsOf = (m: RunMessage) => m.parts as ReadonlyArray<{ type: string; data?: unknown; text?: string }>;
 
 /** The newest plan and question card in the run, and what it last said, read from the same stream Ask reads. */
-export function readRun(messages: readonly UIMessage[]): { plan: PlanPartData | null; brief: AskBriefData | null; said: string } {
+export function readRun(messages: readonly RunMessage[]): { plan: PlanPartData | null; brief: AskBriefData | null; said: string } {
   let plan: PlanPartData | null = null;
   let brief: AskBriefData | null = null;
   let said = '';
