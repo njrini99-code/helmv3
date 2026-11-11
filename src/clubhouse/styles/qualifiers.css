@@ -2761,6 +2761,12 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
   .ch-qf--list[data-canopy] .ch-qf-eyebrow {
     display: block;
   }
+  /* The form and Manage selections: the eyebrow's line is the detail head's 22px (a qualifier's has a status chip that
+     tall), so the three titles share the qualifier's line; they stood 4px higher. */
+  .ch-qf--form[data-canopy] .ch-qf-eyebrow,
+  .ch-qfs[data-canopy] .ch-qf-eyebrow {
+    min-height: var(--ch-lead-detail-eyebrow);
+  }
   .ch-qf[data-canopy] .ch-qf-eyebrow .ch-badge {
     background: none;
     box-shadow: 0 0 0 1px var(--ch-ledger-rule);
@@ -3019,10 +3025,10 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
      ledger rows. */
   .ch-qf[aria-busy='true'][data-canopy] > .ch-qf-back > .ch-skel,
   .ch-qf[aria-busy='true'][data-canopy] > .ch-qf-held--back > .ch-skel {
-    height: 24.8px !important;
+    height: 26.5px !important;
   }
   .ch-qf[data-canopy] .ch-qf-held--eyebrow {
-    height: 14.3px;
+    height: var(--ch-lead-detail-eyebrow);
   }
   .ch-qf[data-canopy] .ch-qf-held--title,
   .ch-qf[data-canopy] .ch-qf-held--name {

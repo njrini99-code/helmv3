@@ -1841,7 +1841,8 @@ html[data-fw-theme='dark'] .ch-cpv-vz {
     margin: 0 auto;
     padding: var(--ch-page-top-no-eyebrow) var(--ch-page-gutter) var(--ch-page-bottom);
   }
-  .ch-cpv-fmt > .ch-backlink { margin-block-end: -12px; }
+  /* The way back and the title where every detail page's are (tokens.css, --ch-page-back-top; the page's 20px gap). */
+  .ch-cpv-fmt > .ch-backlink { margin-block: calc(var(--ch-page-back-top) - var(--ch-page-top-no-eyebrow)) calc(var(--ch-back-to-title) - var(--ch-back-link-h) - 12px - 20px); }
   .ch-cpv-fmt__cols { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 20px; }
   /* The key hugs its label, beside what it does; the hint lines up under the words. */
   .ch-cpv-fmt .fintro { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; }

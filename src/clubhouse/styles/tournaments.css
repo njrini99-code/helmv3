@@ -123,10 +123,26 @@
 .ch-tour.is-phone .ch-tour-crumb {
   min-height: 44px;
 }
+/* On a desk the way back and the head under it stand where every detail page's do (tokens.css, --ch-page-back-top): the
+   link's 26px box 2px under the bar, the head 14.5px under it (the page's 24px gap taken back), and the eyebrow on the
+   detail head's 22px line with the head's whole 8px under it. An event's titles stood 19.5px under a qualifier's. */
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
+  .ch-tour-crumb {
+    min-height: var(--ch-back-link-h);
+    margin-top: calc(var(--ch-page-back-top) - var(--ch-page-head-top));
+    margin-bottom: calc(var(--ch-back-to-head) - 24px);
+  }
+  .ch-tour-crumb + .ch-tour-head .ch-tour-head__k {
+    margin-bottom: 0;
+    line-height: var(--ch-lead-detail-eyebrow);
+  }
+}
 
 /* A loading view keeps the head's geometry (CH-16401): the placeholders stand where the eyebrow and title will. */
-.ch-tour--skel .ch-tour-head__t {
-  gap: 12px;
+.ch-tour--skel .ch-tour-head__k {
+  display: flex;
+  align-items: center;
+  min-height: 1lh;
 }
 /* On the phone the loading head is the page intro's own lines: the eyebrow's bar stands in the eyebrow's line. */
 .ch-tour--skel .ch-tour-intro .ch-intro__eyebrow {

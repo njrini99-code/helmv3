@@ -1428,6 +1428,14 @@ main.ch-prc-planpage {
 main.ch-prc-planpage > .ch-backlink {
   margin-block-end: -8px;
 }
+/* On a desk the way back and the title stand where every detail page's do (tokens.css, --ch-page-back-top): the link 2px
+   under the bar, the title's top 82.5px under the link's (the link's 26px, the head's 12px and the page's 16px gap taken
+   off the way). */
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
+  main.ch-prc-planpage > .ch-backlink {
+    margin-block: calc(var(--ch-page-back-top) - var(--ch-page-top-no-eyebrow)) calc(var(--ch-back-to-title) - var(--ch-back-link-h) - 12px - 16px);
+  }
+}
 .ch-prc-planhead {
   flex-wrap: nowrap;
 }

@@ -16,6 +16,13 @@
   .ch-st[data-canopy]:has(.ch-shs-dhead) {
     padding-top: var(--ch-page-top-no-eyebrow);
   }
+  /* A coach's view of a player opens with the way back, so it is a detail page (tokens.css, --ch-page-back-top): the back
+     row's top 2px under the bar (the page's top and the head's own 12px taken back) and the player's name on the detail
+     pages' title line (the row's 30px and the head's 16px gap taken off the way). It stood 14.5px higher. */
+  .ch-st[data-canopy] .ch-shs-dhead > .ch-st-back {
+    margin-top: calc(var(--ch-page-back-top) - var(--ch-page-top-no-eyebrow) - 12px);
+    margin-bottom: calc(var(--ch-back-to-title) - var(--ch-back-keys-h) - var(--ch-space-4));
+  }
 }
 .ch-st-panel {
   display: flex;

@@ -2773,9 +2773,11 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   .ch-rv[data-canopy] {
     gap: 32px;
   }
+  /* The way back and the head stand where every detail page's do (tokens.css, --ch-page-back-top): the link 2px under
+     the bar, the head 14.5px under it (the page's 32px gap taken back). */
   .ch-rv[data-canopy] .ch-rv-back {
     height: auto;
-    margin: 0 0 -16px -4px;
+    margin: calc(var(--ch-page-back-top) - var(--ch-page-top-eyebrow-low-2)) 0 calc(var(--ch-back-to-head) - 32px) -4px;
     padding: 4px 8px 4px 4px;
     border-radius: var(--ch-radius-md);
     background: none;
@@ -3037,7 +3039,13 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-rv[data-canopy] .ch-rv-hero__k {
     font: var(--ch-type-13-medium);
+    /* The detail head's eyebrow line, so the course's name is on every detail page's title line. */
+    line-height: var(--ch-lead-detail-eyebrow);
     letter-spacing: 0.01em;
+  }
+  /* Loading (CH-11406): the date line's placeholder is held at 18px, so it takes the line's other 4px around it. */
+  .ch-rv[aria-busy='true'][data-canopy] .ch-rv-hero__l > :first-child {
+    margin-block: 2px;
   }
 }
 

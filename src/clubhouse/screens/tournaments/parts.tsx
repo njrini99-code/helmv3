@@ -10,7 +10,7 @@ import { Icon } from '../../ui/Icon';
 import { LargeTitleSkeleton } from '../../ui/LargeTitle';
 import { PageIntro } from '../../ui/Ledger';
 import { Segmented } from '../../ui/Segmented';
-import { EmptyState, Skeleton } from '../../ui/States';
+import { EmptyState, SkelLine, Skeleton } from '../../ui/States';
 import { formatToPar } from './format';
 import { useTourPaths } from './paths';
 import type { ChTourLoad } from './types';
@@ -124,6 +124,9 @@ export function TourCrumb({ href, children = 'Tournaments' }: { href: string; ch
   );
 }
 
+/** The views that open with the way back to the season or the event (TourCrumb) on a desk. */
+const DETAIL_VIEWS: ReadonlySet<ChTourView> = new Set(['desk', 'review', 'links', 'lineup', 'form', 'live']);
+
 /**
  * The loading state at the view's final geometry (CH-16401): the head's eyebrow and title as placeholders, then the
  * view's own body blocks, in place, marked busy.
@@ -146,12 +149,24 @@ export function TourLoading({ view, phone, title, className, children }: { view:
           </span>
         </header>
       ) : (
-        <header className="ch-tour-head" data-canopy-head="tight">
-          <div className="ch-tour-head__t">
-            <Skeleton width={150} height={13} />
-            <Skeleton width={300} height={44} radius={10} />
-          </div>
-        </header>
+        <>
+          {/* An event's own pages open with the way back over the head: its line is held, so the head stands on the detail
+              pages' line while loading as it does once the page lands. */}
+          {DETAIL_VIEWS.has(view) && (
+            <span className="ch-tour-crumb" aria-hidden="true">
+              <Skeleton width={90} height={12} />
+            </span>
+          )}
+          <header className="ch-tour-head" data-canopy-head="tight">
+            <div className="ch-tour-head__t">
+              {/* The eyebrow's own line and the title's (tournaments.css), so both stand where the loaded ones do. */}
+              <span className="ch-tour-head__k">
+                <Skeleton width={150} height={13} />
+              </span>
+              <SkelLine line={47.5} bar={36} width={300} />
+            </div>
+          </header>
+        </>
       )}
       {children}
     </TourMain>

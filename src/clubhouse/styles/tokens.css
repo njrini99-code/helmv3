@@ -461,6 +461,19 @@
      line's 4px), so it does not move with the frame. Whether it joins the frame is the owner's call. */
   --ch-page-top-home-player: 38px;
   --ch-page-top-coachhelm: 36px;
+  /* A detail page on a desk (one that opens with its way back: a qualifier and its forms, a round, an event's pages, a
+     coach's view of a player's stats, a practice plan): one line for every title, the qualifier's (owner, 11 Nov 2026).
+     The way back's 26px link stands 2px under the bar; the head starts 14.5px under the link; the head's own 12px, an
+     eyebrow line held at 22px (a status chip's height) and the 8px under it put the title's top 82.5px under the link's
+     top, 148.5 from the page's top at any head. A page places its own link and head with these, never with numbers. */
+  --ch-page-back-top: 2px;
+  --ch-back-link-h: 26px;
+  --ch-back-to-head: 14.5px;
+  --ch-back-to-title: 82.5px;
+  /* Where the way back is a row of small keys (a coach's view of a player's stats: Team stats, and the next player),
+     the row is the keys' 30px. */
+  --ch-back-keys-h: 30px;
+  --ch-lead-detail-eyebrow: 22px;
   --ch-page-top-home: 52px;
   --ch-page-top-home-desk: 40px;
   --ch-page-top-setup: 28px;
