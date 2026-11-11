@@ -1126,7 +1126,8 @@ html[data-fw-theme='dark'] .ch-prc-feat .ch-btn--secondary:focus-visible {
   color: var(--ch-text-secondary);
 }
 
-/* Groups. A group's colour always comes with its letter. */
+/* Groups. A group's colour always comes with its letter. The tones are the app's own, the sheet's (coachhelm-plan.css): green, ochre,
+   slate, clay, stone and ink by day; at night their lit values, under the dark letter. */
 .ch-prc-groups {
   display: grid;
   gap: 12px;
@@ -1177,14 +1178,16 @@ html[data-fw-theme='dark'] .ch-prc-feat .ch-btn--secondary:focus-visible {
   font: var(--ch-type-13-strong);
   font-style: normal;
 }
-.ch-prc-group.is-b .ch-prc-disc, .ch-prc-disc.g-B { background: var(--ch-run-group-b); }
-.ch-prc-group.is-c .ch-prc-disc, .ch-prc-disc.g-C { background: var(--ch-run-group-c); }
-.ch-prc-group.is-d .ch-prc-disc, .ch-prc-disc.g-D { background: var(--ch-plan-group-d); }
+.ch-prc-group.is-b .ch-prc-disc, .ch-prc-disc.g-B { background: var(--ch-yr-so); }
+.ch-prc-group.is-c .ch-prc-disc, .ch-prc-disc.g-C { background: var(--ch-plan-group-d); }
+.ch-prc-group.is-d .ch-prc-disc, .ch-prc-disc.g-D { background: var(--ch-plan-group-f); }
 .ch-prc-group.is-e .ch-prc-disc, .ch-prc-disc.g-E { background: var(--ch-plan-group-e); }
-.ch-prc-group.is-f .ch-prc-disc, .ch-prc-disc.g-F { background: var(--ch-plan-group-f); }
-html[data-fw-theme='dark'] :is(.ch-prc-group.is-d .ch-prc-disc, .ch-prc-disc.g-D) { background: var(--ch-plan-group-d-night); }
+.ch-prc-group.is-f .ch-prc-disc, .ch-prc-disc.g-F { background: var(--ch-print-soft); }
+html[data-fw-theme='dark'] :is(.ch-prc-group.is-b .ch-prc-disc, .ch-prc-disc.g-B) { background: var(--ch-champagne-500); }
+html[data-fw-theme='dark'] :is(.ch-prc-group.is-c .ch-prc-disc, .ch-prc-disc.g-C) { background: var(--ch-plan-group-d-night); }
+html[data-fw-theme='dark'] :is(.ch-prc-group.is-d .ch-prc-disc, .ch-prc-disc.g-D) { background: var(--ch-plan-group-f-night); }
 html[data-fw-theme='dark'] :is(.ch-prc-group.is-e .ch-prc-disc, .ch-prc-disc.g-E) { background: var(--ch-plan-group-e-night); }
-html[data-fw-theme='dark'] :is(.ch-prc-group.is-f .ch-prc-disc, .ch-prc-disc.g-F) { background: var(--ch-plan-group-f-night); }
+html[data-fw-theme='dark'] :is(.ch-prc-group.is-f .ch-prc-disc, .ch-prc-disc.g-F) { background: var(--ch-ink-700); }
 .ch-prc-player {
   min-height: 44px;
   padding: 0 12px;

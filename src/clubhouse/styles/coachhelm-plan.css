@@ -3,11 +3,15 @@
 .ch-cp-sheet .g-A { --ch-pl-g: var(--ch-pl-gA); --ch-pl-gt: var(--ch-pl-gA-t); }
 .ch-cp-sheet .g-B { --ch-pl-g: var(--ch-pl-gB); --ch-pl-gt: var(--ch-pl-gB-t); }
 .ch-cp-sheet .g-C { --ch-pl-g: var(--ch-pl-gC); --ch-pl-gt: var(--ch-pl-gC-t); }
-.ch-cp-sheet .g-D { --ch-pl-g: var(--ch-plan-group-d); --ch-pl-gt: color-mix(in srgb, var(--ch-plan-group-d) 12%, var(--ch-pl-g-on)); }
-.ch-cp-sheet .g-E { --ch-pl-g: var(--ch-plan-group-e); --ch-pl-gt: color-mix(in srgb, var(--ch-plan-group-e) 12%, var(--ch-pl-g-on)); }
-.ch-cp-sheet .g-F { --ch-pl-g: var(--ch-plan-group-f); --ch-pl-gt: color-mix(in srgb, var(--ch-plan-group-f) 12%, var(--ch-pl-g-on)); }
+/* The groups' tones are the app's own (owner, 11 Nov 2026): green, ochre, slate, clay, stone and ink, never blue or purple, and never the red that
+   means under par. B is Roster's Sophomore ochre; slate, clay and stone are the plan's group tokens; the sixth is paper's soft ink. Each holds
+   4.5:1 under its white letter, and A to C stay apart for a reader who cannot tell red from green.
+   A tint is its tone at 12% on white, written out: Share PDF draws the sheet with html2canvas, which cannot read color-mix() and gave up on the whole file. */
+.ch-cp-sheet .g-D { --ch-pl-g: var(--ch-plan-group-f); --ch-pl-gt: #EFE9E7; }
+.ch-cp-sheet .g-E { --ch-pl-g: var(--ch-plan-group-e); --ch-pl-gt: #ECEBEB; }
+.ch-cp-sheet .g-F { --ch-pl-g: var(--ch-print-soft); --ch-pl-gt: #E9E8E8; }
 .ch-cp-sheet .gd { display: inline-grid; place-items: center; width: 19px; height: 19px; border-radius: var(--ch-radius-xs); background: var(--ch-pl-g); color: var(--ch-pl-g-on); font: var(--ch-type-11-strong);  flex: none; font-style: normal; letter-spacing: var(--ch-track-11); }
-.ch-cp-sheet {--ch-pl-ink:#1C1B18;--ch-pl-ink-2:#47443D;--ch-pl-ink-3:#5F5C55;--ch-pl-rule:#E6E1D5;--ch-pl-rule-2:#CFC8B8;--ch-pl-accent:#155A39;--ch-pl-loss:#9A5700;--ch-pl-gain:#14613D;--ch-pl-gain-tint:#E8EEE8; --ch-pl-gA:#1F6B45;--ch-pl-gB:#2F5B7E;--ch-pl-gC:#654A7E;--ch-pl-g-on:#FFFFFF;--ch-pl-gA-t:#E4EEE7;--ch-pl-gB-t:#E3EAF2;--ch-pl-gC-t:#ECE7F1; color-scheme:light;background:#FFFEFB;color:var(--ch-pl-ink);border-radius: var(--ch-radius-xs);padding:20px 20px 12px;display:grid;gap:16px;font-family:var(--ch-font-sans); box-shadow:var(--ch-plan-shadow-1);}
+.ch-cp-sheet {--ch-pl-ink:#1C1B18;--ch-pl-ink-2:#47443D;--ch-pl-ink-3:#5F5C55;--ch-pl-rule:#E6E1D5;--ch-pl-rule-2:#CFC8B8;--ch-pl-accent:#155A39;--ch-pl-loss:#9A5700;--ch-pl-gain:#14613D;--ch-pl-gain-tint:#E8EEE8; --ch-pl-gA:#1F6B45;--ch-pl-gB:var(--ch-yr-so);--ch-pl-gC:var(--ch-plan-group-d);--ch-pl-g-on:#FFFFFF;--ch-pl-gA-t:#E4EEE7;--ch-pl-gB-t:#F0EDE6;--ch-pl-gC-t:#E9EBED; color-scheme:light;background:#FFFEFB;color:var(--ch-pl-ink);border-radius: var(--ch-radius-xs);padding:20px 20px 12px;display:grid;gap:16px;font-family:var(--ch-font-sans); box-shadow:var(--ch-plan-shadow-1);}
 .ch-cp-sheet section {display:grid;gap:0;}
 .ch-cp-sheet .pp-top {display:grid;grid-template-columns:36px minmax(0,1fr) auto;gap:8px;align-items:center;padding-bottom:12px;border-bottom:2px solid var(--ch-pl-ink);}
 .ch-cp-sheet .pp-mark {width:36px;height:36px;border-radius: var(--ch-radius-sm);background:#0B3A25;color:#F4EEDD;display:grid;place-items:center;font: var(--ch-type-13-strong); letter-spacing: 0.01em;}
@@ -106,11 +110,11 @@
   --ch-pl-cpv-random: #6e5487;
   --ch-pl-cpv-pressure: #1f6b45;
   --ch-pl-cpv-ga: #1f6b45;
-  --ch-pl-cpv-gb: #2f5b7e;
-  --ch-pl-cpv-gc: #654a7e;
-  --ch-pl-cpv-gd: var(--ch-plan-group-d);
+  --ch-pl-cpv-gb: var(--ch-yr-so);
+  --ch-pl-cpv-gc: var(--ch-plan-group-d);
+  --ch-pl-cpv-gd: var(--ch-plan-group-f);
   --ch-pl-cpv-ge: var(--ch-plan-group-e);
-  --ch-pl-cpv-gf: var(--ch-plan-group-f);
+  --ch-pl-cpv-gf: var(--ch-print-soft);
   --ch-pl-cpv-gon: #fff;
   --ch-pl-cpv-sep: var(--ch-separator);
   display: grid;
@@ -125,11 +129,11 @@ html[data-fw-theme='dark'] .ch-cpv-full {
   --ch-pl-cpv-random: #b49acb;
   --ch-pl-cpv-pressure: #4fa877;
   --ch-pl-cpv-ga: #4fa877;
-  --ch-pl-cpv-gb: #6e9bc0;
-  --ch-pl-cpv-gc: #b49acb;
-  --ch-pl-cpv-gd: var(--ch-plan-group-d-night);
+  --ch-pl-cpv-gb: var(--ch-champagne-500);
+  --ch-pl-cpv-gc: var(--ch-plan-group-d-night);
+  --ch-pl-cpv-gd: var(--ch-plan-group-f-night);
   --ch-pl-cpv-ge: var(--ch-plan-group-e-night);
-  --ch-pl-cpv-gf: var(--ch-plan-group-f-night);
+  --ch-pl-cpv-gf: var(--ch-ink-700);
   --ch-pl-cpv-gon: #0e120f;
 }
 .ch-cpv .art {
