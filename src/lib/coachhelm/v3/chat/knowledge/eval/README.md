@@ -18,15 +18,18 @@ Each question: `id`, `area`, `viewer` (`coach` or `player`), `ask`, `readers`, `
   unless the note says both. An empty list means the prompt or the reference answers it and no read of team data
   is required.
 - `global_forbid` (top of the file): the writing rules, scored against every answer whatever the question: the
-  sample as notation (`n=4`, `N-4`), a heading or a table, an abbreviation a coach would not say aloud (`SG`,
-  `GIR`, `avg`, `vs`, and `ft` or `yd` after a number or in a band: a distance is "from 3 to 5 feet", "281 yards"),
-  Title Case stat names or a lower-case "tour", a sentence or list line that starts lower-case, a proper noun not as
-  it is written (PGA Tour, NCAA, Division I), and a tool or table name.
+  sample as notation (`n=4`, `N-4`, a bare count in brackets), a heading or a table, a bold label at the start of a
+  line or list item (`- **Overall:** ...`), an abbreviation a coach would not say aloud (`SG`, `GIR`, `avg`, `vs`,
+  `L10`, and `ft` or `yd` after a number or in a band: a distance is "from 3 to 5 feet", "281 yards"), Title Case
+  stat names or a lower-case "tour", a sentence or list line that starts lower-case, a proper noun not as it is
+  written (PGA Tour, NCAA, Division I), a tool or table name, and a hyphen for a minus sign (`-0.31`; the reads
+  give `−0.31`). They follow the prompt's own section "How your answers read" (`instructions.ts`).
 - Names as stored: `golfSenseQuestions(names, { people, places })` adds the team's own proper names to the
   proper-noun rule, so "eli brandt" or "PINE VALLEY INVITATIONAL" fails when the roster has "Eli Brandt" and the
   event is stored "Pine Valley Invitational". Pass the roster as `people` and the course and event names the turn's
   reads returned as `places`.
-- `style.max_sentences` (the `writing` questions): the answer fails when it runs longer. `index.ts` exports the
+- `style.max_sentences` (the `writing` questions, and every question that ends in a yes/no question: 6, which is
+  the answer, at most three supporting points and one caveat or offer): the answer fails when it runs longer. `index.ts` exports the
   `sentenceCount` these limits mean.
 - Placeholders `{player}`, `{player2}`, `{new_player}`, `{no_shots_player}`, `{teammate}` are filled from the staging roster.
 

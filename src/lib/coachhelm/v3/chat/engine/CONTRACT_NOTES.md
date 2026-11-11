@@ -980,3 +980,8 @@ P12. `../visuals/studio-kinds.ts` exports `STUDIO_KINDS`: sixteen components (`f
   switch is exhaustive and would not compile without its case. The renderer already has the parts
   (`FigureBlock` with `measurementTable`); when the case is in, PLANS adds the block to the schema and to
   `show_visual`'s description in one commit.
+K10. **ENGINE, nothing to change:** `golf-sense.json` gained an eighth writing rule (`ascii_minus`: "-0.31" where the
+    reads give "−0.31"), wider `heading_or_table` (a bold label at the start of a line or list item, as in the first
+    live answer), `abbreviation` ("L10") and `sample_notation` (a bare count in brackets), and
+    `style.max_sentences: 6` on the 27 questions that end in a yes/no question. The harness reads all of it from the
+    file. `index.ts` is unchanged, so the copy test still holds (run: exit 0).

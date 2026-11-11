@@ -84,7 +84,7 @@ describe('the golf-sense eval set', () => {
     const fails = (answer: string) => EVAL_GLOBAL_FORBID.filter((name) => guard(name).test(answer));
 
     it('are on every question', () => {
-      expect([...EVAL_GLOBAL_FORBID].sort()).toEqual(['abbreviation', 'heading_or_table', 'names_internals', 'proper_noun_case', 'sample_notation', 'sentence_start_case', 'wrong_case']);
+      expect([...EVAL_GLOBAL_FORBID].sort()).toEqual(['abbreviation', 'ascii_minus', 'heading_or_table', 'names_internals', 'proper_noun_case', 'sample_notation', 'sentence_start_case', 'wrong_case']);
       for (const q of questions) for (const name of EVAL_GLOBAL_FORBID) expect(q.forbid.filter((f) => f.pattern === name).length, `${q.id}: ${name}`).toBe(1);
     });
 
@@ -155,6 +155,45 @@ describe('the golf-sense eval set', () => {
       const report = '## Putting\n- SG Putting: +0.3 (n=10)\n- 3-Putts: 1.2\n- Make Rate 3-5 ft: 93%\n\nSummary: Good.\nNext Steps: Lag Drills.';
       expect(fails(report)).toEqual(expect.arrayContaining(['sample_notation', 'heading_or_table', 'abbreviation']));
       expect(sentenceCount(report)).toBeGreaterThan(putting.style!.max_sentences);
+    });
+
+    it('fail a bold label at the start of a list item or a line, which is a heading in disguise', () => {
+      // From the first live run: a yes/no question answered as eight bullets, each led by a bold label.
+      for (const bad of ['- **Overall:** His strokes gained total is behind the team.', '- **Off the tee**: This is his biggest gap.', '**Putting:** He is level with the team.', '1. **Approach:** He is close to the team.', '• **Best rounds:** His low round is 70.']) expect(fails(bad), bad).toContain('heading_or_table');
+      // A real list, a bold name and a plain label are not headings.
+      for (const fine of ['Round counts per player:\n- Cole Bennett: 37\n- Jackson Hale: 17', '**Cole Bennett** leads the team in strokes gained putting over the last 10 rounds.', 'Off the tee is his biggest gap: he has hit 43% of fairways over his last 10 rounds.']) expect(fails(fine), fine).toEqual([]);
+    });
+
+    it('fail the notation the prompt bans: L10, a bare count in brackets and a hyphen for a minus sign', () => {
+      for (const bad of ['His L10 scoring average is 74.2.', 'Over L5 he is down.']) expect(fails(bad), bad).toContain('abbreviation');
+      for (const bad of ['His scoring average is 74.2 (10).', 'Cole Bennett (37) has the most rounds.']) expect(fails(bad), bad).toContain('sample_notation');
+      for (const bad of ['He is at -0.31 a round against the Tour benchmark.', 'His last round was -2.', 'Approach (-3.60) is his biggest gap.']) expect(fails(bad), bad).toContain('ascii_minus');
+      for (const fine of ['He is at −0.31 a round against the Tour benchmark over his last 9 rounds.', 'He makes 25-30% from that range, between 18 September and 21 October.', 'The rounds are dated 2026-05-18 to 2026-10-21.', 'Round counts:\n- Cole Bennett: 37', 'His last-10 window has 9 rounds with a figure.', 'In 2024 (his first season) he played 14 rounds.']) expect(fails(fine), fine).toEqual([]);
+    });
+
+    it('hold a yes/no question to the answer, three supporting points and one caveat or offer', () => {
+      const yesNo = questions.filter((q) => /(?:^|[.!?]\s+)(?:Is|Are|Does|Do|Did|Can|Could|Should|Will|Would|Has|Have|Was|Were|Am)\b[^?]*\?\s*$/.test(q.ask));
+      expect(yesNo.length).toBeGreaterThanOrEqual(25);
+      for (const q of yesNo) expect(q.style?.max_sentences, q.id).toBe(6);
+      const limit = questions.find((q) => q.id === 'sg-negative-is-normal')!.style!.max_sentences;
+      // The live answer's shape: the answer, then a report.
+      const report = [
+        'No. A negative figure in every area is normal for a college player against the Tour benchmark, and it does not mean he is bad.',
+        'What matters is how he compares with the team and with himself:',
+        '- **Overall:** His strokes gained total is −7.31 against the Tour benchmark over 8 measured rounds. The team average is −5.82.',
+        '- **Off the tee:** This is his biggest gap. He is at −1.15 against the team\u2019s +0.40.',
+        '- **Approach:** He is at −3.60 against the team\u2019s −3.09, close to the team.',
+        '- **Around the green:** He is at +0.51 against the team\u2019s −0.10, so he is ahead of the team here.',
+        '- **Putting:** He is at −3.07 against the team\u2019s −3.03, so he is level with the team.',
+        'So the strokes are going off the tee and on long approaches.',
+      ].join('\n');
+      expect(sentenceCount(report)).toBeGreaterThan(limit);
+      expect(fails(report)).toEqual(['heading_or_table']);
+      // The same answer, said: the answer first, three points, one offer.
+      const said =
+        'No. A negative figure in every area is normal for a college player against the Tour benchmark, and it does not mean he is bad. His biggest gap to the team is off the tee, at −1.15 against the team\u2019s +0.40 over his last 10 rounds. Around the green he is ahead of the team, and his putting is level with it. I can set up a focus area on driving for him if you want.';
+      expect(sentenceCount(said)).toBeLessThanOrEqual(limit);
+      expect(fails(said)).toEqual([]);
     });
 
     it('do not trip on the words the golf block itself uses to explain the game', () => {

@@ -71,7 +71,7 @@ describe('the golf block of the cached prompt', () => {
       expect(text).toMatch(/Subtract the strokes expected from where the shot finished\. Subtract the one stroke just played\./);
       expect(text).toMatch(/the four parts add up to the round's total/);
       // Against what, and how to name it without naming the wrong tour.
-      expect(text).toMatch(/Say "against the Tour benchmark" or "Tour level"\. Name a tour \("PGA Tour", "LPGA Tour"\) only when a read named it/);
+      expect(text).toMatch(/A read line names the yardstick with its figure: "against the Tour benchmark", or for a women's team "against the women's Tour baseline"\. Use the line's words, or "Tour level"\. Name a tour \("PGA Tour", "LPGA Tour"\) only when a read named it/);
       // Why.
       expect(text).toMatch(/Why the Tour\. It is the level where every shot is measured[^\n]+one fixed yardstick keeps every player, team and season comparable/);
       // What a negative figure is and is not.
