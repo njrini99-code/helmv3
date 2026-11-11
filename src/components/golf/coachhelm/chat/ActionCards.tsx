@@ -182,6 +182,9 @@ export function ActionReceiptCard({
 }) {
   const failed = receipt.status === 'failed';
   const partial = receipt.status === 'partial';
+  // The coach pressed Undo inside the window: nothing was written. Its own quiet state, never drawn as something that happened:
+  // the neutral dot, the title said as undone in the secondary ink, and nothing listed as created or sent.
+  const cancelled = receipt.status === 'cancelled';
 
   return (
     <section
@@ -193,12 +196,12 @@ export function ActionReceiptCard({
           aria-hidden
           className={cn(
             'mt-1 h-2 w-2 shrink-0 rounded-full',
-            failed ? 'bg-text-tertiary' : partial ? 'bg-accent-300' : 'bg-accent-600',
+            failed || cancelled ? 'bg-text-tertiary' : partial ? 'bg-accent-300' : 'bg-accent-600',
           )}
         />
         <div className="min-w-0 flex-1">
-          <p className="font-fw-sans text-body-sm font-semibold text-text-primary">
-            {failed ? `${receipt.action}, not completed` : receipt.action}
+          <p className={cn('font-fw-sans text-body-sm font-semibold', cancelled ? 'text-text-secondary' : 'text-text-primary')}>
+            {failed ? `${receipt.action}, not completed` : cancelled ? `${receipt.action}, undone` : receipt.action}
           </p>
           <p className="mt-0.5 font-fw-sans text-body-sm text-text-secondary">
             {receipt.error ?? receipt.summary}
@@ -206,7 +209,7 @@ export function ActionReceiptCard({
         </div>
       </header>
 
-      {receipt.created.length > 0 && (
+      {!cancelled && receipt.created.length > 0 && (
         <ul className="flex flex-wrap gap-2 px-4 pb-3">
           {receipt.created.map((c, i) =>
             c.href ? (
@@ -237,7 +240,7 @@ export function ActionReceiptCard({
         </ul>
       )}
 
-      {receipt.notifications.length > 0 && (
+      {!cancelled && receipt.notifications.length > 0 && (
         <p className="border-t border-border-subtle px-4 py-2.5 font-fw-sans text-caption text-text-tertiary">
           {receipt.notifications
             .map((n) => `${n.channel} ${n.status} to ${n.recipients}`)
@@ -245,7 +248,7 @@ export function ActionReceiptCard({
         </p>
       )}
 
-      {receipt.partial_failures.length > 0 && (
+      {!cancelled && receipt.partial_failures.length > 0 && (
         <ul className="border-t border-border-subtle px-4 py-2.5">
           {receipt.partial_failures.map((f) => (
             <li key={f} className="font-fw-sans text-caption text-text-secondary">
