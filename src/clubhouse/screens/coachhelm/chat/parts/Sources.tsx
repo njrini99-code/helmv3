@@ -23,6 +23,8 @@ export function Sources({ reads, open: openProp, onToggle }: { reads: AskTurnRea
           ))}
         </span>
         <span className="ch-num">
+          {/* A computed answer has no markers in its sentences: this row is where it says what it stands on (never an empty row). */}
+          {reads.every((r) => r.via === 'code') ? 'Worked out from ' : ''}
           {reads.length} {pluralWord(reads.length, 'read', 'reads')}
         </span>
       </button>

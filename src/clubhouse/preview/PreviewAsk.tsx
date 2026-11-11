@@ -1,5 +1,6 @@
 'use client';
 
+import { revealMode, setRevealMode } from '../screens/coachhelm/chat/reveal';
 import type { UIMessage } from 'ai';
 import { useEffect, useMemo, useState } from 'react';
 import { useCoachHelmChat, type UseCoachHelmChatOptions, type UseCoachHelmChatResult } from '@/components/golf/coachhelm/chat/useCoachHelmChat';
@@ -188,6 +189,8 @@ function PreviewAskPlay({ name, role }: { name?: string; role?: 'player' }) {
     // `script` names the turn; `q` is left alone, because Ask reads `?q=` as a question to put in the field.
     const script = askScript(at.get('script') ?? name, isAskPace(pace) ? pace : 'real');
     DRIVE = { script, auto: ms('auto'), confirm: ms('confirm'), cancel: ms('cancel'), undo: ms('undo'), stop: ms('stop'), retry: ms('retry'), isl: ms('isl'), islstep: ms('islstep') };
+    // `&reveal=smooth|burst`: how the answer's words are released (chat/reveal.ts).
+    setRevealMode(at.get('reveal') === 'smooth' ? 'smooth' : at.get('reveal') === 'burst' ? 'burst' : revealMode());
     const restore = installScriptedChat(script, { until: ms('until') });
     setReady(true);
     return () => {

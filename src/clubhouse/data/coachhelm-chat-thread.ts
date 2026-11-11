@@ -132,6 +132,8 @@ export interface AskTurnRead {
   /** "Putts · 30 days". */
   chip: string;
   envelope: ToolEnvelope;
+  /** The model's code made this read (programmatic reads): the answer's figures carry no markers and are worked out from it. */
+  via?: 'code';
 }
 
 /** The pairing of one proposal card with the tool part that carries its approval. */
@@ -476,13 +478,13 @@ function turnReadsOf(parts: ReadonlyArray<Record<string, unknown> & { type: stri
   const out: AskTurnRead[] = [];
   for (const p of parts) {
     if (p.type !== 'data-evidence') continue;
-    const d = dataOf<{ tool?: string; envelope?: ToolEnvelope; ref?: string }>(p);
+    const d = dataOf<{ tool?: string; envelope?: ToolEnvelope; ref?: string; via?: string }>(p);
     if (!d?.envelope || !d.ref) continue;
     const tool = d.tool ?? '';
     const name = READ_NAME[tool] ?? 'Read';
     // The dates the read covers, never a count of days ("By player · 111 days" said nothing a coach could check); no window, just the read's name.
     const win = windowDates(readBasis(d.envelope));
-    out.push({ ref: d.ref, tool, name, chip: win ? `${name} · ${win}` : name, envelope: d.envelope });
+    out.push({ ref: d.ref, tool, name, chip: win ? `${name} · ${win}` : name, envelope: d.envelope, ...(d.via === 'code' ? { via: 'code' as const } : {}) });
   }
   return out;
 }

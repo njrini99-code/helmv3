@@ -21,6 +21,7 @@ import { Sources } from './Sources';
 import { ArtifactCard } from './Artifact';
 import type { AskArtifact } from './artifacts';
 import { TurnNotice, type TurnEnd } from './TurnNotice';
+import { revealMode, useReveal } from '../reveal';
 import { ReadList, useWork, useWorkListId, WorkLine } from './Work';
 
 /** Seconds this browser watched the turn run; null for a reloaded turn (no honest duration). */
@@ -140,7 +141,11 @@ export function AnswerCard({ turn, fresh, showFollowUps, playersByName, players,
   const listId = useWorkListId();
   const pending = usePendingWords(turn.answerText, live);
   const spoken = useSpoken(turn.answerText, live);
-  const lastText = [...turn.blocks].reverse().find((b) => b.kind === 'text')?.key;
+  const lastBlock = [...turn.blocks].reverse().find((b) => b.kind === 'text');
+  const lastText = lastBlock?.key;
+  // The block being written is released by the frame clock when the surface chose the smoothed reveal; every other block, and
+  // every block once the turn is not live, is whole.
+  const revealed = useReveal(lastBlock?.kind === 'text' ? lastBlock.text : '', live && revealMode() === 'smooth', lastText ?? null);
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(turn.answerText);
@@ -176,7 +181,7 @@ export function AnswerCard({ turn, fresh, showFollowUps, playersByName, players,
             if (b.kind === 'text')
               return (
                 <div className="prose" key={b.key}>
-                  <AskProse text={b.text} lead={b.lead} playersByName={playersByName} streaming={live} pending={pending && b.key === lastText} chip={chip} />
+                  <AskProse text={b.key === lastText ? revealed : b.text} lead={b.lead} playersByName={playersByName} streaming={live} pending={pending && b.key === lastText} chip={chip} />
                 </div>
               );
             // A read the engine named is drawn under the prose once the turn has finished (below). An older stored read, with no ref, stays where it was.

@@ -314,6 +314,8 @@ function scripts(pace: AskPace): Record<string, AskScript> {
         ]),
       },
     },
+    /** An uneven stream, for measuring how the words are released: play it at `pace=worst` (bursts of 6 to 22 words, pauses at sentence ends). */
+    lumpy: { question: 'Give me the short version on our putting.', turn: { events: timeline(pace, [{ kind: 'text', text: LONG.split('\n\n').slice(0, 4).join('\n\n') }]) } },
     /** Words first, then a read in the middle of the answer: the list must not open and the text must not move. */
     late: { question: 'Is Theo ready for the qualifier?', turn: { events: timeline(pace, [{ kind: 'text', text: 'On form, yes. Let me check where he stands in the ranking before I say more.' }, { kind: 'reads', reads: [{ id: 'm1', label: 'Reading the team ranking', tool: 'get_team_metric_ranking', detail: '7 players', ev: { id: 'rank', ref: 'e1', tool: 'get_team_metric_ranking', envelope: ASK_EV_RANKING } }] }, { kind: 'text', text: 'He is second on the team in make rate from 4 to 6 feet [e1], and his last three rounds were all under 72.' }]) } },
     /** One read fails and the answer goes on. */
@@ -334,8 +336,8 @@ function scripts(pace: AskPace): Record<string, AskScript> {
     retry: { question: q, firstAttempt: { events: partial.slice(0, -2), ending: { kind: 'cut' } }, turn: { events: timeline(pace, [{ kind: 'reads', reads: jonahReads }, { kind: 'text', text: lead + ' ' + rest }]) } },
     /** The model fails mid-answer: what arrived stays. */
     model: { question: q, turn: { events: timeline(pace, [{ kind: 'reads', reads: jonahReads.slice(0, 2) }, { kind: 'text', text: 'Jonah’s scoring is trending the right way [e2], but' }, { kind: 'error', message: 'Something went wrong while answering. What arrived is above.', action: 'retry' }], { status: 'failed' }) } },
-    /** The model declines. */
-    declined: { question: 'Write Jonah’s scholarship appeal for him.', turn: { events: timeline(pace, [{ kind: 'error', message: 'CoachHelm can’t help with that one. Try asking it another way.', action: 'none' }], { status: 'failed' }) } },
+    /** The model declines. Not an error: a complete turn whose words are the app's sentence, marked `declined` in its meta (ST-10.declined). */
+    declined: { question: 'Write Jonah’s scholarship appeal for him.', turn: { events: timeline(pace, [{ kind: 'text', text: 'CoachHelm can’t help with that one. It can help with anything about your team’s golf: rounds, practice, plans and the people on your roster.' }, { kind: 'part', part: { type: 'data-turn-meta', id: 'turn-meta', data: { started_at: '2026-11-10T15:00:00.000Z', duration_ms: 900, reads: 0, declined: true } } }]) } },
     /** The answer ran out of room. */
     truncated: { question: 'List every round this season, hole by hole.', turn: { events: timeline(pace, [{ kind: 'text', text: 'Starting with the first event of the fall. Round 1 at Hilltop: Jonah 74, Theo 71, Eli 76,' }, { kind: 'error', message: 'That answer ran too long to finish. Ask for a smaller piece of it.', action: 'none' }], { status: 'failed' }) } },
     budget: { question: q, turn: refuse(429, { error: 'Your team has reached today’s CoachHelm limit. It resets at midnight.', reason: 'team_daily_budget' }) },
@@ -388,7 +390,7 @@ function scripts(pace: AskPace): Record<string, AskScript> {
   };
 }
 
-export const ASK_SCRIPT_NAMES = ['quick', 'jonah', 'long', 'late', 'readfail', 'empty', 'discard', 'task', 'taskfail', 'taskslow', 'tasklost', 'lost', 'retry', 'model', 'declined', 'truncated', 'budget', 'off', 'rate', 'gone', 'signedout', 'player', 'isl-one', 'isl-three', 'isl-team', 'isl-fail', 'isl-chart', 'isl-draft', 'isl-open'] as const;
+export const ASK_SCRIPT_NAMES = ['quick', 'jonah', 'long', 'late', 'readfail', 'empty', 'discard', 'task', 'taskfail', 'taskslow', 'tasklost', 'lost', 'retry', 'model', 'declined', 'truncated', 'budget', 'off', 'rate', 'gone', 'signedout', 'player', 'isl-one', 'isl-three', 'isl-team', 'isl-fail', 'isl-chart', 'isl-draft', 'isl-open', 'lumpy'] as const;
 export type AskScriptName = (typeof ASK_SCRIPT_NAMES)[number];
 
 export function askScript(name: string | null | undefined, pace: AskPace = 'real'): AskScript {
