@@ -114,8 +114,8 @@ describe('clashes', () => {
     const at = { date: D, start: 15, end: 16 };
     const hits = clashesAt(moved, at, all);
     expect([...hits].sort()).toEqual(['c1', 'c2', 'lf', 'tm']);
-    expect(clashSummary(moved, new Set(['tm']), all, people)).toEqual({ line: 'Clashes with Team meeting', players: 2 });
-    expect(clashSummary(moved, new Set(['tm', 'lf']), all, people)).toEqual({ line: 'Clashes with Team meeting and 1 more', players: 3 });
+    expect(clashSummary(moved, new Set(['tm']), all, people)).toEqual({ line: 'Overlaps Team meeting', players: 2 });
+    expect(clashSummary(moved, new Set(['tm', 'lf']), all, people)).toEqual({ line: 'Overlaps Team meeting and 1 more', players: 3 });
     expect(clashSummary(moved, new Set(['c1', 'c2']), all, people).line).toBe('2 in class · Priya, Jonah');
   });
   it('three or more in class are counted only; a long name is cut at 28', () => {
@@ -123,7 +123,7 @@ describe('clashes', () => {
     const e = ev({ id: 'x', people: ['priya', 'jonah', 'ava', 'eli'] });
     expect(clashSummary(e, new Set(many.map((m) => m.id)), many, people).line).toBe('4 in class');
     const long = ev({ id: 'lg', title: 'Pinehurst Invitational Practice Round', people: ['priya'] });
-    expect(clashSummary(e, new Set(['lg']), [long], people).line).toBe('Clashes with Pinehurst Invitational Pract…');
+    expect(clashSummary(e, new Set(['lg']), [long], people).line).toBe('Overlaps Pinehurst Invitational Pract…');
     expect(clashSummary(e, new Set(), [], people)).toEqual({ line: null, players: 0 });
   });
 });

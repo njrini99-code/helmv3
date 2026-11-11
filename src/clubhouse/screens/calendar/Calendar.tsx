@@ -315,7 +315,7 @@ function useHeldMoves(timezone: string, events: ChCalEvent[], today: string, onS
       });
       const when = `${dowLong(to.date)} ${dayNum(to.date)} ${monthName(to.date)}`;
       setSaid(
-        `${base.title} ${kind === 'resize' ? `now ${to.end !== base.end ? `ends at ${fmtHour(to.end, true, clock)}` : `starts at ${at}`}` : `moved to ${at}, ${when}`}.${clash.line ? ` It clashes with ${clash.line.replace(/^Clashes with /, '')}.` : ''} ${undoHint()}`,
+        `${base.title} ${kind === 'resize' ? `now ${to.end !== base.end ? `ends at ${fmtHour(to.end, true, clock)}` : `starts at ${at}`}` : `moved to ${at}, ${when}`}.${clash.line ? ` It overlaps ${clash.line.replace(/^Overlaps /, '')}.` : ''} ${undoHint()}`,
       );
     },
     [flush, drop, toast, timezone, today, onSaved, preview, clock],

@@ -96,8 +96,9 @@ const CLASH_NAME_MAX = 28;
 const cut = (s: string) => (s.length > CLASH_NAME_MAX ? `${s.slice(0, CLASH_NAME_MAX).trimEnd()}…` : s);
 
 /**
- * What a landing clashes with, in the pill's second line, and how many of the moved event's players it double-books.
- * Events are named ("Clashes with Team meeting and 1 more"); classes are counted with first names up to two
+ * What a landing overlaps, in the pill's second line, and how many of the moved event's players it double-books.
+ * Events are named in the words the calendar's lists use for a schedule conflict ("Overlaps Team meeting and 1 more";
+ * owner, 2026-11-11: it is an overlap everywhere, never a clash); classes are counted with first names up to two
  * ("2 in class · Priya, Jonah", "4 in class"). Never a list of thirty people.
  */
 export function clashSummary(e: ChCalEvent, ids: Set<string>, events: ChCalEvent[], people: Map<string, ChCalPerson>): { line: string | null; players: number } {
@@ -113,7 +114,7 @@ export function clashSummary(e: ChCalEvent, ids: Set<string>, events: ChCalEvent
   const others = hit.filter((o) => o.type !== 'class');
   if (others.length > 0) {
     const more = hit.length - 1;
-    return { line: `Clashes with ${cut(others[0]!.title)}${more > 0 ? ` and ${more} more` : ''}`, players: booked.size };
+    return { line: `Overlaps ${cut(others[0]!.title)}${more > 0 ? ` and ${more} more` : ''}`, players: booked.size };
   }
   const owners = [...new Set(hit.map((o) => o.owner).filter((o): o is string => !!o && mine.has(o)))];
   const n = owners.length;
