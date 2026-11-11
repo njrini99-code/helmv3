@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { CoachChatContext } from '../context';
 import type { PlayerChatContext, ReadTool, ToolContext, ToolResult } from '../engine/tool';
 import { nowIso, type Measurement, type ToolEnvelope } from '../provenance';
-import { failed, fieldWords, inWords, notice, plain, together, withText } from '../reader-kit';
+import { datesInWords, dayWords, failed, fieldWords, instantWords, inWords, notice, plain, together, withText } from '../reader-kit';
 import { toolsFor } from '../registry';
 import type { ScreenLoaders, TournamentsLoad } from '../screen-loaders';
 import { person, pgrst, type Tables } from './pgrst-double';
@@ -30,6 +30,7 @@ const BANNED: Array<[string, RegExp]> = [
   ['a hyphen for a minus sign before a figure', /(^|[\s:(|])-\d/m],
   ['a column or table name', /\b[a-z]+_[a-z_]+\b/],
   ['the envelope as JSON', /"(summary|measurements|coverage)"\s*:/],
+  ['a date as a stamp', /(?<![\w-])\d{4}-\d{2}-\d{2}(?![\w-])/],
 ];
 /** What a later call must be handed back exactly stands in brackets at the end of a line ("[metric gir_pct]", "[ref team:…]"): an id, not words to repeat. */
 const withoutIds = (line: string): string => line.replace(/ \[[a-z ]+ [^\]\s]+\]/g, '');
@@ -75,6 +76,47 @@ describe('a field name as words', () => {
     expect(fieldWords('vs_tour')).toBe('against Tour');
     expect(fieldWords('toPar')).toBe('to par');
     expect(fieldWords('putts_made_3_5ft_pct')).toBe('putts made 3 5 feet percent');
+  });
+});
+
+describe('a date the way a coach says it', () => {
+  const now = new Date('2026-11-10T15:00:00Z');
+  const words = { now, timeZone: 'America/New_York' };
+
+  it('a day is the day and the month, with the year only outside this season', () => {
+    expect(dayWords('2026-10-21', words)).toBe('21 October');
+    expect(dayWords('2026-08-01', words)).toBe('1 August');
+    expect(dayWords('2027-07-31', words)).toBe('31 July');
+    expect(dayWords('2026-05-18', words)).toBe('18 May 2026');
+    expect(dayWords('2027-08-01', words)).toBe('1 August 2027');
+    expect(dayWords('not a day', words)).toBe('not a day');
+    expect(dayWords('2026-13-40', words)).toBe('2026-13-40');
+  });
+
+  it('an instant is the weekday, the day and the time on the team\u2019s clock', () => {
+    expect(instantWords('2026-11-12T20:00:00Z', words)).toBe('Thursday 12 November, 3:00 pm');
+    expect(instantWords('2026-11-13T02:30:00.000Z', words)).toBe('Thursday 12 November, 9:30 pm');
+    expect(instantWords('2026-11-07T02:20:00+00:00', words)).toBe('Friday 6 November, 9:20 pm');
+  });
+
+  it('an instant with no clock to read it on is left as it came, never said in the wrong zone', () => {
+    expect(instantWords('2026-11-12T20:00:00Z', { now })).toBe('2026-11-12T20:00:00Z');
+  });
+
+  it('every stamp in a line is said in words, and an id is left alone', () => {
+    expect(datesInWords('Fall Opener (2026-09-12 to 2026-09-13), last round 2026-05-18, starts 2026-11-12T20:00:00Z [round 20261112-2026-4111-8111-202611122026]', words)).toBe(
+      'Fall Opener (12 September to 13 September), last round 18 May 2026, starts Thursday 12 November, 3:00 pm [round 20261112-2026-4111-8111-202611122026]',
+    );
+  });
+
+  it('a field that is a day or an instant is said in words; a date inside stored words is left as written', () => {
+    const lines = inWords(envelope({ detail: { events: [{ title: 'Tuesday range', start_time: '2026-11-12T20:00:00Z', date: '2026-11-12', notes: 'Moved from 2026-11-11.' }] } }), words);
+    expect(lines).toEqual(['events:', '  Tuesday range: start time: Thursday 12 November, 3:00 pm; date: 12 November; notes: Moved from 2026-11-11.']);
+  });
+
+  it('a hand-written line and a summary lose their stamps too', () => {
+    expect(withText(envelope({ summary: 'Rounds since 2026-08-01.' }), ['2026-11-02 Eli Brandt, Pine Hill: 74'], words).model_text).toBe('Rounds since 1 August.\n2 November Eli Brandt, Pine Hill: 74');
+    expect(plain(envelope({ summary: 'Class times on 2026-11-11.' }), words).model_text).toBe('Class times on 11 November.');
   });
 });
 
@@ -243,7 +285,7 @@ describe('the reads that are read out field by field', () => {
   const textOf = async (who: CoachChatContext | PlayerChatContext, tool: string, input: unknown) => ((await run(who, tool, input)) as ToolResult & { model_text: string }).model_text.split('\n').map((l) => l.trim());
 
   it('a row leads with who it is about and ends with the id a later call needs', async () => {
-    expect(await textOf(coach, 'get_schedule', { include: ['attendance'] })).toContain(`Eli Brandt: period start: 2026-09-01; period end: 2026-10-01; events: 20; attended: 18; excused: 1; absent: 1; attendance percentage: 90% [player ${ELI}]`);
+    expect(await textOf(coach, 'get_schedule', { include: ['attendance'] })).toContain(`Eli Brandt: period start: ${dayWords('2026-09-01')}; period end: ${dayWords('2026-10-01')}; events: 20; attended: 18; excused: 1; absent: 1; attendance percentage: 90% [player ${ELI}]`);
     expect(await textOf(coach, 'get_practice', { what: ['drill_bank'] })).toContain(`Gate drill: category: putting; minutes: 15; kind: block [ref team:${DRILL}]`);
     expect(await textOf(maya, 'get_schedule', {})).toContainEqual(expect.stringMatching(/^Tuesday range: event type: practice; .*my reply: no reply \[event /));
   });

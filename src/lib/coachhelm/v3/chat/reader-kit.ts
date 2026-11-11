@@ -9,6 +9,7 @@ import { isPlayerContext, type ToolContext, type ToolResult } from './engine/too
 import { requireRosterPlayer, type CoachChatContext } from './context';
 import { defaultSgBaseline, type SgBaselineKey } from '@/lib/golf/sg-benchmarks';
 import { nowIso, unavailableEnvelope, type CoverageState, type Measurement, type ToolEnvelope } from './provenance';
+import { seasonStartDate } from './season-rule';
 
 /** The session's context in the shape the existing reads take. */
 export const teamOf = (ctx: ToolContext): CoachChatContext => ctx.who;
@@ -117,6 +118,63 @@ export function coachWords(text: string): string {
     .replace(/(^|[\s:(|,;])-(?=\d)/gm, '$1\u2212');
 }
 
+// ---------------------------------------------------------------------------------------------------------------------
+// Dates, the way a coach says them
+// ---------------------------------------------------------------------------------------------------------------------
+
+/** What the wording of a read's lines depends on: the strokes-gained yardstick, and the team's clock for a time of day. */
+export interface WordsOptions {
+  against?: string;
+  timeZone?: string | null;
+  /** Today, for "this season". Tests set it; a reader leaves it out. */
+  now?: Date;
+}
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const ISO_DAY = /^(\d{4})-(\d{2})-(\d{2})$/;
+const ISO_INSTANT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?$/;
+
+/** The year is said only for a day outside this season (1 August to 31 July, `seasonStartDate`). */
+function yearWords(day: string, opts: WordsOptions): string {
+  const start = seasonStartDate(opts.now ?? new Date(), opts.timeZone || 'UTC');
+  const end = `${Number(start.slice(0, 4)) + 1}${start.slice(4)}`;
+  return day >= start && day < end ? '' : ` ${day.slice(0, 4)}`;
+}
+
+/** "2026-05-18" as "18 May": a day as a coach says it. Anything that is not a real day is returned as it came. */
+export function dayWords(iso: string, opts: WordsOptions = {}): string {
+  const m = ISO_DAY.exec(iso);
+  if (!m) return iso;
+  const month = Number(m[2]);
+  const day = Number(m[3]);
+  if (month < 1 || month > 12 || day < 1 || day > 31) return iso;
+  return `${day} ${MONTHS[month - 1]}${yearWords(iso, opts)}`;
+}
+
+/** An instant as "Tuesday 18 May, 3:00 pm" on the team's clock. With no clock to read it on, it is returned as it came: a time in the wrong zone is worse than a stamp. */
+export function instantWords(iso: string, opts: WordsOptions = {}): string {
+  const at = new Date(iso);
+  if (!opts.timeZone || !ISO_INSTANT.test(iso) || Number.isNaN(at.getTime())) return iso;
+  try {
+    const parts = new Intl.DateTimeFormat('en-GB', { timeZone: opts.timeZone, weekday: 'long', year: 'numeric', month: '2-digit', day: '2-digit', hour: 'numeric', minute: '2-digit', hour12: true }).formatToParts(at);
+    const of = (type: string) => parts.find((p) => p.type === type)?.value ?? '';
+    const day = `${of('year')}-${of('month')}-${of('day')}`;
+    return `${of('weekday')} ${dayWords(day, opts)}, ${Number(of('hour'))}:${of('minute')} ${of('dayPeriod').toLowerCase()}`;
+  } catch {
+    return iso;
+  }
+}
+
+/** Every stamped day and instant in a text, in words. Ids are left alone: a day is matched only where it stands on its own. */
+export function datesInWords(text: string, opts: WordsOptions = {}): string {
+  return text
+    .replace(/(?<![\w-])\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?(?![\w-])/g, (stamp) => instantWords(stamp, opts))
+    .replace(/(?<![\w-])\d{4}-\d{2}-\d{2}(?![\w-]|T\d)/g, (day) => dayWords(day, opts));
+}
+
+/** The wording options a reader passes on: this team's yardstick and this team's clock. */
+export const wordsFor = (ctx: ToolContext): WordsOptions => ({ against: sgAgainst(ctx), timeZone: ctx.who.timezone });
+const optionsOf = (opts: WordsOptions | string | undefined): WordsOptions => (typeof opts === 'string' ? { against: opts } : (opts ?? {}));
+
 /** The yardstick strokes gained is measured against, in the words the golf block of the prompt uses. */
 const SG_BASELINE_WORDS: Record<SgBaselineKey, string> = { pga_tour: 'the Tour benchmark', womens: 'the women\u2019s Tour baseline' };
 /**
@@ -135,16 +193,16 @@ export const shotTracked = (tracked: number | undefined, of: number): string =>
  * Several reads answered as one. Each part keeps its own measurements and its own detail under its label. A part that
  * could not be read is named in the note and the whole is `partial`; only when every part failed is it `unavailable`.
  */
-export function together(summary: string, parts: ReadonlyArray<readonly [label: string, envelope: ToolEnvelope]>, against?: string): ToolEnvelope & { model_text: string } {
+export function together(summary: string, parts: ReadonlyArray<readonly [label: string, envelope: ToolEnvelope]>, words?: WordsOptions | string): ToolEnvelope & { model_text: string } {
   const down = parts.filter(([, e]) => e.coverage === 'unavailable');
   if (parts.length > 0 && down.length === parts.length) return plain(unavailableEnvelope(`Could not read ${parts.map(([l]) => l).join(', ')}.`, down.map(([l, e]) => `${l}: ${e.coverage_note ?? 'failed'}`).join(' ')));
   // Each part in its own words, under its label: a part that wrote its own lines keeps them, any other is read out field by field.
-  const texts = parts.map(([l, e]) => [l, plain(e, against).model_text] as const);
+  const texts = parts.map(([l, e]) => [l, plain(e, words).model_text] as const);
   const notes = parts.filter(([, e]) => e.coverage_note).map(([l, e]) => `${l}: ${e.coverage_note}`);
   const allEmpty = parts.every(([, e]) => e.coverage === 'empty' || e.coverage === 'unavailable');
   const coverage: CoverageState = down.length > 0 || parts.some(([, e]) => e.coverage === 'partial') ? 'partial' : allEmpty ? 'empty' : 'complete';
   return {
-    summary: parts.length === 1 ? parts[0]![1].summary : `${summary} ${parts.map(([l, e]) => `${l}: ${e.summary}`).join(' ')}`.trim(),
+    summary: datesInWords(parts.length === 1 ? parts[0]![1].summary : `${summary} ${parts.map(([l, e]) => `${l}: ${e.summary}`).join(' ')}`.trim(), optionsOf(words)),
     measurements: parts.flatMap(([, e]) => e.measurements),
     series: parts.flatMap(([, e]) => e.series),
     detail: parts.length === 1 ? parts[0]![1].detail : Object.fromEntries(parts.map(([l, e]) => [l, e.coverage === 'unavailable' ? { could_not_read: e.coverage_note ?? true } : (e.detail ?? { summary: e.summary })])),
@@ -168,9 +226,10 @@ export async function part(label: string, run: () => Promise<ToolEnvelope>): Pro
  * Labelled lines for the model in place of the envelope's JSON (see engine/CONTRACT_NOTES.md, `model_text`). The
  * envelope still carries every figure for the evidence chip, the visuals and the grounding check.
  */
-export function withText<E extends ToolEnvelope>(envelope: E, lines: ReadonlyArray<string | null | false | undefined>): E & { model_text: string } {
+export function withText<E extends ToolEnvelope>(envelope: E, lines: ReadonlyArray<string | null | false | undefined>, words: WordsOptions = {}): E & { model_text: string } {
   const text = [envelope.summary, ...lines.filter((l): l is string => typeof l === 'string' && l.length > 0), closing(envelope)].filter(Boolean).join('\n');
-  return { ...envelope, model_text: coachWords(text) };
+  // The summary is the read's title on its card and on what the model cites, so its dates are said the same way.
+  return { ...envelope, summary: datesInWords(envelope.summary, words), model_text: datesInWords(coachWords(text), words) };
 }
 const closing = (envelope: ToolEnvelope): string | null => (envelope.coverage === 'complete' ? null : `Coverage: ${envelope.coverage}${envelope.coverage_note ? `. ${envelope.coverage_note}` : ''}`);
 
@@ -206,7 +265,7 @@ const isScalar = (v: unknown): v is Scalar => v === null || typeof v === 'string
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
 const minus = (n: number, signed = false): string => `${signed && n > 0 ? '+' : ''}${n}`.replace(/^-/, '\u2212');
 
-function scalarWords(key: string, v: Scalar): string {
+function scalarWords(key: string, v: Scalar, words: WordsOptions = {}): string {
   if (v === null) return 'none';
   if (typeof v === 'boolean') return v ? 'yes' : 'no';
   if (typeof v === 'number') {
@@ -214,12 +273,15 @@ function scalarWords(key: string, v: Scalar): string {
     return /(_pct|percent|percentage)$/.test(key) ? `${minus(v)}%` : minus(v);
   }
   const text = v.replace(/\s*\n+\s*/g, ' ').trim();
+  // A value that is a day or an instant and nothing else is said as a date; a date inside stored words is left as written.
+  if (ISO_DAY.test(text)) return dayWords(text, words);
+  if (ISO_INSTANT.test(text)) return instantWords(text, words);
   if (CODED.test(key) && /^[a-z0-9]+(_[a-z0-9]+)+$/.test(text)) return fieldWords(text);
   return BAND.test(key) ? coachWords(text) : text;
 }
 
 /** One record on one line: what it is about first, then each field as "name: value", then the ids a later call needs in brackets. */
-function recordLine(record: Record<string, unknown>): { text: string; nested: Array<[string, unknown]> } {
+function recordLine(record: Record<string, unknown>, words: WordsOptions): { text: string; nested: Array<[string, unknown]> } {
   let lead: string | null = null;
   const pairs: string[] = [];
   const ids: string[] = [];
@@ -229,29 +291,29 @@ function recordLine(record: Record<string, unknown>): { text: string; nested: Ar
     if (v === undefined || v === '') continue;
     if (typeof v === 'string' && (k === 'ref' || k === 'metric_id' || ((k === 'id' || k.endsWith('_id')) && UUID.test(v)))) ids.push(`[${k === 'id' || k === 'ref' ? k : fieldWords(k.replace(/_id$/, ''))} ${v}]`);
     else if (isScalar(v)) {
-      if (lead === null && typeof v === 'string' && LEADS.has(k)) lead = scalarWords(k, v);
-      else pairs.push(`${fieldWords(k)}: ${scalarWords(k, v)}`);
-    } else if (Array.isArray(v) && v.every(isScalar)) pairs.push(`${fieldWords(k)}: ${v.length ? v.map((x) => scalarWords(k, x)).join(', ') : 'none'}`);
+      if (lead === null && typeof v === 'string' && LEADS.has(k)) lead = scalarWords(k, v, words);
+      else pairs.push(`${fieldWords(k)}: ${scalarWords(k, v, words)}`);
+    } else if (Array.isArray(v) && v.every(isScalar)) pairs.push(`${fieldWords(k)}: ${v.length ? v.map((x) => scalarWords(k, x, words)).join(', ') : 'none'}`);
     else nested.push([k, v]);
   }
   const body = [lead !== null && pairs.length ? `${lead}: ${pairs.join('; ')}` : (lead ?? pairs.join('; ')), ...ids].filter(Boolean).join(' ');
   return { text: body, nested };
 }
 
-function detailLines(value: unknown, rawKey: string | null, depth: number): string[] {
+function detailLines(value: unknown, rawKey: string | null, depth: number, words: WordsOptions): string[] {
   const key = rawKey === null ? null : snake(rawKey);
   const pad = '  '.repeat(depth);
   const named = key ? `${fieldWords(key)}:` : '';
   if (value === undefined) return [];
-  if (isScalar(value)) return [`${pad}${named}${named ? ' ' : ''}${scalarWords(key ?? '', value)}`];
+  if (isScalar(value)) return [`${pad}${named}${named ? ' ' : ''}${scalarWords(key ?? '', value, words)}`];
   if (Array.isArray(value)) {
-    if (value.every(isScalar)) return [`${pad}${named}${named ? ' ' : ''}${value.length ? value.map((x) => scalarWords(key ?? '', x)).join(', ') : 'none'}`];
-    return [...(named ? [`${pad}${named}`] : []), ...value.flatMap((item) => detailLines(item, null, depth + (named ? 1 : 0)))];
+    if (value.every(isScalar)) return [`${pad}${named}${named ? ' ' : ''}${value.length ? value.map((x) => scalarWords(key ?? '', x, words)).join(', ') : 'none'}`];
+    return [...(named ? [`${pad}${named}`] : []), ...value.flatMap((item) => detailLines(item, null, depth + (named ? 1 : 0), words))];
   }
   if (!isRecord(value)) return [];
-  const { text, nested } = recordLine(value);
+  const { text, nested } = recordLine(value, words);
   const head = named ? `${pad}${named}${text ? ` ${text}` : nested.length ? '' : ' none'}` : text ? `${pad}${text}` : null;
-  return [...(head ? [head] : []), ...nested.flatMap(([k, v]) => detailLines(v, k, depth + (head ? 1 : 0)))];
+  return [...(head ? [head] : []), ...nested.flatMap(([k, v]) => detailLines(v, k, depth + (head ? 1 : 0), words))];
 }
 
 const UNIT_SAID: Record<Measurement['unit'], string> = { percent: '%', strokes: ' strokes', yards: ' yards', feet: ' feet', count: '', score: '', ratio: '' };
@@ -278,23 +340,27 @@ function measurementLine(m: Measurement, against?: string): string {
  * A read's figures and detail as labelled lines, for a read that writes none of its own. Field names become words,
  * the app's short codes become words, what a later call must be given exactly (a row's id, a drill's ref, a metric's
  * id) stays exact in brackets at the end of its line, and stored text (a note, a title, a drill's name) is passed on
- * as it is. `against` is the strokes-gained yardstick (`sgAgainst`).
+ * as it is. A day or an instant is said as a coach says it (`dayWords`, `instantWords`). `words` carries the
+ * strokes-gained yardstick and the team's clock (`wordsFor`); a bare string is the yardstick alone.
  */
-export function inWords(envelope: ToolEnvelope, against?: string): string[] {
+export function inWords(envelope: ToolEnvelope, opts?: WordsOptions | string): string[] {
+  const words = optionsOf(opts);
   const sources = [...new Set(envelope.measurements.map((m) => m.source).filter(Boolean))];
   return [
     envelope.window_label ? `Window: ${envelope.window_label}.` : null,
-    ...envelope.measurements.map((m) => measurementLine(m, against)),
-    ...envelope.series.map((s) => `${s.entity.label}, ${spoken(s.metric_label)}, by date: ${s.points.map((p) => `${p.at.slice(0, 10)}${p.bucket ? ` ${coachWords(p.bucket)}` : ''} ${minus(p.value, isStrokesGained(s))}`).join('; ')}`),
+    ...envelope.measurements.map((m) => measurementLine(m, words.against)),
+    ...envelope.series.map((s) => `${s.entity.label}, ${spoken(s.metric_label)}, by date: ${s.points.map((p) => `${dayWords(p.at.slice(0, 10), words)}${p.bucket ? ` ${coachWords(p.bucket)}` : ''} ${minus(p.value, isStrokesGained(s))}`).join('; ')}`),
     sources.length ? `Source: ${sources.join('; ')}.` : null,
-    ...detailLines(envelope.detail, null, 0),
+    ...detailLines(envelope.detail, null, 0, words),
   ].filter((l): l is string => typeof l === 'string' && l.length > 0);
 }
 
 /** The read with lines for the model: its own when it wrote them, otherwise every figure and field read out in words. */
-export function plain<E extends ToolEnvelope>(envelope: E, against?: string): E & { model_text: string } {
+export function plain<E extends ToolEnvelope>(envelope: E, opts?: WordsOptions | string): E & { model_text: string } {
+  const words = optionsOf(opts);
+  const ours = (text: string) => datesInWords(coachWords(text), words);
   const own = (envelope as E & { model_text?: unknown }).model_text;
   if (typeof own === 'string' && own.trim()) return envelope as E & { model_text: string };
   const end = closing(envelope);
-  return { ...envelope, model_text: [coachWords(envelope.summary), ...inWords(envelope, against), end ? coachWords(end) : null].filter(Boolean).join('\n') };
+  return { ...envelope, summary: datesInWords(envelope.summary, words), model_text: [ours(envelope.summary), ...inWords(envelope, words), end ? ours(end) : null].filter(Boolean).join('\n') };
 }

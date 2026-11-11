@@ -12,7 +12,7 @@ import { compareSeasons } from './engine-reads';
 import { nowIso, type Measurement, type ToolEnvelope } from './provenance';
 import { boardOrder } from '../qualifying/ranking';
 import { TEAM_FIGURES_KEY } from './read-tools';
-import { coachWords, empty, failed, nameOf, ownOr, ownOrOne, part, playerOf, round, sampleWords, say, sgAgainst, shotTracked, spoken, teamOf, toParWords, together, withText } from './reader-kit';
+import { coachWords, empty, failed, nameOf, ownOr, ownOrOne, part, playerOf, round, sampleWords, say, sgAgainst, shotTracked, spoken, teamOf, toParWords, together, withText, wordsFor } from './reader-kit';
 import { screenLoaders, STATS_WINDOWS, type PlayerStatsScreen, type StatsComparisonRow, type StatsWindow, type TeamRoundRow } from './screen-loaders';
 
 const PlayerId = z.string().uuid();
@@ -471,7 +471,7 @@ export const getSeason: ReadTool<SeasonInput> = {
     if (!input.compare_last_season) return now[1];
     // No screen draws last season beside this one; this is the chat library's own read and says so in its source.
     const last = await part('against last season', () => compareSeasons(ctx.sb, teamOf(ctx), { player_id: id }));
-    const both = together('', [now, last], sgAgainst(ctx));
+    const both = together('', [now, last], wordsFor(ctx));
     // The season block of a visual draws from the comparison's own detail, so it stays at the top level.
     return last[1].coverage === 'unavailable' || !last[1].detail || typeof last[1].detail !== 'object' ? both : { ...both, detail: { ...(last[1].detail as Record<string, unknown>), this_season: now[1].detail ?? null } };
   },
