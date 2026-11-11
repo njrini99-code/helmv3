@@ -61,7 +61,9 @@ const ANNOUNCE: QuickStart = { id: 'announce', ask: 'Post an announcement', does
 const TRIP: QuickStart = { id: 'trip', ask: 'Add a trip', does: 'Makes a trip' };
 const PLAN: QuickStart = { id: 'plan', ask: 'Set up Thursday’s practice', does: 'Makes a plan' };
 
-const BY_SCREEN: Readonly<Record<Exclude<QcScreen, 'player'>, readonly QuickStart[]>> = {
+const BY_SCREEN: Readonly<Record<QcScreen, readonly QuickStart[]>> = {
+  // A player's page whose player is not known yet (no name on the context): the roster's starts, never none.
+  player: [SLIPPING, { id: 'no-round', ask: 'Who hasn’t posted a round this week?', does: 'Rounds · team' }, TEAM_TASK, MESSAGE],
   roster: [SLIPPING, { id: 'no-round', ask: 'Who hasn’t posted a round this week?', does: 'Rounds · team' }, TEAM_TASK, MESSAGE],
   calendar: [{ id: 'week', ask: 'What’s on this week?', does: 'Calendar' }, PRACTICE, PLAN, { id: 'block', ask: 'Block time for me', does: 'Makes a block' }],
   stats: [{ id: 'losing', ask: 'Where are we losing shots?', does: 'Strokes gained · team' }, { id: 'putting', ask: 'Who’s putting best?', does: 'Putting · team' }, { id: 'compare', ask: 'Compare our last two events', does: 'Rounds · team' }, SLIPPING],
@@ -85,6 +87,6 @@ export function quickStarts(context: QcContext | null, pathname: string, opts: {
         { id: 'p-focus', ask: `Give ${name} a focus area`, does: 'Makes a focus area' },
         { id: 'p-task', ask: `Set ${name} a task for this week`, does: 'Makes a task' },
       ]
-    : BY_SCREEN[context && context.screen !== 'player' ? context.screen : qcScreen(pathname)];
+    : BY_SCREEN[context?.screen ?? qcScreen(pathname)];
   return rows.filter((r) => opts.planOn !== false || r.id !== 'plan').slice(0, opts.count);
 }

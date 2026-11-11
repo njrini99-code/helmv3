@@ -51,6 +51,9 @@ describe('starts for this screen', () => {
     expect(lead('/golf/dashboard/team-hub', 'Team Hub')).toBe('team-task');
     expect(lead('/golf/dashboard', 'Home')).toBe('slipping');
   });
+  it('every screen the chip can name has starts, a player’s page with no player known included', () => {
+    expect(quickStarts({ screen: 'player', label: 'Player', key: 'player', playerId: null, playerName: null }, '/golf/dashboard/settings', { count: 4 })).toHaveLength(4);
+  });
   it('with plans off no start offers a plan', () => {
     const p = '/golf/dashboard/calendar';
     expect(quickStarts(qcContext(p, none('Calendar')), p, { count: 4, planOn: false }).map((r) => r.id)).not.toContain('plan');

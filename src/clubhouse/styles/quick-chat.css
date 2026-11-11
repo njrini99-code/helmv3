@@ -103,8 +103,6 @@ html[data-fw-theme='dark'] .ch-qck.is-desk .hkey__disc { background: rgb(107 187
   --ch-qc-shadow-13: inset 0 var(--ch-hairline-w) 0 rgb(255 255 255 / 0.2), 0 2px 6px -2px rgb(11 58 37 / 0.5);
   --ch-qc-shadow-14: inset 0 var(--ch-hairline-w) 0 var(--ch-qc-a-pglass-hi), var(--ch-qc-a-pshadow);
 }
-.ch-qcs, .ch-qck {
-}
 .ch-qcs button.steps-sum { border: 0; background: none; cursor: pointer; }
 /* AC-QC-KEY-01: on the phone the key sits before the bell or the page's own action, on every bar (x 290 to 334 at 390, 06 S-KEY). A page's own
    bar hides the shared actions, so the key alone stays, in its slot. */
