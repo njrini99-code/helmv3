@@ -4556,7 +4556,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     font: var(--ch-type-15);
     color: var(--ch-on-green-3); letter-spacing: var(--ch-track-15); }
   .ch-hm[data-ch-crh='on'] .ch-hm-hero h1 {
-    margin: 8px 0 8px;
+    margin: 8px 0 12px;
     font: var(--ch-type-34-strong);
     font-variation-settings: 'wdth' 88;
     letter-spacing: -0.038em;
@@ -4565,6 +4565,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   .ch-hm[data-ch-crh='on'] .ch-hm-hero__brief {
     display: flex;
     gap: 8px;
+    max-width: 60ch;
     margin: 0 0 16px;
     font: var(--ch-type-15);
     color: var(--ch-on-green-2);
@@ -4629,10 +4630,18 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     color: var(--ch-countdown-on-green);
   }
   /* Cards on the flat page. */
+  /* The design's rhythm: Today, Team scoring and The team's game read as one group, 12 apart; This week starts the next, 24 down. */
   .ch-hm[data-ch-crh='on'] .ch-hm-body {
     display: grid;
-    gap: 24px;
+    gap: 12px;
     padding: 24px var(--ch-page-x-phone) 48px;
+  }
+  .ch-hm[data-ch-crh='on'] .ch-hm-body > * + .ch-hm-sec:has(> .ch-hm-week) {
+    margin-top: 12px;
+  }
+  /* The first run has two cards and no groups: each stands 24 from the other. */
+  .ch-hm[data-ch-crh='on'] .ch-hm-body:has(> .ch-hm-setup) {
+    gap: 24px;
   }
   .ch-hm[data-ch-crh='on'] :is(.ch-hm-sec, .ch-hm-form) {
     overflow: hidden;
@@ -4646,18 +4655,38 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     align-items: baseline;
     justify-content: space-between;
     gap: 8px;
+    position: relative;
     padding: 12px 16px 12px;
     border: 0;
-    box-shadow: var(--ch-home-x3);
+    box-shadow: none;
+  }
+  /* The title's hairline runs from the card's 16 inset to its edge, as every row's does (04 3). */
+  .ch-hm[data-ch-crh='on'] :is(.ch-hm-sec__h, .ch-hm-form__head)::after {
+    position: absolute;
+    inset: auto 0 0 16px;
+    height: var(--ch-hairline-w);
+    background: var(--ch-separator);
+    content: '';
   }
   .ch-hm[data-ch-crh='on'] :is(.ch-hm-sec__h, .ch-hm-form__head) h2 {
     margin: 0;
     font: var(--ch-type-card-title);
     color: var(--ch-text-primary);
   }
+  /* The old pass reached 44 with a negative margin; the reach is a layer now, and the link sits on the card's 16. */
   .ch-hm[data-ch-crh='on'] .ch-hm-link {
+    position: relative;
+    display: inline;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
     font: var(--ch-type-meta);
     color: var(--ch-green-600);
+  }
+  .ch-hm[data-ch-crh='on'] .ch-hm-link::after {
+    position: absolute;
+    inset: -14px -8px;
+    content: '';
   }
   .ch-hm[data-ch-crh='on'] .ch-hm-meta {
     font: var(--ch-type-meta);
@@ -4756,9 +4785,18 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   .ch-hm[data-ch-crh='on'] .ch-hm-form__figs {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    margin: 0;
-    padding: 12px 16px 12px;
-    border-top: 0.66px solid var(--ch-separator);
+    margin: 0 16px;
+    padding: 12px 0 16px;
+    border-top: var(--ch-hairline-w) solid var(--ch-separator);
+  }
+  /* Three figures on one grid, as drawn: no rule between them. */
+  .ch-hm[data-ch-crh='on'] .ch-hm-form__figs > div + div {
+    padding-left: 0;
+    border-left: 0;
+  }
+  /* The soft fill under the line, as drawn; the older phone pass hid it. */
+  .ch-hm[data-ch-crh='on'] .ch-hm-form__svg path:first-of-type {
+    display: block;
   }
   /* The team's game: two by two, as designed. The columns need 150pt each at the default Text Size, so a larger size (or a
      narrow phone) takes one column and nothing is squeezed. Bars from a centre zero. */
@@ -4784,7 +4822,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     text-decoration-color: color-mix(in srgb, currentcolor 45%, transparent);
   }
   .ch-hm[data-ch-crh='on'] .ch-hm-legs__a::after {
-    inset: -12px min(0px, calc(50% - 22px));
+    inset: -14px min(0px, calc(50% - 22px));
   }
   .ch-hm[data-ch-crh='on'] .ch-hm-legs__notices {
     padding: 12px 16px 0;
@@ -4938,6 +4976,8 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   .ch-h-main[data-ch-crh='on'] .ch-dh-brief {
     display: flex;
     gap: 8px;
+    max-width: 60ch;
+    hyphens: manual;
     text-wrap: pretty;
   }
   .ch-dh-brief > svg {
@@ -5272,19 +5312,15 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
 .ch-dh-card > .ch-es {
   margin-block: auto;
 }
-/* What the rest of a short list means, centred in the room the card keeps beside its partner. */
+/* The footnote: left, under the last row (HOME-S4). */
 .ch-dh-rest {
   position: relative;
-  display: grid;
-  flex: 1;
-  place-content: center;
-  min-height: 52px;
   margin: 0;
   padding: 12px 16px;
-  font: var(--ch-type-14);
+  font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
   color: var(--ch-text-secondary);
-  text-align: center;
-  text-wrap: balance;
+  text-wrap: pretty;
 }
 .ch-dh-rest::before {
   position: absolute;
