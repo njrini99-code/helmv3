@@ -2487,8 +2487,10 @@
   box-shadow: var(--ch-board-double-shadow);
   color: var(--ch-green-900);
 }
+/* The plate is ivory at night too, so its under-par red is the one for ivory: the fill red is lifted at night for marks
+   under a light numeral, and was 4.26:1 here. */
 .ch-scoreboard .ch-qf-plate.is-under {
-  color: var(--ch-score-under-fill);
+  color: var(--ch-score-under-on-ivory);
 }
 
 /* A board position: the numeral, a tie's T small and raised, and under it the quiet movement since the previous
