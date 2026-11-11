@@ -173,7 +173,8 @@ export function RosterPhoneCrh({
           {!data.teamError && <LargeTitleContext>{data.teamName}</LargeTitleContext>}
         </header>
 
-        <PageRefreshNotice parts={failed} />
+        {/* When the roster itself didn't load, its card is the whole page and says so once, with the one Try again. */}
+        {!data.playersError && <PageRefreshNotice parts={failed} />}
 
         {data.playersError ? (
           <Surface variant="card" level={2} padded={false} title="Players">
@@ -206,25 +207,27 @@ export function RosterPhoneCrh({
               <RequestsRow jr={jr} error={data.requestsError} covered={covered} clock={clock} onRetry={onRetry} onOpen={() => setTapped(true)} />
             </SectionBoundary>
             {data.statsError && (
-              <InlineNotice code="CH-3202" title="Season stats didn’t load" body="The roster is complete, but averages, form and strokes gained are missing until the rounds load." onRetry={onRetry} covered={covered} />
+              <div className="ch-rsx-sec is-tight">
+                <InlineNotice code="CH-3202" title="Season stats didn’t load" body="The roster is complete, but averages, form and strokes gained are missing until the rounds load." onRetry={onRetry} covered={covered} />
+              </div>
             )}
-            <div className="ch-stickybar ch-rsx-sort">
-              <Segmented<PhoneSort>
-                block
-                label="Sort by"
-                value={sortBy}
-                onChange={chooseSort}
-                options={
-                  data.statsError
-                    ? [{ value: 'name', label: 'Name' }]
-                    : [
-                        { value: 'avg', label: TERMS.avg.short, aria: `${TERMS.avg.short}, ${TERMS.scoringAvg.long.toLowerCase()}` },
-                        { value: 'sg', label: TERMS.strokesGained.short, aria: `${TERMS.strokesGained.short}, ${TERMS.strokesGained.long.toLowerCase()}` },
-                        { value: 'name', label: 'Name' },
-                      ]
-                }
-              />
-            </div>
+            {/* Without season stats there is one order, by name, so there is nothing to choose and no control is drawn
+                (a one-option control read as a broken bar). */}
+            {!data.statsError && (
+              <div className="ch-stickybar ch-rsx-sort">
+                <Segmented<PhoneSort>
+                  block
+                  label="Sort by"
+                  value={sortBy}
+                  onChange={chooseSort}
+                  options={[
+                    { value: 'avg', label: TERMS.avg.short, aria: `${TERMS.avg.short}, ${TERMS.scoringAvg.long.toLowerCase()}` },
+                    { value: 'sg', label: TERMS.strokesGained.short, aria: `${TERMS.strokesGained.short}, ${TERMS.strokesGained.long.toLowerCase()}` },
+                    { value: 'name', label: 'Name' },
+                  ]}
+                />
+              </div>
+            )}
             <SectionBoundary surface="roster.list" label="The roster" code="CH-3205">
               <div ref={listRef} className="ch-rsx-lists">
                 {/* B5 and R10: one range over the five rounds the bars draw, so the same height is the same score down the list. */}

@@ -3,7 +3,6 @@
 import { SkelLine, Skeleton } from '../../ui/States';
 import { useClubhouseRole } from '../../shell/context';
 import '../../styles/roster.css';
-import { LargeTitleSkeleton } from '../../ui/LargeTitle';
 
 /**
  * Route loading for Roster: header with its two actions, where the team sits, the toolbar and six face cards in their
@@ -125,8 +124,9 @@ function RosterDeskSkeletonCrh() {
 function RosterPhoneSkeletonCrh() {
   return (
     <div className="ch-rsm-skel ch-rsm-page">
-      <div className="ch-rsm-head">
-        <LargeTitleSkeleton width={128} />
+      {/* What is already known stays: the title is the real word, and the list is named. Only the figures wait. */}
+      <div className="ch-rsm-head" aria-hidden="true">
+        <p className="ch-large-title">Roster</p>
         <Skeleton width={150} height={15} />
       </div>
       <div className="ch-rs-tcard ch-rs-tcard--skel" aria-hidden="true">
@@ -135,8 +135,15 @@ function RosterPhoneSkeletonCrh() {
         <Skeleton width="100%" height={10} />
         <Skeleton width="70%" height={12} />
       </div>
-      <div className="ch-rsx-sec">
+      {/* The sort, at its loaded height, then the Active card under its title. */}
+      <div className="ch-rsx-sort ch-rsx-sort--skel" aria-hidden="true">
+        <Skeleton width="100%" height={44} radius={12} />
+      </div>
+      <div className="ch-rsx-sec is-tight">
         <div className="ch-surface ch-surface--card" aria-hidden="true">
+          <div className="ch-surface__head">
+            <h2 className="ch-surface__title">Active</h2>
+          </div>
           {Array.from({ length: 6 }, (_, i) => (
             <div key={i} className="ch-group__row" data-two-line="">
               <Skeleton width={32} height={32} radius={16} />

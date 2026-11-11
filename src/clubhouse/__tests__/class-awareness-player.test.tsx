@@ -1,5 +1,5 @@
 import { LazyMotion, domAnimation } from 'motion/react';
-import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -343,5 +343,77 @@ describe('Quiet notices', () => {
     expect(within(panel()!).getByText('STAT 201 isn’t used for class status')).toBeTruthy();
     await userEvent.click(within(panel()!).getByRole('button', { name: 'Fix times' }));
     expect(await screen.findByRole('dialog', { name: 'Edit class', hidden: true })).toBeTruthy();
+  });
+});
+
+describe('Classes · a class\u2019s sheet with class status on: what a refusal and a limit do', () => {
+  beforeEach(() => {
+    live.day = myDay();
+    live.status = 'ready';
+  });
+  /** Open ECON 310's sheet from its binder. */
+  async function openEcon(user: ReturnType<typeof userEvent.setup>) {
+    await user.click(screen.getByRole('button', { name: /^ECON 310/ }));
+    return screen.findByRole('dialog', { name: 'ECON 310' });
+  }
+  const uses = (sheet: HTMLElement) => within(sheet).getByRole('switch', { name: 'Use for class status' });
+  /** On, whether the switch is a checkbox or says so with aria-checked. */
+  const isOn = (el: HTMLElement) => el.getAttribute('aria-checked') === 'true' || (el as HTMLInputElement).checked === true;
+  /** The Add an exam sheet for ECON 310, filled in. */
+  async function examSheet(user: ReturnType<typeof userEvent.setup>, times: { start: string; end: string }) {
+    const sheet = await openEcon(user);
+    await user.click(within(sheet).getByRole('button', { name: 'Add an exam' }));
+    const exam = await screen.findByRole('dialog', { name: 'Add an exam' });
+    fireEvent.change(within(exam).getByLabelText('Exam date'), { target: { value: '2026-12-14' } });
+    fireEvent.change(within(exam).getByLabelText('Exam start'), { target: { value: times.start } });
+    fireEvent.change(within(exam).getByLabelText('Exam end'), { target: { value: times.end } });
+    return exam;
+  }
+
+  it('CH-12074 a refused "Use for class status" says so, changes nothing on the page, and the switch goes back', async () => {
+    const user = userEvent.setup();
+    const status = statusWrites({ setClassStatusEnabled: vi.fn(async () => ({ success: false })) });
+    show({ status });
+    const sheet = await openEcon(user);
+    expect(isOn(uses(sheet))).toBe(true);
+    await user.click(uses(sheet));
+    await expectCode('CH-12074', /Couldn’t change class status for this class/);
+    expect(code('CH-12074')!.textContent).toMatch(/Nothing was changed\. Try again\./);
+    expect(status.setClassStatusEnabled).toHaveBeenCalledWith(ECON.id, false);
+    await waitFor(() => expect(isOn(uses(sheet))).toBe(true));
+    // Nothing landed, so the day is not read again.
+    expect(live.refetchMine).not.toHaveBeenCalled();
+  });
+
+  it('CH-12075 a refused exam says so and keeps the sheet open with what was typed; no exam is listed', async () => {
+    const user = userEvent.setup();
+    const status = statusWrites({ addExam: vi.fn(async () => ({ success: false })) });
+    show({ status });
+    const exam = await examSheet(user, { start: '09:00', end: '11:00' });
+    await user.click(within(exam).getByRole('button', { name: 'Add exam' }));
+    await expectCode('CH-12075', /Couldn’t add the exam/);
+    expect(code('CH-12075')!.textContent).toMatch(/Nothing was changed\. Try again\./);
+    expect(status.addExam).toHaveBeenCalledWith({ on: '2026-12-14', start: '09:00', end: '11:00', label: 'ECON 310 exam' });
+    expect(exam.hasAttribute('open')).toBe(true);
+    expect((within(exam).getByLabelText('Exam date') as HTMLInputElement).value).toBe('2026-12-14');
+    expect((within(exam).getByLabelText('Exam end') as HTMLInputElement).value).toBe('11:00');
+    expect(screen.queryByRole('list', { name: 'Exams' })).toBeNull();
+  });
+
+  it('CH-12171 an exam longer than 4 hours is refused beside its end time and nothing is sent; exactly 4 hours is taken', async () => {
+    const user = userEvent.setup();
+    const status = statusWrites();
+    show({ status });
+    const exam = await examSheet(user, { start: '09:00', end: '13:01' });
+    // Nothing is said until Add exam is pressed.
+    expect(code('CH-12171')).toBeNull();
+    await user.click(within(exam).getByRole('button', { name: 'Add exam' }));
+    await expectCode('CH-12171', /Exams can be up to 4 hours\./);
+    expect(code('CH-12171')!.getAttribute('role')).toBe('alert');
+    expect(status.addExam).not.toHaveBeenCalled();
+    fireEvent.change(within(exam).getByLabelText('Exam end'), { target: { value: '13:00' } });
+    await waitFor(() => expect(code('CH-12171')).toBeNull());
+    await user.click(within(exam).getByRole('button', { name: 'Add exam' }));
+    await waitFor(() => expect(status.addExam).toHaveBeenCalledWith({ on: '2026-12-14', start: '09:00', end: '13:00', label: 'ECON 310 exam' }));
   });
 });

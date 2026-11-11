@@ -101,7 +101,6 @@ describe('elevation tokens (B4)', () => {
 
   /** Row 40: a surface on the green or ink casts a tinted drop from the tokens, not a hand-set one. */
   it.each([
-    ['classes.css', '.ch-cl-add__plus', 'green-3'],
     ['classes.css', ".ch-cl-daypick button[aria-pressed='true']", 'green-1'],
     ['hub.css', ".ch-hb-rsvp__a button[aria-checked='true']", 'green-1'],
     ['rounds-track.css', '.ch-rt-hno', 'green-3'],

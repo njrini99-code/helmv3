@@ -4346,10 +4346,9 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
   }
 }
 
-/* The coach's Home bar and hero are one green (Nick, 31 Oct; 06 §11.1). Only with the lane on, and only over a coach hero; player Home
-   follows through data-ch-hero-flat (stats-home PR 6), so a --ch-frame bar never sits over a --ch-green-800 hero. */
+/* The coach's Home bar and hero are one green (Nick, 31 Oct; 06 §11.1). Only with the lane on, and only over a coach hero. */
 @media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
-  .ch-root[data-ch-crh='on'][data-phone-hero]:has(.ch-hm[data-ch-crh='on'], [data-ch-hero-flat]) .ch-topbar {
+  .ch-root[data-ch-crh='on'][data-phone-hero]:has(.ch-hm[data-ch-crh='on']) .ch-topbar {
     background: var(--ch-frame);
   }
 }

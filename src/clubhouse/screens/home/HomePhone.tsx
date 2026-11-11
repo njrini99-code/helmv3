@@ -539,7 +539,7 @@ function Rounds({ years, data, trends, onOpen, covered }: { years?: Record<strin
                     </span>
                     {(trendOf.get(r.playerId)?.length ?? 0) >= 3 && (
                       <span className="ch-hm-rd__spark" aria-hidden="true">
-                        <FormLine data={trendOf.get(r.playerId)!} width={48} height={18} earlyBelow={3} bare label={`${r.playerName}, last ${trendOf.get(r.playerId)!.length} rounds: ${trendOf.get(r.playerId)!.join(', ')}`} />
+                        <FormLine data={trendOf.get(r.playerId)!} width={36} height={18} earlyBelow={3} bare label={`${r.playerName}, last ${trendOf.get(r.playerId)!.length} rounds: ${trendOf.get(r.playerId)!.join(', ')}`} />
                       </span>
                     )}
                     <span className={'ch-hm-score ch-num' + (r.toPar != null && r.toPar < 0 ? ' is-under' : '')}>

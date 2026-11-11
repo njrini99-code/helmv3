@@ -304,18 +304,6 @@
   gap: 16px;
   min-width: 0;
 }
-/* Off the Ledger (a narrow window), a class card lifts 2px on hover (quick); on the desktop Ledger it takes the row tint
-   instead (CH-12601, below). */
-.ch-cl-add__plus {
-  display: grid;
-  place-items: center;
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  background: var(--ch-green-800);
-  color: var(--ch-on-fill-100);
-  box-shadow: var(--ch-drop-green-3);
-}
 
 /* The side column */
 .ch-cl-card2 {
@@ -642,7 +630,7 @@
   padding: 32px 20px 16px;
   border: 2px dashed rgb(21 90 57 / 0.3);
   border-radius: var(--ch-radius-card);
-  background: radial-gradient(60% 80% at 50% 0%, #edf4ef, transparent 70%), var(--ch-ivory-25);
+  background: var(--ch-ivory-25);
   color: inherit;
   font: inherit;
   text-align: center;
@@ -653,12 +641,12 @@
 }
 .ch-cl-drop.is-over {
   border-color: var(--ch-green-600);
-  background: radial-gradient(60% 80% at 50% 0%, #e3eee6, transparent 70%), var(--ch-ivory-25);
+  background: var(--ch-green-50);
 }
 @media (hover: hover) {
   .ch-cl-drop:hover {
     border-color: var(--ch-green-600);
-    background: radial-gradient(60% 80% at 50% 0%, #e3eee6, transparent 70%), var(--ch-ivory-25);
+    background: var(--ch-green-50);
   }
 }
 .ch-cl-drop:focus-visible {
@@ -1468,16 +1456,15 @@ html[data-fw-theme='dark'] .ch-cl-meet li.is-today i {
 }
 html[data-fw-theme='dark'] .ch-cl-drop {
   border-color: rgb(107 187 140 / 0.3);
-  background: radial-gradient(60% 80% at 50% 0%, var(--ch-green-50), transparent 70%), var(--ch-ivory-25);
 }
 html[data-fw-theme='dark'] .ch-cl-drop.is-over {
   border-color: var(--ch-green-600);
-  background: radial-gradient(60% 80% at 50% 0%, var(--ch-green-100), transparent 70%), var(--ch-ivory-25);
+  background: var(--ch-green-100);
 }
 @media (hover: hover) {
   html[data-fw-theme='dark'] .ch-cl-drop:hover {
     border-color: var(--ch-green-600);
-    background: radial-gradient(60% 80% at 50% 0%, var(--ch-green-100), transparent 70%), var(--ch-ivory-25);
+    background: var(--ch-green-100);
   }
 }
 /* The import's drawn page stays paper: a light sheet with tinted lines, like the schedule being read. */
@@ -2653,7 +2640,7 @@ html[data-fw-theme='dark'] .ch-cl {
   gap: 12px;
 }
 .ch-cl:not(.is-phone) .ch-cl-card__f {
-  align-self: end;
+  align-self: start;
 }
 @container chcl (max-width: 760px) {
   .ch-cl:not(.is-phone) .ch-cl-deck {

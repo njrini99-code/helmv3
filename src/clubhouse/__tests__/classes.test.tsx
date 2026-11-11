@@ -1254,6 +1254,199 @@ const page1 = (): ChClassesPage => ({ ...PREVIEW_CLASSES, classes: { list: PREVI
 // Delete all classes
 // ---------------------------------------------------------------------------
 
+describe('Classes, the redesigned screens: removing a class, sections that fail, and what a binder shows', () => {
+  const STAT = /^STAT 201/;
+  const sheetOf = () => screen.findByRole('dialog', { name: 'STAT 201' });
+  const removeQuestion = () => screen.getByRole('dialog', { name: 'Remove this class?' });
+  /** Open STAT 201's sheet and press Remove, which asks. */
+  async function askRemove(user: ReturnType<typeof userEvent.setup>) {
+    await user.click(card(STAT));
+    await user.click(within(await sheetOf()).getByRole('button', { name: 'Remove' }));
+    return removeQuestion();
+  }
+
+  it('CH-12501 Remove asks first: it names the class and what it comes off, and Keep it sends nothing and keeps the binder', async () => {
+    const user = userEvent.setup();
+    const w = show();
+    const q = await askRemove(user);
+    await expectCode('CH-12501');
+    expect(q.textContent).toMatch(/STAT 201 comes off your schedule and your calendar\. This can’t be undone\./);
+    // The destructive answer is the real danger button; the safe one is not.
+    expect(within(q).getByRole('button', { name: 'Remove class' }).className).toMatch(/ch-btn--danger/);
+    await user.click(within(q).getByRole('button', { name: 'Keep it' }));
+    expect(w.remove).not.toHaveBeenCalled();
+    expect(names()).toContain('Probability and Statistics');
+  });
+
+  it('120901 a class that is removed leaves the deck, says "STAT 201 removed" once, and lands with one success tap', async () => {
+    const user = userEvent.setup();
+    const w = show();
+    const q = await askRemove(user);
+    hapticSpy.mockClear();
+    await user.click(within(q).getByRole('button', { name: 'Remove class' }));
+    expect(await screen.findByText('STAT 201 removed')).toBeTruthy();
+    expect(w.remove).toHaveBeenCalledTimes(1);
+    expect(names()).not.toContain('Probability and Statistics');
+    expect(hapticSpy.mock.calls.filter((c) => c[0] === 'success')).toHaveLength(1);
+  });
+
+  it('CH-12003 a removal that fails says so, keeps the class and the question, and Retry on the notice removes it', async () => {
+    const user = userEvent.setup();
+    const w = show(PREVIEW_CLASSES, { remove: vi.fn(async () => ({ success: false })) });
+    const q = await askRemove(user);
+    await user.click(within(q).getByRole('button', { name: 'Remove class' }));
+    await expectCode('CH-12003', /Couldn’t remove STAT 201/);
+    expect(removeQuestion().hasAttribute('open')).toBe(true);
+    expect(names()).toContain('Probability and Statistics');
+    expect(hapticSpy).toHaveBeenCalledWith('error');
+    expect(screen.queryByText('STAT 201 removed')).toBeNull();
+
+    w.remove.mockResolvedValue({ success: true });
+    await user.click(within(code('CH-12003') as HTMLElement).getByRole('button', { name: /Retry|Try again/ }));
+    expect(await screen.findByText('STAT 201 removed')).toBeTruthy();
+    expect(w.remove).toHaveBeenCalledTimes(2);
+    expect(names()).not.toContain('Probability and Statistics');
+  });
+
+  it('120703 offline, a removal is refused before anything is sent and the class stays', async () => {
+    const user = userEvent.setup();
+    const line = vi.spyOn(window.navigator, 'onLine', 'get').mockReturnValue(false);
+    try {
+      const w = show();
+      const q = await askRemove(user);
+      await user.click(within(q).getByRole('button', { name: 'Remove class' }));
+      await expectCode('CH-1903');
+      expect(w.remove).not.toHaveBeenCalled();
+      expect(names()).toContain('Probability and Statistics');
+    } finally {
+      line.mockRestore();
+    }
+  });
+
+  it('120102 a binder is drawn from the class itself: its department and number, credits, name, professor, a tile for each day it meets with its start, and its room', () => {
+    show();
+    const b = card(STAT);
+    expect(b.querySelector('.ch-cl-card__code b')?.textContent).toBe('STAT');
+    expect(b.querySelector('.ch-cl-card__code')?.textContent).toBe('STAT201');
+    expect(b.querySelector('.ch-cl-card__cr')?.textContent).toBe('3 cr');
+    expect(b.querySelector('.ch-cl-card__name')?.textContent).toBe('Probability and Statistics');
+    expect(b.querySelector('.ch-cl-card__prof')?.textContent).toBe('Dr. L. Osei');
+    const tiles = [...b.querySelectorAll('.ch-cl-card__week > span')];
+    expect(tiles.map((t) => t.querySelector('em')?.textContent).join('')).toBe('MTWTF');
+    // It meets Tuesday and Thursday at 9:00: two raised tiles with the start, three outlines without.
+    expect(tiles.map((t) => (t.classList.contains('is-on') ? t.querySelector('b')?.textContent : null))).toEqual([null, '9:00', null, '9:00', null]);
+    expect(b.querySelector('.ch-cl-card__loc')?.textContent).toBe('Hanes Hall 120');
+    // The week is drawing; the binder's name says when it meets.
+    expect(b.querySelector('.ch-cl-card__week')?.getAttribute('aria-hidden')).toBe('true');
+    expect(b.getAttribute('aria-label')).toMatch(/^STAT 201, Probability and Statistics, /);
+  });
+
+  it('120103 a class\u2019s sheet shows where and when it meets and who teaches it, and its two keys are Remove and Edit class', async () => {
+    const user = userEvent.setup();
+    show();
+    await user.click(card(STAT));
+    const sheet = await sheetOf();
+    expect(sheet.textContent).toMatch(/Probability and Statistics/);
+    expect(sheet.textContent).toMatch(/Dr\. L\. Osei/);
+    expect(sheet.textContent).toMatch(/Hanes Hall 120/);
+    expect(sheet.textContent).toMatch(/9:00/);
+    expect(sheet.textContent).toMatch(/This week/);
+    expect(within(sheet).getByRole('button', { name: 'Edit class' })).toBeTruthy();
+    expect(within(sheet).getByRole('button', { name: 'Remove' })).toBeTruthy();
+  });
+
+  it('120407 the first-run page shows only when the read answered with no classes; a read that failed says so instead and never offers Import as a first step', () => {
+    const first = render(
+      <LazyMotion features={domAnimation}>
+        <ToastProvider>
+          <div className="ch-root" data-ui="clubhouse">
+            <ClassesView data={PREVIEW_CLASSES_EMPTY} writes={fakeWrites()} />
+          </div>
+        </ToastProvider>
+      </LazyMotion>,
+    );
+    expect(code('CH-12301')).not.toBeNull();
+    expect(code('CH-12201')).toBeNull();
+    first.unmount();
+    show(PREVIEW_CLASSES_FAILED);
+    expect(code('CH-12201')).not.toBeNull();
+    expect(code('CH-12301')).toBeNull();
+    expect(screen.queryByText('No classes yet')).toBeNull();
+  });
+
+  it('121403 Try again on the failed classes read asks the server for the whole page again', async () => {
+    const user = userEvent.setup();
+    show(PREVIEW_CLASSES_FAILED);
+    await user.click(within(code('CH-12201') as HTMLElement).getByRole('button', { name: 'Try again' }));
+    expect(router.refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it('CH-12203 a section that crashes while drawing says which one and offers Try again; the rest of the page still draws', async () => {
+    const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      // A class whose days are not a list cannot be drawn as a binder: the deck fails inside its own boundary.
+      const broken = { ...PREVIEW_CLASSES, classes: { ...PREVIEW_CLASSES.classes, list: PREVIEW_CLASSES.classes.list.map((c, i) => (i === 0 ? { ...c, instructor: { toString() { throw new Error('boom'); } } as unknown as string } : c)) } };
+      show(broken);
+      await expectCode('CH-12203', /couldn’t be shown/);
+      expect(code('CH-12203')!.textContent).toMatch(/The rest of the page is fine/);
+      expect(within(code('CH-12203') as HTMLElement).getByRole('button', { name: 'Try again' })).toBeTruthy();
+      // The term card is its own section and is still there.
+      expect(document.querySelector('.ch-cl-term')).not.toBeNull();
+    } finally {
+      quiet.mockRestore();
+    }
+  });
+});
+
+describe('Classes, the phone page (121901) and a day with no class (CH-12308)', () => {
+  const realMatchMedia = window.matchMedia;
+  beforeEach(() => {
+    window.matchMedia = ((q: string) => ({
+      matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)',
+      media: q,
+      onchange: null,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false,
+    })) as never;
+  });
+  afterEach(() => {
+    window.matchMedia = realMatchMedia;
+  });
+
+  it('121901 on a phone Classes is the phone build: the term card, Today, then the binders one to a row under Your classes; the header\u2019s desktop keys are not drawn', () => {
+    show();
+    expect(document.querySelector('main.ch-cl')?.classList.contains('is-phone')).toBe(true);
+    expect(document.querySelector('.ch-cl-term')?.classList.contains('is-desk')).toBe(false);
+    expect(screen.queryByRole('button', { name: 'Import schedule' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Add class' })).toBeNull();
+    // No side column on a phone: the sections come one after another.
+    expect(document.querySelector('.ch-cl-dgrid')).toBeNull();
+    const order = [...document.querySelectorAll('.ch-cl-term, .ch-surface, .ch-cl-yours')].map((n) => (n.classList.contains('ch-cl-term') ? 'term' : n.classList.contains('ch-cl-yours') ? 'yours' : (n.querySelector('.ch-surface__title')?.textContent ?? 'card')));
+    expect(order.indexOf('term')).toBe(0);
+    expect(order.indexOf('Today')).toBeGreaterThan(0);
+    expect(order.indexOf('yours')).toBeGreaterThan(order.indexOf('Today'));
+    expect(screen.getByRole('heading', { level: 2, name: /^Your classes/ })).toBeTruthy();
+    expect(names().length).toBe(PREVIEW_CLASSES.classes.list.length);
+  });
+
+  it('CH-12308 a day with no class says "No classes today", names the next class day, draws that day from 7 to 5 and lists its classes, each opening its class', async () => {
+    const user = userEvent.setup();
+    // Saturday of the fixture's week: nothing meets, and Monday is the next class day.
+    const sat = PREVIEW_CLASSES.week.dates[PREVIEW_CLASSES.week.dates.length - 2] ?? PREVIEW_CLASSES.week.dates[5]!;
+    show({ ...PREVIEW_CLASSES, todayIso: sat } as ChClassesPage);
+    await expectCode('CH-12308', /No classes today/);
+    expect(code('CH-12308')!.textContent).toMatch(/Next: Monday/);
+    expect(within(code('CH-12308') as HTMLElement).getByRole('img', { name: 'Monday from 7 AM to 5 PM' })).toBeTruthy();
+    const rows = [...document.querySelectorAll('[data-ch-class-row]')] as HTMLElement[];
+    expect(rows.length).toBeGreaterThan(0);
+    await user.click(rows[0]!);
+    expect((await screen.findAllByRole('dialog')).some((d) => d.hasAttribute('open'))).toBe(true);
+  });
+});
+
 describe('Classes, delete all', () => {
   const ALL_IDS = PREVIEW_CLASS_ROWS.map((r) => r.id).sort();
   const more = () => screen.queryByRole('button', { name: 'More for your classes' });

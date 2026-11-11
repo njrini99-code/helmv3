@@ -2915,8 +2915,6 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   display: flex;
 }
 [data-ch-crh='on'] .ch-rs-tcard__coins .ch-avatar {
-  --ch-av-size: 30px !important;
-  --ch-av-type: 12px !important;
   box-shadow: var(--ch-roster-x2);
 }
 [data-ch-crh='on'] .ch-rs-tcard__coins .ch-avatar + .ch-avatar {
@@ -2956,10 +2954,6 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
 
   letter-spacing: 0;
   color: var(--ch-crh-ink2);
-}
-[data-ch-crh='on'] .ch-rs-ldr__p .ch-avatar {
-  --ch-av-size: 26px !important;
-  --ch-av-type: 12px !important;
 }
 [data-ch-crh='on'] .ch-rs-ldr__p b {
   overflow: hidden;
@@ -3008,6 +3002,10 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   }
   [data-ch-crh='on'] .ch-rsx-lists > :first-child {
     margin-top: 2px;
+  }
+  /* With no sort bar over the lists (season stats didn't load), the first card keeps a section's distance. */
+  [data-ch-crh='on'] .ch-rsx-sec + .ch-rsx-lists > :first-child {
+    margin-top: 12px;
   }
   [data-ch-crh='on'] .ch-rsx-req {
     display: flex;
@@ -3083,13 +3081,6 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   [data-ch-crh='on'] .ch-rsx-row:focus-visible {
     outline-offset: -2px;
     border-radius: var(--ch-radius-md);
-  }
-  [data-ch-crh='on'] .ch-rsx-coin .ch-avatar,
-  [data-ch-crh='on'] .ch-rsx-prow .ch-avatar,
-  [data-ch-crh='on'] .ch-rsx-rq .ch-avatar,
-  [data-ch-crh='on'] .ch-rsx-req__coins .ch-avatar {
-    --ch-av-size: calc(32 * min(var(--ch-type-k), 1.2px)) !important;
-    --ch-av-type: calc(12 * min(var(--ch-type-k), 1.2px)) !important;
   }
   [data-ch-crh='on'] .ch-rsx-row__b {
     display: grid;
@@ -3195,10 +3186,6 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
     gap: 4px;
     padding-top: 20px;
     text-align: center;
-  }
-  [data-ch-crh='on'] .ch-rsx-head .ch-avatar {
-    --ch-av-size: 76px !important;
-    --ch-av-type: 26px !important;
   }
   [data-ch-crh='on'] .ch-rsx-head h2 {
     display: -webkit-box;
@@ -3489,10 +3476,6 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
     line-height: var(--ch-lead-tight);
     text-align: center;
   }
-  [data-ch-crh='on'] .ch-rsx-req__coins .ch-avatar {
-    --ch-av-size: calc(32 * min(var(--ch-type-k), 1.2px)) !important;
-    --ch-av-type: calc(12 * min(var(--ch-type-k), 1.2px)) !important;
-  }
   [data-ch-crh='on'] .ch-rsx-row__b {
     display: grid;
     flex: 1;
@@ -3594,6 +3577,10 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   }
   [data-ch-crh='on'].ch-rsd .ch-rs-ldrs {
     display: contents;
+  }
+  /* Beside the team card a leader card is as tall as it: the kicker at the top, the figure in the middle, who at the foot. */
+  [data-ch-crh='on'].ch-rsd .ch-rs-ldr {
+    align-content: space-between;
   }
   [data-ch-crh='on'].ch-rsd .ch-rs-tcard {
     align-content: space-between;

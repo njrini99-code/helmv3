@@ -187,11 +187,16 @@ function PeopleLine({ leg }: { leg: ChTeamLeg }) {
   if (!leg.gains) return null;
   return (
     <span className="ch-hm-legs__who">
-      <People p={leg.gains} className="ch-hm-legs__a" /> {verb(leg.gains, 'gains most', 'gain most')}
+      {/* Each half is a line of its own in the card, so a wrap never starts a line with the dot; the dot stays in the words. */}
+      <span className="ch-hm-legs__part">
+        <People p={leg.gains} className="ch-hm-legs__a" /> {verb(leg.gains, 'gains most', 'gain most')}
+      </span>
       {leg.loses && (
         <>
-          {' '}
-          &middot; <People p={leg.loses} className="ch-hm-legs__a" /> {verb(leg.loses, 'loses most', 'lose most')}
+          <span className="ch-hm-legs__sep"> &middot; </span>
+          <span className="ch-hm-legs__part">
+            <People p={leg.loses} className="ch-hm-legs__a" /> {verb(leg.loses, 'loses most', 'lose most')}
+          </span>
         </>
       )}
     </span>
@@ -235,7 +240,16 @@ export function TeamLegsPhone({ legs, covered = false }: { legs: ChTeamLegs; cov
                   <i className="ch-hm-legs__bar" aria-hidden="true">
                     <i className={tone + ((leg.sg ?? 0) < 0 ? ' is-neg' : '')} style={{ width: `${legBarWidth(leg.sg)}%` }} />
                   </i>
-                  <span className="ch-hm-legs__s ch-num">{legStatText(leg.stat)}</span>
+                  <span className="ch-hm-legs__s ch-num">
+                    {legStatText(leg.stat)
+                      .split(' · ')
+                      .map((part, i) => (
+                        <Fragment key={part}>
+                          {i > 0 && <span className="ch-hm-legs__sep"> · </span>}
+                          <span className="ch-hm-legs__part">{part}</span>
+                        </Fragment>
+                      ))}
+                  </span>
                   <em className={'ch-hm-legs__c ' + change.tone}>{change.words}</em>
                   <PeopleLine leg={leg} />
                 </li>
