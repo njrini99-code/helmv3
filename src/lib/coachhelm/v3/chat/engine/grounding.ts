@@ -28,6 +28,26 @@ function numbersIn(value: unknown, into: Set<string>): void {
   }
 }
 
+/**
+ * What the model's own code printed, in this conversation, as reads the check can compare against. A figure the code
+ * worked out from the reads it called and printed is a figure the conversation holds: the model was shown it and the
+ * prompt tells it to work numbers out there. A figure the model then derives in its head from that output is still
+ * unmatched. Nothing of the output is stored or logged: it is read from the conversation's own messages for the check.
+ */
+export function codeOutputsOf(messages: ReadonlyArray<{ role: string; content?: unknown }>): ToolEnvelope[] {
+  const out: ToolEnvelope[] = [];
+  for (const message of messages) {
+    if (message.role !== 'assistant' || !Array.isArray(message.content)) continue;
+    for (const block of message.content as Array<{ type?: unknown; content?: { stdout?: unknown } | null }>) {
+      if (typeof block?.type !== 'string' || !block.type.endsWith('code_execution_tool_result')) continue;
+      const printed = block.content?.stdout;
+      if (typeof printed === 'string' && printed.trim()) out.push({ summary: '', measurements: [], series: [], coverage: 'complete', coverage_note: null, as_of: '', model_text: printed.slice(0, CODE_OUTPUT_MAX) } as ToolEnvelope);
+    }
+  }
+  return out;
+}
+const CODE_OUTPUT_MAX = 20_000;
+
 /** Small whole numbers ("the last 3 rounds", "2 players") are counts and ordinals in prose far more often than figures. */
 const isTrivial = (n: number): boolean => Number.isInteger(n) && Math.abs(n) <= 12;
 

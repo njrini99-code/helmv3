@@ -44,7 +44,7 @@ import { CHAT_STREAM_CONTENT_TYPE, encodeChatEvent, eventsForStoredParts, pendin
 import { loadConversation, type LoadedConversation, type TurnRow } from '@/lib/coachhelm/v3/chat/engine/store';
 import { chatTurnResponse, type TurnInput, type TurnSummary } from '@/lib/coachhelm/v3/chat/engine/turn';
 import type { ChatSurface, ScreenLoaders } from '@/lib/coachhelm/v3/chat/engine/tool';
-import { checkGrounding } from '@/lib/coachhelm/v3/chat/grounding';
+import { groundingCheck } from '@/lib/coachhelm/v3/chat/grounding';
 import { heldCommitFor } from '@/lib/coachhelm/v3/chat/held-runner';
 import { instructionBlocks } from '@/lib/coachhelm/v3/chat/instructions';
 import { createConversation, getConversation, touchConversation, upsertUserTurn } from '@/lib/coachhelm/v3/chat/persistence';
@@ -411,7 +411,8 @@ export async function POST(req: NextRequest) {
       store: { loaded, coachId: ctx.coach_id },
       clientTurnId,
       describeError: describeTurnError,
-      checkGrounding: ({ text, reads }) => checkGrounding(text, reads),
+      // With the question: a number the coach typed ("under 75") is theirs to hear back, not a figure from nowhere.
+      checkGrounding: groundingCheck,
       onFinished,
       onSuggested: (result) => later(() => recordSuggestions({ admin, ctx, conversationId: convId, ...result })),
     },

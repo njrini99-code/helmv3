@@ -105,7 +105,13 @@ describe('the whole cached policy', () => {
     // Worded "if you have": the engine offers the tool behind a switch, and these bytes are the same either way.
     expect(rules).toContain('If you have code_execution, use it when a question spans many players or many rounds, or needs a calculation across several reads.');
     expect(rules).toContain('For one player or one figure, call the read directly');
-    expect(rules).toContain('Never do arithmetic in your answer, with or without code.');
+    // Said once, under "Figures", and by name: the reruns of 11 Nov 2026 had a total ("23 in all"), a difference of two counts ("20 more
+    // rounds") and a spread ("0.31 between the best and worst") worked out by the model, each a figure in no read.
+    expect(rules).toMatch(/State only a number that a read returned or the coach gave you, copied exactly/);
+    expect(rules).toMatch(/Do no arithmetic yourself: no total, no difference, no spread, no count of lines/);
+    expect(rules).toMatch(/call summarise_data, or leave that number out/);
+    expect(rules.match(/arithmetic/g)).toHaveLength(1);
+    expect(rulesBlock('player')).toMatch(/State only a number a read returned or they gave you, copied exactly\. Do no arithmetic yourself, not even a total or a difference/);
     expect(rules).toContain('A task is never called from code: call the task tool directly, so the coach gets the card to confirm.');
     expect(rulesBlock('quick_chat')).toBe(rules);
     expect(rulesBlock('practice_helper')).toBe(rules);

@@ -17,7 +17,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import type { ToolEnvelope } from '../provenance';
 import { stripReadMarkers } from '../read-markers';
 import { aboutLine } from './about';
-import { defaultGroundingCheck, type GroundingCheck } from './grounding';
+import { codeOutputsOf, defaultGroundingCheck, type GroundingCheck } from './grounding';
 import { runModelLoop, toolResultsMessage, type LoopState, type LoopStop, type PendingDecision } from './loop';
 import { emptyUsage, fallbackModelOf, profileFor, type ChatFeatures, type FeatureGroup, type ModelClient, type ModelMessage, type ModelProfile, type SystemPrompt, type ToolResultBlock, type UsageTotals } from './model';
 import { applyChatEvent, CARD_REVISION_PART, CHAT_STREAM_CONTENT_TYPE, encodeChatEvent, eventsForStoredParts, textOfParts, TURN_META_PART, turnMetaOf, type ChatCardRevision, type ChatErrorAction, type ChatErrorKind, type ChatEvent, type ChatScreenEcho, type ChatTurnMeta, type ChatTurnStatus, type ChatUIMessage, type ChatUIPart, type WireDataPart } from './protocol';
@@ -466,7 +466,7 @@ async function runTurn(deps: TurnDeps, input: TurnInput, signal: AbortSignal, se
     if (stop.kind !== 'complete') {
       void logServerError(`chat/stream: closing words after a decision did not arrive (${stop.kind})`, { action: 'v3.chat.stream.decision_tail', handled: true }, 'warning');
     }
-    await finish('complete', stop.kind, error, ground(deps, ui, reads, ''), before);
+    await finish('complete', stop.kind, error, ground(deps, ui, reads, '', state.messages), before);
     // After the closing words of a turn whose cards are all answered: what to do next, from the question that began the turn.
     if (stop.kind === 'complete') await suggest(loaded.rows.find((r) => r.role === 'user' && r.client_turn_id !== null && r.client_turn_id === open.row.client_turn_id)?.content ?? '');
     return;
@@ -559,7 +559,7 @@ async function runTurn(deps: TurnDeps, input: TurnInput, signal: AbortSignal, se
   if (stop.kind === 'complete') {
     const saved = await store('complete', null, null);
     if (!saved) fail(NOT_SAVED_NOTE, 'retry', 'lost');
-    await finish('complete', stop.kind, null, ground(deps, ui, reads, question), []);
+    await finish('complete', stop.kind, null, ground(deps, ui, reads, question, state.messages), []);
     if (saved) await suggest(question);
     return;
   }
@@ -615,9 +615,13 @@ async function runLoop(deps: TurnDeps, toolContext: Omit<ToolContext, 'reads'>, 
   return runModelLoop({ model, system: deps.system, tools: deps.tools, toolContext, tasks: deps.tasks, maxSteps: deps.maxSteps, signal, emit }, state);
 }
 
-function ground(deps: TurnDeps, ui: ChatUIMessage, reads: ReadonlyMap<string, ToolEnvelope>, question: string): { grounded: boolean; unmatched: string[] } {
+/**
+ * The figures-against-reads check, which only logs. It is given the conversation's reads, what the model's own code printed
+ * (a figure worked out there from reads is one the conversation holds) and the question, whose numbers are the coach's own.
+ */
+function ground(deps: TurnDeps, ui: ChatUIMessage, reads: ReadonlyMap<string, ToolEnvelope>, question: string, messages: ReadonlyArray<{ role: string; content?: unknown }> = []): { grounded: boolean; unmatched: string[] } {
   try {
-    return (deps.checkGrounding ?? defaultGroundingCheck)({ text: wordsOf(ui.parts), reads: [...reads.values()], question });
+    return (deps.checkGrounding ?? defaultGroundingCheck)({ text: wordsOf(ui.parts), reads: [...reads.values(), ...codeOutputsOf(messages)], question });
   } catch {
     return { grounded: false, unmatched: [] };
   }

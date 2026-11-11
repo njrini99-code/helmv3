@@ -12,7 +12,7 @@ import { anthropicModelClient, chatFeatures, PLAYER_MAX_STEPS, profileFor, promp
 import { CHAT_STREAM_CONTENT_TYPE, encodeChatEvent, type ChatErrorAction, type ChatEvent } from './engine/protocol';
 import { chatTurnResponse, type TurnSummary } from './engine/turn';
 import type { PlayerChatContext, ScreenLoaders } from './engine/tool';
-import { checkGrounding } from './grounding';
+import { groundingCheck } from './grounding';
 import { instructionBlocks } from './instructions';
 import { buildChatLlmCallRow } from '@/lib/coachhelm/v3/llm/chat-call-row';
 import { PLAYER_CHAT_TASK } from '@/lib/coachhelm/v3/llm/types';
@@ -126,7 +126,7 @@ export async function runPlayerTurn(
       store: null,
       clientTurnId: body.clientTurnId,
       describeError: describePlayerError,
-      checkGrounding: ({ text, reads }) => checkGrounding(text, reads),
+      checkGrounding: groundingCheck,
       onFinished,
     },
     { kind: 'message', text: body.text },

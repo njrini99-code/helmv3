@@ -1535,4 +1535,9 @@ E39. **After the reruns at a863b56cc1 (11 Nov 2026).** Again outside the engine,
   and an answer said "the widest gaps"; `compare-owen-approach` requires who ranks below Owen and his greens in
   regulation, which the question does not ask for; the abbreviation rule flags the stored drill name "6-10ft Edge
   Drill".
+- **Figures in no read (7 in the reruns).** Three were the model's own arithmetic (a total, a difference of two counts,
+  a spread): the prompt now names those. Two were the coach's own number, because the route called the check without
+  the question: it now passes `groundingCheck` whole. Two were "18 holes". One answer's figures were what its code had
+  printed: `ground()` in `turn.ts` adds `codeOutputsOf(state.messages)` to the reads the check sees. The check still
+  only logs.
 

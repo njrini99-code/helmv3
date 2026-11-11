@@ -960,6 +960,13 @@ replacement is `src/lib/coachhelm/v3/chat/TOOLS.md`.
   complete one). With it: putts per round is always given with greens hit beside it; a tie for the last qualifying
   place stays a tie until the coach chooses (SOURCES A6); who plays is the coach's call; and a Tour or level figure
   comes only from a read made in the turn (the prompt's Figures rule 6).
+- **A number no read returned.** The prompt (Figures 2 and 3): state only a number a read returned or the coach gave,
+  and do no arithmetic, named as a total, a difference, a spread or a count of lines; `summarise_data` or leave the
+  number out. The check that logs this (`chat/grounding.ts`, never a gate) is given the question, so a number the coach
+  typed is not flagged (the route passed no question until 11 Nov 2026); it treats a round's or event's length in
+  holes as a format; and it is given what the model's own code printed in the conversation
+  (`engine/grounding.ts`, `codeOutputsOf`, read from the stored messages and kept nowhere), so a figure worked out
+  there is held while one the model derives from it in its head is still logged.
 - **How long an answer is** (the prompt's "Answering", coach and player alike): at most four sentences in one
   paragraph, written as the shape of the answer and not as a count among other rules: sentence one answers the
   question with its figure, sentence two gives the one comparison or figure that matters most, sentence three (only
