@@ -46,7 +46,7 @@ function teeOf(instant: string | null, timeZone: string): string | null {
 }
 
 export function stateFromDraft(draft: ChTourEventDraft, courses: ReadonlyArray<{ id: string; name: string; tees: string[] }>, timeZone: string): ChTourState {
-  const rounds: ChRoundDraft[] = draft.rounds.map((r) => ({ id: nextRoundId(), date: r.date, tee: teeOf(r.firstTee, timeZone), startType: r.startType, courseId: r.courseId }));
+  const rounds = draft.rounds.reduce<ChRoundDraft[]>((list, r) => [...list, { id: nextRoundId(list), date: r.date, tee: teeOf(r.firstTee, timeZone), startType: r.startType, courseId: r.courseId }], []);
   const first = rounds[0]?.courseId ?? null;
   const sameCourse = rounds.every((r) => (r.courseId ?? null) === first);
   const named = (id: string | null) => {
