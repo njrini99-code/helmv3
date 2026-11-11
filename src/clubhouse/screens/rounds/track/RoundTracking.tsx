@@ -199,7 +199,7 @@ export function RoundTracking(props: RoundTrackingProps) {
       <main className="ch-rt" data-ui="clubhouse">
         <header className="ch-rt-top">
           {onExit ? (
-            <button type="button" className="ch-rt-pill" onClick={onExit}>
+            <button type="button" className="ch-rt-pill" data-ch-press="" onClick={onExit}>
               <Icon icon={X} size={16} />
               <span>Exit</span>
             </button>
@@ -219,7 +219,7 @@ export function RoundTracking(props: RoundTrackingProps) {
             )}
           </div>
           {onOpenScorecard ? (
-            <button type="button" className="ch-rt-pill ch-rt-pill--card" onClick={onOpenScorecard} aria-label="Scorecard">
+            <button type="button" className="ch-rt-pill ch-rt-pill--card" data-ch-press="" onClick={onOpenScorecard} aria-label="Scorecard">
               <Icon icon={Table2} size={16} />
               <span className="ch-rt-pill__l">Scorecard</span>
               <span className="ch-rt-pill__s" aria-hidden="true">

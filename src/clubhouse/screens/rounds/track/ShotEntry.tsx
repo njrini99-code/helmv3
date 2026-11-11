@@ -336,11 +336,11 @@ export function ShotEntry(p: ShotEntryProps) {
           </p>
         )}
         <div className="ch-rt-bar__row">
-          <button type="button" className="ch-rt-bar__i" disabled={!p.shotHistory.length || p.undoSaving} aria-label="Undo last shot" onClick={() => p.dispatch({ type: 'SHOW_UNDO_CONFIRM' })}>
+          <button type="button" className="ch-rt-bar__i" data-ch-press="" disabled={!p.shotHistory.length || p.undoSaving} aria-label="Undo last shot" onClick={() => p.dispatch({ type: 'SHOW_UNDO_CONFIRM' })}>
             <Icon icon={Undo2} size={18} />
             <span>Undo</span>
           </button>
-          <button type="button" className="ch-rt-bar__i" aria-label="Add penalty stroke" onClick={p.onAddPenalty}>
+          <button type="button" className="ch-rt-bar__i" data-ch-press="" aria-label="Add penalty stroke" onClick={p.onAddPenalty}>
             <Icon icon={FlagTriangleRight} size={18} />
             <span>Penalty</span>
           </button>

@@ -2295,10 +2295,7 @@ path.ch-rt-map__shot {
     color: var(--ch-on-green-ink);
     background: rgb(244 238 221 / 0.08);
     box-shadow: inset 0 0 0 1px rgb(244 238 221 / 0.14);
-  }
-  .ch-rt-pill--card {
-    padding: 0 16px 0 12px;
-    color: var(--ch-on-green-ink);
+    transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-rt-pill--card .ch-rt-pill__l {
     display: none;
@@ -2993,6 +2990,66 @@ path.ch-rt-map__shot {
     background: var(--ch-ivory-100);
     color: var(--ch-ink-900);
     box-shadow: var(--ch-elevation-feature);
+  }
+
+  /* B4: every control on the green answers a press, as the result keys and Next shot do (lib/press.ts holds
+     data-ch-pressed for at least 90ms, whatever the motion setting). Exit, Card, Undo and Penalty are keys: they shrink
+     with Next shot (data-ch-press) and their glass deepens, as the keys on Home's green day card do, so the press still
+     shows with motion off. A hole chip deepens the same way. The drawn hole and the shot log are too wide to shrink:
+     the hole dims under its own dissolve, as a green card that opens a page does, and the log line takes the wash of a
+     played hole's chip, 12px past its words on each side (the box grows; the words stay where they were). */
+  .ch-rt-bar__i {
+    transition: background-color var(--ch-dur-press) var(--ch-ease);
+  }
+  .ch-rt-pill[data-ch-pressed],
+  .ch-rt-bar__i[data-ch-pressed]:not(:disabled) {
+    background: rgb(244 238 221 / 0.2);
+  }
+  @media (hover: hover) {
+    .ch-rt-pill:active,
+    .ch-rt-bar__i:active:not(:disabled) {
+      background: rgb(244 238 221 / 0.2);
+    }
+  }
+  .ch-rt-strip button.ch-rt-strip__h[data-ch-pressed]::before {
+    background: rgb(244 238 221 / 0.2);
+  }
+  @media (hover: hover) {
+    .ch-rt-strip button.ch-rt-strip__h:active::before {
+      background: rgb(244 238 221 / 0.2);
+    }
+  }
+  .ch-rt-hero__map::before {
+    position: absolute;
+    inset: 0;
+    background: rgb(2 18 10 / 0.2);
+    opacity: 0;
+    transition: opacity var(--ch-dur-press) var(--ch-ease);
+    pointer-events: none;
+    content: '';
+  }
+  .ch-rt-hero__map[data-ch-pressed]::before {
+    opacity: 1;
+  }
+  @media (hover: hover) {
+    .ch-rt-hero__map:active::before {
+      opacity: 1;
+    }
+  }
+  .ch-rt-log__h {
+    width: calc(100% + 24px);
+    margin-inline: -12px;
+    padding-inline: 12px;
+    border-radius: var(--ch-radius-md);
+    transition: background-color var(--ch-dur-press) var(--ch-ease);
+  }
+  .ch-rt-log__h[data-ch-pressed] {
+    background: rgb(244 238 221 / 0.1);
+  }
+  @media (hover: hover) {
+    .ch-rt-log__h:active {
+      background: rgb(244 238 221 / 0.1);
+    }
   }
 }
 /* At night the card is the night surface, so its stamped lip goes, and its footer takes the night ivory. */
