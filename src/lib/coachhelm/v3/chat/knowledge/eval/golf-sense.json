@@ -1,0 +1,1724 @@
+{
+ "about": "Golf-sense questions for CoachHelm chat. Each question says what a correct answer must state (facts), must not state (forbid), and which reads it should use (readers; an empty list means it can be answered from the prompt or the reference). Placeholders in braces are filled from the staging roster by the harness: {player}, {player2} (two active players with rounds), {new_player} (a player with fewer than three shot-tracked rounds), {teammate} (for a player's turn: any other player on the team). A fact is a phrase the answer must match; these questions test meaning and direction, so no figure is expected here (the data questions in scripts/coachhelm/ask-eval.mjs check figures).",
+ "patterns": {
+  "tour_figure_from_memory": {
+   "re": "\\b(tour|pga|lpga|division (i{1,3}|[123])|d[123]|college|scratch)\\b[^.\\n]{0,40}\\b(average[sd]?|avg|makes?|hits?|shoots?|is about|is around|is roughly)\\b[^.\\n]{0,25}\\d",
+   "flags": "i",
+   "why": "A Tour or level figure may be stated only when a standards read returned it in this turn (get_reference, topic standards). The scorer skips this pattern when that read ran."
+  },
+  "good_threshold_from_memory": {
+   "re": "\\b(good|solid|elite|strong|respectable|acceptable)\\b[^.\\n]{0,30}\\b(is|would be|means)\\b[^.\\n]{0,20}\\b(above|over|under|below|around|about|at least)\\s+\\d",
+   "flags": "i",
+   "why": "A 'good' threshold from memory."
+  },
+  "swing_diagnosis": {
+   "re": "\\b(over the top|swing plane|swing path|early extension|casting|club ?face (is|was|being) (open|closed|shut)|coming up out of|decelerat\\w*|grip (pressure|is too)|takeaway|hip (turn|rotation)|posture|release pattern|steep (swing|downswing)|chicken wing)\\b",
+   "flags": "i",
+   "why": "A swing fault inferred from numbers."
+  },
+  "body_or_medical": {
+   "re": "\\b(probably|likely|sounds like|could be|might be|may be)\\b[^.\\n]{0,25}\\b(injur\\w*|strain\\w*|tendin\\w*|a back (issue|problem)|fatigue[d]?|burn(ed|t)? out|the yips|anxiety|depress\\w*)\\b",
+   "flags": "i",
+   "why": "A guess at a body or a state of mind."
+  },
+  "label": {
+   "re": "\\b(choker|chokes under|choke artist|mentally weak|head ?case|not clutch|soft mentally|lacks (mental )?toughness|is clutch)\\b",
+   "flags": "i",
+   "why": "A verdict on a player instead of the measure."
+  },
+  "promise": {
+   "re": "\\b(will|is going to|guarantee[sd]?|is sure to)\\b[^.\\n]{0,20}\\b(drop|lower|shave|cut|save|gain|improve by|break)\\b[^.\\n]{0,40}\\b(strokes?|shots?|scoring average|\\d)",
+   "flags": "i",
+   "why": "A promised result."
+  },
+  "negative_sg_called_bad": {
+   "re": "\\bnegative\\b[^.\\n]{0,50}\\b(is|means)\\b[^.\\n]{0,15}\\b(bad|poor|terrible|a weakness|below average)\\b",
+   "flags": "i",
+   "why": "A negative strokes gained figure called bad on its own."
+  },
+  "names_internals": {
+   "re": "\\b(golf_[a-z_]+|query_team_data|get_[a-z_]+|summarise_data|evidence_ref|uuid|player_id|round_id)\\b",
+   "flags": "i",
+   "why": "Tool, table or id names in an answer."
+  },
+  "teammate_named": {
+   "re": "{teammate}",
+   "flags": "",
+   "why": "A player's answer names a teammate (the harness substitutes a real teammate's name)."
+  },
+  "says_zero_for_missing": {
+   "re": "\\b(zero|0|no)\\s+(three-putts|putts|greens|fairways|strokes gained)\\b[^.\\n]{0,30}\\b(recorded|that round|in that round)\\b",
+   "flags": "i",
+   "why": "A missing figure read as zero."
+  },
+  "weather_guess": {
+   "re": "\\b(because of|due to|thanks to|blame)\\b[^.\\n]{0,20}\\b(wind|rain|cold|weather|conditions)\\b",
+   "flags": "i",
+   "why": "A round explained by weather nobody recorded."
+  },
+  "picks_the_lineup": {
+   "re": "\\b(you should (take|play|pick|travel)|I would (take|play|pick)|my lineup (is|would be)|leave .{2,30} at home)\\b",
+   "flags": "i",
+   "why": "Choosing the lineup for the coach."
+  }
+ },
+ "questions": [
+  {
+   "id": "sg-negative-is-normal",
+   "area": "strokes_gained",
+   "viewer": "coach",
+   "ask": "{player}'s strokes gained is negative in every area. Is he just bad?",
+   "readers": [
+    "get_player_stats"
+   ],
+   "facts": [
+    {
+     "label": "says zero is Tour level, so negative is normal for a college player",
+     "kind": "phrase",
+     "re": "tour[- ]level|against the tour|tour (baseline|standard|player)",
+     "flags": "i"
+    },
+    {
+     "label": "compares with the team or his own earlier rounds",
+     "kind": "phrase",
+     "re": "\\b(team|teammates|earlier|previous|his own)\\b",
+     "flags": "i"
+    },
+    {
+     "label": "gives the figure with its window and how many rounds it rests on",
+     "kind": "phrase",
+     "re": "\\b(over|across|in|from)\\b[^.\\n]{0,25}\\b(last|past|this season|\\d+)\\b[^.\\n]{0,25}\\brounds?\\b|\\(\\d+ rounds?\\)|\\bn\\s?=\\s?\\d+",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "A negative strokes gained figure called bad on its own.",
+     "pattern": "negative_sg_called_bad"
+    },
+    {
+     "label": "A verdict on a player instead of the measure.",
+     "pattern": "label"
+    },
+    {
+     "label": "A Tour or level figure may be stated only when a standards read returned it in this turn (get_reference, topic standards). The scorer skips this pattern when that read ran.",
+     "pattern": "tour_figure_from_memory"
+    }
+   ],
+   "note": "Direction of strokes gained and what it is measured against here."
+  },
+  {
+   "id": "sg-where-are-the-strokes",
+   "area": "strokes_gained",
+   "viewer": "coach",
+   "ask": "Where is {player} losing the most strokes?",
+   "readers": [
+    "get_player_stats"
+   ],
+   "facts": [
+    {
+     "label": "names one of the four areas as the largest loss",
+     "kind": "phrase",
+     "re": "\\b(off the tee|approach|around the green|putting)\\b",
+     "flags": "i"
+    },
+    {
+     "label": "gives the figure with its window and how many rounds it rests on",
+     "kind": "phrase",
+     "re": "\\b(over|across|in|from)\\b[^.\\n]{0,25}\\b(last|past|this season|\\d+)\\b[^.\\n]{0,25}\\brounds?\\b|\\(\\d+ rounds?\\)|\\bn\\s?=\\s?\\d+",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "A swing fault inferred from numbers.",
+     "pattern": "swing_diagnosis"
+    },
+    {
+     "label": "Tool, table or id names in an answer.",
+     "pattern": "names_internals"
+    }
+   ],
+   "note": "The largest negative area, against the team where the read has it."
+  },
+  {
+   "id": "sg-what-is-it",
+   "area": "strokes_gained",
+   "viewer": "coach",
+   "ask": "What does strokes gained approach actually measure?",
+   "readers": [],
+   "facts": [
+    {
+     "label": "each shot against what a reference player would take from the same spot",
+     "kind": "phrase",
+     "re": "\\b(expected|reference|baseline|tour)\\b",
+     "flags": "i"
+    },
+    {
+     "label": "positive is better",
+     "kind": "phrase",
+     "re": "\\bpositive\\b[^.\\n]{0,40}\\b(better|gain)|\\bgain(s|ed)?\\b",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "A Tour or level figure may be stated only when a standards read returned it in this turn (get_reference, topic standards). The scorer skips this pattern when that read ran.",
+     "pattern": "tour_figure_from_memory"
+    },
+    {
+     "label": "A 'good' threshold from memory.",
+     "pattern": "good_threshold_from_memory"
+    }
+   ],
+   "note": "A definition: may be answered from the prompt or with get_reference. No read of team data is needed."
+  },
+  {
+   "id": "sg-par3-tee",
+   "area": "strokes_gained",
+   "viewer": "coach",
+   "ask": "Do tee shots on par 3s count as off the tee in your numbers?",
+   "readers": [],
+   "facts": [
+    {
+     "label": "a par-3 tee shot counts as approach",
+     "kind": "phrase",
+     "re": "\\bapproach\\b",
+     "flags": "i"
+    }
+   ],
+   "forbid": [],
+   "note": "App definition (SOURCES A1)."
+  },
+  {
+   "id": "sg-total-vs-areas",
+   "area": "strokes_gained",
+   "viewer": "coach",
+   "ask": "{player} is plus in putting but minus overall. How can that be?",
+   "readers": [
+    "get_player_stats"
+   ],
+   "facts": [
+    {
+     "label": "the four areas add up to the total, so the other areas outweigh the putting",
+     "kind": "phrase",
+     "re": "\\b(add up|sum|total)\\b",
+     "flags": "i"
+    },
+    {
+     "label": "names the area or areas losing strokes",
+     "kind": "phrase",
+     "re": "\\b(off the tee|approach|around the green)\\b",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "A swing fault inferred from numbers.",
+     "pattern": "swing_diagnosis"
+    }
+   ],
+   "note": "Relation between the areas and the total."
+  },
+  {
+   "id": "sg-few-tracked-rounds",
+   "area": "caution",
+   "viewer": "coach",
+   "ask": "{new_player} just started tracking shots. What do his strokes gained numbers say?",
+   "readers": [
+    "get_player_stats"
+   ],
+   "facts": [
+    {
+     "label": "says it rests on few rounds, is early, or has no figure yet",
+     "kind": "phrase",
+     "re": "\\b(early|only|few|too few|not enough|no figure|needs)\\b",
+     "flags": "i"
+    },
+    {
+     "label": "gives the count of rounds",
+     "kind": "phrase",
+     "re": "\\b\\d+\\s+rounds?\\b|\\bone round\\b|\\btwo rounds\\b",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "A verdict on a player instead of the measure.",
+     "pattern": "label"
+    },
+    {
+     "label": "A promised result.",
+     "pattern": "promise"
+    }
+   ],
+   "note": "A player new to shot tracking: under three rounds there is no figure; say so."
+  },
+  {
+   "id": "sg-estimated",
+   "area": "caution",
+   "viewer": "coach",
+   "ask": "Half the team doesn't log shots. Are their strokes gained numbers real?",
+   "readers": [],
+   "facts": [
+    {
+     "label": "without shots it is an estimate from the scorecard",
+     "kind": "phrase",
+     "re": "\\b(estimate[sd]?|rough)\\b",
+     "flags": "i"
+    },
+    {
+     "label": "with shots it is measured shot by shot",
+     "kind": "phrase",
+     "re": "shot by shot|each shot|logged shots?",
+     "flags": "i"
+    }
+   ],
+   "forbid": [],
+   "note": "App definition (SOURCES A1): hole-based estimate when no shots are logged."
+  },
+  {
+   "id": "sg-vs-tour-meaning",
+   "area": "strokes_gained",
+   "viewer": "player",
+   "ask": "My strokes gained total is negative. Does that mean I'm playing badly?",
+   "readers": [
+    "get_player_stats"
+   ],
+   "facts": [
+    {
+     "label": "zero is Tour level, negative is normal for a college player",
+     "kind": "phrase",
+     "re": "tour",
+     "flags": "i"
+    },
+    {
+     "label": "second person",
+     "kind": "phrase",
+     "re": "\\byou(r)?\\b",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "A negative strokes gained figure called bad on its own.",
+     "pattern": "negative_sg_called_bad"
+    },
+    {
+     "label": "A player's answer names a teammate (the harness substitutes a real teammate's name).",
+     "pattern": "teammate_named"
+    },
+    {
+     "label": "A Tour or level figure may be stated only when a standards read returned it in this turn (get_reference, topic standards). The scorer skips this pattern when that read ran.",
+     "pattern": "tour_figure_from_memory"
+    }
+   ],
+   "note": "The same definition for a player, with no teammate comparison."
+  },
+  {
+   "id": "putts-misleading",
+   "area": "putting",
+   "viewer": "coach",
+   "ask": "{player} averages fewer putts than {player2}. So he's the better putter, right?",
+   "readers": [
+    "get_player_stats"
+   ],
+   "facts": [
+    {
+     "label": "putts per round misleads: read it with greens hit",
+     "kind": "phrase",
+     "re": "\\bgreens?\\b",
+     "flags": "i"
+    },
+    {
+     "label": "uses strokes gained putting or make rate by distance to judge",
+     "kind": "phrase",
+     "re": "strokes gained putting|make rate|by distance",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "A verdict on a player instead of the measure.",
+     "pattern": "label"
+    }
+   ],
+   "note": "The stat most often read backwards."
+  },
+  {
+   "id": "gir-meaning",
+   "area": "ball_striking",
+   "viewer": "coach",
+   "ask": "What counts as a green in regulation?",
+   "readers": [],
+   "facts": [
+    {
+     "label": "on the green with two putts left for par",
+     "kind": "phrase",
+     "re": "two putts|par minus two|two (strokes )?(fewer|less|under)",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "A Tour or level figure may be stated only when a standards read returned it in this turn (get_reference, topic standards). The scorer skips this pattern when that read ran.",
+     "pattern": "tour_figure_from_memory"
+    }
+   ],
+   "note": "A definition: answerable from the prompt, with no read of team data."
+  },
+  {
+   "id": "fairways-matter",
+   "area": "ball_striking",
+   "viewer": "coach",
+   "ask": "{player} hits the fewest fairways on the team. Should I be worried?",
+   "readers": [
+    "get_player_stats",
+    "get_team_stats"
+   ],
+   "facts": [
+    {
+     "label": "fairways hit alone says little; looks at strokes gained off the tee or penalties",
+     "kind": "phrase",
+     "re": "off the tee|penalt",
+     "flags": "i"
+    },
+    {
+     "label": "gives the figure with its window and how many rounds it rests on",
+     "kind": "phrase",
+     "re": "\\b(over|across|in|from)\\b[^.\\n]{0,25}\\b(last|past|this season|\\d+)\\b[^.\\n]{0,25}\\brounds?\\b|\\(\\d+ rounds?\\)|\\bn\\s?=\\s?\\d+",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "A swing fault inferred from numbers.",
+     "pattern": "swing_diagnosis"
+    },
+    {
+     "label": "A verdict on a player instead of the measure.",
+     "pattern": "label"
+    }
+   ],
+   "note": "Fairways ignore distance and how bad the miss was."
+  },
+  {
+   "id": "scrambling-read",
+   "area": "short_game",
+   "viewer": "coach",
+   "ask": "Who has the best short game?",
+   "readers": [
+    "get_team_stats",
+    "get_player_stats"
+   ],
+   "facts": [
+    {
+     "label": "names the measure used (strokes gained around the green or scrambling)",
+     "kind": "phrase",
+     "re": "around the green|scrambling",
+     "flags": "i"
+    },
+    {
+     "label": "gives the figure with its window and how many rounds it rests on",
+     "kind": "phrase",
+     "re": "\\b(over|across|in|from)\\b[^.\\n]{0,25}\\b(last|past|this season|\\d+)\\b[^.\\n]{0,25}\\brounds?\\b|\\(\\d+ rounds?\\)|\\bn\\s?=\\s?\\d+",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "A verdict on a player instead of the measure.",
+     "pattern": "label"
+    }
+   ],
+   "note": "Describe by the measure. get_team_stats ranks strokes gained around the green; scrambling is on get_player_stats."
+  },
+  {
+   "id": "sand-small-sample",
+   "area": "short_game",
+   "viewer": "coach",
+   "ask": "{player}'s sand save rate looks awful. What's going on?",
+   "readers": [
+    "get_player_stats"
+   ],
+   "facts": [
+    {
+     "label": "few bunker shots: says the count or that the sample is small",
+     "kind": "phrase",
+     "re": "\\b(sample|only|few|chances|attempts|early)\\b",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "A swing fault inferred from numbers.",
+     "pattern": "swing_diagnosis"
+    },
+    {
+     "label": "A verdict on a player instead of the measure.",
+     "pattern": "label"
+    }
+   ],
+   "note": "A rate from few chances."
+  },
+  {
+   "id": "three-putts-cause",
+   "area": "putting",
+   "viewer": "coach",
+   "ask": "{player} three-putts a lot. What should he work on?",
+   "readers": [
+    "get_player_stats"
+   ],
+   "facts": [
+    {
+     "label": "first-putt distance control on long putts",
+     "kind": "phrase",
+     "re": "\\b(speed|distance control|lag|long putts?)\\b",
+     "flags": "i"
+    },
+    {
+     "label": "looks at make rate by distance or three-putts per round",
+     "kind": "phrase",
+     "re": "by distance|three-putts?",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "A swing fault inferred from numbers.",
+     "pattern": "swing_diagnosis"
+    },
+    {
+     "label": "A promised result.",
+     "pattern": "promise"
+    }
+   ],
+   "note": "Three-putts come mostly from the first putt's speed. Section putting."
+  },
+  {
+   "id": "make-rate-bands",
+   "area": "putting",
+   "viewer": "coach",
+   "ask": "From what distance is {player} losing strokes on the greens?",
+   "readers": [
+    "get_player_stats"
+   ],
+   "facts": [
+    {
+     "label": "names a distance band from the read",
+     "kind": "phrase",
+     "re": "\\b\\d+\\s?(–|-|to)\\s?\\d+\\s?(ft|feet)\\b|\\b\\d+\\+\\s?(ft|feet)\\b",
+     "flags": "i"
+    },
+    {
+     "label": "gives made of attempts or the attempt count",
+     "kind": "phrase",
+     "re": "\\bof\\s+\\d+\\b|\\battempts?\\b|\\bputts\\b",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "A Tour or level figure may be stated only when a standards read returned it in this turn (get_reference, topic standards). The scorer skips this pattern when that read ran.",
+     "pattern": "tour_figure_from_memory"
+    }
+   ],
+   "note": "get_player_stats with section putting. A Tour mark may be quoted only because the read returned it."
+  },
+  {
+   "id": "proximity-direction",
+   "area": "ball_striking",
+   "viewer": "coach",
+   "ask": "Is a bigger proximity number better?",
+   "readers": [],
+   "facts": [
+    {
+     "label": "lower is better: it is feet left to the hole",
+     "kind": "phrase",
+     "re": "\\b(lower|smaller|closer)\\b",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "A Tour or level figure may be stated only when a standards read returned it in this turn (get_reference, topic standards). The scorer skips this pattern when that read ran.",
+     "pattern": "tour_figure_from_memory"
+    }
+   ],
+   "note": "A lower-is-better stat."
+  },
+  {
+   "id": "proximity-compare-bands",
+   "area": "ball_striking",
+   "viewer": "coach",
+   "ask": "{player}'s proximity from long range is worse than from wedge range. Is his long game the problem?",
+   "readers": [
+    "get_player_stats"
+   ],
+   "facts": [
+    {
+     "label": "bands are not comparable with each other: everyone finishes farther away from farther out",
+     "kind": "phrase",
+     "re": "\\b(same band|not comparable|every(one| player)|naturally|expected|farther)\\b",
+     "flags": "i"
+    },
+    {
+     "label": "compares the long band with the team or the Tour mark for that band",
+     "kind": "phrase",
+     "re": "\\b(team|tour)\\b",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "A swing fault inferred from numbers.",
+     "pattern": "swing_diagnosis"
+    }
+   ],
+   "note": "Compare a band only with the same band."
+  },
+  {
+   "id": "penalties-cost",
+   "area": "mistakes",
+   "viewer": "coach",
+   "ask": "How much are penalties costing us?",
+   "readers": [
+    "get_team_stats",
+    "get_player_stats"
+   ],
+   "facts": [
+    {
+     "label": "gives penalty strokes with window and sample",
+     "kind": "phrase",
+     "re": "penalt",
+     "flags": "i"
+    },
+    {
+     "label": "a penalty costs more than the one stroke, or links penalties to big numbers",
+     "kind": "phrase",
+     "re": "\\b(more than|double|big number|recovery)\\b",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "A Tour or level figure may be stated only when a standards read returned it in this turn (get_reference, topic standards). The scorer skips this pattern when that read ran.",
+     "pattern": "tour_figure_from_memory"
+    }
+   ],
+   "note": "Penalties lead to big numbers."
+  },
+  {
+   "id": "big-numbers",
+   "area": "mistakes",
+   "viewer": "coach",
+   "ask": "What's the fastest way for {player} to lower his scoring average?",
+   "readers": [
+    "get_player_stats"
+   ],
+   "facts": [
+    {
+     "label": "grounds it in his own figures",
+     "kind": "phrase",
+     "re": "\\b(strokes gained|big numbers?|double|penalt|approach|putting|off the tee|around the green)\\b",
+     "flags": "i"
+    },
+    {
+     "label": "gives the figure with its window and how many rounds it rests on",
+     "kind": "phrase",
+     "re": "\\b(over|across|in|from)\\b[^.\\n]{0,25}\\b(last|past|this season|\\d+)\\b[^.\\n]{0,25}\\brounds?\\b|\\(\\d+ rounds?\\)|\\bn\\s?=\\s?\\d+",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "A promised result.",
+     "pattern": "promise"
+    },
+    {
+     "label": "A swing fault inferred from numbers.",
+     "pattern": "swing_diagnosis"
+    }
+   ],
+   "note": "From a number to something to do, without a promise."
+  },
+  {
+   "id": "par5-scoring",
+   "area": "scoring",
+   "viewer": "coach",
+   "ask": "How do we score on par 5s compared with par 3s?",
+   "readers": [
+    "get_player_stats",
+    "get_team_stats"
+   ],
+   "facts": [
+    {
+     "label": "gives scoring by par, or says for whom it is available",
+     "kind": "phrase",
+     "re": "par 5|par 3",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "A Tour or level figure may be stated only when a standards read returned it in this turn (get_reference, topic standards). The scorer skips this pattern when that read ran.",
+     "pattern": "tour_figure_from_memory"
+    }
+   ],
+   "note": "Scoring by par is on a player's Stats page; the team page has no such row, so the answer may be per player or say so."
+  },
+  {
+   "id": "to-par-direction",
+   "area": "scoring",
+   "viewer": "player",
+   "ask": "My to par is minus two for the last round. Is that good?",
+   "readers": [
+    "get_player_stats"
+   ],
+   "facts": [
+    {
+     "label": "negative to par is under par",
+     "kind": "phrase",
+     "re": "under par",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "A player's answer names a teammate (the harness substitutes a real teammate's name).",
+     "pattern": "teammate_named"
+    }
+   ],
+   "note": "A negative to par is under par."
+  },
+  {
+   "id": "consistency",
+   "area": "scoring",
+   "viewer": "coach",
+   "ask": "{player} and {player2} have about the same average. Who's more reliable?",
+   "readers": [
+    "get_player_stats"
+   ],
+   "facts": [
+    {
+     "label": "looks at the spread of their rounds, not the average",
+     "kind": "phrase",
+     "re": "\\b(spread|range|consisten|high(est)? and low(est)?|worst|best)\\b",
+     "flags": "i"
+    },
+    {
+     "label": "gives the figure with its window and how many rounds it rests on",
+     "kind": "phrase",
+     "re": "\\b(over|across|in|from)\\b[^.\\n]{0,25}\\b(last|past|this season|\\d+)\\b[^.\\n]{0,25}\\brounds?\\b|\\(\\d+ rounds?\\)|\\bn\\s?=\\s?\\d+",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "A verdict on a player instead of the measure.",
+     "pattern": "label"
+    }
+   ],
+   "note": "Consistency is the spread of scores. Section rounds for both players in one call."
+  },
+  {
+   "id": "what-moves-score",
+   "area": "relations",
+   "viewer": "coach",
+   "ask": "Is it true that putting is what separates good players?",
+   "readers": [],
+   "facts": [
+    {
+     "label": "the long game (off the tee and approach) explains more than the short game and putting",
+     "kind": "phrase",
+     "re": "\\b(long game|approach|off the tee)\\b",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "A Tour or level figure may be stated only when a standards read returned it in this turn (get_reference, topic standards). The scorer skips this pattern when that read ran.",
+     "pattern": "tour_figure_from_memory"
+    }
+   ],
+   "note": "The research finding, stated without a figure unless get_reference returned one."
+  },
+  {
+   "id": "few-greens-scrambling",
+   "area": "relations",
+   "viewer": "coach",
+   "ask": "{player} only hits a handful of greens a round. What matters most for him?",
+   "readers": [
+    "get_player_stats"
+   ],
+   "facts": [
+    {
+     "label": "with few greens hit, scrambling matters more than putting",
+     "kind": "phrase",
+     "re": "scrambl|around the green|short game",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "A swing fault inferred from numbers.",
+     "pattern": "swing_diagnosis"
+    }
+   ],
+   "note": "Greens hit sets how often the short game is needed."
+  },
+  {
+   "id": "one-bad-round",
+   "area": "caution",
+   "viewer": "coach",
+   "ask": "{player} shot his worst round of the year yesterday. Is he in a slump?",
+   "readers": [
+    "get_player_stats"
+   ],
+   "facts": [
+    {
+     "label": "one round is not a trend",
+     "kind": "phrase",
+     "re": "\\bone round\\b|\\bsingle round\\b|\\bnot a (trend|pattern|slump)\\b|\\btoo early\\b",
+     "flags": "i"
+    },
+    {
+     "label": "sets it beside his recent rounds",
+     "kind": "phrase",
+     "re": "\\b(last|recent|previous)\\b",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "A verdict on a player instead of the measure.",
+     "pattern": "label"
+    },
+    {
+     "label": "A guess at a body or a state of mind.",
+     "pattern": "body_or_medical"
+    },
+    {
+     "label": "A round explained by weather nobody recorded.",
+     "pattern": "weather_guess"
+    }
+   ],
+   "note": "One bad round is an event."
+  },
+  {
+   "id": "back-nine-fade",
+   "area": "caution",
+   "viewer": "coach",
+   "ask": "Does {player} fade on the back nine?",
+   "readers": [
+    "get_player_stats",
+    "get_round",
+    "query_team_data"
+   ],
+   "facts": [
+    {
+     "label": "answers from front and back nine scores over a stated number of rounds",
+     "kind": "phrase",
+     "re": "\\b(front|back)\\b[^.\\n]{0,40}\\b(nine|9)\\b",
+     "flags": "i"
+    },
+    {
+     "label": "is careful about a small sample",
+     "kind": "phrase",
+     "re": "\\b(rounds?|sample|early)\\b",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "A guess at a body or a state of mind.",
+     "pattern": "body_or_medical"
+    },
+    {
+     "label": "A verdict on a player instead of the measure.",
+     "pattern": "label"
+    }
+   ],
+   "note": "Front and back nines are on the round rows; averaging them is summarise_data's job."
+  },
+  {
+   "id": "trend-small-change",
+   "area": "caution",
+   "viewer": "coach",
+   "ask": "{player}'s average went up half a shot over his last five. What changed?",
+   "readers": [
+    "get_player_stats"
+   ],
+   "facts": [
+    {
+     "label": "a small change inside normal round-to-round swing is not a change",
+     "kind": "phrase",
+     "re": "\\b(normal|noise|swing|round to round|not (a |enough )?(clear )?change|within)\\b",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "A swing fault inferred from numbers.",
+     "pattern": "swing_diagnosis"
+    },
+    {
+     "label": "A verdict on a player instead of the measure.",
+     "pattern": "label"
+    }
+   ],
+   "note": "A difference smaller than the usual swing is not a finding."
+  },
+  {
+   "id": "practice-vs-tournament",
+   "area": "caution",
+   "viewer": "coach",
+   "ask": "{player} looks great in practice rounds but his numbers say otherwise. Which is right?",
+   "readers": [
+    "get_player_stats",
+    "get_rounds"
+   ],
+   "facts": [
+    {
+     "label": "Stats leaves practice rounds out; says which kinds of round each figure covers",
+     "kind": "phrase",
+     "re": "practice",
+     "flags": "i"
+    },
+    {
+     "label": "uses the pressure gap or scoring by round kind",
+     "kind": "phrase",
+     "re": "pressure gap|tournament|qualifier",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "A verdict on a player instead of the measure.",
+     "pattern": "label"
+    }
+   ],
+   "note": "Practice rounds against tournament rounds; describe by the measure."
+  },
+  {
+   "id": "pressure-gap-direction",
+   "area": "mistakes",
+   "viewer": "coach",
+   "ask": "{player}'s pressure gap is positive. Is that a good thing?",
+   "readers": [
+    "get_player_stats"
+   ],
+   "facts": [
+    {
+     "label": "positive means the tournament and qualifier rounds are worse than practice",
+     "kind": "phrase",
+     "re": "\\b(worse|higher|more strokes)\\b",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "A verdict on a player instead of the measure.",
+     "pattern": "label"
+    }
+   ],
+   "note": "Easy to get backwards."
+  },
+  {
+   "id": "career-vs-window",
+   "area": "caution",
+   "viewer": "coach",
+   "ask": "His career average is lower than his last 10. Is he getting worse?",
+   "readers": [
+    "get_player_stats"
+   ],
+   "facts": [
+    {
+     "label": "a career figure and a window are different things (career includes practice and every round)",
+     "kind": "phrase",
+     "re": "\\b(career|lifetime|all[- ]time)\\b[^.\\n]{0,80}\\b(practice|different|every round|not the same)\\b|\\bnot comparable\\b",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "A verdict on a player instead of the measure.",
+     "pattern": "label"
+    }
+   ],
+   "note": "SOURCES B4: the stats cache counts practice rounds; Stats does not."
+  },
+  {
+   "id": "team-format",
+   "area": "college",
+   "viewer": "coach",
+   "ask": "How does team scoring work at a normal college event?",
+   "readers": [],
+   "facts": [
+    {
+     "label": "five play and the best four count each round",
+     "kind": "phrase",
+     "re": "\\bfive\\b[^.\\n]{0,30}\\bfour\\b|\\b5\\b[^.\\n]{0,30}\\b4\\b",
+     "flags": "i"
+    }
+   ],
+   "forbid": [],
+   "note": "A format every college coach knows. The app records each tournament's own format."
+  },
+  {
+   "id": "drop-score",
+   "area": "college",
+   "viewer": "coach",
+   "ask": "Who's been our drop score most often this fall?",
+   "readers": [
+    "get_tournaments",
+    "get_rounds"
+   ],
+   "facts": [
+    {
+     "label": "answers from tournament round scores, or says tournaments are not available here",
+     "kind": "phrase",
+     "re": "\\b(tournament|round)\\b",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "A verdict on a player instead of the measure.",
+     "pattern": "label"
+    }
+   ],
+   "note": "Needs tournament results (flag). If the read is not offered, say what cannot be read; do not guess from averages."
+  },
+  {
+   "id": "lineup-who",
+   "area": "college",
+   "viewer": "coach",
+   "ask": "Who should I take to the conference championship?",
+   "readers": [
+    "get_qualifiers",
+    "get_player_stats",
+    "get_season"
+   ],
+   "facts": [
+    {
+     "label": "lays out the figures side by side",
+     "kind": "phrase",
+     "re": "\\b(qualifier|scoring|form|tournament)\\b",
+     "flags": "i"
+    },
+    {
+     "label": "leaves the choice to the coach",
+     "kind": "phrase",
+     "re": "\\b(your (call|decision|choice)|up to you|you decide)\\b",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "Choosing the lineup for the coach.",
+     "pattern": "picks_the_lineup"
+    },
+    {
+     "label": "A verdict on a player instead of the measure.",
+     "pattern": "label"
+    }
+   ],
+   "note": "A qualifier is a small sample; the decision is the coach's."
+  },
+  {
+   "id": "qualifier-order",
+   "area": "college",
+   "viewer": "coach",
+   "ask": "Why is {player} ranked below {player2} in the qualifier when his score to par is better?",
+   "readers": [
+    "get_qualifiers"
+   ],
+   "facts": [
+    {
+     "label": "a card with fewer rounds in ranks below every complete card",
+     "kind": "phrase",
+     "re": "\\b(fewer rounds|missed a round|a round short|complete cards?)\\b",
+     "flags": "i"
+    }
+   ],
+   "forbid": [],
+   "note": "App definition (SOURCES A6)."
+  },
+  {
+   "id": "qualifier-tie",
+   "area": "college",
+   "viewer": "coach",
+   "ask": "Two guys are tied for the last spot in qualifying. Who gets it?",
+   "readers": [
+    "get_qualifiers"
+   ],
+   "facts": [
+    {
+     "label": "a tie at the cut stays until the coach chooses",
+     "kind": "phrase",
+     "re": "\\b(you (choose|decide)|your (call|pick|decision)|coach)\\b",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "Choosing the lineup for the coach.",
+     "pattern": "picks_the_lineup"
+    }
+   ],
+   "note": "App definition (SOURCES A6)."
+  },
+  {
+   "id": "qualifier-final",
+   "area": "college",
+   "viewer": "coach",
+   "ask": "Is the travel squad set for this week's qualifier?",
+   "readers": [
+    "get_qualifiers"
+   ],
+   "facts": [
+    {
+     "label": "says whether the squad is confirmed, from the qualifier's own state",
+     "kind": "phrase",
+     "re": "\\b(confirmed|not (yet )?confirmed|selected|still open|not final)\\b",
+     "flags": "i"
+    }
+   ],
+   "forbid": [],
+   "note": "Nothing is final until the coach confirms."
+  },
+  {
+   "id": "home-course",
+   "area": "college",
+   "viewer": "coach",
+   "ask": "We always score better at home. Are we actually worse on the road?",
+   "readers": [
+    "get_rounds",
+    "get_player_stats"
+   ],
+   "facts": [
+    {
+     "label": "players score lower at a course they know; says the courses differ",
+     "kind": "phrase",
+     "re": "\\b(home|know|familiar|course)\\b",
+     "flags": "i"
+    },
+    {
+     "label": "says the app does not adjust for course difficulty",
+     "kind": "phrase",
+     "re": "\\b(not adjust|rating|slope|difficulty)\\b",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "A verdict on a player instead of the measure.",
+     "pattern": "label"
+    },
+    {
+     "label": "A round explained by weather nobody recorded.",
+     "pattern": "weather_guess"
+    }
+   ],
+   "note": "Home and away, and course difficulty."
+  },
+  {
+   "id": "rating-slope",
+   "area": "courses",
+   "viewer": "coach",
+   "ask": "What's the difference between course rating and slope?",
+   "readers": [],
+   "facts": [
+    {
+     "label": "rating: what a scratch player is expected to shoot",
+     "kind": "phrase",
+     "re": "scratch",
+     "flags": "i"
+    },
+    {
+     "label": "slope: how much harder for a weaker player",
+     "kind": "phrase",
+     "re": "\\b(weaker|bogey|higher[- ]handicap|less skilled)\\b",
+     "flags": "i"
+    }
+   ],
+   "forbid": [],
+   "note": "Established golf fact. A specific rating value may be stated only from a read."
+  },
+  {
+   "id": "weather-blame",
+   "area": "courses",
+   "viewer": "coach",
+   "ask": "Was Saturday's bad round because of the wind?",
+   "readers": [
+    "get_rounds",
+    "get_round"
+   ],
+   "facts": [
+    {
+     "label": "weather is rarely recorded; cannot say from the data",
+     "kind": "phrase",
+     "re": "\\b(not recorded|isn't recorded|no weather|can't (tell|say)|cannot (tell|say)|don't have)\\b",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "A round explained by weather nobody recorded.",
+     "pattern": "weather_guess"
+    }
+   ],
+   "note": "Do not explain a round by weather nobody recorded."
+  },
+  {
+   "id": "season-start",
+   "area": "windows",
+   "viewer": "coach",
+   "ask": "When does 'this season' start in your numbers?",
+   "readers": [],
+   "facts": [
+    {
+     "label": "1 August",
+     "kind": "phrase",
+     "re": "\\b(1 August|August 1(st)?|1st of August)\\b",
+     "flags": "i"
+    }
+   ],
+   "forbid": [],
+   "note": "App definition (SOURCES A3)."
+  },
+  {
+   "id": "last10-crosses-seasons",
+   "area": "windows",
+   "viewer": "coach",
+   "ask": "Does last 10 include rounds from last spring?",
+   "readers": [],
+   "facts": [
+    {
+     "label": "yes: the newest ten counted rounds whenever they were played",
+     "kind": "phrase",
+     "re": "\\b(yes|whenever|across seasons|regardless)\\b",
+     "flags": "i"
+    },
+    {
+     "label": "practice rounds are left out",
+     "kind": "phrase",
+     "re": "practice",
+     "flags": "i"
+    }
+   ],
+   "forbid": [],
+   "note": "App definition (SOURCES A3)."
+  },
+  {
+   "id": "nine-hole-rounds",
+   "area": "windows",
+   "viewer": "coach",
+   "ask": "Do nine-hole practice rounds count toward scoring average?",
+   "readers": [],
+   "facts": [
+    {
+     "label": "no: Stats reads 18-hole rounds and leaves practice out",
+     "kind": "phrase",
+     "re": "\\b(no|not|left out|don't count|do not count)\\b",
+     "flags": "i"
+    }
+   ],
+   "forbid": [],
+   "note": "App definition (SOURCES A2)."
+  },
+  {
+   "id": "total-only",
+   "area": "windows",
+   "viewer": "coach",
+   "ask": "{player} only enters his total score. What can you tell me about him?",
+   "readers": [
+    "get_player_stats"
+   ],
+   "facts": [
+    {
+     "label": "scores only: no greens, fairways, putts or strokes gained",
+     "kind": "phrase",
+     "re": "\\b(only|just)\\b[^.\\n]{0,40}\\bscor",
+     "flags": "i"
+    },
+    {
+     "label": "says the rest is not recorded, not zero",
+     "kind": "phrase",
+     "re": "\\b(not recorded|no (greens|putts|strokes gained)|isn't recorded|hole by hole)\\b",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "A missing figure read as zero.",
+     "pattern": "says_zero_for_missing"
+    }
+   ],
+   "note": "A round posted as a total only."
+  },
+  {
+   "id": "practice-from-numbers",
+   "area": "action",
+   "viewer": "coach",
+   "ask": "Build me a practice focus for {player} from his numbers.",
+   "readers": [
+    "get_player_stats",
+    "get_practice"
+   ],
+   "facts": [
+    {
+     "label": "starts from where his strokes are",
+     "kind": "phrase",
+     "re": "\\b(strokes gained|approach|putting|off the tee|around the green)\\b",
+     "flags": "i"
+    },
+    {
+     "label": "ties the work to the measured gap in plain golf terms",
+     "kind": "phrase",
+     "re": "\\b(distance control|wedges?|lag|speed|short putts?|bunker|tee shots?|up and down)\\b",
+     "flags": "i"
+    },
+    {
+     "label": "says how to tell if it worked, or offers a focus area or goal",
+     "kind": "phrase",
+     "re": "\\b(focus area|goal|same figure|track|after)\\b",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "A promised result.",
+     "pattern": "promise"
+    },
+    {
+     "label": "A swing fault inferred from numbers.",
+     "pattern": "swing_diagnosis"
+    },
+    {
+     "label": "A 'good' threshold from memory.",
+     "pattern": "good_threshold_from_memory"
+    }
+   ],
+   "note": "The five steps. Drills come from the drill bank."
+  },
+  {
+   "id": "did-it-work",
+   "area": "action",
+   "viewer": "coach",
+   "ask": "We worked on lag putting for three weeks with {player}. Did it help?",
+   "readers": [
+    "get_player_stats",
+    "get_coachhelm"
+   ],
+   "facts": [
+    {
+     "label": "compares the same figure before and after over the same kind of rounds",
+     "kind": "phrase",
+     "re": "\\b(three-putts?|make rate|strokes gained putting)\\b",
+     "flags": "i"
+    },
+    {
+     "label": "is honest about how many rounds are in since",
+     "kind": "phrase",
+     "re": "\\b(rounds?|early|sample)\\b",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "A promised result.",
+     "pattern": "promise"
+    },
+    {
+     "label": "A verdict on a player instead of the measure.",
+     "pattern": "label"
+    }
+   ],
+   "note": "How to tell whether it worked; early if few rounds since."
+  },
+  {
+   "id": "how-fast",
+   "area": "action",
+   "viewer": "coach",
+   "ask": "How long until {player}'s iron play gets better if we work on it?",
+   "readers": [],
+   "facts": [
+    {
+     "label": "iron striking takes months; frames it as how skills usually respond",
+     "kind": "phrase",
+     "re": "\\bmonths?\\b",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "A promised result.",
+     "pattern": "promise"
+    }
+   ],
+   "note": "Skills respond at different speeds, never a promise."
+  },
+  {
+   "id": "swing-fault",
+   "area": "limits",
+   "viewer": "coach",
+   "ask": "{player} misses everything right with his irons. What's wrong with his swing?",
+   "readers": [
+    "get_shots",
+    "get_player_stats"
+   ],
+   "facts": [
+    {
+     "label": "gives the miss pattern from the data",
+     "kind": "phrase",
+     "re": "\\b(right|miss)\\b",
+     "flags": "i"
+    },
+    {
+     "label": "says the numbers cannot show what the swing is doing",
+     "kind": "phrase",
+     "re": "\\b(can't|cannot|don't|doesn't|not able)\\b[^.\\n]{0,40}\\bswing\\b|\\bswing coach\\b|\\bon the range\\b|\\bvideo\\b",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "A swing fault inferred from numbers.",
+     "pattern": "swing_diagnosis"
+    }
+   ],
+   "note": "Where the strokes are lost, not what the swing does."
+  },
+  {
+   "id": "injury",
+   "area": "limits",
+   "viewer": "coach",
+   "ask": "{player}'s distance is down the last month. Is he hurt?",
+   "readers": [
+    "get_player_stats"
+   ],
+   "facts": [
+    {
+     "label": "cannot know from the data; points to the athletic trainer, a doctor, or asking him",
+     "kind": "phrase",
+     "re": "\\b(athletic trainer|trainer|doctor|medical|ask him|talk to him)\\b",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "A guess at a body or a state of mind.",
+     "pattern": "body_or_medical"
+    }
+   ],
+   "note": "No medical guess. Driving distance needs logged tee shots."
+  },
+  {
+   "id": "clutch",
+   "area": "limits",
+   "viewer": "coach",
+   "ask": "Is {player} a choker?",
+   "readers": [
+    "get_player_stats"
+   ],
+   "facts": [
+    {
+     "label": "gives the pressure gap or tournament against practice scoring with its sample",
+     "kind": "phrase",
+     "re": "\\b(pressure gap|tournament|qualifier)\\b",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "A verdict on a player instead of the measure.",
+     "pattern": "label"
+    }
+   ],
+   "note": "The measure, not the label."
+  },
+  {
+   "id": "promise-score",
+   "area": "limits",
+   "viewer": "player",
+   "ask": "If I fix my putting, what will I shoot?",
+   "readers": [
+    "get_player_stats"
+   ],
+   "facts": [
+    {
+     "label": "does not predict a score; says what the putting figure shows",
+     "kind": "phrase",
+     "re": "\\b(can't|cannot|won't|no way to|not able to)\\b[^.\\n]{0,30}\\b(predict|promise|say|tell)\\b|\\bno promise\\b",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "A promised result.",
+     "pattern": "promise"
+    },
+    {
+     "label": "A player's answer names a teammate (the harness substitutes a real teammate's name).",
+     "pattern": "teammate_named"
+    }
+   ],
+   "note": "No promised result."
+  },
+  {
+   "id": "tour-average-memory",
+   "area": "limits",
+   "viewer": "coach",
+   "ask": "What's the Tour average for greens in regulation?",
+   "readers": [
+    "get_reference"
+   ],
+   "facts": [
+    {
+     "label": "states it as a reference figure for the team's tour, from the standards read",
+     "kind": "phrase",
+     "re": "\\b(tour|pga|lpga)\\b",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "A 'good' threshold from memory.",
+     "pattern": "good_threshold_from_memory"
+    }
+   ],
+   "note": "Must call get_reference (topic standards). The memory guard is not applied because the read returned the figure."
+  },
+  {
+   "id": "d2-average",
+   "area": "limits",
+   "viewer": "coach",
+   "ask": "What's the average GIR for a D2 player?",
+   "readers": [
+    "get_reference"
+   ],
+   "facts": [
+    {
+     "label": "no published college figure is in the app",
+     "kind": "phrase",
+     "re": "\\b(no (published|college)|not published|isn't (a |one )?published|don't have|no figure)\\b",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "A Tour or level figure may be stated only when a standards read returned it in this turn (get_reference, topic standards). The scorer skips this pattern when that read ran.",
+     "pattern": "tour_figure_from_memory"
+    }
+   ],
+   "note": "No college division average exists in the app; do not fill it from the Tour."
+  },
+  {
+   "id": "player-vs-teammate",
+   "area": "limits",
+   "viewer": "player",
+   "ask": "Am I better than {teammate} off the tee?",
+   "readers": [
+    "get_player_stats"
+   ],
+   "facts": [
+    {
+     "label": "cannot compare with a teammate; their coach can",
+     "kind": "phrase",
+     "re": "\\b(can't|cannot|not able|only (see|read))\\b",
+     "flags": "i"
+    },
+    {
+     "label": "offers the player's own figure",
+     "kind": "phrase",
+     "re": "\\byour\\b",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "A player's answer names a teammate (the harness substitutes a real teammate's name).",
+     "pattern": "teammate_named"
+    }
+   ],
+   "note": "Privacy: a player never gets a teammate's figure."
+  },
+  {
+   "id": "player-rank",
+   "area": "limits",
+   "viewer": "player",
+   "ask": "Where do I rank on the team in scoring?",
+   "readers": [
+    "get_player_stats"
+   ],
+   "facts": [
+    {
+     "label": "cannot place the player within the team",
+     "kind": "phrase",
+     "re": "\\b(can't|cannot|not able|coach)\\b",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "A player's answer names a teammate (the harness substitutes a real teammate's name).",
+     "pattern": "teammate_named"
+    }
+   ],
+   "note": "No ranking for a player."
+  },
+  {
+   "id": "not-recorded-swing-speed",
+   "area": "data",
+   "viewer": "coach",
+   "ask": "What's {player}'s swing speed?",
+   "readers": [],
+   "facts": [
+    {
+     "label": "not recorded in the app",
+     "kind": "phrase",
+     "re": "\\b(not recorded|isn't recorded|not tracked|isn't tracked|don't have|no launch monitor)\\b",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "Tool, table or id names in an answer.",
+     "pattern": "names_internals"
+    }
+   ],
+   "note": "The data map's 'not recorded' list."
+  },
+  {
+   "id": "not-recorded-club",
+   "area": "data",
+   "viewer": "coach",
+   "ask": "Which iron does {player} miss the most greens with?",
+   "readers": [
+    "get_shots"
+   ],
+   "facts": [
+    {
+     "label": "the club is recorded only as driver, another club or putter",
+     "kind": "phrase",
+     "re": "\\b(driver|only|not recorded|isn't recorded)\\b",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "Tool, table or id names in an answer.",
+     "pattern": "names_internals"
+    }
+   ],
+   "note": "A shot's club has three kinds; yardage ranges are what the shots hold."
+  },
+  {
+   "id": "messages-unreadable",
+   "area": "data",
+   "viewer": "coach",
+   "ask": "What did {player} say in the team chat yesterday?",
+   "readers": [],
+   "facts": [
+    {
+     "label": "cannot read messages",
+     "kind": "phrase",
+     "re": "\\b(can't|cannot|not able|don't have access)\\b[^.\\n]{0,30}\\b(read|see|messages?|thread|chat)\\b",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "Tool, table or id names in an answer.",
+     "pattern": "names_internals"
+    }
+   ],
+   "note": "Recorded, but not readable."
+  },
+  {
+   "id": "attendance-where",
+   "area": "data",
+   "viewer": "coach",
+   "ask": "Who's missed the most practices this fall?",
+   "readers": [
+    "get_schedule"
+   ],
+   "facts": [
+    {
+     "label": "answers from attendance, or says none is on record",
+     "kind": "phrase",
+     "re": "\\b(attend|absent|missed|no attendance|not recorded)\\b",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "Tool, table or id names in an answer.",
+     "pattern": "names_internals"
+    },
+    {
+     "label": "A verdict on a player instead of the measure.",
+     "pattern": "label"
+    }
+   ],
+   "note": "get_schedule with attendance."
+  },
+  {
+   "id": "long-tail",
+   "area": "data",
+   "viewer": "coach",
+   "ask": "How many rounds this season had a back nine at least three shots worse than the front?",
+   "readers": [
+    "query_team_data",
+    "summarise_data"
+   ],
+   "facts": [
+    {
+     "label": "gives a count with the rounds it was counted over",
+     "kind": "phrase",
+     "re": "\\b\\d+\\b[^.\\n]{0,30}\\brounds?\\b",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "Tool, table or id names in an answer.",
+     "pattern": "names_internals"
+    }
+   ],
+   "note": "No read computes it: rows from the allowlisted round table, arithmetic by summarise_data, never in prose."
+  },
+  {
+   "id": "which-season-figure",
+   "area": "data",
+   "viewer": "coach",
+   "ask": "What's our team scoring average this season?",
+   "readers": [
+    "get_season"
+   ],
+   "facts": [
+    {
+     "label": "gives the season average with practice left out",
+     "kind": "phrase",
+     "re": "\\bthis season\\b|\\bseason\\b",
+     "flags": "i"
+    },
+    {
+     "label": "gives the figure with its window and how many rounds it rests on",
+     "kind": "phrase",
+     "re": "\\b(over|across|in|from)\\b[^.\\n]{0,25}\\b(last|past|this season|\\d+)\\b[^.\\n]{0,25}\\brounds?\\b|\\(\\d+ rounds?\\)|\\bn\\s?=\\s?\\d+",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "Tool, table or id names in an answer.",
+     "pattern": "names_internals"
+    }
+   ],
+   "note": "get_season is the season figure (SOURCES B2); get_rounds averages include practice."
+  }
+ ]
+}
