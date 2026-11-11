@@ -1,0 +1,1696 @@
+/* The CoachHelm chat's look, in three directions (docs/clubhouse/coachhelm-chat-v3/LOOK.md): a preview only, mounted by
+   preview/ask-look/AskLook.tsx at /clubhouse-preview/coachhelm-ask-look. Every class is .ch-look-*; the real chat's
+   stylesheets (coachhelm-ask*.css) are not read or changed. Static: each state is drawn at rest. */
+
+/* ---- The page: the Ask sub-tab's frame, redrawn here so nothing is borrowed from the real chat. ---- */
+.ch-look {
+  --ch-look-measure: 760px;
+  display: flex;
+  flex-direction: column;
+  height: calc(100dvh - 16px - var(--ch-topbar-h));
+  min-height: 0;
+  background: var(--ch-workspace);
+  color: var(--ch-text-primary);
+  font-variant-numeric: tabular-nums;
+}
+.ch-look[data-long] {
+  height: auto;
+  min-height: calc(100dvh - 16px - var(--ch-topbar-h));
+}
+.ch-look-top {
+  display: flex;
+  flex: none;
+  justify-content: flex-end;
+  padding: var(--ch-space-3) calc(var(--ch-page-gutter) + var(--ch-space-1)) var(--ch-space-2) var(--ch-space-6);
+  border-bottom: var(--ch-hairline-w) solid var(--ch-border-hairline);
+}
+.ch-look-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.ch-look[data-long] .ch-look-scroll {
+  flex: none;
+  overflow: visible;
+}
+.ch-look-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--ch-space-4);
+  box-sizing: border-box;
+  width: 100%;
+  max-width: calc(var(--ch-look-measure) + 2 * var(--ch-space-6));
+  margin: 0 auto;
+  padding: var(--ch-space-6) var(--ch-space-6) var(--ch-space-8);
+}
+.ch-look-col > * {
+  max-width: 100%;
+}
+
+/* `.ch-look .x`: base.css zeroes the margin of every p and h3 under .ch-root at (0,1,1), so a paragraph's own rule here
+   carries the page class too. */
+/* The coach's own words: an ivory slip, not a green bubble. */
+.ch-look .ch-look-q {
+  align-self: flex-end;
+  max-width: min(86%, 560px);
+  margin: 0 0 var(--ch-space-2);
+  padding: var(--ch-space-2) var(--ch-space-4);
+  border-radius: var(--ch-radius-bubble);
+  border-bottom-right-radius: var(--ch-radius-tail);
+  background: var(--ch-card-bg);
+  box-shadow: 0 0 0 1px var(--ch-card-ring);
+  font: var(--ch-type-16);
+  letter-spacing: var(--ch-track-16);
+  text-wrap: wrap;
+}
+/* A line of CoachHelm's own, ahead of a card. */
+.ch-look .ch-look-say {
+  margin: 0;
+  font: var(--ch-type-body-l);
+  letter-spacing: var(--ch-track-16);
+  text-wrap: pretty;
+}
+
+/* ---- The mark: a golf ball. ---- */
+.ch-look-ball {
+  flex: none;
+}
+.ch-look-ball__shell {
+  fill: var(--ch-on-fill-50);
+}
+.ch-look-ball__dot {
+  fill: var(--ch-on-green-glyph);
+}
+.ch-look-ball.is-thinking .ch-look-ball__shell {
+  opacity: 0.22;
+}
+.ch-look-ball.is-thinking .ch-look-ball__dot {
+  fill: var(--ch-on-fill-50);
+}
+.ch-look-ball.is-thinking .is-outer {
+  opacity: 0.72;
+}
+.ch-look-ball.is-thinking .is-spray {
+  opacity: 0.34;
+}
+.ch-look-ball--paper .ch-look-ball__shell {
+  fill: var(--ch-card-bg);
+  stroke: var(--ch-ink-500);
+  stroke-width: 0.9;
+}
+.ch-look-ball--paper .ch-look-ball__dot {
+  fill: var(--ch-ink-300);
+}
+.ch-look-ball--paper.is-thinking .ch-look-ball__shell {
+  stroke: none;
+  fill: var(--ch-ink-500);
+}
+.ch-look-ball--paper.is-thinking .ch-look-ball__dot {
+  fill: var(--ch-ink-500);
+}
+
+/* ---- The activity panel (the owner's picture, 11 Nov): a dark green rounded panel, a ringed tick, a turning ring, a dim disc. ---- */
+.ch-look-isl {
+  box-sizing: border-box;
+  width: min(100%, 420px);
+  padding: var(--ch-space-1) var(--ch-space-4) var(--ch-space-3);
+  border-radius: var(--ch-radius-xl);
+  background: var(--ch-feature-bg);
+  box-shadow: var(--ch-feature-shadow);
+  color: var(--ch-feature-ink);
+}
+.ch-look-isl__head {
+  display: flex;
+  align-items: center;
+  gap: var(--ch-space-3);
+  width: 100%;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: var(--ch-type-16-strong);
+  letter-spacing: var(--ch-track-16);
+  text-align: left;
+  cursor: pointer;
+}
+.ch-look-isl__title {
+  flex: 1;
+  min-width: 0;
+}
+.ch-look-isl__chev {
+  flex: none;
+  color: var(--ch-feature-ink-3);
+}
+.ch-look-isl__rows {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-look-isl__row {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  align-items: center;
+  gap: var(--ch-space-3);
+  min-height: 32px;
+  color: var(--ch-feature-ink-2);
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+}
+.ch-look-isl__row.is-active {
+  color: var(--ch-feature-ink);
+  font: var(--ch-type-15-medium);
+}
+.ch-look-isl__row.is-waiting {
+  color: var(--ch-feature-ink-3);
+}
+.ch-look-step {
+  flex: none;
+  justify-self: center;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.ch-look-step__ring,
+.ch-look-step__tick {
+  stroke: var(--ch-feature-gain);
+  stroke-width: 1.5;
+}
+.ch-look-step__track {
+  stroke: var(--ch-feature-track);
+  stroke-width: 2;
+}
+.ch-look-step__arc {
+  stroke: var(--ch-feature-ink);
+  stroke-width: 2;
+  stroke-dasharray: 70 100;
+  transform: rotate(-60deg);
+  transform-origin: 9px 9px;
+}
+.ch-look-step__disc {
+  fill: var(--ch-feature-flat);
+  opacity: 0.55;
+}
+/* After the work: one line, the ball at rest on the green. */
+.ch-look-isl.is-done {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ch-space-2);
+  width: auto;
+  min-height: 36px;
+  padding: 0 var(--ch-space-3) 0 var(--ch-space-2);
+  border: 0;
+  border-radius: 999px;
+  font: var(--ch-type-14-medium);
+  letter-spacing: var(--ch-track-14);
+  cursor: pointer;
+}
+.ch-look-isl.is-done::after {
+  content: '';
+  position: absolute;
+  inset: -4px 0;
+}
+.ch-look-isl__meta {
+  padding-left: var(--ch-space-2);
+  border-left: var(--ch-hairline-w) solid var(--ch-feature-sep);
+  color: var(--ch-feature-ink-2);
+  font: var(--ch-type-13);
+}
+
+/* ---- The hold ring. ---- */
+.ch-look-hold {
+  position: relative;
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+}
+.ch-look-hold svg {
+  position: absolute;
+  inset: 0;
+  fill: none;
+  transform: rotate(-90deg);
+}
+.ch-look-hold__track {
+  stroke: var(--ch-chart-track);
+  stroke-width: 2.5;
+}
+.ch-look-hold__arc {
+  stroke: var(--ch-green-600);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+}
+.ch-look-hold b {
+  font: var(--ch-type-14-strong);
+  line-height: 1;
+}
+.ch-look-hold.is-on-green .ch-look-hold__track {
+  stroke: var(--ch-feature-track);
+}
+.ch-look-hold.is-on-green .ch-look-hold__arc {
+  stroke: var(--ch-feature-gain);
+}
+.ch-look-hold.is-on-green b {
+  color: var(--ch-feature-ink);
+}
+
+/* ---- The composer. ---- */
+.ch-look-dock {
+  position: relative;
+  flex: none;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: calc(var(--ch-look-measure) + 2 * var(--ch-space-6));
+  margin: 0 auto;
+  padding: var(--ch-space-2) var(--ch-space-6) var(--ch-space-3);
+}
+/* The thread slides under the dock through the shared scroll-edge shade, not a hard cut. */
+.ch-look-dock::before {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: 100%;
+  left: 0;
+  height: var(--ch-scroll-edge-h);
+  background: linear-gradient(to top, var(--ch-workspace), transparent);
+  pointer-events: none;
+}
+.ch-look[data-long] .ch-look-dock::before {
+  display: none;
+}
+.ch-look-cmp {
+  display: flex;
+  align-items: center;
+  gap: var(--ch-space-2);
+  padding: var(--ch-space-2);
+  border-radius: var(--ch-radius-xl);
+  background: var(--ch-card-bg);
+  box-shadow: var(--ch-shadow-float);
+}
+.ch-look-cmp textarea {
+  flex: 1;
+  min-width: 0;
+  height: calc(21 * var(--ch-type-k));
+  padding: 0 var(--ch-space-1);
+  border: 0;
+  outline: 0;
+  resize: none;
+  background: none;
+  color: var(--ch-text-primary);
+  font: var(--ch-type-16);
+  letter-spacing: var(--ch-track-16);
+}
+.ch-look-cmp textarea::placeholder {
+  color: var(--ch-text-placeholder);
+}
+.ch-look .ch-look-foot {
+  margin: var(--ch-space-2) 0 0;
+  color: var(--ch-text-tertiary);
+  font: var(--ch-type-12);
+  text-align: center;
+}
+
+/* ==== Direction A: the yardage book ==== */
+.ch-look--a {
+  --ch-look-measure: 880px;
+}
+/* The leaf: yardage-book paper under a running head with a printed double rule. */
+.ch-look-leaf {
+  align-self: stretch;
+  box-sizing: border-box;
+  padding: var(--ch-space-4) var(--ch-space-5) var(--ch-space-2);
+  border-radius: var(--ch-radius-card);
+  background: var(--ch-chart-paper);
+  box-shadow: var(--ch-elevation-card);
+}
+.ch-look-leaf__head {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--ch-space-3);
+  padding-bottom: var(--ch-space-3);
+  border-bottom: 1px solid var(--ch-ink-rule);
+  color: var(--ch-text-tertiary);
+  font: var(--ch-type-13);
+}
+.ch-look-leaf__head::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: -4px;
+  left: 0;
+  border-bottom: var(--ch-hairline-w) solid var(--ch-border-hairline);
+}
+.ch-look-leaf__head > :first-child {
+  color: var(--ch-text-primary);
+  font: var(--ch-type-13-strong);
+}
+/* A pencilled source mark: a raised numeral after what it supports, the same numeral as its row at the foot. */
+.ch-look-a-mark {
+  position: relative;
+  top: -0.55em;
+  margin-left: var(--ch-space-0_5);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ch-champagne-ink);
+  font: var(--ch-type-11-strong);
+  line-height: 1;
+  cursor: pointer;
+}
+.ch-look-a-mark::after {
+  content: '';
+  position: absolute;
+  inset: -16px;
+}
+.ch-look .ch-look-a-lead {
+  margin: var(--ch-space-6) 0 0;
+  font: var(--ch-type-20-medium);
+  letter-spacing: var(--ch-track-20);
+  text-wrap: pretty;
+}
+/* The figure: one number, set large, its unit sitting on the figure's own baseline and its terms on the line below. */
+.ch-look-a-fig {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: last baseline;
+  gap: var(--ch-space-2) var(--ch-space-3);
+  margin-top: var(--ch-space-6);
+}
+.ch-look-a-fig__n {
+  color: var(--ch-loss);
+  font: 500 calc(64 * var(--ch-type-k)) / 0.8 var(--ch-font-sans);
+  font-variation-settings: var(--ch-wdth-dense);
+  letter-spacing: -0.045em;
+}
+.ch-look-a-fig__l {
+  font: var(--ch-type-17-strong);
+  letter-spacing: var(--ch-track-17);
+  text-wrap: balance;
+}
+.ch-look-a-fig__c {
+  grid-column: 1 / -1;
+  color: var(--ch-text-secondary);
+  font: var(--ch-type-13);
+}
+.ch-look-a-sec {
+  margin-top: var(--ch-space-6);
+  padding-top: var(--ch-space-4);
+  border-top: var(--ch-hairline-w) solid var(--ch-separator-strong);
+}
+.ch-look-a-sec__h {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--ch-space-3);
+  margin: 0;
+  color: var(--ch-text-tertiary);
+  font: var(--ch-type-13);
+}
+.ch-look-a-sec__h > span:first-of-type {
+  color: var(--ch-text-primary);
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
+}
+.ch-look .ch-look-a-note {
+  margin: var(--ch-space-3) 0 0;
+  color: var(--ch-text-secondary);
+  font: var(--ch-type-14);
+  text-wrap: pretty;
+}
+
+/* The hole in plan, and the soundings under it. Label sizes are in drawing units (the drawing is 318 wide). */
+.ch-look-a-hole,
+.ch-look-a-trend {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-top: var(--ch-space-3);
+  font-family: var(--ch-font-sans);
+}
+.ch-look-a-hole__rough {
+  fill: none;
+  stroke: var(--ch-chart-rough);
+  stroke-width: 60;
+  stroke-linecap: round;
+}
+.ch-look-a-hole__rough.is-edge {
+  stroke: var(--ch-separator-strong);
+  stroke-width: 61.5;
+}
+.ch-look-a-hole__fairway {
+  fill: none;
+  stroke: var(--ch-chart-fairway);
+  stroke-width: 27;
+  stroke-linecap: round;
+}
+.ch-look-a-hole__fairway.is-edge {
+  stroke: var(--ch-green-ring);
+  stroke-width: 28.5;
+}
+.ch-look-a-hole__tree {
+  fill: var(--ch-chart-fairway-alt);
+  stroke: var(--ch-green-ring);
+  stroke-width: 0.75;
+}
+.ch-look-a-hole__fringe {
+  fill: var(--ch-chart-fairway);
+  stroke: var(--ch-green-ring);
+  stroke-width: 0.75;
+}
+.ch-look-a-hole__green,
+.ch-look-a-hole__tee {
+  fill: var(--ch-chart-fairway-alt);
+  stroke: var(--ch-green-ring);
+  stroke-width: 0.75;
+}
+.ch-look-a-hole__sand {
+  fill: var(--ch-chart-paper);
+  stroke: var(--ch-champagne-500);
+  stroke-width: 0.75;
+}
+.ch-look-a-hole__line {
+  fill: none;
+  stroke: var(--ch-ink-500);
+  stroke-width: 1;
+  stroke-dasharray: 0.1 4;
+  stroke-linecap: round;
+}
+.ch-look-a-hole__pole {
+  stroke: var(--ch-ink-700);
+  stroke-width: 1;
+  stroke-linecap: round;
+}
+.ch-look-a-hole__flag {
+  fill: var(--ch-chart-flag);
+}
+.ch-look-a-hole__cup {
+  fill: var(--ch-ink-900);
+}
+.ch-look-a-hole__station {
+  fill: var(--ch-chart-paper);
+  stroke: var(--ch-ink-900);
+  stroke-width: 1.5;
+}
+.ch-look-a-hole__lead {
+  stroke: var(--ch-ink-500);
+  stroke-width: 0.75;
+  stroke-dasharray: 1.5 2.5;
+}
+.ch-look-a-hole__name {
+  fill: var(--ch-text-primary);
+  font-size: 12px;
+  font-weight: 500;
+}
+.ch-look-a-hole__zero {
+  stroke: var(--ch-chart-zero);
+  stroke-width: 1;
+}
+.ch-look-a-hole__base {
+  fill: var(--ch-text-tertiary);
+  font-size: 11px;
+}
+.ch-look-a-hole__stem {
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+.ch-look-a-hole__value {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.ch-look-a-hole__part.is-gain .ch-look-a-hole__stem {
+  stroke: var(--ch-gain);
+}
+.ch-look-a-hole__part.is-gain .ch-look-a-hole__end,
+.ch-look-a-hole__part.is-gain .ch-look-a-hole__value {
+  fill: var(--ch-gain);
+}
+.ch-look-a-hole__part.is-loss .ch-look-a-hole__stem {
+  stroke: var(--ch-loss);
+}
+.ch-look-a-hole__part.is-loss .ch-look-a-hole__end,
+.ch-look-a-hole__part.is-loss .ch-look-a-hole__value {
+  fill: var(--ch-loss);
+}
+
+/* Score to par: ink on ruled paper, the first and last rounds named, nothing else. */
+.ch-look-a-trend__grid {
+  stroke: var(--ch-separator-strong);
+  stroke-width: 1;
+}
+.ch-look-a-trend__grid.is-minor {
+  stroke: var(--ch-separator);
+  stroke-dasharray: 1 3;
+}
+.ch-look-a-trend__axis {
+  fill: var(--ch-text-tertiary);
+  font-size: 11px;
+}
+.ch-look-a-trend__path {
+  fill: none;
+  stroke: var(--ch-ink-900);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.ch-look-a-trend__pt {
+  fill: var(--ch-chart-paper);
+  stroke: var(--ch-ink-900);
+  stroke-width: 1.5;
+}
+.ch-look-a-trend__pt.is-last {
+  fill: var(--ch-gain);
+  stroke: var(--ch-chart-paper);
+  stroke-width: 2;
+}
+.ch-look-a-trend__first {
+  fill: var(--ch-text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+}
+.ch-look-a-trend__last {
+  fill: var(--ch-gain);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+/* The ranked table: ruled lines, no boxes. */
+.ch-look-a-rank {
+  margin: var(--ch-space-2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-look-a-rank li {
+  display: grid;
+  grid-template-columns: var(--ch-space-5) minmax(0, 1fr) auto 52px;
+  align-items: baseline;
+  gap: var(--ch-space-2);
+  padding: var(--ch-space-3) 0;
+  border-top: var(--ch-hairline-w) solid var(--ch-separator);
+}
+.ch-look-a-rank li:first-child {
+  border-top: 0;
+}
+.ch-look-a-rank__n {
+  color: var(--ch-text-tertiary);
+  font: var(--ch-type-13);
+}
+.ch-look-a-rank__t {
+  font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
+}
+.ch-look-a-rank__m {
+  color: var(--ch-text-secondary);
+  font: var(--ch-type-13);
+}
+.ch-look-a-rank__v {
+  color: var(--ch-loss);
+  font: var(--ch-type-15-strong);
+  text-align: right;
+}
+
+/* The sources, at the foot of the leaf: the pencilled numerals again, each a row that opens. */
+.ch-look-a-src {
+  margin-top: var(--ch-space-4);
+  border-top: 1px solid var(--ch-ink-rule);
+}
+.ch-look-a-src__row {
+  display: grid;
+  grid-template-columns: var(--ch-space-5) minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--ch-space-2);
+  width: 100%;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-top: var(--ch-hairline-w) solid var(--ch-separator);
+  background: none;
+  color: var(--ch-text-tertiary);
+  font: var(--ch-type-13);
+  text-align: left;
+  cursor: pointer;
+}
+.ch-look .ch-look-a-src__h {
+  margin: var(--ch-space-3) 0 var(--ch-space-1);
+  color: var(--ch-text-secondary);
+  font: var(--ch-type-13-strong);
+}
+.ch-look-a-src__h + .ch-look-a-src__row {
+  border-top: 0;
+}
+.ch-look-a-src__n {
+  color: var(--ch-champagne-ink);
+  font: var(--ch-type-11-strong);
+}
+.ch-look-a-src__t {
+  overflow: hidden;
+  color: var(--ch-text-primary);
+  font: var(--ch-type-14);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The task as a pin sheet. */
+.ch-look-a-task {
+  max-width: 520px;
+  padding-bottom: var(--ch-space-4);
+}
+.ch-look-a-task .ch-look-leaf__head {
+  align-items: center;
+}
+.ch-look-a-task__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ch-space-4);
+  margin-top: var(--ch-space-5);
+}
+.ch-look-a-task__t {
+  margin: 0;
+  font: var(--ch-type-20-strong);
+  letter-spacing: var(--ch-track-20);
+  text-wrap: balance;
+}
+.ch-look-a-pin {
+  flex: none;
+  width: 76px;
+  height: 76px;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.ch-look-a-pin__green {
+  fill: var(--ch-chart-fairway);
+  stroke: var(--ch-green-ring);
+  stroke-width: 0.75;
+}
+.ch-look-a-pin__band {
+  fill: var(--ch-chart-paper);
+  stroke: var(--ch-champagne-500);
+  stroke-width: 0.75;
+}
+.ch-look-a-pin__fall,
+.ch-look-a-pin__arrow {
+  stroke: var(--ch-ink-700);
+  stroke-width: 1;
+}
+.ch-look-a-pin__putt {
+  stroke: var(--ch-ink-700);
+  stroke-width: 1;
+  stroke-dasharray: 0.1 3;
+}
+.ch-look-a-pin__pole {
+  stroke: var(--ch-ink-700);
+  stroke-width: 1;
+}
+.ch-look-a-pin__flag {
+  fill: var(--ch-chart-flag);
+}
+.ch-look-a-pin__cup {
+  fill: var(--ch-ink-900);
+}
+.ch-look-a-pin__ball {
+  fill: var(--ch-card-bg);
+  stroke: var(--ch-ink-900);
+  stroke-width: 1.25;
+}
+.ch-look-a-task__rows {
+  margin: var(--ch-space-4) 0 0;
+  border-top: var(--ch-hairline-w) solid var(--ch-separator-strong);
+}
+.ch-look-a-task__rows > div {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  align-items: baseline;
+  gap: var(--ch-space-3);
+  padding: var(--ch-space-3) 0;
+  border-bottom: var(--ch-hairline-w) solid var(--ch-separator);
+}
+.ch-look-a-task__rows dt {
+  color: var(--ch-text-secondary);
+  font: var(--ch-type-13);
+}
+.ch-look-a-task__rows dd {
+  margin: 0;
+  font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
+}
+.ch-look-a-task__rows.is-after {
+  margin-top: var(--ch-space-1);
+  border-top: 1px solid var(--ch-ink-rule);
+}
+.ch-look-a-task__rows.is-after > div:last-child {
+  border-bottom: 0;
+}
+.ch-look-a-task__rows.is-after dd {
+  color: var(--ch-text-secondary);
+  font: var(--ch-type-15);
+}
+.ch-look-a-task__foot {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--ch-space-2);
+  margin-top: var(--ch-space-2);
+}
+.ch-look-a-task__foot.is-hold {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--ch-space-3);
+}
+.ch-look-a-task__foot p {
+  margin: 0;
+  color: var(--ch-text-secondary);
+  font: var(--ch-type-14);
+  text-wrap: pretty;
+}
+
+/* ==== Direction B: the scorecard ==== */
+.ch-look--b {
+  --ch-look-measure: 760px;
+  --ch-look-b-label: 96px;
+  --ch-look-b-total: 52px;
+}
+.ch-look-card {
+  align-self: stretch;
+  box-sizing: border-box;
+  padding: var(--ch-space-4) var(--ch-space-4) 0;
+  border-radius: var(--ch-radius-card);
+  background: var(--ch-card-bg);
+  box-shadow: var(--ch-elevation-card);
+}
+/* The card's head sits on the one heavy rule a printed card has. */
+.ch-look-card__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--ch-space-3);
+  padding-bottom: var(--ch-space-3);
+  border-bottom: 2px solid var(--ch-text-primary);
+  color: var(--ch-text-tertiary);
+  font: var(--ch-type-13);
+}
+.ch-look-card__head h3 {
+  margin: 0;
+  color: var(--ch-text-primary);
+  font: var(--ch-type-card-title);
+  letter-spacing: var(--ch-track-card-title);
+}
+.ch-look .ch-look-b-lead {
+  margin: var(--ch-space-5) 0;
+  font: var(--ch-type-17-medium);
+  letter-spacing: var(--ch-track-17);
+  text-wrap: pretty;
+}
+/* The total box: the caption in one cell, the figure in the cell a card keeps for a total. */
+.ch-look-b-total {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  border-top: var(--ch-hairline-w) solid var(--ch-separator-strong);
+}
+.ch-look-b-total p {
+  display: grid;
+  align-content: center;
+  gap: var(--ch-space-0_5);
+  margin: 0;
+  padding: var(--ch-space-3) var(--ch-space-3) var(--ch-space-3) 0;
+  color: var(--ch-text-secondary);
+  font: var(--ch-type-13);
+}
+.ch-look-b-total p b {
+  color: var(--ch-text-primary);
+  font: var(--ch-type-20-strong);
+  letter-spacing: var(--ch-track-20);
+}
+.ch-look-b-total__n {
+  display: grid;
+  align-items: center;
+  padding: var(--ch-space-3) 0 var(--ch-space-3) var(--ch-space-4);
+  border-left: var(--ch-hairline-w) solid var(--ch-separator-strong);
+  color: var(--ch-loss);
+  font: 500 calc(52 * var(--ch-type-k)) / 1 var(--ch-font-sans);
+  font-variation-settings: var(--ch-wdth-dense);
+  letter-spacing: -0.045em;
+}
+
+/* The grid: a label column, eight rounds, a total. Every row below shares it. */
+.ch-look-b-grid {
+  border-top: 1px solid var(--ch-ink-rule);
+}
+.ch-look-b-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--ch-look-b-label) repeat(8, minmax(0, 1fr)) var(--ch-look-b-total);
+  align-items: center;
+  border-bottom: var(--ch-hairline-w) solid var(--ch-separator);
+  font: var(--ch-type-13);
+}
+/* The two printed column rules: after the labels, before the total. */
+.ch-look-b-row:not(.is-sub, .is-rank)::before,
+.ch-look-b-row:not(.is-sub, .is-rank)::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-left: var(--ch-hairline-w) solid var(--ch-separator-strong);
+}
+.ch-look-b-row:not(.is-sub, .is-rank)::before {
+  left: var(--ch-look-b-label);
+}
+.ch-look-b-row:not(.is-sub, .is-rank)::after {
+  right: var(--ch-look-b-total);
+}
+.ch-look-b-row > * {
+  text-align: center;
+}
+.ch-look-b-row > [role='rowheader'],
+.ch-look-b-row > [role='columnheader']:first-child {
+  text-align: left;
+}
+.ch-look-b-row > b {
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
+}
+.ch-look-b-row.is-head {
+  min-height: 28px;
+  border-bottom-color: var(--ch-separator-strong);
+  color: var(--ch-text-tertiary);
+  font: var(--ch-type-12);
+}
+.ch-look-b-row.is-trend {
+  align-items: stretch;
+  border-bottom: 0;
+}
+.ch-look-b-row.is-trend > [role='rowheader'] {
+  display: grid;
+  align-content: center;
+  gap: var(--ch-space-0_5);
+  color: var(--ch-text-primary);
+  font: var(--ch-type-13-medium);
+}
+.ch-look-b-row.is-trend small {
+  color: var(--ch-text-tertiary);
+  font: var(--ch-type-11);
+}
+.ch-look-b-plot {
+  position: relative;
+  grid-column: 2 / span 8;
+  height: 60px;
+  margin: var(--ch-space-2) 0 var(--ch-space-1);
+}
+.ch-look-b-plot svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.ch-look-b-plot path {
+  fill: none;
+  stroke: var(--ch-text-primary);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+.ch-look-b-plot i {
+  position: absolute;
+  top: calc(6px + var(--ch-look-s) * 12px);
+  left: calc((var(--ch-look-i) + 0.5) * 12.5%);
+  box-sizing: border-box;
+  width: 7px;
+  height: 7px;
+  margin: -3.5px 0 0 -3.5px;
+  border: 1.5px solid var(--ch-text-primary);
+  border-radius: 50%;
+  background: var(--ch-card-bg);
+}
+.ch-look-b-plot i.is-last {
+  width: 9px;
+  height: 9px;
+  margin: -4.5px 0 0 -4.5px;
+  border-color: var(--ch-gain);
+  background: var(--ch-gain);
+}
+.ch-look-b-row.is-score {
+  min-height: 32px;
+  border-bottom-color: var(--ch-separator-strong);
+  font: var(--ch-type-13-medium);
+}
+.ch-look-b-row.is-sub {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--ch-space-3);
+  padding: var(--ch-space-5) 0 var(--ch-space-2);
+  border-bottom-color: var(--ch-ink-rule);
+  color: var(--ch-text-tertiary);
+  font: var(--ch-type-12);
+}
+.ch-look-b-row.is-sub > :first-child {
+  color: var(--ch-text-primary);
+  font: var(--ch-type-13-strong);
+}
+.ch-look-b-row.is-part {
+  min-height: 44px;
+  align-items: stretch;
+}
+.ch-look-b-row.is-part > [role='rowheader'],
+.ch-look-b-row.is-part > b {
+  align-self: center;
+}
+.ch-look-b-row.is-part > [role='rowheader'] {
+  padding-right: var(--ch-space-2);
+  font: var(--ch-type-13-medium);
+  line-height: var(--ch-lead-tight);
+}
+.ch-look-b-row.is-part > [role='cell'] {
+  position: relative;
+}
+/* A round's cell: its midline is the team baseline, the tick rises for strokes gained and falls for strokes lost. */
+.ch-look-b-row.is-part > span[role='cell']::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 0;
+  left: 0;
+  border-top: var(--ch-hairline-w) solid var(--ch-separator-strong);
+}
+.ch-look-b-row.is-part > span[role='cell'] i {
+  position: absolute;
+  left: 50%;
+  width: 6px;
+  height: calc(var(--ch-look-v) * 13px);
+  margin-left: -3px;
+  border-radius: var(--ch-radius-mark);
+}
+.ch-look-b-row.is-part i.is-gain {
+  bottom: 50%;
+  background: var(--ch-chart-gain-fill);
+}
+.ch-look-b-row.is-part i.is-loss {
+  top: 50%;
+  background: var(--ch-chart-loss-fill);
+}
+.ch-look-b-row.is-part i.is-flat {
+  display: none;
+}
+.ch-look-b-row.is-part > b {
+  position: relative;
+}
+.ch-look-b-row.is-gain > b {
+  color: var(--ch-gain);
+}
+.ch-look-b-row.is-loss > b,
+.ch-look-b-row.is-rank > b {
+  color: var(--ch-loss);
+}
+.ch-look-b-row.is-worst > [role='rowheader'] {
+  font: var(--ch-type-13-strong);
+  line-height: var(--ch-lead-tight);
+}
+.ch-look-b-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 50px;
+  height: 30px;
+  margin: -15px 0 0 -25px;
+  fill: none;
+  stroke: var(--ch-ink-500);
+  stroke-width: 1.25;
+  stroke-linecap: round;
+}
+.ch-look-b-ring path {
+  vector-effect: non-scaling-stroke;
+}
+.ch-look-b-row.is-rank {
+  grid-template-columns: minmax(0, 1fr) auto var(--ch-look-b-total);
+  gap: 0 var(--ch-space-3);
+  min-height: 44px;
+}
+.ch-look-b-row.is-rank > [role='rowheader'] {
+  font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
+}
+.ch-look-b-row.is-rank em {
+  display: inline-block;
+  width: var(--ch-space-6);
+  color: var(--ch-text-tertiary);
+  font: var(--ch-type-13);
+  font-style: normal;
+}
+.ch-look-b-row.is-rank > span[role='cell'] {
+  color: var(--ch-text-secondary);
+}
+.ch-look-b-row.is-rank:last-child {
+  border-bottom: 0;
+}
+/* The foot of the card: where a card names its scorer and marker, this one names its sources. */
+.ch-look-b-src {
+  margin: 0 calc(-1 * var(--ch-space-4));
+  border-top: 2px solid var(--ch-text-primary);
+  border-radius: 0 0 var(--ch-radius-card) var(--ch-radius-card);
+  overflow: hidden;
+}
+.ch-look-b-src__cell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0 var(--ch-space-2);
+  width: 100%;
+  min-height: 52px;
+  padding: var(--ch-space-2) var(--ch-space-4);
+  border: 0;
+  border-top: var(--ch-hairline-w) solid var(--ch-separator);
+  background: var(--ch-well-bg-flat);
+  color: var(--ch-text-tertiary);
+  font: var(--ch-type-12);
+  text-align: left;
+  cursor: pointer;
+}
+.ch-look-b-src__cell:first-child {
+  border-top: 0;
+}
+.ch-look-b-src__cell b {
+  overflow: hidden;
+  color: var(--ch-text-primary);
+  font: var(--ch-type-13-medium);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ch-look-b-src__cell small {
+  grid-area: 1 / 2 / span 2;
+  font: var(--ch-type-12);
+}
+.ch-look-b-src__cell > span {
+  grid-area: 1 / 1;
+}
+.ch-look-b-src__cell > b {
+  grid-area: 2 / 1;
+}
+.ch-look-b-src__cell > svg {
+  grid-area: 1 / 3 / span 2;
+}
+
+/* The task: a card that waits for the coach's signature. */
+.ch-look-b-task {
+  max-width: 520px;
+  padding-bottom: var(--ch-space-4);
+}
+.ch-look-b-task .ch-look-card__head {
+  align-items: center;
+}
+.ch-look .ch-look-b-task__t {
+  margin: var(--ch-space-4) 0;
+  font: var(--ch-type-20-strong);
+  letter-spacing: var(--ch-track-20);
+  text-wrap: balance;
+}
+.ch-look-b-task__rows {
+  margin: 0;
+  border-top: 1px solid var(--ch-ink-rule);
+}
+.ch-look-b-task__rows > div {
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--ch-look-b-label) minmax(0, 1fr);
+  align-items: center;
+  min-height: 40px;
+  border-bottom: var(--ch-hairline-w) solid var(--ch-separator);
+}
+.ch-look-b-task__rows > div::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--ch-look-b-label) - var(--ch-space-3));
+  border-left: var(--ch-hairline-w) solid var(--ch-separator-strong);
+}
+.ch-look-b-task__rows dt {
+  color: var(--ch-text-secondary);
+  font: var(--ch-type-13);
+}
+.ch-look-b-task__rows dd {
+  margin: 0;
+  padding: var(--ch-space-2) 0;
+  font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
+}
+.ch-look-b-sign {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: end;
+  gap: var(--ch-space-1) var(--ch-space-2);
+  margin-top: var(--ch-space-6);
+}
+.ch-look-b-sign__x {
+  width: 12px;
+  height: 12px;
+  margin-bottom: var(--ch-space-1_5);
+}
+.ch-look-b-sign__x svg {
+  display: block;
+  fill: none;
+  stroke: var(--ch-ink-500);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+.ch-look-b-sign__line {
+  min-height: calc(28 * var(--ch-type-k));
+  padding: 0 var(--ch-space-1) var(--ch-space-1);
+  border-bottom: 1px solid var(--ch-text-primary);
+  color: var(--ch-forest-800);
+  font: var(--ch-type-22-medium);
+  letter-spacing: var(--ch-track-22);
+}
+.ch-look-b-sign small {
+  grid-column: 2;
+  padding-left: var(--ch-space-1);
+  color: var(--ch-text-secondary);
+  font: var(--ch-type-12);
+}
+.ch-look-b-task__foot {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--ch-space-2);
+  margin-top: var(--ch-space-4);
+}
+.ch-look-b-task__foot.is-hold {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--ch-space-3);
+}
+.ch-look-b-task__foot p {
+  margin: 0;
+  color: var(--ch-text-secondary);
+  font: var(--ch-type-14);
+  text-wrap: pretty;
+}
+/* The scorer's strip: the activity panel with a count and ruled rows. */
+.ch-look-isl.is-ruled .ch-look-isl__count {
+  color: var(--ch-feature-ink-2);
+  font: var(--ch-type-13);
+}
+.ch-look-isl.is-ruled .ch-look-isl__row {
+  min-height: 36px;
+  border-top: var(--ch-hairline-w) solid var(--ch-feature-sep);
+}
+.ch-look-isl.is-ruled {
+  padding-bottom: var(--ch-space-1);
+}
+
+/* ==== Direction C: the big board ==== */
+.ch-look--c {
+  --ch-look-measure: 880px;
+  --ch-look-c-plate: 56px;
+}
+.ch-look-board {
+  align-self: stretch;
+  box-sizing: border-box;
+  overflow: hidden;
+  padding: var(--ch-space-1) var(--ch-space-4) 0;
+  border-radius: var(--ch-radius-card);
+  background: var(--ch-feature-bg);
+  box-shadow: var(--ch-feature-shadow);
+  color: var(--ch-feature-ink);
+}
+.ch-look-board__head {
+  display: flex;
+  align-items: center;
+  gap: var(--ch-space-3);
+  min-height: 48px;
+  border-bottom: 1px solid var(--ch-champagne-rule-strong);
+}
+.ch-look-board__head h3 {
+  color: inherit;
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font: var(--ch-type-card-title);
+  letter-spacing: var(--ch-track-card-title);
+}
+.ch-look-board__steps {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ch-space-1);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ch-feature-ink-2);
+  font: var(--ch-type-13);
+  cursor: pointer;
+}
+.ch-look-board__steps::after {
+  content: '';
+  position: absolute;
+  inset: -14px -8px;
+}
+/* A plate: ivory, ink numerals, a lit top edge and a contact shadow on the green. */
+.ch-look-plate {
+  display: inline-grid;
+  box-sizing: border-box;
+  place-items: center;
+  min-width: var(--ch-look-c-plate);
+  height: 30px;
+  padding: 0 var(--ch-space-1_5);
+  border-radius: var(--ch-radius-xs);
+  background: var(--ch-on-green-plate);
+  box-shadow: var(--ch-board-double-shadow);
+  color: var(--ch-print-ink);
+  font: var(--ch-type-15-strong);
+  line-height: 1;
+}
+.ch-look-c-plates {
+  display: inline-flex;
+  flex: none;
+  gap: var(--ch-space-0_5);
+}
+.ch-look-plate.is-big {
+  min-width: 38px;
+  height: 60px;
+  padding: 0 var(--ch-space-1);
+  font: 600 calc(44 * var(--ch-type-k)) / 1 var(--ch-font-sans);
+  font-variation-settings: var(--ch-wdth-dense);
+  letter-spacing: -0.03em;
+}
+.ch-look .ch-look-c-lead {
+  margin: var(--ch-space-5) 0 0;
+  font: var(--ch-type-20-medium);
+  letter-spacing: var(--ch-track-20);
+  text-wrap: pretty;
+}
+.ch-look-c-fig {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: end;
+  gap: var(--ch-space-3) var(--ch-space-4);
+  margin-top: var(--ch-space-5);
+}
+.ch-look-c-fig b {
+  padding-bottom: var(--ch-space-1);
+  font: var(--ch-type-17-strong);
+  letter-spacing: var(--ch-track-17);
+  text-wrap: balance;
+}
+.ch-look-c-fig > span:last-child {
+  grid-column: 1 / -1;
+  color: var(--ch-feature-ink-2);
+  font: var(--ch-type-13);
+}
+.ch-look-c-sec {
+  margin-top: var(--ch-space-6);
+}
+.ch-look-c-sec h4,
+.ch-look-c-src h4 {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--ch-space-3);
+  margin: 0;
+  padding-bottom: var(--ch-space-2);
+  border-bottom: 1px solid var(--ch-champagne-rule-strong);
+  color: var(--ch-feature-ink);
+  font: var(--ch-type-13-strong);
+}
+.ch-look-c-sec h4 span {
+  color: var(--ch-feature-ink-2);
+  font: var(--ch-type-13);
+}
+/* Strokes gained: the name in ivory, the stroke drawn from the baseline, the figure on its plate. */
+.ch-look-c-parts,
+.ch-look-c-rank,
+.ch-look-c-pegs {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-look-c-parts li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 104px var(--ch-look-c-plate);
+  align-items: center;
+  gap: var(--ch-space-3);
+  min-height: 44px;
+  border-bottom: var(--ch-hairline-w) solid var(--ch-feature-sep);
+  font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
+}
+.ch-look-c-parts li:last-child,
+.ch-look-c-rank li:last-child {
+  border-bottom: 0;
+}
+/* The bar's own cell: the baseline stands four fifths of the way across, losses run left of it and gains right. */
+.ch-look-c-parts i {
+  position: relative;
+  align-self: stretch;
+}
+.ch-look-c-parts i::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 80%;
+  border-left: 1px solid var(--ch-feature-ink-3);
+}
+.ch-look-c-parts i::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  height: 10px;
+  margin-top: -5px;
+  width: calc(var(--ch-look-v) * 84px);
+  border-radius: var(--ch-radius-mark);
+}
+.ch-look-c-parts i.is-loss::after {
+  right: 20%;
+  background: var(--ch-feature-loss-fill);
+}
+.ch-look-c-parts i.is-gain::after {
+  left: calc(80% + 1px);
+  background: var(--ch-feature-gain-fill);
+}
+/* Score to par: eight plates on five rails. */
+.ch-look-c-pegs {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  margin-top: var(--ch-space-3);
+  background: linear-gradient(var(--ch-feature-sep), var(--ch-feature-sep)) 0 14px / 100% 1px no-repeat,
+    linear-gradient(var(--ch-feature-sep), var(--ch-feature-sep)) 0 26px / 100% 1px no-repeat,
+    linear-gradient(var(--ch-feature-sep), var(--ch-feature-sep)) 0 38px / 100% 1px no-repeat,
+    linear-gradient(var(--ch-feature-sep), var(--ch-feature-sep)) 0 50px / 100% 1px no-repeat,
+    linear-gradient(var(--ch-feature-sep), var(--ch-feature-sep)) 0 62px / 100% 1px no-repeat;
+}
+.ch-look-c-pegs li {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  height: 100px;
+}
+.ch-look-c-pegs .ch-look-plate {
+  position: absolute;
+  top: calc(var(--ch-look-s) * 12px);
+  min-width: 0;
+  width: calc(100% - var(--ch-space-1_5));
+  max-width: 44px;
+  height: 28px;
+  padding: 0;
+  font: var(--ch-type-14-strong);
+  line-height: 1;
+}
+.ch-look-c-pegs span {
+  align-self: end;
+  color: var(--ch-feature-ink-3);
+  font: var(--ch-type-12);
+}
+.ch-look .ch-look-c-note {
+  margin: var(--ch-space-3) 0 0;
+  color: var(--ch-feature-ink-2);
+  font: var(--ch-type-14);
+  text-wrap: pretty;
+}
+.ch-look-c-rank li {
+  display: grid;
+  grid-template-columns: var(--ch-space-5) minmax(0, 1fr) auto var(--ch-look-c-plate);
+  align-items: center;
+  gap: var(--ch-space-3);
+  min-height: 44px;
+  border-bottom: var(--ch-hairline-w) solid var(--ch-feature-sep);
+  font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
+}
+.ch-look-c-rank em {
+  color: var(--ch-feature-ink-3);
+  font: var(--ch-type-13);
+  font-style: normal;
+}
+.ch-look-c-rank small {
+  color: var(--ch-feature-ink-2);
+  font: var(--ch-type-13);
+}
+.ch-look-c-src {
+  margin-top: var(--ch-space-6);
+  padding-bottom: var(--ch-space-1);
+}
+.ch-look-c-src h4 {
+  color: var(--ch-feature-ink-2);
+  font: var(--ch-type-13);
+}
+.ch-look-c-src button {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--ch-space-2);
+  width: 100%;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-bottom: var(--ch-hairline-w) solid var(--ch-feature-sep);
+  background: none;
+  color: var(--ch-feature-ink-3);
+  font: var(--ch-type-13);
+  text-align: left;
+  cursor: pointer;
+}
+.ch-look-c-src button:last-child {
+  border-bottom: 0;
+}
+.ch-look-c-src button b {
+  overflow: hidden;
+  color: var(--ch-feature-ink);
+  font: var(--ch-type-14-medium);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ch-look-c-src button small {
+  color: var(--ch-feature-ink-2);
+  font: var(--ch-type-13);
+}
+/* The activity panel as the board before the plates go up: the same shape, in the same place. */
+.ch-look-isl.is-slats {
+  width: 100%;
+  border-radius: var(--ch-radius-card);
+}
+.ch-look-isl.is-slats .ch-look-isl__head {
+  min-height: 48px;
+  margin-bottom: var(--ch-space-2);
+  border-bottom: 1px solid var(--ch-champagne-rule-strong);
+}
+
+/* The task on the board: each field a slat, and an ivory sill for the keys. */
+.ch-look-c-task {
+  max-width: 520px;
+}
+.ch-look .ch-look-c-task__t {
+  margin: var(--ch-space-5) 0 var(--ch-space-4);
+  font: var(--ch-type-20-strong);
+  letter-spacing: var(--ch-track-20);
+  text-wrap: balance;
+}
+.ch-look-c-slats,
+.ch-look-c-after {
+  display: grid;
+  margin: 0;
+}
+.ch-look-c-slats {
+  gap: var(--ch-space-1);
+}
+.ch-look-c-slats > div,
+.ch-look-c-after > div {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  align-items: center;
+  gap: var(--ch-space-3);
+}
+.ch-look-c-slats dt,
+.ch-look-c-after dt {
+  color: var(--ch-feature-ink-2);
+  font: var(--ch-type-13);
+}
+.ch-look-c-slats dd {
+  margin: 0;
+  padding: var(--ch-space-2) var(--ch-space-3);
+  border-radius: var(--ch-radius-xs);
+  background: var(--ch-on-green-plate);
+  box-shadow: var(--ch-board-double-shadow);
+  color: var(--ch-print-ink);
+  font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
+}
+.ch-look-c-after {
+  margin-top: var(--ch-space-4);
+  border-top: 1px solid var(--ch-champagne-rule-strong);
+}
+.ch-look-c-after > div {
+  min-height: 40px;
+  border-bottom: var(--ch-hairline-w) solid var(--ch-feature-sep);
+}
+.ch-look-c-after > div:last-child {
+  border-bottom: 0;
+}
+.ch-look-c-after dd {
+  margin: 0;
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+}
+.ch-look-c-sill {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--ch-space-2);
+  margin: var(--ch-space-3) calc(-1 * var(--ch-space-4)) 0;
+  padding: var(--ch-space-3) var(--ch-space-4);
+  background: var(--ch-card-bg);
+  color: var(--ch-text-primary);
+}
+.ch-look-c-sill.is-hold {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--ch-space-3);
+}
+.ch-look-c-sill p {
+  margin: 0;
+  color: var(--ch-text-secondary);
+  font: var(--ch-type-14);
+  text-wrap: pretty;
+}
+
+/* A desk: the leaf opens as a spread, two pages either side of the gutter. */
+@media (min-width: 821px) {
+  .ch-look--a .ch-look-leaf:not(.ch-look-a-task) {
+    padding: var(--ch-space-5) var(--ch-space-8) var(--ch-space-3);
+  }
+  .ch-look-leaf__pages {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 0 calc(2 * var(--ch-space-8));
+    position: relative;
+  }
+  .ch-look-leaf__pages::before {
+    content: '';
+    position: absolute;
+    top: var(--ch-space-6);
+    bottom: var(--ch-space-3);
+    left: 50%;
+    width: 2px;
+    box-shadow: var(--ch-seam-y);
+  }
+  .ch-look-leaf__page:last-child > .ch-look-a-sec:first-child {
+    border-top: 0;
+    padding-top: 0;
+  }
+  .ch-look .ch-look-a-lead {
+    font: var(--ch-type-22-medium);
+    letter-spacing: var(--ch-track-22);
+  }
+}
+
+@media (min-width: 821px) {
+  .ch-look--b {
+    --ch-look-b-label: 148px;
+    --ch-look-b-total: 72px;
+  }
+  .ch-look--b .ch-look-card:not(.ch-look-b-task) {
+    padding: var(--ch-space-5) var(--ch-space-6) 0;
+  }
+  .ch-look .ch-look-b-lead {
+    max-width: 30em;
+    font: var(--ch-type-20-medium);
+    letter-spacing: var(--ch-track-20);
+  }
+  .ch-look-b-total__n {
+    padding-left: var(--ch-space-6);
+    font-size: calc(64 * var(--ch-type-k));
+  }
+  .ch-look-b-row.is-part > [role='rowheader'],
+  .ch-look-b-row.is-worst > [role='rowheader'],
+  .ch-look-b-row.is-trend > [role='rowheader'] {
+    font-size: calc(14 * var(--ch-type-k));
+  }
+  .ch-look-b-row.is-part > span[role='cell'] i {
+    width: 8px;
+    margin-left: -4px;
+  }
+  .ch-look--b .ch-look-card:not(.ch-look-b-task) .ch-look-b-src {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin: 0 calc(-1 * var(--ch-space-6));
+  }
+  .ch-look--b .ch-look-card:not(.ch-look-b-task) .ch-look-b-src__cell {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--ch-space-0_5) var(--ch-space-2);
+    padding: var(--ch-space-3) var(--ch-space-6);
+    border-top: 0;
+    border-left: var(--ch-hairline-w) solid var(--ch-separator);
+  }
+  .ch-look--b .ch-look-b-src__cell:first-child {
+    border-left: 0;
+  }
+  .ch-look--b .ch-look-card:not(.ch-look-b-task) .ch-look-b-src__cell > :not(svg) {
+    grid-area: auto / 1;
+  }
+  .ch-look--b .ch-look-card:not(.ch-look-b-task) .ch-look-b-src__cell > svg {
+    grid-area: 1 / 2 / span 3;
+  }
+}
+
+@media (min-width: 821px) {
+  .ch-look--c .ch-look-board:not(.ch-look-c-task) {
+    padding: var(--ch-space-2) var(--ch-space-8) 0;
+  }
+  .ch-look-board__cols {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 0 var(--ch-space-12);
+  }
+  .ch-look-board__cols > :last-child > .ch-look-c-sec:first-child {
+    margin-top: var(--ch-space-5);
+  }
+  .ch-look--c .ch-look-board:not(.ch-look-c-task) .ch-look-c-src > div {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0 var(--ch-space-8);
+  }
+  .ch-look--c .ch-look-board:not(.ch-look-c-task) .ch-look-c-src button {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0 var(--ch-space-2);
+    min-height: 56px;
+    border-bottom: 0;
+  }
+  .ch-look--c .ch-look-board:not(.ch-look-c-task) .ch-look-c-src button > :not(svg) {
+    grid-column: 1;
+  }
+  .ch-look--c .ch-look-board:not(.ch-look-c-task) .ch-look-c-src button > svg {
+    grid-area: 1 / 2 / span 2;
+  }
+}
+
+/* The phone. */
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
+  .ch-look {
+    height: calc(100dvh - var(--ch-phone-topbar-h) - env(safe-area-inset-top) - var(--ch-tabbar-h) - env(safe-area-inset-bottom) - var(--keyboard-height, 0px));
+  }
+  .ch-look[data-long] {
+    height: auto;
+    min-height: calc(100dvh - var(--ch-phone-topbar-h) - env(safe-area-inset-top));
+  }
+  .ch-look-top {
+    padding: var(--ch-space-2) var(--ch-page-x-phone);
+  }
+  .ch-look-top__seg {
+    display: grid;
+    flex: 1;
+  }
+  .ch-look-col {
+    padding: var(--ch-space-4) var(--ch-page-x-phone) var(--ch-space-6);
+  }
+  .ch-look-dock {
+    padding: var(--ch-space-2) var(--ch-page-x-phone) var(--ch-space-3);
+  }
+  .ch-look-isl:not(.is-done) {
+    width: 100%;
+  }
+}

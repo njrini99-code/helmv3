@@ -939,6 +939,22 @@
   align-self: center;
   margin-top: 6px;
 }
+/* The filter's empty state (FilterEmpty) inside the sheet's card: the sheet's card is the one card. The state's own
+   card (ui.css .ch-es--page) and the section card around a player's (.ch-st-card) stand down, and the sheet card's
+   padding is the inset, so Clear filters sits inside it (design review 10 Nov 2026: a card in a card, its button wider
+   than the inner one). */
+.ch-shs-card.ch-shs-empty > .ch-es--page,
+.ch-shs-card.ch-shs-empty > .ch-st-card {
+  width: 100%;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+.ch-shs-card.ch-shs-empty > .ch-es--page > .ch-es__copy,
+.ch-shs-card.ch-shs-empty > .ch-st-card > .ch-es > .ch-es__copy {
+  padding: 0;
+}
 .ch-shs-notice {
   display: grid;
   grid-template-columns: 16px minmax(0, 1fr);
