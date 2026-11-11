@@ -11,7 +11,8 @@ import { Icon } from '../../ui/Icon';
 import { useToast } from '../../ui/Toast';
 import { copyBody, emptyBody } from './builder/builder-model';
 
-type Start = 'blank' | 'copy' | 'ask' | 'template';
+export type NewPlanStart = 'blank' | 'copy' | 'ask' | 'template';
+type Start = NewPlanStart;
 
 function Option({ on, title, line, disabled, onPick }: { on: boolean; title: string; line: string; disabled?: boolean; onPick: () => void }) {
   return (
@@ -32,12 +33,12 @@ function Option({ on, title, line, disabled, onPick }: { on: boolean; title: str
  * Ask CoachHelm saves an empty plan and opens the builder filling: its suggestions wait there, and nothing joins the plan until kept.
  * `preview`: a press closes the sheet and reaches no server.
  */
-export function NewPlanSheet({ open, onClose, events, copies, roster, initialEvent, preview = false, template = null }: { template?: { name: string; body: PlanBodyV2 } | null; open: boolean; onClose: () => void; events: ChPracticeEvent[]; copies: Array<{ id: string; label: string }>; roster: string[]; initialEvent?: string | null; preview?: boolean }) {
+export function NewPlanSheet({ open, onClose, events, copies, roster, initialEvent, initialStart, preview = false, template = null }: { /** First run's three starts open the sheet on the one picked. */ initialStart?: NewPlanStart; template?: { name: string; body: PlanBodyV2 } | null; open: boolean; onClose: () => void; events: ChPracticeEvent[]; copies: Array<{ id: string; label: string }>; roster: string[]; initialEvent?: string | null; preview?: boolean }) {
   const router = useRouter();
   const toast = useToast();
   const firstOpen = events.find((e) => !e.allDay)?.id ?? null;
   const [eventId, setEventId] = useState<string | null>(initialEvent ?? firstOpen);
-  const [start, setStart] = useState<Start>(template ? 'template' : 'ask');
+  const [start, setStart] = useState<Start>(template ? 'template' : initialStart && initialStart !== 'template' ? initialStart : 'ask');
   const [copyId, setCopyId] = useState<string | null>(copies[0]?.id ?? null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);

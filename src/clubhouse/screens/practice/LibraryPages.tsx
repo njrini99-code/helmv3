@@ -13,6 +13,7 @@ import { plural } from '../../lib/plural';
 import { PhoneTop } from '../../shell/phone-chrome';
 import { PhoneIconAction } from '../../ui/PhoneBar';
 import { Avatar } from '../../ui/Avatar';
+import { Badge } from '../../ui/Badge';
 import { Button, IconButton } from '../../ui/Button';
 import { FormSheet } from '../../ui/FormSheet';
 import { Icon } from '../../ui/Icon';
@@ -61,7 +62,7 @@ function DrillRowLink({ d }: { d: ChDrillRow }) {
         <span className="ch-prc-row__m">
           <span className="ch-prc-row__top">
             <b>{d.name}</b>
-            {d.source === 'lib' && <span className="ch-prc-mark">GolfHelm</span>}
+            {d.source === 'lib' && <Badge>GolfHelm</Badge>}
           </span>
           <span className="ch-prc-row__w ch-num">{facts}</span>
           {d.levels && <span className="ch-prc-row__l ch-num">{d.levels}</span>}
@@ -86,12 +87,12 @@ export function DrillsPage({ teamId, team, library, preview = false }: { teamId:
     <main className={'ch-page ch-prc' + (phone ? ' is-phone' : '')} data-ch="practice" aria-labelledby="ch-prc-title">
       <LibraryHead tab="drills" title="Drills" actionLabel="New drill" onAction={() => setCreating(true)} />
       <SearchField value={q} onChange={setQ} placeholder="Search drills" label="Search drills" />
-      <div className="ch-prc-chips" role="group" aria-label="Area">
-        <button type="button" className="ch-prc-chip" aria-pressed={area === 'all'} onClick={() => setArea('all')}>
+      <div className="ch-pills ch-prc-areas" role="group" aria-label="Area">
+        <button type="button" className="ch-pill" aria-pressed={area === 'all'} onClick={() => setArea('all')}>
           All
         </button>
         {AREAS.map(([v, label]) => (
-          <button key={v} type="button" className="ch-prc-chip" aria-pressed={area === v} onClick={() => setArea(v)}>
+          <button key={v} type="button" className="ch-pill" aria-pressed={area === v} onClick={() => setArea(v)}>
             {label}
           </button>
         ))}
@@ -183,7 +184,7 @@ export function DrillPage({ teamId, drill, preview = false }: { teamId: string; 
           <LargeTitle id="ch-prc-title">{drill.name}</LargeTitle>
           <p className="ch-prc-h__line ch-num">{[drill.areaLabel, drill.kind ? KIND_WORD[drill.kind] : null, drill.minutes != null ? `${drill.minutes} min` : null, drill.players].filter(Boolean).join(' · ')}</p>
         </div>
-        <div className="ch-prc-h__a">
+        <div className="ch-prc-h__a is-page">
           {team ? (
             <>
               <Button onClick={() => setArchiving(true)}>Archive</Button>
@@ -199,7 +200,7 @@ export function DrillPage({ teamId, drill, preview = false }: { teamId: string; 
         </div>
       </header>
       {team && drill.usedIn != null && <p className="ch-prc-none ch-num">{drill.usedIn ? `Used in ${plural(drill.usedIn, 'plan')}` : 'Not in a plan yet'}</p>}
-      <dl className="ch-prc-facts">
+      <dl className="ch-prc-dfacts">
         {drill.setup && (
           <div>
             <dt>Set-up</dt>
@@ -352,7 +353,7 @@ export function GroupsPage({ teamId, groups, roster, preview = false }: { teamId
         <ul className="ch-prc-cards">
           {groups.map((g) => (
             <li key={g.id}>
-              <button type="button" className="ch-prc-card" data-ch-press=".97" onClick={() => open(g)}>
+              <button type="button" className="ch-prc-gcard" data-ch-press=".97" onClick={() => open(g)}>
                 <b>{g.name}</b>
                 <span className="ch-prc-faces" aria-hidden="true">
                   {g.playerIds.slice(0, 8).map((id) => (

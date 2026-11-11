@@ -193,9 +193,9 @@ export function BankList({ drills, onPick, onNew, pickLabel }: { drills: ChBankD
         <Icon icon={Search} size={15} />
         <input className="ch-input" type="search" aria-label="Search drills" placeholder="Search drills" value={q} onChange={(e) => setQ(e.target.value)} />
       </label>
-      <div className="ch-prc-bank__chips" role="group" aria-label="Area">
+      <div className="ch-pills" role="group" aria-label="Area">
         {AREAS.map((a) => (
-          <button key={a} type="button" className={'ch-prc-chipb' + (a === area ? ' is-on' : '')} aria-pressed={a === area} onClick={() => setArea(a)}>
+          <button key={a} type="button" className="ch-pill" aria-pressed={a === area} onClick={() => setArea(a)}>
             {a}
           </button>
         ))}

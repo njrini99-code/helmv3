@@ -59,7 +59,7 @@ function scheduleRows(body: PlanBodyV2, start: Date, zone: string): ChPracticeUp
     const time = hhmm(new Date(at), zone);
     at += b.len * 60_000;
     const place = b.kind === 'stations' ? `${b.stations.length} stations` : b.kind === 'course' ? `Holes ${b.holeFrom} to ${b.holeTo}` : b.place;
-    return { time, title: b.title, place };
+    return { time, title: b.title, place, min: b.len };
   });
 }
 
@@ -175,6 +175,7 @@ export async function loadCoachPracticeHome(teamId: string, now: Date = new Date
       title: p?.title || nextEvent.title,
       when: [dayShort(start, zone), span(nextEvent, zone), nextEvent.location].filter(Boolean).join(' · '),
       rows: body ? scheduleRows(body, start, zone) : [],
+      state: p ? stateOf(p, false) : undefined,
       planHref: p && p.status === 'published' ? `${HREF}${p.id}` : null,
       editHref: p ? `${HREF}${p.id}/edit` : null,
       eventId: p ? null : nextEvent.id,
@@ -213,7 +214,7 @@ export async function loadPlayerPracticeHome(teamId: string, playerId: string, n
   let next: ChPlayerPracticeHome['next'] = null;
   if (first) {
     const mine = await loadPlayerPractice(first.row.id, playerId, now);
-    if (mine.status === 'ready') next = { planHref: first.row.href, title: mine.data.title, when: mine.data.when, context: mine.data.context, stops: mine.data.stops };
+    if (mine.status === 'ready') next = { planHref: first.row.href, title: mine.data.title, when: mine.data.when, context: mine.data.context, focus: mine.data.focus, group: mine.data.group, stops: mine.data.stops };
   }
   const week = weekTiles(rows.map((r) => ({ event: r.event, state: r.row.state, href: r.row.href, eventId: null })), now, zone);
   return { status: 'ready', data: { next, week, upcoming: upcoming.slice(1).map((r) => r.row), past: past.map((r) => r.row) } };

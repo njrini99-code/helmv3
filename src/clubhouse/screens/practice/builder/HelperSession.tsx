@@ -31,7 +31,8 @@ export function readRun(messages: readonly UIMessage[]): { plan: PlanPartData | 
  * the coach's chats, as any Ask is.
  */
 export default function HelperSession({ request, onPlan, onDone }: { request: string; onPlan: (plan: PlanPartData) => void; onDone: (r: { failed: boolean; said: string; busy: boolean }) => void }) {
-  const chat = useCoachHelmChat();
+  // The helper's own surface: the server picks the instructions and the tool set by it (not Ask's).
+  const chat = useCoachHelmChat({ surface: 'practice_helper' });
   const sent = useRef<string | null>(null);
   useEffect(() => {
     if (sent.current === request) return;

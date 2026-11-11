@@ -40,7 +40,10 @@ export interface ChPracticeTile {
 export interface ChPracticeUpNext {
   title: string;
   when: string;
-  rows: Array<{ time: string; title: string; place: string }>;
+  /** `min`: the block's length, so the card can draw the day to scale. */
+  rows: Array<{ time: string; title: string; place: string; min?: number }>;
+  /** Draft, Published or Updated; left out when the practice has no plan. */
+  state?: ChPracticeState;
   planHref: string | null;
   editHref: string | null;
   eventId: string | null;
@@ -70,6 +73,9 @@ export interface ChPlayerPracticeNext {
   title: string;
   when: string;
   context: string;
+  /** The plan's focus line, and the player's own group: the same two lines their plan page leads with. */
+  focus?: string;
+  group?: { name: string; mates: string[]; me?: string } | null;
   stops: PlayerStop[];
 }
 export interface ChPlayerPracticeHome {

@@ -98,7 +98,7 @@ export function PlanRun({ planId, title, version, body, start, zone, serverNow }
       <ul>
         {rows.map((r) => (
           <li key={r.id}>
-            {r.letter ? <i className={`ch-prc-run__g g-${r.letter}`} aria-label={`Group ${r.letter}`}>{r.letter}</i> : <span />}
+            {r.letter ? <i className={`ch-prc-disc g-${r.letter}`} role="img" aria-label={`Group ${r.letter}`}>{r.letter}</i> : <span />}
             <span>
               <b>{r.now?.place ?? 'Done'}</b>
               {r.now && <small className="ch-num">Now, until {clock(r.now.end)}</small>}
@@ -114,9 +114,14 @@ export function PlanRun({ planId, title, version, body, start, zone, serverNow }
           </li>
         ))}
       </ul>
-      <div className="ch-prc-run__a">
-        <Button onClick={() => setMoving(-5)}>5 min earlier</Button>
-        <Button onClick={() => setMoving(5)}>Shift the rest 5 min later</Button>
+      <div className="ch-prc-run__a" role="group" aria-label="Shift the rest of practice">
+        <span>Shift the rest</span>
+        <Button onClick={() => setMoving(-5)} aria={{ label: '5 min earlier' }}>
+          5 min earlier
+        </Button>
+        <Button onClick={() => setMoving(5)} aria={{ label: 'Shift the rest 5 min later' }}>
+          5 min later
+        </Button>
       </div>
       <Modal
         open={moving !== null}

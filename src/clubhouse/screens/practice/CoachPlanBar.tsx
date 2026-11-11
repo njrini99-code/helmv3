@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { postPracticePlanToChat } from '@/app/golf/actions/coachhelm-practice-plans';
 import { takeDownPracticePlan } from '@/app/golf/actions/practice-publish';
 import { Avatar } from '../../ui/Avatar';
+import { Badge, type BadgeTone } from '../../ui/Badge';
 import { Button } from '../../ui/Button';
 import { Menu } from '../../ui/Menu';
 import { Modal } from '../../ui/Modal';
@@ -21,7 +22,7 @@ export interface ChPlanStatus {
   seen: { names: string[]; of: number } | null;
 }
 
-/** The coach's keys on the plan page (N-00 4.11, 4.15): Edit, Share, Seen by and Take down. */
+/** The coach's bar on the plan page (N-00 4.11, 4.15): what state the plan is in, said in words, then Edit, Share, Seen by and Take down. */
 export function CoachPlanBar({ status }: { status: ChPlanStatus }) {
   const router = useRouter();
   const toast = useToast();
@@ -52,30 +53,43 @@ export function CoachPlanBar({ status }: { status: ChPlanStatus }) {
     if (!r.success) return toast({ tone: 'error', title: r.error ?? 'Couldn’t take the plan down. Players can still see it.' });
     router.refresh();
   };
+  // Three states that must never be mistaken for each other: who can see the plan, and whether what they see is what the coach has now.
+  const state: { key: 'draft' | 'edited' | 'live'; word: string; tone: BadgeTone; line: string } = !published
+    ? { key: 'draft', word: 'Draft', tone: 'neutral', line: 'Only coaches can see this. Players get it when you publish.' }
+    : status.edited
+      ? { key: 'edited', word: 'Edits not published', tone: 'info', line: 'Players still have the plan as you last published it.' }
+      : { key: 'live', word: 'Published', tone: 'positive', line: 'Players have this plan.' };
   return (
-    <div className="ch-prc-planacts">
-      {status.seen && (
-        <button type="button" className="ch-prc-seen ch-num" onClick={() => setSeenOpen(true)}>
-          Seen by {status.seen.names.length} of {status.seen.of}
-        </button>
-      )}
-      {published && status.edited && <span className="ch-prc-row__e">Edits not published</span>}
-      <Button variant="secondary" leftIcon={Pencil} href={`${base}/edit`}>
-        Edit
-      </Button>
-      <Menu
-        label="Share"
-        trigger={(p) => (
-          <Button variant="secondary" rightIcon={ChevronDown} menu={p}>
-            Share
+    <section className="ch-prc-planbar" data-state={state.key} aria-label="Plan status">
+      <div className="ch-prc-planbar__s">
+        <Badge tone={state.tone} dot>
+          {state.word}
+        </Badge>
+        <p>{state.line}</p>
+      </div>
+      <div className="ch-prc-planbar__a">
+        {status.seen && (
+          <Button variant="ghost" size="sm" className="ch-num" onClick={() => setSeenOpen(true)}>
+            Seen by {status.seen.names.length} of {status.seen.of}
           </Button>
         )}
-        items={[
-          ...(published ? [{ label: 'Send to team chat', onSelect: () => void toChat() }, { label: 'Copy link', onSelect: () => void copyLink() }] : []),
-          { label: 'Print or save as PDF', href: `/golf/dashboard/practice/print/${status.planId}` },
-          ...(published ? [{ label: 'Take down', danger: true, onSelect: () => setDownOpen(true) }] : []),
-        ]}
-      />
+        <Button variant={state.key === 'live' ? 'secondary' : 'primary'} leftIcon={Pencil} href={`${base}/edit`}>
+          Edit
+        </Button>
+        <Menu
+          label="Share"
+          trigger={(p) => (
+            <Button variant="secondary" rightIcon={ChevronDown} menu={p}>
+              Share
+            </Button>
+          )}
+          items={[
+            ...(published ? [{ label: 'Send to team chat', onSelect: () => void toChat() }, { label: 'Copy link', onSelect: () => void copyLink() }] : []),
+            { label: 'Print or save as PDF', href: `/golf/dashboard/practice/print/${status.planId}` },
+            ...(published ? [{ label: 'Take down', danger: true, onSelect: () => setDownOpen(true) }] : []),
+          ]}
+        />
+      </div>
       <Modal open={seenOpen} onClose={() => setSeenOpen(false)} title="Seen by" width={420} detent={0.62}>
         <ul className="ch-prc-seenlist">
           {(status.seen?.names ?? []).map((n) => (
@@ -105,6 +119,6 @@ export function CoachPlanBar({ status }: { status: ChPlanStatus }) {
       >
         <Switch label="Tell players" checked={tell} onChange={setTell} />
       </Modal>
-    </div>
+    </section>
   );
 }

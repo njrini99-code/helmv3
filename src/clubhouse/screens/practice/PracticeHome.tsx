@@ -13,12 +13,26 @@ import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { LargeTitle } from '../../ui/LargeTitle';
 import { EmptyState } from '../../ui/States';
-import { NewPlanSheet } from './NewPlanSheet';
+import { Badge, type BadgeTone } from '../../ui/Badge';
+import { DayStrip } from './DayStrip';
+import { NewPlanSheet, type NewPlanStart } from './NewPlanSheet';
 
-const CHIP: Record<ChPracticeState, string> = { 'No plan': 'is-none', Draft: 'is-draft', Published: 'is-live', Updated: 'is-live', Done: 'is-done' };
+/** The state's word and tone. A past plan reads "Ended" (05 S-PRC.past); the tone never carries the meaning alone. */
+const STATE: Record<ChPracticeState, { word: string; tone: BadgeTone; dot?: boolean }> = {
+  'No plan': { word: 'No plan', tone: 'neutral' },
+  Draft: { word: 'Draft', tone: 'neutral', dot: true },
+  Published: { word: 'Published', tone: 'positive' },
+  Updated: { word: 'Updated', tone: 'positive' },
+  Done: { word: 'Ended', tone: 'neutral' },
+};
 
 export function StateChip({ state }: { state: ChPracticeState }) {
-  return <span className={`ch-prc-chip ${CHIP[state]}`}>{state}</span>;
+  const s = STATE[state];
+  return (
+    <Badge tone={s.tone} dot={s.dot}>
+      {s.word}
+    </Badge>
+  );
 }
 
 /** This week: seven tiles, Monday to Sunday in the team's zone. A tile with a plan opens it; one without starts New plan on that practice. */
@@ -33,29 +47,33 @@ export function WeekStrip({ week, onPlan }: { week: ChPracticeTile[]; onPlan?: (
   return (
     <div ref={strip} className="ch-prc-week" role="list" aria-label="This week">
       {week.map((t) => (
-        <div key={t.key} role="listitem" className={'ch-prc-tile' + (t.today ? ' is-today' : '')}>
+        <div key={t.key} role="listitem" className={'ch-prc-tile' + (t.today ? ' is-today' : '') + (t.items.length ? '' : ' is-off')} aria-current={t.today ? 'date' : undefined}>
           <span className="ch-prc-tile__d ch-num">
-            {t.day} <b>{t.date}</b>
+            <span>{t.day}</span>
+            <b>{t.date}</b>
           </span>
           {t.items.length === 0 && <span className="ch-prc-tile__none">No practice</span>}
-          {t.items.map((it, i) =>
-            it.href ? (
-              <Link key={i} className="ch-prc-tile__it" href={it.href}>
+          {t.items.map((it, i) => {
+            const inner = (
+              <>
                 <span className="ch-num">{it.time}</span>
                 <StateChip state={it.state} />
+              </>
+            );
+            return it.href ? (
+              <Link key={i} className="ch-prc-tile__it" href={it.href}>
+                {inner}
               </Link>
             ) : it.eventId && onPlan ? (
               <button key={i} type="button" className="ch-prc-tile__it" onClick={() => onPlan(it.eventId!)}>
-                <span className="ch-num">{it.time}</span>
-                <StateChip state={it.state} />
+                {inner}
               </button>
             ) : (
               <span key={i} className="ch-prc-tile__it">
-                <span className="ch-num">{it.time}</span>
-                <StateChip state={it.state} />
+                {inner}
               </span>
-            ),
-          )}
+            );
+          })}
         </div>
       ))}
     </div>
@@ -67,7 +85,7 @@ export function PlanRows({ rows, label }: { rows: ChPracticeRow[]; label: string
     <ul className="ch-prc-rows" aria-label={label}>
       {rows.map((r) => (
         <li key={r.id}>
-          <Link href={r.href} className="ch-prc-row">
+          <Link href={r.href} className="ch-prc-row" data-ch-press=".97">
             <span className="ch-prc-row__m">
               <span className="ch-prc-row__top">
                 <b>{r.title}</b>
@@ -87,19 +105,25 @@ export function PlanRows({ rows, label }: { rows: ChPracticeRow[]; label: string
   );
 }
 
+const UP_NEXT_ROWS = 4;
+
 /**
  * Practice, the coach's tab (S-PRC.home): the week, what's up next, and every plan. New plan is the page's one primary action; on a phone it is the
  * bar's plus. With no plan ever made, one card with the ways to start (S-PRC.home-first-run), and no empty headers.
  */
 export function PracticeHome({ data, openNew = false, previewSheet = false, template = null, newEvent = null }: { newEvent?: string | null; template?: { name: string; body: PlanBodyV2 } | null; data: ChPracticeHome; openNew?: boolean; previewSheet?: boolean }) {
   const phone = useChPhone();
-  const [sheet, setSheet] = useState<{ event: string | null } | null>(openNew ? { event: newEvent } : null);
+  const [sheet, setSheet] = useState<{ event: string | null; start?: NewPlanStart } | null>(openNew ? { event: newEvent } : null);
   const [pastOpen, setPastOpen] = useState(false);
   const [pastShown, setPastShown] = useState(20);
-  const newPlan = () => setSheet({ event: null });
+  const newPlan = (start?: NewPlanStart) => setSheet({ event: null, start });
+  const up = data.upNext;
+  // The day to scale: each block as wide as its minutes. A plan read without lengths draws no strip rather than a guessed one.
+  const segs = up && up.rows.every((r) => typeof r.min === 'number') ? up.rows.map((r, i) => ({ id: String(i), min: r.min ?? 0 })) : [];
+  const more = up ? Math.max(0, up.rows.length - UP_NEXT_ROWS) : 0;
   return (
     <main className={'ch-page ch-prc' + (phone ? ' is-phone' : '')} data-ch="practice" aria-labelledby="ch-prc-title">
-      {phone && <PhoneTop start title="Practice" action={<PhoneIconAction icon={Plus} label="New plan" onClick={newPlan} />} />}
+      {phone && <PhoneTop start title="Practice" action={<PhoneIconAction icon={Plus} label="New plan" onClick={() => newPlan()} />} />}
       <header className="ch-prc-h">
         <div>
           <LargeTitle id="ch-prc-title">Practice</LargeTitle>
@@ -108,7 +132,7 @@ export function PracticeHome({ data, openNew = false, previewSheet = false, temp
         {!phone && (
           <div className="ch-prc-h__a">
             <Button href="/golf/dashboard/practice/format">Plan format</Button>
-            <Button variant="primary" leftIcon={Plus} onClick={newPlan}>
+            <Button variant="primary" leftIcon={Plus} onClick={() => newPlan()}>
               New plan
             </Button>
           </div>
@@ -119,47 +143,85 @@ export function PracticeHome({ data, openNew = false, previewSheet = false, temp
         <WeekStrip week={data.week} onPlan={(event) => setSheet({ event })} />
       </section>
 
-      <PracticeTabs active="plans" />
-
       {data.firstRun ? (
-        <section className="ch-prc-card ch-prc-first" data-ch-code="CH-13396">
-          <h2>Plan your first practice</h2>
-          <p>Add blocks yourself, or let CoachHelm draft it from your team’s data. Players see it when you publish.</p>
+        <section className="ch-prc-card ch-prc-first" data-ch-code="CH-13396" aria-labelledby="ch-prc-first">
+          <h2 id="ch-prc-first">Plan your first practice</h2>
+          <p>Build it block by block, start from a template, or let CoachHelm draft it from your team’s data. Players see a plan only when you publish it.</p>
           {data.open.length ? (
-            <Button variant="primary" onClick={newPlan}>
-              New plan
-            </Button>
+            <ul className="ch-prc-starts">
+              <li>
+                <button type="button" className="ch-prc-start" data-ch-press=".97" onClick={() => newPlan('ask')}>
+                  <span>
+                    <b>Ask CoachHelm</b>
+                    <span>It drafts from your team’s data. You keep what you like.</span>
+                  </span>
+                  <Icon icon={ChevronRight} size={16} />
+                </button>
+              </li>
+              <li>
+                <Link className="ch-prc-start" data-ch-press=".97" href="/golf/dashboard/practice/templates">
+                  <span>
+                    <b>Start from a template</b>
+                    <span>Six starters from GolfHelm, ready to change.</span>
+                  </span>
+                  <Icon icon={ChevronRight} size={16} />
+                </Link>
+              </li>
+              <li>
+                <button type="button" className="ch-prc-start" data-ch-press=".97" onClick={() => newPlan('blank')}>
+                  <span>
+                    <b>Blank</b>
+                    <span>Add blocks yourself.</span>
+                  </span>
+                  <Icon icon={ChevronRight} size={16} />
+                </button>
+              </li>
+            </ul>
           ) : (
-            <Button variant="primary" href="/golf/dashboard/calendar">
-              Add a practice
-            </Button>
+            <div className="ch-prc-first__a">
+              <p>There is no practice on the calendar in the next two weeks to plan.</p>
+              <Button variant="primary" href="/golf/dashboard/calendar">
+                Add a practice
+              </Button>
+            </div>
           )}
         </section>
       ) : (
         <>
-          {data.upNext ? (
-            <section className="ch-prc-card ch-prc-next" aria-label="Up next">
-              <span className="ch-prc-next__k">Up next</span>
-              <h2>{data.upNext.title}</h2>
-              <p className="ch-num">{data.upNext.when}</p>
-              {data.upNext.rows.length > 0 ? (
-                <ol className="ch-prc-next__rows">
-                  {data.upNext.rows.map((r, i) => (
-                    <li key={i}>
-                      <span className="ch-num">{r.time}</span>
-                      <b>{r.title}</b>
-                      {r.place && <span>{r.place}</span>}
-                    </li>
-                  ))}
-                </ol>
+          {up ? (
+            <section className="ch-prc-card ch-prc-next" aria-labelledby="ch-prc-next">
+              <div className="ch-prc-next__k">
+                <span>Up next</span>
+                {up.state ? <StateChip state={up.state} /> : <StateChip state="No plan" />}
+              </div>
+              <h2 id="ch-prc-next">{up.title}</h2>
+              <p className="ch-prc-next__w ch-num">{up.when}</p>
+              {up.rows.length > 0 ? (
+                <>
+                  <DayStrip segs={segs} />
+                  <ol className="ch-prc-next__rows">
+                    {up.rows.slice(0, UP_NEXT_ROWS).map((r, i) => (
+                      <li key={i}>
+                        <span className="ch-num">{r.time}</span>
+                        <b>{r.title}</b>
+                        {r.place && <span>{r.place}</span>}
+                      </li>
+                    ))}
+                  </ol>
+                  {more > 0 && <p className="ch-prc-next__more ch-num">and {more} more {more === 1 ? 'block' : 'blocks'}</p>}
+                </>
               ) : (
-                <p className="ch-prc-next__none">No plan yet</p>
+                <p className="ch-prc-next__none">{up.eventId ? 'No plan for this practice yet.' : 'This plan has no blocks yet.'}</p>
               )}
               <div className="ch-prc-next__a">
-                {data.upNext.planHref && <Button href={data.upNext.planHref}>Open plan</Button>}
-                {data.upNext.editHref && <Button variant={data.upNext.planHref ? 'secondary' : 'primary'} href={data.upNext.editHref}>Edit</Button>}
-                {data.upNext.eventId && (
-                  <Button variant="primary" onClick={() => setSheet({ event: data.upNext!.eventId })}>
+                {up.planHref && <Button href={up.planHref}>Open plan</Button>}
+                {up.editHref && (
+                  <Button variant={up.planHref ? 'secondary' : 'primary'} href={up.editHref}>
+                    {up.planHref ? 'Edit' : 'Keep building'}
+                  </Button>
+                )}
+                {up.eventId && (
+                  <Button variant="primary" onClick={() => setSheet({ event: up.eventId })}>
                     Build plan
                   </Button>
                 )}
@@ -168,6 +230,13 @@ export function PracticeHome({ data, openNew = false, previewSheet = false, temp
           ) : (
             <EmptyState shape="week" title="No practices this week" body="Add one on the calendar, then plan it here." action={<Button href="/golf/dashboard/calendar">Go to Calendar</Button>} code="CH-13396" />
           )}
+        </>
+      )}
+
+      <PracticeTabs active="plans" />
+
+      {!data.firstRun && (
+        <>
           {data.drafts.length > 0 && (
             <section className="ch-prc-sec" aria-labelledby="ch-prc-drafts">
               <h2 id="ch-prc-drafts">Drafts</h2>
@@ -182,7 +251,7 @@ export function PracticeHome({ data, openNew = false, previewSheet = false, temp
           )}
           {data.past.length > 0 && (
             <section className="ch-prc-sec">
-              <button type="button" className="ch-prc-past" aria-expanded={pastOpen} onClick={() => setPastOpen((v) => !v)}>
+              <button type="button" className="ch-prc-open" aria-expanded={pastOpen} onClick={() => setPastOpen((v) => !v)}>
                 Past plans ({data.past.length})
                 <Icon icon={ChevronRight} size={16} />
               </button>
@@ -193,12 +262,12 @@ export function PracticeHome({ data, openNew = false, previewSheet = false, temp
         </>
       )}
       {phone && (
-        <Link href="/golf/dashboard/practice/format" className="ch-prc-past ch-prc-formatlink">
+        <Link href="/golf/dashboard/practice/format" className="ch-prc-open">
           Plan format
           <Icon icon={ChevronRight} size={16} />
         </Link>
       )}
-      <NewPlanSheet key={sheet?.event ?? 'new'} template={template} open={!!sheet} onClose={() => setSheet(null)} events={data.open} copies={data.copies} roster={data.roster} initialEvent={sheet?.event} preview={previewSheet} />
+      <NewPlanSheet key={`${sheet?.event ?? 'new'}:${sheet?.start ?? ''}`} template={template} open={!!sheet} onClose={() => setSheet(null)} events={data.open} copies={data.copies} roster={data.roster} initialEvent={sheet?.event} initialStart={sheet?.start} preview={previewSheet} />
     </main>
   );
 }

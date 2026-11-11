@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowDown, ArrowUp, ChevronRight, Copy, Flag, Coffee, LayoutGrid, Ellipsis, Plus, Printer, Trash2, User, Users, type LucideIcon } from 'lucide-react';
+import { ArrowDown, ArrowUp, ChevronRight, Copy, Flag, Coffee, LayoutGrid, Ellipsis, Plus, Printer, ShipWheel, Trash2, User, Users, type LucideIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { updateGolfEvent } from '@/app/golf/actions/calendar-events';
@@ -32,6 +32,7 @@ import { toSheetModel } from '../../coachhelm/plan/sheet/plan-sheet-model';
 import { addBlock, addGroup, BLOCK_KINDS, blockSub, blocksOf, clockFor, drillSlots, fmtMinutes, ghostsFrom, keepGhost, keyOfDrill, makeBlock, moveBlock, movePlayer, patchBlock, refOf, removeBlock, removeGroup, ribbon, setSlotDrill, splitGroups, STEPS, totalOf, type BuilderStep, type Ghost } from './builder-model';
 import { BankList, BlockFields, kindLabel, NewDrillSheet } from './Sheets';
 import { restoredDraft, useAutosave } from './useAutosave';
+import { DayStrip, type DaySeg, type DayTone } from '../DayStrip';
 
 const HelperSession = lazy(() => import('./HelperSession'));
 
@@ -88,7 +89,7 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
   const [ask, setAsk] = useState('');
   const [asking, setAsking] = useState(false);
 
-  const [helper, setHelper] = useState<HelperState>(preview?.ghosts ? (preview.kept ? { k: 'kept', count: blocksOf(preview.ghosts.draft.body).length, ids: [] } : { k: 'ghosts' }) : { k: 'idle' });
+  const [helper, setHelper] = useState<HelperState>(preview?.ghosts ? (preview.kept ? { k: 'kept', count: blocksOf(preview.ghosts.draft.body).length, ids: blocksOf(preview.ghosts.draft.body).map((b) => b.id) } : { k: 'ghosts' }) : { k: 'idle' });
   const [plan, setPlan] = useState<PlanPartData | null>(preview?.ghosts && !preview.kept ? preview.ghosts : null);
   const [ghosts, setGhosts] = useState<Ghost[]>(() => (preview?.ghosts && !preview.kept ? ghostsFrom(preview.ghosts.draft) : []));
   const [swap, setSwap] = useState<Ghost | null>(null);
@@ -337,19 +338,41 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
       </Button>
     </div>
   );
+  // The day to scale: a block is as wide as its minutes and takes its drill's kind; suggestions wait as outlines, and what is left of the window stays empty.
+  const toneOf = (d: Parameters<typeof keyOfDrill>[0]): DayTone => (d ? (kinds.get(keyOfDrill(d)) ?? 'plain') : 'plain');
+  const blockSegs = (b: PlanBlock, ghost: boolean): DaySeg[] => {
+    if (ghost) return [{ id: b.id, min: b.len, tone: 'ghost' }];
+    if (b.kind === 'team') return [{ id: b.id, min: b.len, tone: toneOf(b.drill) }];
+    if (b.kind === 'stations' && b.stations.length > 0) return b.stations.map((st) => ({ id: `${b.id}:${st.id}`, min: b.len / b.stations.length, tone: toneOf(st.drill) }));
+    return [{ id: b.id, min: b.len, tone: 'plain' }];
+  };
+  const ghostMin = ghosts.reduce((n, g) => n + g.block.len, 0);
+  const openMin = windowMin == null ? 0 : Math.max(0, windowMin - total - ghostMin);
+  const daySegs: DaySeg[] = [...blocks.flatMap((b) => blockSegs(b, false)), ...ghosts.flatMap((g) => blockSegs(g.block, true)), ...(openMin > 0 ? [{ id: 'open', min: openMin, tone: 'open' as const }] : [])];
   const ribbonBar = (
     <div className="ch-prc-ribbon" aria-live="polite" data-ch-code="CH-13896">
-      <span>
-        <b className="ch-num">{rib.used}</b> planned
-      </span>
-      <span className={'ch-num' + (rib.over ? ' is-over' : '')}>{rib.rest}</span>
-      {mixAll > 0 && (
-        <span className="ch-prc-mix" role="img" aria-label={`Drill time: skill ${mix.skill}, random ${mix.random}, pressure ${mix.pressure} minutes`}>
-          <i className="is-skill" style={{ flexGrow: mix.skill }} />
-          <i className="is-random" style={{ flexGrow: mix.random }} />
-          <i className="is-pressure" style={{ flexGrow: mix.pressure }} />
+      <div className="ch-prc-ribbon__w">
+        <span>
+          <b className="ch-num">{rib.used}</b> planned
         </span>
+        <span className={'ch-num' + (rib.over ? ' is-over' : '')}>{ghostMin > 0 ? `${fmtMinutes(ghostMin)} suggested` : rib.rest}</span>
+      </div>
+      <DayStrip segs={daySegs} />
+      {mixAll > 0 && (
+        <p className="ch-prc-ribbon__mix ch-num">
+          <span data-tone="skill">Skill {fmtMinutes(mix.skill)}</span>
+          <span data-tone="random">Random {fmtMinutes(mix.random)}</span>
+          <span data-tone="pressure">Pressure {fmtMinutes(mix.pressure)}</span>
+        </p>
       )}
+    </div>
+  );
+  const whenLine = (
+    <div className="ch-prb-when">
+      <span className="ch-num">{data.meta}</span>
+      <Button variant="ghost" size="sm" onClick={() => setMoving(moveFrom())} aria={{ label: 'Change the practice time' }}>
+        Change
+      </Button>
     </div>
   );
   const stepBar = <Segmented block={phone} label="Builder step" value={step} options={STEPS.map((s) => ({ value: s.value, label: s.label }))} onChange={(v) => setStep(v)} />;
@@ -404,14 +427,17 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
       <p>CoachHelm reads the calendar, the last 10 rounds and class times.</p>
       {facts}
       {helper.k === 'failed' && <p className="ch-prc-feat__fail" role="alert">{helper.line}</p>}
-      <button type="button" className="ch-prc-feat__go" onClick={() => startFill()}>
+      <Button className="ch-prc-feat__go" onClick={() => startFill()}>
         {cta}
-      </button>
+      </Button>
       {askField}
     </div>
   );
   const helperFold = (helper.k === 'running' || helper.k === 'ghosts' || helper.k === 'kept') && (
     <div className="ch-prc-fold" role="status" data-state={helper.k}>
+      <span className={'ch-prc-fold__m' + (helper.k === 'running' ? ' is-working' : '')} aria-hidden="true">
+        <Icon icon={ShipWheel} size={16} />
+      </span>
       <span className="ch-prc-fold__t">
         <b>CoachHelm</b>
         {helper.k === 'running' && ' · building suggestions'}
@@ -520,7 +546,7 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
             {/* The card's own keys are its buttons; these only add Alt+Arrow to reorder from anywhere in it. */}
             {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
             <div
-              className={'ch-prc-block' + (selected === b.id ? ' is-on' : '')}
+              className={'ch-prc-block' + (selected === b.id ? ' is-on' : '') + (keptIds.includes(b.id) ? ' is-kept' : '')}
               style={phone ? undefined : { minHeight: Math.max(56, b.len * 1.2) }}
               data-kind={b.kind}
               onKeyDown={(e) => {
@@ -538,17 +564,21 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
                   setInspector('block');
                 }}
               >
-                <span className="ch-prc-block__tm ch-num">
-                  {clockFor(data.start, data.zone, start)}
-                  <span>{fmtMinutes(b.len)}</span>
-                </span>
+                <span className="ch-prc-block__tm ch-num">{clockFor(data.start, data.zone, start)}</span>
                 <span className="ch-prc-block__t">
-                  <b>
-                    <Icon icon={KIND_ICON[b.kind]} size={14} /> {b.title}
-                  </b>
-                  <span>{blockSub(b)}</span>
+                  <b>{b.title}</b>
+                  <span className="ch-prc-block__s">
+                    <Icon icon={KIND_ICON[b.kind]} size={14} />
+                    <span>{blockSub(b)}</span>
+                  </span>
                   {drillNames.length > 0 && <span className="ch-prc-block__d">{drillNames.join(' · ')}</span>}
+                  {why[b.id]?.because && (
+                    <span className="ch-prc-block__why">
+                      <b>Because</b> {why[b.id]!.because}
+                    </span>
+                  )}
                 </span>
+                <span className="ch-prc-block__mn ch-num">{fmtMinutes(b.len)}</span>
               </button>
               {blockMenu(b, i)}
             </div>
@@ -591,7 +621,7 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
       {body.groups.map((g, gi) => (
         <section key={g.id} className={`ch-prc-group ${GROUP_TONES[gi] ?? ''}`} aria-label={`Group ${g.name}`}>
           <header>
-            <span className="ch-prc-disc">{g.name}</span>
+            <span className="ch-prc-disc" aria-hidden="true">{g.name}</span>
             <b>Group {g.name}</b>
             <span className="ch-num">{plural(g.players.length, 'player')}</span>
             <button type="button" className="ch-prc-more" aria-label={`Remove Group ${g.name}`} onClick={() => setBody((b) => removeGroup(b, g.id))}>
@@ -765,41 +795,65 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
           <p className="ch-prc-note">{plural(body.players.length, 'player')} into {splitN} groups.</p>
         </div>
       </FormSheet>
-      <FormSheet open={confirm} onClose={() => setConfirm(false)} title={`${publishLabel} ${title}?`} actionLabel={data.status === 'published' ? 'Republish' : `Publish to ${plural(body.players.length + data.coaches.length, 'person', 'people')}`} onAction={() => void doPublish()} busy={publishing} code="CH-13081" note={publishError ?? undefined}>
-        {republish && diff ? (
-          <div className="ch-prc-changed">
-            <h3>What changed</h3>
-            {diff.wordingOnly ? (
-              <p className="ch-prc-note">Only wording changed. No one will be notified.</p>
-            ) : (
-              <>
-                <ul>
-                  {changeLines(diff).map((l) => (
-                    <li key={l}>{l}</li>
-                  ))}
-                </ul>
-                <Switch label="Tell players" checked={tell} onChange={setTell} />
-                <p className="ch-prc-note ch-num">{tell ? `${plural(diff.affected.length, 'player')} whose day changed will be notified: ${affectedNames}.` : 'No one will be notified.'}</p>
-              </>
-            )}
-          </div>
-        ) : (
-          <dl className="ch-prc-facts">
-            <div>
-              <dt>When</dt>
-              <dd className="ch-num">{data.meta}</dd>
+      <Modal
+        open={confirm}
+        onClose={() => setConfirm(false)}
+        title={`${publishLabel} ${title}?`}
+        width={440}
+        code="CH-13081"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setConfirm(false)}>
+              Not yet
+            </Button>
+            <Button variant="primary" busy={publishing} onClick={() => void doPublish()}>
+              {data.status === 'published' ? 'Republish' : `Publish to ${plural(body.players.length + data.coaches.length, 'person', 'people')}`}
+            </Button>
+          </>
+        }
+      >
+        <div className="ch-prc-confirm">
+          {publishError && (
+            <p className="ch-prc-new__err" role="alert">
+              {publishError}
+            </p>
+          )}
+          {republish && diff ? (
+            <div className="ch-prc-changed">
+              <h3>What changed</h3>
+              {diff.wordingOnly ? (
+                <p className="ch-prc-note">Only wording changed. No one will be notified.</p>
+              ) : (
+                <>
+                  <ul>
+                    {changeLines(diff).map((l) => (
+                      <li key={l}>{l}</li>
+                    ))}
+                  </ul>
+                  <Switch label="Tell players" checked={tell} onChange={setTell} />
+                  <p className="ch-prc-note ch-num">{tell ? `${plural(diff.affected.length, 'player')} whose day changed will be notified: ${affectedNames}.` : 'No one will be notified.'}</p>
+                </>
+              )}
             </div>
-            <div>
-              <dt>Tells</dt>
-              <dd className="ch-num">{republish ? 'Players whose day changed, push and bell' : `${peopleLine}, push and bell`}</dd>
-            </div>
-            <div>
-              <dt>Files to</dt>
-              <dd>Documents › Practice plans</dd>
-            </div>
-          </dl>
-        )}
-      </FormSheet>
+          ) : (
+            <dl className="ch-prc-facts">
+              <div>
+                <dt>When</dt>
+                <dd className="ch-num">{data.meta}</dd>
+              </div>
+              <div>
+                <dt>Tells</dt>
+                <dd className="ch-num">{republish ? 'Players whose day changed, push and bell' : `${peopleLine}, push and bell`}</dd>
+              </div>
+              <div>
+                <dt>Files to</dt>
+                <dd>Documents › Practice plans</dd>
+              </div>
+            </dl>
+          )}
+          <p className="ch-prc-note">You get 8 seconds to undo before anyone is told.</p>
+        </div>
+      </Modal>
       <FormSheet open={!!moving} onClose={() => setMoving(null)} title="Practice time" actionLabel="Save" onAction={() => setMoveAsk(true)} actionDisabled={!moving?.start}>
         {moving && (
           <div className="ch-prc-timeform">
@@ -844,9 +898,7 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
         {restored && <p className="ch-prc-note" role="status">Restored your changes</p>}
         {staleBar}
         <div className="ch-prb-sub">
-          <button type="button" className="ch-prb-when ch-num" onClick={() => setMoving(moveFrom())}>
-            {data.meta}
-          </button>
+          {whenLine}
           {ribbonBar}
           {saveStatus}
         </div>
@@ -862,9 +914,7 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
         <BackLink onClick={() => void goBack()}>Practice</BackLink>
         <div className="ch-prb-head__t">
           <input id="ch-prb-title" className="ch-prb-title" aria-label="Plan title" maxLength={80} value={title} onChange={(e) => setTitle(e.target.value)} />
-          <button type="button" className="ch-prb-when ch-num" onClick={() => setMoving(moveFrom())}>
-            {data.meta}
-          </button>
+          {whenLine}
           {saveStatus}
         </div>
         <div className="ch-prb-head__steps">{stepBar}</div>

@@ -130,7 +130,8 @@ export async function PracticeTemplatesRoute() {
 export async function PracticePrintRoute({ planId }: { planId: string }) {
   const team = await coachTeam();
   if (!team) return NO_TEAM;
-  const [load, drills] = await Promise.all([loadCoachPlan(planId), loadPlanDrills(planId).catch(() => [])]);
+  // A drills read that fails is not "this plan has no drills": the studio says the appendix is missing instead of printing a plan that looks whole.
+  const [load, drills] = await Promise.all([loadCoachPlan(planId), loadPlanDrills(planId).then((list) => ({ list, unread: false }), () => ({ list: [], unread: true }))]);
   if (load.status !== 'ready') {
     return (
       <main className="ch-page" data-ch="practice">
@@ -138,7 +139,7 @@ export async function PracticePrintRoute({ planId }: { planId: string }) {
       </main>
     );
   }
-  return <PrintStudio plan={load.plan} drills={drills} draft={load.coach?.status.status === 'draft'} planHref={`/golf/dashboard/practice/plan/${planId}`} />;
+  return <PrintStudio plan={load.plan} drills={drills.list} drillsUnread={drills.unread} draft={load.coach?.status.status === 'draft'} planHref={`/golf/dashboard/practice/plan/${planId}`} />;
 }
 
 /** The builder, a coach's. A player on this address gets their own plan page's address; nothing of a draft reaches them. */

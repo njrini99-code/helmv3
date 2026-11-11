@@ -12,6 +12,7 @@ import { useChPhone } from '../../lib/use-phone';
 import { PhoneTop } from '../../shell/phone-chrome';
 import { Button } from '../../ui/Button';
 import { GroupList, GroupRow } from '../../ui/GroupList';
+import { InlineNotice } from '../../ui/Notices';
 import { LargeTitle } from '../../ui/LargeTitle';
 import { PhoneIconAction } from '../../ui/PhoneBar';
 import { Switch } from '../../ui/Switch';
@@ -361,8 +362,17 @@ const OPTION_WORDS: Record<PartKey, string> = {
 };
 const OPTION_NAMES: Record<PartKey, string> = { coach: 'Coach copy', board: 'Range board', cards: 'Pocket cards', drills: 'Drills appendix' };
 
+/** What Print will send, said before the press: the sheet count, then each piece's share ("5 sheets · Coach copy 2 · Drills appendix 3"). */
+export function printSummary(pages: ReadonlyArray<{ part: string }>): string {
+  if (pages.length === 0) return 'Nothing to print yet';
+  const by = new Map<string, number>();
+  for (const p of pages) by.set(p.part, (by.get(p.part) ?? 0) + 1);
+  const total = plural(pages.length, 'sheet');
+  return by.size === 1 ? `${total} · ${[...by.keys()][0]}` : `${total} · ${[...by].map(([part, n]) => `${part} ${n}`).join(' · ')}`;
+}
+
 /** Print studio (N-00 4.14): pick the pieces, see them as paper, print. Save as PDF is the print dialog's. */
-export function PrintStudio({ plan, drills, planHref, draft = false }: { plan: PlanSheetModel; drills: PrintDrill[]; planHref: string; draft?: boolean }) {
+export function PrintStudio({ plan, drills, planHref, draft = false, drillsUnread = false }: { plan: PlanSheetModel; drills: PrintDrill[]; planHref: string; draft?: boolean; /** The drills read failed: the appendix and the coach copy's drill list are missing, which is not the same as a plan with no drills. */ drillsUnread?: boolean }) {
   const phone = useChPhone();
   const router = useRouter();
   const hasRotation = plan.rows.some((r) => r.rotation);
@@ -373,19 +383,23 @@ export function PrintStudio({ plan, drills, planHref, draft = false }: { plan: P
   const pages = useMemo(() => buildPages(plan, drills, parts, draft), [plan, drills, parts, draft]);
   const offered: PartKey[] = ['coach', ...(hasRotation ? (['board'] as const) : []), ...(plan.groups.length > 0 ? (['cards'] as const) : []), ...(drills.length > 0 ? (['drills'] as const) : [])];
   const print = () => void printNode(<PrintPages pages={pages} qr={qr} />);
+  const appendix = pages.filter((p) => p.part === OPTION_NAMES.drills).length;
   return (
     <main className={'ch-page ch-prc ch-prt' + (phone ? ' is-phone' : '')} data-ch="practice" aria-labelledby="ch-prc-title">
       {phone && <PhoneTop title="Print" back={{ label: 'Plan', onBack: () => router.push(planHref) }} action={pages.length > 0 ? <PhoneIconAction icon={Printer} label="Print" onClick={print} /> : undefined} />}
       <header className="ch-prc-h">
         <LargeTitle id="ch-prc-title">Print</LargeTitle>
-        <div className="ch-prc-h__a">
-          <Button variant="primary" disabled={pages.length === 0} onClick={print}>
-            Print
-          </Button>
-        </div>
+        {!phone && (
+          <div className="ch-prc-h__a">
+            <Button variant="primary" disabled={pages.length === 0} onClick={print}>
+              Print
+            </Button>
+          </div>
+        )}
       </header>
       <div className="ch-prt-layout">
         <aside className="ch-prt-side">
+          {drillsUnread && <InlineNotice title="This plan’s drills didn’t load" body="The coach copy prints without its drill list and there is no drills appendix. The rest of the plan is whole." onRetry={() => router.refresh()} />}
           <GroupList className="ch-prt-opts">
             {offered.map((k) => (
               <GroupRow key={k} twoLine className="ch-prt-opt">
@@ -397,6 +411,11 @@ export function PrintStudio({ plan, drills, planHref, draft = false }: { plan: P
               </GroupRow>
             ))}
           </GroupList>
+          <p className="ch-prt-count ch-num" role="status" data-ch="print-count">
+            <b>{printSummary(pages)}</b>
+            {appendix > 2 && <span>The drills appendix alone is {appendix} sheets.</span>}
+            {draft && <span>Every sheet says Draft.</span>}
+          </p>
           <p className="ch-prt-note">Choose Save as PDF in the print dialog to keep a copy.</p>
         </aside>
         <div className="ch-prt-pages">

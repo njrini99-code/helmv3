@@ -46,7 +46,7 @@ const HOME: ChPracticeHome = {
     { id: 'e-mon', label: 'Monday, Nov 9', detail: 'All day · Lakeside', title: 'Monday practice', place: 'Lakeside', allDay: true },
   ],
   copies: [{ id: 'a', label: 'Tuesday practice · Tue, Nov 3' }],
-  roster: Object.keys(PP_NAMES),
+  roster: [...PP_NAMES.keys()],
   firstRun: false,
 };
 
@@ -77,17 +77,18 @@ export function PreviewPracticeHome({ state }: { state?: string }) {
 }
 
 const DRILLS: ChBuilderData['drills'] = [
-  { ref: 'team:1', name: 'Clock drill, 3 to 5 ft', area: 'Putting', kind: 'skill', minutes: 20, source: 'Your bank' },
-  { ref: 'team:2', name: 'Lag ladder, 20 to 40 ft', area: 'Putting', kind: 'skill', minutes: 20, source: 'Your bank' },
-  { ref: 'team:3', name: 'Make 7 from 5 feet', area: 'Putting', kind: 'pressure', minutes: 25, source: 'Your bank' },
-  { ref: 'lib:4', name: 'Gate drill, 4 feet', area: 'Putting', kind: 'skill', minutes: 15, source: 'GolfHelm' },
-  { ref: 'lib:5', name: 'Up and down ladder', area: TERMS.shortGame.long, kind: 'random', minutes: 20, source: 'GolfHelm' },
+  // The refs the design's plan names (fixtures-practice-thread), so a slot shows its drill and the mix bar has its kinds.
+  { ref: 'team:clock', name: 'Clock drill, 3 to 5 ft', area: 'Putting', kind: 'skill', minutes: 20, source: 'Your bank' },
+  { ref: 'team:lag', name: 'Lag ladder, 20 to 40 ft', area: 'Putting', kind: 'skill', minutes: 20, source: 'Your bank' },
+  { ref: 'team:make7', name: 'Make 7 from 5 feet', area: 'Putting', kind: 'pressure', minutes: 25, source: 'Your bank' },
+  { ref: 'team:updown', name: 'Up and down from 20 yards', area: TERMS.shortGame.long, kind: 'random', minutes: 20, source: 'Your bank' },
+  { ref: 'lib:gate', name: 'Gate drill, 4 feet', area: 'Putting', kind: 'skill', minutes: 15, source: 'GolfHelm' },
 ];
 const PLAN: PlanPartData = PT_PLAN;
 
 /** `coachhelm-practice-builder?state=`: the builder, with its save, publish and helper seams closed. */
 export function PreviewPracticeBuilder({ state }: { state?: string }) {
-  const roster = Object.entries(PP_NAMES).map(([id, name]) => ({ id, name }));
+  const roster = [...PP_NAMES].map(([id, name]) => ({ id, name }));
   const empty = state === 'empty' || state === 'ghosts' || state === 'kept' || state === undefined;
   const body = empty && state !== 'kept' ? emptyBody('Lakeside Golf Club', roster.map((r) => r.id), false) : PLAN.draft.body;
   const data: ChBuilderData = {
@@ -128,7 +129,7 @@ const LIB_GOLFHELM: ChDrillRow[] = [
   { id: 'l1', source: 'lib', name: 'Gate drill, 4 feet', area: 'putting', areaLabel: 'Putting', kind: 'skill', minutes: 15, players: null, levels: null },
   { id: 'l2', source: 'lib', name: 'Random nine', area: 'course', areaLabel: 'Course', kind: 'random', minutes: 45, players: null, levels: null },
 ];
-const ROSTER = Object.entries(PP_NAMES).map(([id, name]) => ({ id, name }));
+const ROSTER = [...PP_NAMES].map(([id, name]) => ({ id, name }));
 
 /** `coachhelm-practice-library?tab=&state=`: Drills, one drill, Groups and Templates, with every press closed. */
 export function PreviewPracticeLibrary({ tab, state }: { tab?: string; state?: string }) {
