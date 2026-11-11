@@ -29,7 +29,7 @@ import { FocusActions, useFocusActions } from '../screens/coachhelm/parts';
 import type { ChCoachHelmWrites } from '../screens/coachhelm/writes';
 
 const jonah = PREVIEW_HELM_COACH.players.list.find((p) => p.name === 'Jonah Okafor')!;
-const READ: ChInsight = { ...jonah.top, assigned: null, declined: false, stale: false };
+const READ: ChInsight = { ...jonah.top, assigned: null, declined: false, stale: null };
 const OTHER: ChInsight = { ...READ, id: `${READ.id}-other`, title: 'Another read' };
 
 const okWrites = (over: Partial<ChCoachHelmWrites> = {}): ChCoachHelmWrites => ({
