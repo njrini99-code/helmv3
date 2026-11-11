@@ -29,6 +29,15 @@ describe('event desk tabs on a phone', () => {
   });
 });
 
+describe('event desk round pills on a phone', () => {
+  it('a short pill ("R1", 38px) reaches 44 across through a layer in the gap, drawn no wider (F-0021)', () => {
+    expect(rule('.ch-tour-desk.is-phone .ch-tour-desk-pill')).toMatch(/position:\s*relative/);
+    const reach = rule('.ch-tour-desk.is-phone .ch-tour-desk-pill::after');
+    expect(reach).toMatch(/inset:\s*0 min\(0px, calc\(50% - 22px\)\)/);
+    expect(reach).toMatch(/content:\s*''/);
+  });
+});
+
 describe('event desk hole grid colours', () => {
   it('draws the Team vs par row under par in the score-under red (D-42), never the chart gain green', () => {
     const under = rule('.ch-tour-desk-heat.is-under');

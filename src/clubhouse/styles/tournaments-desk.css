@@ -210,7 +210,14 @@
   outline-offset: 2px;
 }
 .ch-tour-desk.is-phone .ch-tour-desk-pill {
+  position: relative;
   height: 44px;
+}
+/* "R1" is 38px wide: it reaches 44 across through a layer inside the 6px gap, as the desk's short tab does (F-0021). */
+.ch-tour-desk.is-phone .ch-tour-desk-pill::after {
+  position: absolute;
+  inset: 0 min(0px, calc(50% - 22px));
+  content: '';
 }
 /* On a phone the section is the card, and its body starts on the heading's rule (ui.css). The pills, the hole grid's
    switches and the comparison's line bring no room of their own and sat against that rule: they take 12, as the
