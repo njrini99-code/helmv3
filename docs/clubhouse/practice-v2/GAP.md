@@ -52,3 +52,34 @@ Open, in order:
 - 19: `builder?state=new` is still a dead preview state.
 - Not captured: Reduce Motion, the largest Text Size, and desktop for run, library and print.
 - A real paginated PDF of the printed plan was not produced; page breaks are checked by rule only (`coachhelm-plan.css:91`).
+
+## Round two (10 to 11 Nov)
+
+Closed since the list above:
+- 12: New plan's Ask CoachHelm asks how long and what to work on, and both go into the helper's first message.
+- 14: Run gives the clock once a row.
+- 19: `builder?state=new` is gone.
+- Reduce Motion and the largest Text Size were captured and viewed on Home, the builder and Run; desktop on every state.
+- A real paginated file was produced (Chrome, US Letter). No schedule row or rotation is split across sheets.
+
+Found by looking at the captures and the printed file, and fixed:
+
+| # | Score | Where | What was wrong | Fix |
+|---|---|---|---|---|
+| 23 | 5 | Every form, desktop | New plan, New drill, Save group and the move question were phone sheets with no desktop form: unstyled on a Mac. | `PracticeSheet` (the shared `FormSheet` on a phone, the shared `Modal` on a desk) |
+| 24 | 5 | Print, on paper | The print root sits outside the Clubhouse root, so the font variables were missing and the plan printed in one size of system type. | the root carries the font class (`PrintPlan.tsx`) |
+| 25 | 5 | Print, on paper | Every piece was set a hair taller than the sheet inside the print margin, so each footer printed alone on a sheet of its own: 12 sheets for a plan the studio called 6. | pieces stop short of the sheet (`min-height: 9.3in`) |
+| 26 | 4 | Print, on paper | Range board and pocket cards were drawn as landscape sheets. WebKit has no named pages (portrait paper), and Chrome turned the paper but laid the piece out at the portrait width, two-thirds of the sheet. | every piece is a portrait sheet, on screen and on paper |
+| 27 | 4 | Print studio | "Coach copy 2 sheets" was said for any plan; a three-hour plan's schedule alone runs past one sheet. | the studio measures each piece against a sheet, counts real sheets and marks each break on the paper |
+| 28 | 3 | A drill, desktop and phone | The drill page reused the bank row's class name and drew as a row. | `ch-prc-drillpage` |
+| 29 | 3 | Review, dark | The sheet's title took the page's light ink on white paper. | `.ch-prc h2` sets no colour |
+| 30 | 3 | Builder, dark | Suggestion segments on the day strip were a faint outline, and accent text used the fill green. | outline in `--ch-accent-ink` at 1.5px; accent text in `--ch-accent-ink` |
+| 31 | 2 | Builder, desktop | The stale bar ran to the page edge and its lower edge sat under the inspector. | the board's margin, above and below |
+
+Still open:
+- 18: no class-time read exists for the helper's third fact; nothing is invented.
+- The printed coach copy is large: a three-hour plan with a rotation takes two sheets for the schedule and one for drills, bring and notes. The sheet's print density belongs to `screens/coachhelm/plan/sheet/**`.
+- Landscape paper for the range board. It needs a mechanism that holds in Safari (there is none in CSS today); until then the board prints portrait.
+- "Save as PDF" (`sharePlanPdf`) cuts between rows by the same rule as print; its file was not opened and looked at.
+- The shared Segmented clips "Templates" at the largest Text Size on a phone; a secondary Button on the green helper card is a dark key in dark. Both are shared-primitive requests.
+

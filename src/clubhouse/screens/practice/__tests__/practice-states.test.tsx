@@ -9,7 +9,7 @@ import { CoachPlanBar, type ChPlanStatus } from '../CoachPlanBar';
 import { DayStrip, dayStripLabel } from '../DayStrip';
 import { PlayerPracticeHome } from '../PlayerPracticeHome';
 import { PracticeHome } from '../PracticeHome';
-import { PrintStudio, printSummary } from '../PrintStudio';
+import { PrintStudio, printSummary, sheetNumbers } from '../PrintStudio';
 
 const chat = vi.fn();
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }) }));
@@ -63,6 +63,29 @@ describe('print says what it is missing and what it will send', () => {
     expect(printSummary([{ part: 'Coach copy' }, { part: 'Coach copy' }, { part: 'Range board' }, { part: 'Drills appendix' }, { part: 'Drills appendix' }, { part: 'Drills appendix' }])).toBe('6 sheets · Coach copy 2 · Range board 1 · Drills appendix 3');
     const { container } = render(<PrintStudio plan={plan} drills={[]} planHref="/x" />);
     expect(container.querySelector('[data-ch="print-count"]')?.textContent).toContain('3 sheets · Coach copy 2 · Range board 1');
+  });
+  it('a piece that runs past one sheet counts every sheet it takes, and the page numbers are the sheets in the hand', () => {
+    expect(printSummary([{ part: 'Coach copy', sheets: 2 }, { part: 'Coach copy', sheets: 1 }, { part: 'Range board' }])).toBe('4 sheets · Coach copy 3 · Range board 1');
+    // The schedule takes two sheets: its footer prints on the second, and the piece after it is the third of four.
+    expect(sheetNumbers([2, 1, 1])).toEqual([
+      { first: 1, n: 2, of: 4 },
+      { first: 3, n: 3, of: 4 },
+      { first: 4, n: 4, of: 4 },
+    ]);
+    expect(sheetNumbers([0, 1])).toEqual([
+      { first: 1, n: 1, of: 2 },
+      { first: 2, n: 2, of: 2 },
+    ]);
+  });
+  it('the appendix is four drills a sheet, so a drill with its diagram never runs onto the next', () => {
+    const drills = Array.from({ length: 9 }, (_, i) => ({ name: `Drill ${i + 1}`, line: 'Putting · 20 min', setup: 'Tees.', goal: 'Inside 3 feet.' }));
+    const { container } = render(<PrintStudio plan={plan} drills={drills} planHref="/x" startWith={{ drills: true }} />);
+    expect(container.querySelector('[data-ch="print-count"]')?.textContent).toContain('Drills appendix 3');
+    expect(container.querySelector('[data-ch="print-count"]')?.textContent).toContain('The drills appendix alone is 3 sheets.');
+  });
+  it('no switch promises a sheet count or a paper turn the printer may not give', () => {
+    render(<PrintStudio plan={plan} drills={[]} planHref="/x" />);
+    expect(screen.queryByText(/Two pages|landscape/i)).toBeNull();
   });
   it('nothing in a printed sheet can be pressed', () => {
     const { container } = render(<PrintStudio plan={plan} drills={[{ name: 'Lag ladder', line: 'Putting · 20 min', setup: 'Tees.', goal: 'Inside 3 feet.' }]} planHref="/x" />);

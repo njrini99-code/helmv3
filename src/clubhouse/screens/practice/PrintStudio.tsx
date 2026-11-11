@@ -3,9 +3,10 @@
 import { Printer } from 'lucide-react';
 import qrcode from 'qrcode-generator';
 import { useRouter } from 'next/navigation';
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { PracticePlanSheet } from '../coachhelm/plan/sheet/PracticePlanSheet';
 import type { PlanSheetModel, SheetRow } from '../coachhelm/plan/sheet/plan-sheet-model';
+import { LETTER_CONTENT, pageCuts } from '../coachhelm/plan/page-cuts';
 import { printNode } from '../coachhelm/plan/PrintPlan';
 import { plural } from '../../lib/plural';
 import { useChPhone } from '../../lib/use-phone';
@@ -33,12 +34,15 @@ type Parts = Record<PartKey, boolean>;
 interface PrintPage {
   key: string;
   part: string;
+  /** The pieces read from a distance or cut apart (range board, pocket cards). Same paper as the rest. */
   wide: boolean;
   node: (at: { n: number; of: number; qr: string | null }) => ReactNode;
 }
 
-const PAPER = { tall: { w: 816, h: 1056 }, wide: { w: 1056, h: 816 } };
-const DRILLS_PER_PAGE = 6;
+/** US Letter, portrait: every piece prints on it (a landscape sheet cannot be promised in Safari; see `.ch-prt-page--tall` in practice.css). */
+const PAPER = { w: 816, h: 1056 };
+/** Two rows of two. A drill with its diagram and scoring is about 3.4in tall, so a third row ran onto a second sheet (seen in the paginated render). */
+const DRILLS_PER_PAGE = 4;
 const WORDS: Record<number, string> = { 5: 'Five', 10: 'Ten', 12: 'Twelve', 15: 'Fifteen', 20: 'Twenty', 25: 'Twenty-five', 30: 'Thirty' };
 
 function chunk<T>(items: T[], size: number): T[][] {
@@ -75,6 +79,23 @@ function Foot({ left, qr, caption, page }: { left: ReactNode; qr: string | null;
 }
 
 const pageWord = (at: { n: number; of: number }) => `Page ${at.n} of ${at.of}`;
+/** What must stay whole on paper: a schedule row, a rotation, a pocket card, a drill, a line of the range board. The print rules keep the same ones. */
+const KEEP_WHOLE = '.drow, .pp-rot, .ch-prt-card, .ch-prt-drills article, .ch-prt-board tbody tr';
+
+/**
+ * Each piece's place among the sheets that will come out of the printer. A piece that runs past one sheet takes as many as it needs, and its number is its last
+ * sheet's (its footer prints there), so "Page 2 of 4" on paper is the second of four sheets in the hand.
+ */
+export function sheetNumbers(spans: readonly number[]): Array<{ first: number; n: number; of: number }> {
+  const of = spans.reduce((sum, s) => sum + Math.max(1, s), 0);
+  let before = 0;
+  return spans.map((s) => {
+    const span = Math.max(1, s);
+    const at = { first: before + 1, n: before + span, of };
+    before += span;
+    return at;
+  });
+}
 const hubLine = (plan: PlanSheetModel) => `${plan.team} · Team Hub › Documents › Practice plans`;
 const dateWord = (plan: PlanSheetModel) => `${plan.dayWord} ${plan.dayNum}${plan.monthWord ? ` ${plan.monthWord}` : ''}`;
 
@@ -306,31 +327,59 @@ function pageClass(p: PrintPage): string {
   return 'ch-prt-page ' + (p.wide ? 'ch-prt-page--wide' : 'ch-prt-page--tall');
 }
 
-function PrintPages({ pages, qr }: { pages: PrintPage[]; qr: string | null }) {
+function PrintPages({ pages, qr, numbers }: { pages: PrintPage[]; qr: string | null; numbers: ReadonlyArray<{ n: number; of: number }> }) {
   return (
     <>
       {pages.map((p, i) => (
         <section key={p.key} className={pageClass(p)}>
-          {p.node({ n: i + 1, of: pages.length, qr })}
+          {p.node({ n: numbers[i]?.n ?? i + 1, of: numbers[i]?.of ?? pages.length, qr })}
         </section>
       ))}
     </>
   );
 }
 
-/** One sheet on screen: laid out at its real paper size and scaled to the column, so it looks as it will print. */
-function Sheet({ page, at, qr }: { page: PrintPage; at: { n: number; of: number }; qr: string | null }) {
+/**
+ * One piece on screen: laid out at its real paper size, inside the print's own margin, and scaled to the column, so it looks as it will print. It is measured against a real sheet of US Letter:
+ * a piece longer than one sheet says how many it takes and shows where each break falls (above a row, never through one), so the count is the printer's count.
+ */
+function Sheet({ page, at, qr, onSpan }: { page: PrintPage; at: { first: number; n: number; of: number }; qr: string | null; onSpan: (key: string, sheets: number) => void }) {
   const frame = useRef<HTMLDivElement>(null);
-  const paper = page.wide ? PAPER.wide : PAPER.tall;
+  const paper = PAPER;
+  const sheet = LETTER_CONTENT;
   const [scale, setScale] = useState<number | null>(null);
   const [tall, setTall] = useState(paper.h);
+  const [cuts, setCuts] = useState<number[]>([]);
+  const [padTop, setPadTop] = useState(0);
   const inner = useRef<HTMLDivElement>(null);
+  const key = page.key;
   useLayoutEffect(() => {
     const el = frame.current;
     if (!el) return;
     const fit = () => {
-      setScale(Math.min(1, el.clientWidth / paper.w));
+      // Hidden (the page is being printed, and the studio is not part of the print): nothing to measure, and the last count stands.
+      if (!el.clientWidth) return;
+      const k = Math.min(1, el.clientWidth / paper.w);
+      setScale(k);
       setTall(Math.max(paper.h, inner.current?.offsetHeight ?? paper.h));
+      // The content box is the sheet's printable area: the same width the printer gives it, so the same lines and the same heights.
+      const section = inner.current?.querySelector<HTMLElement>('.ch-prt-page');
+      if (!section) return;
+      // The paper on screen is stretched to a whole sheet, which pins the footer to its foot and grows the range board to fill it. What decides the sheet count
+      // is the piece's own height, so it is measured unstretched and put back before anything is painted.
+      const stretched = section.style.minHeight;
+      section.style.minHeight = '0px';
+      const box = section.getBoundingClientRect();
+      const cs = getComputedStyle(section);
+      const pad = parseFloat(cs.paddingTop) || 0;
+      const top = box.top + pad * k;
+      const body = Math.max(0, section.scrollHeight - pad - (parseFloat(cs.paddingBottom) || 0));
+      const blocks = k > 0 ? [...section.querySelectorAll<HTMLElement>(KEEP_WHOLE)].map((b) => { const r = b.getBoundingClientRect(); return [(r.top - top) / k, (r.bottom - top) / k] as const; }) : [];
+      section.style.minHeight = stretched;
+      const next = pageCuts(body, sheet.h, blocks);
+      setPadTop(pad);
+      setCuts((prev) => (prev.length === next.length && prev.every((c, i) => Math.abs(c - next[i]!) < 1) ? prev : next));
+      onSpan(key, next.length + 1);
     };
     fit();
     if (typeof ResizeObserver === 'undefined') return;
@@ -338,24 +387,32 @@ function Sheet({ page, at, qr }: { page: PrintPage; at: { n: number; of: number 
     ro.observe(el);
     if (inner.current) ro.observe(inner.current);
     return () => ro.disconnect();
-  }, [paper.w, paper.h]);
+    // `onSpan` is the parent's stable setter.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paper.w, paper.h, sheet.h, key]);
   const k = scale ?? 1;
   return (
     <figure className="ch-prt-sheet">
       <div ref={frame} className="ch-prt-frame" style={{ maxWidth: paper.w, height: scale === null ? undefined : tall * k, aspectRatio: scale === null ? `${paper.w} / ${paper.h}` : undefined }}>
         <div ref={inner} className="ch-prt-paper" data-ui="clubhouse" data-ready={scale === null ? undefined : ''} style={{ width: paper.w, minHeight: paper.h, transform: `scale(${k})` }}>
-          <section className={pageClass(page)}>{page.node({ ...at, qr })}</section>
+          <section className={pageClass(page)}>{page.node({ n: at.n, of: at.of, qr })}</section>
         </div>
+        {cuts.map((cut, i) => (
+          <span key={i} className="ch-prt-cut ch-num" style={{ top: (cut + padTop) * k }} data-ch="print-cut">
+            Sheet {at.first + i + 1} starts here
+          </span>
+        ))}
       </div>
       <figcaption className="ch-num">
-        {page.part} · Page {at.n} of {at.of}
+        {page.part} · {cuts.length ? `Pages ${at.first} to ${at.n}` : `Page ${at.n}`} of {at.of}
       </figcaption>
     </figure>
   );
 }
 
+// No sheet counts here: the count line under the switches is measured, and a long plan's coach copy is more than two.
 const OPTION_WORDS: Record<PartKey, string> = {
-  coach: 'Two pages, portrait',
+  coach: 'Schedule, then drills, what to bring and notes',
   board: 'Rotation only, readable at ten feet',
   cards: 'One per group, two to a sheet',
   drills: 'Set-ups and scoring, two columns',
@@ -363,11 +420,11 @@ const OPTION_WORDS: Record<PartKey, string> = {
 const OPTION_NAMES: Record<PartKey, string> = { coach: 'Coach copy', board: 'Range board', cards: 'Pocket cards', drills: 'Drills appendix' };
 
 /** What Print will send, said before the press: the sheet count, then each piece's share ("5 sheets · Coach copy 2 · Drills appendix 3"). */
-export function printSummary(pages: ReadonlyArray<{ part: string }>): string {
+export function printSummary(pages: ReadonlyArray<{ part: string; sheets?: number }>): string {
   if (pages.length === 0) return 'Nothing to print yet';
   const by = new Map<string, number>();
-  for (const p of pages) by.set(p.part, (by.get(p.part) ?? 0) + 1);
-  const total = plural(pages.length, 'sheet');
+  for (const p of pages) by.set(p.part, (by.get(p.part) ?? 0) + Math.max(1, p.sheets ?? 1));
+  const total = plural([...by.values()].reduce((sum, n) => sum + n, 0), 'sheet');
   return by.size === 1 ? `${total} · ${[...by.keys()][0]}` : `${total} · ${[...by].map(([part, n]) => `${part} ${n}`).join(' · ')}`;
 }
 
@@ -382,8 +439,14 @@ export function PrintStudio({ plan, drills, planHref, draft = false, drillsUnrea
   const qr = useMemo(() => (origin ? qrSvg(`${origin}${planHref}`) : null), [origin, planHref]);
   const pages = useMemo(() => buildPages(plan, drills, parts, draft), [plan, drills, parts, draft]);
   const offered: PartKey[] = ['coach', ...(hasRotation ? (['board'] as const) : []), ...(plan.groups.length > 0 ? (['cards'] as const) : []), ...(drills.length > 0 ? (['drills'] as const) : [])];
-  const print = () => void printNode(<PrintPages pages={pages} qr={qr} />);
-  const appendix = pages.filter((p) => p.part === OPTION_NAMES.drills).length;
+  // How many sheets each piece really takes, measured on the paper below against US Letter. Until a piece is measured it counts as one.
+  const [spans, setSpans] = useState<Record<string, number>>({});
+  const onSpan = useCallback((key: string, sheets: number) => setSpans((prev) => (prev[key] === sheets ? prev : { ...prev, [key]: sheets })), []);
+  const numbers = useMemo(() => sheetNumbers(pages.map((p) => spans[p.key] ?? 1)), [pages, spans]);
+  const counted = pages.map((p) => ({ part: p.part, sheets: spans[p.key] ?? 1 }));
+  const print = () => void printNode(<PrintPages pages={pages} qr={qr} numbers={numbers} />);
+  const appendix = counted.filter((p) => p.part === OPTION_NAMES.drills).reduce((sum, p) => sum + p.sheets, 0);
+  const spilled = counted.filter((p) => p.sheets > 1).map((p) => p.part).filter((part, i, all) => all.indexOf(part) === i);
   return (
     <main className={'ch-page ch-prc ch-prt' + (phone ? ' is-phone' : '')} data-ch="practice" aria-labelledby="ch-prc-title">
       {phone && <PhoneTop title="Print" back={{ label: 'Plan', onBack: () => router.push(planHref) }} action={pages.length > 0 ? <PhoneIconAction icon={Printer} label="Print" onClick={print} /> : undefined} />}
@@ -412,7 +475,8 @@ export function PrintStudio({ plan, drills, planHref, draft = false, drillsUnrea
             ))}
           </GroupList>
           <p className="ch-prt-count ch-num" role="status" data-ch="print-count">
-            <b>{printSummary(pages)}</b>
+            <b>{printSummary(counted)}</b>
+            {spilled.length > 0 && <span>{spilled.join(' and ')} {spilled.length === 1 ? 'runs' : 'run'} past one sheet. Each break falls between rows, shown on the paper.</span>}
             {appendix > 2 && <span>The drills appendix alone is {appendix} sheets.</span>}
             {draft && <span>Every sheet says Draft.</span>}
           </p>
@@ -422,7 +486,7 @@ export function PrintStudio({ plan, drills, planHref, draft = false, drillsUnrea
           {pages.length === 0 ? (
             <p className="ch-prt-none">Turn on a page to print it.</p>
           ) : (
-            pages.map((p, i) => <Sheet key={p.key} page={p} at={{ n: i + 1, of: pages.length }} qr={qr} />)
+            pages.map((p, i) => <Sheet key={p.key} page={p} at={numbers[i] ?? { first: i + 1, n: i + 1, of: pages.length }} qr={qr} onSpan={onSpan} />)
           )}
         </div>
       </div>

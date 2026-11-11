@@ -59,11 +59,17 @@ publish function clears (`editedAfterPublish` in `data/practice-plan.ts`). `vers
   anything is written or sent.
 - **Run** (`PlanRun`). From 15 minutes before the start until the end, on a published plan: the block under way, each
   group's stop now and next (one clock a row), and two shifts of five minutes that save and republish.
-- **Print** (`PrintStudio`). Coach copy (two sheets), range board (a sheet a rotation, landscape), pocket cards (two
-  groups a landscape sheet) and the drills appendix (six drills a sheet). The studio says how many sheets it will send
-  before the press, and says when the appendix alone is more than two. Nothing interactive is inside a printed sheet.
-  A schedule row and a rotation carry `break-inside: avoid` (`coachhelm-plan.css`), and so do a pocket card and a
-  drill.
+- **Print** (`PrintStudio`). Four pieces, each a portrait sheet of US Letter: the coach copy (the schedule, then
+  drills, what to bring and notes), the range board (a sheet a rotation), pocket cards (two groups a sheet) and the
+  drills appendix (four drills a sheet). The studio draws each piece on its paper inside the print's own 16mm margin,
+  measures it against one sheet (`LETTER_CONTENT`, 695 by 935 CSS pixels), and says how many sheets will come out:
+  a piece that runs past one sheet counts every sheet it takes, each break is marked on the paper ("Sheet 2 starts
+  here") and falls above a row, never through one (`pageCuts`), and the page number in a footer is the sheet in the
+  hand. It says when the appendix alone is more than two sheets. Nothing interactive is inside a printed sheet. A
+  schedule row and a rotation carry `break-inside: avoid` (`coachhelm-plan.css`), and so do a pocket card, a drill and
+  a line of the range board.
+- **Forms** (`PracticeSheet`). New plan, New drill and Save group are the shared `FormSheet` on a phone and the shared
+  `Modal` on a desk, with the same fields and the same one action.
 
 ## What a player gets
 
@@ -77,6 +83,20 @@ Practice needs twelve migrations that are held (`supabase/migrations/HELD.md`): 
 `20261026090300`, `20261102090000` and `20261104090000`. On a database without them, or with only some, every Practice
 address says "Practice isn't on yet". Saving a Why line or a plan format without its migration answers "Comes with the
 Practice tab."
+
+## What the printed file showed (10 and 11 Nov)
+
+A real paginated file was made from the studio's own Print press, in Chrome (WebKit's test browser cannot write a
+PDF), for a three-hour plan, a twelve-hour plan, every piece switched on, and a fourteen-drill appendix.
+
+- The studio's count and the file's page count are equal in all four: 4, 5, 7 and 8 sheets.
+- No schedule row, rotation, pocket card or drill is split across two sheets.
+- Type and colour print as drawn: the print root carries the Clubhouse font class, which it did not before.
+- Every piece is portrait. WebKit has no named pages (the `page` property reads as unsupported), so a landscape piece
+  printed on portrait paper there, and Chrome turned the paper but laid the piece out at the portrait width. A
+  landscape range board needs a mechanism that holds in Safari.
+- Not done: a print from Safari on a phone or a Mac to paper or to its own PDF. WebKit was measured in print media
+  (nothing outside the print root shows, nothing can be pressed, the type is right), which is not a paginated file.
 
 ## Previews
 
@@ -94,5 +114,6 @@ coordinator instead of added here.
 |---|---|---|
 | Practice: the plan page's state | Draft, Published or Edits not published, each with its line | practice-states › the plan page says which of three states |
 | Practice: print, the drills did not load | "This plan's drills didn't load" with Try again | practice-states › a drills read that failed is said |
-| Practice: print, the sheet count | "6 sheets · Coach copy 2 · Range board 1 · Drills appendix 3" | practice-states › counts the sheets before the press |
+| Practice: print, the sheet count | "4 sheets · Coach copy 3 · Range board 1", with "Coach copy runs past one sheet…" and the breaks marked on the paper | practice-states › counts the sheets before the press; › a piece that runs past one sheet; page-cuts |
+| Practice: New plan, Ask CoachHelm | "What should Friday cover?" with How long and Work on; the action reads Build plan | new-plan-ask |
 | Practice: not on this database | "Practice isn't on yet" on the plan page and print | routes › practice-unavailable |

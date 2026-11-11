@@ -85,7 +85,7 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
   const [deleting, setDeleting] = useState(false);
   const [askDelete, setAskDelete] = useState(false);
   const [restored, setRestored] = useState(false);
-  const [inspector, setInspector] = useState<'block' | 'coachhelm'>(data.helperOn ? 'coachhelm' : 'block');
+  const [inspector, setInspector] = useState<'block' | 'coachhelm'>(data.helperOn && preview?.sheet !== 'block' ? 'coachhelm' : 'block');
   const [ask, setAsk] = useState('');
   const [asking, setAsking] = useState(false);
 

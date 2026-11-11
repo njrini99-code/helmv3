@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { flushSync } from 'react-dom';
 import { clubhouseFontVariables } from '../../../lib/fonts';
+import { pageCuts } from './page-cuts';
 import { PracticePlanSheet } from './sheet/PracticePlanSheet';
 import type { PlanSheetModel } from './sheet/plan-sheet-model';
 
@@ -67,14 +68,25 @@ export async function sharePlanPdf(plan: PlanSheetModel): Promise<boolean> {
     const w = pageW - margin * 2;
     const scale = w / canvas.width;
     const slice = Math.floor((pageH - margin * 2) / scale);
-    for (let top = 0, page = 0; top < canvas.height; top += slice, page++) {
+    // A page ends between rows, never through one: the sheet is cut above the schedule row or rotation that would not fit (it used to be cut every
+    // `slice` pixels, wherever that fell).
+    const k = canvas.width / Math.max(1, host.offsetWidth);
+    const hostTop = host.getBoundingClientRect().top;
+    const blocks = [...host.querySelectorAll<HTMLElement>('.drow, .pp-rot')].map((el) => {
+      const r = el.getBoundingClientRect();
+      return [(r.top - hostTop) * k, (r.bottom - hostTop) * k] as const;
+    });
+    let top = 0;
+    [...pageCuts(canvas.height, slice, blocks), canvas.height].forEach((end, page) => {
+      const height = Math.max(1, Math.round(end - top));
       const part = document.createElement('canvas');
       part.width = canvas.width;
-      part.height = Math.min(slice, canvas.height - top);
-      part.getContext('2d')?.drawImage(canvas, 0, -top);
+      part.height = height;
+      part.getContext('2d')?.drawImage(canvas, 0, -Math.round(top));
       if (page) pdf.addPage();
-      pdf.addImage(part.toDataURL('image/jpeg', 0.92), 'JPEG', margin, margin, w, part.height * scale);
-    }
+      pdf.addImage(part.toDataURL('image/jpeg', 0.92), 'JPEG', margin, margin, w, height * scale);
+      top = end;
+    });
     const name = `${plan.title.replace(/[^\w ]+/g, '').trim() || 'Practice plan'}.pdf`;
     const file = new File([pdf.output('blob')], name, { type: 'application/pdf' });
     if (navigator.canShare?.({ files: [file] })) {

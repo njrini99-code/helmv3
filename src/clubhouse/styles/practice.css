@@ -1274,14 +1274,19 @@ html[data-fw-theme='dark'] :is(.ch-prc-group.is-f .ch-prc-disc, .ch-prc-disc.g-F
   letter-spacing: var(--ch-track-13);
 }
 .ch-prb-head .ch-prc-ribbon {
-  flex: 0 1 240px;
-  min-width: 200px;
+  flex: 0 1 320px;
+  min-width: 240px;
 }
 /* On a Mac the head is one row, as drawn: Publish never drops to a second line. */
 @media (min-width: 1100px) {
   .ch-prb-head { flex-wrap: nowrap; }
   .ch-prb-head > * { flex-shrink: 0; }
   .ch-prb-head > :is(.ch-prb-head__t, .ch-prc-ribbon) { flex-shrink: 1; }
+}
+/* A notice between the head and the board keeps the board's own margin: on a desk the page has no padding of its own. */
+/* Room under it too: the inspector's panel starts at the board's top edge and would sit over the bar's ring. */
+.ch-prb.is-desk > :is(.ch-prc-stale, .ch-prc-note) {
+  margin: 12px 24px;
 }
 .ch-prb-body {
   display: grid;
@@ -1698,14 +1703,18 @@ main.ch-prc-planpage {
 .ch-prt-sheet { display: grid; justify-items: center; gap: 8px; margin: 0; min-width: 0; }
 .ch-prt-sheet figcaption { font: var(--ch-type-13); color: var(--ch-text-secondary); }
 .ch-prt-frame { position: relative; width: 100%; overflow: hidden; background: var(--ch-print-paper); border-radius: var(--ch-radius-xs); box-shadow: var(--ch-elevation-lifted); }
+/* Where the printer starts the next sheet, drawn over the paper: a dashed rule and its words. It is the studio's, never printed. */
+.ch-prt-cut { position: absolute; inset-inline: 0; display: flex; justify-content: flex-end; padding: 2px 8px 0; border-block-start: 1px dashed var(--ch-print-soft); font: var(--ch-type-11-medium); color: var(--ch-print-soft); pointer-events: none; }
 .ch-prt-paper { position: absolute; inset: 0 auto auto 0; transform-origin: 0 0; visibility: hidden; color: var(--ch-print-ink); }
 .ch-prt-paper[data-ui='clubhouse'] { --ch-type-k: var(--ch-print-k); }
 .ch-prt-paper[data-ready] { visibility: visible; }
 
 /* One sheet, on screen and on paper: ink on white, so it copies the same in black and white. */
 .ch-prt-page { box-sizing: border-box; display: flex; flex-direction: column; gap: 24px; color: var(--ch-print-ink); background: var(--ch-print-paper); }
-.ch-prt-page--tall { min-height: 1056px; padding: 48px 48px 40px; page: ch-plan-tall; }
-.ch-prt-page--wide { min-height: 816px; padding: 40px; page: ch-plan-wide; }
+/* Every piece is a portrait sheet of US Letter inside the print's own 16mm margin (`printNode` sets it for the length of the print). A landscape sheet cannot be
+   promised: WebKit has no named pages, so it printed the range board and the pocket cards on portrait paper, and Chrome turned the paper and still laid the piece
+   out at the portrait width (both seen 10 Nov 2026). So the paper drawn here is the paper that comes out. */
+.ch-prt-page--tall, .ch-prt-page--wide { min-height: 1056px; padding: 16mm; }
 .ch-prt-page .ch-cp-sheet { flex: none; align-content: start; padding: 0; border-radius: 0; background: none; box-shadow: none; }
 .ch-prt-page .ch-cp-sheet[data-part='rest'] .pp-two { grid-template-columns: minmax(0, 1fr); gap: 24px; }
 .ch-prt-page .ch-cp-sheet[data-part='rest'] .pp-check { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 32px; }
@@ -1738,9 +1747,10 @@ main.ch-prc-planpage {
 .ch-prt-board tbody th, .ch-prt-board tbody td { padding: 12px 0 12px 16px; border-block-start: var(--ch-hairline-w) solid var(--ch-print-rule); font: var(--ch-type-print-figure); text-align: start; color: var(--ch-print-ink); }
 .ch-prt-board tbody th { padding-inline-start: 0; }
 .ch-prt-board small { font: var(--ch-type-15); letter-spacing: var(--ch-track-15); color: var(--ch-print-soft); }
+.ch-prt-board tbody tr { break-inside: avoid; }
 
-.ch-prt-cards { flex: 1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin: -40px; }
-.ch-prt-card { display: flex; flex-direction: column; gap: 12px; padding: 40px 32px; break-inside: avoid; }
+.ch-prt-cards { flex: 1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin: -16mm; }
+.ch-prt-card { display: flex; flex-direction: column; gap: 12px; padding: 16mm 32px; break-inside: avoid; }
 .ch-prt-card + .ch-prt-card { border-inline-start: var(--ch-hairline-w) dashed var(--ch-print-soft); }
 .ch-prt-card header { display: flex; justify-content: space-between; gap: 12px; font: var(--ch-type-12); color: var(--ch-print-soft); }
 .ch-prt-card h3 { margin: 4px 0 0; font: var(--ch-type-28-strong); letter-spacing: var(--ch-track-28); color: var(--ch-print-ink); }
@@ -1762,13 +1772,12 @@ main.ch-prc-planpage {
 .ch-prt-dia .s { fill: var(--ch-print-rule); fill-opacity: 0.35; stroke: none; }
 .ch-prt-dia .f { fill: var(--ch-print-ink); stroke: none; }
 
-@page ch-plan-tall { size: letter portrait; margin: 0.5in 0.5in 0.6in; }
-@page ch-plan-wide { size: letter landscape; margin: 0.4in; }
 @media print {
   .ch-prt-page { padding: 0; break-after: page; }
   .ch-prt-page:last-child { break-after: auto; }
-  .ch-prt-page--tall { min-height: 9.8in; }
-  .ch-prt-page--wide { min-height: 7.6in; }
+  /* Short of the sheet on purpose. Inside the margins a sheet holds 9.74in; a piece set to fill it exactly sent its footer to a sheet of its own (every piece did,
+     in the paginated render of 10 Nov 2026), so the footer sits near the foot of the sheet and never over it. */
+  .ch-prt-page--tall, .ch-prt-page--wide { min-height: 9.3in; }
   .ch-prt-cards { margin: 0; }
   .ch-prt-card { padding: 0 24px; }
   .ch-prt-card:first-child { padding-inline-start: 0; }
