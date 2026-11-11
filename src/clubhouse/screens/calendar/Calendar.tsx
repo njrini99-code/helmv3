@@ -915,7 +915,8 @@ function CalendarBody({
     now,
     loadedHour: data.nowHour,
     people,
-    events: data.events,
+    // What the grid draws: a new event counts on the Today card the moment it is published, not when the re-read lands.
+    events: placed,
     overlaps,
     rsvpError: data.rsvpError,
     covered,
