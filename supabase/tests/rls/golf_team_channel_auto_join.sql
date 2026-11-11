@@ -183,17 +183,18 @@ UPDATE public.golf_team_members SET status = 'active', updated_at = now()
 SELECT is(public.a4_in('00000000-0000-0000-0000-0000000a4500', '00000000-0000-0000-0000-0000000a4b02'), 0,
   'an update that leaves the status active does not put a removed member back');
 
--- Already in the channel: going inactive and coming back does not fail or duplicate, and going inactive does not remove.
+-- Going inactive and coming back does not fail or duplicate. Changed on purpose by 20261110090400 (owner decision
+-- 2026-11-10: leaving a team removes you): going inactive used to leave the participant row, and now removes it.
 UPDATE public.golf_team_members SET status = 'inactive'
   WHERE player_id = '00000000-0000-0000-0000-0000000a4401' AND team_id = '00000000-0000-0000-0000-0000000a4201';
-SELECT is(public.a4_in('00000000-0000-0000-0000-0000000a4500', '00000000-0000-0000-0000-0000000a4b01'), 1,
-  'going inactive leaves the participant row (unchanged behaviour; leaving is the owner''s open decision)');
+SELECT is(public.a4_in('00000000-0000-0000-0000-0000000a4500', '00000000-0000-0000-0000-0000000a4b01'), 0,
+  'going inactive removes the participant row (20261110090400)');
 SELECT lives_ok(
   $$UPDATE public.golf_team_members SET status = 'active'
     WHERE player_id = '00000000-0000-0000-0000-0000000a4401' AND team_id = '00000000-0000-0000-0000-0000000a4201'$$,
-  'a member already in the channel is set active again without error');
+  'the member is set active again without error');
 SELECT is(public.a4_in('00000000-0000-0000-0000-0000000a4500', '00000000-0000-0000-0000-0000000a4b01'), 1,
-  'and still has exactly one row');
+  'and is back in the channel with exactly one row');
 
 -- ---------------------------------------------------------------------------
 -- Other team, no account, no channel
