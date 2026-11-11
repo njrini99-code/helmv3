@@ -390,8 +390,12 @@ async function runRounds(ctx: ToolContext, input: RoundsInput): Promise<ToolResu
       : [{ metric_id: 'scoring_average', metric_label: 'Scoring avg', unit: 'score' as const, value: p.avg_score, entity: { kind: 'player' as const, id: p.player_id, label: p.player }, window_start: days[0] ?? null, window_end: days[days.length - 1] ?? null, sample_size: p.counted, sample_unit: 'rounds' as const, as_of: nowIso(), coverage: 'complete' as const, coverage_note: null, source: 'Rounds page', method: 'mean_of_full_counting_rounds', denominator: null, benchmark: null, direction: 'lower_better' as const }],
   );
   const whole = !only && !input.round_type && !input.from && !input.to;
+  // Counted here, by kind, so the model neither asks three times nor adds the answers up.
+  const byKind = ROUND_TYPES.map((type) => ({ type, rounds: list.filter((r) => r.type === type).length })).filter((k) => k.rounds > 0);
   const lines = [
-    `${scope}: ${list.length} rounds (${days[0]} to ${days[days.length - 1]}), ${counted.length} of them full rounds that count in an average. Source: Rounds page.`,
+    `${scope}: ${list.length} finished rounds (${days[0]} to ${days[days.length - 1]}), ${counted.length} of them full rounds that count in an average. Source: Rounds page.`,
+    input.round_type || byKind.length === 0 ? null : `By kind of round, of those ${list.length}: ${byKind.map((k) => `${k.rounds} ${k.type}`).join(', ')}.`,
+    'These are finished rounds only: a round still in progress is not on the Rounds page and is not counted here.',
     pooled === null ? null : `Average of those ${counted.length} rounds: ${say(pooled, '', 1)}.`,
     whole && page.season.avg !== null ? `This season (since ${page.seasonStart}), as the Rounds page shows it, every round type with practice rounds included: ${page.season.rounds} full rounds by ${page.season.players} ${page.season.players === 1 ? 'player' : 'players'}, average ${say(page.season.avg, '', 1)}, ${page.season.underPar} under par${page.season.best ? `, best ${page.season.best.score} by ${page.season.best.player} at ${page.season.best.course}` : ''}. The season scoring average that leaves practice rounds out comes from the season read.` : null,
     'Per player, lowest average first:',
@@ -403,7 +407,7 @@ async function runRounds(ctx: ToolContext, input: RoundsInput): Promise<ToolResu
     summary: `${list.length} rounds: ${scope}.`,
     measurements,
     series: [],
-    detail: { scope, rounds_total: list.length, counted_rounds: counted.length, average_of_counted: pooled === null ? null : round(pooled, 1), per_player: per, rounds: shown.map((r) => ({ round_id: r.id, href: `/golf/dashboard/rounds/${r.id}`, date: r.date.slice(0, 10), player: r.player, player_id: r.playerId, course: r.course, type: r.type, holes: r.holes, score: r.score, to_par: r.toPar, putts: r.putts })) },
+    detail: { scope, rounds_total: list.length, ...(input.round_type ? {} : { rounds_by_kind: byKind }), counted_rounds: counted.length, average_of_counted: pooled === null ? null : round(pooled, 1), per_player: per, rounds: shown.map((r) => ({ round_id: r.id, href: `/golf/dashboard/rounds/${r.id}`, date: r.date.slice(0, 10), player: r.player, player_id: r.playerId, course: r.course, type: r.type, holes: r.holes, score: r.score, to_par: r.toPar, putts: r.putts })) },
     coverage: page.rosterError ? 'partial' : 'complete',
     coverage_note: page.rosterError ? 'The roster could not be read in full, so some names may be missing.' : (page.rounds.unscored ?? 0) > 0 ? `${page.rounds.unscored} rounds have no score yet and are left out.` : null,
     as_of: nowIso(),

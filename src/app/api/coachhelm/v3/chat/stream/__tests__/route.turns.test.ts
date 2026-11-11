@@ -869,6 +869,24 @@ describe('the model’s code calling the reads (on for a coach, off for a player
     expect(tools.every((t) => t.strict === undefined && t.allowed_callers === undefined)).toBe(true);
   });
 
+  // Reruns, 11 Nov 2026: 7 answers were logged as stating a figure no read returned. Two were the coach's own number ("under 75": the
+  // route never passed the question to the check) and one was what the model's code had printed.
+  it('the figures check is given the question and what the model’s code printed; a figure from neither is still logged', async () => {
+    const rows = () => ((h.admin as unknown as FakeDb).tables.golf_coachhelm_llm_calls ?? []) as Array<{ verified: boolean; citations: { unmatched_tokens?: string[] } | null }>;
+    script({ content: [toolUse('tu_1', 'get_team_stats', {})] }, { content: [text('Nobody on the team averages under 75: the team is at 74.2.')] });
+    await ask('Who averages under 75?');
+    expect(rows().at(-1)).toMatchObject({ verified: true });
+
+    script(
+      { content: [serverCode(), codeToolUse('tu_ok', 'get_team_stats', {})], container: 'container_1' },
+      { content: [{ type: 'code_execution_tool_result', tool_use_id: 'srvtoolu_1', content: { type: 'code_execution_result', stdout: 'rounds with a split: 20 of 34', stderr: '', return_code: 0, content: [] } } as never, text('Only 20 of the 34 rounds have a split, so 14 could not be checked.')] },
+    );
+    await ask('How many rounds had a split?');
+    // 20 and 34 are what the code printed; 14 is the model's own subtraction, in no read and no output.
+    expect(rows().at(-1)).toMatchObject({ verified: false });
+    expect(rows().at(-1)!.citations!.unmatched_tokens).toEqual(['14']);
+  });
+
   it('a read the code calls is validated, runs as the signed-in coach, and is still a row, a piece of evidence and a stored read', async () => {
     script(
       { content: [serverCode(), codeToolUse('tu_bad', 'get_player_stats', { player_id: 42 }), codeToolUse('tu_ok', 'get_team_stats', {})], container: 'container_1' },

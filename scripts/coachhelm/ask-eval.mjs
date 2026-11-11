@@ -347,11 +347,12 @@ function buildQuestions() {
       { label: `Owen SG approach ${owenAppr.vs.join(' / ')}`, kind: 'number', anyOf: owenAppr.vs, tol: 0.02, claim: /approach[^.\n]{0,80}?(-?\d+\.\d+)/i },
       { label: `rounds with data (${owenAppr.n})`, kind: 'number', value: owenAppr.n },
       { label: `team average (${teamReadings.filter((v) => v !== -2.33).join(' / ')} as the mean of the seven last-10 values, or -2.33 as the benchmark read prints)`, kind: 'number', anyOf: teamReadings, tol: 0.02 },
-      { label: `lower than Owen: ${lower.map((x) => `${x.p.name} ${r2(x.v)}`).join(', ')}`, kind: 'text', anyOf: lower.map((x) => x.p.name) },
-      { label: `Ethan value ${r2(lower[0]?.v)}`, kind: 'number', value: r2(lower[0]?.v), tol: 0.02 },
+      // Who ranks below him and his greens in regulation are not what the question asks: right when given, not missing when not.
+      { label: `lower than Owen: ${lower.map((x) => `${x.p.name} ${r2(x.v)}`).join(', ')}`, kind: 'text', anyOf: lower.map((x) => x.p.name), optional: true },
+      { label: `Ethan value ${r2(lower[0]?.v)}`, kind: 'number', value: r2(lower[0]?.v), tol: 0.02, optional: true },
       { label: `Owen's rank, if the answer gives one (${owenRanks.join(' or ')} of ${appr.length})`, kind: 'number', anyOf: owenRanks, claim: /(\d+)(?:st|nd|rd|th)\s+of\s+\d+/i, optional: true },
-      { label: `GIR ${r2(owenGir?.pct)}%`, kind: 'number', value: r2(owenGir?.pct), tol: 0.02 },
-      { label: `GIR holes (${owenGir?.holes})`, kind: 'number', value: owenGir?.holes },
+      { label: `GIR ${r2(owenGir?.pct)}%`, kind: 'number', value: r2(owenGir?.pct), tol: 0.02, optional: true },
+      { label: `GIR holes (${owenGir?.holes})`, kind: 'number', value: owenGir?.holes, optional: true },
       { label: 'Tour baseline 0 / 66% GIR', kind: 'number', anyOf: [0, 66], optional: true },
     ],
     note: 'Known case 2 (parent). The team figure has two readings: the mean of the seven last-10 values, and the benchmark read\'s all-rounds -2.33; either is accepted.',
@@ -510,6 +511,10 @@ const eventNames = [
   ...(await namesOf('golf_tournaments', 'name', (q) => q)),
 ];
 const stored = { people: roster.map((p) => p.name), places: [...new Set([...real.map((r) => r.course_name), ...eventNames].map((n) => String(n ?? '').trim()).filter(Boolean))] };
+// Drill names, as the drill bank stores them: with the players, courses and events they are names an answer writes as stored,
+// so the abbreviation rule is read without them ("6-10ft Edge Drill").
+const drillNames = (await fetchAllRows((from, to) => sb.from('golf_drills').select('id, title').order('id', { ascending: true }).range(from, to), 'golf_drills')).map((row) => String(row.title ?? '').trim()).filter(Boolean);
+const storedNames = [...stored.people, ...stored.places, ...drillNames];
 const writing = writingRules(sense, stored);
 const senseQuestions = golfSenseQuestions(sense, names, stored);
 
@@ -717,7 +722,7 @@ try {
     // The data questions are scored on their facts; the golf-sense questions on meaning and reads; every answer on the writing rules.
     const scored = answered && !question.golfSense ? score(question, text) : null;
     // `unmatched` is known only when the answer's ledger row was read: without it, only the standards read lifts the Tour-figure guard.
-    const sense = answered ? scoreSense(question.golfSense ? question : { readers: [] }, text, state.tools, writing, { unmatched: grounded === null ? null : unmatched }) : null;
+    const sense = answered ? scoreSense(question.golfSense ? question : { readers: [] }, text, state.tools, writing, { unmatched: grounded === null ? null : unmatched, names: storedNames }) : null;
     report.push({ question, verdict, text, seconds, cost, scored, sense, note, tools: state.tools, failedReads: state.failedReads, dropped: state.dropped, tokens: state.tokens, grounded, unmatched, model });
     if (captureDir && verdict !== 'error') {
       const who = question.viewer === 'player' ? [byName('Cole Bennett')] : roster;

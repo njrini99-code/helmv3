@@ -25,7 +25,7 @@ describe('the policy block', () => {
   it('expects the date and the screen as a system note, and holds neither itself', () => {
     const policy = rulesBlock('ask');
     expect(policy).toMatch(/After the coach's message you may get a system note/);
-    expect(policy).toMatch(/If no note names a player and the coach did not either, ask which player/);
+    expect(policy).toMatch(/If no note names a player and the coach did not either, ask which player, after the point the question turns on if it has one\. Do not guess\./);
     // The one date in it is inside the quoted example of such a note.
     expect(policy.match(/\b20\d\d\b/g)).toEqual(['2026']);
     expect(policy).toContain('for example: "Today is Tue 10 Nov 2026.');
@@ -34,7 +34,7 @@ describe('the policy block', () => {
   it('says what the brief asks, one rule at a time', () => {
     const policy = rulesBlock('ask');
     for (const heading of ['# What you are told each turn', '# Answering', '# Figures', '# Reads', '# When data is missing', '# Visuals', '# Tasks']) expect(policy).toContain(heading);
-    expect(policy).toMatch(/Put the answer in the first sentence/);
+    expect(policy).toMatch(/Sentence one answers the question asked, with its figure/);
     expect(policy).toMatch(/Do no arithmetic yourself/);
     expect(policy).toMatch(/A failed read is not an empty one/);
     expect(policy).toMatch(/call them all in the same step/);
@@ -66,6 +66,8 @@ describe('the policy block', () => {
 
   it('the player\'s policy keeps teammates out and offers no task', () => {
     const policy = rulesBlock('player');
+    // Not even the name the player typed (a rerun answered "I can't compare you with <teammate> or any teammate").
+    expect(policy).toMatch(/Do not write a teammate's name at all, even one the player typed: say "a teammate"\./);
     expect(policy).toMatch(/Never name, describe or guess at a teammate's results/);
     expect(policy).toMatch(/You cannot change anything/);
     expect(policy).not.toMatch(/Confirm|query_team_data|get_team_stats/);
@@ -103,7 +105,13 @@ describe('the whole cached policy', () => {
     // Worded "if you have": the engine offers the tool behind a switch, and these bytes are the same either way.
     expect(rules).toContain('If you have code_execution, use it when a question spans many players or many rounds, or needs a calculation across several reads.');
     expect(rules).toContain('For one player or one figure, call the read directly');
-    expect(rules).toContain('Never do arithmetic in your answer, with or without code.');
+    // Said once, under "Figures", and by name: the reruns of 11 Nov 2026 had a total ("23 in all"), a difference of two counts ("20 more
+    // rounds") and a spread ("0.31 between the best and worst") worked out by the model, each a figure in no read.
+    expect(rules).toMatch(/State only a number that a read returned or the coach gave you, copied exactly/);
+    expect(rules).toMatch(/Do no arithmetic yourself: no total, no difference, no spread, no count of lines/);
+    expect(rules).toMatch(/call summarise_data, or leave that number out/);
+    expect(rules.match(/arithmetic/g)).toHaveLength(1);
+    expect(rulesBlock('player')).toMatch(/State only a number a read returned or they gave you, copied exactly\. Do no arithmetic yourself, not even a total or a difference/);
     expect(rules).toContain('A task is never called from code: call the task tool directly, so the coach gets the card to confirm.');
     expect(rulesBlock('quick_chat')).toBe(rules);
     expect(rulesBlock('practice_helper')).toBe(rules);
@@ -162,35 +170,47 @@ describe('how answers read', () => {
     expect(rules).toMatch(/Never "n=10", "N-4", "\(10\)" or any other notation/);
     expect(rules).toMatch(/Write "strokes gained" in lower case and name its yardstick as the read does: "against the Tour benchmark"/);
     expect(rules).toMatch(/Never "ft", "yd", "avg", "SG", "GIR" or "L10"/);
-    expect(rules).toMatch(/Use sentence case\. No Title Case, no word in capitals, no heading on a short answer/);
+    expect(rules).toMatch(/Use sentence case\. No Title Case and no word in capitals\./);
     expect(rules).toMatch(/\nRight: "[^\n]*against the Tour benchmark over his last 9 rounds[^\n]*"\nWrong: "[^\n]*\(n=9\)[^\n]*"/);
     // The rules' own examples follow the rule: no figure in them carries a bracketed sample.
     expect(rules.split('\nWrong:')[0]).not.toMatch(/\d \(\d+ rounds?\)/);
   });
 
-  it('an answer is the answer first and at most four plain sentences, with no heading, bold, label or table, and no list nobody asked for', () => {
-    // The first full run of the eval (11 Nov 2026): 44 of 99 answers broke a writing rule, 30 of them by length, 13 with bold lead-ins.
+  it('an answer is at most four sentences, each with its job, then it stops; no heading, bold, label, table or bracketed figure, and a list of three at most', () => {
+    // First full eval run (11 Nov 2026): 44 of 99 answers broke a writing rule, 30 by length. With "at most four sentences" as one rule
+    // among twelve, 15 of 58 still ran long, all of them a "why", a "should I worry", a comparison or a read-out of one player: the limit
+    // was a count the model treated as soft. It is now the shape of the answer, sentence by sentence, with a stop and a count at the end.
     const rules = rulesBlock('ask');
-    expect(rules).toMatch(/Put the answer in the first sentence: answer the question that was asked, with its figure/);
-    expect(rules).toMatch(/Write at most four sentences in all, as one short paragraph\. An offer of a next step counts as one of the four; make one only when the data points to an obvious one/);
-    expect(rules).toMatch(/do not walk through every area/);
+    expect(rules).toMatch(/So an answer is at most four sentences, in one paragraph with no blank line\.\nSentence one answers the question asked, with its figure/);
+    expect(rules).toMatch(/\nSentence two gives the one comparison or figure that matters most\.\nSentence three, only when needed, is a caution about the sample/);
+    // Reruns: 11 golf-sense misses, most of them an answer that corrected the coach's premise from the data and stopped there. The
+    // golf block's first line asked for the point; it is now a place in the answer.
+    expect(rules).toMatch(/Sentence one answers the question asked, with its figure, or says that the data does not show what the question assumes\./);
+    expect(rules).toMatch(/is a caution about the sample, or the point of golf or of the app that the question turns on\. Say that point even when the data does not show the case\./);
+    expect(rulesBlock('player')).toMatch(/or the point the question turns on, such as which way is good, said even when your data does not show the case/);
+    expect(rules).toMatch(/\nSentence four, only when the data points to an obvious next step, offers it\.\nThen stop: /);
+    expect(rules).toMatch(/A "why", a "should I worry" and a comparison get four sentences too\. Count your sentences before you finish and cut down to four\./);
     // Short never means leaving out what was asked for (the first full run dropped a course, a count and a comparison player).
-    expect(rules).toMatch(/Give each thing the question asked for: every figure, name, course or count it names\. Never drop one to stay short/);
-    expect(rulesBlock('player')).toMatch(/Give each thing they asked for, such as a count, a score or a course/);
-    expect(rules).toMatch(/Write more than four sentences only when the coach asks for more \("in detail", "everything on him"\), and still in plain sentences/);
-    expect(rules).toMatch(/No heading, no table, no bold, no emoji, and no label with a colon at the start of a line/);
-    expect(rules).toMatch(/A table or a breakdown belongs in a card or a visual, not in your words/);
-    expect(rules).toMatch(/Write a list only when the coach asked for a list or a ranking/);
+    expect(rules).toMatch(/Fit each thing the question asked for \(a figure, a name, a course, a count\) into those sentences\. Never drop one\./);
+    expect(rules).toMatch(/Go past four only when the coach asks for more \("in detail", "everything on him"\), and still in plain sentences/);
+    expect(rules).toMatch(/No heading, table, bold, emoji or figure in brackets, and no label with a colon at the start of a line/);
+    expect(rules).toMatch(/A table or a breakdown belongs in a card or a visual/);
+    // A long list is the card's or the visual's to carry: the words name the top of it.
+    expect(rules).toMatch(/Write a list only when the coach asked for a list or a ranking, of three items at most, one plain line each\. When more belong in it, name the top and say the rest is in the card below, or call show_visual/);
     expect(rules).toMatch(/Write nothing before or between your reads \("Let me check"\), because it stays in the answer/);
-    expect(rules).toMatch(/When several figures share one window, say the window once/);
-    expect(rules).toMatch(/When the coach asks for the full breakdown \("show me every area"\), call show_visual\. Do not write it out/);
+    expect(rules).toMatch(/Give every figure with its window and sample in the same sentence, as the read gave them\. When several figures share one window, say it once/);
+    // The full breakdown is still a visual, said once, under "Visuals".
+    expect(rules).toMatch(/Call show_visual once when the answer is a shape/);
     // The rules follow themselves: nothing in them is bold.
     expect(rules).not.toMatch(/\*\*/);
     // A small sample is said once, under "How your answers read"; its duplicate under "When data is missing" is gone.
     expect(rules.match(/sample is small/g)).toHaveLength(1);
     const player = rulesBlock('player');
-    expect(player).toMatch(/Write at most four sentences in all, as one short paragraph/);
-    expect(player).toMatch(/no heading, no table, no bold, no label with a colon at the start of a line, and a list only when they asked for one/);
+    expect(player).toMatch(/An answer is at most four sentences, in one paragraph with no blank line/);
+    expect(player).toMatch(/Sentence one answers the question, with its figure\. Sentence two gives the one figure that matters most to it\./);
+    expect(player).toMatch(/Then stop: count your sentences and cut down to four/);
+    expect(player).toMatch(/Give each thing they asked for, such as a count, a score or a course, inside those sentences/);
+    expect(player).toMatch(/no heading, no table, no bold, no figure in brackets, no label with a colon at the start of a line, and a list only when they asked for one, of three items at most/);
     expect(player).toMatch(/Write more only when they ask for more/);
   });
 

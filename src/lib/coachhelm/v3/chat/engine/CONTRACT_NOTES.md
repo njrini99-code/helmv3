@@ -1524,3 +1524,20 @@ made by ENGINE at the overnight lead's direction; their owners should know.
   (`scoreSense(..., { unmatched })`; unknown, only `get_reference` lifts the guard, as before). `ask-eval.mjs`: a data
   question can carry `readings`; `window-tyler-last3-rounds` (practice in or out) and `sum-rounds-by-type-since-sep1`
   (finished, or with rounds in progress) pass on either, and only when the answer says which rounds it counted.
+
+E39. **After the reruns at a863b56cc1 (11 Nov 2026).** Again outside the engine, at the overnight lead's direction.
+- **Length** (8e692be6ca): the four-sentence limit is now the answer's shape in the prompt, sentence by sentence.
+- **Golf sense**: the premise and the point have a place in that shape; the point is said before asking which player; a
+  player's answer writes no teammate's name. **Reads**: `get_goals` gives the total in every state and whose the other
+  goals are; the coach's `get_rounds` counts by kind and says its rounds are finished ones.
+- **Scorer, second loosening** (overnight lead's decision, nothing else): `sg-estimated` accepts "shots are logged";
+  `sg-player-everything-negative` accepts "widest"; `compare-owen-approach` no longer requires who ranks below Owen or
+  his greens in regulation; the abbreviation rule is read with stored names taken out (`scoreSense(..., { names })`,
+  players, courses, events and drill titles); `career-vs-window` expects no read, since it names no player and the
+  harness has none on screen.
+- **Figures in no read (7 in the reruns).** Three were the model's own arithmetic (a total, a difference of two counts,
+  a spread): the prompt now names those. Two were the coach's own number, because the route called the check without
+  the question: it now passes `groundingCheck` whole. Two were "18 holes". One answer's figures were what its code had
+  printed: `ground()` in `turn.ts` adds `codeOutputsOf(state.messages)` to the reads the check sees. The check still
+  only logs.
+

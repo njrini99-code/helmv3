@@ -69,13 +69,15 @@ describe('get_goals', () => {
     // Staging, 11 Nov 2026: one active goal, one achieved, four missed, and the coach was told only one goal was visible.
     const rows = [goal('g1', 'p1'), goal('g2', 'p1', { state: 'achieved' }), ...['g3', 'g4', 'g5', 'g6'].map((id) => goal(id, 'p2', { state: 'missed' })), goal('g7', 'other', { state: 'missed' })];
     const e = await getGoals(pgrst({ golf_goals: { rows } }).sb, ctx, { state: 'active', limit: 40 });
-    expect(e.summary).toBe('1 active goal for the team. 5 other goals are not active: 1 achieved, 4 missed.');
+    // The total and whose the others are, so the answer neither adds the states up nor says "the read doesn't say whose".
+    expect(e.summary).toBe('1 active goal for the team, of 6 goals in every state. 5 other goals are not active: 1 achieved (Owen Carter 1), 4 missed (Cole Bennett 4).');
+    expect(e.detail).toMatchObject({ other_states_by_player: { achieved: { 'Owen Carter': 1 }, missed: { 'Cole Bennett': 4 } } });
     expect(e.detail).toMatchObject({ other_states: { achieved: 1, missed: 4 }, goals_in_every_state: 6 });
     expect((e.detail as { goals: unknown[] }).goals).toHaveLength(1);
     expect(e.coverage).toBe('complete');
     // No active goal, but others: not "empty", and the sentence says what there is.
     const none = await getGoals(pgrst({ golf_goals: { rows: rows.slice(1) } }).sb, ctx, { state: 'active', limit: 40 });
-    expect(none.summary).toBe('No active goals visible for the team. 5 other goals are not active: 1 achieved, 4 missed.');
+    expect(none.summary).toBe('No active goals visible for the team, of 5 goals in every state. 5 other goals are not active: 1 achieved (Owen Carter 1), 4 missed (Cole Bennett 4).');
     expect(none.coverage).toBe('partial');
     // Asked for every state, nothing is left out and nothing is counted twice.
     const all = await getGoals(pgrst({ golf_goals: { rows } }).sb, ctx, { state: 'all', limit: 40 });

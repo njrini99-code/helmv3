@@ -943,25 +943,41 @@ replacement is `src/lib/coachhelm/v3/chat/TOOLS.md`.
   finished ones. Before it a player's Ask could only read the Stats page, which leaves practice out, so "how many
   rounds have I recorded since 1 September" was answered 7 where the player had recorded 14 (11 Nov 2026).
 - **A filtered read says what the filter left out.** `get_goals` narrowed to one state also counts the visible goals in
-  the other states ("1 active goal for the team. 5 other goals are not active: 1 achieved, 4 missed."), because the
-  chat asks for active goals and a coach was told only one goal was visible.
+  the other states, gives the total and says whose they are ("1 active goal for the team, of 6 goals in every state. 5
+  other goals are not active: 1 achieved (Cole Bennett 1), 4 missed (Cole Bennett 1, Owen Carter 3)."), because the
+  chat asks for active goals and a coach was told only one goal was visible. The coach's `get_rounds` counts its rounds
+  by kind and says they are finished rounds (a round in progress is not on the Rounds page), so the model neither adds
+  three counts up nor leaves unsaid what it counted.
 - **A short answer still carries what was asked**: the prompt's rule 3 ("Give each thing the question asked for: every
   figure, name, course or count it names. Never drop one to stay short").
-- **Saying the point a question turns on** (the golf block's first line, coach and player): "When a question turns on a
-  point made here, say that point in one plain sentence, even if the team's data does not show the case." In the first
+- **Saying the point a question turns on** (the golf block's first line, and since the reruns a place in the answer's
+  shape: sentence one may say the data does not show what the question assumes, sentence three is the caution or the
+  point; when the model must first ask which player, it says the point before it asks): "When a question turns on a
+  point made here, say that point in one plain sentence, even if the team's data does not show the case." A player's
+  answer never writes a teammate's name, even one the player typed. In the first
   full eval run most golf-sense misses were answers that corrected the coach's premise from the data and never said the
   point itself (one round is not a trend, a negative to par is under par, a short qualifier card ranks below a
   complete one). With it: putts per round is always given with greens hit beside it; a tie for the last qualifying
   place stays a tie until the coach chooses (SOURCES A6); who plays is the coach's call; and a Tour or level figure
   comes only from a read made in the turn (the prompt's Figures rule 6).
-- **How long an answer is** (the prompt's "Answering", coach and player alike): the answer in the first sentence with
-  its figure, at most four sentences in all as one short paragraph (an offer of a next step is one of the four), more
-  only when the coach asks for more; no heading, table, bold or label with a colon at the start of a line; a list only
-  when a list or a ranking was asked for; nothing written before or between reads; a window shared by several figures
-  said once; every name as the roster or the read stores it, capitals included. Written after the first full eval run
-  (11 Nov 2026: 44 of 99 answers broke a writing rule, 30 of them by length and 13 with bold lead-ins, under the
-  earlier "answer, then at most three supporting points"). The size brake on the registry's own tools and rules is
-  12,300 (`__tests__/registry-size.test.ts`; Ask measures about 12,260).
+- **A number no read returned.** The prompt (Figures 2 and 3): state only a number a read returned or the coach gave,
+  and do no arithmetic, named as a total, a difference, a spread or a count of lines; `summarise_data` or leave the
+  number out. The check that logs this (`chat/grounding.ts`, never a gate) is given the question, so a number the coach
+  typed is not flagged (the route passed no question until 11 Nov 2026); it treats a round's or event's length in
+  holes as a format; and it is given what the model's own code printed in the conversation
+  (`engine/grounding.ts`, `codeOutputsOf`, read from the stored messages and kept nowhere), so a figure worked out
+  there is held while one the model derives from it in its head is still logged.
+- **How long an answer is** (the prompt's "Answering", coach and player alike): at most four sentences in one
+  paragraph, written as the shape of the answer and not as a count among other rules: sentence one answers the
+  question with its figure, sentence two gives the one comparison or figure that matters most, sentence three (only
+  when needed) is a caution about the sample, sentence four (only when obvious) offers a next step; then it stops, and
+  the model counts its sentences before finishing. More only when the coach asks for more. No heading, table, bold,
+  bracketed figure or label with a colon; a list only when asked for and of three items at most (a longer one is the
+  card's or `show_visual`'s to carry); nothing written before or between reads; a shared window said once; every name
+  as stored. History: the first full eval run (11 Nov 2026) had 30 of 99 answers too long under "answer, then at most
+  three supporting points"; "at most four sentences" as one rule among twelve left 15 of 58 too long, every one a
+  "why", a "should I worry", a comparison or a read-out of one player. The size brake on the registry's own tools and
+  rules is 12,300 (`__tests__/registry-size.test.ts`).
 - **Strict tool use** (`chat/strict-input.ts`): every registered tool's input is shown to the model as a closed
   object with every field required and optional fields nullable, with no length or range keywords; the tool's own
   zod schema validates behind it, so no bound is lost. A new tool needs only an ordinary zod object. That is

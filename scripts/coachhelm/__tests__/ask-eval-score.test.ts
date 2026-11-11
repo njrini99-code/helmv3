@@ -5,7 +5,7 @@ import { encodeChatEvent, type ChatEvent } from '@/lib/coachhelm/v3/chat/engine/
 import { EVAL_GLOBAL_FORBID, golfSenseQuestions as compiled, sentenceCount as sentencesOf } from '@/lib/coachhelm/v3/chat/knowledge/eval';
 import senseData from '@/lib/coachhelm/v3/chat/knowledge/eval/golf-sense.json';
 // @ts-expect-error -- plain .mjs helper, scripts/ is outside tsconfig.
-import { EVERYDAY_WORDS, answerText, applyEvent, captureFixture, citesFromLog, dateRe, eventReader, figuresAt, golfSenseQuestions, newTurnState, rejectionsFromLog, reportLines, score, scoreSense, sentenceCount, verdictOf, writingRules } from '../ask-eval-score.mjs';
+import { EVERYDAY_WORDS, answerText, applyEvent, captureFixture, citesFromLog, dateRe, eventReader, figuresAt, golfSenseQuestions, newTurnState, rejectionsFromLog, reportLines, score, scoreSense, sentenceCount, verdictOf, writingRules, withoutNames } from '../ask-eval-score.mjs';
 
 const owen = {
   facts: [
@@ -247,6 +247,38 @@ describe('ask-eval golf-sense questions', () => {
       expect(normal.test('That is normal.')).toBe(true);
       expect(normal.test('His numbers are poor.')).toBe(false);
     }
+  });
+
+  // Second loosening, 11 Nov 2026, after the reruns, again by the overnight lead's decision and nothing else.
+  it('accepts "where shots are logged" and "the widest gaps", and expects no read where the question names no player', () => {
+    const questions = golfSenseQuestions(senseData, { player: 'Cole Bennett', player2: 'Jackson Hale', teammate: 'Jackson Hale' });
+    const fact = (id: string, label: RegExp) => (questions.find((q: { id: string }) => q.id === id).facts as Array<{ label: string; re: RegExp }>).find((f) => label.test(f.label))!.re;
+    const measured = fact('sg-estimated', /measured shot by shot/);
+    for (const said of ['Where shots are logged, yes.', 'It is measured shot by shot.', 'Those rounds have logged shots.']) expect(measured.test(said), said).toBe(true);
+    expect(measured.test('Their numbers are real.')).toBe(false);
+    const furthest = fact('sg-player-everything-negative', /furthest behind/);
+    expect(furthest.test('The widest gaps are approach and putting.')).toBe(true);
+    expect(furthest.test('Approach is furthest behind.')).toBe(true);
+    expect(furthest.test('You are behind the Tour.')).toBe(false);
+    // No player is named and the harness has none on screen: the right answer asks, and no read of team data is expected.
+    const career = questions.find((q: { id: string }) => q.id === 'career-vs-window');
+    expect(career.readers).toEqual([]);
+    expect(scoreSense(career, 'A career figure and a last 10 figure are different things, because the career one includes practice. Which player do you mean?', [], []).reads.pass).toBe(true);
+  });
+
+  it('reads the abbreviation rule with the team’s stored names taken out, and nothing else', () => {
+    const rules = mine[0].writing;
+    const names = ['Cole Bennett', 'Home course', '6-10ft Edge Drill', 'Gate Drill (6-foot putts)', 'SG'];
+    const stored = 'The 6-10ft Edge Drill and the Gate Drill (6-foot putts) are in the drill bank.';
+    expect(scoreSense({ readers: [] }, stored, [], rules).writing.broken).toEqual(['abbreviation']);
+    expect(scoreSense({ readers: [] }, stored, [], rules, { names }).writing.pass).toBe(true);
+    // The answer's own abbreviations still fail, beside a stored name or without one; a two-letter "name" exempts nothing.
+    expect(scoreSense({ readers: [] }, 'The 6-10ft Edge Drill fits his putts from 6 to 10 ft.', [], rules, { names }).writing.broken).toEqual(['abbreviation']);
+    expect(scoreSense({ readers: [] }, 'His SG putting is low.', [], rules, { names }).writing.broken).toEqual(['abbreviation']);
+    // Only that rule reads the text without names: a miscased player is still a proper-noun fault.
+    const cased = writingRules(senseData, { people: ['Cole Bennett'], places: ['Home course'] });
+    expect(scoreSense({ readers: [] }, 'cole bennett played the 6-10ft Edge Drill.', [], cased, { names }).writing.broken).toEqual(expect.arrayContaining(['proper_noun_case']));
+    expect(withoutNames('At Home course he used the Gate Drill.', ['Gate Drill', 'Home course', 'x', null])).toBe('At   he used the  .');
   });
 
   it('a question with two readings passes on either, and only when the answer says which rounds it counted', () => {

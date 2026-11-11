@@ -331,7 +331,7 @@
     {
      "label": "with shots it is measured shot by shot",
      "kind": "phrase",
-     "re": "shot by shot|each shot|logged shots?",
+     "re": "shot by shot|each shot|logged shots?|shots (are|were|is|was) logged",
      "flags": "i"
     }
    ],
@@ -1020,9 +1020,7 @@
    "area": "caution",
    "viewer": "coach",
    "ask": "His career average is lower than his last 10. Is he getting worse?",
-   "readers": [
-    "get_player_stats"
-   ],
+   "readers": [],
    "facts": [
     {
      "label": "a career figure and a window are different things (career includes practice and every round)",
@@ -1037,7 +1035,7 @@
      "pattern": "label"
     }
    ],
-   "note": "SOURCES B4: the stats cache counts practice rounds; Stats does not.",
+   "note": "SOURCES B4: the stats cache counts practice rounds; Stats does not. The question names no player and the harness has none on screen, so no read is expected: a right answer says the point and asks which player.",
    "style": {
     "max_sentences": 6
    }
@@ -2204,7 +2202,7 @@
     {
      "label": "which part is furthest behind, and which way it is moving",
      "kind": "phrase",
-     "re": "\\b(furthest|most|biggest|largest|trend|moving|earlier)\\b",
+     "re": "\\b(furthest|most|biggest|largest|widest|trend|moving|earlier)\\b",
      "flags": "i"
     },
     {

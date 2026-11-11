@@ -37,6 +37,8 @@ const NOT_FIGURES: RegExp[] = [
   /^\s*(?:#+\s*)?\d+[.)]\s/gm,
   /\b(?:last|past|next|newest)\s+\d+(?:\s*,\s*\d+)*(?:,?\s*(?:or|and)\s*\d+)?\b/gi,
   /\b(?:holes?|par|top|bottom|first|latest|previous|round|rounds|no\.|number|division|d|grade|class of|e)\s*#?\d+\b/gi,
+  // How long a round or an event is ("18 holes", "a 9-hole round", "54 holes of qualifying"): a format, not a statistic.
+  /\b(?:9|18|27|36|54|72)[-\s]holes?\b/gi,
   /\b\d+\s*(?:-|–|to)\s*\d+\s*(?:ft|feet|foot|yd|yds|yards)\b/gi,
   /\b\d+\+?\s*(?:ft|feet|foot|yd|yds|yards)\b(?=\s*(?:band|range|bucket|putts?|and (?:in|out)))/gi,
   /\b(?:inside|outside|within|beyond|from|under|over)\s+\d+\s*(?:ft|feet|foot|yd|yds|yards)\b/gi,

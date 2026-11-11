@@ -116,21 +116,28 @@ export async function getGoals(sb: Sb, ctx: CoachChatContext, input: { player_id
     await failed('getGoals failed', 'coachhelm.ask.goals', ctx, error);
     return unavailableEnvelope('Could not read goals.', 'The goals query failed. This is not the same as no goals.');
   }
-  // The other states, counted. A failed count is said as unknown; it never reads as "no other goals".
+  // The other states, counted, with whose they are. A failed count is said as unknown; it never reads as "no other goals".
+  const who = names(ctx);
   const others: Record<string, number> = {};
+  const otherPlayers: Record<string, Record<string, number>> = {};
   let othersUnknown = false;
   if (input.state !== 'all') {
-    const counted = await byPlayers(ids, (chunk) => sb.from('golf_goals').select('state').in('player_id', chunk).neq('state', input.state).limit(ROW_CAP));
+    const counted = await byPlayers(ids, (chunk) => sb.from('golf_goals').select('state, player_id').in('player_id', chunk).neq('state', input.state).limit(ROW_CAP));
     if (counted.error) othersUnknown = true;
-    else for (const g of counted.rows) others[g.state] = (others[g.state] ?? 0) + 1;
+    else
+      for (const g of counted.rows) {
+        others[g.state] = (others[g.state] ?? 0) + 1;
+        const name = who.get(g.player_id) ?? 'A player';
+        otherPlayers[g.state] = { ...otherPlayers[g.state], [name]: (otherPlayers[g.state]?.[name] ?? 0) + 1 };
+      }
   }
   const otherTotal = Object.values(others).reduce((a, b) => a + b, 0);
+  const whose = (state: string): string => Object.entries(otherPlayers[state] ?? {}).sort(([a], [b]) => (a < b ? -1 : 1)).map(([name, n]) => `${name} ${n}`).join(', ');
   const otherWords = othersUnknown
     ? ` Goals in other states could not be counted.`
     : otherTotal === 0
       ? ''
-      : ` ${otherTotal} other goal${otherTotal === 1 ? ' is' : 's are'} not ${input.state}: ${Object.entries(others).sort(([a], [b]) => (a < b ? -1 : 1)).map(([state, n]) => `${n} ${state}`).join(', ')}.`;
-  const who = names(ctx);
+      : ` ${otherTotal} other goal${otherTotal === 1 ? ' is' : 's are'} not ${input.state}: ${Object.entries(others).sort(([a], [b]) => (a < b ? -1 : 1)).map(([state, n]) => `${n} ${state} (${whose(state)})`).join(', ')}.`;
   const today = todayIsoInZone(ctx.timezone);
   const goals = rows.slice(0, limit).map((g) => {
     const span = g.target_value != null && g.baseline_value != null ? g.target_value - g.baseline_value : null;
@@ -154,10 +161,13 @@ export async function getGoals(sb: Sb, ctx: CoachChatContext, input: { player_id
   });
   const capped = rows.length > limit;
   const visibility = 'Goals a coach set or a player shared with the coach, recorded against this team. A goal a player keeps private, or one with no team on it, is not visible here.';
-  const counts = input.state === 'all' ? {} : { other_states: othersUnknown ? null : others, goals_in_every_state: othersUnknown ? null : goals.length + otherTotal };
+  const everyState = goals.length + otherTotal;
+  const counts = input.state === 'all' ? {} : { other_states: othersUnknown ? null : others, other_states_by_player: othersUnknown ? null : otherPlayers, goals_in_every_state: othersUnknown ? null : everyState };
+  // The total is said, so the model never adds the states up.
+  const inAll = input.state === 'all' || othersUnknown || otherTotal === 0 ? '' : `, of ${everyState} goals in every state`;
   const stated = input.state === 'all' ? '' : `${input.state} `;
-  if (goals.length === 0) return envelope(`No ${stated}goals visible for ${player ? player.name : 'the team'}.${otherWords}`, { goals: [], visibility, ...counts }, otherTotal > 0 || othersUnknown ? 'partial' : 'empty', otherTotal > 0 ? `There are no ${stated}goals, but there are goals in other states.` : othersUnknown ? 'Goals in other states could not be counted.' : null);
-  return envelope(`${goals.length} ${stated}goal${goals.length === 1 ? '' : 's'} for ${player ? player.name : 'the team'}.${otherWords}`, { goals, visibility, ...counts }, capped || othersUnknown ? 'partial' : 'complete', capped ? `Only the ${limit} soonest-due are listed.` : othersUnknown ? 'Goals in other states could not be counted.' : null);
+  if (goals.length === 0) return envelope(`No ${stated}goals visible for ${player ? player.name : 'the team'}${inAll}.${otherWords}`, { goals: [], visibility, ...counts }, otherTotal > 0 || othersUnknown ? 'partial' : 'empty', otherTotal > 0 ? `There are no ${stated}goals, but there are goals in other states.` : othersUnknown ? 'Goals in other states could not be counted.' : null);
+  return envelope(`${goals.length} ${stated}goal${goals.length === 1 ? '' : 's'} for ${player ? player.name : 'the team'}${inAll}.${otherWords}`, { goals, visibility, ...counts }, capped || othersUnknown ? 'partial' : 'complete', capped ? `Only the ${limit} soonest-due are listed.` : othersUnknown ? 'Goals in other states could not be counted.' : null);
 }
 
 // ---------------------------------------------------------------------------
