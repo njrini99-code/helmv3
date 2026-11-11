@@ -987,3 +987,57 @@ K10. **ENGINE, nothing to change:** `golf-sense.json` gained an eighth writing r
     file. `index.ts` is unchanged, so the copy test still holds (run: exit 0).
 K11. **ENGINE, nothing to change:** a ninth writing rule, `numeric_date`, fails a date written as digits in an answer
     ("2026-05-18", "5/18/26"). It is in `global_forbid`, so the harness holds it against every answer from the file.
+
+C11. (CONTEXT, 10 Nov, late.) Two more CONTEXT tasks, appended last, after `dismiss_signal`:
+`log_focus_progress({ focus_area_id, value, note })` wraps `updateFocusAreaProgress` (a null `value` keeps the current
+one when only a note is added) and `record_focus_outcome({ focus_area_id, outcome })` wraps `recordFocusAreaOutcome`.
+
+- Neither sends anything. `recipients` is `[]`, `delivery` is null and `visible_note` carries what the player sees.
+- **ENGINE: `record_focus_outcome` can return a `partial` receipt.** The app's action writes the focus area first and
+  the signal it came from second, and reports the second failing. The receipt then has `status: 'partial'`,
+  `partial_failures` with one sentence, and `created[0]` as usual. Confirming the same card again is safe: the look
+  finds the signal half missing and runs the action again. Nothing new is asked of the contract.
+- Team patterns are not a tool: a team pattern is computed at read time and has no row to act on, and the three
+  pattern actions act on the older engine's stored patterns, which no chat read returns (`../tasks/INVENTORY.md`).
+- In INVENTORY.md the heading C10 points to as "Asked for and not possible" is now "App gaps: three things a coach
+  asks for that the app itself cannot do".
+- Prefix after these two (characters / 4): Ask 21,870 with the tournaments flag off and 22,284 with it on; quick chat
+  21,353 and 21,767. The stop line is 24,000 with the flag on.
+
+
+## 2026-11-11 (ENGINE): a card the coach can edit (the request path for PLANS's `editable` and `revise`)
+
+E28. **Editing a waiting card.** All additive; a browser that knows nothing of it behaves as before.
+     - **Request**: `{ conversation_id, client_turn_id, decision: { key, edits, revision? } }`. `edits` is
+       `{ [EditableField.key]: value }` for the fields the coach changed. A `decision` carries `approved` or `edits`,
+       never both (400). At most 40 keys and 20,000 characters. It is not budget-gated: no model is called.
+     - **What happens**: the engine reads the ledger row, checks this server's seal, calls the task's
+       `revise(ctx, storedProposal, edits)`, gives the result the card's OWN key (`scopedKey`'s, not the planner's),
+       sets `revision` (1 for the first edit, then 2, ...), seals it again and writes it over the row with one
+       conditional update that only touches a row still `proposed` (`replaceProposal` in `../action-runs.ts`). The
+       stored turn's card part is replaced in place and the turn goes on waiting. `proposed_input.input` (what the
+       model asked for) is kept as asked. `TaskTool.revise?` is on the contract (`tool.ts`), so CONTEXT's tasks can
+       have one.
+     - **Response**: `message_start` (`resumed: true`, the message holding the card), the card as it now stands
+       (`proposal`, part id `proposal-<key>`, so it replaces the one on screen), then one part
+       `{ type: 'data-card-revision', id: 'revision-<key>', data: ChatCardRevision }`, then `done`.
+       `ChatCardRevision` (`protocol.ts`): `{ key, accepted: boolean, kind?: 'invalid' | 'changed' | 'decided' |
+       'fixed' | 'gone', reason?: string }`. `accepted: false` always comes with the card UNCHANGED and a `reason` the
+       coach can read: `invalid` is the task's own sentence ("Title: ..."); `changed` the card was edited somewhere
+       else; `decided` it is held, written, cancelled or withdrawn; `fixed` it offers nothing to edit (or the task has
+       no `revise`); `gone` there is no such card. `done.status` is `awaiting_decision` unless the card turned out to
+       be answered. The notice part is for the live thread only: it is not stored, so a reload shows no stale notice.
+     - **`revision` and two tabs.** The card's proposal carries `revision` once edited (absent before). Every Confirm
+       and every edit should send the `revision` of the card on screen (the hook does: `approve`, `deny`, `revise`).
+       A Confirm or an edit whose `revision` is not the stored one (a missing one counts as 0) changes nothing and is
+       answered with the stored card and `kind: 'changed'`. So a card edited in one tab cannot be confirmed from the
+       stale copy in another, and an old tab cannot confirm an edited card at all. The same check runs again on the
+       row as it was at the instant of the claim (`claimForExecution` now returns `proposed_input`); if an edit slipped
+       in between the read and the claim, the claim is handed back (`releaseClaim`) and nothing is written. After the
+       claim the plan cannot change: the plan that is committed is the claimed one.
+     - **The hook**: `revise(approvalId, edits)` (optional in the result type for the same reason `phase` is:
+       `src/clubhouse/preview/PreviewQuickChat.tsx` builds a result by hand).
+     - **For the UI**: draw the notice from the `data-card-revision` part of the card's message; clear it when the
+       coach edits again or a `decision` for the key arrives. `accepted: true` needs no notice.
+     - **What the model is told**: nothing at the time of the edit. On Confirm the tool result states what was
+       committed (the receipt's summary), which is the edited card (PLANS P11).

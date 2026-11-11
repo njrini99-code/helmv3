@@ -10,7 +10,7 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 import { logServerError } from '@/lib/server-error-logger';
 import { getServiceRoleKey } from '@/lib/supabase/admin';
 import type { ActionProposal, ActionReceipt } from '../action-types';
-import { claimForExecution, isStoredProposal, readRun, recordDenial, recordOutcome, recordProposal, type StoredProposal } from '../action-runs';
+import { claimForExecution, isStoredProposal, readRun, recordDenial, recordOutcome, recordProposal, releaseClaim, replaceProposal, type StoredProposal } from '../action-runs';
 import { holdForExecution, releaseHeld } from '../undo-hold';
 import type { TaskTool, ToolContext } from './tool';
 
@@ -23,8 +23,13 @@ export interface TaskDeps {
   defer: (work: () => Promise<unknown>) => void;
 }
 
-/** A proposal as the card and the ledger hold it: the tool's plan, its key made unique to this one request by the model, and the tool's name. */
-export type CardProposal = ActionProposal & { tool: string };
+/**
+ * A proposal as the card and the ledger hold it: the tool's plan, its key made unique to this one request by the model, and the
+ * tool's name. `revision` counts the coach's edits to the card (absent on a card never edited): a Confirm says which revision the
+ * coach was looking at, so a card changed in another tab is never confirmed as the one on screen.
+ */
+export type CardProposal = ActionProposal & { tool: string; revision?: number };
+export const revisionOf = (proposal: { revision?: unknown } | null | undefined): number => (typeof proposal?.revision === 'number' && proposal.revision > 0 ? proposal.revision : 0);
 
 /**
  * The planner's key names the intent (team, title, …) and repeats when a coach asks for the same thing again next week.
@@ -164,11 +169,20 @@ function outcomeOf(receipt: ActionReceipt): DecisionOutcome {
  * say "done" about something the coach undid, and the write does not wait for the coach's next request.
  * `in_flight`: another request already holds this card (a second press, or a retry while the window is open). That
  * request writes it, tells the model and stores the turn; this one must change nothing.
+ * `changed`: the stored card is not the revision the coach was looking at (it was edited in another tab). Nothing is claimed or
+ * written; `proposal` is the card as it stands, to show in place of the stale one.
  */
-export type ConfirmStart = { kind: 'done'; outcome: DecisionOutcome } | { kind: 'held'; receipt: ActionReceipt; finish: () => Promise<DecisionOutcome> } | { kind: 'in_flight' };
+export type ConfirmStart =
+  | { kind: 'done'; outcome: DecisionOutcome }
+  | { kind: 'held'; receipt: ActionReceipt; finish: () => Promise<DecisionOutcome> }
+  | { kind: 'in_flight' }
+  | { kind: 'changed'; proposal: CardProposal };
 
-/** Confirm. Runs the stored plan at most once, however many times it is called for one key. */
-export async function startConfirm(deps: TaskDeps, tool: TaskTool<unknown> | undefined, ctx: ToolContext, key: string): Promise<ConfirmStart> {
+/**
+ * Confirm. Runs the stored plan at most once, however many times it is called for one key. `seen` is the revision of the card the
+ * coach pressed Confirm on (absent from a browser that knows nothing of revisions, which can only have seen an unedited card).
+ */
+export async function startConfirm(deps: TaskDeps, tool: TaskTool<unknown> | undefined, ctx: ToolContext, key: string, seen?: number): Promise<ConfirmStart> {
   const done = (outcome: DecisionOutcome): ConfirmStart => ({ kind: 'done', outcome });
   const run = await readRun(ctx.sb, { coach_id: deps.coachId, idempotency_key: key });
   const gone: DecisionOutcome = {
@@ -182,7 +196,9 @@ export async function startConfirm(deps: TaskDeps, tool: TaskTool<unknown> | und
     void logServerError(`coachhelm task refused: the stored proposal does not carry this server's seal (${tool.name})`, { action: `coachhelm.tool.${tool.name}.confirm`, feature: 'coachhelm_chat', userId: deps.coachId, handled: true }, 'error');
     return done(gone);
   }
-  const proposal = run.proposed_input.proposal as CardProposal;
+  let proposal = run.proposed_input.proposal as CardProposal;
+  // Only a card still waiting can have changed under the coach; one already decided is answered below with what happened to it.
+  if (run.status === 'proposed' && revisionOf(proposal) !== (seen ?? 0)) return { kind: 'changed', proposal };
 
   const claim = await claimForExecution(ctx.sb, { coach_id: deps.coachId, idempotency_key: key });
   if (claim.kind === 'already_completed') return done({ receipt: claim.receipt, result: `Already done earlier: ${claim.receipt.summary} Nothing new was written.`, isError: false });
@@ -190,6 +206,24 @@ export async function startConfirm(deps: TaskDeps, tool: TaskTool<unknown> | und
   if (claim.kind === 'stale_failed') return done({ receipt: failedReceipt(proposal.action, claim.message, undefined, false), result: `Failed: ${claim.message}`, isError: true });
   if (claim.kind === 'error') {
     return done({ receipt: failedReceipt(proposal.action, 'That didn’t go through. Nothing was saved.', undefined, true), result: 'Failed: the action could not be started safely. Nothing was written.', isError: true });
+  }
+
+  // The plan that runs is the one the row held at the instant it was claimed. An edit can land between the read above and the
+  // claim; after the claim it cannot. So the claimed plan is checked again: this server's seal, and the revision the coach saw.
+  if (claim.proposed_input !== undefined) {
+    const taken = claim.proposed_input;
+    if (!isStoredProposal(taken) || !proposalIsSealed(deps.coachId, key, taken)) {
+      await recordOutcome(ctx.sb, { run_id: claim.run_id, receipt: gone.receipt as ActionReceipt });
+      return done(gone);
+    }
+    const now = taken.proposal as CardProposal;
+    if (revisionOf(now) !== (seen ?? 0)) {
+      if (await releaseClaim(ctx.sb, { run_id: claim.run_id })) return { kind: 'changed', proposal: now };
+      const refused = failedReceipt(now.action, 'That didn’t go through. Nothing was saved.', undefined, true);
+      await recordOutcome(ctx.sb, { run_id: claim.run_id, receipt: refused });
+      return done({ receipt: refused, result: 'Failed: the card changed while it was being confirmed, so it was not run. Nothing was written.', isError: true });
+    }
+    proposal = now;
   }
 
   // The write is the coach's decision, already made: it is not tied to the browser staying connected.
@@ -235,6 +269,46 @@ export async function startConfirm(deps: TaskDeps, tool: TaskTool<unknown> | und
     void logServerError(`coachhelm task outcome not recorded: ${tool.name}`, { action: `coachhelm.tool.${tool.name}.outcome`, feature: 'coachhelm_chat', userId: deps.coachId, handled: true, extra: { status: receipt.status } }, 'error');
   }
   return done(outcomeOf(receipt));
+}
+
+/** Why an edit to a card was not made. `invalid`: the edit itself; `changed`: the card is not the one the coach was editing; `decided`: it is no longer waiting; `fixed`: nothing on it can be edited; `gone`: there is no such card. */
+export type ReviseRefusal = 'invalid' | 'changed' | 'decided' | 'fixed' | 'gone';
+export type ReviseResult = { ok: true; proposal: CardProposal } | { ok: false; kind: ReviseRefusal; reason: string; proposal: CardProposal | null };
+
+/**
+ * The coach edited a field on a waiting card. The task plans again from the stored plan and the edits (its own checks, no write,
+ * no model); the result takes the card's own key, is sealed again and replaces the stored plan, but only while the card is still
+ * waiting. Whatever goes wrong, the stored plan is untouched and is handed back as it stands with a reason the coach can read.
+ */
+export async function reviseTask(deps: TaskDeps, tool: TaskTool<unknown> | undefined, ctx: ToolContext, key: string, edits: Record<string, unknown>, seen?: number): Promise<ReviseResult> {
+  const run = await readRun(ctx.sb, { coach_id: deps.coachId, idempotency_key: key });
+  if (!run || !tool || run.tool_name !== tool.name || !isStoredProposal(run.proposed_input) || !proposalIsSealed(deps.coachId, key, run.proposed_input)) {
+    return { ok: false, kind: 'gone', reason: 'This card can no longer be changed. Ask for it again.', proposal: null };
+  }
+  const stored = run.proposed_input;
+  const current = stored.proposal as CardProposal;
+  const refuse = (kind: ReviseRefusal, reason: string): ReviseResult => ({ ok: false, kind, reason, proposal: current });
+  if (run.status !== 'proposed') return refuse('decided', 'This card has already been answered, so it can no longer be changed.');
+  if (revisionOf(current) !== (seen ?? 0)) return refuse('changed', 'This card was changed somewhere else. This is how it stands now.');
+  if (!tool.revise || !current.editable?.length) return refuse('fixed', 'Nothing on this card can be changed here. Ask for the change in words.');
+
+  let revised: ActionProposal;
+  try {
+    revised = await tool.revise(ctx, current, edits);
+  } catch (err) {
+    return refuse('invalid', err instanceof Error && err.message ? err.message : 'That change could not be made.');
+  }
+  // The card keeps its own key (the planner's would change with the title), and counts the edit.
+  const proposal: CardProposal = { ...revised, idempotency_key: key, tool: tool.name, revision: revisionOf(current) + 1 };
+  const seal = proposalSeal(deps.coachId, key, proposal);
+  if (!seal) return refuse('invalid', 'That change could not be saved. The card is as it was.');
+  const replaced = await replaceProposal(ctx.sb, { coach_id: deps.coachId, idempotency_key: key, proposed_input: { ...stored, proposal, seal } });
+  if (replaced === 'not_proposed') return refuse('decided', 'This card has already been answered, so it can no longer be changed.');
+  if (replaced === 'error') {
+    void logServerError(`coachhelm task revision not recorded: ${tool.name}`, { action: `coachhelm.tool.${tool.name}.revise`, feature: 'coachhelm_chat', userId: deps.coachId, handled: true }, 'error');
+    return refuse('invalid', 'That change could not be saved. The card is as it was.');
+  }
+  return { ok: true, proposal };
 }
 
 /**

@@ -252,6 +252,14 @@ entries are history. The tool list and the prompt are described where the tools 
 - **Hold release**: the Confirm request itself, as above. The fallbacks for a function that died mid-window are
   unchanged: the card's own `GET /api/coachhelm/v3/chat/actions/[key]` when its ring ends, and a sweep on the coach's
   next chat request. A held row is rebuilt from the stored, sealed proposal (`held-runner.ts`). There is still no cron.
+- **Editing a card before confirming.** A card lists the fields the coach may change (`ActionProposal.editable`). An
+  edit is a request with no model call (`decision: { key, edits, revision }`): the task plans again from the stored
+  plan and the edits (`TaskTool.revise`, the same checks as `plan`), the result keeps the card's key, is sealed again
+  and replaces the stored plan only while the card is still waiting. An edit the task refuses, or one to a card
+  already answered, leaves the card exactly as it was and says why (a `data-card-revision` part beside the card, not
+  stored). An edited card carries `revision`; a Confirm or an edit names the revision on screen, and one that names
+  another is answered with the card as it stands and writes nothing, so a card changed in one tab cannot be confirmed
+  from a stale copy in another. The plan that is committed is the one the ledger row held when it was claimed.
 - **A browser that missed how a card ended** (a Confirm whose connection dropped while the write went on) is told on
   the coach's next question: that response begins with the earlier message's recorded `decision` and `receipt`
   events, each carrying `message_id`, and the hook folds them into that message. No reload is needed.

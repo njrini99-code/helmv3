@@ -19,12 +19,19 @@ import { stripReadMarkers } from '../read-markers';
 import { defaultGroundingCheck, type GroundingCheck } from './grounding';
 import { runModelLoop, toolResultsMessage, type LoopState, type LoopStop, type PendingDecision } from './loop';
 import { emptyUsage, fallbackModelOf, profileFor, type ChatFeatures, type ModelClient, type ModelMessage, type ModelProfile, type SystemPrompt, type ToolResultBlock, type UsageTotals } from './model';
-import { applyChatEvent, CHAT_STREAM_CONTENT_TYPE, encodeChatEvent, eventsForStoredParts, textOfParts, TURN_META_PART, turnMetaOf, type ChatErrorAction, type ChatErrorKind, type ChatEvent, type ChatScreenEcho, type ChatTurnMeta, type ChatTurnStatus, type ChatUIMessage, type ChatUIPart, type WireDataPart } from './protocol';
+import { applyChatEvent, CARD_REVISION_PART, CHAT_STREAM_CONTENT_TYPE, encodeChatEvent, eventsForStoredParts, textOfParts, TURN_META_PART, turnMetaOf, type ChatCardRevision, type ChatErrorAction, type ChatErrorKind, type ChatEvent, type ChatScreenEcho, type ChatTurnMeta, type ChatTurnStatus, type ChatUIMessage, type ChatUIPart, type WireDataPart } from './protocol';
 import { buildHistory, collectReads, findOpenDecision, saveCardState, saveResumeToLedger, saveTurn, type LoadedConversation, type OpenDecision } from './store';
-import { declineTask, settleAbandonedTask, startConfirm, type DecisionOutcome, type TaskDeps } from './tasks';
+import { declineTask, reviseTask, settleAbandonedTask, startConfirm, type DecisionOutcome, type TaskDeps } from './tasks';
 import type { ChatTool, TaskTool, ToolContext } from './tool';
 
-export type TurnInput = { kind: 'message'; text: string } | { kind: 'decision'; key: string; approved: boolean };
+/**
+ * `revision` (a decision or an edit): the revision of the card the coach was looking at, as its `proposal` part carries it.
+ * `revise`: the coach changed fields on a waiting card; no model is called.
+ */
+export type TurnInput =
+  | { kind: 'message'; text: string }
+  | { kind: 'decision'; key: string; approved: boolean; revision?: number }
+  | { kind: 'revise'; key: string; edits: Record<string, unknown>; revision?: number };
 
 export interface TurnSummary {
   status: ChatTurnStatus;
@@ -215,6 +222,51 @@ async function runTurn(deps: TurnDeps, input: TurnInput, signal: AbortSignal, se
   /** The assistant row this request writes: the waiting turn (a decision), or a failed attempt a retry replaces. */
   let rowId: string | undefined;
 
+  const proposalPart = (key: string, proposal: unknown): WireDataPart => ({ type: 'data-action-proposal', id: `proposal-${key}`, data: proposal });
+  const revisionPart = (data: ChatCardRevision): WireDataPart => ({ type: CARD_REVISION_PART, id: `revision-${data.key}`, data });
+
+  // ── An edit to a waiting card ───────────────────────────────────────────────────────────────────────────────────
+  // No model is called and nothing is written to the domain: the task plans again and the stored plan is replaced. The response is
+  // the card as it now stands and whether the edit was made.
+  if (input.kind === 'revise') {
+    const key = input.key;
+    const task = open?.pending?.tasks.find((t) => t.key === key);
+    const holder = task && open ? open.row : [...loaded.rows].reverse().find((r) => r.role === 'assistant' && (r.ui_parts ?? []).some((p) => p.type === 'data-action-proposal' && p.id === `proposal-${key}`));
+    send({ type: 'message_start', conversation_id: conversationId, message_id: holder?.id ?? crypto.randomUUID(), resumed: true });
+    const shown = holder?.ui_parts?.find((p) => p.type === 'data-action-proposal' && p.id === `proposal-${key}`);
+    if (!deps.tasks || !open || !task) {
+      // The card is not waiting (answered, withdrawn, or never there): it is shown as stored and nothing is touched.
+      if (shown) send({ type: 'proposal', part: proposalPart(key, shown.data) });
+      const card = holder?.ui_parts?.find((p) => p.type.startsWith('tool-') && (p as { approval?: { id?: unknown } }).approval?.id === key) as { approval?: { approved?: unknown } } | undefined;
+      // Drawn as waiting, but its turn could not be found this time (a read that failed for a moment): say so, and leave it waiting.
+      const unread = Boolean(shown && card && typeof card.approval?.approved !== 'boolean');
+      const verdict: ChatCardRevision = unread
+        ? { key, accepted: false, kind: 'invalid', reason: 'That change could not be made just now. The card is as it was.' }
+        : shown
+          ? { key, accepted: false, kind: 'decided', reason: 'This card has already been answered, so it can no longer be changed.' }
+          : { key, accepted: false, kind: 'gone', reason: 'This card can no longer be changed. Ask for it again.' };
+      send({ type: 'part', part: revisionPart(verdict) });
+      send({ type: 'done', status: unread ? 'awaiting_decision' : 'complete' });
+      return;
+    }
+    const tool = deps.tools.find((t): t is TaskTool<unknown> => t.kind === 'task' && t.name === task.tool);
+    const result = await reviseTask(deps.tasks, tool, { ...toolContext, reads }, key, input.edits, input.revision);
+    const current = result.proposal ?? shown?.data;
+    if (result.ok) {
+      // The stored card is replaced in place, and the turn goes on waiting. If this save fails the ledger still holds the new plan:
+      // a reload then shows the old card, and its Confirm is answered with the new one (its revision no longer matches).
+      const parts = applyChatEvent({ id: open.row.id, role: 'assistant', parts: open.row.ui_parts ?? [] }, { type: 'proposal', part: proposalPart(key, result.proposal) }).parts;
+      await saveCardState(sb, loaded.mode, open.row.id, parts, { stillWaiting: true }).catch((err) => {
+        void logServerError(`chat/stream: revised card not stored: ${err instanceof Error ? err.message : 'unknown'}`, { action: 'v3.chat.stream.persist' }, 'warning');
+      });
+    }
+    if (current) send({ type: 'proposal', part: proposalPart(key, current) });
+    send({ type: 'part', part: revisionPart(result.ok ? { key, accepted: true } : { key, accepted: false, kind: result.kind, reason: result.reason }) });
+    // A card that turned out to be answered already is not waiting; every other outcome leaves it waiting.
+    send({ type: 'done', status: !result.ok && (result.kind === 'decided' || result.kind === 'gone') ? 'complete' : 'awaiting_decision' });
+    return;
+  }
+
   // ── A decision on a waiting card ────────────────────────────────────────────────────────────────────────────────
   if (input.kind === 'decision') {
     const task = open?.pending?.tasks.find((t) => t.key === input.key);
@@ -249,7 +301,15 @@ async function runTurn(deps: TurnDeps, input: TurnInput, signal: AbortSignal, se
       outcome = await declineTask(deps.tasks, ctx, task.key, 'declined');
       emit({ type: 'decision', key: task.key, approved: false });
     } else {
-      const started = await startConfirm(deps.tasks, tool, ctx, task.key);
+      const started = await startConfirm(deps.tasks, tool, ctx, task.key, input.revision);
+      if (started.kind === 'changed') {
+        // The card on the coach's screen is not the stored one (it was edited in another tab). Nothing is confirmed: they are shown
+        // the card as it stands and can confirm that.
+        send({ type: 'proposal', part: proposalPart(task.key, started.proposal) });
+        send({ type: 'part', part: revisionPart({ key: task.key, accepted: false, kind: 'changed', reason: 'This card was changed somewhere else. This is how it stands now. Nothing was confirmed.' }) });
+        send({ type: 'done', status: 'awaiting_decision' });
+        return;
+      }
       if (started.kind === 'in_flight') {
         // The request that confirmed first is still inside the Undo window (or writing). It owns the card, the model's closing words
         // and the stored row: this one shows what is stored and changes nothing, so the two can never write over each other.

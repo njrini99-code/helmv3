@@ -109,14 +109,30 @@ export interface UseCoachHelmChatResult {
    */
   approve: (approvalId: string) => void;
   deny: (approvalId: string) => void;
+  /**
+   * Change fields on a waiting card (`edits` by the keys its `editable` lists). The card comes back as it then stands, with a
+   * `data-card-revision` part beside it saying whether the edit was made. Optional in the type only because a preview builds this
+   * result by hand; the hook always returns it.
+   */
+  revise?: (approvalId: string, edits: Record<string, unknown>) => void;
 }
 
 /** A refused request, in the shape `describeChatError` reads (a status and the response body). */
+/** The revision of a card's proposal as the thread holds it; nothing for a card never edited. */
+function revisionSeen(messages: readonly ChatUIMessage[], key: string): { revision?: number } {
+  for (const message of messages) {
+    const part = message.parts.find((p) => p.type === 'data-action-proposal' && p.id === `proposal-${key}`);
+    const revision = (part?.data as { revision?: unknown } | undefined)?.revision;
+    if (typeof revision === 'number' && revision > 0) return { revision };
+  }
+  return {};
+}
+
 function refusal(status: number, body: string): Error {
   return Object.assign(new Error(body || `Request failed (${status})`), { statusCode: status, responseBody: body });
 }
 
-type Outgoing = { kind: 'message'; text: string; key: string } | { kind: 'decision'; key: string; approved: boolean };
+type Outgoing = { kind: 'message'; text: string; key: string } | { kind: 'decision'; key: string; approved: boolean } | { kind: 'revise'; key: string; edits: Record<string, unknown> };
 
 export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoachHelmChatResult {
   const [conversationId, setConversationId] = React.useState<string | null>(options.conversationId ?? null);
@@ -194,7 +210,7 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
       const fold = (event: ChatEvent) => {
         if (event.type === 'message_start') {
           adoptConversation(event.conversation_id);
-          const holder = outgoing.kind === 'decision' ? thread.current.find((m) => m.role === 'assistant' && m.parts.some((p) => (p as { approval?: { id?: unknown } }).approval?.id === outgoing.key)) : undefined;
+          const holder = outgoing.kind !== 'message' ? thread.current.find((m) => m.role === 'assistant' && m.parts.some((p) => (p as { approval?: { id?: unknown } }).approval?.id === outgoing.key)) : undefined;
           if (event.resumed && holder) {
             target = holder.id;
           } else {
@@ -234,7 +250,11 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
             conversation_id: conversation.current,
             client_turn_id: outgoing.kind === 'message' ? outgoing.key : newKey(),
             ...(surface ? { surface } : {}),
-            ...(outgoing.kind === 'message' ? { message: outgoing.text, ...(screen.current ? { screen: screen.current } : {}) } : { decision: { key: outgoing.key, approved: outgoing.approved } }),
+            ...(outgoing.kind === 'message'
+              ? { message: outgoing.text, ...(screen.current ? { screen: screen.current } : {}) }
+              : // The revision of the card as this browser holds it goes with every answer or edit, so the server never confirms or
+                // edits a card other than the one on screen.
+                { decision: { key: outgoing.key, ...(outgoing.kind === 'decision' ? { approved: outgoing.approved } : { edits: outgoing.edits }), ...revisionSeen(thread.current, outgoing.key) } }),
           }),
         });
         const minted = response.headers.get('x-conversation-id');
@@ -264,7 +284,7 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
         // A refused request carries its kind (the server's, or the status's). Anything else here is a connection that dropped:
         // the device is offline, a Confirm's response was lost, or an answer was cut off.
         const kind: ChatFailureKind =
-          typeof (failure as { statusCode?: unknown }).statusCode === 'number' ? chatErrorKind(failure) : typeof navigator !== 'undefined' && navigator.onLine === false ? 'offline' : outgoing.kind === 'decision' ? 'card_retry' : 'lost';
+          typeof (failure as { statusCode?: unknown }).statusCode === 'number' ? chatErrorKind(failure) : typeof navigator !== 'undefined' && navigator.onLine === false ? 'offline' : outgoing.kind !== 'message' ? 'card_retry' : 'lost';
         setError(Object.assign(failure, { kind }));
       } finally {
         if (inFlight.current === abort) {
@@ -359,6 +379,15 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
     },
     [run],
   );
+  /** Change fields on a waiting card. The server plans it again and sends the card as it then stands, with a `data-card-revision` part saying whether the edit was made. */
+  const revise = React.useCallback(
+    (approvalId: string, edits: Record<string, unknown>) => {
+      if (!approvalId || inFlight.current) return;
+      lastDecision.current = null;
+      void run({ kind: 'revise', key: approvalId, edits });
+    },
+    [run],
+  );
   const approve = React.useCallback((approvalId: string) => decide(approvalId, true), [decide]);
   const deny = React.useCallback((approvalId: string) => decide(approvalId, false), [decide]);
 
@@ -380,6 +409,7 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
     newConversation,
     approve,
     deny,
+    revise,
   };
 }
 

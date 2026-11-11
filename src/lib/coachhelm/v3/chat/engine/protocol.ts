@@ -96,6 +96,23 @@ export interface ChatComputed {
   method?: string;
 }
 
+/**
+ * `data-card-revision`: the answer to an edit of a waiting card (or to a Confirm of a card that had changed), sent beside the
+ * card's `proposal` part as it now stands. Part id `revision-<key>`. It is for the live thread only: it is not stored, so a reload
+ * shows the card and no stale notice.
+ */
+export const CARD_REVISION_PART = 'data-card-revision' as const;
+export interface ChatCardRevision {
+  key: string;
+  /** True: the edit was made and the card beside this is the new one. False: the card beside this is unchanged. */
+  accepted: boolean;
+  /** Why not. `invalid`: the edit itself (`reason` says what); `changed`: the card was edited somewhere else; `decided`: it is no
+   *  longer waiting; `fixed`: nothing on it can be edited; `gone`: there is no such card. */
+  kind?: 'invalid' | 'changed' | 'decided' | 'fixed' | 'gone';
+  /** A sentence the coach can read. */
+  reason?: string;
+}
+
 export function turnMetaOf(parts: readonly ChatUIPart[]): ChatTurnMeta | null {
   const data = parts.find((p) => p.type === TURN_META_PART)?.data as Partial<ChatTurnMeta> | undefined;
   return data && typeof data.started_at === 'string' && typeof data.duration_ms === 'number' ? { started_at: data.started_at, duration_ms: data.duration_ms, reads: typeof data.reads === 'number' ? data.reads : 0, ...(data.declined ? { declined: true as const } : {}) } : null;

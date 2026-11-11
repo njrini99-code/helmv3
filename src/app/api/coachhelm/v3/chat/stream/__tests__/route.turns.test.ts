@@ -9,7 +9,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { asTools, cited, codeToolUse, fakeDb, fakeModel, fallbackHop, linesTool, progressNote, newToolLog, readEvents, readTool, rejected, serverCode, taskTool, text, textOf, thinking, toolUse, type FakeDb, type FakeModel, type ToolLog } from './helpers';
-import type { ChatTool, ReadTool } from '@/lib/coachhelm/v3/chat/engine/tool';
+import type { ChatTool, ReadTool, TaskTool } from '@/lib/coachhelm/v3/chat/engine/tool';
 import type { ChatEvent } from '@/lib/coachhelm/v3/chat/engine/protocol';
 
 vi.mock('server-only', () => ({}));
@@ -111,6 +111,7 @@ import { cancelHeld } from '@/lib/coachhelm/v3/chat/undo-hold';
 import { listConversations, resetSurfaceColumnCheck } from '@/lib/coachhelm/v3/chat/persistence';
 import { getRound } from '@/lib/coachhelm/v3/chat/readers-direct';
 import { turnMetaOf } from '@/lib/coachhelm/v3/chat/engine/protocol';
+import { proposalSeal } from '@/lib/coachhelm/v3/chat/engine/tasks';
 
 const MESSAGES = 'golf_coachhelm_chat_messages';
 /** The app's own line for the turn, as the system message after the coach's words. */
@@ -1146,6 +1147,229 @@ describe('a task', () => {
     expect(result).toMatchObject({ is_error: true });
     expect(result!.content).toContain('Nothing was written');
     expect(done(events)?.status).toBe('complete');
+  });
+});
+
+describe('a card the coach edits before confirming', () => {
+  type Card = { idempotency_key: string; tool: string; summary: string; revision?: number; editable?: Array<{ key: string; value: unknown }>; input?: { title: string } };
+  const revisions: Array<Record<string, unknown>> = [];
+  /** A task whose card offers its title for editing, as PLANS's tasks do: `revise` plans again from the stored plan and the edits. */
+  const editable = (): TaskTool<{ title: string }> => {
+    const base = taskTool('create_focus_area', log);
+    const plan: TaskTool<{ title: string }>['plan'] = async (ctx, input) => ({ ...(await base.plan(ctx, input)), input, editable: [{ key: 'title', label: 'Title', type: 'text', value: input.title, required: true, max_length: 40 }] }) as never;
+    return {
+      ...base,
+      plan,
+      revise: async (ctx, _proposal, edits) => {
+        revisions.push(edits);
+        if (Object.keys(edits).some((k) => k !== 'title')) throw new Error('Team cannot be changed on this card. Ask for it in words instead.');
+        const title = String(edits.title ?? '');
+        if (!title || title.length > 40) throw new Error('Title: keep it to 40 characters or fewer.');
+        return plan(ctx, { title });
+      },
+    };
+  };
+  const revise = (conversation_id: string, key: string, edits: Record<string, unknown>, revision?: number) => post({ conversation_id, decision: { key, edits, ...(revision === undefined ? {} : { revision }) } });
+  const confirm = (conversation_id: string, key: string, revision?: number) => post({ conversation_id, decision: { key, approved: true, ...(revision === undefined ? {} : { revision }) } });
+  const cardOf = (events: ChatEvent[]) => (events.find((e) => e.type === 'proposal') as { part: { id: string; data: Card } } | undefined)?.part;
+  const verdictOf = (events: ChatEvent[]) => (events.find((e) => e.type === 'part' && e.part.type === 'data-card-revision') as { part: { id: string; data: Record<string, unknown> } } | undefined)?.part;
+  const stored = () => runs()[0]!.proposed_input as { input: unknown; proposal: Card; seal: string };
+  const propose = async () => {
+    revisions.length = 0;
+    h.toolsFor.mockImplementation(() => asTools(editable(), readTool('get_team_stats', log, 74.2)));
+    script({ content: [text('Here is the focus area.'), toolUse('tu_task', 'create_focus_area', { title: 'Putting from 6 feet' })] });
+    const { events } = await ask('Make a putting focus area');
+    return { conversationId: conversationOf(events), key: keyOf(events), card: cardOf(events)!.data };
+  };
+
+  it('plans the card again with no model call: same key, sealed again, stored in place, and Confirm writes the edited plan', async () => {
+    const { conversationId, key, card } = await propose();
+    expect(card.editable).toMatchObject([{ key: 'title', value: 'Putting from 6 feet' }]);
+    const sealBefore = stored().seal;
+    const cardRow = assistantRows()[0]!;
+
+    // No step is scripted: a model call here would fail the request.
+    h.model = fakeModel([]);
+    const { events } = await revise(conversationId, key, { title: 'Putting from 8 feet' });
+    expect(events.some((e) => e.type === 'error')).toBe(false);
+    expect(events[0]).toMatchObject({ type: 'message_start', resumed: true, message_id: cardRow.id });
+    expect(cardOf(events)).toMatchObject({ id: `proposal-${key}`, data: { idempotency_key: key, tool: 'create_focus_area', summary: 'Create the focus area "Putting from 8 feet".', revision: 1 } });
+    expect(verdictOf(events)).toEqual({ type: 'data-card-revision', id: `revision-${key}`, data: { key, accepted: true } });
+    expect(done(events)?.status).toBe('awaiting_decision');
+    expect(revisions).toEqual([{ title: 'Putting from 8 feet' }]);
+
+    // The ledger: still one row, still waiting, the new plan under a new seal; what the model asked for is kept as asked.
+    expect(runs()).toHaveLength(1);
+    expect(runs()[0]).toMatchObject({ status: 'proposed', idempotency_key: key });
+    expect(stored().proposal).toMatchObject({ summary: 'Create the focus area "Putting from 8 feet".', revision: 1, idempotency_key: key });
+    expect(stored().seal).not.toBe(sealBefore);
+    expect(stored().input).toEqual({ title: 'Putting from 6 feet' });
+    // The stored turn: the card replaced in place, still waiting, and no notice kept for a reload to show.
+    const row = assistantRows()[0]!;
+    const parts = row.ui_parts as Array<{ type: string; id?: string; data?: Card }>;
+    expect(parts.filter((p) => p.type === 'data-action-proposal')).toHaveLength(1);
+    expect(parts.find((p) => p.type === 'data-action-proposal')!.data).toMatchObject({ summary: 'Create the focus area "Putting from 8 feet".', revision: 1 });
+    expect(parts.some((p) => p.type === 'data-card-revision')).toBe(false);
+    expect(row.pending_decision).toMatchObject({ tasks: [{ tool: 'create_focus_area', tool_use_id: 'tu_task' }] });
+    expect(assistantRows()).toHaveLength(1);
+
+    // Confirm, saying which card was on screen: the edited plan is what is written, and the model is told so.
+    const model = script({ content: [text('Done.')] });
+    const confirmed = await confirm(conversationId, key, 1);
+    expect(receiptStates(confirmed.events)).toEqual(['held', 'completed']);
+    expect(log.commits).toHaveLength(1);
+    expect(log.commits[0]).toMatchObject({ summary: 'Create the focus area "Putting from 8 feet".', idempotency_key: key });
+    expect(JSON.stringify(lastRequestMessages(model).at(-1))).toContain('Committed.');
+  });
+
+  it('an edit the task refuses leaves the card exactly as it was, with the task’s own sentence', async () => {
+    const { conversationId, key, card } = await propose();
+    const before = JSON.stringify(stored());
+    h.model = fakeModel([]);
+
+    const tooLong = await revise(conversationId, key, { title: 'x'.repeat(41) });
+    expect(verdictOf(tooLong.events)!.data).toEqual({ key, accepted: false, kind: 'invalid', reason: 'Title: keep it to 40 characters or fewer.' });
+    expect(cardOf(tooLong.events)!.data).toEqual(card);
+    expect(done(tooLong.events)?.status).toBe('awaiting_decision');
+
+    const notOffered = await revise(conversationId, key, { team_id: 'another-team' });
+    expect(verdictOf(notOffered.events)!.data).toMatchObject({ accepted: false, kind: 'invalid', reason: 'Team cannot be changed on this card. Ask for it in words instead.' });
+
+    expect(JSON.stringify(stored())).toBe(before);
+    expect(runs()[0]!.status).toBe('proposed');
+    expect((assistantRows()[0]!.ui_parts as Array<{ type: string; data?: Card }>).find((p) => p.type === 'data-action-proposal')!.data).toEqual(card);
+    expect(log.commits).toHaveLength(0);
+    // The card can still be confirmed as it stands.
+    script({ content: [text('Done.')] });
+    await confirm(conversationId, key);
+    expect(log.commits).toMatchObject([{ summary: 'Create the focus area "Putting from 6 feet".' }]);
+  });
+
+  it('a body that is not an edit or an answer is refused before anything is read', async () => {
+    const { conversationId, key } = await propose();
+    expect((await post({ conversation_id: conversationId, decision: { key, approved: true, edits: { title: 'Both' } } })).response.status).toBe(400);
+    expect((await post({ conversation_id: conversationId, decision: { key } })).response.status).toBe(400);
+    expect((await post({ conversation_id: conversationId, decision: { key, edits: { title: 'x'.repeat(30_000) } } })).response.status).toBe(400);
+    expect((await post({ decision: { key, edits: { title: 'No conversation' } } })).response.status).toBe(404);
+    expect(revisions).toHaveLength(0);
+  });
+
+  it('an edit after Confirm changes nothing: not during the Undo window, and not once it is written', async () => {
+    const { conversationId, key, card } = await propose();
+    script({ content: [text('Done.')] });
+    const pending = confirm(conversationId, key);
+    await untilHeld();
+    // Inside the Undo window the plan is the one the coach confirmed.
+    const during = await revise(conversationId, key, { title: 'Chipping' });
+    expect(verdictOf(during.events)!.data).toMatchObject({ accepted: false, kind: 'decided' });
+    expect(cardOf(during.events)!.data).toEqual(card);
+    expect(done(during.events)?.status).toBe('complete');
+    await pending;
+    expect(log.commits).toMatchObject([{ summary: 'Create the focus area "Putting from 6 feet".' }]);
+
+    const after = await revise(conversationId, key, { title: 'Chipping' });
+    expect(verdictOf(after.events)!.data).toMatchObject({ accepted: false, kind: 'decided' });
+    expect(revisions).toHaveLength(0);
+    expect(stored().proposal).toEqual(card);
+    expect(runs()[0]!.status).toBe('completed');
+    expect(log.commits).toHaveLength(1);
+  });
+
+  it('two tabs: a card edited in one cannot be confirmed or edited from the stale copy in the other', async () => {
+    const { conversationId, key } = await propose();
+    h.model = fakeModel([]);
+    // Tab A edits. Tab B still shows the first card.
+    await revise(conversationId, key, { title: 'Putting from 8 feet' });
+
+    // Tab B confirms what it sees (the unedited card, with or without saying so): nothing is written, and it is shown the card as it stands.
+    for (const seen of [undefined, 0]) {
+      const stale = await confirm(conversationId, key, seen);
+      expect(verdictOf(stale.events)!.data).toMatchObject({ accepted: false, kind: 'changed' });
+      expect(cardOf(stale.events)!.data).toMatchObject({ summary: 'Create the focus area "Putting from 8 feet".', revision: 1 });
+      expect(stale.events.some((e) => e.type === 'decision' || e.type === 'receipt')).toBe(false);
+      expect(done(stale.events)?.status).toBe('awaiting_decision');
+    }
+    expect(log.commits).toHaveLength(0);
+    expect(runs()[0]!.status).toBe('proposed');
+
+    // Tab B edits from its stale copy: refused the same way, and tab A's edit stands.
+    const staleEdit = await revise(conversationId, key, { title: 'Chipping' }, 0);
+    expect(verdictOf(staleEdit.events)!.data).toMatchObject({ accepted: false, kind: 'changed' });
+    expect(stored().proposal).toMatchObject({ summary: 'Create the focus area "Putting from 8 feet".', revision: 1 });
+
+    // Now looking at the current card, tab B edits again and confirms: one write, of the card on its screen.
+    const second = await revise(conversationId, key, { title: 'Putting from 10 feet' }, 1);
+    expect(cardOf(second.events)!.data).toMatchObject({ revision: 2 });
+    script({ content: [text('Done.')] });
+    await confirm(conversationId, key, 2);
+    expect(log.commits).toMatchObject([{ summary: 'Create the focus area "Putting from 10 feet".' }]);
+    expect(log.commits).toHaveLength(1);
+  });
+
+  it('an edit that lands between a Confirm’s read and its claim: the claim is handed back and nothing is written', async () => {
+    const { conversationId, key } = await propose();
+    const client = (db as FakeDb).client as { from: (table: string) => { update: (values: Record<string, unknown>) => unknown } };
+    const realFrom = client.from;
+    let slipped = false;
+    // The other tab's edit, landing at the last moment before this Confirm takes the row: a plan this server sealed, revision 1.
+    client.from = (table: string) => {
+      const builder = realFrom(table);
+      const realUpdate = builder.update.bind(builder);
+      builder.update = (values: Record<string, unknown>) => {
+        if (table === RUNS && values.status === 'approved' && !slipped) {
+          slipped = true;
+          const row = runs()[0]!;
+          const proposal = { ...(row.proposed_input as { proposal: Card }).proposal, summary: 'Create the focus area "Chipping".', revision: 1 };
+          row.proposed_input = { ...(row.proposed_input as object), proposal, seal: proposalSeal('coach-1', key, proposal) };
+        }
+        return realUpdate(values);
+      };
+      return builder;
+    };
+    try {
+      h.model = fakeModel([]);
+      const raced = await confirm(conversationId, key);
+      expect(slipped).toBe(true);
+      expect(verdictOf(raced.events)!.data).toMatchObject({ accepted: false, kind: 'changed' });
+      expect(cardOf(raced.events)!.data).toMatchObject({ summary: 'Create the focus area "Chipping".', revision: 1 });
+      expect(log.commits).toHaveLength(0);
+      // Handed back: the card waits again and can be confirmed as it now stands.
+      expect(runs()[0]!.status).toBe('proposed');
+      script({ content: [text('Done.')] });
+      await confirm(conversationId, key, 1);
+      expect(log.commits).toMatchObject([{ summary: 'Create the focus area "Chipping".' }]);
+    } finally {
+      client.from = realFrom;
+    }
+  });
+
+  it('a plan edited by hand in the ledger still fails the seal, edited card or not', async () => {
+    const { conversationId, key } = await propose();
+    h.model = fakeModel([]);
+    await revise(conversationId, key, { title: 'Putting from 8 feet' });
+    // The coach's own row is theirs to write (the ledger's policy allows it): a plan changed there is not this server's.
+    const row = runs()[0]!;
+    row.proposed_input = { ...(row.proposed_input as object), proposal: { ...stored().proposal, summary: 'Create the focus area "Everyone".' } };
+    const forged = await confirm(conversationId, key, 1);
+    expect(receiptStates(forged.events)).toEqual(['failed']);
+    expect(log.commits).toHaveLength(0);
+    // And it cannot be edited back into a sealed card either.
+    const edit = await revise(conversationId, key, { title: 'Putting' }, 1);
+    expect(verdictOf(edit.events)!.data).toMatchObject({ accepted: false });
+    expect(revisions).toHaveLength(1);
+  });
+
+  it('a card with nothing to edit says so and is left alone', async () => {
+    // The plain task of this suite offers no fields and has no `revise`.
+    script({ content: [toolUse('tu_task', 'create_focus_area', { title: 'Putting from 6 feet' })] });
+    const { events } = await ask('Make a putting focus area');
+    const conversationId = conversationOf(events);
+    const key = keyOf(events);
+    h.model = fakeModel([]);
+    const { events: answer } = await revise(conversationId, key, { title: 'Other' });
+    expect(verdictOf(answer)!.data).toMatchObject({ accepted: false, kind: 'fixed' });
+    expect(done(answer)?.status).toBe('awaiting_decision');
+    expect(runs()[0]!.status).toBe('proposed');
   });
 });
 

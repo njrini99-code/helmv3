@@ -132,8 +132,21 @@ const Body = z
     surface: z.enum(['ask', 'quick_chat', 'practice_helper']).optional(),
     /** The coach's new message. */
     message: z.string().trim().min(1).max(8000).optional(),
-    /** The coach's answer to a waiting card, by its ledger key. */
-    decision: z.object({ key: z.string().min(1).max(200), approved: z.boolean() }).optional(),
+    /**
+     * About a waiting card, by its ledger key. With `approved`: the coach's answer to it. With `edits`: the coach changed fields on
+     * it (`{ [field key]: value }`, the fields the card's `editable` lists), which plans the card again and calls no model.
+     * `revision`: the revision of the card on the coach's screen, as its proposal part carries it.
+     */
+    decision: z
+      .object({
+        key: z.string().min(1).max(200),
+        approved: z.boolean().optional(),
+        edits: z.record(z.string().min(1).max(100), z.unknown()).optional(),
+        revision: z.number().int().min(0).max(100_000).optional(),
+      })
+      .refine((d) => (d.approved === undefined) !== (d.edits === undefined), 'Send approved or edits, not both.')
+      .refine((d) => d.edits === undefined || (Object.keys(d.edits).length <= 40 && JSON.stringify(d.edits).length <= 20_000), 'Too many edits.')
+      .optional(),
     /** A tab still running the previous client sends its whole thread. Only its last user message is read, as the new message. */
     messages: z.array(z.unknown()).optional(),
     /**
@@ -144,7 +157,11 @@ const Body = z
   })
   .transform((body, ctx): { conversation_id: string | null; client_turn_id: string; surface: ChatSurface; input: TurnInput; screen: unknown } => {
     const base = { conversation_id: body.conversation_id ?? null, client_turn_id: body.client_turn_id, surface: (body.surface ?? 'ask') as ChatSurface, screen: body.screen ?? null };
-    if (body.decision && !body.message) return { ...base, input: { kind: 'decision', ...body.decision } };
+    if (body.decision && !body.message) {
+      const { key, approved, edits, revision } = body.decision;
+      const seen = revision === undefined ? {} : { revision };
+      return { ...base, input: edits !== undefined ? { kind: 'revise', key, edits, ...seen } : { kind: 'decision', key, approved: approved === true, ...seen } };
+    }
     const text = body.message ?? lastUserText(body.messages);
     if (!text || body.decision) {
       ctx.addIssue({ code: 'custom', message: 'Send a message or a decision.' });
@@ -284,7 +301,7 @@ export async function POST(req: NextRequest) {
       const answered = loaded.rows.find((r) => r.role === 'assistant' && r.client_turn_id === clientTurnId && r.status !== 'failed');
       if (answered) return storedTurnResponse(answered, conversationId);
     }
-  } else if (input.kind === 'decision') {
+  } else if (input.kind !== 'message') {
     return refuse(404, 'Conversation not found', 'gone');
   }
 

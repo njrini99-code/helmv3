@@ -172,6 +172,38 @@ describe('useCoachHelmChat', () => {
     expect(result.current.messages.at(-1)!.parts).toEqual([{ type: 'text', text: 'Blake is at 74.' }]);
   });
 
+  it('an edit to a waiting card sends only the changed fields, replaces the card in place, and the Confirm that follows says which card was on screen', async () => {
+    const revised = { type: 'data-action-proposal' as const, id: `proposal-${KEY}`, data: { idempotency_key: KEY, tool: 'create_focus_area', summary: 'Create the other one.', revision: 1 } };
+    fetchMock
+      .mockResolvedValueOnce(
+        sse([
+          { type: 'message_start', conversation_id: CONVERSATION, message_id: 'a-card', resumed: true },
+          { type: 'proposal', part: revised },
+          { type: 'part', part: { type: 'data-card-revision', id: `revision-${KEY}`, data: { key: KEY, accepted: true } } },
+          { type: 'done', status: 'awaiting_decision' },
+        ]),
+      )
+      .mockResolvedValueOnce(sse([{ type: 'message_start', conversation_id: CONVERSATION, message_id: 'a-card', resumed: true }, { type: 'decision', key: KEY, approved: true }, { type: 'done', status: 'complete' }]));
+    const { result } = renderHook(() => useCoachHelmChat({ initialMessages: [waitingCard], conversationId: CONVERSATION }));
+
+    act(() => result.current.revise!(KEY, { title: 'The other one' }));
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    // A card never edited carries no revision, and the request says nothing of one.
+    expect(bodyOf(0)).toMatchObject({ conversation_id: CONVERSATION, decision: { key: KEY, edits: { title: 'The other one' } } });
+    expect(bodyOf(0).decision).not.toHaveProperty('revision');
+    expect(bodyOf(0)).not.toHaveProperty('message');
+    // One message, one card, replaced in place and still waiting; the notice sits beside it.
+    expect(result.current.messages).toHaveLength(1);
+    const parts = result.current.messages[0]!.parts;
+    expect(parts.filter((p) => p.type === 'data-action-proposal')).toEqual([revised]);
+    expect(parts.find((p) => p.type === 'data-card-revision')).toMatchObject({ data: { key: KEY, accepted: true } });
+    expect(parts.find((p) => p.type === 'tool-create_focus_area')).toMatchObject({ state: 'approval-requested' });
+
+    act(() => result.current.approve(KEY));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    expect(bodyOf(1).decision).toEqual({ key: KEY, approved: true, revision: 1 });
+  });
+
   it('every failure carries its kind: the server’s on a stream or a refusal, the browser’s own for a dropped connection', async () => {
     const { result } = renderHook(() => useCoachHelmChat({ initialMessages: [waitingCard], conversationId: CONVERSATION }));
     const kindAfter = async (arrange: () => void, act_: () => void) => {
