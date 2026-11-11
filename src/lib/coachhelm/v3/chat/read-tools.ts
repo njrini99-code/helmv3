@@ -21,6 +21,7 @@ import type { Database } from '@/lib/types/database';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
+import { logServerError } from '@/lib/server-error-logger';
 import {
   mapRowToRankable,
   rankEvidenceInsights,
@@ -1130,10 +1131,16 @@ export async function getRecentRounds(
   const byNewest = (a: { round_date: string; id: string }, b: { round_date: string; id: string }) => (a.round_date === b.round_date ? (a.id < b.id ? -1 : 1) : a.round_date < b.round_date ? 1 : -1);
   const rounds = [...(data ?? [])].sort(byNewest);
 
-  // Each round's stat line. A failed read leaves them out; the round list stands.
+  // Each round's stat line. A failed read leaves them out and the round list stands, but the read says so: rounds with no stat line
+  // because the read failed must not pass for rounds where nothing was entered.
   const lines = new Map<string, Record<string, unknown>>();
+  let linesUnread = false;
   if (rounds.length > 0) {
-    const { data: stat } = await sb.from('golf_round_stats_cache').select(ROUND_LINE_COLUMNS).in('round_id', rounds.map((r) => r.id));
+    const { data: stat, error: statError } = await sb.from('golf_round_stats_cache').select(ROUND_LINE_COLUMNS).in('round_id', rounds.map((r) => r.id));
+    if (statError) {
+      linesUnread = true;
+      void logServerError(`getRecentRounds stat lines failed: ${statError.message}`, { action: 'coachhelm.ask.recent_rounds', feature: 'coachhelm_chat', userId: ctx.user_id, playerId: player.id, errorCode: statError.code, handled: true });
+    }
     for (const row of (stat ?? []) as unknown as Array<Record<string, unknown>>) lines.set(String(row.round_id), row);
   }
   const count = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null);
@@ -1179,8 +1186,13 @@ export async function getRecentRounds(
         };
       }),
     },
-    coverage: rounds.length === 0 ? 'empty' : 'complete',
-    coverage_note: rounds.length === 0 ? `${player.name} has no completed rounds on record.` : null,
+    coverage: rounds.length === 0 ? 'empty' : linesUnread ? 'partial' : 'complete',
+    coverage_note:
+      rounds.length === 0
+        ? `${player.name} has no completed rounds on record.`
+        : linesUnread
+          ? 'The rounds’ stat lines (three-putts, greens, fairways, up-and-downs) could not be read just now, so they are not listed. That is not the same as none recorded. The scores stand.'
+          : null,
     as_of: nowIso(),
   };
 }

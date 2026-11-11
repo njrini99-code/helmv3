@@ -483,11 +483,13 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect: coll
       });
       // The card's own day, so the reply can say it: it is on screen, and the coach confirms it.
       collectActionNumbers(proposal.summary, { facts: proposal.facts, ...(proposal.visual?.kind === 'cal' ? { date: proposal.visual.date } : {}) });
-      const neighbours = askV2 ? await landingRows(sb, ctx, action.toolName, input) : [];
+      // Null: the neighbours could not be read (logged there). The card then draws the new row alone, exactly as it does for a screen
+      // with nothing on it yet: a card without neighbours makes no statement about what else is there, so neither case is misreported.
+      const neighbours = askV2 ? await landingRows(sb, ctx, action.toolName, input) : null;
       writer.write({
         type: 'data-action-proposal',
         id: `proposal-${proposal.idempotency_key}`,
-        data: { ...proposal, ...(neighbours.length ? { neighbours } : {}), tool: action.toolName },
+        data: { ...proposal, ...(neighbours?.length ? { neighbours } : {}), tool: action.toolName },
       });
     } catch (err) {
       // A plan we cannot build must never produce a Confirm button.

@@ -22,7 +22,7 @@
  * The report defaults to the OS temp dir: pass --out <file> to put it elsewhere.
  * Never run against production: it refuses unless the Supabase URL is the staging project.
  */
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
@@ -32,6 +32,7 @@ import { createServerClient } from '@supabase/ssr';
 import { cliGuard } from '../lib/cli-guard.mjs';
 import { readFileSync, statSync } from 'node:fs';
 import { applyStreamLine, captureFixture, citationsFromLedger, citationsFromLog, citesFromLog, newStreamState, score, summariseLogSlice } from './ask-eval-score.mjs';
+import { fetchAllRows } from './fetch-all-rows.mjs';
 
 const STAGING_REF = 'ybmwektreyrwjscxlogv';
 const DEMO_TEAM_ID = '6ecdd1a6-63fe-4beb-b094-00118f334163';
@@ -46,7 +47,7 @@ const cli = cliGuard({
   options: [
     ['--base-url <url>', `Dev server (default ${DEFAULT_BASE}). It must run on the staging env and have Clubhouse on for the demo team.`],
     ['--only <ids>', 'Comma-separated question ids (see --list).'],
-    ['--out <file>', 'Report path (default: <tmpdir>/ask-eval/ask-eval-<timestamp>.md).'],
+    ['--out <file>', 'Report path (default: <tmpdir>/ask-eval-<random>/ask-eval-<timestamp>.md, a directory made for this run).'],
     ['--capture-dir <dir>', "Also write each turn as a replay-suite fixture (JSON: question, answer text, the reads' envelopes, tool calls, verdict) to <dir>/<question id>.json. A player's turn is stored nowhere else until HM3. Copy the files you want into src/lib/coachhelm/v3/chat/__tests__/fixtures/ask-turns-player/ and label them."],
     ['--server-log <file>', "The dev server's log. An accepted turn's citation counts (cited, verified, unresolved, mismatched, invalid) exist only in its v3.chat.stream.citations event; a rejected turn's are in the ledger."],
     ['--cookie <header>', 'Cookie header of a signed-in demo coach (or ASK_EVAL_COOKIE). Skips the magic-link sign-in.'],
@@ -85,14 +86,18 @@ const members = must(await sb.from('golf_team_members').select('player_id').eq('
 const profiles = must(await sb.from('golf_players').select('id, first_name, last_name, user_id').in('id', members.map((m) => m.player_id)), 'players');
 const roster = profiles.map((p) => ({ id: p.id, name: `${p.first_name} ${p.last_name}`.trim(), first: p.first_name, userId: p.user_id }));
 const byName = (n) => roster.find((p) => p.name === n || p.first === n);
-const rounds = must(
-  await sb
-    .from('golf_rounds')
-    .select('id, player_id, round_date, created_at, course_name, round_type, status, is_test, holes_played, total_score, strokes_gained_approach, strokes_gained_putting, total_gir, total_gir_possible')
-    .in('player_id', roster.map((p) => p.id))
-    .order('round_date', { ascending: false })
-    .order('created_at', { ascending: false })
-    .limit(2000),
+// Every round, in pages: one request returns at most 1,000 rows whatever limit it asks for, and the expected answers below are
+// computed from this list. `id` breaks ties, so a page boundary cannot repeat or skip a round.
+const rounds = await fetchAllRows(
+  (from, to) =>
+    sb
+      .from('golf_rounds')
+      .select('id, player_id, round_date, created_at, course_name, round_type, status, is_test, holes_played, total_score, strokes_gained_approach, strokes_gained_putting, total_gir, total_gir_possible')
+      .in('player_id', roster.map((p) => p.id))
+      .order('round_date', { ascending: false })
+      .order('created_at', { ascending: false })
+      .order('id', { ascending: true })
+      .range(from, to),
   'rounds',
 );
 const real = rounds.filter((r) => !r.is_test);
@@ -653,7 +658,10 @@ for (const r of report) {
   for (const x of r.scored?.results ?? []) lines.push(`- ${x.status}${x.optional ? ' (optional)' : ''}: ${x.label}${x.detail ? ` [${x.detail}]` : ''}`);
   lines.push('', '> ' + (r.text.trim().replace(/\n/g, '\n> ') || '(no text)'), '');
 }
-const out = flag('--out') ?? join(tmpdir(), 'ask-eval', `ask-eval-${new Date().toISOString().replace(/[:.]/g, '-')}.md`);
-mkdirSync(join(out, '..'), { recursive: true });
+// The default lands in a directory this run creates for itself (random name, owner-only): a fixed path under the shared temp dir is
+// one another local user could put a link at first. With --out the caller chose the place, and its directory is made if missing.
+const chosen = flag('--out');
+const out = chosen ?? join(mkdtempSync(join(tmpdir(), 'ask-eval-')), `ask-eval-${new Date().toISOString().replace(/[:.]/g, '-')}.md`);
+if (chosen) mkdirSync(join(chosen, '..'), { recursive: true });
 writeFileSync(out, `${lines.join('\n')}\n`);
 console.log(`\nreport: ${out}`);

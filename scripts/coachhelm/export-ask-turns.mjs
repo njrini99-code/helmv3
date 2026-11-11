@@ -22,6 +22,7 @@ import { config } from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
 import { cliGuard, skipWrite } from '../lib/cli-guard.mjs';
 import { citesFromLog } from './ask-eval-score.mjs';
+import { fetchAllRows } from './fetch-all-rows.mjs';
 
 const STAGING_REF = 'ybmwektreyrwjscxlogv';
 const DEMO_TEAM_ID = '6ecdd1a6-63fe-4beb-b094-00118f334163';
@@ -81,17 +82,24 @@ const roster = members.map((m) => {
 });
 const rosterNames = new Set(roster.map((p) => p.name));
 // Every other person in staging: a turn that names one of them (in a question, an answer or an earlier message) is left out.
-const everyone = must(await sb.from('golf_players').select('first_name, last_name').limit(5000), 'all players');
+// This list is the privacy filter, so it must be ALL of them: read in pages, in primary-key order. One request returns at most
+// 1,000 rows whatever limit it asks for, and a list cut there would let everyone past the cut through.
+const everyone = await fetchAllRows((from, to) => sb.from('golf_players').select('first_name, last_name').order('id', { ascending: true }).range(from, to), 'all players');
 const outsiders = [...new Set(everyone.map((p) => `${p.first_name ?? ''} ${p.last_name ?? ''}`.trim().toLowerCase()))].filter((n) => n.includes(' ') && n.length > 6 && !rosterNames.has(n) && ![...rosterNames].some((r) => r.toLowerCase() === n));
 
 const coaches = must(await sb.from('golf_coaches').select('id').eq('organization_id', team.organization_id), 'coaches');
 const convs = must(await sb.from('golf_coachhelm_chat_conversations').select('id').in('coach_id', coaches.map((c) => c.id)), 'conversations');
-const msgs = must(
-  await sb
-    .from('golf_coachhelm_chat_messages')
-    .select('id, conversation_id, role, status, created_at, content, ui_parts, cost_usd')
-    .in('conversation_id', convs.map((c) => c.id))
-    .order('created_at', { ascending: true }),
+// In pages too: past 1,000 messages a single request would drop the newest turns without saying so. `id` breaks ties in created_at,
+// so a page boundary cannot repeat or skip a row.
+const msgs = await fetchAllRows(
+  (from, to) =>
+    sb
+      .from('golf_coachhelm_chat_messages')
+      .select('id, conversation_id, role, status, created_at, content, ui_parts, cost_usd')
+      .in('conversation_id', convs.map((c) => c.id))
+      .order('created_at', { ascending: true })
+      .order('id', { ascending: true })
+      .range(from, to),
   'messages',
 );
 

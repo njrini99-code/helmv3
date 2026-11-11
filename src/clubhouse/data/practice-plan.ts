@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { parsePlanBody, parseVersionBody, toPlayerPlan, withOwnLines, type PlanBodyV2, type PlanWhy } from '@/lib/coachhelm/v3/practice-plan/model';
 import { practiceTables, type PracticePlanRow, type PracticePlanVersionRow } from '@/lib/golf/practice-db';
 import { isPracticeMissing } from '@/lib/golf/practice-errors';
+import { chLogServer } from '../lib/track-server';
 import { sheetFormat, toSheetModel, type PlanSheetFormat, type PlanSheetModel } from '../screens/coachhelm/plan/sheet/plan-sheet-model';
 import type { PlayerPracticeData } from '../screens/coachhelm/plan/player/PlayerPractice';
 import type { ChPlanStatus } from '../screens/practice/CoachPlanBar';
@@ -63,9 +64,12 @@ export async function loadCoachPlan(planId: string): Promise<PlanPageLoad> {
   const zone = ctx.team?.timezone ?? 'America/New_York';
   const [format, live] = await Promise.all([
     readFormat(sb, ctx.event.team_id),
-    row.status === 'published' && row.published_version != null ? practiceTables(sb).from('golf_practice_plan_versions').select('published_at').eq('plan_id', planId).eq('version', row.published_version).maybeSingle() : Promise.resolve({ data: null }),
+    row.status === 'published' && row.published_version != null ? practiceTables(sb).from('golf_practice_plan_versions').select('published_at').eq('plan_id', planId).eq('version', row.published_version).maybeSingle() : Promise.resolve({ data: null, error: null }),
   ]);
-  const publishedAt = (live.data as { published_at: string } | null)?.published_at ?? null;
+  // When the plan went out is decoration on a plan known to be published (the plan row says so). Unread, the sheet says "Published"
+  // with no time, which is still true; it never falls back to "Draft".
+  if (live.error) chLogServer('practice.plan', 'published at', live.error, 'practice_plans');
+  const publishedAt = live.error ? null : ((live.data as { published_at: string } | null)?.published_at ?? null);
   const coach: CoachPlanExtras = { body, zone, start: new Date(ctx.event.start_time), status: { planId, title: row.title ?? 'Practice plan', version: row.version, status: row.status === 'published' ? 'published' : 'draft', edited: row.published_version != null && row.version !== row.published_version, seen } };
   return { status: 'ready', coach, plan: toSheetModel({ body, why: (row.coach_why ?? {}) as Record<string, PlanWhy>, title: row.title ?? 'Practice plan', team: ctx.team?.name ?? '', start: new Date(ctx.event.start_time), end: ctx.event.end_time ? new Date(ctx.event.end_time) : null, zone: ctx.team?.timezone ?? 'America/New_York', coaches: ctx.coaches, names: ctx.names, state: stateWord(row, zone, publishedAt), format }, 'coach') };
 }
@@ -129,20 +133,41 @@ export async function loadPlayerPractice(planId: string, playerId: string, now: 
   };
 }
 
-/** The print studio's extra read: the plan's drills, by the refs in its body. A failed read prints without the appendix. */
+/** A drills read for the print appendix failed. Thrown, never answered with an empty list: "this plan has no drills" is a different fact. */
+export class PlanDrillsUnreadError extends Error {
+  constructor(what: string) {
+    super(`The plan's drills could not be read (${what}).`);
+    this.name = 'PlanDrillsUnreadError';
+  }
+}
+
+/** One failed drills read: logged unless Practice simply is not there yet (the held block), then thrown for the caller to decide. */
+function drillsUnread(what: string, error: { code?: string; message: string }): never {
+  if (!isPracticeMissing(error.code)) chLogServer('practice.plan', `drills ${what}`, error, 'practice_plans');
+  throw new PlanDrillsUnreadError(what);
+}
+
+/**
+ * The print studio's extra read: the plan's drills, by the refs in its body. An empty list means the plan names no drills (or the plan
+ * is not this coach's to read). A read that FAILS throws `PlanDrillsUnreadError`: the caller decides what a print without its appendix
+ * is, and the appendix is never a partial list that looks whole.
+ */
 export async function loadPlanDrills(planId: string): Promise<PrintDrill[]> {
   const sb = await createClient();
   const db = practiceTables(sb);
-  const { data } = await db.from('golf_practice_plans').select('body').eq('id', planId).maybeSingle();
+  const { data, error } = await db.from('golf_practice_plans').select('body').eq('id', planId).maybeSingle();
+  if (error) drillsUnread('plan', error);
   const body = data ? parsePlanBody((data as { body: unknown }).body) : null;
   if (!body) return [];
   const refs = body.variants.main.blocks.flatMap((b) => (b.kind === 'team' ? [b.drill] : b.kind === 'stations' ? b.stations.map((s) => s.drill) : [])).filter((d): d is NonNullable<typeof d> => !!d);
   const teamIds = [...new Set(refs.filter((r) => r.src === 'team').map((r) => r.id))];
   const libIds = [...new Set(refs.filter((r) => r.src === 'lib').map((r) => r.id))];
   const [team, lib] = await Promise.all([
-    teamIds.length ? db.from('golf_team_drills').select('name, area, minutes, setup, goal, diagram, scoring, levels').in('id', teamIds) : Promise.resolve({ data: [] }),
-    libIds.length ? sb.from('golf_drills').select('title, category, duration_min, description').in('id', libIds) : Promise.resolve({ data: [] }),
+    teamIds.length ? db.from('golf_team_drills').select('name, area, minutes, setup, goal, diagram, scoring, levels').in('id', teamIds) : Promise.resolve({ data: [], error: null }),
+    libIds.length ? sb.from('golf_drills').select('title, category, duration_min, description').in('id', libIds) : Promise.resolve({ data: [], error: null }),
   ]);
+  if (team.error) drillsUnread('team drills', team.error);
+  if (lib.error) drillsUnread('library drills', lib.error);
   return [
     ...(((team.data ?? []) as Array<{ name: string; area: string; minutes: number; setup: string; goal: string; diagram: PrintDrill['diagram']; scoring: PrintDrill['scoring'] | null; levels: { par?: string; birdie?: string; eagle?: string } | null }>).map((d) => ({
       name: d.name,

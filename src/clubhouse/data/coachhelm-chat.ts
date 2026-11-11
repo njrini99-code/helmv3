@@ -189,12 +189,16 @@ async function coachFirstName(sb: Awaited<ReturnType<typeof createClient>>, coac
   return data?.full_name?.trim().split(/\s+/)[0] || undefined;
 }
 
-/** A player's own open focus areas for Ask's home; a failed read draws no lines. */
-async function playerFocus(sb: Awaited<ReturnType<typeof createClient>>, playerId: string): Promise<NonNullable<ChAskData['focus']>> {
+/**
+ * A player's own open focus areas for Ask's home. An empty list is an answer: the player has none. A read that failed is NOT that
+ * answer, so it comes back as `undefined` and `focus` is left off the data ("not known"): the home draws no focus lines, and nothing
+ * downstream can take a failed read for "this player has no focus areas".
+ */
+async function playerFocus(sb: Awaited<ReturnType<typeof createClient>>, playerId: string): Promise<ChAskData['focus']> {
   const { data, error } = await sb.from('golf_player_focus_areas').select('title, outcome_status').eq('player_id', playerId).eq('status', 'active').order('priority', { ascending: true }).limit(3);
   if (error) {
     log('player focus', error);
-    return [];
+    return undefined;
   }
   return (data ?? []).map((f) => ({ text: f.title, ask: `How is ${f.title} going for me?`, trend: f.outcome_status === 'improved' ? 'up' : f.outcome_status === 'worsened' ? 'warn' : undefined }));
 }

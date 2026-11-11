@@ -46,7 +46,14 @@ async function setPlanFormatImpl(input: { documentId: string; name: string; sect
   const ctx = await resolveCoachChatContext(sb).catch(() => null);
   if (!ctx) return { success: false, error: 'Unauthorized' };
   // There's one row a team, and the upsert overwrites it: keep what it said, so Undo can put it back.
-  const { data: was } = await practiceTables(sb).from('golf_practice_plan_formats').select('source_document_id, name, sections').eq('team_id', ctx.team_id).maybeSingle();
+  const { data: was, error: priorError } = await practiceTables(sb).from('golf_practice_plan_formats').select('source_document_id, name, sections').eq('team_id', ctx.team_id).maybeSingle();
+  // A failed read is not "no format yet". Writing now would overwrite a format this action never saw, and Undo would then delete the
+  // team's format instead of putting it back. So nothing is written.
+  if (priorError) {
+    if (isPracticeMissing(priorError.code)) return { success: false, error: 'Comes with the Practice tab.' };
+    await logServerError(`setPlanFormat: the current format could not be read, nothing written: ${priorError.message}`, { action: 'coachhelm.plan.format', feature: 'practice_plans', userId: ctx.user_id, errorCode: priorError.code, handled: true });
+    return { success: false, error: 'The format wasn’t set.' };
+  }
   const prior = (was as PriorFormat | null) ?? null;
   const { data, error } = await practiceTables(sb).from('golf_practice_plan_formats').upsert({ team_id: ctx.team_id, source_document_id: input.documentId, name: input.name, sections: input.sections, created_by: ctx.user_id }, { onConflict: 'team_id' }).select('id').maybeSingle();
   if (error) return { success: false, error: isPracticeMissing(error.code) ? 'Comes with the Practice tab.' : 'The format wasn’t set.' };

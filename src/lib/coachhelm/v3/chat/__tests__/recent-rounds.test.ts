@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('server-only', () => ({}));
+const logged = vi.hoisted(() => vi.fn(async (..._args: unknown[]) => undefined));
+vi.mock('@/lib/server-error-logger', () => ({ logServerError: logged }));
 
 import { getRecentRounds, type PlayerFigures } from '../read-tools';
 import { person, pgrst } from './pgrst-double';
@@ -51,5 +53,29 @@ describe('a player’s recent rounds carry their stat line', () => {
     expect(roundsOf(e).map((r) => r.round_id)).toEqual(['r1', 'r3']);
     expect(e.summary).toBe("Cole Bennett's last 2 rounds that count in Stats.");
     expect((e.detail as { window_rule: string }).window_rule).toMatch(/practice rounds are left out/);
+  });
+
+  it('stat lines that could not be read: the rounds stand, the read is partial and says the lines were not read', async () => {
+    logged.mockClear();
+    const { sb } = pgrst({ golf_rounds: { rows }, golf_round_stats_cache: { error: { code: '57014', message: 'canceling statement due to statement timeout' } } });
+    const e = await getRecentRounds(sb, ctx, { player_id: 'p1', last_n: 4 });
+    // The scores are the rounds' own, so the list is still the answer to "what did I shoot".
+    expect(roundsOf(e).map((r) => [r.round_id, r.total_score])).toEqual([['r1', 74], ['r2', 82], ['r3', 74], ['r4', 74]]);
+    // No stat-line field is invented: absent, not 0.
+    for (const r of roundsOf(e)) expect(r).not.toHaveProperty('three_putts');
+    expect(e.coverage).toBe('partial');
+    expect(e.coverage_note).toMatch(/could not be read/);
+    expect(e.coverage_note).toMatch(/not the same as none recorded/);
+    expect(logged).toHaveBeenCalledTimes(1);
+    expect(logged.mock.calls[0]![1]).toMatchObject({ action: 'coachhelm.ask.recent_rounds', errorCode: '57014', handled: true });
+  });
+
+  it('stat lines that read and hold nothing for a round are a complete read: nothing is logged', async () => {
+    logged.mockClear();
+    const { sb } = pgrst({ golf_rounds: { rows }, golf_round_stats_cache: { rows: [] } });
+    const e = await getRecentRounds(sb, ctx, { player_id: 'p1', last_n: 4 });
+    expect(e.coverage).toBe('complete');
+    expect(e.coverage_note).toBeNull();
+    expect(logged).not.toHaveBeenCalled();
   });
 });

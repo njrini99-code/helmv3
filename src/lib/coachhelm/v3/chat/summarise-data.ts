@@ -171,7 +171,9 @@ function unitOf(field: string): Measurement['unit'] {
   if (/strokes_gained|^sg_/.test(field)) return 'strokes';
   if (/pct|percent|rate/.test(field)) return 'percent';
   if (/yards|distance/.test(field)) return 'yards';
-  if (/score|to_par|par$/.test(field)) return 'score';
+  // "score" or "to_par" anywhere in the name, or a name that ends in "par". Written out: as one pattern, /score|to_par|par$/ reads as if the
+  // end anchor covered all three, and it only ever covered the last.
+  if (field.includes('score') || field.includes('to_par') || field.endsWith('par')) return 'score';
   return 'count';
 }
 

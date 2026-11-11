@@ -373,6 +373,67 @@ describe('applyComparisons', () => {
   });
 });
 
+describe('a standing that could not be read is not a player with no standing', () => {
+  const base = (over: Partial<ToolEnvelope>): ToolEnvelope => ({ summary: 'ok', measurements: [], series: [], detail: { window: 'cache' }, coverage: 'complete', coverage_note: null, as_of: '2026-11-07T00:00:00Z', ...over });
+  const fig = (metric_id: string, id = 'p1', value = 58.3) => readFigure({ metric_id, metric_label: metric_id, unit: 'percent', value, entity: { kind: 'player', id, label: 'Owen Carter' }, window_start: null, window_end: null, sample_size: 40, sample_unit: 'rounds', source: 'rounds', method: 'm' });
+  const down = (): Tables => ({ ...tables(), golf_player_standing: { error: { code: '57014', message: 'canceling statement due to statement timeout' } } });
+  const refs = (e: ToolEnvelope) => e.measurements[0]!.comparisons!;
+
+  it('the source answers null for a failed read and an empty map for a player with no rows', async () => {
+    const failed = benchmarkSource(pgrst(down()).sb, 'team-1', { ctx });
+    expect(await failed.standing(['p1'], ['gir_pct'])).toBeNull();
+    const none = await benchmarkSource(pgrst(tables()).sb, 'team-1', { ctx }).standing(['p9'], ['gir_pct']);
+    expect(none).toBeInstanceOf(Map);
+    expect(none!.size).toBe(0);
+  });
+
+  it('logs the failed read', async () => {
+    const { logServerError } = await import('@/lib/server-error-logger');
+    vi.mocked(logServerError).mockClear();
+    await benchmarkSource(pgrst(down()).sb, 'team-1', { ctx }).standing(['p1'], ['gir_pct']);
+    expect(vi.mocked(logServerError)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(logServerError).mock.calls[0]![1]).toMatchObject({ action: 'coachhelm.ask.benchmarks', errorCode: '57014', handled: true });
+  });
+
+  it('a coach’s figure: the level says it could not be read, where a player with no standing is told there is no college figure', async () => {
+    // sg_putting has no published college figure, so its level can only come from the standing.
+    const unread = refs(await applyComparisons(base({ measurements: [fig('sg_putting', 'p1', -0.4)] }), benchmarkSource(pgrst(down()).sb, 'team-1', { ctx })));
+    expect(unread.map((c) => [c.kind, c.value])).toEqual([['level', null], ['team', null], ['tour', 0]]);
+    expect(unread[0]).toMatchObject({ label: 'Division III average', missing_reason: 'could not be read', place_percent: null, place_of: null });
+    expect(unread[0]!.note).toMatch(/could not be read/);
+
+    // The same figure for a player the read worked for and found nothing: a different answer, as it should be.
+    const none = refs(await applyComparisons(base({ measurements: [fig('sg_putting', 'p9', -0.4)] }), benchmarkSource(pgrst(tables()).sb, 'team-1', { ctx })));
+    expect(none[0]).toMatchObject({ missing_reason: 'no college figure' });
+  });
+
+  it('a coach’s figure keeps what does not rest on the standing: the published level, the team’s windowed average and rank, the Tour', async () => {
+    const out = refs(await applyComparisons(base({ measurements: [fig('gir_pct')] }), benchmarkSource(pgrst(down()).sb, 'team-1', { ctx })));
+    expect(out.map((c) => [c.kind, c.value])).toEqual([['level', 50], ['team', 54.6], ['tour', 66]]);
+    // The place among college players is the standing's: unread, it is not stated.
+    expect(out[0]).toMatchObject({ place_percent: null, place_of: null });
+    expect(out[1]).toMatchObject({ place: 3, place_of: 7 });
+  });
+
+  it('a player’s team average is the standing row: unread, it is not "no team average yet"', async () => {
+    const solo = { ...ctx, roster: [person('p1', 'Owen Carter')] };
+    const unread = refs(await applyComparisons(base({ measurements: [fig('sg_putting', 'p1', -0.4)] }), benchmarkSource(pgrst(down()).sb, 'team-1', { ctx: solo, role: 'player' })));
+    expect(unread[1]).toMatchObject({ kind: 'team', value: null, missing_reason: 'could not be read' });
+
+    const none = refs(await applyComparisons(base({ measurements: [fig('sg_putting', 'p1', -0.4)] }), benchmarkSource(pgrst(tables()).sb, 'team-1', { ctx: solo, role: 'player' })));
+    expect(none[1]).toMatchObject({ kind: 'team', value: null, missing_reason: 'no team average yet' });
+  });
+
+  it('the Tour is not compared, and not blamed on the measure, for a figure whose basis only the standing row knows', async () => {
+    const unread = refs(await applyComparisons(base({ measurements: [fig('approach_proximity_50_125ft', 'p1', 29)] }), benchmarkSource(pgrst(down()).sb, 'team-1', { ctx })));
+    expect(unread.find((c) => c.kind === 'tour')).toMatchObject({ value: null, missing_reason: 'could not be read' });
+
+    // Read, and on the green-only basis: the existing answer.
+    const read = refs(await applyComparisons(base({ measurements: [fig('approach_proximity_50_125ft', 'p1', 29)] }), benchmarkSource(pgrst(tables()).sb, 'team-1', { ctx })));
+    expect(read.find((c) => c.kind === 'tour')).toMatchObject({ value: null, missing_reason: 'not compared' });
+  });
+});
+
 describe('get_metric_definitions', () => {
   const defs: Tables = {
     golf_metrics: {

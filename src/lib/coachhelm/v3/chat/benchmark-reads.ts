@@ -146,8 +146,12 @@ export interface StandingLite {
 const STANDING_COLUMNS = 'player_id, metric_id, player_value, level_avg, level_n, level_pct, team_avg, team_n, team_pct, basis';
 
 export interface BenchmarkSource {
-  /** These players' standing on these metrics (standards ids), keyed `player_id|metric_id`; empty when none or unreadable. Row-level security decides whose rows come back. */
-  standing(playerIds: readonly string[], metricIds: readonly string[]): Promise<Map<string, StandingLite>>;
+  /**
+   * These players' standing on these metrics (standards ids), keyed `player_id|metric_id`. Row-level security decides whose rows come back.
+   * An empty map means the read worked and there is no standing; NULL means it could not be read, which is not the same thing: the caller
+   * then says the level and the place are not known, never that there are none.
+   */
+  standing(playerIds: readonly string[], metricIds: readonly string[]): Promise<Map<string, StandingLite> | null>;
   /** The team's level, or null when no division is on record or it could not be read. Nothing is compared with a level the team is not known to play at. */
   level(): Promise<TeamLevel | null>;
   /**
@@ -224,7 +228,11 @@ export function benchmarkSource(sb: Sb, teamId: string, opts: { ctx?: CoachChatC
     const out = new Map<string, StandingLite>();
     for (const chunk of chunkIds([...new Set(playerIds)])) {
       const { data, error } = await sb.from('golf_player_standing').select(STANDING_COLUMNS).in('player_id', chunk).in('metric_id', [...new Set(metricIds)]);
-      if (error) return new Map<string, StandingLite>();
+      // Not an empty map: "no standing" is an answer, and a failed read is not one. One failed chunk makes the whole read unknown.
+      if (error) {
+        void logServerError(`benchmarkSource standing failed: ${error.message}`, { action: 'coachhelm.ask.benchmarks', feature: 'coachhelm_chat', userId: opts.ctx?.user_id ?? null, errorCode: error.code, handled: true });
+        return null;
+      }
       for (const r of (data ?? []) as unknown as StandingLite[]) out.set(`${r.player_id}|${r.metric_id}`, r);
     }
     return out;
@@ -279,6 +287,9 @@ export function benchmarkSource(sb: Sb, teamId: string, opts: { ctx?: CoachChatC
 const COHORT_FLOOR = 8;
 const DIVISION_WORD: Record<TeamLevel, string> = { d1: 'Division I', d2: 'Division II', d3: 'Division III' };
 const LEVEL_NOT_SET_NOTE = 'Level not set: the team’s division is not on record. A coach sets it in Settings, Team, Division.';
+/** The standing read failed: what rests on it is not known. Never worded as "none". */
+const STANDING_UNREAD_REASON = 'could not be read';
+const STANDING_UNREAD_NOTE = 'The player’s standing could not be read just now, so this comparison is not known.';
 const round2 = (n: number): number => Math.round(n * 100) / 100;
 
 /**
@@ -332,10 +343,13 @@ const rankWords = (rank: number, n: number): string => `Rank ${rank} of ${n} pla
  * The three references for one figure, level first, team second, Tour third. `standing` is the player's row when one exists (the level's
  * place comes from it, over all recorded rounds); `team` is the team average and place over the SAME window as the figure; without them
  * the level is the published division average (or missing) and the team is missing. The Tour is withheld where it is not measured the way
- * the player's figure is. `teamFigure`: the figure is the team's own, so it carries the level and the Tour only.
+ * the player's figure is. `teamFigure`: the figure is the team's own, so it carries the level and the Tour only. `standingUnread`: the player's
+ * standing could not be read, so `standing` is null because it is not known, not because there is none: what rests on it (the level from Helm's
+ * own cohort, and whether the Tour is measured the same way) is listed as not read, never as absent.
  */
-export function comparisonsFor(a: { metricId: string; std: StandardRow | undefined; tour: Tour; teamLevel: TeamLevel | null; standing: StandingLite | null; team: TeamRef; teamFigure: boolean; divisionCohort?: { avg: number; n: number } | null }): Comparison[] {
+export function comparisonsFor(a: { metricId: string; std: StandardRow | undefined; tour: Tour; teamLevel: TeamLevel | null; standing: StandingLite | null; team: TeamRef; teamFigure: boolean; divisionCohort?: { avg: number; n: number } | null; standingUnread?: boolean }): Comparison[] {
   const { std, tour, teamLevel, standing } = a;
+  const unread = !!a.standingUnread && !a.teamFigure;
   const out: Comparison[] = [];
 
   // 1. The level, from the best real data there is. A published or estimated college figure with a stated source (none today); else Helm's own
@@ -357,6 +371,7 @@ export function comparisonsFor(a: { metricId: string; std: StandardRow | undefin
   const others = (n: number, who: string) => `Mean of the other ${n} ${who} players on Helm over all recorded rounds; this player is left out.`;
   if (typeof published === 'number') out.push({ kind: 'level', label: levelName(teamLevel as TeamLevel, figure!.basis), value: published, ...place, place: null, note: [figure!.basis === 'estimate' ? `An estimate: ${figure!.source}.` : `Source: ${figure!.source}.`, placeNote].filter(Boolean).join(' '), missing_reason: null });
   else if (!teamLevel) out.push({ kind: 'level', label: 'Level', value: null, place_percent: null, place: null, place_of: null, note: LEVEL_NOT_SET_NOTE, missing_reason: 'not set' });
+  else if (unread) out.push({ kind: 'level', label: LEVEL_LABEL[teamLevel], value: null, place_percent: null, place: null, place_of: null, note: STANDING_UNREAD_NOTE, missing_reason: STANDING_UNREAD_REASON });
   else if (division) out.push({ kind: 'level', label: `${DIVISION_WORD[teamLevel]} players on Helm (n=${division.n})`, value: division.avg, your_value: yours, ...place, place: null, note: [others(division.n, DIVISION_WORD[teamLevel]), placeNote].filter(Boolean).join(' '), missing_reason: null });
   else if (college) out.push({ kind: 'level', label: `${cohortLabel} (n=${college.n})`, value: college.avg, your_value: yours, ...place, place: null, note: [others(college.n, tour === 'lpga' ? 'women’s college' : 'college'), `There are not yet ${COHORT_FLOOR} other ${DIVISION_WORD[teamLevel]} players on Helm with this figure, so the mean is across divisions.`, placeNote].filter(Boolean).join(' '), missing_reason: null });
   else if (!a.teamFigure && standing) out.push({ kind: 'level', label: LEVEL_LABEL[teamLevel], value: null, ...place, place: null, note: `Not enough ${DIVISION_WORD[teamLevel]} players on Helm yet: a level figure needs at least ${COHORT_FLOOR} others with this stat.${placeNote ? ` ${placeNote}` : ''}`, missing_reason: `not enough ${DIVISION_WORD[teamLevel]} players on Helm yet` });
@@ -377,6 +392,8 @@ export function comparisonsFor(a: { metricId: string; std: StandardRow | undefin
   // 3. The Tour, where it is measured the way the player's figure is.
   const tourValue = std?.pga_tour_value;
   if (typeof tourValue !== 'number') out.push({ kind: 'tour', label: tourLabel(tour), value: null, place_percent: null, place: null, place_of: null, note: `The ${tourLabel(tour)} publishes no value for this metric.`, missing_reason: 'no Tour figure' });
+  // The standing row says how the figure is measured. Unread, that is not known for the metrics where it matters: not compared, and not blamed on the measure.
+  else if (unread && !isStandingTourComparable(a.metricId, null)) out.push({ kind: 'tour', label: tourLabel(tour), value: null, place_percent: null, place: null, place_of: null, note: STANDING_UNREAD_NOTE, missing_reason: STANDING_UNREAD_REASON });
   else if (!isStandingTourComparable(a.metricId, (standing?.basis ?? null) as 'on_green' | 'all_shot' | null)) out.push({ kind: 'tour', label: tourLabel(tour), value: null, place_percent: null, place: null, place_of: null, note: `The ${tourLabel(tour)} value is not measured the way this figure is, so it is not compared.`, missing_reason: 'not compared' });
   else out.push({ kind: 'tour', label: tourLabel(tour), value: tourValue, place_percent: null, place: null, place_of: null, note: null, missing_reason: null });
   return out;
@@ -397,10 +414,12 @@ const NO_WINDOW: TeamRef = { kind: 'missing', reason: 'window not stated', note:
  * when the read is the team ranking, so the comparison uses the very values the ranking printed). A player cannot read teammates' windowed
  * figures, so theirs is the standing's, and only beside a figure over all recorded rounds.
  */
-async function teamRefFor(source: BenchmarkSource, chatId: string, window: CohortWindow | null, playerId: string | null, standing: StandingLite | null, local: Cohort | null): Promise<TeamRef> {
+async function teamRefFor(source: BenchmarkSource, chatId: string, window: CohortWindow | null, playerId: string | null, standing: StandingLite | null, local: Cohort | null, standingUnread = false): Promise<TeamRef> {
   if (!window) return NO_WINDOW;
   if (source.role === 'player') {
-    return window === 'cache' ? teamRefFromStanding(standing) : { kind: 'missing', reason: 'all rounds only', note: `A team average ${windowWords(window)} is not available to a player: the team’s figure covers all recorded rounds only.` };
+    if (window !== 'cache') return { kind: 'missing', reason: 'all rounds only', note: `A team average ${windowWords(window)} is not available to a player: the team’s figure covers all recorded rounds only.` };
+    // A player's team average IS the standing row: unread, it is not known, which is not "no team average yet".
+    return standingUnread ? { kind: 'missing', reason: STANDING_UNREAD_REASON, note: STANDING_UNREAD_NOTE } : teamRefFromStanding(standing);
   }
   return teamRefFromCohort(local ?? (await source.cohort(chatId, window)), playerId, window);
 }
@@ -417,7 +436,8 @@ function cohortOfRanking(envelope: ToolEnvelope, metricId: string): Cohort | nul
 /**
  * Put the three references on the measurements a read returned, and `benchmark` (the level, else the Tour) for a chip or a trend line to grade
  * against. Series carry `benchmark` only. A metric the standards do not cover is left alone; a failed read of the team's level, tour or
- * standards leaves the envelope as it was.
+ * standards leaves the envelope as it was. A failed read of the players' standing keeps the references that do not rest on it (a coach's team
+ * average, the Tour) and lists the ones that do as "could not be read".
  */
 export async function applyComparisons(envelope: ToolEnvelope, source: BenchmarkSource): Promise<ToolEnvelope> {
   try {
@@ -430,7 +450,10 @@ export async function applyComparisons(envelope: ToolEnvelope, source: Benchmark
     if (!tour || !standards) return envelope;
     const ids = [...new Set(candidates.flatMap((x) => (x.entity.kind === 'player' ? [STANDING_ID_BY_CHAT_ID(x.metric_id) as string] : [])))];
     const players = [...new Set(candidates.filter((x) => x.entity.kind === 'player').map((x) => x.entity.id))];
-    const standing = players.length && ids.length ? await source.standing(players, ids) : new Map<string, StandingLite>();
+    const standingRead = players.length && ids.length ? await source.standing(players, ids) : new Map<string, StandingLite>();
+    // Null: the standing could not be read. The comparisons that rest on it say so; they do not read as "this player has no standing".
+    const standingUnread = standingRead === null;
+    const standing = standingRead ?? new Map<string, StandingLite>();
     const divisions = teamLevel && ids.length ? await source.divisionCohort(teamLevel, tour, ids) : null;
     const detailWindow = (envelope.detail as { window?: CohortWindow } | undefined)?.window ?? null;
     // A value from the stats cache is over all recorded rounds whatever window the read was asked for; any other is over the read's window.
@@ -441,8 +464,8 @@ export async function applyComparisons(envelope: ToolEnvelope, source: Benchmark
       const row = x.entity.kind === 'player' ? (standing.get(`${x.entity.id}|${id}`) ?? null) : null;
       const w = windowOf(x);
       const local = w && w === detailWindow ? cohortOfRanking(envelope, x.metric_id) : null;
-      const team = x.entity.kind === 'player' ? await teamRefFor(source, x.metric_id, w, x.entity.id, row, local) : NO_WINDOW;
-      return { std, list: comparisonsFor({ metricId: id, std, tour, teamLevel, standing: row, team, teamFigure: x.entity.kind !== 'player', divisionCohort: divisions?.get(id) ?? null }) };
+      const team = x.entity.kind === 'player' ? await teamRefFor(source, x.metric_id, w, x.entity.id, row, local, standingUnread) : NO_WINDOW;
+      return { std, list: comparisonsFor({ metricId: id, std, tour, teamLevel, standing: row, team, teamFigure: x.entity.kind !== 'player', divisionCohort: divisions?.get(id) ?? null, standingUnread }) };
     };
     const measurements = await Promise.all(
       envelope.measurements.map(async (m) => {
