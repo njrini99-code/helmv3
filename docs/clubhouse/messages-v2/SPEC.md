@@ -123,7 +123,8 @@ padding-top 0 / min-height 50, inbox scroll top 74, thread pad-top 78 / pad-bot
 padding 8, attach bottom 58, jump bottom 66, toast top 58. **MSG-006 Phone top
 bar is TODAY'S bar [phone]** The green `TopBar.tsx` / `PhoneBar` chassis is
 unchanged: section switcher left, bell right, parchment sheet's 16 px rounded
-lip below. Do not redesign it. Frame green #0A331F (night #08150E), on-green ink #F4EEDD, soft #F0E9D6 at .86, champagne back link #DCCDA6 (dark #CDBB8E).
+lip below. Do not redesign it. Frame green #0A331F (night #08150E), on-green
+ink #F4EEDD, soft #F0E9D6 at .86, champagne back link #DCCDA6 (dark #CDBB8E).
 **MSG-007 Desktop shell is TODAY'S shell [desk]** 232 px green sidebar (team
 switcher "Demo University / Men's golf", Home, CoachHelm, Calendar, Messages
 [on, badge "3"], section "Team": Team Hub, Roster, Stats, Rounds, Qualifiers,
@@ -158,8 +159,10 @@ Clubhouse `Segmented` size sm: three buttons "All", "Unread", "Groups" in a
 recessed well (radius 16, padding 4, gap 4, margin 12 0 14, well gradient
 `#D4CEBE > #DDD8CA > #E4DFD3`, dark `#0A0D0B > #0D110E > #101411`). Buttons:
 height `30k`, padding 0 12, radius 12, 13k/500 (selected 600, ink #F9F7F1).
-Thumb: radius 12, `linear-gradient(#1F6B45 0%, #0F4A2F 100%)` (dark `#2A7D53 > #1F6B45`), raised shadow, `translateX((100% + 4px) * i)`. Group aria "Filter
-conversations", buttons `aria-pressed`. Pressed button wash `color-mix(in oklab, #155A39 11%, transparent)`. **MSG-105 Pinned card** [phone] Ref
+Thumb: radius 12, `linear-gradient(#1F6B45 0%, #0F4A2F 100%)` (dark `#2A7D53 > #1F6B45`),
+raised shadow, `translateX((100% + 4px) * i)`. Group aria "Filter
+conversations", buttons `aria-pressed`. Pressed button wash `color-mix(in
+oklab, #155A39 11%, transparent)`. **MSG-105 Pinned card** [phone] Ref
 `#inbox-phone-light`. `.lcard` (radius 16, card shadow, margin 0 16 12) titled
 "Pinned" (header 17k/600 inside the card, hairline under it from x = 16).
 `.pins`: 3-column grid, gap 6, padding 6 8 10. Each pin: column, gap 7, padding
@@ -293,7 +296,9 @@ stop. Never stacks on a marker: within `PILL_GAP` = 20 px of a marker (above or
 below) its opacity follows the scroll down to 0 (`.linked`, transition none).
 **MSG-211 Jump key** [both] Ref `#jump-phone-light`. 40 glass circle
 (glass-strong, blur 18, float shadow), down-arrow 19 stroke 2.2, ink; phone
-right 14 / bottom 100 (430: right 18; shot bottom 66); desk right 26 / bottom 96. Appears when the reader is more than 0.9 of the scroller's height above the
+right 14 / bottom 100 (430: right 18; shot bottom 66); desk right 26 /
+bottom 96. Appears when the reader is more than 0.9 of the scroller's height
+above the
 end. Count badge: top -6, right -4, min 20 x 20, padding 0 5, 12/700, accent
 fill, ink accent-ink, 2 px page ring; counts messages that landed while away;
 hides when within 8 px of the bottom. aria "Jump to latest". Rides the keyboard
@@ -402,7 +407,9 @@ today's behaviour and copy (Q-06). **MSG-312 Attach glass menu** [both] Ref
 22, glass-strong, blur 28 saturate 170, float shadow; phone left 12 (430: 16),
 bottom 92 (shot 58); desk left = the plus key's left (margin-left 0), bottom 84.
 Transform origin 18px 100%. Three rows, min-height 46, radius 15, gap 12,
-15k/500: tile 32 radius 10 with ivory glyph 17 stroke 2, label "Photos" (tile #2F7D4C, image icon), "File" (#7F612A, file), "Poll" (#155A39, poll). No camera
+15k/500: tile 32 radius 10 with ivory glyph 17 stroke 2, label "Photos"
+(tile #2F7D4C, image icon), "File" (#7F612A, file), "Poll" (#155A39, poll). No
+camera
 row, no announcement row (owner 31 Oct): Photos offers the camera on iPhone by
 itself. Closes on outside pointerdown, Escape, plus key, or a pick. `role=menu`.
 **MSG-313 Attach picks** [both] Photos opens the system picker (native). File
@@ -578,7 +585,8 @@ recv paper + green bubble with a flag), `h4` "No conversations yet" (20k/600),
 body "Message a player, a coach or the whole team. Everything stays inside Demo
 University Golf." (15k ink-2, max-width 280; team name is the viewer's team),
 primary pill "Start a conversation" (compose icon 18, 44 high, accent, padding 0
-18, 15k/600), ghost "Message the team" (accent-text 14.5k/600). Phone: root bar + card, content padding-top 140. Desktop: card fills the pane, rail shows
+18, 15k/600), ghost "Message the team" (accent-text 14.5k/600). Phone: root
+bar + card, content padding-top 140. Desktop: card fills the pane, rail shows
 MSG-125. A still card: nothing loops. (CH-7301 is not shown; it was a design
 annotation.) **MSG-702 New message page** [both] Ref `#new-phone-light`,
 `#new-desk-light`. Phone bar: left text key "Cancel", centre title "New
@@ -617,12 +625,21 @@ threshold so 1280 works).
 
 **MSG-901 Contrast** [both] WCAG 2.2: 4.5:1 text, 3:1 marks. The artifact's
 table (light | dark): your bubble text #FDFCF8 on #155A39 | #F4EEDD on #1F6B45;
-their bubble text #1C1B18 on #FFFEFB | #F1ECDF on #232925; names/previews/meta #46433D on #FFFEFB | #D0C9B8 on #191E1A; times #5F5C55 on #F2F0E9 | #ADA697 on #0E120F; day label and Seen-by pills #46433D on #FFFEFB | #D0C9B8 on #191E1A;
-context line #46433D on #F2F0E9 | #D0C9B8 on #0E120F; bar title #F4EEDD on #0A331F | on #08150E; back link #DCCDA6 on #0A331F | #CDBB8E on #08150E; desktop
-bar title and placeholder on glass; links #155A39 on #FFFEFB | #7CC79B on #191E1A; "Most votes"/Coach chips #155A39 on tint | #7CC79B; poll text on your
+their bubble text #1C1B18 on #FFFEFB | #F1ECDF on #232925;
+names/previews/meta #46433D on #FFFEFB | #D0C9B8 on #191E1A; times #5F5C55
+on #F2F0E9 | #ADA697 on #0E120F; day label and Seen-by pills #46433D on #FFFEFB | #D0C9B8
+on #191E1A;
+context line #46433D on #F2F0E9 | #D0C9B8 on #0E120F; bar title #F4EEDD
+on #0A331F | on #08150E; back link #DCCDA6 on #0A331F | #CDBB8E on #08150E;
+desktop
+bar title and placeholder on glass; links #155A39 on #FFFEFB | #7CC79B
+on #191E1A; "Most votes"/Coach chips #155A39 on tint | #7CC79B; poll text on
+your
 bar; menu text over the blurred thread; Delete #B3261E | #F28B7D; reaction mark
 (3:1) #155A39 on #FFFEFB; reaction on a paper bubble #FDFCF8 on #155A39; unread
-dot (3:1); typing dots (3:1) #8F8B81 old, now #7A766C / #827D71; avatar initials #FDFCF8 on the lightest coin. Rejected: ivory on #2A7D53 in dark. **MSG-902
+dot (3:1); typing dots (3:1) #8F8B81 old, now #7A766C / #827D71; avatar
+initials #FDFCF8 on the lightest coin. Rejected: ivory on #2A7D53 in dark.
+**MSG-902
 Avatars** [both] Default per Q-30: keep today's neutral coins (5 Nov ruling in
 `ui/Avatar.tsx`); do not touch Avatar. The HTML draws flat coins `--h1` (per
 person) with `inset 0 1px 0 rgb(255 255 255 / .22), inset 0 -1px 0 rgb(0 0 0 /

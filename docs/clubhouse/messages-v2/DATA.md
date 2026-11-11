@@ -155,7 +155,8 @@ Format: Design / Today / Verdict / Change.
   auth.uid()`, DELETE own rows only, no UPDATE policy. In the publication. Kinds
   map to emoji in `src/hooks/golf/use-message-reactions.ts:10-16` (👍 ❤️ 😂 🎉 😮
   🙏). Insert/delete at `:155-156`; realtime on `golf-reactions:<conv>` is
-  unfiltered table-wide (`:129-130`) and refetches. Staging data: 👍 44, ❤️ 11, 😂
+  unfiltered table-wide (`:129-130`) and refetches. Staging data: 👍 44, ❤️ 11,
+  😂
   6, 😮 2, 🎉 1; no stray emoji.
 - **Verdict.** Staging SUPPORTED, production SUPPORTED (shipped 2026-09-04,
   reconstructed by `20260904103000` / `20260908160000`).

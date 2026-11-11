@@ -1,11 +1,14 @@
 # CoachHelm read v2: build notes (10 Nov 2026)
 
 The read page rebuilt from the owner's 7 Nov design (`design-refresh/coachhelm-read/redesign/coachhelm-read.html`,
-artifact SUL5hLtah5MmBd2dkU8mTK). That page wins over the lane's 05 to 08 files where they differ. Messages was
+artifact SUL5hLtah5MmBd2dkU8mTK). That page wins over the lane's 05 to 08 files
+where they differ. Messages was
 rebuilt the same way; its notes are `docs/clubhouse/messages-v2/`.
 
-How the design is read (owner, 10 Nov): its structure, content, states, motion and ideas are followed closely; every
-control is Clubhouse's real primitive from `src/clubhouse/ui/**`, never the mockup's own.
+How the design is read (owner, 10 Nov): its structure, content, states, motion
+and ideas are followed closely; every
+control is Clubhouse's real primitive from `src/clubhouse/ui/**`, never the
+mockup's own.
 
 ## What is where
 
@@ -21,25 +24,35 @@ control is Clubhouse's real primitive from `src/clubhouse/ui/**`, never the mock
 | Preview fixtures and states | `src/clubhouse/preview/fixtures-coachhelm-read.ts`, `PreviewCoachHelmRead.tsx` |
 
 Preview: `/clubhouse-preview/coachhelm-read?q=penalties|putts|approach&viewer=coach|player&state=…`.
-Coach states: open, assigning, assigned, dismissed, stale, partfail, loading, failed, gone. Player states: open,
+Coach states: open, assigning, assigned, dismissed, stale, partfail, loading,
+failed, gone. Player states: open,
 proposed, focus, stale, loading, failed, gone. Also off, no-rounds, stress.
 
-The class prefix is `ch-hr-`, not the design page's `ch-rd-`: `ch-rd` is the Rounds page's root class.
+The class prefix is `ch-hr-`, not the design page's `ch-rd-`: `ch-rd` is the
+Rounds page's root class.
 
 ## Privacy
 
-A player's read never carries a likely cause, another player's figures or the team pool. It is enforced where the
+A player's read never carries a likely cause, another player's figures or the
+team pool. It is enforced where the
 payload is made, not in the view:
 
-- `toChRead` (the Deep dive's shaper, so the Deep dive too) builds a player's What line without the pool sentence;
-- the ladder has no `team_pool` line for a player, whatever `READ_CALLS.teamPoolOnLadder` and the flag say;
-- the board card's pooled figure (`insight.compare.team`) is nulled on a player's copy;
-- what CoachHelm checked, the rung, the arms, the verdict and the range are not built for a player;
-- the trend, the round notes and the hole scores are the player's own rounds, read for the one player the page is
+- `toChRead` (the Deep dive's shaper, so the Deep dive too) builds a player's
+  What line without the pool sentence;
+- the ladder has no `team_pool` line for a player, whatever
+  `READ_CALLS.teamPoolOnLadder` and the flag say;
+- the board card's pooled figure (`insight.compare.team`) is nulled on a
+  player's copy;
+- what CoachHelm checked, the rung, the arms, the verdict and the range are not
+  built for a player;
+- the trend, the round notes and the hole scores are the player's own rounds,
+  read for the one player the page is
   scoped to. The one name on a player's page is their own coach's.
 
-`read/__tests__/read-view-privacy.test.ts` searches the whole player payload; `read-page.test.tsx` searches the DOM;
-`src/clubhouse/__tests__/coachhelm-read-team-pool.test.ts` holds the Deep dive to the same rule.
+`read/__tests__/read-view-privacy.test.ts` searches the whole player payload;
+`read-page.test.tsx` searches the DOM;
+`src/clubhouse/__tests__/coachhelm-read-team-pool.test.ts` holds the Deep dive
+to the same rule.
 
 ## The ten slots the first build left out
 
@@ -58,43 +71,64 @@ payload is made, not in the view:
 
 ## Decisions made while building
 
-- A stale read offers no Assign (the board's rule, `assignStateOf`); Re-check now is its one primary.
-- An assigned read's head pill says Assigned (`stanceOf`), where the design kept Priority.
-- The rail keeps the Deep dive's order (by where on the hole), so Eli's penalties read is 2 of 3, not 1 of 3.
-- The approach fixture's lift is 2.2 (12 of 20 against 11 of 40); the design page printed 2.1.
-- "This read is no longer open" keeps the three true reasons (replaced, cleared, dismissed); the design said replaced.
-- The trend's caption is the window's own figure ("1.5 a round over the last 8 rounds"), not the design's "1.4 to
+- A stale read offers no Assign (the board's rule, `assignStateOf`); Re-check
+  now is its one primary.
+- An assigned read's head pill says Assigned (`stanceOf`), where the design kept
+  Priority.
+- The rail keeps the Deep dive's order (by where on the hole), so Eli's
+  penalties read is 2 of 3, not 1 of 3.
+- The approach fixture's lift is 2.2 (12 of 20 against 11 of 40); the design
+  page printed 2.1.
+- "This read is no longer open" keeps the three true reasons (replaced, cleared,
+  dismissed); the design said replaced.
+- The trend's caption is the window's own figure ("1.5 a round over the last 8
+  rounds"), not the design's "1.4 to
   1.1", which is the engine's stored before and after and stays in its own row.
-- The season is 1 August on (`data/season.ts seasonStartDate`), on the default zone; the switch shows only when the
+- The season is 1 August on (`data/season.ts seasonStartDate`), on the default
+  zone; the switch shows only when the
   season holds other rounds than the last eight.
 
 ## Decided by the coordinator (10 Nov)
 
-- Slot 7, the putting read's team and Tour bars, stays out. The gap is the one in the table: no pooled downhill make rate is
+- Slot 7, the putting read's team and Tour bars, stays out. The gap is the one
+  in the table: no pooled downhill make rate is
   stored, and there is no Tour make rate by slope.
-- The trend for bucket metrics (putt make rate by distance, miss bias, the slope gap, proximity bands) stays out. It needs a
+- The trend for bucket metrics (putt make rate by distance, miss bias, the slope
+  gap, proximity bands) stays out. It needs a
   per-round cache for the bucket, which is a schema change.
-- The rail word on a player's proposed read stays the Deep dive's stance ("Assigned") while the head says "Proposed for you".
-- The Segmented's options are drawn at 36px (34px at `sm`) on the phone by the owner's decision and reach 44px through the
-  `::after` hit area in `styles/controls.css`. It is not a finding, and the lane does not override it.
+- The rail word on a player's proposed read stays the Deep dive's stance
+  ("Assigned") while the head says "Proposed for you".
+- The Segmented's options are drawn at 36px (34px at `sm`) on the phone by the
+  owner's decision and reach 44px through the
+  `::after` hit area in `styles/controls.css`. It is not a finding, and the lane
+  does not override it.
 
 ## Found in WebKit on 10 Nov
 
-- A correction chip took every tap on the page. The shared rule `.ch-hl-cx__c` (`styles/coachhelm.css`) set
-  `position: relative` and then `all: unset`, so the chip's absolute `::after` hit area was measured from the page:
-  `elementFromPoint` at the Cause tab returned a chip, and the tab could not be clicked. Fixed in the shared rule
+- A correction chip took every tap on the page. The shared rule `.ch-hl-cx__c`
+  (`styles/coachhelm.css`) set
+  `position: relative` and then `all: unset`, so the chip's absolute `::after`
+  hit area was measured from the page:
+  `elementFromPoint` at the Cause tab returned a chip, and the tab could not be
+  clicked. Fixed in the shared rule
   (6622146c30); the lane holds the order of the two declarations in `read-page.test.tsx`.
-- The desktop rail's sticky offset is the top bar's height plus 16px on this page; at the Deep dive's 16px its first heading
+- The desktop rail's sticky offset is the top bar's height plus 16px on this
+  page; at the Deep dive's 16px its first heading
   sat behind the bar.
-- A lower-is-better trend is drawn better-upward (`ui/charts/Line lowerIsBetter`), so the card says so in words.
+- A lower-is-better trend is drawn better-upward (`ui/charts/Line
+  lowerIsBetter`), so the card says so in words.
 
 ## For the coordinator: the pushed bar's back label
 
-`src/clubhouse/ui/PhoneBar.tsx`, `BackLabel` (lines 46 to 71): line 57 measures the room between the bar's leading edge and
-the centred title, and line 61 steps from the parent's name to "Back" to the chevron alone when it does not fit. On this page:
+`src/clubhouse/ui/PhoneBar.tsx`, `BackLabel` (lines 46 to 71): line 57 measures
+the room between the bar's leading edge and
+the centred title, and line 61 steps from the parent's name to "Back" to the
+chevron alone when it does not fit. On this page:
 
-- a player's read titled "Course management" shows "Back" where "CoachHelm" was asked for (390px, default Text Size);
-- a coach's "Eli Brandt" keeps "CoachHelm" at the default size and falls to "Back" at the largest Text Size;
+- a player's read titled "Course management" shows "Back" where "CoachHelm" was
+  asked for (390px, default Text Size);
+- a coach's "Eli Brandt" keeps "CoachHelm" at the default size and falls to
+  "Back" at the largest Text Size;
 - "Putting" keeps "CoachHelm".
 
 The lane does not edit the shell.

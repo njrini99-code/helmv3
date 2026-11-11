@@ -11,13 +11,15 @@ log). What is left, and who has it: [QUEUE.md](QUEUE.md).
 
 ## Current state (2026-11-07)
 
-- The 13 redesign flags are retired (the redesign is the only version); the eight CoachHelm and
+- The 13 redesign flags are retired (the redesign is the only version); the
+  eight CoachHelm and
   practice flags too ([change note](changes/2026-11-07-coachhelm-flags.md)).
 - `golf_clubhouse_ui` is gated by `HELM_CLUBHOUSE_TEAMS`; the front door
   (`golf_clubhouse_front_door`) is on.
 - Tournaments stays as `main` has it (owner hold).
 - Production still serves the Oct 21 code (`d0f467a73`); nothing here is deployed.
-- Vercel Preview and Development read the second Supabase project (refreshed from production on 2026-11-07).
+- Vercel Preview and Development read the second Supabase project (refreshed
+  from production on 2026-11-07).
 
 The sections below are history unless they say otherwise.
 

@@ -211,7 +211,8 @@ shared files: `controls.css` (Segmented `:3-107`, Search `:161-215`, phone sizes
 
 #### Shared UI / shell touched
 
-`UI/ContextMenu.tsx` (hold 500 ms, width 232, `CH_POP`), `UI/Menu.tsx` (caption + native disabled), `UI/Segmented.tsx` + `lib/slide-plate.ts`,
+`UI/ContextMenu.tsx` (hold 500 ms, width 232, `CH_POP`), `UI/Menu.tsx`
+(caption + native disabled), `UI/Segmented.tsx` + `lib/slide-plate.ts`,
 `UI/SearchField.tsx`, `UI/ListPresence.tsx`, `UI/SwipeRow.tsx`, `UI/Avatar.tsx`,
 `SH/phone-chrome.tsx` (`CH_UNDERLAY_SHIFT`, `PhoneTop`, `slideUnderlay`),
 `SH/PhoneScreen.tsx`. Changes there affect every Clubhouse screen: add
@@ -1603,7 +1604,8 @@ imports). "Other pages" = distinct page dirs.
   for the phone. Seams: types/`ChMessagesApi` 185-350 (stale flag comment :194);
   `ConvRow` 360 / `RowMuteModal` 439 / `TypingMini` 512 / `ConvRowButton` 528 /
   `Rail` 640 (slice A); `ReactionChip` 756 / `Attachments` 911 / `useLongPress`
-  1045 (hold, `haptic("press")` at 1064, 450 ms at 1066, move cancel 10 px at 1070) / `Bubble` 1110-1540 (slice B/C: stack 1325, hover bar 1354, sr-only
+  1045 (hold, `haptic("press")` at 1064, 450 ms at 1066, move cancel 10 px
+  at 1070) / `Bubble` 1110-1540 (slice B/C: stack 1325, hover bar 1354, sr-only
   actions 1343) / `ReplyQuote` 1573; `AttachChips` 1626 / `ComposerPlus` 1702 /
   `useAutosize` 1735 / `SendKeyHolder` 1750 / `Composer` 1777-2130 (slice B);
   `NewDivider` 2144; `Thread` 2152-2447 (slice B; typing 2412, jump 2424,
@@ -1675,7 +1677,8 @@ Rules that fight the new spec (delete or flip):
   var(--ch-radius-xl)` 20 (spec 24), `--ch-card-shadow` (spec float shadow),
   blur 20 (spec 24 + saturate 170), phone padding `0 12 max(8, safe-4)`
   (5903-5909) vs spec absolute pill over a thread that scrolls under it.
-- Glass blur 20 / no saturate on all nine glass surfaces; scrim blur 20 (spec 14 + saturate 120%): messages.css:4875-4880.
+- Glass blur 20 / no saturate on all nine glass surfaces; scrim blur 20 (spec
+  14 + saturate 120%): messages.css:4875-4880.
 - Toast pill (5841-5857) uses `--ch-glass-blur` 20 and `font:
   --ch-type-13-strong` (spec 13/600) fine, but position `top: safe + 8` vs spec
   top 62 phone / 18 desk.

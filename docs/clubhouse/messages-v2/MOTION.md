@@ -223,7 +223,9 @@ flashes `opacity .4 > 1` over 260 ms `--ch-ease` (MOT-X-9); the field's
 
 The check runs every interrupt and overlap case through the real engine in a
 real browser, samples the on-screen box of each moving thing every frame and
-fails a case on any teleport (a one-frame speed spike: displacement > 10 px and > 3 x the larger neighbouring speed, floor .05), a flicker (gone for a frame, or
+fails a case on any teleport (a one-frame speed spike: displacement > 10 px
+and > 3 x the larger neighbouring speed, floor .05), a flicker (gone for a
+frame, or
 an opacity blink > .45 and > 3 x its neighbours), or, under Reduce Motion, any
 glide (two consecutive frames each moving > .5 px). It must run in a HEADED
 browser at 60 Hz or better (SETTLED: headless containers drop frames and fail 2
