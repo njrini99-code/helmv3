@@ -167,8 +167,9 @@ export function instantWords(iso: string, opts: WordsOptions = {}): string {
 /** Every stamped day and instant in a text, in words. Ids are left alone: a day is matched only where it stands on its own. */
 export function datesInWords(text: string, opts: WordsOptions = {}): string {
   return text
-    .replace(/(?<![\w-])\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?(?![\w-])/g, (stamp) => instantWords(stamp, opts))
-    .replace(/(?<![\w-])\d{4}-\d{2}-\d{2}(?![\w-]|T\d)/g, (day) => dayWords(day, opts));
+    // "Not after a word character or a hyphen" is the start or one such character, kept as it was: iOS before 16.4 cannot parse a lookbehind.
+    .replace(/(^|[^\w-])(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?)(?![\w-])/g, (_all, before: string, stamp: string) => before + instantWords(stamp, opts))
+    .replace(/(^|[^\w-])(\d{4}-\d{2}-\d{2})(?![\w-]|T\d)/g, (_all, before: string, day: string) => before + dayWords(day, opts));
 }
 
 /** The wording options a reader passes on: this team's yardstick and this team's clock. */

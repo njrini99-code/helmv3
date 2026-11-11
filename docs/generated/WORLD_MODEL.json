@@ -22435,6 +22435,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/stored-text.ts",
+          "anchor": "src/lib/coachhelm/reads/placeholder-cause"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/chat/tasks/development-tasks.ts",
           "anchor": "src/app/golf/actions/insights-feed"
         },
@@ -22724,6 +22729,16 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/analyst/breakdown.ts",
+          "anchor": "src/lib/golf/putt-make"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/analyst/fact-sheet.ts",
+          "anchor": "src/lib/golf/sg-benchmarks"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/analyst/measures.ts",
           "anchor": "src/lib/golf/leak-map-buckets"
         },
@@ -22736,6 +22751,11 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/analyst/measures.ts",
           "anchor": "src/lib/golf/round-type-utils"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/analyst/putt-definitions.ts",
+          "anchor": "src/lib/golf/putt-make"
         },
         {
           "kind": "import_graph",

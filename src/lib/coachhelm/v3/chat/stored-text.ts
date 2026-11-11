@@ -10,8 +10,16 @@
 import { isPlaceholderCause, withoutPlaceholderCause } from '@/lib/coachhelm/reads/placeholder-cause';
 import { stripSelfReferences } from './knowledge/reference-plain';
 
-/** The generators' fallback action, as its own sentence (`buildDiagnosis`, v3/engine/generator-base.ts). */
-const TEMPLATE_ACTION = /(?:^|(?<=[.!?])\s+)Target [^.!?]{1,80} in the next practice block\.?/gi;
+/**
+ * The generators' fallback action, as its own sentence (`buildDiagnosis`, v3/engine/generator-base.ts): at the start, or after a
+ * stop and the space that follows it. Written without a lookbehind (iOS before 16.4 cannot parse one, and one literal stops the
+ * whole script it ships in): the stop before the sentence is marked first, the sentence is taken out from its mark, and the marks
+ * left over go.
+ */
+const CUT = '\u0000';
+const TEMPLATE_START = /([.!?])(\s+)(?=Target )/gi;
+const TEMPLATE_ACTION = new RegExp(`(?:^|${CUT}\\s+)Target [^.!?]{1,80} in the next practice block\\.?`, 'gi');
+const withoutTemplateAction = (text: string): string => text.replace(TEMPLATE_START, `$1${CUT}$2`).replace(TEMPLATE_ACTION, '').split(CUT).join('');
 
 /** True for the placeholder cause or the fallback action on its own: text that states nothing measured. */
 export function isTemplateSentence(text: string | null | undefined): boolean {
@@ -23,7 +31,7 @@ export function isTemplateSentence(text: string | null | undefined): boolean {
 /** Stored words with the research pointer and the two template sentences taken out. Null when nothing else was there. */
 export function storedInsightText(text: string | null | undefined): string | null {
   if (typeof text !== 'string' || !text.trim()) return null;
-  const kept = withoutPlaceholderCause(stripSelfReferences(text)).replace(TEMPLATE_ACTION, '').replace(/\s+/g, ' ').trim();
+  const kept = withoutTemplateAction(withoutPlaceholderCause(stripSelfReferences(text))).replace(/\s+/g, ' ').trim();
   return kept || null;
 }
 
