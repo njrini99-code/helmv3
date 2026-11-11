@@ -1,9 +1,10 @@
+import { formatSG } from '../../lib/format';
+
 /**
- * One turn of the CoachHelm chat, as fixture content for the three look directions (docs/clubhouse/coachhelm-chat-v3/LOOK.md).
- * Every direction draws exactly this, so the owner compares looks and not content. Nothing here is loaded or computed.
+ * One turn of the CoachHelm chat, as fixture content for the look preview (docs/clubhouse/coachhelm-chat-v3/LOOK.md).
+ * Nothing here is loaded or computed.
  */
 
-export type LookDir = 'a' | 'b' | 'c';
 export type LookFrame = 'work' | 'answer' | 'task' | 'hold';
 
 export interface LookPart {
@@ -74,7 +75,7 @@ export const LOOK = {
       { key: 'Appears', value: 'His Home, under Focus' },
     ] as const,
     hold: { total: 8, left: 6, line: 'Saves in 6 seconds, then Jonah is told.' },
-    /* The focus itself, as Jonah's Home will show it (direction A draws this, never the fields above as a table). */
+    /* The focus itself, as Jonah's Home will show it (the leaf draws this, never the fields above as a table). */
     focus: { title: 'Downhill putts, 4 to 6 feet', goal: 'Make 7 of 10 in two practices', review: 'Review Tue, Oct 14', from: 'From Coach Reyes' },
     told: 'Jonah is told when it saves. It appears on his Home, under Focus.',
     lands: 'It appears on his Home, under Focus.',
@@ -84,8 +85,7 @@ export const LOOK = {
 
 /** A strokes-gained figure: a sign always, a true minus, one decimal. */
 export function sg(value: number): string {
-  if (value === 0) return '0.0';
-  return (value > 0 ? '+' : '−') + Math.abs(value).toFixed(1);
+  return formatSG(value);
 }
 
 /** A score to par: E for even, a true minus under par. */

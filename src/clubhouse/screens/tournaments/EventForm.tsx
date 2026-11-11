@@ -223,7 +223,7 @@ function NewEvent({ data, phone }: { data: ChTourFormData; phone: boolean }) {
                 )}
               </div>
               <section className="ch-tfx" aria-label="Tournament details">
-                <TournamentFields state={state} onChange={setState} errors={errors} showErrors={touched} timezone={data.timezone} courseWrites={LIVE_WRITES} announce={setSaid} />
+                <TournamentFields state={state} onChange={setState} errors={errors} showErrors={touched} timezone={data.timezone} courseWrites={LIVE_WRITES} announce={setSaid} daysLabelHidden />
               </section>
               {!editing && data.qualifiers.length > 0 && (
                 <div className="ch-tour-lu-form__qual">

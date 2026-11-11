@@ -96,8 +96,8 @@ function describeRefusal(status: number, responseBody: unknown): ChatErrorNotice
 /** `fetch` rejecting before any response: Chrome, Firefox and Safari each word it differently. */
 const NETWORK_FAILURE = /failed to fetch|load failed|networkerror|network request failed/i;
 
-/** The connection dropped: the request never arrived, or the stream ended without its last event. */
-export const CHAT_ERROR_LOST = 'The connection dropped before the answer finished.';
+/** The request never arrived, or the stream ended without its last event. The words name what happened, not a guessed cause (error-copy guard). */
+export const CHAT_ERROR_LOST = 'The answer stopped before it finished.';
 export const CHAT_ERROR_CARD_RETRY = 'That didn’t reach us. Your draft is still here.';
 
 export function describeChatError(error: unknown): ChatErrorNotice {

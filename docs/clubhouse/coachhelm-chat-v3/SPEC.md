@@ -205,7 +205,7 @@ times are from the tap.
 | 150 ms | `ST-4.present`: mark (turning) and "CoachHelm". | same | same | `ST-4.island`: the island, one line |
 | 600 ms after the step began | | | `ST-4.island` if it is still running; a step that finished sooner is only ever said on the turn's line | three or more, or a calculation: `ST-4.island.open` |
 | 1.2 s | `ST-4.sending`: work line "Sending" | `ST-4.reading-question`: work line "Reading your question" | the turn's line names the step until the island takes over | the island speaks; the turn's line is silent |
-| 6 s | "Still sending. Check your connection." | "Still working on it. Long questions take a little longer." | unchanged (a named step is its own explanation) | unchanged |
+| 6 s | "Still sending. This is taking longer than usual." | "Still working on it. Long questions take a little longer." | unchanged (a named step is its own explanation) | unchanged |
 | 20 s | "No answer yet. You can stop and ask again." | same sentence | same | same |
 
 **There is no bare "Thinking" anywhere.** Each wait says what is being done:
@@ -444,7 +444,7 @@ at. Amber, not red (red means under par and nothing else).
 | State | When | Sentence (server's where it sends one) | Offer |
 | --- | --- | --- | --- |
 | `ST-10.offline` | The device is offline when the turn fails, or goes offline mid-answer | "You're offline. What arrived is above." | Try again, disabled until the device is back online; then enabled with "Back online." |
-| `ST-10.lost` | The connection dropped: the request failed, or the stream ended without its last event | "The connection dropped before the answer finished." | Try again |
+| `ST-10.lost` | The connection dropped: the request failed, or the stream ended without its last event | "The answer stopped before it finished." | Try again |
 | `ST-10.model` | The model failed mid-answer (`error`, action `retry`) | the server's sentence; default "Something went wrong while answering." | Try again |
 | `ST-10.declined` | The model declined. Not an error: the engine ends a COMPLETE turn marked `declined: true` in `data-turn-meta` | the turn itself, as an answer: the server's sentence under the name, no amber notice, no Try again, no sources row, follow-ups if the server sent any | none; the composer is the way on |
 | `ST-10.truncated` | The answer hit its length limit | the server's sentence | none; "Ask for the rest" as a follow-up |

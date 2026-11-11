@@ -65,16 +65,7 @@
   padding-top: 0;
 }
 /* First day and Last day, side by side at every width, each under its own name; the row's "Days" is left to assistive
-   tech, which reads it as the pair's name. */
-.ch-tour-lu-form .ch-tfx__row--days > .ch-tfx__lbl {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-}
+   tech, which reads it as the pair's name (EventForm passes `daysLabelHidden`: the shared .ch-sr-only). */
 .ch-tour-lu-form .ch-tfx__pair {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: var(--ch-space-3);
@@ -369,7 +360,7 @@
   align-items: center;
   gap: 8px;
   margin: 0 calc(-1 * var(--ch-page-x-phone)) calc(-52px - env(safe-area-inset-bottom, 0px));
-  padding: 10px var(--ch-page-x-phone) calc(10px + env(safe-area-inset-bottom, 0px));
+  padding: var(--ch-space-2) var(--ch-page-x-phone) calc(var(--ch-space-2) + env(safe-area-inset-bottom, 0px));
   background: var(--ch-bg-surface);
 }
 .ch-tour-lu-bar::before {

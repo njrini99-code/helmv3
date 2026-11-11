@@ -13,8 +13,8 @@ export const playerStatsHref = (id: string) => rebuiltHref(`/golf/dashboard/stat
 
 type Chip = { known: ReadonlySet<string>; draw: (ref: string) => ReactNode };
 
-/** A read's chip keeps the word before it: a narrow no-break space in place of the space the model wrote, so a chip never starts a line alone. */
-const NNBSP = ' ';
+/** A read's chip keeps the word before it: a no-break space in place of the space the model wrote, so a chip never starts a line alone. */
+const NBSP = '\u00a0';
 
 /**
  * One block of an answer (a paragraph, a list, a table, a heading). Memoised on its own text, so while an answer streams only
@@ -54,7 +54,7 @@ const ProseBlockView = memo(function ProseBlockView({ sig, lead, streaming, tail
         const prev = segs[i - 1];
         let text = prev && 'ref' in prev ? seg.text.slice(closing(i - 1).length) : seg.text;
         // The space before a chip becomes a no-break space, so the chip wraps with the word it follows.
-        if (segs[i + 1] && 'ref' in segs[i + 1]!) text = text.replace(/[ \t]+$/, NNBSP);
+        if (segs[i + 1] && 'ref' in segs[i + 1]!) text = text.replace(/[ \t]+$/, NBSP);
         return <Fragment key={`t${i}`}>{plainInline(text)}</Fragment>;
       }
       if (seen.has(seg.ref)) return closing(i) || null;
@@ -67,10 +67,10 @@ const ProseBlockView = memo(function ProseBlockView({ sig, lead, streaming, tail
       );
     });
   };
-  // Joined to the last word by a word joiner, so the dot never wraps to a line of its own.
+  // Joined to the last word by a no-break space (one the face draws), so the dot never wraps to a line of its own.
   const dot = tail ? (
     <span className="ch-ak-pend" aria-hidden="true">
-      {'⁠'}
+      {NBSP}
       <i className="ch-ak-live" />
     </span>
   ) : null;

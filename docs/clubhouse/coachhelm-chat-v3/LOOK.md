@@ -7,9 +7,13 @@ the design work that answers it: one
 turn of the chat drawn three ways for him to choose from. Nothing here changes
 the real chat; the directions are
 static previews at
-`/clubhouse-preview/coachhelm-ask-look?dir=a|b|c&frame=work|answer|task|hold`
+`/clubhouse-preview/coachhelm-ask-look?frame=work|answer|task|hold`
 (add `&long=1` for
 the whole thread on one tall page).
+
+Status, 11 Nov: the owner dropped directions B and C. Their preview code and
+styles are deleted; the preview draws direction A only and no longer reads
+`dir`. The B and C sections below stay as the record of what was compared.
 
 ## Why the current screen reads as generic
 

@@ -6,6 +6,7 @@ import { ChevronRight, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import type { ChPracticeHome, ChPracticeRow, ChPracticeState, ChPracticeTile } from '../../data/practice-home-shape';
+import { pluralWord } from '../../lib/plural';
 import { useChPhone } from '../../lib/use-phone';
 import { PhoneTop } from '../../shell/phone-chrome';
 import { PhoneIconAction } from '../../ui/PhoneBar';
@@ -208,7 +209,7 @@ export function PracticeHome({ data, openNew = false, previewSheet = false, temp
                       </li>
                     ))}
                   </ol>
-                  {more > 0 && <p className="ch-prc-next__more ch-num">and {more} more {more === 1 ? 'block' : 'blocks'}</p>}
+                  {more > 0 && <p className="ch-prc-next__more ch-num">and {more} more {pluralWord(more, 'block')}</p>}
                 </>
               ) : (
                 <p className="ch-prc-next__none">{up.eventId ? 'No plan for this practice yet.' : 'This plan has no blocks yet.'}</p>

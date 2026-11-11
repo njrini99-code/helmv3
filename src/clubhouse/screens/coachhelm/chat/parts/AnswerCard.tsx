@@ -24,7 +24,8 @@ import { ArtifactCard } from './Artifact';
 import type { AskArtifact } from './artifacts';
 import { TurnNotice, type TurnEnd } from './TurnNotice';
 import { revealMode, useReveal } from '../reveal';
-import { pastOf, useWork, useWorkListId, WorkLine } from './Work';
+import { pastOf } from '../work-tense';
+import { useWork, useWorkListId, WorkLine } from './Work';
 
 /** Seconds this browser watched the turn run; null for a reloaded turn (no honest duration). */
 function useRan(active: boolean): number | null {

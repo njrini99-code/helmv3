@@ -57,6 +57,7 @@ export function TournamentFields({
   courseWrites,
   announce,
   idPrefix = 'ch-tfx',
+  daysLabelHidden = false,
 }: {
   state: ChTourState;
   onChange: (next: ChTourState) => void;
@@ -66,6 +67,8 @@ export function TournamentFields({
   courseWrites: Pick<ChQWrites, 'courses' | 'tees'>;
   announce?: (line: string) => void;
   idPrefix?: string;
+  /** The row's "Days" is kept for assistive tech only (a page that names each day over its own field). */
+  daysLabelHidden?: boolean;
 }) {
   const reduced = useChReducedMotion();
   const clock = useChClock();
@@ -132,7 +135,7 @@ export function TournamentFields({
   return (
     <div className="ch-tfx__body">
       <div className="ch-tfx__row ch-tfx__row--days">
-        <span className="ch-tfx__lbl" id={`${idPrefix}-days`}>
+        <span className={'ch-tfx__lbl' + (daysLabelHidden ? ' ch-sr-only' : '')} id={`${idPrefix}-days`}>
           Days
         </span>
         <div>

@@ -156,7 +156,7 @@ describe('CH-13850 what CoachHelm is doing', () => {
       act(() => { vi.advanceTimersByTime(1100); });
       expect(turn.querySelector('.ch-ak-isl .hd')?.textContent).toBe('Sending');
       act(() => { vi.advanceTimersByTime(5000); });
-      expect(turn.querySelector('.ch-ak-isl .hd')?.textContent).toBe('Still sending. Check your connection.');
+      expect(turn.querySelector('.ch-ak-isl .hd')?.textContent).toBe('Still sending. This is taking longer than usual.');
       expect(document.body.textContent).not.toMatch(/get_[a-z_]+/);
     } finally {
       vi.useRealTimers();

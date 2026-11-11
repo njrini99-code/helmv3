@@ -1,3 +1,4 @@
+import { plural } from '../../lib/plural';
 import { fmtMinutes } from './builder/builder-model';
 
 export type DayTone = 'skill' | 'random' | 'pressure' | 'plain' | 'ghost' | 'open';
@@ -14,7 +15,7 @@ export function dayStripLabel(segs: readonly DaySeg[]): string {
   const total = planned.reduce((n, s) => n + s.min, 0);
   const open = segs.filter((s) => s.tone === 'open').reduce((n, s) => n + s.min, 0);
   const ghost = segs.filter((s) => s.tone === 'ghost').reduce((n, s) => n + s.min, 0);
-  return [`${planned.length} ${planned.length === 1 ? 'block' : 'blocks'}, ${fmtMinutes(total)}`, ghost ? `${fmtMinutes(ghost)} suggested` : '', open ? `${fmtMinutes(open)} open` : ''].filter(Boolean).join(', ');
+  return [`${plural(planned.length, 'block')}, ${fmtMinutes(total)}`, ghost ? `${fmtMinutes(ghost)} suggested` : '', open ? `${fmtMinutes(open)} open` : ''].filter(Boolean).join(', ');
 }
 
 /**

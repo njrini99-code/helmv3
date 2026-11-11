@@ -1,5 +1,7 @@
 import type { AskAssistantTurn, AskStep, AskStepSubject } from '../../../../data/coachhelm-chat-thread';
-import { pastOf, couldNot } from '../parts/Work';
+import { formatWhole } from '../../../../lib/format';
+import { plural } from '../../../../lib/plural';
+import { couldNot, pastOf } from '../work-tense';
 
 /**
  * The activity island's model (chat v3, SPEC Moment 4): what CoachHelm is doing, as steps, each caused by a real event from
@@ -45,7 +47,7 @@ export interface IslandModel {
 /** "12 rounds and counting": the sample in words, never notation. */
 export function tally(count: NonNullable<AskStep['count']>): string {
   const unit = count.n === 1 ? count.unit.replace(/s$/, '') : count.unit;
-  return `${count.n.toLocaleString('en-US')} ${unit}${count.more ? ' and counting' : ''}`;
+  return `${formatWhole(count.n)} ${unit}${count.more ? ' and counting' : ''}`;
 }
 
 function stateOf(step: AskStep, live: boolean, stated: boolean): IslandStepState {
@@ -96,7 +98,7 @@ export function islandModel(turn: AskAssistantTurn, o: { live: boolean; hasText:
   const running = steps.filter((s) => s.state === 'active');
   const leaves = running.filter((s) => !parents.has(s.id) || !running.some((r) => r.child));
   const active = leaves.length > 0 ? leaves : running;
-  const count = `${total} ${total === 1 ? 'step' : 'steps'}`;
+  const count = plural(total, 'step');
   let head: string;
   let settled = false;
   let more = 0;

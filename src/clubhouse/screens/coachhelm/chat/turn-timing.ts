@@ -35,7 +35,7 @@ export const BEAT_MS = TURN_TIMING.beat;
 export function waitingWords(elapsed: number, started: boolean): string | null {
   if (elapsed < TURN_TIMING.words) return null;
   if (elapsed >= TURN_TIMING.stuck) return 'No answer yet. You can stop and ask again.';
-  if (elapsed >= TURN_TIMING.slow) return started ? 'Still working on it. Long questions take a little longer.' : 'Still sending. Check your connection.';
+  if (elapsed >= TURN_TIMING.slow) return started ? 'Still working on it. Long questions take a little longer.' : 'Still sending. This is taking longer than usual.';
   // Never a bare "Thinking" (owner, the live workspace): the wait says what is being done.
   return started ? 'Reading your question' : 'Sending';
 }

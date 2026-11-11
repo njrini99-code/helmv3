@@ -241,7 +241,7 @@ function TrendBars({ points, data, state, note }: { points: TrendPoint[]; data: 
                     <Link href={paths.desk(p.event.id)} className={'ch-tour-rev-bar' + (p.event.seasonId === current ? ' is-now' : '')} aria-label={label(p)}>
                       <span className="ch-tour-rev-bar__n">{p.event.name}</span>
                       <span className="ch-tour-rev-bar__t">
-                        <i style={{ '--ch-tour-rev-len': p.value == null ? 0 : (BAR_MIN + (1 - trendY(p.value, lo, hi)) * (1 - BAR_MIN)).toFixed(3) } as CSSProperties} />
+                        <i style={{ '--ch-tour-rev-len': p.value == null ? 0 : Math.round((BAR_MIN + (1 - trendY(p.value, lo, hi)) * (1 - BAR_MIN)) * 1000) / 1000 } as CSSProperties} />
                         <b className="ch-num">{p.value == null ? <NoData /> : formatSigned(p.value, 1)}</b>
                       </span>
                     </Link>

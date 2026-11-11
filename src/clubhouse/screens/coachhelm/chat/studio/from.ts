@@ -17,6 +17,7 @@ import {
 } from '../../../../data/coachhelm-chat-thread';
 import { formatClock, isoDay } from '../../../../lib/dates';
 import { NO_DATA, changeTone, formatToPar } from '../../../../lib/format';
+import { plural } from '../../../../lib/plural';
 import { rebuiltHref } from '../../../../shell/nav';
 import type { StudioBoardRow, StudioDay, StudioEvent, StudioFigure, StudioHole, StudioLeg, StudioPart, StudioTone } from './types';
 
@@ -251,7 +252,7 @@ function boardOf(d: Rec | null): StudioPart | null {
   const squad = numOf(d.squad);
   const onScore = squad === null ? null : Math.max(0, squad - (numOf(d.coach_picks) ?? 0));
   const planned = numOf(d.rounds_planned);
-  const status = [strOf(d.status) ? headingOf(strOf(d.status)!) : null, planned ? `${planned} ${planned === 1 ? 'round' : 'rounds'}` : null].filter(Boolean).join(' · ');
+  const status = [strOf(d.status) ? headingOf(strOf(d.status)!) : null, planned ? plural(planned, 'round') : null].filter(Boolean).join(' · ');
   return { kind: 'qualifier_board', data: { title: name, rows, cut: onScore && onScore < rows.length ? onScore : null, roundLabels: [], status: status || null, href: linkOf(d.href) } };
 }
 

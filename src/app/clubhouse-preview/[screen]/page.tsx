@@ -678,7 +678,7 @@ export default async function ClubhousePreview({
       node: <PreviewAskV2 id={(await searchParams as { id?: string }).id} state={state} kind={q} scene={(await searchParams as { scene?: string }).scene} stage={(await searchParams as { stage?: string }).stage} viewer={(await searchParams as { viewer?: string }).viewer} />,
     },
     // The chat's look in three directions (docs/clubhouse/coachhelm-chat-v3/LOOK.md): ?dir=a|b|c&frame=work|answer|task|hold&long=1
-    'coachhelm-ask-look': { path: '/golf/dashboard/coachhelm', node: <PreviewAskLook {...(await searchParams as { dir?: string; frame?: string; long?: string })} /> },
+    'coachhelm-ask-look': { path: '/golf/dashboard/coachhelm', node: <PreviewAskLook {...(await searchParams as { frame?: string; long?: string })} /> },
     'coachhelm-views': {
       path: '/golf/dashboard/coachhelm',
       node: <PreviewCoachHelmViews view={view} state={state} insight={q} />,

@@ -5,7 +5,7 @@ import { Button, IconButton } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { LOOK } from './content';
 
-/* The pieces every direction shares: the golf ball mark, the activity panel's rows, the sent question, the hold ring and
+/* The pieces of the look preview: the golf ball mark, the activity panel's rows, the sent question, the hold ring and
    the composer. Static: each state is drawn at rest, the motion is written in docs/clubhouse/coachhelm-chat-v3/LOOK.md. */
 
 const ring = (count: number, radius: number, offset = 0) =>
@@ -23,11 +23,11 @@ const BALL_SPRAY = ring(12, 10.6, 0);
  * The chat's mark: a golf ball. At rest it is a whole ball. Thinking, the shell thins and the dimples drift out past its
  * edge, ring by ring (the dissolve), while the whole mark breathes (the pulse). This draws the two ends of that loop.
  */
-export function BallMark({ state = 'rest', size = 20, tone = 'green' }: { state?: 'rest' | 'thinking'; size?: number; tone?: 'green' | 'paper' }) {
+export function BallMark({ state = 'rest', size = 20 }: { state?: 'rest' | 'thinking'; size?: number }) {
   const thinking = state === 'thinking';
   const outer = thinking ? ring(12, 8.3, 15) : BALL_OUTER;
   return (
-    <svg className={`ch-look-ball ch-look-ball--${tone}${thinking ? ' is-thinking' : ''}`} width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
+    <svg className={'ch-look-ball' + (thinking ? ' is-thinking' : '')} width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
       <circle className="ch-look-ball__shell" cx="12" cy="12" r={thinking ? 7.6 : 9.6} />
       <circle className="ch-look-ball__dot" cx="12" cy="12" r="0.8" />
       {BALL_INNER.map((p, i) => (
@@ -62,20 +62,14 @@ export function StepGlyph({ state }: { state: 'done' | 'active' | 'waiting' }) {
   );
 }
 
-/** The activity panel mid-work: one step done, one turning, one waiting. `ruled` draws the scorer's strip (direction B). */
-export function Island({ ruled = false, slats = false }: { ruled?: boolean; slats?: boolean }) {
+/** The activity panel mid-work: one step done, one turning, one waiting. */
+export function Island() {
   const { work } = LOOK;
-  const done = work.steps.filter((s) => s.state === 'done').length;
   return (
-    <section className={'ch-look-isl' + (ruled ? ' is-ruled' : '') + (slats ? ' is-slats' : '')} aria-label="What CoachHelm is doing">
+    <section className="ch-look-isl" aria-label="What CoachHelm is doing">
       <button type="button" className="ch-look-isl__head" aria-expanded="true">
         <BallMark state="thinking" size={24} />
         <span className="ch-look-isl__title">{work.title}</span>
-        {ruled && (
-          <span className="ch-num ch-look-isl__count">
-            {done + 1} of {work.steps.length}
-          </span>
-        )}
         <Icon icon={ChevronUp} size={16} className="ch-look-isl__chev" />
       </button>
       <ol className="ch-look-isl__rows">
@@ -112,9 +106,9 @@ export function Question({ text }: { text: string }) {
 }
 
 /** The eight-second hold: the ring empties as the seconds go, the numeral is what is left. */
-export function HoldRing({ left, total, onGreen = false }: { left: number; total: number; onGreen?: boolean }) {
+export function HoldRing({ left, total }: { left: number; total: number }) {
   return (
-    <span className={'ch-look-hold' + (onGreen ? ' is-on-green' : '')} role="img" aria-label={`${left} seconds left`}>
+    <span className="ch-look-hold" role="img" aria-label={`${left} seconds left`}>
       <svg width="36" height="36" viewBox="0 0 36 36" aria-hidden="true">
         <circle className="ch-look-hold__track" cx="18" cy="18" r="15" />
         <circle className="ch-look-hold__arc" cx="18" cy="18" r="15" pathLength="100" strokeDasharray={`${(left / total) * 100} 100`} />

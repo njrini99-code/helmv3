@@ -1012,13 +1012,13 @@ html[data-fw-theme='dark'] .ch-ak-push .ch-btn--primary[data-ch-pressed]:not(:di
 .ch-ak-wl.is-sum::after { content: ''; position: absolute; inset: -8px -8px; }
 .ch-ak-wl.is-sum .chev { flex: none; color: var(--ch-text-tertiary); transition: transform var(--ch-dur-base) var(--ch-ease); }
 .ch-ak-wl.is-sum[aria-expanded='true'] .chev { transform: rotate(180deg); }
-.ch-ak-wl.is-sum:focus-visible { outline: var(--ch-focus-ring-w, 2px) solid var(--ch-ask-accent); outline-offset: 4px; border-radius: var(--ch-radius-sm); }
+.ch-ak-wl.is-sum:focus-visible { outline: 2px solid var(--ch-border-focus); outline-offset: 2px; border-radius: var(--ch-radius-sm); }
 
 /* Streamed words: each burst fades in once and never moves; a finished fade holds nothing. The dot waits after the last word. */
 .ch-ak-th[data-v3] .ch-th-prose[data-streaming] .w, .ch-ak-th[data-v3] .ch-th-prose[data-streaming] .cite { animation-fill-mode: backwards; }
 .ch-ak-th[data-v3] .ch-th-prose[data-streaming] .cite { animation: ch-ak-fade var(--ch-dur-word) var(--ch-ease) backwards; }
 .ch-ak-pend { white-space: nowrap; }
-.ch-ak-pend .ch-ak-live { width: 7px; height: 7px; margin-left: 6px; vertical-align: 1px; animation: ch-ak-fade var(--ch-dur-quick) var(--ch-ease) backwards, ch-ak-breath var(--ch-dur-reveal) var(--ch-ease-io) infinite alternate; }
+.ch-ak-pend .ch-ak-live { width: 7px; height: 7px; margin-left: 2px; vertical-align: 1px; animation: ch-ak-fade var(--ch-dur-quick) var(--ch-ease) backwards, ch-ak-breath var(--ch-dur-reveal) var(--ch-ease-io) infinite alternate; }
 
 /* A visual is complete at first paint (owner decision Q-153): only its frame fades, and only when it arrives in this visit. */
 .ch-ak-vis { min-width: 0; }
@@ -1134,6 +1134,7 @@ html[data-fw-theme='dark'] .ch-ak-push .ch-btn--primary[data-ch-pressed]:not(:di
   .ch-ak-root:has(.ch-ask-dock textarea:focus) .ch-ak-islhost { display: none; }
 }
 
+/* --isl-r is the radius step as a length for the geometry below; the corners themselves name the step (radius-steps). */
 .ch-isl { --isl-r: var(--ch-radius-lg); --isl-w: min(380px, 100% - 28px); position: absolute; top: 2px; left: 50%; z-index: var(--ch-z-sticky); width: var(--isl-w); height: calc(var(--isl-r) * 2); margin-left: calc(var(--isl-w) / -2); color: var(--ch-feature-ink); animation: ch-isl-in var(--ch-dur-spring-pop, var(--ch-dur-base)) var(--ch-ease-spring-pop, var(--ch-ease)) backwards; transition: transform var(--ch-dur-release) var(--ch-ease); }
 .ch-ask-head .ch-isl { top: calc(50% - var(--isl-r)); --isl-w: min(380px, 100% - 32px); }
 .ch-isl.is-compact { --isl-w: min(300px, 100% - 24px); }
@@ -1144,29 +1145,29 @@ html[data-fw-theme='dark'] .ch-ak-push .ch-btn--primary[data-ch-pressed]:not(:di
 @keyframes ch-isl-word { from { opacity: 0; transform: translateY(3px); } }
 
 /* The shadow of each size, crossed by opacity: a shadow is never resized. */
-.ch-isl .sh { position: absolute; inset: 0; border-radius: var(--isl-r); box-shadow: var(--ch-feature-shadow); pointer-events: none; }
-.ch-isl .sh::after { content: ''; position: absolute; inset: 0 0 auto; height: calc(var(--isl-r) * 2 + var(--ch-isl-h, 0) * 1px); border-radius: var(--isl-r); box-shadow: var(--ch-elevation-raised); opacity: 0; transition: opacity var(--ch-dur-base) var(--ch-ease); }
+.ch-isl .sh { position: absolute; inset: 0; border-radius: var(--ch-radius-lg); box-shadow: var(--ch-feature-shadow); pointer-events: none; }
+.ch-isl .sh::after { content: ''; position: absolute; inset: 0 0 auto; height: calc(var(--isl-r) * 2 + var(--ch-isl-h, 0) * 1px); border-radius: var(--ch-radius-lg); box-shadow: var(--ch-elevation-raised); opacity: 0; transition: opacity var(--ch-dur-base) var(--ch-ease); }
 .ch-isl.is-open .sh::after { opacity: 1; }
 
 /* The plate: a top cap, a middle two pixels tall (whole pixels, so its edges stay sharp when scaled) that scales to the steps' height, and a bottom cap that rides its edge. */
 .ch-isl .pl { position: absolute; inset: 0; pointer-events: none; }
 .ch-isl .pl i { position: absolute; left: 0; right: 0; background: var(--ch-feature-bg); }
-.ch-isl .pt { top: 0; height: var(--isl-r); border-radius: var(--isl-r) var(--isl-r) 0 0; }
+.ch-isl .pt { top: 0; height: var(--isl-r); border-radius: var(--ch-radius-lg) var(--ch-radius-lg) 0 0; }
 .ch-isl .pm { top: calc(var(--isl-r) - 1px); height: 2px; transform-origin: 50% 0; }
-.ch-isl .pb { top: var(--isl-r); height: var(--isl-r); border-radius: 0 0 var(--isl-r) var(--isl-r); }
+.ch-isl .pb { top: var(--isl-r); height: var(--isl-r); border-radius: 0 0 var(--ch-radius-lg) var(--ch-radius-lg); }
 .ch-isl :is(.pm, .pb, .bc, .bd) { transition: transform var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth); }
 .ch-isl.is-open .pm { transform: scaleY(calc((var(--ch-isl-h, 0) + 2) / 2)); }
 .ch-isl.is-open .pb { transform: translateY(calc(var(--ch-isl-h, 0) * 1px)); }
 
 /* The passing light (behind a switch): the wait has life without a second spinner. One band, one transform, clipped to the line. */
-.ch-isl .gl { position: absolute; inset: 0; overflow: hidden; border-radius: var(--isl-r); pointer-events: none; }
+.ch-isl .gl { position: absolute; inset: 0; overflow: hidden; border-radius: var(--ch-radius-lg); pointer-events: none; }
 .ch-isl .gl i { position: absolute; top: 0; bottom: 0; left: 0; width: 38%; background: linear-gradient(100deg, transparent, var(--ch-feature-sep) 50%, transparent); transform: translateX(-110%); animation: ch-isl-light var(--ch-dur-live) var(--ch-ease-io) infinite; }
 @keyframes ch-isl-light { 0%, 20% { transform: translateX(-110%); } 80%, 100% { transform: translateX(290%); } }
 
 /* The head: the island as one line. */
-.ch-isl .hd { position: relative; display: flex; align-items: center; gap: 8px; width: 100%; height: 100%; margin: 0; padding: 0 12px 0 8px; border: 0; border-radius: var(--isl-r); background: none; color: inherit; font: var(--ch-type-13-medium); text-align: left; cursor: pointer; }
+.ch-isl .hd { position: relative; display: flex; align-items: center; gap: 8px; width: 100%; height: 100%; margin: 0; padding: 0 12px 0 8px; border: 0; border-radius: var(--ch-radius-lg); background: none; color: inherit; font: var(--ch-type-13-medium); text-align: left; cursor: pointer; }
 .ch-isl .hd::after { content: ''; position: absolute; inset: -6px 0; }
-.ch-isl .hd:focus-visible, .ch-isl .st .op:focus-visible { outline: var(--ch-focus-ring-w, 2px) solid var(--ch-feature-gain); outline-offset: 2px; }
+.ch-isl .hd:focus-visible, .ch-isl .st .op:focus-visible { outline: 2px solid var(--ch-border-focus-on-dark); outline-offset: 2px; }
 .ch-isl .hd .t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; animation: ch-isl-word var(--ch-dur-base) var(--ch-ease) backwards; }
 .ch-isl .hd .n { flex: none; font: var(--ch-type-12); color: var(--ch-feature-ink-3); }
 .ch-isl .hd .chev { flex: none; color: var(--ch-feature-ink-3); transition: transform var(--ch-dur-base) var(--ch-ease); }
@@ -1196,7 +1197,7 @@ html[data-fw-theme='dark'] .ch-ak-push .ch-btn--primary[data-ch-pressed]:not(:di
    the same amount, so the list stays where it is and only the edge travels: two equal and opposite moves on the same clock
    as the plate, which stay equal when the height changes mid-move. */
 .ch-isl { --isl-max: 420px; }
-.ch-isl .bc { position: absolute; top: calc(var(--isl-r) * 2); left: 0; right: 0; height: var(--isl-max); overflow: hidden; border-radius: 0 0 var(--isl-r) var(--isl-r); pointer-events: none; transform: translateY(calc(var(--isl-max) * -1)); }
+.ch-isl .bc { position: absolute; top: calc(var(--isl-r) * 2); left: 0; right: 0; height: var(--isl-max); overflow: hidden; border-radius: 0 0 var(--ch-radius-lg) var(--ch-radius-lg); pointer-events: none; transform: translateY(calc(var(--isl-max) * -1)); }
 .ch-isl .bd { max-height: min(52dvh, var(--isl-max)); overflow-y: auto; overscroll-behavior: contain; padding: 0 6px 8px; opacity: 0; transform: translateY(var(--isl-max)); transition: transform var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth), opacity var(--ch-dur-quick) var(--ch-ease); }
 .ch-isl.is-open .bc { transform: translateY(calc(var(--ch-isl-h, 0) * 1px - var(--isl-max))); }
 .ch-isl.is-open .bd { pointer-events: auto; opacity: 1; transform: translateY(calc(var(--isl-max) - var(--ch-isl-h, 0) * 1px)); }
@@ -1322,7 +1323,7 @@ html[data-fw-theme='dark'] .ch-ak-push .ch-btn--primary[data-ch-pressed]:not(:di
 }
 .ch-ak-isl .hd:focus-visible,
 .ch-ak-isl .st .op:focus-visible {
-  outline: var(--ch-focus-ring-w, 2px) solid var(--ch-feature-gain);
+  outline: 2px solid var(--ch-border-focus-on-dark);
   outline-offset: 2px;
 }
 .ch-ak-isl .hd .t {
@@ -1588,7 +1589,7 @@ html[data-fw-theme='dark'] .ch-ak-push .ch-btn--primary[data-ch-pressed]:not(:di
   text-underline-offset: 2px;
 }
 .ch-ak-th .cite:focus-visible {
-  outline: var(--ch-focus-ring-w, 2px) solid var(--ch-ask-accent);
+  outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
   border-radius: var(--ch-radius-mark);
 }
@@ -1645,7 +1646,7 @@ button.ch-ak-src__row {
   color: var(--ch-ask-accent);
 }
 .ch-ak-src__row:focus-visible {
-  outline: var(--ch-focus-ring-w, 2px) solid var(--ch-ask-accent);
+  outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
   border-radius: var(--ch-radius-sm);
 }
@@ -1717,7 +1718,7 @@ button.ch-ak-src__row {
   color: var(--ch-text-tertiary);
 }
 .ch-ak-th .chip:focus-visible {
-  outline: var(--ch-focus-ring-w, 2px) solid var(--ch-ask-accent);
+  outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
   border-radius: var(--ch-radius-sm);
 }
@@ -1733,7 +1734,7 @@ button.ch-ak-src__row[data-ch-pressed] {
 }
 
 /* A desk: the leaf has a wider margin, and its lead is a step larger. */
-@media (min-width: 821px) {
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-ak-th:not(.ch-th--phone, .is-compact) .ch-ak-leaf {
     padding: var(--ch-space-5) var(--ch-space-8) var(--ch-space-6);
   }

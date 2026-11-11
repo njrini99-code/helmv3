@@ -10,6 +10,7 @@ import type { ChBoardMissing } from '../../../data/coachhelm-shape';
 import type { ChCoachPlayerHead } from '../../../data/coachhelm-views-shape';
 import { friendlyReason } from '../../../lib/friendly-reason';
 import { haptic } from '../../../lib/haptics';
+import { pluralWord } from '../../../lib/plural';
 import { chReport } from '../../../lib/track';
 import { isOffline, normalise, type ServerResult } from '../../../lib/use-action';
 import { useRefresh } from '../../../lib/use-refresh';
@@ -195,7 +196,7 @@ export function CoachActions({
     setRechecking(false);
     if (res?.success) {
       haptic('success');
-      toast({ title: `Re-checked ${first}’s rounds`, body: res.insightsCreated ? `${res.insightsCreated} new ${res.insightsCreated === 1 ? 'read' : 'reads'}.` : undefined, code: 'CH-13945' });
+      toast({ title: `Re-checked ${first}’s rounds`, body: res.insightsCreated ? `${res.insightsCreated} new ${pluralWord(res.insightsCreated, 'read')}.` : undefined, code: 'CH-13945' });
       // The page shows what the re-check wrote: its own reads, again.
       refresh();
       return;

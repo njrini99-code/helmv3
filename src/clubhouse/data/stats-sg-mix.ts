@@ -1,3 +1,4 @@
+import { pluralWord } from '../lib/plural';
 import type { ChRound } from './season';
 
 /**
@@ -81,7 +82,7 @@ export function sgIsEstimate(mix: ChSgMix | null | undefined): boolean {
   return !!mix && mix.estimatedCounted && mix.estimated > 0 && mix.measured === 0;
 }
 
-const roundsWord = (n: number) => (n === 1 ? 'round' : 'rounds');
+const roundsWord = (n: number) => pluralWord(n, 'round');
 
 /**
  * The line under a strokes gained figure. Nothing when every round was shot-tracked (the figure is what it says it is) or when the

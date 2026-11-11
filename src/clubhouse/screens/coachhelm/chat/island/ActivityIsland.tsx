@@ -2,6 +2,7 @@
 
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { useEffect, useId, useLayoutEffect, useReducer, useRef, useState } from 'react';
+import { pluralWord } from '../../../../lib/plural';
 import { Avatar } from '../../../../ui/Avatar';
 import { Icon } from '../../../../ui/Icon';
 import { waitLight } from '../reveal';
@@ -68,7 +69,7 @@ export function StepRow({ step, onOpen }: { step: IslandStep; onOpen?: (ref: str
           {/* A tally that grows changes in place, in tabular figures: it is not a new line each time. */}
           {step.detail && <span className="dt ch-num">{step.detail}</span>}
           {step.subjects.length > 0 && (
-            <span className="subj" role="img" aria-label={`${step.subjects.length} ${faces.length === step.subjects.length ? (step.subjects.length === 1 ? 'player' : 'players') : 'found'} so far`}>
+            <span className="subj" role="img" aria-label={`${step.subjects.length} ${faces.length === step.subjects.length ? pluralWord(step.subjects.length, 'player') : 'found'} so far`}>
               {faces.slice(0, FACES).map((s) => (
                 <span key={s.id} className="face" title={s.label}>
                   <Avatar name={s.label} id={s.id} size="xs" />

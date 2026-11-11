@@ -57,7 +57,7 @@ export function Row({ r }: { r: ChBriefRow }) {
   return (
     <li className={'ch-hmb-row is-' + r.kind} data-ch-code={r.kind === 'team_pattern' ? 'CH-13934' : 'CH-13933'}>
       <Link className="ch-hmb-row__a" href={r.href}>
-        {r.kind !== 'team_pattern' && <Avatar name={r.who} size={34} />}
+        {r.kind !== 'team_pattern' && <Avatar name={r.who} size="md" />}
         <span className="ch-hmb-row__main">
           <span className="ch-hmb-row__who">{r.who}</span>
           <b className="ch-hmb-row__t ch-num">{r.title}</b>

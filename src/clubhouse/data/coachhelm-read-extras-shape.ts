@@ -1,5 +1,6 @@
 import { ALL_SCORING_COLUMNS, lookupMetricSource, type MetricSourceDef } from '@/lib/coachhelm/v3/causality/metric-sources';
 import { isCountableRound } from '@/lib/golf/round-countable';
+import { plural } from '../lib/plural';
 
 /**
  * What the read page reads beside the read itself (7 Nov design): the read's own metric round by round, how many rounds are newer
@@ -126,7 +127,7 @@ const SHARE_NOUN: Record<string, string> = { greens_hit: 'greens', fairways_hit:
 export function roundNote(def: MetricSourceDef, p: ReadPoint | undefined): string | null {
   if (!p) return null;
   const penalties = (def.kind === 'round_stats_cache_avg' && def.column === 'penalty_strokes') || (def.kind === 'rounds' && def.column === 'total_penalties');
-  if (penalties) return p.value > 0 ? `${p.value} ${p.value === 1 ? 'penalty' : 'penalties'}` : null;
+  if (penalties) return p.value > 0 ? plural(p.value, 'penalty', 'penalties') : null;
   if (def.kind === 'round_stats_cache_ratio' && p.num != null && p.den != null) return `${p.num} of ${p.den} ${SHARE_NOUN[def.numerator] ?? ''}`.trim();
   return null;
 }

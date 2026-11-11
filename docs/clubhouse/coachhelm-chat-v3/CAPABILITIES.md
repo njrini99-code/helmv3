@@ -941,7 +941,7 @@ sentence.
 
 | Kind of work | Mark | Work line (and read row label) | After |
 | --- | --- | --- | --- |
-| Nothing from the server yet | turning | nothing; at 1.2 s "Sending"; at 6 s "Still sending. Check your connection."; at 20 s "No answer yet. You can stop and ask again." | |
+| Nothing from the server yet | turning | nothing; at 1.2 s "Sending"; at 6 s "Still sending. This is taking longer than usual."; at 20 s "No answer yet. You can stop and ask again." | |
 | The server has the turn | turning | at 1.2 s "Thinking"; at 6 s "Still thinking. Long questions take a little longer." | |
 | Reading | turning | "Reading the statistics", "Reading the rounds and statistics", "Reading Team Stats", "Reading the rounds", "Reading the round hole by hole", "Reading the logged shots", "Reading the season", "Reading the qualifiers", "Reading the qualifier board", "Reading tournament results", "Checking the schedule", "Checking the schedule and travel", "Checking outstanding tasks", "Reading what CoachHelm has on record", "Reading practice", "Reading the standards", "Looking it up in the golf reference", "Looking that up", "Reading the team's records", "Finding the thread", "Finding that in the app" | check, and the detail when sent ("38 rounds") |
 | Comparing and ranking | turning | "Ranking the team", "Comparing the seasons" | check |

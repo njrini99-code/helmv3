@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { nextReadChange, nextWaitingChange, readRowState, sentencesSince, settledText, TURN_TIMING, waitingWords } from '../turn-timing';
-import { couldNot, pastOf } from '../parts/Work';
+import { couldNot, pastOf } from '../work-tense';
 
 describe('what the work line says while it waits (SPEC Moment 4)', () => {
   it('says nothing before 1.2 s: a fast answer never shows a word that would be gone at once', () => {
@@ -13,7 +13,7 @@ describe('what the work line says while it waits (SPEC Moment 4)', () => {
   });
   it('explains a long wait at 6 s and offers the way out at 20 s', () => {
     expect(waitingWords(TURN_TIMING.slow, true)).toBe('Still working on it. Long questions take a little longer.');
-    expect(waitingWords(TURN_TIMING.slow, false)).toBe('Still sending. Check your connection.');
+    expect(waitingWords(TURN_TIMING.slow, false)).toBe('Still sending. This is taking longer than usual.');
     expect(waitingWords(TURN_TIMING.stuck, true)).toBe('No answer yet. You can stop and ask again.');
   });
   it('knows when it next changes, and that it stops changing', () => {
