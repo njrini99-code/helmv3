@@ -5,6 +5,27 @@ moment. Columns: trigger; what moves; property; from and to; duration and easing
 raw value); delay or stagger; what interrupts it and how; Reduce Motion; haptic; why this motion exists. A motion
 that cannot answer "why" is not in this file, and is not built.
 
+## The benchmark
+
+The owner's bar (10 Nov): "insanely good. Like ChatGPT, Claude interface but better". What they do, what ours does,
+and why that is equal or better. "Measured" means in WebKit through the harness; the rest is built and watched.
+
+| Moment | ChatGPT / Claude | Ours | Why equal or better |
+| --- | --- | --- | --- |
+| Send | The bubble appears at the bottom; the page scrolls it up | The bubble leaves the thing touched (field, start, follow-up) and takes the top of a fresh page in one spring (MO-3-4) | Shows where the question came from; the answer then grows into space that is already there |
+| The wait | A pulsing dot or a shimmering "Thinking" | Never a bare "Thinking": the wait names what is being done; real work raises the activity island (MO-4-I1 to I9) | Says a fact, and the fact is an engine event |
+| Tool use | A collapsed "Searched…" line that can be expanded after the fact | The island: each step alive, then done with what it found, faces and a tally joining as they are read; a finished step opens its read while the rest continues and while the answer streams | The work is legible and usable while it happens, not only afterwards |
+| Text arriving | Words appear in bursts; the page follows the last line | Words fade in per burst, the text never moves once painted, nothing follows (Rule P); half-written markdown is held back | Measured: 600 words, 366 frames, median 10 ms, max 30 ms, 1 frame over 25 ms, first paragraph's top constant |
+| Scroll while streaming | Auto-follow that the reader fights | The page does not move; a Latest key appears only when there is more below | The reader keeps their place by doing nothing |
+| A chart | Renders when ready, pushing text | Complete at first paint, in its own place; only its frame fades (Q-153) | No skeleton to disbelieve, no growth to wait for |
+| Acting in the app | Not offered, or a tool result as text | A preview card, Confirm, an honest 8 s hold with a ring that is the server's clock, Undo, then the receipt on the card (Moment 7) and the row landing in the page (Moment 8) | Product-only; nothing is written until the coach has seen it |
+| Stop / failure | Stop leaves a cut sentence; errors are a red banner | Stop is silent and says so on the turn; a failure keeps what arrived and says what to do in one amber line | The turn is the record of what happened |
+| Reduce Motion | Mostly unchanged | Every arrival is a fade, loops stop, the island's ring is still, the plate takes its size at once | Designed, not defaulted |
+
+**Frame budget, stated:** while a long answer streams with a chart on the page, no frame over 33 ms and no more than
+1 in 100 over 25 ms on the phone viewport in WebKit; the island's open and fold lay nothing out (transforms on five
+layers). Last measured figure above; the island's own frames are not yet measured (below the bar until they are).
+
 ## The grammar
 
 **What motion is for here.** Four jobs, and only these: where something came from (the question out of the field,
@@ -104,7 +125,7 @@ M-CONTENT, M-CLOSE, M-RETARGET, M-LIVE, M-LIVE-out, M-FULL: kept as written. v3 
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | MO-4-1 | 150 ms after send | assistant turn's first row (mark, name) | `opacity` | 0 > 1 | quick 180 ms | 150 ms from the tap (the bubble is past the row's place by then) | the first event arriving sooner: the row is shown at once | same fade | none | The turn exists because the question was sent; it arrives after the question, as a reply does |
 | MO-4-2 | the turn is live | the mark's wheel | `transform: rotate` | one spoke (45 deg) per cycle, then a hold | shimmer 1.9 s per cycle, phase shared across marks (existing `CoachMark`) | none | the turn ending: it finishes the current spoke and stops there (never snaps back) | no turn | none | The one sign that work is happening. It turns like a hand on a wheel, a spoke at a time, not like a spinner |
-| MO-4-3 | 1.2 s with nothing to show | work line words ("Sending", "Thinking") | `opacity` | 0 > 1 | base 260 ms | none | a read row or the first word: the words cross to the next state (MO-4-9) | quick | none | Words appear only when the wait is long enough to wonder about, and only say what is known |
+| MO-4-3 | 1.2 s with nothing to show | work line words ("Sending", "Reading your question") | `opacity` | 0 > 1 | base 260 ms | none | a read row or the first word: the words cross to the next state (MO-4-9) | quick | none | Words appear only when the wait is long enough to wonder about, and only say what is known |
 | MO-4-4 | 6 s, 20 s | work line words | `opacity` (cross) | old 1 > 0, new 0 > 1 | quick 180 ms each, in sequence | none | as MO-4-3 | at once | none | The sentence changes; nothing new appears and nothing moves |
 | MO-4-5 | a read has been running 300 ms | its row | `opacity`, `transform: translateY` | 0 > 1; 6px > 0 | settle 417 ms | none; reads that started in the same flush arrive in the same frame | finishes | opacity, quick | none | A row rises into the list from the direction the list grows. Rows that start together are one event |
 | MO-4-6 | a row is running | its live dot; its label | dot `transform: scale`; label `background-position` (clipped shimmer) | dot 1 <> .6; shimmer one pass | breath 520 ms each way; shimmer 1.9 s | none | the row finishing: MO-4-7 | dot still, no shimmer | none | The live dot is the sign for "still happening" everywhere in the chat |
@@ -113,6 +134,26 @@ M-CONTENT, M-CLOSE, M-RETARGET, M-LIVE, M-LIVE-out, M-FULL: kept as written. v3 
 | MO-4-9 | first word of the answer | the read list; the work line | rows `opacity`; then the list is removed in one frame; summary `opacity` | rows 1 > 0; summary 0 > 1 | rows 140 ms (`--ch-dur-msg-time`); summary quick 180 ms | summary with the rows' fade; the first words paint when the rows are gone (at most 140 ms after they arrived) | a tap on the work line during the fade: the list stays open | list removed at once; summary appears | none | The reads fold into the line that counts them. Nothing is under the list, so removing it moves nothing; the answer starts under the name, where it will stay |
 | MO-4-10 | tap the work line (a folded turn) | the read list | `opacity`, `transform: translateY` | 0 > 1; -4px > 0 (it comes out of the line above it) | base 260 ms | none; the answer below moves down in one frame (the coach asked) | a second tap: reverses, then the list is removed | quick | `select` | The coach's own act may move the text; the list comes from the line that summarised it |
 | MO-4-11 | a read starts after the answer has begun | work line | `opacity` (cross) | summary > running label (live dot before it) > new summary | quick 180 ms each way | 300 ms hold-back as MO-4-5 | as MO-4-3 | at once | none | A late read is said in the one place status lives; the text is not touched |
+
+### The activity island (supersedes MO-4-5 to MO-4-11 in Ask; they stand for quick chat's inline list)
+
+| ID | Trigger | What moves | Property | From > to | Duration, easing | Delay | Interrupted by | Reduce Motion | Haptic | Why |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| MO-4-I1 | the island is earned (2 steps, or 1 still running at 600 ms) | the island, one line; the phone's scope line | island `opacity`, `transform`; scope line `opacity` | 0 > 1, -6px and 0.9 > rest; scope 1 > 0 | spring pop; scope quick 180 ms | none | finishes | fade | none | It drops out of the bar it hangs from. The scope line gives its place to the thing now doing the reading |
+| MO-4-I2 | open (by itself for a big job on an empty page; or a tap) | the plate's middle and bottom cap; the clip over the steps; the list (counter-move); the open shadow; the chevron | `transform: scaleY`, `translateY` (four layers on one clock); shadow `opacity`; chevron `rotate` | one line > the steps' measured height; 0 > 1; 0 > 180 deg | spring smooth 462 ms; shadow and chevron base 260 ms | an island that arrives open is drawn as one line for one frame first, so it is seen to open | a tap or a height change mid-move: all four retarget from where they are, still equal | size at once; list fades | `select` on a tap, none by itself | A shape change, never a height animation: nothing is laid out, and the steps stay where they are while the edge passes over them |
+| MO-4-I3 | a step joins | its row; the plate | row `opacity`, `translateY` 6px > 0; plate as I2 to the new height | | settle 417 ms; plate spring smooth | none; steps that start together arrive together | finishes | fade | none | The list grows from the direction it grows in; the plate follows its content, it does not lead it |
+| MO-4-I4 | a step is running | its ring | `transform: rotate` | one turn | sweep 900 ms, linear, for as long as it runs | none | the step finishing: I5 | no turn; the open ring is the sign | none | The ring is the step's own clock hand. One animation for the mark's whole life, so it never restarts |
+| MO-4-I5 | a step finishes (**the signature beat**) | the ring, the check, the mark | ring `stroke-dashoffset` (the documented stroke exception, as the hold's ring) closes while still turning; check draws inside it; the mark swells once; 600 ms later the ring steps back to 45% | open > closed; check 0 > drawn; scale 1 > 1.16 > 1 | ring base 260 ms; check base 260 ms; swell word 320 ms `--ch-ease-io` | check and swell one quick (180 ms) after the ring starts to close | finishes | check and closed ring appear | none per step (a held success haptic is the turn's) | The thing that was working becomes the thing that is done, in the same place. No swap, no pop-in of a different icon |
+| MO-4-I6 | a face or name is found; the tally grows | the face; the digits | face `opacity`, `scale` 0.5 > 1; digits change in place (tabular) | | spring pop | each on its own event | finishes | fade | none | What the work touches is shown as it is touched. Digits never roll or re-fade: a count is read, not watched |
+| MO-4-I7 | the line's words change | the new words | `opacity`, `translateY` 3px > 0 | | base 260 ms | none; " and 2 more" changes in place without a new fade | the next change | quick fade | none | A change of activity is a new line arriving, not letters swapping |
+| MO-4-I8 | first word of the answer; or a tap, Escape, a press elsewhere | I2 reversed; the list | list `opacity` 1 > 0, then the plate | | list quick 180 ms; plate spring smooth | none | a tap: reverses from where it is | size at once | `select` on a tap | It gets out of the way of the words in the frame they begin |
+| MO-4-I9 | 6 s after the work finished, or the next send | the island; the scope line; the turn's line | island `opacity`, `scale` > 0.96; scope 0 > 1; the summary on the turn's line 0 > 1 | | quick 180 ms each | the summary after the island has gone | opening it: it stays | fades | none | The summary goes home to its turn, where it is the way back |
+
+Rejected: a pill that changes width with its words (every label change would be a layout or a second morph: the
+plate keeps the column's width, as the owner's reference does); animating `height` or `clip-path` (not on the
+compositor in WebKit); a progress bar or a percentage (there is no honest total); a step list that stays open over
+the streaming answer (it would cover the words being read); rolling digits; a shimmer on step labels (paint, and a
+second sign for "running" beside the ring); pushing the thread down to make room (the first words would move).
 
 ## Moment 5. The answer arriving
 

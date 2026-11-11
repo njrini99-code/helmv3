@@ -27,7 +27,7 @@ IDs: a state is `ST-<moment>.<name>`; a motion is `MO-<moment>-<n>` (MOTION.md).
    anywhere and no second vocabulary.
 4. **Say only what is known, and only when it will be read.** Nothing appears that will be gone in under 300 ms.
    Nothing claims more than the browser knows: before the server answers there is the turning mark and no words;
-   "Thinking" is said only once the server has started the turn; a read is named with the server's own words; a
+   "Reading your question" is said only once the server has started the turn (never a bare "Thinking"); a read is named with the server's own words; a
    held write says "not saved yet" until it is saved.
 5. **Things come from somewhere and go somewhere.** The question comes out of the thing the coach touched (the
    field, a start, a follow-up). The reads fold into the line that summarises them. The countdown ring becomes the
@@ -132,49 +132,83 @@ coach, this screen, today.
   question that has not been answered yet, and Stop is what the key does from that instant.
 - Stop: the turn ends where it is; what arrived stays (`ST-10.stopped`). The key is the send key in the same frame.
 
-## Moment 4. Waiting and reading (send to first word)
+## Moment 4. Waiting and reading (send to first word, and the work after it)
 
-One assistant turn exists from the frame the question lands: mark and name. What joins it depends on time and on
-what the server has said. The times are from the tap.
+Revised 10 Nov 2026 for the owner's two references (the live workspace, the activity island). Where this section and
+an older line disagree, this section wins. The inline read list under the name is superseded in Ask by the island;
+quick chat keeps the list until it mounts the island (`density="compact"`).
 
-| Time | Nothing from the server yet | Server started the turn, no events | A read is running |
-| --- | --- | --- | --- |
-| 0 to 150 ms | The question rising. No assistant turn yet. | same | same |
-| 150 ms | `ST-4.present`: mark (turning) and "CoachHelm". No words after the name. | same | same |
-| 600 ms | unchanged | unchanged | a read that started at least 300 ms ago has its row (`ST-4.reading`) |
-| 1.2 s | `ST-4.sending`: work line "Sending" | `ST-4.thinking`: work line "Thinking" | rows |
-| 2 s | unchanged | unchanged | rows; finished rows show their detail |
-| 6 s | `ST-4.slow`: "Still sending. Check your connection." | `ST-4.slow`: "Still thinking. Long questions take a little longer." | unchanged (a named read is its own explanation) |
-| 20 s | "No answer yet. You can stop and ask again." | same sentence | same sentence under the rows |
+One assistant turn exists from the frame the question lands: mark and name. The times are from the tap.
 
-- **The work line** is the text after the name on the turn's first row: "CoachHelm  Thinking". Secondary ink, regular
-  weight, same baseline as the name. It is the only place status is said, so status never adds or removes a row:
-  the answer's first line is under the name whatever happened before it.
-- **The read list** (`ST-4.reading`): the kit's rows, under the name row, one per `read_started`, in the order they
-  started. A running row: live dot, the server's label ("Reading Eli's last 8 rounds"), shimmer on the label. A
-  finished row: the check, the label in secondary ink, and the detail when the server sent one ("38 rounds"). A
-  failed row: amber ring with a bar, "Couldn't read practice reviews", no retry on the row (the answer says what it
-  is missing; Try again is the turn's). Reads that start together appear together.
-- The list is open **only while the turn has no answer text yet** (the owner's decision, "steps stay open while
-  CoachHelm works, then fold", kept wherever it cannot move text). Nothing is under it then, so its growth moves
-  nothing.
-- **Hold-back and minimum life.** A read's row appears 300 ms after its `read_started`. A read that finishes inside
-  those 300 ms never shows a running row: it appears finished, with its check already drawn, at the 300 ms mark, if
-  the list is still open then. Once a running row is shown it stays running for at least 400 ms (a check that would
-  come sooner waits). The work line's words ("Thinking", "Sending") appear at 1.2 s and, once shown, stay at least
-  500 ms.
-- **The fold** (`ST-4.folded`): on the first word of the answer the list folds into the work line, which now reads
-  "3 steps · 2s" with a chevron and is a button. The answer begins under the name row. The fold happens before the
-  first word paints (the word waits at most 140 ms for it). One read: "1 step · 1s". A turn the browser did not watch
-  (reload) has no honest duration: "3 steps".
-- **Reads after the answer has begun** (the model reads again mid-answer) do not open the list. The work line shows
-  the running read's label in place of the summary, then the new summary. The text does not move.
-- **Reopening** the list is the coach's tap on the work line: it unfolds under the name row and pushes the answer
-  down, which is fine because they asked. Tap again to fold.
-- **Draws and drafts** announced by the server as reads ("Drawing make rate by distance", "Drafting the practice")
-  are rows like any other. There is no chart skeleton (see Moment 5).
-- VoiceOver: the turn is `aria-busy` while live. The work line is a polite live region and is announced when its
-  words change ("Thinking", then each read's label once, then "3 reads, 2 seconds"). Rows are not individually live.
+| Time | Nothing from the server yet | Server started the turn, no step | One step running | Two or more steps |
+| --- | --- | --- | --- | --- |
+| 0 to 150 ms | The question rising. No assistant turn yet. | same | same | same |
+| 150 ms | `ST-4.present`: mark (turning) and "CoachHelm". | same | same | `ST-4.island`: the island, one line |
+| 600 ms after the step began | | | `ST-4.island` if it is still running; a step that finished sooner is only ever said on the turn's line | three or more, or a calculation: `ST-4.island.open` |
+| 1.2 s | `ST-4.sending`: work line "Sending" | `ST-4.reading-question`: work line "Reading your question" | the turn's line names the step until the island takes over | the island speaks; the turn's line is silent |
+| 6 s | "Still sending. Check your connection." | "Still working on it. Long questions take a little longer." | unchanged (a named step is its own explanation) | unchanged |
+| 20 s | "No answer yet. You can stop and ask again." | same sentence | same | same |
+
+**There is no bare "Thinking" anywhere.** Each wait says what is being done: "Sending", "Reading your question", a
+step's own label, "Putting it together" (steps finished, no words yet), "Writing the answer".
+
+### The activity island (`ST-4.island`)
+
+Where CoachHelm's work is shown. Built in `chat/island/` (`ActivityIsland`, `useIsland`, pure model in `model.ts`).
+
+- **Where it lives.** In chrome that already exists, so in its one-line form it covers nothing and nothing the coach
+  is reading moves: the phone's scope row under the tabs (the scope line fades while the island is there and
+  returns when it leaves; the row keeps one height), the desktop's conversation header, centred (the title always
+  leaves the middle to it). Quick chat: its header, compact.
+- **The look.** The product's feature green (`--ch-feature-bg`) with the feature inks; 32px tall, 16px corners; on
+  the phone the width of the thread's column, on desktop 380px. Its own shadow (`--ch-feature-shadow`), and the
+  raised shadow when open. The same plate in dark.
+- **One line** (`ST-4.island`): the mark (a turning ring), what is being done right now in the step's own words
+  ("Reading Jonah's strokes gained", then " and 2 more" for the others running), "1 of 3", the seconds, a chevron.
+  The earliest step still running leads, so the line moves down the list and never back up.
+- **Open** (`ST-4.island.open`): the steps under the line, in the order they started. Each has one of three real
+  states. **Done**: closed ring with a check, the label in the past tense, what it found ("8 rounds"), how long it
+  took, and a chevron when it produced a read: the row opens that read in the evidence panel (sheet on the phone)
+  **while the rest continues and while the answer streams**. **Active**: turning ring, bright label, a running tally
+  ("22 rounds and counting") and the faces or names it has touched so far, joining one at a time. **Waiting**: a dim
+  disc, dim label; shown only when the server has said the step is coming (it queued three reads and is on the
+  first). A step the server did not announce is never invented. Failed: closed amber ring with a bar, "Couldn't
+  read practice reviews", the server's sentence under it. A read the model's code called sits indented under its
+  calculation ("Working it out").
+- **When it appears.** Two or more steps, or one step still running after 600 ms. A single quick read never raises a
+  panel and takes it away: it is said on the turn's line. A resumed turn (Confirm) earns it only with new steps.
+- **When it opens by itself.** Three or more steps, or a calculation, and only while the turn has no answer text:
+  nothing is being read under it then. It covers the top of the thread, the question included; that is the moment
+  the work is the subject. At the first word it folds to one line, in the same frame the words begin, unless the
+  coach opened it themselves. The coach's tap always wins and is remembered for the turn.
+- **Folded while the answer streams:** "Writing the answer · 3 of 3 · 5s". A step that starts mid-answer names
+  itself there; the text does not move.
+- **When the work finishes** the ring closes into a check and the line reads "Done · 3 steps · 6s" (stopped or
+  failed: "Stopped · 1 of 3 steps", the ring left open). It rests 6 s, then leaves, unless the coach has it open. A
+  card waiting on the coach: "Waiting for you" for the same rest.
+- **The way back** is the turn's own line, which reads "3 steps · 6s" with a chevron once the island has left
+  (never both at once): tapping it opens that turn's steps in the island, for any turn in the thread, and tapping
+  again, pressing Escape or pressing anywhere else folds it.
+- **Every change is an engine event.** A step and its state are the turn's stored `data-progress` parts, folded by
+  the shared reducer; the island's model is a pure function of them, and replaying a harness script gives the same
+  island twice (`island/__tests__/island.test.ts`). The only clocks are the 600 ms threshold, the 6 s rest and the
+  seconds counter.
+- **A computed answer** (programmatic reads, `via: 'code'`) carries no citation markers: it shows its work here
+  (the calculation, its reads, "12 of 12 players") and each read opens from its row.
+- VoiceOver: the line is a button ("Reading Jonah's strokes gained and 2 more, 1 of 3, collapsed"); the steps are a
+  list labelled "What CoachHelm is doing", inert while folded; a polite live region says each step once as it
+  finishes ("Read his last 7 rounds, 7 rounds"), never the seconds, never a restored turn's history.
+- Reduce Motion: the ring does not turn (an open ring is running, a closed one with a check is done); the plate
+  takes its size at once; arrivals are fades.
+
+Harness: `?state=play&script=isl-one | isl-three | isl-team | isl-fail | isl-chart | isl-draft | isl-open`
+(`&isl=<ms>` presses the island, `&islstep=<ms>` then its first openable step).
+
+### The turn's own line
+
+The text after the name on the turn's first row. It says the wait's words (table above) and a lone quick step's
+label; it is silent while the island is on screen for its turn; afterwards it is the summary and the way back. It
+never adds or removes a row: the answer's first line is under the name whatever happened before it.
 
 ## Moment 5. The answer arriving
 
@@ -287,7 +321,7 @@ at. Amber, not red (red means under par and nothing else).
 | `ST-10.offline` | The device is offline when the turn fails, or goes offline mid-answer | "You're offline. What arrived is above." | Try again, disabled until the device is back online; then enabled with "Back online." |
 | `ST-10.lost` | The connection dropped: the request failed, or the stream ended without its last event | "The connection dropped before the answer finished." | Try again |
 | `ST-10.model` | The model failed mid-answer (`error`, action `retry`) | the server's sentence; default "Something went wrong while answering." | Try again |
-| `ST-10.declined` | The model declined (`error`, action `none`) | the server's sentence ("CoachHelm can't help with that one. …") | none; the composer is the way on |
+| `ST-10.declined` | The model declined. Not an error: the engine ends a COMPLETE turn marked `declined: true` in `data-turn-meta` | the turn itself, as an answer: the server's sentence under the name, no amber notice, no Try again, no sources row, follow-ups if the server sent any | none; the composer is the way on |
 | `ST-10.truncated` | The answer hit its length limit | the server's sentence | none; "Ask for the rest" as a follow-up |
 | `ST-10.budget` | The team's budget for the day or month is reached (429 with a reason) | the server's sentence, which names when it resets | none |
 | `ST-10.off` | CoachHelm is off for the team, or this account may not use it (403) | "CoachHelm isn't turned on for this team." / "Ask CoachHelm is for coaches." | none |
@@ -409,6 +443,18 @@ Engine and protocol:
    the server's word. Until then it is inferred from `message_start` with no parts.
 7. The screen context on the request body and echoed on `message_start` (`context: { screen, label }`), for the
    context chip.
+
+8. **The island's step shape** (asked 10 Nov; the harness sends it today as `data-progress` parts, the stored part the
+   reads already use, so nothing breaks before it lands). Every field is optional and additive:
+   `{ label, tool, state: 'waiting' | 'active' | 'done' | 'failed', done_label?, detail?, kind?: 'read' | 'find' |
+   'compare' | 'calculate' | 'visual' | 'draft' | 'check', parent_id?, subjects?: Array<{ kind: 'player' | 'team' |
+   'round' | 'event' | 'qualifier' | 'tournament' | 'plan' | 'document'; id; label }>, count?: { n, unit, more },
+   covers?: { n, of, unit }, evidence_ref?, started_at?, ended_at? }`. `waiting` only for a step the server has
+   really queued. `subjects` and `count` may be re-sent as they grow (same part id). A player's turn sends only that
+   player's own subjects. Without these the island still works from `read_started` / `read_finished`: it loses the
+   faces, the tally, the waiting state and the per-step open.
+9. `data-computed` (still coming): the island needs nothing more from it; the evidence panel's "How this was worked
+   out" is CAPABILITIES' body.
 
 Shared files (coordinator):
 1. `ui/Button`: a `busy` state that keeps the button's width and shows the sweep (the card's primary draws its own
