@@ -4,6 +4,7 @@ import type { Database } from '@/lib/types/database';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import { requireRosterPlayer, type CoachChatContext } from './context';
 import { stripSelfReferences } from './knowledge/reference-plain';
+import { storedInsightText } from './stored-text';
 import { nowIso, readFigure, unavailableEnvelope, type ToolEnvelope } from './provenance';
 import { attendanceByEvent, classConflicts } from './ask-reads';
 import { inSeasonAverage, loadCountedRounds, seasonStartDate } from './season-rule';
@@ -17,7 +18,7 @@ export async function getRootCauses(sb: Sb, ctx: CoachChatContext, input: { play
   if (error) return unavailableEnvelope(`Could not read ${player.name}'s causes.`, 'The reads query failed.');
   const causes = (data ?? []).flatMap((r) => {
     const c = (r.evidence as { cause?: { state?: string; word?: string; text?: string } } | null)?.cause;
-    return c && c.state ? [{ insight_id: r.id, title: stripSelfReferences(r.title ?? ''), category: r.category, state: c.state, word: c.word ?? null, text: c.text ? stripSelfReferences(c.text) : null }] : [];
+    return c && c.state ? [{ insight_id: r.id, title: stripSelfReferences(r.title ?? ''), category: r.category, state: c.state, word: c.word ?? null, text: storedInsightText(c.text) }] : [];
   });
   return { summary: `${player.name}: ${causes.length} open cause${causes.length === 1 ? '' : 's'}.`, measurements: [], series: [], detail: { player_id: player.id, player: player.name, causes }, coverage: causes.length ? 'complete' : 'empty', coverage_note: causes.length ? null : 'No stored cause for this player.', as_of: nowIso() };
 }

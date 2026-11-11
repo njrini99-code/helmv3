@@ -33,6 +33,7 @@ import { isCoachHelmFlagEnabled } from '@/lib/coachhelm/canary';
 import { loadCoachWeightsForPlayer } from '@/lib/coachhelm/v3/ranking/score';
 import { loadActiveGoals } from '@/lib/coachhelm/v3/goals/loader';
 import { type CoachChatContext, requireRosterPlayer } from './context';
+import { measuredFacts, storedInsightText } from './stored-text';
 import { getMetricSpec, statsCacheColumns } from './metrics-catalog';
 import { type Measurement, type ToolEnvelope, coverageFor, nowIso, unavailableEnvelope } from './provenance';
 import { CLASS_EVENT_TYPE } from '@/lib/calendar/class-events';
@@ -382,19 +383,17 @@ export async function getPlayerInsights(
     series: [],
     detail: {
       player: { player_id: player.id, name: player.name },
-      insights: rows.map((i) => {
-        const ev = (i.evidence ?? {}) as unknown as Record<string, unknown>;
-        return {
-          insight_id: i.id,
-          type: i.insight_type,
-          category: i.category,
-          title: i.title,
-          content: i.content,
-          metric_label: str(ev.metric_label),
-          value_display: str(ev.your_value_display),
-          created_at: i.created_at,
-        };
-      }),
+      // The title and what was measured. The stored body is template text: it is handed over only without the research
+      // pointer, the placeholder cause and the fallback action (`stored-text.ts`), so the model reasons from the figures.
+      insights: rows.map((i) => ({
+        insight_id: i.id,
+        type: i.insight_type,
+        category: i.category,
+        title: storedInsightText(i.title) ?? i.title,
+        content: storedInsightText(i.content),
+        ...measuredFacts(i.evidence),
+        created_at: i.created_at,
+      })),
     },
     coverage: rows.length === 0 ? 'empty' : 'complete',
     coverage_note: rows.length === 0 ? `No open signals for ${player.name} right now.` : null,
