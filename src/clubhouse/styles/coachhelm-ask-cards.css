@@ -99,6 +99,10 @@
 .ch-akc-term__dates > div, .ch-akc-trip__when > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .ch-akc-term__dates dt, .ch-akc-trip__when dt, .ch-akc-trip__end > small, .ch-akc-goal__target > small, .ch-akc-chips > small, .ch-akc-drill__goal > small, .ch-akc-page > header > small, .ch-akc-lineup > small { font: var(--ch-type-12); color: var(--ch-text-tertiary); }
 .ch-akc-term__dates dd, .ch-akc-trip__when dd { margin: 0; font: var(--ch-type-14-strong); }
+/* Each date wears the colour of the part of the bar it bounds, so the three read against the bar at any width. */
+.ch-akc-term__dates dt { display: flex; align-items: center; gap: 6px; }
+.ch-akc-term__dates dt > i { flex: none; width: 8px; height: 8px; border-radius: var(--ch-radius-mark); background: var(--ch-chart-gain-fill); }
+.ch-akc-term__dates dt > i.is-exams { background: var(--ch-chart-loss-fill); }
 .ch-akc [data-unset] { color: var(--ch-text-tertiary); font-weight: var(--ch-fw-400); }
 
 .ch-akc-trip { display: flex; flex-direction: column; gap: 12px; }

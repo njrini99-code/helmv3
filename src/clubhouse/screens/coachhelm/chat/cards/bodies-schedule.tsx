@@ -209,15 +209,24 @@ export function TermBody(props: BodyProps) {
             </div>
             <dl className="ch-akc-term__dates">
               <div>
-                <dt>Classes start</dt>
+                <dt>
+                  <i aria-hidden="true" />
+                  Classes start
+                </dt>
                 <dd className="ch-num">{dayWords(start)}</dd>
               </div>
               <div>
-                <dt>Classes end</dt>
+                <dt>
+                  <i aria-hidden="true" />
+                  Classes end
+                </dt>
                 <dd className="ch-num">{dayWords(end)}</dd>
               </div>
               <div>
-                <dt>Exams end</dt>
+                <dt>
+                  <i className="is-exams" aria-hidden="true" />
+                  Exams end
+                </dt>
                 <dd className="ch-num">{dayWords(exams)}</dd>
               </div>
             </dl>
