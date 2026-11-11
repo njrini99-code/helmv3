@@ -145,6 +145,11 @@ export type ChatEvent =
    * `message_id` names it.
    */
   | { type: 'decision'; key: string; approved: boolean; reason?: 'superseded'; message_id?: string }
+  /**
+   * The card for `key` waits for the coach again. It was confirmed as part of an "approve all", an earlier card of that batch
+   * failed, and so this one was not run: nothing was written for it. Its held receipt is withdrawn with it.
+   */
+  | { type: 'decision_reopened'; key: string; reason: 'batch_stopped' }
   | { type: 'usage'; input_tokens: number; output_tokens: number; cache_read_input_tokens: number }
   /** A sentence a coach can act on. Never provider text. */
   | { type: 'error'; message: string; action: ChatErrorAction; kind?: ChatErrorKind }
@@ -254,6 +259,15 @@ export function applyChatEvent(message: ChatUIMessage, event: ChatEvent): ChatUI
             ? { ...p, state: event.approved ? 'approval-responded' : 'output-denied', approval: { id: event.key, approved: event.approved, ...(event.reason && !event.approved ? { reason: event.reason } : {}) } }
             : p,
         ),
+      };
+    }
+    case 'decision_reopened': {
+      if (!parts.some((p) => isDecisionPartFor(p, event.key))) return message;
+      return {
+        ...message,
+        parts: parts
+          .filter((p) => !(p.type === 'data-action-receipt' && p.id === `receipt-${event.key}`))
+          .map((p) => (isDecisionPartFor(p, event.key) ? { ...p, state: 'approval-requested', approval: { id: event.key } } : p)),
       };
     }
     default:

@@ -87,6 +87,29 @@ describe('the reducer both ends fold the stream with', () => {
     expect((confirmed.parts[0] as unknown as { approval: object }).approval).toEqual({ id: 'k', approved: true });
   });
 
+  it('a card reopened because an earlier one in its batch failed waits again, without its held receipt, and replays as waiting', () => {
+    const held: ChatEvent[] = [
+      { type: 'decision_needed', key: 'k1', tool: 'create_task', tool_use_id: 'tu_1' },
+      { type: 'decision_needed', key: 'k2', tool: 'create_event', tool_use_id: 'tu_2' },
+      { type: 'decision', key: 'k1', approved: true },
+      { type: 'receipt', part: { type: 'data-action-receipt', id: 'receipt-k1', data: { status: 'failed' } } },
+      { type: 'decision', key: 'k2', approved: true },
+      { type: 'receipt', part: { type: 'data-action-receipt', id: 'receipt-k2', data: { status: 'held' } } },
+    ];
+    const before = fold(held);
+    expect(pendingDecisionKeys(before)).toEqual([]);
+    const after = applyChatEvent(before, { type: 'decision_reopened', key: 'k2', reason: 'batch_stopped' });
+    expect(pendingDecisionKeys(after)).toEqual(['k2']);
+    expect(after.parts.find((p) => p.type === 'tool-create_event')).toEqual({ type: 'tool-create_event', toolCallId: 'tu_2', state: 'approval-requested', input: {}, approval: { id: 'k2' } });
+    // The other card and its receipt are untouched.
+    expect(after.parts.filter((p) => p.type === 'data-action-receipt').map((p) => p.id)).toEqual(['receipt-k1']);
+    expect(after.parts.find((p) => p.type === 'tool-create_task')).toMatchObject({ state: 'approval-responded' });
+    // Stored that way, it replays as a card that waits: no decision for it.
+    expect(eventsForStoredParts(after.parts).filter((e) => e.type === 'decision').map((e) => (e as { key: string }).key)).toEqual(['k1']);
+    // For a card the message does not hold it changes nothing.
+    expect(applyChatEvent(before, { type: 'decision_reopened', key: 'other', reason: 'batch_stopped' })).toBe(before);
+  });
+
   it('a finished read keeps its detail and its picture on the progress row; the thinking phase is never a part', () => {
     const picture = { kind: 'sg', rows: [] };
     const message = fold([

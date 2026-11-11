@@ -101,7 +101,8 @@ const HOLD_MS = 250;
 const afterHold = () => new Promise((resolve) => setTimeout(resolve, HOLD_MS + 150));
 vi.mock('@/lib/coachhelm/v3/chat/undo-hold', async (original) => {
   const real = await original<typeof import('@/lib/coachhelm/v3/chat/undo-hold')>();
-  return { ...real, holdForExecution: (sb: never, args: { run_id: string }) => real.holdForExecution(sb, { ...args, now: Date.now() - real.UNDO_HOLD_MS + HOLD_MS }) };
+  // A shorter window, measured from the moment the caller names (a batch names one moment for all its cards).
+  return { ...real, holdForExecution: (sb: never, args: { run_id: string; now?: number }) => real.holdForExecution(sb, { ...args, now: (args.now ?? Date.now()) - real.UNDO_HOLD_MS + HOLD_MS }) };
 });
 
 import { POST } from '../route';
@@ -1147,6 +1148,175 @@ describe('a task', () => {
     expect(result).toMatchObject({ is_error: true });
     expect(result!.content).toContain('Nothing was written');
     expect(done(events)?.status).toBe('complete');
+  });
+});
+
+describe('several cards in one turn', () => {
+  type Needed = { key: string; tool: string; tool_use_id: string };
+  const failing = (name: string): TaskTool<{ title: string }> => ({
+    ...taskTool(name, log),
+    commit: async (_ctx, proposal) => {
+      log.commits.push(proposal);
+      return { status: 'failed', action: proposal.action, summary: 'Could not create that. Nothing was saved.', created: [], notifications: [], partial_failures: [], retryable: true, at: '2026-11-10T12:00:09.000Z' };
+    },
+  });
+  /** One answer that asks for three things: a focus area, a task and an event, in that order. */
+  const three = async (second: TaskTool<{ title: string }> = taskTool('create_task', log)) => {
+    h.toolsFor.mockImplementation(() => asTools(taskTool('create_focus_area', log), second, taskTool('create_event', log), readTool('get_team_stats', log, 74.2)));
+    script({ content: [text('Three things.'), toolUse('tu_a', 'create_focus_area', { title: 'A' }), toolUse('tu_b', 'create_task', { title: 'B' }), toolUse('tu_c', 'create_event', { title: 'C' })] });
+    const { events } = await ask('Set up the week');
+    const needed = events.filter((e) => e.type === 'decision_needed') as unknown as Needed[];
+    return { events, conversationId: conversationOf(events), keys: needed.map((n) => n.key), needed };
+  };
+  const approveAll = (conversation_id: string, cards: Array<{ key: string; revision?: number }>) => post({ conversation_id, approve_all: { cards } });
+  const statusOf = (key: string) => runs().find((r) => r.idempotency_key === key)!.status;
+  /** Resolves once every card of the batch is inside the shared Undo window. */
+  const untilAllHeld = async (): Promise<void> => {
+    for (let i = 0; i < 100 && runs().some((r) => r.status !== 'held'); i += 1) await new Promise((resolve) => setTimeout(resolve, 2));
+  };
+  const titles = () => log.commits.map((c) => (c as { summary: string }).summary.replace(/^Create the focus area "(.*)"\.$/, '$1'));
+  const cardStates = () => Object.fromEntries((assistantRows()[0]!.ui_parts as Array<{ type: string; state?: string; approval?: { id: string } }>).filter((p) => p.type.startsWith('tool-')).map((p) => [p.approval!.id, p.state]));
+
+  it('each is its own sealed card and ledger row; they are decided one at a time in any order, and the model closes once, after the last', async () => {
+    const { events, conversationId, keys, needed } = await three();
+    expect(needed.map((n) => [n.tool, n.tool_use_id])).toEqual([['create_focus_area', 'tu_a'], ['create_task', 'tu_b'], ['create_event', 'tu_c']]);
+    expect(new Set(keys).size).toBe(3);
+    expect(events.filter((e) => e.type === 'proposal')).toHaveLength(3);
+    expect(done(events)?.status).toBe('awaiting_decision');
+    expect(runs()).toHaveLength(3);
+    for (const run of runs()) expect(run).toMatchObject({ status: 'proposed', proposed_input: { seal: expect.stringMatching(/^[0-9a-f]{64}$/) } });
+    expect(new Set(runs().map((r) => (r.proposed_input as { seal: string }).seal)).size).toBe(3);
+    expect((assistantRows()[0]!.pending_decision as { tasks: unknown[] }).tasks).toHaveLength(3);
+
+    // The second card first. No model step is scripted: asking the model now would fail the request.
+    h.model = fakeModel([]);
+    const second = await decide(conversationId, keys[1]!, true);
+    expect(second.events.some((e) => e.type === 'error')).toBe(false);
+    expect(done(second.events)?.status).toBe('awaiting_decision');
+    expect(titles()).toEqual(['B']);
+    // The third is cancelled. Still one card waiting, still no closing words.
+    const third = await decide(conversationId, keys[2]!, false);
+    expect(done(third.events)?.status).toBe('awaiting_decision');
+    expect(cardStates()).toEqual({ [keys[0]!]: 'approval-requested', [keys[1]!]: 'approval-responded', [keys[2]!]: 'output-denied' });
+
+    // The first card last: now the model is told what happened to all three, in the order it asked.
+    const model = script({ content: [text('Two are set up; the event was left out.')] });
+    const first = await decide(conversationId, keys[0]!, true);
+    expect(done(first.events)?.status).toBe('complete');
+    expect(model.requests).toHaveLength(1);
+    const results = lastRequestMessages(model).at(-1)!.content as Array<{ type: string; tool_use_id: string; content: string }>;
+    expect(results.map((r) => [r.tool_use_id, r.content.split('.')[0]])).toEqual([['tu_a', 'Committed'], ['tu_b', 'Committed'], ['tu_c', 'Declined by the coach']]);
+    expect(titles()).toEqual(['B', 'A']);
+    expect(keys.map(statusOf)).toEqual(['completed', 'completed', 'denied']);
+    expect(assistantRows()).toHaveLength(1);
+    expect(assistantRows()[0]).toMatchObject({ status: 'complete', pending_decision: null });
+  });
+
+  it('approve all: one shared Undo window, then written in the order proposed, and the model closes once', async () => {
+    const { conversationId, keys } = await three();
+    const model = script({ content: [text('All three are set up.')] });
+    // Listed backwards: the order written is the order proposed.
+    const pending = approveAll(conversationId, [...keys].reverse().map((key) => ({ key })));
+    await untilAllHeld();
+    // Inside the window every card is held, nothing is written and the model has not been asked.
+    expect(keys.map(statusOf)).toEqual(['held', 'held', 'held']);
+    expect(new Set(runs().map((r) => r.run_at)).size).toBe(1);
+    expect(log.commits).toHaveLength(0);
+    expect(model.requests).toHaveLength(0);
+
+    const { events } = await pending;
+    const decisions = events.filter((e) => e.type === 'decision') as Array<{ key: string; approved: boolean }>;
+    expect(decisions).toEqual(keys.map((key) => ({ type: 'decision', key, approved: true })));
+    const receipts = events.filter((e) => e.type === 'receipt') as Array<{ part: { id: string; data: { status: string; held_until?: string } } }>;
+    // Three held receipts with one time on them, before anything is written; then each card's own outcome, in order.
+    expect(receipts.map((r) => [r.part.id, r.part.data.status])).toEqual([...keys.map((k) => [`receipt-${k}`, 'held']), ...keys.map((k) => [`receipt-${k}`, 'completed'])]);
+    expect(new Set(receipts.slice(0, 3).map((r) => r.part.data.held_until)).size).toBe(1);
+    expect(titles()).toEqual(['A', 'B', 'C']);
+    expect(keys.map(statusOf)).toEqual(['completed', 'completed', 'completed']);
+    expect(done(events)?.status).toBe('complete');
+    expect(model.requests).toHaveLength(1);
+    const results = lastRequestMessages(model).at(-1)!.content as Array<{ tool_use_id: string; content: string }>;
+    expect(results.map((r) => [r.tool_use_id, r.content.split('.')[0]])).toEqual([['tu_a', 'Committed'], ['tu_b', 'Committed'], ['tu_c', 'Committed']]);
+    expect(assistantRows()[0]).toMatchObject({ status: 'complete', pending_decision: null });
+  });
+
+  it('approve all stops at the first failure: the cards after it are not run and wait for the coach again', async () => {
+    const { conversationId, keys } = await three(failing('create_task'));
+    h.model = fakeModel([]);
+    const { events } = await approveAll(conversationId, keys.map((key) => ({ key })));
+
+    expect(events.some((e) => e.type === 'error')).toBe(false);
+    // The first was written, the second failed, the third was never run.
+    expect(titles()).toEqual(['A', 'B']);
+    expect(keys.map(statusOf)).toEqual(['completed', 'failed', 'proposed']);
+    expect(receiptStates(events)).toEqual(['held', 'held', 'held', 'completed', 'failed']);
+    expect(events.filter((e) => e.type === 'decision_reopened')).toEqual([{ type: 'decision_reopened', key: keys[2], reason: 'batch_stopped' }]);
+    // Nothing closes yet: one card still waits, and it is stored that way, with no receipt left on it.
+    expect(done(events)?.status).toBe('awaiting_decision');
+    expect(cardStates()).toEqual({ [keys[0]!]: 'approval-responded', [keys[1]!]: 'approval-responded', [keys[2]!]: 'approval-requested' });
+    const stored = assistantRows()[0]!;
+    expect((stored.ui_parts as Array<{ type: string; id?: string }>).filter((p) => p.type === 'data-action-receipt').map((p) => p.id)).toEqual([`receipt-${keys[0]}`, `receipt-${keys[1]}`]);
+    expect((stored.pending_decision as { tasks: Array<{ key: string }> }).tasks.map((t) => t.key)).toEqual([keys[2]]);
+    expect(restoreUIMessages((db.tables[MESSAGES] ?? []) as never).at(-1)!.parts.find((p) => p.type === 'tool-create_event')).toMatchObject({ state: 'approval-requested' });
+
+    // The coach confirms the last one on its own: it is written, and only now is the model told about all three.
+    const model = script({ content: [text('The task failed; the other two are set up.')] });
+    const last = await decide(conversationId, keys[2]!, true);
+    expect(done(last.events)?.status).toBe('complete');
+    expect(titles()).toEqual(['A', 'B', 'C']);
+    const results = lastRequestMessages(model).at(-1)!.content as Array<{ tool_use_id: string; content: string; is_error?: boolean }>;
+    expect(results.map((r) => [r.tool_use_id, r.content.split('.')[0], r.is_error === true])).toEqual([['tu_a', 'Committed', false], ['tu_b', 'Failed', true], ['tu_c', 'Committed', false]]);
+  });
+
+  it('approve all: a card the coach undoes in the window is skipped, is not a failure, and the rest are written', async () => {
+    const { conversationId, keys } = await three();
+    const model = script({ content: [text('Two are set up; one was undone.')] });
+    const pending = approveAll(conversationId, keys.map((key) => ({ key })));
+    await untilAllHeld();
+    expect(await cancelHeld(db.client as never, { coach_id: 'coach-1', idempotency_key: keys[1]! })).toBe('cancelled');
+    const { events } = await pending;
+    expect(titles()).toEqual(['A', 'C']);
+    expect(keys.map(statusOf)).toEqual(['completed', 'cancelled', 'completed']);
+    expect(events.some((e) => e.type === 'decision_reopened')).toBe(false);
+    expect(receiptStates(events).slice(3)).toEqual(['completed', 'cancelled', 'completed']);
+    expect(done(events)?.status).toBe('complete');
+    const results = lastRequestMessages(model).at(-1)!.content as Array<{ tool_use_id: string; content: string }>;
+    expect(results[1]).toMatchObject({ tool_use_id: 'tu_b', content: 'The coach pressed Undo before it was written. Nothing was written.' });
+  });
+
+  it('approve all confirms nothing when one card is not the one on screen, and only the cards named', async () => {
+    const { conversationId, keys } = await three();
+    h.model = fakeModel([]);
+    // A revision the stored card does not have (as if it had been edited and this tab had not seen it, the other way round).
+    const stale = await approveAll(conversationId, [{ key: keys[0]! }, { key: keys[1]!, revision: 3 }]);
+    expect((stale.events.find((e) => e.type === 'part' && e.part.type === 'data-card-revision') as { part: { data: unknown } }).part.data).toMatchObject({ key: keys[1], accepted: false, kind: 'changed' });
+    expect(stale.events.some((e) => e.type === 'decision' || e.type === 'receipt')).toBe(false);
+    expect(done(stale.events)?.status).toBe('awaiting_decision');
+    expect(keys.map(statusOf)).toEqual(['proposed', 'proposed', 'proposed']);
+    expect(log.commits).toHaveLength(0);
+
+    // Two of the three: the third is not touched and still waits, so the model is not asked yet.
+    const two = await approveAll(conversationId, [{ key: keys[0]! }, { key: keys[2]! }]);
+    expect(titles()).toEqual(['A', 'C']);
+    expect(keys.map(statusOf)).toEqual(['completed', 'proposed', 'completed']);
+    expect(done(two.events)?.status).toBe('awaiting_decision');
+
+    // Asked again for cards that are no longer waiting: each is answered with what is stored, and nothing is written twice.
+    const again = await approveAll(conversationId, [{ key: keys[0]! }, { key: keys[2]! }]);
+    expect(again.events.filter((e) => e.type === 'decision')).toHaveLength(2);
+    expect(receiptStates(again.events)).toEqual(['completed', 'completed']);
+    expect(done(again.events)?.status).toBe('complete');
+    expect(log.commits).toHaveLength(2);
+  });
+
+  it('a body that names a card twice, or mixes a batch with a decision or a message, is refused', async () => {
+    const { conversationId, keys } = await three();
+    expect((await post({ conversation_id: conversationId, approve_all: { cards: [{ key: keys[0] }, { key: keys[0] }] } })).response.status).toBe(400);
+    expect((await post({ conversation_id: conversationId, approve_all: { cards: [] } })).response.status).toBe(400);
+    expect((await post({ conversation_id: conversationId, approve_all: { cards: [{ key: keys[0] }] }, decision: { key: keys[1], approved: true } })).response.status).toBe(400);
+    expect((await post({ conversation_id: conversationId, approve_all: { cards: [{ key: keys[0] }] }, message: 'and also' })).response.status).toBe(400);
+    expect((await post({ approve_all: { cards: [{ key: keys[0] }] } })).response.status).toBe(404);
+    expect(log.commits).toHaveLength(0);
   });
 });
 

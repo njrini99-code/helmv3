@@ -11,7 +11,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import { getServiceRoleKey } from '@/lib/supabase/admin';
 import type { ActionProposal, ActionReceipt } from '../action-types';
 import { claimForExecution, isStoredProposal, readRun, recordDenial, recordOutcome, recordProposal, releaseClaim, replaceProposal, type StoredProposal } from '../action-runs';
-import { holdForExecution, releaseHeld } from '../undo-hold';
+import { holdForExecution, releaseHeld, runTaken, takeHeldMany } from '../undo-hold';
 import type { TaskTool, ToolContext } from './tool';
 
 export interface TaskDeps {
@@ -178,12 +178,23 @@ export type ConfirmStart =
   | { kind: 'in_flight' }
   | { kind: 'changed'; proposal: CardProposal };
 
+/** A card that is ready to be written: its row is claimed (nothing else can run or edit it), and `commit` writes the claimed plan. */
+interface Claimed {
+  kind: 'claimed';
+  run_id: string;
+  proposal: CardProposal;
+  /** The task writes on Confirm, with no Undo window. */
+  immediate: boolean;
+  commit: () => Promise<ActionReceipt>;
+}
+type Prepared = { kind: 'done'; outcome: DecisionOutcome } | { kind: 'in_flight' } | { kind: 'changed'; proposal: CardProposal } | Claimed;
+
 /**
- * Confirm. Runs the stored plan at most once, however many times it is called for one key. `seen` is the revision of the card the
- * coach pressed Confirm on (absent from a browser that knows nothing of revisions, which can only have seen an unedited card).
+ * The first half of a Confirm, for one card: the stored plan must carry this server's seal and be the revision the coach saw, and
+ * the row is claimed so that exactly one request can run it. Nothing is written to the domain here.
  */
-export async function startConfirm(deps: TaskDeps, tool: TaskTool<unknown> | undefined, ctx: ToolContext, key: string, seen?: number): Promise<ConfirmStart> {
-  const done = (outcome: DecisionOutcome): ConfirmStart => ({ kind: 'done', outcome });
+async function prepareConfirm(deps: TaskDeps, tool: TaskTool<unknown> | undefined, ctx: ToolContext, key: string, seen?: number): Promise<Prepared> {
+  const done = (outcome: DecisionOutcome): Prepared => ({ kind: 'done', outcome });
   const run = await readRun(ctx.sb, { coach_id: deps.coachId, idempotency_key: key });
   const gone: DecisionOutcome = {
     // A receipt, so the card shows that it failed instead of reading as confirmed with nothing under it.
@@ -228,30 +239,49 @@ export async function startConfirm(deps: TaskDeps, tool: TaskTool<unknown> | und
 
   // The write is the coach's decision, already made: it is not tied to the browser staying connected.
   const writeContext: ToolContext = { ...ctx, signal: new AbortController().signal };
+  const plan = proposal;
   const commit = async (): Promise<ActionReceipt> => {
     try {
-      return await tool.commit(writeContext, proposal);
+      return await tool.commit(writeContext, plan);
     } catch (err) {
-      return failedReceipt(proposal.action, 'Could not finish that.', err instanceof Error ? err.message : String(err), false);
+      return failedReceipt(plan.action, 'Could not finish that.', err instanceof Error ? err.message : String(err), false);
     }
   };
+  return { kind: 'claimed', run_id: claim.run_id, proposal, immediate: tool.immediate === true, commit };
+}
+
+const heldReceipt = (proposal: CardProposal, until: string): ActionReceipt => ({ status: 'held', held_until: until, action: proposal.action, summary: proposal.summary, created: [], notifications: [], partial_failures: [], retryable: false, at: new Date().toISOString() });
+
+/** What happened to a held row this request did not get to write: the coach undid it, or it was opened early by the card's own request. */
+async function notTaken(deps: TaskDeps, ctx: ToolContext, key: string, proposal: CardProposal): Promise<DecisionOutcome> {
+  const after = await readRun(ctx.sb, { coach_id: deps.coachId, idempotency_key: key });
+  if (after?.status === 'cancelled') return { receipt: undoneReceipt(proposal.action), result: UNDONE_RESULT, isError: false };
+  if (after?.result) return outcomeOf(after.result);
+  return { receipt: null, result: `It is being written by another request (opened early at ${clock(new Date().toISOString(), deps.timezone)}). The card shows the outcome; do not say it is done.`, isError: false };
+}
+
+/**
+ * Confirm. Runs the stored plan at most once, however many times it is called for one key. `seen` is the revision of the card the
+ * coach pressed Confirm on (absent from a browser that knows nothing of revisions, which can only have seen an unedited card).
+ */
+export async function startConfirm(deps: TaskDeps, tool: TaskTool<unknown> | undefined, ctx: ToolContext, key: string, seen?: number): Promise<ConfirmStart> {
+  const done = (outcome: DecisionOutcome): ConfirmStart => ({ kind: 'done', outcome });
+  const prepared = await prepareConfirm(deps, tool, ctx, key, seen);
+  if (prepared.kind !== 'claimed') return prepared;
+  const { proposal, commit } = prepared;
+  const claim = { run_id: prepared.run_id };
 
   let noUndo = false;
-  if (!tool.immediate) {
+  if (!prepared.immediate) {
     const held = await holdForExecution(ctx.sb, { run_id: claim.run_id });
     if (held.kind === 'held') {
-      const receipt: ActionReceipt = { status: 'held', held_until: held.run_at, action: proposal.action, summary: proposal.summary, created: [], notifications: [], partial_failures: [], retryable: false, at: new Date().toISOString() };
       const finish = async (): Promise<DecisionOutcome> => {
         // Waits until `run_at`, then takes the row only if it is still held; the write starts only after the take.
         const written = await releaseHeld(ctx.sb, { run_id: claim.run_id, run_at: held.run_at, run: commit });
-        if (written) return outcomeOf(written);
         // Not held any more: the coach pressed Undo, or opened it early (which wrote it from the card's own request).
-        const after = await readRun(ctx.sb, { coach_id: deps.coachId, idempotency_key: key });
-        if (after?.status === 'cancelled') return { receipt: undoneReceipt(proposal.action), result: UNDONE_RESULT, isError: false };
-        if (after?.result) return outcomeOf(after.result);
-        return { receipt: null, result: `It is being written by another request (opened early at ${clock(new Date().toISOString(), deps.timezone)}). The card shows the outcome; do not say it is done.`, isError: false };
+        return written ? outcomeOf(written) : notTaken(deps, ctx, key, proposal);
       };
-      return { kind: 'held', receipt, finish };
+      return { kind: 'held', receipt: heldReceipt(proposal, held.run_at), finish };
     }
     if (held.kind === 'error') {
       // The coach was promised an Undo window; without it nothing goes through.
@@ -262,13 +292,150 @@ export async function startConfirm(deps: TaskDeps, tool: TaskTool<unknown> | und
     noUndo = true;
   }
 
-  const ran = await commit();
+  return done(outcomeOf(await writeNow(deps, ctx, prepared, noUndo)));
+}
+
+/** Write a claimed card that has no Undo window, and record what happened. */
+async function writeNow(deps: TaskDeps, ctx: ToolContext, card: Claimed, noUndo: boolean): Promise<ActionReceipt> {
+  const ran = await card.commit();
   const receipt: ActionReceipt = noUndo && ran.status === 'completed' ? { ...ran, summary: `${ran.summary} Undo isn’t on here yet.` } : ran;
-  const recorded = await recordOutcome(ctx.sb, { run_id: claim.run_id, receipt });
+  const recorded = await recordOutcome(ctx.sb, { run_id: card.run_id, receipt });
   if (!recorded) {
-    void logServerError(`coachhelm task outcome not recorded: ${tool.name}`, { action: `coachhelm.tool.${tool.name}.outcome`, feature: 'coachhelm_chat', userId: deps.coachId, handled: true, extra: { status: receipt.status } }, 'error');
+    void logServerError(`coachhelm task outcome not recorded: ${card.proposal.tool}`, { action: `coachhelm.tool.${card.proposal.tool}.outcome`, feature: 'coachhelm_chat', userId: deps.coachId, handled: true, extra: { status: receipt.status } }, 'error');
   }
-  return done(outcomeOf(receipt));
+  return receipt;
+}
+
+/** One card of an "approve all", as it stands when the batch starts. */
+export type BatchCard =
+  /** Held for the batch's one Undo window. `receipt` is the held state to show at once. */
+  | { key: string; state: 'held'; receipt: ActionReceipt }
+  /** Going ahead with no Undo window (the task writes on Confirm, or this database has no hold); written in its turn. */
+  | { key: string; state: 'queued' }
+  /** Settled before anything was held: already done earlier, or it could not be started. */
+  | { key: string; state: 'done'; outcome: DecisionOutcome }
+  /** Another request is confirming it; this batch leaves it alone. */
+  | { key: string; state: 'skipped' };
+/** How a card of the batch ended. `reopened`: an earlier card failed, so this one was not run and waits for the coach again. */
+export type BatchEnd = { key: string; outcome: DecisionOutcome } | { key: string; reopened: true };
+export type ConfirmAllStart = { kind: 'changed'; cards: Array<{ key: string; proposal: CardProposal }> } | { kind: 'started'; cards: BatchCard[]; finish: () => Promise<BatchEnd[]> };
+
+/**
+ * "Approve all": confirm several waiting cards of one turn, in the order they were proposed.
+ *
+ * One shared Undo window: every card that can be held is held until the same moment, so the coach has one stretch of time to
+ * undo any of them (each card's own Undo, as ever). When it closes the batch is taken whole and written one card at a time, in
+ * order. A card the coach undid is skipped and is not a failure. THE FIRST FAILURE STOPS THE BATCH: the cards after it are not
+ * run; their rows go back to waiting and the coach decides again, knowing what failed.
+ *
+ * Nothing is confirmed unless every card is the revision the coach saw (`changed`): "approve all" over a card that was edited in
+ * another tab would confirm something that was never on screen.
+ */
+export async function startConfirmAll(deps: TaskDeps, ctx: ToolContext, wanted: Array<{ key: string; tool: TaskTool<unknown> | undefined; seen?: number }>): Promise<ConfirmAllStart> {
+  // Before any row is touched: is every card the one on the coach's screen?
+  const changed: Array<{ key: string; proposal: CardProposal }> = [];
+  for (const card of wanted) {
+    const run = await readRun(ctx.sb, { coach_id: deps.coachId, idempotency_key: card.key });
+    if (!run || run.status !== 'proposed' || !isStoredProposal(run.proposed_input) || !proposalIsSealed(deps.coachId, card.key, run.proposed_input)) continue;
+    const proposal = run.proposed_input.proposal as CardProposal;
+    if (revisionOf(proposal) !== (card.seen ?? 0)) changed.push({ key: card.key, proposal });
+  }
+  if (changed.length > 0) return { kind: 'changed', cards: changed };
+
+  // Claim in order. A card that cannot be started is the batch's first failure: nothing after it is touched.
+  const cards: BatchCard[] = [];
+  const claimed = new Map<string, Claimed>();
+  const handBack = async () => {
+    for (const taken of claimed.values()) await releaseClaim(ctx.sb, { run_id: taken.run_id });
+  };
+  for (const card of wanted) {
+    const prepared = await prepareConfirm(deps, card.tool, ctx, card.key, card.seen);
+    if (prepared.kind === 'changed') {
+      // An edit slipped in after the check above. Nothing has been held or written: every claim is handed back.
+      await handBack();
+      return { kind: 'changed', cards: [{ key: card.key, proposal: prepared.proposal }] };
+    }
+    if (prepared.kind === 'in_flight') {
+      cards.push({ key: card.key, state: 'skipped' });
+      continue;
+    }
+    if (prepared.kind === 'done') {
+      cards.push({ key: card.key, state: 'done', outcome: prepared.outcome });
+      if (prepared.outcome.isError) break;
+      continue;
+    }
+    claimed.set(card.key, prepared);
+    cards.push({ key: card.key, state: 'queued' });
+  }
+
+  // One window for all of them: the same moment is written on every row that can be held.
+  const now = Date.now();
+  let noUndo = false;
+  let until: string | null = null;
+  for (const [at, card] of cards.entries()) {
+    const taken = claimed.get(card.key);
+    if (!taken || taken.immediate || noUndo) continue;
+    const held = await holdForExecution(ctx.sb, { run_id: taken.run_id, now });
+    if (held.kind === 'held') {
+      until = held.run_at;
+      cards[at] = { key: card.key, state: 'held', receipt: heldReceipt(taken.proposal, held.run_at) };
+    } else if (held.kind === 'no_column') {
+      // This database has no Undo hold: the batch is written at once, in order, and each receipt says so.
+      noUndo = true;
+    } else {
+      // The coach was promised an Undo window; without it this card does not go through, and the batch stops here.
+      const refused = failedReceipt(taken.proposal.action, 'That didn’t go through. Nothing was saved.', undefined, true);
+      await recordOutcome(ctx.sb, { run_id: taken.run_id, receipt: refused });
+      claimed.delete(card.key);
+      cards[at] = { key: card.key, state: 'done', outcome: { receipt: refused, result: 'Failed: the action could not be held for Undo, so it was not run. Nothing was written.', isError: true } };
+      for (const later of cards.splice(at + 1)) {
+        const untouched = claimed.get(later.key);
+        if (untouched) await releaseClaim(ctx.sb, { run_id: untouched.run_id });
+        claimed.delete(later.key);
+      }
+      break;
+    }
+  }
+
+  const finish = async (): Promise<BatchEnd[]> => {
+    if (until) await new Promise<void>((resolve) => setTimeout(resolve, Math.max(0, Date.parse(until) - Date.now())));
+    // The window has closed: every card still held is taken in one update, before the first of them is written.
+    const mine = await takeHeldMany(ctx.sb, { run_ids: cards.flatMap((c) => (c.state === 'held' ? [claimed.get(c.key)!.run_id] : [])) });
+    const ends: BatchEnd[] = [];
+    let stopped = false;
+    for (const card of cards) {
+      if (card.state === 'skipped') continue;
+      if (card.state === 'done') {
+        ends.push({ key: card.key, outcome: card.outcome });
+        if (card.outcome.isError) stopped = true;
+        continue;
+      }
+      const taken = claimed.get(card.key)!;
+      const holding = card.state === 'queued' || mine.has(taken.run_id);
+      if (card.state === 'held' && !holding) {
+        // Not ours to write: the coach undid it (not a failure), or its own request opened it early.
+        const outcome = await notTaken(deps, ctx, card.key, taken.proposal);
+        ends.push({ key: card.key, outcome });
+        if (outcome.isError) stopped = true;
+        continue;
+      }
+      if (stopped) {
+        // An earlier card failed. This one is not run: its row goes back to waiting.
+        if (await releaseClaim(ctx.sb, { run_id: taken.run_id })) ends.push({ key: card.key, reopened: true });
+        else {
+          const refused = failedReceipt(taken.proposal.action, 'Not run: an earlier action failed. Nothing was saved.', undefined, true);
+          await recordOutcome(ctx.sb, { run_id: taken.run_id, receipt: refused });
+          ends.push({ key: card.key, outcome: { receipt: refused, result: 'Not run: an earlier action in the same batch failed. Nothing was written.', isError: true } });
+        }
+        continue;
+      }
+      const receipt = card.state === 'held' ? await runTaken(ctx.sb, { run_id: taken.run_id, run: taken.commit }) : await writeNow(deps, ctx, taken, noUndo && !taken.immediate);
+      ends.push({ key: card.key, outcome: outcomeOf(receipt) });
+      if (receipt.status === 'failed') stopped = true;
+    }
+    return ends;
+  };
+  return { kind: 'started', cards, finish };
 }
 
 /** Why an edit to a card was not made. `invalid`: the edit itself; `changed`: the card is not the one the coach was editing; `decided`: it is no longer waiting; `fixed`: nothing on it can be edited; `gone`: there is no such card. */

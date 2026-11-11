@@ -265,6 +265,90 @@ describe('useCoachHelmChat', () => {
     expect(parts.at(-1)).toEqual({ type: 'text', text: ' It is held for a few seconds.' });
   });
 
+  it('a second card pressed while the first Confirm is still open is not lost: it is sent when the first has finished, and a repeat press is sent once', async () => {
+    const KEY2 = 'task:team-1:Range:def';
+    const twoCards: ChatUIMessage = {
+      ...waitingCard,
+      parts: [
+        ...waitingCard.parts,
+        { type: 'data-action-proposal', id: `proposal-${KEY2}`, data: { idempotency_key: KEY2, tool: 'create_task', summary: 'Create the task.', revision: 2 } },
+        { type: 'tool-create_task', toolCallId: 'tu_2', state: 'approval-requested', input: {}, approval: { id: KEY2 } },
+      ],
+    };
+    // The first Confirm's response stays open (its Undo window) until the test lets it finish.
+    let finishFirst: () => void = () => undefined;
+    const encoder = new TextEncoder();
+    const first = new Response(
+      new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(encoder.encode(encodeChatEvent({ type: 'message_start', conversation_id: CONVERSATION, message_id: 'a-card', resumed: true }) + encodeChatEvent({ type: 'decision', key: KEY, approved: true })));
+          finishFirst = () => {
+            controller.enqueue(encoder.encode(encodeChatEvent({ type: 'done', status: 'awaiting_decision' })));
+            controller.close();
+          };
+        },
+      }),
+      { headers: { 'content-type': 'text/event-stream', 'x-conversation-id': CONVERSATION } },
+    );
+    fetchMock
+      .mockResolvedValueOnce(first)
+      .mockResolvedValueOnce(sse([{ type: 'message_start', conversation_id: CONVERSATION, message_id: 'a-card', resumed: true }, { type: 'decision', key: KEY2, approved: true }, { type: 'done', status: 'complete' }]));
+    const { result } = renderHook(() => useCoachHelmChat({ initialMessages: [twoCards], conversationId: CONVERSATION }));
+
+    act(() => result.current.approve(KEY));
+    await waitFor(() => expect(result.current.messages[0]!.parts.find((p) => p.type === 'tool-create_focus_area')).toMatchObject({ state: 'approval-responded' }));
+    // Pressed twice while the first is open, and the first pressed again: one request each, no more.
+    act(() => result.current.approve(KEY2));
+    act(() => result.current.approve(KEY2));
+    act(() => result.current.approve(KEY));
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    act(() => finishFirst());
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    expect(bodyOf(1).decision).toEqual({ key: KEY2, approved: true, revision: 2 });
+    expect(result.current.messages[0]!.parts.find((p) => p.type === 'tool-create_task')).toMatchObject({ state: 'approval-responded' });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('approve all names every waiting card with the revision on screen, and a card the batch reopens waits again', async () => {
+    const KEY2 = 'task:team-1:Range:def';
+    const twoCards: ChatUIMessage = {
+      ...waitingCard,
+      parts: [
+        ...waitingCard.parts,
+        { type: 'data-action-proposal', id: `proposal-${KEY2}`, data: { idempotency_key: KEY2, tool: 'create_task', summary: 'Create the task.', revision: 2 } },
+        { type: 'tool-create_task', toolCallId: 'tu_2', state: 'approval-requested', input: {}, approval: { id: KEY2 } },
+      ],
+    };
+    const held = (key: string) => ({ type: 'receipt' as const, part: { type: 'data-action-receipt' as const, id: `receipt-${key}`, data: { status: 'held', held_until: '2026-11-10T12:00:08Z' } } });
+    fetchMock.mockResolvedValueOnce(
+      sse([
+        { type: 'message_start', conversation_id: CONVERSATION, message_id: 'a-card', resumed: true },
+        { type: 'decision', key: KEY, approved: true },
+        held(KEY),
+        { type: 'decision', key: KEY2, approved: true },
+        held(KEY2),
+        { type: 'receipt', part: { type: 'data-action-receipt', id: `receipt-${KEY}`, data: { status: 'failed', summary: 'Could not create that.' } } },
+        { type: 'decision_reopened', key: KEY2, reason: 'batch_stopped' },
+        { type: 'done', status: 'awaiting_decision' },
+      ]),
+    );
+    const { result } = renderHook(() => useCoachHelmChat({ initialMessages: [twoCards], conversationId: CONVERSATION }));
+    act(() => result.current.approveAll!());
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    expect(bodyOf(0)).toMatchObject({ conversation_id: CONVERSATION, approve_all: { cards: [{ key: KEY }, { key: KEY2, revision: 2 }] } });
+    expect(bodyOf(0)).not.toHaveProperty('decision');
+    const parts = result.current.messages[0]!.parts;
+    expect(parts.find((p) => p.type === 'tool-create_focus_area')).toMatchObject({ state: 'approval-responded' });
+    expect(parts.find((p) => p.type === 'tool-create_task')).toMatchObject({ state: 'approval-requested', approval: { id: KEY2 } });
+    expect(parts.filter((p) => p.type === 'data-action-receipt').map((p) => [p.id, (p.data as { status: string }).status])).toEqual([[`receipt-${KEY}`, 'failed']]);
+    // Nothing waiting: nothing is sent.
+    const { result: none } = renderHook(() => useCoachHelmChat({ initialMessages: [], conversationId: CONVERSATION }));
+    act(() => none.current.approveAll!());
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
   it('Cancel sends approved false for the same key', async () => {
     fetchMock.mockResolvedValueOnce(sse([{ type: 'message_start', conversation_id: CONVERSATION, message_id: 'a-card', resumed: true }, { type: 'decision', key: KEY, approved: false }, { type: 'done', status: 'complete' }]));
     const { result } = renderHook(() => useCoachHelmChat({ conversationId: CONVERSATION, initialMessages: [waitingCard] }));

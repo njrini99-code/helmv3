@@ -147,6 +147,14 @@ const Body = z
       .refine((d) => (d.approved === undefined) !== (d.edits === undefined), 'Send approved or edits, not both.')
       .refine((d) => d.edits === undefined || (Object.keys(d.edits).length <= 40 && JSON.stringify(d.edits).length <= 20_000), 'Too many edits.')
       .optional(),
+    /**
+     * "Approve all": confirm these waiting cards of one turn. They are written in the order they were proposed, after one shared Undo
+     * window, and the first failure stops the batch (the cards after it wait again). `revision` as on a `decision`.
+     */
+    approve_all: z
+      .object({ cards: z.array(z.object({ key: z.string().min(1).max(200), revision: z.number().int().min(0).max(100_000).optional() })).min(1).max(20) })
+      .refine((a) => new Set(a.cards.map((c) => c.key)).size === a.cards.length, 'A card is listed twice.')
+      .optional(),
     /** A tab still running the previous client sends its whole thread. Only its last user message is read, as the new message. */
     messages: z.array(z.unknown()).optional(),
     /**
@@ -157,13 +165,14 @@ const Body = z
   })
   .transform((body, ctx): { conversation_id: string | null; client_turn_id: string; surface: ChatSurface; input: TurnInput; screen: unknown } => {
     const base = { conversation_id: body.conversation_id ?? null, client_turn_id: body.client_turn_id, surface: (body.surface ?? 'ask') as ChatSurface, screen: body.screen ?? null };
-    if (body.decision && !body.message) {
+    if (body.approve_all && !body.message && !body.decision) return { ...base, input: { kind: 'approve_all', cards: body.approve_all.cards.map((c) => ({ key: c.key, ...(c.revision === undefined ? {} : { revision: c.revision }) })) } };
+    if (body.decision && !body.message && !body.approve_all) {
       const { key, approved, edits, revision } = body.decision;
       const seen = revision === undefined ? {} : { revision };
       return { ...base, input: edits !== undefined ? { kind: 'revise', key, edits, ...seen } : { kind: 'decision', key, approved: approved === true, ...seen } };
     }
     const text = body.message ?? lastUserText(body.messages);
-    if (!text || body.decision) {
+    if (!text || body.decision || body.approve_all) {
       ctx.addIssue({ code: 'custom', message: 'Send a message or a decision.' });
       return z.NEVER;
     }

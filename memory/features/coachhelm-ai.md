@@ -260,6 +260,13 @@ entries are history. The tool list and the prompt are described where the tools 
   stored). An edited card carries `revision`; a Confirm or an edit names the revision on screen, and one that names
   another is answered with the card as it stands and writes nothing, so a card changed in one tab cannot be confirmed
   from a stale copy in another. The plan that is committed is the one the ledger row held when it was claimed.
+- **Several cards in one answer.** Each task the model asks for is its own sealed ledger row and card, decided on its
+  own in any order; the model is asked for closing words once, after the last decision. "Approve all"
+  (`approve_all: { cards: [{ key, revision }] }`) confirms the named cards in the order proposed after ONE shared Undo
+  window (the same `held_until` on each), writing them one at a time. A card the coach undoes is skipped. The first
+  failure stops the batch: later cards are not run, their rows go back to waiting (`decision_reopened`) and the coach
+  decides again. If any named card is not the revision on screen, nothing is confirmed. The hook sends card requests
+  one at a time, queueing presses made while a Confirm is still open.
 - **A browser that missed how a card ended** (a Confirm whose connection dropped while the write went on) is told on
   the coach's next question: that response begins with the earlier message's recorded `decision` and `receipt`
   events, each carrying `message_id`, and the hook folds them into that message. No reload is needed.

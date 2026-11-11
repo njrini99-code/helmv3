@@ -1085,3 +1085,45 @@ notation the answer rules forbid it to repeat. Now:
 - Test: `__tests__/reader-words.test.ts` runs these readers over a team with rows in every table they read and fails
   on the same tokens as the hand-written lines, on JSON, and on any field name in the read sources that `fieldWords`
   would leave abbreviated.
+
+
+## 2026-11-11 (ENGINE): several cards in one turn, and "approve all"
+
+E29. **Several proposals in one turn.** One answer may ask for several tasks. Each is planned on its own, gets its own
+     sealed ledger row and its own card (`proposal` then `decision_needed`, in the order the model asked), and is
+     decided on its own: `decision: { key, approved }` for any of them, in any order. A decision that leaves another
+     card waiting ends `done: awaiting_decision` and calls no model. When the last one is decided the model is asked
+     for its closing words once, with every card's result in the order it asked. Nothing new was needed in the engine
+     for this; it is now tested (`several cards in one turn`).
+     - **"Approve all"**: `{ conversation_id, client_turn_id, approve_all: { cards: [{ key, revision? }] } }` (1 to
+       20 cards, each once; not together with `message` or `decision`). The cards named that are still waiting are
+       confirmed IN THE ORDER PROPOSED, whatever order the request lists them in. A card not named is not touched.
+     - **The hold for a batch is one shared Undo window.** Every card that can be held is held until the same moment
+       (the same `run_at` on every row, the same `held_until` on every receipt). Undo is still each card's own (the
+       action route's Undo for its key); a screen that offers "Undo all" calls it for each key. When the window
+       closes the batch is taken in one update (`takeHeldMany`), then written one card at a time. A card the coach
+       undid is skipped and is not a failure (its receipt is `cancelled`). A task that writes on Confirm
+       (`immediate`) has no window and is written in its turn.
+     - **The first failure stops the batch.** A card that fails (it could not be started, could not be held, or its
+       commit returned `failed`) ends the run: the cards after it are NOT run, their rows go back to `proposed`, and
+       each is announced with a new event `{ type: 'decision_reopened', key, reason: 'batch_stopped' }`. The reducer
+       puts that card back to waiting (`state: 'approval-requested'`, `approval: { id }`) and removes its held
+       receipt. The turn then ends `awaiting_decision`, stored that way; the coach confirms or cancels the rest
+       knowing what failed, and only then is the model told about all of them. A browser that does not know the
+       event shows those cards as held until it reloads; the stored state is right.
+     - **Nothing is confirmed over a stale card.** If any named card is not the revision the request says is on
+       screen, no row is touched: the response is each such card as it stands with a `data-card-revision` part
+       (`kind: 'changed'`) and `done: awaiting_decision`.
+     - **Events of a batch**, in order: `message_start` (resumed), then for each card going ahead `decision` (approved)
+       and its `receipt` (held), all before the window; after it each card's own `receipt` (completed, failed,
+       cancelled) or `decision_reopened`; then the model's words if every card of the turn is now decided.
+     - **Hook**: `approveAll(keys?)` (every waiting card in the thread when no keys are given). Card presses made
+       while another card's request is still open (a Confirm stays open through its Undo window) are queued and sent
+       one at a time in the order pressed; a repeat of the same press is sent once; after a failed request the queue
+       is dropped. A press while an answer is streaming is ignored, as before.
+     - **Limits, deliberately left**: (1) two decision requests open at the same time on one turn (two tabs) each
+       store their own view of what still waits, so neither may ask the model for closing words; the next message
+       settles it from the ledger (`settleAbandonedTask`) and tells the model then. Nothing is written twice. (2) At
+       the instant the window closes, a card's own ring-end request (`commitHeldNow`) can take that one row before
+       the batch does; that card is then written by that request, out of order, and the batch reports its result.
+       (3) A batch holds one request open for the window plus every write; the route's limit is 120 seconds.

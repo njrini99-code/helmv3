@@ -56,6 +56,21 @@ async function takeHeld(sb: Sb, where: { run_id: string }): Promise<string | nul
   return (data as { id?: string } | null)?.id ?? null;
 }
 
+/**
+ * Held to approved for several rows in ONE update. A batch whose shared window has closed is taken whole, so no card of it can be
+ * written by another request (a card's own ring-end, the sweep) while an earlier card of the batch is still being written.
+ * Returns the ids taken; a row the coach undid, or that was opened early, is not among them.
+ */
+export async function takeHeldMany(sb: Sb, args: { run_ids: string[] }): Promise<Set<string>> {
+  if (args.run_ids.length === 0) return new Set();
+  const { data, error } = await askTables(sb).from(TABLE).update({ status: 'approved', decided_at: new Date().toISOString() } as never).eq('status', 'held').in('id', args.run_ids).select('id');
+  if (error || !Array.isArray(data)) return new Set();
+  return new Set((data as Array<{ id: string }>).map((row) => row.id));
+}
+
+/** Write a row this request has already taken, and record what happened. */
+export const runTaken = (sb: Sb, args: { run_id: string; run: () => Promise<ActionReceipt> }): Promise<ActionReceipt> => execute(sb, args.run_id, args.run);
+
 const waitUntil = (at: string) => new Promise<void>((r) => setTimeout(r, Math.max(0, Date.parse(at) - Date.now())));
 
 /** Runs once `run_at` passes, only if still held. A run that failed its action but whose row a read-back finds is `completed`: never offered Try again. */

@@ -21,7 +21,7 @@ import { runModelLoop, toolResultsMessage, type LoopState, type LoopStop, type P
 import { emptyUsage, fallbackModelOf, profileFor, type ChatFeatures, type ModelClient, type ModelMessage, type ModelProfile, type SystemPrompt, type ToolResultBlock, type UsageTotals } from './model';
 import { applyChatEvent, CARD_REVISION_PART, CHAT_STREAM_CONTENT_TYPE, encodeChatEvent, eventsForStoredParts, textOfParts, TURN_META_PART, turnMetaOf, type ChatCardRevision, type ChatErrorAction, type ChatErrorKind, type ChatEvent, type ChatScreenEcho, type ChatTurnMeta, type ChatTurnStatus, type ChatUIMessage, type ChatUIPart, type WireDataPart } from './protocol';
 import { buildHistory, collectReads, findOpenDecision, saveCardState, saveResumeToLedger, saveTurn, type LoadedConversation, type OpenDecision } from './store';
-import { declineTask, reviseTask, settleAbandonedTask, startConfirm, type DecisionOutcome, type TaskDeps } from './tasks';
+import { declineTask, reviseTask, settleAbandonedTask, startConfirm, startConfirmAll, type DecisionOutcome, type TaskDeps } from './tasks';
 import type { ChatTool, TaskTool, ToolContext } from './tool';
 
 /**
@@ -31,7 +31,9 @@ import type { ChatTool, TaskTool, ToolContext } from './tool';
 export type TurnInput =
   | { kind: 'message'; text: string }
   | { kind: 'decision'; key: string; approved: boolean; revision?: number }
-  | { kind: 'revise'; key: string; edits: Record<string, unknown>; revision?: number };
+  | { kind: 'revise'; key: string; edits: Record<string, unknown>; revision?: number }
+  /** "Approve all": confirm these waiting cards of one turn, in the order they were proposed (not the order listed here). */
+  | { kind: 'approve_all'; cards: Array<{ key: string; revision?: number }> };
 
 export interface TurnSummary {
   status: ChatTurnStatus;
@@ -267,11 +269,16 @@ async function runTurn(deps: TurnDeps, input: TurnInput, signal: AbortSignal, se
     return;
   }
 
-  // ── A decision on a waiting card ────────────────────────────────────────────────────────────────────────────────
-  if (input.kind === 'decision') {
-    const task = open?.pending?.tasks.find((t) => t.key === input.key);
+  // ── A decision on a waiting card, or on several at once ─────────────────────────────────────────────────────────
+  if (input.kind === 'decision' || input.kind === 'approve_all') {
+    const wantedKeys = input.kind === 'decision' ? [input.key] : input.cards.map((c) => c.key);
+    // In the order proposed, whatever order the request lists them in.
+    const wanted = open?.pending?.tasks.filter((t) => wantedKeys.includes(t.key)) ?? [];
+    const task = wanted[0];
     if (!deps.tasks || !open || !open.pending || !task) {
-      await answerStaleDecision(deps, loaded, open, input.key, send);
+      // Nothing listed is waiting any more: each card is answered with what is stored for it, and nothing is changed.
+      if (input.kind === 'decision') await answerStaleDecision(deps, loaded, open, input.key, send);
+      else await answerStaleBatch(deps, loaded, wantedKeys, send);
       return;
     }
     const pending: PendingDecision = open.pending;
@@ -282,7 +289,8 @@ async function runTurn(deps: TurnDeps, input: TurnInput, signal: AbortSignal, se
     earlier = turnMetaOf(before);
     send({ type: 'message_start', conversation_id: conversationId, message_id: ui.id, resumed: true, started_at: startedAt });
 
-    const tool = deps.tools.find((t): t is TaskTool<unknown> => t.kind === 'task' && t.name === task.tool);
+    const toolFor = (name: string) => deps.tools.find((t): t is TaskTool<unknown> => t.kind === 'task' && t.name === name);
+    const tool = toolFor(task.tool);
     const ctx: ToolContext = { ...toolContext, reads };
     // Whatever happens to the closing words, a turn whose card the coach has answered is stored as complete.
     const store = async (appended: ModelMessage[], stillPending: PendingDecision | null) => {
@@ -296,46 +304,80 @@ async function runTurn(deps: TurnDeps, input: TurnInput, signal: AbortSignal, se
       }
     };
 
-    let outcome: DecisionOutcome;
-    if (!input.approved) {
-      outcome = await declineTask(deps.tasks, ctx, task.key, 'declined');
-      emit({ type: 'decision', key: task.key, approved: false });
-    } else {
-      const started = await startConfirm(deps.tasks, tool, ctx, task.key, input.revision);
-      if (started.kind === 'changed') {
-        // The card on the coach's screen is not the stored one (it was edited in another tab). Nothing is confirmed: they are shown
-        // the card as it stands and can confirm that.
-        send({ type: 'proposal', part: proposalPart(task.key, started.proposal) });
-        send({ type: 'part', part: revisionPart({ key: task.key, accepted: false, kind: 'changed', reason: 'This card was changed somewhere else. This is how it stands now. Nothing was confirmed.' }) });
+    // What this request settled: each card's tool call gets its result. A card left waiting (or reopened) is not among them.
+    const settled: Array<{ key: string; tool_use_id: string; outcome: DecisionOutcome }> = [];
+    if (input.kind === 'approve_all') {
+      const seen = new Map(input.cards.map((c) => [c.key, c.revision]));
+      const batch = await startConfirmAll(deps.tasks, ctx, wanted.map((t) => ({ key: t.key, tool: toolFor(t.tool), seen: seen.get(t.key) })));
+      if (batch.kind === 'changed') {
+        // A card in the batch is not the one on the coach's screen. Nothing at all is confirmed.
+        for (const card of batch.cards) {
+          send({ type: 'proposal', part: proposalPart(card.key, card.proposal) });
+          send({ type: 'part', part: revisionPart({ key: card.key, accepted: false, kind: 'changed', reason: 'This card was changed somewhere else. This is how it stands now. Nothing was confirmed.' }) });
+        }
         send({ type: 'done', status: 'awaiting_decision' });
         return;
       }
-      if (started.kind === 'in_flight') {
-        // The request that confirmed first is still inside the Undo window (or writing). It owns the card, the model's closing words
-        // and the stored row: this one shows what is stored and changes nothing, so the two can never write over each other.
-        send({ type: 'decision', key: task.key, approved: true });
-        const shown = before.find((p) => p.type === 'data-action-receipt' && p.id === `receipt-${task.key}`);
-        if (shown) send({ type: 'receipt', part: receiptPart(task.key, shown.data) });
-        send({ type: 'done', status: 'complete' });
-        return;
+      // At once, in the order proposed: each card that is going ahead says so, and a held one shows the shared Undo time.
+      for (const card of batch.cards) {
+        if (card.state === 'skipped') continue;
+        emit({ type: 'decision', key: card.key, approved: true });
+        if (card.state === 'held') emit({ type: 'receipt', part: receiptPart(card.key, card.receipt) });
       }
-      emit({ type: 'decision', key: task.key, approved: true });
-      if (started.kind === 'held') {
-        // The coach sees "held, Undo until ..." at once, and it is stored at once: a reload during the window shows the same card.
-        emit({ type: 'receipt', part: receiptPart(task.key, started.receipt) });
-        await store(open.appended, pending);
-        // The open request waits the window out and writes. It does not stop waiting if the browser goes away.
-        outcome = await started.finish();
+      if (batch.cards.some((c) => c.state === 'held' || c.state === 'queued')) await store(open.appended, pending);
+      // The open request waits the window out and writes them in order. It does not stop if the browser goes away.
+      for (const end of await batch.finish()) {
+        if ('reopened' in end) {
+          emit({ type: 'decision_reopened', key: end.key, reason: 'batch_stopped' });
+          continue;
+        }
+        if (end.outcome.receipt) emit({ type: 'receipt', part: receiptPart(end.key, end.outcome.receipt) });
+        const done = wanted.find((t) => t.key === end.key);
+        if (done) settled.push({ key: end.key, tool_use_id: done.tool_use_id, outcome: end.outcome });
+      }
+    } else {
+      let outcome: DecisionOutcome;
+      if (!input.approved) {
+        outcome = await declineTask(deps.tasks, ctx, task.key, 'declined');
+        emit({ type: 'decision', key: task.key, approved: false });
       } else {
-        outcome = started.outcome;
+        const started = await startConfirm(deps.tasks, tool, ctx, task.key, input.revision);
+        if (started.kind === 'changed') {
+          // The card on the coach's screen is not the stored one (it was edited in another tab). Nothing is confirmed: they are shown
+          // the card as it stands and can confirm that.
+          send({ type: 'proposal', part: proposalPart(task.key, started.proposal) });
+          send({ type: 'part', part: revisionPart({ key: task.key, accepted: false, kind: 'changed', reason: 'This card was changed somewhere else. This is how it stands now. Nothing was confirmed.' }) });
+          send({ type: 'done', status: 'awaiting_decision' });
+          return;
+        }
+        if (started.kind === 'in_flight') {
+          // The request that confirmed first is still inside the Undo window (or writing). It owns the card, the model's closing words
+          // and the stored row: this one shows what is stored and changes nothing, so the two can never write over each other.
+          send({ type: 'decision', key: task.key, approved: true });
+          const shown = before.find((p) => p.type === 'data-action-receipt' && p.id === `receipt-${task.key}`);
+          if (shown) send({ type: 'receipt', part: receiptPart(task.key, shown.data) });
+          send({ type: 'done', status: 'complete' });
+          return;
+        }
+        emit({ type: 'decision', key: task.key, approved: true });
+        if (started.kind === 'held') {
+          // The coach sees "held, Undo until ..." at once, and it is stored at once: a reload during the window shows the same card.
+          emit({ type: 'receipt', part: receiptPart(task.key, started.receipt) });
+          await store(open.appended, pending);
+          // The open request waits the window out and writes. It does not stop waiting if the browser goes away.
+          outcome = await started.finish();
+        } else {
+          outcome = started.outcome;
+        }
       }
+      if (outcome.receipt) emit({ type: 'receipt', part: receiptPart(task.key, outcome.receipt) });
+      settled.push({ key: task.key, tool_use_id: task.tool_use_id, outcome });
     }
-    if (outcome.receipt) emit({ type: 'receipt', part: receiptPart(task.key, outcome.receipt) });
 
     const next: PendingDecision = {
       ...pending,
-      results: { ...pending.results, [task.tool_use_id]: { content: outcome.result, ...(outcome.isError ? { is_error: true } : {}) } },
-      tasks: pending.tasks.filter((t) => t.key !== task.key),
+      results: { ...pending.results, ...Object.fromEntries(settled.map((s) => [s.tool_use_id, { content: s.outcome.result, ...(s.outcome.isError ? { is_error: true } : {}) }])) },
+      tasks: pending.tasks.filter((t) => !settled.some((s) => s.key === t.key)),
     };
 
     if (next.tasks.length > 0) {
@@ -518,6 +560,17 @@ function ground(deps: TurnDeps, ui: ChatUIMessage, reads: ReadonlyMap<string, To
  * response): the stored answer is sent again and nothing runs twice. Or its turn cannot be continued: the coach is told
  * plainly and the card is withdrawn.
  */
+/** "Approve all" over cards none of which is waiting any more: each is answered with what is stored for it. Nothing is changed. */
+async function answerStaleBatch(deps: TurnDeps, loaded: LoadedConversation, keys: string[], send: (event: ChatEvent) => void): Promise<void> {
+  const holds = (key: string) => (p: ChatUIPart) => p.type.startsWith('tool-') && (p as { approval?: { id?: unknown } }).approval?.id === key;
+  const row = [...loaded.rows].reverse().find((r) => r.role === 'assistant' && keys.some((key) => (r.ui_parts ?? []).some(holds(key))));
+  send({ type: 'message_start', conversation_id: deps.toolContext.conversationId, message_id: row?.id ?? crypto.randomUUID(), resumed: true });
+  for (const event of eventsForStoredParts(row?.ui_parts ?? [])) {
+    if ((event.type === 'decision' && keys.includes(event.key)) || (event.type === 'receipt' && keys.some((key) => event.part.id === `receipt-${key}`))) send(event);
+  }
+  send({ type: 'done', status: 'complete' });
+}
+
 async function answerStaleDecision(deps: TurnDeps, loaded: LoadedConversation, open: OpenDecision | null, key: string, send: (event: ChatEvent) => void): Promise<void> {
   const conversationId = deps.toolContext.conversationId;
   const row = [...loaded.rows].reverse().find((r) => r.role === 'assistant' && (r.ui_parts ?? []).some((p) => p.type.startsWith('tool-') && (p as { approval?: { id?: unknown } }).approval?.id === key));
