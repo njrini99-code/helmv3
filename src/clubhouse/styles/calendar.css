@@ -3609,7 +3609,12 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
     border-radius: var(--ch-radius-lg);
     background: var(--ch-light-surface);
   }
+  /* The head keeps to the week's own width. The card's 8px of side padding is gone here (.ch-wk below), and the head
+     still reached 8px past the grid on each side to cover it: its own light lay over bare canvas there, and at night
+     the head read as a lighter slab set on the page, wider than the week under it. */
   .ch-cal[data-canopy] .ch-wk__top {
+    margin-inline: 0;
+    padding-inline: 0;
     background: var(--ch-light-surface), var(--ch-workspace);
     background-size: 100% calc(var(--ch-hours, 15) * var(--ch-hh, 52px)), auto;
   }
