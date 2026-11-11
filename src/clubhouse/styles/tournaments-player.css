@@ -102,7 +102,10 @@
   flex: none;
   color: var(--ch-on-green-ink-soft);
 }
-.ch-tour-pl-next:focus-visible {
+/* Focus rules here are written from the page's root: at one class each they tied with the shell's own ring
+   (.ch-root :focus-visible, base.css) and lost to it by source order, so the green card showed a green ring on green and
+   a Played row a second ring round its name. */
+.ch-tour-pl .ch-tour-pl-next:focus-visible {
   outline: 2px solid var(--ch-border-focus-on-dark);
   outline-offset: 2px;
 }
@@ -162,8 +165,8 @@
     transition-delay: var(--ch-dur-press-delay);
   }
 }
-.ch-tour-pl-next__open:focus-visible,
-.ch-tour-pl-next__then:focus-visible {
+.ch-tour-pl .ch-tour-pl-next__open:focus-visible,
+.ch-tour-pl .ch-tour-pl-next__then:focus-visible {
   outline: 2px solid var(--ch-border-focus-on-dark);
   outline-offset: 2px;
   border-radius: var(--ch-radius-xs);
@@ -300,10 +303,10 @@
   border-radius: inherit;
   content: '';
 }
-.ch-tour-pl-res__open:focus-visible {
+.ch-tour-pl .ch-tour-pl-res__open:focus-visible {
   outline: none;
 }
-.ch-tour-pl-res__open:focus-visible::after {
+.ch-tour-pl .ch-tour-pl-res__open:focus-visible::after {
   outline: 2px solid var(--ch-border-focus);
   outline-offset: -2px;
 }
@@ -359,7 +362,7 @@
     background: var(--ch-press-well);
   }
 }
-.ch-tour-pl-row:focus-visible {
+.ch-tour-pl .ch-tour-pl-row:focus-visible {
   outline: 2px solid var(--ch-border-focus);
   outline-offset: -2px;
 }

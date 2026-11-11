@@ -247,7 +247,38 @@ describe('the player’s Tournaments · one following event is the card’s foot
     expect(decls('.ch-tour-pl-next__then')).toMatchObject({ 'min-height': '44px' });
     for (const link of ['.ch-tour-pl-next__open', '.ch-tour-pl-next__then']) {
       expect(decls(`${link}[data-ch-pressed]`)).toMatchObject({ opacity: '0.55' });
-      expect(decls(`${link}:focus-visible`)).toMatchObject({ outline: '2px solid var(--ch-border-focus-on-dark)' });
+      expect(decls(`.ch-tour-pl ${link}:focus-visible`)).toMatchObject({ outline: '2px solid var(--ch-border-focus-on-dark)' });
     }
+  });
+});
+
+/**
+ * The shell rings every focused control in green (base.css, `.ch-root :focus-visible`, two classes). This page's own focus
+ * rules were one class and a pseudo-class, a tie the shell won by source order: the green card's links showed a green
+ * ring on green (about 1.3:1), and a Played row drew a second ring round its name. Each rule is now written from the
+ * page's root, so it outranks the shell's wherever the sheets load.
+ */
+describe('the player’s Tournaments · the page’s focus rings outrank the shell’s', () => {
+  const src = readFileSync(join(import.meta.dirname, '../../../styles/tournaments-player.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+
+  it('every :focus-visible rule starts at the page root', () => {
+    const focus: string[] = [];
+    css.walkRules((r) => {
+      for (const sel of r.selectors) if (sel.includes(':focus-visible')) focus.push(sel);
+    });
+    expect(focus.length).toBeGreaterThanOrEqual(6);
+    expect(focus.filter((sel) => !sel.startsWith('.ch-tour-pl '))).toEqual([]);
+    expect(src).not.toMatch(/\n\.ch-tour-pl-[\w-]+:focus-visible/);
+  });
+
+  it('on the green card the ring is the on-dark one, for the card and for its two phone links', () => {
+    for (const sel of ['.ch-tour-pl .ch-tour-pl-next:focus-visible', '.ch-tour-pl .ch-tour-pl-next__open:focus-visible', '.ch-tour-pl .ch-tour-pl-next__then:focus-visible']) {
+      expect(decls(sel)).toMatchObject({ outline: '2px solid var(--ch-border-focus-on-dark)', 'outline-offset': '2px' });
+    }
+  });
+
+  it('a Played row has one ring, the row’s, and none round its name', () => {
+    expect(decls('.ch-tour-pl .ch-tour-pl-res__open:focus-visible')).toEqual({ outline: 'none' });
+    expect(decls('.ch-tour-pl .ch-tour-pl-res__open:focus-visible::after')).toMatchObject({ outline: '2px solid var(--ch-border-focus)', 'outline-offset': '-2px' });
   });
 });
