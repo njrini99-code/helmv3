@@ -22,7 +22,7 @@
  * this override (#1997 review) — see `restoreFailedTurn`'s doc comment.
  * ========================================================================== */
 
-import type { UIMessage } from 'ai';
+import type { ChatUIMessage as UIMessage } from './engine/protocol';
 import type { ChatMessage } from './types';
 import { STREAM_INCOMPLETE_NOTE } from './verdict';
 
@@ -78,6 +78,27 @@ const ACTION_PART_TYPES = new Set(['data-action-proposal', 'data-action-receipt'
  */
 const GENERIC_FAILURE_NOTE = STREAM_INCOMPLETE_NOTE;
 
+/** The ledger keys of a row's action cards. */
+function proposalKeys(parts: readonly unknown[]): Set<string> {
+  const keys = new Set<string>();
+  for (const p of parts) {
+    const part = p as { type?: unknown; data?: { idempotency_key?: unknown } } | null;
+    if (part?.type === 'data-action-proposal' && typeof part.data?.idempotency_key === 'string') keys.add(part.data.idempotency_key);
+  }
+  return keys;
+}
+
+/**
+ * A card's decision state, as the rebuilt engine stores it: a `tool-<name>` part whose approval id IS the card's ledger
+ * key. It is replayed, so a card that still waits can be confirmed after a reload and an answered one shows its answer.
+ * Tool parts of the previous stack carry an SDK approval id that names nothing the server holds; they stay dropped, and
+ * their cards draw as undecided, as they always have after a reload.
+ */
+function isCardDecision(p: unknown, cardKeys: ReadonlySet<string>): boolean {
+  const part = p as { type?: unknown; approval?: { id?: unknown } } | null;
+  return typeof part?.type === 'string' && part.type.startsWith('tool-') && typeof part.approval?.id === 'string' && cardKeys.has(part.approval.id);
+}
+
 /**
  * Rebuild the UI message list from durable history.
  *
@@ -99,12 +120,13 @@ export function restoreUIMessages(messages: ChatMessage[]): UIMessage[] {
     }
 
     if (Array.isArray(row.ui_parts) && row.ui_parts.length > 0) {
+      const cardKeys = proposalKeys(row.ui_parts);
       const parts = row.ui_parts.filter(
         (p): p is { type: string } =>
           Boolean(p) &&
           typeof p === 'object' &&
           typeof (p as { type?: unknown }).type === 'string' &&
-          REPLAYABLE.has((p as { type: string }).type),
+          (REPLAYABLE.has((p as { type: string }).type) || isCardDecision(p, cardKeys)),
       );
       if (parts.length > 0) {
         out.push({
@@ -173,37 +195,4 @@ function restoreFailedTurn(row: ChatMessage): UIMessage {
       ...actionParts,
     ] as UIMessage['parts'],
   };
-}
-
-/** One chunk of an AI SDK UI message stream — the shape `writer.write` takes. */
-export type StoredTurnChunk = { type: string; id?: string; delta?: string; data?: unknown };
-
-/**
- * A stored, already-answered turn as the UI message stream the browser expects.
- *
- * The stream route answers a retry of a turn that already has an answer with
- * that stored answer instead of running the (paid) agent again. It used to send
- * JSON with a 200, which the chat client cannot read: the SDK parsed it as an
- * empty stream, so Try again finished with no answer and no error — a dead end,
- * with the answer sitting in the database until the next reload.
- *
- * Built from {@link restoreUIMessages}, so it carries exactly what a reload
- * would show: the prose and the `data-*` parts (evidence, action cards), and
- * none of the progress parts. Tool parts are not replayed, so a replayed action
- * card cannot be confirmed — the same as after a reload.
- */
-export function storedTurnChunks(row: ChatMessage): StoredTurnChunk[] {
-  const chunks: StoredTurnChunk[] = [{ type: 'start' }];
-  const [message] = restoreUIMessages([row]);
-  (message?.parts ?? []).forEach((part, index) => {
-    if (part.type === 'text') {
-      const id = `replay-text-${index}`;
-      chunks.push({ type: 'text-start', id }, { type: 'text-delta', id, delta: String(part.text ?? '') }, { type: 'text-end', id });
-    } else if (part.type.startsWith('data-')) {
-      const { id, data } = part as { id?: string; data?: unknown };
-      chunks.push({ type: part.type, ...(id === undefined ? {} : { id }), data });
-    }
-  });
-  chunks.push({ type: 'finish' });
-  return chunks;
 }

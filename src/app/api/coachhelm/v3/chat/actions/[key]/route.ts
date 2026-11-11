@@ -2,6 +2,8 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { resolveCoachChatContext } from '@/lib/coachhelm/v3/chat/context';
 import { heldCommitFor } from '@/lib/coachhelm/v3/chat/held-runner';
+import { toolsFor } from '@/lib/coachhelm/v3/chat/registry';
+import type { ChatTool } from '@/lib/coachhelm/v3/chat/engine/tool';
 import { cancelHeld, commitHeldNow, receiptFor } from '@/lib/coachhelm/v3/chat/undo-hold';
 
 /** A commit runs the write and its fan-out here, as the stream route's release does. */
@@ -21,12 +23,21 @@ async function coachId(): Promise<{ sb: Awaited<ReturnType<typeof createClient>>
 
 const none = () => NextResponse.json({ error: 'Not found' }, { status: 404 });
 
+/** Every task a coach surface offers: the held row names its tool, not the surface that proposed it. */
+function coachTaskTools(ctx: Parameters<typeof toolsFor>[1]): ChatTool[] {
+  const seen = new Map<string, ChatTool>();
+  for (const surface of ['ask', 'quick_chat', 'practice_helper'] as const) {
+    for (const tool of toolsFor(surface, ctx)) if (tool.kind === 'task' && !seen.has(tool.name)) seen.set(tool.name, tool);
+  }
+  return [...seen.values()];
+}
+
 type Who = NonNullable<Awaited<ReturnType<typeof coachId>>>;
 
 async function commit(who: Who, key: string, due_only: boolean): Promise<void> {
   const ctx = await resolveCoachChatContext(who.sb).catch(() => null);
   if (!ctx || ctx.coach_id !== who.coach) return;
-  await commitHeldNow(who.sb, { coach_id: who.coach, idempotency_key: key, due_only, resolve: (row) => heldCommitFor(who.sb, ctx, row) });
+  await commitHeldNow(who.sb, { coach_id: who.coach, idempotency_key: key, due_only, resolve: (row) => heldCommitFor(who.sb, ctx, row, coachTaskTools(ctx)) });
 }
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ key: string }> }) {

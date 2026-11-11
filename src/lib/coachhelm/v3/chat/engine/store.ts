@@ -217,8 +217,12 @@ export interface TurnWrite {
   pending: PendingDecision | null;
 }
 
-/** Insert or update the assistant row of a turn. Returns its id. Throws when it could not be written. */
-export async function saveTurn(sb: Sb, mode: StoreMode, turn: TurnWrite): Promise<string> {
+/**
+ * Insert or update the assistant row of a turn. Returns its id and the shape of database that took it: a conversation
+ * with no rows yet is written as `columns` first, and learns here that the columns are not there. Throws when the row
+ * could not be written at all.
+ */
+export async function saveTurn(sb: Sb, mode: StoreMode, turn: TurnWrite): Promise<{ id: string; mode: StoreMode }> {
   const base = { content: turn.content, status: turn.status, ui_parts: turn.ui_parts as never };
   const write = async (withModel: boolean) => {
     const values = withModel ? { ...base, model_messages: turn.model_messages as never, pending_decision: turn.pending as never } : base;
@@ -226,12 +230,16 @@ export async function saveTurn(sb: Sb, mode: StoreMode, turn: TurnWrite): Promis
       ? fromUntyped(sb, TABLE).update(values).eq('id', turn.id).select('id').maybeSingle()
       : fromUntyped(sb, TABLE).insert({ ...values, conversation_id: turn.conversation_id, role: 'assistant', client_turn_id: turn.client_turn_id }).select('id').maybeSingle();
   };
+  let used = mode;
   let res = await write(mode === 'columns');
-  if (res.error && mode === 'columns' && MISSING_COLUMN.has(String(res.error.code))) res = await write(false);
+  if (res.error && mode === 'columns' && MISSING_COLUMN.has(String(res.error.code))) {
+    used = 'legacy';
+    res = await write(false);
+  }
   if (res.error) throw new Error(`chat turn not saved: ${res.error.message}`);
   const id = (res.data as { id?: string } | null)?.id ?? turn.id;
   if (!id) throw new Error('chat turn not saved: no row returned');
-  return id;
+  return { id, mode: used };
 }
 
 /** Update the cards of an earlier row (a card declined by a newer question) without touching what the model was shown. */

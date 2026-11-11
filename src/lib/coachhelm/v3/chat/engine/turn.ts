@@ -199,8 +199,8 @@ async function runTurn(deps: TurnDeps, input: TurnInput, signal: AbortSignal, se
     const store = async (appended: ModelMessage[], stillPending: PendingDecision | null) => {
       if (!deps.store) return;
       try {
-        await saveTurn(sb, loaded.mode, { id: rowId, conversation_id: conversationId, client_turn_id: open.row.client_turn_id, content: textOfParts(ui.parts), status: 'complete', ui_parts: ui.parts, model_messages: appended, pending: stillPending });
-        if (loaded.mode === 'legacy' && stillPending) await saveResumeToLedger(sb, coachId, { appended, pending: stillPending });
+        const saved = await saveTurn(sb, loaded.mode, { id: rowId, conversation_id: conversationId, client_turn_id: open.row.client_turn_id, content: textOfParts(ui.parts), status: 'complete', ui_parts: ui.parts, model_messages: appended, pending: stillPending });
+        if (saved.mode === 'legacy' && stillPending) await saveResumeToLedger(sb, coachId, { appended, pending: stillPending });
       } catch (err) {
         void logServerError(`chat/stream: decision not stored: ${err instanceof Error ? err.message : 'unknown'}`, { action: 'v3.chat.stream.persist' });
       }
@@ -270,7 +270,7 @@ async function runTurn(deps: TurnDeps, input: TurnInput, signal: AbortSignal, se
     if (!deps.store) return true;
     const failed = status === 'failed';
     try {
-      messageId = await saveTurn(sb, loaded.mode, {
+      const saved = await saveTurn(sb, loaded.mode, {
         id: rowId,
         conversation_id: conversationId,
         client_turn_id: deps.clientTurnId,
@@ -281,7 +281,8 @@ async function runTurn(deps: TurnDeps, input: TurnInput, signal: AbortSignal, se
         model_messages: failed ? [userMessage] : state.appended,
         pending,
       });
-      if (loaded.mode === 'legacy' && pending) return await saveResumeToLedger(sb, coachId, { appended: state.appended, pending });
+      messageId = saved.id;
+      if (saved.mode === 'legacy' && pending) return await saveResumeToLedger(sb, coachId, { appended: state.appended, pending });
       return true;
     } catch (err) {
       void logServerError(`chat/stream: turn not stored: ${err instanceof Error ? err.message : 'unknown'}`, { action: 'v3.chat.stream.persist' });

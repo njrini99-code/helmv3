@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
 import { askTables } from './ask-db';
 import type { ActionReceipt } from './action-types';
+import { logServerError } from '@/lib/server-error-logger';
 import { recordOutcome } from './action-runs';
 
 type Sb = SupabaseClient<Database>;
@@ -33,6 +34,7 @@ export interface HeldRow {
   run_at: string;
   /** The row's scoped ledger key: the write's request id comes from it, so a rebuilt write hits the same row. */
   idempotency_key: string;
+  conversation_id?: string | null;
 }
 /** How to write a held row. Nothing has started until `run` is called, and only the winner of `takeHeld` calls it. */
 export interface HeldCommit {
@@ -42,7 +44,7 @@ export interface HeldCommit {
 /** Null: not this request's to write (another team's row); it stays held. */
 export type HeldResolver = (row: HeldRow) => HeldCommit | null;
 
-const HELD_COLUMNS = 'id, tool_name, proposed_input, team_id, run_at, idempotency_key';
+const HELD_COLUMNS = 'id, tool_name, proposed_input, team_id, run_at, idempotency_key, conversation_id';
 
 /**
  * Held to approved in one update: whoever wins runs it, and `claimForExecution`'s in-flight and TTL rules then apply unchanged.
@@ -75,7 +77,11 @@ async function execute(sb: Sb, run_id: string, run: () => Promise<ActionReceipt>
     const found = await readBack().catch(() => null);
     if (found) receipt = found;
   }
-  await recordOutcome(sb, { run_id, receipt });
+  const recorded = await recordOutcome(sb, { run_id, receipt });
+  if (!recorded) {
+    // The write has happened (or failed) either way; an unrecorded outcome would later read as an interrupted run.
+    void logServerError('coachhelm held action outcome not recorded', { action: 'coachhelm.tool.outcome', feature: 'coachhelm_chat', handled: true, extra: { status: receipt.status } }, 'error');
+  }
   return receipt;
 }
 

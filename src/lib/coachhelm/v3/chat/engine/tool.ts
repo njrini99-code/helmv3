@@ -21,9 +21,8 @@ import type { z } from 'zod';
 import type { Database } from '@/lib/types/database';
 import type { ActionProposal, ActionReceipt } from '../action-types';
 import type { CoachChatContext } from '../context';
-import type { TeamSgSource } from '../practice-reads';
 import type { ToolEnvelope } from '../provenance';
-import type { PlayerFiguresSource, PuttBandsSource } from '../read-tools';
+import type { ScreenLoaders } from '../screen-loaders';
 
 export type ChatSurface = 'ask' | 'quick_chat' | 'practice_helper' | 'player';
 
@@ -34,18 +33,11 @@ export const isPlayerContext = (who: CoachChatContext | PlayerChatContext): who 
   typeof (who as { player_id?: unknown }).player_id === 'string';
 
 /**
- * The Clubhouse screens' own loaders, handed in by the route (`src/lib` does not import `src/clubhouse`). A figure a
- * screen draws is read through the loader that screen uses. TOOLS adds a loader by adding an optional field here and
- * telling ENGINE which Clubhouse function the route binds to it; a tool must cope with a loader being absent.
+ * The Clubhouse screens' own loaders, handed in by the route (`src/lib` does not import `src/clubhouse`). TOOLS owns the
+ * list (`../screen-loaders.ts`): a figure a screen draws is read through the loader that screen uses, and a tool must
+ * cope with a loader being absent.
  */
-export interface ScreenLoaders {
-  /** Stats' per-player figures for a window (`loadPlayersFigures`). */
-  playerFigures?: PlayerFiguresSource;
-  /** Stats' six putting bands for one player and window (`loadPlayerPuttBands`). */
-  puttBands?: PuttBandsSource;
-  /** Team Stats' strokes gained for a window (`loadTeamStrokesGained`). */
-  teamStrokesGained?: TeamSgSource;
-}
+export type { ScreenLoaders } from '../screen-loaders';
 
 export interface ToolContext {
   /** The signed-in session client: RLS applies to every read and write. */
