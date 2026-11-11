@@ -377,7 +377,7 @@
 .ch-htb .stchips {
   /* Five across. When five can't clear each other (the largest Text Size, a 320 phone) the basis jumps to half, so the spots sit two by
      two and Course, alone on its line, takes the row: 300 is the narrowest well that holds five at the default size. */
-  --ch-htb-chip:clamp(calc(20% - 2px), calc((300px * var(--ch-type-k, 1) - 100%) * 999), calc(50% - 1px));
+  --ch-htb-chip:clamp(calc(20% - 2px), calc((300 * var(--ch-type-k) - 100%) * 999), calc(50% - 1px));
   display:flex;
   flex-wrap:wrap;
   gap:2px;

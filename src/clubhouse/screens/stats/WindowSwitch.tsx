@@ -69,7 +69,19 @@ export function WindowSwitch({
           aria: `Last ${n}`,
         })),
         { value: 'season', label: 'Season' },
-        { value: 'qualifiers', label: 'Qualifiers' },
+        {
+          value: 'qualifiers',
+          // With All time in the row the phone says "Quals", the team's own word, so six choices of at least 44pt and the filter fit a
+          // 375pt phone without scrolling; a wider screen and a screen reader keep the whole word.
+          label: onScope ? (
+            <>
+              Qual<span className="ch-sw-last">ifier</span>s
+            </>
+          ) : (
+            'Qualifiers'
+          ),
+          aria: 'Qualifiers',
+        },
         ...(custom ? [{ value: 'custom' as const, label: 'Custom' }] : []),
         ...(onScope
           ? [

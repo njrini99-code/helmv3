@@ -10,6 +10,8 @@ import { FLIGHT_MS, holeFlight, LAND_FADE_MS, LAND_HOLD_MS, RIPPLE_MS, TRAIL } f
 
 const EASE = 'cubic-bezier(.22,1,.36,1)';
 const FLOWN = 'ch:team:htb-flown';
+/** How much of the hole must be on screen before the ball leaves. */
+const IN_VIEW = 0.85;
 /** The ball, r 4.2 in the drawing. */
 const BALL = 8.4;
 
@@ -37,7 +39,7 @@ const toneOf = (v: number | null): string => {
  * What moves on the hole, kept off the drawing: a layer of plain boxes over the SVG, so every frame is a transform or an opacity
  * on its own compositor layer and the SVG is never repainted (WebKit doesn't composite SVG children).
  *
- * The arrival (M-TEAM-01 to 04), once a session: the ball flies tee to green on the hole's own line with a short trail, each station
+ * The arrival (M-TEAM-01 to 04), once a session, when the hole is on screen: the ball flies tee to green on the hole's own line with a short trail, each station
  * rings once as the ball passes, and the ball rests on the flag and fades. The hole under it is already complete; nothing waits on it.
  * It never takes a tap (the layer has no pointer events): choosing a station mid-flight, a resize, or the tab going away fades it out
  * where it is. Reduce Motion and Animations off: it is never drawn.
@@ -67,20 +69,37 @@ export function HoleMotion({
   const chosen = picks > 0;
 
   useEffect(() => {
-    if (!arrive || reduced || flown()) return;
+    const el = box.current;
+    if (!arrive || reduced || !el || flown()) return;
     let live = true;
     let timer = 0;
-    // Type in the hole is the last thing to settle; the ball leaves a beat after it.
-    void (document.fonts?.ready ?? Promise.resolve()).then(() => {
-      if (!live) return;
+    let seen: IntersectionObserver | null = null;
+    const start = () => {
+      window.clearTimeout(timer);
       timer = window.setTimeout(() => {
         if (!live || document.visibilityState === 'hidden') return;
+        seen?.disconnect();
         markFlown();
         setFlying(true);
       }, 250);
+    };
+    // Type in the hole is the last thing to settle; the ball leaves a beat after it, and only with the hole on screen: on a phone
+    // the hole starts below the fold, and a moment nobody saw is not a moment.
+    void (document.fonts?.ready ?? Promise.resolve()).then(() => {
+      if (!live) return;
+      if (typeof IntersectionObserver === 'undefined') return start();
+      seen = new IntersectionObserver(
+        (entries) => {
+          if (entries.some((e) => e.intersectionRatio >= IN_VIEW)) start();
+          else window.clearTimeout(timer);
+        },
+        { threshold: IN_VIEW },
+      );
+      seen.observe(el);
     });
     return () => {
       live = false;
+      seen?.disconnect();
       window.clearTimeout(timer);
     };
   }, [arrive, reduced]);

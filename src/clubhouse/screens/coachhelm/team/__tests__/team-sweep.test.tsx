@@ -129,7 +129,7 @@ describe('sheet and notice styles reach only their own text (owner, 2026-11-06)'
 
   it('the spots go two by two rather than collide, and the sheet buttons stack (320 wide, or largest Text Size)', () => {
     // Five across in one row (the design); the basis jumps to half when five can't clear each other, and Course, alone on its line, takes the row.
-    expect(css).toMatch(/--ch-htb-chip:clamp\(calc\(20% - 2px\), calc\(\(300px \* var\(--ch-type-k, 1\) - 100%\) \* 999\), calc\(50% - 1px\)\);/);
+    expect(css).toMatch(/--ch-htb-chip:clamp\(calc\(20% - 2px\), calc\(\(300 \* var\(--ch-type-k\) - 100%\) \* 999\), calc\(50% - 1px\)\);/);
     expect(css).toMatch(/\.ch-htb \.stchips button \{\s*flex:1 1 var\(--ch-htb-chip\);\s*min-width:0;\s*min-height:44px;/);
     expect(css).not.toMatch(/\.stchips button\.cm \{[^}]*grid-column/);
     expect(css).toMatch(/\.acts > \* \{\s*flex: 1 1 calc\(160 \* var\(--ch-type-k\)\);/);

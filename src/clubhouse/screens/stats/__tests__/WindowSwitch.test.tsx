@@ -61,7 +61,7 @@ describe('WindowSwitch · the range in rounds', () => {
   it('the phone row is one well: no second switch stacked on it, and a word never clips (the well scrolls instead)', () => {
     const css = readFileSync(join(process.cwd(), 'src/clubhouse/styles/stats-redesign.css'), 'utf8');
     expect(css).not.toContain('.ch-span');
-    expect(css).toMatch(/\.ch-shs-ctl \.ch-seg \{[^}]*grid-auto-columns: minmax\(max-content, 1fr\);[^}]*overflow-x: auto;/);
+    expect(css).toMatch(/\.ch-shs-ctl \.ch-seg \{[^}]*grid-auto-columns: auto;[^}]*overflow-x: auto;/);
     for (const file of ['StatsPlayerPhoneShs.tsx', 'StatsTeamIslands.tsx', 'StatsPlayer.tsx']) expect(readFileSync(join(process.cwd(), 'src/clubhouse/screens/stats', file), 'utf8')).not.toContain('SpanSwitch');
   });
 

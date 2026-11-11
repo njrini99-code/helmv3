@@ -50,16 +50,16 @@
   align-items: center;
   gap: 8px;
 }
-/* One row answers "which rounds": Last 5, 10, 20, Season, Qualifiers, then All time (WindowSwitch). The two words take the width
-   they need and the short choices share the rest, none narrower than its own label; a phone too narrow for all six scrolls the
-   well rather than clip a word. */
+/* One row answers "which rounds": 5, 10, 20, Season, Quals, then All (WindowSwitch). Every choice is at least its own label and the
+   44pt the shared control asks for, and they share what is left equally, so all six and the filter fit a 375pt phone; a phone
+   narrower than that scrolls the well rather than clip a word. */
 .ch-shs-ctl .ch-seg {
   flex: 1;
   min-width: 0;
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: minmax(max-content, 1fr);
-  gap: 4px;
+  grid-auto-columns: auto;
+  gap: 2px;
   padding: 4px;
   border-radius: var(--ch-radius-lg);
   min-height: calc(40 * var(--ch-type-k));
@@ -73,10 +73,10 @@
   -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent);
   mask-image: linear-gradient(90deg, #000 85%, transparent);
 }
-.ch-shs-ctl .ch-seg__b {
+.ch-shs .ch-shs-ctl .ch-seg__b {
   position: relative;
   min-height: calc(32 * var(--ch-type-k));
-  padding: 0 6px;
+  padding: 0 3px;
   border-radius: var(--ch-radius-md);
   font: var(--ch-type-14-medium);
   white-space: nowrap;
@@ -2296,10 +2296,10 @@ p.ch-shs-mini-cap {
 }
 /* STATS-1: a coach's header on a player's Stats sits on the page edge. */
 .ch-shs .ch-spm-head { padding-inline: var(--ch-page-x-phone); }
-/* STATS-10: three across, as drawn, on every current iPhone (a 343pt card at 375); two across only on a card too narrow for
-   "Scrambling" in a third of it (a 320pt phone), where the three-column rules step aside. */
+/* STATS-10: three across, as drawn, on every current iPhone (the card's inside is 311pt on a 375pt phone); two across only when
+   a third of it is too narrow for "Scrambling" (256pt inside, a 320pt phone), where the three-column rules step aside. */
 .ch-shs-card { container-type: inline-size; }
-@container (max-width: 320px) {
+@container (max-width: 290px) {
   .ch-shs-glance { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .ch-shs-glance > * { min-width: 0; overflow-wrap: anywhere; }
   .ch-shs-gc::before,

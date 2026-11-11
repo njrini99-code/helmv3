@@ -89,7 +89,7 @@ describe('the hole is whole before anything moves', () => {
     expect(css).toMatch(/\.ch-htb \.holefx \{[^}]*pointer-events:none;/);
   });
 
-  it('flies once a session: the ball, its trail and one ring a station, then the layer is empty again', async () => {
+  it('flies once a session, when the hole is on screen: the ball, its trail and one ring a station, then the layer is empty again', async () => {
     vi.useFakeTimers();
     const played: Array<{ el: Element; frames: Keyframe[]; options: KeyframeAnimationOptions; anim: { onfinish: (() => void) | null; cancel: () => void } }> = [];
     const animate = vi.fn(function (this: Element, frames: Keyframe[], options: KeyframeAnimationOptions) {
@@ -100,6 +100,20 @@ describe('the hole is whole before anything moves', () => {
     const had = Object.getOwnPropertyDescriptor(Element.prototype, 'animate');
     Object.defineProperty(Element.prototype, 'animate', { configurable: true, writable: true, value: animate });
     Object.defineProperty(document, 'fonts', { configurable: true, value: { ready: Promise.resolve() } });
+    // The hole's place on screen, as the browser would report it.
+    let report: ((ratio: number) => void) | null = null;
+    const hadSeen = window.IntersectionObserver;
+    window.IntersectionObserver = class {
+      constructor(cb: IntersectionObserverCallback) {
+        report = (ratio) => cb([{ intersectionRatio: ratio } as IntersectionObserverEntry], this as unknown as IntersectionObserver);
+      }
+      observe() {}
+      disconnect() {}
+      unobserve() {}
+      takeRecords() {
+        return [];
+      }
+    } as unknown as typeof IntersectionObserver;
     try {
       const { container, unmount } = draw();
       await act(async () => {
@@ -107,6 +121,14 @@ describe('the hole is whole before anything moves', () => {
         vi.advanceTimersByTime(260);
       });
       const fx = container.querySelector('.holefx')!;
+      // Below the fold, as a phone opens: nothing flies, and the session's one flight is not spent.
+      act(() => report!(0.4));
+      act(() => vi.advanceTimersByTime(600));
+      expect(fx.hasAttribute('data-ch-team-fly')).toBe(false);
+      expect(window.sessionStorage.getItem('ch:team:htb-flown')).toBeNull();
+      // Scrolled onto the screen: a beat, then the ball leaves.
+      act(() => report!(0.9));
+      act(() => vi.advanceTimersByTime(260));
       expect(fx.hasAttribute('data-ch-team-fly')).toBe(true);
       expect(fx.querySelectorAll('[data-fly]')).toHaveLength(4);
       expect(fx.querySelectorAll('[data-ripple]')).toHaveLength(STATIONS.length);
@@ -131,8 +153,11 @@ describe('the hole is whole before anything moves', () => {
         await Promise.resolve();
         vi.advanceTimersByTime(600);
       });
+      act(() => report?.(1));
+      act(() => vi.advanceTimersByTime(600));
       expect(again.container.querySelector('[data-fly]')).toBeNull();
     } finally {
+      window.IntersectionObserver = hadSeen;
       if (had) Object.defineProperty(Element.prototype, 'animate', had);
       else delete (Element.prototype as { animate?: unknown }).animate;
     }
