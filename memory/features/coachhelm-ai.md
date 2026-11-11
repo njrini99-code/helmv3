@@ -290,7 +290,11 @@ entries are history. The tool list and the prompt are described where the tools 
   under. Every step event carries the turn's sequence number, and each state change is sent once. A running
   calculation re-sends its tally at most every 250 ms. Nothing is estimated and no step is announced before it is
   running. `done.work` and `data-turn-meta` give the turn's step count and the time at least one step was running.
-  The rows are stored with the turn; `restoreUIMessages(rows, { steps: true })` keeps them on reload.
+  The rows are stored with the turn; `restoreUIMessages(rows, { steps: true })` keeps them on reload. A tool declares
+  its own step (`ToolBase.step`: a kind, or `{ kind, doneLabel(input, result), subjects(input, ctx) }`): the finished
+  row's wording (`done_label`) is the tool's own sentence or is not sent, and what a tool says its step is about is
+  checked against the caller's roster and team before it is sent (on a player's turn, only the player). A step lists at
+  most twelve subjects and says how many more there are (`subjects_more`).
 - **A draft is shown as it is written.** A tool whose input is a draft (`ToolBase.draft.fields`) has those fields
   streamed to the thread while the model writes them (`draft_delta`, at most every 150 ms): whole values, the
   finished items of a list, words up to the last whole word, never a half-written item (`engine/draft.ts`). Nothing

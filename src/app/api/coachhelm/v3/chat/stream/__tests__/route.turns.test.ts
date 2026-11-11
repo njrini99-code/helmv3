@@ -853,7 +853,7 @@ describe('the model’s code calling the reads (on for a coach, off for a player
     expect(rows).toEqual(['read_started:code_execution', 'read_started:get_team_stats', 'read_finished:get_team_stats', 'read_finished:code_execution']);
     // The code's row is named for what it is doing, and closes saying how many reads it covered.
     expect(events.find((e) => e.type === 'read_started' && e.tool === 'code_execution')).toMatchObject({ label: 'Working out the figures' });
-    expect(events.find((e) => e.type === 'read_finished' && e.tool === 'code_execution')).toMatchObject({ label: 'Working out the figures', detail: '1 read', state: 'done' });
+    expect(events.find((e) => e.type === 'read_finished' && e.tool === 'code_execution')).toMatchObject({ label: 'Working out the figures', done_label: 'Worked out the figures', detail: '1 read', state: 'done' });
     // And a part records what the run worked from. No method: the code did not begin with one.
     const computed = events.filter((e) => e.type === 'part' && e.part.type === 'data-computed') as Array<{ part: { id: string; data: unknown } }>;
     expect(computed.map((e) => e.part.data)).toEqual([{ refs: ['e2'], reads: 1, players: 0, window: null }]);
@@ -924,7 +924,7 @@ describe('the model’s code calling the reads (on for a coach, off for a player
     const [row] = assistantRows();
     const stored = row!.ui_parts as Array<{ type: string; id?: string; data?: { label?: string; state?: string; detail?: string } }>;
     expect(stored.filter((p) => p.type === 'data-computed')).toEqual([part.part]);
-    expect(stored.filter((p) => p.type === 'data-progress' && p.id === codeRows[0]!.id).map((p) => p.data)).toMatchObject([{ label: 'Working it out across the team', state: 'done', detail: '3 reads' }]);
+    expect(stored.filter((p) => p.type === 'data-progress' && p.id === codeRows[0]!.id).map((p) => p.data)).toMatchObject([{ label: 'Working it out across the team', done_label: 'Worked it out across the team', state: 'done', detail: '3 reads' }]);
     expect(restoreUIMessages((db.tables[MESSAGES] ?? []) as never).at(-1)!.parts.find((p) => p.type === 'data-computed')).toMatchObject({ data: { reads: 3, players: 2 } });
     // The model is never sent the part.
     expect(turnMetaOf(row!.ui_parts as never)).toMatchObject({ reads: 3 });
@@ -1380,6 +1380,59 @@ describe('the steps of a turn', () => {
     expect(last.work!.working_ms).toBeLessThanOrEqual(last.duration_ms);
     const [row] = assistantRows();
     expect(turnMetaOf(row!.ui_parts as never)).toMatchObject({ reads: 2, steps: 2 });
+  });
+
+  it('a tool’s own words finish its step, and what it says the step is about is sent with it; a tool that declares nothing sends neither', async () => {
+    const declared = {
+      ...measured('get_player_stats', [['player-a', 'A']]),
+      step: {
+        kind: 'compare',
+        doneLabel: (input: { player_id?: string }, result: { measurements: unknown[] } | null) => `Compared ${input.player_id === 'player-a' ? 'Avery' : 'someone'} with the team (${result?.measurements.length ?? 0} figures)`,
+        subjects: () => [{ kind: 'event', id: 'ev-1', label: 'Fall Invitational' }, { kind: 'player', id: 'not-on-this-roster', label: 'A stranger' }],
+      },
+    };
+    h.toolsFor.mockImplementation(() => asTools(declared as never, measured('get_team_stats', [['player-b', 'B']]), { ...taskTool('create_focus_area', log), step: { doneLabel: (input: { title: string }) => `Drafted the focus area ${input.title}` } } as never));
+    script({ content: [toolUse('tu_1', 'get_player_stats', { player_id: 'player-a' }), toolUse('tu_2', 'get_team_stats', {})] }, { content: [toolUse('tu_3', 'create_focus_area', { title: 'Lag putting' })] });
+    const { events } = await ask('How does Avery compare, and set a focus area?');
+    const steps = stepEvents(events) as unknown as Array<StepEvent & { done_label?: string; label?: string }>;
+    const of = (tool: string, type: string) => steps.find((s) => s.tool === tool && s.type === type)!;
+
+    // Declared: the kind, the finished wording (the tool's own sentence, with what the read returned), and the event it is about.
+    expect(of('get_player_stats', 'read_started')).toMatchObject({ kind: 'compare', subjects: [{ kind: 'player', id: 'player-a', label: 'Avery Lane' }, { kind: 'event', id: 'ev-1', label: 'Fall Invitational' }] });
+    expect(of('get_player_stats', 'read_started')).not.toHaveProperty('done_label');
+    expect(of('get_player_stats', 'read_finished')).toMatchObject({ kind: 'compare', label: 'Reading get player stats', done_label: 'Compared Avery with the team (1 figures)' });
+    expect(JSON.stringify(steps)).not.toContain('stranger');
+    // Not declared: the finished row carries the running label and no other wording. Nothing is made from the label or the name.
+    expect(of('get_team_stats', 'read_finished')).toMatchObject({ kind: 'read', label: 'Reading get team stats' });
+    expect(of('get_team_stats', 'read_finished')).not.toHaveProperty('done_label');
+    // A task's step is finished in the task's own words too.
+    expect(of('create_focus_area', 'read_finished')).toMatchObject({ kind: 'draft', state: 'done', done_label: 'Drafted the focus area Lag putting' });
+    // Stored as sent: the row a reload draws says the same.
+    const stored = (assistantRows()[0]!.ui_parts as Array<{ type: string; data?: { tool?: string; done_label?: string; done?: string } }>).find((p) => p.type === 'data-progress' && p.data?.tool === 'get_player_stats')!;
+    expect(stored.data).toMatchObject({ done_label: 'Compared Avery with the team (1 figures)', done: 'Compared Avery with the team (1 figures)' });
+  });
+
+  it('a step about more than twelve people or things sends twelve and the number of the rest', async () => {
+    const rounds = Array.from({ length: 30 }, (_, i) => [`round-${i}`, `Round ${i + 1}`] as [string, string]);
+    const many = measured('get_team_stats', []);
+    many.run = async () => ({
+      summary: 'Rounds',
+      measurements: rounds.map(([id, label]) => ({ metric_id: 'score', metric_label: 'Score', unit: 'strokes', value: 72, entity: { kind: 'round', id, label }, window_start: null, window_end: null, sample_size: 1, sample_unit: 'rounds', as_of: '2026-11-10T12:00:00.000Z', coverage: 'complete', coverage_note: null, source: 'Rounds' })),
+      series: [],
+      coverage: 'complete',
+      coverage_note: null,
+      as_of: '2026-11-10T12:00:00.000Z',
+    }) as never;
+    h.toolsFor.mockImplementation(() => asTools(many));
+    script({ content: [toolUse('tu_1', 'get_team_stats', {})] }, { content: [text('Thirty rounds.')] });
+    const { events } = await ask('Show the rounds');
+    const end = (stepEvents(events) as unknown as Array<StepEvent & { subjects_more?: number }>).find((s) => s.type === 'read_finished')!;
+    expect(end.subjects).toHaveLength(12);
+    expect(end.subjects!.map((s) => s.label)).toEqual(rounds.slice(0, 12).map(([, label]) => label));
+    expect(end.subjects_more).toBe(18);
+    const stored = (assistantRows()[0]!.ui_parts as Array<{ type: string; data?: { subjects?: unknown[]; subjects_more?: number } }>).find((p) => p.type === 'data-progress')!;
+    expect(stored.data!.subjects).toHaveLength(12);
+    expect(stored.data!.subjects_more).toBe(18);
   });
 
   it('what the browser folds from the stream is what is stored, step for step, and a reload can bring the steps back', async () => {

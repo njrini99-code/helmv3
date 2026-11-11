@@ -10,13 +10,31 @@
  */
 import type { ToolEnvelope } from '../provenance';
 import type { ChatStep, ChatStepKind, ChatStepSubject, ChatUIPart } from './protocol';
-import type { ChatTool, ToolContext } from './tool';
+import type { ChatTool, StepDescriptor, ToolContext } from './tool';
 import { isPlayerContext } from './tool';
 
-/** The most subjects one step carries: a row of faces, not a roster. */
+/** The most subjects one step carries: a row of faces, not a roster. The rest are a number (`subjects_more`). */
 export const MAX_STEP_SUBJECTS = 12;
+/** The most subjects a step keeps track of at all, so its "and N more" is a true count without holding a whole season of rounds. */
+const MAX_TRACKED_SUBJECTS = 500;
 
-export const stepKindOf = (tool: ChatTool): ChatStepKind => tool.step ?? (tool.kind === 'task' ? 'draft' : 'read');
+/** The tool's own descriptor of its step, when it declares more than a kind. */
+const descriptorOf = (tool: ChatTool): StepDescriptor<unknown> | null => (tool.step && typeof tool.step === 'object' ? (tool.step as StepDescriptor<unknown>) : null);
+
+/** The step's mark: what the tool declares, else `draft` for a task and `read` for a read. Never worked out from a name. */
+export const stepKindOf = (tool: ChatTool): ChatStepKind => (typeof tool.step === 'string' ? tool.step : descriptorOf(tool)?.kind) ?? (tool.kind === 'task' ? 'draft' : 'read');
+
+/** The finished row's label as the tool words it, or null when it declares none (or what it gives is not usable). */
+export function doneLabelOf(tool: ChatTool, input: unknown, result: ToolEnvelope | null): string | null {
+  const declared = descriptorOf(tool)?.doneLabel;
+  if (!declared) return null;
+  try {
+    const words = declared(input, result);
+    return typeof words === 'string' && words.trim() ? words.trim().slice(0, 160) : null;
+  } catch {
+    return null;
+  }
+}
 
 function known(who: ToolContext['who'], kind: string, id: unknown): ChatStepSubject | null {
   if (typeof id !== 'string') return null;
@@ -28,14 +46,55 @@ function known(who: ToolContext['who'], kind: string, id: unknown): ChatStepSubj
   return null;
 }
 
-/** Add subjects to a list, each once, up to the cap. Returns the same list when nothing was added. */
+/** Add subjects to a list, each once, in the order they became known. Returns the same list when nothing was added. */
 export function withSubjects(have: readonly ChatStepSubject[], more: readonly ChatStepSubject[]): readonly ChatStepSubject[] {
   const next = [...have];
   for (const subject of more) {
-    if (next.length >= MAX_STEP_SUBJECTS) break;
+    if (next.length >= MAX_TRACKED_SUBJECTS) break;
     if (!next.some((s) => s.kind === subject.kind && s.id === subject.id)) next.push(subject);
   }
   return next.length === have.length ? have : next;
+}
+
+/** A step's subjects as it sends them: the first twelve, and how many more there are. Nothing when it is about no one. */
+export function subjectFields(all: readonly ChatStepSubject[]): Pick<ChatStep, 'subjects' | 'subjects_more'> {
+  if (all.length === 0) return {};
+  if (all.length <= MAX_STEP_SUBJECTS) return { subjects: all };
+  return { subjects: all.slice(0, MAX_STEP_SUBJECTS), subjects_more: all.length - MAX_STEP_SUBJECTS };
+}
+
+const THINGS = new Set<ChatStepSubject['kind']>(['round', 'event', 'qualifier', 'tournament', 'plan', 'document']);
+/** A face is passed on only as an address this app or a secure host serves. */
+const faceOf = (value: unknown): string | null => (typeof value === 'string' && value.length <= 500 && (/^https:\/\//.test(value) || /^\/[^/]/.test(value)) ? value : null);
+
+/**
+ * Who or what the tool itself says its step is about (`StepDescriptor.subjects`), checked: a player only if on the caller's own
+ * roster, and named as the roster names them; a team only if it is the caller's; a thing (an event, a qualifier, a plan) as the
+ * tool gives it, which it read under the caller's own session. A signed-in player's step is only ever about themselves. A tool
+ * that declares nothing, or throws, adds nothing.
+ */
+export function subjectsDeclared(tool: ChatTool, input: unknown, ctx: ToolContext): readonly ChatStepSubject[] {
+  const declared = descriptorOf(tool)?.subjects;
+  if (!declared) return [];
+  let given: unknown;
+  try {
+    given = declared(input, ctx);
+  } catch {
+    return [];
+  }
+  if (!Array.isArray(given)) return [];
+  const kept: ChatStepSubject[] = [];
+  for (const item of given.slice(0, MAX_TRACKED_SUBJECTS)) {
+    const { kind, id, label, avatar_url: face } = (item ?? {}) as Partial<ChatStepSubject>;
+    if (typeof id !== 'string' || !id || id.length > 100) continue;
+    const person = kind === 'player' || kind === 'team' ? known(ctx.who, kind, id) : null;
+    const thing = kind && THINGS.has(kind) && !isPlayerContext(ctx.who) && typeof label === 'string' && label.trim() ? { kind, id, label: label.trim().slice(0, 80) } : null;
+    const subject = person ?? thing;
+    if (!subject) continue;
+    const avatar = faceOf(face);
+    kept.push(avatar ? { ...subject, avatar_url: avatar } : subject);
+  }
+  return withSubjects([], kept);
 }
 
 /** Who a step is about, as far as its input says before it has run: the players it names. */

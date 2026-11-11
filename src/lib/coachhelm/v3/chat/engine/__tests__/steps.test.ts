@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { ToolEnvelope } from '../../provenance';
 import { applyChatEvent, type ChatEvent, type ChatStep, type ChatUIMessage, type ChatUIPart } from '../protocol';
-import { countOfEnvelope, lastRowNumberOf, lastSeqOf, MAX_STEP_SUBJECTS, playersCovered, subjectsOfEnvelope, subjectsOfInput, withSubjects, workOf } from '../steps';
-import type { ToolContext } from '../tool';
+import { countOfEnvelope, doneLabelOf, lastRowNumberOf, lastSeqOf, MAX_STEP_SUBJECTS, playersCovered, stepKindOf, subjectFields, subjectsDeclared, subjectsOfEnvelope, subjectsOfInput, withSubjects, workOf } from '../steps';
+import type { ChatTool, StepDescriptor, ToolContext } from '../tool';
 
 const coach = { coach_id: 'c', user_id: 'u', team_id: 'team-1', team_name: 'Test Team', timezone: 'America/New_York', roster: [{ id: 'p1', name: 'Avery Lane' }, { id: 'p2', name: 'Blake Reed' }] } as unknown as ToolContext['who'];
 const player = { ...coach, roster: [{ id: 'p1', name: 'Avery Lane' }], player_id: 'p1' } as unknown as ToolContext['who'];
@@ -27,12 +27,18 @@ describe('who a step is about', () => {
     expect(subjectsOfInput(player, { player_id: 'p2' })).toEqual([]);
   });
 
-  it('is each subject once, in the order they became known, and never more than a row of faces', () => {
+  it('is each subject once, in the order they became known; a step sends a row of faces and says how many more there are', () => {
     const have = [{ kind: 'player' as const, id: 'p1', label: 'A' }];
     expect(withSubjects(have, [{ kind: 'player', id: 'p1', label: 'A again' }])).toBe(have);
     expect(withSubjects(have, [{ kind: 'player', id: 'p2', label: 'B' }]).map((s) => s.id)).toEqual(['p1', 'p2']);
     const many = Array.from({ length: 30 }, (_, i) => ({ kind: 'player' as const, id: `x${i}`, label: `P${i}` }));
-    expect(withSubjects([], many)).toHaveLength(MAX_STEP_SUBJECTS);
+    const all = withSubjects([], many);
+    expect(all).toHaveLength(30);
+    // Twelve are sent, in the order they became known, and the rest are a true count: never a roster stored on every step.
+    expect(MAX_STEP_SUBJECTS).toBe(12);
+    expect(subjectFields(all)).toEqual({ subjects: many.slice(0, 12), subjects_more: 18 });
+    expect(subjectFields(many.slice(0, 12))).toEqual({ subjects: many.slice(0, 12) });
+    expect(subjectFields([])).toEqual({});
   });
 
   it('counts what a read counted, and nothing when it counted nothing', () => {
@@ -93,5 +99,65 @@ describe('a step in the reducer', () => {
     expect(waiting.parts[0]!.data).toMatchObject({ state: 'waiting' });
     expect(fold([{ type: 'read_started', id: 'progress-1', label: 'Reading the team', tool: 'get_team_stats' }]).parts[0]!.data).toEqual({ label: 'Reading the team', tool: 'get_team_stats' });
     expect(fold([{ type: 'read_finished', id: 'progress-1', label: 'Read the team', tool: 'get_team_stats', state: 'done' }]).parts[0]!.data).toEqual({ label: 'Read the team', tool: 'get_team_stats', state: 'done', done: 'Read the team' });
+  });
+});
+
+
+describe('what a tool declares about its own step', () => {
+  const ctx = (who: ToolContext['who']) => ({ who }) as unknown as ToolContext;
+  const tool = (step: ChatTool['step'], kind: 'read' | 'task' = 'read') => ({ kind, name: 'get_rounds', description: 'd', progress: () => 'Reading rounds', step }) as unknown as ChatTool;
+  const descriptor = (d: StepDescriptor<{ player_id?: string; event_id?: string }>) => d as unknown as ChatTool['step'];
+
+  it('its kind: a word, or the descriptor’s; undeclared, a read is a read and a task a draft, whatever the tool is called', () => {
+    expect(stepKindOf(tool('compare'))).toBe('compare');
+    expect(stepKindOf(tool(descriptor({ kind: 'find' })))).toBe('find');
+    expect(stepKindOf(tool(descriptor({})))).toBe('read');
+    expect(stepKindOf(tool(undefined))).toBe('read');
+    expect(stepKindOf(tool(undefined, 'task'))).toBe('draft');
+    expect(stepKindOf({ ...tool(undefined), name: 'compare_players' } as ChatTool)).toBe('read');
+  });
+
+  it('the finished row’s wording is the tool’s own words, or nothing: the running label is never reworded here', () => {
+    const declared = tool(descriptor({ doneLabel: (input, result) => `Read ${input.player_id ? 'Avery’s' : 'the team’s'} rounds${result ? `, ${result.measurements.length} figures` : ''}` }));
+    expect(doneLabelOf(declared, { player_id: 'p1' }, read(entity('player', 'p1', 'A')))).toBe('Read Avery’s rounds, 1 figures');
+    expect(doneLabelOf(declared, {}, null)).toBe('Read the team’s rounds');
+    expect(doneLabelOf(tool('read'), {}, null)).toBeNull();
+    expect(doneLabelOf(tool(undefined), {}, null)).toBeNull();
+    // Unusable or throwing: not declared.
+    expect(doneLabelOf(tool(descriptor({ doneLabel: () => '   ' })), {}, null)).toBeNull();
+    expect(doneLabelOf(tool(descriptor({ doneLabel: () => 7 as never })), {}, null)).toBeNull();
+    expect(doneLabelOf(tool(descriptor({ doneLabel: () => { throw new Error('x'); } })), {}, null)).toBeNull();
+    expect(doneLabelOf(tool(descriptor({ doneLabel: () => 'x'.repeat(400) })), {}, null)).toHaveLength(160);
+  });
+
+  it('who or what it says the step is about is checked: people against the caller’s own roster and team, things as given', () => {
+    const declared = tool(descriptor({
+      subjects: () => [
+        { kind: 'event', id: 'ev-1', label: '  Fall Invitational  ', avatar_url: 'javascript:alert(1)' },
+        { kind: 'player', id: 'p2', label: 'whatever the tool calls them', avatar_url: 'https://cdn.example.com/p2.jpg' },
+        { kind: 'player', id: 'stranger', label: 'Not on this roster' },
+        { kind: 'team', id: 'another-team', label: 'Rivals' },
+        { kind: 'team', id: 'team-1', label: 'x' },
+        { kind: 'event', id: 'ev-1', label: 'The same event again' },
+        { kind: 'qualifier', id: '', label: 'No id' },
+        { kind: 'plan', id: 'plan-1', label: '' },
+        { kind: 'person' as never, id: 'x', label: 'Not a kind' },
+        null as never,
+      ],
+    }));
+    expect(subjectsDeclared(declared, {}, ctx(coach))).toEqual([
+      // A thing is named as the tool names it; a face that is not an https or app address is dropped.
+      { kind: 'event', id: 'ev-1', label: 'Fall Invitational' },
+      // A player is named as the roster names them.
+      { kind: 'player', id: 'p2', label: 'Blake Reed', avatar_url: 'https://cdn.example.com/p2.jpg' },
+      { kind: 'team', id: 'team-1', label: 'Test Team' },
+    ]);
+    // A signed-in player's step is only ever about themselves: not a teammate, not an event, whatever the tool says.
+    const mine = tool(descriptor({ subjects: () => [{ kind: 'player', id: 'p2', label: 'A teammate' }, { kind: 'event', id: 'ev-1', label: 'Fall Invitational' }, { kind: 'player', id: 'p1', label: 'Me' }] }));
+    expect(subjectsDeclared(mine, {}, ctx(player))).toEqual([{ kind: 'player', id: 'p1', label: 'Avery Lane' }]);
+    // Nothing declared, something that is not a list, or a throw: nothing.
+    expect(subjectsDeclared(tool('read'), {}, ctx(coach))).toEqual([]);
+    expect(subjectsDeclared(tool(descriptor({ subjects: () => 'everyone' as never })), {}, ctx(coach))).toEqual([]);
+    expect(subjectsDeclared(tool(descriptor({ subjects: () => { throw new Error('x'); } })), {}, ctx(coach))).toEqual([]);
   });
 });

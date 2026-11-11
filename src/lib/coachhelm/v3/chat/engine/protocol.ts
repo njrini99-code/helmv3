@@ -70,6 +70,8 @@ export interface ChatStepSubject {
   kind: 'player' | 'team' | 'round' | 'event' | 'qualifier' | 'tournament' | 'plan' | 'document';
   id: string;
   label: string;
+  /** A face for the subject, only when the tool that declared it already holds one the caller may see. The engine never looks one up. */
+  avatar_url?: string | null;
 }
 /**
  * A step of work: the data of a `data-progress` part (part id = the step's id, stable for the step's life). Every field but
@@ -92,8 +94,10 @@ export interface ChatStep {
   kind?: ChatStepKind;
   /** The step this one ran under: a read the model's code called names the code's step. */
   parent_id?: string;
-  /** Who it is about, in the order they became known. Re-sent whole when it grows. */
+  /** Who it is about, in the order they became known, twelve at most. Re-sent whole when it grows. */
   subjects?: readonly ChatStepSubject[];
+  /** How many more it is about than `subjects` lists. Absent when `subjects` is all of them. */
+  subjects_more?: number;
   /** What it has counted. `more: true` while it is still counting. */
   count?: { n: number; unit: string; more: boolean };
   /** How much of a known whole it has covered ("9 of 12 players"). */
@@ -249,8 +253,8 @@ export type ChatEvent =
   | { type: 'done'; status: ChatTurnStatus; duration_ms?: number; work?: { steps: number; working_ms: number } };
 
 /** The facts a step event may carry beyond its label. All optional. */
-type StepFields = Pick<ChatStep, 'kind' | 'parent_id' | 'subjects' | 'count' | 'covers' | 'evidence_ref' | 'started_at' | 'ended_at' | 'seq'>;
-const STEP_FIELDS = ['kind', 'parent_id', 'subjects', 'count', 'covers', 'evidence_ref', 'started_at', 'ended_at', 'seq'] as const;
+type StepFields = Pick<ChatStep, 'kind' | 'parent_id' | 'subjects' | 'subjects_more' | 'count' | 'covers' | 'evidence_ref' | 'started_at' | 'ended_at' | 'seq'>;
+const STEP_FIELDS = ['kind', 'parent_id', 'subjects', 'subjects_more', 'count', 'covers', 'evidence_ref', 'started_at', 'ended_at', 'seq'] as const;
 /** The step facts an event carries, and nothing else of it. */
 const stepFieldsOf = (event: StepFields): StepFields => Object.fromEntries(STEP_FIELDS.flatMap((k) => (event[k] === undefined ? [] : [[k, event[k]]]))) as StepFields;
 

@@ -1430,3 +1430,29 @@ E34. **After the first live run: the close listeners, the cost of the first turn
   assert that `chat_messages_coach_only` is still there, FOR ALL. Not run here (pgTAP runs in CI). The other held Ask
   migrations (`20261101090000`, `20261101090200`) also hold their own `BEGIN`/`COMMIT`; they are not this worker's.
 
+E35. **Steps, reconciled with the coordinator's contract (11 Nov 2026).** The wire stays as built in E32
+(`read_started`, `step_update`, `read_finished` folding into one `data-progress` part per step id): the island reads
+the part, not the event name, and the part carries every field of the contract's single `step` event (id, parent_id,
+kind, state, label, done_label, detail, subjects, count, covers, evidence_ref, started_at, ended_at, tool). What this
+adds, to meet the contract's rules:
+- **A tool declares its own step** (`ToolBase.step`, `engine/tool.ts`): a kind on its own, or a `StepDescriptor`:
+  `{ kind?, doneLabel?(input, result), subjects?(input, ctx) }`. The engine never infers a kind from a name and never
+  rewords a label. **PLANS / CONTEXT, yours to fill in:** no registered tool declares anything yet (every step is
+  `read` or `draft` and no finished row has its own wording). `doneLabel` is the past-tense row ("Read Eli's last 8
+  rounds"); `result` is the read's envelope, or null for a task. `subjects` is for what the engine cannot see: an
+  event, a qualifier, a tournament, a plan, a document, each as `{ kind, id, label, avatar_url? }`.
+- **`done_label` is sent only when the tool declared one** (and on the engine's own code step: "Worked out the
+  figures", "Worked it out across the team"). chat-ux: when it is absent the row has only `label`; `pastOf()` on the
+  screen is then your fallback, and it can go once every tool declares its own.
+- **Subjects.** The engine still names the players in `player_id` / `player_ids` and the players, team and rounds a
+  read's figures are about. A declared subject is checked: a player only if on the caller's roster, named as the
+  roster names them; a team only if the caller's; a thing as the tool gives it. On a player's turn only the player
+  themself is ever sent, whatever a tool declares. `avatar_url` is passed on only from a tool's declaration and only
+  as an https or app address; the engine looks none up (the roster in a chat context holds no face).
+- **`subjects_more`**: a step sends at most twelve subjects and, when there are more, how many more. A new optional
+  field on the part and on the three events.
+- **Not sent, because it would not be true:** `count` while a read is running (no read is incremental; the count
+  arrives with `done`), and `waiting` (nothing is queued: tool calls of one response start together).
+- **Words.** `engine/__tests__/step-words.test.ts` sweeps every registered tool's running label and declared finished
+  label for the writing rules (full words, no notation, no tool or column name, no trailing full stop).
+
