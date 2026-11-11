@@ -168,6 +168,38 @@ describe('how answers read', () => {
     expect(rules.split('\nWrong:')[0]).not.toMatch(/\d \(\d+ rounds?\)/);
   });
 
+  it('an answer is the answer first, then at most three points, with no bold labels and no list nobody asked for', () => {
+    const rules = rulesBlock('ask');
+    expect(rules).toMatch(/Put the answer in the first sentence: answer the question that was asked/);
+    expect(rules).toMatch(/Then give at most three supporting points, one sentence each, the biggest gap first/);
+    expect(rules).toMatch(/do not walk through every area/);
+    expect(rules).toMatch(/no bold labels\. Write a list only when the coach asked for a list or a ranking/);
+    expect(rules).toMatch(/End with at most one offer of a next step/);
+    expect(rules).toMatch(/When the coach asks for the full breakdown \("show me every area"\), call show_visual\. Do not write it out/);
+    // The rules follow themselves: nothing in them is bold.
+    expect(rules).not.toMatch(/\*\*/);
+    expect(rulesBlock('player')).toMatch(/at most three supporting points, one sentence each\. No bold labels, and a list only when they asked for one/);
+  });
+
+  it('a date is written as a coach says it, and the rule holds no stamp itself', () => {
+    const rules = rulesBlock('ask');
+    expect(rules).toMatch(/Write a date as a coach says it, as the read does: "18 May", "Thursday 12 November at 3:00 pm"/);
+    expect(rules).toMatch(/Add the year only when it is not this season\. Never a year-month-day stamp or "5\/18"/);
+    expect(rules).not.toMatch(/\d{4}-\d{2}-\d{2}/);
+    expect(rulesBlock('player')).toMatch(/a date as the read gives it \("18 May"\), never a year-month-day stamp/);
+  });
+
+  it('an id in square brackets is for the next call and never for an answer', () => {
+    expect(rulesBlock('ask')).toMatch(/An id or ref in square brackets at the end of a read's line is for tool calls only: never write one in an answer/);
+    expect(rulesBlock('player')).toMatch(/never write an id from square brackets/);
+  });
+
+  it('something the app may not record is looked up before it is called missing', () => {
+    const rules = rulesBlock('ask');
+    expect(rules).toMatch(/Before you say the app does not record something, call get_reference with topic golf and what it is about/);
+    expect(rules).toMatch(/If it answers "not tracked", say plainly that it is not recorded and name the closest figure that is/);
+  });
+
   it('the player’s rules carry the same rule in one line', () => {
     const rules = rulesBlock('player');
     expect(rules).toMatch(/in words, inside the sentence/);
