@@ -1,7 +1,7 @@
 -- STATUS: WRITTEN, NOT APPLIED (HOLD, see HELD.md). PRIORITY: security fix,
 -- ships ahead of the Messages redesign.
--- Apply: npm run db:apply -- \
---   supabase/migrations/20261110090050_golf_conversations_team_channel_coach_only.sql
+-- Apply: npm run db:apply -- supabase/migrations/<this file>, which is
+--   20261110090050_golf_conversations_team_channel_coach_only.sql
 -- Risk: LOW. No data changes. It narrows who may INSERT a conversation flagged
 -- is_team_channel: only a coach of that team. No app code sets the flag at
 -- main (743cb23a1) or at the build production serves (d0f467a73); only
