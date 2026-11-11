@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { courseReads, stationOrder, readsDrawn, type ChStation, type ChTeamBoardData, type ChTeamPlayer } from '../../../data/coachhelm-team-shape';
-import { formatSigned, windowWords } from '../../../lib/format';
+import { formatSigned } from '../../../lib/format';
 import { useChPhone } from '../../../lib/use-phone';
 import { PhoneTop } from '../../../shell/phone-chrome';
 import { Button } from '../../../ui/Button';
@@ -80,18 +80,20 @@ function Hero({
     setPicks((n) => n + 1);
     setStation(s);
   };
-  // The hole's figures are each player's season mean, averaged over the players at the shots floor (coachhelm-team-legs.ts):
-  // said here because Home's team's game pools every player's last 10 and reads differently.
+  // The hole's figures are each player's last ten counted rounds (coachhelm-team-legs.ts, `lastTenRounds`: the window Home, Stats and
+  // the roster read), averaged over the players at the shots floor. The line under the figure says that window, as Home's team card
+  // does; it is not "this season", and the board's round count is not the rounds behind the figure.
+  const windowLine = 'Each player’s last 10';
   // The sign carries the direction for the eye; the words carry it for a screen reader (QA-7).
   const figure = (
-    <div className="hn" role="group" aria-label={`${formatSigned(data.teamTotal.strokes)} a round ${betterOrWorse(data.teamTotal.strokes, data.team.baselineLabel)}, ${windowWords('season', data.teamTotal.rounds)}`}>
+    <div className="hn" role="group" aria-label={`${formatSigned(data.teamTotal.strokes)} a round ${betterOrWorse(data.teamTotal.strokes, data.team.baselineLabel)}, ${windowLine.toLowerCase()}`}>
       <b className="ch-num" aria-hidden="true">
         {formatSigned(data.teamTotal.strokes)}
       </b>
       <span aria-hidden="true">
         a round {data.team.baselineLabel}
         <br />
-        {windowWords('season', data.teamTotal.rounds)}
+        {windowLine}
       </span>
     </div>
   );

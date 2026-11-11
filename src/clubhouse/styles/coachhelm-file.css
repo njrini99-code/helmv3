@@ -11,8 +11,8 @@
   --ch-hf-a-accent: var(--ch-accent);
   --ch-hf-a-sep: var(--ch-separator);
   --ch-hf-a-ring: var(--ch-border-hairline);
-  --ch-hf-a-shadow: var(--ch-elevation-lifted);
-  --ch-hf-a-feat: var(--ch-frame);
+  --ch-hf-a-shadow: var(--ch-card-shadow);
+  --ch-hf-a-feat: var(--ch-feature-bg);
   --ch-hf-a-feat-1: var(--ch-feature-ink);
   --ch-hf-a-feat-2: var(--ch-feature-ink-2);
   --ch-hf-a-feat-gain: var(--ch-feature-gain);
@@ -87,7 +87,8 @@
 .ch-hf .ch-hf-whym { margin: 8px 0 0; font: var(--ch-type-13-strong); color: var(--ch-hf-a-ink-2); }
 .ch-hf .ch-hf-cx { padding: 12px; }
 .ch-hf .hs__s .fill { transition: transform var(--ch-dur-base) var(--ch-ease); }
-.ch-hf .card { position: relative; border-radius: var(--ch-radius-lg); background: var(--ch-hf-a-card); box-shadow: var(--ch-file-shadow-1); overflow: hidden; }
+/* The app's global .card draws a border; the shared card recipe's ring is this card's only edge. */
+.ch-hf .card { position: relative; border: 0; border-radius: var(--ch-radius-lg); background: var(--ch-hf-a-card); box-shadow: var(--ch-file-shadow-1); overflow: hidden; }
 .ch-hf .card__h { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 16px 16px 12px; }
 .ch-hf .card__h h4 { margin: 0; font: var(--ch-type-card-title); letter-spacing: var(--ch-track-card-title); display: flex; align-items: center; gap: 6px; }
 .ch-hf .card__h h4 svg { width: 16px; height: 16px; color: var(--ch-hf-a-ink-2); }
@@ -111,16 +112,16 @@
 .ch-hf .feat__open::after { position: absolute; inset: -8px 0; content: ''; }
 .ch-hf .feat__open:focus-visible { outline: 2px solid var(--ch-border-focus); outline-offset: 2px; border-radius: var(--ch-radius-sm); }
 .ch-hf .feat__cmp { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-.ch-hf .feat__cmp div { padding: 8px 12px; border-radius: var(--ch-radius-md); background: rgb(255 255 255 / 0.07); }
+.ch-hf .feat__cmp div { padding: 8px 12px; border-radius: var(--ch-radius-md); background: color-mix(in srgb, var(--ch-feature-ink) 7%, transparent); }
 .ch-hf .feat__cmp b { display: block; font: var(--ch-type-22-medium);  font-stretch: 88%; letter-spacing: 0;  }
 .ch-hf .feat__cmp b.loss { color: var(--ch-hf-a-feat-loss); }
 .ch-hf .feat__cmp span { display: block; margin-top: 4px; font: var(--ch-type-13);  color: var(--ch-hf-a-feat-2); }
 .ch-hf .feat__p { margin: 0; font: var(--ch-type-15);  color: var(--ch-hf-a-feat-2); letter-spacing: var(--ch-track-15); }
 .ch-hf .feat__p b { color: var(--ch-hf-a-feat-1); font-weight:var(--ch-fw-600); }
 .ch-hf .feat__ev { display: flex; flex-wrap: wrap; gap: 6px; }
-.ch-hf .feat__ev span { padding: 4px 8px; border-radius: var(--ch-radius-tail); background: rgb(255 255 255 / 0.1); font: var(--ch-type-13-strong); color: var(--ch-hf-a-feat-1); }
+.ch-hf .feat__ev span { padding: 4px 8px; border-radius: var(--ch-radius-tail); background: color-mix(in srgb, var(--ch-feature-ink) 10%, transparent); font: var(--ch-type-13-strong); color: var(--ch-hf-a-feat-1); }
 .ch-hf .feat__acts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 2px; }
-.ch-hf .stat-done { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px; border-radius: var(--ch-radius-md); font: var(--ch-type-15-strong); letter-spacing: var(--ch-track-15); background: rgb(143 211 170 / 0.12); color: var(--ch-hf-a-feat-gain); } /* .12, not .18: 5.38:1 dark (.18 gave 4.71) */
+.ch-hf .stat-done { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px; border-radius: var(--ch-radius-md); font: var(--ch-type-15-strong); letter-spacing: var(--ch-track-15); background: color-mix(in srgb, var(--ch-feature-gain) 12%, transparent); color: var(--ch-hf-a-feat-gain); } /* .12, not .18: 5.38:1 dark (.18 gave 4.71) */
  /* 8%, not 11%: 4.99:1 light (11% gave 4.78) */
 .ch-hf .rows { display: flex; flex-direction: column; }
 .ch-hf .r { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 64px; padding: 8px 16px; border: 0; background: none; text-align: left; width: 100%; cursor: pointer; color: var(--ch-hf-a-ink); }
@@ -204,7 +205,7 @@
 .ch-hf .pv { position: sticky; top: calc(env(safe-area-inset-top) + var(--ch-phone-topbar-h) + 8px); z-index: var(--ch-z-raised); align-self: center; display: inline-flex; align-items: center; gap: 8px; margin: -12px 0 -8px; padding: 8px 12px 8px 8px; border-radius: 999px; background: var(--ch-hf-a-card); box-shadow: var(--ch-file-shadow-4); font: var(--ch-type-14-medium);  }
 .ch-hf .pv svg { width: 16px; height: 16px; color: var(--ch-hf-a-accent); }
 .ch-hf.is-desk .pv { top: 12px; }
-.ch-hf .well { border-radius: var(--ch-radius-md); background: var(--ch-hf-a-well); box-shadow: var(--ch-file-x1); padding: 12px; }
+.ch-hf .well { border-radius: var(--ch-radius-md); background: var(--ch-hf-a-well); padding: 12px; }
 .ch-hf .well h5 { margin: 0 0 8px; font: var(--ch-type-15-strong); letter-spacing: var(--ch-track-15); }
 .ch-hf .gauge { display: flex; flex-direction: column; gap: 8px; }
 .ch-hf .gauge div { display: grid; grid-template-columns: 56px minmax(0, 1fr) 36px; gap: 8px; align-items: center; font: var(--ch-type-15-medium); letter-spacing: var(--ch-track-15); }
@@ -233,8 +234,8 @@
 .ch-hf .sk i::before { content: ""; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 30%, var(--ch-hf-a-skel-sheen) 50%, transparent 70%); transform: translateX(-100%); animation: ch-hf-shim var(--ch-dur-shimmer) linear infinite; } /* today's .ch-skel: --ch-dur-shimmer 1.9s */
 .ch-hf .sk i.t { height: calc(22px * var(--ch-type-k, 1)); width: 70%; }
 .ch-hf .feat .sk { padding: 0; }
-.ch-hf .feat .sk i { background: rgb(244 241 232 / 0.10); }
-.ch-hf .feat .sk i::before { background: linear-gradient(100deg, transparent 30%, rgb(244 241 232 / 0.12) 50%, transparent 70%); }
+.ch-hf .feat .sk i { background: color-mix(in srgb, var(--ch-feature-ink) 10%, transparent); }
+.ch-hf .feat .sk i::before { background: linear-gradient(100deg, transparent 30%, color-mix(in srgb, var(--ch-feature-ink) 12%, transparent) 50%, transparent 70%); }
 @keyframes ch-hf-shim { to { transform: translateX(100%); } }
 .ch-hf .empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 24px 24px 24px; text-align: center; }
 .ch-hf .card__h + .empty { padding-top: 6px; }
@@ -254,6 +255,9 @@
 .ch-hf .cb-p b { color: var(--ch-hf-a-ink); font-weight:var(--ch-fw-600); }
 .ch-hf .lnk { border: 0; background: none; padding: 0; color: var(--ch-hf-a-accent); font: var(--ch-type-15-strong);  cursor: pointer; letter-spacing: var(--ch-track-15); }
 .ch-hf .r.undo .lnk { min-height: 44px; }
+/* A link inside a sentence keeps the line's height and reaches 44 to the finger. */
+.ch-hf p .lnk { position: relative; }
+.ch-hf p .lnk::after { position: absolute; inset: -12px -8px; content: ''; }
 .ch-hf .feat.tap { cursor: pointer; transition: box-shadow 0s; }
 .ch-hf .feat.tap[data-ch-pressed]:not(:has(button[data-ch-pressed])) { box-shadow: var(--ch-file-shadow-5); transition-delay: var(--ch-dur-press); }
 .ch-hf .well__p { margin: 0; font: var(--ch-type-15);  color: var(--ch-hf-a-ink-2); letter-spacing: var(--ch-track-15); }
@@ -287,14 +291,13 @@
 .ch-hf {
   --ch-file-shadow-1: var(--ch-hf-a-shadow);
   --ch-file-shadow-2: var(--ch-hf-a-shadow), inset 0 0 0 999px var(--ch-hf-a-press);
-  --ch-file-shadow-3: 0 1px 2px rgb(11 58 37 / 0.2), 0 14px 30px -18px rgb(11 58 37 / 0.6);
-  --ch-file-shadow-4: 0 0 0 var(--ch-hairline-w) var(--ch-hf-a-ring), 0 6px 18px -8px rgb(28 25 18 / 0.3);
-  --ch-file-shadow-5: inset 0 0 0 999px rgb(255 255 255 / 0.05), 0 1px 2px rgb(11 58 37 / 0.2), 0 14px 30px -18px rgb(11 58 37 / 0.6);
-  --ch-file-shadow-6: 0 0 0 var(--ch-hairline-w) var(--ch-hf-a-ring), 0 1px 2px rgb(28 25 18 / 0.06);
-  --ch-file-shadow-7: 0 1px 2px rgb(11 58 37 / 0.3);
+  --ch-file-shadow-3: var(--ch-feature-shadow);
+  --ch-file-shadow-4: 0 0 0 var(--ch-hairline-w) var(--ch-hf-a-ring), var(--ch-elevation-bubblet);
+  --ch-file-shadow-5: inset 0 0 0 999px color-mix(in srgb, var(--ch-ivory-0) 5%, transparent), var(--ch-feature-shadow);
+  --ch-file-shadow-6: var(--ch-crh-btn-shadow);
+  --ch-file-shadow-7: var(--ch-elevation-pill-on);
 }
 .ch-hf {
-  --ch-file-x1: inset 0 1px 2px rgb(28 25 18 / 0.06);
 }
 .ch-hf.is-phone .dmain { display: block; }
 .ch-hf .empty .ch-btn {
@@ -302,12 +305,12 @@
 }
 .ch-hf .feat .ch-btn--ghost {
   color: var(--ch-on-green-ink);
-  background: rgb(255 255 255 / 0.1);
+  background: color-mix(in srgb, var(--ch-feature-ink) 10%, transparent);
 }
 @media (hover: hover) {
   .ch-hf .feat .ch-btn--ghost:hover:not(:disabled) {
     color: var(--ch-on-green-ink);
-    background: rgb(255 255 255 / 0.16);
+    background: color-mix(in srgb, var(--ch-feature-ink) 16%, transparent);
   }
 }
 

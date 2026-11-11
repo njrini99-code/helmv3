@@ -32,7 +32,7 @@ const read = (playerId: string, id: string, category: string, title: string, con
 const READS: Record<string, ReturnType<typeof read>[]> = {
   [PLAYERS.eli.id]: [
     read(PLAYERS.eli.id, 'r1', 'approach', 'Long approaches finish short-right', 'From 175 yards and out, 9 of Eli’s 16 missed greens finish short and right.', { stakes: '.6', sample: '21 rounds', word: 'Solid read', label: 'Greens hit from 175 yd and out', compare: { own: 31, team: 38, tour: 52, unit: '%', higherBetter: true } }),
-    read(PLAYERS.eli.id, 'r8', 'course_management', 'Penalty strokes: 1.1 per round', 'Across 21 rounds Eli averages 1.1 penalty strokes a round, most from the tee.', { stakes: '.8', sample: '21 rounds', word: 'Early read', assigned: 'proposed' }),
+    read(PLAYERS.eli.id, 'r8', 'course_management', 'Penalty strokes: 1.1 per round', 'Across 21 rounds Eli averages 1.1 penalty strokes a round, most from the tee.', { stakes: '.9', sample: '21 rounds', word: 'Early read', assigned: 'proposed' }),
     read(PLAYERS.eli.id, 'r13', 'course_management', 'Worst holes on Oak Hollow: #4, #11, #17', 'Across 11 rounds at Oak Hollow, Eli averages 1.1 over par on holes 4, 11 and 17.', { stakes: '.4', sample: '21 rounds', word: 'Early read' }),
   ],
   [PLAYERS.jonah.id]: [

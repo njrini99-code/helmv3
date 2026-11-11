@@ -59,7 +59,7 @@ describe('the coach file and the lens', () => {
   it('the lens has no plan, track record, dismissed read or coach control in the DOM (S-FILE.lens 4)', () => {
     render(<PlayerFile load={{ status: 'ready', data: previewPlayerFile('default') }} roster={null} initialLens="player" />, { wrapper: Wrap });
     const text = document.body.textContent ?? '';
-    expect(text).toContain('As Jonah sees it');
+    expect(text).toContain('As Eli sees it');
     for (const coachOnly of [NOTE, 'Fairways hit on par 5s', 'Track record', 'Only you']) expect(text).not.toContain(coachOnly);
     expect(document.querySelector('.dots')).not.toBeNull();
     expect(teammateDots()).toHaveLength(0);

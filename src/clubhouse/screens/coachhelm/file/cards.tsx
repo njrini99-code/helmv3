@@ -277,6 +277,9 @@ function GoalBlock({ goal }: { goal: NonNullable<ChFilePlan['goal']> }) {
   const x = (i: number) => (goal.points.length < 2 ? W / 2 : 6 + (i * (W - 12)) / (goal.points.length - 1));
   const y = (v: number) => 8 + ((hi + pad - v) / (hi - lo + 2 * pad)) * (H - 26);
   const chip = goal.word === 'Improved' ? 'gain' : goal.word === 'Worse' ? 'loss' : 'plain';
+  const firstPoint = goal.points[0];
+  const lastPoint = goal.points[goal.points.length - 1];
+  const goalAtStart = goal.target != null && firstPoint != null && lastPoint != null && Math.abs(y(firstPoint.value) - y(goal.target)) > Math.abs(y(lastPoint.value) - y(goal.target));
   return (
     <div className="goal">
       <div className="goal__t">
@@ -289,7 +292,8 @@ function GoalBlock({ goal }: { goal: NonNullable<ChFilePlan['goal']> }) {
           {goal.target != null && (
             <>
               <line x1="0" x2={W} y1={y(goal.target)} y2={y(goal.target)} className="gl" />
-              <text x={W} y={y(goal.target) - 8} textAnchor="end" className="gt">
+              {/* The label takes the end of the goal line the trend is farther from, so it never sits on a round's dot. */}
+              <text x={goalAtStart ? 0 : W} y={y(goal.target) - 8} textAnchor={goalAtStart ? 'start' : 'end'} className="gt" data-ch-file-goal={goalAtStart ? 'start' : 'end'}>
                 Goal {goal.target}
               </text>
             </>

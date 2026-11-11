@@ -3,26 +3,33 @@ import type { ChLadder } from '../data/coachhelm-ladder-shape';
 import type { ChDeepInsight } from '../data/coachhelm-dive-shape';
 import { PREVIEW_FILE_DIVE as PREVIEW_COACH_DIVE, PREVIEW_COACH_VOICE } from './fixtures-coachhelm-coach-player';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
+import { CAST } from './cast';
 
-/** The file on the Jonah fixtures: no invented player. Every state comes through the same shapers the loader uses. */
+/**
+ * The coach's file, on the shared cast's focus player: Eli Brandt, whose penalty read this is on every screen (preview/cast.ts). The
+ * reads come from the coach-player fixtures, written about their own player, so every string is re-voiced to Eli here. Every state
+ * comes through the same shapers the loader uses.
+ */
 const ZONE = 'America/New_York';
-const FIRST = 'Jonah';
+const WHO = CAST.eli;
+const FIRST = WHO.first;
 const voice = PREVIEW_COACH_VOICE as Extract<typeof PREVIEW_COACH_VOICE, { role: 'coach' }>;
 
 const LADDER: ChLadder = {
   top: 'approach',
   readsFailed: false,
   rows: [
-    { id: 'tee', label: 'Off the tee', strokes: '−0.91', sense: 'loss', pct: 100, missing: null, causes: [] },
-    { id: 'approach', label: 'Approach', strokes: '−0.42', sense: 'loss', pct: 46, missing: null, causes: [] },
-    { id: 'short_game', label: 'Around the green', strokes: '+0.12', sense: 'gain', pct: 13, missing: null, causes: [] },
-    { id: 'putting', label: 'Putting', strokes: '+0.31', sense: 'gain', pct: 34, missing: null, causes: [] },
+    // One decimal, as `toChLadder` prints strokes (02-PLAN A20): the fixture never shows a precision the app can't.
+    { id: 'tee', label: 'Off the tee', strokes: '−0.9', sense: 'loss', pct: 100, missing: null, causes: [] },
+    { id: 'approach', label: 'Approach', strokes: '−0.4', sense: 'loss', pct: 46, missing: null, causes: [] },
+    { id: 'short_game', label: 'Around the green', strokes: '+0.1', sense: 'gain', pct: 13, missing: null, causes: [] },
+    { id: 'putting', label: 'Putting', strokes: '+0.3', sense: 'gain', pct: 34, missing: null, causes: [] },
   ],
 };
 const row = (metric_id: string, player_value: number, team_avg: number | null, team_n: number) => ({ player_id: voice.playerId, metric_id, player_value, team_avg, team_n, team_pct: null }) as unknown as PlayerStanding;
 const STANDING = [row('sg_ott', -0.91, -0.2, 7), row('sg_approach', -0.42, -0.35, 7), row('sg_around_green', 0.12, 0.05, 7), row('sg_putting', 0.31, 0.1, 7)];
-const SG: ChFileSg = toChFileSg(LADDER, STANDING, { you: false, first: FIRST }, { window: 'All time', rounds: 21 });
-const SG_YOU: ChFileSg = toChFileSg(LADDER, STANDING, { you: true, first: FIRST }, { window: 'All time', rounds: 21 });
+const SG: ChFileSg = toChFileSg(LADDER, STANDING, { you: false, first: FIRST }, { window: 'All time', rounds: WHO.rounds });
+const SG_YOU: ChFileSg = toChFileSg(LADDER, STANDING, { you: true, first: FIRST }, { window: 'All time', rounds: WHO.rounds });
 
 const FOCUS = (status: string, from: string | null = 'pv-1') => ({ id: 'fa-1', title: 'Penalty strokes', status, created_at: '2026-10-02T13:00:00Z', started_at: status === 'active' ? '2026-10-05T13:00:00Z' : null, updated_at: '2026-10-05T13:00:00Z', from_insight_id: from });
 const GOAL = { id: 'g', title: 'Penalties a round', baseline_value: 1.4, target_value: 0.6, snapshots: [{ date: '2026-10-06', value: 1.3 }, { date: '2026-10-13', value: 1.1 }, { date: '2026-10-20', value: 1.2 }, { date: '2026-10-27', value: 0.9 }] } as never;
@@ -32,7 +39,7 @@ const planOf = (state: string): ChFilePlan => {
   if (state === 'proposed') return toChFilePlan(FOCUS('proposed'), null, null, null, coach, ZONE);
   if (state === 'seen') return toChFilePlan(FOCUS('proposed'), '2026-10-04T21:12:00Z', null, null, coach, ZONE);
   if (state === 'declined') return toChFilePlan(FOCUS('declined'), '2026-10-04T21:12:00Z', null, null, coach, ZONE);
-  return toChFilePlan(FOCUS('active'), '2026-10-04T21:12:00Z', GOAL, { drill: 'Gate putting', count: 2 }, coach, ZONE);
+  return toChFilePlan(FOCUS('active'), '2026-10-04T21:12:00Z', GOAL, { drill: 'Fairway gate', count: 2 }, coach, ZONE);
 };
 
 const OTHERS = [2.4, 4.1, 5.8, 6.5, 8.2];
@@ -45,14 +52,23 @@ const field = (state: string, role: 'coach' | 'player'): ChFileField | null => {
 };
 
 export const PREVIEW_FILE_ROSTER: ChFileRosterRow[] = [
-  { id: voice.playerId, name: voice.name, first: FIRST, line: 'Junior' },
-  { id: 'pl-a', name: 'Sam Reid', first: 'Sam', line: 'Senior' },
-  { id: 'pl-b', name: 'Theo Marsh', first: 'Theo', line: 'Freshman' },
+  { id: voice.playerId, name: WHO.name, first: FIRST, line: WHO.classYear },
+  { id: 'pl-a', name: CAST.jonah.name, first: CAST.jonah.first, line: CAST.jonah.classYear },
+  { id: 'pl-b', name: CAST.theo.name, first: CAST.theo.first, line: CAST.theo.classYear },
 ];
+
+/** The same reads in Eli's name: every string in them that names the fixtures' own player. */
+function voiced<T>(v: T): T {
+  if (typeof v === 'string') return v.split(voice.name).join(WHO.name).split(voice.first).join(FIRST) as T;
+  if (Array.isArray(v)) return v.map((x) => voiced(x)) as T;
+  if (v && typeof v === 'object' && Object.getPrototypeOf(v) === Object.prototype) return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, voiced(x)])) as T;
+  return v;
+}
+const READS: ChDeepInsight[] = voiced(PREVIEW_COACH_DIVE.list);
 
 export function previewPlayerFile(state: string): ChPlayerFile {
   const none = state === 'early' || state === 'empty';
-  const all = state === 'oneread' ? PREVIEW_COACH_DIVE.list.slice(0, 1) : PREVIEW_COACH_DIVE.list;
+  const all = state === 'oneread' ? READS.slice(0, 1) : READS;
   const list: ChDeepInsight[] = none ? [] : state === 'manyreads' ? Array.from({ length: 14 }, (_, i) => ({ ...all[i % all.length]!, base: { ...all[i % all.length]!.base, id: `pv-${i}` } })) : all;
   const plan = planOf(none ? 'noplan' : state);
   const cards: ChFileCards = {
@@ -74,11 +90,11 @@ export function previewPlayerFile(state: string): ChPlayerFile {
   const inYourVoice = cards.feat ? { ...cards.feat, base: { ...cards.feat.base, lede: cards.feat.base.lede.replace(/^Across all (\d+) rounds on file \w+ is averaging ([\d.]+) penalty strokes per round\./, 'You’re averaging $2 penalty strokes a round across all $1 rounds.') } } : null;
   const lens: ChFileCards = { ...cards, feat: inYourVoice, intent: undefined, track: undefined, dismissed: [], reads: list.filter((d) => !d.base.strength && d !== list[0]).slice(0, 2), working: strengths.slice(0, 1), more: Math.max(0, list.length - 3), sg: cards.sg && SG_YOU, field: field(state, 'player') };
   return {
-    head: { playerId: voice.playerId, name: state === 'long' ? 'Maximilian Okonkwo-Vandermeer' : voice.name, first: state === 'long' ? 'Maximilian' : FIRST, line: voice.line },
+    head: { playerId: voice.playerId, name: state === 'long' ? 'Maximilian Okonkwo-Vandermeer' : WHO.name, first: state === 'long' ? 'Maximilian' : FIRST, line: voice.line },
     cards,
     lens,
     failed: { ...(state === 'sgfailed' ? { sg: true as const } : {}), ...(state === 'intentfailed' ? { intent: true as const } : {}), ...(state === 'fieldfailed' ? { field: true as const } : {}) },
-    rounds: state === 'empty' ? 0 : state === 'early' ? 2 : 21,
+    rounds: state === 'empty' ? 0 : state === 'early' ? 2 : WHO.rounds,
     roundsToGo: state === 'early' ? 4 : 0,
     readOn: false,
     penalties: [0, 1, 3, 0, 2, 1, 0, 2].map((value, i) => ({ label: `Oct ${i + 1}`, value })),
