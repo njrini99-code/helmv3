@@ -8,7 +8,7 @@
  *   (a) CHANGED             the last 10 rounds against the player's own previous 10
  *                           (two rates: Newcombe range and pooled z; two means: Welch range and t).
  *   (b) STANDS OUT IN TEAM  the player against the teammates' median, on a robust spread (median and MAD).
- *   (c) BIGGEST COST        the strokes-gained area the player loses most in, when it is a real loss AND clearly worse
+ *   (c) BIGGEST COST        the strokes-gained area the player loses most in over the season, when it is a real loss AND clearly worse
  *                           than the player's own other areas (paired by round, widened for choosing one of four).
  *
  * A gap to the Tour alone never makes a candidate: no rule here reads a Tour figure except (c)'s "is it a loss at all",
@@ -27,12 +27,14 @@
  * Pure: fact sheet in, lists out. Every threshold is a named constant with its reason.
  */
 import { REFERENCE_MISSED_GREEN_COST } from '@/lib/coachhelm/v3/counterfactual/measured-impact';
+import { wilsonInterval } from '@/lib/coachhelm/v3/stats/intervals';
 import { studentTSf, tQuantile975 } from '@/lib/coachhelm/v3/support/distributions';
 import { computeGap, type GapResult } from '@/lib/coachhelm/v3/support/gap';
 import { BH_Q, benjaminiHochberg } from '@/lib/coachhelm/v3/support/multiplicity';
 import { STROKES_GAINED_AREA_IDS } from './measures';
 import { meanSummary, satterthwaiteDf, tQuantile } from './stats';
-import type { FactSheet, MeasureArea, MeasureFact, MeasureUnit, RoundStrokesGained, WindowFigure, WindowKey } from './types';
+import { PATTERN_MIN_SHOTS } from './breakdown';
+import type { AreaBreakdown, FactSheet, MeasureArea, MeasureFact, MeasureUnit, PatternFact, RoundStrokesGained, WindowFigure, WindowKey } from './types';
 
 // ── Thresholds ──────────────────────────────────────────────────────────────────────────────────────────────────────
 
@@ -78,6 +80,9 @@ export const COST_AREAS_SEARCHED = STROKES_GAINED_AREA_IDS.length;
 
 /** The owner's cap: three things per player. */
 export const MAX_CANDIDATES = 3;
+
+/** The rounds shown behind a priority: enough for a coach to open and see the pattern, few enough to read. */
+export const EVIDENCE_ROUNDS = 5;
 
 /**
  * Strokes per event, used only to size a rate in strokes per round for ranking. Each is the definitional lower bound
@@ -246,8 +251,60 @@ export interface Priority {
     /** `same` when the player's own 95% range reaches the team median. `difference` is player minus median, strokes gained per round. */
     player_vs_team: { team_median: number; teammates: number; difference: number; verdict: 'better' | 'same' | 'worse' };
   };
+  /** One level down: which band of the area the strokes go in, and the counted pattern there. */
+  where: PriorityWhere;
   questions: ShotQuestion[];
 }
+
+/**
+ * Where inside the priority area the strokes go, from the season's shots (breakdown.ts).
+ *   band           one band is clearly where they go: a loss, and worse than the player's other bands in the area,
+ *                  round by round (rule (c)'s paired logic, widened for choosing one band of several);
+ *   spread_evenly  the loss is across the bands: none is clearly worse than the others. That is a finding too;
+ *   not_traced     the shot rows cannot say, with the reason.
+ */
+export interface PriorityWhere {
+  finding: 'band' | 'spread_evenly' | 'not_traced';
+  why: string;
+  /** Every band with shots, most strokes lost a round first (positive is strokes lost; 95% range). */
+  bands: Array<{ band: string; label: string; shots: number; rounds: number; strokes_per_round: { value: number; low: number | null; high: number | null } }>;
+  /** The band named. With `spread_evenly` it is the largest so far and `named` is false: say it is not separated. */
+  band: {
+    band: string;
+    label: string;
+    shots: number;
+    rounds: number;
+    named: boolean;
+    strokes_per_round: { value: number; low: number | null; high: number | null };
+    /** Round by round, this band minus the mean of the player's other bands, with the widened range. */
+    against_other_bands: { value: number; low: number; high: number; level: number };
+    /** Reported only: would the band be named on the plain 95% range, without widening for the bands compared? */
+    separated_without_widening: boolean;
+  } | null;
+  /**
+   * The counted patterns, each with its count and (coach-only) the teammates' median; the ones the shots cannot support
+   * say why. The named band's when a band is named; the whole area's when the loss is spread evenly.
+   */
+  patterns: PatternFact[];
+  patterns_scope: 'band' | 'area';
+  /** The one pattern to lead with ({@link LeadPattern}); null when none is traced. */
+  lead_pattern: LeadPattern | null;
+  /** The rounds behind it: the five where the named band (or, spread evenly, the whole area) cost the most. Ids only, so a coach can open them. */
+  evidence: Array<{ round_id: string; date: string; shots: number; strokes_gained: number }>;
+  /** Area, band and lead pattern as one key: two players with the same key have the same priority at this level. */
+  signature: string;
+}
+
+/**
+ * The pattern a priority leads with. When one of the player's shares sits clear of the teammates' median (the median
+ * is outside the share's Wilson range, widened for the number of patterns compared), it is the one furthest from it:
+ * that is what is particular to this player. Otherwise it is the largest miss side, said as a count and nothing more.
+ */
+export type LeadPattern = PatternFact & {
+  differs_from_team: boolean;
+  /** Above or below the teammates' median, when it differs. */
+  direction: 'above' | 'below' | null;
+};
 
 /** One test that ran, whatever it found: what the dry run reads to say why a rule does or does not fire. */
 export interface TestRecord {
@@ -287,18 +344,13 @@ export interface Notability {
   tests: { run: number; alpha: number; false_discovery_rate: number; supported: number };
   /** Every test that ran, in the order run. */
   test_log: TestRecord[];
-  /**
-   * Rule (c) run over the season window instead of the last 10 rounds. Reported only: it is not a candidate and is not
-   * in the correction's family. `would_survive_correction` is whether it would be supported if it were added to it.
-   * Null when the season has too few measured rounds.
-   */
-  biggest_cost_season: { measure_id: string; rounds: number; p_value: number; passes_ranges: boolean; would_survive_correction: boolean } | null;
 }
 
 // ── Strokes at stake ────────────────────────────────────────────────────────────────────────────────────────────────
 
 const round2 = (n: number): number => Math.round(n * 100) / 100;
-const r4 = (n: number): number => Math.round(n * 1e4) / 1e4;
+/** Four decimals. The `+ 0` turns a negative zero (the negative of a band that neither gains nor loses) into zero. */
+const r4 = (n: number): number => Math.round(n * 1e4) / 1e4 + 0;
 
 interface StrokeScale {
   /** Strokes per round for one unit of the measure. */
@@ -525,8 +577,9 @@ function teamWorstArea(sheet: FactSheet, pick: (m: MeasureFact) => number | null
 }
 
 /**
- * (c) BIGGEST COST. Over the last 10 rounds measured from logged shots (estimates never enter), the area with the
- * lowest strokes gained. It is a candidate when both hold on a range widened for having chosen one area of four
+ * (c) BIGGEST COST. Over the SEASON's rounds measured from logged shots (estimates never enter), the area with the
+ * lowest strokes gained. (The season, not the last 10 rounds: one round's spread is about 2.5 strokes on approach, so
+ * ten rounds can separate two areas only when they are about 2.6 strokes apart. Coordinator decision, 11 Nov 2026.) It is a candidate when both hold on a range widened for having chosen one area of four
  * (two-sided level ALPHA / 4):
  *   - it is a loss: the area's own mean is below zero;
  *   - it is clearly the player's worst: round by round, (that area − the mean of the other three) is below zero.
@@ -534,11 +587,11 @@ function teamWorstArea(sheet: FactSheet, pick: (m: MeasureFact) => number | null
  * stake is that paired difference: what the area costs beyond the player's own other areas.
  */
 function biggestCost(sheet: FactSheet): Tested | string {
-  const c = readCost(sheet.strokes_gained_by_round);
+  const c = readCost(sheet.strokes_gained_by_round_season);
   if (typeof c === 'string') return c;
   const m = sheet.measures.find((x) => x.id === c.worst);
   if (!m) return 'the area is not on the sheet';
-  const teamWorst = teamWorstArea(sheet, (x) => x.team?.median);
+  const teamWorst = teamWorstArea(sheet, (x) => x.team_season?.median);
   return {
     measure: m,
     rule: 'biggest_cost',
@@ -550,8 +603,8 @@ function biggestCost(sheet: FactSheet): Tested | string {
       verdict: 'worse',
       compared: {
         with: 'own_other_areas',
-        player: { value: r4(c.own.mean), attempts: c.rounds, rounds: c.rounds, window: 'last10' },
-        against: { value: r4(c.otherMean), attempts: c.rounds, rounds: c.rounds, window: 'last10' },
+        player: { value: r4(c.own.mean), attempts: c.rounds, rounds: c.rounds, window: 'season' },
+        against: { value: r4(c.otherMean), attempts: c.rounds, rounds: c.rounds, window: 'season' },
       },
       difference: { ...c.diff, unit: 'strokes_per_round', level: 1 - c.level },
       test: { name: `paired by round against the other three areas, t; range and p widened for choosing 1 of ${COST_AREAS_SEARCHED}`, p_value: c.p, q_value: q },
@@ -618,8 +671,78 @@ function readPriority(sheet: FactSheet): Priority | string {
     against_own_other_areas: { ...c.diff, level: 1 - c.level },
     areas: c.means.map((x) => ({ measure_id: x.id, strokes_gained_per_round: r4(x.mean) })),
     ...(teamShape ? { team_shape: teamShape } : {}),
+    where: readWhere(sheet.breakdowns.find((b) => b.area_measure_id === m.id), m.id),
     questions: questionsFor(m, ['biggest_cost']),
   };
+}
+
+/** Which band of the priority area the strokes go in. Pure over the fact sheet's breakdown. */
+export function readWhere(area: AreaBreakdown | undefined, areaId: string): PriorityWhere {
+  const key = areaId.replace('strokes_gained_', '');
+  const none = (why: string): PriorityWhere => ({ finding: 'not_traced', why, bands: [], band: null, patterns: [], patterns_scope: 'area', lead_pattern: null, evidence: [], signature: `${key}/not_traced/-` });
+  if (!area || area.rounds.length < MIN_MEASURED_ROUNDS_FOR_COST) return none(`needs ${MIN_MEASURED_ROUNDS_FOR_COST} rounds with shots logged; ${area?.rounds.length ?? 0} so far this season`);
+  const played = area.bands.filter((b) => b.shots > 0 && b.strokes_gained_per_round);
+  if (played.length < 2) return none('the shots of this area fall in fewer than two bands, so there is nothing to compare');
+  const lost = (b: (typeof played)[number]) => {
+    const g = b.strokes_gained_per_round!;
+    // Strokes gained is higher-is-better: strokes lost is its negative, and the range ends swap.
+    return { value: r4(-g.value), low: g.high == null ? null : r4(-g.high), high: g.low == null ? null : r4(-g.low) };
+  };
+  const ranked = [...played].sort((a, b) => a.strokes_gained_per_round!.value - b.strokes_gained_per_round!.value || a.band.localeCompare(b.band));
+  const worst = ranked[0]!;
+  const others = played.filter((b) => b.band !== worst.band);
+  const own = meanSummary(area.rounds.map((r) => r.strokes_gained[worst.band] ?? 0))!;
+  const paired = meanSummary(area.rounds.map((r) => (r.strokes_gained[worst.band] ?? 0) - others.reduce((a, b) => a + (r.strokes_gained[b.band] ?? 0), 0) / others.length))!;
+  const bands = ranked.map((b) => ({ band: b.band, label: b.label, shots: b.shots, rounds: b.rounds, strokes_per_round: lost(b) }));
+  if (own.se == null || paired.se == null || paired.df == null || !(paired.se > 0)) return { ...none('the rounds do not vary, so the bands cannot be told apart'), bands };
+  // Widened for choosing one band of those played, as rule (c) widens for choosing one area of four.
+  const level = ALPHA / played.length;
+  const t = tQuantile(level / 2, paired.df);
+  const against = { value: r4(paired.mean), low: r4(paired.mean - t * paired.se), high: r4(paired.mean + t * paired.se), level: 1 - level };
+  const named = against.high < 0 && own.mean + t * own.se < 0 && worst.shots >= PATTERN_MIN_SHOTS;
+  const t95 = tQuantile975(paired.df);
+  const plain = paired.mean + t95 * paired.se < 0 && own.mean + t95 * own.se < 0 && worst.shots >= PATTERN_MIN_SHOTS;
+  const patterns = named ? worst.patterns : area.overall;
+  const lead = leadPattern(patterns);
+  // The rounds behind it: where the named band cost the most, or (spread evenly) where the whole area did.
+  const inScope = (r: AreaBreakdown['rounds'][number]) => (named ? { shots: r.shots[worst.band] ?? 0, sg: r.strokes_gained[worst.band] ?? 0 } : { shots: Object.values(r.shots).reduce((x, y) => x + y, 0), sg: Object.values(r.strokes_gained).reduce((x, y) => x + y, 0) });
+  const evidence = area.rounds
+    .map((r) => ({ round_id: r.round_id, date: r.date, shots: inScope(r).shots, strokes_gained: r4(inScope(r).sg) }))
+    .filter((r) => r.shots > 0)
+    .sort((x, y) => x.strokes_gained - y.strokes_gained || x.round_id.localeCompare(y.round_id))
+    .slice(0, EVIDENCE_ROUNDS);
+  return {
+    finding: named ? 'band' : 'spread_evenly',
+    why: named
+      ? `Over ${area.rounds.length} measured rounds, ${worst.label} lose strokes and lose more than the player's other bands in this area, round by round, beyond what chance explains.`
+      : `Over ${area.rounds.length} measured rounds no band is clearly worse than the others: the loss is spread across the area. ${worst.label} are the largest so far, not separated from the rest.`,
+    bands,
+    band: { band: worst.band, label: worst.label, shots: worst.shots, rounds: worst.rounds, named, strokes_per_round: lost(worst), against_other_bands: against, separated_without_widening: plain },
+    patterns,
+    patterns_scope: named ? 'band' : 'area',
+    lead_pattern: lead,
+    evidence,
+    signature: `${key}/${named ? worst.band : 'spread_evenly'}/${lead ? `${lead.id}${lead.direction === 'above' ? ':above_team' : lead.direction === 'below' ? ':below_team' : ''}` : 'no_pattern'}`,
+  };
+}
+
+/** The pattern to lead with: the share furthest from the teammates' median when one sits clear of it, else the largest miss side. */
+export function leadPattern(patterns: readonly PatternFact[]): LeadPattern | null {
+  const comparable = patterns.filter((p) => p.unit === 'percent' && p.value != null && p.of > 0 && p.team?.median != null && p.team.teammates >= MIN_TEAMMATES);
+  // Several shares are compared and the furthest is kept, so each range is widened for how many were compared.
+  const z = comparable.length ? tQuantile(ALPHA / comparable.length / 2, 1e9) : 0;
+  const clear = comparable
+    .filter((p) => {
+      const ci = wilsonInterval(p.count, p.of, z);
+      const median = p.team!.median as number;
+      return ci != null && (median < ci.low || median > ci.high);
+    })
+    .sort((a, b) => Math.abs((b.value as number) - (b.team!.median as number)) - Math.abs((a.value as number) - (a.team!.median as number)) || a.id.localeCompare(b.id));
+  const far = clear[0];
+  if (far) return { ...far, differs_from_team: true, direction: (far.value as number) > (far.team!.median as number) ? 'above' : 'below' };
+  const sides = patterns.filter((p) => p.id.startsWith('missed_') && p.value != null);
+  const largest = sides.length ? sides.reduce((a, b) => ((b.value as number) > (a.value as number) ? b : a)) : patterns.find((p) => p.value != null);
+  return largest ? { ...largest, differs_from_team: false, direction: null } : null;
 }
 
 // ── Questions for the analyst ───────────────────────────────────────────────────────────────────────────────────────
@@ -730,18 +853,6 @@ export function findNotable(sheet: FactSheet): Notability {
     byMeasure.set(t.measure.id, entry);
   });
 
-  // Rule (c) over the season, reported beside the 10-round version. Not a candidate, not in the family above.
-  const season = readCost(sheet.strokes_gained_by_round_season);
-  const seasonCost =
-    typeof season === 'string'
-      ? null
-      : {
-          measure_id: season.worst as string,
-          rounds: season.rounds,
-          p_value: season.p,
-          passes_ranges: season.isLoss && season.isWorst,
-          would_survive_correction: season.isLoss && season.isWorst && benjaminiHochberg([...tested.map((t) => t.p), season.p], FALSE_DISCOVERY_RATE).rejected[tested.length] === true,
-        };
   const priority = readPriority(sheet);
 
   const pool: CandidateRef[] = [];
@@ -797,6 +908,5 @@ export function findNotable(sheet: FactSheet): Notability {
     outcome_context: parts.length ? outcomes.sort(byStake) : [],
     tests: { run: tested.length, alpha: ALPHA, false_discovery_rate: FALSE_DISCOVERY_RATE, supported },
     test_log: testLog,
-    biggest_cost_season: seasonCost,
   };
 }

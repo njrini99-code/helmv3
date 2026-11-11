@@ -12,6 +12,8 @@
  */
 import { seasonStartDate } from '@/lib/coachhelm/v3/chat/season-rule';
 import { tourFor } from '@/lib/golf/benchmarks/tour';
+import { effectiveSgBaseline, sgBaselineScale } from '@/lib/golf/sg-benchmarks';
+import { areaBreakdowns, withTeamMedians } from './breakdown';
 import { MEASURES, STROKES_GAINED_AREA_IDS, cacheForFigures, hasMeasuredStrokesGained, screenStrokesGained, type MeasureDef, type TourContext, type WindowData } from './measures';
 import { countedRounds, cutWindows, dayIn, figureRounds, holeRounds, readSince, windowRef, type CountedRound, type PlayerWindows } from './rounds';
 import type { AnalystSources, HoleRow, RoundCacheRow, RoundRow, ShotRow, TeamRow, TourStandardRow } from './sources';
@@ -216,6 +218,21 @@ export function assembleFactSheets(rows: TeamRows): FactSheet[] {
   const look = lookups(rows);
   const cuts = new Map(playerIds.map((id) => [id, cutPlayer(id, byPlayer.get(id) ?? [], seasonStart)]));
   const figures = new Map(playerIds.map((id) => [id, computeFigures(cuts.get(id)!, look)]));
+  // The strokes-gained baseline: the team's own setting when it is one of the two, else its gender's
+  // (the database's sg_scale_for_player rule), so per-shot figures are on the scale the stored round figures are.
+  const setting = team.sg_baseline === 'pga_tour' || team.sg_baseline === 'womens' ? team.sg_baseline : null;
+  const baseline = effectiveSgBaseline(setting, tour === 'lpga' ? 'womens' : 'mens');
+  const breakdowns = new Map(
+    playerIds.map((id) => [
+      id,
+      areaBreakdowns({
+        rounds: holeRounds(cuts.get(id)!.counted.season).filter((r) => look.measuredRoundIds.has(r.id)),
+        shotsByRound: look.shotsByRound,
+        holesByRound: look.holesByRound,
+        scale: sgBaselineScale(baseline),
+      }),
+    ]),
+  );
 
   return playerIds.map((playerId): FactSheet => {
     const cut = cuts.get(playerId)!;
@@ -251,7 +268,7 @@ export function assembleFactSheets(rows: TeamRows): FactSheet[] {
       timezone: team.timezone,
       season_start: seasonStart,
       tour,
-      strokes_gained_baseline: tour === 'lpga' ? 'womens' : 'pga_tour',
+      strokes_gained_baseline: baseline,
       windows: {
         last10: ref('last10', cut.counted.last10),
         previous10: cut.counted.previous10 ? ref('previous10', cut.counted.previous10) : null,
@@ -259,6 +276,7 @@ export function assembleFactSheets(rows: TeamRows): FactSheet[] {
       },
       strokes_gained_by_round: sg,
       strokes_gained_by_round_season: strokesGainedByRound(cut.counted.season, look),
+      breakdowns: withTeamMedians(breakdowns.get(playerId)!, playerIds.filter((id) => id !== playerId).map((id) => breakdowns.get(id)!)),
       measures,
       notes: notesFor(cut, sg),
     };

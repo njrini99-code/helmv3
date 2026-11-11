@@ -62,9 +62,11 @@ describe('the priority: where the strokes go this season', () => {
     const n = read(new TeamFixture().player('subject', season(EVEN, { ...EVEN, approach: -3 })));
     expect(n.priority).toMatchObject({ measure_id: 'strokes_gained_approach', rounds: 20, certainty: 'clear' });
     expect(n.priority!.strokes_per_round.value).toBe(2);
-    // Rule (c) over the last 10 rounds has nothing to say, and the season version, reported beside it, does.
-    expect(n.test_log.find((t) => t.rule === 'biggest_cost')).toMatchObject({ supported: false, range_excludes_zero: false });
-    expect(n.biggest_cost_season).toMatchObject({ measure_id: 'strokes_gained_approach', rounds: 20, passes_ranges: true });
+    // Rule (c) reads the season too, so the same area is a signal: clearly this player's worst over 20 rounds.
+    expect(n.test_log.find((t) => t.rule === 'biggest_cost')).toMatchObject({ measure_id: 'strokes_gained_approach', supported: true });
+    expect(n.candidates.map((c) => c.measure_id)).toEqual(['strokes_gained_approach']);
+    const cost = n.candidates[0]!.reasons.find((r) => r.rule === 'biggest_cost')!;
+    expect(cost.compared.player).toMatchObject({ value: -2, rounds: 20, window: 'season' });
   });
 
   it('is never a claim that something changed: it is not a candidate and does not make one', () => {
@@ -82,7 +84,6 @@ describe('the priority: where the strokes go this season', () => {
     const four = read(new TeamFixture().player('subject', tenRounds(2, { tee: -1, approach: -6, around: -1, putting: -1 }).slice(0, 4)));
     expect(four.priority).toBeNull();
     expect(four.priority_missing).toBe('needs 5 rounds with shots logged; 4 so far this season');
-    expect(four.biggest_cost_season).toBeNull();
     // Rounds with no shots logged never count: an estimate cannot set a priority.
     const estimated = read(new TeamFixture().player('subject', tenRounds(2, { tee: 0, approach: -4, around: 0, putting: 0 }, () => ({ shots: false }))));
     expect(estimated.priority).toBeNull();
@@ -140,7 +141,12 @@ describe('the two make-rate definitions', () => {
     id: 's',
     round_id: 'r',
     hole_id: null,
+    hole_number: null,
+    shot_number: null,
     shot_type: 'putting',
+    club_type: null,
+    is_penalty: null,
+    miss_direction: null,
     lie_before: 'green',
     distance_to_hole_before: null,
     distance_unit_before: 'feet',

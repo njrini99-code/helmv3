@@ -20,6 +20,8 @@ export interface TeamRow {
   gender: string | null;
   /** The zone the season turns in: `golf_team_settings.timezone`, already validated (the Stats screens' rule). */
   timezone: string;
+  /** `golf_team_settings.sg_baseline` ('pga_tour' or 'womens') when the team set one; else the team's gender decides. */
+  sg_baseline?: string | null;
 }
 
 /** A completed, real (`is_test = false`) round with a total. The countable rule is applied by the builder, not the loader. */
@@ -77,7 +79,12 @@ export interface ShotRow {
   id: string;
   round_id: string;
   hole_id: string | null;
+  hole_number: number | null;
+  shot_number: number | null;
   shot_type: string | null;
+  club_type: string | null;
+  is_penalty: boolean | null;
+  miss_direction: string | null;
   lie_before: string | null;
   distance_to_hole_before: number | null;
   distance_unit_before: string | null;

@@ -13,7 +13,7 @@
 import { benjaminiHochberg } from '@/lib/coachhelm/v3/support/multiplicity';
 import { assembleFactSheets, loadTeamRows } from './fact-sheet';
 import { STROKES_GAINED_AREA_IDS } from './measures';
-import { FALSE_DISCOVERY_RATE, findNotable, type Certainty, type Notability, type Rule, type TestRecord } from './notability';
+import { FALSE_DISCOVERY_RATE, findNotable, type Certainty, type Notability, type Priority, type Rule, type TestRecord } from './notability';
 import { comparePuttDefinitions, type PuttDefinitionCount } from './putt-definitions';
 import type { AnalystSources } from './sources';
 import type { FactSheet } from './types';
@@ -144,7 +144,16 @@ export interface TeamReport {
       same_as_team: boolean | null;
       vs_team: 'better' | 'same' | 'worse' | null;
       vs_team_difference: number | null;
+      /** One level down: the band and the counted pattern. */
+      finding: 'band' | 'spread_evenly' | 'not_traced';
+      band: string | null;
+      band_shots: number | null;
+      /** The pattern the table prints: the lead miss side when traced, else the band's first traced pattern. */
+      pattern: { id: string; value: number; count: number; of: number; unit: 'percent' | 'feet'; team_median: number | null; differs_from_team: boolean; scope: 'band' | 'area' } | null;
+      signature: string;
     } | null;
+    /** The same golf under another player id has the same fingerprint (staging holds cloned players). */
+    data_fingerprint: string;
     priority_missing: string | null;
     good_news: number;
     /** The measures behind `good_news`: supported reads in the player's favor. */
@@ -170,10 +179,24 @@ export interface TeamReport {
     most_common_priority: { measure_id: string; players: number; share_of_players: number } | null;
     priority_certainty: Record<Certainty, number>;
   };
-  /** Rule (c) over the last 10 rounds (the rule as it runs) beside the same rule over the season (reported only). */
-  biggest_cost: {
-    last10: { tested: number; passes_ranges: number; supported: number };
-    season: { tested: number; passes_ranges: number; would_survive_correction: number };
+  /** Rule (c), over the season: players tested, both ranges passing, supported after the correction. */
+  biggest_cost: { tested: number; passes_ranges: number; supported: number };
+  /**
+   * How many players' priorities differ from every teammate's at band-plus-pattern level (area, band, lead miss side).
+   * `deduplicated` counts players with identical rounds once.
+   */
+  distinctness: {
+    players_with_priority: number;
+    named_band: number;
+    spread_evenly: number;
+    not_traced: number;
+    /** Reported only: how many would have a band named on the plain 95% range, without widening for the bands compared. */
+    named_without_widening: number;
+    /** Priorities whose lead pattern sits clear of the teammates' median. */
+    lead_differs_from_team: number;
+    distinct_from_every_teammate: number;
+    deduplicated: { players: number; distinct_from_every_teammate: number };
+    signatures: Array<{ signature: string; players: number }>;
   };
   /** Why rule (a) does or does not fire: how many tests a player's run holds, and the p-values before any correction. */
   changed: {
@@ -212,6 +235,52 @@ function spreadOf(values: readonly number[]): { min: number; median: number; max
 }
 
 const share = (n: number, of: number): number => (of ? Math.round((n / of) * 1000) / 1000 : 0);
+
+/**
+ * A short key of a player's season (round dates, stored strokes gained, and the shots and strokes of every band):
+ * equal for the same golf under two player ids, different as soon as one shot differs in a way a band can see.
+ */
+function fingerprintOf(sheet: FactSheet): string {
+  const text = JSON.stringify([
+    sheet.windows.season.rounds,
+    sheet.strokes_gained_by_round_season.map((r) => [r.date, r.total, r.approach, r.putting]),
+    sheet.breakdowns.map((a) => a.bands.map((b) => [b.shots, b.strokes_gained_per_round?.value ?? null])),
+  ]);
+  let h = 5381;
+  for (let i = 0; i < text.length; i++) h = ((h << 5) + h + text.charCodeAt(i)) >>> 0;
+  return h.toString(16).padStart(8, '0');
+}
+
+/** The pattern the table prints for a priority: the lead miss side, else the band's first traced pattern. */
+function printedPattern(p: Priority): NonNullable<TeamReport['per_player'][number]['priority']>['pattern'] {
+  const pick = p.where.lead_pattern;
+  return pick && pick.value != null
+    ? { id: pick.id, value: pick.value, count: pick.count, of: pick.of, unit: pick.unit, team_median: pick.team?.median ?? null, differs_from_team: pick.differs_from_team, scope: p.where.patterns_scope }
+    : null;
+}
+
+function distinctnessOf(rows: ReadonlyArray<{ signature: string; fingerprint: string; finding: string; plain: boolean; differs: boolean }>): TeamReport['distinctness'] {
+  const count = (list: ReadonlyArray<{ signature: string }>) => {
+    const n = new Map<string, number>();
+    for (const r of list) n.set(r.signature, (n.get(r.signature) ?? 0) + 1);
+    return n;
+  };
+  const all = count(rows);
+  const unique = [...new Map(rows.map((r) => [r.fingerprint, r])).values()];
+  const dedup = count(unique);
+  return {
+    players_with_priority: rows.length,
+    named_band: rows.filter((r) => r.finding === 'band').length,
+    spread_evenly: rows.filter((r) => r.finding === 'spread_evenly').length,
+    not_traced: rows.filter((r) => r.finding === 'not_traced').length,
+    named_without_widening: rows.filter((r) => r.plain).length,
+    lead_differs_from_team: rows.filter((r) => r.differs).length,
+    // A priority that could not be traced one level down says nothing a teammate's does not: it is never distinct.
+    distinct_from_every_teammate: rows.filter((r) => r.finding !== 'not_traced' && all.get(r.signature) === 1).length,
+    deduplicated: { players: unique.length, distinct_from_every_teammate: unique.filter((r) => r.finding !== 'not_traced' && dedup.get(r.signature) === 1).length },
+    signatures: [...all].map(([signature, players]) => ({ signature, players })).sort((a, b) => b.players - a.players || a.signature.localeCompare(b.signature)),
+  };
+}
 
 /** What a family of test records would support if the correction ran over them alone. */
 function wouldFire(playerId: string, records: readonly TestRecord[]): WouldFire[] {
@@ -303,8 +372,14 @@ export function teamReport(teamId: string, reads: readonly PlayerRead[], puttDef
             same_as_team: p.team_shape?.same_as_team ?? null,
             vs_team: p.team_shape?.player_vs_team.verdict ?? null,
             vs_team_difference: p.team_shape?.player_vs_team.difference ?? null,
+            finding: p.where.finding,
+            band: p.where.band?.band ?? null,
+            band_shots: p.where.band?.shots ?? null,
+            pattern: printedPattern(p),
+            signature: p.where.signature,
           }
         : null,
+      data_fingerprint: fingerprintOf(sheet),
       priority_missing: notability.priority_missing,
       good_news: notability.good_news.length,
       good_news_measures: notability.good_news.map((g) => g.measure_id),
@@ -320,7 +395,6 @@ export function teamReport(teamId: string, reads: readonly PlayerRead[], puttDef
   const topPriority = priorityList[0];
   const withCandidates = perPlayer.filter((p) => p.candidates.length > 0).length;
   const costLog = reads.flatMap((r) => r.notability.test_log.filter((t) => t.rule === 'biggest_cost'));
-  const seasonCost = reads.flatMap((r) => (r.notability.biggest_cost_season ? [r.notability.biggest_cost_season] : []));
   return {
     team_id: teamId,
     as_of: reads[0]?.sheet.as_of ?? '',
@@ -341,10 +415,13 @@ export function teamReport(teamId: string, reads: readonly PlayerRead[], puttDef
       most_common_priority: topPriority ? { measure_id: topPriority.measure_id, players: topPriority.players, share_of_players: share(topPriority.players, reads.length) } : null,
       priority_certainty: certainty,
     },
-    biggest_cost: {
-      last10: { tested: costLog.length, passes_ranges: costLog.filter((t) => t.range_excludes_zero && t.also_holds).length, supported: costLog.filter((t) => t.supported).length },
-      season: { tested: seasonCost.length, passes_ranges: seasonCost.filter((c) => c.passes_ranges).length, would_survive_correction: seasonCost.filter((c) => c.would_survive_correction).length },
-    },
+    biggest_cost: { tested: costLog.length, passes_ranges: costLog.filter((t) => t.range_excludes_zero && t.also_holds).length, supported: costLog.filter((t) => t.supported).length },
+    distinctness: distinctnessOf(
+      reads.flatMap(({ sheet, notability }) => {
+        const w = notability.priority?.where;
+        return w ? [{ signature: w.signature, fingerprint: fingerprintOf(sheet), finding: w.finding, plain: w.band?.separated_without_widening === true, differs: w.lead_pattern?.differs_from_team === true }] : [];
+      }),
+    ),
     changed: changedDiagnosis(reads),
     putt_definitions: puttDefinitions,
   };
@@ -359,7 +436,7 @@ export function reportTable(report: TeamReport): string {
   const lines: string[] = [];
   lines.push(`Team ${report.team_id}, as of ${report.as_of}: ${report.players} active players`);
   lines.push('');
-  lines.push('player    rounds 10/prev/season  shots 10/season  tests a/b/c  priority (season; strokes a round lost, 95% range; against the team) | signals');
+  lines.push('player    rounds 10/prev/season  shots 10/season  tests a/b/c  priority: area certainty strokes a round lost (95% range, rounds) > band: counted pattern; against the team | signals');
   for (const p of report.per_player) {
     const rounds = `${p.rounds_last10}/${p.rounds_previous10 ?? '-'}/${p.rounds_season}`;
     const shots = `${p.rounds_with_shots_logged}/${p.measured_rounds_season}`;
@@ -368,9 +445,12 @@ export function reportTable(report: TeamReport): string {
     const gap = Math.abs(pr?.vs_team_difference ?? 0).toFixed(2);
     const againstTeam = !pr?.vs_team
       ? ''
-      : `; ${pr.same_as_team ? "the team's worst area too" : "not the team's worst area"}, ${pr.vs_team === 'same' ? `not told apart from the team median (${gap} ${(pr.vs_team_difference ?? 0) < 0 ? 'worse' : 'better'})` : `${pr.vs_team} than the team median by ${gap}`}`;
+      : `; ${pr.same_as_team ? "team's worst area too" : "not the team's worst area"}, ${pr.vs_team === 'same' ? `not told apart from the team median (${gap} ${(pr.vs_team_difference ?? 0) < 0 ? 'worse' : 'better'})` : `${pr.vs_team} than the team median by ${gap}`}`;
+    const pat = pr?.pattern;
+    const pattern = !pr ? '' : pat ? `${pat.id} ${pat.unit === 'percent' ? `${Math.round(pat.value)}% (${pat.count} of ${pat.of})` : `${pat.value.toFixed(1)} ft (${pat.count})`}${pat.team_median != null ? `, team ${pat.unit === 'percent' ? `${Math.round(pat.team_median)}%` : `${pat.team_median.toFixed(1)} ft`}${pat.differs_from_team ? ' DIFFERS' : ''}` : ''}` : 'pattern not traced';
+    const where = !pr ? '' : pr.finding === 'band' ? `${pr.band} (${pr.band_shots} shots): ${pattern}` : pr.finding === 'spread_evenly' ? `spread evenly (largest so far ${pr.band}); whole area: ${pattern}` : 'band not traced';
     const priority = pr
-      ? `${short(pr.measure_id)} ${pr.certainty} ${pr.strokes_per_round.toFixed(2)} (${pr.low.toFixed(2)} to ${pr.high.toFixed(2)}, ${pr.rounds} rounds)${againstTeam}`
+      ? `${short(pr.measure_id)} ${pr.certainty} ${pr.strokes_per_round.toFixed(2)} (${pr.low.toFixed(2)} to ${pr.high.toFixed(2)}, ${pr.rounds} rounds) > ${where}${againstTeam}`
       : `none: ${p.priority_missing}`;
     const signals = p.candidates.length ? p.candidates.map((c) => `${c.measure_id} [${c.rules.map((r) => RULE_LETTER[r]).join(', ')}]`).join('; ') : 'none';
     lines.push(`${p.player_id.slice(0, 8).padEnd(8)}  ${rounds.padStart(21)}  ${shots.padStart(15)}  ${tests.padStart(11)}  ${priority} | ${signals}`);
@@ -385,6 +465,11 @@ export function reportTable(report: TeamReport): string {
   }
   const { summary } = report;
   lines.push(`Players with a priority: ${summary.players_with_priority} of ${report.players} (${summary.priority_certainty.clear} clear, ${summary.priority_certainty.likely} likely, ${summary.priority_certainty.leaning} leaning). With neither a priority nor a signal: ${summary.players_with_neither}.`);
+  const dx = report.distinctness;
+  lines.push(`One level down: a band is named for ${dx.named_band}, the loss is spread evenly for ${dx.spread_evenly}, not traced for ${dx.not_traced}. (On the plain 95% range, not widened for the bands compared, a band would be named for ${dx.named_without_widening}.)`);
+  lines.push(`Lead pattern sits clear of the teammates' median for ${dx.lead_differs_from_team} of ${dx.players_with_priority}.`);
+  lines.push(`Priority differs from every teammate's at band-plus-pattern level: ${dx.distinct_from_every_teammate} of ${dx.players_with_priority}. Counting players with identical rounds once: ${dx.deduplicated.distinct_from_every_teammate} of ${dx.deduplicated.players}.`);
+  for (const sig of dx.signatures.filter((x) => x.players > 1)) lines.push(`  shared by ${sig.players}: ${sig.signature}`);
   lines.push('');
   lines.push('SIGNALS (something unusual about the player that cleared a test)');
   if (report.shared.length === 0) lines.push('No player has a candidate.');
@@ -401,9 +486,7 @@ export function reportTable(report: TeamReport): string {
   lines.push(`Good news (supported, in the player's favor, never a candidate): ${good.length ? good.map((p) => `${p.player_id.slice(0, 8)} ${p.good_news_measures.join(', ')}`).join('; ') : 'none'}.`);
   lines.push('');
   const cost = report.biggest_cost;
-  lines.push('RULE (c) BIGGEST COST, last 10 rounds against the season');
-  lines.push(`Last 10 rounds: tested for ${cost.last10.tested} players, both ranges pass for ${cost.last10.passes_ranges}, supported after correction for ${cost.last10.supported}.`);
-  lines.push(`Season: tested for ${cost.season.tested} players, both ranges pass for ${cost.season.passes_ranges}, would survive the same correction for ${cost.season.would_survive_correction}.`);
+  lines.push(`RULE (c) BIGGEST COST, over the season: tested for ${cost.tested} players, both ranges pass for ${cost.passes_ranges}, supported after correction for ${cost.supported}.`);
   lines.push('');
   const ch = report.changed;
   lines.push('RULE (a) CHANGED, before correction');

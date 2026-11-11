@@ -15,6 +15,7 @@ from 24 title shapes and 91% of players carry the same approach card. Nothing as
 | `rounds.ts` | Which rounds count, and the three named windows. |
 | `measures.ts` | The 35 measures, each computed over one window, and the floors. |
 | `stats.ts` | The few statistics not already in `v3/stats` or `v3/support`. |
+| `breakdown.ts` | Each strokes-gained area split into bands over the season, with the counted patterns of each band. |
 | `fact-sheet.ts` | Part 1. `assembleFactSheets` (pure) and `buildTeamFactSheets` / `buildFactSheet` (through the sources). |
 | `notability.ts` | Part 2. `findNotable(sheet)`: one priority, at most three candidates, plus the other lists. |
 | `putt-definitions.ts` | A count of where the app's two make-rate definitions disagree. A diagnostic; no figure reads it. |
@@ -95,7 +96,37 @@ What had no existing function to call:
 
 `team` on each measure: every teammate's value over their own last 10 rounds with its sample, the median, the MAD and
 `spread` (MAD × 1.4826), without the player the sheet is about. Ids only: a fact sheet has no names. It is marked
-`audience: 'coach_only'`; `withoutCoachOnly(sheet)` removes it before anything travels toward a player.
+`audience: 'coach_only'`; `withoutCoachOnly(sheet)` removes it before anything travels toward a player. The four
+strokes-gained areas also carry `team_season` (each teammate's season), which the priority and rule (c) read, and every
+counted pattern carries the teammates' median of the same pattern; `withoutCoachOnly` removes those too.
+
+### The breakdown
+
+`breakdowns` on the sheet: each strokes-gained area split into bands over the season's rounds measured from shots.
+
+| Area | Bands |
+| --- | --- |
+| approach | start distance: inside 50 yards, 50 to 125, 125 to 175, 175 and longer (`approachBandOf`); par-5 lay-ups from 175 and longer are their own band (`classifyParFiveLongApproach`), because a lay-up is not a missed green |
+| putting | start distance: the six make-rate bands (`src/lib/golf/putt-make.ts`) |
+| off the tee | where the tee shot went: fairway, missed left, missed right, a miss with no side recorded, penalty strokes |
+| around the green | the lie it was played from: fairway or fringe, rough, bunker |
+
+Per band: shots, rounds, strokes gained per round with a 95% range, and per round the band's strokes and shots (ids
+only). The per-shot figure is `shotSgForRound` (`v3/generators/insight-angles/shot-sg.ts`), the port of the database
+function that wrote the stored round figures, so a round's bands add up to its stored area figure (checked on one
+staging round's approach: -4.239 from the bands against a stored -4.24).
+
+Each band carries its counted patterns, each with `count` and `of` and `basis: 'counted_from_shots'`:
+
+- approach: green hit, average finish, the share of misses short / long / left / right, played from the rough;
+- putting: made, three-putts (of the holes whose first putt started in the band), average leave after a miss, the
+  share of misses short / long / low / high;
+- off the tee: share of all tee shots, hit with the driver;
+- around the green: finished on the green, average finish, finished inside 6 feet.
+
+A pattern the rows cannot support has `value: null` and `not_traced` with the reason ("needs 10 misses; 9 so far",
+"the miss side is recorded on 10 of 20 misses"). Nothing is inferred. `overall` is the same patterns over the whole
+area (lay-ups left out) plus each band's headline rate under the band's name (`green_hit_125_175`, `made_5_10`).
 
 ### The Tour block
 
@@ -109,8 +140,8 @@ never the other tour's). `provenance` is `measured`, `approximate` or `by_defini
 
 ## Part 2: notability
 
-Two tiers. A `signal` is something unusual about the player that cleared a test, so most players have none in most
-weeks (on staging, 3 of 23). A `priority` is where the strokes go: every player with enough measured rounds has one.
+Two tiers. A `signal` is something unusual about the player that cleared a test, so many players have none. A
+`priority` is where the strokes go: every player with enough measured rounds has one.
 
 `findNotable(sheet)` returns:
 
@@ -120,8 +151,7 @@ weeks (on staging, 3 of 23). A `priority` is where the strokes go: every player 
 - `unremarkable`: measures that were tested and show nothing, with the p-values. Never among the candidates.
 - `not_checked`: measures no rule could test, each with why.
 - `beyond_cap`: qualified, past the cap. `outcome_context`: see below.
-- `test_log`: every test that ran, with its p before correction. `biggest_cost_season`: rule (c) over the season,
-  reported only.
+- `test_log`: every test that ran, with its p before correction.
 
 ### The priority
 
@@ -141,6 +171,31 @@ nothing is claimed beyond "the lowest area so far" with its doubt stated. With t
 sits against the teammates' median in that area (`better`, `same` when the player's own range reaches the median, or
 `worse`, with the difference), so a priority most of a team shares still says something about the player.
 
+### One level down: `priority.where`
+
+Most of a team shares an area. Players differ in which distance and which miss, so the priority reads its area's
+breakdown (`readWhere`):
+
+- `bands`: every band the player hit from, worst first, with strokes lost per round and the range.
+- `finding: 'band'`: the worst band is named only when it is clearly worse than the player's other bands in the area.
+  The test is rule (c)'s, one level down: round by round, (that band − the mean of the other bands) below zero AND the
+  band's own mean below zero, both on a range widened for choosing one band of those played (ALPHA / bands), and at
+  least `PATTERN_MIN_SHOTS` shots in the band.
+- `finding: 'spread_evenly'`: no band is clearly the worst. That is a finding: the loss is across the area. The largest
+  band so far is still in `band` with `named: false`, and `separated_without_widening` says whether the plain 95% range
+  would have named it.
+- `finding: 'not_traced'`, with `why`: under five measured rounds, shots in fewer than two bands, or rounds that do not
+  vary.
+- `patterns`: the named band's counted patterns, or the whole area's when the loss is spread (`patterns_scope`).
+- `lead_pattern`: the share that sits clear of the teammates' median (the median outside the player's own range,
+  widened for how many shares were compared; five or more teammates with the pattern), the furthest one first, with
+  `differs_from_team: true` and the direction. When none is clear: the largest miss side, else the first traced
+  pattern, with `differs_from_team: false`.
+- `evidence`: the five rounds where the named band (or, spread evenly, the whole area) cost most: round id, date,
+  shots, strokes. Ids only.
+- `signature`: `area/band-or-spread_evenly/lead-pattern[:above_team|:below_team]`. Two players with the same signature
+  have the same priority at this level; the dry run counts them.
+
 ### The signal tier
 
 A measure is a candidate only when at least one rule holds. A gap to the Tour alone never makes one: removing every
@@ -150,7 +205,7 @@ Tour figure from a sheet changes nothing in the result (tested).
 | --- | --- | --- |
 | (a) `changed` | the player's own previous 10 rounds | two rates: Newcombe 95% range and pooled z; two means: Welch range and t. Both from `computeGap` (`v3/support/gap.ts`). |
 | (b) `stands_out_in_team` | the teammates' median | (x − median) / (1.4826 × MAD × √(1 + (π/2)/m)) on Student's t with 0.3675 × (m − 1) degrees of freedom, m teammates; AND the player's own 95% range clears the median. |
-| (c) `biggest_cost` | the player's own other three areas | the strokes-gained area with the lowest mean over measured rounds; round by round, (that area − the mean of the other three) below zero AND the area's own mean below zero, both on a range widened for choosing one of four. |
+| (c) `biggest_cost` | the player's own other three areas | the strokes-gained area with the lowest mean over the SEASON's measured rounds; round by round, (that area − the mean of the other three) below zero AND the area's own mean below zero, both on a range widened for choosing one of four. |
 
 A reason is supported when its range excludes zero and it survives Benjamini-Hochberg across every test run for the
 player (`benjaminiHochberg`, `v3/support/multiplicity.ts`).
@@ -182,6 +237,9 @@ Estimated strokes gained is never judged by any rule.
 | `MIN_MEASURED_ROUNDS_FOR_COST` | 5 | The same five-round reason, counted in the rounds rule (c) pairs. |
 | `COST_AREAS_SEARCHED` | 4 | Rule (c) picks the worst of four areas, so its level is ALPHA / 4 (Bonferroni). |
 | `MAX_CANDIDATES` | 3 | The owner's cap. |
+| `PATTERN_MIN_SHOTS` (`breakdown.ts`) | 10 | A pattern is a rate; ten is the floor Stats uses for a putt band and an approach band. A band is not named under it either. |
+| `MISS_SIDE_MIN_COVERAGE` (`breakdown.ts`) | 0.8 | A miss-side share is read only when the side was recorded on 80% of the misses (the miss-compass angle's `COMPASS_MIN_COVERAGE`); under it the recorded ones are not a fair sample. |
+| `EVIDENCE_ROUNDS` | 5 | The rounds a coach is pointed at behind a priority: enough to see the pattern, few enough to open. |
 | `MEDIAN_VARIANCE_FACTOR` | π/2 | A median has 2/π of a mean's efficiency under normal data. |
 | `MAD_EFFICIENCY` | 0.3675 | A MAD has 0.3675 of a standard deviation's efficiency, so it is worth that share of the degrees of freedom. |
 | `MAD_TO_SD` (`stats.ts`) | 1.4826 | 1 / Φ⁻¹(0.75): MAD to standard deviation under normal data. |
@@ -199,11 +257,15 @@ stricter direction. On 400 such players the tests now sit at or under their leve
 
 Read-only. One team: every active player's fact sheet, priority and candidates, a JSON summary and a table:
 
-- per player: rounds in each window, tests run per rule, the priority with its certainty and how the player sits
-  against the team, and the signals with the rule that fired;
+- per player: rounds in each window, tests run per rule, the priority with its certainty, its band or "spread evenly",
+  the lead pattern with its count and the teammates' median, how the player sits against the team, and the signals
+  with the rule that fired;
+- distinctness: how many priorities name a band, how many are spread evenly, how many have a lead pattern clear of the
+  team, and how many differ from every teammate's at band-plus-pattern level, also counting players with identical
+  rounds once (`data_fingerprint`; staging holds cloned players);
 - "N players share priority X" and "N players share candidate X", distinct candidate kinds, the share of players with
   the most common one;
-- rule (c) over the last 10 rounds beside the same rule over the season;
+- rule (c), which reads the season: tested, both ranges pass, supported after correction;
 - rule (a) before correction: tests per player, the p-values in bins, the smallest ones, and what a smaller family
   declared in advance (`PROPOSED_FAMILY`: the four areas and the scoring average) would support. Proposed, not applied;
 - the two make-rate definitions, counted over every shot read.
@@ -228,4 +290,5 @@ every sheet and its candidates to a local file. No names are read.
 | `calibration.test.ts` | 400 players with nothing unusual: the rules fire at no more than their stated rates. |
 | `stats-parity.test.ts` | The fact sheet against the Clubhouse functions over the same rows. |
 | `priority.test.ts` | The priority and each certainty, the team shape, the season read, and the make-rate definition count. |
+| `breakdown.test.ts` | The bands of each area (lay-ups apart, bands adding up to the round), each counted pattern and when it is not traced, the teammates' median, naming a band or saying spread evenly, the evidence rounds, the lead pattern, and the distinctness count. |
 | `dry-run.test.ts` | Flags, the production refusal, the team report, ten ordinary players, and the Supabase sources over a client that can only select (paging past 1,000 rows, id chunks). |

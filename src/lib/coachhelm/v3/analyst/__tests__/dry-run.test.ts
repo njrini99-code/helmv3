@@ -137,12 +137,9 @@ describe('the team report', () => {
     });
   });
 
-  it('counts rule (c) over the last 10 rounds beside the same rule over the season', () => {
-    // Here the season is the same ten rounds, so the two agree: three players pass, the even one does not.
-    expect(report.biggest_cost).toEqual({
-      last10: { tested: 4, passes_ranges: 3, supported: 3 },
-      season: { tested: 4, passes_ranges: 3, would_survive_correction: 3 },
-    });
+  it('counts rule (c), which reads the season', () => {
+    // Three players have one area clearly worse than their others; the even one does not.
+    expect(report.biggest_cost).toEqual({ tested: 4, passes_ranges: 3, supported: 3 });
   });
 
   it('says why rule (a) did not fire: the tests each player\'s run holds and their p-values before correction', () => {
@@ -168,8 +165,11 @@ describe('the team report', () => {
     const table = reportTable(report);
     expect(table).toContain(`Team ${TEAM_ID}, as of 2026-11-10: 4 active players`);
     // Approach 3.0 lost a round; the teammates' median approach is 1.0 lost, so 2.00 worse.
-    expect(table).toContain("p-approa                10/-/10            10/10        0/0/1  approach clear 3.00 (2.77 to 3.23, 10 rounds); not the team's worst area, worse than the team median by 2.00 | strokes_gained_approach [c biggest cost]");
-    expect(table).toContain("p-even                  10/-/10            10/10        0/0/1  off_the_tee likely 1.00 (0.71 to 1.29, 10 rounds); not the team's worst area, worse than the team median by 0.50 | none");
+    // The fixture's only shots are one tee shot a round, so no band or pattern can be traced: the table says so.
+    expect(table).toContain("p-approa                10/-/10            10/10        0/0/1  approach clear 3.00 (2.77 to 3.23, 10 rounds) > band not traced; not the team's worst area, worse than the team median by 2.00 | strokes_gained_approach [c biggest cost]");
+    expect(table).toContain("p-even                  10/-/10            10/10        0/0/1  off_the_tee likely 1.00 (0.71 to 1.29, 10 rounds) > band not traced; not the team's worst area, worse than the team median by 0.50 | none");
+    expect(table).toContain('One level down: a band is named for 0, the loss is spread evenly for 0, not traced for 4.');
+    expect(table).toContain("Priority differs from every teammate's at band-plus-pattern level: 0 of 4.");
     expect(table).toContain('2 players share priority strokes_gained_approach: 2 clear, 0 likely, 0 leaning; against the team median 2 worse, 0 same, 0 better');
     expect(table).toContain('Players with a priority: 4 of 4 (3 clear, 1 likely, 0 leaning). With neither a priority nor a signal: 0.');
     expect(table).toContain('2 players share candidate strokes_gained_approach');
@@ -178,8 +178,7 @@ describe('the team report', () => {
     expect(table).toContain('Most common: strokes_gained_approach, 2 of 4 players (50%).');
     expect(table).toContain('Rules fired: changed 0, stands out in the team 0, biggest cost 3.');
     expect(table).toContain("Good news (supported, in the player's favor, never a candidate): none.");
-    expect(table).toContain('Last 10 rounds: tested for 4 players, both ranges pass for 3, supported after correction for 3.');
-    expect(table).toContain('Season: tested for 4 players, both ranges pass for 3, would survive the same correction for 3.');
+    expect(table).toContain('RULE (c) BIGGEST COST, over the season: tested for 4 players, both ranges pass for 3, supported after correction for 3.');
     expect(table).toContain('Players with a previous window: 0 of 4.');
     expect(table).toContain('PROPOSED, NOT APPLIED: correct over off_the_tee, approach, around_the_green, putting, scoring_average only.');
   });
@@ -402,7 +401,7 @@ describe('the Supabase sources', () => {
   it('takes the team\'s active members, its own tour and the newest season', async () => {
     const sources = supabaseAnalystSources(fakeClient(fx, []));
     expect(await sources.activePlayerIds(TEAM_ID)).toEqual(fx.playerIds);
-    expect(await sources.team(TEAM_ID)).toEqual({ id: TEAM_ID, gender: 'mens', timezone: 'America/New_York' });
+    expect(await sources.team(TEAM_ID)).toEqual({ id: TEAM_ID, gender: 'mens', timezone: 'America/New_York', sg_baseline: null });
     expect(await sources.team('22222222-2222-4222-8222-222222222222')).toBeNull();
     const standards = await sources.tourStandards('pga');
     expect(standards.find((s) => s.metric_id === 'gir_pct')).toEqual({ metric_id: 'gir_pct', value: 66, source: 'PGA Tour 2024' });
