@@ -6,6 +6,7 @@ import { AttendanceBody, BlockedBody, BreakBody, EventBody, LineupBody, LockBody
 import { cardCopy } from './catalog';
 import type { CardBodyProps } from './types';
 
+export { ApproveAll, batchPlan, type ApproveAllProps, type BatchPhase, type BatchPlan, type WaitingCard } from './ApproveAll';
 export { CARD_TOOLS, cardCopy, type CardCopy } from './catalog';
 export { CARD_PHASES, isOpen, isSaved, isWithdrawn, type CardBodyProps, type CardDensity, type CardPerson, type CardPhase, type EditableField, type Reach } from './types';
 export { editableOf, isOutOfDate } from './truth';

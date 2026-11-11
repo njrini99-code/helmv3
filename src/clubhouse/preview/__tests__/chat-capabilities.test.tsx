@@ -68,3 +68,42 @@ describe('the capabilities gallery · Play runs the real sequence at real timing
     expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull();
   });
 });
+
+describe('the capabilities gallery · the plates', () => {
+  it('several cards: Play approves the safe ones together, holds them for one window, and leaves the lock waiting', () => {
+    render(<PreviewChatCapabilities task="batch" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Approve these 3' }));
+    step(700);
+    expect(screen.getByText('Not saved yet. All 3 save in 8 seconds.')).toBeTruthy();
+    expect([...document.querySelectorAll('.ch-akg-card')].map((c) => c.getAttribute('data-phase'))).toEqual(['held', 'held', 'held', 'proposed']);
+    step(8100);
+    expect(screen.getByText('All 3 saved')).toBeTruthy();
+    expect([...document.querySelectorAll('.ch-akg-card')].map((c) => c.getAttribute('data-phase'))).toEqual(['saved', 'saved', 'saved', 'proposed']);
+  });
+
+  it('the workspace: a still frame names the step that is running and how far it has got', () => {
+    render(<PreviewChatCapabilities task="workspace:team" state="3" />);
+    const island = document.querySelector('.ch-isl')!;
+    expect(island.textContent).toContain('Reading every player’s rounds');
+    expect(island.textContent).toMatch(/\d+ rounds and counting/);
+    expect(island.textContent).toContain('Read the roster');
+    // No tool name, anywhere in it.
+    expect(island.textContent).not.toMatch(/get_|code_execution|compare_players/);
+  });
+
+  it('the studio: a specimen by its deep link, and what a tap would ask', () => {
+    render(<PreviewChatCapabilities task="studio:qualifier_board" density="compact" />);
+    expect(document.querySelector('[data-studio="qualifier_board"]')).toBeTruthy();
+    fireEvent.click(document.querySelector<HTMLButtonElement>('button[data-ask-ref]')!);
+    expect(screen.getByRole('status').textContent).toContain('Ask about this: Eli Brandt in Fall qualifier');
+  });
+
+  it('edit mode: Confirm is held while the form is open, and the re-planned card closes it', () => {
+    render(<PreviewChatCapabilities task="create_event" />);
+    const edit = screen.queryByRole('button', { name: /^Edit/ });
+    if (!edit) throw new Error('create_event has no editable field in its fixture');
+    fireEvent.click(edit);
+    expect(screen.getByText('Update or discard your changes first.')).toBeTruthy();
+    expect((screen.getByRole('button', { name: 'Add to calendar' }) as HTMLButtonElement).disabled).toBe(true);
+  });
+});

@@ -2,10 +2,10 @@
 
 import { ArrowUpRight, Check, CircleAlert, Play, Undo2 } from 'lucide-react';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import type { ActionReceipt } from '@/lib/coachhelm/v3/chat/action-types';
+import type { ActionProposal, ActionReceipt } from '@/lib/coachhelm/v3/chat/action-types';
 import type { ToolEnvelope } from '@/lib/coachhelm/v3/chat/provenance';
 import type { AskBriefData, AskHandoffData } from '../data/coachhelm-chat-thread';
-import { CARD_PHASES, CardBody, cardCopy, isWithdrawn, type CardDensity, type CardPerson, type CardPhase } from '../screens/coachhelm/chat/cards';
+import { CARD_PHASES, CardBody, cardCopy, editableOf, isOutOfDate, isWithdrawn, type CardDensity, type CardPerson, type CardPhase, type EditableField } from '../screens/coachhelm/chat/cards';
 import { AppLinkRow, CoachNoteChip, NotTracked, WorkedOut, computedSummary } from '../screens/coachhelm/chat/cards/answers';
 import { BriefBody, DocBody, HandoffBody } from '../screens/coachhelm/chat/cards/drafts';
 import { WORK_KINDS } from '../screens/coachhelm/chat/cards/work-words';
@@ -19,9 +19,12 @@ import { Button } from '../ui/Button';
 import { Icon } from '../ui/Icon';
 import { Segmented } from '../ui/Segmented';
 import { Select } from '../ui/Select';
+import { Switch } from '../ui/Switch';
 import { ASK_EV_EMPTY, ASK_EV_FAILED, ASK_EV_JONAH, ASK_EV_JONAH_SG, ASK_EV_JONAH_TREND, ASK_EV_RANKING, ASK_EV_SLOPE } from './fixtures-ask-thread';
 import { CAP_ROSTER, CAP_TASKS, CAP_TEAM, capTask, type CapTask } from './fixtures-chat-capabilities';
 import { PP_PLAN_PART } from './fixtures-practice-plan';
+import { studioSpecimen } from './fixtures-chat-studio';
+import { BatchPlate, StudioSection, StudioSpecimenView, WORKSPACE_SEQUENCES, WorkspacePlate, isWorkspaceSequence, type WorkspaceSequence } from './PreviewChatStudioPlates';
 
 /**
  * Every capability of the CoachHelm chat in one page (docs/clubhouse/coachhelm-chat-v3/CAPABILITIES.md): each task's
@@ -59,8 +62,24 @@ const toldWords = (r: ActionReceipt): string | null => {
   return `Told ${sent.map((n) => `${n.recipients} ${/^in-app$/i.test(n.channel) ? 'in the app' : `by ${n.channel}`}`).join(', ')}`;
 };
 
+const sayEdit = (f: EditableField, v: unknown): string => {
+  if (v == null || v === '') return 'Not set';
+  if (typeof v === 'boolean') return v ? 'Yes' : 'No';
+  const word = (x: unknown) => f.options?.find((o) => o.value === x)?.label ?? String(x);
+  return Array.isArray(v) ? v.map(word).join(', ') : word(v);
+};
+/** The gallery's stand-in for the server planning a card again after an edit (engine E28): the field's own row, and the next revision. */
+function replan(p: ActionProposal, patch: Record<string, unknown>): ActionProposal {
+  const fields = editableOf(p);
+  const next = { ...p, facts: p.facts.map((fact) => {
+    const f = fields.find((x) => x.label === fact.label && x.key in patch);
+    return f ? { ...fact, value: sayEdit(f, patch[f.key]) } : fact;
+  }) };
+  return Object.assign(next, { editable: fields.map((f) => (f.key in patch ? { ...f, value: patch[f.key] as EditableField['value'] } : f)), revision: ((p as { revision?: number }).revision ?? 0) + 1 });
+}
+
 /** The stand-in shell: what the lead's card draws around a body. */
-function StandInCard({ cap, proposal, roster, phase, density, left, running, onConfirm, onCancel, onUndo, onReset }: { cap: CapTask; proposal: CapTask['proposal']; roster: readonly CardPerson[]; phase: CardPhase; density: CardDensity; left: number; running: boolean; onConfirm: () => void; onCancel: () => void; onUndo: () => void; onReset: () => void }) {
+function StandInCard({ cap, proposal, roster, phase, density, left, running, onConfirm, onCancel, onUndo, onReset, edit }: { cap: CapTask; proposal: CapTask['proposal']; roster: readonly CardPerson[]; phase: CardPhase; density: CardDensity; left: number; running: boolean; onConfirm: () => void; onCancel: () => void; onUndo: () => void; onReset: () => void; /** Edit mode, as the shell wires it: the form is open, an edit is with the server, the server's refusal. */ edit?: { open: boolean; busy: boolean; error: string | null; onOpen: (open: boolean) => void; onEdit: (patch: Record<string, unknown>) => void } }) {
   const copy = cardCopy(cap.tool, proposal);
   const receipt: ActionReceipt | null = phase === 'saved' ? cap.saved : phase === 'partial' ? (cap.partial ?? cap.saved) : phase === 'failed' ? cap.failed : phase === 'held' || phase === 'undoing' || phase === 'committing' ? { ...cap.saved, status: 'held' } : null;
   const badge = badgeFor(phase, copy.badge, copy.reach === 'sends');
@@ -80,7 +99,7 @@ function StandInCard({ cap, proposal, roster, phase, density, left, running, onC
         <Badge tone={badge.tone}>{badge.text}</Badge>
       </div>
       <div className="ch-akg-card__body" data-dim={isWithdrawn(phase) && phase !== 'failed' ? '' : undefined}>
-        <CardBody tool={cap.tool} proposal={proposal} receipt={receipt} phase={phase} density={density} roster={roster} team={CAP_TEAM} onAsk={() => undefined} />
+        <CardBody tool={cap.tool} proposal={proposal} receipt={receipt} phase={phase} density={density} roster={roster} team={CAP_TEAM} onAsk={() => undefined} onEdit={edit?.onEdit} editing={edit?.busy} editError={edit?.error} onEditOpen={edit?.onOpen} />
       </div>
       <div className="ch-akg-card__ft">
         {(phase === 'proposed' || phase === 'confirming') && (
@@ -88,14 +107,15 @@ function StandInCard({ cap, proposal, roster, phase, density, left, running, onC
             <div className="ch-akg-card__btns">
               {phase === 'proposed' && (
                 <Button variant="ghost" onClick={onCancel}>
-                  Cancel
+                  {copy.dismiss}
                 </Button>
               )}
-              <Button variant="primary" busy={phase === 'confirming'} disabled={phase === 'proposed' && proposal.missing.length > 0} onClick={onConfirm}>
+              <Button variant="primary" busy={phase === 'confirming'} disabled={phase === 'proposed' && (proposal.missing.length > 0 || !!edit?.open)} onClick={onConfirm}>
                 {phase === 'confirming' ? copy.busy : copy.primary}
               </Button>
             </div>
             {phase === 'proposed' && proposal.missing.length > 0 && <p className="ch-akg-card__why">Needs {proposal.missing.join(' and ').toLowerCase()}</p>}
+            {phase === 'proposed' && edit?.open && <p className="ch-akg-card__why">{edit.busy ? 'Updating the preview…' : 'Update or discard your changes first.'}</p>}
           </>
         )}
         {(phase === 'held' || phase === 'undoing' || phase === 'committing') && (
@@ -147,10 +167,10 @@ function StandInCard({ cap, proposal, roster, phase, density, left, running, onC
             </span>
             <span className="ch-akg-rcpt__tx">
               <b>{receipt.summary}</b>
-              {!/nothing was|look in|look at/i.test(receipt.summary) && <span>{copy.untouched}</span>}
+              {isOutOfDate(receipt) ? <span>Things changed since this card was made. Ask again and it is prepared from what is true now.</span> : !/nothing was|look in|look at/i.test(receipt.summary) && <span>{copy.untouched}</span>}
             </span>
             <span className="ch-akg-rcpt__acts">
-              {receipt.retryable && (
+              {receipt.retryable && !isOutOfDate(receipt) && (
                 <Button variant="secondary" onClick={onReset}>
                   Try again
                 </Button>
@@ -189,7 +209,24 @@ function Specimen({ cap, initial, onlyDensity, initialVariant, autoplay, bare = 
   const heldAt = useRef(0);
   const phone = useChPhone();
   const chosen = variant === 'base' ? null : cap.variants?.[variant];
-  const proposal = chosen?.proposal ?? cap.proposal;
+  // Edit mode. The gallery has no server to plan the card again, so it stands in for one: after a real pause it puts the
+  // new value on the field's own row and raises the revision, or refuses with a reason when the switch says so.
+  const [replanned, setReplanned] = useState<ActionProposal | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editBusy, setEditBusy] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [refuse, setRefuse] = useState(false);
+  const proposal = replanned ?? chosen?.proposal ?? cap.proposal;
+  const canEdit = editableOf(chosen?.proposal ?? cap.proposal).length > 0;
+  const sendEdit = (patch: Record<string, unknown>) => {
+    setEditBusy(true);
+    setEditError(null);
+    setTimeout(() => {
+      setEditBusy(false);
+      if (refuse) setEditError('That would leave nobody to send it to.');
+      else setReplanned(replan(proposal, patch));
+    }, 900);
+  };
   const roster = chosen?.roster ?? CAP_ROSTER;
   const copy = cardCopy(cap.tool, proposal);
 
@@ -224,6 +261,7 @@ function Specimen({ cap, initial, onlyDensity, initialVariant, autoplay, bare = 
     setRun(null);
     setLeft(5);
     setPhase(next);
+    if (next !== 'proposed') setEditOpen(false);
   };
   const play = (undoAt: number | null) => {
     setPhase('proposed');
@@ -243,6 +281,7 @@ function Specimen({ cap, initial, onlyDensity, initialVariant, autoplay, bare = 
       onCancel={() => choose('cancelled')}
       onUndo={() => (setRun((r) => r ?? { undoAt: null, auto: false }), setPhase('undoing'))}
       onReset={() => choose('proposed')}
+      edit={canEdit ? { open: editOpen, busy: editBusy, error: editError, onOpen: (o) => (setEditOpen(o), o || setEditError(null)), onEdit: sendEdit } : undefined}
     />
   );
   const stage = (
@@ -281,7 +320,7 @@ function Specimen({ cap, initial, onlyDensity, initialVariant, autoplay, bare = 
       </div>
       <div className="ch-akg-spec__bar">
         <Select<CardPhase> label={`State of ${cap.name}`} value={phase} options={phases.map((p) => ({ value: p, label: PHASE_WORDS[p] }))} onChange={choose} />
-        {cap.variants && <Select label={`Case of ${cap.name}`} value={variant} options={[{ value: 'base', label: 'Typical' }, ...Object.entries(cap.variants).map(([value, v]) => ({ value, label: v.label }))]} onChange={(v) => (setVariant(v), choose('proposed'))} />}
+        {cap.variants && <Select label={`Case of ${cap.name}`} value={variant} options={[{ value: 'base', label: 'Typical' }, ...Object.entries(cap.variants).map(([value, v]) => ({ value, label: v.label }))]} onChange={(v) => (setVariant(v), setReplanned(null), choose('proposed'))} />}
         {phone && <Segmented<CardDensity> label="Where it is drawn" size="sm" value={phoneDensity} options={[{ value: 'full', label: 'Ask' }, { value: 'compact', label: 'Quick chat' }]} onChange={setPhoneDensity} />}
         <Button variant="secondary" size="sm" leftIcon={Play} onClick={() => play(null)}>
           Play
@@ -291,7 +330,9 @@ function Specimen({ cap, initial, onlyDensity, initialVariant, autoplay, bare = 
             Play with Undo
           </Button>
         )}
+        {canEdit && phase === 'proposed' && <Switch label="The server refuses the edit" checked={refuse} onChange={setRefuse} />}
       </div>
+      {canEdit && phase === 'proposed' && <p className="ch-akg-note">Press Edit on the card. The gallery stands in for the server: it changes the field’s own row after a real pause, where the server plans the whole card again.</p>}
       {stage}
     </article>
   );
@@ -435,6 +476,30 @@ export function PreviewChatCapabilities({ task, state, density, variant, play }:
       </div>
     );
   }
+  const frame = (cap: CapTask, phase: CardPhase, left: number, d: CardDensity) => <StandInCard cap={cap} proposal={cap.proposal} roster={CAP_ROSTER} phase={phase} density={d} left={left} running={phase === 'held'} onConfirm={() => undefined} onCancel={() => undefined} onUndo={() => undefined} onReset={() => undefined} />;
+  const [plate, which] = (task ?? '').split(':');
+  const specimen = plate === 'studio' ? studioSpecimen(which) : undefined;
+  if (specimen) {
+    return (
+      <div className="ch-akg ch-akg--one" data-ch-capabilities="one" data-density={only ?? 'full'}>
+        <StudioSpecimenView specimen={specimen} only={only ?? 'full'} bare />
+      </div>
+    );
+  }
+  if (plate === 'batch') {
+    return (
+      <div className="ch-akg ch-akg--one" data-ch-capabilities="one" data-density={only ?? 'full'}>
+        <BatchPlate initial={state} autoplay={!!play} density={only ?? 'full'} renderCard={frame} />
+      </div>
+    );
+  }
+  if (plate === 'workspace' && isWorkspaceSequence(which)) {
+    return (
+      <div className="ch-akg ch-akg--one" data-ch-capabilities="one" data-density={only ?? 'full'}>
+        <WorkspacePlate sequence={which} autoplay={!!play} density={only ?? 'full'} at={state && Number.isFinite(Number(state)) ? Number(state) : undefined} />
+      </div>
+    );
+  }
   const all = forms(only ?? 'full');
   if (task && all[task]) {
     return (
@@ -456,11 +521,20 @@ export function PreviewChatCapabilities({ task, state, density, variant, play }:
           <Button variant="secondary" size="sm" href="#tasks">
             A. Tasks, {CAP_TASKS.length}
           </Button>
+          <Button variant="secondary" size="sm" href="#several">
+            Several at once
+          </Button>
           {GROUPS.map((g) => (
             <Button key={g.id} variant="secondary" size="sm" href={`#${g.id}`}>
               {g.title}
             </Button>
           ))}
+          <Button variant="secondary" size="sm" href="#studio">
+            S. The studio
+          </Button>
+          <Button variant="secondary" size="sm" href="#workspace">
+            W. The workspace
+          </Button>
         </nav>
       </header>
       <section className="ch-akg__group" id="tasks">
@@ -471,6 +545,13 @@ export function PreviewChatCapabilities({ task, state, density, variant, play }:
         {CAP_TASKS.map((cap) => (
           <Specimen key={cap.tool} cap={cap} />
         ))}
+      </section>
+      <section className="ch-akg__group" id="several">
+        <header>
+          <h2>Several cards in one answer</h2>
+          <p>Each card is still decided on its own. One bar approves the ones that are safe to approve together, says what that does in total, and leaves out any card that should be read on its own, with the reason.</p>
+        </header>
+        <BatchPlate density={only ?? 'full'} renderCard={frame} />
       </section>
       {GROUPS.map((g) => (
         <section key={g.id} className="ch-akg__group" id={g.id}>
@@ -487,6 +568,22 @@ export function PreviewChatCapabilities({ task, state, density, variant, play }:
           </div>
         </section>
       ))}
+      <section className="ch-akg__group" id="studio">
+        <header>
+          <h2>S. The studio</h2>
+          <p>The fixed set of things CoachHelm can put on screen. The assistant never invents interface: it fills a typed part, the server fills every figure from a read, and one of these components draws it. Tap an element to ask about it; the arrow at a row’s end opens it in the app.</p>
+        </header>
+        <StudioSection />
+      </section>
+      <section className="ch-akg__group" id="workspace">
+        <header>
+          <h2>W. The workspace</h2>
+          <p>What CoachHelm is doing, in a person’s words, on the chat’s own activity island. Press Play to watch two long pieces of work at real timing: players join the row as their rounds are read, the tally counts, and a finished step opens what it read.</p>
+        </header>
+        {(Object.keys(WORKSPACE_SEQUENCES) as WorkspaceSequence[]).map((s) => (
+          <WorkspacePlate key={s} sequence={s} density={only ?? 'full'} />
+        ))}
+      </section>
     </div>
   );
 }
