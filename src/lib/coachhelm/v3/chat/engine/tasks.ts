@@ -2,7 +2,7 @@
  * CoachHelm chat: a task's life after the model asks for it.
  *
  * The model can only ask. `proposeTask` builds the real plan and records it in the action ledger; nothing is written to
- * the domain. The coach's Confirm reaches `confirmTask`, which claims the ledger row (so two Confirms cannot both run),
+ * the domain. The coach's Confirm reaches `startConfirm`, which claims the ledger row (so two Confirms cannot both run),
  * holds it for the Undo window and commits the STORED plan. Cancel reaches `declineTask`. Each returns the sentence the
  * model is told, which states what actually happened: the receipt card, not the model's prose, is the record.
  */
@@ -143,8 +143,29 @@ export interface DecisionOutcome {
   isError: boolean;
 }
 
+/** What the model is told about a receipt. A failed commit's own sentence is passed on as written: it says whether anything was saved. */
+function outcomeOf(receipt: ActionReceipt): DecisionOutcome {
+  if (receipt.status === 'completed') return { receipt, result: `Committed. ${receipt.summary}`, isError: false };
+  if (receipt.status === 'partial') return { receipt, result: `Partly done. ${receipt.summary} Not done: ${receipt.partial_failures.join('; ') || 'see the receipt'}.`, isError: false };
+  return { receipt, result: `Failed. ${receipt.summary}`, isError: true };
+}
+
+/**
+ * Confirm, in two parts.
+ *
+ * `done`: there is nothing to wait for (it ran at once, was already done, or could not start).
+ * `held`: the action is held for the Undo window. `receipt` is the held state to show at once; `finish()` waits the
+ * window out IN THE REQUEST THAT IS ALREADY OPEN, then writes, and resolves with what really happened: committed,
+ * undone by the coach, or failed. Only then is the model asked for its closing words, so the stored sentence can never
+ * say "done" about something the coach undid, and the write does not wait for the coach's next request.
+ * `in_flight`: another request already holds this card (a second press, or a retry while the window is open). That
+ * request writes it, tells the model and stores the turn; this one must change nothing.
+ */
+export type ConfirmStart = { kind: 'done'; outcome: DecisionOutcome } | { kind: 'held'; receipt: ActionReceipt; finish: () => Promise<DecisionOutcome> } | { kind: 'in_flight' };
+
 /** Confirm. Runs the stored plan at most once, however many times it is called for one key. */
-export async function confirmTask(deps: TaskDeps, tool: TaskTool<unknown> | undefined, ctx: ToolContext, key: string): Promise<DecisionOutcome> {
+export async function startConfirm(deps: TaskDeps, tool: TaskTool<unknown> | undefined, ctx: ToolContext, key: string): Promise<ConfirmStart> {
+  const done = (outcome: DecisionOutcome): ConfirmStart => ({ kind: 'done', outcome });
   const run = await readRun(ctx.sb, { coach_id: deps.coachId, idempotency_key: key });
   const gone: DecisionOutcome = {
     // A receipt, so the card shows that it failed instead of reading as confirmed with nothing under it.
@@ -152,24 +173,26 @@ export async function confirmTask(deps: TaskDeps, tool: TaskTool<unknown> | unde
     result: 'Failed: this card can no longer be confirmed. Nothing was written. Offer to prepare it again.',
     isError: true,
   };
-  if (!run || !tool || run.tool_name !== tool.name || !isStoredProposal(run.proposed_input)) return gone;
+  if (!run || !tool || run.tool_name !== tool.name || !isStoredProposal(run.proposed_input)) return done(gone);
   if (!proposalIsSealed(deps.coachId, key, run.proposed_input)) {
     void logServerError(`coachhelm task refused: the stored proposal does not carry this server's seal (${tool.name})`, { action: `coachhelm.tool.${tool.name}.confirm`, feature: 'coachhelm_chat', userId: deps.coachId, handled: true }, 'error');
-    return gone;
+    return done(gone);
   }
   const proposal = run.proposed_input.proposal as CardProposal;
 
   const claim = await claimForExecution(ctx.sb, { coach_id: deps.coachId, idempotency_key: key });
-  if (claim.kind === 'already_completed') return { receipt: claim.receipt, result: `Already done earlier: ${claim.receipt.summary} Nothing new was written.`, isError: false };
-  if (claim.kind === 'in_flight') return { receipt: null, result: 'This action is already running from an earlier Confirm. Nothing new was started.', isError: false };
-  if (claim.kind === 'stale_failed') return { receipt: failedReceipt(proposal.action, claim.message, undefined, false), result: `Failed: ${claim.message}`, isError: true };
+  if (claim.kind === 'already_completed') return done({ receipt: claim.receipt, result: `Already done earlier: ${claim.receipt.summary} Nothing new was written.`, isError: false });
+  if (claim.kind === 'in_flight') return { kind: 'in_flight' };
+  if (claim.kind === 'stale_failed') return done({ receipt: failedReceipt(proposal.action, claim.message, undefined, false), result: `Failed: ${claim.message}`, isError: true });
   if (claim.kind === 'error') {
-    return { receipt: failedReceipt(proposal.action, 'That didn’t go through. Nothing was saved.', undefined, true), result: 'Failed: the action could not be started safely. Nothing was written.', isError: true };
+    return done({ receipt: failedReceipt(proposal.action, 'That didn’t go through. Nothing was saved.', undefined, true), result: 'Failed: the action could not be started safely. Nothing was written.', isError: true });
   }
 
+  // The write is the coach's decision, already made: it is not tied to the browser staying connected.
+  const writeContext: ToolContext = { ...ctx, signal: new AbortController().signal };
   const commit = async (): Promise<ActionReceipt> => {
     try {
-      return await tool.commit(ctx, proposal);
+      return await tool.commit(writeContext, proposal);
     } catch (err) {
       return failedReceipt(proposal.action, 'Could not finish that.', err instanceof Error ? err.message : String(err), false);
     }
@@ -180,18 +203,23 @@ export async function confirmTask(deps: TaskDeps, tool: TaskTool<unknown> | unde
     const held = await holdForExecution(ctx.sb, { run_id: claim.run_id });
     if (held.kind === 'held') {
       const receipt: ActionReceipt = { status: 'held', held_until: held.run_at, action: proposal.action, summary: proposal.summary, created: [], notifications: [], partial_failures: [], retryable: false, at: new Date().toISOString() };
-      deps.defer(() => releaseHeld(ctx.sb, { run_id: claim.run_id, run_at: held.run_at, run: commit }));
-      return {
-        receipt,
-        result: `Held until ${clock(held.run_at, deps.timezone)}: it is written then unless the coach presses Undo first, so it is not done yet. ${proposal.summary}`,
-        isError: false,
+      const finish = async (): Promise<DecisionOutcome> => {
+        // Waits until `run_at`, then takes the row only if it is still held; the write starts only after the take.
+        const written = await releaseHeld(ctx.sb, { run_id: claim.run_id, run_at: held.run_at, run: commit });
+        if (written) return outcomeOf(written);
+        // Not held any more: the coach pressed Undo, or opened it early (which wrote it from the card's own request).
+        const after = await readRun(ctx.sb, { coach_id: deps.coachId, idempotency_key: key });
+        if (after?.status === 'cancelled') return { receipt: null, result: 'The coach pressed Undo before it was written. Nothing was written.', isError: false };
+        if (after?.result) return outcomeOf(after.result);
+        return { receipt: null, result: `It is being written by another request (opened early at ${clock(new Date().toISOString(), deps.timezone)}). The card shows the outcome; do not say it is done.`, isError: false };
       };
+      return { kind: 'held', receipt, finish };
     }
     if (held.kind === 'error') {
       // The coach was promised an Undo window; without it nothing goes through.
       const refused = failedReceipt(proposal.action, 'That didn’t go through. Nothing was saved.', undefined, true);
       await recordOutcome(ctx.sb, { run_id: claim.run_id, receipt: refused });
-      return { receipt: refused, result: 'Failed: the action could not be held for Undo, so it was not run. Nothing was written.', isError: true };
+      return done({ receipt: refused, result: 'Failed: the action could not be held for Undo, so it was not run. Nothing was written.', isError: true });
     }
     noUndo = true;
   }
@@ -202,9 +230,24 @@ export async function confirmTask(deps: TaskDeps, tool: TaskTool<unknown> | unde
   if (!recorded) {
     void logServerError(`coachhelm task outcome not recorded: ${tool.name}`, { action: `coachhelm.tool.${tool.name}.outcome`, feature: 'coachhelm_chat', userId: deps.coachId, handled: true, extra: { status: receipt.status } }, 'error');
   }
-  if (receipt.status === 'completed') return { receipt, result: `Committed. ${receipt.summary}`, isError: false };
-  if (receipt.status === 'partial') return { receipt, result: `Partly done. ${receipt.summary} Not done: ${receipt.partial_failures.join('; ') || 'see the receipt'}.`, isError: false };
-  return { receipt, result: `Failed: ${receipt.error ?? receipt.summary}`, isError: true };
+  return done(outcomeOf(receipt));
+}
+
+/**
+ * A card the coach left behind by asking something else. Usually it is still only proposed, and is declined. But the
+ * ledger is asked first, because a card can also have been confirmed in a request that lost its connection during the
+ * Undo window: then the write happened (or was undone) without this conversation hearing of it, and the model is told
+ * what the ledger says, never "nothing was written" about something that was.
+ */
+export async function settleAbandonedTask(deps: TaskDeps, ctx: ToolContext, key: string): Promise<DecisionOutcome & { declined: boolean }> {
+  const run = await readRun(ctx.sb, { coach_id: deps.coachId, idempotency_key: key });
+  if (run && run.status !== 'proposed') {
+    if (run.status === 'completed' && run.result) return { ...outcomeOf(run.result), declined: false };
+    if (run.status === 'cancelled') return { receipt: null, result: 'The coach pressed Undo before it was written. Nothing was written.', isError: false, declined: false };
+    if (run.status === 'held' || run.status === 'approved') return { receipt: null, result: 'The coach confirmed this and it is being written now. The card shows the outcome; do not say whether it is done.', isError: false, declined: false };
+    if (run.status === 'failed') return { receipt: run.result, result: `Failed. ${run.result?.summary ?? 'It did not go through.'}`, isError: true, declined: false };
+  }
+  return { ...(await declineTask(deps, ctx, key, 'superseded')), declined: true };
 }
 
 /** Cancel, or a new question asked while the card was still waiting. `commit` is never called. */

@@ -59,6 +59,20 @@ describe('the reducer both ends fold the stream with', () => {
     expect(cancelled.parts.at(-1)).toMatchObject({ state: 'output-denied', approval: { id: 'k', approved: false } });
   });
 
+  it('a progress note from the model is a finished progress row between the words; an empty one draws nothing', () => {
+    const message = fold([
+      { type: 'text_delta', delta: 'Checking.' },
+      { type: 'note', id: 'note-1', text: '  Comparing the last five rounds with the season  ' },
+      { type: 'note', id: 'note-2', text: '   ' },
+      { type: 'text_delta', delta: 'Done.' },
+    ]);
+    expect(message.parts).toEqual([
+      { type: 'text', text: 'Checking.' },
+      { type: 'data-progress', id: 'note-1', data: { label: 'Comparing the last five rounds with the season', tool: 'note', state: 'done', done: 'Comparing the last five rounds with the season' } },
+      { type: 'text', text: 'Done.' },
+    ]);
+  });
+
   it('returns the same message when an event changes nothing, and withdraws only the words of the step in progress', () => {
     const message = fold([{ type: 'text_delta', delta: 'First answer.' }, { type: 'read_started', id: 'p1', label: 'Reading', tool: 't' }, { type: 'text_delta', delta: 'I can' }]);
     expect(applyChatEvent(message, { type: 'usage', input_tokens: 1, output_tokens: 1, cache_read_input_tokens: 0 })).toBe(message);

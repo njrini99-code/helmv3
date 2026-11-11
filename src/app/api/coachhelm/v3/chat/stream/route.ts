@@ -27,15 +27,16 @@ import { loadPlayerProfile } from '@/clubhouse/data/stats-player';
 import { loadTeamStats } from '@/clubhouse/data/stats-team';
 import { loadTeamRounds } from '@/clubhouse/data/team-rounds';
 import { loadTeamStrokesGained } from '@/clubhouse/data/team-sg';
-import { isClubhouseFor, isClubhouseForTeam } from '@/clubhouse/gate';
+import { isClubhouseFor } from '@/clubhouse/gate';
 import { classifyProviderFault, providerFaultSeverity } from '@/lib/admin/provider-fault';
 import { drainCollapsedCount, shouldEmit } from '@/lib/admin/emit-throttle';
 import { checkRateLimit, RATE_LIMITS } from '@/lib/auth/rate-limit';
 import { isCoachHelmEnabledForCoach } from '@/lib/coachhelm/v2/gate';
 import { linkProposalsToMessage } from '@/lib/coachhelm/v3/chat/action-runs';
-import { knowsSection, readAskKnows } from '@/lib/coachhelm/v3/chat/ask-knows';
 import { CoachContextError, resolveCoachChatContext, type CoachChatContext } from '@/lib/coachhelm/v3/chat/context';
-import { CHAT_MAX_STEPS, CHAT_MODEL_LEDGER_ID, MissingModelKeyError, anthropicModelClient, promptTokens, turnCostUsd } from '@/lib/coachhelm/v3/chat/engine/model';
+import { firstTurnNotes, readStandingNotes, toneSentence } from '@/lib/coachhelm/v3/chat/context/notes';
+import { turnContext } from '@/lib/coachhelm/v3/chat/context/screen-context';
+import { CHAT_MAX_STEPS, CHAT_MODEL_LEDGER_ID, LONG_PROMPT_TOKENS, MissingModelKeyError, anthropicModelClient, callPromptTokens, chatFeatures, promptTokens, turnCostUsd } from '@/lib/coachhelm/v3/chat/engine/model';
 import { CHAT_STREAM_CONTENT_TYPE, encodeChatEvent, eventsForStoredParts, pendingDecisionKeys, type ChatErrorAction, type ChatEvent } from '@/lib/coachhelm/v3/chat/engine/protocol';
 import { loadConversation, type LoadedConversation, type TurnRow } from '@/lib/coachhelm/v3/chat/engine/store';
 import { chatTurnResponse, type TurnInput, type TurnSummary } from '@/lib/coachhelm/v3/chat/engine/turn';
@@ -126,9 +127,14 @@ const Body = z
     decision: z.object({ key: z.string().min(1).max(200), approved: z.boolean() }).optional(),
     /** A tab still running the previous client sends its whole thread. Only its last user message is read, as the new message. */
     messages: z.array(z.unknown()).optional(),
+    /**
+     * Where the chat was opened from and what is selected there. Read only by the screen-context resolver, which checks every id against
+     * the caller's own team before a word of it reaches the model; anything it cannot use is dropped, never an error.
+     */
+    screen: z.unknown().optional(),
   })
-  .transform((body, ctx): { conversation_id: string | null; client_turn_id: string; surface: ChatSurface; input: TurnInput } => {
-    const base = { conversation_id: body.conversation_id ?? null, client_turn_id: body.client_turn_id, surface: (body.surface ?? 'ask') as ChatSurface };
+  .transform((body, ctx): { conversation_id: string | null; client_turn_id: string; surface: ChatSurface; input: TurnInput; screen: unknown } => {
+    const base = { conversation_id: body.conversation_id ?? null, client_turn_id: body.client_turn_id, surface: (body.surface ?? 'ask') as ChatSurface, screen: body.screen ?? null };
     if (body.decision && !body.message) return { ...base, input: { kind: 'decision', ...body.decision } };
     const text = body.message ?? lastUserText(body.messages);
     if (!text || body.decision) {
@@ -222,7 +228,7 @@ export async function POST(req: NextRequest) {
     if (err instanceof CoachContextError && err.reason === 'not_a_coach' && (await isClubhouseFor('player'))) {
       const body = Body.safeParse(await req.json().catch(() => null));
       if (!body.success || body.data.input.kind !== 'message') return NextResponse.json({ error: 'Bad request' }, { status: 400 });
-      return runPlayerTurn(supabase, { text: body.data.input.text, clientTurnId: body.data.client_turn_id }, req.signal, (who) => playerScreenLoaders(supabase, who));
+      return runPlayerTurn(supabase, { text: body.data.input.text, clientTurnId: body.data.client_turn_id, screen: body.data.screen }, req.signal, (who) => playerScreenLoaders(supabase, who));
     }
     if (err instanceof CoachContextError) return NextResponse.json({ error: err.message }, { status: err.status });
     await logServerError('chat/stream: context resolution failed', { action: 'v3.chat.stream.ctx' });
@@ -296,11 +302,21 @@ export async function POST(req: NextRequest) {
   }
   const convId = conversationId;
 
-  // Ask v2's standing notes only where Clubhouse is on for the team: this route also serves Fairway's chat.
-  const askV2 = isClubhouseForTeam(ctx.team_id);
-  const knows = askV2 ? await readAskKnows(supabase, { coachId: ctx.coach_id, teamId: ctx.team_id, conversationId: isNewConversation ? null : convId }).catch(() => null) : null;
-  // The date in the team block is to the day, never to the second: a timestamp in the prefix would defeat the cache on every request.
-  const blocks = instructionBlocks(surface, ctx, { today: new Date(), notes: knows ? knowsSection(knows) : null });
+  // Nothing that changes during a conversation's life is in the prompt: the policy block is the same for every team, the team block changes
+  // only with the roster. Today's date, the screen the chat was opened from, the conversation's tone and (on a conversation's first
+  // answered turn) the coach's standing notes go to the model as a system message after the coach's own, and are stored with the turn.
+  // A decision request sends none: its turn already has its line.
+  const blocks = instructionBlocks(surface, ctx);
+  let turnNote: string | null = null;
+  if (input.kind === 'message') {
+    // Neither read throws; without the notes migration there are simply no notes and no tone.
+    const [where, knows] = await Promise.all([turnContext(supabase, ctx, parsed.data.screen), readStandingNotes(supabase, ctx, isNewConversation ? null : convId)]);
+    // "First" is the first turn that stays in the stored history: a failed first attempt leaves only its question behind, so its retry
+    // still carries the notes.
+    const firstTurn = !loaded.rows.some((r) => r.role === 'assistant' && r.status !== 'failed');
+    const line = [where.line, toneSentence(knows)].filter(Boolean).join(' ');
+    turnNote = [firstTurn ? firstTurnNotes(knows) : null, line].filter(Boolean).join('\n\n');
+  }
   const tools = toolsFor(surface, ctx);
 
   // Opaque and server-generated, never derived from who the coach or their players are: safe as Sentry's conversation key.
@@ -327,6 +343,8 @@ export async function POST(req: NextRequest) {
       toolContext: { sb: supabase, who: ctx, conversationId: convId, surface, loaders: coachScreenLoaders(supabase, ctx) },
       tasks: { coachId: ctx.coach_id, teamId: ctx.team_id, timezone: ctx.timezone, defer: later },
       maxSteps: CHAT_MAX_STEPS,
+      features: chatFeatures(),
+      turnNote,
       requestSignal: req.signal,
       store: { loaded, coachId: ctx.coach_id },
       clientTurnId,
@@ -361,6 +379,11 @@ async function recordTurn(args: { admin: ReturnType<typeof createAdminClient>; c
   if (summary.status !== 'failed') {
     recordAi({ feature: 'coachhelm_chat', action: 'v3.chat.stream.model', model: CHAT_MODEL_LEDGER_ID, outcome: 'success', durationMs: summary.totalMs, inputTokens: input, outputTokens: usage.output, runtime: process.env.NEXT_RUNTIME ?? 'nodejs' });
   }
+  // A prompt past 100K tokens is billed at five times the rate: it should not happen, so it is said when it does.
+  const longest = Math.max(0, ...usage.calls.map(callPromptTokens));
+  if (longest > LONG_PROMPT_TOKENS) {
+    void logServerError('chat/stream: a request went over 100K prompt tokens and was billed on the long-prompt rate card', { action: 'v3.chat.stream.long_prompt', feature: 'coachhelm_chat', handled: true, skipSentry: true, extra: { conversationId, promptTokens: longest } }, 'warning');
+  }
   // One line per turn for the eval: how long the coach waited for the first word, what the cache saved on each call, whether the figures matched the reads.
   await logServerEvent(
     'chat/stream: turn',
@@ -368,7 +391,7 @@ async function recordTurn(args: { admin: ReturnType<typeof createAdminClient>; c
       action: 'v3.chat.stream.turn',
       featureArea: 'coachhelm',
       skipSentry: true,
-      extra: { conversationId, coachId: ctx.coach_id, status: summary.status, stop: summary.stop, firstTextMs: summary.firstTextMs, totalMs: summary.totalMs, calls: usage.calls, grounded: summary.grounded, unmatchedCount: summary.unmatched.length },
+      extra: { conversationId, coachId: ctx.coach_id, status: summary.status, stop: summary.stop, firstTextMs: summary.firstTextMs, totalMs: summary.totalMs, calls: usage.calls, grounded: summary.grounded, unmatchedCount: summary.unmatched.length, refusalCategory: summary.refusalCategory, degraded: summary.degraded },
     },
     'info',
   ).catch(() => undefined);

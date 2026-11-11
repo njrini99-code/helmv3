@@ -42,6 +42,9 @@ const REPLAYABLE = new Set([
   'data-artifact',
   'data-action-proposal',
   'data-action-receipt',
+  // A link button to a screen of the app (`find_in_app`) and the chip for a note saved or removed: both are part of what the turn did.
+  'data-app-link',
+  'data-coach-note',
   // The live grounding flag (route.ts's `execute`, N15) is written into the
   // persisted assistant turn's `ui_parts` the same way a receipt is. Without
   // it here, the flag showed only during the original streaming session —

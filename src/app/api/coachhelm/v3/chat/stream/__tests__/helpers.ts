@@ -2,6 +2,7 @@
  * Test doubles for the chat route suite: an in-memory Supabase client small enough to read, and a scripted model.
  * The route, the engine, the store, the ledger and the hold all run for real against them.
  */
+import Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
 import type { ModelClient, ModelRequest, ModelResponse, ModelStream, ModelStreamEvent } from '@/lib/coachhelm/v3/chat/engine/model';
 import { createChatEventParser, type ChatEvent } from '@/lib/coachhelm/v3/chat/engine/protocol';
@@ -167,12 +168,30 @@ type Block = ModelResponse['content'][number];
 export const thinking = (signature: string): Block => ({ type: 'thinking', thinking: '', signature }) as Block;
 export const text = (value: string): Block => ({ type: 'text', text: value, citations: null }) as Block;
 export const toolUse = (id: string, name: string, input: unknown): Block => ({ type: 'tool_use', id, name, input }) as Block;
+/** A sentence the API says drew on a read: the citation names the read by the source the engine gave its search result. */
+export const cited = (value: string, ref: string): Block =>
+  ({ type: 'text', text: value, citations: [{ type: 'search_result_location', source: `read:${ref}`, title: 'Read', cited_text: 'x', search_result_index: 0, start_block_index: 0, end_block_index: 1 }] }) as Block;
+/** A tool call made by the model's code in Anthropic's sandbox (programmatic tool calling). */
+export const codeToolUse = (id: string, name: string, input: unknown, runId = 'srvtoolu_1'): Block => ({ type: 'tool_use', id, name, input, caller: { type: 'code_execution_20260120', tool_id: runId } }) as Block;
+export const serverCode = (id = 'srvtoolu_1'): Block => ({ type: 'server_tool_use', id, name: 'code_execution', input: { code: 'rows = await get_team_stats({})' } }) as unknown as Block;
+/** The API refusing a request as malformed, as the SDK surfaces it. */
+export const rejected = (message = 'thinking.block_binding: Extra inputs are not permitted'): Error =>
+  Anthropic.APIError.generate(400, { type: 'error', error: { type: 'invalid_request_error', message } }, message, new Headers());
 
 export interface ScriptedStep {
   content: Block[];
   stop_reason?: ModelResponse['stop_reason'];
   /** Thrown after the text has streamed: a model error mid-stream. */
   fail?: unknown;
+  /** Thrown before anything streams: the API rejecting the request itself. */
+  reject?: unknown;
+  /** `stop_details.category` of a refusal. */
+  category?: string;
+  /** The code execution container the response names. */
+  container?: string;
+  /** Thinking blocks the API reports it dropped from the request (`input_transformations`). */
+  droppedThinking?: number;
+  usage?: Partial<{ input_tokens: number; output_tokens: number; cache_read_input_tokens: number; cache_creation_input_tokens: number; cache_creation: { ephemeral_1h_input_tokens: number; ephemeral_5m_input_tokens: number } }>;
   /** Awaited before anything streams; lets a test abort the request while the model is "thinking". */
   gate?: Promise<void>;
 }
@@ -195,12 +214,23 @@ export function fakeModel(steps: Array<ScriptedStep | ((request: ModelRequest) =
       const events = async function* (): AsyncGenerator<ModelStreamEvent> {
         if (step.gate) await step.gate;
         if (signal.aborted) throw new Error('Request was aborted.');
+        if (step.reject) throw step.reject;
         for (const [index, block] of step.content.entries()) {
-          if (block.type !== 'text') continue;
+          if (block.type !== 'text') {
+            // Every block opens and closes on the wire, whether or not anything in it is streamed to the coach.
+            yield { type: 'content_block_start', index, content_block: block.type === 'thinking' ? { ...block, thinking: '' } : block } as ModelStreamEvent;
+            if (block.type === 'thinking' && block.thinking) yield { type: 'content_block_delta', index, delta: { type: 'thinking_delta', thinking: block.thinking } } as ModelStreamEvent;
+            yield { type: 'content_block_stop', index } as ModelStreamEvent;
+            continue;
+          }
           yield { type: 'content_block_start', index, content_block: { ...block, text: '' } } as ModelStreamEvent;
+          for (const citation of block.citations ?? []) {
+            yield { type: 'content_block_delta', index, delta: { type: 'citations_delta', citation } } as ModelStreamEvent;
+          }
           for (let i = 0; i < block.text.length; i += 5) {
             yield { type: 'content_block_delta', index, delta: { type: 'text_delta', text: block.text.slice(i, i + 5) } } as ModelStreamEvent;
           }
+          yield { type: 'content_block_stop', index } as ModelStreamEvent;
         }
         if (step.fail) throw step.fail;
         finished = true;
@@ -208,16 +238,19 @@ export function fakeModel(steps: Array<ScriptedStep | ((request: ModelRequest) =
       return {
         [Symbol.asyncIterator]: events,
         async finalMessage() {
-          if (!finished) throw step.fail ?? new Error('stream did not finish');
+          if (!finished) throw step.reject ?? step.fail ?? new Error('stream did not finish');
           return {
             id: `msg_${requests.length}`,
             type: 'message',
             role: 'assistant',
-            model: 'claude-sonnet-5-5',
+            model: 'claude-haiku-5-5',
             content: step.content,
             stop_reason: step.stop_reason ?? (step.content.some((b) => b.type === 'tool_use') ? 'tool_use' : 'end_turn'),
             stop_sequence: null,
-            usage: { input_tokens: 100, output_tokens: 20, cache_read_input_tokens: 900, cache_creation_input_tokens: 0 },
+            ...(step.category ? { stop_details: { type: 'refusal', category: step.category, explanation: null } } : {}),
+            ...(step.container ? { container: { id: step.container, expires_at: '2026-11-10T13:00:00Z' } } : {}),
+            input_transformations: Array.from({ length: step.droppedThinking ?? 0 }, (_, i) => ({ type: 'thinking_dropped', path: `messages.${i}.content.0`, reason: 'prefix_binding_mismatch' })),
+            usage: { input_tokens: 100, output_tokens: 20, cache_read_input_tokens: 900, cache_creation_input_tokens: 0, ...(step.usage ?? {}) },
           } as unknown as ModelResponse;
         },
       };
@@ -261,6 +294,21 @@ export function readTool(name: string, log: ToolLog, value: number): ReadTool<{ 
       await new Promise((resolve) => setTimeout(resolve, 15));
       log.running -= 1;
       return envelope(`${name} is ${value}`, value);
+    },
+  };
+}
+
+/** A read that hands the model finished, labelled lines (`model_text`), as the screen readers do. */
+export function linesTool(name: string, log: ToolLog, lines: string[]): ReadTool<Record<string, never>> {
+  return {
+    kind: 'read',
+    name,
+    description: `Reads ${name}.`,
+    input: z.object({}),
+    progress: () => `Reading ${name.replace(/_/g, ' ')}`,
+    run: async (ctx, input) => {
+      log.reads.push({ tool: name, input, who: ctx.who, loaders: ctx.loaders });
+      return { ...envelope(`${name}: ${lines.length} figures`, lines.length), model_text: lines.join('\n') };
     },
   };
 }

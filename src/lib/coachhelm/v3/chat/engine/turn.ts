@@ -15,12 +15,13 @@
  */
 import { logServerError } from '@/lib/server-error-logger';
 import type { ToolEnvelope } from '../provenance';
+import { stripReadMarkers } from '../read-markers';
 import { defaultGroundingCheck, type GroundingCheck } from './grounding';
 import { runModelLoop, toolResultsMessage, type LoopState, type LoopStop, type PendingDecision } from './loop';
-import { emptyUsage, modelToolFor, type ModelClient, type ModelMessage, type SystemPrompt, type ToolResultBlock, type UsageTotals } from './model';
+import { CHAT_FEATURES, emptyUsage, type ChatFeatures, type ModelClient, type ModelMessage, type SystemPrompt, type ToolResultBlock, type UsageTotals } from './model';
 import { applyChatEvent, CHAT_STREAM_CONTENT_TYPE, encodeChatEvent, textOfParts, type ChatErrorAction, type ChatEvent, type ChatTurnStatus, type ChatUIMessage, type ChatUIPart, type WireDataPart } from './protocol';
 import { buildHistory, collectReads, findOpenDecision, saveCardState, saveResumeToLedger, saveTurn, type LoadedConversation, type OpenDecision } from './store';
-import { confirmTask, declineTask, type TaskDeps } from './tasks';
+import { declineTask, settleAbandonedTask, startConfirm, type DecisionOutcome, type TaskDeps } from './tasks';
 import type { ChatTool, TaskTool, ToolContext } from './tool';
 
 export type TurnInput = { kind: 'message'; text: string } | { kind: 'decision'; key: string; approved: boolean };
@@ -41,6 +42,10 @@ export interface TurnSummary {
   /** Keys of the cards this request proposed. */
   proposalKeys: string[];
   error: unknown;
+  /** The API's category when the model declined (`cyber`, `bio`, `frontier_llm`, `general_harms`), for the log. */
+  refusalCategory: string | null;
+  /** True when the API rejected a request with optional features and the turn went on with plain requests. */
+  degraded: boolean;
 }
 
 export interface TurnDeps {
@@ -53,6 +58,16 @@ export interface TurnDeps {
   /** Null where tasks are not offered (the player's Ask). */
   tasks: TaskDeps | null;
   maxSteps: number;
+  /** What requests are sent with. Left out, the deployment's (`CHAT_FEATURES`). */
+  features?: ChatFeatures;
+  /**
+   * What the app tells the model about THIS turn: today's date, the screen the chat was opened from, and on a
+   * conversation's first turn the coach's standing notes. It is sent as a `role: 'system'` message straight after the
+   * user's message and stored with the turn, because nothing that changes during a conversation's life may sit in the
+   * system prompt (a thinking block is only valid while everything before it is unchanged). Never in the same block as
+   * the user's words.
+   */
+  turnNote?: string | null;
   /** The request's own signal: the browser going away stops the model and the spend. */
   requestSignal: AbortSignal | undefined;
   /** Null: nothing is stored and nothing is replayed (a player's turn until player conversations exist). */
@@ -66,12 +81,15 @@ export interface TurnDeps {
   onFinished: (summary: TurnSummary) => void | Promise<void>;
 }
 
-const REFUSAL_NOTE = 'CoachHelm can’t help with that one. Try asking it another way.';
+const REFUSAL_NOTE = 'I can’t help with that one. Try asking it another way, or ask me about your team, your players or your schedule.';
 const TRUNCATED_NOTE = 'That answer ran too long to finish. Ask for a smaller piece of it.';
 const STOPPED_NOTE = 'Stopped before it finished.';
 const CARD_GONE_NOTE = 'This card can no longer be confirmed. Ask CoachHelm to prepare it again.';
 const CARD_RETRY_NOTE = 'That could not be confirmed just now. Try again, or ask CoachHelm to prepare it again.';
 const NOT_SAVED_NOTE = 'That answer could not be saved, so it may be gone after a reload. Please ask again.';
+
+/** The words of a turn as stored and checked: the read markers are the thread's, not prose (the "3" in `[e3]` is not a figure). */
+const wordsOf = (parts: readonly ChatUIPart[]): string => stripReadMarkers(textOfParts(parts)).trim();
 
 const receiptPart = (key: string, receipt: unknown): WireDataPart => ({ type: 'data-action-receipt', id: `receipt-${key}`, data: receipt });
 
@@ -97,7 +115,11 @@ export function chatTurnResponse(deps: TurnDeps, input: TurnInput, headers: Reco
           open = false;
         }
       };
-      void runTurn(deps, input, abort.signal, send)
+      const turn = runTurn(deps, input, abort.signal, send);
+      // A confirmed action is written by this request even if the browser goes away during the Undo window: the platform keeps the
+      // function alive until the turn has finished.
+      deps.tasks?.defer(() => turn.catch(() => undefined));
+      void turn
         .catch((err) => {
           // Nothing below should throw; if it does the coach still gets a sentence and a closed stream.
           void logServerError(`chat/stream: turn crashed: ${err instanceof Error ? err.message : 'unknown'}`, { action: 'v3.chat.stream.turn' });
@@ -141,6 +163,7 @@ async function runTurn(deps: TurnDeps, input: TurnInput, signal: AbortSignal, se
   };
 
   let messageId: string | null = null;
+  let refusalCategory: string | null = null;
   const finish = async (status: ChatTurnStatus, stop: TurnSummary['stop'], error: unknown, grounding: { grounded: boolean; unmatched: string[] }, before: readonly ChatUIPart[]) => {
     send({ type: 'usage', input_tokens: usage.input + usage.cacheRead + usage.cacheWrite, output_tokens: usage.output, cache_read_input_tokens: usage.cacheRead });
     send({ type: 'done', status });
@@ -151,12 +174,14 @@ async function runTurn(deps: TurnDeps, input: TurnInput, signal: AbortSignal, se
         stop,
         messageId,
         usage,
-        text: textOfParts(ui.parts),
+        text: wordsOf(ui.parts),
         ...grounding,
         firstTextMs,
         totalMs: Date.now() - started,
         proposalKeys: proposalKeysOf(ui.parts).filter((k) => !earlier.has(k)),
         error,
+        refusalCategory,
+        degraded: state.degraded,
       });
     } catch {
       // Accounting never fails a turn.
@@ -166,7 +191,7 @@ async function runTurn(deps: TurnDeps, input: TurnInput, signal: AbortSignal, se
 
   const open = deps.store ? await findOpenDecision(sb, loaded, coachId).catch(() => null) : null;
   const { reads, nextRef } = collectReads(loaded);
-  const state: LoopState = { messages: [], appended: [], steps: 0, usage, reads, nextRef, nextProgress: 0 };
+  const state: LoopState = { messages: [], appended: [], steps: 0, usage, reads, nextRef, nextProgress: 0, features: deps.features ?? CHAT_FEATURES, degraded: false, container: null };
   /** The assistant row this request writes: the waiting turn (a decision), or a failed attempt a retry replaces. */
   let rowId: string | undefined;
 
@@ -186,25 +211,49 @@ async function runTurn(deps: TurnDeps, input: TurnInput, signal: AbortSignal, se
 
     const tool = deps.tools.find((t): t is TaskTool<unknown> => t.kind === 'task' && t.name === task.tool);
     const ctx: ToolContext = { ...toolContext, reads };
-    const outcome = input.approved ? await confirmTask(deps.tasks, tool, ctx, task.key) : await declineTask(deps.tasks, ctx, task.key, 'declined');
-    emit({ type: 'decision', key: task.key, approved: input.approved });
+    // Whatever happens to the closing words, a turn whose card the coach has answered is stored as complete.
+    const store = async (appended: ModelMessage[], stillPending: PendingDecision | null) => {
+      if (!deps.store) return;
+      try {
+        const saved = await saveTurn(sb, loaded.mode, { id: rowId, conversation_id: conversationId, client_turn_id: open.row.client_turn_id, content: wordsOf(ui.parts), status: 'complete', ui_parts: ui.parts, model_messages: appended, pending: stillPending });
+        if (saved.mode === 'legacy' && stillPending) await saveResumeToLedger(sb, coachId, { appended, pending: stillPending });
+      } catch (err) {
+        void logServerError(`chat/stream: decision not stored: ${err instanceof Error ? err.message : 'unknown'}`, { action: 'v3.chat.stream.persist' });
+      }
+    };
+
+    let outcome: DecisionOutcome;
+    if (!input.approved) {
+      outcome = await declineTask(deps.tasks, ctx, task.key, 'declined');
+      emit({ type: 'decision', key: task.key, approved: false });
+    } else {
+      const started = await startConfirm(deps.tasks, tool, ctx, task.key);
+      if (started.kind === 'in_flight') {
+        // The request that confirmed first is still inside the Undo window (or writing). It owns the card, the model's closing words
+        // and the stored row: this one shows what is stored and changes nothing, so the two can never write over each other.
+        send({ type: 'decision', key: task.key, approved: true });
+        const shown = before.find((p) => p.type === 'data-action-receipt' && p.id === `receipt-${task.key}`);
+        if (shown) send({ type: 'receipt', part: receiptPart(task.key, shown.data) });
+        send({ type: 'done', status: 'complete' });
+        return;
+      }
+      emit({ type: 'decision', key: task.key, approved: true });
+      if (started.kind === 'held') {
+        // The coach sees "held, Undo until ..." at once, and it is stored at once: a reload during the window shows the same card.
+        emit({ type: 'receipt', part: receiptPart(task.key, started.receipt) });
+        await store(open.appended, pending);
+        // The open request waits the window out and writes. It does not stop waiting if the browser goes away.
+        outcome = await started.finish();
+      } else {
+        outcome = started.outcome;
+      }
+    }
     if (outcome.receipt) emit({ type: 'receipt', part: receiptPart(task.key, outcome.receipt) });
 
     const next: PendingDecision = {
       ...pending,
       results: { ...pending.results, [task.tool_use_id]: { content: outcome.result, ...(outcome.isError ? { is_error: true } : {}) } },
       tasks: pending.tasks.filter((t) => t.key !== task.key),
-    };
-
-    // From here the coach's decision has been carried out. Whatever happens to the closing words, the turn is stored as complete.
-    const store = async (appended: ModelMessage[], stillPending: PendingDecision | null) => {
-      if (!deps.store) return;
-      try {
-        const saved = await saveTurn(sb, loaded.mode, { id: rowId, conversation_id: conversationId, client_turn_id: open.row.client_turn_id, content: textOfParts(ui.parts), status: 'complete', ui_parts: ui.parts, model_messages: appended, pending: stillPending });
-        if (saved.mode === 'legacy' && stillPending) await saveResumeToLedger(sb, coachId, { appended, pending: stillPending });
-      } catch (err) {
-        void logServerError(`chat/stream: decision not stored: ${err instanceof Error ? err.message : 'unknown'}`, { action: 'v3.chat.stream.persist' });
-      }
     };
 
     if (next.tasks.length > 0) {
@@ -217,12 +266,14 @@ async function runTurn(deps: TurnDeps, input: TurnInput, signal: AbortSignal, se
     state.messages = [...buildHistory(loaded, { before: open.row }), ...open.appended, answer];
     state.appended = [...open.appended, answer];
     state.steps = pending.steps;
+    state.container = pending.container ?? null;
     const stop = await runLoop(deps, toolContext, state, emit, signal);
     if (stop.kind === 'awaiting_decision') {
       await store(state.appended, stop.pending);
       await finish('awaiting_decision', stop.kind, null, { grounded: true, unmatched: [] }, before);
       return;
     }
+    if (stop.kind === 'refusal') refusalCategory = stop.category;
     await store(state.appended, null);
     const error = stop.kind === 'error' ? stop.error : null;
     if (stop.kind !== 'complete') {
@@ -243,11 +294,13 @@ async function runTurn(deps: TurnDeps, input: TurnInput, signal: AbortSignal, se
     const ctx: ToolContext = { ...toolContext, reads };
     let cards: ChatUIMessage = { id: open.row.id, role: 'assistant', parts: open.row.ui_parts ?? [] };
     const results = { ...(open.pending?.results ?? {}) };
-    for (const key of open.keys) {
-      const outcome = await declineTask(deps.tasks, ctx, key, 'superseded');
-      cards = applyChatEvent(cards, { type: 'decision', key, approved: false });
+    const keys = [...new Set([...open.keys, ...(open.pending?.tasks.map((t) => t.key) ?? [])])];
+    for (const key of keys) {
+      const outcome = await settleAbandonedTask(deps.tasks, ctx, key);
+      if (outcome.declined) cards = applyChatEvent(cards, { type: 'decision', key, approved: false });
+      else if (outcome.receipt) cards = applyChatEvent(cards, { type: 'receipt', part: receiptPart(key, outcome.receipt) });
       const task = open.pending?.tasks.find((t) => t.key === key);
-      if (task) results[task.tool_use_id] = { content: outcome.result };
+      if (task) results[task.tool_use_id] = { content: outcome.result, ...(outcome.isError ? { is_error: true } : {}) };
     }
     await saveCardState(sb, loaded.mode, open.row.id, cards.parts).catch((err) => {
       void logServerError(`chat/stream: declined card not stored: ${err instanceof Error ? err.message : 'unknown'}`, { action: 'v3.chat.stream.persist' }, 'warning');
@@ -261,9 +314,12 @@ async function runTurn(deps: TurnDeps, input: TurnInput, signal: AbortSignal, se
 
   // A retry of a turn that failed replaces that attempt: its rows are not replayed and its assistant row is overwritten.
   rowId = loaded.rows.find((r) => r.role === 'assistant' && r.client_turn_id === deps.clientTurnId)?.id;
+  // The coach's words are their own text block, after the result of any card they left: never inside a tool_result.
   const userMessage: ModelMessage = { role: 'user', content: declined.length > 0 ? [...declined, { type: 'text', text: input.text }] : input.text };
-  state.messages = [...buildHistory(loaded, { withoutTurn: deps.clientTurnId }), userMessage];
-  state.appended = [userMessage];
+  const note = deps.turnNote?.trim();
+  const asked: ModelMessage[] = note ? [userMessage, { role: 'system', content: note }] : [userMessage];
+  state.messages = [...buildHistory(loaded, { withoutTurn: deps.clientTurnId }), ...asked];
+  state.appended = [...asked];
 
   const stop = await runLoop(deps, toolContext, state, emit, signal);
 
@@ -275,10 +331,11 @@ async function runTurn(deps: TurnDeps, input: TurnInput, signal: AbortSignal, se
         id: rowId,
         conversation_id: conversationId,
         client_turn_id: deps.clientTurnId,
-        content: failed ? '' : textOfParts(ui.parts),
+        content: failed ? '' : wordsOf(ui.parts),
         status,
         ui_parts: failed ? [...ui.parts, { type: 'data-turn-incomplete', id: 'turn-verdict', data: { note: note ?? STOPPED_NOTE } }] : ui.parts,
-        // A failed turn leaves only the question behind: nothing half-finished is ever replayed to the model.
+        // A failed turn leaves only the question behind: nothing half-finished is ever replayed to the model. Its system message is
+        // left out too: one may only stand last or before an assistant message, and the next thing stored will be another question.
         model_messages: failed ? [userMessage] : state.appended,
         pending,
       });
@@ -313,14 +370,26 @@ async function runTurn(deps: TurnDeps, input: TurnInput, signal: AbortSignal, se
     return;
   }
 
+  if (stop.kind === 'refusal') {
+    // The model declined. That is an answer, not a fault: the coach is told so in a sentence they can act on, the turn is stored
+    // complete, and the sentence stands in the stored conversation as the reply (there is no content of the model's to keep).
+    refusalCategory = stop.category;
+    emit({ type: 'text_delta', delta: REFUSAL_NOTE });
+    const reply: ModelMessage = { role: 'assistant', content: [{ type: 'text', text: REFUSAL_NOTE }] };
+    state.messages.push(reply);
+    state.appended.push(reply);
+    const saved = await store('complete', null, null);
+    if (!saved) fail(NOT_SAVED_NOTE, 'retry');
+    await finish('complete', stop.kind, null, { grounded: true, unmatched: [] }, []);
+    return;
+  }
+
   const described =
-    stop.kind === 'refusal'
-      ? { message: REFUSAL_NOTE, action: 'none' as const }
-      : stop.kind === 'truncated'
-        ? { message: TRUNCATED_NOTE, action: 'none' as const }
-        : stop.kind === 'aborted'
-          ? { message: STOPPED_NOTE, action: 'retry' as const }
-          : deps.describeError(stop.error);
+    stop.kind === 'truncated'
+      ? { message: TRUNCATED_NOTE, action: 'none' as const }
+      : stop.kind === 'aborted'
+        ? { message: STOPPED_NOTE, action: 'retry' as const }
+        : deps.describeError(stop.error);
   await store('failed', described.message, null);
   if (stop.kind !== 'aborted') fail(described.message, described.action);
   await finish(stop.kind === 'aborted' ? 'stopped' : 'failed', stop.kind, stop.kind === 'error' ? stop.error : null, { grounded: false, unmatched: [] }, []);
@@ -333,15 +402,12 @@ async function runLoop(deps: TurnDeps, toolContext: Omit<ToolContext, 'reads'>, 
   } catch (err) {
     return { kind: 'error', error: err };
   }
-  return runModelLoop(
-    { model, system: deps.system, tools: deps.tools, modelTools: deps.tools.map(modelToolFor), toolContext, tasks: deps.tasks, maxSteps: deps.maxSteps, signal, emit },
-    state,
-  );
+  return runModelLoop({ model, system: deps.system, tools: deps.tools, toolContext, tasks: deps.tasks, maxSteps: deps.maxSteps, signal, emit }, state);
 }
 
 function ground(deps: TurnDeps, ui: ChatUIMessage, reads: ReadonlyMap<string, ToolEnvelope>, question: string): { grounded: boolean; unmatched: string[] } {
   try {
-    return (deps.checkGrounding ?? defaultGroundingCheck)({ text: textOfParts(ui.parts), reads: [...reads.values()], question });
+    return (deps.checkGrounding ?? defaultGroundingCheck)({ text: wordsOf(ui.parts), reads: [...reads.values()], question });
   } catch {
     return { grounded: false, unmatched: [] };
   }

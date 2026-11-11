@@ -3,7 +3,7 @@
  *
  * Three task classes per master plan Part XI.1. Each task has a fixed
  * model assignment (Part XI.5 amended 2026-05-25): Haiku for
- * round_review + hero_narrative, Sonnet for coach_chat.
+ * round_review + hero_narrative, Sonnet for coach_chat (see 2026-11-10 below).
  *
  * 2026-07-25 — coach_chat moved to Sonnet 5. The chat agent is the one task
  * that runs a multi-step tool loop and has to reason about which reads to make
@@ -12,6 +12,10 @@
  * 2026-10-29 — coach_chat moved to Sonnet 5.5 (owner request). Hyphenated id,
  * like the Haiku entry: the direct-key path strips `anthropic/` and hands the
  * rest to the Anthropic API, whose id is `claude-sonnet-5-5`.
+ *
+ * 2026-11-10 — coach_chat moved to Claude Haiku 5.5 (owner decision), which the
+ * chat engine runs at effort `high` (`chat/engine/model.ts`, where each call is
+ * priced on the model's two rate cards). Other tasks are unchanged.
  *
  * 2026-09-23 — round_review_narrative added (Package 8, owner decision).
  * Its own task key, deliberately NOT a reuse of round_review (round-recap.ts's
@@ -37,7 +41,7 @@ export type ComposeTask = 'round_review' | 'hero_narrative' | 'coach_chat' | 'ro
 export const MODEL_FOR_TASK: Record<ComposeTask, string> = {
   round_review: 'anthropic/claude-haiku-4-5',
   hero_narrative: 'anthropic/claude-haiku-4-5',
-  coach_chat: 'anthropic/claude-sonnet-5-5',
+  coach_chat: 'anthropic/claude-haiku-5-5',
   round_review_narrative: 'anthropic/claude-haiku-4-5',
 };
 
@@ -112,6 +116,9 @@ const MODEL_COST_USD_PER_MTOK: Record<string, { input: number; output: number }>
   // Sonnet 5.5 — the AI Gateway's published rate on 2026-10-29
   // (ai-gateway.vercel.sh/v1/models: $2/M in, $10/M out).
   'anthropic/claude-sonnet-5-5':  { input: 2.0,  output: 10.0 },
+  // The rate card for a prompt of 100K tokens or fewer. Above that the model bills $0.50 / $2.50; the chat engine prices each call
+  // itself with both cards and the cache multipliers (src/lib/coachhelm/v3/chat/engine/model.ts), this row is the pre-flight estimate's.
+  'anthropic/claude-haiku-5-5':   { input: 0.1,  output: 0.5  },
   'anthropic/claude-opus-4-7':    { input: 15.0, output: 75.0 },
 };
 

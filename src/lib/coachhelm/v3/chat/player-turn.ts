@@ -7,7 +7,8 @@ import { isCoachHelmEnabledForPlayer } from '@/lib/coachhelm/v2/gate';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
 import { CoachContextError } from './context';
-import { anthropicModelClient, CHAT_MODEL_LEDGER_ID, PLAYER_MAX_STEPS, promptTokens, turnCostUsd } from './engine/model';
+import { turnContext } from './context/screen-context';
+import { anthropicModelClient, CHAT_MODEL_LEDGER_ID, chatFeatures, PLAYER_MAX_STEPS, promptTokens, turnCostUsd } from './engine/model';
 import { CHAT_STREAM_CONTENT_TYPE, encodeChatEvent, type ChatErrorAction, type ChatEvent } from './engine/protocol';
 import { chatTurnResponse, type TurnSummary } from './engine/turn';
 import type { PlayerChatContext, ScreenLoaders } from './engine/tool';
@@ -29,7 +30,7 @@ const describePlayerError = (): { message: string; action: ChatErrorAction } => 
  */
 export async function runPlayerTurn(
   sb: SupabaseClient<Database>,
-  body: { text: string; clientTurnId: string },
+  body: { text: string; clientTurnId: string; screen?: unknown },
   signal: AbortSignal,
   loadersFor: (who: PlayerChatContext) => ScreenLoaders,
 ): Promise<Response> {
@@ -56,7 +57,9 @@ export async function runPlayerTurn(
     return new Response(events.map(encodeChatEvent).join(''), { headers: { 'content-type': CHAT_STREAM_CONTENT_TYPE } });
   }
 
-  const blocks = instructionBlocks('player', ctx, { today: new Date() });
+  const blocks = instructionBlocks('player', ctx);
+  // Today's date and the screen the player is on: a system message after their own, never in the prompt.
+  const context = await turnContext(sb, ctx, body.screen ?? null);
   const onFinished = (summary: TurnSummary) => {
     if (summary.usage.calls.length === 0) return;
     // The allowance and the ledger row run after the response is sent: the player was not waiting on a counter.
@@ -96,6 +99,8 @@ export async function runPlayerTurn(
       toolContext: { sb, who: ctx, conversationId, surface: 'player', loaders: loadersFor(ctx) },
       tasks: null,
       maxSteps: PLAYER_MAX_STEPS,
+      features: chatFeatures(),
+      turnNote: context.line,
       requestSignal: signal,
       store: null,
       clientTurnId: body.clientTurnId,

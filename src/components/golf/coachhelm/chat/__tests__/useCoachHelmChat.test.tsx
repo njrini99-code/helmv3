@@ -82,6 +82,40 @@ describe('useCoachHelmChat', () => {
     expect(bodyOf(1).client_turn_id).not.toBe(bodyOf(0).client_turn_id);
   });
 
+  it('passes on where the chat was opened from with each new message, as it is at that moment, and never with a decision', async () => {
+    fetchMock
+      .mockResolvedValueOnce(sse(answer('One.')))
+      .mockResolvedValueOnce(sse(answer('Two.').map((e) => (e.type === 'message_start' ? { ...e, message_id: 'a2' } : e))))
+      .mockResolvedValueOnce(sse([{ type: 'message_start', conversation_id: CONVERSATION, message_id: 'a-card', resumed: true }, { type: 'decision', key: KEY, approved: false }, { type: 'done', status: 'complete' }]));
+    const { result, rerender } = renderHook(({ screen }: { screen: Record<string, unknown> | null }) => useCoachHelmChat({ screen, initialMessages: [waitingCard], conversationId: CONVERSATION }), {
+      initialProps: { screen: { screen: 'roster', player_id: 'p-1' } as Record<string, unknown> | null },
+    });
+    act(() => result.current.send('Who is this?'));
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    expect(bodyOf(0).screen).toEqual({ screen: 'roster', player_id: 'p-1' });
+
+    // The coach moved to another screen: the next message says so. No caller has to re-create the hook.
+    rerender({ screen: { screen: 'stats' } });
+    act(() => result.current.send('And here?'));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    expect(bodyOf(1).screen).toEqual({ screen: 'stats' });
+
+    // A decision continues a turn that already has its context.
+    act(() => result.current.deny(KEY));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3));
+    expect(bodyOf(2)).not.toHaveProperty('screen');
+    expect(bodyOf(2)).toMatchObject({ decision: { key: KEY, approved: false } });
+  });
+
+  it('a caller that supplies no screen sends none', async () => {
+    fetchMock.mockResolvedValueOnce(sse(answer('One.')));
+    const { result } = renderHook(() => useCoachHelmChat());
+    act(() => result.current.send('First'));
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    expect(bodyOf(0)).not.toHaveProperty('screen');
+  });
+
   it('Confirm sends the decision by the card’s key and the receipt lands in the same message', async () => {
     fetchMock.mockResolvedValueOnce(
       sse([
