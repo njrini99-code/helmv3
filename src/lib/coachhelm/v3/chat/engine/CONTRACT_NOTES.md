@@ -90,3 +90,56 @@ Changes to `tool.ts` against the contract in the rebuild brief, with the reason 
     name the surfaces it belongs to here. TOOLS adds the import to `../registry.ts` at the end of that surface's
     reads or tasks (appending keeps the earlier definitions' bytes and order) and re-measures the prefix.
 
+
+## 2026-11-10 (CONTEXT), screen context and the app map
+
+CONTEXT owns `../context/**` and `../tasks/**` and edits no ENGINE or TOOLS file except to append here. Neither folder
+has an `index.ts` on purpose: `../context.ts` and `../tasks.ts` already own those import paths.
+
+### C1. Where the person is (ENGINE wires)
+
+1. Request body (`stream/route.ts`, the zod body): add `screen: z.unknown().optional()`. Do not validate it there:
+   `turnContext` parses it and a value that does not parse is ignored, so an old or broken client still gets its turn.
+2. Once per request with a new message (not on a decision request: the turn already has its line), after `ctx` is
+   resolved, for a coach or a player alike:
+   ```ts
+   import { turnContext } from '@/lib/coachhelm/v3/chat/context/screen-context';
+   const where = await turnContext(supabase, ctx, body.screen);   // never throws; one to six small reads, in parallel
+   ```
+   `where.line` is the whole per-turn system message, date included, e.g.
+   `Today is Tue 10 Nov 2026. The coach is on Stats, looking at Avery Lane over the last 10 rounds.`
+   Append it as `{ role: 'system', content: where.line }` after the user's message and store it with the turn like any
+   other message (history stays append-only). With no usable screen it is the date alone, so the date can leave the
+   team block (`instructionBlocks(..., { today })`) whenever TOOLS is ready to drop it from the cached prefix.
+3. `where.screen` (`ResolvedScreen | null`) holds the checked ids for server code. Suggested, not required:
+   `ToolContext.screen?: ResolvedScreen | null`, so a reader can default to "the round on screen". Nothing reads it yet.
+4. Client hook (`useCoachHelmChat.ts`), with each new message:
+   ```ts
+   import { screenContextFromPath } from '@/lib/coachhelm/v3/chat/context/screen-schema';   // pure, no server import
+   body.screen = { ...screenContextFromPath(location.pathname, location.search), ...selection };
+   ```
+   `selection` is what the address does not carry and the screen knows: `{ player_id }` on Roster, `{ thread_id }` in
+   Messages, `{ window }` on Stats. The type is `ScreenContextInput`. The Ask tab's `@` mention of one player can send
+   `{ player_id }` the same way.
+5. What it guarantees (tests in `../context/__tests__/screen-context.test.ts`): an id from another team is dropped (the
+   row's team is compared after the read as well as filtered in it); a player's line never names a teammate (a player
+   gets the screen, the window and their own round only; no title somebody else typed); the line never holds an id or
+   an e-mail address; text from the database is cut to plain characters and quoted; nothing throws.
+
+### C2. Where things are (TOOLS wires, two lines in `registry.ts`)
+
+```ts
+import { findInApp, findInAppForPlayer } from './context/find-in-app';
+// coachTools: add `findInApp` to `reads` (after `findThread` keeps today's cached order for everything before it)
+// playerTools: add `findInAppForPlayer`
+```
+- `find_in_app({ query, player_id | null })` (the player's has `query` only). It reads no team data and returns
+  `evidence: false`, so no evidence chip. The model is given place names and purposes, never an address.
+- New UI part, in `ToolResult.parts`: `{ type: 'data-app-link', id: 'app-link-<place>', data: { label, href, place } }`
+  (`AppLinkPart` in `find-in-app.ts`). `href` is an in-app path from the app map (`/golf/dashboard/...`), never model
+  text. ENGINE: add `'data-app-link'` to `REPLAYABLE` in `restore.ts` so the button survives a reload. The thread draws
+  it as a link button under the answer ("Open Roster"); until a screen draws it, the part is ignored and the answer
+  still names the place.
+- A suggested line for the policy block (TOOLS owns `instructions.ts`): "When the coach asks where something is, or
+  your answer sends them to a screen, call find_in_app and name the place; the button under your answer opens it."
+- `registry-size.test.ts`: the tool adds about 190 tokens to the coach prefix and 130 to the player's.
