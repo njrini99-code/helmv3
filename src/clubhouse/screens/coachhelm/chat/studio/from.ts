@@ -54,8 +54,16 @@ const sgPart = (label: string): string => {
   return part.charAt(0).toUpperCase() + part.slice(1);
 };
 
+/** Each player's Stats address, where there is one: a player with none is left out, and the reader (`hrefs?.[id]`) draws no key for them. */
+function statsHrefs(ids: readonly string[]): Record<string, string> {
+  return Object.fromEntries(ids.flatMap((id) => {
+    const href = playerStatsHref(id);
+    return href ? [[id, href] as const] : [];
+  }));
+}
+
 function playerHrefs(ms: readonly Measurement[]): Record<string, string> {
-  return Object.fromEntries(ms.filter((m) => m.entity.kind === 'player').map((m) => [m.entity.id, playerStatsHref(m.entity.id)]));
+  return statsHrefs(ms.filter((m) => m.entity.kind === 'player').map((m) => m.entity.id));
 }
 
 /** A block of a `show_visual` composition, as the component that draws it takes it. Every block type has a case: the registry test holds this to `STUDIO_KINDS`. */
@@ -107,9 +115,9 @@ export function fromEvidence(ev: AskEvidence): StudioPart | null {
     case 'bars':
       return { kind: 'distance_profile', data: { form: 'bands', bands: ev } };
     case 'ranking':
-      return { kind: 'ranking', data: { label: ev.title, rows: ev.rows, signed: ev.signed, highlight: null, hrefs: Object.fromEntries(ev.rows.map((r) => [r.id, playerStatsHref(r.id)])) } };
+      return { kind: 'ranking', data: { label: ev.title, rows: ev.rows, signed: ev.signed, highlight: null, hrefs: statsHrefs(ev.rows.map((r) => r.id)) } };
     case 'compare':
-      return { kind: 'comparison', data: { label: ev.title, team: ev.team, hrefs: Object.fromEntries(ev.team.players.map((pl) => [pl.id, playerStatsHref(pl.id)])) } };
+      return { kind: 'comparison', data: { label: ev.title, team: ev.team, hrefs: statsHrefs(ev.team.players.map((pl) => pl.id)) } };
     case 'legs':
       return { kind: 'strokes_gained', data: { title: ev.title, legs: ev.rows.map((r) => ({ key: r.label, label: sgPart(r.label), value: r.value, display: r.display })), takeaway: ev.takeaway || null } };
     case 'tiles':
