@@ -60,11 +60,12 @@ export function WindowSwitch({
         ...([5, 10, 20] as const).map((n) => ({
           value: `last${n}` as const,
           // The phone drops "Last" (`.ch-sw-last`) so five choices and the filter fit one row; the name stays whole for a screen reader.
+          // One child, so the key's own gap never opens a space inside a word.
           label: (
-            <>
+            <span>
               <span className="ch-sw-last">Last </span>
               {n}
-            </>
+            </span>
           ),
           aria: `Last ${n}`,
         })),
@@ -74,9 +75,9 @@ export function WindowSwitch({
           // With All time in the row the phone says "Quals", the team's own word, so six choices of at least 44pt and the filter fit a
           // 375pt phone without scrolling; a wider screen and a screen reader keep the whole word.
           label: onScope ? (
-            <>
+            <span>
               Qual<span className="ch-sw-last">ifier</span>s
-            </>
+            </span>
           ) : (
             'Qualifiers'
           ),
@@ -89,9 +90,9 @@ export function WindowSwitch({
                 value: 'all' as const,
                 // The phone says "All" (`.ch-sw-last` again), so six choices and the filter still fit one row.
                 label: (
-                  <>
+                  <span>
                     All<span className="ch-sw-last"> time</span>
-                  </>
+                  </span>
                 ),
                 aria: 'All time',
               },
