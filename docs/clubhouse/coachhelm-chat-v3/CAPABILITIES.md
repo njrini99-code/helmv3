@@ -649,22 +649,26 @@ inside the body.
 
 ## The seam, as it stands
 
-The seam in 0.1 was sent to the chat UI lead at the start; no answer had come when this was written, so:
+The seam in 0.1 is live. The chat UI lead's shell, `chat/parts/TaskCard.tsx` (commit 5c0cb2379b), takes its head,
+button, busy word, badge and lines from `cardCopy` and mounts `CardBody` with the stored plan, the receipt, the phase
+and the density, exactly as 0.1 says. In Ask and in quick chat a task card is now that shell around these bodies.
 
-- The gallery's frame (head, buttons, ring, receipt row, Told line) is a **stand-in** built to SPEC Moment 7, in
-  `PreviewChatCapabilities.tsx` and the `ch-akg-*` rules. It is not the shell and is not imported by the app. Its 8
-  seconds are a page timer; the real card draws the server's `held_until`. When the shell exports, the gallery mounts
-  it and the stand-in is deleted.
-- One thing to settle with the lead: with reach first in every body, SPEC's "On confirm:" line under the draft says
-  the same thing a second time. The stand-in leaves it out. Recommendation: the shell drops the line and keeps only
+- **The gallery still draws a stand-in frame** (`PreviewChatCapabilities.tsx`, the `ch-akg-*` rules), built to SPEC
+  Moment 7, because the real shell's receipt row asks `/api/coachhelm/v3/chat/actions/<key>` for the hold's outcome
+  and for Undo, and the gallery must make no request. Next step, in order: mount `TaskCard` in the gallery through the
+  lead's scripted harness (`preview/ask-script.ts` answers those three calls in the page), then delete the stand-in.
+  Until then the gallery shows every body in every state at real timing, and the real shell's motion is seen in the
+  lead's Ask preview.
+- **One thing to settle with the lead.** The shell still prints SPEC's "On confirm:" line under the body. With reach
+  first in every body it says the same thing a second time, a few lines lower. Recommendation: drop the line and keep
   the hold sentence beside the ring (`cardCopy(...).hold(seconds)`), so one fact lives in one place.
-- The shell's head shows `cardCopy.head` over `proposal.summary`. Bodies are written not to repeat the summary.
+- The head shows `cardCopy.head` over `proposal.summary`. Bodies are written not to repeat the summary.
 
 ## Below the bar, said plainly
 
-1. **The frame is a stand-in.** The ring does not become the check here (MO-7-9), the receipt does not take the
-   buttons' place by a cross-fade (MO-7-5), and nothing arrives (MO-7-1). Those are the shell's motions; the gallery
-   shows states and timing, not choreography.
+1. **The gallery's frame is a stand-in** (the app's is the real shell). In the gallery the ring does not become the
+   check (MO-7-9), the receipt does not take the buttons' place by a cross-fade (MO-7-5), and nothing arrives
+   (MO-7-1). The gallery shows states and timing, not choreography, until it mounts the shell through the harness.
 2. **A poll draft is drawn in the poll's shape, not by Messages' own `PollCard`**, which needs the whole Messages
    api object to mount. Wanted from the Messages owner: a presentational face of the poll (question, options, head
    words) that takes a `Poll` and nothing else.
