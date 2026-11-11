@@ -109,6 +109,9 @@ interface PlayDrive {
   stop: number | null;
   /** Press Try again this long after a turn fails. */
   retry: number | null;
+  /** Press the activity island this long after the question is sent, and its first openable step this long after that. */
+  isl: number | null;
+  islstep: number | null;
 }
 let DRIVE: PlayDrive | null = null;
 
@@ -132,6 +135,19 @@ function useScriptedChat(options: UseCoachHelmChatOptions = {}): UseCoachHelmCha
     if (!drive || drive.stop === null || !sent) return;
     const t = setTimeout(() => click('.ch-ask-cmp__send.is-stop'), drive.stop);
     return () => clearTimeout(t);
+  }, [drive, sent]);
+  useEffect(() => {
+    if (!drive || drive.isl === null || !sent) return;
+    const step = drive.islstep;
+    let inner: ReturnType<typeof setTimeout> | undefined;
+    const t = setTimeout(() => {
+      click('.ch-isl .hd');
+      if (step !== null) inner = setTimeout(() => click('.ch-isl .st .op'), step);
+    }, drive.isl);
+    return () => {
+      clearTimeout(t);
+      clearTimeout(inner);
+    };
   }, [drive, sent]);
   const last = chat.messages[chat.messages.length - 1];
   const waiting = pendingDecisionKeys(last as never).length > 0 && !chat.busy;
@@ -160,7 +176,7 @@ function useScriptedChat(options: UseCoachHelmChatOptions = {}): UseCoachHelmCha
 /**
  * `?state=play&script=<name>`: a scripted turn through the real hook (ask-script.ts). `&pace=fast|real|worst`. Driving it:
  * `&auto=<ms>` asks the script's question, `&confirm=<ms>` / `&cancel=<ms>` answers its card, `&undo=<ms>` presses Undo,
- * `&stop=<ms>` presses Stop, `&retry=<ms>` presses Try again, `&until=<ms>` freezes the response at that instant (a still
+ * `&stop=<ms>` presses Stop, `&retry=<ms>` presses Try again, `&isl=<ms>` presses the activity island and `&islstep=<ms>` then its first openable step, `&until=<ms>` freezes the response at that instant (a still
  * frame of a moment). Without `auto` the page waits for a person to type or tap a start.
  */
 function PreviewAskPlay({ name, role }: { name?: string; role?: 'player' }) {
@@ -171,7 +187,7 @@ function PreviewAskPlay({ name, role }: { name?: string; role?: 'player' }) {
     const pace = at.get('pace');
     // `script` names the turn; `q` is left alone, because Ask reads `?q=` as a question to put in the field.
     const script = askScript(at.get('script') ?? name, isAskPace(pace) ? pace : 'real');
-    DRIVE = { script, auto: ms('auto'), confirm: ms('confirm'), cancel: ms('cancel'), undo: ms('undo'), stop: ms('stop'), retry: ms('retry') };
+    DRIVE = { script, auto: ms('auto'), confirm: ms('confirm'), cancel: ms('cancel'), undo: ms('undo'), stop: ms('stop'), retry: ms('retry'), isl: ms('isl'), islstep: ms('islstep') };
     const restore = installScriptedChat(script, { until: ms('until') });
     setReady(true);
     return () => {

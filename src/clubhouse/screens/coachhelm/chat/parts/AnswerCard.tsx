@@ -96,6 +96,8 @@ export interface AnswerCardProps {
   /** Opens one read in the evidence sheet or panel; `openRef` is the read that is open now. */
   onOpenRead?: (ref: string, label: string) => void;
   openRef?: string | null;
+  /** The activity island shows this thread's work (SPEC Moment 4). `showing`: it is on screen for this turn. `open`: with this turn's steps open. */
+  island?: { showing: boolean; open: boolean; onOpen: () => void };
 }
 
 /**
@@ -103,7 +105,7 @@ export interface AnswerCardProps {
  * them, the answer as it streams, its visuals and cards, and then either its foot and follow-ups or the notice that it ended early.
  * Nothing in it moves once drawn.
  */
-export function AnswerCard({ turn, fresh, showFollowUps, playersByName, players, onSend, actions, onArtifact, sentAt = null, started = true, end = null, offline = false, changed = { changedNothing: false, unconfirmedWrite: false }, onRetry, onNewChat, onOpenRead, openRef = null }: AnswerCardProps) {
+export function AnswerCard({ turn, fresh, showFollowUps, playersByName, players, onSend, actions, onArtifact, sentAt = null, started = true, end = null, offline = false, changed = { changedNothing: false, unconfirmedWrite: false }, onRetry, onNewChat, onOpenRead, openRef = null, island }: AnswerCardProps) {
   const live = turn.active;
   const seconds = useRan(live);
   const artifacts = turn.artifacts ?? [];
@@ -134,7 +136,7 @@ export function AnswerCard({ turn, fresh, showFollowUps, playersByName, players,
   const waiting = turn.blocks.some((b) => b.kind === 'proposal' && (b.view.status === 'live' || b.view.status === 'preparing'));
   // The answer has begun once there is something under the name that is not a card and not a held-back read: from then the read list is folded.
   const hasBody = turn.blocks.some((b) => b.kind !== 'proposal' && b.kind !== 'receipt' && !(b.kind === 'evidence' && b.ref)) || !!turn.note;
-  const work = useWork({ steps: turn.steps, live, sentAt, started, hasText: hasBody, waitingForCoach: waiting && !live, seconds });
+  const work = useWork({ steps: turn.steps, live, sentAt, started, hasText: hasBody, waitingForCoach: waiting && !live, seconds, island: island ? { showing: island.showing } : null });
   const listId = useWorkListId();
   const pending = usePendingWords(turn.answerText, live);
   const spoken = useSpoken(turn.answerText, live);
@@ -159,9 +161,9 @@ export function AnswerCard({ turn, fresh, showFollowUps, playersByName, players,
         <div className="who">
           <CoachMark working={live} />
           <span className="nm">CoachHelm</span>
-          <WorkLine work={work} listId={listId} />
+          <WorkLine work={work} listId={listId} handle={island ? { open: island.open, onOpen: island.onOpen } : undefined} />
         </div>
-        <ReadList work={work} id={listId} live={live} />
+        {!island && <ReadList work={work} id={listId} live={live} />}
         {turn.note && (
           <p className="prose ch-th-note" data-ch-code="CH-13252">
             {turn.note}

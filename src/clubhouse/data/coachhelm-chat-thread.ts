@@ -101,6 +101,26 @@ export interface AskStep {
   detail?: string;
   /** A practice read's picture, drawn under the finished step. */
   picture?: ReadPictureData;
+  /** Chat v3, the activity island (the engine's step shape; every field optional, so an older stored step still draws). */
+  kind?: 'read' | 'find' | 'compare' | 'calculate' | 'visual' | 'draft' | 'check';
+  /** The step this one runs under (a read the model's code calls). */
+  parentId?: string;
+  /** What the step is touching, as far as is known: faces and rounds join as they are found. */
+  subjects?: AskStepSubject[];
+  /** A running tally; `more` while it can still grow. */
+  count?: { n: number; unit: string; more: boolean };
+  /** A calculation: what it covered. */
+  covers?: { n: number; of: number; unit: string };
+  /** The read it produced: a finished step opens it. */
+  ref?: string;
+  startedAt?: string;
+  endedAt?: string;
+}
+
+export interface AskStepSubject {
+  kind: 'player' | 'team' | 'round' | 'event' | 'qualifier' | 'tournament' | 'plan' | 'document';
+  id: string;
+  label: string;
 }
 
 /** One read of a turn, by the ref the model cites (Ask v2). */
@@ -559,13 +579,25 @@ export function buildAssistantTurn(message: UIMessage, ctx: { isLast: boolean; b
   const steps: AskStep[] = parts
     .filter((p) => p.type === 'data-progress')
     .map((p, i) => {
-      const d = dataOf<{ label?: string; tool?: string; state?: AskStep['state']; done?: string; detail?: string; picture?: ReadPictureData }>(p);
+      const d = dataOf<{ label?: string; tool?: string; state?: AskStep['state'] | 'waiting'; done?: string; done_label?: string; detail?: string; picture?: ReadPictureData; kind?: AskStep['kind']; parent_id?: string; subjects?: AskStepSubject[]; count?: AskStep['count']; covers?: AskStep['covers']; evidence_ref?: string; started_at?: string; ended_at?: string }>(p);
+      // The island's fields (chat v3), passed through as sent. A step the server knows is coming and has not started is `waiting`.
+      const island = {
+        ...(d?.kind ? { kind: d.kind } : d?.tool === 'code_execution' ? { kind: 'calculate' as const } : {}),
+        ...(d?.parent_id ? { parentId: d.parent_id } : {}),
+        ...(Array.isArray(d?.subjects) ? { subjects: d.subjects } : {}),
+        ...(d?.count ? { count: d.count } : {}),
+        ...(d?.covers ? { covers: d.covers } : {}),
+        ...(d?.evidence_ref ? { ref: d.evidence_ref } : {}),
+        ...(d?.started_at ? { startedAt: d.started_at } : {}),
+        ...(d?.ended_at ? { endedAt: d.ended_at } : {}),
+      };
       const left = d?.tool ? (retriedTools.get(d.tool) ?? 0) : 0;
       if (d?.state === 'failed' && d.tool && left > 0) {
         retriedTools.set(d.tool, left - 1);
         return { id: String(p.id ?? `step-${i}`), label: stepLabel(d.label), state: 'done' as const, done: retriedWords(d.tool) };
       }
-      return { id: String(p.id ?? `step-${i}`), label: stepLabel(d?.label), ...(d?.state ? { state: d.state } : {}), ...(d?.done ? { done: stepLabel(d.done) } : {}), ...(d?.picture ? { picture: d.picture } : {}), ...(d?.detail ? { detail: d.detail } : {}) };
+      const state = d?.state === 'waiting' ? ('next' as const) : d?.state;
+      return { id: String(p.id ?? `step-${i}`), label: stepLabel(d?.label), ...(state ? { state } : {}), ...(d?.done_label ? { done: stepLabel(d.done_label) } : d?.done ? { done: stepLabel(d.done) } : {}), ...(d?.picture ? { picture: d.picture } : {}), ...(d?.detail ? { detail: d.detail } : {}), ...island };
     });
   const envelopes = parts
     .filter((p) => p.type === 'data-evidence')

@@ -1064,7 +1064,7 @@ html[data-fw-theme='dark'] .ch-ak-push .ch-btn--primary[data-ch-pressed]:not(:di
 .ch-ak-pend { white-space: nowrap; }
 .ch-ak-pend .ch-ak-live { width: 7px; height: 7px; margin-left: 6px; vertical-align: 1px; animation: ch-ak-fade var(--ch-dur-quick) var(--ch-ease) backwards, ch-ak-breath var(--ch-dur-reveal) var(--ch-ease-io) infinite alternate; }
 /* A chip is a word in its sentence: the line's height, never taller, so it cannot push its line apart. */
-.ch-ak-th[data-v3] .prose .cite { margin: 0; padding: 1px 8px 1px 7px; vertical-align: 1px; line-height: 1.35; }
+.ch-ak-th[data-v3] .prose .cite { margin: 0; padding: 1px 8px 1px 7px; vertical-align: 1px; line-height: var(--ch-lead-tight); }
 .ch-ak-th[data-v3] .prose .cite[data-ch-pressed] { transform: scale(0.97); }
 
 /* A visual is complete at first paint (owner decision Q-153): only its frame fades, and only when it arrives in this visit. */
@@ -1166,3 +1166,119 @@ html[data-fw-theme='dark'] .ch-ak-push .ch-btn--primary[data-ch-pressed]:not(:di
 /* The task card's body (the capability's own, cards/): a withdrawn draft steps back; it is not removed. */
 .ch-ak-task__body { min-width: 0; transition: opacity var(--ch-dur-quick) var(--ch-ease); }
 .ch-ak-task__body.is-dim { opacity: 0.55; }
+
+/* ── Chat v3, the activity island (SPEC Moment 4; MOTION MO-4-I1 to I9) ───────────────────────────────────────────────
+   Where CoachHelm's work is shown. One line in chrome that already exists (the phone's scope row, the desktop's header), so
+   it covers nothing; opened, it hangs over the thread as the live workspace. Its two sizes are one shape: the plate is two
+   caps and a middle that scales, and the steps sit behind a clip that travels with the plate's edge, so opening and folding
+   are transforms only and nothing is laid out again. The island's own box is one line tall in both sizes. */
+.ch-ak-islhost { position: relative; flex: none; display: grid; place-items: center; padding-bottom: 6px; }
+.ch-ak-islhost:not(.is-home) { min-height: 40px; }
+.ch-ak-islhost .ch-ak-scope { max-width: 100%; padding-bottom: 0; transition: opacity var(--ch-dur-quick) var(--ch-ease); }
+.ch-ak-islhost:has(.ch-isl:not(.is-leaving)) .ch-ak-scope { opacity: 0; }
+@media (pointer: coarse) and (max-height: 700px) {
+  .ch-ak-root:has(.ch-ask-dock textarea:focus) .ch-ak-islhost { display: none; }
+}
+.ch-ak-root .ch-ask-head { position: relative; }
+/* The title leaves the middle of the header to the island, always, so it is never cut shorter when the island arrives. */
+.ch-ak-root .ch-ask-main:has(.ch-ask-scroll.is-thread) .ch-ask-head__t { flex: 0 1 auto; max-width: calc(50% - 214px); }
+
+.ch-isl { --isl-r: var(--ch-radius-lg); --isl-w: min(380px, 100% - 28px); position: absolute; top: 2px; left: 50%; z-index: var(--ch-z-sticky); width: var(--isl-w); height: calc(var(--isl-r) * 2); margin-left: calc(var(--isl-w) / -2); color: var(--ch-feature-ink); animation: ch-isl-in var(--ch-dur-spring-pop, var(--ch-dur-base)) var(--ch-ease-spring-pop, var(--ch-ease)) backwards; transition: transform var(--ch-dur-release) var(--ch-ease); }
+.ch-ask-head .ch-isl { top: calc(50% - var(--isl-r)); --isl-w: min(380px, 100% - 32px); }
+.ch-isl.is-compact { --isl-w: min(300px, 100% - 24px); }
+.ch-isl:has(.hd[data-ch-pressed]) { transform: scale(0.98); transition-duration: var(--ch-dur-press); }
+.ch-isl.is-leaving { animation: ch-isl-out var(--ch-dur-quick) var(--ch-ease) forwards; pointer-events: none; }
+@keyframes ch-isl-in { from { opacity: 0; transform: translateY(-6px) scale(0.9); } }
+@keyframes ch-isl-out { to { opacity: 0; transform: scale(0.96); } }
+@keyframes ch-isl-word { from { opacity: 0; transform: translateY(3px); } }
+
+/* The shadow of each size, crossed by opacity: a shadow is never resized. */
+.ch-isl .sh { position: absolute; inset: 0; border-radius: var(--isl-r); box-shadow: var(--ch-feature-shadow); pointer-events: none; }
+.ch-isl .sh::after { content: ''; position: absolute; inset: 0 0 auto; height: calc(var(--isl-r) * 2 + var(--ch-isl-h, 0) * 1px); border-radius: var(--isl-r); box-shadow: var(--ch-elevation-raised); opacity: 0; transition: opacity var(--ch-dur-base) var(--ch-ease); }
+.ch-isl.is-open .sh::after { opacity: 1; }
+
+/* The plate: a top cap, a middle two pixels tall (whole pixels, so its edges stay sharp when scaled) that scales to the steps' height, and a bottom cap that rides its edge. */
+.ch-isl .pl { position: absolute; inset: 0; pointer-events: none; }
+.ch-isl .pl i { position: absolute; left: 0; right: 0; background: var(--ch-feature-bg); }
+.ch-isl .pt { top: 0; height: var(--isl-r); border-radius: var(--isl-r) var(--isl-r) 0 0; }
+.ch-isl .pm { top: calc(var(--isl-r) - 1px); height: 2px; transform-origin: 50% 0; }
+.ch-isl .pb { top: var(--isl-r); height: var(--isl-r); border-radius: 0 0 var(--isl-r) var(--isl-r); }
+.ch-isl :is(.pm, .pb, .bc, .bd) { transition: transform var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth); }
+.ch-isl.is-open .pm { transform: scaleY(calc((var(--ch-isl-h, 0) + 2) / 2)); }
+.ch-isl.is-open .pb { transform: translateY(calc(var(--ch-isl-h, 0) * 1px)); }
+
+/* The head: the island as one line. */
+.ch-isl .hd { position: relative; display: flex; align-items: center; gap: 8px; width: 100%; height: 100%; margin: 0; padding: 0 10px 0 8px; border: 0; border-radius: var(--isl-r); background: none; color: inherit; font: var(--ch-type-13-medium); text-align: left; cursor: pointer; }
+.ch-isl .hd::after { content: ''; position: absolute; inset: -6px 0; }
+.ch-isl .hd:focus-visible, .ch-isl .st .op:focus-visible { outline: var(--ch-focus-ring-w, 2px) solid var(--ch-feature-gain); outline-offset: 2px; }
+.ch-isl .hd .t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; animation: ch-isl-word var(--ch-dur-base) var(--ch-ease) backwards; }
+.ch-isl .hd .n { flex: none; font: var(--ch-type-12); color: var(--ch-feature-ink-3); }
+.ch-isl .hd .chev { flex: none; color: var(--ch-feature-ink-3); transition: transform var(--ch-dur-base) var(--ch-ease); }
+.ch-isl.is-open .hd .chev { transform: rotate(180deg); }
+
+/* A step's mark. The ring turns for as long as the step runs; finished, it closes where it is and the check draws inside it. */
+.ch-isl .mk { flex: none; display: grid; place-items: center; width: 18px; height: 18px; }
+.ch-isl .mk.is-waiting::before { content: ''; width: 12px; height: 12px; border-radius: 50%; background: var(--ch-feature-ink-3); opacity: 0.4; }
+.ch-isl .mk svg { width: 16px; height: 16px; overflow: visible; }
+.ch-isl .mk :is(.trk, .arc, .ck, .bar) { stroke-width: 2.2; }
+.ch-isl .mk .trk { stroke: var(--ch-feature-track); transition: opacity var(--ch-dur-base) var(--ch-ease); }
+.ch-isl .mk .arc { stroke: var(--ch-feature-gain); stroke-dasharray: 100; stroke-dashoffset: 70; transform-box: fill-box; transform-origin: 50% 50%; animation: ch-isl-spin var(--ch-dur-sweep) linear infinite; transition: stroke-dashoffset var(--ch-dur-base) var(--ch-ease), opacity var(--ch-dur-base) var(--ch-ease); }
+.ch-isl .mk:is(.is-done, .is-failed) .arc { stroke-dashoffset: 0; }
+.ch-isl .mk:is(.is-done, .is-failed) .trk { opacity: 0; }
+.ch-isl .mk.is-rest .arc, .ch-isl .mk.is-stopped .arc { animation: none; }
+.ch-isl .mk.is-stopped .arc { opacity: 0.6; }
+.ch-isl .mk.is-failed :is(.arc, .bar) { stroke: var(--ch-feature-loss); }
+.ch-isl .mk .ck { stroke: var(--ch-feature-gain); stroke-dasharray: 24; }
+.ch-isl .mk.is-done:not(.is-rest) .ck { animation: ch-isl-ck var(--ch-dur-base) var(--ch-ease) var(--ch-dur-quick) backwards; }
+.ch-isl .mk.is-done:not(.is-rest) svg { animation: ch-isl-pop var(--ch-dur-word) var(--ch-ease-io) var(--ch-dur-quick); }
+/* A finished step steps back, so the one still running is the one the eye finds. */
+.ch-isl .st .mk.is-done.is-rest .arc { opacity: 0.45; }
+@keyframes ch-isl-spin { to { transform: rotate(360deg); } }
+@keyframes ch-isl-ck { from { stroke-dashoffset: 24; } }
+@keyframes ch-isl-pop { 45% { transform: scale(1.16); } }
+
+/* The steps. The clip is a window of fixed height hung from the plate's moving edge, and the list inside it is moved back by
+   the same amount, so the list stays where it is and only the edge travels: two equal and opposite moves on the same clock
+   as the plate, which stay equal when the height changes mid-move. */
+.ch-isl { --isl-max: 420px; }
+.ch-isl .bc { position: absolute; top: calc(var(--isl-r) * 2); left: 0; right: 0; height: var(--isl-max); overflow: hidden; border-radius: 0 0 var(--isl-r) var(--isl-r); pointer-events: none; transform: translateY(calc(var(--isl-max) * -1)); }
+.ch-isl .bd { max-height: min(52dvh, var(--isl-max)); overflow-y: auto; overscroll-behavior: contain; padding: 0 6px 8px; opacity: 0; transform: translateY(var(--isl-max)); transition: transform var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth), opacity var(--ch-dur-quick) var(--ch-ease); }
+.ch-isl.is-open .bc { transform: translateY(calc(var(--ch-isl-h, 0) * 1px - var(--isl-max))); }
+.ch-isl.is-open .bd { pointer-events: auto; opacity: 1; transform: translateY(calc(var(--isl-max) - var(--ch-isl-h, 0) * 1px)); }
+.ch-isl .steps { margin: 0; padding: 4px 0 0; border-top: 1px solid var(--ch-feature-sep); list-style: none; }
+.ch-isl .st { animation: ch-ak-rise6 var(--ch-dur-spring-settle) var(--ch-ease-spring-settle) backwards; }
+.ch-isl .st { position: relative; }
+.ch-isl .st .row { display: flex; align-items: flex-start; gap: 8px; min-height: 36px; padding: 9px 6px 9px 2px; border-radius: var(--ch-radius-sm); font: var(--ch-type-13); transition: background-color var(--ch-dur-quick) var(--ch-ease); }
+.ch-isl .st .op { position: absolute; inset: 0; margin: 0; padding: 0; border: 0; border-radius: var(--ch-radius-sm); background: none; cursor: pointer; }
+.ch-isl .st:has(.op[data-ch-pressed]) .row { background: var(--ch-feature-icon-bg); }
+@media (hover: hover) { .ch-isl .st:has(.op:hover) .row { background: var(--ch-feature-icon-bg); } }
+@media (pointer: coarse) { .ch-isl .st.can-open .row { min-height: 44px; } }
+.ch-isl .st.is-child .row { padding-left: 26px; }
+.ch-isl .st .tx { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ch-isl .st .lb { overflow-wrap: anywhere; color: var(--ch-feature-ink-2); }
+.ch-isl .st.is-active .lb { color: var(--ch-feature-ink); font: var(--ch-type-13-medium); }
+.ch-isl .st.is-waiting .lb, .ch-isl .st.is-stopped .lb { color: var(--ch-feature-ink-3); }
+.ch-isl .st .dt { font: var(--ch-type-12); color: var(--ch-feature-ink-3); animation: ch-ak-fade var(--ch-dur-base) var(--ch-ease) backwards; }
+.ch-isl .hd .mo { color: var(--ch-feature-ink-2); font: var(--ch-type-13); }
+.ch-isl .st.is-failed .lb { color: var(--ch-feature-loss); }
+.ch-isl .st :is(.ms, .go) { flex: none; margin-top: 1px; color: var(--ch-feature-ink-3); }
+.ch-isl .st .ms { font: var(--ch-type-12); }
+/* What the step is touching: faces and names join as they are found, each once. */
+.ch-isl .subj { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 0; padding-top: 4px; }
+.ch-isl .subj .face { display: grid; margin-right: -4px; border-radius: 50%; box-shadow: 0 0 0 2px var(--ch-feature-bg); animation: ch-isl-face var(--ch-dur-spring-pop, var(--ch-dur-base)) var(--ch-ease-spring-pop, var(--ch-ease)) backwards; }
+.ch-isl .subj .tag { margin-right: 4px; padding: 2px 8px; border-radius: var(--ch-radius-lg); background: var(--ch-feature-icon-bg); font: var(--ch-type-12); color: var(--ch-feature-ink-2); animation: ch-isl-face var(--ch-dur-spring-pop, var(--ch-dur-base)) var(--ch-ease-spring-pop, var(--ch-ease)) backwards; }
+.ch-isl .subj .more { margin-left: 10px; font: var(--ch-type-12); color: var(--ch-feature-ink-3); }
+.ch-isl .subj .tag + .more { margin-left: 2px; }
+@keyframes ch-isl-face { from { opacity: 0; transform: scale(0.5); } }
+
+/* Reduce Motion: the ring does not turn (an open ring is running, a closed one with a check is done); the plate takes its size at once; arrivals are fades. */
+@media (prefers-reduced-motion: reduce) {
+  .ch-isl .mk .arc, .ch-isl .mk .ck, .ch-isl .mk svg { animation: none !important; }
+  .ch-isl, .ch-isl .st, .ch-isl .hd .t, .ch-isl .st .dt, .ch-isl .subj .face, .ch-isl .subj .tag { --ch-rm-animation: var(--ch-dur-crossfade-rm); animation: ch-ak-fade var(--ch-dur-crossfade-rm) linear backwards; }
+  .ch-isl.is-leaving { --ch-rm-animation: var(--ch-dur-crossfade-rm); animation: ch-ak-fade-out var(--ch-dur-crossfade-rm) linear forwards; }
+  .ch-isl :is(.pm, .pb, .bc) { transition: none; }
+  .ch-isl .bd { transition: opacity var(--ch-dur-crossfade-rm) linear; }
+  .ch-isl:has(.hd[data-ch-pressed]) { transform: none; }
+}
+[data-motion='off'] .ch-isl, [data-motion='off'] .ch-isl :is(.st, .hd .t, .st .dt, .face, .tag, .mk .arc, .mk .ck, .mk svg) { animation: none !important; }
+[data-motion='off'] .ch-isl :is(.pm, .pb, .bc, .bd, .sh::after) { transition: none; }

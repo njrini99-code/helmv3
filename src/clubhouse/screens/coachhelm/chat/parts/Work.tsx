@@ -40,7 +40,7 @@ export interface WorkModel {
  * `live`: this browser is watching the turn run. `sentAt`: when its question was sent (performance.now), for a live turn.
  * `started`: the server has opened the turn. `hasText`: the answer has begun. `waitingForCoach`: a card waits.
  */
-export function useWork({ steps, live, sentAt, started, hasText, waitingForCoach, seconds }: { steps: AskStep[]; live: boolean; sentAt: number | null; started: boolean; hasText: boolean; waitingForCoach: boolean; seconds: number | null }): WorkModel {
+export function useWork({ steps, live, sentAt, started, hasText, waitingForCoach, seconds, island = null }: { steps: AskStep[]; live: boolean; sentAt: number | null; started: boolean; hasText: boolean; waitingForCoach: boolean; seconds: number | null; /** The activity island is where this thread's work is shown: the list never hangs under the name, and while the island speaks for this turn the line is silent. */ island?: { showing: boolean } | null }): WorkModel {
   const [, tick] = useReducer((n: number) => n + 1, 0);
   // When this browser first saw each read, and when it saw it finish. A turn that was not watched has neither: its rows are settled.
   const seen = useRef(new Map<string, { at: number; done: number | null; cut?: boolean }>());
@@ -74,7 +74,7 @@ export function useWork({ steps, live, sentAt, started, hasText, waitingForCoach
 
   // The list is the work line's open form: it opens by itself only while nothing is under it (no answer text yet).
   const [open, setOpen] = useState(false);
-  const autoOpen = live && !hasText && shown.length > 0;
+  const autoOpen = !island && live && !hasText && shown.length > 0;
   const wasAuto = useRef(false);
   const [folding, setFolding] = useState(false);
   const foldDone = useRef(false);
@@ -108,6 +108,8 @@ export function useWork({ steps, live, sentAt, started, hasText, waitingForCoach
     if (words) line = { kind: 'words', text: words };
   } else if (!live && waitingForCoach) line = { kind: 'words', text: 'Waiting for you' };
   if (line.kind === 'none' && !autoOpen && shown.length > 0) line = { kind: 'summary', text: stepsReceipt(steps, seconds) };
+  // The island is saying it: one place speaks at a time. When the island leaves, the summary is here, and it is the way back.
+  if (island?.showing) line = { kind: 'none' };
 
   return {
     present: !live || sentAt === null || elapsed >= TURN_TIMING.present || started,
@@ -133,13 +135,13 @@ export function LiveDot({ className }: { className?: string }) {
  * The work line: the words after the name on the turn's first row. The only place status is said, so status never adds or
  * removes a row and the answer's first line is always under the name. Folded, it is the button that opens the reads.
  */
-export function WorkLine({ work, listId }: { work: WorkModel; listId: string }) {
+export function WorkLine({ work, listId, handle }: { work: WorkModel; listId: string; /** The summary opens the activity island instead of a list under the name. */ handle?: { open: boolean; onOpen: () => void } }) {
   const { line } = work;
   // The words are announced when they change, politely; rows are not individually live.
   const say = line.kind === 'none' ? '' : line.text;
   if (line.kind === 'summary')
     return (
-      <button type="button" className="ch-ak-wl is-sum" aria-expanded={work.open} aria-controls={listId} onClick={work.toggle} data-ch-press="">
+      <button type="button" className="ch-ak-wl is-sum" aria-expanded={handle ? handle.open : work.open} aria-controls={handle ? undefined : listId} onClick={handle ? handle.onOpen : work.toggle} data-ch-press="" data-ch-isl-handle={handle ? '' : undefined}>
         <span className="t ch-num">{line.text}</span>
         <Icon icon={ChevronDown} size={15} className="chev" />
       </button>

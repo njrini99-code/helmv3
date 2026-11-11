@@ -7,12 +7,12 @@ describe('what the work line says while it waits (SPEC Moment 4)', () => {
     expect(waitingWords(0, false)).toBeNull();
     expect(waitingWords(TURN_TIMING.words - 1, true)).toBeNull();
   });
-  it('claims only what is known: Sending until the server opens the turn, Thinking after', () => {
+  it('claims only what is known: Sending until the server opens the turn, then what is being done (never a bare Thinking)', () => {
     expect(waitingWords(TURN_TIMING.words, false)).toBe('Sending');
-    expect(waitingWords(TURN_TIMING.words, true)).toBe('Thinking');
+    expect(waitingWords(TURN_TIMING.words, true)).toBe('Reading your question');
   });
   it('explains a long wait at 6 s and offers the way out at 20 s', () => {
-    expect(waitingWords(TURN_TIMING.slow, true)).toBe('Still thinking. Long questions take a little longer.');
+    expect(waitingWords(TURN_TIMING.slow, true)).toBe('Still working on it. Long questions take a little longer.');
     expect(waitingWords(TURN_TIMING.slow, false)).toBe('Still sending. Check your connection.');
     expect(waitingWords(TURN_TIMING.stuck, true)).toBe('No answer yet. You can stop and ask again.');
   });

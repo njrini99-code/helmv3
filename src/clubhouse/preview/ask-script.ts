@@ -77,8 +77,34 @@ function rng(seed: number): () => number {
 }
 
 type ReadSpec = { id: string; label: string; tool?: string; detail?: string; failed?: boolean; ev?: { id: string; ref?: string; tool?: string; envelope: unknown } };
+type StepSubject = { kind: 'player' | 'team' | 'round' | 'event' | 'qualifier' | 'tournament' | 'plan' | 'document'; id: string; label: string };
+/**
+ * One step of the activity island, in the shape asked of the engine (SPEC, Requests): a `data-progress` part whose data names
+ * the step's state and what it touches. `from`, `to` and `queued` are offsets from the beat's start, in units of the pace's
+ * read time: `queued` is when the server first knows the step is coming (it is `waiting` until `from`).
+ */
+type StepSpec = {
+  id: string;
+  label: string;
+  done?: string;
+  tool?: string;
+  kind?: 'read' | 'find' | 'compare' | 'calculate' | 'visual' | 'draft' | 'check';
+  parent?: string;
+  from: number;
+  to: number;
+  queued?: number;
+  failed?: boolean;
+  detail?: string;
+  covers?: { n: number; of: number; unit: string };
+  /** A tally that grows while the step runs. */
+  count?: { unit: string; to: number };
+  /** Join one by one while the step runs. */
+  subjects?: StepSubject[];
+  ev?: { id: string; ref: string; tool?: string; envelope: unknown; via?: 'code' };
+};
 type Beat =
   | { kind: 'reads'; reads: ReadSpec[] }
+  | { kind: 'work'; steps: StepSpec[] }
   | { kind: 'text'; text: string }
   | { kind: 'part'; part: WireDataPart; wait?: 'tool' }
   | { kind: 'discard' }
@@ -106,6 +132,43 @@ function timeline(pace: AskPace, beats: Beat[], opts: { status?: 'complete' | 'a
         if (r.ev) out.push({ at: done + 1, event: eventForPart({ type: 'data-evidence', id: `evidence-${r.ev.id}`, data: { tool: r.ev.tool ?? tool, envelope: r.ev.envelope, ...(r.ev.ref ? { ref: r.ev.ref } : {}) } }) });
         end = Math.max(end, done);
       });
+      t = end + p.think;
+    } else if (beat.kind === 'work') {
+      const unit = p.read[0];
+      let end = t;
+      for (const step of beat.steps) {
+        const tool = step.tool ?? 'get_player_metrics';
+        const base = { label: step.label, tool, ...(step.kind ? { kind: step.kind } : {}), ...(step.parent ? { parent_id: step.parent } : {}) };
+        const start = t + Math.round(step.from * unit);
+        const done = t + Math.round(step.to * unit);
+        // The step's own clock is the wall's, read when each event is sent, as the server's would be.
+        const clock: { started?: string } = {};
+        const progress = (at: number, data: () => Record<string, unknown>) => out.push({ at, event: () => eventForPart({ type: 'data-progress', id: step.id, data: { ...base, ...data() } }) });
+        if (step.queued !== undefined) progress(t + Math.round(step.queued * unit), () => ({ state: 'waiting' }));
+        progress(start, () => ({ state: 'active', started_at: (clock.started = new Date().toISOString()), ...(step.count ? { count: { n: 0, unit: step.count.unit, more: true } } : {}) }));
+        const ticks = Math.max(step.subjects?.length ?? 0, step.count ? 6 : 0);
+        for (let k = 1; k <= ticks; k += 1) {
+          progress(start + Math.round(((done - start) * k) / (ticks + 1)), () => ({
+            state: 'active',
+            started_at: clock.started,
+            ...(step.subjects ? { subjects: step.subjects.slice(0, Math.ceil((step.subjects.length * k) / ticks)) } : {}),
+            ...(step.count ? { count: { n: Math.round((step.count.to * k) / (ticks + 1)), unit: step.count.unit, more: true } } : {}),
+          }));
+        }
+        progress(done, () => ({
+          state: step.failed ? 'failed' : 'done',
+          started_at: clock.started,
+          ended_at: new Date().toISOString(),
+          ...(step.done ? { done_label: step.done } : {}),
+          ...(step.detail ? { detail: step.detail } : {}),
+          ...(step.covers ? { covers: step.covers } : {}),
+          ...(step.subjects ? { subjects: step.subjects } : {}),
+          ...(step.count ? { count: { n: step.count.to, unit: step.count.unit, more: false } } : {}),
+          ...(step.ev && !step.failed ? { evidence_ref: step.ev.ref } : {}),
+        }));
+        if (step.ev && !step.failed) out.push({ at: done + 1, event: eventForPart({ type: 'data-evidence', id: `evidence-${step.ev.id}`, data: { tool: step.ev.tool ?? tool, envelope: step.ev.envelope, ref: step.ev.ref, ...(step.ev.via ? { via: step.ev.via } : {}) } }) });
+        end = Math.max(end, done);
+      }
       t = end + p.think;
     } else if (beat.kind === 'text') {
       const next = rng(beat.text.length * 31 + pace.length);
@@ -198,6 +261,41 @@ function scripts(pace: AskPace): Record<string, AskScript> {
   ];
   const task: AskScript = { question: 'Create a focus area for @Jonah Okafor on downhill putts', turn: { events: taskTurn }, confirm: { events: confirm }, cancel: { events: cancel } };
 
+  // The activity island's states (SPEC Moment 4). Every row and every change on screen is one of these events.
+  const face = (id: string, label: string): StepSubject => ({ kind: 'player', id, label });
+  const jonahFace = face('p-jonah', 'Jonah Okafor');
+  const squad: StepSubject[] = [
+    jonahFace,
+    face('p-eli', 'Eli Brandt'),
+    face('p-sofia', 'Sofia Alvarez'),
+    face('p-theo', 'Theo Marchetti'),
+    face('p-priya', 'Priya Natarajan'),
+    face('p-ava', 'Ava Lindqvist'),
+    face('p-noah', 'Noah Castellano'),
+    face('p-ines', 'Ines Varga'),
+    face('p-marcus', 'Marcus Bell'),
+    face('p-hana', 'Hana Sato'),
+    face('p-luca', 'Luca Ferrand'),
+    face('p-dara', 'Dara Okoye'),
+  ];
+  const three: StepSpec[] = [
+    { id: 's1', label: 'Reading Jonah’s strokes gained', kind: 'read', from: 0, to: 1.1, subjects: [jonahFace], count: { unit: 'rounds', to: 8 }, ev: { id: 'sg', ref: 'e1', envelope: ASK_EV_JONAH_SG } },
+    { id: 's2', label: 'Reading his last 7 rounds', tool: 'get_player_trend', kind: 'read', from: 0.01, to: 1.6, count: { unit: 'rounds', to: 7 }, ev: { id: 'trend', ref: 'e2', tool: 'get_player_trend', envelope: ASK_EV_JONAH_TREND } },
+    { id: 's3', label: 'Checking the CoachHelm board', tool: 'get_player_insights', kind: 'check', from: 0.02, to: 1.3, detail: 'Approach is his open read' },
+  ];
+  const teamSteps: StepSpec[] = [
+    { id: 'c0', label: 'Working it out', done: 'Worked it out', tool: 'code_execution', kind: 'calculate', from: 0, to: 6.4, covers: { n: 12, of: 12, unit: 'players' } },
+    { id: 'c1', label: 'Reading the roster', done: 'Read the roster', tool: 'get_team_overview', kind: 'read', parent: 'c0', from: 0.3, to: 1, detail: '12 active players' },
+    { id: 'c2', label: 'Reading every player’s rounds', done: 'Read every player’s rounds', tool: 'get_player_metrics', kind: 'read', parent: 'c0', from: 1.1, to: 4.4, subjects: squad, count: { unit: 'rounds', to: 96 }, ev: { id: 'slope', ref: 'e1', envelope: ASK_EV_SLOPE, via: 'code' } },
+    { id: 'c3', label: 'Comparing strokes gained by player', done: 'Compared strokes gained by player', tool: 'compare_players', kind: 'compare', parent: 'c0', from: 4.5, to: 5.6, detail: '12 players, 4 parts of the game', ev: { id: 'rank', ref: 'e2', tool: 'get_team_metric_ranking', envelope: ASK_EV_RANKING, via: 'code' } },
+  ];
+  const teamAnswer = 'Across all twelve players the team gives up the most on approach: 1.4 strokes a round against the field, and nine of the twelve are below zero there. Putting is next at 0.6, and it is three players who account for most of it. Driving and short game are both within a tenth of level.\n\nThe spread matters more than the average. The best four on approach are close to level; the bottom four lose more than two strokes a round between them and the middle of the roster. If practice time is limited, that group is where it buys the most.';
+  const queued: StepSpec[] = [
+    { id: 'q1', label: 'Reading the roster', tool: 'get_team_overview', kind: 'read', from: 0, to: 0.9, detail: '7 active players' },
+    { id: 'q2', label: 'Reading practice reviews', tool: 'get_practice', kind: 'read', queued: 0, from: 0.9, to: 2.2, failed: true, detail: 'It didn’t come back. The answer goes on without it.' },
+    { id: 'q3', label: 'Reading last week’s rounds', tool: 'get_player_trend', kind: 'read', queued: 0, from: 2.2, to: 3.3, count: { unit: 'rounds', to: 14 }, ev: { id: 'slope', ref: 'e1', envelope: ASK_EV_SLOPE } },
+  ];
+
   const partial = timeline(pace, [{ kind: 'reads', reads: jonahReads.slice(0, 2) }, { kind: 'text', text: 'Jonah’s scoring is trending the right way [e2], but **approach** is still costing' }]);
   const refuse = (status: number, body: object): Flow => ({ events: [], ending: { kind: 'refuse', status, body: JSON.stringify(body) } });
 
@@ -245,12 +343,52 @@ function scripts(pace: AskPace): Record<string, AskScript> {
     rate: { question: q, turn: refuse(429, { error: 'Too many requests' }) },
     gone: { question: q, turn: refuse(404, { error: 'Conversation not found' }) },
     signedout: { question: q, turn: refuse(401, { error: 'Not signed in' }) },
+    /** The island, one read that takes a while: it appears after a beat, as one line, and never opens by itself. */
+    'isl-one': { question: 'How many rounds has Jonah logged this fall?', turn: { events: timeline(pace, [{ kind: 'work', steps: [{ id: 'o1', label: 'Reading Jonah’s rounds', kind: 'read', from: 0, to: 2.4, subjects: [jonahFace], count: { unit: 'rounds', to: 18 }, ev: { id: 'trend', ref: 'e1', tool: 'get_player_trend', envelope: ASK_EV_JONAH_TREND } }] }, { kind: 'text', text: 'Eighteen, eleven of them in events [e1]. That is the most on the team this fall.' }]) } },
+    /** The island, three reads at once: it opens by itself while the page is empty and folds at the first word. */
+    'isl-three': { question: q, turn: { events: timeline(pace, [{ kind: 'work', steps: three }, { kind: 'text', text: lead + ' ' + rest }]) } },
+    /** The island, a whole-team calculation: twelve faces join one by one, the tally runs, the reads sit under the calculation. No markers in the answer: it shows its work in the island and under "Worked out from". */
+    'isl-team': { question: 'Across the whole team, where are we losing the most strokes?', turn: { events: timeline(pace, [{ kind: 'work', steps: teamSteps }, { kind: 'text', text: teamAnswer }]) } },
+    /** The island, steps the server already knows are coming wait their turn; one fails while the others finish. */
+    'isl-fail': { question: 'How did practice go last week?', turn: { events: timeline(pace, [{ kind: 'work', steps: queued }, { kind: 'text', text: 'I could not read the practice reviews just now, so this is from the rounds alone [e1]: fourteen were logged last week and the scoring average came down by half a stroke.' }]) } },
+    /** The island, a chart being prepared after the reads. */
+    'isl-chart': {
+      question: 'Show me where Jonah gains and loses strokes.',
+      turn: {
+        events: timeline(pace, [
+          { kind: 'work', steps: three.slice(0, 2) },
+          { kind: 'text', text: lead },
+          { kind: 'work', steps: [{ id: 's4', label: 'Drawing where he gains and loses', done: 'Drew where he gains and loses', tool: 'show_visual', kind: 'visual', from: 0, to: 1.4, detail: '4 parts of the game' }] },
+          { kind: 'part', part: { type: 'data-visual-composition', id: 'visual-vc-preview0001', data: ASK_COMPOSITION } },
+          { kind: 'text', text: rest },
+        ]),
+      },
+    },
+    /** The island, a task being drafted: the read, the draft, then the card, and the island says it is the coach's turn. */
+    'isl-draft': {
+      ...task,
+      turn: {
+        events: timeline(
+          pace,
+          [
+            { kind: 'work', steps: [{ id: 'd1', label: 'Reading Jonah’s putting', kind: 'read', from: 0, to: 1.2, subjects: [jonahFace], detail: '9 putts, 4 to 6 feet', ev: { id: 'slope', ref: 'e1', envelope: ASK_EV_JONAH } }] },
+            { kind: 'text', text: 'Here is a focus area for Jonah on downhill putts. Check it and confirm when it reads right.' },
+            { kind: 'work', steps: [{ id: 'd2', label: 'Drafting the focus area', done: 'Drafted the focus area', tool: 'create_focus_area', kind: 'draft', from: 0, to: 1.5, subjects: [jonahFace] }] },
+            { kind: 'part', part: proposalPart(ASK_PROPOSAL) },
+            { kind: 'decision', key, tool: 'create_focus_area' },
+          ],
+          { status: 'awaiting_decision' },
+        ),
+      },
+    },
+    /** The island, a long answer under finished steps: open a step while the words still arrive (`&isl=<ms>&islstep=<ms>`). */
+    'isl-open': { question: 'Give me the full picture on our putting this month.', turn: { events: timeline(pace, [{ kind: 'work', steps: [{ id: 'l1', label: 'Reading putts from the last 30 days', kind: 'read', from: 0, to: 1.2, count: { unit: 'putts', to: 1412 }, subjects: squad.slice(0, 7), ev: { id: 'slope', ref: 'e1', envelope: ASK_EV_SLOPE } }, { id: 'l2', label: 'Finding who the misses come from', tool: 'compare_players', kind: 'find', from: 0.02, to: 1.7, detail: 'Per player, 4 to 6 feet', ev: { id: 'jonah', ref: 'e2', envelope: ASK_EV_JONAH } }] }, { kind: 'text', text: LONG }]) } },
     /** A player's own question: their own reads, no cards. */
     player: { question: 'How is my approach from 125 to 150 doing?', turn: { events: timeline(pace, [{ kind: 'reads', reads: [{ id: 'p1', label: 'Reading your strokes gained', detail: '8 rounds', ev: { id: 'sg', ref: 'e1', envelope: ASK_EV_JONAH_SG } }, { id: 'p2', label: 'Reading your last 7 rounds', tool: 'get_player_trend', detail: '7 rounds', ev: { id: 'trend', ref: 'e2', tool: 'get_player_trend', envelope: ASK_EV_JONAH_TREND } }] }, { kind: 'text', text: 'It is getting better. Your scoring has come down over the last month [e2], and approach is the part with the most left to gain: about a stroke a round [e1]. The drill Coach Reyes set, 125 to 150 with a full finish, is aimed right at it.' }]) } },
   };
 }
 
-export const ASK_SCRIPT_NAMES = ['quick', 'jonah', 'long', 'late', 'readfail', 'empty', 'discard', 'task', 'taskfail', 'taskslow', 'tasklost', 'lost', 'retry', 'model', 'declined', 'truncated', 'budget', 'off', 'rate', 'gone', 'signedout', 'player'] as const;
+export const ASK_SCRIPT_NAMES = ['quick', 'jonah', 'long', 'late', 'readfail', 'empty', 'discard', 'task', 'taskfail', 'taskslow', 'tasklost', 'lost', 'retry', 'model', 'declined', 'truncated', 'budget', 'off', 'rate', 'gone', 'signedout', 'player', 'isl-one', 'isl-three', 'isl-team', 'isl-fail', 'isl-chart', 'isl-draft', 'isl-open'] as const;
 export type AskScriptName = (typeof ASK_SCRIPT_NAMES)[number];
 
 export function askScript(name: string | null | undefined, pace: AskPace = 'real'): AskScript {

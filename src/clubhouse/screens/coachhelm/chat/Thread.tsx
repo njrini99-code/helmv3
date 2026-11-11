@@ -65,6 +65,11 @@ export interface AskThreadProps {
   jumpHost?: HTMLElement | null;
   /** A task card's write changed state (held, saved, undone, failed): what the page behind a quick chat lands from. */
   onCardPhase?: (key: string, phase: ReceiptPhase, receipt: ActionReceipt | null) => void;
+  /**
+   * The activity island shows this thread's work (`island/useIsland`): the turn it is on screen for and whether its steps are open,
+   * and how a turn's own line opens it. Left out, the reads hang under the name as before.
+   */
+  island?: { turnId: string | null; open: boolean; pinned: boolean; openFor: (turnId: string) => void };
 }
 
 /** The nearest ancestor that scrolls, or null when the page itself does. */
@@ -101,7 +106,7 @@ const pendingTurn = (id: string): AskAssistantTurn => ({ role: 'assistant', id, 
  * open and fold, charts land and text streams without the thread scrolling. It follows the newest words only when the coach
  * has scrolled to the live edge; otherwise the Latest key says there is more below.
  */
-export function AskThread({ viewer = 'coach', team, stoppedTurn = null, onArtifact, messages, busy, error, offline, phone, players, onApprove, onDeny, onSend, onRetry, onNewChat, evidenceFocus, onOpenEvidence, density = 'full', jumpHost, onCardPhase }: AskThreadProps) {
+export function AskThread({ viewer = 'coach', team, stoppedTurn = null, onArtifact, messages, busy, error, offline, phone, players, onApprove, onDeny, onSend, onRetry, onNewChat, evidenceFocus, onOpenEvidence, density = 'full', jumpHost, onCardPhase, island }: AskThreadProps) {
   const toast = useToast();
   const reduced = useChReducedMotion();
   const turns = useMemo(() => buildTurns(messages, { busy }), [messages, busy]);
@@ -309,6 +314,7 @@ export function AskThread({ viewer = 'coach', team, stoppedTurn = null, onArtifa
                     onNewChat={onNewChat}
                     onOpenRead={openRead(turn.id)}
                     openRef={evidenceFocus?.messageId === turn.id ? (evidenceFocus.ref ?? null) : null}
+                    island={island ? { showing: island.turnId === turn.id && !island.pinned, open: island.turnId === turn.id && island.open, onOpen: () => island.openFor(turn.id) } : undefined}
                     actions={(b) => {
                       if (b.kind === 'receipt') {
                         // A receipt with its card is drawn on the card; one alone (an older thread) draws by itself.

@@ -30,6 +30,8 @@ import { AskEvidencePanel } from './EvidencePanel';
 import { conversationHref, HistoryDrawer, HistoryPanel } from './History';
 import { AskHomeV2 } from './Home';
 import { AskInputsFailed, AskNoRoster, AskThreadFailed, AskUnavailable } from './States';
+import { ActivityIsland } from './island/ActivityIsland';
+import { useIsland } from './island/useIsland';
 import { useViewSwitch } from '../use-view-switch';
 import { PLAYER_HELM_HREF } from '../../../data/coachhelm-views-shape';
 import { PlayerHelmTabs } from '../views/PlayerHelmTabs';
@@ -213,6 +215,12 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
   // A thread covers the page, so the phone tab bar steps aside; the new-chat home keeps it.
   usePhoneTabsHidden(phone && !showHome);
 
+  // The activity island: where CoachHelm's work is shown, above the thread (SPEC Moment 4).
+  const island = useIsland({ messages: chat.messages, busy: chat.busy, ended: Boolean(notice) || stoppedTurn !== null });
+  const islandView = !showHome && !gone && !data.threadFailed && (
+    <ActivityIsland island={island} onOpenStep={(messageId, ref, label) => openEvidence({ messageId, key: `read-${messageId}-${ref}`, label, ref })} />
+  );
+
   const stop = () => {
     const last = chat.messages[chat.messages.length - 1];
     setStoppedTurn(last?.role === 'assistant' ? last.id : 'pending');
@@ -346,6 +354,7 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
         onNewChat={newChat}
         evidenceFocus={evidence}
         onOpenEvidence={openEvidence}
+        island={{ turnId: island.model?.turnId ?? null, open: island.open, pinned: island.pinned, openFor: island.openFor }}
       />
     </SectionBoundary>
   );
@@ -433,12 +442,17 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
                 </>
               )}
               <h1 className="ch-ask-head__t">{heading}</h1>
+              {islandView}
             </header>
           )}
           {phone && !gone && (
-            <p className="ch-ak-scope">
-              Reading <b>{scopeLine}</b>
-            </p>
+            // The scope line's row is the island's place on the phone: while the island is there, it says what is being read.
+            <div className={'ch-ak-islhost' + (showHome ? ' is-home' : '')}>
+              <p className="ch-ak-scope">
+                Reading <b>{scopeLine}</b>
+              </p>
+              {islandView}
+            </div>
           )}
           <div className={'ch-ask-scroll' + (showHome ? ' is-home' : !gone && !data.threadFailed ? ' is-thread' : '')}>
             {body}
