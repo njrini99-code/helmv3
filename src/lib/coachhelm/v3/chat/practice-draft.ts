@@ -1,8 +1,8 @@
 import 'server-only';
-import { tool, type ToolSet, type UIMessageStreamWriter } from 'ai';
 import { z } from 'zod';
 import { autoGrid, stationsLen, type PlanBodyV2, type PlanBlock, type PlanWhy } from '../practice-plan/model';
-import { auditNumericClaims, type ToolEnvelope } from './provenance';
+import { checkGrounding } from './grounding';
+import type { ToolEnvelope } from './provenance';
 import { ActionPlanError } from './action-planners';
 import { requireRosterPlayer, type CoachChatContext } from './context';
 import type { FlowDef } from './create-tools';
@@ -32,7 +32,7 @@ const BlockInput = z.object({
   hole_from: z.number().int().min(1).max(18).optional(),
   hole_to: z.number().int().min(1).max(18).optional(),
 });
-const Input = z.object({
+export const PracticeDraftInput = z.object({
   event_id: z.string().uuid().nullable().describe('The practice event for this plan, from the calendar. Null: the card says to add one first.'),
   title: z.string().min(1).max(80),
   focus: z.string().max(140).default(''),
@@ -45,7 +45,7 @@ const Input = z.object({
   bring: z.array(z.object({ item: z.string().min(1).max(40), qty: z.number().int().min(1).max(99) })).max(20).default([]),
   blocks: z.array(BlockInput).min(1).max(40),
 });
-type In = z.infer<typeof Input>;
+type In = z.infer<typeof PracticeDraftInput>;
 
 const refOf = (r: string | null | undefined): { src: 'team' | 'lib'; id: string } | null => {
   const [src, id] = (r ?? '').split(':');
@@ -122,44 +122,65 @@ function planCardMeta(input: In, reads: readonly ToolEnvelope[], byRef: Readonly
   return { when: input.when, start: input.start, drills, alternatives, sources, evidence };
 }
 
-/** `draft_practice_plan` writes nothing. Each Because is audited against this turn's reads; one that fails keeps its Aim and shows "Lean read" (02 §5.2). */
-export function practiceDraftTool({ ctx, writer, envelopes, evidenceByRef }: { ctx: CoachChatContext; writer: UIMessageStreamWriter; envelopes: () => readonly ToolEnvelope[]; evidenceByRef: ReadonlyMap<string, ToolEnvelope> }): ToolSet {
-  let version = 0;
-  return {
-    draft_practice_plan: tool({
-      description: 'Write a practice plan draft after get_drill_bank and the coach\'s answers. Saves nothing: Save and Publish are the coach\'s presses. Only use drills from get_drill_bank. A number in a Because must come from a read in this turn.',
-      inputSchema: Input,
-      execute: async (input) => {
-        const known = new Set<string>(envelopes().flatMap((e) => ((e.detail as { ids?: string[] } | undefined)?.ids ?? [])));
-        const refs = input.blocks.flatMap((b) => [b.drill, ...(b.stations ?? []).map((s) => s.drill)]).filter((r): r is string => !!r);
-        const unknown = refs.filter((r) => !known.has(r));
-        if (unknown.length) return { status: 'refused', message: 'Some drills are not in the bank. Use only ids from get_drill_bank.' };
-        for (const p of input.players) requireRosterPlayer(ctx, p);
-        const sum = input.blocks.reduce((s, b) => s + b.len, 0);
-        if (sum !== input.minutes_asked) return { status: 'refused', message: `The blocks add up to ${sum} minutes; the coach asked for ${input.minutes_asked}. Fix the lengths.` };
-        const groupIds = input.groups.map((g) => g.id);
-        const blocks = input.blocks.map((b) => toBlock(b, groupIds));
-        // What the save would refuse (golf_practice_plan_check_body), said while the model can still fix it.
-        if (blocks.some((b) => b.kind === 'stations' && !b.stations.length)) return { status: 'refused', message: 'A stations block needs at least one station.' };
-        if (blocks.some((b) => b.len % 5 !== 0)) return { status: 'refused', message: 'A stations block must come to a length in 5 minute steps. Change its turn or move minutes.' };
-        const measurements = envelopes().flatMap((e) => e.measurements);
-        const series = envelopes().flatMap((e) => e.series);
-        const details = envelopes().map((e) => e.detail);
-        const why: Record<string, PlanWhy> = {};
-        for (const b of input.blocks) {
-          const routine = b.routine || b.kind === 'break';
-          const claim = b.because ?? '';
-          const bad = claim ? auditNumericClaims(claim, measurements, series, details as never) : [];
-          const lean = !routine && (!claim || (Array.isArray(bad) ? bad.length > 0 : false));
-          why[b.id] = { aim: b.aim, because: routine || lean ? null : claim, sources: [], lean, routine };
-        }
-        const body: PlanBodyV2 = { v: 2, focus: input.focus, notes: '', place: input.place, arrivalBufferMin: 15, bring: input.bring, players: input.players, groups: input.groups.map((g) => ({ ...g, savedGroupId: null })), variants: { main: { blocks }, rain: null } };
-        version += 1;
-        writer.write({ type: 'data-practice-plan', id: `plan-${version}`, data: { version, eventId: input.event_id, title: input.title, draft: { body, why, version }, saveOn: true, sheet: await planSheetFor(ctx, input.event_id), ...planCardMeta(input, envelopes(), evidenceByRef) } });
-        return { status: 'shown', message: `A ${Math.round(sum / 60 * 10) / 10} hour plan in ${input.blocks.length} blocks is on the card. Nothing is saved yet.` };
-      },
-    }),
+/** The questions a practice brief asks: up to four, each a short list of choices. */
+export const BriefInput = z.object({
+  title: z.string().min(1).max(120),
+  questions: z
+    .array(
+      z.object({
+        id: z.string().min(1).max(40),
+        title: z.string().min(1).max(160),
+        why: z.string().max(200).optional(),
+        multi: z.boolean().optional(),
+        options: z.array(z.object({ id: z.string().min(1).max(40), label: z.string().min(1).max(80), hint: z.string().max(120).optional() })).min(2).max(6),
+        pick: z.array(z.string()).max(6).optional(),
+      }),
+    )
+    .min(1)
+    .max(4),
+});
+
+/** A conversation's drafts are numbered in the order they were made; the card keeps the newest. */
+const versions = new WeakMap<object, number>();
+
+/**
+ * `draft_practice_plan` writes nothing: it builds the card. `reads` is the conversation's reads by evidence_ref. A Because whose numbers
+ * no read returned keeps its Aim and shows "Lean read" (02 §5.2); that is the grounding check used on one sentence, and it only
+ * changes the label on the card.
+ */
+export async function practiceDraft(ctx: CoachChatContext, input: In, reads: ReadonlyMap<string, ToolEnvelope>): Promise<{ ok: true; message: string; card: Record<string, unknown> } | { ok: false; message: string }> {
+  const envelopes = [...reads.values()];
+  // A merged practice read keeps the drill bank's ids one level down (`detail['drill bank'].ids`).
+  const bankOf = (e: ToolEnvelope) => {
+    const d = e.detail as { ids?: string[]; 'drill bank'?: { ids?: string[] } } | undefined;
+    return d?.ids ?? d?.['drill bank']?.ids ?? [];
   };
+  const known = new Set<string>(envelopes.flatMap(bankOf));
+  const refs = input.blocks.flatMap((b) => [b.drill, ...(b.stations ?? []).map((s) => s.drill)]).filter((r): r is string => !!r);
+  if (refs.some((r) => !known.has(r))) return { ok: false, message: 'Some drills are not in the bank. Use only refs from the drill bank read.' };
+  for (const p of input.players) requireRosterPlayer(ctx, p);
+  const sum = input.blocks.reduce((s, b) => s + b.len, 0);
+  if (sum !== input.minutes_asked) return { ok: false, message: `The blocks add up to ${sum} minutes; the coach asked for ${input.minutes_asked}. Fix the lengths.` };
+  const groupIds = input.groups.map((g) => g.id);
+  const blocks = input.blocks.map((b) => toBlock(b, groupIds));
+  // What the save would refuse (golf_practice_plan_check_body), said while the model can still fix it.
+  if (blocks.some((b) => b.kind === 'stations' && !b.stations.length)) return { ok: false, message: 'A stations block needs at least one station.' };
+  if (blocks.some((b) => b.len % 5 !== 0)) return { ok: false, message: 'A stations block must come to a length in 5 minute steps. Change its turn or move minutes.' };
+  const why: Record<string, PlanWhy> = {};
+  for (const b of input.blocks) {
+    const routine = b.routine || b.kind === 'break';
+    const claim = b.because ?? '';
+    const lean = !routine && (!claim || !checkGrounding(claim, envelopes).grounded);
+    why[b.id] = { aim: b.aim, because: routine || lean ? null : claim, sources: [], lean, routine };
+  }
+  const body: PlanBodyV2 = { v: 2, focus: input.focus, notes: '', place: input.place, arrivalBufferMin: 15, bring: input.bring, players: input.players, groups: input.groups.map((g) => ({ ...g, savedGroupId: null })), variants: { main: { blocks }, rain: null } };
+  const version = (versions.get(reads) ?? 0) + 1;
+  versions.set(reads, version);
+  const flat = envelopes.map((e) => {
+    const d = e.detail as { drills?: unknown; 'drill bank'?: { drills?: unknown } } | undefined;
+    return d && !d.drills && d['drill bank']?.drills ? { ...e, detail: { ...d, drills: d['drill bank'].drills } } : e;
+  });
+  return { ok: true, message: `A ${Math.round((sum / 60) * 10) / 10} hour plan in ${input.blocks.length} blocks is on the card. Nothing is saved yet.`, card: { version, eventId: input.event_id, title: input.title, draft: { body, why, version }, saveOn: true, sheet: await planSheetFor(ctx, input.event_id), ...planCardMeta(input, flat, reads) } };
 }
 
 /** One text message in the team channel, with no second push. False when it could not post (the publish still stands); the coach must be a participant. */
@@ -176,7 +197,7 @@ const publishInput = z.object({ plan_id: z.string().uuid().describe('The plan_id
 /** Publish goes on the Ask hold: nothing is written or told until Undo closes. */
 export const publishFlow: FlowDef<z.infer<typeof publishInput>> = {
   name: 'publish_practice_plan',
-  description: 'Publish a saved practice plan. Files it in Documents and tells the plan\'s people. REQUIRES the coach to confirm.',
+  description: 'Publish a saved practice plan. Files it in Documents and tells the plan\'s people.',
   input: publishInput,
   plan: (ctx, i) => {
     if (i.people < 1) throw new ActionPlanError('A plan needs people to publish to.');

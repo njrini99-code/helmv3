@@ -33,7 +33,7 @@ export interface FlowAttempt {
 }
 
 /** What a flow's receipt says once its row exists. */
-interface FlowDone {
+export interface FlowDone {
   summary: string;
   kind: string;
   label?: string;
@@ -54,6 +54,13 @@ export interface FlowDef<I> {
   immediate?: boolean;
   /** Reads what the card has to show before Confirm (a round's note). Nothing the model said stands in for it. */
   prepare?: (sb: Sb, ctx: CoachChatContext, input: I) => Promise<I>;
+  /**
+   * For a flow whose action takes no request id: is the row this card writes there, made since the card was planned? True: yes. False: looked, and no.
+   * Null: could not look. Used before a write (a retry of the same card finds the first attempt's row) and after a failed one (so "nothing was saved" is checked, not assumed).
+   */
+  written?: (sb: Sb, ctx: CoachChatContext, input: I, at: { since: string; requestId: string }) => Promise<boolean | null>;
+  /** What the receipt says when `written` finds the row. */
+  done?: (ctx: CoachChatContext, input: I) => FlowDone;
   /** The table whose row id is `requestId`: an action that failed after that row exists is recorded as done, never offered again. */
   landed?: { table: 'golf_events' | 'golf_coach_blocked_time' | 'golf_recruits'; done: (input: I) => FlowDone };
 }
@@ -84,6 +91,16 @@ export function flowCommit<I>(f: FlowDef<I>, sb: Sb, ctx: CoachChatContext, inpu
         }
       : {}),
   };
+}
+
+
+/** One row matching `match` made at or after `since`? Null when the look itself failed: that is not a no. */
+export async function rowSince(sb: Sb, table: string, match: Record<string, string | number>, since: string | null, stamp = 'created_at'): Promise<boolean | null> {
+  let q = askTables(sb).from(table).select('id').match(match);
+  if (since) q = q.gte(stamp, since);
+  const { data, error } = await q.limit(1);
+  if (error) return null;
+  return (data ?? []).length > 0;
 }
 
 const DATE = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
@@ -125,7 +142,7 @@ const eventDone = (i: z.infer<typeof eventInput>): FlowDone => ({ summary: `${i.
 const eventFlow: FlowDef<z.infer<typeof eventInput>> = {
   name: 'create_event',
   landed: { table: 'golf_events', done: eventDone },
-  description: 'Add one event to the team calendar, including a single practice. Ask first for the type if two fit, for the start if timed and not given, for the end if timed and not a practice, and who is invited to a meeting. A practice with a start needs nothing else: do not ask how long, call this and the card shows the usual length. REQUIRES the coach to confirm.',
+  description: 'Add one event to the team calendar, including a single practice. Ask first for the type if two fit, for the start if timed and not given, for the end if timed and not a practice, and who is invited to a meeting. A practice with a start needs nothing else: do not ask how long, call this and the card shows the usual length.',
   input: eventInput,
   plan: (ctx, i) => {
     const end = eventEnd(i);
@@ -150,7 +167,9 @@ const eventFlow: FlowDef<z.infer<typeof eventInput>> = {
 const tripInput = z.object({ event_name: z.string().min(1).max(200), destination: z.string().min(1).max(200), transportation_type: z.enum(['bus', 'van', 'flight', 'carpool']), departure_date: DATE, departure_time: TIME.optional(), departure_location: z.string().max(500).optional(), return_date: DATE.optional(), return_time: TIME.optional(), flight_info: z.string().max(1000).optional(), hotel_name: z.string().max(200).optional(), hotel_address: z.string().max(500).optional(), hotel_phone: z.string().max(50).optional(), hotel_confirmation: z.string().max(100).optional(), room_assignments: z.string().max(2000).optional(), uniform_requirements: z.string().max(1000).optional(), gear_list: z.array(z.string().max(200).regex(/^[^,]*$/, 'One item, no comma')).max(50).optional(), notes: z.string().max(5000).optional() });
 const tripFlow: FlowDef<z.infer<typeof tripInput>> = {
   name: 'create_trip',
-  description: 'Add a trip. Ask for transport and a firm leave date if not said. REQUIRES the coach to confirm.',
+  written: (sb, ctx, i, { since }) => rowSince(sb, 'golf_travel_itineraries', { team_id: ctx.team_id, event_name: i.event_name, destination: i.destination, departure_date: i.departure_date }, since),
+  done: (_ctx, i) => ({ summary: `The trip to ${i.destination} is added.`, kind: 'trip', label: i.event_name, href: '/golf/dashboard/travel' }),
+  description: 'Add a trip. Ask for transport and a firm leave date if not said.',
   input: tripInput,
   plan: (_ctx, i) => {
     if (i.return_date && i.return_date < i.departure_date) throw new ActionPlanError('The return is before the leave date. Ask the coach.');
@@ -172,7 +191,9 @@ const tripFlow: FlowDef<z.infer<typeof tripInput>> = {
 const qualifierInput = z.object({ name: z.string().min(1).max(200), description: z.string().max(2000).optional(), start_date: DATE, end_date: DATE.optional(), num_rounds: z.number().int().min(1).max(50).describe('Ask if not said; never default to 1.'), selection_slots_total: z.number().int().min(1).max(12).describe('Ask if not said.'), selection_slots_coach_pick: z.number().int().min(0).max(12).describe('Ask if not said.'), player_ids: z.array(z.string().uuid()).min(1), rules: z.string().max(5000).optional(), entry_deadline: DATE.optional() });
 const qualifierFlow: FlowDef<z.infer<typeof qualifierInput>> = {
   name: 'create_qualifier',
-  description: 'Set a qualifier. Ask for rounds, squad size and coach picks if not said; there is no exemption field or tie rule to ask about. REQUIRES the coach to confirm.',
+  written: (sb, ctx, i, { since }) => rowSince(sb, 'golf_qualifiers', { team_id: ctx.team_id, name: i.name, start_date: i.start_date }, since),
+  done: (_ctx, i) => ({ summary: `${i.name} is set.`, kind: 'qualifier', label: i.name, href: '/golf/dashboard/qualifiers' }),
+  description: 'Set a qualifier. Ask for rounds, squad size and coach picks if not said; there is no exemption field or tie rule to ask about.',
   input: qualifierInput,
   plan: (ctx, i) => {
     if (i.selection_slots_coach_pick > i.selection_slots_total) throw new ActionPlanError('Coach picks can’t be more than the squad.');
@@ -196,7 +217,9 @@ const GOAL_STATS = ['sg_total', 'sg_ott', 'sg_approach', 'sg_around_green', 'sg_
 const goalInput = z.object({ player_id: z.string().uuid(), metric_id: z.enum(GOAL_STATS), label: z.string().max(60), window_days: z.number().int().min(7).max(365), target_value: z.number(), mode: z.enum(['mandatory', 'suggested']) });
 const goalFlow: FlowDef<z.infer<typeof goalInput>> = {
   name: 'create_goal',
-  description: 'Give a player a goal on one of eight stats. Ask if the stat is ambiguous, for by-when, and whether it is assigned or suggested. REQUIRES the coach to confirm.',
+  written: (sb, _ctx, i, { since }) => rowSince(sb, 'golf_goals', { player_id: i.player_id, metric_id: i.metric_id, target_value: i.target_value }, since),
+  done: (ctx, i) => ({ summary: `The goal is set for ${requireRosterPlayer(ctx, i.player_id).name}.`, kind: 'goal' }),
+  description: 'Give a player a goal on one of eight stats. Ask if the stat is ambiguous, for by-when, and whether it is assigned or suggested.',
   input: goalInput,
   plan: (ctx, i) => {
     const p = requireRosterPlayer(ctx, i.player_id);
@@ -231,7 +254,7 @@ export function appendedNote(current: string, note: string): { kind: 'write'; te
 const NOTE_TOO_LONG = `With the earlier note this passes ${NOTE_MAX} characters. Nothing was changed; shorten the new note.`;
 const noteFlow: FlowDef<NoteInput> = {
   name: 'add_round_note',
-  description: 'Add a coach note to a round, under any earlier note, which stays. The player always sees it. REQUIRES the coach to confirm.',
+  description: 'Add a coach note to a round, under any earlier note, which stays. The player always sees it.',
   input: noteInput,
   prepare: async (sb, _ctx, i) => {
     const existing = await roundNote(sb, i.round_id);
@@ -258,7 +281,7 @@ const noteFlow: FlowDef<NoteInput> = {
 const lineupInput = z.object({ tournament_id: z.string().uuid(), version: z.number().int(), entries: z.array(z.object({ player_id: z.string().uuid(), role: z.enum(['lineup', 'alternate', 'individual']), slot: z.number().int().min(1).max(9).nullable(), reasoning: z.string().max(500).optional() })).min(1).max(20) });
 export const lineupFlow: FlowDef<z.infer<typeof lineupInput>> = {
   name: 'set_lineup',
-  description: 'Set a tournament lineup. A tie for the last spot always waits for the coach. Locking is a separate step. REQUIRES the coach to confirm.',
+  description: 'Set a tournament lineup. A tie for the last spot always waits for the coach. Locking is a separate step.',
   input: lineupInput,
   plan: (ctx, i) => {
     const rows = i.entries.map((e) => `${e.slot ?? '—'} ${requireRosterPlayer(ctx, e.player_id).name} (${e.role})`);
@@ -274,14 +297,14 @@ const lockInput = z.object({ tournament_id: z.string().uuid() });
 /** The coach's own `set_lineup` for this tournament still in its hold or running. Locking now would lock the old entries, and the new ones would then land on a locked lineup. */
 async function lineupStillLanding(sb: Sb, ctx: CoachChatContext, tournamentId: string): Promise<boolean | null> {
   const fresh = new Date(Date.now() - APPROVED_RUN_TTL_MS).toISOString();
-  const { data, error } = await askTables(sb).from('golf_coachhelm_action_runs').select('id').eq('coach_id', ctx.coach_id).eq('tool_name', 'set_lineup').eq('proposed_input->>tournament_id', tournamentId).or(`status.eq.held,and(status.eq.approved,decided_at.gt.${fresh})`).limit(1);
+  const { data, error } = await askTables(sb).from('golf_coachhelm_action_runs').select('id').eq('coach_id', ctx.coach_id).eq('tool_name', 'set_lineup').or(`proposed_input->>tournament_id.eq.${tournamentId},proposed_input->proposal->input->>tournament_id.eq.${tournamentId}`).or(`status.eq.held,and(status.eq.approved,decided_at.gt.${fresh})`).limit(1);
   if (error) return null;
   return (data ?? []).length > 0;
 }
 
 export const lockFlow: FlowDef<z.infer<typeof lockInput>> = {
   name: 'lock_lineup',
-  description: 'Lock a lineup that is set. It locks the moment the coach presses and cannot be undone. REQUIRES the coach to confirm.',
+  description: 'Lock a lineup that is set. It locks the moment the coach presses and cannot be undone.',
   input: lockInput,
   immediate: true,
   plan: (_ctx, i) => ({ action: 'Lock the lineup', summary: 'This locks at once and can’t be undone.', facts: [fact('Tournament', 'As set', false)], notifications: ['Substitutions only work if the event allows them.'], key: ['lock', i.tournament_id] }),
@@ -299,7 +322,7 @@ const blockDone = (): FlowDone => ({ summary: 'That time is blocked.', kind: 'bl
 const blockFlow: FlowDef<z.infer<typeof blockInput>> = {
   name: 'add_blocked_time',
   landed: { table: 'golf_coach_blocked_time', done: blockDone },
-  description: 'Block off the coach’s own time. Players never see it. REQUIRES the coach to confirm.',
+  description: 'Block off the coach’s own time. Players never see it.',
   input: blockInput,
   plan: (_c, i) => {
     if (i.end_date && i.end_date < i.date) throw new ActionPlanError('The end date is before the start.');
@@ -314,7 +337,7 @@ const blockFlow: FlowDef<z.infer<typeof blockInput>> = {
 const breakInput = z.object({ first_day: DATE, last_day: DATE, label: z.string().max(60) });
 const breakFlow: FlowDef<z.infer<typeof breakInput>> = {
   name: 'add_team_break',
-  description: 'A team break from class, 21 days at most. REQUIRES the coach to confirm.',
+  description: 'A team break from class, 21 days at most.',
   input: breakInput,
   plan: (_c, i) => {
     const days = (Date.parse(i.last_day) - Date.parse(i.first_day)) / 86_400_000;
@@ -329,7 +352,9 @@ const breakFlow: FlowDef<z.infer<typeof breakInput>> = {
 const termInput = z.object({ name: z.string().min(1).max(40), classes_start: DATE, classes_end: DATE, exams_end: DATE });
 const termFlow: FlowDef<z.infer<typeof termInput>> = {
   name: 'save_team_term',
-  description: 'Save a term. Ask for any date not given; never infer from a school calendar. REQUIRES the coach to confirm.',
+  written: (sb, ctx, i) => rowSince(sb, 'golf_team_terms', { team_id: ctx.team_id, label: i.name, classes_start: i.classes_start, classes_end: i.classes_end, exams_end: i.exams_end }, null),
+  done: (_ctx, i) => ({ summary: `${i.name} is saved.`, kind: 'term' }),
+  description: 'Save a term. Ask for any date not given; never infer from a school calendar.',
   input: termInput,
   plan: (_c, i) => ({ action: 'Save term', summary: i.name, facts: [fact('Classes', `${i.classes_start} to ${i.classes_end}`, false), fact('Exams end', i.exams_end, false)], notifications: ['Nobody is told.'], key: ['term', i.name, i.classes_start] }),
   run: async (ctx, i) => {
@@ -340,7 +365,7 @@ const termFlow: FlowDef<z.infer<typeof termInput>> = {
 const availInput = z.object({ player_id: z.string().uuid(), note: z.string().min(1).max(280), existing: z.string().max(280).optional() });
 const availFlow: FlowDef<z.infer<typeof availInput>> = {
   name: 'set_availability_note',
-  description: 'A coach-only note on a player’s availability; it replaces any earlier note. REQUIRES the coach to confirm.',
+  description: 'A coach-only note on a player’s availability; it replaces any earlier note.',
   input: availInput,
   plan: (ctx, i) => {
     const p = requireRosterPlayer(ctx, i.player_id);
@@ -356,7 +381,7 @@ const recruitDone = (): FlowDone => ({ summary: 'The recruit is added.', kind: '
 const recruitFlow: FlowDef<z.infer<typeof recruitInput>> = {
   name: 'create_recruit',
   landed: { table: 'golf_recruits', done: recruitDone },
-  description: 'Add a recruit. Ask for a grad year if a grade was given. Coach only. REQUIRES the coach to confirm.',
+  description: 'Add a recruit. Ask for a grad year if a grade was given. Coach only.',
   input: recruitInput,
   plan: (_c, i) => ({ action: 'Add recruit', summary: [i.first_name, i.last_name].filter(Boolean).join(' '), facts: [fact('Grad year', i.grad_year), fact('Status', i.status, false), fact('Hometown', [i.hometown, i.state].filter(Boolean).join(', '))], notifications: ['Nobody is told. Only coaches see it.'], key: ['recruit', i.first_name, i.last_name ?? '', i.grad_year ?? ''] }),
   run: async (_c, i, { requestId }) => {
@@ -374,7 +399,9 @@ const messageInput = z.object({
 });
 const messageFlow: FlowDef<z.infer<typeof messageInput>> = {
   name: 'send_message',
-  description: 'Draft a message to one thread the coach is in, found with find_thread. It sends only after the coach presses Send and an 8 second Undo. REQUIRES the coach to confirm.',
+  written: (sb, _ctx, _i, { requestId }) => rowSince(sb, 'golf_messages', { id: requestId }, null),
+  done: (_ctx, i) => ({ summary: `Sent to ${i.thread}.`, kind: 'message', label: i.thread, href: `/golf/dashboard/messages?conversation=${i.conversation_id}` }),
+  description: 'Draft a message to one thread the coach is in, found with find_thread. It sends only after the coach presses Send and an 8 second Undo.',
   input: messageInput,
   plan: (_ctx, i) => ({
     visual: { kind: 'msg', conversationId: i.conversation_id, thread: i.thread, count: i.member_count, last: i.last_message ?? null, draft: i.content },
@@ -384,16 +411,13 @@ const messageFlow: FlowDef<z.infer<typeof messageInput>> = {
     notifications: [`Sends as you to ${i.member_count} ${i.member_count === 1 ? 'player' : 'players'} in ${i.thread}, after an 8 second Undo.`],
     key: ['message', i.conversation_id, i.content],
   }),
-  run: async (_ctx, i) => {
-    // The client id is the hash of what's being sent, so a second release hits the 23505 path and returns the first message.
-    const res = await sendGolfMessage(i.conversation_id, i.content, stableMessageId(i.conversation_id, i.content));
+  run: async (_ctx, i, { requestId }) => {
+    // The message's id is this card's request id: a second release of the same card hits the 23505 path and returns the first message,
+    // and the same words sent to the same thread on a later request are a new message (they used to be treated as already sent).
+    const res = await sendGolfMessage(i.conversation_id, i.content, requestId);
     return { ok: !!res?.success, error: res?.success ? undefined : 'That didn’t send. Nothing was delivered.', summary: `Sent to ${i.thread}.`, kind: 'message', label: i.thread, href: `/golf/dashboard/messages?conversation=${i.conversation_id}` };
   },
 };
-
-function stableMessageId(conversationId: string, content: string): string {
-  return stableUuid(`${conversationId}:${content}`);
-}
 
 /** A v4-shaped id from a seed: the same seed, the same id. */
 function stableUuid(seed: string): string {
@@ -413,7 +437,9 @@ const AREA_WORDS: Record<z.infer<typeof drillInput>['area'], string> = { putting
 /** TASK_FIELDS 5.14: one drill bank, N-00's `golf_team_drills`. Registered only with the practice plans flag, which waits on that held migration. */
 export const drillFlow: FlowDef<z.infer<typeof drillInput>> = {
   name: 'create_drill',
-  description: 'Add a new drill to the team drill bank. Players see it only when a published plan uses it. REQUIRES the coach to confirm.',
+  written: (sb, ctx, i, { since }) => rowSince(sb, 'golf_team_drills', { team_id: ctx.team_id, name: i.name.trim(), area: i.area, minutes: i.minutes }, since),
+  done: (_ctx, i) => ({ summary: `${i.name} is in the drill bank.`, kind: 'drill', label: i.name }),
+  description: 'Add a new drill to the team drill bank. Players see it only when a published plan uses it.',
   input: drillInput,
   plan: (_ctx, i) => ({
     action: 'Add drill',
@@ -433,7 +459,9 @@ const publishArtifactInput = z.object({ title: z.string().min(1).max(120), body:
 /** Publish from the artifact pane (ask/06 E-FPICK): the same hold as every write. The document opens for players; nothing else is sent. */
 const publishArtifactFlow: FlowDef<z.infer<typeof publishArtifactInput>> = {
   name: 'publish_artifact',
-  description: 'Publish a piece you wrote with write_artifact to Documents, where every player on the team can open it. Use its latest words unchanged. REQUIRES the coach to confirm.',
+  written: (sb, ctx, i, { since }) => rowSince(sb, 'golf_documents', { team_id: ctx.team_id, title: i.title }, since),
+  done: (_ctx, i) => ({ summary: `${i.title} is in Documents.`, kind: 'document', label: i.title }),
+  description: 'Publish a piece you wrote with write_artifact to Documents, where every player on the team can open it. Use its latest words unchanged.',
   input: publishArtifactInput,
   plan: (ctx, i) => ({
     action: `Publish to ${ctx.roster.length} ${ctx.roster.length === 1 ? 'player' : 'players'}`,
