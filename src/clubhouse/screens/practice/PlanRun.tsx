@@ -102,12 +102,14 @@ export function PlanRun({ planId, title, version, body, start, zone, serverNow }
             <span>
               <b>{r.now?.place ?? 'Done'}</b>
               {r.now && <small className="ch-num">Now, until {clock(r.now.end)}</small>}
+              {!r.now && <small>For today</small>}
             </span>
             <span>
               {r.next && (
                 <>
                   <b>{r.next.place}</b>
-                  <small className="ch-num">Next, {clock(r.next.start)}</small>
+                  {/* The next stop starts as this one ends: the clock is said once, on Now. A gap between them is the only time Next has its own. */}
+                  <small className="ch-num">{r.now && r.next.start.getTime() !== r.now.end.getTime() ? `Next, ${clock(r.next.start)}` : 'Next'}</small>
                 </>
               )}
             </span>

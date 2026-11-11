@@ -55,7 +55,12 @@ describe('PlanRun', () => {
   it('says where each group is now and next', () => {
     render(<PlanRun {...props} start={new Date(now - 35 * MIN)} />);
     expect(screen.getAllByText(/^Now, until /).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/^Next, /).length).toBeGreaterThan(0);
+    // One clock a row: the next stop starts as this one ends, so Next carries no time of its own unless there is a gap.
+    expect(screen.getAllByText('Next').length).toBeGreaterThan(0);
+    for (const row of document.querySelectorAll('.ch-prc-run li')) {
+      const clocks = row.textContent?.match(/\d{1,2}:\d{2}/g) ?? [];
+      expect(new Set(clocks).size).toBe(clocks.length);
+    }
     expect(screen.getByText(/^Rotate in \d+ min$/)).toBeTruthy(); // 35 minutes in: the putting rotation
   });
   it('saves and republishes in one step, quietly unless the coach says to tell players', async () => {

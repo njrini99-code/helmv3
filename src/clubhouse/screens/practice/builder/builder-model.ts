@@ -175,6 +175,49 @@ export function fmtMinutes(min: number): string {
   return h ? (m ? `${h} h ${m}` : `${h} h`) : `${m} min`;
 }
 
+/* New plan › Ask CoachHelm: what the coach picked in the sheet, said to the helper in its first message. */
+export interface AskPicks {
+  /** How long the plan should run, in minutes; null leaves it to the calendar's window. */
+  minutes: number | null;
+  /** What to work on, in the coach's words ("Putting"); none leaves it to the team's numbers. */
+  areas: string[];
+}
+/** The lengths "How long" offers: the calendar's window and the two half-hours under it, or three usual lengths when the practice has no end. */
+export function lengthChoices(window: number | null | undefined): number[] {
+  if (!window || window < 60) return [60, 90, 120];
+  const top = Math.min(MAX_MIN, Math.floor(window / 5) * 5);
+  return [top - 60, top - 30, top].filter((m) => m >= 30);
+}
+const listWords = (items: readonly string[]) => (items.length <= 1 ? (items[0] ?? '') : `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`);
+/** The picks as one plain line for the helper; empty when nothing was picked, so it goes by its best guesses. */
+export function askWords(picks: AskPicks | null): string {
+  if (!picks) return '';
+  const areas = picks.areas.map((a) => a.trim()).filter(Boolean).slice(0, 8);
+  return [picks.minutes ? `Make it ${fmtMinutes(picks.minutes)} long` : '', areas.length ? `Work on ${listWords(areas.map((a) => a.toLowerCase()))}` : ''].filter(Boolean).join('. ');
+}
+const askKey = (planId: string) => `ch-prc-ask:${planId}`;
+/** The sheet leaves the picks for the builder it opens; the builder takes them once. A browser that refuses storage just asks with best guesses. */
+export function leaveAskPicks(planId: string, picks: AskPicks): void {
+  try {
+    window.sessionStorage.setItem(askKey(planId), JSON.stringify(picks));
+  } catch {
+    /* nothing to keep them in */
+  }
+}
+export function takeAskPicks(planId: string): AskPicks | null {
+  try {
+    const raw = window.sessionStorage.getItem(askKey(planId));
+    if (!raw) return null;
+    window.sessionStorage.removeItem(askKey(planId));
+    const v = JSON.parse(raw) as Partial<AskPicks>;
+    const minutes = typeof v.minutes === 'number' && v.minutes >= 5 && v.minutes <= MAX_MIN ? v.minutes : null;
+    const areas = Array.isArray(v.areas) ? v.areas.filter((a): a is string => typeof a === 'string').map((a) => a.slice(0, 40)) : [];
+    return { minutes, areas };
+  } catch {
+    return null;
+  }
+}
+
 /** The ribbon's words (S-PRC.bld-ribbon): "2 h 45 of 3 h" and "15 min open", "On time" or "15 min over". */
 export function ribbon(total: number, window: number | null): { used: string; rest: string; over: boolean } {
   if (window == null) return { used: fmtMinutes(total), rest: '', over: false };

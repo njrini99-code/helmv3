@@ -9,7 +9,12 @@ import type { ChPracticeEvent } from '../../data/practice-home-shape';
 import { FormSheet } from '../../ui/FormSheet';
 import { Icon } from '../../ui/Icon';
 import { useToast } from '../../ui/Toast';
-import { copyBody, emptyBody } from './builder/builder-model';
+import { TERMS } from '../../lib/glossary';
+import { Segmented } from '../../ui/Segmented';
+import { copyBody, emptyBody, fmtMinutes, leaveAskPicks, lengthChoices } from './builder/builder-model';
+
+/** What to work on: the parts of the game a coach names. Nothing is picked for them; no pick leaves it to the team's numbers. */
+const WORK_ON = ['Putting', TERMS.shortGame.long, 'Approach', 'Off the tee', 'On the course', 'Pressure'];
 
 export type NewPlanStart = 'blank' | 'copy' | 'ask' | 'template';
 type Start = NewPlanStart;
@@ -43,6 +48,13 @@ export function NewPlanSheet({ open, onClose, events, copies, roster, initialEve
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const event = events.find((e) => e.id === (initialEvent ?? eventId)) ?? events.find((e) => e.id === eventId) ?? null;
+  // Ask CoachHelm's two questions (S-BLD.new-sheet). The length starts on the calendar's window; what to work on starts empty.
+  const lengths = lengthChoices(event?.minutes);
+  const [minutes, setMinutes] = useState<number | null>(null);
+  const [areas, setAreas] = useState<string[]>([]);
+  const length = minutes != null && lengths.includes(minutes) ? minutes : event?.minutes ? lengths[lengths.length - 1]! : null;
+  const asking = start === 'ask' && !!event && !event.allDay;
+  const dayWord = event?.label.split(',')[0] ?? 'this practice';
 
   const create = async () => {
     if (!event) return;
@@ -67,6 +79,7 @@ export function NewPlanSheet({ open, onClose, events, copies, roster, initialEve
         setError(res.unavailable ? 'Practice plans aren’t on for your team yet.' : res.error);
         return;
       }
+      if (start === 'ask') leaveAskPicks(res.planId, { minutes: length, areas });
       router.push(`/golf/dashboard/practice/plan/${res.planId}/edit${start === 'ask' ? '?fill=1' : ''}`);
     } catch {
       setError('That didn’t go through. Try again.');
@@ -76,7 +89,7 @@ export function NewPlanSheet({ open, onClose, events, copies, roster, initialEve
   };
 
   return (
-    <FormSheet open={open} onClose={onClose} title="New plan" actionLabel="Create plan" full onAction={() => void create()} actionDisabled={!event || event.allDay || (start === 'copy' && !copyId)} busy={busy} code="CH-13395">
+    <FormSheet open={open} onClose={onClose} title="New plan" actionLabel={asking ? 'Build plan' : 'Create plan'} full onAction={() => void create()} actionDisabled={!event || event.allDay || (start === 'copy' && !copyId)} busy={busy} code="CH-13395">
       <div className="ch-prc-new">
         {error && (
           <p className="ch-prc-new__err" role="alert">
@@ -100,6 +113,32 @@ export function NewPlanSheet({ open, onClose, events, copies, roster, initialEve
           {copies.length > 0 && <Option on={start === 'copy'} title="Copy a past practice" line="Keeps blocks, drills and groups" onPick={() => setStart('copy')} />}
           <Option on={start === 'ask'} title="Ask CoachHelm" line="It drafts from your team’s data. You keep what you like." onPick={() => setStart('ask')} />
         </div>
+        {asking && (
+          <>
+            <h3 id="ch-prc-ask-h">What should {dayWord} cover?</h3>
+            <div className="ch-prc-ask" role="group" aria-labelledby="ch-prc-ask-h">
+              <div className="ch-prc-ask__q">
+                <span id="ch-prc-ask-len">How long</span>
+                <Segmented label="How long" block value={length != null ? String(length) : ''} options={lengths.map((m) => ({ value: String(m), label: fmtMinutes(m) }))} onChange={(v) => setMinutes(Number(v))} />
+                <small className="ch-num">{event?.minutes ? `Your calendar has ${event.detail.split(' · ')[0]}.` : 'This practice has no end time on the calendar.'}</small>
+              </div>
+              <div className="ch-prc-ask__q">
+                <span>Work on · pick any</span>
+                <div className="ch-pills" role="group" aria-label="Work on">
+                  {WORK_ON.map((a) => {
+                    const on = areas.includes(a);
+                    return (
+                      <button key={a} type="button" className="ch-pill" aria-pressed={on} onClick={() => setAreas((list) => (on ? list.filter((x) => x !== a) : [...list, a]))}>
+                        {a}
+                      </button>
+                    );
+                  })}
+                </div>
+                <small>{areas.length ? 'CoachHelm builds around these and says why for each block.' : 'Pick none and CoachHelm goes by your team’s numbers.'}</small>
+              </div>
+            </div>
+          </>
+        )}
         {start === 'copy' && (
           <>
             <h3>Which plan</h3>

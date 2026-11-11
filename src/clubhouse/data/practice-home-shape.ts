@@ -27,6 +27,8 @@ export interface ChPracticeEvent {
   place: string;
   /** An all-day practice can't be planned until it has times (CH-13181). */
   allDay: boolean;
+  /** The calendar's window in minutes, when the practice has an end: what "How long" offers when CoachHelm drafts it. */
+  minutes?: number | null;
 }
 
 export interface ChPracticeTile {

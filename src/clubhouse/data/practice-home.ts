@@ -163,7 +163,7 @@ export async function loadCoachPracticeHome(teamId: string, now: Date = new Date
   const open: ChPracticeEvent[] = events
     .filter((e) => !byEvent.has(e.id) && new Date(e.end_time ?? e.start_time) >= now && Date.parse(e.start_time) <= now.getTime() + 14 * DAY)
     .sort((a, b) => a.start_time.localeCompare(b.start_time))
-    .map((e) => ({ id: e.id, label: dayLong(new Date(e.start_time), zone), detail: [e.all_day ? 'All day' : span(e, zone), e.location].filter(Boolean).join(' · '), title: e.title, place: e.location ?? '', allDay: !!e.all_day }));
+    .map((e) => ({ id: e.id, label: dayLong(new Date(e.start_time), zone), detail: [e.all_day ? 'All day' : span(e, zone), e.location].filter(Boolean).join(' · '), title: e.title, place: e.location ?? '', allDay: !!e.all_day, minutes: e.end_time && !e.all_day ? Math.round((Date.parse(e.end_time) - Date.parse(e.start_time)) / 60_000) : null }));
 
   const nextEvent = events.filter((e) => new Date(e.end_time ?? e.start_time) >= now && !e.all_day).sort((a, b) => a.start_time.localeCompare(b.start_time))[0];
   let upNext: ChPracticeUpNext | null = null;

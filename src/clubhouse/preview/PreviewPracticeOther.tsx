@@ -98,11 +98,22 @@ const PRINT_DRILLS: PrintDrill[] = [
   { name: 'Make 7 from 5 feet', line: 'Putting · 25 min', area: 'putting', diagram: 'gate', setup: 'Seven balls around the hole at 5 feet.', goal: 'Make all seven; a miss starts it over.' },
 ];
 
-/** `coachhelm-practice-print?state=norotation|nodrills`: the print studio on the design's plan. */
+const LONG_DRILLS: PrintDrill[] = Array.from({ length: 14 }, (_, i) => ({ ...PRINT_DRILLS[i % 2]!, name: `${PRINT_DRILLS[i % 2]!.name}, set ${i + 1}` }));
+
+/** `coachhelm-practice-print?state=norotation|nodrills|draft|unread|long|cards`: the print studio on the design's plan. `unread`: the drills read failed. `long`: a 14-drill appendix, switched on. */
 export function PreviewPracticePrint({ state }: { state?: string }) {
   const body = state === 'norotation' ? { ...PP_PLAN_PART.draft.body, variants: { ...PP_PLAN_PART.draft.body.variants, main: { blocks: PP_PLAN_PART.draft.body.variants.main.blocks.filter((b) => b.kind !== 'stations') } } } : PP_PLAN_PART.draft.body;
   const plan = toSheetModel({ body, why: PP_PLAN_PART.draft.why, title: PP_PLAN_PART.title, team: 'Demo University Golf', start: PRINT_START, end: new Date('2026-11-05T22:00:00Z'), zone: 'America/New_York', coaches: PP_COACHES, names: PP_NAMES, state: 'Published' }, 'coach');
-  return <PrintStudio plan={plan} drills={state === 'nodrills' ? [] : PRINT_DRILLS} draft={state === 'draft'} planHref="/clubhouse-preview/coachhelm-practice-plan" />;
+  return (
+    <PrintStudio
+      plan={plan}
+      drills={state === 'nodrills' || state === 'unread' ? [] : state === 'long' ? LONG_DRILLS : PRINT_DRILLS}
+      drillsUnread={state === 'unread'}
+      draft={state === 'draft'}
+      startWith={state === 'long' ? { drills: true } : state === 'cards' ? { cards: true, drills: true } : undefined}
+      planHref="/clubhouse-preview/coachhelm-practice-plan"
+    />
+  );
 }
 
 /** `coachhelm-practice-run?state=draft|edited|down`: the coach's bar and, in its window, the Run card. */

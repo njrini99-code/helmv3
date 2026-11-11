@@ -131,14 +131,14 @@ describe('New plan (CH-13395)', () => {
   it('Ask CoachHelm saves an empty plan and opens the builder filling', async () => {
     save.mockResolvedValue({ success: true, planId: 'p', version: 1, updatedAt: null });
     sheet();
-    fireEvent.click(screen.getByRole('button', { name: 'Create plan', hidden: true }));
+    fireEvent.click(screen.getByRole('button', { name: 'Build plan', hidden: true }));
     await waitFor(() => expect(push).toHaveBeenCalledWith('/golf/dashboard/practice/plan/p/edit?fill=1'));
     expect(save.mock.calls[0]![0].body.variants.main.blocks).toEqual([]);
   });
   it('CH-13580 another coach got there first: says so and opens nothing', async () => {
     save.mockResolvedValue({ success: false, error: 'stale', stale: true });
     sheet();
-    fireEvent.click(screen.getByRole('button', { name: 'Create plan', hidden: true }));
+    fireEvent.click(screen.getByRole('button', { name: 'Build plan', hidden: true }));
     await waitFor(() => expect(save).toHaveBeenCalled());
     expect(push).not.toHaveBeenCalled();
   });

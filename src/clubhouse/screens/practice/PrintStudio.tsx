@@ -372,11 +372,11 @@ export function printSummary(pages: ReadonlyArray<{ part: string }>): string {
 }
 
 /** Print studio (N-00 4.14): pick the pieces, see them as paper, print. Save as PDF is the print dialog's. */
-export function PrintStudio({ plan, drills, planHref, draft = false, drillsUnread = false }: { plan: PlanSheetModel; drills: PrintDrill[]; planHref: string; draft?: boolean; /** The drills read failed: the appendix and the coach copy's drill list are missing, which is not the same as a plan with no drills. */ drillsUnread?: boolean }) {
+export function PrintStudio({ plan, drills, planHref, draft = false, drillsUnread = false, startWith }: { /** A preview's switches, in place of taps. */ startWith?: Partial<Record<PartKey, boolean>>; plan: PlanSheetModel; drills: PrintDrill[]; planHref: string; draft?: boolean; /** The drills read failed: the appendix and the coach copy's drill list are missing, which is not the same as a plan with no drills. */ drillsUnread?: boolean }) {
   const phone = useChPhone();
   const router = useRouter();
   const hasRotation = plan.rows.some((r) => r.rotation);
-  const [parts, setParts] = useState<Parts>({ coach: true, board: hasRotation, cards: false, drills: false });
+  const [parts, setParts] = useState<Parts>({ coach: true, board: hasRotation, cards: false, drills: false, ...startWith });
   const [origin, setOrigin] = useState<string | null>(null);
   useEffect(() => setOrigin(window.location.origin), []);
   const qr = useMemo(() => (origin ? qrSvg(`${origin}${planHref}`) : null), [origin, planHref]);

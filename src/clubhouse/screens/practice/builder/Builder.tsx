@@ -29,7 +29,7 @@ import type { PlanPartData } from '../../coachhelm/plan/PlanCard';
 import { printPlan } from '../../coachhelm/plan/PrintPlan';
 import { PracticePlanSheet } from '../../coachhelm/plan/sheet/PracticePlanSheet';
 import { toSheetModel } from '../../coachhelm/plan/sheet/plan-sheet-model';
-import { addBlock, addGroup, BLOCK_KINDS, blockSub, blocksOf, clockFor, drillSlots, fmtMinutes, ghostsFrom, keepGhost, keyOfDrill, makeBlock, moveBlock, movePlayer, patchBlock, refOf, removeBlock, removeGroup, ribbon, setSlotDrill, splitGroups, STEPS, totalOf, type BuilderStep, type Ghost } from './builder-model';
+import { addBlock, addGroup, askWords, takeAskPicks, BLOCK_KINDS, blockSub, blocksOf, clockFor, drillSlots, fmtMinutes, ghostsFrom, keepGhost, keyOfDrill, makeBlock, moveBlock, movePlayer, patchBlock, refOf, removeBlock, removeGroup, ribbon, setSlotDrill, splitGroups, STEPS, totalOf, type BuilderStep, type Ghost } from './builder-model';
 import { BankList, BlockFields, kindLabel, NewDrillSheet } from './Sheets';
 import { restoredDraft, useAutosave } from './useAutosave';
 import { DayStrip, type DaySeg, type DayTone } from '../DayStrip';
@@ -43,7 +43,6 @@ const GROUP_TONES = ['is-a', 'is-b', 'is-c', 'is-d', 'is-e', 'is-f'];
 export interface BuilderPreview {
   ghosts?: PlanPartData;
   kept?: boolean;
-  newSheet?: boolean;
   publish?: boolean;
   sheet?: 'block';
   stale?: boolean;
@@ -146,7 +145,8 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
     setInspector('coachhelm');
   }, [data.title, data.meta, data.eventId, data.body]);
   useEffect(() => {
-    if (autoFill && data.helperOn && !previewing) startFill();
+    // What the coach picked in New plan's sheet (how long, what to work on) goes in the helper's first message.
+    if (autoFill && data.helperOn && !previewing) startFill(askWords(takeAskPicks(data.planId)));
     // Once, as the page opens from New plan's Ask CoachHelm.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

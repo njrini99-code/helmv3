@@ -87,14 +87,16 @@
 .ch-prc-day__bar i {
   flex-basis: 0;
   min-width: 2px;
-  background: color-mix(in srgb, var(--ch-text-tertiary) 32%, var(--ch-card-bg));
+  /* 60% keeps a plain block 3:1 against the card in both themes (3.2 light, 4.5 dark). */
+  background: color-mix(in srgb, var(--ch-text-tertiary) 60%, var(--ch-card-bg));
 }
 .ch-prc-day__bar i[data-tone='skill'] { background: var(--ch-run-group-b); }
 .ch-prc-day__bar i[data-tone='random'] { background: var(--ch-run-group-c); }
 .ch-prc-day__bar i[data-tone='pressure'] { background: var(--ch-run-group-a); }
+/* A suggestion is an outline, in the accent ink that holds 3:1 on the card in light and dark. */
 .ch-prc-day__bar i[data-tone='ghost'] {
-  background: var(--ch-well-bg-flat);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ch-accent) 48%, transparent);
+  background: none;
+  box-shadow: inset 0 0 0 1.5px var(--ch-accent-ink);
 }
 .ch-prc-day__bar i[data-tone='open'] {
   background: var(--ch-well-bg-flat);
@@ -405,6 +407,27 @@ span.ch-prc-tile__it {
   letter-spacing: var(--ch-track-14);
   color: var(--ch-text-secondary);
 }
+/* Ask CoachHelm's two questions, on the sheet's own well. */
+.ch-prc-ask {
+  display: grid;
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-well-bg-flat);
+}
+.ch-prc-ask__q {
+  display: grid;
+  gap: 8px;
+  padding: 12px 16px 16px;
+  font: var(--ch-type-13-strong);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-text-secondary);
+}
+.ch-prc-ask__q + .ch-prc-ask__q {
+  border-top: var(--ch-hairline-w) solid var(--ch-separator);
+}
+.ch-prc-ask__q small {
+  font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
+}
 .ch-prc-new__err {
   margin: 0;
   font: var(--ch-type-14);
@@ -558,7 +581,7 @@ span.ch-prc-tile__it {
   padding: 0;
   border: 0;
   background: none;
-  color: var(--ch-accent);
+  color: var(--ch-accent-ink);
   font: var(--ch-type-14-medium);
   letter-spacing: var(--ch-track-14);
   cursor: pointer;
@@ -584,7 +607,7 @@ span.ch-prc-tile__it {
   padding: 0 4px;
   border: 0;
   background: none;
-  color: var(--ch-accent);
+  color: var(--ch-accent-ink);
   font: var(--ch-type-15-medium);
   letter-spacing: var(--ch-track-15);
   cursor: pointer;
@@ -695,7 +718,7 @@ span.ch-prc-tile__it {
   flex: none;
 }
 .ch-prc-block__t > .ch-prc-block__d {
-  color: var(--ch-accent);
+  color: var(--ch-accent-ink);
 }
 .ch-prc-block__t > .ch-prc-block__why {
   margin-top: 4px;
@@ -853,7 +876,7 @@ span.ch-prc-tile__it {
   padding: 16px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-well-bg-flat);
-  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--ch-accent) 36%, transparent);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--ch-accent-ink) 70%, transparent);
 }
 .ch-prc-gb.is-arriving {
   animation: ch-prc-arrive var(--ch-dur-base) var(--ch-ease) both;
@@ -888,7 +911,7 @@ span.ch-prc-tile__it {
 .ch-prc-gb__s {
   font: var(--ch-type-13-strong);
   letter-spacing: var(--ch-track-13);
-  color: var(--ch-accent);
+  color: var(--ch-accent-ink);
 }
 .ch-prc-gb p {
   margin: 0;
@@ -1156,7 +1179,7 @@ html[data-fw-theme='dark'] :is(.ch-prc-group.is-f .ch-prc-disc, .ch-prc-disc.g-F
   color: var(--ch-text-primary);
 }
 .ch-prc-slot__d {
-  color: var(--ch-accent);
+  color: var(--ch-accent-ink);
 }
 .ch-prc-slot__w {
   color: var(--ch-loss);
@@ -1366,7 +1389,7 @@ main.ch-prc-planpage {
   margin: 0;
   font: var(--ch-type-13-strong);
   letter-spacing: var(--ch-track-13);
-  color: var(--ch-accent);
+  color: var(--ch-accent-ink);
 }
 .ch-prc-run__h span {
   font: var(--ch-type-14-medium);
