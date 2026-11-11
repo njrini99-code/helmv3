@@ -653,3 +653,122 @@ C10. A tenth CONTEXT task, appended last: `dismiss_signal({ insight_id })` wraps
 (`golf/actions/insights-feed.ts`). Nothing is sent; its card says the signal also disappears from the player's own
 page, which is the app's one visibility rule (`lib/coachhelm/v3/insight-visibility.ts`). The row is kept. Whole prefix
 after it, characters / 4: Ask 21,214 with the tournaments flag off and 21,628 with it on; quick chat 20,697 and 21,111.
+
+## 2026-11-11 (PLANS): the card is the truth. New fields, exact names and shapes, for ENGINE and the UI workers
+
+PLANS took over TOOLS's task files. The rule every task now follows: the model's input is intent only; `plan` resolves
+it against the database with the session client and builds the whole card; `commit` performs the stored plan and
+refuses, without calling the app's action, when the world no longer matches the card. Types are in `../card-types.ts`
+and re-exported from `../action-types.ts`. Every field is optional, so a card stored before 11 Nov still renders.
+
+P1. `ActionProposal`, added (all built by the server, never from the model's input):
+```ts
+recipients?: Array<{ id: string; name: string; role: 'player' | 'coach' }>;   // who is SENT something. [] = nobody. The count on the card is recipients.length.
+not_reached?: Array<{ id: string; name: string; role: 'player' | 'coach'; reason: string }>;   // named on the card, will not get it ("no account yet")
+delivery?: {                    // exactly what a recipient receives. null = nothing is sent. absent = an older card.
+  channels: string[];           // 'push' | 'in_app' (the bell) | 'email' | 'message'
+  title: string; body: string;  // the notification as a phone shows it
+  variants?: Array<{ channel: string; title: string; body: string }>;   // the same notice where another channel words it differently (the bell row)
+  each?: Array<{ id: string; name: string; body: string }>;             // when each person gets their own words (a published plan's first stop), in recipients order
+  note?: string;                // what cannot be quoted, said plainly (an email's layout; players' own notification settings)
+} | null;
+visible_to?: 'only_you' | 'coaches' | 'recipients' | 'team';   // E-6, E-24: who can see it once saved
+visible_note?: string;                                          // the same in one sentence, with names
+undo?: { window: boolean; after: string };   // window false = writes on the press (lock_lineup only). `after`: where it is reversed later, or that it cannot be.
+lands?: { kind: string; home: string; day?: string };   // ENGINE's field, unchanged; publish_practice_plan's home is now /golf/dashboard/practice/plan/<id> (the address the app's own notice opens; /practice/<id> is not a page)
+impact?: string;   // existing field, now set by lock_lineup: what locking does and that it cannot be unlocked
+```
+`affects` is now filled for every flow that names players (`{ kind: 'player', id, label }`), including create_event,
+create_qualifier, create_goal, the lineup tasks and publish_artifact (the whole roster). E-1.
+
+P2. `TaskVisual`, added fields and one kind:
+```ts
+{ kind: 'msg'; …; members?: string[] }                        // E-20. Read from the thread; `count` = members that can be named + those that cannot (shown as "N more")
+{ kind: 'goal'; …; current?: number | null; unit?: string; better?: 'up' | 'down' }   // E-10. current null = no rounds in the 90 days a goal is measured from
+{ kind: 'note'; …; round?: { course: string | null; date: string | null; score: number | null } }   // E-14
+{ kind: 'lineup'; seats: Array<{ slot; name; alternate; id?; role?: 'lineup'|'alternate'|'individual'; reasoning? }>;
+  tournament?: { id: string; name: string; date: string; end: string | null };
+  replaces?: Array<{ slot; name; alternate; id?; role? }>;    // E-21. The lineup saved when the card was made; [] = none. Absent on a lock card.
+  locking?: boolean }                                          // E-22. A lock card: `seats` is what gets locked
+{ kind: 'series'; title: string; dates: string[]; start: string; end: string | null; where: string | null }   // E-4, create_recurring_practice
+```
+`publish` (publish_practice_plan) gains `people?: Array<{ id?: string; name: string; role: 'player' | 'coach' }>` (complete,
+players first) and `chatPost?: string | null` (the Team chat post word for word). E-19.
+
+P3. Fact labels added (CAPABILITIES 0.7; an unknown label is already drawn as a plain row):
+create_event `Notes`, `Will not get it`. create_recurring_practice `Ends`, `Description`, `Will not get it`; its
+visual is now `series`. add_blocked_time: `When` carries both days. add_team_break `Days`, `Label`. save_team_term
+`Time zone`, `Replaces` (always "Nothing…": the task only adds a term; a same-name or overlapping term gets no card).
+create_trip `Flight`, `Hotel address`, `Hotel phone`, `Confirmation number`, `Notes`. create_qualifier `Ends`,
+`Entry deadline`, `Description`, `Will not get it`. create_goal `Goal`, `Now`, `Better is` (and `Target` carries the
+unit). create_focus_area and create_task `Details`. add_round_note `Round` ("Pine Hill · 2026-11-01 · 74").
+set_availability_note `Replaces` is always present and read by the server. create_recruit `Email`, `Phone`, `Notes`.
+create_drill `Kind`. set_lineup `Tournament`, `Lineup` (one seat a line), `Replaces`, `Reasoning`. lock_lineup
+`Tournament`, `Lineup`, `What locking does`, `Undo`. send_message `To (n)`. publish_practice_plan `To (n)`,
+`Will not get it`, `Filed in`, `Team chat`; `What they get` is "<title>\n<the first person's body>".
+
+P4. `ActionReceipt`, added:
+```ts
+href?: string;                                   // the thing itself = created[0].href (E-12): now set for every task
+missed?: Array<{ name: string; reason: string }>;   // people on the card the send did not reach, by name (E-23 shape)
+notifications[].to?: string[];                   // who it went to, by name
+```
+`notifications[].status` is `queued` for notices the app's action hands off after it answers (nothing checks them),
+`sent` only where the write itself is the delivery (a message, a goal's in-app row). A receipt is `partial` when the
+write landed but not all of it did (an event whose invitations failed; a plan whose Team chat post failed, or whose
+told-count is not the card's), with the lines in `partial_failures`.
+`created[].id`: now also for a break, a term and a drill (the row's id is the card's request id), a goal, a trip, a
+document, a qualifier, a message, and the tournament / round / plan a task changed.
+
+P5. A card that is no longer true. `commit` looks for its own row first (an earlier run of the same card is `completed`,
+never stale), then checks the world against the card, then writes. A stale card answers
+`{ status: 'failed', error: 'card_out_of_date', retryable: false, summary: <one sentence ending in "Ask for it again." or the like> }`
+and calls no action. ENGINE passes the summary to the model as `Failed. <summary>`; the UI should NOT offer Try again
+for `error === 'card_out_of_date'` (SPEC's "no Try again" reminder case). When the check itself could not be made:
+`error: 'card_not_checked'`, `retryable: true`, or (when the first look also failed) the existing "I could not check
+whether anything was saved: look in <place>" receipt. What is checked: every named player is still on the roster and
+still has (or still lacks) an account; a whole-team announcement's roster gained nobody; the tournament's version and
+seats (set_lineup, lock_lineup); the thread's members (send_message); the plan's version, title, time, place, people,
+each person's words and the Team chat post (publish_practice_plan); the note on the round; the saved availability note.
+
+P6. Inputs that were the model's numbers and words are gone from the tool schemas (strict, smaller prefix):
+`send_message` is `{ conversation_id, content }`; `publish_practice_plan` is `{ plan_id, version, team_chat }`;
+`set_lineup` has no `version` (the server reads it and the write carries the one the card read);
+`set_availability_note` has no `existing`; `publish_artifact` has no `players`. A stored conversation that holds an
+old call replays fine (history is not re-validated); a stored PROPOSAL from before 11 Nov for these five tools fails
+`commit`'s parse and answers "This card could not be read back, so it was not run." (nothing is written).
+
+P7. For ENGINE, on E-25 and E-27 (yours; PLANS built neither):
+- E-27: PLANS's tasks never return `cancelled`; `staleReceipt` is `failed`. The engine's `undoneReceipt` is the only
+  source of `cancelled`.
+- E-25: nothing in a task or reader marks a computed answer. `summarise_data` is still the server's arithmetic over
+  rows already read and is an ordinary read with its own evidence chip.
+- E-26 is built: `ToolEnvelope.coverage` may now be `'not_tracked'` (the envelope only; a measurement's coverage is
+  unchanged), with `coverage_note` and `nearest?: string[]`. `get_reference` topic `golf` answers it when `about`
+  names something the data map says is not recorded (`../not-tracked.ts`, held to the metric catalogue by a test).
+  It is a read with an evidence chip, zero measurements, and `model_text` that tells the model to say so first. The
+  thread can draw D16's row from `coverage === 'not_tracked'`: `summary` ("Not tracked: Which club was hit."),
+  `nearest`. `loop.ts` treats `unavailable` specially (text, not a search result); `not_tracked` goes the ordinary
+  way and may be cited, which is right: it is a fact about the app.
+
+P8. Words. `../card-truth.ts` calls `generatePushPayload` for every push it quotes. Bell rows and the practice plan's
+notices live inside senders that cannot be called without sending, so they are repeated there and
+`../__tests__/card-words.test.ts` reads each sender's source and fails when it changes. Not quoted, and said so in
+`delivery.note`: emails (templates), and create_event's bell row (two writers race for it in `after()`:
+"You're invited: …" from `sendEventInvitations` and "New event: …" from `fanOutEventInvitation`; whichever lands
+first stays). The clean fix for all of these is CONTEXT's C5.2: move each formatter into `src/lib` and have the
+action import it.
+
+P9. Request ids (the actions TOOLS listed as taking none). Done, additive and tested
+(`src/app/golf/actions/__tests__/request-id-drill-break-term.test.ts`): `createTeamDrill({ …, requestId })`,
+`addTeamBreak({ …, requestId })`, `saveTeamTerm({ …, requestId })` (new term only); the id is the row's primary key and
+a repeat answers with the first row, checked against the team. `createRecurringEvent` already took one and
+`create_recurring_practice` now passes it (the look is by the series' id). Still on the natural-key look, in order of
+worth: `createGolfTravelItinerary`, `createGoal`, `saveTextDocument`, `createGolfQualifier`, `createFocusArea`,
+`createTask` and `createEnrichedAnnouncement` (these two already refuse a same-request repeat inside two minutes
+themselves). Each needs the same three lines (accept a UUID, insert it as `id`, on 23505 return the first row for
+this team) and a test.
+
+P10. For CONTEXT: E-23 is your `send_event_reminder`. The receipt shape is ready (`missed: [{ name, reason }]`,
+`notifications[].to`); your commit knows `ids` and `sent` but not which ids were missed, because
+`sendEventReminderToPlayers` returns a count. With `data.sentPlayerIds` from the action you can name them.
