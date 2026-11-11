@@ -87,12 +87,14 @@ describe('the file’s Where the strokes go', () => {
   it('mixed: the note says how many of the rounds it read were shot-tracked', () => {
     render(<SgCard sg={sg('sgmixed')} who="Eli" standingHref={null} />, { wrapper: Wrap });
     expect(note()).toMatch(/6 of 10 rounds shot-tracked; 4 estimated from the scorecard\./);
-    expect(meta()).not.toMatch(/· estimate/);
+    expect(meta()).toMatch(/Eli vs Tour and team/);
+    expect(meta()).not.toMatch(/Est\./);
   });
 
   it('all estimated: the head marks the figures as an estimate', () => {
     render(<SgCard sg={sg('sgest')} who="Eli" standingHref={null} />, { wrapper: Wrap });
-    expect(meta()).toMatch(/Eli vs Tour and team · estimate/);
+    expect(meta()).toMatch(/Est\. vs Tour and team/);
+    expect(meta()).not.toMatch(/Eli vs Tour/);
     expect(note()).toMatch(/Estimated from the scorecard: no round shot-tracked\./);
   });
 });

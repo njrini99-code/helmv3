@@ -372,7 +372,8 @@ export function SgCard({ sg, who, standingHref }: { sg: ChFileSg; who: string; s
   const est = !sg.needsHoles && sgIsEstimate(sg.mix);
   return (
     <section className="card" aria-labelledby="ch-hf-sg" data-ch-anchor="sg">
-      <CardHead id="ch-hf-sg" title="Where the strokes go" meta={`${who} vs Tour${sg.hasTeam ? ' and team' : ''}${est ? ' · estimate' : ''}`} />
+      {/* The mark leads and stands in for the name: added at the end it was the part the phone's head cut off. */}
+      <CardHead id="ch-hf-sg" title="Where the strokes go" meta={`${est ? 'Est.' : who} vs Tour${sg.hasTeam ? ' and team' : ''}`} />
       <div className="card__b">
         <div className="sg">
           {sg.rows.map((r) => {
