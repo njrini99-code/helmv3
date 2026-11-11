@@ -76,7 +76,7 @@ const x = PREVIEW_PLAYER.extra;
 // A test that chooses a window chooses it for the filter too (the screens read the filter, whose window is the window).
 const player = (over: Partial<ChPlayerProfile> = {}): ChPlayerProfile => ({ ...PREVIEW_PLAYER, ...(over.window ? { filter: filterFor(over.window) } : {}), ...over });
 const withExtra = (over: Partial<ChPlayerProfile['extra']>, rest: Partial<ChPlayerProfile> = {}) => player({ extra: { ...x, ...over }, ...rest });
-const showPlayer = (data: ChPlayerProfile, coachId: string | null = 'c1') => wrap(<StatsPlayer data={data} coachId={coachId} />);
+const showPlayer = (data: ChPlayerProfile, coachId: string | null = 'c1') => wrap(<StatsPlayer layout="tabs" data={data} coachId={coachId} />);
 async function openTab(name: RegExp) {
   await userEvent.setup().click(screen.getByRole('tab', { name }));
 }

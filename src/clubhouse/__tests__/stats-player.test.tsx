@@ -90,7 +90,7 @@ function wrap(node: React.ReactNode) {
 }
 // A test that chooses a window chooses it for the filter too (the screens read the filter, whose window is the window).
 const player = (over: Partial<ChPlayerProfile> = {}): ChPlayerProfile => ({ ...PREVIEW_PLAYER, ...(over.window ? { filter: filterFor(over.window) } : {}), ...over });
-const show = (data: ChPlayerProfile, coachId: string | null = 'c1') => wrap(<StatsPlayer data={data} coachId={coachId} />);
+const show = (data: ChPlayerProfile, coachId: string | null = 'c1') => wrap(<StatsPlayer layout="tabs" data={data} coachId={coachId} />);
 const openTab = (user: ReturnType<typeof userEvent.setup>, name: RegExp) => user.click(screen.getByRole('tab', { name }));
 
 beforeEach(() => {
@@ -279,7 +279,7 @@ describe('Stats player · opened from a link', () => {
 
   it('52001 the profile tabs are one stop: arrows, Home and End move and select', async () => {
     const user = userEvent.setup();
-    wrap(<StatsPlayer data={player()} coachId="c1" />);
+    wrap(<StatsPlayer layout="tabs" data={player()} coachId="c1" />);
     const tabs = screen.getAllByRole('tab');
     expect(tabs.filter((t) => t.tabIndex === 0)).toEqual([tabs[0]]);
     tabs[0]!.focus();
@@ -296,7 +296,7 @@ describe('Stats player · opened from a link', () => {
   });
 
   it("50102 ?tab=rounds opens the Rounds tab (Roster's All N, D-53)", () => {
-    wrap(<StatsPlayer data={player()} coachId="c1" initialTab="rounds" />);
+    wrap(<StatsPlayer layout="tabs" data={player()} coachId="c1" initialTab="rounds" />);
     expect(selected()).toMatch(/Rounds/);
     expect(screen.getByRole('tabpanel').getAttribute('aria-labelledby')).toBe('tab-rounds');
   });
@@ -304,14 +304,14 @@ describe('Stats player · opened from a link', () => {
   it('CH-5808 a round in the table opens its review; a round the review can\'t open stays text', () => {
     const id = '5b0c6a1e-2f4d-4c8e-9a7b-1d2e3f4a5b6c';
     const [first, second] = PREVIEW_PLAYER.rounds;
-    wrap(<StatsPlayer data={player({ rounds: [{ ...first!, id }, { ...second!, id: 'not-a-uuid' }] })} coachId="c1" initialTab="rounds" />);
+    wrap(<StatsPlayer layout="tabs" data={player({ rounds: [{ ...first!, id }, { ...second!, id: 'not-a-uuid' }] })} coachId="c1" initialTab="rounds" />);
     const link = screen.getByRole('link', { name: `${first!.course}, ${first!.date}: open the round` });
     expect(link).toHaveAttribute('href', `/golf/dashboard/rounds/${id}`);
     expect(screen.queryByRole('link', { name: `${second!.course}, ${second!.date}: open the round` })).toBeNull();
   });
 
   it('50102 no tab, or one that does not exist, opens Overview', () => {
-    const { unmount } = wrap(<StatsPlayer data={player()} coachId="c1" initialTab="sg" />);
+    const { unmount } = wrap(<StatsPlayer layout="tabs" data={player()} coachId="c1" initialTab="sg" />);
     expect(selected()).toMatch(/Overview/);
     unmount();
     show(player());
@@ -373,7 +373,7 @@ describe('Stats player · phone (v2, Coach - Stats - Mobile.html)', () => {
     wrap(
       <PhoneChromeProvider>
         <SlotHost />
-        <StatsPlayer data={data} coachId={coachId} initialTab={initialTab} />
+        <StatsPlayer layout="tabs" data={data} coachId={coachId} initialTab={initialTab} />
       </PhoneChromeProvider>,
     );
   const top = () => screen.getByTestId('phone-top');
@@ -691,7 +691,7 @@ describe('Stats player · the loader', () => {
     expect(logServer).toHaveBeenCalledWith('stats', 'tourBenchmarks', expect.anything());
     expect(noBench!.bench).toEqual({});
     expect(noBench!.comparisons.every((c) => c.bench == null)).toBe(true);
-    wrap(<StatsPlayer data={noBench!} coachId={null} />);
+    wrap(<StatsPlayer layout="tabs" data={noBench!} coachId={null} />);
     expect(screen.queryByRole('columnheader', { name: 'Tour' })).toBeNull();
     // The team's own row fails: its tour is unknown, so the benchmarks are not even read (a women's team is never graded against the men's).
     const bench = vi.fn(() => ({ data: [{ metric_id: 'gir_pct', pga_tour_value: 67 }] }));
@@ -713,7 +713,7 @@ describe('Stats player · the loader', () => {
     const last = await loadAs('coach', 'c');
     expect(last!.nav).toEqual({ index: 3, total: 3, prev: 'b', next: 'a' });
     // The links carry the player and keep the window.
-    wrap(<StatsPlayer data={player({ nav: first!.nav, window: 'season' })} coachId="c1" />);
+    wrap(<StatsPlayer layout="tabs" data={player({ nav: first!.nav, window: 'season' })} coachId="c1" />);
     expect(screen.getByRole('link', { name: 'Next player' }).getAttribute('href')).toBe('/golf/dashboard/stats?player=b&window=season');
     expect(screen.getByRole('link', { name: 'Previous player' }).getAttribute('href')).toBe('/golf/dashboard/stats?player=c&window=season');
     expect(screen.getByRole('link', { name: 'Team stats' }).getAttribute('href')).toBe('/golf/dashboard/stats?window=season');
@@ -810,14 +810,14 @@ describe('Stats player · the page', () => {
     try {
       const phoneView = wrap(
         <PhoneChromeProvider>
-          <StatsPlayer data={player()} coachId="c1" />
+          <StatsPlayer layout="tabs" data={player()} coachId="c1" />
         </PhoneChromeProvider>,
       );
       expect(screen.getByRole('link', { name: 'Message Jonah' }).getAttribute('href')).toBe('/golf/dashboard/messages?player=jonah');
       phoneView.unmount();
       wrap(
         <PhoneChromeProvider>
-          <StatsPlayer data={player({ viewer: 'player' })} coachId={null} />
+          <StatsPlayer layout="tabs" data={player({ viewer: 'player' })} coachId={null} />
         </PhoneChromeProvider>,
       );
       expect(screen.queryByRole('link', { name: /Message/ })).toBeNull();
@@ -833,7 +833,7 @@ describe('Stats player · the page', () => {
     try {
       wrap(
         <PhoneChromeProvider>
-          <StatsPlayer data={player({ viewer: 'player' })} coachId={null} />
+          <StatsPlayer layout="tabs" data={player({ viewer: 'player' })} coachId={null} />
         </PhoneChromeProvider>,
       );
       expect(document.querySelector('.ch-shs')).not.toBeNull();
@@ -882,9 +882,9 @@ describe('Stats player · the page', () => {
     const user = userEvent.setup();
     const view = show(player());
     await openTab(user, /Rounds/);
-    view.rerender(shell(<StatsPlayer data={player({ window: 'season' })} coachId="c1" />));
+    view.rerender(shell(<StatsPlayer layout="tabs" data={player({ window: 'season' })} coachId="c1" />));
     expect(screen.getByRole('tab', { selected: true }).textContent).toMatch(/Rounds/);
-    view.rerender(shell(<StatsPlayer data={player({ window: 'season', id: 'ava', name: 'Ava Lindqvist', firstName: 'Ava' })} coachId="c1" />));
+    view.rerender(shell(<StatsPlayer layout="tabs" data={player({ window: 'season', id: 'ava', name: 'Ava Lindqvist', firstName: 'Ava' })} coachId="c1" />));
     expect(screen.getByRole('heading', { level: 1, name: 'Ava Lindqvist' })).toBeTruthy();
     expect(screen.getByRole('tab', { selected: true }).textContent).toMatch(/Rounds/);
   });
@@ -947,7 +947,7 @@ describe('Stats player · network', () => {
       await user.click(screen.getByRole('radio', { name: 'Season' }));
       act(() => vi.advanceTimersByTime(5001));
       await expectCode('CH-5902', /Still loading the season/);
-      view.rerender(shell(<StatsPlayer data={player({ window: 'season' })} coachId="c1" />));
+      view.rerender(shell(<StatsPlayer layout="tabs" data={player({ window: 'season' })} coachId="c1" />));
       await waitFor(() => expect(code('CH-5902')).toBeNull());
       await user.click(screen.getByRole('radio', { name: 'Qualifiers' }));
       act(() => vi.advanceTimersByTime(5001));
@@ -974,7 +974,7 @@ describe('Stats player · network', () => {
       expect(router.push).toHaveBeenCalledWith('/golf/dashboard/stats?player=jonah&window=season', { scroll: false });
       expect(trailSpy).toHaveBeenCalledWith('stats window season');
       // The server answers inside five seconds: no notice.
-      view.rerender(shell(<StatsPlayer data={player({ window: 'season' })} coachId="c1" />));
+      view.rerender(shell(<StatsPlayer layout="tabs" data={player({ window: 'season' })} coachId="c1" />));
       vi.advanceTimersByTime(6000);
       expect(code('CH-5902')).toBeNull();
       // It doesn't: the notice names both windows.
@@ -1089,7 +1089,7 @@ describe('Stats player · a failed read is never drawn as zero', () => {
       wrap(
         <PhoneChromeProvider>
           <Slot />
-          <StatsPlayer data={profile!} coachId="c1" />
+          <StatsPlayer layout="tabs" data={profile!} coachId="c1" />
         </PhoneChromeProvider>,
       );
       expect(document.querySelector('.ch-spm-head p')!.textContent).toBe('Sophomore · 3.9 HCP');
@@ -1188,7 +1188,7 @@ describe('toned figures say which way (row 48)', () => {
   const ALLOWED: Record<string, number> = { overview: 10, game: 24, rounds: 1, dev: 0 };
   for (const [tab, most] of Object.entries(ALLOWED)) {
     it(`${tab}: at most ${most} figures in colour alone`, async () => {
-      wrap(<StatsPlayer data={player()} coachId="c1" initialTab={tab} />);
+      wrap(<StatsPlayer layout="tabs" data={player()} coachId="c1" initialTab={tab} />);
       await act(async () => {});
       expect(unsignedTones().length).toBeLessThanOrEqual(most);
     });

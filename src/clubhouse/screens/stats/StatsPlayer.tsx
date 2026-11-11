@@ -77,7 +77,25 @@ export function formNote(first: string, scores: number[]): string {
  * `?area=`: on the phone it opens that area's detail, on desktop the tab (and, for a game part, the section) it lives under. `reads` is what CoachHelm
  * sees per Game detail section (data/stats-reads.ts); without it Game detail draws no count line.
  */
-export function StatsPlayer({ data, coachId, initialTab, initialArea, reads }: { data: ChPlayerProfile; coachId: string | null; initialTab?: string; initialArea?: string; reads?: ChReadsSource; }) {
+export function StatsPlayer({
+  data,
+  coachId,
+  initialTab,
+  initialArea,
+  reads,
+  layout = 'bento',
+}: {
+  data: ChPlayerProfile;
+  coachId: string | null;
+  initialTab?: string;
+  initialArea?: string;
+  reads?: ChReadsSource;
+  /**
+   * The desktop page. `bento` (the default, what a browser shows): the rebuilt cards with the chosen area's drill beside them.
+   * `tabs`: the tabbed tables, which paper still prints (printing always takes it). The phone has one page and ignores this.
+   */
+  layout?: 'bento' | 'tabs';
+}) {
   const router = useRouter();
   const pushOnce = usePushOnce(router);
   const toast = useToast();
@@ -241,7 +259,80 @@ export function StatsPlayer({ data, coachId, initialTab, initialArea, reads }: {
       </main>
     );
 
-  // `is-desk`: the server renders desktop; at phone width it stays hidden until the phone view takes over at hydration.
+  // The desktop page (stats-home, "Desktop"): the phone's own cards as a bento on a flat canvas, the chosen area's drill beside them.
+  // One head, no figure in it: every number lives in its card, once. `is-desk`: the server renders desktop; at phone width it stays
+  // hidden until the phone view takes over at hydration.
+  if (!printing && layout === 'bento')
+    return (
+      <>
+        <main className="ch-st is-desk ch-st--shs" aria-busy={pending} data-ch-code={pending ? 'CH-5402' : undefined} data-canopy="">
+          <header className="ch-shs-dhead" data-canopy-head="tight">
+            {coach && (
+              <div className="ch-st-back">
+                <Button size="sm" variant="ghost" leftIcon={ChevronLeft} href={href(null, data.filter)}>
+                  Team stats
+                </Button>
+                {data.nav && (
+                  <div className="ch-st-back__nav">
+                    <IconButton icon={ChevronLeft} size="sm" label="Previous player" href={href(data.nav.prev, data.filter)} scroll={false} />
+                    <span className="ch-num">
+                      {data.nav.index} of {data.nav.total}
+                    </span>
+                    <IconButton icon={ChevronRight} size="sm" label="Next player" href={href(data.nav.next, data.filter)} scroll={false} />
+                  </div>
+                )}
+              </div>
+            )}
+            <div className="ch-shs-dhead__row">
+              <Avatar name={data.name} id={data.id} size="lg" />
+              <div className="ch-shs-dhead__id">
+                <h1 className="ch-display">{coach ? data.name : 'My stats'}</h1>
+                {/* A no-break space ahead of each dot: a wrapped line never starts with a dot. */}
+                <p>{[coach ? null : data.name, data.classYear, data.gradYear ? `Class of ${data.gradYear}` : null, data.hometown].filter(Boolean).join('\u00a0· ')}</p>
+              </div>
+              {coach && (
+                <div className="ch-shs-dhead__act">
+                  {messageHref && (
+                    <Button leftIcon={MessageSquare} href={messageHref}>
+                      Message
+                    </Button>
+                  )}
+                  {planHref && (
+                    <Button leftIcon={CalendarPlus} href={planHref}>
+                      Schedule 1:1
+                    </Button>
+                  )}
+                  {insightsHref && (
+                    <Button leftIcon={Sparkles} href={insightsHref}>
+                      CoachHelm
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
+          </header>
+          <StatsPlayerPhoneShs
+            desk
+            data={data}
+            initialTab={initialTab}
+            initialArea={initialArea}
+            reads={reads}
+            playerHref={href(data.id, data.filter)}
+            messageHref={messageHref}
+            windowShown={rangeOf(loading ?? data.filter)}
+            spanShown={(loading ?? data.filter).span ?? 'season'}
+            onFilter={changeFilter}
+            onBackToTeam={() => go(null, data.filter)}
+            onAddFocus={coach && coachId ? () => setFocusOpen(true) : null}
+            onRetry={() => router.refresh()}
+            updating={updating}
+          />
+        </main>
+        {sheet}
+      </>
+    );
+
+  // The tabbed page from here: what paper prints (PrintHead, the Rounds table, Game detail), which a bento is not.
   return (
     <>
       <main className="ch-st is-desk" aria-busy={pending} data-ch-code={pending ? 'CH-5402' : undefined} data-canopy="">

@@ -61,13 +61,13 @@ function SlotHost() {
 const team = (over: Partial<ChTeamStats> = {}): ChTeamStats => ({ ...PREVIEW_TEAM_STATS, ...(over.window ? { filter: filterFor(over.window) } : {}), ...over });
 const player = (over: Partial<ChPlayerProfile> = {}): ChPlayerProfile => ({ ...PREVIEW_PLAYER, ...(over.window ? { filter: filterFor(over.window) } : {}), ...over });
 const showTeam = (data: ChTeamStats) => render(shell(<StatsTeam data={data} />));
-const showPlayer = (data: ChPlayerProfile, coachId: string | null = 'c1') => render(shell(<StatsPlayer data={data} coachId={coachId} />));
+const showPlayer = (data: ChPlayerProfile, coachId: string | null = 'c1') => render(shell(<StatsPlayer layout="tabs" data={data} coachId={coachId} />));
 const showPhonePlayer = (data: ChPlayerProfile) =>
   render(
     shell(
       <>
         <SlotHost />
-        <StatsPlayer data={data} coachId="c1" />
+        <StatsPlayer layout="tabs" data={data} coachId="c1" />
       </>,
     ),
   );

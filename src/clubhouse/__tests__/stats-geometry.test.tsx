@@ -45,7 +45,7 @@ describe('Team stats hold their geometry across windows', () => {
     const { container, unmount } = render(shell(<StatsTeam data={team()} />));
     expect(container.querySelector('.ch-fg')).toBeNull();
     unmount();
-    const profile = render(shell(<StatsPlayer data={player()} coachId="c1" />));
+    const profile = render(shell(<StatsPlayer layout="tabs" data={player()} coachId="c1" />));
     for (const g of profile.container.querySelectorAll('.ch-fg')) expect(g.classList.contains('ch-fg--hold')).toBe(false);
   });
 
@@ -61,7 +61,7 @@ describe('Team stats hold their geometry across windows', () => {
     expect(skel.container.querySelectorAll('.ch-tp > .ch-tp__c')).toHaveLength(5);
     skel.unmount();
     // The profile keeps its five equal cards.
-    const profile = render(shell(<StatsPlayer data={player()} coachId="c1" />));
+    const profile = render(shell(<StatsPlayer layout="tabs" data={player()} coachId="c1" />));
     expect(profile.container.querySelector('.ch-fg--lead')).toBeNull();
   });
 
@@ -115,7 +115,7 @@ describe('Team stats hold their geometry across windows', () => {
 describe('A profile holds its hero across windows', () => {
   it('the strokes gained figure keeps its change line when the window has no change to show', () => {
     const noChange = player({ sgChange: { delta: null, context: '' } });
-    const { container } = render(shell(<StatsPlayer data={noChange} coachId="c1" />));
+    const { container } = render(shell(<StatsPlayer layout="tabs" data={noChange} coachId="c1" />));
     const figs = [...container.querySelectorAll('.ch-pf-hero__figs > div')];
     const sg = figs.find((f) => f.querySelector('dt')?.textContent === 'SG / round')!;
     const line = sg.querySelector('.ch-pf-hero__chg');

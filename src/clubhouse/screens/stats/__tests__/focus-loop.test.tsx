@@ -27,7 +27,7 @@ const show = (data: ChPlayerProfile, coachId: string | null = 'c1') =>
         <CrumbProvider>
           <PhoneChromeProvider>
             <div className="ch-root" data-ui="clubhouse">
-              <StatsPlayer data={data} coachId={coachId} initialTab="dev" />
+              <StatsPlayer layout="tabs" data={data} coachId={coachId} initialTab="dev" />
             </div>
           </PhoneChromeProvider>
         </CrumbProvider>

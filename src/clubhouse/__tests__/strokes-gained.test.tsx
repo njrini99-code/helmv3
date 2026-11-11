@@ -81,12 +81,12 @@ function phoneWidth() {
 const team = (over: Partial<ChTeamStats> = {}): ChTeamStats => ({ ...PREVIEW_TEAM_STATS, ...over });
 const player = (over: Partial<ChPlayerProfile> = {}): ChPlayerProfile => ({ ...PREVIEW_PLAYER, ...over });
 const showTeam = (data: ChTeamStats) => wrap(<StatsTeam data={data} />);
-const showPlayer = (data: ChPlayerProfile, initialTab?: string) => wrap(<StatsPlayer data={data} coachId="c1" initialTab={initialTab} />);
+const showPlayer = (data: ChPlayerProfile, initialTab?: string) => wrap(<StatsPlayer layout="tabs" data={data} coachId="c1" initialTab={initialTab} />);
 const showPlayerPhone = (data: ChPlayerProfile, coachId: string | null = 'c1') =>
   wrap(
     <>
       <SlotHost />
-      <StatsPlayer data={data} coachId={coachId} />
+      <StatsPlayer layout="tabs" data={data} coachId={coachId} />
     </>,
   );
 const barWidth = (row: Element) => parseFloat((row.querySelector('[class*="__v"]') as HTMLElement).style.width);
@@ -203,7 +203,7 @@ describe('bar scale', () => {
     const drawnWidth = (el: HTMLElement) => parseFloat(el.style.width) * Math.abs(parseFloat(/scaleX\(([^)]+)\)/.exec(el.style.transform)?.[1] ?? '1'));
     const before = bar();
     const was = drawnWidth(before);
-    view.rerender(shell(<StatsPlayer data={player({ win: win(-1.0) })} coachId="c1" />));
+    view.rerender(shell(<StatsPlayer layout="tabs" data={player({ win: win(-1.0) })} coachId="c1" />));
     // The page kept the chart (no remount on a window change), so the bar starts where it was; it ends on the new scale (2).
     expect(bar()).toBe(before);
     expect(parseFloat(bar().style.width)).toBeCloseTo((1.0 / 2) * 50, 1);

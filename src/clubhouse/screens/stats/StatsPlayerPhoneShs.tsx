@@ -120,7 +120,13 @@ export function StatsPlayerPhoneShs({
   onAddFocus,
   onRetry,
   updating,
+  desk = false,
 }: {
+  /**
+   * The desktop page (stats-home, "Desktop"): the same cards as a bento on a flat canvas, and the chosen area's drill beside them
+   * instead of pushed over them. No phone bar and no push; the page's own head is the caller's.
+   */
+  desk?: boolean;
   data: ChPlayerProfile;
   initialTab?: string;
   /** The address's production `?area=`: opens that area's detail, like a hash. */
@@ -179,11 +185,24 @@ export function StatsPlayerPhoneShs({
     }
   };
 
+  // On a desk the drill stands beside the cards: choosing a card changes the pane, and nothing is pushed or written to the address.
+  const [deskPick, setDeskPick] = useState<StatsPlayerDetailId | null>(null);
+  // With no figures to drill into (a failed read, no rounds yet) the only card left is Development's, so the pane shows that.
+  const deskDetail: StatsPlayerDetailId = failed || noRounds ? 'goals' : (deskPick ?? (detail as StatsPlayerDetailId | null) ?? 'scoring');
   const go = (id: StatsDetailId, landOn?: string) => {
     setAnchor(landOn ?? null);
-    open(id);
+    if (desk) setDeskPick(id as StatsPlayerDetailId);
+    else open(id);
   };
   const [anchor, setAnchor] = useState<string | null>(null);
+  const pane = useRef<HTMLElement>(null);
+  // The pane opens each drill at its top, or on the block the card named (What changed lands on "Against the N before").
+  useEffect(() => {
+    const el = pane.current;
+    if (!desk || !el) return;
+    const target = anchor ? el.querySelector<HTMLElement>(`[data-ch-anchor="${anchor}"]`) : null;
+    el.scrollTop = target ? Math.max(0, target.offsetTop - 12) : 0;
+  }, [desk, deskDetail, anchor]);
   const reduced = useChReducedMotion();
   const stuck = useStuck();
   const root = useRef<HTMLDivElement>(null);
@@ -193,50 +212,16 @@ export function StatsPlayerPhoneShs({
   // Keys that open a detail move focus to Back; a finger doesn't (07 M-STATS-27).
   const keyboard = useRef(false);
 
-  return (
-    <div
-      ref={root}
-      className={'ch-shs' + (big ? ' is-big' : '')}
-      onKeyDownCapture={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') keyboard.current = true;
-      }}
-      onPointerDownCapture={() => {
-        keyboard.current = false;
-      }}
-    >
-      {coach ? (
-        <PhoneTop title="Player stats" heading={false} back={{ label: 'Team', onBack: () => (window.history.length > 1 && document.referrer.startsWith(window.location.origin) ? window.history.back() : onBackToTeam()) }} action={<PhoneIconAction icon={Share} label={`Share ${first}’s stats`} onClick={() => void share()} />} />
-      ) : (
-        <PhoneTop title="My stats" heading={false} start />
-      )}
-
-      {/* While a detail is open the summary is out of reach of the keyboard and VoiceOver. */}
-      <div inert={detail != null} aria-hidden={detail != null || undefined}>
-        {coach && (
-          <header className="ch-spm-head">
-            <Avatar name={data.name} id={data.id} size="lg" />
-            <span className="ch-spm-head__id">
-              <LargeTitle>{data.name}</LargeTitle>
-              <p className="ch-num">{[data.classYear, failed ? null : `${plural(data.season.rounds, 'round')} this season`, data.handicap == null ? null : `${formatHcp(data.handicap)} ${TERMS.handicap.short}`].filter(Boolean).join(' · ')}</p>
-            </span>
-            {messageHref && (
-              <Link href={messageHref} className="ch-spm-head__msg" aria-label={`Message ${first}`} data-ch-press="">
-                <Icon icon={MessageSquare} size={18} />
-              </Link>
-            )}
-          </header>
-        )}
-
-        {!firstRun && <div ref={ctlRef} className={'ch-shs-ctl' + (hasRange(data.filter) ? ' is-custom' : '') + (stuck ? ' is-stuck' : '')}>
+  const controls = !firstRun && <div ref={ctlRef} className={desk ? 'ch-shs-dctl' : 'ch-shs-ctl' + (hasRange(data.filter) ? ' is-custom' : '') + (stuck ? ' is-stuck' : '')}>
           <div className="ch-shs-ctl__row">
             {/* One row for "which rounds": a window of the season, or All time at its end. */}
-            <WindowSwitch value={windowShown ?? rangeOf(data.filter)} span={spanShown ?? data.filter.span ?? 'season'} onScope={(v) => onFilter(withPick(data.filter, v))} custom={hasRange(data.filter)} hook="stats-window-seg" />
-            {showFilter && <StatsFilter filter={data.filter} options={data.filterOptions} count={w.rounds} onChange={onFilter} codes={{ empty: 'CH-5320', pickEmpty: 'CH-5321', pickCap: 'CH-5322', range: 'CH-5102', holes: 'CH-5323' }} phone hook="stats-filter" />}
+            <WindowSwitch value={windowShown ?? rangeOf(data.filter)} span={spanShown ?? data.filter.span ?? 'season'} onScope={(v) => onFilter(withPick(data.filter, v))} custom={hasRange(data.filter)} hook={desk ? undefined : 'stats-window-seg'} />
+            {showFilter && <StatsFilter filter={data.filter} options={data.filterOptions} count={w.rounds} onChange={onFilter} codes={{ empty: 'CH-5320', pickEmpty: 'CH-5321', pickCap: 'CH-5322', range: 'CH-5102', holes: 'CH-5323' }} phone={!desk} hook="stats-filter" />}
           </div>
           {updating}
-        </div>}
-
-        <WindowCrossfade k={filterKey(data.filter)} off={false} reduced={reduced} className="ch-shs-sheet">
+        </div>;
+  const sheet = (
+    <>
           {!filtered && noRounds && !firstRun && <NineHint code="CH-5324" filter={data.filter} options={data.filterOptions} who={coach ? `${first} has` : 'You have'} />}
           {failed && <FailedCard onRetry={onRetry} seen={data} />}
           {emptyFilter && (
@@ -313,6 +298,68 @@ export function StatsPlayerPhoneShs({
               </SectionBoundary>
             </>
           )}
+    </>
+  );
+  const ready = !failed && !noRounds;
+
+  if (desk)
+    return (
+      <div ref={root} className="ch-shs ch-shs--desk" data-ch-shs-open={deskDetail}>
+        {controls}
+        <WindowCrossfade k={filterKey(data.filter)} off={false} reduced={reduced} className={'ch-shs-desk' + (below ? '' : ' is-alone')}>
+          <div className="ch-shs-desk__sum">{sheet}</div>
+          {(ready || below) && (
+            <aside ref={pane} className="ch-shs-screen ch-shs-desk__det" aria-labelledby="ch-shs-desk-det-t" data-ch-shs-detail={hashOf(deskDetail)}>
+              <h2 id="ch-shs-desk-det-t" className="ch-shs-desk__dett">
+                {DETAIL_TITLE[deskDetail]}
+              </h2>
+              <div className="ch-shs-d-sheet ch-shs-d-sheet--body">
+                <DetailBody id={deskDetail} data={data} reads={reads} onRetry={onRetry} coach={coach} onAddFocus={onAddFocus} onPart={(id) => go(id)} />
+              </div>
+            </aside>
+          )}
+        </WindowCrossfade>
+      </div>
+    );
+
+  return (
+    <div
+      ref={root}
+      className={'ch-shs' + (big ? ' is-big' : '')}
+      onKeyDownCapture={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') keyboard.current = true;
+      }}
+      onPointerDownCapture={() => {
+        keyboard.current = false;
+      }}
+    >
+      {coach ? (
+        <PhoneTop title="Player stats" heading={false} back={{ label: 'Team', onBack: () => (window.history.length > 1 && document.referrer.startsWith(window.location.origin) ? window.history.back() : onBackToTeam()) }} action={<PhoneIconAction icon={Share} label={`Share ${first}’s stats`} onClick={() => void share()} />} />
+      ) : (
+        <PhoneTop title="My stats" heading={false} start />
+      )}
+
+      {/* While a detail is open the summary is out of reach of the keyboard and VoiceOver. */}
+      <div inert={detail != null} aria-hidden={detail != null || undefined}>
+        {coach && (
+          <header className="ch-spm-head">
+            <Avatar name={data.name} id={data.id} size="lg" />
+            <span className="ch-spm-head__id">
+              <LargeTitle>{data.name}</LargeTitle>
+              <p className="ch-num">{[data.classYear, failed ? null : `${plural(data.season.rounds, 'round')} this season`, data.handicap == null ? null : `${formatHcp(data.handicap)} ${TERMS.handicap.short}`].filter(Boolean).join(' · ')}</p>
+            </span>
+            {messageHref && (
+              <Link href={messageHref} className="ch-spm-head__msg" aria-label={`Message ${first}`} data-ch-press="">
+                <Icon icon={MessageSquare} size={18} />
+              </Link>
+            )}
+          </header>
+        )}
+
+        {controls}
+
+        <WindowCrossfade k={filterKey(data.filter)} off={false} reduced={reduced} className="ch-shs-sheet">
+          {sheet}
         </WindowCrossfade>
       </div>
 

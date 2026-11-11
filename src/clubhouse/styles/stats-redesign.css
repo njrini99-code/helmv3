@@ -2323,3 +2323,117 @@ p.ch-shs-mini-cap {
 .ch-shs-sum { position: relative; }
 .ch-shs-sum__key { position: absolute; inset: 0; z-index: 0; padding: 0; border: 0; border-radius: inherit; background: none; pointer-events: none; }
 .ch-shs-sum__key:focus-visible { outline: 2px solid var(--ch-border-focus); outline-offset: 2px; }
+
+/*
+ * Desktop My stats (stats-home, "Desktop": the same tokens and card language on a flat canvas; a bento of area tiles, each with
+ * one visual, and a tap opens that area's drill). The phone's own cards, two across, with the chosen card's drill standing beside
+ * them, so a coach reads the summary and its detail in one look. Nothing here restyles a card: only where each one sits.
+ */
+.ch-st--shs {
+  gap: var(--ch-space-5);
+}
+.ch-shs-dhead {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ch-space-4);
+}
+.ch-shs-dhead__row {
+  display: flex;
+  align-items: center;
+  gap: var(--ch-space-4);
+  min-width: 0;
+}
+.ch-shs-dhead__id {
+  flex: 1;
+  min-width: 0;
+}
+.ch-shs-dhead__id h1 {
+  margin: 0;
+}
+.ch-shs-dhead__id p {
+  margin: 4px 0 0;
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-ink-600);
+}
+.ch-shs-dhead__act {
+  display: flex;
+  gap: var(--ch-space-2);
+}
+.ch-shs--desk {
+  background: transparent;
+  min-width: 0;
+}
+/* The desk's own control row: the shared switch at its own size with its whole labels, the filter beside it. Nothing is stuck. */
+.ch-shs-dctl {
+  padding: 0 0 var(--ch-space-4);
+}
+.ch-shs-desk {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 420px);
+  gap: var(--ch-space-6);
+  align-items: start;
+}
+.ch-shs-desk.is-alone {
+  grid-template-columns: minmax(0, 1fr);
+}
+.ch-shs-desk__sum {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--ch-space-4);
+  align-items: start;
+  min-width: 0;
+}
+/* Section names, notes, the feature card and anything that is not a card keep the full width; cards pair up under them. */
+.ch-shs-desk__sum > :not(.ch-shs-card),
+.ch-shs-desk__sum > .ch-shs-feature,
+.ch-shs-desk__sum > .ch-shs-empty {
+  grid-column: 1 / -1;
+}
+.ch-shs-desk__sum > .ch-shs-sech {
+  margin-top: var(--ch-space-2);
+}
+.ch-shs-desk__sum > .ch-shs-sech:first-child {
+  margin-top: 0;
+}
+.ch-shs-desk__det {
+  position: sticky;
+  top: var(--ch-space-4);
+  max-height: calc(100dvh - var(--ch-topbar-h) - var(--ch-space-6));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-shs-s-bg);
+  box-shadow: var(--ch-stats-redesign-shadow-1);
+}
+.ch-shs-desk__dett {
+  margin: 0;
+  padding: var(--ch-space-4) var(--ch-space-4) 0;
+  font: var(--ch-type-22-strong);
+  font-variation-settings: 'wdth' 92;
+  letter-spacing: -0.02em;
+  color: var(--ch-shs-s-ink);
+}
+.ch-shs-desk__det .ch-shs-d-sheet {
+  padding: var(--ch-space-2) var(--ch-space-4) var(--ch-space-5);
+}
+/* The card whose drill is open says so: the house's selected ring, drawn inside the card so the bento's gaps stay even. Scoring is
+   the pane's resting drill and two cards open it (the feature card and What changed), so it draws no ring: the pane's title says it. */
+.ch-shs--desk[data-ch-shs-open='sg'] .ch-shs-sum[data-go='sg'],
+.ch-shs--desk[data-ch-shs-open='tee'] .ch-shs-sum[data-go='tee'],
+.ch-shs--desk[data-ch-shs-open='approach'] .ch-shs-sum[data-go='approach'],
+.ch-shs--desk[data-ch-shs-open='short'] .ch-shs-sum[data-go='short'],
+.ch-shs--desk[data-ch-shs-open='putting'] .ch-shs-sum[data-go='putting'],
+.ch-shs--desk[data-ch-shs-open='rounds'] .ch-shs-sum[data-go='rounds'],
+.ch-shs--desk[data-ch-shs-open='goals'] .ch-shs-sum[data-go='goals'] {
+  box-shadow: var(--ch-stats-redesign-shadow-1), inset 0 0 0 2px var(--ch-shs-s-accent);
+}
+@media (max-width: 1180px) {
+  .ch-shs-desk {
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 380px);
+  }
+  .ch-shs-desk__sum {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
