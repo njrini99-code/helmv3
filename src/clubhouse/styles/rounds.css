@@ -2083,6 +2083,21 @@ a.ch-trd-open:focus-visible {
 .ch-rv-sk-phone {
   display: none;
 }
+/* The review's scorecard card in waiting with its actions under it, 12px apart as on the page (B9). */
+.ch-rv-sk-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ch-rv-sk-act {
+  display: flex;
+  gap: 8px;
+}
+/* The five figures' block on a desk, 6px up as the loaded figures are. */
+.ch-rv-sk-figsd {
+  display: block;
+  margin-top: -6px;
+}
 
 /* The Mobile clubhouse pass (owner, 2026-10-08: "phone too cardy, too vibe coded"; the Coach Home board, round 3:
    "fewer containers, one feature card"). On the phone Rounds opens on the Ledger's intro under the engraved double rule
@@ -2440,22 +2455,21 @@ a.ch-trd-open:focus-visible {
     gap: var(--ch-gap-section-phone);
     padding: var(--ch-page-top-phone-docked) var(--ch-page-x-phone) var(--ch-page-bottom-phone-docked);
   }
-  /* At the loaded geometry (measured at 390): the intro is 73.5px (the eyebrow's 24px line box, the title 10px under it), New
-     round sits at the end of the title's line, the card and season scoring stand 30px apart, a month opens 18px under the tools
-     and its rows are 67.8px. */
+  /* At the loaded geometry (measured in WebKit at 390, 2026-11-11, the page at rest): the intro is 81px (8px, the eyebrow's
+     24px line box, 8px, the title's own 41px line; the title's rule names the skeleton's block three deep, or the shell's
+     margin reset takes its 8px), the card and season scoring stand 32px apart, a month opens 48px under the tools and its
+     rows are 64.8px. */
   .ch-rd-sk-h {
     position: relative;
     display: flex;
     flex-direction: column;
     padding-top: 8px;
   }
-  .ch-rd-sk-title {
+  .ch-rd-sk-phone .ch-rd-sk-h .ch-rd-sk-title {
+    display: flex;
+    align-items: center;
+    min-height: 1lh;
     margin-top: 8px;
-  }
-  .ch-rd-sk-new {
-    position: absolute;
-    right: 0;
-    bottom: 0;
   }
   .ch-rd-sk-hero {
     container: chrdsk / inline-size;
@@ -2463,41 +2477,69 @@ a.ch-trd-open:focus-visible {
     flex-direction: column;
     gap: 32px;
   }
-  /* The round card's place follows the idle card as the phone widens (measured in WebKit from 355 to 445px): its holes
+  /* The round card's place follows the idle card as the phone widens (measured in WebKit from 355 to 440px): its holes
      are squares nine across the card, two rows of them, so it grows by two ninths of the card's width; and its foot
-     takes one line from a 359px card (a 399px phone), two below. */
+     (the last round beside New round) takes one line from a 345px card (a 377px phone), two below. */
   .ch-rd-sk-hero > .ch-skel {
-    height: calc(262.5px + 22.222cqw) !important;
+    height: calc(266.5px + 22.222cqw) !important;
   }
-  @container chrdsk (min-width: 359px) {
+  @container chrdsk (min-width: 345px) {
     .ch-rd-sk-hero > .ch-skel {
-      height: calc(233.6px + 22.222cqw) !important;
+      height: calc(235.6px + 22.222cqw) !important;
     }
   }
-  .ch-rd-sk-sec.ch-rd-sk-season {
-    gap: 0;
+  /* Season scoring, flush on the parchment as the page draws it: its heading, the average 16px under it, the three figures
+     between hairlines (Putts' column the wide one), then the chart's heading (its title, its two-line note, its key) and
+     the chart 8px under that. */
+  .ch-rd-sk-season {
+    display: flex;
+    flex-direction: column;
+  }
+  .ch-rd-sk-season > span:nth-child(2) {
+    margin-top: 16px;
   }
   .ch-rd-sk-season > .ch-rd-sk-figs {
     box-sizing: border-box;
-    height: 129.2px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) minmax(0, 1fr);
+    height: 143.3px;
     margin-top: 16px;
   }
-  .ch-rd-sk-season > .ch-rd-sk-figs + span {
-    margin-top: 16px;
+  .ch-rd-sk-season > .ch-rd-sk-figs > span {
+    gap: 6px;
+    padding: 0 8px;
   }
-  /* The chart scales with the page's width (its viewBox is 380 wide on the phone and about 216 tall for a usual season), so
+  .ch-rd-sk-season > .ch-rd-sk-figs > span:first-child {
+    padding-left: 0;
+  }
+  .ch-rd-sk-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 4px;
+  }
+  /* The chart scales with the page's width (its viewBox is 380 wide on the phone and about 218 tall for a usual season), so
      its place does too. */
   .ch-rd-sk-season > .ch-skel {
     height: auto !important;
     margin-top: 8px;
-    aspect-ratio: 380 / 216;
+    aspect-ratio: 380 / 218;
+  }
+  /* The tools: Search takes the room the grouping control leaves, as on the page. */
+  .ch-rd-sk-phone > .ch-rd-tools {
+    flex-wrap: nowrap;
+  }
+  .ch-rd-sk-phone > .ch-rd-tools > .ch-skel:first-child {
+    flex: 1;
+    min-width: 0;
   }
   .ch-rd-sk-sec.ch-rd-sk-grp {
     gap: 0;
     margin-top: 16px;
   }
-  .ch-rd-sk-sec,
-.ch-rv-sk-sec {
+  .ch-rd-sk-grp > span:first-child {
+    margin-bottom: 2px;
+  }
+  .ch-rd-sk-sec {
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -2531,43 +2573,30 @@ a.ch-trd-open:focus-visible {
   .ch-rv-sk-figs > span:nth-child(3n + 1) {
     box-shadow: none;
   }
-  /* The review at its loaded geometry (measured at 390): the hero 178px, the figures 156px in two rows, each section's head
-     (the double rule, the heading and its figure) 6px over its body, strokes gained's four bars in 125px. */
+  /* The review at its loaded geometry (measured in WebKit at 390, 2026-11-11): the hero 207.4px, the scorecard card 580.2px
+     with Share card 12px under it, then the figures 166.1px in two rows, each figure its label, value and note 6px apart. */
   .ch-rv-sk-phone > .ch-rv-sk-figs {
     box-sizing: border-box;
-    height: 156px;
-    align-content: center;
+    height: 166.1px;
+    align-content: start;
   }
-  .ch-rv-sk-sec {
+  .ch-rv-sk-phone > .ch-rv-sk-figs > span {
     gap: 6px;
   }
-  .ch-rv-sk-head {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    height: 50.8px;
+  /* The card's tee line takes one line from a 372px card (a 414px phone), two below: the card is 18px shorter there. */
+  .ch-rv-sk-phone > .ch-rv-sk-card {
+    container: chrvsk / inline-size;
   }
-  .ch-rv-sk-head.is-sg {
-    height: 54.2px;
-  }
-  .ch-rv-sk-head > span {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding-top: 4px;
-  }
-  .ch-rv-sk-leg {
-    display: grid;
-    grid-template-columns: 84px minmax(0, 1fr) 30px;
-    gap: 8px;
-    align-items: center;
-    height: 26.8px;
+  @container chrvsk (min-width: 372px) {
+    .ch-rv-sk-phone > .ch-rv-sk-card > .ch-skel:first-child {
+      height: 562.2px !important;
+    }
   }
   .ch-rd-sk-row {
     display: flex;
     align-items: center;
-    gap: 16px;
-    min-height: 67.8px;
+    gap: 24px;
+    height: 64.8px;
   }
   .ch-rd-sk-row > span {
     display: flex;
@@ -3301,39 +3330,58 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
     }
   }
 
-  /* Loading (CH-11401): the head holds the loaded head's height (the shell's 34px and 30px padding, the eyebrow's
-     line, 8px, the title's line; 133.8px in WebKit at 1440 and 1100), and its bars sit on the eyebrow and the title, so
-     nothing moves on load. */
-  .ch-rd[data-ch-code='CH-11401'][data-canopy] .ch-rd-h {
-    box-sizing: border-box;
-    min-height: calc(34px + 11px * 1.3 + 8px + 44px * 1.08 + 30px);
+  /* Loading (CH-11401): the head is the loaded tight head, line for line (RoundsSkeleton: the eyebrow's 18px line, 8px,
+     the title's 47.5px line, between the shell's 12px and 32px; 117.5px in WebKit at 1440, 2026-11-11), so nothing moves
+     on load. Its placeholders keep the panes' own gutters (32px each side of the column rule, none once the panes stack)
+     and the rows' height, on the head's edges. */
+  .ch-rd-sk-unf {
+    container: chrdsku / inline-size;
+    min-width: 0;
+    padding-right: 32px;
   }
-  .ch-rd[data-ch-code='CH-11401'][data-canopy] .ch-rd-h > div:first-child > .ch-skel:first-child {
-    margin-bottom: 10.8px;
-  }
-  /* Its placeholders keep the panes' gutter and the head's edges, and stand apart in the book. */
-  .ch-rd[data-ch-code='CH-11401'][data-canopy] .ch-rd-hero {
-    gap: 40px 64px;
+  /* What the round pane holds, at the idle pane's height: its ghost holes are squares nine across the pane, two rows of
+     them, so it grows by two ninths of the pane's width (318.4px at 1280, 331.8px at 1440). */
+  .ch-rd-sk-unf > .ch-skel {
+    height: calc(245.6px + 22.222cqw) !important;
   }
   .ch-rd[data-ch-code='CH-11401'][data-canopy] .ch-rd-book {
-    gap: 8px;
-    margin: 0;
+    margin: 6px 0 0;
   }
   /* The season pane in waiting: its head's block, then the vs-par stage at the chart's own proportion (640 by about
-     220, under the stage's 18px padding, its 43px key and 8px), so the pane, and the tools under the hero, land where
-     the loaded chart puts them at any width (WebKit 1280, 2026-10-18). */
+     218, under the stage's 16px padding, its 44px key and 8px), so the pane, and the tools under the hero, land where
+     the loaded chart puts them at any width. */
   .ch-rd-sk-pane {
+    container: chrdskp / inline-size;
     display: flex;
     flex-direction: column;
     min-width: 0;
+    padding-left: 32px;
   }
   .ch-rd-sk-stage {
     margin-top: 32px;
-    padding: 69px 24px 8px;
+    padding: 68px 24px 8px;
   }
   .ch-rd-sk-stage > span {
     display: block;
-    aspect-ratio: 640 / 220;
+    aspect-ratio: 640 / 218;
+  }
+  /* The chart's note takes a second line in a pane under 632px (a 1392px window and narrower): the stage's head is 18px taller. */
+  @container chrdskp (max-width: 632px) {
+    .ch-rd-sk-stage {
+      padding-top: 86px;
+    }
+  }
+  /* Stacked, the round pane's note is one line and its holes stop growing at 44px. */
+  @container chrd (max-width: 860px) {
+    .ch-rd-sk-unf {
+      padding-right: 0;
+    }
+    .ch-rd-sk-unf > .ch-skel {
+      height: 329.8px !important;
+    }
+    .ch-rd-sk-pane {
+      padding-left: 0;
+    }
   }
 }
 
