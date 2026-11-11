@@ -58,6 +58,7 @@ The feature currently spans two generations:
 - `src/lib/coachhelm/v2/**`
 - `src/lib/coachhelm/v3/**`
 - `src/lib/coachhelm/v3/chat/engine/**`: the chat turn engine on `@anthropic-ai/sdk` (see "CoachHelm chat: the engine").
+- `src/lib/coachhelm/v3/analyst/**`: the analyst, the first slice of the insight engine's replacement. A typed fact sheet per player (35 measures over last 10 / previous 10 / season, measured and estimated strokes gained kept apart, team blocks coach-only), `findNotable` (one season priority per player traced to a band and a counted pattern, at most three tested signals), and a read-only dry run (`scripts/coachhelm/analyst-dry-run.ts`, refuses production). Pure; not wired to any surface, cron or table yet. Contract: `src/lib/coachhelm/v3/analyst/README.md`.
 - `src/app/api/coachhelm/v3/chat/stream/route.ts`: the chat endpoint; it binds the Clubhouse screens' loaders for the tools.
 
 ## Core Data
