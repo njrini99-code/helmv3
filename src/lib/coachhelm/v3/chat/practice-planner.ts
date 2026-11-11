@@ -247,6 +247,8 @@ export function practiceIdempotencyKey(ctx: CoachChatContext, plan: RecurringPra
 export async function executeRecurringPractice(
   ctx: CoachChatContext,
   plan: RecurringPracticePlan,
+  /** The card's own request id: it becomes the series' row id, so a second run of the same card lands on the first one's series. */
+  requestId?: string,
 ): Promise<ActionReceipt> {
   const at = new Date().toISOString();
   const { createRecurringEvent } = await import('@/app/golf/actions/recurring-events');
@@ -278,6 +280,7 @@ export async function executeRecurringPractice(
     teamId: ctx.team_id,
     timezoneOffset,
     attendeeIds: plan.invited_player_ids,
+    ...(requestId ? { requestId } : {}),
   });
 
   if (!result.success) {

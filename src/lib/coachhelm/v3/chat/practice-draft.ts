@@ -4,9 +4,11 @@ import { autoGrid, stationsLen, type PlanBodyV2, type PlanBlock, type PlanWhy } 
 import { checkGrounding } from './grounding';
 import type { ToolEnvelope } from './provenance';
 import { ActionPlanError } from './action-planners';
+import { publishKey, seenPublish, type SeenPublish } from './card-truth';
 import { requireRosterPlayer, type CoachChatContext } from './context';
 import type { FlowDef } from './create-tools';
 import { publishPracticePlan } from '@/app/golf/actions/practice-publish';
+import { practiceTables } from '@/lib/golf/practice-db';
 import { sendMessage } from '@/app/actions/messages';
 import { pluralize } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/server';
@@ -192,32 +194,123 @@ async function postPlanToTeamChat(ctx: CoachChatContext, content: string): Promi
   return sent.success;
 }
 
-const publishInput = z.object({ plan_id: z.string().uuid().describe('From the coach\'s Publish message. Without one, ask the coach to press Publish on the plan.'), version: z.number().int().min(1).describe('From the coach\'s Publish message.'), title: z.string().min(1).max(80), people: z.number().int().min(1).describe('Players and coaches on the plan.'), when: z.string().min(1).max(60), where: z.string().max(80).default(''), first_player_line: z.string().max(140).describe('The notification a player gets.'), player_ids: z.array(z.string().uuid()).max(60).default([]).describe('The plan\'s players, the first player first.'), team_chat: z.boolean().default(true).describe('Also post in Team chat, unless the coach said not to.') });
+/** The model names the plan and says whether Team chat gets a post. Who hears, when, where and what each one gets are read from the plan. */
+const publishInput = z.object({
+  plan_id: z.string().uuid().describe('From the coach\'s Publish message. Without one, ask the coach to press Publish on the plan.'),
+  version: z.number().int().min(1).describe('From the coach\'s Publish message.'),
+  team_chat: z.boolean().default(true).describe('Also post in Team chat, unless the coach said not to.'),
+});
+const SeenPublishShape = z.object({
+  plan_id: z.string(),
+  version: z.number(),
+  title: z.string(),
+  first_publish: z.boolean(),
+  when: z.string().nullable(),
+  where: z.string(),
+  people: z.array(z.object({ id: z.string(), name: z.string(), role: z.enum(['player', 'coach']), body: z.string() })),
+  not_reached: z.array(z.object({ id: z.string(), name: z.string(), role: z.enum(['player', 'coach']), reason: z.string() })),
+  notice_title: z.string(),
+  chat_post: z.string().nullable(),
+});
+type PublishStored = z.infer<typeof publishInput> & { seen?: SeenPublish };
+const planHref = (planId: string) => `/golf/dashboard/practice/plan/${planId}`;
+const PLAN_MOVED = 'The plan, its practice or the people on it changed after this card was made, so what would go out is no longer what you approved. Nothing was published and nobody was told. Ask to publish it again.';
 
 /** Publish goes on the Ask hold: nothing is written or told until Undo closes. */
-export const publishFlow: FlowDef<z.infer<typeof publishInput>> = {
+export const publishFlow: FlowDef<PublishStored> = {
   name: 'publish_practice_plan',
-  description: 'Publish a saved practice plan. Files it in Documents and tells the plan\'s people.',
+  description: 'Publish a saved practice plan. Files it in Documents and tells the plan\'s people. The card lists who is told and what each one gets.',
   input: publishInput,
-  plan: (ctx, i) => {
-    if (i.people < 1) throw new ActionPlanError('A plan needs people to publish to.');
-    const players = i.player_ids.map((id) => requireRosterPlayer(ctx, id));
-    const coaches = Math.max(0, i.people - players.length);
-    const who = players.length ? `${pluralize(players.length, 'player')}${coaches ? ` and ${pluralize(coaches, 'coach', 'coaches')}` : ''}` : `${i.people} people`;
-    const tellsLine = `${who}, push and bell`;
-    const first = players[0];
+  stored: publishInput.extend({ seen: SeenPublishShape.optional() }),
+  prepare: async (sb, ctx, i) => {
+    const seen = await seenPublish(sb, ctx, i.plan_id, { teamChat: i.team_chat, baseUrl: getAppBaseUrl() });
+    // The coach pressed Publish on one version of the plan. If it has been saved again since, that is not the plan they meant.
+    if (seen.version !== i.version) throw new ActionPlanError('The plan was saved again after Publish was pressed, so this is not the version the coach was looking at. Ask the coach to press Publish on the plan again.');
+    return { ...i, seen };
+  },
+  stale: async (sb, ctx, i) => {
+    const seen = i.seen;
+    if (!seen) return 'This card could not be read back, so nothing was published.';
+    const now = await seenPublish(sb, ctx, i.plan_id, { teamChat: i.team_chat, baseUrl: getAppBaseUrl() });
+    return publishKey(now) === publishKey(seen) ? null : PLAN_MOVED;
+  },
+  // The publish this card made: the plan's published version is the one after the version on the card.
+  written: async (sb, ctx, i) => {
+    const { data, error } = await practiceTables(sb).from('golf_practice_plans').select('team_id, version, status').eq('id', i.plan_id).maybeSingle();
+    const row = data as { team_id: string; version: number; status: string } | null;
+    if (error || !row || row.team_id !== ctx.team_id) return null;
+    return row.status === 'published' && Number(row.version) === i.version + 1;
+  },
+  done: (_ctx, i) => ({ summary: `${i.seen?.title ?? 'The plan'} is published.`, kind: 'practice_plan', label: i.seen?.title, href: planHref(i.plan_id), id: i.plan_id }),
+  plan: (_ctx, i) => {
+    const seen = i.seen;
+    if (!seen) throw new ActionPlanError('That could not be prepared.');
+    const players = seen.people.filter((p) => p.role === 'player');
+    const coaches = seen.people.filter((p) => p.role === 'coach');
+    const who = seen.people.length ? [players.length ? pluralize(players.length, 'player') : '', coaches.length ? pluralize(coaches.length, 'coach', 'coaches') : ''].filter(Boolean).join(' and ') : 'nobody';
+    const tellsLine = seen.people.length ? `${who}, push and bell` : seen.first_publish ? 'Nobody: nobody on this plan has an account yet' : 'Nobody: only the wording changed, so no one is told again';
+    const first = seen.people[0];
+    const everyone = seen.people.map((p) => `${p.name}${p.role === 'coach' ? ' (coach)' : ''}`);
     return {
-      action: `Publish to ${i.people} people`,
-      summary: i.title,
-      publish: { heading: `Publish ${i.title}?`, coins: players.slice(0, 6).map((p) => ({ name: p.name })), coinsMore: Math.max(0, players.length - 6), tellsLine, folder: 'Practice plans', teamChat: i.team_chat, ...(first ? { sample: { player: first.name.split(' ')[0] ?? first.name, title: i.title, body: i.first_player_line } } : {}) },
-      facts: [{ label: 'When', value: i.when }, { label: 'Where', value: i.where || 'Not set' }, { label: 'Tells', value: tellsLine }, { label: 'What they get', value: i.first_player_line }],
-      notifications: [`It files in Documents and ${i.people} people hear once Undo closes, 8 seconds later.${i.team_chat ? ' The plan posts in Team chat, with no second push.' : ''}`],
+      action: seen.people.length ? `Publish to ${pluralize(seen.people.length, 'person', 'people')}` : 'Publish the plan',
+      summary: seen.title,
+      publish: {
+        heading: `Publish ${seen.title}?`,
+        coins: players.slice(0, 6).map((p) => ({ name: p.name })),
+        coinsMore: Math.max(0, players.length - 6),
+        tellsLine,
+        folder: 'Practice plans',
+        teamChat: i.team_chat,
+        ...(first ? { sample: { player: first.name.split(' ')[0] ?? first.name, title: seen.notice_title, body: first.body } } : {}),
+        people: seen.people.map((p) => ({ id: p.id, name: p.name, role: p.role })),
+        chatPost: seen.chat_post,
+      },
+      facts: [
+        { label: 'When', value: seen.when ?? 'Not set: the plan has no practice on the calendar' },
+        { label: 'Where', value: seen.where || 'Not set' },
+        { label: 'Tells', value: tellsLine },
+        ...(seen.people.length ? [{ label: `To (${seen.people.length})`, value: everyone.join(', ') }] : []),
+        ...(seen.not_reached.length ? [{ label: 'Will not get it', value: `${seen.not_reached.map((p) => p.name).join(', ')} (${seen.not_reached[0]!.reason})` }] : []),
+        ...(first ? [{ label: 'What they get', value: `${seen.notice_title}\n${first.body}` }] : []),
+        { label: 'Filed in', value: 'Documents, Practice plans' },
+        { label: 'Team chat', value: seen.chat_post ?? 'Not posted in Team chat' },
+      ],
+      notifications: [
+        seen.people.length ? `It files in Documents and ${pluralize(seen.people.length, 'person', 'people')} ${seen.people.length === 1 ? 'hears' : 'hear'} once Undo closes, 8 seconds later: “${seen.notice_title}”${seen.first_publish ? ', with each one’s own start' : ''}.` : 'It files in Documents once Undo closes. Nobody is told.',
+        ...(seen.chat_post ? ['The plan posts in Team chat, with no second push.'] : []),
+      ],
+      affects: players.map((p) => ({ kind: 'player' as const, id: p.id, label: p.name })),
+      recipients: seen.people.map((p) => ({ id: p.id, name: p.name, role: p.role })),
+      not_reached: seen.not_reached,
+      delivery: first ? { channels: ['push', 'in_app'], title: seen.notice_title, body: first.body, ...(seen.first_publish ? { each: seen.people.map((p) => ({ id: p.id, name: p.name, body: p.body })) } : {}), note: seen.first_publish ? 'Each player sees their own start; a coach sees the plan’s line.' : 'Everyone gets the same line.' } : null,
+      visible_to: 'team',
+      visible_note: 'Players on the plan see their own copy on Practice; the plan is filed in Documents, Practice plans.',
       key: ['publish_plan', i.plan_id, String(i.version), i.team_chat ? 'chat' : 'no-chat'],
     };
   },
   run: async (ctx, i) => {
+    const seen = i.seen;
+    const title = seen?.title ?? 'The plan';
     const res = await publishPracticePlan({ planId: i.plan_id, expectedVersion: i.version, notify: 'now' });
-    const chat = res.success && i.team_chat ? await postPlanToTeamChat(ctx, `${i.title} is published. ${i.when}. ${getAppBaseUrl()}/golf/dashboard/practice/plan/${i.plan_id}`) : null;
-    return res.success ? { ok: true, summary: `Published. ${res.recipients} people told.${chat === false ? ' The Team chat post didn’t send.' : ''}`, kind: 'practice_plan', label: i.title, href: `/golf/dashboard/practice/plan/${i.plan_id}`, notifications: [{ channel: 'push and bell', recipients: res.recipients, status: 'sent' as const }] } : { ok: false, error: res.error, summary: res.error, kind: 'practice_plan' };
+    if (!res.success) return { ok: false, error: res.error, summary: res.error, kind: 'practice_plan' };
+    // The Team chat post is the stored one, word for word.
+    const chat = seen?.chat_post ? await postPlanToTeamChat(ctx, seen.chat_post) : null;
+    const expected = seen?.people.length ?? 0;
+    const partial = [
+      ...(chat === false ? ['The Team chat post didn’t send.'] : []),
+      // The database decides who is told when it publishes. If its count is not the card's, the receipt says so instead of repeating the card.
+      ...(seen && res.recipients !== expected ? [`${pluralize(res.recipients, 'person', 'people')} were told, not the ${expected} on the card. Open the plan to see who.`] : []),
+    ];
+    return {
+      ok: true,
+      summary: `Published. ${pluralize(res.recipients, 'person', 'people')} told.${chat === false ? ' The Team chat post didn’t send.' : ''}`,
+      kind: 'practice_plan',
+      label: title,
+      href: planHref(i.plan_id),
+      id: i.plan_id,
+      notifications: res.recipients ? [{ channel: 'push and bell', recipients: res.recipients, status: 'queued' as const, ...(seen && res.recipients === expected ? { to: seen.people.map((p) => p.name) } : {}) }] : [],
+      ...(seen?.not_reached.length ? { missed: seen.not_reached.map((p) => ({ name: p.name, reason: p.reason })) } : {}),
+      ...(partial.length ? { partial } : {}),
+    };
   },
 };

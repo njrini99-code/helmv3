@@ -24,9 +24,10 @@ import { logServerError } from '@/lib/server-error-logger';
 import { isPlayerContext, type ChatTool, type TaskTool, type ToolContext } from './engine/tool';
 import { askTables } from './ask-db';
 import { executeAnnouncement, executeFocusArea, executeTask, keyOf, planAnnouncement, planFocusArea, planTask, type AnnouncementPlan, type FocusAreaPlan, type TaskPlan } from './action-planners';
-import type { ActionLanding, ActionProposal, ActionReceipt, RecurringPracticePlan } from './action-types';
+import type { ActionLanding, ActionProposal, ActionReceipt, CardDelivery, CardVisibility, ProposalFact, RecurringPracticePlan } from './action-types';
+import { announcementDelivery, coachNameOf, focusDelivery, nameList, peopleChanged, plural, reachOf, seenPlayers, seriesInviteDelivery, taskDelivery, undoFor, type SeenPlayer } from './card-truth';
 import { CoachContextError, type CoachChatContext } from './context';
-import { CREATE_FLOWS, LINEUP_FLOWS, createdOf, drillFlow, flowRequestId, rowSince, type FlowDef, type FlowDone } from './create-tools';
+import { CREATE_FLOWS, LINEUP_FLOWS, createdOf, drillFlow, flowRequestId, rowSince, type FlowCard, type FlowDef, type FlowDone, type FlowResult } from './create-tools';
 import { landingRows } from './landing-rows';
 import { publishFlow } from './practice-draft';
 import { executeRecurringPractice, planRecurringPractice } from './practice-planner';
@@ -44,7 +45,34 @@ function coachOnly(ctx: ToolContext): CoachChatContext {
   return ctx.who;
 }
 
-const completed = (action: string, d: FlowDone, notifications: ActionReceipt['notifications'] = []): ActionReceipt => ({ status: 'completed', action, summary: d.summary, created: createdOf(d), notifications, partial_failures: [], retryable: false, at: now() });
+/** A write that landed, as the receipt says it: the row and its address, what went out and to whom, and who it missed. `partial` lines make it a partial receipt. */
+const completed = (action: string, d: FlowDone & Pick<FlowResult, 'missed' | 'partial'>, notifications: ActionReceipt['notifications'] = []): ActionReceipt => ({
+  status: d.partial?.length ? 'partial' : 'completed',
+  action,
+  summary: d.summary,
+  created: createdOf(d),
+  notifications,
+  ...(d.href ? { href: d.href } : {}),
+  ...(d.missed?.length ? { missed: d.missed } : {}),
+  partial_failures: d.partial ?? [],
+  retryable: false,
+  at: now(),
+});
+
+/** The card is no longer true: nothing was written, and the same card must not be offered again. The coach asks for a fresh one. */
+export const staleReceipt = (action: string, said: string): ActionReceipt => ({ status: 'failed', action, summary: said, created: [], notifications: [], partial_failures: [], error: 'card_out_of_date', retryable: false, at: now() });
+const UNCHECKED = 'This card could not be checked against the app just now, so it was not run. Nothing was saved. Try again in a moment.';
+
+/** The fields of a card that the server resolved, carried onto the proposal. Every task says whether it can be undone. */
+const truthOf = (tool: string, d: Pick<FlowCard, 'recipients' | 'not_reached' | 'delivery' | 'visible_to' | 'visible_note' | 'undo' | 'impact'>) => ({
+  ...(d.recipients ? { recipients: d.recipients } : {}),
+  ...(d.not_reached?.length ? { not_reached: d.not_reached } : {}),
+  ...(d.delivery !== undefined ? { delivery: d.delivery } : {}),
+  ...(d.visible_to ? { visible_to: d.visible_to } : {}),
+  ...(d.visible_note ? { visible_note: d.visible_note } : {}),
+  ...(d.impact ? { impact: d.impact } : {}),
+  undo: d.undo ?? undoFor(tool),
+});
 
 /** The receipt of a write that did not go through, saying only what was checked. */
 export function failedReceipt(action: string, looked: Looked, error: string | undefined, where: string): ActionReceipt {
@@ -134,9 +162,21 @@ async function attempt(action: string, run: () => Promise<ActionReceipt>): Promi
  * The write, guarded both ways: look first (an earlier attempt of this card), write, and on failure look again.
  * `look` returns the receipt of the row it found, `not_there`, or `unknown`.
  */
-export async function commitOnce(action: string, look: () => Promise<ActionReceipt | Exclude<Looked, 'there'>>, write: () => Promise<ActionReceipt>): Promise<ActionReceipt> {
+export async function commitOnce(action: string, look: () => Promise<ActionReceipt | Exclude<Looked, 'there'>>, write: () => Promise<ActionReceipt>, stale?: () => Promise<string | null>): Promise<ActionReceipt> {
   const before = await look().catch(() => 'unknown' as const);
   if (typeof before === 'object') return before;
+  // Not written yet. Is the card still true? If the world moved under it, nothing is written and the coach gets a fresh card.
+  // (After the look, so a second run of a card that already landed is reported done, not stale.)
+  if (stale) {
+    let said: string | null;
+    try {
+      said = await stale();
+    } catch {
+      // The check could not be made, so nothing is written. Whether an earlier run of this card wrote anything is only known if the look worked.
+      return before === 'not_there' ? { ...staleReceipt(action, UNCHECKED), error: 'card_not_checked', retryable: true } : failedReceipt(action, 'unknown', 'This card could not be checked against the app just now, so it was not run.', WHERE[action] ?? 'the app');
+    }
+    if (said) return staleReceipt(action, said);
+  }
   const receipt = await attempt(action, write);
   if (receipt.status !== 'failed') return receipt;
   const after = await look().catch(() => 'unknown' as const);
@@ -162,11 +202,12 @@ function flowTask<I>(f: FlowDef<I>): TaskTool<I, TaskProposal> {
       const d = f.plan(who, prepared);
       // The rows this lands between, for the card. A failed look draws the new row alone; it is never a reason to refuse the card.
       const neighbours = await landingRows(ctx.sb, who, f.name, input).catch(() => null);
-      return { ...(d.visual ? { visual: d.visual } : {}), ...(d.publish ? { publish: d.publish } : {}), ...(neighbours?.length ? { neighbours } : {}), ...withLanding(f.name, prepared), action: d.action, summary: d.summary, facts: d.facts, affects: d.affects ?? [], notifications: d.notifications, missing: d.facts.filter((x) => x.missing).map((x) => x.label), idempotency_key: keyOf(d.key), tool: f.name, input: prepared, planned_at: now() };
+      return { ...(d.visual ? { visual: d.visual } : {}), ...(d.publish ? { publish: d.publish } : {}), ...(neighbours?.length ? { neighbours } : {}), ...withLanding(f.name, prepared), ...truthOf(f.name, d), action: d.action, summary: d.summary, facts: d.facts, affects: d.affects ?? [], notifications: d.notifications, missing: d.facts.filter((x) => x.missing).map((x) => x.label), idempotency_key: keyOf(d.key), tool: f.name, input: prepared, planned_at: now() };
     },
     commit: async (ctx, proposal) => {
       const who = coachOnly(ctx);
-      const parsed = f.input.safeParse(proposal.input);
+      // The stored input carries what the server read for the card (`seen`); `stored` keeps it, where `input` would drop it.
+      const parsed = (f.stored ?? f.input).safeParse(proposal.input);
       if (!parsed.success) return failedReceipt(f.name, 'not_there', 'This card could not be read back, so it was not run.', WHERE[f.name] ?? 'the app');
       const input = parsed.data;
       const requestId = flowRequestId(who.coach_id, who.team_id, proposal.idempotency_key);
@@ -192,6 +233,7 @@ function flowTask<I>(f: FlowDef<I>): TaskTool<I, TaskProposal> {
           const r = await f.run(who, input, { sb: ctx.sb, requestId });
           return r.ok ? completed(f.name, row(r), r.notifications) : { status: 'failed', action: f.name, summary: r.error ?? 'That didn’t go through.', created: [], notifications: [], partial_failures: [], ...(r.error ? { error: r.error } : {}), retryable: false, at: now() };
         },
+        f.stale ? () => f.stale!(ctx.sb, who, input) : undefined,
       );
     },
   };
@@ -223,16 +265,42 @@ const PROGRESS: Record<string, string> = {
 const PlayerId = z.string().uuid();
 const Day = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
-function plannedTask<I, TPlan>(def: {
+/** What the server reads for a planned task's card after its planner ran: who it reaches and what they get. */
+interface PlannedTruth {
+  /** The players the card names (roster ids). */
+  ids: readonly string[];
+  /** False: nothing is sent to anyone, whoever is named. */
+  sends: boolean;
+  /** How it arrives, for the receipt. */
+  channels: string[];
+  delivery: () => CardDelivery | Promise<CardDelivery>;
+  /** The card's "what is sent" lines, given the words and how many are reached. */
+  told: (delivery: CardDelivery, reached: number) => string[];
+  /** The same lines when nothing is sent. */
+  nobody: string[];
+  visible_to: CardVisibility;
+  visible_note: string;
+  /** Values the write carries that the planner's facts do not show. */
+  facts?: ProposalFact[];
+  visual?: ActionProposal['visual'];
+}
+type WithPeople = { seen_people?: SeenPlayer[] };
+
+function plannedTask<I, TPlan extends WithPeople>(def: {
   name: string;
   description: string;
   input: z.ZodType<I>;
   progress: string;
   plan: (who: CoachChatContext, input: I) => { plan: TPlan; proposal: ActionProposal };
-  run: (who: CoachChatContext, plan: TPlan) => Promise<ActionReceipt>;
-  /** The row this card writes, among rows made since it was planned. */
-  written: (ctx: ToolContext, who: CoachChatContext, plan: TPlan, since: string) => Promise<boolean | null>;
+  truth: (ctx: ToolContext, who: CoachChatContext, plan: TPlan) => PlannedTruth;
+  /** How the notice arrives, from the stored plan, for the receipt. Empty: nothing was sent. */
+  channels: (plan: TPlan) => string[];
+  run: (who: CoachChatContext, plan: TPlan, requestId: string) => Promise<ActionReceipt>;
+  /** The row this card writes: by its request id where the action keeps one, else among rows made since it was planned. */
+  written: (ctx: ToolContext, who: CoachChatContext, plan: TPlan, at: { since: string; requestId: string }) => Promise<boolean | null>;
   done: (plan: TPlan) => FlowDone;
+  /** A further check at commit that the card is still true, beyond the people on it. */
+  stale?: (ctx: ToolContext, who: CoachChatContext, plan: TPlan) => Promise<string | null>;
 }): TaskTool<I, TaskProposal> {
   return {
     kind: 'task',
@@ -243,19 +311,51 @@ function plannedTask<I, TPlan>(def: {
     plan: async (ctx, input) => {
       const who = coachOnly(ctx);
       const built = def.plan(who, input);
+      // Who is reached is read here, not taken from the planner's count: a player with no account is named as not reached.
+      const truth = def.truth(ctx, who, built.plan);
+      const people = await seenPlayers(ctx.sb, who, truth.ids);
+      const { recipients, not_reached } = reachOf(people, truth.sends);
+      const delivery = recipients.length ? await truth.delivery() : null;
+      const plan: TPlan = { ...built.plan, seen_people: people };
       const neighbours = await landingRows(ctx.sb, who, def.name, input).catch(() => null);
-      return { ...built.proposal, ...(neighbours?.length ? { neighbours } : {}), ...withLanding(def.name, { ...(input as object), ...(built.plan as object) }), tool: def.name, input: built.plan, planned_at: now() };
+      return {
+        ...built.proposal,
+        ...(truth.visual ? { visual: truth.visual } : {}),
+        facts: [...built.proposal.facts, ...(truth.facts ?? []), ...(not_reached.length ? [{ label: 'Will not get it', value: `${nameList(not_reached.map((p) => p.name))} (${not_reached[0]!.reason})` }] : [])],
+        notifications: delivery ? truth.told(delivery, recipients.length) : truth.nobody,
+        ...(neighbours?.length ? { neighbours } : {}),
+        ...withLanding(def.name, { ...(input as object), ...(plan as object) }),
+        ...truthOf(def.name, { recipients, not_reached, delivery, visible_to: truth.visible_to, visible_note: truth.visible_note }),
+        tool: def.name,
+        input: plan,
+        planned_at: now(),
+      };
     },
     commit: async (ctx, proposal) => {
       const who = coachOnly(ctx);
       const plan = proposal.input as TPlan;
+      const requestId = flowRequestId(who.coach_id, who.team_id, proposal.idempotency_key);
+      const seen = plan.seen_people ?? [];
+      const channels = def.channels(plan);
+      const { recipients, not_reached } = reachOf(seen, channels.length > 0);
+      // What went out, by name. Queued: the app's actions hand notices off after they answer, so "sent" would be a claim nobody checked.
+      const told = (receipt: ActionReceipt): ActionReceipt =>
+        receipt.status !== 'completed' || !plan.seen_people
+          ? receipt
+          : {
+              ...receipt,
+              notifications: recipients.length ? channels.map((channel) => ({ channel, recipients: recipients.length, status: 'queued' as const, to: recipients.map((p) => p.name) })) : [],
+              ...(not_reached.length ? { missed: not_reached.map((p) => ({ name: p.name, reason: p.reason })) } : {}),
+              ...(receipt.created[0]?.href ? { href: receipt.created[0].href } : {}),
+            };
       return commitOnce(
         def.name,
         async () => {
-          const found = await def.written(ctx, who, plan, sinceOf(proposal));
-          return found === null ? 'unknown' : found ? completed(def.name, def.done(plan)) : 'not_there';
+          const found = await def.written(ctx, who, plan, { since: sinceOf(proposal), requestId });
+          return found === null ? 'unknown' : found ? told(completed(def.name, def.done(plan))) : 'not_there';
         },
-        () => def.run(who, plan),
+        async () => told(await def.run(who, plan, requestId)),
+        async () => (await peopleChanged(ctx.sb, who, seen, 'Nothing was saved.')) ?? (def.stale ? def.stale(ctx, who, plan) : null),
       );
     },
   };
@@ -278,8 +378,21 @@ const createFocusArea = plannedTask<Parameters<typeof planFocusArea>[1], FocusAr
   }),
   progress: 'Drafting a focus area',
   plan: planFocusArea,
+  truth: (ctx, who, plan) => ({
+    ids: [plan.player_id],
+    sends: true,
+    channels: ['in_app', 'email'],
+    delivery: async () => focusDelivery(await coachNameOf(ctx.sb, who), plan.title),
+    told: (d) => [`${plan.player_name} is told once Undo closes and asked to accept it: “${d.title}”, “${d.body}”.`],
+    nobody: [`Nobody is told: ${plan.player_name} has no account yet, so nobody can accept it.`],
+    visible_to: 'recipients',
+    visible_note: `${plan.player_name} and this team’s coaches see it.`,
+    // Saved with the focus area, so shown with it.
+    facts: plan.description ? [{ label: 'Details', value: plan.description }] : [],
+  }),
+  channels: () => ['in_app', 'email'],
   run: (_who, plan) => executeFocusArea(plan),
-  written: (ctx, _who, plan, since) => rowSince(ctx.sb, 'golf_player_focus_areas', { player_id: plan.player_id, title: plan.title.trim() }, since),
+  written: (ctx, _who, plan, { since }) => rowSince(ctx.sb, 'golf_player_focus_areas', { player_id: plan.player_id, title: plan.title.trim() }, since),
   done: (plan) => ({ summary: `The focus area for ${plan.player_name} is created.`, kind: 'focus_area', label: plan.title, href: `${DASH}/roster?player=${plan.player_id}` }),
 });
 
@@ -289,9 +402,21 @@ const createTask = plannedTask<Parameters<typeof planTask>[1], TaskPlan>({
   input: z.object({ title: z.string().min(1).max(160), description: z.string().max(600).optional(), due_date: Day.optional(), priority: z.enum(['low', 'medium', 'high']).optional(), assign_to_player_ids: z.array(PlayerId).optional() }),
   progress: 'Drafting a task',
   plan: planTask,
+  truth: (_ctx, _who, plan) => ({
+    ids: plan.assignee_ids,
+    sends: true,
+    channels: ['in_app', 'email'],
+    delivery: () => taskDelivery(plan.title, plan.due_date),
+    told: (d, n) => [`${plural(n, 'player')} ${n === 1 ? 'is' : 'are'} told in the app and by email once Undo closes: “${d.title}”, “${d.body}”.`],
+    nobody: ['Nobody is told: none of these players has an account yet.'],
+    visible_to: 'recipients',
+    visible_note: 'The players it is assigned to and this team’s coaches see it in Tasks.',
+    facts: plan.description ? [{ label: 'Details', value: plan.description }] : [],
+  }),
+  channels: () => ['in_app', 'email'],
   run: (_who, plan) => executeTask(plan),
-  written: (ctx, who, plan, since) => rowSince(ctx.sb, 'golf_tasks', { team_id: who.team_id, title: plan.title.trim() }, since),
-  done: (plan) => ({ summary: `The task is assigned to ${plan.assignee_ids.length} ${plan.assignee_ids.length === 1 ? 'player' : 'players'}.`, kind: 'task', label: plan.title }),
+  written: (ctx, who, plan, { since }) => rowSince(ctx.sb, 'golf_tasks', { team_id: who.team_id, title: plan.title.trim() }, since),
+  done: (plan) => ({ summary: `The task is assigned to ${plan.assignee_ids.length} ${plan.assignee_ids.length === 1 ? 'player' : 'players'}.`, kind: 'task', label: plan.title, href: `${DASH}/tasks` }),
 });
 
 const createTeamAnnouncement = plannedTask<Parameters<typeof planAnnouncement>[1], AnnouncementPlan>({
@@ -300,9 +425,27 @@ const createTeamAnnouncement = plannedTask<Parameters<typeof planAnnouncement>[1
   input: z.object({ title: z.string().min(1).max(120), body: z.string().min(1).max(2000), urgency: z.enum(['low', 'normal', 'high', 'urgent']).optional(), requires_acknowledgement: z.boolean().optional(), recipient_player_ids: z.array(PlayerId).optional() }),
   progress: 'Drafting a team update',
   plan: planAnnouncement,
+  truth: (_ctx, who, plan) => ({
+    ids: plan.recipient_ids ?? who.roster.map((p) => p.id),
+    sends: true,
+    channels: ['push', 'in_app', 'email'],
+    delivery: () => announcementDelivery(plan.title, plan.body),
+    told: (d, n) => [`${plural(n, 'player')} ${n === 1 ? 'gets' : 'get'} it in the app, as a push (“${d.title}”, “${d.body}”) and by email once Undo closes.`, ...(plan.requires_acknowledgement ? ['Each player must acknowledge it.'] : [])],
+    nobody: ['Nobody is told: none of these players has an account yet.'],
+    visible_to: 'recipients',
+    visible_note: plan.recipient_ids ? 'The players it is sent to and this team’s coaches see it in Announcements.' : `Every player and coach on ${who.team_name} sees it in Announcements.`,
+  }),
+  channels: () => ['push', 'in_app', 'email'],
   run: (_who, plan) => executeAnnouncement(plan),
-  written: (ctx, who, plan, since) => rowSince(ctx.sb, 'golf_announcements', { team_id: who.team_id, title: plan.title.trim() }, since),
-  done: (plan) => ({ summary: `The update "${plan.title.trim()}" is sent.`, kind: 'announcement', label: plan.title }),
+  written: (ctx, who, plan, { since }) => rowSince(ctx.sb, 'golf_announcements', { team_id: who.team_id, title: plan.title.trim() }, since),
+  done: (plan) => ({ summary: `The update "${plan.title.trim()}" is sent.`, kind: 'announcement', label: plan.title, href: `${DASH}/announcements` }),
+  // "The whole team" is sent to the team as it is when it sends: if someone joined since the card, the card's list is short.
+  stale: async (_ctx, who, plan) => {
+    if (plan.recipient_ids || !plan.seen_people) return null;
+    const seen = new Set(plan.seen_people.map((p) => p.id));
+    const joined = who.roster.filter((p) => !seen.has(p.id));
+    return joined.length ? `${nameList(joined.map((p) => p.name))} joined the roster after this card was made and would get it too. Nothing was sent. Ask for the update again.` : null;
+  },
 });
 
 const createRecurringPractice = plannedTask<Parameters<typeof planRecurringPractice>[1], RecurringPracticePlan>({
@@ -323,9 +466,25 @@ const createRecurringPractice = plannedTask<Parameters<typeof planRecurringPract
   }),
   progress: 'Preparing the practice dates',
   plan: planRecurringPractice,
-  run: (who, plan) => executeRecurringPractice(who, plan),
-  written: (ctx, who, plan, since) => rowSince(ctx.sb, 'golf_events', { team_id: who.team_id, title: plan.title }, since),
-  done: (plan) => ({ summary: `${plan.title} is on the calendar. Check the dates there: an earlier attempt created them and I did not create them again.`, kind: 'event', label: plan.title, href: '/golf/dashboard/calendar' }),
+  truth: (_ctx, who, plan) => ({
+    ids: plan.invited_player_ids,
+    // A series that does not ask for replies tells nobody (owner, 2026-10-08).
+    sends: plan.requires_rsvp,
+    channels: ['push', 'in_app', 'email'],
+    delivery: () => seriesInviteDelivery(plan),
+    told: (d, n) => [`${plural(n, 'player')} ${n === 1 ? 'gets' : 'get'} one push, one bell row and one email for the series once Undo closes: “${d.title}”, “${d.body}”.`, 'Each is asked to reply.'],
+    nobody: [plan.requires_rsvp ? 'Nobody is told: none of the invited players has an account yet.' : 'Nobody is told.'],
+    visible_to: 'team',
+    visible_note: `On the team calendar: every player and coach on ${who.team_name} can see the practices.`,
+    // Written with every practice, so on the card: the end time, and the description when there is one.
+    facts: [{ label: 'Ends', value: plan.end_time ?? 'Not set' }, ...(plan.description ? [{ label: 'Description', value: plan.description }] : [])],
+    visual: { kind: 'series', title: plan.title, dates: plan.occurrence_dates, start: plan.start_time, end: plan.end_time, where: plan.location },
+  }),
+  channels: (plan) => (plan.requires_rsvp ? ['push', 'in_app', 'email'] : []),
+  run: (who, plan, requestId) => executeRecurringPractice(who, plan, requestId),
+  // The series' row id is this card's request id (the action keeps it), so the look is exact.
+  written: (ctx, _who, _plan, { requestId }) => rowSince(ctx.sb, 'golf_events', { id: requestId }, null),
+  done: (plan) => ({ summary: `${plan.title} is on the calendar. Check the dates there: an earlier attempt created them and I did not create them again.`, kind: 'event', label: plan.title, href: `/golf/dashboard/calendar?date=${plan.start_date}` }),
 });
 
 // ---------------------------------------------------------------------------------------------------------------------

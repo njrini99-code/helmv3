@@ -65,6 +65,8 @@ export interface FocusAreaPlanInput {
 export interface FocusAreaPlan extends FocusAreaPlanInput {
   player_name: string;
   coach_id: string;
+  /** The players this reaches as the card saw them, each with whether they have an account to be told on. Set by the server in `plan`. */
+  seen_people?: Array<{ id: string; name: string; account: boolean }>;
 }
 
 /**
@@ -206,6 +208,8 @@ export interface TaskPlan extends TaskPlanInput {
   team_id: string;
   assignee_names: string[];
   assignee_ids: string[];
+  /** The players this reaches as the card saw them, each with whether they have an account to be told on. Set by the server in `plan`. */
+  seen_people?: Array<{ id: string; name: string; account: boolean }>;
 }
 
 export function planTask(
@@ -313,6 +317,8 @@ export interface AnnouncementPlanInput {
 export interface AnnouncementPlan extends AnnouncementPlanInput {
   recipient_names: string[];
   recipient_ids: string[] | null;
+  /** The players this reaches as the card saw them, each with whether they have an account to be told on. Set by the server in `plan`. */
+  seen_people?: Array<{ id: string; name: string; account: boolean }>;
 }
 
 /**

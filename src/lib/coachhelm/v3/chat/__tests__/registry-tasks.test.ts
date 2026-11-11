@@ -13,7 +13,7 @@ import { person } from './pgrst-double';
  *   a write that throws after its row landed is reported done, and "nothing was saved" is only said after looking.
  */
 const { world, action, executed } = vi.hoisted(() => {
-  const world = { landed: false, lookFails: false, mode: 'ok' as 'ok' | 'fail' | 'throw_after_write', actionCalls: [] as string[], dbWrites: [] as string[] };
+  const world = { landed: false, lookFails: false, mode: 'ok' as 'ok' | 'fail' | 'throw_after_write', actionCalls: [] as string[], dbWrites: [] as string[], tables: {} as Record<string, unknown[]> };
   const action = (name: string, extra: Record<string, unknown> = {}) =>
     vi.fn(async (..._args: unknown[]) => {
       world.actionCalls.push(name);
@@ -50,7 +50,9 @@ vi.mock('@/app/golf/actions/recruiting', () => ({ createRecruit: action('createR
 vi.mock('@/app/golf/actions/tournaments', () => ({ lockTournamentLineup: action('lockTournamentLineup'), setTournamentEntries: action('setTournamentEntries') }));
 vi.mock('@/app/golf/actions/practice-library', () => ({ createTeamDrill: action('createTeamDrill') }));
 vi.mock('@/app/golf/actions/documents', () => ({ saveTextDocument: action('saveTextDocument') }));
-vi.mock('@/app/golf/actions/practice-publish', () => ({ publishPracticePlan: action('publishPracticePlan') }));
+vi.mock('@/app/golf/actions/practice-publish', () => ({ publishPracticePlan: action('publishPracticePlan', { recipients: 1 }) }));
+// The goal's starting point is read with the app's own loader; here the player has no rounds to measure from.
+vi.mock('@/lib/coachhelm/v3/goals/window-metric', async (orig) => ({ ...(await orig<typeof import('@/lib/coachhelm/v3/goals/window-metric')>()), loadPlayerWindowRounds: vi.fn(async () => []) }));
 vi.mock('../action-planners', async (orig) => ({ ...(await orig<typeof import('../action-planners')>()), executeFocusArea: executed('create_focus_area'), executeTask: executed('create_task'), executeAnnouncement: executed('create_team_announcement') }));
 vi.mock('../practice-planner', async (orig) => ({ ...(await orig<typeof import('../practice-planner')>()), executeRecurringPractice: executed('create_recurring_practice') }));
 
@@ -60,11 +62,32 @@ const P1 = '00000000-0000-4000-8000-000000000001';
 const ID = '00000000-0000-4000-8000-0000000000aa';
 const coach: CoachChatContext = { coach_id: 'c1', user_id: 'u1', team_id: 'team-1', team_name: 'Rini University', timezone: 'America/New_York', roster: [person(P1, 'Eli Brandt')] };
 
-/** A database that answers "is the row there?" from `world.landed`, never holds a held lineup, and records every write made through it. */
+const PLAN_BODY = { v: 2, focus: '', notes: '', place: 'Range', arrivalBufferMin: 15, bring: [], players: [P1], groups: [], variants: { main: { blocks: [{ id: 'b1', kind: 'team', title: 'Warm up', len: 20, coach: null, note: '', place: 'Putting green', drill: null }] }, rain: null } };
+/** What the cards read: the world as the app holds it. A test changes `world.tables[table]` to move the world under a card. */
+const WORLD = (): Record<string, unknown[]> => ({
+  golf_players: [{ id: P1, user_id: 'u-p1' }],
+  golf_coaches: [{ id: 'c1', user_id: 'u1', full_name: 'Sam Reyes' }],
+  golf_rounds: [{ id: ID, player_id: P1, course_name: 'Pine Hill', round_date: '2026-11-01', total_score: 74 }],
+  golf_round_reviews: [{ coach_notes: '' }],
+  golf_player_availability_coach_notes: [],
+  golf_tournaments: [{ id: ID, team_id: 'team-1', name: 'Fall Classic', start_date: '2026-11-14', end_date: '2026-11-15', version: 3, lineup_locked_at: null, substitutions: true }],
+  golf_tournament_entries: [{ player_id: P1, role: 'lineup', slot: 1 }],
+  golf_conversations: [{ id: ID, title: 'Team', team_id: 'team-1', golf_conversation_participants: [{ user_id: 'u1' }, { user_id: 'u-p1' }] }],
+  golf_practice_plans: [{ id: ID, team_id: 'team-1', title: 'Thursday practice', body: PLAN_BODY, event_id: null, version: 1, published_version: null, active_variant: 'main', status: 'draft' }],
+  golf_coachhelm_action_runs: [],
+});
+
+/** A database that answers what the cards read from `world.tables`, "is the row there?" from `world.landed`, never holds a held lineup, and records every write made through it. */
 function db() {
   const from = (table: string) => {
-    const rows = () => (table === 'golf_coachhelm_action_runs' ? [] : table === 'golf_round_reviews' ? [{ coach_notes: '' }] : world.landed ? [{ id: 'row-1' }] : []);
-    const answer = () => (world.lookFails && table !== 'golf_round_reviews' ? { data: null, error: { message: 'timeout' } } : { data: rows(), error: null });
+    const rows = () => {
+      // Once the write landed, the world shows it: the lineup is locked, the plan is published at the next version.
+      if (world.landed && table === 'golf_tournaments') return (world.tables[table] as Array<Record<string, unknown>>).map((t) => ({ ...t, lineup_locked_at: new Date(Date.now() + 1000).toISOString() }));
+      if (world.landed && table === 'golf_practice_plans') return (world.tables[table] as Array<Record<string, unknown>>).map((t) => ({ ...t, status: 'published', version: 2, published_version: 1 }));
+      if (world.tables[table]) return world.tables[table];
+      return world.landed ? [{ id: 'row-1', content: 'Earlier', is_deleted: false }] : [];
+    };
+    const answer = () => (world.lookFails ? { data: null, error: { message: 'timeout' } } : { data: rows(), error: null });
     const q: Record<string, unknown> = {};
     for (const m of ['select', 'eq', 'neq', 'in', 'is', 'gte', 'lte', 'gt', 'lt', 'match', 'or', 'not', 'ilike', 'order', 'limit', 'range']) q[m] = () => q;
     for (const m of ['insert', 'update', 'upsert', 'delete']) q[m] = () => (world.dbWrites.push(`${m} ${table}`), q);
@@ -93,14 +116,14 @@ const SAMPLES: Record<string, unknown> = {
   create_task: { title: 'Log your rounds' },
   create_team_announcement: { title: 'Bus time', body: 'The bus leaves at seven.' },
   create_drill: { name: 'Ladder', area: 'putting', minutes: 15 },
-  publish_practice_plan: { plan_id: ID, version: 1, title: 'Thursday practice', people: 2, when: 'Thu 3:00 PM', first_player_line: 'Practice is up', player_ids: [P1], team_chat: false },
-  publish_artifact: { title: 'Eli report', body: 'Words about Eli.', players: 1 },
-  send_message: { conversation_id: ID, thread: 'Team', member_count: 5, content: 'See you at three.' },
-  set_lineup: { tournament_id: ID, version: 1, entries: [{ player_id: P1, role: 'lineup', slot: 1 }] },
+  publish_practice_plan: { plan_id: ID, version: 1, team_chat: false },
+  publish_artifact: { title: 'Eli report', body: 'Words about Eli.' },
+  send_message: { conversation_id: ID, content: 'See you at three.' },
+  set_lineup: { tournament_id: ID, entries: [{ player_id: P1, role: 'lineup', slot: 1 }] },
   lock_lineup: { tournament_id: ID },
 };
 /** The tasks whose own row can be looked for: by request id, or by the card's natural key since it was planned. */
-const LOOKABLE = ['create_event', 'add_blocked_time', 'create_recruit', 'create_trip', 'create_qualifier', 'create_goal', 'save_team_term', 'send_message', 'create_drill', 'publish_artifact', 'create_focus_area', 'create_task', 'create_team_announcement', 'create_recurring_practice'];
+const LOOKABLE = ['create_event', 'add_blocked_time', 'create_recruit', 'create_trip', 'create_qualifier', 'create_goal', 'send_message', 'create_drill', 'publish_artifact', 'create_focus_area', 'create_task', 'create_team_announcement', 'create_recurring_practice', 'lock_lineup', 'publish_practice_plan'];
 
 type Task = TaskTool<unknown, TaskProposal>;
 const all = (): Task[] => {
@@ -111,7 +134,7 @@ const all = (): Task[] => {
 const planned = async (t: Task) => t.plan(ctx(), t.input.parse(SAMPLES[t.name]));
 
 beforeEach(() => {
-  Object.assign(world, { landed: false, lookFails: false, mode: 'ok' });
+  Object.assign(world, { landed: false, lookFails: false, mode: 'ok', tables: WORLD() });
   world.actionCalls.length = 0;
   world.dbWrites.length = 0;
 });
@@ -163,8 +186,10 @@ describe('every task', () => {
     expect(looked).toMatchObject({ status: 'failed', retryable: true });
     expect(looked.summary).toMatch(/Nothing was saved\.$/);
     // When the look itself fails, the receipt says it could not check, and is not offered for a blind retry.
+    // (The card is made while the app can be read: a card is never built on a read that failed.)
+    const card = await planned(tool);
     world.lookFails = true;
-    const blind = await tool.commit(ctx(), { ...(await planned(tool)), idempotency_key: 'card-4' });
+    const blind = await tool.commit(ctx(), { ...card, idempotency_key: 'card-4' });
     expect(blind).toMatchObject({ status: 'failed', retryable: false });
     expect(blind.summary).toMatch(/could not check whether anything was saved/);
     expect(blind.summary).not.toMatch(/Nothing was saved/);

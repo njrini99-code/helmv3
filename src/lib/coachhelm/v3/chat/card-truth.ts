@@ -77,14 +77,14 @@ export function reachOf(seen: readonly SeenPlayer[], sends: boolean): { recipien
 
 /**
  * At commit: has anyone on the stored card left the roster, or gained or lost an account? Then the card's "who" is no
- * longer true. Returns the sentence the coach reads, or null. A failed read is a refusal too: the check could not run.
+ * longer true. Returns the sentence the coach reads, or null. Throws `CardReadError` when the check itself could not run.
  */
 export async function peopleChanged(sb: Sb, ctx: CoachChatContext, seen: readonly SeenPlayer[], what: string): Promise<string | null> {
   if (seen.length === 0) return null;
   const gone = seen.filter((p) => !ctx.roster.some((r) => r.id === p.id));
   if (gone.length) return `${nameList(gone.map((p) => p.name))} ${gone.length === 1 ? 'is' : 'are'} no longer on your roster, so this card is out of date. ${what} Ask for it again.`;
   const { data, error } = await sb.from('golf_players').select('id, user_id').in('id', seen.map((p) => p.id));
-  if (error) return `Who this reaches could not be checked just now. ${what} Try again in a moment.`;
+  if (error) throw new CardReadError('Who this reaches could not be checked just now.');
   const withAccount = new Set((data ?? []).filter((p) => Boolean(p.user_id)).map((p) => p.id));
   const moved = seen.filter((p) => p.account !== withAccount.has(p.id));
   if (moved.length) return `Who can be told changed after this card was made (${nameList(moved.map((p) => p.name))}). ${what} Ask for it again.`;
@@ -138,6 +138,12 @@ export function focusDelivery(coachName: string | null | undefined, title: strin
 /** A new task (`notifyTaskAssigned`, lib/notifications/index.ts; the due date as `createTask` formats it). */
 export function taskDelivery(title: string, dueDate: string | null | undefined): CardDelivery {
   return { channels: ['in_app', 'email'], title: 'New task', body: dueDate ? `${title}, due ${longDay(dueDate)}` : title, note: `Sent only to a player whose account has an email address. The email adds the task’s details. ${SETTINGS_NOTE}` };
+}
+
+/** A team update (`createEnrichedAnnouncement`): the push through `generatePushPayload`; in the app it is the update itself, title and words. */
+export function announcementDelivery(title: string, body: string): CardDelivery {
+  const push = generatePushPayload('team_announcement', { title });
+  return { channels: ['push', 'in_app', 'email'], title: push.title, body: push.body, variants: [{ channel: 'in_app', title, body }], note: `The email carries the same title and words. ${SETTINGS_NOTE}` };
 }
 
 /** The coach's own name on file, for a notice that signs with it. Null when it could not be read: the sender then signs "Your Coach" only if the name is really empty, so the card must not guess. */
