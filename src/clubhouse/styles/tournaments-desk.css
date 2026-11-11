@@ -630,6 +630,12 @@ button.ch-tour-desk-sc:focus-visible {
   font-style: normal;
   color: var(--ch-text-secondary);
 }
+/* The phone's floor is 12 (F-0024): the row's averages step up from 11, in the same 30px chip ("+0.2" is 27 wide). */
+.ch-tour-desk-hg.is-phone .ch-tour-desk-heat {
+  font: var(--ch-type-12-strong);
+  letter-spacing: var(--ch-track-12);
+  line-height: var(--ch-lead-tight);
+}
 .ch-tour-desk-heat.is-over {
   background: var(--ch-chart-loss-tint);
   color: var(--ch-chart-loss-on-tint);

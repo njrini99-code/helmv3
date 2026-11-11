@@ -38,6 +38,14 @@ describe('event desk round pills on a phone', () => {
   });
 });
 
+describe('event desk hole grid type on a phone', () => {
+  it('the Team vs par averages are the 12 role, never under the phone’s floor (F-0024)', () => {
+    const heat = rule('.ch-tour-desk-hg.is-phone .ch-tour-desk-heat');
+    expect(heat).toMatch(/font:\s*var\(--ch-type-12-strong\)/);
+    expect(heat).toMatch(/letter-spacing:\s*var\(--ch-track-12\)/);
+  });
+});
+
 describe('event desk hole grid colours', () => {
   it('draws the Team vs par row under par in the score-under red (D-42), never the chart gain green', () => {
     const under = rule('.ch-tour-desk-heat.is-under');
