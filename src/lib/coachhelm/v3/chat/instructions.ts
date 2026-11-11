@@ -1,9 +1,10 @@
 /**
  * CoachHelm chat: the instructions.
  *
- * Written for Claude Haiku 5.5 at high effort: a small, fast model that follows a short concrete rule well and a long
- * nuanced paragraph less well. So each rule is one sentence with its reason, and there is a worked example only where
- * a rule is easy to misread.
+ * Written so the smallest model that reads it can follow it: a player's Ask runs on Claude Haiku 5.5, a small, fast
+ * model that follows a short concrete rule well and a long nuanced paragraph less well, and the coach surfaces run on
+ * Claude Sonnet 5.5 (`engine/CONTRACT_NOTES.md`, E21). So each rule is one sentence with its reason, there is a worked
+ * example only where a rule is easy to misread, and no rule names a model.
  *
  * Two blocks, both free of anything that changes while a conversation is alive, because the model's stored thinking
  * blocks are valid only while the system prompt and the tool definitions before them are byte-for-byte unchanged:
