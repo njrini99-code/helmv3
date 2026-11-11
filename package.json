@@ -200,6 +200,7 @@
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.72",
     "@ai-sdk/react": "^4.0.131",
+    "@anthropic-ai/sdk": "^1.8.0",
     "@base-ui/react": "^1.8.0",
     "@capacitor/android": "^8.5.2",
     "@capacitor/app": "^8.1.2",
