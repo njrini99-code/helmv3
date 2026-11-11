@@ -24,7 +24,7 @@ function Head({ title, line, keys }: { title: { phone: number; desk: number }; l
       <div>
         <LargeTitleSkeleton width={title.phone} className="ch-prc-sk-title" />
         <span className="ch-prc-sk-desk">
-          <SkelLine line={41} bar={30} width={title.desk} />
+          <SkelLine line={47.5} bar={36} width={title.desk} />
         </span>
         {line != null && (
           <p className="ch-prc-h__line">
@@ -119,7 +119,7 @@ function Plans({ rows }: { rows: number }) {
 export function PracticeHomeSkeleton() {
   return (
     <main className="ch-page ch-prc" data-ch="practice" aria-busy="true" aria-label="Loading practice">
-      <Head title={{ phone: 106, desk: 125 }} line={161} keys={[108, 115]} />
+      <Head title={{ phone: 106, desk: 137 }} line={161} keys={[108, 115]} />
       <section aria-hidden="true">
         <Week />
       </section>
@@ -234,7 +234,7 @@ function PlayerCard() {
 export function PlayerPracticeHomeSkeleton() {
   return (
     <main className="ch-page ch-prc" data-ch="practice" aria-busy="true" aria-label="Loading practice">
-      <Head title={{ phone: 106, desk: 125 }} line={64} />
+      <Head title={{ phone: 106, desk: 137 }} line={64} />
       <div className="ch-cpv ch-cpv-ply ch-prc-today" aria-hidden="true">
         <PlayerCard />
         <section className="art">
@@ -255,7 +255,7 @@ export function PlayerPracticeHomeSkeleton() {
   );
 }
 
-const TITLE = { drills: { phone: 64, desk: 76 }, groups: { phone: 94, desk: 112 }, templates: { phone: 134, desk: 158 } } as const;
+const TITLE = { drills: { phone: 64, desk: 83 }, groups: { phone: 94, desk: 122 }, templates: { phone: 134, desk: 172 } } as const;
 /** The head's one key on a Mac (New drill, New group); Templates has none. */
 const KEY = { drills: [111], groups: [126], templates: undefined } as const;
 
@@ -439,7 +439,7 @@ export function PracticePlanSkeleton() {
       </span>
       <header className="ch-prc-h ch-prc-planhead ch-prc-sk-desk" aria-hidden="true">
         <div>
-          <SkelLine line={41} bar={30} width={379} />
+          <SkelLine line={47.5} bar={36} width={379} />
           <p className="ch-prc-h__line">
             <SkelLine line={20} bar={12} width={340} />
           </p>
@@ -477,7 +477,7 @@ export function PlayerPracticePlanSkeleton() {
     <main className="ch-page ch-cpv ch-cpv-ply" data-ch="player-practice" aria-busy="true" aria-label="Loading your practice">
       <LargeTitleSkeleton width={106} className="ch-prc-sk-title" />
       <span className="ch-large-title ch-prc-sk-desk" aria-hidden="true">
-        <SkelLine line={21} bar={14} width={70} />
+        <SkelLine line={47.5} bar={36} width={137} />
       </span>
       <p className="ctx" aria-hidden="true">
         <SkelLine line={20} bar={12} width={64} />

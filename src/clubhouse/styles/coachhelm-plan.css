@@ -1829,13 +1829,17 @@ html[data-fw-theme='dark'] .ch-cpv-vz {
 /* PP-30: a player's page keeps the page width on a Mac. */
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-cpv-ply { max-width: var(--ch-measure-reading); margin-inline: auto; }
+  /* The player's page opens on the page frame's title line: the top a page with no eyebrow has, and the head's 12px over
+     the title (its loading bar too). The column keeps its reading width, so the title starts on the column's edge. */
+  main.ch-cpv-ply { padding-top: var(--ch-page-top-no-eyebrow); }
+  main.ch-page.ch-cpv-ply > .ch-large-title { margin-top: 12px; }
   /* Plan format is a Practice page: the page's width, edge and head (practice.css), its two cards side by side. */
   .ch-cpv-fmt {
     gap: 20px;
     align-content: start;
     max-width: var(--ch-measure-page);
     margin: 0 auto;
-    padding: var(--ch-page-top-coachhelm) var(--ch-page-gutter) var(--ch-page-bottom);
+    padding: var(--ch-page-top-no-eyebrow) var(--ch-page-gutter) var(--ch-page-bottom);
   }
   .ch-cpv-fmt > .ch-backlink { margin-block-end: -12px; }
   .ch-cpv-fmt__cols { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 20px; }

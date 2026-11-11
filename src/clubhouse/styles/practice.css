@@ -10,7 +10,7 @@
   align-content: start;
   max-width: var(--ch-measure-page);
   margin: 0 auto;
-  padding: var(--ch-page-top-coachhelm) var(--ch-page-gutter) var(--ch-page-bottom);
+  padding: var(--ch-page-top-no-eyebrow) var(--ch-page-gutter) var(--ch-page-bottom);
   color: var(--ch-text-primary);
 }
 /* No colour here: a heading takes the ink of what it sits on (the page's, or the printed sheet's paper, which stays light in dark). */
@@ -26,11 +26,12 @@
   justify-content: space-between;
   gap: 12px 16px;
 }
+/* On a desk the title is every page's title (shell.css: one style from one place), and the head stands on the page
+   frame: the page opens where a page with no eyebrow does and the head keeps the frame head's own 12px, so the title's
+   top is on every page's line (owner, 11 Nov 2026). This sheet only places it. */
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
-  .ch-prc-h .ch-large-title:not([hidden]) {
-    margin: 0;
-    font: var(--ch-type-34-strong);
-    letter-spacing: var(--ch-track-34);
+  .ch-prc-h {
+    padding-top: 12px;
   }
 }
 .ch-prc-h__line {
@@ -1420,7 +1421,7 @@ main.ch-prc-planpage {
   box-sizing: border-box;
   max-width: calc(var(--ch-measure-reading) + 2 * var(--ch-page-gutter));
   margin: 0 auto;
-  padding: var(--ch-page-top-coachhelm) var(--ch-page-gutter) var(--ch-page-bottom);
+  padding: var(--ch-page-top-no-eyebrow) var(--ch-page-gutter) var(--ch-page-bottom);
   color: var(--ch-text-primary);
 }
 /* The back link sits on its title: half the page's gap. */

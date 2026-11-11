@@ -2200,10 +2200,12 @@ html[data-ch-ua-pop] .ch-pscreen::after {
      class everyone's, and coachhelm-read.css anchors its rules on it (clubhouse:check, class owners). */
   /* Any other head that keeps its own layout marks its title data-ch-page-title and gets the same title (Classes; owner,
      11 Nov 2026: one title style from one place). The title's size, face, tracking, ink and edge are set here and nowhere
-     else; a page's own rule only places it. */
+     else; a page's own rule only places it. A page's h1 that is the phone's large title (ui/LargeTitle.tsx) is that
+     page's title on a desk too, wherever its head stands (Practice: owner, 11 Nov 2026, its titles join the frame). */
   [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] h1,
   [data-ui='clubhouse'] main[data-ch-crh='on'].ch-rsd .ch-rs-head h1,
   [data-ui='clubhouse'] main[data-ch-screen='coachhelm-read'].is-desk .ch-hl-h h1,
+  [data-ui='clubhouse'] main h1[data-ch-large-title],
   [data-ui='clubhouse'] main [data-ch-page-title] {
     margin: 0;
     font: 600 calc(44 * var(--ch-type-k))/1.08 var(--ch-font-sans);
@@ -2698,6 +2700,7 @@ html[data-fw-theme='dark'] .ch-bellp__row:focus-visible {
   /* The letterpress edge at night: the lit lip under the letters becomes a shadow, never a white halo. */
   html[data-fw-theme='dark'] [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] h1,
   html[data-fw-theme='dark'] [data-ui='clubhouse'] main[data-ch-crh='on'].ch-rsd .ch-rs-head h1,
+  html[data-fw-theme='dark'] [data-ui='clubhouse'] main h1[data-ch-large-title],
   html[data-fw-theme='dark'] [data-ui='clubhouse'] main [data-ch-page-title] {
     text-shadow: 0 1px 0 rgb(0 0 0 / 0.5);
   }
