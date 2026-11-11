@@ -181,7 +181,7 @@ function HomeFirstRun({ data, phone }: { data: ChCoachHome; phone: boolean; }) {
           <h1>Welcome to Clubhouse</h1>
           <p className="ch-hm-hero__brief">
             <Icon icon={Sparkles} size={14} />
-            Set up your team and your first week shows here.
+            {events ? 'Add your players and this week fills in with who’s going.' : 'Set up your team and your first week shows here.'}
           </p>
           {/* On the hero's green, as every other Home draws it: on the page its ivory words measured 1.01:1 (CRH-5). */}
           <CoachQueue queue={data.queue} phone />

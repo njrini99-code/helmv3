@@ -5694,6 +5694,16 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     padding-top: 12px;
     border-top: var(--ch-hairline-w) solid var(--ch-separator);
   }
+  /* No line yet: one quiet sentence where the chart goes, so the figures stay at the foot of the card. */
+  .ch-h-main[data-ch-crh='on'] .ch-hm-form__noline {
+    display: grid;
+    place-content: center;
+    min-height: 72px;
+    margin: 0 16px;
+    font: var(--ch-type-14);
+    color: var(--ch-text-secondary);
+    text-align: center;
+  }
   .ch-h-main[data-ch-crh='on'] .ch-hm-form__figs dd {
     margin: 0;
     font: var(--ch-type-13);
@@ -5845,6 +5855,13 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   }
   .ch-hm[data-ch-crh='on'] .ch-hm-form__figs {
     border-bottom: 0;
+  }
+  /* No line yet: the sentence stands where the chart goes, on the card's inset. */
+  .ch-hm[data-ch-crh='on'] .ch-hm-form__noline {
+    margin: 0;
+    padding: 12px 16px;
+    font: var(--ch-type-meta);
+    color: var(--ch-text-secondary);
   }
 }
 

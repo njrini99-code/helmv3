@@ -333,6 +333,11 @@ function partOf(n: number, of: number): string {
   return n > 0 && n < of ? `${n} of ${of} rounds` : ' ';
 }
 
+/** Under a figure's dash on the card: why there is none, so totals-only rounds read as what they are and not as a gap. */
+export function figureMissing(rounds: number, needs?: string): string {
+  return rounds > 0 ? (needs ?? 'Too few rounds') : 'Totals only so far';
+}
+
 /** What the average, greens and putts rest on: "3 rounds · Aug 2", "24 rounds · Sep 1 – Sep 28". */
 export function formBasis(b: ChTeamForm['basis']): string {
   const span = b.from === b.to ? shortDay(b.from) : `${shortDay(b.from)} – ${shortDay(b.to)}`;
@@ -389,6 +394,7 @@ export function Form({ form }: { form: ChTeamForm; }) {
           <path d={`M${Math.round(x(pts.length - 1) * 10) / 10},${Math.round(y(pts[pts.length - 1]!) * 10) / 10} h0.01`} className="ch-hm-form__dot" vectorEffect="non-scaling-stroke" />
         </svg>
       )}
+      {pts.length <= 1 && <p className="ch-hm-form__noline">The line starts with a second round day.</p>}
       <dl className="ch-hm-form__figs">
         <div>
           <dt>Rounds</dt>
@@ -397,13 +403,13 @@ export function Form({ form }: { form: ChTeamForm; }) {
         </div>
         <div>
           <dt>GIR</dt>
-          <dd className="ch-num">{form.gir.pct != null ? `${Math.round(form.gir.pct)}%` : (form.gir.needs ?? <NoData />)}</dd>
-          <dd className={'ch-num ' + deltaTone(form.gir.delta, form.gir.se, false)}>{form.gir.delta != null ? `${formatSigned(form.gir.delta, 0)} pts` : partOf(form.basis.girRounds, form.basis.rounds)}</dd>
+          <dd className="ch-num">{form.gir.pct != null ? `${Math.round(form.gir.pct)}%` : <NoData />}</dd>
+          <dd className={'ch-num ' + deltaTone(form.gir.delta, form.gir.se, false)}>{form.gir.delta != null ? `${formatSigned(form.gir.delta, 0)} pts` : form.gir.pct == null ? figureMissing(form.basis.girRounds, form.gir.needs) : partOf(form.basis.girRounds, form.basis.rounds)}</dd>
         </div>
         <div>
           <dt>Putts</dt>
           <dd className="ch-num">{form.putts.avg != null ? formatFixed(form.putts.avg) : <NoData />}</dd>
-          <dd className={'ch-num ' + deltaTone(form.putts.delta, form.putts.se, true)}>{form.putts.delta != null ? formatSigned(form.putts.delta) : partOf(form.basis.puttsRounds, form.basis.rounds)}</dd>
+          <dd className={'ch-num ' + deltaTone(form.putts.delta, form.putts.se, true)}>{form.putts.delta != null ? formatSigned(form.putts.delta) : form.putts.avg == null ? figureMissing(form.basis.puttsRounds) : partOf(form.basis.puttsRounds, form.basis.rounds)}</dd>
         </div>
       </dl>
     </section>

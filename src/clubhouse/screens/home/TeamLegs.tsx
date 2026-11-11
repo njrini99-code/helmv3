@@ -214,7 +214,8 @@ export function TeamLegsPhone({ legs, covered = false }: { legs: ChTeamLegs; cov
   const worst = [...legs.rows].filter((l) => l.sg != null).sort((a, b) => (a.sg as number) - (b.sg as number)).slice(0, 2).filter((l) => (l.sg as number) < 0).map((l) => l.label);
   // Promise links only when the names are links (CRH-32); a nobody-ranked team's note is the card's footer too (CRH-10).
   const namesLink = legs.rows.some((l) => [...(l.gains?.ids ?? []), ...(l.loses?.ids ?? [])].some((id) => legPlayerHref(id) != null));
-  const note = !legs.ranked ? <span data-ch-code="CH-2315">{NOBODY_RANKED}</span> : worst.length ? `${worst.join(' and ')} cost${worst.length === 1 ? 's' : ''} the most.${namesLink ? ' Names open that player’s game on Stats.' : ''}` : null;
+  // With no hole-by-hole rounds the card's own empty state says so, and a line about what costs the most would read off nothing.
+  const note = legs.holeRounds === 0 ? null : !legs.ranked ? <span data-ch-code="CH-2315">{NOBODY_RANKED}</span> : worst.length ? `${worst.join(' and ')} cost${worst.length === 1 ? 's' : ''} the most.${namesLink ? ' Names open that player’s game on Stats.' : ''}` : null;
   return (
     <Surface variant="card" level={2} padded={false} title="The team’s game" actions={<span className="ch-hm-meta">SG per round · last 10</span>} footerNote={note ?? undefined}>
       {(legs.cacheError || legs.tourError) && (
