@@ -287,7 +287,8 @@ describe('a player’s read never carries the team pool, a teammate or a coach-o
     expect(v.read?.cause?.state).toBe('not_traced');
     expect(json).not.toContain('times as often');
     expect(json).not.toContain('175+');
-    expect(v.team).toBeUndefined();
+    // The team switcher is gone from the type; the payload is checked as data, so a key that came back would still fail here.
+    expect(Object.keys(v)).not.toContain('team');
     expect(v.head.playerId).toBeNull();
   });
 
