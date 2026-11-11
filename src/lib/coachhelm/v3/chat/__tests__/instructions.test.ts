@@ -34,7 +34,7 @@ describe('the policy block', () => {
   it('says what the brief asks, one rule at a time', () => {
     const policy = rulesBlock('ask');
     for (const heading of ['# What you are told each turn', '# Answering', '# Figures', '# Reads', '# When data is missing', '# Visuals', '# Tasks']) expect(policy).toContain(heading);
-    expect(policy).toMatch(/Put the answer in the first sentence/);
+    expect(policy).toMatch(/Sentence one answers the question asked, with its figure/);
     expect(policy).toMatch(/Do no arithmetic yourself/);
     expect(policy).toMatch(/A failed read is not an empty one/);
     expect(policy).toMatch(/call them all in the same step/);
@@ -168,29 +168,36 @@ describe('how answers read', () => {
     expect(rules.split('\nWrong:')[0]).not.toMatch(/\d \(\d+ rounds?\)/);
   });
 
-  it('an answer is the answer first and at most four plain sentences, with no heading, bold, label or table, and no list nobody asked for', () => {
-    // The first full run of the eval (11 Nov 2026): 44 of 99 answers broke a writing rule, 30 of them by length, 13 with bold lead-ins.
+  it('an answer is at most four sentences, each with its job, then it stops; no heading, bold, label, table or bracketed figure, and a list of three at most', () => {
+    // First full eval run (11 Nov 2026): 44 of 99 answers broke a writing rule, 30 by length. With "at most four sentences" as one rule
+    // among twelve, 15 of 58 still ran long, all of them a "why", a "should I worry", a comparison or a read-out of one player: the limit
+    // was a count the model treated as soft. It is now the shape of the answer, sentence by sentence, with a stop and a count at the end.
     const rules = rulesBlock('ask');
-    expect(rules).toMatch(/Put the answer in the first sentence: answer the question that was asked, with its figure/);
-    expect(rules).toMatch(/Write at most four sentences in all, as one short paragraph\. An offer of a next step counts as one of the four; make one only when the data points to an obvious one/);
-    expect(rules).toMatch(/do not walk through every area/);
+    expect(rules).toMatch(/So an answer is at most four sentences, in one paragraph with no blank line\.\nSentence one answers the question asked, with its figure/);
+    expect(rules).toMatch(/\nSentence two gives the one comparison or figure that matters most\.\nSentence three, only when needed, is a caution about the sample/);
+    expect(rules).toMatch(/\nSentence four, only when the data points to an obvious next step, offers it\.\nThen stop: /);
+    expect(rules).toMatch(/A "why", a "should I worry" and a comparison get four sentences too\. Count your sentences before you finish and cut down to four\./);
     // Short never means leaving out what was asked for (the first full run dropped a course, a count and a comparison player).
-    expect(rules).toMatch(/Give each thing the question asked for: every figure, name, course or count it names\. Never drop one to stay short/);
-    expect(rulesBlock('player')).toMatch(/Give each thing they asked for, such as a count, a score or a course/);
-    expect(rules).toMatch(/Write more than four sentences only when the coach asks for more \("in detail", "everything on him"\), and still in plain sentences/);
-    expect(rules).toMatch(/No heading, no table, no bold, no emoji, and no label with a colon at the start of a line/);
-    expect(rules).toMatch(/A table or a breakdown belongs in a card or a visual, not in your words/);
-    expect(rules).toMatch(/Write a list only when the coach asked for a list or a ranking/);
+    expect(rules).toMatch(/Fit each thing the question asked for \(a figure, a name, a course, a count\) into those sentences\. Never drop one\./);
+    expect(rules).toMatch(/Go past four only when the coach asks for more \("in detail", "everything on him"\), and still in plain sentences/);
+    expect(rules).toMatch(/No heading, table, bold, emoji or figure in brackets, and no label with a colon at the start of a line/);
+    expect(rules).toMatch(/A table or a breakdown belongs in a card or a visual/);
+    // A long list is the card's or the visual's to carry: the words name the top of it.
+    expect(rules).toMatch(/Write a list only when the coach asked for a list or a ranking, of three items at most, one plain line each\. When more belong in it, name the top and say the rest is in the card below, or call show_visual/);
     expect(rules).toMatch(/Write nothing before or between your reads \("Let me check"\), because it stays in the answer/);
-    expect(rules).toMatch(/When several figures share one window, say the window once/);
-    expect(rules).toMatch(/When the coach asks for the full breakdown \("show me every area"\), call show_visual\. Do not write it out/);
+    expect(rules).toMatch(/Give every figure with its window and sample in the same sentence, as the read gave them\. When several figures share one window, say it once/);
+    // The full breakdown is still a visual, said once, under "Visuals".
+    expect(rules).toMatch(/Call show_visual once when the answer is a shape/);
     // The rules follow themselves: nothing in them is bold.
     expect(rules).not.toMatch(/\*\*/);
     // A small sample is said once, under "How your answers read"; its duplicate under "When data is missing" is gone.
     expect(rules.match(/sample is small/g)).toHaveLength(1);
     const player = rulesBlock('player');
-    expect(player).toMatch(/Write at most four sentences in all, as one short paragraph/);
-    expect(player).toMatch(/no heading, no table, no bold, no label with a colon at the start of a line, and a list only when they asked for one/);
+    expect(player).toMatch(/An answer is at most four sentences, in one paragraph with no blank line/);
+    expect(player).toMatch(/Sentence one answers the question, with its figure\. Sentence two gives the one figure that matters most to it\./);
+    expect(player).toMatch(/Then stop: count your sentences and cut down to four/);
+    expect(player).toMatch(/Give each thing they asked for, such as a count, a score or a course, inside those sentences/);
+    expect(player).toMatch(/no heading, no table, no bold, no figure in brackets, no label with a colon at the start of a line, and a list only when they asked for one, of three items at most/);
     expect(player).toMatch(/Write more only when they ask for more/);
   });
 

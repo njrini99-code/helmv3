@@ -954,14 +954,17 @@ replacement is `src/lib/coachhelm/v3/chat/TOOLS.md`.
   complete one). With it: putts per round is always given with greens hit beside it; a tie for the last qualifying
   place stays a tie until the coach chooses (SOURCES A6); who plays is the coach's call; and a Tour or level figure
   comes only from a read made in the turn (the prompt's Figures rule 6).
-- **How long an answer is** (the prompt's "Answering", coach and player alike): the answer in the first sentence with
-  its figure, at most four sentences in all as one short paragraph (an offer of a next step is one of the four), more
-  only when the coach asks for more; no heading, table, bold or label with a colon at the start of a line; a list only
-  when a list or a ranking was asked for; nothing written before or between reads; a window shared by several figures
-  said once; every name as the roster or the read stores it, capitals included. Written after the first full eval run
-  (11 Nov 2026: 44 of 99 answers broke a writing rule, 30 of them by length and 13 with bold lead-ins, under the
-  earlier "answer, then at most three supporting points"). The size brake on the registry's own tools and rules is
-  12,300 (`__tests__/registry-size.test.ts`; Ask measures about 12,260).
+- **How long an answer is** (the prompt's "Answering", coach and player alike): at most four sentences in one
+  paragraph, written as the shape of the answer and not as a count among other rules: sentence one answers the
+  question with its figure, sentence two gives the one comparison or figure that matters most, sentence three (only
+  when needed) is a caution about the sample, sentence four (only when obvious) offers a next step; then it stops, and
+  the model counts its sentences before finishing. More only when the coach asks for more. No heading, table, bold,
+  bracketed figure or label with a colon; a list only when asked for and of three items at most (a longer one is the
+  card's or `show_visual`'s to carry); nothing written before or between reads; a shared window said once; every name
+  as stored. History: the first full eval run (11 Nov 2026) had 30 of 99 answers too long under "answer, then at most
+  three supporting points"; "at most four sentences" as one rule among twelve left 15 of 58 too long, every one a
+  "why", a "should I worry", a comparison or a read-out of one player. The size brake on the registry's own tools and
+  rules is 12,300 (`__tests__/registry-size.test.ts`).
 - **Strict tool use** (`chat/strict-input.ts`): every registered tool's input is shown to the model as a closed
   object with every field required and optional fields nullable, with no length or range keywords; the tool's own
   zod schema validates behind it, so no bound is lost. A new tool needs only an ordinary zod object. That is
