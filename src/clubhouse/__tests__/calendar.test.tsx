@@ -2477,7 +2477,8 @@ describe('Calendar · a player’s own week (wave 7)', () => {
     wrap(PREVIEW_CALENDAR_PLAYER);
     // The day's panel lists it under their attention, and opens the event, not an Overlap panel.
     const sec = screen.getByText('Needs your attention').closest('.ch-in__sec') as HTMLElement;
-    const row = within(sec).getByRole('button', { name: /^1:1 with Jonah.*Overlaps Short-game block 4:45–5:00 PM · Wed/ });
+    // One line in the panel: what it overlaps and the day. The hours are in the event it opens (below).
+    const row = within(sec).getByRole('button', { name: /^1:1 with Jonah\s*Overlaps Short-game block · Wed$/ });
     await user.click(row);
     await screen.findByRole('heading', { name: '1:1 with Jonah' });
     const warn = document.querySelector('.ch-cal-warn') as HTMLElement | null;

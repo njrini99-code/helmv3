@@ -170,11 +170,14 @@ function Warn({ title, children, action }: { title: string; children: ReactNode;
 
 const find = (events: ChCalEvent[], id: string, date?: string) => events.find((e) => e.id === id && (!date || e.date === date)) ?? events.find((e) => e.id === id);
 
-/** A player's own clash, in their words: "Overlaps your ECON 101 class 3:00–4:00 PM" (or another event they're on). */
-function playerOverlapLine(events: ChCalEvent[], o: ChCalOverlap, clock: ChClock): string {
+/** A player's own clash, in their words: "Overlaps your ECON 101 class" (or another event they're on). */
+function playerOverlapWith(events: ChCalEvent[], o: ChCalOverlap): string {
   const w = find(events, o.withId);
-  const what = !w ? 'another of your events' : w.type === 'class' ? `your ${w.title} class` : w.title;
-  return `Overlaps ${what} ${fmtHour(o.from, false, clock)}–${fmtHour(o.to, true, clock)}`;
+  return `Overlaps ${!w ? 'another of your events' : w.type === 'class' ? `your ${w.title} class` : w.title}`;
+}
+/** And when: "Overlaps your ECON 101 class 3:00–4:00 PM", as the event's own warning says it. */
+function playerOverlapLine(events: ChCalEvent[], o: ChCalOverlap, clock: ChClock): string {
+  return `${playerOverlapWith(events, o)} ${fmtHour(o.from, false, clock)}–${fmtHour(o.to, true, clock)}`;
 }
 
 /**
@@ -284,7 +287,9 @@ export function Summary({ ctx }: { ctx: InspCtx }) {
                   </button>
                 );
               })}
-            {/* A player's own clash opens the event, where it says what to do (message the coach); it has no Overlap panel. */}
+            {/* A player's own clash opens the event, where it says what to do (message the coach); it has no Overlap panel.
+                Its line is what it overlaps and the day, on one line in the 218px the panel gives it beside a view; with
+                the hours it wrapped inside them ("4:45–" / "5:00 PM · Wed"). The hours are in the event it opens. */}
             {role === 'player' &&
               weekOverlaps.map((o) => {
                 const e = find(events, o.eventId)!;
@@ -296,7 +301,7 @@ export function Summary({ ctx }: { ctx: InspCtx }) {
                     <span style={{ minWidth: 0 }}>
                       <b>{e.title}</b>
                       <span>
-                        {playerOverlapLine(events, o, clock)} · {dowOf(e.date)}
+                        {playerOverlapWith(events, o)} · {dowOf(e.date)}
                       </span>
                     </span>
                     <Icon icon={ChevronRight} size={14} />
