@@ -7,6 +7,7 @@ import type { AskTurnRead } from '../../../../data/coachhelm-chat-thread';
 import { readBasis, readRows } from '../../../../data/coachhelm-chat-thread';
 import { rebuiltHref } from '../../../../shell/nav';
 import { Icon } from '../../../../ui/Icon';
+import { haptic } from '../../../../lib/haptics';
 import { usePopoverFit } from '../../../../lib/use-popover-fit';
 
 /** Where a read's figures live: this player's Stats, or the team's. Null where Stats isn't rebuilt, and then no link is drawn. */
@@ -17,7 +18,7 @@ export function readStatsHref(read: AskTurnRead): string | null {
 }
 
 /** A pill naming the read and window a sentence's figure came from. Tap opens what's behind it; every row comes from the envelope (AK2). */
-export function ReadChip({ read, onSources }: { read: AskTurnRead; /** Opens this answer's list of every read. */ onSources?: () => void }) {
+export function ReadChip({ read, onSources, onOpen, selected = false }: { read: AskTurnRead; /** Opens this answer's list of every read. */ onSources?: () => void; /** Chat v3: opens the read in the evidence sheet or panel; the chip stays selected while it is open. */ onOpen?: () => void; selected?: boolean }) {
   const [open, setOpen] = useState(false);
   const btn = useRef<HTMLButtonElement>(null);
   const pop = useRef<HTMLSpanElement>(null);
@@ -43,6 +44,23 @@ export function ReadChip({ read, onSources }: { read: AskTurnRead; /** Opens thi
   }, [open]);
   const rows = readRows(read);
   const stats = readStatsHref(read);
+  if (onOpen)
+    return (
+      <button
+        type="button"
+        className={'cite' + (selected ? ' on' : '')}
+        aria-pressed={selected}
+        aria-label={`Source: ${read.name}`}
+        data-ch-press=""
+        onClick={() => {
+          haptic('select');
+          onOpen();
+        }}
+      >
+        <Icon icon={BookOpen} size={12} />
+        {read.name}
+      </button>
+    );
   return (
     <span className="cite-wrap">
       <button ref={btn} type="button" className={'cite' + (open ? ' on' : '')} aria-expanded={open} aria-haspopup="dialog" onClick={() => setOpen((v) => !v)}>

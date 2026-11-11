@@ -1,9 +1,9 @@
 'use client';
 
 import type { UIMessage } from 'ai';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowDown, CircleAlert, RotateCw } from 'lucide-react';
+import { ArrowDown } from 'lucide-react';
 import type { ChatErrorNotice } from '../../../data/coachhelm-chat-error';
 import {
   buildTurns,
@@ -12,17 +12,20 @@ import {
   focusForProposal,
   pendingApproval,
   playerFollowUps,
+  type AskAssistantTurn,
+  type AskTurn,
   type EvidenceFocus,
 } from '../../../data/coachhelm-chat-thread';
+import { CH_FILL_EASE_POINTS, CH_MS, chSpringCurve } from '../../../lib/motion';
 import { haptic } from '../../../lib/haptics';
 import { useChReducedMotion } from '../../../lib/reduced-motion';
-import { Button } from '../../../ui/Button';
 import { Icon } from '../../../ui/Icon';
-import { OFFLINE_LINE } from '../../../ui/Retry';
 import { useToast } from '../../../ui/Toast';
-import { CoachMark } from './CoachMark';
 import { AnswerCard } from './parts/AnswerCard';
-import { Steps } from './parts/Steps';
+import type { TurnEnd } from './parts/TurnNotice';
+import { LiveDot } from './parts/Work';
+import { takeSendSource } from './send-source';
+import { TURN_TIMING } from './turn-timing';
 import { PlanVersions } from '../plan/PlanCard';
 import { ConfirmCard, Receipt } from './parts/ConfirmCard';
 import type { AskArtifact } from './parts/artifacts';
@@ -33,7 +36,7 @@ export interface AskThreadProps {
   onArtifact?: (a: AskArtifact) => void;
   /** The team's name, for a draft that shows how a player's phone will read it. */
   team?: string;
-  /** The assistant message the coach pressed Stop on. */
+  /** The coach pressed Stop on the last turn. */
   stoppedTurn?: string | null;
   messages: UIMessage[];
   /** A turn is in flight. */
@@ -65,18 +68,30 @@ function scrollParentOf(el: HTMLElement | null): HTMLElement | null {
   return null;
 }
 
-/** How far from the bottom the reader is. */
-function fromBottom(sp: HTMLElement | null): { gap: number; screen: number } {
-  if (sp) return { gap: sp.scrollHeight - sp.scrollTop - sp.clientHeight, screen: sp.clientHeight };
-  const doc = document.documentElement;
-  return { gap: doc.scrollHeight - window.scrollY - window.innerHeight, screen: window.innerHeight };
+/** A page: one question and everything that answers it, until the next question (SPEC, Rule P). */
+interface Page {
+  id: string;
+  turns: AskTurn[];
+}
+function pagesOf(turns: AskTurn[]): Page[] {
+  const pages: Page[] = [];
+  for (const t of turns) {
+    if (t.role === 'user' || pages.length === 0) pages.push({ id: t.id, turns: [t] });
+    else pages[pages.length - 1]!.turns.push(t);
+  }
+  return pages;
 }
 
+/** The turn that stands in for an answer the server has not opened yet: the mark and the name, and whatever the wait has earned. */
+const pendingTurn = (id: string): AskAssistantTurn => ({ role: 'assistant', id, steps: [], envelopes: [], blocks: [], note: null, answerText: '', work: null, followUps: [], active: true });
+
 /**
- * The conversation: the coach's lines, each answer as flat text with its evidence and follow-ups,
- * action cards and receipts, and the failed-answer notice. It scrolls to the newest message when
- * the coach sends, and stays where the coach scrolled to while an answer streams. Streamed text
- * does not animate; a new turn arrives with the base fade.
+ * The conversation (chat v3, SPEC Rule P and Moments 3 to 5, 10).
+ *
+ * The question takes the top of the page: on send the thread's position is set so the new question sits at the top and its
+ * page is at least one screen tall, so the answer writes into space that already exists. Nothing on screen moves again: reads
+ * open and fold, charts land and text streams without the thread scrolling. It follows the newest words only when the coach
+ * has scrolled to the live edge; otherwise the Latest key says there is more below.
  */
 export function AskThread({ viewer = 'coach', team, stoppedTurn = null, onArtifact, messages, busy, error, offline, phone, players, onApprove, onDeny, onSend, onRetry, onNewChat, evidenceFocus, onOpenEvidence }: AskThreadProps) {
   const toast = useToast();
@@ -87,63 +102,141 @@ export function AskThread({ viewer = 'coach', team, stoppedTurn = null, onArtifa
   const playersByName = useMemo(() => Object.fromEntries(players.map((p) => [p.name, p.id])), [players]);
   const pending = pendingApproval(messages);
   const last = turns[turns.length - 1];
-  const awaiting = busy && (!last || last.role === 'user');
+  // The question is out and nothing has opened its answer: the turn exists anyway (it arrives after the question, as a reply does).
+  const awaiting = !!last && last.role === 'user' && (busy || !!error || stoppedTurn !== null);
   const lastAssistantId = [...turns].reverse().find((t) => t.role === 'assistant')?.id;
+  const lastUserId = [...turns].reverse().find((t) => t.role === 'user')?.id;
+  const pages = useMemo(() => pagesOf(turns), [turns]);
+  const changed = useMemo(() => failedAnswerChangedNothing(messages), [messages]);
 
-  // ── Scroll ──
   const rootRef = useRef<HTMLDivElement>(null);
-  const endRef = useRef<HTMLDivElement>(null);
-  const stick = useRef(true);
-  // CP-7: Ask v2 follows the answer while the reader is within 0.9 of a screen of the bottom; past that, S-ASK.jump brings them back.
-  // It sits in the chat column, not the thread: the thread is its own overflow box, so anything sticky in it travels with the words.
-  const [jump, setJump] = useState<{ host: HTMLElement; bottom: number } | null>(null);
-  useEffect(() => {
-    // Read the scroller on each scroll, and listen on the document's capture: at mount the scroller's overflow may not have applied yet, and a
-    // listener left on the window never hears it, so the thread kept following a reader who had scrolled away.
-    const onScroll = () => {
-      const sp = scrollParentOf(rootRef.current);
-      const { gap, screen } = fromBottom(sp);
-      const reach = screen * 0.9;
-      stick.current = gap < reach;
+  const colRef = useRef<HTMLDivElement>(null);
+  /** How far under the scroller's top the column starts, at rest: where a page's question sits when it takes the top. */
+  const inset = useRef(0);
 
-      const host = rootRef.current?.closest<HTMLElement>('.ch-ask-main');
-      const bottom = host && sp ? Math.round(host.getBoundingClientRect().bottom - sp.getBoundingClientRect().bottom) + 12 : 0;
-      const next = gap >= reach && host ? { host, bottom } : null;
-      setJump((j) => (j?.host === next?.host && j?.bottom === next?.bottom ? j : next));
+  // ── The page: its height, and where the thread rests ──
+  // The last page is at least as tall as the thread's visible height, less the scroller's own insets, so a short answer leaves open
+  // space under it and a growing one grows into space that is already there.
+  useLayoutEffect(() => {
+    const root = rootRef.current;
+    const sp = scrollParentOf(root);
+    if (!root || !sp) return;
+    const measure = () => {
+      const col = colRef.current;
+      if (!col) return;
+      // What sits above the column (the scroller's and the thread's own insets) and the insets below it: the page fills the rest.
+      const above = col.getBoundingClientRect().top - sp.getBoundingClientRect().top + sp.scrollTop;
+      const below = parseFloat(getComputedStyle(root).paddingBottom || '0') + parseFloat(getComputedStyle(sp).paddingBottom || '0');
+      inset.current = above;
+      root.style.setProperty('--ch-ak-view', `${Math.max(0, Math.floor(sp.clientHeight - above - below))}px`);
+    };
+    measure();
+    if (typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(sp);
+    return () => ro.disconnect();
+  }, []);
+
+  // When each question was sent, for the turn that waits on it (the work line's words are a matter of time).
+  const sentAt = useRef(new Map<string, number>());
+  const knownTurns = useRef<Set<string> | null>(null);
+  // A thread opened from history is at rest: none of its turns arrive. One that mounts on its first question (the home handing over) is new.
+  const openedOnSend = useRef(messages.length === 1 && busy);
+  if (knownTurns.current === null) knownTurns.current = new Set(openedOnSend.current ? [] : turns.map((t) => t.id));
+  for (const t of turns) if (t.role === 'user' && !knownTurns.current.has(t.id) && !sentAt.current.has(t.id)) sentAt.current.set(t.id, typeof performance === 'undefined' ? 0 : performance.now());
+
+  // ── Follow, and the Latest key ──
+  // `follow`: the coach is at the live edge because they went there. A send clears it: the answer never chases itself.
+  const follow = useRef(false);
+  const ours = useRef(0);
+  const [more, setMore] = useState<{ host: HTMLElement; bottom: number } | null>(null);
+  const place = useCallback(() => {
+    const sp = scrollParentOf(rootRef.current);
+    if (!sp) return;
+    const gap = sp.scrollHeight - sp.scrollTop - sp.clientHeight;
+    const host = rootRef.current?.closest<HTMLElement>('.ch-ask-main') ?? null;
+    const bottom = host ? Math.round(host.getBoundingClientRect().bottom - sp.getBoundingClientRect().bottom) + 12 : 0;
+    const next = gap > TURN_TIMING.edge && host ? { host, bottom } : null;
+    setMore((m) => (m?.host === next?.host && m?.bottom === next?.bottom ? m : next));
+    return gap;
+  }, []);
+  useEffect(() => {
+    // Listen on the document's capture: at mount the scroller's overflow may not have applied yet, and a listener on the window never hears it.
+    const onScroll = () => {
+      const gap = place();
+      // A scroll the thread made itself (the send, the glide to Latest) is not the coach going to the edge.
+      if (gap !== undefined && performance.now() > ours.current) follow.current = gap <= TURN_TIMING.edge;
     };
     document.addEventListener('scroll', onScroll, { passive: true, capture: true });
     return () => document.removeEventListener('scroll', onScroll, { capture: true });
-  }, []);
-  const turnCount = turns.length;
-  const lastRole = last?.role;
-  // ASK-15: only the thread's own scroller moves. scrollIntoView also scrolls every ancestor, the page included.
-  const toEnd = (behavior: ScrollBehavior) => {
+  }, [place]);
+
+  // A thread opened from history shows its newest words.
+  useLayoutEffect(() => {
+    if (openedOnSend.current) return;
     const sp = scrollParentOf(rootRef.current);
-    if (sp) sp.scrollTo?.({ top: sp.scrollHeight, behavior });
-    else endRef.current?.scrollIntoView?.({ block: 'end', behavior });
-  };
-  useEffect(() => {
-    // The coach sent something: show it, wherever they were.
-    if (lastRole === 'user') {
-      stick.current = true;
-      toEnd(reduced ? 'instant' : 'smooth');
+    if (sp) sp.scrollTop = sp.scrollHeight;
+  }, []);
+
+  // ── Send: the question takes the top of the page (MO-3-4, MO-3-5) ──
+  const drawn = useRef<string | undefined>(openedOnSend.current ? undefined : lastUserId);
+  useLayoutEffect(() => {
+    if (!lastUserId || drawn.current === lastUserId) return;
+    drawn.current = lastUserId;
+    const root = rootRef.current;
+    const col = colRef.current;
+    const sp = scrollParentOf(root);
+    const page = col?.querySelector<HTMLElement>('.ch-ak-page.is-last');
+    const bubble = page?.querySelector<HTMLElement>('.ch-th-user p');
+    if (!root || !col || !sp || !page) return;
+    follow.current = false;
+    ours.current = performance.now() + 400;
+    const before = sp.scrollTop;
+    const top = sp.scrollTop + page.getBoundingClientRect().top - sp.getBoundingClientRect().top - inset.current;
+    sp.scrollTop = Math.max(0, top);
+    const delta = Math.min(sp.scrollTop - before, sp.clientHeight);
+    const source = takeSendSource() ?? document.querySelector<HTMLElement>('.ch-ask-cmp textarea')?.getBoundingClientRect() ?? null;
+    if (reduced || typeof col.animate !== 'function') return;
+    // The scroll position is already final. The glide shows the older pages going up and away instead of vanishing; a second
+    // send adds its own glide on top of one still running (composite add), so nothing snaps.
+    const send = chSpringCurve('send');
+    if (delta > 1) col.animate([{ transform: `translateY(${delta}px)` }, { transform: 'translateY(0)' }], { duration: send.ms, easing: send.linear, composite: 'add' });
+    if (bubble && source) {
+      // The words rise out of the thing the coach touched (the field, a start, a follow-up), on the launch spring.
+      const rest = bubble.getBoundingClientRect();
+      const dx = Math.min(0, source.left - rest.left);
+      const dy = source.top - rest.top - delta;
+      const launch = chSpringCurve('launch');
+      bubble.animate([{ transform: `translate(${dx}px, ${dy}px) scale(0.96)` }, { transform: 'translate(0, 0) scale(1)' }], { duration: launch.ms, easing: launch.linear });
+      bubble.animate([{ opacity: 0.35 }, { opacity: 1 }], { duration: CH_MS.fillInk, easing: `cubic-bezier(${CH_FILL_EASE_POINTS.join(', ')})` });
     }
-  }, [turnCount, lastRole, reduced]);
+  }, [lastUserId, reduced]);
+
+  // While an answer arrives: follow only at the live edge. The Latest key's place is kept up as the content grows.
   useEffect(() => {
-    // Streaming: follow the answer only while the coach is at the bottom.
-    if (lastRole === 'user') return;
-    // Coalesce chunks received before the next paint; never inherit CSS smooth
-    // scrolling, which would restart an animation for every stream update.
     const frame = requestAnimationFrame(() => {
-      if (stick.current) toEnd('instant');
+      const sp = scrollParentOf(rootRef.current);
+      if (sp && follow.current) {
+        ours.current = performance.now() + 80;
+        sp.scrollTop = sp.scrollHeight;
+      }
+      place();
     });
     return () => cancelAnimationFrame(frame);
-  }, [messages, busy, error, lastRole]);
+  }, [messages, busy, error, place]);
+  const toLatest = () => {
+    const sp = scrollParentOf(rootRef.current);
+    haptic('select');
+    follow.current = true;
+    ours.current = performance.now() + 900;
+    setMore(null);
+    sp?.scrollTo?.({ top: sp.scrollHeight, behavior: reduced ? 'instant' : 'smooth' });
+  };
 
   // ── Receipts that arrive while this thread is on screen: one haptic, and a toast when a write did not complete. A reloaded thread's receipts are not announced again. ──
   const seen = useRef<Set<string> | null>(null);
   useEffect(() => {
-    const receipts = turns.flatMap((t) => (t.role === 'assistant' ? t.blocks.flatMap((b) => (b.kind === 'receipt' ? [b] : [])) : []));
+    const receipts = turns.flatMap((t) => (t.role === 'assistant' ? t.blocks.flatMap((b) => (b.kind === 'receipt' ? [{ ...b, carded: t.blocks.some((x) => x.kind === 'proposal' && x.view.receipt === b.receipt) }] : [])) : []));
     if (seen.current === null) {
       seen.current = new Set(receipts.map((r) => r.key));
       return;
@@ -151,161 +244,131 @@ export function AskThread({ viewer = 'coach', team, stoppedTurn = null, onArtifa
     for (const r of receipts) {
       if (seen.current.has(r.key)) continue;
       seen.current.add(r.key);
-      // Held is a write that went through its press and is waiting out Undo, not a failure: no "not completed" toast.
-      if (r.receipt.status === 'completed' || r.receipt.status === 'held') {
-        haptic('success');
-      } else {
+      // A held write is not saved yet: its haptic comes with the save (the card's own). A failure the coach is looking at needs no toast.
+      if (r.receipt.status === 'completed') {
+        // A receipt on its card: the card fires the haptic, at the moment the write is saved (after a hold, that is later than this).
+        if (!r.carded) haptic('success');
+      } else if (r.receipt.status !== 'held') {
         haptic('error');
         toast({ title: `${r.receipt.action}, not completed`, tone: 'error', body: r.receipt.error ?? r.receipt.summary, code: 'CH-13050' });
       }
     }
   }, [turns, toast]);
 
-  // ── A new turn rises in; the ones the thread opened with do not ──
-  const initial = useRef<Set<string> | null>(null);
-  if (initial.current === null) initial.current = new Set(turns.map((t) => t.id));
-  // The answer that takes over from the "Reading your program" placeholder is already on screen: it must not fade in a
-  // second time (the avatar and name blinked out and back, 2026-10-29). Its id is kept so it stays still on re-renders.
-  const placeholderShown = useRef(false);
-  const continued = useRef(new Set<string>());
-  if (awaiting) placeholderShown.current = true;
-  for (const t of turns) {
-    if (t.role !== 'assistant' || initial.current.has(t.id) || continued.current.has(t.id)) continue;
-    if (placeholderShown.current) continued.current.add(t.id);
-    placeholderShown.current = false;
-  }
+  const openRead = useCallback((messageId: string) => (ref: string, label: string) => onOpenEvidence({ messageId, key: `read-${messageId}-${ref}`, label, ref }), [onOpenEvidence]);
 
   return (
     <PlanVersions.Provider value={planVersions}>
-    <div ref={rootRef} className={'ch-th' + ' ch-ak-th' + (phone ? ' ch-th--phone' : '')} data-ch-code="CH-13850" data-v2="">
-      <div className="ch-th-col" role="log" aria-label="Conversation">
-        {turns.map((turn, turnIndex) => {
-          const fresh = !initial.current?.has(turn.id) && !continued.current.has(turn.id);
-          if (turn.role === 'user') {
-            return (
-              <div key={turn.id} className={'ch-th-turn ch-th-user' + (fresh ? ' is-new' : '')}>
-                <p>
-                  <AskUserText text={turn.text} names={names} />
-                </p>
-              </div>
-            );
-          }
-          const followUps = viewer === 'player' ? playerFollowUps(turn.followUps, turn.envelopes) : turn.followUps;
-          const showFollowUps = turn.id === lastAssistantId && !busy && !pending && !error && followUps.length > 0;
+    <div ref={rootRef} className={'ch-th' + ' ch-ak-th' + (phone ? ' ch-th--phone' : '')} data-ch-code="CH-13850" data-v2="" data-v3="">
+      <div ref={colRef} className="ch-th-col" aria-label="Conversation" role="group">
+        {pages.map((page, pageIndex) => {
+          const lastPage = pageIndex === pages.length - 1;
           return (
-            <AnswerCard
-              key={turn.id}
-              turn={followUps === turn.followUps ? turn : { ...turn, followUps }}
-              stopped={stoppedTurn === turn.id}
-              question={(() => {
-                const before = turns[turnIndex - 1];
-                return before?.role === 'user' ? before.text : undefined;
-              })()}
-              fresh={fresh}
-              showFollowUps={showFollowUps}
-              playersByName={playersByName}
-              onSend={onSend}
-              actions={(b) => {
-                if (b.kind === 'receipt') {
-                  // A receipt with its card is drawn on the card; one alone (an older thread) draws by itself.
-                  if (turn.blocks.some((x) => x.kind === 'proposal' && x.view.receipt)) return null;
+            <div key={page.id} className={'ch-ak-page' + (lastPage ? ' is-last' : '')}>
+              {[
+                ...page.turns.map((turn, turnIndex) => {
+                const fresh = !knownTurns.current?.has(turn.id);
+                if (turn.role === 'user') {
                   return (
-                    <section key={b.key} className="conf">
-                      <Receipt receipt={b.receipt} idempotencyKey={b.key.replace(/^r-receipt-/, '')} />
-                    </section>
+                    <div key={turn.id} className={'ch-th-turn ch-th-user' + (fresh ? ' is-new' : '')}>
+                      <p>
+                        <AskUserText text={turn.text} names={names} />
+                      </p>
+                    </div>
                   );
                 }
-                if (b.kind !== 'proposal') return null;
-                const focus = focusForProposal(turn.id, b.view);
+                const isLast = turn.id === lastAssistantId && lastPage;
+                const followUps = viewer === 'player' ? playerFollowUps(turn.followUps, turn.envelopes) : turn.followUps;
+                const showFollowUps = isLast && !busy && !pending && !error && followUps.length > 0;
+                const question = page.turns[turnIndex - 1];
+                // The turn that answers the page's question keeps one identity from the moment the question is sent, so the mark that
+                // waited is the mark that answers: nothing remounts when the server opens the turn.
+                const answersQuestion = question?.role === 'user' && turnIndex === 1;
+                const end: TurnEnd | null = !isLast || busy ? null : error ? { kind: 'failed', notice: error } : stoppedTurn !== null ? { kind: 'stopped' } : null;
                 return (
-                  <ConfirmCard
-                    key={b.key}
-                    view={b.view}
-                    inlineReceipt={null}
-                    // A live answer takes over from the placeholder, so the turn's own `fresh` is false; what counts is that it was streaming as the card arrived.
-                    fresh={turn.active}
-                    roster={players}
-                    team={team}
-                    evidence={focus && evidenceAvailable(messages, focus) ? { open: evidenceFocus?.key === b.view.key, onOpen: () => onOpenEvidence(focus) } : undefined}
-                    onApprove={onApprove}
-                    onDeny={onDeny}
+                  <AnswerCard
+                    key={answersQuestion ? `answer-${question.id}` : turn.id}
+                    turn={followUps === turn.followUps ? turn : { ...turn, followUps }}
+                    fresh={fresh}
+                    showFollowUps={showFollowUps}
+                    playersByName={playersByName}
                     onSend={onSend}
+                    sentAt={answersQuestion && turn.active ? (sentAt.current.get(question.id) ?? null) : null}
+                    end={end}
+                    offline={offline}
+                    changed={changed}
+                    onRetry={onRetry}
+                    onNewChat={onNewChat}
+                    onOpenRead={openRead(turn.id)}
+                    openRef={evidenceFocus?.messageId === turn.id ? (evidenceFocus.ref ?? null) : null}
+                    actions={(b) => {
+                      if (b.kind === 'receipt') {
+                        // A receipt with its card is drawn on the card; one alone (an older thread) draws by itself.
+                        if (turn.blocks.some((x) => x.kind === 'proposal' && x.view.receipt)) return null;
+                        return (
+                          <section key={b.key} className="conf">
+                            <Receipt receipt={b.receipt} idempotencyKey={b.key.replace(/^r-receipt-/, '')} />
+                          </section>
+                        );
+                      }
+                      if (b.kind !== 'proposal') return null;
+                      const focus = focusForProposal(turn.id, b.view);
+                      return (
+                        <ConfirmCard
+                          key={b.key}
+                          view={b.view}
+                          inlineReceipt={null}
+                          // The card arrived in this visit while the turn was live: it rises out of the answer. A stored one draws still.
+                          fresh={fresh || turn.active}
+                          busy={busy}
+                          roster={players}
+                          team={team}
+                          evidence={focus && evidenceAvailable(messages, focus) ? { open: evidenceFocus?.key === b.view.key, onOpen: () => onOpenEvidence(focus) } : undefined}
+                          onApprove={onApprove}
+                          onDeny={onDeny}
+                          onSend={onSend}
+                        />
+                      );
+                    }}
+                    onArtifact={onArtifact}
+                    players={players}
                   />
                 );
-              }}
-              onArtifact={onArtifact}
-              players={players}
-            />
+                }),
+                // The answer the server has not opened yet. It shares the list and the key of the turn that will take its place.
+                lastPage && awaiting && last?.role === 'user' ? (
+                <AnswerCard
+                  key={`answer-${last.id}`}
+                  turn={{ ...pendingTurn(`pending-${last.id}`), active: busy }}
+                  fresh
+                  showFollowUps={false}
+                  playersByName={playersByName}
+                  players={players}
+                  onSend={onSend}
+                  actions={() => null}
+                  sentAt={sentAt.current.get(last.id) ?? null}
+                  started={false}
+                  end={busy ? null : error ? { kind: 'failed', notice: error } : { kind: 'stopped' }}
+                  offline={offline}
+                  changed={changed}
+                  onRetry={onRetry}
+                  onNewChat={onNewChat}
+                />
+                ) : null,
+              ]}
+            </div>
           );
         })}
-        {awaiting && (
-          <div className="ch-th-turn ch-th-ans is-new" aria-busy="true">
-            <CoachMark working />
-            <div className="ch-th-ans__body">
-              <span className="ch-th-who">CoachHelm</span>
-              <Steps steps={[{ id: 'first', label: 'Reading your program', state: 'active' }]} active seconds={null} />
-            </div>
-          </div>
-        )}
-        {error && <AskError notice={error} offline={offline} changed={failedAnswerChangedNothing(messages)} onRetry={onRetry} onNewChat={onNewChat} />}
-        <div ref={endRef} className="ch-th-end" />
       </div>
-      {jump &&
+      {more &&
         createPortal(
-          <button
-            type="button"
-            className="ch-ak-jump"
-            aria-label="Jump to the latest"
-            data-ch-press=""
-            style={{ bottom: jump.bottom }}
-            onClick={() => {
-              stick.current = true;
-              setJump(null);
-              toEnd(reduced ? 'instant' : 'smooth');
-            }}
-          >
+          <button type="button" className={'ch-ak-jump' + (busy ? ' is-live' : '')} aria-label={busy ? 'More below. Jump to the latest' : 'Jump to the latest'} data-ch-press="" style={{ bottom: more.bottom }} onClick={toLatest}>
             <Icon icon={ArrowDown} size={19} />
+            {busy && <LiveDot />}
           </button>,
-          jump.host,
+          more.host,
         )}
     </div>
     </PlanVersions.Provider>
-  );
-}
-
-/**
- * A failed answer, in a sentence the coach can act on. Try again appears only when it can work;
- * a lost conversation offers a new chat; a daily limit offers nothing, because nothing pressed
- * changes it. "Nothing was changed." is only said when it is true of this turn.
- */
-function AskError({ notice, offline, changed, onRetry, onNewChat }: { notice: ChatErrorNotice; offline: boolean; changed: { changedNothing: boolean; unconfirmedWrite: boolean }; onRetry: () => void; onNewChat: () => void }) {
-  useEffect(() => {
-    haptic('error');
-  }, [notice.message]);
-  const offlineRetry = offline && notice.recovery === 'retry';
-  return (
-    <div className="ch-th-error" role="alert" data-ch-code="CH-13251">
-      <Icon icon={CircleAlert} size={16} className="ch-th-error__icon" />
-      <div className="ch-th-error__txt">
-        <p className="ch-th-error__title">{notice.message}</p>
-        {changed.changedNothing && <p className="ch-th-error__body">Nothing was changed.</p>}
-        {changed.unconfirmedWrite && <p className="ch-th-error__body">You confirmed an action in this answer. Check whether it was created before you ask again.</p>}
-        {offlineRetry && (
-          <p className="ch-th-error__body" data-ch-code="CH-1905">
-            {OFFLINE_LINE}
-          </p>
-        )}
-      </div>
-      {notice.recovery === 'retry' && (
-        <Button size="sm" variant="secondary" leftIcon={RotateCw} disabled={offlineRetry} onClick={onRetry}>
-          Try again
-        </Button>
-      )}
-      {notice.recovery === 'new-chat' && (
-        <Button size="sm" variant="secondary" onClick={onNewChat}>
-          Start a new chat
-        </Button>
-      )}
-    </div>
   );
 }

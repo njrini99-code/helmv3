@@ -1,6 +1,6 @@
 import type { UIMessage } from 'ai';
 import { LazyMotion, domAnimation } from 'motion/react';
-import { act, cleanup, render, screen, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import './dialog-polyfill';
@@ -73,25 +73,41 @@ afterEach(() => {
 });
 
 describe('CH-13850 what CoachHelm is doing', () => {
-  it('the answer that takes over from the placeholder does not fade in a second time', () => {
+  it('the turn that waits is the turn that answers: one element from the send to the answer, so nothing blinks', () => {
     const { update } = show({ messages: [], busy: false });
     update({ messages: ASK_MSGS_WORKING.slice(0, 1), busy: true });
-    const placeholder = document.querySelector('.ch-th-ans[aria-busy="true"]');
-    expect(placeholder?.classList.contains('is-new')).toBe(true);
-    expect(placeholder?.querySelector('.ch-th-mark.is-working')).not.toBeNull();
+    const waiting = document.querySelector('.ch-ak-page.is-last .ch-ak-turn');
+    expect(waiting).not.toBeNull();
     update({ messages: ASK_MSGS_WORKING, busy: true });
     const answer = screen.getByRole('article', { name: 'CoachHelm answer' });
-    expect(answer.classList.contains('is-new')).toBe(false);
+    // The server opening the turn does not remount it: the mark that waited is the mark that answers.
+    expect(answer.closest('.ch-ak-turn')).toBe(waiting);
+    expect(answer.querySelector('.ch-th-mark.is-working')).not.toBeNull();
     expect(document.querySelector('.ch-th-user')?.classList.contains('is-new')).toBe(true);
   });
   it('the phone has no Stop here: the composer owns it', () => {
     show({ messages: ASK_MSGS_WORKING, busy: true, phone: true });
     expect(screen.queryByRole('button', { name: 'Stop' })).toBeNull();
   });
-  it('before the first token there is one quiet line, and no raw tool name anywhere', () => {
-    show({ messages: ASK_MSGS_THINKING, busy: true });
-    expect(screen.getByText('Reading your program')).toBeTruthy();
-    expect(document.body.textContent).not.toMatch(/get_[a-z_]+/);
+  it('before the server answers there are no words, only the mark; the work line speaks at 1.2 s and says only what is known', () => {
+    vi.useFakeTimers();
+    try {
+      show({ messages: ASK_MSGS_THINKING, busy: true });
+      // The turn arrives after its question (150 ms), with the mark turning and nothing said.
+      expect(screen.queryByRole('article', { name: 'CoachHelm answer' })).toBeNull();
+      act(() => { vi.advanceTimersByTime(200); });
+      const turn = screen.getByRole('article', { name: 'CoachHelm answer' });
+      expect(turn.querySelector('.ch-th-mark.is-working')).not.toBeNull();
+      expect(turn.querySelector('.ch-ak-wl')?.textContent).toBe('');
+      // Nothing has come back from the server: it is still being sent, and that is all that is claimed.
+      act(() => { vi.advanceTimersByTime(1100); });
+      expect(turn.querySelector('.ch-ak-wl')?.textContent).toBe('Sending');
+      act(() => { vi.advanceTimersByTime(5000); });
+      expect(turn.querySelector('.ch-ak-wl')?.textContent).toBe('Still sending. Check your connection.');
+      expect(document.body.textContent).not.toMatch(/get_[a-z_]+/);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 
@@ -302,66 +318,92 @@ describe('the evidence panel', () => {
   });
 });
 
-describe('scrolling', () => {
-  const scrollTo = vi.fn();
-  beforeEach(() => {
-    scrollTo.mockClear();
-    Element.prototype.scrollIntoView = scrollTo;
-    Object.defineProperty(document.documentElement, 'scrollHeight', { value: 0, configurable: true });
+describe('Rule P: the question takes the top of the page, and the thread never scrolls itself', () => {
+  /** A scroller with a size: jsdom lays nothing out, so the page's geometry is given. */
+  function inScroller(over: Partial<AskThreadProps> = {}) {
+    const p = props(over);
+    const tree = (q: AskThreadProps) => wrap(
+      <section className="ch-ask-main">
+        <div data-testid="sp" style={{ overflowY: 'auto' }}>
+          <AskThread {...q} />
+        </div>
+      </section>,
+    );
+    const view = render(tree(p));
+    const sp = screen.getByTestId('sp');
+    const sets: number[] = [];
+    let top = 0;
+    Object.defineProperty(sp, 'scrollTop', { configurable: true, get: () => top, set: (v: number) => { top = v; sets.push(v); } });
+    Object.defineProperty(sp, 'clientHeight', { configurable: true, value: 600 });
+    const height = (h: number) => Object.defineProperty(sp, 'scrollHeight', { configurable: true, value: h });
+    height(600);
+    return { sp, sets, height, at: (v: number) => { top = v; }, update: (next: Partial<AskThreadProps>) => view.rerender(tree({ ...p, ...next })) };
+  }
+  const u1 = msg('u1', 'user', [{ type: 'text', text: 'first' }]);
+  const a1 = (text: string) => msg('a1', 'assistant', [{ type: 'text', text }]);
+  const u2 = msg('u2', 'user', [{ type: 'text', text: 'second' }]);
+
+  it('a page is a question and what answers it; only the last one is held a screen tall', () => {
+    inScroller({ messages: [u1, a1('one'), u2, msg('a2', 'assistant', [{ type: 'text', text: 'two' }])] });
+    const pages = document.querySelectorAll('.ch-ak-page');
+    expect(pages).toHaveLength(2);
+    expect(pages[0]!.classList.contains('is-last')).toBe(false);
+    expect(pages[1]!.classList.contains('is-last')).toBe(true);
+    expect(pages[1]!.querySelector('.ch-th-user')?.textContent).toBe('second');
   });
-  afterEach(() => {
-    Object.defineProperty(document.documentElement, 'scrollHeight', { value: 0, configurable: true });
+
+  it('a sent question sets the thread\'s position once, at once, and never by scrollIntoView (which would move the page too)', () => {
+    const into = vi.fn();
+    Element.prototype.scrollIntoView = into;
+    const t = inScroller({ messages: [u1, a1('one')] });
+    t.sets.length = 0;
+    t.update({ messages: [u1, a1('one'), u2], busy: true });
+    expect(t.sets).toHaveLength(1);
+    expect(into).not.toHaveBeenCalled();
   });
-  it('uses instant scrolling for a sent question when OS motion is reduced', () => {
-    const originalMatchMedia = window.matchMedia;
-    window.matchMedia = (query) => ({
-      matches: query === '(prefers-reduced-motion: reduce)', media: query,
-      addEventListener: vi.fn(), removeEventListener: vi.fn(), addListener: vi.fn(), removeListener: vi.fn(),
-      dispatchEvent: vi.fn(), onchange: null,
-    }) as MediaQueryList;
+
+  it('does not follow a streaming answer by itself; follows once the coach has scrolled to the live edge', () => {
+    vi.useFakeTimers();
     try {
-      const { update } = show({ messages: [msg('a1', 'assistant', [{ type: 'text', text: 'one' }])] });
-      scrollTo.mockClear();
-      update({ messages: [msg('u2', 'user', [{ type: 'text', text: 'second' }])] });
-      expect(scrollTo).toHaveBeenLastCalledWith({ block: 'end', behavior: 'instant' });
-    } finally { window.matchMedia = originalMatchMedia; }
-  });
-  it('coalesces streamed updates into one instant scroll per frame', () => {
-    const frames = new Map<number, FrameRequestCallback>();
-    let sequence = 0;
-    const raf = vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
-      frames.set(++sequence, callback);
-      return sequence;
-    });
-    const cancel = vi.spyOn(window, 'cancelAnimationFrame').mockImplementation((id) => { frames.delete(id); });
-    try {
-      const { update } = show({ messages: [msg('a1', 'assistant', [{ type: 'text', text: 'one' }])], busy: true });
-      scrollTo.mockClear();
-      for (const text of ['one two', 'one two three', 'one two three four']) {
-        update({ messages: [msg('a1', 'assistant', [{ type: 'text', text }])], busy: true });
-      }
-      expect(scrollTo).not.toHaveBeenCalled();
-      expect(frames.size).toBe(1);
-      act(() => { for (const callback of frames.values()) callback(performance.now()); frames.clear(); });
-      expect(scrollTo).toHaveBeenCalledTimes(1);
-      expect(scrollTo).toHaveBeenCalledWith({ block: 'end', behavior: 'instant' });
+      const t = inScroller({ messages: [u1, a1('one')] });
+      t.update({ messages: [u1, a1('one'), u2], busy: true });
+      t.sets.length = 0;
+      // The answer grows past the fold: the thread stays where it is.
+      t.height(1400);
+      for (const text of ['two', 'two three', 'two three four']) t.update({ messages: [u1, a1('one'), u2, msg('a2', 'assistant', [{ type: 'text', text }])], busy: true });
+      act(() => { vi.advanceTimersByTime(600); });
+      expect(t.sets).toHaveLength(0);
+      // The coach scrolls to the end themselves: from here the newest line is followed.
+      t.at(800);
+      act(() => { t.sp.dispatchEvent(new Event('scroll')); });
+      t.sets.length = 0;
+      t.height(1600);
+      t.update({ messages: [u1, a1('one'), u2, msg('a2', 'assistant', [{ type: 'text', text: 'two three four five' }])], busy: true });
+      act(() => { vi.advanceTimersByTime(50); });
+      expect(t.sets).toEqual([1600]);
     } finally {
-      raf.mockRestore();
-      cancel.mockRestore();
+      vi.useRealTimers();
     }
   });
-  it('shows what the coach sent, wherever they were; follows a streaming answer only while they are at the bottom', () => {
-    const { update } = show({ messages: [msg('u1', 'user', [{ type: 'text', text: 'first' }]), msg('a1', 'assistant', [{ type: 'text', text: 'one' }])] });
-    scrollTo.mockClear();
-    // They scrolled up: the page is tall and they are far from the end.
-    Object.defineProperty(document.documentElement, 'scrollHeight', { value: 5000, configurable: true });
-    act(() => {
-      window.dispatchEvent(new Event('scroll'));
-    });
-    update({ messages: [msg('u1', 'user', [{ type: 'text', text: 'first' }]), msg('a1', 'assistant', [{ type: 'text', text: 'one two' }])], busy: true });
-    expect(scrollTo).not.toHaveBeenCalled();
-    update({ messages: [msg('u1', 'user', [{ type: 'text', text: 'first' }]), msg('a1', 'assistant', [{ type: 'text', text: 'one two' }]), msg('u2', 'user', [{ type: 'text', text: 'second' }])], busy: false });
-    expect(scrollTo).toHaveBeenCalled();
+
+  it('the Latest key says there is more below while the answer is still being written, and takes the coach there', () => {
+    vi.useFakeTimers();
+    try {
+      const t = inScroller({ messages: [u1, a1('one')] });
+      t.update({ messages: [u1, a1('one'), u2], busy: true });
+      t.height(1400);
+      t.update({ messages: [u1, a1('one'), u2, msg('a2', 'assistant', [{ type: 'text', text: 'two' }])], busy: true });
+      act(() => { vi.advanceTimersByTime(50); });
+      const key = screen.getByRole('button', { name: 'More below. Jump to the latest' });
+      expect(key.querySelector('.ch-ak-live')).not.toBeNull();
+      const scrollTo = vi.fn();
+      t.sp.scrollTo = scrollTo;
+      fireEvent.click(key);
+      expect(scrollTo).toHaveBeenCalledWith({ top: 1400, behavior: 'smooth' });
+      expect(hapticSpy).toHaveBeenCalledWith('select');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 
@@ -372,9 +414,12 @@ describe('a thread as it opens', () => {
     update({ messages: [...ASK_MSGS_LONG, msg('u9', 'user', [{ type: 'text', text: 'and one more' }])] });
     expect(document.querySelectorAll('.ch-th-turn.is-new')).toHaveLength(1);
   });
-  it('a long thread is one conversation log; every answer is an article', () => {
+  it('a long thread is one named conversation; every answer is an article that speaks in sentences, not words', () => {
     show({ messages: ASK_MSGS_LONG });
-    expect(screen.getByRole('log', { name: 'Conversation' })).toBeTruthy();
+    // Not a log: a log is a live region, and a streaming answer in one is read out a word at a time. Each answer has its own polite region.
+    expect(screen.getByRole('group', { name: 'Conversation' })).toBeTruthy();
+    expect(screen.queryByRole('log')).toBeNull();
+    expect(document.querySelectorAll('article[aria-label="CoachHelm answer"] > [aria-live="polite"][aria-atomic="true"]')).toHaveLength(5);
     expect(screen.getAllByRole('article', { name: 'CoachHelm answer' })).toHaveLength(5);
   });
 });

@@ -3,16 +3,32 @@
 import type { UIMessage } from 'ai';
 import { useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { X } from 'lucide-react';
-import { buildEvidencePanel, type EvidenceFocus } from '../../../data/coachhelm-chat-thread';
+import { buildEvidencePanel, readForFocus, sourceLine, readBasis, type EvidenceFocus } from '../../../data/coachhelm-chat-thread';
 import { Modal } from '../../../ui/Modal';
-import { DataTable, Tiles, Trend } from './Evidence';
+import { AskEvidenceView, DataTable, Tiles, Trend } from './Evidence';
 import '../../../styles/coachhelm-thread.css';
 import { IconButton } from '../../../ui/Button';
 
 /** The figures behind an action card, beside the conversation on desktop and in a sheet on a phone. */
 export function AskEvidencePanel({ focus, messages, phone, onClose, open = true }: { focus: EvidenceFocus; messages: UIMessage[]; phone: boolean; onClose: () => void; open?: boolean }) {
   const model = useMemo(() => buildEvidencePanel(messages, focus), [messages, focus]);
-  const body = (
+  // A chip's read (chat v3): that one read, as the server returned it, with its window and sample under the name.
+  const read = useMemo(() => readForFocus(messages, focus), [messages, focus]);
+  const basis = read ? readBasis(read.envelope) : undefined;
+  const readBody = read && (
+    <div key={focus.ref} className={'ch-th-evp__body is-read' + (phone ? ' is-phone' : '')}>
+      {read.envelope.coverage === 'unavailable' ? (
+        <p className="ch-th-read">
+          <b>This read didn’t come back.</b> The answer says what it is missing.
+        </p>
+      ) : (
+        <AskEvidenceView envelope={read.envelope} roster={[]} />
+      )}
+    </div>
+  );
+  const subtitle = read ? (basis ? sourceLine(basis) : 'What CoachHelm read') : model.subtitle;
+  const title = read ? focus.label : 'Evidence';
+  const body = readBody || (
     // `is-phone`: the sheet's figures are rows on the sheet, not tiles (coachhelm-thread.css, the cardless pass).
     <div className={'ch-th-evp__body' + (phone ? ' is-phone' : '')}>
       {model.empty ? (
@@ -38,15 +54,15 @@ export function AskEvidencePanel({ focus, messages, phone, onClose, open = true 
 
   if (phone) {
     return (
-      <Modal open={open} onClose={onClose} title="Evidence" description={model.subtitle} code="CH-13851">
+      <Modal open={open} onClose={onClose} title={title} description={subtitle} code="CH-13851">
         {body}
       </Modal>
     );
   }
-  return <DesktopPanel subtitle={model.subtitle} onClose={onClose}>{body}</DesktopPanel>;
+  return <DesktopPanel title={title} subtitle={subtitle} onClose={onClose}>{body}</DesktopPanel>;
 }
 
-function DesktopPanel({ subtitle, onClose, children }: { subtitle: string; onClose: () => void; children: ReactNode }) {
+function DesktopPanel({ title, subtitle, onClose, children }: { title: string; subtitle: string; onClose: () => void; children: ReactNode }) {
   const ref = useRef<HTMLElement>(null);
   // Focus goes to the panel when it opens and back to the control that opened it when it closes.
   useEffect(() => {
@@ -74,7 +90,7 @@ function DesktopPanel({ subtitle, onClose, children }: { subtitle: string; onClo
     >
       <div className="ch-th-evp__head">
         <span className="ch-th-evp__titles">
-          <b>Evidence</b>
+          <b>{title}</b>
           <span>{subtitle}</span>
         </span>
         <IconButton icon={X} label="Close evidence" onClick={onClose} />

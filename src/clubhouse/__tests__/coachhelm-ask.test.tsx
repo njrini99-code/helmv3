@@ -422,20 +422,18 @@ describe('the composer', () => {
     expect(box().value).toBe('Brief me');
   });
 
-  it('CH-13120 while an action card awaits Confirm or Cancel, Send is off and Enter sends nothing, and the box says why', async () => {
+  it('while an action card waits the composer stays open: a new question is sent (the server sets the card aside first), and the box says so', async () => {
     const { chat } = show(ready({ thread: { id: 'c-putting', title: 'Putting inside 6 feet', messages: ASK_MSGS_ACTION } }), fakeChat());
+    expect(box().placeholder).toBe('Ask something else, or answer the card');
     await userEvent.type(box(), 'What about Eli?{Enter}');
-    expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled();
-    expect(chat.calls.send).not.toHaveBeenCalled();
-    expect(code('CH-13120')?.textContent).toBe('Confirm or cancel the action above first');
-    expect(box()).toHaveAccessibleDescription('Confirm or cancel the action above first');
-    expect(box().value).toBe('What about Eli?');
+    expect(chat.calls.send).toHaveBeenCalledWith('What about Eli?');
+    expect(code('CH-13120')).toBeNull();
   });
 
-  it('CH-13120 a pill or a follow-up sent over a waiting card is not sent either', async () => {
+  it('a pill or a follow-up sent over a waiting card is sent too', async () => {
     const { chat } = show(ready({ thread: { id: 'c-putting', title: 'Putting inside 6 feet', messages: ASK_MSGS_ACTION } }), fakeChat());
     await userEvent.click(screen.getByRole('button', { name: 'stub follow-up' }));
-    expect(chat.calls.send).not.toHaveBeenCalled();
+    expect(chat.calls.send).toHaveBeenCalled();
   });
 
   it('CH-13421 while a reply streams Send is Stop, and Stop is silent', async () => {

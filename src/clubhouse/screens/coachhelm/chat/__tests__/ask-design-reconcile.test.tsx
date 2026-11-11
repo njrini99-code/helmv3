@@ -53,12 +53,15 @@ describe('the Confirm card', () => {
     expect(container.querySelector('.evd')?.textContent).not.toContain('Wed 4:00');
   });
 
-  it('fills its fields only when the card is new in this visit', () => {
+  it('arrives whole, and only when the card is new in this visit (chat v3: no field is staged)', () => {
     const fresh = render(card(view(), { fresh: true }));
-    expect(fresh.container.querySelector('.conf.is-fill')).not.toBeNull();
+    expect(fresh.container.querySelector('.conf.is-arriving')).not.toBeNull();
+    // The plan came as one piece: the Confirm button is there with the card, not after a staged fill.
+    expect(fresh.container.querySelector('.conf.is-fill')).toBeNull();
+    expect(fresh.container.querySelector('[data-ch-ask-confirm]')).not.toBeNull();
     cleanup();
     const again = render(card(view()));
-    expect(again.container.querySelector('.conf.is-fill')).toBeNull();
+    expect(again.container.querySelector('.conf.is-arriving')).toBeNull();
   });
 
   it('offers the reads behind a draft when it has them', () => {
@@ -76,15 +79,19 @@ describe('the receipt', () => {
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: /Undo/ }));
     });
-    expect(screen.getByText(/Too late to undo\. It’s done\. Open it to change it\./)).toBeTruthy();
+    expect(screen.getByText(/Too late to undo\. It’s saved\. Open it to change it\./)).toBeTruthy();
     expect(screen.queryByText(/Undone/)).toBeNull();
   });
 
   it('a dropped Undo keeps the control, and a good one uses the flow’s own line and tells the card', async () => {
-    const onUndone = vi.fn();
+    const onPhase = vi.fn();
     const f = vi.fn(() => Promise.reject(new Error('offline')));
     vi.stubGlobal('fetch', f);
-    render(<Receipt receipt={held()} idempotencyKey="k" undoneLine="Undone. The event was removed." onUndone={onUndone} />);
+    render(<Receipt receipt={held()} idempotencyKey="k" undoneLine="Undone. The event was removed." onPhase={onPhase} />);
+    // While the server holds it, the row says it is not saved yet and shows the seconds left: never a check.
+    expect(screen.getByText(/Not saved yet\. Saves in \d+ seconds?\./)).toBeTruthy();
+    expect(document.querySelector('.receipt .ck')).toBeNull();
+    expect(onPhase).toHaveBeenLastCalledWith('held');
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: /Undo/ }));
     });
@@ -94,7 +101,7 @@ describe('the receipt', () => {
       fireEvent.click(screen.getByRole('button', { name: /Undo/ }));
     });
     expect(screen.getByText('Undone. The event was removed.')).toBeTruthy();
-    expect(onUndone).toHaveBeenCalledOnce();
+    expect(onPhase).toHaveBeenLastCalledWith('undone');
   });
 
   it('draws coins only when they are everyone the count says was told', () => {
@@ -113,18 +120,18 @@ describe('a card arriving in a live answer', () => {
   const props = { v2: true, error: null, offline: false, phone: false, players: [], onApprove: vi.fn(), onDeny: vi.fn(), onSend: vi.fn(), onStop: vi.fn(), onRetry: vi.fn(), onNewChat: vi.fn(), evidenceFocus: null, onOpenEvidence: vi.fn() };
   const q = { id: 'u1', role: 'user', parts: [{ type: 'text', text: 'Set a meeting' }] };
   const parts = [{ type: 'data-action-proposal', id: 'p-k', data: { ...proposal(), tool: 'create_event' } }, { type: 'tool-create_event', toolCallId: 'c1', state: 'approval-requested', input: {}, approval: { id: 'a1' } }];
-  it('fills its fields, though the answer took over from the placeholder', () => {
+  it('rises out of the answer, though the answer took over from the waiting turn', () => {
     const { container, rerender } = render(<AskThread {...props} busy messages={[q] as unknown as UIMessage[]} />);
     rerender(<AskThread {...props} busy messages={[q, { id: 'a1', role: 'assistant', parts }] as unknown as UIMessage[]} />);
-    expect(container.querySelector('.conf.is-fill')).not.toBeNull();
-    // Still filled as it was when the stream ends: nothing replays or snaps.
+    expect(container.querySelector('.conf.is-arriving')).not.toBeNull();
+    // Still as it was when the stream ends: nothing replays or snaps.
     rerender(<AskThread {...props} busy={false} messages={[q, { id: 'a1', role: 'assistant', parts }] as unknown as UIMessage[]} />);
-    expect(container.querySelector('.conf.is-fill')).not.toBeNull();
+    expect(container.querySelector('.conf.is-arriving')).not.toBeNull();
   });
   it('draws still when the thread opens with it', () => {
     const { container } = render(<AskThread {...props} busy={false} messages={[q, { id: 'a1', role: 'assistant', parts }] as unknown as UIMessage[]} />);
     expect(container.querySelector('.conf')).not.toBeNull();
-    expect(container.querySelector('.conf.is-fill')).toBeNull();
+    expect(container.querySelector('.conf.is-arriving')).toBeNull();
   });
 });
 

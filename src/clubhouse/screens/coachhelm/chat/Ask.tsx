@@ -18,6 +18,7 @@ import { CHAT_ERROR_DID_NOT_FINISH, describeChatError } from '../../../data/coac
 import { titleFromQuestion, type ChAskConversation, type ChAskData, type ChAskLoad } from '../../../data/coachhelm-chat-shape';
 import { answerNeverCame, pendingApproval, type EvidenceFocus } from '../../../data/coachhelm-chat-thread';
 import { useChPhone } from '../../../lib/use-phone';
+import { noteSendSource } from './send-source';
 import { PhoneIconAction } from '../../../ui/PhoneBar';
 import { Icon } from '../../../ui/Icon';
 import { SectionBoundary } from '../../../ui/SectionBoundary';
@@ -205,18 +206,24 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
   const showHome = chat.messages.length === 0 && !gone && !data.threadFailed;
   // A turn whose stream ended with no error and no answer (a dev reload, a timeout, a crash) is not an idle thread: it says the answer didn't
   // finish and offers Retry, which sends the same question again (`regenerate` appends nothing).
-  const noAnswer = !chat.busy && !chat.error && !showHome && !gone && !data.threadFailed && !out && answerNeverCame(chat.messages);
+  // CP-1, CP-3: the turn the coach stopped says so, from its own turn, until the next send. `pending`: stopped before the server opened one.
+  const [stoppedTurn, setStoppedTurn] = useState<string | null>(null);
+  const noAnswer = !chat.busy && !chat.error && !showHome && !gone && !data.threadFailed && !out && stoppedTurn === null && answerNeverCame(chat.messages);
   const notice = chat.error ? describeChatError(chat.error) : noAnswer ? CHAT_ERROR_DID_NOT_FINISH : null;
   // A thread covers the page, so the phone tab bar steps aside; the new-chat home keeps it.
   usePhoneTabsHidden(phone && !showHome);
 
-  // CP-1, CP-3: the turn the coach stopped says so, from its own card, until the next send.
-  const [stoppedTurn, setStoppedTurn] = useState<string | null>(null);
   const stop = () => {
     const last = chat.messages[chat.messages.length - 1];
-    setStoppedTurn(last?.role === 'assistant' ? last.id : null);
+    setStoppedTurn(last?.role === 'assistant' ? last.id : 'pending');
     chat.stop();
   };
+  // Where a question came from on screen (a start, a follow-up): the thread raises the bubble out of it (MOTION MO-3-4).
+  useEffect(() => {
+    const note = (e: Event) => noteSendSource(e.target);
+    document.addEventListener('click', note, { capture: true });
+    return () => document.removeEventListener('click', note, { capture: true });
+  }, []);
   // FID-ASK-7: read once, then off the address (below), and taken once: the first send ends it.
   const [seededQuestion, consumeSeed] = useSeedOnce(typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('q'));
   const send = (text: string) => {
@@ -229,7 +236,8 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
   };
   /** False when it wasn't sent, so a card that sends through this can stay open. */
   const ask = (text: string): boolean => {
-    if (chat.busy || pending || refuseOffline()) return false;
+    // A card that waits does not block the next question: the server sets the card aside first (chat v3, SPEC ST-3.card-waiting).
+    if (chat.busy || refuseOffline()) return false;
     send(text);
     return true;
   };
@@ -286,6 +294,7 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
       <AskComposer
         seed={seededQuestion}
         hint={player ? 'Ask about your game' : 'Ask about your team'}
+        waiting={Boolean(pending)}
         scopeOf={(text) => (text.trim() ? askScope(text, player ? 'My rounds' : data.teamName, player ? [] : (data.players ?? []).map((p) => p.name)) : scopeLine).split(' · ')}
         slash={askSlashCommands({ player, plans: !!slashFlags?.plans, lineup: !!slashFlags?.lineup })}
         variant={variant}
@@ -293,7 +302,7 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
         players={data.players}
         busy={chat.busy}
         failed={Boolean(chat.error)}
-        blocked={Boolean(pending)}
+        blocked={false}
         paused={player && out ? 'Ask is paused until Monday' : undefined}
         onSend={send}
         onStop={stop}
@@ -329,7 +338,11 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
         onSend={ask}
         onStop={stop}
         stoppedTurn={stoppedTurn}
-        onRetry={chat.retry}
+        onRetry={() => {
+          // Stopped or failed, Try again asks the same question under its own key: an answered key replays its answer, nothing is asked twice.
+          setStoppedTurn(null);
+          chat.retry();
+        }}
         onNewChat={newChat}
         evidenceFocus={evidence}
         onOpenEvidence={openEvidence}

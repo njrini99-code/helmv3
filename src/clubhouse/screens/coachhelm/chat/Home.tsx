@@ -53,7 +53,7 @@ export function AskHomeV2({ data, phone, heroComposer, onAsk, focus }: { data: C
             <div className="pulse">
               <b>Your focus</b>
               {focus.map((l) => (
-                <button type="button" className="rw" key={l.text} disabled={!l.ask} onClick={() => l.ask && onAsk(l.ask)}>
+                <button type="button" className="rw" data-ch-ask-source="" key={l.text} disabled={!l.ask} onClick={() => l.ask && onAsk(l.ask)}>
                   <i className={l.trend ? DOT[l.trend] : undefined} />
                   <span>{l.text}</span>
                 </button>
@@ -65,7 +65,7 @@ export function AskHomeV2({ data, phone, heroComposer, onAsk, focus }: { data: C
               <b>Since Monday</b>
               {findings.slice(0, 3).map((f) => (
                 // "Tap any line to ask" holds for every line: a finding with no question of its own asks about its headline.
-                <button type="button" className="rw" key={f.id} onClick={() => onAsk(f.ask ?? `${f.headline}. What’s behind it, and what should I do?`)}>
+                <button type="button" className="rw" data-ch-ask-source="" key={f.id} onClick={() => onAsk(f.ask ?? `${f.headline}. What’s behind it, and what should I do?`)}>
                   <i className={DOT[String(f.tone)] ?? 'is-flat'} />
                   <span>{f.headline}</span>
                 </button>
@@ -80,6 +80,7 @@ export function AskHomeV2({ data, phone, heroComposer, onAsk, focus }: { data: C
             <li key={s.id}>
               <button
                 type="button"
+                data-ch-ask-source=""
                 data-ch-code="CH-13721"
                 onClick={() => {
                   haptic('select');

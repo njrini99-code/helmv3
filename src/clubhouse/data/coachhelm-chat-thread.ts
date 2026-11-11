@@ -160,7 +160,7 @@ export interface AskHandoffData {
 
 export type AskBlock =
   | { kind: 'text'; key: string; text: string; lead: boolean }
-  | { kind: 'evidence'; key: string; envelope: ToolEnvelope }
+  | { kind: 'evidence'; key: string; envelope: ToolEnvelope; ref?: string }
   | { kind: 'proposal'; key: string; view: AskProposalView }
   | { kind: 'receipt'; key: string; receipt: ActionReceipt }
   | { kind: 'visual'; key: string; artifact: ValidatedVisualArtifact }
@@ -650,7 +650,9 @@ export function buildAssistantTurn(message: UIMessage, ctx: { isLast: boolean; b
           if (!note || emptySeen.has(note)) return;
           emptySeen.add(note);
         }
-        blocks.push({ kind: 'evidence', key: `e-${String(p.id ?? i)}`, envelope: withWindowFigures(data.envelope, envelopes) });
+        // `ref`: the engine's name for this read (chat v3). The thread draws such a read's table under the answer's prose, once the turn
+        // has finished, because a card arriving above text that is being written moves the words under the coach's eye.
+        blocks.push({ kind: 'evidence', key: `e-${String(p.id ?? i)}`, envelope: withWindowFigures(data.envelope, envelopes), ...(data.ref ? { ref: data.ref } : {}) });
       }
     } else if (p.type === 'data-visual-artifact') {
       const artifact = artifacts.get(String(p.id ?? `v-${i}`));
@@ -1696,7 +1698,20 @@ export function evidenceBlocks(envelope: ToolEnvelope): AskEvidence[] {
 // ── The evidence panel ─────────────────────────────────────────────────────
 
 /** What an action card hands the panel: which turn, which card, and who it is about. */
-export type EvidenceFocus = { messageId: string; key: string; label: string; playerId?: string };
+/** With `ref`, the panel shows that one read of that turn (a chip was tapped) instead of a player's figures. */
+export type EvidenceFocus = { messageId: string; key: string; label: string; playerId?: string; ref?: string };
+
+/** One read of a turn, by its ref: what a chip opens (chat v3, SPEC Moment 6). */
+export function readForFocus(messages: UIMessage[], focus: EvidenceFocus): { tool: string; envelope: ToolEnvelope } | null {
+  if (!focus.ref) return null;
+  const message = messages.find((m) => m.id === focus.messageId);
+  for (const p of message ? partsOf(message) : []) {
+    if (p.type !== 'data-evidence') continue;
+    const d = dataOf<{ tool?: string; envelope?: ToolEnvelope; ref?: string }>(p);
+    if (d?.ref === focus.ref && d.envelope) return { tool: d.tool ?? '', envelope: d.envelope };
+  }
+  return null;
+}
 
 /** At or under this many observations the panel says so: a direction, not a verdict. */
 export const SMALL_SAMPLE_MAX = 12;

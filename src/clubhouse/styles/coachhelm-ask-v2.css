@@ -1010,3 +1010,155 @@ html[data-fw-theme='dark'] .ch-ak-push .ch-btn--primary[data-ch-pressed]:not(:di
   .ch-ak-th .conf.is-fill .ch-ak-tk .rp, .ch-ak-th .conf.is-fill .ch-ak-tk .who > *, .ch-ak-th .conf.is-fill .ch-ak-route .rline, .ch-ak-th .conf.is-fill .ch-ak-route .rd, .ch-ak-th .ch-ak-turn.is-new .ch-ak-board .btiles > * { animation: none; }
 }
 [data-motion='off'] .ch-ak-th :is(.ch-ak-turn.is-new .chips .chip, .conf.is-fill .ch-ak-tk .rp, .conf.is-fill .ch-ak-tk .who > *, .conf.is-fill .ch-ak-route .rline, .conf.is-fill .ch-ak-route .rd, .conf.is-fill .ch-ak-nb, .conf.is-fill .ch-ak-lu li, .ch-ak-turn.is-new .ch-ak-board, .ch-ak-turn.is-new .ch-ak-board .btiles > *, .ch-ak-turn.is-new .ch-ak-pollp .pr), [data-motion='off'] .ch-ak-root .ch-ak-jump { animation: none; }
+
+/* ── Chat v3 (docs/clubhouse/coachhelm-chat-v3/SPEC.md and MOTION.md) ───────────────────────────────────────────────
+   The page, the work line, the reads, streamed words, the turn notice, the Latest key and the send key. Transform and
+   opacity only; every duration and curve is a token. Each arrival uses `backwards`, so a finished one holds no effect. */
+
+/* Rule P: a page is one question and what answers it; the last page is at least one screen tall, so the answer grows into
+   space that is already there and nothing above it is pulled back into view. */
+.ch-ak-th[data-v3] .ch-th-col { gap: 0; }
+.ch-ak-th[data-v3] .ch-ak-page { display: flex; flex-direction: column; gap: 20px; min-width: 0; padding-bottom: 28px; }
+.ch-ak-th[data-v3] .ch-ak-page.is-last { min-height: var(--ch-ak-view, 0px); padding-bottom: 0; }
+/* The question's arrival is the thread's own (MO-3-4): the older rise stands down. */
+.ch-ak-th[data-v3] .ch-th-user.is-new { animation: none; }
+.ch-ak-th[data-v3] .ch-th-user p { transform-origin: 100% 100%; }
+.ch-ak-th[data-v3] .ch-ak-turn.is-early { display: none; }
+.ch-ak-th[data-v3] .ch-ak-turn.is-new .msg-a { animation: ch-ak-fade var(--ch-dur-quick) var(--ch-ease) backwards; }
+
+/* The live dot: the one sign that something is still happening. */
+.ch-ak-live { display: inline-block; flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--ch-ask-accent); animation: ch-ak-breath var(--ch-dur-reveal) var(--ch-ease-io) infinite alternate; }
+
+/* The work line: the words after the name. Status is said here and nowhere else, so it never adds or removes a row. */
+.ch-ak-th[data-v3] .who { flex-wrap: wrap; row-gap: 2px; min-height: 28px; }
+.ch-ak-th[data-v3] .who .nm { flex: none; }
+.ch-ak-wl { display: inline-flex; align-items: center; gap: 8px; min-width: 0; max-width: 100%; margin: 0 0 0 4px; padding: 0; border: 0; background: none; font: var(--ch-type-15); color: var(--ch-text-secondary); letter-spacing: var(--ch-track-15); text-align: left; }
+.ch-ak-wl .t { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; animation: ch-ak-fade var(--ch-dur-base) var(--ch-ease) backwards; }
+.ch-ak-wl .t.shim, .ch-ak-reads .lb.shim { background-image: linear-gradient(90deg, var(--ch-text-primary) 0%, var(--ch-text-primary) 40%, var(--ch-text-tertiary) 50%, var(--ch-text-primary) 60%, var(--ch-text-primary) 100%); background-size: 250% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: ch-ak-fade var(--ch-dur-base) var(--ch-ease) backwards, ch-ak-shim var(--ch-dur-shimmer) linear infinite; }
+.ch-ak-wl.is-sum { position: relative; min-height: 28px; cursor: pointer; }
+.ch-ak-wl.is-sum::after { content: ''; position: absolute; inset: -8px -8px; }
+.ch-ak-wl.is-sum .chev { flex: none; color: var(--ch-text-tertiary); transition: transform var(--ch-dur-base) var(--ch-ease); }
+.ch-ak-wl.is-sum[aria-expanded='true'] .chev { transform: rotate(180deg); }
+.ch-ak-wl.is-sum:focus-visible { outline: var(--ch-focus-ring-w, 2px) solid var(--ch-ask-accent); outline-offset: 4px; border-radius: var(--ch-radius-sm); }
+
+/* The reads: the kit's rows, open only where nothing sits under them (before the first word) or because the coach opened them. */
+.ch-ak-reads { display: grid; gap: 0; margin: -4px 0 0; padding: 0; list-style: none; }
+.ch-ak-reads .rd { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 12px; align-items: start; min-height: 32px; margin-left: 4px; padding: 6px 0; }
+.ch-ak-reads.is-live .rd { animation: ch-ak-rise6 var(--ch-dur-spring-settle) var(--ch-ease-spring-settle) backwards; }
+.ch-ak-reads.is-still { animation: ch-ak-drop4 var(--ch-dur-base) var(--ch-ease) backwards; }
+.ch-ak-reads.is-folding .rd { opacity: 0; transition: opacity var(--ch-dur-msg-time) var(--ch-ease); }
+.ch-ak-reads .ic { display: grid; place-items: center; width: 20px; height: 20px; margin-top: 1px; }
+.ch-ak-reads .ic.ok { color: var(--ch-gain); }
+.ch-ak-reads .ic.is-fail { color: var(--ch-loss); animation: ch-ak-fade var(--ch-dur-quick) var(--ch-ease) backwards; }
+.ch-ak-reads .ic.ok.is-drawn path { stroke-dasharray: 24; stroke-dashoffset: 24; animation: ch-ak-draw var(--ch-dur-base) var(--ch-ease) forwards; }
+.ch-ak-reads .dash { width: 10px; height: 2px; border-radius: var(--ch-radius-mark); background: var(--ch-text-tertiary); }
+.ch-ak-reads .tx { min-width: 0; font: var(--ch-type-15); color: var(--ch-text-primary); letter-spacing: var(--ch-track-15); }
+.ch-ak-reads .rd:not(.is-running) .tx { color: var(--ch-text-secondary); }
+.ch-ak-reads .tx small { display: block; margin-top: 1px; font: var(--ch-type-14); color: var(--ch-text-tertiary); }
+.ch-ak-reads.is-live .tx small { animation: ch-ak-fade var(--ch-dur-base) var(--ch-ease) var(--ch-dur-press) backwards; }
+@keyframes ch-ak-drop4 { from { opacity: 0; transform: translateY(-4px); } }
+
+/* Streamed words: each burst fades in once and never moves; a finished fade holds nothing. The dot waits after the last word. */
+.ch-ak-th[data-v3] .ch-th-prose[data-streaming] .w, .ch-ak-th[data-v3] .ch-th-prose[data-streaming] .cite { animation-fill-mode: backwards; }
+.ch-ak-th[data-v3] .ch-th-prose[data-streaming] .cite { animation: ch-ak-fade var(--ch-dur-word) var(--ch-ease) backwards; }
+.ch-ak-pend { white-space: nowrap; }
+.ch-ak-pend .ch-ak-live { width: 7px; height: 7px; margin-left: 6px; vertical-align: 1px; animation: ch-ak-fade var(--ch-dur-quick) var(--ch-ease) backwards, ch-ak-breath var(--ch-dur-reveal) var(--ch-ease-io) infinite alternate; }
+/* A chip is a word in its sentence: the line's height, never taller, so it cannot push its line apart. */
+.ch-ak-th[data-v3] .prose .cite { margin-left: 0; padding: 1px 8px 1px 7px; vertical-align: 1px; line-height: 1.35; }
+.ch-ak-th[data-v3] .prose .cite[data-ch-pressed] { transform: scale(0.97); }
+
+/* A visual is complete at first paint (owner decision Q-153): only its frame fades, and only when it arrives in this visit. */
+.ch-ak-vis { min-width: 0; }
+.ch-ak-th[data-v3] .ch-ak-turn.is-new .ch-ak-vis { animation: ch-ak-fade var(--ch-dur-base) var(--ch-ease) backwards; }
+
+/* The turn settling: what it stands on, then what the coach might do next, one beat later, together. */
+.ch-ak-th[data-v3] .ch-ak-turn.is-settling .acts { animation: ch-ak-fade var(--ch-dur-quick) var(--ch-ease) backwards; }
+.ch-ak-th[data-v3] .ch-ak-turn.is-settling .chips .chip { animation: ch-ak-rise6 var(--ch-dur-spring-settle) var(--ch-ease-spring-settle) var(--ch-dur-press) backwards; }
+
+/* The turn notice: the last line of a turn that failed or was stopped. Amber, never red; what arrived stays above it. */
+.ch-ak-notice { display: flex; align-items: flex-start; gap: 12px; padding-top: 16px; border-top: var(--ch-hairline-w) solid var(--ch-separator); animation: ch-ak-rise6 var(--ch-dur-base) var(--ch-ease) backwards; }
+.ch-ak-notice .mk { display: grid; flex: none; place-items: center; width: 20px; height: 20px; margin: 1px 0 0 4px; color: var(--ch-loss); }
+.ch-ak-notice .tx { display: grid; flex: 1; gap: 2px; min-width: 0; }
+.ch-ak-notice .t { margin: 0; font: var(--ch-type-15-medium); color: var(--ch-text-primary); letter-spacing: var(--ch-track-15); }
+.ch-ak-notice .s { margin: 0; font: var(--ch-type-14); color: var(--ch-text-secondary); }
+.ch-ak-notice > .ch-btn { flex: none; }
+.ch-ak-th.ch-th--phone .ch-ak-notice { flex-wrap: wrap; }
+.ch-ak-th.ch-th--phone .ch-ak-notice > .ch-btn { margin-left: 36px; }
+
+/* The Latest key: over the composer, centred on the column. Its dot says the answer is still being written below. */
+.ch-ak-root .ch-ak-jump { right: auto; left: 50%; width: 44px; height: 44px; margin-left: -22px; }
+.ch-ak-root .ch-ak-jump .ch-ak-live { position: absolute; top: 4px; right: 4px; box-shadow: 0 0 0 2px var(--ch-card-bg); }
+
+/* The send key: one key in one place. Its meaning changes in the frame of the tap; the two discs cross by opacity. */
+.ch-ak-root .ch-ask-cmp__send { position: relative; overflow: hidden; }
+.ch-ak-root .ch-ask-cmp__send.is-stop { background: var(--ch-accent); }
+.ch-ak-root .ch-ask-cmp__send .ink { position: absolute; inset: 0; border-radius: inherit; background: var(--ch-ink-900); opacity: 0; transition: opacity var(--ch-dur-quick) var(--ch-ease); }
+.ch-ak-root .ch-ask-cmp__send.is-stop .ink { opacity: 1; }
+.ch-ak-root .ch-ask-cmp__send.is-stop[data-ch-pressed] .ink { background: var(--ch-ink-press); }
+.ch-ak-root .ch-ask-cmp__send .g { position: relative; display: grid; grid-area: 1 / 1; place-items: center; }
+.ch-ak-root .ch-ask-cmp__send .g-stop { opacity: 0; }
+.ch-ak-root .ch-ask-cmp__send.is-stop .g-send { animation: ch-ak-arrow-out var(--ch-dur-msg-rule) var(--ch-ease-io) forwards; }
+.ch-ak-root .ch-ask-cmp__send.is-stop .g-stop { animation: ch-ak-stop-in var(--ch-dur-spring-pop, var(--ch-dur-reveal)) var(--ch-ease-spring-pop, var(--ch-ease)) var(--ch-dur-press) both; }
+.ch-ak-root .ch-ask-cmp__send.has-run:not(.is-stop) .g-stop { animation: ch-ak-stop-out var(--ch-dur-msg-key-out) var(--ch-ease) both; }
+.ch-ak-root .ch-ask-cmp__send.has-run:not(.is-stop) .g-send { animation: ch-ak-arrow-in var(--ch-dur-spring-pop, var(--ch-dur-reveal)) var(--ch-ease-spring-pop, var(--ch-ease)) var(--ch-dur-press) backwards; }
+@keyframes ch-ak-arrow-out { to { opacity: 0; transform: translateY(-14px); } }
+@keyframes ch-ak-arrow-in { from { opacity: 0; transform: translateY(8px); } }
+@keyframes ch-ak-stop-in { from { opacity: 0; transform: scale(0.4); } to { opacity: 1; transform: scale(1); } }
+@keyframes ch-ak-stop-out { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(0.4); } }
+
+/* Reduce Motion: every arrival is an opacity fade; nothing travels or scales; loops stop. */
+@media (prefers-reduced-motion: reduce) {
+  .ch-ak-live, .ch-ak-pend .ch-ak-live, .ch-ak-wl .t.shim, .ch-ak-reads .lb.shim { animation: none; }
+  .ch-ak-wl .t.shim, .ch-ak-reads .lb.shim { background: none; color: inherit; }
+  .ch-ak-reads.is-live .rd, .ch-ak-reads.is-still, .ch-ak-notice, .ch-ak-wl .t, .ch-ak-th[data-v3] .ch-ak-turn.is-settling .chips .chip { --ch-rm-animation: var(--ch-dur-crossfade-rm); animation: ch-ak-fade var(--ch-dur-crossfade-rm) linear backwards; }
+  .ch-ak-reads .ic.ok.is-drawn path { animation: none; stroke-dashoffset: 0; }
+  .ch-ak-th[data-v3] .ch-th-prose[data-streaming] .w, .ch-ak-th[data-v3] .ch-th-prose[data-streaming] .cite { animation: none; }
+  .ch-ak-root .ch-ask-cmp__send .g-send, .ch-ak-root .ch-ask-cmp__send .g-stop { animation: none; }
+  .ch-ak-root .ch-ask-cmp__send.is-stop .g-send { opacity: 0; }
+  .ch-ak-root .ch-ask-cmp__send.is-stop .g-stop { opacity: 1; }
+}
+[data-motion='off'] :is(.ch-ak-live, .ch-ak-wl .t, .ch-ak-reads .rd, .ch-ak-reads.is-still, .ch-ak-notice, .ch-ak-vis, .ch-ak-turn .msg-a, .ch-ak-turn .acts, .ch-ak-turn .chips .chip, .ch-ask-cmp__send .g) { animation: none; }
+[data-motion='off'] .ch-ak-root .ch-ask-cmp__send.is-stop .g-send { opacity: 0; }
+[data-motion='off'] .ch-ak-root .ch-ask-cmp__send.is-stop .g-stop { opacity: 1; }
+
+/* ── Chat v3, the task card (MOTION Moment 7) ─────────────────────────────────────────────────────────────────────── */
+/* The card arrives whole, out of the answer: the plan came as one piece. */
+.ch-ak-th[data-v3] .conf.is-arriving { animation: ch-ak-rise var(--ch-dur-spring-settle) var(--ch-ease-spring-settle) var(--ch-dur-press) backwards; }
+/* Cancel leaves on Confirm and keeps its box, so the working button keeps its place. */
+.ch-ak-th[data-v3] .conf .btns .cx { transition: opacity var(--ch-dur-msg-key-out) var(--ch-ease); }
+.ch-ak-th[data-v3] .conf .btns .cx.is-gone { opacity: 0; pointer-events: none; }
+.ch-ak-th[data-v3] .conf .btns > .ch-btn--primary { margin-left: auto; }
+.ch-ak-th[data-v3] .conf .btns .p.cap { animation: ch-ak-fade var(--ch-dur-quick) var(--ch-ease) backwards; }
+.ch-ak-needs { margin: 0; padding: 0 16px 4px; font: var(--ch-type-14); color: var(--ch-text-secondary); }
+/* The hold: the countdown ring with the seconds left, in the place the check will take. */
+.ch-ak-th[data-v3] .receipt { min-height: 68px; animation: ch-ak-fade var(--ch-dur-quick) var(--ch-ease) backwards; }
+.ch-ak-th[data-v3] .receipt.is-hold { align-items: flex-start; }
+.ch-ak-th[data-v3] .receipt.is-hold .lk.now { margin: 4px 0 0 -6px; }
+.ch-ak-th[data-v3] .receipt .cd { position: relative; display: grid; flex: none; place-items: center; width: 28px; height: 28px; transition: opacity var(--ch-dur-quick) var(--ch-ease); }
+.ch-ak-th[data-v3] .receipt .cd svg { position: absolute; inset: 0; width: 28px; height: 28px; }
+.ch-ak-th[data-v3] .receipt .cd .trk { stroke: var(--ch-separator); stroke-width: 2.5; }
+/* A paint-only exception to transform and opacity (MOTION, "Rules"): a 28px mark, no layout. It drains even under Reduce Motion: it is information. */
+.ch-ak-th[data-v3] .receipt .cd .drn { stroke: var(--ch-ask-accent); stroke-width: 2.5; stroke-linecap: round; stroke-dasharray: 100; transform: rotate(-90deg); transform-origin: 14px 14px; animation: ch-ak-drain100 8s linear forwards; }
+.ch-ak-th[data-v3] .receipt .cd.is-frozen .drn { animation-play-state: paused; }
+.ch-ak-th[data-v3] .receipt .cd.is-frozen { opacity: 0.45; }
+.ch-ak-th[data-v3] .receipt .cd .n { position: relative; font: var(--ch-type-12-strong); color: var(--ch-text-primary); }
+@keyframes ch-ak-drain100 { to { stroke-dashoffset: 100; } }
+/* Saved: the ring's place takes the check. The one overshoot in the card, on the moment the write is real. */
+.ch-ak-th[data-v3] .receipt .ck { width: 28px; height: 28px; }
+.ch-ak-th[data-v3] .receipt.in.is-live .ck { animation: ch-ak-ck-in var(--ch-dur-spring-pop, var(--ch-dur-reveal)) var(--ch-ease-spring-pop, var(--ch-ease)) backwards; }
+.ch-ak-th[data-v3] .receipt.in.is-live .ck path { stroke-dasharray: 24; stroke-dashoffset: 24; animation: ch-ak-draw var(--ch-dur-base) var(--ch-ease) var(--ch-dur-press) forwards; }
+.ch-ak-th[data-v3] .receipt.in .ck::after { display: none; }
+@keyframes ch-ak-ck-in { from { opacity: 0; transform: scale(0.6); } }
+.ch-ak-th[data-v3] .told.is-live { animation: ch-ak-rise6 var(--ch-dur-base) var(--ch-ease) var(--ch-dur-base) backwards; }
+.ch-ak-th[data-v3] .told.is-live .coin { animation: none; }
+/* Where it lands, while it is not saved yet: the pending look. */
+.ch-ak-th[data-v3] .ch-ak-hs .hsr.nw.is-pending { opacity: 0.6; }
+@media (prefers-reduced-motion: reduce) {
+  .ch-ak-th[data-v3] .conf.is-arriving, .ch-ak-th[data-v3] .receipt, .ch-ak-th[data-v3] .told.is-live { --ch-rm-animation: var(--ch-dur-crossfade-rm); animation: ch-ak-fade var(--ch-dur-crossfade-rm) linear backwards; }
+  .ch-ak-th[data-v3] .receipt.in.is-live .ck { animation: none; }
+  .ch-ak-th[data-v3] .receipt.in.is-live .ck path { animation: none; stroke-dashoffset: 0; }
+}
+[data-motion='off'] .ch-ak-th[data-v3] :is(.conf.is-arriving, .receipt, .told.is-live, .receipt.in.is-live .ck) { animation: none; }
+[data-motion='off'] .ch-ak-th[data-v3] .receipt.in.is-live .ck path { animation: none; stroke-dashoffset: 0; }
+/* A chip and the punctuation that closes its sentence are one unbreakable piece. */
+.ch-ak-nb { white-space: nowrap; }

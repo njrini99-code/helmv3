@@ -164,9 +164,9 @@ what the server has said. The times are from the tap.
   come sooner waits). The work line's words ("Thinking", "Sending") appear at 1.2 s and, once shown, stay at least
   500 ms.
 - **The fold** (`ST-4.folded`): on the first word of the answer the list folds into the work line, which now reads
-  "3 reads · 2s" with a chevron and is a button. The answer begins under the name row. The fold happens before the
-  first word paints (the word waits at most 140 ms for it). One read: "1 read · 1s". A turn the browser did not watch
-  (reload) has no honest duration: "3 reads".
+  "3 steps · 2s" with a chevron and is a button. The answer begins under the name row. The fold happens before the
+  first word paints (the word waits at most 140 ms for it). One read: "1 step · 1s". A turn the browser did not watch
+  (reload) has no honest duration: "3 steps".
 - **Reads after the answer has begun** (the model reads again mid-answer) do not open the list. The work line shows
   the running read's label in place of the summary, then the new summary. The text does not move.
 - **Reopening** the list is the coach's tap on the work line: it unfolds under the name row and pushes the answer
@@ -186,14 +186,19 @@ what the server has said. The times are from the tap.
 | `ST-5.visual` | A chart or figure in its frame, complete at first paint: title, marks, foot, "Table" toggle. No skeleton, no grow (owner decision Q-153). The frame fades in; the marks are already there. |
 | `ST-5.link` | A link into the app ("Open Roster requests") as a quiet row under the paragraph that names it: arrow, label, where it goes. |
 | `ST-5.more` | The answer has passed the bottom of the screen: the Latest key, with the live dot while the turn is live. |
-| `ST-5.settled` | The turn is done: the mark is at rest; the work line is the summary; the foot row has "3 reads" (opens the sources) and Copy; follow-ups (at most three, each only when the reads support it) sit under the turn. |
+| `ST-5.settled` | The turn is done: the mark is at rest; the work line is the summary; the reads' own tables, if any, are under the prose; the foot row has "3 reads" (opens the sources) and Copy; follow-ups (at most three, each only when the reads support it) sit under the turn. |
 | `ST-5.discarded` | The model withdrew the words of the step in progress (`text_discard`, rare): those words fade out in place and the next words take their position. |
 
 - **Half-written syntax is never shown.** An unclosed `**` draws as bold in progress with no asterisks; a lone
   trailing `*` or `[`, a partial read marker (`[e`, `[e1`), a list marker with no text and a table row with no
   closing pipe are held back until they complete. A table draws when its header and rule have both arrived.
-- **Lead.** The first paragraph is the answer (the engine's instructions lead with it); it is set one step larger
-  only when it is a single sentence of at most 140 characters. Anything longer is body text.
+- **No lead size.** The first paragraph is the answer (the engine's instructions lead with it) and is set in body
+  text like the rest. A larger lead could only be chosen once the paragraph was whole, and changing its size then
+  re-wraps words the coach is already reading.
+- **A read's own table or figure** (a worked-out list, a count, a ranking: the `summarise_data` mechanism, kept) is
+  drawn under the answer's prose, once the turn has finished. While the answer is being written the set can still
+  change (a visual may stand in for a read), and a card that came or went above the text would move it. A stored read
+  from before the rebuild (no ref) stays where it was.
 - **Reduce Motion**: text appears a sentence at a time with no fade; the live dot is still.
 - VoiceOver: streamed text is announced a sentence at a time (on `.`, `?`, `!` or a line end, and once more when the
   turn ends), never per word. A chart is announced by its title and its table is reachable. The Latest key is
@@ -269,7 +274,7 @@ The card is the preview and the record. The prose around it never claims a write
 | `ST-9.qc.live` | Reopened while a turn or hold is still running: the live turn, at its current state. |
 | `ST-9.to-ask` | "Open in Ask": the panel closes into the key while Ask pushes in on the same conversation at the same scroll position. A turn in flight keeps running (the session is the same store). |
 | `ST-9.ask.history` | Ask's rail (desktop) or drawer (phone): today, this week, earlier. Opening a chat dims the thread until it lands (existing view switch). |
-| `ST-9.ask.restored` | A saved thread: every turn at rest. No arrival motion, no word fades, reads folded ("3 reads"), cards in their stored state (`ST-7.returned*`). |
+| `ST-9.ask.restored` | A saved thread: every turn at rest. No arrival motion, no word fades, reads folded ("3 steps"), cards in their stored state (`ST-7.returned*`). |
 
 ## Moment 10. When it goes wrong
 
@@ -394,7 +399,7 @@ Engine and protocol:
    sentence or the HTTP status.
 4. A `decision` event (approved false, `reason: 'superseded'`) on the message that holds a card when a new question
    cancels it, so `ST-7.superseded` is a fact and not inferred from position.
-5. `message_start.started_at` (ISO) and a turn's stored duration, so a restored turn can say "3 reads · 2s" and a
+5. `message_start.started_at` (ISO) and a turn's stored duration, so a restored turn can say "3 steps · 2s" and a
    returned card "waiting since 3:42".
 6. A `phase` event (`thinking`), or the model's own progress notes (`thinking.display: 'updates'`), so "Thinking" is
    the server's word. Until then it is inferred from `message_start` with no parts.

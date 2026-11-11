@@ -2,7 +2,9 @@
 
 import type { UIMessage } from 'ai';
 import { useEffect, useMemo, useState } from 'react';
-import type { UseCoachHelmChatOptions, UseCoachHelmChatResult } from '@/components/golf/coachhelm/chat/useCoachHelmChat';
+import { useCoachHelmChat, type UseCoachHelmChatOptions, type UseCoachHelmChatResult } from '@/components/golf/coachhelm/chat/useCoachHelmChat';
+import { pendingDecisionKeys } from '@/lib/coachhelm/v3/chat/engine/protocol';
+import { askScript, installScriptedChat, isAskPace, SCRIPTED_CHAT_ENDPOINT, type AskScript } from './ask-script';
 import type { ChAskData, ChAskLoad } from '../data/coachhelm-chat-shape';
 import { Ask, type ChAskChat, type ChAskInitial } from '../screens/coachhelm/chat/Ask';
 import { AskSkeleton } from '../screens/coachhelm/chat/AskSkeleton';
@@ -90,6 +92,104 @@ function fakeChat(start: { busy?: boolean; error?: unknown; messages?: UIMessage
 }
 
 /**
+ * What `?state=play` does by itself, so a moment can be captured without a hand on the page. Each is milliseconds; absent, the
+ * page waits for a person. Read from the address once the page has mounted (the route hands over only `state` and `q`).
+ */
+interface PlayDrive {
+  script: AskScript;
+  /** Ask the script's question this long after the page is up. */
+  auto: number | null;
+  /** Press the card's primary this long after it can be pressed. */
+  confirm: number | null;
+  /** Press Cancel instead. */
+  cancel: number | null;
+  /** Press Undo this long after the hold begins. */
+  undo: number | null;
+  /** Press Stop this long after the question is sent. */
+  stop: number | null;
+  /** Press Try again this long after a turn fails. */
+  retry: number | null;
+}
+let DRIVE: PlayDrive | null = null;
+
+const click = (selector: string) => document.querySelector<HTMLElement>(selector)?.click();
+
+/**
+ * The production hook on the harness endpoint (`ask-script.ts` answers it in the page), plus the drive above. Everything the
+ * coach sees comes through `useCoachHelmChat` and its reducer exactly as it would from the server.
+ */
+function useScriptedChat(options: UseCoachHelmChatOptions = {}): UseCoachHelmChatResult {
+  const chat = useCoachHelmChat({ ...options, endpoint: SCRIPTED_CHAT_ENDPOINT });
+  const drive = DRIVE;
+  const send = chat.send;
+  const sent = chat.messages.length > 0;
+  useEffect(() => {
+    if (!drive || drive.auto === null || sent) return;
+    const t = setTimeout(() => send(drive.script.question), drive.auto);
+    return () => clearTimeout(t);
+  }, [drive, send, sent]);
+  useEffect(() => {
+    if (!drive || drive.stop === null || !sent) return;
+    const t = setTimeout(() => click('.ch-ask-cmp__send.is-stop'), drive.stop);
+    return () => clearTimeout(t);
+  }, [drive, sent]);
+  const last = chat.messages[chat.messages.length - 1];
+  const waiting = pendingDecisionKeys(last as never).length > 0 && !chat.busy;
+  useEffect(() => {
+    if (!drive || !waiting) return;
+    const ms = drive.confirm ?? drive.cancel;
+    if (ms === null) return;
+    const t = setTimeout(() => click(drive.confirm !== null ? '[data-ch-ask-confirm]' : '[data-ch-ask-cancel]'), ms);
+    return () => clearTimeout(t);
+  }, [drive, waiting]);
+  const held = (last?.parts ?? []).some((p) => p.type === 'data-action-receipt' && (p.data as { status?: string } | undefined)?.status === 'held');
+  useEffect(() => {
+    if (!drive || drive.undo === null || !held) return;
+    const t = setTimeout(() => click('[data-ch-ask-undo]'), drive.undo);
+    return () => clearTimeout(t);
+  }, [drive, held]);
+  const failed = chat.status === 'error';
+  useEffect(() => {
+    if (!drive || drive.retry === null || !failed) return;
+    const t = setTimeout(() => click('[data-ch-ask-retry]'), drive.retry);
+    return () => clearTimeout(t);
+  }, [drive, failed]);
+  return chat;
+}
+
+/**
+ * `?state=play&script=<name>`: a scripted turn through the real hook (ask-script.ts). `&pace=fast|real|worst`. Driving it:
+ * `&auto=<ms>` asks the script's question, `&confirm=<ms>` / `&cancel=<ms>` answers its card, `&undo=<ms>` presses Undo,
+ * `&stop=<ms>` presses Stop, `&retry=<ms>` presses Try again, `&until=<ms>` freezes the response at that instant (a still
+ * frame of a moment). Without `auto` the page waits for a person to type or tap a start.
+ */
+function PreviewAskPlay({ name, role }: { name?: string; role?: 'player' }) {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    const at = new URLSearchParams(window.location.search);
+    const ms = (key: string): number | null => (at.has(key) ? Math.max(0, Number(at.get(key)) || 0) : null);
+    const pace = at.get('pace');
+    // `script` names the turn; `q` is left alone, because Ask reads `?q=` as a question to put in the field.
+    const script = askScript(at.get('script') ?? name, isAskPace(pace) ? pace : 'real');
+    DRIVE = { script, auto: ms('auto'), confirm: ms('confirm'), cancel: ms('cancel'), undo: ms('undo'), stop: ms('stop'), retry: ms('retry') };
+    const restore = installScriptedChat(script, { until: ms('until') });
+    setReady(true);
+    return () => {
+      restore();
+      DRIVE = null;
+    };
+  }, [name]);
+  const load = useMemo<ChAskLoad>(() => {
+    let data: ChAskData = { ...PREVIEW_ASK_DATA };
+    if (role === 'player') data = { ...data, role: 'player', firstName: 'Jonah', allowance: 'plenty' as ChAskData['allowance'], knows: undefined, focus: [{ text: 'Approach from 125 to 150, set by Coach Reyes', ask: 'How is my approach from 125 to 150 doing?' }, { text: 'Putting gained strokes at Hilltop', ask: 'How did my putting go at Hilltop?' }] } as ChAskData;
+    else data = { ...data, firstName: 'Maya' };
+    return { status: 'ready', data };
+  }, [role]);
+  if (!ready) return <AskSkeleton />;
+  return <Ask load={load} chat={useScriptedChat} />;
+}
+
+/**
  * Ask CoachHelm in the dev preview. `?state=`: new (default) | norounds | noroster | failed | unavailable | loading |
  * pulsefailed | historyempty | historyfailed | threadfailed | history (the phone drawer open) | historyclosed (the desktop
  * panel folded) | offline | error (with `&q=rate|budget|gone|fault|dropped`), and any conversation state of
@@ -99,7 +199,12 @@ function fakeChat(start: { busy?: boolean; error?: unknown; messages?: UIMessage
  * rejected | readfail | partial | long | reads (an answer that names Jonah's reads, each a link to his Deep dive) | readsother
  * (the same reads for a player not on the team: no links). Nothing reaches the server.
  */
-export function PreviewAsk({ state, kind, messages, busy, role }: { state?: string; kind?: string; messages?: UIMessage[]; busy?: boolean; role?: 'player' }) {
+export function PreviewAsk(props: { state?: string; kind?: string; messages?: UIMessage[]; busy?: boolean; role?: 'player' }) {
+  if (props.state === 'play') return <PreviewAskPlay name={props.kind} role={props.role} />;
+  return <PreviewAskStill {...props} />;
+}
+
+function PreviewAskStill({ state, kind, messages, busy, role }: { state?: string; kind?: string; messages?: UIMessage[]; busy?: boolean; role?: 'player' }) {
   const offline = state === 'offline';
   useEffect(() => {
     if (!offline) return;
