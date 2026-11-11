@@ -31,7 +31,7 @@
 .ch-hr .ch-hd-dos__h .ch-hd-read dt { color: var(--ch-on-green-ink-muted); }
 .ch-hr .ch-hd-dos__h .ch-hd-read dd { color: var(--ch-on-green-ink-soft); }
 .ch-hr .ch-hd-dos__h .ch-hd-read__lvl { background: var(--ch-hr-st-good-bg); color: var(--ch-hr-st-good); box-shadow: none; }
-.ch-hr .ch-hl-path.is-out_of_date { margin: 0 0 4px; padding: 8px 0 0; background: none; box-shadow: inset 0 1px 0 var(--ch-on-green-rule); color: var(--ch-on-green-ink-muted); }
+.ch-hr .ch-hl-path.is-out_of_date { max-width: none; margin: 0 0 4px; padding: 8px 0 0; background: none; box-shadow: inset 0 1px 0 var(--ch-on-green-rule); color: var(--ch-on-green-ink-muted); }
 .ch-hr .ch-hl-path.is-out_of_date .ch-hl-path__l { color: var(--ch-on-green-ink-muted); }
 .ch-hr .ch-hl-path.is-out_of_date .ch-hl-path__l b { color: var(--ch-hr-st-warn); }
 
