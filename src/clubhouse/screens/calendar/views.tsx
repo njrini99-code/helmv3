@@ -502,8 +502,8 @@ export function TimeGrid({
 /**
  * P-4 4.5: one bar across the days an all-day event or a run covers, in the week's all-day lane. A run prints its start
  * at the left end and its end at the right; an end that runs past the week is cut in a chevron and has no grip here.
- * A bar one week column wide (`narrow`: a run's first or last day at the week's edge) has room for its name only, so the
- * times stay in its peek and its detail.
+ * A bar one week column wide (`narrow`: a run's first or last day at the week's edge) or two has room for its name only,
+ * so the times stay in its peek and its detail.
  */
 function LaneBar({
   b,
@@ -527,7 +527,8 @@ function LaneBar({
   const clock = useChClock();
   const { e, span } = b;
   const title = eventTitle(e, people, viewerId);
-  const run = !narrow && !e.allDay && e.span?.start != null && e.span.end != null;
+  // A run across two columns has no room for both times and a title ("8:00 AM S… 5:00 PM"): the title comes first, and the times are in the peek.
+  const run = !narrow && (b.c0 === b.c1 || b.c1 - b.c0 >= 2) && !e.allDay && e.span?.start != null && e.span.end != null;
   const days = span.from === span.to ? `${dowOf(span.from)} ${dayNum(span.from)}` : `${dowOf(span.from)} ${dayNum(span.from)} to ${dowOf(span.to)} ${dayNum(span.to)}`;
   return (
     <button

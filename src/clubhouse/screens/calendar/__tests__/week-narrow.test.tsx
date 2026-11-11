@@ -123,3 +123,23 @@ describe('a bar one week column wide', () => {
     expect(container.querySelector<HTMLElement>('.ch-wk__allday')!.style.gridTemplateRows).toBe('repeat(1, minmax(26px, auto))');
   });
 });
+
+describe('a timed run in the all-day lane', () => {
+  const WEEK = ['2026-10-18', '2026-10-19', '2026-10-20', '2026-10-21', '2026-10-22', '2026-10-23', '2026-10-24'];
+  const run = (from: string, to: string) => {
+    const days = WEEK.filter((d) => d >= from && d <= to);
+    return days.map((d, i) => ev({ id: 'trip', type: 'tournament', title: 'Sea Pines', date: d, start: i === 0 ? 8 : 0, end: i === days.length - 1 ? 17 : 24, span: { from, to, start: 8, end: 17 } }));
+  };
+  const times = (events: ChCalEvent[]) => {
+    const { container } = render(<TimeGrid dates={WEEK} events={events} people={new Map()} now={{ date: '2026-10-17', hour: 12 }} selId={null} flagged={new Set()} onSelect={() => {}} onDay={() => {}} />);
+    return [...container.querySelectorAll('.ch-ev-bar--span .ch-ev-bar__t')].map((el) => el.textContent);
+  };
+
+  it('prints its start and its end across three columns or more', () => {
+    expect(times(run('2026-10-20', '2026-10-22'))).toEqual(['8:00 AM', '5:00 PM']);
+  });
+
+  it('across two columns the name comes first: both times beside it left "8:00 AM S… 5:00 PM"', () => {
+    expect(times(run('2026-10-20', '2026-10-21'))).toEqual([]);
+  });
+});
