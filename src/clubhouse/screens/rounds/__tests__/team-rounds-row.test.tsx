@@ -58,4 +58,17 @@ describe('Team rounds · the phone row keeps one structure', () => {
     expect(rule('.ch-trd-meta__kind')).toContain('flex-wrap: wrap');
     expect(rule('.ch-trd-meta__kind > .ch-rd-pill')).toContain('flex: none');
   });
+
+  it('the score column is in tabular numerals, so a +3 over a 75 lines up with an E over a 72', () => {
+    show();
+    const scores = [...document.querySelectorAll('.ch-trd-score')];
+    expect(scores.length).toBe(PREVIEW_TEAM_ROUNDS.rounds.list.length);
+    for (const s of scores) {
+      expect(s.querySelector('b')!.classList.contains('ch-num')).toBe(true);
+      expect(s.querySelector('em')!.classList.contains('ch-num')).toBe(true);
+    }
+    // The season's captions and the head line carry figures too.
+    expect([...document.querySelectorAll('.ch-fgr__note')].every((n) => n.querySelector('.ch-num') != null)).toBe(true);
+    expect(document.querySelector('.ch-rd-k')!.classList.contains('ch-num')).toBe(true);
+  });
 });

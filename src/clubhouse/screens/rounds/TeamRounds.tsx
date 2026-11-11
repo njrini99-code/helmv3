@@ -111,8 +111,8 @@ function TeamRoundRow({ r, by }: { r: ChTeamRound; by: Group }) {
       }
       trail={
         <span className={'ch-trd-score' + (under ? ' is-under' : '')}>
-          <b>{r.toPar == null ? <NoData /> : formatToPar(r.toPar)}</b>
-          <em>{r.score}</em>
+          <b className="ch-num">{r.toPar == null ? <NoData /> : formatToPar(r.toPar)}</b>
+          <em className="ch-num">{r.score}</em>
         </span>
       }
       href={open.href ?? undefined}
@@ -275,6 +275,8 @@ export function TeamRounds({ data: fresh, teamId, live, liveNow }: { data: ChTea
   const noRoster = !data.rosterError && data.players.length === 0;
   const nothing = !noRoster && !data.rosterError && !data.rounds.error && list.length === 0 && unscored === 0;
   const best = s.best;
+  /** A figure's caption, in the figures' own tabular numerals. */
+  const note = (words: string) => <span className="ch-num">{words}</span>;
   const book = !data.rosterError && !data.rounds.error && !noRoster && !nothing;
   // The season's figures: under the title on the phone, beside it on desktop (design review, 10 Nov 2026: a strip as
   // wide as the page held four small figures in wide cells, under an empty band between two rules).
@@ -286,10 +288,10 @@ export function TeamRounds({ data: fresh, teamId, live, liveNow }: { data: ChTea
         items={[
           // Practice is listed and counted, and left out of the three figures beside it, as Stats leaves it out; the captions say so.
           // A quarter of a phone holds one short caption a figure (the four share 358px on one line), so there the average alone says it.
-          { label: 'Rounds', value: s.rounds ? s.rounds : <NoData />, note: s.players ? `${plural(s.players, 'player')}${s.practice && !phone ? ` · ${s.practice} practice` : ''}` : undefined },
-          { label: 'Average', value: s.avg == null ? <NoData /> : formatFixed(s.avg, 1), note: s.avg == null ? undefined : !s.practice ? '18 holes' : phone ? 'no practice' : '18 holes, no practice' },
-          { label: 'Under par', value: s.scored ? s.underPar : <NoData />, tone: s.underPar ? 'under' : undefined, note: s.scored ? `of ${s.scored}` : undefined },
-          { label: 'Low round', value: best ? best.score : <NoData />, note: best ? `${best.player.split(' ')[0]} · ${best.toPar == null ? shortDay(best.date) : formatToPar(best.toPar)}` : undefined },
+          { label: 'Rounds', value: s.rounds ? s.rounds : <NoData />, note: s.players ? note(`${plural(s.players, 'player')}${s.practice && !phone ? ` · ${s.practice} practice` : ''}`) : undefined },
+          { label: 'Average', value: s.avg == null ? <NoData /> : formatFixed(s.avg, 1), note: s.avg == null ? undefined : note(!s.practice ? '18 holes' : phone ? 'no practice' : '18 holes, no practice') },
+          { label: 'Under par', value: s.scored ? s.underPar : <NoData />, tone: s.underPar ? 'under' : undefined, note: s.scored ? note(`of ${s.scored}`) : undefined },
+          { label: 'Low round', value: best ? best.score : <NoData />, note: best ? note(`${best.player.split(' ')[0]} · ${best.toPar == null ? shortDay(best.date) : formatToPar(best.toPar)}`) : undefined },
         ]}
       />
     </SectionBoundary>
@@ -300,7 +302,7 @@ export function TeamRounds({ data: fresh, teamId, live, liveNow }: { data: ChTea
       {phone && <PhoneTop start heading={false} title="Rounds" />}
       <header className="ch-rd-h" data-canopy-head={phone ? undefined : 'tight'}>
         <div>
-          <span className="ch-rd-k">
+          <span className="ch-rd-k ch-num">
             {data.teamName ? `${data.teamName} · ` : ''}
             {s.scored ? `Since August 1 · ${s.scored} counted ${pluralWord(s.scored, 'round')}` : 'Since August 1'}
           </span>

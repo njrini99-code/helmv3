@@ -366,7 +366,7 @@ function SeasonFigures({ season, phone = false }: { season: ChRoundsSeason; phon
             </span>
           </dd>
         )}
-        <dd className="ch-rd-fig__m">{!season.best ? (
+        <dd className="ch-rd-fig__m ch-num">{!season.best ? (
             ''
           ) : phone ? (
             shortDay(season.best.date)
@@ -391,7 +391,7 @@ function SeasonFigures({ season, phone = false }: { season: ChRoundsSeason; phon
         )}
         {/* "two-putting" never breaks at its hyphen on the phone (overnight polish, 2026-10-15); a plain hyphen in a
             no-wrap span, because the font has no non-breaking hyphen (A23). */}
-        <dd className="ch-rd-fig__m">
+        <dd className="ch-rd-fig__m ch-num">
           {putts == null ? (
             'a round'
           ) : phone ? (
@@ -416,7 +416,7 @@ function SeasonFigures({ season, phone = false }: { season: ChRoundsSeason; phon
             </span>
           </dd>
         )}
-        <dd className="ch-rd-fig__m">{season.girPer18 == null ? '' : `${formatFixed(season.girPer18, 1)} of 18${phone ? '' : ' a round'}`}</dd>
+        <dd className="ch-rd-fig__m ch-num">{season.girPer18 == null ? '' : `${formatFixed(season.girPer18, 1)} of 18${phone ? '' : ' a round'}`}</dd>
       </div>
     </dl>
   );
