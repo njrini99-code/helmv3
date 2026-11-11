@@ -1276,3 +1276,58 @@ E32. **Steps.** Built to the shape in `docs/clubhouse/coachhelm-chat-v3/SPEC.md`
        first step REPLACED the turn's first stored step. A continued turn now numbers its rows on from the stored
        ones (`lastRowNumberOf`).
      - Steps are events beside the text: nothing waits on them and no text passes through them.
+
+## 2026-11-11 (PLANS): the studio's agreed set, dates in words, stored reads without template text, drafts
+
+P15. **The studio set (for CAPABILITIES and UX).** `STUDIO_KINDS` is now the sixteen CAPABILITIES named, in registry
+order: figure, comparison, ranking, trend, round, strokes_gained, distance_profile, schedule, qualifier_board,
+practice_plan, document, app_link, note, on_record, action, table.
+- `action` draws `data-action-proposal`, `data-action-receipt`, `data-handoff` and `data-card-revision` (one object
+  from proposed to saved or undone). `document` keeps `data-artifact`. `on_record` draws `get_coachhelm`. `note` keeps
+  `block:note` (stored conversations only), `data-coach-note` and `get_reference`. `table` also claims ENGINE's
+  `data-computed`.
+- Shell parts, no component: `data-progress`, `data-turn-meta`, `data-turn-incomplete`, `data-allowance`, and two I
+  placed there without being told, so say if they belong elsewhere: `data-draft` and `data-suggestions`.
+- The schema test now also finds parts named as constants (`X_PART = 'data-…'`), which is how ENGINE writes them.
+- `show_visual` no longer offers `note` or `headline` (a kpis of one figure is the large single figure). The strict
+  schema still resolves both, so stored conversations draw. Nine blocks and `sg_anatomy` remain.
+- `table` is still planned only: `ResolvedBlock` gets `{ type: 'table', measurements }` in the same change that gives
+  `chat/visual/CoachComposition.tsx` its case (UX's file; asked).
+
+P16. **Edit mode, the two questions CAPABILITIES asked.**
+- A `people` field's `options` are always the session's whole active roster, in the order the session holds it; its
+  `value` is the ids the card names. Sort by label on your side if you want it alphabetical.
+- A field's `label` is the fact's label exactly where the card has a fact for that one field (an event's `Type`,
+  `Where`, `Notes`, `Invited`, `Replies`; a trip's `Leaves`, `Back`). Where one fact holds several fields (an event's
+  `When` is the day and both times) only the day carries the fact's label and the times are `Starts` and `Ends`, with
+  no fact of their own. A field the task gave no label is its own name in words. So the "Edit" list under the subject
+  is the right place for anything without a matching fact.
+- Fact values still carry days as stamps (`2026-11-12`). I left them so one formatter on the card side decides how a
+  card writes a day; the lead is asked to pick one form for cards and answers (cards "Thu, Nov 12", answers "18 May").
+
+P17. **Dates in what the model reads.** Every reader's `model_text` and `summary` say a day as "18 May" (the year only
+outside this season, 1 August to 31 July) and an instant as "Thursday 12 November, 3:00 pm" on the team's clock
+(`dayWords`, `instantWords`, `datesInWords`, `wordsFor(ctx)` in `reader-kit.ts`). An instant with no clock to read it
+on is left as it came. A date inside stored words (a note) is left as written. `detail` and `measurements` keep their
+stamps: components and `summarise_data` read those. The prompt has the matching rule, and both sweep tests fail a stamp.
+
+P18. **Stored reads (`get_coachhelm`).** `stored-text.ts`: a stored insight's words are handed over without the
+research pointer, the placeholder cause ("… is off its benchmark. Likely cause inferred from the aggregate …", both
+stored spellings) and the fallback action ("Target … in the next practice block"). Signals now carry what was
+measured: `metric_label`, `value_display`, `comparison_label`, `comparison_value`, `sample_size`, `window_end`.
+A cause whose text is only the placeholder has `text: null`. No insight rule and no stored row was changed.
+
+P19. **Drafts (ENGINE E31).** Marked: `write_artifact` (title, body), `draft_message` (content),
+`draft_practice_plan` (title, blocks), `publish_artifact` (title, body), `create_team_announcement` (title, body),
+and `send_message` (content) for when it is registered.
+
+P20. **For UX and QUICK-CHAT, said again in one place.** A receipt with `error: 'card_out_of_date'` is never
+retryable: show its sentence, no "Try again", and offer "Ask again", which sends the coach's original request as a
+new turn (the world changed, so the card must be planned again). `error: 'card_not_checked'` with `retryable: true`
+may be tried again as it is. A published practice plan's address is `/golf/dashboard/practice/plan/<id>`.
+
+P21. **The qualifier card** now says `visible_to: 'team'`: the read rule lets any coach or player of the team see a
+qualifier, though a player's own list shows only the ones they are in. The card's note says both.
+
+P22. **Not added: the `# Method:` line (E25).** It fits (Ask's own tools and rules would be about 12,116 against the
+12,150 brake) and waits on the lead's yes.
