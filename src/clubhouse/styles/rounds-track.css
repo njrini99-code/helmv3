@@ -2539,9 +2539,11 @@ path.ch-rt-map__shot {
     color: var(--ch-champagne-300);
   }
 
-  /* The hole strip (board 3): one row of compact chips. A played hole shows its score (red only under par, D-42), the
-     hole you're on is lit ivory, an unplayed hole is an outline with its number. Each chip is drawn inside a 44 x 44
-     hit area; the row scrolls sideways for 18 holes and keeps the current hole in view (TrackStrip). */
+  /* The hole strip (board 3): one row of compact chips. Every chip shows its hole number; a played hole carries its
+     score under it as the scorecard's small mark (a circle under par, a square over it, a plain figure for par; red
+     only under par, D-42), so no chip shows a bare score where a hole's number belongs (owner, 2026-11-11). The hole
+     you're on is lit ivory, an unplayed hole is an outline with its number in the middle. Each chip is drawn inside a
+     44 x 44 hit area; the row scrolls sideways for 18 holes and keeps the current hole in view (TrackStrip). */
   .ch-rt-strip {
     grid-template-columns: repeat(var(--ch-rt-holes, 18), 44px) auto;
     gap: 0;
@@ -2563,7 +2565,9 @@ path.ch-rt-map__shot {
   .ch-rt-strip__h.is-cur.is-done {
     position: relative;
     display: grid;
-    place-items: center;
+    align-content: center;
+    justify-items: center;
+    row-gap: 2px;
     width: 44px;
     height: 44px;
     min-height: 44px;
@@ -2578,7 +2582,7 @@ path.ch-rt-map__shot {
   }
   .ch-rt-strip__h::before {
     position: absolute;
-    inset: 7px 4px;
+    inset: 2px 4px;
     border-radius: var(--ch-radius-md);
     background: transparent;
     box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-stage-rule);
@@ -2589,7 +2593,6 @@ path.ch-rt-map__shot {
   }
   .ch-rt-strip__h > * {
     position: relative;
-    grid-area: 1 / 1;
   }
   .ch-rt-strip .ch-rt-strip__h em {
     font: var(--ch-type-14-medium);
@@ -2604,24 +2607,45 @@ path.ch-rt-map__shot {
     background: rgb(244 238 221 / 0.1);
     box-shadow: none;
   }
-  .ch-rt-strip__h.is-done em {
-    display: none;
+  /* A played hole: its number steps down a size and stands over its mark. */
+  .ch-rt-strip .ch-rt-strip__h.is-done em {
+    font: var(--ch-type-12-medium);
+    line-height: var(--ch-lead-tight);
+    color: var(--ch-on-green-ink-soft);
   }
-  /* The score as a bare numeral: the scorecard's circle and square stay on the card (ScoreMark), not on the strip. */
+  /* The scorecard's mark at the strip's size, in the strip's inks (ui.css draws it for an ivory card): a plain figure
+     for par, a ring under par (two for an eagle), an outlined square over par, a filled one for a double or worse. */
   .ch-rt-strip .ch-rt-strip__h .ch-score {
-    width: auto;
-    height: auto;
-    border-radius: 0;
-    font: var(--ch-type-15-strong);
-    letter-spacing: var(--ch-track-15);
+    width: 20px;
+    height: 20px;
+    font: var(--ch-type-13-strong);
     line-height: var(--ch-lead-tight);
     font-variant-numeric: tabular-nums;
+    text-shadow: none;
     background: none;
     box-shadow: none;
     color: var(--ch-on-green-ink);
   }
-  .ch-rt-strip .ch-rt-strip__h.is-under .ch-score {
+  .ch-rt-strip .ch-rt-strip__h .ch-score--birdie,
+  .ch-rt-strip .ch-rt-strip__h .ch-score--eagle {
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 1.5px var(--ch-score-under-on-green);
     color: var(--ch-score-under-on-green);
+  }
+  .ch-rt-strip .ch-rt-strip__h .ch-score--eagle {
+    box-shadow:
+      inset 0 0 0 1.5px var(--ch-score-under-on-green),
+      0 0 0 1.5px var(--ch-green-900),
+      0 0 0 3px var(--ch-score-under-on-green);
+  }
+  .ch-rt-strip .ch-rt-strip__h .ch-score--bogey {
+    border-radius: var(--ch-radius-xs);
+    box-shadow: var(--ch-board-bogey-shadow);
+  }
+  .ch-rt-strip .ch-rt-strip__h .ch-score--double {
+    border-radius: var(--ch-radius-xs);
+    background: var(--ch-on-green-ink);
+    color: var(--ch-green-900);
   }
   .ch-rt-strip__h.is-cur::before,
   .ch-rt-strip__h.is-cur.is-done::before {
@@ -2632,12 +2656,28 @@ path.ch-rt-map__shot {
     font-weight: 700;
     color: var(--ch-green-900);
   }
+  /* On the lit chip the same marks take the ivory plate's inks. */
   .ch-rt-strip .ch-rt-strip__h.is-cur .ch-score {
     font-weight: 700;
     color: var(--ch-green-900);
   }
-  .ch-rt-strip .ch-rt-strip__h.is-cur.is-under .ch-score {
+  .ch-rt-strip .ch-rt-strip__h.is-cur .ch-score--birdie,
+  .ch-rt-strip .ch-rt-strip__h.is-cur .ch-score--eagle {
+    box-shadow: inset 0 0 0 1.5px var(--ch-score-under-on-ivory);
     color: var(--ch-score-under-on-ivory);
+  }
+  .ch-rt-strip .ch-rt-strip__h.is-cur .ch-score--eagle {
+    box-shadow:
+      inset 0 0 0 1.5px var(--ch-score-under-on-ivory),
+      0 0 0 1.5px var(--ch-on-green-ink),
+      0 0 0 3px var(--ch-score-under-on-ivory);
+  }
+  .ch-rt-strip .ch-rt-strip__h.is-cur .ch-score--bogey {
+    box-shadow: inset 0 0 0 1.5px var(--ch-green-900);
+  }
+  .ch-rt-strip .ch-rt-strip__h.is-cur .ch-score--double {
+    background: var(--ch-green-900);
+    color: var(--ch-on-green-ink);
   }
   .ch-root .ch-rt-strip__h:focus-visible {
     outline: none;

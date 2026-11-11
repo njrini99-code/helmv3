@@ -102,9 +102,10 @@ function toParWords(score: number, par: number): string {
  * button (any earlier hole, a later one with a score, and the next unplayed);
  * the rest are marks. CH-11805: each is named by hole, score, to par and
  * whether it is the one you're on ("Hole 2, 6, 2 over", "Hole 4, current",
- * "Hole 6"). On the phone each is one compact chip (the score once played, the
- * hole number until then) centred in a 44px hit area, and the strip keeps the
- * current hole in view.
+ * "Hole 6"). On the phone each is one compact chip in a 44px hit area: its hole
+ * number always, and under it, once played, its score as the scorecard's small
+ * mark (owner, 2026-11-11: no chip shows a bare score where a number belongs).
+ * The strip keeps the current hole in view.
  */
 export function TrackStrip({ holes, current, onJump, startHole = 1 }: { holes: RoundHole[]; current: number; onJump?: (index: number) => void; startHole?: number }) {
   // The strip reads by hole number; where you can go follows play order (a shotgun start's holes before its start are

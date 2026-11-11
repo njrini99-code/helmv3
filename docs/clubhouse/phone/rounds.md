@@ -164,10 +164,13 @@ Board: `Player - Rounds - Mobile.html`, the tracking frames.
 
 - A round is full screen: the tab bar hides (`usePhoneTabsHidden`); Exit and the
   scorecard (an icon) are in the screen's own top bar.
-- The hole strip is one row of compact chips (board 3): the score once played
-  (red only under par), the hole number until then, the current hole lit ivory,
-  each in a 44 x 44 hit area. It scrolls sideways edge to edge and keeps the
-  current hole in view.
+- The hole strip is one row of compact chips (board 3): every chip shows its
+  hole number, and a played hole carries its score under it as the scorecard's
+  small mark (a ring under par, an outlined square over it, a filled one for a
+  double or worse, a plain figure for par; red only under par). No chip shows
+  a bare score where a hole's number belongs (owner, 2026-11-11). The current
+  hole is lit ivory; each chip is drawn 40px tall in a 44 x 44 hit area. It
+  scrolls sideways edge to edge and keeps the current hole in view.
 - The hole stacks above the entry and takes whatever height the entry card
   leaves: the drawn hole at its own shape with the figures on it where there
   is room, the smaller numeral and readout on a shorter stage, and the hole
