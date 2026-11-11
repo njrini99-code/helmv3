@@ -91,7 +91,10 @@ describe('elevation tokens (B4)', () => {
 
   it('three levels: reading, raised and overlay, in light and dark; floating folds into raised', () => {
     const t = css('tokens.css');
-    for (const level of ['reading', 'raised', 'overlay']) expect(t.match(new RegExp(`--ch-elevation-${level}:`, 'g'))?.length, level).toBeGreaterThanOrEqual(2);
+    // The reading level is the one card (styles/__tests__/depth.test.ts): --ch-elevation-card holds its light and dark
+    // values and --ch-elevation-reading is its older name.
+    for (const level of ['card', 'raised', 'overlay']) expect(t.match(new RegExp(`--ch-elevation-${level}:`, 'g'))?.length, level).toBeGreaterThanOrEqual(2);
+    expect(t).toMatch(/--ch-elevation-reading: var\(--ch-elevation-card\);/);
     expect(t).toMatch(/--ch-elevation-floating: var\(--ch-elevation-raised\);/);
     for (const file of walk(join(ROOT, 'styles'), /\.css$/)) expect(css(basename(file)), basename(file)).not.toMatch(/var\(--ch-elevation-floating\)/);
   });
@@ -130,7 +133,7 @@ const RAW_SHADOW: Record<string, number> = {
   'styles/controls.css': 12,
   'styles/home.css': 15,
   'styles/hub.css': 10,
-  'styles/messages.css': 9,
+  'styles/messages.css': 7,
   'styles/onboard.css': 17,
   'styles/qualifiers.css': 8,
   'styles/recruiting.css': 1,

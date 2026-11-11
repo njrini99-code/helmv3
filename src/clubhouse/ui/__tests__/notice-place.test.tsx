@@ -75,7 +75,7 @@ describe('the notice’s recovery control', () => {
     // Every .ch-btn carries the shared reach on the phone (controls.css).
     expect(readFileSync(join(dir, 'controls.css'), 'utf8')).toMatch(/:where\(\.ch-root\) :where\(\.ch-btn,[^)]*\)::after \{\s*content: '';\s*position: absolute;\s*inset: min\(0px, calc\(50% - 22px\)\);/);
     const shell = readFileSync(join(dir, 'shell.css'), 'utf8');
-    expect(shell).toMatch(/\.ch-notice\[data-ch-bare\] \{\s*--ch-notice-fill: var\(--ch-card-bg\);\s*padding: 14px 16px 16px;\s*border-radius: var\(--ch-radius-lg\);\s*box-shadow: var\(--ch-card-shadow\);/);
+    expect(shell).toMatch(/\.ch-notice\[data-ch-bare\] \{\s*--ch-notice-fill: var\(--ch-card-bg\);\s*padding: 16px;\s*border-radius: var\(--ch-radius-lg\);\s*box-shadow: var\(--ch-card-shadow\);/);
     expect(shell).toMatch(/\.ch-notice\[data-ch-bare='edge'\] \{\s*margin-inline: var\(--ch-page-x-phone\);/);
   });
 });
