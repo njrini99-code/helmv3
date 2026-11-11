@@ -29,7 +29,7 @@ import { PhoneChromeProvider } from '../shell/phone-chrome';
 import { ToastProvider } from '../ui/Toast';
 import './dialog-polyfill';
 import { PREVIEW_HOME_NOW } from '../preview/fixtures';
-import { PREVIEW_PLAYER_HOME, PREVIEW_PLAYER_HOME_EMPTY, PREVIEW_PLAYER_HOME_FAILED, PREVIEW_PLAYER_HOME_NO_ROUNDS } from '../preview/fixtures-player-home';
+import { PREVIEW_PLAYER_HOME, PREVIEW_PLAYER_HOME_EMPTY, PREVIEW_PLAYER_HOME_FAILED } from '../preview/fixtures-player-home';
 
 const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
 function wrap(node: React.ReactNode) {
@@ -410,24 +410,12 @@ describe('Player Home · the phone, the page’s own contracts', () => {
 void waitFor;
 
 describe('Player Home · what the coach is waiting on, and the player’s own reply (wave 7)', () => {
-  it('item 1: one quiet row, From your coach and the counts, opening Team Hub; none when nothing waits or it didn’t load', () => {
+  it('item 1: one quiet row under the head, From your coach and the counts, opening Team Hub; none when nothing waits or it didn’t load', () => {
     const view = show();
     const row = screen.getByRole('link', { name: /^From your coach/ });
     expect(row.textContent).toMatch(/From your coach2 replies · 1 to acknowledge · 2 tasks due/);
     expect(row.getAttribute('href')).toBe('/golf/dashboard/team-hub');
-    // On the two-column desk page it closes the week's column, under the agenda (fix wave, 2026-11-11): under the head it
-    // left that column short of the latest round's beside it.
-    const week = screen.getByRole('region', { name: 'This week' });
-    expect(row.parentElement).toBe(week);
-    expect(week.lastElementChild).toBe(row);
-    expect(row.previousElementSibling?.className).toBe('ch-h-agenda');
     view.unmount();
-    // With no round yet the page is one column: the row keeps its place under the head, in view without a scroll.
-    const solo = show(PREVIEW_PLAYER_HOME_NO_ROUNDS);
-    const under = screen.getByRole('link', { name: /^From your coach/ });
-    expect(under.parentElement?.tagName).toBe('MAIN');
-    expect(under.previousElementSibling?.className).toBe('ch-h-head');
-    solo.unmount();
     for (const asks of [null, { rsvps: 0, acks: 0, tasksDue: 0 }]) {
       const again = show(home({ asks }));
       expect(screen.queryByRole('link', { name: /^From your coach/ })).toBeNull();

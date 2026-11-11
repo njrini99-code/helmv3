@@ -47,10 +47,9 @@ export function nextReplies(e: ChHomeEvent | null | undefined, today: string | n
 /**
  * `between`: what sits between the days and the agenda (the player's Up next, Player - Home.html). `covered`: the
  * page's notice (CH-1209) carries the one Try again, so the failed week keeps only its notice's title. `events`: the
- * coach's today events with their replies (the phone's Today list), for the Next row's reply line and Nudge. `after`:
- * what closes the pane under the agenda (the desk player's "From your coach" row), drawn whether or not the week loaded.
+ * coach's today events with their replies (the phone's Today list), for the Next row's reply line and Nudge.
  */
-export function Week({ week, between, after, covered = false, events }: { week: ChCoachHome['week']; between?: ReactNode; after?: ReactNode; covered?: boolean; events?: ChHomeEvent[] }) {
+export function Week({ week, between, covered = false, events }: { week: ChCoachHome['week']; between?: ReactNode; covered?: boolean; events?: ChHomeEvent[] }) {
   const todayRows = week.agenda.filter((r) => r.when === 'today');
   const today = week.days.find((d) => d.isToday)?.date ?? null;
   const nextOf = (id: string) => events?.find((e) => e.id === id) ?? null;
@@ -108,7 +107,6 @@ export function Week({ week, between, after, covered = false, events }: { week: 
           </div>
         </>
       )}
-      {after}
     </section>
   );
 }

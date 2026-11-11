@@ -4168,10 +4168,6 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   flex: none;
   color: var(--ch-text-tertiary);
 }
-/* On the desk the row closes the week's pane (Week.tsx `after`): the pane's own gap spaces it from the agenda. */
-.ch-h-pane > .ch-ph-asks {
-  margin-top: 0;
-}
 /* A tap on the row shows, as the hover does (the press controller marks links, lib/press.ts). */
 .ch-ph-asks {
   transition: background-color var(--ch-dur-press) var(--ch-ease);
