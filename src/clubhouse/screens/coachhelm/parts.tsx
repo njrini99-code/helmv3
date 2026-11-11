@@ -157,7 +157,11 @@ export function FocusCard({ ins, who, assigned, defaultOpen = false }: { ins: Ch
           )}
           {/* What the engine now knows (each part only with its flag on): how sure, the cause, its status, its focus area's verdict. */}
           <EngineState engine={ins.engine} />
+          {/* Desktop: the figures sit in a compact well with the drill and the reasoning beside it (fix wave 2026-11-11: a
+              two-row table ran 770px wide). On the phone both wrappers draw nothing and the card reads top to bottom as before. */}
+          <div className="ch-hl-evwhy">
           <Evidence ev={ins.evidence} who={who} />
+          <div className="ch-hl-evwhy__side">
           {/* This week, flush under the evidence: the second action, not a second card (the drill well is cut). */}
           {ins.week && (
             <div className="ch-hl-week">
@@ -185,6 +189,8 @@ export function FocusCard({ ins, who, assigned, defaultOpen = false }: { ins: Ch
               </p>
             </>
           )}
+          </div>
+          </div>
           <WhyAudit lines={ins.engine?.audit} />
         </>
       )}
@@ -263,9 +269,10 @@ export function BoardPartial({ missing, what, focus = true }: { missing: ChBoard
 /** `who`: the coach's role line. A player's page has none (wave 7: a player is never told their own role). A coach's view of one
  *  player puts "CoachHelm" there instead, and the player's name as the `title` (spec A). */
 /** `below`: one more line under the sentence, inside the header (the coach's "Since you were last here", D4). */
-export function Head({ who, title = 'CoachHelm', children, aside, below, phone = false }: { who?: ReactNode; title?: ReactNode; children: ReactNode; aside?: ReactNode; below?: ReactNode; phone?: boolean }) {
+/** `asideLevel="title"`: the aside sits on the title's line (the coach board's keys), not at the foot of the header's lines. */
+export function Head({ who, title = 'CoachHelm', children, aside, asideLevel, below, phone = false }: { who?: ReactNode; title?: ReactNode; children: ReactNode; aside?: ReactNode; asideLevel?: 'title'; below?: ReactNode; phone?: boolean }) {
   return (
-    <header className={'ch-hl-h' + (aside ? ' has-aside' : '')} data-canopy-head="">
+    <header className={'ch-hl-h' + (aside ? ' has-aside' : '') + (aside && asideLevel === 'title' ? ' is-aside-title' : '')} data-canopy-head="">
       {who && <span className="ch-hl-role">{who}</span>}
       {/* The phone's one large title (owner decision 4: the same 34 semibold sans as every section root, not the desktop's serif). */}
       {phone ? (

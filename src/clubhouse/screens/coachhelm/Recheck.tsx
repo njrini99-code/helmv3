@@ -47,6 +47,21 @@ export function recheckRunningLabel(players: number | null): string {
  * than that as a rule, and the outcome here is the line, not a toast.
  */
 export function RecheckReads({ players, writes = LIVE_RECHECK_WRITES }: { players: number | null; writes?: ChRecheckWrites }) {
+  const { trigger, status } = useRecheckReads({ players, writes });
+  return (
+    <div className="ch-hl-rck" data-ch-code="CH-13944">
+      {trigger}
+      {status}
+    </div>
+  );
+}
+
+/**
+ * The same action as two pieces, for a page that sets them apart: the coach board's desktop header carries the key beside the
+ * view switch, level with the title, and the outcome line reads under the header's own lines (fix wave 2026-11-11: the key sat
+ * alone under 350px of empty column). `RecheckReads` is the two together, as the phone and the Team view draw them.
+ */
+export function useRecheckReads({ players, writes = LIVE_RECHECK_WRITES }: { players: number | null; writes?: ChRecheckWrites }) {
   const [state, setState] = useState<RecheckState>({ kind: 'idle' });
   const inFlight = useRef(false);
   const { refresh } = useRefresh();
@@ -86,11 +101,12 @@ export function RecheckReads({ players, writes = LIVE_RECHECK_WRITES }: { player
   };
 
   const running = state.kind === 'running';
-  return (
-    <div className="ch-hl-rck" data-ch-code="CH-13944">
-      <Button variant="secondary" leftIcon={RotateCw} busy={running} onClick={() => void run()}>
-        {running ? recheckRunningLabel(players) : 'Re-check reads'}
-      </Button>
+  const trigger = (
+    <Button variant="secondary" leftIcon={RotateCw} busy={running} onClick={() => void run()}>
+      {running ? recheckRunningLabel(players) : 'Re-check reads'}
+    </Button>
+  );
+  const status = (
       <p className={'ch-hl-rck__s' + (state.kind === 'failed' || state.kind === 'limited' ? ' is-failed' : '')} role="status">
         {state.kind === 'running' && (
           <>
@@ -104,6 +120,6 @@ export function RecheckReads({ players, writes = LIVE_RECHECK_WRITES }: { player
         {state.kind === 'limited' && <span data-ch-code="CH-13007">{COACHHELM_ENGINE_RATE_LIMITED}</span>}
         {state.kind === 'failed' && <span data-ch-code="CH-13006">{state.line}</span>}
       </p>
-    </div>
   );
+  return { trigger, status };
 }

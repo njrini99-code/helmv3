@@ -27,7 +27,7 @@ import { useHydrated } from './use-hydrated';
 import { useViewSwitch } from './use-view-switch';
 import { CoursePlan } from './CoursePlan';
 import { LIVE_COACHHELM_WRITES, LIVE_COURSE_PLAN_READS, LIVE_RECHECK_WRITES, type ChCoachHelmWrites, type ChCoursePlanReads, type ChRecheckWrites } from './writes';
-import { RecheckReads } from './Recheck';
+import { useRecheckReads } from './Recheck';
 import { SideScroll } from '../../ui/SideScroll';
 import { pluralWord } from '../../lib/plural';
 
@@ -131,6 +131,9 @@ export function CoachBoard({
   const noReads = noReadRows(data.withoutSignals, data.withoutNames, data.withoutIds);
   // CH-13943: a player every one of whose reads is Not enough yet has no card; they are a By player row that says so.
   const heldOnly = data.notEnough?.players.filter((p) => !p.card) ?? [];
+  // Re-check reads (CH-13944): not with CoachHelm off or with no players to read.
+  const canRecheck = !data.off && (data.roster.error || data.roster.count > 0);
+  const rck = useRecheckReads({ players: data.roster.error ? null : data.roster.count, writes: recheck });
   const rosterHref = coachBoardLinks.roster();
   const inviteHref = coachBoardLinks.invite();
 
@@ -282,6 +285,8 @@ export function CoachBoard({
 
   // With CoachHelm off (CH-13305), Ask is off too, so the strip that leads there is not drawn.
   const tabs = data.off ? null : <CoachHelmTabs active={sw.shown} onGo={sw.go} />;
+  // The board lists somebody: a count of what is new is drawn only then (a "3" over "No signals yet" pointed at nothing).
+  const listed = !!cur || !!data.roster.error || !!data.players.error;
   return (
     <main className={'ch-hl' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hl-title" aria-busy={sw.pending || undefined} data-canopy={phone ? undefined : ''} {...sw.enter}>
       {phone && <PhoneTop start title="CoachHelm" />}
@@ -289,25 +294,48 @@ export function CoachBoard({
       <Head
         who="Coach"
         phone={phone}
-        aside={!phone ? tabs : undefined}
+        // Desktop: the board's keys on the title's line, the team re-run beside the view switch (a quiet secondary, never the primary).
+        aside={
+          phone || (!tabs && !canRecheck) ? undefined : (
+            <div className="ch-hl-h__acts">
+              {canRecheck && (
+                <span className="ch-hl-rck is-head" data-ch-code="CH-13944">
+                  {rck.trigger}
+                </span>
+              )}
+              {tabs}
+            </div>
+          )
+        }
+        asideLevel="title"
         below={data.off || (!data.roster.error && data.roster.count === 0) ? undefined : (
-          // D4: the program pulse is one collapsed line in the header, never a block that comes before the decision.
-          <SectionBoundary surface="coachhelm.pulse" label="Since you were last here" code="CH-13204">
-            {isPulseLater(data.pulse) ? (
-              <Suspense fallback={<SinceSkeleton />}>
-                <SinceFromRead read={data.pulse} />
-              </Suspense>
-            ) : (
-              <SinceLine pulse={data.pulse} />
-            )}
-          </SectionBoundary>
+          // One block in the header's column, so the outcome line adds no row (and no row gap) while it is empty.
+          <div className="ch-hl-h__below">
+            {/* D4: the program pulse is one collapsed line in the header, never a block that comes before the decision. */}
+            <SectionBoundary surface="coachhelm.pulse" label="Since you were last here" code="CH-13204">
+              {isPulseLater(data.pulse) ? (
+                <Suspense fallback={<SinceSkeleton />}>
+                  <SinceFromRead read={data.pulse} listed={listed} />
+                </Suspense>
+              ) : (
+                <SinceLine pulse={data.pulse} listed={listed} />
+              )}
+            </SectionBoundary>
+            {/* The re-run's outcome, under the header's lines on desktop; the key itself is beside the view switch. */}
+            {!phone && canRecheck && rck.status}
+          </div>
         )}
       >
         {players.length > 0 && !data.off ? playersLine(playersOpen) : 'CoachHelm reads the rounds your players post.'}
       </Head>
       {body}
-      {/* CH-13944: the team re-run, a quiet secondary action under the board. Not with CoachHelm off or with no players to read. */}
-      {!data.off && (data.roster.error || data.roster.count > 0) && <RecheckReads players={data.roster.error ? null : data.roster.count} writes={recheck} />}
+      {/* CH-13944: on the phone the team re-run stays a quiet secondary action under the board, its outcome beside it. */}
+      {phone && canRecheck && (
+        <div className="ch-hl-rck" data-ch-code="CH-13944">
+          {rck.trigger}
+          {rck.status}
+        </div>
+      )}
       {trackRecordHref && !data.off && (
         <p className="ch-htr-link" data-ch-code="CH-13969">
           <Button variant="secondary" href={trackRecordHref}>
@@ -330,12 +358,15 @@ const PULSE_NOT_LOADED: ChPulse = { rows: [], error: true };
  * failed, what was not checked (CH-13206), so a gap is never read as "nothing is flagged". The tap is silent, as the card's other
  * disclosures are (D-70).
  */
-function SinceLine({ pulse }: { pulse: ChPulse }) {
+function SinceLine({ pulse, listed = true }: { pulse: ChPulse; /** The board under it lists at least one player. */ listed?: boolean }) {
   const [open, setOpen] = useState(false);
   const id = useId();
   const gaps = pulse.missing && pulse.missing.length > 0 ? pulseGapsLabel(pulse.missing) : null;
   if (pulse.error) return <SinceFailed />;
-  const n = pulse.rows.length;
+  // Nothing is listed under the header (no player has a signal yet), so a count of what is new has nothing to point at: the
+  // line is not drawn. A read that failed is still said (CH-13206), and "Nothing new" is never claimed over rows it hides.
+  if (!listed && pulse.rows.length > 0 && !gaps) return null;
+  const n = listed ? pulse.rows.length : 0;
   if (n === 0 && !gaps) {
     return (
       <div className="ch-hl-since is-quiet" data-ch-code="CH-13309">
@@ -434,9 +465,9 @@ function SinceFailed() {
 }
 
 /** The pulse read the loader handed over still on its way; this suspends until it lands, inside the line's own Suspense. */
-function SinceFromRead({ read }: { read: Promise<ChPulseResult> }) {
+function SinceFromRead({ read, listed }: { read: Promise<ChPulseResult>; listed: boolean }) {
   const res = use(read);
-  return <SinceLine pulse={res.status === 'ok' ? res.pulse : PULSE_NOT_LOADED} />;
+  return <SinceLine pulse={res.status === 'ok' ? res.pulse : PULSE_NOT_LOADED} listed={listed} />;
 }
 
 /** CH-13405: the line on its way, at the line's own height, so the header does not move when it lands. */
