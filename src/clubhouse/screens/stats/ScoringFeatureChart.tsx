@@ -91,17 +91,31 @@ export function ScoringFeatureChart({ rounds, tone, onRead }: { rounds: readonly
   const shape = useRef<{ dots: readonly Pt[]; avg: readonly Pt[] } | null>(null);
   const roundsKey = shown.map((r) => r.id).join();
   const dotPts: Pt[] = shown.map((r, i) => [x(i), y(r.value)]);
+  const morphedKey = useRef<string | null>(null);
   useLayoutEffect(() => {
     const was = shape.current;
     const end = { dots: dotPts, avg };
-    if (!was || reduced || was.dots.length === 0) {
+    const bottom = H - PAD.b;
+    const circles = Array.from(dotsEl.current?.querySelectorAll('circle') ?? []);
+    // The shape as the elements hold it: a morph writes them itself, so whoever stops one must leave them on a whole shape.
+    const paint = (a: readonly Pt[], d: readonly Pt[]) => {
+      const path = monoPath(a);
+      if (lineEl.current) lineEl.current.setAttribute('d', path);
+      if (areaEl.current) areaEl.current.setAttribute('d', path ? `${path}L${a[a.length - 1]![0]},${bottom}L${a[0]![0]},${bottom}Z` : '');
+      circles.forEach((c, i) => d[i] && c.setAttribute('cy', String(d[i]![1])));
+    };
+    const sameRounds = morphedKey.current === roundsKey;
+    morphedKey.current = roundsKey;
+    // Only a new set of rounds morphs. A new width (the card is measured after its first paint, and a desk's card is far wider than
+    // the first guess) or a motion setting that lands late redraws at rest: a morph begun at the old width would otherwise keep
+    // writing the old width's line over the new one, leaving the average half as long as its rounds.
+    if (!was || reduced || was.dots.length === 0 || sameRounds) {
+      paint(avg, dotPts);
       shape.current = end;
       return;
     }
     const startDots = dotPts.map((p) => heightAt(was.dots, p[0]) ?? p[1]);
     const startAvg = avg.map((p) => heightAt(was.avg, p[0]) ?? p[1]);
-    const bottom = H - PAD.b;
-    const circles = Array.from(dotsEl.current?.querySelectorAll('circle') ?? []);
     let raf = 0;
     const t0 = performance.now();
     const step = (now: number) => {
@@ -109,17 +123,14 @@ export function ScoringFeatureChart({ rounds, tone, onRead }: { rounds: readonly
       const a = avg.map((p, i) => [p[0], startAvg[i]! + (p[1] - startAvg[i]!) * t] as const);
       const d = dotPts.map((p, i) => [p[0], startDots[i]! + (p[1] - startDots[i]!) * t] as const);
       shape.current = { dots: d, avg: a };
-      const path = monoPath(a);
-      if (lineEl.current) lineEl.current.setAttribute('d', path);
-      if (areaEl.current && path) areaEl.current.setAttribute('d', `${path}L${a[a.length - 1]![0]},${bottom}L${a[0]![0]},${bottom}Z`);
-      circles.forEach((c, i) => d[i] && c.setAttribute('cy', String(d[i]![1])));
+      paint(a, d);
       if (t < 1) raf = requestAnimationFrame(step);
       else shape.current = end;
     };
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- a new set of rounds starts it; a resize just redraws
-  }, [roundsKey, reduced]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the geometry is read from this render; the keys say when it changed
+  }, [roundsKey, reduced, width]);
 
   const set = useCallback(
     (i: number | null) => {
