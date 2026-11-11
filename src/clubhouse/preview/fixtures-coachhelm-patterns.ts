@@ -1,7 +1,6 @@
 import { computeTeamPatterns, type TeamPatternRead } from '@/lib/coachhelm/v3/team-pattern/pattern';
-import type { ChCoachHelmData } from '../data/coachhelm-shape';
 import { toChTeamPatterns } from '../data/coachhelm-team-pattern';
-import { HELM_PLAYERS, PREVIEW_HELM_COACH } from './fixtures-coachhelm';
+import { HELM_PLAYERS } from './fixtures-coachhelm';
 
 /**
  * The coach board with Team patterns (supercharge Slice 7b, `coachhelm_team_pattern_v1`): synthetic reads run through the real
@@ -79,8 +78,3 @@ export const PREVIEW_TEAM_PATTERNS = toChTeamPatterns(
   }),
   new Map(ROSTER.map((p) => [p.id, p.name])),
 );
-
-export const PREVIEW_HELM_COACH_PATTERNS: ChCoachHelmData = {
-  ...PREVIEW_HELM_COACH,
-  ...(PREVIEW_TEAM_PATTERNS ? { teamPatterns: PREVIEW_TEAM_PATTERNS } : {}),
-};

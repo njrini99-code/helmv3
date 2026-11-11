@@ -52,5 +52,85 @@
     "id": 90632,
     "removedAt": "2026-11-11",
     "reason": "CH-09222 was the failed entries read on a player's My qualifiers list, retired when players got one Qualifiers page (owner, 2026-11-11); on /qualifiers a failed entries read is CH-09202"
+  },
+  {
+    "id": 130212,
+    "removedAt": "2026-11-11",
+    "reason": "CH-13405 belonged to the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11)"
+  },
+  {
+    "id": 130406,
+    "removedAt": "2026-11-11",
+    "reason": "CH-13306 belonged to the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11)"
+  },
+  {
+    "id": 130407,
+    "removedAt": "2026-11-11",
+    "reason": "CH-13307 belonged to the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11)"
+  },
+  {
+    "id": 130409,
+    "removedAt": "2026-11-11",
+    "reason": "CH-13309 belonged to the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11)"
+  },
+  {
+    "id": 130410,
+    "removedAt": "2026-11-11",
+    "reason": "CH-13310 belonged to the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11)"
+  },
+  {
+    "id": 130605,
+    "removedAt": "2026-11-11",
+    "reason": "CH-13202 belonged to the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11)"
+  },
+  {
+    "id": 130606,
+    "removedAt": "2026-11-11",
+    "reason": "CH-13203 belonged to the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11)"
+  },
+  {
+    "id": 130632,
+    "removedAt": "2026-11-11",
+    "reason": "CH-13206 belonged to the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11)"
+  },
+  {
+    "id": 130718,
+    "removedAt": "2026-11-11",
+    "reason": "CH-13908 belonged to the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11)"
+  },
+  {
+    "id": 130728,
+    "removedAt": "2026-11-11",
+    "reason": "CH-13995 belonged to the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11)"
+  },
+  {
+    "id": 130738,
+    "removedAt": "2026-11-11",
+    "reason": "CH-13969 belonged to the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11)"
+  },
+  {
+    "id": 130743,
+    "removedAt": "2026-11-11",
+    "reason": "CH-13941 belonged to the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11)"
+  },
+  {
+    "id": 130744,
+    "removedAt": "2026-11-11",
+    "reason": "CH-13942 belonged to the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11)"
+  },
+  {
+    "id": 130745,
+    "removedAt": "2026-11-11",
+    "reason": "CH-13943 belonged to the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11)"
+  },
+  {
+    "id": 130105,
+    "removedAt": "2026-11-11",
+    "reason": "OPEN_SIGNALS_FOLLOW_DISMISSALS was the header count of the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11)"
+  },
+  {
+    "id": 131501,
+    "removedAt": "2026-11-11",
+    "reason": "THE_PAGE_IS_AS_FRESH_AS_ITS_LAST_READ was proved on the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11)"
   }
 ]

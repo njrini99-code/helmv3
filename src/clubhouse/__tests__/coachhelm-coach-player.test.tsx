@@ -67,12 +67,10 @@ import { STANDING_ROWS } from '../preview/fixtures-coachhelm-views';
 import { coachHeadLine, type ChViewVoice } from '../data/coachhelm-views-shape';
 import type { ChDeepDive } from '../data/coachhelm-dive-shape';
 import { ClubhouseCoachHelmRoute } from '../routes/coachhelm';
-import { CoachBoard } from '../screens/coachhelm/CoachBoard';
 import { DeepDive } from '../screens/coachhelm/views/DeepDive';
 import { Standing } from '../screens/coachhelm/views/Standing';
 import type { ChCoachHelmWrites } from '../screens/coachhelm/writes';
 import { ToastProvider } from '../ui/Toast';
-import { PREVIEW_HELM_COACH } from '../preview/fixtures-coachhelm';
 import { FULL_VECTOR, gameLoad, genome, PREVIEW_DIVE, PREVIEW_GAME, PREVIEW_STANDING } from '../preview/fixtures-coachhelm-views';
 import { PREVIEW_COACH_DIVE, PREVIEW_COACH_GAME, PREVIEW_COACH_STANDING, PREVIEW_COACH_VOICE } from '../preview/fixtures-coachhelm-coach-player';
 
@@ -333,13 +331,6 @@ describe('the action row on a coach’s Deep dive', () => {
 });
 
 describe('every link in and out carries the player', () => {
-  it('the board’s card: "All of Jonah’s reads" opens his Deep dive; a name with no insights opens their Standing', async () => {
-    const u = user();
-    render(wrap(<CoachBoard data={PREVIEW_HELM_COACH} writes={okWrites()} />));
-    await u.click(screen.getAllByRole('button', { name: /Jonah Okafor/ })[0]!);
-    expect(screen.getByRole('link', { name: /All of Jonah’s reads/ }).getAttribute('href')).toBe('/golf/dashboard/coachhelm?view=deep-dive&player=pl-jonah');
-    expect(screen.getByRole('link', { name: 'Sam Whitfield' }).getAttribute('href')).toBe('/golf/dashboard/coachhelm?view=standing&player=pl-sam');
-  });
 
   it('the header links back to the board open on the player; the strip moves between his two views (Game profile folded into Standing)', async () => {
     const u = user();

@@ -44,7 +44,6 @@ const ALLOW_ELEMENTS: Record<string, number> = {
   'styles/coachhelm-ask.css': 2,
   'styles/coachhelm-standing.css': 2,
   'styles/coachhelm-thread.css': 4,
-  'styles/coachhelm.css': 2,
   'styles/home.css': 1,
   'styles/messages.css': 2,
   'styles/qualifiers.css': 2,

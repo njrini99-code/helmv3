@@ -28,7 +28,6 @@ vi.mock('../data/coachhelm', () => ({
   loadCoachHelmGate: gateSpy,
   emptyCoachHelm: (off: unknown) => ({ board: 'off', off }),
 }));
-vi.mock('../screens/coachhelm/CoachBoard', () => ({ CoachBoard: () => null }));
 vi.mock('../screens/coachhelm/PlayerBoard', () => ({ PlayerBoard: () => null }));
 vi.mock('../screens/coachhelm/chat/Ask', () => ({ Ask: () => null }));
 

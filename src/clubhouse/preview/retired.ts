@@ -7,6 +7,8 @@
 export const RETIRED_PREVIEW_SCREENS: Readonly<Record<string, { to: string; keep?: readonly string[] }>> = {
   // Players have ONE Qualifiers page, their own listed first.
   'my-qualifiers': { to: 'qualifiers-player', keep: ['state'] },
+  // The coach's CoachHelm Team page is the drawn golf hole; the older signal-list board is gone.
+  coachhelm: { to: 'coachhelm-team' },
 };
 
 /** Where a retired preview screen went, with the query keys it keeps; null for a screen that is still drawn. */

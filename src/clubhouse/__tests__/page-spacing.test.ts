@@ -120,7 +120,6 @@ const PHONE_EDGES: [file: string, context: string, selector: string][] = [
 /** Full-bleed pieces: out to the screen edge by the gutter, and their content back in by it. */
 const PHONE_BLEEDS: [file: string, context: string, selector: string][] = [
   ['hub.css', PHONE, '.ch-hb-tabs'],
-  ['coachhelm.css', PHONE, '.ch-hl.is-phone .ch-hl-plist'],
   ['coachhelm-views.css', PHONE, '.ch-hv-chips'],
   ['rounds.css', PHONE, '.ch-rv.is-phone .ch-rv-cardw'],
   ['stats.css', PHONE, '.ch-stm .ch-gd.is-phone .ch-gd__nav'],

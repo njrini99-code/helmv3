@@ -331,14 +331,6 @@ export const PREVIEW_HELM_COACH_CORRECTIONS: Record<string, ChCoachHelmData> = {
   'corrections-unavailable': coachEngineBoard(coachCx(null)),
   'corrections-failed': coachEngineBoard(coachCx(null)),
 };
-/** Jonah's focus area did not move. `?state=engine-notmoved`. */
-export const PREVIEW_HELM_COACH_ENGINE_NOT_MOVED: ChCoachHelmData = {
-  ...PREVIEW_HELM_COACH_ENGINE,
-  players: {
-    list: PREVIEW_HELM_COACH_ENGINE.players.list.map((p) => (p.id === jonah.id ? coachCard(jonah, [ENGINE_SLOPE(slope(jonah.id))], 3, focusDidNotMove('in-slope'), DRILL_TEXT) : p)),
-    error: false,
-  },
-};
 
 const ME: ChViewer = { role: 'player' };
 /** What the player's feed hands the page: the support pass's keys are dropped on the server (`delivery/player-projection.ts`). */

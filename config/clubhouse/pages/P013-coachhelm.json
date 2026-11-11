@@ -193,8 +193,6 @@
       "data": [],
       "bridge": {
         "loadFailedPlayer": 130604,
-        "loadFailedCoach": 130605,
-        "loadFailedPulse": 130606,
         "recovery": 131402
       },
       "tests": [

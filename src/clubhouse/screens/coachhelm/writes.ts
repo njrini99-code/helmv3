@@ -5,7 +5,7 @@ import { dismissInsight, reactivateInsight } from '@/app/golf/actions/insights-f
 import { recordCoachHelmCorrection } from '@/app/golf/actions/coachhelm-corrections';
 import { refreshTeamAnalysisAsCoach } from '@/app/golf/actions/insights-coachhelm';
 import type { CorrectionInput, CorrectionResult } from '@/lib/coachhelm/v3/corrections/input';
-import { getCoursePlan, getMyCoursePlan, listCoursePlanCourses, listMyCoursePlanCourses, type CoursePlanCoursesResult, type CoursePlanResult, type MyCoursePlanResult } from '@/app/golf/actions/coachhelm-course-plan';
+import { getMyCoursePlan, listMyCoursePlanCourses, type CoursePlanCoursesResult, type MyCoursePlanResult } from '@/app/golf/actions/coachhelm-course-plan';
 import type { ChHelmLifecycle } from '../../data/coachhelm-shape';
 import type { ServerResult } from '../../lib/use-action';
 
@@ -22,7 +22,7 @@ export interface ChAssignArgs {
 }
 
 /**
- * Every CoachHelm write, as the coach's board calls it. The live set is the
+ * Every CoachHelm write, as the coach's pages call it. The live set is the
  * actions the Fairway Brief uses, unchanged (one write path per behaviour):
  * a focus area from an insight (a proposal the player accepts), and the
  * dismiss with its true reverse. Preview and tests pass their own set.
@@ -55,21 +55,7 @@ export const LIVE_PLAYER_WRITES: ChPlayerWrites = {
 };
 
 /**
- * The course plan's two reads (Slice 7c, `coachhelm_course_plan_v1`): the player's courses with three or more rounds, and
- * the plan for one of them. Read only. Preview and tests pass their own.
- */
-export interface ChCoursePlanReads {
-  courses(playerId: string): Promise<CoursePlanCoursesResult>;
-  plan(playerId: string, courseId: string): Promise<CoursePlanResult>;
-}
-
-export const LIVE_COURSE_PLAN_READS: ChCoursePlanReads = {
-  courses: (playerId) => listCoursePlanCourses(playerId),
-  plan: (playerId, courseId) => getCoursePlan(playerId, courseId),
-};
-
-/**
- * The player's own course plan (chs-21): the same two reads for the signed-in player. They take no player id: the server
+ * The player's own course plan (chs-21, `coachhelm_course_plan_v1`): its two reads for the signed-in player. They take no player id: the server
  * reads the session's own player, so the page can never ask for someone else's. Preview and tests pass their own.
  */
 export interface ChMyCoursePlanReads {
@@ -98,7 +84,7 @@ export const LIVE_CORRECTION_WRITES: ChCorrectionWrites = {
 export type ChRecheckResult = Awaited<ReturnType<typeof refreshTeamAnalysisAsCoach>>;
 
 /**
- * Re-check reads on the coach's board: the action Fairway's Triage desk "Scan team" calls, unchanged. It takes no team or
+ * Re-check reads on the coach's Team page: the action Fairway's Triage desk "Scan team" calls, unchanged. It takes no team or
  * player id: the action resolves the coach and their team from the session itself, checks the coach, and spends the
  * engine's rate limit once for the batch. Preview and tests pass their own.
  */

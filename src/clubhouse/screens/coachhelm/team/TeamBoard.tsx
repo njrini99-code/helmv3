@@ -13,7 +13,7 @@ import { useChSessionState } from '../../../lib/session-state';
 import { plural } from '../../../lib/plural';
 import { Notice, ReadWorthContext } from './parts';
 import { rebuiltHref } from '../../../shell/nav';
-import { CoachHelmOffNotice } from '../CoachBoard';
+import { CoachHelmOffNotice } from '../CoachHelmOffNotice';
 import { CoachHelmTabs, COACHHELM_HREF, type CoachHelmView } from '../chat/SubTabs';
 import { useViewSwitch } from '../use-view-switch';
 import { Modal } from '../../../ui/Modal';

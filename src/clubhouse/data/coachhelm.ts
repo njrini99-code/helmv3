@@ -499,9 +499,13 @@ export function emptyCoachHelm(off: ChCoachHelmData['off'] = null): ChCoachHelmD
 }
 
 /**
- * The coach's CoachHelm for one team: the program pulse, and each player's top
- * insight with how many signals they have. Only the team's active players are
- * read, whichever other teams the coach staffs.
+ * RETIRED PAGE (owner, 2026-11-11): the loader of the coach's old signal-list board, which no page draws any more. The coach's
+ * CoachHelm Team page is the drawn golf hole, read by `loadCoachTeamBoard` (data/coachhelm-team.ts). Nothing calls this outside
+ * its tests; it is kept only because those tests also pin the helpers the Team page's loader shares (`topInsights`,
+ * `teamPatternsOf`, `pulseLater`, the gate). Do not build on it, and do not fix a page bug here.
+ *
+ * What it read: the program pulse, and each player's top insight with how many signals they have, for the team's active
+ * players only, whichever other teams the coach staffs.
  */
 export async function loadCoachCoachHelm(input: { coachId: string; teamId: string }): Promise<ChCoachHelmData> {
   const supabase = await createClient();

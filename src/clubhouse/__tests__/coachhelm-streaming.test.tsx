@@ -1,7 +1,7 @@
-import { LazyMotion, domAnimation } from 'motion/react';
-import { act, cleanup, render, screen } from '@testing-library/react';
+
+import { cleanup } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { landedRead, pulseLanded } from './coachhelm-pulse';
+import { pulseLanded } from './coachhelm-pulse';
 import { resolved } from './route-view';
 
 /**
@@ -33,33 +33,13 @@ vi.mock('../routes/team', () => ({ resolveClubhouseTeam: () => Promise.resolve(t
 vi.mock('../data/coachhelm-chat', () => ({ loadAskCoachHelm: vi.fn() }));
 
 import { loadCoachCoachHelm } from '../data/coachhelm';
-import type { ChPulseResult } from '../data/coachhelm-shape';
 import { ClubhouseCoachHelmRoute } from '../routes/coachhelm';
-import { CoachBoard } from '../screens/coachhelm/CoachBoard';
-import { HELM_PLAYERS, PREVIEW_HELM_COACH, penalties, slope } from '../preview/fixtures-coachhelm';
-import { ToastProvider } from '../ui/Toast';
+import { HELM_PLAYERS, penalties, slope } from '../preview/fixtures-coachhelm';
 
 const jonah = HELM_PLAYERS.jonah;
 const eli = HELM_PLAYERS.eli;
 const on = { userEnabled: true, teamEnabled: true, effectivelyEnabled: true, disabledReason: null, disabledBy: null } as const;
-const wrap = (node: React.ReactNode) => (
-  <LazyMotion features={domAnimation}>
-    <ToastProvider>
-      <div className="ch-root" data-ui="clubhouse">
-        {node}
-      </div>
-    </ToastProvider>
-  </LazyMotion>
-);
-const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
 const pulseOf = (items: unknown[]) => ({ items, latest_round_at: null, players_without_rounds: 0, players_with_recent_rounds: 2, recent_window_days: 30, active_roster: 2, as_of: '2026-10-14T12:00:00Z' });
-const deferred = <T,>() => {
-  let resolve!: (v: T) => void;
-  const promise = new Promise<T>((r) => {
-    resolve = r;
-  });
-  return { promise, resolve };
-};
 
 const arrange = () => {
   gates.coach.mockResolvedValue({ ...on });
@@ -100,52 +80,6 @@ afterEach(() => {
 });
 
 describe('the coach’s board while the pulse is still on its way', () => {
-  it('CH-13405 the frame, the players and the top card are on screen with the header line holding its place; the rows land in that same place', async () => {
-    const later = deferred<ChPulseResult>();
-    await act(async () => {
-      render(wrap(<CoachBoard data={{ ...PREVIEW_HELM_COACH, pulse: later.promise }} />));
-    });
-    // The top card first.
-    expect(document.querySelector('.ch-hl-focus')).not.toBeNull();
-    expect(screen.getByRole('heading', { level: 1, name: 'CoachHelm' })).toBeInTheDocument();
-    expect(screen.getByRole('region', { name: 'By player' })).toBeInTheDocument();
-    // The header's "Since you were last here" line is there, in the header, with its skeleton (never "nothing is flagged", never zero).
-    const slot = document.querySelector('.ch-hl-h');
-    expect(slot).not.toBeNull();
-    expect(code('CH-13405')).not.toBeNull();
-    expect(code('CH-13405')?.getAttribute('aria-busy')).toBe('true');
-    expect(slot?.contains(code('CH-13405'))).toBe(true);
-    expect(code('CH-13309')).toBeNull();
-    expect(code('CH-13203')).toBeNull();
-
-    await act(async () => {
-      later.resolve({ status: 'ok', pulse: PREVIEW_HELM_COACH.pulse as never });
-    });
-    expect(code('CH-13405')).toBeNull();
-    // The same header, now holding the line and its rows.
-    expect(document.querySelector('.ch-hl-h')).toBe(slot);
-    expect(slot?.querySelectorAll('.ch-hl-since li').length).toBeGreaterThan(0);
-  });
-
-  it('CH-13405 a pulse that is already here draws no skeleton at all', () => {
-    render(wrap(<CoachBoard data={{ ...PREVIEW_HELM_COACH, pulse: landedRead<ChPulseResult>({ status: 'ok', pulse: { rows: [], error: false } }) }} />));
-    expect(code('CH-13405')).toBeNull();
-    expect(code('CH-13309')).not.toBeNull();
-  });
-
-  it('CH-13203 a pulse that failed lands as its own notice in the same place, and the players are not affected', async () => {
-    const later = deferred<ChPulseResult>();
-    await act(async () => {
-      render(wrap(<CoachBoard data={{ ...PREVIEW_HELM_COACH, pulse: later.promise }} />));
-    });
-    await act(async () => {
-      later.resolve({ status: 'failed' });
-    });
-    expect(code('CH-13203')).not.toBeNull();
-    expect(code('CH-13309')).toBeNull();
-    expect(document.querySelector('.ch-hl-h')?.contains(code('CH-13203'))).toBe(true);
-    expect(document.querySelector('.ch-hl-focus')).not.toBeNull();
-  });
 
   it('a pulse read that throws is the pulse failing (logged), never a page that throws or an unhandled rejection', async () => {
     pulseRead.read.mockRejectedValue(new Error('pulse chain down'));

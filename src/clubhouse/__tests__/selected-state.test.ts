@@ -32,7 +32,6 @@ const ALLOW_SELECTED_PAINT: Record<string, number> = {
   'styles/coachhelm-ask.css': 1,
   'styles/coachhelm-dive.css': 1,
   'styles/coachhelm-thread.css': 1,
-  'styles/coachhelm.css': 4,
   'styles/controls.css': 3,
   'styles/hub.css': 3,
   'styles/messages.css': 3,

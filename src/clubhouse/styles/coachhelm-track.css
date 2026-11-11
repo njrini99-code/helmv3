@@ -201,12 +201,6 @@
   color: var(--ch-text-tertiary);
 }
 
-/* The coach board's link here, under the board. */
-.ch-htr-link {
-  display: flex;
-  justify-content: flex-start;
-}
-
 /* Phone: the strip stacks (word and line, then the bar, then the basis). */
 @container chhl (max-width: 640px) {
   .ch-htr-body {

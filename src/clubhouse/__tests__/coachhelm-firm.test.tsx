@@ -1,5 +1,5 @@
-import { LazyMotion, domAnimation } from 'motion/react';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+
+import { cleanup } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 /**
@@ -16,26 +16,8 @@ vi.mock('@/app/golf/actions/development', () => ({ createFocusAreaFromInsightV2:
 vi.mock('@/app/golf/actions/insights-feed', () => ({ dismissInsight: vi.fn(), reactivateInsight: vi.fn() }));
 
 import { isNotEnoughYet, notEnoughOf, notEnoughRead, splitFirm } from '../data/coachhelm-firm';
-import type { ChCoachHelmData } from '../data/coachhelm-shape';
-import { CoachBoard } from '../screens/coachhelm/CoachBoard';
-import { PREVIEW_HELM_COACH } from '../preview/fixtures-coachhelm';
-import { PREVIEW_HELM_COACH_NOT_ENOUGH } from '../preview/fixtures-coachhelm-firm';
-import { ToastProvider } from '../ui/Toast';
 
 afterEach(cleanup);
-
-const wrap = (node: React.ReactNode) => (
-  <LazyMotion features={domAnimation}>
-    <ToastProvider>
-      <div className="ch-root" data-ui="clubhouse">
-        {node}
-      </div>
-    </ToastProvider>
-  </LazyMotion>
-);
-const okWrites = () => ({ assign: vi.fn(() => Promise.resolve({ success: true })), dismiss: vi.fn(() => Promise.resolve({ success: true })), undo: vi.fn(() => Promise.resolve({ success: true })) });
-const show = (data: ChCoachHelmData) => render(wrap(<CoachBoard data={data} writes={okWrites()} />));
-const flat = (t: string | null | undefined) => (t ?? '').replace(/\u00a0/g, ' ');
 
 const read = (id: string, ladder: string | null, strokes: number | null = null) => ({
   id,
@@ -85,40 +67,5 @@ describe('splitFirm', () => {
     expect(r.watching).toBe('Watching: 12 attempts so far. 28 more and this read can say something.');
     expect(notEnoughOf([{ id: 'p', name: 'Priya', card: true, reads: [] }])).toBeUndefined();
     expect(notEnoughOf([{ id: 'p', name: 'Priya', card: true, reads: [r, r] }])?.count).toBe(2);
-  });
-});
-
-describe('the coach board with Not enough yet held back (CH-13942, CH-13943)', () => {
-  it('draws one collapsed line, "Not enough yet (3)", that opens in place to each read', () => {
-    show(PREVIEW_HELM_COACH_NOT_ENOUGH);
-    const line = document.querySelector('[data-ch-code="CH-13942"]') as HTMLElement;
-    expect(line).not.toBeNull();
-    const button = screen.getByRole('button', { name: /Not enough yet/ });
-    expect(flat(button.textContent)).toBe('Not enough yet (3)');
-    expect(button.getAttribute('aria-expanded')).toBe('false');
-    const list = line.querySelector('.ch-hl-ney__l') as HTMLElement;
-    expect(list.closest('[hidden]')).not.toBeNull();
-    fireEvent.click(button);
-    expect(button.getAttribute('aria-expanded')).toBe('true');
-    expect(list.closest('[hidden]')).toBeNull();
-    const items = [...list.querySelectorAll('li')].map((li) => flat(li.textContent));
-    expect(items).toHaveLength(3);
-    expect(items.some((t) => t.startsWith('Priya Natarajan · Putting break') && t.includes('Watching: 28 attempts so far. 12 more'))).toBe(true);
-  });
-
-  it('a held-back head is not the card: Eli’s card is his firm read, and Priya, all held back, is a By player row that says so', () => {
-    show(PREVIEW_HELM_COACH_NOT_ENOUGH);
-    const eli = PREVIEW_HELM_COACH_NOT_ENOUGH.players.list.find((p) => p.id === 'pl-eli')!;
-    expect(eli.top.id).toBe('in-pen-eli');
-    expect(PREVIEW_HELM_COACH_NOT_ENOUGH.players.list.some((p) => p.id === 'pl-priya')).toBe(false);
-    const row = document.querySelector('[data-ch-code="CH-13943"]') as HTMLElement;
-    expect(flat(row.textContent)).toContain('Priya NatarajanNot enough yet');
-    expect(row.tagName).toBe('DIV');
-  });
-
-  it('with the flag off (no notEnough on the data) the board draws neither', () => {
-    show(PREVIEW_HELM_COACH);
-    expect(document.querySelector('[data-ch-code="CH-13942"]')).toBeNull();
-    expect(document.querySelector('[data-ch-code="CH-13943"]')).toBeNull();
   });
 });

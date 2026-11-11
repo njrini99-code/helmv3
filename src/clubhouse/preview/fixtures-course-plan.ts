@@ -1,5 +1,5 @@
 import { buildCoursePlan, type CoursePlanCourse, type CoursePlanHole, type CoursePlanShot } from '@/lib/coachhelm/course-plan/build-plan';
-import type { ChCoursePlanReads, ChMyCoursePlanReads } from '../screens/coachhelm/writes';
+import type { ChMyCoursePlanReads } from '../screens/coachhelm/writes';
 
 /**
  * Course plan fixtures for the dev preview (Slice 7c): synthetic rounds run through the real builder, so the preview shows the
@@ -50,20 +50,12 @@ export const PREVIEW_COURSES: CoursePlanCourse[] = [
   { courseId: 'c-pine', name: 'Pine Hollow', rounds: 3, lastPlayed: '2026-09-27' },
 ];
 
-export const PREVIEW_PLANS = {
+const PREVIEW_PLANS = {
   'c-pine': plan('Pine Hollow', PINE, { rounds: 20, threePutts: 4 }),
   'c-cedar': plan('Cedar Ridge', CEDAR, { rounds: 16, threePutts: 13 }),
 } as const;
 
 const wait = <T,>(v: T) => new Promise<T>((r) => setTimeout(() => r(v), 400));
-
-/** `courseplan` answers both courses; `courseplannone` a player with no course at three rounds; `courseplanfailed` fails the read. */
-export function previewCoursePlanReads(state?: string): ChCoursePlanReads {
-  return {
-    courses: () => wait(state === 'courseplanfailed' ? { status: 'failed' as const } : { status: 'ok' as const, courses: state === 'courseplannone' ? [] : PREVIEW_COURSES }),
-    plan: (_p, courseId) => wait({ status: 'ok' as const, plan: PREVIEW_PLANS[courseId as keyof typeof PREVIEW_PLANS] ?? { status: 'too_few' as const, courseName: 'This course', rounds: 0 } }),
-  };
-}
 
 /**
  * The player's own course plan (chs-21) over the same plans, in their voice only, as `getMyCoursePlan` answers: `courseplan`

@@ -3,7 +3,6 @@ import { createClient } from '@/lib/supabase/server';
 import { chLogServer } from '../lib/track-server';
 import { isCoachHelmEnabledForCoach } from '@/lib/coachhelm/v2/gate';
 import { isFlagEnabled } from '@/lib/flags/is-enabled';
-import { TEAM_BOARD_FIRST_VIEW } from '@/lib/coachhelm/v3/team-board/flag';
 import type { ChHelmViews } from '../shell/context';
 import { todayIsoInZone } from '@/lib/golf/timezone';
 import { fullName } from './season';
@@ -187,7 +186,7 @@ export async function loadClubhouseShell(teamId: string | undefined, playerId?: 
     ...(coachId ? { overdueTasks } : {}),
     timezone,
     askAvailable: askOn,
-    helmViews: { playerAsk: true, team: TEAM_BOARD_FIRST_VIEW === 'hole' },
+    helmViews: { playerAsk: true, team: true },
     classAwareness: isFlagEnabled('class_awareness_v1'),
     course: courseOf(courseRes),
     roundInProgress: round && playerId ? { id: round.id, course: round.course_name?.trim() || 'Your round', hole: round.current_hole ?? null, toPar: toParOf(round.golf_holes ?? []), playerId } : null,

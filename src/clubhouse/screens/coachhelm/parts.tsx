@@ -391,8 +391,8 @@ export function focusStatusSaid(missing: ChBoardMissing | undefined, who: string
 }
 
 /**
- * The coach's action row on one read (CoachBoard's card, and each read of a coach's Deep dive of one player): Assign as focus
- * (primary), Dismiss (ghost), and `extra` after them (the board's "All of Jonah's reads", the Deep dive's "Message Jonah"). A read
+ * The coach's action row on one read (the Team page's read sheet, the read's own page, the player file's reads): Assign as focus
+ * (primary), Dismiss (ghost), and `extra` after them (the Deep dive's "Message Jonah"). A read
  * assigned here or already made a focus shows the Assigned chip (CH-13601); a declined one offers Propose again (CH-13907); a read
  * older than the newest round offers no Assign (CH-13906); a read beside it that failed leaves Assign out and says why (CH-13207);
  * a card that states no finding offers nothing (CH-13904). Dismissed, the row is the notice with Undo (CH-13901). `where`: which page

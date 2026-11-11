@@ -15938,19 +15938,6 @@
     ]
   },
   {
-    "id": 130105,
-    "page": "P013",
-    "category": 1,
-    "item": 5,
-    "name": "OPEN_SIGNALS_FOLLOW_DISMISSALS",
-    "meaning": "The header counts the players with an open signal (\"4 players have an open signal.\"): the board draws one card per player, so it never counts the rows behind them. A player's open signals are their visible findings whose read is current, and each row shows that count: a strength, a card that states no finding and a read older than the player's newest completed round are not open signals, and a player with only those has none. Dismissing a player's top insight here takes one off that player's count when the card was one of their open signals, and a player left with none leaves the count of players; Undo puts both back. The row reads Dismissed while the notice is up.",
-    "status": "implemented",
-    "where": "src/clubhouse/screens/coachhelm/CoachBoard.tsx#CoachBoard (open, totalOpen, playersOpen); src/clubhouse/data/coachhelm-shape.ts#signalsLine",
-    "tests": [
-      "src/clubhouse/__tests__/coachhelm.test.tsx"
-    ]
-  },
-  {
     "id": 130106,
     "page": "P013",
     "category": 1,
@@ -16087,17 +16074,6 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
-    "id": 130212,
-    "page": "P013",
-    "category": 2,
-    "item": 12,
-    "name": "COACH_THE_BOARD_IS_DRAWN_AND_THE",
-    "chCode": "CH-13405",
-    "meaning": "Coach: the board is drawn and the program pulse is still on its way",
-    "status": "implemented",
-    "catalog": "docs/clubhouse/catalog/coachhelm.md"
-  },
-  {
     "id": 130213,
     "page": "P013",
     "category": 2,
@@ -16186,28 +16162,6 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
-    "id": 130406,
-    "page": "P013",
-    "category": 4,
-    "item": 6,
-    "name": "COACH_PLAYERS_ON_THE_TEAM_NO_SIGNAL",
-    "chCode": "CH-13306",
-    "meaning": "Coach: players on the team, no signal yet",
-    "status": "implemented",
-    "catalog": "docs/clubhouse/catalog/coachhelm.md"
-  },
-  {
-    "id": 130407,
-    "page": "P013",
-    "category": 4,
-    "item": 7,
-    "name": "COACH_NO_PLAYERS_ON_THE_TEAM",
-    "chCode": "CH-13307",
-    "meaning": "Coach: no players on the team",
-    "status": "implemented",
-    "catalog": "docs/clubhouse/catalog/coachhelm.md"
-  },
-  {
     "id": 130408,
     "page": "P013",
     "category": 4,
@@ -16215,28 +16169,6 @@
     "name": "COACH_NOT_ON_A_TEAM",
     "chCode": "CH-13308",
     "meaning": "Coach: not on a team",
-    "status": "implemented",
-    "catalog": "docs/clubhouse/catalog/coachhelm.md"
-  },
-  {
-    "id": 130409,
-    "page": "P013",
-    "category": 4,
-    "item": 9,
-    "name": "COACH_THE_PULSE_HAS_NOTHING_FLAGGED",
-    "chCode": "CH-13309",
-    "meaning": "Coach: the pulse has nothing new, and every read it is made from landed",
-    "status": "implemented",
-    "catalog": "docs/clubhouse/catalog/coachhelm.md"
-  },
-  {
-    "id": 130410,
-    "page": "P013",
-    "category": 4,
-    "item": 10,
-    "name": "COACH_SOME_PLAYERS_HAVE_NO_INSIGHT_YET",
-    "chCode": "CH-13310",
-    "meaning": "Coach: some players have no read yet",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -16639,28 +16571,6 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
-    "id": 130605,
-    "page": "P013",
-    "category": 6,
-    "item": 5,
-    "name": "THE_COACHS_ROSTER_OR_PLAYERS_INSIGHTS_DONT",
-    "chCode": "CH-13202",
-    "meaning": "The coach's roster or players' insights don't load (same tests, for the team)",
-    "status": "implemented",
-    "catalog": "docs/clubhouse/catalog/coachhelm.md"
-  },
-  {
-    "id": 130606,
-    "page": "P013",
-    "category": 6,
-    "item": 6,
-    "name": "THE_PROGRAM_PULSE_DOESNT_LOAD",
-    "chCode": "CH-13203",
-    "meaning": "The program pulse doesn't load",
-    "status": "implemented",
-    "catalog": "docs/clubhouse/catalog/coachhelm.md"
-  },
-  {
     "id": 130607,
     "page": "P013",
     "category": 6,
@@ -16905,17 +16815,6 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
-    "id": 130632,
-    "page": "P013",
-    "category": 6,
-    "item": 32,
-    "name": "COACH_A_READ_THE_PROGRAM_PULSE_IS",
-    "chCode": "CH-13206",
-    "meaning": "Coach: a read the program pulse is made from failed (rounds, the schedule, tasks or focus areas), the rest landed",
-    "status": "implemented",
-    "catalog": "docs/clubhouse/catalog/coachhelm.md"
-  },
-  {
     "id": 130633,
     "page": "P013",
     "category": 6,
@@ -17143,9 +17042,9 @@
     "name": "WRITES_REFUSE_OFFLINE",
     "meaning": "Assign as focus, Dismiss and Undo are refused while the browser is offline, before anything is sent: the shell's toast (CH-1903) names what did not happen (Couldn’t assign the focus to Jonah: you’re offline), the error haptic fires and Retry is offered. Dismiss's warning haptic has already fired when the refusal comes.",
     "status": "implemented",
-    "where": "src/clubhouse/lib/use-action.ts#useAction; src/clubhouse/screens/coachhelm/CoachBoard.tsx#CoachBoard (assign, dismiss, undo)",
+    "where": "src/clubhouse/lib/use-action.ts#useAction; src/clubhouse/screens/coachhelm/parts.tsx#useFocusActions (assign, dismiss, undo)",
     "tests": [
-      "src/clubhouse/__tests__/coachhelm-contracts.test.tsx"
+      "src/clubhouse/screens/coachhelm/__tests__/focus-actions-row.test.tsx"
     ]
   },
   {
@@ -17314,17 +17213,6 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
-    "id": 130718,
-    "page": "P013",
-    "category": 7,
-    "item": 18,
-    "name": "COACH_THE_PLAYER_THE_COACH_HAD_PICKED",
-    "chCode": "CH-13908",
-    "meaning": "Coach: the player the coach had picked is no longer on the refreshed board (their signal went)",
-    "status": "implemented",
-    "catalog": "docs/clubhouse/catalog/coachhelm.md"
-  },
-  {
     "id": 130719,
     "page": "P013",
     "category": 7,
@@ -17420,17 +17308,6 @@
     "name": "DEEP_DIVE_THE_READS_WHY_LINE_FROM",
     "chCode": "CH-13993",
     "meaning": "Deep dive: the Read's Why line from the cause state",
-    "status": "implemented",
-    "catalog": "docs/clubhouse/catalog/coachhelm.md"
-  },
-  {
-    "id": 130728,
-    "page": "P013",
-    "category": 7,
-    "item": 28,
-    "name": "COACH_TEAM_PATTERNS",
-    "chCode": "CH-13995",
-    "meaning": "Coach: Team patterns (flag `coachhelm_team_pattern_v1`)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -17534,17 +17411,6 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
-    "id": 130738,
-    "page": "P013",
-    "category": 7,
-    "item": 38,
-    "name": "COACH_BOARD_THE_LINK_TO_THE_TRACK",
-    "chCode": "CH-13969",
-    "meaning": "Coach board: the link to the Track record",
-    "status": "implemented",
-    "catalog": "docs/clubhouse/catalog/coachhelm.md"
-  },
-  {
     "id": 130739,
     "page": "P013",
     "category": 7,
@@ -17585,39 +17451,6 @@
     "name": "COACH_PLAYER_THE_PATH_LINE",
     "chCode": "CH-13940",
     "meaning": "Coach, player: the path line (design call D2)",
-    "status": "implemented",
-    "catalog": "docs/clubhouse/catalog/coachhelm.md"
-  },
-  {
-    "id": 130743,
-    "page": "P013",
-    "category": 7,
-    "item": 43,
-    "name": "COACH_SINCE_YOU_WERE_LAST_HERE",
-    "chCode": "CH-13941",
-    "meaning": "Coach: since you were last here (design call D4)",
-    "status": "implemented",
-    "catalog": "docs/clubhouse/catalog/coachhelm.md"
-  },
-  {
-    "id": 130744,
-    "page": "P013",
-    "category": 7,
-    "item": 44,
-    "name": "COACH_READS_RATED_NOT_ENOUGH_YET_ARE",
-    "chCode": "CH-13942",
-    "meaning": "Coach: reads rated Not enough yet are held back",
-    "status": "implemented",
-    "catalog": "docs/clubhouse/catalog/coachhelm.md"
-  },
-  {
-    "id": 130745,
-    "page": "P013",
-    "category": 7,
-    "item": 45,
-    "name": "COACH_EVERY_READ_OF_A_PLAYER_IS",
-    "chCode": "CH-13943",
-    "meaning": "Coach: every read of a player is Not enough yet",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -17978,11 +17811,11 @@
     "category": 8,
     "item": 6,
     "name": "ASSIGN_IS_OFFERED_ONLY_FOR_AN_INSIGHT_NOT_YET_MADE",
-    "meaning": "Assign as focus is offered when no focus has been made from the chosen player's top insight. One that is working (a strength) is offered too, as a keep-doing focus, as the board draws it on Theo's card (Q-80); it can also be dismissed. One with a proposed, active, in-progress or paused focus already made from it opens as the Assigned chip (CH-13601): the loader reads only those statuses, so a declined or completed focus no longer blocks Assign, and a failed focus-area read leaves Assign available (the server's duplicate guard still holds).",
+    "meaning": "Assign as focus is offered when no focus has been made from the read. One that is working (a strength) is offered too, as a keep-doing focus (Q-80); it can also be dismissed. One with a proposed, active, in-progress or paused focus already made from it opens as the Assigned chip (CH-13601): the loader reads only those statuses, so a declined or completed focus leaves the read assignable again.",
     "status": "implemented",
-    "where": "src/clubhouse/screens/coachhelm/CoachBoard.tsx#CoachBoard; src/clubhouse/data/coachhelm.ts#assignedByInsight",
+    "where": "src/clubhouse/screens/coachhelm/parts.tsx#FocusActions; src/clubhouse/data/coachhelm.ts#assignedByInsight",
     "tests": [
-      "src/clubhouse/__tests__/coachhelm.test.tsx"
+      "src/clubhouse/screens/coachhelm/__tests__/focus-actions-row.test.tsx"
     ]
   },
   {
@@ -18005,11 +17838,11 @@
     "category": 9,
     "item": 1,
     "name": "CHANGE_LANDED",
-    "meaning": "A change that lands confirms itself in place with the success haptic and no toast: Assign becomes the chip Assigned as Jonah’s focus, Dismiss becomes the dismissed notice, Undo brings the focus card back. The one toast is the existing-focus outcome (130903).",
+    "meaning": "A change that lands confirms itself in place with the success haptic and no toast: Assign becomes the chip Assigned as Jonah’s focus, Dismiss becomes the dismissed notice, Undo brings the action row back. The one toast is the existing-focus outcome (130903).",
     "status": "implemented",
-    "where": "src/clubhouse/screens/coachhelm/CoachBoard.tsx#CoachBoard (assign, dismiss, undo); src/clubhouse/lib/use-action.ts#useAction",
+    "where": "src/clubhouse/screens/coachhelm/parts.tsx#FocusActions, #useFocusActions (assign, dismiss, undo); src/clubhouse/lib/use-action.ts#useAction",
     "tests": [
-      "src/clubhouse/__tests__/coachhelm.test.tsx"
+      "src/clubhouse/screens/coachhelm/__tests__/focus-actions-row.test.tsx"
     ]
   },
   {
@@ -18018,11 +17851,11 @@
     "category": 9,
     "item": 2,
     "name": "ASSIGN_MAKES_A_PROPOSAL_THE_PLAYER_ACCEPTS",
-    "meaning": "Assign as focus sends the insight's own title, first sentence, area type and metric to createFocusAreaFromInsightV2, which makes a proposal (a coach's use is a prescription), not an active focus. The chip says Assigned and the line under it says the player sees it as a proposal and accepts it to start. The player answers it in Stats, Development (Q-77); this board has no Accept or Decline.",
+    "meaning": "Assign as focus sends the insight's own title, first sentence, area type and metric to createFocusAreaFromInsightV2, which makes a proposal (a coach's use is a prescription), not an active focus. The chip says Assigned and the line under it says the player sees it as a proposal and accepts it to start. The player answers it on their own pages (Q-77); the coach's action row has no Accept or Decline.",
     "status": "implemented",
-    "where": "src/clubhouse/screens/coachhelm/CoachBoard.tsx#CoachBoard (assign); src/clubhouse/screens/coachhelm/writes.ts#LIVE_COACHHELM_WRITES; src/app/golf/actions/development.ts#createFocusAreaFromInsightV2",
+    "where": "src/clubhouse/screens/coachhelm/parts.tsx#useFocusActions (assign); src/clubhouse/screens/coachhelm/writes.ts#LIVE_COACHHELM_WRITES; src/app/golf/actions/development.ts#createFocusAreaFromInsightV2",
     "tests": [
-      "src/clubhouse/__tests__/coachhelm.test.tsx"
+      "src/clubhouse/screens/coachhelm/__tests__/focus-actions-row.test.tsx"
     ]
   },
   {
@@ -18033,9 +17866,9 @@
     "name": "AN_EXISTING_ACTIVE_FOCUS_IS_THE_OUTCOME_WANTED",
     "meaning": "When the write answers ACTIVE_FOCUS_DUPLICATE_ERROR (the player already has an active focus on that metric), Assign is done, not failed: the chip shows and a toast says the player already has a focus on this, with no failure toast and no error haptic. The proposal line is left out, because it is not known whether they have started it.",
     "status": "implemented",
-    "where": "src/clubhouse/screens/coachhelm/CoachBoard.tsx#CoachBoard (assign)",
+    "where": "src/clubhouse/screens/coachhelm/parts.tsx#useFocusActions (assign)",
     "tests": [
-      "src/clubhouse/__tests__/coachhelm.test.tsx"
+      "src/clubhouse/screens/coachhelm/__tests__/focus-actions-row.test.tsx"
     ]
   },
   {
@@ -18077,11 +17910,11 @@
     "category": 12,
     "item": 1,
     "name": "THIS_VISITS_CHANGES_STAY_WHILE_THE_PAGE_IS_OPEN",
-    "meaning": "The Assigned chip, the dismissed notice and the chosen player are held in the page's own state: choosing another player and coming back finds the chip still there. A reload reads the server again and opens on the first player (the chip then comes from the focus-area read). The chosen player or insight is not kept in the address.",
+    "meaning": "The Assigned chip and the dismissed notice are held in the page's own state (useFocusActions), per read: opening another read and coming back finds the chip or the notice still there. A reload reads the server again (the chip then comes from the focus-area read). Nothing of it is kept in the address.",
     "status": "implemented",
-    "where": "src/clubhouse/screens/coachhelm/CoachBoard.tsx#CoachBoard (sel, assigned, dismissed); src/clubhouse/screens/coachhelm/PlayerBoard.tsx#PlayerBoard (picked)",
+    "where": "src/clubhouse/screens/coachhelm/parts.tsx#useFocusActions (assigned, dismissed)",
     "tests": [
-      "src/clubhouse/__tests__/coachhelm-contracts.test.tsx"
+      "src/clubhouse/screens/coachhelm/__tests__/focus-actions-row.test.tsx"
     ]
   },
   {
@@ -18090,11 +17923,11 @@
     "category": 14,
     "item": 1,
     "name": "RETRY_FINISHES_THE_JOB",
-    "meaning": "The error toast's Retry runs the same write again with the same arguments, and when it lands everything the button would have done follows, because the follow-ups live inside the action: Assign shows the chip, Dismiss the notice, Undo the returned focus card. Every control on the board waits while any of the three is running.",
+    "meaning": "The error toast's Retry runs the same write again with the same arguments, and when it lands everything the button would have done follows, because the follow-ups live inside the action: Assign shows the chip, Dismiss the notice, Undo the returned action row. Every control of the row waits while any of the three is running.",
     "status": "implemented",
-    "where": "src/clubhouse/screens/coachhelm/CoachBoard.tsx#CoachBoard (assign, dismiss, undo); src/clubhouse/lib/use-action.ts#useAction",
+    "where": "src/clubhouse/screens/coachhelm/parts.tsx#useFocusActions (assign, dismiss, undo); src/clubhouse/lib/use-action.ts#useAction",
     "tests": [
-      "src/clubhouse/__tests__/coachhelm.test.tsx"
+      "src/clubhouse/screens/coachhelm/__tests__/focus-actions-row.test.tsx"
     ]
   },
   {
@@ -18118,22 +17951,9 @@
     "name": "UNDO_RESTORES_THE_STATE_THE_INSIGHT_HAD",
     "meaning": "Undo calls reactivateInsight with the lifecycle state the insight had when it was dismissed (detected, matured, addressed or resolved), so it returns to the feed where it was rather than always as new. The dismissed notice stays until it has landed.",
     "status": "implemented",
-    "where": "src/clubhouse/screens/coachhelm/CoachBoard.tsx#CoachBoard (undo); src/clubhouse/screens/coachhelm/writes.ts#LIVE_COACHHELM_WRITES",
+    "where": "src/clubhouse/screens/coachhelm/parts.tsx#useFocusActions (undo); src/clubhouse/screens/coachhelm/writes.ts#LIVE_COACHHELM_WRITES",
     "tests": [
-      "src/clubhouse/__tests__/coachhelm.test.tsx"
-    ]
-  },
-  {
-    "id": 131501,
-    "page": "P013",
-    "category": 15,
-    "item": 1,
-    "name": "THE_PAGE_IS_AS_FRESH_AS_ITS_LAST_READ",
-    "meaning": "Nothing on the page refreshes in the background. A landed Assign, Dismiss or Undo changes the page in place from the board's own state and does not call router.refresh (the dismissed notice is never refreshed away); Try again on a failed-read notice is the one client re-read (131402).",
-    "status": "implemented",
-    "where": "src/clubhouse/screens/coachhelm/CoachBoard.tsx#CoachBoard; src/clubhouse/screens/coachhelm/PlayerBoard.tsx#PlayerBoard",
-    "tests": [
-      "src/clubhouse/__tests__/coachhelm-contracts.test.tsx"
+      "src/clubhouse/screens/coachhelm/__tests__/focus-actions-row.test.tsx"
     ]
   },
   {
@@ -18386,7 +18206,7 @@
     "name": "CHOOSING_ANOTHER_INSIGHT_OR_PLAYER",
     "chCode": "CH-13805",
     "meaning": "Choosing another insight or player",
-    "status": "implemented",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {

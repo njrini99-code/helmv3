@@ -35,7 +35,6 @@ const LEGACY_ROLE: Record<string, number> = {
   'styles/calendar.css': 12,
   'styles/classes.css': 2,
   'styles/coachhelm-dive.css': 1,
-  'styles/coachhelm-patterns.css': 1,
   'styles/coachhelm-standing.css': 1,
   'styles/coachhelm.css': 1,
   'styles/command.css': 3,

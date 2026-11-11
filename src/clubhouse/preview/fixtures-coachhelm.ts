@@ -387,28 +387,3 @@ export const PREVIEW_HELM_COACH: ChCoachHelmData = {
   withoutNames: ['Sam Whitfield'],
   withoutIds: ['pl-sam'],
 };
-/** Jonah's slope insight already has a focus area made from it, waiting for him to accept. */
-export const PREVIEW_HELM_COACH_ASSIGNED: ChCoachHelmData = {
-  ...PREVIEW_HELM_COACH,
-  players: { list: sortCoachPlayers([player(HELM_PLAYERS.jonah, chSlope(jonah, coachOf(HELM_PLAYERS.jonah), 'in-slope', 'proposed'), 3), ...COACH_PLAYERS.filter((p) => p.id !== HELM_PLAYERS.jonah.id)]), error: false },
-};
-/** Players on the team, none with a signal yet. */
-export const PREVIEW_HELM_COACH_EMPTY: ChCoachHelmData = { ...PREVIEW_HELM_COACH, players: { list: [], error: false }, withoutSignals: 5, withoutNames: [...Object.values(HELM_PLAYERS).map((p) => p.name), 'Sam Whitfield'], withoutIds: [...Object.values(HELM_PLAYERS).map((p) => p.id), 'pl-sam'] };
-/** No players on the team yet. */
-export const PREVIEW_HELM_COACH_NO_ROSTER: ChCoachHelmData = {
-  off: null,
-  roster: { count: 0, error: false },
-  pulse: { rows: [], error: false },
-  players: { list: [], error: false },
-  withoutSignals: 0,
-};
-export const PREVIEW_HELM_COACH_FAILED: ChCoachHelmData = { ...PREVIEW_HELM_COACH, players: { list: [], error: true }, withoutSignals: 0 };
-export const PREVIEW_HELM_COACH_PULSE_FAILED: ChCoachHelmData = { ...PREVIEW_HELM_COACH, pulse: { rows: [], error: true } };
-export const PREVIEW_HELM_COACH_QUIET: ChCoachHelmData = { ...PREVIEW_HELM_COACH, pulse: { rows: [], error: false } };
-export const PREVIEW_HELM_COACH_OFF: ChCoachHelmData = {
-  off: { by: 'team', reason: null },
-  roster: { count: 0, error: false },
-  pulse: { rows: [], error: false },
-  players: { list: [], error: false },
-  withoutSignals: 0,
-};

@@ -114,38 +114,13 @@ import {
   PREVIEW_SHELL,
   PREVIEW_ROUND_IN_PROGRESS,
 } from '@/clubhouse/preview/fixtures';
-import { PreviewCoachHelm } from '@/clubhouse/preview/PreviewCoachHelm';
 import { PreviewRecruiting } from '@/clubhouse/preview/PreviewRecruiting';
 import { RecruitingNoTeam } from '@/clubhouse/screens/recruiting/RecruitingNoTeam';
 import { RecruitingSkeleton } from '@/clubhouse/screens/recruiting/RecruitingSkeleton';
 import { PREVIEW_RECRUITING, PREVIEW_RECRUITING_EMPTY, PREVIEW_RECRUITING_FAILED } from '@/clubhouse/preview/fixtures-recruiting';
 import '@/clubhouse/styles/recruiting.css';
 import { CoachHelmSkeleton } from '@/clubhouse/screens/coachhelm/CoachHelmSkeleton';
-import {
-  PREVIEW_HELM_COACH,
-  PREVIEW_HELM_COACH_ASSIGNED,
-  PREVIEW_HELM_COACH_EMPTY,
-  PREVIEW_HELM_COACH_FAILED,
-  PREVIEW_HELM_COACH_NO_ROSTER,
-  PREVIEW_HELM_COACH_OFF,
-  PREVIEW_HELM_COACH_PULSE_FAILED,
-  PREVIEW_HELM_COACH_QUIET,
-  PREVIEW_HELM_PLAYER,
-  PREVIEW_HELM_PLAYER_EMPTY,
-  PREVIEW_HELM_PLAYER_FAILED,
-  PREVIEW_HELM_PLAYER_MANY,
-  PREVIEW_HELM_PLAYER_STALE,
-  PREVIEW_HELM_PLAYER_ZERO,
-  PREVIEW_HELM_PLAYER_NO_ROUNDS,
-  PREVIEW_HELM_PLAYER_OFF,
-  PREVIEW_HELM_PLAYER_PROPOSALS_FAILED,
-  PREVIEW_HELM_PLAYER_PROPOSED,
-  PREVIEW_HELM_PLAYER_WORKING,
-} from '@/clubhouse/preview/fixtures-coachhelm';
-import { PREVIEW_HELM_COACH_PATTERNS } from '@/clubhouse/preview/fixtures-coachhelm-patterns';
-import { PREVIEW_HELM_COACH_FALLBACK, PREVIEW_HELM_COACH_NARROWING, PREVIEW_HELM_COACH_NO_READS, PREVIEW_HELM_COACH_PATH } from '@/clubhouse/preview/fixtures-coachhelm-path';
-import { PREVIEW_HELM_COACH_NOT_ENOUGH } from '@/clubhouse/preview/fixtures-coachhelm-firm';
-import { PREVIEW_HELM_COACH_COACH_COPY } from '@/clubhouse/preview/fixtures-coachhelm-voice';
+import { PREVIEW_HELM_PLAYER, PREVIEW_HELM_PLAYER_EMPTY, PREVIEW_HELM_PLAYER_FAILED, PREVIEW_HELM_PLAYER_MANY, PREVIEW_HELM_PLAYER_STALE, PREVIEW_HELM_PLAYER_ZERO, PREVIEW_HELM_PLAYER_NO_ROUNDS, PREVIEW_HELM_PLAYER_OFF, PREVIEW_HELM_PLAYER_PROPOSALS_FAILED, PREVIEW_HELM_PLAYER_PROPOSED, PREVIEW_HELM_PLAYER_WORKING } from '@/clubhouse/preview/fixtures-coachhelm';
 import { PreviewCoachHelmPlayer } from '@/clubhouse/preview/PreviewCoachHelmPlayer';
 import { PreviewAsk } from '@/clubhouse/preview/PreviewAsk';
 import { PreviewChatCapabilities } from '@/clubhouse/preview/PreviewChatCapabilities';
@@ -155,7 +130,7 @@ import { PREVIEW_TRACK_RECORD, PREVIEW_TRACK_RECORD_EARLY, PREVIEW_TRACK_RECORD_
 import { TrackRecord } from '@/clubhouse/screens/coachhelm/views/TrackRecord';
 import { PREVIEW_MONDAY_BRIEF, PREVIEW_MONDAY_BRIEF_EMPTY } from '@/clubhouse/preview/fixtures-coachhelm-brief';
 import { MondayBrief } from '@/clubhouse/screens/coachhelm/views/MondayBrief';
-import { PREVIEW_HELM_COACH_CORRECTIONS, PREVIEW_HELM_COACH_ENGINE, PREVIEW_HELM_COACH_ENGINE_NOT_MOVED, PREVIEW_HELM_PLAYER_ENGINE } from '@/clubhouse/preview/fixtures-coachhelm-engine';
+import { PREVIEW_HELM_PLAYER_ENGINE } from '@/clubhouse/preview/fixtures-coachhelm-engine';
 import '@/clubhouse/styles/coachhelm.css';
 import '@/clubhouse/styles/coachhelm-ask.css';
 import '@/clubhouse/styles/coachhelm-views.css';
@@ -213,10 +188,7 @@ import { ChClockProvider } from '@/clubhouse/lib/use-clock';
  *   /clubhouse-preview/qualifier ?q=live | upcoming | selected | completed | spring, &state=failed | scores | partial | failwrites | loading
  *   /clubhouse-preview/qualifier-player ?q=…   /clubhouse-preview/qualifier-new, qualifier-edit ?state=failed | noroster | courses | failwrites | loading
  *   /clubhouse-preview/qualifier-selection ?q=standings | picking | picked | selected, &state=failwrites
- *   /clubhouse-preview/coachhelm ?state=engine | engine-notmoved   (every engine flag on, CoachHelm surfaces A)
- *   /clubhouse-preview/coachhelm ?state=corrections | corrections-notthis | corrections-wrongcause | corrections-already | corrections-later | corrections-good | corrections-unavailable | corrections-failed   (the correction chips, coachhelm_corrections_v1)
- *   /clubhouse-preview/coachhelm ?state=assigned | empty | noroster | failed | pulsefailed | quiet | off | loading | failwrites | failundo | duplicate | patterns | courseplan | courseplannone | courseplanfailed | brieflink   (the coach; Maya)
- *   /clubhouse-preview/coachhelm ?state=recheck-running | recheck-done | recheck-quiet | recheck-ratelimited | recheck-failed   (Re-check reads answers that way once tapped)
+ *   /clubhouse-preview/coachhelm   retired (the signal-list board): opens coachhelm-team, the coach's CoachHelm Team page
  *   /clubhouse-preview/coachhelm-player ?state=engine   (every engine flag on, CoachHelm surfaces A)
  *   /clubhouse-preview/coachhelm-player ?state=empty | norounds | working | failed | off | loading | proposed | failproposal | proposalsfailed   (Jonah)
  *   /clubhouse-preview/coachhelm-practice-print ?state=norotation | nodrills | draft | unread | long | cards   (unread: the drills read failed; long: a 14-drill appendix switched on)
@@ -579,18 +551,6 @@ export default async function ClubhousePreview({
     'coachhelm-team': {
       path: '/golf/dashboard/coachhelm',
       node: <PreviewCoachHelmTeam state={state} station={station} open={openParam} read={readParam} all={allParam === '1'} />,
-    },
-    coachhelm: {
-      path: '/golf/dashboard/coachhelm',
-      node:
-        state === 'loading' ? (
-          <CoachHelmSkeleton view="coach" />
-        ) : (
-          <PreviewCoachHelm
-            state={state}
-            data={{ ...PREVIEW_HELM_COACH_CORRECTIONS, engine: PREVIEW_HELM_COACH_ENGINE, 'engine-notmoved': PREVIEW_HELM_COACH_ENGINE_NOT_MOVED, assigned: PREVIEW_HELM_COACH_ASSIGNED, empty: PREVIEW_HELM_COACH_EMPTY, noroster: PREVIEW_HELM_COACH_NO_ROSTER, failed: PREVIEW_HELM_COACH_FAILED, pulsefailed: PREVIEW_HELM_COACH_PULSE_FAILED, quiet: PREVIEW_HELM_COACH_QUIET, off: PREVIEW_HELM_COACH_OFF, patterns: PREVIEW_HELM_COACH_PATTERNS, path: PREVIEW_HELM_COACH_PATH, fallback: PREVIEW_HELM_COACH_FALLBACK, narrowing: PREVIEW_HELM_COACH_NARROWING, noreads: PREVIEW_HELM_COACH_NO_READS, notenough: PREVIEW_HELM_COACH_NOT_ENOUGH, coachcopy: PREVIEW_HELM_COACH_COACH_COPY }[state ?? ''] ?? PREVIEW_HELM_COACH}
-          />
-        ),
     },
     recruiting: {
       path: '/golf/dashboard/recruiting',
