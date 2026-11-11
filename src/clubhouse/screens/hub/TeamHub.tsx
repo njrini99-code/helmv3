@@ -775,7 +775,7 @@ export function TeamHub({
 
           {shownTab === 'tasks' && (
             <SectionBoundary surface="hub.tasks" label="Tasks" code="CH-10205">
-              <div className={'ch-hb-list' + (figures ? ' is-board' : '')}>
+              <div className={'ch-hb-list' + (coach ? ' is-board' : '')}>
                 {figures && <TaskBoard figures={figures} />}
                 <Tasks role={data.role} data={tasks} isDone={taskDone} isPending={taskPending} onToggle={onToggle} onDelete={coach ? (t) => askDelete({ kind: 'task', t }) : undefined} focusTask={taskToFocus} onFocused={taskFocused} covered={covered} />
               </div>
