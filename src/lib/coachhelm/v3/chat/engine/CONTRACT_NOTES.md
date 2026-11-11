@@ -240,3 +240,13 @@ import { eventTaskTools } from './tasks/event-tasks';
    `update_event` (INVENTORY.md, "Left for later", 1).
 3. The scoped typecheck reports 23 errors in `src/components/golf/coachhelm/chat/*.test.tsx` (jest-dom matchers not
    typed in this program). They are there with or without CONTEXT's files; none is in `context/**` or `tasks/**`.
+
+### C6. Size and strictness of what CONTEXT adds (measured; replaces the estimate in C2)
+
+- Characters / 4 of name, description and the strict schema, as `registry-size.test.ts` counts: the five coach tools
+  (`find_in_app`, `save_note`, `remove_note`, `send_event_reminder`, `record_attendance`) are 1,166 together; the
+  player's `find_in_app` is 147. TOOLS: re-measure the prefix against the 12,000 target when wiring them.
+- All six pass `strictProblems` after `strictInput`, and parse both the strict shape and the plain one
+  (`../context/__tests__/strict-shape.test.ts`). They are written as closed objects with every field required and
+  nullable where optional, so they are strict with or without the wrapper.
+- Nothing in any description or schema changes between requests: no date, no count, no name, no flag.
