@@ -323,14 +323,17 @@
 .ch-tour-cmp-tl__track {
   --ch-tour-cmp-tl-gutter: 112px;
   position: relative;
-  height: 104px;
+  height: 118px;
   margin: 0 8px 0 calc(8px + var(--ch-tour-cmp-tl-gutter));
   touch-action: none;
   user-select: none;
 }
+/* The plot stands 14 down from the track's top (the board's `.tl-plot{top:14px}`): that band holds each season's
+   name, over the line where the season starts. Inside the plot the name sat under that season's dots, as the scale's
+   two words did, and "2026–27" could not be read. Everything under the plot moves down with it. */
 .ch-tour-cmp-tl__plot {
   position: absolute;
-  top: 0;
+  top: 14px;
   right: 0;
   left: 0;
   height: 56px;
@@ -345,8 +348,9 @@
 }
 .ch-tour-cmp-tl__season em {
   position: absolute;
-  top: 3px;
-  left: 6px;
+  bottom: calc(100% + 2px);
+  left: 0;
+  white-space: nowrap;
   font: var(--ch-type-11-medium);
   letter-spacing: var(--ch-track-11);
   line-height: var(--ch-lead-tight);
@@ -406,7 +410,7 @@
 }
 .ch-tour-cmp-tl__axis {
   position: absolute;
-  top: 62px;
+  top: 76px;
   right: 0;
   left: 0;
   height: 6px;
@@ -415,7 +419,7 @@
 }
 .ch-tour-cmp-tl__sel {
   position: absolute;
-  top: 58px;
+  top: 72px;
   height: 14px;
   border-radius: 999px;
   background: var(--ch-green-ring);
@@ -447,7 +451,7 @@
 }
 .ch-tour-cmp-tl__mk {
   position: absolute;
-  top: 38px;
+  top: 52px;
   transform: translateX(-50%);
 }
 .ch-tour-cmp-tl__mk button {
@@ -471,7 +475,7 @@
 }
 .ch-tour-cmp-tl__thumb {
   position: absolute;
-  top: 65px;
+  top: 79px;
   width: 22px;
   height: 22px;
   margin: -12px 0 0 -12px;
@@ -492,7 +496,7 @@
 }
 .ch-tour-cmp-tl__lab {
   position: absolute;
-  top: 84px;
+  top: 98px;
   transform: translateX(-50%);
   font: var(--ch-type-11-medium);
   letter-spacing: var(--ch-track-11);
