@@ -89,6 +89,15 @@ describe('Messages rail · Announcements is a row on the rail’s grid', () => {
     expect(decls(`${PHONE} .ch-ms-fold__body`)).toEqual({ padding: '0', 'border-top': '0' });
   });
 
+  it('on the phone the chevron holds the fourth column, so it ends on the card’s inset with or without a count', () => {
+    const PHONE = '[data-ch-ms-v2] .ch-inb--phone';
+    expect(decls(`${PHONE} .ch-ms-fold > .ch-ms-count`)).toEqual({ 'grid-column': '3', 'grid-row': '1' });
+    expect(decls(`${PHONE} .ch-ms-fold > .ch-ms-fold__chev`)).toEqual({ 'grid-column': '4', 'grid-row': '1' });
+    // The same columns the rail gives them.
+    expect(decls(`${RAIL} .ch-ms-fold > .ch-ms-count`)['grid-column']).toBe('3');
+    expect(decls(`${RAIL} .ch-ms-fold > .ch-ms-fold__chev`)['grid-column']).toBe('4');
+  });
+
   it('on the phone an opened announcement takes a conversation row’s box and face, and a hairline from the face’s edge', () => {
     const PHONE = '[data-ch-ms-v2] .ch-inb--phone';
     const row = decls('[data-ch-ms-v2] .ch-inb .ch-ms-row:not(.is-ann)');

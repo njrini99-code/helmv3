@@ -180,6 +180,16 @@
   background: transparent;
   box-shadow: none;
 }
+/* The chevron keeps the card's edge with or without a count before it: the count's column is the third and the chevron's
+   the fourth, as on the rail. Unplaced, a coach's chevron (no count) fell into the third and sat 12 short of the edge. */
+[data-ch-ms-v2] .ch-inb--phone .ch-ms-fold > .ch-ms-count {
+  grid-column: 3;
+  grid-row: 1;
+}
+[data-ch-ms-v2] .ch-inb--phone .ch-ms-fold > .ch-ms-fold__chev {
+  grid-column: 4;
+  grid-row: 1;
+}
 /* The head's face is the rows' 40, so its title starts at 84 with every name under it. */
 [data-ch-ms-v2] .ch-inb--phone .ch-ms-fold .ch-ms-grp.is-ann {
   width: 40px;
