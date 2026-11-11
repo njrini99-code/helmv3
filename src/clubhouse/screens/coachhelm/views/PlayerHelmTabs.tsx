@@ -3,16 +3,17 @@
 import { ArrowUpRight } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
 import { COACH_PLAYER_VIEWS, PLAYER_HELM_DEVELOPMENT_HREF, PLAYER_HELM_TAB_LABEL, type PlayerHelmView } from '../../../data/coachhelm-views-shape';
 import { haptic } from '../../../lib/haptics';
+import { useChReducedMotion } from '../../../lib/reduced-motion';
 import { useChPhone } from '../../../lib/use-phone';
 import { useHelmViews } from '../../../shell/context';
 import { rebuiltHref } from '../../../shell/nav';
 import { Button } from '../../../ui/Button';
 import { Icon } from '../../../ui/Icon';
 import { Segmented } from '../../../ui/Segmented';
-import { useHScroll } from '../../../ui/use-hscroll';
+import { useHScroll, useKeepInView } from '../../../ui/use-hscroll';
 
 const VIEWS: readonly PlayerHelmView[] = ['board', 'standing', 'deep-dive'];
 /** The player's Ask: a view of this page with its own address, and no read of its own for the strip to wait on. */
@@ -49,12 +50,10 @@ export function PlayerHelmTabs({ active, onGo, coach = false, held = false }: { 
   const views: readonly PlayerTab[] = coach ? COACH_PLAYER_VIEWS : ask ? [...VIEWS, 'ask'] : VIEWS;
   const labelOf = (v: PlayerTab) => (v === 'ask' ? 'Ask' : PLAYER_HELM_TAB_LABEL[v]);
 
-  // The chip row is wider than the screen: start with the current chip in view, without moving the page.
-  useEffect(() => {
-    const box = row.current;
-    const on = box?.querySelector<HTMLElement>('[aria-current="true"]');
-    if (box && on) box.scrollLeft = Math.max(0, on.offsetLeft - (box.clientWidth - on.offsetWidth) / 2);
-  }, [phone, active]);
+  // The chip row is wider than the screen: the current chip is always whole and clear of the fading edge, without moving
+  // the page (ui/use-hscroll.ts, as Team Hub's tabs). It was centred instead, which cut a chip on both sides of it
+  // ("ard" … "Develop") where the row could have stood at its start with every view whole.
+  useKeepInView(row, '[aria-current="true"]', `${phone}:${active}`, useChReducedMotion());
 
   if (phone) {
     return (
