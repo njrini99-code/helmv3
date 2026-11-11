@@ -128,3 +128,19 @@ describe('the list when nobody has read it', () => {
     expect(dialog.textContent).not.toMatch(/tomorrow|2030/i);
   });
 });
+
+describe('the line under a name in the list (MSG-405)', () => {
+  it('a coach reads each person’s class year or title, as the roster shows it; without one, the plain role', () => {
+    const directory = [
+      { userId: 'coach', name: 'Maya Reyes', role: 'coach' },
+      { userId: 'ava', name: 'Ava Lindqvist', role: 'player', subtitle: 'Junior' },
+      { userId: 'eli', name: 'Eli Brandt', role: 'player' },
+      { userId: 'dana', name: 'Dana Whitfield', role: 'coach', subtitle: 'Assistant Coach' },
+    ];
+    render(<SeenBySheet api={api(half, { directory } as unknown as Partial<ChMessagesApi>)} m={msg()} onClose={() => {}} />);
+    const sub = (id: string) => document.querySelector(`[data-user="${id}"] .ch-seen-row__role`)?.textContent;
+    expect(sub('ava')).toBe('Junior');
+    expect(sub('dana')).toBe('Assistant Coach');
+    expect(sub('eli')).toBe('Player');
+  });
+});

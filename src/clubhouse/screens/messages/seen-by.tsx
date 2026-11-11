@@ -204,7 +204,7 @@ function listTitle(s: SeenBy | null): string {
   return `Seen by ${s.seen.length} of ${s.total}`;
 }
 
-type Row = ReceiptRowInput & { meta: string; label: string };
+type Row = ReceiptRowInput & { meta: string; label: string; /** The line under the name: a coach reads the class year or the title, as the roster shows it; anyone else the plain role. */ sub: string };
 
 /** Who has seen a message and who hasn't (4.4), shared by the phone sheet and the desktop popover. Names only. */
 function SeenByBody({ api, m, compact }: { api: ChMessagesApi; m: ChMsg; compact: boolean }) {
@@ -286,7 +286,9 @@ function SeenByBody({ api, m, compact }: { api: ChMessagesApi; m: ChMsg; compact
     // A forged future last_read_at is shown as now (changelog P-01): never "Last opened tomorrow".
     const lastOpened = raw && Number.isFinite(nowMs) && Date.parse(raw) > nowMs ? api.now : raw;
     const meta = section === "notYet" ? "Hasn’t opened this chat" : lastOpened ? railTime(lastOpened, api.now, api.timeZone, api.clock) : "Just now";
-    return { userId, name, role, lastOpened, seenAt: null, meta, label: [name, meta.toLowerCase()].filter(Boolean).join(", ") };
+    const plain = role === "coach" ? "Coach" : role === "player" ? "Player" : "";
+    const sub = (api.viewer.role === "coach" && p?.subtitle) || plain;
+    return { userId, name, role, lastOpened, seenAt: null, meta, sub, label: [name, meta.toLowerCase()].filter(Boolean).join(", ") };
   };
   const notYet = orderReceiptRows(s.notYet.map((id) => row(id, "notYet")), "notYet");
   // The list reads top to bottom in the order they opened it (MSG-405: Maya 7:06, Owen 7:08, ...).
@@ -323,7 +325,7 @@ function SeenByBody({ api, m, compact }: { api: ChMessagesApi; m: ChMsg; compact
               {compact ? <Avatar name={x.name} size="sm" /> : <Avatar name={x.name} size="md" />}
               <span className="ch-seen-row__body">
                 <span className="ch-seen-row__name">{x.name}</span>
-                {x.role !== "member" && <small className="ch-seen-row__role">{x.role === "coach" ? "Coach" : "Player"}</small>}
+                {x.sub && <small className="ch-seen-row__role">{x.sub}</small>}
               </span>
               {x.meta && <span className="ch-seen-row__meta">{fade(x.meta, x.meta)}</span>}
             </li>

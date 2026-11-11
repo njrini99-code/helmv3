@@ -250,13 +250,30 @@
   justify-self: end;
   margin-left: 0;
 }
+/* The push's focus target is the name's box, never the key in it. It is not a stop of its own, so it draws no ring;
+   the key keeps its gilt ring for a keyboard. */
+[data-ch-ms-v2] .ch-msp-thread .ch-msp-whobox {
+  display: flex;
+  min-width: 0;
+  max-width: 100%;
+}
+[data-ch-ms-v2] .ch-msp-thread .ch-msp-whobox:focus {
+  outline: none;
+}
 [data-ch-ms-v2] .ch-msp-thread .ch-msp-who {
   gap: 10px;
   max-width: 100%;
   min-width: 0;
+  max-height: 44px;
   margin-left: 0;
-  padding: 2px 4px;
+  padding: 1px 4px;
   text-align: left;
+}
+/* The bar's row is 44 at every Text Size (the shell's), and name over role is 41 at the default. So the role shows
+   while both fit, at the default size and below; above it the name grows and the role gives way (it is on Details). The
+   clamp is a switch: positive while 16 * k is under 16.4px, so the cap is 100px, and 0 past it. */
+[data-ch-ms-v2] .ch-msp-thread .ch-msp-who em {
+  max-height: clamp(0px, calc((16.4px - 16 * var(--ch-type-k)) * 100000), 100px);
 }
 [data-ch-ms-v2] .ch-msp-thread .ch-msp-who > span:not(.ch-avatar) {
   display: flex;

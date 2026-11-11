@@ -554,7 +554,7 @@ button.ch-msv-seen::before {
   color: var(--ch-crh-ink4);
 }
 
-/* The Seen by sheet's rows (MSG-405): cards with a count, a 32 face, name over role, the time right-aligned. */
+/* The Seen by sheet's rows (MSG-405): cards with a count, a 36 face (Avatar's md), name over class year or title, the time right-aligned. */
 .ch-mss .ch-seen-list {
   gap: 12px;
 }
@@ -576,9 +576,23 @@ button.ch-msv-seen::before {
   letter-spacing: var(--ch-track-15);
 }
 .ch-mss .ch-seen-row {
-  grid-template-columns: 32px minmax(0, 1fr) auto;
+  position: relative;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
   min-height: 52px;
   padding: 8px 16px;
+}
+/* The separator runs from the name to the card's inner edge, under the time too (the base one stops with the name). */
+.ch-mss .ch-seen-row + .ch-seen-row .ch-seen-row__body::before {
+  content: none;
+}
+.ch-mss .ch-seen-row + .ch-seen-row::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 16px;
+  left: calc(16px + 36px + var(--ch-space-3));
+  height: var(--ch-hairline-w);
+  background: var(--ch-border-subtle);
 }
 .ch-mss .ch-seen-list.is-v2 .ch-seen-row__body {
   display: flex;
@@ -589,12 +603,13 @@ button.ch-msv-seen::before {
   gap: 0;
 }
 .ch-mss .ch-seen-row__name {
-  font: var(--ch-type-16-medium);
+  font: var(--ch-type-16-strong);
   letter-spacing: var(--ch-track-16);
 }
 .ch-mss .ch-seen-row__role {
   color: var(--ch-text-tertiary);
-  font: var(--ch-type-12-medium);
+  font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
 }
 .ch-mss .ch-seen-row__meta {
   color: var(--ch-crh-ink4);

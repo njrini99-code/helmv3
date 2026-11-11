@@ -135,9 +135,11 @@ export function PhoneThread({
     <PhoneScreen labelledBy={titleId} className={"ch-msp-thread" + (seenListAccess ? " is-seen-list" : "")} keyboardAware covered={covered}>
       <PhoneBar
         lead
-        titleId={titleId}
         back={{ onBack, ariaLabel: "Back to Messages" }}
         title={
+          // The push lands focus on the name's box (PhoneScreen focuses the labelled element when it takes focus), not on
+          // the key inside it: a key focused by script on a fresh load (a notification, a link) draws its keyboard ring.
+          <span className="ch-msp-whobox" id={titleId} tabIndex={-1}>
           <button type="button" className="ch-msp-who" onClick={onDetails} aria-label={`Details for ${conv.group ? conv.title : firstName(conv.title)}`}>
             {conv.group ? <GroupMark size="md" flag={!!conv.channel} /> : <Avatar name={conv.title} id={convAvatarId(api, conv)} size="md" year={convYear(api, conv)} />}
             <span>
@@ -147,6 +149,7 @@ export function PhoneThread({
               </em>
             </span>
           </button>
+          </span>
         }
         action={<PhoneIconAction icon={Info} label="Details" onClick={onDetails} />}
       />

@@ -42,6 +42,10 @@ Held items:     "Seen 8:15 AM" (needs the other person's read time from the data
 - Faces are Avatar's steps: pins `xl` (64), rows `lg` (40) on phone and rail, the Seen by sheet `md` (36). The lane's
   forced sizes and types are deleted. Seen faces are the shared coin.
 - First run's two actions are the shared Button (primary, ghost).
+- Seen by rows: a strong name over the class year or title (a coach's view), the separator runs under the time too,
+  and the column fits the 36 px face.
+- Phone thread bar: above the default Text Size the role line gives way, so the title never hangs below the bar. A
+  pushed thread lands focus on the name's box, not on the Details key, so a fresh load draws no keyboard ring.
 - Card shadows are `--ch-card-shadow`; the pin bubblet and the receipt pill are a hairline ring plus
   `--ch-elevation-bubblet` or `--ch-elevation-badge`.
 

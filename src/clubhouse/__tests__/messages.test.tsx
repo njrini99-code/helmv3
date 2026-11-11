@@ -1892,3 +1892,22 @@ describe('Messages · failure and edge states on the redesign (catalog rows with
     });
   });
 });
+
+describe('Messages · the phone thread bar', () => {
+  it('MSG-7 a pushed thread lands focus on the name’s box, not on the Details key inside it', async () => {
+    const user = userEvent.setup();
+    showPhone();
+    await waitFor(() => expect(screen.getAllByRole('button', { name: /^(?!Actions for ).*Varsity team/ })).toHaveLength(1), { timeout: 5000 });
+    await user.click(screen.getByRole('button', { name: /^(?!Actions for ).*Varsity team/ }));
+    const thread = await screen.findByRole('region', { name: /Varsity team/ });
+    const key = within(thread).getByRole('button', { name: 'Details for Varsity team' });
+    const box = key.parentElement as HTMLElement;
+    // A key focused by script on a fresh load (a notification, a link) draws its keyboard ring; the box is not a stop.
+    await waitFor(() => expect(document.activeElement).toBe(box));
+    expect(box.getAttribute('tabindex')).toBe('-1');
+    // The screen is still named by it, and the key is still the next thing a keyboard reaches.
+    expect(thread.getAttribute('aria-labelledby')).toBe(box.id);
+    await user.tab();
+    expect(document.activeElement).toBe(key);
+  });
+});
