@@ -4202,7 +4202,7 @@
       },
       {
         "id": "get_golf_conversations_with_details",
-        "definedIn": "supabase/migrations/20261008160000_golf_conversation_hidden_at.sql"
+        "definedIn": "supabase/migrations/20261107090200_golf_conversation_list_rpc_privacy.sql"
       },
       {
         "id": "get_my_baseball_player_id",
@@ -4301,6 +4301,14 @@
         "definedIn": "supabase/migrations/20260807030000_golf_conversation_participants_tenant_isolation.sql"
       },
       {
+        "id": "golf_conversation_team_link_ok",
+        "definedIn": "supabase/migrations/20261110090600_golf_participants_insert_team_link.sql"
+      },
+      {
+        "id": "golf_conversations_identity_guard",
+        "definedIn": "supabase/migrations/20261107090100_golf_conversations_messages_column_grants.sql"
+      },
+      {
         "id": "golf_courses_set_normalized_name",
         "definedIn": "supabase/migrations/20260613190000_course_library_normalize_unique.sql"
       },
@@ -4353,6 +4361,10 @@
         "definedIn": "supabase/migrations/20261025010000_golf_conversation_read_marks.sql"
       },
       {
+        "id": "golf_messages_identity_guard",
+        "definedIn": "supabase/migrations/20261107090100_golf_conversations_messages_column_grants.sql"
+      },
+      {
         "id": "golf_messages_notify_anyway_guard",
         "definedIn": "supabase/migrations/20261025070300_golf_messages_notify_anyway.sql"
       },
@@ -4371,6 +4383,14 @@
       {
         "id": "golf_normalize_name",
         "definedIn": "supabase/migrations/20260613160100_course_library_normalize_fix.sql"
+      },
+      {
+        "id": "golf_participants_identity_guard",
+        "definedIn": "supabase/migrations/20261107090000_golf_participants_column_grants.sql"
+      },
+      {
+        "id": "golf_participants_insert_guard",
+        "definedIn": "supabase/migrations/20261107090000_golf_participants_column_grants.sql"
       },
       {
         "id": "golf_pin_conversation",
@@ -4559,6 +4579,14 @@
       {
         "id": "golf_team_class_day",
         "definedIn": "supabase/migrations/20261025070100_golf_class_blocks_functions.sql"
+      },
+      {
+        "id": "golf_team_join_requests_identity_guard",
+        "definedIn": "supabase/migrations/20261110090700_golf_team_members_coach_write_bounds.sql"
+      },
+      {
+        "id": "golf_team_members_identity_guard",
+        "definedIn": "supabase/migrations/20261110090700_golf_team_members_coach_write_bounds.sql"
       },
       {
         "id": "golf_team_terms_guard",
