@@ -30,16 +30,22 @@ const landed = (d: ChWhatsNew) => !d.error;
 export const whatsNewLink = (it: Pick<ChWhatsNewItem, 'playerId' | 'kind'>) =>
   rebuiltHref(`/golf/dashboard/stats?player=${it.playerId}${it.kind === 'focus' ? '&tab=dev' : ''}`, 'coach');
 
-function WhatsNewRow({ it }: { it: ChWhatsNewItem }) {
+/**
+ * One update. On desktop the time leads the row, one width for every time, so the titles line up; on the phone that
+ * column and the chevron left the text about 22 characters a line (design review, 10 Nov 2026), so the time opens the
+ * line under the title instead and the title and body take the row's width.
+ */
+function WhatsNewRow({ it, phone }: { it: ChWhatsNewItem; phone: boolean }) {
   const href = whatsNewLink(it);
   const time = useChClockText()(it.time);
   return (
     <LedgerRow
-      lead={time}
+      lead={phone ? undefined : time}
       title={it.title}
       meta={
         <span className="ch-wn-meta">
-          <span>
+          <span className="ch-wn-who">
+            {phone && <span className="ch-num">{time} · </span>}
             {it.player} · <span className={it.good ? 'ch-wn-what is-gain' : 'ch-wn-what'}>{it.what}</span>
           </span>
           {it.detail && <span className="ch-wn-detail">{it.detail}</span>}
@@ -52,14 +58,14 @@ function WhatsNewRow({ it }: { it: ChWhatsNewItem }) {
 }
 
 /** The week's days, drawn in a child of the section's boundary so a row that cannot draw is contained there. */
-function Days({ days }: { days: ChWhatsNewDay[] }) {
+function Days({ days, phone }: { days: ChWhatsNewDay[]; phone: boolean }) {
   return (
     <>
       {days.map((d) => (
         <Section key={d.key} id={`ch-wn-${d.key}`} title={d.label} meta={<span className="ch-num">{d.items.length} {pluralWord(d.items.length, 'update')}</span>}>
           <LedgerList label={`${d.label}, ${d.items.length} updates`}>
             {d.items.map((it) => (
-              <WhatsNewRow key={it.key} it={it} />
+              <WhatsNewRow key={it.key} it={it} phone={phone} />
             ))}
           </LedgerList>
         </Section>
@@ -91,7 +97,8 @@ export function WhatsNew({ data: fresh }: { data: ChWhatsNew }) {
   return (
     <main className={'ch-rd ch-wn' + (phone ? ' is-phone' : '')} aria-labelledby="ch-wn-title" aria-busy={refreshing || undefined} data-canopy={phone ? undefined : ''}>
       {phone && <PhoneTop start heading={false} title="What’s new" />}
-      <header className="ch-rd-h" data-canopy-head={phone ? undefined : ''}>
+      {/* The tight head, as Team rounds: no rule above the eyebrow, where nothing sits for it to close (design review, 10 Nov 2026). */}
+      <header className="ch-rd-h" data-canopy-head={phone ? undefined : 'tight'}>
         <div>
           <span className="ch-rd-k">{data.total ? `Past 7 days · ${plural(data.total, 'update')}` : 'Past 7 days'}</span>
           <span className="ch-rd-upd" role="status" data-ch-code={refreshing ? 'CH-13431' : undefined}>
@@ -127,7 +134,7 @@ export function WhatsNew({ data: fresh }: { data: ChWhatsNew }) {
           {days.length === 0 ? (
             <EmptyState code="CH-13331" kind="filtered" compact title="Nothing of this kind this week" body="Pick All to see the rest of the week." />
           ) : (
-            <Days days={days} />
+            <Days days={days} phone={phone} />
           )}
           {data.truncated && (
             <p className="ch-rd-unscored" data-ch-code="CH-13332">

@@ -6,7 +6,7 @@ import '../../styles/whats-new.css';
 export function WhatsNewSkeleton() {
   return (
     <main className="ch-rd ch-wn" aria-busy="true" aria-label="Loading what’s new" data-ch-code="CH-13430" data-canopy="">
-      <header className="ch-rd-h" data-canopy-head="">
+      <header className="ch-rd-h" data-canopy-head="tight">
         <div>
           <Skeleton width={150} height={13} />
           <div style={{ height: 10 }} />
