@@ -943,12 +943,18 @@ replacement is `src/lib/coachhelm/v3/chat/TOOLS.md`.
   finished ones. Before it a player's Ask could only read the Stats page, which leaves practice out, so "how many
   rounds have I recorded since 1 September" was answered 7 where the player had recorded 14 (11 Nov 2026).
 - **A filtered read says what the filter left out.** `get_goals` narrowed to one state also counts the visible goals in
-  the other states ("1 active goal for the team. 5 other goals are not active: 1 achieved, 4 missed."), because the
-  chat asks for active goals and a coach was told only one goal was visible.
+  the other states, gives the total and says whose they are ("1 active goal for the team, of 6 goals in every state. 5
+  other goals are not active: 1 achieved (Cole Bennett 1), 4 missed (Cole Bennett 1, Owen Carter 3)."), because the
+  chat asks for active goals and a coach was told only one goal was visible. The coach's `get_rounds` counts its rounds
+  by kind and says they are finished rounds (a round in progress is not on the Rounds page), so the model neither adds
+  three counts up nor leaves unsaid what it counted.
 - **A short answer still carries what was asked**: the prompt's rule 3 ("Give each thing the question asked for: every
   figure, name, course or count it names. Never drop one to stay short").
-- **Saying the point a question turns on** (the golf block's first line, coach and player): "When a question turns on a
-  point made here, say that point in one plain sentence, even if the team's data does not show the case." In the first
+- **Saying the point a question turns on** (the golf block's first line, and since the reruns a place in the answer's
+  shape: sentence one may say the data does not show what the question assumes, sentence three is the caution or the
+  point; when the model must first ask which player, it says the point before it asks): "When a question turns on a
+  point made here, say that point in one plain sentence, even if the team's data does not show the case." A player's
+  answer never writes a teammate's name, even one the player typed. In the first
   full eval run most golf-sense misses were answers that corrected the coach's premise from the data and never said the
   point itself (one round is not a trend, a negative to par is under par, a short qualifier card ranks below a
   complete one). With it: putts per round is always given with greens hit beside it; a tie for the last qualifying

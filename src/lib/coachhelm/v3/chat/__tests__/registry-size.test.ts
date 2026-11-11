@@ -50,7 +50,7 @@ describe('the cached prefix: tool definitions and policy', () => {
     console.info(`prefix ${surface}: ${size.tools} tools, ${size.toolTokens} tokens of definitions + ${size.policyTokens} of policy (${size.rulesTokens} of rules, the rest golf and the data map) = ${size.total}; own tools and rules ${size.own}; largest ${size.largest.map(([n, t]) => `${n} ${t}`).join(', ')}`);
     // 12,300, the lead's allowance of 11 Nov 2026 (was 12,000, then 12,150), for the rules on how an answer is shaped, dates, bracketed
     // ids and "not tracked", and, after the first full eval run (44 of 99 answers broke a writing rule), the four-sentence limit, no
-    // label or bold lead-in, no words before a read, and names as stored. Ask measures 12,279.
+    // label or bold lead-in, no words before a read, and names as stored. Ask measures 12,287.
     expect(size.own).toBeLessThan(12_300);
     // 26,000 by the lead's decision of 10 Nov 2026 (was 21,000): the knowledge blocks carry what strokes gained means and the writing rules.
     expect(size.total).toBeLessThan(26_000);

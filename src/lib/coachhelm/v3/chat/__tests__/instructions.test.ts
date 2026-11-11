@@ -25,7 +25,7 @@ describe('the policy block', () => {
   it('expects the date and the screen as a system note, and holds neither itself', () => {
     const policy = rulesBlock('ask');
     expect(policy).toMatch(/After the coach's message you may get a system note/);
-    expect(policy).toMatch(/If no note names a player and the coach did not either, ask which player/);
+    expect(policy).toMatch(/If no note names a player and the coach did not either, ask which player, after the point the question turns on if it has one\. Do not guess\./);
     // The one date in it is inside the quoted example of such a note.
     expect(policy.match(/\b20\d\d\b/g)).toEqual(['2026']);
     expect(policy).toContain('for example: "Today is Tue 10 Nov 2026.');
@@ -66,6 +66,8 @@ describe('the policy block', () => {
 
   it('the player\'s policy keeps teammates out and offers no task', () => {
     const policy = rulesBlock('player');
+    // Not even the name the player typed (a rerun answered "I can't compare you with <teammate> or any teammate").
+    expect(policy).toMatch(/Do not write a teammate's name at all, even one the player typed: say "a teammate"\./);
     expect(policy).toMatch(/Never name, describe or guess at a teammate's results/);
     expect(policy).toMatch(/You cannot change anything/);
     expect(policy).not.toMatch(/Confirm|query_team_data|get_team_stats/);
@@ -162,7 +164,7 @@ describe('how answers read', () => {
     expect(rules).toMatch(/Never "n=10", "N-4", "\(10\)" or any other notation/);
     expect(rules).toMatch(/Write "strokes gained" in lower case and name its yardstick as the read does: "against the Tour benchmark"/);
     expect(rules).toMatch(/Never "ft", "yd", "avg", "SG", "GIR" or "L10"/);
-    expect(rules).toMatch(/Use sentence case\. No Title Case, no word in capitals, no heading on a short answer/);
+    expect(rules).toMatch(/Use sentence case\. No Title Case and no word in capitals\./);
     expect(rules).toMatch(/\nRight: "[^\n]*against the Tour benchmark over his last 9 rounds[^\n]*"\nWrong: "[^\n]*\(n=9\)[^\n]*"/);
     // The rules' own examples follow the rule: no figure in them carries a bracketed sample.
     expect(rules.split('\nWrong:')[0]).not.toMatch(/\d \(\d+ rounds?\)/);
@@ -175,6 +177,11 @@ describe('how answers read', () => {
     const rules = rulesBlock('ask');
     expect(rules).toMatch(/So an answer is at most four sentences, in one paragraph with no blank line\.\nSentence one answers the question asked, with its figure/);
     expect(rules).toMatch(/\nSentence two gives the one comparison or figure that matters most\.\nSentence three, only when needed, is a caution about the sample/);
+    // Reruns: 11 golf-sense misses, most of them an answer that corrected the coach's premise from the data and stopped there. The
+    // golf block's first line asked for the point; it is now a place in the answer.
+    expect(rules).toMatch(/Sentence one answers the question asked, with its figure, or says that the data does not show what the question assumes\./);
+    expect(rules).toMatch(/is a caution about the sample, or the point of golf or of the app that the question turns on\. Say that point even when the data does not show the case\./);
+    expect(rulesBlock('player')).toMatch(/or the point the question turns on, such as which way is good, said even when your data does not show the case/);
     expect(rules).toMatch(/\nSentence four, only when the data points to an obvious next step, offers it\.\nThen stop: /);
     expect(rules).toMatch(/A "why", a "should I worry" and a comparison get four sentences too\. Count your sentences before you finish and cut down to four\./);
     // Short never means leaving out what was asked for (the first full run dropped a course, a count and a comparison player).

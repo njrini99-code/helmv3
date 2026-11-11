@@ -281,6 +281,23 @@ describe('get_rounds: the Rounds page\'s list, with the adding up done here', ()
     expect(textOf(out)).toMatch(/This season \(since [^)]+\), as the Rounds page shows it, every round type with practice rounds included: 2 full rounds by 1 player, average 73\.5, 0 under par\. The season scoring average that leaves practice rounds out comes from the season read\./);
   });
 
+  // Reruns, 11 Nov 2026: asked for tournament, qualifier and practice rounds, the model added three counts up itself ("23 in
+  // all", a figure in no read) and never said the counts were finished rounds. The read now counts by kind and says what it counts.
+  it('counts the rounds by kind and says they are finished rounds, so nothing is added up or left unsaid', async () => {
+    const list = [roundRow(1, { type: 'tournament' }), roundRow(2, { type: 'tournament' }), roundRow(3, { type: 'qualifier' }), roundRow(4, { type: 'practice' }), roundRow(5, { type: 'practice' }), roundRow(6, { type: 'practice' })];
+    const out = await tool().run(ctxFor(coach, { teamRounds: async () => roundsPage(list) }), { list: 0 });
+    const text = textOf(out);
+    expect(text).toMatch(/: 6 finished rounds \(/);
+    expect(text).toContain('By kind of round, of those 6: 3 practice, 1 qualifier, 2 tournament.');
+    expect(text).toContain('These are finished rounds only: a round still in progress is not on the Rounds page and is not counted here.');
+    expect((out.detail as { rounds_by_kind: unknown }).rounds_by_kind).toEqual([{ type: 'practice', rounds: 3 }, { type: 'qualifier', rounds: 1 }, { type: 'tournament', rounds: 2 }]);
+    // Narrowed to one kind there is nothing to split.
+    const one = await tool().run(ctxFor(coach, { teamRounds: async () => roundsPage(list) }), { round_type: 'practice', list: 0 });
+    expect(textOf(one)).not.toContain('By kind of round');
+    expect(textOf(one)).toMatch(/: 3 finished rounds \(/);
+    expect(one.detail).not.toHaveProperty('rounds_by_kind');
+  });
+
   it('never lists a round of someone who is not on the roster', async () => {
     const out = await tool().run(ctxFor(coach, { teamRounds: async () => roundsPage([roundRow(1), roundRow(2, { playerId: OUTSIDER, player: 'Former Player' })]) }), { list: 10 });
     expect(JSON.stringify(out)).not.toContain('Former Player');
