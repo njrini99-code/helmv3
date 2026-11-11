@@ -888,6 +888,38 @@ are byte-identical for every team, day and conversation and sit after the policy
 - When a read tool is added, renamed or removed, or the allowlist changes: update `data-map.source.ts` and run
   `npm run coachhelm:data-map`.
 
+### CoachHelm chat: where the coach is, what it has been told, and what it can do after a thing exists (2026-11-10)
+
+Code: `src/lib/coachhelm/v3/chat/context/**` and `src/lib/coachhelm/v3/chat/tasks/**`. The wiring each part asks of the
+route and the registry is in `engine/CONTRACT_NOTES.md`, sections C1 to C7.
+
+- **Where the person is.** The browser may send a `screen` value with a new message (`context/screen-schema.ts`;
+  `screenContextFromPath` builds it from the address). `turnContext` (`context/screen-context.ts`) checks every id in
+  it against the signed-in person's own team with the session client and writes one line for a system message after
+  the user's message: "Today is Tue 10 Nov 2026. The coach is on Stats, looking at Avery Lane over the last 10
+  rounds." An id that is not theirs is dropped; a value that does not parse is ignored and the turn runs. The line
+  never holds an id or an e-mail address. A player's line holds the screen, the window and their own round only: no
+  name and no title somebody else typed. It is never in the prompt or a tool definition.
+- **Where things are.** `context/app-map.ts` lists every Clubhouse place per role with its address; a test holds each
+  address to a real page and a rebuilt route for that role. `find_in_app` names matching places to the model and
+  attaches a `data-app-link` part (a button); the model is never given an address. The route offers the tool only
+  where Clubhouse renders for the team.
+- **What the coach has told it.** `save_note` and `remove_note` (`context/notes.ts`) write the coach's own standing
+  notes through `saveCoachFact` and `deleteCoachFact`, at once, with a `data-coach-note` chip. Notes reach the model as
+  a system message on a conversation's first turn; the tone goes with every turn. Without held migration
+  20261101090100 there are no notes and nothing fails. A player has none. Anthropic's memory tool is not used
+  (CONTRACT_NOTES C3 says why).
+- **What it can do after a thing exists.** Eight task tools on the contract (`tasks/list.ts` is their order):
+  `send_event_reminder`, `record_attendance`, `update_event`, `cancel_event`, `set_focus_area_status`,
+  `set_goal_state`, `mark_signal_handled`, `set_qualifier_coach_pick`. Each wraps the app's own action, makes that
+  action's permission check first in `plan`, and reads back before a receipt says nothing was saved. `cancel_event` is
+  the app's soft cancellation and never the row delete; `update_event` and `cancel_event` act on one date, as the
+  Calendar does for "this date only". Where something is sent the card names who gets it and shows the words, and a
+  test pins those words to the app's own lines.
+- **What is not a tool, and why.** `tasks/INVENTORY.md`: all 304 actions that change something, the tool for each or
+  the reason there is none, and the list left for later in order. Deleting, removing a person, roles, accounts,
+  consent and sending outside the team are never tools.
+
 ### Coach chat read tools: whole-team reads (2026-10-25)
 
 `get_team_rounds`, `get_tournaments` and `get_qualifiers`
