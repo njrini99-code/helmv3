@@ -119,7 +119,7 @@ draft_poll, draft_board. Quick chat has no write_artifact, draft_message or draf
 |---|---|
 | ask, practice_helper | all reads, all tasks except send_message, all drafts (one list, so one cached prefix) |
 | quick_chat | all reads, all tasks with send_message in place of publish_artifact, draft_practice_plan, ask_practice_brief, draft_board |
-| player | get_player_stats, get_round, get_shots, get_season, get_schedule, get_coachhelm, get_reference, summarise_data, show_visual, find_in_app; own id forced, own rounds only, no team figures beyond what the player's own Stats page shows |
+| player | get_player_stats, get_rounds (their own Rounds page, `my-rounds.ts`), get_round, get_shots, get_season, get_schedule, get_coachhelm, get_reference, summarise_data, show_visual, find_in_app; own id forced, own rounds only, no team figures beyond what the player's own Stats page shows |
 
 Count as built: 38 of this file's own on Ask (41 with the tournaments flag) against 67 (71) before; 35 on quick chat; 9 for a player.
 Registered for CONTEXT on top, always after every tool above so the cached order before them never moves: `find_in_app`,

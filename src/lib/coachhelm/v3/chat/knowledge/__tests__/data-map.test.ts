@@ -127,7 +127,9 @@ describe('the player\'s data map', () => {
     expect(PLAYER_DATA_MAP).not.toMatch(/Columns:|query_team_data/);
     const named = [...new Set(PLAYER_DATA_MAP.match(/\b(?:get|query|find|summarise|show|draft|write|create|save|remove)_[a-z_]+\b/g) ?? [])];
     expect(named.filter((n) => !mine.has(n))).toEqual([]);
-    for (const coachOnly of ['get_team_stats', 'get_rounds', 'get_qualifiers', 'get_tournaments', 'get_practice']) expect(PLAYER_DATA_MAP).not.toContain(coachOnly);
+    for (const coachOnly of ['get_team_stats', 'get_qualifiers', 'get_tournaments', 'get_practice']) expect(PLAYER_DATA_MAP).not.toContain(coachOnly);
+    // get_rounds for a player is their own Rounds page, and the map says it in the second person.
+    expect(PLAYER_DATA_MAP).toContain('get_rounds: how many rounds you recorded and which, by kind and dates, practice and rounds in progress included.');
   });
 
   it('offers nothing about the team or a teammate: every mention of them is a refusal', () => {

@@ -1503,3 +1503,19 @@ rewrote the whole cached prefix, which is what made a first turn cost $0.27 to $
   `registry-tools.test.ts` (the real registry, every surface) and the route suite (three model calls, one prefix).
 - **PLANS / CONTEXT:** nothing to change. `strict-input.ts` still decides the shape the model is shown; the tool's own
   zod schema, run by the engine before `run`/`plan`, is now the only check on an input, so keep every bound in it.
+
+E38. **After the first full eval run (11 Nov 2026; 100 questions at d08890c5a9).** Three changes outside the engine,
+made by ENGINE at the overnight lead's direction; their owners should know.
+- **The prompt's "Answering"** (`instructions.ts`): at most four sentences in one paragraph, the answer first, no
+  heading, table, bold or label with a colon, nothing written before or between reads, each thing asked for is given,
+  names as stored. The size brake on the registry's own tools and rules is now 12,300 (the lead's earlier allowance).
+- **A player has `get_rounds`** (`my-rounds.ts`): their own Rounds page through a new loader, `myRounds`, bound for a
+  player only. A player's tool list is now eleven reads; the data map's player text names it.
+- **`get_goals` counts what its state filter left out** (`team-reads.ts`).
+- **For the eval's owner (KNOWLEDGE).** Scorer lines that failed answers a coach would call right, left as they are:
+  "the choice is yours" and "The choice stays with you" do not match `your (call|decision|choice)`; "normally below"
+  and "what you'd expect" do not match `expected|normal`; a Tour make rate quoted from `get_player_stats` (the read
+  returned it, the figure check matched) is flagged as "from memory" because only `get_reference` lifts that guard;
+  `window-tyler-last3-rounds` expects the newest three rounds without practice while the question says "last 3
+  rounds"; `sum-rounds-by-type-since-sep1` counts rounds in progress as played.
+

@@ -24,6 +24,7 @@ import { filterForFigureWindow, loadPlayerPuttBands, loadPlayersFigures } from '
 import { loadQualifierDetail, loadQualifierList } from '@/clubhouse/data/qualifiers';
 import { loadRoster } from '@/clubhouse/data/roster';
 import { loadRoundReview } from '@/clubhouse/data/round-review';
+import { loadRoundsLibrary } from '@/clubhouse/data/rounds';
 import { loadPlayerProfile } from '@/clubhouse/data/stats-player';
 import { loadTeamStats } from '@/clubhouse/data/stats-team';
 import { loadTeamRounds } from '@/clubhouse/data/team-rounds';
@@ -106,7 +107,8 @@ function coachScreenLoaders(sb: Sb, who: { team_id: string; coach_id: string; ti
 /**
  * A player's loaders: their own figures, and the pages a player sees. No team page, no roster and no team rounds are
  * bound at all, so no tool can reach a teammate's figure through one; the screens' own player views carry their own
- * privacy rule (a player's Stats page has no team column).
+ * privacy rule (a player's Stats page has no team column). `myRounds` is the player's own Rounds page, read for the
+ * signed-in player's id and no other.
  */
 function playerScreenLoaders(sb: Sb, who: { team_id: string; player_id: string; timezone: string }): ScreenLoaders {
   const teamId = who.team_id;
@@ -118,6 +120,7 @@ function playerScreenLoaders(sb: Sb, who: { team_id: string; player_id: string; 
     playerStats: orNull(async (playerId, w) => (own(playerId) ? loadPlayerProfile({ viewer: 'player', teamId, playerId, window: w === 'season' ? 'season' : 'last10', filter: filterForFigureWindow(w) }) : null)),
     qualifierList: orNull(() => loadQualifierList({ role: 'player', teamId, playerId: who.player_id, mode: 'all' })),
     qualifierBoard: orNull((qualifierId) => loadQualifierDetail({ role: 'player', teamId, playerId: who.player_id, qualifierId })),
+    myRounds: orNull(() => loadRoundsLibrary({ playerId: who.player_id, teamId })),
     // The Round page judges the round against the viewer; the tool has already checked the round is the player's own.
     roundReview: orNull((roundId) => loadRoundReview(roundId, { role: 'player', playerId: who.player_id, teamId })),
   };

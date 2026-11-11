@@ -16,6 +16,7 @@ import { findInApp, findInAppForPlayer } from './context/find-in-app';
 import { noteTools } from './context/notes';
 import { isPlayerContext, type ChatSurface, type ChatTool, type ToolContext, type ToolsFor } from './engine/tool';
 import { getMyStats, getMySeason, getPlayerStats, getQualifiers, getRounds, getSeason, getTeamStats } from './readers';
+import { getMyRounds } from './my-rounds';
 import {
   askPracticeBrief,
   draftBoard,
@@ -66,7 +67,7 @@ function strict(tool: ChatTool): ChatTool {
 /** A player's Ask: reads of their own data and a visual of them. */
 function playerTools(): ChatTool[] {
   // CONTEXT's reader (`context/find-in-app.ts`) is last, so everything before it keeps its place in the cached prefix.
-  return [getMyStats, getRound, getShots, getMySeason, getMySchedule, getMyCoachHelm, getMyReference, SUMMARISE_PLAYER, showVisual, findInAppForPlayer];
+  return [getMyStats, getMyRounds, getRound, getShots, getMySeason, getMySchedule, getMyCoachHelm, getMyReference, SUMMARISE_PLAYER, showVisual, findInAppForPlayer];
 }
 
 function coachTools(surface: Exclude<ChatSurface, 'player'>, who: ToolContext['who']): ChatTool[] {

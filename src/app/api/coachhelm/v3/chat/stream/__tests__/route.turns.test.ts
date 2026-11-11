@@ -38,6 +38,7 @@ const h = vi.hoisted(() => ({
   checkBudget: vi.fn(async () => ({ allowed: true }) as { allowed: boolean; fallback_reason?: string }),
   loadPlayersFigures: vi.fn(async (..._args: unknown[]) => new Map()),
   loadPlayerProfile: vi.fn(async (..._args: unknown[]) => ({ ok: true })),
+  loadRoundsLibrary: vi.fn(async (..._args: unknown[]) => ({ rounds: { list: [], error: false }, unfinished: { list: [], error: false } })),
 }));
 
 vi.mock('@sentry/nextjs', () => ({ setConversationId: vi.fn() }));
@@ -54,6 +55,7 @@ vi.mock('@/lib/observability/metrics', () => ({ recordAi: vi.fn() }));
 vi.mock('@/clubhouse/gate', () => ({ isClubhouseFor: vi.fn(async () => true), isClubhouseForTeam: vi.fn(() => h.clubhouse) }));
 vi.mock('@/lib/flags/is-enabled', () => ({ isFlagEnabled: (flag: string) => h.flags.has(flag) }));
 vi.mock('@/clubhouse/data/round-review', () => ({ loadRoundReview: h.loadRoundReview }));
+vi.mock('@/clubhouse/data/rounds', () => ({ loadRoundsLibrary: h.loadRoundsLibrary }));
 vi.mock('@/clubhouse/data/tournaments', () => ({ loadTournamentsHome: h.loadTournamentsHome, tourContext: vi.fn(async (team: unknown) => ({ team })) }));
 // The Clubhouse screens' loaders the route binds for the tools. Stand-ins here: what matters is which the route binds for whom, and with what.
 vi.mock('@/clubhouse/data/player-figures', () => ({ loadPlayersFigures: h.loadPlayersFigures, loadPlayerPuttBands: vi.fn(async () => null), filterForFigureWindow: vi.fn(() => ({})) }));
@@ -2497,6 +2499,8 @@ describe('the screens the tools read through', () => {
     await ask('Team?');
     expect(log.reads.at(-1)!.loaders.roundReview).toBeTypeOf('function');
     expect(log.reads.at(-1)!.loaders.tournaments).toBeUndefined();
+    // A coach has the team's Rounds page; a player's own Rounds page is bound for a player only.
+    expect(log.reads.at(-1)!.loaders.myRounds).toBeUndefined();
 
     h.flags.add('golf_tournaments_v1');
     script({ content: [toolUse('tu_2', 'get_team_stats', {})] }, { content: [text('74.2.')] });
@@ -2724,6 +2728,13 @@ describe('a player’s turn', () => {
     expect(h.loadPlayerProfile).not.toHaveBeenCalled();
     await loaders.playerStats!('player-me', 'season');
     expect(h.loadPlayerProfile.mock.calls.at(-1)?.[0]).toMatchObject({ viewer: 'player', playerId: 'player-me', teamId: 'team-1', window: 'season' });
+    // Their own Rounds page, read for the signed-in player's id and nobody else's: the loader takes no argument a tool could set.
+    h.loadRoundsLibrary.mockClear();
+    expect(loaders.myRounds).toHaveLength(0);
+    await loaders.myRounds!();
+    expect(h.loadRoundsLibrary.mock.calls).toEqual([[{ playerId: 'player-me', teamId: 'team-1' }]]);
+    h.loadRoundsLibrary.mockRejectedValueOnce(new Error('database down'));
+    expect(await loaders.myRounds!()).toBeNull();
     expect(db.tables[MESSAGES] ?? []).toHaveLength(0);
   });
 

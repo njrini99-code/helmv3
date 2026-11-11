@@ -174,6 +174,9 @@ describe('how answers read', () => {
     expect(rules).toMatch(/Put the answer in the first sentence: answer the question that was asked, with its figure/);
     expect(rules).toMatch(/Write at most four sentences in all, as one short paragraph\. An offer of a next step counts as one of the four; make one only when the data points to an obvious one/);
     expect(rules).toMatch(/do not walk through every area/);
+    // Short never means leaving out what was asked for (the first full run dropped a course, a count and a comparison player).
+    expect(rules).toMatch(/Give each thing the question asked for: every figure, name, course or count it names\. Never drop one to stay short/);
+    expect(rulesBlock('player')).toMatch(/Give each thing they asked for, such as a count, a score or a course/);
     expect(rules).toMatch(/Write more than four sentences only when the coach asks for more \("in detail", "everything on him"\), and still in plain sentences/);
     expect(rules).toMatch(/No heading, no table, no bold, no emoji, and no label with a colon at the start of a line/);
     expect(rules).toMatch(/A table or a breakdown belongs in a card or a visual, not in your words/);

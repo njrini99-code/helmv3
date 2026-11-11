@@ -98,6 +98,10 @@ export async function getAttendanceSummary(sb: Sb, ctx: CoachChatContext, input:
 /**
  * Goals and where each stands. Read through the coach's session, so a coach sees what row-level security gives them: goals a coach set
  * or a player shared. A goal a player keeps to themself is not here, and this read says so rather than implying there are none.
+ *
+ * A read narrowed to one state also says how many visible goals are in the other states. The chat asks for the active ones, and
+ * a team with one active goal and five that were achieved or missed was told "only one goal is visible" (first full eval run,
+ * 11 Nov 2026): what a filter left out is counted, never silent.
  */
 export async function getGoals(sb: Sb, ctx: CoachChatContext, input: { player_id?: string; state: 'active' | 'achieved' | 'all'; limit: number }): Promise<ToolEnvelope> {
   const { ids, player } = scopeIds(ctx, input.player_id);
@@ -112,6 +116,20 @@ export async function getGoals(sb: Sb, ctx: CoachChatContext, input: { player_id
     await failed('getGoals failed', 'coachhelm.ask.goals', ctx, error);
     return unavailableEnvelope('Could not read goals.', 'The goals query failed. This is not the same as no goals.');
   }
+  // The other states, counted. A failed count is said as unknown; it never reads as "no other goals".
+  const others: Record<string, number> = {};
+  let othersUnknown = false;
+  if (input.state !== 'all') {
+    const counted = await byPlayers(ids, (chunk) => sb.from('golf_goals').select('state').in('player_id', chunk).neq('state', input.state).limit(ROW_CAP));
+    if (counted.error) othersUnknown = true;
+    else for (const g of counted.rows) others[g.state] = (others[g.state] ?? 0) + 1;
+  }
+  const otherTotal = Object.values(others).reduce((a, b) => a + b, 0);
+  const otherWords = othersUnknown
+    ? ` Goals in other states could not be counted.`
+    : otherTotal === 0
+      ? ''
+      : ` ${otherTotal} other goal${otherTotal === 1 ? ' is' : 's are'} not ${input.state}: ${Object.entries(others).sort(([a], [b]) => (a < b ? -1 : 1)).map(([state, n]) => `${n} ${state}`).join(', ')}.`;
   const who = names(ctx);
   const today = todayIsoInZone(ctx.timezone);
   const goals = rows.slice(0, limit).map((g) => {
@@ -136,8 +154,10 @@ export async function getGoals(sb: Sb, ctx: CoachChatContext, input: { player_id
   });
   const capped = rows.length > limit;
   const visibility = 'Goals a coach set or a player shared with the coach, recorded against this team. A goal a player keeps private, or one with no team on it, is not visible here.';
-  if (goals.length === 0) return envelope(player ? `No ${input.state === 'all' ? '' : `${input.state} `}goals visible for ${player.name}.` : `No ${input.state === 'all' ? '' : `${input.state} `}goals visible for the team.`, { goals: [], visibility }, 'empty');
-  return envelope(`${goals.length} goal${goals.length === 1 ? '' : 's'}${player ? ` for ${player.name}` : ''}.`, { goals, visibility }, capped ? 'partial' : 'complete', capped ? `Only the ${limit} soonest-due are listed.` : null);
+  const counts = input.state === 'all' ? {} : { other_states: othersUnknown ? null : others, goals_in_every_state: othersUnknown ? null : goals.length + otherTotal };
+  const stated = input.state === 'all' ? '' : `${input.state} `;
+  if (goals.length === 0) return envelope(`No ${stated}goals visible for ${player ? player.name : 'the team'}.${otherWords}`, { goals: [], visibility, ...counts }, otherTotal > 0 || othersUnknown ? 'partial' : 'empty', otherTotal > 0 ? `There are no ${stated}goals, but there are goals in other states.` : othersUnknown ? 'Goals in other states could not be counted.' : null);
+  return envelope(`${goals.length} ${stated}goal${goals.length === 1 ? '' : 's'} for ${player ? player.name : 'the team'}.${otherWords}`, { goals, visibility, ...counts }, capped || othersUnknown ? 'partial' : 'complete', capped ? `Only the ${limit} soonest-due are listed.` : othersUnknown ? 'Goals in other states could not be counted.' : null);
 }
 
 // ---------------------------------------------------------------------------
