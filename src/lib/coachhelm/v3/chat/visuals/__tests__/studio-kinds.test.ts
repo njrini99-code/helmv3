@@ -26,7 +26,8 @@ function emittedParts(dir = CHAT): Set<string> {
     if (statSync(path).isDirectory()) {
       if (name !== '__tests__' && name !== 'eval') for (const p of emittedParts(path)) out.add(p);
     } else if (/\.ts$/.test(name) && !/\.test\.ts$/.test(name)) {
-      for (const m of readFileSync(path, 'utf8').matchAll(/type: '(data-[a-z-]+)'/g)) out.add(m[1]!);
+      // Written in place (`type: 'data-…'`) or named once as a constant (`X_PART = 'data-…'`, engine/protocol.ts).
+      for (const m of readFileSync(path, 'utf8').matchAll(/(?:type: |_PART = )'(data-[a-z-]+)'/g)) out.add(m[1]!);
     }
   }
   return out;
@@ -42,6 +43,14 @@ describe('the studio: one list for the schema and the components', () => {
     for (const k of STUDIO_KINDS) expect(k.schema.length, k.kind).toBeGreaterThan(0);
     expect(new Set(claimed.map(([s]) => s)).size).toBe(claimed.length);
     expect(STUDIO_KINDS.map((k) => k.kind)).toContain('table');
+  });
+
+  it('is the set the component side agreed (CAPABILITIES, 11 Nov 2026), in registry order', () => {
+    expect(STUDIO_KINDS.map((k) => k.kind)).toEqual(['figure', 'comparison', 'ranking', 'trend', 'round', 'strokes_gained', 'distance_profile', 'schedule', 'qualifier_board', 'practice_plan', 'document', 'app_link', 'note', 'on_record', 'action', 'table']);
+    // Proposed, saved and undone are one object: the receipt, a hand-off and an edit's notice are all the action card's.
+    for (const part of ['data-action-proposal', 'data-action-receipt', 'data-handoff', 'data-card-revision']) expect(studioKindOf(`part:${part}`)).toBe('action');
+    expect(studioKindOf('read:get_coachhelm')).toBe('on_record');
+    expect(studioKindOf('part:data-computed')).toBe('table');
   });
 
   it('every block and scene show_visual can resolve to is drawn by one component, and the list names no block that does not exist', () => {

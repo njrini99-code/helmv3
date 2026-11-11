@@ -430,19 +430,20 @@ export const summariseDataTool = (player: boolean): ReadTool<z.infer<typeof Summ
 /**
  * What the model is shown of show_visual's input: one flat block shape instead of eleven variants. Each scene is parsed
  * again with its own strict schema in `run` (`CompositionSpecV2`, `VisualSpec`), and a refusal says what to fix.
+ *
+ * Two forms the strict schema still resolves are no longer offered (the studio's set, CONTRACT_NOTES P12 and P15):
+ * `note`, because a sentence is the answer's job, and `headline`, because a kpis of one figure draws as the same large
+ * figure. Conversations stored with either still draw.
  */
 const VisualBlock = z.object({
-  type: z.enum(['headline', 'kpis', 'trend', 'bars', 'split', 'compare', 'note', 'miss_pattern', 'putt_profile', 'season_compare', 'hole_strip']),
+  type: z.enum(['kpis', 'trend', 'bars', 'split', 'compare', 'miss_pattern', 'putt_profile', 'season_compare', 'hole_strip']),
   ref: z.string().optional().describe('The evidence_ref the block draws from.'),
   refs: z.array(z.string()).max(6).optional().describe('split and compare: the reads set side by side.'),
   metricId: z.string().optional(),
   metricIds: z.array(z.string()).max(8).optional(),
-  label: z.string().optional().describe('headline: a few words.'),
   reference: z.enum(['average', 'benchmark', 'none']).optional().describe('trend: the line it is read against.'),
   order: z.enum(['best_first', 'as_read']).optional(),
   highlight: z.string().optional().describe('bars: a player id or band label to emphasise.'),
-  kind: z.enum(['measured', 'association', 'hypothesis']).optional().describe('note: what the sentence is.'),
-  text: z.string().optional().describe('note: one sentence, no digits.'),
 });
 const ShowVisualModelInput = z.object({
   kind: z.enum(['compose', 'sg_anatomy']),
@@ -458,7 +459,7 @@ export const showVisual: ReadTool<z.infer<typeof ShowVisualModelInput>> = {
   kind: 'read',
   name: 'show_visual',
   description:
-    'Draw one visual from reads already made; the server copies the figures in, so titles, ledes, labels and notes are words with no digits. kind "compose": a title, an optional lede, and blocks in order: headline (one figure set large), kpis (up to six figures from one read), trend (one metric over rounds), bars (distance bands, or players on one metric; best_first ranks them), split (signed figures either side of zero, such as strokes gained by area), compare (players across the same metrics), note (one sentence), and four drawn from a read that holds them: putt_profile, miss_pattern, season_compare, hole_strip. kind "sg_anatomy": one player\'s four strokes gained areas. If it is refused, fix what it names once or answer in words.',
+    'Draw one visual from reads already made; the server copies the figures in, so the title and the lede are words with no digits. kind "compose": a title, an optional lede, and blocks in order: kpis (one figure set large, or up to six from one read), trend (one metric over rounds), bars (distance bands, or players on one metric; best_first ranks them), split (signed figures either side of zero, such as strokes gained by area), compare (players across the same metrics), and four drawn from a read that holds them: putt_profile, miss_pattern, season_compare, hole_strip. kind "sg_anatomy": one player\'s four strokes gained areas. If it is refused, fix what it names once or answer in words.',
   input: ShowVisualModelInput,
   progress: () => 'Building the visual',
   run: async (ctx, input) => {

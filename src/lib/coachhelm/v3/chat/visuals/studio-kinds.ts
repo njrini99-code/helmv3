@@ -39,12 +39,14 @@ export const STUDIO_KINDS = [
   { kind: 'schedule', draws: 'Days with their events, replies in, class conflicts and trips', schema: ['read:get_schedule'] },
   { kind: 'qualifier_board', draws: 'A qualifier’s board with the cut drawn between rows', schema: ['read:get_qualifiers', 'read:get_tournaments'] },
   { kind: 'practice_plan', draws: 'A practice plan as a run sheet, and the questions asked before one is drafted', schema: ['part:data-practice-plan', 'part:data-brief', 'read:get_practice'] },
-  { kind: 'document', draws: 'A long piece kept beside the chat, and a draft handed to Messages', schema: ['part:data-artifact', 'part:data-handoff'] },
+  { kind: 'document', draws: 'A long piece kept beside the chat', schema: ['part:data-artifact'] },
   { kind: 'app_link', draws: 'A way into a screen of the app', schema: ['part:data-app-link'] },
-  { kind: 'note', draws: 'One sentence about a visual, or a standing note the coach asked to keep', schema: ['block:note', 'part:data-coach-note', 'read:get_coachhelm', 'read:get_reference'] },
-  { kind: 'action_preview', draws: 'What a task will do, to check, edit, confirm or dismiss', schema: ['part:data-action-proposal'] },
-  { kind: 'receipt', draws: 'What a task did, with the way to the thing it made', schema: ['part:data-action-receipt'] },
-  { kind: 'table', draws: 'Rows and columns with a caption that names the source: the fallback, always available', schema: ['block:table', 'part:data-evidence', 'read:query_team_data', 'read:summarise_data', 'read:find_thread'] },
+  // `block:note` is drawn for stored conversations only: the model can no longer ask for one. A read answered "not tracked" is drawn here whatever read returned it.
+  { kind: 'note', draws: 'A standing note the coach asked to keep, a reference answer, or that something is not tracked', schema: ['block:note', 'part:data-coach-note', 'read:get_reference'] },
+  { kind: 'on_record', draws: 'What CoachHelm has on record for a player or the team: open reads, focus areas, goals and tasks, each a row that opens the thing', schema: ['read:get_coachhelm'] },
+  // One object from proposed to saved or undone, never a swap of boxes: the receipt is a state of the preview. A hand-off to Messages is the same card with one key and no ring.
+  { kind: 'action', draws: 'What a task will do, to check, edit, confirm or dismiss, and then what it did, with the way to the thing it made', schema: ['part:data-action-proposal', 'part:data-action-receipt', 'part:data-handoff', 'part:data-card-revision'] },
+  { kind: 'table', draws: 'Rows and columns with a caption that names the source: the fallback, always available', schema: ['block:table', 'part:data-evidence', 'part:data-computed', 'read:query_team_data', 'read:summarise_data', 'read:find_thread'] },
 ] as const satisfies readonly StudioKind[];
 
 export type StudioKindName = (typeof STUDIO_KINDS)[number]['kind'];
@@ -54,8 +56,12 @@ export function studioKindOf(schemaKind: string): StudioKindName | null {
   return STUDIO_KINDS.find((k) => (k.schema as readonly string[]).includes(schemaKind))?.kind ?? null;
 }
 
-/** Parts that carry no component of their own: the work line, the turn's bookkeeping, a failed turn's sentence, a player's allowance running out. They are the shell's. */
-export const SHELL_PARTS = ['data-progress', 'data-turn-meta', 'data-turn-incomplete', 'data-allowance'] as const;
+/**
+ * Parts that carry no component of their own: the work line, the turn's bookkeeping, a failed turn's sentence, a player's
+ * allowance running out, a draft while the model is still writing it (it is gone once the card it becomes exists), and
+ * the questions offered under an answer. They are the shell's.
+ */
+export const SHELL_PARTS = ['data-progress', 'data-turn-meta', 'data-turn-incomplete', 'data-allowance', 'data-draft', 'data-suggestions'] as const;
 /** Parts that only hold other kinds: a composition is drawn block by block (`block:*`), a visual artifact as its scene (`scene:*`). */
 export const CONTAINER_PARTS = ['data-visual-composition', 'data-visual-artifact'] as const;
 
