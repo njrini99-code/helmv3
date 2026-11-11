@@ -10,7 +10,7 @@ import { landsOf } from '../screens/coachhelm/chat/parts/ConfirmCard';
 import { NotTracked, WorkedOut, computedSummary } from '../screens/coachhelm/chat/cards/answers';
 import { BriefBody, DocBody, HandoffBody } from '../screens/coachhelm/chat/cards/drafts';
 import { WORK_KINDS } from '../screens/coachhelm/chat/cards/work-words';
-import { CoachMark } from '../screens/coachhelm/chat/CoachMark';
+import { BallMark } from '../screens/coachhelm/chat/BallMark';
 import { AskEvidenceView } from '../screens/coachhelm/chat/Evidence';
 import { WorkLine, type WorkModel } from '../screens/coachhelm/chat/parts/Work';
 import { Studio } from '../screens/coachhelm/chat/studio/registry';
@@ -412,7 +412,7 @@ function forms(density: CardDensity): Record<string, { group: 'drafts' | 'notes'
                     <th scope="row">{w.label}</th>
                     <td>
                       <span className="ch-akg-work">
-                        <CoachMark working={w.working} />
+                        <BallMark state={w.working ? 'thinking' : 'still'} on="paper" size="sm" />
                         <b>CoachHelm</b>
                         <WorkLine work={{ ...still, line: w.line }} listId={`akg-${w.label}`} />
                       </span>
