@@ -1161,4 +1161,4 @@ html[data-fw-theme='dark'] .ch-ak-push .ch-btn--primary[data-ch-pressed]:not(:di
 [data-motion='off'] .ch-ak-th[data-v3] :is(.conf.is-arriving, .receipt, .told.is-live, .receipt.in.is-live .ck) { animation: none; }
 [data-motion='off'] .ch-ak-th[data-v3] .receipt.in.is-live .ck path { animation: none; stroke-dashoffset: 0; }
 /* A chip and the punctuation that closes its sentence are one unbreakable piece. */
-.ch-ak-nb { white-space: nowrap; }
+.ch-ak-keep { white-space: nowrap; }

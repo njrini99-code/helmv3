@@ -60,7 +60,7 @@ const ProseBlockView = memo(function ProseBlockView({ sig, lead, streaming, tail
       if (seen.has(seg.ref)) return closing(i) || null;
       seen.add(seg.ref);
       return (
-        <span key={`r${i}`} className="ch-ak-nb">
+        <span key={`r${i}`} className="ch-ak-keep">
           {chip.draw(seg.ref)}
           {closing(i)}
         </span>
