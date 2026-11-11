@@ -10,6 +10,8 @@ import { PREVIEW_TEAM_SG } from './fixtures-team-sg';
 
 const STATION_KEY: Record<string, TeamStation> = { tee: 'tee', app: 'approach', sg: 'short_game', putt: 'putting', course: 'course' };
 
+let lateWorth: ChTeamBoardData['worth'] | null = null;
+
 function stateData(state: string | undefined): ChTeamBoardData {
   const base = PREVIEW_TEAM_BOARD;
   const list = base.players.list;
@@ -29,6 +31,14 @@ function stateData(state: string | undefined): ChTeamBoardData {
   if (state === 'stress') {
     const stress: ChTeamPlayer = { ...(list[3] as ChTeamPlayer), id: 'pl-stress', name: 'Cole Bennett', first: 'Cole', rounds: 3, early: true, total: 0.5, worst: 'putting', legs: { tee: { strokes: 2.5, rounds: 3, missing: null }, approach: { strokes: 1.9, rounds: 3, missing: null }, short_game: { strokes: 0, rounds: 3, missing: null }, putting: { strokes: -3.9, rounds: 3, missing: null } } };
     return { ...base, team: { ...base.team, name: 'Demo University Golf' }, roster: { count: 1, error: false }, players: { list: [stress], error: false }, stations: stationFigures([stress]), teamTotal: { strokes: 0.5, rounds: 3, seasonRounds: 3 } };
+  }
+  // A read's worth arriving after the hole (the themes part, 02-PLAN 4.5): four seconds late, and one read turns out to have none, so
+  // the space held for it is given back. The rows must not move when it lands.
+  if (state === 'worthlate') {
+    const part = base.worth && !(base.worth instanceof Promise) && base.worth.status === 'ok' ? base.worth.value : {};
+    // One promise for the page, so a second render does not start the wait again.
+    lateWorth ??= new Promise((resolve) => setTimeout(() => resolve({ status: 'ok', value: Object.fromEntries(Object.entries(part).slice(1)) }), 4000));
+    return { ...base, worth: lateWorth };
   }
   // Where the hole's rounds' strokes gained came from (stats-sg-mix.ts): some estimated from the scorecard, then all of them.
   if (state === 'sgmixed' || state === 'sgest') {
