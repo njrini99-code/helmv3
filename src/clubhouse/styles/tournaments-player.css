@@ -325,6 +325,18 @@
   text-align: right;
 }
 
+/* On a phone the section is the card (ui.css), and its last block takes the card's 16 under it. A list's rows carry their
+   own room under their last line (8 in the list's rows, 12 in an event's), so the card ended 24 or 28 under its content
+   against 16 over its heading. The list gives the row's share back, and the card ends as it begins. */
+.ch-tour-pl.is-phone .ch-sec__head ~ .ch-tour-pl-list:last-child,
+.ch-tour-pl.is-phone .ch-sec__head ~ .ch-tour-pl-later:last-child {
+  padding-bottom: 8px;
+}
+.ch-tour-pl.is-phone .ch-sec__head ~ .ch-tour-pl-rounds:last-child,
+.ch-tour-pl.is-phone .ch-sec__head ~ .ch-tour-pl-notes:last-child {
+  padding-bottom: 4px;
+}
+
 /* An event's rounds and notes: one card of rows. */
 .ch-tour-pl-rounds,
 .ch-tour-pl-notes {

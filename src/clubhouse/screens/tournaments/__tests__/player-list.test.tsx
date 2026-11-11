@@ -19,7 +19,7 @@ const css = postcss.parse(readFileSync(join(import.meta.dirname, '../../../style
 const decls = (selector: string) => {
   const out: Record<string, string> = {};
   css.walkRules((r) => {
-    if (r.selector === selector && r.parent?.type === 'root') r.walkDecls((d) => void (out[d.prop] = d.value));
+    if (r.selectors.includes(selector) && r.parent?.type === 'root') r.walkDecls((d) => void (out[d.prop] = d.value));
   });
   return out;
 };
@@ -77,5 +77,30 @@ describe('the player’s Tournaments list · Played is a table on the sheet', ()
     expect(decls('.ch-tour-pl-res__row.is-head')).toMatchObject({ 'min-height': '0', 'padding-block': '12px' });
     // The sheet has no inline padding of its own, so its edge is the heading's edge.
     expect(decls('.ch-tour-pl-res').padding).toBeUndefined();
+  });
+});
+
+/**
+ * On a phone a section is a card: 16 over its heading and, from the shared card, 16 under its last block. The lists'
+ * rows keep their own room under their last line, so the cards ended 24 (the list) or 28 (an event) under their content.
+ * Each list hands its row's share back, so a card ends 16 under its content, as it begins.
+ */
+describe('the player’s Tournaments · a phone card ends as it begins', () => {
+  const CARD = 16;
+  const last = (list: string) => decls(`.ch-tour-pl.is-phone .ch-sec__head ~ ${list}:last-child`)['padding-bottom'];
+  const px = (v: string | undefined) => Number(v?.replace('px', ''));
+
+  it('the list’s cards: the row’s 8 and the list’s 8 make the card’s 16', () => {
+    // .ch-tour-pl-row and the kit's ledger row (ui.css .ch-lgr__row) both pad 8 under their content.
+    expect(decls('.ch-tour-pl-row').padding).toMatch(/^8px/);
+    expect(px(last('.ch-tour-pl-list')) + 8).toBe(CARD);
+    expect(px(last('.ch-tour-pl-later')) + 8).toBe(CARD);
+  });
+
+  it('an event’s cards: the row’s 12 and the list’s 4 make the card’s 16', () => {
+    expect(decls('.ch-tour-pl-round').padding).toBe('12px 16px');
+    expect(decls('.ch-tour-pl-note').padding).toBe('12px 16px');
+    expect(px(last('.ch-tour-pl-rounds')) + 12).toBe(CARD);
+    expect(px(last('.ch-tour-pl-notes')) + 12).toBe(CARD);
   });
 });
