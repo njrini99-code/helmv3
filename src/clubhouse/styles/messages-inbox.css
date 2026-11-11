@@ -464,6 +464,130 @@
   box-shadow: none;
 }
 
+/* The rail's Announcements (owner, 2026-10-16: folded under the conversations). On the phone the fold is a card at the
+   page edge (Q-37); on the rail it was the same card, spanning the pane with its own shadow while every row above it
+   sits inset on the rail's grid, and its one-line preview was cut with room to spare. Here it is a row like the others:
+   the same box, the same 40 face, the count and the chevron on the title's line where a row has its time, and the
+   newest title under it on two lines. The announcements it opens to are rows on the same grid. */
+[data-ch-ms-v2] .ch-inb--rail .ch-ms-sec.is-ann {
+  margin: var(--ch-space-2) 0 0;
+}
+[data-ch-ms-v2] .ch-inb--rail .ch-ms-sec.is-ann .ch-ms-fold {
+  grid-template-columns: 40px minmax(0, 1fr) auto auto;
+  gap: var(--ch-inb-2) var(--ch-space-3);
+  width: calc(100% - var(--ch-space-4));
+  min-height: 0;
+  margin: 0 var(--ch-space-2);
+  padding: calc(var(--ch-space-2) + 1px) var(--ch-inb-10);
+  border-radius: var(--ch-radius-md);
+  background: transparent;
+  box-shadow: none;
+  transition: none;
+}
+[data-ch-ms-v2] .ch-inb--rail .ch-ms-sec.is-ann .ch-ms-fold[data-ch-pressed] {
+  background: var(--ch-press-wash);
+}
+@media (hover: hover) {
+  [data-ch-ms-v2] .ch-inb--rail .ch-ms-sec.is-ann .ch-ms-fold:hover,
+  [data-ch-ms-v2] .ch-inb--rail .ch-ms-sec.is-ann .ch-ms-fold:active {
+    background: var(--ch-press-wash);
+  }
+}
+[data-ch-ms-v2] .ch-inb--rail .ch-ms-fold .ch-ms-grp.is-ann {
+  grid-row: 1 / span 2;
+  width: 40px;
+  height: 40px;
+}
+/* The title and the preview are the grid's own cells, so the preview runs under the count and the chevron. */
+[data-ch-ms-v2] .ch-inb--rail .ch-ms-fold__b {
+  display: contents;
+}
+[data-ch-ms-v2] .ch-inb--rail .ch-ms-fold__b b {
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
+  overflow: hidden;
+  font: var(--ch-type-16-strong);
+  letter-spacing: var(--ch-track-16);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+[data-ch-ms-v2] .ch-inb--rail .ch-ms-fold__b > span {
+  display: -webkit-box;
+  grid-column: 2 / -1;
+  grid-row: 2;
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-inb-ink-2);
+  white-space: normal;
+  text-overflow: clip;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+[data-ch-ms-v2] .ch-inb--rail .ch-ms-fold > .ch-ms-count {
+  grid-column: 3;
+  grid-row: 1;
+  align-self: center;
+}
+[data-ch-ms-v2] .ch-inb--rail .ch-ms-fold > .ch-ms-fold__chev {
+  grid-column: 4;
+  grid-row: 1;
+  align-self: center;
+}
+[data-ch-ms-v2] .ch-inb--rail .ch-ms-fold__body {
+  padding: 0 0 var(--ch-space-1);
+  border-top: 0;
+}
+[data-ch-ms-v2] .ch-inb--rail .ch-ms-row.is-ann {
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--ch-space-3);
+  width: calc(100% - var(--ch-space-4));
+  margin: 0 var(--ch-space-2);
+  padding: calc(var(--ch-space-2) + 1px) var(--ch-inb-10);
+  border-radius: var(--ch-radius-md);
+  background: transparent;
+  box-shadow: none;
+  transition: none;
+}
+[data-ch-ms-v2] .ch-inb--rail .ch-ms-row.is-ann[data-ch-pressed],
+[data-ch-ms-v2] .ch-inb--rail .ch-ms-row.is-ann.is-sel {
+  background: var(--ch-press-wash);
+}
+@media (hover: hover) {
+  [data-ch-ms-v2] .ch-inb--rail .ch-ms-row.is-ann:hover,
+  [data-ch-ms-v2] .ch-inb--rail .ch-ms-row.is-ann:active {
+    background: var(--ch-press-wash);
+  }
+}
+[data-ch-ms-v2] .ch-inb--rail .ch-ms-row.is-ann .ch-ms-grp {
+  width: 40px;
+  height: 40px;
+}
+/* The open announcement keeps its own mark and count: the selected row is a pale wash here, not the green fill the
+   ivory count and the group coin's fill were drawn for (an urgent one lost its amber, the count its pill). */
+[data-ch-ms-v2] .ch-inb--rail .ch-ms-row.is-ann.is-sel .ch-ms-grp.is-urgent {
+  background: var(--ch-warning-100);
+  color: var(--ch-warning-600);
+}
+[data-ch-ms-v2] .ch-inb--rail .ch-ms-row.is-ann.is-sel .ch-ms-count {
+  background: var(--ch-green-fill-600);
+  color: var(--ch-text-on-accent);
+}
+/* An announcement that waits on you keeps its count beside its two lines, not under them as a bar. */
+[data-ch-ms-v2] .ch-inb--rail .ch-ms-row.is-ann .ch-ms-row__bot {
+  display: flex;
+  align-items: center;
+  gap: var(--ch-space-2);
+}
+[data-ch-ms-v2] .ch-inb--rail .ch-ms-row.is-ann .ch-ms-row__bot > span:first-child {
+  flex: 1;
+  min-width: 0;
+}
+[data-ch-ms-v2] .ch-inb--rail .ch-ms-fold__body .ch-ms-more {
+  margin: var(--ch-space-1) var(--ch-inb-18) 0;
+}
+
 /* ------------------------------------------------------------------------------------------------------------------
    Loading (MSG-112, MSG-126, MOT-X-15): the same card and row heights as the loaded list. 1.4 s ease-in-out between
    opacity 1 and .55; it stops under Reduce Motion and Animations off. Also drawn by the route skeleton, which has no
