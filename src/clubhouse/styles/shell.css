@@ -752,10 +752,10 @@
   margin-top: 12px;
 }
 
-/* The notice (InlineNotice, PageNotice): a part of the page could not load. Flush in the Ledger (lead decision under
-   the owner's full-auto brief, 2026-10-08, revised the same day; owner to confirm): it sits between the section's
-   own engraved rules and draws nothing of its own, no fill, no ring and no stripe, so its icon lines up with the
-   section's heading. The icon carries the danger ink; the title keeps the page's ink (D5-1, owner 2026-10-08: red is for
+/* The notice (InlineNotice, PageNotice): a part of the page could not load. Inside a card, and on the desktop Ledger
+   (lead decision under the owner's full-auto brief, 2026-10-08), it draws nothing of its own, no fill, no ring and no
+   stripe, so its icon lines up with the heading above it. On the phone a notice the page holds directly draws the
+   card itself (data-ch-bare, at the end of this block). The icon carries the danger ink; the title keeps the page's ink (D5-1, owner 2026-10-08: red is for
    under par and destructive actions, so a failure is named in ink and flagged by its icon), the body the secondary ink. Try again sits beside
    the words, or under them in a narrow rail (the notice is its own size container) and on the phone. The inks and
    the fill are local properties, so a notice on a dark or a floating surface is restyled in one rule;
@@ -841,6 +841,20 @@
   }
   .ch-notice .ch-notice__title {
     font-size: calc(15 * var(--ch-type-k));
+  }
+}
+/* On the phone no text sits on the page (DESIGN_LANGUAGE law 1 and 9). A notice that nothing holds (ui/Notices marks
+   it once it has looked: data-ch-bare) is its own card, the one card recipe, with the card's 16 inset; one that also
+   starts at the screen's edge takes the page gutter. Inside a card it stays flush, as above. */
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
+  .ch-notice[data-ch-bare] {
+    --ch-notice-fill: var(--ch-card-bg);
+    padding: 14px 16px 16px;
+    border-radius: var(--ch-radius-lg);
+    box-shadow: var(--ch-card-shadow);
+  }
+  .ch-notice[data-ch-bare='edge'] {
+    margin-inline: var(--ch-page-x-phone);
   }
 }
 /* On the one green feature card (ui/Ledger.tsx) the notice takes the on-green inks. */

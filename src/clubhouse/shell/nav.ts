@@ -374,11 +374,12 @@ const PUSHED_BELOW: ReadonlyArray<{ path: RegExp; top: (role: ChRole, m: RegExpE
     top: () => ({ back: 'Back', title: 'Round' }),
   },
   { path: /^\/golf\/dashboard\/rounds\/recover$/, top: () => ({ back: 'Rounds', title: 'Recover', parent: '/golf/dashboard/rounds' }) },
-  // No parent: a plan opens from Ask, a push, Documents or Calendar, and Back returns to whichever it was (D-41).
-  { path: /^\/golf\/dashboard\/practice\/plan\/[^/]+$/, top: (role) => ({ back: 'Back', title: role === 'player' ? '' : 'Practice plan' }) },
+  // No parent: a plan opens from Ask, a push, Documents or Calendar, and Back returns to whichever it was (D-41). The
+  // link is named as the page names it (PlanPageActions: "Practice"), so the bar does not change when the page arrives.
+  { path: /^\/golf\/dashboard\/practice\/plan\/[^/]+$/, top: (role) => ({ back: 'Practice', title: role === 'player' ? '' : 'Practice plan' }) },
   { path: /^\/golf\/dashboard\/practice\/drills\/[^/]+$/, top: () => ({ back: 'Drills', title: 'Drill', parent: '/golf/dashboard/practice/drills' }) },
   { path: /^\/golf\/dashboard\/practice\/print\/([^/]+)$/, top: (role, m) => (role === 'coach' ? { back: 'Plan', title: 'Print', parent: `/golf/dashboard/practice/plan/${m[1]}` } : null) },
-  { path: /^\/golf\/dashboard\/practice\/format$/, top: (role) => (role === 'coach' ? { back: 'Back', title: 'Plan format' } : null) },
+  { path: /^\/golf\/dashboard\/practice\/format$/, top: (role) => (role === 'coach' ? { back: 'Practice', title: 'Plan format' } : null) },
   { path: /^\/golf\/dashboard\/practice\/plan\/[^/]+\/edit$/, top: (role) => (role === 'coach' ? { back: 'Practice', title: 'Practice plan', parent: '/golf/dashboard/practice' } : null) },
   // P-7: no parent, so Back steps back to the round or the library it came from (D-41).
   { path: /^\/golf\/dashboard\/rounds\/course\/[^/]+$/, top: (role) => ({ back: role === 'coach' ? 'Round' : 'Rounds', title: 'Course' }) },

@@ -11,6 +11,21 @@ const bez = (c: readonly number[]) => `cubic-bezier(${c.join(',')})`;
 /** M-QC: the panel is opaque by 90 ms, on purpose below the motion scale: a slower fade reads as a ghost of the page. */
 const PANEL_OPAQUE_MS = 90;
 
+/**
+ * M-OPEN's `transform-origin`: the key's centre (a viewport point) in the panel's own untransformed box. The panel's
+ * place comes from its offsets (07: "offsetLeft / offsetTop chains, never getBoundingClientRect, which includes a
+ * running scale"), so a retarget that measures mid-pour gets the same origin as the first open and the panel stays on
+ * the key. Offsets are from the offset parent's padding edge; that parent is not moving, so its rect places them in the
+ * viewport. The phone's panel is fixed and has no offset parent: its offsets are already from the viewport.
+ */
+export function pourOrigin(panel: HTMLElement, key: { x: number; y: number }): string {
+  const parent = panel.offsetParent as HTMLElement | null;
+  const at = parent ? parent.getBoundingClientRect() : { left: 0, top: 0 };
+  const left = at.left + (parent?.clientLeft ?? 0) + panel.offsetLeft;
+  const top = at.top + (parent?.clientTop ?? 0) + panel.offsetTop;
+  return `${key.x - left}px ${key.y - top}px`;
+}
+
 export function useQcMotion(reduced: boolean) {
   const anims = useRef<Animation[]>([]);
   const stop = () => {
@@ -28,8 +43,7 @@ export function useQcMotion(reduced: boolean) {
         if (scrim) anims.current.push(scrim.animate([{ opacity: scrimFrom }, { opacity: 1 }], { duration: CH_FADE_MS, easing: 'linear' }));
         return;
       }
-      const r = panel.getBoundingClientRect();
-      panel.style.transformOrigin = `${origin.x - r.left}px ${origin.y - r.top}px`;
+      panel.style.transformOrigin = pourOrigin(panel, origin);
       const curve = chSpringCurve('pour');
       anims.current.push(panel.animate([{ transform: was.t }, { transform: 'none' }], { duration: curve.ms, easing: curve.linear }));
       anims.current.push(panel.animate([{ opacity: was.o }, { opacity: 1 }], { duration: PANEL_OPAQUE_MS, easing: bez(CH_EASE) }));

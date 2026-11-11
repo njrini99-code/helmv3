@@ -223,6 +223,11 @@
     --ch-av-floor: 12px;
   }
 }
+/* A coin under 22px (ui/Avatar `data-small`) holds one initial at half its width: the floor would clip it. */
+.ch-avatar[data-small] {
+  --ch-av-floor: 0px;
+  letter-spacing: 0;
+}
 .ch-avatar[data-tone='stone'] {
   --ch-av-bg: #e5e2db;
   --ch-av-fg: #4f4b43;

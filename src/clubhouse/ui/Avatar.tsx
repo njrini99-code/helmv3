@@ -21,6 +21,13 @@ export type AvatarSize = keyof typeof AVATAR_SIZES;
 /** F-0073: each step's initials, on the type scale (px; the coin is a fixed size, so its initials are too). */
 export const AVATAR_TYPE: Record<AvatarSize, number> = { xs: 11, sm: 12, md: 13, lg: 14, xl: 22 };
 
+/**
+ * A coin too small for two initials (design review, 10 Nov 2026: 16px faces read "D(E(M"). Under 22px it shows one
+ * initial at half its width, with the phone's 12px type floor lifted (ui.css `[data-small]`); under 14px it shows none.
+ */
+export const AVATAR_SMALL = 22;
+const AVATAR_BARE = 14;
+
 /** A numeric size takes the initials of the nearest step (the smaller on a tie). */
 function typeOf(px: number): number {
   let best: AvatarSize = 'xs';
@@ -51,16 +58,19 @@ export function Avatar({
   dim?: boolean;
 }) {
   const px = typeof size === 'number' ? size : AVATAR_SIZES[size];
-  const type = typeof size === 'number' ? typeOf(size) : AVATAR_TYPE[size];
+  const small = px < AVATAR_SMALL;
+  const type = small ? Math.round(px / 2) : typeof size === 'number' ? typeOf(size) : AVATAR_TYPE[size];
+  const mark = px < AVATAR_BARE ? '' : small ? initialsOf(name).slice(0, 1) : initialsOf(name);
   return (
     <span
       className={'ch-avatar' + (ring ? ' ch-avatar--ring' : '')}
       data-tone={avatarTone(id || name)}
       data-dim={dim ? '' : undefined}
+      data-small={small ? '' : undefined}
       style={{ ['--ch-av-size' as string]: `${px}px`, ['--ch-av-type' as string]: `${type}px` }}
       aria-hidden="true"
     >
-      {initialsOf(name)}
+      {mark}
     </span>
   );
 }
