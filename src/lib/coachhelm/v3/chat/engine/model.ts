@@ -117,6 +117,12 @@ export interface ChatFeatures {
    * call. Only on a model that supports it (Sonnet 5.5); never sent to Haiku 5.5.
    */
   refusalFallback: boolean;
+  /**
+   * What to ask next: after a turn has completed and `done` has gone out, one small call on the player profile's model
+   * asks for two to four follow-ups (`engine/suggestions.ts`). It is a call of its own, not part of the turn's
+   * requests, so it is in no feature group: nothing of the answer waits on it or fails with it. Off for a player.
+   */
+  suggestions: boolean;
 }
 
 export type ChatModelId = 'claude-sonnet-5-5' | 'claude-haiku-5-5';
@@ -138,13 +144,13 @@ export const MODEL_PROFILES: Record<ChatModelId, ModelProfile> = {
     modelId: 'claude-sonnet-5-5',
     ledgerId: MODEL_FOR_TASK.coach_chat,
     effort: 'medium',
-    features: { dropStaleThinking: true, strictTools: true, citations: true, compaction: true, taskBudgetTokens: null, progressNotes: true, programmaticReads: true, refusalFallback: true },
+    features: { dropStaleThinking: true, strictTools: true, citations: true, compaction: true, taskBudgetTokens: null, progressNotes: true, programmaticReads: true, refusalFallback: true, suggestions: true },
   },
   'claude-haiku-5-5': {
     modelId: 'claude-haiku-5-5',
     ledgerId: PLAYER_CHAT_MODEL,
     effort: 'high',
-    features: { dropStaleThinking: true, strictTools: true, citations: true, compaction: true, taskBudgetTokens: null, progressNotes: false, programmaticReads: true, refusalFallback: false },
+    features: { dropStaleThinking: true, strictTools: true, citations: true, compaction: true, taskBudgetTokens: null, progressNotes: false, programmaticReads: true, refusalFallback: false, suggestions: true },
   },
 };
 
@@ -167,8 +173,8 @@ export function profileFor(surface: ChatSurface = 'ask', override: ChatModelId |
   let profile = profiles.get(key);
   if (!profile) {
     const base = MODEL_PROFILES[model];
-    // A player's read-only Ask, on whichever model: the same request without the model's code.
-    profile = surface === 'player' ? { ...base, features: { ...base.features, programmaticReads: false } } : base;
+    // A player's read-only Ask, on whichever model: the same request without the model's code, and no suggestions after it.
+    profile = surface === 'player' ? { ...base, features: { ...base.features, programmaticReads: false, suggestions: false } } : base;
     profiles.set(key, profile);
   }
   return profile;

@@ -1456,3 +1456,36 @@ adds, to meet the contract's rules:
 - **Words.** `engine/__tests__/step-words.test.ts` sweeps every registered tool's running label and declared finished
   label for the writing rules (full words, no notation, no tool or column name, no trailing full stop).
 
+E36. **Suggestions (D4, 11 Nov 2026).**
+- **Wire.** `{ type: 'suggestions'; items: Array<{ label; prompt; kind: 'read' | 'compare' | 'action' }> }`. It is the
+  one event that may come AFTER `done`, a second or two later, and only on a coach's turn that completed with an
+  answer (never `awaiting_decision`, failed, stopped or declined; never a player). An empty list withdraws them.
+  Stored and restored as the part `{ type: 'data-suggestions', id: 'suggestions', data: { items } }`, last in the
+  message; a retried turn that already has its answer is sent them again from the store. `suggestionsOf(parts)` reads
+  them.
+- **For chat-ux and the quick chat.** `useCoachHelmChat().suggestions` is the last answer's, and only while it is the
+  last thing in the thread and nothing is being asked; it is `[]` otherwise. `status` is already `ready` when they
+  arrive, so draw them as something that appears under a finished answer, not as part of the wait. Tapping one is
+  `send(suggestion.prompt)` and nothing else. `kind` is for the chip's mark: an `action` suggestion still leads to a
+  card the coach confirms. Earlier answers keep their stored part; do not draw it.
+- **The checks** (`checkSuggestions`): an `action` must name, in a field the browser never sees, one of the task tools
+  in THIS caller's tool list; nothing matching the never-list (from `tasks/INVENTORY.md`, "Left to the app on
+  purpose"); no tool or snake_case name in the words; label 3 to 60 characters, prompt 8 to 300; no duplicates; at most
+  four; fewer than two is none. A suggestion that fails is dropped, never repaired. **PLANS:** the never-list here is a
+  pattern over the words, written from INVENTORY.md; if that list changes, `NEVER` in `engine/suggestions.ts` should.
+- **The call.** `suggestionsModel()` is the player profile's model whatever the surface's own; `output_config:
+  { effort: 'low', format: json_schema }`, `max_tokens` 2000, no tools, no betas, the question and the answer as data
+  in one user message. It is not a feature group: it is its own request, made after the turn is stored, so nothing of
+  the turn can fail with it. `SUGGESTIONS_TIMEOUT_MS` 8000. Not verified against the live API.
+- **Cost.** `TurnDeps.onSuggested({ usage, kept, failed })`; the route writes a ledger row `task: 'chat_suggestions'`
+  (`verified`: at least two were shown) and counts the spend under the same key. `chat/ledger.ts`
+  (`writeChatLedgerRow`) tries a row under its own key and, where the CHECK refuses it (23514), remembers that for the
+  process and uses the fallback: `coach_chat` for a player's turn, no row for suggestions. Held migration
+  `20261111090000_coachhelm_llm_calls_chat_tasks.sql` (rollback, pgTAP and the declarative schema with it; not
+  applied, not run).
+- **The eval.** A coach question now costs one more small call (about $0.0002) and its response stays open a moment
+  longer; the report's time is the turn's own duration and its "figures matched" comes from the answer's row.
+- **The hook.** `done` now ends the turn for the coach (status, the in-flight guard, the next queued card) while the
+  rest of the response is still read; a new question, Stop, a new chat or leaving the page ends that read. A
+  connection lost after `done` is not a failure.
+

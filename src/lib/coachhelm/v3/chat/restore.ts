@@ -49,6 +49,8 @@ const REPLAYABLE = new Set([
   'data-turn-meta',
   // What a run of the model's code covered: the reads behind a figure it worked out (`ChatComputed`).
   'data-computed',
+  // What to ask next, written after the answer (`ChatSuggestion`). Every message's come back; the thread draws the last answer's only.
+  'data-suggestions',
   // The live grounding flag (route.ts's `execute`, N15) is written into the
   // persisted assistant turn's `ui_parts` the same way a receipt is. Without
   // it here, the flag showed only during the original streaming session —

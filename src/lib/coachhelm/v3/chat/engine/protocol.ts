@@ -187,6 +187,30 @@ export interface ChatCardRevision {
   reason?: string;
 }
 
+/**
+ * What to ask next, under a finished answer (`engine/suggestions.ts`): two to four, written after the turn is done. Tapping one sends
+ * its `prompt` as the coach's next message and nothing else: a suggestion runs nothing, and an action it leads to is planned, shown
+ * and confirmed like any other. They belong to the LAST answer only: once a newer message exists they are history and are not drawn.
+ */
+export interface ChatSuggestion {
+  /** A few words for the chip. */
+  label: string;
+  /** What is sent as the next message when it is tapped. */
+  prompt: string;
+  /** `read`: a follow-up about the data. `compare`: the same thing against someone or something else. `action`: something to set up. */
+  kind: 'read' | 'compare' | 'action';
+}
+export const SUGGESTIONS_PART = 'data-suggestions' as const;
+const isSuggestion = (value: unknown): value is ChatSuggestion => {
+  const s = value as Partial<ChatSuggestion> | null;
+  return Boolean(s) && typeof s!.label === 'string' && typeof s!.prompt === 'string' && (s!.kind === 'read' || s!.kind === 'compare' || s!.kind === 'action');
+};
+/** The suggestions a message carries; none when it has none, or when what is stored is not in the shape. */
+export function suggestionsOf(parts: readonly ChatUIPart[]): ChatSuggestion[] {
+  const items = (parts.find((p) => p.type === SUGGESTIONS_PART)?.data as { items?: unknown } | undefined)?.items;
+  return Array.isArray(items) ? items.filter(isSuggestion) : [];
+}
+
 export function turnMetaOf(parts: readonly ChatUIPart[]): ChatTurnMeta | null {
   const data = parts.find((p) => p.type === TURN_META_PART)?.data as Partial<ChatTurnMeta> | undefined;
   return data && typeof data.started_at === 'string' && typeof data.duration_ms === 'number' ? { started_at: data.started_at, duration_ms: data.duration_ms, reads: typeof data.reads === 'number' ? data.reads : 0, ...(typeof data.steps === 'number' ? { steps: data.steps } : {}), ...(typeof data.working_ms === 'number' ? { working_ms: data.working_ms } : {}), ...(data.declined ? { declined: true as const } : {}) } : null;
@@ -248,9 +272,18 @@ export type ChatEvent =
   | { type: 'usage'; input_tokens: number; output_tokens: number; cache_read_input_tokens: number; cache_creation_input_tokens?: number; features_dropped?: string[] }
   /** A sentence a coach can act on. Never provider text. */
   | { type: 'error'; message: string; action: ChatErrorAction; kind?: ChatErrorKind }
-  /** Last event of every response. `duration_ms`: what this request took. */
-  /** `work`: the turn's steps and for how long at least one was running (`duration_ms` is the whole turn, the model's own time included). */
-  | { type: 'done'; status: ChatTurnStatus; duration_ms?: number; work?: { steps: number; working_ms: number } };
+  /**
+   * The turn is over: the coach can ask the next thing. `duration_ms`: what this request took. `work`: the turn's steps and for how
+   * long at least one was running (`duration_ms` is the whole turn, the model's own time included). The last event of a response,
+   * except that one `suggestions` event may follow it.
+   */
+  | { type: 'done'; status: ChatTurnStatus; duration_ms?: number; work?: { steps: number; working_ms: number } }
+  /**
+   * What to ask next, for the answer this response wrote. The ONE event that may come after `done` (a second or two after, on a
+   * turn that completed; never on a turn that waits, failed, was stopped or was declined), so nothing waits on it. Stored with the
+   * turn as a `data-suggestions` part. An empty list withdraws them.
+   */
+  | { type: 'suggestions'; items: ChatSuggestion[] };
 
 /** The facts a step event may carry beyond its label. All optional. */
 type StepFields = Pick<ChatStep, 'kind' | 'parent_id' | 'subjects' | 'subjects_more' | 'count' | 'covers' | 'evidence_ref' | 'started_at' | 'ended_at' | 'seq'>;
@@ -396,6 +429,11 @@ export function applyChatEvent(message: ChatUIMessage, event: ChatEvent): ChatUI
       if (event.state === 'done') return { ...message, parts: parts.filter((_, i) => i !== at) };
       return { ...message, parts: parts.map((p, i) => (i === at ? { ...p, data: { ...(p.data as ChatDraft), open: null, state: 'failed' } } : p)) };
     }
+    case 'suggestions': {
+      const items = event.items.filter(isSuggestion);
+      if (items.length === 0) return parts.some((p) => p.type === SUGGESTIONS_PART) ? { ...message, parts: parts.filter((p) => p.type !== SUGGESTIONS_PART) } : message;
+      return { ...message, parts: upsertDataPart(parts, { type: SUGGESTIONS_PART, id: 'suggestions', data: { items } }) };
+    }
     case 'decision_reopened': {
       if (!parts.some((p) => isDecisionPartFor(p, event.key))) return message;
       return {
@@ -449,6 +487,11 @@ export function eventsForStoredParts(parts: readonly ChatUIPart[]): ChatEvent[] 
   for (const part of parts) {
     if (part.type === 'text') {
       events.push({ type: 'text_delta', delta: String(part.text ?? '') });
+      continue;
+    }
+    if (part.type === SUGGESTIONS_PART) {
+      const items = suggestionsOf([part]);
+      if (items.length > 0) events.push({ type: 'suggestions', items });
       continue;
     }
     if (part.type.startsWith('data-') && part.type !== 'data-progress') {

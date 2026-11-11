@@ -598,7 +598,7 @@ async function readStream(res) {
 
 async function ledgerRows(viewerKey, id, since) {
   await new Promise((r) => setTimeout(r, 2500));
-  const rows = must(await sb.from('golf_coachhelm_llm_calls').select('cost_usd, verified, citations, model_id, prompt_tokens, completion_tokens').eq(viewerKey, id).gte('created_at', since).order('created_at', { ascending: false }).limit(5), 'ledger row');
+  const rows = must(await sb.from('golf_coachhelm_llm_calls').select('task, cost_usd, verified, citations, model_id, prompt_tokens, completion_tokens').eq(viewerKey, id).gte('created_at', since).order('created_at', { ascending: false }).limit(5), 'ledger row');
   return { cost: rows.reduce((a, r) => a + Number(r.cost_usd ?? 0), 0), rows };
 }
 
@@ -682,7 +682,9 @@ try {
       verdict = 'error';
       note = err instanceof Error ? err.message : String(err);
     }
-    const seconds = (Date.now() - t0) / 1000;
+    // How long the coach waited for the answer: the turn's own duration when the server gave it. The response stays open a moment
+    // longer for the suggestions, which nobody waits on.
+    const seconds = typeof state.durationMs === 'number' && state.durationMs > 0 ? state.durationMs / 1000 : (Date.now() - t0) / 1000;
     if (stoppedBecause) {
       report.push({ question, verdict, text, seconds, cost: 0, scored: null, sense: null, note, tools: state.tools, dropped: state.dropped, grounded: null, model: null });
       break;
@@ -697,9 +699,12 @@ try {
       cost = ledger.cost;
       spent += cost;
       dearest = Math.max(dearest, cost);
+      // The answer's own row: the call for what to ask next writes a row too (`chat_suggestions`), after it, and its `verified` means
+      // something else (suggestions were shown). Its cost is part of what the question cost.
+      const answerRow = ledger.rows.find((r) => r.task !== 'chat_suggestions');
       // The figures-against-reads check, which only logs: false means a figure in the answer was in none of the turn's reads.
-      grounded = ledger.rows[0] ? ledger.rows[0].verified !== false : null;
-      unmatched = ledger.rows[0]?.citations?.unmatched_tokens ?? [];
+      grounded = answerRow ? answerRow.verified !== false : null;
+      unmatched = answerRow?.citations?.unmatched_tokens ?? [];
       model = [...new Set(ledger.rows.map((r) => r.model_id).filter(Boolean))].join(' + ') || null;
     } catch (err) {
       note += ` ledger: ${err instanceof Error ? err.message : err}`;

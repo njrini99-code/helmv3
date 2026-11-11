@@ -57,10 +57,20 @@ export const PLAN_FORMAT_MODEL = 'anthropic/claude-sonnet-5-5';
 
 /**
  * The player's read-only Ask (`chat/engine/model.ts`, the `player` surface). Its own model, beside `coach_chat`'s.
- * Not a `ComposeTask`: the ledger's `task` column has a CHECK that lists the tasks, so a player's turn is still
- * written with `task: 'coach_chat'` and this id as its `model_id`.
+ * Not a `ComposeTask` (it has no compose path and no fallback priority).
  */
 export const PLAYER_CHAT_MODEL = 'anthropic/claude-haiku-5-5';
+
+/**
+ * The chat's own ledger tasks, beside `coach_chat`: a player's Ask turn, and the small call after a coach's answer that
+ * asks what to ask next. The ledger's `task` column has a CHECK that lists the tasks, and these two are added by the
+ * held migration 20261111090000. Until it is applied the database refuses them: a player's turn is then written as
+ * `coach_chat` (as it always was) and a suggestions call writes no row (its cost is still in the day's budget, under
+ * its own key). `chat/ledger.ts` does both.
+ */
+export const PLAYER_CHAT_TASK = 'player_chat' as const;
+export const CHAT_SUGGESTIONS_TASK = 'chat_suggestions' as const;
+export type ChatLedgerTask = 'coach_chat' | typeof PLAYER_CHAT_TASK | typeof CHAT_SUGGESTIONS_TASK;
 
 /**
  * Per-task fallback priority on budget exhaustion (Part XI.4).

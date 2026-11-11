@@ -27,7 +27,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
-import type { ComposeTask } from './types';
+import type { CHAT_SUGGESTIONS_TASK, ComposeTask } from './types';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 
 type Sb = SupabaseClient<Database>;
@@ -201,7 +201,8 @@ export async function recordSpend(
   supabase: Sb,
   args: {
     coach_id: string;
-    task: ComposeTask;
+    /** The subtotal the spend is counted under (`task_class_usage`). The chat's suggestions call has its own, beside the compose tasks. */
+    task: ComposeTask | typeof CHAT_SUGGESTIONS_TASK;
     cost_usd: number;
   },
 ): Promise<void> {

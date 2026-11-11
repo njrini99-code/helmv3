@@ -15,6 +15,8 @@ import type { PlayerChatContext, ScreenLoaders } from './engine/tool';
 import { checkGrounding } from './grounding';
 import { instructionBlocks } from './instructions';
 import { buildChatLlmCallRow } from '@/lib/coachhelm/v3/llm/chat-call-row';
+import { PLAYER_CHAT_TASK } from '@/lib/coachhelm/v3/llm/types';
+import { writeChatLedgerRow } from './ledger';
 import { readBucket, recordPlayerSpend } from './player-allowance';
 import { resolvePlayerChatContext } from './player-context';
 import { toolsFor } from './registry';
@@ -91,8 +93,8 @@ export async function runPlayerTurn(
           unmatchedTokens: summary.unmatched,
           featuresDropped: summary.featuresDropped,
         });
-        const { error } = await createAdminClient().from('golf_coachhelm_llm_calls').insert(row);
-        if (error) throw new Error(error.message);
+        // Under the player's own task key where the database takes it; as `coach_chat`, as it always was, where it does not yet.
+        await writeChatLedgerRow(createAdminClient(), row, PLAYER_CHAT_TASK, 'coach_chat');
       } catch (err) {
         // Said once per process: a ledger that refuses the row refuses every row, and one line is enough to act on.
         if (!ledgerFaultSaid) {

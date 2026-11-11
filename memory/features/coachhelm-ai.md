@@ -295,6 +295,20 @@ entries are history. The tool list and the prompt are described where the tools 
   row's wording (`done_label`) is the tool's own sentence or is not sent, and what a tool says its step is about is
   checked against the caller's roster and team before it is sent (on a player's turn, only the player). A step lists at
   most twelve subjects and says how many more there are (`subjects_more`).
+- **What to ask next.** After a coach's turn has completed and `done` has gone out, one small call (Claude Haiku
+  5.5, effort `low`, no tools, a fixed JSON shape; `engine/suggestions.ts`) asks for two to four follow-ups from the
+  question and the answer: each `{ label, prompt, kind: read | compare | action }`. They are checked before anything is
+  shown: an action must name a task tool this caller actually has; nothing the assistant never does (deleting, removing
+  a person, roles, accounts and sign-in, anything sent outside the team, settings that change what figures mean); no
+  tool or table name; fewer than two left is none. What passes is sent as a `suggestions` event, the one event that may
+  follow `done`, and stored on the turn as a `data-suggestions` part (never in the model's own record of the
+  conversation). Tapping one sends its `prompt` as the next message and nothing else: an action it leads to is planned,
+  shown and confirmed like any other. Not asked for on a turn that waits on a card, failed, was stopped or was
+  declined, and never for a player (`features.suggestions`). The call has eight seconds, holds only the tail of the
+  response open, and ends when the coach asks something else. Its cost is a ledger row under `chat_suggestions` and
+  the same key in the day's budget; without the held migration `20261111090000` the ledger refuses the key, no row is
+  written, and the cost is in the budget only. The same migration lets a player's turn be written as `player_chat`
+  (it is `coach_chat` with a `player_id` until then). `chat/ledger.ts` does both fallbacks.
 - **A draft is shown as it is written.** A tool whose input is a draft (`ToolBase.draft.fields`) has those fields
   streamed to the thread while the model writes them (`draft_delta`, at most every 150 ms): whole values, the
   finished items of a list, words up to the last whole word, never a half-written item (`engine/draft.ts`). Nothing

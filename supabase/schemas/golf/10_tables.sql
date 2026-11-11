@@ -436,7 +436,7 @@ CREATE TABLE IF NOT EXISTS "public"."golf_coachhelm_llm_calls" (
     CONSTRAINT "golf_coachhelm_llm_calls_completion_tokens_check" CHECK (("completion_tokens" >= 0)),
     CONSTRAINT "golf_coachhelm_llm_calls_cost_usd_check" CHECK (("cost_usd" >= (0)::numeric)),
     CONSTRAINT "golf_coachhelm_llm_calls_prompt_tokens_check" CHECK (("prompt_tokens" >= 0)),
-    CONSTRAINT "golf_coachhelm_llm_calls_task_check" CHECK (("task" = ANY (ARRAY['round_review'::"text", 'hero_narrative'::"text", 'coach_chat'::"text", 'round_review_narrative'::"text"])))
+    CONSTRAINT "golf_coachhelm_llm_calls_task_check" CHECK (("task" = ANY (ARRAY['round_review'::"text", 'hero_narrative'::"text", 'coach_chat'::"text", 'round_review_narrative'::"text", 'player_chat'::"text", 'chat_suggestions'::"text"])))
 );
 
 ALTER TABLE "public"."golf_coachhelm_llm_calls" OWNER TO "postgres";

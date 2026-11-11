@@ -20,6 +20,8 @@ export interface FakeDb {
   holdColumn: boolean;
   /** The held migration's `surface` column on the conversations table. */
   surfaceColumn: boolean;
+  /** The held migration that lets the model-call ledger take the chat's own task keys (`player_chat`, `chat_suggestions`). */
+  chatTasks: boolean;
   client: unknown;
 }
 
@@ -32,8 +34,8 @@ let seq = 0;
 const nextId = () => `00000000-0000-4000-8000-${String((seq += 1)).padStart(12, '0')}`;
 
 /** A PostgREST-shaped query builder over arrays. Only what the chat code calls. */
-export function fakeDb(opts: { modelColumns?: boolean; holdColumn?: boolean; surfaceColumn?: boolean } = {}): FakeDb {
-  const db: FakeDb = { tables: {}, modelColumns: opts.modelColumns ?? true, holdColumn: opts.holdColumn ?? true, surfaceColumn: opts.surfaceColumn ?? true, client: null };
+export function fakeDb(opts: { modelColumns?: boolean; holdColumn?: boolean; surfaceColumn?: boolean; chatTasks?: boolean } = {}): FakeDb {
+  const db: FakeDb = { tables: {}, modelColumns: opts.modelColumns ?? true, holdColumn: opts.holdColumn ?? true, surfaceColumn: opts.surfaceColumn ?? true, chatTasks: opts.chatTasks ?? true, client: null };
   const rowsOf = (table: string) => (db.tables[table] ??= []);
   const missing = (table: string, keys: string[]): { code: string; message: string } | null => {
     if (table === 'golf_coachhelm_chat_messages' && !db.modelColumns && keys.some((k) => k === 'model_messages' || k === 'pending_decision')) {
@@ -68,6 +70,10 @@ export function fakeDb(opts: { modelColumns?: boolean; holdColumn?: boolean; sur
         return { data: limit == null ? out : out.slice(0, limit), error: null };
       }
       if (op === 'insert' || op === 'upsert') {
+        // The ledger's CHECK on `task`, as it stands without the held migration.
+        if (table === 'golf_coachhelm_llm_calls' && !db.chatTasks && !['round_review', 'hero_narrative', 'coach_chat', 'round_review_narrative'].includes(String(payload.task))) {
+          return { data: null, error: { code: '23514', message: 'new row for relation "golf_coachhelm_llm_calls" violates check constraint "golf_coachhelm_llm_calls_task_check"' } };
+        }
         const keys = op === 'upsert' ? (upsertOpts.onConflict ?? '').split(',').filter(Boolean) : (UNIQUE[table] ?? []);
         const clash = keys.length > 0 && keys.every((k) => payload[k] != null) ? rows.find((r) => keys.every((k) => r[k] === payload[k])) : undefined;
         if (clash) {

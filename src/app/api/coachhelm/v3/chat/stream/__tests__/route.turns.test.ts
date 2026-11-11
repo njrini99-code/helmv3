@@ -21,6 +21,8 @@ const h = vi.hoisted(() => ({
   model: null as unknown,
   modelFactory: null as null | (() => unknown),
   features: null as unknown,
+  /** Off for the suite: the call for what to ask next is one more model call after every completed coach turn. Its own tests turn it on. */
+  suggestions: false,
   modelId: null as string | null,
   notes: null as null | { tone: 'straight' | 'detailed' | 'team_talk'; facts: Array<{ id: string; text: string }> },
   clubhouse: true,
@@ -95,7 +97,7 @@ vi.mock('@/lib/coachhelm/v3/chat/engine/model', async (original) => {
   type Surface = 'ask' | 'quick_chat' | 'practice_helper' | 'player';
   // `h.model_id` runs every surface on one model, as the engine's own override constant does for the eval.
   const profileFor = (surface?: Surface) => real.profileFor(surface, (h.modelId as 'claude-sonnet-5-5' | 'claude-haiku-5-5' | null) ?? null);
-  return { ...real, anthropicModelClient: () => (h.modelFactory ? h.modelFactory() : h.model), profileFor, chatFeatures: (surface?: Surface) => h.features ?? profileFor(surface).features };
+  return { ...real, anthropicModelClient: () => (h.modelFactory ? h.modelFactory() : h.model), profileFor, chatFeatures: (surface?: Surface) => ({ ...((h.features as typeof real.CHAT_FEATURES | null) ?? profileFor(surface).features), ...(h.suggestions ? {} : { suggestions: false }) }) };
 });
 // The real hold, with a 250 ms window instead of 8 s so a test can watch it release.
 const HOLD_MS = 250;
@@ -109,6 +111,8 @@ vi.mock('@/lib/coachhelm/v3/chat/undo-hold', async (original) => {
 import { POST } from '../route';
 import { restoreUIMessages } from '@/lib/coachhelm/v3/chat/restore';
 import { resetPlayerLedgerFault } from '@/lib/coachhelm/v3/chat/player-turn';
+import { resetLedgerTasks } from '@/lib/coachhelm/v3/chat/ledger';
+import { recordSpend } from '@/lib/coachhelm/v3/llm/budget';
 import { CHAT_FEATURES, MissingModelKeyError, plainFeatures } from '@/lib/coachhelm/v3/chat/engine/model';
 import { cancelHeld } from '@/lib/coachhelm/v3/chat/undo-hold';
 import { listConversations, resetSurfaceColumnCheck } from '@/lib/coachhelm/v3/chat/persistence';
@@ -128,6 +132,7 @@ let turn = 0;
 
 function setup(opts: { modelColumns?: boolean; holdColumn?: boolean; surfaceColumn?: boolean } = {}) {
   resetSurfaceColumnCheck();
+  resetLedgerTasks();
   db = fakeDb(opts);
   h.db = db;
   h.admin = fakeDb();
@@ -135,6 +140,7 @@ function setup(opts: { modelColumns?: boolean; holdColumn?: boolean; surfaceColu
   h.role = 'coach';
   h.modelFactory = null;
   h.features = null;
+  h.suggestions = false;
   h.modelId = null;
   h.notes = null;
   h.clubhouse = true;
@@ -2086,6 +2092,220 @@ describe('a turn that does not finish', () => {
   });
 });
 
+describe('what to ask next', () => {
+  type Suggestion = { label: string; prompt: string; kind: string; tool?: string | null };
+  const s = (label: string, prompt: string, kind = 'read', tool: string | null = null): Suggestion => ({ label, prompt, kind, tool });
+  const GOOD = [
+    s('Avery from 6 to 10 feet', 'How does Avery putt from 6 to 10 feet over the last 8 rounds?'),
+    s('Against the team', 'How does Avery’s putting compare with the rest of the team this season?', 'compare'),
+    s('Set a putting focus area', 'Set up a putting focus area for Avery from 6 to 10 feet.', 'action', 'create_focus_area'),
+  ];
+  const suggested = (...items: Suggestion[]) => ({ content: [text(JSON.stringify({ suggestions: items }))], usage: { input_tokens: 900, output_tokens: 120, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 } });
+  const shown = (events: ChatEvent[]) => events.filter((e) => e.type === 'suggestions') as Array<{ type: 'suggestions'; items: Array<{ label: string; prompt: string; kind: string }> }>;
+  const ledger = () => ((h.admin as unknown as FakeDb).tables.golf_coachhelm_llm_calls ?? []) as Array<{ task: string; model_id: string; cost_usd: number; prompt_tokens: number; completion_tokens: number; verified: boolean; citations: unknown; coach_id: string; prompt_hash: string }>;
+  const storedParts = () => (assistantRows().at(-1)!.ui_parts ?? []) as Array<{ type: string; id?: string; data?: { items?: unknown[] } }>;
+  /** The calls that asked for suggestions: the only requests that ask for a fixed output shape. */
+  const asked = (model: FakeModel) => model.requests.filter((r) => (r.output_config as { format?: unknown } | undefined)?.format !== undefined);
+  beforeEach(() => {
+    h.suggestions = true;
+    vi.mocked(recordSpend).mockClear();
+  });
+
+  it('follows a completed answer, after done: checked, sent as the last event, stored with the turn, and never in what the model is replayed', async () => {
+    const model = script({ content: [text('Avery loses 0.4 strokes a round on the greens.')] }, suggested(...GOOD));
+    const { events } = await ask('How is Avery putting?');
+
+    // The turn was over before any of it: `done` first, then the one event that may follow it.
+    expect(done(events)?.status).toBe('complete');
+    expect(events.map((e) => e.type).slice(-2)).toEqual(['done', 'suggestions']);
+    expect(shown(events)).toEqual([{ type: 'suggestions', items: GOOD.map(({ label, prompt, kind }) => ({ label, prompt, kind })) }]);
+    // The call: the small model, low effort, no tools, the question and the answer as data, only this coach's own actions offered.
+    expect(model.requests).toHaveLength(2);
+    const call = model.requests[1]!;
+    expect(call).toMatchObject({ model: 'claude-haiku-5-5', output_config: { effort: 'low', format: { type: 'json_schema' } } });
+    expect(call).not.toHaveProperty('tools');
+    expect(call).not.toHaveProperty('betas');
+    const content = String((call.messages[0] as { content: unknown }).content);
+    expect(content).toContain('<question>\nHow is Avery putting?\n</question>');
+    expect(content).toContain('<answer>\nAvery loses 0.4 strokes a round on the greens.\n</answer>');
+    expect(content).toContain('- create_focus_area:');
+    expect(content).not.toContain('get_player_stats');
+    // Stored with the turn, as a part of its own; the answer's words are untouched.
+    const part = storedParts().find((p) => p.type === 'data-suggestions')!;
+    expect(part).toMatchObject({ id: 'suggestions', data: { items: GOOD.map(({ label, prompt, kind }) => ({ label, prompt, kind })) } });
+    expect(assistantRows().at(-1)!.content).toBe('Avery loses 0.4 strokes a round on the greens.');
+    // What the browser folds from the stream is what is stored.
+    const folded = events.reduce(applyChatEvent, { id: 'x', role: 'assistant', parts: [] } as ChatUIMessage);
+    expect(folded.parts.find((p) => p.type === 'data-suggestions')).toEqual(part);
+    // The model's own record of the conversation never holds a suggestion: the next turn is not told what was suggested.
+    expect(JSON.stringify(assistantRows().at(-1)!.model_messages)).not.toContain('6 to 10 feet');
+    // A reload brings them back with the thread.
+    expect(restoreUIMessages((db.tables[MESSAGES] ?? []) as never).at(-1)!.parts.find((p) => p.type === 'data-suggestions')).toEqual(part);
+  });
+
+  it('its cost is a ledger row under its own task key and its own line in the day’s budget, beside the answer’s', async () => {
+    script({ content: [text('Avery loses 0.4 strokes a round on the greens.')] }, suggested(...GOOD));
+    const { events } = await ask('How is Avery putting?');
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    const conversation = conversationOf(events);
+    expect(ledger().map((r) => r.task).sort()).toEqual(['chat_suggestions', 'coach_chat']);
+    const row = ledger().find((r) => r.task === 'chat_suggestions')!;
+    expect(row).toMatchObject({ model_id: 'anthropic/claude-haiku-5-5', coach_id: 'coach-1', prompt_tokens: 900, completion_tokens: 120, verified: true, citations: null, prompt_hash: conversation.slice(0, 16) });
+    expect(row.cost_usd).toBeCloseTo((900 * 0.1 + 120 * 0.5) / 1e6, 12);
+    // The answer's own row is the answer's cost alone.
+    expect(ledger().find((r) => r.task === 'coach_chat')!.model_id).toBe('anthropic/claude-sonnet-5-5');
+    const spends = vi.mocked(recordSpend).mock.calls.map((c) => (c as unknown as [unknown, { task: string; cost_usd: number }])[1]);
+    expect(spends.map((x) => x.task).sort()).toEqual(['chat_suggestions', 'coach_chat']);
+    expect(spends.find((x) => x.task === 'chat_suggestions')!.cost_usd).toBeCloseTo(row.cost_usd, 12);
+    // Nothing a suggestion said is in the ledger.
+    expect(JSON.stringify(ledger())).not.toContain('6 to 10 feet');
+  });
+
+  it('never suggests what the assistant never does, an action this coach has no tool for, or a tool by name; fewer than two left is none', async () => {
+    script(
+      { content: [text('Avery loses 0.4 strokes a round on the greens.')] },
+      suggested(
+        GOOD[0]!,
+        s('Remove Blake', 'Remove Blake from the roster.', 'action', 'create_focus_area'),
+        s('Lock the lineup', 'Lock the lineup for Thursday.', 'action', 'lock_lineup'),
+        s('Delete the round', 'Delete Avery’s round from 21 October.'),
+        s('Run get_player_stats', 'Call get_player_stats for Blake.'),
+        GOOD[1]!,
+      ),
+    );
+    const { events } = await ask('How is Avery putting?');
+    expect(shown(events)[0]!.items.map((i) => i.label)).toEqual(['Avery from 6 to 10 feet', 'Against the team']);
+
+    // Only one passes: nothing is shown and nothing is stored. The call was still made, so its cost is still recorded, as not shown.
+    setup();
+    h.suggestions = true;
+    script({ content: [text('Avery loses 0.4 strokes a round on the greens.')] }, suggested(GOOD[0]!, s('Remove Blake', 'Remove Blake from the roster.')));
+    const second = await ask('How is Avery putting?');
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(shown(second.events)).toEqual([]);
+    expect(second.events.at(-1)?.type).toBe('done');
+    expect(storedParts().some((p) => p.type === 'data-suggestions')).toBe(false);
+    expect(ledger().find((r) => r.task === 'chat_suggestions')).toMatchObject({ verified: false });
+  });
+
+  it('is not asked for on a turn that waits on the coach, failed, was declined, or said nothing; nor for a player', async () => {
+    // A card waiting: the turn is not over.
+    let model = script({ content: [toolUse('tu_1', 'create_focus_area', { title: 'Lag putting' })] });
+    let out = await ask('Set a focus area');
+    expect(done(out.events)?.status).toBe('awaiting_decision');
+    expect(asked(model)).toEqual([]);
+    expect(shown(out.events)).toEqual([]);
+
+    // Failed.
+    setup();
+    h.suggestions = true;
+    model = script({ content: [text('Avery')], fail: new Error('socket hang up') });
+    out = await ask('How is Avery putting?');
+    expect(done(out.events)?.status).toBe('failed');
+    expect(asked(model)).toEqual([]);
+
+    // Declined by the model: a complete turn whose words are the app's sentence. Nothing follows it.
+    setup();
+    h.suggestions = true;
+    model = script({ content: [], stop_reason: 'refusal', category: 'general_harms' });
+    out = await ask('Something it will not answer');
+    expect(done(out.events)?.status).toBe('complete');
+    expect(asked(model)).toEqual([]);
+    expect(shown(out.events)).toEqual([]);
+
+    // A player's Ask: off, on whichever model.
+    setup();
+    h.suggestions = true;
+    h.role = 'player';
+    model = script({ content: [text('Your scoring has been steady.')] });
+    out = await ask('How am I scoring?');
+    expect(done(out.events)?.status).toBe('complete');
+    expect(asked(model)).toEqual([]);
+    expect(shown(out.events)).toEqual([]);
+  });
+
+  it('a call that fails, is refused or comes back unusable changes nothing: the answer stands and no event follows done', async () => {
+    for (const step of [{ content: [], reject: new Error('503') }, { content: [], stop_reason: 'refusal' as const, category: 'general_harms' }, { content: [text('not json at all')] }, { content: [text('{"suggestions":[{"label":"Half')], stop_reason: 'max_tokens' as const }]) {
+      setup();
+      h.suggestions = true;
+      h.logServerError.mockClear();
+      const model = script({ content: [text('Avery loses 0.4 strokes a round on the greens.')] }, step);
+      const { events } = await ask('How is Avery putting?');
+      expect(done(events)?.status).toBe('complete');
+      expect(events.at(-1)?.type).toBe('done');
+      expect(events.some((e) => e.type === 'error')).toBe(false);
+      expect(model.requests).toHaveLength(2);
+      expect(storedParts().some((p) => p.type === 'data-suggestions')).toBe(false);
+      expect(assistantRows().at(-1)!.status).toBe('complete');
+    }
+  });
+
+  it('follows the closing words of a turn whose card was answered, from the question that began the turn', async () => {
+    const model = script({ content: [toolUse('tu_1', 'create_focus_area', { title: 'Lag putting' })] }, { content: [text('Done: the focus area is set.')] }, suggested(GOOD[0]!, GOOD[1]!));
+    const first = await ask('Set a lag putting focus area for Avery');
+    const conversation = conversationOf(first.events);
+    const { events } = await decide(conversation, keyOf(first.events), true);
+    expect(done(events)?.status).toBe('complete');
+    expect(events.map((e) => e.type).slice(-2)).toEqual(['done', 'suggestions']);
+    const content = String((model.requests[2]!.messages[0] as { content: unknown }).content);
+    expect(content).toContain('<question>\nSet a lag putting focus area for Avery\n</question>');
+    expect(content).toContain('Done: the focus area is set.');
+    // Stored on the same message the card and the closing words are on.
+    expect(assistantRows()).toHaveLength(1);
+    expect(storedParts().find((p) => p.type === 'data-suggestions')!.data!.items).toHaveLength(2);
+  });
+
+  it('a browser that has left before they arrive gets none, and none are stored', async () => {
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    script({ content: [text('Avery loses 0.4 strokes a round on the greens.')] }, { ...suggested(...GOOD), gate });
+    const controller = new AbortController();
+    const pending = post({ message: 'How is Avery putting?', conversation_id: null }, controller.signal);
+    // Wait for the answer to be stored (the turn is done), then leave while the suggestions are still being written.
+    for (let i = 0; i < 100 && assistantRows().length === 0; i += 1) await new Promise((resolve) => setTimeout(resolve, 5));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    controller.abort();
+    release();
+    const { events } = await pending;
+    expect(done(events)?.status).toBe('complete');
+    expect(shown(events)).toEqual([]);
+    expect(storedParts().some((p) => p.type === 'data-suggestions')).toBe(false);
+    expect(assistantRows().at(-1)!.status).toBe('complete');
+  });
+
+  it('on a database that does not take the task key yet, no row is written, the spend is still counted under its own key, and the key is not tried again', async () => {
+    h.admin = fakeDb({ chatTasks: false });
+    for (const question of ['How is Avery putting?', 'And Blake?']) {
+      script({ content: [text('Avery loses 0.4 strokes a round on the greens.')] }, suggested(...GOOD));
+      const { events } = await ask(question);
+      expect(shown(events)).toHaveLength(1);
+    }
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    // The answers' rows are there; no suggestions row, and never one written under the answers' key.
+    expect(ledger().map((r) => r.task)).toEqual(['coach_chat', 'coach_chat']);
+    expect(ledger().every((r) => r.model_id === 'anthropic/claude-sonnet-5-5')).toBe(true);
+    const spends = vi.mocked(recordSpend).mock.calls.map((c) => (c as unknown as [unknown, { task: string }])[1].task);
+    expect(spends.filter((t) => t === 'chat_suggestions')).toHaveLength(2);
+  });
+
+  it('a retried turn that already has its answer is sent its stored suggestions again, without a second call', async () => {
+    const model = script({ content: [text('Avery loses 0.4 strokes a round on the greens.')] }, suggested(...GOOD));
+    const first = await post({ message: 'How is Avery putting?', conversation_id: null, client_turn_id: 'turn-suggest-1' });
+    const again = await post({ message: 'How is Avery putting?', conversation_id: conversationOf(first.events), client_turn_id: 'turn-suggest-1' });
+    expect(model.requests).toHaveLength(2);
+    expect(shown(again.events)).toEqual(shown(first.events));
+    expect(done(again.events)?.status).toBe('complete');
+  });
+
+  it('with the switch off nothing is asked for and nothing follows done', async () => {
+    h.suggestions = false;
+    const model = script({ content: [text('Avery loses 0.4 strokes a round on the greens.')] });
+    const { events } = await ask('How is Avery putting?');
+    expect(model.requests).toHaveLength(1);
+    expect(events.at(-1)?.type).toBe('done');
+  });
+});
+
 describe('what a turn hangs on the request', () => {
   // The dev server once warned "11 close listeners added to [ServerResponse]" on this route. The chat code never sees the response:
   // the only thing it listens to is the request's abort signal, once a request, however many model calls and reads the turn makes.
@@ -2493,7 +2713,8 @@ describe('a player’s turn', () => {
     const { id: _id, created_at: _at, ...row } = rows[0]!;
     // Exactly the table's columns (`src/lib/types/database.ts`): `prompt_hash` and `verified` are NOT NULL, and there is no `grounded`.
     expect(row).toEqual({
-      task: 'coach_chat',
+      // The player's own task key, where the database takes it (the held migration 20261111090000; the next test is without it).
+      task: 'player_chat',
       coach_id: null,
       player_id: 'player-me',
       // The turn's own id, cut short: opaque, and nothing of the player or the question.
@@ -2506,6 +2727,32 @@ describe('a player’s turn', () => {
       verified: true,
       fallback_to_template: false,
     });
+    expect(h.logServerError.mock.calls.some((c) => String((c as unknown[])[0]).includes('llm ledger failed'))).toBe(false);
+  });
+
+  it('on a database that does not take the player’s task key yet, the row is written as coach_chat as it always was, and the key is not tried again', async () => {
+    h.admin = fakeDb({ chatTasks: false });
+    const admin = h.admin.client as { from: (table: string) => { insert: (row: unknown) => unknown } };
+    const real = admin.from.bind(admin);
+    const tried: string[] = [];
+    admin.from = (table: string) => {
+      const builder = real(table);
+      if (table !== 'golf_coachhelm_llm_calls') return builder;
+      const insert = builder.insert.bind(builder);
+      builder.insert = (row: unknown) => {
+        tried.push(String((row as { task: string }).task));
+        return insert(row);
+      };
+      return builder;
+    };
+    for (const question of ['How am I scoring?', 'And my putting?']) {
+      script({ content: [text('Your scoring has been steady.')] });
+      await ask(question);
+    }
+    const rows = ((h.admin as unknown as FakeDb).tables.golf_coachhelm_llm_calls ?? []) as Array<{ task: string; player_id: string }>;
+    expect(rows.map((r) => [r.task, r.player_id])).toEqual([['coach_chat', 'player-me'], ['coach_chat', 'player-me']]);
+    // Refused once, remembered for the life of the process.
+    expect(tried).toEqual(['player_chat', 'coach_chat', 'coach_chat']);
     expect(h.logServerError.mock.calls.some((c) => String((c as unknown[])[0]).includes('llm ledger failed'))).toBe(false);
   });
 

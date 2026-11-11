@@ -28,11 +28,14 @@
  * the one the instrument could not see.
  */
 
+import type { ChatLedgerTask } from './types';
+
 /** Mirrors `chat/verdict.ts`'s `TurnVerdictReason` (kept local: llm/ does not import chat/). */
 export type ChatVerdictReason = 'stream_incomplete' | 'ungrounded_claims' | 'claim_validation_failed';
 
 export interface ChatLlmCallRow {
-  task: 'coach_chat';
+  /** `coach_chat` as built here. `chat/ledger.ts` writes a player's turn as `player_chat` and the suggestions call as `chat_suggestions` where the database takes them. */
+  task: ChatLedgerTask;
   /** The coach whose turn it was. Null on a player's own Ask turn, which carries `player_id` instead. */
   coach_id: string | null;
   /** Null on a coach's turn (it is coach-scoped, not about one player). The asking player on a player's own Ask turn. */

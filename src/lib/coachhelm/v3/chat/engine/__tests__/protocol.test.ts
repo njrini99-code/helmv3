@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyChatEvent, CHAT_ERROR_KINDS, createChatEventParser, encodeChatEvent, eventsForStoredParts, isChatErrorKind, pendingDecisionKeys, textOfParts, turnMetaOf, type ChatEvent, type ChatUIMessage } from '../protocol';
+import { applyChatEvent, CHAT_ERROR_KINDS, createChatEventParser, encodeChatEvent, eventsForStoredParts, isChatErrorKind, pendingDecisionKeys, suggestionsOf, textOfParts, turnMetaOf, type ChatEvent, type ChatUIMessage } from '../protocol';
 
 const empty = (): ChatUIMessage => ({ id: 'a1', role: 'assistant', parts: [] });
 const fold = (events: ChatEvent[], from: ChatUIMessage = empty()) => events.reduce(applyChatEvent, from);
@@ -170,5 +170,49 @@ describe('the reducer both ends fold the stream with', () => {
     ]);
     const rebuilt = fold(eventsForStoredParts(stored.parts));
     expect(rebuilt.parts).toEqual(stored.parts.filter((p) => p.type !== 'data-progress'));
+  });
+});
+
+describe('what to ask next, as a part of the message', () => {
+  const A = { label: 'Avery from 6 to 10 feet', prompt: 'How does Avery putt from 6 to 10 feet?', kind: 'read' as const };
+  const B = { label: 'Against the team', prompt: 'How does that compare with the team?', kind: 'compare' as const };
+  const C = { label: 'Set a putting focus area', prompt: 'Set up a putting focus area for Avery.', kind: 'action' as const };
+
+  it('is one part after the answer, replaced whole when sent again and withdrawn by an empty list', () => {
+    const answered = fold([{ type: 'text_delta', delta: 'Avery loses 0.4.' }, { type: 'done', status: 'complete' }]);
+    const once = applyChatEvent(answered, { type: 'suggestions', items: [A, B] });
+    expect(once.parts).toEqual([{ type: 'text', text: 'Avery loses 0.4.' }, { type: 'data-suggestions', id: 'suggestions', data: { items: [A, B] } }]);
+    expect(suggestionsOf(once.parts)).toEqual([A, B]);
+    const twice = applyChatEvent(once, { type: 'suggestions', items: [C, A] });
+    expect(twice.parts.filter((p) => p.type === 'data-suggestions')).toEqual([{ type: 'data-suggestions', id: 'suggestions', data: { items: [C, A] } }]);
+    expect(applyChatEvent(twice, { type: 'suggestions', items: [] }).parts).toEqual([{ type: 'text', text: 'Avery loses 0.4.' }]);
+    // Withdrawing what is not there changes nothing, by identity.
+    expect(applyChatEvent(answered, { type: 'suggestions', items: [] })).toBe(answered);
+    // They are not words of the answer.
+    expect(textOfParts(once.parts)).toBe('Avery loses 0.4.');
+  });
+
+  it('only a suggestion in the shape is kept, from the wire or from what was stored', () => {
+    const odd = [A, { label: 'No prompt', kind: 'read' }, { label: 'x', prompt: 'y', kind: 'chat' }, null, 'words', B] as never;
+    expect(suggestionsOf(applyChatEvent(empty(), { type: 'suggestions', items: odd }).parts)).toEqual([A, B]);
+    expect(suggestionsOf([{ type: 'data-suggestions', id: 'suggestions', data: { items: odd } }])).toEqual([A, B]);
+    expect(suggestionsOf([{ type: 'data-suggestions', id: 'suggestions', data: { items: 'none' } }])).toEqual([]);
+    expect(suggestionsOf([{ type: 'data-suggestions', id: 'suggestions' }])).toEqual([]);
+    expect(suggestionsOf([{ type: 'text', text: 'An answer.' }])).toEqual([]);
+  });
+
+  it('a stored message with them is rebuilt with them, by the event that carried them', () => {
+    const stored = fold([{ type: 'text_delta', delta: 'Avery loses 0.4.' }, { type: 'suggestions', items: [A, B] }]);
+    const events = eventsForStoredParts(stored.parts);
+    expect(events).toEqual([{ type: 'text_delta', delta: 'Avery loses 0.4.' }, { type: 'suggestions', items: [A, B] }]);
+    expect(fold(events).parts).toEqual(stored.parts);
+    // A stored part that holds nothing usable is not replayed at all.
+    expect(eventsForStoredParts([{ type: 'data-suggestions', id: 'suggestions', data: { items: [] } }])).toEqual([]);
+  });
+
+  it('a thread stored before suggestions existed is untouched', () => {
+    const old = { id: 'a0', role: 'assistant' as const, parts: [{ type: 'text', text: 'An older answer.' }, { type: 'data-evidence', id: 'evidence-e1', data: { ref: 'e1' } }] };
+    expect(suggestionsOf(old.parts)).toEqual([]);
+    expect(fold(eventsForStoredParts(old.parts)).parts).toEqual(old.parts);
   });
 });

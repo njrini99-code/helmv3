@@ -31,8 +31,10 @@ import {
   pendingDecisionKeys,
   applyChatEvent,
   createChatEventParser,
+  suggestionsOf,
   type ChatEvent,
   type ChatMessageMetadata,
+  type ChatSuggestion,
   type ChatUIMessage,
 } from '@/lib/coachhelm/v3/chat/engine/protocol';
 import { chatErrorKind, type ChatFailureKind } from '@/lib/coachhelm/v3/chat/error-message';
@@ -126,6 +128,12 @@ export interface UseCoachHelmChatResult {
    * one shared Undo window; the first failure stops the batch and the cards after it wait again. Optional in the type as `revise` is.
    */
   approveAll?: (approvalIds?: string[]) => void;
+  /**
+   * What to ask next, for the last answer: two to four, or none. They arrive a moment AFTER the turn is over (`status` is already
+   * `ready` and the coach can already type), and they are gone as soon as anything newer is in the thread. Tapping one is
+   * `send(suggestion.prompt)`: nothing else. Optional in the type only because a preview builds this result by hand.
+   */
+  suggestions?: ChatSuggestion[];
 }
 
 /** A refused request, in the shape `describeChatError` reads (a status and the response body). */
@@ -163,6 +171,9 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
   const thread = React.useRef<ChatUIMessage[]>(messages);
   const conversation = React.useRef<string | null>(conversationId);
   const inFlight = React.useRef<AbortController | null>(null);
+  // A response whose turn is over (`done` has arrived) but whose stream is still open: the server may send the answer's
+  // suggestions after `done`. The coach is no longer waiting on it; anything they do next ends it.
+  const tail = React.useRef<AbortController | null>(null);
   const flushTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   // The last question and the key it was sent under, so a retry dedupes against the turn it is retrying.
   const lastQuestion = React.useRef<{ text: string; key: string; about?: { evidence_ref: string; key: string } } | null>(null);
@@ -214,6 +225,7 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
     return () => {
       leaving.current = setTimeout(() => {
         inFlight.current?.abort();
+        tail.current?.abort();
         if (flushTimer.current) clearTimeout(flushTimer.current);
       }, 0);
     };
@@ -222,6 +234,9 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
   const run = React.useCallback(
     async (outgoing: Outgoing) => {
       inFlight.current?.abort();
+      // The last answer's suggestions, if they have not arrived yet, no longer belong under the last answer.
+      tail.current?.abort();
+      tail.current = null;
       const abort = new AbortController();
       inFlight.current = abort;
       flight.current = outgoing;
@@ -265,6 +280,23 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
 
       let failed = false;
       let finished = false;
+      // The turn is over for the coach: the composer is theirs again and the next card they pressed is sent. Called when `done`
+      // arrives (the stream may stay open a moment longer for the suggestions) and again, to no effect, when the stream ends.
+      let released = false;
+      const release = () => {
+        if (released) return;
+        released = true;
+        if (inFlight.current !== abort) return;
+        inFlight.current = null;
+        flight.current = null;
+        setPhase(null);
+        flush();
+        setStatus(failed ? 'error' : 'ready');
+        // The next card the coach pressed meanwhile. After a failure they are dropped: the coach sees what failed and decides again.
+        const next = failed ? undefined : cardQueue.current.shift();
+        if (failed) cardQueue.current = [];
+        if (next) beginCard.current(next);
+      };
       try {
         const response = await fetch(endpoint, {
           method: 'POST',
@@ -294,17 +326,30 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
           const { done, value } = await reader.read();
           if (done) break;
           for (const event of parse(decoder.decode(value, { stream: true }))) {
+            // After `done` the only thing that may still come is the answer's suggestions; anything else is not this protocol's.
+            if (finished) {
+              if (event.type === 'suggestions' && !abort.signal.aborted) fold(event);
+              continue;
+            }
             if (event.type === 'error') failed = true;
-            if (event.type === 'done') finished = true;
             fold(event);
+            if (event.type === 'done') {
+              finished = true;
+              // What is still to come is read without the coach waiting on it.
+              tail.current = abort;
+              release();
+              continue;
+            }
             if (event.type !== 'message_start' && event.type !== 'phase') setStatus((s) => (s === 'submitted' ? 'streaming' : s));
           }
-          scheduleFlush();
+          if (finished) flush();
+          else scheduleFlush();
         }
         // A stream that ends without its last event was cut off: what arrived is a fragment, not an answer.
         if (!finished && !abort.signal.aborted) throw new Error('');
       } catch (err) {
-        if (abort.signal.aborted) return;
+        // A turn that is already over cannot fail: a connection lost while its suggestions were on the way costs only them.
+        if (abort.signal.aborted || released) return;
         failed = true;
         const failure = err instanceof Error ? err : new Error('');
         // A refused request carries its kind (the server's, or the status's). Anything else here is a connection that dropped:
@@ -313,17 +358,8 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
           typeof (failure as { statusCode?: unknown }).statusCode === 'number' ? chatErrorKind(failure) : typeof navigator !== 'undefined' && navigator.onLine === false ? 'offline' : outgoing.kind !== 'message' ? 'card_retry' : 'lost';
         setError(Object.assign(failure, { kind }));
       } finally {
-        if (inFlight.current === abort) {
-          inFlight.current = null;
-          flight.current = null;
-          setPhase(null);
-          flush();
-          setStatus(failed ? 'error' : 'ready');
-          // The next card the coach pressed meanwhile. After a failure they are dropped: the coach sees what failed and decides again.
-          const next = failed ? undefined : cardQueue.current.shift();
-          if (failed) cardQueue.current = [];
-          if (next) beginCard.current(next);
-        }
+        if (tail.current === abort) tail.current = null;
+        release();
       }
     },
     [adoptConversation, endpoint, flush, scheduleFlush, surface],
@@ -373,6 +409,8 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
 
   const stop = React.useCallback(() => {
     cardQueue.current = [];
+    tail.current?.abort();
+    tail.current = null;
     inFlight.current?.abort();
     inFlight.current = null;
     flight.current = null;
@@ -383,6 +421,8 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
 
   const newConversation = React.useCallback(() => {
     cardQueue.current = [];
+    tail.current?.abort();
+    tail.current = null;
     inFlight.current?.abort();
     inFlight.current = null;
     flight.current = null;
@@ -458,6 +498,9 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
   const deny = React.useCallback((approvalId: string) => decide(approvalId, false), [decide]);
 
   const busy = status === 'submitted' || status === 'streaming';
+  // The last answer's, and only while it is the last thing in the thread and nothing is being asked.
+  const last = messages[messages.length - 1];
+  const suggestions = React.useMemo(() => (status === 'ready' && last?.role === 'assistant' ? suggestionsOf(last.parts) : []), [status, last]);
 
   return {
     messages,
@@ -477,6 +520,7 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
     deny,
     revise,
     approveAll,
+    suggestions,
   };
 }
 

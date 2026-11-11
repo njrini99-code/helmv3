@@ -34,14 +34,15 @@ describe('the model each surface runs on', () => {
     expect(estimateCostUsd(SONNET.ledgerId, 1_000_000, 1_000_000)).toBe(12);
     expect(estimateCostUsd(HAIKU.ledgerId, 1_000_000, 1_000_000)).toBeCloseTo(0.6, 10);
     // A player never has the model's code, on whichever model.
-    expect(chatFeatures('player')).toEqual({ ...HAIKU.features, programmaticReads: false });
+    // A player never has the model's code, on whichever model, and gets no suggestions after an answer.
+    expect(chatFeatures('player')).toEqual({ ...HAIKU.features, programmaticReads: false, suggestions: false });
     expect(chatFeatures('ask')).toBe(CHAT_FEATURES);
     expect(CHAT_FEATURES).toBe(SONNET.features);
   });
 
   it('one override puts every surface on one model, for the eval; a player still gets no code tool', () => {
     for (const surface of ['ask', 'quick_chat', 'practice_helper'] as const) expect(profileFor(surface, 'claude-haiku-5-5')).toBe(HAIKU);
-    expect(profileFor('player', 'claude-sonnet-5-5')).toMatchObject({ modelId: 'claude-sonnet-5-5', effort: 'medium', features: { ...SONNET.features, programmaticReads: false } });
+    expect(profileFor('player', 'claude-sonnet-5-5')).toMatchObject({ modelId: 'claude-sonnet-5-5', effort: 'medium', features: { ...SONNET.features, programmaticReads: false, suggestions: false } });
     expect(profileFor('ask', 'claude-sonnet-5-5')).toBe(SONNET);
   });
 
@@ -56,7 +57,7 @@ describe('the model each surface runs on', () => {
     expect(sent.tool_choice).toEqual({ type: 'auto' });
     expect(request(undefined, { profile: SONNET, answerOnly: true }).tool_choice).toEqual({ type: 'none' });
     for (const rejected of ['temperature', 'top_p', 'top_k']) expect(sent).not.toHaveProperty(rejected);
-    expect(SONNET.features).toEqual({ dropStaleThinking: true, strictTools: true, citations: true, compaction: true, taskBudgetTokens: null, progressNotes: true, programmaticReads: true, refusalFallback: true });
+    expect(SONNET.features).toEqual({ dropStaleThinking: true, strictTools: true, citations: true, compaction: true, taskBudgetTokens: null, progressNotes: true, programmaticReads: true, refusalFallback: true, suggestions: true });
   });
 
   it('Haiku 5.5: effort high, no fallbacks parameter at all, no progress notes', () => {
@@ -68,7 +69,7 @@ describe('the model each surface runs on', () => {
     expect(sent.thinking).toEqual({ type: 'adaptive', block_binding: { prefix_mismatch_behavior: 'drop_block' } });
     expect(sent.betas).toEqual(['thinking-binding-controls-2026-08-01', 'compact-2026-01-12']);
     expect(sent.tool_choice).toEqual({ type: 'auto' });
-    expect(HAIKU.features).toEqual({ dropStaleThinking: true, strictTools: true, citations: true, compaction: true, taskBudgetTokens: null, progressNotes: false, programmaticReads: true, refusalFallback: false });
+    expect(HAIKU.features).toEqual({ dropStaleThinking: true, strictTools: true, citations: true, compaction: true, taskBudgetTokens: null, progressNotes: false, programmaticReads: true, refusalFallback: false, suggestions: true });
   });
 
   it('what is kept of a turn a refusal fallback took over: text and everything after the last boundary; not the declining model’s thinking or tool calls', () => {
@@ -122,7 +123,7 @@ describe('the model request', () => {
   });
 
   it('each optional feature is one field: on, the request carries its header and shape; off, neither', () => {
-    const off: ChatFeatures = { dropStaleThinking: false, strictTools: false, citations: false, compaction: false, taskBudgetTokens: null, progressNotes: false, programmaticReads: false, refusalFallback: false };
+    const off: ChatFeatures = { dropStaleThinking: false, strictTools: false, citations: false, compaction: false, taskBudgetTokens: null, progressNotes: false, programmaticReads: false, refusalFallback: false, suggestions: false };
     const plain = request(off);
     expect(plain).not.toHaveProperty('betas');
     expect(plain).not.toHaveProperty('context_management');
