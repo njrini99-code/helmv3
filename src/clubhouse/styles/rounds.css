@@ -1729,6 +1729,22 @@ a.ch-rd-sc:focus-visible {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  min-width: 0;
+}
+.ch-trd-meta__teen {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* The usual row has one chip beside the tee. A long tee name ("Championship tees") sent it to a third line on that row
+   only, the fault the course's own line was given for: the tee's name gives way first, and the chip keeps its place.
+   A row with two chips or more (nine holes, not counted) still wraps, since there the tee has nothing left to give. */
+.ch-trd-meta__kind:not(:has(.ch-rd-pill ~ .ch-rd-pill)) {
+  flex-wrap: nowrap;
+}
+.ch-trd-meta__kind > .ch-rd-pill {
+  flex: none;
 }
 .ch-trd-score {
   display: inline-flex;
