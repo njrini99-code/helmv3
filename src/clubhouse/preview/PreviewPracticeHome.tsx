@@ -7,6 +7,7 @@ import { emptyBody } from '../screens/practice/builder/builder-model';
 import { PlayerPracticeHome } from '../screens/practice/PlayerPracticeHome';
 import { PracticeHome } from '../screens/practice/PracticeHome';
 import { DrillPage, DrillsPage, GroupsPage, TemplatesPage } from '../screens/practice/LibraryPages';
+import { PlayerPracticeHomeSkeleton, PracticeHomeSkeleton, PracticeLibrarySkeleton } from '../screens/practice/PracticeSkeletons';
 import { PLAN_STARTERS } from '../screens/practice/starters';
 import type { ChDrillRow } from '../data/practice-library-shape';
 import type { ChBuilderData, ChPlayerPracticeHome, ChPracticeHome, ChPracticeTile } from '../data/practice-home-shape';
@@ -81,8 +82,10 @@ const PLAYER: ChPlayerPracticeHome = {
   past: [{ id: 'a', day: 'Tue, Nov 3', title: 'Tuesday practice', time: '3:00 to 5:00 PM', line: '3:00 Warm-up · 3:15 Short game', state: 'Done', href: '/golf/dashboard/practice/plan/a' }],
 };
 
-/** `coachhelm-practice-home?state=`: Practice, with nothing reaching a server. */
+/** `coachhelm-practice-home?state=`: Practice, with nothing reaching a server. `loading` and `player-loading` are the route's loading states. */
 export function PreviewPracticeHome({ state }: { state?: string }) {
+  if (state === 'loading') return <PracticeHomeSkeleton />;
+  if (state === 'player-loading') return <PlayerPracticeHomeSkeleton />;
   if (state === 'player') return <PlayerPracticeHome data={PLAYER} />;
   if (state === 'player-empty') return <PlayerPracticeHome data={{ next: null, week: WEEK.map((t) => ({ ...t, items: [] })), upcoming: [], past: [] }} />;
   if (state === 'empty') return <PracticeHome data={{ ...HOME, upNext: null, drafts: [], published: [], open: [], week: WEEK.map((t) => ({ ...t, items: [] })), weekLine: null }} previewSheet />;
@@ -145,8 +148,9 @@ const LIB_GOLFHELM: ChDrillRow[] = [
 ];
 const ROSTER = [...PP_NAMES].map(([id, name]) => ({ id, name }));
 
-/** `coachhelm-practice-library?tab=&state=`: Drills, one drill, Groups and Templates, with every press closed. */
+/** `coachhelm-practice-library?tab=&state=`: Drills, one drill, Groups and Templates, with every press closed. `state=loading` is a tab's loading state. */
 export function PreviewPracticeLibrary({ tab, state }: { tab?: string; state?: string }) {
+  if (state === 'loading') return <PracticeLibrarySkeleton tab={tab === 'groups' || tab === 'templates' ? tab : 'drills'} />;
   if (tab === 'drill') {
     const lib = state === 'library';
     const row = lib ? LIB_GOLFHELM[0]! : LIB_TEAM[0]!;

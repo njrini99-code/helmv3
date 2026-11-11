@@ -2023,3 +2023,50 @@ main.ch-prc-planpage > .ch-backlink {
   .ch-prt-side { grid-column: 1; grid-row: 1; position: static; }
   .ch-prt-pages { grid-column: 1; grid-row: 2; }
 }
+
+/* Practice in waiting (PracticeSkeletons.tsx): a page's skeleton is the page's own boxes with the shared bars in them, so these
+   rules only place what the page places by element (the Up next title's margin, a tile's day on its baseline) and show the part
+   the width has: a skeleton is drawn once for both widths, since the server draws it before it knows the width. */
+.ch-prc-sk-next {
+  margin-top: 4px;
+}
+/* The strip's key in waiting: the key's own row (`.ch-prc-ribbon__mix`), without the square it draws before each kind. */
+.ch-prc-sk-mix {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-top: 8px;
+}
+.ch-prc-tile__d.ch-prc-sk-mid {
+  align-items: center;
+}
+.ch-prc-sk-still {
+  cursor: default;
+}
+/* A line of facts in waiting: each fact a bar that wraps whole, as `wholeFacts` keeps the words (facts.ts). */
+.ch-prc-sk-facts {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 6px;
+}
+/* Seen by, at the status line's end as the loaded key is (`.ch-prc-planbar__s > .ch-btn`), its words inside the key's 12px. */
+.ch-prc-sk-end {
+  margin-inline-start: auto;
+  padding-inline: 12px;
+}
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
+  main[aria-busy='true'] .ch-prc-sk-desk {
+    display: none;
+  }
+  /* The large title's bar stands in the title's one line, so the line under it does not move when the word lands. */
+  .ch-prc-sk-title {
+    display: flex;
+    align-items: center;
+    min-height: 1lh;
+  }
+}
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
+  main[aria-busy='true'] .ch-prc-sk-phone {
+    display: none;
+  }
+}

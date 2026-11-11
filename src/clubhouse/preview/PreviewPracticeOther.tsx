@@ -2,6 +2,7 @@
 
 import { CoachPlanBar, type ChPlanStatus } from '../screens/practice/CoachPlanBar';
 import { PlanRun } from '../screens/practice/PlanRun';
+import { PlayerPracticePlanSkeleton, PracticePlanSkeleton } from '../screens/practice/PracticeSkeletons';
 import { PlanPageActions } from '../screens/coachhelm/plan/PlanPageActions';
 import { PrintStudio, type PrintDrill } from '../screens/practice/PrintStudio';
 import { Button } from '../ui/Button';
@@ -56,8 +57,9 @@ const STOPS = [
   ['4:55', 'Clubhouse patio', 'Wrap'],
 ];
 
-/** `coachhelm-practice-player?state=notify|practice|plan|docs`: a push can only be drawn; the rest are the player's screens. */
+/** `coachhelm-practice-player?state=notify|practice|plan|docs|loading`: a push can only be drawn; the rest are the player's screens. `loading` is the route's loading state. */
 export function PreviewPracticePlayer({ state }: { state?: string }) {
+  if (state === 'loading') return <PlayerPracticePlanSkeleton />;
   const sheet = (
     <PracticePlanSheet plan={toSheetModel({ body: PP_PLAN_PART.draft.body, title: 'Thursday practice', team: 'Demo University Golf', start: new Date('2026-11-05T19:00:00Z'), end: new Date('2026-11-05T22:00:00Z'), zone: 'America/New_York', coaches: PP_COACHES, names: PP_NAMES, state: 'Published' }, 'player', PP_PLAN_PART.draft.body.groups[1]?.players[0])} />
   );
@@ -124,13 +126,14 @@ export function PreviewPracticePrint({ state }: { state?: string }) {
   );
 }
 
-/** `coachhelm-practice-run?state=draft|edited|down`: the coach's bar and, in its window, the Run card. */
+/** `coachhelm-practice-run?state=draft|edited|down|later|loading`: the coach's bar and, in its window, the Run card. `later`: a published plan for tomorrow, so no Run card. `loading`: the route's loading state. */
 export function PreviewPracticeRun({ state }: { state?: string }) {
+  if (state === 'loading') return <PracticePlanSkeleton />;
   const status: ChPlanStatus = { planId: 'preview', title: PP_PLAN_PART.title, version: 3, status: state === 'draft' ? 'draft' : 'published', edited: state === 'edited', seen: state === 'draft' ? null : { names: ['Sofia', 'Maya', 'Lena', 'Eli', 'Jonah', 'Owen'], of: 9 } };
   // Twenty minutes in, so the first rotation is under way however long the preview has been open.
   const now = Date.now();
   // The plan page as its route draws it: the head, the status line, Run in its window, then the sheet.
-  const start = new Date(now - 20 * 60_000);
+  const start = new Date(state === 'later' ? now + 24 * 60 * 60_000 : now - 20 * 60_000);
   const plan = toSheetModel({ body: PP_PLAN_PART.draft.body, why: PP_PLAN_PART.draft.why, title: PP_PLAN_PART.title, team: 'Demo University Golf', start, end: new Date(start.getTime() + 180 * 60_000), zone: 'America/New_York', coaches: PP_COACHES, names: PP_NAMES, state: state === 'draft' ? 'Draft · Only coaches' : 'Published' }, 'coach');
   return (
     <main className="ch-page ch-prc-planpage" data-ch="practice-plan" aria-labelledby="ch-prc-plan-title">
