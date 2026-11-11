@@ -92,7 +92,7 @@ describe('the player’s Tournaments · a phone card ends as it begins', () => {
 
   it('the list’s cards: the row’s 8 and the list’s 8 make the card’s 16', () => {
     // .ch-tour-pl-row and the kit's ledger row (ui.css .ch-lgr__row) both pad 8 under their content.
-    expect(decls('.ch-tour-pl-row').padding).toMatch(/^8px/);
+    expect(decls('.ch-tour-pl-row').padding).toBe('8px 12px');
     expect(px(last('.ch-tour-pl-list')) + 8).toBe(CARD);
     expect(px(last('.ch-tour-pl-later')) + 8).toBe(CARD);
   });
@@ -102,5 +102,23 @@ describe('the player’s Tournaments · a phone card ends as it begins', () => {
     expect(decls('.ch-tour-pl-note').padding).toBe('12px 16px');
     expect(px(last('.ch-tour-pl-rounds')) + 12).toBe(CARD);
     expect(px(last('.ch-tour-pl-notes')) + 12).toBe(CARD);
+  });
+});
+
+/**
+ * In one phone page two cards of rows washed to two widths: the kit's ledger row (Coming up) reaches 12 past its text, and
+ * the played row reached 8. The played row takes the kit's 12, so a press tints the same band in both cards.
+ */
+describe('the player’s Tournaments · one press band on a phone', () => {
+  it('a played row bleeds 12 past its text, as the kit’s ledger row does', () => {
+    const ui = postcss.parse(readFileSync(join(import.meta.dirname, '../../../styles/ui.css'), 'utf8'));
+    const kit: Record<string, string> = {};
+    ui.walkRules((r) => {
+      if (r.selector === '.ch-lgr__row.is-link' && r.parent?.type === 'root') r.walkDecls((d) => void (kit[d.prop] = d.value));
+    });
+    const row = decls('.ch-tour-pl-row');
+    expect(row['margin-inline']).toBe(kit['margin-inline']);
+    expect(row.padding).toBe(`8px ${kit['padding-inline']}`);
+    expect(row['border-radius']).toBe(kit['border-radius']);
   });
 });

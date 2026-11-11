@@ -270,7 +270,7 @@
 
 /* The events played on a phone (the ledger's phone row), flush in the section's card so a row starts on the heading's
    inset: the event and where on the left, the player's total and to-par over their rounds on the right. The whole row is
-   the link (60px), and its press tint reaches a little past the text. */
+   the link (60px), and its press tint reaches 12 past the text, as the kit's ledger row does in the card above it. */
 .ch-tour-pl-list {
   margin: 0;
   padding: 0;
@@ -285,8 +285,8 @@
   gap: 8px;
   align-items: center;
   min-height: 60px;
-  margin-inline: -8px;
-  padding: 8px;
+  margin-inline: -12px;
+  padding: 8px 12px;
   border-radius: var(--ch-radius-md);
   color: var(--ch-text-secondary);
   text-decoration: none;
