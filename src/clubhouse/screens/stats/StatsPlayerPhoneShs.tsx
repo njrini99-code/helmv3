@@ -566,7 +566,7 @@ function WhatChanged({ data }: { data: ChPlayerProfile }) {
           <div className="ch-shs-cmp-h">{measureName(bars[0]!.measure)}</div>
           {bars.map((b) => (
             <div className="ch-shs-cmp-row" key={b.label}>
-              <span className="k">{b.label}</span>
+              <span className="k ch-num">{b.label}</span>
               <span className="ch-shs-cmp-track">
                 <i className={`ch-shs-fill-${b.tone}`} style={{ width: `${formatFixed(b.width, 1)}%` }} />
               </span>
@@ -600,7 +600,7 @@ function Glance({ data, onOpen }: { data: ChPlayerProfile; onOpen: (id: StatsDet
             {t.value ?? <NoData />}
             {t.value != null && t.unit && <small>{t.unit}</small>}
           </span>
-          <span className="m">{t.meta}</span>
+          <span className="m ch-num">{t.meta}</span>
         </button>
       ))}
     </div>
@@ -731,7 +731,7 @@ function PartCard({ data, part, onOpen }: { data: ChPlayerProfile; part: (typeof
             {kf.value ?? <NoData />}
             {kf.value != null && kf.unit && <small>{kf.unit}</small>}
           </span>
-          <div className="ch-shs-cap">
+          <div className="ch-shs-cap ch-num">
             {kf.label}
             {kf.tour ? ` · ${kf.tour}` : ''}
           </div>
@@ -788,7 +788,7 @@ function RoundsCard({ data, onOpen }: { data: ChPlayerProfile; onOpen: () => voi
             <small>{pluralWord(n, 'round', 'rounds')}</small>
           </span>
           {best && n > 1 && (
-            <div className="ch-shs-cap">
+            <div className="ch-shs-cap ch-num">
               Best {best.value} · {best.date}
             </div>
           )}
@@ -842,7 +842,7 @@ function GoalsCard({ data, onOpen }: { data: ChPlayerProfile; onOpen: () => void
             <div key={g.id} role="img" aria-label={`${g.title}: ${g.line}`}>
               {g.progress != null ? <GoalRing progress={g.progress} label={g.centre} /> : <span className="ch-shs-rg-none ch-num">{g.centre}</span>}
               <b>{g.title}</b>
-              <small>{g.line}</small>
+              <small className="ch-num">{g.line}</small>
             </div>
           ))}
         </div>

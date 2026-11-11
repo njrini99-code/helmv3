@@ -102,7 +102,7 @@ export function SummaryCard({
           {icon && <ShsIcon name={icon} />}
           {title}
         </h3>
-        {meta != null && <span className="ch-shs-ah__meta">{meta}</span>}
+        {meta != null && <span className="ch-shs-ah__meta ch-num">{meta}</span>}
         {feature ? (
           // The chevron is the keyboard's way in when the chart holds focus: 24 drawn, 44 to the finger.
           <button
@@ -131,7 +131,7 @@ export function ShsCard({ title, meta, flush = false, anchor, children }: { titl
     <section className={'ch-shs-card' + (flush ? ' is-flushb' : '')} suppressHydrationWarning aria-label={title} data-ch-anchor={anchor}>
       <div className="ch-shs-ah">
         <h3>{title}</h3>
-        {meta != null && <span className="ch-shs-ah__meta">{meta}</span>}
+        {meta != null && <span className="ch-shs-ah__meta ch-num">{meta}</span>}
       </div>
       {children}
     </section>

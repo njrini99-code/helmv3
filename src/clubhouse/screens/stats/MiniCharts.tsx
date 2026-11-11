@@ -62,7 +62,7 @@ export function MiniRails({ rows, caption }: { rows: readonly MiniRailRow[]; cap
       <div className="ch-shs-mrails">
         {rows.map((r) => (
           <div className="ch-shs-mr" key={r.label}>
-            <span className="l">{r.label}</span>
+            <span className="l ch-num">{r.label}</span>
             <span className="ch-shs-hrail" aria-hidden="true">
               {r.value != null && <i className={`ch-shs-fill-${railTone(r.value, r.tour)}${r.early ? ' is-early' : ''}`} style={{ width: `${Math.max(0, Math.min(100, r.value))}%` }} />}
               {r.tour != null && <span className="ch-shs-tour" style={{ left: `${Math.max(0, Math.min(100, r.tour))}%` }} />}

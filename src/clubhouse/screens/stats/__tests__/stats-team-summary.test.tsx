@@ -154,3 +154,17 @@ describe('Team Stats, the details', () => {
     expect(document.querySelector('h1.ch-sr-only')!.textContent).toBe('Team stats');
   });
 });
+
+/** Tabular numerals come from `.ch-num` (CONS-39): a figure in a card's foot, its reference line and its head caption take it. */
+describe('Team Stats, figures outside the big values are tabular too', () => {
+  it('the leg card’s foot figures and each card’s head caption', async () => {
+    showTeam(TEAM);
+    const game = await painted('tgame');
+    const foot = [...game.querySelectorAll('.ch-shs-sumfoot b')];
+    expect(foot.map((b) => b.textContent)).toEqual(['61%', '30.4', '52%']);
+    expect(foot.every((b) => b.classList.contains('ch-num'))).toBe(true);
+    const metas = [...document.querySelectorAll('.ch-shs-ah__meta')];
+    expect(metas.length).toBeGreaterThanOrEqual(3);
+    expect(metas.every((m) => m.classList.contains('ch-num'))).toBe(true);
+  });
+});

@@ -385,7 +385,7 @@ function TeamGameCard({ data, onOpen }: { data: ChTeamStats; onOpen: () => void 
               {foot.map((f, i) => (
                 <span key={f.label}>
                   {i > 0 && ' · '}
-                  {shortLabel(f.label)} <b>{figureValue(f)}</b>
+                  {shortLabel(f.label)} <b className="ch-num">{figureValue(f)}</b>
                 </span>
               ))}
             </p>
@@ -444,7 +444,7 @@ function TheRound({ data, note }: { data: ChTeamStats; note?: string | null }) {
             <div key={f.label}>
               <dt>{shortLabel(f.label)}</dt>
               <dd className="v">{figureValue(f)}</dd>
-              {ref && <dd className="m">{ref}</dd>}
+              {ref && <dd className="m ch-num">{ref}</dd>}
               {f.delta != null && (
                 <dd className="d">
                   <ShsPill tone={t === 'is-gain' ? 'gain' : t === 'is-loss' ? 'loss' : 'flat'}>{formatSigned(f.delta, f.digits)}</ShsPill>
