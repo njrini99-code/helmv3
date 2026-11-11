@@ -284,14 +284,16 @@ function Step({ on, label, date, next = false, tone }: { on: boolean; label: str
   );
 }
 
+/** The plan's trend is drawn 72px tall at the card's own width: its x is a share of the width, its y the pixels below. */
+const GOAL_H = 72;
+
 function GoalBlock({ goal }: { goal: NonNullable<ChFilePlan['goal']> }) {
-  const W = 320;
-  const H = 72;
+  const H = GOAL_H;
   const vals = [...goal.points.map((p) => p.value), ...(goal.target != null ? [goal.target] : [])];
   const lo = vals.length ? Math.min(...vals) : 0;
   const hi = vals.length ? Math.max(...vals) : 1;
   const pad = (hi - lo || 1) * 0.1;
-  const x = (i: number) => (goal.points.length < 2 ? W / 2 : 6 + (i * (W - 12)) / (goal.points.length - 1));
+  const x = (i: number) => `${goal.points.length < 2 ? 50 : (i * 100) / (goal.points.length - 1)}%`;
   const y = (v: number) => 8 + ((hi + pad - v) / (hi - lo + 2 * pad)) * (H - 26);
   const chip = goal.word === 'Improved' ? 'gain' : goal.word === 'Worse' ? 'loss' : 'plain';
   const firstPoint = goal.points[0];
@@ -305,27 +307,36 @@ function GoalBlock({ goal }: { goal: NonNullable<ChFilePlan['goal']> }) {
       </div>
       {goal.word && <Badge tone={CHIP_TONE[chip] ?? 'neutral'}>{goal.word}</Badge>}
       {goal.points.length > 0 && (
-        <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${goal.title}: ${goal.points.map((p) => `${p.label} ${p.value}`).join(', ')}`}>
-          {goal.target != null && (
-            <>
-              <line x1="0" x2={W} y1={y(goal.target)} y2={y(goal.target)} className="gl" />
-              {/* The label takes the end of the goal line the trend is farther from, so it never sits on a round's dot. */}
-              <text x={goalAtStart ? 0 : W} y={y(goal.target) - 8} textAnchor={goalAtStart ? 'start' : 'end'} className="gt" data-ch-file-goal={goalAtStart ? 'start' : 'end'}>
-                Goal {goal.target}
-              </text>
-            </>
-          )}
-          <polyline points={goal.points.map((p, i) => `${x(i)},${y(p.value)}`).join(' ')} className="pl" />
-          {goal.points.map((p, i) => (
-            <circle key={i} cx={x(i)} cy={y(p.value)} r={i === goal.points.length - 1 && goal.worse ? 4.5 : 3} className={i === goal.points.length - 1 && goal.worse ? 'pt hi' : 'pt'} />
-          ))}
-          <text x="0" y={H - 2} className="gd">
-            {goal.points[0]?.label}
-          </text>
-          <text x={W} y={H - 2} textAnchor="end" className="gd">
-            {goal.points[goal.points.length - 1]?.label}
-          </text>
-        </svg>
+        // Two drawings at the card's text width, neither scaled: the goal line and the labels run edge to edge, and the trend sits
+        // inside them by a dot's reach, so its first and last dots end on the text's own edges. (One scaled drawing kept its 320
+        // units and sat centred in a wider card, well inside both edges.)
+        <div className="goal__plot" role="img" aria-label={`${goal.title}: ${goal.points.map((p) => `${p.label} ${p.value}`).join(', ')}`}>
+          <svg aria-hidden="true" focusable="false">
+            {goal.target != null && (
+              <>
+                <line x1="0" x2="100%" y1={y(goal.target)} y2={y(goal.target)} className="gl" />
+                {/* The label takes the end of the goal line the trend is farther from, so it never sits on a round's dot. */}
+                <text x={goalAtStart ? 0 : '100%'} y={y(goal.target) - 8} textAnchor={goalAtStart ? 'start' : 'end'} className="gt" data-ch-file-goal={goalAtStart ? 'start' : 'end'}>
+                  Goal {goal.target}
+                </text>
+              </>
+            )}
+            <text x="0" y={H - 2} className="gd">
+              {goal.points[0]?.label}
+            </text>
+            <text x="100%" y={H - 2} textAnchor="end" className="gd">
+              {goal.points[goal.points.length - 1]?.label}
+            </text>
+          </svg>
+          <svg className="goal__trend" aria-hidden="true" focusable="false">
+            {goal.points.slice(1).map((p, i) => (
+              <line key={i} x1={x(i)} y1={y(goal.points[i]!.value)} x2={x(i + 1)} y2={y(p.value)} className="pl" />
+            ))}
+            {goal.points.map((p, i) => (
+              <circle key={i} cx={x(i)} cy={y(p.value)} r={i === goal.points.length - 1 && goal.worse ? 4.5 : 3} className={i === goal.points.length - 1 && goal.worse ? 'pt hi' : 'pt'} />
+            ))}
+          </svg>
+        </div>
       )}
     </div>
   );

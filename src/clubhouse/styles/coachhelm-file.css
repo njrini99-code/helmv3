@@ -175,7 +175,11 @@
 .ch-hf .goal { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: end; margin-top: 16px; padding-top: 12px; border-top: var(--ch-hairline-w) solid var(--ch-hf-a-sep); }
 .ch-hf .goal__t b { display: block; font: var(--ch-type-16-medium); letter-spacing: var(--ch-track-16); }
 .ch-hf .goal__t small { font: var(--ch-type-15);  color: var(--ch-hf-a-ink-2); letter-spacing: var(--ch-track-15); }
-.ch-hf .goal svg { grid-column: 1 / -1; width: 100%; height: 72px; overflow: visible; }
+/* The plan's trend at the card's text width: the goal line and the labels edge to edge, the trend inside them by a dot's reach
+   (6px: the largest dot and its ring), so the dots end on the text's edges. */
+.ch-hf .goal__plot { position: relative; grid-column: 1 / -1; height: 72px; }
+.ch-hf .goal svg { position: absolute; top: 0; left: 0; width: 100%; height: 72px; overflow: visible; }
+.ch-hf .goal svg.goal__trend { left: 6px; width: calc(100% - 12px); }
 .ch-hf .drill { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; align-items: start; margin-top: 12px; padding: 12px; border-radius: var(--ch-radius-md); background: var(--ch-hf-a-well); }
 .ch-hf .drill .r__ic { background: var(--ch-hf-a-card); }
 .ch-hf .drill b { display: block; font: var(--ch-type-16-medium); letter-spacing: var(--ch-track-16); }
