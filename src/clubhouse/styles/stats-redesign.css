@@ -853,11 +853,14 @@
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   font: var(--ch-type-15-medium); letter-spacing: var(--ch-track-15); }
+/* A third of a phone's card is narrower than "Now 72 · target 69": the two lines share the words, so none ends on a
+   lone "69" or "ft". */
 .ch-shs-rings small {
   display: block;
   margin-top: 2px;
   font: var(--ch-type-13);
   color: var(--ch-shs-s-ink-2);
+  text-wrap: balance;
 }
 .ch-shs-goaltext {
   margin: 0;
