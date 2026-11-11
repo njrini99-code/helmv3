@@ -122,3 +122,15 @@ describe('the player’s Tournaments · one press band on a phone', () => {
     expect(row['border-radius']).toBe(kit['border-radius']);
   });
 });
+
+/** The page drew its "opens" chevron at three sizes: 18 on the green card, 16 on the kit's rows, 15 in the table. It is the kit's 16 everywhere. */
+describe('the player’s Tournaments · one chevron', () => {
+  it.each([
+    ['desktop', false],
+    ['phone', true],
+  ])('%s: every chevron is the kit’s 16', (_, phone) => {
+    const sizes = [...draw(fx.list, phone).querySelectorAll('svg.lucide-chevron-right')].map((x) => x.getAttribute('width'));
+    expect(sizes.length).toBeGreaterThanOrEqual(fx.list.list.length);
+    expect(new Set(sizes)).toEqual(new Set(['16']));
+  });
+});

@@ -148,7 +148,7 @@ function NextCard({ row: x, today, timezone, href }: { row: ListRow; today: stri
       title={
         <span className="ch-tour-pl-next__t">
           {x.name}
-          <Icon icon={ChevronRight} size={18} />
+          <Icon icon={ChevronRight} size={16} />
         </span>
       }
       line={
@@ -281,7 +281,7 @@ function PlayedTable({ rows, href }: { rows: ChTourPlayerData['list']; href: (id
             {x.mine?.toPar != null ? <ToPar value={x.mine.toPar} /> : <NoData label="No score" />}
           </span>
           <span role="cell" className="ch-tour-pl-res__go" aria-hidden="true">
-            <Icon icon={ChevronRight} size={15} />
+            <Icon icon={ChevronRight} size={16} />
           </span>
         </div>
       ))}
