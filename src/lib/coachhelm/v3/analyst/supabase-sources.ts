@@ -24,7 +24,7 @@ const CACHE_COLUMNS =
   'round_id, greens_hit, greens_total, fairways_hit, fairways_total, total_putts, scramble_attempts, scrambles_converted, sand_attempts, sand_saves, three_putts, penalty_strokes, birdies, eagles, pars, bogeys, double_bogeys, triple_plus';
 const HOLE_COLUMNS = 'id, round_id, hole_number, par, score';
 const SHOT_COLUMNS =
-  'id, round_id, hole_id, shot_type, lie_before, distance_to_hole_before, distance_unit_before, distance_to_hole_after, distance_unit_after, result, lie_after, putt_made';
+  'id, round_id, hole_id, shot_type, lie_before, distance_to_hole_before, distance_unit_before, distance_to_hole_after, distance_unit_after, result, lie_after, putt_made, putt_distance_feet';
 
 /** Every row of a chunked, paged read; throws with the table's name when a page fails. */
 async function readAll<T>(what: string, ids: readonly string[], page: (ids: string[], from: number, to: number) => Page<T>): Promise<T[]> {

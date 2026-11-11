@@ -16,7 +16,8 @@ from 24 title shapes and 91% of players carry the same approach card. Nothing as
 | `measures.ts` | The 35 measures, each computed over one window, and the floors. |
 | `stats.ts` | The few statistics not already in `v3/stats` or `v3/support`. |
 | `fact-sheet.ts` | Part 1. `assembleFactSheets` (pure) and `buildTeamFactSheets` / `buildFactSheet` (through the sources). |
-| `notability.ts` | Part 2. `findNotable(sheet)`: at most three candidates, plus the other lists. |
+| `notability.ts` | Part 2. `findNotable(sheet)`: one priority, at most three candidates, plus the other lists. |
+| `putt-definitions.ts` | A count of where the app's two make-rate definitions disagree. A diagnostic; no figure reads it. |
 | `supabase-sources.ts` | The sources over a Supabase client handed in by the caller. SELECTs only. |
 | `dry-run.ts` | The dry run's logic: flags, the production refusal, the team report and its table. |
 | `scripts/coachhelm/analyst-dry-run.ts` | The script. Thin: flags, client, print. |
@@ -108,13 +109,39 @@ never the other tour's). `provenance` is `measured`, `approximate` or `by_defini
 
 ## Part 2: notability
 
+Two tiers. A `signal` is something unusual about the player that cleared a test, so most players have none in most
+weeks (on staging, 3 of 23). A `priority` is where the strokes go: every player with enough measured rounds has one.
+
 `findNotable(sheet)` returns:
 
-- `candidates`: at most three, ranked.
+- `priority`: one, or `null` with `priority_missing` saying what is needed. See below.
+- `candidates`: the signal tier, at most three, ranked.
 - `good_news`: measures that moved or stand out in the player's favor. Never among the candidates.
 - `unremarkable`: measures that were tested and show nothing, with the p-values. Never among the candidates.
 - `not_checked`: measures no rule could test, each with why.
 - `beyond_cap`: qualified, past the cap. `outcome_context`: see below.
+- `test_log`: every test that ran, with its p before correction. `biggest_cost_season`: rule (c) over the season,
+  reported only.
+
+### The priority
+
+The strokes-gained area with the lowest mean over the season's rounds measured from logged shots (five or more, each
+with all four areas). It carries the strokes per round it costs against the Tour baseline with a 95% range, the four
+areas' means, and a `certainty`:
+
+| Certainty | Means |
+| --- | --- |
+| `clear` | a real loss AND clearly worse than the player's other three areas (rule (c)'s two conditions, over the season) |
+| `likely` | a real loss (its 95% range is below zero), not clearly worse than the others |
+| `leaning` | neither: the lowest area so far, and the rounds cannot yet tell it from zero or from the others |
+
+It describes; it does not claim a change, it is not a candidate, and no correction for many tests applies because
+nothing is claimed beyond "the lowest area so far" with its doubt stated. With teammates on the sheet it carries
+`team_shape` (coach-only): the team's worst area over the season, whether it is this player's too, and how the player
+sits against the teammates' median in that area (`better`, `same` when the player's own range reaches the median, or
+`worse`, with the difference), so a priority most of a team shares still says something about the player.
+
+### The signal tier
 
 A measure is a candidate only when at least one rule holds. A gap to the Tour alone never makes one: removing every
 Tour figure from a sheet changes nothing in the result (tested).
@@ -170,9 +197,16 @@ stricter direction. On 400 such players the tests now sit at or under their leve
 
 ## The dry run
 
-Read-only. One team: every active player's fact sheet and candidates, a JSON summary and a short table (per player how
-many candidates and which rule fired; "N players share candidate X"; distinct candidate kinds; the share of players with
-the most common one).
+Read-only. One team: every active player's fact sheet, priority and candidates, a JSON summary and a table:
+
+- per player: rounds in each window, tests run per rule, the priority with its certainty and how the player sits
+  against the team, and the signals with the rule that fired;
+- "N players share priority X" and "N players share candidate X", distinct candidate kinds, the share of players with
+  the most common one;
+- rule (c) over the last 10 rounds beside the same rule over the season;
+- rule (a) before correction: tests per player, the p-values in bins, the smallest ones, and what a smaller family
+  declared in advance (`PROPOSED_FAMILY`: the four areas and the scoring average) would support. Proposed, not applied;
+- the two make-rate definitions, counted over every shot read.
 
     STAGING_SERVICE_KEY=... node --import tsx/esm --import ./scripts/coachhelm/server-only-hook.mjs \
       scripts/coachhelm/analyst-dry-run.ts --url https://<project>.supabase.co \
@@ -193,4 +227,5 @@ every sheet and its candidates to a local file. No names are read.
 | `notability.test.ts` | Each rule with its numbers by hand; the regression (below the Tour on everything, unchanged, typical: zero candidates); thin samples; estimates; a team of two; ranking, the cap, one per area. |
 | `calibration.test.ts` | 400 players with nothing unusual: the rules fire at no more than their stated rates. |
 | `stats-parity.test.ts` | The fact sheet against the Clubhouse functions over the same rows. |
+| `priority.test.ts` | The priority and each certainty, the team shape, the season read, and the make-rate definition count. |
 | `dry-run.test.ts` | Flags, the production refusal, the team report, ten ordinary players, and the Supabase sources over a client that can only select (paging past 1,000 rows, id chunks). |

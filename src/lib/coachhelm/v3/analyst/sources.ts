@@ -86,6 +86,8 @@ export interface ShotRow {
   result: string | null;
   lie_after: string | null;
   putt_made: boolean | null;
+  /** Read only to count where the two make-rate definitions in the app disagree (putt-definitions.ts). No figure uses it. */
+  putt_distance_feet: number | null;
 }
 
 /** One `golf_pga_standards` row for the team's own tour (newest season per metric). */

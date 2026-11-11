@@ -119,7 +119,8 @@ export interface TeammateFigure {
 export interface TeamDistribution {
   /** A player never sees a teammate's figures: drop this block (`withoutCoachOnly`) before anything reaches a player. */
   audience: 'coach_only';
-  window: 'last10';
+  /** Each teammate's own last 10 rounds, or each teammate's season (the strokes-gained areas only, for the priority). */
+  window: 'last10' | 'season';
   /** Teammates with a value at the measure's floor, ordered by player id. */
   teammates: TeammateFigure[];
   n: number;
@@ -167,6 +168,8 @@ export interface MeasureFact {
   season: WindowFigure;
   /** Null when the sheet was built without teammates. */
   team: TeamDistribution | null;
+  /** The four strokes-gained areas only: the teammates' spread over the SEASON, which the priority is read against. Coach-only. */
+  team_season?: TeamDistribution | null;
   /** Null where the Tour has no figure on the same basis. */
   tour: TourFigure | null;
   /**
@@ -203,6 +206,8 @@ export interface FactSheet {
   windows: { last10: WindowRef; previous10: WindowRef | null; season: WindowRef };
   /** The last 10 rounds' stored strokes gained, newest first, each marked measured or estimated. */
   strokes_gained_by_round: RoundStrokesGained[];
+  /** The same for every round of the season window. */
+  strokes_gained_by_round_season: RoundStrokesGained[];
   measures: MeasureFact[];
   /** Things a reader must know about the data behind this sheet ("4 of the last 10 rounds have no shots logged"). */
   notes: string[];
@@ -210,5 +215,5 @@ export interface FactSheet {
 
 /** A fact sheet with every coach-only block removed: what may travel toward a player. */
 export function withoutCoachOnly(sheet: FactSheet): FactSheet {
-  return { ...sheet, measures: sheet.measures.map((m) => ({ ...m, team: null })) };
+  return { ...sheet, measures: sheet.measures.map((m) => ({ ...m, team: null, ...(m.team_season !== undefined ? { team_season: null } : {}) })) };
 }
