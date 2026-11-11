@@ -57,7 +57,9 @@
   color: var(--ch-text-primary);
 }
 
-/* A lane per player. The score cell takes the changed-wash. */
+/* A lane per player. The score cell takes the changed-wash.
+   Desktop: one line a player. The list owns the columns and each lane borrows them (subgrid), so the chip, the score and
+   the two keys stand in the same place on every row whatever a name or a key's words measure. */
 .ch-tour-live-lanes,
 .ch-tour-live-field {
   margin: 0;
@@ -67,45 +69,22 @@
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-reading);
 }
+.ch-tour-live-lanes {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(96px, auto) 72px auto;
+  column-gap: 12px;
+}
 .ch-tour-live-lane {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto 72px auto;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
   align-items: center;
-  gap: 12px;
+  min-height: 64px;
   padding: 12px 16px;
 }
 .ch-tour-live-lane + .ch-tour-live-lane,
 .ch-tour-live-field__row + .ch-tour-live-field__row {
   box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-border-hairline);
-}
-.ch-tour-live.is-phone .ch-tour-live-lane {
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas:
-    'who v'
-    'chips chips'
-    'act act';
-  gap: 8px 12px;
-  padding: 12px;
-}
-.ch-tour-live.is-phone .ch-tour-live-lane__who {
-  grid-area: who;
-}
-.ch-tour-live.is-phone .ch-tour-live-lane__v {
-  grid-area: v;
-}
-.ch-tour-live.is-phone .ch-tour-live-lane__act {
-  display: flex;
-  gap: 8px;
-}
-.ch-tour-live-lane__chips {
-  grid-area: chips;
-}
-.ch-tour-live.is-phone .ch-tour-live-lane__act {
-  grid-area: act;
-}
-.ch-tour-live.is-phone .ch-tour-live-lane__act .ch-btn {
-  flex: 1 1 0;
-  min-height: 44px;
 }
 .ch-tour-live-lane__who {
   display: flex;
@@ -113,8 +92,11 @@
   min-width: 0;
 }
 .ch-tour-live-lane__n {
+  overflow: hidden;
   font: var(--ch-type-14-strong);
   color: var(--ch-text-primary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .ch-tour-live-lane__chips {
   display: flex;
@@ -129,18 +111,84 @@
   letter-spacing: var(--ch-track-17);
   color: var(--ch-text-primary);
 }
+.ch-tour-live-lane__act {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* Phone: the name and the score on the first line, the chip under them, then the two keys at thumb height. */
+.ch-tour-live.is-phone .ch-tour-live-lanes {
+  display: block;
+}
+.ch-tour-live.is-phone .ch-tour-live-lane {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'who v'
+    'chips chips'
+    'act act';
+  gap: 8px 12px;
+  min-height: 0;
+  padding: 12px;
+}
+.ch-tour-live.is-phone .ch-tour-live-lane__who {
+  grid-area: who;
+}
+.ch-tour-live.is-phone .ch-tour-live-lane__n {
+  white-space: normal;
+}
+.ch-tour-live.is-phone .ch-tour-live-lane__v {
+  grid-area: v;
+}
+.ch-tour-live.is-phone .ch-tour-live-lane__chips {
+  grid-area: chips;
+}
+.ch-tour-live.is-phone .ch-tour-live-lane__act {
+  grid-area: act;
+}
+.ch-tour-live.is-phone .ch-tour-live-lane__act .ch-btn {
+  flex: 1 1 0;
+  min-height: 44px;
+}
+
+/* The field: place, team, to par. The to par sits in the lanes' score column, right-aligned and tabular. */
 .ch-tour-live-field__row {
   display: grid;
-  grid-template-columns: 40px minmax(0, 1fr) auto;
+  grid-template-columns: 40px minmax(0, 1fr) 72px;
   align-items: center;
   gap: 12px;
-  padding: 12px 16px;
+  min-height: 48px;
+  padding: 8px 16px;
   font: var(--ch-type-14);
   color: var(--ch-text-primary);
+}
+.ch-tour-live-field__p {
+  color: var(--ch-text-secondary);
+}
+.ch-tour-live-field__n {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ch-tour-live-field__v {
+  justify-self: end;
+  padding-inline: 8px;
+  font: var(--ch-type-14-strong);
 }
 .ch-tour-live-field__row.is-us {
   background: var(--ch-bg-selected);
   font: var(--ch-type-14-strong);
+}
+.ch-tour-live-field__row.is-us:first-child {
+  border-radius: var(--ch-radius-card) var(--ch-radius-card) 0 0;
+}
+.ch-tour-live-field__row.is-us:last-child {
+  border-radius: 0 0 var(--ch-radius-card) var(--ch-radius-card);
+}
+.ch-tour-live-field__none {
+  margin: 0;
+  font: var(--ch-type-14);
+  color: var(--ch-text-secondary);
 }
 
 /* The Enter score sheet: one column, the two nines side by side. */

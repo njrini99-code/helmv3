@@ -198,6 +198,26 @@ describe('LiveRound', () => {
     expect(within(c).getByRole('link', { name: 'Open the lineup' })).toHaveAttribute('href', expect.stringContaining('/lineup'));
   });
 
+  it('draws the field in place order from the to pars, a mid-round team with no total included, and marks our row', () => {
+    const c = draw();
+    const rows = Array.from(c.querySelectorAll('[data-ch-live-field="rows"] > li'));
+    const standing = fx.field!.teams.filter((t) => t.toPar != null);
+    // The live fixture's teams are mid-round: a to par each and no total yet. Every one of them is a row.
+    expect(standing.every((t) => t.total == null)).toBe(true);
+    expect(rows).toHaveLength(standing.length);
+    expect(rows[0]?.textContent).toContain('Harbor State');
+    const us = rows.find((r) => r.getAttribute('aria-current') === 'true');
+    expect(us?.textContent).toContain(fx.field!.teams.find((t) => t.us)!.name);
+  });
+
+  it('says in one line that no field scores are in, never an empty frame, and draws no field section without a field', () => {
+    const none = draw({ ...fx, field: { ...fx.field!, entered: 0, teams: fx.field!.teams.map((t) => ({ ...t, toPar: null, place: null, placeN: null })) } });
+    expect(none.querySelector('[data-ch-live-field="rows"]')).toBeNull();
+    expect(none.querySelector('[data-ch-live-field="none"]')?.textContent).toBe('No field scores are in yet. Teams show here as their scores are entered.');
+    cleanup();
+    expect(draw({ ...fx, field: null }).querySelector('#ch-tour-live-field-t')).toBeNull();
+  });
+
   it('says some live scores did not load (CH-16271) and keeps the lanes', () => {
     const c = draw({ ...fx, errors: { holes: true } });
     expect(c.querySelector('[data-ch-code="CH-16271"]')?.textContent).toContain('Some live scores didn’t load');

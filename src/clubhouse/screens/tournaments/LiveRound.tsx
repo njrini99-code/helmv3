@@ -328,22 +328,33 @@ function Lane({ lane: l, name, phone, onEnter, onHoles, editable }: { lane: ChTo
   );
 }
 
-/** How the field stands: teams with a total, in place order. Our row is marked. */
+/**
+ * How the field stands: every team with a score to show, in place order, our row marked. A team mid-round has a to par
+ * and no total yet, so the to par is what admits a row. With a field and no scores in, one line says so.
+ */
 function Field({ data }: { data: ChTourLiveSnapshot }) {
   const f = data.field;
-  if (!f || f.entered === 0) return null;
-  const rows = f.teams.filter((t) => t.total != null).sort((a, b) => (a.placeN ?? 99) - (b.placeN ?? 99));
+  if (!f) return null;
+  const rows = f.teams.filter((t) => t.toPar != null).sort((a, b) => (a.placeN ?? 99) - (b.placeN ?? 99) || (a.toPar ?? 0) - (b.toPar ?? 0));
   return (
     <Section id="ch-tour-live-field" title="The field" meta={`${f.entered} of ${f.size} teams entered${f.asOf ? ` · as of ${formatClock(f.asOf)}` : ''}`}>
-      <ul className="ch-tour-live-field">
-        {rows.map((t) => (
-          <li key={t.id} className={'ch-tour-live-field__row' + (t.us ? ' is-us' : '')}>
-            <span className="ch-num ch-tour-live-muted">{t.place ?? '—'}</span>
-            <span>{t.name}</span>
-            <ToPar value={t.toPar} />
-          </li>
-        ))}
-      </ul>
+      {rows.length === 0 ? (
+        <p className="ch-tour-live-field__none" data-ch-live-field="none">
+          No field scores are in yet. Teams show here as their scores are entered.
+        </p>
+      ) : (
+        <ol className="ch-tour-live-field" data-ch-live-field="rows">
+          {rows.map((t) => (
+            <li key={t.id} className={'ch-tour-live-field__row' + (t.us ? ' is-us' : '')} aria-current={t.us ? 'true' : undefined}>
+              <span className="ch-num ch-tour-live-field__p">{t.place ?? '—'}</span>
+              <span className="ch-tour-live-field__n">{t.name}</span>
+              <span className="ch-tour-live-field__v">
+                <ToPar value={t.toPar} />
+              </span>
+            </li>
+          ))}
+        </ol>
+      )}
     </Section>
   );
 }
