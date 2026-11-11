@@ -8,6 +8,12 @@
 .ch-tour-cmp.is-phone {
   gap: 12px;
 }
+/* The comparison's blocks stand 12 apart on a phone, but its head is the page's: the view switch and Add event stand 16
+   under the line, as they do on Events and History (the shared root's gap). On this view alone they stood 4 higher, so
+   the switch moved under the thumb each time the coach changed view. */
+.ch-tour-cmp.is-phone > .ch-tour-head__a {
+  margin-top: 4px;
+}
 
 /* Presets (board .cd-presets) */
 .ch-tour-cmp-presets,

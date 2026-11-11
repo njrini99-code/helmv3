@@ -30,3 +30,16 @@ describe('the comparison timeline’s season names', () => {
     expect(px('.ch-tour-cmp-tl__track', 'height')).toBe(plotEnd + 48);
   });
 });
+
+describe('the comparison’s head on a phone', () => {
+  it('keeps the view switch on the line it has on Events and History: 16 under the page’s line, not the comparison’s 12', () => {
+    // The comparison's own blocks stand 12 apart; the shared root's phone gap is 16. The head's actions make up the 4,
+    // or the switch stands 4 higher on this view alone and moves under the thumb on every change of view.
+    expect(px('.ch-tour-cmp.is-phone', 'gap')).toBe(12);
+    const shared = readFileSync(join(process.cwd(), 'src/clubhouse/styles/tournaments.css'), 'utf8');
+    const root = shared.slice(shared.indexOf('.ch-tour.is-phone {'));
+    const rootGap = Number(/gap:\s*(\d+)px/.exec(root.slice(0, root.indexOf('}')))?.[1]);
+    expect(rootGap).toBe(16);
+    expect(px('.ch-tour-cmp.is-phone > .ch-tour-head__a', 'margin-top')).toBe(rootGap - 12);
+  });
+});
