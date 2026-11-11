@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import postcss from 'postcss';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { haptic } from '../../../lib/haptics';
 import { AnnouncementsSection } from '../announcements';
 import type { ChAnnouncement } from '../model';
 
@@ -25,13 +26,14 @@ const ann = (over: Partial<ChAnnouncement>): ChAnnouncement => ({
   docCount: 0,
   ...over,
 });
+const selectAnn = vi.fn();
 const api = (announcements: ChAnnouncement[], role: 'coach' | 'player' = 'player') =>
   ({
     announcements,
     annError: false,
     refetchAnns: () => {},
     selectedAnnId: null,
-    selectAnn: () => {},
+    selectAnn,
     viewer: { userId: 'me', role, name: 'Me' },
     now: '2026-10-14T18:00:00Z',
     timeZone: 'UTC',
@@ -112,5 +114,17 @@ describe('Messages · the Announcements row’s counts', () => {
     const two = { display: '-webkit-box', 'white-space': 'normal', '-webkit-line-clamp': '2' };
     expect(decls('[data-ch-ms-v2] .ch-inb--phone .ch-ms-fold__b > span', inbox)).toMatchObject(two);
     expect(decls('[data-ch-ms-v2] .ch-inb--rail .ch-ms-fold__b > span', inbox)).toMatchObject(two);
+  });
+});
+
+/** F-0071 (MO-14): no haptic on plain navigation. Opening a conversation was made silent; opening an announcement still ticked. */
+describe('Messages · opening an announcement is silent', () => {
+  it('the row opens its announcement with no haptic', () => {
+    render(<AnnouncementsSection api={api([ann({}), ann({ id: 'a2', title: 'Pairings posted' })])} q="bus" />);
+    vi.mocked(haptic).mockClear();
+    selectAnn.mockClear();
+    fireEvent.click(document.querySelector('.ch-ms-row.is-ann')!);
+    expect(selectAnn).toHaveBeenCalledWith('a1');
+    expect(haptic).not.toHaveBeenCalled();
   });
 });

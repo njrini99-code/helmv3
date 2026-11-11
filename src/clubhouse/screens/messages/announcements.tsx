@@ -79,7 +79,7 @@ export function AnnouncementsSection({ api, q }: { api: ChMessagesApi; q: string
                   className={'ch-ms-row is-ann' + (mine ? ' is-unread' : '') + (api.selectedAnnId === a.id ? ' is-sel' : '')}
                   aria-current={api.selectedAnnId === a.id ? 'true' : undefined}
                   onClick={() => {
-                    haptic('select');
+                    // Opening an announcement is navigation, as opening a conversation is: no haptic (F-0071, MO-14).
                     chTrail('messages open announcement');
                     api.selectAnn(a.id);
                   }}
