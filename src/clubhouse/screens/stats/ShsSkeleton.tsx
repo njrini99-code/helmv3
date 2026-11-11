@@ -28,7 +28,7 @@ const SECTIONS: ReadonlyArray<{ name: string; cards: ReadonlyArray<{ title: stri
 ];
 
 const TEAM_SECTIONS: typeof SECTIONS = [
-  { name: 'Overview', cards: [{ title: 'Team scoring average', height: 300, feature: true }] },
+  { name: 'Overview', cards: [{ title: 'Scoring average', height: 300, feature: true }] },
   { name: 'Team game', cards: [{ title: 'Strokes gained by leg', height: 298 }] },
   { name: 'Players', cards: [{ title: 'Who gains and loses', height: 262 }] },
 ];

@@ -194,7 +194,7 @@ export function StatsTeamPhoneShs({ data, initialArea }: { data: ChTeamStats; /*
                   <h2 className="ch-shs-sech">Overview</h2>
                   <SectionBoundary surface="stats.team.figures" label="Team figures" code="CH-4204">
                     {data.cacheError && <RetryNotice code="CH-4202" title="Some team figures didn’t load" body="Scoring is correct; greens, putts and scrambling are missing." covered={covered} />}
-                    <SummaryCard feature go="tscore" onOpen={() => go('tscore')} icon="flag" title="Team scoring average" meta={windowDays(data)} ariaLabel={`Team scoring average ${scoringFigure(data) ? figureValue(scoringFigure(data)!) : 'no value'}. Open details`}>
+                    <SummaryCard feature go="tscore" onOpen={() => go('tscore')} icon="flag" title="Scoring average" meta={windowDays(data)} ariaLabel={`Team scoring average ${scoringFigure(data) ? figureValue(scoringFigure(data)!) : 'no value'}. Open details`}>
                       <div className="ch-shs-figs">
                         <div className="ch-shs-figline">
                           <span className="ch-shs-fig">{scoringFigure(data) ? figureValue(scoringFigure(data)!) : <NoData />}</span>

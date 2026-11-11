@@ -595,8 +595,9 @@ describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
     expect(rows).toHaveLength(1);
     expect([...rows[0]!.querySelectorAll('[role="radio"]')].map((r) => r.getAttribute('aria-label') ?? r.textContent)).toEqual(['Last 5', 'Last 10', 'Last 20', 'Season', 'Qualifiers', 'All time']);
     const titles = [...document.querySelectorAll('.ch-shs-card h3')].map((h) => h.textContent);
-    for (const t of ['Team scoring average', 'Strokes gained by leg', 'Who gains and loses']) expect(titles).toContain(t);
-    // The card's window sits beside its title on one line: the unit is a day the team played.
+    // On Team stats the card is "Scoring average", as on My stats: the page is the team, and the title and its window share one line.
+    for (const t of ['Scoring average', 'Strokes gained by leg', 'Who gains and loses']) expect(titles).toContain(t);
+    expect(titles).not.toContain('Team scoring average');
     expect(document.querySelector('.ch-shs-feature')!.textContent).toContain('10 round days');
     expect(document.querySelector('.ch-shs-feature')!.textContent).not.toContain('Last 10 round days');
   });
