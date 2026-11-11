@@ -1,21 +1,19 @@
 /**
- * ============================================================================
- * CoachHelm · chat · metrics catalog — the only metrics the agent can ask for
- * ----------------------------------------------------------------------------
- * A closed list, on purpose. The agent picks a `metric_id` from this catalog;
- * the catalog says which cached column holds it, what unit it is in, which
- * direction is good, and — where one exists — which column holds the ATTEMPT
- * COUNT behind a percentage.
+ * CoachHelm chat: the metrics catalogue. A closed list of metric ids, each with its label, unit, the direction that is
+ * good, and (for a rate) the column that holds the attempts behind it.
  *
- * That last part is the reason this file exists rather than a switch statement
- * somewhere. "58%" with no denominator is the most confidently misleading
- * number in golf analytics: it reads identically whether it came from 43
- * attempts or 4. Pairing every rate with its attempt column at the schema level
- * means a measurement physically cannot be built without one.
+ * What it is used for now (2026-11-10): the ids `get_reference` accepts for a definition or a standard, the ids a goal
+ * and a visual name, and the direction of each metric. `knowledge/__tests__/app-definitions.test.ts` checks that the golf
+ * block of the prompt gives every one of these metrics the same direction.
  *
- * Adding a metric here is additive and safe. Letting the agent name an
- * arbitrary column is not, which is why there is no escape hatch.
- * ========================================================================== */
+ * What it is no longer the source of: a figure in an answer. `column` and `attemptsColumn` name columns of
+ * `golf_player_stats_cache`, which holds LIFETIME figures over every completed round, practice included. The chat's
+ * reads take a player's and the team's figures from the Stats pages for a window (`readers.ts`), so a value read
+ * through these columns is a career figure and must be labelled as one, never set beside a window figure.
+ *
+ * A rate is paired with its attempt column on purpose: "58%" reads the same from 43 attempts as from 4, and a
+ * measurement built from this catalogue cannot leave the count out.
+ */
 
 import type { Measurement } from './provenance';
 

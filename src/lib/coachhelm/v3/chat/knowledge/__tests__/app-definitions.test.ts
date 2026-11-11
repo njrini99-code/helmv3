@@ -6,6 +6,7 @@ import { COUNTABLE_HOLE_COUNTS, isCountableRound, roundExclusionReason } from '@
 import { isScoreCountable, isTotalOnlyCountable } from '@/lib/golf/round-score-countable';
 import { roundTypeFromDb } from '@/lib/golf/round-type-utils';
 import { boardOrder, compareStandings } from '@/lib/coachhelm/v3/qualifying/ranking';
+import { ALL_METRIC_SPECS } from '../../metrics-catalog';
 import { STATS_WINDOWS } from '../../screen-loaders';
 import { parseChecks } from '../data-map-build';
 import { APP_DEFINITIONS, golfBlock } from '../golf';
@@ -157,5 +158,41 @@ describe('the app definitions the golf block states', () => {
   it('toughest holes are grouped by hole number, whatever the course', () => {
     says('Toughest holes here are grouped by hole number across whatever courses were played');
     expect(read('src/clubhouse/data/stats-figures.ts')).toMatch(/grouped by hole number as production does \(each play keeps its own\s+\* par: a hole number is a different hole at each course\)/);
+  });
+});
+
+describe('the direction of every catalogued metric', () => {
+  // The sentence of the golf block that gives each catalogue metric its direction. A metric added to the catalogue without a line here fails.
+  const SAID: Record<string, RegExp> = {
+    scoring_average: /Score is strokes; to par is strokes against the course's par\. For both, lower is better/,
+    scoring_average_vs_par: /For both, lower is better, and a negative to par is under par/,
+    sg_total: /A shot that leaves the player better off than the reference gains strokes; a worse one loses them\. Positive is better\./,
+    sg_putting: /Positive is better\./,
+    sg_approach: /Positive is better\./,
+    sg_tee: /Positive is better\./,
+    sg_around_green: /Positive is better\./,
+    gir_pct: /Greens in regulation: on the green with two putts left for par\. Higher is better\./,
+    driving_accuracy_pct: /Fairways hit: tee shots on par 4s and 5s that finish in the fairway\. Higher is better/,
+    scrambling_pct: /Scrambling: par or better after missing the green\. Higher is better\./,
+    sand_save_pct: /Sand saves: the same from a greenside bunker\./,
+    putts_per_round: /Putts per round: lower is better/,
+    three_putt_pct: /Three-putts: fewer is better\./,
+    penalties_per_round: /Penalty strokes: fewer is better\./,
+  };
+  // In the catalogue but on no Stats read, so the block does not teach it; listed so a new metric cannot join it by accident.
+  const NOT_TAUGHT = ['one_putt_pct'];
+  const LOWER = /lower is better|fewer is better/i;
+
+  it('is the direction the golf block teaches', () => {
+    for (const spec of ALL_METRIC_SPECS.filter((m) => !NOT_TAUGHT.includes(m.id))) {
+      const sentence = SAID[spec.id];
+      expect(sentence, `${spec.id} has a sentence in the golf block`).toBeTruthy();
+      const found = block.match(sentence!);
+      expect(found, `${spec.id}: ${sentence}`).toBeTruthy();
+      // "The same" (sand saves) inherits scrambling's direction.
+      const lower = LOWER.test(found![0]);
+      expect(lower ? 'lower_better' : 'higher_better', spec.id).toBe(spec.direction);
+    }
+    expect([...Object.keys(SAID), ...NOT_TAUGHT].sort()).toEqual(ALL_METRIC_SPECS.map((s) => s.id).sort());
   });
 });
