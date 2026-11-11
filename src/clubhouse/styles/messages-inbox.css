@@ -482,6 +482,23 @@
 [data-ch-ms-v2] .ch-inb--rail .ch-ms-sec.is-ann {
   margin: var(--ch-space-2) 0 0;
 }
+/* Under the conversations it read as one more of them. A hairline sets it apart, from the rows' text edge to the times'
+   edge, with the same room above and below; with nothing above it (a search that matches only announcements) there is
+   nothing to part, and no line. */
+[data-ch-ms-v2] .ch-inb--rail .ch-ms-sec ~ .ch-ms-sec.is-ann {
+  position: relative;
+  padding-top: var(--ch-space-2);
+}
+[data-ch-ms-v2] .ch-inb--rail .ch-ms-sec ~ .ch-ms-sec.is-ann::before {
+  position: absolute;
+  top: 0;
+  right: var(--ch-inb-18);
+  left: var(--ch-inb-18);
+  height: var(--ch-hairline-w);
+  background: var(--ch-separator);
+  content: '';
+  pointer-events: none;
+}
 [data-ch-ms-v2] .ch-inb--rail .ch-ms-sec.is-ann .ch-ms-fold {
   grid-template-columns: 40px minmax(0, 1fr) auto auto;
   gap: var(--ch-inb-2) var(--ch-space-3);

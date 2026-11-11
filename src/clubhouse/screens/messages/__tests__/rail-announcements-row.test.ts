@@ -46,6 +46,21 @@ describe('Messages rail · Announcements is a row on the rail’s grid', () => {
     expect(decls(`${RAIL} .ch-ms-row.is-ann.is-sel .ch-ms-count`)).toMatchObject({ background: 'var(--ch-green-fill-600)' });
   });
 
+  it('a hairline parts it from the conversations above, on the rows’ text edges, and only when something is above', () => {
+    const after = `${RAIL} .ch-ms-sec ~ .ch-ms-sec.is-ann`;
+    expect(decls(after)).toMatchObject({ position: 'relative', 'padding-top': 'var(--ch-space-2)' });
+    expect(decls(`${after}::before`)).toMatchObject({
+      top: '0',
+      right: 'var(--ch-inb-18)',
+      left: 'var(--ch-inb-18)',
+      height: 'var(--ch-hairline-w)',
+      background: 'var(--ch-separator)',
+    });
+    // The label above the rows sits on the same edge.
+    expect(decls(`${RAIL} .ch-ms-sec__l`).padding).toBe('0 var(--ch-inb-18)');
+    expect(decls(`${RAIL} .ch-ms-sec.is-ann::before`)).toEqual({});
+  });
+
   it('the phone’s fold is still the card at the page edge', () => {
     expect(decls('[data-ch-ms-v2] .ch-inb--phone .ch-ms-sec.is-ann')).toMatchObject({ margin: '0 var(--ch-page-x-phone) var(--ch-space-3)' });
   });
