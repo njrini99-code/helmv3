@@ -114,9 +114,6 @@
 .ch-akc-meta { margin: 0; font: var(--ch-type-13); color: var(--ch-text-secondary); overflow-wrap: anywhere; }
 .ch-akc-change { margin: 0; font: var(--ch-type-13); color: var(--ch-text-secondary); }
 .ch-akc-change b { color: var(--ch-text-primary); }
-.ch-akc-fold { display: flex; flex-direction: column; gap: 8px; }
-.ch-akc-fold > .ch-btn { align-self: flex-start; }
-.ch-akc-fold > div { display: flex; flex-direction: column; gap: 8px; width: 100%; }
 
 /* What changes: how it stands now, struck through, and how it will stand under it. */
 .ch-akc-diff { display: grid; gap: 4px; }
@@ -128,16 +125,21 @@
 .ch-akc-warn { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; margin: 0; color: var(--ch-loss); font: var(--ch-type-14); text-wrap: pretty; }
 .ch-akc-warn > svg { margin-top: 2px; }
 
-/* ---------- 5. the foot: under one rule, who is told and where it appears, then how it is taken back ---------- */
+/* ---------- 5. the foot: under one rule, who is told and where it appears, then only what cannot be taken back.
+   Everything else the plan says waits behind the one Details key. ---------- */
 .ch-akc-foot { display: flex; flex-direction: column; gap: 4px; padding-top: 12px; border-top: var(--ch-hairline-w) solid var(--ch-separator-strong); }
 .ch-akc-foot > * { min-width: 0; margin: 0; }
 .ch-akc-told { font: var(--ch-type-13); color: var(--ch-text-secondary); overflow-wrap: anywhere; }
 .ch-akc-told > span { color: var(--ch-text-tertiary); }
+.ch-akc-final { font: var(--ch-type-13); color: var(--ch-text-secondary); overflow-wrap: anywhere; }
 .ch-akc-after { font: var(--ch-type-13); color: var(--ch-text-tertiary); overflow-wrap: anywhere; }
-.ch-akc-editkey { display: flex; flex-wrap: wrap; align-items: center; gap: 0 8px; margin-top: 4px; }
-.ch-akc-editkey > small { flex: 1 1 16ch; font: var(--ch-type-13); color: var(--ch-text-tertiary); }
-/* The key's word sits on the card's left edge with the lines above it; its own padding hangs outside. */
-.ch-akc-editkey > .ch-btn { margin-inline-start: -12px; }
+/* The keys' words sit on the card's left edge with the lines above them; the first key's own padding hangs outside. */
+.ch-akc-keys { display: flex; flex-wrap: wrap; align-items: center; gap: 0 4px; margin-top: 4px; margin-inline-start: -12px; }
+/* Details is the quieter of the two: the card's own ink, not the action colour. */
+.ch-akc-keys > .ch-btn[data-ch-card-more] { color: var(--ch-text-secondary); }
+.ch-akc-keys > .ch-btn[aria-expanded='true'] > svg { transform: rotate(180deg); }
+.ch-akc-more { display: flex; flex-direction: column; gap: 4px; }
+.ch-akc-more > * { min-width: 0; margin: 0; }
 
 /* ---------- edit mode: the plan's editable fields, each in the app's own control ---------- */
 .ch-akc-edit { display: flex; flex-direction: column; gap: 12px; padding-top: 12px; border-top: var(--ch-hairline-w) solid var(--ch-separator-strong); }

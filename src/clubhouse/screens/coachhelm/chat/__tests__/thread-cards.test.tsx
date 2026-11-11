@@ -60,7 +60,7 @@ describe('several cards in one turn', () => {
 
   it('leaves a card out of the batch while its edit form is open: what is on screen is not what would be confirmed', () => {
     render(wrap(thread({ onApproveAll: vi.fn(), onEditCard: vi.fn() })));
-    fireEvent.click(cards()[0]!.querySelector<HTMLButtonElement>('.ch-akc-editkey button')!);
+    fireEvent.click(cards()[0]!.querySelector<HTMLButtonElement>('[data-ch-card-edit]')!);
     // One card left that could go, and one card is decided on the card: no bar.
     expect(document.querySelector('.ch-akc-all')).toBeNull();
   });
@@ -75,7 +75,7 @@ describe('edit mode in the thread', () => {
     render(wrap(thread({ onEditCard })));
     // The lock declares nothing editable, so two of the three offer it.
     expect(screen.getAllByRole('button', { name: 'Edit' }).length).toBe(2);
-    fireEvent.click(cards()[1]!.querySelector<HTMLButtonElement>('.ch-akc-editkey button')!);
+    fireEvent.click(cards()[1]!.querySelector<HTMLButtonElement>('[data-ch-card-edit]')!);
     fireEvent.change(screen.getByDisplayValue('Post your Ridgeline practice round hole by hole'), { target: { value: 'Post your Ridgeline round tonight' } });
     fireEvent.click(screen.getByRole('button', { name: 'Update the card' }));
     expect(onEditCard).toHaveBeenCalledWith(keyOf('create_task'), { title: 'Post your Ridgeline round tonight' });
@@ -85,12 +85,28 @@ describe('edit mode in the thread', () => {
     const onEditCard = vi.fn();
     const base = ASK_CARD_STATES.several!.messages;
     const { rerender } = render(wrap(thread({ onEditCard })));
-    fireEvent.click(cards()[1]!.querySelector<HTMLButtonElement>('.ch-akc-editkey button')!);
+    fireEvent.click(cards()[1]!.querySelector<HTMLButtonElement>('[data-ch-card-edit]')!);
     fireEvent.change(screen.getByDisplayValue('Post your Ridgeline practice round hole by hole'), { target: { value: 'x' } });
     fireEvent.click(screen.getByRole('button', { name: 'Update the card' }));
     const refused = base.map((m) => (m.role === 'assistant' ? { ...m, parts: [...m.parts, { type: 'data-card-revision', id: `revision-${keyOf('create_task')}`, data: { key: keyOf('create_task'), accepted: false, kind: 'invalid', reason: 'Task: Say what to post.' } }] } : m)) as AskThreadProps['messages'];
     rerender(wrap(thread({ onEditCard, messages: refused })));
     expect(cards()[1]!.querySelector('[role="alert"]')?.textContent).toContain('Task: Say what to post.');
     expect(cards()[0]!.querySelector('[role="alert"]')).toBeNull();
+  });
+});
+
+describe('quick chat mounts the same thread, compact', () => {
+  it('has Edit on the card and the bar under several cards, as Ask has', () => {
+    const onApproveAll = vi.fn();
+    const onEditCard = vi.fn();
+    render(wrap(thread({ density: 'compact', phone: true, onApproveAll, onEditCard })));
+    expect(cards().length).toBe(3);
+    expect(screen.getAllByRole('button', { name: 'Edit' }).length).toBe(2);
+    fireEvent.click(screen.getByRole('button', { name: 'Approve these 2' }));
+    expect(onApproveAll).toHaveBeenCalledWith([keyOf('create_event'), keyOf('create_task')]);
+    fireEvent.click(cards()[1]!.querySelector<HTMLButtonElement>('[data-ch-card-edit]')!);
+    fireEvent.change(screen.getByDisplayValue('Post your Ridgeline practice round hole by hole'), { target: { value: 'Post your Ridgeline round tonight' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Update the card' }));
+    expect(onEditCard).toHaveBeenCalledWith(keyOf('create_task'), { title: 'Post your Ridgeline round tonight' });
   });
 });

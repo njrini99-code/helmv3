@@ -84,6 +84,8 @@ export function QuickChatThread({ chat: useChatImpl, conversationId, initialMess
   const chipEl = useRef<HTMLSpanElement>(null);
 
   const chat = useChatImpl({ surface: 'quick_chat', conversationId, initialMessages, initialContext: chip?.playerId ? [{ kind: 'player', id: chip.playerId, label: chip.playerName ?? 'This player' }] : undefined });
+  // A chat that cannot confirm several together offers no bar (the thread reads the absence).
+  const approveAll = chat.approveAll;
   const turns = useMemo(() => buildTurns(chat.messages, { busy: chat.busy }), [chat.messages, chat.busy]);
   const pending = pendingApproval(chat.messages);
   // A fresh object each render: effects key on its id, or setting the key's state re-renders into a loop.
@@ -363,6 +365,15 @@ export function QuickChatThread({ chat: useChatImpl, conversationId, initialMess
                   chat.approve(id);
                 }}
                 onDeny={chat.deny}
+                // The same card as Ask: its fields are edited on it, and several are confirmed together under one Undo.
+                onEditCard={chat.revise}
+                onApproveAll={
+                  approveAll &&
+                  ((ids) => {
+                    confirmAt.current = performance.now();
+                    approveAll(ids);
+                  })
+                }
                 onSend={(t) => send(t)}
                 onStop={stop}
                 onRetry={() => {

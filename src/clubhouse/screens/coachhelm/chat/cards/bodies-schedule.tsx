@@ -7,13 +7,12 @@ import { Avatar } from '../../../../ui/Avatar';
 import { Button } from '../../../../ui/Button';
 import type { CardCopy } from './catalog';
 import { clockRange, countedFact, dayWords, daysBetween, factOf, namesIn, peopleOf, plural, restOf, stampWords, valueOf } from './facts';
-import { Body, Change, Delivery, Fold, Notice, People, Rows, Thing, Warning, Who, tense } from './kit';
-import { isOpen, isSaved, type CardBodyProps, type CardPerson } from './types';
+import { Body, Change, Delivery, Notice, People, Thing, Warning, Who, tense } from './kit';
+import { isSaved, type CardBodyProps, type CardPerson } from './types';
 
 /** The bodies of the tasks that put something on the calendar or act on an event (CAPABILITIES.md A1 to A7, A19 to A22). */
 export type BodyProps = CardBodyProps & { copy: CardCopy };
 
-const ask = (p: BodyProps) => (isOpen(p.phase) ? p.onAsk : undefined);
 /** Facts the plan marks missing that are not rows of their own ("Measurable target"). */
 export function missingRows(p: ActionProposal): ProposalFact[] {
   return p.missing.filter((m) => !p.facts.some((f) => f.label === m)).map((label) => ({ label, value: 'Not set', missing: true }));
@@ -33,6 +32,8 @@ export function EventBody(props: BodyProps) {
   const invited = peopleOf(p, roster, valueOf(p, 'Invited'));
   const n = copy.told || invited.length;
   const allDay = !cal?.start;
+  // "Replies: Asked for" is said in the event's own quiet line; any other answer stays a fact behind Details.
+  const replies = !!cal && valueOf(p, 'Replies') === 'Asked for';
   const lede =
     copy.reach === 'sends'
       ? tense(phase, { will: `Sends to ${plural(n, 'player')} and asks each for a reply`, did: `Sent to ${plural(n, 'player')}, who are asked to reply`, not: `Not sent. It would have gone to ${plural(n, 'player')}.` })
@@ -40,19 +41,16 @@ export function EventBody(props: BodyProps) {
         ? `On ${plural(invited.length, 'player')}’ calendars. Nobody is told.`
         : 'On the team’s calendar. Nobody is told.';
   return (
-    <Body label={lede} card={props} wordless={copy.reach === 'sends'}>
+    <Body label={lede} card={props} rows={restOf(p, ['When', 'Type', 'Where', 'Invited', ...(replies ? ['Replies'] : []), ...(p.not_reached ? ['Will not get it'] : [])])} wordless={copy.reach === 'sends'}>
       <Who proposal={p} density={density}>
         <People people={invited} total={n} density={density} everyone={!!roster?.length && invited.length === roster.length} />
       </Who>
       <Thing
         title={cal?.title ?? p.summary}
         lines={cal ? [<span className="ch-num">{[dayWords(cal.date, true), allDay ? 'All day' : clockRange(cal.start, cal.end)].join(' · ')}</span>, cal.where ?? <span data-unset="">No place set</span>] : []}
-        meta={[valueOf(p, 'Type') && titleCase(valueOf(p, 'Type')!)]}
+        meta={[valueOf(p, 'Type') && titleCase(valueOf(p, 'Type')!), replies && 'Replies asked']}
       />
       <Delivery proposal={p} phase={phase} density={density} />
-      <Fold density={density}>
-        <Rows facts={restOf(p, ['When', 'Type', 'Where', 'Invited', ...(p.not_reached ? ['Will not get it'] : [])])} density={density} subject={p.summary} onAsk={ask(props)} />
-      </Fold>
     </Body>
   );
 }
@@ -113,22 +111,23 @@ export function SeriesBody(props: BodyProps) {
   // The plan's own list of days when it carries one; else the planner's sentence of dates, read back.
   const series = p.visual?.kind === 'series' ? p.visual : null;
   const dates = series ? series.dates.map((d) => dayWords(d)) : (valueOf(p, 'Dates') ?? '').split(' · ').filter(Boolean);
+  // The place and the reply deadline are lines of the practice itself, when the plan gives them.
+  const place = series?.where ?? (factOf(p, 'Location')?.missing ? null : valueOf(p, 'Location'));
+  const rsvp = valueOf(p, 'RSVP');
+  const replies = rsvp && /^required/i.test(rsvp) ? `Replies ${rsvp.charAt(0).toLowerCase()}${rsvp.slice(1)}` : null;
   const lede =
     copy.reach === 'sends'
       ? tense(phase, { will: `Sends to ${plural(n, 'player')} and asks each for a reply`, did: `Sent to ${plural(n, 'player')}, who are asked to reply`, not: `Not sent. It would have gone to ${plural(n, 'player')}.` })
       : `On ${plural(people.length, 'player')}’ calendars. Nobody is told.`;
   return (
-    <Body label={lede} card={props} wordless={copy.reach === 'sends'}>
+    <Body label={lede} card={props} rows={restOf(p, ['Repeats', 'Dates', 'Occurrences', 'Invites', ...(place ? ['Location'] : []), ...(replies ? ['RSVP'] : []), ...(p.not_reached ? ['Will not get it'] : [])])} wordless={copy.reach === 'sends'}>
       <Who proposal={p} density={density}>
         <People people={people} density={density} everyone={!!roster?.length && people.length === roster.length} />
       </Who>
-      <Thing title={series?.title ?? p.summary} lines={[valueOf(p, 'Repeats'), series && <span className="ch-num">{[clockRange(series.start, series.end), series.where].filter(Boolean).join(' · ')}</span>]}>
+      <Thing title={series?.title ?? p.summary} lines={[valueOf(p, 'Repeats'), (series || place) && <span className="ch-num">{[series && clockRange(series.start, series.end), place].filter(Boolean).join(' · ')}</span>, replies && <span className="ch-num">{replies}</span>]}>
         <DayTiles dates={dates} limit={density === 'compact' ? 4 : null} />
       </Thing>
       <Delivery proposal={p} phase={phase} density={density} />
-      <Fold density={density}>
-        <Rows facts={restOf(p, ['Repeats', 'Dates', 'Occurrences', 'Invites', ...(p.not_reached ? ['Will not get it'] : [])])} density={density} subject={p.summary} onAsk={ask(props)} />
-      </Fold>
     </Body>
   );
 }
@@ -138,41 +137,38 @@ export function SeriesBody(props: BodyProps) {
 // ---------------------------------------------------------------------------------------------------------------------
 
 export function BlockedBody(props: BodyProps) {
-  const { proposal: p, density } = props;
+  const { proposal: p } = props;
   // "2026-11-13, 13:00 to 15:00", or with a last day: "2026-11-13 to 2026-11-14, all day".
   const [days = '', hours] = (valueOf(p, 'When') ?? '').split(', ');
   const [day, lastDay] = days.split(' to ');
   const [from, to] = (hours ?? '').split(' to ');
   const lede = 'Only you see this. It is not on any player’s calendar.';
   return (
-    <Body label={lede} card={props}>
+    <Body label={lede} card={props} rows={restOf(p, ['When'])}>
       <Thing title={p.summary} lines={[day && <span className="ch-num">{[lastDay ? `${dayWords(day)} to ${dayWords(lastDay)}` : dayWords(day, true), to ? clockRange(from, to) : 'All day'].join(' · ')}</span>]} />
-      <Rows facts={restOf(p, ['When'])} density={density} subject={p.summary} onAsk={ask(props)} />
     </Body>
   );
 }
 
 export function BreakBody(props: BodyProps) {
-  const { proposal: p, density } = props;
+  const { proposal: p } = props;
   const [first, last] = (valueOf(p, 'Dates') ?? '').split(' to ');
   const lede = p.notifications[0] ?? 'Nobody is told.';
   return (
-    <Body label={lede} card={props}>
+    <Body label={lede} card={props} rows={restOf(p, ['Dates'])}>
       <Thing title={p.summary} lines={[first && last && <span className="ch-num">{`${dayWords(first, true)} to ${dayWords(last, true)}`}</span>]} meta={[first && last && plural(daysBetween(first, last), 'day')]} />
-      <Rows facts={restOf(p, ['Dates'])} density={density} subject={p.summary} onAsk={ask(props)} />
     </Body>
   );
 }
 
 export function TermBody(props: BodyProps) {
-  const { proposal: p, density } = props;
+  const { proposal: p } = props;
   const [start, end] = (valueOf(p, 'Classes') ?? '').split(' to ');
   const exams = valueOf(p, 'Exams end');
   const lede = p.notifications[0] ?? 'Nobody is told.';
   return (
-    <Body label={lede} card={props}>
+    <Body label={lede} card={props} rows={restOf(p, ['Classes', 'Exams end'])}>
       <Thing title={p.summary} lines={[start && end && <span className="ch-num">{`Classes run ${dayWords(start)} to ${dayWords(end)}`}</span>, exams && <span className="ch-num">{`Exams end ${dayWords(exams)}`}</span>]} />
-      <Rows facts={restOf(p, ['Classes', 'Exams end'])} density={density} subject={p.summary} onAsk={ask(props)} />
     </Body>
   );
 }
@@ -184,14 +180,14 @@ export function TermBody(props: BodyProps) {
 const HOW: Record<string, string> = { bus: 'Bus', van: 'Van', flight: 'Flight', carpool: 'Carpool' };
 
 export function TripBody(props: BodyProps) {
-  const { proposal: p, density } = props;
+  const { proposal: p } = props;
   const trip = p.visual?.kind === 'trip' ? p.visual : null;
   const how = HOW[trip?.how ?? ''] ?? titleCase(trip?.how ?? 'Transport');
   const told = p.notifications[0] ?? '';
   const lede = 'Players see it as new travel. Nobody is told.';
   const back = stampWords(valueOf(p, 'Back'));
   return (
-    <Body label={lede} card={props}>
+    <Body label={lede} card={props} rows={restOf(p, ['Leaves', 'How', 'From', 'Back']).filter((f) => f.value !== 'Not set')}>
       {trip ? (
         <Thing
           title={p.summary}
@@ -205,9 +201,6 @@ export function TripBody(props: BodyProps) {
       ) : (
         <Thing title={p.summary} />
       )}
-      <Fold density={density}>
-        <Rows facts={restOf(p, ['Leaves', 'How', 'From', 'Back']).filter((f) => f.value !== 'Not set')} density={density} subject={p.summary} onAsk={ask(props)} />
-      </Fold>
       {/confirmation number/i.test(told) && <Warning>Every team member can read the hotel confirmation number.</Warning>}
     </Body>
   );
@@ -224,9 +217,9 @@ export function QualifierBody(props: BodyProps) {
   const n = copy.told || field.length;
   const lede = tense(phase, { will: `Sends to ${plural(n, 'player')}: a push and an email`, did: `Sent to ${plural(n, 'player')}: a push and an email`, not: `Not sent. It would have gone to ${plural(n, 'player')}.` });
   const earned = q ? Math.max(0, q.total - q.picks) : 0;
-  const extra: ProposalFact[] = q?.deadline && !factOf(p, 'Entry deadline') ? [{ label: 'Entry deadline', value: dayWords(q.deadline) }] : [];
+  const deadline = q?.deadline ? dayWords(q.deadline) : null;
   return (
-    <Body label={lede} card={props} wordless>
+    <Body label={lede} card={props} rows={restOf(p, ['Starts', 'Rounds', 'Squad', 'Players', ...(deadline ? ['Entry deadline'] : []), ...(p.not_reached ? ['Will not get it'] : [])]).filter((f) => f.value !== 'Not set')} wordless>
       <Who proposal={p} density={density}>
         <People people={field} total={q?.field} density={density} />
       </Who>
@@ -239,14 +232,12 @@ export function QualifierBody(props: BodyProps) {
               {`${plural(q.total, 'seat')}: ${earned} on score${q.picks > 0 ? `, ${plural(q.picks, 'coach pick')}` : ''}`}
             </span>,
           ]}
+          meta={[deadline && `Entries close ${deadline}`]}
         />
       ) : (
         <Thing title={p.summary} />
       )}
       <Delivery proposal={p} phase={phase} density={density} />
-      <Fold density={density}>
-        <Rows facts={[...restOf(p, ['Starts', 'Rounds', 'Squad', 'Players', ...(p.not_reached ? ['Will not get it'] : [])]).filter((f) => f.value !== 'Not set'), ...extra]} density={density} subject={p.summary} onAsk={ask(props)} />
-      </Fold>
     </Body>
   );
 }
@@ -347,7 +338,7 @@ export function ReminderBody(props: BodyProps) {
   const missed = valueOf(p, 'Will not get it');
   const lede = tense(phase, { will: `Sends to ${plural(n, 'player')}, in the app`, did: `Sent to ${plural(n, 'player')}, in the app`, not: `Not sent. It would have gone to ${plural(n, 'player')}.` });
   return (
-    <Body label={lede} card={props} wordless={!title}>
+    <Body label={lede} card={props} rows={restOf(p, ['To', 'Will not get it', 'They see', 'When', 'Event'])} wordless={!title}>
       <Who proposal={p} density={density}>
         <People people={people} total={n} density={density} />
         {missed && !p.not_reached && <p className="ch-akc-missed">Will not get it: {missed}</p>}
@@ -356,9 +347,6 @@ export function ReminderBody(props: BodyProps) {
       <Delivery proposal={p} phase={phase} density={density}>
         {title && <Notice title={title} body={rest.join('\n')} caption={tense(phase, { will: 'What each of them gets', did: 'What each of them got', not: 'What they would have got' })} density={density} />}
       </Delivery>
-      <Fold density={density}>
-        <Rows facts={restOf(p, ['To', 'Will not get it', 'They see', 'When', 'Event'])} density={density} subject={p.summary} onAsk={ask(props)} />
-      </Fold>
     </Body>
   );
 }

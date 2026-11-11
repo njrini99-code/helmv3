@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ActionProposal } from '@/lib/coachhelm/v3/chat/action-types';
 import { CAP_ROSTER, CAP_ROSTER_40, CAP_TASKS, type CapTask } from '../../../../../preview/fixtures-chat-capabilities';
 import { BODY_TOOLS, CARD_PHASES, CARD_TOOLS, CardBody, cardCopy, isOutOfDate, type CardDensity, type CardPerson, type CardPhase } from '..';
+import { undoParts } from '../kit';
 import { AppLinkRow, CoachNoteChip, NotTracked, WorkedOut, computedSummary } from '../answers';
 import { HandoffBody } from '../drafts';
 import { clockRange, dayWords, namesIn } from '../facts';
@@ -42,6 +43,9 @@ describe('the catalogue covers the registry', () => {
     const proposal: ActionProposal = { action: 'Archive the season', summary: 'Fall 2026', facts: [{ label: 'Rounds', value: '212' }], affects: [], notifications: ['Nobody is told.'], missing: [], idempotency_key: 'k' };
     render(<CardBody tool="archive_season" proposal={proposal} receipt={null} phase="proposed" density="full" />);
     expect(cardCopy('archive_season', proposal).reach).toBe('private');
+    // A fact the body has no words of its own for waits behind the one Details key.
+    expect(screen.queryByText('Rounds')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Details' }));
     expect(screen.getByText('Rounds')).toBeTruthy();
     expect(screen.getByText('212')).toBeTruthy();
   });
@@ -58,7 +62,7 @@ describe('every body draws every state, from the real plan and receipt types', (
         expect(body!.getAttribute('aria-label')!.length).toBeGreaterThan(8);
         // The shell owns every button that decides anything. A body has only disclosures.
         // (A delivery worded differently by channel has a switch between them; a person's own words, a select.)
-        for (const b of within(body as HTMLElement).queryAllByRole('button')) expect(b.textContent + (b.getAttribute('aria-label') ?? '')).toMatch(/Show|Hide|Set it|Push|In the app|Email|Message/);
+        for (const b of within(body as HTMLElement).queryAllByRole('button')) expect(b.textContent + (b.getAttribute('aria-label') ?? '')).toMatch(/Show|Hide|Details|Set it|Push|In the app|Email|Message/);
         expect(body!.querySelector('a')).toBeNull();
         unmount();
       }
@@ -255,7 +259,68 @@ describe('a plan the server built is drawn as the plan says, and an older card s
     // The same notice as the bell row words it.
     fireEvent.click(screen.getByRole('radio', { name: 'In the app' }));
     expect(container.querySelector('.ch-akc-notice')!.textContent).toContain('New event: Short-game practice');
-    expect(screen.getByText(/After the 8 seconds:/).parentElement!.textContent).toContain('Change or cancel it on the Calendar.');
+    // Under the rule: who is told, then only what cannot be taken back. The rest waits behind Details, which says what was assumed.
+    expect([...container.querySelectorAll('.ch-akc-foot > p')].map((x) => x.textContent)).toEqual(['6 players get a push, a notice in the app and an email.', 'An invitation that has gone out stays sent.']);
+    expect(screen.queryByText(/After the 8 seconds:/)).toBeNull();
+    expect(screen.queryByText(/The email is the same invitation/)).toBeNull();
+    expect(container.querySelector('.ch-akc-rows')).toBeNull();
+    // "Replies: Asked for" is said in the event's own quiet line.
+    expect(container.querySelector('.ch-akc-thing > .ch-akc-meta')!.textContent).toBe('Practice · Replies asked');
+    const key = screen.getByRole('button', { name: 'Details · 1 assumed' });
+    expect(key.getAttribute('aria-expanded')).toBe('false');
+    fireEvent.click(key);
+    expect(key.getAttribute('aria-expanded')).toBe('true');
+    const more = container.querySelector('.ch-akc-more')!.textContent!;
+    expect(more).toContain('After the 8 seconds: Change or cancel it on the Calendar.');
+    expect(more).not.toContain('stays sent');
+    expect(more).toContain('The email is the same invitation');
+    expect(more).toContain('Length2.5 hoursAssumed. The usual practice.');
+    expect(more).not.toContain('Replies');
+    fireEvent.click(key);
+    expect(container.querySelector('.ch-akc-more')).toBeNull();
+  });
+
+  it('keeps under the rule only who is told and what cannot be taken back, on every card that waits', () => {
+    for (const c of CASES) {
+      for (const density of ['full', 'compact'] as const) {
+        const { container, unmount } = draw(c, 'proposed', density);
+        const foot = container.querySelector('.ch-akc-foot')!;
+        expect([...foot.children].map((x) => x.className), `${c.id} ${density}`).toEqual(['ch-akc-told', ...(foot.querySelector('.ch-akc-final') ? ['ch-akc-final'] : []), ...(foot.querySelector('.ch-akc-keys') ? ['ch-akc-keys'] : [])]);
+        // A fact shown as a row before the coach asks for details is one still to give.
+        for (const row of container.querySelectorAll('.ch-akc-row')) expect(row.hasAttribute('data-missing'), `${c.id}: ${row.textContent}`).toBe(true);
+        // What a coach must see is never behind the key: who it will not reach, and that there is no Undo.
+        for (const n of c.proposal.not_reached ?? []) expect(container.textContent, c.id).toContain(`Will not get it: ${n.name}`);
+        if (c.proposal.undo?.window === false) expect(container.textContent, c.id).toContain('There is no Undo.');
+        unmount();
+      }
+    }
+  });
+
+  it('reads the plan’s afterwards line as what is final, kept in view, and the way back, behind Details', () => {
+    expect(undoParts('Change or cancel it on the Calendar. An invitation that has gone out stays sent.')).toEqual({ back: 'Change or cancel it on the Calendar.', final: 'An invitation that has gone out stays sent.' });
+    expect(undoParts('Delete the message in the thread. People who have read it have read it.')).toEqual({ back: 'Delete the message in the thread.', final: 'People who have read it have read it.' });
+    expect(undoParts('It stays in every player’s Announcements. It cannot be recalled from the chat.')).toEqual({ back: '', final: 'It stays in every player’s Announcements. It cannot be recalled from the chat.' });
+    expect(undoParts('Each practice is its own event on the Calendar: change or cancel them there.')).toEqual({ back: 'Each practice is its own event on the Calendar: change or cancel them there.', final: '' });
+    expect(undoParts('Mark it completed from the chat or on Jonah’s page.')).toEqual({ back: 'Mark it completed from the chat or on Jonah’s page.', final: '' });
+    expect(undoParts('A locked lineup cannot be unlocked.')).toEqual({ back: '', final: 'A locked lineup cannot be unlocked.' });
+    expect(undoParts('It is not reopened from the chat; the CoachHelm board shows it as handled.').back).toBe('');
+    // A sentence it cannot place stays in view: a new line from the engine is never hidden by a guess.
+    expect(undoParts('Players keep the copy they downloaded.')).toEqual({ back: '', final: 'Players keep the copy they downloaded.' });
+    expect(undoParts(undefined)).toEqual({ back: '', final: '' });
+    // Every sentence of every plan the gallery has lands on one side, none is lost.
+    for (const c of CASES) {
+      const after = c.proposal.undo?.after;
+      if (!after) continue;
+      const { back, final } = undoParts(after);
+      expect((back + final).replace(/\s/g, '').length, c.id).toBe(after.replace(/\s/g, '').length);
+    }
+  });
+
+  it('shows the focus card as the sheet has it: one quiet line under the rule', () => {
+    const { container } = draw(of('create_focus_area'));
+    expect(container.querySelectorAll('.ch-akc-foot > p').length).toBe(1);
+    fireEvent.click(screen.getByRole('button', { name: 'Details' }));
+    expect(container.querySelector('.ch-akc-more')!.textContent).toContain('After the 8 seconds: Mark it completed from the chat or on Jonah’s page.');
   });
 
   it('keeps the honest line on the older card of the same task', () => {
@@ -263,6 +328,7 @@ describe('a plan the server built is drawn as the plan says, and an older card s
     expect(container.querySelector('.ch-akc-notice')).toBeNull();
     expect(screen.getByText('The exact wording is not shown here.')).toBeTruthy();
     expect(screen.queryByText(/After the 8 seconds:/)).toBeNull();
+    expect(container.querySelector('.ch-akc-final')).toBeNull();
   });
 
   it('shows each person their own words when a plan gives them', () => {
@@ -324,6 +390,9 @@ describe('edit mode: only what the plan declares, each in the app’s own contro
   it('offers Edit only where the plan declares fields, only while the card waits, and only when the shell can send it', () => {
     edit(of('create_task'));
     expect(screen.getByRole('button', { name: 'Edit' })).toBeTruthy();
+    // What can be changed is said behind Details; the Edit key itself is in view.
+    expect(screen.queryByText('You can change the task, due, priority and assigned to.')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Details' }));
     expect(screen.getByText('You can change the task, due, priority and assigned to.')).toBeTruthy();
     cleanup();
     edit(of('lock_lineup'));

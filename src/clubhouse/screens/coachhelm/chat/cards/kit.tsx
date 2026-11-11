@@ -297,25 +297,11 @@ export function Meta({ parts }: { parts: ReadonlyArray<string | null | undefined
   return shown.length ? <p className="ch-akc-meta">{shown.join(' · ')}</p> : null;
 }
 
-/** In quick chat the secondary rows wait behind one key; in Ask they are simply there. */
-export function Fold({ density, label = 'details', children }: { density: CardDensity; label?: string; children: ReactNode }) {
-  const [open, setOpen] = useState(false);
-  const id = useId();
-  if (density === 'full') return <>{children}</>;
-  return (
-    <div className="ch-akc-fold">
-      <Button variant="ghost" size="sm" aria={{ expanded: open, controls: id }} onClick={() => setOpen((v) => !v)}>
-        {open ? `Hide ${label}` : `Show ${label}`}
-      </Button>
-      {open && <div id={id}>{children}</div>}
-    </div>
-  );
-}
-
 /**
  * What a recipient receives, exactly: the plan's own `delivery`, built by the code that sends it. Where a channel words
  * it differently the coach can switch channel; where each person gets their own words, whose. `children` is what an
- * older card without `delivery` draws in its place. A plan that says nothing is sent draws nothing here.
+ * older card without `delivery` draws in its place. A plan that says nothing is sent draws nothing here. The plan's note
+ * on its channels is the frame's, behind Details (`Body`).
  */
 export function Delivery({ proposal, phase, density, children }: { proposal: ActionProposal; phase: CardPhase; density: CardDensity; children?: ReactNode }) {
   const d = proposal.delivery;
@@ -345,7 +331,6 @@ export function Delivery({ proposal, phase, density, children }: { proposal: Act
         <b>{form.title}</b>
         <Clamp text={channel === '0' && person ? person.body : form.body} lines={linesFor(density)} density={density} />
       </blockquote>
-      {d.note && <p className="ch-akc-meta">{d.note}</p>}
     </figure>
   );
 }
@@ -371,6 +356,21 @@ const lowerList = (labels: readonly string[]): string => {
   return l.length <= 1 ? (l[0] ?? '') : `${l.slice(0, -1).join(', ')} and ${l[l.length - 1]}`;
 };
 
+/** A sentence of the plan's afterwards line that is a way back the coach takes: an instruction, with nothing final in it. */
+const WAY_BACK = /(^|: )(change|edit|delete|remove|move|restore|reopen|resume|pause|mark|unpublish|set|take|log|clear|cancel|close)\b/i;
+const FINAL = /\b(cannot|can[’']t|not|never|no longer|stays?|already|have read)\b/i;
+
+/**
+ * The plan's afterwards line, read as its sentences: `final` is what cannot be taken back, which a coach sees before
+ * confirming; `back` is how it is changed later, which waits behind Details. A sentence this cannot place is kept in
+ * view, so a new line from the engine is never hidden by a guess.
+ */
+export function undoParts(after: string | undefined): { final: string; back: string } {
+  const sentences = (after ?? '').match(/[^.!?]+(?:[.!?]+|$)/g)?.map((x) => x.trim()).filter(Boolean) ?? [];
+  const isBack = (x: string) => WAY_BACK.test(x) && !FINAL.test(x);
+  return { final: sentences.filter((x) => !isBack(x)).map(sentence).join(' '), back: sentences.filter(isBack).map(sentence).join(' ') };
+}
+
 /** The words an older card cannot show, said where the words would be told. */
 const NO_WORDS = 'The exact wording is not shown here.';
 
@@ -392,11 +392,16 @@ function toldLine(card: CardBodyProps & { copy: CardCopy }, lede: string, wordle
 
 /**
  * The frame of every body: one group, named by its reach sentence, in the density and state it is drawn in. After the
- * body's own drawing it holds what every card says the same way: who a send missed, the one quiet line for who is told
- * and where it appears, how it is taken back afterwards, and the way into edit mode. A write with no Undo says so first.
- * `wordless`: the body has no words of its own to show when the plan carries none (an older card).
+ * body's own drawing it holds what every card says the same way, and it keeps that short: under the hairline, one quiet
+ * line for who is told and where it appears, and a second only for what cannot be taken back. Everything else a plan
+ * says (a fact the body did not set in its own words, what was assumed, the note on its channels, how it is changed
+ * afterwards, what can be edited) waits behind one Details key, which says when something was assumed. What a coach has
+ * to see before confirming is never behind it: a write with no Undo says so first, a value still to give is asked for in
+ * place, and who a send will not reach is in the body's first lines.
+ * `rows`: the facts the body has not set in its own words. `wordless`: the body has no words of its own to show when the
+ * plan carries none (an older card).
  */
-export function Body({ label, card, wordless = false, children }: { label: string; card: CardBodyProps & { copy: CardCopy }; wordless?: boolean; children: ReactNode }) {
+export function Body({ label, card, wordless = false, rows = [], children }: { label: string; card: CardBodyProps & { copy: CardCopy }; wordless?: boolean; rows?: readonly ProposalFact[]; children: ReactNode }) {
   const { proposal: p, phase, density, receipt } = card;
   const fields = editableOf(p);
   const canEdit = phase === 'proposed' && !!card.onEdit && fields.length > 0;
@@ -419,8 +424,20 @@ export function Body({ label, card, wordless = false, children }: { label: strin
     setOpenFor(null);
     tellShell.current?.(false);
   }, [stale]);
+  const [more, setMore] = useState(false);
+  const moreId = useId();
   const missed = receipt?.missed ?? [];
   const { told, note } = toldLine(card, label, wordless);
+  const asking = phase === 'proposed' || phase === 'confirming' ? card.onAsk : undefined;
+  const unset = rows.filter((f) => f.missing);
+  const rest = rows.filter((f) => !f.missing);
+  const assumed = rest.filter((f) => f.source).length;
+  const undo = isWithdrawn(phase) ? null : p.undo;
+  const { final, back } = undoParts(undo?.after);
+  const after = !undo ? null : undo.window ? (back ? `After the 8 seconds: ${back}` : 'Undo is there for 8 seconds after you confirm.') : back ? `Afterwards: ${back}` : null;
+  const channels = p.delivery?.note ?? null;
+  const hint = canEdit && !open ? `You can change the ${lowerList(fields.map((f) => f.label))}.` : null;
+  const hasMore = rest.length > 0 || !!channels || !!after || !!hint;
   return (
     <div className="ch-akc" role="group" aria-label={reachLine(card.copy, phase, p, label)} data-ch-card-body={card.tool} data-density={density} data-phase={phase} data-reach={card.copy.reach} data-editing={open ? '' : undefined}>
       {p.undo?.window === false && !isSaved(phase) && !isWithdrawn(phase) && (
@@ -429,23 +446,34 @@ export function Body({ label, card, wordless = false, children }: { label: strin
         </Warning>
       )}
       {children}
+      <Rows facts={unset} density={density} subject={p.summary} onAsk={asking} />
       {missed.length > 0 && <p className="ch-akc-missed">Did not get it: {missed.map((m) => `${m.name} (${m.reason})`).join(', ')}</p>}
       <div className="ch-akc-foot">
         <p className="ch-akc-told" data-withdrawn={isWithdrawn(phase) ? '' : undefined}>
           {told}
           {note && <span> {note}</span>}
         </p>
-        {p.undo?.after && !isWithdrawn(phase) && (
-          <p className="ch-akc-after">
-            {p.undo.window ? 'After the 8 seconds:' : 'Afterwards:'} {p.undo.after}
-          </p>
+        {final && <p className="ch-akc-final">{final}</p>}
+        {((canEdit && !open) || hasMore) && (
+          <div className="ch-akc-keys">
+            {canEdit && !open && (
+              <Button variant="ghost" size="sm" leftIcon={Pencil} onClick={() => setOpen(true)} data={{ 'data-ch-card-edit': '' }}>
+                Edit
+              </Button>
+            )}
+            {hasMore && (
+              <Button variant="ghost" size="sm" rightIcon={ChevronDown} aria={{ expanded: more, controls: moreId }} onClick={() => setMore((v) => !v)} data={{ 'data-ch-card-more': '' }}>
+                {assumed > 0 ? `Details · ${count(assumed)} assumed` : 'Details'}
+              </Button>
+            )}
+          </div>
         )}
-        {canEdit && !open && (
-          <div className="ch-akc-editkey">
-            <Button variant="ghost" size="sm" leftIcon={Pencil} onClick={() => setOpen(true)}>
-              Edit
-            </Button>
-            <small>You can change the {lowerList(fields.map((f) => f.label))}.</small>
+        {more && hasMore && (
+          <div id={moreId} className="ch-akc-more">
+            <Rows facts={rest} density={density} subject={p.summary} />
+            {channels && <p className="ch-akc-after">{channels}</p>}
+            {after && <p className="ch-akc-after">{after}</p>}
+            {hint && <p className="ch-akc-after">{hint}</p>}
           </div>
         )}
       </div>

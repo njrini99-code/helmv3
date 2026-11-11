@@ -1,10 +1,9 @@
 'use client';
 
-import type { ProposalFact } from '@/lib/coachhelm/v3/chat/action-types';
 import { missingRows, unsetOf, type BodyProps } from './bodies-schedule';
 import { count, dayWords, factOf, peopleOf, plural, restOf, valueOf } from './facts';
-import { Body, Bubble, Change, Clamp, Delivery, Diff, Fold, Notice, People, Quote, Rows, Thing, Who, sentence, tense } from './kit';
-import { isOpen, type CardPerson } from './types';
+import { Body, Bubble, Change, Clamp, Delivery, Diff, Meta, Notice, People, Quote, Thing, Who, sentence, tense } from './kit';
+import type { CardPerson } from './types';
 
 /**
  * The bodies of the tasks about a player, words that are sent, and things that are published (CAPABILITIES.md A8 to A18).
@@ -12,7 +11,6 @@ import { isOpen, type CardPerson } from './types';
  * any fact left over as a plain line. Who is told and where it appears is the frame's one line at the foot (`Body`).
  */
 
-const ask = (p: BodyProps) => (isOpen(p.phase) ? p.onAsk : undefined);
 const titleCase = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' ');
 const who = (roster: readonly CardPerson[] = [], name: string): CardPerson => roster.find((r) => r.name === name) ?? { id: name, name };
 
@@ -27,7 +25,7 @@ export function GoalBody(props: BodyProps) {
   const lede = tense(phase, { will: `Sends to ${name}: a push`, did: `Sent to ${name}: a push`, not: `Not sent. ${name} was not told.` });
   const how = valueOf(p, 'How');
   return (
-    <Body label={lede} card={props} wordless>
+    <Body label={lede} card={props} rows={restOf(p, ['Player', 'Target', 'By', 'How', 'Goal', 'Now', 'Better is'])} wordless>
       <Who proposal={p} density={density}>
         {(g?.player || valueOf(p, 'Player')) && <People people={[who(roster, name)]} density={density} />}
       </Who>
@@ -61,7 +59,6 @@ export function GoalBody(props: BodyProps) {
         <Thing title={valueOf(p, 'Goal') ?? p.summary} />
       )}
       <Delivery proposal={p} phase={phase} density={density} />
-      <Rows facts={restOf(p, ['Player', 'Target', 'By', 'How', 'Goal', 'Now', 'Better is'])} density={density} subject={p.summary} onAsk={ask(props)} />
     </Body>
   );
 }
@@ -85,7 +82,7 @@ export function FocusBody(props: BodyProps) {
   const by = valueOf(p, 'By');
   const over = valueOf(p, 'Over');
   return (
-    <Body label={lede} card={props} wordless>
+    <Body label={lede} card={props} rows={[...missingRows(p), ...unsetOf(p, FOCUS_SET), ...restOf(p, ['Player', 'Focus', 'Area', 'Status', ...FOCUS_SET])]} wordless>
       <Who proposal={p} density={density}>
         <People people={people} density={density} />
       </Who>
@@ -95,7 +92,6 @@ export function FocusBody(props: BodyProps) {
         meta={[review && `Review ${review}`, by && `By ${by}`, over && `Over ${over}`, area && titleCase(area)]}
       />
       <Delivery proposal={p} phase={phase} density={density} />
-      <Rows facts={[...missingRows(p), ...unsetOf(p, FOCUS_SET), ...restOf(p, ['Player', 'Focus', 'Area', 'Status', ...FOCUS_SET])]} density={density} subject={p.summary} onAsk={ask(props)} />
       {status && <Change>{sentence(status)}</Change>}
     </Body>
   );
@@ -115,13 +111,12 @@ export function TaskBody(props: BodyProps) {
   const due = factOf(p, 'Due');
   const priority = valueOf(p, 'Priority');
   return (
-    <Body label={lede} card={props} wordless>
+    <Body label={lede} card={props} rows={[...(due?.missing ? [{ ...due, label: 'Due date', value: 'Not set' }] : []), ...restOf(p, ['Task', 'Assigned to', 'Due', 'Priority'])]} wordless>
       <Who proposal={p} density={density}>
         <People people={people} density={density} everyone={everyone} />
       </Who>
       <Thing title={t?.title ?? valueOf(p, 'Task') ?? p.summary} meta={[t?.due ? `Due ${dayWords(t.due)}` : null, priority && priority !== 'medium' ? `${titleCase(priority)} priority` : null]} />
       <Delivery proposal={p} phase={phase} density={density} />
-      <Rows facts={[...(due?.missing ? [{ ...due, label: 'Due date', value: 'Not set' }] : []), ...restOf(p, ['Task', 'Assigned to', 'Due', 'Priority'])]} density={density} subject={p.summary} onAsk={ask(props)} />
     </Body>
   );
 }
@@ -137,20 +132,17 @@ export function AnnouncementBody(props: BodyProps) {
   const everyone = /^Everyone/.test(valueOf(p, 'To') ?? '');
   const lede = tense(phase, { will: everyone ? `Sends to all ${plural(n, 'player')}` : `Sends to ${plural(n, 'player')}`, did: `Sent to ${plural(n, 'player')}`, not: `Not sent. It would have gone to ${plural(n, 'player')}.` });
   const urgency = valueOf(p, 'Urgency');
-  const details: ProposalFact[] = [
-    ...(urgency && urgency !== 'normal' ? [{ label: 'Urgency', value: titleCase(urgency) }] : []),
-    ...(valueOf(p, 'Acknowledgement') === 'Required' ? [{ label: 'Acknowledgement', value: 'Each player must acknowledge it' }] : []),
-    ...restOf(p, ['Title', 'Message', 'To', 'Urgency', 'Acknowledgement']),
-  ];
+  // How it arrives is part of the announcement: one line under its words, not a fact behind Details.
+  const marked = [urgency && urgency !== 'normal' ? `Marked ${urgency.replace(/_/g, ' ')}` : null, valueOf(p, 'Acknowledgement') === 'Required' ? 'Each player must acknowledge it' : null];
   return (
-    <Body label={lede} card={props}>
+    <Body label={lede} card={props} rows={restOf(p, ['Title', 'Message', 'To', 'Urgency', 'Acknowledgement'])}>
       <Who proposal={p} density={density}>
         <People people={people} density={density} everyone={everyone} />
       </Who>
       <Delivery proposal={p} phase={phase} density={density}>
         <Notice title={valueOf(p, 'Title') ?? p.summary} body={valueOf(p, 'Message')} caption={tense(phase, { will: 'What each of them gets', did: 'What each of them got', not: 'What they would have got' })} density={density} />
       </Delivery>
-      <Rows facts={details} density={density} subject={p.summary} onAsk={ask(props)} />
+      <Meta parts={marked} />
     </Body>
   );
 }
@@ -200,14 +192,13 @@ export function AvailabilityBody(props: BodyProps) {
 // ---------------------------------------------------------------------------------------------------------------------
 
 export function RecruitBody(props: BodyProps) {
-  const { proposal: p, density } = props;
+  const { proposal: p } = props;
   const year = valueOf(p, 'Grad year');
   const status = valueOf(p, 'Status');
   const lede = 'Coaches only. Players never see recruits.';
   return (
-    <Body label={lede} card={props}>
+    <Body label={lede} card={props} rows={restOf(p, ['Grad year', 'Status', 'Hometown'])}>
       <Thing title={p.summary} lines={[[year ? `Class of ${year}` : null, valueOf(p, 'Hometown')].filter(Boolean).join(' · ') || 'No class or hometown given']} meta={[status && titleCase(status)]} />
-      <Rows facts={restOf(p, ['Grad year', 'Status', 'Hometown'])} density={density} subject={p.summary} onAsk={ask(props)} />
     </Body>
   );
 }
@@ -217,12 +208,11 @@ export function DrillBody(props: BodyProps) {
   const setup = valueOf(p, 'Setup');
   const lede = 'Players see it only when a published plan uses it.';
   return (
-    <Body label={lede} card={props}>
+    <Body label={lede} card={props} rows={restOf(p, ['Area', 'Length', 'Setup', 'Goal'])}>
       <Thing title={p.summary} meta={[valueOf(p, 'Area'), valueOf(p, 'Length')]}>
         {setup && <Clamp text={setup} lines={density === 'compact' ? 2 : 4} density={density} what="setup" />}
         {valueOf(p, 'Goal') && <p className="ch-akc-thing__l">{valueOf(p, 'Goal')}</p>}
       </Thing>
-      <Rows facts={restOf(p, ['Area', 'Length', 'Setup', 'Goal'])} density={density} subject={p.summary} onAsk={ask(props)} />
     </Body>
   );
 }
@@ -265,10 +255,9 @@ export function PublishDocBody(props: BodyProps) {
   const words = valueOf(p, 'Words') ?? '';
   const lede = `${sentence((valueOf(p, 'Who can see it') ?? 'Players can open it in Documents').replace(/\s*:\s*/, ': '))} Nobody gets a notification.`;
   return (
-    <Body label={lede} card={props}>
+    <Body label={lede} card={props} rows={restOf(p, ['Who can see it', 'Goes to', 'Words'])}>
       <Thing title={p.summary} meta={[valueOf(p, 'Goes to') ?? 'Documents']} />
       <Quote text={words} caption="The document" density={density} what="document" />
-      <Rows facts={restOf(p, ['Who can see it', 'Goes to', 'Words'])} density={density} subject={p.summary} onAsk={ask(props)} />
     </Body>
   );
 }
@@ -284,7 +273,7 @@ export function MessageBody(props: BodyProps) {
   const n = msg?.count ?? copy.told;
   const lede = tense(phase, { will: `Sends as you to ${plural(n, 'player')} in ${thread}`, did: `Sent as you to ${plural(n, 'player')} in ${thread}`, not: `Not sent. Nothing went to ${thread}.` });
   return (
-    <Body label={lede} card={props}>
+    <Body label={lede} card={props} rows={restOf(p, ['Thread', 'Message', 'To'])}>
       <Who proposal={p} density={density}>
         {msg?.members?.length ? (
           <People people={msg.members.map((name) => who(roster, name))} total={n} density={density} label="people" />
@@ -293,7 +282,6 @@ export function MessageBody(props: BodyProps) {
         )}
       </Who>
       <Bubble text={msg?.draft ?? valueOf(p, 'Message') ?? ''} before={msg?.last} caption={thread} density={density} />
-      <Rows facts={restOf(p, ['Thread', 'Message', 'To'])} density={density} subject={p.summary} onAsk={ask(props)} />
     </Body>
   );
 }
@@ -319,8 +307,10 @@ export function PlanBody(props: BodyProps) {
   const subject = ['Event', 'Focus area', 'Goal', 'Signal', 'Task', 'Qualifier'].map((l) => valueOf(p, l)).find(Boolean);
   const sees = factOf(p, 'They see') ?? factOf(p, 'In the app they see');
   const [title, ...rest] = (sees?.value ?? '').split('\n');
+  // How far a change to one date of a series goes is said in view: it is what the change leaves alone.
+  const series = valueOf(p, 'Series');
   return (
-    <Body label={lede} card={props} wordless={!title}>
+    <Body label={lede} card={props} rows={[...missingRows(p), ...restOf(p, [...SAID, ...(series ? ['Series'] : []), ...(subject ? ['Event', 'Focus area', 'Goal', 'Signal', 'Task', 'Qualifier'] : []), ...(now && after ? ['Now', 'After'] : [])])]} wordless={!title}>
       <Who proposal={p} density={density}>
         {copy.reach === 'sends' && <People people={people} density={density} />}
       </Who>
@@ -329,9 +319,7 @@ export function PlanBody(props: BodyProps) {
       <Delivery proposal={p} phase={phase} density={density}>
         {copy.reach === 'sends' && title && <Notice title={title} body={rest.join('\n')} caption="What each of them gets" density={density} />}
       </Delivery>
-      <Fold density={density}>
-        <Rows facts={[...missingRows(p), ...restOf(p, [...SAID, ...(subject ? ['Event', 'Focus area', 'Goal', 'Signal', 'Task', 'Qualifier'] : []), ...(now && after ? ['Now', 'After'] : [])])]} density={density} subject={p.summary} onAsk={ask(props)} />
-      </Fold>
+      {series && <Change>{sentence(series)}</Change>}
     </Body>
   );
 }
