@@ -78,7 +78,8 @@ describe('112401 Rounds library, on screen', () => {
     expect(screen.getByText('In progress')).toBeTruthy();
     expect(screen.getByText('Blue tees · Practice · 18 holes')).toBeTruthy();
     expect(document.querySelector('.ch-rd-unf__f > span')!.textContent).toBe('+1 through 3');
-    expect(screen.getByText('Since August 1 · 8 counted rounds')).toBeTruthy();
+    // Eight 18-hole rounds since 1 August, four of them practice: the season counts the other four, as Stats does.
+    expect(screen.getByText('Since August 1 · 4 counted rounds')).toBeTruthy();
   });
 
   it('110105 draws a control only for a screen that is rebuilt: New round and Continue (round entry is), and every round opens its review', () => {
@@ -278,8 +279,9 @@ describe('112401 Rounds library, on screen', () => {
 
   it('CH-11803 the ribbon is one labelled image of the season, oldest to newest, with the average', () => {
     show(PREVIEW_ROUNDS_IDLE);
-    const rib = screen.getByRole('img', { name: 'Strokes over par for your last 8 rounds, oldest to newest; average +1.9' });
-    expect(rib.querySelectorAll('rect.is-under, rect.is-even, rect.is-over, rect.is-q')).toHaveLength(8);
+    // The ribbon draws the rounds the average reads: the four that are not practice.
+    const rib = screen.getByRole('img', { name: 'Strokes over par for your last 4 rounds, oldest to newest; average +1.3' });
+    expect(rib.querySelectorAll('rect.is-under, rect.is-even, rect.is-over, rect.is-q')).toHaveLength(4);
     expect(rib.querySelectorAll('rect.is-under')).toHaveLength(1);
     expect([...rib.querySelectorAll('title')].map((t) => t.textContent)[0]).toBe('Aug 18 · 69 (−3) · Qualifier');
     expect(screen.getByText('Under par')).toBeTruthy();
@@ -297,12 +299,14 @@ describe('112401 Rounds library, on screen', () => {
     show(PREVIEW_ROUNDS_IDLE);
     const season = screen.getByRole('region', { name: 'Season scoring' });
     // The figure's decimal point is its own span (withPointSpan), so the figure is read as one text.
-    expect(season.querySelector('.ch-rd-season__big b')!.textContent).toBe('73.4');
-    expect(within(season).getByText('avg · +1.9 to par')).toBeTruthy();
+    // 72, 76, 74 and 69: the qualifier and tournament rounds. The four practice rounds (71, 75, 73, 77) are listed and left out.
+    expect(season.querySelector('.ch-rd-season__big b')!.textContent).toBe('72.8');
+    expect(within(season).getByText('avg · +1.3 to par')).toBeTruthy();
     expect(within(season).getByText('Best').nextSibling!.textContent).toBe('69');
     // P011-D16: the whole course name, not its first word.
     expect(within(season).getByText('Carolina GC').parentElement!.textContent).toBe('Carolina GC\u00a0· Aug 18');
-    expect(within(season).getByText('GIR').nextSibling!.textContent).toBe('62%');
+    expect(within(season).getByText('Putts').nextSibling!.textContent).toBe('30.3');
+    expect(within(season).getByText('GIR').nextSibling!.textContent).toBe('65%');
   });
 });
 
@@ -634,7 +638,9 @@ describe('Rounds loader', () => {
   it('the season keeps the best round by strokes against par, and at most the ribbon length', () => {
     const list = PREVIEW_ROUNDS_IDLE.rounds.list;
     expect(seasonFrom(list, '2026-08-01').best).toMatchObject({ score: 69, toPar: -3, course: 'Carolina GC' });
-    expect(seasonFrom(list, '2026-09-01').rounds).toBe(5);
+    // Five 18-hole rounds since 1 September, two of them practice.
+    expect(seasonFrom(list, '2026-09-01').rounds).toBe(3);
+    expect(list.filter((r) => r.holes === 18 && r.date >= '2026-09-01')).toHaveLength(5);
   });
 
   it('110108 groupRounds: by month in date order, by course in order of each course’s newest round', () => {

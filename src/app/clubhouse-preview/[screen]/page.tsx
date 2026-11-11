@@ -25,7 +25,7 @@ import { WhatsNew } from '@/clubhouse/screens/whats-new/WhatsNew';
 import { WhatsNewSkeleton } from '@/clubhouse/screens/whats-new/WhatsNewSkeleton';
 import { PREVIEW_WHATS_NEW, PREVIEW_WHATS_NEW_EMPTY, PREVIEW_WHATS_NEW_FAILED, PREVIEW_WHATS_NEW_TRUNCATED } from '@/clubhouse/preview/fixtures-whats-new';
 import { PreviewTournaments, TOUR_PREVIEW_PATHS } from '@/clubhouse/preview/PreviewTournaments';
-import { PREVIEW_TEAM_ROUNDS, PREVIEW_TEAM_ROUNDS_EMPTY, PREVIEW_TEAM_ROUNDS_FAILED, PREVIEW_TEAM_ROUNDS_NO_ROSTER, PREVIEW_TEAM_ROUNDS_ROSTER_FAILED } from '@/clubhouse/preview/fixtures-team-rounds';
+import { PREVIEW_TEAM_ROUNDS, PREVIEW_TEAM_ROUNDS_EARLIER, PREVIEW_TEAM_ROUNDS_EMPTY, PREVIEW_TEAM_ROUNDS_FAILED, PREVIEW_TEAM_ROUNDS_NO_ROSTER, PREVIEW_TEAM_ROUNDS_ROSTER_FAILED } from '@/clubhouse/preview/fixtures-team-rounds';
 import { PreviewClasses } from '@/clubhouse/preview/PreviewClasses';
 import { ClassesNoTeam } from '@/clubhouse/screens/classes/ClassesNoTeam';
 import { ClassesSkeleton } from '@/clubhouse/screens/classes/ClassesSkeleton';
@@ -169,6 +169,7 @@ import { ChClockProvider } from '@/clubhouse/lib/use-clock';
  *   /clubhouse-preview/home-player &live=practice | qualifier | stale | none   (the player's own live card; P-6)
  *   /clubhouse-preview/hub, hub-player ?state=empty | failed | failwrites, &tab=home | ann | travel | docs | tasks
  *   /clubhouse-preview/rounds ?state=idle | many | empty | noseason | failed | unfinished-failed | failwrites   (Jonah)
+ *   /clubhouse-preview/team-rounds ?state=earlier | empty | failed | rosterfailed | noroster | loading   (the coach's Team rounds; earlier: rounds from before this season)
  *   /clubhouse-preview/round ?state=coach | noshots | noholes | total | holebyhole | nosg   (a round's review)
  *   /clubhouse-preview/classes ?state=clear | empty | failed | partial | mixed | noteam | loading | failwrites | failsync | read-notschedule | read-fault | read-none | read-warn   (Jonah)
  *   /clubhouse-preview/setup ?state=failcourses | failtees | failholes | failstart | noqualifiers | qualifiersfailed   (new round)
@@ -348,7 +349,7 @@ export default async function ClubhousePreview({
         ) : (
           <TeamRounds
             teamId="preview-team"
-            data={{ empty: PREVIEW_TEAM_ROUNDS_EMPTY, failed: PREVIEW_TEAM_ROUNDS_FAILED, rosterfailed: PREVIEW_TEAM_ROUNDS_ROSTER_FAILED, noroster: PREVIEW_TEAM_ROUNDS_NO_ROSTER }[state ?? ''] ?? PREVIEW_TEAM_ROUNDS}
+            data={{ earlier: PREVIEW_TEAM_ROUNDS_EARLIER, empty: PREVIEW_TEAM_ROUNDS_EMPTY, failed: PREVIEW_TEAM_ROUNDS_FAILED, rosterfailed: PREVIEW_TEAM_ROUNDS_ROSTER_FAILED, noroster: PREVIEW_TEAM_ROUNDS_NO_ROSTER }[state ?? ''] ?? PREVIEW_TEAM_ROUNDS}
           />
         ),
     },

@@ -603,6 +603,22 @@
   color: var(--ch-text-tertiary);
 }
 
+/* Where the season's figures stop and the older rounds start (Team rounds, by month): a line between two month cards on
+   the phone, a quiet row above the month's band in the desktop table. */
+.ch-trd-earlier {
+  margin: 0;
+  padding-top: var(--ch-space-4);
+  border-top: var(--ch-hairline-w) solid var(--ch-separator);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
+  color: var(--ch-text-secondary);
+}
+.ch-trd-tbl .ch-trd-earlier {
+  padding: var(--ch-space-3) var(--ch-space-5);
+  border-top: 0;
+  box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-separator);
+}
+
 /* Tools */
 .ch-rd-tools {
   display: flex;

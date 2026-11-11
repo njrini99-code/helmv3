@@ -1,8 +1,9 @@
 'use client';
 
-import { useMemo, type MouseEvent } from 'react';
+import { Fragment, useMemo, type MouseEvent } from 'react';
 import Link from 'next/link';
 import { ChevronRight, Flag, UserPlus, Users } from 'lucide-react';
+import { countsTowardAverage } from '../../data/rounds-shape';
 import type { ChTeamRound, ChTeamRounds } from '../../data/team-rounds-shape';
 import { formatFixed, formatToPar } from '../../lib/format';
 import { NoData } from '../../ui/NoData';
@@ -124,9 +125,9 @@ function TeamRoundRow({ r, by }: { r: ChTeamRound; by: Group }) {
 
 type RoundGroup = ReturnType<typeof groupTeamRounds>[number];
 
-/** A group's count and its 18-hole countable average, as its heading's caption. */
+/** A group's count and its average, as its heading's caption: the 18-hole countable rounds, practice left out, as the season's figures. */
 function groupMeta(g: RoundGroup) {
-  const full = g.rounds.filter((r) => r.holes === 18 && r.countable);
+  const full = g.rounds.filter((r) => r.holes === 18 && r.countable && countsTowardAverage(r));
   const avg = full.length ? full.reduce((a, r) => a + r.score, 0) / full.length : null;
   return (
     <span className="ch-num">
@@ -137,6 +138,13 @@ function groupMeta(g: RoundGroup) {
 }
 
 const groupId = (g: RoundGroup) => `ch-trd-${g.key.replace(/\W+/g, '-').toLowerCase()}`;
+
+/** The figures are this season's and the list runs further back, so the page says where the season ends: at the first month before it. */
+const EARLIER = 'Before this season, not in the figures above';
+function earlierStartsAt(groups: readonly RoundGroup[], by: Group, seasonStart: string): number {
+  // Months run newest first, so the first one before the season is where the line goes; by player there is no such place.
+  return by === 'month' ? groups.findIndex((g) => g.rounds[0] != null && g.rounds[0].date < seasonStart) : -1;
+}
 
 /** One round in the desktop table. The round's name cell holds the link, which covers the row. */
 function TeamRoundTableRow({ r, by }: { r: ChTeamRound; by: Group }) {
@@ -190,7 +198,7 @@ function TeamRoundTableRow({ r, by }: { r: ChTeamRound; by: Group }) {
  * between a name and its score). One table in the pattern of the Roster table: a quiet label row, a band for each
  * month or player, and a row a round with every value in a cell under its header.
  */
-function TeamRoundsTable({ groups, by }: { groups: RoundGroup[]; by: Group }) {
+function TeamRoundsTable({ groups, by, earlierAt }: { groups: RoundGroup[]; by: Group; earlierAt: number }) {
   return (
     <div className={'ch-trd-tbl' + (by === 'player' ? ' is-by-player' : '')} role="table" aria-label="Team rounds">
       <div role="rowgroup">
@@ -211,8 +219,15 @@ function TeamRoundsTable({ groups, by }: { groups: RoundGroup[]; by: Group }) {
           <span aria-hidden="true" />
         </div>
       </div>
-      {groups.map((g) => (
+      {groups.map((g, i) => (
         <div key={g.key} role="rowgroup" aria-labelledby={`${groupId(g)}-t`}>
+          {i === earlierAt && (
+            <div className="ch-trd-earlier" role="row">
+              <span role="cell" aria-colspan={by === 'month' ? 7 : 6}>
+                {EARLIER}
+              </span>
+            </div>
+          )}
           <div className="ch-trd-grp" role="row">
             <div role="cell" aria-colspan={by === 'month' ? 7 : 6} className="ch-trd-grp__c">
               {by === 'player' && g.rounds[0] && <Avatar name={g.title} id={g.rounds[0].playerId} size="sm" />}
@@ -254,6 +269,7 @@ export function TeamRounds({ data: fresh, teamId, live, liveNow }: { data: ChTea
   // A kept filter for a player who has left the team shows everyone rather than an empty list with no way to see why.
   const playerId = data.players.some((p) => p.id === player) ? player : ALL_PLAYERS;
   const groups = useMemo(() => groupTeamRounds(list, group, q, playerId), [list, group, q, playerId]);
+  const earlierAt = earlierStartsAt(groups, group, data.seasonStart);
   const s = data.season;
   const unscored = data.rounds.error ? 0 : (data.rounds.unscored ?? 0);
   const noRoster = !data.rosterError && data.players.length === 0;
@@ -268,9 +284,11 @@ export function TeamRounds({ data: fresh, teamId, live, liveNow }: { data: ChTea
         label="The team this season"
         code="CH-11319"
         items={[
-          { label: 'Rounds', value: s.rounds ? s.rounds : <NoData />, note: s.players ? `${plural(s.players, 'player')}` : undefined },
-          { label: 'Average', value: s.avg == null ? <NoData /> : formatFixed(s.avg, 1), note: s.avg == null ? undefined : '18 holes' },
-          { label: 'Under par', value: s.rounds ? s.underPar : <NoData />, tone: s.underPar ? 'under' : undefined, note: s.rounds ? `of ${s.rounds}` : undefined },
+          // Practice is listed and counted, and left out of the three figures beside it, as Stats leaves it out; the captions say so.
+          // A quarter of a phone holds one short caption a figure (the four share 358px on one line), so there the average alone says it.
+          { label: 'Rounds', value: s.rounds ? s.rounds : <NoData />, note: s.players ? `${plural(s.players, 'player')}${s.practice && !phone ? ` · ${s.practice} practice` : ''}` : undefined },
+          { label: 'Average', value: s.avg == null ? <NoData /> : formatFixed(s.avg, 1), note: s.avg == null ? undefined : !s.practice ? '18 holes' : phone ? 'no practice' : '18 holes, no practice' },
+          { label: 'Under par', value: s.scored ? s.underPar : <NoData />, tone: s.underPar ? 'under' : undefined, note: s.scored ? `of ${s.scored}` : undefined },
           { label: 'Low round', value: best ? best.score : <NoData />, note: best ? `${best.player.split(' ')[0]} · ${best.toPar == null ? shortDay(best.date) : formatToPar(best.toPar)}` : undefined },
         ]}
       />
@@ -284,7 +302,7 @@ export function TeamRounds({ data: fresh, teamId, live, liveNow }: { data: ChTea
         <div>
           <span className="ch-rd-k">
             {data.teamName ? `${data.teamName} · ` : ''}
-            {s.rounds ? `Since August 1 · ${s.rounds} counted ${pluralWord(s.rounds, 'round')}` : 'Since August 1'}
+            {s.scored ? `Since August 1 · ${s.scored} counted ${pluralWord(s.scored, 'round')}` : 'Since August 1'}
           </span>
           <span className="ch-rd-upd" role="status" data-ch-code={refreshing ? 'CH-11412' : undefined}>
             {refreshing ? 'Updating…' : ''}
@@ -366,17 +384,20 @@ export function TeamRounds({ data: fresh, teamId, live, liveNow }: { data: ChTea
             {groups.length === 0 ? (
               <EmptyState code="CH-11321" compact title={q.trim() ? `No rounds for “${q.trim()}”` : 'No rounds for this player'} body={q.trim() ? 'Check the spelling, or search part of a name or course.' : 'They haven’t posted a round yet.'} />
             ) : phone ? (
-              groups.map((g) => (
-                <Section key={g.key} id={groupId(g)} title={g.title} meta={groupMeta(g)}>
-                  <LedgerList label={`${g.title}, ${g.rounds.length} rounds`}>
-                    {g.rounds.map((r) => (
-                      <TeamRoundRow key={r.id} r={r} by={group} />
-                    ))}
-                  </LedgerList>
-                </Section>
+              groups.map((g, i) => (
+                <Fragment key={g.key}>
+                  {i === earlierAt && <p className="ch-trd-earlier">{EARLIER}</p>}
+                  <Section id={groupId(g)} title={g.title} meta={groupMeta(g)}>
+                    <LedgerList label={`${g.title}, ${g.rounds.length} rounds`}>
+                      {g.rounds.map((r) => (
+                        <TeamRoundRow key={r.id} r={r} by={group} />
+                      ))}
+                    </LedgerList>
+                  </Section>
+                </Fragment>
               ))
             ) : (
-              <TeamRoundsTable groups={groups} by={group} />
+              <TeamRoundsTable groups={groups} by={group} earlierAt={earlierAt} />
             )}
           </SectionBoundary>
 
