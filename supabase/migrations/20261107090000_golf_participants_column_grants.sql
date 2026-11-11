@@ -6,7 +6,9 @@
 -- grant (greps in docs/clubhouse/messages-v2/DATA.md section 3 and the
 -- 2026-11-07 sweep: hidden_at, notification_level + muted_until, last_read_at,
 -- and nothing else). A writer that touches any other column of this table, or
--- upserts into it, would now get 42501.
+-- upserts into it, would now get 42501. A participant INSERT from a client
+-- session lands with the state columns at their defaults and joined_at = now(),
+-- whatever it carried; the app sends only joined_at = now (sweep in item 5).
 -- App change needed: NONE.
 --
 -- The hole (confirmed on production and staging from pg_policies /
@@ -46,6 +48,25 @@
 --      path truncates, maintains or puts a trigger on this table.
 --   4. anon loses every privilege on this table (defence in depth: RLS is the
 --      only thing keeping anon out today).
+--   5. golf_participants_insert_guard, a BEFORE INSERT trigger (security review
+--      2026-11-10, item 4). INSERT is granted table-wide, so whoever may add a
+--      member (a conversation's creator) could insert that member's row with
+--      hidden_at, last_read_at, muted_until and notification_level already
+--      set: the person is listed as a member and never sees the chat, gets no
+--      badge and no push, and after 20261110090100 no message can be dated
+--      late enough to un-hide it. For authenticated and anon sessions the
+--      trigger sets joined_at := now(), last_read_at, hidden_at and
+--      muted_until := NULL and notification_level := 'all' (the column
+--      default, which the precondition below checks). The state columns
+--      belong to the member, who sets them afterwards by UPDATE. Keyed on
+--      current_user like the identity guard, so the definer triggers of
+--      20261110090200 / 20261110090300, the backfill, the table owner and
+--      service_role insert a row as written.
+--      What the app sends (swept 2026-11-10 at main 743cb23a1 and at the
+--      build production serves, d0f467a73; five client INSERT sites, the same
+--      at both): conversation_id, user_id and joined_at = new Date(), or the
+--      first two only. messages.ts:524 / :527 / :1029 / :1081 / :2040
+--      (d0f467a73: :486 / :489 / :908 / :960 / :1852). So no app write changes.
 --
 -- Not touched: policies (unchanged), the AFTER triggers
 -- (golf_participants_read_mark, *_read_marks_on_leave and, once 20261031150000
@@ -53,11 +74,14 @@
 -- grants).
 --
 -- LOCKS (pg_locks after each statement, local stack 2026-11-10): SHARE ROW
--- EXCLUSIVE on golf_conversation_participants, once, from CREATE OR REPLACE
--- TRIGGER. Writes to the table wait for the few milliseconds the file takes;
--- reads do not wait and are not waited for. GRANT and REVOKE take no table
--- lock. (DROP TRIGGER IF EXISTS, which an earlier draft used, takes ACCESS
--- EXCLUSIVE even when the trigger does not exist.)
+-- EXCLUSIVE on golf_conversation_participants, from the two CREATE OR REPLACE
+-- TRIGGER statements (one table, one lock mode). Writes to the table wait for
+-- the few milliseconds the file takes; reads do not wait and are not waited
+-- for. GRANT and REVOKE take no table lock. (DROP TRIGGER IF EXISTS, which an
+-- earlier draft used, takes ACCESS EXCLUSIVE whenever the trigger exists, so
+-- on every re-apply; on a first apply, with nothing to drop, it takes only a
+-- brief ACCESS SHARE. CREATE OR REPLACE TRIGGER takes SHARE ROW EXCLUSIVE in
+-- both cases.)
 --
 -- ORDER: first of the Messages package. Independent of the others; apply before
 -- 20261031150000 (pins) so its triggers sit on the hardened table. No app
@@ -68,12 +92,17 @@
 -- VERIFY: select 1 where not has_column_privilege('authenticated', 'public.golf_conversation_participants', 'conversation_id', 'UPDATE') and not has_column_privilege('authenticated', 'public.golf_conversation_participants', 'user_id', 'UPDATE') and not has_column_privilege('authenticated', 'public.golf_conversation_participants', 'id', 'UPDATE') and not has_column_privilege('authenticated', 'public.golf_conversation_participants', 'joined_at', 'UPDATE'); -- noqa: LT05
 -- VERIFY: select 1 from pg_trigger where tgrelid = 'public.golf_conversation_participants'::regclass and tgname = 'golf_participants_identity_guard' and not tgisinternal; -- noqa: LT05
 -- VERIFY: select 1 where not has_table_privilege('authenticated', 'public.golf_conversation_participants', 'TRUNCATE, MAINTAIN, TRIGGER, REFERENCES') and has_table_privilege('authenticated', 'public.golf_conversation_participants', 'SELECT') and has_table_privilege('authenticated', 'public.golf_conversation_participants', 'INSERT') and has_table_privilege('authenticated', 'public.golf_conversation_participants', 'DELETE'); -- noqa: LT05
+-- VERIFY: select 1 from pg_trigger where tgrelid = 'public.golf_conversation_participants'::regclass and tgname = 'golf_participants_insert_guard' and not tgisinternal and tgenabled = 'O' and (tgtype & 2) = 2 and (tgtype & 4) = 4; -- noqa: LT05
 --
 -- ROLLBACK: (one transaction; re-opens the hole, use only to restore a broken
--- writer while a fix is prepared):
+-- writer while a fix is prepared). ORDER: nothing has to be rolled back first;
+-- the later files do not depend on these grants or guards:
 --   drop trigger if exists golf_participants_identity_guard
 --     on public.golf_conversation_participants;
 --   drop function if exists public.golf_participants_identity_guard();
+--   drop trigger if exists golf_participants_insert_guard
+--     on public.golf_conversation_participants;
+--   drop function if exists public.golf_participants_insert_guard();
 --   grant update on public.golf_conversation_participants to authenticated;
 --   -- authenticated also held TRUNCATE, MAINTAIN, TRIGGER and REFERENCES, and
 --   -- anon held ALL. Nothing uses either; do not restore them unless
@@ -106,6 +135,16 @@ BEGIN
       RAISE EXCEPTION 'golf_conversation_participants.% is missing', v_col;
     END IF;
   END LOOP;
+  -- The insert guard writes the default by value. Stop if it is no longer 'all'.
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'golf_conversation_participants'
+      AND column_name = 'notification_level'
+      AND column_default = '''all''::text'
+  ) THEN
+    RAISE EXCEPTION
+      'golf_conversation_participants.notification_level no longer defaults to all';
+  END IF;
 END $$;
 
 -- 1. Grants -------------------------------------------------------------------
@@ -155,3 +194,33 @@ WHEN (
     OR old.joined_at IS DISTINCT FROM new.joined_at
 )
 EXECUTE FUNCTION public.golf_participants_identity_guard();
+
+-- 3. Insert guard -------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION public.golf_participants_insert_guard()
+RETURNS trigger LANGUAGE plpgsql
+SET search_path = ''
+AS $$
+BEGIN
+  -- Only client sessions are held to this. service_role, the table owner and
+  -- SECURITY DEFINER functions run as other roles and insert the row as written.
+  IF current_user NOT IN ('authenticated', 'anon') THEN
+    RETURN NEW;
+  END IF;
+  -- A new member starts from the defaults, whoever inserts the row. The state
+  -- columns belong to the member, who sets them afterwards by UPDATE.
+  NEW.joined_at := now();
+  NEW.last_read_at := NULL;
+  NEW.hidden_at := NULL;
+  NEW.muted_until := NULL;
+  NEW.notification_level := 'all';
+  RETURN NEW;
+END $$;
+
+REVOKE ALL ON FUNCTION public.golf_participants_insert_guard()
+FROM public, anon;
+
+CREATE OR REPLACE TRIGGER golf_participants_insert_guard
+BEFORE INSERT ON public.golf_conversation_participants
+FOR EACH ROW
+EXECUTE FUNCTION public.golf_participants_insert_guard();

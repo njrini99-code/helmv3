@@ -1714,6 +1714,10 @@ REVOKE ALL ON FUNCTION "public"."golf_participants_identity_guard"() FROM PUBLIC
 GRANT ALL ON FUNCTION "public"."golf_participants_identity_guard"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."golf_participants_identity_guard"() TO "service_role";
 
+REVOKE ALL ON FUNCTION "public"."golf_participants_insert_guard"() FROM PUBLIC, "anon";
+GRANT ALL ON FUNCTION "public"."golf_participants_insert_guard"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."golf_participants_insert_guard"() TO "service_role";
+
 REVOKE ALL ON FUNCTION "public"."golf_conversations_identity_guard"() FROM PUBLIC, "anon";
 GRANT ALL ON FUNCTION "public"."golf_conversations_identity_guard"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."golf_conversations_identity_guard"() TO "service_role";

@@ -15534,6 +15534,28 @@ END $$;
 
 ALTER FUNCTION "public"."golf_participants_identity_guard"() OWNER TO "postgres";
 
+CREATE OR REPLACE FUNCTION "public"."golf_participants_insert_guard"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+BEGIN
+  -- Only client sessions are held to this. service_role, the table owner and
+  -- SECURITY DEFINER functions run as other roles and insert the row as written.
+  IF current_user NOT IN ('authenticated', 'anon') THEN
+    RETURN NEW;
+  END IF;
+  -- A new member starts from the defaults, whoever inserts the row. The state
+  -- columns belong to the member, who sets them afterwards by UPDATE.
+  NEW.joined_at := now();
+  NEW.last_read_at := NULL;
+  NEW.hidden_at := NULL;
+  NEW.muted_until := NULL;
+  NEW.notification_level := 'all';
+  RETURN NEW;
+END $$;
+
+ALTER FUNCTION "public"."golf_participants_insert_guard"() OWNER TO "postgres";
+
 CREATE OR REPLACE FUNCTION "public"."golf_conversations_identity_guard"() RETURNS "trigger"
     LANGUAGE "plpgsql"
     SET "search_path" TO ''
