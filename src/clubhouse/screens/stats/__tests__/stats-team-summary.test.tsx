@@ -7,7 +7,7 @@ vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn(), refresh: 
 vi.mock('@/app/golf/actions/development', () => ({ createFocusArea: vi.fn() }));
 
 import { formatSigned } from '../../../lib/format';
-import { PREVIEW_TEAM_STATS as TEAM } from '../../../preview/fixtures-stats';
+import { PREVIEW_TEAM_STATS as TEAM, PREVIEW_TEAM_TOTALS } from '../../../preview/fixtures-stats';
 import { render } from '@testing-library/react';
 import { StatsTeam } from '../StatsTeam';
 import { asDesktop, asPhone, browserBack, card, cards, detailShown, painted, resetAddress, showTeam, tree } from './_shs-harness';
@@ -69,6 +69,32 @@ describe('Team Stats, the summary', () => {
     const ranked = [...TEAM.grid].filter((g) => g.total != null).sort((a, b) => b.total! - a.total!).slice(0, 3).map((g) => g.name);
     expect(names).toEqual(ranked);
     expect(c.querySelectorAll('a, button:not(.ch-shs-sum__key)')).toHaveLength(0);
+  });
+});
+
+/** Every round posted as a total: a scoring average and its line, and nothing that needs shots. */
+describe('Team Stats, the summary on totals-only rounds', () => {
+  it('strokes gained by leg says once what fills it, with no rows of dashes', async () => {
+    showTeam(PREVIEW_TEAM_TOTALS);
+    const c = await painted('tgame');
+    expect(c.querySelector('.ch-shs-bigv')!.textContent).toBe('—');
+    expect(c.querySelector('.ch-shs-mrows')).toBeNull();
+    expect([...c.querySelectorAll('.ch-shs-sumfoot')].map((p) => p.textContent)).toEqual(['Fills in from rounds posted with shots. Rounds posted as totals still count toward scoring.']);
+  });
+
+  it('who gains and loses has no one to rank, and says what fills it', async () => {
+    showTeam(PREVIEW_TEAM_TOTALS);
+    const c = await painted('tplayers');
+    expect(c.querySelectorAll('.ch-shs-prow')).toHaveLength(0);
+    expect(c.querySelector('.ch-shs-sumfoot')!.textContent).toBe('Fills in from rounds posted with shots.');
+  });
+
+  it('a team with shots keeps its four legs and its foot, and no such line', async () => {
+    showTeam(TEAM);
+    const c = await painted('tgame');
+    expect(c.querySelectorAll('.ch-shs-mrow')).toHaveLength(4);
+    expect(c.textContent).not.toContain('Fills in from rounds posted with shots');
+    expect((await painted('tplayers')).textContent).not.toContain('Fills in from rounds posted with shots');
   });
 });
 

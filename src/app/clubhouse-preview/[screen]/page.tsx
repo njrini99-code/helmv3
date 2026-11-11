@@ -50,6 +50,8 @@ import {
   PREVIEW_PLAYER_LOOPS,
   PREVIEW_PLAYER_LOOPS_SELF,
   PREVIEW_PLAYER_EARLY,
+  PREVIEW_PLAYER_TOTALS,
+  PREVIEW_TEAM_TOTALS,
   PREVIEW_PLAYER_FILTERED,
   PREVIEW_PLAYER_NINES,
   PREVIEW_PLAYER_READS,
@@ -176,8 +178,8 @@ import { ChClockProvider } from '@/clubhouse/lib/use-clock';
  *   /clubhouse-preview/track ?state=approach | putt | holed | checkpointfail | last | meters | exit | card | summary | submitting | posted | submitfail | saved | phone | saving | retrying   (the shot screen; the last four fake the round's save line, CH-11901)
  *   /clubhouse-preview/roster ?state=early | long | big | norequests | onerequest (the lane's flag on, the default here; &crh=0 for main) | empty | failed | partial | availability | helm-failed | helm-off | invite-email | loading   (helm-: the panel's CoachHelm counts didn't load, or CoachHelm is off; invite-email: email invites are on, open the sheet with &invite=1)
  *   /clubhouse-preview/roster-player ?state=empty | failed | noteam | loading   (the player's read-only roster; Theo)
- *   /clubhouse-preview/stats  ?state=empty | failed | partial | crash | loading | filtered | nomatch | earlyfilter | nines | last20 | demo   (the round filter: a filter on, none matching, two rounds, nine-hole rounds in; Last 20)
- *   /clubhouse-preview/player ?state=failed | early | self | filtered | nomatch | nines | loading | readsfailed | readsoff | denied | denied-self   (reads: Game detail's CoachHelm count lines; denied: a coach's link to a player not on the team, denied-self: a player off the roster)
+ *   /clubhouse-preview/stats  ?state=empty | failed | partial | crash | loading | filtered | nomatch | earlyfilter | nines | last20 | demo | totalsonly   (the round filter: a filter on, none matching, two rounds, nine-hole rounds in; Last 20; totalsonly: every round posted as a total, no shots)
+ *   /clubhouse-preview/player ?state=failed | early | self | filtered | nomatch | nines | totalsonly | loading | readsfailed | readsoff | denied | denied-self   (reads: Game detail's CoachHelm count lines; denied: a coach's link to a player not on the team, denied-self: a player off the roster)
  *   /clubhouse-preview/calendar ?state=empty | firstrun | failed | partial | loading, &view=, &date=, &event=
  *   /clubhouse-preview/calendar-player
  *   /clubhouse-preview/messages ?state=empty | rail | failed | thread-failed | loading | loading-route | files-failed | add-failed
@@ -432,6 +434,8 @@ export default async function ClubhousePreview({
           <StatsTeam data={PREVIEW_TEAM_NINES} />
         ) : state === 'last20' ? (
           <StatsTeam data={PREVIEW_TEAM_LAST20} />
+        ) : state === 'totalsonly' ? (
+          <StatsTeam data={PREVIEW_TEAM_TOTALS} />
         ) : state === 'demo' ? (
           <StatsTeam data={PREVIEW_TEAM_DEMO} />
         ) : state === 'crash' ? (
@@ -455,6 +459,8 @@ export default async function ClubhousePreview({
           <NotOnTeam coach={false} />
         ) : previewShsPlayer(state) ? (
           <StatsPlayer data={previewShsPlayer(state)!} coachId={null} initialTab={tab} />
+        ) : state === 'totalsonly' ? (
+          <StatsPlayer data={PREVIEW_PLAYER_TOTALS} coachId="preview-coach" />
         ) : state === 'filtered' ? (
           <StatsPlayer data={PREVIEW_PLAYER_FILTERED} coachId="preview-coach" />
         ) : state === 'nomatch' ? (

@@ -356,6 +356,8 @@ function TeamGameCard({ data, onOpen }: { data: ChTeamStats; onOpen: () => void 
   // Where the rounds' strokes gained came from (stats-sg-mix.ts): all estimate, the figure is marked; mixed, the card says how many.
   const est = data.team.sgMean != null && sgIsEstimate(data.sgMix);
   const mix = data.team.sgMean != null ? sgMixWords(data.sgMix) : null;
+  const legs = legRows(data);
+  const noShots = data.team.sgMean == null && legs.every((r) => r.value == null);
   return (
     <SummaryCard go="tgame" onOpen={onOpen} title="Strokes gained by leg" meta="vs Tour" ariaLabel={`Strokes gained by leg: team ${formatSigned(data.team.sgMean)}${est ? ', an estimate,' : ''} a round against the Tour. Open details`}>
       <div className="ch-shs-sb is-one">
@@ -372,16 +374,23 @@ function TeamGameCard({ data, onOpen }: { data: ChTeamStats; onOpen: () => void 
           )}
         </div>
       </div>
-      <MiniDiverging rows={legRows(data)} fixedScale={4} />
-      {foot.length > 0 && (
-        <p className="ch-shs-sumfoot">
-          {foot.map((f, i) => (
-            <span key={f.label}>
-              {i > 0 && ' · '}
-              {shortLabel(f.label)} <b>{figureValue(f)}</b>
-            </span>
-          ))}
-        </p>
+      {noShots ? (
+        // Every round posted as a total: one line, not four rows of dashes and a foot of three more.
+        <p className="ch-shs-sumfoot">Fills in from rounds posted with shots. Rounds posted as totals still count toward scoring.</p>
+      ) : (
+        <>
+          <MiniDiverging rows={legs} fixedScale={4} />
+          {foot.length > 0 && (
+            <p className="ch-shs-sumfoot">
+              {foot.map((f, i) => (
+                <span key={f.label}>
+                  {i > 0 && ' · '}
+                  {shortLabel(f.label)} <b>{figureValue(f)}</b>
+                </span>
+              ))}
+            </p>
+          )}
+        </>
       )}
     </SummaryCard>
   );
@@ -416,6 +425,8 @@ function TeamPlayersCard({ data, onOpen }: { data: ChTeamStats; onOpen: () => vo
         ))}
       </div>
       {said && <p className="ch-shs-sumfoot">{said}</p>}
+      {/* No player has strokes gained to rank: the card says what fills it, rather than a title over nothing. */}
+      {ranked.length === 0 && <p className="ch-shs-sumfoot">Fills in from rounds posted with shots.</p>}
     </SummaryCard>
   );
 }
