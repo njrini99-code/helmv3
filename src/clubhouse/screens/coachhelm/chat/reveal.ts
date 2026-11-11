@@ -19,6 +19,16 @@ export const setRevealMode = (mode: RevealMode): void => {
 };
 export const revealMode = (): RevealMode => MODE;
 
+/**
+ * The waiting state's passing light (MOTION MO-4-I10): a soft glint that crosses the island's line while work is live. One
+ * switch, off until the owner has seen both; Reduce Motion never draws it.
+ */
+let LIGHT = false;
+export const setWaitLight = (on: boolean): void => {
+  LIGHT = on;
+};
+export const waitLight = (): boolean => LIGHT;
+
 /** The backlog is cleared in about this long: long enough to even out the stream's flushes, short enough that the page is never far behind it. */
 export const REVEAL_CLEAR_MS = 200;
 /** Never slower than this many characters a second, so the last few words of a pause are not rationed. */
