@@ -211,7 +211,7 @@ alongside (not duplicated here).
   `docs/observability/SENTRY_CRON_MONITORS.md`), added in Deliverable 3.
 - **Coverage-gaps pass (2026-09-03)** — closed the remaining call-site
   silence Findings §(e) named but Deliverables 1-6 didn't reach:
-  `src/lib/coachhelm/v3/chat/agent-tools.ts`'s five tool-build/read catches
+  `src/lib/coachhelm/v3/chat/agent-tools.ts` (this file was removed in the 2026-11-10 CoachHelm chat rebuild)'s five tool-build/read catches
   (`guarded`/`proposeGated`/`executeGated` + their `create_recurring_practice`
   twins) now call `logServerError`; `src/lib/notifications/push.ts`'s
   per-token invoke-failure, per-token thrown-exception, and outermost

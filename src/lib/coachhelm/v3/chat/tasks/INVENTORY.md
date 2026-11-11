@@ -72,15 +72,20 @@ The model is told to say where the thing is done (`find_in_app` gives the place)
 - **Settings that change what every figure means**: the strokes-gained baseline, CoachHelm's priorities, team settings.
 - **Anything a player could use to see or change another player's data**: no player tool writes at all.
 
-## Asked for and not possible: the app has no such action for a coach
+## App gaps: three things a coach asks for that the app itself cannot do
 
-- **Edit a task, reassign it, change its due date.** `golf/actions/tasks.ts` has create, delete, reminders and
-  templates and no update of a task. There is nothing to wrap, and writing the row from the chat would be a new write
-  path.
-- **Mark a task done, or reopen it, as the coach.** `completeTask` and `uncompleteTask` resolve the caller as a
-  player and change that player's own assignment. A coach calling them is refused ("Player not found").
-- **Change the groups of a published practice.** Groups live in the plan's body and are saved by the builder's own
-  save (`savePracticePlan`), with the whole body; there is no action for "move Eli to group 2".
+These are gaps in the app, not in the chat. Each needs a server action the app does not have; the chat adds no write
+path of its own, so none of them is a tool until the action exists. The list is written to be handed to the owner.
+
+| A coach asks | The missing action | What exists today |
+| --- | --- | --- |
+| "Change that task: new title, new due date, give it to Avery instead" | **A coach's update of a task**: title, description, due date and assignees of an existing `golf_tasks` row, with the assignment rows added and removed to match and the people affected told. | `src/app/golf/actions/tasks.ts` exports `createTask`, `createRecurringTask`, `deleteTask`, `setTaskReminder`, `clearTaskReminder` and the template actions. Nothing updates a task. |
+| "Mark Avery's task done" / "reopen it" | **A coach's completion of a task for a named player**, and its undo. | `completeTask` and `uncompleteTask` (the same file) resolve the caller as a player and change that player's own assignment. A coach calling either is refused with "Player not found". |
+| "Move Eli to group 2 in Thursday's practice" | **A change to the groups of a published practice plan** that leaves the rest of the plan alone and tells the players whose group changed. | Groups live inside the plan's body. `savePracticePlan` (`src/app/golf/actions/practice-plans.ts`) saves the whole body from the builder; there is no action for one player's group, and a whole-body save from the chat could overwrite an edit made in the builder. |
+
+The chat has no tool for any of the three, so it can offer no card for them. `find_in_app` can name the screen
+where the nearest thing lives (Team Hub Tasks, the practice builder), and `set_task_reminder` covers the one change
+to an existing task the app does have.
 
 ## Left for later, in order
 
