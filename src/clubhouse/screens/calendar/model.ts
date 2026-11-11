@@ -486,6 +486,25 @@ export function findOverlaps(events: ChCalEvent[]): ChCalOverlap[] {
 }
 
 /**
+ * What each flagged event overlaps, in words, for the line under its row on the phone's day ("Overlaps Short-game
+ * block"): the other event by the name the page gives it (`nameOf`; a coach sees whose class it is), each name once,
+ * two joined and more counted ("Overlaps ECON 101 and 2 more"). An overlap whose other event is not in `events` still
+ * says "Overlaps another event", never a bare mark.
+ */
+export function overlapLines(overlaps: ChCalOverlap[], events: ChCalEvent[], nameOf: (e: ChCalEvent) => string): Map<string, string> {
+  const byId = new Map(events.map((e) => [e.id, e]));
+  const names = new Map<string, string[]>();
+  for (const o of overlaps) {
+    const other = byId.get(o.withId);
+    const name = other ? nameOf(other) : 'another event';
+    const list = names.get(o.eventId) ?? [];
+    if (!list.includes(name)) list.push(name);
+    names.set(o.eventId, list);
+  }
+  return new Map([...names].map(([id, n]) => [id, `Overlaps ${n.length <= 2 ? n.join(' and ') : `${n[0]} and ${n.length - 1} more`}`]));
+}
+
+/**
  * Open windows of `len` hours on a date where none of `people` is busy,
  * between 7 AM and 8 PM on the quarter hour, closest to `near` first (the
  * event's current start), so a suggestion moves the event as little as possible.

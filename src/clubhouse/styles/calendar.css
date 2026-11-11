@@ -3005,8 +3005,7 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
   .ch-calm-ev.is-past .ch-calm-ev__b b {
     color: var(--ch-text-secondary);
   }
-  .ch-calm-ev.is-past .ch-calm-ev__rail i,
-  .ch-calm-ev.is-past .ch-calm-ev__w {
+  .ch-calm-ev.is-past .ch-calm-ev__rail i {
     opacity: 0.55;
   }
   .ch-calm-ev.is-cancelled b {
@@ -3093,14 +3092,16 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
     line-height: var(--ch-lead-caption);
     color: var(--ch-text-tertiary);
   }
-  .ch-calm-ev__w {
-    display: grid;
-    place-items: center;
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    background: var(--ch-warning-100);
+  /* An overlap, in words under the row's place ("Overlaps Short-game block"): the amber triangle leads the line it
+     used to stand in for, alone at the row's end. Amber ink, never red (red is under par). */
+  .ch-calm-ev__b span.ch-calm-ev__clash {
+    font: var(--ch-type-13-medium);
+    line-height: var(--ch-lead-caption);
     color: var(--ch-warning-600);
+  }
+  .ch-calm-ev__clash > svg {
+    margin-right: 4px;
+    vertical-align: -2px;
   }
   /* Now: a pill on the time column and a rule across the day (m.css .m-now). */
   .ch-calm-now {
@@ -3144,6 +3145,12 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
     50% {
       opacity: 1;
     }
+  }
+
+  /* Month lists the chosen day under the grid, on the day's own double rule, as far below the legend as Day's list
+     sits below its week strip. */
+  .ch-calm-monthday {
+    margin-top: 24px;
   }
 
   /* Month: the grid flush on the parchment under the weekdays' engraved rule; a dot for a day with events, a dark one

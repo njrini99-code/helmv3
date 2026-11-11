@@ -1093,6 +1093,7 @@ function CalendarBody({
           anchor={anchor}
           view={view}
           flagged={flagged}
+          overlaps={overlaps}
           selId={selId}
           notices={notices}
           eventsNotice={data.eventsError ? <InlineNotice code="CH-6201" title="The calendar didn’t load." body="Nothing was changed. Try again." onRetry={refresh} covered={covered} /> : null}

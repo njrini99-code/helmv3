@@ -1,7 +1,7 @@
 'use client';
 
 import { CalendarCheck, CalendarDays, ChevronLeft, ChevronRight, Ellipsis, Plus, Rss, TriangleAlert, X } from 'lucide-react';
-import { Fragment, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { ChCalendarData } from '../../data/calendar';
 import { Badge } from '../../ui/Badge';
 import { EmptyState } from '../../ui/States';
@@ -27,7 +27,7 @@ import { MarkBadge, MovedAwayRow, useRowMark } from './change-note';
 import type { ChMovedAway } from './change-view';
 import { useMarkReader } from '../../lib/use-change-marks';
 import { PhoneTop } from '../../shell/phone-chrome';
-import { addDays, dayNum, dowOf, fmtHour, monthKey, monthName, playerReplyNeeded, rangeLabel, startLabel, weekDates, yearOf, type ChCalEvent, type ChCalPerson, type ChCalView } from './model';
+import { addDays, dayNum, dowOf, fmtHour, monthKey, monthName, overlapLines, playerReplyNeeded, rangeLabel, startLabel, weekDates, yearOf, type ChCalEvent, type ChCalOverlap, type ChCalPerson, type ChCalView } from './model';
 import { AgendaView, eventTitle, type ChNow } from './views';
 import { roundLabel } from './round-label';
 import { MonthGrid } from './month';
@@ -56,6 +56,7 @@ export function CalendarPhone({
   anchor,
   view,
   flagged,
+  overlaps,
   selId,
   notices,
   eventsNotice,
@@ -74,6 +75,8 @@ export function CalendarPhone({
   anchor: string;
   view: ChCalView;
   flagged: Set<string>;
+  /** What the flagged events overlap: a day's row says it in words ("Overlaps Short-game block"). */
+  overlaps?: ChCalOverlap[];
   selId: string | null;
   /** The failed-read notices, shared with desktop. */
   notices: ReactNode;
@@ -94,6 +97,8 @@ export function CalendarPhone({
   // A player's own class is titled without their name; their replies still owed are marked (P006, wave 7).
   const viewerId = coach ? null : data.viewerPlayerId;
   const pv = phoneViewOf(view);
+  // The other event is named from everything loaded, not only the players on show, as the page titles it.
+  const clashOf = useMemo(() => overlapLines(overlaps ?? [], data.events, (e) => eventTitle(e, people, viewerId)), [overlaps, data.events, people, viewerId]);
   const setPv = (v: ChCalPhoneView) => onView(desktopViewOf(v), anchor);
   // B10.4: away from today (another day, or another month on Month), a Today key brings the page back, as on desktop.
   const away = pv === 'month' ? monthKey(anchor) !== monthKey(now.date) : anchor !== now.date;
@@ -153,8 +158,17 @@ export function CalendarPhone({
         <SectionBoundary surface={`calendar.phone.${pv}`} label="The calendar" code="CH-6210">
           {/* CH-6604: Day, Month and List settle in as the switch moves (base in, quick out); instant with reduced motion. */}
           <Swap swapKey={pv}>
-            {pv === 'day' && <DayView anchor={anchor} events={events} people={people} now={now} flagged={flagged} selId={selId} onDay={(d) => onView('day', d)} onOpen={onOpen} coach={coach} viewerId={viewerId} range={data.range} onNew={onNew} onMove={coach ? onMove : undefined} movedAway={data.movedAway} />}
-            {pv === 'month' && <MonthGrid anchor={anchor} events={events} now={now} onPick={(d) => onView('day', d)} onStep={onStep} onMonth={(d) => onView('month', d)} />}
+            {pv === 'day' && <DayView anchor={anchor} events={events} people={people} now={now} flagged={flagged} clashOf={clashOf} selId={selId} onDay={(d) => onView('day', d)} onOpen={onOpen} coach={coach} viewerId={viewerId} range={data.range} onNew={onNew} onMove={coach ? onMove : undefined} movedAway={data.movedAway} />}
+            {pv === 'month' && (
+              <>
+                <MonthGrid anchor={anchor} events={events} now={now} onPick={(d) => onView('day', d)} onStep={onStep} onMonth={(d) => onView('month', d)} />
+                {/* The chosen day's events under the grid, as Day lists them: the grid ended at two thirds of the screen
+                    and the rest stood empty, with a tap needed to learn what the ringed day holds. */}
+                <div className="ch-calm-monthday">
+                  <DayPage date={anchor} events={events} people={people} now={now} flagged={flagged} clashOf={clashOf} selId={selId} onOpen={onOpen} coach={coach} viewerId={viewerId} onNew={onNew} movedAway={data.movedAway} />
+                </div>
+              </>
+            )}
             {pv === 'list' &&
               (events.some((e) => e.date >= now.date) ? (
                 <AgendaView events={events} people={people} now={now} selId={selId} flagged={flagged} onSelect={(id) => onOpen(id, events.find((e) => e.id === id)?.date ?? anchor)} viewerId={viewerId} movedAway={data.movedAway} onOpenAt={onOpen} />
@@ -179,6 +193,7 @@ function DayView({
   people,
   now,
   flagged,
+  clashOf,
   selId,
   onDay,
   onOpen,
@@ -195,6 +210,7 @@ function DayView({
   people: Map<string, ChCalPerson>;
   now: ChNow;
   flagged: Set<string>;
+  clashOf?: Map<string, string>;
   selId: string | null;
   onDay: (date: string) => void;
   onOpen: (id: string, date: string) => void;
@@ -255,6 +271,7 @@ function DayView({
         people={people}
         now={now}
         flagged={flagged}
+        clashOf={clashOf}
         selId={selId}
         onOpen={onOpen}
         coach={coach}
@@ -340,6 +357,7 @@ function DayPage({
   people,
   now,
   flagged,
+  clashOf,
   selId,
   onOpen,
   coach,
@@ -358,6 +376,8 @@ function DayPage({
   people: Map<string, ChCalPerson>;
   now: ChNow;
   flagged: Set<string>;
+  /** What each flagged event overlaps, in words (model.ts `overlapLines`). */
+  clashOf?: Map<string, string>;
   selId: string | null;
   onOpen: (id: string, date: string) => void;
   coach: boolean;
@@ -474,6 +494,8 @@ function DayPage({
             const title = eventTitle(e, people, viewerId);
             const mark = rowMark(e);
             const lift = liftFor?.(e);
+            // An overlap is said in words under the row, naming what it overlaps; it was a bare amber triangle.
+            const clash = flagged.has(e.id) ? (clashOf?.get(e.id) ?? 'Overlaps another event') : null;
             return (
               <Fragment key={`${e.id}${e.date}`}>
                 {before.map((g) => (
@@ -490,7 +512,7 @@ function DayPage({
                     type="button"
                     className={`ch-calm-ev is-${e.type}` + (past ? ' is-past' : '') + (live ? ' is-live' : '') + (selId === e.id ? ' is-sel' : '') + (e.cancelled ? ' is-cancelled' : '') + (lift ? ' is-movable' : '') + (liftedId === e.id ? ' is-lifted' : '')}
                     onTouchStart={lift ? () => claimTouch('pending') : undefined}
-                    aria-label={`${roundLabel(e, title).name}${roundLabel(e, title).spokenRound}, ${e.allDay ? 'all day' : e.span?.start != null ? rangeLabel(e, clock) : `${fmtHour(e.start!, true, clock)} to ${fmtHour(e.end!, true, clock)}`}${past ? ', ended' : ''}${flagged.has(e.id) ? ', schedule overlap' : ''}${reply ? ', needs your reply' : ''}${e.cancelled ? ', cancelled' : ''}${mark?.aria ?? ''}`}
+                    aria-label={`${roundLabel(e, title).name}${roundLabel(e, title).spokenRound}, ${e.allDay ? 'all day' : e.span?.start != null ? rangeLabel(e, clock) : `${fmtHour(e.start!, true, clock)} to ${fmtHour(e.end!, true, clock)}`}${past ? ', ended' : ''}${clash ? `, ${clash.charAt(0).toLowerCase()}${clash.slice(1)}` : ''}${reply ? ', needs your reply' : ''}${e.cancelled ? ', cancelled' : ''}${mark?.aria ?? ''}`}
                     // D-70: opening an event is plain navigation, so it is silent (F-0071).
                     onClick={() => onOpen(e.id, e.date)}
                   >
@@ -506,14 +528,16 @@ function DayPage({
                       <b>{title}</b>
                       {/* A class's code is already in its title ("Priya · STAT 201"), so its line names only the room. */}
                       <span className={mark?.sub ? 'ch-calm-ev__sub' : undefined}>{mark?.sub ?? (block && e.busyOnly ? 'Busy' : e.type === 'busy' ? 'Your busy time' : [roundLabel(e, title).caption, e.location].filter(Boolean).join(' · '))}</span>
+                      {clash && (
+                        <span className="ch-calm-ev__clash">
+                          <Icon icon={TriangleAlert} size={13} />
+                          {clash}
+                        </span>
+                      )}
                     </span>
                     {reply ? (
-                      // The reply is the action on this row; an overlap still reads in its label and on the event.
+                      // The reply is the action on this row; an overlap reads on its own line under the place.
                       <Badge tone="warning">Reply</Badge>
-                    ) : flagged.has(e.id) ? (
-                      <span className="ch-calm-ev__w" aria-hidden="true">
-                        <Icon icon={TriangleAlert} size={13} />
-                      </span>
                     ) : e.cancelled ? (
                       <Badge tone="warning">Cancelled</Badge>
                     ) : mark ? (

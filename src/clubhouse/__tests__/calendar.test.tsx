@@ -1185,6 +1185,19 @@ describe('Calendar · phone (v2, Coach - Calendar - Mobile.html)', () => {
     expect(live('.ch-calm-dayk')!.textContent).toMatch(/Fri 16 October/);
   });
 
+  it('Month lists the chosen day under the grid, as Day does: its heading, its count and rows that open the event', async () => {
+    const user = userEvent.setup();
+    wrap(cal());
+    await user.click(screen.getByRole('radio', { name: 'Month' }));
+    await screen.findByRole('grid');
+    const under = live('.ch-calm-monthday') as HTMLElement;
+    expect(under.querySelector('.ch-calm-dayk')!.textContent).toMatch(/Wed 14 October/);
+    // The list comes after the grid and its legend, not before them.
+    expect(screen.getByRole('grid').compareDocumentPosition(under) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    await user.click(within(under).getByRole('button', { name: /^Short-game block, 3:30 PM to 5:00 PM/ }));
+    expect(await screen.findByRole('dialog', { name: 'Short-game block' })).toBeTruthy();
+  });
+
   describe('Month on react-day-picker', () => {
     beforeEach(() => freezeClock());
     afterEach(() => vi.useRealTimers());
@@ -2426,6 +2439,17 @@ describe('Calendar · a player’s own week (wave 7)', () => {
       expect(within(row).getByText('Reply')).toBeTruthy();
       // A reply already given (a maybe, here) is not asked for again.
       expect(within(screen.getByRole('button', { name: /^Recovery nine/ })).queryByText('Reply')).toBeNull();
+    });
+
+    it('an overlap is said in words under the row, naming what it overlaps, never a bare mark', () => {
+      wrap(PREVIEW_CALENDAR_PLAYER);
+      const row = screen.getByRole('button', { name: /^1:1 with Jonah, .*, overlaps Short-game block/ });
+      expect(row.querySelector('.ch-calm-ev__clash')!.textContent).toBe('Overlaps Short-game block');
+      // The line is in the row's text column, under the place; nothing stands alone at the row's end.
+      expect(row.querySelector('.ch-calm-ev__b .ch-calm-ev__clash')).not.toBeNull();
+      expect(row.querySelector('.ch-calm-ev__w')).toBeNull();
+      // A row that overlaps nothing says nothing.
+      expect(screen.getByRole('button', { name: /^Putting ladder/ }).querySelector('.ch-calm-ev__clash')).toBeNull();
     });
 
     it('a coach’s strip and rows never carry a player’s reply mark', () => {
