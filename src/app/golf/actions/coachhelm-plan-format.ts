@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { resolveModelProvider } from '@/lib/ai/model-provider';
-import { MODEL_FOR_TASK } from '@/lib/coachhelm/v3/llm/types';
+import { PLAN_FORMAT_MODEL } from '@/lib/coachhelm/v3/llm/types';
 import { logServerError } from '@/lib/server-error-logger';
 import { practiceTables } from '@/lib/golf/practice-db';
 import { isPracticeMissing } from '@/lib/golf/practice-errors';
@@ -23,7 +23,7 @@ async function readPlanFormatImpl(documentId: string): Promise<{ success: true; 
   try {
     const isPdf = preview.data.mimeType.includes('pdf');
     const { object } = await generateObject({
-      model: resolveModelProvider(MODEL_FOR_TASK.coach_chat),
+      model: resolveModelProvider(PLAN_FORMAT_MODEL),
       schema: Sections,
       messages: [{ role: 'user', content: [{ type: 'text', text: 'This is a golf team\'s practice plan. Name its sections in order, layout only. Never copy a person, a drill or a time.' }, isPdf ? { type: 'file', data: new URL(preview.data.url), mediaType: 'application/pdf' } : { type: 'image', image: new URL(preview.data.url) }] }],
     });

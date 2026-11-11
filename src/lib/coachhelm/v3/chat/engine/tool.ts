@@ -103,6 +103,12 @@ interface ToolBase<I> {
 
 export interface ReadTool<I> extends ToolBase<I> {
   kind: 'read';
+  /**
+   * `true` for a tool on the read contract that changes something (saving or removing the coach's own note): the model
+   * must ask for it itself, never from its code. Such a tool is sent without `allowed_callers`, stays strict, and a
+   * call to it from code is refused before it runs.
+   */
+  direct_only?: boolean;
   /** Figures labelled and already computed; no raw rows for the model to add up. A throw becomes an `unavailable` read the model is told about. */
   run: (ctx: ToolContext, input: I) => Promise<ToolResult>;
 }

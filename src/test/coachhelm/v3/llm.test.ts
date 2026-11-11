@@ -12,6 +12,7 @@ import {
   FALLBACK_PRIORITY,
   estimateCostUsd,
   hasKnownPricing,
+  PLAN_FORMAT_MODEL,
 } from '@/lib/coachhelm/v3/llm/types';
 import { verifyCitations } from '@/lib/coachhelm/v3/llm/citations';
 
@@ -28,6 +29,9 @@ describe('MODEL_FOR_TASK', () => {
   });
   it('uses Claude Haiku 5.5 for coach_chat (owner decision, 2026-11-10; the engine sends effort high)', () => {
     expect(MODEL_FOR_TASK.coach_chat).toBe('anthropic/claude-haiku-5-5');
+    // Reading a sample plan's layout used coach_chat's model; it stays on the model it ran on before the chat moved.
+    expect(PLAN_FORMAT_MODEL).toBe('anthropic/claude-sonnet-5-5');
+    expect(estimateCostUsd(PLAN_FORMAT_MODEL, 1_000_000, 1_000_000)).toBe(12);
   });
   it('prices every model it routes to', () => {
     // An unpriced model bills at the conservative fallback rather than its real

@@ -22,7 +22,33 @@ import { requireRosterPlayer } from './context';
 import { askTables } from './ask-db';
 import { APPROVED_RUN_TTL_MS } from './action-runs';
 import { ActionPlanError } from './action-planners';
-import type { ActionProposal, ActionReceipt, ProposalFact } from './action-types';
+import type { ActionProposal, ActionReceipt, CardDelivery, CardNotReached, CardPerson, CardUndo, CardVisibility, ProposalFact, ReceiptMissed } from './action-types';
+import {
+  affectsOf,
+  availabilityNoteNow,
+  eventInviteDelivery,
+  goalDelivery,
+  goalTitleOf,
+  nameList,
+  peopleChanged,
+  plural,
+  qualifierDelivery,
+  reachOf,
+  roundLine,
+  seatLine,
+  seatsKey,
+  seenGoalBase,
+  seenPlayers,
+  seenRound,
+  seenThread,
+  seenTournament,
+  sortSeats,
+  threadKey,
+  threadReach,
+  tournamentDates,
+  undoFor,
+  type SeatRole,
+} from './card-truth';
 
 type Sb = SupabaseClient<Database>;
 
@@ -38,7 +64,44 @@ export interface FlowDone {
   kind: string;
   label?: string;
   href?: string;
+  /** The row that was written, when the app's action says which (`ActionReceipt.created[].id`). */
+  id?: string;
 }
+
+/**
+ * What a flow's `plan` puts on the card. Everything here is resolved by the server: `recipients` from the roster and
+ * the accounts table, `delivery` from the code that sends, `visible_to` from the table's own access rule.
+ */
+export interface FlowCard {
+  visual?: ActionProposal['visual'];
+  publish?: ActionProposal['publish'];
+  facts: ProposalFact[];
+  action: string;
+  summary: string;
+  notifications: string[];
+  affects?: ActionProposal['affects'];
+  key: Array<string | number>;
+  recipients?: CardPerson[];
+  not_reached?: CardNotReached[];
+  delivery?: CardDelivery | null;
+  visible_to?: CardVisibility;
+  visible_note?: string;
+  undo?: CardUndo;
+  impact?: string;
+}
+
+/** What a flow's write answers with. `notifications` and `missed` say what really went out and who it did not reach. */
+export interface FlowResult extends FlowDone {
+  ok: boolean;
+  error?: string;
+  notifications?: ActionReceipt['notifications'];
+  missed?: ReceiptMissed[];
+  /** A write that landed but not in full: the receipt is `partial` and lists these. */
+  partial?: string[];
+}
+
+/** A flow's finished row as the receipt lists it. */
+export const createdOf = (d: FlowDone): ActionReceipt['created'] => [{ kind: d.kind, count: 1, ...(d.href ? { href: d.href } : {}), ...(d.label ? { label: d.label } : {}), ...(d.id ? { id: d.id, ids: [d.id] } : {}) }];
 
 /**
  * Ask v2's create flows (TASK_FIELDS §5). One tool per flow, each on the same gate as today's four writes: `plan` runs before Confirm and writes nothing;
@@ -48,8 +111,18 @@ export interface FlowDef<I> {
   name: string;
   description: string;
   input: z.ZodType<I>;
-  plan: (ctx: CoachChatContext, input: I) => { visual?: ActionProposal['visual']; publish?: ActionProposal['publish']; facts: ProposalFact[]; action: string; summary: string; notifications: string[]; affects?: ActionProposal['affects']; key: Array<string | number> };
-  run: (ctx: CoachChatContext, input: I, attempt: FlowAttempt) => Promise<{ ok: boolean; error?: string; summary: string; href?: string; kind: string; label?: string; notifications?: ActionReceipt['notifications'] }>;
+  plan: (ctx: CoachChatContext, input: I) => FlowCard;
+  run: (ctx: CoachChatContext, input: I, attempt: FlowAttempt) => Promise<FlowResult>;
+  /**
+   * The stored input's schema, when `prepare` adds what the server read (`seen`). `commit` parses the stored input with
+   * it, so what the coach was shown comes back with the card. Left out, `input` is used. The model never sees this one.
+   */
+  stored?: z.ZodType<I>;
+  /**
+   * At commit, before any write: is the card still true? Reads the world again with the session client and answers
+   * null, or the sentence the coach reads (it must say that nothing was saved or sent). Nothing is written when it answers.
+   */
+  stale?: (sb: Sb, ctx: CoachChatContext, input: I) => Promise<string | null>;
   /** Writes the moment the coach presses, with no hold and no Undo (02-PLAN §14.4, 08-ACCEPTANCE: Lock is its own card with no Undo). */
   immediate?: boolean;
   /** Reads what the card has to show before Confirm (a round's note). Nothing the model said stands in for it. */
@@ -74,7 +147,7 @@ export function flowRequestId(coachId: string, teamId: string, key: string): str
 /** One flow's write on one input, as the gate, the release, Open and the sweep all run it. Nothing starts until `run` is called. */
 export function flowCommit<I>(f: FlowDef<I>, sb: Sb, ctx: CoachChatContext, input: I, ledgerKey: string): { run: () => Promise<ActionReceipt>; readBack?: () => Promise<ActionReceipt | null> } {
   const requestId = () => flowRequestId(ctx.coach_id, ctx.team_id, ledgerKey);
-  const completed = (r: FlowDone & { notifications?: ActionReceipt['notifications'] }): ActionReceipt => ({ status: 'completed', action: f.name, summary: r.summary, created: [{ kind: r.kind, count: 1, ...(r.href ? { href: r.href } : {}), ...(r.label ? { label: r.label } : {}) }], notifications: r.notifications ?? [], partial_failures: [], retryable: false, at: new Date().toISOString() });
+  const completed = (r: FlowDone & { notifications?: ActionReceipt['notifications'] }): ActionReceipt => ({ status: 'completed', action: f.name, summary: r.summary, created: createdOf(r), notifications: r.notifications ?? [], partial_failures: [], retryable: false, at: new Date().toISOString() });
   const landed = f.landed;
   return {
     run: async () => {
@@ -106,7 +179,18 @@ export async function rowSince(sb: Sb, table: string, match: Record<string, stri
 const DATE = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const TIME = z.string().regex(/^\d{2}:\d{2}$/);
 const fact = (label: string, value: string | number | null | undefined, optional = true): ProposalFact => (value == null || value === '' ? { label, value: 'Not set', ...(optional ? {} : { missing: true }) } : { label, value: String(value) });
-const names = (ctx: CoachChatContext, ids: readonly string[]) => ids.map((id) => requireRosterPlayer(ctx, id).name);
+/** What `prepare` stores beside the model's input: the roster players the card names, each with whether they can be told. */
+const SeenPeople = z.array(z.object({ id: z.string(), name: z.string(), account: z.boolean() }));
+type SeenPeople = z.infer<typeof SeenPeople>;
+/** `prepare` always runs before `plan`; a stored card without what it read is not a card. */
+function seenOf<T>(seen: T | undefined): T {
+  if (seen === undefined) throw new ActionPlanError('That could not be prepared.');
+  return seen;
+}
+const cannotLine = (out: readonly CardNotReached[]): ProposalFact[] => (out.length ? [{ label: 'Will not get it', value: `${nameList(out.map((p) => p.name))} (${out[0]!.reason})` }] : []);
+/** What a send's receipt says went out: queued, because the app's actions hand notifications off after they answer. */
+const queuedTo = (channels: readonly string[], to: readonly CardPerson[]): ActionReceipt['notifications'] => (to.length ? channels.map((channel) => ({ channel, recipients: to.length, status: 'queued' as const, to: to.map((p) => p.name) })) : []);
+const missedOf = (out: readonly CardNotReached[]): ReceiptMissed[] => out.map((p) => ({ name: p.name, reason: p.reason }));
 /** A team zone offset for a local wall time, as the calendar's own action wants it. */
 function offsetOn(date: string, time: string, zone: string): number {
   const at = new Date(`${date}T${time}:00Z`);
@@ -138,29 +222,56 @@ export function eventEnd(i: { event_type: string; start?: string; end?: string; 
   if (total >= 24 * 60) return null;
   return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
 }
-const eventDone = (i: z.infer<typeof eventInput>): FlowDone => ({ summary: `${i.title} is on the calendar.`, kind: 'event', label: i.title, href: '/golf/dashboard/calendar' });
-const eventFlow: FlowDef<z.infer<typeof eventInput>> = {
+type EventStored = z.infer<typeof eventInput> & { seen?: { people: SeenPeople } };
+const eventDone = (i: z.infer<typeof eventInput>): FlowDone => ({ summary: `${i.title} is on the calendar.`, kind: 'event', label: i.title, href: `/golf/dashboard/calendar?date=${i.date}` });
+const eventFlow: FlowDef<EventStored> = {
   name: 'create_event',
   landed: { table: 'golf_events', done: eventDone },
   description: 'Add one event to the team calendar, including a single practice. Ask for the type if two fit, the start if timed, the end if timed and not a practice, and who is invited to a meeting. A practice needs only its start: the card shows the usual length.',
   input: eventInput,
+  stored: eventInput.extend({ seen: z.object({ people: SeenPeople }).optional() }),
+  prepare: async (sb, ctx, i) => ({ ...i, seen: { people: await seenPlayers(sb, ctx, i.invite_player_ids) } }),
+  stale: (sb, ctx, i) => peopleChanged(sb, ctx, seenOf(i.seen).people, 'Nothing was saved.'),
   plan: (ctx, i) => {
     const end = eventEnd(i);
     if (!i.all_day && (!i.start || !end)) throw new ActionPlanError('A timed event needs a start and an end. Ask the coach.');
     if (!i.all_day && end! <= i.start!) throw new ActionPlanError('The end has to be after the start.');
-    const who = names(ctx, i.invite_player_ids);
+    const people = seenOf(i.seen).people;
+    // Only an event that asks for replies tells anyone (owner, 2026-10-08), and only invited players with an account.
+    const { recipients, not_reached } = reachOf(people, i.requires_rsvp);
+    const delivery = recipients.length ? eventInviteDelivery(i.title) : null;
     return {
-      visual: { kind: 'cal', date: i.date, start: i.all_day ? null : (i.start ?? null), end: i.all_day ? null : end, title: i.title, where: i.location ?? null, who: who.length ? `${who.length} players` : 'Not asked', rsvp: i.requires_rsvp },
+      visual: { kind: 'cal', date: i.date, start: i.all_day ? null : (i.start ?? null), end: i.all_day ? null : end, title: i.title, where: i.location ?? null, who: people.length ? plural(people.length, 'player') : 'Not asked', rsvp: i.requires_rsvp },
       action: 'Add to calendar',
       summary: i.title,
-      facts: [fact('When', i.all_day ? `${i.date}, all day` : `${i.date}, ${i.start} to ${end}`, false), ...(!i.all_day && !i.end ? [{ label: 'Length', value: `${USUAL_PRACTICE_MINUTES / 60} hours`, source: 'The usual practice. Tell me if it should end earlier or later.' }] : []), fact('Type', i.event_type, false), fact('Where', i.location), fact('Invited', who.length ? who.join(', ') : null), fact('Replies', i.requires_rsvp ? 'Asked for' : 'Not asked for')],
-      notifications: i.requires_rsvp && who.length ? [`${who.length} players get a bell, email and push once Undo closes.`] : ['Nobody is told.'],
+      facts: [
+        fact('When', i.all_day ? `${i.date}, all day` : `${i.date}, ${i.start} to ${end}`, false),
+        ...(!i.all_day && !i.end ? [{ label: 'Length', value: `${USUAL_PRACTICE_MINUTES / 60} hours`, source: 'The usual practice. Tell me if it should end earlier or later.' }] : []),
+        fact('Type', i.event_type, false),
+        fact('Where', i.location),
+        fact('Invited', people.length ? nameList(people.map((p) => p.name)) : null),
+        fact('Replies', i.requires_rsvp ? 'Asked for' : 'Not asked for'),
+        ...(i.notes ? [fact('Notes', i.notes)] : []),
+        ...cannotLine(not_reached),
+      ],
+      notifications: delivery ? [`${plural(recipients.length, 'player')} ${recipients.length === 1 ? 'gets' : 'get'} a push, a bell row and an email once Undo closes: “${delivery.title}”, “${delivery.body}”.`] : ['Nobody is told.'],
+      affects: affectsOf(people),
+      recipients,
+      not_reached,
+      delivery,
+      visible_to: 'team',
+      visible_note: `On the team calendar: every player and coach on ${ctx.team_name} can see it.`,
       key: ['event', i.title, i.date, i.start ?? '', end ?? '', i.invite_player_ids.join(',')],
     };
   },
   run: async (ctx, i, { requestId }) => {
     const res = await createGolfEvent({ requestId, title: i.title, eventType: i.event_type, startDate: i.date, startTime: i.all_day ? undefined : i.start, endTime: i.all_day ? undefined : (eventEnd(i) ?? undefined), allDay: i.all_day, timezoneOffset: -offsetOn(i.date, i.start ?? '12:00', ctx.timezone), location: i.location, description: i.notes, requiresRsvp: i.requires_rsvp, attendeeIds: i.invite_player_ids });
-    return { ok: res.success, error: res.success ? undefined : res.error, ...eventDone(i) };
+    if (!res.success) return { ok: false, error: res.error, ...eventDone(i) };
+    const { recipients, not_reached } = reachOf(i.seen?.people ?? [], i.requires_rsvp);
+    // The event is saved either way; when the invitations failed nobody was invited or told, and the receipt says so by name.
+    const invitesFailed = Boolean((res.data as { invitationsError?: string } | undefined)?.invitationsError);
+    if (invitesFailed) return { ok: true, ...eventDone(i), summary: `${i.title} is on the calendar, but the invitations did not go out.`, partial: ['The invitations did not go out: nobody was invited or told. Invite them from the event in the Calendar.'], missed: [...recipients.map((p) => ({ name: p.name, reason: 'the invitation failed' })), ...missedOf(not_reached)] };
+    return { ok: true, ...eventDone(i), notifications: queuedTo(['push', 'in_app', 'email'], recipients), missed: missedOf(not_reached) };
   },
 };
 
@@ -171,20 +282,40 @@ const tripFlow: FlowDef<z.infer<typeof tripInput>> = {
   done: (_ctx, i) => ({ summary: `The trip to ${i.destination} is added.`, kind: 'trip', label: i.event_name, href: '/golf/dashboard/travel' }),
   description: 'Add a trip. Ask for transport and a firm leave date if not said.',
   input: tripInput,
-  plan: (_ctx, i) => {
+  plan: (ctx, i) => {
     if (i.return_date && i.return_date < i.departure_date) throw new ActionPlanError('The return is before the leave date. Ask the coach.');
     return {
       visual: { kind: 'trip', from: i.departure_location ?? null, to: i.destination, how: i.transportation_type, leave: i.departure_date, back: i.return_date ?? null },
       action: 'Add the trip',
       summary: `${i.event_name} · ${i.destination}`,
-      facts: [fact('Leaves', [i.departure_date, i.departure_time].filter(Boolean).join(' '), false), fact('How', i.transportation_type, false), fact('From', i.departure_location), fact('Back', [i.return_date, i.return_time].filter(Boolean).join(' ')), fact('Hotel', i.hotel_name), fact('Rooms', i.room_assignments), fact('Uniform', i.uniform_requirements), fact('Gear', i.gear_list?.join(', '))],
+      facts: [
+        fact('Leaves', [i.departure_date, i.departure_time].filter(Boolean).join(' '), false),
+        fact('How', i.transportation_type, false),
+        fact('From', i.departure_location),
+        fact('Back', [i.return_date, i.return_time].filter(Boolean).join(' ')),
+        // Written only when given, so shown only when given: nothing goes into the trip that is not on this card.
+        ...(i.flight_info ? [fact('Flight', i.flight_info)] : []),
+        fact('Hotel', i.hotel_name),
+        ...(i.hotel_address ? [fact('Hotel address', i.hotel_address)] : []),
+        ...(i.hotel_phone ? [fact('Hotel phone', i.hotel_phone)] : []),
+        ...(i.hotel_confirmation ? [fact('Confirmation number', i.hotel_confirmation)] : []),
+        fact('Rooms', i.room_assignments),
+        fact('Uniform', i.uniform_requirements),
+        fact('Gear', i.gear_list?.join(', ')),
+        ...(i.notes ? [fact('Notes', i.notes)] : []),
+      ],
       notifications: [i.hotel_confirmation ? 'Nobody is told. Every team member can read the hotel confirmation number.' : 'Nobody is told. Players see it as new travel.'],
+      recipients: [],
+      delivery: null,
+      visible_to: 'team',
+      visible_note: `Every player and coach on ${ctx.team_name} can read the whole trip in Travel${i.hotel_confirmation ? ', the hotel confirmation number included' : ''}.`,
       key: ['trip', i.event_name, i.departure_date, i.destination],
     };
   },
   run: async (ctx, i) => {
-    const res = (await createGolfTravelItinerary({ team_id: ctx.team_id, event_name: i.event_name, destination: i.destination, transportation_type: i.transportation_type, departure_date: i.departure_date, departure_time: i.departure_time, departure_location: i.departure_location, return_date: i.return_date, return_time: i.return_time, flight_info: i.flight_info, hotel_name: i.hotel_name, hotel_address: i.hotel_address, hotel_phone: i.hotel_phone, hotel_confirmation: i.hotel_confirmation, room_assignments: i.room_assignments, uniform_requirements: i.uniform_requirements, gear_list: i.gear_list?.join(', '), notes: i.notes })) as { success: boolean; error?: string };
-    return { ok: res.success, error: res.error, summary: `The trip to ${i.destination} is added.`, kind: 'trip', label: i.event_name, href: '/golf/dashboard/travel' };
+    const res = (await createGolfTravelItinerary({ team_id: ctx.team_id, event_name: i.event_name, destination: i.destination, transportation_type: i.transportation_type, departure_date: i.departure_date, departure_time: i.departure_time, departure_location: i.departure_location, return_date: i.return_date, return_time: i.return_time, flight_info: i.flight_info, hotel_name: i.hotel_name, hotel_address: i.hotel_address, hotel_phone: i.hotel_phone, hotel_confirmation: i.hotel_confirmation, room_assignments: i.room_assignments, uniform_requirements: i.uniform_requirements, gear_list: i.gear_list?.join(', '), notes: i.notes })) as { success: boolean; error?: string; data?: { id?: string } | null };
+    const id = res.success && typeof res.data?.id === 'string' ? res.data.id : undefined;
+    return { ok: res.success, error: res.error, summary: `The trip to ${i.destination} is added.`, kind: 'trip', label: i.event_name, href: '/golf/dashboard/travel', ...(id ? { id } : {}) };
   },
 };
 
@@ -208,8 +339,9 @@ const qualifierFlow: FlowDef<z.infer<typeof qualifierInput>> = {
     };
   },
   run: async (_ctx, i) => {
-    const res = (await createGolfQualifier({ name: i.name, description: i.description, startDate: i.start_date, endDate: i.end_date, numRounds: i.num_rounds, selectionSlotsTotal: i.selection_slots_total, selectionSlotsCoachPick: i.selection_slots_coach_pick, playerIds: i.player_ids, rules: i.rules, entryDeadline: i.entry_deadline })) as { success: boolean; error?: string };
-    return { ok: res.success, error: res.error, summary: `${i.name} is set.`, kind: 'qualifier', label: i.name, href: '/golf/dashboard/qualifiers' };
+    const res = (await createGolfQualifier({ name: i.name, description: i.description, startDate: i.start_date, endDate: i.end_date, numRounds: i.num_rounds, selectionSlotsTotal: i.selection_slots_total, selectionSlotsCoachPick: i.selection_slots_coach_pick, playerIds: i.player_ids, rules: i.rules, entryDeadline: i.entry_deadline })) as { success: boolean; error?: string; data?: { qualifierId?: string } };
+    const id = res.success ? res.data?.qualifierId : undefined;
+    return { ok: res.success, error: res.error, summary: `${i.name} is set.`, kind: 'qualifier', label: i.name, href: id ? `/golf/dashboard/qualifiers/${id}` : '/golf/dashboard/qualifiers', ...(id ? { id } : {}) };
   },
 };
 
@@ -318,7 +450,7 @@ export const lockFlow: FlowDef<z.infer<typeof lockInput>> = {
 
 /** The quiet flows: nobody is told. */
 const blockInput = z.object({ title: z.string().min(1).max(200), date: DATE, end_date: DATE.optional(), start: TIME.optional(), end: TIME.optional() });
-const blockDone = (): FlowDone => ({ summary: 'That time is blocked.', kind: 'blocked_time', href: '/golf/dashboard/calendar' });
+const blockDone = (i?: { date?: string }): FlowDone => ({ summary: 'That time is blocked.', kind: 'blocked_time', href: i?.date ? `/golf/dashboard/calendar?date=${i.date}` : '/golf/dashboard/calendar' });
 const blockFlow: FlowDef<z.infer<typeof blockInput>> = {
   name: 'add_blocked_time',
   landed: { table: 'golf_coach_blocked_time', done: blockDone },
@@ -331,7 +463,7 @@ const blockFlow: FlowDef<z.infer<typeof blockInput>> = {
   },
   run: async (_c, i, { requestId }) => {
     const res = (await addCoachBlockedTime({ requestId, title: i.title, startDate: i.date, endDate: i.end_date ?? i.date, startTime: i.start, endTime: i.end, allDay: !i.start })) as { success: boolean; error?: string };
-    return { ok: res.success, error: res.error, ...blockDone() };
+    return { ok: res.success, error: res.error, ...blockDone(i) };
   },
 };
 const breakInput = z.object({ first_day: DATE, last_day: DATE, label: z.string().max(60) });

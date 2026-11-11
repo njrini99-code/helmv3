@@ -305,8 +305,10 @@ export async function executeRecurringPractice(
       {
         kind: 'practice',
         count: plan.occurrence_count,
-        href: '/golf/dashboard/calendar',
+        // The series is one calendar row that repeats: its id, and the Calendar on the first practice's day with it open.
+        href: result.data?.eventId ? `/golf/dashboard/calendar?date=${plan.start_date}&event=${result.data.eventId}` : `/golf/dashboard/calendar?date=${plan.start_date}`,
         label: plan.title,
+        ...(result.data?.eventId ? { id: result.data.eventId, ids: [result.data.eventId] } : {}),
       },
       ...(plan.requires_rsvp
         ? [{ kind: 'RSVP request', count: invited, href: '/golf/dashboard/calendar' }]

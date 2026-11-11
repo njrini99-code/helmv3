@@ -79,19 +79,42 @@ export interface ActionProposal {
   idempotency_key: string;
   /** Only set for `destructive` — what is lost, stated plainly. */
   impact?: string;
+  /**
+   * Where the thing will appear once it is written, known when the card is planned: the kind of thing, the page it
+   * lives on (a path of this app, never model text) and, for something on a date, the day. The page behind the chat
+   * shows a pending place for it while the write is held. Left out for a task that adds no row to a list.
+   */
+  lands?: ActionLanding;
+}
+
+/** `kind` is one of the page's own row kinds: task, event, blocked_time, focus_area, announcement, message, qualifier, trip, recruit, lineup, plan. */
+export interface ActionLanding {
+  kind: string;
+  home: string;
+  /** ISO day, for things that live on a date. */
+  day?: string;
 }
 
 /** What the coach sees after a mutation ran. Durable; survives reload. */
 export interface ActionReceipt {
-  /** `held`: Ask v2's 8 second window, not yet written; the ledger's final receipt replaces it. */
-  status: 'completed' | 'failed' | 'partial' | 'held';
+  /**
+   * `held`: the 8 second Undo window, not yet written; the final receipt replaces it.
+   * `cancelled`: the coach pressed Undo inside that window and nothing was written (stored from 10 Nov 2026; an older
+   * stored turn that was undone still holds its `held` receipt, and the card's own GET says what became of it).
+   */
+  status: 'completed' | 'failed' | 'partial' | 'held' | 'cancelled';
   /** The instant a held run writes. */
   held_until?: string;
   action: string;
   /** Coach-readable result, e.g. 'Created 8 practices, every Tuesday at 3:00 PM'. */
   summary: string;
-  /** What was created — type + count + in-app links. Never raw ids in copy. */
-  created: { kind: string; count: number; href?: string; label?: string }[];
+  /**
+   * What was created: type, count and where it is. `href` goes to the thing itself where the app has an address for it
+   * (the Calendar on that day with the event open), else to its section. `id` is the row the task wrote and `ids` every
+   * row when it wrote several, so a page can find the new row; ids are only ever of rows the coach who confirmed may
+   * read, are never printed, and are left out where the app's own action does not return one.
+   */
+  created: { kind: string; count: number; href?: string; label?: string; id?: string; ids?: string[] }[];
   /** How notification delivery actually went. */
   notifications: { channel: string; recipients: number; status: 'sent' | 'queued' | 'failed' }[];
   /** Populated on `partial` — what succeeded and what did not. */

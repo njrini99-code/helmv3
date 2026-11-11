@@ -18,7 +18,7 @@
 import { referenceTopicsLine } from './reference-topics';
 
 /** Shared by the coach's and the player's block. */
-const READING_THE_NUMBERS = `
+const SCORE = `
 # Golf: reading the numbers
 
 ## Score
@@ -26,20 +26,61 @@ Score is strokes; to par is strokes against the course's par. For both, lower is
 A scoring average is per 18 holes. Compare averages only over the same window and the same kinds of round.
 Par is not difficulty. A course rating is what a scratch player is expected to shoot from those tees, and slope says how much harder the course gets for a weaker player. For a college player the rating is the one that matters.
 The app keeps the rating and slope a round was played at when a course was picked, but it does not adjust any figure for them. So when you set scores from different courses side by side, say that the courses differ.
+`;
 
+/**
+ * Strokes gained. The owner's instruction (10 Nov 2026): "it's all against pga strokes gained. But coachhelm needs to
+ * know what that means and why." So this part carries the calculation, the yardstick and why it is the yardstick, what a
+ * college player's negative figures do and do not mean, what the figure is not, and how far an estimated figure can be
+ * trusted. Each app-true sentence is in SOURCES.md (A1) and in `__tests__/app-definitions.test.ts`.
+ */
+const SG_WHAT_IT_IS = `
 ## Strokes gained
-Strokes gained compares each shot with the strokes a reference player would need from the same spot. A shot that leaves the player better off than the reference gains strokes; a worse one loses them. Positive is better.
-Here the reference is Tour level, matched to the team (the men's Tour for a men's team, a women's baseline for a women's team). So zero means Tour level, and a negative figure is normal for a college player. Never call a negative figure bad on its own.
-What matters is the comparison: against the team for the same window, against the player's own earlier rounds, and between the four areas.
-The four areas add up to the total:
+What it is. For each shot, take the strokes a Tour player would be expected to need to finish the hole from where the ball lay. Subtract the strokes expected from where the shot finished. Subtract the one stroke just played. What is left is what that shot gained or lost against a Tour player. Positive is better.
+The shots are added up by part of the game, and the four parts add up to the round's total:
 - Off the tee: tee shots on par 4s and par 5s. Distance and accuracy count together.
 - Approach: shots into the green, including the tee shot on a par 3.
 - Around the green: chips, pitches and bunker shots close to the green.
 - Putting.
-It is per round. Example in words: a total of minus two with approach at minus one and a half says most of the gap to Tour level is approach play, and the other three areas share the rest.
-How it is built here: with shots logged, a round's strokes gained is worked out shot by shot. With holes scored but no shots logged, it is a rough estimate from the scorecard. A round posted as a total only has none. A strokes gained figure needs at least three rounds that have one, and the read gives the count: say it.
-Strokes gained tells you more than the older stats because it accounts for where each shot started. Use it first when the read has it.
+Zero means "as a Tour player would have done from the same spots". The total says how many strokes more or fewer the player took than a Tour player would be expected to take on the same holes from the same tees. It is per round.
 
+The yardstick. Here every strokes gained figure is measured against the Tour benchmark, matched to the team: the men's Tour baseline for a men's team, and for a women's team the same expected-strokes curve scaled for the women's game. There is no college, division or scratch baseline in the app.
+Say "against the Tour benchmark" or "Tour level". Name a tour ("PGA Tour", "LPGA Tour") only when a read named it, because the wrong name misleads a women's team.
+Why the Tour. It is the level where every shot is measured, so the expected strokes are real. Nothing like it is published for college golf. And one fixed yardstick keeps every player, team and season comparable: a figure does not move because a setting changed.
+`;
+
+const SG_MEANING_COACH = `
+What it makes of a college player's numbers. Tour players are the best in the world, so a college player is expected to be negative, often by several strokes a round and in most parts of the game. That is normal, not a failure. Never call a negative figure bad, poor or a weakness on its own.
+What carries meaning:
+- The parts against each other: where this player gives up the most to the standard.
+- The player against the team and against teammates, for the same window. Everyone is on the same yardstick, so the comparison is fair. A coach reads this one first.
+- The player against their own earlier rounds: the trend.
+- The player against their level, when a read returns one.
+The right reading, in words: approach at minus one and a half with putting close to zero says this player putts near Tour level and gives up most of the gap on approach shots. Then set both beside the team. If the team is also near minus one and a half on approach, that is where the whole team stands, not this player's own problem.
+The wrong reading: "his approach play is bad", or sorting players into good and bad by the sign. The best putter on a team is the one with the highest strokes gained putting, even when it is negative.
+`;
+
+const SG_MEANING_PLAYER = `
+What it makes of this player's numbers. Tour players are the best in the world, so a college player is expected to be negative, often by several strokes a round and in most parts of the game. That is normal, not a failure. Never call a negative figure bad, poor or a weakness on its own.
+What carries meaning for a player:
+- The parts against each other: where they give up the most to the standard.
+- Their own earlier rounds: the trend.
+- Their level, when a read returns one.
+The right reading, in words: approach at minus one and a half with putting close to zero says "you putt near Tour level, and most of your gap is on approach shots, so that is where the strokes are".
+The wrong reading: "your approach play is bad".
+When a player asks why everything is negative, say it plainly: the number is measured against Tour players, a college player is expected to be behind them, and what matters is which part is furthest behind and which way it is moving.
+`;
+
+const SG_LIMITS = `
+What it is not. It is not a handicap, not a score against par and not a prediction of a score. The total is not the gap to a Tour scoring average, because Tour events are played on longer, harder setups; it is the same holes from the same tees. It shows where strokes go, not why.
+It moves a lot on a few rounds. A strokes gained figure needs at least three rounds that have one, and the read gives the count: say it in words, such as "over his last 10 rounds".
+Measured and estimated. With shots logged, a round's strokes gained is measured shot by shot as above. With holes scored but no shots logged, the app stores a rough estimate from the scorecard (fairways, greens, putts, up-and-downs). The estimate is not measured against the Tour, so it is not on the same scale as a measured figure. Use it only loosely, as the direction of that player's own rounds. Do not read one part of the game from it, do not compare it with a measured figure, and do not call it a gap to the Tour.
+The reads do not say which rounds were estimated. The sign that a player does not log shots is a read with no make rate by distance and no proximity for them. Then say their strokes gained is a rough estimate, and lean on score, greens, putts and scrambling.
+A round posted as a total only has no strokes gained at all.
+When it is measured, strokes gained tells you more than the older stats because it accounts for where each shot started. Use it first.
+`;
+
+const REST_OF_THE_NUMBERS = `
 ## Ball striking
 Fairways hit: tee shots on par 4s and 5s that finish in the fairway. Higher is better, but it ignores distance and how bad a miss was, so on its own it says little about scoring.
 Greens in regulation: on the green with two putts left for par. Higher is better. Of the older stats it is the one most tied to scoring.
@@ -82,10 +123,10 @@ Team averages pool the rounds, so a player with more rounds in the window weighs
 
 ## Being careful
 Golf scores swing from round to round for the same player. A difference smaller than that swing is not a change. The Roster's form word (improving, steady, slipping, early) already allows for this: trust it over your own reading of a few scores.
-With only a few rounds, give the figure with its count and say it is early. Do the same for a rate from few chances.
+With only a few rounds, give the figure with its count in words ("over 4 rounds") and say it is early. Do the same for a rate from few chances.
 One bad round or one blow-up hole is an event, not a trend. Say what happened and wait for more rounds before calling it a pattern.
 Practice rounds usually score differently from tournament rounds. When you compare, say which kinds of round each figure covers.
-A player new to shot tracking has strokes gained and distance figures resting on few rounds, or on scorecard estimates. Say so before drawing a conclusion from them.
+A player new to shot tracking has strokes gained and distance figures resting on few measured rounds, with scorecard estimates mixed in. Say so before drawing a conclusion from them.
 A window figure and a career figure are different things. Do not set one against the other.
 `;
 
@@ -140,9 +181,13 @@ It is general golf knowledge from published research, never this team's data. Wh
 
 const tidy = (parts: readonly string[]): string => parts.map((p) => p.trim()).join('\n\n');
 
-const COACH_GOLF = tidy([READING_THE_NUMBERS, COLLEGE_GOLF_COACH, FROM_NUMBER_TO_ACTION, LIMITS, lookUp()]);
+const COACH_GOLF = tidy([SCORE, SG_WHAT_IT_IS, SG_MEANING_COACH, SG_LIMITS, REST_OF_THE_NUMBERS, COLLEGE_GOLF_COACH, FROM_NUMBER_TO_ACTION, LIMITS, lookUp()]);
 const PLAYER_GOLF = tidy([
-  READING_THE_NUMBERS,
+  SCORE,
+  SG_WHAT_IT_IS,
+  SG_MEANING_PLAYER,
+  SG_LIMITS,
+  REST_OF_THE_NUMBERS,
   COLLEGE_GOLF_PLAYER,
   FROM_NUMBER_TO_ACTION,
   LIMITS,
@@ -160,8 +205,13 @@ export function golfBlock(surface: 'ask' | 'quick_chat' | 'practice_helper' | 'p
  * against the code that defines it and checks that the sentence is still in the block, so neither can move alone.
  */
 export const APP_DEFINITIONS = {
-  sgBaseline: 'Here the reference is Tour level, matched to the team (the men\'s Tour for a men\'s team, a women\'s baseline for a women\'s team).',
+  sgFormula: 'take the strokes a Tour player would be expected to need to finish the hole from where the ball lay. Subtract the strokes expected from where the shot finished. Subtract the one stroke just played.',
+  sgBaseline: 'Here every strokes gained figure is measured against the Tour benchmark, matched to the team: the men\'s Tour baseline for a men\'s team, and for a women\'s team the same expected-strokes curve scaled for the women\'s game.',
+  sgNoOtherBaseline: 'There is no college, division or scratch baseline in the app.',
+  sgTotal: 'The total says how many strokes more or fewer the player took than a Tour player would be expected to take on the same holes from the same tees.',
   sgFloor: 'A strokes gained figure needs at least three rounds that have one',
+  sgEstimate: 'With holes scored but no shots logged, the app stores a rough estimate from the scorecard (fairways, greens, putts, up-and-downs). The estimate is not measured against the Tour',
+  sgEstimateUnmarked: 'The reads do not say which rounds were estimated.',
   countedRound: 'A round counts when it is finished, 9 or 18 holes, fully scored and plausible. Test rounds never count.',
   practiceOut: 'The Stats and Roster figures leave practice rounds out and use 18-hole rounds.',
   totalOnly: 'A round posted as a total only counts in scores (average, to par, best round, trend) and in nothing else.',

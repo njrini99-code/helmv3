@@ -25,7 +25,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { transformJSONSchema } from '@anthropic-ai/sdk/lib/transform-json-schema';
 import { z } from 'zod';
 import { MODEL_FOR_TASK } from '@/lib/coachhelm/v3/llm/types';
-import type { ChatTool } from './tool';
+import type { ChatSurface, ChatTool } from './tool';
 
 export type ModelMessage = Anthropic.Beta.BetaMessageParam;
 export type ModelResponse = Anthropic.Beta.BetaMessage;
@@ -87,9 +87,12 @@ export interface ChatFeatures {
   progressNotes: boolean;
   /**
    * Programmatic tool calling: the model writes code that calls the READ tools in Anthropic's sandbox and only the
-   * result of the code reaches it. Stable on this model. Off by default, for the eval to compare. With it on the read
-   * tools are not `strict` (the two cannot be combined) and tool results pass through a code execution container that
-   * Anthropic retains for up to 30 days, which matters for a team of minors: see CONTRACT_NOTES.md before turning it on.
+   * result of the code reaches it, so a question across many players or rounds costs one model call instead of one
+   * per read. Stable on this model, no beta. ON for the coach surfaces by the owner's decision of 10 Nov 2026, made
+   * knowing that with it on the results of those reads pass through Anthropic's code execution container, which
+   * Anthropic retains for up to 30 days and which is not eligible for zero data retention. OFF for a player (a small
+   * read-only tool set). With it on the read tools are not `strict` (the two cannot be combined; the engine's own zod
+   * check still runs before every read, however it was called) and a task is never callable from code.
    */
   programmaticReads: boolean;
 }
@@ -101,13 +104,20 @@ export const CHAT_FEATURES: ChatFeatures = {
   compaction: true,
   taskBudgetTokens: null,
   progressNotes: false,
-  programmaticReads: false,
+  programmaticReads: true,
 };
 
-/** The features a request is sent with. A function so the route has one thing to call and a test one thing to replace. */
-export const chatFeatures = (): ChatFeatures => CHAT_FEATURES;
+/** A player's requests: the same, without the model's code. */
+const PLAYER_FEATURES: ChatFeatures = { ...CHAT_FEATURES, programmaticReads: false };
 
-/** The same request without anything the API could refuse as unknown: no beta, no strict schema. What a rejected request is retried as. */
+/** The features a surface's requests are sent with. A function so the route has one thing to call and a test one thing to replace. */
+export const chatFeatures = (surface: ChatSurface = 'ask'): ChatFeatures => (surface === 'player' ? PLAYER_FEATURES : CHAT_FEATURES);
+
+/**
+ * The same request without anything the API could refuse as unknown: no beta, no strict schema, no code tool. What a
+ * rejected request is retried as. (A conversation that already holds a call made from the model's code cannot be
+ * replayed without the code tool; if the plain request is rejected too, the turn fails with a sentence, as any other.)
+ */
 export const plainFeatures = (features: ChatFeatures): ChatFeatures => ({
   ...features,
   dropStaleThinking: false,
@@ -115,9 +125,10 @@ export const plainFeatures = (features: ChatFeatures): ChatFeatures => ({
   compaction: false,
   taskBudgetTokens: null,
   progressNotes: false,
+  programmaticReads: false,
 });
 
-export const isPlain = (f: ChatFeatures): boolean => !f.dropStaleThinking && !f.strictTools && !f.compaction && f.taskBudgetTokens === null && !f.progressNotes;
+export const isPlain = (f: ChatFeatures): boolean => !f.dropStaleThinking && !f.strictTools && !f.compaction && f.taskBudgetTokens === null && !f.progressNotes && !f.programmaticReads;
 
 const CODE_EXECUTION = 'code_execution_20260120' as const;
 
@@ -151,7 +162,7 @@ export function modelToolFor(tool: ChatTool, features: ChatFeatures = CHAT_FEATU
   const { $schema: _draft, ...schema } = z.toJSONSchema(tool.input, { io: 'input', unrepresentable: 'any' }) as Record<string, unknown>;
   const base = { name: tool.name, description: tool.description, eager_input_streaming: true };
   // The code may call the reads; a task is only ever asked for directly, so it can be planned, shown and confirmed.
-  const programmatic = features.programmaticReads && tool.kind === 'read';
+  const programmatic = features.programmaticReads && tool.kind === 'read' && !tool.direct_only;
   const callers = programmatic ? { allowed_callers: ['direct' as const, CODE_EXECUTION] } : {};
   if (features.strictTools && !programmatic) {
     try {

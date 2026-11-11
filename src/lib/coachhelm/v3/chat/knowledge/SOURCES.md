@@ -10,22 +10,53 @@ The golf block writes to the **Stats screen's** definition wherever two parts of
 
 ## A. Definitions the prompt states
 
-### A1. What strokes gained is measured against
+### A1. Strokes gained: what it is, against what, and why
 | Statement | Proof |
 |---|---|
-| The baseline is Tour level, matched to the team: the PGA Tour's expected strokes for a men's team, the same curve scaled for a women's team. Division and scratch baselines were removed on 2026-06-22. | `src/lib/golf/sg-benchmarks.ts:82-85` (type and the removal note), `:94-97` (the two options), `:110-112` (default by gender), `:42-58` (the women's scale) |
-| The database applies it per player from the team's gender unless the setting names one of the same two. | `supabase/schemas/functions/public.sql:10554-10562` (`sg_baseline_scale`), `:10768-10783` (`sg_scale_for_player`); the setting's CHECK allows only `pga_tour`, `womens`: `supabase/schemas/golf/10_tables.sql:2193` |
+| A shot's strokes gained is the expected strokes from where it started, less the expected strokes from where it finished, less the one stroke. | `supabase/schemas/functions/public.sql:8023-8024` (`exp_before`, `exp_after`), `:8028-8031` (`exp_before-exp_after-1`) |
+| Each shot goes to a part of the game by the type it was logged as (tee, approach, around the green, putting). A penalty is charged to the part of the shot that earned it. | `public.sql:8014-8023` |
+| A tee shot on a par 3 counts as approach. | the on-course logger types it so: `src/hooks/golf/use-shot-state-machine.ts:1197-1198`; also `src/lib/coachhelm/v3/ingest/providers/arccos-mapper.ts:67-71`, `src/lib/utils/golf-stats-calculator-shots.ts:887` |
+| The four parts add up to the round's total. A window's total is the mean of the stored round totals. | `public.sql:8040`; `src/clubhouse/data/stats-weight.ts:127-136` |
+| The total is how many strokes more or fewer than a Tour player would be expected to take on the same holes from the same tees. | Follows from the formula: a holed shot has nothing expected after it (`public.sql:8024`, `WHEN is_holed THEN 0`), so a hole's shots sum to the expected strokes from the tee less the strokes taken. The app's own note says the same: "SG: Total tracks −(strokes over the baseline)", `src/lib/golf/round-countable.ts:46-48` |
+| The yardstick is the Tour benchmark, matched to the team: the men's Tour baseline for a men's team; for a women's team the same curve scaled. | `src/lib/golf/sg-benchmarks.ts:42-58` (the women's scale and what it is), `:94-97` (the two options), `:110-112` (default by gender); `public.sql:10554-10562` (`sg_baseline_scale`), `:10768-10783` (`sg_scale_for_player`: the setting, else the team's gender), `:10742` (`RETURN v_es * p_scale`: one curve, multiplied) |
+| There is no college, division or scratch baseline. | removed 2026-06-22: `supabase/migrations/20260622130000_pga_lpga_only_sg_baselines.sql:1-14`; `src/lib/golf/sg-benchmarks.ts:82-85`; the CHECK allows only `pga_tour`, `womens`: `supabase/schemas/golf/10_tables.sql:2193` |
 | Zero means Tour level; Stats draws no Tour figure beside a strokes gained row because it is zero by definition. | `src/clubhouse/data/stats-player.ts:420`, `:430-440` (`bench: null`) |
-| Strokes gained is stored per round. With shots logged it is worked out shot by shot; with no shots logged it is a rough estimate from the hole card (fairway, green, putts). A round posted as a total only has none. | `supabase/schemas/functions/public.sql:7919-7923` (shot count), `:8036-8038` (the estimate branch), `:10567-10581` (`sg_estimate_from_holes`); total-only: `src/clubhouse/data/round-scope.ts:4-11`, `src/clubhouse/data/stats-weight.ts:144-150` |
-| Each shot goes to an area by the type it was logged as (tee, approach, around the green, putting). A penalty is charged to the area of the shot that earned it. | `supabase/schemas/functions/public.sql:8014-8023` |
-| The round's total is the four areas added. A window's total is the mean of the stored round totals. | `supabase/schemas/functions/public.sql:8040`; `src/clubhouse/data/stats-weight.ts:127-136` |
+| Against the Tour a college player is expected to be negative in most parts, so the comparison a coach reads first is the team's. | the owner-answered question Q-88 and its analysis: `docs/clubhouse/PROGRESS.md:1735-1746` ("Against the Tour nearly every college player is negative ... keep Tour as the number, add 'vs team' as the comparison a coach reads first") |
+| With shots logged it is measured shot by shot. With holes scored and no shots, the stored figure is an estimate from the hole card: fixed credits for a fairway hit or missed, a green hit or missed, putts against a fixed number, an up-and-down, a sand save. It never reads the expected-strokes curve or the team's scale, so it is not on the Tour's scale. | `public.sql:7919-7923` (shot count), `:8036-8038` (the estimate branch), `:10567-10609` (`sg_estimate_from_holes`: reads only `golf_holes`) |
+| Nothing marks a round's strokes gained as measured or estimated, so a read cannot say which it was. | no such column on `golf_rounds` or `golf_round_stats_cache` in `src/lib/types/database.ts` (checked by the test); the readers return `sgRounds` only (`src/lib/coachhelm/v3/chat/readers.ts:98`) |
+| A round posted as a total only has none. | `src/clubhouse/data/round-scope.ts:4-11`; `src/clubhouse/data/stats-weight.ts:144-150` |
 | No strokes gained figure under three rounds that have one (a nine-hole round counts as half). | `src/clubhouse/data/season.ts:79` (`MIN_SG_ROUNDS`), `src/clubhouse/data/stats-weight.ts:127-136` |
 | A strokes gained total above +15 for one round is treated as bad data and the round does not count. | `src/lib/golf/round-countable.ts:54`, `:134-137` (number not stated in the prompt) |
 
-A tee shot on a par 3 counts as approach: the on-course logger types it so (`src/hooks/golf/use-shot-state-machine.ts:1197-1198`),
-as do the Arccos import (`src/lib/coachhelm/v3/ingest/providers/arccos-mapper.ts:67-71`) and the TypeScript calculator
-(`src/lib/utils/golf-stats-calculator-shots.ts:887`). The database files a shot under the type it was saved with
-(`public.sql:8020-8023`), so a shot saved by another path as `tee` on a par 3 would land in off the tee; none was found.
+**Why the Tour is the yardstick: what the repo records and what it does not.**
+The repo records the decisions, not a reason in the owner's words:
+- 2026-06-22: the scratch and NCAA baselines were removed and every team anchors to its gender's Tour, "no coach
+  selector". The migration header and the code comment say what was done, not why
+  (`supabase/migrations/20260622130000_pga_lpga_only_sg_baselines.sql:1-14`, `src/lib/golf/sg-benchmarks.ts:82-85`).
+- 2026-09-30, owner, Q-88: "never a D1 benchmark, always Tour, for every stat in Clubhouse"
+  (`docs/clubhouse/PROGRESS.md:1735-1736`); Q-93: "change it all to PGA moving forward"
+  (`memory/features/stats-analytics.md:149-150`).
+Two recorded facts stand behind the sentences the prompt uses, and the prompt states only these and what is true in
+general:
+1. Nothing measured exists for college golf to anchor to. The research document lists strokes gained by category
+   for any college division as not published (`docs/v3-research-golf-domain.md:126-128`), and every division figure
+   in the standards table failed the source check (`src/lib/coachhelm/v3/chat/benchmark-reads.ts:104-121`). The
+   removed NCAA and scratch baselines were the Tour curve multiplied by a factor, not measured data
+   (`src/lib/golf/sg-benchmarks.ts:126-152`).
+2. A selectable baseline made the stored figures move with a setting: changing it recomputed the team's stored
+   strokes gained (`src/app/golf/actions/team-sg-baseline.ts:6-10`).
+The general statement ("one fixed, well-measured yardstick keeps every player, team and season comparable") is
+golf-analytics common ground and invents no history.
+
+**A women's team, exactly.** The key is `womens`; its label in code is "LPGA" (`sg-benchmarks.ts:96`) and Clubhouse
+words it "vs the women's Tour baseline" (`docs/clubhouse/PROGRESS.md:1739-1740`). It is NOT LPGA shot data: it is
+the men's Tour expected-strokes curve with every value multiplied by one factor, chosen so a women's team's totals
+land in the same band as a men's (`sg-benchmarks.ts:42-58`, `public.sql:10742`). So "it's all against PGA" is true
+of the curve for every team, and a women's team's figures are against that curve scaled up. The Tour column beside
+other stats (greens, make rates) is different: it comes from `golf_pga_standards` rows for the team's own tour, the
+LPGA's for a women's team (`src/clubhouse/data/stats-common.ts:233-261`). The chat's team block does not carry the
+team's gender (`src/lib/coachhelm/v3/chat/instructions.ts:131-144`, `context.ts:100`), so the prompt tells the
+model to say "the Tour benchmark" and to name a tour only when a read named it.
 
 ### A2. A counted round
 | Statement | Proof |
@@ -160,10 +191,13 @@ as do the Arccos import (`src/lib/coachhelm/v3/ingest/providers/arccos-mapper.ts
 ## D. Defaults taken without asking
 
 1. Write to the Stats screen's definitions (brief). Everything else is flagged in B.
-2. Strokes gained is described as "against Tour level, matched to the team", with zero as Tour level. The women's
-   baseline is a scaled men's curve, not LPGA shot data; the prompt does not call it "LPGA ShotLink".
-3. The prompt says a strokes gained figure may rest on estimated rounds, because the readers cannot tell the model
-   which rounds were shot-tracked. If a reader later returns that count, the sentence should point to it.
+2. Strokes gained is described as "against the Tour benchmark, matched to the team". The model is told to name a
+   tour only when a read named it, because the team block does not say whether the team is men's or women's.
+3. An estimated strokes gained figure (no shots logged) is described as not on the Tour's scale and good only as a
+   loose direction for that player's own rounds. The lead suggested it might support a round total cautiously; the
+   code shows the total is a sum of fixed credits unrelated to distance, so the prompt does not let it stand as a
+   gap to the Tour. The readers cannot say which rounds were estimated; the prompt gives the model the practical
+   sign (no make rate by distance and no proximity for the player).
 4. Tour and level figures are served only by `get_reference` topic `standards` (tour-aware, the Stats page's own
    table). The research document's Tour tables are withheld from the golf reference.
 5. The data map names tables only when a reader or the allowlist reaches them, and names columns only for

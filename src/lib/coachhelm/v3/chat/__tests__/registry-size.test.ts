@@ -18,7 +18,7 @@ const definition = (t: ChatTool) => JSON.stringify({ name: t.name, description: 
 const tokens = (chars: number) => Math.round(chars / 4);
 
 /** The tools another worker owns and TOOLS only registers (CONTEXT's, `context/**` and `tasks/**`). Their size is theirs; it counts toward the whole prefix. */
-const REGISTERED_FOR_OTHERS = new Set(['find_in_app', 'save_note', 'remove_note', 'send_event_reminder', 'record_attendance']);
+const REGISTERED_FOR_OTHERS = new Set(['find_in_app', 'save_note', 'remove_note', 'send_event_reminder', 'record_attendance', 'update_event', 'cancel_event', 'set_focus_area_status', 'set_goal_state', 'mark_signal_handled', 'set_qualifier_coach_pick']);
 
 function sizeOf(surface: ChatSurface, who: CoachChatContext | PlayerChatContext) {
   const tools = toolsFor(surface, who);
@@ -45,11 +45,12 @@ describe('the cached prefix: tool definitions and policy', () => {
     ['practice_helper', coach],
     ['quick_chat', coach],
     ['player', player],
-  ] as const)('%s stays under 21,000 tokens, and its own tools and rules under 12,000', (surface, who) => {
+  ] as const)('%s stays under 26,000 tokens, and its own tools and rules under 12,000', (surface, who) => {
     const size = sizeOf(surface, who);
     console.info(`prefix ${surface}: ${size.tools} tools, ${size.toolTokens} tokens of definitions + ${size.policyTokens} of policy (${size.rulesTokens} of rules, the rest golf and the data map) = ${size.total}; own tools and rules ${size.own}; largest ${size.largest.map(([n, t]) => `${n} ${t}`).join(', ')}`);
     expect(size.own).toBeLessThan(12_000);
-    expect(size.total).toBeLessThan(21_000);
+    // 26,000 by the lead's decision of 10 Nov 2026 (was 21,000): the knowledge blocks carry what strokes gained means and the writing rules.
+    expect(size.total).toBeLessThan(26_000);
   });
 
   it('the Ask tab and the practice helper send the same definitions, so they share one cache entry', () => {

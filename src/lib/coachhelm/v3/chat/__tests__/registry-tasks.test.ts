@@ -210,6 +210,62 @@ describe('every task', () => {
   });
 });
 
+describe('where a task lands, and which row it wrote', () => {
+  const CAL = '/golf/dashboard/calendar';
+
+  it('each card says where its row will appear, known when it is planned; a task that adds no row to a list says nothing', async () => {
+    const lands: Record<string, unknown> = {};
+    for (const t of all()) lands[t.name] = (await planned(t)).lands ?? null;
+    expect(lands).toEqual({
+      create_event: { kind: 'event', home: CAL, day: '2026-11-12' },
+      create_recurring_practice: { kind: 'event', home: CAL, day: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/) },
+      add_blocked_time: { kind: 'blocked_time', home: CAL, day: '2026-11-20' },
+      create_task: { kind: 'task', home: '/golf/dashboard/tasks' },
+      create_team_announcement: { kind: 'announcement', home: '/golf/dashboard/announcements' },
+      create_trip: { kind: 'trip', home: '/golf/dashboard/travel', day: '2026-11-14' },
+      create_qualifier: { kind: 'qualifier', home: '/golf/dashboard/qualifiers', day: '2026-11-15' },
+      create_recruit: { kind: 'recruit', home: '/golf/dashboard/recruiting' },
+      create_focus_area: { kind: 'focus_area', home: `/golf/dashboard/roster?player=${P1}` },
+      send_message: { kind: 'message', home: `/golf/dashboard/messages?conversation=${ID}` },
+      set_lineup: { kind: 'lineup', home: `/golf/dashboard/tournaments/${ID}` },
+      publish_practice_plan: { kind: 'plan', home: `/golf/dashboard/practice/${ID}` },
+      create_goal: null,
+      add_round_note: null,
+      add_team_break: null,
+      save_team_term: null,
+      set_availability_note: null,
+      create_drill: null,
+      publish_artifact: null,
+      lock_lineup: null,
+    });
+  });
+
+  it('an event’s receipt names the row it wrote and opens that event on its day; the same card names the same row again', async () => {
+    const tool = all().find((t) => t.name === 'create_event')!;
+    const proposal = { ...(await planned(tool)), idempotency_key: 'card-land-1' };
+    const [made] = (await tool.commit(ctx(), proposal)).created;
+    expect(made!.id).toMatch(/^[0-9a-f-]{36}$/);
+    expect(made).toMatchObject({ kind: 'event', count: 1, ids: [made!.id], href: `${CAL}?date=2026-11-12&event=${made!.id}` });
+    // A retry of the card finds its row by that id and reports the same one.
+    world.landed = true;
+    expect((await tool.commit(ctx(), proposal)).created[0]).toEqual(made);
+    // Another card is another row.
+    world.landed = false;
+    expect((await tool.commit(ctx(), { ...proposal, idempotency_key: 'card-land-2' })).created[0]!.id).not.toBe(made!.id);
+  });
+
+  it('blocked time and a recruit name their rows too; a task whose action does not say which row it wrote names none', async () => {
+    const receiptOf = async (name: string) => {
+      const tool = all().find((t) => t.name === name)!;
+      return (await tool.commit(ctx(), { ...(await planned(tool)), idempotency_key: `card-${name}` })).created[0]!;
+    };
+    expect(await receiptOf('add_blocked_time')).toMatchObject({ kind: 'blocked_time', id: expect.stringMatching(/^[0-9a-f-]{36}$/), href: `${CAL}?date=2026-11-20` });
+    expect(await receiptOf('create_recruit')).toMatchObject({ kind: 'recruit', id: expect.stringMatching(/^[0-9a-f-]{36}$/) });
+    expect(await receiptOf('create_goal')).not.toHaveProperty('id');
+    expect(await receiptOf('create_trip')).not.toHaveProperty('id');
+  });
+});
+
 describe('commitOnce', () => {
   it('with nothing to look by, it still writes, and a failure says it could not check', async () => {
     const write = vi.fn(async (): Promise<ActionReceipt> => ({ status: 'failed', action: 'add_team_break', summary: 'No.', created: [], notifications: [], partial_failures: [], error: 'No.', retryable: false, at: 'now' }));

@@ -40,7 +40,7 @@ import {
 } from './readers-direct';
 import { strictInput } from './strict-input';
 import { taskTools } from './tasks';
-import { eventTaskTools } from './tasks/event-tasks';
+import { contextTaskTools } from './tasks/list';
 
 export type { TaskProposal } from './tasks';
 
@@ -96,8 +96,8 @@ function coachTools(surface: Exclude<ChatSurface, 'player'>, who: ToolContext['w
   ];
   // Quick chat's card is the coach's Send, so it sends and does not hand a draft to Messages or keep a document.
   const drafts: ChatTool[] = quickChat ? [askPracticeBrief, draftPracticePlan, draftBoard] : [writeArtifact, askPracticeBrief, draftPracticePlan, draftMessage, draftPoll, draftBoard];
-  // CONTEXT's two tasks (`tasks/event-tasks.ts`) come last, so every earlier definition keeps its bytes.
-  return [...reads, ...drafts, ...taskTools({ quickChat }), ...eventTaskTools()];
+  // CONTEXT's tasks (`tasks/list.ts`, in its own fixed order) come last, so every earlier definition keeps its bytes.
+  return [...reads, ...drafts, ...taskTools({ quickChat }), ...contextTaskTools()];
 }
 
 export const toolsFor: ToolsFor = (surface: ChatSurface, who: ToolContext['who']): ChatTool[] => {
@@ -107,4 +107,4 @@ export const toolsFor: ToolsFor = (surface: ChatSurface, who: ToolContext['who']
 };
 
 /** The names of the tools that write, for anything that must tell a task from a read without the list in hand (the confirm gate's tests, the UI's card pairing). */
-export const TASK_TOOL_NAMES: readonly string[] = [...new Set([...taskTools({ quickChat: false }), ...taskTools({ quickChat: true })].map((t) => t.name).concat(['set_lineup', 'lock_lineup'], eventTaskTools().map((t) => t.name)))];
+export const TASK_TOOL_NAMES: readonly string[] = [...new Set([...taskTools({ quickChat: false }), ...taskTools({ quickChat: true })].map((t) => t.name).concat(['set_lineup', 'lock_lineup'], contextTaskTools().map((t) => t.name)))];

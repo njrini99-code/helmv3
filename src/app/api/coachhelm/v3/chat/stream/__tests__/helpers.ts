@@ -18,6 +18,8 @@ export interface FakeDb {
   modelColumns: boolean;
   /** The Undo hold's column on the ledger. */
   holdColumn: boolean;
+  /** The held migration's `surface` column on the conversations table. */
+  surfaceColumn: boolean;
   client: unknown;
 }
 
@@ -30,14 +32,15 @@ let seq = 0;
 const nextId = () => `00000000-0000-4000-8000-${String((seq += 1)).padStart(12, '0')}`;
 
 /** A PostgREST-shaped query builder over arrays. Only what the chat code calls. */
-export function fakeDb(opts: { modelColumns?: boolean; holdColumn?: boolean } = {}): FakeDb {
-  const db: FakeDb = { tables: {}, modelColumns: opts.modelColumns ?? true, holdColumn: opts.holdColumn ?? true, client: null };
+export function fakeDb(opts: { modelColumns?: boolean; holdColumn?: boolean; surfaceColumn?: boolean } = {}): FakeDb {
+  const db: FakeDb = { tables: {}, modelColumns: opts.modelColumns ?? true, holdColumn: opts.holdColumn ?? true, surfaceColumn: opts.surfaceColumn ?? true, client: null };
   const rowsOf = (table: string) => (db.tables[table] ??= []);
   const missing = (table: string, keys: string[]): { code: string; message: string } | null => {
     if (table === 'golf_coachhelm_chat_messages' && !db.modelColumns && keys.some((k) => k === 'model_messages' || k === 'pending_decision')) {
       return { code: '42703', message: 'column golf_coachhelm_chat_messages.model_messages does not exist' };
     }
     if (table === 'golf_coachhelm_action_runs' && !db.holdColumn && keys.includes('run_at')) return { code: '42703', message: 'column "run_at" does not exist' };
+    if (table === 'golf_coachhelm_chat_conversations' && !db.surfaceColumn && keys.includes('surface')) return { code: 'PGRST204', message: "Could not find the 'surface' column" };
     return null;
   };
 

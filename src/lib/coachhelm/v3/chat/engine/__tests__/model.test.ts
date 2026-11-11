@@ -28,11 +28,16 @@ describe('the model request', () => {
     expect(sent.tool_choice).toEqual({ type: 'auto' });
     expect(request(undefined, { answerOnly: true }).tool_choice).toEqual({ type: 'none' });
     expect(chatFeatures()).toBe(CHAT_FEATURES);
+    for (const surface of ['ask', 'quick_chat', 'practice_helper'] as const) expect(chatFeatures(surface)).toBe(CHAT_FEATURES);
+    // A player's requests are the same without the model's code.
+    expect(chatFeatures('player')).toEqual({ ...CHAT_FEATURES, programmaticReads: false });
   });
 
   it('a zod input becomes a JSON Schema object the API takes: strict, closed, defaults optional for the model, no $schema key', () => {
-    const converted = modelToolFor(rounds);
+    const direct = { ...CHAT_FEATURES, programmaticReads: false };
+    const converted = modelToolFor(rounds, direct);
     expect(converted).toMatchObject({ name: 'get_rounds', description: 'Rounds.', eager_input_streaming: true, strict: true });
+    expect(converted).not.toHaveProperty('allowed_callers');
     const schema = converted.input_schema as { type: string; additionalProperties?: boolean; properties: Record<string, { description?: string; enum?: string[] }>; required?: string[]; $schema?: string };
     expect(schema.type).toBe('object');
     expect(schema.$schema).toBeUndefined();
@@ -41,7 +46,7 @@ describe('the model request', () => {
     expect(schema.properties.player_id!.description).toContain('Player id from the roster.');
     expect(schema.properties.window!.enum).toEqual(['last5', 'last10']);
     // Without strict the schema is sent as written, and the engine's own zod check is the only gate (it always runs).
-    const loose = modelToolFor(rounds, { ...CHAT_FEATURES, strictTools: false });
+    const loose = modelToolFor(rounds, { ...direct, strictTools: false });
     expect(loose).not.toHaveProperty('strict');
     expect((loose.input_schema as { required?: string[] }).required).toEqual(['player_id']);
   });
@@ -101,17 +106,36 @@ describe('the model request', () => {
     expect(tools[2]).toEqual({ type: 'code_execution_20260120', name: 'code_execution' });
   });
 
-  it('the shipped defaults: stale thinking dropped, strict tools, citations and compaction on; no budget, no progress notes, no code', () => {
-    expect(CHAT_FEATURES).toEqual({ dropStaleThinking: true, strictTools: true, citations: true, compaction: true, taskBudgetTokens: null, progressNotes: false, programmaticReads: false });
-    expect(request().betas).toEqual(['thinking-binding-controls-2026-08-01', 'compact-2026-01-12']);
+  it('the shipped defaults: stale thinking dropped, strict tools, citations, compaction and the model’s code on; no budget, no progress notes', () => {
+    expect(CHAT_FEATURES).toEqual({ dropStaleThinking: true, strictTools: true, citations: true, compaction: true, taskBudgetTokens: null, progressNotes: false, programmaticReads: true });
+    const sent = request();
+    expect(sent.betas).toEqual(['thinking-binding-controls-2026-08-01', 'compact-2026-01-12']);
+    // With the code tool on: the read may be called from code and is not strict; the task is direct-only and strict; the code tool is last.
+    const tools = sent.tools as Array<{ name: string; type?: string; strict?: boolean; allowed_callers?: string[] }>;
+    expect(tools.map((t) => [t.name, t.strict ?? null, t.allowed_callers ?? null])).toEqual([
+      ['get_rounds', null, ['direct', 'code_execution_20260120']],
+      ['create_event', true, null],
+      ['code_execution', null, null],
+    ]);
+    // A tool on the read contract that changes something is direct-only: never offered to the code, and still strict.
+    const note = modelToolFor({ ...rounds, name: 'save_note', direct_only: true } as ChatTool);
+    expect(note).toMatchObject({ name: 'save_note', strict: true });
+    expect(note).not.toHaveProperty('allowed_callers');
+    // A player's request has no code tool, and its reads are strict.
+    const player = request(chatFeatures('player')).tools as Array<{ name: string; strict?: boolean }>;
+    expect(player.map((t) => [t.name, t.strict ?? null])).toEqual([['get_rounds', true], ['create_event', true]]);
   });
 
   it('the plain request a rejected one is retried as carries no beta and no strict schema, and is not retried again', () => {
     const plain = plainFeatures({ ...CHAT_FEATURES, taskBudgetTokens: 60_000, progressNotes: true });
     expect(isPlain(CHAT_FEATURES)).toBe(false);
     expect(isPlain(plain)).toBe(true);
+    // The code tool on its own is still something to fall back from.
+    expect(isPlain({ ...plain, programmaticReads: true })).toBe(false);
     const sent = request(plain);
     expect(sent).not.toHaveProperty('betas');
+    expect((sent.tools as Array<{ name: string }>).map((t) => t.name)).toEqual(['get_rounds', 'create_event']);
+    expect(JSON.stringify(sent.tools)).not.toContain('allowed_callers');
     expect(sent).not.toHaveProperty('context_management');
     expect(sent.thinking).toEqual({ type: 'adaptive' });
     expect(sent.output_config).toEqual({ effort: 'high' });

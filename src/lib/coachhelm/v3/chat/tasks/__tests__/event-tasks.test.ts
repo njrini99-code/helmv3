@@ -65,6 +65,10 @@ describe('send_event_reminder: the card', () => {
     expect(p.notifications).toEqual([`2 players get an in-app notification: “${WORDS.title}”, “${WORDS.message}”.`]);
     expect(p.affects.filter((a) => a.kind === 'player').map((a) => a.label)).toEqual(['Avery Lane', 'Blake Ortiz']);
     expect(p.input).toEqual({ event_id: EVENT, player_ids: [AVERY, BLAKE], ...WORDS });
+    // The same, as the fields the card draws from: people by id and name, who is not reached and why, the words.
+    expect(p.recipients).toEqual([{ id: AVERY, name: 'Avery Lane', role: 'player' }, { id: BLAKE, name: 'Blake Ortiz', role: 'player' }]);
+    expect(p.not_reached).toEqual([{ id: CASEY, name: 'Casey Moss', role: 'player', reason: 'no account yet' }]);
+    expect(p.delivery).toEqual({ channels: ['in_app'], title: WORDS.title, body: WORDS.message });
     // The card survives storage unchanged: the engine hands commit the stored copy.
     expect(JSON.parse(JSON.stringify(p))).toEqual(p);
     // Nobody from outside the roster is on it, by name or by id.
@@ -200,7 +204,7 @@ describe('send_event_reminder: the send', () => {
 });
 
 describe('record_attendance', () => {
-  const input = { event_id: EVENT, present_player_ids: [AVERY, BLAKE], late_player_ids: [], no_show_player_ids: [CASEY] };
+  const input = { event_id: EVENT, present: [AVERY, BLAKE], late: [], no_show: [CASEY] };
   /** The action's own write, standing in: an upsert on (event, player) into the table the read-back reads. */
   const saving = (tables: ReturnType<typeof fakeSb>['tables'], fail: Record<string, { landed: boolean }> = {}) => {
     actions.markAttendance.mockImplementation(async (event: string, player: string, mark: string) => {
@@ -228,6 +232,7 @@ describe('record_attendance', () => {
     expect(fact(p, 'Changes a mark already recorded')).toBe('Blake Ortiz: No-show now, Present after');
     expect(fact(p, 'Not marked')).toBe('Nobody: the whole roster is on this card.');
     expect(fact(p, 'Players are told')).toBe('Nothing is sent to players.');
+    expect([p.recipients, p.delivery]).toEqual([[], null]);
     expect(p.notifications).toEqual([]);
     expect(JSON.parse(JSON.stringify(p))).toEqual(p);
   });
@@ -277,9 +282,9 @@ describe('record_attendance', () => {
     await expect(recordAttendance.commit(toolCtx(db().sb, playerWho(), 'player'), { input: {} } as never)).rejects.toThrow('Only a coach can do that.');
     await expect(recordAttendance.plan(toolCtx(db({ staff: false }).sb, coach()), input)).rejects.toThrow('Only this team’s coaches can do that.');
     await expect(recordAttendance.plan(toolCtx(db().sb, coach()), { ...input, event_id: FOREIGN_EVENT })).rejects.toThrow(/not on your team’s calendar/);
-    await expect(recordAttendance.plan(toolCtx(db().sb, coach()), { ...input, late_player_ids: [STRANGER] })).rejects.toThrow('One of those players is not on your active roster.');
-    await expect(recordAttendance.plan(toolCtx(db().sb, coach()), { ...input, late_player_ids: [AVERY] })).rejects.toThrow('Avery Lane is in two lists. Put each player in one.');
-    await expect(recordAttendance.plan(toolCtx(db().sb, coach()), { event_id: EVENT, present_player_ids: [], late_player_ids: [], no_show_player_ids: [] })).rejects.toThrow('Say who was present, late or missing.');
+    await expect(recordAttendance.plan(toolCtx(db().sb, coach()), { ...input, late: [STRANGER] })).rejects.toThrow('One of those players is not on your active roster.');
+    await expect(recordAttendance.plan(toolCtx(db().sb, coach()), { ...input, late: [AVERY] })).rejects.toThrow('Avery Lane is in two lists. Put each player in one.');
+    await expect(recordAttendance.plan(toolCtx(db().sb, coach()), { event_id: EVENT, present: [], late: [], no_show: [] })).rejects.toThrow('Say who was present, late or missing.');
     expect(actions.markAttendance).not.toHaveBeenCalled();
   });
 

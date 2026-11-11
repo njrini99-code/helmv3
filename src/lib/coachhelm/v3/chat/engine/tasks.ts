@@ -101,6 +101,10 @@ const clock = (iso: string, timezone: string): string => {
   }
 };
 
+/** The receipt of a write the coach undid inside the window: the stored card then says undone, not held. Nothing was written. */
+const undoneReceipt = (action: string): ActionReceipt => ({ status: 'cancelled', action, summary: 'Undone. Nothing was written.', created: [], notifications: [], partial_failures: [], retryable: false, at: new Date().toISOString() });
+const UNDONE_RESULT = 'The coach pressed Undo before it was written. Nothing was written.';
+
 export type ProposeResult = { ok: true; proposal: CardProposal } | { ok: false; message: string };
 
 /** Build the plan and record it. No card is shown unless the ledger holds the proposal: a Confirm with nothing to claim could only fail. */
@@ -209,7 +213,7 @@ export async function startConfirm(deps: TaskDeps, tool: TaskTool<unknown> | und
         if (written) return outcomeOf(written);
         // Not held any more: the coach pressed Undo, or opened it early (which wrote it from the card's own request).
         const after = await readRun(ctx.sb, { coach_id: deps.coachId, idempotency_key: key });
-        if (after?.status === 'cancelled') return { receipt: null, result: 'The coach pressed Undo before it was written. Nothing was written.', isError: false };
+        if (after?.status === 'cancelled') return { receipt: undoneReceipt(proposal.action), result: UNDONE_RESULT, isError: false };
         if (after?.result) return outcomeOf(after.result);
         return { receipt: null, result: `It is being written by another request (opened early at ${clock(new Date().toISOString(), deps.timezone)}). The card shows the outcome; do not say it is done.`, isError: false };
       };
@@ -243,7 +247,10 @@ export async function settleAbandonedTask(deps: TaskDeps, ctx: ToolContext, key:
   const run = await readRun(ctx.sb, { coach_id: deps.coachId, idempotency_key: key });
   if (run && run.status !== 'proposed') {
     if (run.status === 'completed' && run.result) return { ...outcomeOf(run.result), declined: false };
-    if (run.status === 'cancelled') return { receipt: null, result: 'The coach pressed Undo before it was written. Nothing was written.', isError: false, declined: false };
+    if (run.status === 'cancelled') {
+      const action = isStoredProposal(run.proposed_input) ? String((run.proposed_input.proposal as { action?: unknown } | null)?.action ?? run.tool_name) : run.tool_name;
+      return { receipt: undoneReceipt(action), result: UNDONE_RESULT, isError: false, declined: false };
+    }
     if (run.status === 'held' || run.status === 'approved') return { receipt: null, result: 'The coach confirmed this and it is being written now. The card shows the outcome; do not say whether it is done.', isError: false, declined: false };
     if (run.status === 'failed') return { receipt: run.result, result: `Failed. ${run.result?.summary ?? 'It did not go through.'}`, isError: true, declined: false };
   }

@@ -389,7 +389,7 @@ export const DATA_QUIRKS: readonly string[] = [
   'A 9-hole round has about half the strokes of an 18-hole round: do not average them together; holes_played says which.',
   'golf_round_stats_cache.updated_at and every other updated_at is when a row was last recomputed, not when anything was played; order rounds by round_date (or use round_lines).',
   'Strokes gained is measured against Tour level for the team (the men’s Tour baseline, or the women’s baseline for a women’s team): zero is Tour level and a college player is normally negative. A round with shots logged has it measured shot by shot; a round scored hole by hole without shots has an estimate from the scorecard.',
-  'Distances: shot and driving distances are yards; putt distances and approach proximity are feet. Say the unit in the answer ("15.3 ft", never "15.3").',
+  'Distances: shot and driving distances are yards; putt distances and approach proximity are feet. Say the unit in the answer in full ("15 feet", "281 yards"), never a bare number.',
   'Sign: negative strokes gained loses strokes to the baseline; negative score to par is under par (better). Lower is better for score, putts, three-putts, penalties and proximity; higher is better for GIR, fairways, scrambling, make rates and percentiles.',
 ];
 
@@ -405,9 +405,10 @@ export const UNKNOWN_ENTRIES: ReadonlyArray<{ table: string; column: string; why
 );
 
 const UNITS_WORTH_SAYING: ReadonlySet<Unit> = new Set(['count', 'strokes', 'to_par', 'percent', 'percentile', 'feet', 'yards', 'days', 'rating', 'by_metric', 'unknown']);
-const UNIT_TAG: Partial<Record<Unit, string>> = { count: 'n', strokes: 'strokes', to_par: 'to par', percent: '%', percentile: 'pctile', feet: 'ft', yards: 'yd', days: 'days', rating: 'rating', by_metric: 'unit of its metric', unknown: 'unit unknown' };
+// Whole words: a tag the model reads is a tag it may write, and a coach was shown "n=4" (owner, 10 Nov 2026).
+const UNIT_TAG: Partial<Record<Unit, string>> = { count: 'count', strokes: 'strokes', to_par: 'to par', percent: '%', percentile: 'percentile', feet: 'feet', yards: 'yards', days: 'days', rating: 'rating', by_metric: 'unit of its metric', unknown: 'unit unknown' };
 
-/** The unit of each column that has one worth saying: what a row's envelope carries so the answer says "15.3 ft", not "15.3". */
+/** The unit of each column that has one worth saying: what a row's envelope carries so the answer says "15 feet", not "15". */
 export function columnUnits(table: string, columns: readonly string[]): Record<string, Unit> {
   const out: Record<string, Unit> = {};
   for (const col of columns) {
@@ -427,7 +428,7 @@ export function columnWithUnit(table: string, column: string): string {
 /** The compact reading guide that goes with the tool: conventions and quirks, then the sign of the columns where it matters. */
 export function describeDictionary(): string {
   return [
-    'Reading the data (units are in brackets after each column: n is a count, strokes, % is 0 to 100, ft, yd):',
+    'Reading the data (the unit is in brackets after each column: count, strokes, to par, % from 0 to 100, feet, yards). The brackets are for you; an answer gives the unit in words:',
     ...DATA_QUIRKS.map((q) => `- ${q}`),
     '- An empty column is "not recorded", never zero. Each read carries the unit of its columns (detail.units); use it in the answer.',
   ].join('\n');

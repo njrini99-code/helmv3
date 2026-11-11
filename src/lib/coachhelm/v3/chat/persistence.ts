@@ -54,13 +54,33 @@ function rowToMessage(row: {
   };
 }
 
+const CONVERSATION_COLUMNS = 'id, coach_id, title, pinned, archived_at, created_at, updated_at';
+/** `surface` is the held migration 20261110130000. Without it PostgREST answers 42703 (or PGRST204 on a write) and the code carries on without the column. */
+const surfaceColumnMissing = (error: { code?: string | null } | null): boolean => error?.code === '42703' || error?.code === 'PGRST204';
+// Once the column is seen to be missing, this server stops asking for it for a while: a database without the migration must not pay
+// a failed read on every list and every new conversation.
+let surfaceMissingUntil = 0;
+const SURFACE_RECHECK_MS = 5 * 60_000;
+const askForSurface = (): boolean => Date.now() >= surfaceMissingUntil;
+const noteSurfaceMissing = (): void => {
+  surfaceMissingUntil = Date.now() + SURFACE_RECHECK_MS;
+};
+/** For tests: forget what was learned about the column. */
+export const resetSurfaceColumnCheck = (): void => {
+  surfaceMissingUntil = 0;
+};
+
+/** The coach's conversations, each with the surface it was started on (`ask`, `quick_chat`, `practice_helper`), or null where that is not recorded. */
 export async function listConversations(sb: Sb): Promise<ChatConversation[]> {
-  const { data } = await sb
-    .from('golf_coachhelm_chat_conversations')
-    .select('id, coach_id, title, pinned, archived_at, created_at, updated_at')
-    .order('pinned', { ascending: false })
-    .order('updated_at', { ascending: false });
-  return (data ?? []) as ChatConversation[];
+  const read = (columns: string) => fromUntyped(sb, 'golf_coachhelm_chat_conversations').select(columns).order('pinned', { ascending: false }).order('updated_at', { ascending: false });
+  if (askForSurface()) {
+    const withSurface = await read(`${CONVERSATION_COLUMNS}, surface`);
+    if (!withSurface.error) return ((withSurface.data ?? []) as unknown as ChatConversation[]).map((c) => ({ ...c, surface: c.surface ?? null }));
+    if (!surfaceColumnMissing(withSurface.error)) return [];
+    noteSurfaceMissing();
+  }
+  const { data } = await read(CONVERSATION_COLUMNS);
+  return ((data ?? []) as unknown as ChatConversation[]).map((c) => ({ ...c, surface: null }));
 }
 
 export async function getConversation(
@@ -140,15 +160,21 @@ export async function findAssistantTurn(
 
 export async function createConversation(
   sb: Sb,
-  args: { coach_id: string; title?: string | null },
+  args: { coach_id: string; title?: string | null; surface?: 'ask' | 'quick_chat' | 'practice_helper' | null },
 ): Promise<ChatConversation> {
-  const { data, error } = await sb
-    .from('golf_coachhelm_chat_conversations')
-    .insert({ coach_id: args.coach_id, title: args.title ?? null })
-    .select('id, coach_id, title, pinned, archived_at, created_at, updated_at')
-    .single();
+  const base = { coach_id: args.coach_id, title: args.title ?? null };
+  const insert = (values: Record<string, unknown>) => fromUntyped(sb, 'golf_coachhelm_chat_conversations').insert(values as never).select(CONVERSATION_COLUMNS).single();
+  const labelled = Boolean(args.surface) && askForSurface();
+  let { data, error } = labelled ? await insert({ ...base, surface: args.surface }) : await insert(base);
+  // A database without the surface column still gets its conversation: the surface is a label, not a reason to refuse a question.
+  let stored = labelled;
+  if (error && labelled && surfaceColumnMissing(error)) {
+    noteSurfaceMissing();
+    stored = false;
+    ({ data, error } = await insert(base));
+  }
   if (error) throw new Error(`createConversation: ${error.message}`);
-  return data as ChatConversation;
+  return { ...(data as unknown as ChatConversation), surface: stored ? (args.surface ?? null) : null };
 }
 
 export async function touchConversation(sb: Sb, conversation_id: string): Promise<void> {

@@ -157,9 +157,19 @@ describe('the data map block', () => {
     }
   });
 
+  it('tells the model that names and stored values are for tool calls, and gives plain words for each', () => {
+    expect(COACH_DATA_MAP).toMatch(/The names of reads, tables and columns below are for tool calls only\. Never write one in an answer, and never write a stored value/);
+    expect(PLAYER_DATA_MAP).toMatch(/The names of reads below are for tool calls only\. Never write one in an answer\./);
+    // Every table has a plain name in brackets, and every stored value has plain words beside it.
+    for (const line of COACH_DATA_MAP.split('\n').filter((l) => /^- golf_[a-z_]+ \(/.test(l))) expect(line).toMatch(/^- golf_[a-z_]+ \([a-z][^;)]+;/);
+    for (const v of VALUE_LISTS) for (const [value, words] of Object.entries(v.values)) expect(words.length, `${v.table}.${v.column} ${value}`).toBeGreaterThan(3);
+    // No shorthand in the prose around the names.
+    for (const text of [COACH_DATA_MAP, PLAYER_DATA_MAP]) expect(text).not.toMatch(/\b[nN]\s?=\s?\d|\b(SG|GIR|avg|pct|yds?|ft)\b|Strokes Gained/);
+  });
+
   it('is about the size planned (characters / 4)', () => {
     console.info(`data map: coach ${tokens(COACH_DATA_MAP)} tokens, player ${tokens(PLAYER_DATA_MAP)} tokens (characters / 4)`);
-    expect(tokens(COACH_DATA_MAP)).toBeLessThan(3_900);
+    expect(tokens(COACH_DATA_MAP)).toBeLessThan(4_000);
     expect(tokens(PLAYER_DATA_MAP)).toBeLessThan(900);
   });
 });

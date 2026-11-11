@@ -24,9 +24,9 @@ import { logServerError } from '@/lib/server-error-logger';
 import { isPlayerContext, type ChatTool, type TaskTool, type ToolContext } from './engine/tool';
 import { askTables } from './ask-db';
 import { executeAnnouncement, executeFocusArea, executeTask, keyOf, planAnnouncement, planFocusArea, planTask, type AnnouncementPlan, type FocusAreaPlan, type TaskPlan } from './action-planners';
-import type { ActionProposal, ActionReceipt, RecurringPracticePlan } from './action-types';
+import type { ActionLanding, ActionProposal, ActionReceipt, RecurringPracticePlan } from './action-types';
 import { CoachContextError, type CoachChatContext } from './context';
-import { CREATE_FLOWS, LINEUP_FLOWS, drillFlow, flowRequestId, rowSince, type FlowDef, type FlowDone } from './create-tools';
+import { CREATE_FLOWS, LINEUP_FLOWS, createdOf, drillFlow, flowRequestId, rowSince, type FlowDef, type FlowDone } from './create-tools';
 import { landingRows } from './landing-rows';
 import { publishFlow } from './practice-draft';
 import { executeRecurringPractice, planRecurringPractice } from './practice-planner';
@@ -44,7 +44,7 @@ function coachOnly(ctx: ToolContext): CoachChatContext {
   return ctx.who;
 }
 
-const completed = (action: string, d: FlowDone, notifications: ActionReceipt['notifications'] = []): ActionReceipt => ({ status: 'completed', action, summary: d.summary, created: [{ kind: d.kind, count: 1, ...(d.href ? { href: d.href } : {}), ...(d.label ? { label: d.label } : {}) }], notifications, partial_failures: [], retryable: false, at: now() });
+const completed = (action: string, d: FlowDone, notifications: ActionReceipt['notifications'] = []): ActionReceipt => ({ status: 'completed', action, summary: d.summary, created: createdOf(d), notifications, partial_failures: [], retryable: false, at: now() });
 
 /** The receipt of a write that did not go through, saying only what was checked. */
 export function failedReceipt(action: string, looked: Looked, error: string | undefined, where: string): ActionReceipt {
@@ -74,6 +74,51 @@ const WHERE: Record<string, string> = {
   publish_artifact: 'Documents',
   publish_practice_plan: 'the practice plan',
   send_message: 'Messages',
+};
+
+/**
+ * Where each task's row appears once it is written (`ActionProposal.lands`): the page's kind for it and the page it
+ * lives on. Known when the card is planned, from the tool and its own input, so the page behind the chat can keep a
+ * place for it while the write is held. A task that adds no row to a list (a note, a term, a lock) has none.
+ */
+const DASH = '/golf/dashboard';
+const day = (value: unknown): string | undefined => (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value) ? value.slice(0, 10) : undefined);
+const uuid = (value: unknown): string | undefined => (typeof value === 'string' && /^[0-9a-f-]{36}$/i.test(value) ? value : undefined);
+export function landsFor(tool: string, input: unknown): ActionLanding | undefined {
+  const i = (input ?? {}) as Record<string, unknown>;
+  const on = (kind: string, home: string, date?: string): ActionLanding => ({ kind, home, ...(date ? { day: date } : {}) });
+  switch (tool) {
+    case 'create_event':
+      return on('event', `${DASH}/calendar`, day(i.date));
+    case 'create_recurring_practice':
+      return on('event', `${DASH}/calendar`, day(i.start_date) ?? day(i.first_date));
+    case 'add_blocked_time':
+      return on('blocked_time', `${DASH}/calendar`, day(i.date));
+    case 'create_task':
+      return on('task', `${DASH}/tasks`);
+    case 'create_team_announcement':
+      return on('announcement', `${DASH}/announcements`);
+    case 'create_trip':
+      return on('trip', `${DASH}/travel`, day(i.departure_date));
+    case 'create_qualifier':
+      return on('qualifier', `${DASH}/qualifiers`, day(i.start_date));
+    case 'create_recruit':
+      return on('recruit', `${DASH}/recruiting`);
+    case 'create_focus_area':
+      return uuid(i.player_id) ? on('focus_area', `${DASH}/roster?player=${uuid(i.player_id)}`) : undefined;
+    case 'send_message':
+      return uuid(i.conversation_id) ? on('message', `${DASH}/messages?conversation=${uuid(i.conversation_id)}`) : undefined;
+    case 'set_lineup':
+      return uuid(i.tournament_id) ? on('lineup', `${DASH}/tournaments/${uuid(i.tournament_id)}`) : undefined;
+    case 'publish_practice_plan':
+      return uuid(i.plan_id) ? on('plan', `${DASH}/practice/${uuid(i.plan_id)}`) : undefined;
+    default:
+      return undefined;
+  }
+}
+const withLanding = (tool: string, input: unknown): { lands?: ActionLanding } => {
+  const lands = landsFor(tool, input);
+  return lands ? { lands } : {};
 };
 
 async function attempt(action: string, run: () => Promise<ActionReceipt>): Promise<ActionReceipt> {
@@ -117,7 +162,7 @@ function flowTask<I>(f: FlowDef<I>): TaskTool<I, TaskProposal> {
       const d = f.plan(who, prepared);
       // The rows this lands between, for the card. A failed look draws the new row alone; it is never a reason to refuse the card.
       const neighbours = await landingRows(ctx.sb, who, f.name, input).catch(() => null);
-      return { ...(d.visual ? { visual: d.visual } : {}), ...(d.publish ? { publish: d.publish } : {}), ...(neighbours?.length ? { neighbours } : {}), action: d.action, summary: d.summary, facts: d.facts, affects: d.affects ?? [], notifications: d.notifications, missing: d.facts.filter((x) => x.missing).map((x) => x.label), idempotency_key: keyOf(d.key), tool: f.name, input: prepared, planned_at: now() };
+      return { ...(d.visual ? { visual: d.visual } : {}), ...(d.publish ? { publish: d.publish } : {}), ...(neighbours?.length ? { neighbours } : {}), ...withLanding(f.name, prepared), action: d.action, summary: d.summary, facts: d.facts, affects: d.affects ?? [], notifications: d.notifications, missing: d.facts.filter((x) => x.missing).map((x) => x.label), idempotency_key: keyOf(d.key), tool: f.name, input: prepared, planned_at: now() };
     },
     commit: async (ctx, proposal) => {
       const who = coachOnly(ctx);
@@ -125,10 +170,13 @@ function flowTask<I>(f: FlowDef<I>): TaskTool<I, TaskProposal> {
       if (!parsed.success) return failedReceipt(f.name, 'not_there', 'This card could not be read back, so it was not run.', WHERE[f.name] ?? 'the app');
       const input = parsed.data;
       const requestId = flowRequestId(who.coach_id, who.team_id, proposal.idempotency_key);
+      // Where the row's id is the request id (the calendar's rows, a recruit), the receipt can say which row it wrote, and an
+      // event's link opens that event on its day.
+      const row = <D extends FlowDone>(d: D): D => (f.landed ? { ...d, id: requestId, ...(f.landed.table === 'golf_events' && d.href ? { href: `${d.href}${d.href.includes('?') ? '&' : '?'}event=${requestId}` } : {}) } : d);
       const look = async (): Promise<ActionReceipt | 'not_there' | 'unknown'> => {
         if (f.landed) {
           const { data, error } = await askTables(ctx.sb).from(f.landed.table).select('id').eq('id', requestId).maybeSingle();
-          return error ? 'unknown' : data ? completed(f.name, f.landed.done(input)) : 'not_there';
+          return error ? 'unknown' : data ? completed(f.name, row(f.landed.done(input))) : 'not_there';
         }
         if (f.written && f.done) {
           const found = await f.written(ctx.sb, who, input, { since: sinceOf(proposal), requestId });
@@ -142,7 +190,7 @@ function flowTask<I>(f: FlowDef<I>): TaskTool<I, TaskProposal> {
         look,
         async () => {
           const r = await f.run(who, input, { sb: ctx.sb, requestId });
-          return r.ok ? completed(f.name, r, r.notifications) : { status: 'failed', action: f.name, summary: r.error ?? 'That didn’t go through.', created: [], notifications: [], partial_failures: [], ...(r.error ? { error: r.error } : {}), retryable: false, at: now() };
+          return r.ok ? completed(f.name, row(r), r.notifications) : { status: 'failed', action: f.name, summary: r.error ?? 'That didn’t go through.', created: [], notifications: [], partial_failures: [], ...(r.error ? { error: r.error } : {}), retryable: false, at: now() };
         },
       );
     },
@@ -196,7 +244,7 @@ function plannedTask<I, TPlan>(def: {
       const who = coachOnly(ctx);
       const built = def.plan(who, input);
       const neighbours = await landingRows(ctx.sb, who, def.name, input).catch(() => null);
-      return { ...built.proposal, ...(neighbours?.length ? { neighbours } : {}), tool: def.name, input: built.plan, planned_at: now() };
+      return { ...built.proposal, ...(neighbours?.length ? { neighbours } : {}), ...withLanding(def.name, { ...(input as object), ...(built.plan as object) }), tool: def.name, input: built.plan, planned_at: now() };
     },
     commit: async (ctx, proposal) => {
       const who = coachOnly(ctx);
@@ -232,7 +280,7 @@ const createFocusArea = plannedTask<Parameters<typeof planFocusArea>[1], FocusAr
   plan: planFocusArea,
   run: (_who, plan) => executeFocusArea(plan),
   written: (ctx, _who, plan, since) => rowSince(ctx.sb, 'golf_player_focus_areas', { player_id: plan.player_id, title: plan.title.trim() }, since),
-  done: (plan) => ({ summary: `The focus area for ${plan.player_name} is created.`, kind: 'focus_area', label: plan.title }),
+  done: (plan) => ({ summary: `The focus area for ${plan.player_name} is created.`, kind: 'focus_area', label: plan.title, href: `${DASH}/roster?player=${plan.player_id}` }),
 });
 
 const createTask = plannedTask<Parameters<typeof planTask>[1], TaskPlan>({

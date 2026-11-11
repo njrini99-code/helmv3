@@ -102,13 +102,24 @@ entries are history. The tool list and the prompt are described where the tools 
   player.
 - **Optional features are one object, `CHAT_FEATURES`**, each a field that turns it off: `dropStaleThinking`
   (`thinking.block_binding.prefix_mismatch_behavior: 'drop_block'`, beta `thinking-binding-controls-2026-08-01`),
-  `strictTools` (`strict: true` on every tool; the engine still validates every input with zod), `citations` (below),
-  `compaction` (`compact_20260112` at the default trigger, beta `compact-2026-01-12`). Built and off:
-  `taskBudgetTokens` (null), `progressNotes` (`thinking.display: 'updates'`), `programmaticReads` (the model's code
-  calling the read tools; off because results would pass through a container Anthropic retains for up to 30 days,
-  an owner decision for a team of minors). If the API rejects a request (HTTP 400) that carries any of them, the loop
-  sends that call once more as a plain request (no beta, no `strict`), keeps the rest of the turn plain, completes the
-  turn and logs `v3.chat.stream.degraded` as an error: the coach loses the feature, not the answer.
+  `strictTools` (`strict: true`; the engine still validates every input with zod), `citations` (below),
+  `compaction` (`compact_20260112` at the default trigger, beta `compact-2026-01-12`), `programmaticReads` (below).
+  Built and off: `taskBudgetTokens` (null), `progressNotes` (`thinking.display: 'updates'`). If the API rejects a
+  request (HTTP 400) that carries any of them, the loop sends that call once more as a plain request (no beta, no
+  `strict`, no code tool), keeps the rest of the turn plain, completes the turn and logs `v3.chat.stream.degraded`
+  as an error: the coach loses the feature, not the answer.
+- **The model's code calls the reads (programmatic tool calling): ON for Ask, quick chat and the practice helper,
+  OFF for a player.** The model may write code that calls the read tools in Anthropic's code execution sandbox and
+  works a figure out there, so a question across many players or rounds is one model call instead of one per read.
+  **With this on, the results of those reads (players' names and figures) pass through Anthropic's code execution
+  container. Anthropic retains that container's data for up to 30 days and the feature is not eligible for zero data
+  retention. The owner chose this on 10 Nov 2026** ("It's not minors. Turn it on."). The switch is
+  `CHAT_FEATURES.programmaticReads` in `engine/model.ts`. What does not change: every read the code calls is validated
+  by the tool's zod schema, runs with the signed-in coach's session client under row-level security and the same
+  ownership checks, and its envelope reaches the store, the evidence parts (marked `via: 'code'`) and the grounding
+  check. A task can never be called from code, and no card is prepared while code is waiting on a read. Reads are not
+  `strict` while this is on (the API does not allow both); tasks stay strict. An answer computed in code carries no
+  citation markers; its sources are the turn's `via: 'code'` evidence parts.
 - **Stored model messages are exactly what the API returned**, appended only: thinking blocks with their signatures,
   text (with the API's citation objects) and tool calls in order, each tool-result message, and the per-turn system
   message. Thinking is never sent to the browser. A thinking block is valid only while `system`, `tools` and every
@@ -192,6 +203,16 @@ entries are history. The tool list and the prompt are described where the tools 
 - **A failure's kind** is a closed set (`ChatErrorKind`): the server names it on the stream (`model`, `truncated`,
   `lost`, `card_retry`, `card_gone`) and in a refused request's body (`budget`, `off`, `rate`, `signed_out`, `gone`);
   the hook names a dropped connection (`offline`, `lost`, `card_retry`). A refusal by the model is not a failure.
+- **An undone card** is stored as a receipt with `status: 'cancelled'` ("Undone. Nothing was written."); a turn undone
+  before 10 Nov 2026 still holds its `held` receipt and the card's own GET says what became of it.
+- **Where a task lands.** A proposal says where its row will appear (`lands: { kind, home, day? }`), and a receipt's
+  `created[]` names the row it wrote (`id`, `ids`) with a link to the thing itself where the app has one, so the page
+  behind quick chat can keep a place for the row and mark it. Ids are set where the app's own action returns the row
+  (events, blocked time, recruits, tasks, team updates, a practice series, qualifiers) and left out elsewhere.
+- **The surface a conversation was started on** is stored on the conversation (`surface`, held migration
+  `20261110130000`) and returned by `GET /api/coachhelm/v3/chat/conversations`. Without the migration it is null.
+- **Reading a sample plan's layout** (`coachhelm-plan-format.ts`) is not a chat turn. It runs on `PLAN_FORMAT_MODEL`
+  (`anthropic/claude-sonnet-5-5`), the model it ran on before the chat moved, not on `coach_chat`'s.
 - **A turn's facts** are stored as the part `data-turn-meta`: `started_at`, `duration_ms` (summed over the requests
   that worked on the turn), `reads`, and `declined` when the model refused.
 - **Screens bound for the tools** (`stream/route.ts`, the only file that may import a Clubhouse loader): Stats, Team
@@ -843,7 +864,8 @@ are byte-identical for every team, day and conversation and sit after the policy
 - **Golf** (`knowledge/golf.ts`): what each figure means and which way is good, how the figures relate, college
   golf, from a number to something to do, where to be careful, and what the assistant does not do (a swing or body
   diagnosis, medical advice, a label on a player, a promise, a figure from memory). It states this app's own
-  definitions: strokes gained against Tour level by the team's gender, a counted round, the windows, the season from
+  definitions: strokes gained (the per-shot sum, the Tour benchmark by the team's gender and why it is the yardstick,
+  why a college player's figures are negative and what to read instead, what a scorecard estimate cannot support), a counted round, the windows, the season from
   1 August, which figures need hole-by-hole scoring or logged shots, how a qualifier is ranked, how team figures pool.
   `knowledge/SOURCES.md` gives the `file:line` behind each and lists every place the app defines one thing two ways;
   `knowledge/__tests__/app-definitions.test.ts` fails when the code and the text part ways. It contains no benchmark,
@@ -859,11 +881,44 @@ are byte-identical for every team, day and conversation and sit after the policy
   the prompt names the topics. The research document's men's Tour tables are withheld (a Tour or level figure comes
   only from topic standards, which uses the team's own tour), as are sections with unsourced college figures, vendor
   claims and a body-and-swing causal chain; four unsourced sentences are cut from sections that are otherwise served.
-- **The golf-sense eval** (`knowledge/eval/golf-sense.json`): sixty questions with what a correct answer must and must
+- **The golf-sense eval** (`knowledge/eval/golf-sense.json`): 69 questions (nine of them on what a Tour-based
+  strokes gained figure means and why) with what a correct answer must and must
   not state and which reads it should use, in the shape `scripts/coachhelm/ask-eval.mjs` scores. Not yet run: a run
   is a live spend against staging and needs the owner's approval.
 - When a read tool is added, renamed or removed, or the allowlist changes: update `data-map.source.ts` and run
   `npm run coachhelm:data-map`.
+
+### CoachHelm chat: where the coach is, what it has been told, and what it can do after a thing exists (2026-11-10)
+
+Code: `src/lib/coachhelm/v3/chat/context/**` and `src/lib/coachhelm/v3/chat/tasks/**`. The wiring each part asks of the
+route and the registry is in `engine/CONTRACT_NOTES.md`, sections C1 to C7.
+
+- **Where the person is.** The browser may send a `screen` value with a new message (`context/screen-schema.ts`;
+  `screenContextFromPath` builds it from the address). `turnContext` (`context/screen-context.ts`) checks every id in
+  it against the signed-in person's own team with the session client and writes one line for a system message after
+  the user's message: "Today is Tue 10 Nov 2026. The coach is on Stats, looking at Avery Lane over the last 10
+  rounds." An id that is not theirs is dropped; a value that does not parse is ignored and the turn runs. The line
+  never holds an id or an e-mail address. A player's line holds the screen, the window and their own round only: no
+  name and no title somebody else typed. It is never in the prompt or a tool definition.
+- **Where things are.** `context/app-map.ts` lists every Clubhouse place per role with its address; a test holds each
+  address to a real page and a rebuilt route for that role. `find_in_app` names matching places to the model and
+  attaches a `data-app-link` part (a button); the model is never given an address. The route offers the tool only
+  where Clubhouse renders for the team.
+- **What the coach has told it.** `save_note` and `remove_note` (`context/notes.ts`) write the coach's own standing
+  notes through `saveCoachFact` and `deleteCoachFact`, at once, with a `data-coach-note` chip. Notes reach the model as
+  a system message on a conversation's first turn; the tone goes with every turn. Without held migration
+  20261101090100 there are no notes and nothing fails. A player has none. Anthropic's memory tool is not used
+  (CONTRACT_NOTES C3 says why).
+- **What it can do after a thing exists.** Eight task tools on the contract (`tasks/list.ts` is their order):
+  `send_event_reminder`, `record_attendance`, `update_event`, `cancel_event`, `set_focus_area_status`,
+  `set_goal_state`, `mark_signal_handled`, `set_qualifier_coach_pick`. Each wraps the app's own action, makes that
+  action's permission check first in `plan`, and reads back before a receipt says nothing was saved. `cancel_event` is
+  the app's soft cancellation and never the row delete; `update_event` and `cancel_event` act on one date, as the
+  Calendar does for "this date only". Where something is sent the card names who gets it and shows the words, and a
+  test pins those words to the app's own lines.
+- **What is not a tool, and why.** `tasks/INVENTORY.md`: all 304 actions that change something, the tool for each or
+  the reason there is none, and the list left for later in order. Deleting, removing a person, roles, accounts,
+  consent and sending outside the team are never tools.
 
 ### Coach chat read tools: whole-team reads (2026-10-25)
 

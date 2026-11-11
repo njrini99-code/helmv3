@@ -176,7 +176,8 @@ export async function executeFocusArea(plan: FocusAreaPlan): Promise<ActionRecei
       {
         kind: 'focus area',
         count: 1,
-        href: '/golf/dashboard/intelligence?view=players',
+        // The player the focus area belongs to. The app's action does not say which row it wrote, so there is no id here.
+        href: `/golf/dashboard/roster?player=${plan.player_id}`,
         label: plan.title,
       },
     ],
@@ -286,7 +287,7 @@ export async function executeTask(plan: TaskPlan): Promise<ActionReceipt> {
     action: 'Assign a task',
     summary: `${plan.title} assigned to ${plan.assignee_ids.length} player${plan.assignee_ids.length === 1 ? '' : 's'}.`,
     created: [
-      { kind: 'task', count: 1, href: '/golf/dashboard/tasks', label: plan.title },
+      { kind: 'task', count: 1, href: '/golf/dashboard/tasks', label: plan.title, ...(result.data?.taskId ? { id: result.data.taskId, ids: [result.data.taskId] } : {}) },
       { kind: 'assignment', count: plan.assignee_ids.length },
     ],
     notifications: [{ channel: 'In-app', recipients: plan.assignee_ids.length, status: 'sent' }],
@@ -410,6 +411,7 @@ export async function executeAnnouncement(plan: AnnouncementPlan): Promise<Actio
         count: 1,
         href: '/golf/dashboard/announcements',
         label: plan.title,
+        ...(result.data?.announcementId ? { id: result.data.announcementId, ids: [result.data.announcementId] } : {}),
       },
     ],
     notifications: [{ channel: 'In-app', recipients: count, status: 'sent' }],

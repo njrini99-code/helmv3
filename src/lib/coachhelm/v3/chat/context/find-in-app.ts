@@ -93,10 +93,10 @@ export const findInApp: ReadTool<{ query: string; player_id: string | null }> = 
   kind: 'read',
   name: 'find_in_app',
   description:
-    'Find where something is in the app. Returns up to four matching screens, each with its name and one line on what it is for, and puts a button under your answer that opens the best match. Use it when the coach asks where to find, see or change something, or when your answer should point them to a screen. Pass player_id (from the roster) when they want one player’s own page, such as that player’s stats; otherwise pass null. It reads no team data.',
+    'Find where something is in the app. Returns up to four matching screens with what each is for and puts a button under your answer that opens the best one. Use it when the coach asks where to find or change something. player_id: one player’s own page, else null.',
   input: z.strictObject({
-    query: z.string().min(1).max(120).describe('What they are looking for, in a few plain words: "join requests", "drill bank", "change the tees".'),
-    player_id: z.string().uuid().nullable().describe('A roster player whose own page is wanted, or null.'),
+    query: z.string().min(1).max(120).describe('A few plain words: "join requests", "change the tees".'),
+    player_id: z.string().uuid().nullable(),
   }),
   progress: () => 'Finding that in the app',
   run,
@@ -107,8 +107,8 @@ export const findInAppForPlayer: ReadTool<{ query: string }> = {
   kind: 'read',
   name: 'find_in_app',
   description:
-    'Find where something is in the app. Returns up to four matching screens, each with its name and one line on what it is for, and puts a button under your answer that opens the best match. Use it when the player asks where to find or do something, such as posting a round or seeing their classes. It reads no data.',
-  input: z.strictObject({ query: z.string().min(1).max(120).describe('What they are looking for, in a few plain words: "post a round", "my classes".') }),
+    'Find where something is in the app: returns up to four matching screens with what each is for, and puts a button under your answer that opens the best match. Use it when the player asks where to find or do something.',
+  input: z.strictObject({ query: z.string().min(1).max(120).describe('A few plain words: "post a round".') }),
   progress: () => 'Finding that in the app',
   run,
 };

@@ -24,7 +24,7 @@ const tools = [
   [saveNote, { text: 'Lead with the number.' }],
   [removeNote, { note: 'lead with the number' }],
   [eventTaskTools()[0]!, { event_id: ID, recipients: 'not_replied', player_ids: [] }],
-  [eventTaskTools()[1]!, { event_id: ID, present_player_ids: [ID], late_player_ids: [], no_show_player_ids: [] }],
+  [eventTaskTools()[1]!, { event_id: ID, present: [ID], late: [], no_show: [] }],
 ] as const;
 
 describe('the tools CONTEXT adds, as strict tools', () => {

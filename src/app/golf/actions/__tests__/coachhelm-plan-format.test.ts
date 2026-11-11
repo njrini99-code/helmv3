@@ -16,7 +16,7 @@ const state = vi.hoisted(() => ({
 
 vi.mock('ai', () => ({ generateObject: vi.fn() }));
 vi.mock('@/lib/ai/model-provider', () => ({ resolveModelProvider: () => ({}) }));
-vi.mock('@/lib/coachhelm/v3/llm/types', () => ({ MODEL_FOR_TASK: { coach_chat: 'test-model' } }));
+vi.mock('@/lib/coachhelm/v3/llm/types', () => ({ PLAN_FORMAT_MODEL: 'test-model' }));
 vi.mock('@/app/golf/actions/documents', () => ({ getPreviewUrl: vi.fn() }));
 vi.mock('@/lib/admin/observed-action', () => ({ withAdminObserved: (_name: string, _meta: unknown, fn: unknown) => fn }));
 vi.mock('@/lib/server-error-logger', () => ({ logServerError: state.logServerError }));

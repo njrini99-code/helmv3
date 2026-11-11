@@ -2,7 +2,8 @@ import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('server-only', () => ({}));
 
-import { modelToolFor } from '../model';
+import { buildModelRequest, chatFeatures, modelToolFor, plainFeatures } from '../model';
+import { instructionBlocks } from '../../instructions';
 import { toolsFor } from '../../registry';
 import type { ChatSurface } from '../tool';
 
@@ -38,5 +39,59 @@ describe('the registry’s tools as the model is given them', () => {
 
   it('a player is offered no task', () => {
     expect(toolsFor('player', player).filter((t) => t.kind === 'task')).toEqual([]);
+  });
+
+  const prefix = (surface: ChatSurface, who: unknown, features = chatFeatures(surface)) => {
+    const blocks = instructionBlocks(surface, who as never);
+    const request = buildModelRequest({ tools: toolsFor(surface, who as never), system: { stable: blocks.policy, team: blocks.team }, messages: [{ role: 'user', content: 'x' }], features });
+    return { request, cached: JSON.stringify(request.tools) + JSON.stringify(request.system) };
+  };
+
+  it.each(surfaces)('%s: the cached prefix (tools, policy with the golf block and the data map, team) is the same bytes on every request', (surface, who) => {
+    const first = prefix(surface, who);
+    expect(prefix(surface, who).cached).toBe(first.cached);
+    // Nothing that changes with the day is in it: built again three weeks later, it is the same bytes.
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date('2026-12-01T15:00:00Z'));
+      expect(prefix(surface, who).cached).toBe(first.cached);
+    } finally {
+      vi.useRealTimers();
+    }
+    // The fallback request's prefix is stable too, so a deployment the API has pushed onto plain requests still caches.
+    expect(prefix(surface, who, plainFeatures(chatFeatures(surface))).cached).toBe(prefix(surface, who, plainFeatures(chatFeatures(surface))).cached);
+  });
+
+  it.each(surfaces.filter(([surface]) => surface !== 'player'))('%s: with the model’s code on, every read may be called from code and is not strict, every task is direct-only and strict, and the code tool is last', (surface, who) => {
+    const registry = toolsFor(surface, who as never);
+    const tools = prefix(surface, who).request.tools as Array<{ name: string; type?: string; strict?: boolean; allowed_callers?: string[] }>;
+    expect(tools.at(-1)).toEqual({ type: 'code_execution_20260120', name: 'code_execution' });
+    expect(tools.slice(0, -1).map((t) => t.name)).toEqual(registry.map((t) => t.name));
+    for (const tool of registry) {
+      const sent = tools.find((t) => t.name === tool.name)!;
+      if (tool.kind === 'read') {
+        expect(sent.allowed_callers).toEqual(['direct', 'code_execution_20260120']);
+        expect(sent).not.toHaveProperty('strict');
+      } else {
+        expect(sent.strict).toBe(true);
+        expect(sent).not.toHaveProperty('allowed_callers');
+      }
+    }
+  });
+
+  it('a player’s request has no code tool, and every tool in it is strict', () => {
+    const tools = prefix('player', player).request.tools as Array<{ name: string; type?: string; strict?: boolean; allowed_callers?: string[] }>;
+    expect(tools.some((t) => t.name === 'code_execution')).toBe(false);
+    expect(tools.every((t) => t.strict === true && t.allowed_callers === undefined)).toBe(true);
+  });
+
+  it('the prefix as sent (the JSON of tools and system, characters / 4) stays near what was measured with the model’s code on', () => {
+    // Measured 10 Nov 2026, tournaments flag off: Ask and the practice helper 21,251, quick chat 20,739, player 8,118. With the code
+    // tool off the coach surfaces are about 380 smaller (no `allowed_callers` on each read, no code tool). Anthropic adds the code
+    // tool's own instructions on its side; they are not in this count.
+    const sizes = Object.fromEntries(surfaces.map(([surface, who]) => [surface, Math.round(prefix(surface, who).cached.length / 4)]));
+    for (const [surface] of surfaces) expect(sizes[surface]!).toBeLessThan(surface === 'player' ? 9_500 : 23_000);
+    const off = Math.round(prefix('ask', coach, { ...chatFeatures('ask'), programmaticReads: false }).cached.length / 4);
+    expect(sizes.ask! - off).toBeLessThan(600);
   });
 });
