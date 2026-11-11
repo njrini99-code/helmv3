@@ -27,7 +27,9 @@ import { LiveDot } from './parts/Work';
 import { takeSendSource } from './send-source';
 import { TURN_TIMING } from './turn-timing';
 import { PlanVersions } from '../plan/PlanCard';
-import { ConfirmCard, Receipt } from './parts/ConfirmCard';
+import { Receipt, type ReceiptPhase } from './parts/ConfirmCard';
+import { TaskCard } from './parts/TaskCard';
+import type { ActionReceipt } from '@/lib/coachhelm/v3/chat/action-types';
 import type { AskArtifact } from './parts/artifacts';
 import { AskUserText } from './Prose';
 import '../../../styles/coachhelm-thread.css';
@@ -57,6 +59,12 @@ export interface AskThreadProps {
   onNewChat: () => void;
   evidenceFocus: EvidenceFocus | null;
   onOpenEvidence: (focus: EvidenceFocus) => void;
+  /** Ask draws full; quick chat's panel draws compact. */
+  density?: 'full' | 'compact';
+  /** Where the Latest key is placed: the element the thread's scroller sits in. Left out, the nearest `.ch-ask-main`. */
+  jumpHost?: HTMLElement | null;
+  /** A task card's write changed state (held, saved, undone, failed): what the page behind a quick chat lands from. */
+  onCardPhase?: (key: string, phase: ReceiptPhase, receipt: ActionReceipt | null) => void;
 }
 
 /** The nearest ancestor that scrolls, or null when the page itself does. */
@@ -93,7 +101,7 @@ const pendingTurn = (id: string): AskAssistantTurn => ({ role: 'assistant', id, 
  * open and fold, charts land and text streams without the thread scrolling. It follows the newest words only when the coach
  * has scrolled to the live edge; otherwise the Latest key says there is more below.
  */
-export function AskThread({ viewer = 'coach', team, stoppedTurn = null, onArtifact, messages, busy, error, offline, phone, players, onApprove, onDeny, onSend, onRetry, onNewChat, evidenceFocus, onOpenEvidence }: AskThreadProps) {
+export function AskThread({ viewer = 'coach', team, stoppedTurn = null, onArtifact, messages, busy, error, offline, phone, players, onApprove, onDeny, onSend, onRetry, onNewChat, evidenceFocus, onOpenEvidence, density = 'full', jumpHost, onCardPhase }: AskThreadProps) {
   const toast = useToast();
   const reduced = useChReducedMotion();
   const turns = useMemo(() => buildTurns(messages, { busy }), [messages, busy]);
@@ -154,12 +162,12 @@ export function AskThread({ viewer = 'coach', team, stoppedTurn = null, onArtifa
     const sp = scrollParentOf(rootRef.current);
     if (!sp) return;
     const gap = sp.scrollHeight - sp.scrollTop - sp.clientHeight;
-    const host = rootRef.current?.closest<HTMLElement>('.ch-ask-main') ?? null;
+    const host = jumpHost ?? rootRef.current?.closest<HTMLElement>('.ch-ask-main') ?? null;
     const bottom = host ? Math.round(host.getBoundingClientRect().bottom - sp.getBoundingClientRect().bottom) + 12 : 0;
     const next = gap > TURN_TIMING.edge && host ? { host, bottom } : null;
     setMore((m) => (m?.host === next?.host && m?.bottom === next?.bottom ? m : next));
     return gap;
-  }, []);
+  }, [jumpHost]);
   useEffect(() => {
     // Listen on the document's capture: at mount the scroller's overflow may not have applied yet, and a listener on the window never hears it.
     const onScroll = () => {
@@ -259,7 +267,7 @@ export function AskThread({ viewer = 'coach', team, stoppedTurn = null, onArtifa
 
   return (
     <PlanVersions.Provider value={planVersions}>
-    <div ref={rootRef} className={'ch-th' + ' ch-ak-th' + (phone ? ' ch-th--phone' : '')} data-ch-code="CH-13850" data-v2="" data-v3="">
+    <div ref={rootRef} className={'ch-th' + ' ch-ak-th' + (phone ? ' ch-th--phone' : '') + (density === 'compact' ? ' is-compact' : '')} data-ch-code="CH-13850" data-v2="" data-v3="">
       <div ref={colRef} className="ch-th-col" aria-label="Conversation" role="group">
         {pages.map((page, pageIndex) => {
           const lastPage = pageIndex === pages.length - 1;
@@ -314,10 +322,10 @@ export function AskThread({ viewer = 'coach', team, stoppedTurn = null, onArtifa
                       if (b.kind !== 'proposal') return null;
                       const focus = focusForProposal(turn.id, b.view);
                       return (
-                        <ConfirmCard
+                        <TaskCard
                           key={b.key}
                           view={b.view}
-                          inlineReceipt={null}
+                          density={density}
                           // The card arrived in this visit while the turn was live: it rises out of the answer. A stored one draws still.
                           fresh={fresh || turn.active}
                           busy={busy}
@@ -327,6 +335,7 @@ export function AskThread({ viewer = 'coach', team, stoppedTurn = null, onArtifa
                           onApprove={onApprove}
                           onDeny={onDeny}
                           onSend={onSend}
+                          onPhase={onCardPhase}
                         />
                       );
                     }}

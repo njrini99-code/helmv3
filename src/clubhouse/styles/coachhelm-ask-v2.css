@@ -1163,3 +1163,6 @@ html[data-fw-theme='dark'] .ch-ak-push .ch-btn--primary[data-ch-pressed]:not(:di
 [data-motion='off'] .ch-ak-th[data-v3] .receipt.in.is-live .ck path { animation: none; stroke-dashoffset: 0; }
 /* A chip and the punctuation that closes its sentence are one unbreakable piece. */
 .ch-ak-keep { white-space: nowrap; }
+/* The task card's body (the capability's own, cards/): a withdrawn draft steps back; it is not removed. */
+.ch-ak-task__body { min-width: 0; transition: opacity var(--ch-dur-quick) var(--ch-ease); }
+.ch-ak-task__body.is-dim { opacity: 0.55; }

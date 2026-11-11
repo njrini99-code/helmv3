@@ -3,6 +3,7 @@ import { artifactsOf, type AskArtifact } from '../screens/coachhelm/chat/parts/a
 import type { UIMessage } from 'ai';
 import type { ReadPictureData } from '../screens/coachhelm/plan/ReadPicture';
 import type { ActionProposal, ActionReceipt } from '@/lib/coachhelm/v3/chat/action-types';
+import { turnMetaOf } from '@/lib/coachhelm/v3/chat/engine/protocol';
 import type { Measurement, MeasurementSeries, ToolEnvelope } from '@/lib/coachhelm/v3/chat/provenance';
 import { WIDE_READ_CHIPS } from '@/lib/coachhelm/v3/chat/wide-read-names';
 import { ValidatedComposition } from '@/lib/coachhelm/v3/chat/visuals/composition';
@@ -196,6 +197,8 @@ export interface AskAssistantTurn {
   reads?: AskTurnRead[];
   /** Ask v2: the block types of a `show_visual` still on its way; null with none. */
   pendingVisual?: string[] | null;
+  /** Chat v3: how long the server worked on the turn, from its stored meta (`data-turn-meta`). A turn stored before it has none. */
+  durationMs?: number | null;
 }
 
 export type AskTurn = AskUserTurn | AskAssistantTurn;
@@ -303,6 +306,8 @@ export function pairProposals(parts: Part[], ctx: { isLast: boolean; busy: boole
     const receipt = receiptByKey.get(r.key) ?? null;
     let status: AskProposalStatus;
     if (receipt || tp?.approval?.approved === true) status = 'confirmed';
+    // A new question withdrew the card (engine E15): nobody pressed Cancel, so it reads as set aside, not cancelled.
+    else if ((tp?.approval as { reason?: string } | undefined)?.reason === 'superseded') status = 'abandoned';
     else if (tp?.approval?.approved === false || tp?.state === 'output-denied') status = 'cancelled';
     else if (ctx.isLast && approvalId && tp?.state === 'approval-requested') status = 'live';
     else if (ctx.isLast && ctx.busy && !approvalId) status = 'preparing';
@@ -688,6 +693,7 @@ export function buildAssistantTurn(message: UIMessage, ctx: { isLast: boolean; b
     followUps: hasAction ? [] : followUpsFor(envelopes),
     active,
     reads: turnReadsOf(parts),
+    durationMs: turnMetaOf(parts as never)?.duration_ms ?? null,
     artifacts: artifactsOf(parts as never),
     pendingVisual: pendingVisualOf(parts),
   };

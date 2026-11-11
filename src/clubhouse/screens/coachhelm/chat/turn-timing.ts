@@ -28,6 +28,9 @@ export const TURN_TIMING = {
   edge: 24,
 } as const;
 
+/** One beat, by name, for the surfaces that share the thread's rhythm (quick chat). */
+export const BEAT_MS = TURN_TIMING.beat;
+
 /** What the work line says while nothing else can (SPEC Moment 4). `started`: the server has opened the turn. */
 export function waitingWords(elapsed: number, started: boolean): string | null {
   if (elapsed < TURN_TIMING.words) return null;

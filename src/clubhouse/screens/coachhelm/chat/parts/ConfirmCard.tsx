@@ -114,7 +114,7 @@ export function ConfirmCard({ view, inlineReceipt, onApprove, onDeny, onSend, fr
   // The plan arrives whole, so the card arrives whole: no field is staged (the old fill held the Confirm button back by over a second).
   const [arriving] = useState(fresh && !receipt && (status === 'live' || status === 'preparing'));
   // Where the write stands, from the receipt row: held (not saved yet), saved, undone or failed. Null before there is a receipt.
-  const [phase, setPhase] = useState<ReceiptPhase | null>(receipt ? (receipt.status === 'held' ? 'held' : receipt.status === 'failed' ? 'failed' : 'saved') : null);
+  const [phase, setPhase] = useState<ReceiptPhase | null>(receipt ? phaseOfReceipt(receipt) : null);
   const undone = phase === 'undone';
   // MO-7-9: the save landed in this visit, so the draft goes to its row. A stored receipt draws still.
   const wasSaved = useRef(phase === 'saved');
@@ -333,6 +333,13 @@ export function ConfirmCard({ view, inlineReceipt, onApprove, onDeny, onSend, fr
 /** Where a write stands, as the card's head and its landing row need to know it. */
 export type ReceiptPhase = 'held' | 'saved' | 'undone' | 'failed';
 
+/** A stored receipt's phase. `cancelled` is the coach's Undo, recorded by the server: nothing was written, so it is never "saved". */
+export function phaseOfReceipt(receipt: ActionReceipt): ReceiptPhase {
+  if (receipt.status === 'held') return 'held';
+  if (receipt.status === 'failed') return 'failed';
+  return receipt.status === 'cancelled' ? 'undone' : 'saved';
+}
+
 type Phase = { kind: 'held' } | { kind: 'undoing' } | { kind: 'undone' } | { kind: 'done'; receipt: ActionReceipt };
 
 /** The whole seconds left until `until`, ticking. A clock: the number changes at once each second (no count-up, no count-down animation). */
@@ -352,9 +359,17 @@ function useSecondsLeft(until: string | null, running: boolean): number {
  * the time left when the row arrives. When the server says it is saved the ring's place takes the check; Undo freezes the ring
  * where it was. A stored receipt past its window draws the outcome with no ring.
  */
-export function Receipt({ receipt, idempotencyKey, undoneLine = UNDONE_DEFAULT, telling = false, coins = [], onPhase, watched = false, failedLine = 'Nothing was saved.', onRetry }: { failedLine?: string; onRetry?: () => void; receipt: ActionReceipt; idempotencyKey: string; undoneLine?: string; /** Someone hears about this once the window closes. */ telling?: boolean; /** Who was told, where the card knows. */ coins?: readonly string[]; onPhase?: (phase: ReceiptPhase) => void; /** This visit saw the write happen: its check draws and "Told" follows. A stored one draws still. */ watched?: boolean }) {
+export function Receipt({ receipt, idempotencyKey, undoneLine = UNDONE_DEFAULT, telling = false, coins = [], onPhase, watched = false, failedLine = 'Nothing was saved.', onRetry, holdLine, onOpen }: { /** The sentence beside the ring, from the capability's own copy. */ holdLine?: (seconds: number) => string; /** Called as Open is pressed, before it navigates. */ onOpen?: (receipt: ActionReceipt) => void; failedLine?: string; onRetry?: () => void; receipt: ActionReceipt; idempotencyKey: string; undoneLine?: string; /** Someone hears about this once the window closes. */ telling?: boolean; /** Who was told, where the card knows. */ coins?: readonly string[]; onPhase?: (phase: ReceiptPhase) => void; /** This visit saw the write happen: its check draws and "Told" follows. A stored one draws still. */ watched?: boolean }) {
   const held = receipt.status === 'held' && receipt.held_until ? receipt.held_until : null;
-  const [phase, setPhase] = useState<Phase>(held ? { kind: 'held' } : { kind: 'done', receipt });
+  const [phase, setPhase] = useState<Phase>(held ? { kind: 'held' } : receipt.status === 'cancelled' ? { kind: 'undone' } : { kind: 'done', receipt });
+  // The hold this row began with, kept after the server's final receipt replaces the held one (the ring's clock must not restart).
+  const [heldUntil] = useState(held);
+  // The final receipt arrives on the Confirm's own stream when the hold ends (engine E15): the row follows it. `cancelled` is the
+  // server's record of Undo.
+  useEffect(() => {
+    if (receipt.status === 'held') return;
+    setPhase((now) => (now.kind === 'undone' ? now : receipt.status === 'cancelled' ? { kind: 'undone' } : { kind: 'done', receipt }));
+  }, [receipt]);
   // Late: the server said the window had closed (409). A refused or dropped Undo is its own line and can be pressed again.
   const [late, setLate] = useState(false);
   const [undoFailed, setUndoFailed] = useState(false);
@@ -395,7 +410,7 @@ export function Receipt({ receipt, idempotencyKey, undoneLine = UNDONE_DEFAULT, 
     if (!held || phase.kind !== 'held') return;
     let alive = true;
     const end = setTimeout(async () => {
-      // The server has until the function's end to finish it; ask until it says so, a few times.
+      // A fallback: the stream delivers the outcome when the hold ends. This asks only if it has not (a lost connection), a few times.
       for (let i = 0; i < 5 && alive; i++) {
         const res = await fetch(`/api/coachhelm/v3/chat/actions/${encodeURIComponent(idempotencyKey)}`).catch(() => null);
         const row = (await res?.json().catch(() => null)) as { receipt?: ActionReceipt | null } | null;
@@ -405,7 +420,7 @@ export function Receipt({ receipt, idempotencyKey, undoneLine = UNDONE_DEFAULT, 
         }
         await new Promise((r) => setTimeout(r, 900));
       }
-    }, Math.max(0, Date.parse(held) - Date.now()) + 200);
+    }, Math.max(0, Date.parse(held) - Date.now()) + 1500);
     return () => {
       alive = false;
       clearTimeout(end);
@@ -457,7 +472,7 @@ export function Receipt({ receipt, idempotencyKey, undoneLine = UNDONE_DEFAULT, 
         <div>
           <b>{receipt.summary}</b>
           <span className="sub" aria-hidden="true">
-            {late ? 'Too late to undo. It’s saved. Open it to change it.' : undoFailed ? 'Couldn’t undo that. Try again.' : phase.kind === 'undoing' ? 'Undoing…' : closed ? (saving ? 'Saving…' : 'Not saved yet.') : telling ? `Not saved yet. Saves in ${when}, then players are told.` : `Not saved yet. Saves in ${when}.`}
+            {late ? 'Too late to undo. It’s saved. Open it to change it.' : undoFailed ? 'Couldn’t undo that. Try again.' : phase.kind === 'undoing' ? 'Undoing…' : closed ? (saving ? 'Saving…' : 'Not saved yet.') : holdLine ? holdLine(secs) : telling ? `Not saved yet. Saves in ${when}, then players are told.` : `Not saved yet. Saves in ${when}.`}
           </span>
           {!closed && phase.kind === 'held' && (
             <button type="button" className="lk now" onClick={() => void saveNow()}>
@@ -495,7 +510,7 @@ export function Receipt({ receipt, idempotencyKey, undoneLine = UNDONE_DEFAULT, 
   const link = r.created.find((c) => c.href);
   const delivered = r.notifications.filter((n) => n.status !== 'failed');
   // The check draws, and "Told" follows it, only for a save this visit watched (it arrived live, or its hold was on screen).
-  const live = watched || !!held;
+  const live = watched || !!heldUntil;
   return (
     <>
       <div className={'receipt in' + (live ? ' is-live' : '')} role="status">
@@ -509,7 +524,7 @@ export function Receipt({ receipt, idempotencyKey, undoneLine = UNDONE_DEFAULT, 
           {r.status === 'partial' && <span className="sub">{r.partial_failures.join(' ')} Check what was created before you try again.</span>}
         </div>
         {link?.href && (
-          <a className="lk" href={askLinkHref(link.href) ?? link.href}>
+          <a className="lk" href={askLinkHref(link.href) ?? link.href} onClick={() => onOpen?.(r)}>
             Open
             <Icon icon={ArrowUpRight} size={14} />
           </a>

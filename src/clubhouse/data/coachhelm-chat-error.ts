@@ -92,12 +92,26 @@ function describeRefusal(status: number, responseBody: unknown): ChatErrorNotice
   return { message: CHAT_ERROR_GENERIC, recovery: 'retry' };
 }
 
+
 /** `fetch` rejecting before any response: Chrome, Firefox and Safari each word it differently. */
 const NETWORK_FAILURE = /failed to fetch|load failed|networkerror|network request failed/i;
 
+/** The connection dropped: the request never arrived, or the stream ended without its last event. */
+export const CHAT_ERROR_LOST = 'The connection dropped before the answer finished.';
+export const CHAT_ERROR_CARD_RETRY = 'That didn’t reach us. Your draft is still here.';
+
 export function describeChatError(error: unknown): ChatErrorNotice {
-  const { statusCode, responseBody } = (error ?? {}) as { statusCode?: unknown; responseBody?: unknown };
+  const { statusCode, responseBody, kind, action } = (error ?? {}) as { statusCode?: unknown; responseBody?: unknown; kind?: unknown; action?: unknown };
   if (typeof statusCode === 'number') return describeRefusal(statusCode, responseBody);
+  // The hook names what it knows itself (engine E15): a dropped connection, the device offline, a decision whose response was lost.
+  if (kind === 'lost' || kind === 'offline') {
+    const said = typeof (error as { message?: unknown } | null)?.message === 'string' ? (error as { message: string }).message.trim() : '';
+    if (!said || NETWORK_FAILURE.test(said)) return { message: CHAT_ERROR_LOST, recovery: 'retry' };
+  }
+  if (kind === 'card_retry') return { message: CHAT_ERROR_CARD_RETRY, recovery: 'retry' };
+  // A failure the server sent on the stream says what to offer; a button never promises a retry that cannot work.
+  const told = typeof (error as { message?: unknown } | null)?.message === 'string' ? (error as { message: string }).message.trim() : '';
+  if (told && !told.startsWith('{') && !NETWORK_FAILURE.test(told) && (action === 'none' || action === 'new-chat' || action === 'retry')) return { message: told, recovery: action };
 
   const text =
     typeof (error as { message?: unknown } | null)?.message === 'string' ? (error as { message: string }).message.trim() : '';
