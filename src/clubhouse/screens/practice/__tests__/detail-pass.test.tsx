@@ -41,6 +41,15 @@ describe('the plan sheet’s figures', () => {
   });
 });
 
+describe('the print studio’s count', () => {
+  it('keeps a piece with its count and each separator with the piece before it', () => {
+    const src = readFileSync(join(process.cwd(), 'src/clubhouse/screens/practice/PrintStudio.tsx'), 'utf8');
+    const count = src.slice(src.indexOf('data-ch="print-count"'), src.indexOf('{spilled.length > 0'));
+    expect(count).toContain('<span className="ch-nowrap">{i < all.length - 1 ? `${piece} ·` : piece}</span>');
+    expect(count).toContain('<b className="ch-num">');
+  });
+});
+
 describe('Practice’s fields of more than one line', () => {
   // `.ch-input` is the one-line field, 44 tall on a phone: a note's second line was cut off under it.
   it.each(['builder/Sheets.tsx', 'builder/Builder.tsx', 'LibraryPages.tsx'])('%s draws a textarea as the shared multi-line field', (file) => {

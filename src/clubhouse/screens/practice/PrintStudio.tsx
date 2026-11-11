@@ -3,7 +3,7 @@
 import { Printer } from 'lucide-react';
 import qrcode from 'qrcode-generator';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { PracticePlanSheet } from '../coachhelm/plan/sheet/PracticePlanSheet';
 import type { PlanSheetModel, SheetRow } from '../coachhelm/plan/sheet/plan-sheet-model';
 import { LETTER_CONTENT, pageCuts } from '../coachhelm/plan/page-cuts';
@@ -475,7 +475,17 @@ export function PrintStudio({ plan, drills, planHref, draft = false, drillsUnrea
             ))}
           </GroupList>
           <p className="ch-prt-count ch-num" role="status" data-ch="print-count">
-            <b className="ch-num">{printSummary(counted)}</b>
+            {/* A piece keeps its count, and each separator the piece before it: "Range board" never ends a line with its "1" under it. The words are the same. */}
+            <b className="ch-num">
+              {printSummary(counted)
+                .split(' · ')
+                .map((piece, i, all) => (
+                  <Fragment key={piece}>
+                    <span className="ch-nowrap">{i < all.length - 1 ? `${piece} ·` : piece}</span>
+                    {i < all.length - 1 ? ' ' : null}
+                  </Fragment>
+                ))}
+            </b>
             {spilled.length > 0 && <span>{spilled.join(' and ')} {spilled.length === 1 ? 'runs' : 'run'} past one sheet. Each break falls between rows, shown on the paper.</span>}
             {appendix > 2 && <span>The drills appendix alone is {appendix} sheets.</span>}
             {draft && <span>Every sheet says Draft.</span>}
