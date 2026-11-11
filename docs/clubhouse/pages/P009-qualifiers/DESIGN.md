@@ -1,5 +1,11 @@
 # P009 — Qualifiers: design handoff
 
+## Retired on 11 Nov 2026 (owner)
+
+"My qualifiers" is retired in Clubhouse. Players have one Qualifiers page, the
+list below with the qualifiers they are entered in first (same cards, D-30);
+`/golf/dashboard/my-qualifiers` and the `my-qualifiers` preview open it.
+
 <!-- clubhouse:release-audit:start -->
 ## Current implementation audit — 2026-10-06
 

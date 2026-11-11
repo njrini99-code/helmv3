@@ -1,5 +1,27 @@
 # P013 — CoachHelm: page contract
 
+## Retired on 11 Nov 2026 (owner)
+
+Two older versions of this page are gone. Where the text below still says "the
+coach's board" or "the player's board", read the current page.
+
+- The coach's signal-list board (`CoachBoard`: the program pulse, By player, the
+  focus card) is retired. The coach's CoachHelm Team page is the drawn golf hole
+  (`screens/coachhelm/team/TeamBoard.tsx`). `/golf/dashboard/coachhelm` draws
+  it, "CoachHelm is off" (CH-13305) is that page with nothing read, and the
+  `coachhelm` preview opens `coachhelm-team`.
+- The player's focus board (`PlayerBoard`) is retired. A player's CoachHelm
+  Board is Your week (`screens/coachhelm/file/YourWeek.tsx`), and the
+  `coachhelm-player` preview draws it (Standing and the Deep dive with
+  `?view=`).
+- Their catalog codes and board-only contracts are tombstoned
+  (`config/clubhouse/bridge-tombstones.json`, 2026-11-11). The write contracts
+  (Assign, Dismiss, Undo, Retry, offline) stand: they are the shared action
+  row's, tested in `src/clubhouse/__tests__/coachhelm-focus-actions-row.test.tsx`.
+- Still open: a coach's Standing and Deep dive of one player are retired by the
+  owner in favour of the player file, but not removed, because the file's "Full
+  standing" link still opens the coach Standing (`src/clubhouse/AGENTS.md`).
+
 Ask's desktop roster suggestions expose one option per clickable row and
 aria-activedescendant on the composing field. Phone uses the existing modal
 roster picker. See [popup audit](../../POPUP_AUDIT.md).
@@ -44,7 +66,7 @@ the same list); the ones it says are not tested, or only partly, stay reserved.
 (2026-10-19) name 130104, 130608, 130804, 131901, 132101
 and 132301 in test titles, so those are implemented. The write contracts
 (130702, 130806, 130901 to 130903, 131201, 131401, 131403) are named in
-`screens/coachhelm/__tests__/focus-actions-row.test.tsx`, on the action row the
+`src/clubhouse/__tests__/coachhelm-focus-actions-row.test.tsx`, on the action row the
 surviving pages share. The ones that stay reserved
 are 131807 (a script, not a test) and the seven that have a catalog code
 (130713, 130721, 130722, 131704, 131808, 131816, 131817): their tests exist, but

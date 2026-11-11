@@ -131,10 +131,11 @@ Mobile designs are tracked per screen in `PROGRESS.md` (the `phone-spec` and
 - [x] **Team Hub** `/team-hub` — Their team at a glance: RSVPs, announcements to
   acknowledge, trips, tasks, documents (`TeamHub`, 2026-09-30; spec
   `phone/team-hub.md`)
-- [x] **My Qualifiers** `/my-qualifiers` — The qualifiers they're entered in and
-  where they stand
-- [x] **Qualifiers** `/qualifiers` — Their team's qualifiers, read-only:
-  standings with their row marked, and the squad once confirmed (with `/[id]`)
+- [x] **Qualifiers** `/qualifiers` — Their team's qualifiers, read-only, the
+  ones they're entered in first: standings with their row marked, and the squad
+  once confirmed (with `/[id]`). "My Qualifiers" (`/my-qualifiers`) was retired
+  on 11 Nov 2026 (owner): players have one Qualifiers page, and the old address
+  opens it
 - [ ] **Tournaments** `/tournaments` — Their team's events and their own line
   (P016; with `/[id]`). Wired behind `golf_tournaments_v1`, off in production;
   the player view is a placeholder until held file 4

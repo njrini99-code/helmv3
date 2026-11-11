@@ -31,7 +31,9 @@ earlier observations below retain their original date and scope.
 | Screenshots | `npm run clubhouse:shots -- gallery --page P009`, which opens `.helm/screenshots/clubhouse/P009-qualifiers/GALLERY.html` (local) |
 <!-- clubhouse:related:end -->
 
-Four screens on one page: the list (a player's own list is `/my-qualifiers`),
+Four screens on one page: the list (for a player, the qualifiers they are
+entered in come first; "My qualifiers" was retired on 11 Nov 2026 and
+`/my-qualifiers` opens the list),
 one qualifier, the create and edit form, and Manage selections. Coaches and
 players share the list and the qualifier (D-30); create, edit and Manage
 selections are coach-only.
@@ -42,7 +44,8 @@ selections are coach-only.
 Page ID:            P009
 Page Name:          Qualifiers
 Route:              /golf/dashboard/qualifiers (coach and player), with /new, /[id], /[id]/edit and
-                    /[id]/selection (Manage selections); /golf/dashboard/my-qualifiers (player)
+                    /[id]/selection (Manage selections); /golf/dashboard/my-qualifiers is retired
+                    and redirects to /golf/dashboard/qualifiers (owner, 2026-11-11)
 Bridge Namespace:   9 (Bridge IDs 9ccii, D-68; catalog codes CH-09xxx)
 Roles:              coach, player
 Implementation Root: src/clubhouse/screens/qualifiers
@@ -126,7 +129,7 @@ Status:           approved (Manage selections is not drawn: it is built from the
 
 The sidebar (Team › Qualifiers for a coach, My game › Qualifiers for a player,
 D-66), the More sheet on the phone, and older links to `/my-qualifiers`, which
-is a player's own list.
+redirect here (retired 11 Nov 2026).
 
 ### Exits to
 
