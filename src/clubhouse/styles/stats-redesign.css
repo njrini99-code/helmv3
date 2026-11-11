@@ -229,9 +229,6 @@
 .ch-shs.is-big .ch-shs-ctl .ch-seg__b {
   padding: 0 6px;
 }
-.ch-shs.is-big .ch-shs-ctl .ch-sf {
-  margin-left: auto;
-}
 
 /* A card that opens a detail: the pressed wash (data-ch-pressable, lib/press.ts). The card never scales. */
 .ch-shs-sum {
@@ -938,6 +935,22 @@
 .ch-shs-empty .ch-shs-btn {
   align-self: center;
   margin-top: 6px;
+}
+/* The filter's empty state (FilterEmpty) inside the sheet's card: the sheet's card is the one card. The state's own
+   card (ui.css .ch-es--page) and the section card around a player's (.ch-st-card) stand down, and the sheet card's
+   padding is the inset, so Clear filters sits inside it (design review 10 Nov 2026: a card in a card, its button wider
+   than the inner one). */
+.ch-shs-card.ch-shs-empty > .ch-es--page,
+.ch-shs-card.ch-shs-empty > .ch-st-card {
+  width: 100%;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+.ch-shs-card.ch-shs-empty > .ch-es--page > .ch-es__copy,
+.ch-shs-card.ch-shs-empty > .ch-st-card > .ch-es > .ch-es__copy {
+  padding: 0;
 }
 .ch-shs-notice {
   display: grid;
@@ -1648,14 +1661,11 @@ li + li > .ch-shs-rrow::before {
   stroke-width: 1.5;
 }
 
-/* The filter is its icon here; the count is its active state. Its chips stay in the sheet. */
+/* The filter is its icon here; the count is its active state. Its chips stay in the sheet. Its own two boxes are not
+   drawn: what they hold lies in the switch's row (below). */
 .ch-shs-ctl .ch-sf,
 .ch-shs-ctl .ch-sf__bar {
-  flex: none;
-  display: block;
-  margin: 0;
-  padding: 0;
-  border: 0;
+  display: contents;
 }
 .ch-shs-ctl .ch-sf__open > span:not(.ch-sf__n) {
   position: absolute;
@@ -1675,6 +1685,35 @@ li + li > .ch-shs-rrow::before {
 }
 .ch-shs-ctl .ch-sf__chips {
   display: none;
+}
+/* A filter is on: its count line and Clear take a line of their own under the switch. They sat inside the filter's box
+   beside the switch, so the count ("0 rounds: qualifying rounds, at Pine Needles, this season") took the row, squeezed
+   the switch to a sliver and ran off the edge (design review 10 Nov 2026, stats__nomatch at 390). The filter's two
+   boxes dissolve into the row: the switch keeps the row less the filter's key (a pixel spare, so rounding never drops
+   the key), the count wraps under them and Clear ends its line. The 9-hole note follows on a line of its own. */
+.ch-shs-ctl > .ch-shs-ctl__row {
+  flex-wrap: wrap;
+}
+.ch-shs-ctl .ch-seg {
+  flex: 1 1 calc(100% - 40 * var(--ch-type-k) - 9px);
+}
+.ch-shs-ctl .ch-sf__count {
+  order: 1;
+  flex: 1 1 0;
+  min-width: 0;
+}
+.ch-shs-ctl .ch-sf__clear {
+  order: 2;
+  flex: none;
+}
+.ch-shs-ctl .ch-sf__note {
+  order: 4;
+  flex: 1 1 100%;
+}
+/* At the larger Text Sizes the switch has the first line to itself (above), and the filter's key ends the second. */
+.ch-shs.is-big .ch-shs-ctl .ch-sf__open {
+  order: 3;
+  margin-left: auto;
 }
 
 /* The second miss on the tee strip, in its own grey (04 odd value 21). */

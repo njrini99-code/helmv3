@@ -2731,6 +2731,13 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   .ch-es--page > .ch-es__copy {
     padding: 24px 0 20px;
   }
+  /* Where the page-sized state is the card itself (anywhere but inside a surface or a sheet, which bring their own
+     inset), its copy keeps the card's inset. At 0 its full-width action ran over the card's side edges, and the card
+     showed again as a strip below it (Hub's empty Home, design review 10 Nov 2026). The value is the one the player's
+     Home had already set for itself (home.css). */
+  .ch-es--page:not(.ch-surface *, .ch-sheet *) > .ch-es__copy {
+    padding: 24px 16px 16px;
+  }
   .ch-es--page .ch-es__title {
     font-size: calc(22 * var(--ch-type-k));
   }
