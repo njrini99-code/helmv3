@@ -13,7 +13,7 @@ import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
 import { clock, dayLabel, needsMyAck, railTime, type ChAnnouncement, type ChAnnouncementDetail } from './model';
 import type { ChMessagesApi } from './MessagesView';
-import { pluralWord } from '../../lib/plural';
+import { plural, pluralWord } from '../../lib/plural';
 
 /**
  * The team's announcements, folded under the conversations (owner, 2026-10-16: messages first, announcements folded).
@@ -53,10 +53,12 @@ export function AnnouncementsSection({ api, q }: { api: ChMessagesApi; q: string
           <Icon icon={Megaphone} size={15} />
         </span>
         <span className="ch-ms-fold__b">
-          <b>
-            Announcements <span className="ch-num">{api.announcements.length}</span>
-          </b>
-          <span>{api.announcements[0]?.title}</span>
+          <b>Announcements</b>
+          {/* How many there are is said in words beside the newest title; the one figure on the row is the count that
+              waits on you. */}
+          <span>
+            {plural(api.announcements.length, 'post')} · {api.announcements[0]?.title}
+          </span>
         </span>
         {waiting > 0 && (
           <span role="img" className="ch-ms-count ch-num" aria-label={`${waiting} need your acknowledgement`}>

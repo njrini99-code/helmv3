@@ -166,6 +166,16 @@
 [data-ch-ms-v2] .ch-inb--phone .ch-ms-sec.is-ann {
   margin: 0 var(--ch-page-x-phone) var(--ch-space-3);
 }
+/* The line under its title says how many posts there are, then the newest title: it runs to two lines, as a row's preview
+   does and as the rail's fold does, so the count in words never cuts the title short. */
+[data-ch-ms-v2] .ch-inb--phone .ch-ms-fold__b > span {
+  display: -webkit-box;
+  white-space: normal;
+  text-overflow: clip;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
 /* Nothing here (MSG-108): the body under the header. */
 [data-ch-ms-v2] .ch-inb .ch-inb-note {
   margin: 0;

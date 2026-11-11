@@ -38,10 +38,12 @@ const api = (announcements: ChAnnouncement[], role: 'coach' | 'player' = 'player
     clock: '12h',
   }) as never;
 
-const css = postcss.parse(readFileSync(join(import.meta.dirname, '../../../styles/messages.css'), 'utf8'));
-const decls = (selector: string) => {
+const sheet = (file: string) => postcss.parse(readFileSync(join(import.meta.dirname, '../../../styles', file), 'utf8'));
+const css = sheet('messages.css');
+const inbox = sheet('messages-inbox.css');
+const decls = (selector: string, from = css) => {
   const out: Record<string, string> = {};
-  css.walkRules((r) => {
+  from.walkRules((r) => {
     if (r.selector === selector && r.parent?.type === 'root') r.walkDecls((d) => void (out[d.prop] = d.value));
   });
   return out;
@@ -73,5 +75,42 @@ describe('Messages · the Announcements row’s face', () => {
     const fold = decls('[data-ch-ms-v2] .ch-ms-fold .ch-ms-grp.is-ann');
     expect(fold).toEqual({ width: '44px', height: '44px' });
     expect(decls('.ch-ms-grp')).toMatchObject({ 'border-radius': '50%' });
+  });
+});
+
+/**
+ * The row carried two bare figures: a grey total after its title and the green count that waits on you. A figure with no
+ * word is a guess, and two side by side were two guesses. The total is said in words on the line under the title; the
+ * one figure left is the count that waits on you.
+ */
+describe('Messages · the Announcements row’s counts', () => {
+  it('says how many posts there are in words, before the newest title', () => {
+    render(<AnnouncementsSection api={api([ann({}), ann({ id: 'a2', title: 'Pairings posted' })])} q="" />);
+    const fold = screen.getByRole('button', { name: /^Announcements/ });
+    expect(fold.querySelector('.ch-ms-fold__b b')!.textContent).toBe('Announcements');
+    expect(fold.querySelector('.ch-ms-fold__b b .ch-num')).toBeNull();
+    expect(fold.querySelector('.ch-ms-fold__b > span')!.textContent).toBe('2 posts · Bus at 6:15');
+  });
+
+  it('says one post as one post', () => {
+    render(<AnnouncementsSection api={api([ann({})])} q="" />);
+    expect(document.querySelector('.ch-ms-fold__b > span')!.textContent).toBe('1 post · Bus at 6:15');
+  });
+
+  it('keeps the count that waits on a player, named, and shows a coach none', () => {
+    const list = [ann({ requiresAck: true }), ann({ id: 'a2', title: 'Pairings posted' })];
+    const { unmount } = render(<AnnouncementsSection api={api(list)} q="" />);
+    const count = document.querySelector('.ch-ms-fold > .ch-ms-count')!;
+    expect(count.textContent).toBe('1');
+    expect(count.getAttribute('aria-label')).toBe('1 need your acknowledgement');
+    unmount();
+    render(<AnnouncementsSection api={api(list, 'coach')} q="" />);
+    expect(document.querySelector('.ch-ms-fold > .ch-ms-count')).toBeNull();
+  });
+
+  it('gives the line two lines on the phone, as the rail does, so the words never cut the title', () => {
+    const two = { display: '-webkit-box', 'white-space': 'normal', '-webkit-line-clamp': '2' };
+    expect(decls('[data-ch-ms-v2] .ch-inb--phone .ch-ms-fold__b > span', inbox)).toMatchObject(two);
+    expect(decls('[data-ch-ms-v2] .ch-inb--rail .ch-ms-fold__b > span', inbox)).toMatchObject(two);
   });
 });

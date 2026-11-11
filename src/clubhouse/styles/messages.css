@@ -2812,11 +2812,6 @@ html[data-fw-theme='dark'] .ch-ms-grp.is-ann.is-urgent {
   font: var(--ch-type-15-strong);
   letter-spacing: var(--ch-track-15);
 }
-.ch-ms-fold__b b .ch-num {
-  margin-left: 4px;
-  font-weight: 500;
-  color: var(--ch-text-tertiary);
-}
 .ch-ms-fold__b > span {
   overflow: hidden;
   white-space: nowrap;
