@@ -20,7 +20,7 @@ const rule = (sel: string) =>
 const selectors = [...css.matchAll(/([^{}]*)\{/g)].map((m) => m[1]!.trim()).filter((s) => s && !s.startsWith('@') && !/^(?:from|to)$/.test(s));
 
 /** A kind's own root (its rules hang off its parts) and a hook only a screen reader's words carry: named, never styled. */
-const NAMES_ONLY = ['ch-aks-rank', 'ch-aks-trend', 'ch-aks-round', 'ch-aks-sg', 'ch-aks-dist', 'ch-aks-sched', 'ch-aks-record', 'ch-aks-table', 'ch-aks-fig__vs'];
+const NAMES_ONLY = ['ch-aks-rank', 'ch-aks-round', 'ch-aks-sg', 'ch-aks-dist', 'ch-aks-sched', 'ch-aks-record', 'ch-aks-fig__vs'];
 
 describe('CH-13853: what an answer shows is styled', () => {
   it('every ch-aks class the studio uses has a rule in coachhelm-ask-studio.css', () => {
@@ -44,9 +44,9 @@ describe('CH-13853: what an answer shows is styled', () => {
 
   it('nothing is a bar on a track, a pill or a chip, and nothing is boxed: no fill, no shadow, no frame around a part', () => {
     expect(selectors.filter((s) => /track|pill|chip|badge|card/.test(s))).toEqual([]);
-    // The one shadow named is the shared nine's own, turned off where a round lies flat on the paper.
+    // The only shadows named are the shared nine's and the shared table's own, turned off where they lie flat on the paper.
     expect(css).not.toMatch(/box-shadow: (?!none;)|var\(--ch-chart-track\)|var\(--ch-well-bg/);
-    expect(css.match(/box-shadow: none;/g) ?? []).toHaveLength(1);
+    expect([...css.matchAll(/([^{}]*)\{[^{}]*box-shadow: none;[^{}]*\}/g)].map((m) => m[1]!.trim())).toEqual(['.ch-aks-round__nines > .ch-nine', '.ch-aks-table .ch-th-tablewrap']);
     // The only fills are the table's sticky first column (the paper it sits on) and the best-in-measure dot.
     const filled = [...css.matchAll(/([^{}]*)\{[^{}]*background: (?!none)[^{}]*\}/g)].map((m) => m[1]!.trim());
     expect(filled).toEqual(['.ch-aks-cmp__table th:first-child', '.ch-aks-cmp__dot']);

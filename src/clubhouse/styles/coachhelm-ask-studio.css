@@ -260,9 +260,14 @@
 
 /* The hole in plan, and the soundings under it. Label sizes are in drawing units (the drawing is 318 wide). */
 .ch-aks-hole,
+/* The drawing keeps a reading width on a wide leaf, and its head and its sentence keep to the same measure, so the
+   reference said in the head sits over the end of the line it describes. */
+.ch-aks-trend,
+.ch-aks-ruled {
+  max-width: 440px;
+}
 .ch-aks-ruled {
   position: relative;
-  max-width: 440px;
 }
 .ch-aks-hole__svg,
 .ch-aks-ruled__svg {
@@ -852,6 +857,25 @@
   font: var(--ch-type-15-strong);
   letter-spacing: var(--ch-track-15);
   text-align: right;
+}
+
+/* table: the fallback's rows lie on the paper as ruled lines under its head, never a card of their own inside the leaf. */
+.ch-aks-table .ch-th-tablewrap {
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+.ch-aks-table .ch-th-table thead th {
+  border-bottom: var(--ch-hairline-w) solid var(--ch-separator-strong);
+}
+.ch-aks-table .ch-th-table tbody tr + tr > * {
+  border-top-color: var(--ch-separator);
+}
+.ch-aks-table .ch-th-table :is(th, td):first-child {
+  padding-left: 0;
+}
+.ch-aks-table .ch-th-table :is(th, td):last-child {
+  padding-right: 0;
 }
 
 /* A way into a screen of the app: a ruled row with a chevron, as the leaf's sources are. */
