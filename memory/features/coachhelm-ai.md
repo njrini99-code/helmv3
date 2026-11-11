@@ -265,6 +265,11 @@ entries are history. The tool list and the prompt are described where the tools 
   stored). An edited card carries `revision`; a Confirm or an edit names the revision on screen, and one that names
   another is answered with the card as it stands and writes nothing, so a card changed in one tab cannot be confirmed
   from a stale copy in another. The plan that is committed is the one the ledger row held when it was claimed.
+- **A draft is shown as it is written.** A tool whose input is a draft (`ToolBase.draft.fields`) has those fields
+  streamed to the thread while the model writes them (`draft_delta`, at most every 150 ms): whole values, the
+  finished items of a list, words up to the last whole word, never a half-written item (`engine/draft.ts`). Nothing
+  shown is validated; the complete input still passes the tool's schema and planner before any card exists, and a
+  draft that fails either ends as failed in front of the coach (`draft_done`).
 - **Several cards in one answer.** Each task the model asks for is its own sealed ledger row and card, decided on its
   own in any order; the model is asked for closing words once, after the last decision. "Approve all"
   (`approve_all: { cards: [{ key, revision }] }`) confirms the named cards in the order proposed after ONE shared Undo

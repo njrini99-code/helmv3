@@ -63,6 +63,20 @@ export interface ChatScreenEcho {
   label: string;
 }
 
+/**
+ * `data-draft`: a draft while the model writes it, in the live thread (part id `draft-<id>`). It is removed when the draft is
+ * accepted (what it became takes its place) and kept as `failed` when it is not. Never replayed on reload.
+ */
+export const DRAFT_PART = 'data-draft' as const;
+export interface ChatDraft {
+  tool: string;
+  /** Each field shown so far, with its whole value so far. */
+  fields: Record<string, unknown>;
+  /** The field being written now, if any. */
+  open: string | null;
+  state: 'writing' | 'failed';
+}
+
 /** The element of an earlier read a message was asked about (`engine/about.ts`): the reference the server accepted, as it was sent. */
 export interface ChatAboutEcho {
   evidence_ref: string;
@@ -143,6 +157,14 @@ export type ChatEvent =
   | { type: 'read_finished'; id: string; label: string; tool: string; state: 'done' | 'failed'; detail?: string; picture?: unknown }
   /** A short progress note in the model's own words (never its reasoning). Drawn as a finished progress row. */
   | { type: 'note'; id: string; text: string }
+  /**
+   * A draft as the model writes it (a tool whose input is a draft: `ToolBase.draft`). `id` is the same for every event of one
+   * draft. `fields`: the fields that changed since the last event, each with its WHOLE value so far (a list: its finished items;
+   * words: up to the last whole word). `open`: the field being written now. Sent at most a few times a second.
+   */
+  | { type: 'draft_delta'; id: string; tool: string; fields: Record<string, unknown>; open?: string | null }
+  /** The draft is over. `done`: its input was accepted and what it produced follows (the card, the read). `failed`: it was not. */
+  | { type: 'draft_done'; id: string; state: 'done' | 'failed' }
   /** A part of the answer that is not prose. The four named kinds are the ones the brief lists; `part` is every other stored data part.
    *  `message_id`: the part belongs to an EARLIER message, not the one this response is writing (how an earlier card ended). */
   | { type: 'evidence' | 'visual' | 'proposal' | 'receipt' | 'part'; part: WireDataPart; message_id?: string }
@@ -269,6 +291,20 @@ export function applyChatEvent(message: ChatUIMessage, event: ChatEvent): ChatUI
             : p,
         ),
       };
+    }
+    case 'draft_delta': {
+      const id = `draft-${event.id}`;
+      const earlier = parts.find((p) => p.type === DRAFT_PART && p.id === id)?.data as ChatDraft | undefined;
+      const data: ChatDraft = { tool: event.tool, fields: { ...(earlier?.fields ?? {}), ...event.fields }, open: event.open ?? null, state: 'writing' };
+      return { ...message, parts: upsertDataPart(parts, { type: DRAFT_PART, id, data }) };
+    }
+    case 'draft_done': {
+      const id = `draft-${event.id}`;
+      const at = parts.findIndex((p) => p.type === DRAFT_PART && p.id === id);
+      if (at === -1) return message;
+      // A finished draft gives way to what it became (the card, the read). A failed one stays, saying so.
+      if (event.state === 'done') return { ...message, parts: parts.filter((_, i) => i !== at) };
+      return { ...message, parts: parts.map((p, i) => (i === at ? { ...p, data: { ...(p.data as ChatDraft), open: null, state: 'failed' } } : p)) };
     }
     case 'decision_reopened': {
       if (!parts.some((p) => isDecisionPartFor(p, event.key))) return message;

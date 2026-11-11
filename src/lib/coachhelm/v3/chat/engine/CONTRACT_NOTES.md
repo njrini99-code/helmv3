@@ -1196,3 +1196,34 @@ the player. A focus area with no metric has no such guard; the card's own look (
 
 Not done: `npm run build` (not allowed on this laptop). The change adds an optional field to four existing server
 actions and exports nothing new. Test: `src/app/golf/actions/__tests__/request-id-trip-qualifier-goal-document.test.ts`.
+
+
+## 2026-11-11 (ENGINE): a draft shown as it is written
+
+E31. **Drafts.** A tool says its input is a draft with one member on the contract (`ToolBase.draft`, so a read such as
+     `show_visual` can have it as well as a task):
+     ```ts
+     draft?: { fields: readonly string[] };   // top-level input fields to show while the model writes them
+     ```
+     **PLANS: nothing is a draft until a tool says so.** Mark the tools whose input the coach should watch being
+     written (the practice plan's blocks, a message's or an announcement's words) and list the fields. Only top-level
+     fields; a field inside an object is shown when its object is complete.
+     - **What is shown is always finished** (`engine/draft.ts`, tested at every cut of an input): a complete value is
+       shown whole; a list still being written is its finished items, never half an item; words still being written
+       stop at the last whole word, never half a word or half an escape; a number or an object appears when it is
+       complete. A field is only ever shown growing.
+     - **Events**: `{ type: 'draft_delta', id, tool, fields, open? }`. `id` is the tool call's id, the same for the
+       whole draft. `fields` holds only the fields that changed since the last event, each with its WHOLE value so far
+       (replace, do not append). `open` is the field being written now (null on the last one). At most one every
+       150 ms (`DRAFT_INTERVAL_MS`) plus one when the input is complete; input that arrives all at once is shown once.
+       Then `{ type: 'draft_done', id, state: 'done' | 'failed' }`, exactly once per draft that was shown.
+     - **`done`** is sent just before what the draft became: a task's `proposal` (after the input passed the tool's
+       schema and the planner), or a read's result. **`failed`**: the schema did not accept the input, the planner
+       refused it, the model was cut off at its length limit mid-input, the call was retried or declined, or a
+       fallback dropped it. Nothing shown as a draft has been validated; a card can only come from a complete input
+       that passed `input` and `plan`, exactly as before.
+     - **Reducer**: a part `{ type: 'data-draft', id: 'draft-<id>', data: ChatDraft }` with
+       `ChatDraft = { tool, fields, open, state: 'writing' | 'failed' }`, fields merged across events. On `done` the
+       part is removed (the card or the read takes its place in the same flush); on `failed` it stays with
+       `state: 'failed'`. It is not replayed on reload.
+     - A call made by the model's code is never a draft (the code writes no input the coach could watch).
