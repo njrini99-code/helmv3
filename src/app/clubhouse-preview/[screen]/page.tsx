@@ -172,7 +172,7 @@ import { ChClockProvider } from '@/clubhouse/lib/use-clock';
  *   /clubhouse-preview/hub, hub-player ?state=empty | failed | failwrites, &tab=home | ann | travel | docs | tasks
  *   /clubhouse-preview/rounds ?state=idle | many | empty | noseason | failed | unfinished-failed | failwrites   (Jonah)
  *   /clubhouse-preview/team-rounds ?state=earlier | empty | failed | rosterfailed | noroster | loading   (the coach's Team rounds; earlier: rounds from before this season)
- *   /clubhouse-preview/round ?state=coach | noshots | noholes | total | holebyhole | nosg   (a round's review)
+ *   /clubhouse-preview/round ?state=coach | noshots | noholes | total | holebyhole | nosg, &from=rounds   (a round's review; from=rounds: opened from Team rounds)
  *   /clubhouse-preview/classes ?state=clear | empty | failed | partial | mixed | noteam | loading | failwrites | failsync | read-notschedule | read-fault | read-none | read-warn   (Jonah)
  *   /clubhouse-preview/setup ?state=failcourses | failtees | failholes | failstart | noqualifiers | qualifiersfailed   (new round)
  *   /clubhouse-preview/track ?state=approach | putt | holed | checkpointfail | last | meters | exit | card | summary | submitting | posted | submitfail | saved | phone | saving | retrying   (the shot screen; the last four fake the round's save line, CH-11901)
@@ -337,6 +337,7 @@ export default async function ClubhousePreview({
         <RoundReviewSkeleton />
       ) : (
         <RoundReview
+          fromRounds={(await searchParams as { from?: string }).from === 'rounds'}
           review={
             { coach: PREVIEW_REVIEW_COACH, coachnoted: PREVIEW_REVIEW_COACH_NOTED, playernoted: PREVIEW_REVIEW_PLAYER_NOTED, notefailed: PREVIEW_REVIEW_NOTE_FAILED, noshots: PREVIEW_REVIEW_NO_SHOTS, noholes: PREVIEW_REVIEW_NO_HOLES, total: PREVIEW_REVIEW_TOTAL_ONLY, holebyhole: PREVIEW_REVIEW_HOLE_BY_HOLE, nosg: PREVIEW_REVIEW_NO_SG, debrief: PREVIEW_REVIEW_DEBRIEF, 'debrief-thin': PREVIEW_REVIEW_DEBRIEF_THIN }[state ?? ''] ?? PREVIEW_REVIEW
           }

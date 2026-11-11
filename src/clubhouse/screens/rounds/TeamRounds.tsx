@@ -39,9 +39,13 @@ const ALL_PLAYERS = 'all';
 /** Both reads landed: a list worth keeping while a later refresh of it fails (`useLastGood`). */
 const landed = (d: ChTeamRounds) => !d.rounds.error && !d.rosterError;
 
-/** A round's review opens only once its screen is rebuilt for the coach (nav.rebuiltHref), so no dead rows. */
+/**
+ * A round's review opens only once its screen is rebuilt for the coach (nav.rebuiltHref), so no dead rows. The link says
+ * where it came from (`?from=rounds`), so the review names its Back "Rounds" on the server render too: first paint, reload
+ * included.
+ */
 export const teamRoundsLinks = {
-  review: (id: string) => rebuiltHref(`/golf/dashboard/rounds/${id}`, 'coach'),
+  review: (id: string) => rebuiltHref(`/golf/dashboard/rounds/${id}?from=rounds`, 'coach'),
   stats: (playerId: string) => rebuiltHref(`/golf/dashboard/stats?player=${playerId}&tab=rounds`, 'coach'),
 };
 
