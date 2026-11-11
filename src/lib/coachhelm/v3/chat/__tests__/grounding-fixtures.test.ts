@@ -45,11 +45,8 @@ describe('grounding check against the labelled staging turns', () => {
   });
 
   it('reports its agreement with the hand labels', () => {
-    // eslint-disable-next-line no-console
     console.info(`grounding agreement: accepted ${trueGrounded}/${accepted.length} grounded, rejected ${trueFlagged}/${rejected.length} flagged, overall ${trueGrounded + trueFlagged}/${rows.length}`);
-    // eslint-disable-next-line no-console
     console.info(`flagged though labelled accepted: ${accepted.filter((r) => !r.grounded).map((r) => `${r.id}[${r.unmatched.join(' ')}]`).join(', ')}`);
-    // eslint-disable-next-line no-console
     console.info(`grounded though labelled rejected: ${rejected.filter((r) => r.grounded).map((r) => r.id).join(', ')}`);
     // Measured 2026-11-10. The turns labelled rejected are mostly a wrong place ("7th of 7"), a wrong tally or a figure given to the wrong
     // player: things a number-presence check cannot see and the new reads answer at the source (places and tallies arrive computed).

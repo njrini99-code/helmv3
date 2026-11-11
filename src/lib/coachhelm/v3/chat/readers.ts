@@ -15,7 +15,7 @@ import { empty, failed, nameOf, ownOr, ownOrOne, part, playerOf, round, say, tea
 import { screenLoaders, STATS_WINDOWS, type PlayerStatsScreen, type StatsComparisonRow, type StatsWindow, type TeamRoundRow } from './screen-loaders';
 
 const PlayerId = z.string().uuid();
-const Window = z.enum(STATS_WINDOWS).default('last10').describe('last10 unless the question names another: last5, last20, or season (since 1 August).');
+const Window = z.enum(STATS_WINDOWS).default('last10').describe('last10 unless the question names another.');
 
 export const WINDOW_WORDS: Record<StatsWindow, string> = { last5: 'last 5 rounds', last10: 'last 10 rounds', last20: 'last 20 rounds', season: 'this season' };
 const SOURCE_STATS = 'Stats page';
@@ -111,6 +111,8 @@ function playerLines(page: PlayerStatsScreen, name: string, window: StatsWindow,
     if (page.extra.puttsError || !page.puttBands) lines.push('Putting by distance: could not be read.');
     else {
       detail.kind = 'putt_profile';
+      // The shape the putting block of a visual draws (visuals/compile-composition.ts).
+      detail.profile = { buckets: page.puttBands.map((b) => ({ id: slug(b.label), label: b.label, attempts: b.attempts, made: b.made, rate: b.attempts ? round((b.made / b.attempts) * 100, 1) : null })) };
       detail.putt_bands = page.puttBands.map((b) => ({ band: b.label, made: b.made, attempts: b.attempts, make_pct: b.attempts ? round((b.made / b.attempts) * 100, 0) : null, tour_pct: b.bench }));
       lines.push(`Putting by distance (made of attempts): ${page.puttBands.map((b) => `${b.label} ${b.made} of ${b.attempts}${b.attempts ? ` (${round((b.made / b.attempts) * 100, 0)}%${b.bench === null ? '' : `, Tour ${round(b.bench, 0)}%`})` : ''}`).join('; ')}.`);
     }
@@ -171,13 +173,13 @@ async function runPlayerStats(ctx: ToolContext, input: PlayerStatsInput): Promis
   return withText(envelope, built.flatMap((b) => [...b.lines, '']));
 }
 
-const sectionsField = z.array(z.enum(SECTIONS)).max(4).default([]).describe('Extra parts of the page, only when the question needs them: rounds (the window\'s rounds, each with its figures and id), putting (make rate by distance), approach (feet left by distance), holes (toughest holes, opening hole, pressure gap).');
+const sectionsField = z.array(z.enum(SECTIONS)).max(4).default([]).describe('Only when needed: rounds (each with its figures and id), putting (make rate by distance), approach (feet left by distance), holes (toughest holes, pressure gap).');
 
 export const getPlayerStats: ReadTool<PlayerStatsInput> = {
   kind: 'read',
   name: 'get_player_stats',
   description:
-    'The Stats page for one to six players over one window: scoring, strokes gained by area, greens, fairways, scrambling, sand saves, putts, three-putts, putt makes, penalties and more, each beside the team average for the same window and the Tour, and the areas where the player trails the team. These are the figures the coach sees on Stats. Use it for any question about how a player is playing, for comparing players (name them all in one call) and for a player\'s recent rounds (section rounds).',
+    'The Stats page for one to six players over one window: scoring, strokes gained by area, greens, fairways, scrambling, sand saves, putts, three-putts, putt makes and penalties, each beside the team average for the same window and the Tour, with the areas where the player trails the team. Use it for how a player is playing, for comparing players (all in one call) and for recent rounds (section rounds).',
   input: z.object({ player_ids: z.array(PlayerId).min(1).max(6), window: Window, sections: sectionsField }),
   progress: (i) => (i.sections?.includes('rounds') ? 'Reading the rounds and statistics' : 'Reading the statistics'),
   run: runPlayerStats,
@@ -278,6 +280,7 @@ async function runTeamStats(ctx: ToolContext, input: TeamStatsInput): Promise<To
     if (page.puttsError || !page.putting) lines.push('Team putting by distance: could not be read.');
     else {
       detail.kind = 'putt_profile';
+      detail.profile = { buckets: page.putting.bands.map((b) => ({ id: slug(b.label), label: b.label, attempts: b.attempts, made: b.made, rate: b.attempts ? round((b.made / b.attempts) * 100, 1) : null })) };
       detail.putt_bands = page.putting.bands.map((b) => ({ band: b.label, made: b.made, attempts: b.attempts, make_pct: b.attempts ? round((b.made / b.attempts) * 100, 0) : null, tour_pct: b.bench }));
       lines.push(`Team putting by distance (made of attempts, ${page.putting.putts} putts): ${page.putting.bands.map((b) => `${b.label} ${b.made} of ${b.attempts}${b.attempts ? ` (${round((b.made / b.attempts) * 100, 0)}%${b.bench === null ? '' : `, Tour ${round(b.bench, 0)}%`})` : ''}`).join('; ')}.`);
     }
@@ -295,7 +298,7 @@ export const getTeamStats: ReadTool<TeamStatsInput> = {
   kind: 'read',
   name: 'get_team_stats',
   description:
-    'The Team Stats page over one window: the team\'s scoring, strokes gained by area, greens, putts and scrambling, how many players and rounds are behind them, every player ranked on the column you choose, the team\'s putting by distance, and the best rounds. The team average here is the only team average; quote it as given. Use it for any question about the team as a whole, for "who is best or worst at", and before saying how the roster is doing.',
+    'The Team Stats page over one window: the team\'s scoring, strokes gained by area, greens, putts and scrambling, the players and rounds behind them, every player ranked on the column you choose, team putting by distance, and the best rounds. This team average is the only one. Use it for the team as a whole and for who leads or trails on a measure.',
   input: z.object({ window: Window, rank_by: z.enum(RANK_BY).optional().describe('The column to rank players on. Default sg_total.'), putting: z.boolean().default(false).describe('Also return the team\'s make rate by putt distance.') }),
   progress: (i) => (i.rank_by ? 'Ranking the team' : 'Reading Team Stats'),
   run: runTeamStats,
@@ -375,7 +378,7 @@ export const getRounds: ReadTool<RoundsInput> = {
   kind: 'read',
   name: 'get_rounds',
   description:
-    'The team\'s rounds from the Rounds page, narrowed by players, type (practice, qualifier, tournament) and dates: how many, each player\'s count, average score, to par and putts already worked out, the season line, and the newest rounds with their ids. Use it for questions about which rounds were played, qualifier or tournament or practice scoring, and to find a round to open with get_round. For how a player is playing, use get_player_stats.',
+    'The team\'s rounds from the Rounds page, narrowed by players, type and dates: how many, each player\'s count, average score, to par and putts, the season line, and the newest rounds with their ids. Use it for which rounds were played, for qualifier, tournament or practice scoring, and to find a round for get_round.',
   input: z.object({ player_ids: z.array(PlayerId).max(12).optional(), round_type: z.enum(ROUND_TYPES).optional(), from: Day.optional(), to: Day.optional(), list: z.number().int().min(0).max(ROUND_LIST_MAX).default(10).describe('How many of the newest rounds to list.') }),
   progress: () => 'Reading the rounds',
   run: runRounds,
@@ -421,7 +424,7 @@ async function seasonNow(ctx: ToolContext, playerId: string | undefined): Promis
 export const getSeason: ReadTool<SeasonInput> = {
   kind: 'read',
   name: 'get_season',
-  description: 'Scoring this season as the Roster page shows it (full rounds that count since 1 August, practice left out): the team average and every player, or one player. With compare_last_season, also this season against last. Use it when the question says "this season" or "the year".',
+  description: 'Scoring this season as the Roster page shows it (full rounds that count since 1 August, practice left out): the team average and every player, or one player. With compare_last_season, also this season against last.',
   input: z.object({ player_id: PlayerId.optional(), compare_last_season: z.boolean().default(false) }),
   progress: (i) => (i.compare_last_season ? 'Comparing the seasons' : 'Reading the season'),
   run: async (ctx, input) => {
@@ -429,7 +432,10 @@ export const getSeason: ReadTool<SeasonInput> = {
     const now = await part('this season', () => seasonNow(ctx, id));
     if (!input.compare_last_season) return now[1];
     // No screen draws last season beside this one; this is the chat library's own read and says so in its source.
-    return together('', [now, await part('against last season', () => compareSeasons(ctx.sb, teamOf(ctx), { player_id: id }))]);
+    const last = await part('against last season', () => compareSeasons(ctx.sb, teamOf(ctx), { player_id: id }));
+    const both = together('', [now, last]);
+    // The season block of a visual draws from the comparison's own detail, so it stays at the top level.
+    return last[1].coverage === 'unavailable' || !last[1].detail || typeof last[1].detail !== 'object' ? both : { ...both, detail: { ...(last[1].detail as Record<string, unknown>), this_season: now[1].detail ?? null } };
   },
 };
 export const getMySeason: ReadTool<SeasonInput> = { ...getSeason, description: 'Your scoring this season (full rounds that count since 1 August, practice left out). With compare_last_season, also this season against last.', input: z.object({ compare_last_season: z.boolean().default(false) }), progress: () => 'Reading your season' };
@@ -488,7 +494,7 @@ async function runQualifiers(ctx: ToolContext, input: QualifiersInput): Promise<
 export const getQualifiers: ReadTool<QualifiersInput> = {
   kind: 'read',
   name: 'get_qualifiers',
-  description: 'Qualifiers from the Qualifiers page. Without an id: the list with dates, status, squad size and the leaders. With qualifier_id: that qualifier\'s full board in its own order (position, to par, rounds, who is short a round, who was selected and why). The order is the board\'s; never re-rank it.',
+  description: 'Qualifiers from the Qualifiers page. Without an id: the list with dates, status, squad size and leaders. With qualifier_id: the full board in its own order (position, to par, rounds, who is a round short, who was selected and why).',
   input: z.object({ qualifier_id: z.string().uuid().optional(), limit: z.number().int().min(1).max(8).default(5) }),
   progress: (i) => (i.qualifier_id ? 'Reading the qualifier board' : 'Reading the qualifiers'),
   run: runQualifiers,

@@ -120,7 +120,7 @@ const eventInput = z.object({
   event_type: z.enum(['practice', 'tournament', 'qualifier', 'meeting', 'travel', 'other']),
   date: DATE,
   start: TIME.optional().describe('Required unless all_day.'),
-  end: TIME.optional().describe('Required for a timed event unless it is a practice. A practice with no end said: leave this out, and the card shows the usual length for the coach to change. Never guess a length yourself.'),
+  end: TIME.optional().describe('Leave out for a practice with no end given.'),
   all_day: z.boolean().default(false),
   location: z.string().max(500).optional(),
   notes: z.string().max(5000).optional(),
@@ -142,7 +142,7 @@ const eventDone = (i: z.infer<typeof eventInput>): FlowDone => ({ summary: `${i.
 const eventFlow: FlowDef<z.infer<typeof eventInput>> = {
   name: 'create_event',
   landed: { table: 'golf_events', done: eventDone },
-  description: 'Add one event to the team calendar, including a single practice. Ask first for the type if two fit, for the start if timed and not given, for the end if timed and not a practice, and who is invited to a meeting. A practice with a start needs nothing else: do not ask how long, call this and the card shows the usual length.',
+  description: 'Add one event to the team calendar, including a single practice. Ask for the type if two fit, the start if timed, the end if timed and not a practice, and who is invited to a meeting. A practice needs only its start: the card shows the usual length.',
   input: eventInput,
   plan: (ctx, i) => {
     const end = eventEnd(i);
@@ -188,12 +188,12 @@ const tripFlow: FlowDef<z.infer<typeof tripInput>> = {
   },
 };
 
-const qualifierInput = z.object({ name: z.string().min(1).max(200), description: z.string().max(2000).optional(), start_date: DATE, end_date: DATE.optional(), num_rounds: z.number().int().min(1).max(50).describe('Ask if not said; never default to 1.'), selection_slots_total: z.number().int().min(1).max(12).describe('Ask if not said.'), selection_slots_coach_pick: z.number().int().min(0).max(12).describe('Ask if not said.'), player_ids: z.array(z.string().uuid()).min(1), rules: z.string().max(5000).optional(), entry_deadline: DATE.optional() });
+const qualifierInput = z.object({ name: z.string().min(1).max(200), description: z.string().max(2000).optional(), start_date: DATE, end_date: DATE.optional(), num_rounds: z.number().int().min(1).max(50), selection_slots_total: z.number().int().min(1).max(12), selection_slots_coach_pick: z.number().int().min(0).max(12), player_ids: z.array(z.string().uuid()).min(1), rules: z.string().max(5000).optional(), entry_deadline: DATE.optional() });
 const qualifierFlow: FlowDef<z.infer<typeof qualifierInput>> = {
   name: 'create_qualifier',
   written: (sb, ctx, i, { since }) => rowSince(sb, 'golf_qualifiers', { team_id: ctx.team_id, name: i.name, start_date: i.start_date }, since),
   done: (_ctx, i) => ({ summary: `${i.name} is set.`, kind: 'qualifier', label: i.name, href: '/golf/dashboard/qualifiers' }),
-  description: 'Set a qualifier. Ask for rounds, squad size and coach picks if not said; there is no exemption field or tie rule to ask about.',
+  description: 'Set a qualifier. Ask for rounds, squad size and coach picks if not said.',
   input: qualifierInput,
   plan: (ctx, i) => {
     if (i.selection_slots_coach_pick > i.selection_slots_total) throw new ActionPlanError('Coach picks can’t be more than the squad.');
@@ -219,7 +219,7 @@ const goalFlow: FlowDef<z.infer<typeof goalInput>> = {
   name: 'create_goal',
   written: (sb, _ctx, i, { since }) => rowSince(sb, 'golf_goals', { player_id: i.player_id, metric_id: i.metric_id, target_value: i.target_value }, since),
   done: (ctx, i) => ({ summary: `The goal is set for ${requireRosterPlayer(ctx, i.player_id).name}.`, kind: 'goal' }),
-  description: 'Give a player a goal on one of eight stats. Ask if the stat is ambiguous, for by-when, and whether it is assigned or suggested.',
+  description: 'Give a player a goal on one of eight stats. Ask which stat if unclear, by when, and whether it is assigned or suggested.',
   input: goalInput,
   plan: (ctx, i) => {
     const p = requireRosterPlayer(ctx, i.player_id);
@@ -401,7 +401,7 @@ const messageFlow: FlowDef<z.infer<typeof messageInput>> = {
   name: 'send_message',
   written: (sb, _ctx, _i, { requestId }) => rowSince(sb, 'golf_messages', { id: requestId }, null),
   done: (_ctx, i) => ({ summary: `Sent to ${i.thread}.`, kind: 'message', label: i.thread, href: `/golf/dashboard/messages?conversation=${i.conversation_id}` }),
-  description: 'Draft a message to one thread the coach is in, found with find_thread. It sends only after the coach presses Send and an 8 second Undo.',
+  description: 'Send a message to one thread the coach is in, found with find_thread. It sends after the coach presses Send and the Undo window.',
   input: messageInput,
   plan: (_ctx, i) => ({
     visual: { kind: 'msg', conversationId: i.conversation_id, thread: i.thread, count: i.member_count, last: i.last_message ?? null, draft: i.content },
@@ -461,7 +461,7 @@ const publishArtifactFlow: FlowDef<z.infer<typeof publishArtifactInput>> = {
   name: 'publish_artifact',
   written: (sb, ctx, i, { since }) => rowSince(sb, 'golf_documents', { team_id: ctx.team_id, title: i.title }, since),
   done: (_ctx, i) => ({ summary: `${i.title} is in Documents.`, kind: 'document', label: i.title }),
-  description: 'Publish a piece you wrote with write_artifact to Documents, where every player on the team can open it. Use its latest words unchanged.',
+  description: 'Publish a piece written with write_artifact to Documents, where every player on the team can open it. Use its latest words unchanged.',
   input: publishArtifactInput,
   plan: (ctx, i) => ({
     action: `Publish to ${ctx.roster.length} ${ctx.roster.length === 1 ? 'player' : 'players'}`,

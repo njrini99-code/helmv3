@@ -195,7 +195,8 @@ function plannedTask<I, TPlan>(def: {
     plan: async (ctx, input) => {
       const who = coachOnly(ctx);
       const built = def.plan(who, input);
-      return { ...built.proposal, tool: def.name, input: built.plan, planned_at: now() };
+      const neighbours = await landingRows(ctx.sb, who, def.name, input).catch(() => null);
+      return { ...built.proposal, ...(neighbours?.length ? { neighbours } : {}), tool: def.name, input: built.plan, planned_at: now() };
     },
     commit: async (ctx, proposal) => {
       const who = coachOnly(ctx);
@@ -214,7 +215,7 @@ function plannedTask<I, TPlan>(def: {
 
 const createFocusArea = plannedTask<Parameters<typeof planFocusArea>[1], FocusAreaPlan>({
   name: 'create_focus_area',
-  description: 'Give one player a development focus area. Pass from_insight_id when it comes from a signal you read, so its effect can be tracked. The player accepts it before the improvement window opens; the card says so.',
+  description: 'Give one player a development focus area. Pass from_insight_id when it comes from a signal you read, so its effect can be tracked.',
   input: z.object({
     player_id: PlayerId,
     title: z.string().min(1).max(120),
@@ -258,7 +259,7 @@ const createTeamAnnouncement = plannedTask<Parameters<typeof planAnnouncement>[1
 
 const createRecurringPractice = plannedTask<Parameters<typeof planRecurringPractice>[1], RecurringPracticePlan>({
   name: 'create_recurring_practice',
-  description: 'Put a repeating practice on the calendar and invite players. occurrence_count is required: ask if the coach did not say how many, never create an open-ended series. requires_rsvp is off unless the coach asks for replies; with it off players get no notification. The card lists every date.',
+  description: 'Put a repeating practice on the calendar and invite players. Ask how many if the coach did not say; a series is never open-ended. requires_rsvp stays off unless the coach asks for replies (off means players get no notification). The card lists every date.',
   input: z.object({
     title: z.string().max(120).optional().describe('Default "Team practice".'),
     description: z.string().max(500).optional(),

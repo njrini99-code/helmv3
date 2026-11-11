@@ -26,11 +26,11 @@ import { failed, nameOf, notice, ownOrOne, part, playerOf, teamOf, together } fr
 import { screenLoaders, STATS_WINDOWS } from './screen-loaders';
 import { getProximityByBand, getRoundDetail, getShotPattern } from './shot-reads';
 import { SummariseInputCoach, SummariseInputPlayer, summariseData, type SummariseInput } from './summarise-data';
-import { describeQueryTables, queryTableNames, queryTeamData, TeamQueryInput } from './team-query';
+import { describeQueryTables, queryTeamData, TeamQueryInput } from './team-query';
 import { getAttendanceSummary, getFocusPractice, getGoals, getTeamSeasonSettings, getTournamentNotes } from './team-reads';
 import { compileVisual } from './visuals/compile';
 import { compileComposition } from './visuals/compile-composition';
-import { CompositionSpecV2, ShowVisualInputV2 } from './visuals/composition';
+import { CompositionSpecV2 } from './visuals/composition';
 import { VisualSpec } from './visuals/schema';
 
 const PlayerId = z.string().uuid();
@@ -77,7 +77,7 @@ export function holeTallies(holes: readonly HoleRow[]) {
 export const getRound: ReadTool<{ round_id: string }> = {
   kind: 'read',
   name: 'get_round',
-  description: 'One round hole by hole (score, putts, penalties, greens), with its tallies already counted: birdies, pars, bogeys, doubles, scoring on par 3s, 4s and 5s, putts, three-putts, greens hit. Take the round id from get_player_stats (section rounds) or get_rounds.',
+  description: 'One round hole by hole, with its tallies counted: birdies, pars, bogeys, doubles, scoring by par, putts, three-putts, greens hit. The round id comes from get_player_stats (section rounds) or get_rounds.',
   input: z.object({ round_id: z.string().uuid() }),
   progress: () => 'Reading the round hole by hole',
   run: async (ctx, input) => {
@@ -93,7 +93,7 @@ type ShotsInput = { player_id?: string; club_type?: string; from_yards?: number;
 export const getShots: ReadTool<ShotsInput> = {
   kind: 'read',
   name: 'get_shots',
-  description: 'Approach shots as logged, for one player or the team over the last N days: where misses go (short, long, left, right), distance left and lies, optionally for one club or yardage range; with bands, the average distance left in each yardage band you give. For putting by distance and the Stats page\'s own approach bands use get_player_stats or get_team_stats: this reader is for a cut those pages do not draw.',
+  description: 'Approach shots as logged, for one player or the team over the last N days: where misses go, distance left and lies, optionally for one club or yardage range; with bands, the average distance left in each band you give. Putting by distance and the Stats page\'s own approach bands are on get_player_stats and get_team_stats.',
   input: z.object({ player_id: PlayerId.optional(), club_type: z.string().max(40).optional(), from_yards: z.number().optional(), to_yards: z.number().optional(), bands: z.array(z.tuple([z.number(), z.number()])).min(1).max(8).optional(), since_days: z.number().int().min(1).max(365).default(60) }),
   progress: () => 'Reading the logged shots',
   run: async (ctx, input) => {
@@ -128,7 +128,7 @@ type ScheduleInput = { from?: string; to?: string; include: Array<(typeof SCHEDU
 export const getSchedule: ReadTool<ScheduleInput> = {
   kind: 'read',
   name: 'get_schedule',
-  description: 'The team calendar between two instants (default: now to 14 days ahead; past dates work too): each event with who replied and checked in when it asks for a reply, and which players are in class during it. include adds travel (trips with times, transport and hotel), classes (who is in class on class_date) and attendance (each player\'s attended, excused and absent counts and percentage, with the team\'s). Use it before saying nothing is scheduled or that there is no trip.',
+  description: 'The team calendar between two instants (default now to 14 days ahead; past dates work): each event, who replied and checked in, and who is in class during it. include adds travel (trips, transport, hotel), classes (who is in class on class_date) and attendance (each player\'s attended, excused and absent counts and percentage). Read it before saying nothing is scheduled or there is no trip.',
   input: z.object({ from: z.string().max(40).optional().describe('ISO date or date-time. Default now.'), to: z.string().max(40).optional().describe('ISO date or date-time. Default 14 days after from.'), include: z.array(z.enum(SCHEDULE_PARTS)).max(3).default([]), class_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(), player_id: PlayerId.optional().describe('Attendance for one player only.') }),
   progress: (i) => (i.include?.includes('travel') ? 'Checking the schedule and travel' : 'Checking the schedule'),
   run: async (ctx, input) => {
@@ -167,7 +167,7 @@ type CoachHelmInput = { what: Array<(typeof COACHHELM_PARTS)[number]>; player_id
 export const getCoachHelm: ReadTool<CoachHelmInput> = {
   kind: 'read',
   name: 'get_coachhelm',
-  description: 'What CoachHelm and the coach have on record, by part: signals (open signals for one player, with their evidence), causes (the open causes on a player\'s reads), patterns (what several players share), focus_areas (active focus areas, one player or everyone), focus_practice (practice logged toward each focus area), goals (goals with baseline, current, target and days left), tasks (outstanding tasks, overdue flagged). Ask for several parts in one call. signals and causes need a player_id.',
+  description: 'What CoachHelm and the coach have on record, by part: signals (a player\'s open signals with their evidence), causes (the open causes on a player\'s reads), patterns (what several players share), focus_areas, focus_practice (practice logged toward each focus area), goals (baseline, current, target, days left), tasks (outstanding, overdue flagged). Several parts can go in one call; signals and causes need a player_id.',
   input: z.object({ what: z.array(z.enum(COACHHELM_PARTS)).min(1).max(7), player_id: PlayerId.optional(), since_days: z.number().int().min(1).max(180).default(30) }),
   progress: (i) => (i.what?.length === 1 && i.what[0] === 'tasks' ? 'Checking outstanding tasks' : 'Reading what CoachHelm has on record'),
   run: async (ctx, input) => {
@@ -214,7 +214,7 @@ type PracticeInput = { what: Array<(typeof PRACTICE_PARTS)[number]>; since_days:
 export const getPracticeTool: ReadTool<PracticeInput> = {
   kind: 'read',
   name: 'get_practice',
-  description: 'Practice, by part: activity (practices held, practice plans draft or published, and the sessions players logged in the window; no shot data), drill_bank (team drills and the GolfHelm library with the refs a plan must use; a drill is never invented), plan_format (the team\'s plan sections and their order; read it before drafting a plan).',
+  description: 'Practice, by part: activity (practices held, plans draft or published, sessions players logged), drill_bank (team drills and the GolfHelm library, with the refs a plan must use), plan_format (the team\'s plan sections in order; read it before drafting a plan).',
   input: z.object({ what: z.array(z.enum(PRACTICE_PARTS)).min(1).max(3).default(['activity']), since_days: z.number().int().min(1).max(180).default(30), category: z.string().max(40).optional().describe('Drill bank category.') }),
   progress: () => 'Reading practice',
   run: async (ctx, input) => {
@@ -261,11 +261,11 @@ async function runReference(ctx: ToolContext, input: ReferenceInput): Promise<To
   }
 }
 
-const referenceFields = { about: z.string().min(2).max(120).optional().describe('golf: the subject in a few words ("lag putting").'), metric_ids: z.array(z.string().max(60)).max(12).optional(), category: z.enum(DEFINITION_CATEGORIES).optional(), levels: z.array(z.enum(BENCHMARK_LEVELS)).min(1).max(6).optional(), window: z.enum(STATS_WINDOWS).optional() };
+const referenceFields = { about: z.string().min(2).max(120).optional().describe('golf: the subject in a few words.'), metric_ids: z.array(z.string().max(60)).max(12).optional(), category: z.enum(DEFINITION_CATEGORIES).optional(), levels: z.array(z.enum(BENCHMARK_LEVELS)).min(1).max(6).optional(), window: z.enum(STATS_WINDOWS).optional() };
 export const getReference: ReadTool<ReferenceInput> = {
   kind: 'read',
   name: 'get_reference',
-  description: 'Reference material, by topic. golf: general golf knowledge from sourced research (not this team\'s data; name the source when you use a figure from it). metric_definitions: what a metric measures, its unit and which direction is better. standards: the published level and Tour figures for the metric_ids you name, and with a player_id where that player sits against their level; the team average is not here, it is on get_team_stats. course: a course\'s holes with this team\'s scoring by hole. documents: document titles and folders, never contents. team_settings: seasons, terms and scoring settings. data_dictionary: the tables, columns and units query_team_data can read.',
+  description: 'Reference, by topic. golf: golf knowledge from sourced research, not this team\'s data. metric_definitions: what a metric measures and which way is better. standards: published level and Tour figures for metric_ids, and with a player_id where that player sits against their level. course: a course\'s holes with this team\'s scoring. documents: titles and folders, never contents. team_settings: seasons, terms, scoring settings. data_dictionary: what query_team_data can read.',
   input: z.object({ topic: z.enum(REFERENCE_TOPICS), ...referenceFields, player_id: PlayerId.optional(), course_id: z.string().uuid().optional(), folder: z.string().max(60).optional() }),
   progress: (i) => (i.topic === 'golf' ? 'Looking it up in the golf reference' : i.topic === 'standards' ? 'Reading the standards' : 'Looking that up'),
   run: runReference,
@@ -280,32 +280,99 @@ export const getMyReference: ReadTool<ReferenceInput> = {
 // The long tail, arithmetic, visuals
 // ---------------------------------------------------------------------------------------------------------------------
 
+/** The tables it offers are the input's own `table` list (flag-gated tables are refused by the reader while their flag is off). */
 export const queryTeamDataTool = (): ReadTool<TeamQueryInput> => ({
   kind: 'read',
   name: 'query_team_data',
-  description: `Rows from this team's own records when no other reader fits: filtered (eq, in, gte, lte, is), ordered, at most 200 rows, with the exact count of matches. Scope is fixed to this team and its roster. It returns rows, not figures: hand its evidence_ref to summarise_data for any count, sum or average. Tables: ${queryTableNames({ tournamentsOn: tournamentsOn() }).join(', ')}. For their columns and units call get_reference with topic data_dictionary first.`,
+  description: `Rows from this team's own records when no other reader fits: filtered (eq, in, gte, lte, is), ordered, at most 200 rows, with the exact count of matches. Scope is fixed to this team and its roster. It returns rows, not figures: hand its evidence_ref to summarise_data for any count, sum or average. Call get_reference with topic data_dictionary first for each table's columns and units.`,
   input: TeamQueryInput,
   progress: () => 'Reading the team\'s records',
   run: (ctx, input) => queryTeamData(ctx.sb, teamOf(ctx), input, { tournamentsOn: tournamentsOn() }),
 });
 
-const SUMMARISE =
-  'Arithmetic done by the server over reads you already made: a count, a count by value, a sum, an average, the lowest or highest, a place in a ranking, the rows that match, a difference or ratio of two figures, and a join of two reads on a key. Use it whenever an answer needs a number the reads did not already compute; do not work one out yourself. source is { ref } (the evidence_ref of a read; { ref, list: "measurements" } treats its figures as rows). Several ops can go in one call, each with a short id; a difference or ratio can name an earlier op by { op: id } or a figure by { ref, metric_id, subject }. It names the fields a read has when you ask for one it does not.';
-
-export const summariseDataTool = (player: boolean): ReadTool<SummariseInput> => ({
-  kind: 'read',
-  name: 'summarise_data',
-  description: player ? SUMMARISE : `${SUMMARISE} A source can also be { query } with the fields of query_team_data.`,
-  input: (player ? SummariseInputPlayer : SummariseInputCoach) as z.ZodType<SummariseInput>,
-  progress: () => (player ? 'Working out your figures' : 'Working out the figures'),
-  run: (ctx, input) => summariseData(teamOf(ctx), input, { evidence: ctx.reads, ...(player || playerOf(ctx) ? {} : { query: (spec) => queryTeamData(ctx.sb, teamOf(ctx), spec, { tournamentsOn: tournamentsOn() }) }) }),
+/**
+ * What the model is shown of summarise_data's input: one flat shape for an op, about a sixth of the strict schema's size
+ * (ten variants, each repeating its filters). The strict schema (`summarise-data.ts`) still validates every call in `run`,
+ * and a call it refuses comes back with what was wrong, so the model can correct it.
+ */
+const SRef = z.object({ ref: z.string().describe('The evidence_ref of a read.'), list: z.string().optional().describe('"measurements" for a read\'s figures; default its rows.') });
+const SWhere = z.object({ field: z.string(), op: z.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'in', 'is_null', 'not_null']), value: z.unknown().optional() });
+const SFigure = z.object({ ref: z.string().optional(), metric_id: z.string().optional(), subject: z.string().optional().describe('A player id or name, or "team".'), op: z.string().optional().describe('An earlier op\'s id.') });
+const SummariseModelInput = z.object({
+  source: SRef.optional().describe('Not needed for difference and ratio.'),
+  join: z.object({ with: SRef, left_key: z.string(), right_key: z.string(), keep: z.enum(['matched', 'all_left']).optional() }).optional().describe('A second read joined on a key; its fields are also right_<field>.'),
+  where: z.array(SWhere).max(6).optional(),
+  ops: z
+    .array(
+      z.object({
+        op: z.enum(['count', 'count_by', 'sum', 'mean', 'min', 'max', 'rank', 'list', 'difference', 'ratio']),
+        id: z.string().optional(),
+        field: z.string().optional(),
+        by: z.string().optional(),
+        fields: z.array(z.string()).optional(),
+        where: z.array(SWhere).max(6).optional(),
+        subject: z.object({ field: z.string(), equals: z.union([z.string(), z.number()]) }).optional(),
+        order: z.enum(['high_first', 'low_first']).optional(),
+        order_by: z.string().optional(),
+        descending: z.boolean().optional(),
+        limit: z.number().optional(),
+        a: SFigure.optional(),
+        b: SFigure.optional(),
+      }),
+    )
+    .min(1)
+    .max(8),
 });
 
-export const showVisual: ReadTool<z.infer<typeof ShowVisualInputV2>> = {
+const SUMMARISE =
+  'Arithmetic done by the server over reads already made, so no number is worked out in prose. Ops: count; count_by (field); sum, mean, min, max (field, optionally by a second field); rank (field, subject, order): one row\'s place, ties shared; list (fields, limit, order_by); difference and ratio (a, b): two figures, each { ref, metric_id, subject } from a read or { op } naming an earlier op. A refusal names the fields or figures the read does have.';
+
+export const summariseDataTool = (player: boolean): ReadTool<z.infer<typeof SummariseModelInput>> => ({
+  kind: 'read',
+  name: 'summarise_data',
+  description: SUMMARISE,
+  input: SummariseModelInput,
+  progress: () => (player ? 'Working out your figures' : 'Working out the figures'),
+  run: async (ctx, input) => {
+    const strict = (player || playerOf(ctx) ? SummariseInputPlayer : SummariseInputCoach).safeParse(input);
+    if (!strict.success) return notice(`Not worked out: ${strict.error.issues.slice(0, 3).map((i) => `${i.path.join('.')} ${i.message}`).join('; ')}.`, { refused: true });
+    return summariseData(teamOf(ctx), strict.data as SummariseInput, { evidence: ctx.reads });
+  },
+});
+
+/**
+ * What the model is shown of show_visual's input: one flat block shape instead of eleven variants. Each scene is parsed
+ * again with its own strict schema in `run` (`CompositionSpecV2`, `VisualSpec`), and a refusal says what to fix.
+ */
+const VisualBlock = z.object({
+  type: z.enum(['headline', 'kpis', 'trend', 'bars', 'split', 'compare', 'note', 'miss_pattern', 'putt_profile', 'season_compare', 'hole_strip']),
+  ref: z.string().optional().describe('The evidence_ref the block draws from.'),
+  refs: z.array(z.string()).max(6).optional().describe('split and compare: the reads set side by side.'),
+  metricId: z.string().optional(),
+  metricIds: z.array(z.string()).max(8).optional(),
+  label: z.string().optional().describe('headline: a few words.'),
+  reference: z.enum(['average', 'benchmark', 'none']).optional().describe('trend: the line it is read against.'),
+  order: z.enum(['best_first', 'as_read']).optional(),
+  highlight: z.string().optional().describe('bars: a player id or band label to emphasise.'),
+  kind: z.enum(['measured', 'association', 'hypothesis']).optional().describe('note: what the sentence is.'),
+  text: z.string().optional().describe('note: one sentence, no digits.'),
+});
+const ShowVisualModelInput = z.object({
+  kind: z.enum(['compose', 'sg_anatomy']),
+  title: z.string().min(1).max(90),
+  lede: z.string().max(160).optional(),
+  layout: z.enum(['stack', 'split']).optional(),
+  blocks: z.array(VisualBlock).max(6).optional(),
+  evidenceRefs: z.array(z.string()).max(6).optional().describe('sg_anatomy: the get_player_stats read.'),
+  highlightedMetricId: z.string().optional(),
+});
+
+export const showVisual: ReadTool<z.infer<typeof ShowVisualModelInput>> = {
   kind: 'read',
   name: 'show_visual',
-  description: 'Draw one visual from reads already made in this conversation. kind "compose": a title in words, an optional one-line lede, and blocks (headline, kpis, trend, bars, split, compare, note), each naming the evidence_ref it draws from; the server copies the figures in. kind "sg_anatomy": one player\'s four strokes gained areas, from a get_player_stats read named in evidenceRefs. Titles, ledes, labels and notes are words only, no digits. If it is refused, say what you found in words.',
-  input: ShowVisualInputV2,
+  description:
+    'Draw one visual from reads already made; the server copies the figures in, so titles, ledes, labels and notes are words with no digits. kind "compose": a title, an optional lede, and blocks in order: headline (one figure set large), kpis (up to six figures from one read), trend (one metric over rounds), bars (distance bands, or players on one metric; best_first ranks them), split (signed figures either side of zero, such as strokes gained by area), compare (players across the same metrics), note (one sentence), and four drawn from a read that holds them: putt_profile, miss_pattern, season_compare, hole_strip. kind "sg_anatomy": one player\'s four strokes gained areas. If it is refused, fix what it names once or answer in words.',
+  input: ShowVisualModelInput,
   progress: () => 'Building the visual',
   run: async (ctx, input) => {
     if (input.kind === 'compose') {
@@ -347,7 +414,7 @@ export const findThread: ReadTool<{ title: string }> = {
 export const writeArtifact: ReadTool<z.infer<typeof WriteArtifactInput>> = {
   kind: 'read',
   name: 'write_artifact',
-  description: 'Write a long piece the coach will keep (a player report, a lineup, a round recap) as its own document beside the chat instead of in the answer. Pass the artifact_id it returned to revise it; earlier versions stay. Every figure in it must come from a read. It is saved nowhere outside this chat until the coach publishes it.',
+  description: 'Write a long piece the coach will keep (a player report, a lineup, a round recap) as a document beside the chat. Pass the artifact_id it returned to revise it. Every figure must come from a read. It stays in this chat until the coach publishes it.',
   input: WriteArtifactInput,
   progress: () => 'Writing it up',
   run: async (_ctx, { artifact_id, kind, title, body }) => {
@@ -359,7 +426,7 @@ export const writeArtifact: ReadTool<z.infer<typeof WriteArtifactInput>> = {
 export const draftMessage: ReadTool<z.infer<typeof DraftMessageInput>> = {
   kind: 'read',
   name: 'draft_message',
-  description: 'Open a message in Messages with the words already in the composer, for one thread found with find_thread or for named players. Sends nothing: the coach presses Send there.',
+  description: 'Open a draft in Messages, for one thread found with find_thread or for named players. Sends nothing: the coach presses Send there.',
   input: DraftMessageInput,
   progress: () => 'Drafting the message',
   run: async (ctx, { conversation_id, player_ids, content }) => {
@@ -380,7 +447,7 @@ const POLL_PROBLEM: Record<string, string> = { question: 'A poll needs a questio
 export const draftPoll: ReadTool<z.infer<typeof DraftPollInput>> = {
   kind: 'read',
   name: 'draft_poll',
-  description: 'Open a poll in a group thread found with find_thread, in the poll sheet in Messages. Posts nothing: the coach presses Send there. Votes always show names.',
+  description: 'Open a poll draft in a group thread found with find_thread. Posts nothing: the coach presses Send in Messages. Votes show names.',
   input: DraftPollInput,
   progress: () => 'Drafting the poll',
   run: async (ctx, { conversation_id, question, options, multi, closes_at }) => {
@@ -398,7 +465,7 @@ export const draftPoll: ReadTool<z.infer<typeof DraftPollInput>> = {
 export const draftBoard: ReadTool<z.infer<typeof DraftBoardInput>> = {
   kind: 'read',
   name: 'draft_board',
-  description: 'Make a board for one player from the visuals you drew with show_visual (draw them first). It goes in a message to them in Messages as an image under your short note. Sends nothing: the coach presses Send there.',
+  description: 'Make a board for one player from the visuals already drawn with show_visual, as an image in a draft message under a short note. Sends nothing: the coach presses Send in Messages.',
   input: DraftBoardInput,
   progress: () => 'Putting the board together',
   run: async (ctx, { player_id, note }) => {
@@ -411,20 +478,58 @@ export const draftBoard: ReadTool<z.infer<typeof DraftBoardInput>> = {
 export const askPracticeBrief: ReadTool<z.infer<typeof BriefInput>> = {
   kind: 'read',
   name: 'ask_practice_brief',
-  description: 'Ask the coach up to four questions before building a practice plan, as a card of choices. Do not ask what a read already answered; give each option\'s source in hint and put the read\'s default in pick. Their answers arrive as the next message. Writes nothing.',
+  description: 'Ask the coach up to four questions before building a practice plan, as a card of choices. Skip what a read already answered; put an option\'s source in hint and the read\'s default in pick. The answers arrive as the next message.',
   input: BriefInput,
   progress: () => 'Putting the questions together',
   run: async (_ctx, input) => notice('The questions are on screen. Stop here and wait for the coach to answer.', { end_turn: true, parts: [{ type: 'data-brief', id: partId('brief'), data: input }] }),
 };
 
-export const draftPracticePlan: ReadTool<z.infer<typeof PracticeDraftInput>> = {
+/** What the model is shown of a plan draft: the same fields without the strict schema's bounds and defaults, which `run` applies (`PracticeDraftInput`). */
+const Swap = z.object({ ref: z.string(), line: z.string() });
+const PlanDraftModelInput = z.object({
+  event_id: z.string().nullable().describe('The practice event from the calendar, or null if there is none yet.'),
+  title: z.string(),
+  focus: z.string().optional(),
+  place: z.string().optional(),
+  when: z.string().optional().describe('In words: Thu, Nov 5 · 2:00 to 5:00 PM.'),
+  start: z.string().optional().describe('HH:mm, team time.'),
+  minutes_asked: z.number().describe('The length asked for; block lengths must add up to it.'),
+  groups: z.array(z.object({ id: z.string(), name: z.string(), players: z.array(z.string()) })).optional(),
+  players: z.array(z.string()).optional(),
+  bring: z.array(z.object({ item: z.string(), qty: z.number() })).optional(),
+  blocks: z.array(
+    z.object({
+      id: z.string(),
+      kind: z.enum(['team', 'stations', 'course', 'own', 'break']),
+      title: z.string(),
+      len: z.number().describe('Minutes, in steps of 5.'),
+      place: z.string().optional(),
+      note: z.string().optional(),
+      drill: z.string().nullable().optional().describe('A ref from the drill bank, like lib:<id>.'),
+      aim: z.string().optional(),
+      because: z.string().nullable().optional().describe('Why this block, from a read.'),
+      routine: z.boolean().optional(),
+      sources: z.array(z.object({ evidence_ref: z.string(), label: z.string() })).optional(),
+      alternatives: z.array(Swap).optional().describe('Up to three swaps from the drill bank.'),
+      stations: z.array(z.object({ id: z.string(), place: z.string(), drill: z.string().nullable().optional(), note: z.string().optional(), alternatives: z.array(Swap).optional() })).optional(),
+      turn_min: z.number().optional(),
+      move_min: z.number().optional(),
+      hole_from: z.number().optional(),
+      hole_to: z.number().optional(),
+    }),
+  ),
+});
+
+export const draftPracticePlan: ReadTool<z.infer<typeof PlanDraftModelInput>> = {
   kind: 'read',
   name: 'draft_practice_plan',
   description: 'Write a practice plan draft as a card, after reading the drill bank and the plan format and after the coach\'s answers. Saves nothing: Save and Publish are the coach\'s presses. Use only drills from the drill bank, and make the block lengths add up to the minutes asked. A number in a Because must come from a read.',
-  input: PracticeDraftInput,
+  input: PlanDraftModelInput,
   progress: () => 'Drafting the practice plan',
   run: async (ctx, input) => {
-    const built = await practiceDraft(teamOf(ctx), input, ctx.reads);
+    const strict = PracticeDraftInput.safeParse(input);
+    if (!strict.success) return notice(`Not drafted: ${strict.error.issues.slice(0, 3).map((i) => `${i.path.join('.')} ${i.message}`).join('; ')}.`, { refused: true });
+    const built = await practiceDraft(teamOf(ctx), strict.data, ctx.reads);
     return built.ok ? notice(built.message, { parts: [{ type: 'data-practice-plan', id: partId('plan'), data: built.card }] }) : notice(built.message, { refused: true });
   },
 };

@@ -12,7 +12,7 @@ import { pluralize } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/server';
 import { getAppBaseUrl } from '@/lib/app-base-url';
 
-const Drill = z.string().describe('A ref from get_drill_bank detail.ids, like lib:<id>. Never invent one.').nullable().optional();
+const Drill = z.string().describe('A ref from the drill bank read, like lib:<id>.').nullable().optional();
 const BlockInput = z.object({
   id: z.string().min(1).max(40),
   kind: z.enum(['team', 'stations', 'course', 'own', 'break']),
@@ -24,8 +24,8 @@ const BlockInput = z.object({
   aim: z.string().max(200).default(''),
   because: z.string().max(280).nullable().default(null),
   routine: z.boolean().default(false),
-  sources: z.array(z.object({ evidence_ref: z.string().max(80), label: z.string().max(40) })).max(4).default([]).describe('The reads behind this Because, by the evidence_ref they returned.'),
-  alternatives: z.array(z.object({ ref: z.string(), line: z.string().max(120) })).max(3).default([]).describe('Up to three swaps for this block\'s drill, from get_drill_bank.'),
+  sources: z.array(z.object({ evidence_ref: z.string().max(80), label: z.string().max(40) })).max(4).default([]).describe('The reads behind this Because.'),
+  alternatives: z.array(z.object({ ref: z.string(), line: z.string().max(120) })).max(3).default([]).describe('Swaps for this drill, from the drill bank.'),
   stations: z.array(z.object({ id: z.string(), place: z.string().min(1).max(40), drill: Drill, note: z.string().max(280).default(''), alternatives: z.array(z.object({ ref: z.string(), line: z.string().max(120) })).max(3).default([]) })).max(8).optional(),
   turn_min: z.number().int().min(5).max(60).multipleOf(5).optional(),
   move_min: z.number().int().min(0).max(10).optional(),
@@ -33,13 +33,13 @@ const BlockInput = z.object({
   hole_to: z.number().int().min(1).max(18).optional(),
 });
 export const PracticeDraftInput = z.object({
-  event_id: z.string().uuid().nullable().describe('The practice event for this plan, from the calendar. Null: the card says to add one first.'),
+  event_id: z.string().uuid().nullable().describe('The practice event, from the calendar; null if there is none yet.'),
   title: z.string().min(1).max(80),
   focus: z.string().max(140).default(''),
   place: z.string().max(80).default(''),
-  when: z.string().max(60).optional().describe('The practice in words: Thu, Nov 5 · 2:00 to 5:00 PM.'),
-  start: z.string().regex(/^\d{2}:\d{2}$/).optional().describe('The practice start, 24 hour clock, team zone.'),
-  minutes_asked: z.number().int().min(5).max(360).describe('The length the coach asked for. Blocks must add up to it.'),
+  when: z.string().max(60).optional().describe('In words: Thu, Nov 5 · 2:00 to 5:00 PM.'),
+  start: z.string().regex(/^\d{2}:\d{2}$/).optional().describe('Start, 24 hour clock, team time.'),
+  minutes_asked: z.number().int().min(5).max(360).describe('The length asked for; blocks must add up to it.'),
   groups: z.array(z.object({ id: z.string(), name: z.string().max(20), players: z.array(z.string().uuid()) })).max(6).default([]),
   players: z.array(z.string().uuid()).max(60).default([]),
   bring: z.array(z.object({ item: z.string().min(1).max(40), qty: z.number().int().min(1).max(99) })).max(20).default([]),
@@ -192,7 +192,7 @@ async function postPlanToTeamChat(ctx: CoachChatContext, content: string): Promi
   return sent.success;
 }
 
-const publishInput = z.object({ plan_id: z.string().uuid().describe('The plan_id in the coach\'s Publish message. Never guess one; without it, ask the coach to press Publish on the plan.'), version: z.number().int().min(1).describe('The version in the coach\'s Publish message.'), title: z.string().min(1).max(80), people: z.number().int().min(1).describe('Players and coaches on the plan.'), when: z.string().min(1).max(60), where: z.string().max(80).default(''), first_player_line: z.string().max(140).describe('The notification the first player gets.'), player_ids: z.array(z.string().uuid()).max(60).default([]).describe('Roster ids of the players on the plan, the first player first.'), team_chat: z.boolean().default(true).describe('Post the plan in Team chat too. False only if the coach said not to.') });
+const publishInput = z.object({ plan_id: z.string().uuid().describe('From the coach\'s Publish message. Without one, ask the coach to press Publish on the plan.'), version: z.number().int().min(1).describe('From the coach\'s Publish message.'), title: z.string().min(1).max(80), people: z.number().int().min(1).describe('Players and coaches on the plan.'), when: z.string().min(1).max(60), where: z.string().max(80).default(''), first_player_line: z.string().max(140).describe('The notification a player gets.'), player_ids: z.array(z.string().uuid()).max(60).default([]).describe('The plan\'s players, the first player first.'), team_chat: z.boolean().default(true).describe('Also post in Team chat, unless the coach said not to.') });
 
 /** Publish goes on the Ask hold: nothing is written or told until Undo closes. */
 export const publishFlow: FlowDef<z.infer<typeof publishInput>> = {
