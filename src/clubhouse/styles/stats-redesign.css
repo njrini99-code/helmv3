@@ -2387,8 +2387,13 @@ p.ch-shs-mini-cap {
 /* Section names, notes, the feature card and anything that is not a card keep the full width; cards pair up under them. */
 .ch-shs-desk__sum > :not(.ch-shs-card),
 .ch-shs-desk__sum > .ch-shs-feature,
-.ch-shs-desk__sum > .ch-shs-empty {
+.ch-shs-desk__sum > .ch-shs-empty,
+.ch-shs-desk__sum > .ch-shs-failed {
   grid-column: 1 / -1;
+}
+/* A button on the page keeps its own width on a desk; only the phone stretches it. */
+.ch-shs-desk__sum > .ch-btn {
+  justify-self: start;
 }
 .ch-shs-desk__sum > .ch-shs-sech {
   margin-top: var(--ch-space-2);
@@ -2398,8 +2403,9 @@ p.ch-shs-mini-cap {
 }
 .ch-shs-desk__det {
   position: sticky;
-  top: var(--ch-space-4);
-  max-height: calc(100dvh - var(--ch-topbar-h) - var(--ch-space-6));
+  /* The page scrolls under the glass top bar, so the pane rests below it. */
+  top: calc(var(--ch-topbar-h) + var(--ch-space-4));
+  max-height: calc(100dvh - var(--ch-topbar-h) - var(--ch-space-6) - var(--ch-space-6));
   overflow-y: auto;
   overscroll-behavior: contain;
   border-radius: var(--ch-radius-lg);

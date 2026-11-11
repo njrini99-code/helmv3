@@ -388,7 +388,7 @@ function FailedCard({ onRetry, seen }: { onRetry: () => void; /** The page's dat
     return () => window.clearTimeout(t);
   }, [busy, refreshing]);
   return (
-    <section className="ch-shs-card" suppressHydrationWarning>
+    <section className="ch-shs-card ch-shs-failed" suppressHydrationWarning>
       <InlineNotice code="CH-5201" title="Rounds didn’t load" retrying={busy || refreshing} retryHook="stats-retry" onRetry={() => {
         if (busy) return; // A second tap while it loads does nothing.
         setBusy(true);

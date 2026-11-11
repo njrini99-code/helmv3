@@ -36,7 +36,7 @@ function stateData(state: string | undefined): ChTeamBoardData {
   }
   if (state === 'long') {
     const worst: ChStation = 'approach';
-    const many = Array.from({ length: 15 }, (_, i) => ({ ...(list[i % list.length] as ChTeamPlayer), id: `pl-long-${i}`, first: i % 2 ? 'Elijah' : 'Priyanka', name: i % 2 ? 'Elijah Brandt-Whitaker' : 'Priyanka Natarajan-Okonkwo', worst }));
+    const many = Array.from({ length: 15 }, (_, i) => ({ ...(list[i % list.length] as ChTeamPlayer), id: `pl-long-${i}`, first: i % 2 ? 'Elijah' : 'Priyanka', name: i % 2 ? 'Elijah Brandt-Whitaker' : 'Priyanka Natarajan-Okonkwo', worst, reads: i < list.length ? (list[i] as ChTeamPlayer).reads : { needs: [], working: [] } }));
     return { ...base, roster: { count: 15, error: false }, players: { list: many, error: false } };
   }
   return base;
