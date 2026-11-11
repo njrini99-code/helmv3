@@ -146,6 +146,36 @@ const teamPage = (over: Partial<TeamStatsScreen> = {}): TeamStatsScreen => ({
   ...over,
 });
 
+describe('putting by distance: a band nobody putted from is "no attempts", never 0%', () => {
+  const bands = [{ label: '3–5 ft', made: 18, attempts: 20, bench: 88 }, { label: '20–30 ft', made: 0, attempts: 0, bench: 7 }, { label: '30+ ft', made: 0, attempts: 6, bench: 3 }];
+  type Putting = { profile: { buckets: Array<{ label: string; attempts: number; rate: number | null }> }; putt_bands: Array<{ band: string; attempts: number; make_pct: number | null }> };
+  const check = (out: ToolResult, detail: Putting) => {
+    const line = textOf(out).split('\n').find((l) => /utting by distance/.test(l)) ?? '';
+    expect(line).toContain('20–30 ft no attempts');
+    expect(line).not.toMatch(/20–30 ft [^;]*%/);
+    expect(line).not.toContain('0 of 0');
+    // A band that was putted from and never holed is a real 0%, and is said as one.
+    expect(line).toContain('30+ ft 0 of 6 (0%, Tour 3%)');
+    expect(detail.putt_bands.map((b) => [b.band, b.make_pct])).toEqual([['3–5 ft', 90], ['20–30 ft', null], ['30+ ft', 0]]);
+    // The putting picture draws from `rate`: null, so the empty band is drawn as empty and not as a bar at zero.
+    expect(detail.profile.buckets.map((b) => b.rate)).toEqual([90, null, 0]);
+    // No measurement turns the empty band into a figure.
+    expect(out.measurements.filter((m) => /20–30/.test(m.metric_label))).toEqual([]);
+  };
+
+  it('for a player, on the coach\'s Ask and on the player\'s own', async () => {
+    const coachOut = await read<{ player_ids: string[]; window: string; sections: string[] }>(coach, 'get_player_stats').run(ctxFor(coach, { playerStats: async () => statsPage('Eli Brandt', { puttBands: bands }) }), { player_ids: [ELI], window: 'last10', sections: ['putting'] });
+    check(coachOut, coachOut.detail as Putting);
+    const own = await read<{ window: string; sections: string[] }>(maya, 'get_player_stats').run(ctxFor(maya, { playerStats: async () => statsPage('Maya Ortiz', { puttBands: bands }) }), { window: 'last10', sections: ['putting'] });
+    check(own, own.detail as Putting);
+  });
+
+  it('for the team', async () => {
+    const out = await read<{ window: string; rank_by?: string; putting: boolean }>(coach, 'get_team_stats').run(ctxFor(coach, { teamStats: async () => teamPage({ putting: { bands, putts: 26 } }) }), { window: 'last10', putting: true });
+    check(out, out.detail as Putting);
+  });
+});
+
 describe('get_team_stats: one team average, places already worked out', () => {
   const tool = () => read<{ window: string; rank_by?: string; putting: boolean }>(coach, 'get_team_stats');
 
