@@ -2,14 +2,16 @@
 
 import { ArrowLeftRight, Plus, RotateCcw, SlidersHorizontal } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useMemo, useState, type KeyboardEvent } from 'react';
+import { useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { haptic } from '../../lib/haptics';
+import { useChReducedMotion } from '../../lib/reduced-motion';
 import { tabListKeys } from '../../lib/tabs';
 import { useRefresh } from '../../lib/use-refresh';
 import { Button, IconButton } from '../../ui/Button';
 import { InlineNotice } from '../../ui/Notices';
 import { Modal } from '../../ui/Modal';
 import { EmptyState, SkelRows, Skeleton } from '../../ui/States';
+import { useHScroll, useKeepInView } from '../../ui/use-hscroll';
 import { CompareBlocks, CompareGrid } from './compare/CompareGrid';
 import { figureEvidence, groupOf, GROUPS, sideFigures, toMetricRound, dayWords } from './compare/model';
 import { Face, ScopeControls, ScopeTitle, SummaryLine } from './compare/ScopeControls';
@@ -158,6 +160,9 @@ function CompareReady({ data, search, phone, embedded }: { data: ChTourCompareDa
   };
   const ids = GROUPS.map((g) => g.id);
   const groupKeys = tabListKeys(ids, group, pickGroup, (id) => `ch-tour-cmp-tab-${id}`);
+  const groupRow = useRef<HTMLDivElement>(null);
+  const groupEdges = useHScroll<HTMLDivElement>(groupRow);
+  useKeepInView(groupRow, '[aria-selected="true"]', group, useChReducedMotion());
 
   const noRounds = data.rounds.length === 0;
   const body = data.errors.rounds ? (
@@ -206,12 +211,16 @@ function CompareReady({ data, search, phone, embedded }: { data: ChTourCompareDa
           <Timeline A={A} B={B} target={target} onTarget={setTarget} onChange={setSide} env={env} finished={finished} from={axis.from} to={axis.to} />
         </>
       )}
-      <div className="ch-tour-cmp-groups ch-hscroll" role="tablist" aria-label="Metric group">
-        {GROUPS.map((g) => (
-          <button key={g.id} type="button" role="tab" id={`ch-tour-cmp-tab-${g.id}`} aria-selected={group === g.id} aria-controls="ch-tour-cmp-panel" tabIndex={group === g.id ? 0 : -1} onClick={() => pickGroup(g.id)} onKeyDown={(e: KeyboardEvent<HTMLElement>) => groupKeys(e)}>
-            {g.label}
-          </button>
-        ))}
+      {/* The well holds still; the row inside it scrolls and fades at the edge that hides a group, so a word is never cut
+          with no sign of more, and the chosen group is always whole (ui/use-hscroll.ts). */}
+      <div className="ch-tour-cmp-groups">
+        <div ref={groupEdges} className="ch-tour-cmp-groups__row ch-hscroll" role="tablist" aria-label="Metric group">
+          {GROUPS.map((g) => (
+            <button key={g.id} type="button" role="tab" id={`ch-tour-cmp-tab-${g.id}`} aria-selected={group === g.id} aria-controls="ch-tour-cmp-panel" tabIndex={group === g.id ? 0 : -1} onClick={() => pickGroup(g.id)} onKeyDown={(e: KeyboardEvent<HTMLElement>) => groupKeys(e)}>
+              {g.label}
+            </button>
+          ))}
+        </div>
       </div>
       <div role="tabpanel" id="ch-tour-cmp-panel" aria-labelledby={`ch-tour-cmp-tab-${group}`}>
         {phone ? (

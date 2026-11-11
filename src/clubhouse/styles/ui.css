@@ -2261,6 +2261,20 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
     font: var(--ch-type-meta);
     color: var(--ch-text-secondary);
   }
+  /* On a phone held upright the title keeps its own line: a short caption (a count, "4 of 5 count") still sits at the
+     right, and one that does not fit beside the title goes under it at the card's full width. Before, the two shared the
+     row whatever their length, and a long caption squeezed the title into two or three lines ("Alternate / and /
+     individuals", "Who / counted"). */
+  @media (max-width: 480px) {
+    .ch-app[data-ch-refresh='on'] .ch-sec__titles {
+      flex-wrap: wrap;
+      gap: 2px 12px;
+    }
+    .ch-app[data-ch-refresh='on'] .ch-sec__title {
+      flex: none;
+      max-width: 100%;
+    }
+  }
   .ch-app[data-ch-refresh='on'] .ch-sec__head ~ * {
     background: var(--ch-card-bg);
   }

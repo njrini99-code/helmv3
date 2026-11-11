@@ -489,17 +489,22 @@
 }
 
 /* The metric groups (board .cd-groups; phone .tm-groups) */
+/* The well is still; the row of groups scrolls inside it, so the edge fade (.ch-hscroll) falls on the groups and the
+   well keeps its own edge. */
 .ch-tour-cmp-groups {
-  display: flex;
-  gap: 4px;
   padding: 4px;
-  overflow-x: auto;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-subtle);
   box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
+}
+.ch-tour-cmp-groups__row {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  border-radius: var(--ch-radius-sm);
   scrollbar-width: none;
 }
-.ch-tour-cmp-groups::-webkit-scrollbar {
+.ch-tour-cmp-groups__row::-webkit-scrollbar {
   display: none;
 }
 .ch-tour-cmp-groups button {
@@ -527,8 +532,11 @@
   top: 0;
   z-index: 3;
 }
+/* Tighter on the phone, so the group after the last whole one shows its first letters under the fade: the row reads as
+   one that goes on, where four groups used to end flush at the well's edge as if they were all of them. */
 .ch-tour-cmp.is-phone .ch-tour-cmp-groups button {
   height: 44px;
+  padding: 0 12px;
 }
 
 /* The aligned grid (board .cd-body) */
