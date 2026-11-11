@@ -1064,7 +1064,7 @@ html[data-fw-theme='dark'] .ch-ak-push .ch-btn--primary[data-ch-pressed]:not(:di
 .ch-ak-pend { white-space: nowrap; }
 .ch-ak-pend .ch-ak-live { width: 7px; height: 7px; margin-left: 6px; vertical-align: 1px; animation: ch-ak-fade var(--ch-dur-quick) var(--ch-ease) backwards, ch-ak-breath var(--ch-dur-reveal) var(--ch-ease-io) infinite alternate; }
 /* A chip is a word in its sentence: the line's height, never taller, so it cannot push its line apart. */
-.ch-ak-th[data-v3] .prose .cite { margin-left: 0; padding: 1px 8px 1px 7px; vertical-align: 1px; line-height: 1.35; }
+.ch-ak-th[data-v3] .prose .cite { margin: 0; padding: 1px 8px 1px 7px; vertical-align: 1px; line-height: 1.35; }
 .ch-ak-th[data-v3] .prose .cite[data-ch-pressed] { transform: scale(0.97); }
 
 /* A visual is complete at first paint (owner decision Q-153): only its frame fades, and only when it arrives in this visit. */
@@ -1085,8 +1085,9 @@ html[data-fw-theme='dark'] .ch-ak-push .ch-btn--primary[data-ch-pressed]:not(:di
 .ch-ak-th.ch-th--phone .ch-ak-notice { flex-wrap: wrap; }
 .ch-ak-th.ch-th--phone .ch-ak-notice > .ch-btn { margin-left: 36px; }
 
-/* The Latest key: over the composer, centred on the column. Its dot says the answer is still being written below. */
-.ch-ak-root .ch-ak-jump { right: auto; left: 50%; width: 44px; height: 44px; margin-left: -22px; }
+/* The Latest key: over the composer, at the column's right edge, where it covers line ends and not the words being read. Its
+   dot says the answer is still being written below. */
+.ch-ak-root .ch-ak-jump { width: 44px; height: 44px; }
 .ch-ak-root .ch-ak-jump .ch-ak-live { position: absolute; top: 4px; right: 4px; box-shadow: 0 0 0 2px var(--ch-card-bg); }
 
 /* The send key: one key in one place. Its meaning changes in the frame of the tap; the two discs cross by opacity. */

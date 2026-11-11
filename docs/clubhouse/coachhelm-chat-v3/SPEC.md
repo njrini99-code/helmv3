@@ -122,7 +122,7 @@ coach, this screen, today.
 | `ST-3.dictating` | The mic (where the platform has one) replaces `@` while listening; the words arrive in the field as typed text. Unchanged from `useDictation`. |
 | `ST-3.sent` | The field is empty in the same frame as the tap. The send key is the stop key (ink disc, rounded square) in the same frame. The question is on its way to the top of the page (Rule P). The keyboard stays up; focus stays in the field. |
 | `ST-3.busy` | Stop key. The coach can type the next question; Return does not send while a turn runs (the key is Stop), and the field says so only by the key. |
-| `ST-3.card-waiting` | A task card waits. The field is **open** (v3; it was blocked). Hint: "Ask something else, or answer the card". Sending cancels the card first (the engine declines it, "Nothing was written"), and the card shows `ST-7.superseded`. |
+| `ST-3.card-waiting` | A task card waits. The field is **open** (v3; it was blocked). Hint: "Ask, or answer the card" (short enough for the phone's field). Sending cancels the card first (the engine declines it, "Nothing was written"), and the card shows `ST-7.superseded`. |
 | `ST-3.offline` | Sending is refused before anything leaves: the shell's offline toast and the text stays in the field (existing CH-1903). |
 | `ST-3.paused` | Player out of allowance: the field is disabled with "Ask is paused until Monday" (existing). |
 | `ST-3.failed-send` | The request never left or was refused: the question stays at the top of its page with the turn notice under it (`ST-10.*`); the text is not put back in the field (v3: the notice's Try again resends; putting it back made two places to act). |
@@ -334,7 +334,7 @@ Same thread, same motion, a narrower world.
 | Read rows | 32px, detail under the label | same |
 | Composer | docked capsule above the home indicator and the keyboard | docked, column width |
 | Evidence | sheet, detent 0.62 | panel 380px |
-| Latest key | 44px disc, centred over the composer, 12px above it | same, centred on the column |
+| Latest key | 44px disc at the column's right edge, 12px above the composer (over line ends, not over the words being read) | same |
 
 Largest Text Size (`--ch-type-scale` 1.353): the name row wraps the work line under the name rather than
 truncating; read labels wrap to two lines; chips wrap as one piece; card buttons stack (Cancel under the primary);
@@ -386,6 +386,10 @@ Light and dark: every colour is a token; the question bubble is the sent tint, t
 8. Stop offers Try again, not "Continue" (the engine cannot resume a stopped turn).
 9. The 1.2 s, 6 s and 20 s waits are constants in `chat/turn-timing.ts`, not tokens: they are thresholds, not
    durations of a motion.
+10. Built so far, differing from a row above (each is listed in the build report): the home leaves at once on the
+    first send (MO-2-3's fade is not built); the desktop evidence panel keeps the existing column layout (MO-6-3's
+    slide is not built); a finished read's past tense ("Read…", "Checked…") is derived in the browser from the
+    server's one label until the engine sends its own.
 
 ## Requests (not built here; typed stubs stand in)
 

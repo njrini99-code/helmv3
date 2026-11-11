@@ -424,7 +424,7 @@ describe('the composer', () => {
 
   it('while an action card waits the composer stays open: a new question is sent (the server sets the card aside first), and the box says so', async () => {
     const { chat } = show(ready({ thread: { id: 'c-putting', title: 'Putting inside 6 feet', messages: ASK_MSGS_ACTION } }), fakeChat());
-    expect(box().placeholder).toBe('Ask something else, or answer the card');
+    expect(box().placeholder).toBe('Ask, or answer the card');
     await userEvent.type(box(), 'What about Eli?{Enter}');
     expect(chat.calls.send).toHaveBeenCalledWith('What about Eli?');
     expect(code('CH-13120')).toBeNull();

@@ -364,7 +364,7 @@ export function AskComposer({ seed, scopeOf, variant, phone, players, busy, fail
   // The phone's scope line already says it until the coach types; a chip only earns its row there once the words change the scope.
   const scopeChips = scopeOf && (!phone || value.trim()) ? scopeOf(value) : [];
   const first = hero || fresh;
-  const placeholder = paused ? paused : waiting ? 'Ask something else, or answer the card' : first && hint ? hint : first ? (phone ? 'Ask about a player, a stat, or the week' : 'Ask about a player, a stat, or the week ahead') : 'Ask a follow-up';
+  const placeholder = paused ? paused : waiting ? 'Ask, or answer the card' : first && hint ? hint : first ? (phone ? 'Ask about a player, a stat, or the week' : 'Ask about a player, a stat, or the week ahead') : 'Ask a follow-up';
 
   const plus = (
     <Menu
