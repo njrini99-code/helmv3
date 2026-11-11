@@ -30,8 +30,9 @@ const bare = (t: string) => t.trim().replace(/[.!?…]+$/, '');
 function Card({ sec, title, aside, children }: { sec: string; title: string; aside?: ReactNode; children: ReactNode }) {
   return (
     <div className="ch-hr-sec" data-ch-read-sec={sec}>
+      {/* The Surface is the design system's, untouched: the section's own stack sits inside its body. */}
       <Surface id={`ch-hr-${sec}`} title={title} actions={aside ? <span className="ch-hr-aside ch-num">{aside}</span> : undefined}>
-        {children}
+        <div className="ch-hr-body">{children}</div>
       </Surface>
     </div>
   );

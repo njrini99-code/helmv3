@@ -58,10 +58,8 @@
 
 /* ---------- a Surface per section ---------- */
 .ch-hr-sec { min-width: 0; }
-.ch-hr-sec .ch-surface__head { min-height: 28px; }
-.ch-hr.is-phone .ch-hr-sec .ch-surface__head { padding: 16px 16px 0; }
-.ch-hr.is-phone .ch-hr-sec .ch-surface__body { padding: 12px 16px 16px; }
-.ch-hr-sec .ch-surface__body { display: flex; flex-direction: column; gap: 16px; padding-top: 12px; }
+/* The Surface keeps its own head and body (ui.css): only the section's stack inside the body is laid out here. */
+.ch-hr-body { display: flex; flex-direction: column; gap: 16px; }
 .ch-hr-aside { font: var(--ch-type-13); color: var(--ch-text-tertiary); white-space: nowrap; }
 .ch-hr-p { margin: 0; font: var(--ch-type-15); letter-spacing: var(--ch-track-15); color: var(--ch-text-secondary); text-wrap: pretty; }
 

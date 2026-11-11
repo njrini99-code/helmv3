@@ -68,8 +68,10 @@ export function ReadSkeleton() {
   const first = (title: string, block: number) => (
     <div className="ch-hr-sec">
       <Surface>
-        <SkelLine width={title} line={24} bar={16} />
-        <Skeleton width="100%" height={block} radius={12} shape="solid" />
+        <div className="ch-hr-body">
+          <SkelLine width={title} line={24} bar={16} />
+          <Skeleton width="100%" height={block} radius={12} shape="solid" />
+        </div>
       </Surface>
     </div>
   );
