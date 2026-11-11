@@ -363,6 +363,11 @@ check, then the panel leaving, then the row holding the eye, is the same sentenc
 
 ## Requests
 
+Status, 11 Nov: engine requests 1 to 4 landed (CONTRACT_NOTES E18) and are used; 5 and 6 are still open. The lead's
+1 and 2 landed (`AskThread` compact, `noteSendSource`, `onCardPhase`) and are used; 3 is still open, with the newer
+asks listed under "Second pass". Ids are still missing for a focus area, a goal, a trip, and a second commit found by
+its natural key: those rows are found only when exactly one new row of the kind appears, else nothing is marked.
+
 Engine and protocol:
 1. `created[].id` on the final receipt (the saved row's id), so a row is found by id and not by being the one new row.
 2. `created[].href` that goes to the thing, not its section (Calendar on that day, the player's file for a focus area).
@@ -520,6 +525,15 @@ Still open:
 6. In the preview the thread's waiting line reads "No answer yet. You can stop and ask again." for the first 300 ms
    of a scripted turn: the preview's fake hook sends no `message_start`. Not seen with the real hook; for the lead to
    confirm.
+7. Dark, phone: the empty start and today's thread are captured and read correctly on the solid ground
+   (`v3/dark-hello`, `v3/dark-today`); the held state (`qc=land`) was not, twice (a chunk reload in the dev server
+   while another lane's preview route was being edited). The slot and the mark use tokens only, so this is a missing
+   picture and not a known fault.
+8. The progress row of a calculation ("Working it out") is not drawn by any preview state here. The key's pill takes
+   the label of the step that is running, else the last step's; that label is shorter than the read labels already
+   captured on the pill, so it fits, but it has not been seen.
+9. The console carries one React warning on every thread with a people line: a missing `key` in the Ask lane's
+   `People` (not this lane's file).
 
 ---
 
@@ -576,6 +590,10 @@ and are in the open list.
    before it (Open from another page).
 7. **The panel steps away before the page is asked to re-read.** Asked first, the re-read's work delayed the close by
    about 250 ms in the preview; now the close starts one beat after the save and the re-read is asked in that frame.
+   Measured after the change, desktop and phone alike (30 ms samples): card "Assigned" and slot `saved` at 2.15 s, the
+   slot's ground at .47, .82, .95, 1 over the next 150 ms, the panel hidden by 2.50 s (a 120 ms beat, then the close),
+   the real row with the mark at 1 and no slot at 2.66 s (the preview's loader answers 520 ms after the save), the
+   mark still .98 at 4.07 s, mark and tag gone by 5.46 s, 5 rows, nothing left over.
 8. **A thrown sheet keeps its speed** into the close (`chThrownExit`, the app's own), and a finger that rested for
    80 ms before lifting has none.
 9. **Back** uses the shell's pattern for a same-URL entry, with its own key.
