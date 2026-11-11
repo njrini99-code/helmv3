@@ -18,6 +18,7 @@
   height: var(--ch-ball-s);
 }
 .ch-ball.is-paper {
+  --ch-ball-pit: color-mix(in oklab, var(--ch-green-900) 40%, var(--ch-on-fill-100));
   --ch-ball-dot: var(--ch-forest-800);
   --ch-ball-rip: var(--ch-forest-800);
 }

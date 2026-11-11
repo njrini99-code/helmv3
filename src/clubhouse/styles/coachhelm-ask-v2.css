@@ -258,6 +258,10 @@ html[data-fw-theme='dark'] .ch-ak-th {
   display: grid;
   gap: 4px;
 }
+/* The chat's mark at rest (BallMark, styles/coachhelm-ball.css), a step clear of the greeting so its rings have room. */
+.ch-ak-home .hi .ch-ball {
+  margin-bottom: var(--ch-space-2);
+}
 .ch-ak-home .hi h2 {
   margin: 0;
   font: var(--ch-type-28-strong);

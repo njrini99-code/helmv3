@@ -7,6 +7,7 @@ import type { ReactNode } from 'react';
 import { type ChAskData, type ChAskSuggestion } from '../../../data/coachhelm-chat-shape';
 import { haptic } from '../../../lib/haptics';
 import { Icon } from '../../../ui/Icon';
+import { BallMark } from './BallMark';
 
 /** Players, and not one recorded round between them: nothing to report yet, and the chat still works. */
 function NothingYet({ phone }: { phone: boolean }) {
@@ -36,6 +37,7 @@ export function zoneHour(iso: string, timezone: string): number {
 /**
  * Ask v2's home (06 E-HOME): the greeting, what moved since Monday from the Board (each line asks about itself), and starter rows with their tag. A player reads their own focus and
  * the Ask this week word instead; the meter is the screen's. The team's or player's scope sits above it, in the screen's scope line.
+ * The chat's mark, the ball, sits over the greeting at rest: nothing is being worked on here.
  */
 export function AskHomeV2({ data, phone, heroComposer, onAsk, focus }: { data: ChAskData; phone: boolean; heroComposer: ReactNode; onAsk: (text: string) => void; focus?: ReadonlyArray<{ text: string; ask: string | null; trend?: 'up' | 'warn' }> }) {
   const player = data.role === 'player';
@@ -44,6 +46,7 @@ export function AskHomeV2({ data, phone, heroComposer, onAsk, focus }: { data: C
   return (
     <div className={'ch-ak-home' + (phone ? ' is-phone' : '')} data-ch="ask-home">
       <div className="hi">
+        <BallMark state="rest" on="paper" size="lg" />
         <h2>{player ? `${greeting(hour).replace('Good ', '').replace(/^./, (c) => c.toUpperCase())}${data.firstName ? `, ${data.firstName}` : ''}` : `${greeting(hour)}, ${data.firstName ?? 'Coach'}`}</h2>
         <p>{player ? 'I read your rounds and shots. Only you and your coaches see this.' : `I can read every round, shot, practice and event for ${data.teamName}.`}</p>
       </div>

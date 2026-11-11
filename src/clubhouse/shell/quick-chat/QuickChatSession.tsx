@@ -9,10 +9,11 @@ import { haptic } from '../../lib/haptics';
 import { useChMotionMode } from '../../lib/reduced-motion';
 import { sheetSettleHaptic } from '../../lib/sheet-drag';
 import { useChPhone } from '../../lib/use-phone';
+import { BallMark } from '../../screens/coachhelm/chat/BallMark';
 import { conversationHref } from '../../screens/coachhelm/chat/History';
 import { Button, IconButton } from '../../ui/Button';
 import type { ChAskSheetChat } from '../AskSheet';
-import { HelmMark, useQcCtx } from './qc-context';
+import { useQcCtx } from './qc-context';
 import { useQcSeam } from './qc-seam';
 import { DRAG_CLOSE_SHARE, DRAG_FLING, DRAG_REST_MS, DRAG_SLOP_PX } from './qc-timing';
 import { QuickChatThread } from './QuickChatThread';
@@ -286,8 +287,9 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
       {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- the dialog keeps Tab inside itself (AC-QC-PNL-08) */}
       <section id="ch-qc-panel" ref={panel} className="qc" role="dialog" aria-modal="true" aria-label="CoachHelm" tabIndex={-1} hidden={!shown} data-ch-qc-panel="" onKeyDown={onPanelKey}>
         <header className="qc__h" data-qc-rise="" data-qc-drag="" {...handle}>
+          {/* The chat's mark, at rest. While CoachHelm works the island's line carries the ball, thinking, and this one steps back with the name. */}
           <span className="qc__mark">
-            <HelmMark />
+            <BallMark state="rest" on="paper" />
           </span>
           <b className="qc__ttl">CoachHelm</b>
           {/* The activity island's place: one line here while CoachHelm works, opening over the body; empty otherwise. */}

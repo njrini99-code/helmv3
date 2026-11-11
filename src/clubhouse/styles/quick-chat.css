@@ -9,8 +9,6 @@ html[data-fw-theme='dark'] .ch-qcs {
   --ch-qc-a-pglass: rgb(27 32 28 / 0.84); --ch-qc-a-pglass-hi: rgb(255 255 255 / 0.07);
   --ch-qc-a-pshadow: 0 0 0 0.5px rgb(237 231 216 / 0.14), 0 36px 72px -26px rgb(0 0 0 / 0.85), 0 12px 28px -12px rgb(0 0 0 / 0.5);
 }
-.ch-qcs .qc__mark .wheel { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; transform-origin: 12px 12px; }
-.ch-qcs .qc__mark .ball { fill: currentColor; }
 .ch-qcs .qc[hidden] { display: none !important; }
 .ch-qcs .qc__body { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; padding: 4px 12px 12px; scrollbar-width: none; overscroll-behavior: contain; }
 .ch-qcs .qc__body::-webkit-scrollbar { display: none; }
@@ -173,8 +171,8 @@ html[data-fw-theme='dark'] .ch-qck.is-desk .hkey__disc { background: rgb(107 187
 
 /* The header: the mark, the name, the way into Ask, Close. On the phone it is also the sheet's handle (MO-1-5). */
 .ch-qcs .qc__h { flex: none; display: flex; align-items: center; gap: 8px; min-height: 52px; padding: 8px 8px 8px 16px; }
-.ch-qcs .qc__mark { flex: none; display: grid; place-items: center; width: 28px; height: 28px; border-radius: var(--ch-radius-sm); background: var(--ch-accent); color: var(--ch-text-on-accent); }
-.ch-qcs .qc__mark svg { width: 18px; height: 18px; }
+/* The chat's mark: the ball on the sheet itself, no tile under it (BallMark, styles/coachhelm-ball.css). */
+.ch-qcs .qc__mark { flex: none; display: grid; place-items: center; width: 28px; height: 28px; }
 .ch-qcs .qc__ttl { flex: 1; min-width: 0; margin-left: 4px; font: var(--ch-type-17-strong); letter-spacing: var(--ch-track-17); color: var(--ch-text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ch-qcs .qc__full { flex: none; }
 /* The activity island's slot: the centre of the header's row. The island is one line here and opens over the body; while one
@@ -182,8 +180,8 @@ html[data-fw-theme='dark'] .ch-qck.is-desk .hkey__disc { background: rgb(107 187
 .ch-qcs .qc__isl { position: absolute; top: 8px; bottom: 8px; left: 48px; right: 168px; }
 .ch-qcs.is-phone .qc__isl { right: 88px; }
 .ch-qcs .qc__h { position: relative; }
-.ch-qcs .qc__ttl { transition: opacity var(--ch-dur-quick) var(--ch-ease); }
-.ch-qcs .qc__h:has(.ch-isl):not(:has(.ch-isl.is-leaving)) .qc__ttl { opacity: 0; }
+.ch-qcs :is(.qc__ttl, .qc__mark) { transition: opacity var(--ch-dur-quick) var(--ch-ease); }
+.ch-qcs .qc__h:has(.ch-isl):not(:has(.ch-isl.is-leaving)) :is(.qc__ttl, .qc__mark) { opacity: 0; }
 /* On the phone the way into Ask is its arrow alone (its name is the button's accessible name): the row's centre is the island's. */
 .ch-qcs.is-phone .qc__full-l { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .ch-qcs .qc__x { flex: none; }
