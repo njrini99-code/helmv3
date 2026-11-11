@@ -37,6 +37,24 @@ export const nameOf = (ctx: ToolContext, playerId: string): string => ctx.who.ro
 /** A read that could not be made. Never an empty result. */
 export const failed = (what: string, why = 'The read failed.'): ToolEnvelope => unavailableEnvelope(`Could not read ${what}.`, why);
 
+/**
+ * "That isn't tracked": the question asks for something the app does not record. A read on the contract (it gets an
+ * evidence chip, so the thread can draw the "Not tracked … Closest: …" row), with the nearest figures that are recorded.
+ */
+export function notTracked(entry: { what: string; nearest: readonly string[]; note: string }): ToolResult {
+  const closest = entry.nearest.length ? `Closest that is tracked: ${entry.nearest.join(', ')}.` : 'Nothing close to it is tracked.';
+  return {
+    summary: `Not tracked: ${entry.what}.`,
+    measurements: [],
+    series: [],
+    coverage: 'not_tracked',
+    coverage_note: entry.note,
+    nearest: [...entry.nearest],
+    as_of: nowIso(),
+    model_text: `Not tracked: ${entry.what}. ${entry.note} ${closest} Say first that it is not tracked, then offer the closest figure; never show a zero or an empty chart for it.`,
+  };
+}
+
 export const empty = (summary: string, detail?: unknown): ToolEnvelope => ({ summary, measurements: [], series: [], ...(detail === undefined ? {} : { detail }), coverage: 'empty', coverage_note: null, as_of: nowIso() });
 
 /** A result that is not a read of team data: a drawn visual, a draft, a refusal. No evidence chip. */

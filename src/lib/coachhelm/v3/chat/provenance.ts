@@ -54,6 +54,12 @@ const CoverageState = z.enum([
    */
   'unavailable',
 ]);
+/**
+ * A whole read can also be `not_tracked`: the question asks for something the app does not record at all (a launch
+ * monitor number, which club was hit). Not `empty`: there is no window in which it would exist. `coverage_note` says
+ * what is not recorded and `nearest` names the closest figures that are. A single measurement is never `not_tracked`.
+ */
+const EnvelopeCoverage = z.enum([...CoverageState.options, 'not_tracked']);
 export type CoverageState = z.infer<typeof CoverageState>;
 
 // ---------------------------------------------------------------------------
@@ -243,11 +249,13 @@ export const ToolEnvelope = z.object({
   series: z.array(MeasurementSeries).default([]),
   /** Free-form structured payload for renderers that need more than numbers. */
   detail: z.unknown().optional(),
-  coverage: CoverageState,
+  coverage: EnvelopeCoverage,
   coverage_note: z.string().nullable().default(null),
   as_of: z.string(),
   /** The window the read actually covered, in the scope line's words ("last 10 rounds"). Set by the read wrapper (window-label.ts); absent on older stored reads and on reads with no window. */
   window_label: z.string().optional(),
+  /** With `coverage: 'not_tracked'`: the closest figures the app does record, by the name a coach sees. Empty when nothing is close. */
+  nearest: z.array(z.string()).optional(),
 });
 export type ToolEnvelope = z.infer<typeof ToolEnvelope>;
 

@@ -23,7 +23,8 @@ import { BriefInput, PracticeDraftInput, practiceDraft } from './practice-draft'
 import { getClassTimes, getDrillBank, getPlanFormat } from './practice-reads';
 import { nowIso, type Measurement, type ToolEnvelope } from './provenance';
 import { getFocusAreas, getOpenTasks, getPlayerInsights, getTeamTravel } from './read-tools';
-import { empty, failed, nameOf, notice, ownOrOne, part, playerOf, say, teamOf, together, withText } from './reader-kit';
+import { findNotTracked } from './not-tracked';
+import { empty, failed, nameOf, notice, notTracked, ownOrOne, part, playerOf, say, teamOf, together, withText } from './reader-kit';
 import { screenLoaders, STATS_WINDOWS } from './screen-loaders';
 import { getProximityByBand, getShotPattern } from './shot-reads';
 import { SummariseInputCoach, SummariseInputPlayer, summariseData, type SummariseInput } from './summarise-data';
@@ -323,7 +324,9 @@ async function runReference(ctx: ToolContext, input: ReferenceInput): Promise<To
   const me = playerOf(ctx);
   switch (input.topic) {
     case 'golf':
-      return input.about ? getGolfReference({ topic: input.about }) : failed('the golf reference', 'Say what it is about in a few words.');
+      if (!input.about) return failed('the golf reference', 'Say what it is about in a few words.');
+      // Something the app does not record is answered as that, with the nearest thing it does record, before any golf text.
+      return ((hit) => (hit ? notTracked(hit) : getGolfReference({ topic: input.about as string })))(findNotTracked(input.about));
     case 'metric_definitions':
       return getMetricDefinitions(ctx.sb, { metric_ids: input.metric_ids, category: input.category });
     case 'standards': {
@@ -345,7 +348,7 @@ async function runReference(ctx: ToolContext, input: ReferenceInput): Promise<To
 
 /** The metrics a standard or a definition can be asked for by id: a closed list, so the model cannot misspell one. Others are reached by category. */
 const REFERENCE_METRIC_IDS = [...new Set([...METRIC_IDS, ...BENCHMARK_METRIC_IDS])] as [string, ...string[]];
-const referenceFields = { about: z.string().min(2).max(120).optional().describe('golf: a topic name from the golf section of your instructions, or the subject in a few words.'), metric_ids: z.array(z.enum(REFERENCE_METRIC_IDS)).max(12).optional(), category: z.enum(DEFINITION_CATEGORIES).optional().describe('metric_definitions: every metric of one kind.'), levels: z.array(z.enum(BENCHMARK_LEVELS)).min(1).max(6).optional(), window: z.enum(STATS_WINDOWS).optional() };
+const referenceFields = { about: z.string().min(2).max(120).optional().describe('golf: a topic name from the golf section of your instructions, or the subject in a few words. Ask here for something the app may not record (ball speed, the club hit): it answers "not tracked" with the nearest figure that is.'), metric_ids: z.array(z.enum(REFERENCE_METRIC_IDS)).max(12).optional(), category: z.enum(DEFINITION_CATEGORIES).optional().describe('metric_definitions: every metric of one kind.'), levels: z.array(z.enum(BENCHMARK_LEVELS)).min(1).max(6).optional(), window: z.enum(STATS_WINDOWS).optional() };
 export const getReference: ReadTool<ReferenceInput> = {
   kind: 'read',
   name: 'get_reference',
