@@ -5821,6 +5821,14 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   .ch-hm[data-ch-crh='on'] .ch-hm-tl__b {
     flex: 1 1 auto;
   }
+  /* An event's name takes a second line before it is cut: at the largest Text Size one line left "Short-game …". */
+  .ch-hm[data-ch-crh='on'] .ch-hm-tl__b b {
+    display: -webkit-box;
+    overflow: hidden;
+    white-space: normal;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
 }
 
 /* Up next as one row on the player's Home (dashboard cuts, 6). */
