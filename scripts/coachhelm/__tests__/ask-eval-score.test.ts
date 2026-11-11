@@ -288,6 +288,8 @@ describe('ask-eval: a turn the API only accepted after a feature was given up', 
 
   it('is degraded, never complete or a card; a turn that ran as configured is unchanged', () => {
     expect(turn(undefined, 'complete').dropped).toEqual([]);
+    // The turn's tokens are kept as the server counted them.
+    expect(turn(undefined, 'complete').tokens).toEqual({ prompt: 10, cacheRead: 0, cacheWrite: 0, output: 2 });
     expect(verdictOf(turn(undefined, 'complete'))).toBe('complete');
     expect(turn(['strict_tools'], 'complete').dropped).toEqual(['strict_tools']);
     expect(verdictOf(turn(['strict_tools'], 'complete'))).toBe('degraded');
@@ -320,7 +322,7 @@ describe('ask-eval: a turn the API only accepted after a feature was given up', 
     const question = { id: 'count-rounds', category: 'count', viewer: 'coach', ask: 'How many rounds?', facts: [{ label: 'rounds 8', kind: 'number', value: 8 }] };
     const rows = [
       { question, verdict: 'degraded', text: 'The team has played 8 rounds.', seconds: 9, cost: 0.2, note: 'ran without strict_tools (the API rejected a request that carried it): the API rejected a request (400 invalid_request_error) and it was sent again without strict_tools: tools: Too many strict tools (33).', tools: ['get_team_stats'], failedReads: [], dropped: ['strict_tools'], grounded: true, unmatched: [], model: 'anthropic/claude-sonnet-5-5', scored: score(question, 'The team has played 8 rounds.'), sense: null },
-      { question, verdict: 'complete', text: 'The team has played 8 rounds.', seconds: 9, cost: 0.03, note: '', tools: ['get_team_stats'], failedReads: [], dropped: [], grounded: true, unmatched: [], model: 'anthropic/claude-sonnet-5-5', scored: score(question, 'The team has played 8 rounds.'), sense: null },
+      { question, verdict: 'complete', text: 'The team has played 8 rounds.', seconds: 9, cost: 0.03, note: '', tools: ['get_team_stats'], failedReads: [], dropped: [], tokens: { prompt: 68373, cacheRead: 34000, cacheWrite: 2400, output: 473 }, grounded: true, unmatched: [], model: 'anthropic/claude-sonnet-5-5', scored: score(question, 'The team has played 8 rounds.'), sense: null },
     ];
     const text = reportLines({ report: rows, asked: 2, skipped: [], base: 'http://localhost:3200', ref: 'staging-ref', team: 'Demo University Golf', maxUsd: 25, stoppedBecause: '', at: '2026-11-11T04:00:00.000Z' }).join('\n');
     expect(text).toContain('Verdicts: complete 1, card 0, declined 0, degraded 1, failed 0, stopped 0, incomplete 0, error 0.');
@@ -328,6 +330,7 @@ describe('ask-eval: a turn the API only accepted after a feature was given up', 
     // Both answers state the right figure; only the one that ran as configured counts.
     expect(text).toContain('Data questions fully right: 1 of 2.');
     expect(text).toContain('### count-rounds (degraded)');
+    expect(text).toContain('Tokens: prompt 68373 (cache read 34000, cache written 2400), output 473.');
     expect(text).toContain('Run note: ran without strict_tools (the API rejected a request that carried it): the API rejected a request (400 invalid_request_error)');
   });
 });

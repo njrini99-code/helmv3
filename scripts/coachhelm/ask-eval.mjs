@@ -708,7 +708,7 @@ try {
     // The data questions are scored on their facts; the golf-sense questions on meaning and reads; every answer on the writing rules.
     const scored = answered && !question.golfSense ? score(question, text) : null;
     const sense = answered ? scoreSense(question.golfSense ? question : { readers: [] }, text, state.tools, writing) : null;
-    report.push({ question, verdict, text, seconds, cost, scored, sense, note, tools: state.tools, failedReads: state.failedReads, dropped: state.dropped, grounded, unmatched, model });
+    report.push({ question, verdict, text, seconds, cost, scored, sense, note, tools: state.tools, failedReads: state.failedReads, dropped: state.dropped, tokens: state.tokens, grounded, unmatched, model });
     if (captureDir && verdict !== 'error') {
       const who = question.viewer === 'player' ? [byName('Cole Bennett')] : roster;
       const fixture = captureFixture({

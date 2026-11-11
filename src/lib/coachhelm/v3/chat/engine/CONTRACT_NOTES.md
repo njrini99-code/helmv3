@@ -1399,3 +1399,34 @@ over all strict tools). A coach's request held 33 strict tools and 72 unions; a 
   (`buildChatLlmCallRow` with `coachId: null, playerId`), keyed by the turn's own id; a ledger that refuses it is
   logged once per process.
 
+E34. **After the first live run: the close listeners, the cost of the first turn, the two held migrations (11 Nov 2026).**
+- **`MaxListenersExceededWarning: 11 close listeners added to [ServerResponse]`.** Not the chat code. The chat never
+  sees the response: the only thing it listens to is the request's abort signal, one listener a request, removed when
+  the turn ends (`engine/turn.ts`; pinned by "what a turn hangs on the request" in the route suite: one listener for
+  nine model calls, for a rejected-and-retried call, and for a request the browser left). The `close` listeners on a
+  dev response are each added once per response: Next 16.3.8's dev stack adds about seven (`router-server.js:262`,
+  `:358`, `next-dev-server.js:389`, the route template's `signalFromNodeResponse`, `pipe-readable.js` twice), `after()`
+  two (`after-context.js:35`, `:126`, however many times `after()` is called), and Sentry's http integration three or
+  four (`@sentry/core` `server-subscription.js:88`, `:240`, `record-request-session.js:17`, `@sentry/node-core`
+  `httpServerSpansIntegration.js:106`). That is past Node's default of ten on any streaming route handler that calls
+  `after()` under `next dev` with Sentry on. Node prints the warning once per emitter, at the eleventh, so "11" is not a
+  count that grows. Nothing to fix here; read from the installed sources, not measured on a running server.
+- **The first coach turn's $0.274.** The staging ledger row: 68,373 prompt tokens, 473 output tokens. Output is $0.005.
+  The input is billed at $3.95 a million tokens on average, which is the one-hour cache-write rate ($4): nearly every
+  prompt token of the turn was a cache WRITE. Two calls of about 33,000 prompt tokens each wrote the prefix twice. That
+  only fits one sequence: the FIRST request, with every feature on, was accepted and wrote the prefix (about $0.13);
+  the SECOND request (the one that carries the read's result) was rejected; its plain retry has different tool
+  definitions, so it could read nothing of the first write and wrote the whole prefix again (about $0.13, plus the read's
+  result). A rejected request returns no usage and is not billed. The third turn ($0.033, 71,307 prompt tokens) read
+  both prefixes from the cache. So the rejection doubled the first turn's cost, and what the API objects to is
+  something only the second request of a turn carries: a `tool_result` holding a `search_result` block with citations on
+  (beside strict tools), the echoed assistant turn's thinking blocks, or, on a coach surface, the code tool's container.
+  This is an inference from totals (the per-call split is logged only in production); the next run's log line names it.
+  The `usage` event now also carries `cache_creation_input_tokens`, and the eval report prints each turn's prompt,
+  cache-read, cache-written and output tokens, so a cost can be split without the ledger.
+- **`20261110120000` and `20261110130000`.** Neither holds its own `BEGIN`/`COMMIT` any more (`db:apply` runs the file
+  and its ledger row in one transaction; `SET lock_timeout`, as `20261107090400` does). `20261110120000` no longer
+  counts the table's policies in its VERIFY or its pgTAP (the held `20261101090200` adds four to the same table): both
+  assert that `chat_messages_coach_only` is still there, FOR ALL. Not run here (pgTAP runs in CI). The other held Ask
+  migrations (`20261101090000`, `20261101090200`) also hold their own `BEGIN`/`COMMIT`; they are not this worker's.
+

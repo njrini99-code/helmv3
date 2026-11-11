@@ -2,7 +2,7 @@
 -- conversation). HELD: the migration is written and not applied.
 --
 -- Proves: the two columns exist, are jsonb and nullable; a model_messages value must be an array and a pending_decision
--- value an object; the table still has exactly one policy and RLS on; the owning coach reads and writes the new columns
+-- value an object; the coach policy is still there and RLS is on; the owning coach reads and writes the new columns
 -- on their own rows and another coach reads none and changes none; anon has no access.
 -- WRITTEN, NOT RUN where it was authored (the local database stack was in use by another worker): run with
 -- npm run test:rls before applying.
@@ -25,10 +25,15 @@ SELECT ok(
   (SELECT relrowsecurity FROM pg_class WHERE oid = 'public.golf_coachhelm_chat_messages'::regclass),
   'RLS is still enabled on golf_coachhelm_chat_messages'
 );
-SELECT is(
-  (SELECT count(*)::int FROM pg_policies WHERE schemaname = 'public' AND tablename = 'golf_coachhelm_chat_messages'),
-  1,
-  'the table still has exactly one policy'
+-- What the migration guarantees is that it touches no policy: the coach policy is still there, still FOR ALL. How many
+-- policies the table has is not its business (the held 20261101090200 adds four player policies to this table).
+SELECT ok(
+  EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'golf_coachhelm_chat_messages'
+      AND policyname = 'chat_messages_coach_only' AND cmd = 'ALL'
+  ),
+  'the coach policy chat_messages_coach_only is still there, FOR ALL'
 );
 
 DO $$

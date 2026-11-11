@@ -188,7 +188,7 @@ async function runTurn(deps: TurnDeps, input: TurnInput, signal: AbortSignal, se
   const finish = async (status: ChatTurnStatus, stop: TurnSummary['stop'], error: unknown, grounding: { grounded: boolean; unmatched: string[] }, before: readonly ChatUIPart[]) => {
     // `features_dropped`: the request features this turn had to give up to be accepted. Names only, never the API's words.
     const gaveUp = state.dropped.map((d) => d.group);
-    send({ type: 'usage', input_tokens: usage.input + usage.cacheRead + usage.cacheWrite, output_tokens: usage.output, cache_read_input_tokens: usage.cacheRead, ...(gaveUp.length > 0 ? { features_dropped: gaveUp } : {}) });
+    send({ type: 'usage', input_tokens: usage.input + usage.cacheRead + usage.cacheWrite, output_tokens: usage.output, cache_read_input_tokens: usage.cacheRead, cache_creation_input_tokens: usage.cacheWrite, ...(gaveUp.length > 0 ? { features_dropped: gaveUp } : {}) });
     // The turn's work, beside its whole duration: how many steps, and for how long at least one of them was running.
     const work = workOf(ui.parts);
     send({ type: 'done', status, duration_ms: Date.now() - started, ...(work.steps > 0 ? { work } : {}) });

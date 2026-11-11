@@ -12,7 +12,9 @@
 --   existing column, policy, grant or index changes, and every row valid today
 --   stays valid (the column is NULL on every existing row). ADD COLUMN with no
 --   default is a catalog-only change; the constraint is added NOT VALID and
---   validated in a second statement. The table is small (hundreds of rows).
+--   validated in a second statement, both inside the one transaction db:apply
+--   gives the file. The table is small (hundreds of rows) and lock_timeout
+--   bounds the wait at 3s.
 --
 -- What: surface text NULL: which chat surface a conversation was started on
 --   ('ask', 'quick_chat' or 'practice_helper'), written once when the
@@ -52,9 +54,10 @@
 --   surface null again and quick chat's own history shows nothing until new
 --   conversations are labelled. No conversation or message is lost.
 
--- squawk-ignore transaction-nesting
-BEGIN;
-SET LOCAL lock_timeout = '3s';
+-- No BEGIN or COMMIT in this file: db:apply runs the whole file and its ledger
+-- row in one transaction, and a COMMIT here would close that transaction
+-- before the ledger row is written.
+SET lock_timeout = '3s';
 
 ALTER TABLE public.golf_coachhelm_chat_conversations
 ADD COLUMN IF NOT EXISTS surface text NULL;
@@ -79,6 +82,3 @@ $chat_conversation_surface$;
 
 ALTER TABLE public.golf_coachhelm_chat_conversations
 VALIDATE CONSTRAINT golf_coachhelm_chat_conversations_surface_known;
-
--- squawk-ignore transaction-nesting
-COMMIT;

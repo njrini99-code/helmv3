@@ -81,7 +81,7 @@ export function score(question, text) {
  * `tools` is every read the turn ran, by name, once each: the ones the model asked for itself and the ones its code called
  * (`code_execution` is the code step itself). The protocol does not carry a read's input, so `toolCalls[].input` is null.
  */
-export const newTurnState = () => ({ texts: [], dropped: [], open: false, conversationId: null, status: null, durationMs: null, declined: false, error: null, errorKind: null, evidence: 0, tools: [], evidenceParts: [], toolCalls: [], failedReads: [], cards: 0 });
+export const newTurnState = () => ({ texts: [], dropped: [], tokens: null, open: false, conversationId: null, status: null, durationMs: null, declined: false, error: null, errorKind: null, evidence: 0, tools: [], evidenceParts: [], toolCalls: [], failedReads: [], cards: 0 });
 
 /** The words of the answer, without the read markers the engine appends to a sentence (" [e3]"): a marker's digit is not a figure. */
 export const answerText = (state) => state.texts.join('').replace(/[ \t]?\[e\d+\]/g, '');
@@ -130,6 +130,8 @@ export function applyEvent(state, ev) {
   else if (ev.type === 'usage') {
     // The request features the turn gave up because the API rejected them (`features_dropped`); nothing on a turn that ran as configured.
     if (Array.isArray(ev.features_dropped)) state.dropped = ev.features_dropped.filter((g) => typeof g === 'string');
+    // The turn's tokens as the server counted them: every prompt token of its calls, and the parts read from and written to the cache.
+    state.tokens = { prompt: Number(ev.input_tokens ?? 0), cacheRead: Number(ev.cache_read_input_tokens ?? 0), cacheWrite: Number(ev.cache_creation_input_tokens ?? 0), output: Number(ev.output_tokens ?? 0) };
     return state;
   } else if (ev.type === 'phase') return state;
   else if (ev.type === 'done') {
@@ -379,6 +381,8 @@ export function reportLines({ report, asked, skipped, base, ref, team, maxUsd, s
     lines.push(`### ${r.question.id} (${r.verdict})`, '', `Q: ${r.question.ask}`, '');
     if (r.question.note) lines.push(`Note: ${r.question.note}`, '');
     if (r.note) lines.push(`Run note: ${r.note}`, '');
+    // Where the cost went: a first turn writes the prompt to the cache (dearer than plain input), later ones read it (a tenth).
+    if (r.tokens) lines.push(`Tokens: prompt ${r.tokens.prompt} (cache read ${r.tokens.cacheRead}, cache written ${r.tokens.cacheWrite}), output ${r.tokens.output}.`, '');
     if (r.grounded === false) lines.push(`Figures in none of the turn's reads: ${JSON.stringify(r.unmatched ?? [])}`, '');
     if (r.tools.length) lines.push(`Reads: ${r.tools.join(', ')}${r.failedReads?.length ? ` (failed: ${r.failedReads.join(', ')})` : ''}`, '');
     if (r.question.golfSense && r.sense) lines.push(`Reads expected: ${r.sense.reads.expected.length ? r.sense.reads.expected.join(' or ') : 'none needed'} (${yn(r.sense.reads.pass)})`, '');

@@ -240,7 +240,8 @@ export type ChatEvent =
    * `features_dropped`: sent only when the turn could not run as configured: the request feature groups the API rejected and the
    * turn went on without (`engine/model.ts`, `FEATURE_GROUPS`). For the eval and the log, never drawn.
    */
-  | { type: 'usage'; input_tokens: number; output_tokens: number; cache_read_input_tokens: number; features_dropped?: string[] }
+  /** `input_tokens` is every prompt token of the turn's calls; `cache_read_input_tokens` and `cache_creation_input_tokens` are the parts of it read from and written to the cache. */
+  | { type: 'usage'; input_tokens: number; output_tokens: number; cache_read_input_tokens: number; cache_creation_input_tokens?: number; features_dropped?: string[] }
   /** A sentence a coach can act on. Never provider text. */
   | { type: 'error'; message: string; action: ChatErrorAction; kind?: ChatErrorKind }
   /** Last event of every response. `duration_ms`: what this request took. */

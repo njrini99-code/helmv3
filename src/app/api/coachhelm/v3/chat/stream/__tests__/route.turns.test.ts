@@ -587,6 +587,8 @@ describe('the optional request features', () => {
     const { events } = await ask('How is the team scoring?');
     expect(done(events)?.status).toBe('complete');
     expect(usageOf(events)).not.toHaveProperty('features_dropped');
+    // The turn's tokens: every prompt token, and the parts of it read from and written to the cache.
+    expect(usageOf(events)).toMatchObject({ input_tokens: 1000, output_tokens: 20, cache_read_input_tokens: 900, cache_creation_input_tokens: 0 });
     expect(degradedLogs()).toEqual([]);
     expect(turnLogExtra()).toMatchObject({ degraded: false, featuresDropped: [] });
     expect(JSON.stringify(ledgerRows()[0])).not.toContain('features_dropped');
@@ -2028,6 +2030,65 @@ describe('a turn that does not finish', () => {
     expect(row).toMatchObject({ status: 'failed' });
     // A failed turn leaves only the question: its system message would otherwise sit before another user message, which the API rejects.
     expect(row!.model_messages).toEqual([{ role: 'user', content: 'Team?' }]);
+  });
+});
+
+describe('what a turn hangs on the request', () => {
+  // The dev server once warned "11 close listeners added to [ServerResponse]" on this route. The chat code never sees the response:
+  // the only thing it listens to is the request's abort signal, once a request, however many model calls and reads the turn makes.
+  const counted = () => {
+    const controller = new AbortController();
+    const signal = controller.signal;
+    const live = new Set<unknown>();
+    let added = 0;
+    const add = signal.addEventListener.bind(signal);
+    const remove = signal.removeEventListener.bind(signal);
+    signal.addEventListener = ((type: string, listener: EventListener, options?: AddEventListenerOptions) => {
+      added += 1;
+      live.add(listener);
+      add(type, listener, options);
+    }) as typeof signal.addEventListener;
+    signal.removeEventListener = ((type: string, listener: EventListener) => {
+      live.delete(listener);
+      remove(type, listener);
+    }) as typeof signal.removeEventListener;
+    return { controller, signal, added: () => added, live: () => live.size };
+  };
+
+  it('one listener on the request’s signal for a turn of many model calls, and none left when the turn ends', async () => {
+    const steps = Array.from({ length: 8 }, (_, i) => ({ content: [toolUse(`tu_${i}`, 'get_team_stats', {})] }));
+    const model = script(...steps, { content: [text('74.2.')] });
+    const request = counted();
+    const { events } = await post({ message: 'How is the team scoring?', conversation_id: null }, request.signal);
+    expect(done(events)?.status).toBe('complete');
+    expect(model.requests).toHaveLength(9);
+    expect(request.added()).toBe(1);
+    expect(request.live()).toBe(0);
+  });
+
+  it('the same when the API rejects requests on the way: a retried call adds nothing', async () => {
+    const model = script({ content: [], reject: rejected('messages.1: unclear') }, { content: [], reject: rejected('messages.1: unclear') }, { content: [toolUse('tu_1', 'get_team_stats', {})] }, { content: [text('74.2.')] });
+    const request = counted();
+    const { events } = await post({ message: 'How is the team scoring?', conversation_id: null }, request.signal);
+    expect(done(events)?.status).toBe('complete');
+    expect(model.requests).toHaveLength(4);
+    expect(request.added()).toBe(1);
+    expect(request.live()).toBe(0);
+  });
+
+  it('a request the browser left is let go of too', async () => {
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    script({ content: [text('74.2.')], gate });
+    const request = counted();
+    const pending = post({ message: 'How is the team scoring?', conversation_id: null }, request.signal);
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    request.controller.abort();
+    release();
+    const { events } = await pending;
+    expect(done(events)?.status).toBe('stopped');
+    expect(request.added()).toBe(1);
+    expect(request.live()).toBe(0);
   });
 });
 
