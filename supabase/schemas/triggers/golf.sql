@@ -204,3 +204,10 @@ CREATE OR REPLACE TRIGGER "golf_messages_insert_guard" BEFORE INSERT ON "public"
 CREATE OR REPLACE TRIGGER "golf_team_members_join_team_channel" AFTER INSERT OR UPDATE OF "status" ON "public"."golf_team_members" FOR EACH ROW WHEN (("new"."status" = 'active'::"public"."team_member_status")) EXECUTE FUNCTION "helm_private"."golf_team_channel_join_member"();
 
 CREATE OR REPLACE TRIGGER "golf_team_coach_staff_join_team_channel" AFTER INSERT ON "public"."golf_team_coach_staff" FOR EACH ROW EXECUTE FUNCTION "helm_private"."golf_team_channel_join_staff"();
+
+-- Leaving a team (HELD 20261110090400): out of the team's channel and team chats when the last role on the team ends
+CREATE OR REPLACE TRIGGER "golf_team_members_leave_team_chats" AFTER UPDATE OF "status" ON "public"."golf_team_members" FOR EACH ROW WHEN ((("old"."status" = 'active'::"public"."team_member_status") AND ("new"."status" IS DISTINCT FROM 'active'::"public"."team_member_status"))) EXECUTE FUNCTION "helm_private"."golf_team_chats_leave_member"();
+
+CREATE OR REPLACE TRIGGER "golf_team_members_delete_leave_team_chats" AFTER DELETE ON "public"."golf_team_members" FOR EACH ROW EXECUTE FUNCTION "helm_private"."golf_team_chats_leave_member"();
+
+CREATE OR REPLACE TRIGGER "golf_team_coach_staff_leave_team_chats" AFTER DELETE ON "public"."golf_team_coach_staff" FOR EACH ROW EXECUTE FUNCTION "helm_private"."golf_team_chats_leave_staff"();
