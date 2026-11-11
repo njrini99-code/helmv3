@@ -162,7 +162,7 @@ export function modelToolFor(tool: ChatTool, features: ChatFeatures = CHAT_FEATU
   const { $schema: _draft, ...schema } = z.toJSONSchema(tool.input, { io: 'input', unrepresentable: 'any' }) as Record<string, unknown>;
   const base = { name: tool.name, description: tool.description, eager_input_streaming: true };
   // The code may call the reads; a task is only ever asked for directly, so it can be planned, shown and confirmed.
-  const programmatic = features.programmaticReads && tool.kind === 'read';
+  const programmatic = features.programmaticReads && tool.kind === 'read' && !tool.direct_only;
   const callers = programmatic ? { allowed_callers: ['direct' as const, CODE_EXECUTION] } : {};
   if (features.strictTools && !programmatic) {
     try {

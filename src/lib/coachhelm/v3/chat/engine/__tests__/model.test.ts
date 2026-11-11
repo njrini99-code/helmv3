@@ -117,6 +117,10 @@ describe('the model request', () => {
       ['create_event', true, null],
       ['code_execution', null, null],
     ]);
+    // A tool on the read contract that changes something is direct-only: never offered to the code, and still strict.
+    const note = modelToolFor({ ...rounds, name: 'save_note', direct_only: true } as ChatTool);
+    expect(note).toMatchObject({ name: 'save_note', strict: true });
+    expect(note).not.toHaveProperty('allowed_callers');
     // A player's request has no code tool, and its reads are strict.
     const player = request(chatFeatures('player')).tools as Array<{ name: string; strict?: boolean }>;
     expect(player.map((t) => [t.name, t.strict ?? null])).toEqual([['get_rounds', true], ['create_event', true]]);

@@ -593,6 +593,19 @@ describe('the model’s code calling the reads (on for a coach, off for a player
     expect(done(events)?.status).toBe('complete');
   });
 
+  it('a tool on the read contract that changes something cannot be called from code: it never runs', async () => {
+    const save = { ...readTool('save_note', log, 1), direct_only: true };
+    h.toolsFor.mockImplementation(() => asTools(save, readTool('get_team_stats', log, 74.2)));
+    const model = script({ content: [serverCode(), codeToolUse('tu_1', 'save_note', {})], container: 'container_1' }, { content: [text('I will save that directly.')] });
+    await ask('Remember that qualifying is 54 holes');
+    expect(log.reads).toHaveLength(0);
+    const sent = model.requests[0]!.tools as Array<{ name: string; strict?: boolean; allowed_callers?: string[] }>;
+    expect(sent.find((t) => t.name === 'save_note')).toMatchObject({ strict: true });
+    expect(sent.find((t) => t.name === 'save_note')).not.toHaveProperty('allowed_callers');
+    const reply = model.requests[1]!.messages.at(-1) as { content: Array<{ is_error?: boolean; content: string }> };
+    expect(reply.content[0]).toMatchObject({ is_error: true, content: 'This cannot be called from code. Call it directly. Nothing was changed.' });
+  });
+
   it('a request the API rejects with the code tool on is sent again without it, and the turn completes', async () => {
     h.features = { ...plainFeatures(CHAT_FEATURES), citations: true, programmaticReads: true };
     const model = script({ content: [], reject: rejected('tools.6: code_execution_20260120 is not available') }, { content: [text('74.2.')] });

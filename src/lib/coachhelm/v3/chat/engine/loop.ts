@@ -360,6 +360,10 @@ export async function runModelLoop(deps: LoopDeps, state: LoopState): Promise<Lo
             return;
           }
           if (tool.kind === 'read') {
+            if (tool.direct_only && isProgrammatic(block)) {
+              results[block.id] = { is_error: true, content: 'This cannot be called from code. Call it directly. Nothing was changed.' };
+              return;
+            }
             const ran = await runRead(deps, state, tool, parsed.data, progressId, refNumber, isProgrammatic(block));
             results[block.id] = ran.result;
             if (ran.endTurn) endTurn = true;

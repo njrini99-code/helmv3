@@ -570,3 +570,9 @@ E18. What quick chat's landing design asked for (`docs/clubhouse/coachhelm-chat-
      `created: [{ kind, count, id, ids, href }]` with the row's own id and a link to the thing, and add its case to
      `landsFor`. `done(...)` in `../tasks/kit.ts` already passes `created` through unchanged.
 
+E19. `ReadTool.direct_only?: boolean`. A tool on the read contract that changes something is sent without
+     `allowed_callers`, stays strict, and a call to it from the model's code is refused before it runs. **CONTEXT:
+     set `direct_only: true` on `save_note` and `remove_note`** (`../context/notes.ts`); they write the coach's own
+     notes at once, and a write should be something the model asks for itself, as a task is. Until that line is in,
+     the model's code can call them.
+
