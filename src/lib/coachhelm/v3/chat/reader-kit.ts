@@ -58,10 +58,14 @@ export function notTracked(entry: { what: string; nearest: readonly string[]; no
 
 export const empty = (summary: string, detail?: unknown): ToolEnvelope => ({ summary, measurements: [], series: [], ...(detail === undefined ? {} : { detail }), coverage: 'empty', coverage_note: null, as_of: nowIso() });
 
-/** A result that is not a read of team data: a drawn visual, a draft, a refusal. No evidence chip. */
+/**
+ * A result that is not a read of team data: a drawn visual, a draft, a refusal. No evidence chip. With nothing but its
+ * sentence to say, the sentence is all the model is sent; a notice that carries `detail` (the data dictionary, a
+ * thread list) is still sent whole, because the detail is what it is for.
+ */
 export function notice(summary: string, extra: Pick<ToolResult, 'parts' | 'end_turn'> & { detail?: unknown; refused?: boolean } = {}): ToolResult {
   const { refused, detail, ...rest } = extra;
-  return { summary, measurements: [], series: [], ...(detail === undefined ? {} : { detail }), coverage: refused ? 'unavailable' : 'complete', coverage_note: refused ? summary : null, as_of: nowIso(), evidence: false, ...rest };
+  return { summary, measurements: [], series: [], ...(detail === undefined ? { model_text: summary } : { detail }), coverage: refused ? 'unavailable' : 'complete', coverage_note: refused ? summary : null, as_of: nowIso(), evidence: false, ...rest };
 }
 
 export const round = (v: number, digits: number): number => {
