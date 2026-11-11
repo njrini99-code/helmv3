@@ -22,3 +22,10 @@ Changes to `tool.ts` against the contract in the rebuild brief, with the reason 
 - a read that threw, or an input that failed validation: an `is_error` result with one sentence.
 - task proposed: nothing yet; the turn ends on the card. On the coach's decision the result is one of
   `Committed. <receipt summary>`, `Held until HH:MM:SS (the coach can still press Undo). <summary>`, `Declined by the coach. Nothing was written.`, `Failed: <reason>. Nothing was written.` (or what was), `The coach asked something else instead. Nothing was written.`
+
+## 2026-11-10 (ENGINE), after TOOLS delivered the registry
+
+9. `ScreenLoaders` is TOOLS's type (`../screen-loaders.ts`); `tool.ts` re-exports it, so there is one declaration. The route binds every loader that file lists, in `src/app/api/coachhelm/v3/chat/stream/route.ts` (only a route file may import a Clubhouse loader). A player's request binds only the player's own pages, with a teammate's id dropped before the loader is called.
+10. The prompt comes from `instructionBlocks(surface, who, { today, notes })` as `{ policy, team }`; the engine sends them as two cached system blocks in that order.
+11. The grounding check is TOOLS's `checkGrounding(text, reads)` (`../grounding.ts`), called after the turn with the conversation's reads. `engine/grounding.ts` is only the default when none is handed in.
+12. Not on the contract yet: a detail line for a finished progress row ("38 rounds") and the practice picture. The old `progressEnd` added them from the envelope. If TOOLS wants them back, add `progress_detail?: string` to `ToolResult` and the engine will send it on `read_finished` (the event already has a `detail` field).

@@ -118,6 +118,20 @@ describe('useCoachHelmChat', () => {
     expect(result.current.messages[0]!.parts.find((p) => p.type === 'tool-create_focus_area')).toMatchObject({ state: 'output-denied' });
   });
 
+  it('a Confirm whose response was lost can be tried again: the same decision is sent, not a new question', async () => {
+    fetchMock
+      .mockRejectedValueOnce(new TypeError('Failed to fetch'))
+      .mockResolvedValueOnce(sse([{ type: 'message_start', conversation_id: CONVERSATION, message_id: 'a-card', resumed: true }, { type: 'decision', key: KEY, approved: true }, { type: 'done', status: 'complete' }]));
+    const { result } = renderHook(() => useCoachHelmChat({ conversationId: CONVERSATION, initialMessages: [waitingCard] }));
+    act(() => result.current.approve(KEY));
+    await waitFor(() => expect(result.current.status).toBe('error'));
+    act(() => result.current.retry());
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    expect(bodyOf(1)).toMatchObject({ decision: { key: KEY, approved: true } });
+    expect(bodyOf(1)).not.toHaveProperty('message');
+    expect(result.current.messages).toHaveLength(1);
+  });
+
   it('a refused request is an error the thread can explain', async () => {
     fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ error: 'You have reached today’s analysis limit for your program. It resets tomorrow.', reason: 'budget_gated' }), { status: 429 }));
     const { result } = renderHook(() => useCoachHelmChat());

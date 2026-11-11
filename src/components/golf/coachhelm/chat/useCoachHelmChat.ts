@@ -118,6 +118,8 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
   const flushTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   // The last question and the key it was sent under, so a retry dedupes against the turn it is retrying.
   const lastQuestion = React.useRef<{ text: string; key: string } | null>(null);
+  // The last decision sent, so a Confirm whose response was lost can be sent again: the server runs a key at most once.
+  const lastDecision = React.useRef<{ key: string; approved: boolean } | null>(null);
   const endpoint = options.endpoint ?? STREAM_ENDPOINT;
   const surface = options.surface;
 
@@ -244,6 +246,7 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
       const prefix = context.length > 0 ? `[Context: ${context.map((c) => `${c.kind.replace('_', ' ')} ${c.label}`).join('; ')}]\n` : '';
       const question = { text: prefix + trimmed, key: newKey() };
       lastQuestion.current = question;
+      lastDecision.current = null;
       thread.current = [...thread.current, { id: `user-${question.key}`, role: 'user', parts: [{ type: 'text', text: question.text }] }];
       setMessages(thread.current);
       void run({ kind: 'message', ...question });
@@ -252,14 +255,22 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
   );
 
   /**
-   * Ask the last question again under ITS OWN key. The server answers a key
+   * Try again. After a failed decision, the same decision is sent again.
+   * Otherwise ask the last question again under ITS OWN key. The server answers a key
    * that already has an answer with that answer, and replaces a failed attempt
    * instead of adding a second question: a retry can never fork into a thread
    * of duplicates, however many times the coach presses it.
    */
   const retry = React.useCallback(() => {
+    if (inFlight.current) return;
+    // What failed last was a decision: send the same decision again. A key that already ran is answered with its stored outcome.
+    const decision = lastDecision.current;
+    if (decision) {
+      void run({ kind: 'decision', ...decision });
+      return;
+    }
     const question = lastQuestion.current;
-    if (!question || inFlight.current) return;
+    if (!question) return;
     // Whatever the failed attempt drew after the question is replaced by the new answer.
     const at = thread.current.findIndex((m) => m.id === `user-${question.key}`);
     if (at !== -1) thread.current = thread.current.slice(0, at + 1);
@@ -279,6 +290,7 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
     inFlight.current = null;
     conversation.current = null;
     lastQuestion.current = null;
+    lastDecision.current = null;
     thread.current = [];
     setConversationId(null);
     setContext([]);
@@ -299,6 +311,7 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
   const decide = React.useCallback(
     (approvalId: string, approved: boolean) => {
       if (!approvalId || inFlight.current) return;
+      lastDecision.current = { key: approvalId, approved };
       void run({ kind: 'decision', key: approvalId, approved });
     },
     [run],
