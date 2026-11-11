@@ -126,6 +126,10 @@ export function screenContextFromPath(pathname: string, search = ''): ScreenCont
       return base('classes');
     case 'settings':
       return base('settings', { tab: tabOrNull(q.get('section') ?? second) });
+    case 'live':
+      return base('rounds', { tab: 'live' });
+    case 'whats-new':
+      return base('other', { tab: 'whats-new' });
     default:
       return base('other');
   }

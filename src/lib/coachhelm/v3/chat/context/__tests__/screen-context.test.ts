@@ -116,6 +116,14 @@ describe('the screen context a player sends', () => {
     expect(await line(playerWho(), { screen: 'calendar', event_id: EVENT })).toBe('Today is Tue 10 Nov 2026. The player is on Calendar, looking at a practice on Thu 12 Nov 2026.');
   });
 
+  it('an address with no screen of its own is not called by another screen’s name', async () => {
+    expect(await line(coachWho(), { screen: 'other' })).toBe('Today is Tue 10 Nov 2026.');
+    expect(await line(coachWho(), { screen: 'other', tab: 'whats-new' })).toBe('Today is Tue 10 Nov 2026. The coach is on What’s new.');
+    expect(await line(coachWho(), { screen: 'rounds', tab: 'live' })).toBe('Today is Tue 10 Nov 2026. The coach is on Live.');
+    expect(await line(coachWho(), { screen: 'settings' })).toBe('Today is Tue 10 Nov 2026. The coach is on Settings, Account.');
+    expect(await line(coachWho(), { screen: 'coachhelm', tab: 'deep-dive', player_id: AVERY })).toBe('Today is Tue 10 Nov 2026. The coach is on CoachHelm, a player’s Deep dive, looking at Avery Lane.');
+  });
+
   it('is never told about a coach’s screen', async () => {
     expect(await line(playerWho(), { screen: 'recruiting' })).toBe('Today is Tue 10 Nov 2026.');
     expect(await line(playerWho(), { screen: 'team_stats' })).toBe('Today is Tue 10 Nov 2026.');
@@ -194,7 +202,9 @@ describe('the context an address carries', () => {
     [`/golf/dashboard/practice/plan/${PLAN}/edit`, '', { screen: 'practice', tab: 'plan', plan_id: PLAN }],
     ['/golf/dashboard/team-hub', '?tab=tasks', { screen: 'team_hub', tab: 'tasks' }],
     ['/golf/dashboard/settings', '?section=team', { screen: 'settings', tab: 'team' }],
-    ['/golf/dashboard/whats-new', '', { screen: 'other' }],
+    ['/golf/dashboard/whats-new', '', { screen: 'other', tab: 'whats-new' }],
+    ['/golf/dashboard/live', '', { screen: 'rounds', tab: 'live' }],
+    ['/golf/dashboard/courses', '', { screen: 'other' }],
   ])('%s%s', (path, search, want) => {
     const got = screenContextFromPath(path, search);
     expect(got).toEqual(want);

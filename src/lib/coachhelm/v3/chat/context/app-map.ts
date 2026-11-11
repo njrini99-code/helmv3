@@ -101,7 +101,10 @@ export function placesFor(role: AppRole, opts: PlaceOptions = {}): AppPlace[] {
 /** The place a screen context names, for the role: the tab's own place when there is one, else the screen's first. */
 export function placeForScreen(role: AppRole, screen: ScreenId, tab: string | null | undefined, opts: PlaceOptions = {}): AppPlace | null {
   const of = placesFor(role, opts).filter((p) => p.screen === screen);
-  return (tab ? of.find((p) => p.tab === tab) : undefined) ?? of.find((p) => !p.tab || p.tab === 'home') ?? of[0] ?? null;
+  const byTab = tab ? of.find((p) => p.tab === tab) : undefined;
+  // `other` is every address with no screen of its own: only a named tab says which place it is.
+  if (screen === 'other') return byTab ?? null;
+  return byTab ?? of.find((p) => !p.tab || p.tab === 'home') ?? of[0] ?? null;
 }
 
 /** The address of a place, with the player's id put in where the place is opened for one player. Null when it needs a player and none was given. */

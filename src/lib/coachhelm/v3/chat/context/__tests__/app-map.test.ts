@@ -86,7 +86,7 @@ describe('the app map', () => {
   });
 
   it('the address helper and the map agree on the screen of every place', () => {
-    for (const p of APP_PLACES) expect(screenContextFromPath(pathOf(hrefOf(p, AVERY)!), `?${queryOf(hrefOf(p, AVERY)!).toString()}`)?.screen, p.id).toBe(p.id === 'live' ? 'other' : p.screen);
+    for (const p of APP_PLACES) expect(screenContextFromPath(pathOf(hrefOf(p, AVERY)!), `?${queryOf(hrefOf(p, AVERY)!).toString()}`)?.screen, p.id).toBe(p.screen);
   });
 });
 
