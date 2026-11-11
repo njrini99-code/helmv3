@@ -303,3 +303,258 @@ describe('commitOnce', () => {
     expect(failedReceipt('create_event', 'not_there', 'That didn’t go through. Nothing was saved.', 'the Calendar').summary).toBe('That didn’t go through. Nothing was saved.');
   });
 });
+
+/**
+ * The card is the truth: what a coach checks is read by the server, the model's input is intent only, and `commit`
+ * refuses, without calling the app's action, when the world no longer matches the card.
+ */
+describe('the card is the truth', () => {
+  const P2 = '00000000-0000-4000-8000-000000000002';
+  const tool = (name: string) => all().find((t) => t.name === name)!;
+  const plan = (name: string, input: unknown, who: CoachChatContext = coach) => tool(name).plan(ctx(who), tool(name).input.parse(input));
+  const commit = (name: string, proposal: TaskProposal) => tool(name).commit(ctx(), { ...proposal, idempotency_key: `${proposal.idempotency_key}:card` });
+  const factOf = (p: TaskProposal, label: string) => p.facts.find((f) => f.label === label || f.label.startsWith(`${label} (`))?.value;
+  const two: CoachChatContext = { ...coach, roster: [person(P1, 'Eli Brandt'), person(P2, 'Maya Ortiz')] };
+
+  it('lock_lineup names the tournament and every seat, says what locking does, and that it cannot be undone', async () => {
+    world.tables.golf_tournament_entries = [{ player_id: P2, role: 'alternate', slot: null }, { player_id: P1, role: 'lineup', slot: 1 }];
+    const card = await plan('lock_lineup', SAMPLES.lock_lineup, two);
+    expect(factOf(card, 'Tournament')).toBe('Fall Classic · 2026-11-14 to 2026-11-15');
+    expect(factOf(card, 'Lineup')).toBe('1. Eli Brandt\nAlternate: Maya Ortiz');
+    expect(factOf(card, 'What locking does')).toMatch(/copied to every round/);
+    expect(card.undo).toEqual({ window: false, after: expect.stringMatching(/cannot be unlocked, here or anywhere in the app\. This tournament allows substitutions/) });
+    expect(card.impact).toMatch(/can no longer be edited/);
+    expect(card.visual).toMatchObject({ kind: 'lineup', locking: true, tournament: { name: 'Fall Classic' }, seats: [{ slot: 1, name: 'Eli Brandt', id: P1 }, { name: 'Maya Ortiz', alternate: true }] });
+    expect(card.affects.map((a) => a.id)).toEqual([P1, P2]);
+    // A tournament that does not allow substitutions says so.
+    world.tables.golf_tournaments = [{ ...(world.tables.golf_tournaments![0] as object), substitutions: false }];
+    expect((await plan('lock_lineup', SAMPLES.lock_lineup, two)).undo?.after).toMatch(/does not allow substitutions/);
+    expect(world.actionCalls).toEqual([]);
+  });
+
+  it('lock_lineup gives no card for a lineup that is not there, is already locked, or is on another team', async () => {
+    world.tables.golf_tournament_entries = [];
+    await expect(plan('lock_lineup', SAMPLES.lock_lineup)).rejects.toThrow(/No lineup is set on Fall Classic/);
+    world.tables = { ...WORLD(), golf_tournaments: [{ ...(WORLD().golf_tournaments![0] as object), lineup_locked_at: '2026-11-09T10:00:00Z' }] };
+    await expect(plan('lock_lineup', SAMPLES.lock_lineup)).rejects.toThrow(/already locked \(since 2026-11-09\)/);
+    world.tables = { ...WORLD(), golf_tournaments: [{ ...(WORLD().golf_tournaments![0] as object), team_id: 'another-team' }] };
+    await expect(plan('lock_lineup', SAMPLES.lock_lineup)).rejects.toBeInstanceOf(CoachContextError);
+    await expect(plan('set_lineup', SAMPLES.set_lineup)).rejects.toBeInstanceOf(CoachContextError);
+  });
+
+  it('lock_lineup does not lock a lineup the coach has not seen: a seat changed after the card', async () => {
+    const card = await plan('lock_lineup', SAMPLES.lock_lineup, two);
+    world.tables.golf_tournament_entries = [{ player_id: P2, role: 'lineup', slot: 1 }];
+    const receipt = await tool('lock_lineup').commit(ctx(two), { ...card, idempotency_key: 'lock-card' });
+    expect(receipt).toMatchObject({ status: 'failed', retryable: false, error: 'card_out_of_date' });
+    expect(receipt.summary).toMatch(/changed after this card was made.*it was not locked/);
+    expect(world.actionCalls).toEqual([]);
+  });
+
+  it('set_lineup reads the tournament and what it replaces, and refuses when the lineup moved', async () => {
+    const card = await plan('set_lineup', { tournament_id: ID, entries: [{ player_id: P2, role: 'lineup', slot: 1, reasoning: 'Best last three rounds' }, { player_id: P1, role: 'alternate', slot: null }] }, two);
+    expect(factOf(card, 'Tournament')).toBe('Fall Classic · 2026-11-14 to 2026-11-15');
+    expect(factOf(card, 'Replaces')).toBe('1. Eli Brandt');
+    expect(factOf(card, 'Reasoning')).toBe('Maya Ortiz: Best last three rounds');
+    expect(card.visual).toMatchObject({ kind: 'lineup', tournament: { name: 'Fall Classic', date: '2026-11-14' }, replaces: [{ slot: 1, name: 'Eli Brandt' }], seats: [{ name: 'Maya Ortiz', reasoning: 'Best last three rounds' }, { name: 'Eli Brandt', alternate: true }] });
+    // The write carries the version the card read, never one from the model.
+    const { setTournamentEntries } = await import('@/app/golf/actions/tournaments');
+    vi.mocked(setTournamentEntries).mockClear();
+    await tool('set_lineup').commit(ctx(two), { ...card, idempotency_key: 'lineup-ok' });
+    expect(vi.mocked(setTournamentEntries).mock.calls[0]?.[2]).toBe(3);
+    // Someone else changed the lineup after the card: nothing is written.
+    world.actionCalls.length = 0;
+    world.landed = false;
+    world.tables.golf_tournaments = [{ ...(WORLD().golf_tournaments![0] as object), version: 4 }];
+    const stale = await tool('set_lineup').commit(ctx(two), { ...card, idempotency_key: 'lineup-stale' });
+    expect(stale).toMatchObject({ status: 'failed', error: 'card_out_of_date' });
+    expect(stale.summary).toMatch(/Nothing was changed/);
+    expect(world.actionCalls).toEqual([]);
+  });
+
+  it('publish_practice_plan: who is told, when, and what each one gets come from the plan, not from the model', async () => {
+    const card = await plan('publish_practice_plan', { plan_id: ID, version: 1, team_chat: true });
+    expect(card.recipients).toEqual([{ id: P1, name: 'Eli Brandt', role: 'player' }]);
+    expect(card.action).toBe('Publish to 1 person');
+    expect(card.publish?.people).toEqual([{ id: P1, name: 'Eli Brandt', role: 'player' }]);
+    expect(card.delivery?.title).toMatch(/^Practice plan for \w+day$/);
+    expect(card.delivery?.body).toMatch(/· You start on Putting green$/);
+    expect(card.delivery?.each).toEqual([{ id: P1, name: 'Eli Brandt', body: card.delivery?.body }]);
+    expect(card.publish?.chatPost).toMatch(/^Thursday practice is published\. .*\/golf\/dashboard\/practice\/plan\/00000000-0000-4000-8000-0000000000aa$/);
+    expect(factOf(card, 'Team chat')).toBe(card.publish?.chatPost);
+    expect(factOf(card, 'What they get')).toBe(`${card.delivery?.title}\n${card.delivery?.body}`);
+    // The Team chat post that goes out is the card's, word for word.
+    const { sendMessage } = await import('@/app/actions/messages');
+    vi.mocked(sendMessage).mockClear();
+    const { createClient } = await import('@/lib/supabase/server');
+    vi.mocked(createClient).mockResolvedValueOnce({ from: () => ({ select: () => ({ eq: () => ({ eq: () => ({ limit: () => ({ maybeSingle: async () => ({ data: { id: 'team-channel' }, error: null }) }) }) }) }) }) } as never);
+    const receipt = await commit('publish_practice_plan', card);
+    expect(receipt.status).toBe('completed');
+    expect(vi.mocked(sendMessage).mock.calls[0]?.[0]).toMatchObject({ content: card.publish?.chatPost });
+    expect(receipt.notifications).toEqual([{ channel: 'push and bell', recipients: 1, status: 'queued', to: ['Eli Brandt'] }]);
+    expect(receipt.href).toBe(`/golf/dashboard/practice/plan/${ID}`);
+  });
+
+  it('publish_practice_plan names a player with no account as not reached, and gives no card for a plan saved again or on another team', async () => {
+    world.tables.golf_players = [{ id: P1, user_id: null }];
+    const card = await plan('publish_practice_plan', SAMPLES.publish_practice_plan);
+    expect(card.recipients).toEqual([]);
+    expect(card.delivery).toBeNull();
+    expect(factOf(card, 'Tells')).toMatch(/^Nobody/);
+    world.tables = { ...WORLD(), golf_practice_plans: [{ ...(WORLD().golf_practice_plans![0] as object), version: 2 }] };
+    await expect(plan('publish_practice_plan', SAMPLES.publish_practice_plan)).rejects.toThrow(/saved again after Publish was pressed/);
+    world.tables = { ...WORLD(), golf_practice_plans: [{ ...(WORLD().golf_practice_plans![0] as object), team_id: 'another-team' }] };
+    await expect(plan('publish_practice_plan', SAMPLES.publish_practice_plan)).rejects.toBeInstanceOf(CoachContextError);
+  });
+
+  it('publish_practice_plan refuses when the plan was edited after the card: nothing is published and nobody is told', async () => {
+    const card = await plan('publish_practice_plan', SAMPLES.publish_practice_plan);
+    world.tables.golf_practice_plans = [{ ...(WORLD().golf_practice_plans![0] as object), version: 2, title: 'Friday practice' }];
+    const receipt = await commit('publish_practice_plan', card);
+    expect(receipt).toMatchObject({ status: 'failed', error: 'card_out_of_date', retryable: false });
+    expect(receipt.summary).toMatch(/Nothing was published and nobody was told/);
+    expect(world.actionCalls).toEqual([]);
+  });
+
+  it('send_message: the thread, its members by name and the count come from the thread itself', async () => {
+    world.tables.golf_conversations = [{ id: ID, title: 'Travel squad', team_id: 'team-1', golf_conversation_participants: [{ user_id: 'u1' }, { user_id: 'u-p1' }, { user_id: 'u-c2' }, { user_id: 'u-unknown' }] }];
+    world.tables.golf_coaches = [{ id: 'c2', user_id: 'u-c2', full_name: 'Dana Wu' }];
+    const card = await plan('send_message', SAMPLES.send_message);
+    expect(card.recipients).toEqual([{ id: P1, name: 'Eli Brandt', role: 'player' }, { id: 'c2', name: 'Dana Wu', role: 'coach' }]);
+    expect(card.visual).toMatchObject({ kind: 'msg', thread: 'Travel squad', count: 3, members: ['Eli Brandt', 'Dana Wu', '1 more'], draft: 'See you at three.' });
+    expect(card.action).toBe('Send to 3 people');
+    expect(factOf(card, 'To')).toBe('Eli Brandt, Dana Wu and 1 more');
+    expect(card.delivery).toMatchObject({ title: 'Travel squad', body: 'See you at three.' });
+    // The model has nowhere to put a count, a thread name or a last message.
+    expect(Object.keys((tool('send_message').input as unknown as { shape?: object }).shape ?? { conversation_id: 1, content: 1 }).sort()).toEqual(['content', 'conversation_id']);
+  });
+
+  it('send_message gives no card for a thread on another team or one the coach is not in, and does not send when the members changed', async () => {
+    world.tables.golf_conversations = [{ id: ID, title: 'Team', team_id: 'another-team', golf_conversation_participants: [{ user_id: 'u1' }, { user_id: 'u-p1' }] }];
+    await expect(plan('send_message', SAMPLES.send_message)).rejects.toBeInstanceOf(CoachContextError);
+    world.tables.golf_conversations = [{ id: ID, title: 'Team', team_id: 'team-1', golf_conversation_participants: [{ user_id: 'u-p1' }] }];
+    await expect(plan('send_message', SAMPLES.send_message)).rejects.toThrow(/You are not in that thread/);
+    world.tables = WORLD();
+    const card = await plan('send_message', SAMPLES.send_message);
+    world.tables.golf_conversations = [{ id: ID, title: 'Team', team_id: 'team-1', golf_conversation_participants: [{ user_id: 'u1' }, { user_id: 'u-p1' }, { user_id: 'u-new' }] }];
+    const receipt = await commit('send_message', card);
+    expect(receipt).toMatchObject({ status: 'failed', error: 'card_out_of_date' });
+    expect(receipt.summary).toMatch(/Nothing was sent/);
+    expect(world.actionCalls).toEqual([]);
+  });
+
+  it('set_availability_note: what it replaces is read by the server, and a note that changed since is not overwritten', async () => {
+    world.tables.golf_player_availability_coach_notes = [{ note: 'Class until two on Tuesdays' }];
+    const card = await plan('set_availability_note', SAMPLES.set_availability_note);
+    expect(factOf(card, 'Replaces')).toBe('Class until two on Tuesdays');
+    expect(card.visible_to).toBe('coaches');
+    world.tables.golf_player_availability_coach_notes = [{ note: 'Injured wrist, back next week' }];
+    const receipt = await commit('set_availability_note', card);
+    expect(receipt).toMatchObject({ status: 'failed', error: 'card_out_of_date' });
+    expect(world.actionCalls).toEqual([]);
+    // With nothing saved the card says so, and never takes a "replaces" from the model.
+    world.tables.golf_player_availability_coach_notes = [];
+    expect(factOf(await plan('set_availability_note', { ...(SAMPLES.set_availability_note as object), existing: 'made up' }), 'Replaces')).toMatch(/^Nothing/);
+  });
+
+  it('add_round_note: the round is named by course, date and score; another player’s round gets no card; a changed note is not written over', async () => {
+    const card = await plan('add_round_note', SAMPLES.add_round_note);
+    expect(factOf(card, 'Round')).toBe('Pine Hill · 2026-11-01 · 74');
+    expect(card.visual).toMatchObject({ kind: 'note', round: { course: 'Pine Hill', date: '2026-11-01', score: 74 } });
+    world.tables.golf_round_reviews = [{ coach_notes: 'Someone else wrote this meanwhile' }];
+    const receipt = await commit('add_round_note', card);
+    expect(receipt).toMatchObject({ status: 'failed', error: 'card_out_of_date' });
+    expect(world.actionCalls).toEqual([]);
+    world.tables = { ...WORLD(), golf_rounds: [{ id: ID, player_id: P2, course_name: 'Pine Hill', round_date: '2026-11-01', total_score: 74 }] };
+    await expect(plan('add_round_note', SAMPLES.add_round_note, two)).rejects.toBeInstanceOf(CoachContextError);
+  });
+
+  it('who is told is a list of people by id; a player with no account is named as not reached and never counted', async () => {
+    world.tables.golf_players = [{ id: P1, user_id: 'u-p1' }, { id: P2, user_id: null }];
+    const card = await plan('create_qualifier', { ...(SAMPLES.create_qualifier as object), player_ids: [P1, P2] }, two);
+    expect(card.recipients).toEqual([{ id: P1, name: 'Eli Brandt', role: 'player' }]);
+    expect(card.not_reached).toEqual([{ id: P2, name: 'Maya Ortiz', role: 'player', reason: 'no account yet' }]);
+    expect(card.affects.map((a) => a.id)).toEqual([P1, P2]);
+    expect(card.notifications[0]).toMatch(/^1 player gets a push/);
+    expect(factOf(card, 'Will not get it')).toBe('Maya Ortiz (no account yet)');
+    expect(card.delivery).toMatchObject({ title: 'New Qualifier Posted', body: 'Fall qualifier' });
+    const receipt = await tool('create_qualifier').commit(ctx(two), { ...card, idempotency_key: 'q-1' });
+    expect(receipt.notifications[0]).toMatchObject({ recipients: 1, to: ['Eli Brandt'] });
+    expect(receipt.missed).toEqual([{ name: 'Maya Ortiz', reason: 'no account yet' }]);
+    // An event that does not ask for replies tells nobody, whoever is invited.
+    const quiet = await plan('create_event', { ...(SAMPLES.create_event as object), invite_player_ids: [P1] });
+    expect(quiet).toMatchObject({ recipients: [], delivery: null, notifications: ['Nobody is told.'], visible_to: 'team' });
+    expect(quiet.affects).toEqual([{ kind: 'player', id: P1, label: 'Eli Brandt' }]);
+    const asked = await plan('create_event', { ...(SAMPLES.create_event as object), invite_player_ids: [P1], requires_rsvp: true });
+    expect(asked.delivery).toMatchObject({ title: 'RSVP Reminder', body: 'Please RSVP for Team practice' });
+  });
+
+  it.each(['create_qualifier', 'create_task', 'create_focus_area', 'create_team_announcement', 'create_recurring_practice', 'create_goal'])('%s: a recipient who left the team after the card means nothing is saved or sent', async (name) => {
+    const input = name === 'create_qualifier' ? { ...(SAMPLES[name] as object), player_ids: [P1, P2] } : name === 'create_recurring_practice' ? { ...(SAMPLES[name] as object), requires_rsvp: true } : name === 'create_goal' || name === 'create_focus_area' ? { ...(SAMPLES[name] as object), player_id: P2 } : SAMPLES[name];
+    world.tables.golf_players = [{ id: P1, user_id: 'u-p1' }, { id: P2, user_id: 'u-p2' }];
+    const card = await plan(name, input, two);
+    expect(card.recipients?.map((p) => p.id)).toContain(P2);
+    // Maya is off the roster by the time the Undo window closes.
+    const receipt = await tool(name).commit(ctx(coach), { ...card, idempotency_key: `${name}-left` });
+    expect(receipt).toMatchObject({ status: 'failed', error: 'card_out_of_date', retryable: false });
+    expect(receipt.summary).toMatch(/Maya Ortiz is no longer on your roster.*Nothing was saved/);
+    expect(world.actionCalls).toEqual([]);
+  });
+
+  it('create_team_announcement to the whole team is not sent to someone who joined after the card', async () => {
+    const card = await plan('create_team_announcement', SAMPLES.create_team_announcement);
+    world.tables.golf_players = [{ id: P1, user_id: 'u-p1' }, { id: P2, user_id: 'u-p2' }];
+    const receipt = await tool('create_team_announcement').commit(ctx(two), { ...card, idempotency_key: 'ann-joined' });
+    expect(receipt.summary).toMatch(/Maya Ortiz joined the roster after this card was made/);
+    expect(world.actionCalls).toEqual([]);
+  });
+
+  it('create_goal shows where the player stands, the unit and which way is better; a planned task shows the words the player gets', async () => {
+    const goal = await plan('create_goal', SAMPLES.create_goal);
+    expect(goal.visual).toMatchObject({ kind: 'goal', current: null, better: 'up', unit: expect.any(String) });
+    expect(factOf(goal, 'Now')).toMatch(/No rounds in the last 90 days/);
+    expect(factOf(goal, 'Better is')).toBe('Higher');
+    expect(goal.delivery).toMatchObject({ title: 'New goal from your coach', body: 'Greens, 30-day goal' });
+    const focus = await plan('create_focus_area', { ...(SAMPLES.create_focus_area as object), description: 'Three balls from 40 feet, every practice' });
+    expect(focus.delivery).toMatchObject({ title: 'New focus area', body: 'Sam Reyes assigned "Lag putting"' });
+    expect(factOf(focus, 'Details')).toBe('Three balls from 40 feet, every practice');
+    const task = await plan('create_task', { ...(SAMPLES.create_task as object), description: 'Every round since Sunday', due_date: '2026-11-20' });
+    expect(task.delivery?.title).toBe('New task');
+    expect(task.delivery?.body).toMatch(/^Log your rounds, due /);
+    expect(factOf(task, 'Details')).toBe('Every round since Sunday');
+    const series = await plan('create_recurring_practice', { ...(SAMPLES.create_recurring_practice as object), end_time: '17:30', description: 'Bring wedges' });
+    expect(series.visual).toMatchObject({ kind: 'series', start: '15:00', end: '17:30', dates: expect.any(Array) });
+    expect((series.visual as { dates: string[] }).dates).toHaveLength(4);
+    expect(factOf(series, 'Ends')).toBe('17:30');
+    expect(factOf(series, 'Description')).toBe('Bring wedges');
+    expect(series).toMatchObject({ recipients: [], delivery: null, notifications: ['Nobody is told.'] });
+  });
+
+  /** Every value the write carries is on the card. Ids are shown as names, and a code is shown in words (compared without case). */
+  const WALK: Record<string, unknown> = {
+    create_event: { title: 'Rules meeting', event_type: 'meeting', date: '2026-11-12', start: '15:00', end: '16:15', location: 'Clubhouse room 2', notes: 'Bring the handbook', invite_player_ids: [P1], requires_rsvp: true },
+    create_trip: { event_name: 'Fall Classic', destination: 'Raleigh', transportation_type: 'flight', departure_date: '2026-11-14', departure_time: '06:30', departure_location: 'Field house', return_date: '2026-11-16', return_time: '21:00', flight_info: 'DL 1432', hotel_name: 'Oak Inn', hotel_address: '12 Main St', hotel_phone: '555-0101', hotel_confirmation: 'ZX81Q', room_assignments: 'Eli with Jonah', uniform_requirements: 'Navy polo', gear_list: ['Rain gear', 'Rangefinder'], notes: 'Vans leave on time' },
+    create_qualifier: { name: 'Fall qualifier', description: 'Counts toward the travel squad', start_date: '2026-11-15', end_date: '2026-11-17', num_rounds: 3, selection_slots_total: 5, selection_slots_coach_pick: 1, player_ids: [P1], rules: 'Stroke play, white tees', entry_deadline: '2026-11-13' },
+    create_recruit: { first_name: 'Sam', last_name: 'Lee', grad_year: 2028, email: 'sam.lee@example.com', phone: '555-0144', hometown: 'Austin', state: 'TX', notes: 'Met at the state junior', status: 'watched' },
+    create_drill: { name: 'Ladder', area: 'putting', kind: 'pressure', minutes: 15, setup: 'Tees at 3, 6 and 9 feet', goal: 'Nine in a row' },
+    add_blocked_time: { title: 'Recruiting trip', date: '2026-11-20', end_date: '2026-11-22' },
+    add_team_break: { first_day: '2026-11-25', last_day: '2026-11-29', label: 'Thanksgiving' },
+    save_team_term: { name: 'Spring 2027', classes_start: '2027-01-11', classes_end: '2027-04-30', exams_end: '2027-05-07' },
+    set_availability_note: { player_id: P1, note: 'Out Thursday for a lab' },
+    add_round_note: { round_id: ID, player_id: P1, note: 'Good wedge numbers' },
+    publish_artifact: { title: 'Eli report', body: 'Words about Eli.' },
+  };
+  const leaves = (value: unknown, key = ''): string[] => {
+    if (/(^|_)ids?$/.test(key) || key === 'seen') return [];
+    if (Array.isArray(value)) return value.flatMap((v) => leaves(v, key));
+    if (value && typeof value === 'object') return Object.entries(value).flatMap(([k, v]) => leaves(v, k));
+    return typeof value === 'string' || typeof value === 'number' ? [String(value)] : [];
+  };
+  it.each(Object.keys(WALK))('%s: nothing is written that is not on the card', async (name) => {
+    const card = await plan(name, WALK[name]);
+    const shown = JSON.stringify([card.action, card.summary, card.facts, card.visual ?? null, card.delivery ?? null]).toLowerCase();
+    const written = leaves(card.input);
+    expect(written.length).toBeGreaterThan(0);
+    for (const value of written) expect(shown, `${name} writes "${value}" and the card does not show it`).toContain(JSON.stringify(value).slice(1, -1).toLowerCase());
+  });
+});
