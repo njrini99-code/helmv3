@@ -214,5 +214,7 @@ describe('the tools as the model is given them', () => {
     expect(saveNote.description).toMatch(/health, injuries, family, grades or discipline/);
     expect(saveNote.description).toMatch(/players never see notes/);
     expect(saveNote.description).toMatch(/saves at once/);
+    // Both write, so neither may be called from the model's code.
+    expect([saveNote.direct_only, removeNote.direct_only]).toEqual([true, true]);
   });
 });

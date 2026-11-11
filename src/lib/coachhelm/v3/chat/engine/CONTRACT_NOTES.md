@@ -576,3 +576,42 @@ E19. `ReadTool.direct_only?: boolean`. A tool on the read contract that changes 
      notes at once, and a write should be something the model asks for itself, as a task is. Until that line is in,
      the model's code can call them.
 
+
+## 2026-11-11 (CONTEXT): six more tasks, one list, the card's certain fields
+
+C8. `../tasks/list.ts` exports `contextTaskTools()`: CONTEXT's task tools in one fixed order, new ones appended.
+`registry.ts` calls it after `taskTools(...)` for the three coach surfaces (the lead asked CONTEXT to register its
+own; the two lines that named `eventTaskTools` now name this). The names are in `TASK_TOOL_NAMES` and in
+`REGISTERED_FOR_OTHERS` in `__tests__/registry-size.test.ts`. A player gets none.
+
+| Tool | Action | Held for Undo |
+|---|---|---|
+| `send_event_reminder`, `record_attendance` | as C4 | yes |
+| `update_event` | `updateGolfEvent` with `expectedUpdatedAt`; one date | yes |
+| `cancel_event` | `deleteGolfEvent` with no options (the soft cancellation, never `hard`) | yes: nobody is told before the window closes, because the telling is in `commit` |
+| `set_focus_area_status` | `completeFocusArea`, `reactivateFocusArea` | yes |
+| `set_goal_state` | `pauseGoal`, `resumeGoal`, `abandonGoal` | yes |
+| `mark_signal_handled` | `acknowledgeInsight` | yes |
+| `set_qualifier_coach_pick` | `setQualifierCoachPick` | yes |
+
+- Sizes, characters / 4, strict form: the eleven CONTEXT tools are 1,587 together (the first five alone were 1,221
+  before their descriptions were cut). Every description is one or two sentences; what a task card shows is the
+  policy's to say, not each tool's.
+- `record_attendance`'s input fields are now `present`, `late`, `no_show` (were `*_player_ids`). No stored
+  conversation holds the old names: the tool was registered the same day.
+- Card fields (`../card-types.ts`), filled in `plan` from reads, never from the model's input: `recipients` and
+  `not_reached` by id and name, `delivery` (title and body as sent; a cancellation's e-mail is a `variants` entry and
+  its `note` says who else is told), `undo`, `lands` for `update_event` and `cancel_event` (`kind: 'event'`, the
+  Calendar, the day), and `visible_note` (what the player will see) on the four tasks that send nothing, which carry
+  `recipients: []` and `delivery: null`. `../tasks/kit.ts` declares these fields itself (`CardExtras`) as well, so the
+  tools build against the contract with or without the commit that adds them to `ActionProposal`.
+- Receipts: `created[0].id` is the row's own id for an event, a focus area, a goal and a signal;
+  `created[0].href` for an event is `/golf/dashboard/calendar?date=<day>&event=<id>`. Notification entries on
+  `update_event` and `cancel_event` are `queued`, not `sent`: a coach's session cannot read players' notification
+  rows, so the tool does not claim delivery.
+- ENGINE: nothing new is asked of the contract. One thing to know for the tool_result: `settle` (`kit.ts`) returns
+  `retryable: false` with "I could not check whether it went through: look in <place> before trying again" when both
+  the action reported a failure and the read-back could not be made.
+- Not built, with the reason for each: `../tasks/INVENTORY.md`, "Asked for and not possible" and "Left for later".
+- E19 is done: `save_note` and `remove_note` carry `direct_only: true`. `find_in_app` reads nothing of the team's
+  and writes nothing, so it does not.
