@@ -137,7 +137,9 @@ export function FeatureCard({
         )}
       </p>
       <div className="feat__ev">
-        {b.evidence.sample && <span>{b.evidence.sample}</span>}
+        {/* A player's sentence above already counts the rounds ("across all 21 rounds"), and so does the page's head: the chip is
+            not a third telling. It stays where the sentence does not say it, and on the coach's card. */}
+        {b.evidence.sample && !(lens === 'player' && b.lede.includes(b.evidence.sample)) && <span>{b.evidence.sample}</span>}
         {b.evidence.window && <span>{b.evidence.window}</span>}
         {d.firmness && <span>{d.firmness}</span>}
       </div>
@@ -227,7 +229,9 @@ export function PlanCard({ plan, lens, first, onDrawn }: { plan: ChFilePlan | nu
   const line = !plan ? 'No focus yet' : stage === 'accepted' ? `Accepted ${plan.since ?? ''}` : stage === 'declined' ? `You declined this on ${plan.handshake.declined ?? ''}` : stage === 'none' ? 'No focus yet' : 'Waiting for your answer';
   return (
     <section className="card" aria-labelledby="ch-hf-plan" data-ch-anchor="plan">
-      <CardHead id="ch-hf-plan" title={mine ? `${first}’s plan` : 'Your plan'} meta={meta} />
+      {/* A player's card says the stage once, in the line under the head ("Accepted Oct 5", from their coach), and the focus card
+          over it carries "Your focus since Oct 5": the head's own copy of it was the third in one view. A coach's keeps it. */}
+      <CardHead id="ch-hf-plan" title={mine ? `${first}’s plan` : 'Your plan'} meta={mine ? meta : undefined} />
       <div className="card__b">
         {mine ? (
           <div className="hs" data-ch-hs={onDrawn}>
