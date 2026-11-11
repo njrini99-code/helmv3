@@ -1,12 +1,10 @@
 'use client';
 
-import { BookOpen } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import type { AskTurnRead } from '../../../../data/coachhelm-chat-thread';
 import { readBasis, readRows } from '../../../../data/coachhelm-chat-thread';
 import { rebuiltHref } from '../../../../shell/nav';
-import { Icon } from '../../../../ui/Icon';
 import { haptic } from '../../../../lib/haptics';
 import { usePopoverFit } from '../../../../lib/use-popover-fit';
 
@@ -17,8 +15,11 @@ export function readStatsHref(read: AskTurnRead): string | null {
   return rebuiltHref(entity.kind === 'player' ? `/golf/dashboard/stats?player=${entity.id}` : '/golf/dashboard/stats');
 }
 
-/** A pill naming the read and window a sentence's figure came from. Tap opens what's behind it; every row comes from the envelope (AK2). */
-export function ReadChip({ read, onSources, onOpen, selected = false }: { read: AskTurnRead; /** Opens this answer's list of every read. */ onSources?: () => void; /** Chat v3: opens the read in the evidence sheet or panel; the chip stays selected while it is open. */ onOpen?: () => void; selected?: boolean }) {
+/**
+ * A pencilled source mark (direction A): a raised numeral after what it supports, the same numeral as its row at the foot of
+ * the answer. Tap opens what's behind it; every row comes from the envelope (AK2).
+ */
+export function ReadChip({ read, n, onSources, onOpen, selected = false }: { read: AskTurnRead; /** Its place in the answer's sources, from 1. */ n: number; /** Opens this answer's list of every read. */ onSources?: () => void; /** Chat v3: opens the read in the evidence sheet or panel; the chip stays selected while it is open. */ onOpen?: () => void; selected?: boolean }) {
   const [open, setOpen] = useState(false);
   const btn = useRef<HTMLButtonElement>(null);
   const pop = useRef<HTMLSpanElement>(null);
@@ -50,22 +51,20 @@ export function ReadChip({ read, onSources, onOpen, selected = false }: { read: 
         type="button"
         className={'cite' + (selected ? ' on' : '')}
         aria-pressed={selected}
-        aria-label={`Source: ${read.name}`}
+        aria-label={`Source ${n}: ${read.name}`}
         data-ch-press=""
         onClick={() => {
           haptic('select');
           onOpen();
         }}
       >
-        <Icon icon={BookOpen} size={12} />
-        {read.name}
+        {n}
       </button>
     );
   return (
     <span className="cite-wrap">
-      <button ref={btn} type="button" className={'cite' + (open ? ' on' : '')} aria-expanded={open} aria-haspopup="dialog" onClick={() => setOpen((v) => !v)}>
-        <Icon icon={BookOpen} size={12} />
-        {read.chip}
+      <button ref={btn} type="button" className={'cite' + (open ? ' on' : '')} aria-label={`Source ${n}: ${read.chip}`} aria-expanded={open} aria-haspopup="dialog" onClick={() => setOpen((v) => !v)}>
+        {n}
       </button>
       {/* A chip sits inside the answer's paragraph, so every box in here is a span: a div or a list in a <p> is invalid HTML. */}
       {open && (

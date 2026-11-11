@@ -80,9 +80,11 @@ describe('CH-13850 what CoachHelm is doing', () => {
     expect(waiting).not.toBeNull();
     update({ messages: ASK_MSGS_WORKING, busy: true });
     const answer = screen.getByRole('article', { name: 'CoachHelm answer' });
-    // The server opening the turn does not remount it: the mark that waited is the mark that answers.
+    // The server opening the turn does not remount it: the island that waited is the island that works.
     expect(answer.closest('.ch-ak-turn')).toBe(waiting);
-    expect(answer.querySelector('.ch-th-mark.is-working')).not.toBeNull();
+    expect(answer.querySelector('.ch-ak-isl.is-live')).not.toBeNull();
+    // Nothing stands beside an answer: no mark, no name (owner, 11 Nov).
+    expect(answer.querySelector('.ch-th-mark, .who, .nm')).toBeNull();
     expect(document.querySelector('.ch-th-user')?.classList.contains('is-new')).toBe(true);
   });
   it('a restored turn says how long the server worked on it, and with the island its line opens the steps instead of a list', () => {
@@ -110,25 +112,51 @@ describe('CH-13850 what CoachHelm is doing', () => {
     expect(document.querySelector('.ch-ak-wl.is-sum')).toBeNull();
   });
 
+  it('the island sits in the flow under the question: the steps while it works, one line once the answer begins, the steps again on a tap', () => {
+    const working = (parts: unknown[]) => [msg('u1', 'user', [{ type: 'text', text: 'How is Jonah doing?' }]), msg('a1', 'assistant', parts)];
+    const r1 = { type: 'data-progress', id: 'r1', data: { label: 'Reading Jonah’s strokes gained', tool: 'get_player_metrics', state: 'done', done: 'Reading Jonah’s strokes gained' } };
+    const r2 = { type: 'data-progress', id: 'r2', data: { label: 'Reading his last 7 rounds', tool: 'get_player_trend' } };
+    const { update } = show({ messages: working([r1, r2]), busy: true });
+    const island = () => document.querySelector('.ch-ak-page.is-last .ch-ak-isl')!;
+    // It comes after the question, inside the turn, and is open while nothing is under it.
+    expect(document.querySelector('.ch-th-user')!.compareDocumentPosition(island()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(island().classList.contains('is-open')).toBe(true);
+    expect([...island().querySelectorAll('.st')].map((li) => li.className.match(/is-(done|active|waiting)/)?.[1])).toEqual(['done', 'active']);
+    expect(island().querySelector('.ch-th-mark, [class*="sparkle"]')).toBeNull();
+    // The first words of the answer: it folds to one line, and the words are under it.
+    update({ messages: working([r1, { ...r2, data: { ...r2.data, state: 'done' } }, { type: 'text', text: 'Jonah is trending the right way.' }]), busy: true });
+    expect(island().classList.contains('is-open')).toBe(false);
+    expect(island().querySelector('.steps')).toBeNull();
+    expect(island().nextElementSibling?.matches('.ch-ak-say, .ch-ak-leaf')).toBe(true);
+    // The work is over: the line says what it came to, and a tap opens the steps again.
+    update({ messages: working([r1, { ...r2, data: { ...r2.data, state: 'done' } }, { type: 'text', text: 'Jonah is trending the right way.' }]), busy: false });
+    const key = within(island() as HTMLElement).getByRole('button');
+    expect(key.getAttribute('aria-expanded')).toBe('false');
+    expect(key.textContent).toMatch(/2 steps/);
+    fireEvent.click(key);
+    expect(key.getAttribute('aria-expanded')).toBe('true');
+    expect(island().querySelectorAll('.st.is-done')).toHaveLength(2);
+  });
+
   it('the phone has no Stop here: the composer owns it', () => {
     show({ messages: ASK_MSGS_WORKING, busy: true, phone: true });
     expect(screen.queryByRole('button', { name: 'Stop' })).toBeNull();
   });
-  it('before the server answers there are no words, only the mark; the work line speaks at 1.2 s and says only what is known', () => {
+  it('before the server answers there are no words, only the island’s ring; its line speaks at 1.2 s and says only what is known', () => {
     vi.useFakeTimers();
     try {
       show({ messages: ASK_MSGS_THINKING, busy: true });
-      // The turn arrives after its question (150 ms), with the mark turning and nothing said.
+      // The turn arrives after its question (150 ms), with the ring turning and nothing said.
       expect(screen.queryByRole('article', { name: 'CoachHelm answer' })).toBeNull();
       act(() => { vi.advanceTimersByTime(200); });
       const turn = screen.getByRole('article', { name: 'CoachHelm answer' });
-      expect(turn.querySelector('.ch-th-mark.is-working')).not.toBeNull();
-      expect(turn.querySelector('.ch-ak-wl')?.textContent).toBe('');
+      expect(turn.querySelector('.ch-ak-isl.is-live .mk.is-active')).not.toBeNull();
+      expect(turn.querySelector('.ch-ak-isl .hd')?.textContent).toBe('');
       // Nothing has come back from the server: it is still being sent, and that is all that is claimed.
       act(() => { vi.advanceTimersByTime(1100); });
-      expect(turn.querySelector('.ch-ak-wl')?.textContent).toBe('Sending');
+      expect(turn.querySelector('.ch-ak-isl .hd')?.textContent).toBe('Sending');
       act(() => { vi.advanceTimersByTime(5000); });
-      expect(turn.querySelector('.ch-ak-wl')?.textContent).toBe('Still sending. Check your connection.');
+      expect(turn.querySelector('.ch-ak-isl .hd')?.textContent).toBe('Still sending. Check your connection.');
       expect(document.body.textContent).not.toMatch(/get_[a-z_]+/);
     } finally {
       vi.useRealTimers();

@@ -20,7 +20,7 @@ const FACES = 6;
  * and still. The ring keeps one animation for its whole life, so it never restarts or jumps when its state changes; it is
  * stopped only once it is a full circle. A mark that is first drawn finished is drawn still.
  */
-function StepMark({ state }: { state: IslandStepState }) {
+export function StepMark({ state }: { state: IslandStepState }) {
   const [resting, setResting] = useState(state !== 'active');
   useEffect(() => {
     if (state === 'active') {
@@ -53,7 +53,7 @@ function Clock({ since }: { since: number }) {
   return <>{elapsedWords((performance.now() - since) / 1000)}</>;
 }
 
-function StepRow({ step, onOpen }: { step: IslandStep; onOpen?: (ref: string, label: string) => void }) {
+export function StepRow({ step, onOpen }: { step: IslandStep; onOpen?: (ref: string, label: string) => void }) {
   const faces = step.subjects.filter((s) => s.kind === 'player');
   const others = step.subjects.length - faces.length;
   const opens = Boolean(step.ref && onOpen);

@@ -40,3 +40,16 @@ export function lastTurnIsGeneral(messages: readonly Pick<UIMessage, 'role' | 'p
   }
   return tools.length > 0 && tools.every((t) => GENERAL_READS.has(t));
 }
+
+/** Who a question is about: the first player it names (a full name, or a first name), else the team. */
+export function scopeWho(question: string, team: string, names: readonly string[]): string {
+  const q = question.toLowerCase();
+  return names.find((n) => q.includes(n.toLowerCase()) || q.includes((n.split(' ')[0] ?? n).toLowerCase())) ?? team;
+}
+
+/** The window one turn's reads used, for its leaf's running head: one label when they agree, two when they don't, newest first. */
+export function windowOf(envelopes: ReadonlyArray<{ window_label?: unknown }>): string | null {
+  const labels = envelopes.flatMap((e) => (typeof e.window_label === 'string' && e.window_label ? [e.window_label] : []));
+  const distinct = [...new Set(labels.reverse())].slice(0, 2);
+  return distinct.length ? distinct.join(', ') : null;
+}

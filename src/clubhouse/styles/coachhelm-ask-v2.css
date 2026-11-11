@@ -14,10 +14,8 @@ html[data-fw-theme='dark'] .ch-ak-th {
   --ch-ak-ak-feature: #123d29;
 }
 .ch-ak-th .ch-th-col { display: flex; flex-direction: column; gap: 20px; }
-.ch-ak-th .ch-ak-turn { display: grid; gap: 12px; min-width: 0; }
+.ch-ak-th .ch-ak-turn { display: grid; gap: var(--ch-space-4); min-width: 0; }
 .ch-ak-th .ch-ak-turn.is-new .msg-a { animation: ch-ak-fade var(--ch-dur-base) var(--ch-ease) both; }
-.ch-ak-th .msg-a { display: grid; gap: 16px; min-width: 0; padding: 16px 20px 16px; border-radius: var(--ch-radius-xl); background: var(--ch-ask-card); box-shadow: var(--ch-card-shadow); }
-.ch-ak-th .who { display: flex; align-items: center; gap: 8px; font: var(--ch-type-15-strong);  color: var(--ch-text-primary); letter-spacing: var(--ch-track-15); }
 .ch-ak-th .prose { margin: 0; font: var(--ch-type-16);  color: var(--ch-text-primary); letter-spacing: var(--ch-track-16); }
 .ch-ak-th .work .sum { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 44px; border: 0; background: none; padding: 0; text-align: left; font: var(--ch-type-15); color: var(--ch-text-secondary); cursor: pointer; letter-spacing: var(--ch-track-15); }
 .ch-ak-th .work .sum .t { flex: 1; min-width: 0; }
@@ -39,37 +37,15 @@ html[data-fw-theme='dark'] .ch-ak-th {
 .ch-ak-th .step.done .tx small { color: var(--ch-text-tertiary); }
 .ch-ak-th .step .lb.shim { background-image: linear-gradient(90deg, var(--ch-text-primary) 0%, var(--ch-text-primary) 40%, var(--ch-text-tertiary) 50%, var(--ch-text-primary) 60%, var(--ch-text-primary) 100%); background-size: 250% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: ch-ak-shim var(--ch-dur-shimmer, var(--ch-dur-shimmer)) linear infinite; }
 .ch-ak-th .cite-wrap { position: relative; display: inline-block; }
-.ch-ak-th .cite { position: relative; display: inline-flex; align-items: center; gap: 4px; vertical-align: 1px; margin-left: 4px; padding: 4px 8px; border: 0; border-radius: 999px; background: var(--ch-well-bg-flat); box-shadow: 0 0 0 0.5px var(--ch-ak-ak-hair); font: var(--ch-type-13-strong);  color: var(--ch-text-secondary); white-space: nowrap; cursor: pointer; }
-.ch-ak-th .cite::after { content: ''; position: absolute; inset: -4px; }
-.ch-ak-th .cite.on { background: var(--ch-ak-ak-tint); color: var(--ch-ask-accent); box-shadow: none; }
 .ch-ak-th .cpop { display: block; overflow-y: auto; position: absolute; z-index: var(--ch-z-panel); top: calc(100% + 6px); left: 0; width: 280px; max-width: 72vw; padding: 12px 12px; border-radius: var(--ch-radius-md); background: var(--ch-card-bg); box-shadow: var(--ch-shadow-float); font: var(--ch-type-14); }
 .ch-ak-th .cpop b { display: block; margin-bottom: 8px; font: var(--ch-type-15-strong);  color: var(--ch-text-primary); letter-spacing: var(--ch-track-15); }
 .ch-ak-th .cpop .rows { display: grid; gap: 4px; }
 .ch-ak-th .cpop .row { display: flex; justify-content: space-between; gap: 12px; }
 .ch-ak-th .cpop .k { color: var(--ch-text-tertiary); }
 .ch-ak-th .cpop .v { color: var(--ch-text-primary); text-align: right; }
-.ch-ak-th .acts { display: flex; align-items: center; gap: 2px; color: var(--ch-text-tertiary); }
-.ch-ak-th .acts .sp { flex: 1; }
-.ch-ak-th .acts .sb { position: relative; display: grid; place-items: center; width: 32px; height: 32px; border: 0; border-radius: var(--ch-radius-sm); background: none; color: var(--ch-text-tertiary); cursor: pointer; }
-.ch-ak-th .acts .sb::after { content: ''; position: absolute; inset: -6px; }
-.ch-ak-th .srcw { min-width: 0; }
-.ch-ak-th .srcs { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0; border: 0; background: none; font: var(--ch-type-14);  color: var(--ch-text-secondary); cursor: pointer; }
-.ch-ak-th .srcs .stack { display: flex; }
-.ch-ak-th .srcs .stack i { display: grid; place-items: center; width: 20px; height: 20px; margin-left: -6px; border: 2px solid var(--ch-grouped-bg); border-radius: 50%; background: var(--ch-ak-ak-feature); color: var(--ch-champagne-500); }
-.ch-ak-th .srcs .stack i:first-child { margin-left: 0; }
-.ch-ak-th .srcw .in { padding: 4px 12px; border-radius: var(--ch-radius-md); background: var(--ch-well-bg-flat); box-shadow: var(--ch-well-shadow); }
-.ch-ak-th .src { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 12px; padding: 12px 0; border-top: var(--ch-hairline-w) solid var(--ch-separator); font: var(--ch-type-14);  color: var(--ch-text-secondary); }
-.ch-ak-th .src:first-child { border-top: 0; }
-.ch-ak-th .src .n { display: grid; place-items: center; width: 22px; height: 22px; border-radius: var(--ch-radius-tail); background: var(--ch-card-bg); box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-card-ring); font: var(--ch-type-12-strong);  }
-.ch-ak-th .src b { display: block; font: var(--ch-type-15-strong); color: var(--ch-text-primary); letter-spacing: var(--ch-track-15); }
-.ch-ak-th .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
-.ch-ak-th .chip { position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border: 0; border-radius: 999px; background: var(--ch-card-bg); box-shadow: var(--ch-ask-shadow-1); font: var(--ch-type-15-medium); color: var(--ch-text-primary); text-align: left; cursor: pointer; letter-spacing: var(--ch-track-15); }
-.ch-ak-th .chip::after { content: ''; position: absolute; inset: -4px 0; }
-.ch-ak-th .chip svg { color: var(--ch-ask-accent); flex: none; }
 .ch-ak-th .vcard.is-skel { padding: 0; border-radius: var(--ch-radius-lg); background: var(--ch-card-bg); box-shadow: var(--ch-ask-shadow-2); }
 .ch-ak-th .sk { display: grid; gap: 8px; padding: 16px; }
 .ch-ak-th .sk i { display: block; height: 12px; border-radius: var(--ch-radius-tail); background: linear-gradient(90deg, var(--ch-ak-ak-track) 0%, var(--ch-well-bg-flat) 50%, var(--ch-ak-ak-track) 100%); background-size: 200% 100%; animation: ch-ak-sweep var(--ch-dur-typing) linear infinite; }
-.ch-ak-th .ch-th-user p { background: linear-gradient(180deg, var(--ch-ask-mine-a), var(--ch-ask-mine-b)); color: var(--ch-on-green-plate); border-radius: var(--ch-radius-xl) var(--ch-radius-xl) var(--ch-radius-tail) var(--ch-radius-xl); padding: 8px 16px; filter: var(--ch-bubble-mine-shadow); box-shadow: inset 0 var(--ch-hairline-w) 0 rgb(255 255 255 / 0.16); }
 @keyframes ch-ak-fade { from { opacity: 0; } }
 @keyframes ch-ak-rise6 { from { opacity: 0; transform: translateY(6px); } }
 @keyframes ch-ak-draw { to { stroke-dashoffset: 0; } }
@@ -735,7 +711,6 @@ html[data-fw-theme='dark'] .ch-ak-th {
 .ch-ak-th .cpop-f { display: flex; justify-content: space-between; gap: 12px; margin-top: 8px; padding-top: 8px; border-top: var(--ch-hairline-w) solid var(--ch-separator); }
 .ch-ak-th .cpop-f a, .ch-ak-th .cpop-f button { position: relative; padding: 0; border: 0; background: none; font: var(--ch-type-14-strong); color: var(--ch-ask-accent); text-decoration: none; cursor: pointer; }
 .ch-ak-th .cpop-f a::after, .ch-ak-th .cpop-f button::after { content: ''; position: absolute; inset: -12px 0; }
-.ch-ak-th .srcw .in { animation: ch-ak-fade var(--ch-dur-base) var(--ch-ease) both; }
 
 /* S-ASK.turn.stopped: the words stay, the turn says it stopped. */
 .ch-ak-th .ch-ak-stopped { display: flex; align-items: baseline; gap: 8px; margin: 0; font: var(--ch-type-14); color: var(--ch-text-secondary); }
@@ -750,9 +725,9 @@ html[data-fw-theme='dark'] .ch-ak-th {
 @keyframes ch-ak-wedge { from { opacity: 0; transform: scale(0.9); } }
 
 @media (prefers-reduced-motion: reduce) {
-  .ch-ak-th .work .fold, .ch-ak-th .cpop, .ch-ak-th .srcw .in, [data-live] .ch-ak-putts .t i, [data-live] .ch-ak-miss .w, [data-live] .ch-ak-season .ch-ak-mark, [data-live] .ch-ak-holes .ch-ak-mark { animation: none; }
+  .ch-ak-th .work .fold, .ch-ak-th .cpop, [data-live] .ch-ak-putts .t i, [data-live] .ch-ak-miss .w, [data-live] .ch-ak-season .ch-ak-mark, [data-live] .ch-ak-holes .ch-ak-mark { animation: none; }
 }
-[data-motion='off'] .ch-ak-th :is(.work .fold, .cpop, .srcw .in), [data-motion='off'] [data-live] :is(.ch-ak-putts .t i, .ch-ak-miss .w, .ch-ak-season .ch-ak-mark, .ch-ak-holes .ch-ak-mark) { animation: none; }
+[data-motion='off'] .ch-ak-th :is(.work .fold, .cpop), [data-motion='off'] [data-live] :is(.ch-ak-putts .t i, .ch-ak-miss .w, .ch-ak-season .ch-ak-mark, .ch-ak-holes .ch-ak-mark) { animation: none; }
 
 /* E-COMP: the scope chips say what the next answer reads; never a figure. */
 .ch-ak-root .ch-ak-cscope { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 0 0 4px; }
@@ -794,9 +769,6 @@ html[data-fw-theme='dark'] .ch-ak-th {
 .ch-ak-root .ch-ask-cmp.is-dock .ch-ask-cmp__box:has(.ch-ak-cscope), .ch-ak-root .ch-ask-cmp.is-phone .ch-ask-cmp__box:has(.ch-ak-cscope) { flex-wrap: wrap; }
 .ch-ak-root .ch-ask-cmp.is-dock .ch-ak-cscope, .ch-ak-root .ch-ask-cmp.is-phone .ch-ak-cscope { order: -1; flex: 0 0 100%; }
 
-/* Phone: an answer is text on the page, and its cards stand alone at full width, rather than a card holding a card. */
-.ch-ak-root.is-phone .ch-ak-th .msg-a { padding: 0; border-radius: 0; background: none; filter: none; box-shadow: none; }
-
 /* Phone: the draft's well keeps its design (E-EVD), with a narrower label so a date stays on one line. */
 @media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   /* The labels share one column as wide as the longest, so "Attachment" can't run into its value at any Text Size. */
@@ -832,7 +804,6 @@ html[data-fw-theme='dark'] .ch-ak-th {
 }
 
 /* MOB-ASK-16: a chip fits the line it sits in. */
-.ch-ak-th .cite { padding: 1px 6px; line-height: var(--ch-lead-tight); vertical-align: baseline; }
 /* MOB-ASK-15: it wraps at XXL rather than cutting off the window. */
 .ch-ak-scope { white-space: normal; text-wrap: balance; }
 /* MOB-ASK-10: with a keyboard up on a small phone, the thread keeps the height. */
@@ -1018,7 +989,7 @@ html[data-fw-theme='dark'] .ch-ak-push .ch-btn--primary[data-ch-pressed]:not(:di
 /* Rule P: a page is one question and what answers it; the last page is at least one screen tall, so the answer grows into
    space that is already there and nothing above it is pulled back into view. */
 .ch-ak-th[data-v3] .ch-th-col { gap: 0; }
-.ch-ak-th[data-v3] .ch-ak-page { display: flex; flex-direction: column; gap: 20px; min-width: 0; padding-bottom: 28px; }
+.ch-ak-th[data-v3] .ch-ak-page { display: flex; flex-direction: column; gap: var(--ch-space-6); min-width: 0; padding-bottom: var(--ch-space-8); }
 .ch-ak-th[data-v3] .ch-ak-page.is-last { min-height: var(--ch-ak-view, 0px); padding-bottom: 0; }
 /* The question's arrival is the thread's own (MO-3-4): the older rise stands down. */
 .ch-ak-th[data-v3] .ch-th-user.is-new { animation: none; }
@@ -1029,50 +1000,30 @@ html[data-fw-theme='dark'] .ch-ak-push .ch-btn--primary[data-ch-pressed]:not(:di
 /* The live dot: the one sign that something is still happening. */
 .ch-ak-live { display: inline-block; flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--ch-ask-accent); animation: ch-ak-breath var(--ch-dur-reveal) var(--ch-ease-io) infinite alternate; }
 
-/* The work line: the words after the name. Status is said here and nowhere else, so it never adds or removes a row. */
-.ch-ak-th[data-v3] .who { flex-wrap: wrap; row-gap: 2px; min-height: 28px; }
-.ch-ak-th[data-v3] .who .nm { flex: none; }
-.ch-ak-wl { display: inline-flex; align-items: center; gap: 8px; min-width: 0; max-width: 100%; margin: 0 0 0 4px; padding: 0; border: 0; background: none; font: var(--ch-type-15); color: var(--ch-text-secondary); letter-spacing: var(--ch-track-15); text-align: left; }
+/* The work line (quick chat, whose island lives in its own header): the one line that says what the turn is doing and opens that
+   island. In Ask the island sits in the flow instead (below), and this line is never drawn. */
+.ch-ak-wlrow { display: flex; align-items: center; min-width: 0; min-height: 28px; }
+.ch-ak-wl { display: inline-flex; align-items: center; gap: 8px; min-width: 0; max-width: 100%; margin: 0; padding: 0; border: 0; background: none; font: var(--ch-type-15); color: var(--ch-text-secondary); letter-spacing: var(--ch-track-15); text-align: left; }
 .ch-ak-wl .t { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; animation: ch-ak-fade var(--ch-dur-base) var(--ch-ease) backwards; }
-.ch-ak-wl .t.shim, .ch-ak-reads .lb.shim { background-image: linear-gradient(90deg, var(--ch-text-primary) 0%, var(--ch-text-primary) 40%, var(--ch-text-tertiary) 50%, var(--ch-text-primary) 60%, var(--ch-text-primary) 100%); background-size: 250% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: ch-ak-fade var(--ch-dur-base) var(--ch-ease) backwards, ch-ak-shim var(--ch-dur-shimmer) linear infinite; }
+.ch-ak-wl .t.shim { background-image: linear-gradient(90deg, var(--ch-text-primary) 0%, var(--ch-text-primary) 40%, var(--ch-text-tertiary) 50%, var(--ch-text-primary) 60%, var(--ch-text-primary) 100%); background-size: 250% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: ch-ak-fade var(--ch-dur-base) var(--ch-ease) backwards, ch-ak-shim var(--ch-dur-shimmer) linear infinite; }
 .ch-ak-wl.is-sum { position: relative; min-height: 28px; cursor: pointer; }
 .ch-ak-wl.is-sum::after { content: ''; position: absolute; inset: -8px -8px; }
 .ch-ak-wl.is-sum .chev { flex: none; color: var(--ch-text-tertiary); transition: transform var(--ch-dur-base) var(--ch-ease); }
 .ch-ak-wl.is-sum[aria-expanded='true'] .chev { transform: rotate(180deg); }
 .ch-ak-wl.is-sum:focus-visible { outline: var(--ch-focus-ring-w, 2px) solid var(--ch-ask-accent); outline-offset: 4px; border-radius: var(--ch-radius-sm); }
 
-/* The reads: the kit's rows, open only where nothing sits under them (before the first word) or because the coach opened them. */
-.ch-ak-reads { display: grid; gap: 0; margin: -4px 0 0; padding: 0; list-style: none; }
-.ch-ak-reads .rd { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 12px; align-items: start; min-height: 32px; margin-left: 4px; padding: 6px 0; }
-.ch-ak-reads.is-live .rd { animation: ch-ak-rise6 var(--ch-dur-spring-settle) var(--ch-ease-spring-settle) backwards; }
-.ch-ak-reads.is-still { animation: ch-ak-drop4 var(--ch-dur-base) var(--ch-ease) backwards; }
-.ch-ak-reads.is-folding .rd { opacity: 0; transition: opacity var(--ch-dur-msg-time) var(--ch-ease); }
-.ch-ak-reads .ic { display: grid; place-items: center; width: 20px; height: 20px; margin-top: 1px; }
-.ch-ak-reads .ic.ok { color: var(--ch-gain); }
-.ch-ak-reads .ic.is-fail { color: var(--ch-loss); animation: ch-ak-fade var(--ch-dur-quick) var(--ch-ease) backwards; }
-.ch-ak-reads .ic.ok.is-drawn path { stroke-dasharray: 24; stroke-dashoffset: 24; animation: ch-ak-draw var(--ch-dur-base) var(--ch-ease) forwards; }
-.ch-ak-reads .dash { width: 10px; height: 2px; border-radius: var(--ch-radius-mark); background: var(--ch-text-tertiary); }
-.ch-ak-reads .tx { min-width: 0; font: var(--ch-type-15); color: var(--ch-text-primary); letter-spacing: var(--ch-track-15); }
-.ch-ak-reads .rd:not(.is-running) .tx { color: var(--ch-text-secondary); }
-.ch-ak-reads .tx small { display: block; margin-top: 1px; font: var(--ch-type-14); color: var(--ch-text-tertiary); }
-.ch-ak-reads.is-live .tx small { animation: ch-ak-fade var(--ch-dur-base) var(--ch-ease) var(--ch-dur-press) backwards; }
-@keyframes ch-ak-drop4 { from { opacity: 0; transform: translateY(-4px); } }
-
 /* Streamed words: each burst fades in once and never moves; a finished fade holds nothing. The dot waits after the last word. */
 .ch-ak-th[data-v3] .ch-th-prose[data-streaming] .w, .ch-ak-th[data-v3] .ch-th-prose[data-streaming] .cite { animation-fill-mode: backwards; }
 .ch-ak-th[data-v3] .ch-th-prose[data-streaming] .cite { animation: ch-ak-fade var(--ch-dur-word) var(--ch-ease) backwards; }
 .ch-ak-pend { white-space: nowrap; }
 .ch-ak-pend .ch-ak-live { width: 7px; height: 7px; margin-left: 6px; vertical-align: 1px; animation: ch-ak-fade var(--ch-dur-quick) var(--ch-ease) backwards, ch-ak-breath var(--ch-dur-reveal) var(--ch-ease-io) infinite alternate; }
-/* A chip is a word in its sentence: the line's height, never taller, so it cannot push its line apart. */
-.ch-ak-th[data-v3] .prose .cite { margin: 0; padding: 1px 8px 1px 7px; vertical-align: 1px; line-height: var(--ch-lead-tight); }
-.ch-ak-th[data-v3] .prose .cite[data-ch-pressed] { transform: scale(0.97); }
 
 /* A visual is complete at first paint (owner decision Q-153): only its frame fades, and only when it arrives in this visit. */
 .ch-ak-vis { min-width: 0; }
 .ch-ak-th[data-v3] .ch-ak-turn.is-new .ch-ak-vis { animation: ch-ak-fade var(--ch-dur-base) var(--ch-ease) backwards; }
 
 /* The turn settling: what it stands on, then what the coach might do next, one beat later, together. */
-.ch-ak-th[data-v3] .ch-ak-turn.is-settling .acts { animation: ch-ak-fade var(--ch-dur-quick) var(--ch-ease) backwards; }
+.ch-ak-th[data-v3] .ch-ak-turn.is-settling .ch-ak-src { animation: ch-ak-fade var(--ch-dur-quick) var(--ch-ease) backwards; }
 .ch-ak-th[data-v3] .ch-ak-turn.is-settling .chips .chip { animation: ch-ak-rise6 var(--ch-dur-spring-settle) var(--ch-ease-spring-settle) var(--ch-dur-press) backwards; }
 
 /* The turn notice: the last line of a turn that failed or was stopped. Amber, never red; what arrived stays above it. */
@@ -1109,16 +1060,15 @@ html[data-fw-theme='dark'] .ch-ak-push .ch-btn--primary[data-ch-pressed]:not(:di
 
 /* Reduce Motion: every arrival is an opacity fade; nothing travels or scales; loops stop. */
 @media (prefers-reduced-motion: reduce) {
-  .ch-ak-live, .ch-ak-pend .ch-ak-live, .ch-ak-wl .t.shim, .ch-ak-reads .lb.shim { animation: none; }
-  .ch-ak-wl .t.shim, .ch-ak-reads .lb.shim { background: none; color: inherit; }
-  .ch-ak-reads.is-live .rd, .ch-ak-reads.is-still, .ch-ak-notice, .ch-ak-wl .t, .ch-ak-th[data-v3] .ch-ak-turn.is-settling .chips .chip { --ch-rm-animation: var(--ch-dur-crossfade-rm); animation: ch-ak-fade var(--ch-dur-crossfade-rm) linear backwards; }
-  .ch-ak-reads .ic.ok.is-drawn path { animation: none; stroke-dashoffset: 0; }
+  .ch-ak-live, .ch-ak-pend .ch-ak-live, .ch-ak-wl .t.shim { animation: none; }
+  .ch-ak-wl .t.shim { background: none; color: inherit; }
+  .ch-ak-notice, .ch-ak-wl .t, .ch-ak-th[data-v3] .ch-ak-turn.is-settling .chips .chip { --ch-rm-animation: var(--ch-dur-crossfade-rm); animation: ch-ak-fade var(--ch-dur-crossfade-rm) linear backwards; }
   .ch-ak-th[data-v3] .ch-th-prose[data-streaming] .w, .ch-ak-th[data-v3] .ch-th-prose[data-streaming] .cite { animation: none; }
   .ch-ak-root .ch-ask-cmp__send .g-send, .ch-ak-root .ch-ask-cmp__send .g-stop { animation: none; }
   .ch-ak-root .ch-ask-cmp__send.is-stop .g-send { opacity: 0; }
   .ch-ak-root .ch-ask-cmp__send.is-stop .g-stop { opacity: 1; }
 }
-[data-motion='off'] :is(.ch-ak-live, .ch-ak-wl .t, .ch-ak-reads .rd, .ch-ak-reads.is-still, .ch-ak-notice, .ch-ak-vis, .ch-ak-turn .msg-a, .ch-ak-turn .acts, .ch-ak-turn .chips .chip, .ch-ask-cmp__send .g) { animation: none; }
+[data-motion='off'] :is(.ch-ak-live, .ch-ak-wl .t, .ch-ak-notice, .ch-ak-vis, .ch-ak-turn .msg-a, .ch-ak-turn .ch-ak-src, .ch-ak-turn .chips .chip, .ch-ask-cmp__send .g) { animation: none; }
 [data-motion='off'] .ch-ak-root .ch-ask-cmp__send.is-stop .g-send { opacity: 0; }
 [data-motion='off'] .ch-ak-root .ch-ask-cmp__send.is-stop .g-stop { opacity: 1; }
 
@@ -1167,21 +1117,16 @@ html[data-fw-theme='dark'] .ch-ak-push .ch-btn--primary[data-ch-pressed]:not(:di
 .ch-ak-task__body { min-width: 0; transition: opacity var(--ch-dur-quick) var(--ch-ease); }
 .ch-ak-task__body.is-dim { opacity: 0.55; }
 
-/* ── Chat v3, the activity island (SPEC Moment 4; MOTION MO-4-I1 to I9) ───────────────────────────────────────────────
-   Where CoachHelm's work is shown. One line in chrome that already exists (the phone's scope row, the desktop's header), so
-   it covers nothing; opened, it hangs over the thread as the live workspace. Its two sizes are one shape: the plate is two
+/* ── Chat v3, the activity island in a header (quick chat; SPEC Moment 4; MOTION MO-4-I1 to I9) ──────────────────────
+   Quick chat shows CoachHelm's work as one line in its own header, so it covers nothing; opened, it hangs over the thread
+   as the live workspace. (Ask draws the island in the flow under the question: `.ch-ak-isl`, in the direction A block below.) Its two sizes are one shape: the plate is two
    caps and a middle that scales, and the steps sit behind a clip that travels with the plate's edge, so opening and folding
    are transforms only and nothing is laid out again. The island's own box is one line tall in both sizes. */
 .ch-ak-islhost { position: relative; flex: none; display: grid; place-items: center; padding-bottom: 6px; }
-.ch-ak-islhost:not(.is-home) { min-height: 40px; }
-.ch-ak-islhost .ch-ak-scope { max-width: 100%; padding-bottom: 0; transition: opacity var(--ch-dur-quick) var(--ch-ease); }
-.ch-ak-islhost:has(.ch-isl:not(.is-leaving)) .ch-ak-scope { opacity: 0; }
+.ch-ak-islhost .ch-ak-scope { max-width: 100%; padding-bottom: 0; }
 @media (pointer: coarse) and (max-height: 700px) {
   .ch-ak-root:has(.ch-ask-dock textarea:focus) .ch-ak-islhost { display: none; }
 }
-.ch-ak-root .ch-ask-head { position: relative; }
-/* The title leaves the middle of the header to the island, always, so it is never cut shorter when the island arrives. */
-.ch-ak-root .ch-ask-main:has(.ch-ask-scroll.is-thread) .ch-ask-head__t { flex: 0 1 auto; max-width: calc(50% - 214px); }
 
 .ch-isl { --isl-r: var(--ch-radius-lg); --isl-w: min(380px, 100% - 28px); position: absolute; top: 2px; left: 50%; z-index: var(--ch-z-sticky); width: var(--isl-w); height: calc(var(--isl-r) * 2); margin-left: calc(var(--isl-w) / -2); color: var(--ch-feature-ink); animation: ch-isl-in var(--ch-dur-spring-pop, var(--ch-dur-base)) var(--ch-ease-spring-pop, var(--ch-ease)) backwards; transition: transform var(--ch-dur-release) var(--ch-ease); }
 .ch-ask-head .ch-isl { top: calc(50% - var(--isl-r)); --isl-w: min(380px, 100% - 32px); }
@@ -1222,23 +1167,22 @@ html[data-fw-theme='dark'] .ch-ak-push .ch-btn--primary[data-ch-pressed]:not(:di
 .ch-isl.is-open .hd .chev { transform: rotate(180deg); }
 
 /* A step's mark. The ring turns for as long as the step runs; finished, it closes where it is and the check draws inside it. */
-.ch-isl .mk { flex: none; display: grid; place-items: center; width: 18px; height: 18px; }
-.ch-isl .mk.is-waiting::before { content: ''; width: 12px; height: 12px; border-radius: 50%; background: var(--ch-feature-ink-3); opacity: 0.4; }
-.ch-isl .mk svg { width: 16px; height: 16px; overflow: visible; }
-.ch-isl .mk :is(.trk, .arc, .ck, .bar) { stroke-width: 2.2; }
-.ch-isl .mk .trk { stroke: var(--ch-feature-track); transition: opacity var(--ch-dur-base) var(--ch-ease); }
-.ch-isl .mk .arc { stroke: var(--ch-feature-gain); stroke-dasharray: 100; stroke-dashoffset: 70; transform-box: fill-box; transform-origin: 50% 50%; animation: ch-isl-spin var(--ch-dur-sweep) linear infinite; transition: stroke-dashoffset var(--ch-dur-base) var(--ch-ease), opacity var(--ch-dur-base) var(--ch-ease); }
-.ch-isl .mk:is(.is-done, .is-failed) .arc { stroke-dashoffset: 0; }
-.ch-isl .mk:is(.is-done, .is-failed) .trk { opacity: 0; }
-.ch-isl .mk.is-rest .arc, .ch-isl .mk.is-stopped .arc { animation: none; }
-.ch-isl .mk.is-stopped .arc { opacity: 0.6; }
-.ch-isl .mk.is-failed :is(.arc, .bar) { stroke: var(--ch-feature-loss); }
-.ch-isl .mk .ck { stroke: var(--ch-feature-gain); stroke-dasharray: 24; }
-.ch-isl .mk.is-done:not(.is-rest) .ck { animation: ch-isl-ck var(--ch-dur-base) var(--ch-ease) var(--ch-dur-quick) backwards; }
-.ch-isl .mk.is-done:not(.is-rest) svg { animation: ch-isl-pop var(--ch-dur-word) var(--ch-ease-io) var(--ch-dur-quick); }
+:is(.ch-isl, .ch-ak-isl) .mk { flex: none; display: grid; place-items: center; width: 18px; height: 18px; }
+:is(.ch-isl, .ch-ak-isl) .mk.is-waiting::before { content: ''; width: 12px; height: 12px; border-radius: 50%; background: var(--ch-feature-ink-3); opacity: 0.4; }
+:is(.ch-isl, .ch-ak-isl) .mk svg { width: 16px; height: 16px; overflow: visible; }
+:is(.ch-isl, .ch-ak-isl) .mk :is(.trk, .arc, .ck, .bar) { stroke-width: 2.2; }
+:is(.ch-isl, .ch-ak-isl) .mk .trk { stroke: var(--ch-feature-track); transition: opacity var(--ch-dur-base) var(--ch-ease); }
+:is(.ch-isl, .ch-ak-isl) .mk .arc { stroke: var(--ch-feature-gain); stroke-dasharray: 100; stroke-dashoffset: 70; transform-box: fill-box; transform-origin: 50% 50%; animation: ch-spinner-turn var(--ch-dur-sweep) linear infinite; transition: stroke-dashoffset var(--ch-dur-base) var(--ch-ease), opacity var(--ch-dur-base) var(--ch-ease); }
+:is(.ch-isl, .ch-ak-isl) .mk:is(.is-done, .is-failed) .arc { stroke-dashoffset: 0; }
+:is(.ch-isl, .ch-ak-isl) .mk:is(.is-done, .is-failed) .trk { opacity: 0; }
+:is(.ch-isl, .ch-ak-isl) .mk.is-rest .arc, :is(.ch-isl, .ch-ak-isl) .mk.is-stopped .arc { animation: none; }
+:is(.ch-isl, .ch-ak-isl) .mk.is-stopped .arc { opacity: 0.6; }
+:is(.ch-isl, .ch-ak-isl) .mk.is-failed :is(.arc, .bar) { stroke: var(--ch-feature-loss); }
+:is(.ch-isl, .ch-ak-isl) .mk .ck { stroke: var(--ch-feature-gain); stroke-dasharray: 24; }
+:is(.ch-isl, .ch-ak-isl) .mk.is-done:not(.is-rest) .ck { animation: ch-isl-ck var(--ch-dur-base) var(--ch-ease) var(--ch-dur-quick) backwards; }
+:is(.ch-isl, .ch-ak-isl) .mk.is-done:not(.is-rest) svg { animation: ch-isl-pop var(--ch-dur-word) var(--ch-ease-io) var(--ch-dur-quick); }
 /* A finished step steps back, so the one still running is the one the eye finds. */
-.ch-isl .st .mk.is-done.is-rest .arc { opacity: 0.45; }
-@keyframes ch-isl-spin { to { transform: rotate(360deg); } }
+:is(.ch-isl, .ch-ak-isl) .st .mk.is-done.is-rest .arc { opacity: 0.45; }
 @keyframes ch-isl-ck { from { stroke-dashoffset: 24; } }
 @keyframes ch-isl-pop { 45% { transform: scale(1.16); } }
 
@@ -1269,23 +1213,513 @@ html[data-fw-theme='dark'] .ch-ak-push .ch-btn--primary[data-ch-pressed]:not(:di
 .ch-isl .st :is(.ms, .go) { flex: none; margin-top: 1px; color: var(--ch-feature-ink-3); }
 .ch-isl .st .ms { font: var(--ch-type-12); }
 /* What the step is touching: faces and names join as they are found, each once. */
-.ch-isl .subj { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 0; padding-top: 4px; }
-.ch-isl .subj .face { display: grid; margin-right: -4px; border-radius: 50%; box-shadow: 0 0 0 2px var(--ch-feature-bg); animation: ch-isl-face var(--ch-dur-spring-pop, var(--ch-dur-base)) var(--ch-ease-spring-pop, var(--ch-ease)) backwards; }
-.ch-isl .subj .tag { margin-right: 4px; padding: 2px 8px; border-radius: var(--ch-radius-lg); background: var(--ch-feature-icon-bg); font: var(--ch-type-12); color: var(--ch-feature-ink-2); animation: ch-isl-face var(--ch-dur-spring-pop, var(--ch-dur-base)) var(--ch-ease-spring-pop, var(--ch-ease)) backwards; }
-.ch-isl .subj .more { margin-left: 10px; font: var(--ch-type-12); color: var(--ch-feature-ink-3); }
-.ch-isl .subj .tag + .more { margin-left: 2px; }
+:is(.ch-isl, .ch-ak-isl) .subj { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 0; padding-top: 4px; }
+:is(.ch-isl, .ch-ak-isl) .subj .face { display: grid; margin-right: -4px; border-radius: 50%; box-shadow: 0 0 0 2px var(--ch-feature-bg); animation: ch-isl-face var(--ch-dur-spring-pop, var(--ch-dur-base)) var(--ch-ease-spring-pop, var(--ch-ease)) backwards; }
+:is(.ch-isl, .ch-ak-isl) .subj .tag { margin-right: 4px; padding: 2px 8px; border-radius: var(--ch-radius-lg); background: var(--ch-feature-icon-bg); font: var(--ch-type-12); color: var(--ch-feature-ink-2); animation: ch-isl-face var(--ch-dur-spring-pop, var(--ch-dur-base)) var(--ch-ease-spring-pop, var(--ch-ease)) backwards; }
+:is(.ch-isl, .ch-ak-isl) .subj .more { margin-left: 10px; font: var(--ch-type-12); color: var(--ch-feature-ink-3); }
+:is(.ch-isl, .ch-ak-isl) .subj .tag + .more { margin-left: 2px; }
 @keyframes ch-isl-face { from { opacity: 0; transform: scale(0.5); } }
 
 /* Reduce Motion: the ring does not turn (an open ring is running, a closed one with a check is done); the plate takes its size at once; arrivals are fades. */
 @media (prefers-reduced-motion: reduce) {
-  .ch-isl .mk .arc, .ch-isl .mk .ck, .ch-isl .mk svg { animation: none !important; }
+  :is(.ch-isl, .ch-ak-isl) .mk .arc, :is(.ch-isl, .ch-ak-isl) .mk .ck, :is(.ch-isl, .ch-ak-isl) .mk svg { animation: none !important; }
+  .ch-ak-isl .st, .ch-ak-isl .hd .t, .ch-ak-isl .st .dt { --ch-rm-animation: var(--ch-dur-crossfade-rm); animation: ch-ak-fade var(--ch-dur-crossfade-rm) linear backwards; }
   .ch-isl .gl { display: none; }
-  .ch-isl, .ch-isl .st, .ch-isl .hd .t, .ch-isl .st .dt, .ch-isl .subj .face, .ch-isl .subj .tag { --ch-rm-animation: var(--ch-dur-crossfade-rm); animation: ch-ak-fade var(--ch-dur-crossfade-rm) linear backwards; }
+  .ch-isl, .ch-isl .st, .ch-isl .hd .t, .ch-isl .st .dt, :is(.ch-isl, .ch-ak-isl) .subj .face, :is(.ch-isl, .ch-ak-isl) .subj .tag { --ch-rm-animation: var(--ch-dur-crossfade-rm); animation: ch-ak-fade var(--ch-dur-crossfade-rm) linear backwards; }
   .ch-isl.is-leaving { --ch-rm-animation: var(--ch-dur-crossfade-rm); animation: ch-ak-fade-out var(--ch-dur-crossfade-rm) linear forwards; }
   .ch-isl :is(.pm, .pb, .bc) { transition: none; }
   .ch-isl .bd { transition: opacity var(--ch-dur-crossfade-rm) linear; }
   .ch-isl:has(.hd[data-ch-pressed]) { transform: none; }
 }
-[data-motion='off'] .ch-isl, [data-motion='off'] .ch-isl :is(.st, .hd .t, .st .dt, .face, .tag, .mk .arc, .mk .ck, .mk svg) { animation: none !important; }
+[data-motion='off'] .ch-isl, [data-motion='off'] :is(.ch-isl, .ch-ak-isl) :is(.st, .hd .t, .st .dt, .face, .tag, .mk .arc, .mk .ck, .mk svg) { animation: none !important; }
 [data-motion='off'] .ch-isl :is(.pm, .pb, .bc, .bd, .sh::after) { transition: none; }
 [data-motion='off'] .ch-isl .gl { display: none; }
+
+/* ── Direction A, "the yardage book" (docs/clubhouse/coachhelm-chat-v3/LOOK.md; owner-approved 11 Nov) ────────────────
+   The real thread's look, ported from the preview (coachhelm-ask-look.css, `.ch-look-*`): the coach's question is an ivory
+   slip; the activity island sits in the flow under it; an answer that read the team's data is a leaf (paper under a running
+   head with a printed double rule, its figures ruled sections, its sources pencilled numerals); nothing stands beside an
+   answer (no mark, no name). Tokens only: spacing, radii, type roles and hairlines are Clubhouse's. */
+
+/* The turn: the island, then the answer's runs and its cards, in one column. */
+.ch-ak-th .msg-a {
+  display: grid;
+  gap: var(--ch-space-4);
+  min-width: 0;
+}
+.ch-ak-say {
+  display: grid;
+  gap: var(--ch-space-4);
+  min-width: 0;
+}
+
+/* The coach's own words: an ivory slip, not a green bubble. */
+.ch-ak-th[data-v3] .ch-th-user {
+  max-width: min(86%, 560px);
+  color: var(--ch-text-primary);
+  font: var(--ch-type-16);
+  letter-spacing: var(--ch-track-16);
+}
+.ch-ak-th[data-v3] .ch-th-user p {
+  margin: 0;
+  padding: var(--ch-space-2) var(--ch-space-4);
+  border-radius: var(--ch-radius-bubble);
+  border-bottom-right-radius: var(--ch-radius-tail);
+  background: var(--ch-card-bg);
+  box-shadow: 0 0 0 1px var(--ch-card-ring);
+  text-wrap: wrap;
+}
+.ch-ak-th[data-v3] .ch-th-user .ch-th-at {
+  color: inherit;
+}
+
+/* The activity island (the owner's picture, 11 Nov): a deep green rounded panel, a title row with a chevron, one row a
+   step. Folded it is one line. Its two sizes swap in one frame: no height is animated, only its rows and words fade. */
+.ch-ak-isl {
+  justify-self: start;
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+  border-radius: 999px;
+  background: var(--ch-feature-bg);
+  box-shadow: var(--ch-feature-shadow);
+  color: var(--ch-feature-ink);
+}
+.ch-ak-isl .hd {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--ch-space-2);
+  box-sizing: border-box;
+  max-width: 100%;
+  min-height: 36px;
+  margin: 0;
+  padding: 0 var(--ch-space-3) 0 var(--ch-space-2);
+  border: 0;
+  border-radius: inherit;
+  background: none;
+  color: inherit;
+  font: var(--ch-type-14-medium);
+  text-align: left;
+}
+.ch-ak-isl p.hd {
+  padding-right: var(--ch-space-4);
+}
+.ch-ak-isl button.hd {
+  cursor: pointer;
+}
+/* A 44px reach around the 36px line. */
+.ch-ak-isl button.hd::after {
+  content: '';
+  position: absolute;
+  inset: calc(-1 * var(--ch-space-1)) 0;
+}
+.ch-ak-isl .hd:focus-visible,
+.ch-ak-isl .st .op:focus-visible {
+  outline: var(--ch-focus-ring-w, 2px) solid var(--ch-feature-gain);
+  outline-offset: 2px;
+}
+.ch-ak-isl .hd .t {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  animation: ch-isl-word var(--ch-dur-base) var(--ch-ease) backwards;
+}
+.ch-ak-isl .hd .m {
+  flex: none;
+  padding-left: var(--ch-space-2);
+  border-left: var(--ch-hairline-w) solid var(--ch-feature-sep);
+  color: var(--ch-feature-ink-2);
+  font: var(--ch-type-13);
+}
+.ch-ak-isl .hd .chev {
+  flex: none;
+  color: var(--ch-feature-ink-3);
+}
+.ch-ak-isl:has(button.hd[data-ch-pressed]) {
+  background: var(--ch-green-700);
+}
+/* Open: the panel. */
+.ch-ak-isl.is-open {
+  width: min(100%, 420px);
+  padding: var(--ch-space-1) var(--ch-space-4) var(--ch-space-3);
+  border-radius: var(--ch-radius-xl);
+}
+.ch-th--phone .ch-ak-isl.is-open {
+  width: 100%;
+}
+.ch-ak-isl.is-open .hd {
+  width: 100%;
+  min-height: 44px;
+  padding: 0;
+  font: var(--ch-type-16-strong);
+  letter-spacing: var(--ch-track-16);
+}
+.ch-ak-isl.is-open button.hd::after {
+  inset: 0;
+}
+.ch-ak-isl.is-open .hd .t {
+  flex: 1;
+}
+.ch-ak-isl.is-open .hd .chev {
+  transform: rotate(180deg);
+}
+/* A step's mark, as the owner's picture draws it: a ringed tick (done), a ring that turns (active), a dim disc (waiting).
+   The shapes and their motion are the shared mark's (`:is(.ch-isl, .ch-ak-isl) .mk`, above); this sets its size and inks. */
+.ch-ak-isl .mk {
+  width: 22px;
+  height: 20px;
+}
+.ch-ak-isl .mk svg {
+  width: 18px;
+  height: 18px;
+}
+.ch-ak-isl .mk :is(.trk, .arc, .ck, .bar) {
+  stroke-width: 1.8;
+}
+.ch-ak-isl .mk.is-active .arc {
+  stroke: var(--ch-feature-ink);
+}
+.ch-ak-isl .mk.is-waiting::before {
+  width: 14px;
+  height: 14px;
+  background: var(--ch-feature-flat);
+  opacity: 0.55;
+}
+.ch-ak-isl .st .mk.is-done.is-rest .arc {
+  opacity: 1;
+}
+.ch-ak-isl .steps {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-ak-isl .st {
+  position: relative;
+  animation: ch-ak-fade var(--ch-dur-base) var(--ch-ease) backwards;
+}
+.ch-ak-isl .st .row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ch-space-3);
+  min-height: 32px;
+  padding: var(--ch-space-1_5) 0;
+  box-sizing: border-box;
+  color: var(--ch-feature-ink-2);
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+}
+.ch-ak-isl .st.is-child .row {
+  padding-left: var(--ch-space-6);
+}
+.ch-ak-isl .st .tx {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--ch-space-0_5);
+  min-width: 0;
+}
+.ch-ak-isl .st .lb {
+  overflow-wrap: anywhere;
+}
+.ch-ak-isl .st.is-active .lb {
+  color: var(--ch-feature-ink);
+  font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
+}
+.ch-ak-isl .st:is(.is-waiting, .is-stopped) .lb {
+  color: var(--ch-feature-ink-3);
+}
+.ch-ak-isl .st.is-failed .lb {
+  color: var(--ch-feature-loss);
+}
+.ch-ak-isl .st .dt {
+  color: var(--ch-feature-ink-3);
+  font: var(--ch-type-13);
+  animation: ch-ak-fade var(--ch-dur-base) var(--ch-ease) backwards;
+}
+.ch-ak-isl .st :is(.ms, .go) {
+  flex: none;
+  margin-top: var(--ch-space-0_5);
+  color: var(--ch-feature-ink-3);
+  font: var(--ch-type-13);
+}
+/* A finished step that produced a read opens it: the whole row is the key. */
+.ch-ak-isl .st .op {
+  position: absolute;
+  inset: 0 calc(-1 * var(--ch-space-2));
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--ch-radius-sm);
+  background: none;
+  cursor: pointer;
+}
+.ch-ak-isl .st .op[data-ch-pressed] {
+  background: var(--ch-feature-icon-bg);
+}
+@media (hover: hover) {
+  .ch-ak-isl .st .op:hover {
+    background: var(--ch-feature-icon-bg);
+  }
+}
+@media (pointer: coarse) {
+  .ch-ak-isl .st.can-open .row {
+    min-height: 44px;
+    align-items: center;
+  }
+}
+
+/* The leaf: yardage-book paper under a running head with a printed double rule. */
+.ch-ak-leaf {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ch-space-5);
+  box-sizing: border-box;
+  min-width: 0;
+  padding: var(--ch-space-4) var(--ch-space-5) var(--ch-space-5);
+  border-radius: var(--ch-radius-card);
+  background: var(--ch-chart-paper);
+  box-shadow: var(--ch-elevation-card);
+}
+.ch-ak-leaf:has(> .ch-ak-src) {
+  padding-bottom: var(--ch-space-2);
+}
+.ch-ak-leaf__head {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--ch-space-3);
+  margin-bottom: var(--ch-space-1);
+  padding-bottom: var(--ch-space-3);
+  border-bottom: var(--ch-hairline-w) solid var(--ch-ink-rule);
+  color: var(--ch-text-tertiary);
+  font: var(--ch-type-13);
+}
+.ch-ak-leaf__head::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: calc(-1 * var(--ch-space-1));
+  left: 0;
+  border-bottom: var(--ch-hairline-w) solid var(--ch-border-hairline);
+}
+.ch-ak-leaf__head > :first-child {
+  color: var(--ch-text-primary);
+  font: var(--ch-type-13-strong);
+}
+.ch-ak-leaf__head > :last-child:not(:first-child) {
+  text-align: right;
+}
+/* The lead: the leaf's first paragraph, set larger. It is the first paragraph from its first word, so it never changes size. */
+.ch-ak-leaf > .ch-ak-leaf__head + .prose .ch-th-prose > .ch-th-p:first-child {
+  font: var(--ch-type-20-medium);
+  letter-spacing: var(--ch-track-20);
+}
+/* A figure in a leaf is a ruled section of it, flat on the paper: no card inside the card. */
+.ch-ak-leaf > .ch-ak-vis {
+  padding-top: var(--ch-space-4);
+  border-top: var(--ch-hairline-w) solid var(--ch-separator-strong);
+}
+.ch-ak-leaf > .ch-ak-vis:first-child,
+.ch-ak-leaf > .ch-ak-leaf__head + .ch-ak-vis {
+  padding-top: 0;
+  border-top: 0;
+}
+.ch-ak-th[data-v3] .ch-ak-leaf :is(.ch-th-fig, .ch-th-va, .ch-th-cv) {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+
+/* A pencilled source mark: a raised numeral after what it supports, the same numeral as its row at the foot. */
+.ch-ak-th .cite-wrap {
+  position: relative;
+  display: inline-block;
+}
+.ch-ak-th .cite {
+  position: relative;
+  top: -0.55em;
+  margin: 0 0 0 var(--ch-space-0_5);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ch-champagne-ink);
+  font: var(--ch-type-11-strong);
+  letter-spacing: var(--ch-track-11);
+  line-height: var(--ch-lead-tight);
+  cursor: pointer;
+}
+.ch-ak-th .cite::after {
+  content: '';
+  position: absolute;
+  inset: calc(-1 * var(--ch-space-4)) calc(-1 * var(--ch-space-2));
+}
+.ch-ak-th .cite.on {
+  color: var(--ch-ask-accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.ch-ak-th .cite:focus-visible {
+  outline: var(--ch-focus-ring-w, 2px) solid var(--ch-ask-accent);
+  outline-offset: 2px;
+  border-radius: var(--ch-radius-mark);
+}
+
+/* The sources, at the foot of the leaf: the pencilled numerals again, each a row that opens. */
+.ch-ak-src {
+  border-top: var(--ch-hairline-w) solid var(--ch-ink-rule);
+}
+.ch-ak-src__h {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ch-space-3);
+  min-height: 44px;
+}
+.ch-ak-src__h h3 {
+  margin: 0;
+  color: var(--ch-text-secondary);
+  font: var(--ch-type-13-strong);
+}
+.ch-ak-src__row {
+  display: grid;
+  grid-template-columns: var(--ch-space-5) minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--ch-space-2);
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-top: var(--ch-hairline-w) solid var(--ch-separator);
+  background: none;
+  color: var(--ch-text-tertiary);
+  font: var(--ch-type-13);
+  text-align: left;
+}
+button.ch-ak-src__row {
+  cursor: pointer;
+}
+.ch-ak-src__row .n {
+  color: var(--ch-champagne-ink);
+  font: var(--ch-type-11-strong);
+  letter-spacing: var(--ch-track-11);
+}
+.ch-ak-src__row .t {
+  overflow: hidden;
+  color: var(--ch-text-primary);
+  font: var(--ch-type-14);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ch-ak-src__row.is-on .t {
+  color: var(--ch-ask-accent);
+}
+.ch-ak-src__row:focus-visible {
+  outline: var(--ch-focus-ring-w, 2px) solid var(--ch-ask-accent);
+  outline-offset: 2px;
+  border-radius: var(--ch-radius-sm);
+}
+/* Under plain words (no leaf) the rows hang without the leaf's rule; with nothing to list, the row is the copy key alone. */
+.ch-ak-src.is-plain,
+.ch-ak-src.is-bare {
+  border-top: 0;
+}
+.ch-ak-src.is-bare .ch-ak-src__h {
+  justify-content: flex-end;
+  min-height: 32px;
+}
+.ch-ak-leaf > .ch-ak-src.is-bare {
+  margin-top: calc(-1 * var(--ch-space-3));
+}
+/* The copy key. */
+.ch-ak-th .sb {
+  position: relative;
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  margin-right: calc(-1 * var(--ch-space-2));
+  border: 0;
+  border-radius: var(--ch-radius-sm);
+  background: none;
+  color: var(--ch-text-tertiary);
+  cursor: pointer;
+}
+.ch-ak-th .sb::after {
+  content: '';
+  position: absolute;
+  inset: calc(-1 * var(--ch-space-1_5));
+}
+
+/* What the coach might ask next: ruled rows under the answer, as the sources are, not pills. */
+.ch-ak-th .chips {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-ak-th .chips li + li {
+  border-top: var(--ch-hairline-w) solid var(--ch-separator);
+}
+.ch-ak-th .chip {
+  position: relative;
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ch-space-3);
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+  padding: var(--ch-space-2) 0;
+  border: 0;
+  background: none;
+  color: var(--ch-text-primary);
+  font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
+  text-align: left;
+  cursor: pointer;
+}
+.ch-ak-th .chip svg {
+  flex: none;
+  color: var(--ch-text-tertiary);
+}
+.ch-ak-th .chip:focus-visible {
+  outline: var(--ch-focus-ring-w, 2px) solid var(--ch-ask-accent);
+  outline-offset: 2px;
+  border-radius: var(--ch-radius-sm);
+}
+@media (hover: hover) {
+  .ch-ak-th .chip:hover svg,
+  button.ch-ak-src__row:hover > svg {
+    color: var(--ch-ask-accent);
+  }
+}
+.ch-ak-th .chip[data-ch-pressed],
+button.ch-ak-src__row[data-ch-pressed] {
+  opacity: 0.6;
+}
+
+/* A desk: the leaf has a wider margin, and its lead is a step larger. */
+@media (min-width: 821px) {
+  .ch-ak-th:not(.ch-th--phone, .is-compact) .ch-ak-leaf {
+    padding: var(--ch-space-5) var(--ch-space-8) var(--ch-space-6);
+  }
+  .ch-ak-th:not(.ch-th--phone, .is-compact) .ch-ak-leaf:has(> .ch-ak-src) {
+    padding-bottom: var(--ch-space-3);
+  }
+  .ch-ak-th:not(.ch-th--phone, .is-compact) .ch-ak-leaf > .ch-ak-leaf__head + .prose .ch-th-prose > .ch-th-p:first-child {
+    font: var(--ch-type-22-medium);
+    letter-spacing: var(--ch-track-22);
+  }
+}

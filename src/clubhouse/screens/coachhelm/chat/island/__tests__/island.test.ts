@@ -74,6 +74,36 @@ describe('the activity island: its model', () => {
   });
 });
 
+describe('the island in the thread: ticks arrive from the top down (owner, 11 Nov)', () => {
+  it('a later step never shows done before an earlier one: it keeps turning until the earlier one finishes', () => {
+    const racing = [step('a'), step('b', { state: 'done', detail: '8 rounds', ref: 'e2' }), step('c', { state: 'next' })];
+    // As the engine reports it, the second read has finished while the first still runs.
+    expect(islandSteps(racing, true).map((s) => s.state)).toEqual(['active', 'done', 'waiting']);
+    const held = islandSteps(racing, true, true);
+    expect(held.map((s) => s.state)).toEqual(['active', 'active', 'waiting']);
+    // Held, it is still said in the present tense, and it does not open a read yet.
+    expect(held[1]).toMatchObject({ label: 'Reading b', ref: null });
+    // The first finishes: both are done, in order.
+    const settled = islandSteps([step('a', { state: 'done' }), racing[1]!, racing[2]!], true, true);
+    expect(settled.map((s) => s.state)).toEqual(['done', 'done', 'waiting']);
+    expect(settled[1]).toMatchObject({ label: 'Read b', ref: 'e2', detail: '8 rounds' });
+  });
+  it('a held step holds the ones after it, a step is never held by its own parent, and a finished turn is drawn as it ended', () => {
+    const chain = [step('a'), step('b', { state: 'done' }), step('c', { state: 'done' })];
+    expect(islandSteps(chain, true, true).map((s) => s.state)).toEqual(['active', 'active', 'active']);
+    // A calculation runs for as long as the reads under it: its finished read ticks while it turns.
+    const nested = [step('calc', { kind: 'calculate' }), step('r1', { parentId: 'calc', state: 'done' }), step('r2', { parentId: 'calc' })];
+    expect(islandSteps(nested, true, true).map((s) => s.state)).toEqual(['active', 'done', 'active']);
+    // Not live: nothing is held, every step is what the engine last said.
+    expect(islandSteps(chain, false, true).map((s) => s.state)).toEqual(['stopped', 'done', 'done']);
+  });
+  it('the model counts and names by what is shown', () => {
+    const turn = { id: 't', steps: [step('a'), step('b', { state: 'done' })], blocks: [] } as unknown as Parameters<typeof islandModel>[0];
+    const m = islandModel(turn, { live: true, hasText: false, waitingForCoach: false, seconds: null, ended: false, ordered: true });
+    expect(m).toMatchObject({ done: 0, total: 2, head: 'Reading a', more: 1 });
+  });
+});
+
 describe('the activity island: every change on screen is an engine event', () => {
   it('replaying a script gives the same island twice, and it only changes when a step event arrives', () => {
     for (const name of ['isl-one', 'isl-three', 'isl-team', 'isl-fail', 'isl-chart', 'isl-draft', 'isl-open', 'jonah']) {

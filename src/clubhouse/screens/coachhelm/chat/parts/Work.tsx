@@ -5,7 +5,6 @@ import { useEffect, useId, useReducer, useRef, useState } from 'react';
 import { stepsReceipt, type AskStep } from '../../../../data/coachhelm-chat-thread';
 import { haptic } from '../../../../lib/haptics';
 import { Icon } from '../../../../ui/Icon';
-import { ReadPicture } from '../../plan/ReadPicture';
 import { nextReadChange, nextWaitingChange, readRowState, TURN_TIMING, waitingWords, type ReadRowState } from '../turn-timing';
 
 export interface WorkRow {
@@ -132,8 +131,9 @@ export function LiveDot({ className }: { className?: string }) {
 }
 
 /**
- * The work line: the words after the name on the turn's first row. The only place status is said, so status never adds or
- * removes a row and the answer's first line is always under the name. Folded, it is the button that opens the reads.
+ * The work line (quick chat): the one line above an answer that says what the turn is doing. The only place status is said
+ * there, so status never adds or removes a row. Once the work is over it is the key that opens the island in the header.
+ * Ask draws no work line: its island sits in the flow (`island/TurnIsland`).
  */
 export function WorkLine({ work, listId, handle }: { work: WorkModel; listId: string; /** The summary opens the activity island instead of a list under the name. */ handle?: { open: boolean; onOpen: () => void } }) {
   const { line } = work;
@@ -156,57 +156,6 @@ export function WorkLine({ work, listId, handle }: { work: WorkModel; listId: st
         </span>
       )}
     </span>
-  );
-}
-
-function Glyph({ state, watched }: { state: WorkRow['state']; watched: boolean }) {
-  // An amber ring with a bar; red means under par and nothing else.
-  if (state === 'failed')
-    return (
-      <span className="ic is-fail" aria-hidden="true">
-        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-          <circle cx="9" cy="9" r="7" />
-          <path d="M6 9h6" />
-        </svg>
-      </span>
-    );
-  if (state === 'running')
-    return (
-      <span className="ic" aria-hidden="true">
-        <LiveDot />
-      </span>
-    );
-  if (state === 'stopped')
-    return (
-      <span className="ic" aria-hidden="true">
-        <i className="dash" />
-      </span>
-    );
-  return (
-    <span className={'ic ok' + (watched ? ' is-drawn' : '')} aria-hidden="true">
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M2.5 7.5 5.6 10.5 11.5 3.8" pathLength="24" />
-      </svg>
-    </span>
-  );
-}
-
-/** The reads, one row each, in the order they started: the kit's rows. Open only where nothing sits under them, or because the coach opened them. */
-export function ReadList({ work, id, live }: { work: WorkModel; id: string; live: boolean }) {
-  if (!work.listOpen) return null;
-  return (
-    <ol id={id} className={'ch-ak-reads' + (work.folding ? ' is-folding' : '') + (live ? ' is-live' : ' is-still')} aria-label="What CoachHelm read">
-      {work.rows.map(({ step, state, watched }) => (
-        <li key={step.id} className={'rd is-' + state} aria-current={state === 'running' ? 'step' : undefined}>
-          <Glyph state={state} watched={watched} />
-          <span className="tx">
-            <span className={state === 'running' ? 'lb shim' : 'lb'}>{state === 'failed' ? couldNot(step.label) : state === 'done' ? pastOf(step.done ?? step.label) : step.label}</span>
-            {state === 'done' && step.detail && <small>{step.detail}</small>}
-            {state === 'done' && step.picture && <ReadPicture picture={step.picture} />}
-          </span>
-        </li>
-      ))}
-    </ol>
   );
 }
 

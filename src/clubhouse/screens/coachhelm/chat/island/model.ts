@@ -58,10 +58,21 @@ function stateOf(step: AskStep, live: boolean, stated: boolean): IslandStepState
   return stated || step.state === 'active' ? 'stopped' : 'done';
 }
 
-export function islandSteps(steps: readonly AskStep[], live: boolean): IslandStep[] {
+/**
+ * The steps as rows. `ordered` (the island in the thread, owner 11 Nov): a later step never shows finished before an earlier
+ * one. Reads that run side by side can finish in any order; a finished one whose earlier neighbour is still running keeps
+ * turning until that neighbour is done, so the ticks always arrive from the top down. A step is never held by its own
+ * parent (a calculation runs for as long as the reads under it).
+ */
+export function islandSteps(steps: readonly AskStep[], live: boolean, ordered = false): IslandStep[] {
   const stated = steps.some((s) => s.state === 'done' || s.state === 'failed');
+  /** Earlier steps that have not finished, by id. */
+  const open: string[] = [];
   return steps.map((s) => {
-    const state = stateOf(s, live, stated);
+    const real = stateOf(s, live, stated);
+    const held = ordered && live && real === 'done' && open.some((id) => id !== s.parentId);
+    const state: IslandStepState = held ? 'active' : real;
+    if (real === 'active' || real === 'waiting' || held) open.push(s.id);
     const label = state === 'failed' ? couldNot(s.label) : state === 'done' ? pastOf(s.done ?? s.label) : s.label;
     const covered = s.covers ? `${s.covers.n} of ${s.covers.of} ${s.covers.unit}` : null;
     const detail = state === 'done' ? (s.detail ?? covered ?? (s.count ? tally({ ...s.count, more: false }) : null)) : state === 'active' && s.count ? tally(s.count) : state === 'failed' ? (s.detail ?? null) : null;
@@ -76,8 +87,8 @@ export function elapsedWords(seconds: number): string {
   return s < 60 ? `${s}s` : `${Math.floor(s / 60)}m ${s % 60}s`;
 }
 
-export function islandModel(turn: AskAssistantTurn, o: { live: boolean; hasText: boolean; waitingForCoach: boolean; seconds: number | null; ended: boolean }): IslandModel {
-  const steps = islandSteps(turn.steps, o.live);
+export function islandModel(turn: AskAssistantTurn, o: { live: boolean; hasText: boolean; waitingForCoach: boolean; seconds: number | null; ended: boolean; /** Ticks arrive from the top down (see `islandSteps`). */ ordered?: boolean }): IslandModel {
+  const steps = islandSteps(turn.steps, o.live, o.ordered);
   const total = steps.length;
   const done = steps.filter((s) => s.state === 'done').length;
   // What is running, said by its leaves: a calculation whose own read is running is named by that read.

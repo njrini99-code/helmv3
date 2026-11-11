@@ -32,6 +32,7 @@ import { TaskCard } from './parts/TaskCard';
 import type { ActionReceipt } from '@/lib/coachhelm/v3/chat/action-types';
 import type { AskArtifact } from './parts/artifacts';
 import { AskUserText } from './Prose';
+import { scopeWho } from './ask-scope-window';
 import '../../../styles/coachhelm-thread.css';
 
 export interface AskThreadProps {
@@ -66,8 +67,9 @@ export interface AskThreadProps {
   /** A task card's write changed state (held, saved, undone, failed): what the page behind a quick chat lands from. */
   onCardPhase?: (key: string, phase: ReceiptPhase, receipt: ActionReceipt | null) => void;
   /**
-   * The activity island shows this thread's work (`island/useIsland`): the turn it is on screen for and whether its steps are open,
-   * and how a turn's own line opens it. Left out, the reads hang under the name as before.
+   * The work is shown by an island outside the thread (`island/useIsland`; quick chat's header): the turn it is on screen for,
+   * whether its steps are open, and how a turn's own line opens it. Left out, each turn draws its island in the flow, under
+   * its question (direction A).
    */
   island?: { turnId: string | null; open: boolean; pinned: boolean; openFor: (turnId: string) => void };
 }
@@ -95,7 +97,7 @@ function pagesOf(turns: AskTurn[]): Page[] {
   return pages;
 }
 
-/** The turn that stands in for an answer the server has not opened yet: the mark and the name, and whatever the wait has earned. */
+/** The turn that stands in for an answer the server has not opened yet: the island's one line, and whatever the wait has earned. */
 const pendingTurn = (id: string): AskAssistantTurn => ({ role: 'assistant', id, steps: [], envelopes: [], blocks: [], note: null, answerText: '', work: null, followUps: [], active: true });
 
 /**
@@ -294,8 +296,8 @@ export function AskThread({ viewer = 'coach', team, stoppedTurn = null, onArtifa
                 const followUps = viewer === 'player' ? playerFollowUps(turn.followUps, turn.envelopes) : turn.followUps;
                 const showFollowUps = isLast && !busy && !pending && !error && followUps.length > 0;
                 const question = page.turns[turnIndex - 1];
-                // The turn that answers the page's question keeps one identity from the moment the question is sent, so the mark that
-                // waited is the mark that answers: nothing remounts when the server opens the turn.
+                // The turn that answers the page's question keeps one identity from the moment the question is sent, so the island that
+                // waited is the island that works: nothing remounts when the server opens the turn.
                 const answersQuestion = question?.role === 'user' && turnIndex === 1;
                 const end: TurnEnd | null = !isLast || busy ? null : error ? { kind: 'failed', notice: error } : stoppedTurn !== null ? { kind: 'stopped' } : null;
                 return (
@@ -314,6 +316,7 @@ export function AskThread({ viewer = 'coach', team, stoppedTurn = null, onArtifa
                     onNewChat={onNewChat}
                     onOpenRead={openRead(turn.id)}
                     openRef={evidenceFocus?.messageId === turn.id ? (evidenceFocus.ref ?? null) : null}
+                    subject={question?.role === 'user' ? scopeWho(question.text, viewer === 'player' ? 'My rounds' : (team ?? 'Your team'), viewer === 'player' ? [] : names) : null}
                     island={island ? { showing: island.turnId === turn.id && !island.pinned, open: island.turnId === turn.id && island.open, onOpen: () => island.openFor(turn.id) } : undefined}
                     actions={(b) => {
                       if (b.kind === 'receipt') {
