@@ -148,6 +148,12 @@
 .ch-tour-desk.is-phone .ch-tour-desk-tabs button {
   height: 44px;
 }
+/* A short word ("Holes" is 37px wide) still reaches 44 across (F-0021): the reach is a layer inside the 24px gap. */
+.ch-tour-desk.is-phone .ch-tour-desk-tabs button::after {
+  position: absolute;
+  inset: 0 min(0px, calc(50% - 22px));
+  content: '';
+}
 
 .ch-tour-desk-line {
   margin: 0 0 12px;

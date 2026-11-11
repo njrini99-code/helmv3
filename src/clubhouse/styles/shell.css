@@ -4100,6 +4100,12 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
     transition: translate var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth),
       transform var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
   }
+  /* 22px drawn, 24 x 24 to the pointer (F-0022): it sat under the desktop minimum on every page. */
+  .ch-railtoggle::after {
+    position: absolute;
+    inset: -1px;
+    content: '';
+  }
   .ch-railtoggle svg {
     transition: transform var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
   }

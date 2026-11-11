@@ -2571,6 +2571,12 @@ html[data-fw-theme='dark'] .ch-hb-chip {
     text-decoration-color: currentColor;
   }
 }
+/* A 19px line of text, 25px to the pointer (F-0022): the reach is a layer, so the line does not move. */
+.ch-hb-strip button::after {
+  position: absolute;
+  inset: -3px 0;
+  content: '';
+}
 .ch-hb-strip button:focus-visible {
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
@@ -3537,6 +3543,13 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   color: var(--ch-text-primary);
   text-align: left;
   cursor: pointer;
+  position: relative;
+}
+/* A 19px line, 25px to the pointer (F-0022): the reach is a layer, so the row does not grow. */
+.ch-hw-led tbody th button::after {
+  position: absolute;
+  inset: -3px 0;
+  content: '';
 }
 .ch-hw-led tbody th svg,
 .ch-hw-ledm button > svg {

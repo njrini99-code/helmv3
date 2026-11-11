@@ -596,11 +596,11 @@
     height: 44px;
   }
   /* Every control's hit area reaches 44 x 44 on the phone without changing how it is drawn (a 26px
-     segment, a 30px small button, a 36px pill). Zero specificity, so a page's own hit area wins. */
-  :where(.ch-root) :where(.ch-btn, .ch-seg__b, .ch-pill, .ch-hm-link, .ch-msp-link, .ch-spm-head__msg, .ch-search__x, .ch-hs-ld__why) {
+     segment, a 30px small button, a 36px pill, the switch's 40 x 23 track). Zero specificity, so a page's own hit area wins. */
+  :where(.ch-root) :where(.ch-btn, .ch-seg__b, .ch-pill, .ch-hm-link, .ch-msp-link, .ch-spm-head__msg, .ch-search__x, .ch-hs-ld__why, .ch-switch) {
     position: relative;
   }
-  :where(.ch-root) :where(.ch-btn, .ch-seg__b, .ch-pill, .ch-hm-link, .ch-msp-link, .ch-spm-head__msg, .ch-search__x, .ch-hs-ld__why)::after {
+  :where(.ch-root) :where(.ch-btn, .ch-seg__b, .ch-pill, .ch-hm-link, .ch-msp-link, .ch-spm-head__msg, .ch-search__x, .ch-hs-ld__why, .ch-switch)::after {
     content: '';
     position: absolute;
     inset: min(0px, calc(50% - 22px));
@@ -650,6 +650,19 @@
     content: '';
     position: absolute;
     inset: -8px -7px -6px;
+  }
+}
+
+/* On a desk a control's hit area reaches 24 x 24 without changing how it is drawn (F-0022): the switch's 23px track and a
+   card head's 19px text link. Zero specificity, as the phone's rule above, so a page's own hit area wins. */
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
+  :where(.ch-root) :where(.ch-switch, .ch-hm-link) {
+    position: relative;
+  }
+  :where(.ch-root) :where(.ch-switch, .ch-hm-link)::after {
+    content: '';
+    position: absolute;
+    inset: min(0px, calc(50% - 12px));
   }
 }
 
