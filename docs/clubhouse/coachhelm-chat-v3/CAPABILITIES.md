@@ -1,25 +1,39 @@
 # CoachHelm chat v3: every capability, as the coach sees it (11 Nov 2026)
 
-`SPEC.md` is the turn and the card's shell (frame, buttons, ring, receipt row, work line). `MOTION.md` is every
-movement. This file is what goes **inside**: for each thing the assistant can do in the app, what a coach must be able
-to check before saying yes, how it is laid out, every state, the words, and the proof afterwards. It also covers what
-an answer can show (evidence, visuals, links, notes, computed answers), the fixed set of components that draws all of
-it (section S, the studio), and the step each capability shows while CoachHelm works (section W, the workspace).
+`SPEC.md` is the turn and the card's shell (frame, buttons, ring, receipt row,
+work line). `MOTION.md` is every
+movement. This file is what goes **inside**: for each thing the assistant can do
+in the app, what a coach must be able
+to check before saying yes, how it is laid out, every state, the words, and the
+proof afterwards. It also covers what
+an answer can show (evidence, visuals, links, notes, computed answers), the
+fixed set of components that draws all of
+it (section S, the studio), and the step each capability shows while CoachHelm
+works (section W, the workspace).
 
-Read from the code, not from memory: `registry.ts`, `tasks.ts`, `create-tools.ts`, `action-planners.ts`,
-`practice-planner.ts`, `practice-draft.ts`, `tasks/event-tasks.ts`, `context/notes.ts`, `context/find-in-app.ts`,
-`readers.ts`, `readers-direct.ts`, `engine/protocol.ts`, `engine/loop.ts`. Where a plan does not carry something a
-coach needs, the card does not invent it: it is listed under "Requests to the engine" with the field needed.
+Read from the code, not from memory: `registry.ts`, `tasks.ts`,
+`create-tools.ts`, `action-planners.ts`,
+`practice-planner.ts`, `practice-draft.ts`, `tasks/event-tasks.ts`,
+`context/notes.ts`, `context/find-in-app.ts`,
+`readers.ts`, `readers-direct.ts`, `engine/protocol.ts`, `engine/loop.ts`. Where
+a plan does not carry something a
+coach needs, the card does not invent it: it is listed under "Requests to the
+engine" with the field needed.
 
-Gallery: `/clubhouse-preview/coachhelm-capabilities` (no sign-in, no model call). Deep link per capability and state:
-`?task=create_trip&state=held&density=compact`. Code: `src/clubhouse/screens/coachhelm/chat/cards/**` (task card
-bodies, edit mode, approve all), `src/clubhouse/screens/coachhelm/chat/studio/**` (the renderer and registry),
+Gallery: `/clubhouse-preview/coachhelm-capabilities` (no sign-in, no model
+call). Deep link per capability and state:
+`?task=create_trip&state=held&density=compact`. Code:
+`src/clubhouse/screens/coachhelm/chat/cards/**` (task card
+bodies, edit mode, approve all),
+`src/clubhouse/screens/coachhelm/chat/studio/**` (the renderer and registry),
 `src/clubhouse/styles/coachhelm-ask-cards.css`.
 
 ## Count
 
-The engine registers 32 task tools, 6 draft tools, 2 note tools and the reads (the catalogue test reads the task
-names from the engine's own files and fails when one has no card). They make **65 designed capabilities**, drawn by
+The engine registers 32 task tools, 6 draft tools, 2 note tools and the reads
+(the catalogue test reads the task
+names from the engine's own files and fails when one has no card). They make
+**65 designed capabilities**, drawn by
 **16 studio components**:
 
 | Group | Count | What |
@@ -32,14 +46,17 @@ names from the engine's own files and fails when one has no card). They make **6
 | F. Thinking and working | 5 | waiting, reading, working out, drafting, a task's own states on the work line |
 | Across cards | 2 | edit mode (0.8), several cards and approve all (0.9) |
 
-Section S is the component set those are drawn with; section W is the workspace step each one shows.
+Section S is the component set those are drawn with; section W is the workspace
+step each one shows.
 
 ## 0. What is the same for every task card
 
 ### 0.1 The seam with the shell
 
-The shell (chat UI lead) draws the frame, the head (what it will become, the badge), the "On confirm" line, the
-button row, the ring, the receipt row and the "Told" line, and derives the state. A **body** fills the space between
+The shell (chat UI lead) draws the frame, the head (what it will become, the
+badge), the "On confirm" line, the
+button row, the ring, the receipt row and the "Told" line, and derives the
+state. A **body** fills the space between
 the head and the "On confirm" line. One body per capability, from `cards/index.tsx`:
 
 ```ts
@@ -59,42 +76,60 @@ interface CardBodyProps {
 }
 ```
 
-A body reads `facts`, `affects`, `notifications`, `visual`, `publish`, `neighbours` and `missing`. It never reads
-`input` (the write's arguments are not a display contract and hold ids). The fact labels each body depends on are
+A body reads `facts`, `affects`, `notifications`, `visual`, `publish`,
+`neighbours` and `missing`. It never reads
+`input` (the write's arguments are not a display contract and hold ids). The
+fact labels each body depends on are
 the table in 0.7; a test holds the fixtures to the labels the planners write.
 
-A body may not: draw a button in the button row or any Confirm, Cancel, Undo or Open of its own; fetch, poll or
-start a timer; animate its arrival, its height or its layout; draw a ring, a check, a badge or a receipt. It may hold
-a disclosure the coach taps ("Show all 40", "Show the whole message"), which changes height in one frame on their
-tap (MOTION: "because the coach tapped"). Dimming a cancelled or undone draft is the shell's opacity on the body.
+A body may not: draw a button in the button row or any Confirm, Cancel, Undo or
+Open of its own; fetch, poll or
+start a timer; animate its arrival, its height or its layout; draw a ring, a
+check, a badge or a receipt. It may hold
+a disclosure the coach taps ("Show all 40", "Show the whole message"), which
+changes height in one frame on their
+tap (MOTION: "because the coach tapped"). Dimming a cancelled or undone draft is
+the shell's opacity on the body.
 
-`cards/catalog.ts` holds each capability's words as data (head, primary, busy, badge, hold line, undone line, home,
-and `dismiss`: the quiet key's word, "Cancel" except where that would read as the action: "Keep the event", "Keep
-it"), so the shell's labels and the body cannot drift. `cardCopy(tool, proposal)`. Reach, how many are told and
+`cards/catalog.ts` holds each capability's words as data (head, primary, busy,
+badge, hold line, undone line, home,
+and `dismiss`: the quiet key's word, "Cancel" except where that would read as
+the action: "Keep the event", "Keep
+it"), so the shell's labels and the body cannot drift. `cardCopy(tool,
+proposal)`. Reach, how many are told and
 whether there is an Undo window come from the plan itself when it says (0.10).
 
 ### 0.2 The order inside a body (and the VoiceOver order)
 
-Head (shell): what will happen. Then the body, always in this order, each part present only when it has something
+Head (shell): what will happen. Then the body, always in this order, each part
+present only when it has something
 true to say:
 
-1. **Reach**: who is affected and how far it travels. First, because "does this reach my players" is the check that
+1. **Reach**: who is affected and how far it travels. First, because "does this
+   reach my players" is the check that
    cannot be undone by reading the rest.
-2. **Subject**: the thing itself, drawn the way its home screen draws it (an event as a calendar tile, a task as a
+2. **Subject**: the thing itself, drawn the way its home screen draws it (an
+   event as a calendar tile, a task as a
    Tasks row, a poll as a Messages poll, a drill as the drill bank's card).
-3. **Words**: anything a person will read, word for word, in the frame they will read it in (a notification, a
+3. **Words**: anything a person will read, word for word, in the frame they will
+   read it in (a notification, a
    message bubble, a note under the round).
 4. **Details**: the remaining facts as label and value rows.
-5. **Changes**: what this replaces or leaves alone ("Replaces the earlier note", "2 players are left as they are").
-6. **Warning**: anything that cannot be taken back, in amber, last before the shell's "On confirm" line.
+5. **Changes**: what this replaces or leaves alone ("Replaces the earlier note",
+   "2 players are left as they are").
+6. **Warning**: anything that cannot be taken back, in amber, last before the
+   shell's "On confirm" line.
 
-Read aloud: the head ("Add to calendar. Short-game practice."), the reach ("Sends to 6 players: Eli Brandt, …"),
-the subject, the words, then the shell's line and buttons. The body is one `role="group"` labelled by the reach
+Read aloud: the head ("Add to calendar. Short-game practice."), the reach
+("Sends to 6 players: Eli Brandt, …"),
+the subject, the words, then the shell's line and buttons. The body is one
+`role="group"` labelled by the reach
 sentence; avatars are decorative (names are text).
 
 ### 0.3 Reach: three levels, one vocabulary
 
-Every card says which of three things is true, in the same place, with the same three marks. A coach learns it once.
+Every card says which of three things is true, in the same place, with the same
+three marks. A coach learns it once.
 
 | Level | Meaning | Mark | Lead words (proposed) |
 | --- | --- | --- | --- |
@@ -102,29 +137,44 @@ Every card says which of three things is true, in the same place, with the same 
 | **Visible** | Nothing is sent, but players can see it in the app | `Badge tone="info"`: "Players can see it" | "On the team's calendar", "In Documents" |
 | **Private** | Only the coach, or only coaches | `Badge tone="neutral"` with the lock glyph: "Only you" / "Coaches only" | "Only you see this" |
 
-- The level comes from the plan's `notifications` and the capability's own rule (catalog), never from a guess: a
+- The level comes from the plan's `notifications` and the capability's own rule
+  (catalog), never from a guess: a
   line that begins "Nobody is told" or an empty list is not Sends.
-- **People**: named players as avatars (at most 5, then "+35") and names as text: one name in full; two or three
-  joined ("Eli Brandt, Jonah Reyes and Max Ortiz"); more: the first two "and 4 more" with **Show all 6** (a ghost
-  `Button`, small), which opens the full list in roster order, wrapped, each an avatar and a name. The whole roster
-  is "All 7 players" plus Show all. Forty names never print by default and are always one tap away.
-- Tense follows the state: "Sends to" (proposed, confirming), "Sending to … when the ring closes" is the shell's
-  line, "Sent to" (saved), "Not sent" (undone, cancelled, set aside, failed, no longer available). For Visible and
+- **People**: named players as avatars (at most 5, then "+35") and names as
+  text: one name in full; two or three
+  joined ("Eli Brandt, Jonah Reyes and Max Ortiz"); more: the first two "and 4
+  more" with **Show all 6** (a ghost
+  `Button`, small), which opens the full list in roster order, wrapped, each an
+  avatar and a name. The whole roster
+  is "All 7 players" plus Show all. Forty names never print by default and are
+  always one tap away.
+- Tense follows the state: "Sends to" (proposed, confirming), "Sending to … when
+  the ring closes" is the shell's
+  line, "Sent to" (saved), "Not sent" (undone, cancelled, set aside, failed, no
+  longer available). For Visible and
   Private the words do not change with state; only the shell's line does.
-- A card that Sends always shows the recipients and the words (0.4). If the plan carries no recipients by name or no
-  words, the card says exactly that in the place they would be ("The plan does not list who: 6 players") and the gap
+- A card that Sends always shows the recipients and the words (0.4). If the plan
+  carries no recipients by name or no
+  words, the card says exactly that in the place they would be ("The plan does
+  not list who: 6 players") and the gap
   is an engine request. It never draws a made-up preview.
 
 ### 0.4 Words: verbatim, in the reader's frame
 
-- Text another person will read is drawn in the frame they will read it in: a **notice** (app glyph, bold title,
-  body: the notification as a phone shows it), a **bubble** (the coach's own sent bubble from Messages), a **note**
+- Text another person will read is drawn in the frame they will read it in: a
+  **notice** (app glyph, bold title,
+  body: the notification as a phone shows it), a **bubble** (the coach's own
+  sent bubble from Messages), a **note**
   (quoted, with its author line).
-- It is the plan's text, never a summary. The whole text is in the DOM. Past 6 lines (4 in compact) it is clamped
-  with **Show the whole message · 1,240 characters**; the count is always shown when clamped so a coach knows how
+- It is the plan's text, never a summary. The whole text is in the DOM. Past 6
+  lines (4 in compact) it is clamped
+  with **Show the whole message · 1,240 characters**; the count is always shown
+  when clamped so a coach knows how
   much is under the fold before they confirm.
-- When the plan has the channel but not the words ("6 players get a push and an email"), the card shows the channel
-  line and, under it, "The exact wording is not shown here." in secondary ink. No fake notification.
+- When the plan has the channel but not the words ("6 players get a push and an
+  email"), the card shows the channel
+  line and, under it, "The exact wording is not shown here." in secondary ink.
+  No fake notification.
 
 ### 0.5 Long values
 
@@ -162,87 +212,139 @@ Every card says which of three things is true, in the same place, with the same 
 | too late to undo | ST-7.late-undo | as saved |
 | immediate (lock a lineup only) | n/a | no held, no undo: proposed, confirming, saved or failed |
 
-The gallery's switcher offers these by name; "Play" runs proposed, Confirm, the 8 seconds and saved at real timing,
+The gallery's switcher offers these by name; "Play" runs proposed, Confirm, the
+8 seconds and saved at real timing,
 and "Play with Undo" presses Undo at 3 seconds.
 
 ### 0.7 The fact labels each body reads (the contract with the planners)
 
-`create_event`: When, Length, Type, Where, Invited, Replies; visual `cal`. `create_recurring_practice`: Repeats,
-Dates, Occurrences, Timezone, Location, Invites, RSVP. `add_blocked_time`: When. `add_team_break`: Dates.
-`save_team_term`: Classes, Exams end. `create_trip`: Leaves, How, From, Back, Hotel, Rooms, Uniform, Gear; visual
-`trip`. `create_qualifier`: Starts, Rounds, Squad, Players, Rules; visual `qual`. `create_goal`: Player, Target, By,
-How; visual `goal`. `create_focus_area`: Player, Focus, Area, Target, By, Over, Status. `create_task`: Task, Assigned
-to, Due, Priority; visual `task`. `create_team_announcement`: Title, Message, To, Urgency, Acknowledgement.
-`add_round_note`: Earlier note, Adding; visual `note`. `set_availability_note`: Replaces, Note. `create_recruit`:
-Grad year, Status, Hometown. `create_drill`: Area, Length, Setup, Goal. `publish_practice_plan`: When, Where, Tells,
-What they get; `publish`. `publish_artifact`: Who can see it, Goes to, Words. `send_message`: Thread, Message; visual
-`msg`. `set_lineup`: Lineup; visual `lineup`. `lock_lineup`: Tournament. `send_event_reminder`: Event, To (n), Will
-not get it, They see, How, When. `record_attendance`: Event, Present (n), Late (n), No-show (n), Changes a mark
-already recorded, Not marked, Players are told. An unknown label is drawn as a plain row, so a new fact is never lost.
+`create_event`: When, Length, Type, Where, Invited, Replies; visual `cal`.
+`create_recurring_practice`: Repeats,
+Dates, Occurrences, Timezone, Location, Invites, RSVP. `add_blocked_time`: When.
+`add_team_break`: Dates.
+`save_team_term`: Classes, Exams end. `create_trip`: Leaves, How, From, Back,
+Hotel, Rooms, Uniform, Gear; visual
+`trip`. `create_qualifier`: Starts, Rounds, Squad, Players, Rules; visual
+`qual`. `create_goal`: Player, Target, By,
+How; visual `goal`. `create_focus_area`: Player, Focus, Area, Target, By, Over,
+Status. `create_task`: Task, Assigned
+to, Due, Priority; visual `task`. `create_team_announcement`: Title, Message,
+To, Urgency, Acknowledgement.
+`add_round_note`: Earlier note, Adding; visual `note`. `set_availability_note`:
+Replaces, Note. `create_recruit`:
+Grad year, Status, Hometown. `create_drill`: Area, Length, Setup, Goal.
+`publish_practice_plan`: When, Where, Tells,
+What they get; `publish`. `publish_artifact`: Who can see it, Goes to, Words.
+`send_message`: Thread, Message; visual
+`msg`. `set_lineup`: Lineup; visual `lineup`. `lock_lineup`: Tournament.
+`send_event_reminder`: Event, To (n), Will
+not get it, They see, How, When. `record_attendance`: Event, Present (n), Late
+(n), No-show (n), Changes a mark
+already recorded, Not marked, Players are told. An unknown label is drawn as a
+plain row, so a new fact is never lost.
 
 ### 0.8 Edit mode: changing a card before Confirm
 
-A plan may declare fields a coach can change without asking again (`proposal.editable`, engine E28, PLANS P11). The
-card then has two ways to change: a field it declares (edit mode), or anything else, in words (a new card replaces
+A plan may declare fields a coach can change without asking again
+(`proposal.editable`, engine E28, PLANS P11). The
+card then has two ways to change: a field it declares (edit mode), or anything
+else, in words (a new card replaces
 this one). The design holds four things true.
 
-- **It looks editable only where it is.** With no `editable` on the plan, or no `onEdit` from the shell, or in any
-  state but proposed, there is no Edit key and nothing in the body is a control. With them, the body ends with one
-  quiet key, "Edit", and a caption that names exactly what it opens ("You can change the title, the day and who is
-  invited."). Rows do not turn into inputs in place: a row that is sometimes text and sometimes a field is how a
+- **It looks editable only where it is.** With no `editable` on the plan, or no
+  `onEdit` from the shell, or in any
+  state but proposed, there is no Edit key and nothing in the body is a control.
+  With them, the body ends with one
+  quiet key, "Edit", and a caption that names exactly what it opens ("You can
+  change the title, the day and who is
+  invited."). Rows do not turn into inputs in place: a row that is sometimes
+  text and sometimes a field is how a
   coach changes something by accident.
-- **One real control per kind of field**, the app's own: text and long text (`.ch-input`, `.ch-textarea` with the
-  character count against the limit), a day (`DateField`), a time (`TimeField`), a day and time (both), a number, a
-  choice (`Segmented` up to four options, `Select` beyond), a yes or no (`Switch`), people (the roster as
-  `Checkbox` rows with "5 of 8"), a list (rows with Add one and Remove). A field that is not required says
+- **One real control per kind of field**, the app's own: text and long text
+  (`.ch-input`, `.ch-textarea` with the
+  character count against the limit), a day (`DateField`), a time (`TimeField`),
+  a day and time (both), a number, a
+  choice (`Segmented` up to four options, `Select` beyond), a yes or no
+  (`Switch`), people (the roster as
+  `Checkbox` rows with "5 of 8"), a list (rows with Add one and Remove). A field
+  that is not required says
   "Optional".
-- **What is on screen is what would be confirmed.** The form opens under the card's own rows, which do not change
-  while it is open; its first line says so. The shell holds Confirm while the form is open ("Update or discard your
-  changes first."). "Update the preview" sends only the fields that changed (`onEdit(patch)`; an optional field that
-  was emptied is `null`). It is unavailable until something changed, and a required field emptied says which
+- **What is on screen is what would be confirmed.** The form opens under the
+  card's own rows, which do not change
+  while it is open; its first line says so. The shell holds Confirm while the
+  form is open ("Update or discard your
+  changes first."). "Update the preview" sends only the fields that changed
+  (`onEdit(patch)`; an optional field that
+  was emptied is `null`). It is unavailable until something changed, and a
+  required field emptied says which
   ("Title cannot be empty.") without sending.
-- **The server plans the card again; the card never edits itself.** In flight the form goes still and its key reads
-  "Updating the preview…" (`editing`). Accepted: the re-planned proposal arrives with the next `revision`, the form
-  closes, and the body is the new plan (reach, recipients and the words a player receives are all planned again, so
-  an edit to who is invited changes the "Sends to" line too). Refused: the form stays open with what was typed and
-  the server's reason, then "The card has not changed." (`editError`, the `reason` of a `data-card-revision` with
-  `accepted: false`). The form's last line: "Everything else on this card is fixed. To change it, ask in words and a
+- **The server plans the card again; the card never edits itself.** In flight
+  the form goes still and its key reads
+  "Updating the preview…" (`editing`). Accepted: the re-planned proposal arrives
+  with the next `revision`, the form
+  closes, and the body is the new plan (reach, recipients and the words a player
+  receives are all planned again, so
+  an edit to who is invited changes the "Sends to" line too). Refused: the form
+  stays open with what was typed and
+  the server's reason, then "The card has not changed." (`editError`, the
+  `reason` of a `data-card-revision` with
+  `accepted: false`). The form's last line: "Everything else on this card is
+  fixed. To change it, ask in words and a
   new card replaces this one."
 
-Which cards offer what is the plan's to say (today: the create flows' main fields; `cancel_event` its reason,
-`set_goal_state` its reason when abandoned, `set_qualifier_coach_pick` its reasoning, `send_event_reminder` its
-recipients; CONTRACT_NOTES C12 to C14). The seam: `onEdit`, `editing`, `editError`, `onEditOpen` on `CardBodyProps`;
+Which cards offer what is the plan's to say (today: the create flows' main
+fields; `cancel_event` its reason,
+`set_goal_state` its reason when abandoned, `set_qualifier_coach_pick` its
+reasoning, `send_event_reminder` its
+recipients; CONTRACT_NOTES C12 to C14). The seam: `onEdit`, `editing`,
+`editError`, `onEditOpen` on `CardBodyProps`;
 the body marks its root `data-editing` while the form is open. Code: `cards/edit.tsx`.
 
 ### 0.9 Several cards in one answer, and the one safe "approve all"
 
-One answer may propose several tasks (engine E29). Each is its own card, decided on its own, in any order. Under
-them one bar may approve several together. It is designed so that pressing it can never do something the coach did
+One answer may propose several tasks (engine E29). Each is its own card, decided
+on its own, in any order. Under
+them one bar may approve several together. It is designed so that pressing it
+can never do something the coach did
 not read:
 
-- It **names each card it would confirm** and each card it leaves out, with the reason. Left out: a card with a
-  detail missing ("needs a detail first"), a card with an edit open ("has changes you have not updated"), and a card
-  with no Undo ("cannot be undone, so it is confirmed on its own": a lineup lock is never approved in a batch).
-- It **says what approving them does in total**: "3 actions. 2 send to 9 people; 1 tells nobody." People are counted
+- It **names each card it would confirm** and each card it leaves out, with the
+  reason. Left out: a card with a
+  detail missing ("needs a detail first"), a card with an edit open ("has
+  changes you have not updated"), and a card
+  with no Undo ("cannot be undone, so it is confirmed on its own": a lineup lock
+  is never approved in a batch).
+- It **says what approving them does in total**: "3 actions. 2 send to 9 people;
+  1 tells nobody." People are counted
   once across cards when the plans name them.
-- It is **not drawn for one card** (that is the card's own Confirm), and its key is the secondary style: each card's
+- It is **not drawn for one card** (that is the card's own Confirm), and its key
+  is the secondary style: each card's
   named Confirm stays the primary.
-- Its key reads "Approve all 3", or "Approve these 3" when a card is left out, so "all" is never said of less than
+- Its key reads "Approve all 3", or "Approve these 3" when a card is left out,
+  so "all" is never said of less than
   all.
-- **One Undo window for the batch.** Held: "Not saved yet. All 3 save in 6 seconds." with "Undo all 3"; each card
-  keeps its own ring and its own Undo (the engine holds every card of a batch to the same moment). Saved: "All 3
+- **One Undo window for the batch.** Held: "Not saved yet. All 3 save in 6
+  seconds." with "Undo all 3"; each card
+  keeps its own ring and its own Undo (the engine holds every card of a batch to
+  the same moment). Saved: "All 3
   saved". Undone: "Undone. None of the 3 was saved. Nobody was told."
-- **The first failure stops the batch** (the engine's rule). The bar says where: "Stopped at “Team announcement”.
-  It could not be saved, so nothing after it was tried. 1 card is waiting for you again." Those cards are back to
+- **The first failure stops the batch** (the engine's rule). The bar says where:
+  "Stopped at “Team announcement”.
+  It could not be saved, so nothing after it was tried. 1 card is waiting for
+  you again." Those cards are back to
   proposed; nothing is retried by itself.
 
-Code: `cards/ApproveAll.tsx` (`batchPlan(cards)` is the rule, tested; `ApproveAll` is the bar). The shell owns where
-it sits in the turn, the shared ring and the calls (`approveAll(keys)`, Undo for each key).
+Code: `cards/ApproveAll.tsx` (`batchPlan(cards)` is the rule, tested;
+`ApproveAll` is the bar). The shell owns where
+it sits in the turn, the shared ring and the calls (`approveAll(keys)`, Undo for
+each key).
 
 ### 0.10 What the plan itself now says
 
-The server builds these on the plan and the receipt (CONTRACT_NOTES P1 to P11, E12 to E19, E25 to E29). A body draws
-each when it is present and keeps its honest "not shown here" line when it is absent (a card stored before 11 Nov).
+The server builds these on the plan and the receipt (CONTRACT_NOTES P1 to P11,
+E12 to E19, E25 to E29). A body draws
+each when it is present and keeps its honest "not shown here" line when it is
+absent (a card stored before 11 Nov).
 
 | Field | What the body does with it | Request it answers |
 | --- | --- | --- |
@@ -257,57 +359,85 @@ each when it is present and keeps its honest "not shown here" line when it is ab
 | receipt `error: 'card_out_of_date'` | no Try again: "Things changed since this card was made. Ask again and it is prepared from what is true now." (`isOutOfDate`) | new |
 | `data-computed`, `coverage: 'not_tracked'` | D15 and D16 are on the wire | E-25, E-26 |
 
-Whether each planner fills each field is the plans worker's ledger, not this file's. The body's rule does not depend
+Whether each planner fills each field is the plans worker's ledger, not this
+file's. The body's rule does not depend
 on it.
 
 ---
 
 ## A. Tasks
 
-Each entry: the idea; what the coach checks, in order; layout; long values; reach; receipt and Open; Undo; failure;
-compact; what is not shown; requests. "Hold line" is the shell's sentence during the 8 seconds. Motion: none of a
-body's own in any entry (MOTION Moment 7 moves the card; bodies are still). Primary, busy and badge words are the
+Each entry: the idea; what the coach checks, in order; layout; long values;
+reach; receipt and Open; Undo; failure;
+compact; what is not shown; requests. "Hold line" is the shell's sentence during
+the 8 seconds. Motion: none of a
+body's own in any entry (MOTION Moment 7 moves the card; bodies are still).
+Primary, busy and badge words are the
 catalog's.
 
 ### A1. Add one event to the calendar (`create_event`)
 
-- **Idea.** The event as the calendar will show it: a date tile and the block of time, so a wrong day or a wrong
+- **Idea.** The event as the calendar will show it: a date tile and the block of
+  time, so a wrong day or a wrong
   hour is seen before a word is read.
-- **Checks.** Who is invited and whether they are asked to reply; the day, start and end; where; the type.
-- **Layout.** Reach: Sends ("Sends to 6 players, asks for a reply") when replies are asked for and someone is
-  invited; Visible ("On the team's calendar. Nobody is told.") otherwise, with the invited players still shown as
-  people. Subject: date tile (weekday, day, month), title, "3:00 to 5:30 PM", place, type chip. A length the engine
-  assumed ("2.5 hours, the usual practice") carries the "Assumed" chip and its source line, and is the first row a
+- **Checks.** Who is invited and whether they are asked to reply; the day, start
+  and end; where; the type.
+- **Layout.** Reach: Sends ("Sends to 6 players, asks for a reply") when replies
+  are asked for and someone is
+  invited; Visible ("On the team's calendar. Nobody is told.") otherwise, with
+  the invited players still shown as
+  people. Subject: date tile (weekday, day, month), title, "3:00 to 5:30 PM",
+  place, type chip. A length the engine
+  assumed ("2.5 hours, the usual practice") carries the "Assumed" chip and its
+  source line, and is the first row a
   tap can change. Details: Replies.
 - **Long.** Title two lines. Invited: people rule.
-- **Words.** Primary "Add to calendar", busy "Adding…", badge "Added". Hold: "Not saved yet. Saves in 8 seconds,
+- **Words.** Primary "Add to calendar", busy "Adding…", badge "Added". Hold:
+  "Not saved yet. Saves in 8 seconds,
   then 6 players are told." / without people "Saves in 8 seconds."
-- **Receipt.** "{title} is on the calendar." Open: Calendar, on the event's day, with the event marked.
-- **Undo.** Within 8 seconds: nothing was saved, nobody was told. After: the event is edited or deleted in Calendar.
-- **Failure.** "A timed event needs a start and an end" is asked before a card exists. A failed write: the reason,
-  "Nothing was saved." and Try again; when the server could not check: "Look in the Calendar before trying again."
-- **Compact.** Reach line, then one row: tile, title, time. Place and type fold into a meta line.
-- **Not shown.** The week grid around the day in compact (the page behind is the calendar). The time zone when it is
+- **Receipt.** "{title} is on the calendar." Open: Calendar, on the event's day,
+  with the event marked.
+- **Undo.** Within 8 seconds: nothing was saved, nobody was told. After: the
+  event is edited or deleted in Calendar.
+- **Failure.** "A timed event needs a start and an end" is asked before a card
+  exists. A failed write: the reason,
+  "Nothing was saved." and Try again; when the server could not check: "Look in
+  the Calendar before trying again."
+- **Compact.** Reach line, then one row: tile, title, time. Place and type fold
+  into a meta line.
+- **Not shown.** The week grid around the day in compact (the page behind is the
+  calendar). The time zone when it is
   the team's own.
-- **Requests.** E-1 (affects by id), E-2 (the invitation's words), E-3 (Notes is written but not on the card),
+- **Requests.** E-1 (affects by id), E-2 (the invitation's words), E-3 (Notes is
+  written but not on the card),
   E-13 (told-count on the receipt).
 
 ### A2. A repeating practice (`create_recurring_practice`)
 
-- **Idea.** Every date that will be created, as a run of day tiles grouped by month. The coach counts tiles, not a
+- **Idea.** Every date that will be created, as a run of day tiles grouped by
+  month. The coach counts tiles, not a
   number in a sentence.
-- **Checks.** How many, which days, the first and last date, the time, the place, who is invited, replies.
-- **Layout.** Reach: Sends ("Sends to 7 players: an invitation, an email and a push. Each is asked to reply") when
-  RSVP is required; Visible ("On 7 players' calendars. Nobody is told.") when not. Subject: "Every Tuesday and
-  Thursday at 3:00 PM", then the tiles under month labels, the first and last tinted. Details: Location (Not set is
-  amber and blocks Confirm), Replies and its deadline, Time zone only when it differs from the viewer's.
+- **Checks.** How many, which days, the first and last date, the time, the
+  place, who is invited, replies.
+- **Layout.** Reach: Sends ("Sends to 7 players: an invitation, an email and a
+  push. Each is asked to reply") when
+  RSVP is required; Visible ("On 7 players' calendars. Nobody is told.") when
+  not. Subject: "Every Tuesday and
+  Thursday at 3:00 PM", then the tiles under month labels, the first and last
+  tinted. Details: Location (Not set is
+  amber and blocks Confirm), Replies and its deadline, Time zone only when it
+  differs from the viewer's.
 - **Long.** 26 tiles wrap; none hidden in full.
-- **Words.** Primary "Add 8 practices", busy "Adding…", badge "Added". Hold: "Not saved yet. Saves in 8 seconds,
+- **Words.** Primary "Add 8 practices", busy "Adding…", badge "Added". Hold:
+  "Not saved yet. Saves in 8 seconds,
   then 7 players are invited."
-- **Receipt.** "8 practices created, every Tuesday and Thursday at 3:00 PM." Open: Calendar at the first date.
-  Partial: "6 of 8 created" with the two missing dates named when the receipt names them.
+- **Receipt.** "8 practices created, every Tuesday and Thursday at 3:00 PM."
+  Open: Calendar at the first date.
+  Partial: "6 of 8 created" with the two missing dates named when the receipt
+  names them.
 - **Undo.** Nothing was saved. After: each practice is its own event in Calendar.
-- **Failure.** Reason and "Nothing was saved."; a retry that finds the first attempt's rows says so ("an earlier
+- **Failure.** Reason and "Nothing was saved."; a retry that finds the first
+  attempt's rows says so ("an earlier
   attempt created them and I did not create them again").
 - **Compact.** Sentence, first 4 tiles and "+4", Show all.
 - **Not shown.** The description.
@@ -315,62 +445,86 @@ catalog's.
 
 ### A3. Block the coach's own time (`add_blocked_time`)
 
-- **Idea.** A private mark on the coach's own calendar. The card's job is to say plainly that no player sees it.
+- **Idea.** A private mark on the coach's own calendar. The card's job is to say
+  plainly that no player sees it.
 - **Checks.** The day or days, the hours, the title.
-- **Layout.** Reach: Private ("Only you see this"). Subject: date tile, title, "3:00 to 4:00 PM" or "All day".
-- **Words.** Primary "Block time", busy "Blocking…", badge "Blocked". Hold: "Not saved yet. Saves in 8 seconds."
+- **Layout.** Reach: Private ("Only you see this"). Subject: date tile, title,
+  "3:00 to 4:00 PM" or "All day".
+- **Words.** Primary "Block time", busy "Blocking…", badge "Blocked". Hold: "Not
+  saved yet. Saves in 8 seconds."
 - **Receipt.** "That time is blocked." Open: Calendar.
 - **Undo / Failure.** As A1, with no people.
 - **Compact.** One row.
-- **Requests.** E-5 (the end date of a block that spans days is written but not on the card).
+- **Requests.** E-5 (the end date of a block that spans days is written but not
+  on the card).
 
 ### A4. A team break from class (`add_team_break`)
 
 - **Idea.** A span of days on one line: first day, last day, and how many days between.
 - **Checks.** The first and last day, the count, the label.
-- **Layout.** Reach: the plan's own line ("Nobody is told."); the level is Visible only once the engine says who
-  sees a break (E-6); until then the neutral mark and the plan's words. Subject: two date tiles joined by a rule
+- **Layout.** Reach: the plan's own line ("Nobody is told."); the level is
+  Visible only once the engine says who
+  sees a break (E-6); until then the neutral mark and the plan's words. Subject:
+  two date tiles joined by a rule
   with "5 days" on it.
-- **Words.** Primary "Add break", badge "Added". Receipt: "{label} is on the calendar." No Open (E-12).
-- **Undo.** Nothing was saved. **Failure.** "A break is one to 21 days" is asked before a card.
+- **Words.** Primary "Add break", badge "Added". Receipt: "{label} is on the
+  calendar." No Open (E-12).
+- **Undo.** Nothing was saved. **Failure.** "A break is one to 21 days" is asked
+  before a card.
 - **Requests.** E-6, E-12.
 
 ### A5. A school term (`save_team_term`)
 
-- **Idea.** The term as a bar: classes from A to B, then exams to C. Three dates a coach knows by heart, checked at
+- **Idea.** The term as a bar: classes from A to B, then exams to C. Three dates
+  a coach knows by heart, checked at
   a glance.
 - **Checks.** Name, classes start and end, exams end.
-- **Layout.** Reach: the plan's line ("Nobody is told."). Subject: the name, then a two-part bar with the three
-  dates under its joints (drawn in place, not to scale beyond the two segments' real lengths).
-- **Words.** Primary "Save term", badge "Saved". Receipt "{name} is saved." No Open (E-12).
+- **Layout.** Reach: the plan's line ("Nobody is told."). Subject: the name,
+  then a two-part bar with the three
+  dates under its joints (drawn in place, not to scale beyond the two segments'
+  real lengths).
+- **Words.** Primary "Save term", badge "Saved". Receipt "{name} is saved." No
+  Open (E-12).
 - **Not shown.** Whether a term of the same name is replaced (E-7).
 - **Requests.** E-7, E-12.
 
 ### A6. A trip (`create_trip`)
 
-- **Idea.** The itinerary line: where from, how, where to, out and back, as one drawn route, then what a player
+- **Idea.** The itinerary line: where from, how, where to, out and back, as one
+  drawn route, then what a player
   needs for it (hotel, rooms, uniform, gear).
-- **Checks.** Leave date and time, transport, from and to, return, hotel, rooms, uniform, gear.
-- **Layout.** Reach: Visible ("Players see it as new travel. Nobody is told."). When there is a hotel confirmation
-  number the plan's own sentence is the warning row: "Every team member can read the hotel confirmation number."
-  Subject: from, a rule with the transport word and glyph, to; under it "Leaves Fri 14 Nov, 6:30 AM" and "Back Sun
+- **Checks.** Leave date and time, transport, from and to, return, hotel, rooms,
+  uniform, gear.
+- **Layout.** Reach: Visible ("Players see it as new travel. Nobody is told.").
+  When there is a hotel confirmation
+  number the plan's own sentence is the warning row: "Every team member can read
+  the hotel confirmation number."
+  Subject: from, a rule with the transport word and glyph, to; under it "Leaves
+  Fri 14 Nov, 6:30 AM" and "Back Sun
   16 Nov". Details: Hotel, Rooms, Uniform, Gear (as chips).
 - **Long.** Rooms and gear: 3 lines, Show all.
-- **Words.** Primary "Add the trip", badge "Added". Receipt "The trip to {destination} is added." Open: Travel.
+- **Words.** Primary "Add the trip", badge "Added". Receipt "The trip to
+  {destination} is added." Open: Travel.
 - **Undo / Failure.** As A1. "The return is before the leave date" is asked first.
 - **Compact.** Route line and dates; the rest under Show details.
-- **Requests.** E-8 (flight info, hotel address, phone, the confirmation number and notes are written but not on the
+- **Requests.** E-8 (flight info, hotel address, phone, the confirmation number
+  and notes are written but not on the
   card).
 
 ### A7. A qualifier (`create_qualifier`)
 
-- **Idea.** The format as a board head: rounds, who plays, how many make the squad and how many are the coach's
+- **Idea.** The format as a board head: rounds, who plays, how many make the
+  squad and how many are the coach's
   picks, drawn as seats (filled for qualifying spots, outlined for picks).
-- **Checks.** Start, rounds, squad size and picks, the field by name, the rules, the entry deadline.
-- **Layout.** Reach: Sends ("Sends to 9 players: a push and an email"). Subject: name, "3 rounds from Mon 17 Nov",
-  the seat row ("4 qualify, 1 coach pick"), "9 in the field". Details: Rules, Entry deadline.
+- **Checks.** Start, rounds, squad size and picks, the field by name, the rules,
+  the entry deadline.
+- **Layout.** Reach: Sends ("Sends to 9 players: a push and an email"). Subject:
+  name, "3 rounds from Mon 17 Nov",
+  the seat row ("4 qualify, 1 coach pick"), "9 in the field". Details: Rules,
+  Entry deadline.
 - **Long.** Rules 3 lines. Field: people rule.
-- **Words.** Primary "Set qualifier", busy "Setting…", badge "Set". Hold: "Not saved yet. Saves in 8 seconds, then
+- **Words.** Primary "Set qualifier", busy "Setting…", badge "Set". Hold: "Not
+  saved yet. Saves in 8 seconds, then
   9 players are told."
 - **Receipt.** "{name} is set." Open: Qualifiers.
 - **Compact.** Name, the format sentence, people.
@@ -380,171 +534,248 @@ catalog's.
 
 - **Idea.** One player, one stat, one number, one date. The number is the hero.
 - **Checks.** The player, the stat, the target, by when, assigned or suggested.
-- **Layout.** Reach: Sends ("Sends to Eli Brandt: a push"). Subject: avatar and name; the stat label; the target in
+- **Layout.** Reach: Sends ("Sends to Eli Brandt: a push"). Subject: avatar and
+  name; the stat label; the target in
   the large numeral; "in 30 days"; chip "Assigned" or "Suggested".
-- **Words.** Primary "Set goal", badge "Set". Receipt "The goal is set for {name}." No Open (E-12).
-- **Not shown.** Where the player stands now and which way is better: the plan has no baseline, so the card does
+- **Words.** Primary "Set goal", badge "Set". Receipt "The goal is set for
+  {name}." No Open (E-12).
+- **Not shown.** Where the player stands now and which way is better: the plan
+  has no baseline, so the card does
   not draw a from-to (E-10). The target prints as the plan gives it.
 - **Requests.** E-10, E-2, E-12, E-13.
 
 ### A9. A focus area for a player (`create_focus_area`)
 
-- **Idea.** The focus as the player's own list will show it, with the one fact coaches get wrong: it is a proposal
+- **Idea.** The focus as the player's own list will show it, with the one fact
+  coaches get wrong: it is a proposal
   until the player accepts.
-- **Checks.** The player, the title, the area, the measurable target (current to target), by a date or over rounds,
+- **Checks.** The player, the title, the area, the measurable target (current to
+  target), by a date or over rounds,
   that the player must accept.
-- **Layout.** Reach: Sends ("Sends to Eli Brandt, who is asked to accept it"). Subject: area chip, title, target
-  line ("Putts per round 31.2 to 29.5"). Details: By or Over. Changes: "Starts when Eli accepts. Until then it is
+- **Layout.** Reach: Sends ("Sends to Eli Brandt, who is asked to accept it").
+  Subject: area chip, title, target
+  line ("Putts per round 31.2 to 29.5"). Details: By or Over. Changes: "Starts
+  when Eli accepts. Until then it is
   proposed." A missing measurable target is the amber row.
-- **Words.** Primary "Assign focus", busy "Assigning…", badge "Proposed" (not "Assigned": the receipt says
-  "{title} is proposed to {name}."). Open: the player's focus areas. Told: "Told 1 in the app".
+- **Words.** Primary "Assign focus", busy "Assigning…", badge "Proposed" (not
+  "Assigned": the receipt says
+  "{title} is proposed to {name}."). Open: the player's focus areas. Told: "Told
+  1 in the app".
 - **Failure.** A duplicate active focus is not retryable: the reason, no Try again.
 - **Requests.** E-11 (description is written, not shown), E-2.
 
 ### A10. A task for players (`create_task`)
 
-- **Idea.** The task as the Tasks list shows it: an open check circle, the title, the due date, the assignees.
+- **Idea.** The task as the Tasks list shows it: an open check circle, the
+  title, the due date, the assignees.
 - **Checks.** The words of the task, who gets it, the due date, the priority.
-- **Layout.** Reach: Sends ("Sends to 4 players, in the app"). Subject: the Tasks row. Details: Priority. "No due
-  date" is amber (the plan marks it missing; Confirm waits for it, by the engine's rule).
-- **Words.** Primary "Assign task", badge "Assigned". Receipt "{title} assigned to 4 players." Open: Tasks, the row
+- **Layout.** Reach: Sends ("Sends to 4 players, in the app"). Subject: the
+  Tasks row. Details: Priority. "No due
+  date" is amber (the plan marks it missing; Confirm waits for it, by the
+  engine's rule).
+- **Words.** Primary "Assign task", badge "Assigned". Receipt "{title} assigned
+  to 4 players." Open: Tasks, the row
   marked. Told: "Told 4 in the app".
 - **Compact.** The row and the reach line.
 - **Requests.** E-11 (description), E-2.
 
 ### A11. A team announcement (`create_team_announcement`)
 
-- **Idea.** The words, exactly, in the frame a player's phone shows them, and every recipient one tap away. This is
-  the card where a coach approves text written by the assistant for their whole team.
-- **Checks.** The title and the whole message; who gets it; urgency; whether each player must acknowledge.
-- **Layout.** Reach: Sends ("Sends to all 7 players"). Words: the notice (title bold, body under it, verbatim).
+- **Idea.** The words, exactly, in the frame a player's phone shows them, and
+  every recipient one tap away. This is
+  the card where a coach approves text written by the assistant for their whole
+  team.
+- **Checks.** The title and the whole message; who gets it; urgency; whether
+  each player must acknowledge.
+- **Layout.** Reach: Sends ("Sends to all 7 players"). Words: the notice (title
+  bold, body under it, verbatim).
   Details: Urgency when it is not normal, Acknowledgement when it is required.
 - **Long.** 0.4: six lines, Show the whole message with the character count.
-- **Words.** Primary "Post to 7 players", busy "Posting…", badge "Posted". Hold: "Not sent yet. Sends in 8 seconds
-  to 7 players." Receipt "{title} sent to 7 players." Open: Announcements. Told: "Told 7 in the app".
-- **Undo.** "Undone. Nothing was posted." After the window it is in every player's Announcements; whether it can be
+- **Words.** Primary "Post to 7 players", busy "Posting…", badge "Posted". Hold:
+  "Not sent yet. Sends in 8 seconds
+  to 7 players." Receipt "{title} sent to 7 players." Open: Announcements. Told:
+  "Told 7 in the app".
+- **Undo.** "Undone. Nothing was posted." After the window it is in every
+  player's Announcements; whether it can be
   taken down from there is the app's, and the card does not claim either way.
 - **Compact.** Reach, the notice at two lines.
 - **Requests.** none of substance (the plan carries names and words).
 
 ### A12. A coach note on a round (`add_round_note`)
 
-- **Idea.** The round's note as the player will read it: what is already there, then the new words under it.
-- **Checks.** Whose round; the earlier note stays; the new words; the player will see it.
-- **Layout.** Reach: Visible ("Eli Brandt will see this note on the round"). Words: the earlier note, quoted and
+- **Idea.** The round's note as the player will read it: what is already there,
+  then the new words under it.
+- **Checks.** Whose round; the earlier note stays; the new words; the player
+  will see it.
+- **Layout.** Reach: Visible ("Eli Brandt will see this note on the round").
+  Words: the earlier note, quoted and
   quiet, then the new note. Changes: "The earlier note stays. This goes under it."
-- **Words.** Primary "Add note", badge "Added". Receipt "The note is on the round." Undo: "Undone. Your earlier
+- **Words.** Primary "Add note", badge "Added". Receipt "The note is on the
+  round." Undo: "Undone. Your earlier
   notes are as they were."
-- **Failure.** "With the earlier note this passes 2,000 characters. Nothing was changed; shorten the new note."
-- **Requests.** E-14 (which round: course, date and score are not on the card), E-12.
+- **Failure.** "With the earlier note this passes 2,000 characters. Nothing was
+  changed; shorten the new note."
+- **Requests.** E-14 (which round: course, date and score are not on the card),
+  E-12.
 
 ### A13. A coach-only availability note (`set_availability_note`)
 
-- **Checks.** The player, the words, that it replaces the earlier note, that players never see it.
-- **Layout.** Reach: Private ("Coaches only. Eli never sees this."). Words: the note. Changes: "Replaces: {earlier}"
+- **Checks.** The player, the words, that it replaces the earlier note, that
+  players never see it.
+- **Layout.** Reach: Private ("Coaches only. Eli never sees this."). Words: the
+  note. Changes: "Replaces: {earlier}"
   struck through in secondary ink when the plan gives it.
-- **Words.** Primary "Save note", badge "Saved". Receipt "The note is saved." No Open (E-12).
-- **Requests.** E-15 (the earlier note is the model's claim, not read by the server), E-12.
+- **Words.** Primary "Save note", badge "Saved". Receipt "The note is saved." No
+  Open (E-12).
+- **Requests.** E-15 (the earlier note is the model's claim, not read by the
+  server), E-12.
 
 ### A14. A recruit (`create_recruit`)
 
-- **Layout.** Reach: Private ("Coaches only"). Subject: avatar from the name, name, "Class of 2028 · Austin, TX",
+- **Layout.** Reach: Private ("Coaches only"). Subject: avatar from the name,
+  name, "Class of 2028 · Austin, TX",
   status chip.
-- **Words.** Primary "Add recruit", badge "Added". Receipt "The recruit is added." Open: Recruiting.
+- **Words.** Primary "Add recruit", badge "Added". Receipt "The recruit is
+  added." Open: Recruiting.
 - **Requests.** E-16 (email, phone and notes are written but not on the card).
 
 ### A15. A drill for the drill bank (`create_drill`)
 
 - **Idea.** The drill bank's own card: area, name, minutes, setup, goal.
-- **Layout.** Reach: Visible, later ("Players see it only when a published plan uses it. Nobody is told.").
+- **Layout.** Reach: Visible, later ("Players see it only when a published plan
+  uses it. Nobody is told.").
   Subject: the drill card.
-- **Words.** Primary "Add to drill bank", badge "Added". Receipt "{name} is in the drill bank." No Open (E-12).
-- **Requests.** E-17 (the kind, skill, random or pressure, is written, not shown), E-12.
+- **Words.** Primary "Add to drill bank", badge "Added". Receipt "{name} is in
+  the drill bank." No Open (E-12).
+- **Requests.** E-17 (the kind, skill, random or pressure, is written, not
+  shown), E-12.
 
 ### A16. Publish a practice plan (`publish_practice_plan`)
 
-- **Idea.** Who hears, what one of them gets, where it is filed, and whether it also posts in Team chat.
-- **Checks.** The plan's title, when and where; who is told (players and coaches); the notification one player
+- **Idea.** Who hears, what one of them gets, where it is filed, and whether it
+  also posts in Team chat.
+- **Checks.** The plan's title, when and where; who is told (players and
+  coaches); the notification one player
   gets, with the note that each player's is their own; the Team chat post.
-- **Layout.** Reach: Sends ("Sends to 6 players and 2 coaches: push and bell"). The plan lists six names and a
-  count beyond them, so Show all is offered only when the list is complete; otherwise "and 4 more". Words: the
-  notice labelled "What Eli gets. Each player sees their own start." Details: When, Where, Filed in Practice
-  plans, Team chat ("Also posts in Team chat, with no second push" / "Not posted in Team chat").
-- **Words.** Primary "Publish to 8 people", busy "Publishing…", badge "Published". Receipt "Published. 8 people
-  told." (and "The Team chat post didn't send." when it did not). Open: the plan. Failure line: "Nothing was sent."
-- **Requests.** E-18 (the count, the time and the notification line are the model's inputs, not built by the server
+- **Layout.** Reach: Sends ("Sends to 6 players and 2 coaches: push and bell").
+  The plan lists six names and a
+  count beyond them, so Show all is offered only when the list is complete;
+  otherwise "and 4 more". Words: the
+  notice labelled "What Eli gets. Each player sees their own start." Details:
+  When, Where, Filed in Practice
+  plans, Team chat ("Also posts in Team chat, with no second push" / "Not posted
+  in Team chat").
+- **Words.** Primary "Publish to 8 people", busy "Publishing…", badge
+  "Published". Receipt "Published. 8 people
+  told." (and "The Team chat post didn't send." when it did not). Open: the
+  plan. Failure line: "Nothing was sent."
+- **Requests.** E-18 (the count, the time and the notification line are the
+  model's inputs, not built by the server
   from the plan), E-19 (every name; the Team chat post's words).
 
 ### A17. Publish a document (`publish_artifact`, Ask)
 
-- **Layout.** Reach: Visible ("All 7 active players can open it in Documents. Nobody gets a notification.").
-  Subject: the document as a page: title, then its words (0.4, six lines, "Show the whole document · 3,180
+- **Layout.** Reach: Visible ("All 7 active players can open it in Documents.
+  Nobody gets a notification.").
+  Subject: the document as a page: title, then its words (0.4, six lines, "Show
+  the whole document · 3,180
   characters").
-- **Words.** Primary "Publish to 7 players", badge "Published". Receipt "{title} is in Documents." No Open (E-12).
+- **Words.** Primary "Publish to 7 players", badge "Published". Receipt "{title}
+  is in Documents." No Open (E-12).
 
 ### A18. Send a message (`send_message`, quick chat)
 
-- **Idea.** The thread it goes into and the bubble it will be, as Messages draws the coach's own bubble.
-- **Layout.** Reach: Sends ("Sends as you to 6 players in Travel squad"). Words: the last message in the thread,
+- **Idea.** The thread it goes into and the bubble it will be, as Messages draws
+  the coach's own bubble.
+- **Layout.** Reach: Sends ("Sends as you to 6 players in Travel squad"). Words:
+  the last message in the thread,
   quiet, when the plan has it, then the draft as a sent bubble. Nothing else.
-- **Words.** Primary "Send", busy "Sending…", badge "Sent". Hold: "Not sent yet. Sends in 8 seconds." Receipt
+- **Words.** Primary "Send", busy "Sending…", badge "Sent". Hold: "Not sent yet.
+  Sends in 8 seconds." Receipt
   "Sent to {thread}." Open: the thread.
 - **Undo.** "Undone. Nothing was sent." After: a sent message is deleted in Messages.
-- **Requests.** E-20 (the member count is the model's number and the members are not named).
+- **Requests.** E-20 (the member count is the model's number and the members are
+  not named).
 
 ### A19. Set a tournament lineup (`set_lineup`, flag)
 
-- **Layout.** Reach: the plan's line ("Nobody is told."). Subject: seats 1 to 5 as numbered rows with avatar and
+- **Layout.** Reach: the plan's line ("Nobody is told."). Subject: seats 1 to 5
+  as numbered rows with avatar and
   name, alternates under a rule, individuals last.
-- **Words.** Primary "Set lineup", badge "Set". Receipt "Lineup set." Open: the tournament. Undo: "Undone. The
+- **Words.** Primary "Set lineup", badge "Set". Receipt "Lineup set." Open: the
+  tournament. Undo: "Undone. The
   earlier lineup is as it was."
-- **Requests.** E-21 (which tournament; the lineup it replaces; the reasoning per seat is written, not shown).
+- **Requests.** E-21 (which tournament; the lineup it replaces; the reasoning
+  per seat is written, not shown).
 
 ### A20. Lock a tournament lineup (`lock_lineup`, flag): the one with no Undo
 
 - **Idea.** The only card that writes on the press. It must not look like the others.
-- **Layout.** Warning first, as the body's first row, in amber: "This locks the moment you press. There is no
-  Undo." Then the plan's own line: "Substitutions only work if the event allows them."
+- **Layout.** Warning first, as the body's first row, in amber: "This locks the
+  moment you press. There is no
+  Undo." Then the plan's own line: "Substitutions only work if the event allows
+  them."
 - **States.** proposed, confirming, saved, failed. No held, no ring.
-- **Words.** Primary "Lock the lineup", busy "Locking…", badge "Locked". Failure: "The lineup is still going
+- **Words.** Primary "Lock the lineup", busy "Locking…", badge "Locked".
+  Failure: "The lineup is still going
   through. It isn't locked; lock it once it lands."
-- **Requests.** E-22 (the plan says only "Tournament: As set": no name, no seats. The coach locks without seeing
-  what is locked. The card says so: "The plan does not show the lineup. Open the tournament to check it first.").
+- **Requests.** E-22 (the plan says only "Tournament: As set": no name, no
+  seats. The coach locks without seeing
+  what is locked. The card says so: "The plan does not show the lineup. Open the
+  tournament to check it first.").
 
 ### A21. Remind players about an event (`send_event_reminder`)
 
-- **Idea.** The model card for anything sent: every recipient by name, anyone who will not get it and why, and the
+- **Idea.** The model card for anything sent: every recipient by name, anyone
+  who will not get it and why, and the
   reminder exactly as it arrives. The engine carries all of it.
-- **Checks.** The event; who gets it; who will not ("no account yet"); the words; how and when it arrives.
-- **Layout.** Reach: Sends ("Sends to 5 players"). Under the people, when present: "Will not get it: Max Ortiz (no
-  account yet)" in amber. Words: the notice ("Reminder: Short-game practice" / "Thu 12 Nov, 3:00 PM at the short-
+- **Checks.** The event; who gets it; who will not ("no account yet"); the
+  words; how and when it arrives.
+- **Layout.** Reach: Sends ("Sends to 5 players"). Under the people, when
+  present: "Will not get it: Max Ortiz (no
+  account yet)" in amber. Words: the notice ("Reminder: Short-game practice" /
+  "Thu 12 Nov, 3:00 PM at the short-
   game area"). Details: How ("A notification in the app that opens the event").
-- **Words.** Primary "Send reminder", busy "Sending…", badge "Sent". Hold: "Not sent yet. Sends in 8 seconds to 5
+- **Words.** Primary "Send reminder", busy "Sending…", badge "Sent". Hold: "Not
+  sent yet. Sends in 8 seconds to 5
   players." Receipt "The reminder about {event} went to 5 players." Open: the event.
-- **Partial.** "4 of 5 got it." with the receipt's sentence. **Failure.** "The event changed after this card was
-  made, so the reminder would no longer say what you approved. Nothing was sent. Ask for the reminder again." (no
-  Try again); "The reminder may or may not have gone out … Sending it again is safe, nobody gets it twice." (Try
+- **Partial.** "4 of 5 got it." with the receipt's sentence. **Failure.** "The
+  event changed after this card was
+  made, so the reminder would no longer say what you approved. Nothing was sent.
+  Ask for the reminder again." (no
+  Try again); "The reminder may or may not have gone out … Sending it again is
+  safe, nobody gets it twice." (Try
   again).
 - **Requests.** E-23 (the names of who was missed, on a partial receipt).
 
 ### A22. Record attendance (`record_attendance`)
 
-- **Idea.** A roll, in roster order, each player with the mark they will get, grouped Present, Late, No-show, and
+- **Idea.** A roll, in roster order, each player with the mark they will get,
+  grouped Present, Late, No-show, and
   the two things a coach worries about: marks that change, and players left alone.
-- **Layout.** Reach: Private in effect ("Nothing is sent to players."), with the event's name and time as the
-  subject line. The roll: three groups with counts, people rule inside each. Changes: "Changes a mark already
-  recorded: Jonah Reyes: Present now, Late after." and "2 players on the roster are left as they are."
-- **Words.** Primary "Save attendance", busy "Saving…", badge "Saved". Receipt "Attendance is saved for 7 players
+- **Layout.** Reach: Private in effect ("Nothing is sent to players."), with the
+  event's name and time as the
+  subject line. The roll: three groups with counts, people rule inside each.
+  Changes: "Changes a mark already
+  recorded: Jonah Reyes: Present now, Late after." and "2 players on the roster
+  are left as they are."
+- **Words.** Primary "Save attendance", busy "Saving…", badge "Saved". Receipt
+  "Attendance is saved for 7 players
   at {event}. Nothing was sent to players." Open: the event.
-- **Partial.** "Saved for 5, and not for Max Ortiz and Sam Lee." with each reason. **Failure.** "I could not check
-  which marks were saved: look at the event in the Calendar. Saving again is safe, it writes the same marks."
+- **Partial.** "Saved for 5, and not for Max Ortiz and Sam Lee." with each
+  reason. **Failure.** "I could not check
+  which marks were saved: look at the event in the Calendar. Saving again is
+  safe, it writes the same marks."
 - **Requests.** E-24 (whether a player can see their own mark).
 
 ## A, continued. Tasks that change something that exists (A23 to A32)
 
-These ten change or close a thing rather than make one. They share one body (`PlanBody`): reach first, then the
-thing by name, then **what it is now against what it becomes** when the plan carries "Now" and "After", then the
-words anyone receives, then the remaining rows. The dismiss key says what keeping means where "Cancel" would read
+These ten change or close a thing rather than make one. They share one body
+(`PlanBody`): reach first, then the
+thing by name, then **what it is now against what it becomes** when the plan
+carries "Now" and "After", then the
+words anyone receives, then the remaining rows. The dismiss key says what
+keeping means where "Cancel" would read
 as the action.
 
 | # | Tool | Head and primary | Reach | What the coach checks | Dismiss | After Undo |
@@ -560,14 +791,16 @@ as the action.
 | A31 | `log_focus_progress` | Focus area progress · "Log progress" | players can see it | the focus area; the entry as it will read | Cancel | "Undone. The focus area is as it was." |
 | A32 | `record_focus_outcome` | Focus area outcome · "Record the outcome" | players can see it | the focus area; the outcome and what it closes | Cancel | "Undone. No outcome was recorded." |
 
-States are those of 0.6. None is immediate. Gaps: A25, A26, A28, A31 and A32 have no home to open from the receipt
+States are those of 0.6. None is immediate. Gaps: A25, A26, A28, A31 and A32
+have no home to open from the receipt
 until their receipts carry `href`.
 
 ---
 
 ## B. Drafts and hand-offs (a card that writes nothing)
 
-These are reads on the contract: no Confirm, no ring. Each card says, in the reach position, the one true thing:
+These are reads on the contract: no Confirm, no ring. Each card says, in the
+reach position, the one true thing:
 **"Nothing is sent until you press Send in Messages."**
 
 | # | Capability | Idea and layout | States | Words |
@@ -579,28 +812,40 @@ These are reads on the contract: no Confirm, no ring. Each card says, in the rea
 | B5 | A poll draft (`draft_poll`) | Messages' own poll: question, options as the poll's rows at zero votes, "Choose one" or "Choose any", when it closes, "Names show on votes". | drafted, opened | "Open in Messages"; "Nothing is posted until you press Send." |
 | B6 | A board for a player (`draft_board`) | The visuals already drawn in this answer, tiled under the coach's note, as the image the player will get. | drafted, drawing (the image is being made on tap), failed to draw ("Couldn't draw the board. Your note is in the message. Nothing was sent.") | "Open in Messages" |
 
-Compact (quick chat has B1, B2, B6 only): the head and the reach line, then the first two rows and Show all.
+Compact (quick chat has B1, B2, B6 only): the head and the reach line, then the
+first two rows and Show all.
 
 ## C. Instant, no card: standing notes (`save_note`, `remove_note`)
 
-A note saves at once, with no confirmation, because it is the coach's own sentence about how they want answers. So
+A note saves at once, with no confirmation, because it is the coach's own
+sentence about how they want answers. So
 the proof and the undo are the same small thing, in the thread, where it happened.
 
-- **Saved** (`data-coach-note`, op `saved`): a chip under the paragraph: the note glyph, "Noted" and the sentence in
-  the coach's words, with a remove key (44px reach). Long notes (280 at most) wrap to three lines.
-- **Removed** (op `removed`): the same chip, the sentence struck through, "Removed". No key.
-- **Refused**: no chip. The answer says why in prose ("That is about a named player's health… The coach-only
+- **Saved** (`data-coach-note`, op `saved`): a chip under the paragraph: the
+  note glyph, "Noted" and the sentence in
+  the coach's words, with a remove key (44px reach). Long notes (280 at most)
+  wrap to three lines.
+- **Removed** (op `removed`): the same chip, the sentence struck through,
+  "Removed". No key.
+- **Refused**: no chip. The answer says why in prose ("That is about a named
+  player's health… The coach-only
   availability note is the place for it.").
-- **Undo**: the remove key on a saved chip. It is the only write in the chat without Confirm, so the chip always
+- **Undo**: the remove key on a saved chip. It is the only write in the chat
+  without Confirm, so the chip always
   says who can see it: "Only you. Players never see notes."
-- Motion: arrives as a link row does (MO-5-9). A request to the lead: the chip's remove is `MO-1-7`'s fade.
+- Motion: arrives as a link row does (MO-5-9). A request to the lead: the chip's
+  remove is `MO-1-7`'s fade.
 
 ## D. Reads and answers
 
-A figure in an answer carries a marker (a space, then `[e3]`; drawn as a chip, SPEC ST-5.chip). Tapping it opens the read it came
-from (sheet on the phone, panel on desktop, SPEC Moment 6). Every read opens with the same head, so a coach always
-knows what they are looking at before the numbers: **what was read** ("Putting by distance"), **whose** (a player,
-the team), **the window and the sample** ("Last 8 rounds · Sep 1 to Sep 29 · 212 putts"), and **as of**. A sample
+A figure in an answer carries a marker (a space, then `[e3]`; drawn as a chip,
+SPEC ST-5.chip). Tapping it opens the read it came
+from (sheet on the phone, panel on desktop, SPEC Moment 6). Every read opens
+with the same head, so a coach always
+knows what they are looking at before the numbers: **what was read** ("Putting
+by distance"), **whose** (a player,
+the team), **the window and the sample** ("Last 8 rounds · Sep 1 to Sep 29 · 212
+putts"), and **as of**. A sample
 of 12 or fewer says "Small sample" beside it. Then one of these forms:
 
 | # | Kind of evidence | From | Form |
@@ -618,51 +863,80 @@ of 12 or fewer says "Small sample" beside it. Then one of these forms:
 | D11 | What CoachHelm has on record | `get_coachhelm` | Open reads as rows (area, title, value) that open the Deep dive; focus areas, goals and tasks as their own rows. |
 | D12 | Practice, reference, the long tail | `get_practice`, `get_reference`, `get_tournaments`, `query_team_data`, `summarise_data`, `find_thread` | A table with a caption that names the source in the coach's words ("Team records: 38 rows"), capped rows said ("Showing 200 of 412"). A definition is prose with its source. |
 
-- **Empty** ("No putts recorded in this window." with the window) and **failed** ("This read didn't come back.") are
+- **Empty** ("No putts recorded in this window." with the window) and **failed**
+  ("This read didn't come back.") are
   SPEC ST-6.empty-read and ST-6.failed-read.
-- **D13. A visual** (`show_visual`). In the thread, under the paragraph that cites it, complete at first paint
-  (Q-153), in the visual frame: title, who and window, the marks, a foot ("From 3 reads"), a Table toggle. Blocks a
-  composition can hold: headline, KPIs, trend, ranking, bands, split, compare, note, miss pattern, putt profile,
-  season compare, hole strip; and the strokes-gained anatomy figure. Phone: full column width, blocks stacked.
-  Desktop: 720 column, KPIs in a row, split and compare two-up. The frame never grows after paint.
-- **D14. A link into the app** (`find_in_app`, `data-app-link`). A quiet row under the paragraph: arrow, "Open
-  Roster requests", and the place's one line. At most two (a near tie). Never an address in prose. For one player's
+- **D13. A visual** (`show_visual`). In the thread, under the paragraph that
+  cites it, complete at first paint
+  (Q-153), in the visual frame: title, who and window, the marks, a foot ("From
+  3 reads"), a Table toggle. Blocks a
+  composition can hold: headline, KPIs, trend, ranking, bands, split, compare,
+  note, miss pattern, putt profile,
+  season compare, hole strip; and the strokes-gained anatomy figure. Phone: full
+  column width, blocks stacked.
+  Desktop: 720 column, KPIs in a row, split and compare two-up. The frame never
+  grows after paint.
+- **D14. A link into the app** (`find_in_app`, `data-app-link`). A quiet row
+  under the paragraph: arrow, "Open
+  Roster requests", and the place's one line. At most two (a near tie). Never an
+  address in prose. For one player's
   page: "Open Stats for Eli Brandt".
-- **D15. An answer computed across the whole team.** The model reads many players and calculates in code. The
-  coach never sees code or a tool name. The work line says "Working it out across the team" while it runs; the
-  folded line reads "14 reads · 1 calculation · 4s"; and under the answer the foot row carries a **Worked out**
-  chip. Tapping it opens the evidence panel on a "How this was worked out" page: one sentence of method in plain
-  words ("Averaged each player's putts per round over their last 8 rounds, then ranked them"), what was read (14
-  players, 212 rounds, the window), and the result table. Figures in such an answer have no markers (reads called
-  from code cannot be cited), so the chip and this page are how it shows its work. Built against a typed stub
+- **D15. An answer computed across the whole team.** The model reads many
+  players and calculates in code. The
+  coach never sees code or a tool name. The work line says "Working it out
+  across the team" while it runs; the
+  folded line reads "14 reads · 1 calculation · 4s"; and under the answer the
+  foot row carries a **Worked out**
+  chip. Tapping it opens the evidence panel on a "How this was worked out" page:
+  one sentence of method in plain
+  words ("Averaged each player's putts per round over their last 8 rounds, then
+  ranked them"), what was read (14
+  players, 212 rounds, the window), and the result table. Figures in such an
+  answer have no markers (reads called
+  from code cannot be cited), so the chip and this page are how it shows its
+  work. Built against a typed stub
   (E-25).
-- **D16. "That isn't tracked."** When the coach asks for something the app does not collect, the answer says so in
-  its first sentence, and a quiet row under it shows the nearest thing that is: "Not tracked: club used off the tee.
-  Closest: fairways hit, driving distance." Never an empty chart and never a zero. Built against a typed stub
+- **D16. "That isn't tracked."** When the coach asks for something the app does
+  not collect, the answer says so in
+  its first sentence, and a quiet row under it shows the nearest thing that is:
+  "Not tracked: club used off the tee.
+  Closest: fairways hit, driving distance." Never an empty chart and never a
+  zero. Built against a typed stub
   (E-26); today it is prose only.
-- **D17. An answer that declines.** A model refusal is a complete turn marked `declined`, not an error. It is drawn
-  as an answer: the mark at rest, the assistant's own sentence in the answer's type, no warning colour, no Try again,
-  no failed-turn notice, and the composer ready. Nothing about it says something broke, because nothing did. The
-  workspace shows no steps for it (there was no work), and follow-ups are offered as after any answer. It is the
-  shell's to draw (SPEC Moment 4, `declined`); it is catalogued here so that no card or studio component is ever
+- **D17. An answer that declines.** A model refusal is a complete turn marked
+  `declined`, not an error. It is drawn
+  as an answer: the mark at rest, the assistant's own sentence in the answer's
+  type, no warning colour, no Try again,
+  no failed-turn notice, and the composer ready. Nothing about it says something
+  broke, because nothing did. The
+  workspace shows no steps for it (there was no work), and follow-ups are
+  offered as after any answer. It is the
+  shell's to draw (SPEC Moment 4, `declined`); it is catalogued here so that no
+  card or studio component is ever
   used to dress a refusal as a failure.
 
 ## E. The player's Ask (read-only)
 
-Ten tools, all reads of the player's own game. Everything in D applies with these differences, enforced where the
+Ten tools, all reads of the player's own game. Everything in D applies with
+these differences, enforced where the
 data is built and tested in the DOM:
 
-- No task card, no draft card, no note chip, no "Worked out" chip (code is off for players), no D3 ranking, no D2
+- No task card, no draft card, no note chip, no "Worked out" chip (code is off
+  for players), no D3 ranking, no D2
   across teammates, no D10 beyond the player's own line, no D8 for anyone else.
-- Evidence heads say "your": "Your last 8 rounds". Comparisons are to the team average and Tour as the player's own
+- Evidence heads say "your": "Your last 8 rounds". Comparisons are to the team
+  average and Tour as the player's own
   Stats page shows them, never to a named teammate.
-- D14 links open only the player's places. D11 shows their own focus areas, goals and reads.
+- D14 links open only the player's places. D11 shows their own focus areas,
+  goals and reads.
 - A drill their coach set is a quiet card they can open (SPEC ST-11.drill).
 
 ## F. Thinking and working: the work line and the mark
 
-The mark turns while anything is live and rests when nothing is. The work line is the only place status is said
-(SPEC Moment 4). A tool name is never shown; every label below is the server's own `progress` string or the shell's
+The mark turns while anything is live and rests when nothing is. The work line
+is the only place status is said
+(SPEC Moment 4). A tool name is never shown; every label below is the server's
+own `progress` string or the shell's
 sentence.
 
 | Kind of work | Mark | Work line (and read row label) | After |
@@ -687,27 +961,36 @@ sentence.
 | A read failed | turning on | row: "Couldn't read practice reviews" | the answer says what it lacks |
 | Done | at rest | "3 reads · 2s" (a restored turn: "3 reads") | |
 
-For a player the labels are the server's player forms: "Reading your statistics", "Reading your season", "Reading
+For a player the labels are the server's player forms: "Reading your
+statistics", "Reading your season", "Reading
 your CoachHelm", "Working out your figures".
 
 ---
 
 ## S. The studio: the fixed set of things CoachHelm can put on screen
 
-The assistant never invents interface. It fills a typed part, the server fills every figure from a read, and exactly
-one component draws it. The set is `STUDIO_KINDS` (`src/lib/coachhelm/v3/chat/visuals/studio-kinds.ts`), the one list
-the schema side and this side are both tested against. The renderer and registry are
+The assistant never invents interface. It fills a typed part, the server fills
+every figure from a read, and exactly
+one component draws it. The set is `STUDIO_KINDS`
+(`src/lib/coachhelm/v3/chat/visuals/studio-kinds.ts`), the one list
+the schema side and this side are both tested against. The renderer and registry
+are
 `src/clubhouse/screens/coachhelm/chat/studio/**`:
 
 ```tsx
 <Studio part={fromBlock(block)} size="full" read={ref} onAsk={fillComposer} />
 ```
 
-`part.kind` picks the component; `size` is `full` (the thread on a desk) or `compact` (quick chat, and any column
-down to 320px); `read` is the read or artifact the part came from. **Nothing falls through to nothing**: an unknown
-kind, and a part its own component cannot draw, are drawn by the table from whatever rows or fields the part
-carries (`tableOf`). A component takes what it draws already in the app's words (`from.ts`: `fromBlock` for a
-composition block, `fromEvidence` for a read's evidence); no component computes a figure.
+`part.kind` picks the component; `size` is `full` (the thread on a desk) or
+`compact` (quick chat, and any column
+down to 320px); `read` is the read or artifact the part came from. **Nothing
+falls through to nothing**: an unknown
+kind, and a part its own component cannot draw, are drawn by the table from
+whatever rows or fields the part
+carries (`tableOf`). A component takes what it draws already in the app's words
+(`from.ts`: `fromBlock` for a
+composition block, `fromEvidence` for a read's evidence); no component computes
+a figure.
 
 ### S.1 The sixteen, and what folded into what
 
@@ -730,58 +1013,87 @@ composition block, `fromEvidence` for a read's evidence); no component computes 
 | `receipt` | what a task did, with the way to the thing it made | `data-action-receipt` | none | the thing it made |
 | `table` | rows and columns with a caption that names the source: the fallback, always available | composition `table` (planned); `data-evidence`; `query_team_data`, `summarise_data`, `find_thread`; D8, D12; anything unknown | none yet | none |
 
-`action_preview` and `receipt` are two kinds on the shared list and one object on screen: the same body in its next
-tense, so a receipt is the preview the coach confirmed, never a second card. `round`, `schedule` and
-`qualifier_board` are new here; the rest reuse the thread's own drawing (`Trend`, the distance marks, `PlanCard`,
+`action_preview` and `receipt` are two kinds on the shared list and one object
+on screen: the same body in its next
+tense, so a receipt is the preview the coach confirmed, never a second card.
+`round`, `schedule` and
+`qualifier_board` are new here; the rest reuse the thread's own drawing
+(`Trend`, the distance marks, `PlanCard`,
 `DataTable`) so a composed visual and a plain read look the same.
 
-**Proposed to the plans worker, not yet in the shared list** (the registry follows the list as it stands): merge
-`action_preview` and `receipt` into one kind `action`; give "what is on record" its own kind instead of sharing
-`note`; stop offering the model a bare `note` block and fold `headline` into `kpis` (one figure is `kpis` of one).
+**Proposed to the plans worker, not yet in the shared list** (the registry
+follows the list as it stands): merge
+`action_preview` and `receipt` into one kind `action`; give "what is on record"
+its own kind instead of sharing
+`note`; stop offering the model a bare `note` block and fold `headline` into
+`kpis` (one figure is `kpis` of one).
 
 ### S.2 Tappable elements, the link, and the touch feedback
 
-- **A tap asks; it never sends.** The element is a real button. It fills the composer with a question about that
-  element ("Ask about this: hole 7, 2 over") which the coach can edit, and carries a typed reference: the kind, the
-  read and the element (`data-ask-ref="round:r5:hole:7"`, and the `StudioAsk` object handed to `onAsk`).
-- **The row asks; the arrow opens.** Where the element is something the app has a screen for, a separate arrow at
-  the row's end goes there, with its own 44px target and its own name ("Open Eli Brandt’s stats"). One target never
+- **A tap asks; it never sends.** The element is a real button. It fills the
+  composer with a question about that
+  element ("Ask about this: hole 7, 2 over") which the coach can edit, and
+  carries a typed reference: the kind, the
+  read and the element (`data-ask-ref="round:r5:hole:7"`, and the `StudioAsk`
+  object handed to `onAsk`).
+- **The row asks; the arrow opens.** Where the element is something the app has
+  a screen for, a separate arrow at
+  the row's end goes there, with its own 44px target and its own name ("Open Eli
+  Brandt’s stats"). One target never
   does both.
-- **It looks tappable only where it is.** With no `onAsk` (a printed answer, a thread that cannot be continued) the
+- **It looks tappable only where it is.** With no `onAsk` (a printed answer, a
+  thread that cannot be continued) the
   same content is drawn as plain text: no button, no pressed state, no reference.
-- **Feedback** is the app's own pressed wash on the row (`data-ch-pressed`, lib/press.ts): rows do not scale. On a
-  pointer device the row takes the quiet well on hover. Focus is the app's ring. Nothing else moves; the composer
+- **Feedback** is the app's own pressed wash on the row (`data-ch-pressed`,
+  lib/press.ts): rows do not scale. On a
+  pointer device the row takes the quiet well on hover. Focus is the app's ring.
+  Nothing else moves; the composer
   filling is the answer to the tap.
-- **A comparison's cells are read, not pressed.** Twelve players across four measures would be forty-eight keys; the
+- **A comparison's cells are read, not pressed.** Twelve players across four
+  measures would be forty-eight keys; the
   player's name is the key and the cell is a figure.
 
 ### S.3 Sizes
 
-`full` and `compact` are the same component, never two designs. What changes in `compact`: a ranking's bar drops
-under the name; a comparison always puts players in rows under short measure names, keeps every measure on screen where four fit, and drops the arrow per row (the name still asks; the link is in the full size); a
-qualifier board keeps place, name, total and to par and leaves the rounds to the board itself; a round names three
+`full` and `compact` are the same component, never two designs. What changes in
+`compact`: a ranking's bar drops
+under the name; a comparison always puts players in rows under short measure
+names, keeps every measure on screen where four fit, and drops the arrow per row
+(the name still asks; the link is in the full size); a
+qualifier board keeps place, name, total and to par and leaves the rounds to the
+board itself; a round names three
 holes each way instead of four; a figure set wraps to two across.
 
 ### S.4 Copy
 
-Sentence case. A sample is said in words, from the read: "over 4 rounds", "from 126 attempts" (`sampleSaid`). Never
-"n=", never "N-4", never a count alone in brackets, no abbreviation a coach would not say. A missing figure in a
-comparison reads "None". A test renders every component in both sizes and fails on any of those forms, in text or in
+Sentence case. A sample is said in words, from the read: "over 4 rounds", "from
+126 attempts" (`sampleSaid`). Never
+"n=", never "N-4", never a count alone in brackets, no abbreviation a coach
+would not say. A missing figure in a
+comparison reads "None". A test renders every component in both sizes and fails
+on any of those forms, in text or in
 a screen reader's label.
 
 ---
 
 ## W. The workspace: the step each capability shows
 
-The activity island (SPEC Moment 4; `chat/island/**`, the chat UI lead's) shows what CoachHelm is doing as steps.
-This is the catalogue of those steps: for each thing the assistant can do, its words while it runs and once it is
-done, what joins its row, what its tally counts, what opening the finished step shows, and its words when it fails.
-A person's words, never a tool's name. "Opening" a finished step shows the read as its studio component (S.1); a
+The activity island (SPEC Moment 4; `chat/island/**`, the chat UI lead's) shows
+what CoachHelm is doing as steps.
+This is the catalogue of those steps: for each thing the assistant can do, its
+words while it runs and once it is
+done, what joins its row, what its tally counts, what opening the finished step
+shows, and its words when it fails.
+A person's words, never a tool's name. "Opening" a finished step shows the read
+as its studio component (S.1); a
 step with nothing of its own to open does not look openable.
 
-The island's head lines are the lead's: "Reading your question", then the running step's own words (with "and 2
-more"), "Putting it together", "Writing the answer", "Waiting for you", "Saves in 5", "Saved" / "Undone" / "Not
-saved", "Done · 4 steps · 6s", "Stopped · 2 of 4 steps". A failed step never stops the turn by itself: the answer
+The island's head lines are the lead's: "Reading your question", then the
+running step's own words (with "and 2
+more"), "Putting it together", "Writing the answer", "Waiting for you", "Saves
+in 5", "Saved" / "Undone" / "Not
+saved", "Done · 4 steps · 6s", "Stopped · 2 of 4 steps". A failed step never
+stops the turn by itself: the answer
 says what it lacks.
 
 ### W.1 Reads
@@ -825,7 +1137,8 @@ says what it lacks.
 
 ### W.4 Tasks (a card arrives; the coach decides)
 
-Every task's step is the same three beats. The words are the catalogue's (`cardCopy`), so the island, the card and
+Every task's step is the same three beats. The words are the catalogue's
+(`cardCopy`), so the island, the card and
 the receipt cannot disagree.
 
 | Beat | While it runs | Done | Joins the row | Opening it shows | Failed |
@@ -834,24 +1147,33 @@ the receipt cannot disagree.
 | Checking | "Checking who it reaches" (only for a task that sends) | "Reaches 6 players" | the recipients, joining as they are resolved | the card's reach row | "Couldn’t check who it reaches"; the card says "The plan does not name them" |
 | Waiting, then the decision | the island's head: "Waiting for you", then "Saves in 5" | the capability's badge word ("Added", "Sent", "Published") or "Undone" | none | the receipt (`receipt`) | "Not saved" / "Not sent", with what was left untouched on the card |
 
-Several tasks in one answer are several Preparing steps, one per card, then one "Waiting for you".
+Several tasks in one answer are several Preparing steps, one per card, then one
+"Waiting for you".
 
 ### W.5 Where to watch it
 
-`/clubhouse-preview/coachhelm-capabilities?task=workspace:team&play=1` plays a whole-team comparison (twelve players
-joining as their rounds are read, the tally counting to 96 rounds, the comparison drawn under it), and
-`?task=workspace:plan&play=1` a practice plan being drafted, both at real timing on the lead's `ActivityIsland`
-(`&state=3` holds a still frame three seconds in). The steps are the plate's script in the engine's step shape; the
+`/clubhouse-preview/coachhelm-capabilities?task=workspace:team&play=1` plays a
+whole-team comparison (twelve players
+joining as their rounds are read, the tally counting to 96 rounds, the
+comparison drawn under it), and
+`?task=workspace:plan&play=1` a practice plan being drafted, both at real timing
+on the lead's `ActivityIsland`
+(`&state=3` holds a still frame three seconds in). The steps are the plate's
+script in the engine's step shape; the
 lead's Ask preview plays the same kind of turn through the whole thread.
 
 ---
 
 ## Requests to the engine (not built here; nothing is faked in the UI)
 
-A coach could not check these when the catalogue was first written because the plan did not carry them. Each names
-the field wanted. **Status, 11 Nov:** the protocol now has a field for E-1, E-2, E-6, E-12, E-13, E-18 to E-20, E-23
-to E-27 (0.10 says which field answers which); the bodies draw each when a plan carries it. The rest (E-3 to E-5, E-7
-to E-11, E-14 to E-17, E-21, E-22) are facts a planner still has to add, and their cards keep the honest line until
+A coach could not check these when the catalogue was first written because the
+plan did not carry them. Each names
+the field wanted. **Status, 11 Nov:** the protocol now has a field for E-1, E-2,
+E-6, E-12, E-13, E-18 to E-20, E-23
+to E-27 (0.10 says which field answers which); the bodies draw each when a plan
+carries it. The rest (E-3 to E-5, E-7
+to E-11, E-14 to E-17, E-21, E-22) are facts a planner still has to add, and
+their cards keep the honest line until
 then.
 
 | # | Tool | What is missing | Field wanted |
@@ -898,117 +1220,189 @@ The shell's side of the seam is settled (see "The seam, as it stands").
 
 ## Defaults taken (nobody to ask; change here if wrong)
 
-1. Reach comes first in every body, above the subject. SPEC lists "who" first; this makes "who" also say how far it
+1. Reach comes first in every body, above the subject. SPEC lists "who" first;
+   this makes "who" also say how far it
    travels.
-2. Sent words are clamped at six lines with the character count, not shown whole by default. A 2,000 character
-   announcement shown whole pushes Confirm two screens down on a phone; the count and one tap keep it honest.
+2. Sent words are clamped at six lines with the character count, not shown whole
+   by default. A 2,000 character
+   announcement shown whole pushes Confirm two screens down on a phone; the
+   count and one tap keep it honest.
 3. A body never reads `proposal.input`.
-4. Where the plan lacks the words a player receives, the card says "The exact wording is not shown here." rather
+4. Where the plan lacks the words a player receives, the card says "The exact
+   wording is not shown here." rather
    than drawing a notification from the title.
 5. `create_focus_area`'s badge is "Proposed", from the receipt, not "Assigned".
-6. `add_team_break`, `save_team_term`, `set_lineup` use the plan's own "Nobody is told." with the neutral mark until
+6. `add_team_break`, `save_team_term`, `set_lineup` use the plan's own "Nobody
+   is told." with the neutral mark until
    E-6 says who can see them.
 7. `lock_lineup` puts its warning first and has no hold states.
-8. Dates in facts arrive as ISO (`2026-11-12`); bodies print them as "Thu, Nov 12" through `lib/dates`, the way the
+8. Dates in facts arrive as ISO (`2026-11-12`); bodies print them as "Thu, Nov
+   12" through `lib/dates`, the way the
    planners that already write words do. Never raw.
-9. The gallery drives bodies from fixtures of the real `ActionProposal` and `ActionReceipt` types inside a stand-in
+9. The gallery drives bodies from fixtures of the real `ActionProposal` and
+   `ActionReceipt` types inside a stand-in
    frame until the lead's shell exports; the stand-in is labelled in the gallery.
-10. Group D forms D1 to D12 reuse the lead's `Evidence.tsx` blocks in the gallery; this lane adds only what does
+10. Group D forms D1 to D12 reuse the lead's `Evidence.tsx` blocks in the
+    gallery; this lane adds only what does
     not exist (D14 row, D15, D16, the note chip).
 
 ## What is built, and how to see it
 
-- **Task cards.** `cards/index.tsx`: `CardBody` (32 bodies: 22 of their own and the plan-driven one for A23 to
-  A32), `cardCopy` and `CARD_TOOLS` from `catalog.ts`, `ApproveAll` and `batchPlan`. `cards/edit.tsx`: edit mode.
-  `cards/truth.ts`: what the plan itself says. `cards/drafts.tsx`: `BriefBody`, `HandoffBody` (message, poll, board),
-  `DocBody`. `cards/answers.tsx`: `AppLinkRow`, `CoachNoteChip`, `WorkedOut`, `NotTracked`. `cards/work-words.ts`:
+- **Task cards.** `cards/index.tsx`: `CardBody` (32 bodies: 22 of their own and
+  the plan-driven one for A23 to
+  A32), `cardCopy` and `CARD_TOOLS` from `catalog.ts`, `ApproveAll` and
+  `batchPlan`. `cards/edit.tsx`: edit mode.
+  `cards/truth.ts`: what the plan itself says. `cards/drafts.tsx`: `BriefBody`,
+  `HandoffBody` (message, poll, board),
+  `DocBody`. `cards/answers.tsx`: `AppLinkRow`, `CoachNoteChip`, `WorkedOut`,
+  `NotTracked`. `cards/work-words.ts`:
   section F as data.
-- **The studio.** `studio/registry.tsx` (`Studio`, `STUDIO_COMPONENTS`), `studio/components.tsx` (the sixteen),
-  `studio/from.ts` (`fromBlock`, `fromEvidence`, `tableOf`, `sampleSaid`), `studio/ask.tsx` (the ask key, the open
+- **The studio.** `studio/registry.tsx` (`Studio`, `STUDIO_COMPONENTS`),
+  `studio/components.tsx` (the sixteen),
+  `studio/from.ts` (`fromBlock`, `fromEvidence`, `tableOf`, `sampleSaid`),
+  `studio/ask.tsx` (the ask key, the open
   arrow, `fillComposer`).
-- **The gallery, one page:** `/clubhouse-preview/coachhelm-capabilities`. No sign-in, no request, no model call.
-  On a desktop everything is drawn twice, as Ask draws it and as quick chat does; on a phone a switch chooses.
-  - **A. Tasks.** Each has a state switch, a case switch (long text, one recipient, forty, something missing, the
-    card as it was before the server built its fields) and **Play**, which runs Confirm, the request, the 8 seconds
-    and the save at real timing; Play with Undo presses Undo at 3 seconds. A card whose plan declares fields has
+- **The gallery, one page:** `/clubhouse-preview/coachhelm-capabilities`. No
+  sign-in, no request, no model call.
+  On a desktop everything is drawn twice, as Ask draws it and as quick chat
+  does; on a phone a switch chooses.
+  - **A. Tasks.** Each has a state switch, a case switch (long text, one
+    recipient, forty, something missing, the
+    card as it was before the server built its fields) and **Play**, which runs
+    Confirm, the request, the 8 seconds
+    and the save at real timing; Play with Undo presses Undo at 3 seconds. A
+    card whose plan declares fields has
     Edit, with a switch that makes the stand-in server refuse.
-  - **Several at once.** Four cards and the approve-all bar; Play runs the batch through its one Undo window.
+  - **Several at once.** Four cards and the approve-all bar; Play runs the batch
+    through its one Undo window.
   - **B, C, D, F.** Drafts, notes, evidence, the work line.
-  - **S. The studio.** Every component in both sizes; tap an element and the line under it says what the composer
+  - **S. The studio.** Every component in both sizes; tap an element and the
+    line under it says what the composer
     would be filled with and the reference.
   - **W. The workspace.** Two long pieces of work at real timing on the lead's island.
 - **Deep links, for a capture.** `?task=<id>&state=<state>&density=full|compact&variant=<case>&play=1|undo`.
-  - A task: `task=<tool>`; states `proposed`, `confirming`, `held`, `undoing`, `committing`, `saved`, `partial`,
-    `undone`, `cancelled`, `superseded`, `failed`, `expired`. Cases: `older` on every task with server-built fields;
-    `create_event` quiet; `create_recurring_practice` missing; `create_trip` bare; `create_focus_area` missing;
-    `create_task` one, forty; `create_team_announcement` long, one; `send_event_reminder` one, forty.
-  - Several cards: `task=batch`, states `waiting`, `confirming`, `held`, `saved`, `undone`, `stopped`.
-  - A studio component: `task=studio:<id>`, ids `figure`, `figure_six`, `comparison`, `ranking`, `trend`, `round`,
-    `strokes_gained`, `distance_profile`, `distance_putts`, `schedule`, `qualifier_board`, `practice_plan`,
-    `practice_brief`, `document`, `handoff`, `app_link`, `note`, `note_kept`, `on_record`, `action_preview`,
+  - A task: `task=<tool>`; states `proposed`, `confirming`, `held`, `undoing`,
+    `committing`, `saved`, `partial`,
+    `undone`, `cancelled`, `superseded`, `failed`, `expired`. Cases: `older` on
+    every task with server-built fields;
+    `create_event` quiet; `create_recurring_practice` missing; `create_trip`
+    bare; `create_focus_area` missing;
+    `create_task` one, forty; `create_team_announcement` long, one;
+    `send_event_reminder` one, forty.
+  - Several cards: `task=batch`, states `waiting`, `confirming`, `held`,
+    `saved`, `undone`, `stopped`.
+  - A studio component: `task=studio:<id>`, ids `figure`, `figure_six`,
+    `comparison`, `ranking`, `trend`, `round`,
+    `strokes_gained`, `distance_profile`, `distance_putts`, `schedule`,
+    `qualifier_board`, `practice_plan`,
+    `practice_brief`, `document`, `handoff`, `app_link`, `note`, `note_kept`,
+    `on_record`, `action_preview`,
     `receipt`, `table`, `unknown`.
-  - The workspace: `task=workspace:team` or `task=workspace:plan`; `play=1` plays it, `state=<seconds>` holds a
+  - The workspace: `task=workspace:team` or `task=workspace:plan`; `play=1`
+    plays it, `state=<seconds>` holds a
     still frame.
-  - The other forms by id: `ask_practice_brief`, `draft_practice_plan`, `write_artifact`, `draft_message`,
-    `draft_poll`, `draft_board`, `save_note`, `save_note_long`, `remove_note`, `ev-figure`, `ev-ranking`, `ev-trend`,
-    `ev-bands`, `ev-legs`, `ev-empty`, `ev-failed`, `app_link`, `computed`, `not_tracked`, `work_line`, `work_words`.
+  - The other forms by id: `ask_practice_brief`, `draft_practice_plan`,
+    `write_artifact`, `draft_message`,
+    `draft_poll`, `draft_board`, `save_note`, `save_note_long`, `remove_note`,
+    `ev-figure`, `ev-ranking`, `ev-trend`,
+    `ev-bands`, `ev-legs`, `ev-empty`, `ev-failed`, `app_link`, `computed`,
+    `not_tracked`, `work_line`, `work_words`.
 
 ## The seam, as it stands
 
-The seam in 0.1 is live. The chat UI lead's shell, `chat/parts/TaskCard.tsx`, takes its head, button, busy word,
-badge and lines from `cardCopy` and mounts `CardBody` with the stored plan, the receipt, the phase and the density.
+The seam in 0.1 is live. The chat UI lead's shell, `chat/parts/TaskCard.tsx`,
+takes its head, button, busy word,
+badge and lines from `cardCopy` and mounts `CardBody` with the stored plan, the
+receipt, the phase and the density.
 In Ask and in quick chat a task card is that shell around these bodies.
 
-- **Sent to the lead, not yet wired in the shell:** the four edit props (0.8), `cardCopy(...).dismiss` for the quiet
-  key, `isOutOfDate(receipt)` (no Try again), and `ApproveAll` (0.9), which the shell places in the turn.
-- **The gallery still draws a stand-in frame** (`PreviewChatCapabilities.tsx`, the `ch-akg-*` rules), built to SPEC
-  Moment 7, because the real shell's receipt row asks `/api/coachhelm/v3/chat/actions/<key>` for the hold's outcome
-  and for Undo, and the gallery must make no request. Next step, in order: mount `TaskCard` through the lead's
+- **Sent to the lead, not yet wired in the shell:** the four edit props (0.8),
+  `cardCopy(...).dismiss` for the quiet
+  key, `isOutOfDate(receipt)` (no Try again), and `ApproveAll` (0.9), which the
+  shell places in the turn.
+- **The gallery still draws a stand-in frame** (`PreviewChatCapabilities.tsx`,
+  the `ch-akg-*` rules), built to SPEC
+  Moment 7, because the real shell's receipt row asks
+  `/api/coachhelm/v3/chat/actions/<key>` for the hold's outcome
+  and for Undo, and the gallery must make no request. Next step, in order: mount
+  `TaskCard` through the lead's
   scripted harness when it has a task script, then delete the stand-in.
-- **One thing to settle with the lead.** The shell still prints SPEC's "On confirm:" line under the body. With reach
-  first in every body, and now with the plan's own recipients and words in it, the line says the same thing a second
+- **One thing to settle with the lead.** The shell still prints SPEC's "On
+  confirm:" line under the body. With reach
+  first in every body, and now with the plan's own recipients and words in it,
+  the line says the same thing a second
   time. Recommendation: drop it and keep the hold sentence beside the ring (`cardCopy(...).hold(seconds)`).
-- **The studio is not mounted in the thread yet.** `chat/visual/CoachComposition.tsx` and `chat/Evidence.tsx` (the
-  lead's) still draw blocks and evidence themselves. The hand-over is one line per block:
-  `<Studio part={fromBlock(block)} size={…} read={ref} onAsk={fillComposer} />`, and the same with `fromEvidence`.
-  Until then the studio is seen in the gallery, and the thread's ranking and comparison are not tappable.
+- **The studio is not mounted in the thread yet.**
+  `chat/visual/CoachComposition.tsx` and `chat/Evidence.tsx` (the
+  lead's) still draw blocks and evidence themselves. The hand-over is one line
+  per block:
+  `<Studio part={fromBlock(block)} size={…} read={ref} onAsk={fillComposer} />`,
+  and the same with `fromEvidence`.
+  Until then the studio is seen in the gallery, and the thread's ranking and
+  comparison are not tappable.
 
 ## Below the bar, said plainly
 
-1. **The gallery's frame is a stand-in** (the app's is the real shell). In the gallery the ring does not become the
-   check (MO-7-9), the receipt does not take the buttons' place by a cross-fade (MO-7-5), and nothing arrives
-   (MO-7-1). The gallery shows states and timing, not choreography, until it mounts the shell through the harness.
-   The owner's bar ("one continuous object, never a swap of boxes") is met by the bodies (one body through every
-   tense, a receipt that is the preview) and is **not yet shown** by the gallery's frame.
-2. **The studio's components do not arrive with motion of their own**, by rule (a component has none; the entrance
-   is the composition's beats, the lead's). Standing alone in the gallery they appear whole. A ranking's bars do not
-   grow and a board's cut is not drawn in. If the benchmark wants that, it is a named request to the lead's motion
-   vocabulary (bars by `scaleX` on the playbook's stagger, the cut as an opacity beat after the rows), not something
+1. **The gallery's frame is a stand-in** (the app's is the real shell). In the
+   gallery the ring does not become the
+   check (MO-7-9), the receipt does not take the buttons' place by a cross-fade
+   (MO-7-5), and nothing arrives
+   (MO-7-1). The gallery shows states and timing, not choreography, until it
+   mounts the shell through the harness.
+   The owner's bar ("one continuous object, never a swap of boxes") is met by
+   the bodies (one body through every
+   tense, a receipt that is the preview) and is **not yet shown** by the
+   gallery's frame.
+2. **The studio's components do not arrive with motion of their own**, by rule
+   (a component has none; the entrance
+   is the composition's beats, the lead's). Standing alone in the gallery they
+   appear whole. A ranking's bars do not
+   grow and a board's cut is not drawn in. If the benchmark wants that, it is a
+   named request to the lead's motion
+   vocabulary (bars by `scaleX` on the playbook's stagger, the cut as an opacity
+   beat after the rows), not something
    to add here ad hoc.
-3. **`schedule`, `qualifier_board` and `round` are drawn from fixtures.** There is no adapter from the real reads'
-   `detail` yet (E-31), so in the thread those reads still fall to the table. They are the three components that
-   most show the assistant understands the thing itself, and they are the three not yet fed by real data.
-4. **The typed reference does not travel.** A tap fills the composer with words; the engine does not yet take the
+3. **`schedule`, `qualifier_board` and `round` are drawn from fixtures.** There
+   is no adapter from the real reads'
+   `detail` yet (E-31), so in the thread those reads still fall to the table.
+   They are the three components that
+   most show the assistant understands the thing itself, and they are the three
+   not yet fed by real data.
+4. **The typed reference does not travel.** A tap fills the composer with words;
+   the engine does not yet take the
    reference (E-30), so the answer is found from the words.
-5. **A trend's points and a comparison's cells are not keys.** The trend asks as a whole (the chart is the lead's
+5. **A trend's points and a comparison's cells are not keys.** The trend asks as
+   a whole (the chart is the lead's
    component, not edited here); a comparison asks by player.
-6. **Edit mode in the gallery re-plans by standing in for the server**: it changes the field's own row, not the
-   reach or the words a player receives, which the real server plans again. It is labelled there. The real
+6. **Edit mode in the gallery re-plans by standing in for the server**: it
+   changes the field's own row, not the
+   reach or the words a player receives, which the real server plans again. It
+   is labelled there. The real
    round trip is only as good as each planner's `revise`.
-7. **Approve all is a bar and a rule, not yet placed in a turn.** The shell has not mounted it; the gallery shows it
+7. **Approve all is a bar and a rule, not yet placed in a turn.** The shell has
+   not mounted it; the gallery shows it
    under four cards with every state and Play.
-8. **A poll draft is drawn in the poll's shape, not by Messages' own `PollCard`**, which needs the whole Messages
-   api object to mount. Wanted from the Messages owner: a presentational face of the poll.
-9. **An event is not shown in its week.** A body may not fetch. Wanted: the day's other events on the plan
+8. **A poll draft is drawn in the poll's shape, not by Messages' own
+   `PollCard`**, which needs the whole Messages
+   api object to mount. Wanted from the Messages owner: a presentational face of
+   the poll.
+9. **An event is not shown in its week.** A body may not fetch. Wanted: the
+   day's other events on the plan
    (`visual.cal.day`), then the grid can come back with no request.
-10. **The drill, the task and the trip are drawn like their homes, not with their homes' components.** The plan
+10. **The drill, the task and the trip are drawn like their homes, not with
+    their homes' components.** The plan
     draft is the practice lane's real `PlanCard`; a round is the app's real `Nine`.
-11. **Cards still say "the plan does not…"** wherever a planner has not added the fact (the requests still open
+11. **Cards still say "the plan does not…"** wherever a planner has not added
+    the fact (the requests still open
     above). Honest, and not premium.
-12. **The scorecard primitive's column head reads "Tot"**, an abbreviation the copy rule forbids. It is the shared
+12. **The scorecard primitive's column head reads "Tot"**, an abbreviation the
+    copy rule forbids. It is the shared
     `Nine` (not this lane's to edit); wanted: "Total".
-13. **A declined answer (D17) has no plate in this gallery**: it is the shell's to draw and is in the lead's Ask
+13. **A declined answer (D17) has no plate in this gallery**: it is the shell's
+    to draw and is in the lead's Ask
     preview (`coachhelm-ask?state=play&script=declined`).
-14. **VoiceOver was checked by structure and by test** (a group's name is the reach sentence, every key has a name,
-    the arrow is named for where it goes, nothing looks tappable where it is not), **not by listening on a phone.**
+14. **VoiceOver was checked by structure and by test** (a group's name is the
+    reach sentence, every key has a name,
+    the arrow is named for where it goes, nothing looks tappable where it is
+    not), **not by listening on a phone.**
 15. **Not checked on an iPhone.** WebKit captures only.

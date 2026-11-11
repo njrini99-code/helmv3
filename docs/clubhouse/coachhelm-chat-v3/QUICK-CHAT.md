@@ -1,25 +1,38 @@
 # CoachHelm quick chat v3: summon, context, the empty start, the landing, coming back (10 Nov 2026)
 
-The QUICK-CHAT worker's addendum to `SPEC.md` and `MOTION.md` beside this file, written before the build. It covers
-moments 1, 2, 8 and 9. Everything inside the thread (question, work line, reads, streamed prose, chips, the task card
-and its ring, the turn notice) is the lead's and is imported, never forked; this file says only how quick chat frames
-it. Where this file is more specific than SPEC.md or MOTION.md on those four moments, this file is the build; where it
-changes a sentence of theirs, the change is listed under "Where this refines the spec".
+The QUICK-CHAT worker's addendum to `SPEC.md` and `MOTION.md` beside this file,
+written before the build. It covers
+moments 1, 2, 8 and 9. Everything inside the thread (question, work line, reads,
+streamed prose, chips, the task card
+and its ring, the turn notice) is the lead's and is imported, never forked; this
+file says only how quick chat frames
+it. Where this file is more specific than SPEC.md or MOTION.md on those four
+moments, this file is the build; where it
+changes a sentence of theirs, the change is listed under "Where this refines the
+spec".
 
-IDs: states keep the spec's (`ST-1.*`, `ST-2.*`, `ST-8.*`, `ST-9.*`) and add to them; a motion row that the spec
+IDs: states keep the spec's (`ST-1.*`, `ST-2.*`, `ST-8.*`, `ST-9.*`) and add to
+them; a motion row that the spec
 already has keeps its `MO-` id; a row that is new here is `MQ-<moment>-<n>`.
 
 ## The three ideas
 
-1. **It comes out of the key and goes back into it.** Every way of opening starts at the key; every way of closing
-   ends there, from whatever frame the panel is in. The key is also where a running turn lives while the panel is away
+1. **It comes out of the key and goes back into it.** Every way of opening
+   starts at the key; every way of closing
+   ends there, from whatever frame the panel is in. The key is also where a
+   running turn lives while the panel is away
    (the live pill), so the coach always knows where the chat is.
-2. **The page behind is the coach's place.** It keeps its scroll position, keeps updating, stays readable under a 24%
-   veil, and takes no pointer, key or VoiceOver focus while the chat is open. The chat never moves it, with one
+2. **The page behind is the coach's place.** It keeps its scroll position, keeps
+   updating, stays readable under a 24%
+   veil, and takes no pointer, key or VoiceOver focus while the chat is open.
+   The chat never moves it, with one
    exception that the coach caused: bringing a row they just made into view.
-3. **The page is the proof.** When a task is saved and the thing lives on the page behind, the chat gets out of the
-   way and the page shows it: where it will be (pending) while the write is held, then the real row, marked once.
-   When it lives somewhere else, nothing on this page pretends; the receipt's Open goes there and it lands the same way.
+3. **The page is the proof.** When a task is saved and the thing lives on the
+   page behind, the chat gets out of the
+   way and the page shows it: where it will be (pending) while the write is
+   held, then the real row, marked once.
+   When it lives somewhere else, nothing on this page pretends; the receipt's
+   Open goes there and it lands the same way.
 
 ---
 
@@ -36,9 +49,12 @@ already has keeps its `MO-` id; a row that is new here is `MQ-<moment>-<n>`.
 | Keyboard | The sheet's frame never changes. The composer is the part that rides: it sits where the keyboard will leave it. | n/a |
 | Where it comes from | `transform-origin` = the key's centre in the panel's own box (`pourOrigin`, offsets, never a rect read mid-scale). | same |
 
-Why the phone frame is fixed and only the composer rides: a sheet whose height follows the keyboard is a layout
-animation (or a one-frame jump twice per focus). A fixed sheet with a composer on a transform is one motion on the
-keyboard's own curve, and the thread above it never re-flows. With the keyboard up, the sheet's foot is behind the
+Why the phone frame is fixed and only the composer rides: a sheet whose height
+follows the keyboard is a layout
+animation (or a one-frame jump twice per focus). A fixed sheet with a composer
+on a transform is one motion on the
+keyboard's own curve, and the thread above it never re-flows. With the keyboard
+up, the sheet's foot is behind the
 keyboard; nothing is lost, because the composer is the last thing in it.
 
 ### States
@@ -71,20 +87,29 @@ keyboard; nothing is lost, because the composer is the last thing in it.
 | A route change under it | n/a | yes | Existing rule (MOB-QC-10). The panel's history entry is not popped in this case. |
 | "Open in Ask", a receipt's Open, a link in an answer | n/a | yes | The destination replaces the panel's history entry, so Back from there returns to the page, not to a ghost of the panel. |
 
-Each close is the same move (MO-1-4) from the frame on screen. Each is interruptible by any open, and each open by any
-close: the next move reads the computed transform and opacity, cancels, and continues from there. A turn or a hold in
+Each close is the same move (MO-1-4) from the frame on screen. Each is
+interruptible by any open, and each open by any
+close: the next move reads the computed transform and opacity, cancels, and
+continues from there. A turn or a hold in
 flight survives every close.
 
 ### The page behind
 
-- **Alive.** It keeps rendering: realtime refreshes, a landing row, the clock on Home. Nothing is paused.
-- **Legible.** One flat veil at 24%; no blur, no scale, no desaturation. It does not change while the coach types.
-- **In place.** Scroll position is untouched. The composer is focused with `preventScroll`; the panel is fixed, so
+- **Alive.** It keeps rendering: realtime refreshes, a landing row, the clock on
+  Home. Nothing is paused.
+- **Legible.** One flat veil at 24%; no blur, no scale, no desaturation. It does
+  not change while the coach types.
+- **In place.** Scroll position is untouched. The composer is focused with
+  `preventScroll`; the panel is fixed, so
   iOS has nothing to pan to.
-- **Inert.** From the frame the pour ends until the frame a close starts: every sibling of the key's ancestors under
-  `.ch-root` except the chat itself carries `inert` ("inert others"), so pointer, Tab and VoiceOver all stay in the
-  panel and on the key. The earlier build set `inert` on the phone only and left the desktop page tabbable.
-- **Not locked.** No `overflow: hidden` on the body (it resets scroll on iOS): `inert` and the scrim's
+- **Inert.** From the frame the pour ends until the frame a close starts: every
+  sibling of the key's ancestors under
+  `.ch-root` except the chat itself carries `inert` ("inert others"), so
+  pointer, Tab and VoiceOver all stay in the
+  panel and on the key. The earlier build set `inert` on the phone only and left
+  the desktop page tabbable.
+- **Not locked.** No `overflow: hidden` on the body (it resets scroll on iOS):
+  `inert` and the scrim's
   `overscroll-behavior: contain` are enough.
 
 ### Focus
@@ -98,13 +123,16 @@ flight survives every close.
 | Close, any way but a route change | The key. |
 | Close by "Open in Ask" or Open | The destination's own first focus (the route's). |
 
-VoiceOver order: "CoachHelm, dialog"; Open in Ask; Close; the thread (or the starts as a list of buttons, each read
-"How is Eli putting? Reads putting, Eli"); the context chip ("Asking about Roster, Eli Brandt. Remove"); the composer;
+VoiceOver order: "CoachHelm, dialog"; Open in Ask; Close; the thread (or the
+starts as a list of buttons, each read
+"How is Eli putting? Reads putting, Eli"); the context chip ("Asking about
+Roster, Eli Brandt. Remove"); the composer;
 Send.
 
 ### The context chip (`ST-1.context`)
 
-One chip, on its own row directly above the composer's capsule, leading edge aligned with the field's text. It is the
+One chip, on its own row directly above the composer's capsule, leading edge
+aligned with the field's text. It is the
 visible form of what goes with the question.
 
 | Case | Chip | Sent today |
@@ -115,17 +143,26 @@ visible form of what goes with the question.
 | A long name | The label truncates in the middle of the screen part, never the name: "Tourn… · Eli Brandt". At the largest Text Size it wraps to two lines inside the chip. | |
 | A turn in flight | The chip is still: it cannot be removed while a question that carried it is being answered. | |
 
-- The label is the page's own words: the shell's crumb trail (`lookingAt`), joined by a middle dot. The sentence
-  "On Roster · Eli Brandt" is the chip's accessible name ("Asking about Roster, Eli Brandt"); the visible chip leads
-  with a small pin glyph instead of the word "On", so the name is not pushed off a 390pt screen.
-- Real `Badge` (neutral tone) with a remove key inside it: the glyph is 16px, its reach 44px through the shared
+- The label is the page's own words: the shell's crumb trail (`lookingAt`),
+  joined by a middle dot. The sentence
+  "On Roster · Eli Brandt" is the chip's accessible name ("Asking about Roster,
+  Eli Brandt"); the visible chip leads
+  with a small pin glyph instead of the word "On", so the name is not pushed off
+  a 390pt screen.
+- Real `Badge` (neutral tone) with a remove key inside it: the glyph is 16px,
+  its reach 44px through the shared
   `::after` hit area.
-- **Dropping it:** the remove key; or Backspace in an empty composer (as a token field). `haptic('select')`. The chip
-  leaves by MO-1-7 and its row keeps its height until the next send, so nothing under the finger moves.
-- **Removed means removed for that context in this conversation.** Opening the chat again on the same screen and
-  selection shows no chip. Opening it on a different screen or player offers that one: a different thing is a
+- **Dropping it:** the remove key; or Backspace in an empty composer (as a token
+  field). `haptic('select')`. The chip
+  leaves by MO-1-7 and its row keeps its height until the next send, so nothing
+  under the finger moves.
+- **Removed means removed for that context in this conversation.** Opening the
+  chat again on the same screen and
+  selection shows no chip. Opening it on a different screen or player offers
+  that one: a different thing is a
   different chip.
-- Nothing is sent that the chip does not show. With no chip, the hook's context is empty.
+- Nothing is sent that the chip does not show. With no chip, the hook's context
+  is empty.
 
 ### Storyboard
 
@@ -143,15 +180,18 @@ visible form of what goes with the question.
 | MQ-1-9 | Back while open | as MO-1-4 | | | | | | | none | Back means "undo the last thing I opened" |
 | M-LIVE, M-LIVE-out (kept) | closed with a turn or hold running; reopened | the live pill in the key's slot | `transform: scale`, `opacity` | as 07-MOTION | smooth 462 ms in; 200 ms `--ch-ease-sheet` out | label 90 ms | turns around from its held values | opacity, quick | none | The chat is still working, and this is where it is |
 
-Not animated in this moment: the panel's size (ever), the bar, the page behind, the key's position, the composer's
+Not animated in this moment: the panel's size (ever), the bar, the page behind,
+the key's position, the composer's
 height (one frame per line, SPEC `ST-3.typing`).
 
 ---
 
 ## Moment 2. The empty start, for this screen
 
-`ST-2.home` in quick chat. Three starts on the phone (what fits above a raised keyboard at 390x844 without scrolling),
-four on desktop. Each is a row: the question on the left, what it reads or makes on the right in secondary ink, one
+`ST-2.home` in quick chat. Three starts on the phone (what fits above a raised
+keyboard at 390x844 without scrolling),
+four on desktop. Each is a row: the question on the left, what it reads or makes
+on the right in secondary ink, one
 arrow. A start sends at once.
 
 | Opened on | Starts (label · what it does) |
@@ -168,14 +208,20 @@ arrow. A start sends at once.
 | Recruiting | "Add a recruit" · Makes a recruit / "Who's on the board?" · Recruiting / "Add a task for me" · Makes a task / "Message the team" · Drafts, you send |
 | Anywhere else (Home, Settings) | "Who's slipping this month?" · Rounds, team / "Add a practice" · Makes an event / "Message the team" · Drafts, you send / "What can you do?" · A short list |
 
-- The player's first name is the page's (the last crumb); with no player the player rows are not offered.
-- `ST-2.home.norounds`: when the session knows the team has no rounds (a fact it does not have yet; request 5), rows
-  that read rounds are replaced by ones that make things. Until then the rows above are offered and the answer says
+- The player's first name is the page's (the last crumb); with no player the
+  player rows are not offered.
+- `ST-2.home.norounds`: when the session knows the team has no rounds (a fact it
+  does not have yet; request 5), rows
+  that read rounds are replaced by ones that make things. Until then the rows
+  above are offered and the answer says
   what is missing.
-- Above the starts: nothing. No greeting, no headline: the composer is focused and the keyboard is up; the starts are
+- Above the starts: nothing. No greeting, no headline: the composer is focused
+  and the keyboard is up; the starts are
   a shortcut, not a welcome.
-- Below them, when a thread exists from an earlier day: nothing (it is in Ask's history; the header's Open in Ask is
-  disabled until this conversation exists, and reads "Open Ask" when there is none, going to Ask's home).
+- Below them, when a thread exists from an earlier day: nothing (it is in Ask's
+  history; the header's Open in Ask is
+  disabled until this conversation exists, and reads "Open Ask" when there is
+  none, going to Ask's home).
 
 | ID | Trigger | What moves | Property | From > to | Duration, easing | Delay / stagger | Interrupted by | Reduce Motion | Haptic | Why |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -185,7 +231,8 @@ arrow. A start sends at once.
 | MO-2-3 | first send | every start except the one tapped; the chip stays | `opacity` | 1 > 0 | quick 180 ms | none | the thread replaces them when it ends | removed at once | none | The home steps back for the question |
 | MO-2-4 | same frame | the question | the lead's MO-3-4, with the tapped row's label (or the field's text) as its source rect | | launch 812 ms | | | fades in place | none | The question is visibly the thing the coach touched |
 
-Until the lead's `MO-3-4` is exported for a foreign source rect, the question arrives by the inherited M-SEND
+Until the lead's `MO-3-4` is exported for a foreign source rect, the question
+arrives by the inherited M-SEND
 (settle 417 ms, 10px rise): a stand-in, named in the report.
 
 ---
@@ -194,7 +241,8 @@ Until the lead's `MO-3-4` is exported for a foreign source rect, the question ar
 
 ### The signal (one, typed, in `src/clubhouse/shell/quick-chat/landing.ts`)
 
-A landing is a small record in memory, written by the chat and read by the page. It is never persisted: a reload has
+A landing is a small record in memory, written by the chat and read by the page.
+It is never persisted: a reload has
 no landing, so a mark never comes back.
 
 ```ts
@@ -214,22 +262,32 @@ export interface Landing {
 
 What a screen does with it, all of it:
 
-1. **Stamp its rows:** `data-ch-row="<kind>:<id>"` on each row's root element. One attribute.
-2. **Offer a place for the pending row:** `<LandingSlot kind="task" />` where a new row would appear (a list's head, a
-   day's agenda; the calendar passes `day`). It renders nothing unless a landing of that kind is held for this page.
-3. Optional: `data-ch-row-tag` on the element inside the row that may carry the "New" tag (the title line). Without
+1. **Stamp its rows:** `data-ch-row="<kind>:<id>"` on each row's root element.
+   One attribute.
+2. **Offer a place for the pending row:** `<LandingSlot kind="task" />` where a
+   new row would appear (a list's head, a
+   day's agenda; the calendar passes `day`). It renders nothing unless a landing
+   of that kind is held for this page.
+3. Optional: `data-ch-row-tag` on the element inside the row that may carry the
+   "New" tag (the title line). Without
    it the row is tinted and not tagged.
 
-Everything else (finding the row, bringing it into view, the mark, the tag, the announcement, the refresh, cleaning up)
-is done by the chat, in files this lane owns. A screen that has not been stamped still gets the truth: the page
+Everything else (finding the row, bringing it into view, the mark, the tag, the
+announcement, the refresh, cleaning up)
+is done by the chat, in files this lane owns. A screen that has not been stamped
+still gets the truth: the page
 refreshes and the row is simply there; the receipt's Open still works.
 
 ### Per kind, per screen
 
-How each home gets fresh data today is how the landing gets it: the server loader, re-read by `router.refresh()` (in a
-transition, so the page on screen stays until the new one lands). Calendar, Qualifiers and Tournaments also re-read on
-their own realtime channel (`*/live.ts`, debounced 800 ms); a second re-read of the same loader is harmless. Messages
-keeps its own thread state and realtime, so its landing is the thread's own arrival. No second cache is introduced.
+How each home gets fresh data today is how the landing gets it: the server
+loader, re-read by `router.refresh()` (in a
+transition, so the page on screen stays until the new one lands). Calendar,
+Qualifiers and Tournaments also re-read on
+their own realtime channel (`*/live.ts`, debounced 800 ms); a second re-read of
+the same loader is harmless. Messages
+keeps its own thread state and realtime, so its landing is the thread's own
+arrival. No second cache is introduced.
 
 | Kind (tool) | Home | The row | Pending place | When home is the page behind | When it is not |
 | --- | --- | --- | --- | --- | --- |
@@ -263,29 +321,46 @@ keeps its own thread state and realtime, so its landing is the thread's own arri
 ### The choreography, in order (home is the page behind)
 
 1. **Confirm.** The card's button works (MO-7-4). Nothing in the page moves.
-2. **Held.** The receipt row and ring arrive in the card (MO-7-5). One beat later the slot arrives in the page
-   (MO-8-1). On the phone the sheet covers most of the page: the slot is there for when it leaves; on desktop it is
+2. **Held.** The receipt row and ring arrive in the card (MO-7-5). One beat
+   later the slot arrives in the page
+   (MO-8-1). On the phone the sheet covers most of the page: the slot is there
+   for when it leaves; on desktop it is
    visible beside the panel, under the veil.
-3. **The hold.** The ring drains in the card; the slot's seconds tick with it. Closing the panel here shows the page
+3. **The hold.** The ring drains in the card; the slot's seconds tick with it.
+   Closing the panel here shows the page
    with its slot and the pill "Saves in 5".
 4. **Saved.** In this order, each a consequence of the one before:
    a. the card's ring becomes the check (MO-7-9), `success`;
-   b. the page is asked to re-read (`router.refresh()`), and the slot's line becomes "Saved";
-   c. if the slot is not comfortably in view, the page scrolls to it now, while the panel is still over it (MO-8-3);
-   d. one beat after the check starts, the panel recedes into the key (MO-1-4) and the key's pill says "Added";
-   e. when the real row is in the DOM the slot is hidden in the same frame (before paint) and the row is marked
-      (MO-8-2). If the panel is still closing, the mark waits until it has passed half way.
-5. **After.** The mark is gone in 2.8 s; the row is an ordinary row. The pill returns to the key 1.8 s after "Added".
+   b. the page is asked to re-read (`router.refresh()`), and the slot's line
+   becomes "Saved";
+   c. if the slot is not comfortably in view, the page scrolls to it now, while
+   the panel is still over it (MO-8-3);
+   d. one beat after the check starts, the panel recedes into the key (MO-1-4)
+   and the key's pill says "Added";
+   e. when the real row is in the DOM the slot is hidden in the same frame
+   (before paint) and the row is marked
+      (MO-8-2). If the panel is still closing, the mark waits until it has
+      passed half way.
+5. **After.** The mark is gone in 2.8 s; the row is an ordinary row. The pill
+   returns to the key 1.8 s after "Added".
 
-The panel does not recede when: the composer has text; the coach focused the composer after Confirm; a new turn has
-started; the thing's home is not the page behind; the write failed or was undone. It never recedes while the hold runs.
+The panel does not recede when: the composer has text; the coach focused the
+composer after Confirm; a new turn has
+started; the thing's home is not the page behind; the write failed or was
+undone. It never recedes while the hold runs.
 
-**Bringing the row into view without yanking the page (MO-8-3).** Only when no part of the row is inside the comfort
-band (from 16px under the bar to 16px above the dock or the window's foot). The page moves the shortest distance that
-centres the row; it moves once; it is the browser's smooth scroll and it starts before the panel leaves, so by the time
-the page is uncovered it is already where it needs to be or arriving. If the coach has touched, wheeled or keyed the
-page since Confirm (the panel was closed during the hold and they carried on working), the page is not scrolled at all:
-the mark plays where the row is and the pill's "Added" is the way to it. Reduce Motion: the scroll is instant, and
+**Bringing the row into view without yanking the page (MO-8-3).** Only when no
+part of the row is inside the comfort
+band (from 16px under the bar to 16px above the dock or the window's foot). The
+page moves the shortest distance that
+centres the row; it moves once; it is the browser's smooth scroll and it starts
+before the panel leaves, so by the time
+the page is uncovered it is already where it needs to be or arriving. If the
+coach has touched, wheeled or keyed the
+page since Confirm (the panel was closed during the hold and they carried on
+working), the page is not scrolled at all:
+the mark plays where the row is and the pill's "Added" is the way to it. Reduce
+Motion: the scroll is instant, and
 happens before the panel fades.
 
 ### Storyboard
@@ -303,12 +378,16 @@ happens before the panel fades.
 | MO-8-5 | Open on a receipt whose home is another page | the panel (MO-1-4); the route (the shared push, 462 ms smooth, the page behind at -24%); then MO-8-3 and MO-8-2 on the destination | | | | the mark starts when the push ends | Back: the shared reverse; the mark is dropped | crossfade quick, then the mark | `press` | One way of landing, wherever it started |
 | MQ-8-9 | `ST-8.late` at 12 s | the slot | `opacity` | 1 > 0 | quick 180 ms | none | the row arriving first: MQ-8-8 | at once | none | It does not hang on the page as a promise |
 
-Announced once, politely, when the row lands: "Added to Tasks: Putting ladder for Eli." Nothing is announced for a
+Announced once, politely, when the row lands: "Added to Tasks: Putting ladder
+for Eli." Nothing is announced for a
 slot.
 
-Deliberately not built: a flight of the card from the panel to the row. On the phone the row is under the sheet for
-the whole flight; on desktop it would cross the veil and the page at a size that reads as a toy. The ring becoming the
-check, then the panel leaving, then the row holding the eye, is the same sentence in three true steps.
+Deliberately not built: a flight of the card from the panel to the row. On the
+phone the row is under the sheet for
+the whole flight; on desktop it would cross the veil and the page at a size that
+reads as a toy. The ring becoming the
+check, then the panel leaving, then the row holding the eye, is the same
+sentence in three true steps.
 
 ---
 
@@ -348,46 +427,64 @@ check, then the panel leaving, then the row holding the eye, is the same sentenc
 
 ## Defaults taken (no one to ask; change here if wrong)
 
-1. Desktop has a scrim and an inert page (the older table had neither on desktop). The brief asks for the page to be
+1. Desktop has a scrim and an inert page (the older table had neither on
+   desktop). The brief asks for the page to be
    inert to pointer, keyboard and VoiceOver.
 2. Three starts on the phone, four on desktop; no greeting above them.
 3. No chip on Home and Settings.
-4. The panel recedes on save on both phone and desktop, under the conditions listed; never during the hold.
+4. The panel recedes on save on both phone and desktop, under the conditions
+   listed; never during the hold.
 5. A mark waits up to 60 s to be seen, then is dropped.
-6. Today's thread means the newest conversation started today on the quick chat surface; until the list says which
+6. Today's thread means the newest conversation started today on the quick chat
+   surface; until the list says which
    surface a conversation came from (request 4) it is the newest started today.
-7. `BEAT_MS` (120) is imported from the lead's `turn-timing.ts` when it exists; until then a constant of the same
+7. `BEAT_MS` (120) is imported from the lead's `turn-timing.ts` when it exists;
+   until then a constant of the same
    name and value in this lane.
 8. A message's landing is Messages' own outgoing bubble; no extra mark.
-9. The receipt's Open, when home is the page behind and the write is held, saves now and lands in place (no push).
+9. The receipt's Open, when home is the page behind and the write is held, saves
+   now and lands in place (no push).
 
 ## Requests
 
-Status, 11 Nov: engine requests 1 to 4 landed (CONTRACT_NOTES E18) and are used; 5 and 6 are still open. The lead's
-1 and 2 landed (`AskThread` compact, `noteSendSource`, `onCardPhase`) and are used; 3 is still open, with the newer
-asks listed under "Second pass". Ids are still missing for a focus area, a goal, a trip, and a second commit found by
-its natural key: those rows are found only when exactly one new row of the kind appears, else nothing is marked.
+Status, 11 Nov: engine requests 1 to 4 landed (CONTRACT_NOTES E18) and are used;
+5 and 6 are still open. The lead's
+1 and 2 landed (`AskThread` compact, `noteSendSource`, `onCardPhase`) and are
+used; 3 is still open, with the newer
+asks listed under "Second pass". Ids are still missing for a focus area, a goal,
+a trip, and a second commit found by
+its natural key: those rows are found only when exactly one new row of the kind
+appears, else nothing is marked.
 
 Engine and protocol:
 
-1. `created[].id` on the final receipt (the saved row's id), so a row is found by id and not by being the one new row.
-2. `created[].href` that goes to the thing, not its section (Calendar on that day, the player's file for a focus area).
-3. A `lands` object on the proposal (`{ kind, home, day? }`), so the pending slot does not depend on a client map of
+1. `created[].id` on the final receipt (the saved row's id), so a row is found
+   by id and not by being the one new row.
+2. `created[].href` that goes to the thing, not its section (Calendar on that
+   day, the player's file for a focus area).
+3. A `lands` object on the proposal (`{ kind, home, day? }`), so the pending
+   slot does not depend on a client map of
    tool names (`LANDING_HOMES` in `landing.ts` stands in).
 4. `surface` on each row of `GET /api/coachhelm/v3/chat/conversations`.
 5. Whether the team has any rounds, on the session, for `ST-2.home.norounds`.
-6. The screen context on the request (SPEC request 7); the chip's `screen` half is drawn and not sent until then.
+6. The screen context on the request (SPEC request 7); the chip's `screen` half
+   is drawn and not sent until then.
 
 The lead (`chat-ux`):
 
-1. The shared thread pieces at compact size, and `MO-3-4` callable with a foreign source rect (a start's label).
-2. The shared task card's phase changes as a callback (`onPhase(key, 'held' | 'saved' | 'undone' | 'failed', receipt)`),
+1. The shared thread pieces at compact size, and `MO-3-4` callable with a
+   foreign source rect (a start's label).
+2. The shared task card's phase changes as a callback (`onPhase(key, 'held' |
+   'saved' | 'undone' | 'failed', receipt)`),
    because Undo is the card's own state and is not in the messages.
-3. Ask's receipt Open calling `announceLanding(...)` from `landing.ts` before it pushes (one line).
+3. Ask's receipt Open calling `announceLanding(...)` from `landing.ts` before it
+   pushes (one line).
 
-The shell (coordinator): none needed to build; one to tidy: move the two mark rules to `ui.css`.
+The shell (coordinator): none needed to build; one to tidy: move the two mark
+rules to `ui.css`.
 
-Other screens (one-line hooks, listed per file in the build report): `data-ch-row`, `<LandingSlot />`, optional
+Other screens (one-line hooks, listed per file in the build report):
+`data-ch-row`, `<LandingSlot />`, optional
 `data-ch-row-tag`.
 
 ## How each moment is checked
@@ -395,11 +492,15 @@ Other screens (one-line hooks, listed per file in the build report): `data-ch-ro
 As MOTION.md's six steps, plus for these moments:
 
 1. the pour and a landing as frame sequences at 60 fps in WebKit;
-2. the interrupts: close at 140 ms into an open, open at 90 ms into that close, Escape mid-pour, Back while open, a
-   drag released at 20% (returns) and at 40% (closes), Undo during the hold with the slot visible;
-3. `document.getAnimations()` during the pour, the recede and the mark: `transform` and `opacity` only;
+2. the interrupts: close at 140 ms into an open, open at 90 ms into that close,
+   Escape mid-pour, Back while open, a
+   drag released at 20% (returns) and at 40% (closes), Undo during the hold with
+   the slot visible;
+3. `document.getAnimations()` during the pour, the recede and the mark:
+   `transform` and `opacity` only;
 4. the page's `scrollY` before open and after close: equal, except after MO-8-3;
-5. with the panel open: `document.activeElement` stays inside the panel or on the key through a full Tab cycle, and
+5. with the panel open: `document.activeElement` stays inside the panel or on
+   the key through a full Tab cycle, and
    the canvas carries `inert`.
 
 ---
@@ -423,28 +524,43 @@ As MOTION.md's six steps, plus for these moments:
 
 ### Decided while building (each differs from, or adds to, the text above)
 
-1. **The panel's history entry is popped when the close has ended**, not when it starts. A reopen inside the 220 ms of
-   a close keeps the entry it had; popping at the start raced the browser's own asynchronous Back.
-2. **The key's pill follows the card, not the stored receipt.** The hook's messages keep the `held` receipt after the
-   write (the final one arrives by the card's own poll until SPEC request 2 lands), so "Saves in 5", "Saving…" and
+1. **The panel's history entry is popped when the close has ended**, not when it
+   starts. A reopen inside the 220 ms of
+   a close keeps the entry it had; popping at the start raced the browser's own
+   asynchronous Back.
+2. **The key's pill follows the card, not the stored receipt.** The hook's
+   messages keep the `held` receipt after the
+   write (the final one arrives by the card's own poll until SPEC request 2
+   lands), so "Saves in 5", "Saving…" and
    "Added" are driven from the card's phase.
-3. **A landing has a `subject`** (the player's id) beside `day`, so a one-player page shows only that player's slot:
+3. **A landing has a `subject`** (the player's id) beside `day`, so a one-player
+   page shows only that player's slot:
    `<LandingSlot kind="focus_area" subject={playerId} />`.
-4. **The slot reads the shell's pathname from the quick chat's context**, which is the browser's in the app and the
+4. **The slot reads the shell's pathname from the quick chat's context**, which
+   is the browser's in the app and the
    screen's own in a preview.
-5. **The starts sit at the foot of the open page**, on the composer they feed; the one that is tapped rises to the top
-   as the question. (The first build had them under the header, with the page's space under them: the hand and the
+5. **The starts sit at the foot of the open page**, on the composer they feed;
+   the one that is tapped rises to the top
+   as the question. (The first build had them under the header, with the page's
+   space under them: the hand and the
    eye are at the composer.)
-6. **The chip truncates in its screen part** and never in the name, by drawing the two as separate runs.
-7. **In WebKit's default Tab mode** (text fields only) Tab moves between the composer and the browser's own chrome;
-   no element of the page behind is reached. With full keyboard access on, the order is the one in "Focus".
+6. **The chip truncates in its screen part** and never in the name, by drawing
+   the two as separate runs.
+7. **In WebKit's default Tab mode** (text fields only) Tab moves between the
+   composer and the browser's own chrome;
+   no element of the page behind is reached. With full keyboard access on, the
+   order is the one in "Focus".
 
 ### Stand-ins (named, to be replaced, none hidden)
 
-Second pass, 11 Nov: the thread, the card and the island are no longer stand-ins. The panel mounts the Ask lane's
-`AskThread` (compact density, its own Rule P on the panel's scroller, its Latest key in the panel's body), its task card
-through `onCardPhase`, and its `ActivityIsland` in the header's centre slot. The inherited `Steps`, `AssistantTurn`,
-`TaskCard`, `QuickAsk`, `task-motion.ts` and `visuals/**` are deleted, with their 300 lines of ported styles.
+Second pass, 11 Nov: the thread, the card and the island are no longer
+stand-ins. The panel mounts the Ask lane's
+`AskThread` (compact density, its own Rule P on the panel's scroller, its Latest
+key in the panel's body), its task card
+through `onCardPhase`, and its `ActivityIsland` in the header's centre slot. The
+inherited `Steps`, `AssistantTurn`,
+`TaskCard`, `QuickAsk`, `task-motion.ts` and `visuals/**` are deleted, with
+their 300 lines of ported styles.
 
 | Stand-in | For | Replace when |
 | --- | --- | --- |
@@ -469,13 +585,16 @@ through `onCardPhase`, and its `ActivityIsland` in the header's centre slot. The
 | Recruiting | the board's row or card in `screens/recruiting/**` | `data-ch-row={`recruit:${id}`}`; `<LandingSlot kind="recruit" />` at the head of its column |
 | Messages | none | Its own outgoing bubble is the landing |
 
-The Hub's task row already has a wash for a task a notification named (`is-focus`): the landing's mark is the same idea
-arriving by a different road, and the coordinator may prefer to fold the two into one class when the mark's rules move
+The Hub's task row already has a wash for a task a notification named
+(`is-focus`): the landing's mark is the same idea
+arriving by a different road, and the coordinator may prefer to fold the two
+into one class when the mark's rules move
 to `ui.css`.
 
 ### Preview URLs (no sign-in, no model call)
 
-Base `http://127.0.0.1:3100/clubhouse-preview/`. Any coach screen takes `?qc=<state>`; `&qcopen=0` starts closed so
+Base `http://127.0.0.1:3100/clubhouse-preview/`. Any coach screen takes
+`?qc=<state>`; `&qcopen=0` starts closed so
 the pour can be driven from the key.
 
 | Moment | URL |
@@ -513,30 +632,45 @@ the pour can be driven from the key.
 
 ### Not working, or not verified
 
-Fixed in the second pass (11 Nov): Back closes the panel (it failed in the first build; the entry is now kept the way
-the shell keeps a pushed phone screen's, `use-panel-history.ts`); a start tapped with a real pointer; a rested finger
+Fixed in the second pass (11 Nov): Back closes the panel (it failed in the first
+build; the entry is now kept the way
+the shell keeps a pushed phone screen's, `use-panel-history.ts`); a start tapped
+with a real pointer; a rested finger
 no longer flings the sheet.
 
 Still open:
 
-1. Not exercised on a device: the keyboard's rise with the pour (MO-1-3 is drawn against a block in `qc=hello-kb`),
-   the iOS edge swipe, VoiceOver's order, haptics, 120 Hz. The benchmark rows that depend on these say so.
+1. Not exercised on a device: the keyboard's rise with the pour (MO-1-3 is drawn
+   against a block in `qc=hello-kb`),
+   the iOS edge swipe, VoiceOver's order, haptics, 120 Hz. The benchmark rows
+   that depend on these say so.
 2. Not measured: frame times of the pour and of the recede (T3) on a phone.
 3. The largest Text Size on the phone sheet: the one capture was taken mid re-render.
-4. Never run: today's thread read back from the server (`readTodayThread`), the day rollover, Open travelling to
-   another page with the mark on arrival, a failed write's slot leaving, Backspace taking the chip.
-5. "Save now and open" on the card is a page load (the Ask lane's `saveNow`); the landing is lost when it is used.
-6. In the preview the thread's waiting line reads "No answer yet. You can stop and ask again." for the first 300 ms
-   of a scripted turn: the preview's fake hook sends no `message_start`. Not seen with the real hook; for the lead to
+4. Never run: today's thread read back from the server (`readTodayThread`), the
+   day rollover, Open travelling to
+   another page with the mark on arrival, a failed write's slot leaving,
+   Backspace taking the chip.
+5. "Save now and open" on the card is a page load (the Ask lane's `saveNow`);
+   the landing is lost when it is used.
+6. In the preview the thread's waiting line reads "No answer yet. You can stop
+   and ask again." for the first 300 ms
+   of a scripted turn: the preview's fake hook sends no `message_start`. Not
+   seen with the real hook; for the lead to
    confirm.
-7. Dark, phone: the empty start and today's thread are captured and read correctly on the solid ground
-   (`v3/dark-hello`, `v3/dark-today`); the held state (`qc=land`) was not, twice (a chunk reload in the dev server
-   while another lane's preview route was being edited). The slot and the mark use tokens only, so this is a missing
+7. Dark, phone: the empty start and today's thread are captured and read
+   correctly on the solid ground
+   (`v3/dark-hello`, `v3/dark-today`); the held state (`qc=land`) was not, twice
+   (a chunk reload in the dev server
+   while another lane's preview route was being edited). The slot and the mark
+   use tokens only, so this is a missing
    picture and not a known fault.
-8. The progress row of a calculation ("Working it out") is not drawn by any preview state here. The key's pill takes
-   the label of the step that is running, else the last step's; that label is shorter than the read labels already
+8. The progress row of a calculation ("Working it out") is not drawn by any
+   preview state here. The key's pill takes
+   the label of the step that is running, else the last step's; that label is
+   shorter than the read labels already
    captured on the pill, so it fits, but it has not been seen.
-9. The console carries one React warning on every thread with a people line: a missing `key` in the Ask lane's
+9. The console carries one React warning on every thread with a people line: a
+   missing `key` in the Ask lane's
    `People` (not this lane's file).
 
 ---
@@ -545,8 +679,10 @@ Still open:
 
 ### The benchmark (owner, 10 Nov late: "Like chat gpt Claude interface but better")
 
-What the two apps do is described from their shipped behaviour as a person using them sees it, not from their code.
-"Measured" is WebKit in the preview with `scratchpad/tools/qc-drive.mjs`; "not on a device" means the row is a claim
+What the two apps do is described from their shipped behaviour as a person using
+them sees it, not from their code.
+"Measured" is WebKit in the preview with `scratchpad/tools/qc-drive.mjs`; "not
+on a device" means the row is a claim
 until an iPhone confirms it, and is listed as open above.
 
 | Mechanism | What they do | What we do | Equal or better, and why |
@@ -565,45 +701,74 @@ until an iPhone confirms it, and is listed as open above.
 | Taking it back | Permission is asked before a tool runs; after that it has happened | The write is held for 8 seconds on the server's clock, shown on the card's ring, on the slot and on the key; Undo leaves the page exactly as it was (measured: the slot leaves, the list keeps its 4 rows, the panel stays) | Better: an honest window, visible in three places that agree |
 | Coming back | History lists; a thread reopens at rest | The panel reopens on today's thread at rest under "Earlier today"; Open in Ask carries the same conversation to the full screen; Back closes the panel and leaves the page (measured: closing by 30 ms, hidden by 260, focus on the key) | Equal |
 
-Rows where ours is not yet proven equal (the keyboard, frame times, 120 Hz) are defects until measured on an iPhone,
+Rows where ours is not yet proven equal (the keyboard, frame times, 120 Hz) are
+defects until measured on an iPhone,
 and are in the open list.
 
 ### What changed in this pass
 
-1. **The thread is the Ask lane's.** `AskThread` with `density="compact"`, `phone` (the panel is a phone-wide column
-   on a desk too), `jumpHost` the panel's body, `onCardPhase` to the landing. Evidence opens as the app's sheet over the
-   panel. The "Earlier today" rule is now a quiet sticky line at the top of the panel's body, shown until the first
-   question of this sitting (the thread is one unit, so the rule cannot sit between two of its pages).
-2. **The island has a place.** The header's centre is its slot (`.qc__isl`). While an island is shown the name steps
-   back by opacity; on the phone the way into Ask is its arrow alone, so the island has the row's centre.
-3. **The engine's four answers are used** (CONTRACT_NOTES E18). `proposal.lands` decides the kind, the home, the day
-   and (from `?player=`) whose page; `created[].id` finds the row; the table of tool names is the fallback for older
-   cards. Tasks whose action returns no id (focus area, goal, trip) are found only as the one new row of their kind,
+1. **The thread is the Ask lane's.** `AskThread` with `density="compact"`,
+   `phone` (the panel is a phone-wide column
+   on a desk too), `jumpHost` the panel's body, `onCardPhase` to the landing.
+   Evidence opens as the app's sheet over the
+   panel. The "Earlier today" rule is now a quiet sticky line at the top of the
+   panel's body, shown until the first
+   question of this sitting (the thread is one unit, so the rule cannot sit
+   between two of its pages).
+2. **The island has a place.** The header's centre is its slot (`.qc__isl`).
+   While an island is shown the name steps
+   back by opacity; on the phone the way into Ask is its arrow alone, so the
+   island has the row's centre.
+3. **The engine's four answers are used** (CONTRACT_NOTES E18). `proposal.lands`
+   decides the kind, the home, the day
+   and (from `?player=`) whose page; `created[].id` finds the row; the table of
+   tool names is the fallback for older
+   cards. Tasks whose action returns no id (focus area, goal, trip) are found
+   only as the one new row of their kind,
    and when that is not certain nothing is marked.
-4. **`surface: null` counts as today's thread.** Until the held migration is applied every conversation lists
-   `surface: null`; the panel then restores the newest conversation started today (as before), and narrows to quick
-   chat's own by itself once surfaces are stored. Chosen over "restore nothing", which would lose coming back entirely
+4. **`surface: null` counts as today's thread.** Until the held migration is
+   applied every conversation lists
+   `surface: null`; the panel then restores the newest conversation started
+   today (as before), and narrows to quick
+   chat's own by itself once surfaces are stored. Chosen over "restore nothing",
+   which would lose coming back entirely
    for as long as the migration is held.
-5. **A stored card is not an event** (`phaseIsNow`). The shared card reports where it stands when it is first drawn; a
-   receipt read back from the server, a reloaded Undo (`status: 'cancelled'`) or an old failure lands nothing, marks
-   nothing and says nothing on the key. Only an open hold, a change after a hold seen in this sitting, or the card's
+5. **A stored card is not an event** (`phaseIsNow`). The shared card reports
+   where it stands when it is first drawn; a
+   receipt read back from the server, a reloaded Undo (`status: 'cancelled'`) or
+   an old failure lands nothing, marks
+   nothing and says nothing on the key. Only an open hold, a change after a hold
+   seen in this sitting, or the card's
    first word after this sitting's Confirm counts. Tested.
-6. **The hand-off is one object.** Saved, the slot's ground lights to the mark's tint (180 ms) while its line says
-   "Saved"; the real row then takes that ground at full in the frame it appears, so the eye sees a pending row become
-   a real one, not one thing vanish and another arrive. The mark's 180 ms rise is kept only for a row with no slot
+6. **The hand-off is one object.** Saved, the slot's ground lights to the mark's
+   tint (180 ms) while its line says
+   "Saved"; the real row then takes that ground at full in the frame it appears,
+   so the eye sees a pending row become
+   a real one, not one thing vanish and another arrive. The mark's 180 ms rise
+   is kept only for a row with no slot
    before it (Open from another page).
-7. **The panel steps away before the page is asked to re-read.** Asked first, the re-read's work delayed the close by
-   about 250 ms in the preview; now the close starts one beat after the save and the re-read is asked in that frame.
-   Measured after the change, desktop and phone alike (30 ms samples): card "Assigned" and slot `saved` at 2.15 s, the
-   slot's ground at .47, .82, .95, 1 over the next 150 ms, the panel hidden by 2.50 s (a 120 ms beat, then the close),
-   the real row with the mark at 1 and no slot at 2.66 s (the preview's loader answers 520 ms after the save), the
+7. **The panel steps away before the page is asked to re-read.** Asked first,
+   the re-read's work delayed the close by
+   about 250 ms in the preview; now the close starts one beat after the save and
+   the re-read is asked in that frame.
+   Measured after the change, desktop and phone alike (30 ms samples): card
+   "Assigned" and slot `saved` at 2.15 s, the
+   slot's ground at .47, .82, .95, 1 over the next 150 ms, the panel hidden by
+   2.50 s (a 120 ms beat, then the close),
+   the real row with the mark at 1 and no slot at 2.66 s (the preview's loader
+   answers 520 ms after the save), the
    mark still .98 at 4.07 s, mark and tag gone by 5.46 s, 5 rows, nothing left over.
-8. **A thrown sheet keeps its speed** into the close (`chThrownExit`, the app's own), and a finger that rested for
+8. **A thrown sheet keeps its speed** into the close (`chThrownExit`, the app's
+   own), and a finger that rested for
    80 ms before lifting has none.
 9. **Back** uses the shell's pattern for a same-URL entry, with its own key.
-10. **The phone sheet's ground is solid.** Glass on a sheet that covers the screen let words of the page read through
-    its foot and costs a backdrop re-sample on every frame of the pour. A desk keeps the glass.
-11. **Links out of the panel** go by the app's push and take the panel's history entry; when the thing lives on the
+10. **The phone sheet's ground is solid.** Glass on a sheet that covers the
+    screen let words of the page read through
+    its foot and costs a backdrop re-sample on every frame of the pour. A desk
+    keeps the glass.
+11. **Links out of the panel** go by the app's push and take the panel's history
+    entry; when the thing lives on the
     page behind, nothing navigates.
-12. `quick-chat.css` went from 552 lines to about 250 and holds no hex colour; what remains raw is the approved glass,
+12. `quick-chat.css` went from 552 lines to about 250 and holds no hex colour;
+    what remains raw is the approved glass,
     the key's ivory disc on the green bar and the live pill's hairline.

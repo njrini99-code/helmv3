@@ -1,14 +1,19 @@
 # CoachHelm chat v3: every movement (10 Nov 2026)
 
-`SPEC.md` beside this file is the states and content; this is how each one arrives, changes and leaves. One table per
-moment. Columns: trigger; what moves; property; from and to; duration and easing (a token or a named spring, never a
-raw value); delay or stagger; what interrupts it and how; Reduce Motion; haptic; why this motion exists. A motion
+`SPEC.md` beside this file is the states and content; this is how each one
+arrives, changes and leaves. One table per
+moment. Columns: trigger; what moves; property; from and to; duration and easing
+(a token or a named spring, never a
+raw value); delay or stagger; what interrupts it and how; Reduce Motion; haptic;
+why this motion exists. A motion
 that cannot answer "why" is not in this file, and is not built.
 
 ## The benchmark
 
-The owner's bar (10 Nov): "insanely good. Like ChatGPT, Claude interface but better". What they do, what ours does,
-and why that is equal or better. "Measured" means in WebKit through the harness; the rest is built and watched.
+The owner's bar (10 Nov): "insanely good. Like ChatGPT, Claude interface but
+better". What they do, what ours does,
+and why that is equal or better. "Measured" means in WebKit through the harness;
+the rest is built and watched.
 
 | Moment | ChatGPT / Claude | Ours | Why equal or better |
 | --- | --- | --- | --- |
@@ -22,7 +27,8 @@ and why that is equal or better. "Measured" means in WebKit through the harness;
 | Stop / failure | Stop leaves a cut sentence; errors are a red banner | Stop is silent and says so on the turn; a failure keeps what arrived and says what to do in one amber line | The turn is the record of what happened |
 | Reduce Motion | Mostly unchanged | Every arrival is a fade, loops stop, the island's ring is still, the plate takes its size at once | Designed, not defaulted |
 
-**The reveal, measured** (WebKit, phone 390x844, through the harness; "burst" paints each 50 ms flush as it arrives):
+**The reveal, measured** (WebKit, phone 390x844, through the harness; "burst"
+paints each 50 ms flush as it arrives):
 
 | Stream | Reveal | Frames | Slowest frame | Over 25 ms | Frames in which words landed | Words per landing, median (max) | Gap between landings, median / p95 / max | Variation per 100 ms |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -32,24 +38,36 @@ and why that is equal or better. "Measured" means in WebKit through the harness;
 | Lumpy, worst pace (179 words in bursts of 6 to 22, 1.4 s pauses) | burst | 407 | 15 ms | 0 | 14 | 12 (21) | 88 / 1479 / 1479 ms | 1.67 |
 | same | smoothed | 404 | 12 ms | 0 | 133 | 1 (4) | 10 / 61 / 811 ms | 1.29 |
 
-Chosen: smoothed. It turns a stream that lands in clumps into one that is read as it is written, and on an uneven
-connection it fills almost half of each stall with words that had already arrived. Run 1's slow frames (one of
-149 ms) did not recur in run 2 or in the lumpy run and came while other captures were compiling on the same machine;
-they are recorded here because they were seen, and the budget below is the test that will catch them if they are
+Chosen: smoothed. It turns a stream that lands in clumps into one that is read
+as it is written, and on an uneven
+connection it fills almost half of each stall with words that had already
+arrived. Run 1's slow frames (one of
+149 ms) did not recur in run 2 or in the lumpy run and came while other captures
+were compiling on the same machine;
+they are recorded here because they were seen, and the budget below is the test
+that will catch them if they are
 the reveal's. `setRevealMode('burst')` is the way back.
 
-**Frame budget, stated:** while a long answer streams with a chart on the page, no frame over 33 ms and no more than
-1 in 100 over 25 ms on the phone viewport in WebKit; the island's open and fold lay nothing out (transforms on five
-layers). Measured 11 Nov, the whole-team turn (`isl-team`, real pace, phone, light on, smoothed reveal): 730 frames, median
-10 ms, p95 11 ms; the 50 frames after the island opened and after it folded peaked at 13 ms and 12 ms with none over
-25 ms. One frame of 42 ms elsewhere in that turn, so the budget's "none over 33 ms" was missed once in that run;
+**Frame budget, stated:** while a long answer streams with a chart on the page,
+no frame over 33 ms and no more than
+1 in 100 over 25 ms on the phone viewport in WebKit; the island's open and fold
+lay nothing out (transforms on five
+layers). Measured 11 Nov, the whole-team turn (`isl-team`, real pace, phone,
+light on, smoothed reveal): 730 frames, median
+10 ms, p95 11 ms; the 50 frames after the island opened and after it folded
+peaked at 13 ms and 12 ms with none over
+25 ms. One frame of 42 ms elsewhere in that turn, so the budget's "none over 33
+ms" was missed once in that run;
 which change caused it is not established.
 
 ## The grammar
 
-**What motion is for here.** Four jobs, and only these: where something came from (the question out of the field,
-the reads out of the work line), what it belongs to (the chip to its sentence, the receipt to its card), what just
-changed (a row to done, a draft to saved), and what happens if the coach does nothing (the ring).
+**What motion is for here.** Four jobs, and only these: where something came
+from (the question out of the field,
+the reads out of the work line), what it belongs to (the chip to its sentence,
+the receipt to its card), what just
+changed (a row to done, a draft to saved), and what happens if the coach does
+nothing (the ring).
 
 **Values.** All from `src/clubhouse/styles/tokens.css` and `src/clubhouse/lib/motion.ts`.
 
@@ -72,40 +90,59 @@ changed (a row to done, a draft to saved), and what happens if the coach does no
 | sweep | `--ch-dur-sweep`, `--ch-ease-io` | 900 ms a pass | a button working |
 | underlay | `CH_UNDERLAY_SHIFT` | 24% | the scrim behind quick chat; the page behind a push |
 
-No new token is requested. Thresholds that are not motions (300 ms hold-back, 400 ms minimum life, 1.2 s, 6 s, 20 s)
+No new token is requested. Thresholds that are not motions (300 ms hold-back,
+400 ms minimum life, 1.2 s, 6 s, 20 s)
 are named constants in `src/clubhouse/screens/coachhelm/chat/turn-timing.ts`.
 
 **Rules.**
 
-- Transform and opacity only. Two documented exceptions, both paint-only on a mark under 24px with no layout: the
-  countdown ring's `stroke-dashoffset`, and a check's `stroke-dashoffset` as it draws. The label shimmer moves
-  `background-position` on clipped text (paint-only, existing). Nothing animates width, height, top, left, margin,
+- Transform and opacity only. Two documented exceptions, both paint-only on a
+  mark under 24px with no layout: the
+  countdown ring's `stroke-dashoffset`, and a check's `stroke-dashoffset` as it
+  draws. The label shimmer moves
+  `background-position` on clipped text (paint-only, existing). Nothing animates
+  width, height, top, left, margin,
   padding, grid or `clip-path`.
-- A height change is one frame, and happens only where nothing being read sits below it, or because the coach tapped.
-- Everything is interruptible. A script motion is a WAAPI effect that reads the node's current transform and opacity
-  before it starts (the quick chat hook's `hold()`), or is added with `composite: 'add'` (the thread's glide), so a
-  second trigger continues from the frame on screen. A CSS transition reverses from its current value by itself.
+- A height change is one frame, and happens only where nothing being read sits
+  below it, or because the coach tapped.
+- Everything is interruptible. A script motion is a WAAPI effect that reads the
+  node's current transform and opacity
+  before it starts (the quick chat hook's `hold()`), or is added with
+  `composite: 'add'` (the thread's glide), so a
+  second trigger continues from the frame on screen. A CSS transition reverses
+  from its current value by itself.
   Nothing queues; nothing snaps.
-- Related things move together; a consequence follows its cause by one beat (120 ms, `--ch-dur-press` rounded: the
+- Related things move together; a consequence follows its cause by one beat (120
+  ms, `--ch-dur-press` rounded: the
   constant `BEAT_MS` in `turn-timing.ts`). No decorative stagger.
-- Speed first: nothing that will last under 300 ms is shown; anything shown stays long enough to be read (SPEC,
+- Speed first: nothing that will last under 300 ms is shown; anything shown
+  stays long enough to be read (SPEC,
   Moment 4).
-- Reduce Motion (`useChMotionMode() === 'fade'`): every arrival is an opacity fade at `CH_FADE_MS`; nothing
-  travels, nothing scales; loops stop (the dot is still, the mark does not turn, the shimmer is off); the ring still
+- Reduce Motion (`useChMotionMode() === 'fade'`): every arrival is an opacity
+  fade at `CH_FADE_MS`; nothing
+  travels, nothing scales; loops stop (the dot is still, the mark does not turn,
+  the shimmer is off); the ring still
   drains (it is information). `data-motion='off'`: no fades either.
-- Haptics (`lib/haptics.ts`, iPhone app only): send `press`; Stop none (an existing decision, CH-13421: Stop is silent); Confirm `press` (the Button's own); the
-  hold beginning: none; saved `success`; Undo `warning`; a failed write or turn `error` (once per failure); a chip or
+- Haptics (`lib/haptics.ts`, iPhone app only): send `press`; Stop none (an
+  existing decision, CH-13421: Stop is silent); Confirm `press` (the Button's
+  own); the
+  hold beginning: none; saved `success`; Undo `warning`; a failed write or turn
+  `error` (once per failure); a chip or
   the work line `select`. Never on a token, a read, or an answer finishing.
 
-**Check for every row:** `document.getAnimations()` in the preview lists the running effects; each must name only
-`transform`, `opacity` (or the two exceptions). The harness URL for each moment is in the build report.
+**Check for every row:** `document.getAnimations()` in the preview lists the
+running effects; each must name only
+`transform`, `opacity` (or the two exceptions). The harness URL for each moment
+is in the build report.
 
 ---
 
 ## Moment 1. Summoning and dismissing quick chat (QUICK-CHAT builds)
 
-The geometry and the retarget logic are `design-refresh/coachhelm/07-MOTION.md` rows M-KEY-press, M-OPEN, M-SCRIM,
-M-CONTENT, M-CLOSE, M-RETARGET, M-LIVE, M-LIVE-out, M-FULL: kept as written. v3 adds or changes:
+The geometry and the retarget logic are `design-refresh/coachhelm/07-MOTION.md`
+rows M-KEY-press, M-OPEN, M-SCRIM,
+M-CONTENT, M-CLOSE, M-RETARGET, M-LIVE, M-LIVE-out, M-FULL: kept as written. v3
+adds or changes:
 
 | ID | Trigger | What moves | Property | From > to | Duration, easing | Delay | Interrupted by | Reduce Motion | Haptic | Why |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -170,11 +207,16 @@ M-CONTENT, M-CLOSE, M-RETARGET, M-LIVE, M-LIVE-out, M-FULL: kept as written. v3 
 | MO-4-I9 | 6 s after the work finished, or the next send | the island; the scope line; the turn's line | island `opacity`, `scale` > 0.96; scope 0 > 1; the summary on the turn's line 0 > 1 | | quick 180 ms each | the summary after the island has gone | opening it: it stays | fades | none | The summary goes home to its turn, where it is the way back |
 | MO-4-I10 | work is live and the light is switched on (`setWaitLight`; off by default until the owner has seen both) | one soft band across the island's line | `transform: translateX` on its own layer, clipped to the line | off the left edge > off the right | live 2.8 s per pass, `--ch-ease-io`, resting a fifth of the pass at each end | none | the work ending: the band is removed with the live state | not drawn; the still form is the open ring | none | The wait has life without a second spinner: light crosses the thing that is working. It is a transform, where the older shimmer on the words is paint |
 
-Rejected: a pill that changes width with its words (every label change would be a layout or a second morph: the
-plate keeps the column's width, as the owner's reference does); animating `height` or `clip-path` (not on the
-compositor in WebKit); a progress bar or a percentage (there is no honest total); a step list that stays open over
-the streaming answer (it would cover the words being read); rolling digits; a shimmer on step labels (paint, and a
-second sign for "running" beside the ring); pushing the thread down to make room (the first words would move).
+Rejected: a pill that changes width with its words (every label change would be
+a layout or a second morph: the
+plate keeps the column's width, as the owner's reference does); animating
+`height` or `clip-path` (not on the
+compositor in WebKit); a progress bar or a percentage (there is no honest
+total); a step list that stays open over
+the streaming answer (it would cover the words being read); rolling digits; a
+shimmer on step labels (paint, and a
+second sign for "running" beside the ring); pushing the thread down to make room
+(the first words would move).
 
 ## Moment 5. The answer arriving
 
@@ -190,10 +232,14 @@ second sign for "running" beside the ring); pushing the thread down to make room
 | MO-5-8 | `text_discard` | the withdrawn words | `opacity` | 1 > 0, then removed | quick 180 ms | none | new words: they wait for the removal | removed at once | none | Words that are taken back fade; they are not yanked |
 | MO-5-9 | a link part arrives | its row | `opacity` | 0 > 1 | base 260 ms | none | none | quick | none | As a visual: it arrived, it is still |
 
-Streaming is the measured case. Target: a 600-word answer at the worst-case pace (bursts every 50 ms) streams in
-WebKit with no frame over 25 ms attributable to the thread, no layout animation, and no running effect other than
-`opacity` on the newest groups, the dot and the mark. Finished groups hold no effect (`animation-fill-mode:
-backwards`, so a finished fade leaves nothing running), and a settled turn is re-drawn as plain text with no groups.
+Streaming is the measured case. Target: a 600-word answer at the worst-case pace
+(bursts every 50 ms) streams in
+WebKit with no frame over 25 ms attributable to the thread, no layout animation,
+and no running effect other than
+`opacity` on the newest groups, the dot and the mark. Finished groups hold no
+effect (`animation-fill-mode:
+backwards`, so a finished fade leaves nothing running), and a settled turn is
+re-drawn as plain text with no groups.
 
 ## Moment 6. Evidence
 
@@ -223,9 +269,12 @@ backwards`, so a finished fade leaves nothing running), and a settled turn is re
 | MO-7-12 | Cancel, or superseded by a new question | buttons; the draft; the line | buttons `opacity` 1 > 0; draft `opacity` 1 > .55; line 0 > 1 | | quick 180 ms | none | none | at once | none | The draft steps back; it is not removed (it is the record of what was offered) |
 | MO-7-13 | a card drawn from a stored thread | nothing | none | at rest | | | | | | Coming back is not an event |
 
-The old staged fill (`.conf.is-fill`: fields rising 260 ms apart, the write-head bar, worked-out pills popping 70 ms
-apart) is removed: it staged data that had already arrived and held the Confirm button back by over a second.
-The draft's flight to its row (`ask-flight.ts`, M-ASK-45) is kept for MO-7-9 only where the card shows the row it
+The old staged fill (`.conf.is-fill`: fields rising 260 ms apart, the write-head
+bar, worked-out pills popping 70 ms
+apart) is removed: it staged data that had already arrived and held the Confirm
+button back by over a second.
+The draft's flight to its row (`ask-flight.ts`, M-ASK-45) is kept for MO-7-9
+only where the card shows the row it
 lands in, and runs on smooth.
 
 ## Moment 8. The action landing in the screen (QUICK-CHAT builds)
@@ -258,8 +307,10 @@ lands in, and runs on smooth.
 
 ## Moment 11. The player's Ask
 
-No motion of its own. Every row above applies to a player's turn except Moment 7 and Moment 8, which a player never
-reaches. `ST-11.out`'s card keeps its existing arrival (rise, base) and "Request more" follows it by the existing
+No motion of its own. Every row above applies to a player's turn except Moment 7
+and Moment 8, which a player never
+reaches. `ST-11.out`'s card keeps its existing arrival (rise, base) and "Request
+more" follows it by the existing
 delay.
 
 ## What is deliberately not animated
@@ -282,11 +333,15 @@ delay.
 
 For every row: the harness URL for the moment (build report), then in WebKit
 
-1. `document.getAnimations().map(a => [a.effect.target.className, Object.keys(a.effect.getKeyframes()[0] ?? {}),
-   a.effect.getTiming().duration])` at three points in the moment: only `transform`, `opacity`, the two exceptions;
-2. a frame sequence at 60 fps across the moment: the first and last frames match the states in SPEC.md, and no frame
+1. `document.getAnimations().map(a => [a.effect.target.className,
+   Object.keys(a.effect.getKeyframes()[0] ?? {}),
+   a.effect.getTiming().duration])` at three points in the moment: only
+   `transform`, `opacity`, the two exceptions;
+2. a frame sequence at 60 fps across the moment: the first and last frames match
+   the states in SPEC.md, and no frame
    shows a position between two layout states (no layout animation);
-3. the interrupt named in the row, fired mid-motion: the next frame continues from the last, within one frame;
+3. the interrupt named in the row, fired mid-motion: the next frame continues
+   from the last, within one frame;
 4. Reduce Motion: the same sequence shows only opacity changes of at most `CH_FADE_MS`;
 5. largest Text Size and dark: nothing clips, contrast holds;
 6. streaming only: frame times over 600 words at worst-case pace.

@@ -230,6 +230,9 @@ restoring it) are inside the action, so a toast's Retry completes them.
 
 None. Dismiss is undoable, so it doesn't ask: the notice (CH-13901) keeps Undo
 in place.
+
+| # | When | They see | How | Test |
+| --- | --- | --- | --- | --- |
 | CH-13580 | Practice: another coach saved first, or started this practice's plan | "Another coach changed this plan." Load latest; nothing is overwritten | `Builder`, `NewPlanSheet` | practice-screens |
 | CH-13581 | Practice: a block deleted | "Deleted Warm-up" with Undo; it goes back at its place | `Builder` | practice-screens |
 | CH-13582 | Practice: Split evenly | How many groups; replacing groups says so | `Builder` | practice-screens |

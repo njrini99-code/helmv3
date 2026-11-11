@@ -131,17 +131,32 @@ Held items:     none
 
 ### Changed (home.css)
 
-- Fixed sizes that were left in pixels (the round-form and headline figures, the leg values, the day and since figures, the next-up label) now follow the iPhone's text size. The score tile, the chart axis and value labels keep their size on purpose.
+- Fixed sizes that were left in pixels (the round-form and headline figures, the
+  leg values, the day and since figures, the next-up label) now follow the
+  iPhone's text size. The score tile, the chart axis and value labels keep their
+  size on purpose.
 - Radii on the 5, 7, 10, 14, 20 scale.
-- The "no events" chip has a 44px reach on the phone; the Player home asks row and next-up card tint on hover; the form and spark figures use tabular numerals.
+- The "no events" chip has a 44px reach on the phone; the Player home asks row
+  and next-up card tint on hover; the form and spark figures use tabular
+  numerals.
 
 ### Why
 
-- Pixel font sizes did not follow Dynamic Type, radii were off the 5/7/10/14/20 scale, some phone controls were under 44px, some clickable things did not answer a pointer, and the font shorthand had dropped tabular figures from figures that sit in columns.
+- Pixel font sizes did not follow Dynamic Type, radii were off the 5/7/10/14/20
+  scale, some phone controls were under 44px, some clickable things did not
+  answer a pointer, and the font shorthand had dropped tabular figures from
+  figures that sit in columns.
 
 ### Verification
 
-- WebKit (headless) at 390 and 1280, light and dark: Rounds, a round, sign-up, sign-in, Home, a CoachHelm thread and Team Hub looked at after the change; the phone with `--ch-type-scale: 1.4` scales text with no sideways overflow (scrollWidth equals clientWidth). Touch reach was measured with `elementFromPoint` 21px beyond each short control; hover was measured by comparing computed styles under the pointer; figures were measured by computed `font-variant-numeric`. `npm run clubhouse:css`: its two findings are existing shadows in `auth.css` (lines 1809 and 1872).
+- WebKit (headless) at 390 and 1280, light and dark: Rounds, a round, sign-up,
+  sign-in, Home, a CoachHelm thread and Team Hub looked at after the change; the
+  phone with `--ch-type-scale: 1.4` scales text with no sideways overflow
+  (scrollWidth equals clientWidth). Touch reach was measured with
+  `elementFromPoint` 21px beyond each short control; hover was measured by
+  comparing computed styles under the pointer; figures were measured by computed
+  `font-variant-numeric`. `npm run clubhouse:css`: its two findings are existing
+  shadows in `auth.css` (lines 1809 and 1872).
 
 ## 2026-10-19 — Leaderboard fades its clipped edge
 
@@ -156,15 +171,23 @@ Held items:     none
 
 ### Changed
 
-- The leaderboard table, when it is wider than its column, fades only the edge that is hiding something (`data-start` / `data-end`); nothing fades at rest.
+- The leaderboard table, when it is wider than its column, fades only the edge
+  that is hiding something (`data-start` / `data-end`); nothing fades at rest.
 
 ### Why
 
-- The same control behaved differently from page to page: a save greyed its button out at 42%, five places drew their own spinner, icon-only buttons had no words on desktop and a scroller gave no sign there was more. They now come from the shared owners (`Button` busy, `Spinner`, `Tooltip`, `use-hscroll`).
+- The same control behaved differently from page to page: a save greyed its
+  button out at 42%, five places drew their own spinner, icon-only buttons had
+  no words on desktop and a scroller gave no sign there was more. They now come
+  from the shared owners (`Button` busy, `Spinner`, `Tooltip`, `use-hscroll`).
 
 ### Verification
 
-- Targeted tests for this page and `ui/__tests__/controls-consistency.test.tsx`; the busy ring was captured at 390 and 1280, light and dark, on `/clubhouse-preview/classes` (the same Button owner draws it here); tooltips and edge fades on the messages, roster and CoachHelm previews. Pages other than the one captured were checked in source only.
+- Targeted tests for this page and `ui/__tests__/controls-consistency.test.tsx`;
+  the busy ring was captured at 390 and 1280, light and dark, on
+  `/clubhouse-preview/classes` (the same Button owner draws it here); tooltips
+  and edge fades on the messages, roster and CoachHelm previews. Pages other
+  than the one captured were checked in source only.
 
 ## 2026-10-19 — First-run Home draws the week; the latest round's long names stay on the card
 
@@ -179,17 +202,31 @@ Held items:     none
 
 ### Changed
 
-- Coach and player first-run pages, the no-team pages, the leaderboard's empties and the latest-round empty draw the shape of what will fill them (time rows, portrait rows) under the sentence. The coach copy says the page fills itself from replies, posted rounds and the leaderboard.
-- The latest round's player name ends in an ellipsis rather than pushing the score off the card (`.ch-h-round__name`).
-- The compact in-card empties (Today, Later today, Up next) keep their one-line form.
+- Coach and player first-run pages, the no-team pages, the leaderboard's empties
+  and the latest-round empty draw the shape of what will fill them (time rows,
+  portrait rows) under the sentence. The coach copy says the page fills itself
+  from replies, posted rounds and the leaderboard.
+- The latest round's player name ends in an ellipsis rather than pushing the
+  score off the card (`.ch-h-round__name`).
+- The compact in-card empties (Today, Later today, Up next) keep their one-line
+  form.
 
 ### Why
 
-- Every empty page was one template: a green tile, a headline, a sentence and a button in blank space. The waiting form draws the shape of what will fill the space (rules, rings, a baseline; no bars, no fake text) under one sentence that names what fills it and who does it, and a filter that hides everything is told apart from a first run, a lock and a failed read.
+- Every empty page was one template: a green tile, a headline, a sentence and a
+  button in blank space. The waiting form draws the shape of what will fill the
+  space (rules, rings, a baseline; no bars, no fake text) under one sentence
+  that names what fills it and who does it, and a filter that hides everything
+  is told apart from a first run, a lock and a failed read.
 
 ### Verification
 
-- `states.test.tsx` (the waiting form, its four kinds, the danger tone unchanged) and this page's tests; captured at 390 and 1280, light and dark, before and after, on `/clubhouse-preview/home?state=empty` and `home-player?state=empty` (viewed as contact sheets and crops). The latest round's long-name ellipsis was checked on desktop with a name injected in the browser; Home was not captured at a width that forces the ellipsis.
+- `states.test.tsx` (the waiting form, its four kinds, the danger tone
+  unchanged) and this page's tests; captured at 390 and 1280, light and dark,
+  before and after, on `/clubhouse-preview/home?state=empty` and
+  `home-player?state=empty` (viewed as contact sheets and crops). The latest
+  round's long-name ellipsis was checked on desktop with a name injected in the
+  browser; Home was not captured at a width that forces the ellipsis.
 
 ## 2026-10-18 — Wave 10: the first run and the empty team
 

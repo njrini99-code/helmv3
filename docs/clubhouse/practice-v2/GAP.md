@@ -1,12 +1,16 @@
 # Practice: what the build is missing against its design (10 Nov 2026)
 
 Looked at before anything was changed. The design is `design-refresh/practice-plan/redesign/coachhelm-practice.html`
-(scenes 4 and 5: the builder and the player) with `05-SCREENS.md`'s S-PRC rows for the screens that page does not draw
-(home, library, run, print: "build rule", restyled to `DESIGN_LANGUAGE.md`). Captures: WebKit, 390x844 and 1440x900,
-from `/clubhouse-preview/coachhelm-practice-*`. Each row was checked against the code named in it. A real control in
+(scenes 4 and 5: the builder and the player) with `05-SCREENS.md`'s S-PRC rows
+for the screens that page does not draw
+(home, library, run, print: "build rule", restyled to `DESIGN_LANGUAGE.md`).
+Captures: WebKit, 390x844 and 1440x900,
+from `/clubhouse-preview/coachhelm-practice-*`. Each row was checked against the
+code named in it. A real control in
 place of a drawn one is not a difference and is not listed.
 
-Score: 5 a coach or player is misled or the screen is broken, 4 the design's idea is missing, 3 structure or hierarchy
+Score: 5 a coach or player is misled or the screen is broken, 4 the design's
+idea is missing, 3 structure or hierarchy
 is off, 2 craft, 1 nit.
 
 ## Worst first
@@ -43,26 +47,33 @@ is off, 2 craft, 1 nit.
 
 ## After the rebuild (10 Nov, late)
 
-Closed: 1 to 11, 13 to 17, 20 to 22. The mix legend now counts the same clock minutes the strip draws.
+Closed: 1 to 11, 13 to 17, 20 to 22. The mix legend now counts the same clock
+minutes the strip draws.
 
 Open, in order:
 
-- 12: the New plan sheet still asks nothing when Ask CoachHelm is picked; the helper asks in the builder.
+- 12: the New plan sheet still asks nothing when Ask CoachHelm is picked; the
+  helper asks in the builder.
 - 14 (part): Run's group rows still give the clock in both columns.
 - 18: no class-time read exists for the helper's third fact; nothing is invented.
 - 19: `builder?state=new` is still a dead preview state.
-- Not captured: Reduce Motion, the largest Text Size, and desktop for run, library and print.
-- A real paginated PDF of the printed plan was not produced; page breaks are checked by rule only (`coachhelm-plan.css:91`).
+- Not captured: Reduce Motion, the largest Text Size, and desktop for run,
+  library and print.
+- A real paginated PDF of the printed plan was not produced; page breaks are
+  checked by rule only (`coachhelm-plan.css:91`).
 
 ## Round two (10 to 11 Nov)
 
 Closed since the list above:
 
-- 12: New plan's Ask CoachHelm asks how long and what to work on, and both go into the helper's first message.
+- 12: New plan's Ask CoachHelm asks how long and what to work on, and both go
+  into the helper's first message.
 - 14: Run gives the clock once a row.
 - 19: `builder?state=new` is gone.
-- Reduce Motion and the largest Text Size were captured and viewed on Home, the builder and Run; desktop on every state.
-- A real paginated file was produced (Chrome, US Letter). No schedule row or rotation is split across sheets.
+- Reduce Motion and the largest Text Size were captured and viewed on Home, the
+  builder and Run; desktop on every state.
+- A real paginated file was produced (Chrome, US Letter). No schedule row or
+  rotation is split across sheets.
 
 Found by looking at the captures and the printed file, and fixed:
 
@@ -81,7 +92,13 @@ Found by looking at the captures and the printed file, and fixed:
 Still open:
 
 - 18: no class-time read exists for the helper's third fact; nothing is invented.
-- The printed coach copy is large: a three-hour plan with a rotation takes two sheets for the schedule and one for drills, bring and notes. The sheet's print density belongs to `screens/coachhelm/plan/sheet/**`.
-- Landscape paper for the range board. It needs a mechanism that holds in Safari (there is none in CSS today); until then the board prints portrait.
-- "Save as PDF" (`sharePlanPdf`) cuts between rows by the same rule as print; its file was not opened and looked at.
-- The shared Segmented clips "Templates" at the largest Text Size on a phone; a secondary Button on the green helper card is a dark key in dark. Both are shared-primitive requests.
+- The printed coach copy is large: a three-hour plan with a rotation takes two
+  sheets for the schedule and one for drills, bring and notes. The sheet's print
+  density belongs to `screens/coachhelm/plan/sheet/**`.
+- Landscape paper for the range board. It needs a mechanism that holds in Safari
+  (there is none in CSS today); until then the board prints portrait.
+- "Save as PDF" (`sharePlanPdf`) cuts between rows by the same rule as print;
+  its file was not opened and looked at.
+- The shared Segmented clips "Templates" at the largest Text Size on a phone; a
+  secondary Button on the green helper card is a dark key in dark. Both are
+  shared-primitive requests.
