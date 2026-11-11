@@ -37,8 +37,9 @@ import '../../styles/home.css';
 
 /**
  * Player Home (design/handoff/Player - Home.html): the day, a sentence from
- * the player's own rounds, Message coach and Start a round, and what the coach
- * is waiting on (CoachAsks); the week with Up
+ * the player's own rounds, Message coach and Start a round; the week, closed
+ * by what the coach is waiting on (CoachAsks; under the head while there is no
+ * round and the page is one column), with Up
  * next and its countdown beside the latest round; then the player's scoring
  * and the four parts of the game. The phone is PlayerHomePhone (v2 board).
  */
@@ -74,6 +75,7 @@ function PlayerHomeBody({ data, now, live, playerId }: { data: ChPlayerHome; now
     return (
       <main className="ch-h-main ch-h-main--desk" data-canopy="">
         <DeskHead data={data} post={post} />
+        {/* One column here, so the row keeps its place under the head, in view without a scroll. */}
         <CoachAsks asks={data.asks} />
         <PageRefreshNotice parts={failed} />
         {own}
@@ -89,14 +91,15 @@ function PlayerHomeBody({ data, now, live, playerId }: { data: ChPlayerHome; now
   return (
     <main className="ch-h-main ch-h-main--desk" data-canopy="">
       <DeskHead data={data} post={post} />
-      <CoachAsks asks={data.asks} />
       <PageRefreshNotice parts={failed} />
       {own}
       {/* One continuous surface (owner, 2026-10-06): the week and the latest round, then Scoring under a hairline. */}
       <div className="ch-h-flow ch-sheet">
         <div className="ch-h-sheet">
           <SectionBoundary surface="home.week" label="This week" code="CH-2205">
-            <Week week={data.week} covered={covered} />
+            {/* "From your coach" closes the week's column on the desk: under the head it left that column 110px short of
+                the latest round's beside it (fix wave, 2026-11-11). The phone keeps it under the hero. */}
+            <Week week={data.week} after={<CoachAsks asks={data.asks} />} covered={covered} />
           </SectionBoundary>
           <SectionBoundary surface="home.latestRound" label="Your latest round" code="CH-2206">
             <LatestRound data={data.latest} mine lead={data.next ? <DeskNext e={data.next} frozen={now} /> : null} covered={covered} />

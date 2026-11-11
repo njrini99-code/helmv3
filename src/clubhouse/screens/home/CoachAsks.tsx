@@ -19,8 +19,9 @@ export function asksParts(asks: ChPlayerAsks | null | undefined): string[] {
 }
 
 /**
- * The player's "From your coach" row under Home's hero: what the coach is waiting on, as Team Hub lists it, and the way
- * there. Nothing waiting, a read that failed (`asks` null) or a Hub not rebuilt for players: no row.
+ * The player's "From your coach" row: what the coach is waiting on, as Team Hub lists it, and the way there. It sits
+ * under Home's hero on the phone and on the one-column desk page; on the two-column desk page it closes the week's
+ * column. Nothing waiting, a read that failed (`asks` null) or a Hub not rebuilt for players: no row.
  */
 export function CoachAsks({ asks }: { asks: ChPlayerAsks | null | undefined }) {
   const parts = asksParts(asks);
