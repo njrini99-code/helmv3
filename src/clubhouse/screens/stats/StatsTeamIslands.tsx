@@ -98,9 +98,21 @@ export function PhoneWindowSwitch({ custom, hook, rows, beside }: { custom: bool
 }
 
 /** The page frame: changing the window or the filter dims the page and marks it busy until the new rounds land. */
-export function StatsTeamFrame({ filter: current, phone, children }: { filter: ChFilter; phone?: ReactNode; children: ReactNode }) {
+export function StatsTeamFrame({
+  filter: current,
+  phone,
+  desk,
+  children,
+}: {
+  filter: ChFilter;
+  phone?: ReactNode;
+  /** The desktop page a browser shows (the bento and its drill); absent, or on paper, the board in `children` is drawn. */
+  desk?: ReactNode;
+  children: ReactNode;
+}) {
   const printing = usePrinting();
   const isPhone = useChPhone() && phone != null && !printing;
+  const isBento = !isPhone && desk != null && !printing;
   const tone = useHeroTone();
   const router = useRouter();
   const pushOnce = usePushOnce(router);
@@ -138,9 +150,9 @@ export function StatsTeamFrame({ filter: current, phone, children }: { filter: C
   };
   return (
     <GoFilter.Provider value={{ filter: current, go, shown: rangeOf(loading ?? current), span: (loading ?? current).span ?? 'season' }}>
-      <main className={'ch-st' + (isPhone ? ' is-phone' : '')} aria-busy={pending} data-ch-code={pending ? 'CH-4402' : undefined} data-canopy={isPhone || tone !== 'canopy' ? undefined : ''} data-hero-tone={tone}>
+      <main className={'ch-st' + (isPhone ? ' is-phone' : isBento ? ' ch-st--shs' : '')} aria-busy={pending} data-ch-code={pending ? 'CH-4402' : undefined} data-canopy={isPhone || tone !== 'canopy' ? undefined : ''} data-hero-tone={tone}>
         {/* The server renders desktop; at phone width it stays hidden until the phone view takes over at hydration. */}
-        {isPhone ? phone : <div className="ch-st-desk">{children}</div>}
+        {isPhone ? phone : <div className="ch-st-desk">{isBento ? desk : children}</div>}
       </main>
       {/* CH-4903: the figures on screen are dimmed until the new ones land; this says which ones they are. */}
       <UpdatingNote from={current} to={loading} code="CH-4903" />
@@ -149,7 +161,7 @@ export function StatsTeamFrame({ filter: current, phone, children }: { filter: C
 }
 
 /** The header's window switch and Export. */
-export function TeamHeadActions({ filter, teamName, grid }: { filter: ChFilter; teamName: string; grid: ChTeamStats['grid'] | null }) {
+export function TeamHeadActions({ filter, teamName, grid, exportOnly = false }: { filter: ChFilter; teamName: string; grid: ChTeamStats['grid'] | null; /** The bento's head: the window switch sits with the filter, so only Export is drawn here. */ exportOnly?: boolean }) {
   const [span, pick] = useScope();
   const shown = useShownWindow();
   const toast = useToast();
@@ -172,7 +184,7 @@ export function TeamHeadActions({ filter, teamName, grid }: { filter: ChFilter; 
   };
   return (
     <div className="ch-st-head__act">
-      <WindowSwitch value={shown} span={span} onScope={pick} custom={hasRange(filter)} />
+      {!exportOnly && <WindowSwitch value={shown} span={span} onScope={pick} custom={hasRange(filter)} />}
       {/* Never export a half-loaded window: the page passes no grid then. */}
       {grid && grid.length > 0 && (
         <Button variant="ghost" leftIcon={Download} onClick={() => exportCsv(grid)} className="ch-btn--flush-end">

@@ -2332,6 +2332,10 @@ p.ch-shs-mini-cap {
 .ch-st--shs {
   gap: var(--ch-space-5);
 }
+/* Team stats' head: Export rests at the row's end, on the title's line. */
+.ch-shs-dhead__act .ch-st-head__act {
+  margin: 0;
+}
 .ch-shs-dhead {
   display: flex;
   flex-direction: column;
@@ -2405,7 +2409,9 @@ p.ch-shs-mini-cap {
   position: sticky;
   /* The page scrolls under the glass top bar, so the pane rests below it. */
   top: calc(var(--ch-topbar-h) + var(--ch-space-4));
-  max-height: calc(100dvh - var(--ch-topbar-h) - var(--ch-space-6) - var(--ch-space-6));
+  /* Short enough that the page's own bottom space never ends the sticking: at the end of the scroll the pane is still whole
+     under the bar, and what is taller scrolls inside it. */
+  max-height: calc(100dvh - var(--ch-topbar-h) - var(--ch-page-bottom) - var(--ch-space-4) - var(--ch-space-4));
   overflow-y: auto;
   overscroll-behavior: contain;
   border-radius: var(--ch-radius-lg);
@@ -2432,6 +2438,15 @@ p.ch-shs-mini-cap {
 .ch-shs--desk[data-ch-shs-open='putting'] .ch-shs-sum[data-go='putting'],
 .ch-shs--desk[data-ch-shs-open='rounds'] .ch-shs-sum[data-go='rounds'],
 .ch-shs--desk[data-ch-shs-open='goals'] .ch-shs-sum[data-go='goals'] {
+  box-shadow: var(--ch-stats-redesign-shadow-1), inset 0 0 0 2px var(--ch-shs-s-accent);
+}
+/* The team has three cards: the feature across the top, then the game and the players side by side. Each card carries its own
+   title, so the section names after the first would only leave each card alone on its row. */
+.ch-shs--desk-team .ch-shs-desk__sum > .ch-shs-sech ~ .ch-shs-sech {
+  display: none;
+}
+.ch-shs--desk[data-ch-shs-open='tgame'] .ch-shs-sum[data-go='tgame'],
+.ch-shs--desk[data-ch-shs-open='tplayers'] .ch-shs-sum[data-go='tplayers'] {
   box-shadow: var(--ch-stats-redesign-shadow-1), inset 0 0 0 2px var(--ch-shs-s-accent);
 }
 @media (max-width: 1180px) {

@@ -6,7 +6,7 @@ import { Button } from '../../ui/Button';
 import { useBigText } from './StatsPlayerPhoneShs';
 import { useRefresh } from '../../lib/use-refresh';
 import { useSegFade } from './seg-fade';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { ChTeamStats } from '../../data/stats-team';
 import { hasRange, isFiltered, nineRoundsInWindow } from '../../data/stats-filter';
 import { holeCoverage } from '../../data/round-scope';
@@ -100,7 +100,23 @@ const toPar = (data: ChTeamStats): string | null => {
  * No large title, as drawn. A coach's page only: the route never serves it to a player (`routes/stats.tsx`). `StatsTeamPhone` stays for
  * the flag off, and its Players list and Team putting render here unchanged.
  */
-export function StatsTeamPhoneShs({ data, initialArea }: { data: ChTeamStats; /** The address's production `?area=`. */ initialArea?: string }) {
+export function StatsTeamPhoneShs({
+  data,
+  initialArea,
+  desk = false,
+  extra,
+}: {
+  data: ChTeamStats;
+  /** The address's production `?area=`. */
+  initialArea?: string;
+  /**
+   * The desktop page (stats-home, "Desktop"): the same cards as a bento on a flat canvas, the chosen card's drill beside them
+   * instead of pushed over them. No push and nothing written to the address; the page's head is the caller's.
+   */
+  desk?: boolean;
+  /** Desk only: what the desktop page has that no phone card carries (Season bests), drawn after the cards. */
+  extra?: ReactNode;
+}) {
   const noRounds = !data.roundsError && data.roundCount === 0;
   const nineOnly = noRounds && nineRoundsInWindow(data.filter, data.filterOptions);
   const filtered = isFiltered(data.filter);
@@ -125,36 +141,30 @@ export function StatsTeamPhoneShs({ data, initialArea }: { data: ChTeamStats; /*
   if (data.roundsError) hadFailed.current = true;
   const big = useBigText();
   const keyboard = useRef(false);
-  const go = (id: StatsDetailId) => open(id);
+  // On a desk the drill stands beside the cards: choosing a card changes the pane, with no push.
+  const [deskPick, setDeskPick] = useState<StatsTeamDetailId | null>(null);
+  const deskDetail: StatsTeamDetailId = deskPick ?? (detail as StatsTeamDetailId | null) ?? 'tscore';
+  const go = (id: StatsDetailId) => (desk ? setDeskPick(id as StatsTeamDetailId) : open(id));
+  const pane = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (desk && pane.current) pane.current.scrollTop = 0;
+  }, [desk, deskDetail]);
   const days = (data.days ?? []).filter((d): d is { label: string; score: number; n?: number; date?: string } => d.score != null);
   const mean = days.length ? teamDaysMean(days) : null;
   const few = !data.roundsError && !noRounds && days.length > 0 && days.length < 3;
 
-  return (
-    <SectionGroup>
-      <div
-        ref={root}
-        className={'ch-shs' + (big ? ' is-big' : '')}
-        onKeyDownCapture={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') keyboard.current = true;
-        }}
-        onPointerDownCapture={() => {
-          keyboard.current = false;
-        }}
-      >
-        <h1 className="ch-sr-only">Team stats</h1>
-        <div inert={detail != null} aria-hidden={detail != null || undefined}>
-          {!bare && (
-            <div ref={ctlRef} className={'ch-shs-ctl' + (hasRange(data.filter) ? ' is-custom' : '') + (stuck ? ' is-stuck' : '')}>
+  const controls = !bare && (
+            <div ref={ctlRef} className={desk ? 'ch-shs-dctl' : 'ch-shs-ctl' + (hasRange(data.filter) ? ' is-custom' : '') + (stuck ? ' is-stuck' : '')}>
               <PhoneWindowSwitch
                 custom={hasRange(data.filter)}
-                hook="stats-window-seg"
+                hook={desk ? undefined : 'stats-window-seg'}
                 rows
-                beside={showFilter && <TeamFilter filter={data.filter} options={data.filterOptions} count={data.roundCount} phone hook="stats-filter" />}
+                beside={showFilter && <TeamFilter filter={data.filter} options={data.filterOptions} count={data.roundCount} phone={!desk} hook="stats-filter" />}
               />
             </div>
-          )}
-          <WindowCrossfade k={filterKey(data.filter)} off={false} reduced={reduced} className="ch-shs-sheet">
+          );
+  const sheet = (
+    <>
             {data.roundsError && <TeamFailedCard seen={data} />}
             <PageRefreshNotice parts={failed} />
             <SectionGroupNotice />
@@ -222,15 +232,64 @@ export function StatsTeamPhoneShs({ data, initialArea }: { data: ChTeamStats; /*
                 </>
               )
             )}
+    </>
+  );
+  const ready = !data.roundsError && !noRounds;
+  const drill = (id: StatsTeamDetailId) => (
+    <>
+      {id === 'tscore' && <TeamScoringDetail data={data} covered={covered} days={days} mean={mean} />}
+      {id === 'tgame' && <TeamGameDetail data={data} />}
+      {id === 'tplayers' && <TeamPlayersDetail data={data} />}
+    </>
+  );
+
+  if (desk)
+    return (
+      <SectionGroup>
+        <div ref={root} className="ch-shs ch-shs--desk ch-shs--desk-team" data-ch-shs-open={ready ? deskDetail : undefined}>
+          {controls}
+          <WindowCrossfade k={filterKey(data.filter)} off={false} reduced={reduced} className={'ch-shs-desk' + (ready ? '' : ' is-alone')}>
+            <div className="ch-shs-desk__sum">
+              {sheet}
+              {ready && below && extra}
+            </div>
+            {ready && (
+              <aside ref={pane} className="ch-shs-screen ch-shs-desk__det" aria-labelledby="ch-shs-desk-det-t" data-ch-shs-detail={hashOf(deskDetail)}>
+                <h2 id="ch-shs-desk-det-t" className="ch-shs-desk__dett">
+                  {TITLE[deskDetail]}
+                </h2>
+                <div className="ch-shs-d-sheet ch-shs-d-sheet--body">{drill(deskDetail)}</div>
+              </aside>
+            )}
+          </WindowCrossfade>
+        </div>
+      </SectionGroup>
+    );
+
+  return (
+    <SectionGroup>
+      <div
+        ref={root}
+        className={'ch-shs' + (big ? ' is-big' : '')}
+        onKeyDownCapture={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') keyboard.current = true;
+        }}
+        onPointerDownCapture={() => {
+          keyboard.current = false;
+        }}
+      >
+        <h1 className="ch-sr-only">Team stats</h1>
+        <div inert={detail != null} aria-hidden={detail != null || undefined}>
+          {controls}
+          <WindowCrossfade k={filterKey(data.filter)} off={false} reduced={reduced} className="ch-shs-sheet">
+            {sheet}
           </WindowCrossfade>
         </div>
         <AnimatePresence initial={false}>
           {detail && (
             <StatsDetailScreen key="stats-detail" keyboard={keyboard.current} id={hashOf(detail)} title={TITLE[detail as StatsTeamDetailId]} backLabel="Stats" onBack={close} big={big}>
               <WindowCrossfade k={filterKey(data.filter)} off={false} reduced={reduced} className="ch-shs-d-sheet ch-shs-d-sheet--body">
-                {detail === 'tscore' && <TeamScoringDetail data={data} covered={covered} days={days} mean={mean} />}
-                {detail === 'tgame' && <TeamGameDetail data={data} />}
-                {detail === 'tplayers' && <TeamPlayersDetail data={data} />}
+                {drill(detail as StatsTeamDetailId)}
               </WindowCrossfade>
             </StatsDetailScreen>
           )}

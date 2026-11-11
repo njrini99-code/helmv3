@@ -60,7 +60,7 @@ function SlotHost() {
 }
 const team = (over: Partial<ChTeamStats> = {}): ChTeamStats => ({ ...PREVIEW_TEAM_STATS, ...(over.window ? { filter: filterFor(over.window) } : {}), ...over });
 const player = (over: Partial<ChPlayerProfile> = {}): ChPlayerProfile => ({ ...PREVIEW_PLAYER, ...(over.window ? { filter: filterFor(over.window) } : {}), ...over });
-const showTeam = (data: ChTeamStats) => render(shell(<StatsTeam data={data} />));
+const showTeam = (data: ChTeamStats) => render(shell(<StatsTeam layout="board" data={data} />));
 const showPlayer = (data: ChPlayerProfile, coachId: string | null = 'c1') => render(shell(<StatsPlayer layout="tabs" data={data} coachId={coachId} />));
 const showPhonePlayer = (data: ChPlayerProfile) =>
   render(
@@ -531,7 +531,7 @@ describe('Team stats · network', () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     try {
       const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-      const tree = (d: ChTeamStats) => shell(<StatsTeam data={d} />);
+      const tree = (d: ChTeamStats) => shell(<StatsTeam layout="board" data={d} />);
       const view = render(tree(team({ filter: filt({ types: ['tournament'] }), roundCount: 12 })));
       await user.click(screen.getByRole('button', { name: 'Remove filter: Tournament' }));
       expect(lastPush()).toBe(BASE);

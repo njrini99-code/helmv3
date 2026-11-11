@@ -28,7 +28,19 @@ import { TeamInsight } from './StatsInsight';
  * Export, Try again, and the trend, leg cards and grid) ship as client code.
  */
 /** `initialArea` is production's `?area=` (scoring, game, players): on the phone it opens that detail; desktop keeps its one board. */
-export function StatsTeam({ data, initialArea }: { data: ChTeamStats; initialArea?: string }) {
+export function StatsTeam({
+  data,
+  initialArea,
+  layout = 'bento',
+}: {
+  data: ChTeamStats;
+  initialArea?: string;
+  /**
+   * The desktop page. `bento` (the default, what a browser shows): the rebuilt cards with the chosen card's drill beside them.
+   * `board`: the one long board, which paper still prints (printing always takes it). The phone has one page and ignores this.
+   */
+  layout?: 'bento' | 'board';
+}) {
   const noRounds = !data.roundsError && data.roundCount === 0;
   // D-71's first-run page is for no round of either length: a team with only 9-hole rounds gets CH-4301 and the CH-4319 hint instead.
   const nineOnly = noRounds && nineRoundsInWindow(data.filter, data.filterOptions);
@@ -48,7 +60,39 @@ export function StatsTeam({ data, initialArea }: { data: ChTeamStats; initialAre
 
   return (
     // One group per rendered tree (the phone view groups its own): sections that crash together are told once (CH-1210).
-    <StatsTeamFrame filter={data.filter} phone={<StatsTeamPhoneShs data={data} initialArea={initialArea} />}>
+    <StatsTeamFrame
+      filter={data.filter}
+      phone={<StatsTeamPhoneShs data={data} initialArea={initialArea} />}
+      desk={
+        layout === 'bento' ? (
+          <>
+            <header className="ch-shs-dhead" data-canopy-head="tight">
+              <div className="ch-shs-dhead__row">
+                <div className="ch-shs-dhead__id">
+                  <h1 className="ch-display">Team stats</h1>
+                  {/* The team is named once, here. A roster that did not load is not "0 active players"; no figure sits in the head. */}
+                  <p>{[data.teamName, data.season, data.roundsError ? null : `${data.activeCount} active ${pluralWord(data.activeCount, 'player')}`, 'countable rounds only'].filter(Boolean).join('\u00a0· ')}</p>
+                </div>
+                <div className="ch-shs-dhead__act">
+                  {/* Never export a half-loaded window. */}
+                  <TeamHeadActions exportOnly filter={data.filter} teamName={data.teamName} grid={data.roundsError ? null : data.grid} />
+                </div>
+              </div>
+            </header>
+            <StatsTeamPhoneShs
+              desk
+              data={data}
+              initialArea={initialArea}
+              extra={
+                <SectionBoundary surface="stats.team.bests" label="Season bests" code="CH-4208">
+                  <SeasonBests bests={data.bests} filter={data.filter} longestError={data.longestError} covered={covered} />
+                </SectionBoundary>
+              }
+            />
+          </>
+        ) : undefined
+      }
+    >
       <SectionGroup>
         <PrintHead subject={[data.teamName, data.season, 'Team stats'].filter(Boolean).join(' · ')} />
         <PageHero

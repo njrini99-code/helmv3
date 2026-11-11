@@ -42,7 +42,7 @@ const player = (over: Partial<ChPlayerProfile> = {}): ChPlayerProfile => ({ ...P
 
 describe('Team stats hold their geometry across windows', () => {
   it('Team stats draw no figure cards (the trend and its tape replace them); a profile keeps its five cards at the same height in every window', () => {
-    const { container, unmount } = render(shell(<StatsTeam data={team()} />));
+    const { container, unmount } = render(shell(<StatsTeam layout="board" data={team()} />));
     expect(container.querySelector('.ch-fg')).toBeNull();
     unmount();
     const profile = render(shell(<StatsPlayer layout="tabs" data={player()} coachId="c1" />));
@@ -50,7 +50,7 @@ describe('Team stats hold their geometry across windows', () => {
   });
 
   it('strokes gained heads the trend, the five supporting figures follow as one tape under it, and the skeleton draws the same', () => {
-    const { container, unmount } = render(shell(<StatsTeam data={team()} />));
+    const { container, unmount } = render(shell(<StatsTeam layout="board" data={team()} />));
     const order = [...container.querySelectorAll('.ch-sgt, .ch-tp')].map((c) => c.className.split(' ')[0]);
     expect(order).toEqual(['ch-sgt', 'ch-tp']);
     expect(container.querySelector('.ch-sgt__hero .ch-sgt__k')!.textContent).toBe('Team strokes gained per round');
@@ -66,12 +66,12 @@ describe('Team stats hold their geometry across windows', () => {
   });
 
   it('the hole-coverage line is in every window: the note when there is one, an empty line when there is none', () => {
-    const noted = render(shell(<StatsTeam data={team({ figures: PREVIEW_TEAM_STATS.figures.map((f) => ({ ...f, note: 'Hole stats from 8 of 10 rounds' })) })} />));
+    const noted = render(shell(<StatsTeam layout="board" data={team({ figures: PREVIEW_TEAM_STATS.figures.map((f) => ({ ...f, note: 'Hole stats from 8 of 10 rounds' })) })} />));
     const lines = noted.container.querySelectorAll('.ch-st-cover');
     expect(lines).toHaveLength(1);
     expect(lines[0]!.textContent).toBe('Hole stats from 8 of 10 rounds');
     noted.unmount();
-    const none = render(shell(<StatsTeam data={team({ figures: PREVIEW_TEAM_STATS.figures.map((f) => ({ ...f, note: undefined })) })} />));
+    const none = render(shell(<StatsTeam layout="board" data={team({ figures: PREVIEW_TEAM_STATS.figures.map((f) => ({ ...f, note: undefined })) })} />));
     const empty = none.container.querySelectorAll('.ch-st-cover');
     expect(empty).toHaveLength(1);
     expect(empty[0]!.textContent).toBe('');
@@ -79,12 +79,12 @@ describe('Team stats hold their geometry across windows', () => {
   });
 
   it('the trend plot is as tall as the team (its players set --ch-ends), with rounds or without, so a window with fewer players keeps the card', () => {
-    const full = render(shell(<StatsTeam data={team()} />));
+    const full = render(shell(<StatsTeam layout="board" data={team()} />));
     const plot = full.container.querySelector('.ch-sgt__plot') as HTMLElement;
     expect(plot.style.getPropertyValue('--ch-ends')).toBe(String(PREVIEW_TEAM_STATS.players.length));
     full.unmount();
     // A window with no weeks at all: the empty state sits in a box of the same height.
-    const none = render(shell(<StatsTeam data={team({ weeks: [], team: { sg: [], score: [], sgMean: null, scoreMean: null } })} />));
+    const none = render(shell(<StatsTeam layout="board" data={team({ weeks: [], team: { sg: [], score: [], sgMean: null, scoreMean: null } })} />));
     expect(none.container.querySelector('.ch-sgt__plot')).toBeNull();
     const hold = none.container.querySelector('.ch-sgt__hold') as HTMLElement;
     expect(hold.style.getPropertyValue('--ch-ends')).toBe(String(PREVIEW_TEAM_STATS.players.length));

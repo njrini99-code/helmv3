@@ -80,7 +80,7 @@ function phoneWidth() {
 
 const team = (over: Partial<ChTeamStats> = {}): ChTeamStats => ({ ...PREVIEW_TEAM_STATS, ...over });
 const player = (over: Partial<ChPlayerProfile> = {}): ChPlayerProfile => ({ ...PREVIEW_PLAYER, ...over });
-const showTeam = (data: ChTeamStats) => wrap(<StatsTeam data={data} />);
+const showTeam = (data: ChTeamStats) => wrap(<StatsTeam layout="board" data={data} />);
 const showPlayer = (data: ChPlayerProfile, initialTab?: string) => wrap(<StatsPlayer layout="tabs" data={data} coachId="c1" initialTab={initialTab} />);
 const showPlayerPhone = (data: ChPlayerProfile, coachId: string | null = 'c1') =>
   wrap(
@@ -241,7 +241,8 @@ describe('team stats · desktop', () => {
     showTeam(team());
     const hero = document.querySelector('.ch-sgt__hero') as HTMLElement;
     expect(hero.querySelector('.ch-sgt__k')!.textContent).toBe('Team strokes gained per round');
-    expect(hero.querySelector('.ch-sgt__n')!.textContent).toBe('−0.5');
+    // The fixture's team figure is its own players' rounds pooled (preview/fixtures-team-sg.ts): −0.3.
+    expect(hero.querySelector('.ch-sgt__n')!.textContent).toBe('−0.3');
     expect(hero.querySelector('.ch-sgt__n')!.className).toContain('ch-loss');
     // +0.4 against a standard error of 0.7 is no clear change (stats visuals Q4): the number stays, in neutral ink, and says so.
     expect(hero.querySelector('.ch-sgt__chg')!.textContent).toBe('+0.4No clear change vs previous 10');
@@ -297,7 +298,8 @@ describe('team stats · desktop', () => {
   });
 
   it('each leg card’s headline is the window’s mean a round, not the latest week: putting is −0.3 (amber) though its last week was +0.3', () => {
-    showTeam(team());
+    // The test's own leg means, so the case stays the one it names: a window that loses on the greens whose last week gained.
+    showTeam({ ...team(), legTotals: [0.4, -0.7, 0.1, -0.3] });
     const putting = [...document.querySelectorAll('.ch-sgm')].find((b) => b.querySelector('.ch-sgm__l')!.textContent === 'Putting')!;
     expect(PREVIEW_TEAM_STATS.legWeeks.Putting.at(-1)).toBe(0.3);
     expect(putting.querySelector('.ch-sgm__v')!.textContent).toBe('−0.3');
@@ -321,7 +323,7 @@ describe('team stats · desktop', () => {
 
   it('the team’s figure at the head of the list is the window mean too', () => {
     showTeam(team());
-    expect(document.querySelector('.ch-sgt__team b')!.textContent).toBe('−0.5');
+    expect(document.querySelector('.ch-sgt__team b')!.textContent).toBe('−0.3');
   });
 
   it('A1: a change is the newer half of the weeks against the older half, said only past its standard error, never first vs last', async () => {
@@ -656,8 +658,8 @@ describe('player profile · desktop', () => {
     const read = document.querySelector('.ch-zn .ch-znbig')!;
     expect(read.textContent).toBe('−0.9');
     expect(read.className).toContain('is-loss');
-    expect(document.querySelector('.ch-zn__read')!.textContent).toContain('Team −0.5');
-    // Putting +0.2 is a gain even though the team is at −0.3, and a loss stays a loss when it beats the team.
+    expect(document.querySelector('.ch-zn__read')!.textContent).toContain('Team −0.3');
+    // Putting +0.2 is a gain whatever the team's putting is, and a loss stays a loss when it beats the team.
     expect(rows[3]!.querySelector('.ch-lb__bar')!.className).toContain('is-gain');
     expect(rows[1]!.querySelector('.ch-lb__bar')!.className).toContain('is-loss');
     expect(document.querySelectorAll('.ch-lb__team')).toHaveLength(4);

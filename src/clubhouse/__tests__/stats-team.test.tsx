@@ -51,7 +51,7 @@ function tree(data: ChTeamStats) {
     <LazyMotion features={domAnimation}>
       <ToastProvider>
         <div className="ch-root" data-ui="clubhouse">
-          <StatsTeam data={data} />
+          <StatsTeam layout="board" data={data} />
         </div>
       </ToastProvider>
     </LazyMotion>
@@ -617,9 +617,9 @@ describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
     expect(names()).not.toEqual(byAvg);
     await user.click(sg);
     expect(hapticSpy.mock.calls.filter(([kind]) => kind === 'select')).toHaveLength(1);
-    const luca = screen.getByRole('link', { name: /Luca Ferraro/ });
-    expect(luca.getAttribute('href')).toMatch(/luca/);
-    expect(luca.textContent).toMatch(/Early read/);
+    const sam = screen.getByRole('link', { name: /Sam Whitfield/ });
+    expect(sam.getAttribute('href')).toMatch(/sam/);
+    expect(sam.textContent).toMatch(/Early read/);
   });
 
   it('CH-4805 the team’s scoring line comes with a written reading, so the picture is never the only way to it', async () => {
@@ -822,9 +822,9 @@ describe('Stats team · the page', () => {
       const lines = (await cap.seen.blob!.text()).split('\n');
       expect(lines[0]).toBe('Player,Rounds,SG Off the tee,SG Approach,SG Around green,SG Putting,SG total');
       expect(lines).toHaveLength(1 + PREVIEW_TEAM_STATS.grid.length);
-      expect(lines[1]).toBe('"Theo Marchetti","10","0.40","0.70","0.20","0.40","1.70"');
+      expect(lines[1]).toBe('"Theo Marchetti","4","-0.60","-0.40","-0.30","-0.80","-2.20"');
       // A player without three rounds has no leg values, and the cells are empty, never 0.
-      expect(lines.at(-1)).toBe('"Luca Ferraro","2","","","","",""');
+      expect(lines.at(-1)).toBe('"Sam Whitfield","2","","","","",""');
       expect(cap.seen.name).toBe('varsity-stats-season.csv');
       expect(await screen.findByText('Team stats exported')).toBeTruthy();
       expect(hapticSpy).toHaveBeenCalledWith('success');

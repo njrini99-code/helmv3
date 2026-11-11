@@ -12,6 +12,7 @@ import type { ChPlayerProfile } from '../../../data/stats-player';
 import { PREVIEW_PLAYER_SUGGESTED, PREVIEW_TEAM_STATS } from '../../../preview/fixtures-stats';
 import { ToastProvider } from '../../../ui/Toast';
 import { StatsPlayer } from '../StatsPlayer';
+import { StatsTeam } from '../StatsTeam';
 
 /**
  * Desktop My stats (stats-home, "Desktop"): the phone's rebuilt cards as a bento, and the chosen card's drill beside them. The cards
@@ -110,5 +111,53 @@ describe('desktop My stats is the bento with its drill beside it', () => {
     render(shell(<StatsPlayer layout="tabs" data={self()} coachId={null} />));
     expect(screen.getByRole('tablist', { name: 'Profile sections' })).toBeTruthy();
     expect(document.querySelector('.ch-shs--desk')).toBeNull();
+  });
+});
+
+describe('desktop Team stats is the bento with its drill beside it', () => {
+  it('a desktop browser gets the three cards, Season bests and one drill pane, not the long board', async () => {
+    render(shell(<StatsTeam data={PREVIEW_TEAM_STATS} />));
+    await waitFor(() => expect(cards().map((c) => c.dataset.go)).toEqual(['tscore', 'tgame', 'tplayers']));
+    expect(screen.getByRole('heading', { level: 1, name: 'Team stats' })).toBeTruthy();
+    expect(document.querySelector('.ch-pscreen')).toBeNull();
+    expect(title()).toBe('Team scoring');
+    // What no phone card carries stays on the desk: Season bests and Export.
+    expect(screen.getByRole('heading', { name: 'Season bests' })).toBeTruthy();
+    expect(screen.getByText('Export')).toBeTruthy();
+    // One window switch, with its whole labels, beside the filter.
+    expect(document.querySelectorAll('[role="radiogroup"], [role="tablist"]').length).toBeLessThanOrEqual(1);
+    expect(document.querySelector('.ch-shs-dctl')).not.toBeNull();
+    // No figure in the head: the team's numbers live in their cards.
+    expect(document.querySelector('.ch-shs-dhead')?.textContent).not.toMatch(/[+−]\d\.\d/);
+  });
+
+  it('choosing a card changes the pane in place, with no push and no hash', async () => {
+    const pushes = vi.spyOn(window.history, 'pushState');
+    render(shell(<StatsTeam data={PREVIEW_TEAM_STATS} />));
+    const players = await waitFor(() => {
+      const c = cards().find((x) => x.dataset.go === 'tplayers');
+      if (!c) throw new Error('the players card is not drawn yet');
+      return c;
+    });
+    fireEvent.click(within(players).getAllByRole('button')[0]!);
+    await waitFor(() => expect(title()).toBe('Players'));
+    expect(document.querySelector<HTMLElement>('.ch-shs--desk')?.dataset.chShsOpen).toBe('tplayers');
+    expect(pushes).not.toHaveBeenCalled();
+    expect(window.location.hash).toBe('');
+    pushes.mockRestore();
+  });
+
+  it('rounds that did not load are said across the page, with no cards and no pane', async () => {
+    render(shell(<StatsTeam data={{ ...PREVIEW_TEAM_STATS, roundsError: true }} />));
+    await waitFor(() => expect(document.querySelector('.ch-shs-desk.is-alone')).not.toBeNull());
+    expect(cards()).toHaveLength(0);
+    expect(pane()).toBeNull();
+    expect(screen.queryByText('Export')).toBeNull();
+  });
+
+  it('the long board is still there when asked for, which is what paper prints', async () => {
+    render(shell(<StatsTeam layout="board" data={PREVIEW_TEAM_STATS} />));
+    expect(document.querySelector('.ch-shs--desk')).toBeNull();
+    expect(document.querySelector('.ch-st-desk')).not.toBeNull();
   });
 });
