@@ -1896,7 +1896,13 @@ a.ch-rd-sc:focus-visible {
     font-weight: 600;
     letter-spacing: -0.035em;
   }
-  /* Putts says the most ("a round · 0.6 under two-putting"): its column is wider, so it takes two lines, not three (A24). */
+  /* Under the round card the heading needs no rule of its own: the card's edge already parts them, and a second
+     double rule sat in its shadow. */
+  .ch-rd.is-phone .ch-rd-unf + .ch-rd-season .ch-rd-k {
+    padding-top: 0;
+    border-top: 0;
+  }
+  /* Putts draws the widest picture (its bar against 36), so its column is the wide one. */
   .ch-rd.is-phone .ch-rd-season__f {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) minmax(0, 1fr);
     padding: 12px 0;
@@ -3853,9 +3859,14 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 .ch-rd-fig__course {
   white-space: nowrap;
 }
+/* On the phone the captions are one short line each (parts.tsx), set on one line across the three figures: each
+   picture is centred in the band the tallest one sets, and the caption sits at the foot of its column. */
+.ch-rd.is-phone .ch-rd-fig__viz {
+  flex: 1;
+  justify-content: center;
+}
 .ch-rd.is-phone .ch-rd-fig__m {
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
+  margin-top: auto;
 }
 .ch-rd .ch-rd-fig__viz {
   gap: 4px;
