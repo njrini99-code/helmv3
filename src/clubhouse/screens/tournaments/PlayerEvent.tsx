@@ -17,7 +17,7 @@ import { NoData } from '../../ui/NoData';
 import { InlineNotice } from '../../ui/Notices';
 import { Section } from '../../ui/Section';
 import { SideScroll } from '../../ui/SideScroll';
-import { EmptyState, SkelRows, Skeleton } from '../../ui/States';
+import { EmptyState, SkelLine, SkelRows, Skeleton } from '../../ui/States';
 import { TrustChip } from '../../ui/TrustChip';
 import { daysUntil, inDays, teamToday, tourDay, tourDayTime, tourRange } from './format';
 import { cardLine, HoleSheet } from './HoleSheet';
@@ -44,15 +44,45 @@ export function PlayerEvent({ data, load, phone: forced }: PlayerEventProps) {
     loading: () => (
       <TourLoading view="player" phone={phone} title={name} className="ch-tour-pl">
         {/* The list waits in its two columns (the next event's card, the results beside it); an event in its one. */}
-        <div className={'ch-tour-pl-body' + (data.event ? '' : ' ch-tour-pl-body--list is-two')}>
-          <Skeleton width="100%" height={phone ? 120 : data.event ? 140 : 196} radius={16} shape="solid" />
-          <SkelRows rows={3} lead />
-        </div>
+        {data.event || phone ? (
+          <div className={'ch-tour-pl-body' + (data.event ? '' : ' ch-tour-pl-body--list is-two')}>
+            <Skeleton width="100%" height={phone ? 120 : 140} radius={16} shape="solid" />
+            <SkelRows rows={3} lead />
+          </div>
+        ) : (
+          // On a desktop each column opens with its section's heading, so the card and the rows wait where they land.
+          <div className="ch-tour-pl-body ch-tour-pl-body--list is-two">
+            <div className="ch-sec">
+              <SectionHeadSkeleton />
+              <Skeleton width="100%" height={196} radius={16} shape="solid" />
+            </div>
+            <div className="ch-sec">
+              <SectionHeadSkeleton />
+              <SkelRows rows={3} lead />
+            </div>
+          </div>
+        )}
       </TourLoading>
     ),
     failed: () => <TourFailed view="player" phone={phone} id={TITLE_ID} eyebrow={data.team.label} title={name} className="ch-tour-pl" />,
     ready: () => (data.event ? <EventPage data={data} ev={data.event} phone={phone} /> : <ListPage data={data} phone={phone} />),
   });
+}
+
+/**
+ * A section's heading in waiting, in the kit Section's own head (ui/Section.tsx): its title line and caption line at the
+ * loaded line heights over the same rule, so what follows starts where the loaded section's body does. No heading is
+ * announced while the page is busy.
+ */
+function SectionHeadSkeleton() {
+  return (
+    <div className="ch-sec__head" aria-hidden="true">
+      <div className="ch-sec__titles">
+        <SkelLine line={25} bar={16} width={96} />
+        <SkelLine line={18} bar={10} width={176} />
+      </div>
+    </div>
+  );
 }
 
 type ListRow = ChTourPlayerData['list'][number];

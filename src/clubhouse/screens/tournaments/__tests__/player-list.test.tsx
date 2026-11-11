@@ -13,7 +13,7 @@ vi.mock('@/app/golf/actions/tournaments-player', () => ({ saveTournamentReflecti
 vi.mock('@/app/golf/actions/tournaments-holes', () => ({ saveTournamentHole: vi.fn() }));
 
 const fx = tourFixture('ready').player;
-const draw = (d: ChTourPlayerData, phone = false) => render(<PlayerEvent data={d} load="ready" phone={phone} />).container;
+const draw = (d: ChTourPlayerData, phone = false, load: 'ready' | 'loading' = 'ready') => render(<PlayerEvent data={d} load={load} phone={phone} />).container;
 
 const css = postcss.parse(readFileSync(join(import.meta.dirname, '../../../styles/tournaments-player.css'), 'utf8'));
 const decls = (selector: string) => {
@@ -132,5 +132,29 @@ describe('the player’s Tournaments · one chevron', () => {
     const sizes = [...draw(fx.list, phone).querySelectorAll('svg.lucide-chevron-right')].map((x) => x.getAttribute('width'));
     expect(sizes.length).toBeGreaterThanOrEqual(fx.list.list.length);
     expect(new Set(sizes)).toEqual(new Set(['16']));
+  });
+});
+
+/**
+ * Loading, the desktop list drew its card and rows straight under the page head, where the loaded page has each column's
+ * heading: the card landed 78px lower when the read came back. Each column now waits under its section's head.
+ */
+describe('the player’s Tournaments · the list waits where it lands', () => {
+  it('desktop: each of the two columns opens with a section head in waiting, announced as nothing', () => {
+    const c = draw(fx.list, false, 'loading');
+    const cols = c.querySelectorAll('.ch-tour-pl-body--list.is-two > .ch-sec');
+    expect(cols).toHaveLength(2);
+    for (const col of cols) {
+      const head = col.querySelector(':scope > .ch-sec__head')!;
+      expect(head.getAttribute('aria-hidden')).toBe('true');
+      expect(head.querySelectorAll('.ch-sec__titles > .ch-skel-ln')).toHaveLength(2);
+      expect(head.nextElementSibling).not.toBeNull();
+    }
+    expect(c.querySelectorAll('h2')).toHaveLength(0);
+    expect(c.querySelector('[data-ch-tour-view="player"]')?.getAttribute('aria-busy')).toBe('true');
+  });
+
+  it('the loaded columns are the same two sections', () => {
+    expect(draw(fx.list).querySelectorAll('.ch-tour-pl-body--list.is-two > .ch-sec')).toHaveLength(2);
   });
 });
