@@ -2826,13 +2826,16 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   background: var(--ch-rs-y);
   box-shadow: var(--ch-roster-x1);
 }
+/* One line at any width: the short year word in a narrow card, the long one where the card runs the page (below). */
 [data-ch-crh='on'] .ch-rs-mix__lg {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px 12px;
+  gap: 16px;
   font: var(--ch-type-13-medium);
-
+  white-space: nowrap;
   color: var(--ch-on-green-2);
+}
+[data-ch-crh='on'] .ch-rs-mix__w {
+  display: none;
 }
 [data-ch-crh='on'] .ch-rs-mix__lg > span {
   display: inline-flex;
@@ -3525,6 +3528,12 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   [data-ch-crh='on'].ch-rsd .ch-rs-tcard:only-child > .ch-rs-tcard__f {
     grid-column: 1 / -1;
   }
+  [data-ch-crh='on'].ch-rsd .ch-rs-tcard:only-child .ch-rs-mix__w {
+    display: inline;
+  }
+  [data-ch-crh='on'].ch-rsd .ch-rs-tcard:only-child .ch-rs-mix__s {
+    display: none;
+  }
   [data-ch-crh='on'].ch-rsd .ch-rs-ldrs {
     display: contents;
   }
@@ -3679,7 +3688,8 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   --ch-roster-x5: inset 0 0 0 1px #000;
 }
 
-/* The season bar and its legend, one tone a year (the same tokens as the year chips). */
+/* The season bar and its legend, one tone a year (the same tokens as the year chips). Freshmen take the neutral: the year
+   token is a brick red, and red here means under par, the pin flag or a destructive action (D-42). */
 :is(.ch-rs, .ch-rsm)[data-ch-crh='on'] [data-year='sr'] {
   --ch-rs-y: var(--ch-yr-sr);
 }
@@ -3690,7 +3700,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   --ch-rs-y: var(--ch-yr-so);
 }
 :is(.ch-rs, .ch-rsm)[data-ch-crh='on'] [data-year='fr'] {
-  --ch-rs-y: var(--ch-yr-fr);
+  --ch-rs-y: var(--ch-chart-flat);
 }
 
 /* The lane's desktop table and player in waiting (RosterSkeleton). */
@@ -3804,5 +3814,69 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   /* The card grows with the Text Size, so the figure, its unit and the bars stay on one line. */
   [data-ch-crh='on'] .ch-rs-ldr {
     flex: 0 0 min(72%, calc(208px * var(--ch-type-scale, 1)));
+  }
+}
+
+/* The player's desktop Roster (TeamRoster) on the coach's page: the coaches on one line above the search field, and the
+   coach's table with the three columns a teammate has. Rows are text, so nothing here lifts or tints under the pointer. */
+.ch-rs-staff {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 20px;
+  min-width: 0;
+}
+.ch-rs-staff__k {
+  font: var(--ch-type-13-medium);
+  color: var(--ch-text-tertiary);
+}
+.ch-rs-staff ul {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 24px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-rs-staff li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font: var(--ch-type-14);
+  color: var(--ch-text-secondary);
+}
+.ch-rs-staff li b {
+  font: var(--ch-type-14-strong);
+  color: var(--ch-text-primary);
+}
+.ch-rs-who__n {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
+  /* The class column starts under the season card's class bar: the card's own third and gap (its only-child tracks above). */
+  [data-ch-crh='on'].ch-rsd .ch-rs-list--team .ch-rs-row {
+    grid-template-columns: calc((100% - 32px) / 3) minmax(0, 1fr) 72px;
+    column-gap: 32px;
+  }
+  [data-ch-crh='on'].ch-rsd .ch-rs-list--team .ch-rs-ychip {
+    margin-top: 0;
+  }
+  /* In waiting (RosterSkeleton): the season card at its loaded height, and a row on the table's three tracks. */
+  [data-ch-crh='on'].ch-rsd .ch-rs-tcard--skel:only-child {
+    min-height: 91px;
+    row-gap: 12px;
+  }
+  [data-ch-crh='on'].ch-rsd .ch-rs-list--team .ch-rs-sk-row {
+    grid-template-columns: 40px calc((100% - 32px) / 3 - 32px) minmax(0, 1fr) 72px;
+    height: 64px;
+    padding-inline: 16px;
+  }
+  [data-ch-crh='on'].ch-rsd .ch-rs-list--team .ch-rs-sk-row > :last-child {
+    justify-self: end;
   }
 }

@@ -63,6 +63,9 @@ function wrap(data: ChPlayerRoster) {
   );
 }
 const faces = () => screen.getByRole('list', { name: 'Players' });
+/** The table a desktop player starts on, and its rows under the header. */
+const table = () => screen.getByRole('table', { name: 'Roster' });
+const rows = () => within(table()).getAllByRole('row').slice(1);
 /** Anything a person could focus or press. */
 const CONTROLS = 'a, button, [role="button"], [role="link"], [tabindex], input, select, textarea, summary';
 
@@ -223,21 +226,42 @@ describe('Player roster · who gets it (30804)', () => {
 });
 
 describe('Player roster · desktop', () => {
-  it('CH-3808 wave 7: the coaches head the page as plain text (name and role), and are left out when their read failed', () => {
+  it('CH-3808 wave 7: the coaches are one line of plain text (name and role) above the search field, and are left out when their read failed', () => {
     const coaches = [
       { id: 'c1', name: 'Maya Reyes', role: 'Head coach' },
       { id: 'c2', name: 'Dan Whitfield', role: 'Assistant coach' },
     ];
     const { unmount } = wrap({ ...TEAM, coaches });
-    const table = screen.getByRole('table', { name: 'Coaches' });
-    expect(within(table).getAllByRole('row').slice(1).map((r) => r.textContent)).toEqual(['MRMaya ReyesHead coach', 'DWDan WhitfieldAssistant coach']);
-    expect(table.querySelectorAll(CONTROLS)).toHaveLength(0);
-    // Above the players.
-    expect(table.compareDocumentPosition(faces()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const staff = screen.getByRole('list', { name: 'Coaches' });
+    expect(within(staff).getAllByRole('listitem').map((r) => r.textContent)).toEqual(['MRMaya ReyesHead coach', 'DWDan WhitfieldAssistant coach']);
+    expect(code('CH-3808')!.querySelectorAll(CONTROLS)).toHaveLength(0);
+    // Above the search field and the players, and no longer a table of their own.
+    expect(staff.compareDocumentPosition(screen.getByRole('searchbox', { name: 'Search players' })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(staff.compareDocumentPosition(table()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.queryByRole('table', { name: 'Coaches' })).toBeNull();
     unmount();
     wrap({ ...TEAM, coaches: null });
-    expect(screen.queryByRole('table', { name: 'Coaches' })).toBeNull();
+    expect(screen.queryByRole('list', { name: 'Coaches' })).toBeNull();
     expect(code('CH-3808')).toBeNull();
+  });
+
+  it('the season card the phone has heads the desktop page: the season, the count and the class mix, and never a score', () => {
+    const { unmount } = wrap(TEAM);
+    const card = document.querySelector('.ch-rs-top .ch-rs-tcard')!;
+    expect(card.getAttribute('aria-label')).toBe('Fall 2026 season. 4 players. 4 active.');
+    expect(card.querySelector('.ch-rs-mix')!.getAttribute('aria-label')).toBe('1 Senior, 1 Junior, 1 Sophomore, 1 Freshman');
+    // The player's card: no injured, waiting or top five.
+    expect(card.querySelector('.ch-rs-tcard__f')).toBeNull();
+    expect(card.textContent).not.toMatch(/waiting|injured|avg/i);
+    // Above the table it sums up.
+    expect(card.compareDocumentPosition(table()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    unmount();
+    // Nothing to sum up when the roster is empty or did not load.
+    const none = wrap({ ...TEAM, players: [] });
+    expect(document.querySelector('.ch-rs-tcard')).toBeNull();
+    none.unmount();
+    wrap({ ...TEAM, players: [], playersError: true });
+    expect(document.querySelector('.ch-rs-tcard')).toBeNull();
   });
 
   it('is the coach\'s page header with the player\'s words: Your team, the count, no invite, export or requests', () => {
@@ -252,21 +276,26 @@ describe('Player roster · desktop', () => {
   it('CH-3807 30804 a teammate is text, not a control: no card is a link or a button, and nothing leads to a profile, stats or an action', async () => {
     const user = userEvent.setup();
     wrap(TEAM);
-    expect(within(faces()).getAllByRole('listitem')).toHaveLength(4);
-    expect(faces().querySelectorAll(CONTROLS)).toHaveLength(0);
+    // A desktop player starts on the table (the coach's desktop table, with the three columns a teammate has): rows of plain text.
+    expect(screen.queryByRole('list', { name: 'Players' })).toBeNull();
+    expect(within(table()).getAllByRole('columnheader').map((h) => h.textContent)).toEqual(['Player', 'Class', 'HCP']);
+    expect(within(table()).getAllByRole('row')).toHaveLength(5);
+    expect(rows().map((r) => r.textContent)).toContain('TMTheo MarchettiYouSenior · Class of 2027+0.8');
+    expect(table().querySelectorAll(CONTROLS)).toHaveLength(0);
     expect(document.querySelectorAll('a[href]')).toHaveLength(0);
-    // Clicking a card does nothing: no panel, no navigation.
+    // Clicking a row does nothing: no panel, no navigation.
     await user.click(screen.getByText('Ava Lindqvist'));
     expect(router.push).not.toHaveBeenCalled();
     expect(screen.queryByRole('complementary')).toBeNull();
     expect(screen.queryByRole('dialog')).toBeNull();
+    expect(table().querySelectorAll('[aria-pressed]')).toHaveLength(0);
+    // The team view is the same: cards that hold plain text.
+    await user.click(screen.getByRole('button', { name: 'Team view' }));
+    expect(within(faces()).getAllByRole('listitem')).toHaveLength(4);
+    expect(faces().querySelectorAll(CONTROLS)).toHaveLength(0);
     expect(faces().querySelectorAll('[aria-pressed]')).toHaveLength(0);
-    // The list view is the same: a table whose rows hold plain text.
-    await user.click(screen.getByRole('button', { name: 'List view' }));
-    const table = screen.getByRole('table', { name: 'Roster' });
-    expect(within(table).getAllByRole('columnheader').map((h) => h.textContent)).toEqual(['Player', 'Class', 'HCP']);
-    expect(within(table).getAllByRole('row')).toHaveLength(5);
-    expect(table.querySelectorAll(CONTROLS)).toHaveLength(0);
+    await user.click(screen.getByText('Ava Lindqvist'));
+    expect(router.push).not.toHaveBeenCalled();
     expect(document.querySelectorAll('a[href]')).toHaveLength(0);
   });
 
@@ -274,18 +303,19 @@ describe('Player roster · desktop', () => {
     const user = userEvent.setup();
     wrap(TEAM);
     await user.type(screen.getByRole('searchbox', { name: 'Search players' }), 'okaf');
-    expect(within(faces()).getAllByRole('listitem')).toHaveLength(1);
+    expect(rows()).toHaveLength(1);
     await user.clear(screen.getByRole('searchbox', { name: 'Search players' }));
     await user.type(screen.getByRole('searchbox', { name: 'Search players' }), 'zzz');
     expect(code('CH-3302')!.textContent).toMatch(/No players match “zzz”/);
     await user.click(screen.getByRole('button', { name: 'Show everyone' }));
-    expect(within(faces()).getAllByRole('listitem')).toHaveLength(4);
+    expect(rows()).toHaveLength(4);
   });
 
   it('sorts by name, class (seniors first) and handicap (lowest first, none last); changing it is a selection tick', async () => {
     const user = userEvent.setup();
     wrap(TEAM);
-    const names = () => within(faces()).getAllByRole('listitem').map((c) => c.querySelector('.ch-rs-face__name')!.textContent);
+    const names = () => rows().map((r) => r.querySelector('.ch-rs-who b')!.textContent);
+    expect(names()).toEqual(['Luca Ferraro', 'Ava Lindqvist', 'Theo Marchetti', 'Jonah Okafor']);
     await user.click(screen.getByRole('radio', { name: 'Class' }));
     expect(names()).toEqual(['Theo Marchetti', 'Ava Lindqvist', 'Jonah Okafor', 'Luca Ferraro']);
     await user.click(screen.getByRole('radio', { name: 'Handicap' }));
@@ -316,7 +346,7 @@ describe('Player roster · desktop', () => {
 
   it('CH-3309 a roster of one (the player, on a new team): their row, one quiet line, and no search, layout or sort', () => {
     wrap({ ...TEAM, players: [mate('theo', 'Theo Marchetti', 'Senior', 2027, -0.8, true)] });
-    expect(within(faces()).getAllByRole('listitem')).toHaveLength(1);
+    expect(rows()).toHaveLength(1);
     expect(code('CH-3309')!.textContent).toBe('You’re the first one here. Teammates show up as they join.');
     expect(screen.queryByRole('searchbox', { name: 'Search players' })).toBeNull();
     expect(screen.queryByRole('group', { name: 'Layout' })).toBeNull();
@@ -342,10 +372,11 @@ describe('Player roster · desktop', () => {
   it('the layout is remembered on this device, as the coach\'s is', async () => {
     const user = userEvent.setup();
     const { unmount } = wrap(TEAM);
-    await user.click(screen.getByRole('button', { name: 'List view' }));
-    expect(localStorage.getItem('ch-roster-view')).toBe('list');
+    await user.click(screen.getByRole('button', { name: 'Team view' }));
+    expect(localStorage.getItem('ch-roster-view')).toBe('faces');
     unmount();
     wrap(TEAM);
-    await waitFor(() => expect(screen.getByRole('table', { name: 'Roster' })).toBeTruthy());
+    await waitFor(() => expect(faces()).toBeTruthy());
+    expect(screen.queryByRole('table', { name: 'Roster' })).toBeNull();
   });
 });

@@ -70,7 +70,6 @@ const ALLOW_OWN: Record<string, number> = {
   'screens/onboard/Steps.tsx': 1,
   'screens/recruiting/parts.tsx': 1,
   'screens/roster/Roster.tsx': 1,
-  'screens/roster/RosterSkeleton.tsx': 1,
   'screens/roster/TeamRoster.tsx': 1,
   'styles/base.css': 1,
   'styles/onboard.css': 2,
