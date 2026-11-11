@@ -68,9 +68,33 @@ payload is made, not in the view:
 - The season is 1 August on (`data/season.ts seasonStartDate`), on the default zone; the switch shows only when the
   season holds other rounds than the last eight.
 
-## Still shared, not this lane's to change
+## Decided by the coordinator (10 Nov)
 
-- The Segmented's options are 36px tall on the phone and 34px at `sm` (`styles/controls.css`, the phone block that
-  sets `.ch-root .ch-seg .ch-seg__b { height: 36px }`). The read's three tabs and the trend's window switch inherit it.
-- The pushed bar's back label falls to "Back" when the centred title leaves no room (`ui/PhoneBar.tsx`), as for a
-  player's "Course management".
+- Slot 7, the putting read's team and Tour bars, stays out. The gap is the one in the table: no pooled downhill make rate is
+  stored, and there is no Tour make rate by slope.
+- The trend for bucket metrics (putt make rate by distance, miss bias, the slope gap, proximity bands) stays out. It needs a
+  per-round cache for the bucket, which is a schema change.
+- The rail word on a player's proposed read stays the Deep dive's stance ("Assigned") while the head says "Proposed for you".
+- The Segmented's options are drawn at 36px (34px at `sm`) on the phone by the owner's decision and reach 44px through the
+  `::after` hit area in `styles/controls.css`. It is not a finding, and the lane does not override it.
+
+## Found in WebKit on 10 Nov
+
+- A correction chip took every tap on the page. The shared rule `.ch-hl-cx__c` (`styles/coachhelm.css`) set
+  `position: relative` and then `all: unset`, so the chip's absolute `::after` hit area was measured from the page:
+  `elementFromPoint` at the Cause tab returned a chip, and the tab could not be clicked. Fixed in the shared rule
+  (6622146c30); the lane holds the order of the two declarations in `read-page.test.tsx`.
+- The desktop rail's sticky offset is the top bar's height plus 16px on this page; at the Deep dive's 16px its first heading
+  sat behind the bar.
+- A lower-is-better trend is drawn better-upward (`ui/charts/Line lowerIsBetter`), so the card says so in words.
+
+## For the coordinator: the pushed bar's back label
+
+`src/clubhouse/ui/PhoneBar.tsx`, `BackLabel` (lines 46 to 71): line 57 measures the room between the bar's leading edge and
+the centred title, and line 61 steps from the parent's name to "Back" to the chevron alone when it does not fit. On this page:
+
+- a player's read titled "Course management" shows "Back" where "CoachHelm" was asked for (390px, default Text Size);
+- a coach's "Eli Brandt" keeps "CoachHelm" at the default size and falls to "Back" at the largest Text Size;
+- "Putting" keeps "CoachHelm".
+
+The lane does not edit the shell.

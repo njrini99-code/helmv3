@@ -41,6 +41,12 @@ import { Cause, Corrections, Measured, Moved, NextReads, Plan, ReadHead, readOrd
 
 type Tab = 'measured' | 'cause' | 'rounds';
 
+/**
+ * The pushed bar's title: the player's name for a coach, the read's category for a player. With no read to name (failed, gone) a
+ * player's bar says "Read": the back label beside it already says CoachHelm.
+ */
+export const readBarTitle = (coachName: string | null, category: string | null): string => coachName ?? category ?? 'Read';
+
 /** "Penalty strokes: 1.1 per round" as the bar and the breadcrumb say it: the claim up to its figure. */
 const shortOf = (title: string): string => title.split(/[:(]/)[0]?.trim() || title;
 
@@ -200,7 +206,7 @@ export function ReadPage({
   const bar = phone && (
     <PhoneTop
       back={{ label: 'CoachHelm', onBack: () => router.push(backHref) }}
-      title={coach ? coach.name : (read?.insight.category ?? 'CoachHelm')}
+      title={readBarTitle(coach ? coach.name : null, read?.insight.category ?? null)}
       titleId="ch-hr-bar-t"
       action={
         read ? (

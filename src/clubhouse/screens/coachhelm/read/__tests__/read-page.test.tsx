@@ -25,7 +25,7 @@ import type { ChViewLoad, ChViewVoice } from '../../../../data/coachhelm-views-s
 import type { ChReadView } from '../../../../data/coachhelm-read-view-shape';
 import type { ChCoachHelmWrites } from '../../writes';
 import type { ChReadWrites } from '../actions';
-import { ReadPage, ReadSkeleton } from '../ReadPage';
+import { ReadPage, ReadSkeleton, readBarTitle } from '../ReadPage';
 import '../../../../__tests__/dialog-polyfill';
 
 /**
@@ -128,6 +128,12 @@ describe('the read’s structure', () => {
 });
 
 describe('the phone', () => {
+  it('the bar names the player for a coach and the category for a player; with no read to name it says Read, never CoachHelm twice', () => {
+    expect(readBarTitle('Eli Brandt', 'Course management')).toBe('Eli Brandt');
+    expect(readBarTitle(null, 'Putting')).toBe('Putting');
+    expect(readBarTitle(null, null)).toBe('Read');
+  });
+
   it('has three tabs under the actions, and a tab shows only its own sections', async () => {
     device.phone = true;
     show('penalties', 'coach');
@@ -482,9 +488,14 @@ describe('the lane stylesheet', () => {
     expect(rules).not.toContain('!important');
   });
 
-  it('a correction chip’s hit area is measured from the chip, so it cannot cover the page and take the tabs’ and Assign’s taps', () => {
-    // Seen in WebKit, 10 Nov: `document.elementFromPoint` at the Cause tab returned a chip. jsdom has no layout, so the rule is held here.
-    expect(rules).toMatch(/\.ch-hr-cx \.ch-hl-cx__c \{ position: relative; \}/);
+  it('a correction chip’s hit area is measured from the chip: the shared rule sets its position after the reset, and the lane adds no copy', () => {
+    // Seen in WebKit, 10 Nov: `document.elementFromPoint` at the Cause tab returned a chip, whose ::after filled the page. jsdom has no
+    // layout, so the order of the two declarations in the shared rule (coachhelm.css, fixed in 6622146c30) is held here.
+    const shared = readFileSync(join(process.cwd(), 'src/clubhouse/styles/coachhelm.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+    const rule = /\n\.ch-hl-cx__c \{([^}]*)\}/.exec(shared)?.[1] ?? '';
+    expect(rule.indexOf('all: unset')).toBeGreaterThanOrEqual(0);
+    expect(rule.indexOf('position: relative')).toBeGreaterThan(rule.indexOf('all: unset'));
+    expect(rules).not.toContain('ch-hl-cx__c');
   });
 
   it('names only ch- classes, and is a fraction of the 1,324 lines it replaced', () => {
