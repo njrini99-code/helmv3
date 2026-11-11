@@ -86,44 +86,80 @@ dangling-tool-call filters, `prompt-cache.ts`, `ask-perf.ts` and the AI SDK (`ai
 entries are history. The tool list and the prompt are described where the tools are.
 
 - **The server owns the conversation.** The browser sends one thing per request to
-  `POST /api/coachhelm/v3/chat/stream`: `{ conversation_id, client_turn_id, surface, message }` or
+  `POST /api/coachhelm/v3/chat/stream`: `{ conversation_id, client_turn_id, surface, message, screen? }` or
   `{ conversation_id, client_turn_id, surface, decision: { key, approved } }`. It never sends the thread. The server
   loads the stored turns, appends, runs the turn and stores the exact result (`src/lib/coachhelm/v3/chat/engine/`:
   `turn.ts` one request, `loop.ts` the model loop, `store.ts` the stored conversation, `tasks.ts` the action gate,
   `model.ts` the only file that calls `@anthropic-ai/sdk`, `protocol.ts` the wire events and the reducer, `tool.ts`
   the tool contract).
-- **Model settings** (`engine/model.ts`): `claude-sonnet-5-5` from `MODEL_FOR_TASK.coach_chat`, called directly with
-  `ANTHROPIC_API_KEY` (no gateway fallback: a missing key is a logged, coach-readable failure). `max_tokens` 16000,
-  streamed. Thinking is adaptive and cannot be turned off on this model; depth is `output_config.effort`, one constant
-  (`CHAT_EFFORT`, `medium`). `tool_choice` is `auto` (a forced tool is rejected by the model); the step after the last
-  allowed read is sent with `none` so the model answers from what it has. Refusals use `fallbacks: 'default'`. At most
-  8 model calls plus that closing call per coach turn, 6 for a player.
+- **Model settings** (`engine/model.ts`): Claude Haiku 5.5 (`claude-haiku-5-5`, from `MODEL_FOR_TASK.coach_chat`;
+  owner decision 2026-11-10), called directly with `ANTHROPIC_API_KEY` (no gateway fallback: a missing key is a
+  logged, coach-readable failure). `max_tokens` 16000, streamed. Thinking is adaptive and on by default; depth is
+  `output_config.effort`, one constant (`CHAT_EFFORT`, `high`, sent on every request because the model's default is
+  `medium`). No sampling parameter and no `fallbacks` are sent (this model has no server-side fallback). `tool_choice`
+  is `auto` (a forced tool skips thinking); the step after the last allowed read is sent with `none` so the model
+  answers from what it has. At most 12 model calls plus that closing call per coach turn (`CHAT_MAX_STEPS`), 8 for a
+  player.
+- **Optional features are one object, `CHAT_FEATURES`**, each a field that turns it off: `dropStaleThinking`
+  (`thinking.block_binding.prefix_mismatch_behavior: 'drop_block'`, beta `thinking-binding-controls-2026-08-01`),
+  `strictTools` (`strict: true` on every tool; the engine still validates every input with zod), `citations` (below),
+  `compaction` (`compact_20260112` at the default trigger, beta `compact-2026-01-12`). Built and off:
+  `taskBudgetTokens` (null), `progressNotes` (`thinking.display: 'updates'`), `programmaticReads` (the model's code
+  calling the read tools; off because results would pass through a container Anthropic retains for up to 30 days,
+  an owner decision for a team of minors). If the API rejects a request (HTTP 400) that carries any of them, the loop
+  sends that call once more as a plain request (no beta, no `strict`), keeps the rest of the turn plain, completes the
+  turn and logs `v3.chat.stream.degraded` as an error: the coach loses the feature, not the answer.
 - **Stored model messages are exactly what the API returned**, appended only: thinking blocks with their signatures,
-  text and tool calls in order, and each tool-result message. Thinking is never sent to the browser. Because the
-  team block of the prompt changes with the day and the roster and the tool list changes with a deploy, requests set
-  `thinking.block_binding.prefix_mismatch_behavior: 'drop_block'`, so a thinking block the API can no longer verify is
-  dropped by the API instead of failing the coach's question.
-- **Prompt caching**: tools, then the policy block (1 hour), then the team block (5 minutes), each with a breakpoint;
-  the conversation tail is cached by the request-level `cache_control`, so no marker is written into a stored message.
-  Nothing volatile is in the prefix. `cache_read_input_tokens` is logged per model call (`v3.chat.stream.turn`).
+  text (with the API's citation objects) and tool calls in order, each tool-result message, and the per-turn system
+  message. Thinking is never sent to the browser. A thinking block is valid only while `system`, `tools` and every
+  earlier message are unchanged, so **nothing that changes during a conversation's life is in the prompt or a tool
+  definition**: no date, no screen, no notes, no count. A deploy that changes the prompt or a roster edit still
+  changes the prefix; `drop_block` makes the API drop the blocks it can no longer verify (the count is in the turn's
+  log line, `calls[].dropped_thinking`) instead of failing the coach's question.
+- **The per-turn system message.** Today's date, the screen the chat was opened from (`screen` in the body, checked
+  against the caller's own team by `context/screen-context.ts`), the conversation's tone, and on a conversation's
+  first kept turn the coach's standing notes (`context/notes.ts`) are sent as one `{ role: 'system' }` message
+  straight after the coach's message and stored with the turn. A decision request sends none. The coach's own words
+  are never inside a `tool_result` and never in the same block as the app's.
+- **Refusals.** `stop_reason: 'refusal'` is an answer, not a fault: words already streamed are withdrawn, the coach
+  gets one sentence they can act on, the turn is stored `complete` with that sentence as the reply (the model's
+  refused content is not kept), and `stop_details.category` is in the turn's log line (`refusalCategory`).
+- **Prompt caching**: tools, then the policy block (1 hour, `ttl: '1h'`, which covers the tools), then the team block
+  (5 minutes); the conversation tail is cached by the request-level `cache_control`, so no marker is written into a
+  stored message. The model's minimum cacheable prefix is 512 tokens. `cache_read` and the two kinds of cache write
+  are logged per model call (`v3.chat.stream.turn`).
+- **Cost.** Each model call is priced on its own rate card (`callCostUsd`): $0.10 in / $0.50 out per million tokens
+  for a prompt of 100K tokens or fewer, $0.50 / $2.50 above; a cache read is 0.1x input, a five-minute write 1.25x, a
+  one-hour write 2x. A call over 100K prompt tokens logs `v3.chat.stream.long_prompt`. The pre-flight budget estimate
+  uses the short card (`MODEL_COST_USD_PER_MTOK`).
 - **Text streams live.** There is no audit between the model and the coach. After the turn a deterministic check
   compares the numbers in the answer with the numbers the conversation's reads returned and LOGS the result
   (`grounded`, unmatched tokens in `golf_coachhelm_llm_calls`). It never hides, delays or rewrites an answer.
 - **Reads** run in parallel and go back to the model in one message. Each read gets an `evidence_ref` (`e1`, `e2`, ...,
   unique in a conversation for turns this engine wrote) and an evidence part. A tool input is validated against the
-  tool's zod schema before anything runs; an invalid one is an error result the model is told about.
+  tool's zod schema before anything runs; an invalid one is an error result the model is told about. What the model is
+  handed is the read's `model_text` (finished, labelled lines, one figure a line) when it has one, else the envelope's
+  JSON; the whole envelope still goes to the thread, the store and the grounding check.
+- **Grounding by citation.** A read goes back as a `search_result` block (source `read:eN`, one text block per line,
+  citations on). The API attaches to each sentence the read it drew on, and the engine turns that into the ` [eN]`
+  marker the thread already draws (`read-markers.ts`). The model is not asked to write markers. Stored `content` has no
+  markers. With `citations` off a read goes back as `[eN] lines` text and nothing marks a sentence.
 - **Tasks.** A mutating tool call is never run by the model. The engine builds the real plan (`plan`), records it in
-  `golf_coachhelm_action_runs` (`proposed_input = { v: 2, input, proposal }`), shows the card and ends the stream with
-  the turn stored `complete` and waiting. The ledger key is the planner's key plus a hash of the conversation and the
-  model's `tool_use` id, so a retried Confirm of one card is one key and an identical request made later is a new
-  one. Confirm or Cancel is a new request carrying that key. It continues the SAME assistant turn and the same
-  stored row: the tool call gets its tool_result (held until HH:MM:SS, committed, declined, failed with the reason)
-  and the model writes the closing words. Confirm claims the row (so two Confirms cannot both run), holds it for the
-  8-second Undo window when the hold column exists, and commits the STORED proposal: the plan is not built a second
-  time. Cancel calls `recordDenial`. A new message while a card waits counts as Cancel: the card is declined first and
-  the model is told so in the same message as the new question. A task that committed is never stored as a failed
-  turn because the closing words did not arrive: the receipt is the record. The result of `recordProposal`,
-  `recordOutcome` and `recordDenial` is checked; a proposal that cannot be recorded shows no card.
+  `golf_coachhelm_action_runs` (`proposed_input = { v: 2, input, proposal, seal }`, the seal an HMAC only the server
+  can produce, checked before anything is committed), shows the card and ends the stream with the turn stored
+  `complete` and waiting. The ledger key is the planner's key plus a hash of the conversation and the model's
+  `tool_use` id, so a retried Confirm of one card is one key and an identical request made later is a new one.
+  Confirm or Cancel is a new request carrying that key. It continues the SAME assistant turn and the same stored row.
+  Confirm claims the row (so two Confirms cannot both run) and, when the hold column exists, holds it for the
+  8-second Undo window: the card shows "held, Undo until ..." at once (and is stored so), **the open request waits
+  the window out, commits the STORED proposal, and only then gives the model the tool_result** (committed, undone by
+  the coach, failed with the reason) for its closing words. The plan is not built a second time. The wait does not
+  stop if the browser goes away: the write lands once and the stored turn shows the receipt. A second Confirm during
+  the wait changes nothing. Cancel calls `recordDenial`. A new message while a card waits counts as Cancel unless the
+  ledger says the card was already confirmed: the model is given the card's real outcome, then the coach's words as
+  their own text block. A task that committed is never stored as a failed turn because the closing words did not
+  arrive: the receipt is the record. The result of `recordProposal`, `recordOutcome` and `recordDenial` is checked; a
+  proposal that cannot be recorded shows no card.
 - **Idempotency.** A retried `client_turn_id` that already has an answer is sent the stored turn as events, with no
   model call. A retry of a failed turn runs again and replaces the failed row (one question, one assistant row). A
   repeated decision for a key that was already answered is sent the stored outcome.
@@ -137,7 +173,7 @@ entries are history. The tool list and the prompt are described where the tools 
   the previous stack replay as text and still restore; their old cards are not offered for Confirm.
   Both new columns are readable and writable by the owning coach under the table's existing policy, like `ui_parts`
   (self-only). Restricting them to the service role is an open decision.
-- **A failed turn** (a model error, a refusal, a truncated tool call, a stop) is stored `failed` with a
+- **A failed turn** (a model error, a truncated tool call, a stop) is stored `failed` with a
   `data-turn-incomplete` note and only the question in its model messages, so nothing half-finished is replayed. The
   coach is sent one sentence from `classifyProviderFault` or the generic line; provider text never reaches the browser.
 - **The player's Ask** runs on the same runner with the player's tool set, no ledger (a task call is refused before
@@ -145,11 +181,12 @@ entries are history. The tool list and the prompt are described where the tools 
   are the held migration `20261101090200`), so each player question is answered on its own; the browser's copy of the
   thread is not replayed to the model.
 - **Wire protocol** (`engine/protocol.ts`, server-sent events): `message_start`, `text_delta`, `text_discard`,
-  `read_started`, `read_finished`, `evidence`, `visual`, `proposal`, `receipt`, `part`, `decision_needed`, `decision`,
-  `usage`, `error`, `done`. `useCoachHelmChat` keeps its interface and is the only client of it.
-- **Hold release** is unchanged in mechanism: `after()` in the request that held it, the card's own
-  `GET /api/coachhelm/v3/chat/actions/[key]` when its ring ends, and a sweep on the coach's next chat request. A held
-  row is rebuilt from the stored proposal (`held-runner.ts`). There is still no cron for it.
+  `read_started`, `read_finished`, `note`, `evidence`, `visual`, `proposal`, `receipt`, `part`, `decision_needed`,
+  `decision`, `usage`, `error`, `done`. `useCoachHelmChat` keeps its interface, takes an optional `screen` it passes on
+  with each new message (no caller supplies one yet), and is the only client of the protocol.
+- **Hold release**: the Confirm request itself, as above. The fallbacks for a function that died mid-window are
+  unchanged: the card's own `GET /api/coachhelm/v3/chat/actions/[key]` when its ring ends, and a sweep on the coach's
+  next chat request. A held row is rebuilt from the stored, sealed proposal (`held-runner.ts`). There is still no cron.
 - Tests: `src/app/api/coachhelm/v3/chat/stream/__tests__/route.turns.test.ts` (the route against a scripted model and
   an in-memory database) and `src/components/golf/coachhelm/chat/__tests__/useCoachHelmChat.test.tsx`.
 
@@ -841,7 +878,7 @@ card anatomy, motion spec and message mechanics in
 and the `sg_anatomy` artifact in `ChatThread` (`CompositionVisual.tsx`, figures
 in `EvidenceFigures.tsx`, motion in `EvidenceMotion.tsx`); visuals that arrive in
 a live answer animate in, restored threads and reduced motion render final.
-Coach chat runs on Sonnet 5.5 (`MODEL_FOR_TASK.coach_chat`, 2026-10-29).
+Coach chat runs on Claude Haiku 5.5 at effort high (`MODEL_FOR_TASK.coach_chat`, 2026-11-10; Sonnet 5.5 from 2026-10-29 until then).
 Fixture for screenshots: `/fairway-preview/coachhelm-evidence` (`?live` replays
 the motion; dev only).
 

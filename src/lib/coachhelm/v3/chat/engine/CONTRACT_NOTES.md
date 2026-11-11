@@ -18,10 +18,25 @@ Changes to `tool.ts` against the contract in the rebuild brief, with the reason 
 
 ## What the engine sends the model for each result
 
-- read: `JSON.stringify({ ...envelope, evidence_ref })` without `parts`, `evidence`, `end_turn`.
+(Rewritten 2026-11-10 late, for Claude Haiku 5.5. This is what `loop.ts` does now.)
+
+- read, called directly, citations on (the default): the `tool_result` content is ONE `search_result` block:
+  `source: "read:<evidence_ref>"`, `title:` the envelope's `summary` (the progress label when there is none),
+  `content:` one text block per line of `model_text` (the envelope's JSON as one block when a read sets no
+  `model_text`), `citations: { enabled: true }`. A text block is the smallest thing the API can cite, so one figure a
+  line gives a citation that points at one figure.
+- read with citations off, or called from the model's code (programmatic calling can only be handed text):
+  `[<evidence_ref>] <model_text>`, or `JSON.stringify({ ...envelope, evidence_ref })` when there is no `model_text`.
+- read with `evidence: false` (find_in_app, the note tools): `model_text`, or the envelope's JSON. No ref, nothing to cite.
+- read whose `coverage` is `unavailable`: text as above, never a search result (there is nothing to cite).
 - a read that threw, or an input that failed validation: an `is_error` result with one sentence.
-- task proposed: nothing yet; the turn ends on the card. On the coach's decision the result is one of
-  `Committed. <receipt summary>`, `Held until HH:MM:SS (the coach can still press Undo). <summary>`, `Declined by the coach. Nothing was written.`, `Failed: <reason>. Nothing was written.` (or what was), `The coach asked something else instead. Nothing was written.`
+- task proposed: nothing yet; the turn ends on the card. The result arrives with the coach's decision and states what
+  happened, after it happened: `Committed. <receipt summary>`, `Partly done. <summary> Not done: <...>.`,
+  `Failed. <the receipt's own summary>` (TOOLS's sentence, passed on as written), `The coach pressed Undo before it was
+  written. Nothing was written.`, `Declined by the coach. Nothing was written.`, `The coach asked something else instead
+  of confirming. Nothing was written.` There is no "held" result any more: the model is not asked for closing words
+  until the Undo window has closed.
+- a task asked for from the model's code: an `is_error` result. Nothing is planned, no card, no ledger row.
 
 ## 2026-11-10 (ENGINE), after TOOLS delivered the registry
 
@@ -278,3 +293,75 @@ import { eventTaskTools } from './tasks/event-tasks';
     quick chat 12,532 (40), player 3,862 (10). KNOWLEDGE's golf block and data map are not in `policyBlock` yet:
     their export names have not been appended here. When they are, the order is rules, golf, data map.
 
+
+## 2026-11-10 late (ENGINE), Claude Haiku 5.5 at effort high
+
+E1. `model_text` is wired (TOOLS item 2). The envelope, `model_text` included, still goes to the evidence part, the
+    `reads` map, the store and the grounding check; only what the MODEL is handed changed (see "What the engine sends").
+
+E2. **Grounding is search-result blocks with citations, not markers the model writes.** Confirmed in the live docs
+    (search results: this model is listed, stable, no beta header) and in the SDK's types
+    (`BetaSearchResultBlockParam`, `BetaCitationSearchResultLocation`, `citations_delta`). The API attaches to each
+    sentence the read it drew on; the engine turns a citation whose source is `read:eN` into the ` [eN]` marker the
+    thread already draws (`../read-markers.ts`), at the end of the cited text block. So for TOOLS:
+    - the policy must NOT tell the model to write `[e1]` itself (it would be doubled). It can say "state a figure only
+      from a read" as before; the pointing-back is the API's.
+    - a `[eN]` the model writes anyway is still drawn by the thread and still stripped from the stored words.
+    - the stored `content` and what `checkGrounding` is given carry no markers; the stored `model_messages` carry the
+      API's own citation objects and go back unchanged.
+    - a read with one figure a line cites best. A read that returns a paragraph is cited as a whole.
+    - a citation naming a read this conversation does not have draws nothing.
+    `CHAT_FEATURES.citations = false` sends reads as `[eN] lines` text again; nothing else changes.
+
+E3. The per-turn system message. `{ role: 'system', content }` straight after the user's message, stored with the turn,
+    replayed in place on every later turn. Its content, from the route: `[firstTurnNotes(knows) on the first kept turn,
+    [where.line, toneSentence(knows)] joined by a space]` joined by a blank line (CONTEXT C1 and C3, as specified). A
+    decision request sends none. A turn stored as failed keeps only the question (a system message may only stand last
+    or before an assistant message). Nothing volatile is in `system` or `tools`; `instructionBlocks(surface, who)` is
+    called with two arguments.
+
+E4. A coach's words are never inside a `tool_result`. A message typed while a card waits is sent as
+    `[tool_result(the card's outcome), { type: 'text', text: <their words> }]`, then the system message.
+
+E5. Hold release (TOOLS item 6, decided by the lead): Confirm waits the Undo window out inside the open request.
+    `startConfirm` (was `confirmTask`) returns `held` with the receipt to show at once and `finish()`, which waits,
+    takes the row only if it is still held, commits, and answers with what happened. The held card is stored before the
+    wait, so a reload during the window draws it. The wait does not stop when the browser goes away (`after()` keeps the
+    function alive until the turn has finished); the card's GET and the sweep are unchanged. A second Confirm while the
+    first is waiting changes nothing and calls no model. A card left behind for a new question is asked of the ledger
+    first (`settleAbandonedTask`): only a card that is still `proposed` is declined.
+    Not changed, and worth a look by whoever owns the card: after an Undo the stored receipt part is still the `held`
+    one (there is no `cancelled` receipt status); the card's own GET says cancelled, as before.
+
+E6. Refusal: `stop_reason: 'refusal'` ends the turn `complete` with one sentence as the reply (the model's own content
+    is not kept), and `stop_details.category` goes to the turn's log line. No `fallbacks` is ever sent.
+
+E7. `strict: true` is set by the engine on every tool (`modelToolFor`), on the schema `strictInput` produces, passed
+    through the SDK's `transformJSONSchema`. A schema the transform cannot express is sent without `strict` rather
+    than failing the request. TOOLS's caveat stands (no documented limit on the number of strict tools could be found,
+    and no live call was made): if the API rejects the request, the loop sends it once more with no `strict` and no
+    beta, the turn completes, and `v3.chat.stream.degraded` is logged as an error. Until someone turns the feature off
+    in `CHAT_FEATURES`, every turn then pays one rejected round trip (no tokens are billed for a 400).
+
+E8. Programmatic tool calling is built behind `CHAT_FEATURES.programmaticReads`, OFF. With it on: the
+    `code_execution_20260120` tool is offered; READ tools get `allowed_callers: ['direct', 'code_execution_20260120']`
+    and lose `strict` (the two cannot be combined); a read called from code is answered with a plain string; the reply
+    to a pending call holds only `tool_result` blocks and names the container; a task asked for from code is refused.
+    Before anyone turns it on:
+    - tool results pass through a code execution container Anthropic keeps for up to 30 days and the feature is not
+      eligible for zero data retention. These are minors' figures: that is an owner decision, not an eval switch.
+    - reads called from code carry no citations (text only), so those answers have no read markers.
+    - not handled: a single response that both calls a read from code and asks for a task directly, followed by the
+      coach typing instead of deciding (the reply would then hold a text block next to the results, which a pending
+      programmatic call does not accept). The container is carried across the card for the Confirm and Cancel paths.
+
+E9. The memory tool: not used (CONTEXT C3 gives the reasons; ENGINE agrees). The seam is one line: a schema-less entry
+    in `tools` from `buildModelRequest`, and a branch in the loop's tool dispatch for a tool the registry does not
+    hold. Neither exists today.
+
+E10. Off, each one field of `CHAT_FEATURES`: `taskBudgetTokens` (null: the guide says not to send an unmeasured value,
+     and it does not say whether the countdown covers a turn or the stored conversation); `progressNotes`
+     (`thinking.display: 'updates'`: the reference's availability table does not list this model). On: `compaction`
+     at the default trigger, `dropStaleThinking`.
+
+E11. `data-app-link` and `data-coach-note` are in `REPLAYABLE` (`../restore.ts`), so both survive a reload (CONTEXT C2, C3).
