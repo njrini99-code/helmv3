@@ -90,8 +90,10 @@
   /* The app shell around the canvas and the sidebar: the Frame (owner, 2026-10-07, replacing the 2026-10-06 ivory
      sidebar). The frame green around the ivory workspace (the Coach Home handoff). */
   --ch-shell: var(--ch-frame);
-  /* The ivory workspace inside the frame on desktop (the handoff's parchment page). */
-  --ch-workspace: #f5f0e4;
+  /* The page inside the frame on desktop. One flat page colour everywhere (DESIGN_LANGUAGE law 2): the same value as
+     --ch-grouped-bg and --ch-bg-page, so a sticky bar or a ring that paints "the page" matches the page it sits on.
+     styles/__tests__/page-colour.test.ts holds the three together. */
+  --ch-workspace: #f2f0e9;
   /* The one Clubhouse green for large fields and the selected nav row: the canopy and the sidebar selection share it. */
   --ch-field-green: var(--ch-green-800);
   /* Champagne: hairline detail only */
@@ -161,9 +163,9 @@
   --ch-chart-rough: #e4e6d6;
 
   /* Semantic */
-  /* Owner, 2026-10-06: "too much white, need darker ivory and green", then "make the cards lighter". The page is a
-     deeper parchment with a green light across its top; cards are a light ivory that stands off it. */
-  --ch-bg-page: #ebe7dc;
+  /* The page: one flat colour on the phone, a pushed screen and the desktop canvas (DESIGN_LANGUAGE law 2, 31 Oct,
+     which replaced the deeper lit parchment of 2026-10-06). The same value as --ch-grouped-bg and --ch-workspace. */
+  --ch-bg-page: #f2f0e9;
   /* A green light falls across the top of the page and a champagne one from the right, so the canvas reads as a
      lit green-and-ivory room rather than flat paper. Scrolls away with the content. */
   /* No wash: large soft gradients band on 8-bit displays (owner, 2026-10-06: the ivory looked grainy). */
@@ -1122,7 +1124,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-score-under-fill: #c2473a;
   /* At night birdie is the light salmon, so eagle steps darker than it: the mix keeps its order by lightness as well as hue. */
   --ch-score-eagle-fill: #b0473a;
-  --ch-workspace: #131814;
+  --ch-workspace: #0e120f;
   --ch-champagne-100: #2b2619;
   --ch-champagne-300: #cdbb8e;
   --ch-champagne-500: #c9ad74;
@@ -1155,6 +1157,8 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-chart-fairway-alt: #1f3a29;
   --ch-chart-rough: #272d23;
 
+  /* Not yet the page's #0e120f (--ch-grouped-bg): the night hairline (0.12, owner decision 6) reads 1.328 on #0e120f and
+     contrast-tokens.test.ts holds it at 1.33 on this token. The page, a pushed screen and the canvas read --ch-grouped-bg. */
   --ch-bg-page: #111512;
   --ch-bg-surface: #1b201c;
   /* B4: what floats lifts by lightness, as iOS's elevated base does (Gray6 and Gray5, tinted green): a sheet, a menu
@@ -1343,7 +1347,6 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
     --ch-ivory-0: #fdfbf7;
     --ch-ivory-25: #fbf9f4;
     --ch-ivory-50: #f3efe6;
-    --ch-bg-page: #ede9df;
     --ch-bg-surface: #fcfaf5;
     --ch-bg-subtle: #f5f2ea;
     --ch-bg-hover: #f5f2ea;
