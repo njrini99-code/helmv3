@@ -28,12 +28,22 @@ import type { ActionLanding, ActionProposal, ActionReceipt, CardDelivery, CardVi
 import { announcementDelivery, coachNameOf, focusDelivery, nameList, peopleChanged, plural, reachOf, seenPlayers, seriesInviteDelivery, taskDelivery, undoFor, type SeenPlayer } from './card-truth';
 import { CoachContextError, type CoachChatContext } from './context';
 import { CREATE_FLOWS, CardFromBefore, LINEUP_FLOWS, createdOf, drillFlow, flowRequestId, rowSince, type FlowCard, type FlowDef, type FlowDone, type FlowResult } from './create-tools';
+import { editableFields, reviseInput } from './editable';
 import { landingRows } from './landing-rows';
 import { publishFlow } from './practice-draft';
 import { executeRecurringPractice, planRecurringPractice } from './practice-planner';
 
 /** What every task tool here returns from `plan`: the card, the tool it belongs to, the input the write will use, and when it was planned. JSON-safe. */
 export type TaskProposal = ActionProposal & { tool: string; input: unknown; planned_at: string };
+
+/**
+ * A task whose card the coach can edit before confirming. `revise` takes the stored proposal and the coach's edits
+ * (`{ [EditableField.key]: value }`, `null` to clear) and answers with a new proposal, built by the same planner with
+ * the same reads and checks as `plan`. It calls no model and writes nothing. It throws an `Error` whose message the
+ * coach can read when an edit is not allowed or not valid; the card then stays as it was. The new proposal's
+ * `idempotency_key` is the planner's: the engine keeps the card's own key and seals the new plan (CONTRACT_NOTES, PLANS P11).
+ */
+export type RevisableTask<I> = TaskTool<I, TaskProposal> & { revise: (ctx: ToolContext, proposal: TaskProposal, edits: Record<string, unknown>) => Promise<TaskProposal> };
 
 type Looked = 'there' | 'not_there' | 'unknown';
 const now = () => new Date().toISOString();
@@ -190,7 +200,15 @@ export async function commitOnce(action: string, look: () => Promise<ActionRecei
 // The create flows (create-tools.ts, practice-draft.ts)
 // ---------------------------------------------------------------------------------------------------------------------
 
-function flowTask<I>(f: FlowDef<I>): TaskTool<I, TaskProposal> {
+function flowTask<I>(f: FlowDef<I>): RevisableTask<I> {
+  const plan = async (ctx: ToolContext, input: I): Promise<TaskProposal> => {
+      const who = coachOnly(ctx);
+      const prepared = f.prepare ? await f.prepare(ctx.sb, who, input) : input;
+      const d = f.plan(who, prepared);
+      // The rows this lands between, for the card. A failed look draws the new row alone; it is never a reason to refuse the card.
+      const neighbours = await landingRows(ctx.sb, who, f.name, input).catch(() => null);
+      return { ...(d.visual ? { visual: d.visual } : {}), ...(d.publish ? { publish: d.publish } : {}), ...(neighbours?.length ? { neighbours } : {}), ...withLanding(f.name, prepared), ...truthOf(f.name, d), ...(f.editable?.length ? { editable: editableFields(f.input, f.editable, prepared, { labels: f.editLabels, people: who.roster }) } : {}), action: d.action, summary: d.summary, facts: d.facts, affects: d.affects ?? [], notifications: d.notifications, missing: d.facts.filter((x) => x.missing).map((x) => x.label), idempotency_key: keyOf(d.key), tool: f.name, input: prepared, planned_at: now() };
+  };
   return {
     kind: 'task',
     name: f.name,
@@ -198,13 +216,11 @@ function flowTask<I>(f: FlowDef<I>): TaskTool<I, TaskProposal> {
     input: f.input,
     progress: () => PROGRESS[f.name] ?? 'Preparing that',
     ...(f.immediate ? { immediate: true } : {}),
-    plan: async (ctx, input) => {
-      const who = coachOnly(ctx);
-      const prepared = f.prepare ? await f.prepare(ctx.sb, who, input) : input;
-      const d = f.plan(who, prepared);
-      // The rows this lands between, for the card. A failed look draws the new row alone; it is never a reason to refuse the card.
-      const neighbours = await landingRows(ctx.sb, who, f.name, input).catch(() => null);
-      return { ...(d.visual ? { visual: d.visual } : {}), ...(d.publish ? { publish: d.publish } : {}), ...(neighbours?.length ? { neighbours } : {}), ...withLanding(f.name, prepared), ...truthOf(f.name, d), action: d.action, summary: d.summary, facts: d.facts, affects: d.affects ?? [], notifications: d.notifications, missing: d.facts.filter((x) => x.missing).map((x) => x.label), idempotency_key: keyOf(d.key), tool: f.name, input: prepared, planned_at: now() };
+    plan,
+    // The coach's edits on the card: the stored input with them, held to the task's own schema, then planned again with every read and check `plan` makes.
+    revise: async (ctx, proposal, edits) => {
+      coachOnly(ctx);
+      return plan(ctx, reviseInput(f.input, proposal.input, edits, f.editable ?? []));
     },
     commit: async (ctx, proposal) => {
       const who = coachOnly(ctx);
@@ -303,14 +319,13 @@ function plannedTask<I, TPlan extends WithPeople>(def: {
   done: (plan: TPlan) => FlowDone;
   /** A further check at commit that the card is still true, beyond the people on it. */
   stale?: (ctx: ToolContext, who: CoachChatContext, plan: TPlan) => Promise<string | null>;
-}): TaskTool<I, TaskProposal> {
-  return {
-    kind: 'task',
-    name: def.name,
-    description: def.description,
-    input: def.input,
-    progress: () => def.progress,
-    plan: async (ctx, input) => {
+  /** The keys of `input` a coach may change on the card, and the card's label for each. */
+  editable: readonly string[];
+  editLabels?: Record<string, string>;
+  /** The model's input back from a stored plan, where the plan is not the input with more on it. */
+  toInput?: (plan: TPlan) => unknown;
+}): RevisableTask<I> {
+  const plan = async (ctx: ToolContext, input: I): Promise<TaskProposal> => {
       const who = coachOnly(ctx);
       const built = def.plan(who, input);
       // Who is reached is read here, not taken from the planner's count: a player with no account is named as not reached.
@@ -318,7 +333,7 @@ function plannedTask<I, TPlan extends WithPeople>(def: {
       const people = await seenPlayers(ctx.sb, who, truth.ids);
       const { recipients, not_reached } = reachOf(people, truth.sends);
       const delivery = recipients.length ? await truth.delivery() : null;
-      const plan: TPlan = { ...built.plan, seen_people: people };
+      const stored: TPlan = { ...built.plan, seen_people: people };
       const neighbours = await landingRows(ctx.sb, who, def.name, input).catch(() => null);
       return {
         ...built.proposal,
@@ -326,12 +341,25 @@ function plannedTask<I, TPlan extends WithPeople>(def: {
         facts: [...built.proposal.facts, ...(truth.facts ?? []), ...(not_reached.length ? [{ label: 'Will not get it', value: `${nameList(not_reached.map((p) => p.name))} (${not_reached[0]!.reason})` }] : [])],
         notifications: delivery ? truth.told(delivery, recipients.length) : truth.nobody,
         ...(neighbours?.length ? { neighbours } : {}),
-        ...withLanding(def.name, { ...(input as object), ...(plan as object) }),
+        ...withLanding(def.name, { ...(input as object), ...(stored as object) }),
         ...truthOf(def.name, { recipients, not_reached, delivery, visible_to: truth.visible_to, visible_note: truth.visible_note }),
+        ...(def.editable.length ? { editable: editableFields(def.input, def.editable, def.toInput ? def.toInput(stored) : stored, { labels: def.editLabels, people: who.roster }) } : {}),
         tool: def.name,
-        input: plan,
+        input: stored,
         planned_at: now(),
       };
+  };
+  return {
+    kind: 'task',
+    name: def.name,
+    description: def.description,
+    input: def.input,
+    progress: () => def.progress,
+    plan,
+    revise: async (ctx, proposal, edits) => {
+      coachOnly(ctx);
+      const plan0 = proposal.input as TPlan;
+      return plan(ctx, reviseInput(def.input, def.toInput ? def.toInput(plan0) : plan0, edits, def.editable));
     },
     commit: async (ctx, proposal) => {
       const who = coachOnly(ctx);
@@ -379,6 +407,8 @@ const createFocusArea = plannedTask<Parameters<typeof planFocusArea>[1], FocusAr
     from_insight_id: z.string().uuid().optional(),
   }),
   progress: 'Drafting a focus area',
+  editable: ['title', 'description', 'target_value', 'target_date', 'target_rounds'],
+  editLabels: { title: 'Focus', description: 'Details', target_value: 'Target', target_date: 'By', target_rounds: 'Over' },
   plan: planFocusArea,
   truth: (ctx, who, plan) => ({
     ids: [plan.player_id],
@@ -403,6 +433,10 @@ const createTask = plannedTask<Parameters<typeof planTask>[1], TaskPlan>({
   description: 'Assign a task to players. Leave assign_to_player_ids out to assign it to the whole active roster.',
   input: z.object({ title: z.string().min(1).max(160), description: z.string().max(600).optional(), due_date: Day.optional(), priority: z.enum(['low', 'medium', 'high']).optional(), assign_to_player_ids: z.array(PlayerId).optional() }),
   progress: 'Drafting a task',
+  editable: ['title', 'description', 'due_date', 'priority', 'assign_to_player_ids'],
+  editLabels: { title: 'Task', description: 'Details', due_date: 'Due', assign_to_player_ids: 'Assigned to' },
+  // The card names every assignee, so the field holds them, whole roster or not.
+  toInput: (plan) => ({ ...plan, assign_to_player_ids: plan.assignee_ids }),
   plan: planTask,
   truth: (_ctx, _who, plan) => ({
     ids: plan.assignee_ids,
@@ -426,6 +460,10 @@ const createTeamAnnouncement = plannedTask<Parameters<typeof planAnnouncement>[1
   description: 'Send a team update. The full text is on the card before anything goes out. Leave recipient_player_ids out to send to the whole team.',
   input: z.object({ title: z.string().min(1).max(120), body: z.string().min(1).max(2000), urgency: z.enum(['low', 'normal', 'high', 'urgent']).optional(), requires_acknowledgement: z.boolean().optional(), recipient_player_ids: z.array(PlayerId).optional() }),
   progress: 'Drafting a team update',
+  editable: ['title', 'body', 'urgency', 'requires_acknowledgement', 'recipient_player_ids'],
+  editLabels: { body: 'Message', requires_acknowledgement: 'Acknowledgement', recipient_player_ids: 'To' },
+  // "The whole team" is shown as the people it was when the card was made; an edited card sends to exactly the people it lists.
+  toInput: (plan) => ({ ...plan, recipient_player_ids: plan.recipient_ids ?? plan.seen_people?.map((p) => p.id) }),
   plan: planAnnouncement,
   truth: (_ctx, who, plan) => ({
     ids: plan.recipient_ids ?? who.roster.map((p) => p.id),
@@ -467,6 +505,10 @@ const createRecurringPractice = plannedTask<Parameters<typeof planRecurringPract
     invited_player_ids: z.array(PlayerId).optional().describe('Leave out to invite the whole active roster.'),
   }),
   progress: 'Preparing the practice dates',
+  editable: ['title', 'description', 'start_time', 'end_time', 'location', 'occurrence_count', 'first_date', 'requires_rsvp', 'rsvp_deadline', 'invited_player_ids'],
+  editLabels: { start_time: 'Starts', end_time: 'Ends', occurrence_count: 'Occurrences', first_date: 'First date', requires_rsvp: 'RSVP', rsvp_deadline: 'Reply by', invited_player_ids: 'Invites' },
+  // The stored plan holds the resolved dates; the input it came from is these fields.
+  toInput: (plan) => ({ title: plan.title, ...(plan.description ? { description: plan.description } : {}), weekdays: plan.weekdays, start_time: plan.start_time, ...(plan.end_time ? { end_time: plan.end_time } : {}), ...(plan.location ? { location: plan.location } : {}), occurrence_count: plan.occurrence_count, first_date: plan.start_date, requires_rsvp: plan.requires_rsvp, rsvp_deadline: plan.rsvp_deadline, invited_player_ids: plan.invited_player_ids }),
   plan: planRecurringPractice,
   truth: (_ctx, who, plan) => ({
     ids: plan.invited_player_ids,

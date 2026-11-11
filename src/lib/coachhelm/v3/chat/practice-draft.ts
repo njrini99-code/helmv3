@@ -219,6 +219,9 @@ const PLAN_MOVED = 'The plan, its practice or the people on it changed after thi
 /** Publish goes on the Ask hold: nothing is written or told until Undo closes. */
 export const publishFlow: FlowDef<PublishStored> = {
   name: 'publish_practice_plan',
+  // Whether Team chat gets a post is the one thing a coach changes here; the plan itself is edited on its own page.
+  editable: ['team_chat'],
+  editLabels: { team_chat: 'Team chat' },
   description: 'Publish a saved practice plan. Files it in Documents and tells the plan\'s people. The card lists who is told and what each one gets.',
   input: publishInput,
   stored: publishInput.extend({ seen: SeenPublishShape.optional() }),

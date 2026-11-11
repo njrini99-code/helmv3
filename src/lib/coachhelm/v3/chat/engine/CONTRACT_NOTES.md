@@ -850,3 +850,69 @@ E24. **The eval harness** (`scripts/coachhelm/ask-eval.mjs`, pure half `ask-eval
      plan and calls no model. `--max-usd` (default 25) stops the run before the ledger total can pass it; a 401 or a
      spent budget stops it at once; the report is written whatever stops it. Gone with the old audit: the citation
      and repair columns and `--server-log`.
+
+## 2026-11-11 (KNOWLEDGE): the golf reference is served in plain words; one export for TOOLS; one gap in the harness
+
+K7. `get_reference` (topic golf) now hands the model text with the shorthand written out and every pointer to the
+    research document removed (`knowledge/reference-plain.ts`; the document itself is unchanged). The coverage note
+    no longer explains shorthand: it says how to credit a figure (published research, or the publisher the text
+    names) and never by chapter or section number. Size by topic, characters / 4, before and after: strokes_gained
+    713 and 762, what_moves_score 761 and 825, college_golf 1,093 and 1,128, course_management 684 and 721,
+    lies_and_conditions 738 and 784, holes_and_courses 391 and 481, pressure 417 and 427, improvement 392 and 407,
+    sources 1,325 and 1,325. This is a read result, so the cached prefix is the same bytes as before.
+K8. **TOOLS:** `stripSelfReferences(text)` is exported from `knowledge/reference-plain.ts`. Stored insights carry
+    "Per Research doc §4" and "(Research doc §9)" in their bodies (the insight rules write it, for example
+    `v3/composite/rules/pressure-decel-chain.ts:100`; the feed strips it at `golf/actions/insight-delivery.ts:1630`).
+    A reader that returns an insight's stored text to the model (`get_coachhelm`) should pass the text through it,
+    or the model will quote the phrase to a coach. It changes nothing else in the text: it tidies only at a cut.
+K9. **ENGINE:** the harness does what K6 asks (the seven writing rules against every answer, the data questions
+    included; `style.max_sentences`; writing as its own column and rule counts in the report). One gap: `stored.places`
+    is the course names of the staging rounds only (`ask-eval.mjs:494`). Event and qualifier names are not in it, so
+    "the fall invitational" for a stored "Fall Invitational" passes. Recommended: add the team's event and qualifier
+    names from the same staging read to `places`.
+
+## 2026-11-11 (PLANS): a card the coach can edit, `editable` and `revise` (for ENGINE to build the request path)
+
+P11. The contract addition, built on TOOLS's side and waiting for ENGINE's request path and re-sealing.
+
+On the proposal (`ActionProposal.editable?: EditableField[]`, type in `../card-types.ts`):
+```ts
+interface EditableField {
+  key: string;      // the key an edit is sent under
+  label: string;    // the label of the fact this field shows as on the card
+  type: 'text' | 'long_text' | 'date' | 'time' | 'datetime' | 'number' | 'choice' | 'toggle' | 'people' | 'list';
+  value: string | number | boolean | string[] | null;   // as it stands, in the shape an edit sends back
+  required: boolean;                                    // true: it cannot be cleared
+  options?: Array<{ value: string; label: string }>;    // choice: the allowed values. people: the roster (value = player id)
+  max_length?: number; min_length?: number;             // text, long_text; list: per item
+  min?: number; max?: number; step?: number;            // number
+  min_items?: number; max_items?: number;               // people, list
+}
+```
+date is `YYYY-MM-DD`, time is `HH:mm` (24 hour, team time), datetime an ISO instant. Types and limits are read from the
+task's own zod schema, so a value the field accepts is a value the server accepts. Absent or `[]`: nothing on the card
+is editable in place (`set_lineup`, `lock_lineup`; an older stored card).
+
+On the task (every task from `taskTools()` has it; type `RevisableTask<I>` in `../tasks.ts`; please add the optional
+member to `TaskTool` in `tool.ts` so CONTEXT's tasks can grow one too):
+```ts
+revise?: (ctx: ToolContext, proposal: P, edits: Record<string, unknown>) => Promise<P>;
+```
+- `edits` is `{ [EditableField.key]: value }` for the fields the coach changed only. `null` or `''` clears an optional
+  field. A key the card did not offer is refused.
+- It merges the edits into the stored input, validates the result with the tool's own schema, and runs the same
+  planner as `plan`: the same reads (roster, accounts, thread, tournament, note), the same checks, the same card
+  shape. It calls no model and writes nothing.
+- It throws an `Error` whose message the coach can read ("Title: Too big…", "The end has to be after the start.",
+  "Team cannot be changed on this card. Ask for it in words instead."). On a throw the card stays exactly as it was.
+- The proposal it returns has the PLANNER's `idempotency_key` (an edit to a title changes it). ENGINE: keep the card's
+  own key (the one `scopedKey` made for that `tool_use`), write the new proposal over the ledger row while it is still
+  `proposed`, and seal it again. A card that is held, approved or done is not revisable: refuse before calling `revise`.
+- Never editable, by construction: the coach, the team, and the thing a card is about (tournament, round, thread, plan,
+  the player a goal, focus area or note belongs to, a goal's stat). `__tests__/registry-tasks.test.ts` holds every
+  task to that list.
+- What the model is told: nothing at the time of the edit. When the coach confirms, the tool_result already states
+  what was committed (the receipt's summary), which is the edited card. If you want the model to know the card
+  changed before Confirm, the new proposal's `summary` and `facts` are the words to give it.
+- A whole-team task or team update that is edited becomes a card for exactly the people it lists (the `people` field
+  holds them), so "everyone" is fixed at the people the coach saw.
