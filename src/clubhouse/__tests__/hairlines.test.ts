@@ -33,7 +33,7 @@ const ALLOW_LINES: Record<string, number> = {
   'styles/rounds-setup.css': 9,
   'styles/rounds-track.css': 5,
   'styles/rounds.css': 3,
-  'styles/shell.css': 6,
+  'styles/shell.css': 4,
   'styles/stats.css': 2,
   'styles/ui.css': 5,
 };
