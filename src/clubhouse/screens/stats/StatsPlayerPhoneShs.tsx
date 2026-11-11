@@ -215,6 +215,32 @@ export function StatsPlayerPhoneShs({
           </div>
           {updating}
         </div>;
+  // The four parts of the game. On a desk they stand as two columns, the long game beside the short game, on shared rows.
+  const parts = (ids: ReadonlyArray<(typeof PARTS)[number]['id']>) => PARTS.filter((p) => ids.includes(p.id)).map((p) => <PartCard key={p.id} data={data} part={p} onOpen={() => go(p.id)} />);
+  const roundsBlock = (
+    <>
+      <h2 className="ch-shs-sech">Rounds</h2>
+      <SectionBoundary surface="stats.player.rounds" label="The rounds" code="CH-5206">
+        <RoundsCard data={data} onOpen={() => go('rounds')} />
+      </SectionBoundary>
+    </>
+  );
+  const developmentBlock = (
+    <>
+      <h2 className="ch-shs-sech">Development</h2>
+      <SectionBoundary surface="stats.player.development" label="Development" code="CH-5207">
+        <GoalsCard data={data} onOpen={() => go('goals')} />
+        {/* A write stays on the summary, so it never hides in a detail. */}
+        {onAddFocus && (
+          <Button size="sm" leftIcon={Plus} onClick={onAddFocus}>
+            Add focus area
+          </Button>
+        )}
+      </SectionBoundary>
+    </>
+  );
+  // On a desk with figures, Rounds and Development are one card each: they stand side by side instead of each leaving half a row empty.
+  const paired = desk && !failed && !noRounds;
   const sheet = (
     <>
           {!filtered && noRounds && !firstRun && <NineHint code="CH-5324" filter={data.filter} options={data.filterOptions} who={coach ? `${first} has` : 'You have'} />}
@@ -262,37 +288,35 @@ export function StatsPlayerPhoneShs({
                     {data.statsError ? (
                       <InlineNotice code="CH-5202" title="Shot-level detail didn’t load." body="Scores and rounds are correct. Try again." onRetry={onRetry} />
                     ) : data.stats && data.stats.roundsPlayed > 0 ? (
-                      PARTS.map((p) => <PartCard key={p.id} data={data} part={p} onOpen={() => go(p.id)} />)
+                      desk ? (
+                        <div className="ch-shs-duo">
+                          <div className="ch-shs-duo__col">{parts(['tee', 'approach'])}</div>
+                          <div className="ch-shs-duo__col">{parts(['short', 'putting'])}</div>
+                        </div>
+                      ) : (
+                        parts(['tee', 'approach', 'short', 'putting'])
+                      )
                     ) : (
-                      <section className="ch-shs-card" suppressHydrationWarning>
+                      <section className="ch-shs-card" data-ch-wide="" suppressHydrationWarning>
                         <EmptyState kind="filtered" compact code="CH-5301" title="No shot-by-shot rounds in this window." body="Game detail fills in from rounds posted hole by hole with shots. Totals-only rounds still count toward scoring." />
                       </section>
                     )}
                   </SectionBoundary>
 
-                  <h2 className="ch-shs-sech">Rounds</h2>
-                  <SectionBoundary surface="stats.player.rounds" label="The rounds" code="CH-5206">
-                    <RoundsCard data={data} onOpen={() => go('rounds')} />
-                  </SectionBoundary>
+                  {paired ? (
+                    <div className="ch-shs-duo">
+                      <div className="ch-shs-duo__col">{roundsBlock}</div>
+                      <div className="ch-shs-duo__col">{developmentBlock}</div>
+                    </div>
+                  ) : (
+                    roundsBlock
+                  )}
                 </>
               )}
             </>
           )}
 
-          {below && (
-            <>
-              <h2 className="ch-shs-sech">Development</h2>
-              <SectionBoundary surface="stats.player.development" label="Development" code="CH-5207">
-                <GoalsCard data={data} onOpen={() => go('goals')} />
-                {/* A write stays on the summary, so it never hides in a detail. */}
-                {onAddFocus && (
-                  <Button size="sm" leftIcon={Plus} onClick={onAddFocus}>
-                    Add focus area
-                  </Button>
-                )}
-              </SectionBoundary>
-            </>
-          )}
+          {below && !paired && developmentBlock}
     </>
   );
   const ready = !failed && !noRounds;

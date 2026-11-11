@@ -129,6 +129,33 @@ describe('desktop My stats is the bento with its drill beside it', () => {
     expect(pane()!.querySelector('.ch-shs-d-hero__fig')).not.toBeNull();
   });
 
+  it('the cards leave no empty cell: the parts stand as the long game beside the short game, and Rounds beside Development', async () => {
+    render(shell(<StatsPlayer data={coachView()} coachId="coach-1" />));
+    await waitFor(() => expect(cards().map((c) => c.dataset.go)).toContain('goals'));
+    const sum = document.querySelector<HTMLElement>('.ch-shs-desk__sum')!;
+    const duos = [...sum.querySelectorAll<HTMLElement>(':scope > .ch-shs-duo')];
+    const cols = (duo: HTMLElement) => [...duo.querySelectorAll<HTMLElement>(':scope > .ch-shs-duo__col')].map((col) => [...col.children].map((x) => (x as HTMLElement).dataset.go ?? x.textContent));
+    // Each column holds two parts, so a row is always two cards; the golf order runs down a column.
+    expect(duos.map(cols)[0]).toEqual([
+      ['tee', 'approach'],
+      ['short', 'putting'],
+    ]);
+    const last = cols(duos[1]!);
+    expect(last[0]).toEqual(['Rounds', 'rounds']);
+    expect(last[1]!.slice(0, 2)).toEqual(['Development', 'goals']);
+    // Strokes gained leads its section on its own row, a direct child of the grid like the Scoring average card.
+    expect(sum.querySelector(':scope > [data-go="sg"]')).not.toBeNull();
+    // The phone page keeps its one flat list of cards.
+    expect(document.querySelector('.ch-shs:not(.ch-shs--desk) .ch-shs-duo')).toBeNull();
+  });
+
+  it('with no figures the one card left stands alone, unpaired', async () => {
+    render(shell(<StatsPlayer data={self({ roundsError: true })} coachId={null} />));
+    await waitFor(() => expect(pane()).not.toBeNull());
+    expect(document.querySelector('.ch-shs-duo')).toBeNull();
+    expect(screen.getByRole('heading', { name: 'Development' })).toBeTruthy();
+  });
+
   it('the tabbed tables are still there when asked for, which is what paper prints', async () => {
     render(shell(<StatsPlayer layout="tabs" data={self()} coachId={null} />));
     expect(screen.getByRole('tablist', { name: 'Profile sections' })).toBeTruthy();

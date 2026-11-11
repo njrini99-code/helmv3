@@ -2457,6 +2457,54 @@ p.ch-shs-mini-cap {
 .ch-shs-desk__sum > .ch-shs-failed {
   grid-column: 1 / -1;
 }
+/*
+ * A player's cards leave no hole. Strokes gained leads its section across both columns, as Scoring average leads Overview. Under
+ * it the four parts are two columns on shared rows (the long game, then the short game), and Rounds and Development are one card
+ * each, side by side. A row's two cards are one height, so every edge in the bento lines up; the columns are only named in the
+ * markup (`display: contents`), and each child takes its column's track.
+ */
+.ch-shs-desk__sum > .ch-shs-sum[data-go='sg'],
+.ch-shs-desk__sum > [data-ch-wide] {
+  grid-column: 1 / -1;
+}
+.ch-shs--desk:not(.ch-shs--desk-team) .ch-shs-desk__sum {
+  align-items: stretch;
+}
+.ch-shs-duo {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-flow: row dense;
+  gap: var(--ch-space-4);
+  align-items: stretch;
+  min-width: 0;
+}
+.ch-shs-duo__col {
+  display: contents;
+}
+.ch-shs-duo__col:first-child > * {
+  grid-column: 1;
+}
+.ch-shs-duo__col:last-child > * {
+  grid-column: 2;
+}
+.ch-shs-duo .ch-shs-sech {
+  margin-top: var(--ch-space-2);
+}
+/* In a shared row the shorter card's spare height goes above its closing figures, so the two cards' strips rest on one line. */
+.ch-shs-duo .ch-shs-sum {
+  display: flex;
+  flex-direction: column;
+}
+.ch-shs-duo .ch-shs-sum > :has(+ .ch-shs-strip) {
+  margin-bottom: 12px;
+}
+.ch-shs-duo .ch-shs-sum > .ch-shs-strip {
+  margin-top: auto;
+}
+.ch-shs-duo .ch-btn {
+  justify-self: start;
+  align-self: start;
+}
 /* A button on the page keeps its own width on a desk; only the phone stretches it. */
 .ch-shs-desk__sum > .ch-btn {
   justify-self: start;
@@ -2615,7 +2663,12 @@ p.ch-shs-mini-cap {
   .ch-shs-desk {
     grid-template-columns: minmax(0, 1fr) minmax(320px, 380px);
   }
-  .ch-shs-desk__sum {
+  .ch-shs-desk__sum,
+  .ch-shs-duo {
     grid-template-columns: minmax(0, 1fr);
+  }
+  /* One column: the cards run in their written order. */
+  .ch-shs-duo__col:last-child > * {
+    grid-column: 1;
   }
 }
