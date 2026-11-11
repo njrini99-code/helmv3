@@ -60,8 +60,6 @@
 .ch-hf.is-desk[data-ch='your-week'] .ch-hl-h { row-gap: 4px; margin-bottom: var(--ch-gap-section); }
 .ch-hf.is-phone .dhead.is-week { margin-top: 20px; display: block; }
 .ch-hf.is-phone .dhead.is-week p { margin-top: 4px; }
-/* The loading title block keeps the title's own 41px line (its bar is 30px), so the line and the cards under it do not move. */
-.ch-hf.is-phone .dhead .ch-large-title--skel { display: flex; align-items: center; min-height: calc(41 * var(--ch-type-k)); }
 .ch-hf .feat { color: var(--ch-hf-a-feat-1); }
 .ch-hf .ch-hf-coachline { margin: 0 -16px; }
 .ch-hf .goal svg .gl { stroke: var(--ch-hf-c-gain); stroke-width: 1.5; stroke-dasharray: 4 4; }
@@ -177,19 +175,13 @@
 .ch-hf .goal { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: end; margin-top: 16px; padding-top: 12px; border-top: var(--ch-hairline-w) solid var(--ch-hf-a-sep); }
 .ch-hf .goal__t b { display: block; font: var(--ch-type-16-medium); letter-spacing: var(--ch-track-16); }
 .ch-hf .goal__t small { font: var(--ch-type-15);  color: var(--ch-hf-a-ink-2); letter-spacing: var(--ch-track-15); }
-/* The plan's trend at the card's text width: the goal line and the labels edge to edge, the trend inside them by a dot's reach
-   (6px: the largest dot and its ring), so the dots end on the text's edges. */
-.ch-hf .goal__plot { position: relative; grid-column: 1 / -1; height: 72px; }
-.ch-hf .goal svg { position: absolute; top: 0; left: 0; width: 100%; height: 72px; overflow: visible; }
-.ch-hf .goal svg.goal__trend { left: 6px; width: calc(100% - 12px); }
+.ch-hf .goal svg { grid-column: 1 / -1; width: 100%; height: 72px; overflow: visible; }
 .ch-hf .drill { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; align-items: start; margin-top: 12px; padding: 12px; border-radius: var(--ch-radius-md); background: var(--ch-hf-a-well); }
 .ch-hf .drill .r__ic { background: var(--ch-hf-a-card); }
 .ch-hf .drill b { display: block; font: var(--ch-type-16-medium); letter-spacing: var(--ch-track-16); }
 .ch-hf .drill small { display: block; font: var(--ch-type-15);  color: var(--ch-hf-a-ink-2); letter-spacing: var(--ch-track-15); }
-/* The value column is one fixed width (room for "−0.4" at 16px, in tabular figures), on the rows and on the axis under them: at
-   `auto` a wider figure shortened its own row's track, so the zero ticks stood 4px apart and the axis ran past the tracks. */
-.ch-hf .sg { --ch-hf-sg-cols: minmax(max-content, 40%) minmax(0, 1fr) calc(40 * var(--ch-type-k)); display: flex; flex-direction: column; gap: 12px; padding-top: 4px; }
-.ch-hf .sg__row { display: grid; grid-template-columns: var(--ch-hf-sg-cols); align-items: center; gap: 8px; }
+.ch-hf .sg { display: flex; flex-direction: column; gap: 12px; padding-top: 4px; }
+.ch-hf .sg__row { display: grid; grid-template-columns: minmax(max-content, 40%) minmax(0, 1fr) auto; align-items: center; gap: 8px; }
 .ch-hf .sg__row span { font: var(--ch-type-15-medium); letter-spacing: var(--ch-track-15); }
 .ch-hf .sg__row b { text-align: right; font: var(--ch-type-16-strong); letter-spacing: var(--ch-track-16); }
 .ch-hf .sg__row b.loss { color: var(--ch-hf-a-loss); } .ch-hf .sg__row b.gain { color: var(--ch-hf-a-gain); }
@@ -198,7 +190,7 @@
 .ch-hf .sg__bar { position: absolute; top: 3px; bottom: 3px; border-radius: var(--ch-radius-xs); transform-origin: var(--ch-hf-o) 50%; }
 .ch-hf .sg__bar.loss { background: var(--ch-hf-c-loss); right: 50%; --ch-hf-o: 100%; }
 .ch-hf .sg__bar.gain { background: var(--ch-hf-c-gain); left: 50%; --ch-hf-o: 0%; }
-.ch-hf .sg__axis { display: grid; grid-template-columns: var(--ch-hf-sg-cols); gap: 8px; font: var(--ch-type-13);  color: var(--ch-hf-a-ink-3); }
+.ch-hf .sg__axis { display: grid; grid-template-columns: minmax(max-content, 40%) minmax(0, 1fr) auto; gap: 8px; font: var(--ch-type-13);  color: var(--ch-hf-a-ink-3); }
 .ch-hf .sg__axis div { display: flex; justify-content: space-between; }
 .ch-hf .sg__team { position: absolute; top: -3px; bottom: -3px; width: 3px; margin-left: -1px; border-radius: var(--ch-radius-mark); background: var(--ch-hf-a-ink); box-shadow: 0 0 0 1.5px var(--ch-hf-a-card); }
 .ch-hf .sg__key { position: relative; display: flex; align-items: center; gap: 8px; padding-left: 48px; font: var(--ch-type-13);  color: var(--ch-hf-a-ink-2); }
@@ -213,15 +205,7 @@
 .ch-hf .dots i { position: absolute; top: 13px; width: 14px; height: 14px; transform: translateX(-50%); border-radius: 50%; background: var(--ch-hf-c-neutral); box-shadow: 0 0 0 2px var(--ch-hf-a-card); }
 .ch-hf .dots i.me { top: 10px; width: 20px; height: 20px; background: var(--ch-hf-c-gain); }
 .ch-hf .dots i.mean { top: 8px; width: 2px; height: 24px; margin-left: -1px; border-radius: var(--ch-radius-mark); background: var(--ch-hf-c-zero); box-shadow: none; }
-.ch-hf .dots__lab { position: relative; display: flex; justify-content: space-between; font: var(--ch-type-13);  color: var(--ch-hf-a-ink-3); }
-/* A label at each mark (it was one line, "You +3.6 · field +6.0", centred in the row between them). The left mark's label ends at
-   its mark and the right mark's starts at its mark: --ch-hf-a and --ch-hf-b are the two marks, left then right, and --ch-hf-r a
-   mark's half width (the dot's 10px, the tick's 1px). Marks closer than the labels meet 4px either side of their midpoint, and a
-   label stops 8px short of the scale's end figure (--ch-hf-n: that figure's and the label's characters). */
-.ch-hf .dots__m { position: absolute; top: 0; white-space: nowrap; --ch-hf-r: 1px; }
-.ch-hf .dots__m.is-me { --ch-hf-r: 10px; }
-.ch-hf .dots__m.is-l { left: max(min(calc(var(--ch-hf-a) + var(--ch-hf-r)), calc((var(--ch-hf-a) + var(--ch-hf-b)) / 2 - 4px)), calc(var(--ch-hf-n) * 1ch + 8px)); transform: translateX(-100%); }
-.ch-hf .dots__m.is-r { left: min(max(calc(var(--ch-hf-b) - var(--ch-hf-r)), calc((var(--ch-hf-a) + var(--ch-hf-b)) / 2 + 4px)), calc(100% - var(--ch-hf-n) * 1ch - 8px)); }
+.ch-hf .dots__lab { display: flex; justify-content: space-between; font: var(--ch-type-13);  color: var(--ch-hf-a-ink-3); }
 .ch-hf .kv { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 8px 16px; font: var(--ch-type-15); letter-spacing: var(--ch-track-15); }
 .ch-hf .kv dt { color: var(--ch-hf-a-ink-2); }
 .ch-hf .kv dd { margin: 0; font-weight:var(--ch-fw-500); }
@@ -260,11 +244,9 @@
 .ch-hf .cx__done { margin: 0; font: var(--ch-type-14);  color: var(--ch-hf-a-ink-2); }
 .ch-hf .cx__chg { display: inline-flex; align-items: center; min-height: 36px; padding: 0 4px; border: 0; background: none; font: var(--ch-type-13-strong);  color: var(--ch-hf-a-ink); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--ch-hf-a-accent); cursor: pointer; flex-shrink: 0; }
 .ch-hf .sk { display: flex; flex-direction: column; gap: 8px; padding: 4px 20px 20px; }
-/* 12 and 22 are numbers: --ch-type-k is itself a length (1px at the default text size), and a length times a length is no height
-   at all, so every line here was 0px tall and the loading cards drew their heads over an empty sheet. */
-.ch-hf .sk i { position: relative; overflow: hidden; display: block; height: calc(12 * var(--ch-type-k)); border-radius: var(--ch-radius-tail); background: var(--ch-hf-a-skel); }
+.ch-hf .sk i { position: relative; overflow: hidden; display: block; height: calc(12px * var(--ch-type-k, 1)); border-radius: var(--ch-radius-tail); background: var(--ch-hf-a-skel); }
 .ch-hf .sk i::before { content: ""; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 30%, var(--ch-hf-a-skel-sheen) 50%, transparent 70%); transform: translateX(-100%); animation: ch-hf-shim var(--ch-dur-shimmer) linear infinite; } /* today's .ch-skel: --ch-dur-shimmer 1.9s */
-.ch-hf .sk i.t { height: calc(22 * var(--ch-type-k)); width: 70%; }
+.ch-hf .sk i.t { height: calc(22px * var(--ch-type-k, 1)); width: 70%; }
 .ch-hf .feat .sk { padding: 0; }
 .ch-hf .feat .sk i { background: color-mix(in srgb, var(--ch-feature-ink) 10%, transparent); }
 .ch-hf .feat .sk i::before { background: linear-gradient(100deg, transparent 30%, color-mix(in srgb, var(--ch-feature-ink) 12%, transparent) 50%, transparent 70%); }

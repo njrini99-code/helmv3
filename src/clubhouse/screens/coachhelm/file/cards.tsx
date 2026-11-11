@@ -8,7 +8,7 @@ import { pluralWord } from '../../../lib/plural';
 
 import Link from 'next/link';
 import { Check, Eye, Flag, Lock, MessageSquare, Target, Users, X } from 'lucide-react';
-import type { CSSProperties, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import type { ChDeepInsight } from '../../../data/coachhelm-dive-shape';
 import { FILE_SG_FLOOR, FILE_SIGN, fileAimLabel, fileAlertLabel, fileAreaLabel, playerKicker, type ChFileCards, type ChFileField, type ChFileIntent, type ChFilePlan, type ChFileSg, type ChFileStage, type ChFileTrack } from '../../../data/coachhelm-file-shape';
 import { stanceOf, type ChInsight } from '../../../data/coachhelm-shape';
@@ -137,9 +137,7 @@ export function FeatureCard({
         )}
       </p>
       <div className="feat__ev">
-        {/* A player's sentence above already counts the rounds ("across all 21 rounds"), and so does the page's head: the chip is
-            not a third telling. It stays where the sentence does not say it, and on the coach's card. */}
-        {b.evidence.sample && !(lens === 'player' && b.lede.includes(b.evidence.sample)) && <span>{b.evidence.sample}</span>}
+        {b.evidence.sample && <span>{b.evidence.sample}</span>}
         {b.evidence.window && <span>{b.evidence.window}</span>}
         {d.firmness && <span>{d.firmness}</span>}
       </div>
@@ -229,9 +227,7 @@ export function PlanCard({ plan, lens, first, onDrawn }: { plan: ChFilePlan | nu
   const line = !plan ? 'No focus yet' : stage === 'accepted' ? `Accepted ${plan.since ?? ''}` : stage === 'declined' ? `You declined this on ${plan.handshake.declined ?? ''}` : stage === 'none' ? 'No focus yet' : 'Waiting for your answer';
   return (
     <section className="card" aria-labelledby="ch-hf-plan" data-ch-anchor="plan">
-      {/* A player's card says the stage once, in the line under the head ("Accepted Oct 5", from their coach), and the focus card
-          over it carries "Your focus since Oct 5": the head's own copy of it was the third in one view. A coach's keeps it. */}
-      <CardHead id="ch-hf-plan" title={mine ? `${first}’s plan` : 'Your plan'} meta={mine ? meta : undefined} />
+      <CardHead id="ch-hf-plan" title={mine ? `${first}’s plan` : 'Your plan'} meta={meta} />
       <div className="card__b">
         {mine ? (
           <div className="hs" data-ch-hs={onDrawn}>
@@ -288,16 +284,14 @@ function Step({ on, label, date, next = false, tone }: { on: boolean; label: str
   );
 }
 
-/** The plan's trend is drawn 72px tall at the card's own width: its x is a share of the width, its y the pixels below. */
-const GOAL_H = 72;
-
 function GoalBlock({ goal }: { goal: NonNullable<ChFilePlan['goal']> }) {
-  const H = GOAL_H;
+  const W = 320;
+  const H = 72;
   const vals = [...goal.points.map((p) => p.value), ...(goal.target != null ? [goal.target] : [])];
   const lo = vals.length ? Math.min(...vals) : 0;
   const hi = vals.length ? Math.max(...vals) : 1;
   const pad = (hi - lo || 1) * 0.1;
-  const x = (i: number) => `${goal.points.length < 2 ? 50 : (i * 100) / (goal.points.length - 1)}%`;
+  const x = (i: number) => (goal.points.length < 2 ? W / 2 : 6 + (i * (W - 12)) / (goal.points.length - 1));
   const y = (v: number) => 8 + ((hi + pad - v) / (hi - lo + 2 * pad)) * (H - 26);
   const chip = goal.word === 'Improved' ? 'gain' : goal.word === 'Worse' ? 'loss' : 'plain';
   const firstPoint = goal.points[0];
@@ -311,36 +305,27 @@ function GoalBlock({ goal }: { goal: NonNullable<ChFilePlan['goal']> }) {
       </div>
       {goal.word && <Badge tone={CHIP_TONE[chip] ?? 'neutral'}>{goal.word}</Badge>}
       {goal.points.length > 0 && (
-        // Two drawings at the card's text width, neither scaled: the goal line and the labels run edge to edge, and the trend sits
-        // inside them by a dot's reach, so its first and last dots end on the text's own edges. (One scaled drawing kept its 320
-        // units and sat centred in a wider card, well inside both edges.)
-        <div className="goal__plot" role="img" aria-label={`${goal.title}: ${goal.points.map((p) => `${p.label} ${p.value}`).join(', ')}`}>
-          <svg aria-hidden="true" focusable="false">
-            {goal.target != null && (
-              <>
-                <line x1="0" x2="100%" y1={y(goal.target)} y2={y(goal.target)} className="gl" />
-                {/* The label takes the end of the goal line the trend is farther from, so it never sits on a round's dot. */}
-                <text x={goalAtStart ? 0 : '100%'} y={y(goal.target) - 8} textAnchor={goalAtStart ? 'start' : 'end'} className="gt" data-ch-file-goal={goalAtStart ? 'start' : 'end'}>
-                  Goal {goal.target}
-                </text>
-              </>
-            )}
-            <text x="0" y={H - 2} className="gd">
-              {goal.points[0]?.label}
-            </text>
-            <text x="100%" y={H - 2} textAnchor="end" className="gd">
-              {goal.points[goal.points.length - 1]?.label}
-            </text>
-          </svg>
-          <svg className="goal__trend" aria-hidden="true" focusable="false">
-            {goal.points.slice(1).map((p, i) => (
-              <line key={i} x1={x(i)} y1={y(goal.points[i]!.value)} x2={x(i + 1)} y2={y(p.value)} className="pl" />
-            ))}
-            {goal.points.map((p, i) => (
-              <circle key={i} cx={x(i)} cy={y(p.value)} r={i === goal.points.length - 1 && goal.worse ? 4.5 : 3} className={i === goal.points.length - 1 && goal.worse ? 'pt hi' : 'pt'} />
-            ))}
-          </svg>
-        </div>
+        <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${goal.title}: ${goal.points.map((p) => `${p.label} ${p.value}`).join(', ')}`}>
+          {goal.target != null && (
+            <>
+              <line x1="0" x2={W} y1={y(goal.target)} y2={y(goal.target)} className="gl" />
+              {/* The label takes the end of the goal line the trend is farther from, so it never sits on a round's dot. */}
+              <text x={goalAtStart ? 0 : W} y={y(goal.target) - 8} textAnchor={goalAtStart ? 'start' : 'end'} className="gt" data-ch-file-goal={goalAtStart ? 'start' : 'end'}>
+                Goal {goal.target}
+              </text>
+            </>
+          )}
+          <polyline points={goal.points.map((p, i) => `${x(i)},${y(p.value)}`).join(' ')} className="pl" />
+          {goal.points.map((p, i) => (
+            <circle key={i} cx={x(i)} cy={y(p.value)} r={i === goal.points.length - 1 && goal.worse ? 4.5 : 3} className={i === goal.points.length - 1 && goal.worse ? 'pt hi' : 'pt'} />
+          ))}
+          <text x="0" y={H - 2} className="gd">
+            {goal.points[0]?.label}
+          </text>
+          <text x={W} y={H - 2} textAnchor="end" className="gd">
+            {goal.points[goal.points.length - 1]?.label}
+          </text>
+        </svg>
       )}
     </div>
   );
@@ -349,19 +334,6 @@ function GoalBlock({ goal }: { goal: NonNullable<ChFilePlan['goal']> }) {
 export function FieldCard({ field }: { field: ChFileField }) {
   const [lo, hi] = field.scale;
   const at = (v: number) => `${((v - lo) / (hi - lo)) * 100}%`;
-  // The caption's two figures, each said at its own mark: "You +3.6" at the dot and "field +6.0" at the mean's tick. The one on
-  // the left ends at its mark and the one on the right starts at its mark, so they never run into each other (coachhelm-file.css).
-  const [, own, mean] = /^(.*) · (field .*)$/.exec(field.caption) ?? [];
-  const ends = [FILE_SIGN(lo), FILE_SIGN(hi)] as const;
-  const meLeft = field.me <= field.mean;
-  const mark = (text: string, me: boolean) => {
-    const left = me === meLeft;
-    return (
-      <span className={'dots__m ' + (left ? 'is-l' : 'is-r') + (me ? ' is-me' : '')} style={{ '--ch-hf-n': (left ? ends[0] : ends[1]).length + text.length } as CSSProperties}>
-        {text}
-      </span>
-    );
-  };
   return (
     <section className="card" aria-labelledby="ch-hf-field" data-ch-anchor="field">
       <CardHead id="ch-hf-field" title="Last round in context" meta={field.meta} />
@@ -383,17 +355,10 @@ export function FieldCard({ field }: { field: ChFileField }) {
           <i className="mean" style={{ left: at(field.mean) }} />
           <i className="me" style={{ left: at(field.me) }} />
         </div>
-        <div className="dots__lab ch-num" style={{ '--ch-hf-a': at(Math.min(field.me, field.mean)), '--ch-hf-b': at(Math.max(field.me, field.mean)) } as CSSProperties}>
-          <span>{ends[0]}</span>
-          {own && mean ? (
-            <>
-              {mark(own, true)}
-              {mark(mean, false)}
-            </>
-          ) : (
-            <span>{field.caption}</span>
-          )}
-          <span>{ends[1]}</span>
+        <div className="dots__lab ch-num">
+          <span>{FILE_SIGN(lo)}</span>
+          <span>{field.caption}</span>
+          <span>{FILE_SIGN(hi)}</span>
         </div>
       </div>
     </section>
@@ -420,13 +385,13 @@ export function SgCard({ sg, who, standingHref }: { sg: ChFileSg; who: string; s
                   {r.strokes != null && <i className={`sg__bar ${toneOfStrokes(r.strokes)}`} style={{ width: `${width}%` }} />}
                   {r.team != null && <i className="sg__team" style={{ left: `${50 + Math.max(-1, Math.min(1, r.team)) * 50}%` }} />}
                 </div>
-                <b className={'ch-num ' + (r.tone === 'none' ? 'none' : r.tone)}>{r.figure}</b>
+                <b className={r.tone === 'none' ? 'none' : r.tone}>{r.figure}</b>
               </div>
             );
           })}
           <div className="sg__axis">
             <span />
-            <div className="ch-num">
+            <div>
               <span>−1.0</span>
               <span>Tour</span>
               <span>+1.0</span>

@@ -18,7 +18,6 @@ import { GonePanel, ReadPanel } from '../team/panels';
 import { Head } from '../parts';
 import { ProposalRow } from '../Proposals';
 import { useViewSwitch } from '../use-view-switch';
-import { HelmOff, PlayerHelmFrame } from '../views/Frame';
 import { PlayerHelmTabs } from '../views/PlayerHelmTabs';
 import { LIVE_PLAYER_WRITES, type ChPlayerWrites } from '../writes';
 import { EarlyFeature, FeatureCard, FieldCard, PlanCard, ReadsCard, SgCard, WorkingCard } from './cards';
@@ -37,15 +36,6 @@ export function YourWeek({ load, writes = LIVE_PLAYER_WRITES }: { load: ChViewLo
     return m;
   }, [data]);
   const tabs = <PlayerHelmTabs active={sw.shown} onGo={sw.go} />;
-  // CoachHelm is off for the player's team: said as that, in the words Standing and the Deep dive use (CH-13304), in their frame
-  // and with no views to switch between. It fell through to the "couldn't load" card below, as if it were an error to retry.
-  if (load.status === 'off') {
-    return (
-      <PlayerHelmFrame view="board" line="One thing to work on this week, based on the rounds you’ve posted." off>
-        <HelmOff reason={load.reason} />
-      </PlayerHelmFrame>
-    );
-  }
   if (!data) {
     return (
       // On a desk the card takes the page's own gutters and a reading width (it sat edge to edge, under the top bar).

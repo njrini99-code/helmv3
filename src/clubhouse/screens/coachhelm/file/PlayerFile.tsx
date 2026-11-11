@@ -18,7 +18,6 @@ import { usePageCrumbs } from '../../../shell/crumbs';
 import { rebuiltHref } from '../../../shell/nav';
 import { PhoneTop } from '../../../shell/phone-chrome';
 import { Icon } from '../../../ui/Icon';
-import { MenuSheet } from '../../../ui/ContextMenu';
 import { Menu } from '../../../ui/Menu';
 import { Modal } from '../../../ui/Modal';
 import { PhoneIconAction } from '../../../ui/PhoneBar';
@@ -151,7 +150,6 @@ function Ready({ data, at, insight, roster, writes, saveIntent, initialLens }: {
   const [lens, setLens] = useState<FileLens>(initialLens);
   const [openRead, setOpenRead] = useState<string | null>(insight ?? null);
   const [intentOpen, setIntentOpen] = useState(false);
-  const [moreOpen, setMoreOpen] = useState(false);
   const [intent, setIntentValue] = useState<ChFileIntent | null>(data.cards.intent ?? null);
   const flow = useRef<HTMLDivElement>(null);
   usePageCrumbs(['CoachHelm', head.name]);
@@ -332,9 +330,7 @@ function Ready({ data, at, insight, roster, writes, saveIntent, initialLens }: {
         <PhoneTop
           back={{ label: 'CoachHelm', onBack: () => (window.history.length > 1 ? router.back() : router.push(PLAYER_HELM_HREF.board)) }}
           title={head.name}
-          // The phone's menu is a sheet of the same rows (MenuSheet): the popover needs its trigger's element to place itself, the
-          // bar's icon action hands none on, and the list stayed off screen, so a tap on "More" showed nothing.
-          action={<PhoneIconAction icon={Ellipsis} label={`More for ${first}`} onClick={() => setMoreOpen(true)} />}
+          action={more(((p: { ref: (el: HTMLButtonElement | null) => void; onClick: () => void }) => <PhoneIconAction icon={Ellipsis} label={`More for ${first}`} onClick={p.onClick} />) as never)}
         />
       )}
       <div className="dmain">
@@ -393,7 +389,6 @@ function Ready({ data, at, insight, roster, writes, saveIntent, initialLens }: {
             ))}
         </div>
       </Modal>
-      {phone && <MenuSheet open={moreOpen} title={head.name} label={`More for ${first}`} items={moreItems} onClose={() => setMoreOpen(false)} />}
       <IntentSheet key={intentOpen ? 'open' : 'closed'} open={intentOpen} playerId={head.playerId} first={first} value={intent} save={saveIntent} onSaved={(v) => { setIntentValue(v); setIntentOpen(false); }} onClose={() => setIntentOpen(false)} />
     </main>
   );
