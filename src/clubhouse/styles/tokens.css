@@ -808,6 +808,11 @@
   --ch-elevation-mark-ink: 0 5px 10px -6px rgb(28 25 18 / 0.45);
   --ch-elevation-plate: 0 18px 28px -24px rgb(28 25 18 / 0.5);
   --ch-elevation-pill-on: 0 1px 2px rgb(21 90 57 / 0.32);
+  /* Two small drops for things that sit ON a card or the page, never the card recipe (its ambient fall is sized for a
+     card): a count badge or a reaction badge, and a bubblet (a pin's latest-line bubble, a receipt pill). Drop only;
+     the caller keeps its own ring. */
+  --ch-elevation-badge: 0 2px 6px -2px rgb(28 25 18 / 0.25);
+  --ch-elevation-bubblet: 0 4px 10px -4px rgb(28 25 18 / 0.18);
   /* The chosen segment of every switcher (owner, 2026-10-16: green, with more depth): a lit green chip raised off its
      well, the light on its top edge, a contact shadow and a soft one under it. */
   --ch-seg-on-bg: linear-gradient(180deg, var(--ch-green-fill-500) 0%, var(--ch-green-fill-700) 100%);
@@ -1274,6 +1279,8 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-elevation-mark-ink: 0 5px 10px -6px rgb(0 0 0 / 0.6);
   --ch-elevation-plate: 0 18px 28px -24px rgb(0 0 0 / 0.7);
   --ch-elevation-pill-on: 0 1px 2px rgb(0 0 0 / 0.4);
+  --ch-elevation-badge: 0 2px 6px -2px rgb(0 0 0 / 0.5);
+  --ch-elevation-bubblet: 0 4px 10px -4px rgb(0 0 0 / 0.45);
   --ch-seg-on-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16), inset 0 -1px 0 rgb(0 0 0 / 0.2), 0 1px 2px rgb(0 0 0 / 0.5),
     0 3px 8px -2px rgb(0 0 0 / 0.45);
   --ch-elevation-face: var(--ch-light-drift-near) 1px 3px rgb(0 0 0 / 0.35), var(--ch-light-drift-mid) 8px 16px -6px rgb(0 0 0 / 0.5),
