@@ -128,12 +128,12 @@ function HomeReady({ data, phone, live }: { data: ChTourHomeData; phone: boolean
               {hero ? <NextCard event={hero} data={data} phone today={madeToday(hero)} arrived={arrived.has(hero.id)} /> : <EmptyState compact kind="first-run" code="CH-16312" title="Nothing on the calendar" body="Add an event and it shows here with its lineup and travel." />}
               {others.length > 0 && (
                 <Section id="ch-tour-home-more" title="Coming up">
-                  <OtherEvents events={others} data={data} madeToday={madeToday} arrived={arrived} />
+                  <OtherEvents events={others} data={data} madeToday={madeToday} arrived={arrived} phone />
                 </Section>
               )}
               {setUp}
               <SeasonLedger events={data.events} seasons={data.seasons} players={data.players} courseName={courseName} currentSeasonId={data.season.id} phone />
-              <NextSeason events={later} data={data} madeToday={madeToday} arrived={arrived} />
+              <NextSeason events={later} data={data} madeToday={madeToday} arrived={arrived} phone />
             </>
           ) : (
             <>
@@ -204,7 +204,7 @@ function NextCard({ event: e, data, phone, today = false, arrived = false }: { e
             {act.label}
           </Button>
           {!phone && pickLineup && (
-            <Button size="sm" leftIcon={GitCompare} href={paths.compare(e.id)} className="ch-tour-home-feat__alt">
+            <Button size="sm" variant="ghost" leftIcon={GitCompare} href={paths.compare(e.id)} className="ch-btn--on-green">
               Compare lineup options
             </Button>
           )}
@@ -214,8 +214,12 @@ function NextCard({ event: e, data, phone, today = false, arrived = false }: { e
   );
 }
 
-/** The rest of the calendar: a date, the event and where, each one a link to its desk. */
-function OtherEvents({ events, data, madeToday, arrived }: { events: ChTourEvent[]; data: ChTourHomeData; madeToday: (e: ChTourEvent) => boolean; arrived: ReadonlySet<string> }) {
+/**
+ * The rest of the calendar: a date, the event and where, each one a link to its desk. On the phone the list stands under
+ * a heading that already says these are coming up, so a row carries no "Upcoming" chip there (it cut the row's own line
+ * short at 390px); a live event still says Live.
+ */
+function OtherEvents({ events, data, madeToday, arrived, phone = false }: { events: ChTourEvent[]; data: ChTourHomeData; madeToday: (e: ChTourEvent) => boolean; arrived: ReadonlySet<string>; phone?: boolean }) {
   const paths = useTourPaths();
   return (
     <LedgerList label="Also on the calendar" className="ch-tour-home-others">
@@ -235,7 +239,7 @@ function OtherEvents({ events, data, madeToday, arrived }: { events: ChTourEvent
           trail={
             <>
               {madeToday(e) && <span className="ch-tour-home__today">Set up today</span>}
-              <TourChip tone={e.status === 'live' ? 'live' : undefined}>{e.status === 'live' ? 'Live' : 'Upcoming'}</TourChip>
+              {e.status === 'live' ? <TourChip tone="live">Live</TourChip> : !phone && <TourChip>Upcoming</TourChip>}
             </>
           }
           meta={[data.courses[e.courseIds[0] ?? '']?.name, holesLabel(e), e.note].filter(Boolean).join(' · ')}
@@ -317,7 +321,7 @@ function SetUpFromCalendar({ groups, failed, onRetry, retrying }: { groups: ChTo
 }
 
 /** P-5 4.11.2: next season's events, folded at the end of the ledger: "Next season · 2027–28 (2)". */
-function NextSeason({ events, data, madeToday, arrived }: { events: ChTourEvent[]; data: ChTourHomeData; madeToday: (e: ChTourEvent) => boolean; arrived: ReadonlySet<string> }) {
+function NextSeason({ events, data, madeToday, arrived, phone = false }: { events: ChTourEvent[]; data: ChTourHomeData; madeToday: (e: ChTourEvent) => boolean; arrived: ReadonlySet<string>; phone?: boolean }) {
   const [open, setOpen] = useState(false);
   if (!events.length) return null;
   const id = events[0]!.seasonId;
@@ -331,7 +335,7 @@ function NextSeason({ events, data, madeToday, arrived }: { events: ChTourEvent[
       </button>
       {open && (
         <div id="ch-tour-home-next-list">
-          <OtherEvents events={events} data={data} madeToday={madeToday} arrived={arrived} />
+          <OtherEvents events={events} data={data} madeToday={madeToday} arrived={arrived} phone={phone} />
         </div>
       )}
     </div>
