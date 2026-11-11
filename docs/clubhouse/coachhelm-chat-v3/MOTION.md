@@ -15,12 +15,28 @@ and why that is equal or better. "Measured" means in WebKit through the harness;
 | Send | The bubble appears at the bottom; the page scrolls it up | The bubble leaves the thing touched (field, start, follow-up) and takes the top of a fresh page in one spring (MO-3-4) | Shows where the question came from; the answer then grows into space that is already there |
 | The wait | A pulsing dot or a shimmering "Thinking" | Never a bare "Thinking": the wait names what is being done; real work raises the activity island (MO-4-I1 to I9) | Says a fact, and the fact is an engine event |
 | Tool use | A collapsed "Searched…" line that can be expanded after the fact | The island: each step alive, then done with what it found, faces and a tally joining as they are read; a finished step opens its read while the rest continues and while the answer streams | The work is legible and usable while it happens, not only afterwards |
-| Text arriving | Words appear in bursts; the page follows the last line | Words fade in per burst, the text never moves once painted, nothing follows (Rule P); half-written markdown is held back | Measured: 600 words, 366 frames, median 10 ms, max 30 ms, 1 frame over 25 ms, first paragraph's top constant |
+| Text arriving | Words appear in bursts; the page follows the last line | **Smoothed reveal (chosen 10 Nov, `chat/reveal.ts`)**: the stream fills a backlog and a frame clock releases it in whole words at a rate that follows the backlog (cleared in about 200 ms, never slower than 40 characters a second); each word fades in once; nothing is held once the stream ends. The text never moves once painted and nothing follows (Rule P); half-written markdown is held back | Measured below: words land one at a time every 10 to 20 ms instead of 5 to 21 at a time every 80 ms, at the same frame cost |
 | Scroll while streaming | Auto-follow that the reader fights | The page does not move; a Latest key appears only when there is more below | The reader keeps their place by doing nothing |
 | A chart | Renders when ready, pushing text | Complete at first paint, in its own place; only its frame fades (Q-153) | No skeleton to disbelieve, no growth to wait for |
 | Acting in the app | Not offered, or a tool result as text | A preview card, Confirm, an honest 8 s hold with a ring that is the server's clock, Undo, then the receipt on the card (Moment 7) and the row landing in the page (Moment 8) | Product-only; nothing is written until the coach has seen it |
 | Stop / failure | Stop leaves a cut sentence; errors are a red banner | Stop is silent and says so on the turn; a failure keeps what arrived and says what to do in one amber line | The turn is the record of what happened |
 | Reduce Motion | Mostly unchanged | Every arrival is a fade, loops stop, the island's ring is still, the plate takes its size at once | Designed, not defaulted |
+
+**The reveal, measured** (WebKit, phone 390x844, through the harness; "burst" paints each 50 ms flush as it arrives):
+
+| Stream | Reveal | Frames | Slowest frame | Over 25 ms | Frames in which words landed | Words per landing, median (max) | Gap between landings, median / p95 / max | Variation per 100 ms |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Long answer, real pace (390 words, 7.1 s) | burst | 713 | 19 ms | 0 | 80 | 5 (7) | 80 / 99 / 324 ms | 0.58 |
+| same | smoothed, run 1 | 684 | 149 ms | 5 | 362 | 1 (8) | 19 / 40 / 242 ms | 0.33 |
+| same | smoothed, run 2 | 709 | 16 ms | 0 | 374 | 1 (2) | 20 / 40 / 70 ms | 0.30 |
+| Lumpy, worst pace (179 words in bursts of 6 to 22, 1.4 s pauses) | burst | 407 | 15 ms | 0 | 14 | 12 (21) | 88 / 1479 / 1479 ms | 1.67 |
+| same | smoothed | 404 | 12 ms | 0 | 133 | 1 (4) | 10 / 61 / 811 ms | 1.29 |
+
+Chosen: smoothed. It turns a stream that lands in clumps into one that is read as it is written, and on an uneven
+connection it fills almost half of each stall with words that had already arrived. Run 1's slow frames (one of
+149 ms) did not recur in run 2 or in the lumpy run and came while other captures were compiling on the same machine;
+they are recorded here because they were seen, and the budget below is the test that will catch them if they are
+the reveal's. `setRevealMode('burst')` is the way back.
 
 **Frame budget, stated:** while a long answer streams with a chart on the page, no frame over 33 ms and no more than
 1 in 100 over 25 ms on the phone viewport in WebKit; the island's open and fold lay nothing out (transforms on five

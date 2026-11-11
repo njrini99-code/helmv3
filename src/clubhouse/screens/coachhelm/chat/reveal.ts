@@ -13,7 +13,7 @@ import { useEffect, useRef, useState } from 'react';
  * One switch, set once by the surface that mounts the thread. The default is the one the measurements chose (MOTION).
  */
 export type RevealMode = 'burst' | 'smooth';
-let MODE: RevealMode = 'burst';
+let MODE: RevealMode = 'smooth';
 export const setRevealMode = (mode: RevealMode): void => {
   MODE = mode;
 };
