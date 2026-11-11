@@ -43,8 +43,8 @@ export function CalendarSkeleton() {
           their seams. Switched in CSS, since this renders on the server. */}
       <div className="ch-calm-skel">
         <div className="ch-intro ch-calm-head">
-          {/* The eyebrow's 13px type at its 15.6px line, so the title row lands where it loads. */}
-          <SkelLine line={18} bar={9} width={124} />
+          {/* The eyebrow's line as the phone draws it (14.8px, WebKit 390), so the title row lands where it loads. */}
+          <SkelLine line={14.8} bar={9} width={124} />
           <span className="ch-intro__row">
             <SkelLine line={37} bar={26} width={120} />
             <Skeleton width={213} height={42} radius={12} />
@@ -59,9 +59,12 @@ export function CalendarSkeleton() {
           ))}
         </div>
         <div className="ch-calm-skel__day">
+          {/* The day's heading as it loads: its 18px line beside the week arrows' 30px box (drawn empty), then the
+              day's counts on a line of their own, 64px in all, so the rows start where the day's do. */}
           <div className="ch-calm-dayk ch-calm-skel__dayk">
-            <SkelLine line={22} bar={15} width={150} />
-            <SkelLine line={16} bar={10} width={96} />
+            <SkelLine line={18} bar={15} width={150} />
+            <span className="ch-calm-skel__step" />
+            <SkelLine line={15} bar={10} width={170} />
           </div>
           <SkelRows rows={4} lead />
         </div>

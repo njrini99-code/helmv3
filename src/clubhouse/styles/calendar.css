@@ -2963,21 +2963,29 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
     grid-template-columns: repeat(7, minmax(0, 1fr));
     gap: 2px;
   }
+  /* The week strip's own height (65.3px, WebKit 390), and the day straight under the skeleton's 24px gap, as the day
+     view sets it under the week: the day's rule waits where it loads (262.1px; it stood at 268). */
   .ch-calm-skel__d {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 8px;
-    height: 64px;
+    height: 65.3px;
     padding-top: 12px;
   }
   .ch-calm-skel__day {
     display: flex;
     flex-direction: column;
-    margin-top: 4px;
   }
-  .ch-calm-skel__dayk {
-    align-items: center;
+  .ch-calm-dayk.ch-calm-skel__dayk {
+    align-items: flex-start;
+  }
+  .ch-calm-skel__step {
+    width: 62px;
+    height: 30px;
+  }
+  .ch-calm-skel__dayk > .ch-skel-ln:last-child {
+    flex-basis: 100%;
   }
   .ch-calm-skel .ch-skel-rows {
     margin-top: 6px;
