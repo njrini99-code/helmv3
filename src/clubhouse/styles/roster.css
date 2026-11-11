@@ -2944,6 +2944,8 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   font: var(--ch-type-28-strong);
 
   letter-spacing: var(--ch-track-28);
+
+  white-space: nowrap;
 }
 [data-ch-crh='on'] .ch-rs-ldr__v.is-loss {
   color: var(--ch-chart-loss);
@@ -3091,15 +3093,17 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   [data-ch-crh='on'] .ch-rsx-row__b > b {
     overflow: hidden;
     font: var(--ch-type-row);
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
   }
   [data-ch-crh='on'] .ch-rsx-row__b > span {
     overflow: hidden;
     font: var(--ch-type-meta);
     color: var(--ch-crh-ink2);
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
   }
   [data-ch-crh='on'] .ch-rsx-row__b .is-warning,
   [data-ch-crh='on'] .ch-rsx-row__b .is-loss {
@@ -3485,15 +3489,17 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   [data-ch-crh='on'] .ch-rsx-row__b > b {
     overflow: hidden;
     font: var(--ch-type-row);
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
   }
   [data-ch-crh='on'] .ch-rsx-row__b > span {
     overflow: hidden;
     font: var(--ch-type-meta);
     color: var(--ch-crh-ink2);
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
   }
   [data-ch-crh='on'] .ch-rsx-row__b .is-warning,
   [data-ch-crh='on'] .ch-rsx-row__b .is-loss {
@@ -3835,6 +3841,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
 }
 [data-ch-crh='on'] .ch-rs-ldr__v {
   grid-area: v;
+  white-space: nowrap;
 }
 [data-ch-crh='on'] .ch-rs-ldr__bars {
   grid-area: bars;
@@ -3850,7 +3857,8 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   gap: 8px;
 }
 @media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
+  /* The card grows with the Text Size, so the figure, its unit and the bars stay on one line. */
   [data-ch-crh='on'] .ch-rs-ldr {
-    flex: 0 0 min(62%, 208px);
+    flex: 0 0 min(72%, calc(208px * var(--ch-type-scale, 1)));
   }
 }

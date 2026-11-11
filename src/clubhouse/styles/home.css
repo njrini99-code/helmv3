@@ -2205,9 +2205,11 @@
 }
 
 /* Phone (m-player-home.css). The hero's two keys are the shared buttons (PlayerHomePhone), side by side. */
+/* Side by side while both fit (150pt each at the default Text Size); one over the other once they don't, so neither is cut
+   and the page never scrolls sideways. */
 .ch-ph-acts {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, calc(150px * var(--ch-type-scale, 1))), 1fr));
   gap: 8px;
   margin-top: 12px;
 }
@@ -4086,6 +4088,25 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   .ch-ph-asks__k,
   .ch-ph-asks__v {
     grid-column: 1;
+  }
+  /* The parts wrap as whole parts. Each draws its dot in the gap before it, and the row clips what falls outside its
+     leading edge, so the first part on any line has no dot: a line never starts or ends with one. */
+  .ch-ph-asks__v {
+    display: flex;
+    flex-wrap: wrap;
+    column-gap: 16px;
+    overflow: hidden;
+  }
+  .ch-ph-asks__dot {
+    display: none;
+  }
+  .ch-ph-asks__p {
+    position: relative;
+  }
+  .ch-ph-asks__p + .ch-ph-asks__p::before {
+    position: absolute;
+    left: -10px;
+    content: '·';
   }
   .ch-ph-asks > svg {
     grid-column: 2;
