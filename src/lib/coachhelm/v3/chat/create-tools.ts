@@ -179,12 +179,14 @@ export async function rowSince(sb: Sb, table: string, match: Record<string, stri
 const DATE = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const TIME = z.string().regex(/^\d{2}:\d{2}$/);
 const fact = (label: string, value: string | number | null | undefined, optional = true): ProposalFact => (value == null || value === '' ? { label, value: 'Not set', ...(optional ? {} : { missing: true }) } : { label, value: String(value) });
+/** A stored card that does not hold what the server read for it: one made before cards carried that (11 Nov 2026). It cannot be checked, so it is not run. */
+export class CardFromBefore extends ActionPlanError {}
 /** What `prepare` stores beside the model's input: the roster players the card names, each with whether they can be told. */
 const SeenPeople = z.array(z.object({ id: z.string(), name: z.string(), account: z.boolean() }));
 type SeenPeople = z.infer<typeof SeenPeople>;
 /** `prepare` always runs before `plan`; a stored card without what it read is not a card. */
 function seenOf<T>(seen: T | undefined): T {
-  if (seen === undefined) throw new ActionPlanError('That could not be prepared.');
+  if (seen === undefined) throw new CardFromBefore('That could not be prepared.');
   return seen;
 }
 const cannotLine = (out: readonly CardNotReached[]): ProposalFact[] => (out.length ? [{ label: 'Will not get it', value: `${nameList(out.map((p) => p.name))} (${out[0]!.reason})` }] : []);

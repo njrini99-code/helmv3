@@ -558,3 +558,16 @@ describe('the card is the truth', () => {
     for (const value of written) expect(shown, `${name} writes "${value}" and the card does not show it`).toContain(JSON.stringify(value).slice(1, -1).toLowerCase());
   });
 });
+
+describe('a card stored before cards held what the server read', () => {
+  it('is not run: it cannot be checked against the app, so nothing is written and the coach asks again', async () => {
+    const lock = all().find((t) => t.name === 'lock_lineup')!;
+    const old = { tool: 'lock_lineup', input: { tournament_id: ID }, planned_at: new Date().toISOString(), idempotency_key: 'old-card', action: 'Lock the lineup', summary: 'This locks at once and can’t be undone.', facts: [{ label: 'Tournament', value: 'As set' }], affects: [], notifications: [], missing: [] };
+    const receipt = await lock.commit(ctx(), old);
+    expect(receipt).toMatchObject({ status: 'failed', error: 'card_out_of_date', retryable: false });
+    expect(receipt.summary).toMatch(/made before an update.*Nothing was saved\. Ask for it again\./);
+    const message = all().find((t) => t.name === 'send_message')!;
+    expect(await message.commit(ctx(), { ...old, tool: 'send_message', input: { conversation_id: ID, thread: 'Team', member_count: 5, content: 'See you at three.' } })).toMatchObject({ status: 'failed', error: 'card_out_of_date' });
+    expect(world.actionCalls).toEqual([]);
+  });
+});

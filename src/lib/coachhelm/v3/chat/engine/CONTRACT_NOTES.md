@@ -735,8 +735,11 @@ P6. Inputs that were the model's numbers and words are gone from the tool schema
 `send_message` is `{ conversation_id, content }`; `publish_practice_plan` is `{ plan_id, version, team_chat }`;
 `set_lineup` has no `version` (the server reads it and the write carries the one the card read);
 `set_availability_note` has no `existing`; `publish_artifact` has no `players`. A stored conversation that holds an
-old call replays fine (history is not re-validated); a stored PROPOSAL from before 11 Nov for these five tools fails
-`commit`'s parse and answers "This card could not be read back, so it was not run." (nothing is written).
+old call replays fine (history is not re-validated). A PROPOSAL stored before 11 Nov for a task whose card now holds
+what the server read (`input.seen`: create_event, create_qualifier, create_goal, set_lineup, lock_lineup, send_message,
+publish_practice_plan, add_round_note, set_availability_note, save_team_term) is not run when confirmed after the
+deploy: it answers `card_out_of_date` with "This card was made before an update to the app … Ask for it again." and
+writes nothing. The four planned tasks (focus area, task, announcement, repeating practice) still run an old card.
 
 P7. For ENGINE, on E-25 and E-27 (yours; PLANS built neither):
 - E-27: PLANS's tasks never return `cancelled`; `staleReceipt` is `failed`. The engine's `undoneReceipt` is the only

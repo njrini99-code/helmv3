@@ -27,7 +27,7 @@ import { executeAnnouncement, executeFocusArea, executeTask, keyOf, planAnnounce
 import type { ActionLanding, ActionProposal, ActionReceipt, CardDelivery, CardVisibility, ProposalFact, RecurringPracticePlan } from './action-types';
 import { announcementDelivery, coachNameOf, focusDelivery, nameList, peopleChanged, plural, reachOf, seenPlayers, seriesInviteDelivery, taskDelivery, undoFor, type SeenPlayer } from './card-truth';
 import { CoachContextError, type CoachChatContext } from './context';
-import { CREATE_FLOWS, LINEUP_FLOWS, createdOf, drillFlow, flowRequestId, rowSince, type FlowCard, type FlowDef, type FlowDone, type FlowResult } from './create-tools';
+import { CREATE_FLOWS, CardFromBefore, LINEUP_FLOWS, createdOf, drillFlow, flowRequestId, rowSince, type FlowCard, type FlowDef, type FlowDone, type FlowResult } from './create-tools';
 import { landingRows } from './landing-rows';
 import { publishFlow } from './practice-draft';
 import { executeRecurringPractice, planRecurringPractice } from './practice-planner';
@@ -171,7 +171,9 @@ export async function commitOnce(action: string, look: () => Promise<ActionRecei
     let said: string | null;
     try {
       said = await stale();
-    } catch {
+    } catch (err) {
+      // A card from before cards carried what the server read: it cannot be held to the app, so it is not run.
+      if (err instanceof CardFromBefore) return staleReceipt(action, 'This card was made before an update to the app and can no longer be checked, so it was not run. Nothing was saved. Ask for it again.');
       // The check could not be made, so nothing is written. Whether an earlier run of this card wrote anything is only known if the look worked.
       return before === 'not_there' ? { ...staleReceipt(action, UNCHECKED), error: 'card_not_checked', retryable: true } : failedReceipt(action, 'unknown', 'This card could not be checked against the app just now, so it was not run.', WHERE[action] ?? 'the app');
     }
