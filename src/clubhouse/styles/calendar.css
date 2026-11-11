@@ -3010,10 +3010,10 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
   }
 
   /* The week strip is ui/WeekStrip (B18, ui.css). */
-  /* The chosen day: a section on its own double rule, the day in the section heading's sans, its counts beside it. */
-  .ch-calm-dayswap {
-    margin-top: 24px;
-  }
+  /* The chosen day: a section on its own double rule, the day in the section heading's sans, its counts beside it.
+     The day view's own gap (.ch-calm-dayv) sets it 24px under the week, as the week is 24px under the head. The day's
+     swap added 24px more to the day on show alone: 48px under the week against 24 above it, the rule 24px lower than
+     on the day that didn't load, and a neighbouring day coming in on a swipe 24px higher than where it settled. */
   .ch-calm-dayk {
     display: flex;
     flex-wrap: wrap;
