@@ -108,7 +108,9 @@ export interface AnswerCardProps {
  */
 export function AnswerCard({ turn, fresh, showFollowUps, playersByName, players, onSend, actions, onArtifact, sentAt = null, started = true, end = null, offline = false, changed = { changedNothing: false, unconfirmedWrite: false }, onRetry, onNewChat, onOpenRead, openRef = null, island }: AnswerCardProps) {
   const live = turn.active;
-  const seconds = useRan(live);
+  // How long it worked: this browser's own count for a turn it watched, else the server's stored figure (a restored turn), else unknown.
+  const ran = useRan(live);
+  const seconds = ran ?? (turn.durationMs != null ? turn.durationMs / 1000 : null);
   const artifacts = turn.artifacts ?? [];
   const toast = useToast();
   const reads = useMemo(() => turn.reads ?? [], [turn.reads]);

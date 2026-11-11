@@ -85,6 +85,31 @@ describe('CH-13850 what CoachHelm is doing', () => {
     expect(answer.querySelector('.ch-th-mark.is-working')).not.toBeNull();
     expect(document.querySelector('.ch-th-user')?.classList.contains('is-new')).toBe(true);
   });
+  it('a restored turn says how long the server worked on it, and with the island its line opens the steps instead of a list', () => {
+    const restored = [
+      msg('u1', 'user', [{ type: 'text', text: 'How is Jonah doing?' }]),
+      msg('a1', 'assistant', [
+        { type: 'data-progress', id: 'r1', data: { label: 'Reading Jonah’s strokes gained', tool: 'get_player_metrics', state: 'done', done: 'Reading Jonah’s strokes gained' } },
+        { type: 'data-progress', id: 'r2', data: { label: 'Reading his last 7 rounds', tool: 'get_player_trend', state: 'done', done: 'Reading his last 7 rounds' } },
+        { type: 'text', text: 'Jonah is trending the right way.' },
+        { type: 'data-turn-meta', id: 'turn-meta', data: { started_at: '2026-11-10T15:00:00.000Z', duration_ms: 6200, reads: 2 } },
+      ]),
+    ];
+    const openFor = vi.fn();
+    show({ messages: restored, island: { turnId: null, open: false, pinned: false, openFor } });
+    const line = document.querySelector<HTMLButtonElement>('.ch-ak-wl.is-sum');
+    expect(line?.textContent).toContain('2 steps · 6s');
+    expect(line?.getAttribute('aria-expanded')).toBe('false');
+    fireEvent.click(line!);
+    expect(openFor).toHaveBeenCalledWith('a1');
+    // The steps are the island's to show: no list hangs under the name.
+    expect(document.querySelector('.ch-ak-reads')).toBeNull();
+    cleanup();
+    // While the island is on screen for the turn, the line is silent: one place speaks at a time.
+    show({ messages: restored, island: { turnId: 'a1', open: false, pinned: false, openFor } });
+    expect(document.querySelector('.ch-ak-wl.is-sum')).toBeNull();
+  });
+
   it('the phone has no Stop here: the composer owns it', () => {
     show({ messages: ASK_MSGS_WORKING, busy: true, phone: true });
     expect(screen.queryByRole('button', { name: 'Stop' })).toBeNull();
