@@ -373,9 +373,10 @@ const qualifierFlow: FlowDef<QualifierStored> = {
       recipients,
       not_reached,
       delivery,
-      // Certain: the players in it (their notice opens it) and the coaches. Whether a player outside the field can open it is the Qualifiers page's own rule, not claimed here.
-      visible_to: 'recipients',
-      visible_note: 'The players in it and this team’s coaches see it in Qualifiers.',
+      // The read rule is the team's (`golf_qualifiers_select_team`: a coach or a player of the team), wider than the list a player is
+      // shown (`getPlayerQualifiers` lists the qualifiers they are entered in). The card says both, and claims the wider one.
+      visible_to: 'team',
+      visible_note: 'It is listed in Qualifiers for the players in it and this team’s coaches. Any player on the team is allowed to see it.',
       key: ['qualifier', i.name, i.start_date, i.player_ids.join(',')],
     };
   },
