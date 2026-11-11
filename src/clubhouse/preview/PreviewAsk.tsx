@@ -10,6 +10,7 @@ import type { ChAskData, ChAskLoad } from '../data/coachhelm-chat-shape';
 import { Ask, type ChAskChat, type ChAskInitial } from '../screens/coachhelm/chat/Ask';
 import { AskSkeleton } from '../screens/coachhelm/chat/AskSkeleton';
 import { ASK_RAW_ERRORS, PREVIEW_ASK_DATA, PREVIEW_ASK_NOROUNDS } from './fixtures-ask';
+import { ASK_CARD_STATES } from './fixtures-ask-cards';
 import { ASK_PROPOSAL, ASK_RECEIPT_DONE, ASK_THREAD_STATES } from './fixtures-ask-thread';
 
 type Part = { type: string; [key: string]: unknown };
@@ -48,7 +49,8 @@ function fakeChat(start: { busy?: boolean; error?: unknown; messages?: UIMessage
             const parts = m.parts as Part[];
             const i = parts.findIndex((p) => (p.approval as { id?: string } | undefined)?.id === approvalId);
             if (i < 0) return m;
-            const proposal = parts.find((p) => p.type === 'data-action-proposal')?.data as { idempotency_key?: string; summary?: string } | undefined;
+            // The card this approval answers (its plan part is `proposal-<approval id>`); an older fixture has one card and no such id.
+            const proposal = (parts.find((p) => p.id === `proposal-${approvalId}`) ?? parts.find((p) => p.type === 'data-action-proposal'))?.data as { idempotency_key?: string; summary?: string } | undefined;
             const key = proposal?.idempotency_key ?? ASK_PROPOSAL.idempotency_key;
             return { ...m, parts: [...parts, { type: 'data-action-receipt', id: `receipt-${key}`, data: { ...ASK_RECEIPT_DONE, status: 'held', held_until: new Date(Date.now() + 8000).toISOString(), idempotency_key: key, summary: proposal?.summary ?? ASK_RECEIPT_DONE.summary } }] as UIMessage['parts'] };
           }),
@@ -88,6 +90,44 @@ function fakeChat(start: { busy?: boolean; error?: unknown; messages?: UIMessage
       },
       approve: (id) => decideV2(id, true),
       deny: (id) => decide(id, false),
+      // Edit mode and approve-all, answered here as the server would: the card comes back planned again with its revision's word
+      // beside it, and a batch is each card confirmed. Nothing reaches a server.
+      revise: (id, edits) => {
+        setBusy(true);
+        setTimeout(() => {
+          setMessages((all) =>
+            all.map((m) => {
+              const parts = m.parts as Part[];
+              if (!parts.some((p) => p.id === `proposal-${id}`)) return m;
+              const next = parts
+                .filter((p) => p.id !== `revision-${id}`)
+                .map((p) => {
+                  if (p.id !== `proposal-${id}`) return p;
+                  const plan = p.data as { facts: Array<{ label: string; value: string }>; editable?: Array<{ key: string; label: string; value: unknown }>; revision?: number };
+                  const fields = plan.editable ?? [];
+                  const said = (v: unknown) => (Array.isArray(v) ? v.join(', ') : v == null || v === '' ? 'Not set' : String(v));
+                  return {
+                    ...p,
+                    data: {
+                      ...plan,
+                      facts: plan.facts.map((f) => {
+                        const field = fields.find((x) => x.label === f.label && x.key in edits);
+                        return field ? { ...f, value: said(edits[field.key]) } : f;
+                      }),
+                      editable: fields.map((f) => (f.key in edits ? { ...f, value: edits[f.key] } : f)),
+                      revision: (plan.revision ?? 0) + 1,
+                    },
+                  };
+                });
+              return { ...m, parts: [...next, { type: 'data-card-revision', id: `revision-${id}`, data: { key: id, accepted: true } }] as UIMessage['parts'] };
+            }),
+          );
+          setBusy(false);
+        }, 700);
+      },
+      approveAll: (ids) => {
+        for (const id of ids ?? []) decideV2(id, true);
+      },
     };
   };
 }
@@ -259,6 +299,9 @@ function PreviewAskStill({ state, kind, messages, busy, role }: { state?: string
     } else if (messages) {
       data = { ...base, thread: { id: 'c-practice', title: 'Thursday practice', messages } };
       start = { busy };
+    } else if (state && state in ASK_CARD_STATES) {
+      // The server-built cards in the real thread: one that can be edited, several in a turn, one that went out of date.
+      data = { ...base, thread: { id: 'c-cards', title: 'Thursday', messages: ASK_CARD_STATES[state]!.messages } };
     } else if (state && state in ASK_THREAD_STATES) {
       const t = ASK_THREAD_STATES[state]!;
       data = { ...base, thread: { id: 'c-putting', title: 'Putting inside 6 feet', messages: t.messages } };

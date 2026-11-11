@@ -8,6 +8,7 @@ import type { CardBodyProps } from './types';
 import '../../../../styles/coachhelm-ask-cards.css';
 
 export { ApproveAll, batchPlan, type ApproveAllProps, type BatchPhase, type BatchPlan, type WaitingCard } from './ApproveAll';
+export { BatchBar, useCardShell, type BatchBarProps, type CardShell, type WritePhase } from './shell';
 export { CARD_TOOLS, cardCopy, type CardCopy } from './catalog';
 export { CARD_PHASES, isOpen, isSaved, isWithdrawn, type CardBodyProps, type CardDensity, type CardPerson, type CardPhase, type EditableField, type Reach } from './types';
 export { editableOf, isOutOfDate } from './truth';

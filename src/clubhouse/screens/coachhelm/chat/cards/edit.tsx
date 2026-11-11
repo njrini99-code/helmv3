@@ -219,7 +219,7 @@ export function EditForm({ fields, busy, error, onSubmit, onClose }: { fields: r
           {changed > 0 ? 'Discard changes' : 'Close'}
         </Button>
         <Button variant="secondary" size="sm" type="submit" busy={busy} disabled={!busy && (changed === 0 || !!why)}>
-          {busy ? 'Updating the preview…' : 'Update the preview'}
+          {busy ? 'Updating the card…' : 'Update the card'}
         </Button>
       </div>
       <p className="ch-akc-edit__fixed">Everything else on this card is fixed. To change it, ask in words and a new card replaces this one.</p>

@@ -16,6 +16,7 @@ import { Switch } from '../../../../ui/Switch';
 import { useChReducedMotion } from '../../../../lib/reduced-motion';
 import { haptic } from '../../../../lib/haptics';
 import { flyDraftHome } from '../ask-flight';
+import { isOutOfDate } from '../cards/truth';
 import { DateTile, GoalDraft, LineupDraft, NoteDraft, TaskDraft, TripDraft, draftDate, LockPreview, QualDraft, WeekDraft } from './DraftVisual';
 
 const KIND: Record<string, { icon: LucideIcon; verb: (n: number) => string; busy: string; chip: string }> = {
@@ -371,7 +372,7 @@ function useSecondsLeft(until: string | null, running: boolean): number {
  * the time left when the row arrives. When the server says it is saved the ring's place takes the check; Undo freezes the ring
  * where it was. A stored receipt past its window draws the outcome with no ring.
  */
-export function Receipt({ receipt, idempotencyKey, undoneLine = UNDONE_DEFAULT, telling = false, coins = [], onPhase, watched = false, failedLine = 'Nothing was saved.', onRetry, holdLine, onOpen }: { /** The sentence beside the ring, from the capability's own copy. */ holdLine?: (seconds: number) => string; /** Called as Open is pressed, before it navigates. */ onOpen?: (receipt: ActionReceipt) => void; failedLine?: string; onRetry?: () => void; receipt: ActionReceipt; idempotencyKey: string; undoneLine?: string; /** Someone hears about this once the window closes. */ telling?: boolean; /** Who was told, where the card knows. */ coins?: readonly string[]; onPhase?: (phase: ReceiptPhase) => void; /** This visit saw the write happen: its check draws and "Told" follows. A stored one draws still. */ watched?: boolean }) {
+export function Receipt({ receipt, idempotencyKey, undoneLine = UNDONE_DEFAULT, telling = false, coins = [], onPhase, watched = false, failedLine = 'Nothing was saved.', onRetry, onAskAgain, holdLine, onOpen, onOpenNow, undoSignal = 0 }: { /** The sentence beside the ring, from the capability's own copy. */ holdLine?: (seconds: number) => string; /** Called as Open is pressed, before it navigates. */ onOpen?: (receipt: ActionReceipt) => void; /** "Save now and open": the write is in, and the shell goes to `href` its own way (quick chat keeps its landing by pushing, never loading the page). Absent: the page is loaded at `href`. */ onOpenNow?: (receipt: ActionReceipt, href: string) => void; /** Rises by one when several cards are undone together: this row presses its own Undo. */ undoSignal?: number; failedLine?: string; onRetry?: () => void; /** The card is no longer true (`card_out_of_date`): the one way on is to ask again. */ onAskAgain?: () => void; receipt: ActionReceipt; idempotencyKey: string; undoneLine?: string; /** Someone hears about this once the window closes. */ telling?: boolean; /** Who was told, where the card knows. */ coins?: readonly string[]; onPhase?: (phase: ReceiptPhase) => void; /** This visit saw the write happen: its check draws and "Told" follows. A stored one draws still. */ watched?: boolean }) {
   const held = receipt.status === 'held' && receipt.held_until ? receipt.held_until : null;
   const [phase, setPhase] = useState<Phase>(held ? { kind: 'held' } : receipt.status === 'cancelled' ? { kind: 'undone' } : { kind: 'done', receipt });
   // The hold this row began with, kept after the server's final receipt replaces the held one (the ring's clock must not restart).
@@ -458,8 +459,23 @@ export function Receipt({ receipt, idempotencyKey, undoneLine = UNDONE_DEFAULT, 
     const res = await fetch(`/api/coachhelm/v3/chat/actions/${encodeURIComponent(idempotencyKey)}?now=1`, { method: 'POST' }).catch(() => null);
     const row = (await res?.json().catch(() => null)) as { receipt?: ActionReceipt | null } | null;
     const href = row?.receipt?.created.find((c) => c.href)?.href ?? receipt.created.find((c) => c.href)?.href;
-    if (href) window.location.assign(askLinkHref(href) ?? href);
+    if (!href) return;
+    const to = askLinkHref(href) ?? href;
+    if (onOpenNow) onOpenNow(row?.receipt ?? receipt, to);
+    else window.location.assign(to);
   };
+  // Several cards undone together (the batch bar's one Undo): each row takes it back through its own Undo, so each says what it did.
+  const undoRef = useRef(undo);
+  useEffect(() => {
+    undoRef.current = undo;
+  });
+  const undoSeen = useRef(undoSignal);
+  const canUndo = phase.kind === 'held' && !closed && !late;
+  useEffect(() => {
+    if (undoSignal === undoSeen.current) return;
+    undoSeen.current = undoSignal;
+    if (canUndo) void undoRef.current();
+  }, [undoSignal, canUndo]);
   if (phase.kind === 'undone')
     return (
       <div ref={line} className="receipt undone" role="status" tabIndex={-1}>
@@ -502,23 +518,33 @@ export function Receipt({ receipt, idempotencyKey, undoneLine = UNDONE_DEFAULT, 
     );
   }
   const r = phase.receipt;
-  if (r.status === 'failed')
+  if (r.status === 'failed') {
+    // Out of date: repeating the same card can never work, so there is no Try again. Asking again plans it from what is true now.
+    const stale = isOutOfDate(r);
     return (
-      <div className="receipt is-fail" role="alert">
+      <div className="receipt is-fail" role="alert" data-stale={stale ? '' : undefined}>
         <span className="ck warn">
           <Icon icon={CircleAlert} size={15} />
         </span>
         <div>
-          <b>{r.summary}</b>
-          <span className="sub">{failedLine}</span>
+          {/* The server's own sentence says what changed; the bold line is short so the row reads at a glance. */}
+          <b>{stale ? 'This card is out of date' : r.summary}</b>
+          <span className="sub">{stale ? r.summary || 'Things changed since this card was made. Ask again and it is prepared from what is true now.' : failedLine}</span>
         </div>
-        {onRetry && (
-          <Button variant="secondary" size="sm" onClick={onRetry}>
-            Try again
-          </Button>
-        )}
+        {stale
+          ? onAskAgain && (
+              <Button variant="secondary" size="sm" onClick={onAskAgain} data={{ 'data-ch-ask-again': '' }}>
+                Ask again
+              </Button>
+            )
+          : onRetry && (
+              <Button variant="secondary" size="sm" onClick={onRetry}>
+                Try again
+              </Button>
+            )}
       </div>
     );
+  }
   const link = r.created.find((c) => c.href);
   const delivered = r.notifications.filter((n) => n.status !== 'failed');
   // The check draws, and "Told" follows it, only for a save this visit watched (it arrived live, or its hold was on screen).

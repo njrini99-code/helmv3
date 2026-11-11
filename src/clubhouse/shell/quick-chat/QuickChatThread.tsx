@@ -271,6 +271,18 @@ export function QuickChatThread({ chat: useChatImpl, conversationId, initialMess
     else leaveTo(href);
   };
 
+  /**
+   * A card's "Save now and open" (the write is in, the coach goes to the thing): the same way out as a receipt's Open. It used
+   * to load the page, which threw away what the chat knew about the row it had just made.
+   */
+  const openReceipt = (view: AskProposalView, receipt: ActionReceipt, href: string) => {
+    const made = receipt.created.find((c) => c.href) ?? receipt.created[0];
+    saveLanding({ key: view.key, tool: view.tool, lands: view.proposal.lands ?? null, label: made?.label ?? view.proposal.summary, id: made?.id ?? null, subject: view.proposal.affects.find((x) => x.kind === 'player')?.id ?? null });
+    haptic('press');
+    if ((href.split(/[?#]/)[0] ?? '').replace(/\/$/, '') === pathname.replace(/\/$/, '')) onClose();
+    else leaveTo(href);
+  };
+
   const fresh = turns.length === 0;
   const canSend = !!text.trim() && online;
   // With the chip dropped the screen is still the screen: its starts stay, without the player's name.
@@ -361,6 +373,7 @@ export function QuickChatThread({ chat: useChatImpl, conversationId, initialMess
                 evidenceFocus={evidence}
                 onOpenEvidence={setEvidence}
                 onCardPhase={onCardPhase}
+                onOpenReceipt={openReceipt}
                 island={{ turnId: island.model?.turnId ?? null, open: island.open, pinned: island.pinned, openFor: island.openFor }}
               />
             </>

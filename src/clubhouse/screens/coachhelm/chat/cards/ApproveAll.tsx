@@ -2,7 +2,6 @@
 
 import { Check, TriangleAlert, Undo2 } from 'lucide-react';
 import type { ActionProposal } from '@/lib/coachhelm/v3/chat/action-types';
-import { Badge } from '../../../../ui/Badge';
 import { Button } from '../../../../ui/Button';
 import { Icon } from '../../../../ui/Icon';
 import { cardCopy } from './catalog';
@@ -142,12 +141,12 @@ export function ApproveAll({ cards, phase = 'waiting', seconds = 0, stoppedAt = 
           )}
         </div>
         {(phase === 'waiting' || phase === 'confirming') && (
-          <Button variant="secondary" size="sm" busy={phase === 'confirming'} disabled={!onApproveAll} onClick={() => onApproveAll?.(keys)}>
+          <Button variant="secondary" busy={phase === 'confirming'} disabled={!onApproveAll} onClick={() => onApproveAll?.(keys)}>
             {phase === 'confirming' ? 'Approving…' : all ? `Approve all ${n}` : `Approve these ${n}`}
           </Button>
         )}
         {phase === 'held' && (
-          <Button variant="secondary" size="sm" leftIcon={Undo2} disabled={!onUndoAll} onClick={() => onUndoAll?.(keys)}>
+          <Button variant="secondary" leftIcon={Undo2} disabled={!onUndoAll} onClick={() => onUndoAll?.(keys)}>
             {`Undo all ${n}`}
           </Button>
         )}
@@ -157,7 +156,7 @@ export function ApproveAll({ cards, phase = 'waiting', seconds = 0, stoppedAt = 
           {plan.go.map((g) => (
             <li key={g.key}>
               <span>{g.head}</span>
-              <Badge tone={g.reach === 'sends' ? 'accent' : g.reach === 'visible' ? 'info' : 'neutral'}>{g.reach === 'sends' ? `Sends to ${g.told}` : g.reach === 'visible' ? 'Players can see it' : 'Nobody is told'}</Badge>
+              <small>{g.reach === 'sends' ? `Sends to ${g.told}` : g.reach === 'visible' ? 'Players can see it' : 'Nobody is told'}</small>
             </li>
           ))}
           {plan.left.map((l) => (

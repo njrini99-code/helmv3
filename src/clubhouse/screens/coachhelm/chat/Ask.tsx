@@ -12,6 +12,7 @@ import { MessagesSquare, PanelLeftOpen, Settings2, SquarePen } from 'lucide-reac
 import { Modal } from '../../../ui/Modal';
 import { useSafariKeyboardFit } from '../../../shell/PhoneScreen';
 import { useRouter } from 'next/navigation';
+import { announceLanding } from '../../../shell/quick-chat/landing';
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { useCoachHelmChat } from '@/components/golf/coachhelm/chat/useCoachHelmChat';
 import { CHAT_ERROR_DID_NOT_FINISH, describeChatError } from '../../../data/coachhelm-chat-error';
@@ -134,6 +135,7 @@ export function Ask({ load, chat = useCoachHelmChat, initial, slashFlags }: { sl
 
 function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; useChatImpl: ChAskChat; initial?: ChAskInitial; slashFlags?: { plans: boolean; lineup: boolean } }) {
   const phone = useChPhone();
+  const router = useRouter();
   // A switch to the Board moves the strip at once and dims the chat (aria-busy) until the Board is ready.
   const sw = useViewSwitch<CoachHelmView>('ask', (v) => COACHHELM_HREF[v]);
   const online = useOnline();
@@ -346,6 +348,15 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
         onNewChat={newChat}
         evidenceFocus={evidence}
         onOpenEvidence={openEvidence}
+        // The cards' own behaviours: edit a waiting card in place, confirm several together, and open what was just saved by the
+        // app's own push (never a page load), so the page it lands on still knows the row is new.
+        onEditCard={chat.revise}
+        onApproveAll={chat.approveAll}
+        onOpenReceipt={(view, receipt, href) => {
+          const made = receipt.created.find((c) => c.href) ?? receipt.created[0];
+          announceLanding({ key: view.key, tool: view.tool, lands: view.proposal.lands ?? null, label: made?.label ?? view.proposal.summary, id: made?.id ?? null, subject: view.proposal.affects.find((x) => x.kind === 'player')?.id ?? null });
+          router.push(href);
+        }}
       />
     </SectionBoundary>
   );

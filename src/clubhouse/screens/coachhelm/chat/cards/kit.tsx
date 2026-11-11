@@ -1,7 +1,7 @@
 'use client';
 
 import { ChevronDown, Pencil, TriangleAlert } from 'lucide-react';
-import { useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import type { ActionProposal, ProposalFact } from '@/lib/coachhelm/v3/chat/action-types';
 import { Avatar } from '../../../../ui/Avatar';
 import { Button } from '../../../../ui/Button';
@@ -408,6 +408,17 @@ export function Body({ label, card, wordless = false, children }: { label: strin
     setOpenFor(next ? version : null);
     card.onEditOpen?.(next);
   };
+  // The server's re-planned card closed the form (or the card stopped waiting): the shell is told, so it stops holding Confirm.
+  const stale = openFor !== null && !open;
+  const tellShell = useRef(card.onEditOpen);
+  useEffect(() => {
+    tellShell.current = card.onEditOpen;
+  });
+  useEffect(() => {
+    if (!stale) return;
+    setOpenFor(null);
+    tellShell.current?.(false);
+  }, [stale]);
   const missed = receipt?.missed ?? [];
   const { told, note } = toldLine(card, label, wordless);
   return (

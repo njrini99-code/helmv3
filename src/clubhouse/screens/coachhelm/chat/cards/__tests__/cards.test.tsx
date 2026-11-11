@@ -340,11 +340,11 @@ describe('edit mode: only what the plan declares, each in the app’s own contro
     const { onEdit, onEditOpen } = edit(of('create_task'));
     fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
     expect(onEditOpen).toHaveBeenLastCalledWith(true);
-    const send = screen.getByRole('button', { name: 'Update the preview' });
+    const send = screen.getByRole('button', { name: 'Update the card' });
     expect((send as HTMLButtonElement).disabled).toBe(true);
     fireEvent.change(screen.getByDisplayValue('Post your Ridgeline practice round hole by hole'), { target: { value: 'Post your Ridgeline round tonight' } });
     fireEvent.click(screen.getByRole('checkbox', { name: 'Sam Whitfield' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Update the preview' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Update the card' }));
     expect(onEdit).toHaveBeenCalledWith({ title: 'Post your Ridgeline round tonight', assign_to_player_ids: ['p-eli-brandt', 'p-jonah-okafor', 'p-priya-natarajan', 'p-theo-marchetti', 'p-sam-whitfield'] });
   });
 
@@ -353,7 +353,7 @@ describe('edit mode: only what the plan declares, each in the app’s own contro
     fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
     fireEvent.change(screen.getByDisplayValue('Post your Ridgeline practice round hole by hole'), { target: { value: '  ' } });
     expect(screen.getByText('Task cannot be empty.')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Update the preview' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Update the card' }));
     expect(onEdit).not.toHaveBeenCalled();
   });
 
@@ -364,7 +364,7 @@ describe('edit mode: only what the plan declares, each in the app’s own contro
     fireEvent.change(screen.getByDisplayValue(/Navy polos Friday/), { target: { value: 'White polos both days.' } });
     const again = (extra: object, proposal = c.proposal) => rerender(<CardBody tool={c.cap.tool} proposal={proposal} receipt={null} phase="proposed" density="full" roster={c.roster} onEdit={() => undefined} {...extra} />);
     again({ editing: true });
-    expect(screen.getByRole('button', { name: 'Updating the preview…' }).getAttribute('aria-busy')).toBe('true');
+    expect(screen.getByRole('button', { name: 'Updating the card…' }).getAttribute('aria-busy')).toBe('true');
     expect((screen.getByDisplayValue('White polos both days.') as HTMLTextAreaElement).disabled).toBe(true);
     // Refused: the same card comes back, and so do the coach's words.
     again({ editError: 'Message: Too long.' }, { ...c.proposal });

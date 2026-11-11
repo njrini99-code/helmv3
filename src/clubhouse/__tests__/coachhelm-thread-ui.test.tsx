@@ -290,9 +290,9 @@ describe('Copy, follow-ups and the coach\'s line', () => {
 });
 
 describe('CH-13951 the action card', () => {
-  it('Cancel answers the same approval as denied', async () => {
+  it('the quiet key ("Not now") answers the same approval as denied', async () => {
     const { p } = show({ messages: ASK_MSGS_ACTION });
-    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Not now' }));
     expect(p.onDeny).toHaveBeenCalledWith('approval-1');
     expect(p.onApprove).not.toHaveBeenCalled();
   });
@@ -496,9 +496,9 @@ describe('CH-13252 a rejected answer', () => {
 });
 
 describe('CH-13951 the confirm card inside the thread', () => {
-  it('Confirm answers the approval by its id, once, and Cancel answers it as denied', async () => {
+  it('Confirm answers the approval by its id, once, and the quiet key ("Not now") answers it as denied', async () => {
     const { p } = show({ messages: ASK_MSGS_ACTION });
-    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Not now' }));
     expect(p.onDeny).toHaveBeenCalledWith('approval-1');
     expect(p.onApprove).not.toHaveBeenCalled();
   });

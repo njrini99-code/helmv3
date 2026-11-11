@@ -12,6 +12,10 @@
 .ch-akc[data-density='compact'] { gap: 12px; }
 .ch-akc b { font-weight:var(--ch-fw-600); }
 
+/* The plan's own sentence, for a task whose body does not draw its subject: it names the card. Padding, not margin: it sits
+   in the shell's body, whose paragraphs carry no margin. */
+.ch-akc-sum { padding-bottom: 12px; font: var(--ch-type-17-strong); letter-spacing: var(--ch-track-17); color: var(--ch-text-primary); text-wrap: balance; overflow-wrap: anywhere; }
+
 /* ---------- 1. who it is for: small coins and names, every name one tap away ---------- */
 .ch-akc-who { display: flex; flex-direction: column; gap: 4px; }
 .ch-akc-who:empty { display: none; }
@@ -209,16 +213,22 @@
 .ch-akc-board > div > b { font: var(--ch-type-20-strong); letter-spacing: var(--ch-track-20); }
 
 /* ---------- several cards in one turn: the one safe "approve all" (cards/ApproveAll.tsx) ---------- */
-.ch-akc-all { display: flex; flex-direction: column; gap: 12px; padding: 12px 16px; border-radius: var(--ch-radius-card); background: var(--ch-well-bg-flat); box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline); container-type: inline-size; }
+/* The last of several cards and the bar under it are one block of the turn. */
+.ch-akc-deck { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; min-width: 0; }
+/* It sits in the turn under the cards it speaks for, on the same paper leaf and at the same measure: what approving them
+   does, the one key, then each card as a quiet line. */
+.ch-akc-all { box-sizing: border-box; display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 520px; padding: 16px 20px; border-radius: var(--ch-radius-card); background: var(--ch-chart-paper); box-shadow: var(--ch-elevation-card); container-type: inline-size; }
 .ch-akc-all__top { display: flex; align-items: center; gap: 12px; }
-.ch-akc-all__tx { display: flex; flex: 1 1 0; flex-direction: column; gap: 2px; min-width: 0; }
-.ch-akc-all__tx > b { display: inline-flex; align-items: center; gap: 6px; font: var(--ch-type-14-strong); color: var(--ch-text-primary); }
-.ch-akc-all__tx > span { font: var(--ch-type-13); color: var(--ch-text-secondary); text-wrap: pretty; }
+.ch-akc-all__tx { display: flex; flex: 1 1 0; flex-direction: column; gap: 4px; min-width: 0; }
+.ch-akc-all__tx > b { display: inline-flex; align-items: center; gap: 8px; font: var(--ch-type-15-strong); letter-spacing: var(--ch-track-15); color: var(--ch-text-primary); }
+.ch-akc-all__tx > span { font: var(--ch-type-13); color: var(--ch-text-secondary); }
 .ch-akc-all[data-phase='stopped'] .ch-akc-all__tx > b { color: var(--ch-loss); }
-.ch-akc-all__list { display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 12px 0 0; list-style: none; border-top: var(--ch-hairline-w) solid var(--ch-separator); }
-.ch-akc-all__list > li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; font: var(--ch-type-13); color: var(--ch-text-primary); }
+.ch-akc-all__top > .ch-btn { flex: none; min-height: 44px; }
+.ch-akc-all__list { display: flex; flex-direction: column; gap: 4px; margin: 0; padding: 12px 0 0; list-style: none; border-top: var(--ch-hairline-w) solid var(--ch-separator-strong); }
+.ch-akc-all__list > li { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0 12px; font: var(--ch-type-13); color: var(--ch-text-primary); }
 .ch-akc-all__list > li[data-left] > span { color: var(--ch-text-tertiary); }
-.ch-akc-all__list small { font: var(--ch-type-12); color: var(--ch-text-tertiary); }
+.ch-akc-all__list small { font: var(--ch-type-13); color: var(--ch-text-secondary); }
+.ch-akc-all__list > li[data-left] > small { color: var(--ch-text-tertiary); }
 @container (max-width: 400px) { .ch-akc-all__top { flex-direction: column; align-items: stretch; } }
 
 /* The studio's own rules (prefix ch-aks; chat/studio/**) live in coachhelm-ask-studio.css, loaded by the studio's registry. */

@@ -113,7 +113,7 @@ function StandInCard({ cap, proposal, roster, phase, density, left, running, onC
               </Button>
             </div>
             {phase === 'proposed' && proposal.missing.length > 0 && <p className="ch-akg-card__why">Needs {proposal.missing.join(' and ').toLowerCase()}</p>}
-            {phase === 'proposed' && edit?.open && <p className="ch-akg-card__why">{edit.busy ? 'Updating the preview…' : 'Update or discard your changes first.'}</p>}
+            {phase === 'proposed' && edit?.open && <p className="ch-akg-card__why">{edit.busy ? 'Updating the card…' : 'Update or discard your changes first.'}</p>}
           </>
         )}
         {(phase === 'held' || phase === 'undoing' || phase === 'committing') && (

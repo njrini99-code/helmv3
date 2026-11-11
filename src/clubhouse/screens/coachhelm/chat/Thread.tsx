@@ -27,6 +27,8 @@ import { LiveDot } from './parts/Work';
 import { takeSendSource } from './send-source';
 import { TURN_TIMING } from './turn-timing';
 import { PlanVersions } from '../plan/PlanCard';
+import { BatchBar, useCardShell } from './cards';
+import type { AskProposalView } from '../../../data/coachhelm-chat-thread';
 import { Receipt, type ReceiptPhase } from './parts/ConfirmCard';
 import { TaskCard } from './parts/TaskCard';
 import type { ActionReceipt } from '@/lib/coachhelm/v3/chat/action-types';
@@ -66,6 +68,12 @@ export interface AskThreadProps {
   jumpHost?: HTMLElement | null;
   /** A task card's write changed state (held, saved, undone, failed): what the page behind a quick chat lands from. */
   onCardPhase?: (key: string, phase: ReceiptPhase, receipt: ActionReceipt | null) => void;
+  /** Edit mode: the coach changed fields on a waiting card (its approval id, the fields that changed). Left out, no card offers Edit. */
+  onEditCard?: (approvalId: string, edits: Record<string, unknown>) => void;
+  /** Several cards in one turn, confirmed together (their approval ids). Left out, each card is decided on its own. */
+  onApproveAll?: (approvalIds: string[]) => void;
+  /** A card's "Save now and open": the write is in, and the shell goes to the address its own way. Left out, the page loads there. */
+  onOpenReceipt?: (view: AskProposalView, receipt: ActionReceipt, href: string) => void;
   /**
    * The work is shown by an island outside the thread (`island/useIsland`; quick chat's header): the turn it is on screen for,
    * whether its steps are open, and how a turn's own line opens it. Left out, each turn draws its island in the flow, under
@@ -108,7 +116,7 @@ const pendingTurn = (id: string): AskAssistantTurn => ({ role: 'assistant', id, 
  * open and fold, charts land and text streams without the thread scrolling. It follows the newest words only when the coach
  * has scrolled to the live edge; otherwise the Latest key says there is more below.
  */
-export function AskThread({ viewer = 'coach', team, stoppedTurn = null, onArtifact, messages, busy, error, offline, phone, players, onApprove, onDeny, onSend, onRetry, onNewChat, evidenceFocus, onOpenEvidence, density = 'full', jumpHost, onCardPhase, island }: AskThreadProps) {
+export function AskThread({ viewer = 'coach', team, stoppedTurn = null, onArtifact, messages, busy, error, offline, phone, players, onApprove, onDeny, onSend, onRetry, onNewChat, evidenceFocus, onOpenEvidence, density = 'full', jumpHost, onCardPhase, onEditCard, onApproveAll, onOpenReceipt, island }: AskThreadProps) {
   const toast = useToast();
   const reduced = useChReducedMotion();
   const turns = useMemo(() => buildTurns(messages, { busy }), [messages, busy]);
@@ -123,6 +131,8 @@ export function AskThread({ viewer = 'coach', team, stoppedTurn = null, onArtifa
   const lastUserId = [...turns].reverse().find((t) => t.role === 'user')?.id;
   const pages = useMemo(() => pagesOf(turns), [turns]);
   const changed = useMemo(() => failedAnswerChangedNothing(messages), [messages]);
+  // What the cards' built behaviours need kept across the turn: an edit's answer, open edit forms, each write's state, the one batch.
+  const cards = useCardShell({ messages, busy, onApproveAll });
 
   const rootRef = useRef<HTMLDivElement>(null);
   const colRef = useRef<HTMLDivElement>(null);
@@ -330,7 +340,11 @@ export function AskThread({ viewer = 'coach', team, stoppedTurn = null, onArtifa
                       }
                       if (b.kind !== 'proposal') return null;
                       const focus = focusForProposal(turn.id, b.view);
-                      return (
+                      // Several cards in one turn: the one safe "approve all" sits under the last of them.
+                      const proposed = turn.blocks.flatMap((x) => (x.kind === 'proposal' ? [x.view] : []));
+                      const last = proposed.length > 1 && proposed[proposed.length - 1] === b.view;
+                      const batch = last ? cards.batchOf(proposed) : null;
+                      const task = (
                         <TaskCard
                           key={b.key}
                           view={b.view}
@@ -344,8 +358,24 @@ export function AskThread({ viewer = 'coach', team, stoppedTurn = null, onArtifa
                           onApprove={onApprove}
                           onDeny={onDeny}
                           onSend={onSend}
-                          onPhase={onCardPhase}
+                          onPhase={(key, phase, receipt) => {
+                            cards.onPhase(key, phase);
+                            onCardPhase?.(key, phase, receipt);
+                          }}
+                          onEdit={onEditCard}
+                          revision={cards.revisionOf(b.view)}
+                          onEditOpen={cards.onEditOpen}
+                          onOpenReceipt={onOpenReceipt}
+                          undoSignal={cards.undoSignalOf(b.view)}
                         />
+                      );
+                      // The last of several keeps one place in the tree whether or not the bar is drawn, so its card never remounts mid-hold.
+                      if (!last) return task;
+                      return (
+                        <div key={b.key} className="ch-akc-deck">
+                          {task}
+                          {batch && <BatchBar {...batch} />}
+                        </div>
                       );
                     }}
                     onArtifact={onArtifact}

@@ -9,7 +9,7 @@ import { Badge } from '../../../../ui/Badge';
 import { Button } from '../../../../ui/Button';
 import { announceLanding } from '../../../../shell/quick-chat/landing';
 import { flyDraftHome } from '../ask-flight';
-import { CardBody, cardCopy, drawsSubject, isWithdrawn, type CardDensity, type CardPerson, type CardPhase } from '../cards';
+import { CardBody, cardCopy, drawsSubject, isOutOfDate, isWithdrawn, type CardDensity, type CardPerson, type CardPhase } from '../cards';
 import { landsOf, phaseOfReceipt, Receipt, type ReceiptPhase } from './ConfirmCard';
 
 export interface TaskCardProps {
@@ -30,6 +30,22 @@ export interface TaskCardProps {
   onSend?: (text: string) => boolean | void;
   /** Where the write stands, as it changes: what the page behind a quick chat lands from. Undo is the card's own state and is in no message. */
   onPhase?: (key: string, phase: ReceiptPhase, receipt: ActionReceipt | null) => void;
+  /**
+   * Edit mode (CAPABILITIES 0.8): the coach changed fields on the waiting card. Receives the APPROVAL id and only the fields that
+   * changed; the server plans the card again and the new one replaces this. Absent: the card offers no Edit, whatever the plan declares.
+   */
+  onEdit?: (id: string, patch: Record<string, unknown>) => void;
+  /** The server's word on the last edit of this card, while the thread is live (`data-card-revision`). */
+  revision?: { accepted: boolean; reason?: string } | null;
+  /** The card's edit form opened or closed: what is on screen is not what would be confirmed, so nothing may confirm it meanwhile. */
+  onEditOpen?: (key: string, open: boolean) => void;
+  /**
+   * "Save now and open": the write is in and the coach goes to the thing. The shell navigates its own way (quick chat pushes, so
+   * its landing survives). Absent: the page is loaded at the address.
+   */
+  onOpenReceipt?: (view: AskProposalView, receipt: ActionReceipt, href: string) => void;
+  /** Rises by one when this card is undone together with others (the batch bar's Undo). */
+  undoSignal?: number;
 }
 
 /**
@@ -41,7 +57,7 @@ export interface TaskCardProps {
  * that it is not saved, then the thing itself. Who is told and where it appears is the body's one quiet line under its
  * rule (the shell hands it the place). No icon tile, and no "On confirm" row repeating what the body already says.
  */
-export function TaskCard({ view, density = 'full', fresh = false, busy = false, roster = [], team, evidence, onApprove, onDeny, onSend, onPhase }: TaskCardProps) {
+export function TaskCard({ view, density = 'full', fresh = false, busy = false, roster = [], team, evidence, onApprove, onDeny, onSend, onPhase, onEdit, revision = null, onEditOpen, onOpenReceipt, undoSignal = 0 }: TaskCardProps) {
   const { proposal: p, status } = view;
   const copy = cardCopy(view.tool, p);
   const receipt = view.receipt;
@@ -78,6 +94,26 @@ export function TaskCard({ view, density = 'full', fresh = false, busy = false, 
     if (!busy && (status === 'live' || status === 'preparing')) setPressed(null);
   }, [busy, status]);
 
+  // Edit mode. The form is the body's; the shell sends the change, says when it is with the server, and holds Confirm while the
+  // form is open (what is on screen is not what would be confirmed). A refusal is shown for the edit that was just sent only.
+  const [editOpen, setEditOpen] = useState(false);
+  const [editSent, setEditSent] = useState(false);
+  const [editTried, setEditTried] = useState(false);
+  useEffect(() => {
+    if (!busy) setEditSent(false);
+  }, [busy]);
+  const editing = editSent && busy;
+  const editError = !editing && editTried && revision && !revision.accepted ? (revision.reason ?? 'That change could not be made. The card is as it was.') : null;
+  const tellEdit = useRef(onEditOpen);
+  useEffect(() => {
+    tellEdit.current = onEditOpen;
+  });
+  const openEdit = (open: boolean) => {
+    setEditOpen(open);
+    if (open) setEditTried(false);
+    tellEdit.current?.(view.key, open);
+  };
+
   const undecided = status === 'live' || status === 'preparing';
   const phase: CardPhase =
     write === 'saved'
@@ -103,7 +139,7 @@ export function TaskCard({ view, density = 'full', fresh = false, busy = false, 
     (ok ? onApprove : onDeny)(view.approvalId);
   };
   const badge =
-    phase === 'saved' || phase === 'partial' ? copy.badge : phase === 'undone' ? 'Undone' : phase === 'held' ? 'Holding' : phase === 'failed' ? 'Failed' : phase === 'cancelled' || phase === 'superseded' ? 'Set aside' : 'Not saved';
+    phase === 'saved' || phase === 'partial' ? copy.badge : phase === 'undone' ? 'Undone' : phase === 'held' ? 'Holding' : phase === 'failed' ? (isOutOfDate(receipt) ? 'Out of date' : 'Failed') : phase === 'cancelled' || phase === 'superseded' ? 'Set aside' : 'Not saved';
   const sends = p.notifications.length > 0 && !p.notifications.every((n) => /^(nobody|nothing)/i.test(n));
   const lands = landsOf(view.tool, p.visual);
   return (
@@ -116,11 +152,24 @@ export function TaskCard({ view, density = 'full', fresh = false, busy = false, 
           <Badge tone={phase === 'saved' ? 'positive' : phase === 'failed' || phase === 'partial' || phase === 'held' ? 'warning' : 'neutral'}>{badge}</Badge>
         </span>
       </div>
-      {/* A task whose body draws its own subject needs no second title; one that does not is named by the plan's summary. */}
-      {!drawsSubject(view.tool) && <p className="ch-ak-task__sum">{p.summary}</p>}
       {/* What a coach checks, whole at first paint. A withdrawn draft steps back; it is not removed (it is the record of what was offered). */}
       <div className={'ch-ak-task__body' + (isWithdrawn(phase) && phase !== 'failed' ? ' is-dim' : '')}>
-        <CardBody tool={view.tool} proposal={p} receipt={receipt} phase={phase} density={density} roster={roster} team={team} lands={lands} onAsk={undecided && !pressed && onSend ? (text) => void onSend(text) : undefined} />
+        {/* A task whose body draws its own subject needs no second title; one that does not is named by the plan's summary, on the body's own inset. */}
+        {!drawsSubject(view.tool) && <p className="ch-akc-sum">{p.summary}</p>}
+        <CardBody tool={view.tool} proposal={p} receipt={receipt} phase={phase} density={density} roster={roster} team={team} lands={lands} onAsk={undecided && !pressed && onSend ? (text) => void onSend(text) : undefined}
+          onEdit={
+            undecided && !pressed && onEdit && view.approvalId
+              ? (patch) => {
+                  setEditSent(true);
+                  setEditTried(true);
+                  onEdit(view.approvalId!, patch);
+                }
+              : undefined
+          }
+          editing={editing}
+          editError={editError}
+          onEditOpen={openEdit}
+        />
       </div>
       {undecided && evidence && (
         <button type="button" className="ch-ak-evlink" aria-expanded={evidence.open} onClick={evidence.onOpen}>
@@ -128,6 +177,7 @@ export function TaskCard({ view, density = 'full', fresh = false, busy = false, 
         </button>
       )}
       {undecided && p.missing.length > 0 && <p className="ch-ak-needs">Needs {p.missing.join(', ').toLowerCase()} before it can be confirmed.</p>}
+      {undecided && editOpen && p.missing.length === 0 && <p className="ch-ak-needs">{editing ? 'Updating the card…' : 'Update or discard your changes first.'}</p>}
       {(undecided || (status === 'confirmed' && !receipt)) && (
         <div className="btns">
           {/* The quiet key ("Not now", or the catalogue's own word where Cancel is the action itself) leaves on Confirm but keeps its box, so the working button keeps its place (MO-7-4). */}
@@ -141,7 +191,7 @@ export function TaskCard({ view, density = 'full', fresh = false, busy = false, 
               {copy.busy}
             </span>
           ) : (
-            <Button variant="primary" size="lg" disabled={!!pressed || !view.approvalId || p.missing.length > 0} onClick={() => answer(true)} data={{ 'data-ch-ask-confirm': '' }}>
+            <Button variant="primary" size="lg" disabled={!!pressed || !view.approvalId || p.missing.length > 0 || editOpen} onClick={() => answer(true)} data={{ 'data-ch-ask-confirm': '' }}>
               {copy.primary}
             </Button>
           )}
@@ -161,7 +211,15 @@ export function TaskCard({ view, density = 'full', fresh = false, busy = false, 
           onPhase={setWrite}
           watched={fresh}
           onRetry={onSend ? () => void onSend(`Try that again: ${p.action}, ${p.summary}`) : undefined}
+          onAskAgain={onSend ? () => void onSend(`Prepare this again from what is true now: ${p.summary}`) : undefined}
           onOpen={(r) => announceLanding({ key: view.key, tool: view.tool, label: p.summary, id: (r.created[0] as { id?: string } | undefined)?.id ?? null })}
+          onOpenNow={(r, href) => {
+            // The shell goes there its own way and marks the landing with what it knows. With no shell listening, the page loads there.
+            if (onOpenReceipt) return onOpenReceipt(view, r, href);
+            announceLanding({ key: view.key, tool: view.tool, label: p.summary, id: (r.created[0] as { id?: string } | undefined)?.id ?? null });
+            window.location.assign(href);
+          }}
+          undoSignal={undoSignal}
         />
       )}
     </section>
