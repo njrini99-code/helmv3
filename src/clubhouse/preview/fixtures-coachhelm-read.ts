@@ -1,47 +1,177 @@
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
-import { diveCounts, toChDeepInsight, type ChDeepDive } from '../data/coachhelm-dive-shape';
+import { diveCounts, orderDive, toChDeepInsight, type ChDeepDive, type DiveFocusRow, type DiveRoundRow } from '../data/coachhelm-dive-shape';
 import { toChInsight } from '../data/coachhelm-map';
+import { speak } from '../data/coachhelm-voice';
 import { READ_CALLS } from '../data/coachhelm-read-calls';
 import { toChReadView, type ChReadView } from '../data/coachhelm-read-view-shape';
-import { HELM_PLAYERS, PREVIEW_TOUR, breakBias, penalties, slope } from './fixtures-coachhelm';
+import type { ChHelmAssigned } from '../data/coachhelm-shape';
+import { CAST, type CastPlayer } from './cast';
+import { HELM_PLAYERS, PREVIEW_TOUR, bigNumber, breakBias, penalties, slope } from './fixtures-coachhelm';
 
-/** What the engine stores beside a read: the same keys the real row has, so the shapers draw every card. */
-const withDepth = (raw: EvidenceInsight, extra: Record<string, unknown>, movement: { from: number; to: number } | null): EvidenceInsight =>
-  ({ ...raw, evidence: { ...raw.evidence, sample_n: 28, source_round_ids: ['r1', 'r2', 'r3', 'r4'], confidence_factors: { sample_adequacy: 1, factors_measured: true, recency: 0.8 }, ...extra }, metadata: { ...(raw.metadata as object | null), ...(movement ? { movement: { ...movement, direction: movement.to > movement.from ? 'up' : 'down' } } : {}) } }) as EvidenceInsight;
-const NARROW = (steps: Array<[string, string]>) => ({ basis: { narrowing: { steps: steps.map(([label, statement]) => ({ passed: true, label, statement })), stopped_at: null }, checked: ['length: 16 of 28', 'par: long par 4s', 'shape: both sides'] } });
-const LADDER = (team: number, tour: number) => ({ comparison: { lines: [{ source: 'team_pool', label: 'Team pool', value: team, n: 214, n_noun: 'putts', players: 9 }, { source: 'tour', label: 'Tour', value: tour }] } });
+/**
+ * The read page's sample data, the 7 Nov design page's own set (design-refresh/coachhelm-read/redesign, "Data"): one player per read,
+ * and every count on a read agrees with every other count on it. Each read is a real row in the shape its generator writes, with the
+ * engine's depth beside it, and goes through the real shapers, so the preview can't draw what the page can't.
+ *
+ *   penalties  Eli Brandt      21 rounds, 23 penalties (1.1 a round), a counted path: 17 off the tee, 14 of those right.
+ *   putts      Jonah Okafor    75 putts from 4-6 ft (31 downhill, 44 level), a 23-point gap, not traced yet: 6 of 12 greens tracked.
+ *   approach   Priya Natarajan 28 approaches from 175+ yd, 16 missed (43% hit), a likely cause from the totals (coach only).
+ *
+ * Who each read is about, their class year and their rounds on file are the shared cast's (`preview/cast.ts`): Eli 21 rounds, Jonah 18,
+ * Priya 16. The ids are `HELM_PLAYERS`', which the base rows are built with.
+ */
+
+type Ev = EvidenceInsight['evidence'];
+const more = (raw: EvidenceInsight, evidence: Record<string, unknown>, rest: Partial<EvidenceInsight> = {}): EvidenceInsight => ({ ...raw, ...rest, evidence: { ...raw.evidence, ...evidence } as unknown as Ev });
+const ids = (who: string, n: number) => Array.from({ length: n }, (_, i) => `${who}-r${i + 1}`);
+const steps = (list: Array<[string, string]>) => ({ steps: list.map(([label, statement]) => ({ passed: true, label, statement })), stopped_at: null });
+const REFRESHED = '2026-09-29T06:00:00Z';
+const FACTORS = { sample_adequacy: 1, factors_measured: true, recency: 0.8 };
+
+/** A row the base fixtures have no builder for, on the bookkeeping of one they do. */
+const row = (playerId: string, seed: Pick<EvidenceInsight, 'id' | 'category' | 'priority' | 'title' | 'content'> & { drills?: EvidenceInsight['drills'] }, evidence: Record<string, unknown>): EvidenceInsight =>
+  ({
+    ...penalties(playerId, seed.id),
+    drills: [],
+    ...seed,
+    evidence: { window_days: 60, window_start: '', window_end: '', strokes_impact: 0, strokes_impact_method: 'peer_delta', confidence_factors: FACTORS, comparison_source: 'pga_baseline', comparison_label: 'Tour', unit: 'percent', ...evidence },
+  }) as unknown as EvidenceInsight;
+
+const ELI = HELM_PLAYERS.eli.id;
+const JONAH = HELM_PLAYERS.jonah.id;
+const PRIYA = HELM_PLAYERS.priya.id;
 
 const RAW: Record<string, () => EvidenceInsight> = {
-  approach: () =>
-    withDepth(slope(HELM_PLAYERS.priya.id, 'in-approach'), { ...LADDER(49, 52), diagnosis: NARROW([['From 175+ yd', '16 of 28 approaches from 175+ yd missed the green'], ['On long par 4s', '12 of 20 came on long par 4s']]), cause: { state: 'likely', alternatives: [{ label: 'Long par 4s', lift: 2.1, arm_a: { n: 20, failures: 12 }, arm_b: { n: 40, failures: 11 } }] } }, { from: 34, to: 43 }),
   penalties: () =>
-    withDepth(penalties(HELM_PLAYERS.eli.id, 'in-pen'), { ...LADDER(0.7, 0.3), diagnosis: NARROW([['Off the tee', '14 of 21 penalties came off the tee'], ['On par 4s', '9 of 14 came on par 4s']]), cause: { state: 'counted', path: ['Driver', 'Hazard right', 'Penalty drop'], occurrences: 9, denominator: 14, event_strokes: 18, checked: { holes_with_full_record: 280, of: 378 } } }, { from: 1.4, to: 1.1 }),
+    more(
+      penalties(ELI, 'in-pen'),
+      {
+        source_round_ids: ids('eli', CAST.eli.rounds),
+        confidence_factors: FACTORS,
+        comparison: { lines: [{ source: 'team_pool', label: 'Team pool', value: 0.7, n: 186, n_noun: 'rounds', players: 9 }, { source: 'tour', label: 'Tour', value: 0.3 }] },
+        diagnosis: { ...penalties(ELI).evidence.diagnosis, basis: { narrowing: steps([['Off the tee', '17 of 23 penalties came off the tee'], ['Finished right', '14 of 17 tee-shot penalties finished right of the fairway']]), checked: ['Club off the tee', 'shape: 14 of 17 right of the fairway', 'par: par 4s and par 5s'] } },
+        cause: {
+          state: 'observed_sequence',
+          population: 'penalties',
+          path: ['Driver off the tee', 'Right of the fairway', 'Penalty drop'],
+          occurrences: 14,
+          denominator: 23,
+          distinct_rounds: 11,
+          example_holes: [{ round_id: 'eli-r1', hole_number: 7 }, { round_id: 'eli-r2', hole_number: 14 }, { round_id: 'eli-r2', hole_number: 3 }, { round_id: 'eli-r4', hole_number: 11 }, { round_id: 'eli-r6', hole_number: 7 }],
+          event_strokes: null,
+          checked: { holes_with_full_record: 280, of: 378, fields_missing: ['lie'] },
+        },
+      },
+      { metadata: { movement: { from: 1.4, to: 1.1, direction: 'down' }, last_refreshed_at: REFRESHED } as never },
+    ),
   putts: () =>
-    withDepth(breakBias(HELM_PLAYERS.jonah.id, 'in-brk'), { ...LADDER(49, 52), diagnosis: NARROW([['Downhill', '12 of 23 downhill putts from 4–6 ft were missed']]), cause: { state: 'not_traced', count_down: { have_events: 6, need_events: 12, have_rounds: 3, need_rounds: 6 }, data_gap: { have_count: 6, target_count: 6, prompt: 'Track putts on 6 more greens' } } }, { from: 44, to: 49 }),
+    more(
+      slope(JONAH, 'in-slope'),
+      {
+        source_round_ids: ids('jonah', CAST.jonah.rounds),
+        confidence_factors: FACTORS,
+        diagnosis: { symptom: 'Downhill putts from 4-6 ft', root_cause: '', causality_level: 'inferred_hypothesis', drivers: [], recommended_action: '', confidence_reason: 'sample adequate', basis: { narrowing: steps([['Downhill', '13 of 31 downhill putts from 4–6 ft were missed']]), checked: ['Distance of the putt', 'Slope of the putt'] } },
+        cause: { state: 'not_traced', population: 'putts', count_down: { have_events: 6, need_events: 12, have_rounds: 3, need_rounds: 6 }, data_gap: { have_count: 6, target_count: 6, prompt: 'Track putts on 6 more greens' } },
+      },
+      { metadata: { last_refreshed_at: REFRESHED } as never },
+    ),
+  approach: () =>
+    more(
+      row(
+        PRIYA,
+        {
+          id: 'in-approach',
+          category: 'approach',
+          priority: 'medium',
+          title: 'Greens from 175+ yd: 43%',
+          content: "From 175+ yd you're hitting 43% of greens over 28 approaches. Tour players hit 52%. Club up one on long approaches and aim at the middle of the green.",
+          drills: [{ id: 'dr-long-iron', slug: 'long-iron-ladder', title: 'Long-iron ladder', duration_min: 15, difficulty: 'range' }],
+        },
+        { metric: 'approach_gir_175_plus_pct', metric_label: 'Greens in regulation from 175+ yd', polarity: 'higher_better', your_value: 43, your_value_display: '43%', comparison_value: 52, sample_n: 28, confidence: 0.8 },
+      ),
+      {
+        source_round_ids: ids('priya', CAST.priya.rounds),
+        comparison: { lines: [{ source: 'team_pool', label: 'Team pool', value: 49, n: 340, n_noun: 'approaches', players: 9 }, { source: 'tour', label: 'Tour', value: 52 }] },
+        diagnosis: { symptom: 'Greens from 175+ yd', root_cause: '', causality_level: 'inferred_hypothesis', drivers: [], recommended_action: '', confidence_reason: 'sample adequate', basis: { narrowing: steps([['From 175+ yd', '16 of 28 approaches from 175+ yd missed the green'], ['On long par 4s', '12 of 16 misses came on long par 4s']]), checked: ['length: 16 of 28 from 175+ yd', 'par: long par 4s', 'shape: short and right'] } },
+        // 12 of 20 is 60% and 11 of 40 is 27.5%, so the lift is 2.2 (the design page printed 2.1).
+        cause: { state: 'inferred_hypothesis', alternatives: [{ label: 'Long par 4s', lift: 2.2, arm_a: { n: 20, failures: 12, rate: 0.6 }, arm_b: { n: 40, failures: 11, rate: 0.275 } }], checked: { holes_with_full_record: 52, of: 60, fields_missing: ['finish'] } },
+      },
+      { metadata: { movement: { from: 34, to: 43, direction: 'up' }, last_refreshed_at: REFRESHED } as never },
+    ),
 };
 
-const OWNER = (q: string | undefined) => (q === 'penalties' ? HELM_PLAYERS.eli.name : q === 'putts' ? HELM_PLAYERS.jonah.name : HELM_PLAYERS.priya.name);
-const ROUNDS = () =>
-  new Map(
-    ([['r1', '2026-10-22', 'Lonnie Poole', 74, 2], ['r2', '2026-10-15', 'Hilltop', 76, 4], ['r3', '2026-10-08', 'Lonnie Poole', 72, 0], ['r4', '2026-10-01', 'Hilltop', 75, 3]] as const).map(([id, round_date, course_name, total_score, score_to_par]) => [id, { id, round_date, course_name, total_score, score_to_par, holes_played: 18 }]),
-  );
+/** The lighter reads beside each one on the player's own list: only the fields they carry draw. */
+const NEIGHBOURS: Record<string, () => EvidenceInsight[]> = {
+  penalties: () => [
+    bigNumber(ELI, 'in-dbl'),
+    row(ELI, { id: 'in-tee', category: 'tee', priority: 'medium', title: 'Fairways with driver: 48%', content: "You're hitting 48% of fairways with driver. Tour players hit 59%." }, { metric: 'tee_fairway_driver_pct', metric_label: 'Fairways hit with driver', polarity: 'higher_better', your_value: 48, your_value_display: '48%', comparison_value: 59, sample_n: 9, confidence: 0.5, window_basis: 'lifetime' }),
+  ],
+  putts: () => [breakBias(JONAH, 'in-brk'), bigNumber(JONAH, 'in-dbl')],
+  approach: () => [
+    row(PRIYA, { id: 'in-sand', category: 'short_game', priority: 'low', title: 'Sand saves: 52%', content: "You're getting up and down from the sand 52% of the time. Tour players save 50%." }, { metric: 'scrambling_sand_save_pct', metric_label: 'Up and down from the sand', polarity: 'higher_better', your_value: 52, your_value_display: '52%', comparison_value: 50, sample_n: 23, confidence: 0.8 }),
+    row(PRIYA, { id: 'in-lag', category: 'putting', priority: 'medium', title: 'Three-putts from 30+ ft: 14%', content: "You're three-putting 14% of first putts from 30+ ft. Tour players three-putt 9%." }, { metric: 'putt_three_putt_30_plus_pct', metric_label: 'Three-putts from 30+ ft', polarity: 'lower_better', your_value: 14, your_value_display: '14%', comparison_value: 9, sample_n: 29, confidence: 0.5 }),
+  ],
+};
 
-/** A real row through the real shapers, so the preview can't draw what the page can't. The fixtures are today's builders with the engine's depth on them; the design page's own copy isn't in them. */
+const OWNER: Record<string, { id: string; cast: CastPlayer }> = { penalties: { id: ELI, cast: CAST.eli }, putts: { id: JONAH, cast: CAST.jonah }, approach: { id: PRIYA, cast: CAST.priya } };
+
+type RoundSeed = readonly [date: string, course: string, score: number, toPar: number, holes?: number];
+const ROUND_SEEDS: Record<string, { who: string; rounds: readonly RoundSeed[] }> = {
+  penalties: { who: 'eli', rounds: [['2026-09-28', 'Oak Hollow', 74, 2], ['2026-09-21', 'Oak Hollow', 77, 5], ['2026-09-14', 'Pine Ridge', 72, 0], ['2026-09-07', 'Pine Ridge', 75, 3], ['2026-08-31', 'Lakeshore', 71, -1], ['2026-08-24', 'Oak Hollow', 79, 7], ['2026-08-17', 'Lakeshore', 38, 2, 9], ['2026-08-10', 'Pine Ridge', 78, 6]] },
+  putts: { who: 'jonah', rounds: [['2026-09-28', 'Oak Hollow', 73, 1], ['2026-09-21', 'Oak Hollow', 75, 3], ['2026-09-14', 'Pine Ridge', 71, -1], ['2026-09-07', 'Pine Ridge', 74, 2], ['2026-08-31', 'Lakeshore', 72, 0], ['2026-08-24', 'Oak Hollow', 76, 4], ['2026-08-17', 'Pine Ridge', 74, 2], ['2026-08-10', 'Lakeshore', 75, 3]] },
+  approach: { who: 'priya', rounds: [['2026-09-27', 'Lonnie Poole', 74, 2], ['2026-09-20', 'Hilltop', 76, 4], ['2026-09-13', 'Lonnie Poole', 72, 0], ['2026-09-06', 'Hilltop', 75, 3], ['2026-08-30', 'Lonnie Poole', 73, 1], ['2026-08-23', 'Hilltop', 77, 5], ['2026-08-16', 'Lonnie Poole', 74, 2], ['2026-08-09', 'Hilltop', 76, 4]] },
+};
+const roundsOf = (q: string): Map<string, DiveRoundRow> => {
+  const { who, rounds } = ROUND_SEEDS[q]!;
+  return new Map(rounds.map(([round_date, course_name, total_score, score_to_par, holes], i) => [`${who}-r${i + 1}`, { id: `${who}-r${i + 1}`, round_date, course_name, total_score, score_to_par, holes_played: holes ?? 18 }]));
+};
+
+const DRILL_TEXT: Record<string, string> = {
+  'in-slope': 'Rehearse a downhill-only ladder: start 2 ft below the hole and add a foot at a time, focused on dying the ball into the front of the cup rather than a firm strike.',
+  'in-approach': 'Alternate 4- and 5-iron to a 30-yard-wide target at 175, 185 and 195 yards. Count greens out of 15, and log the number.',
+};
+
+export const READ_PREVIEW_KEYS = ['penalties', 'putts', 'approach'] as const;
+export type ReadPreviewKey = (typeof READ_PREVIEW_KEYS)[number];
+const keyOf = (q: string | undefined): ReadPreviewKey => ((READ_PREVIEW_KEYS as readonly string[]).includes(q ?? '') ? (q as ReadPreviewKey) : 'penalties');
+
+/**
+ * A real row through the real shapers. `state`: `assigned` (a focus made from it and started), `proposed` (a coach proposed it; the
+ * player has not answered), `focus` (the player's active focus), `stale` (a round played after the read was last made).
+ */
 export function previewReadView(q: string | undefined, role: 'coach' | 'player', gone = false, state?: string): ChReadView {
-  const raw = (RAW[q ?? 'approach'] ?? RAW.approach!)();
-  const name = OWNER(q);
-  const first = name.split(' ')[0] as string;
+  const key = keyOf(q);
+  const raw = RAW[key]!();
+  const owner = { id: OWNER[key]!.id, name: OWNER[key]!.cast.name };
+  const first = OWNER[key]!.cast.first;
   const viewer = role === 'coach' ? ({ role: 'coach', first } as const) : ({ role: 'player' } as const);
-  const inputs = { rounds: ROUNDS() as never, focusAreas: [] as never, goals: [] as never, themes: null };
+  const assigned: ChHelmAssigned | null = state === 'assigned' || state === 'focus' ? 'active' : state === 'proposed' ? 'proposed' : null;
+  const focusAreas: DiveFocusRow[] = assigned ? [{ id: 'fa-read', title: raw.title, status: assigned, from_insight_id: raw.id, target_metric: raw.evidence.metric }] : [];
+  const inputs = { rounds: roundsOf(key), focusAreas, goals: [], themes: null };
   const deepOf = (r: EvidenceInsight) => {
-    const base = toChInsight(r, { tour: PREVIEW_TOUR, viewer, ...(state === 'assigned' && r.id === raw.id ? { assigned: 'active' as const } : {}) } as never);
-    return toChDeepInsight(r, base, inputs, (s) => s, role);
+    const own = r.id === raw.id;
+    const base = toChInsight(r, {
+      tour: PREVIEW_TOUR,
+      viewer,
+      drillText: DRILL_TEXT[r.id] ?? null,
+      assigned: own ? assigned : null,
+      newestRound: own && state === 'stale' ? '2026-10-03' : null,
+      // The engine's parts as production draws them with their flags on: the cause state on the Why line, the claim ladder, the chips.
+      engine: own ? { flags: { support: true, cause: true } as never, now: '2026-10-01T12:00:00.000Z', viewer, corrections: { role, latest: null, laterRounds: null } } : undefined,
+    });
+    return toChDeepInsight(r, base, own ? inputs : { ...inputs, rounds: new Map(), focusAreas: [] }, (t) => speak(t, viewer), role);
   };
-  const deep = deepOf(raw);
-  // The rail's neighbours: the same player's other reads.
-  const others = Object.entries(RAW).filter(([k]) => k !== (q ?? 'approach')).map(([, f]) => ({ ...f(), player_id: raw.player_id }) as EvidenceInsight);
-  const list = [deep, ...others.map(deepOf)];
-  const dive: ChDeepDive = { list, tour: 'Tour', rounds: 21 as never, themes: {}, roundsFailed: false, plansFailed: false, themesFailed: false, counts: diveCounts(list) };
-  const view = toChReadView(dive, new Map([raw, ...others].map((r) => [r.id, r])), gone ? 'gone' : raw.id, role, { playerId: role === 'coach' ? raw.player_id : null, name: role === 'coach' ? name : 'You', first: role === 'coach' ? first : 'You' }, { ...READ_CALLS, teamPool: true });
-  return role === 'coach' ? { ...view, team: [HELM_PLAYERS.priya, HELM_PLAYERS.eli, HELM_PLAYERS.jonah].map((p) => ({ id: p.id, name: p.name })) } : view;
+  const others = NEIGHBOURS[key]!();
+  const list = orderDive([deepOf(raw), ...others.map(deepOf)]);
+  const dive: ChDeepDive = { list, tour: 'Tour', rounds: null, themes: {}, roundsFailed: false, plansFailed: false, themesFailed: false, counts: diveCounts(list) };
+  const head = { playerId: role === 'coach' ? owner.id : null, name: role === 'coach' ? owner.name : 'You', first: role === 'coach' ? first : 'You' };
+  // The team pool call is on, as production has it with coachhelm_team_pool_v1 on: a coach's ladder carries it, a player's never does.
+  return toChReadView(dive, new Map([raw, ...others].map((r) => [r.id, r])), gone ? 'gone' : raw.id, role, head, { ...READ_CALLS, teamPool: true });
+}
+
+/** Who a coach's preview is about, as the route's scope would say it. */
+export function previewReadHead(q: string | undefined): { playerId: string; name: string; first: string; line: string } {
+  const { id, cast } = OWNER[keyOf(q)]!;
+  const last = { penalties: 'Last round Sep 28, 3 days ago', putts: 'Last round Sep 28, 3 days ago', approach: 'Last round Sep 27, 4 days ago' }[keyOf(q)];
+  return { playerId: id, name: cast.name, first: cast.first, line: `${cast.classYear} · ${last}` };
 }

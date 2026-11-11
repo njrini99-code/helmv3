@@ -157,9 +157,10 @@ export function writeUpFor(text: string, traced: boolean): string | null {
  * A read carrying a team pool as its primary comparison (written only with `coachhelm_team_pool_v1` on) says the team line instead,
  * "Team pool 72% (240 putts)": one pooled number and its count, never a teammate.
  */
-function benchmarkOf(raw: EvidenceInsight, base: ChInsight, say: (t: string) => string): string | null {
-  const team = teamPoolLine(raw.evidence);
-  if (team) return team;
+export function benchmarkOf(raw: EvidenceInsight, base: ChInsight, say: (t: string) => string, team = true): string | null {
+  // `team: false` (the read page, for a player): the comparison the card draws, never the pooled line.
+  const pool = team ? teamPoolLine(raw.evidence) : null;
+  if (pool) return pool;
   const g = base.evidence.gauge;
   const parts = g ? [g.cmp, g.sec].filter((x): x is string => !!x && /[a-z]/i.test(x)) : base.evidence.bars ? [say(raw.evidence.comparison_label ?? '').trim()].filter((x) => /[a-z]/i.test(x)) : [];
   if (parts.length === 0) return null;

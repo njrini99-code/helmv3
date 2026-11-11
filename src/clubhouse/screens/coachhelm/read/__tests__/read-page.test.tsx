@@ -1,273 +1,360 @@
 import { LazyMotion, domAnimation } from 'motion/react';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 vi.mock('../../../../lib/haptics', () => ({ haptic: vi.fn() }));
 vi.mock('../../../../lib/track', () => ({ chReport: vi.fn(), chTrail: vi.fn(), chTagSession: vi.fn() }));
-const router = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn(), replace: vi.fn(), prefetch: vi.fn() }));
+const router = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn(), replace: vi.fn(), prefetch: vi.fn(), back: vi.fn() }));
 vi.mock('next/navigation', () => ({ useRouter: () => router, usePathname: () => '/golf/dashboard/coachhelm', useSearchParams: () => new URLSearchParams() }));
-vi.mock('../../../../lib/use-phone', () => ({ useChPhone: () => false, CH_PHONE_QUERY: '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' }));
+const device = vi.hoisted(() => ({ phone: false }));
+vi.mock('../../../../lib/use-phone', () => ({ useChPhone: () => device.phone, CH_PHONE_QUERY: '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' }));
 vi.mock('../../../../shell/nav', async (orig) => ({ ...(await orig<typeof import('../../../../shell/nav')>()), rebuiltHref: (href: string) => href }));
 vi.mock('@/app/golf/actions/development', () => ({ acceptFocusArea: vi.fn(), createFocusAreaFromInsightV2: vi.fn(), declineFocusArea: vi.fn() }));
 vi.mock('@/app/golf/actions/insights-feed', () => ({ dismissInsight: vi.fn(), reactivateInsight: vi.fn() }));
-vi.mock('@/app/golf/actions/coachhelm-corrections', () => ({ recordCoachHelmCorrection: vi.fn(async () => ({ ok: true })) }));
+vi.mock('@/app/golf/actions/coachhelm-corrections', () => ({ recordCoachHelmCorrection: vi.fn(async () => ({ status: 'recorded' })) }));
 vi.mock('@/app/golf/actions/insights-coachhelm', () => ({ refreshTeamAnalysisAsCoach: vi.fn() }));
 vi.mock('@/app/golf/actions/coachhelm-course-plan', () => ({ getCoursePlan: vi.fn(), getMyCoursePlan: vi.fn(), listCoursePlanCourses: vi.fn(), listMyCoursePlanCourses: vi.fn() }));
 
 import { ToastProvider } from '../../../../ui/Toast';
-import { previewReadView } from '../../../../preview/fixtures-coachhelm-read';
-import { HELM_PLAYERS } from '../../../../preview/fixtures-coachhelm';
+import { previewReadHead, previewReadView } from '../../../../preview/fixtures-coachhelm-read';
 import type { ChViewLoad, ChViewVoice } from '../../../../data/coachhelm-views-shape';
 import type { ChReadView } from '../../../../data/coachhelm-read-view-shape';
 import type { ChCoachHelmWrites } from '../../writes';
 import { ReadPage, ReadSkeleton } from '../ReadPage';
-import { RoundsCard } from '../cards';
-import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
-import { penalties } from '../../../../preview/fixtures-coachhelm';
-import { toChInsight } from '../../../../data/coachhelm-map';
-import { toChDeepInsight, diveCounts, type ChDeepDive } from '../../../../data/coachhelm-dive-shape';
-import { toChReadView } from '../../../../data/coachhelm-read-view-shape';
-import { READ_CALLS } from '../../../../data/coachhelm-read-calls';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import '../../../../__tests__/dialog-polyfill';
 
-/** W-READ-2, W-READ-6, W-READ-8, W-READ-13, S-READ.do 4, S-READ.sure 5, S-READ.gone: the read page as each viewer gets it, from the real shapers. */
+/**
+ * The read page as each viewer gets it (7 Nov design), from the real shapers: the head's four lines, the actions directly under it
+ * with one primary, the three tabs on the phone, the stepper and J and K on desktop, every state visibly its own, and a player's page
+ * with no coach control and no coach-only figure in the DOM.
+ */
 
-const COACH: ChViewVoice = { role: 'coach', playerId: HELM_PLAYERS.priya.id, name: HELM_PLAYERS.priya.name, first: 'Priya', line: '' } as ChViewVoice;
-const PLAYER: ChViewVoice = { role: 'player' } as ChViewVoice;
+const coachVoice = (q: string): ChViewVoice => ({ role: 'coach', ...previewReadHead(q) });
+const PLAYER: ChViewVoice = { role: 'player' };
+const writesSpy = (over: Partial<ChCoachHelmWrites> = {}): ChCoachHelmWrites => ({ assign: vi.fn(async () => ({ success: true })), dismiss: vi.fn(async () => ({ success: true })), undo: vi.fn(async () => ({ success: true })), ...over });
 
-const writesSpy = (): ChCoachHelmWrites => ({ assign: vi.fn(async () => ({ success: true })), dismiss: vi.fn(async () => ({ success: true })), undo: vi.fn(async () => ({ success: true })) });
-
-function show(load: ChViewLoad<ChReadView>, voice: ChViewVoice, writes: ChCoachHelmWrites = writesSpy()) {
+function show(q: string, role: 'coach' | 'player', opts: { state?: string; load?: ChViewLoad<ChReadView>; writes?: ChCoachHelmWrites; over?: (v: ChReadView) => ChReadView } = {}) {
   const Wrap = ({ children }: { children: ReactNode }) => (
     <LazyMotion features={domAnimation}>
       <ToastProvider>{children}</ToastProvider>
     </LazyMotion>
   );
-  render(<ReadPage load={load} voice={voice} writes={writes} />, { wrapper: Wrap });
+  const built = previewReadView(q, role, opts.state === 'gone', opts.state);
+  const load = opts.load ?? ({ status: 'ready', data: opts.over ? opts.over(built) : built } as const);
+  const writes = opts.writes ?? writesSpy();
+  const hrefOf = (id: string) => `/read/${id}`;
+  render(<ReadPage load={load} voice={role === 'coach' ? coachVoice(q) : PLAYER} writes={writes} playerWrites={{ accept: vi.fn(async () => ({ success: true })), decline: vi.fn(async () => ({ success: true })) }} hrefOf={hrefOf} />, { wrapper: Wrap });
   return writes;
 }
-const ready = (role: 'coach' | 'player', gone = false): ChViewLoad<ChReadView> => ({ status: 'ready', data: previewReadView(undefined, role, gone) });
+const main = () => screen.getByRole('main');
+const sec = (name: string) => main().querySelector(`[data-ch-read-sec="${name}"]`);
 
-// jsdom has no Web Animations; the Assigned chip's flash calls it once.
 beforeAll(() => {
   Element.prototype.animate = vi.fn(() => ({ cancel: () => {}, finished: Promise.resolve() })) as unknown as Element['animate'];
 });
-
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  device.phone = false;
+});
+
+describe('the read’s structure', () => {
+  it('the head is one card with What, Why, Next and When, and the actions come straight after it', () => {
+    show('penalties', 'coach');
+    const article = main().querySelector('article.ch-hd-dos')!;
+    const head = article.querySelector('header.ch-hd-dos__h')!;
+    expect([...head.querySelectorAll('dl.ch-hd-read dt')].map((n) => n.textContent)).toEqual(['What', 'Why', 'Next', 'When']);
+    expect(head.querySelector('.ch-hl-pri')?.textContent).toBe('Priority');
+    expect(head.nextElementSibling?.getAttribute('data-ch-read-actions')).toBe('open');
+    // One primary on the page, and it is Assign as focus; Dismiss and Message sit beside it, not in a menu.
+    const primaries = main().querySelectorAll('.ch-btn--primary');
+    expect(primaries.length).toBe(1);
+    expect(primaries[0]?.textContent).toContain('Assign as focus');
+    const row = within(head.nextElementSibling as HTMLElement);
+    expect(row.getByRole('button', { name: 'Dismiss' })).toBeTruthy();
+    expect(row.getByRole('link', { name: 'Message Eli' }).getAttribute('href')).toContain('messages?player=pl-eli');
+  });
+
+  it('desktop draws every section open, in the design’s order, and no tabs', () => {
+    show('penalties', 'coach');
+    expect([...main().querySelectorAll('[data-ch-read-sec]')].map((n) => n.getAttribute('data-ch-read-sec'))).toEqual(['measured', 'moved', 'cause', 'where', 'rounds', 'sure', 'plan', 'right']);
+    expect(screen.queryByRole('radiogroup', { name: 'Parts of this read' })).toBeNull();
+    expect(screen.getByRole('heading', { level: 1, name: 'Eli Brandt' })).toBeTruthy();
+    expect(main().textContent).toContain('Junior · Last round Sep 28');
+  });
+
+  it('a section with no data draws nothing: the putting read has no trend and no ladder, the penalties read no drill', () => {
+    show('putts', 'coach');
+    expect(sec('moved')).toBeNull();
+    expect(sec('week')?.textContent).toContain('Downhill ladder');
+    expect(sec('measured')?.textContent).toContain('The gap, same distance');
+    expect(sec('measured')?.textContent).not.toContain('Against');
+    cleanup();
+    show('penalties', 'coach');
+    expect(sec('week')).toBeNull();
+  });
+
+  it('one page says one round count: 21 rounds on the measure, 21 on the rounds card, and the counts of the cause agree', () => {
+    show('penalties', 'coach');
+    const text = main().textContent ?? '';
+    expect(text).not.toMatch(/\b28 rounds\b|\b4 rounds\b/);
+    expect(sec('rounds')?.textContent).toContain('Newest 8 of 21');
+    expect(sec('measured')?.textContent).toContain('21 rounds');
+    expect(sec('cause')?.textContent).toContain('17 of 23');
+    expect(sec('cause')?.textContent).toContain('14 of 23 penalties went this way.');
+    expect(text).not.toContain('18.0 strokes');
+  });
+
+  it('how sure is a disclosure: closed at first, and what CoachHelm checked is inside it for a coach', async () => {
+    show('penalties', 'coach');
+    const key = screen.getByRole('button', { name: /How sure is this · Solid read/ });
+    expect(key.getAttribute('aria-expanded')).toBe('false');
+    await userEvent.click(key);
+    expect(key.getAttribute('aria-expanded')).toBe('true');
+    expect(sec('sure')?.textContent).toContain('Checked: Club off the tee · Where the miss finished · Par and length of the hole');
+  });
+});
+
+describe('the phone', () => {
+  it('has three tabs under the actions, and a tab shows only its own sections', async () => {
+    device.phone = true;
+    show('penalties', 'coach');
+    const tabs = screen.getByRole('radiogroup', { name: 'Parts of this read' });
+    expect(within(tabs).getAllByRole('radio').map((b) => b.textContent)).toEqual(['Measured', 'Cause', 'Rounds']);
+    expect(sec('measured')).toBeTruthy();
+    expect(sec('cause')).toBeNull();
+    await userEvent.click(within(tabs).getByRole('radio', { name: 'Cause' }));
+    await waitFor(() => expect(sec('cause')).toBeTruthy());
+    expect(sec('where')?.textContent).toContain('Oak Hollow, hole 7');
+    // The tail and the player's other reads stay under every tab.
+    expect(sec('plan')).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'More on Eli' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: /Fairways with driver: 48%/ }).getAttribute('href')).toBe('/read/in-tee');
+  });
+
+  it('a player’s middle tab is What it shows', () => {
+    device.phone = true;
+    show('putts', 'player');
+    expect(within(screen.getByRole('radiogroup', { name: 'Parts of this read' })).getAllByRole('radio').map((b) => b.textContent)).toEqual(['Measured', 'What it shows', 'Rounds']);
+    expect(screen.getByRole('heading', { name: 'Your other reads' })).toBeTruthy();
+  });
+});
+
+describe('desktop: the player’s reads beside the read', () => {
+  it('the rail lists them by area with this one current, and the stepper says where it is', () => {
+    show('penalties', 'coach');
+    const rail = screen.getByRole('navigation', { name: 'Eli’s reads' });
+    expect(within(rail).getAllByRole('link').map((a) => a.getAttribute('href'))).toEqual(['/read/in-tee', '/read/in-pen', '/read/in-dbl']);
+    expect(within(rail).getByRole('link', { current: true }).textContent).toContain('Penalty strokes');
+    expect(main().querySelector('.ch-hr-step')?.textContent).toContain('2 of 3');
+  });
+
+  it('J opens the next read and K the one before, and neither fires while typing', () => {
+    show('penalties', 'coach');
+    fireEvent.keyDown(window, { key: 'j' });
+    expect(router.replace).toHaveBeenLastCalledWith('/read/in-dbl');
+    fireEvent.keyDown(window, { key: 'k' });
+    expect(router.replace).toHaveBeenLastCalledWith('/read/in-tee');
+    router.replace.mockClear();
+    const field = document.createElement('input');
+    document.body.appendChild(field);
+    fireEvent.keyDown(field, { key: 'j' });
+    fireEvent.keyDown(window, { key: 'j', metaKey: true });
+    expect(router.replace).not.toHaveBeenCalled();
+    field.remove();
+  });
+
+  it('the steps stop at the ends', async () => {
+    show('putts', 'coach');
+    expect(main().querySelector('.ch-hr-step')?.textContent).toContain('1 of 3');
+    expect((screen.getByRole('button', { name: 'Previous read' }) as HTMLButtonElement).disabled).toBe(true);
+    await userEvent.click(screen.getByRole('button', { name: 'Next read' }));
+    expect(router.replace).toHaveBeenCalledWith('/read/in-brk');
+  });
+});
+
+describe('a coach acts on the read', () => {
+  it('Assign sends one write for this player; the row, the pill, the list and the plan then say so', async () => {
+    const writes = show('penalties', 'coach');
+    await userEvent.click(screen.getByRole('button', { name: 'Assign as focus' }));
+    expect(writes.assign).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(writes.assign).mock.calls[0]?.[0]).toMatchObject({ playerId: 'pl-eli', insightId: 'in-pen' });
+    await waitFor(() => expect(main().getAttribute('data-ch-read-state')).toBe('assigned'));
+    expect(screen.queryByRole('button', { name: 'Assign as focus' })).toBeNull();
+    expect(main().querySelector('header.ch-hd-dos__h .ch-hl-pri')?.textContent).toBe('Assigned');
+    expect(sec('plan')?.textContent).toContain('Proposed to Eli just now');
+    expect(within(screen.getByRole('navigation', { name: 'Eli’s reads' })).getByRole('link', { current: true }).textContent).toContain('Assigned');
+  });
+
+  it('a refused Assign leaves the button and says so (CH-13001)', async () => {
+    show('penalties', 'coach', { writes: writesSpy({ assign: vi.fn(async () => ({ success: false, error: 'nope' })) }) });
+    await userEvent.click(screen.getByRole('button', { name: 'Assign as focus' }));
+    await waitFor(() => expect(document.querySelector('[data-ch-code="CH-13001"]')).toBeTruthy());
+    expect(screen.getByRole('button', { name: 'Assign as focus' })).toBeTruthy();
+    expect(main().getAttribute('data-ch-read-state')).toBe('open');
+  });
+
+  it('Dismiss writes once, leaves the read readable with one line and Undo, and Undo restores the row', async () => {
+    const writes = show('penalties', 'coach');
+    await userEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
+    expect(writes.dismiss).toHaveBeenCalledWith('in-pen');
+    await waitFor(() => expect(main().getAttribute('data-ch-read-state')).toBe('dismissed'));
+    const row = main().querySelector('[data-ch-read-actions="dismissed"]') as HTMLElement;
+    expect(row.textContent).toContain('Dismissed.');
+    expect(sec('measured')).toBeTruthy();
+    await userEvent.click(within(row).getByRole('button', { name: 'Undo' }));
+    expect(writes.undo).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Assign as focus' })).toBeTruthy());
+  });
 });
 
 describe('a player on their own read', () => {
-  it('has no Assign, Dismiss or Message, and no Coach only well, in the DOM', () => {
-    show(ready('player'), PLAYER);
-    expect(screen.getByRole('main').getAttribute('data-ch-screen')).toBe('coachhelm-read');
-    expect(screen.getByRole('heading', { name: 'Why CoachHelm thinks so' })).toBeTruthy();
-    expect(screen.queryByRole('button', { name: /assign as focus/i })).toBeNull();
-    expect(screen.queryByRole('button', { name: /propose again/i })).toBeNull();
-    expect(screen.queryByText(/^Message /)).toBeNull();
+  it('has no coach control, reads against the Tour only, and Ask about this is the one primary', () => {
+    show('penalties', 'player');
+    expect(main().getAttribute('data-ch-read-viewer')).toBe('player');
+    expect(screen.queryByRole('button', { name: /assign as focus|propose again|dismiss|undo/i })).toBeNull();
+    expect(screen.queryByText(/^Message Eli/)).toBeNull();
+    const primaries = main().querySelectorAll('.ch-btn--primary');
+    expect(primaries.length).toBe(1);
+    expect(primaries[0]?.textContent).toContain('Ask about this');
+    expect(sec('measured')?.textContent).toContain('Against Tour');
+    expect(screen.getByRole('heading', { level: 1, name: 'Your reads' })).toBeTruthy();
+    // No priority pill for a player: only whether it is theirs.
+    expect(main().querySelector('header.ch-hd-dos__h .ch-hl-pri')).toBeNull();
   });
 
-  it('the Coach only well is gated by viewer, even if a rung reached the payload (S-READ.sure 5)', () => {
-    const withRung = (role: 'coach' | 'player'): ChViewLoad<ChReadView> => {
-      const data = previewReadView(undefined, role);
-      return { status: 'ready', data: { ...data, read: { ...data.read!, sure: { ...data.read!.sure, rung: { word: 'Likely', range: '1.1 to 2.9' } } } } };
-    };
-    show(withRung('coach'), COACH);
-    expect(screen.getByText('Coach only')).toBeTruthy();
-    expect(screen.getByText('1.1 to 2.9')).toBeTruthy();
-    cleanup();
-    show(withRung('player'), PLAYER);
-    expect(screen.queryByText('Coach only')).toBeNull();
-    expect(screen.queryByText('1.1 to 2.9')).toBeNull();
+  it('no team pool, teammate, checked line, rung or likely cause is in the DOM, on any of the three reads', async () => {
+    for (const q of ['penalties', 'putts', 'approach']) {
+      show(q, 'player');
+      await userEvent.click(screen.getByRole('button', { name: /How sure is this/ }));
+      const html = document.body.innerHTML;
+      for (const word of ['Team pool', 'the team', 'teammate', 'Checked:', 'Rung', 'Likely', 'Long par 4s', 'times as often', 'Why CoachHelm thinks so', 'Eli', 'Jonah', 'Priya']) expect(html.includes(word), `${q}: ${word}`).toBe(false);
+      expect(main().querySelector('[data-ch-read-coach]')).toBeNull();
+      expect(screen.getByRole('heading', { name: 'What CoachHelm sees' })).toBeTruthy();
+      cleanup();
+    }
   });
 
-  it('the More sheet offers a player no Dismiss and no Message', async () => {
-    show(ready('player'), PLAYER);
-    await userEvent.click(screen.getByRole('button', { name: 'More for this read' }));
-    expect(screen.queryByText('Dismiss this read')).toBeNull();
-    expect(screen.queryByText(/^Message /)).toBeNull();
+  it('the coach’s page of the same reads holds what the player check looks for', async () => {
+    show('approach', 'coach');
+    await userEvent.click(screen.getByRole('button', { name: /How sure is this/ }));
+    const html = document.body.innerHTML;
+    for (const word of ['Team pool', 'the team', 'teammates', 'Checked:', 'Likely, from totals', 'Long par 4s', 'times as often', 'Why CoachHelm thinks so']) expect(html.includes(word), word).toBe(true);
   });
 
-  it('no other player name reaches the DOM, and no likely cause does', () => {
-    show(ready('player'), PLAYER);
-    const text = document.body.textContent ?? '';
-    for (const p of [HELM_PLAYERS.eli, HELM_PLAYERS.jonah]) expect(text).not.toContain(p.name);
-    expect(text).not.toContain('Long par 4s');
+  it('a proposal from this read is answered in place, and the pill says it is waiting on them', () => {
+    show('putts', 'player', { state: 'proposed' });
+    expect(main().getAttribute('data-ch-read-state')).toBe('proposed');
+    expect(main().querySelector('header.ch-hd-dos__h .ch-hl-pri')?.textContent).toBe('Proposed for you');
+    expect(screen.getByRole('button', { name: 'Accept' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Decline' })).toBeTruthy();
+    expect(sec('plan')?.textContent).toContain('Suggested focus');
   });
 
-  it('an id not on the player own list is the gone card, with nothing of the read', () => {
-    show(ready('player', true), PLAYER);
-    expect(document.querySelector('[data-ch-code="CH-13861"]')).not.toBeNull();
-    expect(screen.getByText('This read is no longer open')).toBeTruthy();
-    expect(screen.getByText(/Your open reads are on the board/)).toBeTruthy();
-    expect(screen.queryByText('Why CoachHelm thinks so')).toBeNull();
+  it('their active focus says so, and Ask steps back to secondary', () => {
+    show('putts', 'player', { state: 'focus' });
+    expect(main().getAttribute('data-ch-read-state')).toBe('focus');
+    expect(main().querySelector('header.ch-hd-dos__h .ch-hl-pri')?.textContent).toBe('Your focus');
+    expect(main().querySelectorAll('.ch-btn--primary').length).toBe(0);
+    expect(sec('plan')?.textContent).toContain('Your focus');
   });
 });
 
-describe('a coach on a read', () => {
-  it('Assign sends one write for this player, and the chip shows only after it lands', async () => {
-    let answer: (r: { success: boolean }) => void = () => {};
-    const assign = vi.fn(() => new Promise<{ success: boolean }>((res) => (answer = res)));
-    show(ready('coach'), COACH, { ...writesSpy(), assign });
-    const button = screen.getByRole('button', { name: 'Assign as focus' });
-    await userEvent.click(button);
-    expect(assign).toHaveBeenCalledTimes(1);
-    expect((assign.mock.calls[0] as unknown as [{ playerId: string }])[0].playerId).toBe(HELM_PLAYERS.priya.id);
-    expect(document.querySelector('[data-ch-code="CH-13601"]')).toBeNull();
-    answer({ success: true });
-    await waitFor(() => expect(document.querySelector('[data-ch-code="CH-13601"]')).not.toBeNull());
+describe('every state looks its own', () => {
+  it('stale says which round is missing, under the claim, and offers no Assign (CH-13903, CH-13906)', () => {
+    show('penalties', 'coach', { state: 'stale' });
+    expect(main().getAttribute('data-ch-read-state')).toBe('stale');
+    const note = main().querySelector('header.ch-hd-dos__h [data-ch-code="CH-13903"]');
+    expect(note?.textContent).toContain('A round played Oct 3 isn’t counted yet');
+    expect(screen.queryByRole('button', { name: 'Assign as focus' })).toBeNull();
+    expect(main().querySelector('[data-ch-code="CH-13906"]')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Dismiss' })).toBeTruthy();
   });
 
-  it('a refused Assign leaves the button and shows CH-13001', async () => {
-    show(ready('coach'), COACH, { ...writesSpy(), assign: vi.fn(async () => ({ success: false, error: 'no' })) });
-    await userEvent.click(screen.getByRole('button', { name: 'Assign as focus' }));
-    await waitFor(() => expect(document.querySelector('[data-ch-code="CH-13001"]')).not.toBeNull());
-    expect(document.querySelector('[data-ch-code="CH-13601"]')).toBeNull();
-    expect(screen.getByRole('button', { name: 'Assign as focus' })).toBeTruthy();
+  it('assigned on load: the row is Message, the plan shows the focus', () => {
+    show('penalties', 'coach', { state: 'assigned' });
+    expect(main().getAttribute('data-ch-read-state')).toBe('assigned');
+    expect(main().querySelector('[data-ch-read-actions="assigned"]')?.textContent).toContain('Message Eli');
+    expect(sec('plan')?.textContent).toContain('Focus made from this read');
   });
 
-  it('More offers Dismiss, which writes once, and a Message link with an empty body', async () => {
-    const writes = show(ready('coach'), COACH);
-    await userEvent.click(screen.getByRole('button', { name: 'More for this read' }));
-    const links = screen.getAllByRole('link', { name: 'Message Priya' });
-    for (const a of links) expect(a.getAttribute('href')).toBe(`/golf/dashboard/messages?player=${encodeURIComponent(HELM_PLAYERS.priya.id)}`);
-    await userEvent.click(screen.getByRole('menuitem', { name: 'Dismiss this read' }));
-    expect(writes.dismiss).toHaveBeenCalledTimes(1);
-    await waitFor(() => expect(document.querySelector('[data-ch-code="CH-13901"]')).not.toBeNull());
-  });
-
-  it('the coach view holds what the player tests look for, on the same fixture', () => {
-    show(ready('coach'), COACH);
-    const text = document.body.textContent ?? '';
-    expect(text).toContain('Long par 4s');
-    expect(text).toContain(HELM_PLAYERS.eli.name);
-    expect(text).toContain(HELM_PLAYERS.jonah.name);
-  });
-
-});
-
-describe('the states around a read (W-READ-6)', () => {
-  it('a thrown feed is CH-13866, with Try again that refreshes once', async () => {
-    show({ status: 'failed' }, PLAYER);
-    expect(document.querySelector('[data-ch-code="CH-13866"]')).not.toBeNull();
-    expect(document.querySelector('[data-ch-code="CH-13860"]')).toBeNull();
+  it('a failed load is the centred danger page with Try again, and nothing of the read (CH-13866)', async () => {
+    show('penalties', 'coach', { load: { status: 'failed' } });
+    const page = main().querySelector('section.ch-empty-page--danger');
+    expect(page?.getAttribute('role')).toBe('alert');
+    expect(page?.getAttribute('data-ch-code')).toBe('CH-13866');
+    expect(main().querySelector('article.ch-hd-dos')).toBeNull();
     await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
     expect(router.refresh).toHaveBeenCalledTimes(1);
   });
 
-  it('off is CH-13313 with the reason, and offers no read', () => {
-    show({ status: 'off', reason: 'CoachHelm is off for this team.' }, PLAYER);
-    expect(document.querySelector('[data-ch-code="CH-13313"]')).not.toBeNull();
-    expect(screen.getByText('CoachHelm is off for this team.')).toBeTruthy();
+  it('a read no longer on the list is its own page, with the way back to the player’s reads (CH-13861)', () => {
+    show('penalties', 'coach', { state: 'gone' });
+    expect(main().getAttribute('data-ch-read-state')).toBe('gone');
+    expect(main().querySelector('section.ch-empty-page--danger')).toBeNull();
+    expect(screen.getByRole('link', { name: 'Open Eli’s reads' }).getAttribute('href')).toContain('player=pl-eli');
+    expect(main().querySelector('article.ch-hd-dos')).toBeNull();
+  });
+
+  it('off is the CoachHelm off page with the reason (CH-13313)', () => {
+    show('penalties', 'coach', { load: { status: 'off', reason: 'Exam week' } });
+    expect(document.querySelector('[data-ch-code="CH-13313"]')?.textContent).toContain('Exam week');
+  });
+
+  it('a part that failed says so inside its own card, with Try again; the read above stays (CH-13281)', async () => {
+    show('penalties', 'coach', { over: (v) => ({ ...v, failed: { ...v.failed, rounds: true } }) });
+    const card = sec('rounds') as HTMLElement;
+    expect(card.querySelector('[data-ch-code="CH-13281"]')).toBeTruthy();
+    expect(card.querySelector('ol.ch-hd-rounds')).toBeNull();
+    expect(main().querySelector('header.ch-hd-dos__h dl.ch-hd-read')).toBeTruthy();
+    await userEvent.click(within(card).getByRole('button', { name: 'Try again' }));
+    expect(router.refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it('loading is the page’s own shape: the green head with four label rows, two actions and the first card', () => {
+    for (const phone of [true, false]) {
+      device.phone = phone;
+      const Wrap = ({ children }: { children: ReactNode }) => <LazyMotion features={domAnimation}>{children}</LazyMotion>;
+      const { container } = render(<ReadSkeleton />, { wrapper: Wrap });
+      const el = container.querySelector('main') as HTMLElement;
+      // The route skeleton's mark (RouteFrame, base.css) and the crossfade it asks for.
+      expect(el.getAttribute('aria-busy')).toBe('true');
+      expect(el.getAttribute('aria-label')).toMatch(/^Loading/);
+      expect(el.getAttribute('data-ch-arrive')).toBe('crossfade');
+      expect(el.querySelectorAll('article.ch-hd-dos header.ch-hd-dos__h .ch-skel-rows__r').length).toBe(4);
+      expect(el.querySelectorAll('article.ch-hd-dos .ch-hl-cact .ch-skel').length).toBe(2);
+      expect(el.querySelectorAll('.ch-hr-sec .ch-surface').length).toBe(1);
+      expect(!!el.querySelector('.ch-hd-rail')).toBe(!phone);
+      cleanup();
+    }
   });
 });
 
-/** A row as production stores it, through the real shapers: `diagnosis` with no `cause`, so the Why card is the legacy branch. */
-function viewOf(evidence: Record<string, unknown>, role: 'coach' | 'player' = 'coach'): ChViewLoad<ChReadView> {
-  const base = penalties(HELM_PLAYERS.priya.id, 'in-27');
-  const raw = { ...base, evidence: { ...base.evidence, ...evidence } } as EvidenceInsight;
-  const viewer = role === 'coach' ? ({ role: 'coach', first: 'Priya' } as const) : ({ role: 'player' } as const);
-  const deep = toChDeepInsight(raw, toChInsight(raw, { viewer } as never), { rounds: new Map(), focusAreas: [], goals: [], themes: null }, (t) => t, role);
-  const dive: ChDeepDive = { list: [deep], tour: 'Tour', rounds: 21 as never, themes: {}, roundsFailed: false, plansFailed: false, themesFailed: false, counts: diveCounts([deep]) };
-  return { status: 'ready', data: toChReadView(dive, new Map([[raw.id, raw]]), raw.id, role, { playerId: role === 'coach' ? raw.player_id : null, name: 'Priya Natarajan', first: 'Priya' }, { ...READ_CALLS, teamPool: false }) };
-}
+describe('the lane stylesheet', () => {
+  const css = readFileSync(join(process.cwd(), 'src/clubhouse/styles/coachhelm-read.css'), 'utf8');
+  const rules = css.replace(/\/\*[\s\S]*?\*\//g, '');
 
-describe('READ-S1 how sure, in a coach’s words', () => {
-  const LEAK = /recency|variance|not measured|sample-adequacy|adequate|of target|observations?[;.]/i;
-  const stored = { metric: 'approach_proximity_50_125ft', unit: 'percent', window_basis: undefined, detail: {}, sample_n: 27, confidence: 0.9, confidence_factors: { sample_adequacy: 0.9, recency: 1, variance: 0.5, factors_measured: false } };
-  const diagnosis = (confidence_reason: string) => ({ symptom: 'Greens hit', root_cause: 'Long approaches finish short of the green', causality_level: 'observed_sequence', drivers: [], recommended_action: 'Work on carry', confidence_reason });
-
-  it('reads “27 approaches. Enough for a solid read.”', () => {
-    show(viewOf(stored), COACH);
-    expect(document.querySelector('#csure')?.textContent).toContain('27 approaches. Enough for a solid read.');
+  it('is layout on tokens: no hex, no raw rgb(), no !important', () => {
+    expect(rules.match(/#[0-9a-fA-F]{3,8}\b/g)).toBeNull();
+    expect(rules.match(/\brgba?\(/g)).toBeNull();
+    expect(rules).not.toContain('!important');
   });
 
-  it.each([
-    '27 observations; recency/variance not measured (sample-adequacy only); sample 90% of target',
-    '27 observations; recency measured 0.80; variance measured 0.60; sample adequate',
-    'sample adequate',
-    '27 observations. Enough for a solid read.',
-  ])('a row stored with “%s” does not reach the page, on any card', (reason) => {
-    show(viewOf({ ...stored, diagnosis: diagnosis(reason) }), COACH);
-    const main = screen.getByRole('main');
-    // The legacy Why card is what drew it: it is here, with the cause and without the reason.
-    expect(main.querySelector('#cwhy')?.textContent).toContain('Long approaches finish short of the green');
-    expect(main.textContent).not.toMatch(LEAK);
-    expect(main.querySelector('#cwhy')?.textContent).not.toContain('Enough for');
-    expect(main.querySelector('#cwhy .q')).toBeNull();
-    // The sentence is How sure's, once.
-    expect(main.textContent?.match(/Enough for a solid read/g)).toHaveLength(1);
+  it('names only ch- classes, and is a fraction of the 1,324 lines it replaced', () => {
+    const classes = [...rules.matchAll(/\.([a-zA-Z_][\w-]*)/g)].map((m) => m[1] as string).filter((c) => !/^\d/.test(c));
+    expect(classes.filter((c) => !c.startsWith('ch-') && !c.startsWith('is-'))).toEqual([]);
+    expect(css.split('\n').length).toBeLessThan(200);
   });
 
-  it('a reason a person wrote still reads', () => {
-    show(viewOf({ ...stored, diagnosis: diagnosis('Both groups have enough approaches to compare') }), COACH);
-    expect(document.querySelector('#cwhy')?.textContent).toContain('Both groups have enough approaches to compare');
-  });
-
-  it('a player reads the count alone', () => {
-    show(viewOf(stored, 'player'), PLAYER);
-    const sure = document.querySelector('#csure')?.textContent ?? '';
-    expect(sure).toContain('27 approaches');
-    expect(sure).not.toContain('Enough for');
-  });
-});
-
-describe('READ-S2 the rounds card', () => {
-  const detail = (rounds: Partial<ReturnType<typeof previewReadView>['read'] extends infer D ? (D extends { rounds: infer R } ? R : never) : never>) => ({ ...previewReadView(undefined, 'coach').read!, rounds: { total: 0, list: [], ...rounds } });
-  const round = (id: string, date: string) => ({ id, date, course: 'Hilltop', score: '76', toPar: '+4', toPar18: 4, nine: false, href: `/golf/dashboard/rounds/${id}`, counted: 0 });
-  const paint = (el: ReactNode) => render(el, { wrapper: ({ children }) => <LazyMotion features={domAnimation}>{children}</LazyMotion> });
-
-  it('lists the rounds it joined, each a link to its review', () => {
-    paint(<RoundsCard d={detail({ total: 2, list: [round('r2', 'Oct 15'), round('r1', 'Oct 8')] })} failed={false} voice={COACH} />);
-    const links = screen.getAllByRole('link');
-    expect(links.map((l) => l.getAttribute('href'))).toEqual(['/golf/dashboard/rounds/r2', '/golf/dashboard/rounds/r1']);
-    expect(document.querySelector('#crounds')?.textContent).toContain('2 rounds');
-    expect(document.querySelector('[data-ch-code="CH-13382"]')).toBeNull();
-  });
-
-  it('one round is one round', () => {
-    paint(<RoundsCard d={detail({ total: 1, list: [round('r1', 'Oct 8')] })} failed={false} voice={COACH} />);
-    expect(document.querySelector('#crounds .meta')?.textContent).toBe('1 round');
-  });
-
-  it('a failed read is CH-13281, whatever the list holds', () => {
-    paint(<RoundsCard d={detail({ total: 0, list: [] })} failed voice={COACH} />);
-    expect(document.querySelector('[data-ch-code="CH-13281"]')?.textContent).toContain('didn’t load');
-    expect(document.querySelector('[data-ch-code="CH-13382"]')).toBeNull();
-  });
-
-  it('nothing to list says why, by name, and never “no rounds”', () => {
-    paint(<RoundsCard d={detail({ total: 0, list: [] })} failed={false} voice={COACH} />);
-    expect(document.querySelector('[data-ch-code="CH-13382"]')?.textContent).toBe('This read does not name the rounds it was made from. It uses Priya’s stats over its window, so there is no list to show.');
-    cleanup();
-    paint(<RoundsCard d={detail({ total: 14, list: [] })} failed={false} voice={PLAYER} />);
-    expect(document.querySelector('[data-ch-code="CH-13382"]')?.textContent).toBe('This read was made from 14 rounds, but none of them can be listed here. They may be rounds you have since removed.');
-  });
-});
-
-describe('READ-S4 the skeleton is the page’s shape', () => {
-  const columns = (root: Element) => [...root.querySelector('.ch-hr-desk')!.children].map((c) => (c.classList.contains('ch-hr-col') ? [...c.classList].filter((x) => x.startsWith('ch-hr-col') || x === 'is-evidence').join(' ') : 'rail'));
-
-  it('its three columns are the page’s, placed by one rule: 250, main, 320', () => {
-    const skeleton = render(<ReadSkeleton />);
-    const held = columns(skeleton.container);
-    skeleton.unmount();
-    show(ready('coach'), COACH);
-    expect(held).toEqual(['rail', 'ch-hr-col', 'ch-hr-col is-evidence']);
-    expect(columns(document.body)).toEqual(held);
-    const css = readFileSync(join(process.cwd(), 'src/clubhouse/styles/coachhelm-read.css'), 'utf8');
-    expect(css).toMatch(/\.ch-hr\.is-desk \.ch-hr-desk \{[^}]*grid-template-columns: 250px minmax\(0, 1fr\) 320px;/);
-  });
-
-  it('it is a route skeleton by the mark RouteFrame and base.css look for, and asks to crossfade', () => {
-    const { container } = render(<ReadSkeleton />);
-    const main = container.querySelector("main[aria-busy='true'][aria-label^='Loading']") as HTMLElement;
-    expect(main).toBeTruthy();
-    expect(main.dataset.chArrive).toBe('crossfade');
+  it('moves only transform and opacity, and nothing grows: no width, height or scale animation, no ring', () => {
+    const transitions = [...rules.matchAll(/transition:\s*([^;]+);/g)].map((m) => m[1] as string);
+    expect(transitions.every((t) => /^transform\b/.test(t))).toBe(true);
+    const frames = [...rules.matchAll(/@keyframes[^{]+\{([\s\S]*?\})\s*\}/g)].map((m) => m[1] as string).join(' ');
+    expect(frames).not.toMatch(/width|height|scale|stroke|inset|margin|padding/);
+    expect(rules).not.toMatch(/scaleX|stroke-dash|900ms/);
   });
 });

@@ -1,5 +1,6 @@
 import { formatFixed } from '../lib/format';
 import { namesWithheldArm } from '@/lib/coachhelm/reads/player-cause';
+import { teamPoolLine } from '@/lib/coachhelm/reads/team-pool-line';
 import { confidenceTier } from '@/lib/coachhelm/confidence-label';
 import { sureSentence } from '@/lib/coachhelm/shared/confidence-reason';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
@@ -8,6 +9,8 @@ import type { ChDeepDive, ChDeepInsight, ChDiveHole, ChDivePlan, ChDiveRound, Ch
 import { areaOf as diveAreaOf, DIVE_AREAS } from './coachhelm-dive-shape';
 import type { ChBoardMissing, ChInsight, ChHelmWeek } from './coachhelm-shape';
 import type { ChEngineVerdict } from './coachhelm-engine-shape';
+import { benchmarkOf, readLines, type ChReadNext, type ChReadWhy } from './coachhelm-read-shape';
+import { speak } from './coachhelm-voice';
 
 /** The CoachHelm read as its own view, pure and client-safe (coachhelm-read 02-PLAN 3.5). Every field is nullable: a card draws only when its data is on the read. */
 export interface ChBenchmarkLadder {
@@ -20,6 +23,8 @@ export interface ChBenchmarkLadder {
 export interface ChFunnelStep {
   label: string;
   n: number | null;
+  /** The step's denominator ("17 of 23": 23), for its bar; null when the statement states none. */
+  of: number | null;
   statement: string;
 }
 
@@ -38,6 +43,15 @@ export type ChReadCause =
 export interface ChReadDetail {
   insight: ChInsight;
   stance: string;
+  /** The stance pill's class (`ChStance.cls`): high, medium, low, ok, done, stale, note. */
+  stanceCls: string;
+  /**
+   * The head's four lines (7 Nov design): What as one sentence in the viewer's voice, the Why with its basis, Next and the day the read
+   * runs through. The Deep dive's own (`coachhelm-read-shape.ts`); a player's What never names the team pool.
+   */
+  four: { what: string; why: ChReadWhy; next: ChReadNext; through: string | null };
+  /** What was measured: the number, its label and the window it covers. */
+  measured: { label: string; value: string; span: string | null };
   headline: {
     title: string;
     lede: string;
@@ -64,6 +78,12 @@ export interface ChReadsRailRow {
   sub: string;
   value: string;
   tone: 'warn' | 'good' | 'plain';
+  /** The row as the Deep dive's ledger draws it: the category, the stance (class and word), how firm, and what the number counts. */
+  category: string;
+  cls: string;
+  word: string;
+  firm: string | null;
+  unit: string | null;
 }
 
 export interface ChReadView {
@@ -92,13 +112,16 @@ export function funnelOf(narrowing: { steps?: Array<{ passed: boolean; label: st
   for (const s of steps) {
     if (!s.passed) continue;
     const m = s.statement.match(/(\d+) of (\d+)/);
-    out.push({ label: s.label ?? 'Step', n: m ? Number(m[1]) : null, statement: s.statement });
+    out.push({ label: s.label ?? 'Step', n: m ? Number(m[1]) : null, of: m ? Number(m[2]) : null, statement: s.statement });
   }
   return out.length ? { steps: out, stopped: narrowing?.stopped_at != null } : null;
 }
 
-/** The ladder: the player's figure and each stored comparison; a team line only as call 3 allows, and never a college line (Q-88). */
-export function benchmarkLadder(ev: Record<string, unknown> | null | undefined, who: string, calls: ChReadCalls): ChBenchmarkLadder | null {
+/**
+ * The ladder: the player's figure and each stored comparison; a team line only on a coach's read and only as call 3 allows, and never a
+ * college line (Q-88). A player's ladder never carries the team pool, whatever the calls say: it is built without the line, not hidden.
+ */
+export function benchmarkLadder(ev: Record<string, unknown> | null | undefined, who: string, calls: ChReadCalls, role: 'coach' | 'player' = 'player'): ChBenchmarkLadder | null {
   const you = num(ev?.your_value);
   if (you == null) return null;
   const comparison = ev?.comparison as { lines?: Array<Record<string, unknown>>; primary?: Record<string, unknown> } | undefined;
@@ -106,7 +129,7 @@ export function benchmarkLadder(ev: Record<string, unknown> | null | undefined, 
   const fmt = (v: number) => (unit ? `${Math.round(v)}%` : formatFixed(v, Math.abs(v) < 10 ? 1 : 0));
   const all = comparison?.lines ?? (comparison?.primary ? [comparison.primary] : []);
   const lines = all
-    .filter((l) => num(l.value) != null && (l.source !== 'team_pool' || (calls.teamPool && calls.teamPoolOnLadder === 'when-flag-on')))
+    .filter((l) => num(l.value) != null && (l.source !== 'team_pool' || (role === 'coach' && calls.teamPool && calls.teamPoolOnLadder === 'when-flag-on')))
     .map((l) => {
       const value = l.value as number;
       const n = num(l.n);
@@ -165,6 +188,8 @@ export function readCauseOf(cause: Record<string, unknown> | null | undefined, w
 }
 
 function checkedLabels(lines: readonly string[] | undefined, role: 'coach' | 'player'): string[] {
+  // What CoachHelm checked is the coach's (7 Nov design, "How sure"): a player's payload carries none of it.
+  if (role !== 'coach') return [];
   // The engine's lines start with a level ("length: 16 of 28 …"); the card names what was looked at, and drops the family codes ("A5 …").
   const out: string[] = [];
   for (const l of lines ?? []) {
@@ -180,7 +205,7 @@ function checkedLabels(lines: readonly string[] | undefined, role: 'coach' | 'pl
 
 const WORTH_TO: Record<string, 'team' | 'tour'> = { team: 'team', tour: 'tour' };
 
-export function toChReadDetail(raw: EvidenceInsight, deep: ChDeepInsight, role: 'coach' | 'player', first: string, calls: ChReadCalls, themes: Record<string, ChDiveTheme>): ChReadDetail {
+export function toChReadDetail(raw: EvidenceInsight, deep: ChDeepInsight, role: 'coach' | 'player', first: string, calls: ChReadCalls, themes: Record<string, ChDiveTheme>, tour: string = 'Tour'): ChReadDetail {
   const ev = raw.evidence as unknown as Record<string, unknown>;
   const base = deep.base;
   const cause = ev.cause as Record<string, unknown> | null | undefined;
@@ -210,15 +235,24 @@ export function toChReadDetail(raw: EvidenceInsight, deep: ChDeepInsight, role: 
   const funnel = funnelAllowed ? funnelOf(diagnosis?.basis?.narrowing) : null;
   // Call 2 gives a player the observed funnel; Q3 stays either way, so a step that is an arm of a likely cause is not on their copy.
   const playerSteps = funnel?.steps.filter((s) => !namesWithheldArm(`${s.label} ${s.statement}`, ev)) ?? [];
+  // The team pool is the coach's. A player's read is built without it: the What line takes the comparison the card draws, and the
+  // board card's pooled figure (`compare.team`, the coach's read sheet) is not on their copy.
+  const player = role === 'player';
+  const pooled = player && teamPoolLine(raw.evidence) != null;
+  const what = pooled ? { ...deep.read.what, benchmark: benchmarkOf(raw, base, (t) => speak(t, { role: 'player' }), false) } : deep.read.what;
+  const insight: ChInsight = player && base.compare?.team != null ? { ...base, compare: { ...base.compare, team: null } } : base;
   return {
-    insight: base,
+    insight,
     stance: deep.stance.word,
+    stanceCls: deep.stance.cls,
+    four: { what: readLines({ ...deep.read, what }, tour, undefined, role).what, why: deep.read.why, next: deep.read.next, through: deep.read.when.through },
+    measured: deep.measured,
     headline: {
       title: base.title,
       lede: base.lede,
       value: base.value,
       valueNote: base.valueUnit,
-      ladder: calls.pictures ? benchmarkLadder(ev, role === 'coach' ? first : 'You', calls) : null,
+      ladder: calls.pictures ? benchmarkLadder(ev, role === 'coach' ? first : 'You', calls, role) : null,
       worth: deep.closes ? { strokes: deep.closes.strokes, to: WORTH_TO[deep.closes.anchor] ?? 'self', estimated: base.stakes != null } : null,
       foot: { sample: base.evidence.sample, firm: base.evidence.read?.word ?? null, rung: role === 'coach' ? (support?.word ?? null) : null, through: base.evidence.asOf },
       stale: base.stale ? `A newer round (${base.stale.newestRound}) is not in this read yet. It is re-read overnight.` : null,
@@ -254,6 +288,12 @@ export function railOf(list: readonly ChDeepInsight[], role: 'coach' | 'player',
         sub: [typeof i.stance === "object" ? i.stance.word : i.stance, role === 'coach' ? (TIER[String(((raw?.get(i.base.id)?.evidence as unknown as Record<string, unknown> | undefined)?.cause as { state?: string } | undefined)?.state)] ?? i.firmness) : null].filter(Boolean).join(' · '),
         value: i.base.value,
         tone: i.base.strength ? ('good' as const) : i.base.stale ? ('plain' as const) : ('warn' as const),
+        category: i.base.category,
+        cls: i.stance.cls,
+        word: i.stance.word,
+        // A coach reads the cause tier or the claim ladder's word; a player only the confidence word, never the ladder.
+        firm: role === 'coach' ? (TIER[String(((raw?.get(i.base.id)?.evidence as unknown as Record<string, unknown> | undefined)?.cause as { state?: string } | undefined)?.state)] ?? i.firmness) : (i.base.evidence.read?.word ?? null),
+        unit: i.base.value ? i.base.valueUnit : null,
       })),
   })).filter((g) => g.rows.length > 0);
 }
@@ -265,7 +305,7 @@ export function toChReadView(dive: ChDeepDive, raw: ReadonlyMap<string, Evidence
   return {
     head,
     area: areaLabel,
-    read: deep && row ? toChReadDetail(row, deep, role, head.first, calls, dive.themes) : null,
+    read: deep && row ? toChReadDetail(row, deep, role, head.first, calls, dive.themes, dive.tour) : null,
     rail: railOf(dive.list, role, raw),
     counts: { insights: dive.counts.insights ?? dive.list.length, needs: dive.counts.needs ?? 0 },
     ...(dive.missing ? { missing: dive.missing } : {}),

@@ -6,7 +6,8 @@ import { diveCounts, toChDeepInsight, type ChDeepDive } from '../../../../data/c
 import { toChInsight } from '../../../../data/coachhelm-map';
 import { READ_CALLS } from '../../../../data/coachhelm-read-calls';
 import type { ChInsight } from '../../../../data/coachhelm-shape';
-import { HELM_PLAYERS, PREVIEW_TOUR, slope } from '../../../../preview/fixtures-coachhelm';
+import { HELM_PLAYERS, PREVIEW_TOUR, penalties, slope } from '../../../../preview/fixtures-coachhelm';
+import { previewReadView } from '../../../../preview/fixtures-coachhelm-read';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 
 /**
@@ -201,7 +202,8 @@ describe('a likely cause told in the row’s own words', () => {
     expect(base.title).toBeTruthy();
     // Call 2 keeps the observed funnel; the step that is an arm of the guess is not on the player's copy.
     expect(detail.funnel?.steps.map((s) => s.label)).toEqual(['All approaches']);
-    expect(detail.sure.checked).toEqual(['Length of the approach']);
+    // 7 Nov design: what CoachHelm checked is the coach's. A player's copy carries none of it, named or not.
+    expect(detail.sure.checked).toEqual([]);
   });
 
   it('a coach still reads the row whole, and the arms', () => {
@@ -221,5 +223,92 @@ describe('a likely cause told in the row’s own words', () => {
     const { base, detail } = build('player', told('observed_sequence'));
     expect(base.lede).toContain('driven by long irons');
     expect(detail.cause?.state).toBe('counted');
+  });
+});
+
+/**
+ * The hard rule of the 7 Nov read: a player's read never contains a likely cause, another player's figures or the team pool. The
+ * payload is what `loadPlayerRead` hands the client page (`toChReadView`), so it is searched whole: a field added later that carries
+ * one of these fails here, whatever it is called.
+ */
+describe('a player’s read never carries the team pool, a teammate or a coach-only field', () => {
+  const POOL = { source: 'team_pool', label: 'Team pool', value: 0.7, n: 186, n_unit: 'rounds', n_noun: 'rounds', players: 9, unit: 'count' };
+  const pooled = (): EvidenceInsight => {
+    const r = penalties(HELM_PLAYERS.eli.id, 'in-pool');
+    return {
+      ...r,
+      evidence: {
+        ...r.evidence,
+        comparison: { primary: POOL, lines: [POOL, { source: 'tour', label: 'Tour', value: 0.3 }] },
+        ladder: 'likely',
+        support: SUPPORT,
+        cause: CAUSE,
+        diagnosis: { ...r.evidence.diagnosis, basis: { checked: ['length: 16 of 28 approaches', 'Club off the tee'], narrowing: { steps: [{ passed: true, label: 'Off the tee', statement: '17 of 23 penalties came off the tee' }], stopped_at: null } } },
+      } as unknown as EvidenceInsight['evidence'],
+    };
+  };
+  const ON = { ...READ_CALLS, teamPool: true };
+  const view = (role: 'coach' | 'player') => {
+    const row = pooled();
+    const viewer = role === 'coach' ? ({ role: 'coach', first: 'Eli' } as const) : ({ role: 'player' } as const);
+    const base = toChInsight(row, { tour: PREVIEW_TOUR, viewer, engine: { flags: { support: true, cause: true }, now: '2026-11-01T00:00:00.000Z', viewer } as never });
+    const deep = toChDeepInsight(row, base, { rounds: new Map(), focusAreas: [], goals: [], themes: null }, (s) => s, role);
+    const dive: ChDeepDive = { list: [deep], tour: 'Tour', rounds: null, themes: {}, roundsFailed: false, plansFailed: false, themesFailed: false, counts: diveCounts([deep]) };
+    const head = role === 'coach' ? { playerId: row.player_id, name: 'Eli Brandt', first: 'Eli' } : { playerId: null, name: 'You', first: 'You' };
+    return toChReadView(dive, new Map([[row.id, row]]), row.id, role, head, ON);
+  };
+  /** Keys whose value is the coach's alone, wherever they sit in the payload. */
+  const COACH_KEYS = new Set(['arms', 'range', 'rung', 'verdict', 'team']);
+  const POOL_WORDS = ['Team pool', 'team pool', 'teammates', 'teammate', '186 rounds'];
+
+  it('the coach’s copy of the same row carries all of it, so the player check means something', () => {
+    const v = view('coach');
+    const json = JSON.stringify(v);
+    expect(v.read?.headline.ladder?.lines.map((l) => l.source)).toEqual(['team_pool', 'tour']);
+    expect(v.read?.insight.compare?.team).toBe(0.7);
+    expect(v.read?.four.what).toContain('Team pool 0.7 a round (186 rounds)');
+    expect(v.read?.cause?.state).toBe('likely');
+    expect(v.read?.sure.checked.length).toBeGreaterThan(0);
+    expect(v.read?.sure.rung).not.toBeNull();
+    expect(POOL_WORDS.filter((w) => json.includes(w)).length).toBeGreaterThan(0);
+  });
+
+  it('the player’s copy holds no pool line, pooled figure, teammate count, checked line, rung, arm or verdict', () => {
+    const v = view('player');
+    const json = JSON.stringify(v);
+    expect(POOL_WORDS.filter((w) => json.includes(w))).toEqual([]);
+    expect(valuesUnder(v, COACH_KEYS)).toEqual([]);
+    expect(v.read?.headline.ladder?.lines.map((l) => l.source)).toEqual(['tour']);
+    expect(v.read?.insight.compare?.team ?? null).toBeNull();
+    expect(v.read?.four.what).toContain('Compared with Tour 0.3');
+    expect(v.read?.sure.checked).toEqual([]);
+    expect(v.read?.sure.rung).toBeNull();
+    expect(v.read?.cause?.state).toBe('not_traced');
+    expect(json).not.toContain('times as often');
+    expect(json).not.toContain('175+');
+    expect(v.team).toBeUndefined();
+    expect(v.head.playerId).toBeNull();
+  });
+
+  it('a row whose only comparison is the pool leaves a player with no ladder, never the pool alone', () => {
+    const row = pooled();
+    const only: EvidenceInsight = { ...row, evidence: { ...row.evidence, comparison: { primary: POOL, lines: [POOL] } } as unknown as EvidenceInsight['evidence'] };
+    const base = toChInsight(only, { tour: PREVIEW_TOUR, viewer: { role: 'player' } });
+    const deep = toChDeepInsight(only, base, { rounds: new Map(), focusAreas: [], goals: [], themes: null }, (s) => s, 'player');
+    expect(toChReadDetail(only, deep, 'player', 'You', ON, {}).headline.ladder).toBeNull();
+  });
+
+  it('every preview read, as the player gets it, passes the same search (the preview runs with the pool call on)', () => {
+    for (const q of ['penalties', 'putts', 'approach']) {
+      const coach = JSON.stringify(previewReadView(q, 'coach'));
+      const player = previewReadView(q, 'player');
+      const json = JSON.stringify(player);
+      expect(POOL_WORDS.filter((w) => json.includes(w)), q).toEqual([]);
+      expect(valuesUnder(player, COACH_KEYS), q).toEqual([]);
+      expect(json, q).not.toContain('Long par 4s');
+      // No player's name: a player's copy speaks in the second person and names no one on the team.
+      for (const name of ['Eli', 'Jonah', 'Priya', 'Theo']) expect(json.includes(name), `${q}: ${name}`).toBe(false);
+      if (q !== 'putts') expect(coach).toContain('Team pool');
+    }
   });
 });
