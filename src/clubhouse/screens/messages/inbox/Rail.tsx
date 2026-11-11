@@ -22,6 +22,13 @@ import { InboxSkeleton } from './InboxSkeleton';
 import { AnnouncementsSection } from '../announcements';
 import { MessageHits } from '../message-hits';
 
+/**
+ * What ↑ and ↓ walk on the rail, in the order it draws them: the conversations, then the Announcements row, the
+ * announcements it opens to, and "earlier announcements". The Announcements row was left out, so the arrows stopped on
+ * the last conversation and Safari's Tab went past it to the thread.
+ */
+export const RAIL_ROWS = ".ch-ms-row, .ch-ms-fold, .ch-ms-more";
+
 /** B11: the rail's keys, as the shortcuts sheet lists them. */
 const RAIL_KEYS: readonly ChPageKey[] = [{ label: "Move between conversations", keys: ["Up", "Down"] }];
 
@@ -33,8 +40,8 @@ export function inboxContextDesktop(unread: number, total: number): string {
 export function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
   const body = useRef<HTMLDivElement | null>(null);
   usePanelSmoothScroll(body);
-  // B11: ↑ and ↓ walk the conversations; the rail is one Tab stop.
-  useRovingRows(body, ".ch-ms-row");
+  // B11: ↑ and ↓ walk the conversations and the announcements under them; the rail is one Tab stop.
+  useRovingRows(body, RAIL_ROWS);
   usePageKeys("Messages", RAIL_KEYS);
   const [filter, setFilter] = useState<ChConvFilter>(api.designFilter ?? "all");
   const [q, setQ] = useState("");
