@@ -236,7 +236,8 @@ describe('the same shot data is saved through the new arrangement', () => {
     await user.click(screen.getByRole('radio', { name: /^Green/ }));
     await user.type(document.getElementById('ch-rt-dist')!, '8');
     await user.click(next());
-    // First putt: left to right, uphill, missed short and on the low side, 2 ft left.
+    // First putt: left to right, uphill (its optional row, opened once), missed short and on the low side, 2 ft left.
+    await user.click(screen.getByRole('button', { name: /^Break and slope/ }));
     await user.click(within(screen.getByRole('radiogroup', { name: 'Putt break' })).getByRole('radio', { name: 'L → R' }));
     await user.click(within(screen.getByRole('radiogroup', { name: 'Putt slope' })).getByRole('radio', { name: 'Uphill' }));
     await user.click(screen.getByRole('radio', { name: 'Green' }));

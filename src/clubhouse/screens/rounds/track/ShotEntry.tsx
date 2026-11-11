@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState, type Dispatch, type ReactNode, type RefObject } from 'react';
-import { ArrowRight, Check, FlagTriangleRight, TriangleAlert, Undo2 } from 'lucide-react';
+import { useEffect, useLayoutEffect, useRef, useState, type Dispatch, type ReactNode, type RefObject } from 'react';
+import { ArrowRight, Check, ChevronDown, FlagTriangleRight, TriangleAlert, Undo2 } from 'lucide-react';
 import type { ShotAction } from '@/hooks/golf/use-shot-state-machine';
 import { displayToFeet, displayToYards, yardsToDisplay, type DistancePreference } from '@/lib/golf/distance-units';
 import {
@@ -61,6 +61,12 @@ export interface ShotEntryProps {
   /** Resolves true once the tap in's hole is saved. */
   onTapIn?: () => Promise<boolean>;
   /**
+   * Whether the putt's optional Break and slope row is open. The round screen holds it, so once opened it stays open on
+   * every putt for the rest of the round; closed until then.
+   */
+  puttReadOpen: boolean;
+  onPuttReadOpen: (open: boolean) => void;
+  /**
    * The one-tap data prompts (CH-11960 to CH-11962), drawn first in the card: the round screen owns them, so a tap
    * survives the entry being re-keyed for the next shot. Absent, the card is what it was.
    */
@@ -68,6 +74,7 @@ export interface ShotEntryProps {
 }
 
 const DIST_ID = 'ch-rt-dist';
+const READ_ID = 'ch-rt-read';
 const BLOCKER_ID = 'ch-rt-blocker';
 
 /**
@@ -127,6 +134,20 @@ export function ShotEntry(p: ShotEntryProps) {
   if (turned.key !== shotKey) setTurned({ key: shotKey, face, count: 0 });
   else if (turned.face !== face) setTurned({ key: shotKey, face, count: turned.count + 1 });
   const turn = turned.key === shotKey && turned.count > 0 ? (turned.count % 2 ? 'a' : 'b') : undefined;
+  // The Break and slope row stays where it was tapped. Where the hero has height to give, the card grows up into it and
+  // the row does not move; where it has none (a small phone), the card can only grow down the page, so the page is
+  // scrolled by exactly what the row moved, at once, before the frame is painted.
+  const readRow = useRef<HTMLButtonElement>(null);
+  const readRowWas = useRef<number | null>(null);
+  useLayoutEffect(() => {
+    const was = readRowWas.current;
+    readRowWas.current = null;
+    const row = readRow.current;
+    if (was === null || !row) return;
+    const moved = row.getBoundingClientRect().top - was;
+    if (Math.abs(moved) >= 1) window.scrollBy({ top: moved, behavior: 'instant' });
+  }, [p.puttReadOpen]);
+  const puttRead = [BREAK_OPTIONS.find(([v]) => v === p.puttBreak)?.[1], SLOPE_OPTIONS.find(([v]) => v === p.puttSlope)?.[1]].filter(Boolean).join(' · ');
   const resultLabel = p.isPutting ? 'Putt result' : 'Shot result';
   const followLabel = p.isPutting ? 'What happened' : 'Miss direction';
 
@@ -185,25 +206,13 @@ export function ShotEntry(p: ShotEntryProps) {
           </Sec>
         )}
 
-        {p.isPutting && (
-          <Sec label="Putting details" hint="Optional" tint>
-            <div className="ch-rt-sub">
-              <em>Break</em>
-              <Seg label="Putt break" value={p.puttBreak} onChange={(v) => p.dispatch({ type: 'SET_PUTT_BREAK', payload: v })} options={BREAK_OPTIONS.map(([value, label]) => ({ value, label }))} />
-            </div>
-            <div className="ch-rt-sub">
-              <em>Slope</em>
-              <Seg label="Putt slope" value={p.puttSlope} onChange={(v) => p.dispatch({ type: 'SET_PUTT_SLOPE', payload: v })} options={SLOPE_OPTIONS.map(([value, label]) => ({ value, label }))} />
-            </div>
-          </Sec>
-        )}
-
         <div className="ch-rt-slot" data-face={face} data-turn={turn}>
           <div className="ch-rt-face" data-face="pick" inert={face !== 'pick' || undefined} aria-hidden={face !== 'pick' || undefined}>
             <Sec label={resultLabel}>
               <Seg
                 label={resultLabel}
-                cols={3}
+                // A putt's four results stand in one row, so the leave distance sits directly under them.
+                cols={p.isPutting ? 4 : 3}
                 value={result}
                 onChange={(v) => {
                   setChangingAt(null);
@@ -352,6 +361,38 @@ export function ShotEntry(p: ShotEntryProps) {
           )}
           {noticeAtDistance && notice}
         </Sec>
+
+        {p.isPutting && (
+          // The putt's read, one optional row under the leave distance (owner, 2026-11-11): closed until the player opens
+          // it, then open on every putt for the rest of the round. Closed, it still says what the putt carries.
+          <section className={'ch-rt-sec ch-rt-read' + (p.puttReadOpen ? ' is-open' : '')} aria-label="Break and slope">
+            <button
+              ref={readRow}
+              type="button"
+              className="ch-rt-read__h"
+              aria-expanded={p.puttReadOpen}
+              aria-controls={READ_ID}
+              onClick={(e) => {
+                readRowWas.current = e.currentTarget.getBoundingClientRect().top;
+                p.onPuttReadOpen(!p.puttReadOpen);
+              }}
+            >
+              <span>Break and slope</span>
+              {puttRead ? <b>{puttRead}</b> : <em className="ch-rt-hint">Optional</em>}
+              <Icon icon={ChevronDown} size={16} className="ch-rt-read__chev" />
+            </button>
+            <div className="ch-rt-read__b" id={READ_ID} hidden={!p.puttReadOpen}>
+              <div className="ch-rt-sub">
+                <em>Break</em>
+                <Seg label="Putt break" value={p.puttBreak} onChange={(v) => p.dispatch({ type: 'SET_PUTT_BREAK', payload: v })} options={BREAK_OPTIONS.map(([value, label]) => ({ value, label }))} />
+              </div>
+              <div className="ch-rt-sub">
+                <em>Slope</em>
+                <Seg label="Putt slope" value={p.puttSlope} onChange={(v) => p.dispatch({ type: 'SET_PUTT_SLOPE', payload: v })} options={SLOPE_OPTIONS.map(([value, label]) => ({ value, label }))} />
+              </div>
+            </div>
+          </section>
+        )}
 
         {p.currentShot >= 12 && (
           // CH-11106: the 15-stroke limit, from shot 12.

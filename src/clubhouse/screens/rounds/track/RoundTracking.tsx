@@ -120,6 +120,9 @@ export function RoundTracking(props: RoundTrackingProps) {
   // The stage above the shot log takes the screen's spare height on a phone. While the log is open the stage keeps the
   // height it had, so the log's rows open downward from a line that stays where it was tapped (the page scrolls to
   // them, as it did) instead of the stage giving its height up and the line jumping.
+  // The putt's Break and slope row: closed until the player opens it, then open for the rest of the round (owner,
+  // 2026-11-11). Held here, beside the engine, so it outlives each shot's entry and the move between holes.
+  const [puttReadOpen, setPuttReadOpen] = useState(false);
   const stageRef = useRef<HTMLDivElement>(null);
   const [stageHeld, setStageHeld] = useState<number | null>(null);
   const hole = t.currentHole;
@@ -369,6 +372,8 @@ export function RoundTracking(props: RoundTrackingProps) {
               onUndoLastShot={t.handleUndoLastShot}
               tapIn={t.tapIn}
               onTapIn={t.handleTapIn}
+              puttReadOpen={puttReadOpen}
+              onPuttReadOpen={setPuttReadOpen}
               prompts={prompts}
             />
           )}

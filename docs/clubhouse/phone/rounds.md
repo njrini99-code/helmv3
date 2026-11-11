@@ -186,6 +186,16 @@ Board: `Player - Rounds - Mobile.html`, the tracking frames.
   row is held in the same way before a result and for a holed ball, and the
   shot's length takes "Required"'s place in its heading. On the phone the miss
   grid drops its two captions. Quick distances fill the row at 44px.
+- Putting (owner, 2026-11-11): Putt result first, its four results in one
+  row; the required leave distance directly under it; and Break and slope as
+  one optional row at the card's foot, closed until the player opens it and
+  then open on every putt for the rest of the round (the round screen holds
+  it; a reload closes it again). Its two rows of choices, break then slope,
+  open above the row, so the row stays where it was tapped; where the card can
+  only grow down the page (a small phone), the page is scrolled by what the
+  row moved. Closed, the row says what the putt carries ("L → R · Uphill"). A
+  missed putt's four tags stand two by two, each row a pair that excludes
+  itself.
 - The round's save line (CH-11901) is a quiet line beside the distance readout
   (or the holed score), never a pill under the top bar.
 - Sheets (penalty, change a shot, leave this shot, exit, scorecard, round
@@ -224,7 +234,7 @@ as they read every other make.
     "Leaves 1 ft, holes it · 2 putts · 5". The caption always names the
     strokes, so a putt that was actually holed is never tapped in by
     mistake without the score saying so.
-  - The break and slope picked above go with the putt on screen.
+  - The break and slope picked in their row go with the putt on screen.
   - Meters: the caption reads 0.3 m and 0.6 m; feet are stored.
 - **After.** The same path as Hole out: the hole saves, the review shows
   "Saving hole N", a failed save shows Try again, and the round moves to the

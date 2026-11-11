@@ -1033,6 +1033,68 @@ path.ch-rt-map__shot {
   }
 }
 
+/* The putt's read (owner, 2026-11-11): Break and slope as one optional row under the leave distance, opened to its two
+   choices. On the desk the choices open under the row; on the phone the row is the card's foot and they open above it
+   (the phone block), so the row just tapped stays where it is. */
+.ch-rt-read {
+  display: flex;
+  flex-direction: column;
+}
+.ch-rt-read__h {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  margin: -12px 0;
+}
+.ch-rt-read__h > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: auto;
+  font: var(--ch-type-13-strong);
+  line-height: var(--ch-lead-tight);
+  color: var(--ch-ink-700);
+}
+.ch-rt-read__h > span::before {
+  width: 3px;
+  height: 12px;
+  border-radius: var(--ch-radius-mark);
+  background: var(--ch-green-fill-600);
+  content: '';
+}
+.ch-rt-read__h > b {
+  font: var(--ch-type-13-medium);
+  line-height: var(--ch-lead-tight);
+  color: var(--ch-text-primary);
+}
+.ch-rt-read__chev {
+  flex: none;
+  color: var(--ch-text-tertiary);
+  transition: transform var(--ch-dur-base) var(--ch-ease);
+}
+.ch-rt-read.is-open .ch-rt-read__chev {
+  transform: rotate(180deg);
+}
+.ch-rt-read__b {
+  margin-top: 16px;
+}
+.ch-root .ch-rt-read__h:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+.ch-rt-read__h[data-ch-pressed] {
+  background-image: linear-gradient(var(--ch-ledger-row-press), var(--ch-ledger-row-press));
+}
+@media (hover: hover) {
+  .ch-rt-read__h:active {
+    background-image: linear-gradient(var(--ch-ledger-row-press), var(--ch-ledger-row-press));
+  }
+}
+
 /* The distance box */
 .ch-rt-dist {
   display: flex;
@@ -3024,14 +3086,56 @@ path.ch-rt-map__shot {
     grid-template-rows: repeat(3, 44px);
     max-width: none;
   }
-  /* The putt's four tags as one row of equal keys: as pills they wrapped to a second row under 400px. */
+  /* The putt's four tags, two by two: each row is a pair that excludes itself (short or long, low side or high side),
+     on wide keys. As pills they wrapped to an uneven second row under 400px. */
   .ch-rt-follow .ch-rt-tags {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .ch-rt-follow .ch-rt-tags button {
     padding: 0 4px;
     text-align: center;
+  }
+  /* The putt's read is the card's foot: one row under the leave distance, and its two rows of choices open above it,
+     so the row just tapped stays under the thumb and what arrives under a second tap is the same row. The two rows
+     read in the row's own order, break then slope, without their small labels. */
+  .ch-rt-card > .ch-rt-read {
+    flex-direction: column-reverse;
+    padding-top: 4px;
+  }
+  .ch-rt-read__h {
+    margin: 0;
+  }
+  .ch-rt-read__h > span {
+    color: var(--ch-ink-600);
+  }
+  .ch-rt-read__h > span::before {
+    display: none;
+  }
+  .ch-rt-read__h > b {
+    color: var(--ch-ink-900);
+  }
+  .ch-rt-read__chev {
+    color: var(--ch-ink-500);
+    transform: rotate(180deg);
+  }
+  .ch-rt-read.is-open .ch-rt-read__chev {
+    transform: none;
+  }
+  .ch-rt-read__b {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 8px 0 0;
+  }
+  .ch-rt-read__b[hidden] {
+    display: none;
+  }
+  .ch-rt-read .ch-rt-sub > em {
+    display: none;
+  }
+  .ch-rt-read .ch-rt-sub + .ch-rt-sub {
+    margin-top: 0;
   }
   .ch-rt-sec.is-tint {
     background: none;
