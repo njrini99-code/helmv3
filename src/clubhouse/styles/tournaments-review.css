@@ -92,6 +92,33 @@
   font: var(--ch-type-13);
   color: var(--ch-text-secondary);
 }
+/* On a phone the section is already the card (ui.css): the notes sit flush in it, on the heading's inset, with no card of
+   their own inside it, as the player's notes do (tournaments-player.css). Before, the list was a second card inside the
+   section's, its rows 32 in against the heading's 16, and the line about who has not written hung 1px under that inner
+   card's foot. Now that line is the card's last row: the rows' rule over it, 16 around it. A list that ends the card
+   gives its last row's 16 back, so the card ends 16 under its content either way. */
+/* No corners of its own either: a rounded foot in the middle of the card showed the page through two notches. The
+   card's own last block still takes the card's corners (ui.css, the stronger rule). */
+.ch-tour-rev.is-phone .ch-tour-rev-notes {
+  border-radius: 0;
+  box-shadow: none;
+}
+.ch-tour-rev.is-phone .ch-tour-rev-note {
+  padding-inline: 0;
+}
+.ch-tour-rev.is-phone .ch-sec__head ~ .ch-tour-rev-notes:last-child {
+  padding-bottom: 0;
+}
+.ch-tour-rev.is-phone .ch-sec__head ~ .ch-tour-rev-missing {
+  margin: 0;
+}
+.ch-tour-rev.is-phone .ch-tour-rev-missing::before {
+  display: block;
+  height: var(--ch-hairline-w);
+  margin-bottom: 16px;
+  background: var(--ch-border-hairline);
+  content: '';
+}
 
 /* History: the trend (board .tr-trend; phone .tm-trend). */
 .ch-tour-rev-tools {
