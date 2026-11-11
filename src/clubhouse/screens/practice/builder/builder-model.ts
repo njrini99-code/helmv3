@@ -168,6 +168,18 @@ export const refOf = (ref: string): DrillRef | null => {
 };
 export const keyOfDrill = (d: DrillRef | null | undefined) => (d ? `${d.src}:${d.id}` : '');
 
+/** What kind of work a stretch of the day is: its drill's kind, or plain where no drill says. */
+export type DayKind = 'skill' | 'random' | 'pressure' | 'plain';
+/**
+ * A block on the day's strip, wherever the strip is drawn (the builder, Up next on Practice): as wide as its minutes and in its drill's kind.
+ * A rotation's time is shared between its stations, so three stations in an hour are three 20 minute stretches.
+ */
+export function blockDaySegs(b: PlanBlock, kindOf: (d: DrillRef | null | undefined) => DayKind): Array<{ id: string; min: number; tone: DayKind }> {
+  if (b.kind === 'team') return [{ id: b.id, min: b.len, tone: kindOf(b.drill) }];
+  if (b.kind === 'stations' && b.stations.length > 0) return b.stations.map((st) => ({ id: `${b.id}:${st.id}`, min: b.len / b.stations.length, tone: kindOf(st.drill) }));
+  return [{ id: b.id, min: b.len, tone: 'plain' }];
+}
+
 /** "45 min", "3 h", "2 h 45". */
 export function fmtMinutes(min: number): string {
   const h = Math.floor(min / 60);

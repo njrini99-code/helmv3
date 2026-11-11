@@ -10,6 +10,7 @@ import { practiceTables, type PracticePlanRow, type PracticePlanVersionRow, type
 import { isPracticeMissing } from '@/lib/golf/practice-errors';
 import { isoDay, formatWith } from '../lib/dates';
 import { editedAfterPublish, loadPlayerPractice } from './practice-plan';
+import { blockDaySegs, keyOfDrill } from '../screens/practice/builder/builder-model';
 import type { ChBankDrill, ChBuilderData, ChPlayerPracticeHome, ChPracticeEvent, ChPracticeHome, ChPracticeLoad, ChPracticeRow, ChPracticeState, ChPracticeTile, ChPracticeUpNext } from './practice-home-shape';
 
 type Sb = Awaited<ReturnType<typeof createClient>>;
@@ -61,6 +62,14 @@ function scheduleRows(body: PlanBodyV2, start: Date, zone: string): ChPracticeUp
     const place = b.kind === 'stations' ? `${b.stations.length} stations` : b.kind === 'course' ? `Holes ${b.holeFrom} to ${b.holeTo}` : b.place;
     return { time, title: b.title, place, min: b.len };
   });
+}
+
+/** Up next's strip, coloured as the builder colours it. The drill bank is read only when the plan names a drill; a bank that won't read leaves the strip plain. */
+async function daySegs(sb: Sb, teamId: string, body: PlanBodyV2): Promise<NonNullable<ChPracticeUpNext['day']>> {
+  const blocks = body.variants.main.blocks;
+  const named = blocks.some((b) => (b.kind === 'team' && b.drill) || (b.kind === 'stations' && b.stations.some((st) => st.drill)));
+  const kinds = named ? new Map((await drillBank(sb, teamId).catch(() => [])).map((d) => [d.ref, d.kind])) : new Map<string, ChBankDrill['kind']>();
+  return blocks.flatMap((b) => blockDaySegs(b, (d) => (d ? (kinds.get(keyOfDrill(d)) ?? 'plain') : 'plain'))).map(({ min, tone }) => ({ min, tone }));
 }
 
 function stateOf(p: PlanRow | undefined, ended: boolean): ChPracticeState {
@@ -175,6 +184,7 @@ export async function loadCoachPracticeHome(teamId: string, now: Date = new Date
       title: p?.title || nextEvent.title,
       when: [dayShort(start, zone), span(nextEvent, zone), nextEvent.location].filter(Boolean).join(' · '),
       rows: body ? scheduleRows(body, start, zone) : [],
+      day: body ? await daySegs(sb, teamId, body) : undefined,
       state: p ? stateOf(p, false) : undefined,
       planHref: p && p.status === 'published' ? `${HREF}${p.id}` : null,
       editHref: p ? `${HREF}${p.id}/edit` : null,

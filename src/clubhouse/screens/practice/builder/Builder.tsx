@@ -30,10 +30,10 @@ import type { PlanPartData } from '../../coachhelm/plan/PlanCard';
 import { printPlan } from '../../coachhelm/plan/PrintPlan';
 import { PracticePlanSheet } from '../../coachhelm/plan/sheet/PracticePlanSheet';
 import { toSheetModel } from '../../coachhelm/plan/sheet/plan-sheet-model';
-import { addBlock, addGroup, askWords, takeAskPicks, BLOCK_KINDS, blockSub, blocksOf, clockFor, drillSlots, fmtMinutes, ghostsFrom, keepGhost, keyOfDrill, makeBlock, moveBlock, movePlayer, patchBlock, refOf, removeBlock, removeGroup, ribbon, setSlotDrill, splitGroups, STEPS, totalOf, type BuilderStep, type Ghost } from './builder-model';
+import { addBlock, addGroup, askWords, takeAskPicks, BLOCK_KINDS, blockDaySegs, blockSub, blocksOf, clockFor, drillSlots, fmtMinutes, ghostsFrom, keepGhost, keyOfDrill, makeBlock, moveBlock, movePlayer, patchBlock, refOf, removeBlock, removeGroup, ribbon, setSlotDrill, splitGroups, STEPS, totalOf, type BuilderStep, type DayKind, type Ghost } from './builder-model';
 import { BankList, BlockFields, kindLabel, NewDrillSheet } from './Sheets';
 import { restoredDraft, useAutosave } from './useAutosave';
-import { DayStrip, type DaySeg, type DayTone } from '../DayStrip';
+import { DayLegend, DayStrip, type DaySeg } from '../DayStrip';
 
 const HelperSession = lazy(() => import('./HelperSession'));
 
@@ -338,19 +338,11 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
     </div>
   );
   // The day to scale: a block is as wide as its minutes and takes its drill's kind; suggestions wait as outlines, and what is left of the window stays empty.
-  const toneOf = (d: Parameters<typeof keyOfDrill>[0]): DayTone => (d ? (kinds.get(keyOfDrill(d)) ?? 'plain') : 'plain');
-  const blockSegs = (b: PlanBlock, ghost: boolean): DaySeg[] => {
-    if (ghost) return [{ id: b.id, min: b.len, tone: 'ghost' }];
-    if (b.kind === 'team') return [{ id: b.id, min: b.len, tone: toneOf(b.drill) }];
-    if (b.kind === 'stations' && b.stations.length > 0) return b.stations.map((st) => ({ id: `${b.id}:${st.id}`, min: b.len / b.stations.length, tone: toneOf(st.drill) }));
-    return [{ id: b.id, min: b.len, tone: 'plain' }];
-  };
+  const toneOf = (d: Parameters<typeof keyOfDrill>[0]): DayKind => (d ? (kinds.get(keyOfDrill(d)) ?? 'plain') : 'plain');
+  const blockSegs = (b: PlanBlock, ghost: boolean): DaySeg[] => (ghost ? [{ id: b.id, min: b.len, tone: 'ghost' }] : blockDaySegs(b, toneOf));
   const ghostMin = ghosts.reduce((n, g) => n + g.block.len, 0);
   const openMin = windowMin == null ? 0 : Math.max(0, windowMin - total - ghostMin);
   const daySegs: DaySeg[] = [...blocks.flatMap((b) => blockSegs(b, false)), ...ghosts.flatMap((g) => blockSegs(g.block, true)), ...(openMin > 0 ? [{ id: 'open', min: openMin, tone: 'open' as const }] : [])];
-  // The legend counts the same clock minutes the strip draws (a rotation's hour is shared between its stations), so the two can't disagree.
-  const kindMin = { skill: 0, random: 0, pressure: 0 };
-  for (const seg of daySegs) if (seg.tone === 'skill' || seg.tone === 'random' || seg.tone === 'pressure') kindMin[seg.tone] += Math.round(seg.min);
   const ribbonBar = (
     <div className="ch-prc-ribbon" aria-live="polite" data-ch-code="CH-13896">
       <div className="ch-prc-ribbon__w">
@@ -360,11 +352,7 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
         <span className={'ch-num' + (rib.over ? ' is-over' : '')}>{ghostMin > 0 ? `${fmtMinutes(ghostMin)} suggested` : rib.rest}</span>
       </div>
       <DayStrip segs={daySegs} />
-      {kindMin.skill + kindMin.random + kindMin.pressure > 0 && (
-        <p className="ch-prc-ribbon__mix ch-num">
-          {(['skill', 'random', 'pressure'] as const).map((k) => (kindMin[k] > 0 ? <span key={k} data-tone={k}>{kindLabel(k)} {fmtMinutes(kindMin[k])}</span> : null))}
-        </p>
-      )}
+      <DayLegend segs={daySegs} />
     </div>
   );
   const whenLine = (

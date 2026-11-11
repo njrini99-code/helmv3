@@ -37,6 +37,8 @@ const HOME: ChPracticeHome = {
       { time: '4:40', title: 'Pressure finish: 25 in a row from 3 feet', place: 'Putting green', min: 15 },
       { time: '4:55', title: 'Wrap', place: 'Clubhouse patio', min: 5 },
     ],
+    // The strip as the builder draws this plan: the rotation's hour is three stations, each in its drill's kind.
+    day: [{ min: 30, tone: 'plain' }, { min: 20, tone: 'skill' }, { min: 20, tone: 'skill' }, { min: 20, tone: 'random' }, { min: 10, tone: 'plain' }, { min: 60, tone: 'plain' }, { min: 15, tone: 'pressure' }, { min: 5, tone: 'plain' }],
     state: 'Draft',
     planHref: null,
     editHref: '/golf/dashboard/practice/plan/b/edit',

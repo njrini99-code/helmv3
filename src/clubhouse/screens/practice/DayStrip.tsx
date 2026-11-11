@@ -41,3 +41,26 @@ export function DayStrip({ segs, from, to }: { segs: readonly DaySeg[]; from?: s
     </div>
   );
 }
+
+const KIND_WORD = { skill: 'Skill', random: 'Random', pressure: 'Pressure' } as const;
+
+/**
+ * The strip's key: each kind of work drawn, with its minutes. It counts the same clock minutes the strip draws (a rotation's hour is shared
+ * between its stations), so the two can't disagree. A day with no drill kinds has no key.
+ */
+export function DayLegend({ segs }: { segs: readonly DaySeg[] }) {
+  const min = { skill: 0, random: 0, pressure: 0 };
+  for (const seg of segs) if (seg.tone === 'skill' || seg.tone === 'random' || seg.tone === 'pressure') min[seg.tone] += Math.round(seg.min);
+  if (min.skill + min.random + min.pressure === 0) return null;
+  return (
+    <p className="ch-prc-ribbon__mix ch-num">
+      {(['skill', 'random', 'pressure'] as const).map((k) =>
+        min[k] > 0 ? (
+          <span key={k} data-tone={k}>
+            {KIND_WORD[k]} {fmtMinutes(min[k])}
+          </span>
+        ) : null,
+      )}
+    </p>
+  );
+}

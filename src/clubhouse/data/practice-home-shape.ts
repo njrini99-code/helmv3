@@ -44,6 +44,8 @@ export interface ChPracticeUpNext {
   when: string;
   /** `min`: the block's length, so the card can draw the day to scale. */
   rows: Array<{ time: string; title: string; place: string; min?: number }>;
+  /** The day's strip as the builder draws it: a stretch a block (a rotation's stations each their own), in its drill's kind. Left out, the card draws a stretch a row, plain. */
+  day?: Array<{ min: number; tone: 'skill' | 'random' | 'pressure' | 'plain' }>;
   /** Draft, Published or Updated; left out when the practice has no plan. */
   state?: ChPracticeState;
   planHref: string | null;

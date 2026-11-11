@@ -240,6 +240,29 @@ span.ch-prc-tile__it {
   margin-top: 12px;
 }
 
+/* Practice, the tab's body: Up next, then the plans. On a Mac, Up next takes three fifths with the plans beside it; a page with no plan to list keeps one column. */
+.ch-prc-home,
+.ch-prc-home__plans {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: inherit;
+  align-content: start;
+  min-width: 0;
+}
+.ch-prc-next .ch-prc-ribbon__mix {
+  margin-top: 8px;
+}
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
+  .ch-prc-home.has-plans {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    align-items: start;
+  }
+  /* The card's keys sit under what they act on, as the first-run card's do. */
+  .ch-prc-next__a {
+    justify-content: flex-start;
+  }
+}
+
 /* First run: one card, three starts. */
 .ch-prc-first {
   gap: 4px;

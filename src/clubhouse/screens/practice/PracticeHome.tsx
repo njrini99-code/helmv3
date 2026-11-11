@@ -15,7 +15,7 @@ import { Icon } from '../../ui/Icon';
 import { LargeTitle } from '../../ui/LargeTitle';
 import { EmptyState } from '../../ui/States';
 import { Badge, type BadgeTone } from '../../ui/Badge';
-import { DayStrip } from './DayStrip';
+import { DayLegend, DayStrip, type DaySeg } from './DayStrip';
 import { NewPlanSheet, type NewPlanStart } from './NewPlanSheet';
 
 /** The state's word and tone. A past plan reads "Ended" (05 S-PRC.past); the tone never carries the meaning alone. */
@@ -120,7 +120,9 @@ export function PracticeHome({ data, openNew = false, previewSheet = false, temp
   const newPlan = (start?: NewPlanStart) => setSheet({ event: null, start });
   const up = data.upNext;
   // The day to scale: each block as wide as its minutes. A plan read without lengths draws no strip rather than a guessed one.
-  const segs = up && up.rows.every((r) => typeof r.min === 'number') ? up.rows.map((r, i) => ({ id: String(i), min: r.min ?? 0 })) : [];
+  // Coloured by kind of work as the builder's is, when the plan was read with its drills; else a stretch a row, plain.
+  const segs: DaySeg[] = up?.day ? up.day.map((d, i) => ({ id: String(i), ...d })) : up && up.rows.every((r) => typeof r.min === 'number') ? up.rows.map((r, i) => ({ id: String(i), min: r.min ?? 0 })) : [];
+  const listed = !data.firstRun && data.drafts.length + data.published.length + data.past.length > 0;
   const more = up ? Math.max(0, up.rows.length - UP_NEXT_ROWS) : 0;
   return (
     <main className={'ch-page ch-prc' + (phone ? ' is-phone' : '')} data-ch="practice" aria-labelledby="ch-prc-title">
@@ -144,6 +146,9 @@ export function PracticeHome({ data, openNew = false, previewSheet = false, temp
         <WeekStrip week={data.week} onPlan={(event) => setSheet({ event })} />
       </section>
 
+      {/* On a Mac the tabs sit over both columns: Up next, with the plans beside it. On a phone they sit over the plans, under Up next. */}
+      {!phone && <PracticeTabs active="plans" />}
+      <div className={'ch-prc-home' + (listed ? ' has-plans' : '')}>
       {data.firstRun ? (
         <section className="ch-prc-card ch-prc-first" data-ch-code="CH-13396" aria-labelledby="ch-prc-first">
           <h2 id="ch-prc-first">Plan your first practice</h2>
@@ -200,6 +205,7 @@ export function PracticeHome({ data, openNew = false, previewSheet = false, temp
               {up.rows.length > 0 ? (
                 <>
                   <DayStrip segs={segs} />
+                  <DayLegend segs={segs} />
                   <ol className="ch-prc-next__rows">
                     {up.rows.slice(0, UP_NEXT_ROWS).map((r, i) => (
                       <li key={i}>
@@ -234,10 +240,10 @@ export function PracticeHome({ data, openNew = false, previewSheet = false, temp
         </>
       )}
 
-      <PracticeTabs active="plans" />
+      {phone && <PracticeTabs active="plans" />}
 
-      {!data.firstRun && (
-        <>
+      {listed && (
+        <div className="ch-prc-home__plans">
           {data.drafts.length > 0 && (
             <section className="ch-prc-sec" aria-labelledby="ch-prc-drafts">
               <h2 id="ch-prc-drafts">Drafts</h2>
@@ -260,8 +266,9 @@ export function PracticeHome({ data, openNew = false, previewSheet = false, temp
               {pastOpen && data.past.length > pastShown && <Button onClick={() => setPastShown((n) => n + 20)}>Show more</Button>}
             </section>
           )}
-        </>
+        </div>
       )}
+      </div>
       {phone && (
         <Link href="/golf/dashboard/practice/format" className="ch-prc-open">
           Plan format

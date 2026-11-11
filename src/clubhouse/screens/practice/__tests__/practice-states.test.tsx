@@ -5,8 +5,9 @@ import type { ChPlayerPracticeHome, ChPracticeHome } from '../../../data/practic
 import { PP_COACHES, PP_NAMES, PP_PLAN_PART } from '../../../preview/fixtures-practice-plan';
 import { toSheetModel } from '../../coachhelm/plan/sheet/plan-sheet-model';
 import HelperSession, { readRun } from '../builder/HelperSession';
+import { blockDaySegs } from '../builder/builder-model';
 import { CoachPlanBar, type ChPlanStatus } from '../CoachPlanBar';
-import { DayStrip, dayStripLabel } from '../DayStrip';
+import { DayLegend, DayStrip, dayStripLabel } from '../DayStrip';
 import { PlayerPracticeHome } from '../PlayerPracticeHome';
 import { PracticeHome } from '../PracticeHome';
 import { PrintStudio, printSummary, sheetNumbers } from '../PrintStudio';
@@ -104,6 +105,33 @@ describe('the day to scale', () => {
     expect(segs[1]!.getAttribute('data-tone')).toBe('pressure');
     rerender(<DayStrip segs={[]} />);
     expect(container.querySelector('.ch-prc-day')).toBeNull();
+  });
+  it('a block is one stretch in its drill’s kind, and a rotation shares its time between its stations', () => {
+    const blocks = PP_PLAN_PART.draft.body.variants.main.blocks;
+    const kindOf = (d: { id: string } | null | undefined) => (d ? 'pressure' : 'plain') as 'pressure' | 'plain';
+    expect(blockDaySegs(blocks[0]!, kindOf)).toEqual([{ id: 'warm', min: 30, tone: 'plain' }]);
+    expect(blockDaySegs(blocks[1]!, () => 'skill').map((seg) => [seg.min, seg.tone])).toEqual([[20, 'skill'], [20, 'skill'], [20, 'skill']]);
+    expect(blockDaySegs(blocks[3]!, () => 'skill')).toEqual([{ id: 'holes', min: 60, tone: 'plain' }]);
+  });
+  it('the key counts the minutes the strip draws, by kind, and a day with no kinds has none', () => {
+    const { container, rerender } = render(<DayLegend segs={[{ id: 'a', min: 30 }, { id: 'b', min: 20, tone: 'skill' }, { id: 'c', min: 20, tone: 'skill' }, { id: 'd', min: 15, tone: 'pressure' }, { id: 'g', min: 10, tone: 'ghost' }]} />);
+    expect([...container.querySelectorAll('.ch-prc-ribbon__mix span')].map((el) => [el.getAttribute('data-tone'), el.textContent])).toEqual([['skill', 'Skill 40 min'], ['pressure', 'Pressure 15 min']]);
+    rerender(<DayLegend segs={[{ id: 'a', min: 30 }]} />);
+    expect(container.querySelector('.ch-prc-ribbon__mix')).toBeNull();
+  });
+});
+
+describe('Up next draws the day as the builder does', () => {
+  const home: ChPracticeHome = { teamName: 'Demo', week: [], weekLine: null, firstRun: false, upNext: { title: 'Thursday practice', when: 'Thu', rows: [{ time: '2:00', title: 'Warm-up', place: 'Range', min: 30 }, { time: '2:30', title: 'Rotation', place: '2 stations', min: 40 }], day: [{ min: 30, tone: 'plain' }, { min: 20, tone: 'skill' }, { min: 20, tone: 'random' }], planHref: null, editHref: '/x', eventId: null }, drafts: [], published: [], past: [], open: [], copies: [], roster: [] } as unknown as ChPracticeHome;
+  it('in the kinds of work, with the key under it', () => {
+    const { container } = render(<PracticeHome data={home} />);
+    expect([...container.querySelectorAll('.ch-prc-next .ch-prc-day__bar i')].map((el) => el.getAttribute('data-tone'))).toEqual(['plain', 'skill', 'random']);
+    expect(container.querySelector('.ch-prc-next .ch-prc-ribbon__mix')!.textContent).toBe('Skill 20 minRandom 20 min');
+  });
+  it('a plan read without its drills is a stretch a row, plain, with no key', () => {
+    const { container } = render(<PracticeHome data={{ ...home, upNext: { ...home.upNext!, day: undefined } }} />);
+    expect([...container.querySelectorAll('.ch-prc-next .ch-prc-day__bar i')].map((el) => el.getAttribute('data-tone'))).toEqual(['plain', 'plain']);
+    expect(container.querySelector('.ch-prc-next .ch-prc-ribbon__mix')).toBeNull();
   });
 });
 
