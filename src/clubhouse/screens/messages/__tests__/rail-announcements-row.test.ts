@@ -7,7 +7,7 @@ const css = postcss.parse(readFileSync(join(import.meta.dirname, '../../../style
 const decls = (selector: string) => {
   const out: Record<string, string> = {};
   css.walkRules((r) => {
-    if (r.selector === selector && r.parent?.type === 'root') r.walkDecls((d) => void (out[d.prop] = d.value));
+    if (r.selectors.includes(selector) && r.parent?.type === 'root') r.walkDecls((d) => void (out[d.prop] = d.value));
   });
   return out;
 };
@@ -70,5 +70,42 @@ describe('Messages rail · Announcements is a row on the rail’s grid', () => {
 
   it('the phone’s fold is still the card at the page edge', () => {
     expect(decls('[data-ch-ms-v2] .ch-inb--phone .ch-ms-sec.is-ann')).toMatchObject({ margin: '0 var(--ch-page-x-phone) var(--ch-space-3)' });
+  });
+
+  /**
+   * On the phone the opened announcements were rows on the canvas at the page gutter (a 36 face at 16, the time at 374)
+   * under a card that held only its own head, beside cards whose rows sit at 32. The section is the card now, as Recent
+   * is, and its rows are inside it on the card's grid.
+   */
+  it('on the phone the section is the card, with Recent’s face, and the fold is its head', () => {
+    const PHONE = '[data-ch-ms-v2] .ch-inb--phone';
+    const recent = decls(`${PHONE} .ch-msv-card`);
+    const card = decls(`${PHONE} .ch-ms-sec.is-ann`);
+    for (const prop of ['display', 'margin', 'overflow', 'border-radius', 'background', 'box-shadow']) expect(card[prop], prop).toBe(recent[prop]);
+    expect(card).toMatchObject({ overflow: 'hidden', background: 'var(--ch-card-bg)', 'box-shadow': 'var(--ch-card-shadow)' });
+    expect(decls(`${PHONE} .ch-ms-sec.is-ann .ch-ms-fold`)).toEqual({ 'grid-template-columns': '40px minmax(0, 1fr) auto auto', 'border-radius': '0', background: 'transparent', 'box-shadow': 'none' });
+    // The head's face is the rows' 40, so its title and every name under it start on one edge.
+    expect(decls(`${PHONE} .ch-ms-fold .ch-ms-grp.is-ann`)).toEqual({ width: '40px', height: '40px' });
+    expect(decls(`${PHONE} .ch-ms-fold__body`)).toEqual({ padding: '0', 'border-top': '0' });
+  });
+
+  it('on the phone an opened announcement takes a conversation row’s box and face, and a hairline from the face’s edge', () => {
+    const PHONE = '[data-ch-ms-v2] .ch-inb--phone';
+    const row = decls('[data-ch-ms-v2] .ch-inb .ch-ms-row:not(.is-ann)');
+    const ann = decls(`${PHONE} .ch-ms-row.is-ann`);
+    for (const prop of ['grid-template-columns', 'gap', 'width', 'min-height', 'margin', 'padding', 'border-radius', 'background']) expect(ann[prop], prop).toBe(row[prop]);
+    expect(ann.padding).toBe('var(--ch-inb-10) var(--ch-space-4)');
+    // The same 40 face; the coin keeps the announcement's own fill (and its amber when urgent).
+    const face = decls('[data-ch-ms-v2] .ch-inb .ch-ms-row:not(.is-ann) .ch-ms-grp');
+    expect(decls(`${PHONE} .ch-ms-row.is-ann .ch-ms-grp`)).toEqual({ width: face.width, height: face.height });
+    expect(face.width).toBe('40px');
+    expect(decls(`${PHONE} .ch-ms-row.is-ann[data-ch-pressed]`)).toEqual({ background: 'var(--ch-press-wash)' });
+    expect(decls(`${PHONE} .ch-ms-sec.is-ann .ch-ms-sec__card > .ch-ms-row:first-child::before`)).toMatchObject({
+      left: 'var(--ch-space-4)',
+      right: '0',
+      height: 'var(--ch-hairline-w)',
+      background: 'var(--ch-separator)',
+    });
+    expect(decls(`${PHONE} .ch-ms-fold__body .ch-ms-more`)).toEqual({ margin: '0 var(--ch-space-4)' });
   });
 });

@@ -162,9 +162,73 @@
   letter-spacing: 0;
   color: var(--ch-inb-ink-2);
 }
-/* "Announcements" keeps its own folded row; it sits at the page edge like a card (Q-37). */
+/* "Announcements" keeps its own folded row; it sits at the page edge like a card (Q-37). The section is the card, as
+   Recent is: the fold is its head, and what it opens to are rows inside it on the card's grid (a 40 face at 32, the name
+   at 84, the time at the card's inset), a hairline from the face's edge over each. They were rows on the canvas at the
+   page gutter, under a card that held only its own head. */
 [data-ch-ms-v2] .ch-inb--phone .ch-ms-sec.is-ann {
+  display: block;
   margin: 0 var(--ch-page-x-phone) var(--ch-space-3);
+  overflow: hidden;
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-card-bg);
+  box-shadow: var(--ch-card-shadow);
+}
+[data-ch-ms-v2] .ch-inb--phone .ch-ms-sec.is-ann .ch-ms-fold {
+  grid-template-columns: 40px minmax(0, 1fr) auto auto;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+/* The head's face is the rows' 40, so its title starts at 84 with every name under it. */
+[data-ch-ms-v2] .ch-inb--phone .ch-ms-fold .ch-ms-grp.is-ann {
+  width: 40px;
+  height: 40px;
+}
+[data-ch-ms-v2] .ch-inb--phone .ch-ms-fold__body {
+  padding: 0;
+  border-top: 0;
+}
+[data-ch-ms-v2] .ch-inb--phone .ch-ms-row.is-ann {
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--ch-space-3);
+  width: 100%;
+  min-height: 0;
+  margin: 0;
+  padding: var(--ch-inb-10) var(--ch-space-4);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  transition: none;
+}
+[data-ch-ms-v2] .ch-inb--phone .ch-ms-row.is-ann[data-ch-pressed],
+[data-ch-ms-v2] .ch-inb--phone .ch-ms-row.is-ann.is-sel {
+  background: var(--ch-press-wash);
+}
+@media (hover: hover) {
+  [data-ch-ms-v2] .ch-inb--phone .ch-ms-row.is-ann:hover,
+  [data-ch-ms-v2] .ch-inb--phone .ch-ms-row.is-ann:active {
+    background: var(--ch-press-wash);
+  }
+}
+[data-ch-ms-v2] .ch-inb--phone .ch-ms-row.is-ann .ch-ms-grp {
+  width: 40px;
+  height: 40px;
+}
+/* The first announcement's hairline is the one under the card's head, as Recent's head has. */
+[data-ch-ms-v2] .ch-inb--phone .ch-ms-sec.is-ann .ch-ms-sec__card > .ch-ms-row:first-child::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: var(--ch-space-4);
+  height: var(--ch-hairline-w);
+  background: var(--ch-separator);
+  box-shadow: none;
+  content: '';
+  pointer-events: none;
+}
+[data-ch-ms-v2] .ch-inb--phone .ch-ms-fold__body .ch-ms-more {
+  margin: 0 var(--ch-space-4);
 }
 /* The line under its title says how many posts there are, then the newest title: it runs to two lines, as a row's preview
    does and as the rail's fold does, so the count in words never cuts the title short. */
