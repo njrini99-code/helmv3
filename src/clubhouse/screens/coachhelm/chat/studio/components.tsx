@@ -66,6 +66,7 @@ export function RankingList(p: StudioProps<'ranking'>) {
   const { rows, signed, label, highlight, hrefs } = p.data;
   return (
     <div className="ch-aks ch-aks-rank" data-size={p.size} data-signed={signed ? '' : undefined}>
+      <p className="ch-aks-title">{label}</p>
       <ol className="ch-aks-rank__list" aria-label={label}>
         {rows.map((r) => (
           <li key={r.id} className="ch-aks-row" data-on={highlight === r.id ? '' : undefined}>
@@ -118,7 +119,8 @@ export function Comparison(p: StudioProps<'comparison'>) {
           <b>{pl.label}</b>
           {pl.sample && <small>{pl.sample}</small>}
         </AskKey>
-        <OpenKey href={hrefs?.[pl.id]} label={`Open ${pl.label}’s stats`} />
+        {/* The phone keeps every measure on screen instead of an arrow per row: the name still asks, and the full size carries the link. */}
+        {p.size === 'full' && <OpenKey href={hrefs?.[pl.id]} label={`Open ${pl.label}’s stats`} />}
       </span>
     );
   };
@@ -130,7 +132,7 @@ export function Comparison(p: StudioProps<'comparison'>) {
           <thead>
             <tr>
               <th scope="col">{playersAsRows ? 'Player' : 'Measure'}</th>
-              {playersAsRows ? team.metrics.map((m) => <th key={m.id} scope="col">{m.label}</th>) : team.players.map((_, pi) => <th key={pi} scope="col">{who(pi)}</th>)}
+              {playersAsRows ? team.metrics.map((m) => <th key={m.id} scope="col" title={m.label}>{p.size === 'compact' ? m.short : m.label}</th>) : team.players.map((_, pi) => <th key={pi} scope="col">{who(pi)}</th>)}
             </tr>
           </thead>
           <tbody>
@@ -354,7 +356,7 @@ export function QualifierBoard(p: StudioProps<'qualifier_board'>) {
         {title}
         {status && <small>{status}</small>}
       </p>
-      <ol className="ch-aks-board__rows" data-open={rows.some((r) => r.href) ? '' : undefined} style={{ '--ch-aks-rounds': rounds.length } as CSSProperties} aria-label={`${title}: ${plural(rows.length, 'player')}${cut ? `, ${plural(cut, 'seat')}` : ''}`}>
+      <ol className="ch-aks-board__rows" data-open={rows.some((r) => r.href) ? '' : undefined} style={{ '--ch-aks-cols': ['20px', 'minmax(0, 1fr)', ...rounds.map(() => '36px'), '44px', '52px'].join(' ') } as CSSProperties} aria-label={`${title}: ${plural(rows.length, 'player')}${cut ? `, ${plural(cut, 'seat')}` : ''}`}>
         <li className="ch-aks-board__head" aria-hidden="true">
           <span />
           <span>Player</span>

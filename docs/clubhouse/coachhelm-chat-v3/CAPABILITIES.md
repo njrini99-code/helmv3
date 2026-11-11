@@ -1,9 +1,10 @@
-# CoachHelm chat v3: every capability, as the coach sees it (10 Nov 2026)
+# CoachHelm chat v3: every capability, as the coach sees it (11 Nov 2026)
 
 `SPEC.md` is the turn and the card's shell (frame, buttons, ring, receipt row, work line). `MOTION.md` is every
 movement. This file is what goes **inside**: for each thing the assistant can do in the app, what a coach must be able
 to check before saying yes, how it is laid out, every state, the words, and the proof afterwards. It also covers what
-an answer can show (evidence, visuals, links, notes, computed answers) and every state of the work line.
+an answer can show (evidence, visuals, links, notes, computed answers), the fixed set of components that draws all of
+it (section S, the studio), and the step each capability shows while CoachHelm works (section W, the workspace).
 
 Read from the code, not from memory: `registry.ts`, `tasks.ts`, `create-tools.ts`, `action-planners.ts`,
 `practice-planner.ts`, `practice-draft.ts`, `tasks/event-tasks.ts`, `context/notes.ts`, `context/find-in-app.ts`,
@@ -11,22 +12,27 @@ Read from the code, not from memory: `registry.ts`, `tasks.ts`, `create-tools.ts
 coach needs, the card does not invent it: it is listed under "Requests to the engine" with the field needed.
 
 Gallery: `/clubhouse-preview/coachhelm-capabilities` (no sign-in, no model call). Deep link per capability and state:
-`?task=create_trip&state=held&density=compact`. Code: `src/clubhouse/screens/coachhelm/chat/cards/**`,
+`?task=create_trip&state=held&density=compact`. Code: `src/clubhouse/screens/coachhelm/chat/cards/**` (task card
+bodies, edit mode, approve all), `src/clubhouse/screens/coachhelm/chat/studio/**` (the renderer and registry),
 `src/clubhouse/styles/coachhelm-ask-cards.css`.
 
 ## Count
 
-47 tools are registered across the three surfaces (43 on Ask, 46 with `golf_tournaments_v1`; quick chat swaps
-`publish_artifact` for `send_message`; a player has 10). They make **52 designed capabilities**:
+The engine registers 32 task tools, 6 draft tools, 2 note tools and the reads (the catalogue test reads the task
+names from the engine's own files and fails when one has no card). They make **65 designed capabilities**, drawn by
+**16 studio components**:
 
 | Group | Count | What |
 | --- | --- | --- |
-| A. Tasks (a card, Confirm, 8 seconds of Undo) | 22 | every `kind: 'task'` tool |
+| A. Tasks (a card, Confirm, 8 seconds of Undo) | 32 | every `kind: 'task'` tool: 22 that make something (A1 to A22), 10 that change or close something (A23 to A32) |
 | B. Drafts and hand-offs (a card, nothing written) | 6 | practice brief, practice plan, document, message, poll, board |
 | C. Instant, no card | 2 | save a note, remove a note |
-| D. Reads and answers | 16 | 12 kinds of evidence, the visual, a link into the app, a computed answer, "that isn't tracked" |
+| D. Reads and answers | 17 | 12 kinds of evidence, the visual, a link into the app, a computed answer, "that isn't tracked", an answer that declines |
 | E. The player's Ask | 1 | the read-only set, as one entry with its differences |
 | F. Thinking and working | 5 | waiting, reading, working out, drafting, a task's own states on the work line |
+| Across cards | 2 | edit mode (0.8), several cards and approve all (0.9) |
+
+Section S is the component set those are drawn with; section W is the workspace step each one shows.
 
 ## 0. What is the same for every task card
 
@@ -46,6 +52,10 @@ interface CardBodyProps {
   roster?: ReadonlyArray<{ id: string; name: string; avatarUrl?: string | null }>;
   team?: string;
   onAsk?: (text: string) => void; // a row tap asks for the change in words; absent: rows are not buttons
+  onEdit?: (patch: Record<string, unknown>) => void; // 0.8: only the fields that changed; absent: no Edit key
+  editing?: boolean;             // the edit is with the server
+  editError?: string | null;     // the server refused it, in its words
+  onEditOpen?: (open: boolean) => void; // the shell holds Confirm while the form is open
 }
 ```
 
@@ -58,8 +68,10 @@ start a timer; animate its arrival, its height or its layout; draw a ring, a che
 a disclosure the coach taps ("Show all 40", "Show the whole message"), which changes height in one frame on their
 tap (MOTION: "because the coach tapped"). Dimming a cancelled or undone draft is the shell's opacity on the body.
 
-`cards/catalog.ts` holds each capability's words as data (head, primary, busy, badge, hold line, undone line, home),
-so the shell's labels and the body cannot drift. `cardCopy(tool, proposal)`.
+`cards/catalog.ts` holds each capability's words as data (head, primary, busy, badge, hold line, undone line, home,
+and `dismiss`: the quiet key's word, "Cancel" except where that would read as the action: "Keep the event", "Keep
+it"), so the shell's labels and the body cannot drift. `cardCopy(tool, proposal)`. Reach, how many are told and
+whether there is an Undo window come from the plan itself when it says (0.10).
 
 ### 0.2 The order inside a body (and the VoiceOver order)
 
@@ -168,6 +180,86 @@ What they get; `publish`. `publish_artifact`: Who can see it, Goes to, Words. `s
 not get it, They see, How, When. `record_attendance`: Event, Present (n), Late (n), No-show (n), Changes a mark
 already recorded, Not marked, Players are told. An unknown label is drawn as a plain row, so a new fact is never lost.
 
+
+### 0.8 Edit mode: changing a card before Confirm
+
+A plan may declare fields a coach can change without asking again (`proposal.editable`, engine E28, PLANS P11). The
+card then has two ways to change: a field it declares (edit mode), or anything else, in words (a new card replaces
+this one). The design holds four things true.
+
+- **It looks editable only where it is.** With no `editable` on the plan, or no `onEdit` from the shell, or in any
+  state but proposed, there is no Edit key and nothing in the body is a control. With them, the body ends with one
+  quiet key, "Edit", and a caption that names exactly what it opens ("You can change the title, the day and who is
+  invited."). Rows do not turn into inputs in place: a row that is sometimes text and sometimes a field is how a
+  coach changes something by accident.
+- **One real control per kind of field**, the app's own: text and long text (`.ch-input`, `.ch-textarea` with the
+  character count against the limit), a day (`DateField`), a time (`TimeField`), a day and time (both), a number, a
+  choice (`Segmented` up to four options, `Select` beyond), a yes or no (`Switch`), people (the roster as
+  `Checkbox` rows with "5 of 8"), a list (rows with Add one and Remove). A field that is not required says
+  "Optional".
+- **What is on screen is what would be confirmed.** The form opens under the card's own rows, which do not change
+  while it is open; its first line says so. The shell holds Confirm while the form is open ("Update or discard your
+  changes first."). "Update the preview" sends only the fields that changed (`onEdit(patch)`; an optional field that
+  was emptied is `null`). It is unavailable until something changed, and a required field emptied says which
+  ("Title cannot be empty.") without sending.
+- **The server plans the card again; the card never edits itself.** In flight the form goes still and its key reads
+  "Updating the preview…" (`editing`). Accepted: the re-planned proposal arrives with the next `revision`, the form
+  closes, and the body is the new plan (reach, recipients and the words a player receives are all planned again, so
+  an edit to who is invited changes the "Sends to" line too). Refused: the form stays open with what was typed and
+  the server's reason, then "The card has not changed." (`editError`, the `reason` of a `data-card-revision` with
+  `accepted: false`). The form's last line: "Everything else on this card is fixed. To change it, ask in words and a
+  new card replaces this one."
+
+Which cards offer what is the plan's to say (today: the create flows' main fields; `cancel_event` its reason,
+`set_goal_state` its reason when abandoned, `set_qualifier_coach_pick` its reasoning, `send_event_reminder` its
+recipients; CONTRACT_NOTES C12 to C14). The seam: `onEdit`, `editing`, `editError`, `onEditOpen` on `CardBodyProps`;
+the body marks its root `data-editing` while the form is open. Code: `cards/edit.tsx`.
+
+### 0.9 Several cards in one answer, and the one safe "approve all"
+
+One answer may propose several tasks (engine E29). Each is its own card, decided on its own, in any order. Under
+them one bar may approve several together. It is designed so that pressing it can never do something the coach did
+not read:
+
+- It **names each card it would confirm** and each card it leaves out, with the reason. Left out: a card with a
+  detail missing ("needs a detail first"), a card with an edit open ("has changes you have not updated"), and a card
+  with no Undo ("cannot be undone, so it is confirmed on its own": a lineup lock is never approved in a batch).
+- It **says what approving them does in total**: "3 actions. 2 send to 9 people; 1 tells nobody." People are counted
+  once across cards when the plans name them.
+- It is **not drawn for one card** (that is the card's own Confirm), and its key is the secondary style: each card's
+  named Confirm stays the primary.
+- Its key reads "Approve all 3", or "Approve these 3" when a card is left out, so "all" is never said of less than
+  all.
+- **One Undo window for the batch.** Held: "Not saved yet. All 3 save in 6 seconds." with "Undo all 3"; each card
+  keeps its own ring and its own Undo (the engine holds every card of a batch to the same moment). Saved: "All 3
+  saved". Undone: "Undone. None of the 3 was saved. Nobody was told."
+- **The first failure stops the batch** (the engine's rule). The bar says where: "Stopped at “Team announcement”.
+  It could not be saved, so nothing after it was tried. 1 card is waiting for you again." Those cards are back to
+  proposed; nothing is retried by itself.
+
+Code: `cards/ApproveAll.tsx` (`batchPlan(cards)` is the rule, tested; `ApproveAll` is the bar). The shell owns where
+it sits in the turn, the shared ring and the calls (`approveAll(keys)`, Undo for each key).
+
+### 0.10 What the plan itself now says
+
+The server builds these on the plan and the receipt (CONTRACT_NOTES P1 to P11, E12 to E19, E25 to E29). A body draws
+each when it is present and keeps its honest "not shown here" line when it is absent (a card stored before 11 Nov).
+
+| Field | What the body does with it | Request it answers |
+| --- | --- | --- |
+| `recipients`, `not_reached` | the reach row's people, by name and role; "Will not get it: Max Ortiz (no account yet)" | E-1, E-19, E-20 |
+| `delivery` (channels, the words per channel, `each`) | the notification drawn in the reader's frame, a switch between channels, "Whose words" when each player's differ; `null` means nothing is sent and nothing is drawn | E-2, E-18 |
+| `visible_to`, `visible_note` | the reach mark ("Only you", "Coaches only", "Players can see it") and its sentence | E-6, E-24 |
+| `undo` (`window`, `after`) | no window: the first row is the warning "This happens the moment you press. There is no Undo."; `after`: the body's last line, "After the 8 seconds: change or cancel it on the Calendar." | new |
+| `editable`, `revision` | edit mode (0.8) | new |
+| receipt `href` | Open, on the shell's receipt row | E-12 |
+| receipt `missed`, `notifications[].to` | "Did not get it: …" by name; who was told, by name | E-13, E-23 |
+| receipt status `cancelled` | a restored card is Undone without asking the ledger | E-27 |
+| receipt `error: 'card_out_of_date'` | no Try again: "Things changed since this card was made. Ask again and it is prepared from what is true now." (`isOutOfDate`) | new |
+| `data-computed`, `coverage: 'not_tracked'` | D15 and D16 are on the wire | E-25, E-26 |
+
+Whether each planner fills each field is the plans worker's ledger, not this file's. The body's rule does not depend
+on it.
 ---
 
 ## A. Tasks
@@ -448,6 +540,30 @@ catalog's.
   which marks were saved: look at the event in the Calendar. Saving again is safe, it writes the same marks."
 - **Requests.** E-24 (whether a player can see their own mark).
 
+
+## A, continued. Tasks that change something that exists (A23 to A32)
+
+These ten change or close a thing rather than make one. They share one body (`PlanBody`): reach first, then the
+thing by name, then **what it is now against what it becomes** when the plan carries "Now" and "After", then the
+words anyone receives, then the remaining rows. The dismiss key says what keeping means where "Cancel" would read
+as the action.
+
+| # | Tool | Head and primary | Reach | What the coach checks | Dismiss | After Undo |
+| --- | --- | --- | --- | --- | --- | --- |
+| A23 | `update_event` | Change an event · "Change the event" | sends when anyone is told | the event by name and day; each changed field as now and after; who is told and the words | Cancel | "Undone. The event is as it was, and nobody was told." |
+| A24 | `cancel_event` | Cancel an event · "Cancel the event" | sends when anyone is told | the event; who is told; the reason, in the words they receive (editable) | **Keep the event** | "Undone. The event is still on, and nobody was told." |
+| A25 | `set_focus_area_status` | Focus area · "Mark completed" or "Reopen" | players can see it | the player and the focus area; the status now and after | Cancel | "Undone. The focus area is as it was." |
+| A26 | `set_goal_state` | Goal · "Pause the goal", "Resume the goal", "Abandon the goal" (the summary's verb) | players can see it | the goal; the state now and after; the reason when abandoned (editable) | Cancel | "Undone. The goal is as it was." |
+| A27 | `mark_signal_handled` | Signal · "Mark handled" | players can see it | the signal's own sentence and who it is about | Cancel | "Undone. The signal is still open." |
+| A28 | `dismiss_signal` | Signal · "Dismiss the signal" | players can see it | the signal; that it leaves the board | **Keep it** | "Undone. The signal is still on your board." |
+| A29 | `set_qualifier_coach_pick` | Coach’s pick · "Make the pick" | coaches only | the qualifier, the player picked, the seat; the reasoning (editable) | Cancel | "Undone. No pick was made." |
+| A30 | `set_task_reminder` | Task reminder · "Set the reminder" | sends | the task; who is reminded; when; the words | Cancel | "Undone. No reminder was set." |
+| A31 | `log_focus_progress` | Focus area progress · "Log progress" | players can see it | the focus area; the entry as it will read | Cancel | "Undone. The focus area is as it was." |
+| A32 | `record_focus_outcome` | Focus area outcome · "Record the outcome" | players can see it | the focus area; the outcome and what it closes | Cancel | "Undone. No outcome was recorded." |
+
+States are those of 0.6. None is immediate. Gaps: A25, A26, A28, A31 and A32 have no home to open from the receipt
+until their receipts carry `href`.
+
 ---
 
 ## B. Drafts and hand-offs (a card that writes nothing)
@@ -525,6 +641,12 @@ of 12 or fewer says "Small sample" beside it. Then one of these forms:
   its first sentence, and a quiet row under it shows the nearest thing that is: "Not tracked: club used off the tee.
   Closest: fairways hit, driving distance." Never an empty chart and never a zero. Built against a typed stub
   (E-26); today it is prose only.
+- **D17. An answer that declines.** A model refusal is a complete turn marked `declined`, not an error. It is drawn
+  as an answer: the mark at rest, the assistant's own sentence in the answer's type, no warning colour, no Try again,
+  no failed-turn notice, and the composer ready. Nothing about it says something broke, because nothing did. The
+  workspace shows no steps for it (there was no work), and follow-ups are offered as after any answer. It is the
+  shell's to draw (SPEC Moment 4, `declined`); it is catalogued here so that no card or studio component is ever
+  used to dress a refusal as a failure.
 
 ## E. The player's Ask (read-only)
 
@@ -571,9 +693,167 @@ your CoachHelm", "Working out your figures".
 
 ---
 
+## S. The studio: the fixed set of things CoachHelm can put on screen
+
+The assistant never invents interface. It fills a typed part, the server fills every figure from a read, and exactly
+one component draws it. The set is `STUDIO_KINDS` (`src/lib/coachhelm/v3/chat/visuals/studio-kinds.ts`), the one list
+the schema side and this side are both tested against. The renderer and registry are
+`src/clubhouse/screens/coachhelm/chat/studio/**`:
+
+```tsx
+<Studio part={fromBlock(block)} size="full" read={ref} onAsk={fillComposer} />
+```
+
+`part.kind` picks the component; `size` is `full` (the thread on a desk) or `compact` (quick chat, and any column
+down to 320px); `read` is the read or artifact the part came from. **Nothing falls through to nothing**: an unknown
+kind, and a part its own component cannot draw, are drawn by the table from whatever rows or fields the part
+carries (`tableOf`). A component takes what it draws already in the app's words (`from.ts`: `fromBlock` for a
+composition block, `fromEvidence` for a read's evidence); no component computes a figure.
+
+### S.1 The sixteen, and what folded into what
+
+| Kind | A coach sees | Draws (what folded in) | Tap an element to ask about | Arrow opens |
+| --- | --- | --- | --- | --- |
+| `figure` | one figure set large, or up to six beside each other, each with its sample in words | composition `headline` and `kpis`; the season read; D1's tiles | that figure ("Jonah Okafor, putts per round, 31.8 over 4 rounds") | the player's stats |
+| `comparison` | players across the same measures, the best in each marked with a dot | composition `compare`; D2 | a player (their row against the others) | the player's stats |
+| `ranking` | place, name, sample, a bar on one fitted axis, the figure; gain right of zero and loss left for strokes gained | composition `ranking`; D3; the old bars-of-players | a player on that measure | the player's stats |
+| `trend` | one measure round by round with its reference line; or this season against last on one scale | composition `trend` and `season_compare`; D4 | the trend as a whole (its summary); each season | none |
+| `round` | the scorecard: two nines in the app's own scorecard table, then the holes that cost and gained the most | composition `hole_strip`; `get_round`, `get_rounds`; D5 | a hole ("hole 7, 2 over") | the round |
+| `strokes_gained` | the parts of the game on one axis, gain right and loss left | composition `split`; the `sg_anatomy` scene; D7 | a part of the game | none |
+| `distance_profile` | make rate or feet left by distance band, each with its attempts; where the misses go | composition `bands`, `putt_profile`, `miss_pattern`; `get_shots`; D6 | a band; a miss direction | none |
+| `schedule` | days as the calendar's tile, each event with time, place, replies in and class conflicts | `get_schedule`; D9 | an event | the event on the Calendar; the Calendar |
+| `qualifier_board` | place, player, each round, total, to par, with the cut drawn between the last seat and the first player outside it | `get_qualifiers`, `get_tournaments`; D10 | a player's qualifier | the player's rounds; the board |
+| `practice_plan` | a plan as a run sheet; the questions asked before one is drafted | `data-practice-plan`, `data-brief`, `get_practice`; B1, B2 | the plan card's own asks | the plan card's own |
+| `document` | a long piece kept beside the chat; a draft handed to Messages | `data-artifact`, `data-handoff`; B3 to B6 | none (it is a draft to send or publish) | where it is going |
+| `app_link` | a way into a screen of the app | `data-app-link`; D14 | none | the screen |
+| `note` | one sentence about a visual, said as what it is (Measured, Pattern, Hypothesis); a note the coach asked to keep; what is on record | composition `note`; `data-coach-note`; `get_coachhelm`, `get_reference`; C; D11 | a row of what is on record | none |
+| `action_preview` | what a task will do, to check, edit, confirm or dismiss | `data-action-proposal`; all of A | rows that can be changed ask for the change | none until saved |
+| `receipt` | what a task did, with the way to the thing it made | `data-action-receipt` | none | the thing it made |
+| `table` | rows and columns with a caption that names the source: the fallback, always available | composition `table` (planned); `data-evidence`; `query_team_data`, `summarise_data`, `find_thread`; D8, D12; anything unknown | none yet | none |
+
+`action_preview` and `receipt` are two kinds on the shared list and one object on screen: the same body in its next
+tense, so a receipt is the preview the coach confirmed, never a second card. `round`, `schedule` and
+`qualifier_board` are new here; the rest reuse the thread's own drawing (`Trend`, the distance marks, `PlanCard`,
+`DataTable`) so a composed visual and a plain read look the same.
+
+**Proposed to the plans worker, not yet in the shared list** (the registry follows the list as it stands): merge
+`action_preview` and `receipt` into one kind `action`; give "what is on record" its own kind instead of sharing
+`note`; stop offering the model a bare `note` block and fold `headline` into `kpis` (one figure is `kpis` of one).
+
+### S.2 Tappable elements, the link, and the touch feedback
+
+- **A tap asks; it never sends.** The element is a real button. It fills the composer with a question about that
+  element ("Ask about this: hole 7, 2 over") which the coach can edit, and carries a typed reference: the kind, the
+  read and the element (`data-ask-ref="round:r5:hole:7"`, and the `StudioAsk` object handed to `onAsk`).
+- **The row asks; the arrow opens.** Where the element is something the app has a screen for, a separate arrow at
+  the row's end goes there, with its own 44px target and its own name ("Open Eli Brandt’s stats"). One target never
+  does both.
+- **It looks tappable only where it is.** With no `onAsk` (a printed answer, a thread that cannot be continued) the
+  same content is drawn as plain text: no button, no pressed state, no reference.
+- **Feedback** is the app's own pressed wash on the row (`data-ch-pressed`, lib/press.ts): rows do not scale. On a
+  pointer device the row takes the quiet well on hover. Focus is the app's ring. Nothing else moves; the composer
+  filling is the answer to the tap.
+- **A comparison's cells are read, not pressed.** Twelve players across four measures would be forty-eight keys; the
+  player's name is the key and the cell is a figure.
+
+### S.3 Sizes
+
+`full` and `compact` are the same component, never two designs. What changes in `compact`: a ranking's bar drops
+under the name; a comparison always puts players in rows under short measure names, keeps every measure on screen where four fit, and drops the arrow per row (the name still asks; the link is in the full size); a
+qualifier board keeps place, name, total and to par and leaves the rounds to the board itself; a round names three
+holes each way instead of four; a figure set wraps to two across.
+
+### S.4 Copy
+
+Sentence case. A sample is said in words, from the read: "over 4 rounds", "from 126 attempts" (`sampleSaid`). Never
+"n=", never "N-4", never a count alone in brackets, no abbreviation a coach would not say. A missing figure in a
+comparison reads "None". A test renders every component in both sizes and fails on any of those forms, in text or in
+a screen reader's label.
+
+---
+
+## W. The workspace: the step each capability shows
+
+The activity island (SPEC Moment 4; `chat/island/**`, the chat UI lead's) shows what CoachHelm is doing as steps.
+This is the catalogue of those steps: for each thing the assistant can do, its words while it runs and once it is
+done, what joins its row, what its tally counts, what opening the finished step shows, and its words when it fails.
+A person's words, never a tool's name. "Opening" a finished step shows the read as its studio component (S.1); a
+step with nothing of its own to open does not look openable.
+
+The island's head lines are the lead's: "Reading your question", then the running step's own words (with "and 2
+more"), "Putting it together", "Writing the answer", "Waiting for you", "Saves in 5", "Saved" / "Undone" / "Not
+saved", "Done · 4 steps · 6s", "Stopped · 2 of 4 steps". A failed step never stops the turn by itself: the answer
+says what it lacks.
+
+### W.1 Reads
+
+| Capability | While it runs | Done | Joins the row | Tally | Opening it shows | Failed |
+| --- | --- | --- | --- | --- | --- | --- |
+| A player's statistics (`get_player_stats`) | Reading Jonah’s statistics | Read Jonah’s statistics | the player; a second and third player as they are read | rounds ("8 rounds and counting") | `figure`, or `comparison` for several players | Couldn’t read Jonah’s statistics |
+| The team's statistics (`get_team_stats`) | Reading the team’s statistics | Read the team’s statistics | the team, then each player as their figures arrive | players ("12 players") | `ranking`, or `strokes_gained` by part of the game | Couldn’t read the team’s statistics |
+| Rounds (`get_rounds`) | Reading the rounds | Read the rounds | each round as it is found (course and day) | rounds | `round` for one, `table` for a list | Couldn’t read the rounds |
+| One round (`get_round`) | Reading the round hole by hole | Read the round hole by hole | the round | holes ("18 holes") | `round` | Couldn’t read that round |
+| Logged shots (`get_shots`) | Reading the logged shots | Read the logged shots | the player | shots ("212 shots and counting") | `distance_profile` | Couldn’t read the logged shots |
+| The season (`get_season`) | Reading the season | Read the season | the team | rounds | `figure`; `trend` for this season against last | Couldn’t read the season |
+| Qualifiers (`get_qualifiers`) | Reading the qualifier | Read the qualifier | the qualifier, then players | players | `qualifier_board` | Couldn’t read the qualifier |
+| Tournaments (`get_tournaments`) | Reading the tournaments | Read the tournaments | each tournament | tournaments | `qualifier_board` for one field, `table` for a list | Couldn’t read the tournaments |
+| The schedule (`get_schedule`) | Reading the calendar | Read the calendar | each event as it is found | events | `schedule` | Couldn’t read the calendar |
+| What CoachHelm has on record (`get_coachhelm`) | Reading what is on record | Read what is on record | the player it is about | reads, goals and tasks, as one count of items | `note` (what is on record) | Couldn’t read what is on record |
+| Practice (`get_practice`) | Reading practice reviews | Read practice reviews | each plan | plans | `practice_plan`, or `table` | Couldn’t read practice reviews |
+| Reference (`get_reference`) | Looking it up | Looked it up | none | none | `note` | Couldn’t look that up |
+| Team data (`query_team_data`, `summarise_data`) | Reading the team’s records | Read the team’s records | none | rows | `table` | Couldn’t read the team’s records |
+| A thread (`find_thread`) | Finding the thread | Found the thread | the thread by name | none | `table` | Couldn’t find that thread |
+| A place in the app (`find_in_app`) | Finding where that is | Found where that is | none | none | `app_link` | Couldn’t find where that is |
+
+### W.2 Comparing, calculating, drawing
+
+| Capability | While it runs | Done | Joins the row | Tally | Opening it shows | Failed |
+| --- | --- | --- | --- | --- | --- | --- |
+| Ranking or comparing players | Comparing strokes gained by player | Compared strokes gained by player | the players compared | players and measures ("12 players, 4 measures") | `ranking` or `comparison` | Couldn’t compare them |
+| A calculation across the team (code) | Working it out across the team | Worked it out across the team | none of its own: its reads are nested under it, each with its faces | what it covered ("12 of 12 players") | "How this was worked out" (D15): the method in one sentence, what was read, the result as a `table` | Couldn’t work it out |
+| Arithmetic over rows already read | Working out the figures | Worked out the figures | none | none | the read it worked from | Couldn’t work out the figures |
+| A visual (`show_visual`) | Drawing the comparison (named for what it draws: "Drawing the trend", "Drawing the round") | Drew the comparison | none | what it draws ("12 players across 4 measures") | the visual itself, in place under the answer | Couldn’t draw it; the figures are in the answer |
+
+### W.3 Drafts (a card arrives; nothing is written)
+
+| Capability | While it runs | Done | Joins the row | Tally | Opening it shows | Failed |
+| --- | --- | --- | --- | --- | --- | --- |
+| The practice brief (`ask_practice_brief`) | Working out what to ask | Has questions for you | none | questions | the brief card | Couldn’t prepare the questions |
+| A practice plan (`draft_practice_plan`) | Drafting the plan | Drafted the plan | the plan by name | blocks ("5 blocks and counting") | `practice_plan` | Couldn’t draft the plan |
+| A document (`write_artifact`) | Writing it up | Wrote it up | the document by title | none | `document` | Couldn’t write it up |
+| A message, a poll, a board (`draft_message`, `draft_poll`, `draft_board`) | Drafting the message / the poll / the board | Drafted the message / the poll / the board | the players or the thread it is for | none | `document` (the hand-off) | Couldn’t draft it |
+| A note kept (`save_note`, `remove_note`) | Saving that note / Removing that note | Noted / Removed | none | none | `note` (the chip) | Couldn’t save that note |
+
+### W.4 Tasks (a card arrives; the coach decides)
+
+Every task's step is the same three beats. The words are the catalogue's (`cardCopy`), so the island, the card and
+the receipt cannot disagree.
+
+| Beat | While it runs | Done | Joins the row | Opening it shows | Failed |
+| --- | --- | --- | --- | --- | --- |
+| Preparing | "Preparing the event" (the thing by its name: the trip, the qualifier, the reminder, the lineup, the change) | "Prepared the event" | the thing by name; the players it names | the card (`action_preview`) | "Couldn’t prepare the event"; no card is shown and the answer says why |
+| Checking | "Checking who it reaches" (only for a task that sends) | "Reaches 6 players" | the recipients, joining as they are resolved | the card's reach row | "Couldn’t check who it reaches"; the card says "The plan does not name them" |
+| Waiting, then the decision | the island's head: "Waiting for you", then "Saves in 5" | the capability's badge word ("Added", "Sent", "Published") or "Undone" | none | the receipt (`receipt`) | "Not saved" / "Not sent", with what was left untouched on the card |
+
+Several tasks in one answer are several Preparing steps, one per card, then one "Waiting for you".
+
+### W.5 Where to watch it
+
+`/clubhouse-preview/coachhelm-capabilities?task=workspace:team&play=1` plays a whole-team comparison (twelve players
+joining as their rounds are read, the tally counting to 96 rounds, the comparison drawn under it), and
+`?task=workspace:plan&play=1` a practice plan being drafted, both at real timing on the lead's `ActivityIsland`
+(`&state=3` holds a still frame three seconds in). The steps are the plate's script in the engine's step shape; the
+lead's Ask preview plays the same kind of turn through the whole thread.
+
+---
+
 ## Requests to the engine (not built here; nothing is faked in the UI)
 
-A coach cannot check these today because the plan does not carry them. Each names the field wanted.
+A coach could not check these when the catalogue was first written because the plan did not carry them. Each names
+the field wanted. **Status, 11 Nov:** the protocol now has a field for E-1, E-2, E-6, E-12, E-13, E-18 to E-20, E-23
+to E-27 (0.10 says which field answers which); the bodies draw each when a plan carries it. The rest (E-3 to E-5, E-7
+to E-11, E-14 to E-17, E-21, E-22) are facts a planner still has to add, and their cards keep the honest line until
+then.
 
 | # | Tool | What is missing | Field wanted |
 | --- | --- | --- | --- |
@@ -605,9 +885,17 @@ A coach cannot check these today because the plan does not carry them. Each name
 | E-26 | readers | "Not tracked" is prose only | `coverage: 'not_tracked'` with `coverage_note` and `nearest: string[]` on the envelope |
 | E-27 | every task | After Undo the stored receipt is still `held` (CONTRACT_NOTES E5) | a `cancelled` receipt status, so a restored card is Undone without asking the ledger |
 
-Also needed from the shell (asked of the chat UI lead, not built here): a slot between the head and the "On confirm"
-line; the body's wrapper dimmed on cancelled, undone, set aside and expired; no arrival of its own for anything
-inside the body.
+Asked for by the studio and the workspace (section S and W):
+
+| # | Of | What is missing | Wanted |
+| --- | --- | --- | --- |
+| E-30 | the request | A tap on an element fills the composer with words only; the reference does not travel | `message.reference?: { kind, read, key }` on the send, so "ask about this" is answered from the same read and element, not from the words |
+| E-31 | `get_schedule`, `get_qualifiers`, `get_round` | The studio's `schedule`, `qualifier_board` and `round` are built and drawn from fixtures; there is no adapter from these reads' `detail` yet | each read's `detail` in a stated shape (days with events, replies and conflicts; rows with rounds, total, to par and the seat count; holes with par and score), or the adapter written against today's shape |
+| E-32 | `show_visual` | No `table` block (planned, PLANS P12) | the block, drawn by the studio's `table` |
+| E-33 | every tool's progress | The words in W are a catalogue, not yet the server's strings | `label` and `done` per tool as W.1 to W.4 give them, with `kind`, `subjects` and `count` where the table says something joins or is counted |
+| E-34 | every element with a home | Links are built here from ids (`playerStatsHref`); an event, a round and a board have no address on the part | `href` on the row, from the app map, never from model text |
+
+The shell's side of the seam is settled (see "The seam, as it stands").
 
 ## Defaults taken (nobody to ask; change here if wrong)
 
@@ -631,60 +919,97 @@ inside the body.
 
 ## What is built, and how to see it
 
-- `cards/index.tsx`: `CardBody` (the 22 task bodies and the generic one), `cardCopy` and `CARD_TOOLS` from
-  `catalog.ts`. `cards/drafts.tsx`: `BriefBody`, `HandoffBody` (message, poll, board), `DocBody`. `cards/answers.tsx`:
-  `AppLinkRow`, `CoachNoteChip`, `WorkedOut`, `NotTracked`. `cards/work-words.ts`: section F as data.
-- The gallery, one page: `/clubhouse-preview/coachhelm-capabilities`. On a desktop each task is drawn twice, as Ask
-  draws it and as quick chat does; on a phone a switch chooses. Each has a state switch, a case switch (long text, one
-  recipient, forty, something missing) and Play, which runs Confirm, the request, the 8 seconds and the save at real
-  timing; Play with Undo presses Undo at 3 seconds.
-- One capability, for a capture: `?task=<tool>&state=<state>&density=full|compact&variant=<case>&play=1|undo`.
-  States: `proposed`, `confirming`, `held`, `undoing`, `committing`, `saved`, `partial`, `undone`, `cancelled`,
-  `superseded`, `failed`, `expired`. Cases: `create_event` quiet; `create_recurring_practice` missing; `create_trip`
-  bare; `create_focus_area` missing; `create_task` one, forty; `create_team_announcement` long, one;
-  `send_event_reminder` one, forty. The other forms by id: `ask_practice_brief`, `draft_practice_plan`,
-  `write_artifact`, `draft_message`, `draft_poll`, `draft_board`, `save_note`, `save_note_long`, `remove_note`,
-  `ev-figure`, `ev-ranking`, `ev-trend`, `ev-bands`, `ev-legs`, `ev-empty`, `ev-failed`, `app_link`, `computed`,
-  `not_tracked`, `work_line`, `work_words`.
+- **Task cards.** `cards/index.tsx`: `CardBody` (32 bodies: 22 of their own and the plan-driven one for A23 to
+  A32), `cardCopy` and `CARD_TOOLS` from `catalog.ts`, `ApproveAll` and `batchPlan`. `cards/edit.tsx`: edit mode.
+  `cards/truth.ts`: what the plan itself says. `cards/drafts.tsx`: `BriefBody`, `HandoffBody` (message, poll, board),
+  `DocBody`. `cards/answers.tsx`: `AppLinkRow`, `CoachNoteChip`, `WorkedOut`, `NotTracked`. `cards/work-words.ts`:
+  section F as data.
+- **The studio.** `studio/registry.tsx` (`Studio`, `STUDIO_COMPONENTS`), `studio/components.tsx` (the sixteen),
+  `studio/from.ts` (`fromBlock`, `fromEvidence`, `tableOf`, `sampleSaid`), `studio/ask.tsx` (the ask key, the open
+  arrow, `fillComposer`).
+- **The gallery, one page:** `/clubhouse-preview/coachhelm-capabilities`. No sign-in, no request, no model call.
+  On a desktop everything is drawn twice, as Ask draws it and as quick chat does; on a phone a switch chooses.
+  - **A. Tasks.** Each has a state switch, a case switch (long text, one recipient, forty, something missing, the
+    card as it was before the server built its fields) and **Play**, which runs Confirm, the request, the 8 seconds
+    and the save at real timing; Play with Undo presses Undo at 3 seconds. A card whose plan declares fields has
+    Edit, with a switch that makes the stand-in server refuse.
+  - **Several at once.** Four cards and the approve-all bar; Play runs the batch through its one Undo window.
+  - **B, C, D, F.** Drafts, notes, evidence, the work line.
+  - **S. The studio.** Every component in both sizes; tap an element and the line under it says what the composer
+    would be filled with and the reference.
+  - **W. The workspace.** Two long pieces of work at real timing on the lead's island.
+- **Deep links, for a capture.** `?task=<id>&state=<state>&density=full|compact&variant=<case>&play=1|undo`.
+  - A task: `task=<tool>`; states `proposed`, `confirming`, `held`, `undoing`, `committing`, `saved`, `partial`,
+    `undone`, `cancelled`, `superseded`, `failed`, `expired`. Cases: `older` on every task with server-built fields;
+    `create_event` quiet; `create_recurring_practice` missing; `create_trip` bare; `create_focus_area` missing;
+    `create_task` one, forty; `create_team_announcement` long, one; `send_event_reminder` one, forty.
+  - Several cards: `task=batch`, states `waiting`, `confirming`, `held`, `saved`, `undone`, `stopped`.
+  - A studio component: `task=studio:<id>`, ids `figure`, `figure_six`, `comparison`, `ranking`, `trend`, `round`,
+    `strokes_gained`, `distance_profile`, `distance_putts`, `schedule`, `qualifier_board`, `practice_plan`,
+    `practice_brief`, `document`, `handoff`, `app_link`, `note`, `note_kept`, `on_record`, `action_preview`,
+    `receipt`, `table`, `unknown`.
+  - The workspace: `task=workspace:team` or `task=workspace:plan`; `play=1` plays it, `state=<seconds>` holds a
+    still frame.
+  - The other forms by id: `ask_practice_brief`, `draft_practice_plan`, `write_artifact`, `draft_message`,
+    `draft_poll`, `draft_board`, `save_note`, `save_note_long`, `remove_note`, `ev-figure`, `ev-ranking`, `ev-trend`,
+    `ev-bands`, `ev-legs`, `ev-empty`, `ev-failed`, `app_link`, `computed`, `not_tracked`, `work_line`, `work_words`.
 
 ## The seam, as it stands
 
-The seam in 0.1 is live. The chat UI lead's shell, `chat/parts/TaskCard.tsx` (commit 5c0cb2379b), takes its head,
-button, busy word, badge and lines from `cardCopy` and mounts `CardBody` with the stored plan, the receipt, the phase
-and the density, exactly as 0.1 says. In Ask and in quick chat a task card is now that shell around these bodies.
+The seam in 0.1 is live. The chat UI lead's shell, `chat/parts/TaskCard.tsx`, takes its head, button, busy word,
+badge and lines from `cardCopy` and mounts `CardBody` with the stored plan, the receipt, the phase and the density.
+In Ask and in quick chat a task card is that shell around these bodies.
 
+- **Sent to the lead, not yet wired in the shell:** the four edit props (0.8), `cardCopy(...).dismiss` for the quiet
+  key, `isOutOfDate(receipt)` (no Try again), and `ApproveAll` (0.9), which the shell places in the turn.
 - **The gallery still draws a stand-in frame** (`PreviewChatCapabilities.tsx`, the `ch-akg-*` rules), built to SPEC
   Moment 7, because the real shell's receipt row asks `/api/coachhelm/v3/chat/actions/<key>` for the hold's outcome
-  and for Undo, and the gallery must make no request. Next step, in order: mount `TaskCard` in the gallery through the
-  lead's scripted harness (`preview/ask-script.ts` answers those three calls in the page), then delete the stand-in.
-  Until then the gallery shows every body in every state at real timing, and the real shell's motion is seen in the
-  lead's Ask preview.
+  and for Undo, and the gallery must make no request. Next step, in order: mount `TaskCard` through the lead's
+  scripted harness when it has a task script, then delete the stand-in.
 - **One thing to settle with the lead.** The shell still prints SPEC's "On confirm:" line under the body. With reach
-  first in every body it says the same thing a second time, a few lines lower. Recommendation: drop the line and keep
-  the hold sentence beside the ring (`cardCopy(...).hold(seconds)`), so one fact lives in one place.
-- The head shows `cardCopy.head` over `proposal.summary`. Bodies are written not to repeat the summary.
+  first in every body, and now with the plan's own recipients and words in it, the line says the same thing a second
+  time. Recommendation: drop it and keep the hold sentence beside the ring (`cardCopy(...).hold(seconds)`).
+- **The studio is not mounted in the thread yet.** `chat/visual/CoachComposition.tsx` and `chat/Evidence.tsx` (the
+  lead's) still draw blocks and evidence themselves. The hand-over is one line per block:
+  `<Studio part={fromBlock(block)} size={…} read={ref} onAsk={fillComposer} />`, and the same with `fromEvidence`.
+  Until then the studio is seen in the gallery, and the thread's ranking and comparison are not tappable.
 
 ## Below the bar, said plainly
 
 1. **The gallery's frame is a stand-in** (the app's is the real shell). In the gallery the ring does not become the
    check (MO-7-9), the receipt does not take the buttons' place by a cross-fade (MO-7-5), and nothing arrives
    (MO-7-1). The gallery shows states and timing, not choreography, until it mounts the shell through the harness.
-2. **A poll draft is drawn in the poll's shape, not by Messages' own `PollCard`**, which needs the whole Messages
-   api object to mount. Wanted from the Messages owner: a presentational face of the poll (question, options, head
-   words) that takes a `Poll` and nothing else.
-3. **An event is not shown in its week.** The old card's five-day grid read the real week from the server; a body
-   may not fetch. The date tile says the day; whether the day is free is not on the card. Wanted: the day's other
-   events on the plan (`visual.cal.day: Array<{ title, start, end }>`), then the grid can come back with no request.
-4. **The drill, the task and the trip are drawn like their homes, not with their homes' components.** They use the
-   same tokens and shapes; they are not the drill bank's card or the Tasks row imported. The plan draft is the
-   practice lane's real `PlanCard`.
-5. **Twelve cards say "the plan does not…"** (the wording a player receives, who is in a thread, which round, which
-   tournament, where a player stands on a goal). That is honest and it is not premium. Each one goes away with its
-   engine request (E-1 to E-24); none is hidden.
-6. **Evidence forms D2, D5, D8, D9, D10** (comparison table, a round hole by hole, the rounds list, a schedule, a
-   qualifier board) are specified here and not in the gallery: there is no fixture envelope for them yet. D1, D3, D4,
-   D6, D7, empty and failed are the lead's blocks with the Ask fixtures.
-7. **VoiceOver was checked by structure and by test** (the group's name is the reach sentence, avatars are
-   decorative, every name is text, a body holds no button of the shell's), **not by listening on a phone.**
-8. **Not checked on an iPhone.** WebKit captures only: phone and desktop, light and dark, the largest Text Size,
-   Reduce Motion (a body has no motion to reduce).
+   The owner's bar ("one continuous object, never a swap of boxes") is met by the bodies (one body through every
+   tense, a receipt that is the preview) and is **not yet shown** by the gallery's frame.
+2. **The studio's components do not arrive with motion of their own**, by rule (a component has none; the entrance
+   is the composition's beats, the lead's). Standing alone in the gallery they appear whole. A ranking's bars do not
+   grow and a board's cut is not drawn in. If the benchmark wants that, it is a named request to the lead's motion
+   vocabulary (bars by `scaleX` on the playbook's stagger, the cut as an opacity beat after the rows), not something
+   to add here ad hoc.
+3. **`schedule`, `qualifier_board` and `round` are drawn from fixtures.** There is no adapter from the real reads'
+   `detail` yet (E-31), so in the thread those reads still fall to the table. They are the three components that
+   most show the assistant understands the thing itself, and they are the three not yet fed by real data.
+4. **The typed reference does not travel.** A tap fills the composer with words; the engine does not yet take the
+   reference (E-30), so the answer is found from the words.
+5. **A trend's points and a comparison's cells are not keys.** The trend asks as a whole (the chart is the lead's
+   component, not edited here); a comparison asks by player.
+6. **Edit mode in the gallery re-plans by standing in for the server**: it changes the field's own row, not the
+   reach or the words a player receives, which the real server plans again. It is labelled there. The real
+   round trip is only as good as each planner's `revise`.
+7. **Approve all is a bar and a rule, not yet placed in a turn.** The shell has not mounted it; the gallery shows it
+   under four cards with every state and Play.
+8. **A poll draft is drawn in the poll's shape, not by Messages' own `PollCard`**, which needs the whole Messages
+   api object to mount. Wanted from the Messages owner: a presentational face of the poll.
+9. **An event is not shown in its week.** A body may not fetch. Wanted: the day's other events on the plan
+   (`visual.cal.day`), then the grid can come back with no request.
+10. **The drill, the task and the trip are drawn like their homes, not with their homes' components.** The plan
+    draft is the practice lane's real `PlanCard`; a round is the app's real `Nine`.
+11. **Cards still say "the plan does not…"** wherever a planner has not added the fact (the requests still open
+    above). Honest, and not premium.
+12. **The scorecard primitive's column head reads "Tot"**, an abbreviation the copy rule forbids. It is the shared
+    `Nine` (not this lane's to edit); wanted: "Total".
+13. **A declined answer (D17) has no plate in this gallery**: it is the shell's to draw and is in the lead's Ask
+    preview (`coachhelm-ask?state=play&script=declined`).
+14. **VoiceOver was checked by structure and by test** (a group's name is the reach sentence, every key has a name,
+    the arrow is named for where it goes, nothing looks tappable where it is not), **not by listening on a phone.**
+15. **Not checked on an iPhone.** WebKit captures only.

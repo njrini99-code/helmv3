@@ -363,6 +363,9 @@
 }
 
 /* comparison */
+.ch-aks-cmp__wrap { max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; }
+.ch-aks-cmp[data-size='compact'] .ch-aks-cmp__who { width: 112px; min-width: 112px; white-space: normal; overflow-wrap: break-word; }
+.ch-aks-cmp[data-size='compact'] .ch-aks-cmp__table th, .ch-aks-cmp[data-size='compact'] .ch-aks-cmp__table td { padding-inline: 4px; }
 .ch-aks-cmp__table { width: 100%; border-collapse: collapse; font: var(--ch-type-13); }
 .ch-aks-cmp__table th, .ch-aks-cmp__table td { padding: 8px; border-bottom: var(--ch-hairline-w) solid var(--ch-separator); text-align: end; vertical-align: middle; white-space: nowrap; }
 .ch-aks-cmp__table thead th { font: var(--ch-type-12-strong); color: var(--ch-text-tertiary); white-space: normal; vertical-align: bottom; }
@@ -399,7 +402,7 @@
 .ch-aks-sched__tx > .ch-aks-sched__clash { color: var(--ch-loss); }
 
 /* qualifier board: the cut is drawn between the last seat and the first player outside it */
-.ch-aks-board__rows { --ch-aks-cols: 20px minmax(0, 1fr) repeat(var(--ch-aks-rounds, 0), 36px) 44px 52px; display: flex; flex-direction: column; }
+.ch-aks-board__rows { --ch-aks-cols: 20px minmax(0, 1fr) 44px 52px; display: flex; flex-direction: column; }
 .ch-aks-board__rows > li.ch-aks-row { flex-wrap: wrap; }
 .ch-aks-board__head, .ch-aks-board__row { display: grid; grid-template-columns: var(--ch-aks-cols); align-items: center; gap: 8px; }
 .ch-aks-board__head { padding: 0 8px 4px; font: var(--ch-type-12-strong); color: var(--ch-text-tertiary); }
