@@ -298,8 +298,6 @@
   --ch-file-shadow-6: var(--ch-crh-btn-shadow);
   --ch-file-shadow-7: var(--ch-elevation-pill-on);
 }
-.ch-hf {
-}
 .ch-hf.is-phone .dmain { display: block; }
 .ch-hf .empty .ch-btn {
   margin-top: 8px;
