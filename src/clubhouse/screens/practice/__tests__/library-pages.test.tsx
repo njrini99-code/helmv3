@@ -8,6 +8,7 @@ vi.mock('@/app/golf/actions/practice-library', () => ({ createTeamDrill: vi.fn()
 
 import { ToastProvider } from '../../../ui/Toast';
 import { DrillPage, DrillsPage, TemplatesPage } from '../LibraryPages';
+import { tabsFitOneRow } from '../PracticeTabs';
 import type { ChDrillDetail, ChDrillRow } from '../../../data/practice-library-shape';
 
 afterEach(() => {
@@ -36,6 +37,15 @@ describe('Practice library', () => {
     expect(areas.classList.contains('ch-hscroll')).toBe(true);
     expect(areas.querySelectorAll('button').length).toBe(9);
     expect([...document.querySelectorAll('.ch-prc-list')].every((list) => list.classList.contains('is-drills'))).toBe(true);
+  });
+  it('the tabs take two rows of two only when a label would not fit its column', () => {
+    // A phone's row: 350 inside the well, 4 between tabs. "Templates" is about 63 wide at the default Text Size and 86 at the largest.
+    expect(tabsFitOneRow(63, 350, 4, 4)).toBe(true);
+    expect(tabsFitOneRow(86, 350, 4, 4)).toBe(false);
+    // Not laid out yet (no width to read): stay on one row instead of guessing.
+    expect(tabsFitOneRow(0, 0, 4, 4)).toBe(true);
+    render(<ToastProvider><DrillsPage preview teamId="t" team={[team]} library={[lib]} /></ToastProvider>);
+    expect(document.querySelector('.ch-prc-tabs')!.classList.contains('is-two')).toBe(false);
   });
   it('a team drill edits and archives; a library drill only copies', () => {
     const { unmount } = render(<ToastProvider><DrillPage preview teamId="t" drill={detail(team)} /></ToastProvider>);

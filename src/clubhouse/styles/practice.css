@@ -1566,6 +1566,19 @@ main.ch-prc-planpage > .ch-backlink {
 }
 
 /* The library: Drills, a drill, Groups, Templates (N-00 4.1). */
+/* Practice's tabs on a phone: four equal columns, a label with a little room each side. Where a label would not fit its column
+   (the largest Text Sizes, the narrowest phones; PracticeTabs measures) they are two rows of two, never clipped and never scrolled. */
+.ch-prc-tabs .ch-seg--block {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.ch-prc-tabs .ch-seg--block .ch-seg__b {
+  padding-inline: 8px;
+}
+.ch-prc-tabs.is-two .ch-seg--block {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 /* Finding a drill: the search, then the areas. */
 .ch-prc-find {
   display: grid;
