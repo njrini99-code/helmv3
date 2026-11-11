@@ -263,7 +263,7 @@ describe('Stats player · empty', () => {
   it('CH-5306 CH-5307 a player not on the team, for a coach and for a player', () => {
     wrap(<NotOnTeam coach />);
     expect(code('CH-5306')!.textContent).toMatch(/That player isn’t on your team/);
-    expect(screen.getByRole('link', { name: 'Back to team stats' }).getAttribute('href')).toBe('/golf/dashboard/stats');
+    expect(screen.getByRole('link', { name: 'Back to roster' }).getAttribute('href')).toBe('/golf/dashboard/roster');
     wrap(<NotOnTeam coach={false} />);
     expect(code('CH-5307')!.textContent).toMatch(/Your stats aren’t available/);
   });

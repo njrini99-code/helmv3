@@ -90,6 +90,8 @@ describe('desktop My stats is the bento with its drill beside it', () => {
     expect(screen.queryByText('Team stats')).toBeNull();
     expect(screen.queryByText('Message')).toBeNull();
     expect(screen.queryByText('Add focus area')).toBeNull();
+    // The player's own page speaks to them.
+    expect(screen.getByRole('heading', { level: 2, name: 'Your game' })).toBeTruthy();
     const html = document.body.innerHTML;
     for (const name of PREVIEW_TEAM_STATS.players.map((p) => p.name).filter((n) => n !== self().name)) expect(html).not.toContain(name);
     own.unmount();
@@ -98,6 +100,9 @@ describe('desktop My stats is the bento with its drill beside it', () => {
     expect(screen.getByRole('heading', { level: 1, name: coachView().name })).toBeTruthy();
     expect(screen.getByText('Team stats')).toBeTruthy();
     expect(screen.getByText('Message')).toBeTruthy();
+    // A coach reads someone else's page: the game is the player's, by name, never "Your".
+    expect(screen.getByRole('heading', { level: 2, name: `${coachView().firstName}’s game` })).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: 'Your game' })).toBeNull();
   });
 
   it('a failed read keeps the page honest: the failure across the cards’ place, and the pane on the one card left', async () => {

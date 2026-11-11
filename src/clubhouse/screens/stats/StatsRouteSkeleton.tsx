@@ -17,7 +17,7 @@ export function StatsRouteSkeleton() {
   const phone = useChPhone();
   // The address already names the window, so the loading page draws the real switch on it.
   const filter = parseFilter(Object.fromEntries(params));
-  if (phone) return profile ? <ShsPlayerSkeleton filter={filter} /> : <ShsTeamSkeleton filter={filter} />;
+  if (phone) return profile ? <ShsPlayerSkeleton filter={filter} coach={role === 'coach'} /> : <ShsTeamSkeleton filter={filter} />;
 
   return profile ? <StatsProfileSkeleton coach={role === 'coach'} /> : <StatsSkeleton />;
 }
@@ -25,7 +25,7 @@ export function StatsRouteSkeleton() {
 /** The same choice for a known page (the dev preview): the phone's own skeleton on a phone (P004-D6, P005-D13). */
 export function StatsSkeletonFor({ profile, coach = true }: { profile: boolean; coach?: boolean; }) {
   const phone = useChPhone();
-  if (phone) return profile ? <ShsPlayerSkeleton /> : <ShsTeamSkeleton />;
+  if (phone) return profile ? <ShsPlayerSkeleton coach={coach} /> : <ShsTeamSkeleton />;
 
   return profile ? <StatsProfileSkeleton coach={coach} /> : <StatsSkeleton />;
 }

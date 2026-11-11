@@ -280,7 +280,8 @@ export function StatsPlayerPhoneShs({
 
               {below && (
                 <>
-                  <h2 className="ch-shs-sech">Your game</h2>
+                  {/* A coach is reading someone else's page: the section is the player's game, by name. */}
+                  <h2 className="ch-shs-sech">{coach ? `${first}’s game` : 'Your game'}</h2>
                   <SectionBoundary surface="stats.player.strokesGained" label="Strokes gained" code="CH-5204">
                     <SgCard data={data} onOpen={() => go('sg')} />
                   </SectionBoundary>
@@ -542,7 +543,7 @@ function WhatChanged({ data }: { data: ChPlayerProfile }) {
         <p className="ch-shs-hl">Nothing has moved past its usual round-to-round spread {insight.against}.</p>
       ) : (
         <p className="ch-shs-hl">
-          {plural(scores.length, 'round')}, averaging {formatFixed(data.win.avg)}. {bars.length === 2 ? `Your ${bars[0]!.label.toLowerCase()} average ${formatFixed(Math.abs(bars[0]!.value - bars[1]!.value))} ${bars[0]!.value < bars[1]!.value ? 'lower' : 'higher'} than the ${bars[1]!.label.toLowerCase()} of this window.` : ''}
+          {plural(scores.length, 'round')}, averaging {formatFixed(data.win.avg)}. {bars.length === 2 ? `${data.viewer === 'coach' ? `${data.firstName}’s` : 'Your'} ${bars[0]!.label.toLowerCase()} average ${formatFixed(Math.abs(bars[0]!.value - bars[1]!.value))} ${bars[0]!.value < bars[1]!.value ? 'lower' : 'higher'} than the ${bars[1]!.label.toLowerCase()} of this window.` : ''}
         </p>
       )}
       {bars.length > 0 && (
@@ -950,7 +951,7 @@ function GameAreaDetail({ id, data, reads, onRetry, beside = false }: { id: 'sco
           </span>
           <div className="ch-shs-bench-k">
             <span className={`ch-shs-${kf.rail.tone}`}>
-              You {kf.value}
+              {coach ? data.firstName : 'You'} {kf.value}
               {kf.unit}
             </span>
             <span>{kf.tour}</span>

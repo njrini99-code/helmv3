@@ -200,7 +200,7 @@ import { ChClockProvider } from '@/clubhouse/lib/use-clock';
  *   /clubhouse-preview/roster ?state=early | long | big | norequests | onerequest (the lane's flag on, the default here; &crh=0 for main) | empty | failed | partial | availability | helm-failed | helm-off | invite-email | loading   (helm-: the panel's CoachHelm counts didn't load, or CoachHelm is off; invite-email: email invites are on, open the sheet with &invite=1)
  *   /clubhouse-preview/roster-player ?state=empty | failed | noteam | loading   (the player's read-only roster; Theo)
  *   /clubhouse-preview/stats  ?state=empty | failed | partial | crash | loading | filtered | nomatch | earlyfilter | nines | last20 | demo   (the round filter: a filter on, none matching, two rounds, nine-hole rounds in; Last 20)
- *   /clubhouse-preview/player ?state=failed | early | self | filtered | nomatch | nines | loading | readsfailed | readsoff   (reads: Game detail's CoachHelm count lines)
+ *   /clubhouse-preview/player ?state=failed | early | self | filtered | nomatch | nines | loading | readsfailed | readsoff | denied | denied-self   (reads: Game detail's CoachHelm count lines; denied: a coach's link to a player not on the team, denied-self: a player off the roster)
  *   /clubhouse-preview/calendar ?state=empty | firstrun | failed | partial | loading, &view=, &date=, &event=
  *   /clubhouse-preview/calendar-player
  *   /clubhouse-preview/messages ?state=empty | rail | failed | thread-failed | loading | loading-route | files-failed | add-failed
@@ -473,6 +473,9 @@ export default async function ClubhousePreview({
         ) : state === 'loading' ? (
           <StatsSkeletonFor profile />
         ) : state === 'denied' ? (
+          // The coach's shell frames this screen, so the coach's words; the player's own are `denied-self`.
+          <NotOnTeam coach />
+        ) : state === 'denied-self' ? (
           <NotOnTeam coach={false} />
         ) : previewShsPlayer(state) ? (
           <StatsPlayer data={previewShsPlayer(state)!} coachId={null} initialTab={tab} />

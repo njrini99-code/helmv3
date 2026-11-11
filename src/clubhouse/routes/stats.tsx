@@ -76,8 +76,9 @@ export function NotOnTeam({ coach }: { coach: boolean }) {
         body={coach ? 'They may have been removed, or the link is from another team.' : 'You aren’t on an active team roster right now.'}
         action={
           coach ? (
-            <Button size="sm" href="/golf/dashboard/stats">
-              Back to team stats
+            // The roster is where a coach sees who is on the team now, which is the question this page leaves open.
+            <Button size="sm" href="/golf/dashboard/roster">
+              Back to roster
             </Button>
           ) : undefined
         }

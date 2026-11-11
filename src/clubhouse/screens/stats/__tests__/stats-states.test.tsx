@@ -36,6 +36,10 @@ describe('loading', () => {
     expect(heads).toEqual(['Scoring average', 'What changed', 'At a glance', 'Strokes gained', 'Off the tee', 'Approach', expect.any(String), 'Putting', 'Round by round', 'Goals and focus areas']);
     for (const c of document.querySelectorAll<HTMLElement>('.ch-shs-skel-card')) expect(parseFloat(/calc\((\d+)/.exec(c.style.height)?.[1] ?? '')).toBeGreaterThan(100);
     expect([...document.querySelectorAll('.ch-shs-sech')].map((h) => h.textContent)).toEqual(['Overview', 'Your game', 'Rounds', 'Development']);
+    // A coach waiting on a player's page is not told the game is theirs; the name arrives with the page.
+    cleanup();
+    render(<ShsPlayerSkeleton coach />);
+    expect([...document.querySelectorAll('.ch-shs-sech')].map((h) => h.textContent)).toEqual(['Overview', 'Game', 'Rounds', 'Development']);
   });
 
   it('the window switch is the real control on the address’s choice, held inert, and the bars are hidden from assistive tech', () => {

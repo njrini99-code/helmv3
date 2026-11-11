@@ -37,8 +37,8 @@ const TEAM_SECTIONS: typeof SECTIONS = [
  * The loading page: the real switch on the choice the address names, held still; titles and section names show; meta, figure and body
  * are bars; the green card is plain (criteria 93 to 96).
  */
-export function ShsPlayerSkeleton({ filter }: { filter?: ChFilter }) {
-  return <Skeleton sections={SECTIONS} filter={filter} />;
+export function ShsPlayerSkeleton({ filter, coach = false }: { filter?: ChFilter; /** A coach waiting on a player's page: the game is not theirs, and the player's name is not known yet. */ coach?: boolean }) {
+  return <Skeleton sections={coach ? SECTIONS.map((s) => (s.name === 'Your game' ? { ...s, name: 'Game' } : s)) : SECTIONS} filter={filter} />;
 }
 
 /** Team Stats' (today's CH-4401 stays on the container). */
