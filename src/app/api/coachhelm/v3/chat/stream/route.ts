@@ -604,6 +604,11 @@ export async function POST(req: NextRequest) {
   const evidenceRefs = new Map<string, ToolEnvelope>();
   perf.mark('knows');
   const stream = createUIMessageStream({
+    // The SDK builds the message `onFinish` receives from this thread's last assistant message. On an approval continuation the approved tool
+    // runs before any model call and its `tool-output-available` (or `tool-output-denied` on Cancel) names a call from the PREVIOUS response;
+    // with no `originalMessages` the SDK's reducer starts empty, throws "No tool invocation found for tool call ID", tears the response down
+    // and the completed task is stored as a failed turn (production, 2026-11-10; ai 7.0.128 `handleUIMessageStreamFinish`).
+    originalMessages: uiMessages,
     execute: async ({ writer }) => {
       perf.mark('execute');
       const tools = buildCoachTools({
@@ -1130,8 +1135,14 @@ export async function POST(req: NextRequest) {
         return Promise.resolve();
       };
       try {
-        const assistant = [...messages].reverse().find((m) => m.role === 'assistant');
-        if (!assistant) return;
+        const finished = [...messages].reverse().find((m) => m.role === 'assistant');
+        if (!finished) return;
+        // On an approval continuation the SDK hands back the browser's assistant message with this response's parts appended (see
+        // `originalMessages` above). The parts it already had were stored with the first response, so only what this response added is
+        // stored now: a second copy would draw the proposal card and its evidence twice after a reload.
+        const sentAssistant = isApprovalContinuation ? uiMessages[uiMessages.length - 1] : undefined;
+        const alreadyStored = sentAssistant && sentAssistant.id === finished.id ? sentAssistant.parts.length : 0;
+        const assistant = alreadyStored > 0 ? { ...finished, parts: finished.parts.slice(alreadyStored) } : finished;
 
         // Prefer the exact string `execute` streamed and verified — see
         // `turnVerdict`'s declaration above — over independently
