@@ -287,6 +287,28 @@ export const PREVIEW_HOME_TOTALS_ONLY: ChCoachHome = {
   },
 };
 
+/**
+ * `?state=realshape`: phone Home on the text a real team produces. Ties on the four parts ("Tyler H. and 2 others"), a long week note,
+ * long course and player names and a long event title.
+ */
+const tieOf = (names: string[], value: number) => ({ ids: names.map((_, i) => `tie-${i}`), names, value });
+export const PREVIEW_HOME_REAL_SHAPE: ChCoachHome = {
+  ...PREVIEW_HOME,
+  legs: {
+    ...PREVIEW_LEGS,
+    rows: PREVIEW_LEGS.rows.map((r) => ({ ...r, gains: tieOf(['Tyler H.', 'Cole B.', 'Dylan B.'], 0.6), loses: tieOf(['Ethan P.', 'Noah R.', 'Owen C.'], -0.8) })),
+  },
+  phone: {
+    ...PREVIEW_HOME.phone,
+    weekNote: { weekday: 'Saturday', title: 'Spring Preview Tournament' },
+    today: PREVIEW_HOME.phone.today.map((e, i) => (i === 0 ? { ...e, title: 'Short-game block and putting ladder', location: 'Practice green behind the clubhouse' } : e)),
+  },
+  latestRounds: {
+    ...PREVIEW_HOME.latestRounds,
+    rounds: PREVIEW_HOME.latestRounds.rounds.map((r) => ({ ...r, playerName: 'Maximilian Featherstonehaugh', meta: 'Carolina Trace Country Club · Sat 31 Oct · Championship tees' })),
+  },
+};
+
 /** `?state=oneday`: totals only, on a single round day, so there is no line to draw. */
 export const PREVIEW_HOME_ONE_DAY: ChCoachHome = {
   ...PREVIEW_HOME_TOTALS_ONLY,

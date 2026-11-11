@@ -70,3 +70,14 @@ describe('Coach Home, the owner pass: the brief', () => {
     expect(line).not.toMatch(/Audit|no 18-hole/);
   });
 });
+
+describe('Coach Home, phone: Team scoring’s change reads on one line (owner, 5 Nov)', () => {
+  it('the label has its own line, and the change takes the room beside the figure with no width cap', () => {
+    const top = rule(".ch-hm[data-ch-crh='on'] .ch-hm-form__top");
+    expect(top).toContain('display: grid');
+    expect(top).toContain('grid-template-columns: auto minmax(0, 1fr)');
+    expect(rule(".ch-hm[data-ch-crh='on'] .ch-hm-form__top > span:first-child")).toContain('display: contents');
+    expect(rule(".ch-hm[data-ch-crh='on'] .ch-hm-form__top > span:first-child em")).toContain('grid-column: 1 / -1');
+    expect(rule(".ch-hm[data-ch-crh='on'] .ch-hm-form__top .ch-hm-delta em:not(.ch-hm-form__basis)")).toContain('max-width: none');
+  });
+});

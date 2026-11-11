@@ -4733,10 +4733,6 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   .ch-hm[data-ch-crh='on'] .ch-hm-form__top > span:first-child em {
     display: block;
   }
-  .ch-hm[data-ch-crh='on'] .ch-hm-form__top > span:first-child {
-    display: grid;
-    gap: 4px;
-  }
   .ch-hm[data-ch-crh='on'] .ch-hm-tl__w {
     display: inline-flex;
     flex: none;
@@ -4755,11 +4751,23 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   .ch-hm[data-ch-crh='on'] .ch-hm-form::after {
     display: none;
   }
+  /* The label has its own line; under it the figure, with its change beside it. The change takes the room the figure leaves, so
+     "No clear change vs previous 10" reads on one line at phone width and wraps only at a larger Text Size. */
   .ch-hm[data-ch-crh='on'] .ch-hm-form__top {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: end;
+    gap: 4px 12px;
     padding: 12px 16px;
+  }
+  .ch-hm[data-ch-crh='on'] .ch-hm-form__top > span:first-child {
+    display: contents;
+  }
+  .ch-hm[data-ch-crh='on'] .ch-hm-form__top > span:first-child em {
+    grid-column: 1 / -1;
+  }
+  .ch-hm[data-ch-crh='on'] .ch-hm-form__top .ch-hm-delta em:not(.ch-hm-form__basis) {
+    max-width: none;
   }
   .ch-hm[data-ch-crh='on'] .ch-hm-form__top em {
     font: var(--ch-type-15);
