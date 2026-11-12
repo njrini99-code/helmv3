@@ -71,6 +71,7 @@ import { AvatarUpload } from '@/components/ui/avatar-upload';
 import { ConfirmAlert } from '@/components/fairway/overlays/ConfirmAlert';
 import { JoinTeamSection } from '@/components/golf/settings/JoinTeamSection';
 import { CoachHelmToggle } from '@/components/golf/coachhelm/v2';
+import { readPlayerContacts } from '@/lib/golf/player-contacts';
 import {
   IconUser,
   IconMail,
@@ -500,10 +501,12 @@ export function FairwaySettingsGeneral() {
       }
 
       if (golfUser.playerId) {
-        const [playerResult, teamResult] = await Promise.all([
+        // The player's own phone comes through golf_player_contacts: e-mail and phone are not readable from golf_players by a
+        // signed-in session (security review 2026-11-11, finding 1).
+        const [playerResult, teamResult, contactResult] = await Promise.all([
           supabase
             .from('golf_players')
-            .select('first_name, last_name, avatar_url, handicap, handicap_index, graduation_year, hometown, state, phone')
+            .select('first_name, last_name, avatar_url, handicap, handicap_index, graduation_year, hometown, state')
             .eq('id', golfUser.playerId)
             .maybeSingle(),
           golfUser.teamId
@@ -513,6 +516,7 @@ export function FairwaySettingsGeneral() {
                 .eq('id', golfUser.teamId)
                 .maybeSingle()
             : Promise.resolve({ data: null }),
+          readPlayerContacts(supabase, [golfUser.playerId]),
         ]);
 
         // A failed profile read yields the same null as "this player has filled
@@ -531,7 +535,12 @@ export function FairwaySettingsGeneral() {
           console.warn('[settings] team read failed:', teamResult.error.message);
         }
 
-        const player = playerResult.data;
+        // A failed phone read is treated like a failed profile read (no form data), for the same reason as above.
+        if (contactResult.error) {
+          console.warn('[settings] player contact read failed:', contactResult.error.message);
+        }
+        const player = contactResult.error ? null : playerResult.data;
+        const ownPhone = contactResult.data.get(golfUser.playerId)?.phone ?? null;
         const team = teamResult.data;
 
         let currentTeam: SettingsProfile['currentTeam'] = null;
@@ -562,7 +571,7 @@ export function FairwaySettingsGeneral() {
                 graduation_year: player.graduation_year,
                 hometown: player.hometown,
                 state: player.state,
-                phone: player.phone,
+                phone: ownPhone,
               }
             : undefined,
         });

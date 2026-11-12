@@ -114,9 +114,10 @@ function GolfPlayerOnboardingContent() {
       await ensurePlayerRecord();
 
       // Check for existing player record
+      // Named columns: e-mail and phone are not readable through the table (security review 2026-11-11, finding 1).
       const { data: player } = await supabase
         .from('golf_players')
-        .select('*')
+        .select('first_name, last_name, gpa, graduation_year, handicap, hometown, state, onboarding_completed')
         .eq('user_id', user.id)
         .maybeSingle();
 

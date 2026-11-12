@@ -13,6 +13,7 @@ import type { CoachPhilosophy } from '@/lib/coachhelm/types';
 import { isCustomerEmailEnabled } from '@/lib/email/outbound-gate';
 import { DEFAULT_NOTIFICATION_PREFERENCES } from '@/lib/notifications/types';
 import { chLogServer } from '../lib/track-server';
+import { readPlayerContacts } from '@/lib/golf/player-contacts';
 import type { ChCoachHelmSettings, ChScoring, ChSettingsData } from '../screens/settings/model';
 
 /**
@@ -60,7 +61,9 @@ export async function loadSettings(session: GolfSessionProfile, teamId: string |
 
   // The team's name comes from the team row each role reads below, and the digest from the CoachHelm philosophy row: each
   // table is read once (the loader read golf_teams and golf_coach_philosophy twice each; readiness audit, 2026-10-17).
-  const [userRes, deliveryRes, savedPrefsRes, profileRes] = await Promise.all([
+  // The player's own phone comes through golf_player_contacts: e-mail and phone are not readable from golf_players by a
+  // signed-in session (security review 2026-11-11, finding 1).
+  const [userRes, deliveryRes, savedPrefsRes, profileRes, contactRes] = await Promise.all([
     supabase.auth.getUser(),
     getNotificationPreferences().catch((e: unknown) => ({ data: null, error: String(e) })),
     // Which switches this account has saved, to tell a saved "off" from one never touched (see withDeliveryDefaults).
@@ -69,10 +72,12 @@ export async function loadSettings(session: GolfSessionProfile, teamId: string |
       ? supabase.from('golf_coaches').select('full_name, avatar_url, title').eq('id', coachId!).maybeSingle()
       : supabase
           .from('golf_players')
-          .select('first_name, last_name, avatar_url, handicap, handicap_index, graduation_year, hometown, state, phone')
+          .select('first_name, last_name, avatar_url, handicap, handicap_index, graduation_year, hometown, state')
           .eq('id', playerId!)
           .maybeSingle(),
+    role === 'player' && playerId ? readPlayerContacts(supabase, [playerId]) : Promise.resolve(null),
   ]);
+  if (contactRes?.error) log('contact', contactRes.error);
   if (userRes.error) log('user', userRes.error, 'auth');
   if (deliveryRes.error || !deliveryRes.data) log('deliveryPrefs', deliveryRes.error ?? 'no data', 'notifications');
   if (savedPrefsRes.error) log('savedPrefs', savedPrefsRes.error, 'notifications');
@@ -120,8 +125,9 @@ export async function loadSettings(session: GolfSessionProfile, teamId: string |
   };
 
   if (role === 'player') {
+    // A failed phone read fails the card, like a failed profile read: a blank phone on a save surface would be written back.
     base.golf =
-      p == null
+      p == null || contactRes?.error
         ? failed
         : ok({
             handicap: str(p.handicap),
@@ -129,7 +135,7 @@ export async function loadSettings(session: GolfSessionProfile, teamId: string |
             graduationYear: str(p.graduation_year),
             hometown: str(p.hometown),
             state: str(p.state),
-            phone: str(p.phone),
+            phone: str(contactRes?.data.get(playerId!)?.phone ?? null),
           });
     const [routingRes, requestsRes, teamRes] = await Promise.all([
       supabase.from('golf_player_notification_state').select('prefs, quiet_mode').eq('player_id', playerId!).maybeSingle(),
