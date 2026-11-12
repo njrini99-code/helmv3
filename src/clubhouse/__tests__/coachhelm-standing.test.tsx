@@ -549,12 +549,12 @@ describe('the Standing screen', () => {
     show(standingLoad({ ...PREVIEW_STANDING, ladder: null as never }));
     await waitFor(() => expect(code('CH-13204')).not.toBeNull());
     expect(code('CH-13204')!.textContent).toMatch(/couldn’t be shown/);
-    expect(screen.getByRole('heading', { level: 1, name: 'CoachHelm' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 1, name: 'Standing' })).toBeTruthy();
     expect(screen.getByRole('radiogroup', { name: 'CoachHelm view' })).toBeTruthy();
     quiet.mockRestore();
   });
 
-  it('CH-13880 the page is labelled by CoachHelm; where they stand, where strokes go and each group are labelled regions', () => {
+  it('CH-13880 the page is labelled by its title; where they stand, where strokes go and each group are labelled regions', () => {
     show();
     expect(screen.getByRole('main').getAttribute('aria-labelledby')).toBe('ch-hl-title');
     // The hero names the part of the round that loses the most, once, and its counts use one denominator, the Tour's.
