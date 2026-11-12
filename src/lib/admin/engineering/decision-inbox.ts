@@ -128,9 +128,11 @@ export function buildDecisionInbox(input: BuildDecisionInboxInput): EngineeringD
   return items;
 }
 
-async function readRepoFile(relativePath: string): Promise<string | null> {
+// Each source is named with literal path segments: a path built from a variable makes the bundler trace the
+// whole repository into the page's server function (it pushed /admin/deploys past Vercel's 250 MB limit).
+async function readOrNull(read: () => Promise<string>): Promise<string | null> {
   try {
-    return await readFile(join(process.cwd(), relativePath), 'utf-8');
+    return await read();
   } catch {
     return null;
   }
@@ -152,8 +154,8 @@ export interface DecisionInboxSnapshot {
 export async function fetchDecisionInbox(now: number = Date.now()): Promise<AdminFetchResult<DecisionInboxSnapshot>> {
   try {
     const [heldMarkdown, janitorRaw] = await Promise.all([
-      readRepoFile('supabase/migrations/HELD.md'),
-      readRepoFile('docs/generated/janitor-findings.json'),
+      readOrNull(() => readFile(join(process.cwd(), 'supabase', 'migrations', 'HELD.md'), 'utf-8')),
+      readOrNull(() => readFile(join(process.cwd(), 'docs', 'generated', 'janitor-findings.json'), 'utf-8')),
     ]);
 
     if (heldMarkdown === null && janitorRaw === null) {
