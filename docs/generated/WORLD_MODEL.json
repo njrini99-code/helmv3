@@ -4437,6 +4437,10 @@
         "definedIn": "supabase/migrations/20261031142000_golf_events_class_rows_private.sql"
       },
       {
+        "id": "golf_player_private_fields",
+        "definedIn": "supabase/migrations/20261112090000_golf_players_coaches_contact_columns.sql"
+      },
+      {
         "id": "golf_player_profiles",
         "definedIn": "supabase/migrations/20261017004000_golf_player_profiles_fn.sql"
       },
@@ -8038,6 +8042,18 @@
     },
     {
       "source": "admin_platform",
+      "target": "player_coachhelm_development",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/data/ask-credit-requests.ts",
+          "anchor": "src/lib/coachhelm/v3/chat/ask-db"
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
       "target": "player_hub",
       "kind": "feature_relation",
       "evidence": [
@@ -9733,6 +9749,11 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/roster.ts",
           "anchor": "src/lib/golf/with-golf-action"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/roster.ts",
+          "anchor": "src/lib/golf/player-private-fields"
         }
       ]
     },
@@ -18962,6 +18983,18 @@
     },
     {
       "source": "golf_round_lifecycle",
+      "target": "golf_player_private_fields",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/lib/golf/player-private-fields.ts",
+          "anchor": "golf_player_private_fields"
+        }
+      ]
+    },
+    {
+      "source": "golf_round_lifecycle",
       "target": "golf_player_profiles",
       "kind": "feature_rpc",
       "evidence": [
@@ -22876,6 +22909,11 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/chat/readers-direct.ts",
           "anchor": "src/lib/golf/message-polls"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/season-reads.ts",
+          "anchor": "src/lib/golf/timezone"
         },
         {
           "kind": "import_graph",

@@ -175,14 +175,16 @@ async function resolveUploaders(
   const ids = Array.from(new Set(userIds.filter((id): id is string => Boolean(id))));
   if (ids.length === 0) return new Map();
 
+  // Name only: golf_coaches.email is not readable by a signed-in session (security review 2026-11-11, finding 1), and no screen
+  // shows an uploader's e-mail. `email` stays in the shape, always null.
   const { data } = await supabase
     .from('golf_coaches')
-    .select('user_id, full_name, email')
+    .select('user_id, full_name')
     .in('user_id', ids);
 
   const map = new Map<string, { full_name: string | null; email: string | null }>();
-  for (const row of (data as { user_id: string; full_name: string | null; email: string | null }[] | null) || []) {
-    map.set(row.user_id, { full_name: row.full_name, email: row.email });
+  for (const row of (data as { user_id: string; full_name: string | null }[] | null) || []) {
+    map.set(row.user_id, { full_name: row.full_name, email: null });
   }
   return map;
 }

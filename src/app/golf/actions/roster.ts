@@ -9,6 +9,7 @@ import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { withGolfAction } from '@/lib/golf/with-golf-action';
 import { describeError } from '@/lib/utils/describe-error';
+import { readPlayerPrivateFields } from '@/lib/golf/player-private-fields';
 
 // ============================================================================
 // TYPES
@@ -263,7 +264,7 @@ async function getTeamPlayersImpl(): Promise<{
   const playerIds = teamMembers.map(m => m.player_id);
   const { data: players, error: playersError } = await supabase
     .from('golf_players')
-    .select('id, first_name, last_name, email, handicap, avatar_url')
+    .select('id, first_name, last_name, handicap, avatar_url')
     .in('id', playerIds)
     .order('last_name', { ascending: true });
 
@@ -273,9 +274,16 @@ async function getTeamPlayersImpl(): Promise<{
   }
 
   // 5. Merge player data with membership status
+  // E-mail through golf_player_private_fields: not readable from the table by a signed-in session (security review 2026-11-11,
+  // finding 1). A failed read leaves it blank rather than failing the roster.
+  const contacts = await readPlayerPrivateFields(supabase, playerIds);
+  if (contacts.error) {
+    await logServerError(`getTeamPlayers: contact read failed: ${contacts.error.message}`, { action: 'roster.getTeamPlayers.contacts' }, 'warning');
+  }
   const memberStatusMap = new Map(teamMembers.map(m => [m.player_id, m.status]));
   const result = (players || []).map(player => ({
     ...player,
+    email: contacts.data.get(player.id)?.email ?? null,
     status: memberStatusMap.get(player.id) ?? null,
   }));
 

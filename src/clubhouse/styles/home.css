@@ -5522,7 +5522,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   .ch-h-main[data-ch-crh='on'] .ch-hm-legs__a {
     border-radius: var(--ch-radius-xs);
     color: var(--ch-text-primary);
-    font-weight: inherit;
+    font: var(--ch-type-14);
     text-decoration: underline;
     text-decoration-thickness: 1px;
     text-underline-offset: 2px;
@@ -6140,7 +6140,9 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
 /* W3 (owner's preview, 11 Nov 2026): Team scoring's line names its first and last days and marks its best and toughest,
    and a change the card itself calls noise ("No clear change") is no longer its boldest figure. */
 .ch-hm-delta.is-flat {
-  font-weight: 400;
+  font: var(--ch-type-16);
+  letter-spacing: var(--ch-track-16);
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
 .ch-hm-form__axis {
@@ -6148,7 +6150,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   justify-content: space-between;
   margin-top: -4px;
   font: var(--ch-type-11);
-  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--ch-track-11);
   color: var(--ch-text-tertiary);
 }
 .ch-hm-form__ends {
@@ -6157,7 +6159,6 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   gap: 4px 16px;
   margin: 10px 0 12px;
   font: var(--ch-type-12);
-  font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
 }
 .ch-hm-form__ends span {

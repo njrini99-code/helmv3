@@ -105,6 +105,15 @@ async function saveTournamentHoleImpl(raw: TourHoleInput): Promise<ActionResult<
     if (!roundId) {
       // A player cannot change a row the coach made (no update policy): they only add their own link.
       if (!coach && row) return refuse('invalid', 'Your coach has this round open. Ask them to score it or to clear it.');
+      if (!coach) {
+        // The lineup first, before any round is made (security review 2026-11-11, finding 4): the link policy refuses a player who
+        // is not in the round's lineup, but only after the round exists, and a failed clean-up would leave a stray round. The
+        // player reads their own snapshot row (the select-own policy of 20261024100300); before that file there is none to read.
+        const own = await tourTable(supabase, 'golf_tournament_round_lineups').select('role').eq('round_event_id', i.roundEventId).eq('player_id', i.playerId);
+        if (own.error) return refuse(tourRefusalOf(own.error));
+        const plays = ((own.data as Array<{ role: string }> | null) ?? []).some((f) => f.role === 'lineup' || f.role === 'individual');
+        if (!plays) return refuse('not_in_lineup');
+      }
       const made = await supabase
         .from('golf_rounds')
         .insert({ player_id: i.playerId, team_id: teamId, round_date: i.date, round_type: 'tournament', holes_played: t.holes_per_round, course_id: r.course_id ?? t.course_id, status: 'in_progress' })

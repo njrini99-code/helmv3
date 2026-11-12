@@ -15,6 +15,7 @@ import { KpiTile } from '../_components/KpiTile';
 import { TeamHealthTable } from '../_components/TeamHealthTable';
 import { TeamCommandCard } from '../_components/TeamCommandCard';
 import { PlayerWatchlist } from '../_components/PlayerWatchlist';
+import { AskRequestsPanel } from '../_components/AskRequestsPanel';
 import { LocalTime } from '../_components/LocalTime';
 import { AutoRefresh } from '../_components/AutoRefresh';
 import { DetailsDisclosure, TabHeader } from '../_components/TabHeader';
@@ -337,6 +338,7 @@ async function GolfBody() {
 
         <div className="space-y-4">
           <PlayerWatchlist players={watchlist} title="Player-by-player watchlist" />
+          <AskRequestsPanel />
           <Surface padding="sm">
             <SectionLabel>Error trace hooks</SectionLabel>
             <div className="mt-3 grid grid-cols-2 gap-3">

@@ -8,6 +8,7 @@ import { askTables } from '@/lib/coachhelm/v3/chat/ask-db';
 import { logServerError } from '@/lib/server-error-logger';
 import { isCustomerEmailEnabled } from '@/lib/email/outbound-gate';
 import { sendOpsAlert } from '@/lib/admin/digest/transport';
+import { getAppBaseUrl } from '@/lib/app-base-url';
 import { weekStart } from '@/lib/coachhelm/v3/chat/player-allowance';
 import { resolvePlayerChatContext } from '@/lib/coachhelm/v3/chat/player-context';
 
@@ -22,7 +23,7 @@ async function requestAskCreditsImpl(note?: string): Promise<{ success: boolean;
   if (!ctx) return { success: false, error: 'Unauthorized' };
   const admin = createAdminClient();
   const { data, error } = await askTables(admin).from('ask_credit_requests')
-    .insert({ player_id: ctx.player_id, team_id: ctx.team_id, week_start: weekStart(new Date(), ctx.timezone), note: note?.trim().slice(0, 280) || null, release_at: new Date(Date.now() + UNDO_MS).toISOString() } as never)
+    .insert({ player_id: ctx.player_id, team_id: ctx.team_id, week_start: weekStart(new Date(), ctx.timezone), note: note?.trim().slice(0, 280) || '', release_at: new Date(Date.now() + UNDO_MS).toISOString() } as never)
     .select('id')
     .maybeSingle();
   if (error) {
@@ -31,27 +32,34 @@ async function requestAskCreditsImpl(note?: string): Promise<{ success: boolean;
     return { success: false, error: 'That didn’t go in. Try again.' };
   }
   const id = (data as { id: string } | null)?.id;
-  const asker = ctx.roster[0]?.name ?? 'A player';
-  if (id) after(() => releaseRequest(id, ctx.team_name, asker));
+  if (id) after(() => releaseRequest(id, ctx.team_name));
   return { success: true, id };
 }
 
-async function releaseRequest(id: string, teamName: string, asker: string): Promise<void> {
+/**
+ * After the Undo window, release the request and tell ops. The e-mail carries the request id and the team only (security review
+ * 2026-11-11, finding 5; owner: "Request number and team only"): a player's name and free-text note never travel by e-mail.
+ * Ops reads both in the admin console (`/admin/golf#ask-requests`, `AskRequestsPanel`).
+ */
+async function releaseRequest(id: string, teamName: string): Promise<void> {
   await new Promise((r) => setTimeout(r, UNDO_MS));
   const admin = createAdminClient();
   const { data, error } = await askTables(admin).from('ask_credit_requests')
     .update({ released_at: new Date().toISOString() } as never)
     .eq('id', id)
     .is('released_at', null)
-    .select('id, note')
+    .select('id')
     .maybeSingle();
-  const row = error ? null : (data as { id: string; note: string | null } | null);
+  const row = error ? null : (data as { id: string } | null);
   if (!row) return; // Undone.
   if (!isCustomerEmailEnabled()) {
     await logServerError('ask credits request held by the email gate', { action: 'coachhelm.ask.requestCredits', extra: { requestId: id } }, 'warning');
     return;
   }
-  const sent = await sendOpsAlert({ subject: `Ask: ${asker} asked for more (${teamName})`, text: `${asker} on ${teamName} asked for more Ask this week.${row.note ? `\n\n${row.note}` : ''}` });
+  const sent = await sendOpsAlert({
+    subject: `Ask: request for more (${teamName})`,
+    text: `Request ${id} on ${teamName} asked for more Ask this week.\n\nWho asked and their note: ${getAppBaseUrl()}/admin/golf#ask-requests`,
+  });
   if (sent.sent) await askTables(admin).from('ask_credit_requests').update({ sent_at: new Date().toISOString() } as never).eq('id', id);
 }
 

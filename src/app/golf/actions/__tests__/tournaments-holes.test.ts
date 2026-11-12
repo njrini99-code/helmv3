@@ -151,6 +151,7 @@ describe('saveTournamentHole', () => {
 
   it('a player scores only themselves, as a player link', async () => {
     state.role = 'player';
+    state.snap = [{ player_id: P1, role: 'lineup' }];
     await expect(saveTournamentHole({ ...base, playerId: P2 })).resolves.toMatchObject({ success: false, code: 'not_coach' });
     expect(state.calls).toEqual([]);
     await expect(saveTournamentHole(base)).resolves.toMatchObject({ success: true });
@@ -159,9 +160,27 @@ describe('saveTournamentHole', () => {
 
   it('a link the policy refuses leaves no half-made round, and the refusal is a code with its words', async () => {
     state.role = 'player';
+    state.snap = [{ player_id: P1, role: 'lineup' }];
     state.linkErr = { code: '42501', message: 'new row violates row-level security policy' };
     await expect(saveTournamentHole(base)).resolves.toMatchObject({ success: false, code: 'not_coach', error: expect.any(String) });
     expect(state.calls.some((c) => c.startsWith('delete golf_rounds'))).toBe(true);
     expect(state.calls.some((c) => c.includes('upsert golf_holes'))).toBe(false);
+  });
+
+  it('a player not in the round’s lineup (or only an alternate) is refused before any round is made', async () => {
+    state.role = 'player';
+    state.snap = [];
+    await expect(saveTournamentHole(base)).resolves.toMatchObject({ success: false, code: 'not_in_lineup' });
+    state.snap = [{ player_id: P1, role: 'alternate' }];
+    await expect(saveTournamentHole(base)).resolves.toMatchObject({ success: false, code: 'not_in_lineup' });
+    expect(state.calls).toEqual([]);
+  });
+
+  it('a player already linked to their round scores on it without the lineup read deciding again', async () => {
+    state.role = 'player';
+    state.snap = [];
+    state.existing = { round_id: 'r-1', entered_total: null };
+    await expect(saveTournamentHole(base)).resolves.toMatchObject({ success: true });
+    expect(state.calls.some((c) => c.startsWith('insert golf_rounds'))).toBe(false);
   });
 });

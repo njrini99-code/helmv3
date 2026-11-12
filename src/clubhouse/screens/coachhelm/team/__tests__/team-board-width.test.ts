@@ -17,7 +17,8 @@ const rule = (selector: string): string => {
 describe('the Team board on a desk', () => {
   it('stops at the wide measure, on the shared left edge', () => {
     const desk = rule('  .ch-htb.is-desk');
-    expect(desk).toContain('max-width: calc(var(--ch-measure-wide) + 48px)');
+    // W40 (owner, 12 Nov 2026): one wide box for every board, the same as Calendar's and Recruiting's.
+    expect(desk).toContain('max-width: var(--ch-measure-wide);');
     expect(desk).toContain('margin-inline: max(0px, calc((100vw - var(--ch-sidebar-w) - var(--ch-measure-wide)) / 2)) auto');
   });
 });
