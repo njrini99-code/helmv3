@@ -33,6 +33,8 @@ export function WelcomeStage({ children }: { children?: ReactNode }) {
           <SceneMount camera={handoff === 'fold' ? 'leave' : 'push'} play />
           <div className="ch-au-paper" />
         </div>
+        {/* Desk: the sidebar's green sliding in over the course to the canvas's edge (auth.css, the fold). */}
+        <div className="ch-au-fold" aria-hidden="true" />
         {/* The phone's hand-off (design/handoff/auth, Sign in - Mobile): the green collapses to the dashboard's bar while
             the parchment sheet rises from the foot to meet it, so the dashboard opens on its own frame. */}
         <div className="ch-au-hero" aria-hidden="true" />
