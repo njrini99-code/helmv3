@@ -218,6 +218,7 @@ function Accept({ preview, program, email, token, writes, returnTo, focusOnMount
 
   const wrong = wrongAccount(failure);
   const switchAccount = () => void writes.switchAccount(returnTo);
+  const noticeId = useId();
   return (
     <div className="ch-au-form" data-ch-code="CH-15941">
       <h1 ref={titleRef} tabIndex={-1}>
@@ -235,22 +236,25 @@ function Accept({ preview, program, email, token, writes, returnTo, focusOnMount
       )}
       {failure && (
         <div className="ch-au-err" key={failure}>
-          <AuthNotice
-            tone={wrong ? 'warning' : 'danger'}
-            code={wrong ? 'CH-15944' : 'CH-15034'}
-            action={
-              wrong ? (
-                <Button size="sm" onClick={switchAccount}>
-                  Switch account
-                </Button>
-              ) : undefined
-            }
-          >
+          <AuthNotice tone={wrong ? 'warning' : 'danger'} id={noticeId} code={wrong ? 'CH-15944' : 'CH-15034'}>
             {failure}
           </AuthNotice>
         </div>
       )}
-      <GateKey idle="Accept invitation" working="Joining…" busy={busy} type="button" onClick={() => void accept()} code="CH-15433" />
+      {wrong ? (
+        // CH-15944: an account that belongs to another program. The way out is the one lit key; accepting into the wrong
+        // program is not the easy tap: Accept stays, secondary and off, the warning its reason.
+        <div className="ch-au-submit ch-au-submit--pair">
+          <Button variant="primary" size="lg" onClick={switchAccount}>
+            Switch account
+          </Button>
+          <Button variant="secondary" size="lg" disabled aria={{ describedby: noticeId }}>
+            Accept invitation
+          </Button>
+        </div>
+      ) : (
+        <GateKey idle="Accept invitation" working="Joining…" busy={busy} type="button" onClick={() => void accept()} code="CH-15433" />
+      )}
     </div>
   );
 }

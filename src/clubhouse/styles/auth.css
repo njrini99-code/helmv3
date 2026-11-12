@@ -732,7 +732,14 @@
   min-width: 0;
 }
 .ch-au-notice > .ch-btn {
+  position: relative;
   margin-inline-start: var(--ch-space-6);
+}
+/* 44 to the finger and the mouse alike, drawn as it is (a 30px small key on the desk): the box grows on its short side. */
+.ch-au-notice > .ch-btn::after {
+  content: '';
+  position: absolute;
+  inset: min(0px, calc(50% - 22px));
 }
 .ch-au-notice--info svg {
   color: var(--ch-info-600);
@@ -750,6 +757,11 @@
 }
 .ch-au-submit {
   margin-top: 24px;
+}
+/* The wrong account (CH-15944): Switch account lit, Accept under it, off. */
+.ch-au-submit--pair {
+  display: grid;
+  gap: var(--ch-space-2);
 }
 .ch-au-submit .ch-btn {
   width: 100%;

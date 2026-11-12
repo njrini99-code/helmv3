@@ -23,6 +23,14 @@ Held items:     none
 - The password's four needs sit two by two. As a wrapped row they broke three and one, "A symbol" alone, on a phone and on
   the desk panel.
 
+### Changed (owner calls, 12 Nov)
+
+- Staff invite, an account that belongs to another program (CH-15944): Switch account is the lit key; Accept invitation
+  stays under it, secondary and off, the warning its reason (aria-describedby). Accepting into the wrong program is not
+  the easy tap.
+- Reset, a refusal of the new password (CH-15030): said under that field and its needs, tied to it; Confirm stays clean.
+- A notice's action (Go to sign in) reaches 44 under any pointer, drawn as it is.
+
 ### Verification
 
 - WebKit at 390 and 1440, light and dark: 54 states of signin, forgot, the six refusals, reset, join, joinconfirm, staff,

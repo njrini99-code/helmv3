@@ -24,7 +24,7 @@ interface CommonProps {
   feel?: ChHaptic | null;
   className?: string;
   /** The states a key carries for assistive tech (CONS-2): a name that differs from its label, a disclosure it opens, a toggle's state. */
-  aria?: { label?: string; expanded?: boolean; controls?: string; pressed?: boolean };
+  aria?: { label?: string; expanded?: boolean; controls?: string; pressed?: boolean; /** What says why: a disabled key's reason (an id). */ describedby?: string };
   /** A `data-ch-code` for the state this key starts (the CH- catalog). */
   code?: string;
   /** Extra `data-*` hooks, for a capture tool or a test to find this key. */
@@ -82,6 +82,7 @@ export function Button(props: ButtonProps) {
       aria-haspopup={props.menu?.['aria-haspopup']}
       aria-controls={props.menu?.['aria-controls'] ?? aria?.controls}
       aria-pressed={aria?.pressed}
+      aria-describedby={aria?.describedby}
       data-ch-code={code}
       {...data}
       disabled={props.disabled || props.busy}
