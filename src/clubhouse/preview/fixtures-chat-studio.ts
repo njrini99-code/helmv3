@@ -24,6 +24,8 @@ export interface StudioSpecimen {
   /** The read it would have come from. */
   read: string;
   part: { kind: string; data: unknown };
+  /** Drawn with the Miss Compass on (its team flag), as Ask's page draws it for a team the flag lists. */
+  compass?: boolean;
 }
 
 const make = <K extends StudioKindName>(id: string, kind: K, title: string, read: string, data: StudioData[K], note?: string): StudioSpecimen => ({ id, kind, title, read, part: { kind, data }, note });
@@ -37,6 +39,33 @@ function fromRead(envelope: ToolEnvelope, want: AskEvidence['kind']): { kind: st
 }
 
 const PAR = [4, 4, 3, 5, 4, 4, 3, 4, 5, 4, 3, 4, 5, 4, 4, 3, 4, 5];
+
+/**
+ * The Miss Compass's specimen (Studio Phase 1): the shots behind each direction, as the compiler copies them from a read's
+ * `detail.ui_only` (newest round first, at most 40 a direction with the true count). Right holds 46, so its list says it is
+ * capped. Synthetic rounds and shots only.
+ */
+const COMPASS_COUNTS: Record<string, number> = { long: 4, long_right: 6, right: 46, short_right: 11, short: 9, short_left: 5, left: 4, long_left: 2 };
+const COMPASS_ROUNDS = [
+  ['cr-1', '2026-11-04', 'Hilltop Golf Club'],
+  ['cr-2', '2026-10-28', 'Pine Ridge'],
+  ['cr-3', '2026-10-14', 'Hilltop Golf Club'],
+  ['cr-4', '2026-09-30', 'Cedar Lakes'],
+  ['cr-5', '2026-09-16', 'Pine Ridge'],
+] as const;
+const COMPASS_SHOTS = Object.fromEntries(
+  Object.entries(COMPASS_COUNTS).map(([dir, count], d) => [
+    dir,
+    {
+      count,
+      shots: Array.from({ length: Math.min(count, 40) }, (_, i) => {
+        const [round_id, round_date, course] = COMPASS_ROUNDS[Math.min(COMPASS_ROUNDS.length - 1, Math.floor((i * COMPASS_ROUNDS.length) / Math.max(1, Math.min(count, 40))))]!;
+        return { id: `cs-${d}-${i}`, round_id, hole_id: `ch-${(i % 18) + 1}`, round_date, course, from_ft: (125 + ((i * 7 + d * 5) % 50)) * 3, left_ft: 12 + ((i * 11 + d * 3) % 40), lie_before: i % 4 === 3 ? 'rough' : 'fairway' };
+      }),
+    },
+  ]),
+);
+const COMPASS_TOTAL = Object.values(COMPASS_COUNTS).reduce((a, b) => a + b, 0) + 6;
 const SHOT = [4, 5, 3, 4, 4, 4, 5, 4, 5, 4, 2, 6, 5, 4, 4, 3, 5, 4];
 const HOLES: StudioHole[] = PAR.map((par, i) => ({ n: i + 1, par, score: SHOT[i]! }));
 
@@ -138,6 +167,13 @@ export const STUDIO_SPECIMENS: readonly StudioSpecimen[] = [
   { id: 'round_read', kind: 'round', title: 'A round, from the round read', read: 'r5', part: fromReadOr(STUDIO_READ_ROUND, 'round') },
   make('round_strip', 'round', 'A round hole by hole, to par', 'r5', { title: null, strip: { type: 'hole_strip', holes: PAR.map((par, i) => ({ hole_number: i + 1, to_par: SHOT[i]! - par })) } }),
   make('distance_misses', 'distance_profile', 'Where the misses go', 'r7', { form: 'misses', misses: { type: 'miss_pattern', total: 64, no_direction: 6, inside_15: 14, inside_25: 31, wedges: [{ direction: 'long', count: 4, avg_left_ft: 31 }, { direction: 'long_right', count: 6, avg_left_ft: 34 }, { direction: 'right', count: 17, avg_left_ft: 38 }, { direction: 'short_right', count: 11, avg_left_ft: 42 }, { direction: 'short', count: 9, avg_left_ft: 36 }, { direction: 'short_left', count: 5, avg_left_ft: 29 }, { direction: 'left', count: 4, avg_left_ft: 27 }, { direction: 'long_left', count: 2, avg_left_ft: 24 }] } }),
+  {
+    ...make('distance_compass', 'distance_profile', 'The Miss Compass: choose a direction, see its shots', 'r7', {
+      form: 'misses',
+      misses: { type: 'miss_pattern', total: COMPASS_TOTAL, no_direction: 6, inside_15: 19, inside_25: 41, wedges: Object.entries(COMPASS_COUNTS).map(([direction, count]) => ({ direction, count, avg_left_ft: 30 })), shots: { ref: 'e7', cap: 40, directions: COMPASS_SHOTS } },
+    }, 'Drawn with its team flag on. A direction opens its shots, newest round first; Right holds 46, so its list says it shows the newest 40.'),
+    compass: true,
+  },
   make('trend_seasons', 'trend', 'This season against last', 'r4', { form: 'seasons', seasons: { type: 'season_compare', metric: 'Scoring average to par', this_season: { mean: 2.1, lo: 0.4, hi: 3.8, n: 9 }, last_season: { mean: 3.4, lo: 1.6, hi: 5.2, n: 22 }, method: 'Full rounds that count, practice left out.' } }),
   make('practice_plan', 'practice_plan', 'A practice plan, as a run sheet', 'r10', { form: 'plan', plan: PP_PLAN_PART }, 'The practice lane’s own plan card, mounted as it is.'),
   make('practice_brief', 'practice_plan', 'The questions asked before a plan is drafted', 'r10', { form: 'brief', brief: { title: 'Thursday’s practice', questions: [{ id: 'focus', title: 'What should it work on?', why: 'The team lost most strokes here over the last 8 rounds.', options: [{ id: 'putt', label: 'Putting inside 8 feet', hint: 'from the read' }, { id: 'app', label: 'Approach, 150 to 175 yards' }], pick: ['putt'] }] } }),

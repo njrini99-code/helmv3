@@ -10,6 +10,7 @@ import { requireRosterPlayer, type CoachChatContext } from './context';
 import { defaultSgBaseline, type SgBaselineKey } from '@/lib/golf/sg-benchmarks';
 import { nowIso, unavailableEnvelope, type CoverageState, type Measurement, type ToolEnvelope } from './provenance';
 import { seasonStartDate } from './season-rule';
+import { withoutUiOnly } from './ui-only';
 
 /** The session's context in the shape the existing reads take. */
 export const teamOf = (ctx: ToolContext): CoachChatContext => ctx.who;
@@ -355,7 +356,8 @@ export function inWords(envelope: ToolEnvelope, opts?: WordsOptions | string): s
     ...envelope.measurements.map((m) => measurementLine(m, words.against)),
     ...envelope.series.map((s) => `${s.entity.label}, ${spoken(s.metric_label)}, by date: ${s.points.map((p) => `${dayWords(p.at.slice(0, 10), words)}${p.bucket ? ` ${coachWords(p.bucket)}` : ''} ${minus(p.value, isStrokesGained(s))}`).join('; ')}`),
     sources.length ? `Source: ${sources.join('; ')}.` : null,
-    ...detailLines(envelope.detail, null, 0, words),
+    // The shots a coach can open (`ui_only`) are the app's, never read out to the model (ui-only.ts).
+    ...detailLines(withoutUiOnly(envelope.detail), null, 0, words),
   ].filter((l): l is string => typeof l === 'string' && l.length > 0);
 }
 

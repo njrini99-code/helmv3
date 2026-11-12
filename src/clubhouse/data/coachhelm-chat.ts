@@ -2,6 +2,7 @@
 import { readAskKnows } from '@/lib/coachhelm/v3/chat/ask-knows';
 import { resolvePlayerChatContext } from '@/lib/coachhelm/v3/chat/player-context';
 import { readBucket } from '@/lib/coachhelm/v3/chat/player-allowance';
+import { missCompassEnabled } from '@/lib/coachhelm/v3/chat/visuals/miss-compass-flag';
 import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
@@ -175,6 +176,8 @@ export async function loadAskCoachHelm({ conversationId }: { conversationId?: st
     threadFailed: thread?.kind === 'failed',
     knows: await askKnows(sb, ctx, wanted),
     firstName: await coachFirstName(sb, ctx.coach_id),
+    // The Miss Compass, for a coach on a team the flag lists; a player's Ask never draws it.
+    ...(missCompassEnabled(ctx.team_id) ? { missCompass: true } : {}),
   };
   return { status: 'ready', data };
 }

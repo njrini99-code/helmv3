@@ -16,6 +16,9 @@ import { HoleStrip, MissPattern, SeasonCompare } from '../visual/blocks';
 import { AskKey, OpenKey, type AskTarget } from './ask';
 import { HolePlan, RuledTrend, onTheHole, trendReference } from './drawings';
 import type { StudioEvent, StudioHole, StudioProps } from './types';
+import type { MissPatternBlock } from '@/lib/coachhelm/v3/chat/visuals/composition';
+import { useMissCompassGate } from './compass-gate';
+import { MissCompass } from './MissCompass';
 
 /**
  * The studio's components, one per kind (registry.tsx), in the chat's approved look (LOOK.md, "A. The yardage book"):
@@ -341,6 +344,28 @@ export function StrokesGained(p: StudioProps<'strokes_gained'>) {
 const BAND_TONE = { good: 'gain', loss: 'loss', neutral: undefined } as const;
 const TONE_OF = { 'is-gain': 'gain', 'is-loss': 'loss', '': undefined } as const;
 
+/**
+ * Where the misses go. The Miss Compass where Ask's page turns it on (its team flag) and the read kept the shots behind each
+ * direction; otherwise the drawing as it always was, whatever the stored block holds (Studio Phase 1, compass-gate.tsx).
+ */
+function Misses({ block, size }: { block: MissPatternBlock; size: StudioProps['size'] }) {
+  const gate = useMissCompassGate();
+  const { shots } = block;
+  if (gate.on && shots)
+    return (
+      <div className="ch-aks ch-aks-dist" data-size={size}>
+        <Head title="Where the misses go" />
+        <MissCompass block={block} shots={shots} compact={size === 'compact'} />
+      </div>
+    );
+  return (
+    <div className="ch-aks ch-aks-dist" data-size={size}>
+      <Head title="Where the misses go" />
+      <MissPattern block={block} />
+    </div>
+  );
+}
+
 /** Make rate or feet left by distance band, as ruled rows: the band, its attempts, the figure in its tone, and under it what it is set against, in words. Putts and misses keep their own drawings. Each band and each direction asks. */
 export function DistanceProfile(p: StudioProps<'distance_profile'>) {
   const t = targetOf('distance_profile', p);
@@ -372,13 +397,7 @@ export function DistanceProfile(p: StudioProps<'distance_profile'>) {
       </div>
     );
   }
-  if (p.data.form === 'misses')
-    return (
-      <div className="ch-aks ch-aks-dist" data-size={p.size}>
-        <Head title="Where the misses go" />
-        <MissPattern block={p.data.misses} />
-      </div>
-    );
+  if (p.data.form === 'misses') return <Misses block={p.data.misses} size={p.size} />;
   const { bands } = p.data;
   return (
     <div className="ch-aks ch-aks-dist" data-size={p.size}>

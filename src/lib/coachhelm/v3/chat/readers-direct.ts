@@ -27,6 +27,7 @@ import { findNotTracked } from './not-tracked';
 import { empty, failed, nameOf, notice, notTracked, ownOrOne, part, plain, playerOf, say, sgAgainst, teamOf, together, withText, wordsFor } from './reader-kit';
 import { screenLoaders, STATS_WINDOWS } from './screen-loaders';
 import { getProximityByBand, getShotPattern } from './shot-reads';
+import { missCompassEnabled } from './visuals/miss-compass-flag';
 import { SummariseInputCoach, SummariseInputPlayer, summariseData, type SummariseInput } from './summarise-data';
 import { describeQueryTables, queryTeamData, TeamQueryInput } from './team-query';
 import { getAttendanceSummary, getFocusPractice, getGoals, getTeamSeasonSettings, getTournamentNotes } from './team-reads';
@@ -152,7 +153,9 @@ export const getShots: ReadTool<ShotsInput> = {
     const player_id = ownOrOne(ctx, input.player_id);
     const who = teamOf(ctx);
     if (input.bands?.length) return plain(asOwn(ctx, await getProximityByBand(ctx.sb, who, { player_id, bands: input.bands, since_days: input.since_days })), wordsFor(ctx));
-    return plain(asOwn(ctx, await getShotPattern(ctx.sb, who, { player_id, club_type: input.club_type, from_yards: input.from_yards, to_yards: input.to_yards, since_days: input.since_days, mode: 'approach' })), wordsFor(ctx));
+    // The Miss Compass (team flag, coach only): the shots behind each direction ride on the read for the coach to open.
+    const drawer = !playerOf(ctx) && missCompassEnabled(who.team_id);
+    return plain(asOwn(ctx, await getShotPattern(ctx.sb, who, { player_id, club_type: input.club_type, from_yards: input.from_yards, to_yards: input.to_yards, since_days: input.since_days, mode: 'approach', ...(drawer ? { drawer } : {}) })), wordsFor(ctx));
   },
 };
 
