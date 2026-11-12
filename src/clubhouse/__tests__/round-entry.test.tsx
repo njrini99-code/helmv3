@@ -1,4 +1,5 @@
 import { LazyMotion, domAnimation } from 'motion/react';
+import { StrictMode, useEffect } from 'react';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
@@ -505,6 +506,39 @@ describe('Failures with no dialog to hold them', () => {
     }
     expect(run).toHaveBeenCalledTimes(3);
     expect(entryFailureToast('save-for-later', { course: '  ', run }).title).toBe('Couldn’t save your round');
+  });
+
+  // G18 (12 Nov): the entry preview showed every failure toast twice, stacked. Its mount effect raises the toast, and
+  // Strict Mode runs a mount effect twice in development; the real round can raise one twice too (two saves refused
+  // while the round changed elsewhere). The same failure now takes the place of the one on screen.
+  it.each([
+    ['fail save', 'CH-11010'],
+    ['fail discard', 'CH-11011'],
+    ['fail updated', 'CH-11902'],
+  ])('G18 %s twice draws one toast (%s)', async (label, c) => {
+    const { user } = show();
+    await user.click(button(label));
+    await user.click(button(label));
+    await waitFor(() => expect(document.querySelectorAll(`[data-ch-code="${c}"]`)).toHaveLength(1));
+  });
+
+  it('G18 raised from a mount effect under Strict Mode, it is one toast', async () => {
+    function OnArrival() {
+      const fail = useEntryFailureToast();
+      useEffect(() => fail('round-updated', { run: vi.fn() }), [fail]);
+      return null;
+    }
+    render(
+      <StrictMode>
+        <LazyMotion features={domAnimation}>
+          <ToastProvider>
+            <OnArrival />
+          </ToastProvider>
+        </LazyMotion>
+      </StrictMode>,
+    );
+    await waitFor(() => expect(code('CH-11902')).not.toBeNull());
+    expect(document.querySelectorAll('[data-ch-code="CH-11902"]')).toHaveLength(1);
   });
 });
 
