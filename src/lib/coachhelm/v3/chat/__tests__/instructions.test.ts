@@ -3,6 +3,7 @@ import type { CoachChatContext } from '../context';
 import type { PlayerChatContext } from '../engine/tool';
 import { instructionBlocks, policyBlock, rulesBlock, teamBlock } from '../instructions';
 import { knowledgeBlocks } from '../knowledge';
+import { findInApp } from '../context/find-in-app';
 import { person } from './pgrst-double';
 
 const ELI = '8091da4b-dbc9-47f3-80f1-be37c96b2c91';
@@ -200,7 +201,7 @@ describe('how answers read', () => {
     expect(rules).toMatch(/Write nothing before or between your reads \("Let me check"\), because it stays in the answer/);
     expect(rules).toMatch(/Give every figure with its window and sample in the same sentence, as the read gave them\. When several figures share one window, say it once/);
     // The full breakdown is still a visual, said once, under "Visuals".
-    expect(rules).toMatch(/Call show_visual once when the answer is a shape/);
+    expect(rules).toMatch(/Call show_visual \(never offer it\) once when the answer is a shape/);
     // The rules follow themselves: nothing in them is bold.
     expect(rules).not.toMatch(/\*\*/);
     // A small sample is said once, under "How your answers read"; its duplicate under "When data is missing" is gone.
@@ -262,5 +263,13 @@ describe('the team block says which baseline strokes gained is measured against'
     const player = { ...base, gender: 'womens', roster: [{ id: 'p1', name: 'Maya Ortiz', first_name: 'Maya', last_name: 'Ortiz', graduation_year: null }], player_id: 'p1' };
     expect(teamBlock(player)).toContain('measured against the women’s Tour baseline');
     expect(teamBlock(player)).toBe(teamBlock({ ...player }));
+  });
+});
+
+describe('visuals are drawn, not offered, and a dashboard is the Team board (preview, 12 Nov)', () => {
+  it('the coach prompt says so', () => {
+    const { policy } = instructionBlocks('ask', coach());
+    expect(policy).toContain('Call show_visual (never offer it) once when the answer is a shape');
+    expect(findInApp.description).toContain('for a dashboard or the team’s trends: that is the CoachHelm Team board, already built');
   });
 });

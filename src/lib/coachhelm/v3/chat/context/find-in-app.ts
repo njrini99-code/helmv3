@@ -93,7 +93,7 @@ export const findInApp: ReadTool<{ query: string; player_id: string | null }> = 
   kind: 'read',
   name: 'find_in_app',
   description:
-    'Find where something is in the app. Returns up to four matching screens with what each is for and puts a button under your answer that opens the best one. Use it when the coach asks where to find or change something. player_id: one player’s own page, else null.',
+    'Find where something is in the app. Returns up to four matching screens with what each is for and puts a button under your answer that opens the best one. Use it when the coach asks where to find or change something, and for a dashboard or the team’s trends: that is the CoachHelm Team board, already built, so send them there and give its short read; never build a dashboard in the chat. player_id: one player’s own page, else null.',
   input: z.strictObject({
     query: z.string().min(1).max(120).describe('A few plain words: "join requests", "change the tees".'),
     player_id: z.string().uuid().nullable(),
