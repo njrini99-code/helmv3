@@ -188,7 +188,7 @@
   padding: 12px;
   border: 0;
   background: none;
-  font: inherit;
+  font: var(--ch-type-14);
   color: inherit;
   text-align: start;
   cursor: pointer;
