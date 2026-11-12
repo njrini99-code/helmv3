@@ -4257,7 +4257,9 @@
         "src/clubhouse/styles/messages-details.css",
         "src/clubhouse/styles/messages-inbox.css",
         "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/practice.css",
         "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-desk.css",
@@ -6868,6 +6870,7 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/practice.css",
         "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-desk.css",
@@ -10546,6 +10549,7 @@
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-compare.css",
         "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/tournaments-live.css",
         "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -10760,6 +10764,7 @@
         "src/clubhouse/styles/recruiting.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/settings.css",
+        "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-desk.css",
@@ -11098,6 +11103,7 @@
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-compare.css",
         "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/tournaments-live.css",
         "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -13107,6 +13113,7 @@
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/tournaments-review.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [
@@ -18431,7 +18438,6 @@
         "ch-hb-reads__t",
         "ch-hb-req",
         "ch-hb-retryline",
-        "ch-hb-role",
         "ch-hb-roster",
         "ch-hb-rsvp__a",
         "ch-hb-rsvp__b",
@@ -18578,8 +18584,6 @@
         "ch-lv-deskwrap",
         "ch-lv-disc",
         "ch-lv-dot",
-        "ch-lv-empty",
-        "ch-lv-empty__body",
         "ch-lv-empty__title",
         "ch-lv-evdot",
         "ch-lv-eventrow",
@@ -21114,6 +21118,11 @@
           "name": "--ch-rec-ring",
           "value": "var(--ch-green-400)",
           "scope": ":where(html[data-fw-theme='dark']) .ch-rec-pipe__stage.is-offered > .ch-rec-pipe__dot"
+        },
+        {
+          "name": "--ch-rec-ring",
+          "value": "var(--ch-ivory-400)",
+          "scope": ".ch-rec-pipe__stage.is-zero > .ch-rec-pipe__dot"
         }
       ]
     },
@@ -21477,14 +21486,14 @@
           "scope": ":is(.ch-rs, .ch-rsm)[data-ch-crh='on'] [data-year='fr']"
         },
         {
-          "name": "--ch-yr-fr",
-          "value": "#63597e",
+          "name": "--ch-rs-fr",
+          "value": "color-mix(in srgb, var(--ch-yr-jr) 60%, var(--ch-yr-fr))",
           "scope": ":is(.ch-rs, .ch-rsm)"
         },
         {
           "name": "--ch-yr-fr",
-          "value": "#6e6590",
-          "scope": "html[data-fw-theme='dark'] :is(.ch-rs, .ch-rsm)"
+          "value": "var(--ch-rs-fr)",
+          "scope": ":is(.ch-rs, .ch-rsm) *"
         },
         {
           "name": "--ch-rs-y",
@@ -21910,7 +21919,6 @@
         "ch-rcard-h",
         "ch-rcard-h__l",
         "ch-rcard-h__m",
-        "ch-rcard-h__s",
         "ch-rcard-mk",
         "ch-rcard-nw",
         "ch-rcard-pr",
@@ -30208,7 +30216,10 @@
       "file": "src/clubhouse/styles/tournaments-live.css",
       "classes": [
         "ch-btn",
+        "ch-btn--ghost",
+        "ch-tour-head__a",
         "ch-tour-live",
+        "ch-tour-live-acts",
         "ch-tour-live-body",
         "ch-tour-live-field",
         "ch-tour-live-field__n",
@@ -30226,7 +30237,9 @@
         "ch-tour-live-lane",
         "ch-tour-live-lane__act",
         "ch-tour-live-lane__chips",
+        "ch-tour-live-lane__go",
         "ch-tour-live-lane__n",
+        "ch-tour-live-lane__tap",
         "ch-tour-live-lane__v",
         "ch-tour-live-lane__who",
         "ch-tour-live-lanes",
@@ -30234,6 +30247,7 @@
         "ch-tour-live-muted",
         "ch-tour-live-rounds",
         "ch-tour-live-sheet",
+        "ch-tour-live-sheet__holes",
         "ch-tour-live-sheet__nines",
         "ch-tour-live-team",
         "ch-tour-live-team__t",
@@ -30300,6 +30314,7 @@
         "ch-btn",
         "ch-sec__actions",
         "ch-sec__head",
+        "ch-seg__b",
         "ch-tour-links",
         "ch-tour-links-body",
         "ch-tour-links-list",
