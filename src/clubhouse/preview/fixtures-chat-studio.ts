@@ -60,7 +60,7 @@ const COMPASS_SHOTS = Object.fromEntries(
       count,
       shots: Array.from({ length: Math.min(count, 40) }, (_, i) => {
         const [round_id, round_date, course] = COMPASS_ROUNDS[Math.min(COMPASS_ROUNDS.length - 1, Math.floor((i * COMPASS_ROUNDS.length) / Math.max(1, Math.min(count, 40))))]!;
-        return { id: `cs-${d}-${i}`, round_id, hole_id: `ch-${(i % 18) + 1}`, round_date, course, from_ft: (125 + ((i * 7 + d * 5) % 50)) * 3, left_ft: 12 + ((i * 11 + d * 3) % 40), lie_before: i % 4 === 3 ? 'rough' : 'fairway' };
+        return { id: `cs-${d}-${i}`, round_id: `${round_id}-${i % 5}`, hole_id: `ch-${(i % 18) + 1}`, round_date, course, from_ft: (125 + ((i * 7 + d * 5) % 50)) * 3, left_ft: 12 + ((i * 11 + d * 3) % 40), lie_before: i % 4 === 3 ? 'rough' : 'fairway', player: CAP_ROSTER[(i + d) % 5]!.name };
       }),
     },
   ]),

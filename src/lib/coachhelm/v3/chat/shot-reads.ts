@@ -104,7 +104,15 @@ export interface MissShot {
   from_ft: number | null;
   left_ft: number | null;
   lie_before: string | null;
+  /**
+   * Who played the round, on a team-wide read only (a read of one player has none: it is theirs). The roster's name; null for
+   * a round whose player is no longer on the active roster.
+   */
+  player?: string | null;
 }
+
+/** A round as the lists need it: when, where, and on a team-wide read whose (`player`, a name). */
+export type MissRound = { round_date: string | null; course: string | null; player?: string | null };
 
 /** The shots behind each wedge: the true count, and up to `cap` of them, newest round first. */
 export interface MissShots {
@@ -119,7 +127,7 @@ const oneDecimal = (v: number | null): number | null => (v == null ? null : Math
  * `count` is its count there. The list is the newest rounds' shots first, then by shot id, so the same `cap` shots come back
  * on every read.
  */
-export function missShotsOf(shots: readonly ShotRow[], rounds: ReadonlyMap<string, { round_date: string | null; course: string | null }>, cap = MISS_SHOTS_CAP): MissShots {
+export function missShotsOf(shots: readonly ShotRow[], rounds: ReadonlyMap<string, MissRound>, cap = MISS_SHOTS_CAP): MissShots {
   const by = new Map<MissDirection, ShotRow[]>();
   for (const s of shots) {
     const d = s.miss_direction as MissDirection | null;
@@ -145,6 +153,7 @@ export function missShotsOf(shots: readonly ShotRow[], rounds: ReadonlyMap<strin
           from_ft: oneDecimal(toFeet(s.distance_to_hole_before, s.distance_unit_before)),
           left_ft: oneDecimal(toFeet(s.distance_to_hole_after, s.distance_unit_after)),
           lie_before: s.lie_before,
+          ...(round && 'player' in round ? { player: round.player ?? null } : {}),
         };
       });
     directions[d] = { count: all.length, shots: listed };
@@ -176,16 +185,16 @@ export function puttProfileOf(shots: ReadonlyArray<Pick<ShotRow, 'putt_distance_
 const SHOT_COLUMNS = 'id, round_id, hole_id, miss_direction, distance_to_hole_before, distance_unit_before, distance_to_hole_after, distance_unit_after, lie_before, lie_after, club_type, is_penalty, putt_distance_feet, putt_made';
 
 /** Team-scoped, only reads: never a write to `golf_shots`, `golf_rounds` or the round RPCs (SHARED-10). */
-async function shotsOf(sb: Sb, ctx: CoachChatContext, input: { player_id?: string; since_days: number }): Promise<{ shots: ShotRow[]; rounds: number; roundsById: Map<string, { round_date: string | null; course: string | null }>; since: string; playerName: string | null; entity: Measurement['entity']; scope: { player_id: string } | { team_scope: true } } | null> {
+async function shotsOf(sb: Sb, ctx: CoachChatContext, input: { player_id?: string; since_days: number }): Promise<{ shots: ShotRow[]; rounds: number; roundsById: Map<string, { round_date: string | null; course: string | null; player_id: string | null }>; since: string; playerName: string | null; entity: Measurement['entity']; scope: { player_id: string } | { team_scope: true } } | null> {
   const player = input.player_id ? requireRosterPlayer(ctx, input.player_id) : null;
   const since = new Date(Date.now() - input.since_days * 86_400_000).toISOString().slice(0, 10);
-  let q = sb.from('golf_rounds').select('id, round_date, course_name').eq('team_id', ctx.team_id).eq('status', 'completed').eq('is_test', false).gte('round_date', since);
+  let q = sb.from('golf_rounds').select('id, round_date, course_name, player_id').eq('team_id', ctx.team_id).eq('status', 'completed').eq('is_test', false).gte('round_date', since);
   if (player) q = q.eq('player_id', player.id);
   const rounds = await q;
   if (rounds.error) return null;
   const ids = (rounds.data ?? []).map((r) => r.id);
-  // The date and course of each round, so a listed shot says where it was played (the same rows, no second query).
-  const roundsById = new Map((rounds.data ?? []).map((r) => [r.id, { round_date: r.round_date ?? null, course: r.course_name ?? null }] as const));
+  // The date, course and player of each round, so a listed shot says where it was played and whose it was (the same rows, no second query).
+  const roundsById = new Map((rounds.data ?? []).map((r) => [r.id, { round_date: r.round_date ?? null, course: r.course_name ?? null, player_id: r.player_id ?? null }] as const));
   const shots: ShotRow[] = [];
   for (const chunk of chunkIds(ids)) {
     // PostgREST stops at 1000 rows a response, so a long chunk is paged rather than silently cut short.
@@ -208,6 +217,16 @@ async function shotsOf(sb: Sb, ctx: CoachChatContext, input: { player_id?: strin
 const SEASON_DAYS = 270;
 const whose = (name: string | null, team: string) => name ?? team;
 const today = () => nowIso().slice(0, 10);
+
+/**
+ * The rounds for the Miss Compass's lists. A team-wide read mixes every player's rounds, so each says whose it was, by the
+ * roster's name (Studio WebKit pass, 12 Nov: eight "Wed, Nov 4, Hilltop" rows could be eight players). A read of one player
+ * (`roster` null) names no one.
+ */
+function missRounds(rounds: ReadonlyMap<string, { round_date: string | null; course: string | null; player_id: string | null }>, roster: CoachChatContext['roster'] | null): Map<string, MissRound> {
+  const names = roster ? new Map(roster.map((p) => [p.id, p.name] as const)) : null;
+  return new Map([...rounds].map(([id, r]) => [id, { round_date: r.round_date, course: r.course, ...(names ? { player: (r.player_id && names.get(r.player_id)) || null } : {}) }] as const));
+}
 
 /**
  * `drawer`: also keep, per direction, the shots behind each wedge (`detail.ui_only.miss_shots`, capped with the true count), for
@@ -238,7 +257,7 @@ export async function getShotPattern(sb: Sb, ctx: CoachChatContext, input: { pla
   const pattern = missPatternOf(list);
   const shotCount = (metric_id: string, metric_label: string, value: number) => readFigure({ metric_id, metric_label, unit: 'count', value, entity: read.entity, window_start: read.since, window_end: today(), sample_size: pattern.total, sample_unit: 'shots', source: 'shots', method: 'count_of_logged_shots' });
   const measurements = pattern.total ? [shotCount('shots_logged', 'Shots logged', pattern.total), shotCount('shots_inside_15ft', 'Left inside 15 ft', pattern.inside_15), shotCount('shots_inside_25ft', 'Left inside 25 ft', pattern.inside_25)] : [];
-  const drawer = input.drawer && pattern.total > 0 ? { [UI_ONLY_KEY]: { miss_shots: missShotsOf(list, read.roundsById) } } : {};
+  const drawer = input.drawer && pattern.total > 0 ? { [UI_ONLY_KEY]: { miss_shots: missShotsOf(list, missRounds(read.roundsById, 'team_scope' in read.scope ? ctx.roster : null)) } } : {};
   return { summary: `${who}: ${pattern.total} shots, last ${input.since_days} days.`, measurements, series: [], detail: { ...read.scope, kind: 'miss_pattern', pattern, rounds: read.rounds, since: read.since, since_days: input.since_days, ...drawer }, coverage: pattern.total ? 'complete' : 'empty', coverage_note: pattern.total ? null : 'No shots logged in this window.', as_of: nowIso() };
 }
 

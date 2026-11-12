@@ -180,12 +180,14 @@ function ShotList({ direction, count, rows, cap, headId, onAsk, onClose }: { dir
           const from = s.from_ft != null ? `${yards(s.from_ft)}${lie ? ` from ${lie}` : ''}` : lie && `from ${lie}`;
           const said = [from, s.left_ft != null && `${feet(s.left_ft)} left`].filter(Boolean).join(' · ');
           const when = s.round_date ? weekdayMonthDay(s.round_date) : 'Undated round';
+          // A team-wide read names whose round it was: the player leads, the date and course under it.
+          const where = s.player ? [when, s.course].filter(Boolean).join(' · ') : s.course;
           return (
             <li key={s.id}>
-              <a className="ch-aks-compass__shot" href={shotRoundHref(s.round_id)} aria-label={`Open the round: ${when}${s.course ? `, ${s.course}` : ''}${said ? `, ${said}` : ''}`} data-ch-press="">
+              <a className="ch-aks-compass__shot" href={shotRoundHref(s.round_id)} aria-label={`Open the round: ${s.player ? `${s.player}, ` : ''}${when}${s.course ? `, ${s.course}` : ''}${said ? `, ${said}` : ''}`} data-ch-press="">
                 <span className="ch-aks-compass__when">
-                  <b>{when}</b>
-                  {s.course && <small>{s.course}</small>}
+                  <b>{s.player ?? when}</b>
+                  {where && <small>{where}</small>}
                 </span>
                 <span className="ch-aks-compass__said ch-num">{said}</span>
                 <Icon icon={ArrowUpRight} size={16} />
