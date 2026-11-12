@@ -44,7 +44,7 @@ import { RosterTeamCard } from './RosterTeamCard';
 import { useDeepLinkSheet } from '../../shell/use-deep-link-sheet';
 import { useHomeDayRollover } from '../home/use-day-rollover';
 import { Tooltip } from '../../ui/Tooltip';
-import { AVAILABILITY_WORD, availabilityLine, earlyNeed, lastFive, rosterFailedParts, rosterStandings, teamInSentence, yearKeyOf, type RosterClock, type RosterStanding } from './format';
+import { AVAILABILITY_WORD, availabilityLine, lastFive, rosterFailedParts, rosterStandings, teamInSentence, yearKeyOf, type RosterClock, type RosterStanding } from './format';
 import { StatusConfirm, statusCopy } from './RosterStatus';
 import { classNoteFor, type RosterClassLines } from './class-line';
 import { useRosterClassLines } from './useClassLines';
@@ -1057,7 +1057,8 @@ function FaceFigures({
   const lo = avgs.length ? Math.min(...avgs) : 0;
   const hi = avgs.length ? Math.max(...avgs) : 0;
   const at = (v: number) => (hi === lo ? 50 : ((v - lo) / (hi - lo)) * 100);
-  const need = p.avg != null ? earlyNeed(p.rounds) : null;
+  // W25: an early player's card already says "Early read" over its form line (FormLine, under three points), so the
+  // scoring caption no longer repeats it as "Needs N more"; it reads "Avg", as a player with no place does.
   const ord = (n: number) => `${n}${n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] ?? 'th'}`;
   const sg = p.sgPerRound;
   const sgW = sg == null ? 0 : Math.min(50, (Math.abs(sg) / 3) * 50);
@@ -1066,7 +1067,7 @@ function FaceFigures({
       <span className="ch-rs-fig">
         <span className="ch-rs-fig__k">Scoring</span>
         <b className="ch-num">{formatFixed(p.avg)}</b>
-        <span className="ch-rs-fig__m">{standing && standing.of > 1 ? `${standing.tied ? `T${standing.place}` : ord(standing.place)} of ${standing.of}` : need ?? 'Avg'}</span>
+        <span className="ch-rs-fig__m">{standing && standing.of > 1 ? `${standing.tied ? `T${standing.place}` : ord(standing.place)} of ${standing.of}` : 'Avg'}</span>
         {p.avg != null && standing && standing.of > 1 && (
           <span className="ch-rs-strip" aria-hidden="true">
             {avgs.map((v, k) => (
@@ -1078,8 +1079,11 @@ function FaceFigures({
       </span>
       <span className="ch-rs-fig">
         <span className="ch-rs-fig__k">Strokes gained</span>
-        <b className={'ch-num ' + changeTone(sg, false, 1)}>{sg == null ? NO_DATA : formatSigned(sg)}</b>
-        {sg != null && <span className="ch-rs-fig__m">a round</span>}
+        {/* W25: the unit stays with its figure ("−4.9 a round"), never wrapped under the bar on its own line. */}
+        <b className={'ch-num ' + changeTone(sg, false, 1)}>
+          {sg == null ? NO_DATA : formatSigned(sg)}
+          {sg != null && <small className="ch-rs-fig__u">a round</small>}
+        </b>
         {sg != null && (
           <span className="ch-rs-sgbar" aria-hidden="true">
             <i className={changeTone(sg, false, 1)} style={sg >= 0 ? { left: '50%', width: `${sgW}%` } : { right: '50%', width: `${sgW}%` }} />
