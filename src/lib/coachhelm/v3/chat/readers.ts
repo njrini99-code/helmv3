@@ -476,8 +476,10 @@ export const getSeason: ReadTool<SeasonInput> = {
     // No screen draws last season beside this one; this is the chat library's own read and says so in its source.
     const last = await part('against last season', () => compareSeasons(ctx.sb, teamOf(ctx), { player_id: id }));
     const both = together('', [now, last], wordsFor(ctx));
-    // The season block of a visual draws from the comparison's own detail, so it stays at the top level.
-    return last[1].coverage === 'unavailable' || !last[1].detail || typeof last[1].detail !== 'object' ? both : { ...both, detail: { ...(last[1].detail as Record<string, unknown>), this_season: now[1].detail ?? null } };
+    // The season block of a visual draws from the comparison's own detail, so it stays at the top level, bands and all: its
+    // `this_season` is a band ({ mean, lo, hi, n }) like `last_season`. The season's table (team average, every player) rides
+    // beside it as `season_table`; it once replaced `this_season`, and the visual built on it was dropped whole (preview, 12 Nov).
+    return last[1].coverage === 'unavailable' || !last[1].detail || typeof last[1].detail !== 'object' ? both : { ...both, detail: { ...(last[1].detail as Record<string, unknown>), season_table: now[1].detail ?? null } };
   },
 };
 export const getMySeason: ReadTool<SeasonInput> = { ...getSeason, description: 'Your scoring this season (full rounds that count since 1 August, practice left out). With compare_last_season, also this season against last.', input: z.object({ compare_last_season: z.boolean().default(false) }), progress: () => 'Reading your season' };
