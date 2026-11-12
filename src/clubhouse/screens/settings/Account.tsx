@@ -157,7 +157,7 @@ function EmailCard({ email, writes }: { email: string | null; writes: ChSettings
         },
       }}
     >
-      <Row label="Current email">
+      <Row label="Current email" stack>
         <span className="ch-set-value">{email ?? 'No email on file'}</span>
       </Row>
       {sentTo && (
