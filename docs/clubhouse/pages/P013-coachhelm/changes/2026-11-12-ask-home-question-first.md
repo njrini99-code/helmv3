@@ -32,6 +32,10 @@ Held items:     none
 - The phone is unchanged: its new chat keeps the opener and its rows over the box the screen pins (the cardless pass),
   which A's centred box does not apply to.
 
+- Repo-wide guards (12 Nov): a desk starter's pressed look reads `:active` only under a hover query, with the press
+  controller's `[data-ch-pressed]` twin before it (B6); the home's width is `--ch-measure-reading`, not 760px (row 39);
+  the picker opening above is `data-side="up"`, not `is-up`, a word the tone vocabulary keeps for verdicts (CONS-20).
+
 ### Verification
 
 - `screens/coachhelm/chat/__tests__/ask-home-question-first.test.tsx`: the order (coach, player, no rounds, phone), the

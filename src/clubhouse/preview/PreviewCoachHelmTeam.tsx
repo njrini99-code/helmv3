@@ -64,7 +64,7 @@ function stateData(state: string | undefined): ChTeamBoardData {
     const part = base.brief instanceof Promise ? null : base.brief;
     const brief = part?.status === 'ok' ? part.value : null;
     const [a, b, c, d, e] = crowd.map((p) => ({ who: p.name, playerId: p.id }));
-    const cascade = 'Lag putts → 3-putt cascade';
+    const cascade = 'Lag putts into 3-putts';
     const area = (id: string, who: typeof a, title: string, progress: { from: number; now: number; target: number } | null = null, word = 'Active') => ({ id, ...who!, title, word, line: progress ? 'Three-putts 0.9 to 0.5 a round · target 0.4' : null, since: '6 rounds since Sep 25', href: '#', progress });
     const working = [
       area('c1', a, cascade),

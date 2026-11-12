@@ -521,7 +521,8 @@ export function AskComposer({ seed, scopeOf, variant, phone, players, busy, fail
           // A press on the picker never moves the focus: the text box keeps it, and the phone its keyboard.
           // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- not a control; it only keeps the focus in the text box
           <div
-            className={'ch-ask-pick' + (hero && !phone && !pickBelow ? ' is-up' : '')}
+            className="ch-ask-pick"
+            data-side={hero && !phone && !pickBelow ? 'up' : undefined}
             data-ch-code="CH-13821"
             // The CSS caps the list by this, so a short sheet or a raised keyboard never cuts it off.
             style={room === null ? undefined : { ['--ch-ask-pick-room' as string]: `${room}px` }}

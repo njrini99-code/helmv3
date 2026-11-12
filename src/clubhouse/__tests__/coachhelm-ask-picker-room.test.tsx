@@ -87,7 +87,7 @@ describe('CH-13821 the picker never runs past the edge that would clip it', () =
     await userEvent.type(box(), '@');
     // The window (jsdom's 768px) is nearer than the panel's 900: 768 - 420, less the gap and the edge.
     expect(pickPanel().style.getPropertyValue('--ch-ask-pick-room')).toBe('332px');
-    expect(pickPanel().classList.contains('is-up')).toBe(false);
+    expect(pickPanel()).not.toHaveAttribute('data-side');
   });
 
   it('above the new-chat box when the room under it is short (owner’s preview: 80px for 23 rows)', async () => {
@@ -95,7 +95,7 @@ describe('CH-13821 the picker never runs past the edge that would clip it', () =
     show({ variant: 'hero', players: ASK_PLAYERS }, true);
     await userEvent.type(box(), '@');
     // Under: 520 - 420 - 16 = 84, short of 240. Over: 300 - 0 - 16 = 284.
-    expect(pickPanel().classList.contains('is-up')).toBe(true);
+    expect(pickPanel()).toHaveAttribute('data-side', 'up');
     expect(pickPanel().style.getPropertyValue('--ch-ask-pick-room')).toBe('284px');
   });
 
@@ -104,7 +104,7 @@ describe('CH-13821 the picker never runs past the edge that would clip it', () =
     show({ variant: 'hero', players: ASK_PLAYERS }, true);
     await userEvent.type(box(), '@');
     // Under 84, over 34: below is the roomier side.
-    expect(pickPanel().classList.contains('is-up')).toBe(false);
+    expect(pickPanel()).not.toHaveAttribute('data-side');
     expect(pickPanel().style.getPropertyValue('--ch-ask-pick-room')).toBe('84px');
   });
 
