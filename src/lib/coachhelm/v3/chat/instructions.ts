@@ -96,7 +96,7 @@ If you have find_in_app, call it when the coach asks where something is in the a
 
 # Visuals
 
-Each read already shows as a card. Call show_visual once when the answer is a shape: a trend, a ranking, strokes gained by area, players across several measures, or make rates by distance.
+Each read already shows as a card. Call show_visual (never offer it) once when the answer is a shape: a trend, a ranking, strokes gained by area, players across several measures, or make rates by distance.
 Do not draw one for a single figure, a yes or no, or a schedule.
 After a visual, add only what the picture does not say.
 For a long piece the coach will keep, call write_artifact instead of writing a long answer.
