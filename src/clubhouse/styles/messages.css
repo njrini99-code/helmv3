@@ -3833,10 +3833,6 @@ body:has([data-ch-ms-v2]) .ch-toast {
 }
 
 /* Redesign: first run, the hello card, details (06 S-MSG.empty, .fresh, .details, .groupdetails, .mute). */
-[data-ch-ms-v2] .ch-msv-empty__illo {
-  width: 168px;
-  height: 120px;
-}
 [data-ch-ms-v2] .ch-ms-thread.is-empty:has(> .ch-es--page) {
   display: grid;
   place-items: center;
@@ -3856,29 +3852,6 @@ body:has([data-ch-ms-v2]) .ch-toast {
   min-height: calc(var(--ch-vv-h, 100dvh) - env(safe-area-inset-top) - var(--ch-phone-topbar-h) - env(safe-area-inset-bottom) - var(--ch-space-5));
   padding-inline: var(--ch-page-x-phone);
 }
-[data-ch-ms-v2] .ch-msv-empty {
-  display: grid;
-  justify-items: center;
-  gap: 8px;
-  box-sizing: border-box;
-  width: min(360px, 100%);
-  margin: 0 auto;
-  padding: 24px 20px 20px;
-  border-radius: var(--ch-radius-lg);
-  background: var(--ch-card-bg);
-  box-shadow: var(--ch-card-shadow);
-  text-align: center;
-}
-[data-ch-ms-v2] .ch-msv-empty h2 {
-  margin: 0;
-  font: var(--ch-type-20-strong);
-  letter-spacing: -0.01em;
-}
-[data-ch-ms-v2] .ch-msv-empty p {
-  margin: 0;
-  font: var(--ch-type-15);
-  color: var(--ch-text-secondary); letter-spacing: var(--ch-track-15); }
-/* The two actions are the shared Button (primary, ghost): no lane copy of either. */
 [data-ch-ms-v2] .ch-msv-hello {
   display: grid;
   justify-items: center;
