@@ -603,6 +603,9 @@ describe('Recruiting · desktop', () => {
     expect(code('CH-14304')).not.toBeNull();
     expect(within(p).queryByRole('link', { name: /Email|Call/ })).toBeNull();
     expect(within(p).getByText('Added Sep 12')).toBeTruthy();
+    // W42: the desktop pane draws each empty part as one line (recruiting.css); the longer line describes its Add.
+    expect(within(code('CH-14303') as HTMLElement).getByRole('button', { name: 'Add' })).toHaveAccessibleDescription('Add an email or phone number to reach Owen or their family from here.');
+    expect(within(code('CH-14304') as HTMLElement).getByRole('button', { name: 'Add a note' })).toHaveAccessibleDescription('Where you saw them, what stood out, and what happens next.');
     await user.click(within(code('CH-14303') as HTMLElement).getByRole('button', { name: 'Add' }));
     await waitFor(() => expect(document.activeElement?.id).toMatch(/-email$/));
     await user.click(within(dlg()).getByRole('button', { name: 'Cancel' }));
