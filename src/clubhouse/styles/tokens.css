@@ -750,6 +750,8 @@
   --ch-yr-jr: #3d6787;
   --ch-yr-so: #86672c;
   --ch-yr-fr: #9a4a35;
+  /* Roster's own Freshmen tone (G4): red reads as a warning there (D-42); other screens keep --ch-yr-fr. */
+  --ch-yr-fr-roster: #63597e;
   --ch-yr-ink: #ffffff;
   /* Messages redesign, 11a (golf_messages_redesign_v1): nothing in main reads these. Shadows are filters, so the drawn tail casts with the body. */
   --ch-bubble-theirs-bg: #fffefb;
@@ -1088,6 +1090,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-yr-jr: #46739a;
   --ch-yr-so: #8b6b30;
   --ch-yr-fr: #a3533e;
+  --ch-yr-fr-roster: #6e6590;
   --ch-chart-line: #6db488;
   --ch-coin-bg: #2a2e27;
   --ch-coin-ink: #dcd3bc;

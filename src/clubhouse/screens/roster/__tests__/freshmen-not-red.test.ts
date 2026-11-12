@@ -13,12 +13,18 @@ const lum = (hex: string) => {
 
 describe('G4 Freshmen are not red on Roster', () => {
   const css = read('styles/roster.css');
-  const light = css.match(/\n:is\(\.ch-rs, \.ch-rsm\) \{\s*--ch-yr-fr: (#[0-9a-f]{6});/)?.[1];
-  const dark = css.match(/html\[data-fw-theme='dark'\] :is\(\.ch-rs, \.ch-rsm\) \{\s*--ch-yr-fr: (#[0-9a-f]{6});/)?.[1];
+  // The tone is a token (tokens only, no hex in a screen's CSS): light in the base block, dark in the dark block.
+  const tokens = read('styles/tokens.css');
+  const darkAt = tokens.indexOf("html[data-fw-theme='dark'] [data-ui='clubhouse'] {");
+  const light = tokens.slice(0, darkAt).match(/--ch-yr-fr-roster: (#[0-9a-f]{6});/)?.[1];
+  const dark = tokens.slice(darkAt).match(/--ch-yr-fr-roster: (#[0-9a-f]{6});/)?.[1];
 
   it('scopes its own tone to Roster, light and dark', () => {
+    expect(darkAt).toBeGreaterThan(0);
     expect(light).toBeDefined();
     expect(dark).toBeDefined();
+    expect(css).toMatch(/\n:is\(\.ch-rs, \.ch-rsm\) \{\s*--ch-yr-fr: var\(--ch-yr-fr-roster\);/);
+    expect(css).not.toMatch(/--ch-yr-fr: #/);
   });
 
   it('leaves the shared token as it was', () => {
