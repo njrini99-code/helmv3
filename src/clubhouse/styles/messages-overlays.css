@@ -328,14 +328,15 @@
 }
 
 /* Reaction badges (MSG-406, MOT-RX-1): clipped to the bubble's top corner; the colour is the opposite of the bubble it sits on. */
-/* The badges sit in the row's line, which is exactly as wide as the bubble: -14 above it, -10 past the corner that faces the
+/* The badges sit in the row's line, which is exactly as wide as the bubble: -22 above it (a 26 px badge overlaps the bubble's
+   top by 4 px, inside its rounded corner and padding, so it never covers a word; W16), -10 past the corner that faces the
    other side of the thread (their bubble's right, your bubble's left). Never wider than the screen (MSG-2). */
 .ch-ms-reacts {
   --ch-mso-rx-page: 0 0 0 2px var(--ch-grouped-bg);
   --ch-mso-rx-page-own: 0 0 0 4px var(--ch-grouped-bg);
   --ch-mso-rx-pale: color-mix(in srgb, var(--ch-bubble-mine-fill) 20%, transparent);
   position: absolute;
-  top: -14px;
+  top: -22px;
   z-index: var(--ch-z-raised);
   display: flex;
   gap: var(--ch-ms-px-3);
