@@ -4924,6 +4924,8 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   .ch-hm[data-ch-crh='on'] .ch-hm-legs__c {
     font: var(--ch-type-13-medium);
     font-style: normal;
+  }
+  .ch-hm[data-ch-crh='on'] .ch-hm-legs__c:not(.is-gain, .is-loss) {
     color: var(--ch-text-secondary);
   }
   /* Who gains and loses: the quiet line under the figures (W6). */
@@ -5507,6 +5509,8 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   .ch-h-main[data-ch-crh='on'] .ch-hm-legs__c {
     font: var(--ch-type-13-medium);
     font-style: normal;
+  }
+  .ch-h-main[data-ch-crh='on'] .ch-hm-legs__c:not(.is-gain, .is-loss) {
     color: var(--ch-text-secondary);
   }
   /* Who gains and loses: the quiet line under the figures (W6). */
