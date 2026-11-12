@@ -3,7 +3,6 @@
 import { SkelLine, Skeleton } from '../../ui/States';
 import { LargeTitle } from '../../ui/LargeTitle';
 import { useClubhouseRole } from '../../shell/context';
-import '../../styles/roster.css';
 
 /**
  * Route loading for Roster: header with its two actions, where the team sits, the toolbar and six face cards in their
