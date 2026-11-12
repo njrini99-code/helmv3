@@ -92,6 +92,8 @@ function LivePage({ data, phone }: { data: ChTourLiveSnapshot; phone: boolean })
   const lineup = data.lanes.filter((l) => l.role === 'lineup');
   const individuals = data.lanes.filter((l) => l.role === 'individual');
   const course = data.course.name;
+  // Nobody in the round yet: the empty state says so once and offers the lineup; going live has no one to score.
+  const nobody = data.lanes.length === 0;
 
   const status = useAction<[ 'live' | 'suspended_weather' | 'suspended_other' | 'final' ], unknown>(
     'tournaments.roundStatus',
@@ -111,9 +113,11 @@ function LivePage({ data, phone }: { data: ChTourLiveSnapshot; phone: boolean })
 
   const primary =
     r.status === 'upcoming' ? (
-      <Button variant="primary" busy={status.pending} onClick={() => void status.run('live')}>
-        Go live
-      </Button>
+      nobody ? null : (
+        <Button variant="primary" busy={status.pending} onClick={() => void status.run('live')}>
+          Go live
+        </Button>
+      )
     ) : r.status === 'live' ? (
       <Button variant="primary" leftIcon={Flag} busy={status.pending} onClick={() => setFinishing(true)}>
         Finish round
@@ -184,8 +188,8 @@ function LivePage({ data, phone }: { data: ChTourLiveSnapshot; phone: boolean })
         </div>
       )}
       {data.errors.holes && <InlineNotice code="CH-16271" title="Some live scores didn’t load" body="Entered totals are unaffected. Holes from GolfHelm rounds are left out for now." onRetry={refresh} retrying={refreshing} />}
-      <TeamLine data={data} />
-      {data.lanes.length === 0 ? (
+      {!nobody && <TeamLine data={data} />}
+      {nobody ? (
         <EmptyState size="page" kind="first-run" code="CH-16370" title="Nobody is in this round yet" body="Set the lineup, then the lanes show here as scores come in." action={<Button href={paths.lineup(e.id)}>Open the lineup</Button>} />
       ) : (
         <div className="ch-tour-live-body">

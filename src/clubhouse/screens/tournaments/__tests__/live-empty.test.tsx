@@ -25,6 +25,19 @@ describe('the live round with nobody in it', () => {
     expect(c.querySelector('#ch-tour-live-field')).toBeNull();
   });
 
+  // Seen once the empty state was real: the team line's "No scores yet" stood over "Nobody is in this round yet", and Go
+  // live was the primary with nobody to score. The page says it once, and the lineup is the one way on.
+  it.each([
+    ['desktop', false],
+    ['phone', true],
+  ])('%s: says it once, with no team line and no Go live', (_, phone) => {
+    const c = render(<LiveRound data={tourFixture('empty').live} load="ready" phone={phone} />).container;
+    expect(c.querySelector('[data-ch-live-team]')).toBeNull();
+    expect(c.textContent).not.toContain('No scores yet');
+    expect(c.textContent).not.toContain('Go live');
+    expect(c.querySelector('a[href*="lineup"]')?.textContent).toContain('Open the lineup');
+  });
+
   it('the default still draws the lineup', () => {
     const c = render(<LiveRound data={tourFixture('ready').live} load="ready" phone={false} />).container;
     expect(c.querySelectorAll('[data-ch-lane]').length).toBeGreaterThan(0);
