@@ -229,7 +229,8 @@
   height: 40px;
   padding: 0 4px 0 8px;
 }
-.ch-ask-hist__head b {
+.ch-ask-hist__head :is(b, h2) {
+  margin: 0;
   font: var(--ch-type-15-strong);
   letter-spacing: -0.01em;
 }
@@ -941,7 +942,7 @@ body.keyboard-open .ch-ask-hist.is-drawer {
     translate: 0 0;
   }
 }
-.ch-ask-drawer .ch-ask-hist__head b {
+.ch-ask-drawer .ch-ask-hist__head :is(b, h2) {
   font-size: calc(20 * var(--ch-type-k));
   letter-spacing: -0.02em;
 }
@@ -951,6 +952,9 @@ body.keyboard-open .ch-ask-hist.is-drawer {
 }
 .ch-ask-drawer .ch-ask-hist__row {
   min-height: 44px;
+  /* The 44 line centres the title on its own; the panel's 12px padding on top of it set every title 12px low, so a
+     group's heading sat on the row above and far from its own (WebKit, 390, 12 Nov). */
+  padding-block: 0;
   font-size: calc(16 * var(--ch-type-k));
   line-height: 44px;
 }
