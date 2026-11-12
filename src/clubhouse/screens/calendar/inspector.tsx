@@ -349,7 +349,8 @@ export function Summary({ ctx }: { ctx: InspCtx }) {
           {role === 'coach' ? (
             <>
               <Fact icon={BookOpen} tone="class">
-                Class schedules for {classOwners.size} {pluralWord(classOwners.size, 'player')}
+                {/* W45: "for 0 players" read as broken; with none yet the line says so plainly. */}
+                {classOwners.size ? `Class schedules for ${classOwners.size} ${pluralWord(classOwners.size, 'player')}` : 'No class schedules added yet'}
               </Fact>
               <Fact icon={Lock} tone="own">Your busy time · only you see it</Fact>
             </>
