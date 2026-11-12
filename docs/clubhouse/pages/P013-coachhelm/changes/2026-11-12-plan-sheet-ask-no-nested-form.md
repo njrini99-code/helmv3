@@ -25,3 +25,11 @@ Held items:     none
 - Dev server, `/clubhouse-preview/coachhelm-practice-thread?state=edit|swap|empty-bank|published`
   at 1440 and 390: the sheet open with its ask, 0 nested forms, no console errors.
 - Not reproduced: the "published" hydration text mismatch (C2) did not appear on the dev server.
+
+## 2026-11-12 — An undated plan's rotation no longer clashes its keys
+
+- Opening a plan with no practice date ("Open" on the card) logged "Encountered two children with
+  the same key, `—`" (capture-2c's C3): an undated plan prints every rotation turn as "—", and the
+  turn headers were keyed by their text. Turns and station rows are keyed by their place in the grid.
+- `plan/__tests__/plan-sheet-undated-keys.test.tsx` (new; fails without the fix). Dev server,
+  `coachhelm-practice-plan?state=card` → Open, at 1440 and 390: no key errors.
