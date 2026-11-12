@@ -311,12 +311,20 @@
   outline-offset: 2px;
   border-radius: var(--ch-radius-xs);
 }
-/* The two filters, one under the other, each the card's full width. */
+/* G17: the phone's one filter (three views of the trend), the card's full width. The two stacked filters stood before
+   any content. A label may wrap at a larger text size rather than run out of its third of the row. */
 .ch-tour-rev-hist.is-phone .ch-tour-rev-tools {
   flex: 1 1 auto;
   flex-direction: column;
   flex-wrap: nowrap;
   align-items: stretch;
+}
+.ch-tour-rev-hist.is-phone .ch-tour-rev-tools .ch-seg__b {
+  min-width: 0;
+  height: auto;
+  min-height: 26px;
+  padding: 4px 8px;
+  white-space: normal;
 }
 
 /* Link inbox: a row per GolfHelm round (who and what, the match and the two pickers, the two keys). A row is a card on
