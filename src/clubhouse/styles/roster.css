@@ -3701,6 +3701,15 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
 :is(.ch-rs, .ch-rsm)[data-ch-crh='on'] [data-year='fr'] {
   --ch-rs-y: var(--ch-yr-fr);
 }
+/* G4 (preview grade): red reads as a warning (D-42 keeps red for under par, the pin flag and destructive acts), so inside
+   Roster the Freshmen tone is a muted violet; the bar, legend and year chips here move together. The shared --ch-yr-fr
+   token, read by other screens, is left as it is. White on it holds 6.4:1 light and 5.3:1 dark. */
+:is(.ch-rs, .ch-rsm) {
+  --ch-yr-fr: #63597e;
+}
+html[data-fw-theme='dark'] :is(.ch-rs, .ch-rsm) {
+  --ch-yr-fr: #6e6590;
+}
 /* W23: players with no class year: a quiet segment in the legend's own ink at 45%, so the split adds up to the roster. */
 /* W24: the leaders' rule, once under the row; on desktop the row is part of the top grid, so the line spans it. */
 [data-ch-crh='on'] .ch-rs-ldrs__rule {
