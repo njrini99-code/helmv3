@@ -35,6 +35,9 @@ export interface EntryFailureOptions {
  * The toast, in the shape useAction gives its failures: an error tone, what
  * failed, the reason if readable else what to do next, an action, and the
  * catalog number. Pure, so a test or a caller can read it without a provider.
+ * Each failure has its own `replace` key (G18): raised again, it takes the
+ * place of the one on screen instead of stacking a copy under it (two saves
+ * refused while the round changed elsewhere; a mount effect run twice).
  */
 export function entryFailureToast(kind: EntryFailure, { course, reason, run }: EntryFailureOptions): ToastInput {
   const at = course?.trim() ? ` at ${course.trim()}` : '';
@@ -46,6 +49,7 @@ export function entryFailureToast(kind: EntryFailure, { course, reason, run }: E
         body: reasonText(reason) ?? 'Your shots are still on this device. Try again.',
         action: { label: 'Try again', run },
         code: 'CH-11010',
+        replace: 'entry:save-for-later',
       };
     case 'discard-round':
       return {
@@ -54,6 +58,7 @@ export function entryFailureToast(kind: EntryFailure, { course, reason, run }: E
         body: reasonText(reason) ?? 'It is still saved. Try again, or keep playing.',
         action: { label: 'Try again', run },
         code: 'CH-11011',
+        replace: 'entry:discard-round',
       };
     case 'round-updated':
       return {
@@ -62,6 +67,7 @@ export function entryFailureToast(kind: EntryFailure, { course, reason, run }: E
         body: 'Saving is paused until you reload, so this device can’t overwrite the newer round.',
         action: { label: 'Reload', run },
         code: 'CH-11902',
+        replace: 'entry:round-updated',
       };
   }
 }
