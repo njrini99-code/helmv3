@@ -146,7 +146,7 @@ export function DeskRounds({ rounds }: { rounds: ChCoachHome['latestRounds']['ro
               <b>{r.playerName}</b>
               <span>{r.meta}</span>
             </span>
-            <span className={'ch-dh-score ch-num' + (r.toPar != null && r.toPar < 0 ? ' is-under' : '')} aria-label={r.scores ? `Total ${r.score}, ${formatToPar(r.toPar)}` : undefined}>
+            <span className={'ch-dh-score ch-num' + (r.toPar != null && r.toPar < 0 ? ' is-under' : '')} role={r.scores ? 'img' : undefined} aria-label={r.scores ? `Total ${r.score}, ${formatToPar(r.toPar)}` : undefined}>
               <b>{r.score}</b>
               <em>{formatToPar(r.toPar)}</em>
             </span>
