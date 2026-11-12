@@ -198,6 +198,16 @@
   white-space: nowrap;
   text-overflow: ellipsis;
 }
+/* W18: the team's channel carries the school and team ("Demo University Golf — Varsity"); its name may take two lines
+   instead of being cut. Other rows keep one line, as Messages does. */
+.ch-ms-row.is-channel .ch-ms-row__top b {
+  display: -webkit-box;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
 .ch-ms-row.is-sel .ch-ms-row__top b {
   font-weight: 600;
   color: var(--ch-green-700);

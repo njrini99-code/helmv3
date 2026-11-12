@@ -15,7 +15,7 @@ import { PresenceRow } from '../../../ui/ListPresence';
 export function ConvRowButton({ api, c, onOpen, bind, plain = false }: { api: ChMessagesApi; c: ChConv; onOpen: () => void; bind: ContextMenuBind; plain?: boolean }) {
   const row = {
     type: "button" as const,
-    className: "ch-ms-row" + (isUnread(c) ? " is-unread" : "") + (api.selectedId === c.id ? " is-sel" : ""),
+    className: "ch-ms-row" + (c.channel ? " is-channel" : "") + (isUnread(c) ? " is-unread" : "") + (api.selectedId === c.id ? " is-sel" : ""),
     "aria-current": api.selectedId === c.id ? ("true" as const) : undefined,
     onClick: onOpen,
     ...bind,
