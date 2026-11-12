@@ -678,7 +678,8 @@ export function RoundReview({
             <>
               <ZoneBig value={formatToPar(r.toPar)} tone={changeVerdict(r.toPar, true, 0)} />
               <div className="ch-znlines">
-                {r.holesPlayed === 18 && r.front.score != null && r.back.score != null && (
+                {/* W47: the card's Out and In cells say this when it is drawn. */}
+                {!hasCard(r) && r.holesPlayed === 18 && r.front.score != null && r.back.score != null && (
                   <span>
                     <b>
                       Out {r.front.score} · In {r.back.score}
