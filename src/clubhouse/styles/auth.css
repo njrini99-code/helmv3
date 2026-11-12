@@ -715,6 +715,7 @@
 }
 .ch-au-notice {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   align-items: flex-start;
   font: var(--ch-type-body-s);
@@ -725,8 +726,13 @@
   margin-top: 1px;
 }
 .ch-au-notice p {
-  flex: 1;
+  /* The text takes the row beside its icon, so an action (Switch account, Go to sign in) goes under it, lined up with the
+     words: beside them it squeezed the message to four short lines at 390 and on the desk panel (WebKit, 12 Nov). */
+  flex: 1 1 calc(100% - var(--ch-space-8));
   min-width: 0;
+}
+.ch-au-notice > .ch-btn {
+  margin-inline-start: var(--ch-space-6);
 }
 .ch-au-notice--info svg {
   color: var(--ch-info-600);
@@ -1825,8 +1831,9 @@ html[data-fw-theme='dark'] .ch-au-wl:not([data-dark]) h1 {
   background: var(--ch-green-fill-600);
 }
 .ch-au-rules {
-  display: flex;
-  flex-wrap: wrap;
+  /* Two by two: wrapped as a row, the four needs broke three and one ("A symbol" alone) on a phone and on the desk panel. */
+  display: grid;
+  grid-template-columns: repeat(2, max-content);
   gap: 6px 16px;
   margin: 8px 0 0;
   padding: 0;
