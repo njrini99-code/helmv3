@@ -84,6 +84,11 @@
 .ch-au-scene {
   animation: chAuSceneIn var(--ch-au-t-panel) var(--ch-au-out) both;
 }
+/* From the landing page the course's chunk is already here (ScenePreload): it draws on the route's first frame, so a
+   fade-in would only show the daytime still under it. */
+.ch-au-poster[data-instant] ~ .ch-au-scene {
+  animation: none;
+}
 .ch-au-scene svg {
   position: absolute;
   display: block;

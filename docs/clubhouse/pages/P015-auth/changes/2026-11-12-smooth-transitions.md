@@ -27,7 +27,11 @@ Held items:     none
   its header and Continue, then the rows popped in (on a phone, a tall blank card). The rows now ride the card's fade and
   settle 6px, 50ms apart; the card is opaque in 0.4s (its rise still 0.9s). Leaving, every piece is gone in 0.24s.
 - **Landing to sign in.** The painted course is fetched while the landing page is idle (`SignInScenePreload`, only with
-  the front door on), so the sign in no longer opens on the daytime still and snaps to the hour's sky. Sign in reads
+  the front door on), and the sign in then renders it directly (`scene-preload.ts`), in its first frame and with no
+  fade-in, so it no longer opens on the daytime still and turns to the hour's sky a beat later (filmed at dusk: grey for
+  300ms, then gold; after: the painted course in the first frame). Through next/dynamic the course went through a
+  Suspense fallback even with its chunk loaded. A hard load is unchanged (no preload; SkyScript's wash, then the fade-in).
+  A sky tint on the still was tried and dropped: as a colour blend it browned the trees at morning and golden hour. Sign in reads
   hydration from the shared store (`useHydrated`), so a client navigation draws it enabled; the server HTML still holds it
   disabled (#1245).
 
