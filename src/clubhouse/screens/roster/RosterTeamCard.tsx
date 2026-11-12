@@ -2,7 +2,7 @@ import { Avatar } from '../../ui/Avatar';
 import { formatFixed } from '../../lib/format';
 import { NoData } from '../../ui/NoData';
 import type { ChRosterPlayer } from '../../data/roster';
-import { classMix, teamCardFigures, yearKeyOf, type RosterClock } from './format';
+import { classMix, classUnset, teamCardFigures, yearKeyOf, type RosterClock } from './format';
 import { plural, pluralWord } from '../../lib/plural';
 
 /** Coach or player, the same card; a player's holds neither injured, waiting nor the top five, in the DOM or in the props. */
@@ -24,7 +24,9 @@ export function RosterTeamCard(props: Props) {
   const mix = classMix(players, clock);
   const counts = [`${active} active`, injured > 0 ? `${injured} injured` : null, waiting ? `${waiting} waiting` : null].filter(Boolean).join(' · ');
   const title = season ? `${season} season` : null;
-  const mixWords = mix.filter((m) => m.count > 0).map((m) => `${m.count} ${m.label}`).join(', ');
+  // W23: players with no class year are counted too ("2 not set"), so the split adds up to the roster.
+  const unset = classUnset(players, clock);
+  const mixWords = [...mix.filter((m) => m.count > 0).map((m) => `${m.count} ${m.label}`), unset > 0 ? `${unset} not set` : null].filter(Boolean).join(', ');
   return (
     <section className="ch-rs-tcard" role="group" aria-label={`${title ?? 'Season not set'}. ${plural(total, 'player')}. ${counts}.`}>
       <div className="ch-rs-tcard__top">
@@ -43,6 +45,7 @@ export function RosterTeamCard(props: Props) {
             {mix.filter((m) => m.count > 0).map((m) => (
               <i key={m.key} data-year={m.key} style={{ flexGrow: m.count }} />
             ))}
+            {unset > 0 && <i data-year="none" style={{ flexGrow: unset }} />}
           </span>
           <span className="ch-rs-mix__lg" aria-hidden="true">
             {mix.map((m) => (
@@ -51,6 +54,12 @@ export function RosterTeamCard(props: Props) {
                 <b className="ch-num">{m.count}</b> {m.label}
               </span>
             ))}
+            {unset > 0 && (
+              <span data-year="none">
+                <i />
+                <b className="ch-num">{unset}</b> not set
+              </span>
+            )}
           </span>
         </>
       )}

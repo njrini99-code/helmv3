@@ -135,6 +135,11 @@ const YEAR_WORD: Record<ChYearKey, [one: string, many: string]> = {
 
 export type ClassMixRow = { key: ChYearKey; count: number; label: string };
 
+/** W23: the players whose class year is missing or past, so the mix still adds up to the roster ("2 not set"). */
+export function classUnset(players: ReadonlyArray<{ gradYear: number | null }>, clock: RosterClock): number {
+  return players.filter((p) => !yearKeyOf(p.gradYear, clock)).length;
+}
+
 /** The class mix in year order: one row per year, a year with none included (the legend shows 0, as drawn). An unknown year is not counted. */
 export function classMix(players: ReadonlyArray<{ gradYear: number | null }>, clock: RosterClock): ClassMixRow[] {
   const counts: Record<ChYearKey, number> = { sr: 0, jr: 0, so: 0, fr: 0 };

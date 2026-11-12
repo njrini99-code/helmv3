@@ -3695,6 +3695,10 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
 :is(.ch-rs, .ch-rsm)[data-ch-crh='on'] [data-year='fr'] {
   --ch-rs-y: var(--ch-yr-fr);
 }
+/* W23: players with no class year: a quiet segment in the legend's own ink at 45%, so the split adds up to the roster. */
+:is(.ch-rs, .ch-rsm)[data-ch-crh='on'] [data-year='none'] {
+  --ch-rs-y: color-mix(in srgb, var(--ch-on-green-2) 45%, transparent);
+}
 
 /* The lane's desktop table and player in waiting (RosterSkeleton). */
 .ch-rs-sk-row {
