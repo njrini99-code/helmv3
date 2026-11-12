@@ -71,6 +71,9 @@ export const PREVIEW_ASK_DATA: ChAskData = {
   threadFailed: false,
 };
 
+/** A player's starters, built as the real player loader builds them (coachhelm-chat.ts): no team openers, only the week. */
+export const PREVIEW_ASK_PLAYER_SUGGESTIONS = buildAskSuggestions({ openers: [], recentCovered: 0, rosterCount: 1 });
+
 /** Players, and not one recorded round between them (mockups NoRounds, PhoneNoRounds). */
 export const PREVIEW_ASK_NOROUNDS: ChAskData = {
   ...PREVIEW_ASK_DATA,
