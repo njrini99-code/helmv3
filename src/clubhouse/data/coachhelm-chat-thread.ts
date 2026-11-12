@@ -211,6 +211,8 @@ export interface AskAssistantTurn {
   /** "Read 38 rounds across 8 players", without a duration (only the browser that watched it knows how long it took). */
   work: string | null;
   followUps: string[];
+  /** What each follow-up sends, by position, when it is longer than its label (the server's suggestions). */
+  followUpPrompts?: string[];
   /** The last turn, while it streams. */
   active: boolean;
   /** Ask v2: the artifacts this turn wrote. */
@@ -376,13 +378,34 @@ export function playerFollowUps(followUps: readonly string[], envelopes: ToolEnv
   return out.slice(0, 3);
 }
 
+/**
+ * The server's next steps for this answer (`data-suggestions`, written from the answer itself): a short label and the question it
+ * sends. Null when the turn carries none, so the evidence-based fallback applies; an empty list is the server withdrawing them.
+ * The thread drew only the fallback until 12 Nov, so a tee comparison offered putting work for the first player read (#17).
+ */
+export function suggestionsOf(parts: ReadonlyArray<Record<string, unknown> & { type: string }>): Array<{ label: string; prompt: string }> | null {
+  const part = [...parts].reverse().find((p) => p.type === 'data-suggestions');
+  if (!part) return null;
+  const items = dataOf<{ items?: Array<{ label?: unknown; prompt?: unknown }> }>(part)?.items ?? [];
+  return items.flatMap((i) => {
+    const label = typeof i.label === 'string' ? i.label.trim() : '';
+    const prompt = typeof i.prompt === 'string' ? i.prompt.trim() : '';
+    return label || prompt ? [{ label: label || prompt, prompt: prompt || label }] : [];
+  }).slice(0, 3);
+}
+
 /** At most three next steps, each one only when the evidence supports it: a row of always-there buttons teaches people to stop reading them. */
 export function followUpsFor(envelopes: ToolEnvelope[]): string[] {
   const out: string[] = [];
   for (const envelope of envelopes) {
     if (envelope.coverage === 'unavailable') continue;
+    // Two or more players across several measures is a comparison: a step for the first of them alone is not what was asked.
+    const playerMs = envelope.measurements.filter((m) => m.entity.kind === 'player');
+    if (new Set(playerMs.map((m) => m.entity.id)).size > 1 && new Set(playerMs.map((m) => m.metric_id)).size > 1) continue;
     const player = envelope.measurements[0]?.entity;
-    const putting = envelope.measurements.some((m) => /putt/i.test(m.metric_id));
+    // Putting steps only for a putting read, not for a full stats read that happens to carry a putting figure.
+    const valued = envelope.measurements.filter((m) => m.value !== null);
+    const putting = valued.length > 0 && valued.every((m) => /putt|make_/i.test(m.metric_id));
     if (player?.kind === 'player' && putting) {
       out.push(`Create a focus area for ${player.label} on putting`);
       out.push(`Build a putting practice for ${player.label}`);
@@ -572,7 +595,34 @@ function roundsListScore(envelope: ToolEnvelope): number {
 }
 
 /** One assistant message as the thread draws it. */
-export function buildAssistantTurn(message: UIMessage, ctx: { isLast: boolean; busy: boolean }): AskAssistantTurn {
+/** A question's subject, and the measures of a Stats read that answer it. */
+const TOPICS: ReadonlyArray<readonly [RegExp, RegExp]> = [
+  [/\b(off the tee|tee shots?|driv(?:ing|er|es)|fairways?)\b/i, /^(sg_tee|driving_|fairway|penalt)/],
+  [/\b(approach(?:es)?|irons?|proximity|greens in regulation|gir)\b/i, /^(sg_approach|gir_|proximity_)/],
+  [/\bputt/i, /^(sg_putting|putts_|make_|3_putts)/],
+  [/\b(short game|chipping|around the green|scrambl\w*|bunkers?|sand)\b/i, /^(sg_around_green|scrambling|sand_save)/],
+  [/\b(scor(?:e|es|ing)|par [345]s?|birdies?)\b/i, /^(scoring_average|par_\d_scoring|sg_total|birdies)/],
+];
+/** The Stats page's headline measures, for a comparison whose question names no subject. */
+const CORE_MEASURES = /^(scoring_average|sg_)/;
+
+/**
+ * A Stats read compares players on every measure the page has (29 for two players). The card under an answer shows the measures
+ * the question is about: "Compare Cole and Jackson off the tee" drew a 29-row table (#17). A question with no subject gets the
+ * headline measures. Only the card is narrowed; the read in Sources keeps every figure.
+ */
+export function focusComparison(envelope: ToolEnvelope, question: string | null | undefined): ToolEnvelope {
+  const ms = envelope.measurements;
+  const players = new Set(ms.filter((m) => m.entity.kind === 'player').map((m) => m.entity.id));
+  if (players.size < 2 || new Set(ms.map((m) => m.metric_id)).size < 7) return envelope;
+  const wanted = TOPICS.filter(([words]) => words.test(question ?? '')).map(([, metrics]) => metrics);
+  const pick = (test: (id: string) => boolean) => ms.filter((m) => test(m.metric_id));
+  const onTopic = wanted.length ? pick((id) => wanted.some((re) => re.test(id))) : [];
+  const kept = onTopic.length ? onTopic : pick((id) => CORE_MEASURES.test(id));
+  return kept.length ? { ...envelope, measurements: kept } : envelope;
+}
+
+export function buildAssistantTurn(message: UIMessage, ctx: { isLast: boolean; busy: boolean; question?: string | null }): AskAssistantTurn {
   const parts = partsOf(message);
   // A read that failed and was made again with success is the model's own recovery: the coach is not shown the failure (its field names mean
   // nothing to them). It stays in the steps, worded plainly. A failure nothing recovered from is still shown, as a plain sentence.
@@ -741,7 +791,7 @@ export function buildAssistantTurn(message: UIMessage, ctx: { isLast: boolean; b
         }
         // `ref`: the engine's name for this read (chat v3). The thread draws such a read's table under the answer's prose, once the turn
         // has finished, because a card arriving above text that is being written moves the words under the coach's eye.
-        blocks.push({ kind: 'evidence', key: `e-${String(p.id ?? i)}`, envelope: withWindowFigures(data.envelope, envelopes), ...(data.ref ? { ref: data.ref } : {}) });
+        blocks.push({ kind: 'evidence', key: `e-${String(p.id ?? i)}`, envelope: focusComparison(withWindowFigures(data.envelope, envelopes), ctx.question), ...(data.ref ? { ref: data.ref } : {}) });
       }
     } else if (p.type === 'data-visual-artifact') {
       const artifact = artifacts.get(String(p.id ?? `v-${i}`));
@@ -774,7 +824,11 @@ export function buildAssistantTurn(message: UIMessage, ctx: { isLast: boolean; b
     note: null,
     answerText: texts.join('\n\n'),
     work: describeWork(steps, envelopes),
-    followUps: hasAction ? [] : followUpsFor(envelopes),
+    ...(() => {
+      if (hasAction) return { followUps: [] };
+      const fromServer = suggestionsOf(parts);
+      return fromServer ? { followUps: fromServer.map((s) => s.label), followUpPrompts: fromServer.map((s) => s.prompt) } : { followUps: followUpsFor(envelopes) };
+    })(),
     active,
     reads: turnReadsOf(parts),
     durationMs: turnMetaOf(parts as never)?.duration_ms ?? null,
@@ -787,12 +841,16 @@ export function buildAssistantTurn(message: UIMessage, ctx: { isLast: boolean; b
 /** The whole thread. A user turn with no text (an approval resubmit carries none) is not drawn. */
 export function buildTurns(messages: UIMessage[], opts: { busy: boolean }): AskTurn[] {
   const out: AskTurn[] = [];
+  let question: string | null = null;
   messages.forEach((m, i) => {
     if (m.role === 'user') {
       const text = userText(m);
-      if (text) out.push({ role: 'user', id: m.id, text });
+      if (text) {
+        question = text;
+        out.push({ role: 'user', id: m.id, text });
+      }
     } else if (m.role === 'assistant') {
-      out.push(buildAssistantTurn(m, { isLast: i === messages.length - 1, busy: opts.busy }));
+      out.push(buildAssistantTurn(m, { isLast: i === messages.length - 1, busy: opts.busy, question }));
     }
   });
   return out;

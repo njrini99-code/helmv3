@@ -322,7 +322,7 @@ export function AnswerCard({ turn, fresh, showFollowUps, playersByName, players,
         if (b.kind === 'brief' && b.brief.intake) return <PlanIntake key={b.key} brief={b.brief} onSend={onSend} />;
         return null;
       })}
-      {showFollowUps && settled && <FollowUps items={turn.followUps} onSend={onSend} />}
+      {showFollowUps && settled && <FollowUps items={turn.followUps} prompts={turn.followUpPrompts} onSend={onSend} />}
     </div>
   );
 }

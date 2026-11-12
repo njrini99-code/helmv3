@@ -28,3 +28,7 @@ Held items:     none
 - W49: a team read that lists every player on one measure draws the players as a ranking and the team's figures as
   their own card, not a one-column comparison table. The comparison's hidden caption no longer repeats the card's
   title ("…rounds.: 7 players"), and the open arrow sits beside the player's name.
+- #17: a two-player comparison names both players in the scope line; its card shows the measures the question is
+  about (tee, approach, putting, short game, scoring; the headline measures when it names none), with the whole read
+  kept in Sources; and the next steps are the server's suggestions for the answer, not putting work for the first
+  player read.
