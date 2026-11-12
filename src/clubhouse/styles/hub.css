@@ -3575,14 +3575,8 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-primary);
 }
-.ch-hw-led__n em {
-  font: var(--ch-type-12-strong);
-  line-height: var(--ch-lead-tight);
-  font-style: normal;
-  color: var(--ch-warning-600);
-  white-space: nowrap;
-}
-.ch-hw-led__n b.is-zero {
+/* W22: a late task, or no rounds in 30 days, takes the warning ink (never red; red is under par). */
+.ch-hw-led__n b.is-warn {
   color: var(--ch-warning-600);
 }
 .ch-hw-led__0,
@@ -4095,7 +4089,6 @@ html[data-fw-theme='dark'] .ch-hw--dark {
     text-align: center;
   }
   .ch-hw-q__k,
-  .ch-hw-led__n em,
   .ch-hw-meter__k,
   .ch-hw-discs__k,
   .ch-hw-figs dt,
