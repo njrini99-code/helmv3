@@ -469,6 +469,10 @@ export function ShotTrail({ hole }: { hole: ChReviewHole }) {
   // A label's width, estimated from its length at the size the stylesheet draws it (this face averages ~0.43em a character).
   const width = (text: string) => text.length * fs * 0.46;
   const GAP = fs * 0.6;
+  // The words' baseline: 30 under the line where they are small, and lower as they grow, so their capitals (about 0.72em)
+  // always clear the shot dots (r 9) by 3. On a phone the stylesheet sets them at 34 units, and at +30 the dotted line ran
+  // through "Tee · 518 yds" (phone premium sweep, 12 Nov 2026).
+  const labelY = base + Math.max(30, Math.ceil(12 + fs * 0.72));
   const teeText = hole.yards ? `Tee · ${hole.yards} yds` : 'Tee';
   const puttText = t.putts > 0 ? `${plural(t.putts, 'putt')}${t.firstPutt != null ? ` · from ${t.firstPutt} ft` : ''}` : null;
   const puttLeft = puttText ? RIGHT - width(puttText) : Infinity;
@@ -509,13 +513,13 @@ export function ShotTrail({ hole }: { hole: ChReviewHole }) {
               <circle className="ch-rzshot__dot" cx={b} cy={base} r={9} fill={color} stroke="var(--ch-green-900)" strokeWidth={2.5} />
               <text className="ch-rzsvg__in" x={b} y={base + 3.5} textAnchor="middle" fontSize={10} fontWeight={700} fill="var(--ch-green-900)">{s.n}</text>
               {s.left && shown.has(s.n) && (
-                <text x={b} y={base + 30} textAnchor="middle" fontSize={11.5} fontWeight={600} fill="var(--ch-stage-ink-soft)">{s.left} out</text>
+                <text x={b} y={labelY} textAnchor="middle" fontSize={11.5} fontWeight={600} fill="var(--ch-stage-ink-soft)">{s.left} out</text>
               )}
             </g>
           );
         })}
         <circle cx={X0} cy={base} r={6} fill="var(--ch-stage-ink)" />
-        <text data-ch-label="" x={X0 - 8} y={base + 30} fontSize={11.5} fontWeight={600} fill="var(--ch-stage-ink-soft)">
+        <text data-ch-label="" x={X0 - 8} y={labelY} fontSize={11.5} fontWeight={600} fill="var(--ch-stage-ink-soft)">
           {teeText}
         </text>
         <line x1={X1 + 16} y1={base} x2={X1 + 16} y2={base - 36} stroke="var(--ch-stage-ink)" strokeWidth={2} />
@@ -525,7 +529,7 @@ export function ShotTrail({ hole }: { hole: ChReviewHole }) {
             {Array.from({ length: Math.min(t.putts, 5) }, (_, i) => (
               <circle key={i} cx={X1 + 54 + i * 14} cy={base} r={4.5} fill={t.putts >= 3 ? 'var(--ch-stage-gold)' : 'var(--ch-stage-line)'} />
             ))}
-            <text x={RIGHT} y={base + 30} textAnchor="end" fontSize={11.5} fontWeight={600} fill="var(--ch-stage-ink-soft)">
+            <text x={RIGHT} y={labelY} textAnchor="end" fontSize={11.5} fontWeight={600} fill="var(--ch-stage-ink-soft)">
               {puttText}
             </text>
           </g>
