@@ -2650,7 +2650,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   border-radius: var(--ch-radius-xs);
   background: var(--ch-separator);
 }
-.ch-es__seg i.is-on {
+.ch-es__seg i.is-done {
   background: var(--ch-green-fill-600);
 }
 /* The action sits where the row's trailing value will be. */

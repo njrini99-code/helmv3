@@ -1,6 +1,6 @@
 import type { GolfEventInput } from '@/app/golf/actions/calendar-events';
 import { offsetMinutesFor } from '@/lib/golf/timezone';
-import { isoDay } from '../../lib/dates';
+import { formatWith, isoDay } from '../../lib/dates';
 
 /**
  * A practice made from the New plan sheet (Q7, owner, 12 Nov: "New plan" creates the practice itself). The coach picks the
@@ -79,10 +79,11 @@ export function newPracticeEvent(p: NewPractice, zone: string, roster: readonly 
 /** "Tuesday, Nov 17" and "3:00 to 5:00 PM", for the sheet's line once the practice is on the calendar. */
 export function newPracticeWords(p: NewPractice): { day: string; time: string } {
   // The wall clock as written, read in UTC so no zone moves it; the start drops its AM/PM as the practice list's lines do.
+  // Formatted through lib/dates (CONS-16), the one place a date's options are built.
   const at = (hhmm: string) => new Date(`${p.date}T${hhmm}:00Z`);
-  const clock = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' });
+  const clock = (hhmm: string) => formatWith(at(hhmm), { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' });
   return {
-    day: new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'short', day: 'numeric', timeZone: 'UTC' }).format(at('12:00')),
-    time: `${clock.format(at(p.start)).replace(/\s?[AP]M$/, '')} to ${clock.format(at(p.end))}`,
+    day: formatWith(at('12:00'), { weekday: 'long', month: 'short', day: 'numeric', timeZone: 'UTC' }),
+    time: `${clock(p.start).replace(/\s?[AP]M$/, '')} to ${clock(p.end)}`,
   };
 }

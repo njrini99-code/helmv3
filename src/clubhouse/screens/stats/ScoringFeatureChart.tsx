@@ -310,7 +310,7 @@ export function TeamFeatureChart({ days, mean }: { days: ReadonlyArray<{ label: 
   const ticks: number[] = [];
   for (let q = lo; q <= hi; q++) if ((q - lo) % (hi - lo > 4 ? 2 : 1) === 0) ticks.push(q);
   return (
-    <div ref={box} className="ch-shs-chart" role="img" aria-label={`Team scoring average by round day, from ${formatFixed(v[0]!, 1)} to ${formatFixed(v[n - 1]!, 1)}. Lower scores sit higher.${joined.one.size ? ` ${joined.one.size} ${joined.one.size === 1 ? 'day' : 'days'} with one round ${joined.one.size === 1 ? 'is' : 'are'} drawn apart from the team's line.` : ''}`}>
+    <div ref={box} className="ch-shs-chart" role="img" aria-label={`Team scoring average by round day, from ${formatFixed(v[0]!, 1)} to ${formatFixed(v[n - 1]!, 1)}. Lower scores sit higher.${joined.one.size ? ` ${joined.one.size} ${pluralWord(joined.one.size, 'day', 'days')} with one round ${joined.one.size === 1 ? 'is' : 'are'} drawn apart from the team’s line.` : ''}`}>
       <svg viewBox={`0 0 ${width} ${H}`} height={H} aria-hidden="true">
         <defs>
           <linearGradient id="ch-shs-tg" x1="0" x2="0" y1="0" y2="1">

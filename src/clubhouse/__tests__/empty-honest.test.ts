@@ -6,7 +6,7 @@ import { hits, ratchet, ROOT, walk, type Hit } from './_scan';
 
 /**
  * CONS-11: an empty state says which honest state it is. An `EmptyState` names its `kind` (first run, filtered,
- * restricted…) or draws a `shape`, or is a whole-page state (`size="page"`). The legacy section form (none of these)
+ * restricted…) or draws a `shape`, or is a whole-page state (`size="page"`, or the route error's `size="canvas"`). The legacy section form (none of these)
  * is ratcheted per file and moves as each screen is read; the hand-rolled empty classes may only fall too.
  */
 type Attr = (name: string) => ts.JsxAttribute | undefined;
@@ -36,7 +36,8 @@ function empties(test: (attr: Attr, literal: (name: string) => string | null, so
   return out;
 }
 
-const legacy = () => empties((attr, literal) => !attr('kind') && !attr('shape') && literal('size') !== 'page');
+// A whole-page state is `size="page"`, or `size="canvas"`: the route error's full canvas (shell/NotFound.tsx, W19 B).
+const legacy = () => empties((attr, literal) => !attr('kind') && !attr('shape') && literal('size') !== 'page' && literal('size') !== 'canvas');
 
 const ALLOW_LEGACY: Record<string, number> = {
   'preview/ComponentGallery.tsx': 1,
@@ -92,10 +93,13 @@ describe('honest empty states (CONS-11)', () => {
     expect(r.stale).toEqual([]);
   });
 
-  /** Auditor on #2361: `icon={Flag}` on the phone's shaped first-run empties never drew; the shape is a first run's
-   *  picture, and EmptyState drops the glyph there (ui/States.tsx). */
-  it('a shaped first-run empty passes no icon, since it never draws one', () => {
-    expect(empties((attr, literal) => !!attr('shape') && (literal('kind') ?? 'first-run') === 'first-run' && !!attr('icon'))).toEqual([]);
+  /** Auditor on #2361: `icon={Flag}` on the phone's shaped first-run empties never drew, because a first run dropped its
+   *  glyph. W19 B (owner, 12 Nov 2026: every empty reads as Tournaments' first run) draws it on a page: the caller's icon
+   *  is the medallion's tile, else the shape's own glyph (ui/States.tsx; `ui/__tests__/empty-state-b.test.tsx` renders
+   *  it). So an icon given to a shaped first run belongs on a page empty, where it is drawn; anywhere else it needs its
+   *  own render check first. */
+  it('a shaped first-run empty given an icon is a page empty, where it is drawn', () => {
+    expect(empties((attr, literal) => !!attr('shape') && (literal('kind') ?? 'first-run') === 'first-run' && !!attr('icon') && literal('size') !== 'page')).toEqual([]);
   });
 
   /** Auditor on #2361: the Stats page filter empty had no kind; a page state was exempt from the guard. A state that
