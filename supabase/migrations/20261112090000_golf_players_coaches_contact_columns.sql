@@ -1,39 +1,60 @@
--- golf_players / golf_coaches: e-mail, phone (both tables) and GPA (golf_players) stop being readable through the tables
--- (security review 2026-11-11, finding 1; GPA added by the owner, 2026-11-11: "Hide GPA only").
+-- golf_players / golf_coaches: e-mail, phone (both tables) and GPA
+-- (golf_players) stop being readable through the tables
+-- (security review 2026-11-11, finding 1; GPA added by the owner, 2026-11-11:
+-- "Hide GPA only").
 --
--- The leak (reproduced on the local release rehearsal, 2026-11-11): `authenticated` holds table-wide SELECT on both tables, and
--- the row policies decide only WHICH rows. golf_players_select still has its teammate branch (20261017005000, which drops it, is
--- deferred because Clubhouse reads teammates' rows), and golf_coaches_select lets every member of an organization read every
--- coach row in it. So any signed-in player (many are minors) could call PostgREST directly and read every teammate's e-mail,
+-- The leak (reproduced on the local release rehearsal, 2026-11-11):
+-- `authenticated` holds table-wide SELECT on both tables, and
+-- the row policies decide only WHICH rows. golf_players_select still has its
+-- teammate branch (20261017005000, which drops it, is
+-- deferred because Clubhouse reads teammates' rows), and golf_coaches_select
+-- lets every member of an organization read every
+-- coach row in it. So any signed-in player (many are minors) could call
+-- PostgREST directly and read every teammate's e-mail,
 -- phone and GPA, and every coach's e-mail and phone in the organization:
 --   GET /rest/v1/golf_players?select=first_name,last_name,email,phone,gpa
 --
 -- Now:
---   1. Table-wide SELECT on both tables is revoked from `authenticated` and granted again on every column EXCEPT email and
---      phone (both tables) and gpa (golf_players). Which rows a user sees is unchanged (the row policies are untouched). A
---      `select('*')` or an embed `golf_players(*)` from a signed-in session now fails with "permission denied"; every such call
---      in src/ was changed in the same branch to name its columns. high_school_name and hometown stay readable (owner, same day).
---   2. public.golf_player_private_fields(uuid[]) returns id, email, phone and gpa of the players the caller may see them for:
---      their own row, a player active or inactive on a team the caller is staffed on, and a player with a pending join request
---      to such a team (today's coach reach, without the teammate branch). SECURITY DEFINER, search_path ''. A player gets only
+--   1. Table-wide SELECT on both tables is revoked from `authenticated` and
+--      granted again on every column EXCEPT email and
+--      phone (both tables) and gpa (golf_players). Which rows a user sees is
+--      unchanged (the row policies are untouched). A
+--      `select('*')` or an embed `golf_players(*)` from a signed-in session now
+--      fails with "permission denied"; every such call
+--      in src/ was changed in the same branch to name its columns.
+--      high_school_name and hometown stay readable (owner, same day).
+--   2. public.golf_player_private_fields(uuid[]) returns id, email, phone and
+--      gpa of the players the caller may see them for:
+--      their own row, a player active or inactive on a team the caller is
+--      staffed on, and a player with a pending join request
+--      to such a team (today's coach reach, without the teammate branch).
+--      SECURITY DEFINER, search_path ''. A player gets only
 --      their own row.
---   No coach function: no signed-in read in the app needs another coach's e-mail or phone (pending coaches and staff lists read
+--   No coach function: no signed-in read in the app needs another coach's
+--   e-mail or phone (pending coaches and staff lists read
 --   through the service role), and a user's own e-mail comes from auth.
 --
--- Not changed: anon (RLS gives anon no rows), service_role (keeps every privilege), INSERT/UPDATE privileges (a profile save
+-- Not changed: anon (RLS gives anon no rows), service_role (keeps every
+-- privilege), INSERT/UPDATE privileges (a profile save
 -- still writes phone and gpa), and the Baseball and Lift Lab tables.
 --
--- Rule from now on, recorded in HELD.md: a column added to either table later is NOT readable by `authenticated` until it is
--- granted. A migration that adds a column must add `GRANT SELECT (<column>) ON ... TO authenticated` unless the column is private.
+-- Rule from now on, recorded in HELD.md: a column added to either table later
+-- is NOT readable by `authenticated` until it is
+-- granted. A migration that adds a column must add `GRANT SELECT (<column>) ON
+-- ... TO authenticated` unless the column is private.
 --
--- Locks: REVOKE/GRANT on a table takes ACCESS EXCLUSIVE briefly; both tables are read by most Golf policies, so the timeout is
+-- Locks: REVOKE/GRANT on a table takes ACCESS EXCLUSIVE briefly; both tables
+-- are read by most Golf policies, so the timeout is
 -- short and the file is safe to run again after a timeout.
 --
 -- Rollback (restores today's exposure):
---   REVOKE SELECT ON public.golf_players FROM authenticated; GRANT SELECT ON public.golf_players TO authenticated;
---   REVOKE SELECT ON public.golf_coaches FROM authenticated; GRANT SELECT ON public.golf_coaches TO authenticated;
+--   REVOKE SELECT ON public.golf_players FROM authenticated; GRANT SELECT ON
+--   public.golf_players TO authenticated;
+--   REVOKE SELECT ON public.golf_coaches FROM authenticated; GRANT SELECT ON
+--   public.golf_coaches TO authenticated;
 --   DROP FUNCTION IF EXISTS public.golf_player_private_fields(uuid[]);
---   (The app works after a rollback: its reads fall back to the table when the function is missing.)
+--   (The app works after a rollback: its reads fall back to the table when the
+--   function is missing.)
 --
 -- pgTAP: supabase/tests/rls/golf_players_coaches_contact_columns.sql
 --
@@ -45,8 +66,10 @@
 
 SET LOCAL lock_timeout = '3s';
 
--- Precondition: the column lists below name every column but the private ones. Refuse if either table has a column this file
--- does not know about, so a new column is never silently made private or public by this file.
+-- Precondition: the column lists below name every column but the private ones.
+-- Refuse if either table has a column this file
+-- does not know about, so a new column is never silently made private or public
+-- by this file.
 DO $$
 DECLARE
   v_extra text;
@@ -70,16 +93,21 @@ END $$;
 
 REVOKE SELECT ON public.golf_players FROM authenticated;
 GRANT SELECT (
-  id, user_id, first_name, last_name, avatar_url, graduation_year, high_school_name, hometown, state, handicap,
-  handicap_index, onboarding_completed, profile_complete, is_test, anonymized_at, created_at, updated_at
+    id, user_id, first_name, last_name, avatar_url, graduation_year,
+    high_school_name, hometown, state, handicap, handicap_index,
+    onboarding_completed, profile_complete, is_test, anonymized_at,
+    created_at, updated_at
 ) ON public.golf_players TO authenticated;
 
 REVOKE SELECT ON public.golf_coaches FROM authenticated;
 GRANT SELECT (
-  id, user_id, organization_id, full_name, title, bio, avatar_url, onboarding_completed, created_at, updated_at
+    id, user_id, organization_id, full_name, title, bio, avatar_url,
+    onboarding_completed, created_at, updated_at
 ) ON public.golf_coaches TO authenticated;
 
-CREATE OR REPLACE FUNCTION public.golf_player_private_fields(p_player_ids uuid[])
+CREATE OR REPLACE FUNCTION public.golf_player_private_fields(
+    p_player_ids uuid[]
+)
 RETURNS TABLE (id uuid, email text, phone text, gpa numeric)
 LANGUAGE sql
 STABLE
@@ -113,7 +141,12 @@ AS $$
 $$;
 
 COMMENT ON FUNCTION public.golf_player_private_fields(uuid[]) IS
-  'E-mail, phone and GPA of the given players, for the caller only where they may see them: their own row, a player active or inactive on a team they are staffed on, or one with a pending join request to such a team. Teammates get nothing (security review 2026-11-11, finding 1).';
+'E-mail, phone and GPA of the given players, for the caller only where they '
+'may see them: their own row, a player active or inactive on a team they are '
+'staffed on, or one with a pending join request to such a team. Teammates get '
+'nothing (security review 2026-11-11, finding 1).';
 
-REVOKE ALL ON FUNCTION public.golf_player_private_fields(uuid[]) FROM PUBLIC, anon;
-GRANT EXECUTE ON FUNCTION public.golf_player_private_fields(uuid[]) TO authenticated, service_role;
+REVOKE ALL ON FUNCTION public.golf_player_private_fields(uuid[])
+FROM public, anon;
+GRANT EXECUTE ON FUNCTION public.golf_player_private_fields(uuid[])
+TO authenticated, service_role;
