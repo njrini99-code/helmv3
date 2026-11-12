@@ -21,7 +21,7 @@ import { askAboutReadHref } from '../chat/ask-links';
 import { Button } from '../../../ui/Button';
 import { toPar } from './CourseCard';
 import { STATION_NAME } from './hole-geometry';
-import { Chevron, Coin, ReadRow, ReadWorthContext } from './parts';
+import { Chevron, Coin, ReadRow, ReadWorthContext, readTitle } from './parts';
 import { sgMixShort } from '../../../data/stats-sg-mix';
 
 const areaName = (r: ChInsight) => (r.area ? STATION_NAME[r.area] : 'Course and scoring');
@@ -172,7 +172,7 @@ export function ReadPanel({
   return (
     <>
       {coach ? <Head lead={<Coin player={player} />} name={player.name} line={`${areaName(read)} · ${player.rounds === 0 ? 'no counted rounds yet' : `last ${plural(player.rounds, 'round')}`}`} onClose={onClose} /> : <Head lead={null} name={areaName(read)} line="" onClose={onClose} />}
-      <h3 className="ch-num">{read.title}</h3>
+      <h3 className="ch-num">{readTitle(player, read.title)}</h3>
       <p className="lede ch-num">{read.lede}</p>
       <div className="evs">
         {read.stale && <Badge>Out of date</Badge>}

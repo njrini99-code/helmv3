@@ -11,7 +11,7 @@ import type { ChInsight } from '../../../data/coachhelm-shape';
 import type { ChTeamPart } from '../../../data/coachhelm-team-shape';
 import type { ChTrackRecord } from '../../../data/coachhelm-track-record-shape';
 import { formatSigned } from '../../../lib/format';
-import { Coin, Notice } from './parts';
+import { Coin, Notice, readTitle } from './parts';
 import { STATION_SHORT } from './hole-geometry';
 import { sgIsEstimate } from '../../../data/stats-sg-mix';
 
@@ -140,7 +140,7 @@ export function WorkingCard({ working, proposed, failed, onRetry }: { working: r
               <Ring v={0} proposed />
               <div>
                 <b className="ch-num">
-                  {player.first} · {read.title}
+                  {player.first} · {readTitle(player, read.title)}
                 </b>
                 <span>
                   From {read.value} now · {player.first} sets the target
