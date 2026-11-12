@@ -263,6 +263,17 @@ describe('the team block says which baseline strokes gained is measured against'
     for (const who of [base, { ...base, gender: null }, { ...base, gender: 'mixed' }]) expect(teamBlock(who)).not.toMatch(/measured against/);
   });
 
+  it('a coach’s Ask says why the figures are negative when asked, and the first time strokes gained comes up, unasked (Q1, owner 12 Nov 2026)', () => {
+    const rule = 'When a coach asks why the figures are negative, or strokes gained first comes up in a conversation, say in one sentence that the figures are against Tour players and that below zero is normal for a college golfer.';
+    // Every coach's team, whatever its gender; it names no tour, so a team with none set is not told which one.
+    for (const who of [base, { ...base, gender: 'mens' }, { ...base, gender: 'womens' }]) expect(teamBlock(who)).toContain(rule);
+    expect(teamBlock(base)).not.toMatch(/PGA|LPGA|women’s Tour/);
+    // In the per-team block, beside the yardstick: neither the cached rules nor the golf block grow (registry-size, golf-block tests).
+    const { policy } = instructionBlocks('ask', coach());
+    expect(policy).not.toContain(rule);
+    expect(instructionBlocks('ask', coach()).team).toContain(rule);
+  });
+
   it('a player is told the same about their own team, and the line is the same bytes on every call', () => {
     const player = { ...base, gender: 'womens', roster: [{ id: 'p1', name: 'Maya Ortiz', first_name: 'Maya', last_name: 'Ortiz', graduation_year: null }], player_id: 'p1' };
     expect(teamBlock(player)).toContain('measured against the women’s Tour baseline');

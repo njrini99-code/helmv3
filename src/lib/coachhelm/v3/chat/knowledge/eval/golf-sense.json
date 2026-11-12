@@ -1895,6 +1895,49 @@
    }
   },
   {
+   "id": "sg-first-mention-says-tour",
+   "area": "strokes_gained",
+   "viewer": "coach",
+   "ask": "How is the team doing in strokes gained this season?",
+   "readers": [
+    "get_team_stats"
+   ],
+   "facts": [
+    {
+     "label": "says once that it is measured against Tour players",
+     "kind": "phrase",
+     "re": "\\btour\\b",
+     "flags": "i"
+    },
+    {
+     "label": "says below zero is normal for a college team, unasked",
+     "kind": "phrase",
+     "re": "\\b(expected|normal(ly)?|not a (failure|problem)|nothing wrong)\\b",
+     "flags": "i"
+    },
+    {
+     "label": "gives the figure with its window and how many rounds it rests on",
+     "kind": "phrase",
+     "re": "\\b(over|across|in|from)\\b[^.\\n]{0,25}\\b(last|past|this season|\\d+)\\b[^.\\n]{0,25}\\brounds?\\b|\\(\\d+ rounds?\\)|\\bn\\s?=\\s?\\d+",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "A negative strokes gained figure called bad on its own.",
+     "pattern": "negative_sg_called_bad"
+    },
+    {
+     "label": "Names the PGA Tour when no read named a tour. The harness skips this for a men's team whose standards read named it; for a women's team it always applies.",
+     "pattern": "names_pga_unprompted"
+    }
+   ],
+   "note": "The first time strokes gained comes up in a conversation, the answer says it is against the Tour and that below zero is normal for a college team, before the coach has to ask (owner, 12 Nov 2026, Q1).",
+   "style": {
+    "max_sentences": 6
+   }
+  },
+  {
    "id": "sg-is-minus-two-bad",
    "area": "strokes_gained",
    "viewer": "coach",

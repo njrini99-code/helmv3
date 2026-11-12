@@ -161,6 +161,13 @@ describe('the golf block of the cached prompt', () => {
     for (const [key, sentence] of Object.entries(APP_DEFINITIONS)) expect(golfBlock('ask'), key).toContain(sentence);
   });
 
+  it('a player is told why strokes gained is negative the first time it comes up, unasked (Q1, owner 12 Nov 2026; the coach’s rule is in the team block)', () => {
+    const playerSg = golfBlock('player').slice(golfBlock('player').indexOf('## Strokes gained'), golfBlock('player').indexOf('## Ball striking'));
+    expect(playerSg).toContain('Say the first two of those in one sentence the first time strokes gained comes up in a conversation, too.');
+    // It names no tour: a read names the tour, and the wrong name misleads a women's team.
+    for (const s of ['ask', 'player'] as const) expect(golfBlock(s)).not.toMatch(/normal for a college golfer[^.]*PGA/);
+  });
+
   it('is about the size planned (characters / 4)', () => {
     const coach = tokens(golfBlock('ask'));
     const player = tokens(golfBlock('player'));
