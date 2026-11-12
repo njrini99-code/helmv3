@@ -52,12 +52,16 @@ export function AskHomeV2({ data, phone, heroComposer, onAsk, focus }: { data: C
     ? !!focus?.length && (
         <div className="pulse">
           <b>Your focus</b>
-          {focus.map((l) => (
-            <button type="button" className="rw" data-ch-ask-source="" key={l.text} disabled={!l.ask} onClick={() => l.ask && onAsk(l.ask)}>
-              <i className={l.trend ? DOT[l.trend] : undefined} />
-              <span>{l.text}</span>
-            </button>
-          ))}
+          {focus.map((l) => {
+            // A focus area with no outcome yet has no dot, and no empty 8px slot holding its words off the edge.
+            const dot = l.trend ? DOT[l.trend] : undefined;
+            return (
+              <button type="button" className="rw" data-ch-ask-source="" key={l.text} disabled={!l.ask} onClick={() => l.ask && onAsk(l.ask)}>
+                {dot && <i className={dot} />}
+                <span>{l.text}</span>
+              </button>
+            );
+          })}
         </div>
       )
     : findings.length > 0 && (
