@@ -55,11 +55,12 @@ export function newPracticeProblem(p: NewPractice): string | null {
 }
 
 /**
- * The Calendar's create for this practice, as its editor builds a one-off: timed (`allDay: false`; the server stores a
+ * The Calendar's create for this practice, as its editor builds a new one-off: timed (`allDay: false`; the server stores a
  * create without it as all-day, which the sheet could not plan), in the team zone's offset on that day (the editor's
- * `offsetMinutesFor`, positive west of UTC), with nobody invited and no replies asked, so no one is notified.
+ * `offsetMinutesFor`, positive west of UTC), with the whole roster on it as the editor starts a new practice. No replies
+ * are asked, so the server writes their attendance rows and notifies no one (createGolfEvent, sendEventInvitations).
  */
-export function newPracticeEvent(p: NewPractice, zone: string): GolfEventInput {
+export function newPracticeEvent(p: NewPractice, zone: string, roster: readonly string[] = []): GolfEventInput {
   const place = p.place.trim();
   return {
     title: NEW_PRACTICE_TITLE,
@@ -70,6 +71,7 @@ export function newPracticeEvent(p: NewPractice, zone: string): GolfEventInput {
     allDay: false,
     location: place || undefined,
     requiresRsvp: false,
+    ...(roster.length ? { attendeeIds: [...roster] } : {}),
     timezoneOffset: offsetMinutesFor(p.date, p.start, zone) ?? undefined,
   };
 }

@@ -8,9 +8,10 @@ import { NewPlanSheet } from '../NewPlanSheet';
  * create (createGolfEvent) and then saves the plan on it, as it always has.
  */
 const push = vi.fn();
+const refresh = vi.fn();
 const save = vi.fn();
 const createEvent = vi.fn();
-vi.mock('next/navigation', () => ({ useRouter: () => ({ push, refresh: vi.fn() }) }));
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push, refresh }) }));
 vi.mock('../../../lib/use-phone', () => ({ useChPhone: () => false }));
 vi.mock('../../../ui/Toast', () => ({ useToast: () => vi.fn() }));
 vi.mock('@/app/golf/actions/practice-plans', () => ({ savePracticePlan: (...a: unknown[]) => save(...a), copyPlanBody: vi.fn() }));
@@ -26,6 +27,7 @@ beforeAll(() => {
 });
 beforeEach(() => {
   push.mockReset();
+  refresh.mockReset();
   save.mockReset().mockResolvedValue({ success: true, planId: 'p9', version: 1, updatedAt: null });
   createEvent.mockReset().mockResolvedValue({ success: true, data: { eventId: 'ev-new' } });
 });
@@ -58,6 +60,8 @@ describe('New plan with no practice to plan', () => {
       allDay: false,
       location: 'Lakeside',
       requiresRsvp: false,
+      // The team on it, as the Calendar's editor starts a practice; no replies asked, so nobody is notified.
+      attendeeIds: ['r1'],
       timezoneOffset: 300,
     });
     expect(createEvent.mock.calls[0]![0].requestId).toMatch(/^[0-9a-f-]{36}$/);
@@ -72,6 +76,8 @@ describe('New plan with no practice to plan', () => {
     // The practice is on the calendar now: its day and time are a line, not fields that would make a second one.
     expect(screen.getByText(/On the calendar/, { hidden: true }).textContent).toContain('Friday, Nov 13');
     expect(screen.queryByRole('group', { name: 'When', hidden: true })).toBeNull();
+    // The page reads the calendar again, so the practice is listed if the sheet is opened afresh.
+    expect(refresh).toHaveBeenCalledTimes(1);
     fireEvent.click(createButton());
     await waitFor(() => expect(push).toHaveBeenCalled());
     expect(createEvent).toHaveBeenCalledTimes(1);

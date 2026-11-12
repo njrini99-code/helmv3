@@ -18,9 +18,9 @@ describe('a new practice from the New plan sheet', () => {
     expect(nextWeekday(new Date('2026-11-15T15:00:00Z'), NY)).toBe('2026-11-16');
   });
 
-  it('builds the Calendar’s practice: timed (never all-day), in the team’s offset on that day, nobody invited', () => {
+  it('builds the Calendar’s practice: timed (never all-day), in the team’s offset on that day, the team on it, no replies asked', () => {
     // Daylight time: 240 minutes west of UTC, which the server writes as -04:00.
-    expect(newPracticeEvent({ date: '2026-10-20', start: '15:00', end: '17:00', place: ' Lakeside ' }, NY)).toEqual({
+    expect(newPracticeEvent({ date: '2026-10-20', start: '15:00', end: '17:00', place: ' Lakeside ' }, NY, ['p1', 'p2'])).toEqual({
       title: 'Practice',
       eventType: 'practice',
       startDate: '2026-10-20',
@@ -29,12 +29,14 @@ describe('a new practice from the New plan sheet', () => {
       allDay: false,
       location: 'Lakeside',
       requiresRsvp: false,
+      attendeeIds: ['p1', 'p2'],
       timezoneOffset: 240,
     });
     // After the clock change: 300.
     const nov = newPracticeEvent({ date: '2026-11-17', start: '15:00', end: '17:00', place: '' }, NY);
     expect(nov.timezoneOffset).toBe(300);
     expect(nov.location).toBeUndefined();
+    // No roster read: nobody is put on it rather than an empty list.
     expect(nov).not.toHaveProperty('attendeeIds');
   });
 

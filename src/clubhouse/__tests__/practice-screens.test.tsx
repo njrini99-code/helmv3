@@ -17,7 +17,8 @@ vi.mock('@/components/golf/coachhelm/chat/useCoachHelmChat', () => ({ useCoachHe
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push, refresh: vi.fn(), replace: vi.fn(), back: vi.fn() }), usePathname: () => '/golf/dashboard/practice', useSearchParams: () => new URLSearchParams() }));
 vi.mock('../lib/haptics', () => ({ haptic: vi.fn() }));
 vi.mock('../lib/track', () => ({ chReport: vi.fn(), chTrail: vi.fn(), chTagSession: vi.fn() }));
-vi.mock('../lib/use-phone', () => ({ useChPhone: () => false, CH_PHONE_QUERY: '(max-width: 820px)' }));
+const device = vi.hoisted(() => ({ phone: false }));
+vi.mock('../lib/use-phone', () => ({ useChPhone: () => device.phone, CH_PHONE_QUERY: '(max-width: 820px)' }));
 
 import { emptyBody, makeBlock, addBlock } from '../screens/practice/builder/builder-model';
 import { Builder, type BuilderPreview } from '../screens/practice/builder/Builder';
@@ -143,6 +144,18 @@ describe('the landing', () => {
       const { container, unmount } = render(<PracticeHome data={d} />);
       expect(primaries(container), name).toEqual(['New plan']);
       unmount();
+    }
+    // On a phone New plan is the bar's plus (PhoneTop portals it into the shell's bar, which this harness has none of), and
+    // nothing in the page is a primary beside it.
+    device.phone = true;
+    try {
+      for (const [name, d] of states) {
+        const { unmount } = render(<PracticeHome data={d} />);
+        expect(primaries(document.body), `phone: ${name}`).toEqual([]);
+        unmount();
+      }
+    } finally {
+      device.phone = false;
     }
   });
   it('W15 a day with no practice is a quiet dash that still says so to a reader', () => {
