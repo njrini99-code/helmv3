@@ -30,8 +30,8 @@ Held items:     none
   `coachhelm-dive.css` and `coachhelm-track.css`); `coachhelm-patterns.css` is
   deleted.
 - Tests: the cases that only rendered a board are deleted. The write contracts
-  run on the shared action row (`coachhelm-focus-actions-row.test.tsx`), Re-check reads on
-  `RecheckReads`, proposal answers on `ProposalRow`, the view strip on Your
+  run on the shared action row (`coachhelm-focus-actions-row.test.tsx`),
+  Re-check reads on `RecheckReads`, proposal answers on `ProposalRow`, the view strip on Your
   week.
 
 ### Why

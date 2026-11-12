@@ -66,8 +66,8 @@ the same list); the ones it says are not tested, or only partly, stay reserved.
 (2026-10-19) name 130104, 130608, 130804, 131901, 132101
 and 132301 in test titles, so those are implemented. The write contracts
 (130702, 130806, 130901 to 130903, 131201, 131401, 131403) are named in
-`src/clubhouse/__tests__/coachhelm-focus-actions-row.test.tsx`, on the action row the
-surviving pages share. The ones that stay reserved
+`src/clubhouse/__tests__/coachhelm-focus-actions-row.test.tsx`, on the action
+row the surviving pages share. The ones that stay reserved
 are 131807 (a script, not a test) and the seven that have a catalog code
 (130713, 130721, 130722, 131704, 131808, 131816, 131817): their tests exist, but
 the registry marks a coded contract `implemented` only once its CH- code is in
@@ -85,8 +85,8 @@ person picks (130102), and a coach's players come most pressing first (130103).
 Every number is the generator's own, re-shaped and never computed here (130106).
 A strength, a card that states no finding and a read that is out of date are
 not open signals (130107); the old board's header count of players with an open
-signal went with that board (11 Nov 2026). `?view=standing` and `deep-dive` are the
-player's own Standing and Deep dive, each read for the signed-in player alone
+signal went with that board (11 Nov 2026). `?view=standing` and `deep-dive` are
+the player's own Standing and Deep dive, each read for the signed-in player alone
 and only once CoachHelm is on for them; `?view=profile`, the Game profile's old
 address, is Standing opened at its How you play section (130760), and
 `?view=development` goes to Stats' Development (130104, Q-76); none says "not

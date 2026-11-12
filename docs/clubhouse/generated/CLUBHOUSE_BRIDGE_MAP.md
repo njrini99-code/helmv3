@@ -2147,44 +2147,46 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 
 ## Tombstones
 
-- 150202: CH-15420 was minted in category 02 before its category override existed; re-minted in its own category the same day (2026-10-07, replaced by 150302)
-- 150702: CH-15920 was minted in category 07 before its category override existed; re-minted in its own category the same day (2026-10-07, replaced by 151202)
-- 150703: CH-15921 was minted in category 07 before its category override existed; re-minted in its own category the same day (2026-10-07, replaced by 150902)
-- 150704: CH-15922 was minted in category 07 before its category override existed; re-minted in its own category the same day (2026-10-07, replaced by 151203)
-- 130208: CH-13450 belonged to the old Ask action card, deleted when coachhelm_ask_v2 was retired; the Ask v2 card has its own codes (2026-11-07)
-- 130613: CH-13051 belonged to the old Ask action card, deleted when coachhelm_ask_v2 was retired; the Ask v2 card has its own codes (2026-11-07)
-- 130622: CH-13253 belonged to the old Ask action card, deleted when coachhelm_ask_v2 was retired; the Ask v2 card has its own codes (2026-11-07)
-- 130623: CH-13254 belonged to the old Ask action card, deleted when coachhelm_ask_v2 was retired; the Ask v2 card has its own codes (2026-11-07)
-- 90406: CH-09306 was the empty state of a player's My qualifiers list, retired when players got one Qualifiers page (owner, 2026-11-11); /my-qualifiers opens /qualifiers (2026-11-11)
-- 90632: CH-09222 was the failed entries read on a player's My qualifiers list, retired when players got one Qualifiers page (owner, 2026-11-11); on /qualifiers a failed entries read is CH-09202 (2026-11-11)
-- 130212: CH-13405 belonged to the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11) (2026-11-11)
-- 130406: CH-13306 belonged to the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11) (2026-11-11)
-- 130407: CH-13307 belonged to the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11) (2026-11-11)
-- 130409: CH-13309 belonged to the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11) (2026-11-11)
-- 130410: CH-13310 belonged to the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11) (2026-11-11)
-- 130605: CH-13202 belonged to the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11) (2026-11-11)
-- 130606: CH-13203 belonged to the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11) (2026-11-11)
-- 130632: CH-13206 belonged to the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11) (2026-11-11)
-- 130718: CH-13908 belonged to the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11) (2026-11-11)
-- 130728: CH-13995 belonged to the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11) (2026-11-11)
-- 130738: CH-13969 belonged to the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11) (2026-11-11)
-- 130743: CH-13941 belonged to the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11) (2026-11-11)
-- 130744: CH-13942 belonged to the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11) (2026-11-11)
-- 130745: CH-13943 belonged to the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11) (2026-11-11)
-- 130105: OPEN_SIGNALS_FOLLOW_DISMISSALS was the header count of the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11) (2026-11-11)
-- 131501: THE_PAGE_IS_AS_FRESH_AS_ITS_LAST_READ was proved on the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11) (2026-11-11)
-- 130401: CH-13301 belonged to the old CoachHelm boards (the player's PlayerBoard and the cards it shared with the coach's), retired when Your week became a player's Board (owner, 2026-11-11) (2026-11-11)
-- 130402: CH-13302 belonged to the old CoachHelm boards (the player's PlayerBoard and the cards it shared with the coach's), retired when Your week became a player's Board (owner, 2026-11-11) (2026-11-11)
-- 130403: CH-13303 belonged to the old CoachHelm boards (the player's PlayerBoard and the cards it shared with the coach's), retired when Your week became a player's Board (owner, 2026-11-11) (2026-11-11)
-- 130460: CH-13333 belonged to the old CoachHelm boards (the player's PlayerBoard and the cards it shared with the coach's), retired when Your week became a player's Board (owner, 2026-11-11) (2026-11-11)
-- 130604: CH-13201 belonged to the old CoachHelm boards (the player's PlayerBoard and the cards it shared with the coach's), retired when Your week became a player's Board (owner, 2026-11-11) (2026-11-11)
-- 130611: CH-13205 belonged to the old CoachHelm boards (the player's PlayerBoard and the cards it shared with the coach's), retired when Your week became a player's Board (owner, 2026-11-11) (2026-11-11)
-- 130660: CH-13233 belonged to the old CoachHelm boards (the player's PlayerBoard and the cards it shared with the coach's), retired when Your week became a player's Board (owner, 2026-11-11) (2026-11-11)
-- 130719: CH-13909 belonged to the old CoachHelm boards (the player's PlayerBoard and the cards it shared with the coach's), retired when Your week became a player's Board (owner, 2026-11-11) (2026-11-11)
-- 130742: CH-13940 belonged to the old CoachHelm boards (the player's PlayerBoard and the cards it shared with the coach's), retired when Your week became a player's Board (owner, 2026-11-11) (2026-11-11)
-- 130764: CH-13917 belonged to the old CoachHelm boards (the player's PlayerBoard and the cards it shared with the coach's), retired when Your week became a player's Board (owner, 2026-11-11) (2026-11-11)
-- 131701: CH-13701 belonged to the old CoachHelm boards (the player's PlayerBoard and the cards it shared with the coach's), retired when Your week became a player's Board (owner, 2026-11-11) (2026-11-11)
-- 131803: CH-13803 belonged to the old CoachHelm boards (the player's PlayerBoard and the cards it shared with the coach's), retired when Your week became a player's Board (owner, 2026-11-11) (2026-11-11)
-- 131804: CH-13804 belonged to the old CoachHelm boards (the player's PlayerBoard and the cards it shared with the coach's), retired when Your week became a player's Board (owner, 2026-11-11) (2026-11-11)
-- 131805: CH-13805 belonged to the old CoachHelm boards (the player's PlayerBoard and the cards it shared with the coach's), retired when Your week became a player's Board (owner, 2026-11-11) (2026-11-11)
-- 131806: CH-13806 belonged to the old CoachHelm boards (the player's PlayerBoard and the cards it shared with the coach's), retired when Your week became a player's Board (owner, 2026-11-11) (2026-11-11)
+| Bridge ID | Removed | Replaced by | Reason |
+| --- | --- | --- | --- |
+| 150202 | 2026-10-07 | 150302 | CH-15420 was minted in category 02 before its category override existed; re-minted in its own category the same day |
+| 150702 | 2026-10-07 | 151202 | CH-15920 was minted in category 07 before its category override existed; re-minted in its own category the same day |
+| 150703 | 2026-10-07 | 150902 | CH-15921 was minted in category 07 before its category override existed; re-minted in its own category the same day |
+| 150704 | 2026-10-07 | 151203 | CH-15922 was minted in category 07 before its category override existed; re-minted in its own category the same day |
+| 130208 | 2026-11-07 | — | CH-13450 belonged to the old Ask action card, deleted when coachhelm_ask_v2 was retired; the Ask v2 card has its own codes |
+| 130613 | 2026-11-07 | — | CH-13051 belonged to the old Ask action card, deleted when coachhelm_ask_v2 was retired; the Ask v2 card has its own codes |
+| 130622 | 2026-11-07 | — | CH-13253 belonged to the old Ask action card, deleted when coachhelm_ask_v2 was retired; the Ask v2 card has its own codes |
+| 130623 | 2026-11-07 | — | CH-13254 belonged to the old Ask action card, deleted when coachhelm_ask_v2 was retired; the Ask v2 card has its own codes |
+| 90406 | 2026-11-11 | — | CH-09306 was the empty state of a player's My qualifiers list, retired when players got one Qualifiers page (owner, 2026-11-11); /my-qualifiers opens /qualifiers |
+| 90632 | 2026-11-11 | — | CH-09222 was the failed entries read on a player's My qualifiers list, retired when players got one Qualifiers page (owner, 2026-11-11); on /qualifiers a failed entries read is CH-09202 |
+| 130212 | 2026-11-11 | — | CH-13405 belonged to the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11) |
+| 130406 | 2026-11-11 | — | CH-13306 belonged to the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11) |
+| 130407 | 2026-11-11 | — | CH-13307 belonged to the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11) |
+| 130409 | 2026-11-11 | — | CH-13309 belonged to the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11) |
+| 130410 | 2026-11-11 | — | CH-13310 belonged to the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11) |
+| 130605 | 2026-11-11 | — | CH-13202 belonged to the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11) |
+| 130606 | 2026-11-11 | — | CH-13203 belonged to the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11) |
+| 130632 | 2026-11-11 | — | CH-13206 belonged to the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11) |
+| 130718 | 2026-11-11 | — | CH-13908 belonged to the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11) |
+| 130728 | 2026-11-11 | — | CH-13995 belonged to the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11) |
+| 130738 | 2026-11-11 | — | CH-13969 belonged to the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11) |
+| 130743 | 2026-11-11 | — | CH-13941 belonged to the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11) |
+| 130744 | 2026-11-11 | — | CH-13942 belonged to the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11) |
+| 130745 | 2026-11-11 | — | CH-13943 belonged to the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11) |
+| 130105 | 2026-11-11 | — | OPEN_SIGNALS_FOLLOW_DISMISSALS was the header count of the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11) |
+| 131501 | 2026-11-11 | — | THE_PAGE_IS_AS_FRESH_AS_ITS_LAST_READ was proved on the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11) |
+| 130401 | 2026-11-11 | — | CH-13301 belonged to the old CoachHelm boards (the player's PlayerBoard and the cards it shared with the coach's), retired when Your week became a player's Board (owner, 2026-11-11) |
+| 130402 | 2026-11-11 | — | CH-13302 belonged to the old CoachHelm boards (the player's PlayerBoard and the cards it shared with the coach's), retired when Your week became a player's Board (owner, 2026-11-11) |
+| 130403 | 2026-11-11 | — | CH-13303 belonged to the old CoachHelm boards (the player's PlayerBoard and the cards it shared with the coach's), retired when Your week became a player's Board (owner, 2026-11-11) |
+| 130460 | 2026-11-11 | — | CH-13333 belonged to the old CoachHelm boards (the player's PlayerBoard and the cards it shared with the coach's), retired when Your week became a player's Board (owner, 2026-11-11) |
+| 130604 | 2026-11-11 | — | CH-13201 belonged to the old CoachHelm boards (the player's PlayerBoard and the cards it shared with the coach's), retired when Your week became a player's Board (owner, 2026-11-11) |
+| 130611 | 2026-11-11 | — | CH-13205 belonged to the old CoachHelm boards (the player's PlayerBoard and the cards it shared with the coach's), retired when Your week became a player's Board (owner, 2026-11-11) |
+| 130660 | 2026-11-11 | — | CH-13233 belonged to the old CoachHelm boards (the player's PlayerBoard and the cards it shared with the coach's), retired when Your week became a player's Board (owner, 2026-11-11) |
+| 130719 | 2026-11-11 | — | CH-13909 belonged to the old CoachHelm boards (the player's PlayerBoard and the cards it shared with the coach's), retired when Your week became a player's Board (owner, 2026-11-11) |
+| 130742 | 2026-11-11 | — | CH-13940 belonged to the old CoachHelm boards (the player's PlayerBoard and the cards it shared with the coach's), retired when Your week became a player's Board (owner, 2026-11-11) |
+| 130764 | 2026-11-11 | — | CH-13917 belonged to the old CoachHelm boards (the player's PlayerBoard and the cards it shared with the coach's), retired when Your week became a player's Board (owner, 2026-11-11) |
+| 131701 | 2026-11-11 | — | CH-13701 belonged to the old CoachHelm boards (the player's PlayerBoard and the cards it shared with the coach's), retired when Your week became a player's Board (owner, 2026-11-11) |
+| 131803 | 2026-11-11 | — | CH-13803 belonged to the old CoachHelm boards (the player's PlayerBoard and the cards it shared with the coach's), retired when Your week became a player's Board (owner, 2026-11-11) |
+| 131804 | 2026-11-11 | — | CH-13804 belonged to the old CoachHelm boards (the player's PlayerBoard and the cards it shared with the coach's), retired when Your week became a player's Board (owner, 2026-11-11) |
+| 131805 | 2026-11-11 | — | CH-13805 belonged to the old CoachHelm boards (the player's PlayerBoard and the cards it shared with the coach's), retired when Your week became a player's Board (owner, 2026-11-11) |
+| 131806 | 2026-11-11 | — | CH-13806 belonged to the old CoachHelm boards (the player's PlayerBoard and the cards it shared with the coach's), retired when Your week became a player's Board (owner, 2026-11-11) |
