@@ -44,7 +44,8 @@
   }
 }
 
-/* MSG-209 Day marker: plain centred text on the page, no chip. Day 12k/600 ink-3, time 400 beside it, margin 22 0 8. */
+/* MSG-209 Day marker: plain centred text on the page, no chip. Day 13k/600 ink-3 (one step up from 12, W17: it read thin
+   at 1x), time 400 beside it, margin 22 0 8. */
 [data-ch-ms-v2] :is(.ch-ms-thread, .ch-msp-thread) .ch-ms-day {
   justify-content: center;
   margin: var(--ch-ms-px-22) 0 8px;
@@ -55,7 +56,7 @@
   padding: 0;
   background: none;
   box-shadow: none;
-  font: var(--ch-type-12-strong);
+  font: var(--ch-type-13-strong);
   letter-spacing: 0;
   color: var(--ch-crh-ink4);
 }
