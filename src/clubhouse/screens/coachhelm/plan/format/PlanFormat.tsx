@@ -80,9 +80,13 @@ export function PlanFormat({ teamId = '', initial = { k: 'empty' }, current = 'G
   const fileInput = useRef<HTMLInputElement>(null);
   const libraryInput = useRef<HTMLInputElement>(null);
   const cameraInput = useRef<HTMLInputElement>(null);
+  // On a desk there is one way in, a file; the camera and the photo library are the phone's. The sheet is a phone
+  // component (its styles live in the phone media query), so a desk opens the file picker at once.
+  const deskInput = useRef<HTMLInputElement>(null);
   const phone = useChPhone();
   const router = useRouter();
   const undoOpen = useUndoWindow(view.k === 'set' ? view.until : null);
+  const openUpload = () => (phone ? setSheet(true) : deskInput.current?.click());
   const pick = async (file: File) => {
     setSheet(false);
     setView({ k: 'reading', file: file.name, meta: `${file.type.includes('pdf') ? 'PDF' : 'File'} · 1 page` });
@@ -201,7 +205,7 @@ export function PlanFormat({ teamId = '', initial = { k: 'empty' }, current = 'G
             </div>
           ))}
           <div className="acts is-pad">
-            <Button variant="secondary" onClick={() => setSheet(true)}>
+            <Button variant="secondary" onClick={openUpload}>
               Try another
             </Button>
             <Button variant="primary" className="is-fill" onClick={() => void use()}>
@@ -267,7 +271,7 @@ export function PlanFormat({ teamId = '', initial = { k: 'empty' }, current = 'G
             </p>
           )}
           <div className="acts is-pad">
-            <Button variant="primary" size="lg" className="is-wide" onClick={() => setSheet(true)}>
+            <Button variant="primary" size="lg" className="is-wide" onClick={openUpload}>
               Upload a plan
             </Button>
           </div>
@@ -277,6 +281,8 @@ export function PlanFormat({ teamId = '', initial = { k: 'empty' }, current = 'G
       )}
       {learns}
       </div>
+      {!phone && <input ref={deskInput} type="file" accept="application/pdf,image/*,.doc,.docx,.xls,.xlsx" hidden onChange={onFile} data-testid="plan-format-desk-file" />}
+      {phone && (
       <FormSheet open={sheet} onClose={() => setSheet(false)} title="Upload a plan" actionLabel="Done" onAction={() => setSheet(false)}>
         <div className="ch-cpv ch-cpv-sheet">
           {/* The three ways in differ: any file, the photo library, the camera itself. In the sheet: outside a modal they're inert. */}
@@ -315,6 +321,7 @@ export function PlanFormat({ teamId = '', initial = { k: 'empty' }, current = 'G
           )}
         </div>
       </FormSheet>
+      )}
     </main>
   );
 }
