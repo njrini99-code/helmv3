@@ -3067,6 +3067,11 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   color: var(--ch-text-tertiary);
   text-align: right;
 }
+/* #12: "Add a choice" sits under the rows, its icon on the choice inputs' left edge (past the 16 px number and 8 px gap). */
+.ch-ms-pollf__add {
+  display: flex;
+  padding-left: 24px;
+}
 .ch-ms-pollf__set .ch-field__help {
   display: flex;
   align-items: center;
