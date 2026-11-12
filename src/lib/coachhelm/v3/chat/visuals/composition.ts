@@ -75,6 +75,29 @@ export const CompositionSpec = z.object({
 });
 export type CompositionSpec = z.infer<typeof CompositionSpec>;
 
+/** One shot behind a wedge, as the Miss Compass's drawer lists it (shot-reads.ts `MissShot`). */
+export const MissShotResolved = z.object({
+  id: z.string(),
+  round_id: z.string(),
+  hole_id: z.string().nullable(),
+  round_date: z.string().nullable(),
+  course: z.string().nullable(),
+  from_ft: z.number().nullable(),
+  left_ft: z.number().nullable(),
+  lie_before: z.string().nullable(),
+});
+/**
+ * The shots behind each wedge, copied by the compiler from the read's `detail.ui_only` (never named by the model), with the
+ * read they came from so "Ask about these shots" can name it. Each direction keeps its true `count` beside a list of at most
+ * `cap`. Optional: a composition without it (the flag off, or stored before it) parses and draws as it always did.
+ */
+export const MissShotsResolved = z.object({
+  ref: z.string(),
+  cap: z.number(),
+  directions: z.record(z.string(), z.object({ count: z.number(), shots: z.array(MissShotResolved) })),
+});
+export type MissShotsBlock = z.infer<typeof MissShotsResolved>;
+
 /** A block as drawn: the design choices plus the figures, copied from the reads. */
 const MissPatternResolved = z.object({
   type: z.literal('miss_pattern'),
@@ -83,6 +106,7 @@ const MissPatternResolved = z.object({
   inside_15: z.number(),
   inside_25: z.number(),
   wedges: z.array(z.object({ direction: z.string(), count: z.number(), avg_left_ft: z.number().nullable() })),
+  shots: MissShotsResolved.optional(),
 });
 const PuttProfileResolved = z.object({
   type: z.literal('putt_profile'),

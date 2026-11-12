@@ -1165,6 +1165,27 @@ Coach chat runs on Claude Sonnet 5.5 at effort medium (`MODEL_FOR_TASK.coach_cha
 Fixture for screenshots: `/fairway-preview/coachhelm-evidence` (`?live` replays
 the motion; dev only).
 
+Miss Compass, data half (CoachHelm Studio Phase 1, flag `coachhelm_miss_compass_v1`,
+off everywhere, 2026-11-12). Team scoped: on only for teams listed in
+`COACHHELM_MISS_COMPASS_TEAM_IDS` (`chat/visuals/miss-compass-flag.ts`, fail
+closed), and for a coach only. Then `get_shots` asks `getShotPattern` for its
+`drawer`: per miss direction, the shots behind the wedge (`missShotsOf`: id,
+round, hole, date, course, from and left in feet, lie), at most 40 with the true
+count, newest round first, in `detail.ui_only.miss_shots`. `chat/ui-only.ts`
+names that key; the model's text (`plain`/`detailLines`), the grounding check's
+supported numbers, `summarise_data`'s rows, an `about` `row:` reference and the
+thread's generic tables all pass it over, so with the flag on the model's words
+and the figures an answer is checked against are what they were. It is stored
+with the read, and the compiler copies it, with the read's `evidence_ref`, into
+the `miss_pattern` block's optional `shots` (only when every direction's count
+equals its wedge's). "Ask about these shots" sends `about` with
+`key: "shots:<direction>"`; `engine/about.ts` checks the direction is one of the
+eight and holds shots in the STORED read, and tells the model the count and the
+rounds (date, course, id), never a shot's distance. Flag off: no `ui_only`, no
+`shots`, today's read and drawing. Tests: `chat/__tests__/miss-compass-data.test.ts`
+(truth, on/off equality, a sentinel through every reader, the selection, the
+compiler, replay, the flag) and `miss-compass-get-shots.test.ts`.
+
 ## Clubhouse redesign behind flags (all off, migrations held)
 
 <!-- schema-drift-absent: golf_coachhelm_coach_facts, golf_practice_plans -->

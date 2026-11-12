@@ -1,9 +1,11 @@
 import 'server-only';
 import { createHash } from 'node:crypto';
 import type { Measurement, MeasurementSeries, ToolEnvelope } from '../provenance';
+import { uiOnlyOf } from '../ui-only';
 import {
   COMPOSITION_SCHEMA_V2,
   COMPOSITION_SCHEMA_VERSION,
+  MissShotsResolved,
   ResolvedBlock,
   ValidatedComposition,
   blockProblem,
@@ -60,7 +62,12 @@ function resolveV2(block: Exclude<CompositionBlockSpecV2, CompositionBlockSpec>,
   if (block.type === 'miss_pattern') {
     if (d.kind !== 'miss_pattern') return none;
     const p = d.pattern as { total: number; no_direction: number; inside_15: number; inside_25: number; wedges: Array<{ direction: string; count: number; avg_left_ft: number | null }> };
-    return { ok: true, block: { type: 'miss_pattern', total: p.total, no_direction: p.no_direction, inside_15: p.inside_15, inside_25: p.inside_25, wedges: p.wedges }, drawn };
+    // The shots behind each wedge (the Miss Compass), only where the read kept them (its team's flag) and only as the read
+    // kept them: each direction's count must be its wedge's, or none are drawn. The model never names a shot.
+    const kept = MissShotsResolved.omit({ ref: true }).safeParse(uiOnlyOf(d)?.miss_shots);
+    const agrees = kept.success && p.wedges.every((w) => (kept.data.directions[w.direction]?.count ?? 0) === w.count);
+    const shots = agrees ? { shots: { ref: block.ref, ...kept.data } } : {};
+    return { ok: true, block: { type: 'miss_pattern', total: p.total, no_direction: p.no_direction, inside_15: p.inside_15, inside_25: p.inside_25, wedges: p.wedges, ...shots }, drawn };
   }
   if (block.type === 'putt_profile') {
     if (d.kind !== 'putt_profile') return none;

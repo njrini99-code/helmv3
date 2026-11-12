@@ -6,6 +6,7 @@ import type { ActionProposal, ActionReceipt } from '@/lib/coachhelm/v3/chat/acti
 import { turnMetaOf } from '@/lib/coachhelm/v3/chat/engine/protocol';
 import type { Measurement, MeasurementSeries, ToolEnvelope } from '@/lib/coachhelm/v3/chat/provenance';
 import { WIDE_READ_CHIPS } from '@/lib/coachhelm/v3/chat/wide-read-names';
+import { withoutUiOnly } from '@/lib/coachhelm/v3/chat/ui-only';
 import { salvageComposition, type ValidatedComposition } from '@/lib/coachhelm/v3/chat/visuals/composition';
 import { ValidatedVisualArtifact } from '@/lib/coachhelm/v3/chat/visuals/schema';
 import { changeTone, formatFixed, formatSG, formatToPar, MINUS, NO_DATA } from '../lib/format';
@@ -1273,7 +1274,9 @@ const columnOrder = (a: string, b: string) => {
 /** How many columns a generic record table starts from; `fitToPhone` then drops the rightmost until it fits 393 px. */
 const TABLE_COLUMNS = 5;
 
-export function detailTable(detail: unknown, caption: string): AskTable | null {
+export function detailTable(raw: unknown, caption: string): AskTable | null {
+  // The shots a coach can open from a miss pattern (`ui_only`) are the compass's to draw, never a generic table (ui-only.ts).
+  const detail = withoutUiOnly(raw);
   if (!detail || typeof detail !== 'object') return null;
   const lists = Object.values(detail as Record<string, unknown>).filter((v): v is Array<Record<string, unknown>> => Array.isArray(v) && v.length > 0 && v.every((r) => r && typeof r === 'object' && !Array.isArray(r)));
   const rows = lists[0];
