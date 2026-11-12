@@ -172,12 +172,16 @@ export function teamBlock(who: CoachChatContext | PlayerChatContext): string {
     const me = who.roster.find((p) => p.id === playerId);
     return `You are talking with ${me?.first_name || me?.name || 'a player'}, who plays for ${who.team_name}. ${where}`;
   }
+  // Q1 (owner, 12 Nov 2026): a coach asked "Why are all my players negative … is something wrong with the numbers?". The golf block
+  // says what a negative figure means; this says when to tell the coach, unasked. It sits here, beside the yardstick, because the golf
+  // block and the rules are at their size caps (registry-size, golf-block tests); it names no tour, so a team with none set gets it too.
+  const belowZero = 'When a coach asks why the figures are negative, or strokes gained first comes up in a conversation, say in one sentence that the figures are against Tour players and that below zero is normal for a college golfer.';
   const players = [...who.roster].sort((a, b) => (a.name === b.name ? (a.id < b.id ? -1 : 1) : a.name < b.name ? -1 : 1));
   const roster =
     players.length === 0
       ? 'The team has no active players yet.'
       : ['Active roster. The id after each name is for a tool\'s player id and is never written in an answer.', ...players.map((p) => `- ${p.name} (${p.id})`), 'This is the whole active team. If a read covers fewer players, say who is missing. Do not treat the smaller group as the team.'].join('\n');
-  return [`Team: ${who.team_name}. ${where}`, roster].join('\n\n');
+  return [`Team: ${who.team_name}. ${where} ${belowZero}`, roster].join('\n\n');
 }
 
 /**
