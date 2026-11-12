@@ -199,8 +199,8 @@
     "node": "24.x"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^4.0.72",
-    "@ai-sdk/react": "^4.0.131",
+    "@ai-sdk/anthropic": "^4.0.103",
+    "@ai-sdk/react": "^4.0.175",
     "@anthropic-ai/sdk": "^1.8.0",
     "@base-ui/react": "^1.8.0",
     "@capacitor/android": "^8.5.2",
@@ -244,7 +244,7 @@
     "@visx/responsive": "^4.0.0",
     "@visx/scale": "^4.0.0",
     "@visx/shape": "^4.0.0",
-    "ai": "^7.0.128",
+    "ai": "^7.0.171",
     "autoprefixer": "^10.6.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
