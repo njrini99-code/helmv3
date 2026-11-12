@@ -242,11 +242,13 @@ export function TripTile({ trips, role, days, error, covered, onEdit, onPlan, on
   );
 }
 
-// ── This week ───────────────────────────────────────────────────────────────
+// ── Next 7 days ─────────────────────────────────────────────────────────────
 
 /**
- * Seven days you can step through. A dot is an event, gold is a day on the road. The day you pick lists its events;
- * an event that takes replies shows who has replied (coach) or your answer, which you can change in place (player).
+ * Seven days you can step through: today and the six after it. A dot is an event, gold is a day on the road. The day you
+ * pick lists its events; an event that takes replies shows who has replied (coach) or your answer, which you can change
+ * in place (player). W21 (12 Nov): it said "This week" and "Later this week", so on a Wednesday next Tuesday was this
+ * week; it says the next 7 days, and what is coming up in them.
  */
 export function WeekTile({ week, role, rsvps, replies, isPending, onReply, covered, span = 5 }: {
   week: ChTeamHub['week'];
@@ -275,14 +277,14 @@ export function WeekTile({ week, role, rsvps, replies, isPending, onReply, cover
     .slice(0, 3);
   const rsvpFor = (id: string) => (rsvps.error ? null : (rsvps.rows.find((r) => r.eventId === id) ?? null));
   return (
-    <Tile id="ch-hw-week" title="This week" span={span} aside={!week.error && <More href="/golf/dashboard/calendar">Calendar</More>}>
+    <Tile id="ch-hw-week" title="Next 7 days" span={span} aside={!week.error && <More href="/golf/dashboard/calendar">Calendar</More>}>
       {week.error ? (
-        <RefreshNotice code="CH-10201" title="This week didn’t load." body="Nothing was lost. Try again." covered={covered} />
+        <RefreshNotice code="CH-10201" title="The next 7 days didn’t load." body="Nothing was lost. Try again." covered={covered} />
       ) : quiet || !day ? (
         <EmptyState
           compact
           code="CH-10301"
-          title="Nothing on the calendar this week"
+          title="Nothing on the calendar in the next 7 days"
           body={coach ? 'Events you add show here, with who has replied.' : 'Team events show here as your coaches add them.'}
           action={
             coach ? (
@@ -295,7 +297,7 @@ export function WeekTile({ week, role, rsvps, replies, isPending, onReply, cover
       ) : (
         <>
           <WeekStrip
-            label="Days this week"
+            label="The next 7 days"
             days={days.map((d, i) => ({
               date: d.date,
               top: i === 0 ? 'Today' : d.weekday,
@@ -351,7 +353,7 @@ export function WeekTile({ week, role, rsvps, replies, isPending, onReply, cover
           </div>
           {later.length > 0 && (
             <div className="ch-hw-later">
-              <span>Later this week</span>
+              <span>Coming up</span>
               <ol>
                 {later.map(({ e, d, i }) => (
                   <li key={e.id}>
@@ -457,7 +459,7 @@ function Owed({ row, onOpen }: { row: ChHubLedgerRow; onOpen: (tab: ChHubTab) =>
 }
 
 /**
- * Who owes what, one row a player: replies this week, posts not acknowledged, open tasks (late in amber) and rounds in
+ * Who owes what, one row a player: replies due, posts not acknowledged, open tasks (late in amber) and rounds in
  * 30 days. It opens on whoever owes the most; a column heading sorts by it (again to turn it round), and a name opens
  * what they owe by title.
  */

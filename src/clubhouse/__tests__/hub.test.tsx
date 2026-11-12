@@ -349,7 +349,7 @@ describe('Team Hub · player', () => {
     expect(within(queue).getByRole('radiogroup', { name: 'Your reply for Team dinner' })).toBeTruthy();
     expect(within(queue).getByRole('button', { name: 'Show all 5' })).toBeTruthy();
     expect(within(screen.getByRole('region', { name: 'Latest post' })).getByRole('button', { name: 'Got it' })).toBeTruthy();
-    expect(within(screen.getByRole('region', { name: 'This week' })).getByText('Short-game block')).toBeTruthy();
+    expect(within(screen.getByRole('region', { name: 'Next 7 days' })).getByText('Short-game block')).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Updates' })).toBeTruthy();
     expect(within(screen.getByRole('region', { name: 'Files' })).getByText('Pairings and tee times')).toBeTruthy();
     // RSVPs are no longer Home's centre: no RSVP section, no band.
@@ -449,7 +449,7 @@ describe('Team Hub · player', () => {
     cleanup();
     // A week with nothing on it says so in its tile.
     show({ ...PREVIEW_HUB_PLAYER, week: PREVIEW_HUB_PLAYER_EMPTY.week });
-    expect(code('CH-10301')!.textContent).toMatch(/Nothing on the calendar this week/);
+    expect(code('CH-10301')!.textContent).toMatch(/Nothing on the calendar in the next 7 days/);
   });
 
   it('CH-10302 CH-10303 CH-10304 CH-10307 CH-10308 each empty tab says what fills it', async () => {
@@ -473,7 +473,7 @@ describe('Team Hub · player', () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
     show({ ...PREVIEW_HUB_PLAYER, updates: { rows: null as never, error: false } });
     expect(code('CH-10205')).not.toBeNull();
-    expect(screen.getByRole('heading', { name: 'This week' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Next 7 days' })).toBeTruthy();
     expect(track.chReport).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ surface: 'hub.updates', severity: 'high' }));
     spy.mockRestore();
   });
@@ -514,7 +514,7 @@ describe('Team Hub · coach', () => {
     expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Home', 'Announcements1', 'Travel', 'Documents', 'Tasks1']);
     expect(within(screen.getByRole('region', { name: 'Next trip' })).getByText('5 players traveling')).toBeTruthy();
     // The week opens on today; a day with an event that takes replies shows how many have.
-    const week = screen.getByRole('region', { name: 'This week' });
+    const week = screen.getByRole('region', { name: 'Next 7 days' });
     await user.click(within(week).getByRole('button', { name: 'Wed 15: 1 event' }));
     expect(hapticSpy).toHaveBeenCalledWith('select');
     expect(within(week).getByText(/5 of 6 replied/)).toBeTruthy();
@@ -982,7 +982,7 @@ describe('Team Hub · coach', () => {
 
   it('CH-10201 the coach’s failed reads', () => {
     show(PREVIEW_HUB_COACH_FAILED);
-    expect(code('CH-10201')!.textContent).toMatch(/This week didn’t load/);
+    expect(code('CH-10201')!.textContent).toMatch(/The next 7 days didn’t load/);
   });
 
   it('CH-10309 no team: coach and player each get their own words', async () => {
@@ -1907,7 +1907,7 @@ describe('Team Hub · roles, states and layout', () => {
     const user = userEvent.setup();
     show(PREVIEW_HUB_COACH_FAILED);
     const page = code('CH-1209') as HTMLElement;
-    expect(page.textContent).toMatch(/This week, announcements, travel, updates, tasks, documents and the team list didn’t load/);
+    expect(page.textContent).toMatch(/The next 7 days, announcements, travel, updates, tasks, documents and the team list didn’t load/);
     expect(within(page).getAllByRole('button', { name: 'Try again' })).toHaveLength(1);
     for (const c of ['CH-10201', 'CH-10202', 'CH-10206', 'CH-10207']) {
       expect(code(c)).not.toBeNull();

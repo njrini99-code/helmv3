@@ -129,7 +129,7 @@ describe('100101 Team Hub · Home’s widgets', () => {
 
   it('the week steps by day with the arrow keys, and an event that takes replies lets a player answer in place', async () => {
     const { user, w } = show(PREVIEW_HUB_PLAYER);
-    const week = screen.getByRole('region', { name: 'This week' });
+    const week = screen.getByRole('region', { name: 'Next 7 days' });
     const today = within(week).getByRole('button', { name: /^Today, Tue 14/ });
     expect(today.getAttribute('aria-pressed')).toBe('true');
     today.focus();
@@ -141,7 +141,7 @@ describe('100101 Team Hub · Home’s widgets', () => {
     const dinner = within(week).getByRole('radiogroup', { name: 'Your reply for Team dinner' });
     await user.click(within(dinner).getByRole('radio', { name: 'Going' }));
     expect(w.reply).toHaveBeenCalledWith('r2', 'accepted');
-    // Later this week opens its day.
+    // Coming up opens its day.
     await user.click(within(week).getByRole('button', { name: /Recovery nine/ }));
     expect(within(week).getByRole('button', { name: 'Fri 17: 1 event' }).getAttribute('aria-pressed')).toBe('true');
   });
@@ -158,9 +158,19 @@ describe('100101 Team Hub · Home’s widgets', () => {
     expect(within(queue).getByText('Sign travel waiver')).toBeTruthy();
   });
 
+  // W21 (12 Nov): the tile is today and the six days after it, so on a Wednesday it ran to next Tuesday under "This week"
+  // and "Later this week". It says what it is: the next 7 days, and what is coming up in them.
+  it('the week tile says the next 7 days, never this week, and its later list is what is coming up', () => {
+    show(PREVIEW_HUB_COACH);
+    const week = screen.getByRole('region', { name: 'Next 7 days' });
+    expect(week.textContent).not.toMatch(/this week/i);
+    expect(within(week).getByRole('list', { name: 'The next 7 days' }).querySelectorAll(':scope > li')).toHaveLength(7);
+    expect(within(week).getByText('Coming up')).toBeTruthy();
+  });
+
   it('a read that failed says so in its own tile, never as an empty one', () => {
     show({ ...PREVIEW_HUB_COACH, week: { days: [], error: true } });
-    expect(within(screen.getByRole('region', { name: 'This week' })).getByText(/This week didn’t load/)).toBeTruthy();
+    expect(within(screen.getByRole('region', { name: 'Next 7 days' })).getByText(/The next 7 days didn’t load/)).toBeTruthy();
     // The rest of Home still stands.
     expect(screen.getByRole('region', { name: 'Waiting on' })).toBeTruthy();
   });
