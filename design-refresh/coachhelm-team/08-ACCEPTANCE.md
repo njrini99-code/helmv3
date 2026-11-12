@@ -328,9 +328,9 @@ Motion: M-TEAM-38.
 
 ### S-TEAM.working
 
-- AC-WORK-01. Card "Working on", meta "{n} focus areas". Rows: ring 38 (r 15, stroke 4, `--track` track; fill in gain fill at 50% and over, neutral fill under, round cap, from 12 o'clock); "{first} · {title}" 15/1.3 500; progress line 13.5 ink-2; state 13.5/600 in gain ("Active · 5 rounds in") or ink-2 ("In progress · 3 rounds in"), or the verdict word. Check: S `work`.
+- AC-WORK-01. Card "Working on", meta "{n} focus areas". Rows: "{first} · {title}" 15/1.3 500; progress line 13.5 ink-2; state 13.5 ink-2 at regular weight ("Active · 5 rounds in", "In progress · 3 rounds in", or the verdict word), never in green. A ring 38 (r 15, stroke 4, `--track` track; fill in gain fill at 50% and over, neutral fill under, round cap, from 12 o'clock) closes the row only when the focus has a target; a row without one has no ring. A focus two or more players share (the same title) is one row: the title, their first names ("Cole, Dylan and Jackson") and the state word when all of them share it, with no ring (W11, owner's preview walk, 11 Nov 2026). Check: S `work`, `crowded`.
 - AC-WORK-02. Ring fill = (baseline − current) / (baseline − target), clamped 0 to 1 (03 section 8). Check: D.
-- AC-WORK-03. A proposal made in this visit appears as a row with a dashed 3/3 neutral track and no fill, "From {now} now · {first} sets the target" and "Proposed · {first} accepts it in their app". The board sends no target. Check: S `assigned-read` then `work`, C `assign`.
+- AC-WORK-03. A proposal made in this visit appears as a row with no ring (it has no target until the player sets one; W11), "From {now} now · {first} sets the target" and "Proposed · {first} accepts it in their app". The board sends no target. Check: S `assigned-read` then `work`, C `assign`.
 - AC-WORK-04. No rows: "Nothing in progress yet. Assign a read as a focus and it shows here." With the brief flag off the card is absent. Check: D.
 
 States: early and empty (the empty line), long (titles wrap), XXL, dark as common.

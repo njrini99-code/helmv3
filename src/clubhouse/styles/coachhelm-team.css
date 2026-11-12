@@ -1046,9 +1046,10 @@
   fill:var(--ch-ink-500);
   font: var(--ch-type-11-medium);
   text-anchor:middle; letter-spacing: var(--ch-track-11); }
+/* The words lead; a ring, when the focus has a target, closes the row (W11, Cards.tsx). */
 .ch-htb .wk {
   display:grid;
-  grid-template-columns:auto minmax(0,1fr);
+  grid-template-columns:minmax(0,1fr) auto;
   gap:12px;
   align-items:center;
   padding:8px 16px;
@@ -1064,12 +1065,8 @@
   font: var(--ch-type-14);
   color:var(--ch-ink-600);
 }
+/* The state line is quiet: every row's in one green read as nine alarms (W11). */
 .ch-htb .wk .st {
-  font-weight:var(--ch-fw-600);}
-.ch-htb .wk .st.ok {
-  color:var(--ch-gain);
-}
-.ch-htb .wk .st.wait {
   color:var(--ch-ink-600);
 }
 .ch-htb .ringc .trk {
@@ -1080,10 +1077,6 @@
   transition:stroke-dashoffset var(--ch-dur-sweep) var(--ch-ease);
 }
 .ch-htb .ringc .fil.mid {
-  stroke:var(--ch-chart-flat);
-}
-.ch-htb .ringc.prop .trk {
-  stroke-dasharray:3 3;
   stroke:var(--ch-chart-flat);
 }
 @keyframes ch-htb-popin {from{opacity:0;transform:scale(.94);}}
