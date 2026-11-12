@@ -140,7 +140,7 @@ const RAW_SHADOW: Record<string, number> = {
   'styles/rounds-track.css': 17,
   'styles/rounds.css': 21,
   'styles/settings.css': 3,
-  'styles/shell.css': 17,
+  'styles/shell.css': 16,
   'styles/stats.css': 30,
   'styles/ui.css': 19,
 };
@@ -157,6 +157,6 @@ const RAW_DROP: Record<string, number> = {
   'styles/rounds-track.css': 1,
   'styles/rounds.css': 1,
   'styles/settings.css': 1,
-  'styles/shell.css': 2,
+  'styles/shell.css': 1,
   'styles/ui.css': 2,
 };

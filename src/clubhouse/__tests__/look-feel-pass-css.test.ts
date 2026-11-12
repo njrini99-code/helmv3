@@ -270,7 +270,7 @@ const RAW_LONGHAND: Record<string, number> = {
   'styles/settings.css': 6,
   'styles/shell.css': 22,
   'styles/stats.css': 55,
-  'styles/ui.css': 22,
+  'styles/ui.css': 20,
 };
 
 /** Off-role `letter-spacing` left after the tracking pass (2026-10-23): positive tracking on codes, initials and badges, large figures off the steps, and the sign-in pages. Only falls. */
