@@ -87,9 +87,10 @@ SELECT throws_ok(
 SELECT throws_ok(
   $$SELECT * FROM public.golf_players$$,
   '42501', NULL, 'nor the whole row');
+-- Own row: a teammate's row is visible only while 20261017005000 is unapplied, and CI applies every file.
 SELECT is(
-  (SELECT first_name || ' / ' || high_school_name FROM public.golf_players WHERE id = '00000000-0000-0000-0000-000000c7e003'),
-  'Mate / West High', 'the teammate''s name and school are still readable (the row policy is unchanged)');
+  (SELECT first_name || ' / ' || high_school_name FROM public.golf_players WHERE id = '00000000-0000-0000-0000-000000c7e002'),
+  'Me / East High', 'the other columns are still readable (name and school)');
 SELECT is(
   (SELECT array_agg(email ORDER BY email) FROM public.golf_player_private_fields(ARRAY[
     '00000000-0000-0000-0000-000000c7e002', '00000000-0000-0000-0000-000000c7e003', '00000000-0000-0000-0000-000000c7e008']::uuid[])),
