@@ -64,22 +64,30 @@ function show(data: ChTeamHub, tab: ChHubTab = 'home', w = writes()) {
 const stripText = () => [...document.querySelectorAll('.ch-hb-strip li')].map((li) => li.textContent);
 
 describe('100101 Team Hub · the strip under the title', () => {
-  it('a coach’s line says what the team is waiting on, and a figure opens the tab it counts', async () => {
+  // W20 (12 Nov): five figures in a run of 13px text, separated by bars and underlined, were a sentence of links. The
+  // head now draws what the team owes as figures, a number over its words, and each still opens its tab.
+  it('a coach’s figures say what the team owes, and a figure opens the tab it counts', async () => {
     const { user } = show(PREVIEW_HUB_COACH);
-    expect(stripText()).toEqual(['6 players', '3 replies due this week', '1 post awaiting acknowledgement', 'next trip in 20 days', '3 tasks open, 1 overdue']);
-    await user.click(within(screen.getByRole('list', { name: 'Team at a glance' })).getByRole('button', { name: /3 tasks open/ }));
+    expect(stripText()).toEqual(['3 replies due', '1 post awaiting acknowledgement', '1 task overdue']);
+    const figures = screen.getByRole('list', { name: 'Team at a glance' });
+    for (const b of figures.querySelectorAll('button')) {
+      expect(b.querySelector(':scope > b.ch-num')).not.toBeNull();
+      expect(b.querySelector(':scope > span')).not.toBeNull();
+    }
+    expect(figures.querySelector('li.is-warn')?.textContent).toBe('1 task overdue');
+    await user.click(within(figures).getByRole('button', { name: '1 task overdue' }));
     expect(screen.getByRole('tab', { name: 'Tasks', selected: true })).toBeTruthy();
     expect(await screen.findByRole('region', { name: 'Task progress' })).toBeTruthy();
   });
 
-  it('a player’s line is theirs: replies owed, posts to acknowledge, tasks open', () => {
+  it('a player’s figures are theirs: replies owed, posts to acknowledge, tasks overdue', () => {
     show(PREVIEW_HUB_PLAYER);
-    expect(stripText()).toEqual(['2 replies due', '1 post to acknowledge', 'traveling in 20 days', '3 tasks open, 1 overdue']);
+    expect(stripText()).toEqual(['2 replies due', '1 post to acknowledge', '1 task overdue']);
   });
 
   it('a read that failed leaves its figure out instead of saying zero', () => {
     show({ ...PREVIEW_HUB_COACH, tasks: { rows: [], error: true }, announcements: { rows: [], error: true }, trips: { rows: [], error: true }, rsvps: { rows: [], error: true } });
-    expect(stripText()).toEqual(['6 players']);
+    expect(stripText()).toEqual([]);
   });
 
   it('the tab figures are drawn on the tabs and left to the strip for a screen reader', () => {

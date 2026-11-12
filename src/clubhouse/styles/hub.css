@@ -10,11 +10,10 @@
   padding: var(--ch-page-head-top) var(--ch-page-gutter) 80px;
   color: var(--ch-text-primary);
 }
-/* A player's head has no role chip over the title (the chip is the coach's alone), so the top adds that room and the title
-   lands on the one title line (tokens.css); it stood 24px higher than the coach's. By the frame's role, so the loading
-   page opens where the loaded one does. */
+/* No role chip over the title for either role (a player's never had one; the coach's went in W20), so the top adds that
+   room and the title lands on the one title line (tokens.css), the loading page with it. */
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
-  [data-ch-role='player'] .ch-hb[data-canopy] {
+  .ch-hb[data-canopy] {
     padding-top: var(--ch-page-top-no-eyebrow);
   }
 }
@@ -26,17 +25,6 @@
   gap: 16px;
   padding-bottom: 24px;
   border-bottom: var(--ch-hairline-w) solid var(--ch-champagne-rule);
-}
-.ch-hb-role {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 24px;
-  padding: 0 8px;
-  border-radius: 999px;
-  box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.3);
-  font: var(--ch-type-12-strong);
-  color: var(--ch-green-700);
 }
 .ch-hb-h h1 {
   margin: 8px 0 6px;
@@ -1251,8 +1239,8 @@
     padding: 8px 0 0;
     border-bottom: 0;
   }
-  /* The page's large title (.ch-large-title, shell.css; owner decision 4) on its own line under the role chip and the
-     team line, from the first paint. */
+  /* The page's large title (.ch-large-title, shell.css; owner decision 4) on its own line under the team line, from the
+     first paint. */
   .ch-hb-h > div:first-child > .ch-large-title {
     order: 1;
     flex-basis: 100%;
@@ -1273,9 +1261,9 @@
     flex-direction: column;
     gap: 24px;
   }
-  /* The opening's first line at its loaded height: the role chip's 24px, or a player's team line alone (16px), then
-     the large title's block under it. */
-  .ch-hb-skelm .ch-hb-h > div.is-player > .ch-skel {
+  /* The opening's first line at its loaded height: the team line alone (16px; no role chip since W20), then the large
+     title's block under it. */
+  .ch-hb-skelm .ch-hb-h > div.is-plain > .ch-skel {
     margin-block: 4px;
   }
   .ch-hb-skelm__tab {
@@ -1295,7 +1283,7 @@
   .ch-hb-skelm .ch-skel-rows {
     margin-top: 6px;
   }
-  /* The role chip and the team line share one row; the team line is the page's engraved eyebrow. */
+  /* The team line is the page's engraved eyebrow. */
   .ch-hb-h > div:first-child {
     display: flex;
     flex-wrap: wrap;
@@ -1895,7 +1883,6 @@
     font-size: 12px;
   }
   /* Dynamic Type from the floor up; the date tile above keeps its fixed size. */
-  .ch-hb-role,
   .ch-hb-req,
   .ch-hb-rsvp__c em,
   .ch-hb-pass__f dt,
@@ -1923,10 +1910,11 @@
   padding: 16px;
 }
 
-/* Loading in the framed page head (desktop): the skeleton draws the loaded head's own parts (chip, title, team line, the
-   strip's row, a coach's action), so the tabs land where they stood. The strip's row is held at one line of its own type. */
+/* Loading in the framed page head (desktop): the skeleton draws the loaded head's own parts (title, team line, the
+   strip's row, a coach's action), so the tabs land where they stood. The strip's row is held at a figure over its words
+   (W20): the 22 figure's line, the 2px between, a 13 line, and the row's 8px of focus room. */
 .ch-hb-strip--skel {
-  min-height: calc(13.5 * var(--ch-type-k) * 1.4 + 8px);
+  min-height: calc(28 * var(--ch-type-k) + 2px + 13 * var(--ch-type-k) * var(--ch-lead-caption) + 8px);
 }
 
 /* The Ledger on desktop Team Hub (owner, 2026-10-07: "flush, not so card heavy"). RSVPs, updates, tasks and folders
@@ -2142,9 +2130,6 @@
    Rules, tracks and checkboxes drawn in ink become ivory hairlines; ivory type on a filled green takes the on-green
    ink (the ivory ramp is the dark surfaces at night); deep-green marks and ink lift to the text greens. The featured
    announcement is already a green card with its own inks and stays as it is. */
-html[data-fw-theme='dark'] .ch-hb-role {
-  box-shadow: inset 0 0 0 1px rgb(107 187 140 / 0.35);
-}
 html[data-fw-theme='dark'] .ch-hb-rsvp__list li,
 html[data-fw-theme='dark'] .ch-hb-plan li,
 html[data-fw-theme='dark'] .ch-hb-feed li,
@@ -2515,11 +2500,13 @@ html[data-fw-theme='dark'] .ch-hb-chip {
    the Travel pass, the coach's task board), section rules at 1.8:1 (they were 1.2:1), and a one-line strip under the title
    that says what the team is waiting on. Overdue is amber, never red (red is under par). Tokens only. */
 
-/* The strip: figures that open the tab they count. */
+/* The strip: what the team owes, as figures that open the tab they count. W20 (12 Nov): it was five figures in a run of
+   13px text, separated by bars and underlined, a sentence of links; now at most three, each a figure over its words,
+   divided by soft rules as the kit's FigureRow (ui.css .ch-fgr) is. */
 .ch-hb-strip {
   display: flex;
   flex: 1 0 100%;
-  align-items: center;
+  align-items: stretch;
   /* One line on a desktop, whatever it says: a row that outgrows the page scrolls (ui.css .ch-hscroll fades the clipped
      edge), with room inside for a focus ring taken back by the margins, as the tabs do. A phone wraps it (below). */
   box-sizing: border-box;
@@ -2542,32 +2529,41 @@ html[data-fw-theme='dark'] .ch-hb-chip {
   align-items: center;
 }
 .ch-hb-strip li + li::before {
+  align-self: stretch;
   width: var(--ch-hairline-w);
-  height: 14px;
-  margin: 0 16px;
-  background: var(--ch-ledger-rule-strong);
+  margin: 0 20px;
+  background: var(--ch-ledger-rule-soft);
   content: '';
 }
 .ch-hb-strip b {
-  font-weight: 600;
+  font: var(--ch-type-22-strong);
+  letter-spacing: -0.03em;
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);
 }
 .ch-hb-strip button {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
   padding: 0;
   border: 0;
   background: none;
   color: inherit;
   font: inherit;
-  text-decoration: underline;
-  text-decoration-color: var(--ch-ledger-rule-strong);
-  text-underline-offset: 3px;
+  text-align: start;
   cursor: pointer;
+}
+.ch-hb-strip button > span {
+  font: var(--ch-type-13);
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 3px;
   transition: text-decoration-color var(--ch-dur-quick) var(--ch-ease);
 }
 @media (hover: hover) {
-  .ch-hb-strip button:hover {
+  .ch-hb-strip button:hover > span {
     text-decoration-color: currentColor;
   }
 }
@@ -2583,7 +2579,8 @@ html[data-fw-theme='dark'] .ch-hb-chip {
   border-radius: var(--ch-radius-mark);
 }
 .ch-hb-strip .is-warn,
-.ch-hb-strip .is-warn b {
+.ch-hb-strip .is-warn b,
+.ch-hb-strip .is-warn button > span {
   color: var(--ch-warning-600);
 }
 

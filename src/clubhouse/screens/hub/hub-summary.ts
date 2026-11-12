@@ -1,21 +1,21 @@
-import type { ChHubAnnouncement, ChHubDay, ChHubLedgerRow, ChHubRsvp, ChHubTask, ChHubTrip, ChRsvp, ChTeamHub } from '../../data/hub';
+import type { ChHubAnnouncement, ChHubDay, ChHubLedgerRow, ChHubRsvp, ChHubTask, ChRsvp, ChTeamHub } from '../../data/hub';
 import type { ChHubTab } from '../../lib/hub-tabs';
 import { pluralWord } from '../../lib/plural';
 
 /**
- * What Team Hub says about itself in one line under its title, and the rules behind Home's widgets (the player's queue,
+ * What Team Hub says under its title (what the team owes, as figures), and the rules behind Home's widgets (the player's queue,
  * the week's first day, Waiting on's order).
  * Pure: everything is read from what the page already loaded, so the server render and the client agree, and a unit test
  * can pin the rules. Figures that are zero drop out; a figure whose read failed is left out, never shown as zero.
  */
 
 export interface StripItem {
-  key: string;
-  before?: string;
-  n?: number;
+  key: 'replies' | 'acks' | 'tasks';
+  n: number;
+  /** The words after the figure: with it, a sentence ("3 replies due"), which is the figure's name to a screen reader. */
   after: string;
   /** The tab the figure opens. */
-  tab?: ChHubTab;
+  tab: ChHubTab;
   /** Something is late: the figure takes the warning ink (never red; red is under par). */
   warn?: boolean;
 }
@@ -23,7 +23,6 @@ export interface StripItem {
 
 export interface StripInput {
   role: ChTeamHub['role'];
-  players: number;
   rsvps: ChHubRsvp[];
   /** The player's replies this visit, over what loaded. */
   replies: ReadonlyMap<string, ChRsvp>;
@@ -31,34 +30,33 @@ export interface StripInput {
   isAcked: (a: ChHubAnnouncement) => boolean;
   tasks: ChHubTask[];
   isDone: (t: ChHubTask) => boolean;
-  nextTrip: ChHubTrip | null;
-  pulse: ChTeamHub['pulse'];
 }
 
+/**
+ * W20 (12 Nov): the figures under the title are what the team owes, at most three, never a sentence of five links. The
+ * roster's size, the next trip (Home's trip card says it, large) and the roster's quiet (Waiting on's foot says it) are
+ * gone. Tasks count the overdue ones when any are, as the Tasks tab's badge does, else the open ones. Replies are due
+ * over the week strip's seven days, so they are "due", not "due this week".
+ */
 export function hubStrip(i: StripInput): StripItem[] {
   const coach = i.role === 'coach';
   const out: StripItem[] = [];
   const openTasks = i.tasks.filter((t) => !i.isDone(t));
   const overdue = openTasks.filter((t) => t.status === 'overdue').length;
-  const tasksAfter = ` ${pluralWord(openTasks.length, 'task', 'tasks')} open${overdue === 0 ? '' : overdue === openTasks.length ? ', all overdue' : `, ${overdue} overdue`}`;
   if (coach) {
-    if (i.players > 0) out.push({ key: 'players', n: i.players, after: ` ${pluralWord(i.players, 'player', 'players')}` });
     const quiet = i.rsvps.reduce((n, r) => n + (r.counts?.none ?? 0), 0);
-    if (quiet > 0) out.push({ key: 'replies', n: quiet, after: ` ${pluralWord(quiet, 'reply', 'replies')} due this week`, tab: 'home' });
+    if (quiet > 0) out.push({ key: 'replies', n: quiet, after: ` ${pluralWord(quiet, 'reply', 'replies')} due`, tab: 'home' });
     const waiting = i.announcements.filter((a) => a.needAck && a.recipients > 0 && a.ackCount < a.recipients).length;
     if (waiting > 0) out.push({ key: 'acks', n: waiting, after: ` ${pluralWord(waiting, 'post', 'posts')} awaiting acknowledgement`, tab: 'ann' });
-    if (i.nextTrip?.inDays != null) out.push({ key: 'trip', before: 'next trip in ', n: i.nextTrip.inDays, after: pluralWord(i.nextTrip.inDays, ' day', ' days'), tab: 'travel' });
-    if (openTasks.length > 0) out.push({ key: 'tasks', n: openTasks.length, after: tasksAfter, tab: 'tasks', warn: overdue > 0 });
-    if (i.pulse && i.pulse.players > 0 && i.pulse.active14 === 0) out.push({ key: 'pulse', after: 'no rounds in 14 days' });
-    return out;
+  } else {
+    const mine = (r: ChHubRsvp) => i.replies.get(r.eventId) ?? r.mine ?? 'pending';
+    const due = i.rsvps.filter((r) => mine(r) === 'pending').length;
+    if (due > 0) out.push({ key: 'replies', n: due, after: ` ${pluralWord(due, 'reply', 'replies')} due`, tab: 'home' });
+    const toAck = i.announcements.filter((a) => a.needAck && !i.isAcked(a)).length;
+    if (toAck > 0) out.push({ key: 'acks', n: toAck, after: ` ${pluralWord(toAck, 'post', 'posts')} to acknowledge`, tab: 'ann' });
   }
-  const mine = (r: ChHubRsvp) => i.replies.get(r.eventId) ?? r.mine ?? 'pending';
-  const due = i.rsvps.filter((r) => mine(r) === 'pending').length;
-  if (due > 0) out.push({ key: 'replies', n: due, after: ` ${pluralWord(due, 'reply', 'replies')} due`, tab: 'home' });
-  const toAck = i.announcements.filter((a) => a.needAck && !i.isAcked(a)).length;
-  if (toAck > 0) out.push({ key: 'acks', n: toAck, after: ` ${pluralWord(toAck, 'post', 'posts')} to acknowledge`, tab: 'ann' });
-  if (i.nextTrip?.mine && i.nextTrip.inDays != null) out.push({ key: 'trip', before: 'traveling in ', n: i.nextTrip.inDays, after: pluralWord(i.nextTrip.inDays, ' day', ' days'), tab: 'travel' });
-  if (openTasks.length > 0) out.push({ key: 'tasks', n: openTasks.length, after: tasksAfter, tab: 'tasks', warn: overdue > 0 });
+  if (overdue > 0) out.push({ key: 'tasks', n: overdue, after: ` ${pluralWord(overdue, 'task', 'tasks')} overdue`, tab: 'tasks', warn: true });
+  else if (openTasks.length > 0) out.push({ key: 'tasks', n: openTasks.length, after: ` ${pluralWord(openTasks.length, 'task', 'tasks')} open`, tab: 'tasks' });
   return out;
 }
 

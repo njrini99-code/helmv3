@@ -1,6 +1,6 @@
 'use client';
 
-import { ClipboardList, Plane, Plus } from 'lucide-react';
+import { Plane, Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { deletePracticePlan } from '@/app/golf/actions/practice-plans';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
@@ -9,7 +9,6 @@ import type { ChHubAnnouncement, ChHubFile, ChHubRsvp, ChHubTask, ChHubTrip, ChH
 import { PROVISIONAL_ID } from '../../data/hub-shape';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
-import { Icon } from '../../ui/Icon';
 import { PageRefreshNotice, RefreshNotice } from '../../ui/RefreshNotice';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { Swap } from '../../ui/Swap';
@@ -445,15 +444,12 @@ export function TeamHub({
   // (a failed read is never shown as zero), and the band is withheld while a read it leans on is down.
   const summary = {
     role: data.role,
-    players: coach && !data.playersError ? data.players.length : 0,
     rsvps: data.rsvps.error ? [] : data.rsvps.rows,
     replies,
     announcements: data.announcements.error ? [] : anns,
     isAcked,
     tasks: data.tasks.error ? [] : tasks.rows,
     isDone: taskDone,
-    nextTrip: data.trips.error ? null : nextTrip,
-    pulse: data.pulse ?? null,
   };
   const strip = hubStrip(summary);
   const attention = tabAttention(summary);
@@ -582,13 +578,6 @@ export function TeamHub({
       )}
       <header className="ch-hb-h" data-canopy-head="tight">
         <div>
-          {/* Coach only (wave 7): a player is never told their own role. */}
-          {coach && (
-            <span className="ch-hb-role">
-              <Icon icon={ClipboardList} size={12} />
-              Coach view
-            </span>
-          )}
           {/* The phone's one large title (owner decision 4); desktop keeps its hero rule (hub.css). Drawn from the first
               paint, before useChPhone hydrates, since its look is the phone's CSS alone. */}
           <LargeTitle id="ch-hb-title">Team Hub</LargeTitle>
