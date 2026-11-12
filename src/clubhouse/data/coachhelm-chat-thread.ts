@@ -1133,9 +1133,19 @@ function madeOf(m: Measurement): string | null {
   return m.sample_size > 0 ? sampleWords(m.sample_size, m.sample_unit) : null;
 }
 
+/**
+ * The strokes gained areas of one golfer or of the team: never the two mixed, and never the total, which is the whole and not an
+ * area. A team read carrying one player's figures listed "SG approach" twice (React's duplicate-key warning, R6) and the team's
+ * total beside the player's ("Team SG per round" and "SG total", the total named as the largest loss, R7; staging, 12 Nov).
+ * The entity with the most areas is drawn; on a tie, the team.
+ */
 function strokesGainedLegs(ms: Measurement[]): Measurement[] | null {
-  const sg = ms.filter((m) => m.unit === 'strokes' && m.metric_id.startsWith('sg_') && m.value !== null);
-  return sg.length >= 2 ? sg : null;
+  const sg = ms.filter((m) => m.unit === 'strokes' && m.metric_id.startsWith('sg_') && m.metric_id !== 'sg_total' && m.value !== null);
+  const byEntity = new Map<string, Measurement[]>();
+  for (const m of sg) byEntity.set(m.entity.id, [...(byEntity.get(m.entity.id) ?? []), m]);
+  const groups = [...byEntity.values()].sort((a, b) => b.length - a.length || (a[0]!.entity.kind === 'team' ? -1 : b[0]!.entity.kind === 'team' ? 1 : 0));
+  const legs = [...new Map((groups[0] ?? []).map((m) => [m.metric_id, m])).values()];
+  return legs.length >= 2 ? legs : null;
 }
 
 const isPlain = (v: unknown): v is string | number | boolean => ['string', 'number', 'boolean'].includes(typeof v);
