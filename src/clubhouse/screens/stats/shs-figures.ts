@@ -254,11 +254,12 @@ export function straightPath(pts: ReadonlyArray<readonly [number, number]>): str
 
 /**
  * Which round days the team's line joins (W26, owner's preview, 11 Nov 2026: the line's low point was one player's single 87,
- * drawn as the team's worst day). A day one player posted on is a hollow dot off the line; the line joins the days two or more
+ * drawn as the team's worst day). A day resting on one round or less is a hollow dot off the line; the line joins the days two or more
  * posted on, unless fewer than two such days exist, when it joins them all. A day with no count is read as a team day.
  */
 export function teamLineDays(days: ReadonlyArray<{ n?: number }>): { line: number[]; one: Set<number> } {
-  const one = new Set(days.flatMap((d, i) => (d.n === 1 ? [i] : [])));
+  // `n` counts a 9-hole round as half, so a day resting on one round or less is a single player's day.
+  const one = new Set(days.flatMap((d, i) => (d.n != null && d.n <= 1 ? [i] : [])));
   const team = days.flatMap((_, i) => (one.has(i) ? [] : [i]));
   return team.length >= 2 ? { line: team, one } : { line: days.map((_, i) => i), one: new Set() };
 }

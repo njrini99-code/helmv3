@@ -23,6 +23,8 @@ describe('the team scoring line (W26)', () => {
   it('joins every day when fewer than two had the team out, and reads a day with no count as a team day', () => {
     expect(teamLineDays([{ n: 1 }, { n: 1 }, { n: 3 }])).toEqual({ line: [0, 1, 2], one: new Set() });
     expect(teamLineDays([{}, { n: 1 }, {}]).line).toEqual([0, 2]);
+    // A day of one nine-hole round counts as half a round: still one player's day.
+    expect([...teamLineDays([{ n: 3 }, { n: 0.5 }, { n: 4 }]).one]).toEqual([1]);
   });
 
   it('renders the hollow day, a straight line and a named average', () => {
