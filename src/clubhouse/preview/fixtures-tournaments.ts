@@ -50,6 +50,7 @@ import type {
   TourFormat,
 } from '../screens/tournaments/types';
 import { teamEvent, teamRound, type ChTourTeamRound as EngineTeamRound } from '../screens/tournaments/scoring';
+import { buildLive } from '../screens/tournaments/live-model';
 import { teamRoundView } from '../data/tournaments-shape';
 
 // ── Preview states ───────────────────────────────────────────────────────────────────────────────────────────────
@@ -720,6 +721,33 @@ const LIVE_PLAY: Array<{ playerId: string; slot: number | null; role: 'lineup' |
   { playerId: 'priya', slot: null, role: 'individual', startHole: 10, toPars: [1, 0, 1, 0, 0, 1, 0, 0, 1, 0] },
 ];
 
+/**
+ * The empty state's live round (G15): Pinehurst's first round before anyone is in it. The lanes and the team line come
+ * from the loader's own engine (`buildLive`, as `loadTournamentLive` builds them), so the view takes its real no-lanes
+ * path; the rest is what the loader fills in before the hole feed exists (no presence, moments or projection).
+ */
+function emptyLiveSnapshot(now: string, e34: ChTourEvent): ChTourLiveSnapshot {
+  const event: ChTourEvent = { ...e34, entries: [], playerRounds: [], lineup: { ...e34.lineup, status: 'none', set: 0 } };
+  const round = event.rounds[0]!;
+  const built = buildLive(event, round);
+  return {
+    now,
+    seq: 0,
+    event,
+    round,
+    players: PLAYERS,
+    course: COURSES[round.courseId] ?? COURSES.pin!,
+    lanes: built.lanes,
+    team: built.team,
+    field: event.field,
+    presence: [],
+    appScoring: 'off',
+    moments: [],
+    projection: null,
+    errors: {},
+  };
+}
+
 function liveSnapshot(e34: ChTourEvent): ChTourLiveSnapshot {
   const c = COURSES.pin!;
   const pars = c.holes.map((h) => h.par);
@@ -1118,7 +1146,7 @@ export function tourFixture(state: ChTourPreviewState): ChTourFixture {
     edit: { ...formBase, mode: 'edit' as const, eventId: 'e34', initial: draft('e34') },
   };
 
-  const liveSnap = liveSnapshot(e34);
+  const liveSnap = empty ? emptyLiveSnapshot(now, e34) : liveSnapshot(e34);
   if (partial) liveSnap.errors = { field: true };
 
   const jonah = PLAYERS.find((p) => p.id === 'jonah')!;
