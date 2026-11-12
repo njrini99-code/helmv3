@@ -49,8 +49,12 @@
 .ch-hb-tabs::-webkit-scrollbar {
   display: none;
 }
+/* A row, the label and its count each centred on their own: as inline text the 18px count pill made its tab's line box
+   taller, and that tab's label sat 2px below the others' (phone premium sweep, 12 Nov 2026). */
 .ch-hb-tabs button {
   position: relative;
+  display: inline-flex;
+  align-items: center;
   flex: none;
   height: 34px;
   padding: 0;
