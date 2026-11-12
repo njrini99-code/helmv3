@@ -1097,6 +1097,13 @@
 .ch-aks-table .ch-th-table :is(th, td):last-child {
   padding-right: 0;
 }
+/* A table of records drawn as items keeps the same ruled lines on the paper, flush to the leaf's edges. */
+.ch-aks-table .ch-th-items > li {
+  padding-inline: 0;
+}
+.ch-aks-table .ch-th-items > li + li {
+  border-top-color: var(--ch-separator);
+}
 
 /* A way into a screen of the app: a ruled row with a chevron, as the leaf's sources are. */
 .ch-aks-link {
