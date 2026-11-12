@@ -29,7 +29,7 @@ import { LEGS_LIST } from './legs';
 import { MiniDiverging } from './MiniCharts';
 import { TeamFeatureChart } from './ScoringFeatureChart';
 import { Ribbon, SHS_HOW } from './ShsBlocks';
-import { divergeBar, filterKey, sgTone, windowShort, type ShsTone } from './shs-figures';
+import { divergeBar, filterKey, scoreChangeChip, sgTone, windowShort, type ShsTone } from './shs-figures';
 import { useStuck, WindowCrossfade } from './shs-motion';
 import { EarlyRead, NineHint } from './StatsFilter';
 import { DetailHero, StatsDetailScreen } from './StatsDetailScreen';
@@ -65,14 +65,10 @@ function scoringFigure(data: ChTeamStats) {
 function changeBits(data: ChTeamStats): { chip: string | null; tone: ShsTone; direction: 'down' | 'up' | 'flat'; words: string } {
   const f = scoringFigure(data);
   if (!f || f.delta == null) return { chip: null, tone: 'flat', direction: 'flat', words: 'Nothing earlier to compare with' };
-  const t = deltaTone(f.delta, f.se, f.lowerIsBetter);
-  return {
-    chip: `${formatFixed(Math.abs(f.delta), f.digits)} ${f.delta < 0 ? 'lower' : 'higher'}`,
-    tone: t === 'is-gain' ? 'gain' : t === 'is-loss' ? 'loss' : 'flat',
-    direction: f.delta < 0 ? 'down' : f.delta > 0 ? 'up' : 'flat',
-    // One phrasing with My stats ("0.9 lower than the 10 before"); the loader's own reason, when it gives one, stays as written.
-    words: f.context ? f.context.replace(/^vs (?:the )?previous (\d+)$/i, 'than the $1 before') : `than the ${data.last} before`,
-  };
+  // One phrasing with My stats ("0.9 lower than the 10 before") and one rule with Home ("No clear change vs previous 10" under the
+  // standard error, W27); the loader's own reason, when it gives one, stays as written.
+  const vs = f.context || `vs previous ${data.last}`;
+  return scoreChangeChip(f.delta, f.se, f.lowerIsBetter, { than: vs.replace(/^vs (?:the )?previous (\d+)$/i, 'than the $1 before'), vs }, f.digits);
 }
 
 function Change({ data }: { data: ChTeamStats }) {
@@ -81,7 +77,8 @@ function Change({ data }: { data: ChTeamStats }) {
     <>
       {c.chip && (
         <ShsPill tone={c.tone}>
-          <ShsArrow direction={c.direction} />
+          {/* No glyph for no clear change: a dash beside a signed number read as "— −0.8" (the Islands hero's rule). */}
+          {c.direction !== 'flat' && <ShsArrow direction={c.direction} />}
           {c.chip}
         </ShsPill>
       )}

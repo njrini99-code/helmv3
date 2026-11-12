@@ -481,7 +481,7 @@ function ScoringCard({ data, onOpen }: { data: ChPlayerProfile; onOpen: () => vo
             <>
               {change.chip && (
                 <ShsPill tone={change.tone}>
-                  <ShsArrow direction={change.direction} />
+                  {change.direction !== 'flat' && <ShsArrow direction={change.direction} />}
                   {change.chip}
                 </ShsPill>
               )}
@@ -927,7 +927,7 @@ function GameAreaDetail({ id, data, reads, onRetry, beside = false }: { id: 'sco
           <>
             {change.chip && (
               <ShsPill tone={change.tone}>
-                <ShsArrow direction={change.direction} />
+                {change.direction !== 'flat' && <ShsArrow direction={change.direction} />}
                 {change.chip}
               </ShsPill>
             )}
