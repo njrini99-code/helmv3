@@ -168,7 +168,7 @@ describe('P-5 season home', () => {
     ]);
   });
 
-  it('CH-16352: the first run starts on the calendar, and points at untracked tournaments when there are some', () => {
+  it('CH-16352: the first run starts on the calendar, and leads with untracked tournaments when there are some (W36, W38)', () => {
     let c = draw(empty);
     const first = c.querySelector('[data-ch-code="CH-16352"]') as HTMLElement;
     expect(first.textContent).toMatch(/Your season starts on the calendar/);
@@ -176,7 +176,13 @@ describe('P-5 season home', () => {
     expect(within(first).getByRole('link', { name: 'Plan from here instead' })).toBeTruthy();
     cleanup();
     c = draw({ ...empty, untracked: [{ eventIds: ['x1', 'x2'], title: 'Fall Classic', first: '2026-10-02', last: '2026-10-03' }] });
-    expect(within(c.querySelector('[data-ch-code="CH-16352"]') as HTMLElement).getByRole('link', { name: 'Set up from calendar (1)' })).toHaveAttribute('href', '#ch-tour-home-setup-t');
+    // W38: the page leads with what is there; W36: its primary opens the first one's setup, not a jump to the list below.
+    const lead = c.querySelector('[data-ch-code="CH-16352"]') as HTMLElement;
+    expect(lead.textContent).toMatch(/1 tournament on your calendar to set up/);
+    expect(within(lead).getByRole('link', { name: 'Set up Fall Classic' })).toHaveAttribute('href', '/golf/dashboard/calendar?event=x1&setup=1');
+    expect(within(lead).getByRole('link', { name: 'Add a tournament' })).toHaveAttribute('href', '/golf/dashboard/calendar?new=1&type=tournament');
+    expect(within(lead).queryByRole('link', { name: /Set up from calendar/ })).toBeNull();
+    expect(c.querySelectorAll('.ch-btn--primary')).toHaveLength(1);
     const row = within(c.querySelector('#ch-tour-home-setup-t')!.closest('section') as HTMLElement).getByRole('link', { name: /^Set up Fall Classic, / });
     expect(row).toHaveAttribute('href', '/golf/dashboard/calendar?event=x1&setup=1');
     expect(row.textContent).toMatch(/2 calendar entries/);
