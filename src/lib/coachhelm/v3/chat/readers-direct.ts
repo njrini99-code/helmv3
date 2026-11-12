@@ -455,6 +455,20 @@ const ShowVisualModelInput = z.object({
   highlightedMetricId: z.string().optional(),
 });
 
+/**
+ * The model cites a read by the source it was handed, `read:e1` (engine/loop.ts searchResult), and passes that same name to
+ * show_visual, whose reads are keyed `e1`. On staging (12 Nov) two of four chart questions failed on exactly this ("no usable
+ * read named read:e1"), and the coach got "I couldn't draw the chart". Both spellings name the same read.
+ */
+const bareRef = (ref: string) => ref.replace(/^read:/, '');
+export function withBareRefs(input: z.infer<typeof ShowVisualModelInput>): z.infer<typeof ShowVisualModelInput> {
+  return {
+    ...input,
+    ...(input.evidenceRefs ? { evidenceRefs: input.evidenceRefs.map(bareRef) } : {}),
+    ...(input.blocks ? { blocks: input.blocks.map((b) => ({ ...b, ...(b.ref ? { ref: bareRef(b.ref) } : {}), ...(b.refs ? { refs: b.refs.map(bareRef) } : {}) })) } : {}),
+  };
+}
+
 export const showVisual: ReadTool<z.infer<typeof ShowVisualModelInput>> = {
   kind: 'read',
   name: 'show_visual',
@@ -462,7 +476,8 @@ export const showVisual: ReadTool<z.infer<typeof ShowVisualModelInput>> = {
     'Draw one visual from reads already made; the server copies the figures in, so the title and the lede are words with no digits. kind "compose": a title, an optional lede, and blocks in order: kpis (one figure set large, or up to six from one read), trend (one metric over rounds), bars (distance bands, or players on one metric; best_first ranks them), split (signed figures either side of zero, such as strokes gained by area), compare (players across the same metrics), and four drawn from a read that holds them: putt_profile, miss_pattern, season_compare, hole_strip. kind "sg_anatomy": one player\'s four strokes gained areas. If it is refused, fix what it names once or answer in words.',
   input: ShowVisualModelInput,
   progress: () => 'Building the visual',
-  run: async (ctx, input) => {
+  run: async (ctx, raw) => {
+    const input = withBareRefs(raw);
     if (input.kind === 'compose') {
       const parsed = CompositionSpecV2.safeParse(input);
       if (!parsed.success) return { ...notice(`Not drawn: a composition needs a title and one to six blocks of the listed types (${parsed.error.issues[0]?.path.join('.') || 'input'}: ${parsed.error.issues[0]?.message ?? 'invalid'}).`, { refused: true }), progress_detail: `invalid input: ${parsed.error.issues[0]?.path.join('.') || 'composition'}` };
