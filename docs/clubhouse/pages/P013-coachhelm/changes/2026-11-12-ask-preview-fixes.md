@@ -32,3 +32,5 @@ Held items:     none
   about (tee, approach, putting, short game, scoring; the headline measures when it names none), with the whole read
   kept in Sources; and the next steps are the server's suggestions for the answer, not putting work for the first
   player read.
+- #6: opening a saved chat (`?c=`) waits in the thread's shape (the question, the answer's leaf, the docked composer),
+  not as the new chat's home that the thread then replaced.
