@@ -137,9 +137,9 @@ describe('the rules that hold the box above the fold', () => {
     expect(rules('coachhelm-ask-v2.css').filter((r) => r.sel.startsWith('.ch-ak-home:not(.is-phone)') && !r.sel.includes(':hover') && /ledger-row-hover/.test(r.body))).toEqual([]);
   });
 
-  it('the box now sits mid-page, so its picker opens down only while the composer measured room there (else `is-up`)', () => {
+  it('the box now sits mid-page, so its picker opens down only while the composer measured room there (else `data-side="up"`)', () => {
     const down = rules('coachhelm-ask.css').filter((r) => /\.ch-ask-cmp\.is-hero:not\(\.is-phone\) \.ch-ask-pick/.test(r.sel) && /top:\s*calc\(100% \+ 8px\)/.test(r.body));
-    expect(down.map((r) => r.sel)).toEqual(['.ch-ask-cmp.is-hero:not(.is-phone) .ch-ask-pick:not(.is-up)']);
+    expect(down.map((r) => r.sel)).toEqual([".ch-ask-cmp.is-hero:not(.is-phone) .ch-ask-pick:not([data-side='up'])"]);
   });
 });
 
