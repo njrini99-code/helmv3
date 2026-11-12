@@ -239,13 +239,14 @@ button.ch-rt-strip__h {
   overflow-x: clip;
 }
 /* The card's words for the shot, or the holed hole's review, turn inside the card (Swap, ShotEntry). The frame passes
-   the card's column through, so the result's place still takes the card's spare height. */
+   the card's column through. On the phone the result's place takes the card's spare height (the phone block); on the
+   desk the panel's spare height goes above the bar instead, so the rows stay together under their heading. */
 .ch-rt-cardswap,
 .ch-rt-cardswap > .ch-swap__item,
 .ch-rt-cardswap > .ch-swap__item > .ch-swap__body,
 .ch-rt-card__head {
   display: flex;
-  flex: 1 0 auto;
+  flex: 0 0 auto;
   flex-direction: column;
   min-width: 0;
 }
@@ -771,6 +772,9 @@ path.ch-rt-map__shot {
 .ch-rt-panel {
   display: flex;
   flex-direction: column;
+  /* On the desk the entry panel stands as tall as the hole beside it, so the two cards end on one line and the bar sits
+     at the panel's foot, clear of the last row, whatever the shot asks (a putt's card is short). */
+  align-self: stretch;
   min-width: 0;
   border-radius: var(--ch-radius-card);
   background: var(--ch-bg-surface);
@@ -1346,6 +1350,16 @@ path.ch-rt-map__shot {
   box-shadow: none;
 }
 /* Row 41: content scrolling under the bar fades into it, one shade instead of a hairline. */
+/* On the desk the bar's shade (row 41) falls on this spacer, the shade's own height, so it never lies over the last row
+   when nothing scrolls under the bar. The phone's bar draws its own edge and takes no spacer (the phone block). */
+.ch-rt-panel::after {
+  order: 1;
+  flex: 0 0 var(--ch-scroll-edge-h);
+  content: '';
+}
+.ch-rt-panel > .ch-rt-bar {
+  order: 2;
+}
 .ch-rt-bar::before {
   position: absolute;
   right: 0;
@@ -1430,10 +1444,6 @@ path.ch-rt-map__shot {
   margin: 12px 0 0;
   padding: 0;
   list-style: none;
-}
-/* In the card on the desk the bar's fade (row 41) stands over the card's foot: the last shot keeps clear of it. */
-.ch-rt-card .ch-rt-review {
-  padding-bottom: 16px;
 }
 .ch-rt-rs {
   all: unset;
@@ -3416,9 +3426,17 @@ path.ch-rt-map__shot {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
-  /* Its own gradient is the scroll edge here. */
-  .ch-rt-bar::before {
+  /* Its own gradient is the scroll edge here, so the desk's spacer under the shade goes too. */
+  .ch-rt-bar::before,
+  .ch-rt-panel::after {
     content: none;
+  }
+  /* The result's place takes the card's spare height, so the foot band stands at the card's foot (one height). */
+  .ch-rt-cardswap,
+  .ch-rt-cardswap > .ch-swap__item,
+  .ch-rt-cardswap > .ch-swap__item > .ch-swap__body,
+  .ch-rt-card__head {
+    flex: 1 0 auto;
   }
   .ch-rt-bar__row {
     display: grid;
@@ -3464,10 +3482,6 @@ path.ch-rt-map__shot {
   }
   .ch-rt-card .ch-rt-rs {
     padding: 8px 0;
-  }
-  /* The phone's card holds its one height and its own foot padding: the desk's clearance over the bar is not needed. */
-  .ch-rt-card .ch-rt-review {
-    padding-bottom: 0;
   }
 
   /* B4: every control on the green answers a press, as the result keys and Next shot do (lib/press.ts holds
