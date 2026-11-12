@@ -333,7 +333,7 @@ describe('Team Hub · player', () => {
   it('100101 Home: the trip counting down, the queue of what is asked, the week, the latest post, Updates and files', () => {
     show(PREVIEW_HUB_PLAYER);
     expect(screen.getByRole('heading', { level: 1, name: 'Team Hub' })).toBeTruthy();
-    // A player is never shown their own role (wave 7); the coach keeps "Coach view" (100101 below).
+    // A player is never shown their own role (wave 7); since W20 neither is the coach (100101 below).
     expect(screen.queryByText('Player view')).toBeNull();
     expect(document.querySelector('.ch-hb-role')).toBeNull();
     // A tab that asks for something carries its figure (aria-hidden: the strip says it to a screen reader).
@@ -508,7 +508,9 @@ describe('Team Hub · coach', () => {
   it('100101 Home: the trip, the week with replies as counts, who owes what, the newest post’s receipts and the tasks', async () => {
     const user = userEvent.setup();
     show(PREVIEW_HUB_COACH);
-    expect(screen.getByText('Coach view')).toBeTruthy();
+    // W20 (12 Nov): no "Coach view" chip over the title; the coach knows whose page it is.
+    expect(screen.queryByText('Coach view')).toBeNull();
+    expect(document.querySelector('.ch-hb-role')).toBeNull();
     expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Home', 'Announcements1', 'Travel', 'Documents', 'Tasks1']);
     expect(within(screen.getByRole('region', { name: 'Next trip' })).getByText('5 players traveling')).toBeTruthy();
     // The week opens on today; a day with an event that takes replies shows how many have.
