@@ -9,7 +9,7 @@ import { askScript, installScriptedChat, isAskPace, SCRIPTED_CHAT_ENDPOINT, type
 import type { ChAskData, ChAskLoad } from '../data/coachhelm-chat-shape';
 import { Ask, type ChAskChat, type ChAskInitial } from '../screens/coachhelm/chat/Ask';
 import { AskSkeleton } from '../screens/coachhelm/chat/AskSkeleton';
-import { ASK_RAW_ERRORS, PREVIEW_ASK_DATA, PREVIEW_ASK_NOROUNDS } from './fixtures-ask';
+import { ASK_RAW_ERRORS, PREVIEW_ASK_DATA, PREVIEW_ASK_NOROUNDS, PREVIEW_ASK_PLAYER_SUGGESTIONS } from './fixtures-ask';
 import { ASK_CARD_STATES } from './fixtures-ask-cards';
 import { ASK_PROPOSAL, ASK_RECEIPT_DONE, ASK_THREAD_STATES } from './fixtures-ask-thread';
 
@@ -242,7 +242,7 @@ function PreviewAskPlay({ name, role }: { name?: string; role?: 'player' }) {
   }, [name]);
   const load = useMemo<ChAskLoad>(() => {
     let data: ChAskData = { ...PREVIEW_ASK_DATA };
-    if (role === 'player') data = { ...data, role: 'player', firstName: 'Jonah', allowance: 'plenty' as ChAskData['allowance'], knows: undefined, focus: [{ text: 'Approach from 125 to 150, set by Coach Reyes', ask: 'How is my approach from 125 to 150 doing?' }, { text: 'Putting gained strokes at Hilltop', ask: 'How did my putting go at Hilltop?' }] } as ChAskData;
+    if (role === 'player') data = { ...data, role: 'player', firstName: 'Jonah', suggestions: PREVIEW_ASK_PLAYER_SUGGESTIONS, allowance: 'plenty' as ChAskData['allowance'], knows: undefined, focus: [{ text: 'Approach from 125 to 150, set by Coach Reyes', ask: 'How is my approach from 125 to 150 doing?' }, { text: 'Putting gained strokes at Hilltop', ask: 'How did my putting go at Hilltop?' }] } as ChAskData;
     else data = { ...data, firstName: 'Maya' };
     return { status: 'ready', data };
   }, [role]);
@@ -308,7 +308,7 @@ function PreviewAskStill({ state, kind, messages, busy, role }: { state?: string
       start = { busy: t.busy };
       init.evidence = t.focus ?? null;
     }
-    if (role === 'player') data = { ...data, role: 'player', firstName: 'Jonah', allowance: 'plenty' as ChAskData['allowance'], focus: [{ text: 'Approach from 125 to 150, set by Coach Reyes', ask: 'How is my approach from 125 to 150 doing?' }, { text: 'Putting gained strokes at Hilltop', ask: 'How did my putting go at Hilltop?' }] };
+    if (role === 'player') data = { ...data, role: 'player', firstName: 'Jonah', suggestions: PREVIEW_ASK_PLAYER_SUGGESTIONS, allowance: 'plenty' as ChAskData['allowance'], focus: [{ text: 'Approach from 125 to 150, set by Coach Reyes', ask: 'How is my approach from 125 to 150 doing?' }, { text: 'Putting gained strokes at Hilltop', ask: 'How did my putting go at Hilltop?' }] };
     if (role !== 'player') data = { ...data, firstName: 'Maya' };
     if (!data.knows && role !== 'player') data = { ...data, knows: { tone: 'straight', teamId: 'preview', facts: [{ id: 'k1', text: 'Practice runs 2h 30m on weekdays' }, { id: 'k2', text: 'Team goal: under +2 a round by spring' }] } };
     const load: ChAskLoad = state === 'noroster' ? { status: 'noRoster', teamName: 'Finley University' } : state === 'failed' ? { status: 'failed' } : { status: 'ready', data };
