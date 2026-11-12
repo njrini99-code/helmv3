@@ -95,14 +95,15 @@ const NOBODY_RANKED = 'No player has 3 rounds with hole scores yet, so no one is
  */
 export function TeamLegs({ legs, covered = false }: { legs: ChTeamLegs; covered?: boolean }) {
   const team = rebuiltHref('/golf/dashboard/stats', 'coach');
-  const vs = sgBaseline(legs.tour).vs;
+  const { vs, why } = sgBaseline(legs.tour);
   return (
     <section className="ch-h-legs" aria-labelledby="ch-h-legs-t">
       <div className="ch-h-sec">
         <div>
           <h2 id="ch-h-legs-t">The team’s game</h2>
+          {/* "vs Tour" gave way to the sentence that says what the Tour means for a college team's figures (Q1, owner 12 Nov 2026). */}
           <span>
-            {UNIT_DESK} {vs} &middot; the same rounds as the average above
+            {UNIT_DESK} &middot; the same rounds as the average above. {why}
           </span>
         </div>
         {team && (
@@ -217,7 +218,23 @@ export function TeamLegsPhone({ legs, covered = false }: { legs: ChTeamLegs; cov
   // With no hole-by-hole rounds the card's own empty state says so, and a line about what costs the most would read off nothing.
   const note = legs.holeRounds === 0 ? null : !legs.ranked ? <span data-ch-code="CH-2315">{NOBODY_RANKED}</span> : worst.length ? `${worst.join(' and ')} cost${worst.length === 1 ? 's' : ''} the most.${namesLink ? ' Names open that player’s game on Stats.' : ''}` : null;
   return (
-    <Surface variant="card" level={2} padded={false} title="The team’s game" actions={<span className="ch-hm-meta">SG per round · last 10</span>} footerNote={note ?? undefined}>
+    // The footer also says why a college team's figures sit below zero, after the card's own line (Q1, owner 12 Nov 2026).
+    <Surface
+      variant="card"
+      level={2}
+      padded={false}
+      title="The team’s game"
+      actions={<span className="ch-hm-meta">SG per round · last 10</span>}
+      footerNote={
+        legs.holeRounds === 0 ? undefined : (
+          <>
+            {note}
+            {note ? ' ' : null}
+            {sgBaseline(legs.tour).why}
+          </>
+        )
+      }
+    >
       {(legs.cacheError || legs.tourError) && (
         <div className="ch-hm-legs__notices">
           <Notices legs={legs} covered={covered} />

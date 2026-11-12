@@ -3,6 +3,7 @@
 import { AlertTriangle, ChartColumn, Flag, Medal } from 'lucide-react';
 import { AnimatePresence } from 'motion/react';
 import { Button } from '../../ui/Button';
+import { sgBaseline } from '../../lib/sg';
 import { useBigText } from './StatsPlayerPhoneShs';
 import { useRefresh } from '../../lib/use-refresh';
 import { useSegFade } from './seg-fade';
@@ -363,7 +364,8 @@ function TeamGameCard({ data, onOpen }: { data: ChTeamStats; onOpen: () => void 
             {formatSigned(data.team.sgMean)}
             {est && <small>est.</small>}
           </span>
-          <div className="ch-shs-cap">Team strokes a round against the Tour</div>
+          {/* The card's one caption also says why a college team's figures sit below zero (Q1, owner 12 Nov 2026). */}
+          <div className="ch-shs-cap">Team strokes a round. {sgBaseline(data.tour).why}</div>
           {mix && (
             <p className="ch-shs-mini-cap" data-ch-sg-mix="">
               {mix}

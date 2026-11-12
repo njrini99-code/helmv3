@@ -179,3 +179,18 @@ describe('the preview’s crowded board, staging’s shape on the owner’s walk
     expect(document.body.textContent).not.toMatch(/(\w+): \1: /);
   });
 });
+
+describe('why the hole’s figures sit below zero (Q1, owner 12 Nov 2026)', () => {
+  const said = (tour: 'pga' | 'lpga' | undefined) => {
+    render(ui({ data: { ...PREVIEW_TEAM_BOARD, team: { ...PREVIEW_TEAM_BOARD.team, sgTour: tour } } as ChTeamBoardData }));
+    const foot = document.querySelector('[data-ch-team-card="hole"] .hfoot')!.textContent ?? '';
+    const all = document.body.textContent ?? '';
+    cleanup();
+    return { foot, times: all.split('below zero is normal for nearly everyone else').length - 1 };
+  };
+  it('says it once, under the hole, naming the team’s own Tour, or no tour when the team row did not load', () => {
+    expect(said('pga')).toEqual({ foot: expect.stringContaining('Measured against PGA Tour pros, so below zero is normal for nearly everyone else. Players stand where they lose most.'), times: 1 });
+    expect(said('lpga').foot).toContain('Measured against LPGA Tour pros');
+    expect(said(undefined).foot).toContain('Measured against Tour pros');
+  });
+});

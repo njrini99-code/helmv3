@@ -25,6 +25,7 @@ import { Swap } from '../../ui/Swap';
 import { useToast } from '../../ui/Toast';
 import { useAction } from '../../lib/use-action';
 import { haptic } from '../../lib/haptics';
+import { sgBaseline } from '../../lib/sg';
 import { CH_PHONE_QUERY, useChPhone } from '../../lib/use-phone';
 import { RovingRows } from '../../ui/RovingRows';
 import { usePageKeys, type ChPageKey } from '../../shell/command/page-keys';
@@ -534,6 +535,8 @@ export function Roster({ data }: { data: ChRoster; }) {
                   Team average <span className="ch-num">{formatAvg(teamAvg)}</span> over the season.
                 </>
               )}
+              {/* Once for the page, not on every card: why the cards' strokes gained sit below zero (Q1, owner 12 Nov 2026). */}
+              {players.some((p) => p.sgPerRound != null) && <> {sgBaseline(data.sgTour ?? null).whyNamed}</>}
             </p>
           )}
         </div>
