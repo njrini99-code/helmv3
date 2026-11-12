@@ -4916,13 +4916,20 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     background: var(--ch-loss);
     transform-origin: right center;
   }
-  .ch-hm[data-ch-crh='on'] .ch-hm-legs__s,
-  .ch-hm[data-ch-crh='on'] .ch-hm-legs__who {
+  .ch-hm[data-ch-crh='on'] .ch-hm-legs__s {
     font: var(--ch-type-15);
     color: var(--ch-text-secondary); letter-spacing: var(--ch-track-15); }
+  /* One change line in one style in every part (W6, owner's preview, 11 Nov 2026): "No clear change" was bold black beside an
+     amber "Worse", so the line that says least was the loudest. The weight is the same; only a real change takes a colour. */
   .ch-hm[data-ch-crh='on'] .ch-hm-legs__c {
-    font: var(--ch-type-13-strong);
+    font: var(--ch-type-13-medium);
     font-style: normal;
+    color: var(--ch-text-secondary);
+  }
+  /* Who gains and loses: the quiet line under the figures (W6). */
+  .ch-hm[data-ch-crh='on'] .ch-hm-legs__who {
+    font: var(--ch-type-14);
+    color: var(--ch-text-secondary);
   }
   /* Latest rounds. */
   /* The player's line and the score keep to what they need, so the course and its date fit beside them on a 390pt phone. */
@@ -5492,18 +5499,26 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     background: var(--ch-loss);
     transform-origin: right center;
   }
-  .ch-h-main[data-ch-crh='on'] .ch-hm-legs__s,
-  .ch-h-main[data-ch-crh='on'] .ch-hm-legs__who {
+  .ch-h-main[data-ch-crh='on'] .ch-hm-legs__s {
     font: var(--ch-type-15);
     color: var(--ch-text-secondary); letter-spacing: var(--ch-track-15); }
+  /* One change line in one style in every part (W6, owner's preview, 11 Nov 2026): "No clear change" was bold black beside an
+     amber "Worse", so the line that says least was the loudest. The weight is the same; only a real change takes a colour. */
   .ch-h-main[data-ch-crh='on'] .ch-hm-legs__c {
-    font: var(--ch-type-13-strong);
+    font: var(--ch-type-13-medium);
     font-style: normal;
+    color: var(--ch-text-secondary);
+  }
+  /* Who gains and loses: the quiet line under the figures (W6). */
+  .ch-h-main[data-ch-crh='on'] .ch-hm-legs__who {
+    font: var(--ch-type-14);
+    color: var(--ch-text-secondary);
   }
   /* The names are the links (06 §11.2): they read as links without the row being one. */
   .ch-h-main[data-ch-crh='on'] .ch-hm-legs__a {
     border-radius: var(--ch-radius-xs);
-    color: var(--ch-green-600);
+    color: var(--ch-text-primary);
+    font-weight: inherit;
     text-decoration: underline;
     text-decoration-thickness: 1px;
     text-underline-offset: 2px;
