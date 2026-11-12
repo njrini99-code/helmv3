@@ -19,7 +19,7 @@ The route is `/golf/dashboard/team-hub` for both roles. Today a coach there gets
 
 ## Header and tabs
 
-"Team Hub", the team and season (no role pill for either role since W20; a player never had one, wave 7). Under them, what the team owes as at most three figures, each a number over its words that opens its tab: replies due, posts awaiting acknowledgement (a player's: to acknowledge), and tasks, overdue when any are, else open (W20). A coach's one primary action is New announcement. Tabs: Home, Announcements, Travel, Documents, and Tasks (coach). `?tab=` opens a tab (the legacy `?tab=` redirects stay for Fairway users only).
+"Team Hub", the team and season (no role pill for either role since W20; a player never had one, wave 7). Under them, what the team owes as at most three figures, each a number over its words that opens its tab: replies due, posts unacknowledged (a player's: to acknowledge), and tasks, overdue when any are, else open (W20). A coach's one primary action is New announcement. Tabs: Home, Announcements, Travel, Documents, and Tasks (coach). `?tab=` opens a tab (the legacy `?tab=` redirects stay for Fairway users only).
 
 ## Board to data
 

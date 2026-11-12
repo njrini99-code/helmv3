@@ -68,7 +68,7 @@ describe('100101 Team Hub · the strip under the title', () => {
   // head now draws what the team owes as figures, a number over its words, and each still opens its tab.
   it('a coach’s figures say what the team owes, and a figure opens the tab it counts', async () => {
     const { user } = show(PREVIEW_HUB_COACH);
-    expect(stripText()).toEqual(['3 replies due', '1 post awaiting acknowledgement', '1 task overdue']);
+    expect(stripText()).toEqual(['3 replies due', '1 post unacknowledged', '1 task overdue']);
     const figures = screen.getByRole('list', { name: 'Team at a glance' });
     for (const b of figures.querySelectorAll('button')) {
       expect(b.querySelector(':scope > b.ch-num')).not.toBeNull();

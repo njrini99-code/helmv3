@@ -32,7 +32,7 @@ const text = (i: StripInput) => hubStrip(i).map((s) => `${s.n}${s.after}`);
 // W20 (12 Nov): the head said five figures as a sentence of links (players, replies, posts, the next trip, tasks). It
 // now says what the team owes, at most three figures, each opening its tab.
 describe('hubStrip', () => {
-  it('a coach’s figures are the replies due, the posts awaiting acknowledgement and the overdue tasks', () => {
+  it('a coach’s figures are the replies due, the posts unacknowledged and the overdue tasks', () => {
     const lines = text(
       strip({
         rsvps: [rsvp({ counts: { going: 4, maybe: 0, no: 0, none: 2 } }), rsvp({ eventId: 'e2', counts: { going: 5, maybe: 0, no: 0, none: 1 } })],
@@ -40,7 +40,7 @@ describe('hubStrip', () => {
         tasks: [task(), task({ id: 't2', status: 'overdue' })],
       }),
     );
-    expect(lines).toEqual(['3 replies due', '1 post awaiting acknowledgement', '1 task overdue']);
+    expect(lines).toEqual(['3 replies due', '1 post unacknowledged', '1 task overdue']);
     expect(hubStrip(strip({ rsvps: [rsvp({ counts: { going: 4, maybe: 0, no: 0, none: 2 } })], announcements: [ann()], tasks: [task()] })).map((s) => s.key)).toEqual(['replies', 'acks', 'tasks']);
   });
 
