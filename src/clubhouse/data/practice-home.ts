@@ -194,7 +194,7 @@ export async function loadCoachPracticeHome(teamId: string, now: Date = new Date
   }
   return {
     status: 'ready',
-    data: { teamName, week, weekLine: weekMin ? `${hours(weekMin)} of practice this week` : null, upNext, drafts, published, past, open, copies: rows.filter((r) => r.state !== 'Draft' || r.ended).slice(0, 20).map((r) => ({ id: r.id, label: `${r.title} · ${r.day}` })), roster: roster.map((r) => r.id), firstRun: plans.length === 0 },
+    data: { teamName, week, weekLine: weekMin ? `${hours(weekMin)} of practice this week` : null, upNext, drafts, published, past, open, copies: rows.filter((r) => r.state !== 'Draft' || r.ended).slice(0, 20).map((r) => ({ id: r.id, label: `${r.title} · ${r.day}` })), roster: roster.map((r) => r.id), firstRun: plans.length === 0, zone },
   };
 }
 

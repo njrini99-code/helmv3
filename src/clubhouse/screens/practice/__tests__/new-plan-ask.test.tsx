@@ -41,7 +41,7 @@ const events = [
   { id: 'e1', label: 'Thursday, Nov 5', detail: '2:00 to 5:00 PM · Lakeside', title: 'Thursday practice', place: 'Lakeside', allDay: false, minutes: 180 },
   { id: 'e2', label: 'Friday, Nov 6', detail: '3:00 PM · Lakeside', title: 'Friday practice', place: 'Lakeside', allDay: false, minutes: null },
 ];
-const sheet = () => render(<NewPlanSheet open onClose={vi.fn()} events={events} copies={[]} roster={['r1']} />);
+const sheet = () => render(<NewPlanSheet open onClose={vi.fn()} events={events} copies={[]} roster={['r1']} zone="America/New_York" />);
 const picked = (name: string) => (screen.getByRole('radiogroup', { name: 'How long', hidden: true }).querySelector('[aria-checked="true"]') as HTMLElement | null)?.textContent === name;
 
 describe('the picks, as words', () => {

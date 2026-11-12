@@ -319,12 +319,6 @@ span.ch-prc-tile__it {
   justify-items: start;
   padding: 8px 0 12px;
 }
-.ch-prc-first__a p {
-  margin: 0;
-  font: var(--ch-type-14);
-  letter-spacing: var(--ch-track-14);
-  color: var(--ch-text-secondary);
-}
 
 /* Plans, and every list of rows. */
 .ch-prc-rows,
@@ -429,7 +423,21 @@ span.ch-prc-tile__it {
   letter-spacing: var(--ch-track-13);
   color: var(--ch-text-secondary);
 }
-.ch-prc-new__none {
+/* A new practice (Q7): the day takes its own line, the times share the one under it, and the place the last. */
+.ch-prc-when {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 8px;
+}
+.ch-prc-when__day,
+.ch-prc-when__wide {
+  grid-column: 1 / -1;
+}
+.ch-prc-when .ch-field__help {
+  margin: 0;
+}
+/* Once it is on the calendar its day and time are a line: a plan that failed after it is planned on it, not on a second one. */
+.ch-prc-new__made {
   margin: 0;
   font: var(--ch-type-14);
   letter-spacing: var(--ch-track-14);

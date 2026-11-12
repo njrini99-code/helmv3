@@ -193,7 +193,7 @@ import { ChClockProvider } from '@/clubhouse/lib/use-clock';
  *   /clubhouse-preview/coachhelm-practice-print ?state=norotation | nodrills | draft | unread | long | cards   (unread: the drills read failed; long: a 14-drill appendix switched on)
  *   /clubhouse-preview/coachhelm-practice-run ?state=draft | edited
  *   /clubhouse-preview/coachhelm-practice-library ?tab=drills | drill | groups | templates &state=empty | library
- *   /clubhouse-preview/coachhelm-practice-home ?state=empty | firstrun | new | player | player-empty   (Practice, the tab; synthetic plans, nothing reaches a server)
+ *   /clubhouse-preview/coachhelm-practice-home ?state=empty | empty-new | firstrun | new | player | player-empty   (Practice, the tab; synthetic plans, nothing reaches a server)
  *   /clubhouse-preview/coachhelm-practice-builder ?state=empty | blocks | sheet | ghosts | kept | groups | drills | review | publish | stale   (the builder over the design page's plan; nothing reaches a server)
  *   /clubhouse-preview/coachhelm-ask ?state=… &q=…   (the Ask sub-tab; states in src/clubhouse/preview/PreviewAsk.tsx)
  *   /clubhouse-preview/coachhelm-capabilities ?task=<tool> &state=proposed | confirming | held | saved | undone | cancelled | superseded | failed | expired &density=full | compact &variant=… &play=1 | undo   (every chat capability's card)

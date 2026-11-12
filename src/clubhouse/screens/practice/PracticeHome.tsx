@@ -117,7 +117,8 @@ const UP_NEXT_ROWS = 4;
 
 /**
  * Practice, the coach's tab (S-PRC.home): the week, what's up next, and every plan. New plan is the page's one primary action; on a phone it is the
- * bar's plus. With no plan ever made, one card with the ways to start (S-PRC.home-first-run), and no empty headers.
+ * bar's plus. With no plan ever made, one card with the ways to start (S-PRC.home-first-run), and no empty headers. New plan makes the
+ * practice too when there is none to plan (Q7, owner, 12 Nov), so it is always there; the calendar stays a quiet link.
  */
 export function PracticeHome({ data, openNew = false, previewSheet = false, template = null, newEvent = null }: { newEvent?: string | null; template?: { name: string; body: PlanBodyV2 } | null; data: ChPracticeHome; openNew?: boolean; previewSheet?: boolean }) {
   const phone = useChPhone();
@@ -133,12 +134,16 @@ export function PracticeHome({ data, openNew = false, previewSheet = false, temp
   const drafts = up?.editHref ? data.drafts.filter((r) => r.href !== up.editHref) : data.drafts;
   const listed = !data.firstRun && drafts.length + data.published.length + data.past.length > 0;
   const more = up ? Math.max(0, up.rows.length - UP_NEXT_ROWS) : 0;
-  // New plan needs a practice to plan (W13, W52): with none on the calendar in the next two weeks its sheet could create nothing, so
-  // the page offers one way, Add a practice, and New plan steps aside until there is one.
-  const canPlan = data.open.length > 0;
+  // W13, W52 then Q7 (owner, 12 Nov): with no practice on the calendar New plan's sheet asks the day and times and makes one, so
+  // New plan is the page's one primary whatever the calendar holds. Every other key on the page is secondary or quieter.
+  const calendar = (
+    <Button variant="ghost" href="/golf/dashboard/calendar">
+      Open the calendar
+    </Button>
+  );
   return (
     <main className={'ch-page ch-prc' + (phone ? ' is-phone' : '')} data-ch="practice" aria-labelledby="ch-prc-title">
-      {phone && <PhoneTop start title="Practice" action={canPlan ? <PhoneIconAction icon={Plus} label="New plan" onClick={() => newPlan()} /> : undefined} />}
+      {phone && <PhoneTop start title="Practice" action={<PhoneIconAction icon={Plus} label="New plan" onClick={() => newPlan()} />} />}
       <header className="ch-prc-h">
         <div>
           <LargeTitle id="ch-prc-title">Practice</LargeTitle>
@@ -147,11 +152,9 @@ export function PracticeHome({ data, openNew = false, previewSheet = false, temp
         {!phone && (
           <div className="ch-prc-h__a">
             <Button href="/golf/dashboard/practice/format">Plan format</Button>
-            {canPlan && (
-              <Button variant="primary" leftIcon={Plus} onClick={() => newPlan()}>
-                New plan
-              </Button>
-            )}
+            <Button variant="primary" leftIcon={Plus} onClick={() => newPlan()}>
+              New plan
+            </Button>
           </div>
         )}
       </header>
@@ -167,44 +170,37 @@ export function PracticeHome({ data, openNew = false, previewSheet = false, temp
         <section className="ch-prc-card ch-prc-first" data-ch-code="CH-13396" aria-labelledby="ch-prc-first">
           <h2 id="ch-prc-first">Plan your first practice</h2>
           <p>Build it block by block, start from a template, or let CoachHelm draft it from your team’s data. Players see a plan only when you publish it.</p>
-          {data.open.length ? (
-            <ul className="ch-prc-starts">
-              <li>
-                <button type="button" className="ch-prc-start" data-ch-press=".97" onClick={() => newPlan('ask')}>
-                  <span>
-                    <b>Ask CoachHelm</b>
-                    <span>It drafts from your team’s data. You keep what you like.</span>
-                  </span>
-                  <Icon icon={ChevronRight} size={16} />
-                </button>
-              </li>
-              <li>
-                <Link className="ch-prc-start" data-ch-press=".97" href="/golf/dashboard/practice/templates">
-                  <span>
-                    <b>Start from a template</b>
-                    <span>Six starters from GolfHelm, ready to change.</span>
-                  </span>
-                  <Icon icon={ChevronRight} size={16} />
-                </Link>
-              </li>
-              <li>
-                <button type="button" className="ch-prc-start" data-ch-press=".97" onClick={() => newPlan('blank')}>
-                  <span>
-                    <b>Blank</b>
-                    <span>Add blocks yourself.</span>
-                  </span>
-                  <Icon icon={ChevronRight} size={16} />
-                </button>
-              </li>
-            </ul>
-          ) : (
-            <div className="ch-prc-first__a">
-              <p>There is no practice on the calendar in the next two weeks to plan.</p>
-              <Button variant="primary" href="/golf/dashboard/calendar">
-                Add a practice
-              </Button>
-            </div>
-          )}
+          {/* With nothing on the calendar each start asks the day and times first, and makes the practice with the plan. */}
+          <ul className="ch-prc-starts">
+            <li>
+              <button type="button" className="ch-prc-start" data-ch-press=".97" onClick={() => newPlan('ask')}>
+                <span>
+                  <b>Ask CoachHelm</b>
+                  <span>It drafts from your team’s data. You keep what you like.</span>
+                </span>
+                <Icon icon={ChevronRight} size={16} />
+              </button>
+            </li>
+            <li>
+              <Link className="ch-prc-start" data-ch-press=".97" href="/golf/dashboard/practice/templates">
+                <span>
+                  <b>Start from a template</b>
+                  <span>Six starters from GolfHelm, ready to change.</span>
+                </span>
+                <Icon icon={ChevronRight} size={16} />
+              </Link>
+            </li>
+            <li>
+              <button type="button" className="ch-prc-start" data-ch-press=".97" onClick={() => newPlan('blank')}>
+                <span>
+                  <b>Blank</b>
+                  <span>Add blocks yourself.</span>
+                </span>
+                <Icon icon={ChevronRight} size={16} />
+              </button>
+            </li>
+          </ul>
+          {data.open.length === 0 && <div className="ch-prc-first__a">{calendar}</div>}
         </section>
       ) : (
         <>
@@ -237,12 +233,12 @@ export function PracticeHome({ data, openNew = false, previewSheet = false, temp
               <div className="ch-prc-next__a">
                 {up.planHref && <Button href={up.planHref}>Open plan</Button>}
                 {up.editHref && (
-                  <Button variant={up.planHref ? 'secondary' : 'primary'} href={up.editHref}>
+                  <Button href={up.editHref}>
                     {up.planHref ? 'Edit' : 'Keep building'}
                   </Button>
                 )}
                 {up.eventId && (
-                  <Button variant="primary" onClick={() => setSheet({ event: up.eventId })}>
+                  <Button onClick={() => setSheet({ event: up.eventId })}>
                     Build plan
                   </Button>
                 )}
@@ -253,12 +249,13 @@ export function PracticeHome({ data, openNew = false, previewSheet = false, temp
             <EmptyState
               shape="week"
               title="No practice on the calendar in the next two weeks"
-              body="Add one there, then plan it here."
+              body="New plan puts one on the calendar and plans it."
               action={
-                <Button variant={canPlan ? 'secondary' : 'primary'} leftIcon={Plus} href="/golf/dashboard/calendar">
-                  Add a practice
+                <Button leftIcon={Plus} onClick={() => newPlan()}>
+                  New plan
                 </Button>
               }
+              secondaryAction={calendar}
               code="CH-13396"
             />
           )}
@@ -300,7 +297,7 @@ export function PracticeHome({ data, openNew = false, previewSheet = false, temp
           <Icon icon={ChevronRight} size={16} />
         </Link>
       )}
-      <NewPlanSheet key={`${sheet?.event ?? 'new'}:${sheet?.start ?? ''}`} template={template} open={!!sheet} onClose={() => setSheet(null)} events={data.open} copies={data.copies} roster={data.roster} initialEvent={sheet?.event} initialStart={sheet?.start} preview={previewSheet} />
+      <NewPlanSheet key={`${sheet?.event ?? 'new'}:${sheet?.start ?? ''}`} template={template} open={!!sheet} onClose={() => setSheet(null)} events={data.open} copies={data.copies} roster={data.roster} zone={data.zone} initialEvent={sheet?.event} initialStart={sheet?.start} preview={previewSheet} />
     </main>
   );
 }
