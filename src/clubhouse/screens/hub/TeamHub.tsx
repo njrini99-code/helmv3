@@ -1,6 +1,6 @@
 'use client';
 
-import { Plane, Plus } from 'lucide-react';
+import { Megaphone, Plane, Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { deletePracticePlan } from '@/app/golf/actions/practice-plans';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
@@ -635,6 +635,7 @@ export function TeamHub({
                 size="page"
                 code={coach ? 'CH-10305' : 'CH-10306'}
                 shape="rows"
+                icon={Megaphone}
                 title={coach ? 'Nothing posted yet' : 'No team updates yet'}
                 body={coach ? 'Post an announcement, plan a trip or share a document. Everything you post shows up in your players’ Team Hub.' : 'Announcements, trips and documents from your coaches will show up here.'}
                 // The head's New announcement is the page's one primary action on every tab (states audit b9): the empty

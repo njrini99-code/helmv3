@@ -68,7 +68,8 @@ describe('The section empty is a line on the Ledger', () => {
     expect(el.querySelector(':scope > .ch-empty__icon > svg')).not.toBeNull();
     expect(screen.getByText('No trips planned').className).toBe('ch-empty__title');
     expect(rule('.ch-empty')).toMatch(/justify-items: center;[\s\S]*text-align: center;/);
-    expect(rule('.ch-empty__icon')).toContain('color: var(--ch-ledger-ink);');
+    // W19 B (owner, 12 Nov 2026): the section's glyph is the small tinted tile the page's echoes.
+    expect(rule('.ch-empty__icon')).toMatch(/width: 28px;[\s\S]*height: 28px;[\s\S]*background: var\(--ch-green-50\);[\s\S]*color: var\(--ch-green-700\);/);
   });
 
   it('without a glyph it is one column, and compact only tightens it', () => {
@@ -78,11 +79,15 @@ describe('The section empty is a line on the Ledger', () => {
 });
 
 describe('The page empty and the route error share one anatomy', () => {
-  it('the page empty names its title in the forest ink, and in the Ledger it sits under the head with measured air', () => {
+  it('the page empty names its title in the forest ink, in the card that holds the page\u2019s place (W19 B)', () => {
     render(<EmptyState size="page" code="CH-3301" icon={Users} title="No players yet." body="Share your team code." />);
-    expect(screen.getByRole('heading', { level: 2, name: 'No players yet' }).className).toBe('ch-empty-page__title');
+    // One anatomy for every page empty (W19 B): the honest states' card, not the route error's medallion.
+    expect(screen.getByRole('heading', { level: 2, name: 'No players yet' }).className).toBe('ch-es__title');
+    const uiCss = readFileSync(join(root, 'styles/ui.css'), 'utf8');
+    const title = uiCss.slice(uiCss.indexOf('.ch-es--page .ch-es__title {'), uiCss.indexOf('}', uiCss.indexOf('.ch-es--page .ch-es__title {')));
+    expect(title).toContain('color: var(--ch-ledger-ink);');
+    // The route error keeps its own (a dead end keeps the canvas).
     expect(rule('.ch-empty-page__title')).toContain('color: var(--ch-ledger-ink);');
-    expect(rule("  [data-ui='clubhouse'] main[data-canopy] .ch-empty-page")).toMatch(/min-height: 0;[\s\S]*padding-block: 72px 88px;/);
   });
 
   it('CH-1206 the route error is the page empty in the danger tone: no card, Try again first, the reference as a caption', () => {
@@ -141,22 +146,24 @@ describe('CH-1211 a page whose one read failed is the page empty in the danger t
     expect(refreshSpy).toHaveBeenCalledTimes(1);
   });
 
-  it('renders on the server, and a page empty without the tone is unchanged', () => {
+  it('renders on the server, and a page empty without the tone is the quiet card, never an alert', () => {
     const html = renderToString(failed({ code: 'CH-4201' }));
     expect(html).toContain('role="alert"');
     expect(html).toContain('Try again');
     render(<EmptyState size="page" code="CH-4301" icon={ChartColumn} title="No 18-hole rounds in this window yet" />);
     const quiet = document.querySelector('[data-ch-code="CH-4301"]')!;
-    expect(quiet.className).toBe('ch-empty-page');
+    // W19 B: the page empty's card, its glyph tile first; no Try again, no actions it was not given.
+    expect(quiet.className).toBe('ch-es ch-es--page ch-es--first-run');
     expect(quiet.getAttribute('role')).toBeNull();
-    expect(quiet.querySelector('.ch-empty-page__a')).toBeNull();
+    expect(quiet.querySelector(':scope > .ch-es__copy > .ch-es__glyph svg')).not.toBeNull();
+    expect(quiet.querySelector('.ch-es__a, .ch-empty-page')).toBeNull();
   });
 });
 
 describe('The waiting form: four states that read differently', () => {
   const uiCss = readFileSync(join(root, 'styles/ui.css'), 'utf8');
 
-  it('without a shape or a kind the state renders exactly as before', () => {
+  it('a section without a shape or a kind renders as before (a page one is the card, W19 B)', () => {
     const { container } = render(<EmptyState code="CH-10303" icon={Users} title="No trips planned." />);
     expect(container.querySelector('[data-ch-code="CH-10303"]')!.className).toBe('ch-empty ch-empty--icon');
     expect(container.querySelector('.ch-es, .ch-es-shape')).toBeNull();
@@ -217,7 +224,7 @@ describe('The waiting form: four states that read differently', () => {
     expect(el.querySelector(':scope > .ch-es__copy > :first-child')!.className).toBe('ch-es__glyph');
     const phone = uiCss.slice(uiCss.indexOf('@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {\n  .ch-es--page > .ch-es__copy'));
     // The two-column row (glyph, then words) is a section's only.
-    expect(phone).toMatch(/\.ch-es:not\(\.ch-es--page\) > \.ch-es__copy:has\(> \.ch-es__glyph\) \{\s*display: grid;\s*grid-template-columns: 20px minmax\(0, 1fr\);/);
+    expect(phone).toMatch(/\.ch-es:not\(\.ch-es--page\) > \.ch-es__copy:has\(> \.ch-es__glyph\) \{\s*display: grid;\s*grid-template-columns: 28px minmax\(0, 1fr\);/);
     expect(phone.slice(0, phone.indexOf('.ch-es-shape--people'))).not.toMatch(/\n {2}\.ch-es__copy:has\(> \.ch-es__glyph\) \{/);
   });
 

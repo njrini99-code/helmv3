@@ -684,12 +684,16 @@
     min-height: 44px;
   }
 }
+/* The section's tile, as the honest states draw theirs (ui.css .ch-es__glyph; W19 B, 12 Nov 2026). */
 .ch-empty__icon {
   display: grid;
   place-items: center;
-  height: 16px;
+  width: 28px;
+  height: 28px;
   margin-bottom: 4px;
-  color: var(--ch-ledger-ink);
+  border-radius: var(--ch-radius-md);
+  background: var(--ch-green-50);
+  color: var(--ch-green-700);
 }
 .ch-empty__title {
   max-width: 60ch;

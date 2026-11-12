@@ -2540,7 +2540,10 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
    is nothing to dim, nothing to reduce and nothing that reads as a placeholder of text. The fade is on the shape layer
    alone; no rule ever runs through the copy. */
 /* One anatomy on every screen and width (design-refresh/DESIGN_LANGUAGE §9, stats-home S-STATS__empty): centred, inside
-   the card that would have held the data. A page-sized state is that card; a section's sits in its own. */
+   the card that would have held the data. A page-sized state is that card; a section's sits in its own.
+   W19 B, "a moment" (owner, 12 Nov 2026): every empty reads as Tournaments' first run did. A page's is a roomy card that
+   holds the space its content will take: a tinted glyph tile, a 22 strong title, one sentence, one action. A section's
+   is the same order, compact, its tile small. Nothing ghosted under it (4 Nov). */
 .ch-es {
   display: block;
   text-align: center;
@@ -2558,7 +2561,15 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   padding: 24px 20px;
 }
 .ch-es--page > .ch-es__copy {
-  padding: 40px 24px;
+  justify-content: center;
+  gap: 16px;
+  padding: 48px 32px;
+}
+/* The room a page's card holds, on a desk: only where the state is the card, never a tall box inside another card. */
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
+  .ch-es--page:not(.ch-surface *, .ch-sheet *, .ch-shs-card *, .ch-es--line) > .ch-es__copy {
+    min-height: 320px;
+  }
 }
 .ch-es--line > .ch-es__copy {
   gap: 8px;
@@ -2579,8 +2590,17 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   display: grid;
   place-items: center;
   flex: none;
-  height: 20px;
-  color: var(--ch-ledger-ink);
+  width: 28px;
+  height: 28px;
+  border-radius: var(--ch-radius-md);
+  background: var(--ch-green-50);
+  color: var(--ch-green-700);
+}
+/* A page's tile: the glyph the empty is about, large enough to be the card's one picture. */
+.ch-es--page:not(.ch-es--line) .ch-es__glyph {
+  width: 64px;
+  height: 64px;
+  border-radius: var(--ch-radius-xl);
 }
 .ch-es__title {
   max-width: 60ch;
@@ -2591,8 +2611,8 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   text-wrap: balance;
 }
 .ch-es--page .ch-es__title {
-  font: var(--ch-type-20-strong);
-  letter-spacing: var(--ch-track-20);
+  font: var(--ch-type-22-strong);
+  letter-spacing: var(--ch-track-22);
   color: var(--ch-ledger-ink);
 }
 .ch-es__body {
@@ -2603,15 +2623,33 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   text-wrap: pretty;
 }
 .ch-es--page .ch-es__body {
+  max-width: 44ch;
   margin-top: 4px;
-  font: var(--ch-type-15);
-  letter-spacing: var(--ch-track-15);
+  font: var(--ch-type-16);
+  letter-spacing: var(--ch-track-16);
 }
 .ch-es__prog {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
   margin: 8px 0 0;
   font: var(--ch-type-13);
   line-height: var(--ch-lead-caption);
   color: var(--ch-text-secondary);
+}
+/* How far the space is from filling in: one segment a step, the done ones in the forest fill. */
+.ch-es__seg {
+  display: flex;
+  gap: 4px;
+}
+.ch-es__seg i {
+  width: 34px;
+  height: 6px;
+  border-radius: var(--ch-radius-xs);
+  background: var(--ch-separator);
+}
+.ch-es__seg i.is-on {
+  background: var(--ch-green-fill-600);
 }
 /* The action sits where the row's trailing value will be. */
 .ch-es__a {
@@ -2750,6 +2788,14 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   .ch-es--page > .ch-es__copy {
     padding: 24px 0 20px;
   }
+  /* A phone's card holds less room than a desk's, still enough that the empty is the page's content, not a note on it. */
+  .ch-es--page:not(.ch-surface *, .ch-sheet *, .ch-shs-card *, .ch-es--line) > .ch-es__copy {
+    min-height: 240px;
+  }
+  .ch-es--page:not(.ch-es--line) .ch-es__glyph {
+    width: 56px;
+    height: 56px;
+  }
   /* Where the page-sized state is the card itself (anywhere but inside a surface or a sheet, which bring their own
      inset), its copy keeps the card's inset. At 0 its full-width action ran over the card's side edges, and the card
      showed again as a strip below it (Hub's empty Home, design review 10 Nov 2026). The value is the one the player's
@@ -2761,7 +2807,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
     font-size: calc(22 * var(--ch-type-k));
   }
   .ch-es--page .ch-es__body {
-    font-size: calc(15 * var(--ch-type-k));
+    font-size: calc(16 * var(--ch-type-k));
   }
   .ch-es__copy {
     flex-direction: column;
@@ -2771,7 +2817,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
      10 Nov 2026). */
   .ch-es:not(.ch-es--page) > .ch-es__copy:has(> .ch-es__glyph) {
     display: grid;
-    grid-template-columns: 20px minmax(0, 1fr);
+    grid-template-columns: 28px minmax(0, 1fr);
     column-gap: 12px;
   }
   .ch-es:not(.ch-es--page) > .ch-es__copy:has(> .ch-es__glyph) > .ch-es__a {

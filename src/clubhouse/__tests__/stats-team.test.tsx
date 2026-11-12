@@ -314,7 +314,7 @@ describe('Stats team · empty', () => {
     wrap(emptyWindow({ window: 'last10' }));
     await expectCode('CH-4301', /No 18-hole rounds in this window yet/);
     // The whole body is empty, so it is the page's empty state (states audit, 2026-10-08), not a section's.
-    expect(code('CH-4301')!.classList.contains('ch-empty-page')).toBe(true);
+    expect(code('CH-4301')!.classList.contains('ch-es--page')).toBe(true);
     await user.click(screen.getByRole('button', { name: 'Show the season' }));
     expect(router.push).toHaveBeenCalledWith('/golf/dashboard/stats?window=season', { scroll: false });
   });
