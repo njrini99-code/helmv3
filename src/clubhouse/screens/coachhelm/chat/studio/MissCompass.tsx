@@ -19,6 +19,8 @@ import { useMissCompassGate } from './compass-gate';
  * call, no request. It opens the shots behind it (newest round first, at most the read's cap with the true count said), each
  * opening its round, and "Ask about these shots" sends the next question with that selection (`shots:<direction>`), which the
  * server checks against the read it stored. Drawn only where Ask's page turns it on (the team flag); `MissPattern` otherwise.
+ * In the studio's look (coachhelm-ask-studio.css): rules, not boxes; fills only inside the drawing; and it draws in place, so
+ * nothing moves when a direction is chosen, with or without reduced motion.
  */
 
 /** Compass order, long at the top as on the old drawing: [row][column]; the middle is the pin. */
@@ -96,12 +98,14 @@ export function MissCompass({ block, shots, compact }: { block: MissPatternBlock
         disabled={n === 0}
         onClick={() => choose(d)}
         onKeyDown={(e) => onKey(e, d)}
-        style={{ ['--ch-compass-share' as string]: String(most ? n / most : 0) }}
       >
         <span className="ch-aks-compass__word">{Said(d)}</span>
         <b className="ch-aks-compass__n ch-num">{n}</b>
         <small className="ch-aks-compass__share ch-num">{n ? `${share(d)}%` : 'none'}</small>
-        <i className="ch-aks-compass__bar" aria-hidden="true" />
+        {/* Its count against the commonest, as a ruled length: drawn in place, never grown. */}
+        <svg className="ch-aks-compass__bar" viewBox="0 0 100 3" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+          <rect width={most ? Math.round((n / most) * 1000) / 10 : 0} height="3" />
+        </svg>
       </button>
     );
   };
@@ -118,7 +122,9 @@ export function MissCompass({ block, shots, compact }: { block: MissPatternBlock
               cell(d)
             ) : (
               <span key={`pin-${r}-${c}`} className="ch-aks-compass__pin" aria-hidden="true">
-                <i />
+                <svg viewBox="0 0 8 8" focusable="false">
+                  <circle cx="4" cy="4" r="4" />
+                </svg>
                 <span className="ch-num">{block.total}</span>
                 <small>shots</small>
               </span>
