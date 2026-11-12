@@ -176,7 +176,7 @@ describe('touch and motion', () => {
 });
 
 describe('the phone: the shots in a sheet', () => {
-  it('a direction opens a sheet with its shots and the ask', () => {
+  it('a direction opens a sheet with its shots and the ask; a sent ask closes it, so it never sits over the answer', () => {
     const { askAbout } = draw(undefined, WITH, 'compact');
     fireEvent.click(radio(/^Short,/));
     const sheetEl = screen.getByRole('dialog');
@@ -184,5 +184,19 @@ describe('the phone: the shots in a sheet', () => {
     expect(within(sheetEl).getAllByRole('link')).toHaveLength(9);
     fireEvent.click(within(sheetEl).getByRole('button', { name: 'Ask about these shots' }));
     expect(askAbout).toHaveBeenCalledWith('Ask about the 9 shots that missed short', { evidence_ref: 'e7', key: 'shots:short' });
+    expect(radio(/^Short,/)).toHaveAttribute('aria-checked', 'false');
+    expect(screen.queryByRole('link')).toBeNull();
+  });
+
+  it('an ask that is not sent (a reply on its way, offline) leaves the sheet open; on a desk the drawer stays after a send', () => {
+    draw(vi.fn(() => false), WITH, 'compact');
+    fireEvent.click(radio(/^Short,/));
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Ask about these shots' }));
+    expect(radio(/^Short,/)).toHaveAttribute('aria-checked', 'true');
+    cleanup();
+    draw();
+    fireEvent.click(radio(/^Short,/));
+    fireEvent.click(screen.getByRole('button', { name: 'Ask about these shots' }));
+    expect(screen.getByRole('region', { name: '9 shots missed short' })).toBeInTheDocument();
   });
 });

@@ -111,7 +111,17 @@ export function MissCompass({ block, shots, compact }: { block: MissPatternBlock
   };
 
   const kept = picked ? shots.directions[picked] : undefined;
-  const drawer = picked && kept ? <ShotList direction={picked} count={kept.count} rows={kept.shots} cap={shots.cap} headId={`${id}-h`} onAsk={gate.askAbout ? () => gate.askAbout!(`Ask about the ${plural(kept.count, 'shot')} that missed ${saidDirection(picked)}`, { evidence_ref: shots.ref, key: `shots:${picked}` }) : undefined} onClose={() => setPicked(null)} /> : null;
+  const askAbout = gate.askAbout;
+  // On a phone the sheet would sit over the answer as it arrives: a sent ask closes it. On a desk the drawer stays where it is.
+  const onAsk =
+    askAbout && picked && kept
+      ? () => {
+          const sent = askAbout(`Ask about the ${plural(kept.count, 'shot')} that missed ${saidDirection(picked)}`, { evidence_ref: shots.ref, key: `shots:${picked}` });
+          if (sent && compact) setPicked(null);
+          return sent;
+        }
+      : undefined;
+  const drawer = picked && kept ? <ShotList direction={picked} count={kept.count} rows={kept.shots} cap={shots.cap} headId={`${id}-h`} onAsk={onAsk} onClose={() => setPicked(null)} /> : null;
 
   return (
     <figure className="ch-aks-compass" data-size={compact ? 'compact' : 'full'}>
