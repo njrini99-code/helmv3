@@ -55,8 +55,12 @@ const next = () => screen.getByRole('button', { name: /Record next shot|Complete
 describe('a putt asks its result first, then the leave, then the optional read', () => {
   it('the card’s order: Putt result, Leave distance, Break and slope', () => {
     setup();
-    const parts = [...document.querySelectorAll('.ch-rt-card > *')].map((el) => (el.matches('.ch-rt-slot') ? 'result' : el.matches('.ch-rt-read') ? 'read' : el.querySelector('#ch-rt-dist') ? 'distance' : el.className));
+    // The result's place stands in the card's swap (it turns the shot's words in place), alone in its head.
+    const parts = [...document.querySelectorAll('.ch-rt-card > *')].map((el) =>
+      el.matches('.ch-rt-cardswap') && el.querySelector('.ch-rt-card__head > .ch-rt-slot') ? 'result' : el.matches('.ch-rt-read') ? 'read' : el.querySelector('#ch-rt-dist') ? 'distance' : el.className,
+    );
     expect(parts).toEqual(['result', 'distance', 'read']);
+    expect([...document.querySelector('.ch-rt-card__head')!.children].map((el) => el.className.split(' ')[0])).toEqual(['ch-rt-slot']);
     expect(screen.queryByText('Putting details')).toBeNull();
   });
 

@@ -222,18 +222,38 @@ button.ch-rt-strip__h {
 }
 
 /* Body: the hole beside the entry */
-/* The hole turn (Swap slide, keyed by the hole) and the hole-out swap (owner, 2026-10-31) pass the screen's column
-   through, so the hero still takes the spare height and the entry still sits on the dock. */
+/* The hole turn (Swap slide, keyed by the hole; owner, 2026-10-31) holds the hero alone: the entry card and its bar
+   stay where they are through it (owner, 2026-11-11). The frame passes the column through, so on a phone the hero still
+   takes the spare height, and on the desk it spans the row, so the hero still sticks beside the entry. */
 .ch-rt-turn,
 .ch-rt-turn > .ch-swap__item,
 .ch-rt-turn > .ch-swap__item > .ch-swap__body {
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
+  min-width: 0;
   min-height: 0;
 }
-.ch-rt-turn {
+.ch-rt-body > .ch-rt-turn {
+  align-self: stretch;
   overflow-x: clip;
+}
+/* The card's words for the shot, or the holed hole's review, turn inside the card (Swap, ShotEntry). The frame passes
+   the card's column through, so the result's place still takes the card's spare height. */
+.ch-rt-cardswap,
+.ch-rt-cardswap > .ch-swap__item,
+.ch-rt-cardswap > .ch-swap__item > .ch-swap__body,
+.ch-rt-card__head {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+  min-width: 0;
+}
+/* A swap's leaving copy is not drawn: the new one settles in over a cleared place, so two shots' or two holes' words
+   never stand on top of each other (owner, 2026-11-11). It keeps its box for its beat, hidden and out of reach. */
+.ch-rt-turn > .ch-swap__item > .ch-swap__body[inert],
+.ch-rt-cardswap > .ch-swap__item > .ch-swap__body[inert] {
+  visibility: hidden;
 }
 .ch-rt-body {
   display: grid;
@@ -763,7 +783,7 @@ path.ch-rt-map__shot {
   padding: 16px 16px;
   border-bottom: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
-.ch-rt-card > .ch-rt-sec:first-child {
+.ch-rt-card__head > .ch-rt-sec:first-child {
   padding-top: 16px;
   border-radius: var(--ch-radius-card) var(--ch-radius-card) 0 0;
 }
@@ -1214,6 +1234,11 @@ path.ch-rt-map__shot {
   flex: none;
   margin-top: 2px;
 }
+/* The saving note's ring (ui/Spinner) is a span too: the words' flex above would stretch it across the note. */
+.ch-rt-note > .ch-spinner {
+  flex: none;
+  margin-top: 2px;
+}
 .ch-rt-note.is-warn {
   background: var(--ch-warning-100);
   color: var(--ch-warning-600);
@@ -1406,6 +1431,10 @@ path.ch-rt-map__shot {
   padding: 0;
   list-style: none;
 }
+/* In the card on the desk the bar's fade (row 41) stands over the card's foot: the last shot keeps clear of it. */
+.ch-rt-card .ch-rt-review {
+  padding-bottom: 16px;
+}
 .ch-rt-rs {
   all: unset;
   cursor: pointer;
@@ -1448,17 +1477,6 @@ path.ch-rt-map__shot {
 .ch-rt-rs__b span {
   font: var(--ch-type-13);
   font-variant-numeric: tabular-nums;
-}
-.ch-rt-review__f {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 12px;
-  padding: 16px;
-  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
-}
-.ch-rt-review__f .ch-btn--primary {
-  flex: 1;
 }
 
 /* Sheets */
@@ -1961,16 +1979,9 @@ path.ch-rt-map__shot {
   }
 }
 
-/* Phone (docs/clubhouse/phone/rounds.md, Tracking): the summary and the review's footer. The shot screen itself is the
-   owner's board 3 ("On the course, glove on"), in the block after the dark rules below. */
+/* Phone (docs/clubhouse/phone/rounds.md, Tracking): the summary. The shot screen itself is the owner's board 3 ("On the
+   course, glove on"), in the block after the dark rules below. */
 @container chrt (max-width: 640px) {
-  .ch-rt-review__f {
-    position: sticky;
-    bottom: 0;
-    padding-bottom: calc(16px + env(safe-area-inset-bottom));
-    border-radius: 0 0 var(--ch-radius-xl) var(--ch-radius-xl);
-    background: rgb(244 242 234 / 0.96);
-  }
   .ch-rt-sum {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -2056,7 +2067,6 @@ path.ch-rt-map__shot {
 :where(html[data-fw-theme='dark']) .ch-rt-log__r,
 :where(html[data-fw-theme='dark']) .ch-rt-log__r--btn,
 :where(html[data-fw-theme='dark']) .ch-rt-rs,
-:where(html[data-fw-theme='dark']) .ch-rt-review__f,
 :where(html[data-fw-theme='dark']) .ch-rt-mc tr + tr > * {
   border-top-color: var(--ch-border-hairline);
 }
@@ -2166,12 +2176,6 @@ path.ch-rt-map__shot {
 :where(html[data-fw-theme='dark']) .ch-rt-subm__bad {
   color: #8a5a0c;
 }
-@container chrt (max-width: 640px) {
-  :where(html[data-fw-theme='dark']) .ch-rt-review__f {
-    background: rgb(27 32 28 / 0.94);
-  }
-}
-
 /* A holed shot's disc on the deep fill, so its ivory number keeps 4.5:1 (the 500 fill measured 4.4). */
 :where(html[data-fw-theme='dark']) .ch-rt-log__dots i.is-hole,
 :where(html[data-fw-theme='dark']) .ch-rt-log__n.is-hole,
@@ -3043,6 +3047,8 @@ path.ch-rt-map__shot {
        holds, not where it stands. A card that needs more (larger text, the putt's break and slope open) grows. */
     min-height: calc(298px + 43 * var(--ch-type-k));
     padding: 16px 16px 12px;
+    /* The card's words turn 12px across with a new hole; the card's own edge holds them. */
+    overflow-x: clip;
     border-radius: var(--ch-radius-card);
     background: var(--ch-ivory-100);
     color: var(--ch-ink-900);
@@ -3053,13 +3059,14 @@ path.ch-rt-map__shot {
   .ch-rt-sec,
   .ch-rt-slot,
   .ch-rt-band,
-  .ch-rt-card > .ch-rt-sec:first-child {
+  .ch-rt-card__head > .ch-rt-sec:first-child {
     padding: 0 0 12px;
     border-bottom: var(--ch-hairline-w) solid var(--ch-ivory-300);
     border-radius: 0;
   }
+  .ch-rt-card__head > * + .ch-rt-sec,
+  .ch-rt-card__head > * + .ch-rt-slot,
   .ch-rt-card > * + .ch-rt-sec,
-  .ch-rt-card > * + .ch-rt-slot,
   .ch-rt-card > * + .ch-rt-band {
     padding-top: 12px;
   }
@@ -3450,12 +3457,17 @@ path.ch-rt-map__shot {
     color: var(--ch-on-green-ink-soft);
   }
 
-  /* A holed hole: its shots on the same ivory card. */
-  .ch-rt-panel.ch-rt-review {
-    border-radius: var(--ch-radius-card);
-    background: var(--ch-ivory-100);
-    color: var(--ch-ink-900);
-    box-shadow: var(--ch-elevation-feature);
+  /* A holed hole: its shots in the same ivory card, on the card's own inset, the rules between them running edge to
+     edge of the card's content as its other rules do. */
+  .ch-rt-card .ch-rt-review__h {
+    padding: 0 0 8px;
+  }
+  .ch-rt-card .ch-rt-rs {
+    padding: 8px 0;
+  }
+  /* The phone's card holds its one height and its own foot padding: the desk's clearance over the bar is not needed. */
+  .ch-rt-card .ch-rt-review {
+    padding-bottom: 0;
   }
 
   /* B4: every control on the green answers a press, as the result keys and Next shot do (lib/press.ts holds
@@ -3518,15 +3530,12 @@ path.ch-rt-map__shot {
     }
   }
 }
-/* At night the card is the night surface, so its stamped lip goes, and its footer takes the night ivory. */
+/* At night the card is the night surface, so its stamped lip goes. */
 @container chrt (max-width: 640px) {
   :where(html[data-fw-theme='dark']) .ch-rt-card {
     box-shadow:
       inset 0 1px 0 rgb(255 255 255 / 0.05),
       var(--ch-elevation-cast);
-  }
-  :where(html[data-fw-theme='dark']) .ch-rt-review__f {
-    background: rgb(36 42 37 / 0.96);
   }
 }
 
@@ -3543,7 +3552,7 @@ path.ch-rt-map__shot {
   }
   /* Held hidden, the row takes the rule above it too: a hairline over an empty band reads as a section with nothing in it. */
   .ch-rt-card .ch-rt-sec:has(+ .ch-rt-sec.is-reserved),
-  .ch-rt-card .ch-rt-slot:has(+ .ch-rt-band[data-face='distance'] > .ch-rt-sec.is-reserved) {
+  .ch-rt-card:has(> .ch-rt-band[data-face='distance'] > .ch-rt-sec.is-reserved) .ch-rt-card__head > .ch-rt-slot:last-child {
     border-bottom-color: transparent;
   }
 }

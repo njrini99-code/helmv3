@@ -20,7 +20,6 @@ const ALLOW: Record<string, number> = {
   'screens/rounds/setup/AddCourseSheet.tsx': 3,
   'screens/rounds/setup/RoundSetup.tsx': 3,
   'screens/rounds/track/DataPrompts.tsx': 1,
-  'screens/rounds/track/HoleReview.tsx': 2,
   'screens/rounds/track/ShotEntry.tsx': 2,
   'screens/rounds/track/round-sheets.tsx': 2,
   'screens/stats/StatsFilter.tsx': 1,

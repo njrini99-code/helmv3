@@ -80,8 +80,12 @@ describe('a data prompt stands in the card’s foot band, with the distance row'
     expect(ask.closest('.ch-rt-band')).toBe(band());
     expect(ask.parentElement!.className).toBe('ch-rt-band__ask');
     expect(band().dataset.face).toBe('ask');
-    // The card's order: the result's place, then the band (the prompt, and the distance row held under it), then the read row.
-    expect([...document.querySelectorAll('.ch-rt-card > *')].map((el) => el.className.split(' ')[0])).toEqual(['ch-rt-slot', 'ch-rt-band', 'ch-rt-sec']);
+    // The card's order: the result's place (inside the card's swap, which turns the shot's words in place), then the band
+    // (the prompt, and the distance row held under it), then the read row.
+    expect([...document.querySelectorAll('.ch-rt-card > *')].map((el) => el.className.split(' ').find((c) => c.startsWith('ch-rt-')))).toEqual(['ch-rt-cardswap', 'ch-rt-band', 'ch-rt-sec']);
+    const heads = document.querySelectorAll('.ch-rt-cardswap .ch-rt-card__head');
+    expect(heads).toHaveLength(1);
+    expect([...heads[0]!.children].map((el) => el.className.split(' ')[0])).toEqual(['ch-rt-slot']);
     expect(document.getElementById('ch-rt-dist')!.closest('.is-reserved')).not.toBeNull();
     expect(screen.getByRole('radiogroup', { name: 'Putt result' }).compareDocumentPosition(ask) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
