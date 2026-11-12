@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowDown, ArrowUp, Bandage, ChartColumn, CircleCheck, Copy, Download, Ellipsis, LayoutGrid, List, MessageSquare, Plane, Share, Sparkles, UserCheck, UserMinus, UserPlus, UserX } from 'lucide-react';
+import { ArrowDown, ArrowUp, Bandage, ChartColumn, CircleCheck, Copy, Download, Ellipsis, LayoutGrid, List, MessageSquare, Plane, Share, Sparkles, UserCheck, UserMinus, UserPlus, Users, UserX } from 'lucide-react';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useChSessionState } from '../../lib/session-state';
 import { useRouter } from 'next/navigation';
@@ -598,6 +598,7 @@ export function Roster({ data }: { data: ChRoster; }) {
           size="page"
           code="CH-3301"
           shape="people"
+          icon={Users}
           title="No players yet"
           body="Players fill this list themselves: they join with your team code or invite link, and you can remove anyone here."
           action={

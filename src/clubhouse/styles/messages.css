@@ -3837,14 +3837,18 @@ body:has([data-ch-ms-v2]) .ch-toast {
   width: 168px;
   height: 120px;
 }
-[data-ch-ms-v2] .ch-ms-thread.is-empty:has(.ch-msv-empty) {
+[data-ch-ms-v2] .ch-ms-thread.is-empty:has(> .ch-es--page) {
   display: grid;
   place-items: center;
   padding: 16px;
 }
+/* The first run is the shared page empty (W19 B): a card at a reading measure in the middle of the pane. */
+[data-ch-ms-v2] .ch-ms-thread.is-empty > .ch-es--page {
+  width: min(640px, 100%);
+}
 /* MSG-701 First run: the card is centred in the page under the bar (the page is as tall as the screen less the bar and
    the home indicator's room, so centre means the middle of what the person sees), at the page edge on a phone. */
-.ch-msp-home:has(> .ch-msv-empty) {
+.ch-msp-home:has(> .ch-es--page) {
   display: grid;
   align-content: center;
   justify-items: center;

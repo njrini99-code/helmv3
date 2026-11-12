@@ -2,7 +2,7 @@
 
 import type { PlanBodyV2 } from '@/lib/coachhelm/v3/practice-plan/model';
 import { PracticeTabs } from './PracticeTabs';
-import { ChevronRight, Plus } from 'lucide-react';
+import { CalendarDays, ChevronRight, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import type { ChPracticeHome, ChPracticeRow, ChPracticeState, ChPracticeTile } from '../../data/practice-home-shape';
@@ -247,6 +247,8 @@ export function PracticeHome({ data, openNew = false, previewSheet = false, temp
           ) : (
             // The week's tiles already say there is no practice on each day: this says only what to do about it.
             <EmptyState
+              size="page"
+              icon={CalendarDays}
               shape="week"
               title="No practice on the calendar in the next two weeks"
               body="New plan puts one on the calendar and plans it."

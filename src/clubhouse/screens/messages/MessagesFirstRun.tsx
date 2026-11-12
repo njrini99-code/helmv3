@@ -1,41 +1,38 @@
 'use client';
 
-import { SquarePen } from 'lucide-react';
+import { MessageSquare, SquarePen } from 'lucide-react';
 import { Button } from '../../ui/Button';
+import { EmptyState } from '../../ui/States';
 
 /**
  * CH-7309 (D-71): no conversation and no announcement yet, so the whole page
- * is the v2 first-run empty with its one action, New message. With anything
+ * is the first-run empty with its one action, Start a conversation. With anything
  * in the list, the rail's compact empty (CH-7301) and the thread's (CH-7305)
- * take over.
+ * take over. The shared page empty (W19 B, owner, 12 Nov 2026), not a drawing
+ * of its own: one empty state across the app.
  */
 export function MessagesFirstRun({ onNew, teamName, onTeam }: { coach: boolean; onNew: () => void; teamName?: string; onTeam?: () => void }) {
   return (
-      <section className="ch-msv-empty ch-msd-empty" data-ch-code="CH-7309">
-        <svg className="ch-msv-empty__illo" viewBox="0 0 168 120" aria-hidden="true">
-          <ellipse cx="84" cy="111" rx="62" ry="5" fill="var(--ch-well-bg-flat)" />
-          <rect x="16" y="16" width="92" height="56" rx="22" fill="var(--ch-card-bg)" stroke="var(--ch-border-hairline)" />
-          <path d="M28 68c-1 8-5 12-11 15 9 1 16-2 22-8z" fill="var(--ch-card-bg)" />
-          <rect x="32" y="33" width="50" height="7" rx="3.5" fill="var(--ch-well-bg-flat)" />
-          <rect x="32" y="48" width="32" height="7" rx="3.5" fill="var(--ch-well-bg-flat)" />
-          <rect x="64" y="46" width="88" height="50" rx="21" fill="var(--ch-bubble-mine-fill)" />
-          <path d="M142 90c2 7 5 11 10 13-8 1-14-2-19-7z" fill="var(--ch-bubble-mine-fill)" />
-          <path d="M98 60v22" stroke="var(--ch-card-bg)" strokeWidth="2" strokeLinecap="round" />
-          <path d="M99 60l13 5-13 5z" fill="var(--ch-champagne-dot)" />
-          <circle cx="122" cy="80" r="3.2" fill="var(--ch-card-bg)" />
-        </svg>
-        <h2>No conversations yet</h2>
-        <p>{`Message a player, a coach or the whole team. Everything stays inside ${teamName ?? 'your team'}.`}</p>
-        <Button variant="primary" size="lg" leftIcon={SquarePen} onClick={onNew}>
+    <EmptyState
+      size="page"
+      code="CH-7309"
+      icon={MessageSquare}
+      title="No conversations yet"
+      body={`Message a player, a coach or the whole team. Everything stays inside ${teamName ?? 'your team'}.`}
+      action={
+        <Button variant="primary" leftIcon={SquarePen} onClick={onNew}>
           Start a conversation
         </Button>
-        {onTeam && (
+      }
+      secondaryAction={
+        onTeam ? (
           <Button variant="ghost" onClick={onTeam}>
             Message the team
           </Button>
-        )}
-      </section>
-    );
+        ) : undefined
+      }
+    />
+  );
 }
 
 /** Nothing to list at all (the list read, not loading or failed). */

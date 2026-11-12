@@ -705,8 +705,8 @@
   width: 40px;
   height: 40px;
   border-radius: var(--ch-radius-md);
-  background: var(--ch-ivory-100);
-  color: var(--ch-text-tertiary);
+  background: var(--ch-green-50);
+  color: var(--ch-green-700);
 }
 .ch-rec-empty__t {
   display: flex;
@@ -1789,9 +1789,12 @@
   }
   /* W42 (12 Nov): three empty states stood stacked here (Contact, Notes, Documents), each an icon tile, a bold line, a
      grey line and its Add. Under its heading an empty part is one line now, what is missing and its Add, so the pane
-     reads as a form waiting to be filled; the longer line describes the Add for a screen reader (aria-describedby). */
+     reads as a form waiting to be filled; the longer line describes the Add for a screen reader (aria-describedby).
+     W19 B (12 Nov): the line keeps the empty states' order, glyph first, in the section's small tinted tile. */
   .ch-rec[data-canopy] .ch-rec-panel .ch-rec-empty__ic {
-    display: none;
+    width: 28px;
+    height: 28px;
+    border-radius: var(--ch-radius-sm);
   }
   .ch-rec[data-canopy] .ch-rec-panel .ch-rec-empty__t b {
     font: var(--ch-type-14);
