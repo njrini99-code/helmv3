@@ -123,11 +123,11 @@ SELECT throws_ok(
 -- Anon reads nothing.
 RESET ROLE;
 SET LOCAL ROLE anon;
-SELECT is(
-  (SELECT count(*)::int FROM public.golf_coachhelm_llm_calls
-   WHERE coach_id = '00000000-0000-0000-0000-0000000c9a02'),
-  0,
-  'anon reads none of them'
+-- anon holds no SELECT on the table at all, so the read is refused outright (stronger than "no rows").
+SELECT throws_ok(
+  $$SELECT count(*) FROM public.golf_coachhelm_llm_calls WHERE coach_id = '00000000-0000-0000-0000-0000000c9a02'$$,
+  '42501', NULL,
+  'anon reads none of them (no table privilege)'
 );
 RESET ROLE;
 

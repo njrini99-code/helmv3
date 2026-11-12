@@ -1279,6 +1279,9 @@ features:
         # supabase/migrations/HELD.md): the profile function the roster, team
         # and RSVP reads call.
         - supabase/migrations/20261017004000_golf_player_profiles_fn.sql
+        # E-mail, phone and GPA private on golf_players / golf_coaches (security review 2026-11-11,
+        # finding 1, held; see supabase/migrations/HELD.md), with golf_player_private_fields.
+        - supabase/migrations/20261112090000_golf_players_coaches_contact_columns.sql
       tests:
         - src/app/golf/actions/__tests__/travel.test.ts
         - src/components/fairway/pages/team-hub/FairwayTeamHub.logic.test.ts

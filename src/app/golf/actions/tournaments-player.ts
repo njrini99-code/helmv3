@@ -40,6 +40,15 @@ async function saveTournamentReflectionImpl(tournamentId: string, text: string):
   const teamId = (membership.data as { team_id?: string } | null)?.team_id;
   if (membership.error || !teamId) return refuse(membership.error ? 'failed' : 'not_found');
   const supabase = await createClient();
+  // The tournament must be the player's own team's (security review 2026-11-11, finding 3): neither this write nor the row
+  // policy otherwise ties tournament_id to team_id, so another team's id would be stored under this team.
+  const tour = await tourTable(supabase, 'golf_tournaments').select('team_id').eq('id', tournamentId).maybeSingle();
+  if (tour.error) {
+    const code = tourRefusalOf(tour.error);
+    if (code === 'failed') await logServerError(`[tournaments] saveTournamentReflection tournament read failed: ${describeError(tour.error)}`, { action: 'saveTournamentReflection', featureArea: 'calendar_events' });
+    return refuse(code);
+  }
+  if ((tour.data as { team_id?: string } | null)?.team_id !== teamId) return refuse('not_found');
   const savedAt = new Date().toISOString();
   const { error } = await tourTable(supabase, 'golf_tournament_reflections').upsert(
     { tournament_id: tournamentId, team_id: teamId, player_id: session.player.id, body: parsed.data, updated_at: savedAt },
