@@ -3529,11 +3529,21 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   }
 }
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
+  /* W17: the hover time sits beside the bubble on the side facing the middle (after theirs, before yours), in the row's
+     own flow, so a full-width thread never pushes it off the pane (#9: it hung far right on wide windows). */
   [data-ch-ms-v2] .ch-msv-time {
+    position: static;
+    flex: none;
+    align-self: center;
     right: auto;
-    left: 100%;
+    left: auto;
+    transform: none;
     opacity: 0;
     transition: opacity var(--ch-dur-quick) var(--ch-ease);
+  }
+  [data-ch-ms-v2] .ch-ms-msg.is-mine .ch-msv-time {
+    order: -1;
+    text-align: right;
   }
   [data-ch-ms-v2] .ch-ms-msg:is(:hover, :focus-within) .ch-msv-time {
     opacity: 1;
@@ -3641,9 +3651,15 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   [data-ch-ms-v2] .ch-ms-th .ch-avatar {
     flex: none;
   }
+  /* W17: as Messages on the Mac, the thread spans its pane: their messages start at the pane's left edge and yours end at
+     its right, on the composer's 28 px inset, instead of a 760 px column in the middle of a 1130 px pane. */
   [data-ch-ms-v2] .ch-ms-msgs {
-    max-width: var(--ch-measure-reading);
-    margin-inline: auto;
+    max-width: none;
+    margin-inline: 0;
+    padding-inline: calc(var(--ch-space-6) + var(--ch-space-1));
+  }
+  [data-ch-ms-v2] .ch-ms-comp__field {
+    max-width: none;
   }
 }
 [data-ch-ms-v2] .ch-ms-msg__fail {
