@@ -91,7 +91,7 @@ export function NewPlanSheet({ open, onClose, events, copies, roster, zone, now,
   const target = async (): Promise<{ id: string; title: string; place: string } | null> => {
     if (!isNew) return event ? { id: event.id, title: event.title, place: event.place } : null;
     if (made) return { id: made.id, title: NEW_PRACTICE_TITLE, place: made.practice.place.trim() };
-    const single = newPracticeEvent(draft, zone);
+    const single = newPracticeEvent(draft, zone, roster);
     const res = await createGolfEvent({ ...single, requestId: requestIdFor(single) });
     if (!res.success) {
       setError(res.error);
@@ -126,6 +126,8 @@ export function NewPlanSheet({ open, onClose, events, copies, roster, zone, now,
           return;
         }
         setError(res.unavailable ? 'Practice plans aren’t on for your team yet.' : res.error);
+        // A practice made just now is on the calendar either way: the page reads it again, so New plan lists it next time.
+        if (isNew) router.refresh();
         return;
       }
       if (start === 'ask') leaveAskPicks(res.planId, { minutes: length, areas });
