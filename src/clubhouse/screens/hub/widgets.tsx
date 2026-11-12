@@ -15,7 +15,7 @@ import { Icon } from '../../ui/Icon';
 import { RefreshNotice } from '../../ui/RefreshNotice';
 import { WeekStrip } from '../../ui/WeekStrip';
 import { EmptyState } from '../../ui/States';
-import { firstBusyDay, ledgerSorted, owedBy, type LedgerKey, type QueueItem, type TaskFigures } from './hub-summary';
+import { firstBusyDay, lateBy, ledgerSorted, type LedgerKey, type QueueItem, type TaskFigures } from './hub-summary';
 import { Acknowledgement, ReplyChoices, repliesLine, useTaskSave } from './parts';
 import { plural } from '../../lib/plural';
 
@@ -396,36 +396,32 @@ function ReplyMeter({ c }: { c: { going: number; maybe: number; no: number; none
 
 // ── Waiting on (coach) ──────────────────────────────────────────────────────
 
+/**
+ * W22 (12 Nov): a cell is one figure and its heading says what it counts. "1 late 3" (one late of three tasks) and
+ * "none in 14 days 0" read as one number; late tasks are a column of their own, and rounds are only the count (the foot
+ * says who played in the last 14 days).
+ */
 const COLUMNS: Array<[Exclude<LedgerKey, 'owed'>, string]> = [
   ['name', 'Player'],
   ['replies', 'Replies'],
   ['posts', 'Posts'],
   ['tasks', 'Tasks'],
+  ['late', 'Late'],
   ['rounds', 'Rounds'],
 ];
 
-function Figure({ items, late = 0 }: { items: unknown[] | null; late?: number }) {
-  if (items == null)
+/** One figure: a count, a quiet 0, or a dash when its list didn't load. `warn` takes the warning ink (late, no rounds). */
+function Figure({ n, warn = false }: { n: number | null; warn?: boolean }) {
+  if (n == null)
     return (
       <span className="ch-hw-led__x" title="Didn’t load">
         —<span className="ch-sr-only">didn’t load</span>
       </span>
     );
-  if (!items.length) return <span className="ch-hw-led__0 ch-num">0</span>;
+  if (n === 0 && !warn) return <span className="ch-hw-led__0 ch-num">0</span>;
   return (
     <span className="ch-hw-led__n">
-      <b className="ch-num">{items.length}</b>
-      {late > 0 && <em className="ch-num">{late} late</em>}
-    </span>
-  );
-}
-
-function Rounds({ r }: { r: ChHubLedgerRow['rounds'] }) {
-  if (!r) return <Figure items={null} />;
-  return (
-    <span className="ch-hw-led__n">
-      <b className={'ch-num' + (r.n === 0 ? ' is-zero' : '')}>{r.n}</b>
-      {!r.recent && <em>none in 14 days</em>}
+      <b className={'ch-num' + (warn ? ' is-warn' : '')}>{n}</b>
     </span>
   );
 }
@@ -472,7 +468,7 @@ export function WaitingOn({ rows, pulse, playersError, onOpen }: {
   const phone = useChPhone();
   const [sort, setSort] = useState<{ key: LedgerKey; flipped: boolean }>({ key: 'owed', flipped: false });
   const [open, setOpen] = useState<string | null>(null);
-  const owing = rows.filter((r) => owedBy(r) > 0).length;
+  const lateRows = rows.filter((r) => lateBy(r) > 0).length;
   const sorted = ledgerSorted(rows, sort.key, sort.flipped);
   const by = (key: LedgerKey) => {
     haptic('select');
@@ -494,7 +490,9 @@ export function WaitingOn({ rows, pulse, playersError, onOpen }: {
       title="Waiting on"
       span={8}
       className="ch-hw--ledger"
-      aside={!playersError && rows.length > 0 && <span className="ch-hw__k ch-num">{owing === 0 ? 'Nobody owes anything' : `${owing} of ${rows.length} owe something`}</span>}
+      // W22: who has a late task, not who owes anything (everyone owes a reply in a week with events, so that flagged the
+      // whole team). The ledger itself ranks by what is owed.
+      aside={!playersError && rows.length > 0 && <span className="ch-hw__k ch-num">{lateRows === 0 ? 'Nothing late' : `${lateRows} with a late task`}</span>}
     >
       {playersError ? (
         // The page's own notice (CH-10208, or CH-1209 with another failure) carries Try again: no second one here.
@@ -532,7 +530,7 @@ export function WaitingOn({ rows, pulse, playersError, onOpen }: {
       ) : (
         <table className="ch-hw-led">
           <caption className="ch-sr-only">
-            What each player owes. {sort.key === 'owed' ? 'Most owed first.' : `Sorted by ${sort.key}.`} Choose a heading to sort, a name to see the items.
+            What each player owes: replies due, posts to acknowledge, open tasks, late tasks and rounds in 30 days. {sort.key === 'owed' ? 'Most owed first.' : `Sorted by ${sort.key}.`} Choose a heading to sort, a name to see the items.
           </caption>
           <thead>
             <tr>
@@ -573,21 +571,24 @@ function LedgerRow({ r, open, onToggle, late, onOpen }: { r: ChHubLedgerRow; ope
           </button>
         </th>
         <td>
-          <Figure items={r.replies} />
+          <Figure n={r.replies?.length ?? null} />
         </td>
         <td>
-          <Figure items={r.posts} />
+          <Figure n={r.posts?.length ?? null} />
         </td>
         <td>
-          <Figure items={r.tasks} late={late} />
+          <Figure n={r.tasks?.length ?? null} />
         </td>
         <td>
-          <Rounds r={r.rounds} />
+          <Figure n={r.tasks ? late : null} warn={late > 0} />
+        </td>
+        <td>
+          <Figure n={r.rounds?.n ?? null} warn={r.rounds?.n === 0} />
         </td>
       </tr>
       {open && (
         <tr className="ch-hw-led__more" id={`ch-hw-owe-${r.id}`}>
-          <td colSpan={5}>
+          <td colSpan={COLUMNS.length}>
             <Owed row={r} onOpen={onOpen} />
           </td>
         </tr>

@@ -103,11 +103,11 @@ export function firstBusyDay(days: ChHubDay[]): number {
   return i < 0 ? 0 : i;
 }
 
-export type LedgerKey = 'owed' | 'name' | 'replies' | 'posts' | 'tasks' | 'rounds';
+export type LedgerKey = 'owed' | 'name' | 'replies' | 'posts' | 'tasks' | 'late' | 'rounds';
 
 /** Everything a player owes; a list that didn't load counts nothing (its cell says so). */
 export const owedBy = (r: ChHubLedgerRow) => (r.replies?.length ?? 0) + (r.posts?.length ?? 0) + (r.tasks?.length ?? 0);
-const lateBy = (r: ChHubLedgerRow) => r.tasks?.filter((t) => t.late).length ?? 0;
+export const lateBy = (r: ChHubLedgerRow) => r.tasks?.filter((t) => t.late).length ?? 0;
 
 /**
  * Waiting on's order. The default puts whoever owes the most first (late tasks break a tie); a column sorts by its own
@@ -118,7 +118,7 @@ export function ledgerSorted(rows: ChHubLedgerRow[], key: LedgerKey, flipped = f
   const byName = (a: ChHubLedgerRow, b: ChHubLedgerRow) => a.name.localeCompare(b.name);
   if (key === 'name') return [...rows].sort((a, b) => (flipped ? -1 : 1) * byName(a, b));
   const value = (r: ChHubLedgerRow): number | null =>
-    key === 'owed' ? owedBy(r) : key === 'rounds' ? (r.rounds ? r.rounds.n : null) : (r[key]?.length ?? null);
+    key === 'owed' ? owedBy(r) : key === 'rounds' ? (r.rounds ? r.rounds.n : null) : key === 'late' ? (r.tasks ? lateBy(r) : null) : (r[key]?.length ?? null);
   // Most first, except rounds (fewest first); flipped turns either round.
   const sign = (key === 'rounds' ? 1 : -1) * (flipped ? -1 : 1);
   return [...rows].sort((a, b) => {

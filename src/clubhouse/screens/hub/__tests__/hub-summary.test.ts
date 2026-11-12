@@ -142,6 +142,10 @@ describe('ledgerSorted', () => {
     expect(ids(ledgerSorted(rows, 'name'))).toBe('aejx');
     expect(ids(ledgerSorted(rows, 'name', true))).toBe('xjea');
   });
+  it('late sorts by late tasks, most first, and a list that did not load sorts last (W22)', () => {
+    expect(ids(ledgerSorted(rows, 'late'))).toBe('aejx');
+    expect(ids(ledgerSorted(rows, 'late', true))).toBe('ejax');
+  });
   it('rounds sort fewest first, so the player who has not played leads', () => {
     expect(ids(ledgerSorted(rows, 'rounds'))[0]).toBe('j');
     expect(ids(ledgerSorted(rows, 'rounds')).at(-1)).toBe('x');

@@ -533,7 +533,10 @@ describe('Team Hub · coach', () => {
     const user = userEvent.setup();
     show(PREVIEW_HUB_COACH);
     const owe = screen.getByRole('region', { name: 'Waiting on' });
-    expect(within(owe).getByText('6 of 6 owe something')).toBeTruthy();
+    // W22 (12 Nov): "6 of 6 owe something" flagged everyone, because replies due count and they are not late. The
+    // heading counts who has a late task (here one overdue task no one has finished).
+    expect(within(owe).getByText('6 with a late task')).toBeTruthy();
+    expect(within(owe).queryByText(/owe something/)).toBeNull();
     const names = () => within(owe).getAllByRole('rowheader').map((r) => r.textContent);
     expect(names()[0]).toBe('Jonah Okafor');
     await user.click(within(owe).getByRole('button', { name: /^Rounds/ }));
@@ -552,6 +555,28 @@ describe('Team Hub · coach', () => {
     expect(within(owe).getByText('34 rounds in 30 days · 5 of 6 played in the last 14')).toBeTruthy();
     await user.click(within(owe).getByRole('button', { name: /Announcements/ }));
     expect(screen.getByRole('tab', { name: 'Announcements' }).getAttribute('aria-selected')).toBe('true');
+  });
+
+  // W22 (12 Nov): cells read as one figure: "1 late 3" (1 late of 3 tasks) and "none in 14 days 0". Each cell is one
+  // figure now, its meaning in its heading: late tasks have a column of their own, and rounds are only the count.
+  it('W22 Waiting on: one figure a cell, its meaning in the heading, Late a column of its own', async () => {
+    const user = userEvent.setup();
+    show(PREVIEW_HUB_COACH);
+    const owe = screen.getByRole('region', { name: 'Waiting on' });
+    expect(within(owe).getAllByRole('columnheader').map((h) => h.textContent)).toEqual(['Player', 'Replies', 'Posts', 'Tasks', 'Late', 'Rounds 30 d']);
+    const jonah = within(owe).getByRole('rowheader', { name: 'Jonah Okafor' }).closest('tr')!;
+    const cells = [...jonah.querySelectorAll('td')].map((td) => td.textContent);
+    expect(cells).toEqual(['2', '1', '3', '1', '0']);
+    for (const c of cells) expect(c).toMatch(/^\d+$/);
+    await user.click(within(owe).getByRole('button', { name: /^Late/ }));
+    expect(within(owe).getByRole('columnheader', { name: /Late/ }).getAttribute('aria-sort')).toBe('descending');
+    await user.click(within(owe).getByRole('button', { name: 'Jonah Okafor' }));
+    expect(owe.querySelector('.ch-hw-led__more > td')?.getAttribute('colspan')).toBe('6');
+  });
+
+  it('W22 Waiting on says nothing is late when nothing is', () => {
+    show({ ...PREVIEW_HUB_COACH, ledger: PREVIEW_HUB_COACH.ledger!.map((r) => ({ ...r, tasks: r.tasks?.map((t) => ({ ...t, late: false })) ?? null })) });
+    expect(within(screen.getByRole('region', { name: 'Waiting on' })).getByText('Nothing late')).toBeTruthy();
   });
 
   it('CH-10101 CH-10109 CH-10102 CH-10402 101201 posting: a headline, a message (the server requires one), an audience; the post keeps its text when it fails (CH-10005)', async () => {
