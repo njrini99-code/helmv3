@@ -61,7 +61,8 @@ export function Pipeline({
             <button
               key={s.value}
               type="button"
-              className={`ch-rec-pipe__stage is-${s.value}`}
+              // W41: a stage at 0 draws the quiet coin (recruiting.css), whatever its stage's tone.
+              className={`ch-rec-pipe__stage is-${s.value}` + (n === 0 ? ' is-zero' : '')}
               aria-pressed={on}
               aria-label={`${s.label}, ${plural(n, 'prospect')}`}
               disabled={empty}
