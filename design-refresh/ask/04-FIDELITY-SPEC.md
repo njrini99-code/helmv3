@@ -101,4 +101,3 @@ What the page draws that the build does differently, and what to build instead.
 - The moments stage bar, the pieces board and the 47 status bar are design page chrome. Not built.
 - On the page, `&stage=confirm` holds before Cancel and the primary button get their listeners, so neither can be pressed while held; capture reaches Cancelled by stepping the clock instead. The build has no hold.
 - On the page a run sets `data-stage=done` before the 8s Undo timer sets `told`, and `lock` and `locked` after that. Capture waits on the DOM, not on the order.
-
