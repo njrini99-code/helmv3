@@ -8,9 +8,22 @@ export type PreviewViewer = 'coach' | 'theo' | 'jonah';
 const THEO = new Set(['home-player', 'hub-player', 'roster-player']);
 const JONAH = new Set(['rounds', 'classes', 'track', 'setup', 'calendar-player', 'messages-player', 'qualifiers-player', 'qualifier-player', 'tournament-player', 'coachhelm-practice-player']);
 
-export function previewViewer(screen: string, state: string | undefined): PreviewViewer {
+/**
+ * The query a screen draws a player's view from, beside `state`: `viewer`/`view` (the player file, Read, Ask v2) and
+ * `copy` (the plan page's words for a player).
+ */
+export interface PreviewViewerParams {
+  viewer?: string;
+  copy?: string;
+}
+
+export function previewViewer(screen: string, state: string | undefined, params: PreviewViewerParams = {}): PreviewViewer {
   if (THEO.has(screen)) return 'theo';
   if (JONAH.has(screen)) return 'jonah';
+  // G1 (preview grade, 12 Nov): these draw the player's own view from their query, and drew it in the coach's shell.
+  if (screen === 'coachhelm-practice-home' && state?.startsWith('player')) return 'jonah';
+  if (screen === 'coachhelm-practice-plan' && params.copy === 'player') return 'jonah';
+  if ((screen === 'coachhelm-player-file' || screen === 'coachhelm-read' || screen === 'coachhelm-ask-v2') && params.viewer === 'player') return 'jonah';
   if (screen === 'round' && !state?.startsWith('coach')) return 'jonah';
   if (screen === 'settings' && (state === 'player' || state === 'noteam')) return 'jonah';
   // The player's own stats page: the coach sees a player through the coach shell, the player sees themself.

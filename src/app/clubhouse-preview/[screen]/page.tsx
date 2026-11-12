@@ -683,7 +683,7 @@ export default async function ClubhousePreview({
   for (const [id, path] of Object.entries(TOUR_PREVIEW_PATHS)) screens[id] = { path, node: <PreviewTournaments screen={id} state={state} event={event} tab={tab} view={view} /> };
   const entry = screens[screen];
   if (!entry) notFound();
-  const who = previewViewer(screen, state);
+  const who = previewViewer(screen, state, { viewer: viewerParam ?? view, copy: (await searchParams as { copy?: string }).copy });
   const viewer = who === 'theo' ? { ...PREVIEW_PLAYER_USER, name: 'Theo Marchetti' } : who === 'jonah' ? { ...PREVIEW_PLAYER_USER, name: 'Jonah Okafor' } : PREVIEW_COACH;
   const user = teams === '2' && viewer.role === 'coach' ? { ...viewer, coachTeams: [{ id: 'preview-team', name: 'Varsity', gender: 'mens' }, { id: 'preview-team-w', name: 'Varsity Women', gender: 'womens' }], canSwitchTeams: true } : viewer;
 
