@@ -99,6 +99,8 @@ describe('112401 Round review, on screen', () => {
     expect(document.querySelector('.ch-rcard-h__s')).toBeNull();
     expect(document.querySelector('.ch-rv-figs')).toBeNull();
     for (const k of ['Front 9', 'Back 9', 'Putts', 'Fairways', 'Greens']) expect(screen.queryByText(k, { selector: 'dt' })).toBeNull();
+    // Zone 1's read keeps its headline, not the card's Out and In again.
+    expect(screen.queryByText(/^Out \d+ · In \d+$/)).toBeNull();
   });
 
   it('111811 a round posted as a total keeps the five figures: there is no card to say them', () => {
