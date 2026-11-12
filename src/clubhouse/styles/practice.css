@@ -1865,6 +1865,13 @@ main.ch-prc-planpage > .ch-backlink {
     flex-basis: 100%;
   }
   /* The areas are one row that scrolls sideways, out to the screen's edges; the clipped edge fades (.ch-hscroll) and the chosen area is kept whole. */
+  /* G13: the row bleeds to the screen's edges, so the fade runs over its side padding too (28 + 16); at the plain 28px most
+     of it fell on the padding and an area was cut at the edge nearly at full ink ("Approac…"). A plain length, not calc():
+     useKeepInView reads the number (parseFloat) to keep the chosen area clear of it. Two classes, so it wins over
+     ui.css's .ch-hscroll phone fade whichever sheet loads last. */
+  .ch-hscroll.ch-prc-areas {
+    --ch-hs-fade: 44px;
+  }
   .ch-prc-areas {
     flex-wrap: nowrap;
     margin: 0 calc(-1 * var(--ch-page-x-phone));
@@ -1912,6 +1919,9 @@ main.ch-prc-planpage > .ch-backlink {
     margin: 0 -20px;
     padding: 2px 20px;
     scroll-padding-inline: 20px;
+  }
+  .ch-hscroll.ch-prc-areas {
+    --ch-hs-fade: 48px;
   }
   .ch-prc-areas {
     margin: 0 -20px;
