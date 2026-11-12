@@ -1542,8 +1542,9 @@ button.ch-mo__ev.is-major {
 button.ch-mo__ev.is-major.is-qualifier {
   background: var(--ch-bg-surface);
 }
+/* W44: the name in primary ink (it read as a grey line); the time beside it stays quieter. */
 button.ch-mo__ev:not(.is-major) {
-  color: var(--ch-text-secondary);
+  color: var(--ch-text-primary);
 }
 .ch-mo__n:focus-visible,
 .ch-mo__ev:focus-visible,
@@ -1667,6 +1668,12 @@ html[data-fw-theme='dark'] .ch-mo__ribbon.is-held {
   min-height: 24px;
   font: var(--ch-type-12-medium);
   color: var(--ch-text-secondary);
+}
+/* W44: the start leads a timed chip, in the chip's own weight, then the name (gap 8 from the dot, 4 to the name). */
+.ch-mo__at {
+  flex: none;
+  margin-right: -4px;
+  color: var(--ch-text-tertiary);
 }
 .ch-mo__ev i {
   flex: none;
