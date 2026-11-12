@@ -55,10 +55,12 @@
 -- it as a held override, out of timestamp order, like the other held
 -- tournament files.
 --
--- VERIFY: select to_regprocedure('public.golf_tournament_my_lineup(uuid)') is not null; -- noqa: LT05
--- VERIFY: select prosecdef and proconfig @> array['search_path=""'] from pg_proc where oid = 'public.golf_tournament_my_lineup(uuid)'::regprocedure; -- noqa: LT05
--- VERIFY: select not has_function_privilege('anon', 'public.golf_tournament_my_lineup(uuid)', 'EXECUTE') and has_function_privilege('authenticated', 'public.golf_tournament_my_lineup(uuid)', 'EXECUTE'); -- noqa: LT05
--- VERIFY: select count(*) = 1 from pg_policies where tablename = 'golf_tournament_round_lineups' and policyname = 'golf_tournament_round_lineups_select_own'; -- noqa: LT05
+-- Each VERIFY returns a row only when its check holds (release review B2, 11 Nov 2026: `select <boolean>` returned a row
+-- when false too, so a bad apply could not be seen).
+-- VERIFY: select 1 where to_regprocedure('public.golf_tournament_my_lineup(uuid)') is not null; -- noqa: LT05
+-- VERIFY: select 1 from pg_proc where oid = to_regprocedure('public.golf_tournament_my_lineup(uuid)') and prosecdef and proconfig @> array['search_path=""']; -- noqa: LT05
+-- VERIFY: select 1 from pg_proc p where p.oid = to_regprocedure('public.golf_tournament_my_lineup(uuid)') and not has_function_privilege('anon', p.oid, 'EXECUTE') and has_function_privilege('authenticated', p.oid, 'EXECUTE'); -- noqa: LT05
+-- VERIFY: select 1 from pg_policies where schemaname = 'public' and tablename = 'golf_tournament_round_lineups' and policyname = 'golf_tournament_round_lineups_select_own'; -- noqa: LT05
 --
 -- ROLLBACK: drop policy if exists golf_tournament_round_lineups_select_own on public.golf_tournament_round_lineups; -- noqa: LT05
 -- ROLLBACK: drop function if exists public.golf_tournament_my_lineup(uuid);
