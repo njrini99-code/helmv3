@@ -43,7 +43,8 @@ export function PreviewPracticeFormat({ state }: { state?: string }) {
       </main>
     );
   }
-  return <PlanFormat preview published={6} see={{ label: 'See Thursday in it', href: '/clubhouse-preview/coachhelm-practice-format?state=see' }} initial={VIEWS[state ?? ''] ?? { k: 'empty' }} sheet={state === 'upload' || state === 'upload-sheet' || state === 'picked'} picked={state === 'picked' ? { name: FILE, meta: '1 page · 240 KB' } : null} current={state === 'set' ? 'Fall practice sheet' : 'GolfHelm standard'} />;
+  // Empty is a team that has published no plans (G15): the page itself always opens on the upload card.
+  return <PlanFormat preview published={state === 'empty' ? 0 : 6} see={{ label: 'See Thursday in it', href: '/clubhouse-preview/coachhelm-practice-format?state=see' }} initial={VIEWS[state ?? ''] ?? { k: 'empty' }} sheet={state === 'upload' || state === 'upload-sheet' || state === 'picked'} picked={state === 'picked' ? { name: FILE, meta: '1 page · 240 KB' } : null} current={state === 'set' ? 'Fall practice sheet' : 'GolfHelm standard'} />;
 }
 
 const STOPS = [
