@@ -258,7 +258,7 @@ describe('replay: stored compositions parse unchanged, with or without shots', (
     expect(salvageComposition(stored).dropped).toEqual([]);
     // Nothing is added on the way through: a stored miss pattern without shots comes back without them, one with them as it was.
     const misses = (blocks: ReadonlyArray<{ type: string }>) => JSON.stringify(blocks.filter((b) => b.type === 'miss_pattern'));
-    expect(misses(parsed.data!.blocks)).toBe(misses(stored.blocks));
+    expect(misses(parsed.data!.blocks)).toBe(misses(stored.blocks as ReadonlyArray<{ type: string }>));
   });
 });
 
