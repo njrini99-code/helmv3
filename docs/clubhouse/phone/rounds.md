@@ -94,8 +94,8 @@ both roles.
 | --- | --- |
 | Back ("Rounds") | Player: the library. Coach: Team rounds when the round was opened from it, otherwise that player's rounds on Stats (`stats?player=<id>&tab=rounds`, D-53), labelled with the player's name |
 | Hero: day, date and type; course; tee swatch, yards, rating and slope; score, to par, "Strokes" | `golf_rounds` (the canonical total), `golf_course_tees.total_yards` by `tee_id`, `course_rating` and `course_slope`. A coach sees the player's name first in the line |
-| Front 9, Back 9, Putts (per hole), Fairways, Greens | Each nine from `golf_holes` when every hole in it has a score (else "—"); the rest from the round's totals |
-| Scorecard: Score, Putts (three flagged), FIR, GIR; tap a hole | `golf_holes`. A par 3 never counts a fairway |
+| Front 9, Back 9, Putts (per hole), Fairways, Greens: a round posted as a total only (W47: with the card drawn they were its own Out, In and Total cells again) | Each nine from `golf_holes` when every hole in it has a score (else "—"); the rest from the round's totals |
+| Scorecard: Score, Putts (three flagged), FIR, GIR; tap a hole. Its head is its name and tees (the hero says the score) | `golf_holes`. A par 3 never counts a fairway |
 | The hole's shots: kind and club, from → where it finished, the miss, the putt's read | `golf_shots` for the round, by hole and shot number |
 | Scoring distribution | The holes against par |
 | Round recap | `golf_rounds.ai_recap`, written when the round was posted (407 rounds have one); hidden when absent |
