@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from '@testing-library/react';
 import { STATIONS, stationFigures, type ChTeamPlayer } from '../../../../data/coachhelm-team-shape';
@@ -77,5 +79,70 @@ describe('the hole drawn at three quarters of its width, five players losing mos
     for (let i = 0; i < coins.length; i++) {
       for (let j = i + 1; j < coins.length; j++) expect(apart(coins[i]!.at, coins[j]!.at)).toBeGreaterThanOrEqual(2 * r + RING);
     }
+  });
+});
+
+/** A selector's specificity as [ids, classes/attributes/pseudo-classes, types], for the plain selectors this sheet uses. */
+const specificity = (sel: string): [number, number, number] => {
+  const ids = (sel.match(/#[\w-]+/g) ?? []).length;
+  const classes = (sel.match(/\.[\w-]+|\[[^\]]+\]|:(?!:)[\w-]+/g) ?? []).length;
+  const types = (sel.replace(/\[[^\]]+\]/g, '').match(/(^|[\s>+~])[a-z][\w-]*/gi) ?? []).length;
+  return [ids, classes, types];
+};
+const outranks = (a: [number, number, number], b: [number, number, number]) => a[0] - b[0] || a[1] - b[1] || a[2] - b[2];
+
+describe('W9 on the phone (12 Nov): what a coin group paints, its tap target included', () => {
+  const origRO = globalThis.ResizeObserver;
+  const origRect = Element.prototype.getBoundingClientRect;
+  afterEach(() => {
+    cleanup();
+    globalThis.ResizeObserver = origRO;
+    Element.prototype.getBoundingClientRect = origRect;
+  });
+
+  it('at 390 wide the hole draws about 300 of its 330: the coins and "+3" keep their gap, and the 44px target is not a disc', () => {
+    globalThis.ResizeObserver = class {
+      observe() {}
+      disconnect() {}
+      unobserve() {}
+    } as unknown as typeof ResizeObserver;
+    Element.prototype.getBoundingClientRect = function () {
+      return { width: this instanceof SVGSVGElement ? 300 : 0, height: 0, x: 0, y: 0, top: 0, left: 0, right: 0, bottom: 0, toJSON: () => ({}) } as DOMRect;
+    };
+    const base = PREVIEW_TEAM_BOARD.players.list[0] as ChTeamPlayer;
+    const names = ['Jonah Okafor', 'Eli Brandt', 'Priya Natarajan', 'Theo Marchetti', 'Sam Ortiz'];
+    const players = names.map((name, i) => ({ ...base, id: `p-${i}`, name, first: name.split(' ')[0]!, worst: 'putting' as const, early: false }));
+    const { container } = render(<TeamHole stations={stationFigures(PREVIEW_TEAM_BOARD.players.list)} players={players} station="approach" onStation={() => {}} orientation="v" />);
+    const r = 11 / (300 / 330);
+    const painted: Array<{ at: [number, number]; r: number }> = [];
+    for (const g of container.querySelectorAll('.scn')) {
+      for (const c of g.querySelectorAll('circle')) {
+        const at: [number, number] = [Number(c.getAttribute('cx')), Number(c.getAttribute('cy'))];
+        // The only circle in a coin group that is not the coin is its tap target: 44px, and the sheet must leave it unpainted.
+        if (c.classList.contains('hit')) {
+          expect(g.classList.contains('is-more')).toBe(true);
+          expect(c.getAttribute('fill')).toBe('transparent');
+          continue;
+        }
+        expect(Number(c.getAttribute('r'))).toBeCloseTo(r, 5);
+        painted.push({ at, r: Number(c.getAttribute('r')) });
+      }
+    }
+    expect(painted).toHaveLength(3);
+    for (let i = 0; i < painted.length; i++) {
+      for (let j = i + 1; j < painted.length; j++) expect(apart(painted[i]!.at, painted[j]!.at)).toBeGreaterThanOrEqual(painted[i]!.r + painted[j]!.r + RING);
+    }
+  });
+
+  it('the sheet leaves the target unpainted, by a rule that outranks every rule that fills or rings a coin’s circle', () => {
+    const css = readFileSync(join(process.cwd(), 'src/clubhouse/styles/coachhelm-team.css'), 'utf8');
+    const rules = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].flatMap(([, sels, body]) => sels!.split(',').map((sel) => ({ sel: sel.replace(/\/\*[\s\S]*?\*\//g, '').trim(), body: body! })));
+    const target = rules.filter((x) => /\.scn circle\.hit$/.test(x.sel));
+    expect(target).toHaveLength(1);
+    expect(target[0]!.body).toMatch(/fill:\s*transparent/);
+    expect(target[0]!.body).toMatch(/stroke:\s*none/);
+    const painters = rules.filter((x) => /\.scn\S*\s+circle$/.test(x.sel) && /(^|;|\s)(fill|stroke)\s*:/.test(x.body));
+    expect(painters.length).toBeGreaterThanOrEqual(3);
+    for (const p of painters) expect(outranks(specificity(target[0]!.sel), specificity(p.sel)), p.sel).toBeGreaterThan(0);
   });
 });
