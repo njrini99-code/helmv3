@@ -178,6 +178,9 @@ export interface ChTeamForm {
   deltaSe?: number | null;
   /** The team's average on each of its last ten round days (the rounds the average rests on), oldest to newest, for the line. */
   line: number[];
+  /** Each point's day (YYYY-MM-DD) and how many rounds it averages, so the chart can name its ends and its best and worst days (W27/W3). Absent on an older fixture. */
+  lineDays?: string[];
+  lineCounts?: number[];
   /** Countable rounds of either length in the team-local Monday-to-Sunday week: a count on its own basis, not the figures'. */
   roundsThisWeek: number;
   /** What the average, greens and putts rest on: the rounds, their first and last dates, and how many carry greens and putts. */
@@ -913,7 +916,8 @@ export function teamForm(full: ChRound[], roundsThisWeek: number, span?: ChSpan)
     const d = r.round_date.slice(0, 10);
     byDay.set(d, [...(byDay.get(d) ?? []), r.total_score as number]);
   }
-  const line = [...byDay.values()].slice(-10).map((scores) => mean(scores) as number);
+  const lastDays = [...byDay.entries()].slice(-10);
+  const line = lastDays.map(([, scores]) => mean(scores) as number);
   const dates = last.map((r) => r.round_date.slice(0, 10)).sort();
   return {
     ...(span === 'all' ? { span } : {}),
@@ -921,6 +925,8 @@ export function teamForm(full: ChRound[], roundsThisWeek: number, span?: ChSpan)
     delta: prevAvg != null && pairedAvg != null ? pairedAvg - prevAvg : null,
     deltaSe: comparable ? windowChangeSe(lastPaired, prev, scoreOf, 'score') : null,
     line,
+    lineDays: lastDays.map(([day]) => day),
+    lineCounts: lastDays.map(([, scores]) => scores.length),
     roundsThisWeek,
     basis: { rounds: last.length, from: dates[0]!, to: dates[dates.length - 1]!, girRounds: last.filter(hasGir).length, puttsRounds: last.filter((r) => puttsOf(r) != null).length },
     gir: { pct: gir, ...(girFloor.needs ? { needs: girFloor.needs } : {}), delta: gir != null && pairedGir != null && prevGir != null ? pairedGir - prevGir : null, se: comparable ? changeSe(girRates(lastPaired), girRates(prev), null) : null },

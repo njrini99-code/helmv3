@@ -6123,3 +6123,63 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
 :is(.ch-hm, .ch-h-main)[data-ch-crh='on'] .ch-hm-legs__sep {
   display: none;
 }
+
+/* W3 (owner's preview, 11 Nov 2026): Team scoring's line names its first and last days and marks its best and toughest,
+   and a change the card itself calls noise ("No clear change") is no longer its boldest figure. */
+.ch-hm-delta.is-flat {
+  font-weight: 400;
+  color: var(--ch-text-tertiary);
+}
+.ch-hm-form__axis {
+  display: flex;
+  justify-content: space-between;
+  margin-top: -4px;
+  font: var(--ch-type-11);
+  font-variant-numeric: tabular-nums;
+  color: var(--ch-text-tertiary);
+}
+.ch-hm-form__ends {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 10px 0 12px;
+  font: var(--ch-type-12);
+  font-variant-numeric: tabular-nums;
+  color: var(--ch-text-secondary);
+}
+.ch-hm-form__ends span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.ch-hm-form__ends i {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+.ch-hm-form__ends i.is-best {
+  background: var(--ch-chart-gain);
+}
+.ch-hm-form__ends i.is-worst {
+  background: var(--ch-chart-loss);
+}
+.ch-hm-form__svg .ch-hm-form__mark {
+  display: inline;
+  fill: none;
+  stroke-width: 7px;
+  stroke-linecap: round;
+}
+.ch-hm-form__svg .ch-hm-form__mark.is-best {
+  stroke: var(--ch-chart-gain);
+}
+.ch-hm-form__svg .ch-hm-form__mark.is-worst {
+  stroke: var(--ch-chart-loss);
+}
+/* The card's parts carry their own inset in the redesign (crh): the plot and the figures sit 16px in, so the labels do too. */
+.ch-hm[data-ch-crh='on'] .ch-hm-form__axis,
+.ch-hm[data-ch-crh='on'] .ch-hm-form__ends,
+.ch-h-main[data-ch-crh='on'] .ch-hm-form__axis,
+.ch-h-main[data-ch-crh='on'] .ch-hm-form__ends {
+  margin-inline: 16px;
+}
