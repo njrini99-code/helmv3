@@ -108,5 +108,35 @@ export const HOLE: Record<'v' | 'h', HoleGeometry> = {
   },
 };
 
-export const STATION_NAME: Record<ChStation, string> = { tee: 'Off the tee', approach: 'Approach', short_game: 'Around the green', putting: 'Putting' };
+/** A coin's ring (coachhelm-team.css `.scn circle`, stroke-width 1.5) and the clear gap kept between two rings, in drawing units. */
+const COIN_RING = 1.5;
+const COIN_GAP = 3;
+
+/**
+ * Where a station's first `drawn` coins stand when each is `r` in radius, in drawing units. The slots are placed by hand for a 22-unit
+ * coin, 24 to 26 apart; a coin keeps its size on screen, so when the hole draws smaller than its own width it grows in the drawing
+ * and the slots no longer held it: at Putting the "+2" coin covered the first coin's initials, leaving "B" beside "MR" (W9, staging,
+ * 11 Nov). The slots fan out from the first one, by just enough that every two rings keep a gap, and the coins drawn are moved
+ * together, never apart, so the whole group sits inside the drawing.
+ */
+export function coinSlots(H: HoleGeometry, s: ChStation, r: number, drawn: number): Array<[number, number]> {
+  const all = H.coins[s];
+  const [ox, oy] = all[0] ?? [0, 0];
+  let closest = Infinity;
+  for (let i = 0; i < all.length; i++) {
+    for (let j = i + 1; j < all.length; j++) closest = Math.min(closest, Math.hypot(all[i]![0] - all[j]![0], all[i]![1] - all[j]![1]));
+  }
+  const fan = Number.isFinite(closest) && closest > 0 ? Math.max(1, (2 * r + COIN_RING + COIN_GAP) / closest) : 1;
+  const slots = all.slice(0, Math.max(0, drawn)).map(([x, y]): [number, number] => [ox + (x - ox) * fan, oy + (y - oy) * fan]);
+  if (slots.length === 0) return slots;
+  const edge = r + COIN_RING / 2;
+  const xs = slots.map(([x]) => x);
+  const ys = slots.map(([, y]) => y);
+  const shift = (lo: number, hi: number, max: number) => (lo < edge ? edge - lo : hi > max - edge ? max - edge - hi : 0);
+  const dx = shift(Math.min(...xs), Math.max(...xs), H.w);
+  const dy = shift(Math.min(...ys), Math.max(...ys), H.h);
+  return slots.map(([x, y]) => [x + dx, y + dy]);
+}
+
+export const STATION_NAME: Record<ChStation, string> ={ tee: 'Off the tee', approach: 'Approach', short_game: 'Around the green', putting: 'Putting' };
 export const STATION_SHORT: Record<ChStation, string> = { tee: 'Tee', approach: 'Approach', short_game: TERMS.shortGame.short, putting: 'Putting' };
