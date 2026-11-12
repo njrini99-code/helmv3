@@ -115,11 +115,11 @@ describe('W19 B · the look, in tokens', () => {
     expect(ui).not.toContain('.ch-es--page .ch-es__body {');
   });
 
-  it('Tournaments’ air: 40/24 in the card, 72/88 under the Ledger’s head on a desk, 52/24/40 on a phone', () => {
+  it('Tournaments’ air: 40/24 in the card (a phone’s too), 72/88 under the Ledger’s head on a desk', () => {
     expect(rule(ui, '.ch-es--page > .ch-es__copy')).toContain('padding: 40px 24px');
     const gate = '.ch-es--page:not(.ch-surface *, .ch-sheet *, .ch-shs-card *, .ch-es--line) > .ch-es__copy';
     expect(rule(media(DESK, gate), `  [data-ui='clubhouse'] main[data-canopy] ${gate}`)).toContain('padding-block: 72px 88px');
-    expect(rule(media(PHONE, gate), '  .ch-es--page:not(.ch-surface *, .ch-sheet *) > .ch-es__copy')).toContain('padding: 52px 24px 40px');
+    expect(rule(media(PHONE, gate), '  .ch-es--page:not(.ch-surface *, .ch-sheet *) > .ch-es__copy')).toContain('padding: 40px 24px');
   });
 
   it('the card holds 320px of the page on a desk and 240 on a phone, only where it is the card (never inside another)', () => {

@@ -2798,8 +2798,10 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
      inset), its copy keeps the card's inset. At 0 its full-width action ran over the card's side edges, and the card
      showed again as a strip below it (Hub's empty Home, design review 10 Nov 2026). The value is the one the player's
      Home had already set for itself (home.css). */
+  /* Tournaments' phone inset as it drew: the in-page card's 40/24 (shell.css .ch-empty-page:not(…) outranks the phone's
+     52/24/40 there). */
   .ch-es--page:not(.ch-surface *, .ch-sheet *) > .ch-es__copy {
-    padding: 52px 24px 40px;
+    padding: 40px 24px;
   }
   .ch-es__copy {
     flex-direction: column;
