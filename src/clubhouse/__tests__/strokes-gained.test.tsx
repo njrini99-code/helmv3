@@ -105,9 +105,9 @@ beforeEach(() => {
 describe('the strokes gained baseline', () => {
   it('names the Tour for a men’s team, the women’s Tour baseline for a women’s team, and claims none when the tour is unknown', () => {
     // `mark` and `zero` name the gauge's zero mark and the trend's zero line (A8.3).
-    expect(sgBaseline('pga')).toEqual({ vs: 'vs Tour', noun: 'the Tour baseline', mark: 'Tour', name: 'the Tour', zero: 'Zero is the Tour' });
-    expect(sgBaseline('lpga')).toEqual({ vs: "vs the women's Tour baseline", noun: "the women's Tour baseline", mark: "Women's Tour", name: "the women's Tour", zero: "Zero is the women's Tour" });
-    expect(sgBaseline(null)).toEqual({ vs: 'vs the baseline', noun: 'the baseline', mark: 'Baseline', name: 'the baseline', zero: 'Zero is the baseline' });
+    expect(sgBaseline('pga')).toEqual({ vs: 'vs Tour', noun: 'the Tour baseline', mark: 'Tour', name: 'the Tour', zero: 'Zero is the Tour', why: 'Measured against PGA Tour pros, so below zero is normal for nearly everyone else.', whyNamed: 'Strokes gained is measured against PGA Tour pros, so below zero is normal for nearly everyone else.' });
+    expect(sgBaseline('lpga')).toEqual({ vs: "vs the women's Tour baseline", noun: "the women's Tour baseline", mark: "Women's Tour", name: "the women's Tour", zero: "Zero is the women's Tour", why: 'Measured against LPGA Tour pros, so below zero is normal for nearly everyone else.', whyNamed: 'Strokes gained is measured against LPGA Tour pros, so below zero is normal for nearly everyone else.' });
+    expect(sgBaseline(null)).toEqual({ vs: 'vs the baseline', noun: 'the baseline', mark: 'Baseline', name: 'the baseline', zero: 'Zero is the baseline', why: 'Measured against Tour pros, so below zero is normal for nearly everyone else.', whyNamed: 'Strokes gained is measured against Tour pros, so below zero is normal for nearly everyone else.' });
   });
 
   it('the player profile says vs Tour (never vs D1) on the hero, on the phone figure and in the comparison table; a women’s team says so', () => {
@@ -290,11 +290,13 @@ describe('team stats · desktop', () => {
     expect(code('CH-4312')!.querySelector('svg')).toBeNull();
   });
 
-  it('the leg cards say their one shared scale once, the same ends their lines are drawn on (row 102)', () => {
+  it('the leg cards say their one shared scale once, the same ends their lines are drawn on (row 102), then why they sit below zero (Q1)', () => {
     showTeam(team());
     const words = legScaleWords(legScale(PREVIEW_TEAM_STATS.legWeeks));
     const note = [...document.querySelectorAll('.ch-sv-note')].find((n) => /One scale for the four legs/.test(n.textContent ?? ''));
-    expect(note?.textContent).toBe(words);
+    expect(note?.textContent).toBe(`${words}. ${sgBaseline(team().tour).why}`);
+    // The scale is said by the section's label, so the note's copy of it is hidden; the sentence after it is read.
+    expect(note?.querySelector('[aria-hidden="true"]')?.textContent).toBe(`${words}. `);
     expect(document.querySelector('.ch-sgm-row')!.getAttribute('aria-label')).toContain(words);
   });
 

@@ -246,7 +246,7 @@ export function TeamCharts({ data, tape }: { data: ChTeamCharts; tape?: ReactNod
       </SectionBoundary>
 
       <SectionBoundary surface="stats.team.legs" label="Strokes gained by leg" code="CH-4206">
-        <LegTrends legWeeks={data.legWeeks} legHalves={data.legHalves} legTotals={data.legTotals} leg={leg} setLeg={setLeg} />
+        <LegTrends legWeeks={data.legWeeks} legHalves={data.legHalves} legTotals={data.legTotals} leg={leg} setLeg={setLeg} why={sgBaseline(data.tour).why} />
         <LegGrid data={data} leg={leg} focus={focus} setFocus={setFocus} />
       </SectionBoundary>
     </>
@@ -259,12 +259,15 @@ function LegTrends({
   legTotals,
   leg,
   setLeg,
+  why,
 }: {
   legWeeks: ChTeamStats['legWeeks'];
   legHalves: ChTeamStats['legHalves'];
   legTotals: ChTeamStats['legTotals'];
   leg: ChLeg;
   setLeg: (l: ChLeg) => void;
+  /** Why a college team's figures sit below zero (lib/sg.ts), said in the cards' one note. */
+  why: string;
 }) {
   const scale = legScale(legWeeks);
   // One span for the four cards, so a week sits at the same place on each.
@@ -288,9 +291,11 @@ function LegTrends({
           />
         ))}
       </section>
-      {/* The four cards share one scale (B5); its ends are said once, under them (row 102). */}
-      <p className="ch-sv-note" aria-hidden="true">
-        {legScaleWords(scale)}
+      {/* The four cards share one scale (B5); its ends are said once, under them (row 102), and the section's label says them too.
+          The same note says why a college team's legs sit below zero (Q1, owner 12 Nov 2026). */}
+      <p className="ch-sv-note">
+        <span aria-hidden="true">{legScaleWords(scale)}. </span>
+        {why}
       </p>
     </>
   );

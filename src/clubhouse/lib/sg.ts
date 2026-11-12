@@ -19,12 +19,29 @@ export interface ChSgBaseline {
   name: string;
   /** The zero line on a trend: "Zero is the Tour", "Zero is the women's Tour" (A8.3). */
   zero: string;
+  /**
+   * Why a college team's strokes gained reads below zero, said once on each page whose headline is a strokes gained figure, in
+   * the caption that page already has (owner, 12 Nov 2026, Q1: keep the PGA Tour baseline, and say so, so a coach does not read
+   * every negative as broken numbers). "Measured against PGA Tour pros, so below zero is normal for nearly everyone else." It names
+   * no college, division or level: the Tour is the only benchmark on these pages (Q-88), so the sentence says what zero is, not
+   * whom the team is held against.
+   */
+  why: string;
+  /** The same sentence where no strokes gained figure stands beside it (Roster's head): "Strokes gained is measured against …". */
+  whyNamed: string;
 }
 
+/** The one place the sentence is written; `against` is who zero is. */
+const belowZero = (against: string) => ({
+  why: `Measured against ${against}, so below zero is normal for nearly everyone else.`,
+  whyNamed: `Strokes gained is measured against ${against}, so below zero is normal for nearly everyone else.`,
+});
+
 export function sgBaseline(tour: ChSgTour): ChSgBaseline {
-  if (tour === 'pga') return { vs: 'vs Tour', noun: 'the Tour baseline', mark: 'Tour', name: 'the Tour', zero: 'Zero is the Tour' };
-  if (tour === 'lpga') return { vs: "vs the women's Tour baseline", noun: "the women's Tour baseline", mark: "Women's Tour", name: "the women's Tour", zero: "Zero is the women's Tour" };
-  return { vs: 'vs the baseline', noun: 'the baseline', mark: 'Baseline', name: 'the baseline', zero: 'Zero is the baseline' };
+  if (tour === 'pga') return { vs: 'vs Tour', noun: 'the Tour baseline', mark: 'Tour', name: 'the Tour', zero: 'Zero is the Tour', ...belowZero('PGA Tour pros') };
+  if (tour === 'lpga') return { vs: "vs the women's Tour baseline", noun: "the women's Tour baseline", mark: "Women's Tour", name: "the women's Tour", zero: "Zero is the women's Tour", ...belowZero('LPGA Tour pros') };
+  // A tour the app could not read claims neither the men's nor the women's (CH-4210).
+  return { vs: 'vs the baseline', noun: 'the baseline', mark: 'Baseline', name: 'the baseline', zero: 'Zero is the baseline', ...belowZero('Tour pros') };
 }
 
 /**

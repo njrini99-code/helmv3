@@ -624,7 +624,8 @@ function SgCard({ data, onOpen }: { data: ChPlayerProfile; onOpen: () => void })
             {ready ? formatSigned(data.win.sgPerRound) : <NoData />}
             {est && <small>est.</small>}
           </span>
-          <div className="ch-shs-cap">{ready ? 'Strokes a round against the Tour' : `${SG_WAIT}.`}</div>
+          {/* The card's one caption also says why a college player's figure sits below zero (Q1, owner 12 Nov 2026). */}
+          <div className="ch-shs-cap">{ready ? `Strokes a round. ${sgBaseline(data.tour).why}` : `${SG_WAIT}.`}</div>
           {mix && (
             <p className="ch-shs-mini-cap" data-ch-sg-mix="">
               {mix}
