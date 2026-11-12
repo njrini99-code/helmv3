@@ -20,7 +20,7 @@ Held items:     none
 - The card (ui.css): at the page's measure, with Tournaments' first run as the reference, which reads exactly as
   before. Tournaments' medallion (the green-800 tile on faint rings, 148px, 120 on a phone), its 28 strong title (22 on
   a phone) and 15 sentence at 42ch, 12px apart in 460px, its air (40/24 in the card, 72/88 under the Ledger's head on
-  a desk, 52/24/40 on a phone). shell.css draws the medallion and the type for the route error and every page empty
+  a desk, 40/24 on a phone). shell.css draws the medallion and the type for the route error and every page empty
   from one rule set (`.ch-empty-page__art, .ch-es--page … .ch-es__glyph`, `.ch-empty-page__ic, .ch-es__tile`, the
   title and body pairs, the medallion colours and their dark rings). On a desk the card also holds at least 320px
   (240 on a phone) so a short empty still holds the page. Never a tall box inside another card: the room is left out
