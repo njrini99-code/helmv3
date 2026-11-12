@@ -998,6 +998,20 @@
 .ch-aks-compass__shot > svg {
   color: var(--ch-text-tertiary);
 }
+/* The phone's sheet: at 390 the distances beside the date cut "Hilltop Golf Club" to "Hilltop Golf Cl…" (WebKit, 12 Nov).
+   There the row stacks: whose and when, then the distances under them, the arrow beside both. */
+.ch-aks-compass__sheet .ch-aks-compass__shot {
+  grid-template-columns: minmax(0, 1fr) auto;
+  row-gap: var(--ch-space-1);
+}
+.ch-aks-compass__sheet .ch-aks-compass__said {
+  grid-column: 1;
+  grid-row: 2;
+}
+.ch-aks-compass__sheet .ch-aks-compass__shot > svg {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
 .ch-aks-compass__ask {
   padding-top: var(--ch-space-1);
 }
