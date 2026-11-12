@@ -54,7 +54,13 @@ export function WeekStrip({ week, onPlan }: { week: ChPracticeTile[]; onPlan?: (
             <span>{t.day}</span>
             <b className="ch-num">{t.date}</b>
           </span>
-          {t.items.length === 0 && <span className="ch-prc-tile__none">No practice</span>}
+          {/* A quiet dash, not six lines of "No practice" (W15); a reader still hears the words. */}
+          {t.items.length === 0 && (
+            <span className="ch-prc-tile__none">
+              <span aria-hidden="true">–</span>
+              <span className="ch-sr-only">No practice</span>
+            </span>
+          )}
           {t.items.map((it, i) => {
             const inner = (
               <>
@@ -127,9 +133,12 @@ export function PracticeHome({ data, openNew = false, previewSheet = false, temp
   const drafts = up?.editHref ? data.drafts.filter((r) => r.href !== up.editHref) : data.drafts;
   const listed = !data.firstRun && drafts.length + data.published.length + data.past.length > 0;
   const more = up ? Math.max(0, up.rows.length - UP_NEXT_ROWS) : 0;
+  // New plan needs a practice to plan (W13, W52): with none on the calendar in the next two weeks its sheet could create nothing, so
+  // the page offers one way, Add a practice, and New plan steps aside until there is one.
+  const canPlan = data.open.length > 0;
   return (
     <main className={'ch-page ch-prc' + (phone ? ' is-phone' : '')} data-ch="practice" aria-labelledby="ch-prc-title">
-      {phone && <PhoneTop start title="Practice" action={<PhoneIconAction icon={Plus} label="New plan" onClick={() => newPlan()} />} />}
+      {phone && <PhoneTop start title="Practice" action={canPlan ? <PhoneIconAction icon={Plus} label="New plan" onClick={() => newPlan()} /> : undefined} />}
       <header className="ch-prc-h">
         <div>
           <LargeTitle id="ch-prc-title">Practice</LargeTitle>
@@ -138,9 +147,11 @@ export function PracticeHome({ data, openNew = false, previewSheet = false, temp
         {!phone && (
           <div className="ch-prc-h__a">
             <Button href="/golf/dashboard/practice/format">Plan format</Button>
-            <Button variant="primary" leftIcon={Plus} onClick={() => newPlan()}>
-              New plan
-            </Button>
+            {canPlan && (
+              <Button variant="primary" leftIcon={Plus} onClick={() => newPlan()}>
+                New plan
+              </Button>
+            )}
           </div>
         )}
       </header>
@@ -239,7 +250,17 @@ export function PracticeHome({ data, openNew = false, previewSheet = false, temp
             </section>
           ) : (
             // The week's tiles already say there is no practice on each day: this says only what to do about it.
-            <EmptyState shape="week" title="Add a practice on the calendar" body="Then plan it here." action={<Button href="/golf/dashboard/calendar">Go to Calendar</Button>} code="CH-13396" />
+            <EmptyState
+              shape="week"
+              title="No practice on the calendar in the next two weeks"
+              body="Add one there, then plan it here."
+              action={
+                <Button variant={canPlan ? 'secondary' : 'primary'} leftIcon={Plus} href="/golf/dashboard/calendar">
+                  Add a practice
+                </Button>
+              }
+              code="CH-13396"
+            />
           )}
         </>
       )}

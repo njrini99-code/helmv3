@@ -105,12 +105,30 @@ describe('the landing', () => {
   });
   it('CH-13396 a coach with plans and no practice coming is told what to do about it, and the plans still list', () => {
     render(<PracticeHome data={{ ...HOME, firstRun: false, past: [{ id: 'a', day: 'Tue', title: 'Old', time: '3:00', line: '', state: 'Done', href: '/x' }] }} />);
-    // The week's tiles say "No practice" day by day: the words under them don't say it again.
-    expect(screen.getByText('Add a practice on the calendar')).toBeTruthy();
-    expect(screen.getByText('Then plan it here.')).toBeTruthy();
+    // W13, W52 (owner's preview, 11 Nov 2026): New plan was the page's primary and led to a sheet that could create nothing.
+    // With nothing to plan there is one way, Add a practice, as the one primary; New plan steps aside.
+    expect(screen.getByText('No practice on the calendar in the next two weeks')).toBeTruthy();
+    expect(screen.getByText('Add one there, then plan it here.')).toBeTruthy();
     expect(screen.queryByText(/No practices? this week/)).toBeNull();
-    expect(screen.getByRole('link', { name: 'Go to Calendar' }).getAttribute('href')).toBe('/golf/dashboard/calendar');
+    const add = screen.getByRole('link', { name: 'Add a practice' });
+    expect(add.getAttribute('href')).toBe('/golf/dashboard/calendar');
+    expect(add.className).toMatch(/primary/);
+    expect(screen.queryByRole('button', { name: /New plan/ })).toBeNull();
     expect(screen.getByRole('button', { name: /Past plans \(1\)/ })).toBeTruthy();
+  });
+  it('W15 a day with no practice is a quiet dash that still says so to a reader', () => {
+    const week = [
+      { key: 'mon', day: 'Mon', date: '2', today: false, items: [] },
+      { key: 'tue', day: 'Tue', date: '3', today: true, items: [{ time: '3:00 PM', state: 'Done' as const, href: '/golf/dashboard/practice/p1', eventId: null }] },
+    ];
+    const { container } = render(<PracticeHome data={{ ...HOME, firstRun: false, week }} />);
+    expect(container.querySelectorAll('.ch-prc-tile__none')).toHaveLength(1);
+    const none = [...container.querySelectorAll('.ch-prc-tile__none')];
+    expect(none.length).toBeGreaterThan(0);
+    for (const n of none) {
+      expect(n.querySelector('[aria-hidden="true"]')!.textContent).toBe('–');
+      expect(n.querySelector('.ch-sr-only')!.textContent).toBe('No practice');
+    }
   });
   it('CH-13397 a player with nothing published is told so, with no New plan', () => {
     render(<PlayerPracticeHome data={{ next: null, week: [], upcoming: [], past: [] }} />);
