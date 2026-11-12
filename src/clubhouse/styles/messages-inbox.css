@@ -456,6 +456,15 @@
   -webkit-line-clamp: unset;
   line-clamp: unset;
 }
+/* W18: the channel's name takes up to two lines here too (messages.css). */
+[data-ch-ms-v2] .ch-inb .ch-ms-row.is-channel .ch-ms-row__top b {
+  display: -webkit-box;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
 [data-ch-ms-v2] .ch-inb .ch-ms-row.is-unread .ch-ms-row__top b {
   font: var(--ch-type-16-strong);
   letter-spacing: var(--ch-track-16);
