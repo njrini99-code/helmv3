@@ -4824,34 +4824,6 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 .ch-rcard-nw {
   white-space: nowrap;
 }
-.ch-rcard-h__s {
-  display: flex;
-  flex: none;
-  align-items: baseline;
-  gap: 8px;
-}
-.ch-rcard-h__s b {
-  font: var(--ch-type-34-strong);
-  line-height: var(--ch-lead-tight);
-
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.03em;
-}
-.ch-rcard-h__s em {
-  font: var(--ch-type-16-strong);
-  letter-spacing: var(--ch-track-16);
-  line-height: var(--ch-lead-tight);
-
-  font-variant-numeric: tabular-nums;
-  font-style: normal;
-  color: var(--ch-text-primary);
-}
-.ch-rcard-h__s em.is-under {
-  color: var(--ch-score-under);
-}
-.ch-rcard-h__s em.is-over {
-  color: var(--ch-chart-loss);
-}
 /* The printed head: course, date and score at paper size. Hidden on the page, where the hero says the same. */
 .ch-rcard-pr {
   display: none;

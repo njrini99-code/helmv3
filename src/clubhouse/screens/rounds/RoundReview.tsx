@@ -638,15 +638,20 @@ export function RoundReview({
 
       {hasCard(r) && <RoundCard review={r} phone={phone} just={justSubmitted} settle={justSubmitted && !reduced} />}
 
-      <dl className="ch-rv-figs">
-        {figs.map(([k, v, m]) => (
-          <div key={k}>
-            <dt>{k}</dt>
-            <dd className="ch-num">{v}</dd>
-            <dd className="ch-num">{m}</dd>
-          </div>
-        ))}
-      </dl>
+      {/* W47 (12 Nov): with the card drawn, these five were the card's own Out, In and Total cells told a third time (after
+          the hero and the card's head), and what else they could say the zones below already do (the distribution, the
+          putting split). So they stand only for a round posted as a total, which has no card to say them. */}
+      {!hasCard(r) && (
+        <dl className="ch-rv-figs">
+          {figs.map(([k, v, m]) => (
+            <div key={k}>
+              <dt>{k}</dt>
+              <dd className="ch-num">{v}</dd>
+              <dd className="ch-num">{m}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
 
       {typeEdit && <ChangeRoundType roundId={r.id} edit={typeEdit} />}
 
