@@ -19,6 +19,7 @@ import { PREVIEW_TEAM_BOARD } from '../../../../preview/fixtures-coachhelm-team'
 import { ToastProvider } from '../../../../ui/Toast';
 import { SpotCard } from '../SpotCard';
 import { TeamBoard } from '../TeamBoard';
+import { PreviewCoachHelmTeam } from '../../../../preview/PreviewCoachHelmTeam';
 
 /** W-TEAM-6, W-TEAM-14, W-TEAM-15: the spot's pattern line, the addresses that open a sheet, and a part that is off or failed. */
 
@@ -152,5 +153,29 @@ describe('the board’s counts and windows say only what they are (one number, o
     const text = document.body.textContent ?? '';
     expect(text).toContain('Team against Tour · all time');
     expect(text).not.toContain('Team against Tour · this season');
+  });
+});
+
+describe('the preview’s crowded board, staging’s shape on the owner’s walk (W9 to W11, 11 Nov)', () => {
+  it('folds Putting’s extra coins into "+3", draws one picture in three This week rows at their end, and one row for a shared focus', () => {
+    render(
+      <LazyMotion features={domAnimation}>
+        <ToastProvider>
+          <PreviewCoachHelmTeam state="crowded" />
+        </ToastProvider>
+      </LazyMotion>,
+    );
+    expect([...document.querySelectorAll('.scn.is-more')].map((g) => g.textContent)).toEqual(['+3']);
+    const tiles = [...document.querySelectorAll<HTMLElement>('[data-ch-team-card="today"] .tile')];
+    expect(tiles).toHaveLength(3);
+    expect(tiles.map((t) => !!t.querySelector('.tv'))).toEqual([false, true, false]);
+    for (const t of tiles) expect(t.firstElementChild?.classList.contains('tt')).toBe(true);
+    const work = document.querySelector('[data-ch-team-card="work"]') as HTMLElement;
+    // Ten focus areas and the fixture's one proposal, which has no target yet and so no ring.
+    expect(work.querySelector('.meta')!.textContent).toBe('11 focus areas');
+    expect(work.querySelectorAll('.wk.is-shared')).toHaveLength(1);
+    expect(work.querySelectorAll('.ringc')).toHaveLength(2);
+    // The stored "Eli: …" titles read without the name beside Eli's coin.
+    expect(document.body.textContent).not.toMatch(/(\w+): \1: /);
   });
 });
