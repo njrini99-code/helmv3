@@ -40,3 +40,21 @@ Held items:     none
 All four were filmed in WebKit (video plus a per-frame trace) before the change. A clip-path transition repaints the
 whole painted course on the main thread every frame in WebKit, so it stalls while the next route loads; transforms keep
 moving. Guarded by `screens/auth/__tests__/auth-transform-only.test.tsx` and `auth-logic.test.ts`.
+
+## 2026-11-12 — Log in from the bottom of the landing page no longer jumps to its top first
+
+```text
+Design package: none (owner, 12 Nov 2026: "do on phone too, make sure it all looks premium")
+PR/commit:      agent/preview-fixes-ui
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- `src/lib/motion/gsap/MarketingScrollProvider.tsx` (the landing's scroll, outside Clubhouse): a link into the app
+  (`/golf/...`) stops Lenis but no longer resets the scroll. On a phone, a tap on the closing section's Log in showed the
+  landing's hero for as long as the sign in took to load (0.8s in WebKit), then the sign in. The sign in draws its own fixed,
+  full-screen frame, so the scroll under it never shows; links between marketing pages still reset as before.
