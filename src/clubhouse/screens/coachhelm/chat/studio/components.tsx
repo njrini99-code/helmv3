@@ -123,6 +123,11 @@ export function Comparison(p: StudioProps<'comparison'>) {
   const { team, label, hrefs } = p.data;
   // In the compact size the players are always the rows: a phone reads down a list of names, never across twelve columns.
   const playersAsRows = p.size === 'compact' ? true : team.playersAsRows;
+  // A measure is marked only when one player leads it: a tie, a measure with no better direction, or one player alone marks nothing,
+  // and the legend claims no mark the table does not carry (R8: "The best in each measure" under a table with nothing marked).
+  const marked = team.best.filter((id) => id != null && team.players.some((pl) => pl.id === id)).length;
+  const legend = marked === 0 ? null : marked === team.metrics.length ? 'The best in each measure.' : 'The best in each measure one player leads.';
+  const strokes = team.metrics.some((m) => m.strokes);
   const cell = (pi: number, mi: number) => {
     const c = team.cells[pi]?.[mi];
     const best = team.best[mi] === team.players[pi]?.id;
@@ -153,7 +158,7 @@ export function Comparison(p: StudioProps<'comparison'>) {
       <ScrollRegion label={`${label}, scrolls sideways`} className="ch-aks-cmp__wrap" fade={false}>
         <table className="ch-aks-cmp__table">
           {/* The head above already names the table; the caption only says its shape (it read "…rounds.: 7 players", W49). */}
-          <caption className="ch-sr-only">{`${plural(team.players.length, 'player')} across ${plural(team.metrics.length, 'measure')}; the best in each is marked.`}</caption>
+          <caption className="ch-sr-only">{`${plural(team.players.length, 'player')} across ${plural(team.metrics.length, 'measure')}${marked === 0 ? '.' : marked === team.metrics.length ? '; the best in each is marked.' : '; the best is marked where one player leads.'}`}</caption>
           <thead>
             <tr>
               <th scope="col">{playersAsRows ? 'Player' : 'Measure'}</th>
@@ -177,10 +182,16 @@ export function Comparison(p: StudioProps<'comparison'>) {
           </tbody>
         </table>
       </ScrollRegion>
-      <p className="ch-aks-foot">
-        <span className="ch-aks-cmp__dot" aria-hidden="true" /> The best in each measure.
-        {team.metrics.some((m) => m.strokes) && ' Strokes gained is against the baseline.'}
-      </p>
+      {(legend || strokes) && (
+        <p className="ch-aks-foot">
+          {legend && (
+            <>
+              <span className="ch-aks-cmp__dot" aria-hidden="true" /> {legend}
+            </>
+          )}
+          {strokes && `${legend ? ' ' : ''}Strokes gained is against the baseline.`}
+        </p>
+      )}
     </div>
   );
 }
