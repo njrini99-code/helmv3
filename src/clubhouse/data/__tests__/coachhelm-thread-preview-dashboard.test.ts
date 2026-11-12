@@ -1,7 +1,7 @@
 import type { UIMessage } from 'ai';
 import { describe, expect, it } from 'vitest';
-import type { ToolEnvelope } from '../../lib/coachhelm/v3/chat/provenance';
-import { type AskAssistantTurn, buildTurns, describeWork, evidenceBlocks, readNameOf } from '../data/coachhelm-chat-thread';
+import type { ToolEnvelope } from '../../../lib/coachhelm/v3/chat/provenance';
+import { type AskAssistantTurn, buildTurns, describeWork, evidenceBlocks, readNameOf } from '../coachhelm-chat-thread';
 import stored from './fixtures/preview-dashboard-turn.json';
 
 /**
