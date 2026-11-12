@@ -943,7 +943,7 @@
     content: '';
     pointer-events: none;
   }
-  .ch-rec-pipe.is-compact .ch-rec-pipe__stage.is-committed > .ch-rec-pipe__dot::after {
+  .ch-rec-pipe.is-compact .ch-rec-pipe__stage.is-committed:not(.is-zero) > .ch-rec-pipe__dot::after {
     background: rgb(2 18 10 / 0.22);
   }
   .ch-rec-pipe.is-compact .ch-rec-pipe__stage[data-ch-pressed]:not(:disabled) > .ch-rec-pipe__dot::after {
@@ -2129,4 +2129,17 @@
     position: absolute;
     inset: min(0px, calc(50% - 22px));
   }
+}
+
+/* W41 (12 Nov): "Committed 0" was the only filled dark coin, so the stage with nobody in it was the loudest of the four.
+   A stage's tone is earned by the people in it: a stage at 0 draws the quiet coin, light and dark, after every stage
+   fill above so it wins whatever the stage. Pressed, it keeps its second ring. */
+.ch-rec-pipe__stage.is-zero > .ch-rec-pipe__dot {
+  --ch-rec-ring: var(--ch-ivory-400);
+  background: var(--ch-ivory-25);
+  color: var(--ch-ink-500);
+  box-shadow: 0 0 0 2px var(--ch-rec-ring);
+}
+.ch-rec-pipe__stage.is-zero[aria-pressed='true'] > .ch-rec-pipe__dot {
+  box-shadow: 0 0 0 2px var(--ch-rec-ring), 0 0 0 6px color-mix(in oklab, var(--ch-green-600) 16%, transparent);
 }
