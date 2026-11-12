@@ -163,12 +163,15 @@ export async function loadActiveRosterResult(
 
   const { data: profiles } = await sb
     .from('golf_players')
-    .select('id, first_name, last_name, graduation_year')
+    .select('id, first_name, last_name, graduation_year, is_test')
     .in('id', memberIds);
 
   const byId = new Map((profiles ?? []).map((p) => [p.id, p]));
+  // An account marked as a test player is not on the roster Ask reads: it was named in answers and in the Ask home's
+  // "Since Monday" (preview, 12 Nov). The rounds reads already leave out test rounds; this leaves out the test player.
+  const flagged = new Set((profiles ?? []).filter((p) => p.is_test === true).map((p) => p.id));
 
-  const roster = memberIds.map((id) => {
+  const roster = memberIds.filter((id) => !flagged.has(id)).map((id) => {
     const p = byId.get(id);
     const name = `${p?.first_name ?? ''} ${p?.last_name ?? ''}`.trim();
     return {

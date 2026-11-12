@@ -34,3 +34,5 @@ Held items:     none
   player read.
 - #6: opening a saved chat (`?c=`) waits in the thread's shape (the question, the answer's leaf, the docked composer),
   not as the new chat's home that the thread then replaced.
+- A player marked as a test account (`golf_players.is_test`) is not on the roster Ask reads, so answers and the
+  home's "Since Monday" do not name them. Staging's and production's test-named accounts are not marked yet.
