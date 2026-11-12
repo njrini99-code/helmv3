@@ -1721,8 +1721,11 @@ html[data-fw-theme='dark'] .ch-htb .skl::after {
   flex:none;
   height:36px;
 }
+/* The words lead and take the row; a picture, when the tile has one, closes it at a fixed width (W10, Stories.tsx). */
 .ch-htb.is-desk .tile .tt {
   display:grid;
+  flex:1;
+  min-width:0;
   gap:2px;
 }
 .ch-htb.is-desk .tile .tm {

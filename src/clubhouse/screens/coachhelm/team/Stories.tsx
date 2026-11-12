@@ -42,7 +42,8 @@ function TileVisual({ story, round }: { story: ChTeamStory; round: ChStoryRound 
       <svg viewBox="0 0 108 40" aria-hidden="true">
         <rect x="0" y="4" width={w(p.from)} height="12" rx="6" fill="var(--ch-chart-track)" />
         <rect x="0" y="24" width={w(p.now)} height="12" rx="6" fill="var(--ch-chart-gain-fill)" />
-        <rect x={w(p.target) - 1} y="20" width="2" height="20" fill="var(--ch-ink-900)" />
+        {/* The target is a line through both bars, as the story's: beside the lower bar alone it read as a divider (W10). */}
+        <rect x={w(p.target) - 1} y="0" width="2" height="40" fill="var(--ch-ink-900)" />
       </svg>
     );
   }
@@ -353,6 +354,14 @@ export function StoriesCard({
               </span>
             </>
           );
+          // A tile's picture only when it has a true one (its round, or a focus's progress). On the phone it heads the tile's card; on a
+          // desk it closes the row, so every row's words start on one line whether it has a picture or not (W10, staging 11 Nov: of
+          // three rows, the one picture pushed the middle row's words in, beside a target tick that read as a divider).
+          const figure = (s.kind === 'read' ? roundOf(s) : s.kind === 'working' ? s.progress : null) ? (
+            <span className="tv">
+              <TileVisual story={s} round={roundOf(s)} />
+            </span>
+          ) : null;
           return (
             <button
               key={s.id}
@@ -365,12 +374,17 @@ export function StoriesCard({
                 else onDesk(s);
               }}
             >
-              {(s.kind === 'read' ? roundOf(s) : s.kind === 'working' ? s.progress : null) && (
-                <span className="tv">
-                  <TileVisual story={s} round={roundOf(s)} />
-                </span>
+              {phone ? (
+                <>
+                  {figure}
+                  {text}
+                </>
+              ) : (
+                <>
+                  <span className="tt">{text}</span>
+                  {figure}
+                </>
               )}
-              {phone ? text : <span className="tt">{text}</span>}
             </button>
           );
         })}
