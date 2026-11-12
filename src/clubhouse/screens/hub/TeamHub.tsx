@@ -727,7 +727,8 @@ export function TeamHub({
                 {data.announcements.error ? (
                   <RefreshNotice code="CH-10206" title="Announcements didn’t load." body="Nothing was lost. Try again." covered={covered} />
                 ) : !anns.length ? (
-                  <EmptyState code="CH-10307" shape="rows" shapeCount={3} title="No announcements yet" body={coach ? 'Post one and see who has read it.' : 'Posts from your coaches show here.'} />
+                  // W19 B: the tab's list is the page's content, so its empty is the page's card.
+                  <EmptyState size="page" icon={Megaphone} code="CH-10307" shape="rows" shapeCount={3} title="No announcements yet" body={coach ? 'Post one and see who has read it.' : 'Posts from your coaches show here.'} />
                 ) : (
                   <ListPresence>{anns.map((a, i) => <Announcement key={a.id} a={a} role={data.role} rank={i === 0 ? 'lead' : 'older'} acked={isAcked(a)} pending={ackPending(a)} onAck={onAck} onEdit={setEditing} onDelete={(x) => askDelete({ kind: 'ann', a: x })} files={attachments} />)}</ListPresence>
                 )}
@@ -742,7 +743,7 @@ export function TeamHub({
                 {data.trips.error ? (
                   <RefreshNotice code="CH-10207" title="Travel didn’t load." body="Trips are safe. Try again." covered={covered} />
                 ) : !tripRows.length ? (
-                  <EmptyState code="CH-10308" shape="time" shapeCount={3} title="No trips planned" body={coach ? 'Plan a trip and players see the itinerary here.' : 'Trips your coaches plan show here with the bus time and hotel.'} />
+                  <EmptyState size="page" icon={Plane} code="CH-10308" shape="time" shapeCount={3} title="No trips planned" body={coach ? 'Plan a trip and players see the itinerary here.' : 'Trips your coaches plan show here with the bus time and hotel.'} />
                 ) : (
                   <ListPresence>
                     {nextTrip && <TripPass key={nextTrip.id} t={nextTrip} big role={data.role} focus={tripToFocus === nextTrip.id} onFocused={tripFocused} {...tripActions} />}

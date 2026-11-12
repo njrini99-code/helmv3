@@ -461,12 +461,14 @@ describe('Team Hub · player', () => {
     expect(code('CH-10303')!.textContent).toMatch(/Nothing is asked of you/);
     await tab('Tasks');
     expect(code('CH-10303')!.textContent).toMatch(/No tasks right now/);
+    // W19 B (owner, 12 Nov): a tab whose list is empty is the page's content, so it is the page's card with its glyph.
     await tab('Announcements');
-    expect(code('CH-10307')).not.toBeNull();
+    expect(code('CH-10307')!.classList.contains('ch-es--page')).toBe(true);
     await tab('Travel');
-    expect(code('CH-10308')).not.toBeNull();
+    expect(code('CH-10308')!.classList.contains('ch-es--page')).toBe(true);
     await tab('Documents');
-    expect(code('CH-10304')).not.toBeNull();
+    expect(code('CH-10304')!.classList.contains('ch-es--page')).toBe(true);
+    for (const c of ['CH-10304']) expect(code(c)!.querySelector('.ch-es__tile svg'), c).not.toBeNull();
   });
 
   it('CH-10205 102301 a section that crashes stays inside its section, and is reported under its own surface', () => {
