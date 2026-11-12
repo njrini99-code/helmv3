@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import type { UIMessage } from 'ai';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ChPlayerPracticeHome, ChPracticeHome } from '../../../data/practice-home-shape';
@@ -20,6 +20,7 @@ vi.mock('../../coachhelm/plan/PrintPlan', () => ({ printNode: vi.fn(), printPlan
 vi.mock('@/app/golf/actions/practice-publish', () => ({ takeDownPracticePlan: vi.fn() }));
 vi.mock('@/app/golf/actions/coachhelm-practice-plans', () => ({ postPracticePlanToChat: vi.fn() }));
 vi.mock('@/app/golf/actions/practice-plans', () => ({ savePracticePlan: vi.fn(), copyPlanBody: vi.fn() }));
+vi.mock('@/app/golf/actions/calendar-events', () => ({ createGolfEvent: vi.fn() }));
 vi.mock('@/components/golf/coachhelm/chat/useCoachHelmChat', () => ({ useCoachHelmChat: (...a: unknown[]) => chat(...a) }));
 
 const status: ChPlanStatus = { planId: 'p1', title: 'Plan', version: 2, status: 'published', edited: false, seen: { names: ['Sofia'], of: 9 } };
@@ -166,19 +167,32 @@ describe('the builder’s helper', () => {
   });
 });
 
-const HOME: ChPracticeHome = { teamName: 'Demo', week: [], weekLine: null, upNext: null, drafts: [], published: [], past: [], open: [{ id: 'e', label: 'Thursday, Nov 5', detail: '2:00 to 5:00 PM', title: 'Practice', place: '', allDay: false }], copies: [], roster: [], firstRun: true };
+const HOME: ChPracticeHome = { teamName: 'Demo', week: [], weekLine: null, upNext: null, drafts: [], published: [], past: [], open: [{ id: 'e', label: 'Thursday, Nov 5', detail: '2:00 to 5:00 PM', title: 'Practice', place: '', allDay: false }], copies: [], roster: [], firstRun: true, zone: 'America/New_York' };
 
 describe('Practice home', () => {
-  it('first run offers three starts, and none when there is no practice to plan', () => {
+  it('first run offers three starts; with no practice to plan they make one (Q7), and the calendar is a quiet link', () => {
+    HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) {
+      this.setAttribute('open', '');
+    };
+    HTMLDialogElement.prototype.close ??= function (this: HTMLDialogElement) {
+      this.removeAttribute('open');
+    };
+    const starts = () => {
+      const card = screen.getByText('Plan your first practice').closest('section')!;
+      expect(within(card).getByRole('button', { name: /Ask CoachHelm/ })).toBeTruthy();
+      expect(within(card).getByRole('button', { name: /Blank/ })).toBeTruthy();
+      expect(within(card).getByRole('link', { name: /Start from a template/ }).getAttribute('href')).toBe('/golf/dashboard/practice/templates');
+      return card;
+    };
     const { unmount } = render(<PracticeHome data={HOME} />);
-    const card = screen.getByText('Plan your first practice').closest('section')!;
-    expect(within(card).getByRole('button', { name: /Ask CoachHelm/ })).toBeTruthy();
-    expect(within(card).getByRole('button', { name: /Blank/ })).toBeTruthy();
-    expect(within(card).getByRole('link', { name: /Start from a template/ }).getAttribute('href')).toBe('/golf/dashboard/practice/templates');
+    expect(within(starts()).queryByRole('link', { name: 'Open the calendar' })).toBeNull();
     unmount();
     render(<PracticeHome data={{ ...HOME, open: [] }} />);
-    expect(screen.queryByRole('button', { name: /Ask CoachHelm/ })).toBeNull();
-    expect(screen.getByRole('link', { name: 'Add a practice' })).toBeTruthy();
+    const card = starts();
+    expect(within(card).getByRole('link', { name: 'Open the calendar' }).className).toMatch(/ghost/);
+    expect(screen.queryByRole('link', { name: 'Add a practice' })).toBeNull();
+    fireEvent.click(within(card).getByRole('button', { name: /Blank/ }));
+    expect(screen.getByRole('group', { name: 'When', hidden: true })).toBeTruthy();
   });
   it('Up next says whether players have the plan, and draws the day only from real lengths', () => {
     const up = { title: 'Thursday practice', when: 'Thu, Nov 5', rows: [{ time: '2:00', title: 'Warm-up', place: 'Range', min: 30 }, { time: '2:30', title: 'Rotation', place: '3 stations', min: 60 }], state: 'Draft' as const, planHref: null, editHref: '/e', eventId: null };
