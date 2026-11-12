@@ -972,6 +972,43 @@ a.ch-th-reads__r:focus-visible {
 .ch-th-table tbody td.is-text {
   white-space: nowrap;
 }
+/* A table of records (tasks, events, tournaments, goals: studio/table.tsx itemsOf) is a list of items, not a ruled grid of
+   words: the title, its state as a chip, and one line that reads as a sentence (owner, 2026-11-12: "I don't like those
+   tables"). A grid of figures stays a table. */
+.ch-th-items {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-th-items > li {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 16px;
+}
+.ch-th-items > li + li {
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
+}
+.ch-th-item__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.ch-th-item__top b {
+  min-width: 0;
+  font: var(--ch-type-14-medium);
+  letter-spacing: var(--ch-track-14);
+  color: var(--ch-text-primary);
+}
+.ch-th-item__top .ch-badge {
+  flex: none;
+}
+.ch-th-item__line {
+  font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-text-secondary);
+}
 
 /* Copy, and the next steps */
 .ch-th-tools {

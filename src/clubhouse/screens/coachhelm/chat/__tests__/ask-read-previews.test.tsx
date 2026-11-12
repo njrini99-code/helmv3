@@ -350,7 +350,13 @@ describe('a reloaded turn draws the same table as the live one', () => {
     const ev = turn.blocks.find((b) => b.kind === 'evidence');
     if (!ev || ev.kind !== 'evidence') throw new Error('evidence block expected');
     const { container } = render(<AskEvidenceView envelope={ev.envelope} />);
-    expect(Array.from(container.querySelectorAll('thead th')).map((h) => h.textContent)).toEqual(['Player', 'Title', 'Category', 'State']);
+    // A table of records is drawn as items (owner, 2026-11-12: "I don't like those tables"): the player, the goal's state as its
+    // chip, and the title and category on one line, in that order after a reload as live.
+    const items = Array.from(container.querySelectorAll('.ch-th-items > li'));
+    expect(items).toHaveLength(5);
+    expect(items[0]!.querySelector('b')?.textContent).toBe('Cole Bennett');
+    expect(items[0]!.querySelector('.ch-badge')?.textContent).toBe('Active');
+    expect(items[0]!.querySelector('.ch-th-item__line')?.textContent).toBe('Goal 0 · Putting');
   });
 
   it('a goalsTable leaves out a column nobody has, and the generic record table keeps one order whichever way the keys arrive', () => {

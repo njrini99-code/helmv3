@@ -456,7 +456,10 @@
 }
 .ch-aks-cmp__table {
   width: 100%;
-  border-collapse: collapse;
+  /* Separate, not collapsed: WebKit drew a collapsed half-pixel rule only under the sticky first cell, so the header's
+     rule stopped after "Player" (12 Nov). Each cell draws its own rule; with no spacing they meet as one line. */
+  border-collapse: separate;
+  border-spacing: 0;
   font: var(--ch-type-14);
 }
 .ch-aks-cmp__table th,
@@ -998,6 +1001,20 @@
 .ch-aks-compass__shot > svg {
   color: var(--ch-text-tertiary);
 }
+/* The phone's sheet: at 390 the distances beside the date cut "Hilltop Golf Club" to "Hilltop Golf Cl…" (WebKit, 12 Nov).
+   There the row stacks: whose and when, then the distances under them, the arrow beside both. */
+.ch-aks-compass__sheet .ch-aks-compass__shot {
+  grid-template-columns: minmax(0, 1fr) auto;
+  row-gap: var(--ch-space-1);
+}
+.ch-aks-compass__sheet .ch-aks-compass__said {
+  grid-column: 1;
+  grid-row: 2;
+}
+.ch-aks-compass__sheet .ch-aks-compass__shot > svg {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
 .ch-aks-compass__ask {
   padding-top: var(--ch-space-1);
 }
@@ -1079,6 +1096,13 @@
 }
 .ch-aks-table .ch-th-table :is(th, td):last-child {
   padding-right: 0;
+}
+/* A table of records drawn as items keeps the same ruled lines on the paper, flush to the leaf's edges. */
+.ch-aks-table .ch-th-items > li {
+  padding-inline: 0;
+}
+.ch-aks-table .ch-th-items > li + li {
+  border-top-color: var(--ch-separator);
 }
 
 /* A way into a screen of the app: a ruled row with a chevron, as the leaf's sources are. */

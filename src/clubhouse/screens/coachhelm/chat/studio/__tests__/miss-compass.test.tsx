@@ -178,6 +178,11 @@ describe('touch and motion', () => {
     expect(px('height', close)).toBeGreaterThanOrEqual(44);
   });
 
+  it('in the phone’s sheet a row stacks, so the distances never cut the date and course short', () => {
+    expect(rule('.ch-aks-compass__sheet .ch-aks-compass__shot')).toMatch(/grid-template-columns: minmax\(0, 1fr\) auto;/);
+    expect(rule('.ch-aks-compass__sheet .ch-aks-compass__said')).toMatch(/grid-column: 1;\s*grid-row: 2;/);
+  });
+
   it('it draws in place: nothing moves when a direction is chosen, with or without reduced motion (the studio’s look)', () => {
     const compass = [...sheet.matchAll(/([^{}]+)\{([^{}]*)\}/g)].filter(([, s]) => /ch-aks-compass/.test(s!));
     expect(compass.length).toBeGreaterThan(10);

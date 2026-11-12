@@ -363,7 +363,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
   flex-direction: column;
   align-items: center;
   gap: var(--ch-space-4);
-  max-width: 760px;
+  max-width: var(--ch-measure-reading);
   padding: var(--ch-space-3) 0 0;
 }
 .ch-ak-home:not(.is-phone) .hi {
@@ -416,14 +416,18 @@ html[data-fw-theme='dark'] .ch-ak-th {
   cursor: pointer;
   transition: box-shadow var(--ch-dur-quick) var(--ch-ease), color var(--ch-dur-quick) var(--ch-ease);
 }
+/* The press controller's mark (B6): the pressed look on touch, where :active is not read. */
+.ch-ak-home:not(.is-phone) .sugg button[data-ch-pressed] {
+  background-image: linear-gradient(var(--ch-ledger-row-press), var(--ch-ledger-row-press));
+}
 @media (hover: hover) {
   .ch-ak-home:not(.is-phone) .sugg button:hover {
     box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-strong);
     color: var(--ch-text-primary);
   }
-}
-.ch-ak-home:not(.is-phone) .sugg button:active {
-  background-image: linear-gradient(var(--ch-ledger-row-press), var(--ch-ledger-row-press));
+  .ch-ak-home:not(.is-phone) .sugg button:active {
+    background-image: linear-gradient(var(--ch-ledger-row-press), var(--ch-ledger-row-press));
+  }
 }
 /* The foot: what moved since Monday (a player's focus, and their meter), a quiet ruled list in the page's ink rather than
    the dark feature panel. Its rows keep their 44 target (ASK-10). */
