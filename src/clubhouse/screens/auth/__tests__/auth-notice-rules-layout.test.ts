@@ -21,6 +21,12 @@ describe('auth notices and the password needs', () => {
     expect(rule('.ch-au-notice > .ch-btn')).toMatch(/margin-inline-start: var\(--ch-space-6\);/);
   });
 
+  it('a notice’s action reaches 44 under any pointer, drawn as it is; the wrong account’s two keys stack', () => {
+    expect(rule('.ch-au-notice > .ch-btn')).toMatch(/position: relative;/);
+    expect(rule('.ch-au-notice > .ch-btn::after')).toMatch(/inset: min\(0px, calc\(50% - 22px\)\);/);
+    expect(rule('.ch-au-submit--pair')).toMatch(/display: grid;/);
+  });
+
   it('the four password needs are a two-column grid, never three and one', () => {
     expect(rule('.ch-au-rules')).toMatch(/display: grid;/);
     expect(rule('.ch-au-rules')).toMatch(/grid-template-columns: repeat\(2, max-content\);/);

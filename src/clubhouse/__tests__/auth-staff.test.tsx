@@ -87,7 +87,16 @@ describe('the invitation', () => {
     const note = await screen.findByRole('alert');
     expect(note).toHaveAttribute('data-ch-code', 'CH-15944');
     expect(note).toHaveTextContent(error);
-    await user.click(screen.getByRole('button', { name: 'Switch account' }));
+    // The way out is the one lit key; Accept stays, secondary and off, the warning its reason (Commander's call, 12 Nov).
+    const out = screen.getByRole('button', { name: 'Switch account' });
+    expect(out).toHaveClass('ch-btn--primary');
+    expect(screen.getAllByRole('button', { name: 'Switch account' })).toHaveLength(1);
+    const acceptKey = screen.getByRole('button', { name: 'Accept invitation' });
+    expect(acceptKey).toBeDisabled();
+    expect(acceptKey).not.toHaveClass('ch-btn--primary');
+    expect(acceptKey).toHaveAttribute('aria-describedby', note.id);
+    expect(acceptKey).toHaveAccessibleDescription(error);
+    await user.click(out);
     expect(w.switchAccount).toHaveBeenCalledWith('/golf/staff/join/tok-1');
     await user.click(screen.getByRole('button', { name: 'Not you?' }));
     expect(w.switchAccount).toHaveBeenCalledTimes(2);
