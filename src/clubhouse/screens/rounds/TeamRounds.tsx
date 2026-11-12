@@ -176,9 +176,11 @@ function TeamRoundTableRow({ r, by }: { r: ChTeamRound; by: Group }) {
       <span role="cell" className="ch-trd-td--course">
         {by === 'month' ? r.course : opener}
       </span>
+      {/* W32: under the Tees header a round with no tee recorded reads "—", not its length ("18 holes" is not a tee);
+          a nine-hole round keeps its "9 holes" chip either way. */}
       <span role="cell" className="ch-trd-td--tee">
-        <TeeCell r={r} />
-        {r.tee && r.holes === 9 && <span className="ch-rd-pill is-nine">9 holes</span>}
+        {r.tee ? <TeeCell r={r} /> : <NoData />}
+        {r.holes === 9 && <span className="ch-rd-pill is-nine">9 holes</span>}
       </span>
       <span role="cell" className="ch-trd-td--type">
         {r.type ? <TypePill type={r.type} /> : <NoData />}
