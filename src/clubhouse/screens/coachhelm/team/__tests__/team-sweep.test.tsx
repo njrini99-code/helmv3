@@ -120,15 +120,18 @@ describe('sheet and notice styles reach only their own text (owner, 2026-11-06)'
 
   it('the sheet holds one page edge, its body adding none (TEAM-17)', () => {
     expect(css).toMatch(/\.ch-htb-sheet \.ch-modal__body \{\s*padding: 0;/);
-    expect(css).toMatch(/\.ch-htb \.ins \{[^}]*padding:8px var\(--ch-tb-edge\)/);
+    expect(css).toMatch(/\.ch-htb \.ins \{[^}]*padding:8px var\(--ch-page-x-phone, 16px\)/);
   });
 
   it('every bar row is one set of columns on a phone, so the Tour line runs straight (MOB-TEAM-4)', () => {
-    expect(css).toMatch(/\.ch-htb \.br \{\s*min-height:44px;\s*grid-template-columns:calc\(108 \* var\(--ch-tb-k\)\) minmax\(0,1fr\) calc\(52 \* var\(--ch-tb-k\)\);/);
+    expect(css).toMatch(/\.ch-htb \.br \{\s*min-height:44px;\s*grid-template-columns:calc\(108 \* var\(--ch-type-k, 1\)\) minmax\(0,1fr\) calc\(52 \* var\(--ch-type-k, 1\)\);/);
   });
 
   it('the spots go two by two rather than collide, and the sheet buttons stack (320 wide, or largest Text Size)', () => {
-    expect(css).toMatch(/\.ch-htb \.stchips \{\s*grid-template-columns:repeat\(auto-fit,minmax\(clamp\(/);
+    // Five across in one row (the design); the basis jumps to half when five can't clear each other, and Course, alone on its line, takes the row.
+    expect(css).toMatch(/--ch-htb-chip:clamp\(calc\(20% - 2px\), calc\(\(300 \* var\(--ch-type-k\) - 100%\) \* 999\), calc\(50% - 1px\)\);/);
+    expect(css).toMatch(/\.ch-htb \.stchips button \{\s*flex:1 1 var\(--ch-htb-chip\);\s*min-width:0;\s*min-height:44px;/);
+    expect(css).not.toMatch(/\.stchips button\.cm \{[^}]*grid-column/);
     expect(css).toMatch(/\.acts > \* \{\s*flex: 1 1 calc\(160 \* var\(--ch-type-k\)\);/);
   });
 });

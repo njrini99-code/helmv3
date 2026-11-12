@@ -6,6 +6,8 @@ import { fetchAllRowsTogether } from './paging';
 import { chLogServer } from '../lib/track-server';
 import { lastTenFloor, seasonStartDate, type ChRound } from './season';
 import { hasScore } from './stats-weight';
+import { holeRounds } from './round-scope';
+import { sgCounted, sgPolicy, type ChSgSourceRead } from './stats-sg-mix';
 import {
   earlierCount,
   hasRange,
@@ -45,8 +47,9 @@ export function roundsInFilter(rounds: ChRound[], f: ChFilter, start: string = s
 }
 
 /** The Stats redesign's default (clubhouse_stats_redesign_v1): practice rounds out, unless the filter names a type or picks rounds by hand ("Only these"). */
-export function practiceCut(shs: boolean | undefined, f: ChFilter): boolean {
-  return !!shs && f.types.length === 0 && f.pick?.mode !== 'only';
+export function practiceCut(f: ChFilter): boolean {
+  // All time is Fairway's basis (span.ts): every round type counts, practice too.
+  return f.types.length === 0 && f.pick?.mode !== 'only' && f.span !== 'all';
 }
 
 /** The matching rounds before the newest ten, for "vs previous 10", across seasons like the ten; null when the filter has no previous window or there are fewer than three. */
@@ -70,6 +73,8 @@ export function seasonOnly(rounds: ChRound[], start: string = seasonStartDate())
  * the range has no start). Undefined is `loadSeasonRounds`' own default, the season.
  */
 export function loadSince(f: ChFilter, start?: string): string | null | undefined {
+  // All time reads every round there is, whatever window the address names (span.ts).
+  if (f.span === 'all') return null;
   // `start`, the season's first day in the team's zone, stands for the season when given (owner decision 9); else the loader's default.
   if (hasRange(f)) {
     if (!f.from) return null;
@@ -369,6 +374,83 @@ export async function loadPutts(supabase: Supabase, roundIds: string[]): Promise
     }
   }
   return { rows, error: false };
+}
+
+/**
+ * Which of these rounds had their strokes gained measured from shots (stats-sg-mix.ts): the rest, where they carry a figure, were
+ * estimated from the scorecard. The filter is `recalculate_round_strokes_gained`'s own count of usable shots, so a round is measured
+ * here exactly when the database measured it.
+ *
+ * Cheap on purpose: the first pass asks only for the first shot of hole 1 and hole 10 (two rows a round at most, where a full round
+ * has about 74 usable shots), which finds nearly every measured round. Only the rounds it did not find are asked again without that
+ * narrowing, and a round with no shot rows answers that with no row at all. Read failed: `error`, and nothing is claimed.
+ */
+export async function loadMeasuredRounds(supabase: Supabase, roundIds: readonly string[], surface: string): Promise<{ ids: Set<string>; error: boolean }> {
+  const ids = new Set<string>();
+  const pass = async (wanted: readonly string[], firstShots: boolean): Promise<boolean> => {
+    const results = await Promise.all(
+      chunkIds([...wanted]).map((chunk) =>
+        fetchAllRowsTogether<{ round_id: string; distance_to_hole_after: number | null; putt_made: boolean | null; result: string | null }>(
+          (from, to) => {
+            let q = supabase
+              .from('golf_shots')
+              .select('round_id, distance_to_hole_after, putt_made, result')
+              .in('round_id', chunk)
+              .not('shot_type', 'is', null)
+              .not('lie_before', 'is', null)
+              .gt('distance_to_hole_before', 0);
+            if (firstShots) q = q.eq('shot_number', 1).in('hole_number', [1, 10]);
+            return q.order('id', { ascending: true }).range(from, to);
+          },
+          undefined,
+          { table: 'golf_shots', action: `clubhouse.${surface}.sgMeasured`, feature: 'stats_analytics', sport: 'golf' },
+        ),
+      ),
+    );
+    for (const res of results) {
+      if (res.error) {
+        chLogServer(surface, 'sgMeasured', res.error, 'stats_analytics');
+        return false;
+      }
+      // The function's last condition, checked here so the query stays three plain filters: the shot has an end.
+      for (const r of res.data ?? []) if (r.distance_to_hole_after != null || r.putt_made === true || r.result === 'holed' || r.result === 'hole') ids.add(r.round_id);
+    }
+    return true;
+  };
+  const all = [...new Set(roundIds)];
+  if (!all.length) return { ids, error: false };
+  // This read only words a figure; it must never take the page, or Ask's answer, down with it.
+  try {
+    if (!(await pass(all, true))) return { ids: new Set(), error: true };
+    const rest = all.filter((id) => !ids.has(id));
+    if (rest.length && !(await pass(rest, false))) return { ids: new Set(), error: true };
+    return { ids, error: false };
+  } catch (err) {
+    chLogServer(surface, 'sgMeasured', err, 'stats_analytics');
+    return { ids: new Set(), error: true };
+  }
+}
+
+const sgHoleIds = (rounds: readonly ChRound[]) => holeRounds([...rounds]).filter((r) => r.strokes_gained_total != null).map((r) => r.id);
+
+/**
+ * The policy on estimated strokes gained, applied where the rounds are loaded, so every figure a loader works out afterwards follows
+ * it without a change of its own. Under `include` (today) nothing is read and the rounds come back untouched: the caller reads the
+ * split for its window alongside its other reads (`sgSourceFor`). Under `exclude` the split is read here for every loaded round, and
+ * the estimated ones come back with no strokes gained.
+ */
+export async function sgPolicyAtSource<T extends ChRound>(supabase: Supabase, rounds: readonly T[], surface: string): Promise<{ rounds: T[]; early: ChSgSourceRead | null }> {
+  if (sgPolicy.estimated === 'include') return { rounds: rounds as T[], early: null };
+  const measured = await loadMeasuredRounds(supabase, sgHoleIds(rounds), surface);
+  const out = sgCounted(rounds, measured);
+  return { rounds: out.rounds, early: { measured: measured.ids, dropped: out.dropped, error: measured.error } };
+}
+
+/** The split for a window's rounds: the one `sgPolicyAtSource` already read, or a read of just these rounds. Pass it to `sgMixOf`. */
+export async function sgSourceFor(supabase: Supabase, early: ChSgSourceRead | null, windowRounds: readonly ChRound[], surface: string): Promise<ChSgSourceRead> {
+  if (early) return early;
+  const measured = await loadMeasuredRounds(supabase, sgHoleIds(windowRounds), surface);
+  return { measured: measured.ids, dropped: new Set(), error: measured.error };
 }
 
 /**

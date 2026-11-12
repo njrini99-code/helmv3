@@ -2,7 +2,6 @@ import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { logServerError } from '@/lib/server-error-logger';
 import { isFlagEnabled } from '@/lib/flags';
-import { isReadEnabled } from '@/lib/coachhelm/v3/read/flag';
 import { buildFieldDayContext } from '@/lib/coachhelm/v3/field-day/field';
 import { loadTeamFieldRounds } from '@/lib/coachhelm/v3/field-day/loader';
 import { readAttributionForPlayer } from '@/lib/coachhelm/v3/effectiveness/attribution-read';
@@ -16,9 +15,14 @@ import { coachDiveCore, loadCoachPlayerStanding, type ChCoachPlayerScope } from 
 import { firstName, partitionInsights, type ChHelmLifecycle } from './coachhelm-shape';
 import type { ChDeepInsight } from './coachhelm-dive-shape';
 import { loadPlayerStanding, readStandingRows } from './coachhelm-standing';
-import { classYearLabel, loadTeamZone, seasonStartDate } from './season';
+import { classYearLabel, lastTenFloor, loadSeasonRounds, loadTeamZone, seasonStartDate, type ChRound } from './season';
+import { lastTenRounds, playerStrokesGained, roundsForFigures } from './figure-window';
+import { sgPolicyAtSource, sgSourceFor } from './stats-common';
+import { sgMixOf, type ChSgMix } from './stats-sg-mix';
+import { holeRounds } from './round-scope';
+import { teamLastTenStrokesGained } from './stats-team-sg';
 import { readTextFor } from './coachhelm-voice';
-import { fileDay, teamFigureOf, toChFileField, toChFilePlan, toChFileSg, toChFileTrack, type ChFileCards, type ChFileField, type ChFileIntent, type ChFilePlan, type ChFileRosterRow, type ChFileTrack, type ChFocusRow, type ChPlayerFile, type ChPlayerWeek } from './coachhelm-file-shape';
+import { fileDay, teamFigureOf, toChFileField, toChFilePlan, toChFileSgOver, toChFileTrack, type ChFileCards, type ChFileField, type ChFileIntent, type ChFilePlan, type ChFileRosterRow, type ChFileTrack, type ChFocusRow, type ChPlayerFile, type ChPlayerWeek } from './coachhelm-file-shape';
 import type { ChViewLoad } from './coachhelm-views-shape';
 import type { ChStanding } from './coachhelm-standing-shape';
 
@@ -184,6 +188,30 @@ export async function loadFilePenalties(supabase: Supabase, playerId: string, zo
   return (data ?? []).reverse().map((r) => ({ label: fileDay(r.round_date, zone) ?? '', value: r.total_penalties as number }));
 }
 
+/**
+ * The rounds behind "Where the strokes go": the same read, the same year back and the same counting as CoachHelm Team and Stats' Last 10
+ * (`loadSeasonRounds` from `lastTenFloor`), so the card's legs are theirs. A coach's file reads the active roster's rounds, for the
+ * team's tick; a player's own page reads only their own (`teamId: null`), so no teammate's round is ever loaded for it. `null`: the
+ * read failed, and the card says so.
+ */
+export async function loadFileSgRounds(supabase: Supabase, input: { playerId: string; teamId: string | null }): Promise<{ rounds: ChRound[]; roster: string[]; mix: ChSgMix | null } | null> {
+  let roster = [input.playerId];
+  if (input.teamId) {
+    const members = await supabase.from('golf_team_members').select('player_id').eq('team_id', input.teamId).eq('status', 'active');
+    // Without the roster the player's own legs still draw; only the team's tick is left out.
+    if (members.error) log('sg.roster', members.error);
+    else roster = [...new Set([input.playerId, ...(members.data ?? []).map((m) => (m as { player_id: string }).player_id)])];
+  }
+  const read = await loadSeasonRounds(supabase, roster, { surface: 'coachhelm.file', since: lastTenFloor() });
+  if (read.error) return null;
+  // Estimated strokes gained (stats-sg-mix.ts): the policy on the rounds as loaded, then the split for the player's own last ten, the
+  // rounds the card's legs read. `mix` is null when that read failed, and the card then says nothing about it.
+  const policy = await sgPolicyAtSource(supabase, read.rounds, 'coachhelm.file');
+  const own = holeRounds(lastTenRounds(roundsForFigures(policy.rounds.filter((r) => r.player_id === input.playerId))));
+  const source = await sgSourceFor(supabase, policy.early, own, 'coachhelm.file');
+  return { rounds: policy.rounds, roster, mix: sgMixOf(own, source) };
+}
+
 /** Reads the coach dismissed, for Undo on reload (S-FILE.undo 3). A player route never ships them. */
 async function loadFileDismissed(scope: ChCoachPlayerScope): Promise<ChFileCards['dismissed']> {
   try {
@@ -227,7 +255,7 @@ export async function loadCoachPlayerFile(input: { scope: ChCoachPlayerScope }):
     const supabase = await createClient();
     const zone = await loadTeamZone(supabase, scope.teamId, 'coachhelm');
     const first = scope.head.first;
-    const [standing, rowsRead, plan, field, intent, track, dismissed, toGo, penalties] = await Promise.all([
+    const [standing, rowsRead, plan, field, intent, track, dismissed, toGo, penalties, sgRounds] = await Promise.all([
       loadCoachPlayerStanding({ scope, feed: [...raw.values()] }),
       readStandingRows(scope.playerId),
       loadFilePlan(scope, zone),
@@ -237,24 +265,30 @@ export async function loadCoachPlayerFile(input: { scope: ChCoachPlayerScope }):
       loadFileDismissed(scope),
       roundsToGo(supabase, scope.playerId),
       loadFilePenalties(supabase, scope.playerId, zone),
+      loadFileSgRounds(supabase, { playerId: scope.playerId, teamId: scope.teamId }).catch((err: unknown) => (log('sg', err), null)),
     ]);
     const rows = rowsRead.ok ? rowsRead.rows : [];
     const st: ChStanding | null = standing.status === 'ready' ? standing.data : null;
-    const source = { window: st?.window.label ?? 'All time', rounds: st?.rounds ?? null };
-    const sg = st ? toChFileSg(st.ladder, rows, { you: false, first }, source) : null;
-    const lensSg = st ? toChFileSg(st.ladder, rows, { you: true, first }, source) : null;
+    // One number, one source: the legs are the rounds' own over the player's last ten, as on the hole and in Stats; the team's tick is
+    // Team stats' team figure over the roster's same window. The lens is the player's page, so it carries no team figure.
+    const mine = sgRounds ? playerStrokesGained(sgRounds.rounds.filter((r) => r.player_id === scope.playerId)) : null;
+    const sg = sgRounds && mine ? { ...toChFileSgOver(mine, teamLastTenStrokesGained(sgRounds.rounds, sgRounds.roster), { you: false, first }), mix: sgRounds.mix } : null;
+    const lensSg = sgRounds && mine ? { ...toChFileSgOver(mine, null, { you: true, first }), mix: sgRounds.mix } : null;
     // The player's own view of the same round: no dots, no card under five (SHARED-11).
     const lensField = field === null || field === undefined ? null : await loadFileField(scope, { role: 'player' }, zone);
-    const cards: ChFileCards = { ...coachCards(load.data.list, rows, load.data.cleared ?? []), dismissed, sg, plan, field: field ?? null, intent: intent ?? null, track: track ?? null };
-    const lensCards: ChFileCards | null = lens ? { ...playerCards(lens, rows), sg: lensSg, plan, field: lensField ?? null } : null;
+    // The standing rows' own window, for the two places the file still shows a standing figure: the featured read's Team cell
+    // (when the read carries no team figure) and the link to the Standing page.
+    const basis = rowsRead.ok ? (rowsRead.window === 'season' ? 'this season' : 'all time') : null;
+    const cards: ChFileCards = { ...coachCards(load.data.list, rows, load.data.cleared ?? []), featTeamBasis: basis, dismissed, sg: sg && st ? { ...sg, standing: st.window.label } : sg, plan, field: field ?? null, intent: intent ?? null, track: track ?? null };
+    const lensCards: ChFileCards | null = lens ? { ...playerCards(lens, rows), featTeamBasis: basis, sg: lensSg, plan, field: lensField ?? null } : null;
     const failed: ChPlayerFile['failed'] = {
-      ...(standing.status !== 'ready' ? { sg: true as const } : {}),
+      ...(sgRounds === null ? { sg: true as const } : {}),
       ...(plan === null ? { plan: true as const } : {}),
       ...(field === undefined ? { field: true as const } : {}),
       ...(intent === undefined ? { intent: true as const } : {}),
       ...(track === undefined ? { track: true as const } : {}),
     };
-    return { status: 'ready', data: { head: scope.head, cards, lens: lensCards, failed, rounds: load.data.rounds ?? st?.rounds ?? null, roundsToGo: toGo, readOn: isReadEnabled(), penalties } };
+    return { status: 'ready', data: { head: scope.head, cards, lens: lensCards, failed, rounds: load.data.rounds ?? st?.rounds ?? null, roundsToGo: toGo, readOn: true, penalties } };
   } catch (err) {
     log('load', err);
     return { status: 'failed' };
@@ -288,7 +322,7 @@ export async function loadPlayerYourWeek(input: { playerId: string }): Promise<{
     const teamId = team?.teamId ?? null;
     const zone = teamId ? await loadTeamZone(supabase, teamId, 'coachhelm') : 'America/New_York';
     const list = byFeed(load.data.list, [...raw.keys()]);
-    const [proposals, rowsRead, standing, field, toGo, penalties, last] = await Promise.all([
+    const [proposals, rowsRead, standing, field, toGo, penalties, last, sgRounds] = await Promise.all([
       loadProposals(supabase, playerId, teamId, list.map((d) => ({ id: d.base.id, title: d.base.title })), true),
       readStandingRows(playerId),
       loadPlayerStanding({ playerId, feed: () => Promise.resolve([]) }),
@@ -296,14 +330,18 @@ export async function loadPlayerYourWeek(input: { playerId: string }): Promise<{
       roundsToGo(supabase, playerId),
       loadFilePenalties(supabase, playerId, zone),
       latestFocus(supabase, playerId),
+      // Their own rounds only: no teammate's round is read for a player's page.
+      loadFileSgRounds(supabase, { playerId, teamId: null }).catch((err: unknown) => (log('sg', err), null)),
     ]);
     const rows = rowsRead.ok ? rowsRead.rows : [];
     const st = standing.status === 'ready' ? standing.data : null;
-    const sg = st ? toChFileSg(st.ladder, rows, { you: true, first: '' }, { window: st.window.label, rounds: st.rounds }) : null;
+    const sg = sgRounds ? { ...toChFileSgOver(playerStrokesGained(sgRounds.rounds.filter((r) => r.player_id === playerId)), null, { you: true, first: '' }), mix: sgRounds.mix } : null;
     const coach = proposals.list[0]?.coachName ?? 'Your coach';
     const plan = toChFilePlan(last, null, null, null, coach, zone);
     const cards: ChFileCards = { ...playerCards(list, rows), sg, plan, field: field ?? null };
-    return { load: { status: 'ready', data: { cards, proposals, rounds: load.data.rounds ?? st?.rounds ?? null, roundsToGo: toGo, readOn: isReadEnabled(), penalties, refreshed: st?.refreshed ?? null, failed: { ...(st ? {} : { sg: true as const }), ...(field === undefined ? { field: true as const } : {}) } } } };
+    // The standing rows' own window, said under a Team cell that comes from them.
+    cards.featTeamBasis = rowsRead.ok ? (rowsRead.window === 'season' ? 'this season' : 'all time') : null;
+    return { load: { status: 'ready', data: { cards, proposals, rounds: load.data.rounds ?? st?.rounds ?? null, roundsToGo: toGo, readOn: true, penalties, refreshed: st?.refreshed ?? null, failed: { ...(sgRounds ? {} : { sg: true as const }), ...(field === undefined ? { field: true as const } : {}) } } } };
   } catch (err) {
     log('week', err);
     return { load: { status: 'failed' } };

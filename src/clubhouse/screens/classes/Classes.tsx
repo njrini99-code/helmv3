@@ -8,10 +8,10 @@ import { createLiveClassStatusWrites } from './class-status-writes';
 import { createLiveClassesWrites } from './writes';
 
 /** The live Classes: server data from the route and the real writes. Preview and tests render ClassesView with their own. */
-export function Classes({ data, playerId, teamId, crh = false }: { data: ChClassesPage; playerId: string; teamId: string; /** `clubhouse_classes_roster_home_v1`, read in the route. */ crh?: boolean }) {
+export function Classes({ data, playerId, teamId }: { data: ChClassesPage; playerId: string; teamId: string; }) {
   // P-10: with `class_awareness_v1` on the page also gets the Class status panel and its writes; off, nothing new is built.
   const aware = useClassAwareness();
   const writes = useMemo(() => createLiveClassesWrites({ playerId, teamId, term: data.term.label, classAwareness: aware }), [playerId, teamId, data.term.label, aware]);
   const statusWrites = useMemo(() => (aware ? createLiveClassStatusWrites({ playerId, teamId }) : undefined), [aware, playerId, teamId]);
-  return <ClassesView data={data} writes={writes} statusWrites={statusWrites} crh={crh} />;
+  return <ClassesView data={data} writes={writes} statusWrites={statusWrites} />;
 }

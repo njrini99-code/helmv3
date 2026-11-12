@@ -1,0 +1,246 @@
+{
+ "id": "8b39dd77",
+ "messageId": "8b39dd77-4fd9-43ab-9b5c-816d7dc11394",
+ "source": {
+  "project": "staging",
+  "team": "Demo University Golf",
+  "exportedBy": "scripts/coachhelm/export-ask-turns.mjs"
+ },
+ "timezone": "America/New_York",
+ "roster": [
+  {
+   "id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+   "name": "Cole Bennett",
+   "first_name": "Cole",
+   "last_name": "Bennett"
+  },
+  {
+   "id": "ed1ff03e-b33a-4a80-891e-09685b7db3d0",
+   "name": "Dylan Brooks",
+   "first_name": "Dylan",
+   "last_name": "Brooks"
+  },
+  {
+   "id": "9458ca63-9dbe-4020-ab13-9e2b70f70c80",
+   "name": "Mason Rivers",
+   "first_name": "Mason",
+   "last_name": "Rivers"
+  },
+  {
+   "id": "b40a650a-bce0-4e46-87cd-365b0256ee21",
+   "name": "Jackson Hale",
+   "first_name": "Jackson",
+   "last_name": "Hale"
+  },
+  {
+   "id": "8e382583-2ce6-4d15-8568-5088cf02dbd1",
+   "name": "Ethan Park",
+   "first_name": "Ethan",
+   "last_name": "Park"
+  },
+  {
+   "id": "faced578-b271-416f-b757-ac3aee5bd9e5",
+   "name": "Tyler Hayes",
+   "first_name": "Tyler",
+   "last_name": "Hayes"
+  },
+  {
+   "id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+   "name": "Owen Carter",
+   "first_name": "Owen",
+   "last_name": "Carter"
+  },
+  {
+   "id": "b6b87c4d-0673-4166-9f8c-44e60936a034",
+   "name": "Audit Testplayer",
+   "first_name": "Audit",
+   "last_name": "Testplayer"
+  }
+ ],
+ "userMessage": {
+  "content": "[Context: player Cole Bennett]\nwhat are the weakest parts of his game",
+  "createdAt": "2026-07-26T00:26:59.684003+00:00"
+ },
+ "priorMessages": [
+  {
+   "role": "user",
+   "createdAt": "2026-07-26T00:26:59.684003+00:00",
+   "content": "[Context: player Cole Bennett]\nwhat are the weakest parts of his game",
+   "evidence": []
+  }
+ ],
+ "turn": {
+  "createdAt": "2026-07-26T00:27:06.725716+00:00",
+  "status": "failed",
+  "costUsd": null,
+  "content": "Cole's biggest gap relative to his teammates is around the greens, in this order (window: May 18–Jul 10, 2026, 15 recorded rounds):\n\n- **Sand saves**: 5% (20 attempts) vs. a team average of 22.2% — the largest gap on the roster.\n- **Strokes gained putting**: -3.91 per round (15 rounds) vs. team average -3.02.\n- **Three-putt rate**: 10.3% of holes (15 rounds) vs. team average 9.4%.\n- **Scrambling**: 33.7% (92 attempts) vs. team average 35.5%.\n\nSand play stands out as the sharpest outlier — his save rate is less than a quarter of the team average on a reasonable sample of 20 attempts. Putting is the next clearest theme, showing up in both the strokes-gained number and the three-putt rate.\n\n_Some figures in this answer could not be traced back to your program's data, so I've flagged it rather than presenting them as fact. Please ask again._",
+  "tools": [
+   {
+    "name": "find_player",
+    "input": {
+     "name": "Cole Bennett"
+    }
+   },
+   {
+    "name": "get_player_weakest_areas",
+    "input": {
+     "player_id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b"
+    }
+   }
+  ],
+  "evidence": [
+   {
+    "tool": "get_player_weakest_areas",
+    "ref": null,
+    "envelope": {
+     "as_of": "2026-07-21T01:06:58.696167+00:00",
+     "detail": {
+      "gaps": [
+       {
+        "unit": "percent",
+        "direction": "higher_better",
+        "metric_id": "sand_save_pct",
+        "metric_label": "Sand saves",
+        "player_value": 5,
+        "team_average": 22.16,
+        "team_peers_compared": 6
+       },
+       {
+        "unit": "strokes",
+        "direction": "higher_better",
+        "metric_id": "sg_putting",
+        "metric_label": "Strokes gained putting",
+        "player_value": -3.91,
+        "team_average": -3.02,
+        "team_peers_compared": 6
+       },
+       {
+        "unit": "percent",
+        "direction": "lower_better",
+        "metric_id": "three_putt_pct",
+        "metric_label": "Three-putt rate",
+        "player_value": 10.34,
+        "team_average": 9.37,
+        "team_peers_compared": 6
+       },
+       {
+        "unit": "percent",
+        "direction": "higher_better",
+        "metric_id": "scrambling_pct",
+        "metric_label": "Scrambling",
+        "player_value": 33.7,
+        "team_average": 35.51,
+        "team_peers_compared": 6
+       }
+      ],
+      "recorded_rounds": 15
+     },
+     "series": [],
+     "summary": "Cole Bennett is furthest behind the team on sand saves.",
+     "coverage": "complete",
+     "measurements": [
+      {
+       "unit": "percent",
+       "as_of": "2026-07-21T01:06:58.696167+00:00",
+       "value": 5,
+       "entity": {
+        "id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+        "kind": "player",
+        "label": "Cole Bennett"
+       },
+       "method": "sand_saves_over_sand_attempts",
+       "source": "stats cache",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "higher_better",
+       "metric_id": "sand_save_pct",
+       "window_end": "2026-07-10",
+       "denominator": 20,
+       "sample_size": 20,
+       "sample_unit": "attempts",
+       "metric_label": "Sand saves",
+       "window_start": "2026-05-18",
+       "coverage_note": null
+      },
+      {
+       "unit": "strokes",
+       "as_of": "2026-07-21T01:06:58.696167+00:00",
+       "value": -3.91,
+       "entity": {
+        "id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+        "kind": "player",
+        "label": "Cole Bennett"
+       },
+       "method": "sg_per_round_vs_broadie_baseline",
+       "source": "stats cache",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "higher_better",
+       "metric_id": "sg_putting",
+       "window_end": "2026-07-10",
+       "denominator": null,
+       "sample_size": 15,
+       "sample_unit": "rounds",
+       "metric_label": "Strokes gained putting",
+       "window_start": "2026-05-18",
+       "coverage_note": null
+      },
+      {
+       "unit": "percent",
+       "as_of": "2026-07-21T01:06:58.696167+00:00",
+       "value": 10.34,
+       "entity": {
+        "id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+        "kind": "player",
+        "label": "Cole Bennett"
+       },
+       "method": "three_putt_holes_over_holes",
+       "source": "stats cache",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "lower_better",
+       "metric_id": "three_putt_pct",
+       "window_end": "2026-07-10",
+       "denominator": null,
+       "sample_size": 15,
+       "sample_unit": "holes",
+       "metric_label": "Three-putt rate",
+       "window_start": "2026-05-18",
+       "coverage_note": null
+      },
+      {
+       "unit": "percent",
+       "as_of": "2026-07-21T01:06:58.696167+00:00",
+       "value": 33.7,
+       "entity": {
+        "id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+        "kind": "player",
+        "label": "Cole Bennett"
+       },
+       "method": "scrambles_converted_over_attempts",
+       "source": "stats cache",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "higher_better",
+       "metric_id": "scrambling_pct",
+       "window_end": "2026-07-10",
+       "denominator": 92,
+       "sample_size": 92,
+       "sample_unit": "attempts",
+       "metric_label": "Scrambling",
+       "window_start": "2026-05-18",
+       "coverage_note": null
+      }
+     ],
+     "coverage_note": null
+    }
+   }
+  ],
+  "recorded": {
+   "outcome": "rejected",
+   "reason": "unknown",
+   "unmatchedTokens": [],
+   "misattributedTokens": []
+  }
+ }
+}

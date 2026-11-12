@@ -15,6 +15,22 @@ import { plural } from '../../lib/plural';
 /** A player with no countable round (any length) for this many days reads "No rounds N days". */
 export const QUIET_DAYS = 7;
 
+/**
+ * The leaderboard's order, the one Fairway's Top performers uses: an early read (fewer than three 18-hole rounds) last, then the
+ * average AT THE PRECISION THE ROW PRINTS (one decimal), so two players who both read 74.8 are level and the player with more
+ * rounds ranks first, then the name. Ordering on the hidden second decimal put a 20-round 74.8 behind a 19-round 74.8 for no reason
+ * anyone could see (parity check, staging 2026-11-07).
+ */
+export function compareLeaderRows(
+  a: { status: string; avg: number; rounds: number; name: string },
+  b: { status: string; avg: number; rounds: number; name: string },
+  /** False on All time (span.ts): Fairway has no floor, so a short sample ranks on its average like any other. */
+  floor = true,
+): number {
+  const early = (r: { status: string }) => (floor && r.status === 'early' ? 1 : 0);
+  return early(a) - early(b) || Math.round(a.avg * 10) - Math.round(b.avg * 10) || b.rounds - a.rounds || a.name.localeCompare(b.name);
+}
+
 /** Whole days from one YYYY-MM-DD to another (negative when `to` is earlier). */
 export function daysBetween(from: string, to: string): number {
   const t = (s: string) => Date.UTC(Number(s.slice(0, 4)), Number(s.slice(5, 7)) - 1, Number(s.slice(8, 10)));
@@ -84,7 +100,7 @@ export function homeSubline(
   opts: {
     roundsError: boolean;
     nextCompetition: { title: string; when: string } | null;
-    /** Active players with no 18-hole round this season: no leaderboard row, so never "on track" either. */
+    /** Active players with no 18-hole round this season: no leaderboard row, so never "on track" either, and never a sentence of their own (HOME-S5). */
     unposted?: Pick<ChSublineRow, 'name' | 'availability'>[];
   },
 ): string | null {
@@ -110,14 +126,6 @@ export function homeSubline(
   // A no-break space ahead of a title's dot keeps "· Pinehurst No. 2" from opening a line.
   if (opts.nextCompetition) out.push(`${opts.nextCompetition.title.replace(/ · /g, '\u00a0· ')} is ${opts.nextCompetition.when}.`);
   if (flagged.length > 0 && onTrack.length > 0) out.push(partial ? 'The others with enough rounds are on track.' : 'The rest of the team is on track.');
-  // With no rows at all the leaderboard's own empty state says it.
-  if (unposted.length > 0 && rows.length > 0) {
-    out.push(
-      unposted.length <= 2
-        ? `${list(unposted.map((r) => firstName(r.name)))} ${unposted.length === 1 ? 'has' : 'have'} no 18-hole round this season.`
-        : `${unposted.length} players have no 18-hole round this season.`,
-    );
-  }
   return out.length ? out.join(' ') : null;
 }
 

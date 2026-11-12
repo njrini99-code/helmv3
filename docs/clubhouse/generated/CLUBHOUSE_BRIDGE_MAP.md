@@ -161,14 +161,14 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P006 | 4 | 5 | 3 | 10 | 14 | 58 | 1 | 8 | 1 | 2 | 7 | 3 | 2 | 2 | 1 | 7 | 3 | 10 | 1 | 1 | 1 |  | 1 | 1 |  | 146 |
 | P007 | 2 | 11 | 1 | 11 | 6 | 48 | 1 | 2 | 2 | 1 | 4 | 2 | 1 | 2 | 1 | 9 | 5 | 6 | 1 | 1 | 1 |  | 2 | 1 |  | 121 |
 | P008 | 2 | 1 | 3 | 6 | 15 | 44 | 3 | 10 | 3 | 3 | 8 | 6 | 2 | 2 | 1 | 9 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 138 |
-| P009 | 7 | 7 | 4 | 13 | 14 | 35 | 8 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 3 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 139 |
+| P009 | 7 | 7 | 4 | 12 | 14 | 34 | 8 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 3 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 137 |
 | P010 | 3 | 10 |  | 16 | 10 | 25 | 1 | 4 | 1 |  | 4 | 1 | 1 | 2 | 1 | 2 | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 90 |
 | P011 | 16 | 15 |  | 26 | 11 | 44 | 22 | 5 | 2 |  | 24 | 2 | 1 | 4 | 4 | 4 | 11 | 11 | 3 | 1 | 1 |  | 1 | 2 |  | 210 |
 | P012 | 3 | 3 |  | 8 | 19 | 22 | 3 | 3 | 2 |  | 5 | 1 |  | 4 | 4 | 2 | 5 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 96 |
-| P013 | 7 | 15 |  | 36 | 1 | 45 | 71 | 7 | 3 |  |  | 1 |  | 3 | 4 | 4 | 11 | 21 | 1 |  | 1 |  | 1 |  |  | 232 |
+| P013 | 6 | 13 |  | 31 | 3 | 42 | 62 | 7 | 3 |  | 3 | 1 |  | 3 | 3 | 4 | 10 | 19 | 1 |  | 1 |  | 1 |  |  | 213 |
 | P014 | 1 | 3 | 4 | 7 | 11 | 10 | 4 | 2 | 4 |  | 2 | 1 | 1 | 1 | 1 | 4 | 3 | 8 | 1 | 1 |  |  |  |  |  | 69 |
 | P015 |  | 7 | 2 | 3 | 12 | 21 | 27 | 2 | 2 |  |  | 3 |  | 1 |  | 17 | 7 | 6 | 2 | 1 | 1 |  | 1 |  |  | 115 |
-| P016 | 31 | 1 | 1 | 18 |  | 17 | 1 | 1 |  | 2 | 2 | 1 |  |  | 5 | 2 |  | 3 |  |  |  |  |  |  |  | 85 |
+| P016 | 31 | 1 | 1 | 26 |  | 35 | 1 | 1 |  | 2 | 4 | 1 |  |  | 5 | 2 |  | 3 |  |  |  |  |  |  |  | 113 |
 
 ## P001 Shell
 
@@ -209,7 +209,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 10703 | CH-1903 | 07 Network / offline | `SOMEONE_SAVES_WHILE_OFFLINE` | implemented | Someone saves while offline |
 | 10704 | CH-1905 | 07 Network / offline | `SOMEONE_PRESSES_TRY_AGAIN_ON_A_NOTICE` | implemented | Someone presses Try again on a notice, or on a page that didn't load, while offline |
 | 10705 | CH-1909 | 07 Network / offline | `IN_THE_IPHONE_APP_PULLING_A_PHONE` | implemented | In the iPhone app, pulling a phone page down from its top |
-| 10706 | CH-1910 | 07 Network / offline | `TWO_NOTICES_ABOUT_THE_SAME_THING_IN` | implemented | Two notices about the same thing in a row (Conversation muted, then Notifications back on) |
+| 10706 | CH-1910 | 07 Network / offline | `TWO_NOTICES_ABOUT_THE_SAME_THING_IN` | reserved | Two notices about the same thing in a row (Conversation muted, then Notifications back on) |
 | 10801 |  | 08 Permission / authorization | `CLUBHOUSE_GATE` | implemented | Clubhouse renders only for a coach or a player, and only with golf_clubhouse_ui on (isClubhouseFor); everyone else gets the existing GolfHelm pages, and held server actions refuse through the same check. |
 | 10802 |  | 08 Permission / authorization | `ROLE_SCOPED_NAV` | implemented | Each role sees only its own navigation (D-66), and an address not rebuilt for the viewer's role shows the not-rebuilt notice inside the Clubhouse frame, never another role's page or a Fairway page. |
 | 10803 |  | 08 Permission / authorization | `TEAM_SWITCH_IS_A_HEAD_COACHS` | implemented | Only a head coach staffed on more than one team is offered the team switch (canSwitchTeams and two or more teams), the same gate setActiveTeam enforces: a coach on one team, an assistant on several, and a player see the team as a plain label, and a forged or unstaffed team id is refused by the server, so the switch can never be wider than the server's answer. |
@@ -270,7 +270,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 11819 | CH-1830 | 18 Accessibility | `ON_A_TOUCH_SCREEN_HOLDING_A_PEEKABLE` | implemented | On a touch screen, holding a peekable object (a player's name) for about 450ms ticks once and raises its card over the dimmed, softened page where the row was, its actions listed under it (the native context menu's anatomy); the tap the hold ends with does not open the row, a scroll or drag past 8px cancels the hold, and iOS's link callout stays out of it. Esc, a tap outside or an action closes it, but not the lift that ends the hold; focus returns to the row |
 | 11820 | CH-1831 | 18 Accessibility | `ON_A_DESKTOP_RESTING_THE_POINTER_ON` | implemented | On a desktop, resting the pointer on it for 400ms (or focusing it from the keyboard for 600ms) opens a hover card beside it with the same actions as small keys; leaving the target and the card, Esc, or a scroll that moves the target closes it |
 | 11821 | CH-1832 | 18 Accessibility | `THE_PLAYER_PEEK_NAME_AND_CLASS_WHY` | implemented | The player peek: name and class, why they need a look (ink, the amber on its icon), the last round, the average and a word-sized line of the last scores; Message opens Messages with the player as the recipient (never sends), View stats and Plan 1:1 open their pages, and CoachHelm the player's deep dive (`coachhelm?view=deep-dive&player=`, not drawn until CoachHelm is rebuilt for coaches). Wired on Home's leaderboard; other pages wrap their names in `PlayerPeek` |
-| 11822 | CH-1840 | 18 Accessibility | `A_COACHS_TOP_BAR_CARRIES_AN_ASK` | implemented | A coach's top bar carries an Ask key (desktop and phone; only while CoachHelm is on for the coach, not on CoachHelm itself, and never for a player): it opens the Ask sheet over the page |
+| 11822 | CH-1840 | 18 Accessibility | `A_COACHS_TOP_BAR_CARRIES_AN_ASK` | reserved | A coach's top bar carries an Ask key (desktop and phone; only while CoachHelm is on for the coach, not on CoachHelm itself, and never for a player): it opens the Ask sheet over the page |
 | 11823 | CH-1841 | 18 Accessibility | `THE_ASK_SHEET_IS_COACHHELMS_ASK_OVER` | implemented | The Ask sheet is CoachHelm's Ask over any screen: the same chat hook and route (no new model or spend), the thread and the message box, saved like any chat; Open in CoachHelm goes to it there. Phone: a bottom sheet that opens at half height with the page in view and grows to full when a thread starts (the grab or the chevron toggles); desktop: a centred sheet. Its heading takes focus, Esc, Close or the backdrop close it, and a new page (or another player) closes it and starts the next one fresh; in the app it sits above the keyboard |
 | 11824 | CH-1842 | 18 Accessibility | `THE_SHEET_NAMES_WHAT_THE_COACH_IS` | implemented | The sheet names what the coach is looking at (“Looking at: Stats · Jonah Okafor”, from the page's trail or the navigation); a page about one player (`?player=`) also hands the chat that player as its context chip |
 | 11825 | CH-1816 | 18 Accessibility | `ON_THE_PHONE_THE_SECTIONS_NAME_IN` | implemented | On the phone the section's name in the top bar is the section switcher: a button with a chevron (`aria-expanded`, `aria-controls="ch-strip"`) that opens the section strip, with a dot and a spoken note while another section has something new; on a section's own page a pull down on the bar draws the strip and a sideways swipe steps to the next section |
@@ -292,14 +292,14 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 
 | Bridge ID | Code | Category | Name | Status | Meaning |
 | --- | --- | --- | --- | --- | --- |
-| 20101 |  | 01 Default / core UI | `COACH_HOME_READY` | implemented | Coach Home opens with the date, the greeting and the brief, Message team and New event, the week beside the latest round in one sheet, and the season leaderboard, all read on the server for the first paint; a team with nothing yet gets the first-run page (CH-2308), and on a phone the same data is drawn as the phone Home (21901). |
+| 20101 |  | 01 Default / core UI | `COACH_HOME_READY` | implemented | Coach Home opens with the date, the greeting and the brief, Up next beside the hero, Today and the team's scoring form, the team's four parts and the latest round, all read on the server for the first paint; a team with nothing yet gets the first-run page. The leaderboard and the week are not on Home (Roster, Stats and Calendar). |
 | 20102 |  | 01 Default / core UI | `PLAYER_HOME_READY` | implemented | Player Home opens with the date and the greeting (no brief line: owner, 2026-10-06), Message coach, the week beside Up next and Your latest round in one sheet, then Scoring and the four parts of the game, all read on the server for the first paint; a new player gets the first-run page (CH-2312), and on a phone the same data is drawn as the phone Home (21901). |
 | 20103 |  | 01 Default / core UI | `LINKS_OPEN_WHAT_THEY_NAME` | implemented | Every link out of Home opens the thing it names: Message team the team chat (?conversation=) or Messages when the chat did not load, Up next and a Today row that event in Calendar (?date=&event=), a week day Calendar's day view (?view=day&date=), New event, Plan, Add event and the quick event types the editor (?new=1, with &type=), a leaderboard row and a latest round's stats link that player's stats (?player=), My stats the player's own stats, Message coach the coach's thread (?user=), the first run's Invite players Roster with its invite sheet open (/golf/dashboard/roster?invite=1), each part of the coach's "Waiting on you" the screen that holds it (join requests Roster, replies that event in Calendar when one event holds them and Calendar when more do, overdue tasks Team Hub's Tasks ?tab=tasks, posts awaiting acknowledgement its Announcements ?tab=ann), a name in the team's four parts that player's Game tab on Stats on the same Last 10 (?player=&tab=game) and Team stats Stats, the coach's Next row Nudge Messages prefilled for who hasn't replied (the phone day card's own link, never sent), and CoachHelm in the player peek and the phone's round sheet that player's deep dive (/golf/dashboard/coachhelm?view=deep-dive&player=); a link to a screen not yet rebuilt for the viewer's role is not drawn. |
 | 20104 |  | 01 Default / core UI | `COACH_QUEUE_COUNTS_AS_ITS_SCREEN` | implemented | Coach Home's "Waiting on you" (under the head on desktop, in the phone's hero, and on the first run) counts each part with the read and rule of the screen that holds it, so the two show one number: pending join requests as the sidebar's Roster badge counts them, replies missing on this week's events that still take one as Team Hub's RSVPs count "no reply" (rsvpQueue), overdue tasks as Team Hub's Tasks (taskStatus, overdueTaskCount) and posts awaiting an acknowledgement as its Announcements (unackedPostCount). Only parts above zero are drawn, in that order; with nothing waiting the row is not drawn. Each part reads on its own: one that fails is null, logged and left out, never 0 (CH-2220). |
-| 20105 |  | 01 Default / core UI | `TEAM_PARTS_ON_THE_FORMS_LAST_10` | implemented | Coach Home's four parts (The team's game; under the team's form on desktop, after Team scoring on the phone) read the form's own Last 10 rounds of the active roster, hole-level only (Q-123): strokes gained per round in each part from 3 rounds with hole scores (else none), its change against the same players' previous ten (Q-112) coloured only when it clears its standard error, the part's plain stat (Fairways, Greens, Up and down, Putts) with the Tour's mark from the team's tour, and who gains and loses most from Team Stats' ranking (ties share a place and are named together; one ranked player, or everyone in one place, loses nothing). No other player's round reaches the figures. |
+| 20105 |  | 01 Default / core UI | `TEAM_PARTS_ON_THE_FORMS_LAST_10` | implemented | Coach Home's four parts (The team's game; under the team's form on desktop, after Team scoring on the phone) read the form's own Last 10 rounds of the active roster, hole-level only (Q-123): strokes gained per round in each part is Team Stats' own team figure (teamStrokesGained): the rounds of the players who have 3 rounds with strokes gained in that window, so a player's first round or two moves it neither here nor on Stats (no player at that floor: none), its change against the same players' previous ten (Q-112) coloured only when it clears its standard error, the part's plain stat (Fairways, Greens, Up and down, Putts) with the Tour's mark from the team's tour, and who gains and loses most from Team Stats' ranking (ties share a place and are named together; one ranked player, or everyone in one place, loses nothing). No other player's round reaches the figures. |
 | 20201 | CH-2401 | 02 Initial loading / skeleton | `HOME_IS_LOADING` | implemented | Home is loading |
 | 20202 | CH-2470 | 02 Initial loading / skeleton | `THE_SHEET_OPENS_BEFORE_THE_CLASS_DAY` | implemented | The sheet opens before the class day has arrived |
-| 20301 |  | 03 Background loading / refresh | `CLOCK_KEEPS_TIME` | implemented | The phone's Up next line (In 50 min, Happening now) is recomputed from the device clock every minute and the player's countdown every second, so neither needs a reload. |
+| 20301 |  | 03 Background loading / refresh | `CLOCK_KEEPS_TIME` | implemented | The phone's Up next line (In 50 min, Happening now) is recomputed from the device clock every minute, so it needs no reload. |
 | 20401 | CH-2301 | 04 Empty | `NOTHING_IS_ON_THE_CALENDAR_TODAY` | implemented | Nothing is on the calendar today |
 | 20402 | CH-2302 | 04 Empty | `NO_ROUNDS_THIS_SEASON` | implemented | No rounds this season |
 | 20403 | CH-2303 | 04 Empty | `THE_NEWEST_ROUND_WAS_POSTED_AS_A` | implemented | The newest round was posted as a total |
@@ -330,8 +330,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 20604 | CH-2204 | 06 Server / system error | `SEASON_ROUNDS_DONT_LOAD_2` | implemented | Season rounds don't load (the leaderboard's source) |
 | 20605 | CH-2205 | 06 Server / system error | `THE_WEEK_SECTION_CRASHES_WHILE_DRAWING` | implemented | The week section crashes while drawing |
 | 20606 | CH-2206 | 06 Server / system error | `THE_LATEST_ROUND_CRASHES_WHILE_DRAWING` | implemented | The latest round crashes while drawing |
-| 20607 | CH-2207 | 06 Server / system error | `THE_LEADERBOARD_CRASHES_WHILE_DRAWING` | implemented | The leaderboard crashes while drawing |
-| 20608 | CH-2208 | 06 Server / system error | `THE_TEAM_CHAT_DOESNT_LOAD` | implemented | The team chat doesn't load |
+| 20607 | CH-2207 | 06 Server / system error | `THE_LEADERBOARD_CRASHES_WHILE_DRAWING` | deprecated | (retired 2026-11-07, with the Home leaderboard) The leaderboard crashes while drawing |
+| 20608 | CH-2208 | 06 Server / system error | `THE_TEAM_CHAT_DOESNT_LOAD` | deprecated | (retired 2026-11-07, with Message team) The team chat doesn't load |
 | 20609 | CH-2209 | 06 Server / system error | `EVENT_REPLIES_DONT_LOAD` | implemented | Event replies don't load |
 | 20610 | CH-2210 | 06 Server / system error | `THE_TEAMS_TIMEZONE_DOESNT_LOAD` | implemented | The team's timezone doesn't load |
 | 20611 | CH-2211 | 06 Server / system error | `THE_TEAMS_FORM_DOESNT_LOAD` | implemented | The team's form doesn't load (phone) |
@@ -372,7 +372,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 21804 | CH-2804 | 18 Accessibility | `THE_ROUND_PAGER_ANNOUNCES_2_OF_3` | reserved | The round pager announces "2 of 3"; each form line has a text equivalent ("last 7 rounds: 72, 71…") |
 | 21805 | CH-2805 | 18 Accessibility | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_STATE` | reserved | No axe violations in any preview state, 1280px and 390px |
 | 21806 | CH-2806 | 18 Accessibility | `ON_A_PHONE_THE_SCORECARD_SCROLLS_SIDEWAYS` | reserved | On a phone the scorecard scrolls sideways; it is a named region that takes focus, so the arrow keys scroll it |
-| 21807 |  | 18 Accessibility | `COUNTDOWN_IS_A_NAMED_TIMER` | implemented | The player's countdown is a timer named for a screen reader as Starts in N days, N hours and N minutes (singular at one), and its digits, the ticking seconds included, are hidden from a screen reader, so it is heard once, not every second. |
+| 21807 |  | 18 Accessibility | `COUNTDOWN_IS_A_NAMED_TIMER` | deprecated | Retired 2026-11-07 (Dashboard cuts: the player Home has no countdown). The player's countdown is a timer named for a screen reader as Starts in N days, N hours and N minutes (singular at one), and its digits, the ticking seconds included, are hidden from a screen reader, so it is heard once, not every second. |
 | 21808 | CH-2870 | 18 Accessibility | `THE_HOME_CLASS_LINE` | implemented | The Home class line |
 | 21901 |  | 19 Responsive layout | `PHONE_HOME` | implemented | At 820px and below both roles get the phone Home, never the desktop page shrunk: a hero with Up next, then for a coach Today, the team's scoring form, This week and Latest rounds, and for a player This week, Today, Your latest round, Scoring and the parts of the game; wider canvases get the desktop Home. |
 | 22101 |  | 21 Performance | `LOADERS_NEVER_THROW` | implemented | Each Home is read on the server before its first paint, and a failed read is logged through chLogServer('home', {read}) and flagged on its own section instead of throwing, so one failed read never takes the page down. |
@@ -418,7 +418,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 30612 | CH-3205 | 06 Server / system error | `THE_ROSTER_LIST_CRASHES` | implemented | The roster list crashes |
 | 30613 | CH-3206 | 06 Server / system error | `THE_PLAYER_PANEL_CRASHES` | implemented | The player panel crashes |
 | 30614 | CH-3207 | 06 Server / system error | `THE_TEAM_ROW_DOESNT_LOAD` | implemented | The team row doesn't load |
-| 30615 | CH-3208 | 06 Server / system error | `FOCUS_AREAS_OR_GOALS_DONT_LOAD` | implemented | Focus areas or goals don't load |
+| 30615 | CH-3208 | 06 Server / system error | `FOCUS_AREAS_OR_GOALS_DONT_LOAD` | deprecated | (retired 2026-11-07, the roster peek no longer shows Development counts) Focus areas or goals don't load |
 | 30616 | CH-3209 | 06 Server / system error | `THIS_COACHS_NOTES_DONT_LOAD` | implemented | This coach's notes don't load |
 | 30617 | CH-3210 | 06 Server / system error | `THE_PLAYERS_ROSTER_DOESNT_LOAD` | implemented | The player's roster doesn't load (a player's own team's members) |
 | 30618 | CH-3211 | 06 Server / system error | `THE_PLAYERS_ROSTER_LIST_CRASHES` | implemented | The player's roster list crashes |
@@ -449,7 +449,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 31601 | CH-3601 | 16 Micro animation | `OPENING_OR_SWITCHING_A_PLAYER` | implemented | Opening or switching a player (desktop: from a Needs a look chip) |
 | 31602 | CH-3602 | 16 Micro animation | `HOVERING_OR_PRESSING_A_FACE_CARD_OR` | implemented | Hovering or pressing a face card or row |
 | 31603 | CH-3603 | 16 Micro animation | `SWITCHING_BETWEEN_TEAM_VIEW_AND_LIST_VIEW` | implemented | Switching between Team view and List view |
-| 31604 | CH-3604 | 16 Micro animation | `PHONE_CHOOSING_AVG_SG_OR_NAME` | implemented | Phone: choosing Avg, SG or Name |
+| 31604 | CH-3604 | 16 Micro animation | `PHONE_CHOOSING_AVG_SG_OR_NAME` | reserved | Phone: choosing Avg, SG or Name |
 | 31701 | CH-3701 | 17 Haptic | `OPENING_A_PLAYER_CHANGING_A_FILTER_LAYOUT` | implemented | Opening a player; changing a filter, layout or sort |
 | 31702 | CH-3702 | 17 Haptic | `AN_EXPORT_LANDS` | implemented | An export lands |
 | 31703 | CH-3703 | 17 Haptic | `THE_CODE_OR_LINK_IS_COPIED` | implemented | The code or link is copied |
@@ -632,7 +632,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 51804 | CH-5804 | 18 Accessibility | `THE_FOCUS_AREA_FIELDS_NAME_IS_JUST` | reserved | The focus-area field's name is just "What to work on"; its help or error is read as its description |
 | 51805 | CH-5805 | 18 Accessibility | `NO_AXE_VIOLATIONS_ON_EVERY_TAB_AND` | reserved | No axe violations on every tab and state, 1280px and 390px |
 | 51806 | CH-5806 | 18 Accessibility | `ON_A_PHONE_THE_ROUNDS_TABLE_SCROLLS` | reserved | On a phone the rounds table scrolls sideways; it is a named region that takes focus, so the arrow keys scroll it |
-| 51807 | CH-5807 | 18 Accessibility | `ON_THE_PHONE_ALL_N_ROUNDS_IS` | implemented | On the phone, "All N rounds" is a button that says whether the full list is open; Game detail's section chips say which one is showing |
+| 51807 | CH-5807 | 18 Accessibility | `ON_THE_PHONE_ALL_N_ROUNDS_IS` | reserved | Game detail's section chips say which one is showing (the phone's "All N rounds" button went with the old rounds list) |
 | 51808 | CH-5808 | 18 Accessibility | `IN_THE_ROUNDS_TABLE_EACH_COURSE_OPENS` | implemented | In the Rounds table each course opens that round's review (for a coach and the player), named "Finley GC, Oct 14: open the round"; where the review isn't rebuilt, it stays text |
 | 51809 | CH-5809 | 18 Accessibility | `THE_ROUND_FILTER_AS_ON_TEAM_STATS` | reserved | The round filter, as on Team stats (CH-4806): the Filter button opens a labelled dialog, each chip is "Remove filter: …", Clear is "Clear filters", the count line is a polite status region, choices (round type, holes, pick mode) are toggle buttons and courses and rounds are checkboxes, all in labelled groups, and the date fields carry their error as their description |
 | 51810 | CH-5810 | 18 Accessibility | `SHARE_BEST_SCORE_OPENS_A_LABELLED_DIALOG` | implemented | Share best score (P005-C2) opens a labelled dialog with the card as an image whose alt names the score, the player, the course and the date; Share is the one primary. The card shows no school or team name and, unless the player shares it, their first name and last initial |
@@ -813,7 +813,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 70301 |  | 03 Background loading / refresh | `REALTIME_UPDATES_ARRIVE` | implemented | New messages, edits, deletes and reactions arrive over realtime while the page is open, without a reload; the rail refreshes its last message and unread counts the same way. |
 | 70401 | CH-7301 | 04 Empty | `NO_CONVERSATIONS_YET` | implemented | No conversations yet |
 | 70402 | CH-7302 | 04 Empty | `A_RAIL_SEARCH_OR_THE_UNREAD_FILTER` | implemented | A rail search or a filter has nothing |
-| 70403 | CH-7303 | 04 Empty | `NO_MESSAGE_MENTIONS_THE_SEARCH` | implemented | No message mentions the search |
+| 70403 | CH-7303 | 04 Empty | `NO_MESSAGE_MENTIONS_THE_SEARCH` | implemented | A conversation’s own search (Details › Search) finds no message |
 | 70404 | CH-7304 | 04 Empty | `A_THREAD_WITH_NO_MESSAGES` | implemented | A thread with no messages |
 | 70405 | CH-7305 | 04 Empty | `NOTHING_OPEN` | implemented | Nothing open |
 | 70406 | CH-7306 | 04 Empty | `NOTHING_HAS_BEEN_SHARED_IN_THE_CONVERSATION` | implemented | Nothing has been shared in the conversation (Details) |
@@ -893,12 +893,12 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 71402 |  | 14 Retry / recovery | `TRY_AGAIN_SECTION_READ` | implemented | Try again on a section that did not load re-reads only that section (conversations, a thread, members, files, announcements) and keeps the rest of the page as it was. |
 | 71501 | CH-7017 | 15 Data freshness / sync | `A_MESSAGES_SEND_CANT_BE_CONFIRMED` | implemented | A message's send can't be confirmed |
 | 71601 | CH-7601 | 16 Micro animation | `A_MESSAGE_ARRIVES_OR_IS_SENT` | implemented | A message arrives or is sent |
-| 71602 | CH-7602 | 16 Micro animation | `SOMEONE_IS_TYPING` | implemented | Someone is typing |
+| 71602 | CH-7602 | 16 Micro animation | `SOMEONE_IS_TYPING` | reserved | Someone is typing |
 | 71603 | CH-7603 | 16 Micro animation | `OPENING_DETAILS_OR_A_REACTION_BAR` | implemented | Opening details or a reaction bar |
 | 71604 | CH-7604 | 16 Micro animation | `A_LONG_PRESS_ON_A_MESSAGE` | implemented | A long press on a message (phone) |
 | 71605 | CH-7605 | 16 Micro animation | `OPENING_ANOTHER_CONVERSATION_OR_ANNOUNCEMENT` | implemented | Opening another conversation or announcement (desktop) |
-| 71606 | CH-7606 | 16 Micro animation | `CHANGING_THE_INBOX_FILTER_ON_THE_PHONE` | implemented | Changing the inbox filter on the phone (All, Unread, Groups) |
-| 71607 | CH-7607 | 16 Micro animation | `MUTING_A_CONVERSATION_FROM_ITS_ROW` | implemented | Muting a conversation from its row (owner decision 14) |
+| 71606 | CH-7606 | 16 Micro animation | `CHANGING_THE_INBOX_FILTER_ON_THE_PHONE` | reserved | Changing the inbox filter on the phone (All, Unread, Groups) |
+| 71607 | CH-7607 | 16 Micro animation | `MUTING_A_CONVERSATION_FROM_ITS_ROW` | reserved | Muting a conversation from its row (owner decision 14) |
 | 71608 | CH-7608 | 16 Micro animation | `A_GROUP_MESSAGES_RECEIPT_CHANGES` | implemented | A group message's receipt changes ("Sent" → "Seen by 4 of 11" → "Seen by everyone") |
 | 71609 | CH-7609 | 16 Micro animation | `THE_SEEN_BY_SHEET_OR_POPOVER_OPENS` | implemented | The Seen by sheet (phone) or popover (desktop) opens and updates live |
 | 71701 | CH-7701 | 17 Haptic | `A_CHANGE_FAILS` | implemented | A change fails |
@@ -1070,8 +1070,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 90102 |  | 01 Default / core UI | `DETAIL_READY` | implemented | A qualifier opens with its status pill and name, five facts (dates, entrants, rounds submitted, course, spots), the leaderboard, and beside it the selections, the course per round and the scoring rules; a coach also gets round-by-round scores, Manage selections, Edit qualifier and Close or Reopen. |
 | 90103 |  | 01 Default / core UI | `FORM_READY` | implemented | Create opens with the whole active roster ticked, three rounds, a five-player squad and one coach's pick; Edit opens with the qualifier's own values, round courses and entrants. |
 | 90104 |  | 01 Default / core UI | `SELECTION_READY` | implemented | Manage selections opens with the qualifier's name and squad line, the three steps (Standings, Coach's picks, Squad confirmed) with the current one marked, the places on score now, the rest of the field, the coach's picks with their open slots, and the one primary action for the next step. |
-| 90105 |  | 01 Default / core UI | `ADDRESSES_RENDER_IN_PLACE` | implemented | Each address renders its own screen in place, never as a redirect (D-23): /qualifiers and /my-qualifiers the list, /qualifiers/[id] the detail, /qualifiers/new and /qualifiers/[id]/edit the form, and /qualifiers/[id]/selection Manage selections. |
-| 90106 |  | 01 Default / core UI | `MY_QUALIFIERS_ARE_THE_PLAYERS_OWN` | implemented | /my-qualifiers lists only the qualifiers the player is entered in, /qualifiers puts a player's own first with where they stand, and a coach who is given /my-qualifiers gets the whole list (the Clubhouse frame does not offer it to coaches: the shell shows its not-rebuilt page there). |
+| 90105 |  | 01 Default / core UI | `ADDRESSES_RENDER_IN_PLACE` | implemented | Each address renders its own screen in place, never as a redirect (D-23): /qualifiers the list, /qualifiers/[id] the detail, /qualifiers/new and /qualifiers/[id]/edit the form, and /qualifiers/[id]/selection Manage selections. The one exception is /my-qualifiers, retired on 2026-11-11 (owner): it opens /qualifiers. |
+| 90106 |  | 01 Default / core UI | `MY_QUALIFIERS_ARE_THE_PLAYERS_OWN` | implemented | Players have one Qualifiers page: /qualifiers puts a player's own first with where they stand. My qualifiers is retired (owner, 2026-11-11): /my-qualifiers opens /qualifiers for a coach and a player, and is no screen of its own. |
 | 90107 |  | 01 Default / core UI | `SELECTION_ADDRESS_OUTSIDE_THE_CLUBHOUSE` | implemented | With the Clubhouse off, /qualifiers/[id]/selection sends a coach to the CoachHelm qualifying workspace and a player to the qualifier, and a signed-out visitor to login; with it on, the route gets the address. |
 | 90201 | CH-09401 | 02 Initial loading / skeleton | `THE_LIST_IS_LOADING` | implemented | The list is loading |
 | 90202 | CH-09402 | 02 Initial loading / skeleton | `A_QUALIFIER_IS_LOADING` | implemented | A qualifier is loading |
@@ -1089,7 +1089,6 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 90403 | CH-09303 | 04 Empty | `NOTHING_HAS_CONCLUDED_YET` | implemented | Nothing has concluded yet |
 | 90404 | CH-09304 | 04 Empty | `NO_ROUND_IS_IN_YET` | implemented | No round is in yet |
 | 90405 | CH-09305 | 04 Empty | `THE_ROSTER_HAS_NO_ACTIVE_PLAYERS` | implemented | The roster has no active players (form) |
-| 90406 | CH-09306 | 04 Empty | `A_PLAYER_ISNT_ENTERED_IN_ANY_QUALIFIER` | implemented | A player isn't entered in any qualifier (/my-qualifiers) |
 | 90407 | CH-09308 | 04 Empty | `A_ROUND_HAS_NO_HOLE_BY_HOLE` | implemented | A round has no hole-by-hole card |
 | 90408 | CH-09309 | 04 Empty | `NOT_ON_A_TEAM` | implemented | Not on a team |
 | 90409 | CH-09312 | 04 Empty | `THE_COURSE_SEARCH_MATCHES_NOTHING` | implemented | The course search matches nothing |
@@ -1142,7 +1141,6 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 90629 | CH-09009 | 06 Server / system error | `THE_SQUAD_IS_CONFIRMED_BUT_TELLING_THE` | implemented | The squad is confirmed but telling the players failed |
 | 90630 | CH-09010 | 06 Server / system error | `GIVING_OR_TAKING_BACK_A_PLACE_AT` | implemented | Giving or taking back a place at a tied cut fails |
 | 90631 | CH-09221 | 06 Server / system error | `THE_COACHS_PICK_NOTES_DONT_LOAD` | implemented | The coach's pick notes don't load (detail, coach, confirmed squad) |
-| 90632 | CH-09222 | 06 Server / system error | `A_PLAYERS_ENTRIES_DONT_LOAD_ON_MY` | implemented | A player's entries don't load on /my-qualifiers |
 | 90633 | CH-09220 | 06 Server / system error | `A_REFRESH_OF_A_QUALIFIERS_STANDINGS_FAILS` | implemented | A refresh of a qualifier's standings fails after they were showing (a live update, a write's re-read, Try again) |
 | 90634 | CH-09223 | 06 Server / system error | `THE_PLAYERS_ROUNDS_PANEL_CRASHES` | implemented | The player's rounds panel crashes (desktop, beside the leaderboard) |
 | 90635 | CH-09224 | 06 Server / system error | `EDIT_AN_ENTRANT_WHOSE_PROFILE_CANNOT_BE` | implemented | Edit: an entrant whose profile cannot be read (injured, redshirt or inactive: the profile read admits active members only) |
@@ -1191,10 +1189,10 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 91802 | CH-09802 | 18 Accessibility | `THE_LEADERBOARD_AND_ROUND_BY_ROUND_ARE` | reserved | The leaderboard and round-by-round are tables (rows, column headers, a row header per player); each row's scorecards open from a button with aria-expanded, and each scorecard is a table with a caption |
 | 91803 | CH-09803 | 18 Accessibility | `A_LIVE_UPDATE_TO_THE_STANDINGS_IS` | implemented | A live update to the standings is announced |
 | 91804 |  | 18 Accessibility | `FIELD_PROBLEMS_ARE_ALERTS` | implemented | Each problem in the form or the pick dialog is an alert tied to its field by aria-describedby, the field is marked aria-invalid, and a field with no problem is not. |
-| 91901 |  | 19 Responsive layout | `PHONE_DETAIL` | implemented | At 820px and below a qualifier is one column: two facts (rounds in, spots), the leaderboard as cards that open a player's rounds in a sheet, the confirmed squad above it, and Close and Reopen behind Edit; round-by-round stays on desktop. |
+| 91901 |  | 19 Responsive layout | `PHONE_DETAIL` | implemented | At 820px and below a qualifier is one column: two facts (rounds in, spots), the leaderboard as cards that open a player's rounds in a sheet, the confirmed squad above it, and Edit, Close and Reopen in the bar's actions sheet, with Close also a key beside Manage selections once the qualifier is past its last day; round-by-round stays on desktop. |
 | 91902 |  | 19 Responsive layout | `PHONE_FORM` | implemented | On the phone the form's Cancel and Create (Save when editing) sit in the top bar and the tab bar steps aside; Create runs the same checks as the page's button, and Cancel asks before discarding changes. |
 | 91903 |  | 19 Responsive layout | `PHONE_SELECTION` | implemented | On the phone Manage selections has its own top bar (Selections, with a way back to the qualifier) and the one primary action in a foot at the bottom of the page. |
-| 91904 |  | 19 Responsive layout | `PHONE_LIST` | implemented | On the phone the list's top bar reads ‹ More and the title (Qualifiers, or My qualifiers on a player's own list); the list itself is the desktop list with phone CSS. |
+| 91904 |  | 19 Responsive layout | `PHONE_LIST` | implemented | On the phone the list's top bar reads the title, Qualifiers, for a coach and a player alike; the list itself is the desktop list with phone CSS. |
 | 92001 |  | 20 Keyboard / input | `FIRST_PROBLEM_TAKES_FOCUS` | implemented | When Create or Save finds problems nothing is sent and focus moves to the first problem in reading order (name, dates, rounds, the one-round confirmation, players, squad, picks), not the last. |
 | 92002 |  | 20 Keyboard / input | `ENTER_SUBMITS_THE_FORM` | implemented | Enter in a field of the form submits it, and a form with a problem shows the problem instead of sending. |
 | 92003 |  | 20 Keyboard / input | `SCORECARDS_OPEN_FROM_THE_KEYBOARD` | implemented | A leaderboard row's scorecards open from a button that takes Enter and Space and says whether it is expanded; the row itself is not a tab stop. |
@@ -1527,7 +1525,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 120202 | CH-12402 | 02 Initial loading / skeleton | `A_SCHEDULE_IS_BEING_READ` | implemented | A schedule is being read |
 | 120203 | CH-12403 | 02 Initial loading / skeleton | `CLASSES_ARE_BEING_PUT_ON_THE_CALENDAR` | implemented | Classes are being put on the calendar |
 | 120401 | CH-12301 | 04 Empty | `NO_CLASSES_YET` | implemented | No classes yet |
-| 120402 | CH-12302 | 04 Empty | `NO_CLASS_MEETS_A_TEAM_EVENT_THIS` | implemented | No class meets a team event this week |
+| 120402 | CH-12302 | 04 Empty | `NO_CLASS_MEETS_A_TEAM_EVENT_THIS` | deprecated | (retired 2026-11-07, the overlaps card has no empty line in the redesign) No class meets a team event this week |
 | 120403 | CH-12303 | 04 Empty | `A_CLASS_WITH_NO_FIXED_MEETING` | implemented | A class with no fixed meeting (online or arranged) |
 | 120404 | CH-12304 | 04 Empty | `A_CLASS_WITH_TIMES_BUT_NO_DAYS` | implemented | A class with times but no days |
 | 120405 | CH-12305 | 04 Empty | `A_PLAYER_ON_NO_TEAM` | implemented | A player on no team |
@@ -1585,7 +1583,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 120902 |  | 09 Success | `THE_IMPORT_RESULT_SAYS_WHAT_REACHED_THE_CALENDAR` | reserved | The Schedule imported view says how many classes were imported and counts as on the calendar only those that can be: "3 of 4 are on your calendar and repeat weekly until Dec 15" (until each class's own term end, or "until the end of their terms, Dec 15 and May 15" when they differ), then "Not on your calendar: PHIL 150 (no meeting days) and HIST 210 (no time set). Open the class to add what's missing." It says "Adding them to your calendar…" while the sync runs, and "Some didn't reach your calendar. Use Retry sync on the Classes page." when one failed. An import where no class can be on the calendar never says they are. |
 | 121101 | CH-12501 | 11 Destructive | `REMOVE_CLASS` | implemented | Remove class |
 | 121102 | CH-12502 | 11 Destructive | `CANCEL_OR_CLOSE_A_FORM_THAT_HAS` | implemented | Cancel or close a form that has changes |
-| 121103 | CH-12503 | 11 Destructive | `DELETE_ALL_CLASSES_NOT_DRAWN_WITH_NO` | implemented | Delete all classes (a quiet red button under the deck, with a bin icon; 44px tall and full width on the phone). Not drawn with no classes (CH-12301) or when they didn't load (CH-12201); off while a save, an import, a remove, a calendar sync or a delete-all is running, because a write beside it would put back what was just taken off |
+| 121103 | CH-12503 | 11 Destructive | `DELETE_ALL_CLASSES_NOT_DRAWN_WITH_NO` | implemented | Delete all classes (the destructive row, with a bin icon, in the More menu on the Your classes heading, on the phone and on desktop). Not drawn with no classes (CH-12301) or when they didn't load (CH-12201); the More key is off while a save, an import, a remove, a calendar sync or a delete-all is running, because a write beside it would put back what was just taken off |
 | 121104 | CH-12504 | 11 Destructive | `START_OVER_IN_THE_IMPORT_REVIEW_ONCE` | implemented | Start over in the import review, once it holds three or more classes or one came off (an emptied review, or one or two classes as read, starts over at once) |
 | 121105 | CH-12570 | 11 Destructive | `THE_PLAYER_REMOVES_AN_EXAM` | implemented | The player removes an exam |
 | 121201 |  | 12 State preservation | `FORM_KEPT_ON_FAILURE` | implemented | A class that fails to save leaves its sheet open with every field as typed; nothing is cleared until the save lands, and the failure toast is inside the open sheet so its Retry is where the person is looking. An import that fails to save leaves the review as it was. A remove that fails leaves the question open and the class in the list. Cancel or close on a form with changes asks first (CH-12502), and each time the sheet opens it starts from the class being edited, or blank. |
@@ -1606,7 +1604,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 121705 | CH-12704 | 17 Haptic | `DELETE_ALL_CLASSES_IS_TAPPED` | implemented | Delete all classes is tapped |
 | 121801 | CH-12801 | 18 Accessibility | `A_SCREEN_READER_MOVES_THROUGH_THE_DECK` | implemented | A screen reader moves through the deck |
 | 121802 | CH-12802 | 18 Accessibility | `THE_CARDS_WEEK_STRIP` | implemented | The card's week strip |
-| 121803 | CH-12803 | 18 Accessibility | `THE_TERM_OVERVIEW` | implemented | The term overview |
+| 121803 | CH-12803 | 18 Accessibility | `THE_TERM_OVERVIEW` | reserved | The term overview |
 | 121804 | CH-12804 | 18 Accessibility | `A_SAVE_IS_REFUSED` | implemented | A save is refused |
 | 121805 | CH-12805 | 18 Accessibility | `THE_IMPORTS_DROP_ZONE` | implemented | The import's drop zone |
 | 121806 |  | 18 Accessibility | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_STATE` | reserved | No axe violations on the six preview states (the board's Fall 2026, empty, failed, partial, no team and loading) at 1280px and 390px, run by npm run clubhouse:a11y from the entries in scripts/clubhouse/a11y.mjs. Reserved: it ran clean on 2026-09-30 (12 of 12), but it is a dev-server run, not a test, so no test names it. |
@@ -1621,11 +1619,10 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 
 | Bridge ID | Code | Category | Name | Status | Meaning |
 | --- | --- | --- | --- | --- | --- |
-| 130101 |  | 01 Default / core UI | `COACHHELM_OPENS_FOR_THE_ROLE` | implemented | One address gives a coach the coach's board and a player the player's, from the session (a coach who also has a player profile is a coach here). A player's page is the header (the Player chip, CoachHelm, one line), one focus card, Also worth knowing (at most two findings, three with the focus), Working (at most one strength), a count of the reads left to the Deep dive ("6 more reads in the Deep dive", a tap that opens it; not drawn when the board shows every read) and a closing note (reads update as rounds are posted, and coaches see the same insights). A coach's page is the header (the Coach chip and the count of players with an open signal), the program pulse (up to six rows), By player, the chosen player's focus with Assign as focus and Dismiss, and a count of players with no insight yet. Everything is read on the server before first paint. |
+| 130101 |  | 01 Default / core UI | `COACHHELM_OPENS_FOR_THE_ROLE` | implemented | One address gives a coach their CoachHelm (the Team page, the drawn golf hole, with Ask beside it) and a player theirs (Your week, with Standing and the Deep dive beside it), from the session: a coach who also has a player profile is a coach here, and a player's page needs no team. The older boards that once opened here (the coach's signal list, the player's focus board) were retired on 2026-11-11. |
 | 130102 |  | 01 Default / core UI | `THE_FOCUS_IS_THE_TOP_INSIGHT_THAT_IS_NOT_WORKING` | implemented | The player's focus card is the insight the person picked or, without a pick, the top-ranked finding that is current (a read older than the newest round, and a card that states no finding, do not lead), in the delivery feed's own order. The picked insight leaves both lists and the one it replaced joins them; the board holds at most three findings (the focus counted when it is one, so Also worth knowing has at most two) and one strength (a picked strength is that one), in the feed's own order, never re-ranked (NEEDS_MAX, WORKING_MAX). A measured zero (a strokes-gained baseline whose strokes_impact prints as 0.0, coachhelm-strokes.ts) is not one of the board's open reads; any other zero is no estimate and the read stays. Every read the board does not show (past the caps, or a measured zero) is counted in the line that opens the Deep dive, which lists them all, so the count and the lists add up to the Deep dive's reads (a note is in neither). No strokes-a-round figure is drawn from strokes_impact unless it is a real estimate (sg_baseline or peer_delta, non-zero at one decimal: strokesAtStake), and the miner's own "Projected impact: ~0.00 strokes per round." sentence is not drawn when its figure is zero or the row has no estimate (withoutZeroImpact; the stored text is untouched). With only strengths there is no focus and CH-13303 says nothing needs work, and names What's working only when it is drawn. On the coach's board the focus is the chosen player's top insight. |
 | 130103 |  | 01 Default / core UI | `PLAYERS_ARE_ORDERED_MOST_PRESSING_FIRST` | implemented | The coach's By player list is ordered by how pressing each player's top insight is (Priority, then Worth closing, then Minor; a strength last, whatever its own priority), then by how many open signals the player has, then by name. A strength, and a top read that is out of date, come after the findings, and a card that states no finding comes last. The first player's focus is open when the page opens, and picking a player (a toggle, aria-pressed) shows that player's focus. |
 | 130104 |  | 01 Default / core UI | `FAIRWAY_DRILL_LINKS_SAY_NOT_REBUILT` | implemented | The Fairway drills' addresses (where /my-development, /my-game-profile, /my-standing and the focus-area cards send people) land on a screen that exists: ?view=development redirects to Stats' Development tab (/golf/dashboard/stats?tab=dev), and ?view=profile, ?view=standing and ?view=deep-dive are the player's own Game profile, Standing and Deep dive, built for the signed-in player alone (the loader takes the session's player id and nothing from the address). None of them says "not rebuilt yet" any more (the name is the contract's original, kept because Bridge IDs are append-only). ?view=insights, no view and any other value draw the board. A coach's ?view=profile, standing or deep-dive with no ?player= is their own board; with ?player=<golf_players.id> it is the coach's view of that player (spec A, 2026-10-21, which supersedes Q-76's "a coach's equivalents are not asked for"), read only once the id is checked against the coach's team (130807). A player's ?player= means nothing: their views read the session's id. |
-| 130105 |  | 01 Default / core UI | `OPEN_SIGNALS_FOLLOW_DISMISSALS` | implemented | The header counts the players with an open signal ("4 players have an open signal."): the board draws one card per player, so it never counts the rows behind them. A player's open signals are their visible findings whose read is current, and each row shows that count: a strength, a card that states no finding and a read older than the player's newest completed round are not open signals, and a player with only those has none. Dismissing a player's top insight here takes one off that player's count when the card was one of their open signals, and a player left with none leaves the count of players; Undo puts both back. The row reads Dismissed while the notice is up. |
 | 130106 |  | 01 Default / core UI | `INSIGHTS_ARE_GENERATOR_OUTPUT_ONLY` | implemented | Every insight is a delivery-action row (EvidenceInsight) re-shaped by toChInsight; nothing is generated, ranked or computed here beyond a gauge's display scale. The value is the generator's own display; the downhill-penalty finding is two bars and no gauge, any other insight with a comparison is a gauge (you, the cohort, and the Tour when it differs) and one with no comparison draws no gauge; the sample names what it counts and the window is days or All rounds; the read is a word; the drill is the attached drill (its text read from golf_drills.description) and the generator's placeholder action is not shown as a drill. An insight is working when it is resolved, or better than the comparison the card draws (the Tour's value where the generator carried a college comparison, never a stored college one the page does not show) at low priority or with an encouraging tone (isNegativePolarityMetric decides which way a number is good; a missing comparison is none, never zero). The read says Solid, Early or Thin from the one table every surface uses. The text is the player's own on the player's board (a coach's "have the player" instruction is dropped) and about the player by their first name on the coach's board (the gauge says "Jonah ·", not "You ·"). |
 | 130107 | CH-13904 | 01 Default / core UI | `COACH_A_PLAYERS_TOP_CARD_STATES_NO` | implemented | Coach: a player's top card states no finding (a note) |
 | 130201 | CH-13401 | 02 Initial loading / skeleton | `THE_PLAYERS_PAGE_IS_ON_ITS_WAY` | implemented | The player's page is on its way |
@@ -1635,24 +1632,15 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130205 | CH-13404 | 02 Initial loading / skeleton | `A_PLAYERS_ACCEPT_OR_DECLINE_IS_BEING` | implemented | A player's Accept is being sent |
 | 130206 | CH-13420 | 02 Initial loading / skeleton | `ASK_THE_CHAT_PAGE_LOADS` | implemented | Ask: The chat page loads |
 | 130207 | CH-13421 | 02 Initial loading / skeleton | `ASK_A_REPLY_IS_STREAMING` | implemented | Ask: A reply is streaming |
-| 130208 | CH-13450 | 02 Initial loading / skeleton | `ASK_AN_ACTION_WAS_CONFIRMED_AND_IS` | implemented | Ask: An action was confirmed and is being carried out |
 | 130209 | CH-13460 | 02 Initial loading / skeleton | `PROFILE_THE_GAME_PROFILE_IS_ON_ITS` | deprecated | (retired with the Game profile, chs-37) Profile: the Game profile is on its way |
 | 130210 | CH-13470 | 02 Initial loading / skeleton | `STANDING_THE_STANDING_IS_ON_ITS_WAY` | implemented | Standing: the standing is on its way |
 | 130211 | CH-13480 | 02 Initial loading / skeleton | `DEEP_DIVE_THE_INSIGHTS_ARE_ON_THEIR` | implemented | Deep dive: the insights are on their way |
-| 130212 | CH-13405 | 02 Initial loading / skeleton | `COACH_THE_BOARD_IS_DRAWN_AND_THE` | implemented | Coach: the board is drawn and the program pulse is still on its way |
 | 130213 | CH-13430 | 02 Initial loading / skeleton | `WHATS_NEW_IS_ON_ITS_WAY` | implemented | What’s new is on its way |
 | 130214 | CH-13431 | 02 Initial loading / skeleton | `WHATS_NEW_READS_AGAIN` | implemented | What’s new reads again (Try again, or the page refreshes) |
 | 130215 | CH-13406 | 02 Initial loading / skeleton | `RECHECK_RUNNING` | implemented | Re-check running |
-| 130401 | CH-13301 | 04 Empty | `PLAYER_NO_ROUND_POSTED_YET` | implemented | Player: no round posted yet (the lede reads "One thing to work on each week, from the rounds you post.") |
-| 130402 | CH-13302 | 04 Empty | `PLAYER_ROUNDS_POSTED_NO_INSIGHT_YET` | implemented | Player: rounds posted, no insight yet |
-| 130403 | CH-13303 | 04 Empty | `PLAYER_EVERY_INSIGHT_IS_A_STRENGTH` | implemented | Player: every insight is a strength |
 | 130404 | CH-13304 | 04 Empty | `PLAYER_COACHHELM_IS_OFF_FOR_THEM` | implemented | Player: CoachHelm is off for them (the board, and Standing and Deep dive, which say the same, answered at once and with no sub-navigation) |
 | 130405 | CH-13305 | 04 Empty | `COACH_COACHHELM_IS_OFF` | implemented | Coach: CoachHelm is off (by them, by the team, or globally) |
-| 130406 | CH-13306 | 04 Empty | `COACH_PLAYERS_ON_THE_TEAM_NO_SIGNAL` | implemented | Coach: players on the team, no signal yet |
-| 130407 | CH-13307 | 04 Empty | `COACH_NO_PLAYERS_ON_THE_TEAM` | implemented | Coach: no players on the team |
 | 130408 | CH-13308 | 04 Empty | `COACH_NOT_ON_A_TEAM` | implemented | Coach: not on a team |
-| 130409 | CH-13309 | 04 Empty | `COACH_THE_PULSE_HAS_NOTHING_FLAGGED` | implemented | Coach: the pulse has nothing new, and every read it is made from landed |
-| 130410 | CH-13310 | 04 Empty | `COACH_SOME_PLAYERS_HAVE_NO_INSIGHT_YET` | implemented | Coach: some players have no read yet |
 | 130411 |  | 04 Empty | `A_FAILED_READ_IS_NEVER_DRAWN_AS_EMPTY` | implemented | The delivery actions answer an empty list or map when a read fails, so the loaders tell a failed read from a first run. An empty feed, or empty top insights, while a drawable visible insight is on file (for a player, one they have not dismissed themselves: the newest feedback row per insight decides) is a failed read (CH-13201, CH-13202), and so is a failed visible-insights, feedback or roster read; only when that check finds nothing is it a first run (CH-13301, CH-13302, CH-13306). A player who dismissed every insight themselves is a first run, not a failure, and a failed roster read is never an empty team (CH-13307). |
 | 130412 | CH-13320 | 04 Empty | `ASK_A_CONVERSATION_THAT_IS_GONE_OR` | implemented | Ask: A conversation that is gone or not the coach's |
 | 130413 | CH-13321 | 04 Empty | `ASK_THE_ROSTER_IS_EMPTY` | implemented | Ask: The roster is empty |
@@ -1678,21 +1666,20 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130433 | CH-13311 | 04 Empty | `COACH_PLAYER_PAGE_PLAYER_NOT_ON_THE` | implemented | Coach player page, player not on the team: the id in the address is not a player on this coach's team (not an id, not on the team, on another team the coach staffs, or no longer active) |
 | 130434 | CH-13313 | 04 Empty | `COACH_PLAYER_PAGE_COACHHELM_OFF_FOR_THE` | implemented | Coach player page, CoachHelm off for the player: it is off for that player's team |
 | 130435 | CH-13374 | 04 Empty | `STANDING_A_PART_OF_THE_ROUND_ON` | implemented | Standing: a part of the round on Where strokes go has no figure (no strokes-gained row for it, or no Tour figure to compare with) |
-| 130460 | CH-13333 | 04 Empty | `PLAYER_NO_COURSE_HAS_THREE_OF_THEIR` | implemented | Player: no course has three of their countable rounds yet, or the course picked has fewer than three (chs-21) |
+| 130436 | CH-13395 | 04 Empty | `PRACTICE_NEW_PLAN_AND_SOMEONE_WITH_NO` | implemented | Practice: New plan, and someone with no team |
+| 130437 | CH-13396 | 04 Empty | `PRACTICE_A_COACHS_FIRST_PLAN_OR_NO` | implemented | Practice: a coach's first plan, or no practice this week |
+| 130438 | CH-13397 | 04 Empty | `PRACTICE_A_PLAYER_WITH_NOTHING_PUBLISHED` | implemented | Practice: a player with nothing published |
 | 130501 | CH-13120 | 05 Validation | `ASK_SEND_WHILE_AN_ACTION_CARD_WAITS` | implemented | Ask: Send while an action card waits for Confirm or Cancel |
+| 130502 | CH-13180 | 05 Validation | `PRACTICE_A_DRILL_RUNS_PAST_ITS_TURN` | implemented | Practice: a drill runs past its turn |
+| 130503 | CH-13181 | 05 Validation | `PRACTICE_AN_ALL_DAY_PRACTICE_IN_NEW` | implemented | Practice: an all-day practice in New plan |
 | 130601 | CH-13001 | 06 Server / system error | `ASSIGN_AS_FOCUS_FAILS` | implemented | Assign as focus fails |
 | 130602 | CH-13002 | 06 Server / system error | `DISMISS_FAILS` | implemented | Dismiss fails |
 | 130603 | CH-13003 | 06 Server / system error | `UNDO_FAILS` | implemented | Undo fails |
-| 130604 | CH-13201 | 06 Server / system error | `THE_PLAYERS_INSIGHTS_DONT_LOAD` | implemented | The player's insights don't load (the read fails, throws, comes back empty while insights are on file, or the gate lookup fails) |
-| 130605 | CH-13202 | 06 Server / system error | `THE_COACHS_ROSTER_OR_PLAYERS_INSIGHTS_DONT` | implemented | The coach's roster or players' insights don't load (same tests, for the team) |
-| 130606 | CH-13203 | 06 Server / system error | `THE_PROGRAM_PULSE_DOESNT_LOAD` | implemented | The program pulse doesn't load |
 | 130607 | CH-13204 | 06 Server / system error | `A_SECTION_CRASHES_WHILE_DRAWING` | implemented | A section crashes while drawing |
 | 130608 |  | 06 Server / system error | `A_FAILED_GATE_LOOKUP_IS_A_FAILED_READ_NOT_OFF` | implemented | The gate that says CoachHelm is off is asked first. A gate that throws, or whose reason says the lookup failed, is a failed read and not off: a player gets Your insights didn't load (CH-13201) and a coach gets the roster flagged as failed (CH-13202); it is logged as gate. Fixed since: on a coach's gate failure the pulse is still read and drawn beside the CH-13202 notice, never the empty line (coachhelm-contracts.test.tsx). |
 | 130609 | CH-13004 | 06 Server / system error | `A_PLAYERS_ACCEPT_OF_A_PROPOSED_FOCUS` | implemented | A player's Accept of a proposed focus area fails |
 | 130610 | CH-13005 | 06 Server / system error | `A_PLAYERS_DECLINE_OF_A_PROPOSED_FOCUS` | implemented | A player's Decline of a proposed focus area fails (written when its Undo toast goes, CH-13912) |
-| 130611 | CH-13205 | 06 Server / system error | `THE_PLAYERS_PROPOSED_FOCUS_AREAS_DONT_LOAD` | implemented | The player's proposed focus areas don't load (the read fails, or the team they are read through can't be read) |
 | 130612 | CH-13050 | 06 Server / system error | `ASK_AN_ACTION_COACHHELM_PROPOSED_FAILS_AFTER` | implemented | Ask: An action CoachHelm proposed fails after Confirm |
-| 130613 | CH-13051 | 06 Server / system error | `ASK_COPY_IS_REFUSED_BY_THE_CLIPBOARD` | implemented | Ask: Copy is refused by the clipboard |
 | 130614 | CH-13221 | 06 Server / system error | `ASK_THE_CHAT_CONTEXT_DOES_NOT_LOAD` | implemented | Ask: The chat context (the program) does not load, or its roster read fails |
 | 130615 | CH-13222 | 06 Server / system error | `ASK_THE_CHAT_LIST_DOES_NOT_LOAD` | implemented | Ask: The chat list does not load |
 | 130616 | CH-13223 | 06 Server / system error | `ASK_THE_PULSE_DOES_NOT_LOAD` | deprecated | Ask: The pulse does not load |
@@ -1701,8 +1688,6 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130619 | CH-13250 | 06 Server / system error | `ASK_A_READ_TOOL_BEHIND_AN_ANSWER` | implemented | Ask: A read tool behind an answer failed |
 | 130620 | CH-13251 | 06 Server / system error | `ASK_AN_ANSWER_FAILS_WHILE_IT_STREAMS` | implemented | Ask: An answer fails while it streams |
 | 130621 | CH-13252 | 06 Server / system error | `ASK_AN_ANSWER_ARRIVES_MALFORMED_AND_IS` | implemented | Ask: An answer arrives malformed and is rejected |
-| 130622 | CH-13253 | 06 Server / system error | `ASK_A_CONFIRMED_ACTION_FAILED_OR_ONLY` | implemented | Ask: A confirmed action failed or only partly completed |
-| 130623 | CH-13254 | 06 Server / system error | `ASK_THE_CONVERSATION_MOVED_PAST_A_CARD` | implemented | Ask: The conversation moved past a card that was never answered |
 | 130624 | CH-13255 | 06 Server / system error | `ASK_THE_EVIDENCE_PANEL_IS_OPENED_FOR` | implemented | Ask: The evidence panel is opened for a player the conversation has nothing on |
 | 130625 | CH-13260 | 06 Server / system error | `PROFILE_THE_GAME_PROFILE_DOESNT_LOAD` | implemented | Standing: How you play doesn't load (the genome read fails or throws) |
 | 130626 | CH-13270 | 06 Server / system error | `STANDING_THE_STANDING_DOESNT_LOAD` | implemented | Standing: the standing doesn't load (the standing read fails or throws) |
@@ -1711,7 +1696,6 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130629 | CH-13281 | 06 Server / system error | `DEEP_DIVE_THE_ROUNDS_BEHIND_A_READ` | implemented | Deep dive: the rounds behind a read don't load (that one read of `golf_rounds` fails) |
 | 130630 | CH-13282 | 06 Server / system error | `DEEP_DIVE_THEIR_FOCUS_AREAS_AND_GOALS` | implemented | Deep dive: their focus areas and goals don't load |
 | 130631 | CH-13283 | 06 Server / system error | `DEEP_DIVE_THE_CATEGORY_TRENDS_DONT_LOAD` | implemented | Deep dive: the category trends don't load (`getThemesForPlayer` answers `success: false` or throws) |
-| 130632 | CH-13206 | 06 Server / system error | `COACH_A_READ_THE_PROGRAM_PULSE_IS` | implemented | Coach: a read the program pulse is made from failed (rounds, the schedule, tasks or focus areas), the rest landed |
 | 130633 | CH-13207 | 06 Server / system error | `COACH_A_READ_ABOUT_THE_TOP_CARD` | implemented | Coach: a read about the top card failed: which focus areas were made from it, which were declined, or the newest round (whether the read is still current) |
 | 130634 | CH-13208 | 06 Server / system error | `A_READ_BESIDE_THE_CARDS_FAILED_THE` | implemented | A read beside the cards failed: the Tour's values (or the team they come from), the drills' text, which reads are Assigned (the player's board and Deep dive), or the newest round |
 | 130635 | CH-13226 | 06 Server / system error | `ASK_A_READ_THE_PULSE_IS_MADE` | deprecated | Ask: a read the pulse is made from failed |
@@ -1724,7 +1708,12 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130642 | CH-13007 | 06 Server / system error | `RECHECK_RATE_LIMITED` | implemented | Re-check rate-limited |
 | 130643 | CH-13273 | 06 Server / system error | `STANDING_THE_OPEN_READS_BEHIND_WHERE_STROKES` | implemented | Standing: the open reads behind Where strokes go don't load |
 | 130644 | CH-13006 | 06 Server / system error | `RECHECK_FAILS` | implemented | Re-check fails or is offline |
-| 130660 | CH-13233 | 06 Server / system error | `PLAYER_THEIR_OWN_COURSE_PLAN_DOESNT_LOAD` | implemented | Player: their own course plan (chs-21) doesn't load: the courses or the plan read fails or throws |
+| 130645 | CH-13080 | 06 Server / system error | `PRACTICE_THREE_SAVES_IN_A_ROW_FAILED` | implemented | Practice: three saves in a row failed (the design's CH-17001) |
+| 130646 | CH-13081 | 06 Server / system error | `PRACTICE_PUBLISH_WENT_THROUGH` | implemented | Practice: publish went through |
+| 130647 | CH-13082 | 06 Server / system error | `PRACTICE_DELETE_DRAFT_REFUSED` | implemented | Practice: Delete draft refused |
+| 130648 | CH-13083 | 06 Server / system error | `PRACTICE_A_NEW_DRILL_SAVED` | implemented | Practice: a new drill saved |
+| 130649 | CH-13084 | 06 Server / system error | `PRACTICE_OFFLINE_WHILE_EDITING` | implemented | Practice: offline while editing |
+| 130650 | CH-13008 | 06 Server / system error | `REMOVE_FOCUS_ON_A_READ_FAILS` | implemented | Remove focus on a read fails (written when its Undo toast goes) |
 | 130701 | CH-13901 | 07 Network / offline | `AN_INSIGHT_IS_DISMISSED` | implemented | An insight is dismissed |
 | 130702 |  | 07 Network / offline | `WRITES_REFUSE_OFFLINE` | implemented | Assign as focus, Dismiss and Undo are refused while the browser is offline, before anything is sent: the shell's toast (CH-1903) names what did not happen (Couldn’t assign the focus to Jonah: you’re offline), the error haptic fires and Retry is offered. Dismiss's warning haptic has already fired when the refusal comes. |
 | 130703 | CH-13902 | 07 Network / offline | `A_PROPOSED_FOCUS_AREA_IS_ACCEPTED_OR` | implemented | A proposed focus area is accepted or declined |
@@ -1732,18 +1721,16 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130705 | CH-13921 | 07 Network / offline | `ASK_A_SEND_FAILS` | implemented | Ask: A send fails |
 | 130706 | CH-13922 | 07 Network / offline | `ASK_A_NEW_THREAD_STARTS` | implemented | Ask: A new thread starts |
 | 130707 | CH-13923 | 07 Network / offline | `ASK_THE_SUB_TAB_STRIP` | implemented | Ask: The sub-tab strip |
-| 130708 | CH-13950 | 07 Network / offline | `ASK_COPY_AN_ANSWER` | implemented | Ask: Copy an answer |
+| 130708 | CH-13950 | 07 Network / offline | `ASK_COPY_AN_ANSWER` | reserved | Ask: Copy an answer |
 | 130709 | CH-13951 | 07 Network / offline | `ASK_COACHHELM_PROPOSES_AN_ACTION` | implemented | Ask: CoachHelm proposes an action |
-| 130710 | CH-13952 | 07 Network / offline | `ASK_A_PROPOSED_ACTION_IS_CANCELLED` | implemented | Ask: A proposed action is cancelled |
-| 130711 | CH-13953 | 07 Network / offline | `ASK_A_CONFIRMED_ACTION_LANDS` | implemented | Ask: A confirmed action lands |
+| 130710 | CH-13952 | 07 Network / offline | `ASK_A_PROPOSED_ACTION_IS_CANCELLED` | reserved | Ask: A proposed action is cancelled |
+| 130711 | CH-13953 | 07 Network / offline | `ASK_A_CONFIRMED_ACTION_LANDS` | reserved | Ask: A confirmed action lands |
 | 130712 | CH-13930 | 07 Network / offline | `PLAYER_THE_SUB_NAVIGATION` | implemented | Player: the sub-navigation |
 | 130713 | CH-13931 | 07 Network / offline | `PLAYER_DEVELOPMENT` | reserved | Player: Development |
 | 130714 | CH-13980 | 07 Network / offline | `DEEP_DIVE_A_READ_IS_OPENED_ON` | implemented | Deep dive: a read is opened on the phone |
 | 130715 | CH-13981 | 07 Network / offline | `DEEP_DIVE_AN_ADDRESS_NAMES_A_READ` | implemented | Deep dive: an address names a read (`?view=deep-dive&insight=<id>`) |
 | 130716 | CH-13982 | 07 Network / offline | `DEEP_DIVE_A_CAUSE_IS_A_HYPOTHESIS` | implemented | Deep dive: a cause is a hypothesis |
 | 130717 | CH-13907 | 07 Network / offline | `COACH_THE_PLAYER_DECLINED_A_FOCUS_MADE` | implemented | Coach: the player declined a focus made from the top card, and none stands now |
-| 130718 | CH-13908 | 07 Network / offline | `COACH_THE_PLAYER_THE_COACH_HAD_PICKED` | implemented | Coach: the player the coach had picked is no longer on the refreshed board (their signal went) |
-| 130719 | CH-13909 | 07 Network / offline | `PLAYER_THE_READ_THE_PLAYER_HAD_PICKED` | implemented | Player: the read the player had picked is no longer on the refreshed board |
 | 130720 | CH-13910 | 07 Network / offline | `DEEP_DIVE_THE_READ_THAT_WAS_OPEN` | implemented | Deep dive: the read that was open is no longer on the page after a refresh |
 | 130721 | CH-13911 | 07 Network / offline | `COACH_PLAYER_COMING_BACK_TO_THE_PAGE` | reserved | Coach, player: coming back to the page (Back, a reload, a link) after leaving it |
 | 130722 | CH-13924 | 07 Network / offline | `ASK_COMING_BACK_TO_THE_PAGE_AFTER` | reserved | Ask: coming back to the page after leaving it |
@@ -1752,7 +1739,6 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130725 | CH-13991 | 07 Network / offline | `COACH_PLAYER_WHY_DO_YOU_THINK_SO` | implemented | Coach, player: why do you think so |
 | 130726 | CH-13992 | 07 Network / offline | `COACH_PLAYER_READS_THE_RECHECK_CLEARED` | implemented | Coach, player: reads the recheck cleared |
 | 130727 | CH-13993 | 07 Network / offline | `DEEP_DIVE_THE_READS_WHY_LINE_FROM` | implemented | Deep dive: the Read's Why line from the cause state |
-| 130728 | CH-13995 | 07 Network / offline | `COACH_TEAM_PATTERNS` | implemented | Coach: Team patterns (flag `coachhelm_team_pattern_v1`) |
 | 130729 | CH-13960 | 07 Network / offline | `COACH_THE_TRACK_RECORD` | implemented | Coach: the Track record (`?view=track-record`, flag `coachhelm_track_record_v1`) |
 | 130730 | CH-13961 | 07 Network / offline | `TRACK_RECORD_A_LEVEL_WITH_ENOUGH_RECHECKED` | implemented | Track record: a level with enough rechecked reads (10 or more) |
 | 130731 | CH-13962 | 07 Network / offline | `TRACK_RECORD_A_LEVEL_OR_A_FAMILY` | implemented | Track record: a level or a family with fewer than 10 rechecked reads |
@@ -1762,14 +1748,9 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130735 | CH-13966 | 07 Network / offline | `TRACK_RECORD_A_READ_IT_IS_MADE` | implemented | Track record: a read it is made from failed |
 | 130736 | CH-13967 | 07 Network / offline | `TRACK_RECORD_THE_DATABASE_CANNOT_ANSWER_YET` | implemented | Track record: the database cannot answer yet (its function is not applied) |
 | 130737 | CH-13968 | 07 Network / offline | `TRACK_RECORD_NOTHING_SHOWN_SINCE_THE_SEASON` | implemented | Track record: nothing shown since the season start |
-| 130738 | CH-13969 | 07 Network / offline | `COACH_BOARD_THE_LINK_TO_THE_TRACK` | implemented | Coach board: the link to the Track record |
 | 130739 | CH-13970 | 07 Network / offline | `COACH_PLAYER_CORRECTION_CHIPS` | implemented | Coach, player: correction chips |
 | 130740 | CH-13971 | 07 Network / offline | `COACH_PLAYER_ANSWER_RECORDED` | implemented | Coach, player: answer recorded |
 | 130741 | CH-13972 | 07 Network / offline | `COACH_READ_HELD_BACK` | implemented | Coach: read held back |
-| 130742 | CH-13940 | 07 Network / offline | `COACH_PLAYER_THE_PATH_LINE` | implemented | Coach, player: the path line (design call D2) |
-| 130743 | CH-13941 | 07 Network / offline | `COACH_SINCE_YOU_WERE_LAST_HERE` | implemented | Coach: since you were last here (design call D4) |
-| 130744 | CH-13942 | 07 Network / offline | `COACH_READS_RATED_NOT_ENOUGH_YET_ARE` | implemented | Coach: reads rated Not enough yet are held back |
-| 130745 | CH-13943 | 07 Network / offline | `COACH_EVERY_READ_OF_A_PLAYER_IS` | implemented | Coach: every read of a player is Not enough yet |
 | 130746 | CH-13936 | 07 Network / offline | `MONDAY_BRIEF_COACHHELM_IS_OFF_FOR_THE` | implemented | Monday brief: CoachHelm is off for the team |
 | 130747 | CH-13937 | 07 Network / offline | `MONDAY_BRIEF_A_READ_IT_IS_MADE` | implemented | Monday brief: a read it is made from failed |
 | 130748 | CH-13938 | 07 Network / offline | `COACH_BOARD_THE_LINK_TO_THE_MONDAY` | deprecated | Retired 2026-11-07 (Dashboard cuts). Coach board: the link to the Brief |
@@ -1784,8 +1765,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130760 | CH-13913 | 07 Network / offline | `PLAYER_COACH_GAME_PROFILES_OLD_ADDRESS` | implemented | Player, coach: Game profile's old address (`?view=profile`, and `view=profile&player=` for a coach; chs-37) |
 | 130761 | CH-13914 | 07 Network / offline | `ASK_AN_ANSWER_NAMES_A_PLAYERS_READS` | implemented | Ask (coach): an answer names a player's reads (chs-39) |
 | 130762 | CH-13915 | 07 Network / offline | `STANDING_HOW_YOU_PLAY` | implemented | Standing: How you play (chs-37) |
-| 130763 | CH-13916 | 07 Network / offline | `PLAYER_THEIR_OWN_COURSE_PLAN_OFFERED_BY` | implemented | Player: their own Course plan (chs-21 / par-14, `coachhelm_course_plan_v1`), offered by the loader while the flag is on |
-| 130764 | CH-13917 | 07 Network / offline | `PLAYER_THE_PLAN_FOR_THE_COURSE_THEY` | implemented | Player: the plan for the course they picked |
+| 130763 | CH-13916 | 07 Network / offline | `PLAYER_THEIR_OWN_COURSE_PLAN_OFFERED_BY` | reserved | Player: their own Course plan (chs-21 / par-14, `coachhelm_course_plan_v1`), offered by the loader while the flag is on |
 | 130780 | CH-13983 | 07 Network / offline | `COACH_THE_BRIEF_BEHIND_INTELLIGENCE` | deprecated | Retired 2026-11-07 (Dashboard cuts). Coach: the Brief behind /intelligence (`?view=brief`, flag `coachhelm_monday_brief_v1`) |
 | 130781 | CH-13984 | 07 Network / offline | `BRIEF_THIS_WEEKS_OPEN_READS` | reserved | Brief: this week's open reads |
 | 130782 | CH-13985 | 07 Network / offline | `BRIEF_WHAT_PLAYERS_ARE_WORKING_ON` | reserved | Brief: what players are working on |
@@ -1796,21 +1776,23 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130787 | CH-13997 | 07 Network / offline | `BRIEF_A_READ_IT_IS_MADE_FROM` | deprecated | Retired 2026-11-07 (Dashboard cuts). Brief: a read it is made from failed |
 | 130788 | CH-13998 | 07 Network / offline | `INTELLIGENCE_AND_ITS_OLD_SUB_LINKS` | reserved | /intelligence and its old sub-links |
 | 130789 | CH-13999 | 07 Network / offline | `BRIEF_COACHHELM_IS_OFF_FOR_THE_TEAM` | deprecated | Retired 2026-11-07 (Dashboard cuts). Brief: CoachHelm is off for the team |
-| 130801 |  | 08 Permission / authorization | `CONTROLS_FOLLOW_THE_ROLE` | implemented | The coach's controls (Assign as focus, Dismiss, Undo) exist only on the coach's board. The player's board has no write of any kind and is never drawn Assign, Dismiss, Undo or Share, and neither board has a Share button: no action sits behind it. |
+| 130801 |  | 08 Permission / authorization | `CONTROLS_FOLLOW_THE_ROLE` | implemented | The coach's controls (Assign as focus, Dismiss, Undo) exist only on the coach's pages. A player's CoachHelm (Your week) is never drawn Assign, Dismiss, Undo or Share: the one thing a player writes is their answer to a proposal, Accept or Decline. No page has a Share button: no action sits behind it. |
 | 130802 |  | 08 Permission / authorization | `A_COACH_READS_ONLY_THE_TEAMS_ACTIVE_PLAYERS` | implemented | A coach's board reads only the active members of the team the shell resolved (golf_team_members, team_id and status active), whichever other teams the coach staffs; only those ids reach the visible-insights read, the top-insight read (one per player) and the focus-area read. A coach session with no resolved team, or one that is not a coach team, gets the no-team page (CH-13308) and no player is read. The program pulse is the coach's own (getCoachProgramPulse, which resolves its team through the coach chat context), not a read of this page's team id. |
 | 130803 |  | 08 Permission / authorization | `A_PLAYER_READS_ONLY_THEIR_OWN_INSIGHTS` | implemented | A player's board is built from the session's own player id and nothing else: the gate, the feed (up to 30), the dismissal read and the rounds count are that player's, with or without a team, and no team read or teammate's insight reaches it. |
 | 130804 |  | 08 Permission / authorization | `SERVER_ACTIONS_ARE_THE_GATE` | implemented | Every write is checked again by its server action, whatever the board shows: dismissInsight and reactivateInsight refuse a caller who is not a coach of the insight's team (verifyInsightAccess; an insight with no team is refused) and update only that team's row; createFocusAreaFromInsightV2 refuses a caller who fails verifyPlayerAccess for the player (a coach of the player's team, or the player themself, whose own use would make an active focus with no proposal and is not reachable from this board) and refuses a second active focus on the same metric with ACTIVE_FOCUS_DUPLICATE_ERROR. Run in coachhelm-actions-contracts.test.ts against the real actions. |
 | 130805 |  | 08 Permission / authorization | `THE_PAGE_GIVES_CLUBHOUSE_ONLY_BEHIND_THE_FLAG` | implemented | With golf_clubhouse_ui on, a signed-in coach or player gets the Clubhouse route, drawn in place with no redirect, and ?view= is handed to it. With it off, everyone keeps the Fairway page (a coach gets its pointer to the Brief), and no session goes to sign in. |
-| 130806 |  | 08 Permission / authorization | `ASSIGN_IS_OFFERED_ONLY_FOR_AN_INSIGHT_NOT_YET_MADE` | implemented | Assign as focus is offered when no focus has been made from the chosen player's top insight. One that is working (a strength) is offered too, as a keep-doing focus, as the board draws it on Theo's card (Q-80); it can also be dismissed. One with a proposed, active, in-progress or paused focus already made from it opens as the Assigned chip (CH-13601): the loader reads only those statuses, so a declined or completed focus no longer blocks Assign, and a failed focus-area read leaves Assign available (the server's duplicate guard still holds). |
+| 130806 |  | 08 Permission / authorization | `ASSIGN_IS_OFFERED_ONLY_FOR_AN_INSIGHT_NOT_YET_MADE` | implemented | Assign as focus is offered when no focus has been made from the read. One that is working (a strength) is offered too, as a keep-doing focus (Q-80); it can also be dismissed. One with a proposed, active, in-progress or paused focus already made from it opens as the Assigned chip (CH-13601): the loader reads only those statuses, so a declined or completed focus leaves the read assignable again. |
 | 130807 |  | 08 Permission / authorization | `A_COACH_READS_ONE_PLAYER_ONLY_THROUGH_THE_SCOPE` | implemented | A coach's view of one player (?view=deep-dive\|standing\|profile&player=) reads nothing about the player until loadCoachPlayerScope has found the id an active member of the team the shell resolved (golf_team_members, team_id, player_id and status active, through the session's client): an id that is not a uuid is answered with no query, and any id not on this team, on another team the coach staffs, or no longer active is the one "That player isn't on your team" page (CH-13311), so the page never says whether a player exists. The three loaders take only the branded scope that check makes, never an id (a raw id does not compile), because Standing's standing map and the goals read through the service client. A read the check needs that fails is CH-13209, never CH-13311. The Deep dive reads the coach feed (getInsightsForCoach with player_id), never the player's, and every row of anyone else's is dropped. |
-| 130901 |  | 09 Success | `CHANGE_LANDED` | implemented | A change that lands confirms itself in place with the success haptic and no toast: Assign becomes the chip Assigned as Jonah’s focus, Dismiss becomes the dismissed notice, Undo brings the focus card back. The one toast is the existing-focus outcome (130903). |
-| 130902 |  | 09 Success | `ASSIGN_MAKES_A_PROPOSAL_THE_PLAYER_ACCEPTS` | implemented | Assign as focus sends the insight's own title, first sentence, area type and metric to createFocusAreaFromInsightV2, which makes a proposal (a coach's use is a prescription), not an active focus. The chip says Assigned and the line under it says the player sees it as a proposal and accepts it to start. The player answers it in Stats, Development (Q-77); this board has no Accept or Decline. |
+| 130901 |  | 09 Success | `CHANGE_LANDED` | implemented | A change that lands confirms itself in place with the success haptic and no toast: Assign becomes the chip Assigned as Jonah’s focus, Dismiss becomes the dismissed notice, Undo brings the action row back. The one toast is the existing-focus outcome (130903). |
+| 130902 |  | 09 Success | `ASSIGN_MAKES_A_PROPOSAL_THE_PLAYER_ACCEPTS` | implemented | Assign as focus sends the insight's own title, first sentence, area type and metric to createFocusAreaFromInsightV2, which makes a proposal (a coach's use is a prescription), not an active focus. The chip says Assigned and the line under it says the player sees it as a proposal and accepts it to start. The player answers it on their own pages (Q-77); the coach's action row has no Accept or Decline. |
 | 130903 |  | 09 Success | `AN_EXISTING_ACTIVE_FOCUS_IS_THE_OUTCOME_WANTED` | implemented | When the write answers ACTIVE_FOCUS_DUPLICATE_ERROR (the player already has an active focus on that metric), Assign is done, not failed: the chip shows and a toast says the player already has a focus on this, with no failure toast and no error haptic. The proposal line is left out, because it is not known whether they have started it. |
-| 131201 |  | 12 State preservation | `THIS_VISITS_CHANGES_STAY_WHILE_THE_PAGE_IS_OPEN` | implemented | The Assigned chip, the dismissed notice and the chosen player are held in the page's own state: choosing another player and coming back finds the chip still there. A reload reads the server again and opens on the first player (the chip then comes from the focus-area read). The chosen player or insight is not kept in the address. |
-| 131401 |  | 14 Retry / recovery | `RETRY_FINISHES_THE_JOB` | implemented | The error toast's Retry runs the same write again with the same arguments, and when it lands everything the button would have done follows, because the follow-ups live inside the action: Assign shows the chip, Dismiss the notice, Undo the returned focus card. Every control on the board waits while any of the three is running. |
-| 131402 |  | 14 Retry / recovery | `TRY_AGAIN_REREADS_THE_PAGE` | implemented | Try again on a failed-read notice (CH-13201, CH-13202, CH-13203) has the server read the whole page again (router.refresh); no section re-reads itself and nothing retries a read on its own. |
+| 131101 | CH-13580 | 11 Destructive | `PRACTICE_ANOTHER_COACH_SAVED_FIRST_OR_STARTED` | implemented | Practice: another coach saved first, or started this practice's plan |
+| 131102 | CH-13581 | 11 Destructive | `PRACTICE_A_BLOCK_DELETED` | implemented | Practice: a block deleted |
+| 131103 | CH-13582 | 11 Destructive | `PRACTICE_SPLIT_EVENLY` | implemented | Practice: Split evenly |
+| 131201 |  | 12 State preservation | `THIS_VISITS_CHANGES_STAY_WHILE_THE_PAGE_IS_OPEN` | implemented | The Assigned chip and the dismissed notice are held in the page's own state (useFocusActions), per read: opening another read and coming back finds the chip or the notice still there. A reload reads the server again (the chip then comes from the focus-area read). Nothing of it is kept in the address. |
+| 131401 |  | 14 Retry / recovery | `RETRY_FINISHES_THE_JOB` | implemented | The error toast's Retry runs the same write again with the same arguments, and when it lands everything the button would have done follows, because the follow-ups live inside the action: Assign shows the chip, Dismiss the notice, Undo the returned action row. Every control of the row waits while any of the three is running. |
+| 131402 |  | 14 Retry / recovery | `TRY_AGAIN_REREADS_THE_PAGE` | implemented | Try again on a failed-read notice has the server read the whole page again (router.refresh, through useRefresh); no section re-reads itself and nothing retries a read on its own. |
 | 131403 |  | 14 Retry / recovery | `UNDO_RESTORES_THE_STATE_THE_INSIGHT_HAD` | implemented | Undo calls reactivateInsight with the lifecycle state the insight had when it was dismissed (detected, matured, addressed or resolved), so it returns to the feed where it was rather than always as new. The dismissed notice stays until it has landed. |
-| 131501 |  | 15 Data freshness / sync | `THE_PAGE_IS_AS_FRESH_AS_ITS_LAST_READ` | implemented | Nothing on the page refreshes in the background. A landed Assign, Dismiss or Undo changes the page in place from the board's own state and does not call router.refresh (the dismissed notice is never refreshed away); Try again on a failed-read notice is the one client re-read (131402). |
 | 131502 | CH-13903 | 15 Data freshness / sync | `A_READ_IS_OLDER_THAN_THE_PLAYERS` | implemented | A read is older than the player's newest completed round |
 | 131503 | CH-13905 | 15 Data freshness / sync | `A_CARD_SAYS_WHEN_ITS_READ_WAS` | implemented | A card says when its read was made |
 | 131504 | CH-13906 | 15 Data freshness / sync | `COACH_THE_TOP_READ_IS_OUT_OF` | implemented | Coach: the top read is out of date |
@@ -1818,12 +1800,11 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 131602 | CH-13602 | 16 Micro animation | `HOVERING_AN_INSIGHT_ROW_OR_A_PLAYER` | implemented | Hovering an insight row or a player |
 | 131603 | CH-13620 | 16 Micro animation | `ASK_HIDE_CHATS` | implemented | Ask: Hide chats |
 | 131604 | CH-13621 | 16 Micro animation | `ASK_THE_PHONE_DRAWER_IS_DRAGGED` | implemented | Ask: The phone drawer is dragged |
-| 131701 | CH-13701 | 17 Haptic | `A_PLAYER_OR_AN_INSIGHT_ROW_IS` | implemented | A player or an insight row is picked |
 | 131702 | CH-13702 | 17 Haptic | `ASSIGN_AS_FOCUS_IS_TAPPED` | implemented | Assign as focus is tapped |
 | 131703 | CH-13703 | 17 Haptic | `DISMISS_IS_TAPPED` | implemented | Dismiss is tapped |
 | 131704 | CH-13704 | 17 Haptic | `ACCEPT_OR_DECLINE_IS_TAPPED` | reserved | Accept or Decline is tapped |
 | 131705 | CH-13721 | 17 Haptic | `ASK_AN_OPENER_PILL_OR_SHORTCUT_CARD` | implemented | Ask: An opener pill or shortcut card is tapped |
-| 131706 | CH-13752 | 17 Haptic | `ASK_A_FOLLOW_UP_IS_TAPPED` | implemented | Ask: A follow-up is tapped |
+| 131706 | CH-13752 | 17 Haptic | `ASK_A_FOLLOW_UP_IS_TAPPED` | reserved | Ask: A follow-up is tapped |
 | 131707 | CH-13780 | 17 Haptic | `DEEP_DIVE_A_READ_IN_THE_LIST` | implemented | Deep dive: a read in the list, or a round or a plan under it, is tapped |
 | 131708 | CH-13705 | 17 Haptic | `RECHECK_TAPPED` | implemented | Re-check tapped |
 | 131709 | CH-13760 | 17 Haptic | `PLAYER_FILE_SAVING_A_COACHS_PLAN_FAILS` | implemented | Player File: saving a coach's plan fails |
@@ -1831,10 +1812,6 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 131760 | CH-13733 | 17 Haptic | `PLAYER_A_COURSE_IS_PICKED_IN_THEIR` | reserved | Player: a course is picked in their Course plan (chs-21) |
 | 131801 | CH-13801 | 18 Accessibility | `A_SCREEN_READER_MOVES_THROUGH_THE_PAGE` | implemented | A screen reader moves through the page |
 | 131802 | CH-13802 | 18 Accessibility | `A_GAUGE` | reserved | A gauge |
-| 131803 | CH-13803 | 18 Accessibility | `AN_INSIGHT_OR_PLAYER_ROW` | implemented | An insight or player row |
-| 131804 | CH-13804 | 18 Accessibility | `WHY_WE_THINK_THIS` | implemented | Why we think this |
-| 131805 | CH-13805 | 18 Accessibility | `CHOOSING_ANOTHER_INSIGHT_OR_PLAYER` | implemented | Choosing another insight or player |
-| 131806 | CH-13806 | 18 Accessibility | `PRIORITY` | implemented | Priority |
 | 131807 |  | 18 Accessibility | `NO_AXE_VIOLATIONS_IN_THE_AXE_PREVIEW_STATES` | reserved | No axe violations in the ten preview states clubhouse:a11y walks for CoachHelm (the coach's default, assigned, empty, failed, off and loading; the player's default, empty, norounds and failed), at 1280px and 390px: 20 runs, clean on 2026-09-30 as reported by the lead in PROGRESS.md. Checked by npm run clubhouse:a11y (CH_A11Y_PAGES in scripts/clubhouse/a11y.mjs), not by a unit test. Not walked: the coach's noroster, pulsefailed, quiet, failwrites, failundo and duplicate states and the player's working, off and loading states. |
 | 131808 | CH-13807 | 18 Accessibility | `THE_PLAYERS_PROPOSED_FOCUS_AREAS` | reserved | The player's proposed focus areas |
 | 131809 | CH-13820 | 18 Accessibility | `ASK_THE_CHAT_PAGE` | implemented | Ask: The chat page |
@@ -1843,14 +1820,16 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 131812 | CH-13823 | 18 Accessibility | `ASK_THE_OPEN_CHAT_IN_THE_LIST` | implemented | Ask: The open chat in the list |
 | 131813 | CH-13850 | 18 Accessibility | `ASK_COACHHELM_IS_WORKING_ON_AN_ANSWER` | implemented | Ask: CoachHelm is working on an answer |
 | 131814 | CH-13851 | 18 Accessibility | `ASK_THE_EVIDENCE_CONTROL` | implemented | Ask: The evidence control |
-| 131815 | CH-13852 | 18 Accessibility | `ASK_EVIDENCE_DRAWN_AS_A_CHART` | implemented | Ask: Evidence drawn as a chart |
-| 131816 | CH-13860 | 18 Accessibility | `PROFILE_A_SCREEN_READER_MOVES_THROUGH_THE` | reserved | Standing: a screen reader moves through How you play |
+| 131815 | CH-13852 | 18 Accessibility | `ASK_EVIDENCE_DRAWN_AS_A_CHART` | reserved | Ask: Evidence drawn as a chart |
+| 131816 | CH-13860 | 18 Accessibility | `PROFILE_A_SCREEN_READER_MOVES_THROUGH_THE` | implemented | Standing: a screen reader moves through How you play |
 | 131817 | CH-13880 | 18 Accessibility | `STANDING_A_SCREEN_READER_MOVES_THROUGH_THE` | reserved | Standing: a screen reader moves through the page |
 | 131818 | CH-13890 | 18 Accessibility | `DEEP_DIVE_A_SCREEN_READER_MOVES_THROUGH` | implemented | Deep dive: a screen reader moves through the page |
 | 131819 | CH-13853 | 18 Accessibility | `ASK_A_VALIDATED_VISUAL` | implemented | Ask: A validated visual (strokes gained anatomy) |
 | 131820 | CH-13861 | 18 Accessibility | `READ_THE_LINKS_READ_IS_NO_LONGER` | implemented | Read: the link's read is no longer open |
 | 131821 | CH-13866 | 18 Accessibility | `READ_THE_READ_DIDNT_LOAD` | implemented | Read: the read didn't load |
-| 131901 |  | 19 Responsive layout | `PHONE_LAYOUT` | implemented | At 820px and below CoachHelm is the phone build, never a shrunken desktop: the page takes the phone frame, the shell's top bar reads CoachHelm, and the boards, writes and states are the desktop's. Separately, when the page's container is 640px wide or less the coach's players are a row of pills that scrolls sideways. Choosing an insight on the player's phone brings the focus into view; on a wider screen the page stays where it is. |
+| 131822 | CH-13895 | 18 Accessibility | `PRACTICE_A_BLOCKS_SHEET_ON_A_PHONE` | implemented | Practice: a block's sheet on a phone, or Swap |
+| 131823 | CH-13896 | 18 Accessibility | `PRACTICE_THE_TIME_RIBBON_CHANGES` | implemented | Practice: the time ribbon changes |
+| 131901 |  | 19 Responsive layout | `PHONE_LAYOUT` | implemented | At 820px and below CoachHelm is the phone build, never a shrunken desktop: the page takes its phone frame, the shell's top bar reads CoachHelm, and the views are a row of chips that scrolls sideways. The pages' writes and states are the desktop's. |
 | 132101 |  | 21 Performance | `LOADER_READS_IN_ROUNDS` | implemented | The loaders read on the server before first paint, in a few rounds and never per row. A coach: the gate; the roster, then the players' names; then the program pulse, the visible insights (paginated) and each player's top insight (one per player, so only it counts as shown in the effectiveness ledger) together; then the drills and the focus areas made from those insights together. A player: the gate, the feed (up to 30), then the drills; the dismissal and visible reads and the rounds count are read only when the feed comes back empty. A drill or focus-area read that fails is logged and the board draws without it. |
 | 132301 |  | 23 Logging / observability | `FAILURES_REPORTED` | implemented | A read that fails in a loader is logged through chLogServer('coachhelm', {read}, …) under the coachhelm feature (gate, feed, visible, dismissed, rounds, drills, assigned, roster, players, heads) and named on the page; a write that fails is reported through chReport under the coachhelm surface with its action (coachhelm.assign, coachhelm.dismiss, coachhelm.undo), at low severity when the server refused it, after a chTrail breadcrumb for the intent; a section that crashes reports under its own surface (coachhelm.focus, coachhelm.side, coachhelm.pulse, coachhelm.players). |
 
@@ -2085,7 +2064,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 160131 | CH-16606 | 01 Default / core UI | `MORE_LANES_THAN_THE_CARD_SHOWS` | implemented | More lanes than the card shows |
 | 160201 | CH-16401 | 02 Initial loading / skeleton | `A_TOURNAMENTS_VIEW_IS_ON_ITS_WAY` | implemented | A Tournaments view is on its way (`load: 'loading'`) |
 | 160301 | CH-16604 | 03 Background loading / refresh | `A_LIVE_READ_FAILED_OR_THE_FEED` | implemented | A live read failed or the feed dropped |
-| 160401 | CH-16301 | 04 Empty | `A_VIEW_ITS_LANE_HASNT_BUILT_YET` | implemented | A view its lane hasn't built yet (the edit-event form, lineup builder, link inbox, live round and player view; their routes are wired and draw it with real data) |
+| 160401 | CH-16301 | 04 Empty | `A_VIEW_ITS_LANE_HASNT_BUILT_YET` | deprecated | Retired 2026-11-07: a view its lane hasn't built yet. Every Tournaments view is built, so no screen draws it |
 | 160402 | CH-16310 | 04 Empty | `HOME_NO_EVENT_IN_THE_SEASON_NOTHING` | deprecated | Retired 2026-10-25 (P-5 4.11.1): replaced by CH-16352. Home: no event in the season, nothing failed |
 | 160403 | CH-16311 | 04 Empty | `THE_SEASON_LEDGER_THE_SEASON_HAS_NO` | implemented | The season ledger (Home, History): the season has no finished event yet |
 | 160404 | CH-16312 | 04 Empty | `HOME_NO_EVENT_IS_UPCOMING_OR_LIVE` | implemented | Home: no event is upcoming or live |
@@ -2103,6 +2082,14 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 160416 | CH-16305 | 04 Empty | `A_PLAYER_ON_A_COACHS_TOURNAMENTS_PAGE` | implemented | A player on a coach's Tournaments page (new or edit event, lineup, live, compare, history, link rounds) |
 | 160417 | CH-16619 | 04 Empty | `NOBODY_IS_ON_THE_COURSE` | implemented | Nobody is on the course |
 | 160418 | CH-16352 | 04 Empty | `HOME_NO_EVENT_IN_THE_SEASON_NOTHING_2` | implemented | Home: no event in the season, nothing failed (P-5 4.11.1; replaces CH-16310) |
+| 160419 | CH-16338 | 04 Empty | `LINK_ROUNDS_NO_GOLFHELM_ROUND_IS_WAITING` | implemented | Link rounds: no GolfHelm round is waiting to be linked (the read worked) |
+| 160420 | CH-16362 | 04 Empty | `LINEUP_THE_TEAM_HAS_NO_PLAYERS_ON` | implemented | Lineup: the team has no players on its roster (the read worked) |
+| 160421 | CH-16363 | 04 Empty | `LINEUP_A_PLAYER_IN_THE_DRAFT_IS` | implemented | Lineup: a player in the draft is injured, out for academics, not travelling, or has left the team |
+| 160422 | CH-16370 | 04 Empty | `LIVE_ROUND_NOBODY_IS_IN_THE_ROUND` | implemented | Live round: nobody is in the round (no lineup, no individuals) |
+| 160423 | CH-16390 | 04 Empty | `PLAYER_NO_TOURNAMENTS_IN_THE_SEASON` | implemented | Player: no tournaments in the season (the read worked) |
+| 160424 | CH-16391 | 04 Empty | `PLAYER_EVENT_THE_EVENT_HAS_NO_ROUNDS` | implemented | Player event: the event has no rounds yet |
+| 160425 | CH-16392 | 04 Empty | `PLAYER_EVENT_THE_COACH_HAS_SHARED_NOTHING` | implemented | Player event: the coach has shared nothing |
+| 160426 | CH-16393 | 04 Empty | `PLAYER_EVENT_THE_TEAMS_RESULT_IS_NOT` | implemented | Player event: the team’s result is not on the player’s page (teammates’ scores and the lineup are the coach’s until held file 4) |
 | 160601 | CH-16201 | 06 Server / system error | `A_TOURNAMENTS_VIEWS_ONE_READ_FAILS` | implemented | A Tournaments view's one read fails (any view; `load: 'failed'`) |
 | 160602 | CH-16210 | 06 Server / system error | `HOME_THE_EVENTS_READ_FAILS_WHILE_THE` | implemented | Home: the events read fails while the page itself loads (`errors.events`) |
 | 160603 | CH-16220 | 06 Server / system error | `EVENT_DESK_HOLES_TAB_THE_SCORECARDS_READ` | implemented | Event desk, Holes tab: the scorecards read fails (`errors.holes`) |
@@ -2120,12 +2107,32 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 160615 | CH-16052 | 06 Server / system error | `RESTORE_TOURNAMENT_ON_THE_DESK` | implemented | Restore tournament on the desk |
 | 160616 | CH-16053 | 06 Server / system error | `STOP_TRACKING_REFUSED_THE_RESULTS_ARE_OFFICIAL` | implemented | Stop tracking refused: the results are official |
 | 160617 | CH-16253 | 06 Server / system error | `HOME_THE_READ_OF_THE_CALENDARS_UNTRACKED` | implemented | Home (coach): the read of the calendar's untracked tournaments fails (`errors.untracked`, P-5) |
+| 160618 | CH-16038 | 06 Server / system error | `LINK_ROUNDS_LINKING_A_GOLFHELM_ROUND_TO` | implemented | Link rounds: linking a GolfHelm round to an event round fails or is refused |
+| 160619 | CH-16039 | 06 Server / system error | `LINK_ROUNDS_NOT_A_TOURNAMENT_ROUND_FAILS` | implemented | Link rounds: "Not a tournament round" fails |
+| 160620 | CH-16060 | 06 Server / system error | `EDIT_EVENT_THE_SAVE_IS_REFUSED` | implemented | Edit event: the save is refused (stale, a round with scores, an out-of-order round, not a coach) |
+| 160621 | CH-16061 | 06 Server / system error | `EDIT_EVENT_THE_CHANGES_ARE_SAVED` | implemented | Edit event: the changes are saved |
+| 160622 | CH-16238 | 06 Server / system error | `LINK_ROUNDS_THE_CANDIDATE_ROUNDS_READ_FAILS` | implemented | Link rounds: the candidate rounds read fails (`errors.candidates`) |
+| 160623 | CH-16062 | 06 Server / system error | `LINEUP_SAVING_THE_DRAFT_FAILS_OR_IS` | implemented | Lineup: saving the draft fails or is refused (the event changed, the lineup is locked, too many players) |
+| 160624 | CH-16063 | 06 Server / system error | `LINEUP_PUBLISHING_FAILS_OR_IS_REFUSED` | implemented | Lineup: publishing fails or is refused (the save before it is refused, or the publish itself) |
+| 160625 | CH-16064 | 06 Server / system error | `LINEUP_LOCKING_FAILS_OR_IS_REFUSED` | implemented | Lineup: locking fails or is refused |
+| 160626 | CH-16262 | 06 Server / system error | `LINEUP_THE_ROSTER_READ_FAILS` | implemented | Lineup: the roster read fails (`errors.roster`) |
+| 160627 | CH-16070 | 06 Server / system error | `LIVE_ROUND_SAVING_A_SCORE_FAILS_OR` | implemented | Live round: saving a score fails or is refused (not in the round’s lineup, not signed in, not set up) |
+| 160628 | CH-16071 | 06 Server / system error | `LIVE_ROUND_STARTING_SUSPENDING_RESUMING_OR_FINISHING` | implemented | Live round: starting, suspending, resuming or finishing the round fails or is refused (rounds out of order, a state it can’t move to) |
+| 160629 | CH-16271 | 06 Server / system error | `LIVE_ROUND_THE_HOLES_OF_LINKED_GOLFHELM` | implemented | Live round: the holes of linked GolfHelm rounds fail to load (`errors.holes`) |
+| 160630 | CH-16092 | 06 Server / system error | `PLAYER_SAVING_THEIR_REFLECTION_FAILS_OR_IS` | implemented | Player: saving their reflection fails or is refused |
+| 160631 | CH-16290 | 06 Server / system error | `PLAYER_THE_EVENTS_READ_FAILS` | implemented | Player: the events read fails (`errors.events`) |
+| 160632 | CH-16291 | 06 Server / system error | `PLAYER_EVENT_THE_COACHS_SHARED_NOTES_READ` | implemented | Player event: the coach’s shared notes read fails (`errors.notes`) |
+| 160633 | CH-16292 | 06 Server / system error | `PLAYER_EVENT_THE_PLAYERS_REFLECTION_READ_FAILS` | implemented | Player event: the player’s reflection read fails (`errors.reflection`) |
+| 160634 | CH-16293 | 06 Server / system error | `PLAYER_EVENT_THE_PLAYERS_OWN_SPOT_FAILS` | implemented | Player event: the player’s own spot (the lineup reveal) fails to load (`errors.reveal`) |
+| 160635 | CH-16072 | 06 Server / system error | `HOLE_BY_HOLE_SAVING_ONE_HOLE_FAILS` | implemented | Hole by hole: saving one hole fails or is refused (not in the round’s lineup, a total already entered, results official, not set up) |
 | 160701 | CH-16605 | 07 Network / offline | `THE_DEVICE_IS_OFFLINE_WHILE_THE_CARD` | implemented | The device is offline while the card or the live view is open |
 | 160801 | CH-16609 | 08 Permission / authorization | `THE_COACH_HAS_NO_TEAM_OR_LOST` | implemented | The coach has no team, or lost access to it |
 | 161001 | CH-16920 | 10 Warning | `EVENT_DESK_THE_HOSTS_PUBLISHED_NUMBER_DIFFERS` | implemented | Event desk: the host's published number differs from our scorecard (`officialTotal` set and unequal) |
 | 161002 | CH-16665 | 10 Warning | `A_ROUNDS_SHARING_WAS_CHANGED_30_TIMES` | implemented | A round's sharing was changed 30 times (slice 2) |
 | 161101 | CH-16550 | 11 Destructive | `STOP_TRACKING_FROM_THE_DESKS_TOURNAMENT_MENU` | implemented | Stop tracking, from the desk's tournament menu (P-5) |
 | 161102 | CH-16551 | 11 Destructive | `CANCEL_TOURNAMENT_FROM_THE_DESKS_TOURNAMENT_MENU` | implemented | Cancel tournament, from the desk's tournament menu (P-5; the calendar's CH-6541) |
+| 161103 | CH-16560 | 11 Destructive | `LOCK_THE_LINEUP_FROM_THE_LINEUP_BUILDER` | implemented | Lock the lineup, from the lineup builder |
+| 161104 | CH-16570 | 11 Destructive | `FINISH_THE_ROUND_FROM_THE_LIVE_ROUND` | implemented | Finish the round, from the live round |
 | 161201 | CH-16621 | 12 State preservation | `A_PLAYER_WITH_THEIR_OWN_ROUND_ON` | implemented | A player with their own round on this qualifier (slice 4) |
 | 161501 | CH-16614 | 15 Data freshness / sync | `LANES_WITH_NO_WORD_FOR_90_MINUTES` | implemented | Lanes with no word for 90 minutes |
 | 161502 | CH-16672 | 15 Data freshness / sync | `A_LANE_SILENT_FOR_10_MINUTES_WITH` | implemented | A lane silent for 10 minutes with the last hole at least as old |
@@ -2140,7 +2147,46 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 
 ## Tombstones
 
-- 150202: CH-15420 was minted in category 02 before its category override existed; re-minted in its own category the same day (2026-10-07, replaced by 150302)
-- 150702: CH-15920 was minted in category 07 before its category override existed; re-minted in its own category the same day (2026-10-07, replaced by 151202)
-- 150703: CH-15921 was minted in category 07 before its category override existed; re-minted in its own category the same day (2026-10-07, replaced by 150902)
-- 150704: CH-15922 was minted in category 07 before its category override existed; re-minted in its own category the same day (2026-10-07, replaced by 151203)
+| Bridge ID | Removed | Replaced by | Reason |
+| --- | --- | --- | --- |
+| 150202 | 2026-10-07 | 150302 | CH-15420 was minted in category 02 before its category override existed; re-minted in its own category the same day |
+| 150702 | 2026-10-07 | 151202 | CH-15920 was minted in category 07 before its category override existed; re-minted in its own category the same day |
+| 150703 | 2026-10-07 | 150902 | CH-15921 was minted in category 07 before its category override existed; re-minted in its own category the same day |
+| 150704 | 2026-10-07 | 151203 | CH-15922 was minted in category 07 before its category override existed; re-minted in its own category the same day |
+| 130208 | 2026-11-07 | — | CH-13450 belonged to the old Ask action card, deleted when coachhelm_ask_v2 was retired; the Ask v2 card has its own codes |
+| 130613 | 2026-11-07 | — | CH-13051 belonged to the old Ask action card, deleted when coachhelm_ask_v2 was retired; the Ask v2 card has its own codes |
+| 130622 | 2026-11-07 | — | CH-13253 belonged to the old Ask action card, deleted when coachhelm_ask_v2 was retired; the Ask v2 card has its own codes |
+| 130623 | 2026-11-07 | — | CH-13254 belonged to the old Ask action card, deleted when coachhelm_ask_v2 was retired; the Ask v2 card has its own codes |
+| 90406 | 2026-11-11 | — | CH-09306 was the empty state of a player's My qualifiers list, retired when players got one Qualifiers page (owner, 2026-11-11); /my-qualifiers opens /qualifiers |
+| 90632 | 2026-11-11 | — | CH-09222 was the failed entries read on a player's My qualifiers list, retired when players got one Qualifiers page (owner, 2026-11-11); on /qualifiers a failed entries read is CH-09202 |
+| 130212 | 2026-11-11 | — | CH-13405 belonged to the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11) |
+| 130406 | 2026-11-11 | — | CH-13306 belonged to the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11) |
+| 130407 | 2026-11-11 | — | CH-13307 belonged to the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11) |
+| 130409 | 2026-11-11 | — | CH-13309 belonged to the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11) |
+| 130410 | 2026-11-11 | — | CH-13310 belonged to the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11) |
+| 130605 | 2026-11-11 | — | CH-13202 belonged to the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11) |
+| 130606 | 2026-11-11 | — | CH-13203 belonged to the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11) |
+| 130632 | 2026-11-11 | — | CH-13206 belonged to the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11) |
+| 130718 | 2026-11-11 | — | CH-13908 belonged to the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11) |
+| 130728 | 2026-11-11 | — | CH-13995 belonged to the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11) |
+| 130738 | 2026-11-11 | — | CH-13969 belonged to the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11) |
+| 130743 | 2026-11-11 | — | CH-13941 belonged to the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11) |
+| 130744 | 2026-11-11 | — | CH-13942 belonged to the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11) |
+| 130745 | 2026-11-11 | — | CH-13943 belonged to the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11) |
+| 130105 | 2026-11-11 | — | OPEN_SIGNALS_FOLLOW_DISMISSALS was the header count of the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11) |
+| 131501 | 2026-11-11 | — | THE_PAGE_IS_AS_FRESH_AS_ITS_LAST_READ was proved on the coach's old signal-list CoachHelm board (CoachBoard), retired when the drawn golf hole became the coach's one Team page (owner, 2026-11-11) |
+| 130401 | 2026-11-11 | — | CH-13301 belonged to the old CoachHelm boards (the player's PlayerBoard and the cards it shared with the coach's), retired when Your week became a player's Board (owner, 2026-11-11) |
+| 130402 | 2026-11-11 | — | CH-13302 belonged to the old CoachHelm boards (the player's PlayerBoard and the cards it shared with the coach's), retired when Your week became a player's Board (owner, 2026-11-11) |
+| 130403 | 2026-11-11 | — | CH-13303 belonged to the old CoachHelm boards (the player's PlayerBoard and the cards it shared with the coach's), retired when Your week became a player's Board (owner, 2026-11-11) |
+| 130460 | 2026-11-11 | — | CH-13333 belonged to the old CoachHelm boards (the player's PlayerBoard and the cards it shared with the coach's), retired when Your week became a player's Board (owner, 2026-11-11) |
+| 130604 | 2026-11-11 | — | CH-13201 belonged to the old CoachHelm boards (the player's PlayerBoard and the cards it shared with the coach's), retired when Your week became a player's Board (owner, 2026-11-11) |
+| 130611 | 2026-11-11 | — | CH-13205 belonged to the old CoachHelm boards (the player's PlayerBoard and the cards it shared with the coach's), retired when Your week became a player's Board (owner, 2026-11-11) |
+| 130660 | 2026-11-11 | — | CH-13233 belonged to the old CoachHelm boards (the player's PlayerBoard and the cards it shared with the coach's), retired when Your week became a player's Board (owner, 2026-11-11) |
+| 130719 | 2026-11-11 | — | CH-13909 belonged to the old CoachHelm boards (the player's PlayerBoard and the cards it shared with the coach's), retired when Your week became a player's Board (owner, 2026-11-11) |
+| 130742 | 2026-11-11 | — | CH-13940 belonged to the old CoachHelm boards (the player's PlayerBoard and the cards it shared with the coach's), retired when Your week became a player's Board (owner, 2026-11-11) |
+| 130764 | 2026-11-11 | — | CH-13917 belonged to the old CoachHelm boards (the player's PlayerBoard and the cards it shared with the coach's), retired when Your week became a player's Board (owner, 2026-11-11) |
+| 131701 | 2026-11-11 | — | CH-13701 belonged to the old CoachHelm boards (the player's PlayerBoard and the cards it shared with the coach's), retired when Your week became a player's Board (owner, 2026-11-11) |
+| 131803 | 2026-11-11 | — | CH-13803 belonged to the old CoachHelm boards (the player's PlayerBoard and the cards it shared with the coach's), retired when Your week became a player's Board (owner, 2026-11-11) |
+| 131804 | 2026-11-11 | — | CH-13804 belonged to the old CoachHelm boards (the player's PlayerBoard and the cards it shared with the coach's), retired when Your week became a player's Board (owner, 2026-11-11) |
+| 131805 | 2026-11-11 | — | CH-13805 belonged to the old CoachHelm boards (the player's PlayerBoard and the cards it shared with the coach's), retired when Your week became a player's Board (owner, 2026-11-11) |
+| 131806 | 2026-11-11 | — | CH-13806 belonged to the old CoachHelm boards (the player's PlayerBoard and the cards it shared with the coach's), retired when Your week became a player's Board (owner, 2026-11-11) |

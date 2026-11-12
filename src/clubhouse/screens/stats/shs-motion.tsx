@@ -1,44 +1,11 @@
 'use client';
 
-import { Component, useEffect, useState, type ReactNode, type RefObject } from 'react';
-import { CH_FADE_MS } from '../../lib/motion';
+import { Component, useEffect, useState, type ReactNode } from 'react';
+import { CH_DUR, CH_FADE_MS } from '../../lib/motion';
 
 /** A figure block's crossfade on a window change (07 M-STATS-09). */
-const XFADE_MS = 260;
+const XFADE_MS = CH_DUR.base * 1000;
 
-/**
- * Marks grow once, the first time their card is a quarter in view, and never again: not on scroll back, a window change, a refresh or a
- * Try again (07 M-STATS-12 to 15). The class stays on the element, so a re-render keeps it; `at rest` draws everything seen straight away
- * (Reduce Motion, Animations off, a landing after a retry).
- * This can run before a card's Suspense boundary hydrates, so each card carries suppressHydrationWarning for these classes.
- */
-export function useGrowOnce(root: RefObject<HTMLElement | null>, atRest: boolean, deps: readonly unknown[] = []): void {
-  useEffect(() => {
-    const el = root.current;
-    if (!el) return;
-    const cards = Array.from(el.querySelectorAll<HTMLElement>('.ch-shs-card:not(.is-seen)'));
-    if (atRest || typeof IntersectionObserver === 'undefined') {
-      for (const c of cards) c.classList.add('is-seen');
-      return;
-    }
-    const io = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) {
-          if (!e.isIntersecting) continue;
-          e.target.classList.add('is-seen');
-          io.unobserve(e.target);
-        }
-      },
-      { threshold: 0.25 },
-    );
-    for (const c of cards) {
-      c.classList.add('is-waiting');
-      io.observe(c);
-    }
-    return () => io.disconnect();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- the cards present change with the caller's own list
-  }, [root, atRest, ...deps]);
-}
 
 /** The window switch has reached the bar and something has passed under it (07 M-STATS-11). */
 export function useStuck(): boolean {

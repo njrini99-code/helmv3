@@ -3,7 +3,7 @@
 import { CH_DESK_QUERY } from '@/clubhouse/lib/phone-query';
 import { Button } from '../../../ui/Button';
 
-import { ArrowUp, Check, ChevronDown, ChevronLeft, ChevronRight, ClipboardList, FolderClosed, Minus, Plus, X } from 'lucide-react';
+import { ArrowUp, Check, ChevronDown, ChevronLeft, ChevronRight, ClipboardList, Ellipsis, FolderClosed, Minus, Plus, Printer, Share, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { createPortal } from 'react-dom';
 import { safeSave } from './safe-save';
@@ -16,8 +16,12 @@ import { listPlanFolders, savePracticePlanDraft, undoPracticePlanDraft } from '@
 import { forgetSavedPlan, publishRequest, rememberSavedPlan, savedPlanFor, type SavedPlanRef } from './saved-plans';
 import { FormSheet } from '../../../ui/FormSheet';
 import { Icon } from '../../../ui/Icon';
+import { Menu } from '../../../ui/Menu';
+import { InlineNotice } from '../../../ui/Notices';
 import { useChReducedMotion } from '../../../lib/reduced-motion';
 import { PracticePlanSheet } from './sheet/PracticePlanSheet';
+import { useToast } from '../../../ui/Toast';
+import { printPlan, sharePlanPdf } from './PrintPlan';
 import { toSheetModel } from './sheet/plan-sheet-model';
 import { useUndoWindow } from './useUndoWindow';
 
@@ -52,8 +56,8 @@ export interface PlanPartData {
   /** The figures behind a source chip, from this turn's reads, by source ref. */
   evidence?: Record<string, PlanEvidence>;
   sources?: Record<string, Array<{ ref: string; label: string }>>;
-  /** What the full plan prints: the team, the practice's window and who's on it. Absent, the sheet starts at the plan's own clock. */
-  sheet?: { team: string; start: string; end: string | null; zone: string; coaches: string[]; names: Record<string, string> };
+  /** What the full plan prints: the team, the practice's window and who's on it. `start` is null with no event yet: the sheet then draws — for what it can't know. */
+  sheet?: { team: string; start: string | null; end: string | null; zone: string; coaches: string[]; names: Record<string, string> };
 }
 
 /** What a preview hands the card, in place of a tap or a signed-in read. */
@@ -84,7 +88,12 @@ function changedBlocks(before: PlanPartData | undefined, now: PlanPartData): str
 const DEFAULT = 'Practice plans';
 const FIELD_MAX = 60;
 const NO_CLAIM = 'Routine. No claim.';
-const REFINE = ['Make it 2 hours', 'More pressure', 'Lighter before Hargrove'];
+/** Ways to change this plan: from its own length, and nothing that names an event it isn't for. */
+export function refineChips(minutes: number): string[] {
+  const hours = Math.floor((minutes - 1) / 60);
+  const shorter = hours >= 2 ? `Make it ${hours} hours` : hours === 1 ? `Make it ${plural(1, 'hour')}` : `Make it ${minutes + 30} minutes`;
+  return [shorter, 'More pressure', 'Less on the range'];
+}
 const keyOf = (d: DrillRef | null | undefined) => (d ? `${d.src}:${d.id}` : '');
 const clock = (start: string | undefined, plus: number) => {
   if (!start) return null;
@@ -107,6 +116,7 @@ function KindChip({ kind }: { kind: DrillKind | null | undefined }) {
 
 /** The plan in Ask: writes itself block by block, a Why under every block, Save to, Save draft and Publish. Coach only: never imported by a player surface. */
 export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; onSend: (text: string) => void; fresh?: boolean }) {
+  const toast = useToast();
   const preview = useContext(PlanPreview);
   const router = useRouter();
   const reduced = useChReducedMotion();
@@ -203,6 +213,18 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
     const saved = state.k === 'saved' ? { planId: state.planId, version: state.version } : await save();
     if (saved) onSend(publishRequest(plan.title, saved));
   };
+  const undoSave = () => {
+    if (state.k !== 'saved') return;
+    if (preview) return setState({ k: 'undone' });
+    setUndoing(true);
+    void safeSave(() => undoPracticePlanDraft({ planId: state.planId, created: state.created, savedAt: state.savedAt }))
+      .then((r) => {
+        if (!r.success) return setError('Too late to undo. It’s saved.');
+        forgetSavedPlan(planKey(plan));
+        setState({ k: 'undone' });
+      })
+      .finally(() => setUndoing(false));
+  };
   const setBlock = (id: string, next: (b: PlanBlock) => PlanBlock) => {
     setDraft((d) => ({ ...d, version: d.version + 1, body: { ...d.body, variants: { ...d.body.variants, main: { blocks: d.body.variants.main.blocks.map((b) => (b.id === id ? next(b) : b)) } } } }));
     setChanged((s) => new Set(s).add(id));
@@ -216,7 +238,18 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
     if (owner) setBlock(owner.id, (b) => (b.kind === 'team' ? { ...b, drill: ref } : b.kind === 'stations' ? { ...b, stations: b.stations.map((s) => (s.id === slot ? { ...s, drill: ref } : s)) } : b));
     setSheet(null);
   };
-  const open = sheet?.kind === 'block' ? blocks.find((b) => b.id === sheet.id) : null;
+  const opened = sheet?.kind === 'block' ? blocks.find((b) => b.id === sheet.id) : null;
+  // The sheet's steppers change this copy. Done commits it, Cancel throws it away.
+  const [blockLen, setBlockLen] = useState<number | null>(null);
+  const open = opened ? ({ ...opened, len: blockLen ?? opened.len } as PlanBlock) : null;
+  const closeBlock = () => {
+    setBlockLen(null);
+    setSheet(null);
+  };
+  const commitBlock = () => {
+    if (opened && blockLen != null && blockLen !== opened.len) setBlock(opened.id, (b) => ({ ...b, len: blockLen }) as PlanBlock);
+    closeBlock();
+  };
   const slotAlts = sheet?.kind === 'swap' ? (plan.alternatives?.[sheet.id] ?? []) : [];
   const evidence = sheet?.kind === 'evidence' ? plan.evidence?.[sheet.ref] : null;
   const sendAsk = (prefix: string) => {
@@ -225,18 +258,61 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
     setAsk('');
     setSheet(null);
   };
-  // S-ASKD.pane: on a Mac the plan opens beside the thread once it has written, and the card in the thread goes compact.
-  const writingNow = !!writing;
-  // Only as this plan finishes writing: a chat reopened with plans in it doesn't open a pane for each one.
-  const wasWriting = useRef(writingNow);
+  // S-ASKD.pane: on a Mac the plan opens beside the thread when it starts writing, and the card in the thread goes compact.
+  // Only a plan writing now: a chat reopened with plans in it doesn't open a pane for each one.
   useEffect(() => {
-    if (preview?.full || (wasWriting.current && !writingNow && window.matchMedia(CH_DESK_QUERY).matches)) setFull(true);
-    wasWriting.current = writingNow;
-  }, [preview?.full, writingNow]);
+    if (preview?.full || ((writing || fresh) && !preview && window.matchMedia(CH_DESK_QUERY).matches)) setFull(true);
+    // Once, on mount: closing the pane mid-write stays closed.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  // PP-32: the plan is a dialog. Esc closes it, Tab stays in it, the page behind doesn't scroll, focus comes back.
+  const fullRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!full) return;
+    const back = document.activeElement as HTMLElement | null;
+    fullRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !sheet) return setFull(false);
+      if (e.key !== 'Tab' || !fullRef.current) return;
+      const items = [...fullRef.current.querySelectorAll<HTMLElement>('button:not([disabled]),a[href],input,select,textarea,[tabindex="0"]')];
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (!first || !last) return;
+      const here = document.activeElement;
+      if (e.shiftKey && (here === first || here === fullRef.current)) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && here === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      back?.focus?.();
+    };
+  }, [full, sheet]);
   const swapSlot =
     sheet?.kind === 'swap'
       ? blocks.flatMap((b) => (b.kind === 'stations' ? b.stations.map((s, i) => ({ id: s.id, head: `Station ${i + 1}`, drill: s.drill })) : b.kind === 'team' ? [{ id: b.id, head: b.title, drill: b.drill }] : [])).find((s) => s.id === sheet.id)
       : null;
+  const sheetModel = toSheetModel(
+    {
+      // While it writes, the pane fills in block by block with the card.
+      body: shownVersion?.draft.body ?? (writing ? { ...draft.body, variants: { ...draft.body.variants, main: { blocks: blocks.slice(0, shown) } } } : draft.body),
+      why: shownVersion?.draft.why ?? draft.why,
+      title: plan.title,
+      team: plan.sheet?.team ?? '',
+      start: plan.sheet?.start ? new Date(plan.sheet.start) : null,
+      end: plan.sheet?.end ? new Date(plan.sheet.end) : null,
+      zone: plan.sheet?.zone ?? null,
+      coaches: plan.sheet?.coaches ?? [],
+      names: new Map(Object.entries(plan.sheet?.names ?? {})),
+      state: 'Draft · not published',
+    },
+    'coach',
+  );
   let at = 0;
   return (
     <div className={'ch-cpv' + (phone ? '' : ' is-desk')} data-ch="plan-card">
@@ -382,7 +458,9 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
             )}
             {state.k === 'undone' ? (
               <p className="inert">Removed. Nothing was saved.</p>
-            ) : !saveOn ? null : state.k === 'saved' ? (
+            ) : !saveOn ? (
+              <p className="inert">Comes with the Practice tab</p>
+            ) : state.k === 'saved' ? (
               <div className="savedw">
                 <div className="saved" role="status">
                   <span className="okc">
@@ -400,17 +478,7 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
                       <button
                         type="button"
                         disabled={undoing}
-                        onClick={() => {
-                          if (preview) return setState({ k: 'undone' });
-                          setUndoing(true);
-                          void safeSave(() => undoPracticePlanDraft({ planId: state.planId, created: state.created, savedAt: state.savedAt }))
-                            .then((r) => {
-                              if (!r.success) return setError('Too late to undo. It’s saved.');
-                              forgetSavedPlan(planKey(plan));
-                              setState({ k: 'undone' });
-                            })
-                            .finally(() => setUndoing(false));
-                        }}
+                        onClick={undoSave}
                       >
                         Undo
                       </button>
@@ -467,7 +535,7 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
                         }}
                       >
                         <Icon icon={FolderClosed} size={18} className="fi" />
-                        <input className="inp" ref={(el) => el?.focus()} aria-label="Folder name" maxLength={FIELD_MAX} value={name} placeholder="Folder name" onChange={(e) => setName(e.target.value)} />
+                        <input ref={(el) => { el?.focus({ preventScroll: true }); }} className="inp" autoCapitalize="words" enterKeyHint="done" aria-label="Folder name" maxLength={FIELD_MAX} value={name} placeholder="Folder name" onChange={(e) => setName(e.target.value)} />
                         <Button variant="secondary" size="sm" type="submit" disabled={!clean || dupe || reserved}>
                           Create
                         </Button>
@@ -519,14 +587,14 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
       </section>
       {!writing && (
         <div className="refine" role="group" aria-label="Change the plan">
-          {REFINE.map((r) => (
+          {refineChips(total).map((r) => (
             <button type="button" key={r} onClick={() => onSend(r)}>
               {r}
             </button>
           ))}
         </div>
       )}
-      <FormSheet open={!!open} onClose={() => setSheet(null)} title={open?.title.split(':')[0] ?? ''} actionLabel="Done" onAction={() => setSheet(null)}>
+      <FormSheet open={!!open} onClose={closeBlock} title={open?.title.split(':')[0] ?? ''} actionLabel="Done" onAction={commitBlock}>
         {open && (
           <div className="ch-cpv ch-cpv-sheet">
             <div className="grp">
@@ -536,11 +604,11 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
                   <span className="v ch-num">{open.len} min</span>
                 ) : (
                   <span className="stepper">
-                    <button type="button" aria-label="Shorter" disabled={open.len <= 5} onClick={() => setBlock(open.id, (b) => ({ ...b, len: Math.max(5, b.len - 5) }) as PlanBlock)}>
+                    <button type="button" aria-label="Shorter" disabled={open.len <= 5} onClick={() => setBlockLen(Math.max(5, open.len - 5))}>
                       <Icon icon={Minus} size={14} />
                     </button>
                     <span className="len ch-num">{open.len} min</span>
-                    <button type="button" aria-label="Longer" disabled={open.len >= 360} onClick={() => setBlock(open.id, (b) => ({ ...b, len: Math.min(360, b.len + 5) }) as PlanBlock)}>
+                    <button type="button" aria-label="Longer" disabled={open.len >= 360} onClick={() => setBlockLen(Math.min(360, open.len + 5))}>
                       <Icon icon={Plus} size={14} />
                     </button>
                   </span>
@@ -601,7 +669,7 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
                 sendAsk(open.title);
               }}
             >
-              <input aria-label="Ask about this block" placeholder="Ask about this block" value={ask} onChange={(e) => setAsk(e.target.value)} />
+              <input enterKeyHint="send" autoCapitalize="sentences" aria-label="Ask about this block" placeholder="Ask about this block" value={ask} onChange={(e) => setAsk(e.target.value)} />
               <button type="submit" aria-label="Send" disabled={!ask.trim()}>
                 <Icon icon={ArrowUp} size={18} />
               </button>
@@ -644,7 +712,7 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
               sendAsk('This station');
             }}
           >
-            <input aria-label="Ask about this station" placeholder="Ask about this station" value={ask} onChange={(e) => setAsk(e.target.value)} />
+            <input enterKeyHint="send" autoCapitalize="sentences" aria-label="Ask about this station" placeholder="Ask about this station" value={ask} onChange={(e) => setAsk(e.target.value)} />
             <button type="submit" aria-label="Send" disabled={!ask.trim()}>
               <Icon icon={ArrowUp} size={18} />
             </button>
@@ -664,8 +732,8 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
                       <span>{r.label}</span>
                       {r.pct != null && (
                         <span className="tr">
-                          <i className={'m' + (r.tour != null && r.tour - r.pct > 8 ? ' is-gap' : '')} style={{ width: `${r.pct}%` }} />
-                          {r.tour != null && <i className="t" style={{ left: `${r.tour}%` }} />}
+                          <i className={'m' + (r.tour != null && r.tour - r.pct > 8 ? ' is-gap' : '')} style={{ width: `${Math.max(0, Math.min(100, r.pct))}%` }} />
+                          {r.tour != null && <i className="t" style={{ left: `${Math.max(0, Math.min(100, r.tour))}%` }} />}
                         </span>
                       )}
                       <span className="ch-num">{r.value}</span>
@@ -681,13 +749,25 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
         </div>
       </FormSheet>
       {full && createPortal(
-        <div className="ch-cpv-full" role="dialog" aria-modal="true" aria-label={plan.title}>
+        <div className="ch-cpv-full" role="dialog" aria-modal="true" aria-label={plan.title} ref={fullRef} tabIndex={-1}>
           <div className="fbar">
             <button type="button" className="back" aria-label={phone ? undefined : 'Close the plan'} onClick={() => setFull(false)}>
               <Icon icon={phone ? ChevronLeft : X} size={18} />
               {phone && 'Ask'}
             </button>
-            <b>{plan.title}</b>
+            <b title={plan.title}>{plan.title}</b>
+            <span className="fmore">
+              <Menu
+                label="More for this plan"
+                align="end"
+                items={[{ label: 'Print', icon: Printer, onSelect: () => void printPlan(sheetModel) }, { label: 'Share PDF', icon: Share, onSelect: () => void sharePlanPdf(sheetModel).then((ok) => { if (!ok) toast({ tone: 'error', title: 'Couldn’t make the PDF', body: 'Print can still save one.' }); }) }]}
+                trigger={(p) => (
+                  <button type="button" className="fmore__b" aria-label="More for this plan" {...p}>
+                    <Icon icon={Ellipsis} size={20} />
+                  </button>
+                )}
+              />
+            </span>
             {!phone && versions.length > 0 && (
               <span className="vsw">
                 <button type="button" aria-label="Earlier version" disabled={(viewing ?? own) <= 0} onClick={() => setViewing((viewing ?? own) - 1)}>
@@ -701,38 +781,39 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
             )}
           </div>
           <div className="fbody">
-            <PracticePlanSheet
-              plan={toSheetModel(
-                {
-                  body: shownVersion?.draft.body ?? draft.body,
-                  why: shownVersion?.draft.why ?? draft.why,
-                  title: plan.title,
-                  team: plan.sheet?.team ?? '',
-                  start: new Date(plan.sheet?.start ?? Date.now()),
-                  end: plan.sheet?.end ? new Date(plan.sheet.end) : null,
-                  zone: plan.sheet?.zone ?? 'UTC',
-                  coaches: plan.sheet?.coaches ?? [],
-                  names: new Map(Object.entries(plan.sheet?.names ?? {})),
-                  state: 'Draft · Only coaches',
-                },
-                'coach',
-              )}
-            />
+            <PracticePlanSheet plan={sheetModel} />
           </div>
           <div className="fdock">
-            {state.k === 'saved' && (
-              <Button variant="secondary" onClick={() => router.push(`/golf/dashboard/practice/plan/${state.planId}`)}>
-                Edit in builder
-              </Button>
+            {!saveOn ? (
+              <p className="inert fnote">Comes with the Practice tab</p>
+            ) : (
+              <>
+                {state.k === 'failed' && error && <InlineNotice title="That didn’t save" body={error} />}
+                {state.k === 'saved' && !phone && (
+                  <p className="fnote is-saved" role="status">
+                    <b>Plan saved · Documents · {state.folder}</b>
+                    {undoOpen && (
+                      <button type="button" className="fundo" disabled={undoing} onClick={undoSave}>
+                        Undo
+                      </button>
+                    )}
+                  </p>
+                )}
+                {state.k === 'saved' && (
+                  <Button variant="secondary" onClick={() => router.push(`/golf/dashboard/practice/plan/${state.planId}/edit`)}>
+                    Edit in builder
+                  </Button>
+                )}
+                {state.k !== 'saved' && (
+                  <Button variant="secondary" busy={state.k === 'saving'} onClick={() => void save()}>
+                    {state.k === 'saving' ? 'Saving…' : state.k === 'failed' ? 'Try again' : 'Save draft'}
+                  </Button>
+                )}
+                <Button variant="primary" onClick={() => { setFull(false); void publish(); }}>
+                  Publish…
+                </Button>
+              </>
             )}
-            {!phone && state.k !== 'saved' && (
-              <Button variant="secondary" busy={state.k === 'saving'} onClick={() => void save()}>
-                {state.k === 'saving' ? 'Saving…' : 'Save draft…'}
-              </Button>
-            )}
-            <Button variant="primary" onClick={() => { setFull(false); void publish(); }}>
-              Publish…
-            </Button>
           </div>
         </div>,
         document.querySelector('.ch-root') ?? document.body,

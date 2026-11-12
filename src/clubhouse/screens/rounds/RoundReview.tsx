@@ -456,12 +456,15 @@ export function RoundReview({
   history: historyIn,
   typeEdit = null,
   initialHole = null,
+  fromRounds = false,
 }: {
   review: ChRoundReview;
   /** P-7 stage 3, streamed by the server after the review (it never rejects); a fixture puts it in `review.history` instead. */
   history?: PromiseLike<ChReviewHistory | null>;
   typeEdit?: ChReviewTypeEdit | null;
   /** P-7: `?hole=`, a hole to open on. */ initialHole?: number | null;
+  /** `?from=rounds`, Team rounds' own link: the server knows where Back goes, so it is right on the first paint and after a reload. */
+  fromRounds?: boolean;
 }) {
   const [streamed, setStreamed] = useState<{ from: PromiseLike<ChReviewHistory | null>; history: ChReviewHistory | null } | null>(null);
   useEffect(() => {
@@ -506,11 +509,12 @@ export function RoundReview({
   // A coach who opened this round from Team rounds goes back there, as a player goes back to the library. The note is in
   // session storage: read during render on the client (an in-app open, the only way a note exists), so the back label is
   // right before the first paint (visual pass 2026-10-28; it was set after mount and swapped "Stats" for "Rounds" in
-  // view). A server render reads no note, and a hydrating page takes the client's answer straight after.
+  // view). A server render reads no note, which is why Team rounds also says so in its link (`fromRounds`): a reload's
+  // server render and its hydration then agree, and "Stats" is never painted.
   const fromList = useSyncExternalStore(
     noSubscribe,
-    () => openedFromLibrary(r.id),
-    () => false,
+    () => fromRounds || openedFromLibrary(r.id),
+    () => fromRounds,
   );
   const back = coach && fromList ? { label: 'Rounds', href: '/golf/dashboard/rounds' } : reviewBack(r);
   const insight = useMemo(() => headline(r), [r]);

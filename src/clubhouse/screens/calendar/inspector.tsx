@@ -57,6 +57,7 @@ import {
   isMajor,
   openTimes,
   rangeLabel,
+  startLabel,
   replyLock,
   rsvpCounts,
   type ChCalEvent,
@@ -169,21 +170,23 @@ function Warn({ title, children, action }: { title: string; children: ReactNode;
 
 const find = (events: ChCalEvent[], id: string, date?: string) => events.find((e) => e.id === id && (!date || e.date === date)) ?? events.find((e) => e.id === id);
 
-/** A player's own clash, in their words: "Overlaps your ECON 101 class 3:00–4:00 PM" (or another event they're on). */
-function playerOverlapLine(events: ChCalEvent[], o: ChCalOverlap, clock: ChClock): string {
+/** A player's own clash, in their words: "Overlaps your ECON 101 class" (or another event they're on). */
+function playerOverlapWith(events: ChCalEvent[], o: ChCalOverlap): string {
   const w = find(events, o.withId);
-  const what = !w ? 'another of your events' : w.type === 'class' ? `your ${w.title} class` : w.title;
-  return `Overlaps ${what} ${fmtHour(o.from, false, clock)}–${fmtHour(o.to, true, clock)}`;
+  return `Overlaps ${!w ? 'another of your events' : w.type === 'class' ? `your ${w.title} class` : w.title}`;
+}
+/** And when: "Overlaps your ECON 101 class 3:00–4:00 PM", as the event's own warning says it. */
+function playerOverlapLine(events: ChCalEvent[], o: ChCalOverlap, clock: ChClock): string {
+  return `${playerOverlapWith(events, o)} ${fmtHour(o.from, false, clock)}–${fmtHour(o.to, true, clock)}`;
 }
 
-/* Nothing selected: today, what needs attention, where the data comes from. */
-export function Summary({ ctx }: { ctx: InspCtx }) {
-  const { now, events, overlaps, people, role } = ctx;
-  const clock = useChClock();
-  const today = events.filter((e) => e.date === now.date && e.type !== 'class' && e.type !== 'busy' && !e.cancelled).sort((a, b) => (a.start ?? -1) - (b.start ?? -1));
-  const next = today.find((e) => !e.allDay && (e.start ?? 0) > now.hour);
-  const mins = next ? Math.round(((next.start ?? 0) - now.hour) * 60) : 0;
-  const until = mins < 60 ? `in ${mins} min` : `in ${Math.floor(mins / 60)} h ${mins % 60 ? `${mins % 60} min` : ''}`.trim();
+/**
+ * What needs attention in the next seven days: the overlaps, and the events still waiting on replies (for a player,
+ * the replies they owe). The panel's list draws these; the week's toolbar counts them (Calendar.tsx), since on the
+ * desktop week the list lies under the grid.
+ */
+export function attentionOf(ctx: Pick<InspCtx, 'now' | 'events' | 'overlaps' | 'role' | 'viewerPlayerId'>) {
+  const { now, events, overlaps, role } = ctx;
   const weekEnd = dayAfter(now.date, 7);
   const upcoming = events.filter((e) => e.type !== 'class' && e.type !== 'busy' && !e.cancelled && e.date >= now.date && e.date < weekEnd);
   const seen = new Set<string>();
@@ -200,6 +203,21 @@ export function Summary({ ctx }: { ctx: InspCtx }) {
     const e = find(events, o.eventId);
     return e && e.date >= now.date && e.date < weekEnd;
   });
+  return { pendingRows, weekOverlaps, count: weekOverlaps.length + pendingRows.length, heading: attentionHeading(role, weekOverlaps.length) };
+}
+
+/** The list's heading, which the week's toolbar button repeats so it names the list it goes to. */
+export const attentionHeading = (role: InspCtx['role'], overlaps: number) => (role === 'coach' ? 'Needs attention' : overlaps ? 'Needs your attention' : 'Needs your reply');
+
+/* Nothing selected: today, what needs attention, where the data comes from. */
+export function Summary({ ctx }: { ctx: InspCtx }) {
+  const { now, events, people, role } = ctx;
+  const clock = useChClock();
+  const today = events.filter((e) => e.date === now.date && e.type !== 'class' && e.type !== 'busy' && !e.cancelled).sort((a, b) => (a.start ?? -1) - (b.start ?? -1));
+  const next = today.find((e) => !e.allDay && (e.start ?? 0) > now.hour);
+  const mins = next ? Math.round(((next.start ?? 0) - now.hour) * 60) : 0;
+  const until = mins < 60 ? `in ${mins} min` : `in ${Math.floor(mins / 60)} h ${mins % 60 ? `${mins % 60} min` : ''}`.trim();
+  const { pendingRows, weekOverlaps, heading } = attentionOf(ctx);
   const classOwners = new Set(events.filter((e) => e.type === 'class' && e.owner).map((e) => e.owner));
 
   return (
@@ -237,9 +255,9 @@ export function Summary({ ctx }: { ctx: InspCtx }) {
       )}
       </div>
 
-      <div className="ch-in__sec">
+      <div className="ch-in__sec" data-ch-attention="">
         <div className="ch-in__sechead">
-          <b>{role === 'coach' ? 'Needs attention' : weekOverlaps.length ? 'Needs your attention' : 'Needs your reply'}</b>
+          <b>{heading}</b>
           <span>Next 7 days</span>
         </div>
         {ctx.rsvpError && (
@@ -269,7 +287,9 @@ export function Summary({ ctx }: { ctx: InspCtx }) {
                   </button>
                 );
               })}
-            {/* A player's own clash opens the event, where it says what to do (message the coach); it has no Overlap panel. */}
+            {/* A player's own clash opens the event, where it says what to do (message the coach); it has no Overlap panel.
+                Its line is what it overlaps and the day, on one line in the 218px the panel gives it beside a view; with
+                the hours it wrapped inside them ("4:45–" / "5:00 PM · Wed"). The hours are in the event it opens. */}
             {role === 'player' &&
               weekOverlaps.map((o) => {
                 const e = find(events, o.eventId)!;
@@ -281,7 +301,7 @@ export function Summary({ ctx }: { ctx: InspCtx }) {
                     <span style={{ minWidth: 0 }}>
                       <b>{e.title}</b>
                       <span>
-                        {playerOverlapLine(events, o, clock)} · {dowOf(e.date)}
+                        {playerOverlapWith(events, o)} · {dowOf(e.date)}
                       </span>
                     </span>
                     <Icon icon={ChevronRight} size={14} />
@@ -293,10 +313,18 @@ export function Summary({ ctx }: { ctx: InspCtx }) {
                 <span className="ch-in__ic is-ok">
                   <Icon icon={MailQuestion} size={14} />
                 </span>
+                {/* Beside a clash the player's row says what it asks in words, as the coach's does ("1 reply pending"):
+                    the event and its time alone left the ask to the glyph. The event follows with its day and its start,
+                    on one line as the coach's is (the full range is in the event it opens). Under "Needs your reply"
+                    the heading has already said it, and the row stays the event. */}
                 <span style={{ minWidth: 0 }}>
-                  <b>{role === 'coach' ? `${plural(pending.length, 'reply', 'replies')} pending` : e.title}</b>
+                  <b>{role === 'coach' ? `${plural(pending.length, 'reply', 'replies')} pending` : weekOverlaps.length ? 'Reply needed' : e.title}</b>
                   <span>
-                    {role === 'coach' ? `${e.title} · ${pending.length <= 2 ? pending.map((p) => first(people.get(p)?.name)).join(', ') : `${dowOf(e.date)} ${dayNum(e.date)}`}` : `${dowOf(e.date)} ${dayNum(e.date)} · ${rangeLabel(e, clock)}`}
+                    {role === 'coach'
+                      ? `${e.title} · ${pending.length <= 2 ? pending.map((p) => first(people.get(p)?.name)).join(', ') : `${dowOf(e.date)} ${dayNum(e.date)}`}`
+                      : weekOverlaps.length
+                        ? `${e.title} · ${dowOf(e.date)} ${dayNum(e.date)} · ${startLabel(e, true, clock)}`
+                        : `${dowOf(e.date)} ${dayNum(e.date)} · ${rangeLabel(e, clock)}`}
                   </span>
                 </span>
                 <Icon icon={ChevronRight} size={14} />
@@ -442,6 +470,8 @@ function PlayerReply({ e, playerId, now, onDone }: { e: ChCalEvent; playerId: st
   );
 }
 
+const PLAN_WORD = { none: 'No plan yet', draft: 'Draft', published: 'Published', edited: 'Edits not published' } as const;
+
 export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date: string }) {
   const e = find(ctx.events, id, date);
   const toast = useToast();
@@ -538,6 +568,18 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
         {e.recurring && <Fact icon={Repeat}>{e.recurring}</Fact>}
         {e.notes && <Fact icon={Text}>{e.notes}</Fact>}
       </div>
+      {e.plan && (coach || e.plan.state !== 'none') && (
+        <div className="ch-in__sec ch-in__plan">
+          <span className="ch-in__plan-s">{PLAN_WORD[e.plan.state]}</span>
+          {e.plan.state === 'none' ? (
+            <Button variant="primary" href={`/golf/dashboard/practice?new=1&event=${e.id}`}>
+              Build plan
+            </Button>
+          ) : (
+            <Button href={`/golf/dashboard/practice/plan/${e.plan.id}`}>Open plan</Button>
+          )}
+        </div>
+      )}
       {coach && <EventLiveRow e={e} />}
       {coach && overlap && (
         <Warn

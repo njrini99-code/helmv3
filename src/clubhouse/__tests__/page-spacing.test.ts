@@ -66,6 +66,9 @@ const TOKENS: Record<string, string> = {
   '--ch-page-top-eyebrow-short-2': 'calc(var(--ch-page-head-top) + 2px)',
   '--ch-page-top-eyebrow-short-4': 'calc(var(--ch-page-head-top) + 4px)',
   '--ch-page-top-eyebrow-low-2': 'calc(var(--ch-page-head-top) - 2px)',
+  // One frame (owner, 2026-11-11): the redesigned desks' top, and Player Home's, which is held where it was built.
+  '--ch-page-top-crh': 'calc(var(--ch-page-head-top) + 12px)',
+  '--ch-page-top-home-player': '38px',
   '--ch-page-top-coachhelm': '36px',
   '--ch-page-top-home': '52px',
   '--ch-page-top-home-desk': '40px',
@@ -120,7 +123,6 @@ const PHONE_EDGES: [file: string, context: string, selector: string][] = [
 /** Full-bleed pieces: out to the screen edge by the gutter, and their content back in by it. */
 const PHONE_BLEEDS: [file: string, context: string, selector: string][] = [
   ['hub.css', PHONE, '.ch-hb-tabs'],
-  ['coachhelm.css', PHONE, '.ch-hl.is-phone .ch-hl-plist'],
   ['coachhelm-views.css', PHONE, '.ch-hv-chips'],
   ['rounds.css', PHONE, '.ch-rv.is-phone .ch-rv-cardw'],
   ['stats.css', PHONE, '.ch-stm .ch-gd.is-phone .ch-gd__nav'],

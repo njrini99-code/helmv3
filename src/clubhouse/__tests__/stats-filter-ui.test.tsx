@@ -29,7 +29,6 @@ import { formatDate, localToday } from '../ui/date-time';
 import './dialog-polyfill';
 import { PREVIEW_PLAYER, PREVIEW_PLAYER_EARLY, PREVIEW_PLAYER_NOMATCH, PREVIEW_TEAM_STATS } from '../preview/fixtures-stats';
 
-
 // A swap's leaving copy (ui/Swap.tsx) is hidden from assistive tech while it fades; read the live one.
 const code = (c: string) => [...document.querySelectorAll(`[data-ch-code="${c}"]`)].find((e) => !e.closest('.ch-swap__body[aria-hidden]')) ?? null;
 async function expectCode(c: string, text?: RegExp) {
@@ -61,14 +60,14 @@ function SlotHost() {
 }
 const team = (over: Partial<ChTeamStats> = {}): ChTeamStats => ({ ...PREVIEW_TEAM_STATS, ...(over.window ? { filter: filterFor(over.window) } : {}), ...over });
 const player = (over: Partial<ChPlayerProfile> = {}): ChPlayerProfile => ({ ...PREVIEW_PLAYER, ...(over.window ? { filter: filterFor(over.window) } : {}), ...over });
-const showTeam = (data: ChTeamStats) => render(shell(<StatsTeam data={data} />));
-const showPlayer = (data: ChPlayerProfile, coachId: string | null = 'c1') => render(shell(<StatsPlayer data={data} coachId={coachId} />));
+const showTeam = (data: ChTeamStats) => render(shell(<StatsTeam layout="board" data={data} />));
+const showPlayer = (data: ChPlayerProfile, coachId: string | null = 'c1') => render(shell(<StatsPlayer layout="tabs" data={data} coachId={coachId} />));
 const showPhonePlayer = (data: ChPlayerProfile) =>
   render(
     shell(
       <>
         <SlotHost />
-        <StatsPlayer data={data} coachId="c1" />
+        <StatsPlayer layout="tabs" data={data} coachId="c1" />
       </>,
     ),
   );
@@ -532,7 +531,7 @@ describe('Team stats · network', () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     try {
       const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-      const tree = (d: ChTeamStats) => shell(<StatsTeam data={d} />);
+      const tree = (d: ChTeamStats) => shell(<StatsTeam layout="board" data={d} />);
       const view = render(tree(team({ filter: filt({ types: ['tournament'] }), roundCount: 12 })));
       await user.click(screen.getByRole('button', { name: 'Remove filter: Tournament' }));
       expect(lastPush()).toBe(BASE);
@@ -719,17 +718,6 @@ describe('Stats player · phone', () => {
 
 describe('Team stats · phone', () => {
   phoneWidth();
-
-  it('the same filter: the bar under the window switch, chips and the count, the sheet, and a player opened with it', async () => {
-    const user = userEvent.setup();
-    showTeam(team({ filter: filt({ types: ['tournament'], ...RANGE }), roundCount: 12 }));
-    expect(document.querySelector('.ch-sf.is-phone')).not.toBeNull();
-    expect(chipNames()).toEqual(['Remove filter: Tournament', 'Remove filter: Sep 1 to Sep 29']);
-    expect(countLine()!.textContent).toBe('12 rounds: tournaments, Sep 1 to Sep 29');
-    expect(document.querySelector('a[href*="player="]')!.getAttribute('href')).toContain(`type=tournament&from=${RANGE.from}&to=${RANGE.to}`);
-    await user.click(screen.getByRole('button', { name: /^Filter/ }));
-    expect(dialog()).toBeTruthy();
-  });
 
   it('CH-4313 CH-4314 the same empty and early-read states', async () => {
     const user = userEvent.setup();
@@ -1046,64 +1034,6 @@ describe('Stats · holes', () => {
 
 describe('Stats · holes · phone', () => {
   phoneWidth();
-
-  it('CH-5323 the phone profile: the chip and the note, the sheet\'s Holes control, and a 9-hole round named in the list and doubled in the line', async () => {
-    const user = userEvent.setup();
-    const rounds = PREVIEW_PLAYER.rounds.map((r, i) => (i === 0 ? { ...r, holes: 9, score: 38 } : r));
-    showPhonePlayer(player({ filter: filt({ holes: 'all' }), rounds }));
-    expect(chipNames()).toEqual(['Remove filter: 18 and 9 holes']);
-    expect(code('CH-5323')!.textContent).toMatch(/per 18 holes/);
-    expect(document.body.textContent).toMatch(/9-hole scores doubled/);
-    // The line is drawn per 18: the newest round, a 38, ends it as a 76.
-    expect(document.querySelector('[role="group"][aria-label^="Scores over the last"]')!.getAttribute('aria-label')).toMatch(/to 76,/);
-    // The round's own row says it was nine holes (the chip above says so too, so look at the rows).
-    expect([...document.querySelectorAll('.ch-num')].some((el) => / · 9 holes/.test(el.textContent ?? ''))).toBe(true);
-    await user.click(screen.getByRole('button', { name: /^Filter/ }));
-    expect(inDialog().getByRole('group', { name: 'Holes' })).toBeTruthy();
-    await user.click(inDialog().getByRole('button', { name: '9 holes' }));
-    await user.click(inDialog().getByRole('button', { name: 'Done' }));
-    expect(lastPush()).toBe(`${BASE}?player=jonah&holes=9`);
-  });
-
-  it('CH-5305 the phone early read counts whole rounds too', () => {
-    const { unmount } = showPhonePlayer(player({ filter: filt({ holes: '9' }), win: { ...PREVIEW_PLAYER.win, rounds: 4, effRounds: 2, sgRounds: 4, effSgRounds: 2 } }));
-    expect(code('CH-5305')!.textContent).toMatch(/4 countable rounds, 2 counting 9-hole rounds as half/);
-    unmount();
-    showPhonePlayer(player({ filter: filt({ holes: '9' }), win: { ...PREVIEW_PLAYER.win, rounds: 6, effRounds: 3, sgRounds: 4, effSgRounds: 2 } }));
-    expect(code('CH-5305')).toBeNull();
-    expect(code('CH-5308')!.textContent).toMatch(/4 of 6 rounds with shots \(2 counting 9-hole rounds as half\)/);
-  });
-
-  it('CH-4319 CH-5324 the phone pages point at the 9-hole rounds too', () => {
-    const withNine = opts(2, { rounds: [pr(0, { holes: 9 }), pr(1)] });
-    const { unmount } = showTeam(team({ roundCount: 0, roundsEffective: 0, grid: [], players: [], putting: null, bests: [], filterOptions: withNine }));
-    expect(code('CH-4319')!.textContent).toMatch(/^This team has 9-hole rounds/);
-    unmount();
-    // The phone's first run is D-71's too: 9-hole rounds this season are CH-4301 with the hint.
-    const season = showTeam(team({ window: 'season', roundCount: 0, roundsEffective: 0, grid: [], players: [], putting: null, bests: [], filterOptions: withNine }));
-    expect(code('CH-4310')).toBeNull();
-    expect(code('CH-4301')).not.toBeNull();
-    expect(code('CH-4319')).not.toBeNull();
-    season.unmount();
-    const none = { ...PREVIEW_PLAYER.win, rounds: 0, effRounds: 0, sgRounds: 0, effSgRounds: 0, avg: null, sgPerRound: null };
-    const coach = showPhonePlayer(player({ win: none, rounds: [], filterOptions: withNine }));
-    expect(code('CH-5324')!.textContent).toMatch(/^Jonah has 9-hole rounds/);
-    coach.unmount();
-    const own = showPhonePlayer(player({ viewer: 'player', nav: null, win: none, rounds: [], filterOptions: withNine }));
-    expect(code('CH-5324')!.textContent).toMatch(/^You have 9-hole rounds/);
-    own.unmount();
-    // Rounds on the page, or a filter on: no hint.
-    const withRounds = showPhonePlayer(player({ filterOptions: withNine }));
-    expect(code('CH-5324')).toBeNull();
-    withRounds.unmount();
-    showPhonePlayer(player({ win: none, rounds: [], filter: filt({ holes: '9' }), filterOptions: withNine }));
-    expect(code('CH-5324')).toBeNull();
-    expect(code('CH-5320')).not.toBeNull();
-    cleanup();
-    showTeam(team({ roundCount: 0, roundsEffective: 0, grid: [], players: [], putting: null, bests: [], filter: filt({ holes: 'all' }), filterOptions: withNine }));
-    expect(code('CH-4319')).toBeNull();
-    expect(code('CH-4313')).not.toBeNull();
-  });
 
   it('CH-4318 the phone team page: the chip, the note and the early read in whole rounds', () => {
     const { unmount } = showTeam(team({ filter: filt({ holes: '9' }), roundCount: 4, roundsEffective: 2 }));

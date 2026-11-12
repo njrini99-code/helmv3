@@ -61,11 +61,11 @@ const WEEKDAY = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'lo
 const DIRECTIONS = new Set<ChHomeEvent['type']>(['qualifier', 'tournament', 'travel']);
 export const directionsHref = (e: ChHomeEvent) => (e.location && DIRECTIONS.has(e.type) ? `https://maps.apple.com/?q=${encodeURIComponent(e.location)}` : null);
 
-export function DayCard({ phase, now, today, onOpenRound, years, crh = false }: { crh?: boolean; years?: Record<string, ChYearKey>; phase: Exclude<ChDayPhase, null>; now: Date | null; today: string | null; onOpenRound: (r: ChLatestRound) => void }) {
-  return phase.kind === 'recap' ? <Recap rounds={phase.rounds} onOpen={onOpenRound} /> : <EventCard crh={crh} years={years} e={phase.e} live={phase.live} now={now} today={today} />;
+export function DayCard({ phase, now, today, onOpenRound, years }: { years?: Record<string, ChYearKey>; phase: Exclude<ChDayPhase, null>; now: Date | null; today: string | null; onOpenRound: (r: ChLatestRound) => void }) {
+  return phase.kind === 'recap' ? <Recap rounds={phase.rounds} onOpen={onOpenRound} /> : <EventCard years={years} e={phase.e} live={phase.live} now={now} today={today} />;
 }
 
-function EventCard({ e, live, now, today, years, crh }: { crh: boolean; e: ChHomeEvent; live: boolean; now: Date | null; today: string | null; years?: Record<string, ChYearKey> }) {
+function EventCard({ e, live, now, today, years }: { e: ChHomeEvent; live: boolean; now: Date | null; today: string | null; years?: Record<string, ChYearKey> }) {
   const t = useChClockText();
   const when = whenLabel(e, now);
   const people = e.invitees ?? [];
@@ -82,7 +82,7 @@ function EventCard({ e, live, now, today, years, crh }: { crh: boolean; e: ChHom
         <span className="ch-hm-next__type">
           <Icon icon={TYPE_ICON[e.type]} size={13} />
           {/* The lane names the type and leaves the time to the line under the title (06 §11.1). */}
-          {crh && !live && !e.allDay ? TYPE_LABEL[e.type] : kicker}
+          {!live && !e.allDay ? TYPE_LABEL[e.type] : kicker}
         </span>
         <span className={'ch-hm-next__when ch-num' + (when.soon ? ' is-soon' : '')}>{t(when.text)}</span>
       </span>

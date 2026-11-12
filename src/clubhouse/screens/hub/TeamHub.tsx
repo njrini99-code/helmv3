@@ -2,6 +2,7 @@
 
 import { ClipboardList, Plane, Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { deletePracticePlan } from '@/app/golf/actions/practice-plans';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
 import { useDeferredValue, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import type { ChHubAnnouncement, ChHubFile, ChHubRsvp, ChHubTask, ChHubTrip, ChHubUpdate, ChRsvp, ChTeamHub } from '../../data/hub';
@@ -31,7 +32,7 @@ import { TripEditSheet } from './trip-edit';
 import { uploadRefusal } from './upload-rules';
 import { LIVE_HUB_WRITES, type ChHubWrites } from './writes';
 import { useToast } from '../../ui/Toast';
-import { useHScroll } from '../../ui/use-hscroll';
+import { useHScroll, useKeepInView } from '../../ui/use-hscroll';
 import '../../styles/hub.css';
 import { ListPresence } from '../../ui/ListPresence';
 import { LargeTitle } from '../../ui/LargeTitle';
@@ -155,21 +156,9 @@ export function TeamHub({
   const tabsEdges = useHScroll<HTMLDivElement>(tabsRef);
   const reduced = useChReducedMotion();
   useSlidePlate(tabsRef, '[aria-selected="true"] > .ch-hb-tabs__bar', tab, { reduced, kind: 'smooth' });
-  // The chosen tab is always in view in the phone's sideways strip: Tasks, opened from the strip or a link, sat past the
-  // screen's edge with only a sliver of its underline showing. The first paint jumps there; a later change glides.
-  const tabsShown = useRef(false);
-  useEffect(() => {
-    const strip = tabsRef.current;
-    const on = strip?.querySelector<HTMLElement>('[aria-selected="true"]');
-    const first = !tabsShown.current;
-    tabsShown.current = true;
-    if (!strip || !on || strip.scrollWidth <= strip.clientWidth) return;
-    const s = strip.getBoundingClientRect();
-    const b = on.getBoundingClientRect();
-    const edge = 16;
-    const by = b.left < s.left + edge ? b.left - s.left - edge : b.right > s.right - edge ? b.right - s.right + edge : 0;
-    if (by) strip.scrollTo({ left: strip.scrollLeft + by, behavior: first || reduced ? 'auto' : 'smooth' });
-  }, [tab, reduced]);
+  // The chosen tab is always whole in the phone's sideways strip (ui/use-hscroll.ts): Tasks, opened from the strip or a
+  // link, sat past the screen's edge, and again once the type settled wider than the first paint drew it.
+  useKeepInView(tabsRef, '[aria-selected="true"]', tab, reduced);
   const [replies, setReplies] = useState(() => new Map<string, ChRsvp>());
   const [acked, setAcked] = useState(() => new Set<string>());
   const [pendingWrites, setPendingWrites] = useState(() => new Set<string>());
@@ -332,7 +321,9 @@ export function TeamHub({
           ? writes.deleteTask(p.t.id)
           : p.kind === 'trip'
             ? writes.deleteTrip(p.t.id)
-            : writes.deleteDocument(p.f.id));
+            : p.f.planId
+              ? deletePracticePlan({ planId: p.f.planId })
+              : writes.deleteDocument(p.f.id));
       if (normalise(res).success) {
         setGone(withId(p.kind === 'ann' ? p.a.id : p.kind === 'task' || p.kind === 'trip' ? p.t.id : p.f.id));
         setConfirm(null);
@@ -376,7 +367,10 @@ export function TeamHub({
   const onReply = reply;
   const onAck = ack;
   const onToggle = toggle;
-  const onOpen = (f: ChHubFile) => void open.run(f);
+  const onOpen = (f: ChHubFile) => {
+    if (f.planId) return router.push(`/golf/dashboard/practice/plan/${f.planId}`);
+    void open.run(f);
+  };
   // A post's attachments: listed on request, each opened like a file in Documents (production's announcement card).
   const attachments = writes.announcementFiles ? { load: writes.announcementFiles, open: onOpen, opening } : undefined;
   const toast = useToast();
@@ -781,7 +775,7 @@ export function TeamHub({
 
           {shownTab === 'tasks' && (
             <SectionBoundary surface="hub.tasks" label="Tasks" code="CH-10205">
-              <div className="ch-hb-list">
+              <div className={'ch-hb-list' + (coach ? ' is-board' : '')}>
                 {figures && <TaskBoard figures={figures} />}
                 <Tasks role={data.role} data={tasks} isDone={taskDone} isPending={taskPending} onToggle={onToggle} onDelete={coach ? (t) => askDelete({ kind: 'task', t }) : undefined} focusTask={taskToFocus} onFocused={taskFocused} covered={covered} />
               </div>

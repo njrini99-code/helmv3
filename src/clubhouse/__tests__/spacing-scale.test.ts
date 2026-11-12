@@ -62,9 +62,10 @@ const OFF_SCALE_TSX = /\b(?:padding|margin|gap|rowGap|columnGap)(?:Top|Bottom|Le
 const ALLOW: Record<string, number> = {
   'styles/coachhelm-dive.css': 1,
   'styles/coachhelm.css': 2,
-  'styles/home.css': 10,
+  'styles/home.css': 9,
   'styles/hub.css': 1,
   'styles/messages.css': 9,
+  'styles/messages-thread.css': 2,
   'styles/recruiting.css': 1,
   'styles/roster.css': 1,
   'styles/rounds-recover.css': 1,

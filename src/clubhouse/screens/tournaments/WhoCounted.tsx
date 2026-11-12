@@ -111,7 +111,7 @@ export function WhoCounted({
             {x.total ?? <NoData />}
           </span>
           {!phone && (
-            <span role="cell" className="is-r ch-tour-desk-ct__cnt">
+            <span role="cell" className="is-r ch-num ch-tour-desk-ct__cnt">
               {x.individual ? <NoData label="Not counted" /> : `${x.counted}/${x.played}`}
             </span>
           )}
@@ -143,7 +143,7 @@ export function WhoCounted({
             {result.total ?? <NoData />} <ToPar value={result.toPar} />
           </span>
           {!phone && (
-            <span role="cell" className="is-r ch-tour-desk-ct__cnt">
+            <span role="cell" className="is-r ch-num ch-tour-desk-ct__cnt">
               {par != null ? `Par ${par}` : ''}
             </span>
           )}

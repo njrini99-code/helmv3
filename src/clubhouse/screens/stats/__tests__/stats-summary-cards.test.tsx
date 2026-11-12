@@ -9,7 +9,8 @@ vi.mock('@/app/golf/actions/development', () => ({ createFocusArea: vi.fn(), acc
 
 import { PREVIEW_PLAYER_SHS, PREVIEW_PLAYER_SHS_SELF } from '../../../preview/fixtures-stats-redesign';
 import { SummaryCard } from '../SummaryCard';
-import { asDesktop, asPhone, browserBack, card, detailShown, painted, resetAddress, showPlayer } from './_shs-harness';
+import { StatsPlayer } from '../StatsPlayer';
+import { asDesktop, asPhone, browserBack, card, detailShown, painted, resetAddress, showPlayer, tree } from './_shs-harness';
 
 beforeEach(() => {
   hapticSpy.mockClear();
@@ -35,7 +36,7 @@ describe('SummaryCard', () => {
         </button>
       </SummaryCard>,
     );
-    return { onOpen, el: screen.getByRole('link', { name: /Scoring average 73/ }) };
+    return { onOpen, el: screen.getByRole('button', { name: /Scoring average 73/ }) };
   };
 
   it('a tap opens, with the select haptic', () => {
@@ -45,17 +46,12 @@ describe('SummaryCard', () => {
     expect(hapticSpy).toHaveBeenCalledWith('select');
   });
 
-  it('Enter and Space on the card open it, each once', () => {
-    const { onOpen, el } = one();
-    fireEvent.keyDown(el, { key: 'Enter' });
-    fireEvent.keyDown(el, { key: ' ' });
-    expect(onOpen).toHaveBeenCalledTimes(2);
-  });
-
-  it('another key does nothing', () => {
-    const { onOpen, el } = one();
-    fireEvent.keyDown(el, { key: 'a' });
-    expect(onOpen).not.toHaveBeenCalled();
+  it('its keyboard and VoiceOver path is one real button, and nothing inside is nested in it (STATS-8)', () => {
+    const { el } = one();
+    expect(el.tagName).toBe('BUTTON');
+    expect(el.childElementCount).toBe(0);
+    expect(el.closest('section')?.getAttribute('role')).toBeNull();
+    expect(el.closest('section')?.hasAttribute('tabindex')).toBe(false);
   });
 
   it('a key pressed on something inside the card does not open the card', () => {
@@ -80,7 +76,42 @@ describe('SummaryCard', () => {
 
   it('a plain card draws no chevron button', () => {
     one();
-    expect(screen.queryByRole('button', { name: /details/ })).toBeNull();
+    expect(document.querySelector('.ch-shs-dlink')).toBeNull();
+  });
+
+  it('a press deepens the surface and never scales the card (owner: presses never scale; CH-1606)', () => {
+    one();
+    const section = document.querySelector<HTMLElement>('[data-ch="stats-card"]')!;
+    expect(section.hasAttribute('data-ch-press-scale')).toBe(false);
+    // The press controller marks the pressed card from this, and the wash is drawn from `data-ch-pressed`.
+    expect(section.hasAttribute('data-ch-pressable')).toBe(true);
+  });
+});
+
+describe("production’s ?area= deep links on the phone", () => {
+  const arrive = (area: string) => {
+    window.history.replaceState(null, '', `/golf/dashboard/stats?area=${area}`);
+    return render(tree(<StatsPlayer data={PREVIEW_PLAYER_SHS_SELF} coachId={null} initialArea={area} />));
+  };
+
+  it.each([
+    ['putting', 'gm-putting'],
+    ['driving', 'gm-tee'],
+    ['short-game', 'gm-short'],
+    ['standing', 'sd-sg'],
+    ['rounds', 'sd-rounds'],
+  ])('?area=%s opens %s in place, and Back reaches the summary without the area', async (area, hash) => {
+    arrive(area);
+    await waitFor(() => expect(detailShown()).toBe(hash));
+    await browserBack();
+    await waitFor(() => expect(detailShown()).toBeNull());
+    expect(window.location.search).toBe('');
+  });
+
+  it('an area production has and this screen does not (home) opens the summary', async () => {
+    arrive('home');
+    await painted('scoring');
+    expect(detailShown()).toBeNull();
   });
 });
 
@@ -116,9 +147,9 @@ describe('each summary card opens its detail and Back returns', () => {
     expect(window.location.hash).toBe('');
   });
 
-  it('Enter on a focused card opens it', async () => {
+  it('the card’s own key opens it, as Enter on it does', async () => {
     showPlayer(PREVIEW_PLAYER_SHS_SELF);
-    fireEvent.keyDown(await painted('sg'), { key: 'Enter' });
+    fireEvent.click((await painted('sg')).querySelector('.ch-shs-sum__key')!);
     await waitFor(() => expect(detailShown()).toBe('sd-sg'));
   });
 

@@ -13,6 +13,7 @@ import type { ChTrackRecord } from '../../../data/coachhelm-track-record-shape';
 import { formatSigned } from '../../../lib/format';
 import { Coin, Notice } from './parts';
 import { STATION_SHORT } from './hole-geometry';
+import { sgIsEstimate } from '../../../data/stats-sg-mix';
 
 /** Four bars around a zero line: 20pt is 1.1 strokes, loss down, gain up (AC-ROSTER-03). */
 export function FingerPrint({ player, labels = false }: { player: ChTeamPlayer; labels?: boolean }) {
@@ -62,6 +63,7 @@ export function RosterCard({ players, phone, onPlayer }: { players: readonly ChT
               <span className="m">
                 {[phone ? shortYear(p.classYear) : p.classYear, p.rounds ? `${p.rounds} rounds` : 'no rounds yet'].filter(Boolean).join(' · ')}
                 {p.early && p.rounds ? ' · early' : ''}
+                {p.total != null && sgIsEstimate(p.sgMix) ? ' · estimated' : ''}
                 {p.heldBack ? ` · ${p.heldBack} held back` : ''}
               </span>
             </span>
@@ -125,7 +127,7 @@ export function WorkingCard({ working, proposed, failed, onRetry }: { working: r
             <div className="wk" key={w.id}>
               <Ring v={w.progress ? ringValue(w.progress) : 0} />
               <div>
-                <b>
+                <b className="ch-num">
                   {w.who.split(' ')[0]} · {w.title}
                 </b>
                 {w.line && <span>{w.line}</span>}
@@ -137,7 +139,7 @@ export function WorkingCard({ working, proposed, failed, onRetry }: { working: r
             <div className="wk" key={read.id}>
               <Ring v={0} proposed />
               <div>
-                <b>
+                <b className="ch-num">
                   {player.first} · {read.title}
                 </b>
                 <span>

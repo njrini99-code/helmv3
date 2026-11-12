@@ -826,7 +826,7 @@ main[data-canopy] .ch-hs-r.is-ahead,
   background: linear-gradient(90deg, var(--ch-green-500), var(--ch-green-fill-600));
 }
 .ch-hs-r.is-behind .ch-hs-tr__gap {
-  background: linear-gradient(90deg, #d9a441, #b8862b);
+  background: var(--ch-chart-loss-fill);
 }
 [data-ui='clubhouse'] .ch-hs-tr__tour {
   z-index: 1;
@@ -867,7 +867,8 @@ main[data-canopy] .ch-hs-r:not(:first-child) .ch-hs-r__f dt {
    figure, the bar under them and the "Because" line, 105px each. */
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   main[data-canopy] .ch-hs-sk__hero.is-board {
-    min-height: 237px;
+    /* 244 with the four figures beside the sentence (their column is a line taller than the sentence's; WebKit 1440, 2026-11-11). */
+    min-height: 244px;
     padding: 32px;
     box-sizing: border-box;
     border-radius: var(--ch-radius-xl);
@@ -912,5 +913,97 @@ main[data-canopy] .ch-hs-r:not(:first-child) .ch-hs-r__f dt {
   }
   .ch-hs-sk__ldh.is-why {
     height: 36px;
+  }
+}
+
+/* Desktop (fix wave 2026-11-11): the page was the phone's column at 1110px. The four parts of the round sit as figures in
+   the half of the green board the sentence leaves empty, and Where strokes go keeps a reading width with the strokes
+   gained total, the figure its four rows add up to, beside it. The phone draws neither: its board is the sentence, and
+   the pair's wrapper draws nothing. */
+.ch-hs-hero__figs {
+  /* The figures sit on the green board, so the gain and loss pair is the on-green one here (CONS-20). */
+  --ch-chart-gain: var(--ch-feature-gain);
+  --ch-chart-loss: var(--ch-feature-loss);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.ch-hs-hero__figs > p {
+  font: var(--ch-type-12-medium);
+  color: var(--ch-text-tertiary);
+}
+.ch-hs-hero__figs dl {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px 24px;
+  margin: 0;
+}
+.ch-hs-hero__figs dl > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.ch-hs-hero__figs dt {
+  font: var(--ch-type-13-medium);
+  color: var(--ch-text-secondary);
+}
+.ch-hs-hero__figs dd {
+  margin: 0;
+  font: var(--ch-type-22-strong);
+  line-height: var(--ch-lead-tight);
+  letter-spacing: var(--ch-track-22);
+  color: var(--ch-text-primary);
+}
+.ch-hs-hero__figs .is-loss dd {
+  color: var(--ch-chart-loss);
+}
+.ch-hs-hero__figs .is-gain dd {
+  color: var(--ch-chart-gain);
+}
+.ch-hs-hero__figs .is-none dd {
+  color: var(--ch-text-tertiary);
+}
+.ch-hs-pair {
+  display: contents;
+}
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
+  @container chhl (min-width: 901px) {
+    /* Beside the sentence, under the board's head line, split off by the board's own hairline. */
+    main[data-canopy] .ch-hs-hero__figs {
+      grid-column: 2;
+      grid-row: 2 / -1;
+      padding-left: 32px;
+      box-shadow: inset var(--ch-hairline-w) 0 0 var(--ch-board-rule);
+    }
+    main[data-canopy] .ch-hs-hero__figs dl {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    /* Loading holds the ladder at the width it lands at. */
+    main[data-canopy] .ch-hs-sk__g:has(> .is-ld) {
+      max-width: 560px;
+    }
+    main[data-canopy] .ch-hs-pair {
+      display: grid;
+      grid-template-columns: minmax(0, 560px) minmax(0, 1fr);
+      column-gap: 48px;
+      align-items: start;
+    }
+    /* Both heads set their note under the name, so the two rules sit on one line across the pair. */
+    main[data-canopy] .ch-hs-pair .ch-hs-g__h {
+      flex-direction: column;
+      align-items: flex-start;
+      flex-wrap: nowrap;
+    }
+    /* In the narrower column a stat stacks its name, its track and its figures, as it does on a narrow canvas. */
+    main[data-canopy] .ch-hs-pair .ch-hs-r {
+      grid-template-columns: minmax(0, 1fr);
+      row-gap: 12px;
+    }
+    main[data-canopy] .ch-hs-pair .ch-hs-r__f {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 6px 16px;
+    }
   }
 }

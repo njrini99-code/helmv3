@@ -1,9 +1,7 @@
 'use client';
 
 import { SquarePen } from 'lucide-react';
-import { Icon } from '../../ui/Icon';
 import { Button } from '../../ui/Button';
-import { EmptyState } from '../../ui/States';
 
 /**
  * CH-7309 (D-71): no conversation and no announcement yet, so the whole page
@@ -11,10 +9,9 @@ import { EmptyState } from '../../ui/States';
  * in the list, the rail's compact empty (CH-7301) and the thread's (CH-7305)
  * take over.
  */
-export function MessagesFirstRun({ coach, onNew, redesign = false, teamName, onTeam }: { coach: boolean; onNew: () => void; /** golf_messages_redesign_v1: one still card (S-MSG.empty). */ redesign?: boolean; teamName?: string; onTeam?: () => void }) {
-  if (redesign)
-    return (
-      <section className="ch-msv-empty" data-ch-code="CH-7309">
+export function MessagesFirstRun({ onNew, teamName, onTeam }: { coach: boolean; onNew: () => void; teamName?: string; onTeam?: () => void }) {
+  return (
+      <section className="ch-msv-empty ch-msd-empty" data-ch-code="CH-7309">
         <svg className="ch-msv-empty__illo" viewBox="0 0 168 120" aria-hidden="true">
           <ellipse cx="84" cy="111" rx="62" ry="5" fill="var(--ch-well-bg-flat)" />
           <rect x="16" y="16" width="92" height="56" rx="22" fill="var(--ch-card-bg)" stroke="var(--ch-border-hairline)" />
@@ -23,37 +20,22 @@ export function MessagesFirstRun({ coach, onNew, redesign = false, teamName, onT
           <rect x="32" y="48" width="32" height="7" rx="3.5" fill="var(--ch-well-bg-flat)" />
           <rect x="64" y="46" width="88" height="50" rx="21" fill="var(--ch-bubble-mine-fill)" />
           <path d="M142 90c2 7 5 11 10 13-8 1-14-2-19-7z" fill="var(--ch-bubble-mine-fill)" />
-          <path d="M98 60v22" stroke="#fdfcf8" strokeWidth="2" strokeLinecap="round" />
-          <path d="M99 60l13 5-13 5z" fill="#d6c08f" />
-          <circle cx="122" cy="80" r="3.2" fill="#fdfcf8" />
+          <path d="M98 60v22" stroke="var(--ch-card-bg)" strokeWidth="2" strokeLinecap="round" />
+          <path d="M99 60l13 5-13 5z" fill="var(--ch-champagne-dot)" />
+          <circle cx="122" cy="80" r="3.2" fill="var(--ch-card-bg)" />
         </svg>
         <h2>No conversations yet</h2>
         <p>{`Message a player, a coach or the whole team. Everything stays inside ${teamName ?? 'your team'}.`}</p>
-        <button type="button" className="ch-msv-empty__cta" onClick={onNew}>
-          <Icon icon={SquarePen} size={18} />
+        <Button variant="primary" size="lg" leftIcon={SquarePen} onClick={onNew}>
           Start a conversation
-        </button>
+        </Button>
         {onTeam && (
-          <button type="button" className="ch-msv-empty__ghost" onClick={onTeam}>
+          <Button variant="ghost" onClick={onTeam}>
             Message the team
-          </button>
+          </Button>
         )}
       </section>
     );
-  return (
-    <EmptyState
-      size="page"
-      code="CH-7309"
-      shape="people"
-      title="No conversations yet"
-      body={coach ? 'Start a thread with the whole team or message a player directly.' : 'Message a coach or a teammate. Team announcements show up here too.'}
-      action={
-        <Button variant="primary" leftIcon={SquarePen} onClick={onNew}>
-          New message
-        </Button>
-      }
-    />
-  );
 }
 
 /** Nothing to list at all (the list read, not loading or failed). */

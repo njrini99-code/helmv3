@@ -37,9 +37,34 @@ export type ChatErrorRecovery =
   /** Nothing the coach presses will change the outcome (a daily limit, the wrong role). */
   | 'none';
 
+/** Why it failed, as the closed set the screens pick a notice by. The same list as `ChatErrorKind` in `engine/protocol.ts`. */
+export type ChatFailureKind = 'offline' | 'lost' | 'model' | 'declined' | 'truncated' | 'budget' | 'off' | 'rate' | 'signed_out' | 'gone' | 'card_retry' | 'card_gone';
+const FAILURE_KINDS: readonly string[] = ['offline', 'lost', 'model', 'declined', 'truncated', 'budget', 'off', 'rate', 'signed_out', 'gone', 'card_retry', 'card_gone'];
+
 export interface ChatErrorNotice {
   message: string;
   recovery: ChatErrorRecovery;
+}
+
+/**
+ * The kind of a failure, beside `describeChatError`'s sentence. The server names it (on a stream's `error` event, or as `kind` in a refused request's body);
+ * where it does not (an older deployment, a proxy's page) the status decides. A failure with neither is a dropped
+ * connection, which the hook has already named `offline`, `lost` or `card_retry`.
+ */
+export function chatErrorKind(error: unknown): ChatFailureKind {
+  const { kind, statusCode, responseBody } = (error ?? {}) as { kind?: unknown; statusCode?: unknown; responseBody?: unknown };
+  if (typeof kind === 'string' && FAILURE_KINDS.includes(kind)) return kind as ChatFailureKind;
+  if (typeof statusCode === 'number') {
+    const body = parseRefusalBody(responseBody);
+    if (body?.kind && FAILURE_KINDS.includes(body.kind)) return body.kind as ChatFailureKind;
+    if (statusCode === 401) return 'signed_out';
+    if (statusCode === 403) return 'off';
+    if (statusCode === 404) return body?.error === CONVERSATION_NOT_FOUND ? 'gone' : 'off';
+    if (statusCode === 429) return body?.reason ? 'budget' : 'rate';
+    return 'model';
+  }
+  const text = typeof (error as { message?: unknown } | null)?.message === 'string' ? (error as { message: string }).message.trim() : '';
+  return !text || NETWORK_FAILURE.test(text) ? 'lost' : 'model';
 }
 
 export const CHAT_ERROR_RATE_LIMIT = "You're asking quickly. Wait a moment, then try again.";
@@ -57,15 +82,16 @@ const CONVERSATION_NOT_FOUND = 'Conversation not found';
 const COACHHELM_OFF = 'CoachHelm is off for your team.';
 
 /** The refusal's JSON body, when it is one. Anything else is null, never thrown. */
-function parseRefusalBody(responseBody: unknown): { error?: string; reason?: string } | null {
+function parseRefusalBody(responseBody: unknown): { error?: string; reason?: string; kind?: string } | null {
   if (typeof responseBody !== 'string') return null;
   try {
     const parsed: unknown = JSON.parse(responseBody);
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
-    const { error, reason } = parsed as Record<string, unknown>;
+    const { error, reason, kind } = parsed as Record<string, unknown>;
     return {
       error: typeof error === 'string' ? error : undefined,
       reason: typeof reason === 'string' ? reason : undefined,
+      kind: typeof kind === 'string' ? kind : undefined,
     };
   } catch {
     return null;

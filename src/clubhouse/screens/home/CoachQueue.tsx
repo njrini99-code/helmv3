@@ -64,7 +64,7 @@ export function CoachQueue({ queue, covered = false, phone = false }: { queue: C
                 ·
               </span>
             )}
-            <Link href={p.href} className={`${base}__a ch-num`} title={p.title}>
+            <Link prefetch={false} href={p.href} className={`${base}__a ch-num`} title={p.title}>
               {p.text}
             </Link>
           </Fragment>

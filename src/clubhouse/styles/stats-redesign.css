@@ -40,7 +40,7 @@
 /* Sticky window switch: page colour behind it, no blur, no hairline. */
 .ch-shs .ch-shs-ctl {
   position: sticky;
-  top: var(--ch-phone-topbar-h, 0px);
+  top: calc(var(--ch-phone-topbar-h, 0px) + env(safe-area-inset-top));
   z-index: var(--ch-z-raised);
   padding: 2px var(--ch-page-x-phone) 8px;
   background: var(--ch-shs-s-bg);
@@ -50,24 +50,30 @@
   align-items: center;
   gap: 8px;
 }
+/* One row answers "which rounds": 5, 10, 20, Season, Quals, then All (WindowSwitch). Every choice is at least its own label and the
+   44pt the shared control asks for, and they share what is left equally, so all six and the filter fit a 375pt phone; a phone
+   narrower than that scrolls the well rather than clip a word. */
 .ch-shs-ctl .ch-seg {
   flex: 1;
   min-width: 0;
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1.3fr 1.6fr;
-  gap: 4px;
+  grid-auto-flow: column;
+  grid-auto-columns: auto;
+  gap: 2px;
   padding: 4px;
   border-radius: var(--ch-radius-lg);
   min-height: calc(40 * var(--ch-type-k));
-}
-.ch-shs-ctl.is-custom .ch-seg {
-  grid-template-columns: 1fr 1fr 1fr 1.3fr 1.6fr 1.3fr;
   overflow-x: auto;
   scrollbar-width: none;
+}
+.ch-shs-ctl .ch-seg::-webkit-scrollbar {
+  display: none;
+}
+.ch-shs-ctl .ch-seg[data-more] {
   -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent);
   mask-image: linear-gradient(90deg, #000 85%, transparent);
 }
-.ch-shs-ctl .ch-seg__b {
+.ch-shs .ch-shs-ctl .ch-seg__b {
   position: relative;
   min-height: calc(32 * var(--ch-type-k));
   padding: 0 2px;
@@ -125,7 +131,7 @@
 .ch-shs-sech {
   margin: 16px 2px 0;
   font: var(--ch-type-22-strong);
-  font-variation-settings: 'wdth' 96;
+  font-variation-settings: 'wdth' 92;
   letter-spacing: -0.02em;
   color: var(--ch-shs-s-ink);
 }
@@ -209,20 +215,22 @@
 .ch-shs.is-big .ch-shs-ah > .ch-shs-dlink {
   margin-left: auto;
 }
+/* Text Size Larger and above: every choice stays on screen with nothing to scroll to. The switch takes the whole row and the choices
+   share it (each at least its own label), and the filter button, which no longer fits beside it, drops to a row of its own below,
+   at the right edge where it sat. Until the shared two-row Segmented lands this is the whole answer on a 375pt phone; a 320pt
+   phone at the largest size still scrolls the well rather than clip a word. */
+.ch-shs.is-big .ch-shs-ctl__row {
+  flex-wrap: wrap;
+}
 .ch-shs.is-big .ch-shs-ctl .ch-seg {
-  grid-template-columns: none;
-  grid-auto-flow: column;
-  grid-auto-columns: max-content;
-  overflow-x: auto;
-  scrollbar-width: none;
-  -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent);
-  mask-image: linear-gradient(90deg, #000 85%, transparent);
+  flex: 1 1 100%;
+  grid-auto-columns: minmax(max-content, 1fr);
 }
 .ch-shs.is-big .ch-shs-ctl .ch-seg__b {
-  padding: 0 12px;
+  padding: 0 6px;
 }
 
-/* A card that opens a detail: the pressed wash; data-ch-press-scale carries the 0.97 (lib/press.ts). */
+/* A card that opens a detail: the pressed wash (data-ch-pressable, lib/press.ts). The card never scales. */
 .ch-shs-sum {
   cursor: pointer;
   transition: box-shadow var(--ch-dur-release) var(--ch-ease);
@@ -302,7 +310,7 @@
 }
 .ch-shs-fig {
   font: var(--ch-type-figure-40-500);
-  font-variation-settings: 'wdth' 96;
+  font-variation-settings: 'wdth' 92;
   letter-spacing: -0.038em;
 
 }
@@ -388,6 +396,8 @@
   background: var(--ch-chart-loss-tint);
   color: var(--ch-chart-loss);
 }
+.ch-shs-feat .ch-shs-pill.is-gain { background: color-mix(in oklab, var(--ch-chart-gain) 12%, transparent); color: var(--ch-chart-gain); }
+.ch-shs-feat .ch-shs-pill.is-loss { background: color-mix(in oklab, var(--ch-chart-loss) 12%, transparent); color: var(--ch-chart-loss); }
 .ch-shs-pill.is-flat {
   background: var(--ch-shs-s-flat-tint);
   color: var(--ch-shs-s-ink-2);
@@ -415,6 +425,16 @@
   display: grid;
   gap: 8px;
   margin-top: 12px;
+}
+.ch-shs-cmp-h {
+  font: var(--ch-type-13-medium);
+  color: var(--ch-shs-s-ink-2);
+}
+.ch-shs-also {
+  margin: 12px 0 0;
+  font: var(--ch-type-13);
+  color: var(--ch-shs-s-ink-2);
+  text-wrap: pretty;
 }
 .ch-shs-cmp-row {
   display: grid;
@@ -515,7 +535,7 @@
   color: var(--ch-shs-s-ink-2); letter-spacing: var(--ch-track-15); }
 .ch-shs-gc .v {
   font: var(--ch-type-22-strong);
-  font-variation-settings: 'wdth' 96;
+  font-variation-settings: 'wdth' 92;
   letter-spacing: -0.02em;
 
 }
@@ -552,7 +572,7 @@
 }
 .ch-shs-bigv {
   font: var(--ch-type-34-strong);
-  font-variation-settings: 'wdth' 96;
+  font-variation-settings: 'wdth' 92;
   letter-spacing: -0.038em;
 
 }
@@ -833,11 +853,14 @@
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   font: var(--ch-type-15-medium); letter-spacing: var(--ch-track-15); }
+/* A third of a phone's card is narrower than "Now 72 · target 69": the two lines share the words, so none ends on a
+   lone "69" or "ft". */
 .ch-shs-rings small {
   display: block;
   margin-top: 2px;
   font: var(--ch-type-13);
   color: var(--ch-shs-s-ink-2);
+  text-wrap: balance;
 }
 .ch-shs-goaltext {
   margin: 0;
@@ -916,6 +939,22 @@
   align-self: center;
   margin-top: 6px;
 }
+/* The filter's empty state (FilterEmpty) inside the sheet's card: the sheet's card is the one card. The state's own
+   card (ui.css .ch-es--page) and the section card around a player's (.ch-st-card) stand down, and the sheet card's
+   padding is the inset, so Clear filters sits inside it (design review 10 Nov 2026: a card in a card, its button wider
+   than the inner one). */
+.ch-shs-card.ch-shs-empty > .ch-es--page,
+.ch-shs-card.ch-shs-empty > .ch-st-card {
+  width: 100%;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+.ch-shs-card.ch-shs-empty > .ch-es--page > .ch-es__copy,
+.ch-shs-card.ch-shs-empty > .ch-st-card > .ch-es > .ch-es__copy {
+  padding: 0;
+}
 .ch-shs-notice {
   display: grid;
   grid-template-columns: 16px minmax(0, 1fr);
@@ -971,8 +1010,37 @@
   gap: 12px;
   animation: ch-shs-skelin var(--ch-dur-base) var(--ch-ease) backwards;
 }
-.ch-shs-skel--f {
-  background: var(--ch-feature-track);
+/* A coach's view of a player while loading: the head's block at the loaded head's geometry (stats.css .ch-spm-head: 4px
+   in, the 40px avatar centred beside the name's own line and the facts' two lines at a 390pt phone). */
+.ch-shs-skel-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px var(--ch-page-x-phone) 0;
+}
+.ch-shs-skel-head__id {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.ch-shs-skel--av {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+}
+.ch-shs-skel-head__facts {
+  display: block;
+  min-height: 2lh;
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
+}
+.ch-shs-skel-head__facts > .ch-shs-skel {
+  width: 70%;
+  height: 12px;
+  margin-top: 2px;
 }
 .ch-shs-skel--hero {
   width: 42%;
@@ -1045,7 +1113,7 @@
 .ch-shs-d-hero__fig {
   display: block;
   font: var(--ch-type-figure-40-500);
-  font-variation-settings: 'wdth' 96;
+  font-variation-settings: 'wdth' 92;
   letter-spacing: -0.038em;
 
 }
@@ -1116,7 +1184,7 @@
 .ch-shs-m4 .v {
   margin-top: 4px;
   font: var(--ch-type-22-strong);
-  font-variation-settings: 'wdth' 96;
+  font-variation-settings: 'wdth' 92;
   letter-spacing: -0.02em;
 
 }
@@ -1128,7 +1196,7 @@
 /* The trend ribbon. */
 .ch-shs-rib {
   position: relative;
-  padding-right: 40px;
+  padding-right: calc(40 * var(--ch-type-k));
 }
 .ch-shs-rib__in {
   position: relative;
@@ -1175,7 +1243,7 @@
 }
 .ch-shs-rib .rref {
   position: absolute;
-  right: -42px;
+  right: calc(-42 * var(--ch-type-k));
   padding: 1px 2px;
   transform: translateY(-50%);
   background: var(--ch-shs-s-card);
@@ -1544,6 +1612,23 @@ li + li > .ch-shs-rrow::before {
   border-radius: var(--ch-radius-mark);
   background: var(--ch-shs-s-ink);
 }
+/* The mean's label keeps a halo of the card under it, so a line crossing it can't strike through the words. */
+.ch-shs-mean-label {
+  paint-order: stroke;
+  stroke: var(--ch-shs-s-card);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+}
+.ch-shs-early-key {
+  margin-top: 6px;
+}
+.ch-shs-early-key i {
+  width: 16px;
+  height: 8px;
+  border-radius: var(--ch-radius-xs);
+  background: none;
+  box-shadow: var(--ch-stats-redesign-x5);
+}
 .ch-shs-skey {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(calc(96 * var(--ch-type-k)), 1fr));
@@ -1611,14 +1696,11 @@ li + li > .ch-shs-rrow::before {
   stroke-width: 1.5;
 }
 
-/* The filter is its icon here; the count is its active state. Its chips stay in the sheet. */
+/* The filter is its icon here; the count is its active state. Its chips stay in the sheet. Its own two boxes are not
+   drawn: what they hold lies in the switch's row (below). */
 .ch-shs-ctl .ch-sf,
 .ch-shs-ctl .ch-sf__bar {
-  flex: none;
-  display: block;
-  margin: 0;
-  padding: 0;
-  border: 0;
+  display: contents;
 }
 .ch-shs-ctl .ch-sf__open > span:not(.ch-sf__n) {
   position: absolute;
@@ -1638,6 +1720,35 @@ li + li > .ch-shs-rrow::before {
 }
 .ch-shs-ctl .ch-sf__chips {
   display: none;
+}
+/* A filter is on: its count line and Clear take a line of their own under the switch. They sat inside the filter's box
+   beside the switch, so the count ("0 rounds: qualifying rounds, at Pine Needles, this season") took the row, squeezed
+   the switch to a sliver and ran off the edge (design review 10 Nov 2026, stats__nomatch at 390). The filter's two
+   boxes dissolve into the row: the switch keeps the row less the filter's key (a pixel spare, so rounding never drops
+   the key), the count wraps under them and Clear ends its line. The 9-hole note follows on a line of its own. */
+.ch-shs-ctl > .ch-shs-ctl__row {
+  flex-wrap: wrap;
+}
+.ch-shs-ctl .ch-seg {
+  flex: 1 1 calc(100% - 40 * var(--ch-type-k) - 9px);
+}
+.ch-shs-ctl .ch-sf__count {
+  order: 1;
+  flex: 1 1 0;
+  min-width: 0;
+}
+.ch-shs-ctl .ch-sf__clear {
+  order: 2;
+  flex: none;
+}
+.ch-shs-ctl .ch-sf__note {
+  order: 4;
+  flex: 1 1 100%;
+}
+/* At the larger Text Sizes the switch has the first line to itself (above), and the filter's key ends the second. */
+.ch-shs.is-big .ch-shs-ctl .ch-sf__open {
+  order: 3;
+  margin-left: auto;
 }
 
 /* The second miss on the tee strip, in its own grey (04 odd value 21). */
@@ -1661,7 +1772,11 @@ li + li > .ch-shs-rrow::before {
   align-items: center;
   justify-content: center;
   font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
   color: var(--ch-text-secondary);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 /* A figure drawn against its reference, under the hero's caption. */
@@ -1797,6 +1912,8 @@ p.ch-shs-mini-cap {
   margin: 0;
 }
 .ch-shs-m3 > div {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
 }
 .ch-shs-m3 dt {
@@ -1815,6 +1932,10 @@ p.ch-shs-mini-cap {
   margin-top: 2px;
   font: var(--ch-type-13);
   color: var(--ch-shs-s-ink-2);
+}
+/* The change chips share one line across the row, however many lines each figure's reference takes. */
+.ch-shs-m3 .d {
+  margin-top: auto;
 }
 .ch-shs-m3 .ch-shs-pill {
   margin-top: 8px;
@@ -1847,7 +1968,7 @@ p.ch-shs-mini-cap {
 .ch-shs-prow {
   position: relative;
   display: grid;
-  grid-template-columns: calc(20 * var(--ch-type-k)) calc(104 * var(--ch-type-k)) minmax(0, 1fr) calc(44 * var(--ch-type-k));
+  grid-template-columns: calc(20 * var(--ch-type-k)) minmax(0, 1.2fr) minmax(64px, 1fr) calc(44 * var(--ch-type-k));
   align-items: center;
   gap: 8px;
   min-height: 52px;
@@ -1879,34 +2000,7 @@ p.ch-shs-mini-cap {
 .ch-shs-sumfoot.is-pad {
   margin: 8px 16px 12px;
 }
-.ch-shs-skel-seg--team {
-  display: block;
-}
 
-/* Grow once (07 M-STATS-12 to 15): a card waits at zero until a quarter of it is in view. A card with no marker class is at rest, so no script draws it whole. */
-.ch-shs-card.is-waiting:not(.is-seen) [data-ch-grow] {
-  transform: scaleX(0);
-}
-.ch-shs-card.is-waiting:not(.is-seen) [data-ch-grow-y] {
-  transform: scaleY(0);
-}
-.ch-shs-card.is-waiting:not(.is-seen) .ch-shs-rg .rf {
-  stroke-dashoffset: var(--ch-ring-c) !important;
-}
-.ch-shs-card.is-waiting:not(.is-seen) :is(.ch-shs-tour, .ch-shs-rib .dot, .ch-shs-db .track) {
-  opacity: 0;
-}
-.ch-shs-card.is-waiting [data-ch-grow],
-.ch-shs-card.is-waiting [data-ch-grow-y] {
-  transition: transform var(--ch-dur-release) var(--ch-ease);
-}
-.ch-shs-card.is-waiting [data-ch-grow-y] {
-  transform-box: fill-box;
-  transform-origin: 50% 100%;
-}
-.ch-shs-card.is-waiting .ch-shs-rg .rf {
-  transition: stroke-dashoffset var(--ch-dur-release) var(--ch-ease);
-}
 .ch-shs-card.is-waiting :is(.ch-shs-tour, .ch-shs-rib .dot, .ch-shs-db .track) {
   transition: opacity var(--ch-dur-release) var(--ch-ease);
 }
@@ -1941,7 +2035,7 @@ p.ch-shs-mini-cap {
   right: 0;
   top: 0;
   height: 14px;
-  background: linear-gradient(rgb(0 0 0 / 0.1), transparent);
+  background: var(--ch-scroll-edge-down);
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--ch-dur-quick) linear;
@@ -1978,12 +2072,6 @@ p.ch-shs-mini-cap {
 .ch-shs-skel-sec {
   display: contents;
 }
-.ch-shs-skel-seg {
-  flex: 1;
-  display: block;
-  min-height: calc(40 * var(--ch-type-k));
-  border-radius: var(--ch-radius-lg);
-}
 .ch-shs-skel-f {
   display: block;
   flex: none;
@@ -2011,8 +2099,8 @@ p.ch-shs-mini-cap {
 }
 .ch-shs-hero-top {
   position: relative;
-  margin: 0 calc(-1 * var(--ch-page-x-phone)) 12px;
-  padding: calc(var(--ch-phone-topbar-h, 48px) + 6px) var(--ch-page-x-phone) 32px;
+  margin: 0;
+  padding: var(--ch-space-3) var(--ch-page-x-phone) var(--ch-space-8);
   background: var(--ch-frame);
   color: var(--ch-on-green-ink);
 }
@@ -2026,16 +2114,39 @@ p.ch-shs-mini-cap {
   border-radius: var(--ch-radius-xl) var(--ch-radius-xl) 0 0;
   background: var(--ch-grouped-bg);
 }
-.ch-shs-hero-top > span {
-  display: block;
-  font: var(--ch-type-15);
-  color: var(--ch-feature-ink-2); letter-spacing: var(--ch-track-15); }
-.ch-shs-hero-top > h1 {
-  margin: 4px 0 0;
+/* S-HOMEGAME (06): the top is one row, the player's coin and the greeting over what is next. */
+.ch-shs-who {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.ch-shs-who .ch-avatar {
+  flex: none;
+}
+.ch-shs-who__t {
+  min-width: 0;
+}
+.ch-shs-who h1 {
+  margin: 0;
   font: var(--ch-type-22-strong);
-  font-variation-settings: 'wdth' 96;
-  letter-spacing: -0.01em;
+  font-variation-settings: 'wdth' 92;
+  letter-spacing: -0.02em;
   color: var(--ch-on-green-ink);
+  text-shadow: none;
+  overflow-wrap: anywhere;
+}
+.ch-shs-who__line .ch-badge {
+  margin-inline-start: 8px;
+  vertical-align: 1px;
+}
+.ch-shs-who__line {
+  display: block;
+  margin-top: 2px;
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-feature-ink-2);
+  text-decoration: none;
+  overflow-wrap: anywhere;
 }
 
 /* Your game (S-HOMEGAME). */
@@ -2131,7 +2242,7 @@ p.ch-shs-mini-cap {
 .ch-shs-leg__v {
   display: block;
   font: var(--ch-type-28-strong);
-  font-variation-settings: 'wdth' 96;
+  font-variation-settings: 'wdth' 92;
   letter-spacing: -0.03em;
 
 }
@@ -2266,38 +2377,333 @@ p.ch-shs-mini-cap {
   padding-inline-start: 12px;
 }
 
-/* Your game's one line over My stats' window (dashboard cuts, 6): the figures' home is My stats, so the line links there. */
-.ch-shs-yg__sum {
-  position: relative;
-  display: flex;
+/* The legs keep one grid so every spark starts at the same x (Approach's bar no longer shifts its own). */
+.ch-shs-home .ch-shs-leg__m {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+.ch-shs-bench-k {
   flex-wrap: wrap;
+  gap: 2px 12px;
+}
+/* STATS-1: a coach's header on a player's Stats sits on the page edge. */
+.ch-shs .ch-spm-head { padding-inline: var(--ch-page-x-phone); }
+/* STATS-10: three across, as drawn, on every current iPhone (the card's inside is 311pt on a 375pt phone); two across only when
+   a third of it is too narrow for "Scrambling" (256pt inside, a 320pt phone), where the three-column rules step aside. */
+.ch-shs-card { container-type: inline-size; }
+@container (max-width: 290px) {
+  .ch-shs-glance { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ch-shs-glance > * { min-width: 0; overflow-wrap: anywhere; }
+  .ch-shs-gc::before,
+  .ch-shs-gc::after { display: none; }
+}
+/* The scoring mix on the redesigned page wears the lane's scoring colours (tokens.css): par the quiet ivory and bogey the scorecard's
+   tan, which is a golf colour and not the loss amber, so the key's bogey swatch is no longer a grey that reads as "no data". */
+.ch-shs .ch-sv-mix .is-par,
+.ch-shs-screen .ch-sv-mix .is-par {
+  --ch-sv-mix-fill: var(--ch-chart-par);
+}
+.ch-shs .ch-sv-mix .is-bogey,
+.ch-shs-screen .ch-sv-mix .is-bogey {
+  --ch-sv-mix-fill: var(--ch-chart-bogey);
+  --ch-sv-mix-ink: var(--ch-ink-950);
+}
+/* STATS-14: Left and Right read apart without colour. */
+.ch-shs-stack > * + * { box-shadow: inset 2px 0 0 var(--ch-card-bg); }
+
+/* A summary card's one key for VoiceOver and the keyboard: nothing to see until focused, and then the card's ring (STATS-8). */
+.ch-shs-sum { position: relative; }
+.ch-shs-sum__key { position: absolute; inset: 0; z-index: 0; padding: 0; border: 0; border-radius: inherit; background: none; pointer-events: none; }
+.ch-shs-sum__key:focus-visible { outline: 2px solid var(--ch-border-focus); outline-offset: 2px; }
+
+/*
+ * Desktop My stats (stats-home, "Desktop": the same tokens and card language on a flat canvas; a bento of area tiles, each with
+ * one visual, and a tap opens that area's drill). The phone's own cards, two across, with the chosen card's drill standing beside
+ * them, so a coach reads the summary and its detail in one look. Nothing here restyles a card: only where each one sits.
+ */
+.ch-st--shs {
+  gap: var(--ch-space-5);
+}
+/* Team stats' head: Export rests at the row's end, on the title's line. */
+.ch-shs-dhead__act .ch-st-head__act {
+  margin: 0;
+}
+.ch-shs-dhead {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ch-space-4);
+}
+.ch-shs-dhead__row {
+  display: flex;
   align-items: center;
-  gap: 4px 16px;
-  min-height: 44px;
-  padding: 8px 16px;
+  gap: var(--ch-space-4);
+  min-width: 0;
+}
+.ch-shs-dhead__id {
+  flex: 1;
+  min-width: 0;
+}
+.ch-shs-dhead__id h1 {
+  margin: 0;
+}
+.ch-shs-dhead__id p {
+  margin: 4px 0 0;
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-ink-600);
+}
+.ch-shs-dhead__act {
+  display: flex;
+  gap: var(--ch-space-2);
+}
+.ch-shs--desk {
+  background: transparent;
+  min-width: 0;
+}
+/* The desk's own control row: the shared switch at its own size with its whole labels, the filter beside it. Nothing is stuck. */
+.ch-shs-dctl {
+  padding: 0 0 var(--ch-space-4);
+}
+.ch-shs-desk {
+  /* Where a column rests under the glass top bar. */
+  --ch-shs-pane-rest: calc(var(--ch-topbar-h) + var(--ch-space-4));
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 420px);
+  gap: var(--ch-space-6);
+  align-items: start;
+}
+.ch-shs-desk.is-alone {
+  grid-template-columns: minmax(0, 1fr);
+}
+.ch-shs-desk__sum {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--ch-space-4);
+  align-items: start;
+  min-width: 0;
+  /* When the drill beside them is the longer column, the cards go down with the page until their last one is in view and hold
+     there, so the pane never ends beside blank canvas. Their height is measured by DeskPane.tsx; before it runs nothing holds. */
+  position: sticky;
+  top: min(var(--ch-shs-pane-rest), calc(var(--ch-shs-port-h, 100dvh) - var(--ch-shs-sum-h, 100000px) - var(--ch-space-4)));
+}
+/* Section names, notes, the feature card and anything that is not a card keep the full width; cards pair up under them. */
+.ch-shs-desk__sum > :not(.ch-shs-card),
+.ch-shs-desk__sum > .ch-shs-feature,
+.ch-shs-desk__sum > .ch-shs-empty,
+.ch-shs-desk__sum > .ch-shs-failed {
+  grid-column: 1 / -1;
+}
+/*
+ * A player's cards leave no hole. Strokes gained leads its section across both columns, as Scoring average leads Overview. Under
+ * it the four parts are two columns on shared rows (the long game, then the short game), and Rounds and Development are one card
+ * each, side by side. A row's two cards are one height, so every edge in the bento lines up; the columns are only named in the
+ * markup (`display: contents`), and each child takes its column's track.
+ */
+.ch-shs-desk__sum > .ch-shs-sum[data-go='sg'],
+.ch-shs-desk__sum > [data-ch-wide] {
+  grid-column: 1 / -1;
+}
+.ch-shs--desk:not(.ch-shs--desk-team) .ch-shs-desk__sum {
+  align-items: stretch;
+}
+.ch-shs-duo {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-flow: row dense;
+  gap: var(--ch-space-4);
+  align-items: stretch;
+  min-width: 0;
+}
+.ch-shs-duo__col {
+  display: contents;
+}
+.ch-shs-duo__col:first-child > * {
+  grid-column: 1;
+}
+.ch-shs-duo__col:last-child > * {
+  grid-column: 2;
+}
+.ch-shs-duo .ch-shs-sech {
+  margin-top: var(--ch-space-2);
+}
+/* In a shared row the shorter card's spare height goes above its closing figures, so the two cards' strips rest on one line. */
+.ch-shs-duo .ch-shs-sum {
+  display: flex;
+  flex-direction: column;
+}
+.ch-shs-duo .ch-shs-sum > :has(+ .ch-shs-strip) {
+  margin-bottom: 12px;
+}
+.ch-shs-duo .ch-shs-sum > .ch-shs-strip {
+  margin-top: auto;
+}
+.ch-shs-duo .ch-btn {
+  justify-self: start;
+  align-self: start;
+}
+/* A button on the page keeps its own width on a desk; only the phone stretches it. */
+.ch-shs-desk__sum > .ch-btn {
+  justify-self: start;
+}
+.ch-shs-desk__sum > .ch-shs-sech {
+  margin-top: var(--ch-space-2);
+}
+.ch-shs-desk__sum > .ch-shs-sech:first-child {
+  margin-top: 0;
+}
+/* The pane's column runs the whole row, so the pane has the row to travel in; the lead is its place in it (DeskPane.tsx). */
+.ch-shs-desk__rail {
+  display: flex;
+  flex-direction: column;
+  align-self: stretch;
+  min-width: 0;
+}
+.ch-shs-desk__lead {
+  flex: none;
+  height: 0;
+}
+/*
+ * The pane is as tall as what it holds and never scrolls inside itself, so it always ends on a whole card. The page scrolls under
+ * the glass top bar, so a pane shorter than the window rests below it. A taller one goes down with the page until its last card
+ * is in view and holds there; on the way back up it holds once its title is under the bar again (`data-dir`, set when the scroll
+ * turns round). The two heights are measured by DeskPane.tsx; before it runs the pane rests under the bar.
+ */
+.ch-shs-desk__det {
+  position: sticky;
+  top: min(var(--ch-shs-pane-rest), calc(var(--ch-shs-port-h, 100dvh) - var(--ch-shs-pane-h, 0px) - var(--ch-space-4)));
+  scroll-margin-top: var(--ch-shs-pane-rest);
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-shs-s-bg);
+  box-shadow: var(--ch-stats-redesign-shadow-1);
+}
+.ch-shs-desk__dett {
+  margin: 0;
+  padding: var(--ch-space-4) var(--ch-space-4) 0;
+  font: var(--ch-type-22-strong);
+  font-variation-settings: 'wdth' 92;
+  letter-spacing: -0.02em;
+  color: var(--ch-shs-s-ink);
+}
+.ch-shs-desk__rail[data-dir='up'] > .ch-shs-desk__det {
+  top: auto;
+  bottom: calc(var(--ch-shs-port-h, 100dvh) - var(--ch-shs-pane-h, 0px) - var(--ch-shs-pane-rest));
+}
+.ch-shs-desk__det [data-ch-anchor] {
+  scroll-margin-top: var(--ch-shs-pane-rest);
+}
+.ch-shs-desk__det .ch-shs-d-sheet {
+  padding: var(--ch-space-2) var(--ch-space-4) var(--ch-space-5);
+}
+/* Team putting in the pane: the phone's panel (a bar per band, the Tour rate as a mark), whose own rules live in the phone's
+   stylesheet block and so never reached a desk. Drawn here in the redesign's inks, like the leg bars beside it. */
+.ch-shs-desk__det .ch-stm-panel__h {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ch-shs-desk__det .ch-stm-panel .ch-stm-panel__h h2 {
+  margin: 0;
+  color: var(--ch-shs-s-ink);
+}
+.ch-shs-desk__det .ch-stm-panel__h > span {
   font: var(--ch-type-15);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-shs-s-ink-2);
-  text-decoration: none;
 }
-.ch-shs-yg__sum b {
+.ch-shs-desk__det .ch-stm-putt {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ch-space-3);
+  margin-top: var(--ch-space-3);
+}
+.ch-shs-desk__det .ch-stm-putt__r {
+  display: grid;
+  grid-template-columns: calc(64 * var(--ch-type-k)) minmax(0, 1fr) calc(40 * var(--ch-type-k));
+  align-items: center;
+  gap: var(--ch-space-3);
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-shs-s-ink-2);
+}
+.ch-shs-desk__det .ch-stm-putt__r b {
   font: var(--ch-type-15-strong);
   letter-spacing: var(--ch-track-15);
+  text-align: right;
   color: var(--ch-shs-s-ink);
 }
-.ch-shs-yg__sum::after {
-  content: '';
-  position: absolute;
-  left: 16px;
-  right: 0;
-  bottom: 0;
-  height: var(--ch-hairline-w);
-  background: var(--ch-shs-s-sep);
+.ch-shs-desk__det .ch-stm-putt__r b.ch-loss {
+  color: var(--ch-shs-s-loss);
 }
-.ch-shs-yg__go {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  margin-inline-start: auto;
-  color: var(--ch-green-600);
+.ch-shs-desk__det .ch-stm-putt__bar {
+  position: relative;
+  height: calc(10 * var(--ch-type-k));
+  border-radius: 999px;
+  background: var(--ch-shs-s-track);
+}
+.ch-shs-desk__det .ch-stm-putt__bar i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 999px;
+  background: var(--ch-shs-s-gain-fill);
+}
+.ch-shs-desk__det .ch-stm-putt__bar i.is-low {
+  background: var(--ch-shs-s-loss-fill);
+}
+.ch-shs-desk__det .ch-stm-putt__bar em {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 2px;
+  margin-left: -1px;
+  border-radius: var(--ch-radius-mark);
+  background: var(--ch-shs-s-ink);
+}
+/* What changed, the pane's last card, on its neighbours' edges and title ink. */
+.ch-shs-desk__det .ch-surface__head {
+  padding: 12px 16px 0;
+}
+.ch-shs-desk__det .ch-surface__title {
+  color: var(--ch-shs-s-ink);
+}
+.ch-shs-desk__det .ch-surface__body {
+  padding: 8px 16px 16px;
+}
+.ch-shs-desk__det .ch-stm-note {
+  margin: var(--ch-space-3) 0 0;
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-shs-s-ink-2);
+  text-wrap: pretty;
+}
+/* The card whose drill is open says so: the house's selected ring, drawn inside the card so the bento's gaps stay even. Scoring is
+   the pane's resting drill and two cards open it (the feature card and What changed), so it draws no ring: the pane's title says it. */
+.ch-shs--desk[data-ch-shs-open='sg'] .ch-shs-sum[data-go='sg'],
+.ch-shs--desk[data-ch-shs-open='tee'] .ch-shs-sum[data-go='tee'],
+.ch-shs--desk[data-ch-shs-open='approach'] .ch-shs-sum[data-go='approach'],
+.ch-shs--desk[data-ch-shs-open='short'] .ch-shs-sum[data-go='short'],
+.ch-shs--desk[data-ch-shs-open='putting'] .ch-shs-sum[data-go='putting'],
+.ch-shs--desk[data-ch-shs-open='rounds'] .ch-shs-sum[data-go='rounds'],
+.ch-shs--desk[data-ch-shs-open='goals'] .ch-shs-sum[data-go='goals'] {
+  box-shadow: var(--ch-stats-redesign-shadow-1), inset 0 0 0 2px var(--ch-shs-s-accent);
+}
+/* The team has three cards: the feature across the top, then the game and the players side by side. Each card carries its own
+   title, so the section names after the first would only leave each card alone on its row. */
+.ch-shs--desk-team .ch-shs-desk__sum > .ch-shs-sech ~ .ch-shs-sech {
+  display: none;
+}
+.ch-shs--desk[data-ch-shs-open='tgame'] .ch-shs-sum[data-go='tgame'],
+.ch-shs--desk[data-ch-shs-open='tplayers'] .ch-shs-sum[data-go='tplayers'] {
+  box-shadow: var(--ch-stats-redesign-shadow-1), inset 0 0 0 2px var(--ch-shs-s-accent);
+}
+@media (max-width: 1180px) {
+  .ch-shs-desk {
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 380px);
+  }
+  .ch-shs-desk__sum,
+  .ch-shs-duo {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  /* One column: the cards run in their written order. */
+  .ch-shs-duo__col:last-child > * {
+    grid-column: 1;
+  }
 }

@@ -8,7 +8,7 @@ import { isUuid } from '@/lib/utils/uuid';
 import { chLogServer } from '../lib/track-server';
 import { assignedByInsight, coachTour, countCountableRounds, declinedByInsight, drillTextByInsight, earliestStaleFloor, handled, loadCoachHelmGate, loadPlayerHelmGate, loadVisible, newestRounds, PLAYER_FEED_LIMIT, type CoachHelmGate } from './coachhelm';
 import { isOpenFinding, kindOf } from './coachhelm-classify';
-import { EMPTY_DIVE, readPlans, readRounds, readThemes } from './coachhelm-dive';
+import { EMPTY_DIVE, readPlans, readRounds, readThemes, readWindowRounds } from './coachhelm-dive';
 import { diveCounts, exampleRoundIds, orderDive, roundIdsToRead, themesByCategory, toChDeepInsight, toDiveCleared, type ChDeepInsight, type ChDeepDive } from './coachhelm-dive-shape';
 import { readEngineFlags, readFocusVerdicts } from './coachhelm-engine';
 import { shapeReadsLifecycle } from './coachhelm-engine-shape';
@@ -191,7 +191,7 @@ export async function loadCoachPlayerDeepDive(input: { scope: ChCoachPlayerScope
 }
 
 /** The Deep dive's one read, with the raw rows the read view needs and the page drops (coachhelm-read 02-PLAN 3.4). */
-export async function coachDiveCore(input: { scope: ChCoachPlayerScope }, opts: { exampleRounds?: boolean; lens?: boolean } = {}): Promise<{ load: ChViewLoad<ChDeepDive>; raw: ReadonlyMap<string, EvidenceInsight>; lens: ChDeepInsight[] | null }> {
+export async function coachDiveCore(input: { scope: ChCoachPlayerScope }, opts: { exampleRounds?: boolean; lens?: boolean; behind?: string } = {}): Promise<{ load: ChViewLoad<ChDeepDive>; raw: ReadonlyMap<string, EvidenceInsight>; lens: ChDeepInsight[] | null }> {
   let raw: ReadonlyMap<string, EvidenceInsight> = new Map();
   let lens: ChDeepInsight[] | null = null;
   const load = await coachDiveLoad(
@@ -207,7 +207,7 @@ export async function coachDiveCore(input: { scope: ChCoachPlayerScope }, opts: 
   return { load, raw, lens };
 }
 
-async function coachDiveLoad(input: { scope: ChCoachPlayerScope }, opts: { exampleRounds?: boolean; lens?: boolean }, keep: (raw: ReadonlyMap<string, EvidenceInsight>) => void, keepLens: (lens: ChDeepInsight[]) => void): Promise<ChViewLoad<ChDeepDive>> {
+async function coachDiveLoad(input: { scope: ChCoachPlayerScope }, opts: { exampleRounds?: boolean; lens?: boolean; behind?: string }, keep: (raw: ReadonlyMap<string, EvidenceInsight>) => void, keepLens: (lens: ChDeepInsight[]) => void): Promise<ChViewLoad<ChDeepDive>> {
   const { scope } = input;
   const { playerId } = scope;
   try {
@@ -240,7 +240,7 @@ async function coachDiveLoad(input: { scope: ChCoachPlayerScope }, opts: { examp
     const shaped = shapeReadsLifecycle(drawn, flags.recheck, viewer, now);
     keep(new Map(drawn.map((i) => [i.id, i])));
     const ids = drawn.map((i) => i.id);
-    const [drills, assigned, declined, newest, rounds, plans, themes, focus] = await Promise.all([
+    const [drills, assigned, declined, newest, rounds, plans, themes, focus, windowRounds] = await Promise.all([
       drillTextByInsight(supabase, drawn),
       assignedByInsight(supabase, ids),
       declinedByInsight(supabase, ids),
@@ -253,6 +253,7 @@ async function coachDiveLoad(input: { scope: ChCoachPlayerScope }, opts: { examp
         shaped.kept.map((i) => i.id),
         flags.verdicts,
       ),
+      readWindowRounds(supabase, playerId, drawn.find((i) => i.id === opts.behind)?.evidence),
     ]);
     const newestRound = newest.days.get(playerId) ?? null;
     const say = (t: string) => speak(t, viewer);
@@ -267,7 +268,7 @@ async function coachDiveLoad(input: { scope: ChCoachPlayerScope }, opts: { examp
           viewer,
           engine: { flags, lifecycle: shaped.byId.get(raw.id) ?? null, focus: focus.get(raw.id) ?? null, now, viewer },
         });
-        return toChDeepInsight(raw, base, { rounds: rounds ?? new Map(), focusAreas: plans?.focusAreas ?? [], goals: plans?.goals ?? [], themes }, say, 'coach');
+        return toChDeepInsight(raw, base, { rounds: rounds ?? new Map(), ...(raw.id === opts.behind ? { windowRounds: windowRounds ?? [] } : {}), focusAreas: plans?.focusAreas ?? [], goals: plans?.goals ?? [], themes }, say, 'coach');
       }),
     );
     if (opts.lens) {
@@ -300,7 +301,7 @@ async function coachDiveLoad(input: { scope: ChCoachPlayerScope }, opts: { examp
         tour: tourName,
         rounds: null,
         themes: themesByCategory(themes, 'coach'),
-        roundsFailed: rounds === null,
+        roundsFailed: rounds === null || windowRounds === null,
         plansFailed: plans === null,
         themesFailed: themes === null,
         counts: diveCounts(list),

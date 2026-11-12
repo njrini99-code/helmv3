@@ -358,7 +358,7 @@ export function HoleMap({ holes: all, selected: asked, onSelect, coverage, sampl
           {plays.length > 0 && (
             <div className="ch-hmap-d__plays">
               {plays.map((p) => (
-                <Link key={p.roundId} className="ch-hmap-d__pill" href={reviewAt(p.roundId)} aria-label={`${shortDate(p.date)}: ${p.score} on par ${p.par}. Open the round at this hole`}>
+                <Link prefetch={false} key={p.roundId} className="ch-hmap-d__pill" href={reviewAt(p.roundId)} aria-label={`${shortDate(p.date)}: ${p.score} on par ${p.par}. Open the round at this hole`}>
                   <ScoreMark score={p.score} par={p.par} size="sm" />
                   <span className="ch-num">{shortDate(p.date)}</span>
                 </Link>

@@ -3,11 +3,12 @@
 import { createClient } from '@/lib/supabase/server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { logServerError } from '@/lib/server-error-logger';
-import { isPracticePlansEnabled, isPracticeTabEnabled } from '@/lib/coachhelm/v3/practice-plan/flag';
 import { parsePlanBody, type PlanDraft } from '@/lib/coachhelm/v3/practice-plan/model';
 import { practiceRpc, practiceTables } from '@/lib/golf/practice-db';
 import { isPracticeMissing, practiceErrorOf } from '@/lib/golf/practice-errors';
 import { resolveCoachChatContext } from '@/lib/coachhelm/v3/chat/context';
+import { sendMessage } from '@/app/actions/messages';
+import { getAppBaseUrl } from '@/lib/app-base-url';
 
 const cleanFolder = (f: string): string | null => {
   const t = f.trim();
@@ -17,15 +18,15 @@ const cleanFolder = (f: string): string | null => {
 type SaveResult = { success: true; planId: string; version: number; documentId: string | null; folder: string; created: boolean; savedAt: string } | { success: false; error: string; unavailable?: boolean; needsEvent?: boolean };
 
 /** Save draft: the coach's press. `version` is the plan's stored version, and null for a plan not saved yet, which is what N-00's save asks of a first save. The body goes to N-00's save; Why lines go to the coach-only column, never the body. Not on the hold: it writes at once and Undo removes it. */
-async function savePracticePlanDraftImpl(input: { eventId: string | null; planId: string | null; version: number | null; title: string; draft: PlanDraft; folder: string }): Promise<SaveResult> {
-  if (!isPracticePlansEnabled() || !isPracticeTabEnabled()) return { success: false, error: 'Comes with the Practice tab.', unavailable: true };
+async function savePracticePlanDraftImpl(input: { eventId: string | null; planId: string | null; version: number | null; title: string; draft: PlanDraft; folder: string; step?: 'blocks' | 'groups' | 'drills' | 'review' }): Promise<SaveResult> {
+
   const folder = cleanFolder(input.folder);
   if (!folder) return { success: false, error: 'A folder name is 1 to 60 characters and can’t be Team.' };
   if (!input.planId && !input.eventId) return { success: false, error: 'Add a practice to the calendar first.', needsEvent: true };
   const body = parsePlanBody(input.draft.body);
   if (!body) return { success: false, error: 'That plan couldn’t be saved.' };
   const sb = await createClient();
-  const saved = await practiceRpc(sb, 'golf_practice_plan_save', { p_event_id: input.planId ? null : input.eventId, p_plan_id: input.planId, p_expected_version: input.version, p_title: input.title, p_step: 'review', p_body: body });
+  const saved = await practiceRpc(sb, 'golf_practice_plan_save', { p_event_id: input.planId ? null : input.eventId, p_plan_id: input.planId, p_expected_version: input.version, p_title: input.title, p_step: input.step ?? 'review', p_body: body });
   if (saved.error) {
     const m = practiceErrorOf(saved.error.message);
     await logServerError(`savePracticePlanDraft: ${saved.error.message}`, { action: 'coachhelm.plan.save' }, 'warning');
@@ -79,4 +80,21 @@ export async function undoPracticePlanDraft(input: Parameters<typeof undoPractic
 }
 export async function listPlanFolders() {
   return obsList();
+}
+
+/** Share › Send to team chat: one text post with the plan's link, no second push. */
+async function postPracticePlanToChatImpl(input: { planId: string }): Promise<{ success: boolean; error?: string }> {
+  const sb = await createClient();
+  const ctx = await resolveCoachChatContext(sb).catch(() => null);
+  if (!ctx) return { success: false, error: 'Unauthorized' };
+  const { data: plan, error: planError } = await practiceTables(sb).from('golf_practice_plans').select('title').eq('id', input.planId).eq('team_id', ctx.team_id).maybeSingle();
+  if (planError || !plan) return { success: false, error: 'That plan is gone.' };
+  const { data: channel, error } = await sb.from('golf_conversations').select('id').eq('team_id', ctx.team_id).eq('is_team_channel', true).limit(1).maybeSingle();
+  if (error || !channel?.id) return { success: false, error: 'Your team has no team chat yet.' };
+  const sent = await sendMessage({ conversationId: channel.id, content: `${(plan as { title: string }).title} ${getAppBaseUrl()}/golf/dashboard/practice/plan/${input.planId}`, sport: 'golf', createNotifications: false });
+  return sent.success ? { success: true } : { success: false, error: 'Couldn’t post to team chat.' };
+}
+const observedPostChat = withAdminObserved('postPracticePlanToChat', { sport: 'golf', feature: 'practice_plans' }, postPracticePlanToChatImpl);
+export async function postPracticePlanToChat(input: { planId: string }) {
+  return observedPostChat(input);
 }

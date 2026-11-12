@@ -1,4 +1,4 @@
-import { isAskV2Enabled } from '@/lib/coachhelm/v3/chat/ask-flag';
+
 import { readAskKnows } from '@/lib/coachhelm/v3/chat/ask-knows';
 import { resolvePlayerChatContext } from '@/lib/coachhelm/v3/chat/player-context';
 import { readBucket } from '@/lib/coachhelm/v3/chat/player-allowance';
@@ -174,13 +174,38 @@ export async function loadAskCoachHelm({ conversationId }: { conversationId?: st
     notFound: (!!asked && !wanted) || thread?.kind === 'missing',
     threadFailed: thread?.kind === 'failed',
     knows: await askKnows(sb, ctx, wanted),
+    firstName: await coachFirstName(sb, ctx.coach_id),
   };
   return { status: 'ready', data };
 }
 
+/** The greeting's name, from the coach's own row. A read that fails only costs the name: the greeting says "Coach". */
+async function coachFirstName(sb: Awaited<ReturnType<typeof createClient>>, coachId: string): Promise<string | undefined> {
+  const { data, error } = await sb.from('golf_coaches').select('full_name').eq('id', coachId).maybeSingle();
+  if (error) {
+    log('coach name', error);
+    return undefined;
+  }
+  return data?.full_name?.trim().split(/\s+/)[0] || undefined;
+}
+
+/**
+ * A player's own open focus areas for Ask's home. An empty list is an answer: the player has none. A read that failed is NOT that
+ * answer, so it comes back as `undefined` and `focus` is left off the data ("not known"): the home draws no focus lines, and nothing
+ * downstream can take a failed read for "this player has no focus areas".
+ */
+async function playerFocus(sb: Awaited<ReturnType<typeof createClient>>, playerId: string): Promise<ChAskData['focus']> {
+  const { data, error } = await sb.from('golf_player_focus_areas').select('title, outcome_status').eq('player_id', playerId).eq('status', 'active').order('priority', { ascending: true }).limit(3);
+  if (error) {
+    log('player focus', error);
+    return undefined;
+  }
+  return (data ?? []).map((f) => ({ text: f.title, ask: `How is ${f.title} going for me?`, trend: f.outcome_status === 'improved' ? 'up' : f.outcome_status === 'worsened' ? 'warn' : undefined }));
+}
+
 /** Tone and facts, only with Ask v2 on; a missing column or table (HM2 held) is null and the controls stay hidden. */
 async function askKnows(sb: Awaited<ReturnType<typeof createClient>>, ctx: { coach_id: string; team_id: string }, conversationId: string | null): Promise<ChAskData['knows']> {
-  if (!isAskV2Enabled()) return null;
+
   const k = await readAskKnows(sb, { coachId: ctx.coach_id, teamId: ctx.team_id, conversationId }).catch(() => null);
   return k ? { ...k, teamId: ctx.team_id } : null;
 }
@@ -213,6 +238,9 @@ export async function loadAskPlayer(): Promise<ChAskLoad> {
       threadFailed: false,
       role: 'player',
       allowance: bucket,
+      // The player's context carries the display name only; 'You' is its stand-in for a profile with no name.
+      firstName: ctx.roster[0]?.name && ctx.roster[0].name !== 'You' ? ctx.roster[0].name.split(' ')[0] : undefined,
+      focus: await playerFocus(sb, ctx.player_id),
     },
   };
 }

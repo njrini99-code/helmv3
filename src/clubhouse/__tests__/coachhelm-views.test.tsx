@@ -44,19 +44,17 @@ vi.mock('@/app/golf/actions/insights-feed', () => ({ dismissInsight: vi.fn(), re
 
 import { isCoachHelmEnabledForCoach, isCoachHelmEnabledForPlayer } from '@/lib/coachhelm/v2/gate';
 import { ClubhouseCoachHelmRoute } from '../routes/coachhelm';
-import { CoachHelmSkeleton } from '../screens/coachhelm/CoachHelmSkeleton';
-import { PlayerBoard } from '../screens/coachhelm/PlayerBoard';
+import { YourWeek } from '../screens/coachhelm/file/YourWeek';
+import { previewPlayerWeek } from '../preview/fixtures-coachhelm-player-file';
 import { DeepDive } from '../screens/coachhelm/views/DeepDive';
 import { DiveSkeleton, StandingSkeleton } from '../screens/coachhelm/views/Skeletons';
 import { Standing } from '../screens/coachhelm/views/Standing';
-import { PREVIEW_HELM_PLAYER, PREVIEW_HELM_PLAYER_OFF } from '../preview/fixtures-coachhelm';
 import { diveLoad, gameLoad, PREVIEW_DIVE, PREVIEW_GAME, PREVIEW_STANDING, standingLoad } from '../preview/fixtures-coachhelm-views';
 import { ToastProvider } from '../ui/Toast';
 
 const on = { userEnabled: true, teamEnabled: true, effectivelyEnabled: true, disabledReason: null, disabledBy: null } as const;
 const off = { userEnabled: true, teamEnabled: false, effectivelyEnabled: false, disabledReason: 'Back after the qualifier', disabledBy: 'coach' } as const;
 const jonah = { userId: 'u2', role: 'player', coach: null, player: { id: 'pl-jonah' } };
-const maya = { userId: 'u1', role: 'coach', coach: { id: 'c1', organization_id: 'org1' }, player: null };
 
 const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
 const wrap = (node: React.ReactNode) => (
@@ -144,39 +142,6 @@ describe.each(VIEWS)('?view=$view ($name): the player’s own, behind the same s
     expect(again.props.load).toEqual({ status: 'failed' });
   });
 
-  it('a coach is a coach here: the view’s address is their board, no player loader runs, and the player’s gate is never asked (a coach who is also a player is a coach)', async () => {
-    session.current = maya;
-    teamOf.current = { role: 'coach', teamId: 't1', coachId: 'c1' };
-    vi.mocked(isCoachHelmEnabledForCoach).mockResolvedValue({ ...on });
-    board.coach.mockResolvedValue({ off: null, roster: { count: 0, error: false }, pulse: { rows: [], error: false }, players: { list: [], error: false }, withoutSignals: 0 });
-    const el = (await ClubhouseCoachHelmRoute({ view })) as Gated;
-    const out = await settle(el);
-    expect(board.coach).toHaveBeenCalled();
-    for (const r of allReads()) expect(r).not.toHaveBeenCalled();
-    expect(isCoachHelmEnabledForPlayer).not.toHaveBeenCalled();
-    expect(out.type).not.toBe(Screen);
-
-    session.current = { ...maya, player: { id: 'pl-coach-as-player' } };
-    await settle((await ClubhouseCoachHelmRoute({ view })) as Gated);
-    for (const r of allReads()) expect(r).not.toHaveBeenCalled();
-  });
-});
-
-describe('the player’s views and the board', () => {
-  it('no session renders nothing; ?view=insights, no view and any other value are the board, not a view', async () => {
-    session.current = null;
-    expect(await ClubhouseCoachHelmRoute({ view: 'profile' })).toBeNull();
-    expect(await ClubhouseCoachHelmRoute({ view: 'standing' })).toBeNull();
-    expect(await ClubhouseCoachHelmRoute({ view: 'deep-dive' })).toBeNull();
-    session.current = jonah;
-    board.player.mockResolvedValue(PREVIEW_HELM_PLAYER);
-    for (const view of [undefined, 'insights', 'nonsense']) {
-      const el = (await ClubhouseCoachHelmRoute({ view })) as Gated;
-      expect(el.props.fallback.type).toBe(CoachHelmSkeleton);
-      expect((await settle(el)).type).toBe(PlayerBoard);
-    }
-    for (const r of allReads()) expect(r).not.toHaveBeenCalled();
-  });
 });
 
 describe('CH-13981 ?insight= on the Deep dive', () => {
@@ -207,7 +172,9 @@ describe('CH-13981 ?insight= on the Deep dive', () => {
 });
 
 describe('CH-13930 the player’s sub-navigation', () => {
-  const showBoard = (data = PREVIEW_HELM_PLAYER) => render(wrap(<PlayerBoard data={data} />));
+  // The player's Board is Your week (the older board is retired, owner 2026-11-11): the strip is the one its page head draws.
+  const week = () => <YourWeek load={{ status: 'ready', data: previewPlayerWeek('accepted') }} />;
+  const showBoard = () => render(wrap(week()));
 
   it('Board, Standing and Deep dive are one radiogroup of views of this page (Game profile folded into Standing); Board is the current one', () => {
     showBoard();
@@ -233,8 +200,8 @@ describe('CH-13930 the player’s sub-navigation', () => {
   it('a tap moves the strip at once and marks the page busy until the view lands: the page stays, nothing blanks, and a view does the same (phone chips too)', async () => {
     for (const where of ['board', 'deep-dive'] as const) {
       router.push.mockImplementationOnce(() => new Promise(() => {}));
-      render(wrap(where === 'board' ? <PlayerBoard data={PREVIEW_HELM_PLAYER} /> : <DeepDive load={diveLoad(PREVIEW_DIVE)} />));
-      const main = document.querySelector('main.ch-hl')!;
+      render(wrap(where === 'board' ? week() : <DeepDive load={diveLoad(PREVIEW_DIVE)} />));
+      const main = document.querySelector('main')!;
       expect(main.hasAttribute('aria-busy')).toBe(false);
       await userEvent.click(screen.getByRole('radio', { name: 'Standing' }));
       await waitFor(() => expect(main.getAttribute('aria-busy')).toBe('true'));
@@ -242,15 +209,16 @@ describe('CH-13930 the player’s sub-navigation', () => {
       expect(screen.getByRole('radio', { name: where === 'board' ? 'Board' : 'Deep dive' })).toHaveAttribute('aria-checked', 'false');
       // The page is still drawn, not swapped for a skeleton, and the header (which stays crisp) is on it.
       expect(main.getAttribute('aria-label')).toBeNull();
-      expect(screen.getByRole('heading', { level: 1, name: 'CoachHelm' })).toBeTruthy();
+      // Your week names itself; the Deep dive keeps the page's name.
+      expect(screen.getByRole('heading', { level: 1, name: where === 'board' ? 'Your week' : 'CoachHelm' })).toBeTruthy();
       cleanup();
     }
     router.push.mockReset();
     phoneState.on = true;
     router.push.mockImplementationOnce(() => new Promise(() => {}));
-    render(wrap(<PlayerBoard data={PREVIEW_HELM_PLAYER} />));
+    render(wrap(week()));
     await userEvent.click(within(screen.getByRole('group', { name: 'CoachHelm view' })).getByRole('button', { name: 'Deep dive' }));
-    await waitFor(() => expect(document.querySelector('main.ch-hl')!.getAttribute('aria-busy')).toBe('true'));
+    await waitFor(() => expect(document.querySelector('main')!.getAttribute('aria-busy')).toBe('true'));
     expect(screen.getByRole('button', { name: 'Deep dive' }).getAttribute('aria-current')).toBe('true');
     router.push.mockReset();
   });
@@ -262,9 +230,12 @@ describe('CH-13930 the player’s sub-navigation', () => {
     expect(within(screen.getByRole('radiogroup')).queryByText('Development')).toBeNull();
   });
 
-  it('on the phone it is a row of chips that scrolls sideways: the current view pressed, Development a link at the end', async () => {
+  it('131901 on the phone the page is the phone build, and the views are a row of chips that scrolls sideways: the current view pressed, Development a link at the end', async () => {
     phoneState.on = true;
     showBoard();
+    // The phone frame, never a shrunken desktop.
+    expect(document.querySelector('main')!.classList.contains('is-phone')).toBe(true);
+    expect(document.querySelector('main')!.classList.contains('is-desk')).toBe(false);
     expect(screen.queryByRole('radiogroup')).toBeNull();
     const row = screen.getByRole('group', { name: 'CoachHelm view' });
     const chips = within(row).getAllByRole('button');
@@ -273,12 +244,5 @@ describe('CH-13930 the player’s sub-navigation', () => {
     expect(within(row).getByRole('link', { name: /Development/ }).getAttribute('href')).toBe('/golf/dashboard/stats?tab=dev');
     await userEvent.click(chips[1]!);
     expect(router.push).toHaveBeenCalledWith('/golf/dashboard/coachhelm?view=standing');
-  });
-
-  it('CH-13304 with CoachHelm off there is no strip: nothing is read and every view would say the same', () => {
-    showBoard(PREVIEW_HELM_PLAYER_OFF);
-    expect(code('CH-13304')).not.toBeNull();
-    expect(code('CH-13930')).toBeNull();
-    expect(screen.queryByRole('radiogroup')).toBeNull();
   });
 });

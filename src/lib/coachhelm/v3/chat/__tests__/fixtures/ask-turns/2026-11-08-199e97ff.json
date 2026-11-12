@@ -1,0 +1,892 @@
+{
+ "id": "199e97ff",
+ "messageId": "199e97ff-66ac-40a1-a998-44b67d65c4cf",
+ "source": {
+  "project": "staging",
+  "team": "Demo University Golf",
+  "exportedBy": "scripts/coachhelm/export-ask-turns.mjs"
+ },
+ "timezone": "America/New_York",
+ "roster": [
+  {
+   "id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+   "name": "Cole Bennett",
+   "first_name": "Cole",
+   "last_name": "Bennett"
+  },
+  {
+   "id": "ed1ff03e-b33a-4a80-891e-09685b7db3d0",
+   "name": "Dylan Brooks",
+   "first_name": "Dylan",
+   "last_name": "Brooks"
+  },
+  {
+   "id": "9458ca63-9dbe-4020-ab13-9e2b70f70c80",
+   "name": "Mason Rivers",
+   "first_name": "Mason",
+   "last_name": "Rivers"
+  },
+  {
+   "id": "b40a650a-bce0-4e46-87cd-365b0256ee21",
+   "name": "Jackson Hale",
+   "first_name": "Jackson",
+   "last_name": "Hale"
+  },
+  {
+   "id": "8e382583-2ce6-4d15-8568-5088cf02dbd1",
+   "name": "Ethan Park",
+   "first_name": "Ethan",
+   "last_name": "Park"
+  },
+  {
+   "id": "faced578-b271-416f-b757-ac3aee5bd9e5",
+   "name": "Tyler Hayes",
+   "first_name": "Tyler",
+   "last_name": "Hayes"
+  },
+  {
+   "id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+   "name": "Owen Carter",
+   "first_name": "Owen",
+   "last_name": "Carter"
+  },
+  {
+   "id": "b6b87c4d-0673-4166-9f8c-44e60936a034",
+   "name": "Audit Testplayer",
+   "first_name": "Audit",
+   "last_name": "Testplayer"
+  }
+ ],
+ "userMessage": {
+  "content": "Who putts best on the team?",
+  "createdAt": "2026-11-08T05:06:16.773856+00:00"
+ },
+ "priorMessages": [
+  {
+   "role": "user",
+   "createdAt": "2026-11-08T05:06:16.773856+00:00",
+   "content": "Who putts best on the team?",
+   "evidence": []
+  }
+ ],
+ "turn": {
+  "createdAt": "2026-11-08T05:06:29.479633+00:00",
+  "status": "complete",
+  "costUsd": null,
+  "content": "Ethan Park and Owen Carter putt best on the team, and the two measures split the top spot between them.\n\n- **Strokes gained putting:** Ethan Park is first at -1.92 strokes per round over his last 8 recorded rounds. Owen Carter is second at -2.06 over his last 8.\n- **Putts per round:** Owen Carter is lowest at 31.88 over his last 8 rounds. Tyler Hayes is next at 32.29 over his last 7. Ethan Park is third at 32.5 over his last 8.\n\nThe gap between Ethan and Owen on strokes gained is small, so I wouldn't separate them on putting alone. Strokes gained also adjusts for how far the putts were, which putts per round doesn't.\n\nEvery player with data is below zero on strokes gained putting. The team average is -3.01, and the PGA Tour baseline is 0. There is no college figure for strokes gained, so I can't place anyone against the Division I average. Ethan and Owen are the least negative on the team, not positive putters.\n\nEach player's last ten rounds actually number 7 or 8 putting rounds. They run from late May or June through September 26. Cole Bennett's window runs later, to October 21. Audit Testplayer has no recorded rounds, so this covers 7 of your 8 players.",
+  "tools": [
+   {
+    "name": "get_team_metric_ranking",
+    "input": {
+     "window": "last10",
+     "metric_id": "sg_putting"
+    }
+   },
+   {
+    "name": "get_team_metric_ranking",
+    "input": {
+     "window": "last10",
+     "metric_id": "putts_per_round"
+    }
+   },
+   {
+    "name": "get_team_overview",
+    "input": {}
+   }
+  ],
+  "evidence": [
+   {
+    "tool": "get_team_overview",
+    "ref": "e1",
+    "envelope": {
+     "as_of": "2026-11-08T05:06:19.486Z",
+     "detail": {
+      "players": [
+       {
+        "name": "Cole Bennett",
+        "player_id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+        "last_round_date": "2026-10-21",
+        "rounds_recorded": 37,
+        "last_round_holes": 18,
+        "last_round_to_par": 2
+       },
+       {
+        "name": "Dylan Brooks",
+        "player_id": "ed1ff03e-b33a-4a80-891e-09685b7db3d0",
+        "last_round_date": "2026-09-26",
+        "rounds_recorded": 14,
+        "last_round_holes": 18,
+        "last_round_to_par": 2
+       },
+       {
+        "name": "Mason Rivers",
+        "player_id": "9458ca63-9dbe-4020-ab13-9e2b70f70c80",
+        "last_round_date": "2026-09-26",
+        "rounds_recorded": 14,
+        "last_round_holes": 18,
+        "last_round_to_par": 0
+       },
+       {
+        "name": "Jackson Hale",
+        "player_id": "b40a650a-bce0-4e46-87cd-365b0256ee21",
+        "last_round_date": "2026-09-26",
+        "rounds_recorded": 17,
+        "last_round_holes": 18,
+        "last_round_to_par": 0
+       },
+       {
+        "name": "Ethan Park",
+        "player_id": "8e382583-2ce6-4d15-8568-5088cf02dbd1",
+        "last_round_date": "2026-09-26",
+        "rounds_recorded": 15,
+        "last_round_holes": 18,
+        "last_round_to_par": 1
+       },
+       {
+        "name": "Tyler Hayes",
+        "player_id": "faced578-b271-416f-b757-ac3aee5bd9e5",
+        "last_round_date": "2026-09-26",
+        "rounds_recorded": 13,
+        "last_round_holes": 18,
+        "last_round_to_par": 5
+       },
+       {
+        "name": "Owen Carter",
+        "player_id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+        "last_round_date": "2026-09-26",
+        "rounds_recorded": 14,
+        "last_round_holes": 18,
+        "last_round_to_par": -1
+       },
+       {
+        "name": "Audit Testplayer",
+        "player_id": "b6b87c4d-0673-4166-9f8c-44e60936a034",
+        "last_round_date": null,
+        "rounds_recorded": 0,
+        "last_round_holes": null,
+        "last_round_to_par": null
+       }
+      ],
+      "timezone": "America/New_York",
+      "team_name": "Demo University Golf",
+      "latest_round_date": "2026-10-21",
+      "profiles_resolved": 8,
+      "active_roster_count": 8,
+      "players_with_rounds": 7,
+      "unresolved_player_ids": []
+     },
+     "series": [],
+     "summary": "Demo University Golf has 8 active players.",
+     "coverage": "partial",
+     "measurements": [
+      {
+       "unit": "count",
+       "as_of": "2026-11-08T05:06:19.486Z",
+       "value": 8,
+       "entity": {
+        "id": "6ecdd1a6-63fe-4beb-b094-00118f334163",
+        "kind": "team",
+        "label": "Demo University Golf"
+       },
+       "method": "count_active_team_members",
+       "source": "roster",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": null,
+       "metric_id": "active_roster_count",
+       "window_end": null,
+       "denominator": null,
+       "sample_size": 8,
+       "sample_unit": "players",
+       "metric_label": "Active roster",
+       "window_start": null,
+       "coverage_note": null
+      }
+     ],
+     "coverage_note": "1 player has no recorded rounds (Audit Testplayer)"
+    }
+   },
+   {
+    "tool": "get_team_metric_ranking",
+    "ref": "e2",
+    "envelope": {
+     "as_of": "2026-11-08T05:06:19.644Z",
+     "detail": {
+      "direction": "lower_better",
+      "metric_id": "putts_per_round",
+      "metric_label": "Putts per round"
+     },
+     "series": [],
+     "summary": "Putts per round across Demo University Golf, over each player’s newest ten rounds.",
+     "coverage": "partial",
+     "measurements": [
+      {
+       "unit": "count",
+       "as_of": "2026-11-08T05:06:19.644Z",
+       "value": 31.88,
+       "entity": {
+        "id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+        "kind": "player",
+        "label": "Owen Carter"
+       },
+       "method": "putts_per_round_per_18_over_the_window_as_stats_reads_it",
+       "source": "rounds",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "lower_better",
+       "metric_id": "putts_per_round",
+       "window_end": "2026-09-26",
+       "denominator": null,
+       "sample_size": 8,
+       "sample_unit": "rounds",
+       "metric_label": "Putts per round",
+       "window_start": "2026-06-09",
+       "coverage_note": null
+      },
+      {
+       "unit": "count",
+       "as_of": "2026-11-08T05:06:19.644Z",
+       "value": 32.29,
+       "entity": {
+        "id": "faced578-b271-416f-b757-ac3aee5bd9e5",
+        "kind": "player",
+        "label": "Tyler Hayes"
+       },
+       "method": "putts_per_round_per_18_over_the_window_as_stats_reads_it",
+       "source": "rounds",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "lower_better",
+       "metric_id": "putts_per_round",
+       "window_end": "2026-09-26",
+       "denominator": null,
+       "sample_size": 7,
+       "sample_unit": "rounds",
+       "metric_label": "Putts per round",
+       "window_start": "2026-06-08",
+       "coverage_note": null
+      },
+      {
+       "unit": "count",
+       "as_of": "2026-11-08T05:06:19.644Z",
+       "value": 32.5,
+       "entity": {
+        "id": "8e382583-2ce6-4d15-8568-5088cf02dbd1",
+        "kind": "player",
+        "label": "Ethan Park"
+       },
+       "method": "putts_per_round_per_18_over_the_window_as_stats_reads_it",
+       "source": "rounds",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "lower_better",
+       "metric_id": "putts_per_round",
+       "window_end": "2026-09-26",
+       "denominator": null,
+       "sample_size": 8,
+       "sample_unit": "rounds",
+       "metric_label": "Putts per round",
+       "window_start": "2026-06-09",
+       "coverage_note": null
+      },
+      {
+       "unit": "count",
+       "as_of": "2026-11-08T05:06:19.644Z",
+       "value": 32.63,
+       "entity": {
+        "id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+        "kind": "player",
+        "label": "Cole Bennett"
+       },
+       "method": "putts_per_round_per_18_over_the_window_as_stats_reads_it",
+       "source": "rounds",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "lower_better",
+       "metric_id": "putts_per_round",
+       "window_end": "2026-10-21",
+       "denominator": null,
+       "sample_size": 8,
+       "sample_unit": "rounds",
+       "metric_label": "Putts per round",
+       "window_start": "2026-08-25",
+       "coverage_note": null
+      },
+      {
+       "unit": "count",
+       "as_of": "2026-11-08T05:06:19.644Z",
+       "value": 33.13,
+       "entity": {
+        "id": "b40a650a-bce0-4e46-87cd-365b0256ee21",
+        "kind": "player",
+        "label": "Jackson Hale"
+       },
+       "method": "putts_per_round_per_18_over_the_window_as_stats_reads_it",
+       "source": "rounds",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "lower_better",
+       "metric_id": "putts_per_round",
+       "window_end": "2026-09-26",
+       "denominator": null,
+       "sample_size": 8,
+       "sample_unit": "rounds",
+       "metric_label": "Putts per round",
+       "window_start": "2026-06-08",
+       "coverage_note": null
+      },
+      {
+       "unit": "count",
+       "as_of": "2026-11-08T05:06:19.644Z",
+       "value": 33.38,
+       "entity": {
+        "id": "ed1ff03e-b33a-4a80-891e-09685b7db3d0",
+        "kind": "player",
+        "label": "Dylan Brooks"
+       },
+       "method": "putts_per_round_per_18_over_the_window_as_stats_reads_it",
+       "source": "rounds",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "lower_better",
+       "metric_id": "putts_per_round",
+       "window_end": "2026-09-26",
+       "denominator": null,
+       "sample_size": 8,
+       "sample_unit": "rounds",
+       "metric_label": "Putts per round",
+       "window_start": "2026-06-07",
+       "coverage_note": null
+      },
+      {
+       "unit": "count",
+       "as_of": "2026-11-08T05:06:19.644Z",
+       "value": 33.38,
+       "entity": {
+        "id": "9458ca63-9dbe-4020-ab13-9e2b70f70c80",
+        "kind": "player",
+        "label": "Mason Rivers"
+       },
+       "method": "putts_per_round_per_18_over_the_window_as_stats_reads_it",
+       "source": "rounds",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "lower_better",
+       "metric_id": "putts_per_round",
+       "window_end": "2026-09-26",
+       "denominator": null,
+       "sample_size": 8,
+       "sample_unit": "rounds",
+       "metric_label": "Putts per round",
+       "window_start": "2026-05-29",
+       "coverage_note": null
+      },
+      {
+       "unit": "count",
+       "as_of": "2026-11-08T05:06:19.644Z",
+       "value": null,
+       "entity": {
+        "id": "b6b87c4d-0673-4166-9f8c-44e60936a034",
+        "kind": "player",
+        "label": "Audit Testplayer"
+       },
+       "method": "putts_per_round_per_18_over_the_window_as_stats_reads_it",
+       "source": "rounds",
+       "coverage": "empty",
+       "benchmark": null,
+       "direction": "lower_better",
+       "metric_id": "putts_per_round",
+       "window_end": null,
+       "denominator": null,
+       "sample_size": 0,
+       "sample_unit": "rounds",
+       "metric_label": "Putts per round",
+       "window_start": null,
+       "coverage_note": "Not enough rounds in this window for putts taken per round."
+      }
+     ],
+     "window_label": "last 10 rounds",
+     "coverage_note": "No putts per round recorded for Audit Testplayer."
+    }
+   },
+   {
+    "tool": "get_team_metric_ranking",
+    "ref": "e3",
+    "envelope": {
+     "as_of": "2026-11-08T05:06:19.624Z",
+     "detail": {
+      "direction": "higher_better",
+      "metric_id": "sg_putting",
+      "metric_label": "Strokes gained putting"
+     },
+     "series": [],
+     "summary": "Strokes gained putting across Demo University Golf, over each player’s newest ten rounds.",
+     "coverage": "partial",
+     "measurements": [
+      {
+       "unit": "strokes",
+       "as_of": "2026-11-08T05:06:19.623Z",
+       "value": -1.92,
+       "entity": {
+        "id": "8e382583-2ce6-4d15-8568-5088cf02dbd1",
+        "kind": "player",
+        "label": "Ethan Park"
+       },
+       "method": "sg_putting_per_18_over_the_window_as_stats_reads_it",
+       "source": "rounds",
+       "coverage": "complete",
+       "benchmark": {
+        "value": 0,
+        "source": "PGA Tour 2024",
+        "version": "2024",
+        "omitted_for_cohort": false
+       },
+       "direction": "higher_better",
+       "metric_id": "sg_putting",
+       "window_end": "2026-09-26",
+       "comparisons": [
+        {
+         "kind": "level",
+         "note": "There is no college figure for this metric.",
+         "label": "Division I average",
+         "value": null,
+         "place_of": null,
+         "place_percent": null,
+         "missing_reason": "no college figure"
+        },
+        {
+         "kind": "team",
+         "note": null,
+         "label": "Team average",
+         "value": -3.01,
+         "place_of": 7,
+         "place_percent": 83,
+         "missing_reason": null
+        },
+        {
+         "kind": "tour",
+         "note": null,
+         "label": "PGA Tour",
+         "value": 0,
+         "place_of": null,
+         "place_percent": null,
+         "missing_reason": null
+        }
+       ],
+       "denominator": null,
+       "sample_size": 8,
+       "sample_unit": "rounds",
+       "metric_label": "Strokes gained putting",
+       "window_start": "2026-06-09",
+       "coverage_note": null
+      },
+      {
+       "unit": "strokes",
+       "as_of": "2026-11-08T05:06:19.623Z",
+       "value": -2.06,
+       "entity": {
+        "id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+        "kind": "player",
+        "label": "Owen Carter"
+       },
+       "method": "sg_putting_per_18_over_the_window_as_stats_reads_it",
+       "source": "rounds",
+       "coverage": "complete",
+       "benchmark": {
+        "value": 0,
+        "source": "PGA Tour 2024",
+        "version": "2024",
+        "omitted_for_cohort": false
+       },
+       "direction": "higher_better",
+       "metric_id": "sg_putting",
+       "window_end": "2026-09-26",
+       "comparisons": [
+        {
+         "kind": "level",
+         "note": "There is no college figure for this metric.",
+         "label": "Division I average",
+         "value": null,
+         "place_of": null,
+         "place_percent": null,
+         "missing_reason": "no college figure"
+        },
+        {
+         "kind": "team",
+         "note": null,
+         "label": "Team average",
+         "value": -3.01,
+         "place_of": 7,
+         "place_percent": 100,
+         "missing_reason": null
+        },
+        {
+         "kind": "tour",
+         "note": null,
+         "label": "PGA Tour",
+         "value": 0,
+         "place_of": null,
+         "place_percent": null,
+         "missing_reason": null
+        }
+       ],
+       "denominator": null,
+       "sample_size": 8,
+       "sample_unit": "rounds",
+       "metric_label": "Strokes gained putting",
+       "window_start": "2026-06-09",
+       "coverage_note": null
+      },
+      {
+       "unit": "strokes",
+       "as_of": "2026-11-08T05:06:19.623Z",
+       "value": -2.88,
+       "entity": {
+        "id": "faced578-b271-416f-b757-ac3aee5bd9e5",
+        "kind": "player",
+        "label": "Tyler Hayes"
+       },
+       "method": "sg_putting_per_18_over_the_window_as_stats_reads_it",
+       "source": "rounds",
+       "coverage": "complete",
+       "benchmark": {
+        "value": 0,
+        "source": "PGA Tour 2024",
+        "version": "2024",
+        "omitted_for_cohort": false
+       },
+       "direction": "higher_better",
+       "metric_id": "sg_putting",
+       "window_end": "2026-09-26",
+       "comparisons": [
+        {
+         "kind": "level",
+         "note": "There is no college figure for this metric.",
+         "label": "Division I average",
+         "value": null,
+         "place_of": null,
+         "place_percent": null,
+         "missing_reason": "no college figure"
+        },
+        {
+         "kind": "team",
+         "note": null,
+         "label": "Team average",
+         "value": -3.01,
+         "place_of": 7,
+         "place_percent": 17,
+         "missing_reason": null
+        },
+        {
+         "kind": "tour",
+         "note": null,
+         "label": "PGA Tour",
+         "value": 0,
+         "place_of": null,
+         "place_percent": null,
+         "missing_reason": null
+        }
+       ],
+       "denominator": null,
+       "sample_size": 7,
+       "sample_unit": "rounds",
+       "metric_label": "Strokes gained putting",
+       "window_start": "2026-06-08",
+       "coverage_note": null
+      },
+      {
+       "unit": "strokes",
+       "as_of": "2026-11-08T05:06:19.623Z",
+       "value": -3.07,
+       "entity": {
+        "id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+        "kind": "player",
+        "label": "Cole Bennett"
+       },
+       "method": "sg_putting_per_18_over_the_window_as_stats_reads_it",
+       "source": "rounds",
+       "coverage": "complete",
+       "benchmark": {
+        "value": 0,
+        "source": "PGA Tour 2024",
+        "version": "2024",
+        "omitted_for_cohort": false
+       },
+       "direction": "higher_better",
+       "metric_id": "sg_putting",
+       "window_end": "2026-10-21",
+       "comparisons": [
+        {
+         "kind": "level",
+         "note": "There is no college figure for this metric.",
+         "label": "Division I average",
+         "value": null,
+         "place_of": null,
+         "place_percent": null,
+         "missing_reason": "no college figure"
+        },
+        {
+         "kind": "team",
+         "note": null,
+         "label": "Team average",
+         "value": -3.01,
+         "place_of": 7,
+         "place_percent": 67,
+         "missing_reason": null
+        },
+        {
+         "kind": "tour",
+         "note": null,
+         "label": "PGA Tour",
+         "value": 0,
+         "place_of": null,
+         "place_percent": null,
+         "missing_reason": null
+        }
+       ],
+       "denominator": null,
+       "sample_size": 8,
+       "sample_unit": "rounds",
+       "metric_label": "Strokes gained putting",
+       "window_start": "2026-08-25",
+       "coverage_note": null
+      },
+      {
+       "unit": "strokes",
+       "as_of": "2026-11-08T05:06:19.623Z",
+       "value": -3.25,
+       "entity": {
+        "id": "ed1ff03e-b33a-4a80-891e-09685b7db3d0",
+        "kind": "player",
+        "label": "Dylan Brooks"
+       },
+       "method": "sg_putting_per_18_over_the_window_as_stats_reads_it",
+       "source": "rounds",
+       "coverage": "complete",
+       "benchmark": {
+        "value": 0,
+        "source": "PGA Tour 2024",
+        "version": "2024",
+        "omitted_for_cohort": false
+       },
+       "direction": "higher_better",
+       "metric_id": "sg_putting",
+       "window_end": "2026-09-26",
+       "comparisons": [
+        {
+         "kind": "level",
+         "note": "There is no college figure for this metric.",
+         "label": "Division I average",
+         "value": null,
+         "place_of": null,
+         "place_percent": null,
+         "missing_reason": "no college figure"
+        },
+        {
+         "kind": "team",
+         "note": null,
+         "label": "Team average",
+         "value": -3.01,
+         "place_of": 7,
+         "place_percent": 33,
+         "missing_reason": null
+        },
+        {
+         "kind": "tour",
+         "note": null,
+         "label": "PGA Tour",
+         "value": 0,
+         "place_of": null,
+         "place_percent": null,
+         "missing_reason": null
+        }
+       ],
+       "denominator": null,
+       "sample_size": 8,
+       "sample_unit": "rounds",
+       "metric_label": "Strokes gained putting",
+       "window_start": "2026-06-07",
+       "coverage_note": null
+      },
+      {
+       "unit": "strokes",
+       "as_of": "2026-11-08T05:06:19.623Z",
+       "value": -3.25,
+       "entity": {
+        "id": "9458ca63-9dbe-4020-ab13-9e2b70f70c80",
+        "kind": "player",
+        "label": "Mason Rivers"
+       },
+       "method": "sg_putting_per_18_over_the_window_as_stats_reads_it",
+       "source": "rounds",
+       "coverage": "complete",
+       "benchmark": {
+        "value": 0,
+        "source": "PGA Tour 2024",
+        "version": "2024",
+        "omitted_for_cohort": false
+       },
+       "direction": "higher_better",
+       "metric_id": "sg_putting",
+       "window_end": "2026-09-26",
+       "comparisons": [
+        {
+         "kind": "level",
+         "note": "There is no college figure for this metric.",
+         "label": "Division I average",
+         "value": null,
+         "place_of": null,
+         "place_percent": null,
+         "missing_reason": "no college figure"
+        },
+        {
+         "kind": "team",
+         "note": null,
+         "label": "Team average",
+         "value": -3.01,
+         "place_of": 7,
+         "place_percent": 33,
+         "missing_reason": null
+        },
+        {
+         "kind": "tour",
+         "note": null,
+         "label": "PGA Tour",
+         "value": 0,
+         "place_of": null,
+         "place_percent": null,
+         "missing_reason": null
+        }
+       ],
+       "denominator": null,
+       "sample_size": 8,
+       "sample_unit": "rounds",
+       "metric_label": "Strokes gained putting",
+       "window_start": "2026-05-29",
+       "coverage_note": null
+      },
+      {
+       "unit": "strokes",
+       "as_of": "2026-11-08T05:06:19.623Z",
+       "value": -4.77,
+       "entity": {
+        "id": "b40a650a-bce0-4e46-87cd-365b0256ee21",
+        "kind": "player",
+        "label": "Jackson Hale"
+       },
+       "method": "sg_putting_per_18_over_the_window_as_stats_reads_it",
+       "source": "rounds",
+       "coverage": "complete",
+       "benchmark": {
+        "value": 0,
+        "source": "PGA Tour 2024",
+        "version": "2024",
+        "omitted_for_cohort": false
+       },
+       "direction": "higher_better",
+       "metric_id": "sg_putting",
+       "window_end": "2026-09-26",
+       "comparisons": [
+        {
+         "kind": "level",
+         "note": "There is no college figure for this metric.",
+         "label": "Division I average",
+         "value": null,
+         "place_of": null,
+         "place_percent": null,
+         "missing_reason": "no college figure"
+        },
+        {
+         "kind": "team",
+         "note": null,
+         "label": "Team average",
+         "value": -3.01,
+         "place_of": 7,
+         "place_percent": 0,
+         "missing_reason": null
+        },
+        {
+         "kind": "tour",
+         "note": null,
+         "label": "PGA Tour",
+         "value": 0,
+         "place_of": null,
+         "place_percent": null,
+         "missing_reason": null
+        }
+       ],
+       "denominator": null,
+       "sample_size": 8,
+       "sample_unit": "rounds",
+       "metric_label": "Strokes gained putting",
+       "window_start": "2026-06-08",
+       "coverage_note": null
+      },
+      {
+       "unit": "strokes",
+       "as_of": "2026-11-08T05:06:19.623Z",
+       "value": null,
+       "entity": {
+        "id": "b6b87c4d-0673-4166-9f8c-44e60936a034",
+        "kind": "player",
+        "label": "Audit Testplayer"
+       },
+       "method": "sg_putting_per_18_over_the_window_as_stats_reads_it",
+       "source": "rounds",
+       "coverage": "empty",
+       "benchmark": {
+        "value": 0,
+        "source": "PGA Tour 2024",
+        "version": "2024",
+        "omitted_for_cohort": false
+       },
+       "direction": "higher_better",
+       "metric_id": "sg_putting",
+       "window_end": null,
+       "comparisons": [
+        {
+         "kind": "level",
+         "note": "There is no college figure for this metric.",
+         "label": "Division I average",
+         "value": null,
+         "place_of": null,
+         "place_percent": null,
+         "missing_reason": "no college figure"
+        },
+        {
+         "kind": "team",
+         "note": "There is no team average for this metric yet.",
+         "label": "Team average",
+         "value": null,
+         "place_of": null,
+         "place_percent": null,
+         "missing_reason": "no team average yet"
+        },
+        {
+         "kind": "tour",
+         "note": null,
+         "label": "PGA Tour",
+         "value": 0,
+         "place_of": null,
+         "place_percent": null,
+         "missing_reason": null
+        }
+       ],
+       "denominator": null,
+       "sample_size": 0,
+       "sample_unit": "rounds",
+       "metric_label": "Strokes gained putting",
+       "window_start": null,
+       "coverage_note": "Not enough rounds in this window for putting strokes gained per round."
+      }
+     ],
+     "window_label": "last 10 rounds",
+     "coverage_note": "No strokes gained putting recorded for Audit Testplayer."
+    }
+   }
+  ],
+  "recorded": {
+   "outcome": "accepted"
+  }
+ }
+}

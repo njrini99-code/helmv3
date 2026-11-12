@@ -29,7 +29,7 @@ import {
   type DropAnimation,
   type KeyboardCoordinateGetter,
 } from '@dnd-kit/core';
-import { useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { useId, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { haptic } from '../../lib/haptics';
 import { chSpringCurve, CH_DUR, CH_EASE } from '../../lib/motion';
 import { useChReducedMotion } from '../../lib/reduced-motion';
@@ -95,6 +95,9 @@ export function DndMonth({
   const grabDate = useRef<string | null>(null);
   const canDrag = (e: ChCalEvent) => !!coach && !!draggable(e, true);
 
+  // dnd-kit numbers its contexts as they mount (DndDescribedBy-0, -1…), and the server's count and the browser's differ,
+  // so every draggable's aria-describedby failed hydration on each load. React's id is the same on both.
+  const dndId = useId();
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 450, tolerance: 10 } }),
@@ -187,8 +190,8 @@ export function DndMonth({
                           <Ribbon key={r.e.id} r={r} tab={dates.includes(focusDate) && r.c0 <= dates.indexOf(focusDate) && dates.indexOf(focusDate) <= r.c1} canDrag={canDrag(r.e)} onPick={() => onPick(r.span.from < dates[0]! ? dates[0]! : r.span.from)} onGrab={(d) => (grabDate.current = d)} dates={dates} lifted={active?.e.id === r.e.id} />
                         ))}
                       <div className="ch-mo__evs">
-                        {shown.map((e) => (
-                          <Chip key={e.id} e={e} tab={date === focusDate} canDrag={canDrag(e)} onPick={() => onPick(date)} lifted={active?.e.id === e.id} onAltMove={(d) => e.start != null && e.end != null && onMove?.(e, { date: addDays(e.date, d), start: e.start, end: e.end }, 'move')} />
+                        {shown.map((e, i) => (
+                          <Chip key={e.id} two={i === 0 && isMajor(e.type) && lanes === 0 && hidden === 0 && shown.length <= 2} e={e} tab={date === focusDate} canDrag={canDrag(e)} onPick={() => onPick(date)} lifted={active?.e.id === e.id} onAltMove={(d) => e.start != null && e.end != null && onMove?.(e, { date: addDays(e.date, d), start: e.start, end: e.end }, 'move')} />
                         ))}
                         {hidden > 0 && <span className="ch-mo__more">{hidden} more</span>}
                       </div>
@@ -205,6 +208,7 @@ export function DndMonth({
   if (!coach) return body;
   return (
     <DndContext
+      id={dndId}
       sensors={sensors}
       autoScroll={false}
       collisionDetection={dayCollision}
@@ -276,7 +280,7 @@ function useMaybeDraggable(id: string, data: object, on: boolean) {
   return on ? d : { ...d, attributes: {}, listeners: undefined };
 }
 
-function Chip({ e, tab, canDrag, onPick, lifted, onAltMove }: { e: ChCalEvent; tab: boolean; canDrag: boolean; onPick: () => void; lifted: boolean; onAltMove: (days: number) => void }) {
+function Chip({ e, two = false, tab, canDrag, onPick, lifted, onAltMove }: { e: ChCalEvent; two?: boolean; tab: boolean; canDrag: boolean; onPick: () => void; lifted: boolean; onAltMove: (days: number) => void }) {
   const { setNodeRef, attributes, listeners } = useMaybeDraggable(`chip:${e.id}`, { e, ribbon: false }, canDrag);
   const mk = useRowMark()(e);
   return (
@@ -289,7 +293,8 @@ function Chip({ e, tab, canDrag, onPick, lifted, onAltMove }: { e: ChCalEvent; t
       tabIndex={tab ? 0 : -1}
       aria-roledescription={canDrag ? 'draggable event' : undefined}
       aria-label={`${roundLabel(e, e.title).name}${roundLabel(e, e.title).spoken}${e.allDay || e.start == null ? '' : `, ${fmtHour(e.start, true)}`}${e.cancelled ? ', cancelled' : ''}${mk?.aria ?? ''}`}
-      className={'ch-mo__ev' + (isMajor(e.type) ? ` is-major is-${e.type}` : '') + (canDrag ? ' is-draggable' : '') + (lifted ? ' is-held' : '') + (e.cancelled ? ' is-cancelled' : '')}
+      title={roundLabel(e, e.title).name}
+      className={'ch-mo__ev' + (isMajor(e.type) ? ` is-major is-${e.type}` : '') + (two ? ' is-two' : '') + (canDrag ? ' is-draggable' : '') + (lifted ? ' is-held' : '') + (e.cancelled ? ' is-cancelled' : '')}
       onKeyDown={(ev) => {
         if (canDrag && ev.altKey && (ev.key === 'ArrowLeft' || ev.key === 'ArrowRight')) {
           ev.preventDefault();
@@ -325,6 +330,7 @@ function Ribbon({ r, tab, canDrag, onPick, onGrab, dates, lifted }: { r: ChLaneB
       tabIndex={tab ? 0 : -1}
       aria-roledescription={canDrag ? 'draggable event' : undefined}
       aria-label={`${roundLabel(e, e.title).name}${roundLabel(e, e.title).spoken}, ${dowOf(span.from)} ${dayNum(span.from)} to ${dowOf(span.to)} ${dayNum(span.to)}`}
+      title={roundLabel(e, e.title).name}
       className={`ch-mo__ribbon ch-ev--${e.type}${isMajor(e.type) ? ' is-major' : ''}${r.clipStart ? ' is-clip-start' : ''}${r.clipEnd ? ' is-clip-end' : ''}${canDrag ? ' is-draggable' : ''}${lifted ? ' is-held' : ''}`}
       style={{ ['--ch-mo-span' as string]: n, ['--ch-mo-lane' as string]: r.row } as React.CSSProperties}
       onPointerDownCapture={(ev) => {

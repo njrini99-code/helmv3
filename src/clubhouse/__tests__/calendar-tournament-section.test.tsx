@@ -72,6 +72,11 @@ describe('P-5 the tournament section', () => {
     expect(within(dlg).getByRole('button', { name: 'Create tournament' })).toBeTruthy();
     expect(within(dlg).getByText('Creates the tournament, with one calendar entry per round.')).toBeTruthy();
     expect(within(dlg).getByRole('note').textContent).toMatch(/^Creates the tournament in Tournaments with 1 round on /);
+    // Each day has its own name in the shared fields, for a page that writes its labels over its fields (the Tournaments
+    // form); they are out of the accessibility tree, where each field is already named.
+    const days = Array.from(dlg.querySelectorAll('.ch-tfx__row--days .ch-tfx__sublbl'));
+    expect(days.map((d) => d.textContent)).toEqual(['First day', 'Last day']);
+    expect(days.every((d) => d.getAttribute('aria-hidden') === 'true')).toBe(true);
   });
 
   it('with golf_tournaments_v1 off, Tournament is today’s editor: no section, the date and place fields stay', async () => {

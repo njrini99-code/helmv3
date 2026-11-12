@@ -32,12 +32,12 @@ const shell = (node: React.ReactNode) => (
 describe('Rows that open another page', () => {
   it('the team grid, the season bests and the leaderboard show the hairline and say "Loading" while their page loads, and nothing when idle', () => {
     pending.value = false;
-    const idle = render(shell(<><StatsTeam data={PREVIEW_TEAM_STATS} /><Leaderboard data={PREVIEW_HOME.leaderboard} /></>));
+    const idle = render(shell(<><StatsTeam layout="board" data={PREVIEW_TEAM_STATS} /><Leaderboard data={PREVIEW_HOME.leaderboard} /></>));
     expect(idle.container.querySelector('.ch-lp')).toBeNull();
     idle.unmount();
 
     pending.value = true;
-    const { container } = render(shell(<><StatsTeam data={PREVIEW_TEAM_STATS} /><Leaderboard data={PREVIEW_HOME.leaderboard} /></>));
+    const { container } = render(shell(<><StatsTeam layout="board" data={PREVIEW_TEAM_STATS} /><Leaderboard data={PREVIEW_HOME.leaderboard} /></>));
     const inside = (selector: string) => [...container.querySelectorAll(selector)].filter((link) => link.querySelector('.ch-lp__bar'));
     // The grid row's name is its link (P004-D4); its hit area covers the row.
     expect(inside('a.ch-lg__a').length).toBe(PREVIEW_TEAM_STATS.grid.length);

@@ -321,7 +321,10 @@ describe('Calendar parity · a player’s reply locks when the server locks it (
     // replies; the clash row ("Team dinner · Overlaps Film session …") is not a reply row.
     const sec = (await screen.findByText('Needs your attention')).closest('.ch-in__sec') as HTMLElement;
     const rows = within(sec).getAllByRole('button').map((b) => b.textContent ?? '');
-    expect(rows.filter((t) => !t.includes('Overlaps'))).toEqual([expect.stringMatching(/^Team dinnerFri 16 · /)]);
+    // Beside a clash the reply row says its ask in words, as the coach's does, then the event, its day and its start.
+    const replies = rows.filter((t) => !t.includes('Overlaps'));
+    expect(replies).toEqual([expect.stringMatching(/^Reply neededTeam dinner · Fri 16 · \d{1,2}:\d{2} [AP]M$/)]);
+    expect(replies.some((t) => t.includes('Film session'))).toBe(false);
     expect(rows.some((t) => t.startsWith('Film session'))).toBe(false);
   });
 
@@ -410,6 +413,9 @@ describe('Calendar parity · an event that asks for replies and invites no one i
     const view = wrap(cal([open()], player));
     const sec = (await screen.findByText('Needs your reply')).closest('.ch-in__sec') as HTMLElement;
     expect(within(sec).getByText(/Team dinner/)).toBeTruthy();
+    // The heading has said the ask: the row is the event and its time, not "Reply needed" again.
+    expect(within(sec).getByRole('button').textContent).toMatch(/^Team dinnerFri 16 · /);
+    expect(within(sec).queryByText('Reply needed')).toBeNull();
     view.unmount();
     wrap(cal([open()], player), 'tm');
     expect(await screen.findByText('Open to the whole team')).toBeTruthy();

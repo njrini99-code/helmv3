@@ -41,15 +41,13 @@ const opened = (id: string, from: 'hero' | 'card') => (e: MouseEvent) => {
   if (isPlainClick(e)) noteOpenedFromList(id);
 };
 
-/** Qualifiers list, coach and player. `mine` is a player's own entries (/my-qualifiers). */
+/** Qualifiers list, coach and player: the one list (a player's own entries come first, D-30; My qualifiers is retired). */
 const ROW_KEYS: readonly ChPageKey[] = [{ label: 'Move between qualifiers', keys: ['Up', 'Down'] }];
 
 export function QualifiersList({ data, live }: { data: ChQList; live?: Record<string, ChQLiveLine> }) {
   const { refresh, refreshing } = useRefresh();
   usePageKeys('Qualifiers', ROW_KEYS);
   const coach = data.role === 'coach';
-  // A player's own list is only as good as the entries read: without it nothing says who they are entered in.
-  const mineUnknown = data.mode === 'mine' && !!data.entriesError;
   // The filter and the search come back when the coach returns to the list (Back from a qualifier, the sidebar, a tab): the shell keeps
   // them for this tab under the page and the team (`useChSessionState`), and the list's place comes back through RouteFrame (owner rule 8).
   const [filter, setFilter] = useChSessionState<Filter>('filter', 'all');
@@ -75,19 +73,21 @@ export function QualifiersList({ data, live }: { data: ChQList; live?: Record<st
     setFilter(f);
   };
 
-  const title = coach ? 'Lineup decisions' : data.mode === 'mine' ? 'My qualifiers' : 'Qualifiers';
-  const lede = listLede(coach, data.mode);
+  const title = coach ? 'Lineup decisions' : 'Qualifiers';
+  const lede = listLede(coach);
 
   return (
     <main className="ch-qf ch-qf--list" data-canopy="">
       {/* Phone (board 01): Qualifiers opens from More (D-66), so the top bar goes back there. */}
-      <PhoneTop heading={false} title={data.mode === 'mine' ? 'My qualifiers' : 'Qualifiers'} start />
+      <PhoneTop heading={false} title="Qualifiers" start />
       <header className="ch-qf-head" data-canopy-head="tight">
         <div>
           {/* The filter pills below carry the active and concluded counts, so the eyebrow is the page's name alone (no second copy
-              of the counts, and no dashes when they failed to load). The phone's top bar already names the page, so it has none. */}
+              of the counts, and no dashes when they failed to load). A player's title is that same name, so their eyebrow is the
+              squad and the season instead, as the Tournaments head; the name again only when the team didn't load. The phone's
+              top bar already names the page, so it has none. */}
           <span className="ch-qf-eyebrow ch-num is-bare">
-            <span className="ch-qf-eyebrow__k">{data.mode === 'mine' ? 'My qualifiers' : 'Qualifiers'}</span>
+            <span className="ch-qf-eyebrow__k">{(!coach && data.teamLabel) || 'Qualifiers'}</span>
           </span>
           <LargeTitle>{title}</LargeTitle>
           <p>{lede}</p>
@@ -110,40 +110,21 @@ export function QualifiersList({ data, live }: { data: ChQList; live?: Record<st
           onRetry={refresh}
           retrying={refreshing}
         />
-      ) : mineUnknown ? (
-        <InlineNotice
-          code="CH-09222"
-          title="Your qualifiers didn’t load"
-          body="Which qualifiers you’re entered in didn’t load, so none are shown rather than a wrong list. Nothing has changed. Try again."
-          onRetry={refresh}
-          retrying={refreshing}
-        />
       ) : data.items.length === 0 ? (
-        data.mode === 'mine' ? (
-          <EmptyState
-            size="page"
-            code="CH-09306"
-            icon={Medal}
-            title="You aren’t entered in any qualifiers"
-            body="Qualifiers your coach enters you in show here, with your rounds and where you stand."
-            action={<Button href={LIST}>See the team’s qualifiers</Button>}
-          />
-        ) : (
-          <EmptyState
-            size="page"
-            code="CH-09301"
-            icon={Medal}
-            title="No qualifiers yet"
-            body={coach ? 'Set up a qualifier to rank players across counted rounds and pick your lineup.' : 'Your coach’s qualifiers show here once they’re set up.'}
-            action={
-              coach ? (
-                <Button variant="primary" leftIcon={Plus} href={`${LIST}/new`}>
-                  New qualifier
-                </Button>
-              ) : undefined
-            }
-          />
-        )
+        <EmptyState
+          size="page"
+          code="CH-09301"
+          icon={Medal}
+          title="No qualifiers yet"
+          body={coach ? 'Set up a qualifier to rank players across counted rounds and pick your lineup.' : 'Your coach’s qualifiers show here once they’re set up.'}
+          action={
+            coach ? (
+              <Button variant="primary" leftIcon={Plus} href={`${LIST}/new`}>
+                New qualifier
+              </Button>
+            ) : undefined
+          }
+        />
       ) : (
         <>
           <div className="ch-qf-tools">
@@ -209,8 +190,7 @@ export function QualifiersList({ data, live }: { data: ChQList; live?: Record<st
                 {hero && (
                   <section className="ch-qf-sec is-focus" aria-labelledby="ch-qf-now">
                     <h2 id="ch-qf-now">Active</h2>
-                    <Hero item={hero} standingsError={data.standingsError} today={data.today} line={live?.[hero.id]} />
-                    <PlayNext item={hero} standingsError={data.standingsError} today={data.today} />
+                    <HeroWithNext item={hero} standingsError={data.standingsError} today={data.today} line={live?.[hero.id]} />
                   </section>
                 )}
                 {rest.length > 0 && (
@@ -268,45 +248,59 @@ export function LiveLine({ line }: { line?: ChQLiveLine }) {
   );
 }
 
-function Mine({ item }: { item: ChQListItem }) {
-  if (!item.mine) return null;
-  if (!item.mine.entered) return <span className="ch-qf-mine is-out">You aren’t entered</span>;
-  if (!item.mine.played) return <span className="ch-qf-mine">You’re entered · no rounds in yet</span>;
-  // Once the coach confirms the squad, the line says whether you made it (wave 7); before that, or with the read failed, the standing.
-  if (item.mine.squad === true) {
-    return (
-      <span className="ch-qf-mine">
-        You made the squad · {placeOf(item.mine.position)} · {formatToPar(item.mine.toPar)}
-      </span>
-    );
-  }
-  if (item.mine.squad === false) {
-    return (
-      <span className="ch-qf-mine">
-        You’re {placeOf(item.mine.position)} · {formatToPar(item.mine.toPar)} · not selected
-      </span>
-    );
-  }
+/**
+ * Where you stand on a card, set as the qualifier's own page states a place and a total ("You vs the line", parts.tsx): what you
+ * are in the strong line, the total on its plate, the rest quiet beside them, in the sentence's order. It is read, and found, as
+ * the one sentence it was.
+ */
+function Standing({ lead, place, toPar, rest }: { lead: string; place?: string | null; toPar?: number | null; rest?: string | null }) {
+  const said = [lead, place, toPar !== undefined ? formatToPar(toPar) : null, rest].filter(Boolean).join(' · ');
   return (
-    <span className="ch-qf-mine">
-      You’re {placeOf(item.mine.position)} · {formatToPar(item.mine.toPar)} · {item.mine.played} of {item.numRounds} {pluralWord(item.numRounds, 'round')}
+    <span className="ch-qf-mine ch-qf-you-line__me ch-num">
+      <span className="ch-sr-only">{said}</span>
+      <span className="ch-qf-mine__v" aria-hidden="true">
+        <b>{lead}</b>
+        {place && <span>{place}</span>}
+        {toPar !== undefined && <ToParPlate value={toPar} size="card" />}
+        {rest && <span>{rest}</span>}
+      </span>
     </span>
   );
 }
 
+function Mine({ item }: { item: ChQListItem }) {
+  if (!item.mine) return null;
+  if (!item.mine.entered) return <span className="ch-qf-mine ch-qf-you-line__me is-out">You aren’t entered</span>;
+  if (!item.mine.played) return <Standing lead="You’re entered" rest="no rounds in yet" />;
+  // Once the coach confirms the squad, the line says whether you made it (wave 7); before that, or with the read failed, the standing.
+  if (item.mine.squad === true) return <Standing lead="You made the squad" place={placeOf(item.mine.position)} toPar={item.mine.toPar} />;
+  if (item.mine.squad === false) return <Standing lead={`You’re ${placeOf(item.mine.position)}`} toPar={item.mine.toPar} rest="not selected" />;
+  return <Standing lead={`You’re ${placeOf(item.mine.position)}`} toPar={item.mine.toPar} rest={`${item.mine.played} of ${item.numRounds} ${pluralWord(item.numRounds, 'round')}`} />;
+}
+
 /**
- * A live qualifier's next round for you, as its own link under the card (the card is one link already): round setup with this
- * qualifier chosen. Not past the qualifier's last day, and not before round setup is rebuilt for players.
+ * The live qualifier's card. With a round of yours still to play it stands in a box that carries the card's material, and the round
+ * is the action at the card's foot (the ivory key on the phone's green) with the way to the board beside it. The card is one link
+ * already, so the foot is its sibling, never inside it: round setup with this qualifier chosen. The card's link still covers the
+ * whole box, so "View leaderboard" at the foot is its words, not a second link. Not past the qualifier's last day, and not before
+ * round setup is rebuilt for players.
  */
-function PlayNext({ item, standingsError, today }: { item: ChQListItem; standingsError: boolean; today?: string }) {
+function HeroWithNext({ item, standingsError, today, line }: { item: ChQListItem; standingsError: boolean; today?: string; line?: ChQLiveLine }) {
   const next = item.mine?.next;
   const href = playRoundHref(item.id);
-  if (!next || !href || standingsError || endedOf(item, standingsError, today)) return null;
+  if (!next || !href || standingsError || endedOf(item, standingsError, today)) return <Hero item={item} standingsError={standingsError} today={today} line={line} />;
   return (
-    <div className="ch-qf-play" data-ch-code="CH-09906">
-      <Button size="sm" variant="secondary" leftIcon={Play} href={href}>
-        {[`Play round ${next.round}`, next.course].filter(Boolean).join(' · ')}
-      </Button>
+    <div className="ch-qf-herobox">
+      <Hero item={item} standingsError={standingsError} today={today} line={line} foot />
+      <div className="ch-qf-herobox__foot" data-ch-code="CH-09906">
+        <Button variant="primary" leftIcon={Play} href={href} className="ch-qf-herobox__go">
+          {[`Play round ${next.round}`, next.course].filter(Boolean).join(' · ')}
+        </Button>
+        <span className="ch-qf-cta ch-qf-herobox__more" aria-hidden="true">
+          {ctaLabel(item.status)}
+          <Icon icon={ArrowRight} size={16} />
+        </span>
+      </div>
     </div>
   );
 }
@@ -315,7 +309,7 @@ function PlayNext({ item, standingsError, today }: { item: ChQListItem; standing
 const endedOf = (item: ChQListItem, standingsError: boolean, today: string | undefined) =>
   endedLive({ status: item.status, endDate: item.endDate, today, entrants: item.entrants, numRounds: item.numRounds, submitted: standingsError ? null : item.submitted });
 
-function Hero({ item, standingsError, today, line }: { item: ChQListItem; standingsError: boolean; today?: string; line?: ChQLiveLine }) {
+function Hero({ item, standingsError, today, line, foot = false }: { item: ChQListItem; standingsError: boolean; today?: string; line?: ChQLiveLine; foot?: boolean }) {
   const press = usePressPrefetch();
   const live = item.status === 'in_progress' && !standingsError && item.leaders.length > 0;
   const ended = endedOf(item, standingsError, today);
@@ -330,10 +324,13 @@ function Hero({ item, standingsError, today, line }: { item: ChQListItem; standi
         <Meta startDate={item.startDate} endDate={item.endDate} squad={item.squad} course={item.course} today={today} />
         <LiveLine line={line} />
         {!standingsError && <Mine item={item} />}
-        <span className="ch-qf-cta">
-          {ctaLabel(item.status)}
-          <Icon icon={ArrowRight} size={16} />
-        </span>
+        {/* With a foot under the card, the foot carries this link's words. */}
+        {!foot && (
+          <span className="ch-qf-cta">
+            {ctaLabel(item.status)}
+            <Icon icon={ArrowRight} size={16} />
+          </span>
+        )}
       </div>
       {live && (
         <div className="ch-qf-lead ch-scoreboard">

@@ -12,24 +12,26 @@ export function CalendarSkeleton() {
           <Skeleton width={240} height={14} />
         </div>
         <div className="ch-cal-tools">
-          <Skeleton width={40} height={40} radius={11} />
-          <Skeleton width={140} height={40} radius={11} />
+          <Skeleton width={36} height={36} radius={11} />
+          <Skeleton width={145} height={36} radius={11} />
         </div>
       </header>
       <div className="ch-cal-bar">
-        <Skeleton width={357} height={38} radius={12} />
-        <Skeleton width={313} height={48} radius={14} />
-        <div className="ch-cal-legend" aria-hidden="true">
-          <Skeleton width={333} height={18} radius={9} />
-        </div>
+        <Skeleton width={348} height={38} radius={12} />
+        <Skeleton width={333} height={48} radius={14} />
       </div>
-      {/* The view and the panel in the loaded page's own classes, so they sit flush on the Ledger like it does. */}
-      <div className="ch-cal-body">
+      {/* The view and the panel in the loaded page’s own classes, so they sit flush on the Ledger like it does. Calendar
+          opens on the week, whose panel lies under it on the desktop (owner, 2026-11-11), so the skeleton waits that way. */}
+      <div className="ch-cal-body" data-view="week">
         <div className="ch-wk ch-cal-surface" style={{ display: 'grid', gap: 16 }}>
+          {/* The week's legend, in the week's head. */}
+          <div className="ch-cal-legend" aria-hidden="true">
+            <Skeleton width={333} height={18} radius={9} />
+          </div>
           <Skeleton width="100%" height={48} radius={10} />
           <Skeleton width="100%" height={820} radius={10} />
         </div>
-        <div className="ch-in-wrap ch-cal-surface">
+        <div className="ch-in-wrap ch-cal-surface" data-under="">
           <div className="ch-in">
             <Skeleton width={120} height={12} />
             <Skeleton width={220} height={24} radius={8} />
@@ -43,11 +45,11 @@ export function CalendarSkeleton() {
           their seams. Switched in CSS, since this renders on the server. */}
       <div className="ch-calm-skel">
         <div className="ch-intro ch-calm-head">
-          {/* The eyebrow's 13px type at its 15.6px line, so the title row lands where it loads. */}
-          <SkelLine line={15.6} bar={9} width={124} />
+          {/* The eyebrow's line as the phone draws it (14.8px, WebKit 390), so the title row lands where it loads. */}
+          <SkelLine line={14.8} bar={9} width={124} />
           <span className="ch-intro__row">
-            <SkelLine line={34} bar={26} width={150} />
-            <Skeleton width={160} height={40} radius={12} />
+            <SkelLine line={37} bar={26} width={120} />
+            <Skeleton width={213} height={42} radius={12} />
           </span>
         </div>
         <div className="ch-calm-skel__week">
@@ -59,9 +61,12 @@ export function CalendarSkeleton() {
           ))}
         </div>
         <div className="ch-calm-skel__day">
+          {/* The day's heading as it loads: its 18px line beside the week arrows' 30px box (drawn empty), then the
+              day's counts on a line of their own, 64px in all, so the rows start where the day's do. */}
           <div className="ch-calm-dayk ch-calm-skel__dayk">
-            <SkelLine line={22} bar={15} width={150} />
-            <SkelLine line={16} bar={10} width={96} />
+            <SkelLine line={18} bar={15} width={150} />
+            <span className="ch-calm-skel__step" />
+            <SkelLine line={15} bar={10} width={170} />
           </div>
           <SkelRows rows={4} lead />
         </div>

@@ -1,1292 +1,478 @@
 /**
- * ============================================================================
- * CoachHelm chat — streaming endpoint (AI SDK 7 UI message stream)
- * ----------------------------------------------------------------------------
- * Replaces the blocking POST that returned a finished JSON body. The client now
- * renders text, progress, charts, approval cards and receipts as they arrive.
+ * CoachHelm chat: the streaming endpoint.
  *
- * Everything load-bearing from the previous route is preserved and, where it
- * was weak, strengthened:
+ * The browser sends ONE thing: a new message, or the coach's decision on a waiting card, with the conversation id, a
+ * per-turn idempotency key and the surface. The server owns the conversation: it loads the stored model messages,
+ * appends, runs the turn (engine/turn.ts) and stores the exact result. Nothing the browser holds is replayed to the
+ * model.
  *
- *   auth + ownership   the coach is resolved from the session; the conversation
- *                      must belong to them; RLS backs both.
- *   idempotency        an unchanged `client_turn_id` returns the stored turn
- *                      instead of re-running the (paid) model.
- *   budget             the pre-flight gate runs BEFORE both the conversation
- *                      row is created and the user turn is appended, so an
- *                      exhausted budget leaves no orphan of either.
- *   cost logging       token usage lands in `golf_coachhelm_llm_calls` and the
- *                      day's running spend, from the stream's finish callback.
- *   gateway            provider selection stays behind one abstraction.
- *   grounding          upgraded from "did a tool run" to auditing the finished
- *                      text against the measurements the turn actually produced.
- *   durability         UI parts are persisted, so a reload reproduces the
- *                      charts and receipts rather than only the prose.
- * ========================================================================== */
-
-import { isPracticePlansEnabled } from '@/lib/coachhelm/v3/practice-plan/flag';
-import { runPlayerTurn } from '@/lib/coachhelm/v3/chat/player-turn';
-import { knowsSection, readAskKnows } from '@/lib/coachhelm/v3/chat/ask-knows';
-import { isAskV2Enabled, isPlayerAskEnabled } from '@/lib/coachhelm/v3/chat/ask-flag';
-import { stripReadMarkers } from '@/lib/coachhelm/v3/chat/read-markers';
+ * What this file keeps from the route it replaces:
+ *   auth + ownership   the coach comes from the session; the conversation must be theirs; RLS backs both.
+ *   gates              CoachHelm on for the coach, the rate limit, and the daily budget before anything is created.
+ *   idempotency        a retried `client_turn_id` that already has an answer is sent that answer, not a second run.
+ *   cost               reported tokens go to `golf_coachhelm_llm_calls` and the day's spend, after the response.
+ *   errors             the coach reads a sentence they can act on; provider text never reaches the browser.
+ *
+ * What is gone: held text, the withheld card, the repair pass, the claims and cites blocks, the client-held thread and
+ * everything that patched it (abandoned approvals, dangling tool calls).
+ */
 import type { NextRequest } from 'next/server';
 import { after, NextResponse } from 'next/server';
 import { z } from 'zod';
 import * as Sentry from '@sentry/nextjs';
-import {
-  convertToModelMessages,
-  createUIMessageStream,
-  createUIMessageStreamResponse,
-  stepCountIs,
-  streamText,
-  type LanguageModelUsage,
-  type UIMessage,
-} from 'ai';
-import { resolveModelProvider } from '@/lib/ai/model-provider';
-import { recordAi } from '@/lib/observability/metrics';
-import { createClient } from '@/lib/supabase/server';
-import { createAdminClient } from '@/lib/supabase/admin';
-import { logServerError, logServerEvent } from '@/lib/server-error-logger';
+import { filterForFigureWindow, loadPlayerPuttBands, loadPlayersFigures } from '@/clubhouse/data/player-figures';
+import { loadQualifierDetail, loadQualifierList } from '@/clubhouse/data/qualifiers';
+import { loadRoster } from '@/clubhouse/data/roster';
+import { loadRoundReview } from '@/clubhouse/data/round-review';
+import { loadRoundsLibrary } from '@/clubhouse/data/rounds';
+import { loadPlayerProfile } from '@/clubhouse/data/stats-player';
+import { loadTeamStats } from '@/clubhouse/data/stats-team';
+import { loadTeamRounds } from '@/clubhouse/data/team-rounds';
+import { loadTeamStrokesGained } from '@/clubhouse/data/team-sg';
+import { loadTournamentsHome, tourContext } from '@/clubhouse/data/tournaments';
+import { isClubhouseFor, isClubhouseForTeam } from '@/clubhouse/gate';
 import { classifyProviderFault, providerFaultSeverity } from '@/lib/admin/provider-fault';
 import { drainCollapsedCount, shouldEmit } from '@/lib/admin/emit-throttle';
-import {
-  estimateCachedCostUsd,
-  estimateCostUsd,
-  MODEL_FOR_TASK,
-} from '@/lib/coachhelm/v3/llm/types';
-import { checkBudget, recordSpend } from '@/lib/coachhelm/v3/llm/budget';
 import { checkRateLimit, RATE_LIMITS } from '@/lib/auth/rate-limit';
-import {
-  CoachContextError,
-  resolveCoachChatContext,
-  type CoachChatContext,
-} from '@/lib/coachhelm/v3/chat/context';
-import { buildCoachTools, isConfirmRequired } from '@/lib/coachhelm/v3/chat/agent-tools';
-import { buildInstructions } from '@/lib/coachhelm/v3/chat/instructions';
-import {
-  coachRequestDates,
-  collectDates,
-  collectEnvelopeNumbers,
-  // Imported as a value, not `type`-only: `priorTurnEvidence` runs it as a
-  // zod schema (`ToolEnvelope.safeParse`) to validate a stored `ui_parts`
-  // blob before trusting its shape. The inferred type of the same name is
-  // still available for annotations below — zod schema + `z.infer` sharing
-  // one exported identifier is the standard pattern.
-  ToolEnvelope,
-  type Measurement,
-  type MeasurementSeries,
-  type ScopedNumber,
-} from '@/lib/coachhelm/v3/chat/provenance';
-import { todayIsoInZone } from '@/lib/golf/timezone';
-import {
-  computeTurnVerdict,
-  STREAM_INCOMPLETE_NOTE,
-  verdictPartType,
-  verdictRecord,
-  withVerdictPart,
-  type TurnVerdict,
-  type TurnVerdictReason,
-} from '@/lib/coachhelm/v3/chat/verdict';
-import { extractAndValidateChatClaims } from '@/lib/coachhelm/v3/chat/claims-packet';
-import { CLAIMS_OPEN, CLAIMS_CLOSE, extractAndValidateClaimsSafe } from '@/lib/coachhelm/v3/llm/claims-block';
-import { isFlagEnabled } from '@/lib/flags';
-import { isClubhouseForTeam } from '@/clubhouse/gate';
 import { isCoachHelmEnabledForCoach } from '@/lib/coachhelm/v2/gate';
-import type { ChatMessage } from '@/lib/coachhelm/v3/chat/types';
-import {
-  appendMessage,
-  createConversation,
-  findAssistantTurn,
-  getConversation,
-  listRecentMessages,
-  touchConversation,
-  upsertUserTurn,
-} from '@/lib/coachhelm/v3/chat/persistence';
-import { linkProposalsToMessage, proposalKeysFromParts } from '@/lib/coachhelm/v3/chat/action-runs';
-import { denyAbandonedApprovals } from '@/lib/coachhelm/v3/chat/abandoned-approvals';
-import { storedTurnChunks } from '@/lib/coachhelm/v3/chat/restore';
-// `publishableParts` also drops dangling tool calls: storing one poisons the
-// conversation permanently, because a reload rehydrates the thread from
-// `ui_parts` and sends the orphaned `tool_use` back with no matching
-// `tool_result`. Production shows the signature — one tool id rejected three
-// times in ninety seconds as the coach retried.
-import {
-  hasPersistableAssistantContent,
-  isIncompleteToolPart,
-  publishableParts,
-} from '@/lib/coachhelm/v3/chat/ui-parts';
-import { describeError } from '@/lib/utils/describe-error';
+import { linkProposalsToMessage } from '@/lib/coachhelm/v3/chat/action-runs';
+import { CoachContextError, resolveCoachChatContext, type CoachChatContext } from '@/lib/coachhelm/v3/chat/context';
+import { firstTurnNotes, readStandingNotes, toneSentence } from '@/lib/coachhelm/v3/chat/context/notes';
+import { turnContext } from '@/lib/coachhelm/v3/chat/context/screen-context';
+import { CHAT_MAX_STEPS, MissingModelKeyError, anthropicModelClient, callPromptTokens, chatFeatures, onLongCard, profileFor, promptTokens, turnCostUsd, type UsageTotals } from '@/lib/coachhelm/v3/chat/engine/model';
+import { CHAT_STREAM_CONTENT_TYPE, encodeChatEvent, eventsForStoredParts, pendingDecisionKeys, type ChatErrorAction, type ChatErrorKind, type ChatEvent, type ChatScreenEcho } from '@/lib/coachhelm/v3/chat/engine/protocol';
+import { loadConversation, type LoadedConversation, type TurnRow } from '@/lib/coachhelm/v3/chat/engine/store';
+import { chatTurnResponse, type TurnInput, type TurnSummary } from '@/lib/coachhelm/v3/chat/engine/turn';
+import type { ChatSurface, ScreenLoaders } from '@/lib/coachhelm/v3/chat/engine/tool';
+import { groundingCheck } from '@/lib/coachhelm/v3/chat/grounding';
+import { heldCommitFor } from '@/lib/coachhelm/v3/chat/held-runner';
+import { instructionBlocks } from '@/lib/coachhelm/v3/chat/instructions';
+import { createConversation, getConversation, touchConversation, upsertUserTurn } from '@/lib/coachhelm/v3/chat/persistence';
+import { runPlayerTurn } from '@/lib/coachhelm/v3/chat/player-turn';
+import { toolsFor } from '@/lib/coachhelm/v3/chat/registry';
+import { sweepHeld } from '@/lib/coachhelm/v3/chat/undo-hold';
+import { checkBudget, recordSpend } from '@/lib/coachhelm/v3/llm/budget';
 import { buildChatLlmCallRow } from '@/lib/coachhelm/v3/llm/chat-call-row';
+import { CHAT_SUGGESTIONS_TASK, estimateCostUsd } from '@/lib/coachhelm/v3/llm/types';
+import { writeChatLedgerRow } from '@/lib/coachhelm/v3/chat/ledger';
+import { suggestionsModel } from '@/lib/coachhelm/v3/chat/engine/suggestions';
+import { isFlagEnabled } from '@/lib/flags/is-enabled';
+import { recordAi } from '@/lib/observability/metrics';
+import { logServerError, logServerEvent } from '@/lib/server-error-logger';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { createClient } from '@/lib/supabase/server';
+import type { Database } from '@/lib/types/database';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { describeError } from '@/lib/utils/describe-error';
 
 export const maxDuration = 120;
 
-/** Worst-case one-turn spend, for the pre-flight gate only. */
-const CHAT_TURN_COST_ESTIMATE_USD = estimateCostUsd(MODEL_FOR_TASK.coach_chat, 12000, 2500);
+// ── The Clubhouse screens' loaders, bound for the chat tools ─────────────────────────────────────────────────────────
+// `src/lib` may not import `src/clubhouse`, and only a route file may import a screen's loader, so this is where the
+// tools' `ScreenLoaders` meet the real functions. A figure the chat states is read through the loader the screen itself
+// calls, for the same window: one number, one source. Each binding resolves to null when its loader throws, so a failed
+// read is reported as failed and never as "no data".
 
-const Body = z.object({
-  conversation_id: z.string().uuid().nullable().optional(),
-  /** Full UI message list from `useChat`. */
-  messages: z.array(z.unknown()).min(1),
-  client_turn_id: z.string().min(1).max(128),
-});
+type Sb = SupabaseClient<Database>;
 
-/**
- * What the coach is allowed to see when a turn fails.
- *
- * An upstream error can carry provider internals or echo prompt text, neither
- * of which belongs in a browser — but "An error occurred" is not a safer
- * alternative, it is just a less useful one. Name the cause when it is a class
- * the coach can act on.
- */
-function sanitiseStreamError(error: unknown): string {
-  // One shared classifier decides this, so the coach's wording, the schedule
-  // importer's wording and the Bridge's severity cannot drift apart the way
-  // three separate regexes let them.
-  const fault = classifyProviderFault(error);
-  if (fault) return fault.summary;
-  return 'Something went wrong while answering. Please try again.';
+const orNull = <A extends unknown[], R>(load: (...args: A) => Promise<R>) => async (...args: A): Promise<R | null> => {
+  try {
+    return await load(...args);
+  } catch {
+    return null;
+  }
+};
+
+/** A coach's loaders: every screen of their team. */
+function coachScreenLoaders(sb: Sb, who: { team_id: string; coach_id: string; timezone: string; roster: ReadonlyArray<{ id: string }> }): ScreenLoaders {
+  const teamId = who.team_id;
+  const timezone = who.timezone;
+  return {
+    playerFigures: orNull((ids, window) => loadPlayersFigures(sb, { timezone }, ids, window)),
+    puttBands: orNull((id, window) => loadPlayerPuttBands(sb, { timezone }, id, window)),
+    teamStrokesGained: orNull((window) => loadTeamStrokesGained(sb, { timezone, playerIds: who.roster.map((p) => p.id) }, window)),
+    playerStats: orNull((playerId, w) => loadPlayerProfile({ viewer: 'coach', teamId, playerId, window: w === 'season' ? 'season' : 'last10', filter: filterForFigureWindow(w) })),
+    teamStats: orNull((w) => loadTeamStats({ teamId, window: w === 'season' ? 'season' : 'last10', filter: filterForFigureWindow(w) })),
+    roster: orNull(() => loadRoster({ teamId, coachId: who.coach_id })),
+    teamRounds: orNull(() => loadTeamRounds({ teamId })),
+    qualifierList: orNull(() => loadQualifierList({ role: 'coach', teamId, playerId: null })),
+    qualifierBoard: orNull((qualifierId) => loadQualifierDetail({ role: 'coach', teamId, playerId: null, qualifierId })),
+    roundReview: orNull((roundId) => loadRoundReview(roundId, { role: 'coach', teamId })),
+    // Tournaments are behind golf_tournaments_v1: with the flag off the loader is not bound at all, and a read through it answers
+    // "could not be read", never an empty season.
+    ...(isFlagEnabled('golf_tournaments_v1') ? { tournaments: orNull(async () => loadTournamentsHome(await tourContext({ role: 'coach', teamId }))) } : {}),
+  };
 }
 
 /**
- * Log one failed turn.
- *
- * A provider/account fault is normalised before it is written: the raw text
- * carries the provider's own billing URL and, for the incomplete-tool-call
- * class, an opaque `toolu_…` id. Neither survives
- * `normalizeIncidentMessagePrefix` (mixed-case base62 is not a UUID and not
- * long hex), so every retry of one outage was landing in the Bridge as its own
- * incident. Naming a stable `errorCode` and an id-free message is what makes
- * them one row, and the emit throttle attaches how many were collapsed.
+ * A player's loaders: their own figures, and the pages a player sees. No team page, no roster and no team rounds are
+ * bound at all, so no tool can reach a teammate's figure through one; the screens' own player views carry their own
+ * privacy rule (a player's Stats page has no team column). `myRounds` is the player's own Rounds page, read for the
+ * signed-in player's id and no other.
  */
-function logStreamModelError(error: unknown): void {
-  const fault = classifyProviderFault(error);
-  const raw = describeError(error);
+function playerScreenLoaders(sb: Sb, who: { team_id: string; player_id: string; timezone: string }): ScreenLoaders {
+  const teamId = who.team_id;
+  const timezone = who.timezone;
+  const own = (id: string) => id === who.player_id;
+  return {
+    playerFigures: orNull((ids, window) => loadPlayersFigures(sb, { timezone }, ids.filter(own), window)),
+    puttBands: orNull(async (id, window) => (own(id) ? loadPlayerPuttBands(sb, { timezone }, id, window) : null)),
+    playerStats: orNull(async (playerId, w) => (own(playerId) ? loadPlayerProfile({ viewer: 'player', teamId, playerId, window: w === 'season' ? 'season' : 'last10', filter: filterForFigureWindow(w) }) : null)),
+    qualifierList: orNull(() => loadQualifierList({ role: 'player', teamId, playerId: who.player_id })),
+    qualifierBoard: orNull((qualifierId) => loadQualifierDetail({ role: 'player', teamId, playerId: who.player_id, qualifierId })),
+    myRounds: orNull(() => loadRoundsLibrary({ playerId: who.player_id, teamId })),
+    // The Round page judges the round against the viewer; the tool has already checked the round is the player's own.
+    roundReview: orNull((roundId) => loadRoundReview(roundId, { role: 'player', playerId: who.player_id, teamId })),
+  };
+}
 
-  // A failed call before the AI SDK returns usage carries no token counts —
-  // recordAi's own doc comment: those distributions are only emitted when
-  // supplied. helm.ai.request/failure still land either way.
-  recordAi({
-    feature: 'coachhelm_chat',
-    action: 'v3.chat.stream.model',
-    model: MODEL_FOR_TASK.coach_chat,
-    provider: fault?.provider,
-    outcome: 'failure',
-    errorCode: fault?.code,
-    runtime: process.env.NEXT_RUNTIME ?? 'nodejs',
+
+/** Worst-case one-turn spend at the rates of the model the surface runs on, for the pre-flight gate only. What is billed is what the API reports. */
+const turnCostEstimateUsd = (ledgerId: string): number => estimateCostUsd(ledgerId, 12000, 2500);
+
+const Body = z
+  .object({
+    conversation_id: z.string().uuid().nullable().optional(),
+    client_turn_id: z.string().min(1).max(128),
+    surface: z.enum(['ask', 'quick_chat', 'practice_helper']).optional(),
+    /** The coach's new message. */
+    message: z.string().trim().min(1).max(8000).optional(),
+    /**
+     * About a waiting card, by its ledger key. With `approved`: the coach's answer to it. With `edits`: the coach changed fields on
+     * it (`{ [field key]: value }`, the fields the card's `editable` lists), which plans the card again and calls no model.
+     * `revision`: the revision of the card on the coach's screen, as its proposal part carries it.
+     */
+    decision: z
+      .object({
+        key: z.string().min(1).max(200),
+        approved: z.boolean().optional(),
+        edits: z.record(z.string().min(1).max(100), z.unknown()).optional(),
+        revision: z.number().int().min(0).max(100_000).optional(),
+      })
+      .refine((d) => (d.approved === undefined) !== (d.edits === undefined), 'Send approved or edits, not both.')
+      .refine((d) => d.edits === undefined || (Object.keys(d.edits).length <= 40 && JSON.stringify(d.edits).length <= 20_000), 'Too many edits.')
+      .optional(),
+    /**
+     * "Approve all": confirm these waiting cards of one turn. They are written in the order they were proposed, after one shared Undo
+     * window, and the first failure stops the batch (the cards after it wait again). `revision` as on a `decision`.
+     */
+    approve_all: z
+      .object({ cards: z.array(z.object({ key: z.string().min(1).max(200), revision: z.number().int().min(0).max(100_000).optional() })).min(1).max(20) })
+      .refine((a) => new Set(a.cards.map((c) => c.key)).size === a.cards.length, 'A card is listed twice.')
+      .optional(),
+    /** A tab still running the previous client sends its whole thread. Only its last user message is read, as the new message. */
+    messages: z.array(z.unknown()).optional(),
+    /**
+     * Where the chat was opened from and what is selected there. Read only by the screen-context resolver, which checks every id against
+     * the caller's own team before a word of it reaches the model; anything it cannot use is dropped, never an error.
+     */
+    screen: z.unknown().optional(),
+    /**
+     * A thing in an earlier answer that the coach tapped and is asking about: `{ evidence_ref, key }`. Resolved against the reads this
+     * conversation has stored and nothing else (`engine/about.ts`); a reference that names nothing stored is ignored, never an error.
+     */
+    about: z.unknown().optional(),
+  })
+  .transform((body, ctx): { conversation_id: string | null; client_turn_id: string; surface: ChatSurface; input: TurnInput; screen: unknown } => {
+    const base = { conversation_id: body.conversation_id ?? null, client_turn_id: body.client_turn_id, surface: (body.surface ?? 'ask') as ChatSurface, screen: body.screen ?? null };
+    if (body.approve_all && !body.message && !body.decision) return { ...base, input: { kind: 'approve_all', cards: body.approve_all.cards.map((c) => ({ key: c.key, ...(c.revision === undefined ? {} : { revision: c.revision }) })) } };
+    if (body.decision && !body.message && !body.approve_all) {
+      const { key, approved, edits, revision } = body.decision;
+      const seen = revision === undefined ? {} : { revision };
+      return { ...base, input: edits !== undefined ? { kind: 'revise', key, edits, ...seen } : { kind: 'decision', key, approved: approved === true, ...seen } };
+    }
+    const text = body.message ?? lastUserText(body.messages);
+    if (!text || body.decision || body.approve_all) {
+      ctx.addIssue({ code: 'custom', message: 'Send a message or a decision.' });
+      return z.NEVER;
+    }
+    return { ...base, input: { kind: 'message', text, ...(body.about === undefined || body.about === null ? {} : { about: body.about }) } };
   });
 
-  if (!fault) {
-    void logServerError(`chat/stream: model error — ${raw}`, { action: 'v3.chat.stream.model' }, 'warning');
+/** The last user message of a previous-client thread, if that is what the thread ends in. A thread ending in the assistant was that client's approval resubmit, which this server no longer takes. */
+function lastUserText(messages: unknown[] | undefined): string | null {
+  const last = messages?.[messages.length - 1] as { role?: unknown; parts?: unknown } | undefined;
+  if (!last || last.role !== 'user' || !Array.isArray(last.parts)) return null;
+  const text = last.parts
+    .filter((p): p is { type: 'text'; text: string } => Boolean(p) && typeof p === 'object' && (p as { type?: unknown }).type === 'text' && typeof (p as { text?: unknown }).text === 'string')
+    .map((p) => p.text)
+    .join('')
+    .trim();
+  return text ? text.slice(0, 8000) : null;
+}
+
+const GENERIC_FAILURE = 'Something went wrong while answering. Please try again.';
+const MISSING_KEY = 'CoachHelm is not set up on this server yet. Please tell support: the AI key is missing.';
+
+/**
+ * What the coach is told when a turn fails. An upstream error can carry provider internals or echo prompt text, neither
+ * of which belongs in a browser, so the sentence comes from one shared classifier (the schedule importer and the Bridge
+ * use the same one) or is the generic line.
+ */
+function describeTurnError(error: unknown): { message: string; action: ChatErrorAction; kind: ChatErrorKind } {
+  if (error instanceof MissingModelKeyError) return { message: MISSING_KEY, action: 'none', kind: 'model' };
+  const fault = classifyProviderFault(error);
+  if (fault) return { message: fault.summary, action: 'retry', kind: 'model' };
+  return { message: GENERIC_FAILURE, action: 'retry', kind: 'model' };
+}
+
+/** A refused request: a sentence, and the kind the screen picks its notice by (`ChatErrorKind`). */
+const refuse = (status: number, error: string, kind: ChatErrorKind | null, extra: Record<string, unknown> = {}) => NextResponse.json({ error, ...(kind ? { kind } : {}), ...extra }, { status });
+/** 401 is a session that ended; 403 and "no active team" are an account that may not use this. */
+const kindForStatus = (status: number): ChatErrorKind | null => (status === 401 ? 'signed_out' : status === 403 || status === 404 ? 'off' : null);
+
+/** Log one failed model call. A provider or account fault is logged under a stable code so every retry of one outage is one incident. */
+function logModelError(error: unknown, ledgerId: string): void {
+  const fault = classifyProviderFault(error);
+  const raw = describeError(error);
+  recordAi({ feature: 'coachhelm_chat', action: 'v3.chat.stream.model', model: ledgerId, provider: fault?.provider, outcome: 'failure', errorCode: fault?.code, runtime: process.env.NEXT_RUNTIME ?? 'nodejs' });
+  if (error instanceof MissingModelKeyError) {
+    void logServerError('chat/stream: ANTHROPIC_API_KEY is not set; chat cannot answer', { action: 'v3.chat.stream.model', errorCode: 'missing_model_key', feature: 'coachhelm_chat' });
     return;
   }
-
+  if (!fault) {
+    void logServerError(`chat/stream: model error: ${raw}`, { action: 'v3.chat.stream.model' }, 'warning');
+    return;
+  }
   const throttleKey = `chat-stream-provider:${fault.code}`;
   if (!shouldEmit(throttleKey)) return;
   const collapsed = drainCollapsedCount(throttleKey);
   const { severity, skipSentry } = providerFaultSeverity(fault);
-
   void logServerError(
     `chat/stream: ${fault.summary}`,
-    {
-      action: 'v3.chat.stream.model',
-      errorCode: fault.code,
-      skipSentry,
-      feature: 'coachhelm_chat',
-      // The provider's verbatim text stays available for whoever has to act on
-      // it — it just does not decide the grouping any more.
-      extra: {
-        providerFaultKind: fault.kind,
-        provider: fault.provider,
-        providerMessage: raw.slice(0, 500),
-        ...(collapsed > 0 ? { collapsed_count: collapsed } : {}),
-      },
-    },
+    { action: 'v3.chat.stream.model', errorCode: fault.code, skipSentry, feature: 'coachhelm_chat', extra: { providerFaultKind: fault.kind, provider: fault.provider, providerMessage: raw.slice(0, 500), ...(collapsed > 0 ? { collapsed_count: collapsed } : {}) } },
     severity,
   );
 }
 
-/**
- * How many of the conversation's most recent ASSISTANT turns
- * {@link priorTurnEvidence} draws carried-over evidence from — not messages.
- * A "turn" can span more than one stored row (an approval round-trip inserts
- * a second assistant message for the same exchange), so counting turns
- * rather than raw rows is what "the last few things the coach was told"
- * actually means; a flat row count skews toward whichever conversation
- * happens to have chattier tool/approval loops in its recent history.
- */
-const PRIOR_EVIDENCE_ASSISTANT_TURN_LIMIT = 5;
-
-/**
- * Row budget for the query backing {@link priorTurnEvidence}. Comfortably
- * covers `PRIOR_EVIDENCE_ASSISTANT_TURN_LIMIT` turns even with a user message
- * and an approval round-trip between each one, and stays far under
- * PostgREST's 1,000-row cap (`.claude/rules/database.md`) regardless of how
- * long the conversation has grown — see `listRecentMessages`.
- */
-const PRIOR_EVIDENCE_ROW_LIMIT = 40;
-
-/**
- * Evidence already shown to the coach earlier in THIS conversation.
- *
- * The claim audit used to see only the current request's fresh tool calls
- * (`collect`, below). A model does not always re-call a tool for data it
- * already has in its own context — production, 2026-09-10: a coach asked two
- * questions about the same player 22 seconds apart; the second answer
- * restated the first answer's round-by-round table verbatim (77, 35, -3.38…)
- * with NO tool call of its own. Every number in it was real and had already
- * been shown to the coach, but that request's audit had never seen any of it
- * and discarded the whole answer as fabricated.
- *
- * Read from THIS SERVER'S OWN persisted `ui_parts` (`listRecentMessages`),
- * never from the client-sent `uiMessages` thread: a `data-evidence` part is
- * written server-side, after this route itself ran the tool (see
- * `evidence()` in `buildCoachTools`), and nothing else ever produces one.
- * Seeding the supported set from the client's replayed payload instead would
- * let a tampered request forge "evidence" for whatever number it wanted.
- *
- * Two more things a NUMBER passing through here does not automatically
- * earn:
- *
- *  - A believable shape. This is JSON that round-tripped through the
- *    database, not something `execute` just built and validated a moment
- *    ago — a legacy row predating a schema field, or a forged `ui_parts`
- *    payload (the coach can edit their own via RLS — `chat_messages_coach_
- *    only` is FOR ALL, a known, accepted, self-only risk; see the PR
- *    description), could otherwise 500 the whole turn the moment the audit
- *    tries to iterate a `series[].points` that isn't an array. Every
- *    envelope is re-validated with `ToolEnvelope.safeParse` and dropped,
- *    not thrown on, when it fails.
- *  - The right player. A number that measured player A is not support for a
- *    claim about player B just because both appeared in the same
- *    conversation. Two things follow, and neither is decidable from the
- *    prior messages alone — both are resolved by the caller (`POST`, below)
- *    once THIS turn's own fresh evidence is also known:
- *      1. Evidence with a `Measurement`/`MeasurementSeries` entity that is
- *         NOT a player (team/round) carries no attribution risk at all and
- *         is returned as `shared`, unconditionally safe to use.
- *      2. Everything else — evidence tied to a specific player, AND
- *         evidence with no entity at all (`get_player_insights` puts
- *         everything in free-form `detail` with no `Measurement` wrapper,
- *         so its own shape cannot say who it is about) — is returned as
- *         `deferred`, alongside every distinct player id actually seen.
- *         The caller only folds `deferred` in once it can check that
- *         id set against the player(s) THIS turn's own fresh tool calls are
- *         actually about; a number about a player never mentioned this turn
- *         must not silently support a claim about whichever player IS being
- *         asked about now.
- */
-function priorTurnEvidence(messages: readonly ChatMessage[], timezone: string): {
-  shared: { measurements: Measurement[]; series: MeasurementSeries[]; detailNumbers: ScopedNumber[]; detailDates: string[] };
-  deferred: {
-    measurements: Measurement[];
-    series: MeasurementSeries[];
-    detailNumbers: ScopedNumber[];
-    detailDates: string[];
-    playerIds: Set<string>;
-  };
-} {
-  const shared = {
-    measurements: [] as Measurement[],
-    series: [] as MeasurementSeries[],
-    detailNumbers: [] as ScopedNumber[],
-    detailDates: [] as string[],
-  };
-  const deferred = {
-    measurements: [] as Measurement[],
-    series: [] as MeasurementSeries[],
-    detailNumbers: [] as ScopedNumber[],
-    detailDates: [] as string[],
-    playerIds: new Set<string>(),
-  };
-
-  const assistantTurns = messages
-    .filter((m) => m.role === 'assistant')
-    .slice(-PRIOR_EVIDENCE_ASSISTANT_TURN_LIMIT);
-
-  for (const message of assistantTurns) {
-    if (!Array.isArray(message.ui_parts)) continue;
-    for (const part of message.ui_parts) {
-      if (!part || typeof part !== 'object') continue;
-      const { type, data } = part as { type?: unknown; data?: { envelope?: unknown } };
-      if (type !== 'data-evidence' || !data?.envelope) continue;
-      const parsed = ToolEnvelope.safeParse(data.envelope);
-      if (!parsed.success) continue;
-      const envelope = parsed.data;
-
-      const entities = [...envelope.measurements, ...envelope.series].map((m) => m.entity);
-      const playerIdsHere = entities.filter((e) => e.kind === 'player').map((e) => e.id);
-      // No entity anywhere in the envelope is treated the same as a player
-      // entity, not the same as team/round: its scope is genuinely unknown,
-      // not positively team-level.
-      const target = playerIdsHere.length > 0 || entities.length === 0 ? deferred : shared;
-
-      target.measurements.push(...envelope.measurements);
-      target.series.push(...envelope.series);
-      target.detailNumbers.push(...collectEnvelopeNumbers(envelope));
-      if (envelope.detail !== undefined) target.detailDates.push(...collectDates(envelope.detail, timezone));
-      for (const id of playerIdsHere) deferred.playerIds.add(id);
-    }
+/** Run work after the response is sent. `after` only exists inside a request; anywhere else (a test) it runs now. */
+function later(work: () => Promise<unknown>): void {
+  const run = () => work().catch(() => undefined);
+  try {
+    after(run);
+  } catch {
+    void run();
   }
+}
 
-  return { shared, deferred };
+/** A turn that already has an answer, sent again: the stored parts as the events that rebuild them. No model call. */
+function storedTurnResponse(row: TurnRow, conversationId: string): Response {
+  const parts = row.ui_parts ?? (row.content ? [{ type: 'text', text: row.content }] : []);
+  const waiting = pendingDecisionKeys({ id: row.id, role: 'assistant', parts }).length > 0;
+  const events: ChatEvent[] = [
+    { type: 'message_start', conversation_id: conversationId, message_id: row.id, resumed: false },
+    ...eventsForStoredParts(parts),
+    { type: 'done', status: waiting ? 'awaiting_decision' : 'complete' },
+  ];
+  return new Response(events.map(encodeChatEvent).join(''), { headers: { 'content-type': CHAT_STREAM_CONTENT_TYPE, 'cache-control': 'no-cache, no-transform', 'x-conversation-id': conversationId } });
 }
 
 export async function POST(req: NextRequest) {
-  let ctx: CoachChatContext;
   const supabase = await createClient();
-
+  let ctx: CoachChatContext;
   try {
     ctx = await resolveCoachChatContext(supabase);
   } catch (err) {
-    // A player has no coach row: their own read-only Ask, on this route, with the role from the session. Only that denial comes here (any other
-    // stays what it was), and the player turn confirms a player row and runs the team gate itself.
-    if (err instanceof CoachContextError && err.reason === 'not_a_coach' && isPlayerAskEnabled()) {
+    // A player has no coach row: their own read-only Ask, on this route, with the role from the session. Only that denial comes here,
+    // and the player turn confirms a player row and runs the team gate itself.
+    if (err instanceof CoachContextError && err.reason === 'not_a_coach' && (await isClubhouseFor('player'))) {
       const body = Body.safeParse(await req.json().catch(() => null));
-      if (!body.success) return NextResponse.json({ error: 'Bad request' }, { status: 400 });
-      return runPlayerTurn(supabase, { messages: body.data.messages }, req.signal);
+      if (!body.success || body.data.input.kind !== 'message') return refuse(400, 'Bad request', null);
+      return runPlayerTurn(supabase, { text: body.data.input.text, clientTurnId: body.data.client_turn_id, screen: body.data.screen }, req.signal, (who) => playerScreenLoaders(supabase, who));
     }
-    if (err instanceof CoachContextError) {
-      return NextResponse.json({ error: err.message }, { status: err.status });
-    }
-    await logServerError(`chat/stream: context resolution failed`, { action: 'v3.chat.stream.ctx' });
+    if (err instanceof CoachContextError) return refuse(err.status, err.message, kindForStatus(err.status));
+    await logServerError('chat/stream: context resolution failed', { action: 'v3.chat.stream.ctx' });
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });
   }
 
-  // CoachHelm switched off (globally, for the coach or for the team) answers nothing here either: the Ask tab and route
-  // are gated, and the endpoint must not be the way around them (swap audit CH13-20). The gate fails closed on a
-  // lookup error.
-  const helmGate = await isCoachHelmEnabledForCoach(ctx.coach_id);
-  if (!helmGate.effectivelyEnabled) {
-    return NextResponse.json({ error: 'CoachHelm is off for your team.' }, { status: 403 });
-  }
-
+  // One wave of independent reads: the gate, the rate limit, the conversation and its rows, the budget. They are reads (the rate limit's own
+  // counter aside), so a request any of them turns away has changed nothing. The verdicts are applied in a fixed order, so a coach is told
+  // the same thing for the same fault.
   const parsed = Body.safeParse(await req.json().catch(() => null));
-  if (!parsed.success) {
-    return NextResponse.json({ error: 'Bad request' }, { status: 400 });
-  }
-
-  const uiMessages = parsed.data.messages as UIMessage[];
-  const clientTurnId = parsed.data.client_turn_id;
-  const lastUser = [...uiMessages].reverse().find((m) => m.role === 'user');
-  const userText = textOf(lastUser);
-
-  // Is this a new question, or the continuation of one the coach already asked?
-  //
-  // When an action is approved, the client resubmits the SAME thread so the
-  // suspended tool call can run. There is no new user message in it — the
-  // approval rides on the assistant message as a tool-approval-response part, so
-  // the last entry is the assistant, not the coach.
-  //
-  // `lastUser` still resolves to the original question in that case, which is
-  // correct for the model (it needs the full thread) and wrong for persistence:
-  // the resubmit carries a fresh `client_turn_id`, so the upsert's
-  // (conversation_id, role, client_turn_id) conflict target does not match the
-  // stored turn and it would INSERT the coach's question a second time. Every
-  // approved action would leave a duplicate of the question above it.
-  const isApprovalContinuation = uiMessages[uiMessages.length - 1]?.role !== 'user';
-
-  // Bound request concurrency at the door, independent of the dollar gate
-  // below — this is what actually shrinks the check-then-act race window on
-  // the daily budget (checkBudget/recordSpend are a read-then-upsert pair,
-  // not an atomic reservation; see budget.ts).
-  const rl = await checkRateLimit(`coachhelm:chat:${ctx.coach_id}`, RATE_LIMITS.API_GENERAL);
-  if (!rl.allowed) {
-    return NextResponse.json({ error: 'Too many requests. Please slow down.' }, { status: 429 });
-  }
-
-  // ── Conversation: load (and verify ownership), or resolve the id to create ──
-  let conversationId = parsed.data.conversation_id ?? null;
-  let needsNewConversation = false;
-  if (conversationId) {
-    const existing = await getConversation(supabase, conversationId);
-    if (!existing || existing.coach_id !== ctx.coach_id) {
-      return NextResponse.json({ error: 'Conversation not found' }, { status: 404 });
-    }
-    // Idempotency: an already-answered turn is returned, not re-run. Returned
-    // as the same kind of stream a fresh answer is: the client reads a stream,
-    // and the JSON this used to send parsed as an empty one, so a retry that
-    // landed here ended with no answer and no error.
-    const done = await findAssistantTurn(supabase, conversationId, clientTurnId);
-    if (done) {
-      return createUIMessageStreamResponse({
-        stream: createUIMessageStream({
-          execute: ({ writer }) => {
-            for (const chunk of storedTurnChunks(done)) writer.write(chunk as Parameters<typeof writer.write>[0]);
-          },
-        }),
-        headers: { 'x-conversation-id': conversationId },
-      });
-    }
-  } else {
-    needsNewConversation = true;
-  }
-
-  // ── Budget gate BEFORE anything externally visible happens ──────────────
-  // The conversation row itself must not be created before this passes —
-  // creating it first left an orphaned `golf_coachhelm_chat_conversations`
-  // row (no messages) on every gated request.
+  const earlyConversationId = parsed.success ? parsed.data.conversation_id : null;
   const admin = createAdminClient();
-  const gate = await checkBudget(admin, ctx.coach_id, CHAT_TURN_COST_ESTIMATE_USD);
-  if (!gate.allowed) {
-    // "Reached your daily limit" is the wrong sentence for a coach whose team
-    // was switched off, and both are the wrong sentence for an account we
-    // could not resolve at all. A coach who is told the wrong thing waits for
-    // tomorrow instead of asking the one person who can fix it.
-    const message =
-      gate.fallback_reason === 'budget_unresolved'
-        ? 'CoachHelm could not verify your program’s analysis settings. Contact support — this is not something waiting will fix.'
-        : gate.fallback_reason === 'budget_disabled'
-          ? 'AI analysis is switched off for your program. An administrator can turn it on in coaching settings.'
-          : 'You have reached today’s analysis limit for your program. It resets tomorrow.';
-    return NextResponse.json(
-      { error: message, reason: gate.fallback_reason ?? 'budget_gated' },
-      { status: 429 },
-    );
+  const [helmGate, rl, existing, loadedOrError, earlyGate] = await Promise.all([
+    isCoachHelmEnabledForCoach(ctx.coach_id),
+    checkRateLimit(`coachhelm:chat:${ctx.coach_id}`, RATE_LIMITS.API_GENERAL),
+    earlyConversationId ? getConversation(supabase, earlyConversationId) : null,
+    earlyConversationId ? loadConversation(supabase, earlyConversationId).catch((err: unknown) => (err instanceof Error ? err : new Error('history'))) : null,
+    earlyConversationId ? null : checkBudget(admin, ctx.coach_id, turnCostEstimateUsd(profileFor(parsed.success ? parsed.data.surface : 'ask').ledgerId)),
+  ]);
+  // CoachHelm switched off (globally, for the coach or for the team) answers nothing here either; the gate fails closed on a lookup error.
+  if (!helmGate.effectivelyEnabled) return refuse(403, 'CoachHelm is off for your team.', 'off');
+  if (!parsed.success) return refuse(400, 'Bad request', null);
+  if (!rl.allowed) return refuse(429, 'Too many requests. Please slow down.', 'rate');
+
+  const { input, client_turn_id: clientTurnId, surface } = parsed.data;
+  let conversationId = parsed.data.conversation_id;
+  // A conversation with no rows yet is assumed to have the model-message columns; the first write finds out and falls back if not.
+  let loaded: LoadedConversation = { mode: 'columns', rows: [] };
+  if (conversationId) {
+    if (!existing || existing.coach_id !== ctx.coach_id) return refuse(404, 'Conversation not found', 'gone');
+    if (loadedOrError instanceof Error || !loadedOrError) {
+      // Without the stored turns the model would answer with no memory of the conversation, and a Confirm could not find its card.
+      await logServerError(`chat/stream: history could not be read: ${loadedOrError instanceof Error ? loadedOrError.message : 'none'}`, { action: 'v3.chat.stream.history' });
+      return NextResponse.json({ error: 'Internal error' }, { status: 500 });
+    }
+    loaded = loadedOrError;
+    // Idempotency: a turn that already has an answer is sent that answer again, as the same kind of stream a fresh one is.
+    if (input.kind === 'message') {
+      const answered = loaded.rows.find((r) => r.role === 'assistant' && r.client_turn_id === clientTurnId && r.status !== 'failed');
+      if (answered) return storedTurnResponse(answered, conversationId);
+    }
+  } else if (input.kind !== 'message') {
+    return refuse(404, 'Conversation not found', 'gone');
   }
 
-  if (needsNewConversation) {
-    const created = await createConversation(supabase, {
-      coach_id: ctx.coach_id,
-      title: userText.slice(0, 60) || 'New conversation',
-    });
-    conversationId = created.id;
+  // The budget gate runs before anything is created, so an exhausted budget leaves no orphan conversation or user turn. A decision is not
+  // gated: the card was offered under the budget, and refusing its Confirm would strand an action the coach has already been shown.
+  if (input.kind === 'message') {
+    const gate = earlyGate ?? (await checkBudget(admin, ctx.coach_id, turnCostEstimateUsd(profileFor(surface).ledgerId)));
+    if (!gate.allowed) {
+      const message =
+        gate.fallback_reason === 'budget_unresolved'
+          ? 'CoachHelm could not verify your program’s analysis settings. Contact support — this is not something waiting will fix.'
+          : gate.fallback_reason === 'budget_disabled'
+            ? 'AI analysis is switched off for your program. An administrator can turn it on in coaching settings.'
+            : 'You have reached today’s analysis limit for your program. It resets tomorrow.';
+      // Switched off for the program is "off"; a limit reached (or settings that could not be checked) is "budget".
+      return refuse(429, message, gate.fallback_reason === 'budget_disabled' ? 'off' : 'budget', { reason: gate.fallback_reason ?? 'budget_gated' });
+    }
   }
-  if (!conversationId) {
-    await logServerError('chat/stream: conversation id unresolved after gate', {
-      action: 'v3.chat.stream.conv',
-    });
+
+  const isNewConversation = !conversationId;
+  try {
+    if (!conversationId && input.kind === 'message') {
+      conversationId = (await createConversation(supabase, { coach_id: ctx.coach_id, title: input.text.slice(0, 60) || 'New conversation', surface: surface === 'player' ? null : surface })).id;
+    }
+    if (!conversationId) throw new Error('conversation id unresolved');
+    if (input.kind === 'message') await upsertUserTurn(supabase, { conversation_id: conversationId, content: input.text, client_turn_id: clientTurnId });
+  } catch (err) {
+    await logServerError(`chat/stream: the question could not be stored: ${describeError(err)}`, { action: 'v3.chat.stream.conv' });
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });
   }
-
-  if (userText && !isApprovalContinuation) {
-    await upsertUserTurn(supabase, {
-      conversation_id: conversationId,
-      content: userText,
-      client_turn_id: clientTurnId,
-    });
-  }
-
-  // Provider selection stays behind one abstraction: the coach's own Anthropic
-  // key when present, else the gateway model string. No provider name appears
-  // in tool or UI code.
-  //
-  // Derived from MODEL_FOR_TASK rather than naming the model again. The two
-  // used to be written out separately — 'anthropic/claude-sonnet-5' here and
-  // 'claude-sonnet-5' there — so changing MODEL_FOR_TASK.coach_chat would have
-  // moved the gateway path and left the direct path on the old model, with
-  // nothing to catch the split. Everything downstream (cost estimate, telemetry,
-  // the slow-first-token log) already keys off MODEL_FOR_TASK.coach_chat.
-  const model = resolveModelProvider(MODEL_FOR_TASK.coach_chat);
-
-  const startedAt = Date.now();
-  let firstTokenMs: number | null = null;
-
-  // Everything the turn measured, for the post-generation claim audit.
-  const measurements: Measurement[] = [];
-  const seriesAll: MeasurementSeries[] = [];
-  // Numbers a tool returned in its structured `detail` — team averages, round
-  // rows, RSVP counts. The model may legitimately cite these, so they count as
-  // supported. See auditNumericClaims' `extraSupported`.
-  const detailNumbers: ScopedNumber[] = [];
-  // ISO dates reachable inside a tool's `detail` (an event's `starts_at`, a
-  // round's `date`) — the model may restate one in non-ISO prose ("Aug 16",
-  // "9/6/26"); see auditNumericClaims' `extraSupportedDates`.
-  const detailDates: string[] = [];
-  const collect = (envelope: ToolEnvelope) => {
-    measurements.push(...envelope.measurements);
-    seriesAll.push(...envelope.series);
-    detailNumbers.push(...collectEnvelopeNumbers(envelope));
-    if (envelope.detail !== undefined) detailDates.push(...collectDates(envelope.detail, ctx.timezone));
-  };
-  // A date the coach's own words name ("next Tuesday") is theirs to have restated, with or without a tool run.
-  detailDates.push(...coachRequestDates(userText, todayIsoInZone(ctx.timezone)));
-
-  // Seed the audit with evidence THIS conversation already produced (see
-  // priorTurnEvidence's doc comment) — a fresh conversation has none to load.
-  // `shared` (team/round-level) evidence is unconditionally safe and seeded
-  // immediately; `deferred` (player-scoped, or of unknown scope) is held
-  // back and only folded in from inside `execute`, once this turn's OWN
-  // fresh evidence says which player(s) are actually in play — see the
-  // `allPlayerIds` check below.
-  let priorDeferred: {
-    measurements: Measurement[];
-    series: MeasurementSeries[];
-    detailNumbers: ScopedNumber[];
-    detailDates: string[];
-    playerIds: Set<string>;
-  } = { measurements: [], series: [], detailNumbers: [], detailDates: [], playerIds: new Set() };
-  if (!needsNewConversation) {
-    const priorMessages = await listRecentMessages(
-      supabase,
-      conversationId,
-      PRIOR_EVIDENCE_ROW_LIMIT,
-    );
-    // The draft usually lands a turn after the date was said ("next Tuesday", then "5pm"), so earlier asks count, each from its own day.
-    for (const m of priorMessages) {
-      if (m.role === 'user') detailDates.push(...coachRequestDates(m.content, todayIsoInZone(ctx.timezone, new Date(m.created_at))));
-    }
-    const prior = priorTurnEvidence(priorMessages, ctx.timezone);
-    measurements.push(...prior.shared.measurements);
-    seriesAll.push(...prior.shared.series);
-    detailNumbers.push(...prior.shared.detailNumbers);
-    detailDates.push(...prior.shared.detailDates);
-    priorDeferred = prior.deferred;
-  }
-
   const convId = conversationId;
-  // Opaque, server-generated (gen_random_uuid() — golf_coachhelm_chat_conversations.id
-  // default, prod_public_baseline.sql), never derived from coach_id/player
-  // identity — safe to hand to Sentry as the AI conversation grouping key.
-  // Ties every span/error/AI-observability event this turn produces back to
-  // the same thread without exposing who the coach or their players are.
+
+  // Nothing that changes during a conversation's life is in the prompt: the policy block is the same for every team, the team block changes
+  // only with the roster. Today's date, the screen the chat was opened from, the conversation's tone and (on a conversation's first
+  // answered turn) the coach's standing notes go to the model as a system message after the coach's own, and are stored with the turn.
+  // A decision request sends none: its turn already has its line.
+  const blocks = instructionBlocks(surface, ctx);
+  // Clubhouse for this coach's team, by the check its pages use. It decides two things here, both because the names are Clubhouse's:
+  // whether the screen the browser names is told to the model, and whether `find_in_app` (which answers with Clubhouse addresses) is offered.
+  const clubhouseOn = isClubhouseForTeam(ctx.team_id);
+  let turnNote: string | null = null;
+  let screenEcho: ChatScreenEcho | null = null;
+  if (input.kind === 'message') {
+    // Neither read throws; without the notes migration there are simply no notes and no tone.
+    const [where, knows] = await Promise.all([turnContext(supabase, ctx, clubhouseOn ? parsed.data.screen : null), readStandingNotes(supabase, ctx, isNewConversation ? null : convId)]);
+    screenEcho = where.screen?.place ? { screen: where.screen.screen, label: where.screen.place.name } : null;
+    // "First" is the first turn that stays in the stored history: a failed first attempt leaves only its question behind, so its retry
+    // still carries the notes.
+    const firstTurn = !loaded.rows.some((r) => r.role === 'assistant' && r.status !== 'failed');
+    const line = [where.line, toneSentence(knows)].filter(Boolean).join(' ');
+    turnNote = [firstTurn ? firstTurnNotes(knows) : null, line].filter(Boolean).join('\n\n');
+  }
+  // The model this surface runs on. A coach's three surfaces share one, so a conversation never changes model between them.
+  const profile = profileFor(surface);
+  // The registry registers `find_in_app` for everyone; a team without Clubhouse is not offered it. That is two tool lists per surface,
+  // each the same bytes on every request, so each is cached on its own.
+  const tools = toolsFor(surface, ctx).filter((tool) => clubhouseOn || tool.name !== 'find_in_app');
+
+  // Opaque and server-generated, never derived from who the coach or their players are: safe as Sentry's conversation key.
   Sentry.setConversationId(convId);
-  // Captured in `execute` so `onFinish` can bill ACTUAL tokens, not the gate's
-  // worst-case estimate. See recordTurnCost below.
-  let usagePromise: Promise<{ inputTokens?: number; outputTokens?: number }> | null = null;
-  // Computed in `execute`, once the full text is known — see the manual
-  // stream-forwarding loop below — and reused by `onFinish` so the verdict
-  // runs exactly once per turn and both places agree on it. `text` travels
-  // alongside the verdict, not just the outcome: `onFinish` persists this
-  // EXACT string rather than re-deriving its own from `assistant.parts`, so
-  // the live affordance and the stored status/content can never quietly
-  // diverge.
-  //
-  // Staying `null` past `execute` (never assigned) is itself meaningful, not
-  // just "not computed yet": it means the client disconnected, or the
-  // platform tore the function down, before generation ever reached a
-  // verdict. `onFinish` treats a still-`null` verdict as rejected —
-  // unconditionally, never re-running the numeric audit on whatever partial
-  // text happened to accumulate — because "no verdict was ever computed" is
-  // not the same claim as "the audit found nothing wrong." See
-  // `computeTurnVerdict`'s doc comment.
-  let turnVerdict: TurnVerdict | null = null;
-  let turnText = '';
+  // The next chat request finishes what a cut-off function left held. It has to be a request: the writes read the coach from the session.
+  later(() => sweepHeld(supabase, { coach_id: ctx.coach_id, team_id: ctx.team_id, resolve: (row) => heldCommitFor(supabase, ctx, row, tools) }));
 
-  // Read once and reuse for both the prompt (below) and the packet gate
-  // (after the stream finishes) — same flag value either way within one
-  // request, and #1999 re-review's MUST is exactly that these two checks
-  // must never disagree. See `instructions.ts`'s `CLAIMS_BLOCK_SECTION` doc
-  // comment.
-  const claimsBlockEnabled = isFlagEnabled('coachhelm_chat_claim_gate');
-
-  // Ask v2 only where Clubhouse is on for the team: this route also serves Fairway's chat (coachhelm-ask 02, hard rules).
-  const askV2 = isAskV2Enabled() && isClubhouseForTeam(ctx.team_id);
-  const knows = askV2 ? await readAskKnows(supabase, { coachId: ctx.coach_id, teamId: ctx.team_id, conversationId: convId }).catch(() => null) : null;
-
-  const stream = createUIMessageStream({
-    execute: async ({ writer }) => {
-      const tools = buildCoachTools({
-        sb: supabase,
-        ctx,
-        conversationId: convId,
-        writer,
-        collect,
-        // Ask's whole-team tools follow Clubhouse for this team (flag, then allowlist).
-        teamTools: isClubhouseForTeam(ctx.team_id),
-        askV2,
-        practicePlans: isPracticePlansEnabled(),
-        defer: (fn) => after(fn),
-      });
-
-      const result = streamText({
-        model,
-        // A client disconnect should stop generation and spend, not just the
-        // write side: the answer is discarded anyway once `onFinish` marks
-        // the row `'failed'` (no verdict was ever computed — see
-        // `turnVerdict`'s doc comment below), so paying the provider for
-        // tokens nobody will read is pure waste (#1997 review, SHOULD-4).
-        abortSignal: req.signal,
-        // ── Prompt caching on the static prefix ─────────────────────────
-        //
-        // One turn is several model calls: the agent loop re-sends the system
-        // prompt AND every tool definition on each step, and the ledger shows
-        // what that costs — a turn's median input is 19,120 tokens while the
-        // smallest single-step turn is 3,363. Most of the difference is the
-        // same prefix, paid for again and again.
-        //
-        // A cache breakpoint on the system block covers the tool definitions
-        // too (Anthropic orders the payload tools → system → messages and
-        // caches everything before the breakpoint), so steps 2..N of a turn
-        // read the whole prefix at a tenth of the input rate.
-        //
-        // This only works because `buildInstructions` is stable: it formats the
-        // date to the DAY, not to an ISO timestamp. A prefix carrying
-        // `new Date().toISOString()` would change on every request and could
-        // never produce a cache hit — worth preserving deliberately if that
-        // string is ever edited.
-        instructions: {
-          role: 'system',
-          content: buildInstructions(ctx, new Date().toISOString(), claimsBlockEnabled, { askV2, knows: knows ? knowsSection(knows) : null }),
-          providerOptions: { anthropic: { cacheControl: { type: 'ephemeral' } } },
-        },
-        // Pass the tool set so tool parts from earlier turns convert correctly —
-        // without it, a resumed approval loses the call it belongs to.
-        //
-        // We drop dangling tool calls (`input-streaming`/`input-available` —
-        // see isIncompleteToolPart) OURSELVES, with the same predicate
-        // `publishableParts` uses for persistence, rather than delegating to
-        // the SDK's `ignoreIncompleteToolCalls` flag. The thread here is the
-        // CLIENT's `useChat` state, not the database, so a server-side
-        // persistence guard alone cannot save this request: the browser
-        // resends whatever it is holding. Without filtering, one unresolved
-        // call makes every subsequent turn in that thread fail upstream with
-        // "Tool result is missing for tool call toolu_…" — there is no
-        // matching `tool_result` block to pair it with, and the coach cannot
-        // recover except by starting a new conversation.
-        //
-        // This used to rely on `ignoreIncompleteToolCalls: true` instead, on
-        // the assumption the SDK's own filter left `approval-requested` (an
-        // awaiting-coach call, not an abandoned one — the entire Confirm
-        // flow) untouched. `ai` 7.0.79 changed that: its filter now keeps
-        // only `approval-responded`/`output-available`/`output-error`/
-        // `output-denied`, silently stripping `approval-requested` too and
-        // reintroducing exactly the bug this file exists to fix, just for a
-        // different state. Filtering with our own predicate first — already
-        // proven correct and covered by chat-incomplete-tool-calls.test.ts —
-        // makes this correctness independent of the SDK's internal state
-        // list, which just changed under us once already.
-        //
-        // One state our predicate does NOT drop, unlike the SDK's retired
-        // filter: an `output-available` part with `preliminary: true` — a
-        // tool result from a still-streaming step, before the final value
-        // lands. The SDK's own `convertToModelMessages` (index.js, the
-        // `case "output-error": case "output-available":` branch) does not
-        // special-case it either — a preliminary part converts to a full
-        // `tool-result` content block same as a final one. That is safe here
-        // ONLY because nothing in `buildCoachTools` (agent-tools.ts) can ever
-        // produce one: every `execute` is a plain `async` function returning
-        // a single value, never an async generator / multi-yield tool, which
-        // is the only shape the SDK uses to emit `preliminary: true`. If a
-        // future tool streams partial output this way, add
-        // `(part.state === 'output-available' && part.preliminary === true)`
-        // to `isIncompleteToolPart`'s drop condition before shipping it —
-        // otherwise a preliminary result can precede the final one for the
-        // same `toolCallId` and reintroduce this exact bug class.
-        //
-        // A Confirm card the coach never answered, followed by a newer
-        // question, is a Cancel: see `denyAbandonedApprovals`. Left as it was,
-        // ai 7.0.37 rejected the whole request ("Tool result is missing for
-        // tool call …") for every later question in the thread; ai 7.0.128
-        // drops the card silently, so the model is never told it was declined.
-        messages: await convertToModelMessages(
-          denyAbandonedApprovals(uiMessages).map((m) => ({
-            ...m,
-            parts: m.parts.filter((p) => !isIncompleteToolPart(p)),
-          })),
-          { tools },
-        ),
-        tools,
-        // Every mutating tool suspends for an explicit coach decision. This is
-        // the gate the whole action framework rests on — a model cannot reach
-        // a write, only an approval request.
-        toolApproval: ({ toolCall }) => (isConfirmRequired(toolCall.toolName) ? 'user-approval' : 'not-applicable'),
-        // The brief ends the turn: the coach's answers are the next message (practice-plan 02 §4.2).
-        stopWhen: [stepCountIs(8), ({ steps }: { steps: ReadonlyArray<{ toolCalls: ReadonlyArray<{ toolName: string }> }> }) => !!steps.at(-1)?.toolCalls.some((t) => t.toolName === 'ask_practice_brief')],
-        onChunk: () => {
-          if (firstTokenMs === null) firstTokenMs = Date.now() - startedAt;
-        },
-        onError: ({ error }) => {
-          logStreamModelError(error);
-        },
-        // Sentry AI observability opt-in (vercelAIIntegration instruments
-        // NOTHING for a call unless it itself sets isEnabled — Phase A
-        // finding, docs/observability/SENTRY_PHASE_A_FINDINGS.md §(a)).
-        // recordInputs/recordOutputs:false explicitly overrides the
-        // integration's own global recordInputs/recordOutputs:true
-        // (instrumentation.ts) at this specific call site — a coach chat
-        // prompt/message can carry a player's first name (see
-        // hero-narrative.ts's own pattern in the same Phase A finding) and
-        // this app's own numeric-grounding tool-call payloads, neither of
-        // which belongs in Sentry.
-        experimental_telemetry: {
-          isEnabled: true,
-          functionId: 'coachhelm.chat',
-          recordInputs: false,
-          recordOutputs: false,
-        },
-      });
-
-      usagePromise = result.usage;
-      // `sendReasoning: false` keeps the model's private deliberation off the
-      // wire entirely. It renders nowhere today, but "not rendered" is not the
-      // requirement — the requirement is that it never reaches the browser,
-      // where it sits in network responses and React state either way.
-      // `onError` HAS to be passed here too — see why below.
-      //
-      // Forwarded chunk-by-chunk ourselves — accumulating every `text-delta`
-      // as it passes through — rather than handed to `writer.merge` (see its
-      // implementation: a `.getReader()` loop kicked off as a fire-and-forget
-      // background promise). Two things follow from doing it this way that
-      // `writer.merge` cannot give us: `execute` does not resolve, and the
-      // response does not close, until every chunk has actually been sent;
-      // and we get one deterministic point — after the loop, before
-      // `execute` returns — to run the grounding audit on the text that was
-      // ACTUALLY streamed and still speak into this same connection. N15:
-      // the audit used to run only in `onFinish`, which cannot happen until
-      // the stream has already finished sending — a coach watching the
-      // answer stream in never saw the flag live, only on a later reload of
-      // the thread.
-      //
-      // That text is NOT `result.text`. In `ai` 7.0.79, `StreamTextResult`'s
-      // `text` getter resolves to `finalStep.text` — the LAST agent step's
-      // text only (`node_modules/ai/dist/index.js`, the `StreamTextResult`
-      // class). A tool-using turn is routinely more than one step (tool call
-      // → tool result → more text → …, up to `stepCountIs(8)`), and the
-      // coach sees every step's text concatenated, not just the last one.
-      // Auditing `result.text` would silently exempt a fabricated number
-      // written in an earlier step from ever being checked. Accumulating
-      // `text-delta.delta` ourselves as each chunk is forwarded is exactly
-      // the string the browser received, in the order it received it — and
-      // it is the SAME string `onFinish` persists as `content` (see
-      // `turnVerdict` above), so the live affordance and the stored status
-      // can never audit two different things and disagree.
-      //
-      // A model failure happens INSIDE this merged stream, not inside the
-      // outer `execute`, so the outer `createUIMessageStream.onError` never
-      // sees it — `toUIMessageStream` falls back to the SDK default, and the
-      // coach is shown the literal string "An error occurred." That is what
-      // a coach saw in production while the account's model credit was
-      // exhausted: six identical retries, each answered with four words that
-      // named neither the cause nor anything they could do. The sanitised
-      // message below already said "the model quota is exhausted"; it was
-      // just never reaching the browser. `toUIMessageStream`'s own `onError`
-      // (passed below) turns that failure into an inline `{type:'error'}`
-      // chunk carrying the sanitised text, which this loop still forwards
-      // like any other chunk — but a turn that produced one must never be
-      // stored as a finished, verified answer just because the partial text
-      // it managed to stream happened to pass the numeric audit. Likewise, a
-      // dropped connection can end this stream with no `finish` chunk at
-      // all; either signal marks the turn as never having completed.
-      //
-      // The `finish` chunk itself is held back and re-emitted last so a
-      // rejected turn's verdict part still arrives before the message is
-      // marked done, per the UI message stream protocol.
-      //
-      // `toUIMessageStream`'s deprecated method overload does not carry a
-      // precise element type through to a `for await` loop; the SDK's own
-      // `writer.write` parameter type is the source of truth for what a
-      // chunk may be, so chunks are typed against THAT rather than
-      // duplicating the SDK's chunk union here.
-      type StreamChunk = Parameters<typeof writer.write>[0];
-      const uiStream = result.toUIMessageStream({
-        sendStart: true,
-        sendFinish: true,
-        sendReasoning: false,
-        onError: sanitiseStreamError,
-      }) as AsyncIterable<StreamChunk>;
-      let finishChunk: StreamChunk | null = null;
-      // The COMPLETE text the model streamed, claims block included — never
-      // forwarded to the client as-is; only `extractAndValidateClaims`
-      // (after this loop) reads it. `turnText`/the persisted `content` come
-      // from ITS stripped output, not from this variable directly.
-      let rawText = '';
-      let streamErrored = false;
-      // Addendum A7 slice 1: the model appends a `<<<CLAIMS>>>...` block
-      // after its prose (instructions.ts's "Claims block" section) — a raw
-      // JSON fragment a coach must never see live, in the persisted
-      // `content`, or in a saved `ui_parts` text part. Withholding it here,
-      // not just stripping it after the fact, is what keeps all three
-      // honest: `execute` is the only place text ever reaches the writer.
-      //
-      // `pendingText` holds back up to `CLAIMS_OPEN.length - 1` trailing
-      // characters of every otherwise-forwardable delta, in case the
-      // opener is split across two chunks (a provider can flush a delta at
-      // any byte boundary) — without this, forwarding a delta the instant
-      // it arrives could send half of `<<<CLAIMS` before ever seeing the
-      // rest. Once the opener is found, text is withheld into
-      // `insideBlockBuffer` — a raw JSON fragment, never forwarded — until
-      // the closer is found.
-      //
-      // #1999 re-review, SHOULD-2: an earlier version withheld EVERYTHING
-      // from the opener to the end of the text part, forever, even past the
-      // closer. `strippedText`/`content` (`extractAndValidateClaims`) only
-      // ever remove the delimited block itself and preserve whatever prose
-      // follows it (see `compose.test.ts`'s "strips a single well-formed
-      // block ... including one in the MIDDLE of the prose" — trailing text
-      // after the block is an intentional, tested contract, not an
-      // anomaly), so a coach could see LESS live/in `ui_parts` than what
-      // `content` ends up storing. Resuming forwarding once the closer is
-      // seen keeps the two channels in agreement. The loop below re-enters
-      // itself (via `remaining`) so an opener and closer landing in the
-      // SAME delta — or a closer immediately followed by a second opener —
-      // are each handled without waiting for the next chunk.
-      let pendingText = '';
-      let insideBlockBuffer = '';
-      let claimsBlockStarted = false;
-      let lastTextDeltaChunk: StreamChunk | null = null;
-      for await (const chunk of uiStream) {
-        const c = chunk as { type?: string; delta?: unknown };
-        if (c.type === 'text-delta' && typeof c.delta === 'string') {
-          rawText += c.delta;
-          lastTextDeltaChunk = chunk;
-          let remaining: string | null = c.delta;
-          while (remaining !== null) {
-            if (!claimsBlockStarted) {
-              pendingText += remaining;
-              remaining = null;
-              const openIdx = pendingText.indexOf(CLAIMS_OPEN);
-              if (openIdx !== -1) {
-                const toForward = pendingText.slice(0, openIdx);
-                if (toForward) writer.write({ ...chunk, delta: toForward } as StreamChunk);
-                claimsBlockStarted = true;
-                insideBlockBuffer = pendingText.slice(openIdx + CLAIMS_OPEN.length);
-                pendingText = '';
-                remaining = ''; // re-enter below to scan the leftover for a closer immediately
-                continue;
-              }
-              const safeLen = Math.max(0, pendingText.length - (CLAIMS_OPEN.length - 1));
-              if (safeLen > 0) {
-                writer.write({ ...chunk, delta: pendingText.slice(0, safeLen) } as StreamChunk);
-                pendingText = pendingText.slice(safeLen);
-              }
-            } else {
-              insideBlockBuffer += remaining;
-              remaining = null;
-              const closeIdx = insideBlockBuffer.indexOf(CLAIMS_CLOSE);
-              if (closeIdx !== -1) {
-                // Block content itself (`<<<CLAIMS>>>...<<<END_CLAIMS>>>`) is
-                // small JSON — no length bound needed on `insideBlockBuffer`
-                // the way `pendingText` needs one while forwarding live.
-                claimsBlockStarted = false;
-                remaining = insideBlockBuffer.slice(closeIdx + CLAIMS_CLOSE.length);
-                insideBlockBuffer = '';
-                continue; // re-enter above to forward/scan whatever followed the closer
-              }
-            }
-          }
-          continue;
-        }
-        // The withheld tail belongs to the text part that `text-end` is
-        // about to close, so flush it first: a delta written after its
-        // part's `text-end` is rejected by the ai SDK ("text-delta for
-        // missing text part") and the tail would never reach the coach.
-        if (c.type === 'text-end' && !claimsBlockStarted && pendingText && lastTextDeltaChunk) {
-          writer.write({ ...lastTextDeltaChunk, delta: pendingText } as StreamChunk);
-          pendingText = '';
-        }
-        if (c.type === 'error') {
-          streamErrored = true;
-        }
-        if (c.type === 'finish') {
-          finishChunk = chunk;
-          continue;
-        }
-        writer.write(chunk);
+  const onFinished = (summary: TurnSummary) => {
+    later(async () => {
+      await touchConversation(supabase, convId).catch(() => undefined);
+      if (summary.messageId && summary.proposalKeys.length > 0) {
+        await linkProposalsToMessage(supabase, { coach_id: ctx.coach_id, message_id: summary.messageId, idempotency_keys: summary.proposalKeys }).catch(() => undefined);
       }
-      // No claims block ever started (or the one that did already closed
-      // and we're back outside it) — the withheld tail is ordinary text
-      // (the common case: most turns end after "…" with nothing to hold
-      // back at all), so flush it now that we know it was never the start
-      // of a delimiter. An UNTERMINATED opener (`claimsBlockStarted` still
-      // true at stream end) intentionally flushes nothing — matches
-      // `stripAllClaimsDelimiters`'s "strip from the opener onward" for that
-      // case.
-      if (!claimsBlockStarted && pendingText && lastTextDeltaChunk) {
-        writer.write({ ...lastTextDeltaChunk, delta: pendingText } as StreamChunk);
-      }
-      // The stream ended without ever emitting a `finish` chunk — the
-      // connection was aborted mid-generation rather than completing
-      // normally. Whatever text made it through is a fragment, not an
-      // answer, however clean it audits.
-      if (!finishChunk) streamErrored = true;
+      if (summary.error) logModelError(summary.error, profile.ledgerId);
+      await recordTurn({ admin, ctx, conversationId: convId, summary, ledgerId: profile.ledgerId });
+    });
+  };
 
-      // Fold in `priorDeferred` (player-scoped, or of unknown scope, prior
-      // evidence) only now — `measurements`/`seriesAll` already carry every
-      // fresh `Measurement`/`MeasurementSeries` THIS turn's own tool calls
-      // produced (via `collect`, which has already run: tool execution
-      // happens inside the `streamText` agent loop the forwarding loop above
-      // just finished draining), so this is the first point where "which
-      // player(s) is this turn actually about" is knowable. A prior turn's
-      // number about a player never mentioned this turn must not be allowed
-      // to "support" a claim about whichever player IS being discussed now.
-      const currentTurnPlayerIds = new Set(
-        [...measurements, ...seriesAll]
-          .map((m) => m.entity)
-          .filter((e) => e.kind === 'player')
-          .map((e) => e.id),
-      );
-      // A turn with zero fresh player-scoped tool calls this turn (the model
-      // answering entirely from memory, no new tool call) must not fold in
-      // `deferred` at all — not even when exactly one player is on record
-      // there. With `currentTurnPlayerIds` empty, `allPlayerIds` would
-      // otherwise collapse to whichever single player `deferred` happens to
-      // carry, and that player's number would silently "support" a claim
-      // about a DIFFERENT player this turn never fetched anything for (e.g.
-      // turn 1 fetches Alice's putts; turn 2 asks about Bob and answers from
-      // memory — Alice's number must not ground a claim about Bob). Requiring
-      // at least one fresh player id this turn is what lets us confirm the
-      // deferred player is actually who's being discussed now.
-      const allPlayerIds = new Set([...currentTurnPlayerIds, ...priorDeferred.playerIds]);
-      if (currentTurnPlayerIds.size > 0 && allPlayerIds.size <= 1) {
-        measurements.push(...priorDeferred.measurements);
-        seriesAll.push(...priorDeferred.series);
-        detailNumbers.push(...priorDeferred.detailNumbers);
-        detailDates.push(...priorDeferred.detailDates);
-      }
-
-      // Addendum A7 slice 1 / audit row 47(a): the typed claim gate. With
-      // the flag on, `extractAndValidateChatClaims` validates EVERY claim in
-      // the block against the packet for the claim's own (player, window) —
-      // a multi-player or multi-window turn is no longer skipped — and leaves
-      // prose numbers to the player/metric-bound numeric audit above. It
-      // engages only when the turn has player-scoped measurements; a team
-      // turn is judged by the numeric audit alone.
-      //
-      // Gated behind `coachhelm_chat_claim_gate` (config/feature-flags.yml,
-      // default off — same pattern as round-recap's
-      // `coachhelm_recap_claim_packet`): off, `claims` stays `null`, so the
-      // third verdict check never engages and behavior is unchanged from
-      // before this gate existed. Either way `strippedText` is the text with
-      // any `<<<CLAIMS>>>` block removed, and the numeric audit is unaffected.
-      const { strippedText, claims } = claimsBlockEnabled
-        ? extractAndValidateChatClaims(rawText, measurements)
-        : extractAndValidateClaimsSafe(rawText, null);
-      // Read markers are the UI's: the "2" in `e2` is not a claim, and the stored `content` never carries one. The parts keep them.
-      turnText = (askV2 ? stripReadMarkers(strippedText) : strippedText).trim();
-      turnVerdict = computeTurnVerdict({
-        streamComplete: !streamErrored,
-        text: turnText,
-        measurements,
-        series: seriesAll,
-        detailNumbers,
-        // Rebase reconciliation (#1997 vs. a since-merged main commit): main
-        // grew `auditNumericClaims` two more params (date-claim checking and
-        // timezone-correct WINDOW/SERIES-POINT conversion) after this
-        // module was written against the 4-arg shape. Threaded through here
-        // so `computeTurnVerdict` gets the same accuracy the inline
-        // pre-#1997 call on main had, instead of silently degrading to the
-        // old UTC-only, no-date-check behavior (both are backward-
-        // compatible optional params on `auditNumericClaims` itself — see
-        // its own doc comment — so this is strictly additive, not a fix to
-        // a broken call).
-        detailDates,
-        timezone: ctx.timezone,
-        // Audit row 47b: the roster lets the numeric audit recognise a
-        // player named in the answer and bind the number to them.
-        players: ctx.roster,
-        claims,
-      });
-      // A rejected verdict's note replaces the streamed text — not a note
-      // appended alongside it — so ChatThread (live) and restoreUIMessages
-      // (reload) both hide the text parts whenever this part is present. See
-      // ChatThread.tsx's `MessageTurn` and restore.ts's per-row filter.
-      if (turnVerdict.outcome === 'rejected') {
-        writer.write({
-          type: verdictPartType(turnVerdict.reason),
-          id: 'turn-verdict',
-          data: { note: turnVerdict.note },
-        });
-      }
-      if (finishChunk) writer.write(finishChunk);
+  return chatTurnResponse(
+    {
+      model: anthropicModelClient,
+      tools,
+      system: { stable: blocks.policy, team: blocks.team },
+      toolContext: { sb: supabase, who: ctx, conversationId: convId, surface, loaders: coachScreenLoaders(supabase, ctx) },
+      tasks: { coachId: ctx.coach_id, teamId: ctx.team_id, timezone: ctx.timezone, defer: later },
+      maxSteps: CHAT_MAX_STEPS,
+      profile,
+      features: chatFeatures(surface),
+      turnNote,
+      screen: screenEcho,
+      requestSignal: req.signal,
+      store: { loaded, coachId: ctx.coach_id },
+      clientTurnId,
+      describeError: describeTurnError,
+      // With the question: a number the coach typed ("under 75") is theirs to hear back, not a figure from nowhere.
+      checkGrounding: groundingCheck,
+      onFinished,
+      onSuggested: (result) => later(() => recordSuggestions({ admin, ctx, conversationId: convId, ...result })),
     },
-
-    /**
-     * Persist the finished turn.
-     *
-     * Both halves matter: `content` keeps the conversation replayable to the
-     * model, and `ui_parts` keeps it reproducible for the coach. Storing only
-     * the first is what made a reload throw away every chart.
-     */
-    onFinish: async ({ messages }) => {
-      try {
-        const assistant = [...messages].reverse().find((m) => m.role === 'assistant');
-        if (!assistant) return;
-
-        // Prefer the exact string `execute` streamed and verified — see
-        // `turnVerdict`'s declaration above — over independently
-        // reconstructing one from `assistant.parts` here, so the live
-        // affordance and the persisted content/status can never disagree.
-        // The `textOf(assistant)` fallback only matters when `turnVerdict`
-        // is still null below.
-        const text = turnVerdict ? turnText : textOf(assistant);
-
-        // A turn that produced NOTHING must not be stored as an answer.
-        //
-        // `onFinish` fires on a failed turn too. With no guard it wrote a row
-        // with empty content and `status: 'complete'` — a total failure was
-        // recorded as a finished answer. Production has six of them, one per
-        // retry, and each renders on reload as a blank assistant turn.
-        //
-        // A turn with no prose is not necessarily empty: an action proposal is
-        // a card with no text. So the test is text OR a real data part —
-        // `step-start` alone does not count as an answer.
-        const hasContent = hasPersistableAssistantContent(assistant, text);
-        if (!hasContent) return;
-
-        // `execute` never reached its own verdict — the client disconnected,
-        // or the platform tore the function down, before the stream
-        // finished (see `handleUIMessageStreamFinish`'s TransformStream
-        // `cancel()`, which calls `onFinish` early with whatever fragment of
-        // `assistant.parts` made it into the OUTER stream by then). This is
-        // NOT "the audit found nothing wrong" — there is no complete answer
-        // to audit — so a still-null verdict here is unconditionally
-        // rejected as `stream_incomplete`, the same first check
-        // `computeTurnVerdict` itself runs, rather than re-running the
-        // numeric audit on a fragment the model never finished. Re-running
-        // that audit on a truncated fragment was the actual defect: a short
-        // partial answer with no numbers in it passed the audit trivially
-        // and was stored as `'complete'`.
-        // `note` is never read below in this function — this branch only
-        // ever inspects `.outcome`/`.reason`/`.unsupported` — but the empty
-        // string this used to carry was also simply wrong: `stream_incomplete`
-        // ALWAYS means `STREAM_INCOMPLETE_NOTE`, the same value
-        // `computeTurnVerdict` itself returns for this exact reason above
-        // (#1997 review, NICE). Populating it correctly costs nothing and
-        // removes a landmine for the next caller that reads `.note`.
-        const verdict: TurnVerdict =
-          turnVerdict ?? { outcome: 'rejected', reason: 'stream_incomplete', note: STREAM_INCOMPLETE_NOTE, unsupported: [] };
-
-        if (verdict.outcome === 'rejected' && verdict.reason === 'ungrounded_claims') {
-          // A designed guardrail FIRING is not an incident: the claim was
-          // caught and the turn was annotated + stored as 'failed' below,
-          // which is the system working. Logged at 'info' with skipSentry so
-          // it stays queryable as a hallucination-rate metric without sitting
-          // in the incident feed's default view or minting a Sentry issue —
-          // the convention stated in lib/admin/observe-action-result.ts.
-          //
-          // Count-stable message (see the staleBacklog emitter for the same
-          // rule): interpolating the claim count minted one fingerprint per
-          // distinct count, so "1 claim" and "2 claims" arrived as two
-          // unrelated warnings that could never dedupe.
-          //
-          // The claim TEXTS matter more than the count and were not recorded
-          // at all, which made the false-positive rate unmeasurable:
-          // auditNumericClaims exempts only ISO dates, clock times and
-          // integers <= 12, so "18 holes", "par 72", "2025" and "150 yards"
-          // all read as unsupported. Do NOT widen those exemptions without
-          // this telemetry first — a fabricated "72%" next to the word "par"
-          // is exactly what the check exists to catch.
-          await logServerEvent(
-            'chat/stream: assistant turn contained numeric claims not traceable to tool evidence',
-            {
-              action: 'v3.chat.stream.ungrounded',
-              featureArea: 'coachhelm',
-              skipSentry: true,
-              extra: {
-                unsupportedCount: verdict.unsupported.length,
-                claims: verdict.unsupported.slice(0, 10).map((c) => c.text),
-                conversationId: convId,
-                coachId: ctx.coach_id,
-              },
-            },
-            'info',
-          );
-        } else if (verdict.outcome === 'rejected' && verdict.reason === 'claim_validation_failed') {
-          // Addendum A7 slice 1: the typed claim gate (claim-validator.ts,
-          // #1991) caught a claim that cited a real value under the wrong
-          // metric/player/window/unit/denominator, or lacked causal backing
-          // for a stated cause — a MISATTRIBUTED number, not a fabricated
-          // one, which the flat numeric scan above cannot see (the value
-          // really is in the packet). Same 'info'/skipSentry convention as
-          // the ungrounded-claims branch: the guardrail firing is the system
-          // working, not an incident. `{claim_id, metric_id, reason}` only —
-          // no prose — mirrors compose.ts's own `claim_validation` log shape.
-          await logServerEvent(
-            'chat/stream: assistant turn contained a typed claim that failed validation against its evidence packet',
-            {
-              action: 'v3.chat.stream.claim_validation',
-              featureArea: 'coachhelm',
-              skipSentry: true,
-              extra: {
-                rejected: (verdict.rejectedClaims ?? []).map((r) => ({
-                  claim_id: r.claim.claim_id,
-                  metric_id: r.claim.metric_id,
-                  reason: r.reason,
-                })),
-                conversationId: convId,
-                coachId: ctx.coach_id,
-              },
-            },
-            'info',
-          );
-        } else if (verdict.outcome === 'rejected' && verdict.reason === 'stream_incomplete') {
-          // Distinct from the guardrail above: nothing was fabricated, the
-          // turn simply never finished (an inline error chunk, the stream
-          // ending with no `finish` chunk, or `onFinish` firing before
-          // `execute` ever computed a verdict at all — see `turnVerdict`'s
-          // declaration). Logging it separately keeps "the model made
-          // something up" and "the turn broke" as two different, both-
-          // queryable signals instead of one count that conflates them.
-          await logServerEvent(
-            'chat/stream: assistant turn ended without completing; stored as failed rather than complete',
-            {
-              action: 'v3.chat.stream.incomplete',
-              featureArea: 'coachhelm',
-              skipSentry: true,
-              extra: { conversationId: convId, coachId: ctx.coach_id },
-            },
-            'info',
-          );
-        }
-
-        // `content` is the raw text the model produced — never the failure
-        // note, which lives only in `ui_parts`/`status`. Baking the note into
-        // `content` too would leak it into the next turn's model context via
-        // `convertToModelMessages` on the client's own replayed thread. This
-        // is about what `content` is SENT to the model as, not what a coach
-        // can see: `restore.ts`/`ChatThread.tsx` govern display and, on a
-        // rejected turn, show only the note — but an in-session `uiMessages`
-        // array (this same request, before any reload) can still carry the
-        // raw rejected text in a `text` part alongside it (#1997 review,
-        // NICE) — this comment used to overclaim that display, not just the
-        // model-context payload, was undecorated everywhere.
-        const persistedAssistant = await appendMessage(supabase, {
-          conversation_id: convId,
-          role: 'assistant',
-          content: text,
-          status: verdict.outcome === 'accepted' ? 'complete' : 'failed',
-          client_turn_id: clientTurnId,
-          // Audit row 47(c): a rejected turn's verdict part carries WHY
-          // (reason kind + unmatched tokens), appended if none was streamed.
-          ui_parts: withVerdictPart(publishableParts(assistant.parts), verdict) as unknown,
-        });
-        await touchConversation(supabase, convId);
-
-        // Audit row 50(b): tie every action this turn proposed to the message
-        // that carries its card. `message_id` was NULL on every production
-        // run — the audit trail could not say which answer proposed what.
-        // Best-effort: a failure here never costs the coach their answer.
-        const proposalKeys = proposalKeysFromParts(assistant.parts);
-        if (persistedAssistant?.id && proposalKeys.length > 0) {
-          await linkProposalsToMessage(supabase, {
-            coach_id: ctx.coach_id,
-            message_id: persistedAssistant.id,
-            idempotency_keys: proposalKeys,
-          }).catch(() => {});
-        }
-
-        // Latency telemetry: first token and total. No player name, prompt
-        // text or database value — only timings and the model tier.
-        if (firstTokenMs !== null && firstTokenMs > 8000) {
-          await logServerError(
-            `chat/stream: slow first token ${firstTokenMs}ms (total ${Date.now() - startedAt}ms) model=${MODEL_FOR_TASK.coach_chat}`,
-            { action: 'v3.chat.stream.latency' },
-            'warning',
-          );
-        }
-
-        // Bill the turn from REPORTED token counts. Recording the gate's
-        // worst-case estimate instead (which an earlier revision of this route
-        // did) over-charges every short answer several times over and
-        // exhausts a coach's daily budget long before they have spent it.
-        await recordTurnCost({
-          admin,
-          ctx,
-          conversationId: convId,
-          usagePromise,
-          grounded: verdict.outcome === 'accepted',
-          unmatchedTokens: verdictRecord(verdict)?.unmatched_tokens ?? [],
-          verdictReason: verdict.outcome === 'rejected' ? verdict.reason : undefined,
-        });
-
-        // helm.ai.* — the call reached this point, so the model responded and
-        // was billed; an ungrounded/failed-audit turn is still a successful
-        // AI SDK call (recordAi's outcome is about the call itself, not
-        // content quality — that has its own logServerEvent above).
-        // usagePromise is already settled by recordTurnCost's own await.
-        const usage = usagePromise ? await usagePromise.catch(() => null) : null;
-        recordAi({
-          feature: 'coachhelm_chat',
-          action: 'v3.chat.stream.model',
-          model: MODEL_FOR_TASK.coach_chat,
-          outcome: 'success',
-          durationMs: Date.now() - startedAt,
-          inputTokens: usage?.inputTokens,
-          outputTokens: usage?.outputTokens,
-          runtime: process.env.NEXT_RUNTIME ?? 'nodejs',
-        });
-      } catch (err) {
-        await logServerError(
-          `chat/stream: persistence failed — ${describeError(err)}`,
-          { action: 'v3.chat.stream.persist' },
-        );
-      }
-    },
-
-    /**
-     * Sanitised for the wire. An upstream error message can carry provider
-     * internals or echo prompt text, neither of which belongs in a browser.
-     */
-    onError: sanitiseStreamError,
-  });
-
-  return createUIMessageStreamResponse({
-    stream,
-    headers: { 'x-conversation-id': convId },
-  });
-}
-
-/** Concatenate the text parts of a UI message. */
-function textOf(message: UIMessage | undefined): string {
-  if (!message) return '';
-  return message.parts
-    .filter((p): p is { type: 'text'; text: string } => p.type === 'text')
-    .map((p) => p.text)
-    .join('')
-    .trim();
+    input,
+    { 'x-conversation-id': convId },
+  );
 }
 
 /**
- * Record what the turn actually cost.
- *
- * The pre-flight gate reserves a conservative worst case so a turn cannot start
- * without headroom; what gets BILLED has to be the real number. Using the
- * estimate for both means a $0.01 answer is charged like a $0.12 one, and a
- * coach hits "daily budget reached" after a handful of questions.
- *
- * Telemetry carries model, latency and cost. It carries no player name, no
- * prompt text and no database value.
+ * Record the call that asked what to ask next: a ledger row under its own task key (`chat_suggestions`) and the same
+ * key in the day's budget, so the feature's cost can be read apart from the answers'. `verified`: at least two
+ * suggestions passed the checks and were shown. Where the database does not take the key yet (the held migration
+ * 20261111090000) no row is written; the spend is still counted, under its own key. No suggestion text is recorded.
  */
-async function recordTurnCost(args: {
-  admin: ReturnType<typeof createAdminClient>;
-  ctx: CoachChatContext;
-  conversationId: string;
-  usagePromise: Promise<LanguageModelUsage> | null;
-  /** `unsupported.length === 0` from the numeric-claim audit above. Was not
-   *  passed at all, so the ledger recorded a literal `false` for every turn —
-   *  0 of 37 verified in production while round_review recorded 29 of 121. */
-  grounded: boolean;
-  /** The claim texts the audit flagged, when `grounded` is false. */
-  unmatchedTokens: string[];
-  /** Which verdict check rejected the turn (audit row 47c). */
-  verdictReason?: TurnVerdictReason;
-}): Promise<void> {
-  const { admin, ctx, conversationId, usagePromise, grounded, unmatchedTokens, verdictReason } = args;
-  try {
-    const usage = usagePromise ? await usagePromise : undefined;
-    const promptTokens = usage?.inputTokens ?? 0;
-    const completionTokens = usage?.outputTokens ?? 0;
-    // If the provider reported nothing, fall back to the reserved estimate
-    // rather than billing zero — an unmeasured turn must not be free.
-    // Cache-aware: `promptTokens` INCLUDES the cached portions, and a cache
-    // read costs a tenth of a fresh token. Billing the total at the full input
-    // rate would spend a coach's daily budget on tokens that were never
-    // freshly processed.
-    const cost =
-      promptTokens + completionTokens > 0
-        ? estimateCachedCostUsd(
-            MODEL_FOR_TASK.coach_chat,
-            promptTokens,
-            completionTokens,
-            usage?.inputTokenDetails,
-          )
-        : CHAT_TURN_COST_ESTIMATE_USD;
+async function recordSuggestions(args: { admin: ReturnType<typeof createAdminClient>; ctx: CoachChatContext; conversationId: string; usage: UsageTotals; kept: number; failed: boolean }): Promise<void> {
+  const { admin, ctx, conversationId, usage, kept } = args;
+  const cost = turnCostUsd(usage);
+  const row = { ...buildChatLlmCallRow({ coachId: ctx.coach_id, conversationId, modelId: suggestionsModel().ledgerId, promptTokens: promptTokens(usage), completionTokens: usage.output, costUsd: cost, grounded: kept > 0 }), citations: null };
+  // The row and the day's spend are written apart: a ledger that fails must not leave the spend uncounted.
+  await writeChatLedgerRow(admin, row, CHAT_SUGGESTIONS_TASK, null).catch(() => undefined);
+  await recordSpend(admin, { coach_id: ctx.coach_id, task: CHAT_SUGGESTIONS_TASK, cost_usd: cost }).catch(() => undefined);
+}
 
+/**
+ * Record what the turn cost and how it went. Billed from REPORTED token counts: the pre-flight estimate charges a short
+ * answer several times over. Carries model, latency, cost, cache use and the grounding check's result; no player name,
+ * no prompt text, no database value.
+ */
+async function recordTurn(args: { admin: ReturnType<typeof createAdminClient>; ctx: CoachChatContext; conversationId: string; summary: TurnSummary; ledgerId: string }): Promise<void> {
+  const { admin, ctx, conversationId, summary, ledgerId } = args;
+  const { usage } = summary;
+  if (usage.calls.length === 0) return;
+  const input = promptTokens(usage);
+  try {
+    const cost = input + usage.output > 0 ? turnCostUsd(usage) : turnCostEstimateUsd(ledgerId);
     await admin.from('golf_coachhelm_llm_calls').insert(
-      buildChatLlmCallRow({
-        coachId: ctx.coach_id,
-        conversationId,
-        modelId: MODEL_FOR_TASK.coach_chat,
-        promptTokens,
-        completionTokens,
-        costUsd: cost,
-        grounded,
-        unmatchedTokens,
-        verdictReason,
-      }),
+      buildChatLlmCallRow({ coachId: ctx.coach_id, conversationId, modelId: ledgerId, promptTokens: input, completionTokens: usage.output, costUsd: cost, grounded: summary.grounded, unmatchedTokens: summary.unmatched, featuresDropped: summary.featuresDropped }),
     );
     await recordSpend(admin, { coach_id: ctx.coach_id, task: 'coach_chat', cost_usd: cost });
   } catch {
     // Never fail a coach's answer because accounting hiccuped.
   }
+  if (summary.status !== 'failed') {
+    recordAi({ feature: 'coachhelm_chat', action: 'v3.chat.stream.model', model: ledgerId, outcome: 'success', durationMs: summary.totalMs, inputTokens: input, outputTokens: usage.output, runtime: process.env.NEXT_RUNTIME ?? 'nodejs' });
+  }
+  // A prompt past 100K tokens is billed at five times the rate: it should not happen, so it is said when it does.
+  // (Only a model with a second rate card can be on it: Claude Haiku 5.5 past 100K prompt tokens.)
+  const longest = Math.max(0, ...usage.calls.filter(onLongCard).map(callPromptTokens));
+  if (longest > 0) {
+    void logServerError('chat/stream: a request went over 100K prompt tokens and was billed on the long-prompt rate card', { action: 'v3.chat.stream.long_prompt', feature: 'coachhelm_chat', handled: true, skipSentry: true, extra: { conversationId, promptTokens: longest } }, 'warning');
+  }
+  // One line per turn for the eval: how long the coach waited for the first word, what the cache saved on each call, whether the figures matched the reads.
+  await logServerEvent(
+    'chat/stream: turn',
+    {
+      action: 'v3.chat.stream.turn',
+      featureArea: 'coachhelm',
+      skipSentry: true,
+      extra: { conversationId, coachId: ctx.coach_id, status: summary.status, stop: summary.stop, firstTextMs: summary.firstTextMs, totalMs: summary.totalMs, calls: usage.calls, grounded: summary.grounded, unmatchedCount: summary.unmatched.length, refusalCategory: summary.refusalCategory, degraded: summary.degraded, featuresDropped: summary.featuresDropped, model: ledgerId, fallbackModel: summary.fallbackModel },
+    },
+    'info',
+  ).catch(() => undefined);
 }

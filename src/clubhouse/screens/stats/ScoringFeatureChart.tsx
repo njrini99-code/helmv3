@@ -1,17 +1,21 @@
 'use client';
+import { readTypeK } from '../../lib/type-k';
 import { pluralWord } from '../../lib/plural';
 import { formatFixed } from '../../lib/format';
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type PointerEvent } from 'react';
 import { useChReducedMotion } from '../../lib/reduced-motion';
+import { CH_MARKS_MS } from '../../lib/motion';
 import { hapticScrub } from '../../lib/haptics';
 import { meanSeries, parLine, type TrendRound } from './round-trend';
 import { monoPath, type ShsTone } from './shs-figures';
 
 const H = 160;
-const PAD = { l: 4, r: 30, t: 10, b: 26 };
+const BASE_PAD = { l: 4, r: 30, t: 10, b: 26 };
+const HOLD_MS = 120;
+const SIDEWAYS_PX = 6;
 /** The line's morph on a window change (07 M-STATS-10). */
-const MORPH_MS = 360;
+const MORPH_MS = CH_MARKS_MS;
 const morphEase = (t: number) => 1 - Math.pow(1 - t, 3.2);
 
 type Pt = readonly [number, number];
@@ -39,6 +43,15 @@ export function ScoringFeatureChart({ rounds, tone, onRead }: { rounds: readonly
   const box = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(320);
   const [read, setRead] = useState<number | null>(null);
+  // The axis type follows Text Size, so its gutters do too: fixed ones clip the figures at large sizes (STATS-9).
+  const [k, setK] = useState(1);
+  useEffect(() => setK(readTypeK(document.documentElement)), []);
+  const PAD = { ...BASE_PAD, r: BASE_PAD.r * k, b: BASE_PAD.b * k };
+  const pending = useRef<{ x0: number; timer: number } | null>(null);
+  const cancelPending = () => {
+    if (pending.current) window.clearTimeout(pending.current.timer);
+    pending.current = null;
+  };
   useEffect(() => {
     const el = box.current;
     if (!el) return;
@@ -78,17 +91,31 @@ export function ScoringFeatureChart({ rounds, tone, onRead }: { rounds: readonly
   const shape = useRef<{ dots: readonly Pt[]; avg: readonly Pt[] } | null>(null);
   const roundsKey = shown.map((r) => r.id).join();
   const dotPts: Pt[] = shown.map((r, i) => [x(i), y(r.value)]);
+  const morphedKey = useRef<string | null>(null);
   useLayoutEffect(() => {
     const was = shape.current;
     const end = { dots: dotPts, avg };
-    if (!was || reduced || was.dots.length === 0) {
+    const bottom = H - PAD.b;
+    const circles = Array.from(dotsEl.current?.querySelectorAll('circle') ?? []);
+    // The shape as the elements hold it: a morph writes them itself, so whoever stops one must leave them on a whole shape.
+    const paint = (a: readonly Pt[], d: readonly Pt[]) => {
+      const path = monoPath(a);
+      if (lineEl.current) lineEl.current.setAttribute('d', path);
+      if (areaEl.current) areaEl.current.setAttribute('d', path ? `${path}L${a[a.length - 1]![0]},${bottom}L${a[0]![0]},${bottom}Z` : '');
+      circles.forEach((c, i) => d[i] && c.setAttribute('cy', String(d[i]![1])));
+    };
+    const sameRounds = morphedKey.current === roundsKey;
+    morphedKey.current = roundsKey;
+    // Only a new set of rounds morphs. A new width (the card is measured after its first paint, and a desk's card is far wider than
+    // the first guess) or a motion setting that lands late redraws at rest: a morph begun at the old width would otherwise keep
+    // writing the old width's line over the new one, leaving the average half as long as its rounds.
+    if (!was || reduced || was.dots.length === 0 || sameRounds) {
+      paint(avg, dotPts);
       shape.current = end;
       return;
     }
     const startDots = dotPts.map((p) => heightAt(was.dots, p[0]) ?? p[1]);
     const startAvg = avg.map((p) => heightAt(was.avg, p[0]) ?? p[1]);
-    const bottom = H - PAD.b;
-    const circles = Array.from(dotsEl.current?.querySelectorAll('circle') ?? []);
     let raf = 0;
     const t0 = performance.now();
     const step = (now: number) => {
@@ -96,17 +123,14 @@ export function ScoringFeatureChart({ rounds, tone, onRead }: { rounds: readonly
       const a = avg.map((p, i) => [p[0], startAvg[i]! + (p[1] - startAvg[i]!) * t] as const);
       const d = dotPts.map((p, i) => [p[0], startDots[i]! + (p[1] - startDots[i]!) * t] as const);
       shape.current = { dots: d, avg: a };
-      const path = monoPath(a);
-      if (lineEl.current) lineEl.current.setAttribute('d', path);
-      if (areaEl.current && path) areaEl.current.setAttribute('d', `${path}L${a[a.length - 1]![0]},${bottom}L${a[0]![0]},${bottom}Z`);
-      circles.forEach((c, i) => d[i] && c.setAttribute('cy', String(d[i]![1])));
+      paint(a, d);
       if (t < 1) raf = requestAnimationFrame(step);
       else shape.current = end;
     };
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- a new set of rounds starts it; a resize just redraws
-  }, [roundsKey, reduced]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the geometry is read from this render; the keys say when it changed
+  }, [roundsKey, reduced, width]);
 
   const set = useCallback(
     (i: number | null) => {
@@ -152,19 +176,49 @@ export function ScoringFeatureChart({ rounds, tone, onRead }: { rounds: readonly
       aria-valuetext={interactive ? (read == null ? `Latest ${Math.round(last.value)}, ${last.label}` : `${Math.round(shown[read]!.value)}, ${shown[read]!.label}`) : undefined}
       onPointerDown={(e) => {
         if (!interactive) return;
-        e.currentTarget.setPointerCapture(e.pointerId);
-        hapticScrub('start');
-        pick(e);
+        // A scroll that starts here isn't a read: nothing lights and nothing buzzes until a hold or a sideways move (MOB-STATS-4).
+        if (e.pointerType !== 'touch') {
+          e.currentTarget.setPointerCapture(e.pointerId);
+          hapticScrub('start');
+          pick(e);
+          return;
+        }
+        const el = e.currentTarget;
+        const id = e.pointerId;
+        const x0 = e.clientX;
+        const at = { clientX: e.clientX };
+        pending.current = {
+          x0,
+          timer: window.setTimeout(() => {
+            pending.current = null;
+            el.setPointerCapture(id);
+            hapticScrub('start');
+            pick(at as never);
+          }, HOLD_MS),
+        };
       }}
       onPointerMove={(e) => {
+        const wait = pending.current;
+        if (wait && Math.abs(e.clientX - wait.x0) >= SIDEWAYS_PX) {
+          window.clearTimeout(wait.timer);
+          pending.current = null;
+          e.currentTarget.setPointerCapture(e.pointerId);
+          hapticScrub('start');
+          pick(e);
+          return;
+        }
         if (interactive && e.currentTarget.hasPointerCapture(e.pointerId)) pick(e);
       }}
       onPointerUp={() => {
+        cancelPending();
         if (read == null) return;
         hapticScrub('end');
         set(null);
       }}
-      onPointerCancel={() => set(null)}
+      onPointerCancel={() => {
+        cancelPending();
+        set(null);
+      }}
       onBlur={() => set(null)}
       onKeyDown={(e) => {
         if (!interactive) return;
@@ -281,11 +335,16 @@ export function TeamFeatureChart({ days, mean }: { days: ReadonlyArray<{ label: 
             {known[n - 1]!.label}
           </text>
         )}
-        {mean != null && (
-          <text className="ch-shs-ax" x="4" y={y(mean) - 6}>
-            Mean {formatFixed(mean, 1)}
-          </text>
-        )}
+        {mean != null && (() => {
+          // The label sits at the end of the dash where the line is farther from it, so the line rarely runs through the words.
+          const my = y(mean);
+          const atLeft = pts.length > 1 && Math.abs(pts[0]![1] - my) > Math.abs(pts[pts.length - 1]![1] - my);
+          return (
+            <text className="ch-shs-ax ch-shs-mean-label" x={atLeft ? pts[0]![0] : width - BASE_PAD.r} textAnchor={atLeft ? 'start' : 'end'} y={Math.max(12, my - 6)}>
+              Mean {formatFixed(mean, 1)}
+            </text>
+          );
+        })()}
       </svg>
     </div>
   );

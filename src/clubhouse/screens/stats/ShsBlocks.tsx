@@ -68,6 +68,10 @@ export function Ribbon({
   const bot = lowerIsBetter ? Math.max(...vals) : Math.min(...vals);
   const path = monoPath(pts);
   const colour = fill(tone);
+  // An end of the range that lands on the reference line can't print beside the line's label. The axis still needs two figures to be a
+  // scale (a best round at par left "75" alone), so there the line prints its value; the card's head already says what the dashed line is.
+  const onRef = (v: number) => ref != null && Math.abs(y(v) - y(ref)) < 14;
+  const refCovers = onRef(top) || onRef(bot);
   return (
     <div className="ch-shs-rib">
       <div className="ch-shs-rib__in">
@@ -85,14 +89,14 @@ export function Ribbon({
         </svg>
         <i className="dot" style={{ left: `${(last[0] / W) * 100}%`, top: `${(last[1] / H) * 100}%`, background: colour }} />
         {reference && (
-          <span className="rref" style={{ top: `${(y(reference.value) / H) * 100}%` }}>
-            {reference.label}
+          <span className={'rref' + (refCovers ? ' ch-num' : '')} style={{ top: `${(y(reference.value) / H) * 100}%` }} data-ch-rib-ref={refCovers ? 'value' : 'label'}>
+            {refCovers ? format(reference.value) : reference.label}
           </span>
         )}
       </div>
       {[top, bot].map((v, i) =>
         // A figure on the reference line would print over its label: the label already sits there.
-        ref != null && Math.abs(y(v) - y(ref)) < 14 ? null : (
+        onRef(v) ? null : (
           <span key={i} className="ry ch-num" style={{ top: `calc(${y(v) / H} * 124 * var(--ch-type-k))` }}>
             {format(v)}
           </span>

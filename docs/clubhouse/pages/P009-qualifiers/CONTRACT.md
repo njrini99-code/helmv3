@@ -39,9 +39,11 @@ rounds, order, ties and cut are the ones the squad is confirmed from, and the
 Bubble sits inside the squad (WIRING.md, "Standings parity"). The form opens
 with the whole active roster ticked and sensible defaults, or prefilled when
 editing (90103). Manage selections opens on its three steps (90104). Every
-address renders in place, never as a redirect (90105, D-23). `/my-qualifiers` is
-the player's own list (90106); a coach is not offered it, and inside the
-Clubhouse frame the shell shows its not-rebuilt page there (10401). With the
+address renders in place, never as a redirect (90105, D-23). Players have one
+Qualifiers page, with the qualifiers they are entered in listed first (90106).
+"My qualifiers" was retired on 11 Nov 2026 (owner): `/my-qualifiers` opens
+`/qualifiers` for a coach and a player, and its empty and failed states
+(CH-09306, CH-09222) are tombstoned. With the
 Clubhouse off, the selection address sends a coach to the existing CoachHelm
 workspace (90107).
 
@@ -51,8 +53,8 @@ workspace (90107).
 | 90102 | — | `DETAIL_READY` | A qualifier opens with its status pill and name, five facts (dates, entrants, rounds submitted, course, spots), the leaderboard, and beside it the selections, the course per round and the scoring rules; a coach also gets round-by-round scores, Manage selections, Edit qualifier and Close or Reopen. |
 | 90103 | — | `FORM_READY` | Create opens with the whole active roster ticked, three rounds, a five-player squad and one coach's pick; Edit opens with the qualifier's own values, round courses and entrants. |
 | 90104 | — | `SELECTION_READY` | Manage selections opens with the qualifier's name and squad line, the three steps (Standings, Coach's picks, Squad confirmed) with the current one marked, the places on score now, the rest of the field, the coach's picks with their open slots, and the one primary action for the next step. |
-| 90105 | — | `ADDRESSES_RENDER_IN_PLACE` | Each address renders its own screen in place, never as a redirect (D-23): /qualifiers and /my-qualifiers the list, /qualifiers/[id] the detail, /qualifiers/new and /qualifiers/[id]/edit the form, and /qualifiers/[id]/selection Manage selections. |
-| 90106 | — | `MY_QUALIFIERS_ARE_THE_PLAYERS_OWN` | /my-qualifiers lists only the qualifiers the player is entered in, /qualifiers puts a player's own first with where they stand, and a coach who is given /my-qualifiers gets the whole list (the Clubhouse frame does not offer it to coaches: the shell shows its not-rebuilt page there). |
+| 90105 | — | `ADDRESSES_RENDER_IN_PLACE` | Each address renders its own screen in place, never as a redirect (D-23): /qualifiers the list, /qualifiers/[id] the detail, /qualifiers/new and /qualifiers/[id]/edit the form, and /qualifiers/[id]/selection Manage selections. The one exception is /my-qualifiers, retired on 2026-11-11 (owner): it opens /qualifiers. |
+| 90106 | — | `MY_QUALIFIERS_ARE_THE_PLAYERS_OWN` | Players have one Qualifiers page: /qualifiers puts a player's own first with where they stand. My qualifiers is retired (owner, 2026-11-11): /my-qualifiers opens /qualifiers for a coach and a player, and is no screen of its own. |
 | 90107 | — | `SELECTION_ADDRESS_OUTSIDE_THE_CLUBHOUSE` | With the Clubhouse off, /qualifiers/[id]/selection sends a coach to the CoachHelm qualifying workspace and a player to the qualifier, and a signed-out visitor to login; with it on, the route gets the address. |
 
 From the shell (P001): 10101 CH-1904, 10102 SHELL_READY,
@@ -112,8 +114,8 @@ A team with no qualifiers gets the v2 page empty state, with New qualifier for a
 coach and a line about their coach for a player (90401); a search or filter that
 matches nothing offers Clear filters (90402); Concluded says so when nothing has
 concluded (90403); a qualifier with no round in says "Awaiting first round"
-(90404); the form says when the roster has no active players (90405); a player
-entered in nothing is told so (90406); a round with only a total says so
+(90404); the form says when the roster has no active players (90405); a round
+with only a total says so
 (90407); no team is the page empty state on every address (90408, 90804); a
 course search that matches nothing, or a course with no tee sets, says so
 (90409, 90410); Manage selections says when nobody can be a pick or no place on
@@ -126,7 +128,6 @@ score is filled (90411, 90412). Not found and coach-only are category 08.
 | 90403 | CH-09303 | `NOTHING_HAS_CONCLUDED_YET` | Nothing has concluded yet |
 | 90404 | CH-09304 | `NO_ROUND_IS_IN_YET` | No round is in yet |
 | 90405 | CH-09305 | `THE_ROSTER_HAS_NO_ACTIVE_PLAYERS` | The roster has no active players (form) |
-| 90406 | CH-09306 | `A_PLAYER_ISNT_ENTERED_IN_ANY_QUALIFIER` | A player isn't entered in any qualifier (/my-qualifiers) |
 | 90407 | CH-09308 | `A_ROUND_HAS_NO_HOLE_BY_HOLE` | A round has no hole-by-hole card |
 | 90408 | CH-09309 | `NOT_ON_A_TEAM` | Not on a team |
 | 90409 | CH-09312 | `THE_COURSE_SEARCH_MATCHES_NOTHING` | The course search matches nothing |
@@ -219,7 +220,6 @@ page again (91402), and Retry runs the write again (91401).
 | 90629 | CH-09009 | `THE_SQUAD_IS_CONFIRMED_BUT_TELLING_THE` | The squad is confirmed but telling the players failed |
 | 90630 | CH-09010 | `GIVING_OR_TAKING_BACK_A_PLACE_AT` | Giving or taking back a place at a tied cut fails |
 | 90631 | CH-09221 | `THE_COACHS_PICK_NOTES_DONT_LOAD` | The coach's pick notes don't load (detail, coach, confirmed squad) |
-| 90632 | CH-09222 | `A_PLAYERS_ENTRIES_DONT_LOAD_ON_MY` | A player's entries don't load on /my-qualifiers |
 | 90633 | CH-09220 | `A_REFRESH_OF_A_QUALIFIERS_STANDINGS_FAILS` | A refresh of a qualifier's standings fails after they were showing (a live update, a write's re-read, Try again) |
 | 90634 | CH-09223 | `THE_PLAYERS_ROUNDS_PANEL_CRASHES` | The player's rounds panel crashes (desktop, beside the leaderboard) |
 | 90635 | CH-09224 | `EDIT_AN_ENTRANT_WHOSE_PROFILE_CANNOT_BE` | Edit: an entrant whose profile cannot be read (injured, redshirt or inactive: the profile read admits active members only) |
@@ -534,10 +534,10 @@ The phone spec is `docs/clubhouse/phone/qualifiers.md` (approved).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 91901 | — | `PHONE_DETAIL` | At 820px and below a qualifier is one column: two facts (rounds in, spots), the leaderboard as cards that open a player's rounds in a sheet, the confirmed squad above it, and Close and Reopen behind Edit; round-by-round stays on desktop. |
+| 91901 | — | `PHONE_DETAIL` | At 820px and below a qualifier is one column: two facts (rounds in, spots), the leaderboard as cards that open a player's rounds in a sheet, the confirmed squad above it, and Edit, Close and Reopen in the bar's actions sheet, with Close also a key beside Manage selections once the qualifier is past its last day; round-by-round stays on desktop. |
 | 91902 | — | `PHONE_FORM` | On the phone the form's Cancel and Create (Save when editing) sit in the top bar and the tab bar steps aside; Create runs the same checks as the page's button, and Cancel asks before discarding changes. |
 | 91903 | — | `PHONE_SELECTION` | On the phone Manage selections has its own top bar (Selections, with a way back to the qualifier) and the one primary action in a foot at the bottom of the page. |
-| 91904 | — | `PHONE_LIST` | On the phone the list's top bar reads ‹ More and the title (Qualifiers, or My qualifiers on a player's own list); the list itself is the desktop list with phone CSS. |
+| 91904 | — | `PHONE_LIST` | On the phone the list's top bar reads the title, Qualifiers, for a coach and a player alike; the list itself is the desktop list with phone CSS. |
 
 From the shell (P001): 11901 PHONE_CHROME.
 

@@ -7,7 +7,7 @@
   gap: 18px;
   max-width: var(--ch-measure-page);
   margin: 0 auto;
-  padding: var(--ch-page-head-top) var(--ch-page-gutter) 80px;
+  padding: var(--ch-page-top-eyebrow-low-2) var(--ch-page-gutter) 80px;
   color: var(--ch-text-primary);
 }
 .ch-rd-k {
@@ -603,6 +603,22 @@
   color: var(--ch-text-tertiary);
 }
 
+/* Where the season's figures stop and the older rounds start (Team rounds, by month): a line between two month cards on
+   the phone, a quiet row above the month's band in the desktop table. */
+.ch-trd-earlier {
+  margin: 0;
+  padding-top: var(--ch-space-4);
+  border-top: var(--ch-hairline-w) solid var(--ch-separator);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
+  color: var(--ch-text-secondary);
+}
+.ch-trd-tbl .ch-trd-earlier {
+  padding: var(--ch-space-3) var(--ch-space-5);
+  border-top: 0;
+  box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-separator);
+}
+
 /* Tools */
 .ch-rd-tools {
   display: flex;
@@ -746,7 +762,11 @@ a.ch-rd-sc:focus-visible {
 .ch-rd-tee--blue {
   background: #2f5e9e;
 }
+/* White on a white card: the faint ring every swatch has left it nearly invisible (design review, 10 Nov 2026), so the
+   white tee draws its own edge inside its 10px. */
 .ch-rd-tee--white {
+  box-sizing: border-box;
+  border: 1px solid var(--ch-ink-400);
   background: #fff;
 }
 .ch-rd-tee--gold {
@@ -1028,7 +1048,7 @@ a.ch-rd-sc:focus-visible {
   gap: 16px;
   max-width: var(--ch-measure-page);
   margin: 0 auto;
-  padding: var(--ch-page-head-top) var(--ch-page-gutter) 80px;
+  padding: var(--ch-page-top-eyebrow-low-2) var(--ch-page-gutter) 80px;
   color: var(--ch-text-primary);
 }
 .ch-rv.is-phone {
@@ -1685,16 +1705,46 @@ a.ch-rd-sc:focus-visible {
 .ch-trd .ch-lgr__lead {
   min-width: 52px;
 }
+/* Every row has one structure (design review, 10 Nov 2026: a long course name pushed the tee and the chip onto a
+   third line on some rows only): the course on its line, then the tee and what kind of round it was. */
 .ch-trd-meta {
-  display: inline-flex;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.ch-trd-meta__course {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ch-trd-meta__kind {
+  display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 4px 8px;
+  min-width: 0;
 }
 .ch-trd-meta__tee {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  min-width: 0;
+}
+.ch-trd-meta__teen {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* The usual row has one chip beside the tee. A long tee name ("Championship tees") sent it to a third line on that row
+   only, the fault the course's own line was given for: the tee's name gives way first, and the chip keeps its place.
+   A row with two chips or more (nine holes, not counted) still wraps, since there the tee has nothing left to give. */
+.ch-trd-meta__kind:not(:has(.ch-rd-pill ~ .ch-rd-pill)) {
+  flex-wrap: nowrap;
+}
+.ch-trd-meta__kind > .ch-rd-pill {
+  flex: none;
 }
 .ch-trd-score {
   display: inline-flex;
@@ -1732,6 +1782,228 @@ a.ch-rd-sc:focus-visible {
 @media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-rd.ch-trd .ch-rd-tools .ch-select {
     width: 100%;
+  }
+  /* The four figures share the row evenly, and a label that needs more than its share takes it: "Under par" wrapped
+     under its disc, so its figure sat a line lower than the others (design review, 10 Nov 2026). */
+  .ch-rd.ch-trd.is-phone .ch-fgr {
+    grid-template-columns: repeat(var(--ch-fgr-n, 4), minmax(max-content, 1fr));
+  }
+  .ch-rd.ch-trd.is-phone .ch-fgr__c {
+    padding-inline: var(--ch-space-2);
+  }
+  .ch-rd.ch-trd.is-phone .ch-fgr__c:first-child {
+    padding-left: 0;
+  }
+  .ch-rd.ch-trd.is-phone .ch-fgr__c:last-child {
+    padding-right: 0;
+  }
+  .ch-rd.ch-trd.is-phone .ch-fgr dt,
+  .ch-rd.ch-trd.is-phone .ch-fgr .ch-fgr__note {
+    white-space: nowrap;
+  }
+}
+/* On the narrowest phones four one-line labels no longer fit a row: two rows of two, the same rules between them. */
+@container chrd (max-width: 350px) {
+  .ch-rd.ch-trd.is-phone .ch-fgr {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: 12px;
+  }
+  .ch-rd.ch-trd.is-phone .ch-fgr__c:nth-child(odd) {
+    padding-left: 0;
+    box-shadow: none;
+  }
+}
+
+/* Team rounds on desktop (design review, 10 Nov 2026). The season's figures sit beside the title, each as wide as what
+   it says, over the head's one hairline: a strip as wide as the page held four small figures in wide cells, under an
+   empty band between two rules. */
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
+  .ch-rd.ch-trd[data-canopy] .ch-rd-h {
+    flex-wrap: wrap;
+    gap: var(--ch-space-5) var(--ch-space-8);
+  }
+  .ch-rd.ch-trd[data-canopy] .ch-rd-h .ch-fgr {
+    flex: none;
+    grid-template-columns: repeat(var(--ch-fgr-n, 4), max-content);
+    padding: 0;
+    border: 0;
+  }
+  .ch-rd.ch-trd[data-canopy] .ch-rd-h .ch-fgr__c {
+    padding: 0 var(--ch-space-6);
+  }
+  .ch-rd.ch-trd[data-canopy] .ch-rd-h .ch-fgr__c:first-child {
+    padding-left: 0;
+  }
+  .ch-rd.ch-trd[data-canopy] .ch-rd-h .ch-fgr__c:last-child {
+    padding-right: 0;
+  }
+}
+
+/* The desktop book: one table in the Roster table's pattern. A card, a quiet label row, a band for each month or
+   player, and a round a row with every value in a cell under its header; a hairline between rows starts at the inset. */
+.ch-trd-tbl {
+  overflow: hidden;
+  border-radius: var(--ch-radius-card);
+  background: var(--ch-card-bg);
+  box-shadow: var(--ch-card-shadow);
+}
+.ch-trd-tr {
+  position: relative;
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1.3fr) minmax(0, 1.3fr) minmax(0, 0.9fr) minmax(0, 0.9fr) 56px 56px 16px;
+  column-gap: var(--ch-space-4);
+  align-items: center;
+  min-height: 56px;
+  padding: var(--ch-space-2) var(--ch-space-5);
+  font: var(--ch-type-14);
+  color: var(--ch-text-secondary);
+  transition: background-color var(--ch-dur-press) var(--ch-ease);
+}
+.ch-trd-tbl.is-by-player .ch-trd-tr {
+  grid-template-columns: 64px minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr) 56px 56px 16px;
+}
+.ch-trd-tr + .ch-trd-tr::before {
+  position: absolute;
+  inset: 0 0 auto var(--ch-space-5);
+  height: var(--ch-hairline-w);
+  background: var(--ch-separator);
+  content: '';
+}
+.ch-trd-tr--head {
+  min-height: 0;
+  padding-block: var(--ch-space-3);
+  font: var(--ch-type-13-medium);
+  line-height: var(--ch-lead-label);
+}
+.ch-trd-tr .r {
+  justify-self: end;
+  text-align: right;
+}
+.ch-trd-tr > [role='cell'] {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* A round opens from its name: the link covers the row, so the whole row is the target and the cells stay cells. */
+.ch-trd-open {
+  min-width: 0;
+  overflow: hidden;
+  font: var(--ch-type-14-strong);
+  color: var(--ch-text-primary);
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+a.ch-trd-open::after {
+  position: absolute;
+  inset: 0;
+  content: '';
+}
+a.ch-trd-open:focus-visible {
+  outline: none;
+}
+.ch-trd-tr:has(a.ch-trd-open:focus-visible) {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: -2px;
+}
+@media (hover: hover) {
+  .ch-trd-tr.is-link:hover {
+    background: var(--ch-ledger-row-hover);
+  }
+}
+.ch-trd-tr.is-link:has(a.ch-trd-open[data-ch-pressed]) {
+  background: var(--ch-ledger-row-press);
+}
+@media (hover: hover) {
+  .ch-trd-tr.is-link:has(a.ch-trd-open:active) {
+    background: var(--ch-ledger-row-press);
+  }
+}
+.ch-trd-tr > .ch-trd-td--who {
+  display: flex;
+  align-items: center;
+  gap: var(--ch-space-3);
+}
+.ch-trd-td--date {
+  font: var(--ch-type-14-medium);
+}
+.ch-trd-tr > .ch-trd-td--tee,
+.ch-trd-tr > .ch-trd-td--type {
+  display: flex;
+  align-items: center;
+  gap: var(--ch-space-2);
+}
+.ch-trd-td--score {
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+}
+.ch-trd-td--par {
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-text-primary);
+}
+.ch-trd-td--par.is-under {
+  color: var(--ch-score-under);
+}
+.ch-trd-td--go {
+  display: inline-flex;
+  justify-self: end;
+  color: var(--ch-ink-500);
+}
+/* The band that opens a month or a player: its name, and the count and average at the row's end. */
+.ch-trd-grp {
+  display: block;
+  background: var(--ch-card-bg-raised);
+  box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-separator), inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-separator);
+}
+.ch-trd-grp__c {
+  display: flex;
+  align-items: center;
+  gap: var(--ch-space-3);
+  min-height: 44px;
+  padding: var(--ch-space-2) var(--ch-space-5);
+}
+.ch-rd.ch-trd .ch-trd-grp__t {
+  margin: 0;
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-text-primary);
+}
+.ch-trd-grp__m {
+  margin-left: auto;
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
+  color: var(--ch-text-secondary);
+}
+/* A narrower window (a tablet, the sidebar open on a small laptop) keeps every column and never scrolls sideways: the
+   table tightens, and a long name ends in an ellipsis before the score leaves the screen. The tee gives way last. */
+@container chrd (max-width: 900px) {
+  .ch-trd-tr,
+  .ch-trd-tbl.is-by-player .ch-trd-tr {
+    grid-template-columns: 56px minmax(0, 1.5fr) minmax(0, 1.2fr) minmax(0, 1fr) 96px 44px 48px 16px;
+    column-gap: var(--ch-space-3);
+    padding-inline: var(--ch-space-4);
+  }
+  .ch-trd-tbl.is-by-player .ch-trd-tr {
+    grid-template-columns: 56px minmax(0, 1.5fr) minmax(0, 1fr) 96px 44px 48px 16px;
+  }
+  .ch-trd-tr + .ch-trd-tr::before {
+    left: var(--ch-space-4);
+  }
+  .ch-trd-grp__c {
+    padding-inline: var(--ch-space-4);
+  }
+}
+@container chrd (max-width: 640px) {
+  .ch-trd-tr {
+    grid-template-columns: 56px minmax(0, 1.5fr) minmax(0, 1.2fr) 96px 44px 48px 16px;
+  }
+  .ch-trd-tbl.is-by-player .ch-trd-tr {
+    grid-template-columns: 56px minmax(0, 1fr) 96px 44px 48px 16px;
+  }
+  .ch-trd-tr > .ch-trd-td--tee {
+    display: none;
   }
 }
 
@@ -1811,6 +2083,21 @@ a.ch-rd-sc:focus-visible {
 .ch-rv-sk-phone {
   display: none;
 }
+/* The review's scorecard card in waiting with its actions under it, 12px apart as on the page (B9). */
+.ch-rv-sk-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ch-rv-sk-act {
+  display: flex;
+  gap: 8px;
+}
+/* The five figures' block on a desk, 6px up as the loaded figures are. */
+.ch-rv-sk-figsd {
+  display: block;
+  margin-top: -6px;
+}
 
 /* The Mobile clubhouse pass (owner, 2026-10-08: "phone too cardy, too vibe coded"; the Coach Home board, round 3:
    "fewer containers, one feature card"). On the phone Rounds opens on the Ledger's intro under the engraved double rule
@@ -1827,11 +2114,12 @@ a.ch-rd-sc:focus-visible {
     padding: var(--ch-page-top-phone-docked) var(--ch-page-x-phone) var(--ch-page-bottom-phone-docked);
   }
   /* The eyebrow takes the page's whole width, as the intro's does; New round sits at the end of the title's line. */
+  /* The head opens the sheet, so it has no rule above it: the intro's double rule only drew a line under the bar (owner,
+     11 Nov 2026: no double line where nothing sits above it), as on Calendar and Team Hub. It starts 8px in, as theirs do. */
   .ch-rd.is-phone > .ch-rd-h {
     position: relative;
     display: block;
-    padding-top: 16px;
-    border-top: var(--ch-ledger-rule-double);
+    padding-top: 8px;
   }
   .ch-rd.is-phone > .ch-rd-h > .ch-btn {
     position: absolute;
@@ -1883,7 +2171,7 @@ a.ch-rd-sc:focus-visible {
     font: var(--ch-type-20-strong);
     letter-spacing: var(--ch-track-20);
     font-variation-settings: 'wdth' 88;
-    color: var(--ch-ledger-ink);
+    color: var(--ch-text-primary);
   }
   .ch-rd.is-phone .ch-rd-season__h {
     gap: 16px;
@@ -1896,7 +2184,13 @@ a.ch-rd-sc:focus-visible {
     font-weight: 600;
     letter-spacing: -0.035em;
   }
-  /* Putts says the most ("a round · 0.6 under two-putting"): its column is wider, so it takes two lines, not three (A24). */
+  /* Under the round card the heading needs no rule of its own: the card's edge already parts them, and a second
+     double rule sat in its shadow. */
+  .ch-rd.is-phone .ch-rd-unf + .ch-rd-season .ch-rd-k {
+    padding-top: 0;
+    border-top: 0;
+  }
+  /* Putts draws the widest picture (its bar against 36), so its column is the wide one. */
   .ch-rd.is-phone .ch-rd-season__f {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) minmax(0, 1fr);
     padding: 12px 0;
@@ -1933,7 +2227,7 @@ a.ch-rd-sc:focus-visible {
     font: var(--ch-type-20-strong);
     letter-spacing: var(--ch-track-20);
     font-variation-settings: 'wdth' 88;
-    color: var(--ch-ledger-ink);
+    color: var(--ch-text-primary);
   }
   .ch-rd.is-phone .ch-rd-more li {
     min-height: 58px;
@@ -1953,7 +2247,7 @@ a.ch-rd-sc:focus-visible {
     font: var(--ch-type-20-strong);
     letter-spacing: var(--ch-track-20);
     font-variation-settings: 'wdth' 88;
-    color: var(--ch-ledger-ink);
+    color: var(--ch-text-primary);
   }
   .ch-rd.is-phone .ch-rd-grp__rule {
     background: none;
@@ -2066,7 +2360,7 @@ a.ch-rd-sc:focus-visible {
     font: var(--ch-type-20-strong);
     letter-spacing: var(--ch-track-20);
     font-variation-settings: 'wdth' 88;
-    color: var(--ch-ledger-ink);
+    color: var(--ch-text-primary);
   }
   .ch-rv.is-phone .ch-rv-sg__legs,
 .ch-rv.is-phone .ch-rv-cardw,
@@ -2161,23 +2455,34 @@ a.ch-rd-sc:focus-visible {
     gap: var(--ch-gap-section-phone);
     padding: var(--ch-page-top-phone-docked) var(--ch-page-x-phone) var(--ch-page-bottom-phone-docked);
   }
-  /* At the loaded geometry (measured at 390): the intro is 84.5px (the eyebrow's 24px line box, the title 10px under it), New
-     round sits at the end of the title's line, the card and season scoring stand 30px apart, a month opens 18px under the tools
-     and its rows are 67.8px. */
+  /* At the loaded geometry (measured in WebKit at 390, 2026-11-11, the page at rest): the intro is 81px (8px, the eyebrow's
+     24px line box, 8px, the title's own 41px line; the title's rule names the skeleton's block three deep, or the shell's
+     margin reset takes its 8px), the card and season scoring stand 32px apart, a month opens 48px under the tools and its
+     rows are 64.8px. */
   .ch-rd-sk-h {
     position: relative;
     display: flex;
     flex-direction: column;
-    padding-top: 16px;
-    border-top: var(--ch-ledger-rule-double);
+    padding-top: 8px;
   }
-  .ch-rd-sk-title {
+  .ch-rd-sk-phone .ch-rd-sk-h .ch-rd-sk-title {
+    display: flex;
+    align-items: center;
+    min-height: 1lh;
     margin-top: 8px;
   }
-  .ch-rd-sk-new {
-    position: absolute;
-    right: 0;
-    bottom: 0;
+  /* Team rounds and What's new while loading (CH-11413, CH-13430): one skeleton serves both widths with no is-phone on
+     its root, so it stood in the base page's frame (40px sides) with its title 21px high. The phone's frame and the
+     head's lines are named here: the head starts 8px in, the eyebrow's 13px bar is centred in the eyebrow's 24px line box
+     (the 3.5px under it and the head's 10px spacer leave the title's 8px), then the title's own line. */
+  .ch-rd:is([data-ch-code='CH-11413'], [data-ch-code='CH-13430'])[aria-busy='true'] {
+    padding: var(--ch-page-top-phone-docked) var(--ch-page-x-phone) var(--ch-page-bottom-phone-docked);
+  }
+  .ch-rd:is([data-ch-code='CH-11413'], [data-ch-code='CH-13430'])[aria-busy='true'] > .ch-rd-h {
+    padding-top: 8px;
+  }
+  .ch-rd:is([data-ch-code='CH-11413'], [data-ch-code='CH-13430'])[aria-busy='true'] > .ch-rd-h > div > .ch-skel:first-child {
+    margin-block: 5.5px 3.5px;
   }
   .ch-rd-sk-hero {
     container: chrdsk / inline-size;
@@ -2185,41 +2490,69 @@ a.ch-rd-sc:focus-visible {
     flex-direction: column;
     gap: 32px;
   }
-  /* The round card's place follows the idle card as the phone widens (measured in WebKit from 355 to 445px): its holes
+  /* The round card's place follows the idle card as the phone widens (measured in WebKit from 355 to 440px): its holes
      are squares nine across the card, two rows of them, so it grows by two ninths of the card's width; and its foot
-     takes one line from a 359px card (a 399px phone), two below. */
+     (the last round beside New round) takes one line from a 345px card (a 377px phone), two below. */
   .ch-rd-sk-hero > .ch-skel {
-    height: calc(262.5px + 22.222cqw) !important;
+    height: calc(266.5px + 22.222cqw) !important;
   }
-  @container chrdsk (min-width: 359px) {
+  @container chrdsk (min-width: 345px) {
     .ch-rd-sk-hero > .ch-skel {
-      height: calc(233.6px + 22.222cqw) !important;
+      height: calc(235.6px + 22.222cqw) !important;
     }
   }
-  .ch-rd-sk-sec.ch-rd-sk-season {
-    gap: 0;
+  /* Season scoring, flush on the parchment as the page draws it: its heading, the average 16px under it, the three figures
+     between hairlines (Putts' column the wide one), then the chart's heading (its title, its two-line note, its key) and
+     the chart 8px under that. */
+  .ch-rd-sk-season {
+    display: flex;
+    flex-direction: column;
+  }
+  .ch-rd-sk-season > span:nth-child(2) {
+    margin-top: 16px;
   }
   .ch-rd-sk-season > .ch-rd-sk-figs {
     box-sizing: border-box;
-    height: 129.2px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) minmax(0, 1fr);
+    height: 143.3px;
     margin-top: 16px;
   }
-  .ch-rd-sk-season > .ch-rd-sk-figs + span {
-    margin-top: 16px;
+  .ch-rd-sk-season > .ch-rd-sk-figs > span {
+    gap: 6px;
+    padding: 0 8px;
   }
-  /* The chart scales with the page's width (its viewBox is 380 wide on the phone and about 216 tall for a usual season), so
+  .ch-rd-sk-season > .ch-rd-sk-figs > span:first-child {
+    padding-left: 0;
+  }
+  .ch-rd-sk-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 4px;
+  }
+  /* The chart scales with the page's width (its viewBox is 380 wide on the phone and about 218 tall for a usual season), so
      its place does too. */
   .ch-rd-sk-season > .ch-skel {
     height: auto !important;
     margin-top: 8px;
-    aspect-ratio: 380 / 216;
+    aspect-ratio: 380 / 218;
+  }
+  /* The tools: Search takes the room the grouping control leaves, as on the page. */
+  .ch-rd-sk-phone > .ch-rd-tools {
+    flex-wrap: nowrap;
+  }
+  .ch-rd-sk-phone > .ch-rd-tools > .ch-skel:first-child {
+    flex: 1;
+    min-width: 0;
   }
   .ch-rd-sk-sec.ch-rd-sk-grp {
     gap: 0;
     margin-top: 16px;
   }
-  .ch-rd-sk-sec,
-.ch-rv-sk-sec {
+  .ch-rd-sk-grp > span:first-child {
+    margin-bottom: 2px;
+  }
+  .ch-rd-sk-sec {
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -2253,43 +2586,30 @@ a.ch-rd-sc:focus-visible {
   .ch-rv-sk-figs > span:nth-child(3n + 1) {
     box-shadow: none;
   }
-  /* The review at its loaded geometry (measured at 390): the hero 178px, the figures 156px in two rows, each section's head
-     (the double rule, the heading and its figure) 6px over its body, strokes gained's four bars in 125px. */
+  /* The review at its loaded geometry (measured in WebKit at 390, 2026-11-11): the hero 207.4px, the scorecard card 580.2px
+     with Share card 12px under it, then the figures 166.1px in two rows, each figure its label, value and note 6px apart. */
   .ch-rv-sk-phone > .ch-rv-sk-figs {
     box-sizing: border-box;
-    height: 156px;
-    align-content: center;
+    height: 166.1px;
+    align-content: start;
   }
-  .ch-rv-sk-sec {
+  .ch-rv-sk-phone > .ch-rv-sk-figs > span {
     gap: 6px;
   }
-  .ch-rv-sk-head {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    height: 50.8px;
+  /* The card's tee line takes one line from a 372px card (a 414px phone), two below: the card is 18px shorter there. */
+  .ch-rv-sk-phone > .ch-rv-sk-card {
+    container: chrvsk / inline-size;
   }
-  .ch-rv-sk-head.is-sg {
-    height: 54.2px;
-  }
-  .ch-rv-sk-head > span {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding-top: 4px;
-  }
-  .ch-rv-sk-leg {
-    display: grid;
-    grid-template-columns: 84px minmax(0, 1fr) 30px;
-    gap: 8px;
-    align-items: center;
-    height: 26.8px;
+  @container chrvsk (min-width: 372px) {
+    .ch-rv-sk-phone > .ch-rv-sk-card > .ch-skel:first-child {
+      height: 562.2px !important;
+    }
   }
   .ch-rd-sk-row {
     display: flex;
     align-items: center;
-    gap: 16px;
-    min-height: 67.8px;
+    gap: 24px;
+    height: 64.8px;
   }
   .ch-rd-sk-row > span {
     display: flex;
@@ -2353,6 +2673,7 @@ html[data-fw-theme='dark'] .ch-rd-tee {
   box-shadow: 0 0 0 1px rgb(237 231 216 / 0.3);
 }
 html[data-fw-theme='dark'] .ch-rd-tee--white {
+  border: 0;
   background: #f1ece0;
 }
 html[data-fw-theme='dark'] .ch-rd-sc__grid {
@@ -2452,9 +2773,11 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   .ch-rv[data-canopy] {
     gap: 32px;
   }
+  /* The way back and the head stand where every detail page's do (tokens.css, --ch-page-back-top): the link 2px under
+     the bar, the head 14.5px under it (the page's 32px gap taken back). */
   .ch-rv[data-canopy] .ch-rv-back {
     height: auto;
-    margin: 0 0 -16px -4px;
+    margin: calc(var(--ch-page-back-top) - var(--ch-page-top-eyebrow-low-2)) 0 calc(var(--ch-back-to-head) - 32px) -4px;
     padding: 4px 8px 4px 4px;
     border-radius: var(--ch-radius-md);
     background: none;
@@ -2525,7 +2848,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 .ch-rv[data-canopy] .ch-rv-card__h h3 {
     font: var(--ch-type-20-strong);
     letter-spacing: var(--ch-track-20);
-    color: var(--ch-ledger-ink);
+    color: var(--ch-text-primary);
   }
   .ch-rv[data-canopy] .ch-rv-sg__legs,
 .ch-rv[data-canopy] .ch-rv-cardw,
@@ -2698,7 +3021,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   margin: 0;
   font: var(--ch-type-20-strong);
   letter-spacing: var(--ch-track-20);
-  color: var(--ch-ledger-ink);
+  color: var(--ch-text-primary);
 }
 .ch-rv .ch-rv-recap p {
   font: var(--ch-type-15);
@@ -2716,7 +3039,13 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-rv[data-canopy] .ch-rv-hero__k {
     font: var(--ch-type-13-medium);
+    /* The detail head's eyebrow line, so the course's name is on every detail page's title line. */
+    line-height: var(--ch-lead-detail-eyebrow);
     letter-spacing: 0.01em;
+  }
+  /* Loading (CH-11406): the date line's placeholder is held at 18px, so it takes the line's other 4px around it. */
+  .ch-rv[aria-busy='true'][data-canopy] .ch-rv-hero__l > :first-child {
+    margin-block: 2px;
   }
 }
 
@@ -2766,7 +3095,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
     gap: 8px;
     font: var(--ch-type-20-strong);
     letter-spacing: var(--ch-track-20);
-    color: var(--ch-ledger-ink);
+    color: var(--ch-text-primary);
   }
   .ch-rd[data-canopy] .ch-rd-unf__k i {
     width: 8px;
@@ -2860,7 +3189,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
     padding-bottom: 12px;
     font: var(--ch-type-20-strong);
     letter-spacing: var(--ch-track-20);
-    color: var(--ch-ledger-ink);
+    color: var(--ch-text-primary);
     box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule);
   }
   .ch-rd[data-canopy] .ch-rd-season.is-empty .ch-rd-k {
@@ -2939,7 +3268,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
     box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule);
   }
   .ch-rd[data-canopy] .ch-rd-grp__h h2 {
-    color: var(--ch-ledger-ink);
+    color: var(--ch-text-primary);
   }
   .ch-rd[data-canopy] .ch-rd-grp__rule {
     background: none;
@@ -3022,39 +3351,58 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
     }
   }
 
-  /* Loading (CH-11401): the head holds the loaded head's height (the shell's 34px and 30px padding, the eyebrow's
-     line, 8px, the title's line; 133.8px in WebKit at 1440 and 1100), and its bars sit on the eyebrow and the title, so
-     nothing moves on load. */
-  .ch-rd[data-ch-code='CH-11401'][data-canopy] .ch-rd-h {
-    box-sizing: border-box;
-    min-height: calc(34px + 11px * 1.3 + 8px + 44px * 1.08 + 30px);
+  /* Loading (CH-11401): the head is the loaded tight head, line for line (RoundsSkeleton: the eyebrow's 18px line, 8px,
+     the title's 47.5px line, between the shell's 12px and 32px; 117.5px in WebKit at 1440, 2026-11-11), so nothing moves
+     on load. Its placeholders keep the panes' own gutters (32px each side of the column rule, none once the panes stack)
+     and the rows' height, on the head's edges. */
+  .ch-rd-sk-unf {
+    container: chrdsku / inline-size;
+    min-width: 0;
+    padding-right: 32px;
   }
-  .ch-rd[data-ch-code='CH-11401'][data-canopy] .ch-rd-h > div:first-child > .ch-skel:first-child {
-    margin-bottom: 10.8px;
-  }
-  /* Its placeholders keep the panes' gutter and the head's edges, and stand apart in the book. */
-  .ch-rd[data-ch-code='CH-11401'][data-canopy] .ch-rd-hero {
-    gap: 40px 64px;
+  /* What the round pane holds, at the idle pane's height: its ghost holes are squares nine across the pane, two rows of
+     them, so it grows by two ninths of the pane's width (318.4px at 1280, 331.8px at 1440). */
+  .ch-rd-sk-unf > .ch-skel {
+    height: calc(245.6px + 22.222cqw) !important;
   }
   .ch-rd[data-ch-code='CH-11401'][data-canopy] .ch-rd-book {
-    gap: 8px;
-    margin: 0;
+    margin: 6px 0 0;
   }
   /* The season pane in waiting: its head's block, then the vs-par stage at the chart's own proportion (640 by about
-     220, under the stage's 18px padding, its 43px key and 8px), so the pane, and the tools under the hero, land where
-     the loaded chart puts them at any width (WebKit 1280, 2026-10-18). */
+     218, under the stage's 16px padding, its 44px key and 8px), so the pane, and the tools under the hero, land where
+     the loaded chart puts them at any width. */
   .ch-rd-sk-pane {
+    container: chrdskp / inline-size;
     display: flex;
     flex-direction: column;
     min-width: 0;
+    padding-left: 32px;
   }
   .ch-rd-sk-stage {
     margin-top: 32px;
-    padding: 69px 24px 8px;
+    padding: 68px 24px 8px;
   }
   .ch-rd-sk-stage > span {
     display: block;
-    aspect-ratio: 640 / 220;
+    aspect-ratio: 640 / 218;
+  }
+  /* The chart's note takes a second line in a pane under 632px (a 1392px window and narrower): the stage's head is 18px taller. */
+  @container chrdskp (max-width: 632px) {
+    .ch-rd-sk-stage {
+      padding-top: 86px;
+    }
+  }
+  /* Stacked, the round pane's note is one line and its holes stop growing at 44px. */
+  @container chrd (max-width: 860px) {
+    .ch-rd-sk-unf {
+      padding-right: 0;
+    }
+    .ch-rd-sk-unf > .ch-skel {
+      height: 329.8px !important;
+    }
+    .ch-rd-sk-pane {
+      padding-left: 0;
+    }
   }
 }
 
@@ -3853,9 +4201,14 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 .ch-rd-fig__course {
   white-space: nowrap;
 }
+/* On the phone the captions are one short line each (parts.tsx), set on one line across the three figures: each
+   picture is centred in the band the tallest one sets, and the caption sits at the foot of its column. */
+.ch-rd.is-phone .ch-rd-fig__viz {
+  flex: 1;
+  justify-content: center;
+}
 .ch-rd.is-phone .ch-rd-fig__m {
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
+  margin-top: auto;
 }
 .ch-rd .ch-rd-fig__viz {
   gap: 4px;

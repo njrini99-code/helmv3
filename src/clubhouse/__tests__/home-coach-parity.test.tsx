@@ -1,6 +1,5 @@
 import { LazyMotion, domAnimation } from 'motion/react';
 import { cleanup, render, screen, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -200,23 +199,5 @@ describe('20103 CH-1832 CoachHelm from a player (spec B §3)', () => {
     expect(playerPeekActions({ id: 'p 1' }).find((a) => a.label === 'CoachHelm')?.href).toBe('/golf/dashboard/coachhelm?view=deep-dive&player=p%201');
     hide.coachhelm = true;
     expect(playerPeekActions({ id: 'p1' }).find((a) => a.label === 'CoachHelm')?.href).toBeNull();
-  });
-
-  it.each([
-    ['rebuilt', false],
-    ['not rebuilt', true],
-  ])('the phone’s round sheet has CoachHelm after Player stats when CoachHelm is %s', async (_, hidden) => {
-    hide.coachhelm = hidden;
-    const user = userEvent.setup();
-    wrap(<CoachHome data={PREVIEW_HOME} now={PREVIEW_HOME_NOW} />);
-    await user.click(screen.getByRole('button', { name: /Theo Marchetti/ }));
-    const sheet = await screen.findByRole('dialog', { name: 'Theo Marchetti' });
-    const helm = within(sheet).queryByRole('link', { name: 'CoachHelm' });
-    if (hidden) expect(helm).toBeNull();
-    else {
-      expect(helm!.getAttribute('href')).toBe('/golf/dashboard/coachhelm?view=deep-dive&player=theo');
-      const names = within(sheet).getAllByRole('link').map((a) => a.textContent);
-      expect(names.indexOf('CoachHelm')).toBeGreaterThan(names.indexOf('Player stats'));
-    }
   });
 });

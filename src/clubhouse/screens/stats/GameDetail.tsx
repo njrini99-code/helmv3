@@ -328,7 +328,6 @@ export function GameDetail({
   onRetry,
   phone = false,
   only,
-  shs = false,
   asDetail,
 }: {
   s: GolfStats;
@@ -353,8 +352,6 @@ export function GameDetail({
   phone?: boolean;
   /** One section alone, for a pushed detail page: no chips, no hash listener, and the session's choice is not read. */
   only?: GameSectionId;
-  /** clubhouse_stats_redesign_v1: Missed short reads the calculator's own figure. */
-  shs?: boolean;
   /** With `only`: draw that section as the redesign's pushed detail. */
   asDetail?: GameAreaDetail;
 }) {
@@ -473,7 +470,7 @@ export function GameDetail({
   ];
   const tourProx = (x.approach ?? []).map((b) => ({ band: b.label.replace('-', '–').replace(' yd', ''), value: b.value, bench: b.bench, n: b.shots, floor: b.floor }));
   const worstProx = tourProx.filter((b) => b.value != null && b.bench != null).sort((a, b) => b.value! - b.bench! - (a.value! - a.bench!))[0];
-  const { short: missShort, long: missLong } = missSplit(s, shs);
+  const { short: missShort, long: missLong } = missSplit(s);
   const hasMiss = s.approachMissTotal > 0;
 
   // Short game
@@ -602,7 +599,7 @@ export function GameDetail({
               <p className="ch-sv-mix-none">No holes scored yet.</p>
             ) : (
               <div className="ch-sv-mix">
-                <div className="ch-shs-stack is-detail" aria-hidden="true" data-ch-grow="">
+                <div className="ch-shs-stack is-detail" aria-hidden="true">
                   {AVERAGE_ROUND.map(([key]) => (dist[key] > 0 ? <span key={key} className={`is-${key}`} style={{ flexGrow: dist[key], background: 'var(--ch-sv-mix-fill)' }} /> : null))}
                 </div>
                 <div className="ch-shs-skey">
@@ -673,7 +670,7 @@ export function GameDetail({
           <ShsCard title="Where drives finish" meta="Par 4s and 5s">
             {s.fairwayOpportunities > 0 ? (
               <>
-                <div className="ch-shs-stack is-detail" aria-hidden="true" data-ch-grow="">
+                <div className="ch-shs-stack is-detail" aria-hidden="true">
                   {driveSplit.map((d) => (
                     <span key={d.label} className={d.cls} style={{ flexGrow: d.share }} />
                   ))}

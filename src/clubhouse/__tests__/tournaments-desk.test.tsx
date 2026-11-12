@@ -38,6 +38,16 @@ const plain = (el: Element | null | undefined) => (el?.textContent ?? '').replac
 const rowOf = (c: Element, name: string) => within(c as HTMLElement).getAllByRole('row').find((r) => r.querySelector('.ch-tour-desk-ct__n')?.textContent?.startsWith(name)) as HTMLElement;
 const dialog = () => document.querySelector('dialog[open]') as HTMLElement | null;
 
+describe('Event desk, Who counted figures', () => {
+  it('every number column is tabular, the right-aligned "Rounds counted" and the team’s par included', () => {
+    const c = draw(oak, tab('counted'));
+    const counted = [...c.querySelectorAll('.ch-tour-desk-ct__cnt')];
+    expect(counted.length).toBeGreaterThan(2);
+    // "1/3" under "3/3": with proportional figures the 1 is narrower and the column's digits do not line up.
+    for (const cell of [...counted, ...c.querySelectorAll('.ch-tour-desk-ct__tot, .ch-tour-desk-ct__fin')]) expect(cell.classList.contains('ch-num')).toBe(true);
+  });
+});
+
 describe('Event desk, desktop', () => {
   it('opens with the event, its result and the state of its numbers', () => {
     const c = draw(oak, tab('overview'));

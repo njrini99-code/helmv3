@@ -94,8 +94,11 @@ As built (2026-09-30): the list is the desktop list with phone CSS; the detail
 is `QualifierDetailPhone` (chosen by `useChPhone()`), with the player sheet
 `PlayerRounds`; the form is the desktop form with `PhoneTop` (Cancel, Create or
 Save) and the tab bar hidden (`usePhoneTabsHidden`). "Manage selections" opens
-`/qualifiers/[id]/selection` (Q-65), and Edit opens a sheet with Edit details
-and Close or Reopen (Q-20).
+`/qualifiers/[id]/selection` (Q-65), and the bar's "…" opens a sheet with Edit
+details and Close or Reopen (Q-20). The page itself has no Edit key (2026-11-11):
+it was a second door to that sheet. Once a qualifier is past its last day and
+still open, Close qualifier is also a key on the page beside Manage selections,
+as in the desk's head, with the same question before it closes.
 
 **02 Detail**
 

@@ -109,8 +109,9 @@ describe('type roles (B1)', () => {
   });
 
   it('two widths only, 88 for dense numbers and 96 for display, the sign-in pages too, and font-stretch as well', () => {
+    // Stats' condensed figures are 92, the one exception (owner, 2026-11-06).
     const off = [
-      ...hits(/'wdth'\s*\d+/, css).filter((h) => !/'wdth' (88|96)\b/.test(h.text)),
+      ...hits(/'wdth'\s*\d+/, css).filter((h) => !/'wdth' (88|96)\b/.test(h.text) && !(h.file.endsWith('stats-redesign.css') && /'wdth' 92\b/.test(h.text))),
       ...hits(/font-stretch:/, css).filter((h) => !/font-stretch:\s*(88|96)%;/.test(h.text)),
     ];
     expect(off).toEqual([]);
@@ -191,7 +192,7 @@ const RAW_FONT: Record<string, number> = {
   'styles/auth.css': 32,
   'styles/base.css': 1,
   'styles/calendar.css': 8,
-  'styles/classes.css': 12,
+  'styles/classes.css': 7,
   'styles/coachhelm-ask.css': 1,
   'styles/coachhelm-dive.css': 1,
   'styles/coachhelm.css': 1,
@@ -208,13 +209,13 @@ const RAW_FONT: Record<string, number> = {
   'styles/rounds.css': 23,
   'styles/settings.css': 3,
   'styles/shell.css': 10,
-  'styles/stats.css': 33,
+  'styles/stats.css': 24,
   'styles/ui.css': 5,
 };
 
 /** Raw `line-height` values per stylesheet after the leading pass (2026-10-24, row 27): fixed-row px leadings and legacy ratios. Only falls. */
 const RAW_LEAD: Record<string, number> = {
-  'styles/classes.css': 2,
+  'styles/classes.css': 1,
   'styles/coachhelm-ask.css': 3,
   'styles/coachhelm-profile.css': 1,
   'styles/coachhelm-thread.css': 1,
@@ -241,7 +242,7 @@ const RAW_LONGHAND: Record<string, number> = {
   'styles/auth.css': 22,
   'styles/base.css': 3,
   'styles/calendar.css': 20,
-  'styles/classes.css': 14,
+  'styles/classes.css': 12,
   'styles/coachhelm-ask.css': 9,
   'styles/coachhelm-brief.css': 2,
   'styles/coachhelm-dive.css': 11,
@@ -250,15 +251,16 @@ const RAW_LONGHAND: Record<string, number> = {
   'styles/coachhelm-thread.css': 18,
   'styles/coachhelm-track.css': 2,
   'styles/coachhelm-views.css': 2,
-  'styles/coachhelm.css': 19,
+  'styles/coachhelm.css': 9,
   'styles/command.css': 2,
   'styles/controls.css': 18,
   'styles/hero-tones.css': 2,
   'styles/home.css': 47,
   'styles/hub.css': 46,
-  'styles/messages.css': 12,
+  'styles/messages.css': 10,
+  'styles/messages-details.css': 2,
   'styles/onboard.css': 23,
-  'styles/qualifiers.css': 52,
+  'styles/qualifiers.css': 51,
   'styles/recruiting.css': 18,
   'styles/roster.css': 8,
   'styles/rounds-recover.css': 2,
@@ -278,12 +280,12 @@ const OFF_TRACK: Record<string, number> = {
   'styles/classes.css': 1,
   'styles/coachhelm-ask.css': 1,
   'styles/coachhelm-dive.css': 2,
-  'styles/coachhelm-patterns.css': 1,
   'styles/coachhelm-standing.css': 1,
-  'styles/coachhelm.css': 2,
+  'styles/coachhelm.css': 1,
   'styles/hero-tones.css': 1,
   'styles/home.css': 11,
-  'styles/hub.css': 8,
+  'styles/hub.css': 7,
+  'styles/messages-details.css': 3,
   'styles/onboard.css': 4,
   'styles/qualifiers.css': 2,
   'styles/roster.css': 2,

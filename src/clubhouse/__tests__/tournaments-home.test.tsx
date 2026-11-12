@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { cleanup, render, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { tourFixture } from '../preview/fixtures-tournaments';
@@ -50,6 +52,17 @@ describe('Tournaments home, desktop', () => {
     const add = within(c.querySelector('.ch-tour-head') as HTMLElement).getByRole('link', { name: 'Add event' });
     expect(add).toHaveAttribute('href', '/golf/dashboard/tournaments/new');
     expect(add).not.toHaveClass('ch-btn--primary');
+  });
+
+  it('the card’s action is the filled key, and the second key beside it is the ghost for a green surface', () => {
+    const card = draw(ready).querySelector('.ch-tour-home-feat') as HTMLElement;
+    const go = within(card).getByRole('link', { name: 'Build lineup' });
+    expect(go).toHaveClass('ch-btn--primary', 'ch-tour-home-feat__go');
+    const alt = within(card).getByRole('link', { name: 'Compare lineup options' });
+    expect(alt).toHaveClass('ch-btn--ghost', 'ch-btn--on-green');
+    // The ivory face is written from the card down, so the shared primary key's green cannot win it back by load order.
+    const css = readFileSync(join(process.cwd(), 'src/clubhouse/styles/tournaments-home.css'), 'utf8');
+    expect(css).toMatch(/\.ch-tour-home-feat \.ch-tour-home-feat__go,[^{]*\{\s*background: var\(--ch-on-green-plate\);/);
   });
 
   it('lists the other events on the calendar with their date, course and note', () => {
@@ -109,6 +122,10 @@ describe('Tournaments home, phone', () => {
     expect(within(card).getByRole('link', { name: 'Build lineup' })).toBeInTheDocument();
     // The phone board has no second key on the card.
     expect(within(card).queryByRole('link', { name: 'Compare lineup options' })).toBeNull();
+    // Under "Coming up" a row does not say Upcoming again: the chip cut the row's own line short at this width.
+    const more = c.querySelector('.ch-tour-home-others') as HTMLElement;
+    expect(text(more)).toContain('Holly Ridge · 36 holes · Qualifier opens Oct 24');
+    expect(text(more)).not.toContain('Upcoming');
     const oak = within(c).getByRole('link', { name: /Oakmont Fall Classic/ });
     expect(text(oak)).toBe('Oakmont Fall Classic Oct 5 · Oakmont CC 3 of 14 858 · −6');
     const past = within(c).getByRole('link', { name: /Conference Championship/ });

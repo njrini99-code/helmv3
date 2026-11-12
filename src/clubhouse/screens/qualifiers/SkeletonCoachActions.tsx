@@ -6,7 +6,7 @@ import { Skeleton } from '../../ui/States';
 /**
  * The qualifier head's three coach actions held at their loaded widths (Manage selections, Edit qualifier, Close
  * qualifier), so a coach's head is as tall loading as loaded. A player's head has no actions, so nothing is held.
- * `phone`: the phone qualifier's two (Manage selections across the row, then Edit).
+ * `phone`: the phone qualifier's one (Manage selections across the row; Edit is in the bar's sheet).
  */
 export function SkeletonCoachActions({ phone = false }: { phone?: boolean }) {
   if (useClubhouseRole() === 'player') return null;
@@ -14,7 +14,6 @@ export function SkeletonCoachActions({ phone = false }: { phone?: boolean }) {
     return (
       <div className="ch-qfm-acts" aria-hidden="true">
         <Skeleton width="100%" height={36} radius={10} />
-        <Skeleton width={74} height={36} radius={10} />
       </div>
     );
   }

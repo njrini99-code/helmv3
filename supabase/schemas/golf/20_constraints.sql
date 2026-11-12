@@ -1423,3 +1423,20 @@ ALTER TABLE ONLY "public"."golf_class_hold_dirty"
 
 ALTER TABLE ONLY "public"."golf_class_hold_dirty"
     ADD CONSTRAINT "golf_class_hold_dirty_team_id_fkey" FOREIGN KEY ("team_id") REFERENCES "public"."golf_teams"("id") ON DELETE CASCADE;
+
+-- Messages v2 package M, M5 (HELD 20261031150000)
+ALTER TABLE ONLY "public"."golf_conversation_pins"
+    ADD CONSTRAINT "golf_conversation_pins_pkey" PRIMARY KEY ("user_id", "conversation_id");
+
+ALTER TABLE ONLY "public"."golf_conversation_pins"
+    ADD CONSTRAINT "golf_conversation_pins_conversation_id_fkey" FOREIGN KEY ("conversation_id") REFERENCES "public"."golf_conversations"("id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."golf_conversation_pins"
+    ADD CONSTRAINT "golf_conversation_pins_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+-- Ask level comparison (HELD 20261108100000): the division cohort
+ALTER TABLE ONLY "public"."golf_division_cohort"
+    ADD CONSTRAINT "golf_division_cohort_pkey" PRIMARY KEY ("gender", "level", "metric_id");
+
+ALTER TABLE ONLY "public"."golf_division_cohort"
+    ADD CONSTRAINT "golf_division_cohort_metric_id_fkey" FOREIGN KEY ("metric_id") REFERENCES "public"."golf_metrics"("metric_id") ON DELETE CASCADE;

@@ -1,5 +1,7 @@
+import { tidyCourseName } from '../lib/course-name';
 import { isScoreCountable, isTotalOnlyCountable, recordedPutts } from './round-scope';
 import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
+import { roundTypeFromDb } from '@/lib/golf/round-type-utils';
 
 /**
  * The Rounds library's data shapes and the pure steps that build them, kept
@@ -34,6 +36,8 @@ export interface ChLibraryRound {
   totalOnly?: boolean;
   /** Counts toward the score figures (isScoreCountable: every hole scored, or an 18-hole total posted without its holes, Q-123). */
   countable: boolean;
+  /** False on a round the averages leave out: practice, as Stats reads it (`inAverages`). The round is still listed. Absent on every other round. */
+  averaged?: false;
   /** P-7: the library course and the name as typed, which group the round by course (`course-key.ts`); absent in older fixtures. */
   courseId?: string | null;
   courseRaw?: string | null;
@@ -66,7 +70,7 @@ export interface ChUnfinishedRound {
 }
 
 export interface ChRoundsSeason {
-  /** 18-hole countable rounds since 1 August. */
+  /** 18-hole countable rounds since 1 August, practice left out (`countsTowardAverage`): the rounds every figure here reads. */
   rounds: number;
   avg: number | null;
   toPar: number | null;
@@ -125,7 +129,19 @@ export function roundType(t: string | null): ChRoundType | null {
   return t === 'practice' || t === 'tournament' || t === 'qualifier' ? t : null;
 }
 
-export const courseName = (name: string | null) => name?.trim() || 'Course not recorded';
+export const courseName = (name: string | null) => tidyCourseName(name) || 'Course not recorded';
+
+/**
+ * Whether a round of this type is in the averages. Stats' rule (`countsForScoring`, data/season.ts, which is server-only, so the rule is
+ * written out here and cross-screen-figures.test.ts holds the two equal): no type counts, practice does not, and a type the app does not
+ * know reads as practice.
+ */
+export function inAverages(roundType: string | null): boolean {
+  return roundType == null || roundTypeFromDb(roundType) !== 'practice';
+}
+
+/** A listed round the season's figures read: anything but practice (owner, 11 Nov 2026: the Rounds average leaves practice out, as Stats does). */
+export const countsTowardAverage = (r: Pick<ChLibraryRound, 'type' | 'averaged'>) => r.averaged !== false && r.type !== 'practice';
 
 export type ChRoundListRow = {
   id: string;
@@ -168,13 +184,17 @@ export function toLibraryRound(raw: ChRoundListRow): ChLibraryRound | null {
     putts: recordedPutts(r.total_putts),
     ...(isTotalOnlyCountable(r) ? { totalOnly: true } : {}),
     countable: isScoreCountable(r),
+    ...(inAverages(raw.round_type) ? {} : { averaged: false as const }),
     ...(raw.course_id !== undefined ? { courseId: raw.course_id, courseRaw: raw.course_name } : {}),
   };
 }
 
-/** The season figures from the listed rounds: countable (a total-only round included, Q-123: a score), 18 holes, since `since`. */
+/**
+ * The season figures from the listed rounds: countable (a total-only round included, Q-123: a score), 18 holes, since `since`, and not
+ * practice, so the average is the one Stats prints for the season (cross-screen-figures.test.ts).
+ */
 export function seasonFrom(list: ChLibraryRound[], since: string): ChRoundsSeason {
-  const s = list.filter((r) => r.countable && r.holes === 18 && r.date >= since);
+  const s = list.filter((r) => r.countable && r.holes === 18 && r.date >= since && countsTowardAverage(r));
   const nums = (pick: (r: ChLibraryRound) => number | null) => s.map(pick).filter((v): v is number => v != null);
   const withPar = s.filter((r): r is ChLibraryRound & { toPar: number } => r.toPar != null);
   const best = withPar.length ? withPar.reduce((m, r) => (r.toPar < m.toPar || (r.toPar === m.toPar && r.score < m.score) ? r : m)) : s.length ? s.reduce((m, r) => (r.score < m.score ? r : m)) : null;

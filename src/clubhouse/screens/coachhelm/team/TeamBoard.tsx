@@ -1,8 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { courseReads, stationOrder, readsDrawn, type ChStation, type ChTeamBoardData, type ChTeamPlayer } from '../../../data/coachhelm-team-shape';
-import { formatSigned, windowWords } from '../../../lib/format';
+import { boardRoundsWords, courseReads, stationOrder, readsDrawn, type ChReadWorth, type ChStation, type ChTeamBoardData, type ChTeamPlayer } from '../../../data/coachhelm-team-shape';
+import { formatSigned } from '../../../lib/format';
 import { useChPhone } from '../../../lib/use-phone';
 import { PhoneTop } from '../../../shell/phone-chrome';
 import { Button } from '../../../ui/Button';
@@ -11,9 +11,9 @@ import { useRefresh } from '../../../lib/use-refresh';
 import { CoachHelmHead } from '../CoachHelmHead';
 import { useChSessionState } from '../../../lib/session-state';
 import { plural } from '../../../lib/plural';
-import { Notice } from './parts';
+import { Notice, ReadWorthContext } from './parts';
 import { rebuiltHref } from '../../../shell/nav';
-import { CoachHelmOffNotice } from '../CoachBoard';
+import { CoachHelmOffNotice } from '../CoachHelmOffNotice';
 import { CoachHelmTabs, COACHHELM_HREF, type CoachHelmView } from '../chat/SubTabs';
 import { useViewSwitch } from '../use-view-switch';
 import { Modal } from '../../../ui/Modal';
@@ -33,6 +33,7 @@ import { CourseSheet, GonePanel, PlayerPanel, ReadPanel } from './panels';
 import { SpotCard } from './SpotCard';
 import { StationControl } from './StationControl';
 import { TeamHole } from './TeamHole';
+import { sgIsEstimate, sgMixShort, sgMixWords } from '../../../data/stats-sg-mix';
 
 export type TeamStation = ChStation | 'course';
 export type TeamBoardOpen = { kind: 'read' | 'player' | 'course'; id: string } | { kind: 'story'; id: string; story: ChTeamStory; week: string };
@@ -42,10 +43,6 @@ export interface TeamBoardProps {
   /** The server's flips (`team-board/flag.ts`): client code never reads a flag (W-TEAM-19). */
   courseTab?: boolean;
   writes?: ChCoachHelmWrites;
-  /** The server's answers for the cross-lane links (`coachhelm_read_v1`, `coachhelm_player_file_v1`). */
-  readOn?: boolean;
-  askOn?: boolean;
-  fileOn?: boolean;
   initialPlayer?: string;
   initialInsight?: string;
   initialStation?: TeamStation;
@@ -78,19 +75,43 @@ function Hero({
   courseTab: boolean;
 }) {
   const list = data.players.list;
-  // The hole's figures are each player's season mean, averaged over the players at the shots floor (coachhelm-team-legs.ts):
-  // said here because Home's team's game pools every player's last 10 and reads differently.
+  // A choice made here, as against the station the page opened on or brought back from the last visit: the hole's pulse answers it.
+  const [picks, setPicks] = useState(0);
+  const pick = (s: TeamStation) => {
+    setPicks((n) => n + 1);
+    setStation(s);
+  };
+  // The hole's figures are Team stats' own team figure (`teamStrokesGained`) over each player's last ten counted rounds (`lastTenRounds`:
+  // the window Home, the roster and Stats' default read), so the hero is Team stats' "Team SG per round" on Last 10, to the decimal. The
+  // line under the figure says that window; it is not "this season", and the head's round count is not the rounds behind the figure.
+  const windowLine = 'Each player’s last 10';
+  // Where those rounds' strokes gained came from (stats-sg-mix.ts): all estimate, the figure is marked; mixed, a third line says how
+  // many were shot-tracked. Nothing is added when every round was.
+  const has = data.teamTotal.strokes != null;
+  const est = has && sgIsEstimate(data.teamTotal.sgMix);
+  const mixLine = has ? (est ? 'Estimated from the scorecard' : sgMixShort(data.teamTotal.sgMix)) : null;
+  const mixSaid = has ? sgMixWords(data.teamTotal.sgMix) : null;
+  // The sign carries the direction for the eye; the words carry it for a screen reader (QA-7).
   const figure = (
-    <div className="hn">
-      <b className="ch-num">{formatSigned(data.teamTotal.strokes)}</b>
-      <span>
-        a round {betterOrWorse(data.teamTotal.strokes, data.team.baselineLabel)}
+    <div className="hn" role="group" aria-label={`${formatSigned(data.teamTotal.strokes)} a round ${betterOrWorse(data.teamTotal.strokes, data.team.baselineLabel)}, ${windowLine.toLowerCase()}${mixSaid ? `. ${mixSaid}` : ''}`}>
+      <b className="ch-num" aria-hidden="true">
+        {formatSigned(data.teamTotal.strokes)}
+        {est && <small>est.</small>}
+      </b>
+      <span aria-hidden="true">
+        a round {data.team.baselineLabel}
         <br />
-        {windowWords('season', data.teamTotal.rounds)}
+        {windowLine}
+        {mixLine && (
+          <>
+            <br />
+            <span data-ch-sg-mix="">{mixLine}</span>
+          </>
+        )}
       </span>
     </div>
   );
-  const chips = <StationControl value={station} onChange={setStation} stations={data.stations} courseReads={course} courseTab={courseTab} />;
+  const chips = <StationControl value={station} onChange={pick} stations={data.stations} courseReads={course} courseTab={courseTab} />;
   return (
     <section className="feat hero ch-htb-feat" data-ch-team-card="hole" aria-label={`Where ${data.team.name} gives back strokes`}>
       {phone ? (
@@ -108,7 +129,7 @@ function Hero({
         </div>
       )}
       <div className={'hole' + (station === 'course' ? ' offh' : '')}>
-        <TeamHole stations={data.stations} players={list} station={station} onStation={setStation} orientation={phone ? 'v' : 'h'} />
+        <TeamHole stations={data.stations} players={list} station={station} onStation={pick} orientation={phone ? 'v' : 'h'} arrive picks={picks} />
       </div>
       {phone && chips}
       <div className="hfoot">
@@ -165,7 +186,7 @@ function EmptySteps() {
 }
 
 /** The coach's Team view: the green bar untouched, the switch, the title, then one green feature card (the hole). */
-export function TeamBoard({ askOn = false, data, courseTab = true, writes = LIVE_COACHHELM_WRITES, readOn = false, fileOn = false, initialOpen, initialAll = false, initialPlayer, initialInsight, initialStation, onRetry }: TeamBoardProps) {
+export function TeamBoard({ data, courseTab = true, writes = LIVE_COACHHELM_WRITES, initialOpen, initialAll = false, initialPlayer, initialInsight, initialStation, onRetry }: TeamBoardProps) {
   const router = useRouter();
   // Every failed part offers Try again; the route has no function to pass, so the board refreshes itself (FID-TEAM-1).
   const { refresh } = useRefresh();
@@ -187,6 +208,18 @@ export function TeamBoard({ askOn = false, data, courseTab = true, writes = LIVE
       live = false;
     };
   }, [data.storyRounds]);
+  // Each drawn read's worth lands with the themes part; until it does, rows hold its place (ReadWorthContext).
+  const worthNow = data.worth && !(data.worth instanceof Promise) ? data.worth : null;
+  const [worth, setWorth] = useState<{ byRead: Record<string, ChReadWorth> | null; pending: boolean }>({ byRead: worthNow?.status === 'ok' ? worthNow.value : null, pending: data.worth != null && !worthNow });
+  useEffect(() => {
+    let live = true;
+    void Promise.resolve(data.worth).then((w) => {
+      if (live) setWorth({ byRead: w?.status === 'ok' ? w.value : null, pending: false });
+    });
+    return () => {
+      live = false;
+    };
+  }, [data.worth]);
   const [weekBrief, setWeekBrief] = useState<ChCoachBrief | null>(null);
   // A new object each time, so asking for the same story again opens it again.
   const [storyAsk, setStoryAsk] = useState<{ id: string } | null>(null);
@@ -229,8 +262,8 @@ export function TeamBoard({ askOn = false, data, courseTab = true, writes = LIVE
   const list: ChTeamPlayer[] = data.players.list;
   const noRounds = data.teamTotal.rounds === 0;
   const tabs = data.off ? null : <CoachHelmTabs active={sw.shown} onGo={sw.go} boardLabel="Team" />;
-  const context = data.off ? 'CoachHelm reads the rounds your players post.' : data.roster.count === 0 ? 'No players yet' : noRounds ? `${plural(data.roster.count, 'player')} · no rounds yet this season` : `${plural(data.roster.count, 'player')} · ${plural(data.teamTotal.rounds, 'round')} this season · ${plural(readsDrawn(list), 'open read')}`;
-  const head = <CoachHelmHead title={data.team.name || 'CoachHelm'} context={context} scope={data.team.name ? `${data.team.name} · ${plural(data.roster.count, 'player')} · this season` : undefined} tabs={tabs} />;
+  const context = data.off ? 'CoachHelm reads the rounds your players post.' : data.roster.count === 0 ? 'No players yet' : noRounds ? `${plural(data.roster.count, 'player')} · no rounds yet this season` : `${plural(data.roster.count, 'player')} · ${boardRoundsWords(data.teamTotal)} · ${plural(readsDrawn(list), 'open read')}`;
+  const head = <CoachHelmHead title={data.team.name || 'CoachHelm'} context={context} scope={data.team.name ? `${data.team.name} · ${plural(data.roster.count, 'player')} · ${boardRoundsWords(data.teamTotal)}` : undefined} tabs={tabs} />;
   const course = courseReads(list).length;
   const skeletonCard = <span className="skl" style={{ height: 120, borderRadius: 16 }} />;
   const today = (
@@ -364,11 +397,11 @@ export function TeamBoard({ askOn = false, data, courseTab = true, writes = LIVE
       const owner = list2.find((p) => [...p.reads.needs, ...p.reads.working].some((r) => r.id === open.id));
       const read = owner && [...owner.reads.needs, ...owner.reads.working].find((r) => r.id === open.id);
       if (!owner || !read) return <GonePanel onClose={close} />;
-      return <ReadPanel askOn={askOn} read={read} player={owner} fa={fa} missing={data.missing} readOn={readOn} roster={list2} onClose={close} />;
+      return <ReadPanel read={read} player={owner} fa={fa} missing={data.missing} roster={list2} onClose={close} />;
     }
     if (open.kind === 'player') {
       const p = list2.find((x) => x.id === open.id);
-      return p ? <PlayerPanel player={p} fileOn={fileOn} onClose={close} /> : null;
+      return p ? <PlayerPanel player={p} onClose={close} /> : null;
     }
     // A phone tells its story in the viewer, the tile's own (StoriesCard).
     if (open.kind === 'story' && phone) return null;
@@ -413,6 +446,7 @@ export function TeamBoard({ askOn = false, data, courseTab = true, writes = LIVE
           : 'Story';
 
   return (
+    <ReadWorthContext.Provider value={worth}>
     <main ref={top} {...sw.enter} className={'ch-htb ' + (phone ? 'is-phone' : 'is-desk')} aria-busy={sw.pending || undefined} data-ch-screen="coachhelm-team">
       {phone && <PhoneTop start title="CoachHelm" />}
       {phone ? (
@@ -437,5 +471,6 @@ export function TeamBoard({ askOn = false, data, courseTab = true, writes = LIVE
         </Inspector>
       )}
     </main>
+    </ReadWorthContext.Provider>
   );
 }

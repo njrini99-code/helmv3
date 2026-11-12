@@ -3,7 +3,8 @@
 import { createClient } from '@/lib/supabase/server';
 import { derivePlayerQualifierProgress } from './qualifier-progress';
 import { fromUntyped } from '@/lib/supabase/untyped';
-import { revalidatePath, updateTag } from 'next/cache';
+import { revalidatePath } from 'next/cache';
+import { updateTag } from '@/lib/cache/safe-update-tag';
 import { CACHE_TAGS } from '@/lib/cache/tags';
 import { z } from 'zod';
 // roundTypeToDb was a no-op (identity function) and has been removed.
@@ -91,7 +92,15 @@ interface GolfQualifierInput {
   numRounds: number;
   /** Feature G — the course assigned to each round (omit → none). */
   roundCourses?: QualifierRoundCourseInput[];
+  /**
+   * Optional. A uuid that becomes the qualifier's id, so the same request sent twice (a retry after a lost response)
+   * answers with the first qualifier: no second one, no second set of entries, no second notification. Left out,
+   * nothing changes.
+   */
+  requestId?: string;
 }
+
+const REQUEST_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 /** Feature G — a single round's course assignment within a qualifier. */
 export interface QualifierRoundCourseInput {
   roundNumber: number;
@@ -120,6 +129,11 @@ async function createGolfQualifierImpl(data: GolfQualifierInput): Promise<Action
   try {
     // Validate input
     const validatedData = golfQualifierSchema.parse(data);
+    // The schema drops what it does not name, so the request's id is read from the input and checked here.
+    const requestId = data.requestId;
+    if (requestId !== undefined && !REQUEST_ID_RE.test(requestId)) {
+      return { success: false, error: 'Invalid qualifier data. Please check your inputs.' };
+    }
 
     const supabase = await createClient();
 
@@ -181,6 +195,7 @@ async function createGolfQualifierImpl(data: GolfQualifierInput): Promise<Action
     const { data: qualifier, error: qualifierError } = await supabase
       .from('golf_qualifiers')
       .insert({
+        ...(requestId ? { id: requestId } : {}),
         team_id: orgTeamId,
         name: validatedData.name,
         description: validatedData.description || null,
@@ -209,6 +224,25 @@ async function createGolfQualifierImpl(data: GolfQualifierInput): Promise<Action
       })
       .select()
       .single();
+
+    // The same request again: the qualifier it made the first time is the answer (the id is the request's, and it is
+    // this team's). A failed first attempt takes its row back out, so a row that is still here was made whole.
+    if (qualifierError?.code === '23505' && requestId) {
+      const { data: first, error: firstError } = await supabase
+        .from('golf_qualifiers')
+        .select('id')
+        .eq('id', requestId)
+        .eq('team_id', orgTeamId)
+        .maybeSingle();
+      // A failed look falls through to the "failed to create" answer below; it is recorded so it is not read as "no first qualifier".
+      if (firstError) {
+        await logServerError(`createGolfQualifier request lookup failed: ${describeError(firstError)}`, {
+          action: 'createGolfQualifier.requestLookup',
+          featureArea: 'qualifiers',
+        }, 'warning');
+      }
+      if (first) return { success: true, data: { qualifierId: first.id } };
+    }
 
     if (qualifierError) {
       return { success: false, error: 'Failed to create qualifier. Please try again.' };

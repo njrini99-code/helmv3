@@ -30,12 +30,11 @@ describe('phone targets reach 44pt (F-0021)', () => {
     expect(rule(blocks(css('controls.css'), 'max-width: 820px'), '.ch-root .ch-select select', 'height: 44px')).toBe(true);
     expect(rule(blocks(css('stats.css'), 'max-width: 820px'), '.ch-sv-tr__menu .ch-select select', 'height: 44px')).toBe(true);
   });
-  it.each(['.ch-hl-since__b', '.ch-hs-ld__why'])('%s takes the shared 44pt reach', (sel) => {
+  it.each(['.ch-hs-ld__why'])('%s takes the shared 44pt reach', (sel) => {
     const phone = blocks(css('controls.css'), 'max-width: 820px');
     expect(phone).toMatch(new RegExp(`:where\\([^)]*${esc(sel)}[^)]*\\)::after`));
   });
   it('the all:unset buttons position themselves, so the reach has a box to grow from', () => {
-    expect(rule(css('coachhelm.css'), '.ch-hl-since__b', 'position: relative')).toBe(true);
     expect(rule(css('coachhelm-standing.css'), '.ch-hs-ld__why', 'position: relative')).toBe(true);
   });
   it('the new-event title is 44 tall on the phone', () => {

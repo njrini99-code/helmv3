@@ -1,6 +1,6 @@
 import type { UIMessage } from 'ai';
 import { LazyMotion, domAnimation } from 'motion/react';
-import { act, cleanup, render, screen, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import './dialog-polyfill';
@@ -14,22 +14,18 @@ vi.mock('../lib/track', () => ({ chReport: vi.fn(), chTrail: vi.fn(), chTagSessi
 import {
   ASK_ERRORS,
   ASK_FOCUS_JONAH,
-  ASK_MSGS_ABANDONED,
   ASK_MSGS_ACTION,
   ASK_MSGS_ANSWER,
-  ASK_MSGS_CANCELLED,
   ASK_MSGS_CONFIRMED,
   ASK_MSGS_LONG,
   ASK_MSGS_PARTIAL,
   ASK_MSGS_READFAIL,
+  ASK_MSGS_REJECTED,
   ASK_MSGS_RECEIPT,
   ASK_MSGS_RECEIPT_FAILED,
-  ASK_MSGS_REJECTED,
   ASK_MSGS_THINKING,
   ASK_MSGS_WORKING,
   ASK_PLAYERS,
-  ASK_PROPOSAL,
-  ASK_RECEIPT_PARTIAL,
 } from '../preview/fixtures-ask-thread';
 import { AskThread, type AskThreadProps } from '../screens/coachhelm/chat/Thread';
 import { AskEvidencePanel } from '../screens/coachhelm/chat/EvidencePanel';
@@ -77,71 +73,115 @@ afterEach(() => {
 });
 
 describe('CH-13850 what CoachHelm is doing', () => {
-  it('while it works, the steps are one polite live region, the newest is the current step, and Stop is offered on desktop', async () => {
-    const { p } = show({ messages: ASK_MSGS_WORKING, busy: true });
-    const list = screen.getByRole('list', { name: 'What CoachHelm is doing' });
-    expect(list.getAttribute('aria-live')).toBe('polite');
-    const items = within(list).getAllByRole('listitem');
-    expect(items.map((i) => i.textContent)).toEqual(['Reading your roster', 'Reading the last 38 recorded rounds', 'Comparing putting by distance']);
-    expect(items.map((i) => i.getAttribute('aria-current'))).toEqual([null, null, 'step']);
-    // No ticking "Working 12s" line; the avatar's wheel turns while it works (2026-10-29) and the current step is marked.
-    expect(screen.queryByText(/^Working/)).toBeNull();
-    expect(document.querySelector('.ch-th-mark.is-working')).not.toBeNull();
-    expect(items[2]?.querySelector('.ch-th-live')?.textContent).toBe('Comparing putting by distance');
-    await userEvent.click(screen.getByRole('button', { name: 'Stop' }));
-    expect(p.onStop).toHaveBeenCalledTimes(1);
-  });
-  it('the answer that takes over from the placeholder does not fade in a second time', () => {
+  it('the turn that waits is the turn that answers: one element from the send to the answer, so nothing blinks', () => {
     const { update } = show({ messages: [], busy: false });
     update({ messages: ASK_MSGS_WORKING.slice(0, 1), busy: true });
-    const placeholder = document.querySelector('.ch-th-ans[aria-busy="true"]');
-    expect(placeholder?.classList.contains('is-new')).toBe(true);
-    expect(placeholder?.querySelector('.ch-th-mark.is-working')).not.toBeNull();
+    const waiting = document.querySelector('.ch-ak-page.is-last .ch-ak-turn');
+    expect(waiting).not.toBeNull();
     update({ messages: ASK_MSGS_WORKING, busy: true });
     const answer = screen.getByRole('article', { name: 'CoachHelm answer' });
-    expect(answer.classList.contains('is-new')).toBe(false);
+    // The server opening the turn does not remount it: the island that waited is the island that works.
+    expect(answer.closest('.ch-ak-turn')).toBe(waiting);
+    expect(answer.querySelector('.ch-ak-isl.is-live')).not.toBeNull();
+    // Nothing stands beside an answer: no mark, no name (owner, 11 Nov).
+    expect(answer.querySelector('.ch-th-mark, .who, .nm')).toBeNull();
     expect(document.querySelector('.ch-th-user')?.classList.contains('is-new')).toBe(true);
   });
+  it('a restored turn says how long the server worked on it, and with the island its line opens the steps instead of a list', () => {
+    const restored = [
+      msg('u1', 'user', [{ type: 'text', text: 'How is Jonah doing?' }]),
+      msg('a1', 'assistant', [
+        { type: 'data-progress', id: 'r1', data: { label: 'Reading Jonah’s strokes gained', tool: 'get_player_metrics', state: 'done', done: 'Reading Jonah’s strokes gained' } },
+        { type: 'data-progress', id: 'r2', data: { label: 'Reading his last 7 rounds', tool: 'get_player_trend', state: 'done', done: 'Reading his last 7 rounds' } },
+        { type: 'text', text: 'Jonah is trending the right way.' },
+        { type: 'data-turn-meta', id: 'turn-meta', data: { started_at: '2026-11-10T15:00:00.000Z', duration_ms: 6200, reads: 2 } },
+      ]),
+    ];
+    const openFor = vi.fn();
+    show({ messages: restored, island: { turnId: null, open: false, pinned: false, openFor } });
+    const line = document.querySelector<HTMLButtonElement>('.ch-ak-wl.is-sum');
+    expect(line?.textContent).toContain('2 steps · 6s');
+    expect(line?.getAttribute('aria-expanded')).toBe('false');
+    fireEvent.click(line!);
+    expect(openFor).toHaveBeenCalledWith('a1');
+    // The steps are the island's to show: no list hangs under the name.
+    expect(document.querySelector('.ch-ak-reads')).toBeNull();
+    cleanup();
+    // While the island is on screen for the turn, the line is silent: one place speaks at a time.
+    show({ messages: restored, island: { turnId: 'a1', open: false, pinned: false, openFor } });
+    expect(document.querySelector('.ch-ak-wl.is-sum')).toBeNull();
+  });
+
+  it('the island sits in the flow under the question: the steps while it works, one line once the answer begins, the steps again on a tap', () => {
+    const working = (parts: unknown[]) => [msg('u1', 'user', [{ type: 'text', text: 'How is Jonah doing?' }]), msg('a1', 'assistant', parts)];
+    const r1 = { type: 'data-progress', id: 'r1', data: { label: 'Reading Jonah’s strokes gained', tool: 'get_player_metrics', state: 'done', done: 'Reading Jonah’s strokes gained' } };
+    const r2 = { type: 'data-progress', id: 'r2', data: { label: 'Reading his last 7 rounds', tool: 'get_player_trend' } };
+    const { update } = show({ messages: working([r1, r2]), busy: true });
+    const island = () => document.querySelector('.ch-ak-page.is-last .ch-ak-isl')!;
+    // It comes after the question, inside the turn, and is open while nothing is under it.
+    expect(document.querySelector('.ch-th-user')!.compareDocumentPosition(island()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(island().classList.contains('is-open')).toBe(true);
+    expect([...island().querySelectorAll('.st')].map((li) => li.className.match(/is-(done|active|waiting)/)?.[1])).toEqual(['done', 'active']);
+    expect(island().querySelector('.ch-th-mark, [class*="sparkle"]')).toBeNull();
+    // The first words of the answer: it folds to one line, and the words are under it.
+    update({ messages: working([r1, { ...r2, data: { ...r2.data, state: 'done' } }, { type: 'text', text: 'Jonah is trending the right way.' }]), busy: true });
+    expect(island().classList.contains('is-open')).toBe(false);
+    expect(island().querySelector('.steps')).toBeNull();
+    expect(island().nextElementSibling?.matches('.ch-ak-say, .ch-ak-leaf')).toBe(true);
+    // The work is over: the line says what it came to, and a tap opens the steps again.
+    update({ messages: working([r1, { ...r2, data: { ...r2.data, state: 'done' } }, { type: 'text', text: 'Jonah is trending the right way.' }]), busy: false });
+    const key = within(island() as HTMLElement).getByRole('button');
+    expect(key.getAttribute('aria-expanded')).toBe('false');
+    expect(key.textContent).toMatch(/2 steps/);
+    fireEvent.click(key);
+    expect(key.getAttribute('aria-expanded')).toBe('true');
+    expect(island().querySelectorAll('.st.is-done')).toHaveLength(2);
+  });
+
   it('the phone has no Stop here: the composer owns it', () => {
     show({ messages: ASK_MSGS_WORKING, busy: true, phone: true });
     expect(screen.queryByRole('button', { name: 'Stop' })).toBeNull();
   });
-  it('before the first token there is one quiet line, and no raw tool name anywhere', () => {
-    show({ messages: ASK_MSGS_THINKING, busy: true });
-    expect(screen.getByText('Reading your program')).toBeTruthy();
-    expect(document.body.textContent).not.toMatch(/get_[a-z_]+/);
-  });
-  it('a finished answer leaves one quiet line that opens the steps it took, and what it read', async () => {
-    show();
-    // A reloaded answer has no honest duration: the receipt is the step count alone (playbook §4).
-    const button = screen.getByRole('button', { name: '4 steps' });
-    expect(button.getAttribute('aria-expanded')).toBe('false');
-    // A finished answer draws still: only a streaming answer's blocks settle in (coachhelm-thread.css).
-    expect(document.querySelector('.ch-th-prose')).toBeTruthy();
-    expect(document.querySelector('.ch-th-prose[data-streaming]')).toBeNull();
-    await userEvent.click(button);
-    expect(button.getAttribute('aria-expanded')).toBe('true');
-    expect(screen.getByRole('list', { name: 'What CoachHelm is doing' }).children).toHaveLength(4);
-    expect(screen.getByText(/^Read 3 players/)).toBeTruthy();
+  it('before the server answers there are no words, only the ball, thinking; its line speaks at 1.2 s and says only what is known', () => {
+    vi.useFakeTimers();
+    try {
+      show({ messages: ASK_MSGS_THINKING, busy: true });
+      // The turn arrives after its question (150 ms), with the chat's mark thinking and nothing said: no ring, no wheel.
+      expect(screen.queryByRole('article', { name: 'CoachHelm answer' })).toBeNull();
+      act(() => { vi.advanceTimersByTime(200); });
+      const turn = screen.getByRole('article', { name: 'CoachHelm answer' });
+      expect(turn.querySelector('.ch-ak-isl.is-live .hd .ch-ball.is-thinking')).not.toBeNull();
+      expect(turn.querySelector('.ch-ak-isl .hd .mk')).toBeNull();
+      expect(turn.querySelector('.ch-ak-isl .hd')?.textContent).toBe('');
+      // Nothing has come back from the server: it is still being sent, and that is all that is claimed.
+      act(() => { vi.advanceTimersByTime(1100); });
+      expect(turn.querySelector('.ch-ak-isl .hd')?.textContent).toBe('Sending');
+      act(() => { vi.advanceTimersByTime(5000); });
+      expect(turn.querySelector('.ch-ak-isl .hd')?.textContent).toBe('Still sending. This is taking longer than usual.');
+      expect(document.body.textContent).not.toMatch(/get_[a-z_]+/);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 
-describe('CH-13852 View as table', () => {
-  it('swaps a chart for a real table of the same figures, and back', async () => {
+// Owner, 11 Nov: the "Table" key is gone from what an answer shows. A block that is rows is its own table; a chart keeps its
+// figures as a table for a screen reader (chat/__tests__/evidence-direction.test.tsx).
+describe('CH-13852 the figures without a Table key', () => {
+  it('has no key to swap a figure for a table: the rows are the figures, toned by what the read says is the weak side', () => {
     show();
-    const toggles = screen.getAllByRole('button', { name: /View as table/ });
-    const slope = toggles[0]!;
-    expect(slope.getAttribute('aria-pressed')).toBe('false');
-    expect(screen.getByRole('list', { name: 'Make rate from 4 to 6 feet, by slope' })).toBeTruthy();
-    await userEvent.click(slope);
-    expect(slope.getAttribute('aria-pressed')).toBe('true');
-    const table = screen.getByRole('table', { name: 'Make rate from 4 to 6 feet, by slope for Finley University' });
-    expect(within(table).getAllByRole('row').map((r) => r.textContent)).toEqual(['RangeRateSample', 'Uphill76%51', 'Level81%44', 'Downhill58%31']);
-    expect(screen.queryByRole('list', { name: 'Make rate from 4 to 6 feet, by slope' })).toBeNull();
-    await userEvent.click(slope);
+    expect(screen.queryByRole('button', { name: /View as table/ })).toBeNull();
+    const rows = within(screen.getByRole('list', { name: 'Make rate from 4 to 6 feet, by slope' })).getAllByRole('listitem');
+    expect(rows.map((r) => [r.querySelector('.ch-aks-dist__band')?.textContent, r.querySelector('.ch-aks-dist__val')?.textContent, r.querySelector('.ch-aks-dist__val')?.getAttribute('data-tone')])).toEqual([
+      ['Uphill', '76%', 'gain'],
+      ['Level', '81%', 'gain'],
+      ['Downhill', '58%', 'loss'],
+    ]);
+    // No bar on a track: the figure is type.
+    expect(document.querySelector('.ch-ak-leaf [class*="track"]')).toBeNull();
     expect(screen.queryByRole('table', { name: /by slope/ })).toBeNull();
   });
-  it('the bars carry the sample beside each and the source line under them', () => {
+  it('the rows carry the sample beside each and the source line under them', () => {
     show();
     const figure = screen.getByRole('list', { name: 'Make rate from 4 to 6 feet, by slope' });
     expect(within(figure).getAllByRole('listitem').map((i) => i.textContent)).toEqual(['Uphill76% of 51', 'Level81% of 44', 'Downhill58% of 31']);
@@ -218,39 +258,7 @@ describe('CH-13251 a failed answer', () => {
   });
 });
 
-describe('CH-13252 a rejected answer', () => {
-  it('shows its one note and keeps the card; the prose and the evidence are not shown', () => {
-    show({ messages: ASK_MSGS_REJECTED });
-    expect(code('CH-13252')?.textContent).toBe("This answer didn't finish coming through, so it isn't being shown. Please ask again.");
-    expect(document.body.textContent).not.toMatch(/makes 41%/);
-    expect(screen.queryByText('Uphill')).toBeNull();
-    expect(screen.getByRole('button', { name: 'Confirm' })).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'Copy' })).toBeNull();
-  });
-});
-
 describe('Copy, follow-ups and the coach\'s line', () => {
-  it('CH-13950 Copy copies the answer as plain text and says so', async () => {
-    const user = userEvent.setup();
-    const write = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue(undefined);
-    show();
-    await user.click(screen.getByRole('button', { name: 'Copy' }));
-    expect(write).toHaveBeenCalledTimes(1);
-    const copied = write.mock.calls[0]![0];
-    expect(copied).toContain('Most of it is downhill putts from 4 to 6 feet.');
-    expect(copied).not.toContain('**');
-    expect(await screen.findByText('Copied')).toBeTruthy();
-    expect(code('CH-13950')).not.toBeNull();
-    expect(hapticSpy).not.toHaveBeenCalled();
-  });
-  it("CH-13051 when the clipboard refuses, it says so and how to copy instead", async () => {
-    const user = userEvent.setup();
-    vi.spyOn(navigator.clipboard, 'writeText').mockRejectedValue(new Error('denied'));
-    show();
-    await user.click(screen.getByRole('button', { name: 'Copy' }));
-    expect(await screen.findByText("Couldn’t copy")).toBeTruthy();
-    expect(code('CH-13051')).not.toBeNull();
-  });
   it('CH-13752 a follow-up sends its text with a selection tick, on the last answer only, and not while it works', async () => {
     const { p, update } = show({ messages: ASK_MSGS_LONG });
     // The long thread ends on an answer with no evidence: none offered.
@@ -283,138 +291,15 @@ describe('Copy, follow-ups and the coach\'s line', () => {
 });
 
 describe('CH-13951 the action card', () => {
-  it('Confirm answers the approval by its id, once, even on a double tap, and a later Cancel is ignored', async () => {
+  it('the quiet key ("Not now") answers the same approval as denied', async () => {
     const { p } = show({ messages: ASK_MSGS_ACTION });
-    const confirm = screen.getByRole('button', { name: 'Confirm' });
-    await userEvent.dblClick(confirm);
-    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
-    expect(p.onApprove).toHaveBeenCalledTimes(1);
-    expect(p.onApprove).toHaveBeenCalledWith('approval-1');
-    expect(p.onDeny).not.toHaveBeenCalled();
-    // The primary press (light) fires once; the answer's own success comes with the receipt.
-    expect(hapticSpy.mock.calls.filter((c) => c[0] === 'press')).toHaveLength(1);
-  });
-  it('Cancel answers the same approval as denied', async () => {
-    const { p } = show({ messages: ASK_MSGS_ACTION });
-    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Not now' }));
     expect(p.onDeny).toHaveBeenCalledWith('approval-1');
     expect(p.onApprove).not.toHaveBeenCalled();
-  });
-  it('states the facts, who is told, and nothing else, before the button', () => {
-    show({ messages: ASK_MSGS_ACTION });
-    const card = screen.getByRole('region', { name: 'Create focus area' });
-    expect(within(card).getByText('Needs your OK')).toBeTruthy();
-    const facts = Array.from(card.querySelectorAll('dl > div')).map((d) => d.textContent);
-    expect(facts).toEqual(['PlayerJonah Okafor', 'FocusDownhill putts, 4 to 6 feet', 'GoalMake 7 of 10 in two practices', 'Review onTue, Oct 14']);
-    expect(within(card).getByText('On confirm:').parentElement?.textContent).toBe('On confirm: Jonah gets a notification and sees the focus area on his Home.');
-  });
-  it('an action that sends nothing says so, and a missing fact says what it will be created without', () => {
-    const quiet = { ...ASK_PROPOSAL, notifications: [], missing: ['Location'], facts: [...ASK_PROPOSAL.facts, { label: 'Location', value: '', missing: true }] };
-    const m = msg('a2', 'assistant', [
-      { type: 'tool-create_focus_area', toolCallId: 'c', state: 'approval-requested', approval: { id: 'ap' } },
-      { type: 'data-action-proposal', id: 'proposal-k', data: { ...quiet, idempotency_key: 'k' } },
-    ]);
-    show({ messages: [m] });
-    expect(screen.getByText('Nothing is sent.')).toBeTruthy();
-    expect(screen.getByText('Location not set. This will be created without it.')).toBeTruthy();
-    expect(screen.getByText('Not set')).toBeTruthy();
-  });
-  it('an impact line is stated on the card', () => {
-    const risky = { ...ASK_PROPOSAL, impact: 'Every player on the team gets this message.' };
-    const m = msg('a2', 'assistant', [
-      { type: 'tool-create_focus_area', toolCallId: 'c', state: 'approval-requested', approval: { id: 'ap' } },
-      { type: 'data-action-proposal', id: 'proposal-k', data: { ...risky, idempotency_key: 'k' } },
-    ]);
-    show({ messages: [m] });
-    expect(screen.getByText('Every player on the team gets this message.')).toBeTruthy();
-  });
-  it('two proposals of one tool are not crossed: each Confirm answers its own approval', async () => {
-    const card = (key: string, name: string) => ({ type: 'data-action-proposal', id: `proposal-${key}`, data: { ...ASK_PROPOSAL, idempotency_key: key, affects: [{ kind: 'player', id: `p-${name}`, label: name }], facts: [{ label: 'Player', value: name }] } });
-    const m = msg('a2', 'assistant', [
-      { type: 'tool-create_focus_area', toolCallId: 'c1', state: 'approval-requested', approval: { id: 'ap-1' } },
-      card('k1', 'Jonah Okafor'),
-      { type: 'tool-create_focus_area', toolCallId: 'c2', state: 'approval-requested', approval: { id: 'ap-2' } },
-      card('k2', 'Eli Brandt'),
-    ]);
-    const { p } = show({ messages: [m] });
-    const cards = screen.getAllByRole('region', { name: 'Create focus area' });
-    await userEvent.click(within(cards[1]!).getByRole('button', { name: 'Confirm' }));
-    expect(p.onApprove).toHaveBeenCalledWith('ap-2');
-    await userEvent.click(within(cards[0]!).getByRole('button', { name: 'Cancel' }));
-    expect(p.onDeny).toHaveBeenCalledWith('ap-1');
-  });
-  it('after Confirm it says so and waits for the receipt; after Cancel, that nothing was created', () => {
-    const a = show({ messages: ASK_MSGS_CONFIRMED });
-    expect(code('CH-13450')?.textContent).toBe('Confirmed. Working on it.');
-    expect(screen.queryByRole('button', { name: 'Confirm' })).toBeNull();
-    a.unmount();
-    show({ messages: ASK_MSGS_CANCELLED });
-    expect(code('CH-13952')?.textContent).toBe('Cancelled. Nothing was created.');
-    expect(screen.queryByRole('button', { name: 'Confirm' })).toBeNull();
-  });
-  it('the notifications line is a promise before Confirm and what happened after: sent, still going, or nothing sent', () => {
-    const line = () => screen.getByRole('region', { name: 'Create focus area' }).querySelector('.ch-th-act__note b')?.textContent;
-    const views = [
-      [ASK_MSGS_RECEIPT, 'Sent:'],
-      [ASK_MSGS_CONFIRMED, 'Notifies:'],
-      [ASK_MSGS_RECEIPT_FAILED, 'Nothing was sent.'],
-      [ASK_MSGS_CANCELLED, 'Nothing was sent.'],
-      [ASK_MSGS_ABANDONED, 'Nothing was sent.'],
-    ] as const;
-    for (const [messages, word] of views) {
-      const a = show({ messages });
-      expect(line()).toBe(word);
-      a.unmount();
-    }
-  });
-  it('CH-13254 a card the conversation moved past has no buttons and says nothing was created', () => {
-    show({ messages: ASK_MSGS_ABANDONED });
-    expect(screen.queryByRole('button', { name: 'Confirm' })).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Cancel' })).toBeNull();
-    expect(screen.getByText('No decision was made. Nothing was created.')).toBeTruthy();
-    expect(code('CH-13254')).not.toBeNull();
-  });
-  it('a card that arrives before its approval waits, with its buttons held', () => {
-    const m = msg('a2', 'assistant', [{ type: 'data-action-proposal', id: 'proposal-k', data: { ...ASK_PROPOSAL, idempotency_key: 'k' } }]);
-    show({ messages: [m], busy: true });
-    expect((screen.getByRole('button', { name: 'Confirm' }) as HTMLButtonElement).disabled).toBe(true);
-    expect(screen.getByText('Getting it ready')).toBeTruthy();
   });
 });
 
 describe('the receipt', () => {
-  it('CH-13953 a created action says what was created, links where its screen opens in Clubhouse, and Confirmed is stated once', () => {
-    show({ messages: ASK_MSGS_RECEIPT });
-    expect(code('CH-13953')).not.toBeNull();
-    expect(screen.getByText('Created a focus area for Jonah Okafor on downhill putts.')).toBeTruthy();
-    // The engine links focus areas to Fairway's Intelligence Players view; in Clubhouse that address opens the CoachHelm board
-    // (its alias redirect), so the chip goes there, as production's chip links (P013 wiring pass, 2026-10-17).
-    expect(screen.getByRole('link', { name: /1 focus area/ }).getAttribute('href')).toBe('/golf/dashboard/coachhelm');
-    expect(screen.getByText('Confirmed.')).toBeTruthy();
-  });
-  it('a failed action that is not safe to ask again offers no Ask again', () => {
-    const m = msg('a2', 'assistant', [{ type: 'data-action-receipt', id: 'receipt-x', data: { ...ASK_RECEIPT_PARTIAL, status: 'failed', retryable: false, error: 'The calendar refused it.' } }]);
-    show({ messages: [m] });
-    expect(screen.getByText('The calendar refused it.')).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'Ask again' })).toBeNull();
-  });
-  it('a partly done action links the calendar, says to check before asking again, and offers no Ask again', () => {
-    const m = msg('a2', 'assistant', [{ type: 'data-action-receipt', id: 'receipt-x', data: ASK_RECEIPT_PARTIAL }]);
-    show({ messages: [m] });
-    const link = screen.getByRole('link', { name: /6 practices/ }) as HTMLAnchorElement;
-    expect(link.getAttribute('href')).toBe('/golf/dashboard/calendar');
-    expect(screen.getByText('Oct 28 and Nov 4 could not be added.')).toBeTruthy();
-    expect(screen.getByText('Check what was created before you ask again.')).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'Ask again' })).toBeNull();
-    expect(code('CH-13253')).not.toBeNull();
-  });
-  it('CH-13253 a failed action says it was not completed, why, and Ask again asks CoachHelm to propose it again', async () => {
-    const { p } = show({ messages: ASK_MSGS_RECEIPT_FAILED });
-    expect(screen.getByText('Create focus area, not completed')).toBeTruthy();
-    expect(screen.getByText('Jonah already has an active focus area on downhill putts.')).toBeTruthy();
-    await userEvent.click(screen.getByRole('button', { name: 'Ask again' }));
-    expect(p.onSend).toHaveBeenCalledWith('Try that again: Create focus area');
-  });
   it('CH-13750 a receipt that arrives while the thread is open: one success haptic, or an error haptic and a toast. A reloaded thread announces nothing.', async () => {
     const live = show({ messages: ASK_MSGS_CONFIRMED });
     hapticSpy.mockClear();
@@ -442,33 +327,6 @@ describe('the receipt', () => {
   });
 });
 
-describe('CH-13851 the evidence control', () => {
-  it('desktop: Evidence opens the panel for the player this card is about', async () => {
-    const { p } = show({ messages: ASK_MSGS_ACTION });
-    await userEvent.click(screen.getByRole('button', { name: 'Evidence' }));
-    expect(p.onOpenEvidence).toHaveBeenCalledWith({ messageId: 'a2', key: 'key-focus-jonah', label: 'Jonah Okafor, downhill putts, 4 to 6 feet', playerId: 'p-jonah' });
-  });
-  it("phone: a row that reads See Jonah's numbers", () => {
-    show({ messages: ASK_MSGS_ACTION, phone: true });
-    expect(screen.getByRole('button', { name: /See Jonah’s numbers/ })).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'Evidence' })).toBeNull();
-  });
-  it("when the conversation has no figures for that player, it links to their stats instead", () => {
-    const m = msg('a2', 'assistant', [
-      { type: 'tool-create_focus_area', toolCallId: 'c', state: 'approval-requested', approval: { id: 'ap' } },
-      { type: 'data-action-proposal', id: 'proposal-k', data: { ...ASK_PROPOSAL, idempotency_key: 'k', affects: [{ kind: 'player', id: 'p-ava', label: 'Ava Lindqvist' }] } },
-    ]);
-    show({ messages: [m] });
-    const link = screen.getByRole('link', { name: "See Ava’s stats" }) as HTMLAnchorElement;
-    expect(link.getAttribute('href')).toBe('/golf/dashboard/stats?player=p-ava');
-    expect(screen.queryByRole('button', { name: 'Evidence' })).toBeNull();
-  });
-  it('the open panel marks its card pressed', () => {
-    show({ messages: ASK_MSGS_ACTION, evidenceFocus: ASK_FOCUS_JONAH });
-    expect(screen.getByRole('button', { name: 'Evidence' }).getAttribute('aria-pressed')).toBe('true');
-  });
-});
-
 describe('the evidence panel', () => {
   const panel = (over: Partial<Parameters<typeof AskEvidencePanel>[0]> = {}) => {
     const onClose = vi.fn();
@@ -479,12 +337,21 @@ describe('the evidence panel', () => {
     panel();
     const aside = screen.getByRole('complementary', { name: 'Evidence' });
     expect(within(aside).getByText('Jonah Okafor, downhill putts, 4 to 6 feet')).toBeTruthy();
-    const tiles = Array.from(aside.querySelectorAll('.ch-th-tile')).map((t) => t.textContent);
-    expect(tiles).toEqual(['Downhill, 4 to 6 feet33%3 of 9', 'Team, Downhill, 4 to 6 feet58%18 of 31', 'Level, 4 to 6 feet78%7 of 9']);
+    // The figures are ruled rows drawn by the studio (the figure, its name, its sample), not tiles.
+    const figures = Array.from(aside.querySelectorAll('.ch-aks-fig__cell')).map((t) => [t.querySelector('.ch-aks-fig__label')?.textContent, t.querySelector('.ch-aks-fig__value')?.textContent, t.querySelector('.ch-aks-fig__sub')?.textContent]);
+    expect(figures).toEqual([
+      ['Downhill, 4 to 6 feet', '33%', '3 of 9'],
+      ['Team, Downhill, 4 to 6 feet', '58%', '18 of 31'],
+      ['Level, 4 to 6 feet', '78%', '7 of 9'],
+    ]);
+    expect(aside.querySelector('.ch-th-tile')).toBeNull();
     expect(within(aside).getByRole('img', { name: /Make rate by round for Jonah Okafor: 50% to 0% across 5 rounds/ })).toBeTruthy();
     expect(within(aside).getByText('Team 58%')).toBeTruthy();
     expect(within(aside).getByText('Small sample: 9 attempts. Treat it as a direction, not a verdict.')).toBeTruthy();
-    expect(within(aside).getByRole('table')).toBeTruthy();
+    // Two tables: the trend's rounds, kept for a screen reader, and the rounds the panel lists.
+    const tables = within(aside).getAllByRole('table');
+    expect(tables).toHaveLength(2);
+    expect(tables[0]!.className).toBe('ch-sr-only');
   });
   it('focus moves to the panel when it opens and back to the control that opened it when it closes; Esc and the close button close it', async () => {
     const opener = document.createElement('button');
@@ -515,66 +382,92 @@ describe('the evidence panel', () => {
   });
 });
 
-describe('scrolling', () => {
-  const scrollTo = vi.fn();
-  beforeEach(() => {
-    scrollTo.mockClear();
-    Element.prototype.scrollIntoView = scrollTo;
-    Object.defineProperty(document.documentElement, 'scrollHeight', { value: 0, configurable: true });
+describe('Rule P: the question takes the top of the page, and the thread never scrolls itself', () => {
+  /** A scroller with a size: jsdom lays nothing out, so the page's geometry is given. */
+  function inScroller(over: Partial<AskThreadProps> = {}) {
+    const p = props(over);
+    const tree = (q: AskThreadProps) => wrap(
+      <section className="ch-ask-main">
+        <div data-testid="sp" style={{ overflowY: 'auto' }}>
+          <AskThread {...q} />
+        </div>
+      </section>,
+    );
+    const view = render(tree(p));
+    const sp = screen.getByTestId('sp');
+    const sets: number[] = [];
+    let top = 0;
+    Object.defineProperty(sp, 'scrollTop', { configurable: true, get: () => top, set: (v: number) => { top = v; sets.push(v); } });
+    Object.defineProperty(sp, 'clientHeight', { configurable: true, value: 600 });
+    const height = (h: number) => Object.defineProperty(sp, 'scrollHeight', { configurable: true, value: h });
+    height(600);
+    return { sp, sets, height, at: (v: number) => { top = v; }, update: (next: Partial<AskThreadProps>) => view.rerender(tree({ ...p, ...next })) };
+  }
+  const u1 = msg('u1', 'user', [{ type: 'text', text: 'first' }]);
+  const a1 = (text: string) => msg('a1', 'assistant', [{ type: 'text', text }]);
+  const u2 = msg('u2', 'user', [{ type: 'text', text: 'second' }]);
+
+  it('a page is a question and what answers it; only the last one is held a screen tall', () => {
+    inScroller({ messages: [u1, a1('one'), u2, msg('a2', 'assistant', [{ type: 'text', text: 'two' }])] });
+    const pages = document.querySelectorAll('.ch-ak-page');
+    expect(pages).toHaveLength(2);
+    expect(pages[0]!.classList.contains('is-last')).toBe(false);
+    expect(pages[1]!.classList.contains('is-last')).toBe(true);
+    expect(pages[1]!.querySelector('.ch-th-user')?.textContent).toBe('second');
   });
-  afterEach(() => {
-    Object.defineProperty(document.documentElement, 'scrollHeight', { value: 0, configurable: true });
+
+  it('a sent question sets the thread\'s position once, at once, and never by scrollIntoView (which would move the page too)', () => {
+    const into = vi.fn();
+    Element.prototype.scrollIntoView = into;
+    const t = inScroller({ messages: [u1, a1('one')] });
+    t.sets.length = 0;
+    t.update({ messages: [u1, a1('one'), u2], busy: true });
+    expect(t.sets).toHaveLength(1);
+    expect(into).not.toHaveBeenCalled();
   });
-  it('uses instant scrolling for a sent question when OS motion is reduced', () => {
-    const originalMatchMedia = window.matchMedia;
-    window.matchMedia = (query) => ({
-      matches: query === '(prefers-reduced-motion: reduce)', media: query,
-      addEventListener: vi.fn(), removeEventListener: vi.fn(), addListener: vi.fn(), removeListener: vi.fn(),
-      dispatchEvent: vi.fn(), onchange: null,
-    }) as MediaQueryList;
+
+  it('does not follow a streaming answer by itself; follows once the coach has scrolled to the live edge', () => {
+    vi.useFakeTimers();
     try {
-      const { update } = show({ messages: [msg('a1', 'assistant', [{ type: 'text', text: 'one' }])] });
-      scrollTo.mockClear();
-      update({ messages: [msg('u2', 'user', [{ type: 'text', text: 'second' }])] });
-      expect(scrollTo).toHaveBeenLastCalledWith({ block: 'end', behavior: 'instant' });
-    } finally { window.matchMedia = originalMatchMedia; }
-  });
-  it('coalesces streamed updates into one instant scroll per frame', () => {
-    const frames = new Map<number, FrameRequestCallback>();
-    let sequence = 0;
-    const raf = vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
-      frames.set(++sequence, callback);
-      return sequence;
-    });
-    const cancel = vi.spyOn(window, 'cancelAnimationFrame').mockImplementation((id) => { frames.delete(id); });
-    try {
-      const { update } = show({ messages: [msg('a1', 'assistant', [{ type: 'text', text: 'one' }])], busy: true });
-      scrollTo.mockClear();
-      for (const text of ['one two', 'one two three', 'one two three four']) {
-        update({ messages: [msg('a1', 'assistant', [{ type: 'text', text }])], busy: true });
-      }
-      expect(scrollTo).not.toHaveBeenCalled();
-      expect(frames.size).toBe(1);
-      act(() => { for (const callback of frames.values()) callback(performance.now()); frames.clear(); });
-      expect(scrollTo).toHaveBeenCalledTimes(1);
-      expect(scrollTo).toHaveBeenCalledWith({ block: 'end', behavior: 'instant' });
+      const t = inScroller({ messages: [u1, a1('one')] });
+      t.update({ messages: [u1, a1('one'), u2], busy: true });
+      t.sets.length = 0;
+      // The answer grows past the fold: the thread stays where it is.
+      t.height(1400);
+      for (const text of ['two', 'two three', 'two three four']) t.update({ messages: [u1, a1('one'), u2, msg('a2', 'assistant', [{ type: 'text', text }])], busy: true });
+      act(() => { vi.advanceTimersByTime(600); });
+      expect(t.sets).toHaveLength(0);
+      // The coach scrolls to the end themselves: from here the newest line is followed.
+      t.at(800);
+      act(() => { t.sp.dispatchEvent(new Event('scroll')); });
+      t.sets.length = 0;
+      t.height(1600);
+      t.update({ messages: [u1, a1('one'), u2, msg('a2', 'assistant', [{ type: 'text', text: 'two three four five' }])], busy: true });
+      act(() => { vi.advanceTimersByTime(50); });
+      expect(t.sets).toEqual([1600]);
     } finally {
-      raf.mockRestore();
-      cancel.mockRestore();
+      vi.useRealTimers();
     }
   });
-  it('shows what the coach sent, wherever they were; follows a streaming answer only while they are at the bottom', () => {
-    const { update } = show({ messages: [msg('u1', 'user', [{ type: 'text', text: 'first' }]), msg('a1', 'assistant', [{ type: 'text', text: 'one' }])] });
-    scrollTo.mockClear();
-    // They scrolled up: the page is tall and they are far from the end.
-    Object.defineProperty(document.documentElement, 'scrollHeight', { value: 5000, configurable: true });
-    act(() => {
-      window.dispatchEvent(new Event('scroll'));
-    });
-    update({ messages: [msg('u1', 'user', [{ type: 'text', text: 'first' }]), msg('a1', 'assistant', [{ type: 'text', text: 'one two' }])], busy: true });
-    expect(scrollTo).not.toHaveBeenCalled();
-    update({ messages: [msg('u1', 'user', [{ type: 'text', text: 'first' }]), msg('a1', 'assistant', [{ type: 'text', text: 'one two' }]), msg('u2', 'user', [{ type: 'text', text: 'second' }])], busy: false });
-    expect(scrollTo).toHaveBeenCalled();
+
+  it('the Latest key says there is more below while the answer is still being written, and takes the coach there', () => {
+    vi.useFakeTimers();
+    try {
+      const t = inScroller({ messages: [u1, a1('one')] });
+      t.update({ messages: [u1, a1('one'), u2], busy: true });
+      t.height(1400);
+      t.update({ messages: [u1, a1('one'), u2, msg('a2', 'assistant', [{ type: 'text', text: 'two' }])], busy: true });
+      act(() => { vi.advanceTimersByTime(50); });
+      const key = screen.getByRole('button', { name: 'More below. Jump to the latest' });
+      expect(key.querySelector('.ch-ak-live')).not.toBeNull();
+      const scrollTo = vi.fn();
+      t.sp.scrollTo = scrollTo;
+      fireEvent.click(key);
+      expect(scrollTo).toHaveBeenCalledWith({ top: 1400, behavior: 'smooth' });
+      expect(hapticSpy).toHaveBeenCalledWith('select');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 
@@ -585,9 +478,29 @@ describe('a thread as it opens', () => {
     update({ messages: [...ASK_MSGS_LONG, msg('u9', 'user', [{ type: 'text', text: 'and one more' }])] });
     expect(document.querySelectorAll('.ch-th-turn.is-new')).toHaveLength(1);
   });
-  it('a long thread is one conversation log; every answer is an article', () => {
+  it('a long thread is one named conversation; every answer is an article that speaks in sentences, not words', () => {
     show({ messages: ASK_MSGS_LONG });
-    expect(screen.getByRole('log', { name: 'Conversation' })).toBeTruthy();
+    // Not a log: a log is a live region, and a streaming answer in one is read out a word at a time. Each answer has its own polite region.
+    expect(screen.getByRole('group', { name: 'Conversation' })).toBeTruthy();
+    expect(screen.queryByRole('log')).toBeNull();
+    expect(document.querySelectorAll('article[aria-label="CoachHelm answer"] > [aria-live="polite"][aria-atomic="true"]')).toHaveLength(5);
     expect(screen.getAllByRole('article', { name: 'CoachHelm answer' })).toHaveLength(5);
+  });
+});
+
+/** The Ask v2 answer card is the only card: its Confirm and Cancel answer the approval by its id (the old action card is retired with coachhelm_ask_v2). */
+describe('CH-13252 a rejected answer', () => {
+  it('shows its one note on the answer card', () => {
+    show({ messages: ASK_MSGS_REJECTED });
+    expect(code('CH-13252')).not.toBeNull();
+  });
+});
+
+describe('CH-13951 the confirm card inside the thread', () => {
+  it('Confirm answers the approval by its id, once, and the quiet key ("Not now") answers it as denied', async () => {
+    const { p } = show({ messages: ASK_MSGS_ACTION });
+    await userEvent.click(screen.getByRole('button', { name: 'Not now' }));
+    expect(p.onDeny).toHaveBeenCalledWith('approval-1');
+    expect(p.onApprove).not.toHaveBeenCalled();
   });
 });

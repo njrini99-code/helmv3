@@ -7,14 +7,12 @@ vi.mock('../../data/stats-team', () => ({ loadTeamStats: vi.fn() }));
 vi.mock('../../data/stats-player', () => ({ loadPlayerProfile: vi.fn() }));
 vi.mock('../../data/coachhelm-player', () => ({ loadCoachPlayerScope: vi.fn(async () => ({ status: 'off' })) }));
 vi.mock('../../data/stats-reads', () => ({ loadStatsReads: vi.fn(async () => ({ status: 'ready', byLeg: {} })), readsForScope: vi.fn(() => ({ status: 'failed' })) }));
-vi.mock('../../gate', () => ({ statsRedesignEnabled: vi.fn() }));
 vi.mock('../../screens/stats/StatsTeam', () => ({ StatsTeam: function StatsTeam() { return null; } }));
 vi.mock('../../screens/stats/StatsPlayer', () => ({ StatsPlayer: function StatsPlayer() { return null; } }));
 
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { loadPlayerProfile } from '../../data/stats-player';
 import { loadTeamStats } from '../../data/stats-team';
-import { statsRedesignEnabled } from '../../gate';
 import { StatsPlayer } from '../../screens/stats/StatsPlayer';
 import { StatsTeam } from '../../screens/stats/StatsTeam';
 import { ClubhouseStatsRoute } from '../stats';
@@ -38,12 +36,8 @@ beforeEach(() => {
   vi.mocked(loadTeamStats).mockReset().mockResolvedValue({ teamName: 'T' } as never);
 });
 
-/** SHARED-11 and stats-home criteria 27 and 48, in both flag states: the route is what keeps team figures from a player. */
-describe.each([true, false])('the stats route with clubhouse_stats_redesign_v1 %s', (flag) => {
-  beforeEach(() => {
-    vi.mocked(statsRedesignEnabled).mockReturnValue(flag);
-  });
-
+/** SHARED-11 and stats-home criteria 27 and 48: the route is what keeps team figures from a player. */
+describe('the stats route', () => {
   it('a player naming a teammate in the address still reads only their own profile', async () => {
     asPlayer();
     const el = (await ClubhouseStatsRoute({ player: TEAMMATE })) as unknown as El;
@@ -67,28 +61,25 @@ describe.each([true, false])('the stats route with clubhouse_stats_redesign_v1 %
     expect(el.props.coachId).toBeNull();
   });
 
-  it('a coach with no player gets the team page, and the flag is what reaches it', async () => {
+  it("production’s ?area= reaches the screen: the player's and the team's, and never the loader", async () => {
+    asPlayer();
+    const mine = (await ClubhouseStatsRoute({ area: 'putting' })) as unknown as El;
+    expect(mine.props.initialArea).toBe('putting');
+    expect(JSON.stringify(vi.mocked(loadPlayerProfile).mock.calls[0]![0])).not.toContain('putting');
+    asCoach();
+    const team = (await ClubhouseStatsRoute({ area: 'game' })) as unknown as El;
+    expect(team.type).toBe(StatsTeam);
+    expect(team.props.initialArea).toBe('game');
+    vi.mocked(loadPlayerProfile).mockResolvedValue({ id: TEAMMATE } as never);
+    const theirs = (await ClubhouseStatsRoute({ player: TEAMMATE, area: 'standing' })) as unknown as El;
+    expect(theirs.type).toBe(StatsPlayer);
+    expect(theirs.props.initialArea).toBe('standing');
+  });
+
+  it('a coach with no player gets the team page', async () => {
     asCoach();
     const el = (await ClubhouseStatsRoute({})) as unknown as El;
     expect(el.type).toBe(StatsTeam);
-    expect(el.props.shs).toBe(flag);
     expect(vi.mocked(loadPlayerProfile)).not.toHaveBeenCalled();
-  });
-
-  it('asks the loaders for the redesign only when the flag is on', async () => {
-    asCoach();
-    await ClubhouseStatsRoute({});
-    const team = vi.mocked(loadTeamStats).mock.calls[0]![0] as { shs?: boolean };
-    asPlayer();
-    await ClubhouseStatsRoute({});
-    const player = vi.mocked(loadPlayerProfile).mock.calls[0]![0] as { shs?: boolean };
-    if (flag) {
-      expect(team.shs).toBe(true);
-      expect(player.shs).toBe(true);
-    } else {
-      // Off, the keys are absent: the loaders' calls are byte for byte main's.
-      expect('shs' in team).toBe(false);
-      expect('shs' in player).toBe(false);
-    }
   });
 });

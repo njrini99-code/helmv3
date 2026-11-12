@@ -189,3 +189,35 @@ CREATE OR REPLACE TRIGGER "golf_tref_touch" BEFORE UPDATE ON "public"."golf_tour
 CREATE OR REPLACE TRIGGER "golf_events_tournament_round_guard" BEFORE UPDATE OF "event_type", "team_id", "recurring", "recurrence_rule", "parent_event_id", "status", "title", "location", "course_id" ON "public"."golf_events" FOR EACH ROW WHEN (("old"."event_type" = 'tournament'::"text")) EXECUTE FUNCTION "helm_private"."guard_tournament_round_event"();
 
 CREATE CONSTRAINT TRIGGER "golf_events_tournament_round_sync" AFTER UPDATE OF "start_time", "end_time", "all_day", "status" ON "public"."golf_events" DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN ((("new"."event_type" = 'tournament'::"text") AND (("old"."start_time" IS DISTINCT FROM "new"."start_time") OR ("old"."all_day" IS DISTINCT FROM "new"."all_day") OR (("old"."status" = 'cancelled'::"text") AND ("new"."status" IS DISTINCT FROM 'cancelled'::"text"))))) EXECUTE FUNCTION "helm_private"."sync_tournament_round_from_event"();
+
+-- Messages privacy fixes (HELD 20261107090000 / 20261107090100): identity guards, client sessions only
+CREATE OR REPLACE TRIGGER "golf_participants_identity_guard" BEFORE UPDATE ON "public"."golf_conversation_participants" FOR EACH ROW WHEN ((("old"."id" IS DISTINCT FROM "new"."id") OR ("old"."conversation_id" IS DISTINCT FROM "new"."conversation_id") OR ("old"."user_id" IS DISTINCT FROM "new"."user_id") OR ("old"."joined_at" IS DISTINCT FROM "new"."joined_at"))) EXECUTE FUNCTION "public"."golf_participants_identity_guard"();
+
+-- Messages privacy fixes (HELD 20261107090000): a new participant row starts from the defaults, client sessions only
+CREATE OR REPLACE TRIGGER "golf_participants_insert_guard" BEFORE INSERT ON "public"."golf_conversation_participants" FOR EACH ROW EXECUTE FUNCTION "public"."golf_participants_insert_guard"();
+
+CREATE OR REPLACE TRIGGER "golf_conversations_identity_guard" BEFORE UPDATE ON "public"."golf_conversations" FOR EACH ROW WHEN ((("old"."id" IS DISTINCT FROM "new"."id") OR ("old"."created_by" IS DISTINCT FROM "new"."created_by") OR ("old"."team_id" IS DISTINCT FROM "new"."team_id") OR ("old"."is_team_chat" IS DISTINCT FROM "new"."is_team_chat") OR ("old"."is_team_channel" IS DISTINCT FROM "new"."is_team_channel") OR ("old"."created_at" IS DISTINCT FROM "new"."created_at"))) EXECUTE FUNCTION "public"."golf_conversations_identity_guard"();
+
+CREATE OR REPLACE TRIGGER "golf_messages_identity_guard" BEFORE UPDATE ON "public"."golf_messages" FOR EACH ROW WHEN ((("old"."id" IS DISTINCT FROM "new"."id") OR ("old"."conversation_id" IS DISTINCT FROM "new"."conversation_id") OR ("old"."sender_id" IS DISTINCT FROM "new"."sender_id") OR ("old"."created_at" IS DISTINCT FROM "new"."created_at") OR ("old"."kind" IS DISTINCT FROM "new"."kind") OR ("old"."reply_to_id" IS DISTINCT FROM "new"."reply_to_id"))) EXECUTE FUNCTION "public"."golf_messages_identity_guard"();
+
+-- Team channel auto-join (HELD 20261110090200)
+CREATE OR REPLACE TRIGGER "golf_team_members_join_team_channel" AFTER INSERT OR UPDATE OF "status" ON "public"."golf_team_members" FOR EACH ROW WHEN (("new"."status" = 'active'::"public"."team_member_status")) EXECUTE FUNCTION "helm_private"."golf_team_channel_join_member"();
+
+CREATE OR REPLACE TRIGGER "golf_team_coach_staff_join_team_channel" AFTER INSERT ON "public"."golf_team_coach_staff" FOR EACH ROW EXECUTE FUNCTION "helm_private"."golf_team_channel_join_staff"();
+
+-- Leaving a team (HELD 20261110090400): out of the team's channel and team chats when the last role on the team ends
+CREATE OR REPLACE TRIGGER "golf_team_members_leave_team_chats" AFTER UPDATE OF "status" ON "public"."golf_team_members" FOR EACH ROW WHEN ((("old"."status" = 'active'::"public"."team_member_status") AND ("new"."status" IS DISTINCT FROM 'active'::"public"."team_member_status"))) EXECUTE FUNCTION "helm_private"."golf_team_chats_leave_member"();
+
+CREATE OR REPLACE TRIGGER "golf_team_members_delete_leave_team_chats" AFTER DELETE ON "public"."golf_team_members" FOR EACH ROW EXECUTE FUNCTION "helm_private"."golf_team_chats_leave_member"();
+
+-- Coach roster writes (HELD 20261110090700): identity guards on the roster and on join requests, client sessions only
+CREATE OR REPLACE TRIGGER "golf_team_join_requests_identity_guard" BEFORE UPDATE ON "public"."golf_team_join_requests" FOR EACH ROW WHEN ((("old"."id" IS DISTINCT FROM "new"."id") OR ("old"."team_id" IS DISTINCT FROM "new"."team_id") OR ("old"."player_id" IS DISTINCT FROM "new"."player_id") OR (("new"."status" = 'pending'::"text") AND ("old"."status" IS DISTINCT FROM 'pending'::"text")))) EXECUTE FUNCTION "public"."golf_team_join_requests_identity_guard"();
+
+CREATE OR REPLACE TRIGGER "golf_team_members_identity_guard" BEFORE UPDATE ON "public"."golf_team_members" FOR EACH ROW WHEN ((("old"."id" IS DISTINCT FROM "new"."id") OR ("old"."team_id" IS DISTINCT FROM "new"."team_id") OR ("old"."player_id" IS DISTINCT FROM "new"."player_id"))) EXECUTE FUNCTION "public"."golf_team_members_identity_guard"();
+
+CREATE OR REPLACE TRIGGER "golf_team_coach_staff_leave_team_chats" AFTER DELETE ON "public"."golf_team_coach_staff" FOR EACH ROW EXECUTE FUNCTION "helm_private"."golf_team_chats_leave_staff"();
+
+-- Messages v2 package M, M5 (HELD 20261031150000): leaving or hiding a conversation unpins it
+CREATE OR REPLACE TRIGGER "golf_participants_unpin_on_leave" AFTER DELETE ON "public"."golf_conversation_participants" FOR EACH ROW EXECUTE FUNCTION "helm_private"."golf_unpin_on_participant_change"();
+
+CREATE OR REPLACE TRIGGER "golf_participants_unpin_on_hide" AFTER UPDATE OF "hidden_at" ON "public"."golf_conversation_participants" FOR EACH ROW WHEN ((("new"."hidden_at" IS NOT NULL) AND ("old"."hidden_at" IS NULL))) EXECUTE FUNCTION "helm_private"."golf_unpin_on_participant_change"();

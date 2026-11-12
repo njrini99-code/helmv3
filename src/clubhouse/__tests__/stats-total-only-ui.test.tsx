@@ -14,8 +14,6 @@ vi.mock('../lib/track', () => ({ chReport: vi.fn(), chTrail: vi.fn(), chTagSessi
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }), useSearchParams: () => new URLSearchParams(), usePathname: () => '/golf/dashboard/stats' }));
 vi.mock('../lib/track-server', () => ({ chLogServer: vi.fn() }));
 vi.mock('@/app/golf/actions/development', () => ({ createFocusArea: vi.fn(), acceptFocusArea: vi.fn(), declineFocusArea: vi.fn() }));
-
-import { filterFor } from '../data/stats-filter';
 import type { ChPlayerProfile } from '../data/stats-player';
 import type { ChTeamStats } from '../data/stats-team';
 import { StatsPlayer } from '../screens/stats/StatsPlayer';
@@ -58,7 +56,7 @@ afterEach(() => cleanup());
 
 describe('Player stats · desktop', () => {
   it('Overview: the zones say how many rounds the hole stats read, and that the scoring average counts all of them, when some are totals', () => {
-    shell(<StatsPlayer data={player({ rounds: 5, effRounds: 5, holeRounds: 3 }, { holeRounds: 3 })} coachId="c1" />);
+    shell(<StatsPlayer layout="tabs" data={player({ rounds: 5, effRounds: 5, holeRounds: 3 }, { holeRounds: 3 })} coachId="c1" />);
     const note = document.querySelector('.ch-zns__note')!.textContent!;
     expect(note.startsWith(COVERAGE)).toBe(true);
     // The scoring average is a score: it counts all five.
@@ -66,18 +64,18 @@ describe('Player stats · desktop', () => {
   });
 
   it('Overview: the table against the team or the Tour says it too, and that the scoring rows read every round', () => {
-    shell(<StatsPlayer data={player({ rounds: 5, effRounds: 5, holeRounds: 3 }, { holeRounds: 3 })} coachId="c1" />);
+    shell(<StatsPlayer layout="tabs" data={player({ rounds: 5, effRounds: 5, holeRounds: 3 }, { holeRounds: 3 })} coachId="c1" />);
     expect(screen.getByText(/^Hole stats from 3 of 5 rounds; the scoring average and the pressure gap read all 5\. /)).toBeTruthy();
   });
 
   it('Overview: with every round holed there is no coverage line', () => {
-    shell(<StatsPlayer data={player({ rounds: 10, effRounds: 10, holeRounds: 10 }, { holeRounds: 10 })} coachId="c1" />);
+    shell(<StatsPlayer layout="tabs" data={player({ rounds: 10, effRounds: 10, holeRounds: 10 }, { holeRounds: 10 })} coachId="c1" />);
     expect(document.querySelector('.ch-zns__note')).toBeNull();
     expect(screen.queryByText(/Hole stats from/)).toBeNull();
   });
 
   it('Game detail: every section says the hole stats come from 3 of the 5 rounds, the rest posted as a total only', async () => {
-    shell(<StatsPlayer data={player({ rounds: 5, effRounds: 5, holeRounds: 3 }, { holeRounds: 3 })} coachId="c1" />);
+    shell(<StatsPlayer layout="tabs" data={player({ rounds: 5, effRounds: 5, holeRounds: 3 }, { holeRounds: 3 })} coachId="c1" />);
     await openTab(/Game detail/);
     const rules = [...document.querySelectorAll('.ch-gx-rule')].map((r) => r.textContent ?? '');
     expect(rules.filter((r) => r.includes(`${COVERAGE}, the rest posted as a total only`)).length).toBeGreaterThanOrEqual(5);
@@ -86,20 +84,20 @@ describe('Player stats · desktop', () => {
   });
 
   it('Game detail: a window with every round holed says nothing of coverage', async () => {
-    shell(<StatsPlayer data={player({ rounds: 10, effRounds: 10, holeRounds: 10 }, { holeRounds: 10 })} coachId="c1" />);
+    shell(<StatsPlayer layout="tabs" data={player({ rounds: 10, effRounds: 10, holeRounds: 10 }, { holeRounds: 10 })} coachId="c1" />);
     await openTab(/Game detail/);
     expect([...document.querySelectorAll('.ch-gx-rule')].some((r) => (r.textContent ?? '').includes('Hole stats from'))).toBe(false);
   });
 
   it('Rounds tab: the comparison with the ten before says how many rounds greens, fairways and putts read', async () => {
     const compare = { ...PREVIEW_PLAYER.extra.compare!, lastRounds: 10, previousRounds: 8, lastHoleRounds: 8, previousHoleRounds: 8 };
-    shell(<StatsPlayer data={player({}, { compare })} coachId="c1" />);
+    shell(<StatsPlayer layout="tabs" data={player({}, { compare })} coachId="c1" />);
     await openTab(/^Rounds/);
     expect(screen.getByText('Greens, fairways and putts: hole stats from 8 of 10 latest rounds and 8 of 8 before them.')).toBeTruthy();
   });
 
   it('Rounds tab: no line when every round has its holes', async () => {
-    shell(<StatsPlayer data={player({}, {})} coachId="c1" />);
+    shell(<StatsPlayer layout="tabs" data={player({}, {})} coachId="c1" />);
     await openTab(/^Rounds/);
     expect(screen.queryByText(/hole stats from/)).toBeNull();
   });
@@ -112,16 +110,6 @@ describe('Team stats · phone', () => {
   });
   afterEach(() => {
     window.matchMedia = real;
-  });
-
-  it('says under the figures how many of the window’s rounds the hole stats read', () => {
-    shell(
-      <>
-        <SlotHost />
-        <StatsTeam data={team({ filter: filterFor('season'), window: 'season', roundCount: 5, holeRoundCount: 3 })} />
-      </>,
-    );
-    expect(screen.getByText(COVERAGE)).toBeTruthy();
   });
 
   it('says nothing when every round has its holes, or when the loader did not say', () => {

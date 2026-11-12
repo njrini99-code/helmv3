@@ -1170,9 +1170,16 @@ features:
         - supabase/migrations/20261021100000_golf_player_hub_rpcs_staff_gate.sql
         - supabase/migrations/20261105090000_golf_player_hub_events_class_rows.sql
         - supabase/migrations/20261105100000_golf_players_coach_reads_inactive_members.sql
+        # Messaging security (held, PR #2498). The name carries none of
+        # "messag", "conversation" or "chat_": the participants column grants.
+        - supabase/migrations/20261107090000_golf_participants_column_grants.sql
         # Polls in Messages (held): the vote guard and the payload freeze carry
         # "poll" but not "messag" in their names.
         - supabase/migrations/*golf_poll_*.sql
+        # Messages v2 (held M1-M4): neither "messag" nor "conversation" in these names.
+        - supabase/migrations/20261107090000_golf_participants_column_grants.sql
+        - supabase/migrations/20261107090300_golf_typing_private_topic.sql
+        - supabase/migrations/20261107090400_golf_player_next_class.sql
       tests:
         - e2e/messages.spec.ts
         - src/clubhouse/__tests__/messages*.test.*
@@ -1230,7 +1237,7 @@ features:
         - src/app/golf/(dashboard)/dashboard/documents/**
         - src/app/golf/(dashboard)/dashboard/travel/**
         - src/app/golf/(dashboard)/dashboard/team-hub/**
-        - src/app/golf/(dashboard)/dashboard/practice/plan/**
+        - src/app/golf/(dashboard)/dashboard/practice/**
       components:
         - src/components/fairway/pages/tasks/**
         - src/components/golf/documents/**
@@ -1238,6 +1245,7 @@ features:
         - src/components/fairway/pages/team-hub/**
         - src/clubhouse/screens/home/**
         - src/clubhouse/screens/hub/**
+        - src/clubhouse/screens/practice/**
       api:
         - src/components/fairway/pages/documents/**
       actions:
@@ -1257,6 +1265,7 @@ features:
         - src/clubhouse/data/home.ts
         - src/clubhouse/data/player-home.ts
         - src/clubhouse/data/practice-plan.ts
+        - src/clubhouse/data/practice-home.ts
         - src/lib/golf/practice-*.ts
       db:
         - supabase/migrations/*task*.sql

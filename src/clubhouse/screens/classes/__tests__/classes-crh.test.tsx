@@ -47,9 +47,15 @@ describe('TodayCard', () => {
     expect(screen.getByText('Next: Monday, Nov 9')).toBeTruthy();
     expect(container.querySelector('.ch-cl-ribbon')).not.toBeNull();
   });
-  it('draws rows alone on a class day, the time one node', () => {
+  it('a class day draws the day strip too (how many, when the first starts, where they fall from 7 to 5), then the rows, the time one node', () => {
     const { container } = render(<TodayCard classes={[cls('a')]} term={TERM} todayIso="2026-11-02" week={WEEK} onOpen={() => {}} />);
-    expect(container.querySelector('.ch-cl-ribbon')).toBeNull();
+    const strip = container.querySelector('.ch-cl-today2')!;
+    expect(strip.querySelector('.ch-cl-today2__h b')?.textContent).toBe('1 class today');
+    expect(strip.querySelector('.ch-cl-today2__h span')?.textContent).toMatch(/^First at /);
+    // Today's own day on the ribbon, one block for the one class; it is not the "no classes" state.
+    expect(strip.querySelectorAll('.ch-cl-ribbon > i')).toHaveLength(1);
+    expect(strip.getAttribute('data-ch-code')).toBeNull();
+    expect(container.textContent).not.toMatch(/No classes today/);
     expect(container.querySelectorAll('.ch-cl-tr__t b.ch-num')).toHaveLength(1);
   });
 });

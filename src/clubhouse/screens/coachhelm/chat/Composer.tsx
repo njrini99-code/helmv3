@@ -74,6 +74,8 @@ export function useRefuseOffline(): () => boolean {
 }
 
 export interface AskComposerProps {
+  /** Ask v2's scope chips (E-COMP): what the next answer will read, from the words so far. None: no chips. */
+  scopeOf?: (text: string) => string[];
   /** Ask v2's `/` list (ask 05). A pick fills the box. */
   slash?: readonly ChAskSlash[];
   /** `hero`: the new chat's big box with its Players and date chips. `dock`: the one-line box at the foot of a thread. */
@@ -82,17 +84,23 @@ export interface AskComposerProps {
   players: ChAskPlayer[];
   /** Ask v2's home line, one line on a phone (E-HOME). */
   hint?: string;
+  /** A task card waits for the coach. The box stays open (a new question sets the card aside) and its hint says so. */
+  waiting?: boolean;
   /** A reply is on its way: Send becomes Stop. */
   busy: boolean;
   /** The last send failed: its text comes back into the box (once, and only into an empty box). */
   failed: boolean;
   /** An action card is waiting for Confirm or Cancel: a new question can't go over it (PR #2105 fixes that on the server). */
   blocked: boolean;
+  /** A player out of Ask: the box stays, says why and takes nothing (E-OUT). */
+  paused?: string;
   onSend: (text: string) => void;
   onStop: () => void;
   autoFocus?: boolean;
   /** A new chat (no messages yet): the box invites a first question, whatever its shape (the phone's new chat is the one-row box). */
   fresh?: boolean;
+  /** "Ask about this" from another page (`?q=`): the question waits in the box, unsent. */
+  seed?: string | null;
   /** Who and which chat the unsent text belongs to ("coach:chat"), so it comes back when the coach returns to this page; none, none kept. */
   draftKey?: string | null;
   /**
@@ -162,11 +170,15 @@ function usePickerRoom(anchor: RefObject<HTMLElement | null>, open: boolean, bel
  *  - Offline, Send is refused before anything is sent: an error toast (CH-1903) and the text stays.
  *  - A send that failed puts its text back (once, into an empty box); a card awaiting a decision disables Send.
  */
-export function AskComposer({ variant, phone, players, busy, failed, blocked, onSend, onStop, autoFocus, fresh = false, draftKey = null, roster = true, hint, slash = [] }: AskComposerProps) {
+export function AskComposer({ seed, scopeOf, variant, phone, players, busy, failed, blocked, paused, onSend, onStop, autoFocus, fresh = false, draftKey = null, roster = true, hint, waiting = false, slash = [] }: AskComposerProps) {
   const refuseOffline = useRefuseOffline();
   const finePointer = useFinePointer();
   const hero = variant === 'hero';
-  const [value, setValue] = useAskDraft(draftKey);
+  const [value, setValue, clearDraft] = useAskDraft(draftKey);
+  useEffect(() => {
+    if (seed) setValue(seed);
+    // Mount only: it is a starting point, not a value to hold on to.
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [range, setRange] = useState<ChAskRange | null>(null);
   const [dismissed, setDismissed] = useState(false);
   const [pickIds, setPickIds] = useState<PickerIds>({});
@@ -267,12 +279,13 @@ export function AskComposer({ variant, phone, players, busy, failed, blocked, on
 
   const submit = () => {
     const typed = value.trim();
-    if (!typed || busy || blocked) return;
+    if (!typed || busy || blocked || paused) return;
     if (refuseOffline()) return;
     last.current = { text: typed, range };
     haptic('press');
     onSend(withRangeClause(typed, range));
     setValue('');
+    clearDraft();
     setRange(null);
     setDismissed(false);
     opened.current = null;
@@ -338,20 +351,26 @@ export function AskComposer({ variant, phone, players, busy, failed, blocked, on
       opened.current = null;
       return;
     }
-    if (e.key === 'Enter' && !e.shiftKey && finePointer) {
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       submit();
     }
   };
 
-  const canSend = value.trim().length > 0 && !blocked;
+  const canSend = value.trim().length > 0 && !blocked && !paused;
+  // The key's return motion (the square leaving, the arrow coming back) belongs to a turn that ran in this visit, never to first paint.
+  const [hasRun, setHasRun] = useState(false);
+  if (busy && !hasRun) setHasRun(true);
+  // The phone's scope line already says it until the coach types; a chip only earns its row there once the words change the scope.
+  const scopeChips = scopeOf && (!phone || value.trim()) ? scopeOf(value) : [];
   const first = hero || fresh;
-  const placeholder = first && hint ? hint : first ? (phone ? 'Ask about a player, a stat, or the week' : 'Ask about a player, a stat, or the week ahead') : 'Ask a follow-up';
+  const placeholder = paused ? paused : waiting ? 'Ask, or answer the card' : first && hint ? hint : first ? (phone ? 'Ask about a player, a stat, or the week' : 'Ask about a player, a stat, or the week ahead') : 'Ask a follow-up';
 
   const plus = (
     <Menu
       label="Add to your question"
       align="start"
+      keepFocus
       items={ASK_STARTERS.map((s) => ({
         label: s.label,
         onSelect: () => {
@@ -373,16 +392,25 @@ export function AskComposer({ variant, phone, players, busy, failed, blocked, on
     />
   );
 
-  const send = busy ? (
+  // One key, in one place, whose meaning changes in the frame of the tap (MOTION MO-3-3, MO-3-6): the arrow leaves upward, the
+  // ink disc and the stop square come up under it; when the turn ends the square goes and the arrow comes back from below.
+  const send = (
     <Tooltip>
-      <button type="button" className="ch-ask-cmp__send is-stop" aria-label="Stop generating" data-ch-code="CH-13421" onClick={onStop}>
-        <Icon icon={Square} size={14} />
-      </button>
-    </Tooltip>
-  ) : (
-    <Tooltip>
-      <button type="button" className="ch-ask-cmp__send" aria-label="Send" disabled={!canSend} onClick={submit}>
-        <Icon icon={ArrowUp} size={18} />
+      <button
+        type="button"
+        className={'ch-ask-cmp__send' + (busy ? ' is-stop' : '') + (hasRun ? ' has-run' : '')}
+        aria-label={busy ? 'Stop generating' : 'Send'}
+        data-ch-code={busy ? 'CH-13421' : undefined}
+        disabled={!busy && !canSend}
+        onClick={busy ? onStop : submit}
+      >
+        <span className="ink" aria-hidden="true" />
+        <span className="g g-send" aria-hidden="true">
+          <Icon icon={ArrowUp} size={18} />
+        </span>
+        <span className="g g-stop" aria-hidden="true">
+          <Icon icon={Square} size={14} />
+        </span>
       </button>
     </Tooltip>
   );
@@ -396,6 +424,13 @@ export function AskComposer({ variant, phone, players, busy, failed, blocked, on
   return (
     <div className={'ch-ask-cmp is-' + variant + (phone ? ' is-phone' : '')}>
       <div className="ch-ask-cmp__box" ref={frame}>
+        {scopeChips.length > 0 && (
+          <div className="ch-ak-cscope" role="group" aria-label="What the next answer reads">
+            {scopeChips.map((c) => (
+              <span key={c}>{c}</span>
+            ))}
+          </div>
+        )}
         <label className="ch-ask-cmp__label" htmlFor={`${listId}-ta`}>
           {first ? 'Ask CoachHelm' : 'Reply to CoachHelm'}
         </label>
@@ -405,6 +440,7 @@ export function AskComposer({ variant, phone, players, busy, failed, blocked, on
           className="ch-ask-cmp__ta"
           rows={hero && !phone ? 2 : 1}
           value={value}
+          disabled={!!paused}
           placeholder={placeholder}
           enterKeyHint="send"
           autoComplete="off"

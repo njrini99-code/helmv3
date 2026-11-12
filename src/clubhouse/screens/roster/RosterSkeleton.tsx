@@ -1,21 +1,20 @@
 'use client';
 
 import { SkelLine, Skeleton } from '../../ui/States';
+import { LargeTitle } from '../../ui/LargeTitle';
 import { useClubhouseRole } from '../../shell/context';
-import '../../styles/roster.css';
-import { LargeTitleSkeleton } from '../../ui/LargeTitle';
 
 /**
  * Route loading for Roster: header with its two actions, where the team sits, the toolbar and six face cards in their
  * final slots; on a phone, the list's rows (switched in CSS, since this renders on the server). Join requests and Needs a
  * look are drawn only when there are some, so the skeleton leaves them out and they push the grid down when they come.
  */
-export function RosterSkeleton({ crh = false }: { /** `clubhouse_classes_roster_home_v1`, from the server. */ crh?: boolean }) {
+export function RosterSkeleton() {
   // The coach's desktop page in the lane is its own shape (Roster.tsx); a player's keeps the face cards.
   const role = useClubhouseRole();
-  const coachCrh = crh && role !== 'player';
+  const coachCrh = role !== 'player';
   return (
-    <main className={'ch-rs' + (crh ? ' ch-rsx' : '') + (coachCrh ? ' ch-rsd' : '')} data-canopy={coachCrh ? undefined : ''} aria-busy="true" aria-label="Loading roster" data-ch-code="CH-3401" data-ch-crh={crh ? 'on' : undefined}>
+    <main className={'ch-rs' + ' ch-rsx' + (coachCrh ? ' ch-rsd' : '')} data-canopy={coachCrh ? undefined : ''} aria-busy="true" aria-label="Loading roster" data-ch-code="CH-3401" data-ch-crh="on">
       {coachCrh ? <RosterDeskSkeletonCrh /> : <div className="ch-rs-skel-desk">
         <header className="ch-rs-head" data-canopy-head="tight" data-canopy-tight-always="">
           <div>
@@ -56,34 +55,7 @@ export function RosterSkeleton({ crh = false }: { /** `clubhouse_classes_roster_
         </div>
       </div>}
       {/* The phone page's own classes, so the eyebrow, the title, the sort and each row land where the loaded page puts them. */}
-      {crh ? <RosterPhoneSkeletonCrh /> : <div className="ch-rsm-skel ch-rsm-page">
-        <div className="ch-rsm-head">
-          <Skeleton width={124} height={14.4} />
-          <LargeTitleSkeleton width={128} />
-        </div>
-        <div className="ch-rsm-sort">
-          <Skeleton width={48} height={14} />
-          <Skeleton width={156} height={40} radius={12} />
-        </div>
-        <ul className="ch-rsm-list" aria-hidden="true">
-          {Array.from({ length: 7 }, (_, i) => (
-            <li key={i}>
-              <div className="ch-rsm-row ch-rsm-row--static">
-                <Skeleton width={36} height={36} radius={18} />
-                <span className="ch-rsm-row__b">
-                  <Skeleton width={130} height={16} />
-                  <Skeleton width={110} height={12} />
-                </span>
-                <span className="ch-rsm-row__v">
-                  <Skeleton width={38} height={17} />
-                  <Skeleton width={48} height={12} />
-                </span>
-                <span className="ch-rsm-row__chev" />
-              </div>
-            </li>
-          ))}
-        </ul>
-      </div>}
+      <RosterPhoneSkeletonCrh />
     </main>
   );
 }
@@ -152,8 +124,9 @@ function RosterDeskSkeletonCrh() {
 function RosterPhoneSkeletonCrh() {
   return (
     <div className="ch-rsm-skel ch-rsm-page">
-      <div className="ch-rsm-head">
-        <LargeTitleSkeleton width={128} />
+      {/* What is already known stays: the title is the real word, and the list is named. Only the figures wait. */}
+      <div className="ch-rsm-head" aria-hidden="true">
+        <LargeTitle as="p" hidden>Roster</LargeTitle>
         <Skeleton width={150} height={15} />
       </div>
       <div className="ch-rs-tcard ch-rs-tcard--skel" aria-hidden="true">
@@ -162,8 +135,15 @@ function RosterPhoneSkeletonCrh() {
         <Skeleton width="100%" height={10} />
         <Skeleton width="70%" height={12} />
       </div>
-      <div className="ch-rsx-sec">
+      {/* The sort, at its loaded height, then the Active card under its title. */}
+      <div className="ch-rsx-sort ch-rsx-sort--skel" aria-hidden="true">
+        <Skeleton width="100%" height={44} radius={12} />
+      </div>
+      <div className="ch-rsx-sec is-tight">
         <div className="ch-surface ch-surface--card" aria-hidden="true">
+          <div className="ch-surface__head">
+            <h2 className="ch-surface__title">Active</h2>
+          </div>
           {Array.from({ length: 6 }, (_, i) => (
             <div key={i} className="ch-group__row" data-two-line="">
               <Skeleton width={32} height={32} radius={16} />

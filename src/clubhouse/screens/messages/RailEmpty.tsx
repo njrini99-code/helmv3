@@ -1,42 +1,25 @@
-import { Button } from '../../ui/Button';
-import { EmptyState } from '../../ui/States';
-import type { ChConvFilter } from './model';
+import { type ChConvFilter, nothingHere } from './inbox/model';
 
 /**
- * The conversation list with nothing to list (CH-7302), told by why. A search that matches no name or an unread filter
- * with nothing unread is a filter hiding rows, so it names the filter and offers the one way out. Groups with no group
- * is the list not having begun, so it only says so (wave 5 #12: never "caught up"). With a search it speaks of names
- * only, since message hits may still follow below (wave 5 #11).
+ * The conversation list with nothing to list (CH-7302, MSG-108): the card the artifact draws, a "Nothing here" header and
+ * one line of why, in the Recent card's place. It names the filter and never says "caught up" (wave 5 #12). A search that
+ * lists nothing is not told here, since message hits may still follow below; they say it (message-hits.tsx).
+ * `card`: the phone's card. `flat`: the desktop rail's label over the same line.
  */
-export function RailEmpty({ filter, q, onClearSearch, onShowAll }: { filter: ChConvFilter; q: string; onClearSearch: () => void; onShowAll: () => void }) {
-  if (q.trim()) {
+export function RailEmpty({ filter, q = '', layout }: { filter: ChConvFilter; q?: string; layout: 'card' | 'flat' }) {
+  const line = <p className="ch-inb-note">{nothingHere(filter, q)}</p>;
+  if (layout === 'card') {
     return (
-      <EmptyState
-        compact
-        kind="filtered"
-        code="CH-7302"
-        title="No conversation names match"
-        action={
-          <Button size="sm" onClick={onClearSearch}>
-            Clear search
-          </Button>
-        }
-      />
+      <section className="ch-msv-card" aria-label="Nothing here" data-ch-code="CH-7302">
+        <h2 className="ch-msv-card__h">Nothing here</h2>
+        {line}
+      </section>
     );
   }
-  if (filter === 'groups') return <EmptyState compact code="CH-7302" title="No group conversations yet" />;
   return (
-    <EmptyState
-      compact
-      kind="filtered"
-      code="CH-7302"
-      title="Nothing unread"
-      body="You’re caught up."
-      action={
-        <Button size="sm" onClick={onShowAll}>
-          Show all
-        </Button>
-      }
-    />
+    <section className="ch-ms-sec" aria-label="Nothing here" data-ch-code="CH-7302">
+      <div className="ch-ms-sec__l">Nothing here</div>
+      {line}
+    </section>
   );
 }

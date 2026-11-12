@@ -12,6 +12,7 @@ export function PlanIntake({ brief, onSend }: { brief: AskBriefData; onSend: (li
   const [picks, setPicks] = useState<Record<string, string[]>>(() => Object.fromEntries(brief.questions.map((q) => [q.id, (q as { pick?: string[] }).pick ?? []])));
   const [done, setDone] = useState(false);
   const ready = brief.questions.every((q) => (picks[q.id] ?? []).length > 0);
+  // PB-FLD-01: on press the card becomes the coach's own bubble (the line it sends), so nothing stays here.
   if (done) return null;
   return (
     <div className="ch-cpv" data-ch="plan-intake">

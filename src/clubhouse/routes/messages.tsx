@@ -1,4 +1,3 @@
-import { isFlagEnabled } from '@/lib/flags/is-enabled';
 import 'server-only';
 import { getAnnouncementsWithMeta } from '@/app/golf/actions/announcements';
 import { canHideGolfConversations } from '@/app/golf/actions/conversation-hide';
@@ -12,6 +11,8 @@ import { MessagesNoTeam } from '../screens/messages/MessagesNoTeam';
 import { chLogServer } from '../lib/track-server';
 import { resolveClubhouseTeam } from './team';
 import '../styles/messages.css';
+import '../styles/messages-thread.css';
+import '../styles/messages-inbox.css';
 
 /**
  * /golf/dashboard/messages in Clubhouse, for coaches and players. The thread
@@ -25,11 +26,10 @@ export async function ClubhouseMessagesRoute() {
   if (!session) return null;
   const team = await resolveClubhouseTeam(session);
   if (!team) {
-    return <MessagesNoTeam coach={pickGolfDashboardRole(session) === 'coach'} redesign={isFlagEnabled('golf_messages_redesign_v1')} />;
+    return <MessagesNoTeam coach={pickGolfDashboardRole(session) === 'coach'} />;
   }
   const viewerName = session.coach?.full_name ?? ([session.player?.first_name, session.player?.last_name].filter(Boolean).join(' ') || 'You');
   const viewerPlayerId = team.role === 'player' ? team.playerId : null;
-  const redesign = isFlagEnabled('golf_messages_redesign_v1');
   const [data, canHide, anns, activeIds] = await Promise.all([
     loadMessagesDirectory({ role: team.role, teamId: team.teamId, viewerUserId: session.userId, viewerName, viewerPlayerId }),
     // Failed, it is left out and the inbox asks for it itself once it lands (Messages), rather than hiding Delete.
@@ -48,5 +48,5 @@ export async function ClubhouseMessagesRoute() {
     }),
   ]);
   const announcements = anns?.success && anns.data ? anns.data.map(toChAnnouncement) : null;
-  return <Messages data={{ ...data, redesign, ...(canHide === undefined ? {} : { canHide }), ...(activeIds === undefined ? {} : { activeConversationIds: activeIds }), announcements }} />;
+  return <Messages data={{ ...data, ...(canHide === undefined ? {} : { canHide }), ...(activeIds === undefined ? {} : { activeConversationIds: activeIds }), announcements }} />;
 }

@@ -998,17 +998,18 @@ export function tourFixture(state: ChTourPreviewState): ChTourFixture {
     history.splits = [];
   }
 
+  const roundEventOf = (e: string, n: number) => complete.find((x) => x.id === e)?.rounds.find((r) => r.number === n)?.roundEventId ?? `${e}-r${n}`;
   const links: ChTourLinksData = {
     now,
     players: PLAYERS,
     candidates: empty
       ? []
       : [
-          { roundId: 'g-eli-0923', playerId: 'eli', date: '2026-09-23', courseName: 'Dogwood Lakes', score: 72, toPar: 0, suggestion: { eventId: 'e32', roundNumber: 3, confidence: 'high' } },
-          { roundId: 'g-priya-1006', playerId: 'priya', date: '2026-10-06', courseName: null, score: 74, toPar: 2, suggestion: { eventId: 'e33', roundNumber: 2, confidence: 'medium' } },
-          { roundId: 'g-theo-1008', playerId: 'theo', date: '2026-10-08', courseName: 'Oakmont CC', score: 70, toPar: -2, suggestion: { eventId: 'e33', roundNumber: 3, confidence: 'low' } },
+          { roundId: 'g-eli-0923', playerId: 'eli', date: '2026-09-23', courseName: 'Dogwood Lakes', score: 72, toPar: 0, suggestion: { eventId: 'e32', roundEventId: roundEventOf('e32', 3), roundNumber: 3, confidence: 'high' } },
+          { roundId: 'g-priya-1006', playerId: 'priya', date: '2026-10-06', courseName: null, score: 74, toPar: 2, suggestion: { eventId: 'e33', roundEventId: roundEventOf('e33', 2), roundNumber: 2, confidence: 'medium' } },
+          { roundId: 'g-theo-1008', playerId: 'theo', date: '2026-10-08', courseName: 'Oakmont CC', score: 70, toPar: -2, suggestion: { eventId: 'e33', roundEventId: roundEventOf('e33', 3), roundNumber: 3, confidence: 'low' } },
         ],
-    events: complete.map((e) => ({ id: e.id, name: e.name, rounds: e.rounds.map((r) => ({ number: r.number, date: r.date, courseName: COURSES[r.courseId]?.name ?? '' })) })),
+    events: complete.map((e) => ({ id: e.id, name: e.name, rounds: e.rounds.map((r) => ({ number: r.number, roundEventId: r.roundEventId, date: r.date, courseName: COURSES[r.courseId]?.name ?? '' })) })),
     missing: empty ? [] : [{ eventId: 'e32', roundNumber: 3, playerId: 'eli' }],
     dismissed: empty ? 0 : 2,
     errors: partial ? { candidates: true } : {},
@@ -1067,6 +1068,7 @@ export function tourFixture(state: ChTourPreviewState): ChTourFixture {
     projection: null,
     projectionShort: [],
     lineup: empty ? { ...e34.lineup, status: 'none', set: 0 } : e34.lineup,
+    version: 3,
     qualifier: empty ? null : { id: 'q-pinehurst', name: 'Pinehurst qualifier' },
     errors: partial ? { qualifier: true } : {},
   };
@@ -1123,12 +1125,16 @@ export function tourFixture(state: ChTourPreviewState): ChTourFixture {
   const mineIn = (e: ChTourEvent) => {
     const rows = e.playerRounds.filter((p) => p.playerId === 'jonah');
     if (!rows.length) return null;
-    return { place: null, total: sum(rows.map((p) => p.total ?? 0)), counted: rows.filter((p) => p.count === 'counted').length, of: rows.length };
+    const scores = e.rounds.map((r) => {
+      const p = rows.find((x) => x.roundNumber === r.number);
+      return { number: r.number, total: p?.total ?? null, toPar: p?.toPar ?? null };
+    });
+    return { place: null, total: sum(rows.map((p) => p.total ?? 0)), toPar: sum(rows.map((p) => p.toPar ?? 0)), rounds: rows.length, scores };
   };
   const list = [...all]
     .filter((e) => e.seasonId === '2026-27')
     .sort((a, b) => (a.status === 'complete') === (b.status === 'complete') ? (a.status === 'complete' ? b.startDate.localeCompare(a.startDate) : a.startDate.localeCompare(b.startDate)) : a.status === 'complete' ? 1 : -1)
-    .map((e) => ({ eventId: e.id, name: e.name, startDate: e.startDate, endDate: e.endDate, courseName: COURSES[e.courseIds[0]!]?.name ?? '', status: e.status, mine: e.status === 'complete' ? mineIn(e) : null }));
+    .map((e) => ({ eventId: e.id, name: e.name, startDate: e.startDate, endDate: e.endDate, courseName: COURSES[e.courseIds[0]!]?.name ?? '', status: e.status, days: e.rounds.map((r) => ({ number: r.number, date: r.date, firstTeeAt: r.firstTeeAt })), mine: e.status === 'complete' ? mineIn(e) : null }));
   const seasonRounds = pool.filter((r) => r.playerId === 'jonah' && r.date >= '2026-08-01');
   const per18 = (ctx: ChTourCompareRound['context']) => {
     const rs = seasonRounds.filter((r) => r.context === ctx && r.holes === 18);
@@ -1175,12 +1181,23 @@ export function tourFixture(state: ChTourPreviewState): ChTourFixture {
                 firstView: false,
                 changedFrom: null,
                 lockedAt: e.lineup.locksAt,
+                counting: e.rounds.map((r) => ({
+                  roundNumber: r.number,
+                  state: (() => {
+                    const mine = e.playerRounds.find((p) => p.playerId === 'jonah' && p.roundNumber === r.number);
+                    return entry.role !== 'lineup' ? ('not_playing' as const) : mine && (r.status === 'final' || r.status === 'official') ? mine.count : ('pending' as const);
+                  })(),
+                })),
               }
             : null,
         trip: e.id === 'e34' && !partial ? PINEHURST_TRIP : null,
         results: e.status === 'complete' ? { visible: true, reason: null } : live && e.id === 'e34' ? { visible: false, reason: 'in_window' } : { visible: false, reason: 'not_final' },
         sharedNotes: e.id === 'e33' ? [{ label: 'Next block focus', text: 'Par 3 club selection: middle of the green, every time.', author: 'Maya Reyes', updatedAt: '2026-10-09T16:20:00-04:00' }] : [],
-        reflection: e.id === 'e33' ? { state: 'saved', went: 'Stopped aiming at flags on the par 3s on day two.', strokes: 'Two penalty strokes on 13 in round 1.', next: 'Commit to the safe side off the tee.', shot: '' } : null,
+        reflection: e.id === 'e33' ? { state: 'saved', body: 'Stopped aiming at flags on the par 3s on day two. Two penalty strokes on 13 in round 1. Next time: commit to the safe side off the tee.', updatedAt: '2026-10-09T18:00:00-04:00' } : { state: 'unwritten', body: '', updatedAt: null },
+        card:
+          live && e.id === 'e34' && entry?.role === 'lineup'
+            ? { roundEventId: e.rounds[0]!.roundEventId, roundNumber: e.rounds[0]!.number, date: e.rounds[0]!.date, holes: COURSES.pin!.holes.map((h, i) => ({ n: h.n, par: h.par, strokes: i < 5 ? h.par : null })) }
+            : null,
         moments: [],
         following: true,
       },

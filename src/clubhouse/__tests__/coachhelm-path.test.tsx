@@ -1,5 +1,5 @@
-import { LazyMotion, domAnimation } from 'motion/react';
-import { cleanup, render, screen, within } from '@testing-library/react';
+
+import { cleanup } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 /**
@@ -19,28 +19,10 @@ import type { InsightCause, InsightEvidence } from '@/lib/coachhelm/v2/insights/
 import { withoutPlaceholderCause } from '@/lib/coachhelm/reads/placeholder-cause';
 import { toChInsight } from '../data/coachhelm-map';
 import { NOT_TRACED_SHOT_BY_SHOT, pathLineFor, pathLineText } from '../data/coachhelm-path';
-import type { ChCoachHelmData } from '../data/coachhelm-shape';
-import { CoachBoard } from '../screens/coachhelm/CoachBoard';
-import { PlayerBoard } from '../screens/coachhelm/PlayerBoard';
-import { HELM_PLAYERS, penalties, PREVIEW_HELM_COACH, PREVIEW_TOUR, slope } from '../preview/fixtures-coachhelm';
-import { PREVIEW_HELM_COACH_FALLBACK, PREVIEW_HELM_COACH_NARROWING, PREVIEW_HELM_COACH_NO_READS, PREVIEW_HELM_COACH_PATH } from '../preview/fixtures-coachhelm-path';
-import { ToastProvider } from '../ui/Toast';
+import { HELM_PLAYERS, penalties, PREVIEW_TOUR, slope } from '../preview/fixtures-coachhelm';
+import { PREVIEW_HELM_COACH_FALLBACK, PREVIEW_HELM_COACH_NARROWING, PREVIEW_HELM_COACH_PATH } from '../preview/fixtures-coachhelm-path';
 
 afterEach(cleanup);
-
-const wrap = (node: React.ReactNode) => (
-  <LazyMotion features={domAnimation}>
-    <ToastProvider>
-      <div className="ch-root" data-ui="clubhouse">
-        {node}
-      </div>
-    </ToastProvider>
-  </LazyMotion>
-);
-const okWrites = () => ({ assign: vi.fn(() => Promise.resolve({ success: true })), dismiss: vi.fn(() => Promise.resolve({ success: true })), undo: vi.fn(() => Promise.resolve({ success: true })) });
-const show = (data: ChCoachHelmData) => render(wrap(<CoachBoard data={data} writes={okWrites()} />));
-const card = () => document.querySelector('.ch-hl-focus') as HTMLElement;
-const path = () => card().querySelector('[data-ch-code="CH-13940"]') as HTMLElement | null;
 const flat = (t: string | null | undefined) => (t ?? '').replace(/\u00a0/g, ' ');
 const COACH = { role: 'coach', first: 'Eli' } as const;
 
@@ -135,73 +117,5 @@ describe('the path line (D2), from the stored evidence', () => {
     expect(withoutPlaceholderCause('You average 1.1. Penalties per Round is off its benchmark. Likely cause inferred from the aggregate, not a measured shot sequence. Keep going.')).toBe('You average 1.1. Keep going.');
     expect(withoutPlaceholderCause('Greens is off its benchmark — likely cause inferred from the aggregate, not a measured shot sequence')).toBe('');
     expect(withoutPlaceholderCause('Nothing to take out here.')).toBe('Nothing to take out here.');
-  });
-});
-
-describe('the coach Board, on screen', () => {
-  it('the path line is the card’s second line, inside the green head, right under the claim', () => {
-    show(PREVIEW_HELM_COACH_PATH);
-    const head = card().querySelector('.ch-hl-focus__head')!;
-    const kids = [...head.children].map((el) => el.tagName.toLowerCase() + (el.className ? `.${String(el.className).split(' ')[0]}` : ''));
-    expect(kids.slice(0, 3)).toEqual(['p.ch-hl-focus__k', 'h2', 'div.ch-hl-path']);
-    expect(flat(path()!.textContent)).toBe('driver off the tee → into the water · 5 of 7 penalties · 4 rounds · Seen in Eli’s shots');
-  });
-
-  it('a row carrying the template cause renders "Not yet traced" and the measure, and never the template string', () => {
-    show(PREVIEW_HELM_COACH_FALLBACK);
-    expect(flat(path()!.textContent)).toBe(`Penalties per round: 1.1 · 21 rounds · ${NOT_TRACED_SHOT_BY_SHOT}`);
-    expect(document.body.textContent).not.toMatch(/off its benchmark|inferred from the aggregate/);
-  });
-
-  it('narrowing chips under the path line, prefixed "Observed, not a cause:"', () => {
-    show(PREVIEW_HELM_COACH_NARROWING);
-    const chips = [...card().querySelectorAll('.ch-hl-path__chip')].map((c) => flat(c.textContent));
-    expect(chips).toEqual(['175+ yd', '›long par 4s', '›short-right']);
-    expect(card().querySelector('.ch-hl-path__n')!.textContent).toMatch(/^Observed, not a cause:/);
-    expect(flat(path()!.querySelector('.ch-hl-path__l')!.textContent)).toBe('Green missed on long par 4s · 12 of 16 · 9 rounds · Likely, not yet traced');
-  });
-
-  it('every card on the board has a path line', () => {
-    show(PREVIEW_HELM_COACH);
-    for (const p of PREVIEW_HELM_COACH.players.list) expect(p.top.kind === 'note' || p.top.path !== null).toBe(true);
-    expect(path()).not.toBeNull();
-  });
-
-  it('chs-33: no pill, no meter, no gauge and no drill well on the card; This week is flush', () => {
-    show(PREVIEW_HELM_COACH);
-    const c = card();
-    for (const gone of ['.ch-hl-pri', '.ch-hl-conf', '.ch-hl-g', '.ch-hl-g__t', '.ch-hl-drill']) expect(c.querySelector(gone)).toBeNull();
-    const jonah = PREVIEW_HELM_COACH.players.list.find((p) => p.id === HELM_PLAYERS.jonah.id)!;
-    cleanup();
-    render(wrap(<CoachBoard data={PREVIEW_HELM_COACH} writes={okWrites()} initialPlayer={jonah.id} />));
-    const week = card().querySelector('.ch-hl-week')!;
-    expect(week.textContent).toMatch(/^This week Downhill ladder · 12 min · intermediate/);
-    expect(within(card()).getByText('Solid read')).toBeTruthy();
-  });
-
-  it('D4: nothing above By player but the header; the pulse is one collapsed line in it, and Team patterns sit under the board', () => {
-    show(PREVIEW_HELM_COACH);
-    const main = document.querySelector('main.ch-hl') as HTMLElement;
-    const order = [...main.children].map((el) => String(el.className).split(' ')[0]);
-    const head = order.indexOf('ch-hl-h');
-    const grid = order.indexOf('ch-hl-cgrid');
-    expect(head).toBeGreaterThanOrEqual(0);
-    expect(grid).toBe(head + 1);
-    expect(within(main.querySelector('.ch-hl-h') as HTMLElement).getByRole('button', { name: /Since you were last here/ }).getAttribute('aria-expanded')).toBe('false');
-    expect(main.querySelectorAll('.ch-hl-since li')).toHaveLength(3);
-  });
-
-  it('chs-34: a player with no read is a By player row, the named first and the rest as one row; there is no footer', () => {
-    show(PREVIEW_HELM_COACH_NO_READS);
-    const list = screen.getByRole('region', { name: 'By player' });
-    const none = [...list.querySelectorAll('.ch-hl-pl.is-none')].map((r) => r.textContent);
-    expect(none).toEqual(['SWSam WhitfieldNo reads yet', '+11 more playerNo reads yet']);
-    expect(screen.queryByText(/no insights yet/)).toBeNull();
-  });
-
-  it('the player’s own board draws the same path line, in their voice, with no inferred cause', () => {
-    const mine = toChInsight(penalties(HELM_PLAYERS.jonah.id), { tour: PREVIEW_TOUR, viewer: { role: 'player' } });
-    render(wrap(<PlayerBoard data={{ off: null, proposals: { list: [], error: false }, insights: { list: [mine], error: false }, rounds: null }} />));
-    expect(flat(path()!.textContent)).toBe(`Penalties per round · 21 rounds · ${NOT_TRACED_SHOT_BY_SHOT}`);
   });
 });

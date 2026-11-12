@@ -34,7 +34,7 @@ type AllOutcome = { added: ChJoinRequest[]; failed: ChJoinRequest[] };
  * failed and says how many were added (CH-3007). Failures stay in the list,
  * and the toast's Retry only re-runs those.
  */
-export function useJoinRequests(teamName: string, initial: ChJoinRequest[], crh = false) {
+export function useJoinRequests(teamName: string, initial: ChJoinRequest[]) {
   const router = useRouter();
   // S-ROSTER.requests.elsewhere (behind the lane's flag): another coach got there first. The row stays gone, no toast, and the page reads again.
   const elsewhere = useRef(new Set<string>());
@@ -63,7 +63,7 @@ export function useJoinRequests(teamName: string, initial: ChJoinRequest[], crh 
       try {
         const res = await call();
         const out = normalise(res);
-        if (crh && !out.success && out.error === ALREADY_HANDLED) {
+        if (!out.success && out.error === ALREADY_HANDLED) {
           elsewhere.current.add(r.id);
           router.refresh();
           return { success: true };
@@ -77,7 +77,7 @@ export function useJoinRequests(teamName: string, initial: ChJoinRequest[], crh 
         setBusy(null);
       }
     },
-    [crh, hide, restore, router],
+    [hide, restore, router],
   );
   /** A decision another coach had already made says nothing here. */
   const quietIfElsewhere = useCallback((r: ChJoinRequest) => elsewhere.current.has(r.id), []);

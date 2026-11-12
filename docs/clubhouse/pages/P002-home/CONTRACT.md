@@ -68,11 +68,11 @@ Home.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 20101 | — | `COACH_HOME_READY` | Coach Home opens with the date, the greeting and the brief, Message team and New event, the week beside the latest round in one sheet, and the season leaderboard, all read on the server for the first paint; a team with nothing yet gets the first-run page (CH-2308), and on a phone the same data is drawn as the phone Home (21901). |
+| 20101 | — | `COACH_HOME_READY` | Coach Home opens with the date, the greeting and the brief, Up next beside the hero, Today and the team's scoring form, the team's four parts and the latest round, all read on the server for the first paint; a team with nothing yet gets the first-run page. The leaderboard and the week are not on Home (Roster, Stats and Calendar). |
 | 20102 | — | `PLAYER_HOME_READY` | Player Home opens with the date and the greeting (no brief line: owner, 2026-10-06), Message coach, the week beside Up next and Your latest round in one sheet, then Scoring and the four parts of the game, all read on the server for the first paint; a new player gets the first-run page (CH-2312), and on a phone the same data is drawn as the phone Home (21901). |
 | 20103 | — | `LINKS_OPEN_WHAT_THEY_NAME` | Every link out of Home opens the thing it names: Message team the team chat (?conversation=) or Messages when the chat did not load, Up next and a Today row that event in Calendar (?date=&event=), a week day Calendar's day view (?view=day&date=), New event, Plan, Add event and the quick event types the editor (?new=1, with &type=), a leaderboard row and a latest round's stats link that player's stats (?player=), My stats the player's own stats, Message coach the coach's thread (?user=), the first run's Invite players Roster with its invite sheet open (/golf/dashboard/roster?invite=1), each part of the coach's "Waiting on you" the screen that holds it (join requests Roster, replies that event in Calendar when one event holds them and Calendar when more do, overdue tasks Team Hub's Tasks ?tab=tasks, posts awaiting acknowledgement its Announcements ?tab=ann), a name in the team's four parts that player's Game tab on Stats on the same Last 10 (?player=&tab=game) and Team stats Stats, the coach's Next row Nudge Messages prefilled for who hasn't replied (the phone day card's own link, never sent), and CoachHelm in the player peek and the phone's round sheet that player's deep dive (/golf/dashboard/coachhelm?view=deep-dive&player=); a link to a screen not yet rebuilt for the viewer's role is not drawn. |
 | 20104 | — | `COACH_QUEUE_COUNTS_AS_ITS_SCREEN` | Coach Home's "Waiting on you" (under the head on desktop, in the phone's hero, and on the first run) counts each part with the read and rule of the screen that holds it, so the two show one number: pending join requests as the sidebar's Roster badge counts them, replies missing on this week's events that still take one as Team Hub's RSVPs count "no reply" (rsvpQueue), overdue tasks as Team Hub's Tasks (taskStatus, overdueTaskCount) and posts awaiting an acknowledgement as its Announcements (unackedPostCount). Only parts above zero are drawn, in that order; with nothing waiting the row is not drawn. Each part reads on its own: one that fails is null, logged and left out, never 0 (CH-2220). |
-| 20105 | — | `TEAM_PARTS_ON_THE_FORMS_LAST_10` | Coach Home's four parts (The team's game; under the team's form on desktop, after Team scoring on the phone) read the form's own Last 10 rounds of the active roster, hole-level only (Q-123): strokes gained per round in each part from 3 rounds with hole scores (else none), its change against the same players' previous ten (Q-112) coloured only when it clears its standard error, the part's plain stat (Fairways, Greens, Up and down, Putts) with the Tour's mark from the team's tour, and who gains and loses most from Team Stats' ranking (ties share a place and are named together; one ranked player, or everyone in one place, loses nothing). No other player's round reaches the figures. |
+| 20105 | — | `TEAM_PARTS_ON_THE_FORMS_LAST_10` | Coach Home's four parts (The team's game; under the team's form on desktop, after Team scoring on the phone) read the form's own Last 10 rounds of the active roster, hole-level only (Q-123): strokes gained per round in each part is Team Stats' own team figure (teamStrokesGained): the rounds of the players who have 3 rounds with strokes gained in that window, so a player's first round or two moves it neither here nor on Stats (no player at that floor: none), its change against the same players' previous ten (Q-112) coloured only when it clears its standard error, the part's plain stat (Fairways, Greens, Up and down, Putts) with the Tour's mark from the team's tour, and who gains and loses most from Team Stats' ranking (ties share a place and are named together; one ranked player, or everyone in one place, loses nothing). No other player's round reaches the figures. |
 
 From the shell (P001): 10101 CH-1904, 10102 SHELL_READY,
 10103 TEAM_SWITCH_READS_EVERY_SCREEN_AGAIN.
@@ -117,7 +117,7 @@ the old one (`useHomeDayRollover`, home-day-rollover.test).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 20301 | — | `CLOCK_KEEPS_TIME` | The phone's Up next line (In 50 min, Happening now) is recomputed from the device clock every minute and the player's countdown every second, so neither needs a reload. |
+| 20301 | — | `CLOCK_KEEPS_TIME` | The phone's Up next line (In 50 min, Happening now) is recomputed from the device clock every minute, so it needs no reload. |
 
 ## 04 — Empty
 
@@ -211,8 +211,6 @@ opens Messages plain (20805).
 | 20604 | CH-2204 | `SEASON_ROUNDS_DONT_LOAD_2` | Season rounds don't load (the leaderboard's source) |
 | 20605 | CH-2205 | `THE_WEEK_SECTION_CRASHES_WHILE_DRAWING` | The week section crashes while drawing |
 | 20606 | CH-2206 | `THE_LATEST_ROUND_CRASHES_WHILE_DRAWING` | The latest round crashes while drawing |
-| 20607 | CH-2207 | `THE_LEADERBOARD_CRASHES_WHILE_DRAWING` | The leaderboard crashes while drawing |
-| 20608 | CH-2208 | `THE_TEAM_CHAT_DOESNT_LOAD` | The team chat doesn't load |
 | 20609 | CH-2209 | `EVENT_REPLIES_DONT_LOAD` | Event replies don't load |
 | 20610 | CH-2210 | `THE_TEAMS_TIMEZONE_DOESNT_LOAD` | The team's timezone doesn't load |
 | 20611 | CH-2211 | `THE_TEAMS_FORM_DOESNT_LOAD` | The team's form doesn't load (phone) |
@@ -477,7 +475,6 @@ CH-1842, 11825 CH-1816.
 | 21804 | CH-2804 | `THE_ROUND_PAGER_ANNOUNCES_2_OF_3` | The round pager announces "2 of 3"; each form line has a text equivalent ("last 7 rounds: 72, 71…") |
 | 21805 | CH-2805 | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_STATE` | No axe violations in any preview state, 1280px and 390px |
 | 21806 | CH-2806 | `ON_A_PHONE_THE_SCORECARD_SCROLLS_SIDEWAYS` | On a phone the scorecard scrolls sideways; it is a named region that takes focus, so the arrow keys scroll it |
-| 21807 | — | `COUNTDOWN_IS_A_NAMED_TIMER` | The player's countdown is a timer named for a screen reader as Starts in N days, N hours and N minutes (singular at one), and its digits, the ticking seconds included, are hidden from a screen reader, so it is heard once, not every second. |
 | 21808 | CH-2870 | `THE_HOME_CLASS_LINE` | The Home class line |
 
 From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803,

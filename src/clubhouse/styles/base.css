@@ -140,11 +140,11 @@
 /* Important because a screen's `font` shorthand, however specific, resets both to normal, and the figures stop lining up. */
 .ch-num,
 svg .ch-num {
-  font-variant-numeric: tabular-nums;
-  font-feature-settings: 'tnum';
+  font-variant-numeric: tabular-nums !important;
+  font-feature-settings: 'tnum' !important;
 }
-.ch-root:not([data-ch-pre-refresh]) .ch-num,
-.ch-root:not([data-ch-pre-refresh]) svg .ch-num {
+.ch-root[data-ui] .ch-num,
+.ch-root[data-ui] svg .ch-num {
   font-feature-settings: 'tnum' !important;
 }
 .ch-display {
@@ -256,12 +256,10 @@ svg .ch-num {
   .ch-cl-today__row,
   .ch-qf-card,
   .ch-qf-hero,
-  .ch-hl-focus,
   .ch-hg-m,
   .ch-hs-g,
   .ch-hd-rail,
   .ch-hd-dos,
-  .ch-th-fig,
   .ch-th-act,
   .ch-hv-next,
   .ch-ox-stage,
@@ -328,7 +326,11 @@ html[data-ch-vt-hold] [data-ui='clubhouse'] main[aria-busy='true'][aria-label^='
   /* Except the one spinner (OQ-18, rubric H19): it keeps turning, as iOS's activity indicator does under Reduce Motion. A
      ring turning in place moves nothing across the screen, and a still ring reads as stuck. Animations off still stops
      it (--ch-dur-sweep is 0 there). */
-  .ch-root .ch-spinner {
+  .ch-root .ch-spinner,
+  .ch-root .ch-qcs .live__spin,
+  .ch-root .ch-qck .live__spin,
+  .ch-root .ch-hr .spin,
+  .ch-root .ch-htb .spin {
     animation-duration: var(--ch-dur-sweep) !important;
     animation-iteration-count: infinite !important;
   }
@@ -351,11 +353,12 @@ html[data-ch-vt-hold] [data-ui='clubhouse'] main[aria-busy='true'][aria-label^='
   /* Titles are sans now (2026-10-07), so the digits SerifText sets apart take the title's own size and weight. */
   font-size: inherit;
   font-style: normal;
-  /* Proportional figures at the serif's own weight: tabular figures padded every 1 to a full width, so "1.1" in a
-     headline read as a typewriter's, heavier than the words around it. Tables keep their tabular figures. */
   font-weight: inherit;
-  font-variant-numeric: lining-nums proportional-nums;
-  letter-spacing: -0.01em;
+  /* The numeric style, as `.ch-num`: tabular figures at no tracking. Instrument Sans kerns a proportional 1 hard against a
+     full stop, and a heading's negative tracking closed what was left, so "1.1 per round" read as "11 per round"
+     (fix wave 2026-11-11). A tabular 1 keeps its own width, so the point keeps its room at every heading size. */
+  font-variant-numeric: lining-nums tabular-nums;
+  letter-spacing: 0;
 }
 
 /* Dark: globals.css gives every h1–h6 Tailwind's warm-900 ink (near-black), which a Clubhouse heading with no colour of

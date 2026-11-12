@@ -1867,6 +1867,24 @@
   .ch-ox-mc__f b {
     font-size: calc(13 * var(--ch-type-k));
   }
+  /* The card is 340px here, so three fields abreast cut every value ("Pine Needles U…", "D2 · Confer…"). The first
+     field (the program or team) takes the card's width; the other two share the next row; a long value takes a
+     second line before it is cut. */
+  .ch-ox-mc__f {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 12px 16px;
+  }
+  .ch-ox-mc__f > div:first-child {
+    grid-column: 1 / -1;
+  }
+  .ch-ox-mc__f b,
+  .ch-ox-mc__f b > .ch-ox-flash {
+    display: -webkit-box;
+    white-space: normal;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+  }
   .ch-ox-mcw {
     --ch-ox-mc-s: 0.92;
     margin: 0;
@@ -1959,6 +1977,12 @@
   .ch-ox-act .ch-btn--primary {
     flex: 1;
     min-height: 52px;
+  }
+  /* The quiet second action wraps under the full-width button: it takes that row too, so its label sits centred under
+     the button's (it hung at the left, off both the centre and the margin). */
+  .ch-ox-act .ch-btn--ghost {
+    flex: 1 1 100%;
+    justify-content: center;
   }
   .ch-ox-2 {
     grid-template-columns: minmax(0, 1fr);

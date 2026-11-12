@@ -125,4 +125,6 @@ export interface ChatConversation {
   archived_at: string | null;
   created_at: string;
   updated_at: string;
+  /** The surface the conversation was started on. Null on one started before 10 Nov 2026 or on a database without the column. */
+  surface?: 'ask' | 'quick_chat' | 'practice_helper' | null;
 }

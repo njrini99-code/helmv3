@@ -1,0 +1,831 @@
+/*
+ * Messages v2, package A: the inbox on the phone and the rail on the desktop (docs/clubhouse/messages-v2: SPEC MSG-004,
+ * 005, 101 to 116, 121 to 126; MOTION MOT-LIST-4, 5, MOT-X-2, 15, 17). Loaded after messages.css and thread by thread
+ * with it (SEAMS.md); every rule is anchored on `.ch-inb--phone` or `.ch-inb--rail` (css-owners.mjs: one family, my own
+ * first class) and sits under [data-ch-ms-v2], so it outranks the older generations in messages.css without !important
+ * (the one exception is the coin's size, which messages.css forces with !important and an inline style sets).
+ * Numbers are the artifact's (design-refresh/messages/redesign/clubhouse-messages.html, Part 2), at Text Size k = 1.
+ * Spacing steps that are not on the scale (10, 14, 18) are built from two steps, so the spacing ratchet is not touched.
+ */
+
+[data-ch-ms-v2] .ch-inb,
+.ch-inb-skelpage {
+  --ch-inb-2: var(--ch-space-0_5);
+  --ch-inb-10: calc(var(--ch-space-2) + var(--ch-space-0_5));
+  --ch-inb-14: calc(var(--ch-space-3) + var(--ch-space-0_5));
+  --ch-inb-18: calc(var(--ch-space-4) + var(--ch-space-0_5));
+  /* ink-2 and ink-3 of the artifact: the names are crossed in tokens.css (SPEC.md, Tokens). */
+  --ch-inb-ink-2: var(--ch-text-tertiary);
+  --ch-inb-ink-3: var(--ch-crh-ink4);
+}
+
+/* ------------------------------------------------------------------------------------------------------------------
+   Phone page (MSG-004, MSG-005, MSG-102): the page edge is the cards' and the search row's own margin, once (the page
+   wrapper's padding used to add a second one); 24 from the bar to the search, 40 below the last card.
+   ------------------------------------------------------------------------------------------------------------------ */
+[data-ch-ms-v2] .ch-inb--phone.ch-msp-page {
+  gap: 0;
+  padding: var(--ch-space-6) 0 var(--ch-space-10);
+}
+@media (max-height: 500px) and (pointer: coarse) {
+  /* An iPhone on its side: the notch's side stays clear. */
+  [data-ch-ms-v2] .ch-inb--phone.ch-msp-page {
+    padding-inline: env(safe-area-inset-left) env(safe-area-inset-right);
+  }
+}
+[data-ch-ms-v2] .ch-inb--phone .ch-msv-top {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ch-inb-10);
+  margin-bottom: var(--ch-space-1);
+  padding: 0 var(--ch-page-x-phone);
+}
+
+/* ------------------------------------------------------------------------------------------------------------------
+   Search well and New key (MSG-103), phone and rail
+   ------------------------------------------------------------------------------------------------------------------ */
+[data-ch-ms-v2] .ch-inb .ch-msv-srow {
+  display: flex;
+  align-items: center;
+  gap: var(--ch-space-2);
+}
+[data-ch-ms-v2] .ch-inb .ch-search {
+  flex: 1;
+  min-width: 0;
+  height: 40px;
+  padding: 0 calc(var(--ch-space-3) - 1px);
+  border-radius: var(--ch-radius-md);
+  background: var(--ch-well-bg-flat);
+  box-shadow: var(--ch-crh-well-shadow);
+  color: var(--ch-inb-ink-2);
+}
+[data-ch-ms-v2] .ch-inb .ch-search:focus-within {
+  box-shadow: inset 0 0 0 1px var(--ch-border-focus), 0 0 0 4px var(--ch-focus-halo);
+}
+[data-ch-ms-v2] .ch-inb .ch-search > svg:first-child {
+  width: 17px;
+  height: 17px;
+}
+[data-ch-ms-v2] .ch-inb .ch-search input {
+  font: var(--ch-type-16);
+  letter-spacing: var(--ch-track-16);
+}
+[data-ch-ms-v2] .ch-inb .ch-search input::placeholder {
+  color: var(--ch-text-placeholder);
+  opacity: 1;
+}
+[data-ch-ms-v2] .ch-inb .ch-msv-new {
+  position: relative;
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--ch-card-bg);
+  box-shadow: var(--ch-card-shadow);
+  color: var(--ch-accent-ink);
+}
+/* A 44 target on the 40 key (MSG-010). */
+[data-ch-ms-v2] .ch-inb .ch-msv-new::before {
+  position: absolute;
+  inset: calc(-1 * var(--ch-space-0_5));
+  content: '';
+}
+
+/* ------------------------------------------------------------------------------------------------------------------
+   Filter well (MSG-104): All, Unread, Groups. Buttons are 30k tall at every size, 13k/500 (600 chosen), the chip is the
+   well's thumb. It stays a radiogroup (the app's Segmented); only its size is Messages'.
+   ------------------------------------------------------------------------------------------------------------------ */
+[data-ch-ms-v2] .ch-inb .ch-seg {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--ch-space-1);
+  align-self: stretch;
+  margin: var(--ch-space-3) 0 var(--ch-inb-14);
+  padding: var(--ch-space-1);
+  border-radius: var(--ch-radius-lg);
+}
+[data-ch-ms-v2] .ch-inb .ch-seg .ch-seg__b {
+  flex: none;
+  min-width: 0;
+  height: calc(30 * var(--ch-type-k));
+  padding: 0 var(--ch-space-3);
+  border-radius: var(--ch-radius-md);
+  font: var(--ch-type-13-medium);
+}
+[data-ch-ms-v2] .ch-inb .ch-seg .ch-seg__b.is-on {
+  font: var(--ch-type-13-strong);
+}
+
+/* ------------------------------------------------------------------------------------------------------------------
+   Cards (MSG-105, MSG-107): one style, the card shadow, a 17k/600 header with a hairline under it from x = 16
+   ------------------------------------------------------------------------------------------------------------------ */
+[data-ch-ms-v2] .ch-inb--phone .ch-msv-card,
+[data-ch-ms-v2] .ch-inb--phone .ch-ms-sec:not(.is-ann) {
+  display: block;
+  margin: 0 var(--ch-page-x-phone) var(--ch-space-3);
+  overflow: hidden;
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-card-bg);
+  box-shadow: var(--ch-card-shadow);
+}
+[data-ch-ms-v2] .ch-inb--phone .ch-msv-card__h,
+[data-ch-ms-v2] .ch-inb--phone .ch-ms-sec:not(.is-ann) > .ch-ms-sec__l {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--ch-inb-10);
+  margin: 0;
+  padding: var(--ch-inb-14) var(--ch-space-4) var(--ch-inb-10);
+  border-top: 0;
+  font: var(--ch-type-17-strong);
+  font-variation-settings: normal;
+  letter-spacing: var(--ch-track-17);
+  color: var(--ch-text-primary);
+}
+[data-ch-ms-v2] .ch-inb--phone .ch-msv-card__h::after,
+[data-ch-ms-v2] .ch-inb--phone .ch-ms-sec:not(.is-ann) > .ch-ms-sec__l::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: var(--ch-space-4);
+  height: var(--ch-hairline-w);
+  background: var(--ch-separator);
+  content: '';
+}
+[data-ch-ms-v2] .ch-inb--phone .ch-msv-card__h small {
+  font: var(--ch-type-15);
+  letter-spacing: 0;
+  color: var(--ch-inb-ink-2);
+}
+/* "Announcements" keeps its own folded row; it sits at the page edge like a card (Q-37). The section is the card, as
+   Recent is: the fold is its head, and what it opens to are rows inside it on the card's grid (a 40 face at 32, the name
+   at 84, the time at the card's inset), a hairline from the face's edge over each. They were rows on the canvas at the
+   page gutter, under a card that held only its own head. */
+[data-ch-ms-v2] .ch-inb--phone .ch-ms-sec.is-ann {
+  display: block;
+  margin: 0 var(--ch-page-x-phone) var(--ch-space-3);
+  overflow: hidden;
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-card-bg);
+  box-shadow: var(--ch-card-shadow);
+}
+[data-ch-ms-v2] .ch-inb--phone .ch-ms-sec.is-ann .ch-ms-fold {
+  grid-template-columns: 40px minmax(0, 1fr) auto auto;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+/* The chevron keeps the card's edge with or without a count before it: the count's column is the third and the chevron's
+   the fourth, as on the rail. Unplaced, a coach's chevron (no count) fell into the third and sat 12 short of the edge. */
+[data-ch-ms-v2] .ch-inb--phone .ch-ms-fold > .ch-ms-count {
+  grid-column: 3;
+  grid-row: 1;
+}
+[data-ch-ms-v2] .ch-inb--phone .ch-ms-fold > .ch-ms-fold__chev {
+  grid-column: 4;
+  grid-row: 1;
+}
+/* The head's face is the rows' 40, so its title starts at 84 with every name under it. */
+[data-ch-ms-v2] .ch-inb--phone .ch-ms-fold .ch-ms-grp.is-ann {
+  width: 40px;
+  height: 40px;
+}
+[data-ch-ms-v2] .ch-inb--phone .ch-ms-fold__body {
+  padding: 0;
+  border-top: 0;
+}
+[data-ch-ms-v2] .ch-inb--phone .ch-ms-row.is-ann {
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--ch-space-3);
+  width: 100%;
+  min-height: 0;
+  margin: 0;
+  padding: var(--ch-inb-10) var(--ch-space-4);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  transition: none;
+}
+[data-ch-ms-v2] .ch-inb--phone .ch-ms-row.is-ann[data-ch-pressed],
+[data-ch-ms-v2] .ch-inb--phone .ch-ms-row.is-ann.is-sel {
+  background: var(--ch-press-wash);
+}
+@media (hover: hover) {
+  [data-ch-ms-v2] .ch-inb--phone .ch-ms-row.is-ann:hover,
+  [data-ch-ms-v2] .ch-inb--phone .ch-ms-row.is-ann:active {
+    background: var(--ch-press-wash);
+  }
+}
+[data-ch-ms-v2] .ch-inb--phone .ch-ms-row.is-ann .ch-ms-grp {
+  width: 40px;
+  height: 40px;
+}
+/* The first announcement's hairline is the one under the card's head, as Recent's head has. */
+[data-ch-ms-v2] .ch-inb--phone .ch-ms-sec.is-ann .ch-ms-sec__card > .ch-ms-row:first-child::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: var(--ch-space-4);
+  height: var(--ch-hairline-w);
+  background: var(--ch-separator);
+  box-shadow: none;
+  content: '';
+  pointer-events: none;
+}
+[data-ch-ms-v2] .ch-inb--phone .ch-ms-fold__body .ch-ms-more {
+  margin: 0 var(--ch-space-4);
+}
+/* The line under its title says how many posts there are, then the newest title: it runs to two lines, as a row's preview
+   does and as the rail's fold does, so the count in words never cuts the title short. */
+[data-ch-ms-v2] .ch-inb--phone .ch-ms-fold__b > span {
+  display: -webkit-box;
+  white-space: normal;
+  text-overflow: clip;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+/* An opened announcement that waits on you keeps its count beside its lines, as the rail's does: under them the pill
+   stretched into a bar the width of the row. */
+[data-ch-ms-v2] .ch-inb--phone .ch-ms-row.is-ann .ch-ms-row__bot {
+  display: flex;
+  align-items: center;
+  gap: var(--ch-space-2);
+}
+[data-ch-ms-v2] .ch-inb--phone .ch-ms-row.is-ann .ch-ms-row__bot > span:first-child {
+  flex: 1;
+  min-width: 0;
+}
+/* Nothing here (MSG-108): the body under the header. */
+[data-ch-ms-v2] .ch-inb .ch-inb-note {
+  margin: 0;
+  padding: var(--ch-inb-10) var(--ch-space-4) var(--ch-inb-14);
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-inb-ink-2);
+}
+[data-ch-ms-v2] .ch-inb--rail .ch-inb-note {
+  padding: var(--ch-space-1) var(--ch-inb-18) 0;
+}
+
+/* ------------------------------------------------------------------------------------------------------------------
+   Pinned card (MSG-105, MSG-106): three faces of 62 with the latest line over each
+   ------------------------------------------------------------------------------------------------------------------ */
+[data-ch-ms-v2] .ch-inb--phone .ch-msv-pins {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--ch-space-1_5);
+  padding: var(--ch-space-1_5) var(--ch-space-2) var(--ch-inb-10);
+}
+[data-ch-ms-v2] .ch-inb--phone .ch-msv-pinw {
+  position: relative;
+  display: flex;
+  min-width: 0;
+}
+[data-ch-ms-v2] .ch-inb--phone .ch-msv-pin {
+  flex: 1;
+  gap: calc(var(--ch-space-1_5) + 1px);
+  padding: var(--ch-inb-10) var(--ch-space-1) calc(var(--ch-space-2) + 1px);
+  border-radius: var(--ch-radius-lg);
+  transition: none;
+}
+[data-ch-ms-v2] .ch-inb--phone .ch-msv-pin[data-ch-pressed] {
+  background: var(--ch-press-wash);
+}
+@media (hover: hover) {
+  [data-ch-ms-v2] .ch-inb--phone .ch-msv-pin:active {
+    background: var(--ch-press-wash);
+  }
+}
+/* The face is Avatar's xl step (64), set by the component; a group's coin is the same size, its icon half of it. */
+[data-ch-ms-v2] .ch-inb--phone .ch-msv-pin .ch-msv-pin__grp {
+  width: 64px;
+  height: 64px;
+}
+[data-ch-ms-v2] .ch-inb--phone .ch-msv-pin .ch-msv-pin__grp svg {
+  width: 32px;
+  height: 32px;
+}
+[data-ch-ms-v2] .ch-inb--phone .ch-msv-pin__l {
+  max-width: 100%;
+  font: var(--ch-type-13-medium);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-text-primary);
+}
+[data-ch-ms-v2] .ch-inb--phone .ch-msv-bubblet {
+  top: var(--ch-space-0_5);
+  right: auto;
+  left: 50%;
+  max-width: 92px;
+  padding: var(--ch-space-1) var(--ch-space-2);
+  border-radius: var(--ch-radius-md);
+  background: var(--ch-card-bg);
+  /* MSG-106: a hairline ring and the shared bubblet drop, nothing lifted. */
+  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline), var(--ch-elevation-bubblet);
+  font: var(--ch-type-12-medium);
+  letter-spacing: var(--ch-track-12);
+  color: var(--ch-inb-ink-2);
+  transform: translateX(-12%);
+}
+/* The third face's line anchors to its right edge (MSG-106). */
+[data-ch-ms-v2] .ch-inb--phone .ch-msv-pinw[data-place='2'] .ch-msv-bubblet {
+  right: calc(-1 * var(--ch-space-0_5));
+  left: auto;
+  transform: none;
+}
+@media (max-width: 359px) {
+  /* The narrowest phones: each line stays over its own face (MOB-MSG-9). */
+  [data-ch-ms-v2] .ch-inb--phone .ch-msv-bubblet,
+  [data-ch-ms-v2] .ch-inb--phone .ch-msv-pinw[data-place='2'] .ch-msv-bubblet {
+    right: auto;
+    left: 50%;
+    max-width: calc(100% - var(--ch-space-1));
+    transform: translateX(-50%);
+  }
+}
+[data-ch-ms-v2] .ch-inb .ch-msv-bubblet .ch-ms-typing-mini {
+  padding: var(--ch-space-0_5) 0;
+}
+
+/* ------------------------------------------------------------------------------------------------------------------
+   Conversation row (MSG-109, MSG-113, MSG-124): a 44 face (40 on the rail), the name over a two-line preview.
+   The row's background changes at once, never animated (MOT-X-17). A swipe frame wraps the phone row.
+   ------------------------------------------------------------------------------------------------------------------ */
+[data-ch-ms-v2] .ch-inb .ch-ms-row:not(.is-ann) {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--ch-space-3);
+  align-items: center;
+  width: 100%;
+  min-height: 0;
+  margin: 0;
+  padding: var(--ch-inb-10) var(--ch-space-4);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  transition: none;
+}
+[data-ch-ms-v2] .ch-inb .ch-ms-swipe {
+  margin-inline: 0;
+}
+[data-ch-ms-v2] .ch-inb .ch-ms-swipe .ch-ms-row:not(.is-ann) {
+  width: 100%;
+  margin-inline: 0;
+}
+[data-ch-ms-v2] .ch-inb .ch-swipe[data-side] .ch-swipe__c {
+  background: var(--ch-card-bg);
+}
+[data-ch-ms-v2] .ch-inb .ch-ms-row:not(.is-ann)[data-ch-pressed],
+[data-ch-ms-v2] .ch-inb .ch-ms-row:not(.is-ann).is-sel {
+  background: var(--ch-press-wash);
+  box-shadow: none;
+}
+@media (hover: hover) {
+  [data-ch-ms-v2] .ch-inb .ch-ms-row:not(.is-ann):hover,
+  [data-ch-ms-v2] .ch-inb .ch-ms-row:not(.is-ann):active {
+    background: var(--ch-press-wash);
+    box-shadow: none;
+  }
+}
+/* Seams: a hairline from x = 16 to the right edge between rows, none under the last. */
+[data-ch-ms-v2] .ch-inb--phone .ch-ms-swipe ~ .ch-ms-swipe .ch-ms-row::before,
+[data-ch-ms-v2] .ch-inb--phone .ch-ms-sec__card > .ch-ms-row ~ .ch-ms-row::before,
+.ch-inb-skrow ~ .ch-inb-skrow::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: var(--ch-space-4);
+  height: var(--ch-hairline-w);
+  background: var(--ch-separator);
+  box-shadow: none;
+  content: '';
+  pointer-events: none;
+}
+/* The rail has no separators: each row is its own rounded wash (MSG-124). */
+[data-ch-ms-v2] .ch-inb--rail .ch-ms-row::before {
+  display: none;
+}
+[data-ch-ms-v2] .ch-inb--rail .ch-ms-row:not(.is-ann) {
+  width: calc(100% - var(--ch-space-4));
+  margin: 0 var(--ch-space-2);
+  padding: calc(var(--ch-space-2) + 1px) var(--ch-inb-10);
+  border-radius: var(--ch-radius-md);
+}
+
+/* The face is Avatar's lg step (40), phone and rail, set by the component; a group's is the green coin at the same
+   size with its icon at half of it. */
+[data-ch-ms-v2] .ch-inb .ch-ms-row:not(.is-ann) .ch-ms-grp {
+  background: linear-gradient(160deg, var(--ch-green-500), var(--ch-green-800));
+  color: var(--ch-on-fill-50);
+}
+[data-ch-ms-v2] .ch-inb .ch-ms-row:not(.is-ann) .ch-ms-grp {
+  width: 40px;
+  height: 40px;
+}
+[data-ch-ms-v2] .ch-inb .ch-ms-row:not(.is-ann) .ch-ms-grp svg {
+  width: 50%;
+  height: 50%;
+}
+
+/* Name and time on one line, the name on one line (ellipsis), the unread dot and the muted bell in the name's line. */
+[data-ch-ms-v2] .ch-inb .ch-ms-row__main {
+  gap: var(--ch-inb-2);
+  min-width: 0;
+}
+[data-ch-ms-v2] .ch-inb .ch-ms-row__top {
+  align-items: baseline;
+  justify-content: flex-start;
+  gap: 0;
+}
+[data-ch-ms-v2] .ch-inb .ch-ms-row__top b {
+  display: block;
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  font: var(--ch-type-16-strong);
+  letter-spacing: var(--ch-track-16);
+  color: var(--ch-text-primary);
+  white-space: nowrap;
+  overflow-wrap: normal;
+  text-overflow: ellipsis;
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
+}
+[data-ch-ms-v2] .ch-inb .ch-ms-row.is-unread .ch-ms-row__top b {
+  font: var(--ch-type-16-strong);
+  letter-spacing: var(--ch-track-16);
+}
+[data-ch-ms-v2] .ch-inb .ch-ms-row__top .ch-ms-row__mute {
+  flex: none;
+  align-self: center;
+  margin-left: var(--ch-space-1);
+  color: var(--ch-inb-ink-3);
+}
+[data-ch-ms-v2] .ch-inb .ch-ms-row .ch-ms-row__top > .ch-num {
+  flex: none;
+  margin-left: auto;
+  padding: 0 0 0 var(--ch-space-2);
+  font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-inb-ink-3);
+}
+[data-ch-ms-v2] .ch-inb .ch-ms-row .ch-msv-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin: 0 calc(var(--ch-space-1_5)) 1px -1px;
+  border-radius: 50%;
+  background: var(--ch-accent-ink);
+}
+/* The preview: 15k over two lines, ink-2 when read and ink when unread. */
+[data-ch-ms-v2] .ch-inb .ch-ms-row__bot {
+  display: block;
+}
+[data-ch-ms-v2] .ch-inb .ch-ms-row .ch-ms-row__bot > span:first-child {
+  display: -webkit-box;
+  overflow: hidden;
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-inb-ink-2);
+  white-space: normal;
+  text-overflow: clip;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+[data-ch-ms-v2] .ch-inb .ch-ms-row.is-unread .ch-ms-row__bot > span:first-child {
+  color: var(--ch-text-primary);
+}
+[data-ch-ms-v2] .ch-inb .ch-ms-row .ch-ms-row__prev,
+[data-ch-ms-v2] .ch-inb .ch-ms-row .ch-ms-row__bot em {
+  color: inherit;
+}
+[data-ch-ms-v2] .ch-inb .ch-ms-row.is-sel .ch-ms-row__top b {
+  color: var(--ch-text-primary);
+}
+/* Typing: three dots 5 across, 3 apart, in place of the preview (MOT-LIST-5). Reduce Motion holds them at opacity 1
+   (messages.css). */
+[data-ch-ms-v2] .ch-inb .ch-ms-typing-mini {
+  gap: calc(var(--ch-space-0_5) + 1px);
+}
+
+/* ------------------------------------------------------------------------------------------------------------------
+   Rail (MSG-121 to MSG-126)
+   ------------------------------------------------------------------------------------------------------------------ */
+[data-ch-ms-v2] .ch-inb--rail {
+  border-right: 0;
+  background: var(--ch-card-bg);
+}
+[data-ch-ms-v2] .ch-inb--rail .ch-ms-rail__head {
+  gap: 0;
+  padding: var(--ch-inb-18) var(--ch-space-4) var(--ch-space-1);
+}
+[data-ch-ms-v2] .ch-inb--rail .ch-ms-rail__title h1 {
+  /* 26 in the artifact; the type scale has 22 and 28 and ratchets everything else, so the title takes the 28 step. */
+  font: var(--ch-type-28-strong);
+  letter-spacing: var(--ch-track-28);
+}
+[data-ch-ms-v2] .ch-inb--rail .ch-ms-rail__ctx {
+  margin: var(--ch-inb-2) 0 var(--ch-space-3);
+  font: var(--ch-type-meta);
+  color: var(--ch-inb-ink-2);
+}
+[data-ch-ms-v2] .ch-inb--rail .ch-ms-rail__head > .ch-search {
+  flex: none;
+  width: 100%;
+}
+[data-ch-ms-v2] .ch-inb--rail .ch-ms-rail__body {
+  gap: 0;
+  padding: 0 0 var(--ch-space-6);
+}
+[data-ch-ms-v2] .ch-inb--rail .ch-ms-rail__notice {
+  margin-inline: 0;
+}
+[data-ch-ms-v2] .ch-inb--rail .ch-ms-sec__l {
+  margin: var(--ch-inb-14) 0 var(--ch-space-1);
+  padding: 0 var(--ch-inb-18);
+  font: var(--ch-type-13-strong);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-inb-ink-2);
+}
+[data-ch-ms-v2] .ch-inb--rail .ch-ms-sec__card {
+  gap: 0;
+  background: none;
+  box-shadow: none;
+}
+
+/* The rail's Announcements (owner, 2026-10-16: folded under the conversations). On the phone the fold is a card at the
+   page edge (Q-37); on the rail it was the same card, spanning the pane with its own shadow while every row above it
+   sits inset on the rail's grid, and its one-line preview was cut with room to spare. Here it is a row like the others:
+   the same box, the same 40 face, the count and the chevron on the title's line where a row has its time, and the
+   newest title under it on two lines. The announcements it opens to are rows on the same grid. */
+[data-ch-ms-v2] .ch-inb--rail .ch-ms-sec.is-ann {
+  margin: var(--ch-space-2) 0 0;
+}
+/* Under the conversations it read as one more of them. A hairline sets it apart, from the rows' text edge to the times'
+   edge, with the same room above and below; with nothing above it (a search that matches only announcements) there is
+   nothing to part, and no line. */
+[data-ch-ms-v2] .ch-inb--rail .ch-ms-sec ~ .ch-ms-sec.is-ann {
+  position: relative;
+  padding-top: var(--ch-space-2);
+}
+[data-ch-ms-v2] .ch-inb--rail .ch-ms-sec ~ .ch-ms-sec.is-ann::before {
+  position: absolute;
+  top: 0;
+  right: var(--ch-inb-18);
+  left: var(--ch-inb-18);
+  height: var(--ch-hairline-w);
+  background: var(--ch-separator);
+  content: '';
+  pointer-events: none;
+}
+[data-ch-ms-v2] .ch-inb--rail .ch-ms-sec.is-ann .ch-ms-fold {
+  grid-template-columns: 40px minmax(0, 1fr) auto auto;
+  gap: var(--ch-inb-2) var(--ch-space-3);
+  width: calc(100% - var(--ch-space-4));
+  min-height: 0;
+  margin: 0 var(--ch-space-2);
+  padding: calc(var(--ch-space-2) + 1px) var(--ch-inb-10);
+  border-radius: var(--ch-radius-md);
+  background: transparent;
+  box-shadow: none;
+  transition: none;
+}
+[data-ch-ms-v2] .ch-inb--rail .ch-ms-sec.is-ann .ch-ms-fold[data-ch-pressed] {
+  background: var(--ch-press-wash);
+}
+@media (hover: hover) {
+  [data-ch-ms-v2] .ch-inb--rail .ch-ms-sec.is-ann .ch-ms-fold:hover,
+  [data-ch-ms-v2] .ch-inb--rail .ch-ms-sec.is-ann .ch-ms-fold:active {
+    background: var(--ch-press-wash);
+  }
+}
+[data-ch-ms-v2] .ch-inb--rail .ch-ms-fold .ch-ms-grp.is-ann {
+  grid-row: 1 / span 2;
+  width: 40px;
+  height: 40px;
+}
+/* The title and the preview are the grid's own cells, so the preview runs under the count and the chevron. */
+[data-ch-ms-v2] .ch-inb--rail .ch-ms-fold__b {
+  display: contents;
+}
+[data-ch-ms-v2] .ch-inb--rail .ch-ms-fold__b b {
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
+  overflow: hidden;
+  font: var(--ch-type-16-strong);
+  letter-spacing: var(--ch-track-16);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+[data-ch-ms-v2] .ch-inb--rail .ch-ms-fold__b > span {
+  display: -webkit-box;
+  grid-column: 2 / -1;
+  grid-row: 2;
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-inb-ink-2);
+  white-space: normal;
+  text-overflow: clip;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+[data-ch-ms-v2] .ch-inb--rail .ch-ms-fold > .ch-ms-count {
+  grid-column: 3;
+  grid-row: 1;
+  align-self: center;
+}
+[data-ch-ms-v2] .ch-inb--rail .ch-ms-fold > .ch-ms-fold__chev {
+  grid-column: 4;
+  grid-row: 1;
+  align-self: center;
+}
+[data-ch-ms-v2] .ch-inb--rail .ch-ms-fold__body {
+  padding: 0 0 var(--ch-space-1);
+  border-top: 0;
+}
+[data-ch-ms-v2] .ch-inb--rail .ch-ms-row.is-ann {
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--ch-space-3);
+  width: calc(100% - var(--ch-space-4));
+  margin: 0 var(--ch-space-2);
+  padding: calc(var(--ch-space-2) + 1px) var(--ch-inb-10);
+  border-radius: var(--ch-radius-md);
+  background: transparent;
+  box-shadow: none;
+  transition: none;
+}
+[data-ch-ms-v2] .ch-inb--rail .ch-ms-row.is-ann[data-ch-pressed],
+[data-ch-ms-v2] .ch-inb--rail .ch-ms-row.is-ann.is-sel {
+  background: var(--ch-press-wash);
+}
+@media (hover: hover) {
+  [data-ch-ms-v2] .ch-inb--rail .ch-ms-row.is-ann:hover,
+  [data-ch-ms-v2] .ch-inb--rail .ch-ms-row.is-ann:active {
+    background: var(--ch-press-wash);
+  }
+}
+[data-ch-ms-v2] .ch-inb--rail .ch-ms-row.is-ann .ch-ms-grp {
+  width: 40px;
+  height: 40px;
+}
+/* The open announcement keeps its own mark and count: the selected row is a pale wash here, not the green fill the
+   ivory count and the group coin's fill were drawn for (an urgent one lost its amber, the count its pill). */
+[data-ch-ms-v2] .ch-inb--rail .ch-ms-row.is-ann.is-sel .ch-ms-grp.is-urgent {
+  background: var(--ch-warning-100);
+  color: var(--ch-warning-600);
+}
+[data-ch-ms-v2] .ch-inb--rail .ch-ms-row.is-ann.is-sel .ch-ms-count {
+  background: var(--ch-green-fill-600);
+  color: var(--ch-text-on-accent);
+}
+/* An announcement that waits on you keeps its count beside its two lines, not under them as a bar. */
+[data-ch-ms-v2] .ch-inb--rail .ch-ms-row.is-ann .ch-ms-row__bot {
+  display: flex;
+  align-items: center;
+  gap: var(--ch-space-2);
+}
+[data-ch-ms-v2] .ch-inb--rail .ch-ms-row.is-ann .ch-ms-row__bot > span:first-child {
+  flex: 1;
+  min-width: 0;
+}
+[data-ch-ms-v2] .ch-inb--rail .ch-ms-fold__body .ch-ms-more {
+  margin: var(--ch-space-1) var(--ch-inb-18) 0;
+}
+
+/* ------------------------------------------------------------------------------------------------------------------
+   Loading (MSG-112, MSG-126, MOT-X-15): the same card and row heights as the loaded list. 1.4 s ease-in-out between
+   opacity 1 and .55; it stops under Reduce Motion and Animations off. Also drawn by the route skeleton, which has no
+   data-ch-ms-v2 ancestor of its own, so these are not scoped by it.
+   ------------------------------------------------------------------------------------------------------------------ */
+.ch-inb-sk,
+.ch-inb-sk__face,
+.ch-inb-sk__title,
+.ch-inb-sk__search,
+.ch-inb-sk__new,
+.ch-inb-sk__ctx,
+.ch-inb-sk__seg {
+  display: block;
+  background: color-mix(in srgb, var(--ch-text-primary) 9%, transparent);
+  animation: ch-inb-pulse var(--ch-dur-skeleton, 1.4s) ease-in-out infinite;
+}
+@keyframes ch-inb-pulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ch-inb-sk,
+  .ch-inb-sk__face,
+  .ch-inb-sk__title,
+  .ch-inb-sk__search,
+  .ch-inb-sk__new,
+  .ch-inb-sk__ctx,
+  .ch-inb-sk__seg {
+    animation: none;
+  }
+}
+[data-motion='off'] .ch-inb-sk,
+[data-motion='off'] .ch-inb-sk__face,
+[data-motion='off'] .ch-inb-sk__title,
+[data-motion='off'] .ch-inb-sk__search,
+[data-motion='off'] .ch-inb-sk__new,
+[data-motion='off'] .ch-inb-sk__ctx,
+[data-motion='off'] .ch-inb-sk__seg {
+  animation: none;
+}
+.ch-inb-sk {
+  height: calc(11 * var(--ch-type-k));
+  margin: calc(var(--ch-space-1) - 1px) 0;
+  border-radius: var(--ch-radius-tail);
+}
+.ch-inb-sk.is-small {
+  height: calc(9 * var(--ch-type-k));
+  margin-top: var(--ch-space-2);
+  opacity: 0.75;
+}
+.ch-inb-sk.is-bar {
+  width: 64px;
+}
+.ch-inb-sk.is-label {
+  display: inline-block;
+  width: 56px;
+  vertical-align: middle;
+}
+.ch-inb-sk__face {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+}
+.ch-inb-skel.is-rail .ch-inb-sk__face {
+  width: 40px;
+  height: 40px;
+}
+.ch-inb-skrow {
+  pointer-events: none;
+  cursor: default;
+}
+.ch-inb-skrow .ch-ms-row__main {
+  display: block;
+}
+.ch-inb-sk__title {
+  width: 150px;
+  height: 30px;
+  border-radius: var(--ch-radius-sm);
+}
+.ch-inb-sk__search {
+  flex: 1;
+  height: 40px;
+  border-radius: var(--ch-radius-md);
+}
+.ch-ms-rail__head > .ch-inb-sk__search {
+  flex: none;
+}
+.ch-inb-sk__new {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+}
+/* The filter well's box: 30k buttons in 4 of padding. Its margins are the loaded well's (set above for .ch-seg). */
+.ch-inb-sk__seg {
+  height: calc(38 * var(--ch-type-k));
+  margin: var(--ch-space-3) 0 var(--ch-inb-14);
+  border-radius: var(--ch-radius-lg);
+}
+.ch-inb-sk__row {
+  display: flex;
+  align-items: center;
+  gap: var(--ch-space-2);
+}
+/* The context line's box (20 tall, 2 over and 12 under), with the 11k bar drawn in its middle. */
+.ch-inb-sk__ctx {
+  width: 140px;
+  height: calc(20 * var(--ch-type-k));
+  margin: var(--ch-inb-2) 0 var(--ch-space-3);
+  border-block: calc(5 * var(--ch-type-k)) solid transparent;
+  border-radius: var(--ch-radius-tail);
+  background-clip: padding-box;
+}
+.ch-inb-skel.is-rail .ch-ms-sec__l {
+  margin: 0 0 var(--ch-space-1);
+}
+/* The route skeleton's phone page, in the loaded inbox's own margins; its card is the Recent card. */
+.ch-inb-skelpage {
+  gap: 0;
+  padding: var(--ch-space-6) 0 var(--ch-space-10);
+}
+.ch-inb-skelpage .ch-inb-skeltop {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ch-inb-10);
+  margin-bottom: var(--ch-space-1);
+  padding: 0 var(--ch-page-x-phone);
+}

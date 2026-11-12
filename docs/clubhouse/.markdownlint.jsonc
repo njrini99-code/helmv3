@@ -1,5 +1,7 @@
 // Clubhouse docs: every changelog entry repeats Changed, Why and Verification under its own dated heading
 // (docs/clubhouse/templates/CHANGELOG.md), so a repeated heading is only a defect between siblings.
+// Line length is the repo's rule (../../.markdownlint.jsonc: prose only, tables and code are not counted).
 {
+  "extends": "../../.markdownlint.jsonc",
   "MD024": { "siblings_only": true }
 }

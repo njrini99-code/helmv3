@@ -15,6 +15,7 @@ export function FollowUps({ items, onSend }: { items: string[]; onSend: (text: s
             type="button"
             className="chip"
             data-ch-press=""
+            data-ch-ask-source=""
             onClick={() => {
               haptic('select');
               onSend(f);

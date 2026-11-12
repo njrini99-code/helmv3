@@ -133,6 +133,22 @@ describe('buildTurns: a thread as it is drawn', () => {
     expect(t.envelopes).toEqual([]);
     expect(t.answerText).toBe(t.note);
   });
+  it('a rejected turn keeps its steps (they fold above the note) and still hides what it claimed', () => {
+    // Staging, 2026-11-07: "What's on this week?" lost its whole list of steps along with the answer.
+    const m = msg('a', 'assistant', [
+      { type: 'data-progress', id: 'progress-1', data: { tool: 'get_team_travel', label: 'Checking team travel', done: 'Checked team travel', state: 'done' } },
+      { type: 'data-progress', id: 'progress-2', data: { tool: 'get_open_tasks', label: 'Reading your tasks', state: 'done' } },
+      { type: 'data-evidence', id: 'evidence-1', data: { ref: 'e1', tool: 'get_team_travel', envelope: { summary: 'No trips.', measurements: [], series: [], coverage: 'empty', coverage_note: null, as_of: '2026-11-08T02:15:22.123Z' } } },
+      { type: 'text', text: 'Nothing is on the calendar.' },
+      { type: 'data-grounding-flag', id: 'turn-verdict', data: { note: REJECTED_TURN_NOTE, reason: 'ungrounded_claims', unmatched_tokens: ['November 15'] } },
+    ]);
+    const t = asst(buildTurns([m], { busy: false }));
+    expect(t.steps.map((s) => s.label)).toEqual(['Checking team travel', 'Reading your tasks']);
+    expect(t.note).toBe(REJECTED_TURN_NOTE);
+    expect(t.envelopes).toEqual([]);
+    expect(t.blocks).toEqual([]);
+    expect(t.answerText).toBe(t.note);
+  });
   it('a verdict part with no note still says it, with the production sentence', () => {
     const m = msg('a', 'assistant', [{ type: 'text', text: 'made up' }, { type: 'data-turn-incomplete', id: 'x', data: {} }]);
     expect(asst(buildTurns([m], { busy: false })).note).toBe(REJECTED_TURN_NOTE);
@@ -268,7 +284,7 @@ describe('evidenceBlocks: the shape decides the drawing, and nothing is dropped'
   it('a benchmark shows only with its source and version, and never when it is omitted for the cohort', () => {
     const m = ASK_EV_PARTIAL.measurements[0]!;
     const withBench = { ...ASK_EV_PARTIAL, coverage: 'complete' as const, measurements: [{ ...m, benchmark: { source: 'PGA Tour expected strokes', version: '2026-06-06', value: 29, omitted_for_cohort: false } }] };
-    expect(evidenceBlocks(withBench)[0] && 'bench' in evidenceBlocks(withBench)[0]! ? (evidenceBlocks(withBench)[0] as { bench: string | null }).bench : null).toBe('PGA Tour expected strokes, 2026-06-06: 29');
+    expect(evidenceBlocks(withBench)[0] && 'bench' in evidenceBlocks(withBench)[0]! ? (evidenceBlocks(withBench)[0] as { bench: string | null }).bench : null).toBe('PGA Tour expected strokes (2026-06-06): 29');
     const omitted = { ...withBench, measurements: [{ ...withBench.measurements[0]!, benchmark: { ...withBench.measurements[0]!.benchmark!, omitted_for_cohort: true } }] };
     expect((evidenceBlocks(omitted)[0] as { bench: string | null }).bench).toBeNull();
   });
@@ -344,12 +360,17 @@ describe('buildEvidencePanel: the figures behind an action card', () => {
 });
 
 describe('prose: paragraphs, lists, bold and roster names', () => {
-  it('splits paragraphs and lists, and drops a heading marker rather than honouring it', () => {
-    expect(parseProse('## Heading\nline two\n\n- one\n- two\n\nLast')).toEqual([
-      { kind: 'paragraph', text: 'Heading line two' },
+  it('splits paragraphs and lists; a heading is a heading and a numbered list stays numbered (ASK-7)', () => {
+    expect(parseProse('## Heading\nline two\n\n- one\n- two\n\n1. first\n2. second\n\nLast')).toEqual([
+      { kind: 'heading', text: 'Heading' },
+      { kind: 'paragraph', text: 'line two' },
       { kind: 'list', items: ['one', 'two'] },
+      { kind: 'list', items: ['first', 'second'], ordered: true },
       { kind: 'paragraph', text: 'Last' },
     ]);
+  });
+  it('code ticks, single-star italics and links read as their words (ASK-7)', () => {
+    expect(splitInline('Use `putts` and *only* [the chart](https://x.test/a)', [])).toEqual([{ text: 'Use putts and only the chart', bold: false }]);
   });
   it('bold first, then roster names: longest first, on word boundaries', () => {
     expect(splitInline('**Nick Rini** and Nicky and Nick', ['Nick', 'Nick Rini'])).toEqual([
@@ -380,5 +401,27 @@ describe('prose: paragraphs, lists, bold and roster names', () => {
       { text: ' on putts' },
     ]);
     expect(splitAtMentions('hello', [])).toEqual([{ text: 'hello' }]);
+  });
+});
+
+import { answerNeverCame } from '../data/coachhelm-chat-thread';
+
+describe('answerNeverCame', () => {
+  const user = (text = 'Who should play?') => ({ id: 'u1', role: 'user', parts: [{ type: 'text', text }] }) as never;
+  const assistant = (...parts: unknown[]) => ({ id: 'a1', role: 'assistant', parts }) as never;
+  it('is true when the question is the last thing: the stream died before an answer was stored', () => {
+    expect(answerNeverCame([user()])).toBe(true);
+    expect(answerNeverCame([user('One'), assistant({ type: 'text', text: 'Done.' }), user('Two')])).toBe(true);
+  });
+  it('is true for an answer that holds only progress steps, false once it holds anything to show', () => {
+    expect(answerNeverCame([user(), assistant()])).toBe(true);
+    expect(answerNeverCame([user(), assistant({ type: 'data-progress', id: 's', data: {} }, { type: 'step-start' })])).toBe(true);
+    expect(answerNeverCame([user(), assistant({ type: 'data-progress', id: 's', data: {} }, { type: 'text', text: 'Owen is 6th.' })])).toBe(false);
+    expect(answerNeverCame([user(), assistant({ type: 'data-evidence', id: 'e', data: {} })])).toBe(false);
+    expect(answerNeverCame([user(), assistant({ type: 'data-action-proposal', id: 'p', data: {} })])).toBe(false);
+  });
+  it('is false for an empty thread and a question with no text (an approval resubmit)', () => {
+    expect(answerNeverCame([])).toBe(false);
+    expect(answerNeverCame([{ id: 'u', role: 'user', parts: [] } as never])).toBe(false);
   });
 });

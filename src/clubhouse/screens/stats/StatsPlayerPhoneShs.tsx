@@ -1,9 +1,9 @@
 'use client';
 
-import { AlertTriangle, Flag, MessageSquare, Plus, RotateCw, Share } from 'lucide-react';
+import { Flag, MessageSquare, Plus, Share } from 'lucide-react';
 import { AnimatePresence } from 'motion/react';
 import Link from 'next/link';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { ChPlayerProfile } from '../../data/stats-player';
 import { basisWords, clearFilters, hasRange, isFiltered, rangeOf, type ChFilter, type ChRange } from '../../data/stats-filter';
 import { playerInsight } from '../../data/stats-insight';
@@ -16,6 +16,8 @@ import { sgBaseline, sgScale } from '../../lib/sg';
 import { chTrail } from '../../lib/track';
 import { useArrivalPainted } from '../../lib/use-painted';
 import { rebuiltHref } from '../../shell/nav';
+import { useRefresh } from '../../lib/use-refresh';
+import { useSegFade } from './seg-fade';
 import { PhoneTop } from '../../shell/phone-chrome';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
@@ -36,6 +38,7 @@ import { GoalSetButton, GoalStatus, GoalSuggestions } from './Goals';
 import { legReadout, sgLegRows } from './leg-rows';
 import { GoalRing, MiniDiverging, MiniRails, RoundTicker, type MiniRailRow } from './MiniCharts';
 import { CACHE_ERROR, countWords, shotsWords } from './notes';
+import { sgIsEstimate, sgMixWords } from '../../data/stats-sg-mix';
 import { ProposalAnswer } from './ProposalAnswer';
 import { RoundsExtra } from './RoundsExtra';
 import { RoundTrend } from './RoundTrend';
@@ -59,13 +62,14 @@ import {
   windowShort,
 } from './shs-figures';
 import { FilterEmpty, NineHint, StatsFilter } from './StatsFilter';
+import { DeskPane } from './DeskPane';
 import { DetailHero, StatsDetailScreen } from './StatsDetailScreen';
 import { ShsArrow, ShsCard, ShsChevron, ShsIcon, ShsPill, SummaryCard, type ShsIconName } from './SummaryCard';
 import { useStatsDetail, type StatsArrivalState } from './use-stats-detail';
-import { useGrowOnce, useStuck, WindowCrossfade } from './shs-motion';
+import { useStuck, WindowCrossfade } from './shs-motion';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { filterKey } from './shs-figures';
-import { WindowSwitch } from './WindowSwitch';
+import { WindowSwitch, withPick } from './WindowSwitch';
 
 const PARTS: ReadonlyArray<{ id: 'tee' | 'approach' | 'short' | 'putting'; name: string; icon: ShsIconName; leg: string }> = [
   { id: 'tee', name: 'Off the tee', icon: 'tee', leg: 'tee' },
@@ -86,10 +90,10 @@ const DETAIL_TITLE: Readonly<Record<StatsPlayerDetailId, string>> = {
 };
 
 /** Text Size Larger and XXL (1.24 and up) reflow the page (08 criterion 20). */
-function useBigText(): boolean {
+export function useBigText(): boolean {
   const [big, setBig] = useState(false);
   useEffect(() => {
-    const read = () => setBig(parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ch-type-scale')) >= 1.24);
+    const read = () => setBig(parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ch-type-scale')) >= 1.2);
     read();
     const watch = new MutationObserver(read);
     watch.observe(document.documentElement, { attributes: true, attributeFilter: ['style'] });
@@ -107,24 +111,34 @@ function useBigText(): boolean {
 export function StatsPlayerPhoneShs({
   data,
   initialTab,
+  initialArea,
   reads,
   playerHref,
   messageHref,
   windowShown,
-  onWindow,
+  spanShown,
   onFilter,
   onBackToTeam,
   onAddFocus,
   onRetry,
   updating,
+  desk = false,
 }: {
+  /**
+   * The desktop page (stats-home, "Desktop"): the same cards as a bento on a flat canvas, and the chosen area's drill beside them
+   * instead of pushed over them. No phone bar and no push; the page's own head is the caller's.
+   */
+  desk?: boolean;
   data: ChPlayerProfile;
   initialTab?: string;
+  /** The address's production `?area=`: opens that area's detail, like a hash. */
+  initialArea?: string;
   reads?: ChReadsSource;
   playerHref: string;
   messageHref: string | null;
   windowShown?: ChRange;
-  onWindow: (r: ChRange) => void;
+  /** The span being loaded (This season, All time), from the tap, as `windowShown` is. */
+  spanShown?: 'season' | 'all';
   onFilter: (next: ChFilter) => void;
   onBackToTeam: () => void;
   onAddFocus: (() => void) | null;
@@ -135,6 +149,8 @@ export function StatsPlayerPhoneShs({
   const coach = data.viewer === 'coach';
   const toast = useToast();
   const big = useBigText();
+  const ctlRef = useRef<HTMLDivElement | null>(null);
+  useSegFade(ctlRef);
   const below = useArrivalPainted();
   const w = data.win;
   const first = data.firstName;
@@ -149,7 +165,7 @@ export function StatsPlayerPhoneShs({
   const showFilter = !failed && (data.filterOptions.total > 0 || filtered);
   const arrivalState: StatsArrivalState = failed ? 'failed' : noRounds ? 'empty' : 'ready';
 
-  const { detail, open, close, replace, saveScroll, detailScroll, restoreTo } = useStatsDetail({ screen: 'player', tab: initialTab, state: arrivalState });
+  const { detail, open, close, replace, saveScroll, detailScroll, restoreTo } = useStatsDetail({ screen: 'player', tab: initialTab, area: initialArea, state: arrivalState });
   const backLabel = coach ? 'Player stats' : 'My stats';
 
   const share = async () => {
@@ -171,64 +187,62 @@ export function StatsPlayerPhoneShs({
     }
   };
 
+  // On a desk the drill stands beside the cards: choosing a card changes the pane, and nothing is pushed or written to the address.
+  const [deskPick, setDeskPick] = useState<StatsPlayerDetailId | null>(null);
+  // With no figures to drill into (a failed read, no rounds yet) the only card left is Development's, so the pane shows that.
+  const deskDetail: StatsPlayerDetailId = failed || noRounds ? 'goals' : (deskPick ?? (detail as StatsPlayerDetailId | null) ?? 'scoring');
   const go = (id: StatsDetailId, landOn?: string) => {
     setAnchor(landOn ?? null);
-    open(id);
+    if (desk) setDeskPick(id as StatsPlayerDetailId);
+    else open(id);
   };
+  // The pane opens each drill at its top, or on the block the card named (What changed lands on "Against the N before").
   const [anchor, setAnchor] = useState<string | null>(null);
   const reduced = useChReducedMotion();
   const stuck = useStuck();
   const root = useRef<HTMLDivElement>(null);
-  // A landing after a failed load or a Try again draws at rest: marks grow once in a session of the page, and that wasn't a first look.
+  // A landing after a failed load or a Try again is not a first look: the feature chart's scrub hint stays quiet.
   const hadFailed = useRef(failed);
   if (failed) hadFailed.current = true;
-  useGrowOnce(root, reduced || hadFailed.current, [below, failed, noRounds]);
   // Keys that open a detail move focus to Back; a finger doesn't (07 M-STATS-27).
   const keyboard = useRef(false);
 
-  return (
-    <div
-      ref={root}
-      className={'ch-shs' + (big ? ' is-big' : '')}
-      onKeyDownCapture={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') keyboard.current = true;
-      }}
-      onPointerDownCapture={() => {
-        keyboard.current = false;
-      }}
-    >
-      {coach ? (
-        <PhoneTop title="Player stats" heading={false} back={{ label: 'Team', onBack: onBackToTeam }} action={<PhoneIconAction icon={Share} label={`Share ${first}’s stats`} onClick={() => void share()} />} />
-      ) : (
-        <PhoneTop title="My stats" heading={false} start />
-      )}
-
-      {/* While a detail is open the summary is out of reach of the keyboard and VoiceOver. */}
-      <div inert={detail != null} aria-hidden={detail != null || undefined}>
-        {coach && (
-          <header className="ch-spm-head">
-            <Avatar name={data.name} id={data.id} size="lg" />
-            <span className="ch-spm-head__id">
-              <LargeTitle>{data.name}</LargeTitle>
-              <p className="ch-num">{[data.classYear, failed ? null : `${plural(data.season.rounds, 'round')} this season`, data.handicap == null ? null : `${formatHcp(data.handicap)} ${TERMS.handicap.short}`].filter(Boolean).join(' · ')}</p>
-            </span>
-            {messageHref && (
-              <Link href={messageHref} className="ch-spm-head__msg" aria-label={`Message ${first}`} data-ch-press="">
-                <Icon icon={MessageSquare} size={18} />
-              </Link>
-            )}
-          </header>
-        )}
-
-        <div className={'ch-shs-ctl' + (hasRange(data.filter) ? ' is-custom' : '') + (stuck ? ' is-stuck' : '')}>
+  const controls = !firstRun && <div ref={ctlRef} className={desk ? 'ch-shs-dctl' : 'ch-shs-ctl' + (hasRange(data.filter) ? ' is-custom' : '') + (stuck ? ' is-stuck' : '')}>
           <div className="ch-shs-ctl__row">
-            <WindowSwitch value={windowShown ?? rangeOf(data.filter)} onChange={onWindow} custom={hasRange(data.filter)} hook="stats-window-seg" />
-            {showFilter && <StatsFilter filter={data.filter} options={data.filterOptions} count={w.rounds} onChange={onFilter} codes={{ empty: 'CH-5320', pickEmpty: 'CH-5321', pickCap: 'CH-5322', range: 'CH-5102', holes: 'CH-5323' }} phone hook="stats-filter" />}
+            {/* One row for "which rounds": a window of the season, or All time at its end. */}
+            <WindowSwitch value={windowShown ?? rangeOf(data.filter)} span={spanShown ?? data.filter.span ?? 'season'} onScope={(v) => onFilter(withPick(data.filter, v))} custom={hasRange(data.filter)} hook={desk ? undefined : 'stats-window-seg'} />
+            {showFilter && <StatsFilter filter={data.filter} options={data.filterOptions} count={w.rounds} onChange={onFilter} codes={{ empty: 'CH-5320', pickEmpty: 'CH-5321', pickCap: 'CH-5322', range: 'CH-5102', holes: 'CH-5323' }} phone={!desk} hook="stats-filter" />}
           </div>
           {updating}
-        </div>
-
-        <WindowCrossfade k={filterKey(data.filter)} off={false} reduced={reduced} className="ch-shs-sheet">
+        </div>;
+  // The four parts of the game. On a desk they stand as two columns, the long game beside the short game, on shared rows.
+  const parts = (ids: ReadonlyArray<(typeof PARTS)[number]['id']>) => PARTS.filter((p) => ids.includes(p.id)).map((p) => <PartCard key={p.id} data={data} part={p} onOpen={() => go(p.id)} />);
+  const roundsBlock = (
+    <>
+      <h2 className="ch-shs-sech">Rounds</h2>
+      <SectionBoundary surface="stats.player.rounds" label="The rounds" code="CH-5206">
+        <RoundsCard data={data} onOpen={() => go('rounds')} />
+      </SectionBoundary>
+    </>
+  );
+  const developmentBlock = (
+    <>
+      <h2 className="ch-shs-sech">Development</h2>
+      <SectionBoundary surface="stats.player.development" label="Development" code="CH-5207">
+        <GoalsCard data={data} onOpen={() => go('goals')} />
+        {/* A write stays on the summary, so it never hides in a detail. */}
+        {onAddFocus && (
+          <Button size="sm" leftIcon={Plus} onClick={onAddFocus}>
+            Add focus area
+          </Button>
+        )}
+      </SectionBoundary>
+    </>
+  );
+  // On a desk with figures, Rounds and Development are one card each: they stand side by side instead of each leaving half a row empty.
+  const paired = desk && !failed && !noRounds;
+  const sheet = (
+    <>
           {!filtered && noRounds && !firstRun && <NineHint code="CH-5324" filter={data.filter} options={data.filterOptions} who={coach ? `${first} has` : 'You have'} />}
           {failed && <FailedCard onRetry={onRetry} seen={data} />}
           {emptyFilter && (
@@ -266,7 +280,8 @@ export function StatsPlayerPhoneShs({
 
               {below && (
                 <>
-                  <h2 className="ch-shs-sech">Your game</h2>
+                  {/* A coach is reading someone else's page: the section is the player's game, by name. */}
+                  <h2 className="ch-shs-sech">{coach ? `${first}’s game` : 'Your game'}</h2>
                   <SectionBoundary surface="stats.player.strokesGained" label="Strokes gained" code="CH-5204">
                     <SgCard data={data} onOpen={() => go('sg')} />
                   </SectionBoundary>
@@ -274,37 +289,106 @@ export function StatsPlayerPhoneShs({
                     {data.statsError ? (
                       <InlineNotice code="CH-5202" title="Shot-level detail didn’t load." body="Scores and rounds are correct. Try again." onRetry={onRetry} />
                     ) : data.stats && data.stats.roundsPlayed > 0 ? (
-                      PARTS.map((p) => <PartCard key={p.id} data={data} part={p} onOpen={() => go(p.id)} />)
+                      desk ? (
+                        <div className="ch-shs-duo">
+                          <div className="ch-shs-duo__col">{parts(['tee', 'approach'])}</div>
+                          <div className="ch-shs-duo__col">{parts(['short', 'putting'])}</div>
+                        </div>
+                      ) : (
+                        parts(['tee', 'approach', 'short', 'putting'])
+                      )
                     ) : (
-                      <section className="ch-shs-card" suppressHydrationWarning>
+                      <section className="ch-shs-card" data-ch-wide="" suppressHydrationWarning>
                         <EmptyState kind="filtered" compact code="CH-5301" title="No shot-by-shot rounds in this window." body="Game detail fills in from rounds posted hole by hole with shots. Totals-only rounds still count toward scoring." />
                       </section>
                     )}
                   </SectionBoundary>
 
-                  <h2 className="ch-shs-sech">Rounds</h2>
-                  <SectionBoundary surface="stats.player.rounds" label="The rounds" code="CH-5206">
-                    <RoundsCard data={data} onOpen={() => go('rounds')} />
-                  </SectionBoundary>
+                  {paired ? (
+                    <div className="ch-shs-duo">
+                      <div className="ch-shs-duo__col">{roundsBlock}</div>
+                      <div className="ch-shs-duo__col">{developmentBlock}</div>
+                    </div>
+                  ) : (
+                    roundsBlock
+                  )}
                 </>
               )}
             </>
           )}
 
-          {below && (
-            <>
-              <h2 className="ch-shs-sech">Development</h2>
-              <SectionBoundary surface="stats.player.development" label="Development" code="CH-5207">
-                <GoalsCard data={data} onOpen={() => go('goals')} />
-                {/* A write stays on the summary, so it never hides in a detail. */}
-                {onAddFocus && (
-                  <Button size="sm" leftIcon={Plus} onClick={onAddFocus}>
-                    Add focus area
-                  </Button>
-                )}
-              </SectionBoundary>
-            </>
+          {below && !paired && developmentBlock}
+    </>
+  );
+  const ready = !failed && !noRounds;
+
+  if (desk)
+    return (
+      <div ref={root} className="ch-shs ch-shs--desk" data-ch-shs-open={deskDetail}>
+        {controls}
+        <WindowCrossfade k={filterKey(data.filter)} off={false} reduced={reduced} className={'ch-shs-desk' + (below ? '' : ' is-alone')}>
+          <div className="ch-shs-desk__sum">{sheet}</div>
+          {(ready || below) && (
+            <DeskPane detail={deskDetail} hash={hashOf(deskDetail)} title={DETAIL_TITLE[deskDetail]} anchor={anchor}>
+              <DetailBody id={deskDetail} data={data} reads={reads} onRetry={onRetry} coach={coach} onAddFocus={onAddFocus} onPart={(id) => go(id)} beside />
+            </DeskPane>
           )}
+        </WindowCrossfade>
+      </div>
+    );
+
+  return (
+    <div
+      ref={root}
+      className={'ch-shs' + (big ? ' is-big' : '')}
+      onKeyDownCapture={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') keyboard.current = true;
+      }}
+      onPointerDownCapture={() => {
+        keyboard.current = false;
+      }}
+    >
+      {coach ? (
+        <PhoneTop title="Player stats" heading={false} back={{ label: 'Team', onBack: () => (window.history.length > 1 && document.referrer.startsWith(window.location.origin) ? window.history.back() : onBackToTeam()) }} action={<PhoneIconAction icon={Share} label={`Share ${first}’s stats`} onClick={() => void share()} />} />
+      ) : (
+        <PhoneTop title="My stats" heading={false} start />
+      )}
+
+      {/* While a detail is open the summary is out of reach of the keyboard and VoiceOver. */}
+      <div inert={detail != null} aria-hidden={detail != null || undefined}>
+        {coach && (
+          <header className="ch-spm-head">
+            <Avatar name={data.name} id={data.id} size="lg" />
+            <span className="ch-spm-head__id">
+              <LargeTitle>{data.name}</LargeTitle>
+              {/* Each fact is one unbroken item that opens with its separator (`.ch-spm-facts`, stats.css): the three are wider than the
+                  254pt beside the avatar on a 390pt phone, where the line broke inside a fact and the next line began with the dot. */}
+              <p className="ch-num ch-spm-facts">
+                {[data.classYear, failed ? null : `${plural(data.season.rounds, 'round')} this season`, data.handicap == null ? null : `${formatHcp(data.handicap)} ${TERMS.handicap.short}`]
+                  .filter((x): x is string => !!x)
+                  .map((fact, i) => (
+                    <Fragment key={fact}>
+                      {i > 0 && ' '}
+                      <span>
+                        {i > 0 && <i>· </i>}
+                        {fact}
+                      </span>
+                    </Fragment>
+                  ))}
+              </p>
+            </span>
+            {messageHref && (
+              <Link href={messageHref} className="ch-spm-head__msg" aria-label={`Message ${first}`} data-ch-press="">
+                <Icon icon={MessageSquare} size={18} />
+              </Link>
+            )}
+          </header>
+        )}
+
+        {controls}
+
+        <WindowCrossfade k={filterKey(data.filter)} off={false} reduced={reduced} className="ch-shs-sheet">
+          {sheet}
         </WindowCrossfade>
       </div>
 
@@ -324,31 +408,21 @@ export function StatsPlayerPhoneShs({
 function FailedCard({ onRetry, seen }: { onRetry: () => void; /** The page's data: a new copy means the retry came back, so Try again works again. */ seen: unknown }) {
   const [busy, setBusy] = useState(false);
   useEffect(() => setBusy(false), [seen]);
+  // The refresh's own transition ends even when the same data comes back, so Try again never goes dead (FID-STATS-4).
+  const { refresh, refreshing } = useRefresh();
+  void onRetry;
+  useEffect(() => {
+    if (!busy || refreshing) return;
+    const t = window.setTimeout(() => setBusy(false), 1000);
+    return () => window.clearTimeout(t);
+  }, [busy, refreshing]);
   return (
-    <section className="ch-shs-card" suppressHydrationWarning role="alert" data-ch-code="CH-5201">
-      <div className="ch-shs-notice">
-        <span className="ch-shs-notice__ic--flag">
-          <Icon icon={AlertTriangle} size={16} />
-        </span>
-        <div>
-          <p className="ch-shs-notice__t">Rounds didn’t load.</p>
-          <p className="ch-shs-notice__b">Posted rounds are safe. Every figure that reads them would be incomplete, so they’re hidden. Try again.</p>
-          <button
-            type="button"
-            className="ch-shs-btn"
-            data-ch="stats-retry"
-            aria-disabled={busy || undefined}
-            onClick={() => {
-              if (busy) return; // A second tap while it loads does nothing.
-              setBusy(true);
-              onRetry();
-            }}
-          >
-            <Icon icon={RotateCw} size={15} />
-            Try again
-          </button>
-        </div>
-      </div>
+    <section className="ch-shs-card ch-shs-failed" suppressHydrationWarning>
+      <InlineNotice code="CH-5201" title="Rounds didn’t load" retrying={busy || refreshing} retryHook="stats-retry" onRetry={() => {
+        if (busy) return; // A second tap while it loads does nothing.
+        setBusy(true);
+        refresh();
+      }} body={<>Posted rounds are safe. Every figure that reads them would be incomplete, so they’re hidden. Try again.</>} />
     </section>
   );
 }
@@ -367,6 +441,9 @@ function FirstRunCard() {
 
 /** The one green card. A drag on its chart shows that round in the figures; release restores the average. */
 function ScoringCard({ data, onOpen }: { data: ChPlayerProfile; onOpen: () => void }) {
+  // One course's par across the window labels the dashed line; a mix has no one number to give it.
+  const parValues = new Set(data.rounds.flatMap((r) => (r.toPar == null || r.holes !== 18 ? [] : [r.score - r.toPar])));
+  const par = parValues.size === 1 ? [...parValues][0]! : null;
   const [read, setRead] = useState<number | null>(null);
   const rounds = trendRounds(data.rounds, 'score');
   const shown = rounds.filter((r) => r.value != null);
@@ -425,37 +502,53 @@ function ScoringCard({ data, onOpen }: { data: ChPlayerProfile; onOpen: () => vo
             5-round average
           </span>
         )}
-        <span>
-          <i className="lp" />
-          Par
-        </span>
+        {par != null && (
+          <span>
+            <i className="lp" />
+            Par {par}
+          </span>
+        )}
       </div>
     </SummaryCard>
   );
 }
 
 /** The sentence (the honest insight, past its error only) and the two bars. Under four rounds it says when it will have something. */
-/** The page writes the change as one sentence: "Putts per round are down 0.8; greens in regulation are down 5.6 pts, against the previous 10." */
+const measureName = (subject: string) => (subject === 'Scoring avg' ? 'Scoring average' : subject);
+
+/** One change as words: "Putts per round are down 0.8". */
+function changePart(l: { subject: string; figure: string }, lead: boolean): string {
+  const said = measureName(l.subject);
+  const subject = lead ? said : said.charAt(0).toLowerCase() + said.slice(1);
+  const down = /^[−-]/.test(l.figure);
+  return `${subject} ${/^(Greens|Fairways|Putts)/.test(said) ? 'are' : 'is'} ${down ? 'down' : 'up'} ${l.figure.replace(/^[−+-]/, '')}`;
+}
+
+/** The card's headline is one measure, the one its bars draw: "Putts per round are down 0.8, against the previous 10." */
 function changeSentence(lines: ReadonlyArray<{ subject: string; figure: string; words: string }>): string {
-  const parts = lines.map((l, i) => {
-    const subject = i === 0 ? l.subject : l.subject.charAt(0).toLowerCase() + l.subject.slice(1);
-    const down = /^[−-]/.test(l.figure);
-    return `${subject} ${(l.subject.startsWith('Putts') || l.subject.endsWith('s')) ? 'are' : 'is'} ${down ? 'down' : 'up'} ${l.figure.replace(/^[−+-]/, '')}`;
-  });
-  const against = /than (.*)$/.exec(lines[0]?.words ?? '')?.[1];
-  return `${parts.join('; ')}${against ? `, against ${against}` : ''}.`;
+  const lead = lines[0];
+  if (!lead) return '';
+  const against = /than (.*)$/.exec(lead.words)?.[1];
+  return `${changePart(lead, true)}${against ? `, against ${against}` : ''}.`;
+}
+
+/** What else moved past its error, said after the bars so it is never read as their subject. */
+function alsoChanged(lines: ReadonlyArray<{ subject: string; figure: string; words: string }>): string | null {
+  const rest = lines.slice(1);
+  return rest.length ? `Also: ${rest.map((l) => changePart(l, false)).join('; ')}.` : null;
 }
 
 function WhatChanged({ data }: { data: ChPlayerProfile }) {
   const scores = trendRounds(data.rounds, 'score').filter((r) => r.value != null);
-  const bars = changeBars(data);
+  const insightFirst = hasPrevious(data) ? playerInsight(data) : null;
+  const bars = changeBars(data, insightFirst?.state === 'changes' ? insightFirst.lines[0]?.subject : undefined);
   if (scores.length < 4)
     return (
       <p className="ch-shs-hl">
         {plural(scores.length, 'round')} so far, averaging {formatFixed(data.win.avg)}. Once there are a few more, this card says what changed and why.
       </p>
     );
-  const insight = hasPrevious(data) ? playerInsight(data) : null;
+  const insight = insightFirst;
   return (
     <>
       {insight?.state === 'changes' ? (
@@ -464,22 +557,25 @@ function WhatChanged({ data }: { data: ChPlayerProfile }) {
         <p className="ch-shs-hl">Nothing has moved past its usual round-to-round spread {insight.against}.</p>
       ) : (
         <p className="ch-shs-hl">
-          {plural(scores.length, 'round')}, averaging {formatFixed(data.win.avg)}. {bars.length === 2 ? `Your ${bars[0]!.label.toLowerCase()} average ${formatFixed(Math.abs(bars[0]!.value - bars[1]!.value))} ${bars[0]!.value < bars[1]!.value ? 'lower' : 'higher'} than the ${bars[1]!.label.toLowerCase()} of this window.` : ''}
+          {plural(scores.length, 'round')}, averaging {formatFixed(data.win.avg)}. {bars.length === 2 ? `${data.viewer === 'coach' ? `${data.firstName}’s` : 'Your'} ${bars[0]!.label.toLowerCase()} average ${formatFixed(Math.abs(bars[0]!.value - bars[1]!.value))} ${bars[0]!.value < bars[1]!.value ? 'lower' : 'higher'} than the ${bars[1]!.label.toLowerCase()} of this window.` : ''}
         </p>
       )}
       {bars.length > 0 && (
-        <div className="ch-shs-cmp" aria-hidden="true">
+        <div className="ch-shs-cmp" aria-hidden="true" data-ch-stats-changed={bars[0]!.measure}>
+          {/* The bars are one measure and say which. */}
+          <div className="ch-shs-cmp-h">{measureName(bars[0]!.measure)}</div>
           {bars.map((b) => (
             <div className="ch-shs-cmp-row" key={b.label}>
-              <span className="k">{b.label}</span>
+              <span className="k ch-num">{b.label}</span>
               <span className="ch-shs-cmp-track">
-                <i className={`ch-shs-fill-${b.tone}`} data-ch-grow="" style={{ width: `${formatFixed(b.width, 1)}%` }} />
+                <i className={`ch-shs-fill-${b.tone}`} style={{ width: `${formatFixed(b.width, 1)}%` }} />
               </span>
-              <span className="v">{formatFixed(b.value)}</span>
+              <span className="v">{formatFixed(b.value)}{b.unit}</span>
             </div>
           ))}
         </div>
       )}
+      {insight?.state === 'changes' && alsoChanged(insight.lines) && <p className="ch-shs-also">{alsoChanged(insight.lines)}</p>}
     </>
   );
 }
@@ -504,7 +600,7 @@ function Glance({ data, onOpen }: { data: ChPlayerProfile; onOpen: (id: StatsDet
             {t.value ?? <NoData />}
             {t.value != null && t.unit && <small>{t.unit}</small>}
           </span>
-          <span className="m">{t.meta}</span>
+          <span className="m ch-num">{t.meta}</span>
         </button>
       ))}
     </div>
@@ -516,12 +612,24 @@ function SgCard({ data, onOpen }: { data: ChPlayerProfile; onOpen: () => void })
   const rows = sgLegRows(data, data.viewer === 'coach').filter((r) => !r.total);
   const said = strongestAndLeak(rows);
   const tone = sgTone(data.win.sgPerRound, ready);
+  // Where the rounds' strokes gained came from (stats-sg-mix.ts): a figure that is all estimate is marked as one, and a mixed one says
+  // how many rounds were shot-tracked. Nothing is added when every round was.
+  const est = ready && sgIsEstimate(data.sgMix);
+  const mix = ready ? sgMixWords(data.sgMix) : null;
   return (
-    <SummaryCard go="sg" onOpen={onOpen} title="Strokes gained" meta="vs Tour" ariaLabel={`Strokes gained ${ready ? formatSigned(data.win.sgPerRound) : 'no value'} a round against the Tour. Open details`}>
+    <SummaryCard go="sg" onOpen={onOpen} title="Strokes gained" meta="vs Tour" ariaLabel={`Strokes gained ${ready ? `${formatSigned(data.win.sgPerRound)}${est ? ', an estimate,' : ''}` : 'no value'} a round against the Tour. Open details`}>
       <div className="ch-shs-sb is-one">
         <div>
-          <span className={`ch-shs-bigv${tone === 'flat' ? '' : ` ch-shs-${tone}`}${ready ? '' : ' ch-shs-none'}`}>{ready ? formatSigned(data.win.sgPerRound) : <NoData />}</span>
+          <span className={`ch-shs-bigv${tone === 'flat' ? '' : ` ch-shs-${tone}`}${ready ? '' : ' ch-shs-none'}`}>
+            {ready ? formatSigned(data.win.sgPerRound) : <NoData />}
+            {est && <small>est.</small>}
+          </span>
           <div className="ch-shs-cap">{ready ? 'Strokes a round against the Tour' : `${SG_WAIT}.`}</div>
+          {mix && (
+            <p className="ch-shs-mini-cap" data-ch-sg-mix="">
+              {mix}
+            </p>
+          )}
         </div>
       </div>
       <MiniDiverging rows={rows} ready={ready} />
@@ -623,7 +731,7 @@ function PartCard({ data, part, onOpen }: { data: ChPlayerProfile; part: (typeof
             {kf.value ?? <NoData />}
             {kf.value != null && kf.unit && <small>{kf.unit}</small>}
           </span>
-          <div className="ch-shs-cap">
+          <div className="ch-shs-cap ch-num">
             {kf.label}
             {kf.tour ? ` · ${kf.tour}` : ''}
           </div>
@@ -632,7 +740,7 @@ function PartCard({ data, part, onOpen }: { data: ChPlayerProfile; part: (typeof
       </div>
       {tee && (
         <>
-          <div className="ch-shs-stack" aria-hidden="true" data-ch-grow="">
+          <div className="ch-shs-stack" aria-hidden="true">
             {tee.map((x) => (
               <span key={x.label} className={x.cls} style={{ flexGrow: x.share }} />
             ))}
@@ -680,7 +788,7 @@ function RoundsCard({ data, onOpen }: { data: ChPlayerProfile; onOpen: () => voi
             <small>{pluralWord(n, 'round', 'rounds')}</small>
           </span>
           {best && n > 1 && (
-            <div className="ch-shs-cap">
+            <div className="ch-shs-cap ch-num">
               Best {best.value} · {best.date}
             </div>
           )}
@@ -734,7 +842,7 @@ function GoalsCard({ data, onOpen }: { data: ChPlayerProfile; onOpen: () => void
             <div key={g.id} role="img" aria-label={`${g.title}: ${g.line}`}>
               {g.progress != null ? <GoalRing progress={g.progress} label={g.centre} /> : <span className="ch-shs-rg-none ch-num">{g.centre}</span>}
               <b>{g.title}</b>
-              <small>{g.line}</small>
+              <small className="ch-num">{g.line}</small>
             </div>
           ))}
         </div>
@@ -768,6 +876,7 @@ function DetailBody({
   coach,
   onAddFocus,
   onPart,
+  beside = false,
 }: {
   id: StatsPlayerDetailId;
   data: ChPlayerProfile;
@@ -776,15 +885,17 @@ function DetailBody({
   coach: boolean;
   onAddFocus: (() => void) | null;
   onPart: (id: StatsDetailId) => void;
+  /** On a desk the drill stands beside its card: Scoring leaves out what the Scoring average card already shows. */
+  beside?: boolean;
 }) {
   if (id === 'sg') return <SgDetail data={data} onPart={onPart} />;
   if (id === 'rounds') return <RoundsDetail data={data} />;
   if (id === 'goals') return <GoalsDetail data={data} coach={coach} onAddFocus={onAddFocus} onRetry={onRetry} />;
-  return <GameAreaDetail id={id} data={data} reads={reads} onRetry={onRetry} />;
+  return <GameAreaDetail id={id} data={data} reads={reads} onRetry={onRetry} beside={beside} />;
 }
 
 /** Scoring and the four parts: the page's blocks around today's panels, every one of them kept (`GameDetail only`). */
-function GameAreaDetail({ id, data, reads, onRetry }: { id: 'scoring' | 'tee' | 'approach' | 'short' | 'putting'; data: ChPlayerProfile; reads?: ChReadsSource; onRetry: () => void }) {
+function GameAreaDetail({ id, data, reads, onRetry, beside = false }: { id: 'scoring' | 'tee' | 'approach' | 'short' | 'putting'; data: ChPlayerProfile; reads?: ChReadsSource; onRetry: () => void; beside?: boolean }) {
   const label = windowLabel(data.filter);
   const previous = hasPrevious(data);
   if (data.statsError) return <InlineNotice code="CH-5202" title="Shot-level detail didn’t load." body="Scores and rounds are correct. Try again." onRetry={onRetry} />;
@@ -797,7 +908,17 @@ function GameAreaDetail({ id, data, reads, onRetry }: { id: 'scoring' | 'tee' | 
   let after: ReactNode;
   if (id === 'scoring') {
     const change = scoringChange(data);
-    hero = (
+    // Beside its card (a desk), the figure, its change and the curve are already on the page: the drill keeps the one thing the card
+    // lacks, a coach's team average, and starts at its cards.
+    hero = beside ? (
+      coach && data.teamAvg != null ? (
+        <div className="ch-shs-d-hero">
+          <p className="ch-shs-d-hero__cap">
+            Team average <b className="ch-num">{formatAvg(data.teamAvg)}</b> · {label}
+          </p>
+        </div>
+      ) : null
+    ) : (
       <DetailHero
         figure={formatFixed(data.win.avg)}
         caption={`Scoring average${data.win.toPar == null ? '' : ` · ${formatToPar(data.win.toPar)} to par`} · ${label}${coach && data.teamAvg != null ? ` · Team ${formatAvg(data.teamAvg)}` : ''}`}
@@ -818,7 +939,7 @@ function GameAreaDetail({ id, data, reads, onRetry }: { id: 'scoring' | 'tee' | 
     const parValues = new Set(data.rounds.map((r) => (r.toPar == null || r.holes !== 18 ? null : r.score - r.toPar)));
     const par = parValues.size === 1 ? [...parValues][0]! : null;
     const reading = scoreTrendReading(data);
-    before = x.series.score.length > 0 && (
+    before = !beside && x.series.score.length > 0 && (
       <ShsCard title="Score by round" meta={par == null ? undefined : 'Par dashed'}>
         <Ribbon points={x.series.score} lowerIsBetter reference={par == null ? null : { value: par, label: 'Par' }} />
         {reading && <p className="ch-shs-mini-cap">{reading}</p>}
@@ -839,12 +960,12 @@ function GameAreaDetail({ id, data, reads, onRetry }: { id: 'scoring' | 'tee' | 
       bench = (
         <>
           <span className="ch-shs-hrail ch-shs-kf-bar" aria-hidden="true">
-            <i className={`ch-shs-fill-${kf.rail.tone}`} data-ch-grow="" style={{ width: `${kf.rail.you}%` }} />
+            <i className={`ch-shs-fill-${kf.rail.tone}`} style={{ width: `${kf.rail.you}%` }} />
             <span className="ch-shs-tour" style={{ left: `${kf.rail.tour}%` }} />
           </span>
           <div className="ch-shs-bench-k">
             <span className={`ch-shs-${kf.rail.tone}`}>
-              You {kf.value}
+              {coach ? data.firstName : 'You'} {kf.value}
               {kf.unit}
             </span>
             <span>{kf.tour}</span>
@@ -900,7 +1021,6 @@ function GameAreaDetail({ id, data, reads, onRetry }: { id: 'scoring' | 'tee' | 
       onRetry={onRetry}
       phone
       only={id}
-      shs
       asDetail={{ hero, bench, before, after, figuresMeta: windowShort(data.filter), figuresFirst: id !== 'scoring' }}
     />
   );
@@ -949,7 +1069,18 @@ function SgDetail({ data, onPart }: { data: ChPlayerProfile; onPart: (id: StatsD
     <>
       <DetailHero
         figure={formatSigned(data.win.sgPerRound)}
-        caption={`Strokes a round against the Tour · ${label}`}
+        unit={sgIsEstimate(data.sgMix) ? 'est.' : undefined}
+        caption={
+          <>
+            Strokes a round against the Tour · {label}
+            {sgMixWords(data.sgMix) && (
+              <>
+                <br />
+                <span data-ch-sg-mix="">{sgMixWords(data.sgMix)}</span>
+              </>
+            )}
+          </>
+        }
         gauge={data.win.sgPerRound != null ? <FigureGauge gauge={{ kind: 'sg', tour: data.tour }} n={data.win.sgPerRound} /> : undefined}
         chips={
           <>
@@ -977,7 +1108,7 @@ function SgDetail({ data, onPart }: { data: ChPlayerProfile; onPart: (id: StatsD
               <span className="lab">{r.label}</span>
               <span className="ch-shs-rail">
                 <span className="ch-shs-zero" />
-                {bar && <span className={`ch-shs-bar ch-shs-fill-${tone}${early ? ' is-early' : ''}`} data-ch-grow="" style={{ left: `${bar.left}%`, width: `${bar.width}%`, transformOrigin: `${(r.value ?? 0) >= 0 ? '0' : '100%'} 50%` }} />}
+                {bar && <span className={`ch-shs-bar ch-shs-fill-${tone}${early ? ' is-early' : ''}`} style={{ left: `${bar.left}%`, width: `${bar.width}%`, transformOrigin: `${(r.value ?? 0) >= 0 ? '0' : '100%'} 50%` }} />}
                 {r.value == null && r.tag && <span className="ch-shs-needs">{r.tag}</span>}
                 {r.value != null && r.se != null && <span className="ch-shs-whisk" style={{ left: `${divergeAt(r.value - r.se, scale)}%`, width: `${divergeAt(r.value + r.se, scale) - divergeAt(r.value - r.se, scale)}%` }} />}
               </span>
@@ -1103,6 +1234,10 @@ function GoalsDetail({ data, coach, onAddFocus, onRetry }: { data: ChPlayerProfi
   return (
     <>
       {data.devError && <InlineNotice code="CH-5203" title="Some development items didn’t load." body="Try again." onRetry={onRetry} />}
+      {data.goals[0] && (() => {
+        const lead = data.goals[0]!;
+        return <DetailHero figure={devValue(lead.current, devMetric(lead.title, lead.metric))} caption={[devTitle(lead.title), goalLine(lead)].filter(Boolean).join(' · ')} chips={<GoalStatus id={lead.id} title={devTitle(lead.title)} state={lead.state} coach={coach} />} />;
+      })()}
       <ShsCard title="Goals this season" meta={plural(data.goals.length, 'goal')}>
         {!coach && (
           <>
@@ -1133,7 +1268,7 @@ function GoalsDetail({ data, coach, onAddFocus, onRetry }: { data: ChPlayerProfi
       </ShsCard>
       <ShsCard title="Focus areas" meta={`${active} active${proposed ? ` · ${proposed} waiting on ${coach ? first : 'you'}` : ''}`} flush>
         {data.focusAreas.length === 0 ? (
-          <EmptyState code="CH-5303" kind="first-run" compact title="No focus areas yet." body={coach ? 'Add one from a weak section above.' : 'Your coach adds focus areas; they show here.'} />
+          <EmptyState code="CH-5303" kind="first-run" compact title="No focus areas yet." body={coach ? 'Add one with the button below.' : 'Your coach adds focus areas; they show here.'} />
         ) : (
           <div className="ch-shs-dev">
             {data.focusAreas.map((f) => {
@@ -1144,7 +1279,7 @@ function GoalsDetail({ data, coach, onAddFocus, onRetry }: { data: ChPlayerProfi
                   <span className="ch-num">{f.status === 'proposed' ? 'Proposed, waiting to be accepted' : devProgress(f)}</span>
                   {progress != null && (
                     <div className="ch-shs-prog" aria-hidden="true">
-                      <i data-ch-grow="" style={{ width: `${progress}%` }} />
+                      <i style={{ width: `${progress}%` }} />
                     </div>
                   )}
                   {!coach && f.status === 'proposed' && <ProposalAnswer id={f.id} title={f.title} />}

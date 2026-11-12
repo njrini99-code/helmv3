@@ -19,7 +19,6 @@ vi.mock('@/app/golf/actions/development', () => ({ createFocusArea: vi.fn() }));
 import { StatsTeam } from '../screens/stats/StatsTeam';
 import { StatsPlayer } from '../screens/stats/StatsPlayer';
 import { StatsProfileSkeleton, StatsSkeleton } from '../screens/stats/StatsSkeleton';
-import { StatsPlayerPhoneSkeleton, StatsTeamPhoneSkeleton } from '../screens/stats/StatsPhoneSkeleton';
 import { HomeSkeleton } from '../screens/home/HomeSkeleton';
 import { ClubhouseMarker } from '../shell/context';
 import { ToastProvider } from '../ui/Toast';
@@ -27,7 +26,6 @@ import { PREVIEW_PLAYER, PREVIEW_TEAM_STATS } from '../preview/fixtures-stats';
 import { filterFor } from '../data/stats-filter';
 import type { ChTeamStats } from '../data/stats-team';
 import type { ChPlayerProfile } from '../data/stats-player';
-
 
 const css = readFileSync(join(process.cwd(), 'src/clubhouse/styles/stats.css'), 'utf8');
 const shell = (node: React.ReactNode) => (
@@ -44,15 +42,15 @@ const player = (over: Partial<ChPlayerProfile> = {}): ChPlayerProfile => ({ ...P
 
 describe('Team stats hold their geometry across windows', () => {
   it('Team stats draw no figure cards (the trend and its tape replace them); a profile keeps its five cards at the same height in every window', () => {
-    const { container, unmount } = render(shell(<StatsTeam data={team()} />));
+    const { container, unmount } = render(shell(<StatsTeam layout="board" data={team()} />));
     expect(container.querySelector('.ch-fg')).toBeNull();
     unmount();
-    const profile = render(shell(<StatsPlayer data={player()} coachId="c1" />));
+    const profile = render(shell(<StatsPlayer layout="tabs" data={player()} coachId="c1" />));
     for (const g of profile.container.querySelectorAll('.ch-fg')) expect(g.classList.contains('ch-fg--hold')).toBe(false);
   });
 
   it('strokes gained heads the trend, the five supporting figures follow as one tape under it, and the skeleton draws the same', () => {
-    const { container, unmount } = render(shell(<StatsTeam data={team()} />));
+    const { container, unmount } = render(shell(<StatsTeam layout="board" data={team()} />));
     const order = [...container.querySelectorAll('.ch-sgt, .ch-tp')].map((c) => c.className.split(' ')[0]);
     expect(order).toEqual(['ch-sgt', 'ch-tp']);
     expect(container.querySelector('.ch-sgt__hero .ch-sgt__k')!.textContent).toBe('Team strokes gained per round');
@@ -63,17 +61,17 @@ describe('Team stats hold their geometry across windows', () => {
     expect(skel.container.querySelectorAll('.ch-tp > .ch-tp__c')).toHaveLength(5);
     skel.unmount();
     // The profile keeps its five equal cards.
-    const profile = render(shell(<StatsPlayer data={player()} coachId="c1" />));
+    const profile = render(shell(<StatsPlayer layout="tabs" data={player()} coachId="c1" />));
     expect(profile.container.querySelector('.ch-fg--lead')).toBeNull();
   });
 
   it('the hole-coverage line is in every window: the note when there is one, an empty line when there is none', () => {
-    const noted = render(shell(<StatsTeam data={team({ figures: PREVIEW_TEAM_STATS.figures.map((f) => ({ ...f, note: 'Hole stats from 8 of 10 rounds' })) })} />));
+    const noted = render(shell(<StatsTeam layout="board" data={team({ figures: PREVIEW_TEAM_STATS.figures.map((f) => ({ ...f, note: 'Hole stats from 8 of 10 rounds' })) })} />));
     const lines = noted.container.querySelectorAll('.ch-st-cover');
     expect(lines).toHaveLength(1);
     expect(lines[0]!.textContent).toBe('Hole stats from 8 of 10 rounds');
     noted.unmount();
-    const none = render(shell(<StatsTeam data={team({ figures: PREVIEW_TEAM_STATS.figures.map((f) => ({ ...f, note: undefined })) })} />));
+    const none = render(shell(<StatsTeam layout="board" data={team({ figures: PREVIEW_TEAM_STATS.figures.map((f) => ({ ...f, note: undefined })) })} />));
     const empty = none.container.querySelectorAll('.ch-st-cover');
     expect(empty).toHaveLength(1);
     expect(empty[0]!.textContent).toBe('');
@@ -81,12 +79,12 @@ describe('Team stats hold their geometry across windows', () => {
   });
 
   it('the trend plot is as tall as the team (its players set --ch-ends), with rounds or without, so a window with fewer players keeps the card', () => {
-    const full = render(shell(<StatsTeam data={team()} />));
+    const full = render(shell(<StatsTeam layout="board" data={team()} />));
     const plot = full.container.querySelector('.ch-sgt__plot') as HTMLElement;
     expect(plot.style.getPropertyValue('--ch-ends')).toBe(String(PREVIEW_TEAM_STATS.players.length));
     full.unmount();
     // A window with no weeks at all: the empty state sits in a box of the same height.
-    const none = render(shell(<StatsTeam data={team({ weeks: [], team: { sg: [], score: [], sgMean: null, scoreMean: null } })} />));
+    const none = render(shell(<StatsTeam layout="board" data={team({ weeks: [], team: { sg: [], score: [], sgMean: null, scoreMean: null } })} />));
     expect(none.container.querySelector('.ch-sgt__plot')).toBeNull();
     const hold = none.container.querySelector('.ch-sgt__hold') as HTMLElement;
     expect(hold.style.getPropertyValue('--ch-ends')).toBe(String(PREVIEW_TEAM_STATS.players.length));
@@ -114,47 +112,10 @@ describe('Team stats hold their geometry across windows', () => {
   });
 });
 
-describe('The phone holds its panels across windows', () => {
-  const phone = (run: () => void) => {
-    const real = window.matchMedia;
-    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
-    try {
-      run();
-    } finally {
-      window.matchMedia = real;
-    }
-  };
-
-  it('Team stats: a window with no trend keeps the chart\'s frame and the reading\'s line; one with no strokes gained keeps the bars\' height', () => {
-    phone(() => {
-      const { container } = render(shell(<StatsTeam data={team({ days: [], legTotals: [null, null, null, null] })} />));
-      const trend = container.querySelector('section[aria-labelledby="ch-stm-trend"]')!;
-      expect(trend.querySelector('.ch-stm-chart-hold')!.textContent).toMatch(/The trend draws once the team has rounds on a second day/);
-      expect(trend.querySelector('.ch-stm-note[aria-hidden="true"]')).not.toBeNull();
-      expect(container.querySelector('section[aria-labelledby="ch-stm-legs"]')!.classList.contains('ch-stm-panel--bars')).toBe(true);
-    });
-    expect(css).toMatch(/\.ch-stm-chart-hold\s*{[^}]*aspect-ratio: 340 \/ 120/);
-    expect(css).toMatch(/\.ch-stm-panel--bars\s*{\s*min-height: 258px/);
-  });
-
-  it('a profile: one round keeps the trend\'s frame, and no strokes gained keeps the bars\' height', () => {
-    phone(() => {
-      const one = player({ rounds: PREVIEW_PLAYER.rounds.slice(0, 1) });
-      const { container } = render(shell(<StatsPlayer data={one} coachId="c1" />));
-      expect(container.querySelector('section[aria-labelledby="ch-spm-trend"] .ch-stm-chart-hold')!.textContent).toMatch(/One round so far/);
-    });
-    phone(() => {
-      const noSg = player({ win: { ...PREVIEW_PLAYER.win, sgPerRound: null, sgLegs: { tee: null, approach: null, around: null, putting: null } } });
-      const { container } = render(shell(<StatsPlayer data={noSg} coachId="c1" />));
-      expect(container.querySelector('section[aria-labelledby="ch-spm-sg"]')!.classList.contains('ch-stm-panel--bars')).toBe(true);
-    });
-  });
-});
-
 describe('A profile holds its hero across windows', () => {
   it('the strokes gained figure keeps its change line when the window has no change to show', () => {
     const noChange = player({ sgChange: { delta: null, context: '' } });
-    const { container } = render(shell(<StatsPlayer data={noChange} coachId="c1" />));
+    const { container } = render(shell(<StatsPlayer layout="tabs" data={noChange} coachId="c1" />));
     const figs = [...container.querySelectorAll('.ch-pf-hero__figs > div')];
     const sg = figs.find((f) => f.querySelector('dt')?.textContent === 'SG / round')!;
     const line = sg.querySelector('.ch-pf-hero__chg');
@@ -194,44 +155,6 @@ describe('Skeletons draw the loaded page\'s lines', () => {
     expect(css).toMatch(/\.ch-pf-hero__figs \.ch-sgchg\s*{\s*flex-wrap: nowrap/);
     // The window switch keeps the loaded one's foot.
     expect(css).toMatch(/\.ch-pf-tabs \.ch-seg,\s*\.ch-pf-tabs > \.ch-skel:last-child\s*{\s*margin-bottom: 8px/);
-  });
-
-  it('the phone skeletons keep the loaded order (a profile: head, the window and filter row, then the figures) and give each figure its second line', () => {
-    const profile = render(<StatsPlayerPhoneSkeleton />);
-    const order = [...profile.container.querySelector('main')!.children].map((c) => c.className.split(' ')[0]);
-    expect(order.slice(0, 3)).toEqual(['ch-spm-head', 'ch-stm-controls', 'ch-stm-overview']);
-    const overview = profile.container.querySelector('.ch-stm-overview')!;
-    expect(overview.getAttribute('aria-hidden')).toBe('true');
-    expect(overview.querySelector('.ch-stm-figs.is-three')).not.toBeNull();
-    expect(overview.querySelector('.ch-stm-figs > div:last-child dd')?.classList.contains('is-words')).toBe(true);
-    expect(overview.querySelector('.ch-stm-overview__meta')).not.toBeNull();
-    expect(overview.textContent).toBe('');
-    expect(profile.container.querySelector('main')?.getAttribute('aria-label')).toBe('Loading player stats');
-    profile.unmount();
-    const teamPhone = render(<StatsTeamPhoneSkeleton />);
-    // Team stats (direction A): the large title, the window row, the hero, its trend, then the round and strokes gained groups.
-    const teamOrder = [...teamPhone.container.querySelector('main')!.children].map((c) => c.className.split(' ')[0]);
-    expect(teamOrder).toEqual(['ch-stm-head', 'ch-stm-controls', 'ch-stm-hero', 'ch-stm-trend', 'ch-stm-panel', 'ch-stm-panel', 'ch-sr-only']);
-    expect(teamPhone.container.querySelector('main')!.className).toBe('ch-stm is-team');
-    // The hero holds the value's line and the comparison's; the groups hold the loaded rows at their fixed heights.
-    expect(teamPhone.container.querySelectorAll('.ch-stm-hero > dd')).toHaveLength(2);
-    expect(teamPhone.container.querySelectorAll('.ch-stm-figrow')).toHaveLength(3);
-    expect(teamPhone.container.querySelectorAll('.ch-stm-sgfig + .ch-stm-legs > .ch-stm-leg')).toHaveLength(5);
-    expect(css).toMatch(/\.ch-stm\.is-team \.ch-stm-figrow\s*{[^}]*min-height: 60px/);
-    expect(css).toMatch(/\.ch-stm\.is-team \.ch-stm-sgfig\s*{[^}]*height: 64px/);
-    expect(css).toMatch(/\.ch-stm\.is-team \.ch-stm-leg\s*{[^}]*height: 44px/);
-    // The trend's hold is the plot's own box (the same bleed), and its reading holds the two lines it wraps to beside the mean's key.
-    expect(css).toMatch(/\.ch-stm\.is-team \.ch-stm-plot\s*{[^}]*aspect-ratio: 340 \/ 120;\s*margin-inline: -4px/);
-    expect(css).toMatch(/\.ch-stm\.is-team \.ch-stm-trend \.ch-stm-chart-hold\s*{\s*margin-inline: -4px/);
-    expect(css).toMatch(/\.ch-stm\.is-team \.ch-stm-trend \.ch-stm-note\s*{[^}]*min-height: calc\(2 \* 1\.4 \* 14px\)/);
-    // A profile's three figures take the stat line and gauge row.
-    const profilePhone = render(<StatsPlayerPhoneSkeleton />);
-    expect(profilePhone.container.querySelector('.ch-stm-overview > .ch-stm-figs.is-three.is-line + .ch-stm-gauges')).not.toBeNull();
-    profilePhone.unmount();
-    expect(css).toMatch(/\.ch-stm-gauges\s*{[^}]*min-height: 39px/);
-    expect(teamPhone.container.querySelector('.ch-stm-cover')?.getAttribute('aria-hidden')).toBe('true');
-    expect(teamPhone.container.querySelector('.ch-stm-chart-hold')).not.toBeNull();
-    expect(teamPhone.container.querySelector('main')?.getAttribute('aria-label')).toBe('Loading stats');
   });
 
   it('Home: the head has its sentence and its two actions, as loaded', () => {

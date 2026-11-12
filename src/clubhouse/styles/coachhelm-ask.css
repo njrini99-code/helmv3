@@ -303,8 +303,9 @@
 /* A block, not a flex row: an ellipsis on a flex container cuts a long title mid-letter. The line height centres it. */
 .ch-ask-hist__row {
   display: block;
-  height: 36px;
-  padding: 0 8px;
+  height: 44px;
+  /* Centred in its 44 by padding: the row stays a block so its ellipsis holds. */
+  padding: 12px 8px;
   overflow: hidden;
   border-radius: var(--ch-radius-md);
   font: var(--ch-type-14);
@@ -703,6 +704,44 @@
 .ch-ask-cmp.is-phone .ch-ask-cmp__grow {
   display: none;
 }
+/* Direction A (owner, 11 Nov): in a thread the composer is one ivory bar with a plain +, the field and the green
+   rounded-square send key. The + and the @ carry no ring; a hover or a press washes them. The send key keeps its green
+   when there is nothing to send yet, and its arrow steps back instead. */
+.ch-ask-cmp.is-dock .ch-ask-cmp__round,
+.ch-ask-cmp.is-phone .ch-ask-cmp__round {
+  border-radius: var(--ch-radius-md);
+  box-shadow: none;
+}
+@media (hover: hover) {
+  .ch-ask-cmp.is-dock .ch-ask-cmp__round:hover,
+  .ch-ask-cmp.is-phone .ch-ask-cmp__round:hover {
+    background: var(--ch-well-bg-flat);
+    box-shadow: none;
+    color: var(--ch-text-primary);
+  }
+}
+/* The @ stays, quieter than the +: it is a shortcut to what typing @ already does. It wears the placeholder's ink
+   (the text inks are all one inside Ask's composer). */
+.ch-ask-cmp.is-dock .ch-ask-cmp__round.is-quiet,
+.ch-ask-cmp.is-phone .ch-ask-cmp__round.is-quiet {
+  color: var(--ch-text-placeholder);
+}
+.ch-ask-cmp.is-dock .ch-ask-cmp__round[data-ch-pressed],
+.ch-ask-cmp.is-phone .ch-ask-cmp__round[data-ch-pressed] {
+  background: var(--ch-press-wash);
+}
+.ch-ask-cmp.is-dock .ch-ask-cmp__send,
+.ch-ask-cmp.is-phone .ch-ask-cmp__send {
+  border-radius: var(--ch-radius-md);
+}
+.ch-ask-cmp.is-dock .ch-ask-cmp__send:disabled,
+.ch-ask-cmp.is-phone .ch-ask-cmp__send:disabled {
+  opacity: 1;
+}
+.ch-ask-cmp.is-dock .ch-ask-cmp__send:disabled .g-send,
+.ch-ask-cmp.is-phone .ch-ask-cmp__send:disabled .g-send {
+  opacity: 0.55;
+}
 /* The mention picker (cmdk, CH-13821): the roster and the stats, a list docked on the box. Above the box in a thread and
    on the phone, so it rises out of the composer the thumb is on; below the desktop's new-chat box, which sits high on
    its page. It floats (the overlay elevation) because it covers the conversation for a moment, and nothing in it takes
@@ -918,6 +957,9 @@ body.keyboard-open .ch-ask-hist.is-drawer {
   .ch-ask-body.has-panel {
     grid-template-columns: minmax(0, 1fr);
   }
+  .ch-ask[data-ch-vv] {
+    height: calc(var(--ch-vv-h) + var(--ch-vv-top) - var(--ch-phone-topbar-h) - env(safe-area-inset-top));
+  }
   .ch-ask-scroll {
     padding: 0 var(--ch-page-x-phone) 12px;
   }
@@ -926,7 +968,7 @@ body.keyboard-open .ch-ask-hist.is-drawer {
     flex-direction: column;
   }
   .ch-ask-dock {
-    padding: 8px 12px 8px;
+    padding: 8px var(--ch-page-x-phone) 8px;
     box-shadow: 0 -1px 0 var(--ch-border-hairline);
     background: var(--ch-phone-composer-bg);
   }
@@ -1341,7 +1383,7 @@ html:not([data-fw-theme='dark']) .ch-ask {
   }
 }
 .ch-ask-cap__ic {
-  background: var(--ch-green-700);
+  background: var(--ch-accent);
   color: var(--ch-text-on-accent);
 }
 @media (hover: hover) {
@@ -1407,6 +1449,19 @@ html:not([data-fw-theme='dark']) .ch-ask {
     display: none;
   }
   .ch-root:has(> .ch-cpv-full) .ch-ask-main {
-    margin-right: 452px;
+    margin-right: max(380px, min(452px, 45vw));
+  }
+}
+
+/* ASK-13: Ask owns the phone's height: no extra scroll on the canvas, and with the tabs hidden the dock carries the home indicator's inset. */
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
+  .ch-canvas:has(> .ch-ask), .ch-root[data-phone-notabs] .ch-canvas:has(> .ch-ask) {
+    padding-bottom: 0;
+  }
+  .ch-root[data-phone-notabs] .ch-ask {
+    height: calc(100dvh - var(--ch-phone-topbar-h) - env(safe-area-inset-top) - var(--keyboard-height, 0px));
+  }
+  .ch-root[data-phone-notabs] .ch-ask-dock {
+    padding-bottom: calc(8px + env(safe-area-inset-bottom));
   }
 }

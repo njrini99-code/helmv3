@@ -1,5 +1,10 @@
 # P013 — CoachHelm
 
+> Retired on 11 Nov 2026 (owner): the coach's signal-list board and the
+> player's focus board. The coach's Team page is the drawn golf hole, and a
+> player's Board is Your week; `?player=<id>` on the coach's page opens that
+> player on the hole. See CONTRACT.md, "Retired on 11 Nov 2026".
+
 <!-- clubhouse:release-audit:start -->
 ## Current release audit — 2026-10-06
 

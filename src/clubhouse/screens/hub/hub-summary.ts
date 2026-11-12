@@ -131,13 +131,31 @@ export function ledgerSorted(rows: ChHubLedgerRow[], key: LedgerKey, flipped = f
   });
 }
 
-/** The Tasks board's figures, from the per-task completion the coach's read already carries. */
+/**
+ * The Tasks board's figures, from the per-task completion the coach's read already carries. Two units, never mixed in one
+ * line: tasks (open, overdue, complete: what the strip and the tab's badge count) and assignments, one task for one player
+ * (done and left: how far the team has got through them).
+ */
 export interface TaskFigures {
-  done: number;
-  left: number;
+  /** Tasks not yet done by everyone they were set for. */
+  open: number;
+  /** Open tasks past their due day. */
   overdue: number;
-  /** Tasks nobody has finished that are past due. */
+  /** Tasks every assignee has done. */
+  complete: number;
+  /** Assignments done. */
+  done: number;
+  /** Assignments still to do. */
+  left: number;
+  /** Overdue tasks no player has finished. */
   untouched: number;
+}
+
+/** The board's line about late work, in tasks; null when nothing overdue is untouched. */
+export function untouchedLine(f: Pick<TaskFigures, 'overdue' | 'untouched'>): string | null {
+  if (f.untouched === 0) return null;
+  if (f.overdue === 1) return 'No player has finished the overdue task.';
+  return f.untouched === f.overdue ? `No player has finished any of the ${f.overdue} overdue tasks.` : `No player has finished ${f.untouched} of the ${f.overdue} overdue tasks.`;
 }
 
 export function taskFigures(rows: ChHubTask[], isDone: (t: ChHubTask) => boolean): TaskFigures | null {
@@ -145,6 +163,7 @@ export function taskFigures(rows: ChHubTask[], isDone: (t: ChHubTask) => boolean
   if (!rows.length || known.length < rows.length) return null;
   const done = known.reduce((n, t) => n + t.done![0], 0);
   const total = known.reduce((n, t) => n + t.done![1], 0);
-  const late = rows.filter((t) => !isDone(t) && t.status === 'overdue');
-  return { done, left: Math.max(0, total - done), overdue: late.length, untouched: late.filter((t) => t.done![0] === 0).length };
+  const open = rows.filter((t) => !isDone(t));
+  const late = open.filter((t) => t.status === 'overdue');
+  return { open: open.length, overdue: late.length, complete: rows.length - open.length, done, left: Math.max(0, total - done), untouched: late.filter((t) => t.done![0] === 0).length };
 }

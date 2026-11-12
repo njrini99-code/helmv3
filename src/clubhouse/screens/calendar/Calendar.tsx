@@ -30,7 +30,7 @@ import { whoHears, whoHearsLine } from './who-hears';
 import { RoundMoveConfirm, SeriesScopeMenu } from './drag-popovers';
 import { useToast } from '../../ui/Toast';
 import { friendlyReason, isOffline, normalise, useAction } from '../../lib/use-action';
-import { Attendance, EventDetail, Overlap, Summary, type ChInsp, type InspCtx } from './inspector';
+import { Attendance, EventDetail, Overlap, Summary, attentionOf, type ChInsp, type InspCtx } from './inspector';
 import { CancelEvent, DeleteEvent, EventEditor, SubscribeSheet, type ChTournamentSaved, type EditorSeed } from './editor';
 import { roundsOverlay } from './round-overlay';
 import { RoundEditor } from './editor-round';
@@ -315,7 +315,7 @@ function useHeldMoves(timezone: string, events: ChCalEvent[], today: string, onS
       });
       const when = `${dowLong(to.date)} ${dayNum(to.date)} ${monthName(to.date)}`;
       setSaid(
-        `${base.title} ${kind === 'resize' ? `now ${to.end !== base.end ? `ends at ${fmtHour(to.end, true, clock)}` : `starts at ${at}`}` : `moved to ${at}, ${when}`}.${clash.line ? ` It clashes with ${clash.line.replace(/^Clashes with /, '')}.` : ''} ${undoHint()}`,
+        `${base.title} ${kind === 'resize' ? `now ${to.end !== base.end ? `ends at ${fmtHour(to.end, true, clock)}` : `starts at ${at}`}` : `moved to ${at}, ${when}`}.${clash.line ? ` It overlaps ${clash.line.replace(/^Overlaps /, '')}.` : ''} ${undoHint()}`,
       );
     },
     [flush, drop, toast, timezone, today, onSaved, preview, clock],
@@ -831,10 +831,18 @@ function CalendarBody({
   const reduced = useChReducedMotion();
   const panel = useRef<HTMLElement | null>(null);
   usePanelSmoothScroll(panel);
+  // The week's summary, under the grid; the toolbar's button goes to its list.
+  const under = useRef<HTMLElement | null>(null);
+  // Whether something is open in the panel, and whether it was opened after the page was drawn: the week's panel fades
+  // in then (calendar.css, [data-enter]); one the page loads with is simply there, as is another event opened in it.
+  const [shown, setShown] = useState({ open: !!insp, late: false });
+  if (shown.open !== !!insp) setShown({ open: !!insp, late: true });
   // A-25: was the last press a key that activates a button (Enter or Space), not a pointer?
   const keyed = useRef(false);
   const opener = useRef<HTMLElement | null>(null);
   const toPanel = useRef(false);
+  // Which click of a run the one in hand is (the browser's count: 2 for a double click's second; 0 from the keyboard).
+  const clicks = useRef(0);
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       keyed.current = e.key === 'Enter' || e.key === ' ';
@@ -842,11 +850,16 @@ function CalendarBody({
     const point = () => {
       keyed.current = false;
     };
+    const click = (e: MouseEvent) => {
+      clicks.current = e.detail;
+    };
     window.addEventListener('keydown', key, true);
     window.addEventListener('pointerdown', point, true);
+    window.addEventListener('click', click, true);
     return () => {
       window.removeEventListener('keydown', key, true);
       window.removeEventListener('pointerdown', point, true);
+      window.removeEventListener('click', click, true);
     };
   }, []);
   useEffect(() => {
@@ -888,6 +901,9 @@ function CalendarBody({
     // panel, and closing the panel hands focus back to it. A click leaves focus where the pointer put it.
     const from = document.activeElement;
     const keyboard = keyed.current && !phone && from instanceof HTMLElement && from.matches('.ch-ev, .ch-ev-bar, .ch-ag__row');
+    // The week narrows as its panel opens, so another block can slide under a pointer that has not moved: the second
+    // click of a double click must not open that one instead (F-0057: a double click runs nothing twice).
+    if (view === 'week' && !phone && insp && clicks.current > 1 && !(insp.kind === 'event' && insp.id === e.id)) return;
     opener.current = keyboard ? from : null;
     toPanel.current = keyboard;
     // The event already open stays the same state, so a double click runs nothing twice (F-0057).
@@ -915,7 +931,8 @@ function CalendarBody({
     now,
     loadedHour: data.nowHour,
     people,
-    events: data.events,
+    // What the grid draws: a new event counts on the Today card the moment it is published, not when the re-read lands.
+    events: placed,
     overlaps,
     rsvpError: data.rsvpError,
     covered,
@@ -938,6 +955,66 @@ function CalendarBody({
     onRestoreTournament: (e) => heldCancel.restore(e, 'tournament'),
     refresh,
   };
+
+  // Owner, 2026-11-11: the desktop week takes the page's full width, so the panel (Today, what needs attention) lies
+  // under the grid (calendar.css, .ch-cal-body[data-view='week']). The toolbar says how much is waiting there and goes
+  // to it: the list's own heading and its count, and nothing when the count is 0.
+  const attention = attentionOf(ctx);
+  const toAttention = () => {
+    // From the keyboard, focus goes with the page, to the list's first row.
+    const keyboard = keyed.current;
+    requestAnimationFrame(() => {
+      const canvas = document.getElementById('ch-canvas');
+      const sec = under.current?.querySelector<HTMLElement>('[data-ch-attention]');
+      if (!canvas || !sec) return;
+      // The list's heading comes to rest 16px under the top bar.
+      const bar = Number.parseFloat(getComputedStyle(canvas).getPropertyValue('--ch-topbar-h')) || 56;
+      const top = Math.max(0, Math.round(sec.getBoundingClientRect().top - canvas.getBoundingClientRect().top + canvas.scrollTop - bar - 16));
+      const lenis = canvasLenis();
+      if (reduced) canvasScrollNow(top);
+      else if (lenis) lenis.scrollTo(top);
+      else canvas.scrollTo({ top, behavior: 'smooth' });
+      if (keyboard) sec.querySelector<HTMLElement>('.ch-in__need')?.focus({ preventScroll: true });
+    });
+  };
+
+  // Owner, 2026-11-11: the week's legend sits in the week's own pinned head, at the grid's right edge (views.tsx), so
+  // the toolbar holds on one row beside the week's button; it names Travel and Busy time too, whose tiles the week
+  // draws (busy time is the coach's alone). Day, Month and List keep theirs in the toolbar.
+  const legend = (
+    <div className="ch-cal-legend" aria-hidden="true">
+      <span>
+        <i className="ch-dot-practice" />
+        Practice
+      </span>
+      <span>
+        <i className="ch-dot-qualifier" />
+        Competition
+      </span>
+      <span>
+        <i className="ch-dot-meeting" />
+        Meeting
+      </span>
+      {view !== 'month' && (
+        <span>
+          <i className="ch-dot-class" />
+          Classes
+        </span>
+      )}
+      {view === 'week' && (
+        <span>
+          <i className="ch-dot-travel" />
+          Travel
+        </span>
+      )}
+      {view === 'week' && coach && (
+        <span>
+          <i className="ch-dot-busy" />
+          Busy
+        </span>
+      )}
+    </div>
+  );
 
   const moreItems = [
     { label: 'Add to calendar app', icon: Rss, onSelect: () => setSubs(true) },
@@ -1093,6 +1170,7 @@ function CalendarBody({
           anchor={anchor}
           view={view}
           flagged={flagged}
+          overlaps={overlaps}
           selId={selId}
           notices={notices}
           eventsNotice={data.eventsError ? <InlineNotice code="CH-6201" title="The calendar didn’t load." body="Nothing was changed. Try again." onRetry={refresh} covered={covered} /> : null}
@@ -1222,26 +1300,12 @@ function CalendarBody({
           />
         </div>
         {coach && data.people.length > 0 && <PeoplePicker people={data.people} sel={sel} setSel={setSel} />}
-        <div className="ch-cal-legend" aria-hidden="true">
-          <span>
-            <i className="ch-dot-practice" />
-            Practice
-          </span>
-          <span>
-            <i className="ch-dot-qualifier" />
-            Competition
-          </span>
-          <span>
-            <i className="ch-dot-meeting" />
-            Meeting
-          </span>
-          {view !== 'month' && (
-            <span>
-              <i className="ch-dot-class" />
-              Classes
-            </span>
-          )}
-        </div>
+        {view === 'week' && !data.eventsError && attention.count > 0 && (
+          <Button variant="ghost" className="ch-cal-attn ch-num" onClick={toAttention}>
+            {attention.heading} · {attention.count}
+          </Button>
+        )}
+        {view !== 'week' && legend}
       </div>
 
       {notices}
@@ -1250,7 +1314,7 @@ function CalendarBody({
           <InlineNotice code="CH-6201" title="The calendar didn’t load." body="Nothing was changed. Try again." onRetry={refresh} covered={covered} />
         </div>
       ) : (
-        <div className="ch-cal-body">
+        <div className="ch-cal-body" data-view={view} data-open={view === 'week' && insp ? '' : undefined}>
           <div style={{ minWidth: 0 }}>
             <SectionBoundary surface={`calendar.${view}`} label="The calendar" code="CH-6210">
               {/* CH-6604: another view settles in (base in, quick out); CH-6605: another day, week or month slides 12px the
@@ -1258,7 +1322,7 @@ function CalendarBody({
               <Swap swapKey={view}>
                 <Swap swapKey={period.key} kind="slide" dir={period.dir}>
                   {(view === 'week' || view === 'day') && (
-                    <TimeGrid dates={dates} events={events} people={people} now={now} selId={selId} flagged={flagged} onSelect={open} onDay={(d) => go('day', d)} onMove={coach ? onGridMove : undefined} onBarMove={coach ? (e, to) => onGridMove(e, to, 'bar') : undefined} daylight={daylight} coach={coach} viewerId={data.viewerPlayerId} />
+                    <TimeGrid dates={dates} events={events} people={people} now={now} selId={selId} flagged={flagged} onSelect={open} onDay={(d) => go('day', d)} legend={view === 'week' ? legend : undefined} onMove={coach ? onGridMove : undefined} onBarMove={coach ? (e, to) => onGridMove(e, to, 'bar') : undefined} daylight={daylight} coach={coach} viewerId={data.viewerPlayerId} />
                   )}
                   {view === 'month' && (
                     <MonthView
@@ -1294,14 +1358,27 @@ function CalendarBody({
               </Swap>
             </SectionBoundary>
           </div>
-          <aside ref={panel} className="ch-in-wrap ch-cal-surface" aria-label="Details" aria-live="polite" /* CH-6802 */>
+          {/* Day, Month and List keep the panel beside them: the summary, or what is open. The week is full width with
+              its summary under it; an event, an overlap or attendance opened there brings the panel back beside the
+              grid, where it is on screen wherever the page is scrolled, and the summary stays under the grid so the
+              page keeps its height and nothing under the pointer moves down or up. Closed, the week is whole again:
+              the panel stays on the page, empty and without a place, so it is the live region that says what opens
+              (CH-6802). */}
+          <aside ref={panel} className="ch-in-wrap ch-cal-surface" data-enter={shown.open && shown.late ? '' : undefined} aria-label="Details" aria-live="polite" /* CH-6802 */>
             <SectionBoundary surface="calendar.panel" label="The detail panel" code="CH-6211">
-              {!insp && <Summary ctx={ctx} />}
+              {!insp && view !== 'week' && <Summary ctx={ctx} />}
               {insp?.kind === 'event' && <EventDetail key={`${insp.id}${insp.date}`} ctx={ctx} id={insp.id} date={insp.date} />}
               {insp?.kind === 'attendance' && <Attendance key={insp.id} ctx={ctx} id={insp.id} date={insp.date} />}
               {insp?.kind === 'overlap' && <Overlap key={insp.id} ctx={ctx} id={insp.id} />}
             </SectionBoundary>
           </aside>
+          {view === 'week' && (
+            <aside ref={under} className="ch-in-wrap ch-cal-surface" data-under="" aria-label="This week">
+              <SectionBoundary surface="calendar.panel" label="The summary" code="CH-6211">
+                <Summary ctx={ctx} />
+              </SectionBoundary>
+            </aside>
+          )}
         </div>
       )}
 

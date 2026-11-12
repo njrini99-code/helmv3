@@ -1,0 +1,282 @@
+{
+ "id": "6305ae75",
+ "messageId": "6305ae75-83f0-4c64-9676-fd5f496074bd",
+ "source": {
+  "project": "staging",
+  "team": "Demo University Golf",
+  "exportedBy": "scripts/coachhelm/export-ask-turns.mjs"
+ },
+ "timezone": "America/New_York",
+ "roster": [
+  {
+   "id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+   "name": "Cole Bennett",
+   "first_name": "Cole",
+   "last_name": "Bennett"
+  },
+  {
+   "id": "ed1ff03e-b33a-4a80-891e-09685b7db3d0",
+   "name": "Dylan Brooks",
+   "first_name": "Dylan",
+   "last_name": "Brooks"
+  },
+  {
+   "id": "9458ca63-9dbe-4020-ab13-9e2b70f70c80",
+   "name": "Mason Rivers",
+   "first_name": "Mason",
+   "last_name": "Rivers"
+  },
+  {
+   "id": "b40a650a-bce0-4e46-87cd-365b0256ee21",
+   "name": "Jackson Hale",
+   "first_name": "Jackson",
+   "last_name": "Hale"
+  },
+  {
+   "id": "8e382583-2ce6-4d15-8568-5088cf02dbd1",
+   "name": "Ethan Park",
+   "first_name": "Ethan",
+   "last_name": "Park"
+  },
+  {
+   "id": "faced578-b271-416f-b757-ac3aee5bd9e5",
+   "name": "Tyler Hayes",
+   "first_name": "Tyler",
+   "last_name": "Hayes"
+  },
+  {
+   "id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+   "name": "Owen Carter",
+   "first_name": "Owen",
+   "last_name": "Carter"
+  },
+  {
+   "id": "b6b87c4d-0673-4166-9f8c-44e60936a034",
+   "name": "Audit Testplayer",
+   "first_name": "Audit",
+   "last_name": "Testplayer"
+  }
+ ],
+ "userMessage": {
+  "content": "And what is his scoring average over those?",
+  "createdAt": "2026-07-25T21:48:42.191751+00:00"
+ },
+ "priorMessages": [
+  {
+   "role": "user",
+   "createdAt": "2026-07-25T21:48:31.112021+00:00",
+   "content": "How many rounds has Mason Rivers recorded?",
+   "evidence": []
+  },
+  {
+   "role": "assistant",
+   "createdAt": "2026-07-25T21:48:37.147091+00:00",
+   "content": "Mason Rivers has 12 recorded rounds, spanning May 28 to July 10, 2026.\n\n_Some figures in this answer could not be traced back to your program's data, so I've flagged it rather than presenting them as fact. Please ask again._",
+   "evidence": [
+    {
+     "as_of": "2026-07-25T21:48:35.450Z",
+     "detail": {
+      "player": {
+       "name": "Mason Rivers",
+       "player_id": "9458ca63-9dbe-4020-ab13-9e2b70f70c80"
+      },
+      "rounds": [
+       {
+        "date": "2026-07-10",
+        "putts": 32,
+        "course": "Poplar Grove (real)",
+        "to_par": 8,
+        "round_id": "713ff6ad-0141-4593-ab9b-6d4641a3490c",
+        "sg_total": -7.42,
+        "round_type": "tournament",
+        "total_score": 80
+       },
+       {
+        "date": "2026-07-09",
+        "putts": 34,
+        "course": "Poplar Grove (real)",
+        "to_par": 8,
+        "round_id": "58abde33-15bc-4349-9d14-700421c870a6",
+        "sg_total": -8.03,
+        "round_type": "tournament",
+        "total_score": 80
+       },
+       {
+        "date": "2026-07-08",
+        "putts": 32,
+        "course": "Poplar Grove (real)",
+        "to_par": 3,
+        "round_id": "f28b195a-40f9-4d1c-885d-01a141663edd",
+        "sg_total": -2.16,
+        "round_type": "tournament",
+        "total_score": 75
+       },
+       {
+        "date": "2026-07-04",
+        "putts": 31,
+        "course": "Golden Horseshoe gold course",
+        "to_par": 8,
+        "round_id": "6e3c6280-b1b0-40d4-85bb-f698c3e90b0e",
+        "sg_total": -8.52,
+        "round_type": "practice",
+        "total_score": 79
+       },
+       {
+        "date": "2026-07-04",
+        "putts": 35,
+        "course": "Golden Horseshoe gold course",
+        "to_par": 3,
+        "round_id": "ebeaf9a3-0c1d-4ca1-951c-4bcca5868f61",
+        "sg_total": -4.28,
+        "round_type": "practice",
+        "total_score": 74
+       },
+       {
+        "date": "2026-07-04",
+        "putts": 36,
+        "course": "Golden Horseshoe gold course",
+        "to_par": 9,
+        "round_id": "644fc7ee-93b3-4467-aaa6-06526d71c6b3",
+        "sg_total": -9.88,
+        "round_type": "tournament",
+        "total_score": 80
+       },
+       {
+        "date": "2026-06-10",
+        "putts": 36,
+        "course": "Jekyll Island",
+        "to_par": 5,
+        "round_id": "1c6040dd-47a2-4f0e-a191-789cfaa35725",
+        "sg_total": -8.61,
+        "round_type": "tournament",
+        "total_score": 77
+       },
+       {
+        "date": "2026-06-09",
+        "putts": 31,
+        "course": "Jekyll Island",
+        "to_par": 0,
+        "round_id": "8fda3b26-d6c8-4ab6-9c03-e59fec6c96ec",
+        "sg_total": -1.96,
+        "round_type": "tournament",
+        "total_score": 72
+       },
+       {
+        "date": "2026-06-08",
+        "putts": 30,
+        "course": "Jekyll Island",
+        "to_par": 0,
+        "round_id": "249eec7f-3935-4b47-8ca2-583c21cfe845",
+        "sg_total": -1.98,
+        "round_type": "tournament",
+        "total_score": 72
+       },
+       {
+        "date": "2026-05-29",
+        "putts": 29,
+        "course": "Forest Creek",
+        "to_par": -1,
+        "round_id": "d23f302c-84bf-48b1-940c-39f1b02778a7",
+        "sg_total": -0.1,
+        "round_type": "tournament",
+        "total_score": 71
+       },
+       {
+        "date": "2026-05-29",
+        "putts": 36,
+        "course": "Forest Creek",
+        "to_par": -2,
+        "round_id": "5ff8a4ff-cc4b-4944-9ca7-64e2bf419ebc",
+        "sg_total": 1.08,
+        "round_type": "tournament",
+        "total_score": 70
+       },
+       {
+        "date": "2026-05-28",
+        "putts": 36,
+        "course": "Forest Creek",
+        "to_par": 5,
+        "round_id": "e727cb60-0bec-44c7-b630-a3f47629064d",
+        "sg_total": -6.7,
+        "round_type": "tournament",
+        "total_score": 77
+       }
+      ]
+     },
+     "series": [],
+     "summary": "Mason Rivers's last 12 recorded rounds.",
+     "coverage": "complete",
+     "measurements": [],
+     "coverage_note": null
+    }
+   ]
+  },
+  {
+   "role": "user",
+   "createdAt": "2026-07-25T21:48:42.191751+00:00",
+   "content": "And what is his scoring average over those?",
+   "evidence": []
+  }
+ ],
+ "turn": {
+  "createdAt": "2026-07-25T21:48:46.420293+00:00",
+  "status": "failed",
+  "costUsd": null,
+  "content": "Mason Rivers's scoring average is 75.58 over his 12 recorded rounds (May 28 – July 10, 2026).\n\n_Some figures in this answer could not be traced back to your program's data, so I've flagged it rather than presenting them as fact. Please ask again._",
+  "tools": [
+   {
+    "name": "get_player_metrics",
+    "input": {
+     "player_id": "9458ca63-9dbe-4020-ab13-9e2b70f70c80",
+     "metric_ids": [
+      "scoring_average"
+     ]
+    }
+   }
+  ],
+  "evidence": [
+   {
+    "tool": "get_player_metrics",
+    "ref": null,
+    "envelope": {
+     "as_of": "2026-07-23T11:39:47.911234+00:00",
+     "series": [],
+     "summary": "1 metric for Mason Rivers.",
+     "coverage": "complete",
+     "measurements": [
+      {
+       "unit": "score",
+       "as_of": "2026-07-23T11:39:47.911234+00:00",
+       "value": 75.58,
+       "entity": {
+        "id": "9458ca63-9dbe-4020-ab13-9e2b70f70c80",
+        "kind": "player",
+        "label": "Mason Rivers"
+       },
+       "method": "mean_total_score_over_completed_rounds",
+       "source": "stats cache",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "lower_better",
+       "metric_id": "scoring_average",
+       "window_end": "2026-07-10",
+       "denominator": null,
+       "sample_size": 12,
+       "sample_unit": "rounds",
+       "metric_label": "Scoring average",
+       "window_start": "2026-05-28",
+       "coverage_note": null
+      }
+     ],
+     "coverage_note": null
+    }
+   }
+  ],
+  "recorded": {
+   "outcome": "rejected",
+   "reason": "unknown",
+   "unmatchedTokens": [],
+   "misattributedTokens": []
+  }
+ }
+}

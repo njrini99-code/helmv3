@@ -1,6 +1,6 @@
 'use client';
 
-import { Bus, Check, ChevronDown, Download, FileSpreadsheet, FileText, FileType, Folder, Image as ImageIcon, Megaphone, Ellipsis, Pencil, Plane, Trash2, Upload } from 'lucide-react';
+import { Bus, Check, ChevronDown, ChevronRight, Download, FileSpreadsheet, FileText, FileType, Folder, Image as ImageIcon, Megaphone, Ellipsis, Pencil, Plane, Trash2, Upload } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useRef, useState, type CSSProperties, type DragEvent } from 'react';
 import type { ChHubAnnouncement, ChHubFile, ChHubRsvp, ChHubTask, ChHubTrip, ChHubUpdate, ChRsvp, ChTeamHub } from '../../data/hub';
@@ -686,6 +686,7 @@ export function Documents({
   picker?: { current: (() => void) | null };
 }) {
   const coach = role === 'coach';
+  const phone = useChPhone();
   const input = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (!picker || !coach) return;
@@ -723,7 +724,7 @@ export function Documents({
             <span aria-hidden="true">
               <Icon icon={Upload} size={18} />
             </span>
-            <b>{uploading ? 'Uploading…' : 'Drop files to share with the team'}</b>
+            <b>{uploading ? 'Uploading…' : phone ? 'Tap to add files' : 'Drop files to share with the team'}</b>
             <em>PDF, DOC, XLS or images · players see them in Team Hub</em>
           </button>
           <input
@@ -762,19 +763,19 @@ export function Documents({
                   <button type="button" className="ch-hb-file__open" onClick={() => onOpen(d)} disabled={opening === d.id} aria-label={`Open ${d.title}, ${d.type}`}>
                     <span className={`ch-hb-file__ic is-${d.type.toLowerCase()}`} aria-hidden="true">
                       <Icon icon={FILE_ICON[d.type] ?? FileText} size={18} />
-                      <em>{d.type}</em>
+                      {!d.planId && <em>{d.type}</em>}
                     </span>
                     <span className="ch-hb-file__b">
                       <b>{d.title}</b>
-                      <span className="ch-num">{[d.size, d.date].filter(Boolean).join(' · ')}</span>
+                      <span className="ch-num">{[d.planId ? (d.isPublic ? 'Shared with players' : 'Draft · Only coaches') : d.size, d.date].filter(Boolean).join(' · ')}</span>
                     </span>
-                    <Icon icon={Download} size={15} className="ch-hb-muted" />
+                    <Icon icon={d.planId ? ChevronRight : Download} size={15} className="ch-hb-muted" />
                   </button>
                   {coach && (
                     <Menu
                       label={`More for ${d.title}`}
                       align="end"
-                      items={[{ label: 'Delete file', icon: Trash2, danger: true, onSelect: () => onDelete(d) }]}
+                      items={[{ label: d.planId ? 'Delete plan' : 'Delete file', icon: Trash2, danger: true, onSelect: () => onDelete(d) }]}
                       trigger={(p) => (
                         <Tooltip>
                           <button type="button" className="ch-hb-iconbtn" aria-label={`More for ${d.title}`} {...p}>

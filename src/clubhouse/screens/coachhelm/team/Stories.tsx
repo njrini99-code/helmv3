@@ -40,9 +40,9 @@ function TileVisual({ story, round }: { story: ChTeamStory; round: ChStoryRound 
     const w = (v: number) => Math.max(8, (Math.abs(v) / top) * 108);
     return (
       <svg viewBox="0 0 108 40" aria-hidden="true">
-        <rect x="0" y="4" width={w(p.from)} height="12" rx="6" fill="var(--ch-tb-track)" />
-        <rect x="0" y="24" width={w(p.now)} height="12" rx="6" fill="var(--ch-tb-gain-fill)" />
-        <rect x={w(p.target) - 1} y="20" width="2" height="20" fill="var(--ch-tb-ink)" />
+        <rect x="0" y="4" width={w(p.from)} height="12" rx="6" fill="var(--ch-chart-track)" />
+        <rect x="0" y="24" width={w(p.now)} height="12" rx="6" fill="var(--ch-chart-gain-fill)" />
+        <rect x={w(p.target) - 1} y="20" width="2" height="20" fill="var(--ch-ink-900)" />
       </svg>
     );
   }

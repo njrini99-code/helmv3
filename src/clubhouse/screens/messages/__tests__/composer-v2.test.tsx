@@ -80,11 +80,6 @@ describe('the send key', () => {
     expect(at).toBeGreaterThan(-1);
     expect(css.slice(at, css.indexOf('}', at))).toMatch(/display:\s*none/);
   });
-
-  it('flag off: no holder at all', () => {
-    show(fakeApi({ redesign: false }));
-    expect(sendKey()).toBeNull();
-  });
 });
 
 /** MSG-COMP-03, MSG-COMP-01. */
@@ -115,10 +110,17 @@ describe('six lines, then it scrolls', () => {
     expect((screen.getByTestId('f') as HTMLTextAreaElement).style.height).toBe('132px');
   });
 
-  it('the stylesheet sets the 132 cap under the redesign, and no height transition on the field', () => {
-    const css = readFileSync(resolve(process.cwd(), 'src/clubhouse/styles/messages.css'), 'utf8');
-    const block = css.slice(css.indexOf('[data-ch-ms-v2]'));
-    expect(block).toMatch(/textarea[^{]*\{[^}]*max-height:\s*132px/);
+  it('the field has one definition: the 132 cap, no height transition, and no ring of its own inside the pill', () => {
+    const css = readFileSync(resolve(process.cwd(), 'src/clubhouse/styles/messages.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+    const all = (sel: string) => [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].filter((m) => m[1]!.split(',').some((s) => s.trim() === sel));
+    for (const sel of ['.ch-ms-comp', '.ch-ms-comp__field', '.ch-ms-comp__field textarea', '.ch-ms-send']) expect(all(sel).length, sel).toBeLessThanOrEqual(sel === '.ch-ms-comp' ? 2 : 1);
+    const field = all('.ch-ms-comp__field textarea')[0]![2]!;
+    expect(field).toMatch(/max-height:\s*132px/);
+    expect(field).not.toMatch(/transition/);
+    expect(all('.ch-ms-comp__field textarea:focus-visible')[0]![2]).toMatch(/outline:\s*none/);
+    // MSG-301: the pill is radius 24 at 10 px from the phone's edge (the page edge less 6).
+    expect(all('.ch-ms-comp__field')[0]![2]).toMatch(/border-radius:\s*24px/);
+    expect(css).toMatch(/\.ch-ms-comp \{\s*padding: 8px calc\(var\(--ch-page-x-phone\) - 6px\)/);
   });
 });
 

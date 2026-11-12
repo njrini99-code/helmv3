@@ -164,15 +164,41 @@ Board: `Player - Rounds - Mobile.html`, the tracking frames.
 
 - A round is full screen: the tab bar hides (`usePhoneTabsHidden`); Exit and the
   scorecard (an icon) are in the screen's own top bar.
-- The hole strip is one row of compact chips (board 3): the score once played
-  (red only under par), the hole number until then, the current hole lit ivory,
-  each in a 44 x 44 hit area. It scrolls sideways edge to edge and keeps the
-  current hole in view.
-- The hole stacks above the entry, with a smaller map and a 76px distance.
+- The hole strip is one row of compact chips (board 3): every chip shows its
+  hole number, and a played hole carries its score under it as the scorecard's
+  small mark (a ring under par, an outlined square over it, a filled one for a
+  double or worse, a plain figure for par; red only under par). No chip shows
+  a bare score where a hole's number belongs (owner, 2026-11-11). The current
+  hole is lit ivory; each chip is drawn 40px tall in a 44 x 44 hit area. It
+  scrolls sideways edge to edge and keeps the current hole in view.
+- The hole stacks above the entry and takes whatever height the entry card
+  leaves: the drawn hole at its own shape with the figures on it where there
+  is room, the smaller numeral and readout on a shorter stage, and the hole
+  and the readout side by side on a small phone, the whole hole always drawn.
+  The page has nothing to scroll.
 - The entry card sits directly on the action bar (Undo, Penalty, Next shot) at
-  the foot, above the home indicator, in every state; the hero above takes the
-  slack, so picking a result grows the card upward and the drawn hole does not
-  move. Quick distances fill the row at 44px.
+  the foot, above the home indicator, and keeps one height through a hole
+  (owner, 2026-11-11: nothing moves under the thumb). A result that asks for
+  more (a miss direction, a missed putt's tags) folds into the heading of that
+  question, "Miss direction · Rough · Change", and the question takes the place
+  the results had; both are in the card from the first frame, the one not in
+  use hidden and inert, so neither the pick nor the answer changes the card.
+  A result that asks nothing more (the fairway from the tee, the green, holed)
+  stays lit in the grid. For one base beat after a fold the place takes no tap,
+  so a double tap cannot land on the keys that have just arrived. The distance
+  row is held in the same way before a result and for a holed ball, and the
+  shot's length takes "Required"'s place in its heading. On the phone the miss
+  grid drops its two captions. Quick distances fill the row at 44px.
+- Putting (owner, 2026-11-11): Putt result first, its four results in one
+  row; the required leave distance directly under it; and Break and slope as
+  one optional row at the card's foot, closed until the player opens it and
+  then open on every putt for the rest of the round (the round screen holds
+  it; a reload closes it again). Its two rows of choices, break then slope,
+  open above the row, so the row stays where it was tapped; where the card can
+  only grow down the page (a small phone), the page is scrolled by what the
+  row moved. Closed, the row says what the putt carries ("L → R · Uphill"). A
+  missed putt's four tags stand two by two, each row a pair that excludes
+  itself.
 - The round's save line (CH-11901) is a quiet line beside the distance readout
   (or the holed score), never a pill under the top bar.
 - Sheets (penalty, change a shot, leave this shot, exit, scorecard, round
@@ -211,7 +237,7 @@ as they read every other make.
     "Leaves 1 ft, holes it · 2 putts · 5". The caption always names the
     strokes, so a putt that was actually holed is never tapped in by
     mistake without the score saying so.
-  - The break and slope picked above go with the putt on screen.
+  - The break and slope picked in their row go with the putt on screen.
   - Meters: the caption reads 0.3 m and 0.6 m; feet are stored.
 - **After.** The same path as Hole out: the hole saves, the review shows
   "Saving hole N", a failed save shows Try again, and the round moves to the
@@ -227,11 +253,16 @@ are the reference; no Clubhouse board draws them, so this note is the spec
 until one does. All three are off in production
 (`coachhelm_data_gap_prompt_v1`, `coachhelm_data_prompts_v2`).
 
-- **Where.** First inside the entry card, above the lie and result controls,
-  as one flush section: a label, a ghost Skip at the right (44px tall), one
-  row of chips, and a muted caption that is a live status line. Never in the
-  action bar, never a second primary. At most one prompt shows: the putt ask,
-  then the recovery tap, then the course nudge.
+- **Where.** In the entry card's foot band, the place the distance row takes
+  once a result is picked (owner, 2026-11-11: a fixed place that pushes
+  nothing), as one flush section: a label, a ghost Skip at the right (44px
+  tall), one row of chips as equal keys, and a muted caption that is a live
+  status line. It shows while no result is picked and gives the band to the
+  distance row once one is; Change brings it back. Skipped, or answered and
+  read, it is still drawn for the rest of its shot, hidden and inert, so the
+  card does not change height. Never in the action bar, never a second
+  primary. At most one prompt shows: the putt ask, then the recovery tap, then
+  the course nudge. On the desktop it stays first in the panel.
 - **Putt miss (CH-11960).** After a missed first putt in the band the
   player's putting read is short of, with no miss side tagged: "Which side
   did it miss?" and the chips Short, Long, High side, Low side. The caption
@@ -279,6 +310,14 @@ legacy engine's start, when the engine moves; ROUNDS_PLAN step 4).
 - The qualifier: the first open qualifier is offered above Round details (Play
   sets the type, the course and the tees, and says which round it counts as); a
   qualifier with no round open shows why and can't be chosen.
+- Round type from the course (owner, 2026-11-11): when the course and tees
+  just picked are exactly one open qualifier's, Round type is set to Qualifier
+  with that qualifier's next round, and a line under the control says why
+  ("Set to Qualifier because this course and these tees are Fall qualifier
+  2's."). The player can change it. With no match, or several, the type stays
+  Practice. The page never chooses over a type the player chose, a qualifier
+  they played from its offer, or a kept setup of another type; a type it chose
+  goes back to Practice when the course changes to one that is no qualifier's.
 
 ## Setup on the phone
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { ChevronLeft, CircleAlert, House, RotateCw } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { Icon } from './Icon';
 import { Button } from './Button';
 import { stateTitle } from './States';
@@ -9,11 +9,34 @@ import { OFFLINE_LINE, useOfflineRetry } from './Retry';
 import { CH_NAV_COACH, CH_NAV_PLAYER, routeLabel } from '../shell/nav';
 
 /**
- * A part of the page could not load (catalog kind 2). Flush in the Ledger (lead decision under the owner's full-auto
- * brief, 2026-10-08, revised the same day; owner to confirm): it sits between the section's own rules with no fill,
- * no ring and no stripe, the icon and the title in the danger ink, the body in the secondary ink, and Try again beside
- * the words, or under them in a narrow rail and on the phone (shell.css). The title is a headline, so it shows without
- * a trailing full stop (`stateTitle`).
+ * Where a notice sits: `card` when nothing between it and the page paints a surface, so the notice is bare on the page
+ * (`edge` when it also starts at the screen's edge, inside no page gutter), else null: it is inside a card, a sheet or
+ * a feature card and stays flush there. Read from what is drawn, so a lane's own card counts without declaring itself.
+ */
+export function noticePlace(el: HTMLElement): 'card' | 'edge' | null {
+  const page = el.closest<HTMLElement>('.ch-pscreen, .ch-canvas, dialog') ?? el.ownerDocument.body;
+  const paper = getComputedStyle(page).backgroundColor;
+  for (let n = el.parentElement; n && n !== page; n = n.parentElement) {
+    const cs = getComputedStyle(n);
+    if (cs.backgroundImage && cs.backgroundImage !== 'none') return null;
+    const bg = cs.backgroundColor;
+    if (bg && bg !== 'transparent' && bg !== 'rgba(0, 0, 0, 0)' && bg !== paper) return null;
+  }
+  return el.getBoundingClientRect().left - page.getBoundingClientRect().left < 8 ? 'edge' : 'card';
+}
+
+/**
+ * A part of the page could not load (catalog kind 2). Inside a card it is flush: no fill, no ring and no stripe, the
+ * icon in the danger ink, the title in the page's ink, the body in the secondary ink, and Try again beside the words,
+ * or under them in a narrow rail and on the phone (shell.css). The title is a headline, so it shows without a trailing
+ * full stop (`stateTitle`).
+ *
+ * On the phone no text sits on the page (DESIGN_LANGUAGE law 1; 9: "Empty and failed states: inside the card that would
+ * have held the data"). The right place for a notice is inside the card it belongs to, under that card's head, with
+ * the values that did load left in place. A notice a page holds directly is caught here: it finds that it is bare
+ * (`noticePlace`, once, before paint) and draws the card itself (`data-ch-bare`, shell.css), so it never floats as text
+ * on the page. A whole page that failed is not a notice: use `EmptyState tone="danger" size="page"` (ui/States), the
+ * centred danger page. Try again is the regular 36pt key, which reaches 44pt on the phone (controls.css).
  */
 export function InlineNotice({
   title,
@@ -22,6 +45,7 @@ export function InlineNotice({
   retrying = false,
   covered = false,
   code,
+  retryHook,
 }: {
   title: string;
   body?: ReactNode;
@@ -35,14 +59,23 @@ export function InlineNotice({
   covered?: boolean;
   /** Catalog number (docs/clubhouse/catalog). */
   code?: string;
+  /** A `data-ch` on Try again, for a capture tool or a test to find. */
+  retryHook?: string;
 }) {
   // Try again while offline would fail the same way: say so instead (CH-1905).
   const { retry, offline } = useOfflineRetry(onRetry, retrying);
+  const ref = useRef<HTMLDivElement>(null);
+  const [bare, setBare] = useState<'card' | 'edge' | null>(null);
+  useLayoutEffect(() => {
+    if (ref.current) setBare(noticePlace(ref.current));
+  }, []);
   return (
     <div
+      ref={ref}
       className={'ch-notice ch-notice--danger' + (covered ? ' ch-notice--covered' : '')}
       role={covered ? undefined : 'alert'}
       data-ch-code={code}
+      data-ch-bare={bare ?? undefined}
       aria-busy={retrying || undefined}
     >
       <div className="ch-notice__in">
@@ -58,7 +91,7 @@ export function InlineNotice({
         </div>
         {!covered && onRetry && (
           <div className="ch-notice__act">
-            <Button size="sm" variant="secondary" leftIcon={RotateCw} onClick={retry} busy={retrying}>
+            <Button variant="secondary" leftIcon={RotateCw} onClick={retry} busy={retrying} data={retryHook ? { 'data-ch': retryHook } : undefined}>
               {retrying ? 'Trying again…' : 'Try again'}
             </Button>
           </div>

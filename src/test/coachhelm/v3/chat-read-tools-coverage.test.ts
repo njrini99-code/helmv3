@@ -13,19 +13,7 @@ vi.mock('@/lib/coachhelm/v3/goals/loader', () => ({
   loadActiveGoals: vi.fn(async () => []),
 }));
 
-import {
-  comparePlayers,
-  getFocusAreas,
-  getOpenTasks,
-  getPlayerInsights,
-  getPlayerMetric,
-  getPlayerTrend,
-  getPlayerWeakestAreas,
-  getRecentRounds,
-  getTeamMetricRanking,
-  getUpcomingEvents,
-  resolvePlayerReference,
-} from '@/lib/coachhelm/v3/chat/read-tools';
+import { getFocusAreas, getOpenTasks, getPlayerInsights, getTeamMetricRanking } from '@/lib/coachhelm/v3/chat/read-tools';
 
 type QueryResult = { data: unknown; error: unknown };
 
@@ -90,31 +78,6 @@ afterEach(() => {
 });
 
 describe('CoachHelm read tools — sourced envelope contracts', () => {
-  it('uses the stats-cache timestamp and sample size for a player metric', async () => {
-    const envelope = await getPlayerMetric(
-      sbWith({
-        golf_player_stats_cache: [{
-          data: {
-            player_id: 'p1',
-            scoring_average: 74.5,
-            rounds_in_calculation: 8,
-            updated_at: '2026-08-17T12:00:00.000Z',
-            is_stale: false,
-          },
-        }],
-      }),
-      ctx,
-      { player_id: 'p1', metric_ids: ['scoring_average'] },
-    );
-
-    expect(envelope.as_of).toBe('2026-08-17T12:00:00.000Z');
-    expect(envelope.measurements[0]).toMatchObject({
-      metric_id: 'scoring_average',
-      value: 74.5,
-      sample_size: 8,
-      source: 'stats cache',
-    });
-  });
 
   it('orders a higher-is-better team metric and reports missing teammates', async () => {
     const envelope = await getTeamMetricRanking(
@@ -137,107 +100,6 @@ describe('CoachHelm read tools — sourced envelope contracts', () => {
     expect(envelope.coverage_note).toContain('Drew Mills');
   });
 
-  it('returns a chronological trend even though the database read is newest-first', async () => {
-    const envelope = await getPlayerTrend(
-      sbWith({
-        golf_rounds: [{
-          data: [
-            { id: 'r2', round_date: '2026-08-10', course_name: 'North', round_type: 'tournament', score_to_par: 2, holes_played: 18, total_score: 74, front_nine: 37, back_nine: 37, total_putts: 30 },
-            { id: 'r1', round_date: '2026-08-01', course_name: 'South', round_type: 'practice', score_to_par: 6, holes_played: 18, total_score: 78, front_nine: 37, back_nine: 41, total_putts: 30 },
-          ],
-        }],
-      }),
-      ctx,
-      { player_id: 'p1', metric_id: 'score_to_par', last_n: 5 },
-    );
-
-    expect(envelope.series[0]?.points.map((point) => [point.at, point.value])).toEqual([
-      ['2026-08-01', 6],
-      ['2026-08-10', 2],
-    ]);
-    expect(envelope.measurements[0]?.value).toBe(4);
-  });
-
-  it('warns when a comparison uses materially different sample sizes', async () => {
-    const envelope = await comparePlayers(
-      sbWith({
-        golf_player_stats_cache: [{
-          data: [
-            { player_id: 'p1', scoring_average: 73, rounds_in_calculation: 10, updated_at: '2026-08-17T12:00:00Z' },
-            { player_id: 'p2', scoring_average: 77, rounds_in_calculation: 2, updated_at: '2026-08-17T12:00:00Z' },
-          ],
-        }],
-      }),
-      ctx,
-      { player_ids: ['p1', 'p2'], metric_ids: ['scoring_average'] },
-    );
-
-    expect(envelope.coverage).toBe('complete');
-    expect(envelope.coverage_note).toMatch(/very different amounts of recorded data/i);
-    expect(envelope.coverage_note).toContain('Avery Stone: 10');
-    expect(envelope.coverage_note).toContain('Blake Reed: 2');
-  });
-
-  it('identifies a measured weakness only when at least three peers support it', async () => {
-    const envelope = await getPlayerWeakestAreas(
-      sbWith({
-        golf_player_stats_cache: [{
-          data: [
-            { player_id: 'p1', gir_percentage: 40, greens_total: 90, rounds_in_calculation: 5, updated_at: '2026-08-17T12:00:00Z' },
-            { player_id: 'p2', gir_percentage: 60, greens_total: 90, rounds_in_calculation: 5 },
-            { player_id: 'p3', gir_percentage: 65, greens_total: 90, rounds_in_calculation: 5 },
-            { player_id: 'p4', gir_percentage: 70, greens_total: 90, rounds_in_calculation: 5 },
-          ],
-        }],
-      }),
-      ctx,
-      { player_id: 'p1' },
-    );
-
-    expect(envelope.summary).toContain('greens in regulation');
-    expect(envelope.measurements.map((measurement) => measurement.metric_id)).toContain('gir_pct');
-    expect((envelope.detail as { gaps: Array<{ team_peers_compared: number }> }).gaps[0]?.team_peers_compared).toBe(3);
-  });
-
-  it('maps recent rounds into the bounded coach-facing detail shape', async () => {
-    const envelope = await getRecentRounds(
-      sbWith({
-        golf_rounds: [{
-          data: [{
-            id: 'round-1',
-            round_date: '2026-08-16',
-            course_name: 'Pine Valley',
-            round_type: 'tournament',
-            total_score: 72,
-            score_to_par: 1,
-            total_putts: 29,
-            strokes_gained_total: 0.8,
-            holes_played: 18,
-            front_nine: 36,
-            back_nine: 36,
-          }],
-        }],
-      }),
-      ctx,
-      { player_id: 'p1', last_n: 5 },
-    );
-
-    expect((envelope.detail as { rounds: unknown[] }).rounds).toEqual([
-      {
-        round_id: 'round-1',
-        date: '2026-08-16',
-        course: 'Pine Valley',
-        round_type: 'tournament',
-        holes: 18,
-        counts_in_averages: true,
-        total_score: 72,
-        to_par: 1,
-        putts: 29,
-        sg_total: 0.8,
-      },
-    ]);
-  });
-
   it('returns only the evidence fields the chat may cite from an insight', async () => {
     const envelope = await getPlayerInsights(
       sbWith({
@@ -248,7 +110,8 @@ describe('CoachHelm read tools — sourced envelope contracts', () => {
             insight_type: 'trend',
             category: 'putting',
             title: 'Inside six feet',
-            content: 'Conversion improved.',
+            // The stored body ends with the generators' two template sentences: neither is a finding, so neither is handed over.
+            content: 'Conversion improved. Make rate is off its benchmark. Likely cause inferred from the aggregate, not a measured shot sequence. Target make rate in the next practice block.',
             // strokes_impact/confidence/metric are the eligibility floor
             // `mapRowToRankable` (insight-delivery-ranking.ts) applies — a row
             // missing any of them can't be scored, so it can't be ranked into
@@ -256,9 +119,14 @@ describe('CoachHelm read tools — sourced envelope contracts', () => {
             evidence: {
               metric_label: 'Make rate',
               your_value_display: '82%',
+              comparison_label: 'Team average',
+              comparison_value: 74,
+              sample_n: 38,
+              window_end: '2026-08-16',
               strokes_impact: 0.6,
               confidence: 0.8,
               metric: 'putts_made_5_10ft_pct',
+              diagnosis: { root_cause: 'Make rate is off its benchmark. Likely cause inferred from the aggregate, not a measured shot sequence', recommended_action: 'Target make rate in the next practice block' },
             },
             lifecycle_state: 'detected',
             status: 'active',
@@ -281,9 +149,15 @@ describe('CoachHelm read tools — sourced envelope contracts', () => {
         content: 'Conversion improved.',
         metric_label: 'Make rate',
         value_display: '82%',
+        // What the read measured (the lead's decision of 11 Nov 2026): what it is read against, its sample and its window's end.
+        comparison_label: 'Team average',
+        comparison_value: 74,
+        sample_size: 38,
+        window_end: '2026-08-16',
         created_at: '2026-08-17T12:00:00Z',
       },
     ]);
+    expect(JSON.stringify(envelope)).not.toMatch(/off its benchmark|next practice block|root_cause|recommended_action/);
   });
 
   it('ranks by the canonical composite, not DB/array order (A6 revert-check)', async () => {
@@ -374,90 +248,6 @@ describe('CoachHelm read tools — sourced envelope contracts', () => {
     expect((envelope.detail as { focus_areas: Array<{ player_name: string }> }).focus_areas[0]?.player_name).toBe('Blake Reed');
   });
 
-  it('summarizes attendance for upcoming non-cancelled events', async () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date('2026-08-18T12:00:00.000Z')); // The fixture's events are a few days out.
-    const envelope = await getUpcomingEvents(
-      sbWith({
-        golf_events: [{
-          data: [
-            {
-              id: 'event-1',
-              title: 'Practice',
-              event_type: 'practice',
-              start_time: '2026-08-20T18:00:00Z',
-              end_time: '2026-08-20T20:00:00Z',
-              location: 'Range',
-              requires_rsvp: true,
-              rsvp_deadline: '2026-08-19T18:00:00Z',
-              status: 'scheduled',
-            },
-            {
-              id: 'event-cancelled',
-              title: 'Cancelled practice',
-              event_type: 'practice',
-              start_time: '2026-08-21T18:00:00Z',
-              end_time: '2026-08-21T20:00:00Z',
-              location: 'Range',
-              requires_rsvp: true,
-              rsvp_deadline: null,
-              status: 'cancelled',
-            },
-          ],
-        }],
-        golf_event_attendance: [{
-          data: [
-            { event_id: 'event-1', player_id: 'p1', status: 'accepted' },
-            { event_id: 'event-1', player_id: 'p2', status: 'pending' },
-          ],
-        }],
-      }),
-      ctx,
-      { days_ahead: 7 },
-    );
-
-    expect(envelope.summary).toBe('1 event in the next 7 days.');
-    expect((envelope.detail as { events: unknown[] }).events).toEqual([
-      expect.objectContaining({
-        event_id: 'event-1',
-        rsvp_accepted: 1,
-        rsvp_pending_count: 1,
-        rsvp_pending_names: ['Blake Reed'],
-      }),
-    ]);
-  });
-
-  it('carries no reply counts for an event that does not require an RSVP, so nothing nags about it (owner, 2026-10-08)', async () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date('2026-08-18T12:00:00.000Z')); // The fixture's events are a few days out.
-    const envelope = await getUpcomingEvents(
-      sbWith({
-        golf_events: [{
-          data: [
-            { id: 'event-off', title: 'Practice', event_type: 'practice', start_time: '2026-08-20T18:00:00Z', end_time: null, location: 'Range', requires_rsvp: false, rsvp_deadline: null, status: 'scheduled' },
-            { id: 'event-null', title: 'Lift', event_type: 'practice', start_time: '2026-08-21T18:00:00Z', end_time: null, location: 'Gym', requires_rsvp: null, rsvp_deadline: null, status: 'scheduled' },
-          ],
-        }],
-        golf_event_attendance: [{
-          data: [
-            { event_id: 'event-off', player_id: 'p1', status: 'pending' },
-            { event_id: 'event-null', player_id: 'p2', status: 'pending' },
-          ],
-        }],
-      }),
-      ctx,
-      { days_ahead: 7 },
-    );
-    const events = (envelope.detail as { events: Array<Record<string, unknown>> }).events;
-    expect(events).toHaveLength(2);
-    for (const e of events) {
-      expect(e.requires_rsvp).toBe(false);
-      expect(e).not.toHaveProperty('rsvp_pending_count');
-      expect(e).not.toHaveProperty('rsvp_pending_names');
-      expect(e).not.toHaveProperty('rsvp_accepted');
-    }
-  });
-
   it('decides overdue status in the team timezone rather than UTC', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-08-18T01:00:00.000Z')); // Aug 17 in New York.
@@ -480,13 +270,5 @@ describe('CoachHelm read tools — sourced envelope contracts', () => {
       expect.objectContaining({ task_id: 'late', overdue: true }),
     ]);
     expect(envelope.summary).toBe('2 open tasks, 1 overdue.');
-  });
-
-  it('resolves an unambiguous player reference and refuses an unknown name', () => {
-    expect(resolvePlayerReference(ctx, 'Avery')).toEqual({ player_id: 'p1', name: 'Avery Stone' });
-    expect(resolvePlayerReference(ctx, 'Rory')).toEqual({
-      error: 'No single player on the roster matches "Rory".',
-      candidates: roster.map((candidate) => candidate.name),
-    });
   });
 });

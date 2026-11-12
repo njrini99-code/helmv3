@@ -4,7 +4,6 @@ import { createClient } from '@/lib/supabase/server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { askTables } from '@/lib/coachhelm/v3/chat/ask-db';
 import { logServerError } from '@/lib/server-error-logger';
-import { isAskV2Enabled } from '@/lib/coachhelm/v3/chat/ask-flag';
 import { resolveCoachChatContext } from '@/lib/coachhelm/v3/chat/context';
 import { quickChatWeekBounds, quickChatWeekDays, quickChatWeekOf, type QuickChatWeek } from '@/lib/coachhelm/v3/chat/quick-chat-week';
 import { getValidTimezone } from '@/lib/calendar/timezone';
@@ -22,7 +21,7 @@ async function coach() {
 /** The coach's own words only: no chat turn ever calls this, so nothing inferred is saved (AK8). */
 async function saveCoachFactImpl(input: { teamId: string; text: string; id?: string }): Promise<{ success: boolean; error?: string; id?: string }> {
   const text = input.text.trim();
-  if (!isAskV2Enabled() || !text || text.length > FACT_MAX) return { success: false, error: 'A fact is 1 to 280 characters.' };
+  if (!text || text.length > FACT_MAX) return { success: false, error: 'A fact is 1 to 280 characters.' };
   const who = await coach();
   if (!who) return { success: false, error: 'Unauthorized' };
   const q = input.id ? askTables(who.sb).from('golf_coachhelm_coach_facts').update({ text } as never).eq('id', input.id).eq('coach_id', who.id) : askTables(who.sb).from('golf_coachhelm_coach_facts').insert({ coach_id: who.id, team_id: input.teamId, text } as never);
@@ -36,18 +35,17 @@ async function saveCoachFactImpl(input: { teamId: string; text: string; id?: str
 
 async function deleteCoachFactImpl(id: string): Promise<{ success: boolean; error?: string }> {
   const who = await coach();
-  if (!who || !isAskV2Enabled()) return { success: false, error: 'Unauthorized' };
+  if (!who) return { success: false, error: 'Unauthorized' };
   const { error } = await askTables(who.sb).from('golf_coachhelm_coach_facts').delete().eq('id', id).eq('coach_id', who.id);
   return error ? { success: false, error: 'That wasn’t removed. Try again.' } : { success: true };
 }
 
 async function setChatToneImpl(conversationId: string, tone: 'straight' | 'detailed' | 'team_talk'): Promise<{ success: boolean; error?: string }> {
   const who = await coach();
-  if (!who || !isAskV2Enabled()) return { success: false, error: 'Unauthorized' };
+  if (!who) return { success: false, error: 'Unauthorized' };
   const { error } = await askTables(who.sb).from('golf_coachhelm_chat_conversations').update({ tone } as never).eq('id', conversationId).eq('coach_id', who.id);
   return error ? { success: false, error: 'The tone wasn’t saved.' } : { success: true };
 }
-
 
 /** The week around a draft event and that day's blocks, for the quick chat's card. RLS holds it to the coach's team. */
 async function readQuickChatWeekImpl(date: string): Promise<QuickChatWeek | null> {

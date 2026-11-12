@@ -187,6 +187,12 @@ export function QualifierDetail({
     );
   }
 
+  const playerRounds = (
+    <SectionBoundary surface="qualifiers.player-rounds" label="A player’s rounds" code="CH-09223">
+      <PlayerRounds data={data} openRow={openRow} />
+    </SectionBoundary>
+  );
+
   return (
     <SecondaryProvider value={shown.source}>
       <main className="ch-qf ch-qf--detail" data-canopy="">
@@ -269,15 +275,16 @@ export function QualifierDetail({
             )}
           </div>
           <div className="ch-qf-col">
+            {/* A player's own rounds, with the next one to play, lead the rail (the phone opens on them too); a coach's rail
+                leads with the squad, and the rounds of the row they opened follow the courses. */}
+            {!coach && playerRounds}
             <SectionBoundary surface="qualifiers.selections" label="Selections" code="CH-09214">
               <Selections data={data} status={status} topScore={topScore} />
             </SectionBoundary>
             <SectionBoundary surface="qualifiers.courses" label="Course per round" code="CH-09215">
               <Courses data={data} />
             </SectionBoundary>
-            <SectionBoundary surface="qualifiers.player-rounds" label="A player’s rounds" code="CH-09223">
-              <PlayerRounds data={data} openRow={openRow} />
-            </SectionBoundary>
+            {coach && playerRounds}
             {data.rules && (
               <section className="ch-qf-side" aria-labelledby="ch-qf-rules">
                 <div className="ch-qf-panel__head">
@@ -450,7 +457,7 @@ function Leaderboard({
       </p>
       <ViewerLineCard board={b} viewerId={data.viewerPlayerId} numRounds={data.numRounds} selection={viewerSelection(data.selectionState, data.selections)} />
       {coach && b.mixed && <MixedRounds mixed={b.mixed} />}
-      <StandingsSpread rows={b.rows} topScore={b.topScore} />
+      <StandingsSpread rows={b.rows} topScore={b.topScore} viewerId={data.viewerPlayerId} />
       <div className="ch-qf-table" role="table" aria-labelledby="ch-qf-lb">
         <div role="rowgroup">
           <div className="ch-qf-row ch-qf-row--head ch-qf-lbrow" role="row">

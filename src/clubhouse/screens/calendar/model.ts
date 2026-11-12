@@ -22,7 +22,11 @@ export interface ChCalPerson {
   availability?: ChAvailability;
 }
 
+/** A practice's plan (N-00 4.17). Left out with Practice off; `none` is a practice with no plan yet. */
+export type ChCalPlan = { state: 'none' } | { state: 'draft' | 'published' | 'edited'; id: string };
+
 export interface ChCalEvent {
+  plan?: ChCalPlan;
   id: string;
   type: ChCalType;
   title: string;
@@ -437,6 +441,19 @@ export function layoutLanes<E extends { start: number | null; end: number | null
   return out;
 }
 
+/**
+ * Where a block sits across its day's column, as CSS. Overlapping events cascade (each later lane steps right and lies
+ * over the earlier ones, to the column's right edge). In a column under 120px (the desktop week at 1440px is 100) the
+ * step is halved, so the block on top keeps about 70px for its words instead of 47: the clamp is the switch, nothing
+ * under 120px and the rest of the step from there up.
+ */
+export function laneBox(lane: number, lanes: number): { left: string; width: string } {
+  const step = (lanes > 1 ? Math.min(46, 70 / (lanes - 1)) : 0) * lane;
+  if (!step) return { left: 'calc(0% + 3px)', width: 'calc(100% - 6px)' };
+  const x = `${step / 2}% + clamp(0px, (100% - 120px) * 999, ${step / 2}%)`;
+  return { left: `calc(${x} + 3px)`, width: `calc(100% - (${x}) - 6px)` };
+}
+
 export function rsvpCounts(e: Pick<ChCalEvent, 'people' | 'rsvp'>): Record<ChRsvp, number> {
   const c: Record<ChRsvp, number> = { accepted: 0, maybe: 0, declined: 0, pending: 0 };
   for (const p of e.people) c[e.rsvp[p] ?? 'pending']++;
@@ -479,6 +496,25 @@ export function findOverlaps(events: ChCalEvent[]): ChCalOverlap[] {
     }
   }
   return out;
+}
+
+/**
+ * What each flagged event overlaps, in words, for the line under its row on the phone's day ("Overlaps Short-game
+ * block"): the other event by the name the page gives it (`nameOf`; a coach sees whose class it is), each name once,
+ * two joined and more counted ("Overlaps ECON 101 and 2 more"). An overlap whose other event is not in `events` still
+ * says "Overlaps another event", never a bare mark.
+ */
+export function overlapLines(overlaps: ChCalOverlap[], events: ChCalEvent[], nameOf: (e: ChCalEvent) => string): Map<string, string> {
+  const byId = new Map(events.map((e) => [e.id, e]));
+  const names = new Map<string, string[]>();
+  for (const o of overlaps) {
+    const other = byId.get(o.withId);
+    const name = other ? nameOf(other) : 'another event';
+    const list = names.get(o.eventId) ?? [];
+    if (!list.includes(name)) list.push(name);
+    names.set(o.eventId, list);
+  }
+  return new Map([...names].map(([id, n]) => [id, `Overlaps ${n.length <= 2 ? n.join(' and ') : `${n[0]} and ${n.length - 1} more`}`]));
 }
 
 /**

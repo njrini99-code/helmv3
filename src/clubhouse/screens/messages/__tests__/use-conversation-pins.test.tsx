@@ -131,6 +131,24 @@ describe('the table missing', () => {
     await waitFor(() => expect(f.calls.reads).toBe(2));
   });
 
+  it('a window focus inside the five minutes makes no request; past them it asks once', async () => {
+    const { useConversationPins } = await load();
+    const now = vi.spyOn(Date, 'now').mockReturnValue(2_000_000);
+    const f = fakeDb({ readError: { code: '42P01' } });
+    createClient.mockReturnValue(f.db);
+    renderHook(() => useConversationPins('me', 't1', IDS, true));
+    await waitFor(() => expect(f.calls.reads).toBe(1));
+    act(() => void window.dispatchEvent(new Event('focus')));
+    act(() => void window.dispatchEvent(new Event('focus')));
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(f.calls.reads).toBe(1);
+    now.mockReturnValue(2_000_000 + 5 * 60_000 + 1);
+    act(() => void window.dispatchEvent(new Event('focus')));
+    await waitFor(() => expect(f.calls.reads).toBe(2));
+  });
+
   it('a failure that is not "missing" is not remembered', async () => {
     const { useConversationPins } = await load();
     const f = fakeDb({ readError: { code: '500' } });

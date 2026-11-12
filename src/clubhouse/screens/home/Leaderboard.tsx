@@ -61,9 +61,9 @@ export function leaderPeek(p: ChLeaderRow, rounds: ChLatestRound[] = []): ChPlay
  * and the next place counts them all (1, T2, T2, 4). An early read (under three 18-hole rounds; the loader sorts them
  * last) has no place yet: "—".
  */
-export function leaderPlaces(rows: Pick<ChLeaderRow, 'avg' | 'status'>[]): Array<{ label: string; place: number | null }> {
-  // The one rank rule (B13, lib/rank.ts): on the average as shown, to a tenth.
-  const places = displayPlaces(rows.map((r) => (r.status === 'early' ? null : r.avg)));
+export function leaderPlaces(rows: Pick<ChLeaderRow, 'avg' | 'status'>[], floor = true): Array<{ label: string; place: number | null }> {
+  // The one rank rule (B13, lib/rank.ts): on the average as shown, to a tenth. All time has no floor (data/span.ts): every row has a place.
+  const places = displayPlaces(rows.map((r) => (floor && r.status === 'early' ? null : r.avg)));
   return places.map((p) => (p ? { label: placeLabel(p), place: p.place } : { label: '—', place: null }));
 }
 
@@ -138,7 +138,7 @@ export function Leaderboard({ data, covered = false, rounds }: { data: ChCoachHo
           <h2 id="ch-lb-title">Leaderboard</h2>
           {!data.error && data.scorecards > 0 && (
             <span>
-              Season scoring average &middot; 18-hole rounds &middot; <span className="ch-num">{data.scorecards}</span>{' '}
+              {data.span === 'all' ? 'All-time scoring average' : 'Season scoring average'} &middot; 18-hole rounds &middot; <span className="ch-num">{data.scorecards}</span>{' '}
               {pluralWord(data.scorecards, 'scorecard')}
             </span>
           )}
@@ -178,7 +178,7 @@ export function Leaderboard({ data, covered = false, rounds }: { data: ChCoachHo
           <EmptyState
             code="CH-2305"
             shape="people"
-            title="No 18-hole rounds posted yet this season."
+            title={data.span === 'all' ? 'No 18-hole rounds posted yet.' : 'No 18-hole rounds posted yet this season.'}
             body={`${plural(data.rosterSize, 'player is', 'players are')} on the roster. The leaderboard fills in as rounds are posted.`}
           />
         </div>
@@ -196,7 +196,7 @@ export function Leaderboard({ data, covered = false, rounds }: { data: ChCoachHo
             <span role="columnheader" className="r">SG / rd</span>
           </div>
           {(() => {
-            const places = leaderPlaces(data.rows);
+            const places = leaderPlaces(data.rows, data.span !== 'all');
             // B5: the board's form lines share one range, so the same height is the same score in every row.
             return <FormRange trends={data.rows.map((p) => p.trend)}>{data.rows.map((p, i) => <Row key={p.playerId} p={p} pos={places[i]!} rounds={rounds} />)}</FormRange>;
           })()}

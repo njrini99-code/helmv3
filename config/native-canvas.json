@@ -8,9 +8,9 @@
       "token": "--fw-color-canvas (src/styles/design-tokens.css)"
     },
     "clubhouse": {
-      "light": "#EDE9DF",
+      "light": "#F2F0E9",
       "dark": "#111512",
-      "token": "--ch-bg-page at phone width (src/clubhouse/styles/tokens.css)"
+      "token": "--ch-bg-page (src/clubhouse/styles/tokens.css), one value at every width"
     }
   }
 }

@@ -139,10 +139,9 @@ Player opens round review
     a coach on the player's team change the prescription columns and
     nobody but the service role change `verdict`.
 
-## Player Ask and Your week (flags off, migrations held)
+## Player Ask and Your week (migrations held)
 
-`coachhelm_player_ask_v1` gives a player their own read-only Ask. It only works
-with `coachhelm_ask_v2` also on. Both are off in every environment. The migrations
+A player has their own read-only Ask (its flags were retired 2026-11-07). The migrations
 below are written and not applied. `supabase/migrations/HELD.md` is authoritative.
 
 - The chat stream route sends a player to `src/lib/coachhelm/v3/chat/player-turn.ts`,
@@ -159,8 +158,8 @@ below are written and not applied. `supabase/migrations/HELD.md` is authoritativ
   player's one write. It is held for 8 seconds, and `undoAskCredits` removes it
   inside that window.
 
-`coachhelm_player_file_v1` also adds the player's "Your week"
-(`src/clubhouse/screens/coachhelm/file/YourWeek.tsx`). The flag is off.
+The player's "Your week" is part of it
+(`src/clubhouse/screens/coachhelm/file/YourWeek.tsx`).
 
 ## UI Contract
 

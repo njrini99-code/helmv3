@@ -2,7 +2,6 @@ import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('server-only', () => ({}));
 
-import type { UIMessage } from 'ai';
 import { buildAssistantTurn } from '@/clubhouse/data/coachhelm-chat-thread';
 import type { Measurement, ToolEnvelope } from '../../provenance';
 import { compileVisual } from '../compile';
@@ -134,7 +133,7 @@ describe('compileVisual · the reads an artifact stands in for', () => {
       id: 'a1',
       role: 'assistant',
       parts: [part('x1', 'e1', env(four)), part('x2', 'e2', teamRounds), { type: 'data-visual-artifact', id: 'visual-1', data: r.artifact }],
-    } as unknown as UIMessage;
+    } as unknown as Parameters<typeof buildAssistantTurn>[0];
     const turn = buildAssistantTurn(message, { isLast: false, busy: false });
     if (turn.role !== 'assistant') throw new Error('assistant turn expected');
     expect(turn.blocks.map((b) => (b.kind === 'evidence' ? `evidence:${b.envelope.measurements[0]?.metric_id}` : b.kind))).toEqual(['evidence:avg_score', 'visual']);

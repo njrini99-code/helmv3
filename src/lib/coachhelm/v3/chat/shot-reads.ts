@@ -137,6 +137,7 @@ async function shotsOf(sb: Sb, ctx: CoachChatContext, input: { player_id?: strin
   };
 }
 
+const SEASON_DAYS = 270;
 const whose = (name: string | null, team: string) => name ?? team;
 const today = () => nowIso().slice(0, 10);
 
@@ -145,7 +146,11 @@ export async function getShotPattern(sb: Sb, ctx: CoachChatContext, input: { pla
   if (!read) return unavailableEnvelope('Could not read those shots.', 'The shots query failed. This is not the same as having none.');
   const who = whose(read.playerName, ctx.team_name);
   if (input.mode === 'putting') {
-    const profile = puttProfileOf(read.shots);
+    const window = puttProfileOf(read.shots);
+    // The season tick on each bar (ASK_REDESIGN 3.4): the same player over the season. A failed second read just draws no tick.
+    const seasonRead = (input.since_days ?? 0) < SEASON_DAYS ? await shotsOf(sb, ctx, { ...input, since_days: SEASON_DAYS }).catch(() => null) : null;
+    const season = seasonRead ? puttProfileOf(seasonRead.shots) : null;
+    const profile = { ...window, buckets: window.buckets.map((b) => ({ ...b, season_rate: season?.buckets.find((x) => x.id === b.id)?.rate ?? null })) };
     const measurements = profile.buckets.flatMap((b) => (b.rate == null ? [] : [readFigure({ metric_id: `putt_make_rate_${b.id}`, metric_label: `Make rate, ${b.label}`, unit: 'percent', value: b.rate, entity: read.entity, window_start: read.since, window_end: today(), sample_size: b.attempts, sample_unit: 'attempts', denominator: b.attempts, direction: 'higher_better', source: 'shots', method: 'putts_made_over_attempts_by_stats_bucket' })]));
     return { summary: `${who}: putting by distance, last ${input.since_days} days.`, measurements, series: [], detail: { ...read.scope, metric_scope: 'putt_make_rate', kind: 'putt_profile', profile, rounds: read.rounds, since: read.since, since_days: input.since_days }, coverage: profile.attempts ? 'complete' : 'empty', coverage_note: profile.attempts ? null : 'No putts with a distance in this window.', as_of: nowIso() };
   }
@@ -177,18 +182,4 @@ export async function getProximityByBand(sb: Sb, ctx: CoachChatContext, input: {
   });
   const measurements = rows.flatMap((r) => (r.avg_left_ft == null ? [] : [readFigure({ metric_id: `proximity_${r.from_yards}_${r.to_yards}_yards`, metric_label: `Average left from ${r.from_yards} to ${r.to_yards} yards`, unit: 'feet', value: r.avg_left_ft, entity: read.entity, window_start: read.since, window_end: today(), sample_size: r.shots, sample_unit: 'shots', direction: 'lower_better', source: 'shots', method: 'mean_distance_to_hole_after_by_approach_band' })]));
   return { summary: `${whose(read.playerName, ctx.team_name)}: proximity by band, last ${input.since_days} days.`, measurements, series: [], detail: { ...read.scope, bands: rows, rounds: read.rounds }, coverage: rows.some((r) => r.shots) ? 'complete' : 'empty', coverage_note: rows.some((r) => r.shots) ? null : 'No approach shots in this window.', as_of: nowIso() };
-}
-
-/** Hole by hole for one of the team's rounds. A round off this team isn't read at all. */
-export async function getRoundDetail(sb: Sb, ctx: CoachChatContext, input: { round_id: string }): Promise<ToolEnvelope> {
-  const r = await sb.from('golf_rounds').select('id, player_id, round_date, course_name, total_score, score_to_par').eq('id', input.round_id).eq('team_id', ctx.team_id).maybeSingle();
-  if (r.error) return unavailableEnvelope('Could not read that round.', 'The round query failed.');
-  if (!r.data) return { summary: 'That round is not on this team.', measurements: [], series: [], coverage: 'empty', coverage_note: 'No round with that id on this team.', as_of: nowIso() };
-  const player = requireRosterPlayer(ctx, r.data.player_id);
-  const holes = await sb.from('golf_holes').select('hole_number, par, score, putts, penalty_strokes, gir').eq('round_id', input.round_id).order('hole_number');
-  if (holes.error) return unavailableEnvelope('Could not read that round.', 'The holes query failed.');
-  const list = holes.data ?? [];
-  const roundFigure = (metric_id: string, metric_label: string, value: number) => readFigure({ metric_id, metric_label, unit: 'score', value, entity: { kind: 'player', id: player.id, label: player.name }, window_start: r.data!.round_date, window_end: r.data!.round_date, sample_size: list.length, sample_unit: 'holes', source: 'rounds', method: 'round_as_posted' });
-  const measurements = [...(r.data.total_score == null ? [] : [roundFigure('total_score', 'Total score', r.data.total_score)]), ...(r.data.score_to_par == null ? [] : [roundFigure('score_to_par', 'Score to par', r.data.score_to_par)])];
-  return { summary: `${player.name}, ${r.data.course_name ?? 'a round'} on ${r.data.round_date}.`, measurements, series: [], detail: { player_id: player.id, kind: 'hole_strip', round: { date: r.data.round_date, course: r.data.course_name, total: r.data.total_score, to_par: r.data.score_to_par }, holes: list }, coverage: list.length ? 'complete' : 'empty', coverage_note: list.length ? null : 'This round was posted as a total, with no holes.', as_of: nowIso() };
 }

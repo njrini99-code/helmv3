@@ -37,7 +37,7 @@ export const dynamic = 'force-dynamic';
  */
 
 interface GolfStatsPageProps {
-  searchParams: Promise<{ player?: string; tab?: string; window?: string } & ChFilterQuery>;
+  searchParams: Promise<{ player?: string; tab?: string; area?: string; window?: string } & ChFilterQuery>;
 }
 
 export default async function GolfStatsPage({ searchParams }: GolfStatsPageProps) {
@@ -47,7 +47,7 @@ export default async function GolfStatsPage({ searchParams }: GolfStatsPageProps
   // Clubhouse Stats (golf_clubhouse_ui): team stats and player profiles,
   // coaches and players, each with the permissions they already have.
   if ((await isClubhouseFor(await getGolfDashboardRole()))) {
-    return <ClubhouseStatsRoute player={params.player} window={params.window} tab={params.tab} query={params} />;
+    return <ClubhouseStatsRoute player={params.player} window={params.window} tab={params.tab} area={params.area} query={params} />;
   }
 
   // Legacy `?tab=` (the old FairwayStatsCockpit tab strip) → the Spine &

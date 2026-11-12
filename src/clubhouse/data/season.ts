@@ -10,6 +10,7 @@ import { chLogServer } from '../lib/track-server';
 import { seasonLabelOf } from '../lib/season-start';
 import { deltaTone, halvesChange } from '../lib/stats-signal';
 import { hasHoleScores, isTotalOnlyCountable } from './round-scope';
+import { spanKeepsPractice, spanKeepsTotalOnly, type ChSpan } from './span';
 
 /**
  * Season rounds, shared by every Clubhouse screen so a player's average,
@@ -64,6 +65,14 @@ const ROUND_COLUMNS =
  */
 export function countsForScoring(r: { round_type: string | null }): boolean {
   return r.round_type == null || roundTypeFromDb(r.round_type) !== 'practice';
+}
+
+/**
+ * The rounds a figure reads on a span (span.ts). The season: practice out (`countsForScoring`). All time, Fairway's basis: every round type in,
+ * and no round posted as a total only (Fairway's `isCountableRound` reads none). Order is kept.
+ */
+export function roundsForSpan<T extends { round_type: string | null; total_only?: true }>(rounds: readonly T[], span?: ChSpan): T[] {
+  return rounds.filter((r) => (spanKeepsPractice(span) || countsForScoring(r)) && (spanKeepsTotalOnly(span) || hasHoleScores(r)));
 }
 
 export const TREND_LENGTH = 7;

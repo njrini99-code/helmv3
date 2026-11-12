@@ -8,7 +8,8 @@ import { createContext, useContext, useEffect, useId, useMemo, useState, useTran
 import { useRouter } from 'next/navigation';
 import type { ChHalves, ChLeg, ChTeamStats } from '../../data/stats-team';
 import { LEGS_LIST } from './legs';
-import { basisWords, clearFilters, filterFor, isFiltered, isWindowChange, hasRange, statsHref, rangeOf, withScope, type ChFilter, type ChRange } from '../../data/stats-filter';
+import { basisWords, clearFilters, filterFor, isFiltered, isWindowChange, hasRange, statsHref, rangeOf, type ChFilter, type ChRange } from '../../data/stats-filter';
+import type { ChSpan } from '../../data/span';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
@@ -30,7 +31,7 @@ import { firstValue, gappedPath, lastValue } from '../../lib/chart';
 import { changeInk, changeTone, formatFixed, formatSigned, NO_DATA } from '../../lib/format';
 import { deltaTone, deltaWords, halvesTone } from '../../lib/stats-signal';
 import { sgBaseline, sgScale } from '../../lib/sg';
-import { changeWords, UpdatingNote, WindowSwitch } from './WindowSwitch';
+import { changeWords, UpdatingNote, WindowSwitch, withPick, type ChScope } from './WindowSwitch';
 import { FilterEmpty, StatsFilter } from './StatsFilter';
 import { gridPeek, legDetailHref, teamPlayerHref } from './links';
 import { PlayerPeek } from '../../ui/PlayerPeek';
@@ -59,12 +60,12 @@ const asText = (s: string) => (/^[=+\-@\t\r]/.test(s) ? `'${s}` : s);
 export type ChTeamCharts = Pick<ChTeamStats, 'window' | 'filter' | 'weeks' | 'weekStarts' | 'team' | 'players' | 'legWeeks' | 'legHalves' | 'legTotals' | 'grid' | 'tour' | 'roundCount' | 'figures'>;
 
 /** The filter in force and the one way to change it: the frame's offline refusal and slow notice, then the new address. */
-const GoFilter = createContext<{ filter: ChFilter; go: (next: ChFilter) => void; shown: ChRange }>({ filter: filterFor(), go: () => {}, shown: 'last10' });
+const GoFilter = createContext<{ filter: ChFilter; go: (next: ChFilter) => void; shown: ChRange; span: ChSpan }>({ filter: filterFor(), go: () => {}, shown: 'last10', span: 'season' });
 
-/** The frame's window change (offline refusal, slow notice, then the new window), for the phone view. */
-export function useGoWindow() {
-  const { filter, go } = useContext(GoFilter);
-  return (r: ChRange) => go(withScope(filter, r));
+/** The span the figures are on (This season, All time): the one being loaded, from the tap, as the window is, and the one way to choose a window or All time. */
+export function useScope(): [ChSpan, (v: ChScope) => void] {
+  const { filter, go, span } = useContext(GoFilter);
+  return [span, (v) => go(withPick(filter, v))];
 }
 
 /** The window the switch shows: the one being loaded, from the tap, not from when its figures land (F-55). */
@@ -76,15 +77,42 @@ export function useShownWindow(): ChRange {
  * The phone's window switch, reading the frame itself: a tap moves the pill at once and re-renders only this, not the
  * whole page (the page re-rendered every chart in the click, 40ms in the Simulator audit, 2026-10-14).
  */
-export function PhoneWindowSwitch({ custom, hook }: { custom: boolean; hook?: string }) {
-  const go = useGoWindow();
-  return <WindowSwitch value={useShownWindow()} onChange={go} custom={custom} hook={hook} />;
+export function PhoneWindowSwitch({ custom, hook, rows, beside }: { custom: boolean; hook?: string; rows?: boolean; beside?: ReactNode }) {
+  const [span, pick] = useScope();
+  const shown = useShownWindow();
+  // One row for "which rounds", as My stats has: the windows of the season, then All time, then the filter.
+  const one = <WindowSwitch value={shown} span={span} onScope={pick} custom={custom} hook={hook} />;
+  if (rows)
+    return (
+      <div className="ch-shs-ctl__row">
+        {one}
+        {beside}
+      </div>
+    );
+  return (
+    <>
+      {one}
+      {beside}
+    </>
+  );
 }
 
 /** The page frame: changing the window or the filter dims the page and marks it busy until the new rounds land. */
-export function StatsTeamFrame({ filter: current, phone, children }: { filter: ChFilter; phone?: ReactNode; children: ReactNode }) {
+export function StatsTeamFrame({
+  filter: current,
+  phone,
+  desk,
+  children,
+}: {
+  filter: ChFilter;
+  phone?: ReactNode;
+  /** The desktop page a browser shows (the bento and its drill); absent, or on paper, the board in `children` is drawn. */
+  desk?: ReactNode;
+  children: ReactNode;
+}) {
   const printing = usePrinting();
   const isPhone = useChPhone() && phone != null && !printing;
+  const isBento = !isPhone && desk != null && !printing;
   const tone = useHeroTone();
   const router = useRouter();
   const pushOnce = usePushOnce(router);
@@ -121,10 +149,10 @@ export function StatsTeamFrame({ filter: current, phone, children }: { filter: C
     start(() => pushOnce(statsHref('/golf/dashboard/stats', next), { scroll: false }));
   };
   return (
-    <GoFilter.Provider value={{ filter: current, go, shown: rangeOf(loading ?? current) }}>
-      <main className={'ch-st' + (isPhone ? ' is-phone' : '')} aria-busy={pending} data-ch-code={pending ? 'CH-4402' : undefined} data-canopy={isPhone || tone !== 'canopy' ? undefined : ''} data-hero-tone={tone}>
+    <GoFilter.Provider value={{ filter: current, go, shown: rangeOf(loading ?? current), span: (loading ?? current).span ?? 'season' }}>
+      <main className={'ch-st' + (isPhone ? ' is-phone' : isBento ? ' ch-st--shs' : '')} aria-busy={pending} data-ch-code={pending ? 'CH-4402' : undefined} data-canopy={isPhone || tone !== 'canopy' ? undefined : ''} data-hero-tone={tone}>
         {/* The server renders desktop; at phone width it stays hidden until the phone view takes over at hydration. */}
-        {isPhone ? phone : <div className="ch-st-desk">{children}</div>}
+        {isPhone ? phone : <div className="ch-st-desk">{isBento ? desk : children}</div>}
       </main>
       {/* CH-4903: the figures on screen are dimmed until the new ones land; this says which ones they are. */}
       <UpdatingNote from={current} to={loading} code="CH-4903" />
@@ -133,8 +161,9 @@ export function StatsTeamFrame({ filter: current, phone, children }: { filter: C
 }
 
 /** The header's window switch and Export. */
-export function TeamHeadActions({ filter, teamName, grid }: { filter: ChFilter; teamName: string; grid: ChTeamStats['grid'] | null }) {
-  const go = useGoWindow();
+export function TeamHeadActions({ filter, teamName, grid, exportOnly = false }: { filter: ChFilter; teamName: string; grid: ChTeamStats['grid'] | null; /** The bento's head: the window switch sits with the filter, so only Export is drawn here. */ exportOnly?: boolean }) {
+  const [span, pick] = useScope();
+  const shown = useShownWindow();
   const toast = useToast();
   const exportCsv = (rows: ChTeamStats['grid']) => {
     const head = ['Player', 'Rounds', ...LEGS_LIST.map((l) => `SG ${l}`), 'SG total'];
@@ -155,7 +184,7 @@ export function TeamHeadActions({ filter, teamName, grid }: { filter: ChFilter; 
   };
   return (
     <div className="ch-st-head__act">
-      <WindowSwitch value={useShownWindow()} onChange={go} custom={hasRange(filter)} />
+      {!exportOnly && <WindowSwitch value={shown} span={span} onScope={pick} custom={hasRange(filter)} />}
       {/* Never export a half-loaded window: the page passes no grid then. */}
       {grid && grid.length > 0 && (
         <Button variant="ghost" leftIcon={Download} onClick={() => exportCsv(grid)} className="ch-btn--flush-end">
@@ -168,7 +197,7 @@ export function TeamHeadActions({ filter, teamName, grid }: { filter: ChFilter; 
 
 /** The empty window's way out. */
 export function ShowSeason() {
-  const go = useGoWindow();
+  const [, go] = useScope();
   // The page empty's one primary action (CH-4301, CH-4302).
   return (
     <Button variant="primary" leftIcon={CalendarRange} onClick={() => go('season')}>
@@ -484,7 +513,7 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
               Players
             </span>
           </div>
-          <Segmented<Lens>
+          <Segmented<Lens> weight="filter"
             size="sm"
             label="Measure"
             value={lens}

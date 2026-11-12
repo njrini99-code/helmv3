@@ -4,14 +4,12 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { ClassesSkeleton } from '../screens/classes/ClassesSkeleton';
 import { CoachHelmSkeleton } from '../screens/coachhelm/CoachHelmSkeleton';
 import { HubSkeleton } from '../screens/hub/HubSkeleton';
-import { MessagesSkeleton } from '../screens/messages/MessagesSkeleton';
 import { QualifiersSkeleton } from '../screens/qualifiers/QualifiersSkeleton';
 import { RecruitingSkeleton } from '../screens/recruiting/RecruitingSkeleton';
 import { RosterSkeleton } from '../screens/roster/RosterSkeleton';
 import { RoundsSkeleton } from '../screens/rounds/RoundsSkeleton';
 import { TeamRoundsSkeleton } from '../screens/rounds/TeamRoundsSkeleton';
 import { SettingsSkeleton } from '../screens/settings/SettingsSkeleton';
-import { StatsSkeletonFor } from '../screens/stats/StatsRouteSkeleton';
 
 /**
  * B10.2 / CONS-13, owner decision 4 (2026-10-24): every phone section root draws the one large title, and its loading
@@ -21,15 +19,15 @@ import { StatsSkeletonFor } from '../screens/stats/StatsRouteSkeleton';
  * Not listed, on purpose (shell/large-title.tsx): Home, whose green hero is its own head, and Calendar, whose month is
  * the content's heading, not the page's name. Both keep the bar's title. (Owner question: decision 4 says "every phone
  * section root"; the exclusion predates it.)
+ *
+ * Messages left this list on 2026-11-07 (Messages v2, MSG-102 and MSG-112): its phone inbox has no large title, so its
+ * route skeleton has none either; screens/messages/__tests__/inbox-skeleton.test.tsx pins its shape instead.
  */
 const ROOTS: ReadonlyArray<[string, () => ReactElement]> = [
   ['CoachHelm (coach)', () => <CoachHelmSkeleton view="coach" />],
   ['CoachHelm (player)', () => <CoachHelmSkeleton view="player" />],
-  ['Messages', () => <MessagesSkeleton />],
   ['Team Hub', () => <HubSkeleton />],
   ['Roster', () => <RosterSkeleton />],
-  ['Team stats', () => <StatsSkeletonFor profile={false} />],
-  ['My stats', () => <StatsSkeletonFor profile coach={false} />],
   ['Rounds (player)', () => <RoundsSkeleton />],
   ['Rounds (coach)', () => <TeamRoundsSkeleton />],
   ['Qualifiers', () => <QualifiersSkeleton />],

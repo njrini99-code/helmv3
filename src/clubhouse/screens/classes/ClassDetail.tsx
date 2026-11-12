@@ -2,21 +2,15 @@
 
 import { Bus, Pencil, RotateCw, TriangleAlert } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
-import { parseSemesterDates } from '@/lib/golf/semester';
 import {
   calendarGap,
   conflictsOf,
   daysLabel,
   dayToken,
-  eventLabel,
-  gapReason,
-  hasNoTime,
-  isFlexible,
   longDay,
   shortDay,
   tabParts,
   timeRange,
-  upcomingMeetings,
   type ChClass,
   type ChTerm,
   type ChWeek,
@@ -44,10 +38,8 @@ import { plural } from '../../lib/plural';
  * drawn (docs/clubhouse/phone/classes.md, gaps).
  */
 export function ClassDetail({
-  crh = false,
   c,
   todayIso,
-  term,
   week,
   unsynced,
   syncing,
@@ -58,8 +50,6 @@ export function ClassDetail({
   statusWrites,
   onStatusEnabled,
 }: {
-  /** `clubhouse_classes_roster_home_v1` on a phone: the identity block, Meets, Time, Room and Credits, and This week (06 §5). */
-  crh?: boolean;
   c: ChClass | null;
   todayIso: string;
   term: ChTerm;
@@ -106,32 +96,18 @@ export function ClassDetail({
   });
   const removeExam = useAction('classes.removeExam', (id: string) => statusWrites!.removeExam(id), { done: '', failed: 'Couldn’t remove the exam', hint: 'It is still on your list. Try again.', code: 'CH-12076' });
   const mine2 = c ? examsOfClass(exams, c) : [];
-  const flexible = c ? isFlexible(c) : true;
   const mine = c && !week.error ? conflictsOf([c], week.events, week.dates) : [];
-  // From the later of today and the first day of the class's own term: a class in next term meets from then, not from today.
-  const own = c ? parseSemesterDates(c.semester || term.label) : null;
   // A class that isn't on the calendar (no days, or no full time) has no meetings to list.
   const gap = c ? calendarGap(c) : null;
-  const meetings = c && !gap ? upcomingMeetings(c, own && own.start > todayIso ? own.start : todayIso, own?.end ?? term.end, 4) : [];
   const thisWeek = c && !gap ? week.dates.filter((d) => c.days.includes(dayToken(d))) : [];
-  const facts: Array<[string, string]> = c
-    ? [
-        ['When', flexible ? (hasNoTime(c) ? `${daysLabel(c.days)} · No time set` : 'No fixed meeting') : `${daysLabel(c.days)} · ${timeRange(c.start, c.end, hours)}`],
-        ...(gap ? ([['Calendar', `Not on your calendar: ${gapReason(gap)}`]] as Array<[string, string]>) : []),
-        ['Where', c.location ?? 'Not set'],
-        ['Instructor', c.instructor ?? 'Not listed'],
-        ['Term', c.semester ?? 'Not set'],
-        ...(c.notes ? ([['Notes', c.notes]] as Array<[string, string]>) : []),
-      ]
-    : [];
   return (
     <>
     <Modal
       open={!!c && !adding && !removing}
       onClose={onClose}
-      detent={crh ? 0.9 : undefined}
-      title={crh && c ? [tabParts(c).top, tabParts(c).bottom].filter(Boolean).join(' ') : (c?.name ?? '')}
-      description={crh ? undefined : c ? [c.code, c.credits != null ? `${plural(c.credits, 'credit')}` : null, c.semester].filter(Boolean).join(' · ') : undefined}
+      detent={0.9}
+      title={c ? [tabParts(c).top, tabParts(c).bottom].filter(Boolean).join(' ') : ''}
+      description={undefined}
       width={460}
       footer={
         c && (
@@ -145,9 +121,9 @@ export function ClassDetail({
                 onRemove(c);
               }}
             >
-              {crh ? 'Remove' : 'Remove class'}
+              Remove
             </Button>
-            <Button variant={crh ? 'primary' : undefined} leftIcon={Pencil} onClick={() => onEdit(c)}>
+            <Button variant="primary" leftIcon={Pencil} onClick={() => onEdit(c)}>
               Edit class
             </Button>
           </>
@@ -187,8 +163,7 @@ export function ClassDetail({
               onRemoveExam={setRemoving}
             />
           )}
-          {crh && (
-            <div className={`ch-cl-dhero ch-cl-t-${c.tone}`}>
+          <div className={`ch-cl-dhero ch-cl-t-${c.tone}`}>
               <span className="ch-cl-card__code">
                 <b>{tabParts(c).top}</b>
                 {tabParts(c).bottom}
@@ -196,16 +171,13 @@ export function ClassDetail({
               <b className="ch-cl-dhero__n">{c.name}</b>
               {c.instructor && <em>{c.instructor}</em>}
             </div>
-          )}
-          <dl className={'ch-cl-facts' + (crh ? ' is-grid' : '')}>
-            {(crh
-              ? ([
+          <dl className={'ch-cl-facts' + ' is-grid'}>
+            {(([
                   ['Meets', daysLabel(c.days) || '—'],
                   ['Time', timeRange(c.start, c.end, hours) ?? '—'],
                   ['Room', c.location ?? '—'],
                   ['Credits', c.credits != null ? String(c.credits) : '—'],
                 ] as Array<[string, string]>)
-              : facts
             ).map(([k, val]) => (
               <div key={k}>
                 <dt>{k}</dt>
@@ -213,8 +185,7 @@ export function ClassDetail({
               </div>
             ))}
           </dl>
-          {crh && (
-            <Surface variant="card" padded={false} title="This week" actions={<span className="ch-cl-meta ch-num">{plural(thisWeek.length, 'meeting')}</span>}>
+          <Surface variant="card" padded={false} title="This week" actions={<span className="ch-cl-meta ch-num">{plural(thisWeek.length, 'meeting')}</span>}>
               <GroupList inset="16px">
                 {thisWeek.map((d) => (
                   <GroupRow key={d} className="ch-cl-wk">
@@ -231,24 +202,7 @@ export function ClassDetail({
                 ))}
               </GroupList>
             </Surface>
-          )}
-          {!crh && meetings.length > 0 && (
-            <section className="ch-cl-meet" aria-labelledby="ch-cl-meet-h">
-              <h3 id="ch-cl-meet-h">Next meetings</h3>
-              <ol>
-                {meetings.map((d) => {
-                  const over = mine.find((x) => x.date === d);
-                  return (
-                    <li key={d} className={(d === todayIso ? 'is-today ' : '') + (over ? 'is-over' : '')}>
-                      <i aria-hidden="true" />
-                      <span className="ch-num">{longDay(d)}</span>
-                      <em>{d === todayIso ? 'Today' : over ? `Overlaps ${eventLabel(over.event)}` : 'Upcoming'}</em>
-                    </li>
-                  );
-                })}
-              </ol>
-            </section>
-          )}
+
         </div>
       )}
     </Modal>

@@ -65,7 +65,7 @@ describe('putts on the Rounds library read as Stats counts them', () => {
     course_name: 'C',
     tees_played: null,
     round_date: '2026-09-10',
-    round_type: 'practice',
+    round_type: 'qualifier',
     total_score: 74,
     score_to_par: 2,
     front_nine: 37,

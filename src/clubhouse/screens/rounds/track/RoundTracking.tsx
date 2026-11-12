@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Check, CloudOff, Smartphone, Table2, X } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { ArrowRight, Check, CloudOff, Send, Smartphone, Table2, X } from 'lucide-react';
 import { useDistanceUnits } from '@/hooks/golf/use-distance-units';
 import { useShotTracking, type ShotTrackingPorts, type ShotTrackingProps } from '@/hooks/golf/use-shot-tracking';
 import type { ShotRecord } from '@/lib/types/golf';
@@ -18,13 +18,13 @@ import { Spinner } from '../../../ui/Spinner';
 import { Swap } from '../../../ui/Swap';
 import { TeeSwatch, TYPE_LABEL } from '../parts';
 import { CourseView } from './CourseView';
-import { PuttMissPrompt, RecoveryPrompt } from './DataPrompts';
+import { AskHeld, PuttMissPrompt, RecoveryPrompt } from './DataPrompts';
 import { HoleReview } from './HoleReview';
 import { heroDistance, scoreName, shotKind } from './labels';
 import { HoleMap, ShotLog, TrackStrip } from './parts';
 import { EditShotSheet, PenaltySheet, UnsavedSheet } from './sheets';
-import { ShotEntry } from './ShotEntry';
-import { useChPuttPrompt, useChRecoveryPrompt } from './use-data-prompts';
+import { ShotEntry, type ChHoleReviewView } from './ShotEntry';
+import { useChPuttPrompt, useChRecoveryPrompt, type ChPuttPromptView, type ChRecoveryPromptView } from './use-data-prompts';
 import { useWakeLock } from './use-wake-lock';
 import { pluralWord } from '../../../lib/plural';
 import '../../../styles/rounds-track.css';
@@ -117,7 +117,34 @@ export function RoundTracking(props: RoundTrackingProps) {
   useWakeLock();
   const { distancePref } = useDistanceUnits();
   const [courseOpen, setCourseOpen] = useState(false);
-  const hole = t.currentHole;
+  // The stage above the shot log takes the screen's spare height on a phone. While the log is open the stage keeps the
+  // height it had, so the log's rows open downward from a line that stays where it was tapped (the page scrolls to
+  // them, as it did) instead of the stage giving its height up and the line jumping.
+  // The prompt this shot showed, as it last stood: once it goes (Skip, or its receipt has been read) it is still drawn,
+  // held, until the next shot, so its place in the card keeps its height (owner, 2026-11-11).
+  const [shown, setShown] = useState<{ shot: string; mark: string; putt: ChPuttPromptView | null; recovery: ChRecoveryPromptView | null; start: ReactNode } | null>(null);
+  // The putt's Break and slope row: closed until the player opens it, then open for the rest of the round (owner,
+  // 2026-11-11). Held here, beside the engine, so it outlives each shot's entry and the move between holes.
+  const [puttReadOpen, setPuttReadOpen] = useState(false);
+  const stageRef = useRef<HTMLDivElement | null>(null);
+  // A hole turn keeps the leaving hero mounted, hidden, for a beat after the new one: only the stage on screen sets this
+  // or clears it, so the log's hold still finds the stage once the hole has turned.
+  const stageEl = useCallback((el: HTMLDivElement | null) => {
+    if (!el) return;
+    stageRef.current = el;
+    return () => {
+      if (stageRef.current === el) stageRef.current = null;
+    };
+  }, []);
+  const [stageHeld, setStageHeld] = useState<number | null>(null);
+  // The engine starts a new hole's shots in an effect, a render after the round screen moves on. That render would draw
+  // the new hole over the old hole's shots (its review under the new number, its score in the hero), and the turn would
+  // run twice. The screen draws the hole the shots belong to until the engine has caught up, so a hole turns once.
+  const [shotsOf, setShotsOf] = useState({ shots: t.shotHistory, index: currentHoleIndex });
+  if (shotsOf.shots !== t.shotHistory) setShotsOf({ shots: t.shotHistory, index: currentHoleIndex });
+  const viewIndex = shotsOf.shots === t.shotHistory ? shotsOf.index : currentHoleIndex;
+  const catchingUp = viewIndex !== currentHoleIndex;
+  const hole = catchingUp ? holes[viewIndex] : t.currentHole;
   // The engine says "saved" for two seconds, then goes quiet. The line stays on "Round saved" for as long as what is on
   // screen is exactly what the server acknowledged: the same hole and the same shot list (the engine replaces the list
   // on every shot, edit, undo and hole change, so any of those drops the claim until the next acknowledgement).
@@ -135,11 +162,11 @@ export function RoundTracking(props: RoundTrackingProps) {
   const [leftHole, setLeftHole] = useState<number | null>(null);
   // Which way the round just moved (owner, 2026-10-31: the move on after a hole was "very off"): a later hole turns in
   // from the right, an earlier one from the left. Read during the render that changes the hole, before the effect.
-  const lastHole = useRef(currentHoleIndex);
-  const holeDir: 1 | -1 = currentHoleIndex >= lastHole.current ? 1 : -1;
+  const lastHole = useRef(viewIndex);
+  const holeDir: 1 | -1 = viewIndex >= lastHole.current ? 1 : -1;
   useEffect(() => {
-    lastHole.current = currentHoleIndex;
-  }, [currentHoleIndex]);
+    lastHole.current = viewIndex;
+  }, [viewIndex]);
   useEffect(() => {
     if (!savedNote) return;
     const id = window.setTimeout(() => setSavedNote(null), 4000);
@@ -157,21 +184,22 @@ export function RoundTracking(props: RoundTrackingProps) {
   const holedOut = t.shotHistory.length > 0 && t.shotHistory[t.shotHistory.length - 1]?.result === 'hole';
   // The next hole to play, in play order (a shotgun start's wraps past the card's last hole).
   const frontier = frontierIndex(holes.length, startHole, (i) => holes[i]!.score !== null);
-  const backTo = holedOut && !!onNavigateToHole && frontier >= 0 && frontier !== currentHoleIndex ? { index: frontier, number: holes[frontier]!.number } : null;
+  // Not while the screen is catching up with a move the round screen has made: that render is about to turn the hole.
+  const backTo = holedOut && !catchingUp && !!onNavigateToHole && frontier >= 0 && frontier !== viewIndex ? { index: frontier, number: holes[frontier]!.number } : null;
   const stats = holedOut ? calculateHoleStats(t.shotHistory, hole) : null;
-  if (leftHole !== null && leftHole !== currentHoleIndex) setLeftHole(null);
-  if (stats && t.holeCheckpointStatus === 'saving' && leftHole !== currentHoleIndex) {
+  if (leftHole !== null && leftHole !== viewIndex) setLeftHole(null);
+  if (stats && t.holeCheckpointStatus === 'saving' && leftHole !== viewIndex) {
     const words = `Hole ${hole.number} saved · ${scoreName(stats.score, hole.par)}`;
-    if (savingHole?.index !== currentHoleIndex || savingHole.words !== words) setSavingHole({ index: currentHoleIndex, words });
-  } else if (savingHole && savingHole.index !== currentHoleIndex) {
+    if (savingHole?.index !== viewIndex || savingHole.words !== words) setSavingHole({ index: viewIndex, words });
+  } else if (savingHole && savingHole.index !== viewIndex) {
     setSavingHole(null);
-    setSavedNote({ index: currentHoleIndex, words: savingHole.words });
+    setSavedNote({ index: viewIndex, words: savingHole.words });
   }
   const jump = onNavigateToHole
     ? (index: number) => {
         // The player's own move to another hole says nothing about the save, even when the move lands a render later
         // (the unsaved-shots sheet asks first).
-        setLeftHole(currentHoleIndex);
+        setLeftHole(viewIndex);
         setSavingHole(null);
         setSavedNote(null);
         t.handleNavigateToHole(index);
@@ -184,22 +212,66 @@ export function RoundTracking(props: RoundTrackingProps) {
   // "Round saved": the hole's own save is the truth then. Device, syncing and retrying still agree with it, so they stay.
   const saveState = heldSaved === 'saved' && t.holeCheckpointStatus !== 'idle' ? 'idle' : heldSaved;
   const meta = [round.teeLabel && `${round.teeLabel} tees`, round.type && TYPE_LABEL[round.type]].filter(Boolean).join(' · ');
-  const atStart = !!startPrompt && isRoundStartMoment({ holeScores: holes.map((h) => h.score), currentHoleIndex, startHole, shotCount: t.shotHistory.length });
-  const prompts =
-    puttAsk || recoveryAsk || atStart ? (
-      <>
-        {atStart && startPrompt}
-        {puttAsk && <PuttMissPrompt prompt={puttAsk} pref={distancePref} />}
-        {recoveryAsk && <RecoveryPrompt prompt={recoveryAsk} />}
-      </>
-    ) : undefined;
+  const atStart = !!startPrompt && isRoundStartMoment({ holeScores: holes.map((h) => h.score), currentHoleIndex: viewIndex, startHole, shotCount: t.shotHistory.length });
+  const asking = !!(puttAsk || recoveryAsk || atStart);
+  const shotKey = `${hole.number}:${t.currentShot}`;
+  // What is on show, by what it says, so the copy held for later is the prompt as the player last saw it.
+  const mark = [puttAsk && `${puttAsk.key}|${puttAsk.saved}|${puttAsk.counter}`, recoveryAsk && `${recoveryAsk.key}|${recoveryAsk.saved}`, atStart && 'start'].filter(Boolean).join(';');
+  if (asking && (shown?.shot !== shotKey || shown.mark !== mark)) setShown({ shot: shotKey, mark, putt: puttAsk, recovery: recoveryAsk, start: atStart ? startPrompt : null });
+  const held = !asking && shown?.shot === shotKey ? shown : null;
+  const prompts = asking ? (
+    <>
+      {atStart && startPrompt}
+      {puttAsk && <PuttMissPrompt prompt={puttAsk} pref={distancePref} />}
+      {recoveryAsk && <RecoveryPrompt prompt={recoveryAsk} />}
+    </>
+  ) : held ? (
+    <AskHeld.Provider value={true}>
+      <div className="ch-rt-held" aria-hidden="true" inert>
+        {held.start}
+        {held.putt && <PuttMissPrompt prompt={held.putt} pref={distancePref} />}
+        {held.recovery && <RecoveryPrompt prompt={held.recovery} />}
+      </div>
+    </AskHeld.Provider>
+  ) : undefined;
+  // A holed hole, as the card and the bar show it: its shots where the shot was, Undo on the bar's key, and in Next shot's
+  // place the way on (CH-11910), or the hole-out words held while the hole saves.
+  const saving = t.holeCheckpointStatus === 'saving';
+  const reviewRound = frontier < 0 && !catchingUp ? onReviewRound : undefined;
+  const go = jump ?? t.handleNavigateToHole;
+  const review: ChHoleReviewView | null = stats
+    ? {
+        content: (
+          <HoleReview
+            hole={hole}
+            shots={t.shotHistory}
+            pref={distancePref}
+            checkpointStatus={t.holeCheckpointStatus}
+            showUndoConfirm={t.showUndoConfirm}
+            undoSaving={t.undoSaving}
+            undoError={t.state.undoError}
+            dispatch={t.dispatch}
+            onEditShot={t.handleEditShot}
+            onRetryCheckpoint={t.handleRetryHoleCheckpoint}
+            onUndoLastShot={t.handleUndoLastShot}
+          />
+        ),
+        score: stats.score,
+        busy: saving || t.undoSaving,
+        action: backTo
+          ? { label: `Back to hole ${backTo.number}`, icon: ArrowRight, disabled: saving, onClick: () => go(backTo.index) }
+          : reviewRound
+            ? { label: 'Review and post', icon: Send, disabled: saving || t.undoSaving, onClick: reviewRound }
+            : null,
+      }
+    : null;
 
   return (
     <div className="ch-rt-q">
       <main className="ch-rt" data-ui="clubhouse">
         <header className="ch-rt-top">
           {onExit ? (
-            <button type="button" className="ch-rt-pill" onClick={onExit}>
+            <button type="button" className="ch-rt-pill" data-ch-press="" onClick={onExit}>
               <Icon icon={X} size={16} />
               <span>Exit</span>
             </button>
@@ -219,7 +291,7 @@ export function RoundTracking(props: RoundTrackingProps) {
             )}
           </div>
           {onOpenScorecard ? (
-            <button type="button" className="ch-rt-pill ch-rt-pill--card" onClick={onOpenScorecard} aria-label="Scorecard">
+            <button type="button" className="ch-rt-pill ch-rt-pill--card" data-ch-press="" onClick={onOpenScorecard} aria-label="Scorecard">
               <Icon icon={Table2} size={16} />
               <span className="ch-rt-pill__l">Scorecard</span>
               <span className="ch-rt-pill__s" aria-hidden="true">
@@ -231,14 +303,17 @@ export function RoundTracking(props: RoundTrackingProps) {
           )}
         </header>
         {statusSlot}
-        <TrackStrip holes={holes} current={currentHoleIndex} startHole={startHole} onJump={jump} />
+        <TrackStrip holes={holes} current={viewIndex} startHole={startHole} onJump={jump} />
 
-        {/* A hole change turns the page: the hole, its map and its entry slide in together (Swap `slide`, the D-64 settle
-            spring); the strip above stays put. Reduced motion and Animations off swap at once. */}
-        <Swap kind="slide" dir={holeDir} swapKey={hole.number} className="ch-rt-turn">
         <div className="ch-rt-body">
+          {/* A hole change turns the page (owner, 2026-10-31): the hole and its map slide in from the side the round is
+              moving to (Swap `slide`, the D-64 settle spring), and the card's words turn with them inside the card. The
+              strip above, the card and the bar under it stay where they are (owner, 2026-11-11: nothing moves under the
+              thumb). Reduced motion and Animations off swap at once. */}
+          <Swap kind="slide" dir={holeDir} swapKey={hole.number} className="ch-rt-turn">
           <section className="ch-rt-hero" aria-label={`Hole ${hole.number}`}>
             {/* Board 3: the drawn hole is the hero; tapping it opens the course view (board 3b). */}
+            <div className="ch-rt-hero__stage" ref={stageEl} style={stageHeld != null ? { flex: `0 0 ${stageHeld}px` } : undefined}>
             <button type="button" className="ch-rt-hero__map" aria-haspopup="dialog" aria-label={`Course view of hole ${hole.number}`} onClick={() => setCourseOpen(true)}>
               <HoleMap hole={hole} shots={t.shotHistory} pending={!holedOut} frame="wide" />
               <HoleMap hole={hole} shots={t.shotHistory} pending={!holedOut} frame="tall" />
@@ -299,38 +374,23 @@ export function RoundTracking(props: RoundTrackingProps) {
                 )}
               </div>
             </div>
+            </div>
             {/* Mid-hole a recorded shot opens from the log (Fairway's shot pills); once holed, the hole review is the one way in. */}
             <ShotLog
+              onOpenChange={(open) => setStageHeld(open ? (stageRef.current?.getBoundingClientRect().height ?? null) : null)}
               shots={t.shotHistory}
               pref={distancePref}
               onEdit={holedOut ? undefined : t.handleEditShot}
               editDisabled={t.undoSaving || t.editSaving}
-              saved={savedNote?.index === currentHoleIndex ? savedNote.words : null}
+              saved={savedNote?.index === viewIndex ? savedNote.words : null}
             />
           </section>
+          </Swap>
 
-          {/* Holing out settles the hole's review in where the shot entry was, instead of snapping to it. */}
-          <Swap swapKey={holedOut ? 'review' : 'entry'} className="ch-rt-done">
-          {holedOut ? (
-            <HoleReview
-              hole={hole}
-              shots={t.shotHistory}
-              pref={distancePref}
-              checkpointStatus={t.holeCheckpointStatus}
-              backTo={backTo}
-              onReviewRound={frontier < 0 ? onReviewRound : undefined}
-              showUndoConfirm={t.showUndoConfirm}
-              undoSaving={t.undoSaving}
-              undoError={t.state.undoError}
-              dispatch={t.dispatch}
-              onEditShot={t.handleEditShot}
-              onNavigateToHole={jump ?? t.handleNavigateToHole}
-              onRetryCheckpoint={t.handleRetryHoleCheckpoint}
-              onUndoLastShot={t.handleUndoLastShot}
-            />
-          ) : (
-            <ShotEntry
-              key={`${hole.number}:${t.currentShot}`}
+          {/* One card and one bar for the whole round (ShotEntry): Next shot changes what the card asks, and holing out
+              settles the hole's review in where the shot was, with its actions on the bar's keys. Never remounted, so
+              neither is ever absent and the key just tapped is the key still there. */}
+          <ShotEntry
               currentHole={hole}
               currentShot={t.currentShot}
               shotHistory={t.shotHistory}
@@ -361,19 +421,21 @@ export function RoundTracking(props: RoundTrackingProps) {
               onUndoLastShot={t.handleUndoLastShot}
               tapIn={t.tapIn}
               onTapIn={t.handleTapIn}
+              puttReadOpen={puttReadOpen}
+              onPuttReadOpen={setPuttReadOpen}
               prompts={prompts}
+              asking={asking}
+              holeDir={holeDir}
+              review={review}
             />
-          )}
-          </Swap>
         </div>
-        </Swap>
 
         <CourseView
           open={courseOpen}
           onClose={() => setCourseOpen(false)}
           holes={holes}
-          current={currentHoleIndex}
-          shotsFor={(i) => (i === currentHoleIndex ? t.shotHistory : (holeShots?.(i) ?? null))}
+          current={viewIndex}
+          shotsFor={(i) => (i === viewIndex ? t.shotHistory : (holeShots?.(i) ?? null))}
           pending={holedOut ? null : { shot: t.currentShot, kind: t.shotType }}
           ball={{ value: t.distanceToHole, unit: t.distanceUnit }}
           pref={distancePref}

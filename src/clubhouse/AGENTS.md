@@ -11,12 +11,49 @@ phone behavior. Fairway's primitives, tokens and motion rules do not apply here.
 
 Use live state and code first, then the mapped page CONTRACT, DESIGN and WIRING
 in `docs/clubhouse/pages/P###-*/`, the manifest in `config/clubhouse/pages/`, and
-the owner's references in `design/handoff/`. Runtime values come from
-`styles/tokens.css`, `styles/auth-tokens.css` and `lib/fonts.ts`; handoff files
-are references, not a reason to restore behavior superseded by owner revisions.
+the September prototypes in `design/handoff/`, except the files its
+[`RETIRED.md`](../../design/handoff/RETIRED.md) lists: those are not the design
+any more. Where `design-refresh/<page>/` exists it replaces the handoff for that
+page. Runtime values come from `styles/tokens.css`, `styles/auth-tokens.css` and
+`lib/fonts.ts`; handoff files are references, not a reason to restore behavior
+superseded by owner revisions.
 `DESIGN.md` at the repo root and `docs/clubhouse/UI_OWNERSHIP.md` index these
 owners. Follow the existing approved design; new phone designs still follow
 the phone-design workflow in `.claude/rules/clubhouse.md`.
+
+## Current and retired pages (owner, 11 Nov 2026)
+
+Each line is the one current version of a page. Do not work on, screenshot or
+copy any other version; an old address opens the current page.
+
+- Roster: as built in `screens/roster`. Coach desktop opens on the cards
+  (commit `9e6db115f3`); the phone follows `design-refresh/classes-roster-home`
+  (approved 31 Oct). The "Your players." Roster in `design/handoff/` is retired
+  (`design/handoff/RETIRED.md`).
+- Player Home: the 28 Oct version, permanent (commit `dc11bf6b7e`). Do not
+  restyle it.
+- CoachHelm Team (coach): the drawn golf hole, `screens/coachhelm/team`
+  (preview `coachhelm-team`). The signal-list board is gone; the `coachhelm`
+  preview opens `coachhelm-team`.
+- A coach's page for one player: the player file, `screens/coachhelm/file`
+  (preview `coachhelm-player-file`). The coach's Deep dive and Standing of a
+  player (preview `coachhelm-coach-player`) are retired by the owner but not
+  removed yet: the file's "Full standing" link still opens the coach Standing.
+  Do not polish or screenshot either. A player's own Standing and Deep dive
+  stay.
+- A player's CoachHelm Board: Your week, `screens/coachhelm/file/YourWeek.tsx`
+  (preview `coachhelm-player`). The older player board is gone.
+- Qualifiers: players have one Qualifiers page, the qualifiers they are entered
+  in first. "My qualifiers" is gone in Clubhouse; `/my-qualifiers` and the
+  `my-qualifiers` preview open Qualifiers. Fairway keeps its own page.
+- CoachHelm chat: direction A only
+  (`docs/clubhouse/coachhelm-chat-v3/LOOK.md`).
+- Stills in any `shots/test-pass` folder were taken before the fixes. They are
+  evidence of defects, never targets.
+- Every picture shown to the owner is named with role (coach or player), phone
+  or desktop, light or dark, before or after.
+
+Retired preview addresses are listed in `preview/retired.ts`.
 
 ## Current shared exemplars
 

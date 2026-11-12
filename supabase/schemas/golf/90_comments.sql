@@ -30,9 +30,15 @@ COMMENT ON TABLE "public"."golf_coachhelm_action_runs" IS 'Audit + idempotency l
 
 COMMENT ON TABLE "public"."golf_coachhelm_chat_conversations" IS 'v3 W32 coach chat thread. Per Part XII coach-only (player chat deferred to v2). pinned + archived_at drive the history UX sort.';
 
+COMMENT ON COLUMN "public"."golf_coachhelm_chat_conversations"."surface" IS 'CoachHelm chat: the surface the conversation was started on (ask, quick_chat, practice_helper). Written once at creation. NULL on conversations created before 20261110130000.';
+
 COMMENT ON TABLE "public"."golf_coachhelm_chat_messages" IS 'v3 W32 coach chat messages. Append-only. tool_calls + tool_results are jsonb so the agent can replay/inspect a turn without re-running the model.';
 
 COMMENT ON COLUMN "public"."golf_coachhelm_chat_messages"."ui_parts" IS 'AI SDK UIMessage parts for this message (text, tool calls, typed data parts, approvals, receipts). Lets a reload reproduce charts/mentions/approvals instead of only the prose in content.';
+
+COMMENT ON COLUMN "public"."golf_coachhelm_chat_messages"."model_messages" IS 'CoachHelm chat: the exact model API messages this assistant turn added to the conversation (user message, assistant content blocks as returned including thinking signatures, tool results), in order. Append-only. NULL on user rows and on rows written before 20261110120000.';
+
+COMMENT ON COLUMN "public"."golf_coachhelm_chat_messages"."pending_decision" IS 'CoachHelm chat: set while this assistant turn waits for the coach to confirm or cancel an action: { order, results, tasks, steps }. NULL when nothing waits.';
 
 COMMENT ON TABLE "public"."golf_coachhelm_coach_weights" IS 'v3 W35 Bayesian-updated per-coach weights. weight × |strokes_impact| × confidence = ranker score (W36). Default 1.0 until sample_n ≥ 10.';
 
@@ -311,3 +317,9 @@ COMMENT ON COLUMN "public"."golf_travel_itineraries"."is_test" IS 'QA/demo row: 
 COMMENT ON TABLE "public"."golf_tournament_player_rounds" IS 'P016 Tournaments (D-82): one row per player per tournament round, linking a golf_rounds row or holding an entered score. golf_rounds is never updated by tournaments. HELD 20261024100000.';
 
 COMMENT ON TABLE "public"."golf_tournaments" IS 'P016 Tournaments (D-81): one tournament edition for one GolfHelm team. Each competition round is a golf_events row linked through golf_tournament_rounds. version is bumped on every update (compare-and-set). HELD 20261024100000.';
+
+-- Messages v2 package M, M5 (HELD 20261031150000)
+COMMENT ON TABLE "public"."golf_conversation_pins" IS 'Clubhouse Messages pins, per person per team, in order (position 0 first). Private: only the owner reads them; every write goes through golf_pin_conversation and golf_reorder_conversation_pins.';
+
+-- Ask level comparison (HELD 20261108100000): the division cohort
+COMMENT ON TABLE "public"."golf_division_cohort" IS 'Mean of golf_player_standing.player_value over the players on Helm at one college level and gender, one row per metric, only for cohorts of 8 or more. Aggregates only: no player column. Rebuilt by refresh_division_cohort().';

@@ -137,10 +137,14 @@ export function useConversationPins(viewer: string, team: string, convIds: reado
     const db = createClient() as unknown as PinsClient;
     client.current = db;
     let channel: unknown = null;
-    const refetch = () =>
+    // A window focus or a rejoin asks again, but never inside the five minutes a missing table is remembered for: one
+    // failing request per window, not one per focus (MSG-PIN-04).
+    const refetch = () => {
+      if (Date.now() < unavailableUntil) return;
       void read().then((list) => {
         if (live && list) setServer(list);
       });
+    };
     void read().then(async (list) => {
       if (!live) return;
       window.clearTimeout(wait);

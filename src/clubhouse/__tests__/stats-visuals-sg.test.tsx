@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest';
 import { PREVIEW_PLAYER } from '../preview/fixtures-stats';
 import { LegBars } from '../screens/stats/LegBars';
 import { legReadout, sgLegBars, sgLegRows } from '../screens/stats/leg-rows';
-import { SgBars } from '../screens/stats/SgBars';
 import type { ChPlayerProfile } from '../data/stats-player';
 
 const withRounds = (eff: number): ChPlayerProfile => ({
@@ -48,8 +47,9 @@ describe('sgLegRows: how sure each leg is', () => {
 
   it('reads a leg as a sentence: the figure, the rounds, the likely range, the team', () => {
     const [tee] = sgLegRows(PREVIEW_PLAYER, true);
+    // The preview team is level with the Tour off the tee (one team across the previews), and a level figure is written 0.0, unsigned.
     const text = legReadout(tee!, 'Team');
-    expect(text).toMatch(/^Off the tee · \+0\.3 a round · 10 rounds · likely range −?\d\.\d to \+?\d\.\d · Team [+−]\d\.\d$/);
+    expect(text).toMatch(/^Off the tee · \+0\.3 a round · 10 rounds · likely range −?\d\.\d to \+?\d\.\d · Team (?:[+−]\d\.\d|0\.0)$/);
     expect(legReadout({ label: 'Putting', value: null, tag: 'Needs 5 rounds' })).toBe('Putting · Needs 5 rounds');
     expect(legReadout({ label: 'Putting', value: 0.2, n: 6, state: 'early', tag: 'Early read · 6 rounds', se: null })).toBe('Putting · +0.2 a round · Early read · 6 rounds');
   });
@@ -128,33 +128,5 @@ describe('LegBars: read, pin, keys', () => {
     const scale = Math.max(1, Math.ceil(Math.max(0, ...scaled)));
     const approach = rows()[1]!;
     expect(parseFloat((row(1).querySelector('.ch-lb__bar') as HTMLElement).style.width)).toBeCloseTo((Math.abs(approach.value!) / scale) * 50, 1);
-  });
-});
-
-describe('SgBars: the phone’s rows', () => {
-  const rows = () => sgLegRows(PREVIEW_PLAYER, false);
-  const leg = (i: number) => document.querySelectorAll('.ch-stm-leg')[i] as HTMLElement;
-  const live = () => document.querySelector('[aria-live="polite"]')!.textContent;
-
-  it('rests on the same words as the desktop legs: the whisker is the likely range (B14)', () => {
-    render(<SgBars rows={rows()} />);
-    expect(document.querySelector('.ch-sv-read')!.textContent).toBe('Tap a leg to see its likely range.');
-  });
-
-  it('five rows, the total last, each a tap target that pins its reading', () => {
-    render(<SgBars rows={rows()} />);
-    expect(document.querySelectorAll('.ch-stm-leg')).toHaveLength(5);
-    expect(leg(4).className).toContain('is-total');
-    fireEvent.click(leg(4));
-    expect(leg(4).hasAttribute('data-pinned')).toBe(true);
-    expect(live()).toMatch(/^Total · [+−]\d\.\d a round · 10 rounds · likely range/);
-    expect(document.querySelector('.ch-sv-read')!.textContent).toBe(live());
-  });
-
-  it('a muted row is an early read and a row under its floor says what it needs', () => {
-    render(<SgBars rows={sgLegRows(withRounds(4), false)} />);
-    expect(leg(0).className).toContain('is-early');
-    expect(leg(3).querySelector('.ch-sv-needs')!.textContent).toBe('Needs 5 rounds');
-    expect(leg(3).querySelector('.ch-stm-leg__v')).toBeNull();
   });
 });

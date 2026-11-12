@@ -1,21 +1,35 @@
 import { toChInsight } from '../data/coachhelm-map';
-import { courseReads, stationFigures, teamTotalOf, worstOf, type ChStation, type ChTeamBoardData, type ChTeamLeg, type ChTeamPlayer } from '../data/coachhelm-team-shape';
+import { courseReads, stationsOfTeamSg, worstOf, type ChStation, type ChTeamBoardData, type ChTeamLeg, type ChTeamPlayer } from '../data/coachhelm-team-shape';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import type { CourseHistory } from '@/lib/coachhelm/v3/team-board/course-shape';
 import { HELM_PLAYERS, PREVIEW_TOUR, slope } from './fixtures-coachhelm';
 import { PREVIEW_TRACK_RECORD } from './fixtures-coachhelm-track';
+import { PREVIEW_SG_FLOOR, PREVIEW_TEAM_SG, previewSgRow } from './fixtures-team-sg';
+import { formatFixed } from '../lib/format';
 
-/** The design page's board (`redesign/coachhelm-team.html`, P, READS, CRS): five players, their legs, reads and the course table. */
+/**
+ * The team board for the cast's seven active players. Their reads and the course table are the design page's
+ * (`redesign/coachhelm-team.html`, READS, CRS); every strokes-gained figure is the shared table's (fixtures-team-sg.ts), the one
+ * Team stats and the Player file preview read too, so the three previews show one team.
+ */
 const PLAYERS = {
   ...HELM_PLAYERS,
   sam: { id: 'pl-sam', name: 'Sam Whitfield' },
+  sofia: { id: 'pl-sofia', name: 'Sofia Alvarez' },
+  ava: { id: 'pl-ava', name: 'Ava Lindqvist' },
 } as const;
 
-const leg = (strokes: number, rounds: number): ChTeamLeg => ({ strokes, rounds, missing: null });
-const legs = (r: number, tee: number, approach: number, short_game: number, putting: number) => ({ tee: leg(tee, r), approach: leg(approach, r), short_game: leg(short_game, r), putting: leg(putting, r) });
+const leg = (strokes: number | null, rounds: number): ChTeamLeg => (strokes == null ? { strokes: null, rounds, missing: `Shows from ${PREVIEW_SG_FLOOR} rounds with shots.` } : { strokes, rounds, missing: null });
+
+/** A read's drill belongs to its area: the base insight is the putting one, so a read anywhere else swaps it or carries none. */
+const DRILLS: Record<string, EvidenceInsight['drills']> = {
+  tee: [{ id: 'dr-gate', slug: 'fairway-gate', title: 'Fairway gate', duration_min: 15, difficulty: 'intermediate' }],
+  approach: [{ id: 'dr-carry', slug: 'carry-ladder', title: 'Carry-number ladder', duration_min: 15, difficulty: 'intermediate' }],
+  short_game: [{ id: 'dr-landing', slug: 'landing-spot-ladder', title: 'Landing-spot ladder', duration_min: 12, difficulty: 'intermediate' }],
+};
 
 const read = (playerId: string, id: string, category: string, title: string, content: string, drawn?: { stakes: string; sample: string; assigned?: 'proposed'; word?: string; label?: string; compare?: { own: number; team: number; tour: number; unit: string; higherBetter: boolean } }) => {
-  const r = toChInsight({ ...slope(playerId, id), category, title, content } as EvidenceInsight, { tour: PREVIEW_TOUR, viewer: { role: 'coach', first: title.split(' ')[0] ?? 'Player' } });
+  const r = toChInsight({ ...slope(playerId, id), category, title, content, ...(category === 'putting' ? {} : { drills: DRILLS[category] ?? [] }) } as EvidenceInsight, { tour: PREVIEW_TOUR, viewer: { role: 'coach', first: title.split(' ')[0] ?? 'Player' } });
   if (!drawn) return r;
   const evidence = { ...r.evidence, sample: drawn.sample, ...(drawn.label ? { label: drawn.label } : {}), ...(drawn.word && r.evidence.read ? { read: { ...r.evidence.read, word: drawn.word } } : {}) };
   return { ...r, stakes: drawn.stakes, evidence, ...(drawn.assigned ? { assigned: drawn.assigned } : {}), ...(drawn.compare ? { compare: { ...r.compare, ...drawn.compare } } : {}) } as typeof r;
@@ -24,7 +38,7 @@ const read = (playerId: string, id: string, category: string, title: string, con
 const READS: Record<string, ReturnType<typeof read>[]> = {
   [PLAYERS.eli.id]: [
     read(PLAYERS.eli.id, 'r1', 'approach', 'Long approaches finish short-right', 'From 175 yards and out, 9 of Eli’s 16 missed greens finish short and right.', { stakes: '.6', sample: '21 rounds', word: 'Solid read', label: 'Greens hit from 175 yd and out', compare: { own: 31, team: 38, tour: 52, unit: '%', higherBetter: true } }),
-    read(PLAYERS.eli.id, 'r8', 'course_management', 'Penalty strokes: 1.1 per round', 'Across 21 rounds Eli averages 1.1 penalty strokes a round, most from the tee.', { stakes: '.8', sample: '21 rounds', word: 'Early read', assigned: 'proposed' }),
+    read(PLAYERS.eli.id, 'r8', 'course_management', 'Penalty strokes: 1.1 per round', 'Across 21 rounds Eli averages 1.1 penalty strokes a round, most from the tee.', { stakes: '.9', sample: '21 rounds', word: 'Early read', assigned: 'proposed' }),
     read(PLAYERS.eli.id, 'r13', 'course_management', 'Worst holes on Oak Hollow: #4, #11, #17', 'Across 11 rounds at Oak Hollow, Eli averages 1.1 over par on holes 4, 11 and 17.', { stakes: '.4', sample: '21 rounds', word: 'Early read' }),
   ],
   [PLAYERS.jonah.id]: [
@@ -40,26 +54,27 @@ const READS: Record<string, ReturnType<typeof read>[]> = {
   [PLAYERS.theo.id]: [
     read(PLAYERS.theo.id, 'r5', 'putting', 'Three-putts from 30 feet and out', 'Theo three-putts 1.2 times a round from 30 feet and out, from 4 rounds.'),
     read(PLAYERS.theo.id, 'r7', 'tee', 'Drives finish right of the fairway', '1 in 3 of Theo’s drives finish in the right rough or worse, from 4 rounds.'),
+    read(PLAYERS.theo.id, 'r3', 'approach', 'Proximity from 125 to 175', 'Theo’s approaches from 125 to 175 finish 41 feet away on average, from 4 rounds.', { stakes: '.4', sample: '4 rounds', word: 'Thin read' }),
     read(PLAYERS.theo.id, 'r14', 'scoring', 'Par 3 scoring: 3.48 (+0.48 vs par)', 'Theo averages 3.48 on par 3s, from 4 rounds. Tour is 3.00.'),
   ],
-  [PLAYERS.sam.id]: [
-    read(PLAYERS.sam.id, 'r3', 'approach', 'Proximity from 125 to 175', 'Sam’s approaches from 125 to 175 finish 41 feet away on average, from 6 rounds.', { stakes: '.4', sample: '3 rounds', word: 'Thin read' }),
-    read(PLAYERS.sam.id, 'r9', 'short_game', 'Up and down from greenside bunkers', 'Sam has got up and down 2 times from 11 greenside bunkers, from 6 rounds.'),
-  ],
+  // Sam has two counted rounds with shots: under the floor of three, so he has no figure, no place on the hole and no read.
 };
 
-const player = (p: { id: string; name: string }, classYear: string, rounds: number, l: Record<ChStation, ChTeamLeg>, early = rounds < 5): ChTeamPlayer => {
-  const values = Object.values(l).map((x) => x.strokes as number);
+/** One player as the loader shapes them: who they are from the cast, their last-ten figures from the shared table. */
+const player = (key: keyof typeof PLAYERS): ChTeamPlayer => {
+  const p = PLAYERS[key];
+  const row = previewSgRow(key);
+  const l: Record<ChStation, ChTeamLeg> = { tee: leg(row.legs?.[0] ?? null, row.shots), approach: leg(row.legs?.[1] ?? null, row.shots), short_game: leg(row.legs?.[2] ?? null, row.shots), putting: leg(row.legs?.[3] ?? null, row.shots) };
   return {
     id: p.id,
     name: p.name,
-    first: p.name.split(' ')[0] as string,
-    classYear,
-    rounds,
-    early,
+    first: row.cast.first,
+    classYear: row.cast.classYear,
+    // The counted rounds in the window (ten at most), which is what the loader carries; the cast's count is every round on file.
+    rounds: row.rounds,
+    early: row.rounds < 5,
     legs: l,
-    // The page's figure; the app's total is the stored per-round mean (8 K).
-    total: values.reduce((a, b) => a + b, 0),
+    total: row.total,
     worst: worstOf(l),
     first10: null,
     reads: { needs: READS[p.id] ?? [], working: [] },
@@ -67,13 +82,8 @@ const player = (p: { id: string; name: string }, classYear: string, rounds: numb
   };
 };
 
-const LIST: ChTeamPlayer[] = [
-  player(PLAYERS.eli, 'Junior', 21, legs(21, -0.31, -1.08, -0.22, -0.47)),
-  player(PLAYERS.jonah, 'Senior', 18, legs(18, 0.12, -0.54, -0.38, -0.96)),
-  player(PLAYERS.priya, 'Sophomore', 16, legs(16, -0.18, -0.89, 0.08, -0.71)),
-  player(PLAYERS.theo, 'Freshman', 4, legs(4, -0.64, -0.41, -0.29, -0.83)),
-  player(PLAYERS.sam, 'Junior', 3, legs(3, -0.22, -0.77, -0.51, -0.35)),
-];
+// The design's five, in its order, then the two the cast adds.
+const LIST: ChTeamPlayer[] = (['eli', 'jonah', 'priya', 'theo', 'sam', 'sofia', 'ava'] as const).map(player);
 
 const WEEK_STARTS = ['2026-08-17', '2026-08-24', '2026-08-31', '2026-09-07', '2026-09-14', '2026-09-21', '2026-09-28', '2026-10-05', '2026-10-12', '2026-10-19', '2026-10-26'];
 const WEEK_VALUES = [7.6, 6.9, 8.1, 6.3, 6.6, 5.9, 6.2, 6.8, 5.4, 5.7, 6.1];
@@ -110,8 +120,9 @@ export const PREVIEW_TEAM_BOARD: ChTeamBoardData = {
   roster: { count: LIST.length, error: false },
   players: { list: LIST, error: false },
   legsError: false,
-  stations: stationFigures(LIST),
-  teamTotal: { strokes: teamTotalOf(LIST), rounds: 62 },
+  // The team figure Team stats' preview prints, pooled over the same rounds.
+  stations: stationsOfTeamSg({ legs: PREVIEW_TEAM_SG.legs, legPlayers: PREVIEW_TEAM_SG.legs.map(() => PREVIEW_TEAM_SG.players) }),
+  teamTotal: { strokes: PREVIEW_TEAM_SG.total, rounds: HISTORY.rounds, seasonRounds: HISTORY.rounds },
   course: {
     history: HISTORY,
     reads: courseReads(LIST),
@@ -124,16 +135,18 @@ export const PREVIEW_TEAM_BOARD: ChTeamBoardData = {
       { id: 'opening_hole_delta', team: 0.12, tour: 0.1, n: 5 },
     ],
   },
+  // Each read's worth as the themes part hands it over: the cascade's figure, to the team where the read has a team figure.
+  worth: { status: 'ok', value: Object.fromEntries(LIST.flatMap((p) => p.reads.needs).filter((r) => r.stakes).map((r) => [r.id, { strokes: formatFixed(Number(r.stakes), 1), anchor: r.compare?.team != null ? ('team' as const) : ('tour' as const) }])) },
   patterns: {
     rows: [
       {
         id: 'approach-short',
-        title: 'Eli, Priya and Sam all miss approaches short',
-        members: '3 of 5 players',
+        title: 'Eli, Priya and Theo all miss approaches short',
+        members: '3 of 7 players',
         strokes: null,
         next: 'the ball finishes short of the green',
         who: [],
-        memberIds: [PLAYERS.eli.id, PLAYERS.priya.id, PLAYERS.sam.id],
+        memberIds: [PLAYERS.eli.id, PLAYERS.priya.id, PLAYERS.theo.id],
         area: 'approach',
       },
     ],

@@ -17,13 +17,13 @@ export function SkeletonListAction() {
 
 /**
  * The phone lede: the reader's own sentence drawn as a bar under each of its lines, so it wraps where the page's does
- * at any width. `mine`: a player's own entries (/my-qualifiers), whose sentence is shorter.
+ * at any width.
  */
-export function SkeletonLede({ mode }: { mode: 'all' | 'mine' }) {
+export function SkeletonLede() {
   const coach = useClubhouseRole() !== 'player';
   return (
     <p className="ch-qf-skel-words" aria-hidden="true">
-      <span className="ch-skel">{listLede(coach, mode)}</span>
+      <span className="ch-skel">{listLede(coach)}</span>
     </p>
   );
 }

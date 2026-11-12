@@ -100,7 +100,9 @@ describe('the player plan read', () => {
     const page = await loadPlayerPractice('plan-1', 'me', new Date('2026-11-05T19:10:00Z'));
     if (page.status !== 'ready') throw new Error('not ready');
     expect(page.data.title).toBe('Thursday practice');
-    expect(page.data.group).toEqual({ name: 'B', mates: ['Jonah'] });
+    expect(page.data.group).toEqual({ name: 'B', me: 'Maya', mates: ['Jonah'] });
+    // The line under the title is the day alone: the group is said once, by `group`.
+    expect(page.data.context).toBe('Thursday');
     expect(page.data.stops.map((s) => s.place)).toEqual(['Range', 'Front', 'Back', 'Range']);
     expect(page.data.stops[3]!.line).toContain('Wedges to 60');
     expect(page.data.stops[0]!.now).toBe(true);

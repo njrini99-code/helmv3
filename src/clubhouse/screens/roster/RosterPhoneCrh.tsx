@@ -3,9 +3,9 @@
 import { ChartColumn, Check, ChevronRight, CircleAlert, Copy, Ellipsis, RotateCw, UserCheck, UserMinus, UserPlus, Users, UserX } from 'lucide-react';
 import { AnimatePresence } from 'motion/react';
 import { useChReducedMotion } from '../../lib/reduced-motion';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react';
+import { Component, useCallback, useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react';
+import { chReport } from '../../lib/track';
 import { useChSessionState } from '../../lib/session-state';
 import type { ChRoster, ChRosterPlayer } from '../../data/roster';
 import { Avatar } from '../../ui/Avatar';
@@ -18,6 +18,8 @@ import { InlineNotice } from '../../ui/Notices';
 import { LargeTitle, LargeTitleContext } from '../../ui/LargeTitle';
 import { ListPresence, PresenceRow } from '../../ui/ListPresence';
 import { Modal } from '../../ui/Modal';
+import { MenuSheet } from '../../ui/ContextMenu';
+import type { MenuItem } from '../../ui/Menu';
 import { PageRefreshNotice } from '../../ui/RefreshNotice';
 import { PhoneBar, PhoneIconAction } from '../../ui/PhoneBar';
 import { PlayerPeek } from '../../ui/PlayerPeek';
@@ -33,7 +35,6 @@ import { rebuiltHref } from '../../shell/nav';
 import { PhoneScreen } from '../../shell/PhoneScreen';
 import { PhoneTop } from '../../shell/phone-chrome';
 import { useDeepLinkSheet } from '../../shell/use-deep-link-sheet';
-import { usePressPrefetch } from '../../shell/use-prefetch-tabs';
 import { classNoteFor, NO_CLASS_LINES, type RosterClassLine, type RosterClassLines } from './class-line';
 import { lastFive, rosterFailedParts, rosterPeek, rowNote, yearKeyOf, yearLineOf, type RosterClock } from './format';
 import type { AvailabilityControl, NoteSaved } from './RosterPeek';
@@ -173,7 +174,8 @@ export function RosterPhoneCrh({
           {!data.teamError && <LargeTitleContext>{data.teamName}</LargeTitleContext>}
         </header>
 
-        <PageRefreshNotice parts={failed} />
+        {/* When the roster itself didn't load, its card is the whole page and says so once, with the one Try again. */}
+        {!data.playersError && <PageRefreshNotice parts={failed} />}
 
         {data.playersError ? (
           <Surface variant="card" level={2} padded={false} title="Players">
@@ -206,25 +208,27 @@ export function RosterPhoneCrh({
               <RequestsRow jr={jr} error={data.requestsError} covered={covered} clock={clock} onRetry={onRetry} onOpen={() => setTapped(true)} />
             </SectionBoundary>
             {data.statsError && (
-              <InlineNotice code="CH-3202" title="Season stats didn’t load" body="The roster is complete, but averages, form and strokes gained are missing until the rounds load." onRetry={onRetry} covered={covered} />
+              <div className="ch-rsx-sec is-tight">
+                <InlineNotice code="CH-3202" title="Season stats didn’t load" body="The roster is complete, but averages, form and strokes gained are missing until the rounds load." onRetry={onRetry} covered={covered} />
+              </div>
             )}
-            <div className="ch-stickybar ch-rsx-sort">
-              <Segmented<PhoneSort>
-                block
-                label="Sort by"
-                value={sortBy}
-                onChange={chooseSort}
-                options={
-                  data.statsError
-                    ? [{ value: 'name', label: 'Name' }]
-                    : [
-                        { value: 'avg', label: TERMS.avg.short, aria: `${TERMS.avg.short}, ${TERMS.scoringAvg.long.toLowerCase()}` },
-                        { value: 'sg', label: TERMS.strokesGained.short, aria: `${TERMS.strokesGained.short}, ${TERMS.strokesGained.long.toLowerCase()}` },
-                        { value: 'name', label: 'Name' },
-                      ]
-                }
-              />
-            </div>
+            {/* Without season stats there is one order, by name, so there is nothing to choose and no control is drawn
+                (a one-option control read as a broken bar). */}
+            {!data.statsError && (
+              <div className="ch-stickybar ch-rsx-sort">
+                <Segmented<PhoneSort> weight="filter"
+                  block
+                  label="Sort by"
+                  value={sortBy}
+                  onChange={chooseSort}
+                  options={[
+                    { value: 'avg', label: TERMS.avg.short, aria: `${TERMS.avg.short}, ${TERMS.scoringAvg.long.toLowerCase()}` },
+                    { value: 'sg', label: TERMS.strokesGained.short, aria: `${TERMS.strokesGained.short}, ${TERMS.strokesGained.long.toLowerCase()}` },
+                    { value: 'name', label: 'Name' },
+                  ]}
+                />
+              </div>
+            )}
             <SectionBoundary surface="roster.list" label="The roster" code="CH-3205">
               <div ref={listRef} className="ch-rsx-lists">
                 {/* B5 and R10: one range over the five rounds the bars draw, so the same height is the same score down the list. */}
@@ -237,7 +241,7 @@ export function RosterPhoneCrh({
                         padded={false}
                         title="Active"
                         actions={<span className="ch-rsx-meta ch-num">{plural(playing.length, 'player')}</span>}
-                        footerNote="Bars are the last five rounds this season. Green beats the team average."
+                        footerNote={data.statsError ? undefined : 'Bars are the last five rounds this season. Green beats the team average.'}
                       >
                         <GroupList>
                           {playing.map((p) => (
@@ -278,7 +282,7 @@ export function RosterPhoneCrh({
 
       <ProfilePresence atRest={arrivedAtRest}>
         {open && (
-          <PhoneScreen key={`player-${open.id}`} labelledBy="ch-rsm-prof-title" className="ch-rsm-screen ch-rsx-screen">
+          <PhoneScreen key={`player-${open.id}`} keyboardAware immersive={false} labelledBy="ch-rsm-prof-title" className="ch-rsm-screen ch-rsx-screen">
             <PhoneBar back={{ label: 'Roster', onBack: guardedClose }} title={open.name} titleId="ch-rsm-prof-title" action={<PhoneIconAction icon={Ellipsis} label="Player actions" onClick={() => setActing(true)} />} />
             <div className="ch-rsm-scroll" onClickCapture={onProfileClick}>
               <SectionBoundary surface="roster.peek" label="The player panel" code="CH-3206">
@@ -313,7 +317,9 @@ export function RosterPhoneCrh({
           onStatus(p);
         }}
       />
-      <RequestsSheetCrh open={requestsOpen} atRest={link.atRest} onClose={closeRequests} data={data} jr={jr} clock={clock} />
+      <SheetGuard>
+        <RequestsSheetCrh open={requestsOpen} atRest={link.atRest} onClose={closeRequests} data={data} jr={jr} clock={clock} />
+      </SheetGuard>
       <Modal
         open={!!leaving}
         onClose={keepEditing}
@@ -541,29 +547,33 @@ export function RequestsSheetCrh({ open, atRest, onClose, data, jr, clock }: { o
 }
 
 /** The profile's more button (05 S-ROSTER.profile-actions): today's rows in a restyled sheet. */
+/**
+ * The requests sheet draws the same requests as the row on the page, but outside that row's section. A request that cannot be
+ * drawn is told once, by the row's own boundary (CH-3204); this keeps the sheet's crash from taking the whole page down with
+ * it, and reports it under the same surface.
+ */
+class SheetGuard extends Component<{ children: ReactNode }, { failed: boolean }> {
+  override state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  override componentDidCatch(error: Error) {
+    chReport(error, { surface: 'roster.requests', severity: 'high' });
+  }
+  override render() {
+    return this.state.failed ? null : this.props.children;
+  }
+}
+
 function PlayerActionsCrh({ p, onClose, onRemove, onStatus }: { p: ChRosterPlayer | undefined; onClose: () => void; onRemove: (p: ChRosterPlayer) => void; onStatus: (p: ChRosterPlayer) => void }) {
   const statsHref = p ? rebuiltHref(`/golf/dashboard/stats?player=${p.id}`) : null;
-  const press = usePressPrefetch();
-  return (
-    <Modal open={!!p} onClose={onClose} title={p?.name ?? 'Player'}>
-      {p && (
-        <div className="ch-surface ch-surface--card ch-rsx-acts">
-          {statsHref && (
-            <Link href={statsHref} className="ch-rsx-act" {...press(statsHref)}>
-              <Icon icon={ChartColumn} size={16} />
-              <b>View stats</b>
-            </Link>
-          )}
-          <button type="button" className="ch-rsx-act" onClick={() => onStatus(p)}>
-            <Icon icon={p.status === 'active' ? UserX : UserCheck} size={16} />
-            <b>{p.status === 'active' ? 'Mark inactive' : 'Mark active'}</b>
-          </button>
-          <button type="button" className="ch-rsx-act is-danger" onClick={() => onRemove(p)}>
-            <Icon icon={UserMinus} size={16} />
-            <b>Remove from team</b>
-          </button>
-        </div>
-      )}
-    </Modal>
-  );
+  // The shared sheet of actions (ui MenuSheet), not a list drawn here: its rows, its keys and its destructive row are the app's own.
+  const items: MenuItem[] = !p
+    ? []
+    : [
+        ...(statsHref ? [{ label: 'View stats', icon: ChartColumn, href: statsHref } satisfies MenuItem] : []),
+        { label: p.status === 'active' ? 'Mark inactive' : 'Mark active', icon: p.status === 'active' ? UserX : UserCheck, onSelect: () => onStatus(p) },
+        { label: 'Remove from team', icon: UserMinus, danger: true, onSelect: () => onRemove(p) },
+      ];
+  return <MenuSheet open={!!p} title={p?.name ?? 'Player'} label="Player actions" items={items} onClose={onClose} />;
 }

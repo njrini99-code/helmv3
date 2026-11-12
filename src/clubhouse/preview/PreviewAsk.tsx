@@ -1,12 +1,16 @@
 'use client';
 
+import { revealMode, setRevealMode, setWaitLight } from '../screens/coachhelm/chat/reveal';
 import type { UIMessage } from 'ai';
 import { useEffect, useMemo, useState } from 'react';
-import type { UseCoachHelmChatOptions, UseCoachHelmChatResult } from '@/components/golf/coachhelm/chat/useCoachHelmChat';
+import { useCoachHelmChat, type UseCoachHelmChatOptions, type UseCoachHelmChatResult } from '@/components/golf/coachhelm/chat/useCoachHelmChat';
+import { pendingDecisionKeys } from '@/lib/coachhelm/v3/chat/engine/protocol';
+import { askScript, installScriptedChat, isAskPace, SCRIPTED_CHAT_ENDPOINT, type AskScript } from './ask-script';
 import type { ChAskData, ChAskLoad } from '../data/coachhelm-chat-shape';
 import { Ask, type ChAskChat, type ChAskInitial } from '../screens/coachhelm/chat/Ask';
 import { AskSkeleton } from '../screens/coachhelm/chat/AskSkeleton';
 import { ASK_RAW_ERRORS, PREVIEW_ASK_DATA, PREVIEW_ASK_NOROUNDS } from './fixtures-ask';
+import { ASK_CARD_STATES } from './fixtures-ask-cards';
 import { ASK_PROPOSAL, ASK_RECEIPT_DONE, ASK_THREAD_STATES } from './fixtures-ask-thread';
 
 type Part = { type: string; [key: string]: unknown };
@@ -31,10 +35,28 @@ function fakeChat(start: { busy?: boolean; error?: unknown; messages?: UIMessage
             const approval = p.approval as { id?: string } | undefined;
             if (!p.type.startsWith('tool-') || approval?.id !== approvalId) return [p];
             const decided: Part = { ...p, state: 'approval-responded', approval: { id: approvalId, approved } };
-            return approved ? [decided, { type: 'data-action-receipt', id: `receipt-${ASK_PROPOSAL.idempotency_key}`, data: ASK_RECEIPT_DONE }] : [decided];
+            return [decided];
           }) as UIMessage['parts'],
         })),
       );
+    // Ask v2's write answers a moment later, held for its 8 seconds, so the capsule, the flight and the Undo ring all show.
+    const decideV2 = (approvalId: string, approved: boolean) => {
+      decide(approvalId, approved);
+      if (!approved) return;
+      setTimeout(() => {
+        setMessages((all) =>
+          all.map((m) => {
+            const parts = m.parts as Part[];
+            const i = parts.findIndex((p) => (p.approval as { id?: string } | undefined)?.id === approvalId);
+            if (i < 0) return m;
+            // The card this approval answers (its plan part is `proposal-<approval id>`); an older fixture has one card and no such id.
+            const proposal = (parts.find((p) => p.id === `proposal-${approvalId}`) ?? parts.find((p) => p.type === 'data-action-proposal'))?.data as { idempotency_key?: string; summary?: string } | undefined;
+            const key = proposal?.idempotency_key ?? ASK_PROPOSAL.idempotency_key;
+            return { ...m, parts: [...parts, { type: 'data-action-receipt', id: `receipt-${key}`, data: { ...ASK_RECEIPT_DONE, status: 'held', held_until: new Date(Date.now() + 8000).toISOString(), idempotency_key: key, summary: proposal?.summary ?? ASK_RECEIPT_DONE.summary } }] as UIMessage['parts'] };
+          }),
+        );
+      }, 700);
+    };
 
     return {
       messages,
@@ -66,10 +88,166 @@ function fakeChat(start: { busy?: boolean; error?: unknown; messages?: UIMessage
         setError(undefined);
         setBusy(false);
       },
-      approve: (id) => decide(id, true),
+      approve: (id) => decideV2(id, true),
       deny: (id) => decide(id, false),
+      // Edit mode and approve-all, answered here as the server would: the card comes back planned again with its revision's word
+      // beside it, and a batch is each card confirmed. Nothing reaches a server.
+      revise: (id, edits) => {
+        setBusy(true);
+        setTimeout(() => {
+          setMessages((all) =>
+            all.map((m) => {
+              const parts = m.parts as Part[];
+              if (!parts.some((p) => p.id === `proposal-${id}`)) return m;
+              const next = parts
+                .filter((p) => p.id !== `revision-${id}`)
+                .map((p) => {
+                  if (p.id !== `proposal-${id}`) return p;
+                  const plan = p.data as { facts: Array<{ label: string; value: string }>; editable?: Array<{ key: string; label: string; value: unknown }>; revision?: number };
+                  const fields = plan.editable ?? [];
+                  const said = (v: unknown) => (Array.isArray(v) ? v.join(', ') : v == null || v === '' ? 'Not set' : String(v));
+                  return {
+                    ...p,
+                    data: {
+                      ...plan,
+                      facts: plan.facts.map((f) => {
+                        const field = fields.find((x) => x.label === f.label && x.key in edits);
+                        return field ? { ...f, value: said(edits[field.key]) } : f;
+                      }),
+                      editable: fields.map((f) => (f.key in edits ? { ...f, value: edits[f.key] } : f)),
+                      revision: (plan.revision ?? 0) + 1,
+                    },
+                  };
+                });
+              return { ...m, parts: [...next, { type: 'data-card-revision', id: `revision-${id}`, data: { key: id, accepted: true } }] as UIMessage['parts'] };
+            }),
+          );
+          setBusy(false);
+        }, 700);
+      },
+      approveAll: (ids) => {
+        for (const id of ids ?? []) decideV2(id, true);
+      },
     };
   };
+}
+
+/**
+ * What `?state=play` does by itself, so a moment can be captured without a hand on the page. Each is milliseconds; absent, the
+ * page waits for a person. Read from the address once the page has mounted (the route hands over only `state` and `q`).
+ */
+interface PlayDrive {
+  script: AskScript;
+  /** Ask the script's question this long after the page is up. */
+  auto: number | null;
+  /** Press the card's primary this long after it can be pressed. */
+  confirm: number | null;
+  /** Press Cancel instead. */
+  cancel: number | null;
+  /** Press Undo this long after the hold begins. */
+  undo: number | null;
+  /** Press Stop this long after the question is sent. */
+  stop: number | null;
+  /** Press Try again this long after a turn fails. */
+  retry: number | null;
+  /** Press the activity island this long after the question is sent, and its first openable step this long after that. */
+  isl: number | null;
+  islstep: number | null;
+}
+let DRIVE: PlayDrive | null = null;
+
+const click = (selector: string) => document.querySelector<HTMLElement>(selector)?.click();
+
+/**
+ * The production hook on the harness endpoint (`ask-script.ts` answers it in the page), plus the drive above. Everything the
+ * coach sees comes through `useCoachHelmChat` and its reducer exactly as it would from the server.
+ */
+function useScriptedChat(options: UseCoachHelmChatOptions = {}): UseCoachHelmChatResult {
+  const chat = useCoachHelmChat({ ...options, endpoint: SCRIPTED_CHAT_ENDPOINT });
+  const drive = DRIVE;
+  const send = chat.send;
+  const sent = chat.messages.length > 0;
+  useEffect(() => {
+    if (!drive || drive.auto === null || sent) return;
+    const t = setTimeout(() => send(drive.script.question), drive.auto);
+    return () => clearTimeout(t);
+  }, [drive, send, sent]);
+  useEffect(() => {
+    if (!drive || drive.stop === null || !sent) return;
+    const t = setTimeout(() => click('.ch-ask-cmp__send.is-stop'), drive.stop);
+    return () => clearTimeout(t);
+  }, [drive, sent]);
+  useEffect(() => {
+    if (!drive || drive.isl === null || !sent) return;
+    const step = drive.islstep;
+    let inner: ReturnType<typeof setTimeout> | undefined;
+    const t = setTimeout(() => {
+      click('.ch-ak-page.is-last .ch-ak-isl button.hd');
+      if (step !== null) inner = setTimeout(() => click('.ch-ak-page.is-last .ch-ak-isl .st .op'), step);
+    }, drive.isl);
+    return () => {
+      clearTimeout(t);
+      clearTimeout(inner);
+    };
+  }, [drive, sent]);
+  const last = chat.messages[chat.messages.length - 1];
+  const waiting = pendingDecisionKeys(last as never).length > 0 && !chat.busy;
+  useEffect(() => {
+    if (!drive || !waiting) return;
+    const ms = drive.confirm ?? drive.cancel;
+    if (ms === null) return;
+    const t = setTimeout(() => click(drive.confirm !== null ? '[data-ch-ask-confirm]' : '[data-ch-ask-cancel]'), ms);
+    return () => clearTimeout(t);
+  }, [drive, waiting]);
+  const held = (last?.parts ?? []).some((p) => p.type === 'data-action-receipt' && (p.data as { status?: string } | undefined)?.status === 'held');
+  useEffect(() => {
+    if (!drive || drive.undo === null || !held) return;
+    const t = setTimeout(() => click('[data-ch-ask-undo]'), drive.undo);
+    return () => clearTimeout(t);
+  }, [drive, held]);
+  const failed = chat.status === 'error';
+  useEffect(() => {
+    if (!drive || drive.retry === null || !failed) return;
+    const t = setTimeout(() => click('[data-ch-ask-retry]'), drive.retry);
+    return () => clearTimeout(t);
+  }, [drive, failed]);
+  return chat;
+}
+
+/**
+ * `?state=play&script=<name>`: a scripted turn through the real hook (ask-script.ts). `&pace=fast|real|worst`. Driving it:
+ * `&auto=<ms>` asks the script's question, `&confirm=<ms>` / `&cancel=<ms>` answers its card, `&undo=<ms>` presses Undo,
+ * `&stop=<ms>` presses Stop, `&retry=<ms>` presses Try again, `&isl=<ms>` presses the activity island and `&islstep=<ms>` then its first openable step, `&until=<ms>` freezes the response at that instant (a still
+ * frame of a moment). Without `auto` the page waits for a person to type or tap a start.
+ */
+function PreviewAskPlay({ name, role }: { name?: string; role?: 'player' }) {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    const at = new URLSearchParams(window.location.search);
+    const ms = (key: string): number | null => (at.has(key) ? Math.max(0, Number(at.get(key)) || 0) : null);
+    const pace = at.get('pace');
+    // `script` names the turn; `q` is left alone, because Ask reads `?q=` as a question to put in the field.
+    const script = askScript(at.get('script') ?? name, isAskPace(pace) ? pace : 'real');
+    DRIVE = { script, auto: ms('auto'), confirm: ms('confirm'), cancel: ms('cancel'), undo: ms('undo'), stop: ms('stop'), retry: ms('retry'), isl: ms('isl'), islstep: ms('islstep') };
+    // `&reveal=smooth|burst`: how the answer's words are released (chat/reveal.ts).
+    setRevealMode(at.get('reveal') === 'smooth' ? 'smooth' : at.get('reveal') === 'burst' ? 'burst' : revealMode());
+    // `&light=1`: the island's passing light while it works.
+    setWaitLight(at.get('light') === '1');
+    const restore = installScriptedChat(script, { until: ms('until') });
+    setReady(true);
+    return () => {
+      restore();
+      DRIVE = null;
+    };
+  }, [name]);
+  const load = useMemo<ChAskLoad>(() => {
+    let data: ChAskData = { ...PREVIEW_ASK_DATA };
+    if (role === 'player') data = { ...data, role: 'player', firstName: 'Jonah', allowance: 'plenty' as ChAskData['allowance'], knows: undefined, focus: [{ text: 'Approach from 125 to 150, set by Coach Reyes', ask: 'How is my approach from 125 to 150 doing?' }, { text: 'Putting gained strokes at Hilltop', ask: 'How did my putting go at Hilltop?' }] } as ChAskData;
+    else data = { ...data, firstName: 'Maya' };
+    return { status: 'ready', data };
+  }, [role]);
+  if (!ready) return <AskSkeleton />;
+  return <Ask load={load} chat={useScriptedChat} />;
 }
 
 /**
@@ -82,7 +260,12 @@ function fakeChat(start: { busy?: boolean; error?: unknown; messages?: UIMessage
  * rejected | readfail | partial | long | reads (an answer that names Jonah's reads, each a link to his Deep dive) | readsother
  * (the same reads for a player not on the team: no links). Nothing reaches the server.
  */
-export function PreviewAsk({ state, kind, v2 = false, messages, busy, role }: { state?: string; kind?: string; v2?: boolean; messages?: UIMessage[]; busy?: boolean; role?: 'player' }) {
+export function PreviewAsk(props: { state?: string; kind?: string; messages?: UIMessage[]; busy?: boolean; role?: 'player' }) {
+  if (props.state === 'play') return <PreviewAskPlay name={props.kind} role={props.role} />;
+  return <PreviewAskStill {...props} />;
+}
+
+function PreviewAskStill({ state, kind, messages, busy, role }: { state?: string; kind?: string; messages?: UIMessage[]; busy?: boolean; role?: 'player' }) {
   const offline = state === 'offline';
   useEffect(() => {
     if (!offline) return;
@@ -116,6 +299,9 @@ export function PreviewAsk({ state, kind, v2 = false, messages, busy, role }: { 
     } else if (messages) {
       data = { ...base, thread: { id: 'c-practice', title: 'Thursday practice', messages } };
       start = { busy };
+    } else if (state && state in ASK_CARD_STATES) {
+      // The server-built cards in the real thread: one that can be edited, several in a turn, one that went out of date.
+      data = { ...base, thread: { id: 'c-cards', title: 'Thursday', messages: ASK_CARD_STATES[state]!.messages } };
     } else if (state && state in ASK_THREAD_STATES) {
       const t = ASK_THREAD_STATES[state]!;
       data = { ...base, thread: { id: 'c-putting', title: 'Putting inside 6 feet', messages: t.messages } };
@@ -123,11 +309,12 @@ export function PreviewAsk({ state, kind, v2 = false, messages, busy, role }: { 
       init.evidence = t.focus ?? null;
     }
     if (role === 'player') data = { ...data, role: 'player', firstName: 'Jonah', allowance: 'plenty' as ChAskData['allowance'], focus: [{ text: 'Approach from 125 to 150, set by Coach Reyes', ask: 'How is my approach from 125 to 150 doing?' }, { text: 'Putting gained strokes at Hilltop', ask: 'How did my putting go at Hilltop?' }] };
-    if (v2 && !data.knows && role !== 'player') data = { ...data, knows: { tone: 'straight', teamId: 'preview', facts: [{ id: 'k1', text: 'Practice runs 2h 30m on weekdays' }, { id: 'k2', text: 'Team goal: under +2 a round by spring' }] } };
+    if (role !== 'player') data = { ...data, firstName: 'Maya' };
+    if (!data.knows && role !== 'player') data = { ...data, knows: { tone: 'straight', teamId: 'preview', facts: [{ id: 'k1', text: 'Practice runs 2h 30m on weekdays' }, { id: 'k2', text: 'Team goal: under +2 a round by spring' }] } };
     const load: ChAskLoad = state === 'noroster' ? { status: 'noRoster', teamName: 'Finley University' } : state === 'failed' ? { status: 'failed' } : { status: 'ready', data };
     return { load, chat: fakeChat(start), initial: init };
-  }, [state, kind, messages, busy, role, v2]);
+  }, [state, kind, messages, busy, role]);
 
   if (state === 'loading') return <AskSkeleton />;
-  return <Ask v2={v2} load={load} chat={chat} initial={initial} />;
+  return <Ask load={load} chat={chat} initial={initial} />;
 }

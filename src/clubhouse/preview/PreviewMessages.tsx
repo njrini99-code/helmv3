@@ -9,6 +9,7 @@ import { useToast, useToastPill } from '../ui/Toast';
 import { designFiles, designLongInbox, designReadMarks, DESIGN_CONVS, DESIGN_NOW, DESIGN_PEOPLE, DESIGN_REACTIONS, DESIGN_ROUTE_CONV, designRouteFixture, DESIGN_THREADS, DESIGN_VOTES, designAttachments, designMsg, designPins, designRowTyping } from './messages-design-cast';
 
 import { usePinned } from '../screens/messages/pinned';
+import { CAST, CAST_TEAM } from './cast';
 import { buildPollPayload, encodeChoice, parsePollPayload, pollFallbackText, tallyPoll, type Poll, type PollResponseRow } from '@/lib/golf/message-polls';
 
 /**
@@ -22,23 +23,23 @@ const at = (day: number, h: number, m: number) => new Date(Date.UTC(2026, 9, day
 
 const people: ChPerson[] = [
   { userId: 'dan', name: 'Dan Whitfield', role: 'coach', subtitle: 'Assistant coach', playerId: null },
-  { userId: 'ava', name: 'Ava Lindqvist', role: 'player', subtitle: 'Junior', playerId: 'p-ava' },
-  { userId: 'eli', name: 'Eli Brandt', role: 'player', subtitle: 'Junior', playerId: 'p-eli' },
-  { userId: 'jonah', name: 'Jonah Okafor', role: 'player', subtitle: 'Sophomore', playerId: 'p-jonah' },
-  { userId: 'priya', name: 'Priya Natarajan', role: 'player', subtitle: 'Freshman', playerId: 'p-priya' },
-  { userId: 'sofia', name: 'Sofia Alvarez', role: 'player', subtitle: 'Senior', playerId: 'p-sofia' },
-  { userId: 'theo', name: 'Theo Marchetti', role: 'player', subtitle: 'Senior', playerId: 'p-theo' },
+  { userId: 'ava', name: CAST.ava.name, role: 'player', subtitle: CAST.ava.classYear, playerId: 'p-ava' },
+  { userId: 'eli', name: CAST.eli.name, role: 'player', subtitle: CAST.eli.classYear, playerId: 'p-eli' },
+  { userId: 'jonah', name: CAST.jonah.name, role: 'player', subtitle: CAST.jonah.classYear, playerId: 'p-jonah' },
+  { userId: 'priya', name: CAST.priya.name, role: 'player', subtitle: CAST.priya.classYear, playerId: 'p-priya' },
+  { userId: 'sofia', name: CAST.sofia.name, role: 'player', subtitle: CAST.sofia.classYear, playerId: 'p-sofia' },
+  { userId: 'theo', name: CAST.theo.name, role: 'player', subtitle: CAST.theo.classYear, playerId: 'p-theo' },
 ];
 const all = ['dan', 'theo', 'sofia', 'ava', 'jonah', 'eli', 'priya'];
 
 const baseConvs: ChConv[] = [
   { id: 'team', group: true, title: 'Varsity team', subtitle: '', memberIds: all, memberCount: 8, unread: 3, lastAt: at(14, 14, 31), lastSenderId: 'ava', lastText: 'Does the bus leave from Finley or the field house?', creatorId: 'me' },
-  { id: 'jonah', group: false, title: 'Jonah Okafor', subtitle: 'Sophomore', memberIds: ['jonah'], memberCount: 2, unread: 1, lastAt: at(14, 13, 58), lastSenderId: 'jonah', lastText: 'Can we push to 5? I have ECON until 2:15 and then a TA meeting.', creatorId: 'me' },
+  { id: 'jonah', group: false, title: CAST.jonah.name, subtitle: CAST.jonah.classYear, memberIds: ['jonah'], memberCount: 2, unread: 1, lastAt: at(14, 13, 58), lastSenderId: 'jonah', lastText: 'Can we push to 5? I have ECON until 2:15 and then a TA meeting.', creatorId: 'me' },
   { id: 'travel', group: true, title: 'Pinehurst travel', subtitle: '', memberIds: all, memberCount: 8, unread: 0, lastAt: at(14, 11, 6), lastSenderId: 'me', lastText: 'Poll: Which van are you riding in Thursday?', lastIsPoll: true, creatorId: 'me' },
   { id: 'dan', group: false, title: 'Dan Whitfield', subtitle: 'Assistant coach', memberIds: ['dan'], memberCount: 2, unread: 0, lastAt: at(14, 9, 20), lastSenderId: 'dan', lastText: 'I can run the short-game block if you take Jonah.', creatorId: 'dan' },
   { id: 'eli', group: false, title: 'Eli Brandt', subtitle: 'Junior', memberIds: ['eli'], memberCount: 2, unread: 0, lastAt: at(13, 16, 10), lastSenderId: 'me', lastText: 'You need two posted rounds before Thursday.', creatorId: 'me' },
-  { id: 'priya', group: false, title: 'Priya Natarajan', subtitle: 'Freshman', memberIds: ['priya'], memberCount: 2, unread: 0, lastAt: at(13, 19, 44), lastSenderId: 'priya', lastText: 'Thank you coach. I will be at the ladder.', creatorId: 'me' },
-  { id: 'theo', group: false, title: 'Theo Marchetti', subtitle: 'Senior', memberIds: ['theo'], memberCount: 2, unread: 0, lastAt: at(11, 17, 2), lastSenderId: 'theo', lastText: 'Sent you the Arccos export from Oakmont.', creatorId: 'me' },
+  { id: 'priya', group: false, title: CAST.priya.name, subtitle: CAST.priya.classYear, memberIds: ['priya'], memberCount: 2, unread: 0, lastAt: at(13, 19, 44), lastSenderId: 'priya', lastText: 'Thank you coach. I will be at the ladder.', creatorId: 'me' },
+  { id: 'theo', group: false, title: CAST.theo.name, subtitle: CAST.theo.classYear, memberIds: ['theo'], memberCount: 2, unread: 0, lastAt: at(11, 17, 2), lastSenderId: 'theo', lastText: 'Sent you the Arccos export from Oakmont.', creatorId: 'me' },
   { id: 'sofia', group: false, title: 'Sofia Alvarez', subtitle: 'Senior', memberIds: ['sofia'], memberCount: 2, unread: 0, lastAt: at(8, 20, 15), lastSenderId: 'me', lastText: 'Good round. Keep the same pre-shot on 16.', creatorId: 'me' },
 ];
 
@@ -271,7 +272,7 @@ export function PreviewMessages({ state, view, play, role = 'coach' }: { state?:
       pollnew: [plus, named('Poll')],
       hold: [hold(lastTheirs)],
       holdseen: [hold(lastMine)],
-      react: [hold(lastTheirs), click(() => el('.ch-msv-rbar button:nth-child(2)'))],
+      react: [hold(lastTheirs), click(() => el('.ch-mso-rbar button:nth-child(2)'))],
       reply: [hold(lastTheirs), named('Reply')],
       edit: [hold(lastMine), named('Edit')],
       rowmenu: [rowMenu],
@@ -336,15 +337,13 @@ export function PreviewMessages({ state, view, play, role = 'coach' }: { state?:
   const convIds = useMemo(() => convs.map((c) => c.id), [convs]);
   const pins = usePinned('me', 'design', convIds, design, pinSeed);
   const api: ChMessagesApi = {
-    // The preview forces the redesign on for the design fixture, whatever the flag says.
-    redesign: design,
     designFilter: design && view === 'unread' ? 'unread' : undefined,
     ...(design ? { pins, typingByConv: designRowTyping(view), ...(view === 'grouptyping' ? { typingUserIds: ['maya'] } : {}) } : {}),
     viewer: { userId: 'me', role, name: cast.me.name },
     signers: { 'c-maya': { name: 'Maya Reyes', title: 'Head coach' } },
     timeZone: TZ,
     now: design ? DESIGN_NOW : NOW,
-    teamName: design ? 'Demo University Golf' : 'Varsity',
+    teamName: design ? CAST_TEAM.name : CAST_TEAM.squad,
     ...(design ? { receipts: { status: 'ready' as const, marks: designReadMarks(view), retry: () => undefined } } : {}),
     convs,
     convsLoading: state === 'loading' || (design && view === 'loading'),

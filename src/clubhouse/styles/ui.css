@@ -223,6 +223,11 @@
     --ch-av-floor: 12px;
   }
 }
+/* A coin under 22px (ui/Avatar `data-small`) holds one initial at half its width: the floor would clip it. */
+.ch-avatar[data-small] {
+  --ch-av-floor: 0px;
+  letter-spacing: 0;
+}
 .ch-avatar[data-tone='stone'] {
   --ch-av-bg: #e5e2db;
   --ch-av-fg: #4f4b43;
@@ -543,13 +548,14 @@
   white-space: nowrap;
 }
 
-/* Surface (design system: surfaces/Surface) */
+/* Surface (design system: surfaces/Surface). Every variant with depth reads the one card recipe (tokens.css
+   --ch-card-shadow); nothing below sets another. */
 .ch-surface {
   position: relative;
   min-width: 0;
   border-radius: var(--ch-radius-card);
   background: var(--ch-bg-surface);
-  box-shadow: var(--ch-elevation-card);
+  box-shadow: var(--ch-card-shadow);
 }
 .ch-surface--flat {
   box-shadow: 0 0 0 1px var(--ch-border-subtle);
@@ -730,7 +736,8 @@
   margin: 0;
   font: var(--ch-type-section);
   letter-spacing: var(--ch-track-section);
-  color: var(--ch-ledger-ink);
+  /* Near-black, as the page's title is (owner, 11 Nov 2026; shell.css, main[data-canopy] h2). */
+  color: var(--ch-section-ink, var(--ch-text-primary));
 }
 .ch-sec__meta {
   font: var(--ch-type-13);
@@ -1045,12 +1052,15 @@ button.ch-feat {
   color: var(--ch-on-green-ink-soft);
 }
 
+/* A page's opening has no rule above it (owner, 11 Nov 2026): nothing sits above it but the bar, so the Ledger's double
+   rule there only drew a thin double line under the green bar. The double rule is for a section that follows something
+   (.ch-sec__head below, a page's own section heads); an opening starts 8px in. Calendar and Rounds had dropped it by hand,
+   and every page's own opening head (Team Hub, Qualifiers, Settings, Recruiting, Stats) now does the same. */
 .ch-intro {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding-top: 16px;
-  border-top: var(--ch-ledger-rule-double);
+  padding-top: 8px;
 }
 /* 12px, the phone text floor (F09): PageIntro opens a page on the phone (lead, 2026-10-08). */
 .ch-intro__eyebrow {
@@ -1074,7 +1084,7 @@ button.ch-feat {
   line-height: var(--ch-lead-tight);
   letter-spacing: -0.038em;
   font-variation-settings: 'wdth' 88;
-  color: var(--ch-ledger-ink);
+  color: var(--ch-title-ink);
 }
 .ch-intro__brief {
   margin: 0;
@@ -1260,9 +1270,6 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
     background: rgb(0 0 0 / 0.06);
     color: var(--ch-ink-950);
   }
-}
-:where(html[data-fw-theme='dark']) .ch-surface {
-  box-shadow: var(--ch-elevation-reading);
 }
 :where(html[data-fw-theme='dark']) .ch-surface__foot {
   background: var(--ch-bg-subtle);
@@ -1664,7 +1671,8 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   font: var(--ch-type-28-strong);
   line-height: var(--ch-lead-tight);
   letter-spacing: -0.02em;
-  color: var(--ch-forest-800);
+  /* Near-black, as every section title (owner, 11 Nov 2026): it was forest green on the phone and the Ledger's ink on a desk. */
+  color: var(--ch-section-ink, var(--ch-text-primary));
 }
 .ch-zn__id h2::after {
   content: '';
@@ -1967,8 +1975,9 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   align-items: center;
   gap: 6px;
   width: 100%;
-  height: 64px;
-  padding: 12px 0 0;
+  /* Padding, not a fixed box: its own 67 didn't fit in 64, and at XXL the mark fell below the ring (CRH-12). */
+  min-height: calc(64 * var(--ch-type-k));
+  padding: 8px 0 8px;
   border: 0;
   border-radius: var(--ch-radius-md);
   background: none;
@@ -2030,7 +2039,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: var(--ch-ink-300);
+  background: var(--ch-green-500);
   transition: background-color var(--ch-dur-base) var(--ch-ease);
 }
 .ch-wks__d.is-today b {
@@ -2207,17 +2216,10 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   }
 }
 
-/* Clubhouse refresh, PR 2 (clubhouse_refresh_v1, off everywhere). The feature card is flat (SHARED-2). A Surface takes the card's
-   surface, ring and shadow; its head is title plus meta over a hairline inset 16, and its note is a band inside the card. */
-.ch-app[data-ch-refresh='on'] {
-  --ch-feature-bg: var(--ch-green-800);
-}
-html[data-fw-theme='dark'] .ch-app[data-ch-refresh='on'] {
-  --ch-feature-bg: #123d29;
-}
+/* Clubhouse refresh, PR 2. A Surface takes the card's face; its head is title plus meta over a hairline inset 16, and
+   its note is a band inside the card. (The feature card is flat in tokens.css itself: --ch-feature-bg.) */
 .ch-app[data-ch-refresh='on'] .ch-surface {
   background: var(--ch-card-bg);
-  box-shadow: var(--ch-ui-x1);
 }
 .ch-app[data-ch-refresh='on'] .ch-surface__sub {
   font: var(--ch-type-meta);
@@ -2264,6 +2266,20 @@ html[data-fw-theme='dark'] .ch-app[data-ch-refresh='on'] {
     font: var(--ch-type-meta);
     color: var(--ch-text-secondary);
   }
+  /* On a phone held upright the title keeps its own line: a short caption (a count, "4 of 5 count") still sits at the
+     right, and one that does not fit beside the title goes under it at the card's full width. Before, the two shared the
+     row whatever their length, and a long caption squeezed the title into two or three lines ("Alternate / and /
+     individuals", "Who / counted"). */
+  @media (max-width: 480px) {
+    .ch-app[data-ch-refresh='on'] .ch-sec__titles {
+      flex-wrap: wrap;
+      gap: 2px 12px;
+    }
+    .ch-app[data-ch-refresh='on'] .ch-sec__title {
+      flex: none;
+      max-width: 100%;
+    }
+  }
   .ch-app[data-ch-refresh='on'] .ch-sec__head ~ * {
     background: var(--ch-card-bg);
   }
@@ -2289,7 +2305,28 @@ html[data-fw-theme='dark'] .ch-app[data-ch-refresh='on'] {
 .ch-surface--card {
   border-radius: var(--ch-radius-lg);
   background: var(--ch-card-bg);
-  box-shadow: var(--ch-ui-x1);
+}
+/* The one feature card as a Surface (variant="feature"): the flat green, its cast, and the on-green inks for the head
+   and note. One per view (DESIGN_LANGUAGE law 5). */
+.ch-app[data-ch-refresh='on'] .ch-surface--feature,
+.ch-surface--feature {
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-feature-bg);
+  box-shadow: var(--ch-feature-shadow);
+  color: var(--ch-feature-ink);
+}
+.ch-surface--feature .ch-surface__title {
+  color: var(--ch-feature-ink);
+}
+.ch-app[data-ch-refresh='on'] .ch-surface--feature :is(.ch-surface__sub, .ch-surface__foot),
+.ch-surface--feature :is(.ch-surface__sub, .ch-surface__foot) {
+  border-color: var(--ch-feature-sep);
+  background: transparent;
+  color: var(--ch-feature-ink-2);
+}
+.ch-app[data-ch-refresh='on'] .ch-surface--feature .ch-surface__rule,
+.ch-surface--feature .ch-surface__rule {
+  background: var(--ch-feature-sep);
 }
 .ch-surface--card .ch-surface__foot {
   border-top: var(--ch-hairline-w) solid var(--ch-separator);
@@ -2360,7 +2397,6 @@ html[data-fw-theme='dark'] .ch-app[data-ch-refresh='on'] {
 /* The lane's card head, note and shared pieces (classes-roster-home 06 1.3). Everything here is scoped to the flag. */
 [data-ch-crh='on'] .ch-surface--card {
   overflow: hidden;
-  box-shadow: var(--ch-crh-card-shadow);
 }
 [data-ch-crh='on'] .ch-surface--card .ch-surface__head {
   position: relative;
@@ -2488,12 +2524,12 @@ html[data-fw-theme='dark'] .ch-app[data-ch-refresh='on'] {
 [data-ui='clubhouse'] main[data-ch-crh='on'] {
   --ch-border-focus: var(--ch-accent-ink);
 }
-[data-ui='clubhouse'] main[data-ch-crh='on'] :focus-visible {
+/* Not a programmatic reading destination, such as a sheet's title: base.css draws no box on those. */
+[data-ui='clubhouse'] main[data-ch-crh='on'] :focus-visible:not([tabindex='-1']) {
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
 }
 [data-ui='clubhouse'] {
-  --ch-ui-x1: var(--ch-elevation-lifted);
   --ch-ui-x2: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-separator);
   --ch-ui-x3: inset 0 0 0 var(--ch-hairline-w) rgb(0 0 0 / 0.1), inset 0 var(--ch-hairline-w) 0 rgb(255 255 255 / 0.16);
 }
@@ -2529,7 +2565,7 @@ html[data-fw-theme='dark'] .ch-app[data-ch-refresh='on'] {
   padding: 16px 12px;
 }
 /* The owner's call (4 Nov): rings and rules under an empty read as a page stuck loading. */
-.ch-root:not([data-ch-pre-refresh]) .ch-es--shaped > .ch-es-shape {
+.ch-root[data-ui] .ch-es--shaped > .ch-es-shape {
   display: none;
 }
 .ch-es__text {
@@ -2714,6 +2750,13 @@ html[data-fw-theme='dark'] .ch-app[data-ch-refresh='on'] {
   .ch-es--page > .ch-es__copy {
     padding: 24px 0 20px;
   }
+  /* Where the page-sized state is the card itself (anywhere but inside a surface or a sheet, which bring their own
+     inset), its copy keeps the card's inset. At 0 its full-width action ran over the card's side edges, and the card
+     showed again as a strip below it (Hub's empty Home, design review 10 Nov 2026). The value is the one the player's
+     Home had already set for itself (home.css). */
+  .ch-es--page:not(.ch-surface *, .ch-sheet *) > .ch-es__copy {
+    padding: 24px 16px 16px;
+  }
   .ch-es--page .ch-es__title {
     font-size: calc(22 * var(--ch-type-k));
   }
@@ -2723,12 +2766,15 @@ html[data-fw-theme='dark'] .ch-app[data-ch-refresh='on'] {
   .ch-es__copy {
     flex-direction: column;
   }
-  .ch-es__copy:has(> .ch-es__glyph) {
+  /* A section's line keeps its glyph at the left, where the row's leading mark will be. A page-sized state is one centred
+     column on a phone as on a desk, its glyph above the title: beside centred words the glyph read as stray (design review,
+     10 Nov 2026). */
+  .ch-es:not(.ch-es--page) > .ch-es__copy:has(> .ch-es__glyph) {
     display: grid;
     grid-template-columns: 20px minmax(0, 1fr);
     column-gap: 12px;
   }
-  .ch-es__copy:has(> .ch-es__glyph) > .ch-es__a {
+  .ch-es:not(.ch-es--page) > .ch-es__copy:has(> .ch-es__glyph) > .ch-es__a {
     grid-column: 1 / -1;
   }
   .ch-es__a {

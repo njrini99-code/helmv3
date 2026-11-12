@@ -28,10 +28,14 @@ import {
   type ChRoundCache,
   type ChSgChange,
   type ChWindow,
+  sgPolicyAtSource,
+  sgSourceFor,
 } from './stats-common';
+import { sgMixOf, sgMixShort, type ChSgMix } from './stats-sg-mix';
 import { holeCoverage, holeRounds } from './round-scope';
 import { effectiveWindow, filterFor, hasPrevious, previousWords, type ChFilter, type ChFilterOptions, type ChLast } from './stats-filter';
 import { effectiveCount, effectiveRounds, roundHalves, roundValues, summarizeWindow, weightedMean, windowChangeSe, type ChHalves } from './stats-weight';
+import { teamStrokesGained } from './stats-team-sg';
 
 export type { ChHalves } from './stats-weight';
 import { changeSe, floorRate, halvesTone, meanSe, needsText, type DeltaTone, type SpreadKind } from '../lib/stats-signal';
@@ -160,6 +164,8 @@ export interface ChTeamStats {
     spread?: ChRankSpread;
     /** The player's newest scored round (the hover card's "Last round"); null with none. */
     last?: { score: number; toPar: number | null; label: string } | null;
+    /** Where this player's strokes gained rounds came from: shot-tracked or estimated (stats-sg-mix.ts). */
+    sgMix?: ChSgMix | null;
   }>;
   /** The team's strokes gained per round in each leg over the window, against the baseline; null with no strokes gained (the phone's leg bars). */
   legTotals: Array<number | null>;
@@ -171,6 +177,11 @@ export interface ChTeamStats {
   sgChange: ChSgChange;
   /** Rounds in the window with strokes gained (the headline's sample). */
   sgRounds: number;
+  /**
+   * Of those rounds, how many were shot-tracked and how many estimated from the scorecard (stats-sg-mix.ts). Null when that read
+   * failed, absent on data built elsewhere: the screen then says nothing.
+   */
+  sgMix?: ChSgMix | null;
   roundsError: boolean;
   cacheError: boolean;
   puttsError: boolean;
@@ -183,7 +194,7 @@ export function sgLegs(r: ChRound): Array<number | null> {
   return [r.strokes_gained_tee, r.strokes_gained_approach, r.strokes_gained_around_green, r.strokes_gained_putting];
 }
 
-export async function loadTeamStats(input: { teamId: string; window: ChWindow; filter?: ChFilter; /** clubhouse_stats_redesign_v1: practice rounds leave the default figures. Off, they count as they always have. */ shs?: boolean }): Promise<ChTeamStats> {
+export async function loadTeamStats(input: { teamId: string; window: ChWindow; filter?: ChFilter; }): Promise<ChTeamStats> {
   const f = input.filter ?? filterFor(input.window);
   const supabase = await createClient();
   const [teamRes, membersRes, tz] = await Promise.all([
@@ -207,11 +218,15 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
   const tour = teamRes.error ? null : tourForGender(teamRes.data?.gender);
   const benchPromise = tour ? loadTourBenchmarks(supabase, tour, 'stats') : Promise.resolve(new Map<string, number>());
 
-  const season = players.length
+  const seasonRead = players.length
     ? await loadSeasonRounds(supabase, players.map((p) => p.id), { surface: 'stats', since: loadSince(f, start) })
     : { rounds: [], error: !!membersRes.error };
+  // Estimated strokes gained (stats-sg-mix.ts): the policy is applied here, to the rounds as loaded, so every figure below follows it.
+  const sgPolicyRead = await sgPolicyAtSource(supabase, seasonRead.rounds, 'stats');
+  const season = { ...seasonRead, rounds: sgPolicyRead.rounds };
   // With the redesign on, the team's figures leave practice rounds out unless the filter asks for a type or picks rounds by hand (data/season.ts).
-  const scoringRounds = practiceCut(input.shs, f) ? season.rounds.filter(countsForScoring) : season.rounds;
+  // All time (span.ts) is Fairway's basis: practice in, and no round posted as a total only (Fairway's isCountableRound reads none).
+  const scoringRounds = practiceCut(f) ? season.rounds.filter(countsForScoring) : f.span === 'all' ? holeRounds(season.rounds) : season.rounds;
   const byPlayer = groupByPlayer(scoringRounds);
 
   const windowRounds: ChRound[] = [];
@@ -242,13 +257,15 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
   const seasonFull = scoringRounds.filter((r) => (r.holes_played ?? 18) === 18);
   const seasonRounds = seasonOnly(scoringRounds, start);
   const figureIds = [...new Set([...holeWindow, ...holePrev, ...holeRounds(seasonRounds)].map((r) => r.id))];
-  const [cache, putts, longest, bench] = await Promise.all([
+  const [cache, putts, longest, bench, sgSource] = await Promise.all([
     loadRoundCache(supabase, figureIds, 'stats'),
     // Only the window's putts, for its bands (the previous window's and the season's were read for nothing: the bands count the window).
     loadPutts(supabase, holeWindow.map((r) => r.id)),
     // The season's longest made putt is one row from the database, not every putt of the season to find it.
     loadLongestPutt(supabase, holeRounds(seasonRounds).map((r) => r.id)),
     benchPromise,
+    // Which of the window's rounds were shot-tracked and which estimated from the scorecard: two rows a round at most.
+    sgSourceFor(supabase, sgPolicyRead.early, holeWindow, 'stats'),
   ]);
   const rowsFor = (rs: ChRound[]) => rs.map((r) => cache.byRound.get(r.id)).filter((x): x is ChRoundCache => !!x);
   const cur = rowsFor(holeWindow);
@@ -302,10 +319,15 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
   // stretch do, so one player's first round or two never swings the headline or the leg totals.
   const sgOf = (r: ChRound) => r.strokes_gained_total;
   const atFloor = (rs: ChRound[]) => new Set(players.filter((p) => effectiveCount(rs.filter((r) => r.player_id === p.id), sgOf) >= MIN_SG_ROUNDS).map((p) => p.id));
-  const sgReady = atFloor(holeWindow);
+  // The headline and the leg totals are the one team figure (`teamStrokesGained`), which CoachHelm Team reads too over its own window.
+  const teamSg = teamStrokesGained(holeWindow, players.map((p) => p.id));
+  const sgReady = teamSg.ready;
   const sgWindow = holeWindow.filter((r) => sgReady.has(r.player_id));
   const sgNow = sgWindow.map(sgOf).filter((v): v is number => v != null);
-  const sgTotal = weightedMean(sgWindow, sgOf);
+  const sgTotal = teamSg.total;
+  // The headline's rounds, split by where their strokes gained came from. "With shots" is said only of rounds known to have them.
+  const sgMix = sgMixOf(sgWindow, sgSource);
+  const sgRoundsWords = (n: number) => (sgMix && sgMix.estimatedCounted && sgMix.estimated > 0 ? plural(n, 'round') : `${plural(n, 'round')} with shots`);
   const earlier = players.reduce((a, p) => a + earlierInFilter(byPlayer.get(p.id) ?? [], f, start), 0);
   // The change is like for like (A4, Q-112): the same players on both sides, each at the floor in the window and in their own
   // previous stretch, so a floored window is never set against an unfloored one (a player's two earlier rounds count nowhere).
@@ -351,10 +373,11 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
       se: sgDelta.se ?? null,
       lowerIsBetter: false,
       // With rounds with shots but no player at the floor yet, the card says what it needs (A4), never a number from one round.
-      context: sgDelta.context || (sgNow.length ? `${plural(sgNow.length, 'round')} with shots` : holeWindow.some((r) => sgOf(r) != null) ? `${needsText('sgLong')} with shots from one player` : 'Needs rounds with shots'),
+      context: sgDelta.context || (sgNow.length ? sgRoundsWords(sgNow.length) : holeWindow.some((r) => sgOf(r) != null) ? `${needsText('sgLong')} with shots from one player` : 'Needs rounds with shots'),
       state: sgTotal == null ? 'empty' : sgDelta.delta == null && sgDelta.context ? 'no-comparison' : undefined,
       // Always drawn, so the card is as tall as its loading skeleton (CH-4401).
-      note: `${baseline.vs}${sgNow.length && sgDelta.context ? ` · ${plural(sgNow.length, 'round')} with shots` : ''}`,
+      // The board and print layouts draw this line, so the split is said here too (short form; the phone and desk cards say it in full).
+      note: `${baseline.vs}${sgNow.length && sgDelta.context ? ` · ${sgRoundsWords(sgNow.length)}` : ''}${sgTotal != null && sgMixShort(sgMix) ? ` · ${sgMixShort(sgMix)}` : ''}`,
       gauge: { kind: 'sg', tour },
     },
     { key: 'score', series: weekKeys.map((wk) => avgOf(inWeek(windowRounds, wk), (r) => r.total_score)), label: 'Scoring average', value: scoring, unit: '', digits: 1, delta: d(weightedMean(windowPaired, (r) => r.total_score), prevScoring), se: seOf((r) => r.total_score, windowPaired, prevRounds, 'score'), lowerIsBetter: true, context: hasPrev ? previousWords(f.last) : sample, gauge: { kind: 'par', toPar } },
@@ -407,7 +430,8 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
   const onDay = (d: string) => windowRounds.filter((r) => r.round_date === d);
 
   // Player x leg grid.
-  const grid = teamGrid(players, scoringRounds, f, start);
+  // Each row carries its own split, so a player whose figure is all estimate is marked on the row, not only in the team's line.
+  const grid = teamGrid(players, scoringRounds, f, start).map((row) => ({ ...row, sgMix: sgMixOf(holeWindow.filter((r) => r.player_id === row.id), sgSource) }));
 
   // Putting make rate by distance.
   let putting: ChTeamStats['putting'] = null;
@@ -451,12 +475,13 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
     legWeeks,
     legHalves,
     grid,
-    legTotals: LEGS.map((_, i) => avgOf(sgWindow, (r) => sgLegs(r)[i] ?? null)),
+    legTotals: [...teamSg.legs],
     putting,
     bests,
     tour,
     sgChange: sgDelta,
     sgRounds: sgNow.length,
+    sgMix,
     roundsError: season.error || !!membersRes.error,
     cacheError: cache.error,
     puttsError: putts.error,

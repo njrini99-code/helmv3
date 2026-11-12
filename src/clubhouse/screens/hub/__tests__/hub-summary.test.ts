@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ChHubAnnouncement, ChHubDay, ChHubLedgerRow, ChHubRsvp, ChHubTask, ChHubTrip, ChRsvp } from '../../../data/hub';
-import { firstBusyDay, hubStrip, ledgerSorted, owedBy, queueOf, tabAttention, taskFigures, type StripInput } from '../hub-summary';
+import { firstBusyDay, hubStrip, ledgerSorted, owedBy, queueOf, tabAttention, taskFigures, untouchedLine, type StripInput } from '../hub-summary';
 
 const rsvp = (over: Partial<ChHubRsvp> = {}): ChHubRsvp => ({
   eventId: 'e1',
@@ -172,11 +172,20 @@ describe('ledgerSorted', () => {
   });
 });
 
+describe('untouchedLine', () => {
+  it('says it in tasks, one, all or some of them', () => {
+    expect(untouchedLine({ overdue: 2, untouched: 0 })).toBeNull();
+    expect(untouchedLine({ overdue: 1, untouched: 1 })).toBe('No player has finished the overdue task.');
+    expect(untouchedLine({ overdue: 9, untouched: 9 })).toBe('No player has finished any of the 9 overdue tasks.');
+    expect(untouchedLine({ overdue: 9, untouched: 4 })).toBe('No player has finished 4 of the 9 overdue tasks.');
+  });
+});
+
 describe('taskFigures', () => {
   const done = (t: ChHubTask) => t.status === 'completed';
   it('sums completions across every assignment and counts what is late and untouched', () => {
     const rows = [task({ done: [0, 6], status: 'overdue' }), task({ id: 't2', done: [4, 6] }), task({ id: 't3', done: [3, 5], status: 'overdue' }), task({ id: 't4', done: [6, 6], status: 'completed' })];
-    expect(taskFigures(rows, done)).toEqual({ done: 13, left: 10, overdue: 2, untouched: 1 });
+    expect(taskFigures(rows, done)).toEqual({ open: 3, overdue: 2, complete: 1, done: 13, left: 10, untouched: 1 });
   });
 
   it('is absent when any task’s completion did not load, or there are no tasks', () => {

@@ -1,13 +1,4 @@
-import 'server-only';
-import { isFlagEnabled } from '@/lib/flags/is-enabled';
-
-export const TEAM_BOARD_FLAG = 'coachhelm_team_board_v1';
-
-export function isTeamBoardEnabled(): boolean {
-  return isFlagEnabled(TEAM_BOARD_FLAG);
-}
-
-/** Which Team view opens first; Nick's flip: `'board'` opens on today's board (02-PLAN 0.1). */
-export const TEAM_BOARD_FIRST_VIEW: 'hole' | 'board' = 'hole';
+// The coach's CoachHelm Team page is the drawn golf hole, with no switch: the older signal-list board it could flip back to
+// (`TEAM_BOARD_FIRST_VIEW = 'board'`, 02-PLAN 0.1) was retired by the owner on 11 Nov 2026.
 /** The fifth tab; Nick's flip: false hides it, and the reads stay in player sheets (02-PLAN 0.1). */
 export const COURSE_TAB = true;

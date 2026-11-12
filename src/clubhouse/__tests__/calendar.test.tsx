@@ -393,6 +393,34 @@ describe('Calendar · new event deep link', () => {
 describe('Calendar · saves that fail', () => {
   // Two replies below freeze the clock to the sample's day; nothing after them runs on it.
   afterEach(() => vi.useRealTimers());
+  it('Find a time stays in the form whoever is invited, so Clear and Select all do not move the dialog', async () => {
+    const user = userEvent.setup();
+    wrap(cal(), { initialNew: true });
+    const dlg = await screen.findByRole('dialog');
+    const block = () => dlg.querySelectorAll('.ch-cal-ftb').length;
+    expect(block()).toBe(1);
+    const toggle = within(dlg).getByRole('button', { name: /^(Select all|Clear)$/ });
+    await user.click(toggle);
+    expect(block()).toBe(1);
+    await user.click(toggle);
+    expect(block()).toBe(1);
+  });
+
+  it('the Today card counts a new event as soon as it is published, before the re-read lands', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(`${PREVIEW_CALENDAR.today}T16:00:00Z`));
+    const user = userEvent.setup();
+    a.createGolfEvent.mockImplementation(() => new Promise(() => {}));
+    wrap(cal(), { initialNew: true });
+    const title = () => document.querySelector('.ch-in__title')!.textContent ?? '';
+    const before = title();
+    await user.type(await screen.findByRole('textbox', { name: 'Event title' }), 'Short game');
+    await user.click(screen.getByRole('button', { name: 'Publish event' }));
+    await waitFor(() => expect(document.querySelector('dialog[open]')).toBeNull());
+    // The reply never comes: only the event drawn at publish can have moved the count.
+    expect(Number.parseInt(title(), 10)).toBe((Number.parseInt(before, 10) || 0) + 1);
+  });
+
   it('CH-6101 CH-6001 61202 a new event needs a title; a failed publish keeps the editor with everything as typed', async () => {
     const user = userEvent.setup();
     a.createGolfEvent.mockImplementation(fail);
@@ -1185,6 +1213,19 @@ describe('Calendar · phone (v2, Coach - Calendar - Mobile.html)', () => {
     expect(live('.ch-calm-dayk')!.textContent).toMatch(/Fri 16 October/);
   });
 
+  it('Month lists the chosen day under the grid, as Day does: its heading, its count and rows that open the event', async () => {
+    const user = userEvent.setup();
+    wrap(cal());
+    await user.click(screen.getByRole('radio', { name: 'Month' }));
+    await screen.findByRole('grid');
+    const under = live('.ch-calm-monthday') as HTMLElement;
+    expect(under.querySelector('.ch-calm-dayk')!.textContent).toMatch(/Wed 14 October/);
+    // The list comes after the grid and its legend, not before them.
+    expect(screen.getByRole('grid').compareDocumentPosition(under) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    await user.click(within(under).getByRole('button', { name: /^Short-game block, 3:30 PM to 5:00 PM/ }));
+    expect(await screen.findByRole('dialog', { name: 'Short-game block' })).toBeTruthy();
+  });
+
   describe('Month on react-day-picker', () => {
     beforeEach(() => freezeClock());
     afterEach(() => vi.useRealTimers());
@@ -1957,6 +1998,160 @@ describe('Calendar · what each role is given', () => {
     expect(screen.queryByRole('button', { name: /New event/ })).toBeNull();
   });
 
+  // Owner, 2026-11-11: the desktop week takes the full width and the panel lies under it, so the toolbar says what waits there.
+  it('the week’s toolbar says how much needs attention, in the list’s own words, and goes to the list; other views and a quiet week have no such button', async () => {
+    const user = userEvent.setup();
+    const canvas = document.body.appendChild(Object.assign(document.createElement('div'), { id: 'ch-canvas' }));
+    const scrollTo = vi.fn();
+    canvas.scrollTo = scrollTo as unknown as typeof canvas.scrollTo;
+    try {
+      const coach = wrap(cal());
+      expect(document.querySelector('.ch-cal-body')!.getAttribute('data-view')).toBe('week');
+      const sec = document.querySelector<HTMLElement>('[data-ch-attention]')!;
+      expect(within(sec).getByText('Needs attention')).toBeTruthy();
+      // The count is everything waiting: the rows shown and the ones the list only counts ("4 more events are waiting").
+      const waiting = sec.querySelectorAll('.ch-in__need').length + Number(/(\d+) more/.exec(sec.textContent ?? '')?.[1] ?? 0);
+      expect(waiting).toBeGreaterThan(0);
+      const btn = screen.getByRole('button', { name: `Needs attention · ${waiting}` });
+      expect(btn.className).toContain('ch-btn--ghost');
+      expect(btn.parentElement!.className).toBe('ch-cal-bar');
+      // Pressed, the list's heading comes to rest 16px under the top bar (56px where the shell has not said).
+      sec.getBoundingClientRect = () => ({ top: 1475, bottom: 1849, left: 0, right: 0, width: 0, height: 374, x: 0, y: 1475, toJSON: () => ({}) });
+      await user.click(btn);
+      await waitFor(() => expect(scrollTo).toHaveBeenCalledWith(expect.objectContaining({ top: 1475 - 56 - 16 })));
+      expect(document.activeElement?.className ?? '').not.toContain('ch-in__need');
+      // From the keyboard, focus goes with the page, to the list's first row.
+      btn.focus();
+      await user.keyboard('{Enter}');
+      await waitFor(() => expect(document.activeElement).toBe(sec.querySelector('.ch-in__need')));
+      // Day, Month and List keep the panel beside them, so they have no button.
+      for (const other of ['Day', 'Month', 'List']) {
+        await user.click(screen.getByRole('radio', { name: other }));
+        expect(screen.queryByRole('button', { name: /^Needs attention · / })).toBeNull();
+      }
+      coach.unmount();
+      // A player's reads as their list does.
+      const player = wrap(PREVIEW_CALENDAR_PLAYER);
+      const theirs = document.querySelector<HTMLElement>('[data-ch-attention]')!;
+      expect(screen.getByRole('button', { name: `Needs your attention · ${theirs.querySelectorAll('.ch-in__need').length}` })).toBeTruthy();
+      player.unmount();
+      // Nothing waiting: no button.
+      wrap(cal({ events: [] }));
+      expect(document.querySelector('.ch-cal-attn')).toBeNull();
+    } finally {
+      canvas.remove();
+    }
+  });
+
+  // The full-width week's panel lay under the grid: an opened event's detail was off the screen.
+  describe('something open in the full-width week', () => {
+    const body = () => document.querySelector<HTMLElement>('.ch-cal-body')!;
+    const details = () => screen.getByRole('complementary', { name: 'Details' });
+    const summary = () => document.querySelector<HTMLElement>('.ch-in-wrap[data-under]')!;
+    const block = (id: string) => document.querySelector<HTMLElement>(`.ch-wk [data-ev-id="${id}"]`)!;
+
+    it('closed, the week is whole: the summary is under it and the Details region is on the page, empty', () => {
+      wrap(cal());
+      expect(body().hasAttribute('data-open')).toBe(false);
+      expect(within(summary()).getByText('Needs attention')).toBeTruthy();
+      expect(summary().getAttribute('aria-label')).toBe('This week');
+      expect(details().textContent).toBe('');
+      expect(details().hasAttribute('data-enter')).toBe(false);
+      // In that order: the view, the panel, the summary, so the panel is beside the grid's row and runs down both.
+      expect([...body().children].map((c) => (c === details() ? 'details' : c === summary() ? 'summary' : 'view'))).toEqual(['view', 'details', 'summary']);
+    });
+
+    it('an event opens in the panel beside the grid, fading in; the summary stays under the grid; closing empties the panel', async () => {
+      const user = userEvent.setup();
+      wrap(cal());
+      await user.click(block('e3'));
+      expect(body().hasAttribute('data-open')).toBe(true);
+      expect(within(details()).getByRole('heading', { name: 'Range and wedges' })).toBeTruthy();
+      expect(details().hasAttribute('data-enter')).toBe(true);
+      expect(within(summary()).getByText('Needs attention')).toBeTruthy();
+      expect(within(details()).queryByText('Needs attention')).toBeNull();
+      // Another event opens in the panel already there.
+      await user.click(block('e2'));
+      expect(within(details()).getByRole('heading', { name: 'Strength' })).toBeTruthy();
+      await user.keyboard('{Escape}');
+      expect(body().hasAttribute('data-open')).toBe(false);
+      expect(details().textContent).toBe('');
+    });
+
+    it('a row of the summary opens beside the grid too, and the list stays where it is', async () => {
+      const user = userEvent.setup();
+      wrap(cal());
+      const rows = summary().querySelectorAll('.ch-in__need').length;
+      await user.click(summary().querySelector<HTMLElement>('.ch-in__need')!);
+      expect(body().hasAttribute('data-open')).toBe(true);
+      expect(details().textContent).not.toBe('');
+      expect(summary().querySelectorAll('.ch-in__need')).toHaveLength(rows);
+    });
+
+    it('an event the page loads with is simply there: no fade on the first paint, nor when another opens in its place', async () => {
+      const user = userEvent.setup();
+      wrap(cal(), { initialEvent: 'e3' });
+      expect(body().hasAttribute('data-open')).toBe(true);
+      expect(details().hasAttribute('data-enter')).toBe(false);
+      await user.click(block('e2'));
+      expect(details().hasAttribute('data-enter')).toBe(false);
+    });
+
+    it('the week narrows as the panel opens: the second click of a double click does not open the block that slid under the pointer', () => {
+      wrap(cal());
+      fireEvent.click(block('e3'), { detail: 1 });
+      expect(within(details()).getByRole('heading', { name: 'Range and wedges' })).toBeTruthy();
+      fireEvent.click(block('e2'), { detail: 2 });
+      expect(within(details()).getByRole('heading', { name: 'Range and wedges' })).toBeTruthy();
+      // A click of its own opens it.
+      fireEvent.click(block('e2'), { detail: 1 });
+      expect(within(details()).getByRole('heading', { name: 'Strength' })).toBeTruthy();
+    });
+
+    it('Day, Month and List are as they were: one panel, with the summary in it', () => {
+      for (const view of ['day', 'month', 'agenda'] as const) {
+        const page = wrap(cal({ view }));
+        expect(body().hasAttribute('data-open')).toBe(false);
+        expect(document.querySelector('.ch-in-wrap[data-under]')).toBeNull();
+        expect(within(details()).getByText('Needs attention')).toBeTruthy();
+        page.unmount();
+      }
+    });
+  });
+
+  // Owner, 2026-11-11: with the week's button the toolbar wrapped its legend onto a second row.
+  it('the week’s legend is in the week’s pinned head and names Travel and Busy; Day, Month and List keep theirs in the toolbar', () => {
+    const legend = () => document.querySelector<HTMLElement>('.ch-cal-legend')!;
+    const items = () => [...legend().querySelectorAll('span')].map((x) => x.textContent);
+    const dots = () => [...legend().querySelectorAll('i')].map((x) => x.className);
+    const coach = wrap(cal());
+    expect(document.querySelectorAll('.ch-cal-legend')).toHaveLength(1);
+    expect(legend().parentElement!.className).toBe('ch-wk__top');
+    expect(legend().nextElementSibling!.className).toBe('ch-wk__head');
+    expect(legend().getAttribute('aria-hidden')).toBe('true');
+    expect(items()).toEqual(['Practice', 'Competition', 'Meeting', 'Classes', 'Travel', 'Busy']);
+    expect(dots()).toEqual(['ch-dot-practice', 'ch-dot-qualifier', 'ch-dot-meeting', 'ch-dot-class', 'ch-dot-travel', 'ch-dot-busy']);
+    expect(document.querySelector('.ch-cal-bar .ch-cal-legend')).toBeNull();
+    coach.unmount();
+    // Busy time is the coach's alone.
+    const player = wrap(PREVIEW_CALENDAR_PLAYER);
+    expect(items()).toEqual(['Practice', 'Competition', 'Meeting', 'Classes', 'Travel']);
+    player.unmount();
+    for (const [view, names] of [
+      ['day', ['Practice', 'Competition', 'Meeting', 'Classes']],
+      ['month', ['Practice', 'Competition', 'Meeting']],
+      ['agenda', ['Practice', 'Competition', 'Meeting', 'Classes']],
+    ] as const) {
+      const page = wrap(cal({ view }));
+      expect(document.querySelectorAll('.ch-cal-legend')).toHaveLength(1);
+      expect(legend().parentElement!.className).toBe('ch-cal-bar');
+      expect(items()).toEqual(names);
+      page.unmount();
+    }
+    const css = readFileSync(join(__dirname, '..', 'styles', 'calendar.css'), 'utf8');
+    expect(css).toMatch(/\n\.ch-wk__top > \.ch-cal-legend \{\s*flex-wrap: wrap;\s*justify-content: flex-end;\s*margin: 0 0 var\(--ch-space-2\);\s*\}/);
+  });
+
   it('60801 a player has no planning tools: no New event or N key, no editor from ?new=1, no busy time, people filter, overlap panel, responses, attendance, edit or cancel; a coach has them', async () => {
     const user = userEvent.setup();
     const seeded = { initialNew: true, initialWith: 'jonah', initialEvent: 'e9' };
@@ -2391,7 +2586,8 @@ describe('Calendar · a player’s own week (wave 7)', () => {
     wrap(PREVIEW_CALENDAR_PLAYER);
     // The day's panel lists it under their attention, and opens the event, not an Overlap panel.
     const sec = screen.getByText('Needs your attention').closest('.ch-in__sec') as HTMLElement;
-    const row = within(sec).getByRole('button', { name: /^1:1 with Jonah.*Overlaps Short-game block 4:45–5:00 PM · Wed/ });
+    // One line in the panel: what it overlaps and the day. The hours are in the event it opens (below).
+    const row = within(sec).getByRole('button', { name: /^1:1 with Jonah\s*Overlaps Short-game block · Wed$/ });
     await user.click(row);
     await screen.findByRole('heading', { name: '1:1 with Jonah' });
     const warn = document.querySelector('.ch-cal-warn') as HTMLElement | null;
@@ -2426,6 +2622,17 @@ describe('Calendar · a player’s own week (wave 7)', () => {
       expect(within(row).getByText('Reply')).toBeTruthy();
       // A reply already given (a maybe, here) is not asked for again.
       expect(within(screen.getByRole('button', { name: /^Recovery nine/ })).queryByText('Reply')).toBeNull();
+    });
+
+    it('an overlap is said in words under the row, naming what it overlaps, never a bare mark', () => {
+      wrap(PREVIEW_CALENDAR_PLAYER);
+      const row = screen.getByRole('button', { name: /^1:1 with Jonah, .*, overlaps Short-game block/ });
+      expect(row.querySelector('.ch-calm-ev__clash')!.textContent).toBe('Overlaps Short-game block');
+      // The line is in the row's text column, under the place; nothing stands alone at the row's end.
+      expect(row.querySelector('.ch-calm-ev__b .ch-calm-ev__clash')).not.toBeNull();
+      expect(row.querySelector('.ch-calm-ev__w')).toBeNull();
+      // A row that overlaps nothing says nothing.
+      expect(screen.getByRole('button', { name: /^Putting ladder/ }).querySelector('.ch-calm-ev__clash')).toBeNull();
     });
 
     it('a coach’s strip and rows never carry a player’s reply mark', () => {

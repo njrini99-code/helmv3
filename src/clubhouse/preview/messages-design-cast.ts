@@ -1,10 +1,12 @@
 import type { ChFile, ChConv, ChMsg, ChPerson, ChReaction, ChReactionKey } from '../screens/messages/model';
 import type { Poll, PollResponseRow } from '@/lib/golf/message-polls';
+import { CAST, CAST_ASSISTANT, CAST_TEAM } from './cast';
 
 /**
  * The cast of the approved Messages design page (design-refresh/messages/redesign/prototype.js `INIT`), for
  * `/clubhouse-preview/messages?state=design&view=<route>`: same people, conversations, messages, reactions, poll and files, on the
- * page's clock (Friday, 8:21 AM). Synthetic. The other preview states keep their own cast.
+ * page's clock (Friday, 8:21 AM). Synthetic. The people the shared preview cast also has (`./cast`: Eli, Sam, Owen, Dana, the
+ * team's name) take their names and class years from it, so Sam is Sam Whitfield, a Junior, here as on every other screen.
  */
 const TZ_OFFSET = 4; // Eastern, October.
 const at = (day: number, h: number, m: number) => new Date(Date.UTC(2026, 9, day, h + TZ_OFFSET, m)).toISOString();
@@ -15,12 +17,12 @@ export const DESIGN_NOW = at(16, 8, 21);
 const player = (id: string, name: string, subtitle: string, gradYear: number): ChPerson => ({ userId: id, name, role: 'player', subtitle, playerId: `p-${id}`, gradYear });
 
 export const DESIGN_PEOPLE: ChPerson[] = [
-  { userId: 'dana', name: 'Dana Reyes', role: 'coach', subtitle: 'Assistant Coach', playerId: null, gradYear: null },
-  player('eli', 'Eli Brandt', 'Junior', 2028),
+  { userId: 'dana', name: CAST_ASSISTANT.name, role: 'coach', subtitle: 'Assistant Coach', playerId: null, gradYear: null },
+  player('eli', CAST.eli.name, CAST.eli.classYear, CAST.eli.gradYear),
   player('maya', 'Maya Ortiz', 'Senior', 2027),
-  player('sam', 'Sam Carter', 'Sophomore', 2029),
+  player('sam', CAST.sam.name, CAST.sam.classYear, CAST.sam.gradYear),
   player('jack', 'Jack Liu', 'Freshman', 2030),
-  player('owen', 'Owen Park', 'Junior', 2028),
+  player('owen', CAST.owen.name, CAST.owen.classYear, CAST.owen.gradYear),
   player('luca', 'Luca Ferri', 'Senior', 2027),
   player('ben', 'Ben Hale', 'Sophomore', 2029),
   player('cole', 'Cole Mercer', 'Freshman', 2030),
@@ -33,13 +35,13 @@ const conv = (id: string, over: Partial<ChConv> & Pick<ChConv, 'title' | 'lastAt
   ({ id, group: false, subtitle: '', memberIds: [id], memberCount: 2, unread: 0, ...over }) as ChConv;
 
 export const DESIGN_CONVS: ChConv[] = [
-  conv('team', { group: true, channel: true, creatorId: 'me', title: 'Demo University Golf', memberIds: TEAM, memberCount: 11, unread: 1, lastAt: at(16, 7, 31), lastSenderId: 'jack', lastText: 'Asking the real questions' }),
-  conv('eli', { title: 'Eli Brandt', subtitle: 'Junior', lastAt: at(16, 8, 14), lastSenderId: 'me', lastText: 'Send me the card when you get a sec' }),
-  conv('dana', { title: 'Dana Reyes', subtitle: 'Assistant Coach', lastAt: at(15, 16, 52), lastSenderId: 'dana', lastText: 'I can drive the second van tomorrow' }),
+  conv('team', { group: true, channel: true, creatorId: 'me', title: CAST_TEAM.name, memberIds: TEAM, memberCount: 11, unread: 1, lastAt: at(16, 7, 31), lastSenderId: 'jack', lastText: 'Asking the real questions' }),
+  conv('eli', { title: CAST.eli.name, subtitle: CAST.eli.classYear, lastAt: at(16, 8, 14), lastSenderId: 'me', lastText: 'Send me the card when you get a sec' }),
+  conv('dana', { title: CAST_ASSISTANT.name, subtitle: 'Assistant Coach', lastAt: at(15, 16, 52), lastSenderId: 'dana', lastText: 'I can drive the second van tomorrow' }),
   conv('quals', { group: true, title: 'Qualifier group', memberIds: QUALS, memberCount: 6, lastAt: at(15, 18, 11), lastSenderId: 'dana', lastText: 'You, Eli and Owen' }),
   conv('maya', { title: 'Maya Ortiz', subtitle: 'Senior', lastAt: at(14, 19, 20), lastSenderId: 'me', lastText: 'Proud of how you handled 16' }),
-  conv('sam', { title: 'Sam Carter', subtitle: 'Sophomore', unread: 1, lastAt: at(13, 14, 5), lastSenderId: 'sam', lastText: 'Can I miss Thursday lift for a lab?' }),
-  conv('owen', { title: 'Owen Park', subtitle: 'Junior', lastAt: at(12, 21, 12), lastSenderId: 'owen', lastText: 'Sent a file: Swing video' }),
+  conv('sam', { title: CAST.sam.name, subtitle: CAST.sam.classYear, unread: 1, lastAt: at(13, 14, 5), lastSenderId: 'sam', lastText: 'Can I miss Thursday lift for a lab?' }),
+  conv('owen', { title: CAST.owen.name, subtitle: CAST.owen.classYear, lastAt: at(12, 21, 12), lastSenderId: 'owen', lastText: 'Sent a file: Swing video' }),
 ];
 
 export const designMsg = (id: string, senderId: string, when: string, text: string, extra: Partial<ChMsg> = {}): ChMsg => ({

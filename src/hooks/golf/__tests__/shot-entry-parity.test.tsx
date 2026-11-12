@@ -133,6 +133,13 @@ async function openEdit(r: Renderer, user: UserEvent, shot: number) {
 }
 
 async function play(r: Renderer, user: UserEvent, cap: Captured, steps: Step[]) {
+  // Clubhouse keeps a putt's break and slope in one optional row, closed until it is opened (owner, 2026-11-11): the
+  // same two fields, reached through that row.
+  const openPuttRead = async () => {
+    if (r === 'fairway') return;
+    const row = screen.getByRole('button', { name: /^Break and slope/ });
+    if (row.getAttribute('aria-expanded') !== 'true') await user.click(row);
+  };
   for (const step of steps) {
     switch (step.do) {
       case 'result':
@@ -153,11 +160,13 @@ async function play(r: Renderer, user: UserEvent, cap: Captured, steps: Step[]) 
         await user.click(screen.getByRole('button', { name: exact(TAG_WORD[r][step.v]) }));
         break;
       case 'break':
+        await openPuttRead();
         await user.click(
           within(screen.getByRole('radiogroup', { name: r === 'fairway' ? 'Putt break direction' : 'Putt break' })).getByRole('radio', { name: exact(BREAK_WORD[step.v]) }),
         );
         break;
       case 'slope':
+        await openPuttRead();
         await user.click(within(screen.getByRole('radiogroup', { name: 'Putt slope' })).getByRole('radio', { name: SLOPE_WORD[step.v] }));
         break;
       case 'dist': {

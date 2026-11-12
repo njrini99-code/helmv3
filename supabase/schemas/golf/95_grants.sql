@@ -158,9 +158,15 @@ GRANT ALL ON TABLE "public"."golf_confidence_calibration" TO "authenticated";
 
 GRANT ALL ON TABLE "public"."golf_confidence_calibration" TO "service_role";
 
-GRANT ALL ON TABLE "public"."golf_conversation_participants" TO "anon";
+GRANT SELECT,INSERT,DELETE ON TABLE "public"."golf_conversation_participants" TO "authenticated";
 
-GRANT ALL ON TABLE "public"."golf_conversation_participants" TO "authenticated";
+GRANT UPDATE("last_read_at") ON TABLE "public"."golf_conversation_participants" TO "authenticated";
+
+GRANT UPDATE("notification_level") ON TABLE "public"."golf_conversation_participants" TO "authenticated";
+
+GRANT UPDATE("muted_until") ON TABLE "public"."golf_conversation_participants" TO "authenticated";
+
+GRANT UPDATE("hidden_at") ON TABLE "public"."golf_conversation_participants" TO "authenticated";
 
 GRANT ALL ON TABLE "public"."golf_conversation_participants" TO "service_role";
 
@@ -170,9 +176,9 @@ GRANT ALL ON TABLE "public"."golf_conversation_read_marks" TO "service_role";
 
 GRANT ALL ON SEQUENCE "public"."golf_conversation_read_marks_id_seq" TO "service_role";
 
-GRANT ALL ON TABLE "public"."golf_conversations" TO "anon";
+GRANT SELECT,INSERT,DELETE ON TABLE "public"."golf_conversations" TO "authenticated";
 
-GRANT ALL ON TABLE "public"."golf_conversations" TO "authenticated";
+GRANT UPDATE("updated_at") ON TABLE "public"."golf_conversations" TO "authenticated";
 
 GRANT ALL ON TABLE "public"."golf_conversations" TO "service_role";
 
@@ -358,9 +364,17 @@ GRANT ALL ON TABLE "public"."golf_message_responses" TO "authenticated";
 
 GRANT ALL ON TABLE "public"."golf_message_responses" TO "service_role";
 
-GRANT ALL ON TABLE "public"."golf_messages" TO "anon";
+GRANT SELECT,INSERT,DELETE ON TABLE "public"."golf_messages" TO "authenticated";
 
-GRANT ALL ON TABLE "public"."golf_messages" TO "authenticated";
+GRANT UPDATE("content") ON TABLE "public"."golf_messages" TO "authenticated";
+
+GRANT UPDATE("edited_at") ON TABLE "public"."golf_messages" TO "authenticated";
+
+GRANT UPDATE("is_deleted") ON TABLE "public"."golf_messages" TO "authenticated";
+
+GRANT UPDATE("payload") ON TABLE "public"."golf_messages" TO "authenticated";
+
+GRANT UPDATE("has_attachments") ON TABLE "public"."golf_messages" TO "authenticated";
 
 GRANT ALL ON TABLE "public"."golf_messages" TO "service_role";
 
@@ -764,3 +778,11 @@ GRANT ALL ON TABLE "public"."golf_push_holds" TO "service_role";
 GRANT ALL ON TABLE "public"."golf_push_hold_heartbeat" TO "service_role";
 
 GRANT ALL ON TABLE "public"."golf_class_hold_dirty" TO "service_role";
+
+-- Messages v2 package M, M5 (HELD 20261031150000)
+GRANT SELECT ON TABLE "public"."golf_conversation_pins" TO "authenticated";
+GRANT ALL ON TABLE "public"."golf_conversation_pins" TO "service_role";
+
+-- Ask level comparison (HELD 20261108100000): the division cohort
+GRANT SELECT ON TABLE "public"."golf_division_cohort" TO "authenticated";
+GRANT ALL ON TABLE "public"."golf_division_cohort" TO "service_role";

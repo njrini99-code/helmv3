@@ -62,7 +62,7 @@ export function PlayerHelmFrame({ view, line, off = false, covered = false, afte
             <span className="ch-num">{coach.line}</span>
           </Head>
         ) : (
-          <Head phone={phone} aside={!phone ? tabs : undefined}>
+          <Head phone={phone} tight={!coach} aside={!phone ? tabs : undefined}>
             {line}
           </Head>
         )}

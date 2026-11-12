@@ -34,7 +34,7 @@ describe('printPlan', () => {
     let rootDuring = false;
     vi.spyOn(window, 'print').mockImplementation(() => {
       during = [...document.head.querySelectorAll('style')].map((s) => s.textContent).join('');
-      rootDuring = !!document.querySelector('.ch-cp-print-root');
+      rootDuring = document.querySelector('.ch-cp-print-root')?.getAttribute('data-ui') === 'clubhouse';
     });
     await printPlan(plan);
     expect(during).toContain('@page');

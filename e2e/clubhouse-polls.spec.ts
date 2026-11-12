@@ -47,7 +47,7 @@ async function openTeamChat(page: Page) {
   await expect(page.getByPlaceholder(/^Message /)).toBeVisible({ timeout: 60_000 });
 }
 
-const card = (page: Page, question: RegExp) => page.getByRole('group', { name: question }).filter({ has: page.locator('.ch-ms-poll__opts') });
+const card = (page: Page, question: RegExp) => page.getByRole('group', { name: question }).filter({ has: page.locator('.ch-msd-poll__opts') });
 
 async function sendVanPoll(page: Page) {
   await page.getByRole('button', { name: 'New poll' }).click();
@@ -157,7 +157,7 @@ test('on a 390 x 844 phone, poll rows and footer links are at least 44 px tall',
   const poll = card(coach, /Range or course tomorrow\?|Which van are you riding in\?/).first();
   await expect(poll).toBeVisible({ timeout: 30_000 });
 
-  const targets = [poll.getByRole('radio'), poll.locator('.ch-ms-poll__link')];
+  const targets = [poll.getByRole('radio'), poll.locator('.ch-msd-poll__link')];
   for (const set of targets) {
     for (const el of await set.all()) {
       // A footer link is 28 px drawn and 44 px to a finger (its padding); the box measured is the hit area.

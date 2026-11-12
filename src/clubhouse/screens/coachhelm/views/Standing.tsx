@@ -13,7 +13,7 @@ import { Icon } from '../../../ui/Icon';
 import { PageRefreshNotice, RefreshNotice } from '../../../ui/RefreshNotice';
 import { SectionBoundary } from '../../../ui/SectionBoundary';
 import { EmptyState } from '../../../ui/States';
-import { coachHelmLinks } from '../PlayerBoard';
+import { coachHelmLinks } from '../links';
 import { HelmOff, PlayerHelmFrame } from './Frame';
 import { HowYouPlay } from './HowYouPlay';
 import { KeepReading } from './KeepReading';
@@ -164,15 +164,19 @@ function Hero({ s, voice = PLAYER_VOICE }: { s: ChStanding; voice?: ChViewVoice 
   const meta = [
     season && s.window.since ? `${s.window.label} from ${s.window.since.replace(' ', '\u00a0')}` : s.window.label,
     s.rounds != null ? `${plural(s.rounds, 'round')}` : null,
-    !season && s.scoringAverage ? `Scoring average ${s.scoringAverage}` : null,
+    !season && s.scoringAverage ? `Scoring average ${s.scoringAverage}, practice included` : null,
     s.refreshed ? `Refreshed ${s.refreshed.replace(' ', '\u00a0')}` : null,
   ].filter(Boolean);
   const { tour, team } = s.counts;
   const top = s.ladder.top;
   const tourName = s.tour === 'Tour' ? 'the Tour' : 'the LPGA Tour';
+  // Desktop: the four parts of the round as figures beside the sentence, in the half of the board the sentence leaves empty
+  // (fix wave 2026-11-11). The phone's board is the sentence alone, and the ladder under it carries the figures.
+  const phone = useChPhone();
+  const figs = !phone && s.ladder.rows.some((r) => r.strokes != null);
   return (
     // On the team board's green (owner, 2026-10-16: "same with standing"): one sentence, then the ladder under it.
-    <section className="ch-hs-hero ch-scoreboard is-solo" aria-labelledby="ch-hs-hero-t">
+    <section className={'ch-hs-hero ch-scoreboard' + (figs ? ' has-figs' : ' is-solo')} aria-labelledby="ch-hs-hero-t">
       <div className="ch-hs-hero__main">
         <div className="ch-hs-hero__k">
           <span>{w.where}</span>
@@ -201,6 +205,19 @@ function Hero({ s, voice = PLAYER_VOICE }: { s: ChStanding; voice?: ChViewVoice 
           Every stat, strokes gained included, is measured against {tourName}.
         </p>
       </div>
+      {figs && (
+        <div className="ch-hs-hero__figs">
+          <p id="ch-hs-hero-f">Strokes a round against {tourName}</p>
+          <dl aria-labelledby="ch-hs-hero-f">
+            {s.ladder.rows.map((r) => (
+              <div key={r.id} className={r.sense ? 'is-' + r.sense : 'is-none'}>
+                <dt>{r.label}</dt>
+                <dd className="ch-num">{r.strokes ?? '—'}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      )}
     </section>
   );
 }
@@ -238,7 +255,7 @@ function LadderRow({ r, open, onToggle, readsFailed, voice }: { r: ChLadderRow; 
             <ul>
               {r.causes.map((c) => (
                 <li key={c.id}>
-                  <a href={diveReadHref(c.id, voice)}>{c.title}</a>
+                  <a className="ch-num" href={diveReadHref(c.id, voice)}>{c.title}</a>
                   {c.line && <p>{c.line}</p>}
                   {c.firmness && <em>{c.firmness}</em>}
                 </li>
@@ -281,6 +298,26 @@ function Ladder({ s, voice = PLAYER_VOICE }: { s: ChStanding; voice?: ChViewVoic
           The reads behind these didn’t load, so nothing opens under them. The strokes are not affected. Try again in a moment.
         </p>
       )}
+    </section>
+  );
+}
+
+/** A group of stats: its name and tally over the rule, then its rows. */
+function Group({ g, voice, readHref }: { g: ChStanding['groups'][number]; voice: ChViewVoice; readHref: (metric: string) => string | null }) {
+  return (
+    <section className="ch-hs-g" aria-labelledby={`ch-hs-g-${g.id}`}>
+      <div className="ch-hs-g__h">
+        <div className="ch-hs-g__t">
+          <h2 id={`ch-hs-g-${g.id}`}>{g.label}</h2>
+          <Tally rows={g.rows} />
+        </div>
+        <p>{g.description}</p>
+      </div>
+      <ol className="ch-hs-rows">
+        {g.rows.map((r) => (
+          <Row key={r.id} r={r} voice={voice} readHref={readHref(r.id)} />
+        ))}
+      </ol>
     </section>
   );
 }
@@ -378,22 +415,18 @@ export function Standing({ load, voice = PLAYER_VOICE, game, at }: { load: ChVie
             </p>
           )}
           <Hero s={s} voice={voice} />
-          <Ladder s={s} voice={voice} />
-          {s.groups.map((g) => (
-            <section key={g.id} className="ch-hs-g" aria-labelledby={`ch-hs-g-${g.id}`}>
-              <div className="ch-hs-g__h">
-                <div className="ch-hs-g__t">
-                  <h2 id={`ch-hs-g-${g.id}`}>{g.label}</h2>
-                  <Tally rows={g.rows} />
-                </div>
-                <p>{g.description}</p>
-              </div>
-              <ol className="ch-hs-rows">
-                {g.rows.map((r) => (
-                  <Row key={r.id} r={r} voice={voice} readHref={readHref(r.id)} />
-                ))}
-              </ol>
-            </section>
+          {/* Desktop: Where strokes go keeps a reading width, and the strokes gained total, the figure its four rows add up to,
+              sits beside it (`.ch-hs-pair`). On the phone the wrapper draws nothing and the two stack as before. */}
+          {s.groups[0]?.id === 'sg' ? (
+            <div className="ch-hs-pair">
+              <Ladder s={s} voice={voice} />
+              <Group g={s.groups[0]} voice={voice} readHref={readHref} />
+            </div>
+          ) : (
+            <Ladder s={s} voice={voice} />
+          )}
+          {(s.groups[0]?.id === 'sg' ? s.groups.slice(1) : s.groups).map((g) => (
+            <Group key={g.id} g={g} voice={voice} readHref={readHref} />
           ))}
           <p className="ch-hl-note">
             {f ? 'Ranks come from the team’s overnight refresh and use the teammates who have the stat.' : 'Ranks come from your team’s refresh overnight and use the teammates who have the stat.'} The Tour mark is the Tour’s value for the same stat; where it is not comparable, the row says so and draws none.

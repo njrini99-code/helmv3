@@ -25,7 +25,7 @@ function readScroll(): { summary: number; detail: number } | null {
  * An arrival with a target replaces the entry with the summary's address, then pushes the detail, so one Back reaches the summary. An
  * entry that already carries `{ chPhone: 1 }` is a Back onto a detail (from the round page) or a refresh: the detail opens with no new entry.
  */
-export function useStatsDetail({ screen, tab, state = 'ready' }: { screen: StatsScreen; tab?: string; state?: StatsArrivalState }) {
+export function useStatsDetail({ screen, tab, area, state = 'ready' }: { screen: StatsScreen; tab?: string; /** The address's production `?area=`, which names a detail the way `tab` and the hash do. */ area?: string; state?: StatsArrivalState }) {
   const [detail, setDetail] = useState<StatsDetailId | null>(null);
   /** The opener's detail when focus should return to its card on the pop. */
   const lastOpen = useRef<StatsDetailId | null>(null);
@@ -47,7 +47,7 @@ export function useStatsDetail({ screen, tab, state = 'ready' }: { screen: Stats
       setRestoreTo(readScroll());
       return;
     }
-    const target = arrivalDetail({ tab, hash }, screen);
+    const target = arrivalDetail({ tab, hash, area }, screen);
     if (!target) {
       arrived.current = true;
       if (isDetailHash(hash)) window.history.replaceState(window.history.state, '', summaryUrl(window.location));
@@ -60,7 +60,7 @@ export function useStatsDetail({ screen, tab, state = 'ready' }: { screen: Stats
     window.history.pushState({ chPhone: 1 }, '', `#${hashOf(target)}`);
     lastOpen.current = target;
     setDetail(target);
-  }, [screen, tab, state]);
+  }, [screen, tab, area, state]);
 
   // Before the first paint: a deep link shows its detail in place, never a slide over a page nobody saw.
   useLayoutEffect(() => {

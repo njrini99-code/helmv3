@@ -195,7 +195,9 @@ export function CourseCard({ data, initialAll = false, onRead, onCourse, onRetry
   );
   const against = (
     <div className="shpw">
-      <div className="subh">Team against Tour · {history?.last4 == null && history ? `from ${history.rounds} rounds` : 'this season'}</div>
+      {/* These six read each player's standing row, which covers every round on file (`loadPlayersStandingMap`): not the season's
+          rounds the trend above reads, so the heading says so. */}
+      <div className="subh">Team against Tour · all time</div>
       {data.course.against ? (
         <div className="shape">
           {data.course.against.map((row) => {

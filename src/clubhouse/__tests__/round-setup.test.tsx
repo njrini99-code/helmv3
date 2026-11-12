@@ -252,7 +252,9 @@ describe('Round setup: details and starting', () => {
     await user.click(startBtn());
     await waitFor(() => expect(code('CH-11007')).toHaveTextContent("Couldn’t start your round at Finley GC"));
     expect(onStarted).not.toHaveBeenCalled();
-    expect(start.mock.calls[0]![0]).toMatchObject({ pick: { teeId: 'finley-blue' }, count: 18, type: 'practice', date: PREVIEW_SETUP_TODAY });
+    // Finley GC from the Blue tees is the one open qualifier's course and tees, so the round starts as that qualifier's
+    // next round (owner, 2026-11-11; setup/__tests__/qualifier-preselect.test.tsx holds the rule).
+    expect(start.mock.calls[0]![0]).toMatchObject({ pick: { teeId: 'finley-blue' }, count: 18, type: 'qualifier', qualifierId: 'q-fall-2', qualifierRound: 3, date: PREVIEW_SETUP_TODAY });
     await user.click(within(code('CH-11007')!).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(onStarted).toHaveBeenCalledWith('r-2'));
   });

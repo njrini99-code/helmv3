@@ -6,7 +6,7 @@
 export type PreviewViewer = 'coach' | 'theo' | 'jonah';
 
 const THEO = new Set(['home-player', 'hub-player', 'roster-player']);
-const JONAH = new Set(['rounds', 'classes', 'track', 'setup', 'calendar-player', 'messages-player', 'qualifiers-player', 'qualifier-player', 'my-qualifiers', 'tournament-player']);
+const JONAH = new Set(['rounds', 'classes', 'track', 'setup', 'calendar-player', 'messages-player', 'qualifiers-player', 'qualifier-player', 'tournament-player', 'coachhelm-practice-player']);
 
 export function previewViewer(screen: string, state: string | undefined): PreviewViewer {
   if (THEO.has(screen)) return 'theo';
@@ -14,6 +14,6 @@ export function previewViewer(screen: string, state: string | undefined): Previe
   if (screen === 'round' && !state?.startsWith('coach')) return 'jonah';
   if (screen === 'settings' && (state === 'player' || state === 'noteam')) return 'jonah';
   // The player's own stats page: the coach sees a player through the coach shell, the player sees themself.
-  if (screen === 'player' && state === 'self') return 'jonah';
+  if (screen === 'player' && (state === 'self' || state === 'denied-self')) return 'jonah';
   return 'coach';
 }

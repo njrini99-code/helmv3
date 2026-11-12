@@ -19,6 +19,7 @@ import {
   shapeHoles,
   type TourCourseInput,
   type TourHoleRow,
+  linkedRoundOf,
   type TourLinkedRound,
   type TourPlayerInput,
   type TourRawEvent,
@@ -42,6 +43,9 @@ import {
   type TourRow,
   type TourTeamSeasonRow,
 } from '@/lib/golf/tournaments-tables';
+import { candidateStats } from '../screens/tournaments/lineup-model';
+import { cardOf, revealOf, type FinalScore, type MyLineupRow } from '../screens/tournaments/reveal-model';
+import { buildLive, type LiveHoleRow } from '../screens/tournaments/live-model';
 import { setupGroups } from '../screens/tournaments/setup-groups';
 import type {
   ChTourCompareData,
@@ -62,6 +66,8 @@ import type {
   ChTourNextUp,
   ChTourPlayer,
   ChTourPlayerData,
+  ChTourPlayerEvent,
+  ChTourPlayerRound,
   ChTourReview,
   ChTourTeam,
 } from '../screens/tournaments/types';
@@ -304,16 +310,21 @@ async function readEvents(ctx: TourCtx, tz: string, opts: { ids?: string[]; own?
 
   const linkedIds = playerRounds.map((p) => p.round_id).filter((x): x is string => !!x);
   const [linkedRows, holeRounds] = await Promise.all([
-    allIn<{ id: string; status: string | null; total_score: number | null; strokes_gained_total: number | null }>('linkedRounds', linkedIds, (chunk, from, to) =>
-      ctx.supabase.from('golf_rounds').select('id, status, total_score, strokes_gained_total').in('id', chunk).order('id', { ascending: true }).range(from, to),
+    allIn<{ id: string; status: string | null; total_score: number | null; strokes_gained_total: number | null; holes_played: number | null }>('linkedRounds', linkedIds, (chunk, from, to) =>
+      ctx.supabase.from('golf_rounds').select('id, status, total_score, strokes_gained_total, holes_played').in('id', chunk).order('id', { ascending: true }).range(from, to),
     ),
-    allIn<{ round_id: string }>('linkedHoles', linkedIds, (chunk, from, to) =>
-      ctx.supabase.from('golf_holes').select('round_id').in('round_id', chunk).not('score', 'is', null).order('id', { ascending: true }).range(from, to),
+    allIn<{ round_id: string; score: number | null }>('linkedHoles', linkedIds, (chunk, from, to) =>
+      ctx.supabase.from('golf_holes').select('round_id, score').in('round_id', chunk).not('score', 'is', null).order('id', { ascending: true }).range(from, to),
     ),
   ]);
   const withHoles = new Set(holeRounds.map((h) => h.round_id));
+  const scored = new Map<string, { n: number; sum: number }>();
+  for (const h of holeRounds) {
+    const c = scored.get(h.round_id) ?? { n: 0, sum: 0 };
+    scored.set(h.round_id, { n: c.n + 1, sum: c.sum + (h.score ?? 0) });
+  }
   const linked: Record<string, TourLinkedRound> = {};
-  for (const r of linkedRows) linked[r.id] = { total: r.total_score, completed: r.status === 'completed', holes: withHoles.has(r.id), shots: r.strokes_gained_total != null };
+  for (const r of linkedRows) linked[r.id] = linkedRoundOf(r, scored.get(r.id), withHoles.has(r.id));
 
   const courseIds = [...new Set([...ts.map((t) => t.course_id), ...rounds.map((r) => r.course_id)].filter((x): x is string => !!x))];
   const teeIds = [...new Set(rounds.map((r) => r.tee_id).filter((x): x is string => !!x))];
@@ -876,10 +887,10 @@ export async function loadTournamentLinks(ctx: TourCtx): Promise<TourLoad<ChTour
             courseName: row.course_name,
             score: row.total_score ?? 0,
             toPar: row.score_to_par,
-            suggestion: s.match ? { eventId: eventOf.get(s.match.eventRound.roundEventId) ?? s.match.eventRound.tournamentId, roundNumber: s.match.eventRound.roundNumber, confidence: s.match.confidence } : null,
+            suggestion: s.match ? { eventId: eventOf.get(s.match.eventRound.roundEventId) ?? s.match.eventRound.tournamentId, roundEventId: s.match.eventRound.roundEventId, roundNumber: s.match.eventRound.roundNumber, confidence: s.match.confidence } : null,
           };
         }),
-        events: read.events.map((e) => ({ id: e.id, name: e.name, rounds: e.rounds.map((r) => ({ number: r.number, date: r.date, courseName: courseName(r.courseId) })) })),
+        events: read.events.map((e) => ({ id: e.id, name: e.name, rounds: e.rounds.map((r) => ({ number: r.number, roundEventId: r.roundEventId, date: r.date, courseName: courseName(r.courseId) })) })),
         // Lineup players with no score in a round that has started.
         missing: read.events.flatMap((e) =>
           e.rounds
@@ -974,9 +985,11 @@ export async function loadTournamentLineup(ctx: TourCtx, eventId: string): Promi
   return guard<ChTourLineupData>('lineup', async () => {
     const info = await readTeam(ctx);
     const seasonEnd = Number(seasonIdOf(info.today).slice(0, 4)) + 1;
-    const [read, players] = await Promise.all([readEvents(ctx, info.team.timezone, { ids: [eventId] }), readPlayers(ctx, seasonEnd)]);
-    const event = read.events[0];
+    // Every event of the team: a player's form and how often they counted come from the other events.
+    const [read, players] = await Promise.all([readEvents(ctx, info.team.timezone), readPlayers(ctx, seasonEnd)]);
+    const event = read.events.find((e) => e.id === eventId);
     if (!event) return { kind: 'missing' };
+    const raw = read.raws.find((r) => r.t.id === eventId);
     const lineup = event.entries.filter((x) => x.role === 'lineup');
     return {
       kind: 'ready',
@@ -984,15 +997,16 @@ export async function loadTournamentLineup(ctx: TourCtx, eventId: string): Promi
         now: ctx.now,
         event,
         players,
-        // Count chance, form and the projection are the lineup lane's engines (D-93: never below the gate): the roster
-        // with its availability only until that view is built.
-        candidates: players.filter((p) => !p.alumni).map((p) => ({ playerId: p.id, availability: p.availability, form: [], qualifying: null, countRate: null, countRounds: 0, chance: null, chancePct: null, eligibleRounds: 0, course: { rounds: 0, avgToPar: null } })),
+        // Form, count rate and the count-chance band come from the finished events (D-93: no band under six rounds).
+        // The projected range is the projection engine's, which is not built: null, never an invented figure.
+        candidates: players.filter((p) => !p.alumni).map((p) => ({ playerId: p.id, availability: p.availability, qualifying: null, ...candidateStats(p.id, read.events, eventId, event.courseIds) })),
         slots: Array.from({ length: event.format.players }, (_, i) => ({ slot: i + 1, playerId: lineup.find((x) => x.slot === i + 1)?.playerId ?? null, reason: null, squad: 'A' as const })),
         alternate: event.entries.find((x) => x.role === 'alternate')?.playerId ?? null,
         individuals: event.entries.filter((x) => x.role === 'individual').map((x) => x.playerId),
         projection: null,
         projectionShort: [],
         lineup: event.lineup,
+        version: raw?.t.version ?? null,
         qualifier: null,
         errors: {},
       },
@@ -1000,18 +1014,36 @@ export async function loadTournamentLineup(ctx: TourCtx, eventId: string): Promi
   });
 }
 
-/** The live round is held file 6 (100500, not written): the snapshot is the event's own state, with no hole feed. */
-export async function loadTournamentLive(ctx: TourCtx, eventId: string): Promise<TourLoad<ChTourLiveSnapshot>> {
+/**
+ * The live round (a round of the event: the one in play, else the next, else the last, or `?round=`). The hole-by-hole
+ * feed, moments and presence are held file 6 (100500, not written), so they stay empty. What is live is real: the entered
+ * and linked totals the event already holds, and the holes a linked GolfHelm round has scored so far (`golf_holes`, the
+ * rows Fairway's round tracker writes), combined by the scoring engine into the team's live line (`live-model.ts`).
+ * Tournament tables are not in the realtime publication, so the screen re-reads this on a timer.
+ */
+export async function loadTournamentLive(ctx: TourCtx, eventId: string, roundNumber: number | null = null): Promise<TourLoad<ChTourLiveSnapshot>> {
   return guard<ChTourLiveSnapshot>('live', async () => {
     const info = await readTeam(ctx);
     const seasonEnd = Number(seasonIdOf(info.today).slice(0, 4)) + 1;
     const [read, players] = await Promise.all([readEvents(ctx, info.team.timezone, { ids: [eventId] }), readPlayers(ctx, seasonEnd)]);
     const event = read.events[0];
     if (!event) return { kind: 'missing' };
-    const round = event.rounds.find((r) => r.status === 'live' || r.status === 'suspended') ?? event.rounds.find((r) => r.status === 'upcoming') ?? event.rounds[event.rounds.length - 1];
+    const round =
+      (roundNumber != null ? event.rounds.find((r) => r.number === roundNumber) : undefined) ??
+      event.rounds.find((r) => r.status === 'live' || r.status === 'suspended') ??
+      event.rounds.find((r) => r.status === 'upcoming') ??
+      event.rounds[event.rounds.length - 1];
     if (!round) return { kind: 'missing' };
-    const team = event.team.rounds.find((r) => r.roundNumber === round.number);
     const course: ChTourCourse = read.courses[round.courseId] ?? { id: round.courseId, name: '', tees: '', par: round.par, rating: null, holes: [] };
+    // The holes of every linked GolfHelm round (golf_holes, the rows Fairway's tracker and the hole sheet write): a round
+    // still being played shows its holes so far; a finished card shows all of them.
+    const open = event.playerRounds.filter((p) => p.roundNumber === round.number && p.roundId).map((p) => p.roundId!);
+    const holes = await section('live', 'holes', () =>
+      allIn<TourHoleRow>('liveHoles', open, (chunk, from, to) => ctx.supabase.from('golf_holes').select('round_id, hole_number, par, score').in('round_id', chunk).order('round_id').order('hole_number').range(from, to)),
+    );
+    const byRound = new Map<string, LiveHoleRow[]>();
+    for (const h of holes.ok ? holes.value : []) byRound.set(h.round_id, [...(byRound.get(h.round_id) ?? []), { roundId: h.round_id, hole: h.hole_number, par: h.par, score: h.score }]);
+    const built = buildLive(event, round, byRound);
     return {
       kind: 'ready',
       data: {
@@ -1021,14 +1053,14 @@ export async function loadTournamentLive(ctx: TourCtx, eventId: string): Promise
         round,
         players,
         course,
-        lanes: [],
-        team: team ?? { kind: 'none', total: null, toPar: null, counting: [], dropped: [], tiedAtBoundary: [] },
+        lanes: built.lanes,
+        team: built.team,
         field: event.field,
         presence: [],
         appScoring: 'off',
         moments: [],
         projection: null,
-        errors: {},
+        errors: holes.ok ? {} : { holes: true },
       },
     };
   });
@@ -1049,12 +1081,111 @@ export async function loadPlayerTournaments(ctx: TourCtx, eventId: string | null
     const me = players.find((p) => p.id === ctx.playerId);
     if (!me) return { kind: 'missing' };
     const season = seasonIdOf(info.today);
+    // The player reads their own rows only (D-85), and who plays is not theirs to read (entries and round lineups are the
+    // coach's until held file 4), so the event shape carries no field: their scores come straight from their own rows.
+    const ownRounds = (e: ChTourEvent): ChTourPlayerRound[] => {
+      const raw = read.raws.find((r) => r.t.id === e.id);
+      if (!raw) return [];
+      return raw.playerRounds.flatMap((row): ChTourPlayerRound[] => {
+        const r = e.rounds.find((x) => x.roundEventId === row.round_event_id);
+        if (!r) return [];
+        const linked = row.round_id ? raw.linked[row.round_id] : undefined;
+        const total = row.entered_total ?? (linked?.completed ? linked.total : null);
+        return [{ eventId: e.id, roundEventId: r.roundEventId, roundNumber: r.number, playerId: ctx.playerId!, role: 'lineup', slot: null, squad: 'A', total, toPar: total != null ? total - r.par : null, status: row.status, source: row.entered_total != null ? 'coach' : 'card', trust: e.trust, roundId: row.round_id, holesKnown: false, shotData: false, officialTotal: null, count: 'none' }];
+      });
+    };
+    const mineOf = (e: ChTourEvent) => {
+      const own = ownRounds(e);
+      const scored = own.filter((p) => p.total != null);
+      if (!scored.length) return null;
+      // Round by round for the list's table, from the same own rows: a round with no score of theirs stays null.
+      const scores = e.rounds.map((r) => {
+        const p = own.find((x) => x.roundEventId === r.roundEventId);
+        return { number: r.number, total: p?.total ?? null, toPar: p?.toPar ?? null };
+      });
+      return { place: null, total: scored.reduce((s, p) => s + (p.total ?? 0), 0), toPar: scored.reduce((s, p) => s + (p.toPar ?? 0), 0), rounds: scored.length, scores };
+    };
     const list = read.events
-      .filter((e) => e.seasonId === season)
+      .filter((e) => e.seasonId === season && !e.cancelled)
       .sort((a, b) => (a.status === 'complete') === (b.status === 'complete') ? (a.status === 'complete' ? b.startDate.localeCompare(a.startDate) : a.startDate.localeCompare(b.startDate)) : a.status === 'complete' ? 1 : -1)
-      .map((e) => ({ eventId: e.id, name: e.name, startDate: e.startDate, endDate: e.endDate, courseName: read.courses[e.courseIds[0] ?? '']?.name ?? '', status: e.status, mine: null }));
+      .map((e) => ({ eventId: e.id, name: e.name, startDate: e.startDate, endDate: e.endDate, courseName: read.courses[e.courseIds[0] ?? '']?.name ?? '', status: e.status, days: e.rounds.map((r) => ({ number: r.number, date: r.date, firstTeeAt: r.firstTeeAt })), mine: mineOf(e) }));
     const open = eventId ? read.events.find((e) => e.id === eventId) : null;
     if (eventId && !open) return { kind: 'missing' };
+    // Their reflection and the notes their coach shared with them (the policies return only those).
+    const [reflection, notes] = open
+      ? await Promise.all([
+          section('player', 'reflection', async () => {
+            const rows = await all<TourReflectionRow>('reflection', (from, to) =>
+              tourTable(ctx.supabase, 'golf_tournament_reflections').select(TOUR_COLUMNS.golf_tournament_reflections).eq('tournament_id', open.id).eq('player_id', ctx.playerId!).order('player_id').range(from, to),
+            );
+            return rows[0] ?? null;
+          }),
+          section('player', 'notes', () =>
+            all<TourPlayerNoteRow>('sharedNotes', (from, to) =>
+              tourTable(ctx.supabase, 'golf_tournament_player_notes').select(TOUR_COLUMNS.golf_tournament_player_notes).eq('tournament_id', open.id).eq('player_id', ctx.playerId!).order('player_id').range(from, to),
+            ),
+          ),
+        ])
+      : [null, null];
+    // The reveal: the player's own role and spot once the coach has published (held migration 20261024100300). Without it
+    // (not published, or the function not applied yet) there is none, which is the same "not shown" answer.
+    const myLineup = open
+      ? await section('player', 'reveal', async () => {
+          const { data, error } = await ctx.supabase.rpc('golf_tournament_my_lineup' as never, { p_tournament_id: open.id } as never);
+          if (error) {
+            if (isTourSchemaMissing(error)) return null;
+            throw new ReadFailed('myLineup', error);
+          }
+          return (data ?? null) as MyLineupRow | null;
+        })
+      : null;
+    // Whether a score counted needs the round's lineup scores, which a teammate may read once the round is final (D-85).
+    const scoresByRound = new Map<string, Map<string, FinalScore>>();
+    // Judged on the per-round role (a substitution makes the published role stale), never the tournament-level one.
+    if (open && myLineup?.ok && myLineup.value?.rounds.some((x) => x.my_role === 'lineup')) {
+      const finalIds = open.rounds.filter((r) => r.status === 'final' || r.status === 'official').map((r) => r.roundEventId);
+      const scored = await section('player', 'finalScores', async () => {
+        const rows = await allIn<TourPlayerRoundRow>('finalScores', finalIds, (chunk, from, to) =>
+          tourTable(ctx.supabase, 'golf_tournament_player_rounds').select(TOUR_COLUMNS.golf_tournament_player_rounds).in('round_event_id', chunk).order('player_id').range(from, to),
+        );
+        const linkedIds = rows.map((r) => r.round_id).filter((x): x is string => !!x);
+        const linked = await allIn<{ id: string; status: string | null; total_score: number | null }>('finalLinked', linkedIds, (chunk, from, to) =>
+          ctx.supabase.from('golf_rounds').select('id, status, total_score').in('id', chunk).order('id').range(from, to),
+        );
+        return { rows, linked };
+      });
+      if (scored.ok) {
+        for (const r of scored.value.rows) {
+          const l = scored.value.linked.find((x) => x.id === r.round_id);
+          const total = r.entered_total ?? (l?.status === 'completed' ? l.total_score : null);
+          const byPlayer = scoresByRound.get(r.round_event_id) ?? new Map<string, FinalScore>();
+          byPlayer.set(r.player_id, { total, status: r.status });
+          scoresByRound.set(r.round_event_id, byPlayer);
+        }
+      }
+    }
+    const reveal = open && myLineup?.ok ? revealOf(myLineup.value, { playerId: ctx.playerId!, format: open.format, rounds: open.rounds, players, scoresByRound }) : null;
+    // Their own card for the round in play (hole-by-hole scoring): the course's holes and what their linked round has.
+    let card: ChTourPlayerEvent['card'] = null;
+    const playing = open?.rounds.find((r) => r.status === 'live');
+    if (open && playing && myLineup?.ok) {
+      const ownRow = read.raws.find((r) => r.t.id === open.id)?.playerRounds.find((p) => p.round_event_id === playing.roundEventId);
+      const strokes = new Map<number, number | null>();
+      if (ownRow?.round_id) {
+        const holes = await section('player', 'cardHoles', () =>
+          all<{ hole_number: number; score: number | null }>('cardHoles', (from, to) => ctx.supabase.from('golf_holes').select('hole_number, score').eq('round_id', ownRow.round_id!).order('hole_number').range(from, to)),
+        );
+        for (const h of holes.ok ? holes.value : []) strokes.set(h.hole_number, h.score);
+      }
+      card = cardOf(playing, myLineup.value?.rounds.find((x) => x.round_event_id === playing.roundEventId), read.courses[playing.courseId]?.holes ?? [], open.format.holes, strokes, ownRow?.entered_total != null);
+    }
+    const shared = notes?.ok
+      ? notes.value.flatMap((n) =>
+          ([['Shot of the day', n.shot_of_day], ['A decision to think about', n.decision], ['Next focus', n.next_focus]] as const)
+            .filter(([, text]) => !!text?.trim())
+            .map(([label, text]) => ({ label, text: text!.trim(), author: 'Your coach', updatedAt: n.updated_at })),
+        )
+      : [];
     return {
       kind: 'ready',
       data: {
@@ -1064,21 +1195,24 @@ export async function loadPlayerTournaments(ctx: TourCtx, eventId: string | null
         list,
         event: open
           ? {
-              // The player's copy of the event carries no lineup and no teammates' scores (D-85).
-              event: { ...open, entries: [], playerRounds: open.playerRounds.filter((p) => p.playerId === ctx.playerId), team: { rounds: [], result: null }, field: null },
-              reveal: null,
+              // The player's copy of the event carries no lineup, no receipt and no teammates' scores (D-85).
+              event: { ...open, entries: [], playerRounds: ownRounds(open), team: { rounds: [], result: null }, field: null, lineup: { ...open.lineup, seen: null } },
+              // Whether this player is in the lineup is the reveal (golf_tournament_my_lineup, held 20261024100300).
+              reveal,
               trip: null,
+              // Teammates' results and the team's are held file 4's too: only the player's own line is drawn.
               results: { visible: false, reason: open.status === 'complete' ? null : 'not_final' },
-              sharedNotes: [],
-              reflection: null,
+              sharedNotes: shared,
+              card,
+              reflection: reflection?.ok ? { state: reflection.value ? 'saved' : 'unwritten', body: reflection.value?.body ?? '', updatedAt: reflection.value?.updated_at ?? null } : null,
               moments: [],
               following: false,
             }
           : null,
         window: { in: false, until: null, day: null },
+        // The player's season line (counted, per 18) is held file 4's: zeros here are never drawn.
         season: { counted: 0, of: 0, rounds: 0, roundsTarget: null, perEighteen: { event: null, qualifier: null, practice: null }, n: { event: 0, qualifier: 0, practice: 0 }, early: true },
-        // The player's season line (counted, per 18) is held file 4's: zeros here are never drawn (the view is a placeholder).
-        errors: {},
+        errors: { ...(open && reflection && !reflection.ok ? { reflection: true as const } : {}), ...(open && notes && !notes.ok ? { notes: true as const } : {}), ...(open && myLineup && !myLineup.ok ? { reveal: true as const } : {}) },
       },
     };
   });

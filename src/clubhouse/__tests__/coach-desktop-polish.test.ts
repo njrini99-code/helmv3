@@ -10,7 +10,7 @@ describe('coach desktop polish (owner, 2026-11-05: "it looks sloppy")', () => {
   it('the listed pages take the tight head, with no double rule above the title', () => {
     const shell = css('shell.css');
     expect(shell).toMatch(/\[data-canopy-head='tight'\]::before \{\s*content: none;/);
-    for (const file of ['calendar/Calendar', 'calendar/CalendarSkeleton', 'hub/TeamHub', 'hub/HubSkeleton', 'rounds/TeamRounds', 'rounds/TeamRoundsSkeleton', 'qualifiers/QualifiersList', 'qualifiers/QualifiersSkeleton', 'settings/SettingsView', 'settings/SettingsSkeleton', 'stats/StatsSkeleton', 'tournaments/parts']) {
+    for (const file of ['calendar/Calendar', 'calendar/CalendarSkeleton', 'hub/TeamHub', 'hub/HubSkeleton', 'rounds/TeamRounds', 'rounds/TeamRoundsSkeleton', 'qualifiers/QualifiersList', 'qualifiers/QualifiersSkeleton', 'settings/SettingsView', 'settings/SettingsSkeleton', 'stats/StatsSkeleton', 'tournaments/parts', 'whats-new/WhatsNew', 'whats-new/WhatsNewSkeleton']) {
       const src = readFileSync(join(ROOT, 'screens', `${file}.tsx`), 'utf8');
       expect(src, file).toMatch(/data-canopy-head=(?:"tight"|\{phone \? undefined : 'tight'\})/);
       expect(src, file).not.toMatch(/data-canopy-head=(?:""|\{phone \? undefined : ''\})/);

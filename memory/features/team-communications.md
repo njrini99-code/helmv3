@@ -392,6 +392,29 @@ Two consequences worth carrying:
   `participant_count` instead. `is_team_channel` would be worse there, not
   better: it is true for a small minority of real team chats.
 
+### Held, not applied: one channel per team, kept in step with the roster (2026-11-10)
+
+Owner decisions of 2026-11-10, written as held migrations (`supabase/migrations/HELD.md` has a row each; none is on
+production). Until they are applied the paragraph above is the whole truth: only the service-role seed script creates
+a channel, and nothing adds or removes a member when the roster changes.
+
+- `20261110090200` + `20261110090300`: a team has at most one channel (unique index on `team_id WHERE
+  is_team_channel`). The ensure function that `20261110090300` adds in `helm_private` creates it the first time a player becomes active
+  or a coach is staffed, owned by the primary coach (else the coach staffed first), titled `<team name> — Team
+  Channel`, and fills it from the roster. A team with no coach has no channel.
+- `20261110090400`: a person whose last role on a team ends (roster row no longer `active` or deleted, staff row
+  deleted) loses their participant rows in that team's channel and team chats. One-to-one threads stay. Rejoining puts
+  a player back in the channel only.
+- `20261110090500`: the same for the teams and people that exist today, once (a data change the owner approves on
+  its own).
+- `20261110090600`: only someone on the team can add a member to its channel or a team chat, so a creator who left
+  cannot put themself back.
+
+Two things the UI will show once channels exist everywhere, both from the count rule above: Fairway draws a channel
+with one or two members as a direct thread (the other person's name, or "Conversation member" for a coach alone),
+and an empty channel's row reads "No messages yet" in the EARLIER section. Making `isGroupConversation` return true
+for `is_team_channel` fixes the first; a channel is always a group, unlike `is_team_chat`.
+
 ### Clubhouse follow-ups to the same race (2026-10-31 audit)
 
 - The Clubhouse attachment tile (`Attachments` in `MessagesView.tsx`) asks once

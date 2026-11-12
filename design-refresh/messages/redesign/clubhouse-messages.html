@@ -1,13 +1,4 @@
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<!-- Local copy of the published design page (https://claude.ai/artifact/BXhxxNzJDAJLMoNXPjMpev), wrapped in the same
-     document skeleton the artifact host adds, so a local open and capture/capture.mjs render exactly what the link shows. -->
-<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,-apple-system,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
-</head>
-<body>
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>Clubhouse Messages Redesign</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -577,6 +568,47 @@ td .mono { display: inline-block; padding: 1px 6px; border-radius: 6px; backgrou
 .desk .toast { top: 18px; }
 .press-ring { position: absolute; inset: -4px; border-radius: 22px; pointer-events: none; }
 @media (prefers-reduced-motion: reduce) { .stage__cap.is-live i { animation: none; } }
+
+/* iOS keyboard on the phone. It rises on the system keyboard's curve and carries the composer and the thread with it.
+   In the app the real keyboard drives this: CapacitorProvider's keyboardWillShow sets --keyboard-height and body.keyboard-open. */
+:root { --kb-bg: #d1d4da; --kb-key: #fdfdfe; --kb-fn: #abb0ba; --kb-ink: #0b0b0c; --kb-sh: 0 1px 0 rgb(0 0 0 / 0.3); --kb-rule: rgb(60 60 67 / 0.29); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --kb-bg: #2c2c2f; --kb-key: #6b6b70; --kb-fn: #47474b; --kb-ink: #fff; --kb-sh: 0 1px 0 rgb(0 0 0 / 0.6); --kb-rule: rgb(235 235 245 / 0.2); } }
+:root[data-theme="dark"] { --kb-bg: #2c2c2f; --kb-key: #6b6b70; --kb-fn: #47474b; --kb-ink: #fff; --kb-sh: 0 1px 0 rgb(0 0 0 / 0.6); --kb-rule: rgb(235 235 245 / 0.2); }
+.thread-pg { --kbh: 316px; --kb-lift: 294px; --kb-ease: cubic-bezier(0.32, 0.72, 0, 1); --kb-ms: 0.48s; }
+.msgs { padding-bottom: calc(var(--pad-bot) + var(--kb-pad, 0px)); }
+.thread-pg.kb-on .thread { --kb-pad: var(--kb-lift); }
+.kb { position: absolute; left: 0; right: 0; bottom: 0; z-index: 30; height: var(--kbh); display: flex; flex-direction: column; background: var(--kb-bg); color: var(--kb-ink); font-family: -apple-system, "SF Pro Text", system-ui, sans-serif; transform: translateY(100%); visibility: hidden; transition: transform var(--kb-ms) var(--kb-ease), visibility 0s linear var(--kb-ms); user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+.thread-pg.kb-on .kb { transform: none; visibility: visible; transition: transform var(--kb-ms) var(--kb-ease), visibility 0s; }
+.phone .comp, .phone .jump { transition: translate var(--kb-ms) var(--kb-ease); }
+.thread-pg.kb-on .comp, .thread-pg.kb-on .jump { translate: 0 calc(-1 * var(--kb-lift)); }
+.kb__sug { display: grid; grid-template-columns: repeat(3, 1fr); align-items: center; height: 44px; flex: none; font-size: 16px; letter-spacing: -0.01em; }
+.kb__sug span { position: relative; text-align: center; padding: 10px 4px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kb__sug span + span::before { content: ""; position: absolute; left: 0; top: 50%; width: 0.5px; height: 24px; margin-top: -12px; background: var(--kb-rule); }
+.kb__rows { display: flex; flex-direction: column; gap: 11px; padding: 4px 3px 0; }
+.kb__r { display: flex; justify-content: center; gap: 6px; }
+.kb__k { position: relative; display: grid; place-items: center; width: 32px; height: 43px; flex: none; padding: 0; border: 0; border-radius: 6px; background: var(--kb-key); box-shadow: var(--kb-sh); color: var(--kb-ink); font: 400 23px/1 -apple-system, "SF Pro Text", system-ui, sans-serif; cursor: pointer; }
+.kb.is-caps .kb__k:not(.fn):not(.space) { text-transform: uppercase; }
+.kb__k.fn { background: var(--kb-fn); width: 42px; }
+.kb__k.fn svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.kb.is-caps .kb__k.shift { background: var(--kb-key); }
+.kb.is-caps .kb__k.shift svg { fill: currentColor; }
+.kb__r.r3 .shift { margin-right: 8px; }
+.kb__r.r3 .del { margin-left: 8px; }
+.kb__k.wide { width: 88px; font-size: 16px; }
+.kb__k.space { flex: 1; width: auto; font-size: 16px; }
+.kb__r.r4 { padding: 0 0; }
+.kb__k.is-down { background: var(--kb-fn); }
+.kb__k.fn.is-down { background: var(--kb-key); }
+.kb__bar { display: flex; justify-content: space-between; padding: 12px 26px 0; color: var(--kb-ink); opacity: 0.6; }
+.kb__bar svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.kb__pop { position: absolute; z-index: 2; display: grid; place-items: center; width: 50px; height: 56px; border-radius: 10px; background: var(--kb-key); box-shadow: 0 1px 2px rgb(0 0 0 / 0.25), 0 0 0 0.5px rgb(0 0 0 / 0.08); color: var(--kb-ink); font: 400 36px/1 -apple-system, "SF Pro Text", system-ui, sans-serif; pointer-events: none; }
+.reduce .kb { transform: none; opacity: 0; transition: opacity 0.12s linear, visibility 0s linear 0.12s; }
+.reduce .thread-pg.kb-on .kb { opacity: 1; transition: opacity 0.12s linear, visibility 0s; }
+.reduce .comp, .reduce .jump { transition: none; }
+.desk .kb { display: none; }
+.send-fly { position: absolute; z-index: 25; pointer-events: none; display: flex; justify-content: flex-end; }
+.send-fly .b { margin: 0; }
+.send-ghost { position: absolute; z-index: 25; pointer-events: none; color: var(--a-ink); font: 400 calc(16px * var(--k))/1.32 var(--f-sans); white-space: pre-wrap; overflow-wrap: anywhere; }
 </style>
 <style>
 /* ───────── Clubhouse design language fit (31 Oct refresh) ─────────
@@ -655,10 +687,27 @@ th { text-transform: none; letter-spacing: 0; font-size: 12.5px; }
 
 /* Wells */
 .search { background: var(--a-page-2); box-shadow: var(--a-well-shadow); color: var(--a-ink-2); font-size: calc(16px * var(--k)); height: 40px; }
-.segw { position: relative; display: grid; grid-template-columns: repeat(3, 1fr); margin: 12px 0 14px; padding: 3px; border-radius: 10px; background: var(--a-page-2); box-shadow: var(--a-well-shadow); }
-.segw button { position: relative; z-index: 1; min-height: 32px; border: 0; background: none; border-radius: 8px; color: var(--a-ink-2); font: 500 calc(14px * var(--k))/1 var(--f-sans); cursor: pointer; }
-.segw button[aria-pressed="true"] { color: var(--a-ink); font-weight: 600; }
-.segw__thumb { position: absolute; top: 3px; bottom: 3px; left: 3px; width: calc((100% - 6px) / 3); border-radius: 8px; background: var(--a-surface); box-shadow: 0 1px 2px rgb(28 25 18 / 0.14), 0 0 0 0.5px rgb(28 27 24 / 0.08); transform: translateX(calc(100% * var(--i, 0))); transition: transform 0.36s cubic-bezier(0.34, 1.3, 0.64, 1); }
+/* Filter switch = Clubhouse's Segmented (src/clubhouse/ui/Segmented.tsx, size sm; controls.css .ch-seg and tokens.css):
+   a recessed ivory well and a raised green chip that slides. Values copied from the repo tokens. */
+:root { --ch-well-bg: linear-gradient(180deg, #d4cebe 0%, #ddd8ca 55%, #e4dfd3 100%);
+  --ch-well-shadow: inset 0 2px 3px rgb(28 25 18 / 0.2), inset 0 4px 10px -2px rgb(28 25 18 / 0.16), inset 0 -1px 0 rgb(255 255 255 / 0.55), inset 0 0 0 1px rgb(28 25 18 / 0.13), 0 1px 0 #fff, 0 0 0 1px rgb(255 255 255 / 0.35);
+  --ch-seg-on-bg: linear-gradient(180deg, #1f6b45 0%, #0f4a2f 100%);
+  --ch-seg-on-shadow: inset 0 1px 0 rgb(255 255 255 / 0.2), inset 0 -1px 0 rgb(0 0 0 / 0.12), 0 1px 2px rgb(11 58 37 / 0.35), 0 3px 8px -2px rgb(11 58 37 / 0.3);
+  --ch-seg-on-ink: #f9f7f1; --ch-seg-ink: #3a3833; --ch-seg-press: color-mix(in oklab, #155a39 11%, transparent); --ch-seg-edge: 0 1px 0 rgb(255 255 255 / 0.6); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --ch-well-bg: linear-gradient(180deg, #0a0d0b 0%, #0d110e 55%, #101411 100%);
+  --ch-well-shadow: inset 0 2px 3px rgb(0 0 0 / 0.5), inset 0 4px 10px -2px rgb(0 0 0 / 0.4), inset 0 0 0 1px rgb(0 0 0 / 0.4), 0 1px 0 rgb(255 255 255 / 0.05);
+  --ch-seg-on-bg: linear-gradient(180deg, #2a7d53 0%, #1f6b45 100%); --ch-seg-on-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16), inset 0 -1px 0 rgb(0 0 0 / 0.2), 0 1px 2px rgb(0 0 0 / 0.5), 0 3px 8px -2px rgb(0 0 0 / 0.45);
+  --ch-seg-on-ink: #f9f7f1; --ch-seg-ink: #e2dccd; --ch-seg-press: color-mix(in oklab, #6bbb8c 12%, transparent); --ch-seg-edge: 0 1px 0 rgb(0 0 0 / 0.35); } }
+:root[data-theme="dark"] { --ch-well-bg: linear-gradient(180deg, #0a0d0b 0%, #0d110e 55%, #101411 100%);
+  --ch-well-shadow: inset 0 2px 3px rgb(0 0 0 / 0.5), inset 0 4px 10px -2px rgb(0 0 0 / 0.4), inset 0 0 0 1px rgb(0 0 0 / 0.4), 0 1px 0 rgb(255 255 255 / 0.05);
+  --ch-seg-on-bg: linear-gradient(180deg, #2a7d53 0%, #1f6b45 100%); --ch-seg-on-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16), inset 0 -1px 0 rgb(0 0 0 / 0.2), 0 1px 2px rgb(0 0 0 / 0.5), 0 3px 8px -2px rgb(0 0 0 / 0.45);
+  --ch-seg-on-ink: #f9f7f1; --ch-seg-ink: #e2dccd; --ch-seg-press: color-mix(in oklab, #6bbb8c 12%, transparent); --ch-seg-edge: 0 1px 0 rgb(0 0 0 / 0.35); }
+.segw { position: relative; display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin: 12px 0 14px; padding: 4px; border-radius: 16px; background: var(--ch-well-bg); box-shadow: var(--ch-well-shadow); }
+.segw button { position: relative; z-index: 1; height: calc(30px * var(--k)); padding: 0 12px; border: 0; background: transparent; border-radius: 12px; color: var(--ch-seg-ink); font: 500 calc(13px * var(--k))/1.15 var(--f-sans); white-space: nowrap; text-shadow: var(--ch-seg-edge); cursor: pointer; touch-action: manipulation; transition: color 0s linear 0.12s, background-color 0.12s ease; }
+.segw button:not([aria-pressed="true"]):active { background: var(--ch-seg-press); }
+.segw button[aria-pressed="true"] { color: var(--ch-seg-on-ink); font-weight: 600; text-shadow: 0 1px 0 rgb(0 0 0 / 0.18); }
+.segw button:focus-visible { outline: 2px solid var(--a-champ); outline-offset: 2px; }
+.segw__thumb { position: absolute; top: 4px; bottom: 4px; left: 4px; width: calc((100% - 16px) / 3); border-radius: 12px; background: var(--ch-seg-on-bg); box-shadow: var(--ch-seg-on-shadow); transform: translateX(calc((100% + 4px) * var(--i, 0))); transition: transform 0.36s cubic-bezier(0.34, 1.3, 0.64, 1); }
 .reduce .segw__thumb { transition: none; }
 
 /* Inbox */
@@ -689,8 +738,10 @@ th { text-transform: none; letter-spacing: 0; font-size: 12.5px; }
 .rail .sec { margin: 14px 0 4px; padding: 0 18px; font: 600 calc(13px * var(--k))/1.2 var(--f-sans); letter-spacing: 0; text-transform: none; color: var(--a-ink-2); }
 
 /* Thread: text off the page goes onto small surfaces */
-.day span { display: inline-block; padding: 4px 11px; border-radius: 999px; background: var(--a-surface); box-shadow: var(--a-card-shadow); font: 500 calc(13px * var(--k))/1.3 var(--f-sans); letter-spacing: 0; color: var(--a-ink-2); }
-.day span b { color: var(--a-ink-2); font-weight: 400; }
+/* Day marker, Messages style: plain centered text on the page, no chip. Day in semibold, time in regular, both secondary ink. */
+.day { margin: 22px 0 8px; }
+.day span { display: inline-block; padding: 0; border-radius: 0; background: none; box-shadow: none; font: 600 calc(12px * var(--k))/1.3 var(--f-sans); letter-spacing: 0; color: var(--a-ink-3); font-variant-numeric: tabular-nums; }
+.day span b { color: var(--a-ink-3); font-weight: 400; margin-left: 2px; }
 .datepill { font: 500 calc(13px * var(--k))/1.3 var(--f-sans); letter-spacing: 0; color: var(--a-ink-2); }
 .bname { display: block; margin: 0 0 1px; font: 600 calc(13px * var(--k))/1.3 var(--f-sans); color: var(--a-ink-2); letter-spacing: 0; }
 .time { font: 400 calc(13px * var(--k))/1 var(--f-sans); color: var(--a-ink-3); }
@@ -860,8 +911,11 @@ th { text-transform: none; letter-spacing: 0; font-size: 12.5px; }
 .dtop__bell i { position: absolute; top: 9px; right: 10px; width: 8px; height: 8px; border-radius: 50%; background: var(--a-accent-text); box-shadow: 0 0 0 2px var(--a-surface); }
 
 /* Today's conversation bar (MessagesPhone.tsx PhoneThread): back key, the face, name and role at the left, info at the right. */
-.phone .chbar .tbar.conv { display: flex; align-items: center; gap: 2px; padding: 54px 8px 6px 4px; }
-.phone .chbar .tbar.conv .who { flex: 1; min-width: 0; justify-content: flex-start; gap: 10px; padding: 2px 4px; text-align: left; }
+/* Owner comment (2026-11-07, "center this"): the face and name sit centred between the back key and info, the back key left, info right. */
+.phone .chbar .tbar.conv { display: grid; flex: 1 1 auto; width: 100%; box-sizing: border-box; grid-template-columns: 44px minmax(0, 1fr) 44px; align-items: center; gap: 4px; padding: 54px 8px 6px; }
+.phone .chbar .tbar.conv > .pback-i { justify-self: start; }
+.phone .chbar .tbar.conv > .ibtn:last-child { justify-self: end; }
+.phone .chbar .tbar.conv .who { justify-self: center; max-width: 100%; min-width: 0; justify-content: center; gap: 10px; padding: 2px 4px; text-align: left; }
 .phone .chbar .tbar.conv .who > span:not(.av) { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; min-width: 0; }
 .phone .chbar .tbar.conv .who b { font: 600 calc(17px * var(--k))/1.2 var(--f-sans); }
 .phone .chbar .tbar.conv .who em { font: 400 calc(13px * var(--k))/1.2 var(--f-sans); color: var(--a-on-green-soft); }
@@ -981,6 +1035,9 @@ html.shot body > header.top { display: none !important; }
 .sheet__h > div { min-width: 0; }
 /* The hidden time column starts just past the thread's side padding, so at 430 (padding 16) it sits 4 px further out. */
 .phone.w430 .time { right: calc(-68px * var(--k)); }
+
+/* v16: the floating date pill follows the scroll near a day marker (ruling 31). */
+.datepill.linked { transition: none; }
 </style>
 
 <header class="top">
@@ -1273,7 +1330,8 @@ const SP = {
   smooth: { vd: 0.26, b: 0, house: true, use: 'Push, sheets, bars and rows moving together. The design language’s 462 ms curve.' },
   settle: { vd: 0.26, b: 0.1, house: true, use: 'Things returning to rest: a held bubble, times sliding back.' },
   reveal: { vd: 0.52, b: 0, house: true, use: 'Content opening out: a reply leaving the typing bubble, the jump glide.' },
-  send: { vd: 0.42, b: 0.12, use: 'Your bubble rising from the field and the thread making room.' },
+  send: { vd: 0.42, b: 0.12, use: 'The thread making room for your message.' },
+  launch: { vd: 0.5, b: 0.2, use: 'Your bubble rising out of the field: one soft overshoot as it lands.' },
   pop: { vd: 0.25, b: 0.35, use: 'Small things arriving: reaction badges, the send key, typing dots, Seen faces.' },
   lift: { vd: 0.28, b: 0.15, use: 'A held bubble lifting, menus unfolding from it.' },
 };
@@ -1600,7 +1658,7 @@ function inboxPage() {
   }).join('');
   return el(`<section class="pg inbox">
     <div class="scroll">
-      <div class="inbox__top"><p class="ctx">${unreadCount()} unread · Demo University Golf</p><div class="srow"><div class="search">${ic('search')}Search</div><button class="ibtn newbtn" type="button" data-act="new" aria-label="New message">${ic('compose')}</button></div>${segHTML()}</div>
+      <div class="inbox__top"><div class="srow"><div class="search">${ic('search')}Search</div><button class="ibtn newbtn" type="button" data-act="new" aria-label="New message">${ic('compose')}</button></div>${segHTML()}</div>
       <div class="lcard"><div class="lcard__h">Pinned</div><div class="pins">${pinHTML}</div></div>
       <div class="lcard list">${listIds.length ? `<div class="lcard__h">${S.filter === 'unread' ? 'Unread' : S.filter === 'groups' ? 'Groups' : 'Recent'}<small>${listIds.length}</small></div>${listIds.map(cvHTML).join('')}` : `<div class="lcard__h">Nothing here</div><p class="ctx" style="padding:10px 16px 14px;margin:0">No ${S.filter === 'unread' ? 'unread conversations' : 'groups'} right now.</p>`}</div>
     </div>
@@ -1629,6 +1687,7 @@ function threadPage(cid) {
     <header class="glass top${S.device === 'desk' ? '' : ' chbar'}">${head}</header>
     <button class="jump" type="button" data-act="jump" aria-label="Jump to latest" hidden>${ic('down')}<b hidden>0</b></button>
     ${compHTML(cid)}
+    ${S.device === 'phone' ? kbHTML() : ''}
     <div class="pg__dim"></div>
   </section>`);
 }
@@ -1772,6 +1831,105 @@ function curThread() {
   return pg ? CTL.get(pg) : null;
 }
 
+
+/* ───────── Phone keyboard ───────── */
+const KB_ROWS = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'];
+const KB_SVG = {
+  shift: '<svg viewBox="0 0 24 24"><path d="M12 4 4 12.5h4.5V19h7v-6.5H20z"/></svg>',
+  del: '<svg viewBox="0 0 24 24"><path d="M8.5 5H20a1.5 1.5 0 0 1 1.5 1.5v11A1.5 1.5 0 0 1 20 19H8.5L2.5 12z"/><path d="m11 9.5 5 5m0-5-5 5"/></svg>',
+  emoji: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8.2 14.2c1 1.5 2.3 2.2 3.8 2.2s2.8-.7 3.8-2.2"/><circle cx="9" cy="9.8" r=".6" fill="currentColor"/><circle cx="15" cy="9.8" r=".6" fill="currentColor"/></svg>',
+  mic: '<svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg>',
+};
+function kbHTML() {
+  const k = (c) => `<button class="kb__k" type="button" tabindex="-1" data-k="${c}">${c}</button>`;
+  return `<div class="kb" aria-hidden="true">
+    <div class="kb__sug"><span data-w="I">“I”</span><span data-w="The">The</span><span data-w="I’m">I’m</span></div>
+    <div class="kb__rows">
+      <div class="kb__r">${[...KB_ROWS[0]].map(k).join('')}</div>
+      <div class="kb__r">${[...KB_ROWS[1]].map(k).join('')}</div>
+      <div class="kb__r r3"><button class="kb__k fn shift" type="button" tabindex="-1" data-k="shift">${KB_SVG.shift}</button>${[...KB_ROWS[2]].map(k).join('')}<button class="kb__k fn del" type="button" tabindex="-1" data-k="del">${KB_SVG.del}</button></div>
+      <div class="kb__r r4"><button class="kb__k fn wide" type="button" tabindex="-1" data-k="123">123</button><button class="kb__k space" type="button" tabindex="-1" data-k=" ">space</button><button class="kb__k fn wide" type="button" tabindex="-1" data-k="ret">return</button></div>
+    </div>
+    <div class="kb__bar">${KB_SVG.emoji}${KB_SVG.mic}</div>
+  </div>`;
+}
+const KB_TIME = { ms: 480, ease: 'cubic-bezier(0.32, 0.72, 0, 1)' };
+function wireKb(t) {
+  const kb = t.kb;
+  t.ta.addEventListener('focus', () => kbShow(t, true));
+  t.ta.addEventListener('blur', () => kbShow(t, false));
+  // Keys and the send key never take focus, so the field keeps its caret and the keyboard stays up, like iMessage.
+  kb.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    const k = e.target.closest('[data-k]'); if (k) { kbPress(t, k); return; }
+    const w = e.target.closest('[data-w]'); if (w) kbWord(t, w.dataset.w);
+  });
+  t.send.addEventListener('pointerdown', (e) => { if (t.kbOn) e.preventDefault(); });
+  t.ta.addEventListener('input', () => kbSync(t));
+  kbSync(t);
+}
+function kbShow(t, on) {
+  if (!t.kb || !!t.kbOn === on) return;
+  t.kbOn = on;
+  const at = distBottom(t) < 24, before = t.scroll.scrollTop;
+  t.pg.classList.toggle('kb-on', on);
+  // The thread's floor rises with the composer. When you were at the latest message it stays just above the field.
+  let d = 0;
+  if (on && at) { const top = maxTop(t); t.quiet = true; t.scroll.scrollTop = top; d = t.scroll.scrollTop - before; }
+  else if (!on) { d = t.scroll.scrollTop - before; }
+  if (d) anim(t.msgs, [{ transform: `translateY(${d}px)` }, { transform: 'translateY(0)' }], KB_TIME, { rd: null, composite: 'add' });
+}
+function kbSync(t) {
+  if (!t.kb) return;
+  const v = t.ta.value;
+  t.kb.classList.toggle('is-caps', !!t.kbShift || v === '' || /([.!?]\s|\n)$/.test(v));
+  const part = (v.match(/[A-Za-z’']+$/) || [''])[0];
+  const sug = $$('.kb__sug span', t.kb);
+  const words = part ? [`“${part}”`, ...kbGuess(part)] : ['“I”', 'The', 'I’m'];
+  sug.forEach((n, i) => { n.textContent = words[i]; n.dataset.w = words[i].replace(/[“”]/g, ''); });
+}
+const KB_WORDS = ['practice', 'Monday', 'Thursday', 'tomorrow', 'today', 'thanks', 'tee', 'time', 'the', 'there', 'that', 'see', 'see you', 'great', 'good', 'qualifier', 'yardage', 'wedge', 'when', 'what', 'we', 'will', 'work', 'proud', 'putting', 'round', 'range', 'lift', 'let’s', 'bring', 'before', 'card', 'can', 'course', 'on', 'of', 'okay', 'you', 'your', 'and', 'at', 'after', 'I’ll', 'is', 'in', 'it'];
+function kbGuess(part) {
+  const p = part.toLowerCase();
+  const hits = KB_WORDS.filter((w) => w.toLowerCase().startsWith(p) && w.toLowerCase() !== p);
+  const cap = (w) => (part[0] === part[0].toUpperCase() ? w[0].toUpperCase() + w.slice(1) : w);
+  return [...hits.map(cap), 'the', 'I'].slice(0, 2);
+}
+function kbFlash(kb, key, ch) {
+  if (!key) return;
+  key.classList.add('is-down'); setTimeout(() => key.classList.remove('is-down'), 120);
+  if (S.reduce || !ch || !/^[a-z]$/i.test(ch)) return;
+  const kr = loc(key, kb);
+  const pop = el(`<span class="kb__pop">${esc(ch)}</span>`);
+  pop.style.left = `${kr.left + kr.width / 2 - 25}px`; pop.style.top = `${kr.top - 58}px`;
+  kb.append(pop); setTimeout(() => pop.remove(), 120);
+}
+function kbPress(t, k) {
+  const c = k.dataset.k, ta = t.ta;
+  if (c === 'shift') { t.kbShift = !t.kb.classList.contains('is-caps'); kbSync(t); kbFlash(t.kb, k); return; }
+  if (c === '123') { kbFlash(t.kb, k); return; }
+  let v = ta.value, ch = '';
+  if (c === 'del') v = v.slice(0, -1);
+  else if (c === 'ret') v += '\n';
+  else { ch = c; if (/^[a-z]$/.test(ch) && t.kb.classList.contains('is-caps')) ch = ch.toUpperCase(); v += ch; }
+  kbFlash(t.kb, k, ch);
+  t.kbShift = false;
+  ta.value = v; ta.setSelectionRange(v.length, v.length);
+  ta.dispatchEvent(new Event('input', { bubbles: true }));
+}
+function kbWord(t, w) {
+  const ta = t.ta; ta.value = ta.value.replace(/[A-Za-z’']*$/, w + ' ');
+  ta.dispatchEvent(new Event('input', { bubbles: true }));
+}
+/* Scripted typing lights the key it would press. */
+function kbFlashFor(node, ch) {
+  const pg = node.closest && node.closest('.thread-pg'); const kb = pg && pg.classList.contains('kb-on') && $('.kb', pg);
+  if (!kb) return;
+  const low = ch.toLowerCase();
+  const key = ch === ' ' ? $('[data-k=" "]', kb) : ch === '\n' ? $('[data-k="ret"]', kb) : /^[a-z]$/.test(low) ? $(`[data-k="${low}"]`, kb) : $('[data-k="123"]', kb);
+  kbFlash(kb, key, /^[a-z]$/.test(low) ? ch : '');
+}
+
 /* ───────── Thread controller ───────── */
 function makeThread(pg) {
   const t = {
@@ -1787,6 +1945,7 @@ function makeThread(pg) {
   t.ta.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); send(t); } });
   wireHold(t);
   wireTimes(t);
+  t.kb = $('.kb', pg); if (t.kb) wireKb(t);
   return t;
 }
 /* The thread's real bottom, from layout only. A glide translates the list down while it plays, and browsers count
@@ -1808,14 +1967,24 @@ function onScroll(t) {
   if (distBottom(t) < 8 && t.unseen && !t.holdJump) { t.unseen = 0; const b = $('b', t.jump); b.hidden = true; }
   if (t.quiet) { t.quiet = false; return; }
   // Date pill
-  const days = $$('.day', t.msgs), barH = S.device === 'phone' ? 116 : 76;
-  let cur = null;
-  for (const d of days) { if (d.offsetTop - s.scrollTop < barH - 4) cur = d; }
+  /* The floating pill names the day whose marker has gone above the pill's own spot. It never stacks on a marker:
+     as a marker comes within PILL_GAP of it, from above or below, the pill's opacity follows the scroll down to 0. */
+  const PILL_GAP = 20, days = $$('.day', t.msgs), pr = t.pill.getBoundingClientRect();
+  let cur = null, near = Infinity;
+  for (const d of days) {
+    const r = (d.firstElementChild || d).getBoundingClientRect();
+    if (r.bottom <= pr.top) { cur = d; near = pr.top - r.bottom; }
+    else near = Math.min(near, Math.max(0, r.top - pr.bottom));
+  }
+  clearTimeout(t.pillT);
   if (cur) {
     t.pill.textContent = cur.dataset.day;
+    const k = Math.min(1, near / PILL_GAP);
+    t.pill.classList.toggle('linked', k < 1);
+    t.pill.style.opacity = k < 1 ? k.toFixed(3) : '';
     if (!t.pill.classList.contains('is-on')) t.pill.classList.add('is-on');
-    clearTimeout(t.pillT); t.pillT = setTimeout(() => t.pill.classList.remove('is-on'), 1000);
-  }
+    t.pillT = setTimeout(() => { t.pill.classList.remove('is-on', 'linked'); t.pill.style.opacity = ''; }, 1000);
+  } else { t.pill.classList.remove('is-on'); t.pill.classList.toggle('linked', near < PILL_GAP); t.pill.style.opacity = ''; }
 }
 function grow(t) {
   const at = distBottom(t) < 24;
@@ -1888,17 +2057,70 @@ function send(t, payload) {
   // The thread glides up and each new bubble rises from the field on the same spring
   const d = clamp(delta, -t.scroll.clientHeight, t.scroll.clientHeight);
   if (!S.reduce && d) anim(t.msgs, [{ transform: `translateY(${d}px)` }, { transform: 'translateY(0)' }], 'send', { composite: 'add' });
+  launchSend(t, ids, fieldR, d, text);
+  receiptsAfterSend(t, ids[ids.length - 1]);
+}
+/* The words fly as one piece above the composer and keyboard: they start as plain text exactly where they sat in the
+   field, the green fill and light ink come up under them in 160 ms, and the bubble rises to its slot. The real bubble
+   takes over the moment it lands, so nothing is ever drawn twice. */
+function flyText(t, b, r, d, fieldR, L) {
+  const cs = getComputedStyle(b), tcs = getComputedStyle(t.ta);
+  const fill = cs.getPropertyValue('--a-sent-t').trim() || cs.backgroundColor;
+  const fly = el(`<div class="send-fly mine" aria-hidden="true"></div>`);
+  const clone = b.cloneNode(true); clone.removeAttribute('id'); fly.append(clone);
+  // Its slot once the thread's glide ends (r is read while the glide still holds the list d px lower).
+  Object.assign(fly.style, { left: `${r.left}px`, top: `${r.top - d}px`, width: `${r.width}px` });
+  t.pg.append(fly);
+  const padL = parseFloat(cs.paddingLeft), padB = parseFloat(cs.paddingBottom);
+  const sx = fieldR.left + parseFloat(tcs.paddingLeft) - padL - r.left;
+  const sy = (fieldR.bottom - parseFloat(tcs.paddingBottom) + padB) - (r.bottom - d);
+  const ink = tcs.color, sentInk = cs.color;
+  fly.animate([{ translate: `0 ${sy}px` }, { translate: '0 0' }], { duration: L.ms, easing: L.ease || EASE });
+  fly.animate([{ transform: `translateX(${sx}px)` }, { transform: 'translateX(0)' }], { duration: Math.round(L.ms * 0.62), easing: EASE });
+  clone.animate([{ scale: '0.96', transformOrigin: '0% 100%' }, { scale: '1', transformOrigin: '0% 100%' }], { duration: SP.pop.ms, easing: SP.pop.ease || EASE });
+  clone.animate([
+    { backgroundImage: 'none', backgroundColor: 'rgba(0,0,0,0)', color: ink, boxShadow: 'none', filter: 'none' },
+    { backgroundImage: 'none', backgroundColor: fill, color: sentInk, offset: 0.999 },
+    { backgroundColor: fill, color: sentInk },
+  ], { duration: 160, easing: 'cubic-bezier(0.3, 0, 0.5, 1)' });
+  // The tail grows in as the bubble fills, so the words start as nothing but words.
+  const tail = clone.querySelector('.tail');
+  if (tail) tail.animate([{ opacity: 0, scale: '0.3', transformOrigin: '0% 100%' }, { opacity: 0, scale: '0.3', transformOrigin: '0% 100%', offset: 0.15 }, { opacity: 1, scale: '1', transformOrigin: '0% 100%' }], { duration: SP.pop.ms + 60, easing: SP.pop.ease || EASE });
+  // The real bubble stays hidden until the flight lands, then the copy goes.
+  const hold = b.animate([{ opacity: 0 }, { opacity: 0 }], { duration: L.ms });
+  done(hold).then(() => fly.remove());
+}
+/* Send, step by step. The words lift out of the field and become the bubble: the typed text fades where it sat while the
+   green bubble fills in under it, then rises on its own spring with one soft overshoot. Sideways it settles faster than
+   upward, so the path curves toward the right edge instead of sliding diagonally. The arrow leaves the send key upward,
+   the receipt waits until the bubble has landed, and the field's placeholder comes back last. */
+function launchSend(t, ids, fieldR, d, text) {
+  const arrow = $('svg', t.send);
+  if (arrow && !S.reduce) arrow.animate([{ translate: '0 0', opacity: 1 }, { translate: '0 -14px', opacity: 0 }], { duration: 200, easing: 'cubic-bezier(0.4, 0, 0.9, 0.3)' });
   ids.forEach((id, n) => {
     const row = rowEl(t, id); if (!row) return;
     const b = $('.b, .poll', row); const r = loc(b, t.pg);
-    const dx = (fieldR.left - 9) - r.left, dy = fieldR.bottom - r.bottom - d + (ids.length - 1 - n) * -8;
-    anim(b, [{ transform: `translate(${dx}px, ${dy}px) scale(.96)`, opacity: 0.85 }, { transform: 'none', opacity: 1 }], 'send', { rd: [{ opacity: 0 }, { opacity: 1 }] });
+    // r is read while the thread's glide already holds it at its old place, so the field is measured against that.
+    const dx = (fieldR.left - 9) - r.left, dy = fieldR.bottom - r.bottom + (ids.length - 1 - n) * -8;
+    if (S.reduce) { anim(b, [{ opacity: 0 }, { opacity: 1 }], 'launch'); return; }
+    const L = SP.launch, delay = (ids.length - 1 - n) * 40;
+    const isText = b.classList.contains('b') && text && n === ids.length - 1;
+    if (isText) { flyText(t, b, r, d, fieldR, L); }
+    else {
+      b.animate([{ translate: `0 ${dy}px` }, { translate: '0 0' }], { duration: L.ms, easing: L.ease || EASE, delay, fill: 'backwards' });
+      b.animate([{ transform: `translateX(${dx}px)` }, { transform: 'translateX(0)' }], { duration: Math.round(L.ms * 0.62), easing: EASE, delay, fill: 'backwards' });
+      b.animate([{ scale: '0.92', transformOrigin: '0% 100%' }, { scale: '1', transformOrigin: '0% 100%' }], { duration: SP.pop.ms, easing: SP.pop.ease || EASE, delay, fill: 'backwards' });
+      b.animate([{ opacity: 0.6 }, { opacity: 1 }], { duration: 150, easing: 'linear', delay, fill: 'backwards' });
+    }
+    // Its receipt appears only once the bubble has landed.
+    const seen = $('.seen', row);
+    if (seen && n === ids.length - 1) seen.animate([{ opacity: 0, translate: '0 4px' }, { opacity: 1, translate: '0 0' }], { duration: 260, easing: EASE, delay: Math.round(L.ms * 0.7), fill: 'backwards' });
   });
-  receiptsAfterSend(t, ids[ids.length - 1]);
+  if (!S.reduce) t.ta.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 220, easing: 'linear', delay: 140, fill: 'backwards' });
 }
 function clearComposer(t) {
   t.ta.value = ''; t.ta.style.height = ''; t.pending = null; t.replyTo = null; t.editing = null;
-  t.files.hidden = true; t.files.innerHTML = ''; syncSend(t);
+  t.files.hidden = true; t.files.innerHTML = ''; syncSend(t); kbSync(t);
 }
 async function receiptsAfterSend(t, id) {
   const c = CONVS[t.cid];
@@ -2536,8 +2758,8 @@ const PLAYS = {
   thread: ['Show the thread', 'Today’s green conversation bar on top, unchanged; paper and green bubbles on one flat page. Tails only on the last bubble of a run.'],
   scrollglass: ['Scroll the thread', 'Messages slide under the green bar’s rounded lip and the date pill floats while you scroll.'],
   times: ['Drag for times', 'Drag left to read every time. Let go and it springs back.'],
-  type: ['Type a message', 'The send key springs in and the field grows a line at a time.'],
-  send: ['Send it', 'The bubble rises from the field and the thread glides up with it.'],
+  type: ['Type a message', 'Tap the field and the keyboard rises on iOS’s own curve, carrying the composer and the latest messages up with it. Keys light as you type, the send key springs in and the field grows a line at a time.'],
+  send: ['Send it', 'Keyboard up, type, send: the bubble rises out of the field above the keyboard and the thread glides up with it. The keyboard stays up like iMessage; tapping the thread lowers it.'],
   reply: ['Get a reply', 'Typing dots, then the reply opens out of the typing bubble.'],
   hold: ['Hold a message', 'Hold: the bubble lifts over a blurred thread, reactions above, actions below.'],
   holdseen: ['Hold your message', 'In a group, your own messages get Seen by with faces right in the menu.'],
@@ -2558,7 +2780,7 @@ const PLAYS = {
   jump: ['Read back, then jump', 'Read back, a new message lands, and the jump key glides you down.'],
 };
 async function typeInto(node, text, w, per = 34) {
-  for (const ch of text) { node.value += ch; node.dispatchEvent(new Event('input', { bubbles: true })); await w(S.reduce ? 4 : per); }
+  for (const ch of text) { kbFlashFor(node, ch); node.value += ch; node.dispatchEvent(new Event('input', { bubbles: true })); await w(S.reduce ? 4 : per); }
 }
 async function pressOn(node, w) {
   if (!node) return;
@@ -2594,14 +2816,16 @@ const DEMO = {
     cancelAll(t.msgs); anim(t.msgs, [{ transform: `translateX(${-timesW(t)}px)` }, { transform: 'none' }], 'settle', { rd: null }); await w(600);
   },
   async type(w) {
-    build('thread', 'eli'); const t = curThread(); await w(500); t.ta.focus({ preventScroll: true });
+    build('thread', 'eli'); const t = curThread(); await w(500); t.ta.focus({ preventScroll: true }); await w(650);
     await typeInto(t.ta, 'Great work today. Let’s go through the card Monday before practice. Bring your yardage book and we’ll mark where the wedge ladders paid off', w, 26);
     await w(400);
   },
   async send(w) {
     build('thread', 'eli'); const t = curThread(); await w(400);
+    t.ta.focus({ preventScroll: true }); await w(650);
     await typeInto(t.ta, 'Proud of you. See you Monday', w, 30); await w(350);
-    await pressOn(t.send, w); send(t); await w(2600);
+    await pressOn(t.send, w); send(t); await w(2400);
+    t.ta.blur(); await w(800);
   },
   async reply(w) {
     build('thread', 'eli'); const t = curThread(); await w(500);
@@ -2752,9 +2976,14 @@ const MOT = {
     ['Arrivals', 'A new message has its full height from the first frame. Only transforms move, so the thread above never jumps (owner rule B7).', 'send', 'Appears with a 120 ms fade', 'reply'],
   ],
   send: [
+    ['Keyboard rises', 'Tapping the field slides the iOS keyboard up. The composer rides on it and the thread moves up by the same amount, so the latest message stays just above the field. In the app the real keyboard drives this through <code>--keyboard-height</code>.', '480 ms <span class="mono">cubic-bezier(0.32, 0.72, 0, 1)</span>, iOS’s keyboard curve', 'Keyboard fades in 120 ms; composer moves at once', 'type'],
+    ['Keyboard stays up', 'Sending never drops the keyboard; the send key doesn’t take focus from the field.', 'None', 'None', 'send'],
+    ['Keyboard lowers', 'Tapping the thread or going back drops it on the same curve, and the thread follows it down.', 'Same curve', 'Fades out 120 ms', 'send'],
     ['Send key', 'The green key springs in with the first character and shrinks away when the field empties. Scale 0.4 → 1. No key while the field is empty.', 'pop', 'Swaps at once', 'type'],
     ['Field grows', 'A line at a time up to six lines, then it scrolls. The height changes without animating, so only transforms move.', 'Instant', 'Same', 'type'],
-    ['Sent bubble rises', 'Starts where the text sat in the field and travels to its slot, scale 0.96 → 1.', 'send', 'Fades in place, 120 ms', 'send'],
+    ['Words become the bubble', 'The typed words fade where they sat as the green fill comes up under them, 150 ms. The arrow leaves the send key upward.', '150 ms; arrow 200 ms', 'Fades in place, 120 ms', 'send'],
+    ['Bubble rises', 'Up on its own spring with one soft overshoot; sideways on the house curve in 60% of the time, so the path curves into the right edge. Scale 0.92 → 1 on pop, from its lower left so the words stay put.', 'launch; x <span class="mono">--ch-ease</span>', 'Fades in place, 120 ms', 'send'],
+    ['Receipt waits', 'Delivered rises 4 px into place only after the bubble lands; the field’s placeholder fades back last.', '260 ms, after 70% of launch', 'Appears', 'send'],
     ['Thread makes room', 'Everything above glides up by the bubble’s height on the same spring.', 'send', 'Moves at once', 'send'],
     ['Delivered → Seen', 'The receipt under your latest message crossfades.', '180 ms', '120 ms', 'send'],
     ['Typing bubble', 'Grows from its tail corner; the dots wave in one loop.', 'pop', 'Fades in; dots pulse', 'reply'],
@@ -3207,5 +3436,5 @@ if (!applyHash()) build('thread', 'eli');
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { const t = curThread(); if (t && !t.placed) toBottom(t); }); // placed: a still frame that set its own scroll
 })();
 </script>
-</body>
-</html>
+
+</body></html>

@@ -618,14 +618,14 @@ export interface ChTourLinkCandidate {
   courseName: string | null;
   score: number;
   toPar: number | null;
-  suggestion: { eventId: string; roundNumber: number; confidence: 'high' | 'medium' | 'low' } | null;
+  suggestion: { eventId: string; roundEventId: string; roundNumber: number; confidence: 'high' | 'medium' | 'low' } | null;
 }
 
 export interface ChTourLinksData {
   now: string;
   players: ChTourPlayer[];
   candidates: ChTourLinkCandidate[];
-  events: Array<{ id: string; name: string; rounds: Array<{ number: number; date: string; courseName: string }> }>;
+  events: Array<{ id: string; name: string; rounds: Array<{ number: number; roundEventId: string; date: string; courseName: string }> }>;
   /** Lineup players with no round for an event round ("1 lineup player has no round linked for R2"). */
   missing: Array<{ eventId: string; roundNumber: number; playerId: string }>;
   dismissed: number;
@@ -805,6 +805,8 @@ export interface ChTourLineupData {
   } | null;
   projectionShort: Array<{ playerId: string; have: number; need: number }>;
   lineup: ChTourLineupState;
+  /** The event's version, the compare-and-set `setTournamentEntries` sends back (null if unknown). */
+  version: number | null;
   qualifier: { id: string; name: string } | null;
   errors: Partial<Record<'roster' | 'qualifier' | 'projection', true>>;
 }
@@ -878,6 +880,12 @@ export interface ChTourReveal {
   firstView: boolean;
   changedFrom: ChTourReveal['status'] | null;
   lockedAt: string | null;
+  /**
+   * Whether the player's score counted, by round, once the round is final: the scoring engine's answer from the scores
+   * a teammate may read at that point (D-85). `pending` until then; `not_playing` for the alternate and a player who is
+   * not travelling.
+   */
+  counting: Array<{ roundNumber: number; state: ChTourCount | 'pending' | 'not_playing' }>;
 }
 
 export interface ChTourPlayerMoment {
@@ -894,7 +902,13 @@ export interface ChTourPlayerEvent {
   /** Teammates' scores, only once a round is Final and outside the player's window (D-85). */
   results: { visible: boolean; reason: 'not_final' | 'in_window' | null };
   sharedNotes: Array<{ label: string; text: string; author: string; updatedAt: string }>;
-  reflection: { state: 'unwritten' | 'draft' | 'saved'; went: string; strokes: string; next: string; shot: string } | null;
+  /**
+   * The player’s own card for the round in play, when they play it and no total is entered for it: the course’s holes with
+   * what they have scored (`golf_holes` on their own round). Null otherwise, and the page offers no scoring.
+   */
+  card: { roundEventId: string; roundNumber: number; date: string; holes: Array<{ n: number; par: number; strokes: number | null }> } | null;
+  /** The player’s own reflection (`golf_tournament_reflections.body`, one text the coach reads in the review). */
+  reflection: { state: 'unwritten' | 'saved'; body: string; updatedAt: string | null } | null;
   moments: ChTourPlayerMoment[];
   following: boolean;
 }
@@ -922,13 +936,19 @@ export interface ChTourPlayerData {
     endDate: string;
     courseName: string;
     status: ChTourEvent['status'];
-    mine: { place: string | null; total: number | null; counted: number; of: number } | null;
+    /** The event's days in round order, each with its first tee where one is set: the card for the next event reads them. */
+    days: Array<{ number: number; date: string; firstTeeAt: string | null }>;
+    /**
+     * The player’s own line: their total over `rounds` scored rounds, that total against par, and each round's own score in
+     * round order (null where they have none). Team counting is not theirs to read (D-85).
+     */
+    mine: { place: string | null; total: number | null; toPar: number | null; rounds: number; scores: Array<{ number: number; total: number | null; toPar: number | null }> } | null;
   }>;
   /** The open event; null on the list. */
   event: ChTourPlayerEvent | null;
   window: ChTourWindow;
   season: ChTourPlayerSeason;
-  errors: Partial<Record<'events' | 'trip' | 'season', true>>;
+  errors: Partial<Record<'events' | 'trip' | 'season' | 'notes' | 'reflection' | 'reveal', true>>;
 }
 
 // ── View props (the contract every view keeps) ────────────────────────────────────────────────────────────────

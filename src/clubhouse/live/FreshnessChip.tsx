@@ -13,14 +13,25 @@ import type { LiveFeed } from './use-live-rounds';
  * answer, "No signal" with Try again when a read failed, and "Paused" with the time of what is on screen when the device is
  * offline. The generalised form of the qualifier board's Live chip. The dot is static (D-33). The time is set after
  * hydration only, so the server's paint never disagrees with the reader's clock.
+ *
+ * `failed`: the page itself says the feed failed and it holds nothing from before (CH-16604, F-0012). The chip then says
+ * what the page says, in the page's words, and leaves Try again to the page's notice (one retry on the screen); it said
+ * "Connecting" over a page that said it could not refresh. The notice is the announcement, so the chip is not a second one.
  */
-export function FreshnessChip({ feed, updatedAt, onRefresh }: { feed: LiveFeed; updatedAt: number | null; onRefresh: () => void | Promise<void> }) {
+export function FreshnessChip({ feed, failed = false, updatedAt, onRefresh }: { feed: LiveFeed; failed?: boolean; updatedAt: number | null; onRefresh: () => void | Promise<void> }) {
   const hours = useChClock();
   const [refreshing, start] = useTransition();
   const [stamped, setStamped] = useState<number | null>(null);
   useEffect(() => setStamped(updatedAt ?? Date.now()), [updatedAt]);
   const at = stamped != null ? clockText(new Date(stamped).toISOString(), hours) : null;
 
+  if (failed) {
+    return (
+      <span className="ch-lv-chip" data-feed="failed">
+        {LIVE_COPY.cantRefresh}
+      </span>
+    );
+  }
   if (feed === 'paused') {
     return (
       <span className="ch-lv-chip" data-feed="paused" role="status">

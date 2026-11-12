@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import type { ReactNode } from 'react';
-import { COACH_BOARD_HREF, type ChTrackFamily, type ChTrackRecord, type ChTrackRung } from '../../../data/coachhelm-track-record-shape';
+import { COACH_BOARD_HREF, TRACK_NOT_ENOUGH, type ChTrackFamily, type ChTrackRecord, type ChTrackRung } from '../../../data/coachhelm-track-record-shape';
 import type { ChViewLoad } from '../../../data/coachhelm-views-shape';
 import { useChPhone } from '../../../lib/use-phone';
 import { PhoneTop } from '../../../shell/phone-chrome';
@@ -45,12 +45,22 @@ function TrackFrame({ children }: { children: ReactNode }) {
   );
 }
 
-/** One claim level: its word, how many held of those rechecked (or "Not enough yet"), the bar with the target, and what that stands on. */
+/** A count that is not there yet: a dash in the figure's place, with the words for a screen reader, so a row with nothing to judge reads quieter than one with a count. */
+function NotEnough() {
+  return (
+    <>
+      <span aria-hidden="true">—</span>
+      <span className="ch-sr-only">{TRACK_NOT_ENOUGH}</span>
+    </>
+  );
+}
+
+/** One claim level: its word, how many held of those rechecked (or a dash), the bar with the target, and what that stands on. */
 function RungRow({ r }: { r: ChTrackRung }) {
   return (
-    <li className={'ch-htr-rung is-' + r.tone} data-ch-code={r.bar ? 'CH-13961' : 'CH-13962'}>
+    <li className={'ch-htr-rung is-' + r.tone + (r.bar ? '' : ' is-none')} data-ch-code={r.bar ? 'CH-13961' : 'CH-13962'}>
       <span className="ch-htr-rung__w">{r.word}</span>
-      <b className="ch-htr-rung__l ch-num">{r.line}</b>
+      <b className="ch-htr-rung__l ch-num">{r.bar ? r.line : <NotEnough />}</b>
       {r.bar && (
         <span className="ch-htr-bar" aria-hidden="true">
           <i className="ch-htr-bar__fill" style={{ width: `${(r.bar.held / r.bar.of) * 100}%` }} />
@@ -63,41 +73,56 @@ function RungRow({ r }: { r: ChTrackRung }) {
 }
 
 function FamilyRow({ f }: { f: ChTrackFamily }) {
+  const none = f.line === TRACK_NOT_ENOUGH;
   return (
-    <li className="ch-htr-fam">
+    <li className={'ch-htr-fam' + (none ? ' is-none' : '')}>
       <span className="ch-htr-fam__n">{f.label}</span>
-      <b className="ch-htr-fam__l ch-num">{f.line}</b>
+      <b className="ch-htr-fam__l ch-num">{none ? <NotEnough /> : f.line}</b>
       <span className="ch-htr-fam__s ch-num">{f.sub}</span>
     </li>
   );
 }
 
+/** Desktop: two columns (the season and its levels; the families and the staff's corrections). The phone is one column in that order. */
 function Ready({ d }: { d: Extract<ChTrackRecord, { state: 'ready' }> }) {
   return (
     <div className="ch-htr-body">
-      <Surface id="ch-htr-prog" title="This season">
-        <p className="ch-htr-prog ch-num">{d.program}</p>
-        {d.unrated && <p className="ch-htr-note ch-num">{d.unrated}</p>}
-      </Surface>
-      <Surface id="ch-htr-rungs" title="By level" subtitle="How often reads at each level held on the next rounds. The thin line is the target.">
-        <ol className="ch-htr-rungs">
-          {d.rungs.map((r) => (
-            <RungRow key={r.id} r={r} />
-          ))}
-        </ol>
-      </Surface>
-      <Surface id="ch-htr-corr" title="Your corrections">
-        <p className="ch-htr-corr ch-num" data-ch-code="CH-13963">
-          {d.corrections ?? 'Corrections are not recorded yet, so Not this and Good read are not counted here.'}
-        </p>
-      </Surface>
-      <Surface id="ch-htr-fams" title="By family">
-        <ul className="ch-htr-fams" data-ch-code="CH-13964">
-          {d.families.map((f) => (
-            <FamilyRow key={f.id} f={f} />
-          ))}
-        </ul>
-      </Surface>
+      <div className="ch-htr-col">
+        <Surface id="ch-htr-prog" title="This season">
+          {/* The season's one figure, as the Team view's record card says it; the sentence under it carries the rest. */}
+          {d.rechecked > 0 && (
+            <p className="ch-htr-fig">
+              <b className="ch-num">
+                {d.held} of {d.rechecked}
+              </b>
+              <span>reads held when rechecked</span>
+            </p>
+          )}
+          <p className={'ch-htr-prog ch-num' + (d.rechecked > 0 ? ' is-under' : '')}>{d.program}</p>
+          {d.unrated && <p className="ch-htr-note ch-num">{d.unrated}</p>}
+        </Surface>
+        <Surface id="ch-htr-rungs" title="By level" subtitle="How often reads at each level held on the next rounds. The thin line is the target.">
+          <ol className="ch-htr-rungs">
+            {d.rungs.map((r) => (
+              <RungRow key={r.id} r={r} />
+            ))}
+          </ol>
+        </Surface>
+      </div>
+      <div className="ch-htr-col">
+        <Surface id="ch-htr-fams" title="By family">
+          <ul className="ch-htr-fams" data-ch-code="CH-13964">
+            {d.families.map((f) => (
+              <FamilyRow key={f.id} f={f} />
+            ))}
+          </ul>
+        </Surface>
+        <Surface id="ch-htr-corr" title="Your corrections">
+          <p className="ch-htr-corr ch-num" data-ch-code="CH-13963">
+            {d.corrections ?? 'Corrections are not recorded yet, so Not this and Good read are not counted here.'}
+          </p>
+        </Surface>
+      </div>
     </div>
   );
 }

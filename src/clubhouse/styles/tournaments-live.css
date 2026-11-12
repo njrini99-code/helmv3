@@ -1,3 +1,285 @@
-/* P016 Tournaments, the live round (LiveRound, LiveRow, CountBadge, HoleMap, MomentsFeed, the score sheets).
+/* P016 Tournaments, the live round (LiveRound, the lanes, the team line, the score sheet).
    Owned by the live area (src/clubhouse/screens/tournaments/README.md). Every class here starts .ch-tour-live-; shared
    pieces (the view root .ch-tour, the changed-wash) live in tournaments.css. Tokens only. */
+
+.ch-tour-live-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ch-space-2) var(--ch-space-3);
+  margin-top: var(--ch-space-2);
+}
+.ch-tour-live-muted {
+  font: var(--ch-type-13);
+  color: var(--ch-text-secondary);
+}
+.ch-tour-live-rounds {
+  max-width: 320px;
+}
+.ch-tour-live-body {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  min-width: 0;
+}
+.ch-tour-live.is-phone .ch-tour-live-body {
+  gap: 20px;
+}
+
+/* The counting line: the team's to par now, large, with how many counting scores are in beside it. */
+.ch-tour-live-team {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 16px 20px;
+  border-radius: var(--ch-radius-card);
+  background: var(--ch-bg-surface);
+  box-shadow: var(--ch-elevation-reading);
+}
+.ch-tour-live-team__v {
+  min-width: 72px;
+  padding: 4px 8px;
+  border-radius: var(--ch-radius-md);
+  font: var(--ch-type-34-strong);
+  letter-spacing: -0.02em;
+  color: var(--ch-text-primary);
+}
+.ch-tour-live.is-phone .ch-tour-live-team__v {
+  font: var(--ch-type-28-strong);
+  letter-spacing: var(--ch-track-28);
+}
+.ch-tour-live-team__t {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  font: var(--ch-type-14-strong);
+  color: var(--ch-text-primary);
+}
+
+/* A lane per player. The score cell takes the changed-wash.
+   Desktop: one line a player. The list owns the columns and each lane borrows them (subgrid), so the chip, the score and
+   the two keys stand in the same place on every row whatever a name or a key's words measure. */
+.ch-tour-live-lanes,
+.ch-tour-live-field {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-radius: var(--ch-radius-card);
+  background: var(--ch-bg-surface);
+  box-shadow: var(--ch-elevation-reading);
+}
+.ch-tour-live-lanes {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(96px, auto) 72px auto;
+  column-gap: 12px;
+}
+.ch-tour-live-lane {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  align-items: center;
+  min-height: 64px;
+  padding: 12px 16px;
+}
+.ch-tour-live-lane + .ch-tour-live-lane,
+.ch-tour-live-field__row + .ch-tour-live-field__row {
+  box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-border-hairline);
+}
+.ch-tour-live-lane__who {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.ch-tour-live-lane__n {
+  overflow: hidden;
+  font: var(--ch-type-14-strong);
+  color: var(--ch-text-primary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ch-tour-live-lane__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ch-tour-live-lane__v {
+  justify-self: end;
+  padding: 2px 8px;
+  border-radius: var(--ch-radius-sm);
+  font: var(--ch-type-17-strong);
+  letter-spacing: var(--ch-track-17);
+  color: var(--ch-text-primary);
+}
+.ch-tour-live-lane__act {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* Phone: the name and the score on the first line, the chip under them, then the two keys at thumb height. */
+.ch-tour-live.is-phone .ch-tour-live-lanes {
+  display: block;
+}
+.ch-tour-live.is-phone .ch-tour-live-lane {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'who v'
+    'chips chips'
+    'act act';
+  gap: 8px 12px;
+  min-height: 0;
+  padding: 12px;
+}
+.ch-tour-live.is-phone .ch-tour-live-lane__who {
+  grid-area: who;
+}
+.ch-tour-live.is-phone .ch-tour-live-lane__n {
+  white-space: normal;
+}
+.ch-tour-live.is-phone .ch-tour-live-lane__v {
+  grid-area: v;
+}
+.ch-tour-live.is-phone .ch-tour-live-lane__chips {
+  grid-area: chips;
+}
+.ch-tour-live.is-phone .ch-tour-live-lane__act {
+  grid-area: act;
+}
+.ch-tour-live.is-phone .ch-tour-live-lane__act .ch-btn {
+  flex: 1 1 0;
+  min-height: 44px;
+}
+
+/* The field: place, team, to par. The to par sits in the lanes' score column, right-aligned and tabular. */
+.ch-tour-live-field__row {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 72px;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 8px 16px;
+  font: var(--ch-type-14);
+  color: var(--ch-text-primary);
+}
+.ch-tour-live-field__p {
+  color: var(--ch-text-secondary);
+}
+.ch-tour-live-field__n {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ch-tour-live-field__v {
+  justify-self: end;
+  padding-inline: 8px;
+  font: var(--ch-type-14-strong);
+}
+.ch-tour-live-field__row.is-us {
+  background: var(--ch-bg-selected);
+  font: var(--ch-type-14-strong);
+}
+.ch-tour-live-field__row.is-us:first-child {
+  border-radius: var(--ch-radius-card) var(--ch-radius-card) 0 0;
+}
+.ch-tour-live-field__row.is-us:last-child {
+  border-radius: 0 0 var(--ch-radius-card) var(--ch-radius-card);
+}
+.ch-tour-live-field__none {
+  margin: 0;
+  font: var(--ch-type-14);
+  color: var(--ch-text-secondary);
+}
+
+/* The Enter score sheet: one column, the two nines side by side. */
+.ch-tour-live-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ch-space-4);
+}
+.ch-tour-live-sheet__nines {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--ch-space-3);
+}
+
+/* The hole-by-hole sheet (HoleSheet): a strip of holes with what is on each, the hole in hand, and the strokes to tap.
+   Every key is at least 44px, so it works with a thumb on the course. */
+.ch-tour-live-hs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ch-space-4);
+}
+.ch-tour-live-hs__strip {
+  display: grid;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  gap: 6px;
+}
+.ch-tour-live-hs__h {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 4px 0;
+  border: 0;
+  border-radius: var(--ch-radius-sm);
+  background: var(--ch-bg-subtle);
+  font: var(--ch-type-13);
+  color: var(--ch-text-secondary);
+  cursor: pointer;
+}
+.ch-tour-live-hs__h.is-done {
+  color: var(--ch-text-primary);
+}
+.ch-tour-live-hs__h.is-cur {
+  background: var(--ch-bg-selected);
+  box-shadow: inset 0 0 0 2px var(--ch-border-focus);
+  color: var(--ch-text-primary);
+}
+.ch-tour-live-hs__h:focus-visible,
+.ch-tour-live-hs__c:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+.ch-tour-live-hs__now {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font: var(--ch-type-17-strong);
+  letter-spacing: var(--ch-track-17);
+  color: var(--ch-text-primary);
+}
+.ch-tour-live-hs__choices {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+.ch-tour-live-hs__c {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 56px;
+  padding: 6px 4px;
+  border: 0;
+  border-radius: var(--ch-radius-md);
+  background: var(--ch-bg-subtle);
+  font: var(--ch-type-17-strong);
+  letter-spacing: var(--ch-track-17);
+  color: var(--ch-text-primary);
+  cursor: pointer;
+}
+.ch-tour-live-hs__c.is-on {
+  background: var(--ch-selected-strong);
+  color: var(--ch-text-on-accent);
+}
+.ch-tour-live-hs__c:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.ch-tour-live-hs__w {
+  font: var(--ch-type-12);
+  text-align: center;
+}

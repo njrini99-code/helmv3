@@ -71,3 +71,35 @@ describe('Avatar colour', () => {
     expect(el.getAttribute('data-tone')).not.toBeNull();
   });
 });
+
+/**
+ * Design review, 10 Nov 2026: a 16px coin held two 12px initials (the phone's type floor reaches every coin), so a row of
+ * faces read "D(E(M". A small coin shows one initial at half its width, and a coin under 14px none.
+ */
+describe('Avatar small coins', () => {
+  const draw = (size: number) => {
+    const { container, unmount } = render(<Avatar name="Dana Reyes" id="dana" size={size} />);
+    const el = container.querySelector<HTMLElement>('.ch-avatar')!;
+    const out = { text: el.textContent, type: el.style.getPropertyValue('--ch-av-type'), small: el.hasAttribute('data-small') };
+    unmount();
+    return out;
+  };
+  it.each([
+    [16, 'D', '8px'],
+    [18, 'D', '9px'],
+    [20, 'D', '10px'],
+  ])('a %ipx coin shows one initial at half the coin', (size, text, type) => {
+    expect(draw(size)).toEqual({ text, type, small: true });
+  });
+  it('a coin under 14px shows none', () => {
+    expect(draw(12).text).toBe('');
+  });
+  it('a coin of 22px and up keeps both initials on its step', () => {
+    expect(draw(22)).toEqual({ text: 'DR', type: '11px', small: false });
+    expect(draw(36)).toEqual({ text: 'DR', type: '13px', small: false });
+  });
+  it('the phone’s 12px floor is lifted for a small coin, so its initial fits', () => {
+    const css = readFileSync(join(__dirname, '../../styles/ui.css'), 'utf8');
+    expect(css).toMatch(/\.ch-avatar\[data-small\] \{[^}]*--ch-av-floor: 0px;/);
+  });
+});

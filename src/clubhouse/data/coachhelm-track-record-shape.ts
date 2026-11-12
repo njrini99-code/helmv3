@@ -52,6 +52,9 @@ export function familyLabel(family: string): string {
   return words ? words.charAt(0).toUpperCase() + words.slice(1) : 'Other';
 }
 
+/** What a level or a family with too few rechecked reads says in place of a count. The screen draws it as a dash, with these words for a screen reader. */
+export const TRACK_NOT_ENOUGH = 'Not enough yet';
+
 export type ChTrackTone = 'good' | 'warn' | 'plain';
 
 export interface ChTrackRung {
@@ -109,7 +112,7 @@ function rungView(row: RungRow, sinceWord: string): ChTrackRung {
       row.shown === 0
         ? `None shown since ${sinceWord}`
         : `${row.rechecked} of ${row.shown} rechecked so far. Judged from ${TRACK_RECORD_MIN_RECHECKED}`;
-    return { id: row.rung, word, line: 'Not enough yet', sub, tone: 'plain', bar: null };
+    return { id: row.rung, word, line: TRACK_NOT_ENOUGH, sub, tone: 'plain', bar: null };
   }
   const line = `${row.held} of ${row.rechecked} held`;
   const said =
@@ -138,7 +141,7 @@ function familyView(row: FamilyRow): ChTrackFamily {
   return {
     id: row.family,
     label: familyLabel(row.family),
-    line: enough ? `${row.held} of ${row.rechecked} held` : 'Not enough yet',
+    line: enough ? `${row.held} of ${row.rechecked} held` : TRACK_NOT_ENOUGH,
     sub: parts.join(' · '),
   };
 }

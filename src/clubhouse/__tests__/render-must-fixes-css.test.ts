@@ -16,10 +16,15 @@ describe('Render must-fixes (A24, A29)', () => {
     expect(css('rounds-track.css')).toMatch(/\.ch-rt-hero__dist > em \{\s*width: 100%;/);
   });
 
-  it('the Hub strip fades over 28px and snaps to a figure; the phone tabs scroll at 16px apart, not packed edge to edge', () => {
+  it('the phone Hub strip wraps to a second line and is no scroller; the phone tabs scroll at 16px apart, not packed edge to edge', () => {
     const hub = css('hub.css');
-    // The 28px is the phone's edge-fade token since B4.
-    expect(hub).toMatch(/\.ch-hb-h > \.ch-hb-strip \{[^}]*--ch-hs-fade: var\(--ch-edge-fade\);[^}]*scroll-snap-type: x proximity;/);
+    // The strip was a second sideways scroller over the tabs and ended mid-word at 390px: it wraps, each figure whole.
+    const strip = hub.match(/\.ch-hb-h > \.ch-hb-strip \{([^}]*)\}/)?.[1] ?? '';
+    expect(strip).toMatch(/flex-wrap: wrap;/);
+    expect(strip).toMatch(/overflow: visible;/);
+    expect(strip).not.toMatch(/scroll-snap/);
+    // The tabs still scroll, and a scroller's clipped edge fades over 28px on a phone (the edge-fade token, B4).
+    expect(css('ui.css')).toMatch(/\.ch-hscroll \{\s*--ch-hs-fade: var\(--ch-edge-fade\);/);
     expect(css('tokens.css')).toMatch(/--ch-edge-fade: 28px;/);
     expect(hub).toMatch(/\.ch-hb-tabs \{\s*justify-content: flex-start;\s*gap: calc\(16 \* var\(--ch-type-k\)\);/);
     expect(hub).not.toMatch(/\.ch-hb-tabs \{\s*justify-content: space-between;/);

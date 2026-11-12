@@ -500,14 +500,14 @@ describe('Shell · sidebar data', () => {
     const { unmount } = wrap(<Sidebar userData={coach} shell={shell} pathname="/golf/dashboard" />);
     // Owner, 2026-10-16: Team Hub and Qualifiers sit under Team, and the team's own name heads that group.
     expect(read()).toEqual([
-      ['', ['Home', 'CoachHelm', 'Calendar', 'Messages']],
+      ['', ['Home', 'CoachHelm', 'Calendar', 'Practice', 'Messages']],
       ['Varsity', ['Team Hub', 'Roster', 'Stats', 'Rounds', 'Qualifiers', 'Recruiting']],
     ]);
     unmount();
     const player = { role: 'player', name: 'Theo Marchetti', teamName: 'Varsity' } as unknown as GolfUserData;
     wrap(<Sidebar userData={player} shell={shell} pathname="/golf/dashboard" />);
     expect(read()).toEqual([
-      ['', ['Home', 'CoachHelm', 'Calendar', 'Messages']],
+      ['', ['Home', 'CoachHelm', 'Calendar', 'Practice', 'Messages']],
       ['Varsity', ['Team Hub', 'Roster', 'Qualifiers']],
       ['My game', ['Rounds', 'My stats']],
       ['School', ['Classes']],
@@ -827,12 +827,12 @@ describe('Shell · phone chrome', () => {
     const { unmount } = wrap(<PhoneNav pathname="/golf/dashboard" shell={shell} role="coach" />);
     const labels = () => [...code('CH-1808')!.querySelectorAll('.ch-strip__label')].map((el) => el.textContent);
     // D-66 (v2 GH.tabs) first: coach Home, CoachHelm, Calendar, Stats; then the sidebar's order.
-    expect(labels()).toEqual(['Home', 'CoachHelm', 'Calendar', 'Stats', 'Messages', 'Team Hub', 'Roster', 'Rounds', 'Qualifiers', 'Recruiting', 'Settings', 'Account']);
+    expect(labels()).toEqual(['Home', 'CoachHelm', 'Calendar', 'Stats', 'Practice', 'Messages', 'Team Hub', 'Roster', 'Rounds', 'Qualifiers', 'Recruiting', 'Settings', 'Account']);
     unmount();
     // Player: Home, CoachHelm, Rounds, Team Hub first.
     // eslint-disable-next-line jsx-a11y/aria-role -- role is a component prop, not an ARIA role
     wrap(<PhoneNav pathname="/golf/dashboard/team-hub" shell={shell} role="player" />);
-    expect(labels()).toEqual(['Home', 'CoachHelm', 'Rounds', 'Team Hub', 'Calendar', 'Messages', 'Roster', 'Qualifiers', 'My stats', 'Classes', 'Settings', 'Account']);
+    expect(labels()).toEqual(['Home', 'CoachHelm', 'Rounds', 'Team Hub', 'Calendar', 'Practice', 'Messages', 'Roster', 'Qualifiers', 'My stats', 'Classes', 'Settings', 'Account']);
     expect(screen.getByRole('link', { name: /Team Hub/ }).getAttribute('aria-current')).toBe('page');
     expect(code('CH-1816')!.getAttribute('aria-controls')).toBe('ch-strip');
   });
@@ -1035,8 +1035,8 @@ describe('Shell · phone chrome', () => {
     expect(title.textContent).toBe('Notifications');
     expect(title.firstElementChild!.className).toBe('ch-sr-only');
     view.unmount();
-    // My qualifiers is the player's: a coach there gets the not-rebuilt notice under the plain bar, once the alias has had
-    // its CH_ALIAS_WAIT_MS to redirect (A30: an old address on its way somewhere draws a blank canvas first).
+    // My qualifiers is retired (it opens Qualifiers): a coach there gets the not-rebuilt notice under the plain bar, once the alias has
+    // had its CH_ALIAS_WAIT_MS to redirect (A30: an old address on its way somewhere draws a blank canvas first).
     vi.useFakeTimers();
     try {
       render(
@@ -1072,7 +1072,6 @@ describe('Shell · phone chrome', () => {
       ['/golf/dashboard/roster', 'player'],
       ['/golf/dashboard/stats', 'player'],
       ['/golf/dashboard/qualifiers', 'player'],
-      ['/golf/dashboard/my-qualifiers', 'player'],
       ['/golf/dashboard/classes', 'player'],
       ['/golf/dashboard/settings/', 'player'],
     ] as const)
@@ -1080,8 +1079,9 @@ describe('Shell · phone chrome', () => {
     // Pages below another go up to it.
     expect(bar(`/golf/dashboard/qualifiers/${uuid}`, 'coach')).toBe('Qualifiers | Qualifier -> /golf/dashboard/qualifiers');
     expect(bar(`/golf/dashboard/qualifiers/${uuid}/selection`, 'coach')).toBe(`Qualifier | Selections -> /golf/dashboard/qualifiers/${uuid}`);
-    expect(bar(`/golf/dashboard/rounds/${uuid}`, 'coach')).toBe('Stats | Round -> /golf/dashboard/stats');
-    expect(bar(`/golf/dashboard/rounds/${uuid}`, 'player')).toBe('Rounds | Round -> /golf/dashboard/rounds');
+    // A round opens from Stats, Rounds, Home or Team: Back returns to whichever it was (D-41, FID-STATS-5).
+    expect(bar(`/golf/dashboard/rounds/${uuid}`, 'coach')).toBe('Back | Round');
+    expect(bar(`/golf/dashboard/rounds/${uuid}`, 'player')).toBe('Back | Round');
     expect(bar('/golf/dashboard/rounds/recover', 'player')).toBe('Rounds | Recover -> /golf/dashboard/rounds');
     // The coach's full-page forms: a plain Cancel back to where they came from (QualifierForm).
     expect(bar('/golf/dashboard/qualifiers/new', 'coach')).toBe('Cancel | New qualifier -> /golf/dashboard/qualifiers (form)');

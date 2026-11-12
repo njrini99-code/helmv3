@@ -101,6 +101,12 @@ export function RoundSetup({ ports, liveShare, qualifiers, today, backHref, onSt
   const [holesLoad, setHolesLoad] = useState<HolesLoad>({ state: 'idle' });
   const [lastTee, setLastTee] = useState<string | null>(null);
   const set = (patch: Partial<ChSetupForm>) => setForm((f) => ({ ...f, ...patch }));
+  // Round type from the course (owner, 2026-11-11): when the course and tees just picked are exactly one open
+  // qualifier's, the type is set to Qualifier for the player, with a line saying why. Only while the type is still the
+  // page's own: once the player has chosen a type, played a qualifier or come back to a kept setup of another type, the
+  // page never chooses for them. `autoQualifier` is the qualifier chosen this way, for the line.
+  const typeChosen = useRef(false);
+  const [autoQualifier, setAutoQualifier] = useState<string | null>(null);
   // The setup kept for this tab comes back after mount (never during hydration), unless the page opened on a qualifier
   // to play; from then on every change is kept, until the round starts.
   const draftKey = useSetupDraftKey(viewerId);
@@ -108,7 +114,11 @@ export function RoundSetup({ ports, liveShare, qualifiers, today, backHref, onSt
   useEffect(() => {
     if (!preselectQualifierId) {
       const draft = readSetupDraft(draftKey);
-      if (draft) setForm(restoreSetupDraft(draft, qualifiers));
+      if (draft) {
+        const kept = restoreSetupDraft(draft, qualifiers);
+        if (kept.type !== 'practice') typeChosen.current = true;
+        setForm(kept);
+      }
     }
     // Mount only.
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -148,10 +158,22 @@ export function RoundSetup({ ports, liveShare, qualifiers, today, backHref, onSt
     tee: { id: string; name: string; color: ChSetupPick['teeColor']; rating: number | null; slope: number | null; yards: number | null },
   ) => {
     setPicker(null);
+    const pickedCourse = course.saved ? course.saved.courseId : course.id;
+    const pickedTee = course.saved ? null : tee.id;
+    // Exactly one open qualifier on this course and these tees: none or several leave the type as it is.
+    const matches = typeChosen.current || !pickedCourse || !pickedTee ? [] : (qualifiers ?? []).filter((q) => q.nextRound != null && q.courseId === pickedCourse && q.teeId === pickedTee);
+    const match = matches.length === 1 ? matches[0]! : null;
+    setAutoQualifier(match ? match.id : null);
     set({
+      ...(match
+        ? { type: 'qualifier' as const, qualifierId: match.id, qualifierRound: match.nextRound }
+        : // A type the page chose for the last course goes back to the default when the new course is not that qualifier's.
+          autoQualifier && !typeChosen.current
+          ? { type: 'practice' as const, qualifierId: null, qualifierRound: null }
+          : {}),
       // A saved course ("Your courses") starts as Fairway's saved-course start does: its library link, if any, and no tee.
       pick: {
-        courseId: course.saved ? course.saved.courseId : course.id,
+        courseId: pickedCourse,
         courseName: course.name,
         place: course.place,
         city: course.city,
@@ -172,6 +194,9 @@ export function RoundSetup({ ports, liveShare, qualifiers, today, backHref, onSt
   };
 
   const applyQualifier = (q: ChSetupQualifier) => {
+    // The player's own choice (the offer, the list, or the link that opened the page): the page stops choosing.
+    typeChosen.current = true;
+    setAutoQualifier(null);
     set({ type: 'qualifier', qualifierId: q.id, qualifierRound: q.nextRound });
     if (q.courseName && q.teeId && q.teeName) pickTee({ id: q.courseId, name: q.courseName, place: null }, { id: q.teeId, name: q.teeName, color: null, rating: null, slope: null, yards: null });
   };
@@ -351,8 +376,18 @@ export function RoundSetup({ ports, liveShare, qualifiers, today, backHref, onSt
                   label="Round type"
                   value={form.type}
                   options={TYPES.map((t) => ({ value: t, label: TYPE_LABEL[t] }))}
-                  onChange={(t) => set({ type: t, ...(t !== 'qualifier' ? { qualifierId: null, qualifierRound: null } : {}) })}
+                  onChange={(t) => {
+                    typeChosen.current = true;
+                    setAutoQualifier(null);
+                    set({ type: t, ...(t !== 'qualifier' ? { qualifierId: null, qualifierRound: null } : {}) });
+                  }}
                 />
+                {autoQualifier && chosenQ?.id === autoQualifier && form.type === 'qualifier' && (
+                  <span className="ch-rsu-field__hint" role="status">
+                    {/* The qualifier's name keeps to one line, so the sentence never breaks inside it. */}
+                    Set to Qualifier because this course and these tees are {chosenQ.name.length <= 32 ? chosenQ.name.replace(/ /g, '\u00a0') : chosenQ.name}&rsquo;s.
+                  </span>
+                )}
               </div>
               <div className="ch-rsu-2">
                 <div className="ch-rsu-field">
@@ -439,13 +474,6 @@ export function RoundSetup({ ports, liveShare, qualifiers, today, backHref, onSt
               {liveShare && <LiveShareField type={form.type} ports={liveShare} />}
             </div>
           </section>
-
-          <p className="ch-rsu-note">
-            <Icon icon={ChartColumn} size={15} />
-            <span>
-              <b>Tracked on every shot:</b> driving, approach proximity, putting, scrambling and penalties. Use your rangefinder for accurate distances.
-            </span>
-          </p>
         </div>
 
         <div className="ch-rsu-col">
@@ -496,6 +524,13 @@ export function RoundSetup({ ports, liveShare, qualifiers, today, backHref, onSt
               <p>Your scorecard appears here once you pick a course and tees.</p>
             </section>
           )}
+          {/* Under the scorecard, not under Round details: there the sticky dock cut its second line on a desktop. */}
+          <p className="ch-rsu-note">
+            <Icon icon={ChartColumn} size={15} />
+            <span>
+              <b>Tracked on every shot:</b> driving, approach proximity, putting, scrambling and penalties. Use your rangefinder for accurate distances.
+            </span>
+          </p>
         </div>
       </div>
 

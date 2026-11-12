@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { LazyMotion, domAnimation } from 'motion/react';
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -59,7 +61,7 @@ describe('the coach file and the lens', () => {
   it('the lens has no plan, track record, dismissed read or coach control in the DOM (S-FILE.lens 4)', () => {
     render(<PlayerFile load={{ status: 'ready', data: previewPlayerFile('default') }} roster={null} initialLens="player" />, { wrapper: Wrap });
     const text = document.body.textContent ?? '';
-    expect(text).toContain('As Jonah sees it');
+    expect(text).toContain('As Eli sees it');
     for (const coachOnly of [NOTE, 'Fairways hit on par 5s', 'Track record', 'Only you']) expect(text).not.toContain(coachOnly);
     expect(document.querySelector('.dots')).not.toBeNull();
     expect(teammateDots()).toHaveLength(0);
@@ -90,6 +92,39 @@ describe('the coach file and the lens', () => {
   it('no row at all reads Not set yet, never a made-up default (S-FILE 29)', () => {
     render(<PlayerFile load={{ status: 'ready', data: previewPlayerFile('nointent') }} roster={null} />, { wrapper: Wrap });
     expect(document.body.textContent).toContain('Not set yet');
+  });
+});
+
+describe('every figure on the file names the window it reads (one number, one source)', () => {
+  it('the strokes card says the last ten, and its link to Standing says Standing’s own window', () => {
+    render(<PlayerFile load={{ status: 'ready', data: previewPlayerFile('default') }} roster={null} />, { wrapper: Wrap });
+    const card = document.querySelector('[data-ch-anchor="sg"]') as HTMLElement;
+    expect(card.textContent).toContain('Last 10 rounds');
+    expect(card.textContent).not.toContain('All time ·');
+    expect(within(card).getByRole('link', { name: 'Full standing, all time' })).toBeTruthy();
+    // A separator never starts a line, and the link keeps the space before it (it sat two pixels over it).
+    expect(card.querySelector('.card__n')!.textContent).toContain('Last 10 rounds\u00a0· strokes per round. Full standing, all time');
+    const css = readFileSync(join(process.cwd(), 'src/clubhouse/styles/coachhelm-file.css'), 'utf8');
+    expect(css).toMatch(/\.ch-hf p \.lnk \{ position: relative; margin: 0; \}/);
+  });
+
+  it('a Team cell that comes from the standing rows says their window; a read’s own team figure is plain Team', () => {
+    const data = previewPlayerFile('default');
+    const first = render(<PlayerFile load={{ status: 'ready', data }} roster={null} />, { wrapper: Wrap });
+    const cells = () => [...document.querySelectorAll('[data-ch="file-feature"] .feat__cmp span')].map((x) => x.textContent);
+    expect(cells()).toContain('Team, all time');
+    // The window is its own line under "Team" (it broke after "all" in the phone's cell); a reader still hears "Team, all time".
+    const team = [...document.querySelectorAll('[data-ch="file-feature"] .feat__cmp > div > span')].find((x) => x.textContent === 'Team, all time')!;
+    expect(team.querySelector('small')?.textContent).toBe('all time');
+    expect(team.querySelector('.ch-sr-only')?.textContent).toBe(', ');
+    first.unmount();
+    // The same read carrying its own team figure: that is the one the Team board's sheet draws, so the cell is plain "Team".
+    const feat = data.cards.feat!;
+    const own = { ...data, cards: { ...data.cards, feat: { ...feat, base: { ...feat.base, compare: { ...feat.base.compare!, team: 0.9 } } } } };
+    render(<PlayerFile load={{ status: 'ready', data: own }} roster={null} />, { wrapper: Wrap });
+    expect(cells()).toContain('Team');
+    expect(cells()).not.toContain('Team, all time');
+    expect(document.querySelector('[data-ch="file-feature"] .feat__cmp')!.textContent).toContain('0.9');
   });
 });
 
@@ -140,14 +175,38 @@ describe('IntentSheet (W-LNS-8)', () => {
 describe('the player page (S-BOARD, W-LNS-14, W-LNS-15)', () => {
   const week = (state: string): ChPlayerWeek => previewPlayerWeek(state);
 
-  it('holds no coach plan, no track record, no dismissed read and no More menu', () => {
+  it('130801 holds no coach plan, no track record, no dismissed read, no More menu and no coach control (Assign, Dismiss, Undo)', () => {
     render(<YourWeek load={{ status: 'ready', data: week('default') }} />, { wrapper: Wrap });
     const text = document.body.textContent ?? '';
     expect(text).toContain('Your week');
     expect(text).not.toContain(NOTE);
     expect(text).not.toContain('Fairways hit on par 5s');
     expect(screen.queryByRole('button', { name: /More for/ })).toBeNull();
-    expect(screen.queryByRole('button', { name: /Assign/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Assign|Dismiss|Undo|Share/ })).toBeNull();
+  });
+
+  it('on a desk the page opens with the player’s CoachHelm head: the page title, the line, and the views inside the head', () => {
+    render(<YourWeek load={{ status: 'ready', data: week('default') }} />, { wrapper: Wrap });
+    const main = screen.getByRole('main');
+    // The canopy is what gives the head the page title's style (shell.css), and the tight head has no rule over the title.
+    expect(main.getAttribute('data-canopy')).toBe('');
+    const head = main.querySelector('header.ch-hl-h') as HTMLElement;
+    expect(head.getAttribute('data-canopy-head')).toBe('tight');
+    const title = within(head).getByRole('heading', { level: 1, name: 'Your week' });
+    expect(main.getAttribute('aria-labelledby')).toBe(title.id);
+    expect(head.textContent).toMatch(/21 rounds · refreshed/);
+    // The views stand in the head's own aside (inside the page's gutter), never in the 300px box that ran them to the page's edge.
+    expect(within(head.querySelector('.ch-hl-h__aside') as HTMLElement).getByRole('radiogroup', { name: 'CoachHelm view' })).toBeTruthy();
+    expect(main.querySelector('.dhead, .aseg')).toBeNull();
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
+  });
+
+  it('What’s working says its figure once: the title carries it, and the line under it is the area and how firm the read is', () => {
+    render(<YourWeek load={{ status: 'ready', data: week('default') }} />, { wrapper: Wrap });
+    const row = within(screen.getByRole('region', { name: 'What’s working' })).getByRole('button');
+    expect(row.querySelector('b')!.textContent).toBe('Double bogey-or-worse rate: 1.6%');
+    expect(row.querySelector('small')!.textContent).toBe('Course and scoring · Solid read');
+    expect(row.textContent!.match(/1\.6%/g)).toHaveLength(1);
   });
 
   it('draws no dot for another player on the field card', () => {

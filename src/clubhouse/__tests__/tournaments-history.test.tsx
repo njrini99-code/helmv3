@@ -87,15 +87,27 @@ describe('History, desktop', () => {
     expect(plain(riverside)).toContain('Theo, Sofia, Ava, Will, Jonah');
   });
 
-  it('keeps one primary action, Add event, beside the switch', () => {
+  it('keeps Add event as the quiet key beside the switch, as on Events: no green key in the head', () => {
     const c = draw(data, search());
     const head = c.querySelector('.ch-tour-head') as HTMLElement;
-    expect(head.querySelectorAll('.ch-btn--primary')).toHaveLength(1);
+    const add = within(head).getByRole('link', { name: 'Add event' });
+    expect(add.className).toContain('ch-btn--secondary');
+    expect(add.getAttribute('href')).toContain('/tournaments/new');
+    expect(head.querySelectorAll('.ch-btn--primary')).toHaveLength(0);
     expect(within(head).getByRole('radiogroup', { name: 'Tournaments view' })).toBeInTheDocument();
   });
 });
 
 describe('History, phone', () => {
+  it('Add event is the head’s quiet key, as on Events and Compare: the same key under the same switch, never green on one view', () => {
+    const c = draw(data, search(), { phone: true });
+    const add = within(c as HTMLElement).getByRole('link', { name: 'Add event' });
+    expect(add.className).toContain('ch-btn--secondary');
+    expect(add.className).not.toContain('ch-btn--primary');
+    expect(add.getAttribute('href')).toContain('/tournaments/new');
+    expect(c.querySelectorAll('.ch-btn--primary')).toHaveLength(0);
+  });
+
   it('draws one bar a finished event, this season’s in green, each one opening its event', () => {
     const c = draw(data, search(), { phone: true });
     const bars = c.querySelectorAll('.ch-tour-rev-bar');
@@ -103,10 +115,16 @@ describe('History, phone', () => {
     expect(c.querySelectorAll('.ch-tour-rev-bar.is-now')).toHaveLength(3);
     expect(plain(c.querySelector('.ch-tour-rev-trend__s'))).toBe('Per round · lower is better · actual lineups');
     expect(bars[bars.length - 1]).toHaveAttribute('href', '/golf/dashboard/tournaments/e33');
-    // The tallest bar is the best (lowest) figure; the figure is on top of it.
-    const heights = Array.from(bars).map((b) => parseFloat((b.querySelector('i') as HTMLElement).style.height));
+    // The bars run across. The longest is the best (lowest) figure; the figure is at its end.
+    const lengths = Array.from(bars).map((b) => parseFloat((b.querySelector('i') as HTMLElement).style.getPropertyValue('--ch-tour-rev-len')));
     const nums = Array.from(bars).map((b) => Number((b.querySelector('b')?.textContent ?? '').replace('−', '-')));
-    expect(heights.indexOf(Math.max(...heights))).toBe(nums.indexOf(Math.min(...nums)));
+    expect(lengths.indexOf(Math.max(...lengths))).toBe(nums.indexOf(Math.min(...nums)));
+    expect(lengths.every((l) => l > 0 && l <= 1)).toBe(true);
+    // Every bar carries its event's full name, never the short one a column had room for, under its season's name.
+    expect(Array.from(bars).map((b) => b.querySelector('.ch-tour-rev-bar__n')?.textContent)).toEqual(data.trend.map((t) => data.events.find((e) => e.id === t.eventId)!.name));
+    expect(Array.from(c.querySelectorAll('.ch-tour-rev-bars__k')).map((k) => k.textContent)).toEqual([data.seasons[1]!.label, data.seasons[0]!.label]);
+    // Both filters are the card's full width.
+    expect(c.querySelectorAll('.ch-tour-rev-tools .ch-seg--block')).toHaveLength(2);
     expect(plain(c.querySelector('.ch-tour-rev-trend__note'))).toContain('Will graduated and Eli and Priya joined the lineup');
     // The ledger lives on Events on the phone.
     expect(c.querySelector('[role="table"]')).toBeNull();

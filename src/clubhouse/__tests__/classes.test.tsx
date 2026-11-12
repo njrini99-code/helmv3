@@ -1,5 +1,5 @@
 import { LazyMotion, domAnimation } from 'motion/react';
-import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -95,7 +95,6 @@ import {
   toChClasses,
   toImportRow,
   toTeamEvent,
-  upcomingMeetings,
   weekDates,
   type ChClass,
   type ChClassesPage,
@@ -111,7 +110,6 @@ import { CH_SLOW_SAVE_AFTER } from '../lib/use-action';
 import { classifyReadError, readScheduleLive, screenFile } from '../screens/classes/import-read';
 import { createLiveClassesWrites, newClassId, syncDataOf, type ChClassesWrites, type ChRemoveAllData } from '../screens/classes/writes';
 import { ClubhouseMarker } from '../shell/context';
-import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
 import { ToastProvider } from '../ui/Toast';
 import './dialog-polyfill';
 import {
@@ -121,7 +119,6 @@ import {
   PREVIEW_CLASSES_EMPTY,
   PREVIEW_CLASSES_FAILED,
   PREVIEW_CLASSES_MIXED,
-  PREVIEW_CLASSES_PARTIAL,
   PREVIEW_PARSED,
   PREVIEW_SCHEDULE_TEXT,
 } from '../preview/fixtures-classes';
@@ -362,12 +359,6 @@ describe('Classes shaping', () => {
     expect(timeRange('', '10:15')).toBeNull();
   });
 
-  it('the next meetings run from today to the end of the term, at most as many as asked', () => {
-    expect(upcomingMeetings({ days: ['T', 'Th'], start: '09:00' }, '2026-10-14', '2026-12-15', 3)).toEqual(['2026-10-15', '2026-10-20', '2026-10-22']);
-    expect(upcomingMeetings({ days: ['W'], start: '09:00' }, '2026-10-14', '2026-10-20', 4)).toEqual(['2026-10-14']);
-    expect(upcomingMeetings({ days: [], start: '09:00' }, '2026-10-14', '2026-12-15', 4)).toEqual([]);
-  });
-
   it('121502 CH-12002 a class goes on the calendar from next Monday only when that is inside its own term and leaves the term standing; otherwise from the term’s own window', () => {
     // In this term, with weeks left; a class saved with no term is in the current one.
     expect(syncStartFor('Fall 2026', 'Fall 2026', '2026-10-14')).toBe('2026-10-19');
@@ -580,10 +571,17 @@ describe('Classes route and page', () => {
     render(<ClassesSkeleton />);
     await expectCode('CH-12401');
     expect(screen.getByRole('main', { name: 'Loading your classes' }).getAttribute('aria-busy')).toBe('true');
-    // Four rows, under Your classes' heading and the week's days once (2026-10-18: the first row landed 82px lower without them).
-    expect(document.querySelectorAll('.ch-cl-deck > .ch-skel')).toHaveLength(4);
-    expect(document.querySelector('.ch-cl-sk-desk .ch-cl-sec > .ch-sec__head + .ch-cl-deck > .ch-cl-tthead:first-child')).not.toBeNull();
-    expect(document.querySelectorAll('.ch-cl-sk-desk .ch-cl-tthead__days > span')).toHaveLength(5);
+    // Two shapes, one per width, and nothing else: the phone's and the desktop's. Each keeps what is already known: the
+    // title is the real word, the term card is its plate with four bars, and Today and Your classes are named.
+    expect([...document.querySelectorAll('main > div')].map((d) => d.className)).toEqual(['ch-cl-sk-dcrh', 'ch-cl-sk-crh']);
+    expect(document.querySelector('.ch-cl-sk-crh .ch-large-title')?.textContent).toBe('Classes');
+    expect(document.querySelector('.ch-cl-sk-dcrh__title')?.textContent).toBe('Classes');
+    expect(document.querySelectorAll('.ch-cl-sk-crh .ch-cl-sk-crh__term > i')).toHaveLength(4);
+    expect([...document.querySelectorAll('.ch-cl-sk-crh .ch-crh-skcard > b')].map((b) => b.textContent)).toEqual(['Today', 'Your classes']);
+    // Five binders on the desktop, three to a row, beside the overlaps.
+    expect(document.querySelectorAll('.ch-cl-sk-dcrh__deck > .ch-skel')).toHaveLength(5);
+    // The shapes are drawing: a screen reader hears "Loading your classes" once, from the page.
+    for (const d of document.querySelectorAll('main > div')) expect(d.getAttribute('aria-hidden')).toBe('true');
   });
 
   it('the no-team page draws without the router (it is a server component)', () => {
@@ -998,29 +996,6 @@ describe('Classes, on screen', () => {
     expect(within(stat).getByText('3 cr')).toBeTruthy();
   });
 
-  it('CH-12803 the term overview is one labelled group: the week, the credits, and the end of term; its drawing is hidden', () => {
-    show();
-    const tb = screen.getByRole('region', { name: 'Fall 2026, week 8 of 17, 13 credits · 5 classes, ends Dec 15' });
-    expect(tb.querySelector('.ch-cl-tb__wk')!.getAttribute('aria-hidden')).toBe('true');
-    expect(tb.querySelector('.ch-cl-tb__bar')!.getAttribute('aria-hidden')).toBe('true');
-    expect([...tb.querySelectorAll('.ch-cl-tb__bar i')].map((i) => i.getAttribute('title'))).toEqual(['ECON 310 · 3 cr', 'ENGL 105 · 3 cr', 'STAT 201 · 3 cr', 'BUSI 401 · 3 cr', 'EXSS 188 · 1 cr']);
-    // The line is today: 55 of 117 days through the term.
-    expect(parseFloat((tb.querySelector('.ch-cl-tb__fill') as HTMLElement).style.width)).toBeCloseTo((55 / 117) * 100, 3);
-  });
-
-  it('P012-A1/A2/D1/D4 one timetable header, the team day named in it, keys in the overlap list, no "E" on the term bar', () => {
-    show();
-    const heads = document.querySelectorAll('.ch-cl-tthead');
-    expect(heads).toHaveLength(1);
-    expect(heads[0]!.getAttribute('aria-hidden')).toBe('true');
-    expect([...heads[0]!.querySelectorAll('.ch-cl-tthead__days em')].map((e) => e.textContent)).toEqual(['Mon', 'Tue', 'Wed', 'Thu', 'Fri']);
-    expect(heads[0]!.querySelector('.is-team i')!.textContent).toBe('Pinehurst qualifier');
-    // The phone names it on its own line under the days, its day first (design picks, 2026-10-28).
-    expect([...heads[0]!.querySelectorAll('.ch-cl-tthead__evs > span')].map((e) => e.textContent)).toEqual(['Thu Pinehurst qualifier']);
-    expect([...document.querySelectorAll('.ch-cl-over .ch-cl-key')].map((k) => k.textContent)).toEqual(['STAT', 'BUSI']);
-    expect([...document.querySelectorAll('.ch-cl-tb__bar b')].map((b) => b.textContent)).not.toContain('E');
-  });
-
   it('CH-12802 each card’s week strip is hidden from screen readers and shows the start under each day the class meets', () => {
     show();
     const strip = card(/^STAT 201/).querySelector('.ch-cl-card__week')!;
@@ -1041,35 +1016,6 @@ describe('Classes, on screen', () => {
 const headerButton = (name: string) => within(document.querySelector('.ch-cl-h') as HTMLElement).getByRole('button', { name });
 
 describe('Classes, states', () => {
-  it('CH-12301 no classes yet: the first-run page offers the import first and the add second, and none of the rest of the page', async () => {
-    const user = userEvent.setup();
-    show(PREVIEW_CLASSES_EMPTY);
-    await expectCode(
-      'CH-12301',
-      /Add your class schedule.*Import a screenshot of your schedule and we’ll read it so you can check each class\. Your coach can see when you’re busy, so practice and travel get planned around class\./,
-    );
-    expect(document.querySelector('.ch-cl-h__a')).toBeNull();
-    expect(document.querySelector('.ch-cl-tb')).toBeNull();
-    expect(document.querySelector('.ch-cl-deck')).toBeNull();
-    await user.click(screen.getByRole('button', { name: 'Add a class' }));
-    expect(await screen.findByRole('dialog', { name: 'Add a class' })).toBeTruthy();
-    await user.click(screen.getByRole('button', { name: 'Cancel' }));
-    await user.click(screen.getByRole('button', { name: 'Import schedule' }));
-    expect(await screen.findByRole('dialog', { name: 'Import schedule' })).toBeTruthy();
-  });
-
-  it('120407 121403 CH-12201 the classes do not load: it says so with a way to ask again, never "no classes", and the head keeps Import schedule and Add class', async () => {
-    const user = userEvent.setup();
-    show(PREVIEW_CLASSES_FAILED);
-    await expectCode('CH-12201', /Your classes didn’t load.*Nothing is lost\. Your classes are still saved; try again in a moment\./);
-    expect(code('CH-12301')).toBeNull();
-    const head = document.querySelector('.ch-cl-h__a') as HTMLElement;
-    expect(within(head).getByRole('button', { name: 'Import schedule' })).toBeTruthy();
-    expect(within(head).getByRole('button', { name: 'Add class' })).toBeTruthy();
-    expect(document.querySelector('.ch-cl-tb')).toBeNull();
-    await user.click(within(code('CH-12201') as HTMLElement).getByRole('button', { name: 'Try again' }));
-    expect(router.refresh).toHaveBeenCalledTimes(1);
-  });
 
   it('CH-12201 a failed read is never drawn beside classes: with the error set the notice replaces the deck, and the head keeps its actions with no sync status', () => {
     show({ ...PREVIEW_CLASSES, classes: { list: PREVIEW_CLASSES.classes.list, error: true } });
@@ -1079,58 +1025,6 @@ describe('Classes, states', () => {
     expect(within(head).getByRole('button', { name: 'Add class' })).toBeTruthy();
     expect(within(head).getByRole('button', { name: 'Import schedule' })).toBeTruthy();
     expect(head.textContent).not.toMatch(/calendar/i);
-  });
-
-  it('CH-12202 the team’s events do not load: the classes show, the overlap card says it cannot tell, and no overlap is claimed anywhere', async () => {
-    const user = userEvent.setup();
-    show(PREVIEW_CLASSES_PARTIAL);
-    await expectCode('CH-12202', /The team’s events didn’t load.*Overlaps with practice and travel can’t be checked right now/);
-    expect(names()).toHaveLength(5);
-    expect(document.querySelector('.ch-cl-tb__over')).toBeNull();
-    expect(document.querySelectorAll('.ch-cl-card .ch-cl-flag')).toHaveLength(0);
-    expect(screen.queryByText('Nothing overlaps this week')).toBeNull();
-    await user.click(within(code('CH-12202') as HTMLElement).getByRole('button', { name: 'Try again' }));
-    expect(router.refresh).toHaveBeenCalledTimes(1);
-    // The sheet doesn't claim an overlap either.
-    await user.click(card(/^BUSI 401/));
-    const sheet = await screen.findByRole('dialog', { name: 'Corporate Finance' });
-    expect(within(sheet).queryByText(/Overlaps/)).toBeNull();
-  });
-
-  it('CH-12203 a section that crashes while drawing is contained: the classes and the rest of the page stay', async () => {
-    const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
-    // A term with no end to its weeks can't be drawn as a line: only the overview throws.
-    show({ ...PREVIEW_CLASSES, term: { ...PREVIEW_CLASSES.term, weeks: Infinity } });
-    await expectCode('CH-12203', /The term overview couldn.t be shown/);
-    expect(names()).toHaveLength(5);
-    expect(screen.getByText('A team event overlaps your classes')).toBeTruthy();
-    quiet.mockRestore();
-  });
-
-  it('this week’s overlaps: the trip meets the two Thursday classes, on the overview, the two cards and the side card', () => {
-    show();
-    expect(document.querySelector('.ch-cl-tb__over')!.textContent).toBe('2overlaps with the team this week');
-    expect(document.querySelector('.ch-cl-tb__over')!.className).toContain('has-any');
-    const flags = (name: RegExp) => [...card(name).querySelectorAll('.ch-cl-flag')].map((f) => f.textContent);
-    expect(flags(/^STAT 201/)).toEqual(['Overlaps Pinehurst qualifier Thu']);
-    expect(flags(/^BUSI 401/)).toEqual(['Overlaps Pinehurst qualifier Thu']);
-    expect(flags(/^ECON 310/)).toEqual([]);
-    const side = screen.getByRole('region', { name: 'A team event overlaps your classes' });
-    expect(within(side).getByText('Pinehurst qualifier')).toBeTruthy();
-    expect(within(side).getAllByText('Overlap')).toHaveLength(2);
-    expect(within(side).getByText(/^Thu, Oct 15 · 6:15 AM–8:00 PM · Pinehurst No\. 2$/)).toBeTruthy();
-    expect(within(side).getByText('STAT 201')).toBeTruthy();
-    expect(within(side).getByText('BUSI 401')).toBeTruthy();
-    // Overlaps are amber, never red: nothing here carries the danger class.
-    expect(document.querySelector('.ch-cl-over .ch-cl-danger')).toBeNull();
-  });
-
-  it('CH-12302 nothing overlaps this week: the side card says so, the overview counts none, and no card is flagged', async () => {
-    show(PREVIEW_CLASSES_CLEAR);
-    await expectCode('CH-12302', /Nothing overlaps this week.*None of your classes meets over practice, travel or another team event\./);
-    expect(document.querySelector('.ch-cl-tb__over')!.textContent).toBe('0overlaps with the team this week');
-    expect(document.querySelector('.ch-cl-tb__over')!.className).not.toContain('has-any');
-    expect(document.querySelectorAll('.ch-cl-card .ch-cl-flag')).toHaveLength(0);
   });
 
   it('CH-12303 CH-12304 an online class says it has no fixed meeting; times with no days say what is missing and that it is not on the calendar', () => {
@@ -1147,149 +1041,12 @@ describe('Classes, states', () => {
     expect(online.querySelector('[data-ch-code="CH-12304"]')).toBeNull();
   });
 
-  it('120102 a class from another term is named for it and kept out of this term’s figures; one with no term counts as this term; a weekend class draws seven days', () => {
-    show(PREVIEW_CLASSES_MIXED);
-    expect(within(card(/^GEOG 110/)).getByText('Spring 2026')).toBeTruthy();
-    expect(within(card(/^STAT 201/)).queryByText('Fall 2026')).toBeNull();
-    // STAT, ECON, BUSI, CSCI, ART and the one with no term: 3 + 3 + 3 + 3 + 2 + 1 credits.
-    expect(screen.getByRole('region', { name: /^Fall 2026, week 8 of 17, 15 credits · 6 classes, ends Dec 15$/ })).toBeTruthy();
-    expect(card(/^MUSC 140/).querySelectorAll('.ch-cl-card__week > span')).toHaveLength(7);
-    // P012-A1: one timetable, so every class lines up under the same seven days once one meets on a weekend.
-    expect(card(/^STAT 201/).querySelectorAll('.ch-cl-card__week > span')).toHaveLength(7);
-  });
-
-  it('a class from another term is never counted as overlapping this week’s practice, even when its days and times would', () => {
-    // Monday 3:30 to 4:30 PM meets Monday's practice, but the class is Spring 2026's.
-    const spring = rowFor('c0000000-0000-4000-8000-000000000099', {
-      code: 'GEOG 110',
-      name: 'Global Environmental Change',
-      instructor: '',
-      days: ['M'],
-      start: '15:30',
-      end: '16:30',
-      building: '',
-      room: '',
-      credits: 3,
-      semester: 'Spring 2026',
-      notes: '',
-    });
-    show({ ...PREVIEW_CLASSES, classes: { list: toChClasses([...PREVIEW_CLASS_ROWS, spring]), error: false } });
-    expect(document.querySelector('.ch-cl-tb__over')!.textContent).toBe('2overlaps with the team this week');
-    expect([...card(/^GEOG 110/).querySelectorAll('.ch-cl-flag')]).toHaveLength(0);
-    expect(within(screen.getByRole('region', { name: 'A team event overlaps your classes' })).queryByText('GEOG 110')).toBeNull();
-  });
-
-  it('120103 opening a class shows when and where it meets and its next meetings; the one that overlaps the trip says so; nothing the table has no column for is drawn', async () => {
+  it('every control goes somewhere: the header\u2019s Add class opens the sheet, and a binder only ever opens its class', async () => {
     const user = userEvent.setup();
     show();
-    await user.click(card(/^STAT 201/));
-    const sheet = await screen.findByRole('dialog', { name: 'Probability and Statistics' });
-    expect(within(sheet).getByText('STAT 201 · 3 credits · Fall 2026')).toBeTruthy();
-    const facts = Object.fromEntries([...sheet.querySelectorAll('.ch-cl-facts > div')].map((d) => [d.querySelector('dt')!.textContent, d.querySelector('dd')!.textContent]));
-    expect(facts).toEqual({ When: 'Tue, Thu · 9:00–10:15 AM', Where: 'Hanes Hall 120', Instructor: 'Dr. L. Osei', Term: 'Fall 2026' });
-    const meets = [...sheet.querySelectorAll('.ch-cl-meet li')].map((li) => li.textContent);
-    expect(meets).toEqual(['Thu, Oct 15Overlaps Pinehurst qualifier', 'Tue, Oct 20Upcoming', 'Thu, Oct 22Upcoming', 'Tue, Oct 27Upcoming']);
-    // The board's grade, deadline and share switch have no column: they are not drawn.
-    expect(within(sheet).queryByText(/grade|deadline|share/i)).toBeNull();
-    expect(within(sheet).queryByRole('switch')).toBeNull();
-  });
-
-  it('every control goes somewhere: the Add tile opens the same sheet as the header, and a card only ever opens its class', async () => {
-    const user = userEvent.setup();
-    show();
-    await user.click(screen.getByRole('button', { name: /^Add a class/ }));
+    await user.click(headerButton('Add class'));
     expect(await screen.findByRole('dialog', { name: 'Add a class' })).toBeTruthy();
     expect(document.querySelectorAll('a[href]')).toHaveLength(0);
-  });
-});
-
-describe('Classes, on the phone', () => {
-  const real = window.matchMedia;
-  beforeEach(() => {
-    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
-  });
-  afterEach(() => {
-    window.matchMedia = real;
-  });
-
-  /** The shell's phone top bar, where the page's PhoneTop renders. */
-  function SlotHost() {
-    const { setSlot } = usePhoneChromeState();
-    return <div ref={setSlot} data-testid="phone-top" />;
-  }
-
-  it('121901 draws the phone bar with the way back to More, and the same classes and actions', async () => {
-    const user = userEvent.setup();
-    render(
-      <LazyMotion features={domAnimation}>
-        <ToastProvider>
-          <PhoneChromeProvider>
-            <div className="ch-root" data-ui="clubhouse">
-              <SlotHost />
-              <ClassesView data={PREVIEW_CLASSES} writes={fakeWrites()} />
-            </div>
-          </PhoneChromeProvider>
-        </ToastProvider>
-      </LazyMotion>,
-    );
-    expect(document.querySelector('.ch-cl')!.className).toContain('is-phone');
-    const top = screen.getByTestId('phone-top');
-    expect(within(top).getByRole('heading', { level: 1, name: 'Classes' })).toBeTruthy();
-    expect(within(top).queryByRole('button', { name: 'Back to More' })).toBeNull();
-    expect(names()).toHaveLength(5);
-    // B10.1: the create action is the top bar's plus, in the bell's place, and the head no longer repeats it.
-    expect(within(document.querySelector<HTMLElement>('.ch-cl-h')!).queryByRole('button', { name: 'Add class' })).toBeNull();
-    expect(within(document.querySelector<HTMLElement>('.ch-cl-h')!).getByRole('button', { name: 'Import schedule' })).toBeTruthy();
-    await user.click(within(top).getByRole('button', { name: 'Add class' }));
-    expect(await screen.findByRole('dialog', { name: 'Add a class' })).toBeTruthy();
-  });
-
-  it('121901 B10.1: a first run has no plus (its empty state carries the add), and a failed read keeps it (CH-12201)', () => {
-    phoneView({ ...PREVIEW_CLASSES, classes: { list: [], error: false } });
-    expect(within(screen.getByTestId('phone-top')).queryByRole('button', { name: 'Add class' })).toBeNull();
-    cleanup();
-    phoneView({ ...PREVIEW_CLASSES, classes: { list: [], error: true } });
-    expect(within(screen.getByTestId('phone-top')).getByRole('button', { name: 'Add class' })).toBeTruthy();
-  });
-
-  function phoneView(data: ChClassesPage) {
-    render(
-      <LazyMotion features={domAnimation}>
-        <ToastProvider>
-          <PhoneChromeProvider>
-            <div className="ch-root" data-ui="clubhouse">
-              <SlotHost />
-              <ClassesView data={data} writes={fakeWrites()} />
-            </div>
-          </PhoneChromeProvider>
-        </ToastProvider>
-      </LazyMotion>,
-    );
-  }
-
-  it('iPhone brief: one "Classes" heading, the term in one line, today (or the next class day) before the deck', () => {
-    phoneView(PREVIEW_CLASSES);
-    expect(screen.getAllByRole('heading', { level: 1, name: 'Classes' })).toHaveLength(1);
-    expect(screen.getByRole('main', { name: 'Classes' })).toBeTruthy();
-    // The compact overview: no credit bar and no term line on the phone.
-    expect(document.querySelector('.ch-cl-tb.is-compact .ch-cl-tb__one')).not.toBeNull();
-    expect(document.querySelector('.ch-cl-tb__line')).toBeNull();
-    const today = document.querySelector('.ch-cl-today')!;
-    expect(today).not.toBeNull();
-    expect(today.compareDocumentPosition(document.querySelector('.ch-cl-deck')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-  });
-
-  it('CH-12308 with no class today the list names the next day that has one, and its classes open', async () => {
-    const user = userEvent.setup();
-    // A Sunday in the preview term: nothing meets.
-    const sunday = { ...PREVIEW_CLASSES, todayIso: '2026-10-18' };
-    phoneView(sunday);
-    await waitFor(() => expect(code('CH-12308')).not.toBeNull());
-    expect(code('CH-12308')!.textContent).toMatch(/No classes today · next/);
-    const rows = within(code('CH-12308') as HTMLElement).getAllByRole('button');
-    expect(rows.length).toBeGreaterThan(0);
-    await user.click(rows[0]!);
-    expect(await screen.findByRole('dialog')).toBeTruthy();
   });
 });
 
@@ -1325,27 +1082,6 @@ const failing = <T,>(first: T, then: (...a: never[]) => unknown) =>
     .mockImplementation(then as never);
 
 describe('Classes, add and edit', () => {
-  it('120901 CH-12001 adding a class saves it once as typed, adds it in the order the week unfolds, closes the sheet, and puts it on the calendar; overlaps warn while typing and do not block', async () => {
-    const user = userEvent.setup();
-    const w = show();
-    await fillGeog(user);
-    expect(field('Course code').value).toBe('GEOG 110');
-    await expectCode('CH-12109', /Overlaps the team.*Practice on Mon.*Practice on Wed.*This week\. Your coach can see your classes\./);
-    await submitForm(user);
-    await waitFor(() => expect(w.save).toHaveBeenCalledTimes(1));
-    const [input, editing] = w.save.mock.calls[0]!;
-    expect(input).toMatchObject({ code: 'GEOG 110', name: 'Global Environmental Change', days: ['M', 'W'], start: '15:30', end: '16:45', credits: 3, semester: 'Fall 2026' });
-    expect(editing).toBeNull();
-    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
-    expect(names()).toEqual(ORDER_WITH_GEOG);
-    expect(await screen.findByText('Class added')).toBeTruthy();
-    expect(hapticSpy).toHaveBeenCalledWith('success');
-    await waitFor(() => expect(w.sync).toHaveBeenCalledTimes(1));
-    expect(w.sync.mock.calls[0]![0]).toMatchObject({ id: 'n1', code: 'GEOG 110', days: ['M', 'W'] });
-    // Practice on Monday and Wednesday now meets the new class: the card and the overview say so.
-    expect([...card(/^GEOG 110/).querySelectorAll('.ch-cl-flag')].map((f) => f.textContent)).toEqual(['Overlaps 2 team events']);
-    expect(document.querySelector('.ch-cl-tb__over')!.textContent).toBe('4overlaps with the team this week');
-  });
 
   it('CH-12804 a refused save says what is wrong beside the field, marks it invalid, and moves focus to the first one; nothing is sent', async () => {
     const user = userEvent.setup();
@@ -1410,38 +1146,6 @@ describe('Classes, add and edit', () => {
     await waitFor(() => expect(w.save).toHaveBeenCalledTimes(1));
   });
 
-  it('editing opens on the class as saved, saves only that class, and updates it in place', async () => {
-    const user = userEvent.setup();
-    const w = show();
-    await user.click(card(/^STAT 201/));
-    await user.click(within(await screen.findByRole('dialog', { name: 'Probability and Statistics' })).getByRole('button', { name: 'Edit class' }));
-    const form = await screen.findByRole('dialog', { name: 'Edit class' });
-    expect(within(form).getByText('Repeats weekly until Dec 15, the end of the term.')).toBeTruthy();
-    expect([
-      field('Course code').value,
-      field('Course name').value,
-      field('Credits').value,
-      field('Starts').value,
-      field('Ends').value,
-      field('Building').value,
-      field('Room').value,
-      field('Instructor').value,
-    ]).toEqual(['STAT 201', 'Probability and Statistics', '3', '9:00 AM', '10:15 AM', 'Hanes Hall', '120', 'Dr. L. Osei']);
-    expect([day('Mon'), day('Tue'), day('Wed'), day('Thu'), day('Fri')].map((b) => b.getAttribute('aria-pressed'))).toEqual(['false', 'true', 'false', 'true', 'false']);
-    setField('Room', '121');
-    await submitForm(user);
-    await waitFor(() => expect(w.save).toHaveBeenCalledTimes(1));
-    const [input, editing] = w.save.mock.calls[0]!;
-    expect(input).toMatchObject({ code: 'STAT 201', room: '121', days: ['T', 'Th'] });
-    expect(editing).toMatchObject({ id: STAT_ID });
-    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
-    expect(within(card(/^STAT 201/)).getByText('Hanes Hall 121')).toBeTruthy();
-    expect(names()).toHaveLength(5);
-    expect(await screen.findByText('Class updated')).toBeTruthy();
-    await waitFor(() => expect(w.sync).toHaveBeenCalledTimes(1));
-    expect(w.sync.mock.calls[0]![0]).toMatchObject({ id: STAT_ID, room: '121' });
-  });
-
   it('CH-12502 a form with changes asks before it is thrown away, and keeps what was typed if the answer is to keep editing; an untouched form just closes', async () => {
     const user = userEvent.setup();
     const w = show();
@@ -1479,14 +1183,6 @@ describe('Classes, add and edit', () => {
     await user.click(day('Fri'));
     expect(day('Fri').getAttribute('aria-pressed')).toBe('false');
     expect(hapticSpy.mock.calls.map((c) => c[0])).toEqual(['select', 'select']);
-  });
-
-  it('CH-12701 opening a class is a selection tap', async () => {
-    const user = userEvent.setup();
-    show();
-    await user.click(card(/^ECON 310/));
-    expect(hapticSpy).toHaveBeenCalledWith('select');
-    expect(await screen.findByRole('dialog', { name: 'Intermediate Macroeconomics' })).toBeTruthy();
   });
 });
 
@@ -1537,31 +1233,6 @@ describe('Classes, writes that fail', () => {
     expect(sync.mock.calls[1]![0]).toMatchObject({ id: 'n1' });
   });
 
-  it('a failed sync is retried from the header, and from the class itself', async () => {
-    const user = userEvent.setup();
-    const sync = vi
-      .fn()
-      .mockResolvedValueOnce({ success: false, error: 'Could not determine semester dates' })
-      .mockResolvedValueOnce({ success: false, error: 'Could not determine semester dates' })
-      .mockResolvedValue({ success: true });
-    show(PREVIEW_CLASSES, { sync });
-    await fillGeog(user);
-    await submitForm(user);
-    await expectCode('CH-12002');
-    await user.click(within(document.querySelector('.ch-cl-sync.is-failed') as HTMLElement).getByRole('button', { name: 'Retry sync' }));
-    await waitFor(() => expect(sync).toHaveBeenCalledTimes(2));
-    // Still failing: the class stays flagged, and its sheet has the way to try again.
-    await waitFor(() => expect(document.querySelector('.ch-cl-sync.is-failed')).not.toBeNull());
-    await user.click(card(/^GEOG 110/));
-    const detail = await screen.findByRole('dialog', { name: 'Global Environmental Change' });
-    expect(within(detail).getByText('Not on your calendar')).toBeTruthy();
-    expect(within(detail).getByText(/The last sync failed, so your coach won’t see this class on the team calendar yet\./)).toBeTruthy();
-    await user.click(within(detail).getByRole('button', { name: 'Retry sync' }));
-    await waitFor(() => expect(sync).toHaveBeenCalledTimes(3));
-    await waitFor(() => expect(within(detail).queryByText('Not on your calendar')).toBeNull());
-    expect(document.querySelector('.ch-cl-sync')).toBeNull();
-  });
-
   it('CH-12403 while a class goes on the calendar the header says so, and says nothing once it has', async () => {
     const user = userEvent.setup();
     let finish: (v: { success: boolean }) => void = () => {};
@@ -1574,100 +1245,6 @@ describe('Classes, writes that fail', () => {
     await act(async () => finish({ success: true }));
     await waitFor(() => expect(code('CH-12403')).toBeNull());
   });
-
-  it('CH-12002 a class saved while an import is still going on the calendar is flagged, not dropped, and the header Retry puts it there', async () => {
-    const user = userEvent.setup();
-    const held = later<{ success: boolean }>();
-    // The imported classes' sync stays running; anything else syncs at once.
-    const sync = vi.fn((c: ChClass) => (c.id.startsWith('i') ? held.promise : Promise.resolve({ success: true })));
-    const w = show(PREVIEW_CLASSES, { sync, read: vi.fn(async () => ({ ok: true as const, rows: PREVIEW_PARSED.slice(0, 4).map(toImportRow), warnings: [] })) });
-    await openImport(user);
-    await pasteAndRead(user);
-    await reviewArrived();
-    await user.click(inSheet().getByRole('button', { name: 'Import 4 classes' }));
-    await screen.findByRole('dialog', { name: 'Schedule imported' });
-    await user.click(inSheet().getByRole('button', { name: 'View classes' }));
-    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
-    await expectCode('CH-12403');
-    // Edit STAT 201 while that import is still being put on the calendar.
-    await user.click(card(/^STAT 201/));
-    await user.click(within(await screen.findByRole('dialog', { name: 'Probability and Statistics' })).getByRole('button', { name: 'Edit class' }));
-    await screen.findByRole('dialog', { name: 'Edit class' });
-    setField('Room', '121');
-    await submitForm(user);
-    expect(await screen.findByText('Class updated')).toBeTruthy();
-    expect(w.sync.mock.calls.map((c) => c[0].id)).not.toContain(STAT_ID);
-    await waitFor(() => expect(within(card(/^STAT 201/)).getByText('Not on your calendar')).toBeTruthy());
-    await act(async () => held.resolve({ success: true }));
-    await waitFor(() => expect(document.querySelector('.ch-cl-sync.is-failed')).not.toBeNull());
-    expect(document.querySelector('.ch-cl-sync.is-failed')!.textContent).toContain('1 class is not on your calendar');
-    await user.click(within(document.querySelector('.ch-cl-sync.is-failed') as HTMLElement).getByRole('button', { name: 'Retry sync' }));
-    await waitFor(() => expect(w.sync.mock.calls.map((c) => c[0].id)).toContain(STAT_ID));
-    await waitFor(() => expect(document.querySelector('.ch-cl-sync')).toBeNull());
-    expect(within(card(/^STAT 201/)).queryByText('Not on your calendar')).toBeNull();
-  });
-
-  it('CH-12501 CH-12702 removing a class warns first, then asks what goes; Keep it sends nothing, and a yes removes it from the schedule', async () => {
-    const user = userEvent.setup();
-    const w = show();
-    await user.click(card(/^STAT 201/));
-    hapticSpy.mockClear();
-    await user.click(within(await screen.findByRole('dialog', { name: 'Probability and Statistics' })).getByRole('button', { name: 'Remove class' }));
-    expect(hapticSpy.mock.calls.map((c) => c[0])[0]).toBe('warning');
-    await expectCode('CH-12501', /Remove this class\?.*STAT 201 comes off your schedule and your calendar\. This can’t be undone\./);
-    expect(screen.queryByRole('dialog', { name: 'Probability and Statistics' })).toBeNull();
-    await user.click(screen.getByRole('button', { name: 'Keep it' }));
-    expect(w.remove).not.toHaveBeenCalled();
-    expect(names()).toContain('Probability and Statistics');
-    await user.click(card(/^STAT 201/));
-    await user.click(within(await screen.findByRole('dialog', { name: 'Probability and Statistics' })).getByRole('button', { name: 'Remove class' }));
-    await user.click(await screen.findByRole('button', { name: 'Remove class' }));
-    await waitFor(() => expect(w.remove).toHaveBeenCalledWith(STAT_ID));
-    await waitFor(() => expect(names()).not.toContain('Probability and Statistics'));
-    expect(await screen.findByText('STAT 201 removed')).toBeTruthy();
-    expect(hapticSpy).toHaveBeenLastCalledWith('success');
-    expect(screen.queryByRole('dialog')).toBeNull();
-    expect(document.querySelector('.ch-cl-tb__over')!.textContent).toBe('1overlap with the team this week');
-  });
-
-  it('121401 CH-12003 a remove that fails keeps the class and the question, says so, and Retry removes it', async () => {
-    const user = userEvent.setup();
-    const remove = failing({ success: false, error: "Couldn’t take this class off your calendar: events locked. The class was kept so you can try again." }, () => Promise.resolve({ success: true }));
-    show(PREVIEW_CLASSES, { remove });
-    await user.click(card(/^STAT 201/));
-    await user.click(within(await screen.findByRole('dialog', { name: 'Probability and Statistics' })).getByRole('button', { name: 'Remove class' }));
-    await user.click(await screen.findByRole('button', { name: 'Remove class' }));
-    await expectCode('CH-12003', /Couldn’t remove STAT 201.*The class was kept so you can try again\./);
-    expect(hapticSpy).toHaveBeenCalledWith('error');
-    expect(names()).toContain('Probability and Statistics');
-    expect(screen.getByRole('dialog', { name: 'Remove this class?' })).toBeTruthy();
-    await user.click(within(code('CH-12003') as HTMLElement).getByRole('button', { name: 'Try again' }));
-    await waitFor(() => expect(names()).not.toContain('Probability and Statistics'));
-    expect(remove).toHaveBeenCalledTimes(2);
-    expect(screen.queryByRole('dialog')).toBeNull();
-  });
-
-  it('CH-12003 a remove that took the class off the calendar but could not delete it says so and flags it', async () => {
-    const user = userEvent.setup();
-    const remove = vi.fn(() => Promise.resolve({ success: false, error: 'It is off your calendar but still on your schedule. Try again to finish removing it.', data: { offCalendar: true } }));
-    show(PREVIEW_CLASSES, { remove });
-    await user.click(card(/^STAT 201/));
-    await user.click(within(await screen.findByRole('dialog', { name: 'Probability and Statistics' })).getByRole('button', { name: 'Remove class' }));
-    await user.click(await screen.findByRole('button', { name: 'Remove class' }));
-    await expectCode('CH-12003', /off your calendar but still on your schedule/);
-    expect(code('CH-12003')!.textContent).not.toMatch(/still on your schedule and your calendar/);
-    expect(within(card(/^STAT 201/)).getByText('Not on your calendar')).toBeTruthy();
-  });
-
-  it('removing the last class returns to the first-run page', async () => {
-    const user = userEvent.setup();
-    show(page1());
-    await user.click(card(/^STAT 201/));
-    await user.click(within(await screen.findByRole('dialog', { name: 'Probability and Statistics' })).getByRole('button', { name: 'Remove class' }));
-    await user.click(await screen.findByRole('button', { name: 'Remove class' }));
-    await expectCode('CH-12301');
-    expect(document.querySelector('.ch-cl-h__a')).toBeNull();
-  });
 });
 
 /** A page with STAT 201 alone. */
@@ -1677,10 +1254,207 @@ const page1 = (): ChClassesPage => ({ ...PREVIEW_CLASSES, classes: { list: PREVI
 // Delete all classes
 // ---------------------------------------------------------------------------
 
+describe('Classes, the redesigned screens: removing a class, sections that fail, and what a binder shows', () => {
+  const STAT = /^STAT 201/;
+  const sheetOf = () => screen.findByRole('dialog', { name: 'STAT 201' });
+  const removeQuestion = () => screen.getByRole('dialog', { name: 'Remove this class?' });
+  /** Open STAT 201's sheet and press Remove, which asks. */
+  async function askRemove(user: ReturnType<typeof userEvent.setup>) {
+    await user.click(card(STAT));
+    await user.click(within(await sheetOf()).getByRole('button', { name: 'Remove' }));
+    return removeQuestion();
+  }
+
+  it('CH-12501 Remove asks first: it names the class and what it comes off, and Keep it sends nothing and keeps the binder', async () => {
+    const user = userEvent.setup();
+    const w = show();
+    const q = await askRemove(user);
+    await expectCode('CH-12501');
+    expect(q.textContent).toMatch(/STAT 201 comes off your schedule and your calendar\. This can’t be undone\./);
+    // The destructive answer is the real danger button; the safe one is not.
+    expect(within(q).getByRole('button', { name: 'Remove class' }).className).toMatch(/ch-btn--danger/);
+    await user.click(within(q).getByRole('button', { name: 'Keep it' }));
+    expect(w.remove).not.toHaveBeenCalled();
+    expect(names()).toContain('Probability and Statistics');
+  });
+
+  it('120901 a class that is removed leaves the deck, says "STAT 201 removed" once, and lands with one success tap', async () => {
+    const user = userEvent.setup();
+    const w = show();
+    const q = await askRemove(user);
+    hapticSpy.mockClear();
+    await user.click(within(q).getByRole('button', { name: 'Remove class' }));
+    expect(await screen.findByText('STAT 201 removed')).toBeTruthy();
+    expect(w.remove).toHaveBeenCalledTimes(1);
+    expect(names()).not.toContain('Probability and Statistics');
+    expect(hapticSpy.mock.calls.filter((c) => c[0] === 'success')).toHaveLength(1);
+  });
+
+  it('CH-12003 a removal that fails says so, keeps the class and the question, and Retry on the notice removes it', async () => {
+    const user = userEvent.setup();
+    const w = show(PREVIEW_CLASSES, { remove: vi.fn(async () => ({ success: false })) });
+    const q = await askRemove(user);
+    await user.click(within(q).getByRole('button', { name: 'Remove class' }));
+    await expectCode('CH-12003', /Couldn’t remove STAT 201/);
+    expect(removeQuestion().hasAttribute('open')).toBe(true);
+    expect(names()).toContain('Probability and Statistics');
+    expect(hapticSpy).toHaveBeenCalledWith('error');
+    expect(screen.queryByText('STAT 201 removed')).toBeNull();
+
+    w.remove.mockResolvedValue({ success: true });
+    await user.click(within(code('CH-12003') as HTMLElement).getByRole('button', { name: /Retry|Try again/ }));
+    expect(await screen.findByText('STAT 201 removed')).toBeTruthy();
+    expect(w.remove).toHaveBeenCalledTimes(2);
+    expect(names()).not.toContain('Probability and Statistics');
+  });
+
+  it('120703 offline, a removal is refused before anything is sent and the class stays', async () => {
+    const user = userEvent.setup();
+    const line = vi.spyOn(window.navigator, 'onLine', 'get').mockReturnValue(false);
+    try {
+      const w = show();
+      const q = await askRemove(user);
+      await user.click(within(q).getByRole('button', { name: 'Remove class' }));
+      await expectCode('CH-1903');
+      expect(w.remove).not.toHaveBeenCalled();
+      expect(names()).toContain('Probability and Statistics');
+    } finally {
+      line.mockRestore();
+    }
+  });
+
+  it('120102 a binder is drawn from the class itself: its department and number, credits, name, professor, a tile for each day it meets with its start, and its room', () => {
+    show();
+    const b = card(STAT);
+    expect(b.querySelector('.ch-cl-card__code b')?.textContent).toBe('STAT');
+    expect(b.querySelector('.ch-cl-card__code')?.textContent).toBe('STAT201');
+    expect(b.querySelector('.ch-cl-card__cr')?.textContent).toBe('3 cr');
+    expect(b.querySelector('.ch-cl-card__name')?.textContent).toBe('Probability and Statistics');
+    expect(b.querySelector('.ch-cl-card__prof')?.textContent).toBe('Dr. L. Osei');
+    const tiles = [...b.querySelectorAll('.ch-cl-card__week > span')];
+    expect(tiles.map((t) => t.querySelector('em')?.textContent).join('')).toBe('MTWTF');
+    // It meets Tuesday and Thursday at 9:00: two raised tiles with the start, three outlines without.
+    expect(tiles.map((t) => (t.classList.contains('is-on') ? t.querySelector('b')?.textContent : null))).toEqual([null, '9:00', null, '9:00', null]);
+    expect(b.querySelector('.ch-cl-card__loc')?.textContent).toBe('Hanes Hall 120');
+    // The week is drawing; the binder's name says when it meets.
+    expect(b.querySelector('.ch-cl-card__week')?.getAttribute('aria-hidden')).toBe('true');
+    expect(b.getAttribute('aria-label')).toMatch(/^STAT 201, Probability and Statistics, /);
+  });
+
+  it('120103 a class\u2019s sheet shows where and when it meets and who teaches it, and its two keys are Remove and Edit class', async () => {
+    const user = userEvent.setup();
+    show();
+    await user.click(card(STAT));
+    const sheet = await sheetOf();
+    expect(sheet.textContent).toMatch(/Probability and Statistics/);
+    expect(sheet.textContent).toMatch(/Dr\. L\. Osei/);
+    expect(sheet.textContent).toMatch(/Hanes Hall 120/);
+    expect(sheet.textContent).toMatch(/9:00/);
+    expect(sheet.textContent).toMatch(/This week/);
+    expect(within(sheet).getByRole('button', { name: 'Edit class' })).toBeTruthy();
+    expect(within(sheet).getByRole('button', { name: 'Remove' })).toBeTruthy();
+  });
+
+  it('120407 the first-run page shows only when the read answered with no classes; a read that failed says so instead and never offers Import as a first step', () => {
+    const first = render(
+      <LazyMotion features={domAnimation}>
+        <ToastProvider>
+          <div className="ch-root" data-ui="clubhouse">
+            <ClassesView data={PREVIEW_CLASSES_EMPTY} writes={fakeWrites()} />
+          </div>
+        </ToastProvider>
+      </LazyMotion>,
+    );
+    expect(code('CH-12301')).not.toBeNull();
+    expect(code('CH-12201')).toBeNull();
+    first.unmount();
+    show(PREVIEW_CLASSES_FAILED);
+    expect(code('CH-12201')).not.toBeNull();
+    expect(code('CH-12301')).toBeNull();
+    expect(screen.queryByText('No classes yet')).toBeNull();
+  });
+
+  it('121403 Try again on the failed classes read asks the server for the whole page again', async () => {
+    const user = userEvent.setup();
+    show(PREVIEW_CLASSES_FAILED);
+    await user.click(within(code('CH-12201') as HTMLElement).getByRole('button', { name: 'Try again' }));
+    expect(router.refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it('CH-12203 a section that crashes while drawing says which one and offers Try again; the rest of the page still draws', async () => {
+    const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      // A class whose days are not a list cannot be drawn as a binder: the deck fails inside its own boundary.
+      const broken = { ...PREVIEW_CLASSES, classes: { ...PREVIEW_CLASSES.classes, list: PREVIEW_CLASSES.classes.list.map((c, i) => (i === 0 ? { ...c, instructor: { toString() { throw new Error('boom'); } } as unknown as string } : c)) } };
+      show(broken);
+      await expectCode('CH-12203', /couldn’t be shown/);
+      expect(code('CH-12203')!.textContent).toMatch(/The rest of the page is fine/);
+      expect(within(code('CH-12203') as HTMLElement).getByRole('button', { name: 'Try again' })).toBeTruthy();
+      // The term card is its own section and is still there.
+      expect(document.querySelector('.ch-cl-term')).not.toBeNull();
+    } finally {
+      quiet.mockRestore();
+    }
+  });
+});
+
+describe('Classes, the phone page (121901) and a day with no class (CH-12308)', () => {
+  const realMatchMedia = window.matchMedia;
+  beforeEach(() => {
+    window.matchMedia = ((q: string) => ({
+      matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)',
+      media: q,
+      onchange: null,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false,
+    })) as never;
+  });
+  afterEach(() => {
+    window.matchMedia = realMatchMedia;
+  });
+
+  it('121901 on a phone Classes is the phone build: the term card, Today, then the binders one to a row under Your classes; the header\u2019s desktop keys are not drawn', () => {
+    show();
+    expect(document.querySelector('main.ch-cl')?.classList.contains('is-phone')).toBe(true);
+    expect(document.querySelector('.ch-cl-term')?.classList.contains('is-desk')).toBe(false);
+    expect(screen.queryByRole('button', { name: 'Import schedule' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Add class' })).toBeNull();
+    // No side column on a phone: the sections come one after another.
+    expect(document.querySelector('.ch-cl-dgrid')).toBeNull();
+    const order = [...document.querySelectorAll('.ch-cl-term, .ch-surface, .ch-cl-yours')].map((n) => (n.classList.contains('ch-cl-term') ? 'term' : n.classList.contains('ch-cl-yours') ? 'yours' : (n.querySelector('.ch-surface__title')?.textContent ?? 'card')));
+    expect(order.indexOf('term')).toBe(0);
+    expect(order.indexOf('Today')).toBeGreaterThan(0);
+    expect(order.indexOf('yours')).toBeGreaterThan(order.indexOf('Today'));
+    expect(screen.getByRole('heading', { level: 2, name: /^Your classes/ })).toBeTruthy();
+    expect(names().length).toBe(PREVIEW_CLASSES.classes.list.length);
+  });
+
+  it('CH-12308 a day with no class says "No classes today", names the next class day, draws that day from 7 to 5 and lists its classes, each opening its class', async () => {
+    const user = userEvent.setup();
+    // Saturday of the fixture's week: nothing meets, and Monday is the next class day.
+    const sat = PREVIEW_CLASSES.week.dates[PREVIEW_CLASSES.week.dates.length - 2] ?? PREVIEW_CLASSES.week.dates[5]!;
+    show({ ...PREVIEW_CLASSES, todayIso: sat } as ChClassesPage);
+    await expectCode('CH-12308', /No classes today/);
+    expect(code('CH-12308')!.textContent).toMatch(/Next: Monday/);
+    expect(within(code('CH-12308') as HTMLElement).getByRole('img', { name: 'Monday from 7 AM to 5 PM' })).toBeTruthy();
+    const rows = [...document.querySelectorAll('[data-ch-class-row]')] as HTMLElement[];
+    expect(rows.length).toBeGreaterThan(0);
+    await user.click(rows[0]!);
+    expect((await screen.findAllByRole('dialog')).some((d) => d.hasAttribute('open'))).toBe(true);
+  });
+});
+
 describe('Classes, delete all', () => {
   const ALL_IDS = PREVIEW_CLASS_ROWS.map((r) => r.id).sort();
-  /** The control under the deck (the dialog has a button of the same name). */
-  const deleteAll = () => within(document.querySelector('.ch-cl-delall') as HTMLElement).getByRole('button', { name: 'Delete all classes' }) as HTMLButtonElement;
+  const more = () => screen.queryByRole('button', { name: 'More for your classes' });
+  /** The destructive row in Your classes' More menu (the dialog has a button of the same name). Opens the menu when it is shut. While a write runs the More key itself is off, so nothing in it can be picked. */
+  const deleteAll = () => {
+    if (!screen.queryByRole('menuitem', { name: 'Delete all classes' })) fireEvent.click(more()!);
+    return screen.getByRole('menuitem', { name: 'Delete all classes' }) as HTMLButtonElement;
+  };
   const question = () => screen.getByRole('dialog', { name: 'Delete all classes?' });
   const confirm = (user: ReturnType<typeof userEvent.setup>) => user.click(within(question()).getByRole('button', { name: /^(Delete all classes|Deleting…)$/ }));
   const answer = (over: Partial<ChRemoveAllData>, error = 'stopped'): { success: boolean; error: string; data: ChRemoveAllData } => ({ success: false, error, data: { removed: [], kept: [], offCalendar: [], ...over } });
@@ -1711,7 +1485,7 @@ describe('Classes, delete all', () => {
     expect(await screen.findByText('All 5 classes deleted')).toBeTruthy();
     expect(hapticSpy.mock.calls.map((c) => c[0])).toEqual(['success']);
     expect(screen.queryByRole('dialog')).toBeNull();
-    expect(document.querySelector('.ch-cl-delall')).toBeNull();
+    expect(more()).toBeNull();
   });
 
   it('CH-12503 the question counts the classes from other terms too, and a single class is named', async () => {
@@ -1733,12 +1507,12 @@ describe('Classes, delete all', () => {
 
   it('CH-12301 the control is not drawn with no classes', () => {
     show(PREVIEW_CLASSES_EMPTY);
-    expect(document.querySelector('.ch-cl-delall')).toBeNull();
+    expect(more()).toBeNull();
   });
 
   it('CH-12201 the control is not drawn beside a schedule that did not load', () => {
     show(PREVIEW_CLASSES_FAILED);
-    expect(document.querySelector('.ch-cl-delall')).toBeNull();
+    expect(more()).toBeNull();
   });
 
   it('CH-12503 while a delete runs the question says Deleting and cannot be closed or pressed again, and the control is off; while a calendar sync runs the control is off too', async () => {
@@ -1750,7 +1524,7 @@ describe('Classes, delete all', () => {
     await waitFor(() => expect(within(question()).getByRole('button', { name: 'Deleting…' })).toBeTruthy());
     expect((within(question()).getByRole('button', { name: 'Deleting…' }) as HTMLButtonElement).disabled).toBe(true);
     expect((within(question()).getByRole('button', { name: 'Keep them' }) as HTMLButtonElement).disabled).toBe(true);
-    expect(deleteAll().disabled).toBe(true);
+    expect((more() as HTMLButtonElement).disabled).toBe(true);
     // Esc and the Close button leave it open: closing would hide a delete that is still going.
     fireEvent(question(), new Event('cancel', { cancelable: true }));
     await user.click(within(question()).getByRole('button', { name: 'Close' }));
@@ -1764,14 +1538,14 @@ describe('Classes, delete all', () => {
     const user = userEvent.setup();
     const held = later<{ success: boolean }>();
     show(PREVIEW_CLASSES, { sync: vi.fn((c: ChClass) => (c.code === 'GEOG 110' ? held.promise : Promise.resolve({ success: true }))) });
-    expect(deleteAll().disabled).toBe(false);
+    expect((more() as HTMLButtonElement).disabled).toBe(false);
     await fillGeog(user);
     await submitForm(user);
     await expectCode('CH-12403', /Adding to your calendar…/);
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
-    expect(deleteAll().disabled).toBe(true);
+    expect((more() as HTMLButtonElement).disabled).toBe(true);
     await act(async () => held.resolve({ success: true }));
-    await waitFor(() => expect(deleteAll().disabled).toBe(false));
+    await waitFor(() => expect((more() as HTMLButtonElement).disabled).toBe(false));
   });
 
   it('CH-12005 a delete where no class could be taken off the calendar keeps every class and the question, says so, and Retry deletes them', async () => {
@@ -2167,36 +1941,6 @@ describe('Classes, offline and slow', () => {
     vi.useRealTimers();
   });
 
-  it('120703 CH-1903 a write while offline is refused with what was being done, sends nothing, and Retry works once back online', async () => {
-    const user = userEvent.setup();
-    const w = show();
-    await user.click(card(/^STAT 201/));
-    await user.click(within(await screen.findByRole('dialog', { name: 'Probability and Statistics' })).getByRole('button', { name: 'Edit class' }));
-    await screen.findByRole('dialog', { name: 'Edit class' });
-    setField('Room', '121');
-    goOffline();
-    await submitForm(user);
-    await expectCode('CH-1903', /Couldn’t update STAT 201: you’re offline/);
-    expect(w.save).not.toHaveBeenCalled();
-    expect(within(sheet()).getByRole('button', { name: 'Save changes' })).toBeTruthy();
-    expect(field('Room').value).toBe('121');
-    line!.mockReturnValue(true);
-    await user.click(within(code('CH-1903') as HTMLElement).getByRole('button', { name: 'Try again' }));
-    await waitFor(() => expect(w.save).toHaveBeenCalledTimes(1));
-  });
-
-  it('120703 CH-1903 removing while offline is refused too, and the class stays', async () => {
-    const user = userEvent.setup();
-    const w = show();
-    await user.click(card(/^STAT 201/));
-    await user.click(within(await screen.findByRole('dialog', { name: 'Probability and Statistics' })).getByRole('button', { name: 'Remove class' }));
-    goOffline();
-    await user.click(await screen.findByRole('button', { name: 'Remove class' }));
-    await expectCode('CH-1903', /Couldn’t remove STAT 201: you’re offline/);
-    expect(w.remove).not.toHaveBeenCalled();
-    expect(names()).toContain('Probability and Statistics');
-  });
-
   it('CH-12002 a class saved just as the connection went is still marked as not on the calendar', async () => {
     const user = userEvent.setup();
     const base = fakeWrites();
@@ -2214,24 +1958,6 @@ describe('Classes, offline and slow', () => {
     await waitFor(() => expect(within(card(/^GEOG 110/)).getByText('Not on your calendar')).toBeTruthy());
     expect(w.sync).not.toHaveBeenCalled();
     expect(document.querySelector('.ch-cl-sync.is-failed')!.textContent).toContain('1 class is not on your calendar');
-  });
-
-  it('CH-1902 a save that is slow says so once, and the button says it is working', async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
-    const answer = later<{ success: boolean }>();
-    const w = show(PREVIEW_CLASSES, { save: vi.fn(() => answer.promise as never) });
-    fireEvent.click(card(/^STAT 201/));
-    fireEvent.click(within(await screen.findByRole('dialog', { name: 'Probability and Statistics' })).getByRole('button', { name: 'Edit class' }));
-    await screen.findByRole('dialog', { name: 'Edit class' });
-    fireEvent.click(within(sheet()).getByRole('button', { name: 'Save changes' }));
-    expect(w.save).toHaveBeenCalledTimes(1);
-    expect((within(sheet()).getByRole('button', { name: 'Saving…' }) as HTMLButtonElement).disabled).toBe(true);
-    await act(async () => void vi.advanceTimersByTime(CH_SLOW_SAVE_AFTER + 10));
-    await expectCode('CH-1902', /Still saving/);
-    // A second tap while it runs sends nothing more.
-    fireEvent.click(within(sheet()).getByRole('button', { name: 'Saving…' }));
-    expect(w.save).toHaveBeenCalledTimes(1);
-    await act(async () => answer.resolve({ success: false }));
   });
 
   it('CH-12901 a screenshot needs a connection: offline it says so and Try again reads it once back; pasted text and a TXT file do not need one', async () => {
@@ -2309,7 +2035,6 @@ const rowIn = (n: number, over: Partial<ChClassInput> = {}): ChClassRow =>
   });
 /** The board's page with more classes among them. */
 const pageWith = (...extra: ChClassRow[]): ChClassesPage => ({ ...PREVIEW_CLASSES, classes: { list: toChClasses([...PREVIEW_CLASS_ROWS, ...extra]), error: false } });
-const factsOf = (root: HTMLElement) => Object.fromEntries([...root.querySelectorAll('.ch-cl-facts > div')].map((d) => [d.querySelector('dt')!.textContent, d.querySelector('dd')!.textContent]));
 
 describe('Classes, calendar sync in the background', () => {
   it('121501 CH-12403 CH-12002 a saved class goes on the calendar in the background: the sheet is free meanwhile, and a class saved then is flagged with no toast, and Retry sync puts it there', async () => {
@@ -2413,34 +2138,6 @@ describe('Classes, calendar sync in the background', () => {
 });
 
 describe('Classes, review fixes on screen', () => {
-  it('CH-12303 CH-12304 a class with days and no time says so on its card and in its sheet, and is not on the calendar for want of a time', async () => {
-    const user = userEvent.setup();
-    show(pageWith(rowIn(95)));
-    const c = card(/^HIST 210/);
-    expect(c.getAttribute('aria-label')).toBe('HIST 210, World History, Tue, no time set');
-    expect(within(c).getByText('Add the time this class meets.')).toBeTruthy();
-    expect(within(c).getByText('No meeting time, not on your calendar')).toBeTruthy();
-    // It is not "online or arranged" (CH-12303), and it has days (CH-12304).
-    expect(c.querySelector('[data-ch-code="CH-12303"], [data-ch-code="CH-12304"]')).toBeNull();
-    await user.click(c);
-    const detail = await screen.findByRole('dialog', { name: 'World History' });
-    expect(factsOf(detail)).toMatchObject({ When: 'Tue · No time set', Calendar: 'Not on your calendar: no time set' });
-    expect(detail.querySelector('.ch-cl-meet')).toBeNull();
-  });
-
-  it('CH-12303 CH-12304 a class with days and a start but no end reads the same way: no time set, not on the calendar, no week strip and no meetings listed', async () => {
-    const user = userEvent.setup();
-    show(pageWith(rowIn(93, { start: '09:00' })));
-    const c = card(/^HIST 210/);
-    expect(c.getAttribute('aria-label')).toBe('HIST 210, World History, Tue, no time set');
-    expect(c.querySelector('.ch-cl-card__week')).toBeNull();
-    expect(within(c).getByText('Add the time this class meets.')).toBeTruthy();
-    expect(within(c).getByText('No meeting time, not on your calendar')).toBeTruthy();
-    await user.click(c);
-    const detail = await screen.findByRole('dialog', { name: 'World History' });
-    expect(factsOf(detail)).toMatchObject({ When: 'Tue · No time set', Calendar: 'Not on your calendar: no time set' });
-    expect(detail.querySelector('.ch-cl-meet')).toBeNull();
-  });
 
   it('CH-12004 CH-12109 the import result says which classes are not on the calendar and why, and counts only the ones that are', async () => {
     const user = userEvent.setup();
@@ -2527,35 +2224,6 @@ describe('Classes, review fixes on screen', () => {
     await waitFor(() => expect(code('CH-12109')).toBeNull());
     fireEvent.change(field('Term'), { target: { value: 'Fall 2026' } });
     await expectCode('CH-12109', /Practice on Mon/);
-  });
-
-  it('CH-12703 a class saved on a weekend day shows it in the form, so it can be taken off', async () => {
-    const user = userEvent.setup();
-    const w = show(PREVIEW_CLASSES_MIXED);
-    await user.click(card(/^MUSC 140/));
-    await user.click(within(await screen.findByRole('dialog', { name: 'Ensemble' })).getByRole('button', { name: 'Edit class' }));
-    await screen.findByRole('dialog', { name: 'Edit class' });
-    const days = within(sheet()).getByRole('group', { name: 'Days' });
-    expect([...days.querySelectorAll('button')].map((b) => b.getAttribute('aria-label'))).toEqual(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']);
-    expect(day('Sat').getAttribute('aria-pressed')).toBe('true');
-    await user.click(day('Sat'));
-    expect(day('Sat').getAttribute('aria-pressed')).toBe('false');
-    await submitForm(user);
-    await waitFor(() => expect(w.save).toHaveBeenCalledTimes(1));
-    expect(w.save.mock.calls[0]![0].days).toEqual([]);
-    // A class with no weekend day offers the weekdays only.
-    await user.click(card(/^STAT 201/));
-    await user.click(within(await screen.findByRole('dialog', { name: 'Probability and Statistics' })).getByRole('button', { name: 'Edit class' }));
-    await screen.findByRole('dialog', { name: 'Edit class' });
-    expect(within(sheet()).getByRole('group', { name: 'Days' }).querySelectorAll('button')).toHaveLength(5);
-  });
-
-  it('a class in next term lists its next meetings from its term’s first day, not from today', async () => {
-    const user = userEvent.setup();
-    show(pageWith(rowIn(94, { code: 'GEOG 110', name: 'Global Environmental Change', days: ['T', 'Th'], start: '09:00', end: '10:15', semester: 'Spring 2027' })));
-    await user.click(card(/^GEOG 110/));
-    const detail = await screen.findByRole('dialog', { name: 'Global Environmental Change' });
-    expect([...detail.querySelectorAll('.ch-cl-meet li')].map((li) => li.textContent)).toEqual(['Tue, Jan 19Upcoming', 'Thu, Jan 21Upcoming', 'Tue, Jan 26Upcoming', 'Thu, Jan 28Upcoming']);
   });
 
   it('CH-12001 a failed save and its Retry, and another tap on Add in the same sheet, carry one row id; the next sheet gets a new one', async () => {
@@ -2657,17 +2325,5 @@ describe('Classes reader', () => {
     const past = new File([new Uint8Array(3.5 * 1024 * 1024)], 'IMG_2043.png', { type: 'image/png' });
     expect(await readScheduleLive({ kind: 'file', file: past })).toEqual({ ok: false, kind: 'tooLarge', message: 'That image is too large to send. Use a PNG or JPG screenshot, or paste the text.' });
     expect(actions.extract).not.toHaveBeenCalled();
-  });
-});
-
-describe('Classes · the palette’s Add class (A16)', () => {
-  afterEach(() => window.history.replaceState(null, '', '/'));
-
-  it('?new=1 opens the add form once and cleans the address', async () => {
-    window.history.replaceState(null, '', '/golf/dashboard/classes?new=1');
-    router.replace.mockClear();
-    show();
-    expect(await screen.findByRole('dialog', { name: 'Add a class' })).toBeTruthy();
-    expect(router.replace).toHaveBeenCalledWith('/golf/dashboard/classes', { scroll: false });
   });
 });

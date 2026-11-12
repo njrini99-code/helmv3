@@ -336,8 +336,10 @@ export const PHONE_RIBBON = 10;
  *   Putts: a bar against 36, two putts on every green (golf's own baseline), with how far under or over it is.
  *   GIR: the 18 greens of a round, as many lit as the season's greens per 18.
  * dt then the value dd stays first in each pair (the season test reads label, then value).
+ * On the phone each caption is one short line ("Aug 18", "5.1 under 36", "11.1 of 18"): a third of 390px has no room
+ * for the desk's sentence, which wrapped into two- and three-line stubs of different heights.
  */
-function SeasonFigures({ season }: { season: ChRoundsSeason }) {
+function SeasonFigures({ season, phone = false }: { season: ChRoundsSeason; phone?: boolean }) {
   const scores = season.ribbon.map((x) => x.score);
   const lo = scores.length ? Math.min(...scores) : null;
   const hi = scores.length ? Math.max(...scores) : null;
@@ -364,14 +366,16 @@ function SeasonFigures({ season }: { season: ChRoundsSeason }) {
             </span>
           </dd>
         )}
-        <dd className="ch-rd-fig__m">{season.best ? (
+        <dd className="ch-rd-fig__m ch-num">{!season.best ? (
+            ''
+          ) : phone ? (
+            shortDay(season.best.date)
+          ) : (
             // D16: the whole course name, cut by the column's ellipsis rather than at its first word. It keeps its words
             // on one line (rounds.css) and the separator ends that line, so a wrapped date never starts with "·".
             <>
               <span className="ch-rd-fig__course">{season.best.course}</span>&nbsp;· {shortDay(season.best.date)}
             </>
-          ) : (
-            ''
           )}</dd>
       </div>
       <div className="ch-rd-fig">
@@ -387,9 +391,12 @@ function SeasonFigures({ season }: { season: ChRoundsSeason }) {
         )}
         {/* "two-putting" never breaks at its hyphen on the phone (overnight polish, 2026-10-15); a plain hyphen in a
             no-wrap span, because the font has no non-breaking hyphen (A23). */}
-        <dd className="ch-rd-fig__m">
+        <dd className="ch-rd-fig__m ch-num">
           {putts == null ? (
             'a round'
+          ) : phone ? (
+            // Against the same 36 the bar's tick marks.
+            `${formatFixed(Math.abs(twoPutt - putts), 1)} ${putts <= twoPutt ? 'under' : 'over'} ${twoPutt}`
           ) : (
             <>
               a round · {formatFixed(Math.abs(twoPutt - putts), 1)} {putts <= twoPutt ? 'under' : 'over'} <span className="ch-nowrap">two-putting</span>
@@ -409,7 +416,7 @@ function SeasonFigures({ season }: { season: ChRoundsSeason }) {
             </span>
           </dd>
         )}
-        <dd className="ch-rd-fig__m">{season.girPer18 == null ? '' : `${formatFixed(season.girPer18, 1)} of 18 a round`}</dd>
+        <dd className="ch-rd-fig__m ch-num">{season.girPer18 == null ? '' : `${formatFixed(season.girPer18, 1)} of 18${phone ? '' : ' a round'}`}</dd>
       </div>
     </dl>
   );
@@ -440,7 +447,7 @@ export function SeasonCard({ season, phone = false }: { season: ChRoundsSeason; 
             <em>avg · {formatToPar(season.toPar, 1)} to par</em>
           </div>
         </div>
-        <SeasonFigures season={season} />
+        <SeasonFigures season={season} phone={phone} />
       </div>
       {season.ribbon.length >= 2 && season.toPar != null && <SeasonStage ribbon={season.ribbon} avg={season.toPar} phone={phone} />}
     </section>

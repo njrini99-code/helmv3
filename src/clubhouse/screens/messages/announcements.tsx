@@ -13,7 +13,7 @@ import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
 import { clock, dayLabel, needsMyAck, railTime, type ChAnnouncement, type ChAnnouncementDetail } from './model';
 import type { ChMessagesApi } from './MessagesView';
-import { pluralWord } from '../../lib/plural';
+import { plural, pluralWord } from '../../lib/plural';
 
 /**
  * The team's announcements, folded under the conversations (owner, 2026-10-16: messages first, announcements folded).
@@ -47,14 +47,18 @@ export function AnnouncementsSection({ api, q }: { api: ChMessagesApi; q: string
           setOpen(!shown);
         }}
       >
-        <span className={'ch-ms-grp is-ann' + (api.announcements[0]?.urgent ? ' is-urgent' : '')}>
-          <Icon icon={api.announcements[0]?.urgent ? TriangleAlert : Megaphone} size={15} />
+        {/* The section's own face: always the megaphone in the announcement coin, round like every face in the list.
+            Urgency is said on the announcement's own row, never here. */}
+        <span className="ch-ms-grp is-ann">
+          <Icon icon={Megaphone} size={15} />
         </span>
         <span className="ch-ms-fold__b">
-          <b>
-            Announcements <span className="ch-num">{api.announcements.length}</span>
-          </b>
-          <span>{api.announcements[0]?.title}</span>
+          <b>Announcements</b>
+          {/* How many there are is said in words beside the newest title; the one figure on the row is the count that
+              waits on you. */}
+          <span>
+            {plural(api.announcements.length, 'post')} · {api.announcements[0]?.title}
+          </span>
         </span>
         {waiting > 0 && (
           <span role="img" className="ch-ms-count ch-num" aria-label={`${waiting} need your acknowledgement`}>
@@ -75,7 +79,7 @@ export function AnnouncementsSection({ api, q }: { api: ChMessagesApi; q: string
                   className={'ch-ms-row is-ann' + (mine ? ' is-unread' : '') + (api.selectedAnnId === a.id ? ' is-sel' : '')}
                   aria-current={api.selectedAnnId === a.id ? 'true' : undefined}
                   onClick={() => {
-                    haptic('select');
+                    // Opening an announcement is navigation, as opening a conversation is: no haptic (F-0071, MO-14).
                     chTrail('messages open announcement');
                     api.selectAnn(a.id);
                   }}

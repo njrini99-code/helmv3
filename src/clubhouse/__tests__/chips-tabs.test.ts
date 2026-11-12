@@ -16,12 +16,8 @@ const GROUPS = {
 
 const ALLOW: Record<keyof typeof GROUPS, Record<string, number>> = {
   chips: {
-    'screens/coachhelm/chat/ActionCard.tsx': 2,
-    'screens/coachhelm/chat/Home.tsx': 1,
-    'screens/coachhelm/chat/Thread.tsx': 1,
     'screens/coachhelm/views/PlayerHelmTabs.tsx': 2,
     'screens/hub/sheets.tsx': 1,
-    'screens/messages/MessagesPhone.tsx': 1,
     'screens/qualifiers/QualifierDetailPhone.tsx': 1,
     'screens/qualifiers/QualifiersList.tsx': 1,
     'screens/rounds/track/RoundTracking.tsx': 2,
@@ -32,7 +28,6 @@ const ALLOW: Record<keyof typeof GROUPS, Record<string, number>> = {
     'styles/coachhelm-thread.css': 10,
     'styles/coachhelm-views.css': 10,
     'styles/hub.css': 7,
-    'styles/messages.css': 8,
     'styles/qualifiers.css': 22,
     'styles/rounds-track.css': 10,
     'styles/settings.css': 7,
@@ -59,8 +54,6 @@ const ALLOW: Record<keyof typeof GROUPS, Record<string, number>> = {
     'screens/hub/HubSkeleton.tsx': 1,
     'screens/hub/HubSkeletonTop.tsx': 1,
     'screens/hub/TeamHub.tsx': 1,
-    'screens/stats/SgBars.tsx': 1,
-    'screens/stats/StatsPhoneSkeleton.tsx': 1,
     'screens/stats/StatsPlayer.tsx': 2,
     'screens/stats/StatsSkeleton.tsx': 2,
     'screens/stats/StatsTeamPhone.tsx': 4,

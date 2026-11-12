@@ -1,7 +1,7 @@
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { Plus } from 'lucide-react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { IconButton } from '../Button';
+import { Button, IconButton } from '../Button';
 
 vi.mock('next/link', () => ({
   default: ({ href, children, scroll: _scroll, ...rest }: { href: string; children: React.ReactNode; scroll?: boolean }) => (
@@ -38,5 +38,19 @@ describe('IconButton', () => {
     const b = screen.getByRole('button', { name: 'More' }) as HTMLButtonElement;
     expect(b.disabled).toBe(true);
     expect(b.getAttribute('aria-haspopup')).toBe('menu');
+  });
+});
+
+describe('Button with words as a menu key', () => {
+  it('takes the menu trigger’s props and opens it', () => {
+    const onClick = vi.fn();
+    render(
+      <Button menu={{ ref: () => {}, onClick, 'aria-expanded': false, 'aria-haspopup': 'menu', 'aria-controls': 'm1' }}>Share</Button>,
+    );
+    const key = screen.getByRole('button', { name: 'Share' });
+    expect(key.getAttribute('aria-haspopup')).toBe('menu');
+    expect(key.getAttribute('aria-expanded')).toBe('false');
+    fireEvent.click(key);
+    expect(onClick).toHaveBeenCalledTimes(1);
   });
 });

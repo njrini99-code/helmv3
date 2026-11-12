@@ -15,12 +15,14 @@ export type ShsTone = 'gain' | 'loss' | 'flat';
 /** "Last 10 rounds", "This season", "Qualifiers"; a filter says its own words. */
 export function windowLabel(f: ChFilter): string {
   if (isFiltered(f)) return basisWords(f);
+  if (f.span === 'all') return 'All time';
   if (f.window === 'last10') return `Last ${f.last} rounds`;
   return f.window === 'season' ? 'This season' : 'Qualifiers';
 }
 
 export function windowShort(f: ChFilter): string {
   if (isFiltered(f)) return 'Filtered';
+  if (f.span === 'all') return 'All time';
   if (f.window === 'last10') return `Last ${f.last}`;
   return f.window === 'season' ? 'Season' : 'Qualifiers';
 }
@@ -147,37 +149,44 @@ export function scoringChange(data: ChPlayerProfile): ShsChange {
 }
 
 export interface ShsCompareBar {
+  /** The one measure both bars show ("Putts per round"), named above them. */
+  measure: string;
   label: string;
   value: number;
   /** Width, 0 to 100: 30% plus 70% of the scaled value (04 "What changed"). */
   width: number;
   tone: ShsTone | 'was';
+  /** '%' when the bars compare a rate (the sentence named fairways, greens...). */
+  unit?: string;
 }
 
 /** The two bars under What changed, with a real pair only; none under four rounds (criterion CP-126). */
-export function changeBars(data: ChPlayerProfile): ShsCompareBar[] {
+export function changeBars(data: ChPlayerProfile, subject?: string): ShsCompareBar[] {
   const list = scores(data);
   if (list.length < 4) return [];
-  const pair = (nowLabel: string, now: number, wasLabel: string, was: number, tone: ShsTone): ShsCompareBar[] => {
-    const lo = Math.min(now, was) - 6;
+  const pair = (measure: string, nowLabel: string, now: number, wasLabel: string, was: number, tone: ShsTone, unit = ''): ShsCompareBar[] => {
+    // A rate's bars share a 0 floor; a score's start 6 strokes under the lower one, so a stroke still reads.
+    const lo = unit === '%' ? 0 : Math.min(now, was) - 6;
     const hi = Math.max(now, was);
     const width = (v: number) => 30 + (70 * (v - lo)) / (hi - lo || 1);
     return [
-      { label: nowLabel, value: now, width: width(now), tone },
-      { label: wasLabel, value: was, width: width(was), tone: 'was' },
+      { measure, label: nowLabel, value: now, width: width(now), tone, unit },
+      { measure, label: wasLabel, value: was, width: width(was), tone: 'was', unit },
     ];
   };
   if (hasPrevious(data)) {
     const c = data.extra.compare!;
-    const row = c.rows.find((r) => r.lowerIsBetter && /scor/i.test(r.label));
-    if (row?.last != null && row.previous != null) return pair(`Last ${c.lastRounds}`, row.last, `${c.previousRounds} before`, row.previous, changeTone(row.last - row.previous, row.se, true));
+    // The bars show what the sentence above them names (its largest change), and scoring when it names nothing.
+    const named = subject ? c.rows.find((r) => r.label === subject) : undefined;
+    const row = named ?? c.rows.find((r) => r.lowerIsBetter && /scor/i.test(r.label));
+    if (row?.last != null && row.previous != null) return pair(row.label, `Last ${c.lastRounds}`, row.last, `${c.previousRounds} before`, row.previous, changeTone(row.last - row.previous, row.se, row.lowerIsBetter), row.unit ?? '');
   }
   const half = Math.floor(list.length / 2);
   const first = mean(list.slice(0, half));
   const newest = mean(list.slice(list.length - half));
   const halves = halvesChange(list, 'score');
   if (first == null || newest == null) return [];
-  return pair(`Newest ${half}`, newest, `First ${half}`, first, changeTone(halves?.delta, halves?.se, true));
+  return pair('Scoring avg', `Newest ${half}`, newest, `First ${half}`, first, changeTone(halves?.delta, halves?.se, true));
 }
 
 /** "Strongest: Off the tee. Biggest leak: Approach, 1.2 a round." */

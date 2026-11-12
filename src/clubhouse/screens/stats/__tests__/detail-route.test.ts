@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { arrivalDetail, desktopTabOfHash, detailFromHash, hashOf, PLAYER_DETAIL_IDS, summaryUrl, tabOfDetail, TEAM_DETAIL_IDS } from '../detail-route';
+import { areaDetail, arrivalDetail, desktopTabOfHash, detailFromHash, hashOf, PLAYER_DETAIL_IDS, summaryUrl, tabOfDetail, TEAM_DETAIL_IDS } from '../detail-route';
 
 describe('detail-route', () => {
   it('round-trips all 11 ids on their own screen', () => {
@@ -38,6 +38,39 @@ describe('detail-route', () => {
     expect(arrivalDetail(input, 'player')).toBe(want);
   });
 
+  it.each([
+    ['scoring', 'scoring'],
+    ['driving', 'tee'],
+    ['approach', 'approach'],
+    ['short-game', 'short'],
+    ['putting', 'putting'],
+    ['standing', 'sg'],
+    ['rounds', 'rounds'],
+    ['goals', 'goals'],
+    ['home', null],
+    ['game', null],
+    ['__proto__', null],
+    ['', null],
+    [undefined, null],
+  ] as const)("production’s ?area=%s opens %s on the player screen", (area, want) => {
+    expect(areaDetail(area, 'player')).toBe(want);
+  });
+
+  it('the team screen reads its own areas', () => {
+    expect(areaDetail('scoring', 'team')).toBe('tscore');
+    expect(areaDetail('game', 'team')).toBe('tgame');
+    expect(areaDetail('players', 'team')).toBe('tplayers');
+    expect(areaDetail('putting', 'team')).toBeNull();
+  });
+
+  it('?area= arrives after a hash and before ?tab=', () => {
+    expect(arrivalDetail({ area: 'putting' }, 'player')).toBe('putting');
+    expect(arrivalDetail({ area: 'putting', tab: 'rounds' }, 'player')).toBe('putting');
+    expect(arrivalDetail({ area: 'putting', hash: '#gm-tee' }, 'player')).toBe('tee');
+    expect(arrivalDetail({ area: 'nope', tab: 'rounds' }, 'player')).toBe('rounds');
+    expect(arrivalDetail({ area: 'game' }, 'team')).toBe('tgame');
+  });
+
   it('the team screen takes only its own hashes', () => {
     expect(arrivalDetail({ tab: 'rounds' }, 'team')).toBeNull();
     expect(arrivalDetail({ hash: '#sd-team-players' }, 'team')).toBe('tplayers');
@@ -46,6 +79,7 @@ describe('detail-route', () => {
   it('summaryUrl drops tab and the hash and keeps player, window and the filter', () => {
     expect(summaryUrl({ pathname: '/golf/dashboard/stats', search: '?player=p1&window=season&tab=rounds&type=tournament' })).toBe('/golf/dashboard/stats?player=p1&window=season&type=tournament');
     expect(summaryUrl({ pathname: '/golf/dashboard/stats', search: '?tab=dev' })).toBe('/golf/dashboard/stats');
+    expect(summaryUrl({ pathname: '/golf/dashboard/stats', search: '?player=p1&area=putting&window=last10' })).toBe('/golf/dashboard/stats?player=p1&window=last10');
     expect(summaryUrl({ pathname: '/golf/dashboard/stats', search: '' })).toBe('/golf/dashboard/stats');
   });
 

@@ -91,17 +91,18 @@ describe('elevation tokens (B4)', () => {
 
   it('three levels: reading, raised and overlay, in light and dark; floating folds into raised', () => {
     const t = css('tokens.css');
-    for (const level of ['reading', 'raised', 'overlay']) expect(t.match(new RegExp(`--ch-elevation-${level}:`, 'g'))?.length, level).toBeGreaterThanOrEqual(2);
+    // The reading level is the one card (styles/__tests__/depth.test.ts): --ch-elevation-card holds its light and dark
+    // values and --ch-elevation-reading is its older name.
+    for (const level of ['card', 'raised', 'overlay']) expect(t.match(new RegExp(`--ch-elevation-${level}:`, 'g'))?.length, level).toBeGreaterThanOrEqual(2);
+    expect(t).toMatch(/--ch-elevation-reading: var\(--ch-elevation-card\);/);
     expect(t).toMatch(/--ch-elevation-floating: var\(--ch-elevation-raised\);/);
     for (const file of walk(join(ROOT, 'styles'), /\.css$/)) expect(css(basename(file)), basename(file)).not.toMatch(/var\(--ch-elevation-floating\)/);
   });
 
   /** Row 40: a surface on the green or ink casts a tinted drop from the tokens, not a hand-set one. */
   it.each([
-    ['classes.css', '.ch-cl-add__plus', 'green-3'],
     ['classes.css', ".ch-cl-daypick button[aria-pressed='true']", 'green-1'],
     ['hub.css', ".ch-hb-rsvp__a button[aria-checked='true']", 'green-1'],
-    ['messages.css', '.ch-ms-below', 'green-2'],
     ['rounds-track.css', '.ch-rt-hno', 'green-3'],
     ['ui.css', '.ch-toast', 'ink'],
     ['stats.css', '.ch-st-updating', 'ink'],
@@ -121,9 +122,8 @@ describe('elevation tokens (B4)', () => {
 const RAW_SHADOW: Record<string, number> = {
   'styles/auth.css': 6,
   'styles/calendar.css': 28,
-  'styles/classes.css': 14,
+  'styles/classes.css': 13,
   'styles/coachhelm-ask.css': 1,
-  'styles/coachhelm-dive.css': 1,
   'styles/coachhelm-profile.css': 5,
   'styles/coachhelm-standing.css': 1,
   'styles/coachhelm-thread.css': 1,
@@ -131,16 +131,16 @@ const RAW_SHADOW: Record<string, number> = {
   'styles/controls.css': 12,
   'styles/home.css': 15,
   'styles/hub.css': 10,
-  'styles/messages.css': 10,
+  'styles/messages.css': 7,
   'styles/onboard.css': 17,
   'styles/qualifiers.css': 8,
   'styles/recruiting.css': 1,
-  'styles/roster.css': 8,
+  'styles/roster.css': 6,
   'styles/rounds-setup.css': 17,
   'styles/rounds-track.css': 17,
   'styles/rounds.css': 22,
   'styles/settings.css': 3,
-  'styles/shell.css': 20,
+  'styles/shell.css': 17,
   'styles/stats.css': 30,
   'styles/ui.css': 19,
 };
@@ -148,16 +148,15 @@ const RAW_SHADOW: Record<string, number> = {
 /** Raw drop shadows per stylesheet on 2026-10-24 (row 40): tinted lifts under green and ink surfaces. Only falls. */
 const RAW_DROP: Record<string, number> = {
   'styles/auth.css': 2,
-  'styles/classes.css': 2,
+  'styles/classes.css': 1,
   'styles/coachhelm-ask.css': 1,
   'styles/controls.css': 2,
   'styles/home.css': 3,
   'styles/onboard.css': 6,
-  'styles/roster.css': 1,
   'styles/rounds-setup.css': 1,
   'styles/rounds-track.css': 1,
   'styles/rounds.css': 1,
   'styles/settings.css': 1,
-  'styles/shell.css': 4,
+  'styles/shell.css': 2,
   'styles/ui.css': 2,
 };

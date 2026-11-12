@@ -40,7 +40,13 @@ address names, with who and the four hero figures already in the server's first
 render (50101). The address is read for its tab and window (50102):
 ?tab=overview, game, rounds or dev, and ?window=season or qualifiers, anything
 else opening Overview and Last 10 (D-53; Roster's All N is
-`window=season&tab=rounds`). A coach pages through the team with Previous player
+`window=season&tab=rounds`). Production's stats-board `?area=` opens the same
+place (stats-v2): scoring, driving, approach, short-game, putting, standing
+(Strokes gained) and rounds, plus this build's goals. On the phone the area is
+the pushed detail (a hash wins over `?area=`, which wins over `?tab=`); on desktop
+it is the tab, scrolled to the part for a game area; `home` or an unknown value
+opens the summary. The arrival replaces the address with the summary's (no `tab`,
+no `area`), so one Back reaches the summary. A coach pages through the team with Previous player
 and Next player (50103) and Message opens the player's direct thread (50104). A
 player's own address is /golf/dashboard/stats with no ?player=.
 
@@ -434,7 +440,7 @@ CH-1842, 11825 CH-1816.
 | 51804 | CH-5804 | `THE_FOCUS_AREA_FIELDS_NAME_IS_JUST` | The focus-area field's name is just "What to work on"; its help or error is read as its description |
 | 51805 | CH-5805 | `NO_AXE_VIOLATIONS_ON_EVERY_TAB_AND` | No axe violations on every tab and state, 1280px and 390px |
 | 51806 | CH-5806 | `ON_A_PHONE_THE_ROUNDS_TABLE_SCROLLS` | On a phone the rounds table scrolls sideways; it is a named region that takes focus, so the arrow keys scroll it |
-| 51807 | CH-5807 | `ON_THE_PHONE_ALL_N_ROUNDS_IS` | On the phone, "All N rounds" is a button that says whether the full list is open; Game detail's section chips say which one is showing |
+| 51807 | CH-5807 | `ON_THE_PHONE_ALL_N_ROUNDS_IS` | Game detail's section chips say which one is showing (the phone's "All N rounds" button went with the old rounds list) |
 | 51808 | CH-5808 | `IN_THE_ROUNDS_TABLE_EACH_COURSE_OPENS` | In the Rounds table each course opens that round's review (for a coach and the player), named "Finley GC, Oct 14: open the round"; where the review isn't rebuilt, it stays text |
 | 51809 | CH-5809 | `THE_ROUND_FILTER_AS_ON_TEAM_STATS` | The round filter, as on Team stats (CH-4806): the Filter button opens a labelled dialog, each chip is "Remove filter: …", Clear is "Clear filters", the count line is a polite status region, choices (round type, holes, pick mode) are toggle buttons and courses and rounds are checkboxes, all in labelled groups, and the date fields carry their error as their description |
 | 51810 | CH-5810 | `SHARE_BEST_SCORE_OPENS_A_LABELLED_DIALOG` | Share best score (P005-C2) opens a labelled dialog with the card as an image whose alt names the score, the player, the course and the date; Share is the one primary. The card shows no school or team name and, unless the player shares it, their first name and last initial |

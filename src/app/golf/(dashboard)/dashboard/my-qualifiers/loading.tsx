@@ -91,7 +91,7 @@ function QualifierCardSkeleton() {
   );
 }
 
-/** Inside Clubhouse, the Clubhouse skeleton for this page; everywhere else the existing one. */
+/** Inside Clubhouse this address is on its way to Qualifiers (retired there, 2026-11-11), so it holds that page's skeleton; everywhere else the existing one. */
 export default function Loading() {
-  return <ClubhouseSwitch clubhouse={<QualifiersSkeleton mode="mine" />} fallback={<LegacyLoading />} />;
+  return <ClubhouseSwitch clubhouse={<QualifiersSkeleton />} fallback={<LegacyLoading />} />;
 }

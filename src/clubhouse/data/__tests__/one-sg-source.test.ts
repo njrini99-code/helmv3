@@ -87,7 +87,7 @@ describe('one strokes-gained source (QA-1)', () => {
   });
 
   it('each screen’s loader goes through the helper', () => {
-    expect(src('data/player-home.ts')).toContain('playerStrokesGained(roundsRes.rounds)');
+    expect(src('data/player-home.ts')).toContain('playerStrokesGained(yearOf(roundsRes))');
     expect(src('data/roster.ts')).toContain('playerStrokesGained(wideByPlayer.get(p.id) ?? [])');
     expect(src('data/home.ts')).toContain('playerStrokesGained(wideByPlayer.get(p.id) ?? [])');
     expect(src('data/coachhelm-team-legs.ts')).toContain('lastTenRounds(rounds.filter(');

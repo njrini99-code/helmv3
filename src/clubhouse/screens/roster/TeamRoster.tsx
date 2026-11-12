@@ -18,11 +18,10 @@ import { formatHcp } from '../../lib/format';
 import { NoData } from '../../ui/NoData';
 import { TERMS } from '../../lib/glossary';
 import { useChPhone } from '../../lib/use-phone';
-import { TeamRosterPhone } from './TeamRosterPhone';
 import { TeamRosterPhoneCrh } from './TeamRosterPhoneCrh';
 import { useHomeDayRollover } from '../home/use-day-rollover';
 import { yearKeyOf, yearLineOf, type RosterClock } from './format';
-import { sortTeammates, teammateLine, type TeamSort } from './team';
+import { sortTeammates, type TeamSort } from './team';
 import '../../styles/roster.css';
 import { SideScroll } from '../../ui/SideScroll';
 import { pluralWord } from '../../lib/plural';
@@ -42,7 +41,7 @@ function TeamDayRollover({ clock }: { clock: RosterClock }) {
   return null;
 }
 
-export function TeamRoster({ data, crh = false }: { data: ChPlayerRoster; /** `clubhouse_classes_roster_home_v1`, from the server. */ crh?: boolean }) {
+export function TeamRoster({ data }: { data: ChPlayerRoster; }) {
   const router = useRouter();
   const phone = useChPhone();
   const [q, setQ] = useState('');
@@ -77,7 +76,7 @@ export function TeamRoster({ data, crh = false }: { data: ChPlayerRoster; /** `c
     );
   }, [players, q, sort]);
 
-  if (phone && crh) {
+  if (phone) {
     return (
       <>
         <TeamDayRollover clock={data.clock} />
@@ -85,12 +84,11 @@ export function TeamRoster({ data, crh = false }: { data: ChPlayerRoster; /** `c
       </>
     );
   }
-  if (phone) return <TeamRosterPhone data={data} onRetry={() => router.refresh()} />;
 
   return (
     // The coach's page material (P003 #1): the framed head and the Ledger, so player and coach read as one product.
-    <main className="ch-rs" data-canopy="" data-ch-crh={crh ? 'on' : undefined}>
-      {crh && <TeamDayRollover clock={data.clock} />}
+    <main className="ch-rs" data-canopy="" data-ch-crh="on">
+      <TeamDayRollover clock={data.clock} />
       <header className="ch-rs-head" data-canopy-head="tight" data-canopy-tight-always="">
         <div>
           <span className="ch-rs-team">
@@ -120,7 +118,7 @@ export function TeamRoster({ data, crh = false }: { data: ChPlayerRoster; /** `c
         <>
           {/* Nothing to search, sort or lay out for one row. */}
           <SectionBoundary surface="roster.team" label="The roster" code="CH-3211">
-            <TeammateList rows={rows} view={view} q={q} onClearSearch={() => setQ('')} crh={crh} clock={data.clock} />
+            <TeammateList rows={rows} view={view} q={q} onClearSearch={() => setQ('')} clock={data.clock} />
           </SectionBoundary>
           <p className="ch-rs-solo" data-ch-code="CH-3309">
             You’re the first one here. Teammates show up as they join.
@@ -154,7 +152,7 @@ export function TeamRoster({ data, crh = false }: { data: ChPlayerRoster; /** `c
                   </Tooltip>
                 ))}
               </div>
-              <Segmented<TeamSort>
+              <Segmented<TeamSort> weight="filter"
                 size="sm"
                 label="Sort players"
                 value={sort}
@@ -169,7 +167,7 @@ export function TeamRoster({ data, crh = false }: { data: ChPlayerRoster; /** `c
           </div>
 
           <SectionBoundary surface="roster.team" label="The roster" code="CH-3211">
-            <TeammateList rows={rows} view={view} q={q} onClearSearch={() => setQ('')} crh={crh} clock={data.clock} />
+            <TeammateList rows={rows} view={view} q={q} onClearSearch={() => setQ('')} clock={data.clock} />
           </SectionBoundary>
         </>
       )}
@@ -209,7 +207,7 @@ function TeamCoaches({ coaches }: { coaches: ChPlayerRoster['coaches'] }) {
 }
 
 /** The teammates, as cards or a table: plain text, never a control (CH-3807). Its own component so the boundary contains it. */
-function TeammateList({ rows, view, q, onClearSearch, crh = false, clock }: { rows: ChTeammate[]; view: View; q: string; onClearSearch: () => void; /** The lane's flag: year coins and the year line, nothing else changes on desktop (05 S-ROSTER.player). */ crh?: boolean; clock?: RosterClock }) {
+function TeammateList({ rows, view, q, onClearSearch, clock }: { rows: ChTeammate[]; view: View; q: string; onClearSearch: () => void; clock?: RosterClock }) {
   if (rows.length === 0) {
     return (
       <EmptyState
@@ -228,10 +226,10 @@ function TeammateList({ rows, view, q, onClearSearch, crh = false, clock }: { ro
           <li key={p.id} className="ch-rs-face ch-rs-face--static">
             <span className="ch-rs-face__top" />
             <span className="ch-rs-face__av">
-              <Avatar name={p.name} id={p.id} size={76} year={crh ? yearKeyOf(p.gradYear, clock) : null} />
+              <Avatar name={p.name} id={p.id} size={76} year={yearKeyOf(p.gradYear, clock)} />
             </span>
             <span className="ch-rs-face__name">{p.name}</span>
-            <span className="ch-rs-face__meta">{crh ? [p.isYou ? 'You' : null, yearLineOf(p.gradYear, clock)].filter(Boolean).join(' · ') || ' ' : teammateLine(p) || ' '}</span>
+            <span className="ch-rs-face__meta">{[p.isYou ? 'You' : null, yearLineOf(p.gradYear, clock)].filter(Boolean).join(' · ') || ' '}</span>
             <span className="ch-rs-face__figs ch-rs-face__figs--one">
               <span>
                 <b className="ch-num">{formatHcp(p.handicap)}</b>HCP
@@ -255,7 +253,7 @@ function TeammateList({ rows, view, q, onClearSearch, crh = false, clock }: { ro
         <div key={p.id} role="row" className="ch-rs-row">
           <span role="cell" className="ch-rs-who__cell">
             <span className="ch-rs-who ch-rs-who--static">
-              <Avatar name={p.name} id={p.id} size="lg" year={crh ? yearKeyOf(p.gradYear, clock) : null} />
+              <Avatar name={p.name} id={p.id} size="lg" year={yearKeyOf(p.gradYear, clock)} />
               <span>
                 <b>{p.name}</b>
                 {p.isYou && <span className="ch-rs-who__m">You</span>}
@@ -263,7 +261,7 @@ function TeammateList({ rows, view, q, onClearSearch, crh = false, clock }: { ro
             </span>
           </span>
           <span role="cell" className="ch-rs-num2">
-            {(crh ? yearLineOf(p.gradYear, clock) : p.classYear) ?? <NoData />}
+            {(yearLineOf(p.gradYear, clock)) ?? <NoData />}
           </span>
           <span role="cell" className="r ch-num ch-rs-num2">
             {formatHcp(p.handicap)}

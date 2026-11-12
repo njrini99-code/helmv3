@@ -1,0 +1,373 @@
+/*
+ * Messages v2, package B: the thread, its bubbles, the glass controls and the composer.
+ * Loaded after messages.css (docs/clubhouse/messages-v2/SEAMS.md). Every rule is scoped to [data-ch-ms-v2], the redesign
+ * flag's root, so the flag-off look (messages.css alone) is untouched. Values come from the artifact through Clubhouse
+ * tokens (docs/clubhouse/messages-v2/SPEC.md). The legacy phone rules in messages.css reach 0,5,0, so the bubble rules here
+ * name the thread root too (`:is(.ch-ms-thread, .ch-msp-thread)`, the desktop section and the phone screen) to out-rank them
+ * without !important; the replaced v2-scoped rules were deleted from messages.css.
+ */
+
+/* MSG-204 to MSG-206 The bubble, its joins, the emoji-only form and the photo frame are one definition in messages.css (`.ch-ms-bub`). */
+/* MSG-205 row spacing and the MSG-204 column cap are the row's one definition in messages.css (`.ch-ms-msg`, `.ch-ms-msg__col`). */
+/* MSG-207 Group names: first name inside the first bubble, 13k/600 ink-2, floor 12k on the phone, margin 0 0 1. */
+[data-ch-ms-v2] .ch-msv-bname {
+  display: block;
+  margin: 0 0 1px;
+  font: var(--ch-type-13-strong);
+  color: var(--ch-text-tertiary);
+}
+/* MSG-217 Edited marker: 0.78em, .75, margin-left 6. */
+[data-ch-ms-v2] .ch-ms-bub .ch-msv-edited {
+  margin-left: 6px;
+  font: var(--ch-type-12);
+  letter-spacing: var(--ch-track-12);
+  color: color-mix(in srgb, currentColor 75%, transparent);
+}
+
+/* MSG-208 Hidden times: one line, 13k/400 ink-3 tabular, bottom 6, -64k off the right edge (-68k at 430), a hover time on desktop. */
+[data-ch-ms-v2] .ch-msv-time {
+  top: auto;
+  bottom: 6px;
+  font: var(--ch-type-13);
+  color: var(--ch-crh-ink4);
+  transform: none;
+}
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
+  [data-ch-ms-v2] .ch-msv-time {
+    transition: opacity var(--ch-dur-msg-time) linear;
+  }
+}
+/* At rest the column starts 12k past the row, inside the 16 px page gutter, so it would peek 4 px; it shows only while the drag moves the thread. */
+@media not ((min-width: 821px) and ((min-height: 501px) or (pointer: fine))) {
+  [data-ch-ms-v2] .ch-ms-msgs:not([data-ch-times]) .ch-msv-time {
+    visibility: hidden;
+  }
+}
+
+/* MSG-209 Day marker: plain centred text on the page, no chip. Day 12k/600 ink-3, time 400 beside it, margin 22 0 8. */
+[data-ch-ms-v2] :is(.ch-ms-thread, .ch-msp-thread) .ch-ms-day {
+  justify-content: center;
+  margin: var(--ch-ms-px-22) 0 8px;
+  padding: 0;
+  border: 0;
+}
+[data-ch-ms-v2] :is(.ch-ms-thread, .ch-msp-thread) .ch-ms-day > span {
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  font: var(--ch-type-12-strong);
+  letter-spacing: 0;
+  color: var(--ch-crh-ink4);
+}
+[data-ch-ms-v2] :is(.ch-ms-thread, .ch-msp-thread) .ch-ms-day > span b {
+  font-weight:var(--ch-fw-400);
+}
+
+/* MSG-210 Floating date pill: glass-strong, blur 16 / saturate 160, float shadow, 13k/500 ink-2, centred 20 px clear of a marker.
+   Its spot (74 under the phone bar, 76 under the desktop bar) is measured through an always-mounted anchor. */
+[data-ch-ms-v2] :is(.ch-ms-thread, .ch-msp-thread) {
+  --ch-ms-pill-top: calc(env(safe-area-inset-top) + 74px);
+}
+[data-ch-ms-v2] .ch-msv-datepillspot {
+  position: absolute;
+  top: var(--ch-ms-pill-top);
+  left: 50%;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+[data-ch-ms-v2] .ch-msv-datepill {
+  top: var(--ch-ms-pill-top);
+  padding: 4px var(--ch-ms-px-10);
+  background: var(--ch-glass-strong);
+  -webkit-backdrop-filter: blur(var(--ch-glass-blur)) saturate(160%);
+  backdrop-filter: blur(var(--ch-glass-blur)) saturate(160%);
+  font: var(--ch-type-13-medium);
+  color: var(--ch-text-tertiary);
+  transition: opacity var(--ch-dur-msg-pill-out) linear;
+}
+[data-ch-ms-v2] .ch-msv-datepill.is-on {
+  opacity: 1;
+  transition-duration: var(--ch-dur-quick);
+}
+/* Within PILL_GAP of a marker its opacity follows the scroll (set inline), with no transition. */
+[data-ch-ms-v2] .ch-msv-datepill.linked {
+  transition: none;
+}
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
+  [data-ch-ms-v2] :is(.ch-ms-thread, .ch-msp-thread) {
+    --ch-ms-pill-top: 76px;
+  }
+}
+
+/* MSG-211 Jump key: 40 glass circle, blur 18, float shadow; badge 12/700 accent with a 2 px page ring. It leaves in 160 ms. */
+[data-ch-ms-v2] .ch-msv-jump {
+  bottom: calc(var(--ch-ms-comp-h, 54px) + 12px);
+  animation: none;
+  -webkit-backdrop-filter: blur(var(--ch-glass-blur)) saturate(var(--ch-glass-saturate));
+  backdrop-filter: blur(var(--ch-glass-blur)) saturate(var(--ch-glass-saturate));
+}
+[data-ch-ms-v2] .ch-msv-jump b {
+  padding: 0 var(--ch-ms-px-5);
+  background: var(--ch-bubble-mine-fill);
+  color: var(--ch-accent-ink);
+  font: var(--ch-type-12-strong);
+  font-weight:var(--ch-fw-700);
+  box-shadow: var(--ch-ms-badge-ring);
+}
+
+/* MSG-212 / MSG-213 Typing bubble: a received bubble, radius 19 and a 6 corner, padding 13 15, 7 px dots; the typer's name sits inside it. */
+[data-ch-ms-v2] .ch-msv-typing {
+  padding: var(--ch-ms-px-13) var(--ch-ms-px-15);
+  border-radius: var(--ch-radius-bubble);
+  border-bottom-left-radius: var(--ch-radius-tail);
+}
+[data-ch-ms-v2] .ch-msv-typing.has-name {
+  gap: var(--ch-ms-px-5);
+  padding: calc(7.5 * var(--ch-type-k)) var(--ch-ms-px-13) 12px;
+}
+
+/* MSG-216 Failed send: the bubble stays as sent; a danger pill under it reads "Not delivered · Try again". */
+[data-ch-ms-v2] .ch-ms-msg__fail {
+  gap: 6px;
+  min-height: 0;
+  margin: 6px 2px 0;
+  padding: var(--ch-ms-px-3) var(--ch-ms-px-9);
+  background: var(--ch-card-bg);
+  box-shadow: var(--ch-card-shadow);
+  font: var(--ch-type-13-medium);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-flag);
+}
+[data-ch-ms-v2] .ch-ms-msg__fail button {
+  border: 0;
+  background: none;
+  color: inherit;
+  font-family: inherit;
+  font-size:inherit;
+  font-weight:inherit;
+  cursor: pointer;
+  text-decoration: none;
+}
+[data-ch-ms-v2] .ch-ms-msg__fail button:first-of-type {
+  font-weight:var(--ch-fw-700);
+}
+[data-ch-ms-v2] .ch-ms-msg__fail button + button {
+  color: var(--ch-text-tertiary);
+}
+
+/* MSG-218 Reply quote: a chip above the bubble, margin 0 4 4, padding 5 10, radius 12, surface and card shadow, 13k ink-2, one line. */
+[data-ch-ms-v2] .ch-ms-quote {
+  max-width: 100%;
+  margin: 0 4px 4px;
+  padding: var(--ch-ms-px-5) var(--ch-ms-px-10);
+  border-radius: var(--ch-radius-md);
+  background: var(--ch-card-bg);
+  box-shadow: var(--ch-card-shadow);
+  font: var(--ch-type-13);
+  color: var(--ch-text-tertiary);
+}
+
+/* MSG-222 Empty thread: card padding 22 16 18, margin 16 0 12, name 19k/700, sub 15k ink-2. */
+[data-ch-ms-v2] .ch-msv-hello {
+  margin: 16px 0 12px;
+  padding: var(--ch-ms-px-22) 16px var(--ch-ms-px-18);
+  box-shadow: var(--ch-card-shadow);
+}
+[data-ch-ms-v2] .ch-msv-hello > b {
+  font: var(--ch-type-20-strong);
+  letter-spacing: var(--ch-track-20);
+}
+[data-ch-ms-v2] .ch-msv-hello > small {
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-text-tertiary);
+}
+
+/* MOT-R: under Reduce Motion the typing bubble fades in instead of growing; its dots hold still at full opacity (MSG-003). */
+@media (prefers-reduced-motion: reduce) {
+  [data-ch-ms-v2] .ch-msv-typing {
+    animation: ch-msv-fade var(--ch-dur-crossfade-rm) linear both;
+  }
+}
+@keyframes ch-msv-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+/* MSG-301 to MSG-304 The composer pill, its field and its keys are one definition in messages.css (`.ch-ms-comp`). */
+
+/*
+ * MSG-201 / MSG-202 / MSG-203 / MSG-307: the thread as three layers. The scroller fills the page; the bar and the floating
+ * composer lie over it, and the list pads its first and last message clear of them (--ch-ms-pad-top / --ch-ms-pad-bot, which
+ * thread/use-thread-layers.ts measures; the fallbacks are the artifact's --pad-top / --pad-bot). --ch-ms-kb is the keyboard's
+ * lift: the composer and the jump key translate by it on the keyboard's own beat, the list's floor grows by it at once, and the
+ * hook glides the list so a reader at the end stays on the last message. Rules that this replaces in messages.css (the
+ * flex-row thread: `.ch-ms-scroll` padding and mask, the in-flow composer and bar, the 48 px desktop padding, the
+ * `keyboard-open` composer padding) are out-ranked here, not edited, so that file is left to its owner.
+ */
+
+/* The scroller is the page: under both bars, no top fade (the bar blurs what slides under it). */
+[data-ch-ms-v2] .ch-msp-thread .ch-ms-scroll,
+[data-ch-ms-v2] .ch-ms-thread.is-layered .ch-ms-scroll {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+[data-ch-ms-v2] .ch-msp-thread .ch-ms-scroll {
+  display: flex;
+  flex-direction: column;
+}
+/* The list: first and last message clear of the bars; the keyboard's lift raises the floor (no transition: the hook seats the thread). */
+[data-ch-ms-v2] .ch-msp-thread .ch-ms-msgs {
+  padding-top: var(--ch-ms-pad-top, calc(env(safe-area-inset-top) + 78px));
+  padding-bottom: calc(var(--ch-ms-pad-bot, 104px) + var(--ch-ms-kb, 0px));
+}
+[data-ch-ms-v2] .ch-ms-thread.is-layered .ch-ms-msgs {
+  padding-top: var(--ch-ms-pad-top, 76px);
+  padding-bottom: calc(var(--ch-ms-pad-bot, 92px) + var(--ch-ms-kb, 0px));
+}
+
+
+/* The phone bar: today's green bar with its lip, over the page; three columns so the who sits in the middle (MSG-201). */
+[data-ch-ms-v2] .ch-msp-thread > .ch-pbar {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: var(--ch-z-raised);
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  gap: 4px;
+  padding: env(safe-area-inset-top) 8px 6px;
+}
+[data-ch-ms-v2] .ch-msp-thread > .ch-pbar > .ch-pbar__lead {
+  justify-content: center;
+  min-width: 0;
+}
+[data-ch-ms-v2] .ch-msp-thread > .ch-pbar > .ch-pbar__right {
+  justify-self: end;
+  margin-left: 0;
+}
+/* The push's focus target is the name's box, never the key in it. It is not a stop of its own, so it draws no ring;
+   the key keeps its gilt ring for a keyboard. */
+[data-ch-ms-v2] .ch-msp-thread .ch-msp-whobox {
+  display: flex;
+  min-width: 0;
+  max-width: 100%;
+}
+[data-ch-ms-v2] .ch-msp-thread .ch-msp-whobox:focus {
+  outline: none;
+}
+[data-ch-ms-v2] .ch-msp-thread .ch-msp-who {
+  gap: 10px;
+  max-width: 100%;
+  min-width: 0;
+  max-height: 44px;
+  margin-left: 0;
+  padding: 1px 4px;
+  text-align: left;
+}
+/* The bar's row is 44 at every Text Size (the shell's), and name over role is 41 at the default. So the role shows
+   while both fit, at the default size and below; above it the name grows and the role gives way (it is on Details). The
+   clamp is a switch: positive while 16 * k is under 16.4px, so the cap is 100px, and 0 past it. */
+[data-ch-ms-v2] .ch-msp-thread .ch-msp-who em {
+  max-height: clamp(0px, calc((16.4px - 16 * var(--ch-type-k)) * 100000), 100px);
+}
+[data-ch-ms-v2] .ch-msp-thread .ch-msp-who > span:not(.ch-avatar) {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  min-width: 0;
+}
+[data-ch-ms-v2] .ch-msp-thread .ch-msp-who b,
+[data-ch-ms-v2] .ch-msp-thread .ch-msp-who em {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The phone composer: over the page at the foot, rising with the keyboard (MSG-307, MOT-KB-1; 480 ms on the keyboard's curve, 0 under Reduce Motion). */
+[data-ch-ms-v2] .ch-msp-thread > .ch-msp-composer {
+  position: absolute;
+  inset: auto 0 0;
+  z-index: var(--ch-z-raised);
+  translate: 0 calc(-1 * var(--ch-ms-kb, 0px));
+  transition: translate var(--ch-dur-keyboard) var(--ch-ease-sheet);
+}
+[data-ch-ms-v2] :is(.ch-msp-thread, .ch-ms-thread.is-layered) .ch-msv-jump {
+  translate: 0 calc(-1 * var(--ch-ms-kb, 0px));
+  transition: translate var(--ch-dur-keyboard) var(--ch-ease-sheet);
+}
+/* The home indicator's room stays while the composer rides (the lift is the keyboard minus it). */
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
+  body.keyboard-open [data-ch-ms-v2] .ch-msp-thread .ch-ms-comp,
+  [data-ch-ms-v2] .ch-pscreen.ch-msp-thread[data-ch-vv] .ch-ms-comp {
+    padding-bottom: max(8px, calc(env(safe-area-inset-bottom) - 4px));
+  }
+}
+/* The thread lifts its own composer, so the shell's resize-by-padding is off for it: with the keyboard up the screen keeps its
+   full height (Safari: from the visible area's top down to the layout bottom, which the lift then rises out of). */
+body.keyboard-open [data-ch-ms-v2] .ch-pscreen.ch-msp-thread[data-fw-keyboard-aware] {
+  padding-bottom: 0;
+}
+body [data-ch-ms-v2] .ch-pscreen.ch-msp-thread[data-fw-keyboard-aware][data-ch-vv] {
+  top: var(--ch-vv-top);
+  bottom: calc(-1 * var(--ch-vv-top));
+  height: auto;
+  padding-bottom: 0;
+}
+
+/* MSG-202 The desktop bar: glass over the page, 64 high, who left and tools right; the hairline shows only with content under it. */
+[data-ch-ms-v2] .ch-ms-thread.is-layered {
+  position: relative;
+}
+[data-ch-ms-v2] .ch-ms-thread.is-layered > .ch-ms-th {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: var(--ch-z-raised);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 64px;
+  padding: 10px 14px;
+  border-bottom: 0;
+  background: var(--ch-glass);
+  -webkit-backdrop-filter: blur(var(--ch-glass-blur-msg, var(--ch-glass-blur))) saturate(var(--ch-glass-saturate-msg, var(--ch-glass-saturate)));
+  backdrop-filter: blur(var(--ch-glass-blur-msg, var(--ch-glass-blur))) saturate(var(--ch-glass-saturate-msg, var(--ch-glass-saturate)));
+}
+[data-ch-ms-v2] .ch-ms-thread.is-layered > .ch-ms-th::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0;
+  height: 0.5px;
+  background: var(--ch-glass-rule);
+  opacity: 1;
+  pointer-events: none;
+  transition: opacity var(--ch-dur-msg-rule) linear;
+}
+[data-ch-ms-v2] .ch-ms-thread.is-layered > .ch-ms-th.is-flat::after {
+  opacity: 0;
+}
+[data-ch-ms-v2] .ch-ms-thread.is-layered .ch-ms-th__who div > span {
+  font: var(--ch-type-13);
+  color: var(--ch-crh-ink4);
+}
+/* MSG-203 The desktop composer floats at the foot over the page. */
+[data-ch-ms-v2] .ch-ms-thread.is-layered > .ch-ms-comp {
+  position: absolute;
+  inset: auto 0 0;
+  z-index: var(--ch-z-raised);
+}
+/* MOT-R: Reduce Motion (the OS setting; Animations off zeroes --ch-dur-keyboard) puts the composer and the jump key at their place at once. */
+@media (prefers-reduced-motion: reduce) {
+  [data-ch-ms-v2] .ch-ms-thread.is-layered > .ch-ms-th::after,
+  [data-ch-ms-v2] .ch-msp-thread > .ch-msp-composer,
+  [data-ch-ms-v2] :is(.ch-msp-thread, .ch-ms-thread.is-layered) .ch-msv-jump {
+    transition: none;
+  }
+}

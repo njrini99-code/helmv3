@@ -8,7 +8,6 @@ import { askTables } from '@/lib/coachhelm/v3/chat/ask-db';
 import { logServerError } from '@/lib/server-error-logger';
 import { isCustomerEmailEnabled } from '@/lib/email/outbound-gate';
 import { sendOpsAlert } from '@/lib/admin/digest/transport';
-import { isPlayerAskEnabled } from '@/lib/coachhelm/v3/chat/ask-flag';
 import { weekStart } from '@/lib/coachhelm/v3/chat/player-allowance';
 import { resolvePlayerChatContext } from '@/lib/coachhelm/v3/chat/player-context';
 
@@ -18,7 +17,6 @@ const UNDO_MS = 8_000;
  * Request more: the player's one write. The row is the 8 second hold (HM4): Undo deletes it before `release_at`, and the release alone sends. It follows HELM_CUSTOMER_EMAIL_ENABLED: off means logged, no email (DECISIONS).
  */
 async function requestAskCreditsImpl(note?: string): Promise<{ success: boolean; id?: string; error?: string }> {
-  if (!isPlayerAskEnabled()) return { success: false, error: 'Ask is off.' };
   const sb = await createClient();
   const ctx = await resolvePlayerChatContext(sb).catch(() => null);
   if (!ctx) return { success: false, error: 'Unauthorized' };
@@ -33,11 +31,12 @@ async function requestAskCreditsImpl(note?: string): Promise<{ success: boolean;
     return { success: false, error: 'That didn’t go in. Try again.' };
   }
   const id = (data as { id: string } | null)?.id;
-  if (id) after(() => releaseRequest(id, ctx.team_name));
+  const asker = ctx.roster[0]?.name ?? 'A player';
+  if (id) after(() => releaseRequest(id, ctx.team_name, asker));
   return { success: true, id };
 }
 
-async function releaseRequest(id: string, teamName: string): Promise<void> {
+async function releaseRequest(id: string, teamName: string, asker: string): Promise<void> {
   await new Promise((r) => setTimeout(r, UNDO_MS));
   const admin = createAdminClient();
   const { data, error } = await askTables(admin).from('ask_credit_requests')
@@ -52,7 +51,7 @@ async function releaseRequest(id: string, teamName: string): Promise<void> {
     await logServerError('ask credits request held by the email gate', { action: 'coachhelm.ask.requestCredits', extra: { requestId: id } }, 'warning');
     return;
   }
-  const sent = await sendOpsAlert({ subject: `Ask: more requested (${teamName})`, text: row.note ?? 'A player asked for more Ask this week.' });
+  const sent = await sendOpsAlert({ subject: `Ask: ${asker} asked for more (${teamName})`, text: `${asker} on ${teamName} asked for more Ask this week.${row.note ? `\n\n${row.note}` : ''}` });
   if (sent.sent) await askTables(admin).from('ask_credit_requests').update({ sent_at: new Date().toISOString() } as never).eq('id', id);
 }
 

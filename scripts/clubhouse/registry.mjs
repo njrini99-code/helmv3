@@ -522,7 +522,13 @@ export function generateDocs({ manifests, bridge, map, tombstones, read, exists,
     bm += `\n## ${m.id} ${m.name}\n\n| Bridge ID | Code | Category | Name | Status | Meaning |\n| --- | --- | --- | --- | --- | --- |\n`;
     for (const r of mine) bm += `| ${r.id} | ${r.chCode ?? ''} | ${pad2(r.category)} ${cats[r.category]} | \`${r.name}\` | ${r.status} | ${cell(r.meaning)} |\n`;
   }
-  bm += `\n## Tombstones\n\n${tombstones.length ? tombstones.map((t) => `- ${t.id}: ${t.reason} (${t.removedAt}${t.replacement ? `, replaced by ${t.replacement}` : ''})`).join('\n') : 'None yet.'}\n`;
+  // A table, as every other list on this map: a reason runs as long as it needs (a table row is not held to the prose
+  // line length), and the columns read the same way as the pages' tables above.
+  bm += `\n## Tombstones\n\n${
+    tombstones.length
+      ? `| Bridge ID | Removed | Replaced by | Reason |\n| --- | --- | --- | --- |\n${tombstones.map((t) => `| ${t.id} | ${t.removedAt} | ${t.replacement ?? '—'} | ${cell(t.reason)} |`).join('\n')}`
+      : 'None yet.'
+  }\n`;
   out['docs/clubhouse/generated/CLUBHOUSE_BRIDGE_MAP.md'] = bm;
 
   let am = GEN_HEAD('Clubhouse action map', 'Every registered action: page, component, handler, service, data, Bridge outcomes and tests. Actions are registered when a page\'s WIRING.md is written.');

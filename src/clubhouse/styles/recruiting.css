@@ -6,7 +6,7 @@
   gap: 22px;
   max-width: var(--ch-measure-wide);
   margin: 0 auto;
-  padding: var(--ch-page-head-top) var(--ch-page-gutter) 80px;
+  padding: var(--ch-page-top-no-eyebrow) var(--ch-page-gutter) 80px;
 }
 .ch-rec-head {
   display: flex;
@@ -33,7 +33,7 @@
 .ch-rec-none {
   max-width: var(--ch-measure-page);
   margin: 0 auto;
-  padding: var(--ch-page-head-top) var(--ch-page-gutter) 80px;
+  padding: var(--ch-page-top-no-eyebrow) var(--ch-page-gutter) 80px;
 }
 
 /* ── Pipeline: the four stages on one line, each a filter ─────────────────── */
@@ -862,10 +862,10 @@
     flex-direction: column;
     gap: 6px;
   }
-  /* The large title (.ch-large-title, shell.css) under the board's engraved double rule. */
+  /* The large title (.ch-large-title, shell.css) opens the page, 8px in, with no rule above it (ui.css .ch-intro; owner,
+     11 Nov 2026: the double rule there only drew a line under the bar). */
   .ch-recm-title {
-    padding-top: 16px;
-    border-top: var(--ch-ledger-rule-double);
+    padding-top: 8px;
   }
   /* The kit's field (its material kept), 36px drawn and 44px to the finger: the label's reach focuses the input, while
      the input and its clear key sit above it and take their own taps. */
@@ -1083,7 +1083,7 @@
     line-height: var(--ch-lead-tight);
     letter-spacing: var(--ch-track-28);
     font-variation-settings: 'wdth' 88;
-    color: var(--ch-ledger-ink);
+    color: var(--ch-text-primary);
     overflow-wrap: anywhere;
   }
   .ch-recm-hero > span > span {
@@ -1234,7 +1234,7 @@
     font: var(--ch-type-section);
     letter-spacing: var(--ch-track-section);
     font-variation-settings: 'wdth' 88;
-    color: var(--ch-ledger-ink);
+    color: var(--ch-text-primary);
   }
   .ch-recm-det .ch-rec-sec__head {
     align-items: baseline;
@@ -1546,7 +1546,7 @@
   .ch-rec[data-canopy] .ch-rec-pipe__sum b {
     font: var(--ch-type-20-strong);
     letter-spacing: var(--ch-track-20);
-    color: var(--ch-ledger-ink);
+    color: var(--ch-text-primary);
   }
   .ch-rec[data-canopy] .ch-rec-pipe__sum span {
     font: var(--ch-type-13);

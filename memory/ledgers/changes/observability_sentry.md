@@ -338,7 +338,7 @@
   against current code before touching anything (most of Deliverables
   1-6's own claims were verified live rather than trusted from the ledger
   — recorded per-row in the matrix itself).
-- Change: (1) `src/lib/coachhelm/v3/chat/agent-tools.ts` — the five
+- Change: (1) `src/lib/coachhelm/v3/chat/agent-tools.ts` (this file was removed in the 2026-11-10 CoachHelm chat rebuild) — the five
   tool-build/read catches Findings §(e) item #11 named
   (`guarded`/`proposeGated`/`executeGated` + the `create_recurring_practice`
   twins) now call `logServerError` (warning, `skipSentry` true for expected

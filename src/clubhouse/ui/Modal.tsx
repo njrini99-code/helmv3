@@ -4,6 +4,7 @@ import type { LucideIcon } from 'lucide-react';
 import { X } from 'lucide-react';
 import { useId, type ReactNode } from 'react';
 import { useDialogLifetime } from '../lib/dialog-lifetime';
+import { useSheetKeyboardFit } from './sheet-keyboard';
 import { useSheetDrag } from '../lib/sheet-drag';
 import { useChPhone } from '../lib/use-phone';
 import { Icon } from './Icon';
@@ -32,7 +33,10 @@ export function Modal({
   detent,
   atRest = false,
   bare = false,
+  variant = 'default',
 }: {
+  /** `messages`: the Messages sheet's drag feel (closes past one third of its height, `sqrt` rubber band). Default: every other sheet as it was. */
+  variant?: 'default' | 'messages';
   /** The panel draws its own head and Close: the title stays for assistive tech, and there's no second Close to tab to (TEAM-19). */
   bare?: boolean;
   /** A control in the head beside Close (the course picker's Add a course). */
@@ -57,6 +61,7 @@ export function Modal({
   atRest?: boolean;
 }) {
   const titleId = useId();
+  useSheetKeyboardFit(open);
   const descriptionId = useId();
   const phone = useChPhone();
   const { ref, reduced, retainContent } = useDialogLifetime(open, {
@@ -66,7 +71,7 @@ export function Modal({
     focusSelector: initialFocus ?? '.ch-modal__titles h2',
     atRest,
   });
-  const drag = useSheetDrag(ref, onClose, { enabled: phone, reduced });
+  const drag = useSheetDrag(ref, onClose, { enabled: phone, reduced, variant });
 
   return (
     // The click is only the backdrop dismiss; the keyboard path is Esc, which <dialog> handles through onCancel.

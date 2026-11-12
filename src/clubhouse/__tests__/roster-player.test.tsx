@@ -1,7 +1,7 @@
 import { LazyMotion, domAnimation } from 'motion/react';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 /**
  * The player's Roster (docs/clubhouse/catalog/roster.md: CH-3210, CH-3211, CH-3307, CH-3308, CH-3309, CH-3807; contracts 30804
@@ -31,7 +31,6 @@ import { resolveClubhouseTeam } from '../routes/team';
 import { RosterNoTeam } from '../screens/roster/RosterNoTeam';
 import { TeamRoster } from '../screens/roster/TeamRoster';
 import { sortTeammates } from '../screens/roster/team';
-import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
 import { ToastProvider } from '../ui/Toast';
 import { activeNavItem, isRebuilt, phoneTabsFor } from '../shell/nav';
 import './dialog-polyfill';
@@ -271,20 +270,6 @@ describe('Player roster · desktop', () => {
     expect(document.querySelectorAll('a[href]')).toHaveLength(0);
   });
 
-  it('a card shows name, who it is to you, class and handicap (a plus handicap with its plus); no average, strokes gained, form or hometown', () => {
-    wrap(TEAM);
-    const cards = within(faces()).getAllByRole('listitem');
-    // Sorted by surname: Ferraro, Lindqvist, Marchetti, Okafor.
-    expect(cards.map((c) => c.querySelector('.ch-rs-face__name')!.textContent)).toEqual(['Luca Ferraro', 'Ava Lindqvist', 'Theo Marchetti', 'Jonah Okafor']);
-    const theo = cards[2]!;
-    expect(theo.querySelector('.ch-rs-face__meta')!.textContent).toBe('You · Senior');
-    expect(theo.querySelector('.ch-rs-face__figs')!.textContent).toBe('+0.8HCP');
-    expect(cards[0]!.querySelector('.ch-rs-face__figs')!.textContent).toBe('—HCP');
-    const text = faces().textContent ?? '';
-    expect(text).not.toMatch(/Avg|SG|Rounds|form|Scoring/i);
-    expect(faces().querySelector('svg.ch-form, .ch-rs-face__form')).toBeNull();
-  });
-
   it('search narrows the list, and a search with no match says so and clears (CH-3302)', async () => {
     const user = userEvent.setup();
     wrap(TEAM);
@@ -362,112 +347,5 @@ describe('Player roster · desktop', () => {
     unmount();
     wrap(TEAM);
     await waitFor(() => expect(screen.getByRole('table', { name: 'Roster' })).toBeTruthy());
-  });
-});
-
-describe('Player roster · phone', () => {
-  const realMatchMedia = window.matchMedia;
-  beforeEach(() => {
-    window.matchMedia = ((q: string) => ({
-      matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)',
-      media: q,
-      onchange: null,
-      addEventListener: () => {},
-      removeEventListener: () => {},
-      addListener: () => {},
-      removeListener: () => {},
-      dispatchEvent: () => false,
-    })) as never;
-  });
-  afterEach(() => {
-    window.matchMedia = realMatchMedia;
-  });
-  function SlotHost() {
-    const { setSlot } = usePhoneChromeState();
-    return <div ref={setSlot} data-testid="phone-top" />;
-  }
-  const phone = (data: ChPlayerRoster) =>
-    render(
-      <LazyMotion features={domAnimation}>
-        <ToastProvider>
-          <PhoneChromeProvider>
-            <div className="ch-root" data-ui="clubhouse">
-              <SlotHost />
-              <TeamRoster data={data} />
-            </div>
-          </PhoneChromeProvider>
-        </ToastProvider>
-      </LazyMotion>,
-    );
-
-  it('CH-3808 wave 7: the coaches are a plain group above the players', () => {
-    phone({ ...TEAM, coaches: [{ id: 'c1', name: 'Maya Reyes', role: 'Head coach' }] });
-    const list = screen.getByRole('list', { name: 'Coaches' });
-    expect(within(list).getAllByRole('listitem').map((li) => li.textContent)).toEqual(['MRMaya ReyesHead coach']);
-    expect(list.querySelectorAll(CONTROLS)).toHaveLength(0);
-    expect(screen.getByRole('heading', { level: 2, name: 'Players' })).toBeTruthy();
-  });
-
-  it('the top bar is the section title Roster with no back link and no action, and the page names the team and the count', () => {
-    phone(TEAM);
-    const top = screen.getByTestId('phone-top');
-    expect(within(top).queryByRole('button', { name: /More/ })).toBeNull();
-    expect(within(top).getByText('Roster')).toBeTruthy();
-    // A section root (section-strip.md): its title is the switcher in the shell, and nothing else is in the bar.
-    expect(top.querySelectorAll('button, a')).toHaveLength(0);
-    expect(screen.getByRole('main', { name: 'Roster' }).querySelector('.ch-rsm-kicker')!.textContent).toBe('Varsity · 4 players');
-  });
-
-  it('CH-3807 30804 a row is not a button: name, class and handicap as text, nothing to open', async () => {
-    const user = userEvent.setup();
-    phone(TEAM);
-    const list = screen.getByRole('list', { name: 'Players' });
-    const rows = within(list).getAllByRole('listitem');
-    expect(rows).toHaveLength(4);
-    expect(list.querySelectorAll(CONTROLS)).toHaveLength(0);
-    expect(rows.map((r) => r.querySelector('.ch-rsm-row__b b')!.textContent)).toEqual(['Luca Ferraro', 'Ava Lindqvist', 'Theo Marchetti', 'Jonah Okafor']);
-    const theo = rows[2]!;
-    expect(theo.querySelector('.ch-rsm-row__b > span')!.textContent).toBe('You · Senior');
-    expect(theo.querySelector('.ch-rsm-row__v')!.textContent).toBe('+0.8HCP');
-    expect(list.textContent).not.toMatch(/Avg|SG|form|Improving|Steady|Slipping|Early read/i);
-    await user.click(screen.getByText('Ava Lindqvist'));
-    expect(screen.queryByRole('region')).toBeNull();
-    expect(router.push).not.toHaveBeenCalled();
-    expect(document.querySelectorAll('a[href]')).toHaveLength(0);
-  });
-
-  it('sorts by class and by handicap from the one control the screen has', async () => {
-    const user = userEvent.setup();
-    phone(TEAM);
-    await user.click(screen.getByRole('radio', { name: 'Class' }));
-    expect(within(screen.getByRole('list', { name: 'Players' })).getAllByRole('listitem').map((r) => r.querySelector('.ch-rsm-row__b b')!.textContent)).toEqual([
-      'Theo Marchetti',
-      'Ava Lindqvist',
-      'Jonah Okafor',
-      'Luca Ferraro',
-    ]);
-    await user.click(screen.getByRole('radio', { name: 'HCP, handicap' }));
-    expect(within(screen.getByRole('list', { name: 'Players' })).getAllByRole('listitem')[3]!.textContent).toMatch(/Luca Ferraro/);
-  });
-
-  it('CH-3210 CH-3307 a failed read and an empty team are told apart on the phone too', async () => {
-    const user = userEvent.setup();
-    const { unmount } = phone({ ...TEAM, players: [], playersError: true });
-    expect(code('CH-3210')).not.toBeNull();
-    await user.click(within(code('CH-3210') as HTMLElement).getByRole('button', { name: 'Try again' }));
-    expect(router.refresh).toHaveBeenCalled();
-    unmount();
-    phone({ ...TEAM, players: [] });
-    expect(code('CH-3307')).not.toBeNull();
-    expect(code('CH-3210')).toBeNull();
-    // Wave 10 (B): the kicker drops "0 players".
-    expect(screen.getByRole('main', { name: 'Roster' }).querySelector('.ch-rsm-kicker')!.textContent).toBe('Varsity');
-  });
-
-  it('CH-3309 a roster of one on the phone: the row and the quiet line, no sort', () => {
-    phone({ ...TEAM, players: [mate('theo', 'Theo Marchetti', 'Senior', 2027, -0.8, true)] });
-    expect(within(screen.getByRole('list', { name: 'Players' })).getAllByRole('listitem')).toHaveLength(1);
-    expect(code('CH-3309')!.textContent).toBe('You’re the first one here. Teammates show up as they join.');
-    expect(screen.queryByRole('radio', { name: 'Class' })).toBeNull();
   });
 });

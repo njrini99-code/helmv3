@@ -1,11 +1,9 @@
 import { LazyMotion, domAnimation } from 'motion/react';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
-import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { Suspense } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { pulseLanded } from './coachhelm-pulse';
-import { resolved } from './route-view';
 
 /** CoachHelm (P013): every numbered state in docs/clubhouse/catalog/coachhelm.md, found by its number. */
 
@@ -46,44 +44,17 @@ import { dismissInsight, reactivateInsight } from '@/app/golf/actions/insights-f
 import { getInsightsForPlayer, getTopInsightsForPlayers } from '@/app/golf/actions/insight-delivery';
 import { isCoachHelmEnabledForCoach, isCoachHelmEnabledForPlayer } from '@/lib/coachhelm/v2/gate';
 import { getCoachProgramPulse } from '@/lib/coachhelm/v3/chat/request-cache';
-import { ACTIVE_FOCUS_DUPLICATE_ERROR } from '@/lib/coachhelm/focus-areas/duplicate-guard';
 import { loadCoachCoachHelm, loadPlayerCoachHelm } from '../data/coachhelm';
 import { areaTypeFor, formatComparison, splitContent, toChInsight, withoutCollegeAverage } from '../data/coachhelm-map';
-import { partitionInsights, playersLine, pulseRows, sortCoachPlayers, type ChCoachHelmData, type ChPlayerHelm, type ChTourBaseline } from '../data/coachhelm-shape';
+import { partitionInsights, playersLine, pulseRows, sortCoachPlayers, type ChPlayerHelm, type ChTourBaseline } from '../data/coachhelm-shape';
 import { ClubhouseCoachHelmRoute } from '../routes/coachhelm';
-import { CoachBoard } from '../screens/coachhelm/CoachBoard';
 import { CoachHelmRouteSkeleton, CoachHelmSkeleton, routeSkeletonFor } from '../screens/coachhelm/CoachHelmSkeleton';
-import { PlayerBoard } from '../screens/coachhelm/PlayerBoard';
-import { DiveSkeleton } from '../screens/coachhelm/views/Skeletons';
-import { LIVE_COACHHELM_WRITES, LIVE_PLAYER_WRITES, type ChCoachHelmWrites, type ChPlayerWrites } from '../screens/coachhelm/writes';
-import { PreviewCoachHelmPlayer } from '../preview/PreviewCoachHelmPlayer';
+import { ProposalRow } from '../screens/coachhelm/Proposals';
+import { LIVE_COACHHELM_WRITES, LIVE_PLAYER_WRITES, type ChPlayerWrites } from '../screens/coachhelm/writes';
 import { ClubhouseMarker } from '../shell/context';
 import { ToastProvider } from '../ui/Toast';
 import { GolfUserProvider } from '@/contexts/golf-user-context';
-import {
-  bigNumber,
-  breakBias,
-  HELM_PLAYERS,
-  penalties,
-  PREVIEW_HELM_COACH,
-  PREVIEW_HELM_COACH_ASSIGNED,
-  PREVIEW_HELM_COACH_EMPTY,
-  PREVIEW_HELM_COACH_FAILED,
-  PREVIEW_HELM_COACH_NO_ROSTER,
-  PREVIEW_HELM_COACH_OFF,
-  PREVIEW_HELM_COACH_PULSE_FAILED,
-  PREVIEW_HELM_COACH_QUIET,
-  PREVIEW_HELM_PLAYER,
-  PREVIEW_HELM_PLAYER_EMPTY,
-  PREVIEW_HELM_PLAYER_FAILED,
-  PREVIEW_HELM_PLAYER_NO_ROUNDS,
-  PREVIEW_HELM_PLAYER_OFF,
-  PREVIEW_HELM_PLAYER_PROPOSALS_FAILED,
-  PREVIEW_HELM_PLAYER_PROPOSED,
-  PREVIEW_HELM_PLAYER_WORKING,
-  PREVIEW_TOUR,
-  slope,
-} from '../preview/fixtures-coachhelm';
+import { bigNumber, breakBias, HELM_PLAYERS, penalties, PREVIEW_HELM_COACH, PREVIEW_HELM_PLAYER, PREVIEW_HELM_PLAYER_PROPOSED, PREVIEW_HELM_PLAYER_WORKING, PREVIEW_TOUR, slope } from '../preview/fixtures-coachhelm';
 
 const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
 async function expectCode(c: string, text?: RegExp) {
@@ -99,18 +70,6 @@ const wrap = (node: React.ReactNode) => (
     </ToastProvider>
   </LazyMotion>
 );
-const showPlayer = (data: ChPlayerHelm) => render(wrap(<PlayerBoard data={data} />));
-const okWrites = (): ChCoachHelmWrites => ({
-  assign: vi.fn(() => Promise.resolve({ success: true })),
-  dismiss: vi.fn(() => Promise.resolve({ success: true })),
-  undo: vi.fn(() => Promise.resolve({ success: true })),
-});
-function showCoach(data: ChCoachHelmData = PREVIEW_HELM_COACH, w: ChCoachHelmWrites = okWrites()) {
-  render(wrap(<CoachBoard data={data} writes={w} />));
-  return w;
-}
-const focusHeading = () => within(document.querySelector('.ch-hl-focus') as HTMLElement).getByRole('heading', { level: 2 }).textContent;
-const inList = (heading: string) => within(screen.getByRole('region', { name: heading }));
 
 beforeEach(() => {
   gate.on = true;
@@ -422,304 +381,28 @@ describe('Which insight leads, and who is most pressing', () => {
   });
 });
 
-// ── The player's board ─────────────────────────────────────────────────────
-
-describe('CoachHelm for the player, on screen', () => {
-  it('130801 130101 CH-13801 one focus: the page is labelled by its title, the claim is the card’s heading, and there are no coach controls', () => {
-    showPlayer(PREVIEW_HELM_PLAYER);
-    expect(screen.getByRole('main').getAttribute('aria-labelledby')).toBe('ch-hl-title');
-    expect(screen.getByRole('heading', { level: 1, name: 'CoachHelm' })).toBeTruthy();
-    // No role line over a player's own board (wave 7); the coach's reads "Coach".
-    expect(screen.queryByText('Player')).toBeNull();
-    expect(screen.getByText('One thing to work on this week, based on the rounds you’ve posted.')).toBeTruthy();
-    expect(focusHeading()).toBe('Downhill putts from 4–6\u00a0ft: a real penalty');
-    expect(screen.queryByRole('button', { name: /Assign|Dismiss|Share/ })).toBeNull();
-  });
-
-  it('the focus card: the category (a medium finding wears no stance word), the path line, the first sentence, the evidence bars with their sample, window and read, and this week’s drill', () => {
-    showPlayer(PREVIEW_HELM_PLAYER);
-    const card = within(document.querySelector('.ch-hl-focus') as HTMLElement);
-    expect(card.getByText('Putting')).toBeTruthy();
-    expect(card.queryByText(/Worth closing/)).toBeNull();
-    expect(code('CH-13940')!.textContent).toMatch(/75 putts · Not yet traced shot by shot$/);
-    expect(card.getByText(/^From 4–6 ft, you’re making 58%/)).toBeTruthy();
-    const bars = within(card.getByRole('list'));
-    expect(bars.getByText('Downhill').parentElement!.textContent).toBe('Downhill58%');
-    expect(bars.getByText('Level').parentElement!.textContent).toBe('Level81%');
-    expect(card.getByText('75 putts')).toBeTruthy();
-    expect(card.getByText('90 days')).toBeTruthy();
-    expect(card.getByText('Solid read')).toBeTruthy();
-    expect(card.getByText('This week')).toBeTruthy();
-    expect(card.getByText('Downhill ladder')).toBeTruthy();
-    expect(card.getByText(/12 min · intermediate/)).toBeTruthy();
-  });
-
-  it('CH-13804 Why we think this is a disclosure that names what it controls; it opens closed and each insight opens closed', async () => {
-    const user = userEvent.setup();
-    showPlayer(PREVIEW_HELM_PLAYER);
-    const why = screen.getByRole('button', { name: 'Why we think this' });
-    const body = document.getElementById(why.getAttribute('aria-controls')!)!;
-    expect(why.getAttribute('aria-expanded')).toBe('false');
-    expect(body.hasAttribute('hidden')).toBe(true);
-    await user.click(why);
-    expect(why.getAttribute('aria-expanded')).toBe('true');
-    expect(body.hasAttribute('hidden')).toBe(false);
-    expect(body.textContent).toMatch(/^Short putts carry the highest leverage/);
-    await user.click(inList('Also worth knowing').getByRole('button', { name: /Penalty strokes/ }));
-    expect(screen.getByRole('button', { name: 'Why we think this' }).getAttribute('aria-expanded')).toBe('false');
-  });
-
-  it('the lists: what else is worth knowing, and what is working, each a labelled region', () => {
-    showPlayer(PREVIEW_HELM_PLAYER);
-    // Each row reads category, title, priority in words (visually hidden), then the value.
-    expect(
-      inList('Also worth knowing')
-        .getAllByRole('button')
-        .map((b) => b.textContent),
-    // A bare number says what it counts beneath it ("a round", "made").
-    ).toEqual(['Course managementPenalty strokes: 1.1 per roundPriority1.1 a round', 'PuttingPutting break: under-reading left-to-right (10–20\u00a0ft)Worth closing36% made']);
-    expect(
-      inList('What’s working')
-        .getAllByRole('button')
-        .map((b) => b.textContent),
-    ).toEqual(['Course managementDouble bogey-or-worse rate: 1.6%Working1.6% of holes']);
-    expect(screen.getByText('Reads update as you post rounds. Your coaches see the same insights.')).toBeTruthy();
-  });
-
-  it('CH-13701 CH-13803 choosing another insight puts it in the focus card with the selection haptic; the focus it replaced is now in the list', async () => {
-    const user = userEvent.setup();
-    showPlayer(PREVIEW_HELM_PLAYER);
-    await user.click(inList('Also worth knowing').getByRole('button', { name: /Penalty strokes: 1.1 per round/ }));
-    expect(hapticSpy).toHaveBeenCalledWith('select');
-    expect(focusHeading()).toBe('Penalty strokes: 1.1 per round');
-    const also = inList('Also worth knowing');
-    expect(also.queryByText('Penalty strokes: 1.1 per round')).toBeNull();
-    expect(also.getByRole('button', { name: /Downhill putts from 4–6\sft/ })).toBeTruthy();
-  });
-
-  it('CH-13802 a gauge says every number in words: you, the Tour, the sample and the window, and no college cohort', async () => {
-    const user = userEvent.setup();
-    showPlayer(PREVIEW_HELM_PLAYER);
-    await user.click(inList('Also worth knowing').getByRole('button', { name: /Penalty strokes/ }));
-    const card = within(document.querySelector('.ch-hl-focus') as HTMLElement);
-    expect(card.getByText('Penalties per round')).toBeTruthy(); // the generator's Title Case, sentence-cased (P013 D12)
-    // D8: no track; the ledger says every number in words.
-    expect(document.querySelector('.ch-hl-g__t')).toBeNull();
-    expect(card.getByText('You').parentElement!.textContent).toBe('You1.1');
-    // Visual pass 2026-10-28: the comparison's figure sits in the ledger's figure column, as the read's own does.
-    expect(card.getByText('Tour').parentElement!.textContent).toBe('Tour 0.3');
-    expect(card.getByText('0.3').className).toBe('ch-num');
-    // Q-88: the college cohort is not drawn, not in the legend and not in the reasoning beneath it.
-    expect(card.queryByText(/College cohort/)).toBeNull();
-    expect(card.queryByText(/PGA Tour avg/)).toBeNull();
-    expect(document.querySelector('.ch-hl-focus')!.textContent).not.toMatch(/College players in our data/);
-    expect(card.getByText('21 rounds')).toBeTruthy();
-    expect(card.getByText('All rounds')).toBeTruthy();
-    expect(card.getByText(/· Priority$/)).toBeTruthy();
-    expect(card.queryByText('This week')).toBeNull();
-  });
-
-  it('CH-13806 a strength picked from Working reads Working in words, never by colour, and no drill', async () => {
-    const user = userEvent.setup();
-    showPlayer(PREVIEW_HELM_PLAYER);
-    await user.click(inList('What’s working').getByRole('button', { name: /Double bogey-or-worse rate/ }));
-    const card = within(document.querySelector('.ch-hl-focus') as HTMLElement);
-    expect(card.getByText(/· Working$/)).toBeTruthy();
-    // Nothing is left to be working, so the section is gone.
-    expect(screen.queryByRole('region', { name: 'What’s working' })).toBeNull();
-  });
-
-  it('CH-13805 the focus is a polite live region, so choosing another insight is announced', () => {
-    showPlayer(PREVIEW_HELM_PLAYER);
-    expect(document.querySelector('.ch-hl-focus')!.closest('[aria-live="polite"]')).not.toBeNull();
-  });
-
-  it('CH-13301 no round posted yet: the first-run page names what will appear, and New round opens round entry', async () => {
-    showPlayer(PREVIEW_HELM_PLAYER_NO_ROUNDS);
-    await expectCode('CH-13301', /Post a round to start CoachHelm.*one thing to work on this week shows up here/);
-    expect(screen.getByRole('link', { name: 'New round' }).getAttribute('href')).toBe('/golf/dashboard/rounds/new');
-    // With no round posted the lede doesn't claim any, and New round has the Plus Home and Rounds use.
-    expect(screen.getByText('One thing to work on each week, from the rounds you post.')).toBeTruthy();
-    expect(screen.queryByText(/based on the rounds you’ve posted/)).toBeNull();
-    expect(screen.getByRole('link', { name: 'New round' }).querySelector('svg.lucide-plus')).not.toBeNull();
-    expect(screen.queryByRole('link', { name: 'Open Rounds' })).toBeNull();
-    // Wave 7: with the rounds still to go known, the line names them.
-    cleanup();
-    showPlayer({ ...PREVIEW_HELM_PLAYER_NO_ROUNDS, roundsToGo: 4 });
-    await expectCode('CH-13301', /CoachHelm reads the rounds you post\. After 4 rounds, one thing to work on this week shows up here\./);
-  });
-
-  it('CH-13992 every read cleared: the Cleared lines still show beside the empty state, for their two more checks', async () => {
-    showPlayer({ ...PREVIEW_HELM_PLAYER_EMPTY, cleared: ['4–6 ft putts · Cleared — 22 of your last 29 (76%).'] });
-    await expectCode('CH-13302');
-    expect(screen.getByRole('region', { name: 'Cleared' })).toHaveTextContent('4–6 ft putts · Cleared');
-  });
-
-  it('CH-13302 rounds posted but no insight yet: it says how many, that CoachHelm needs enough to find a pattern, and no threshold', async () => {
-    showPlayer(PREVIEW_HELM_PLAYER_EMPTY);
-    await expectCode('CH-13302', /No insights yet.*You’ve posted 3 rounds\. CoachHelm needs enough rounds to find a pattern worth acting on/);
-    expect(code('CH-13302')!.textContent).not.toMatch(/five|of 5/i);
-    showPlayer({ ...PREVIEW_HELM_PLAYER_EMPTY, rounds: 1 });
-    expect(screen.getAllByText(/You’ve posted 1 round\./)).toHaveLength(1);
-    showPlayer({ ...PREVIEW_HELM_PLAYER_EMPTY, rounds: null });
-    expect(screen.getAllByText(/^CoachHelm needs enough rounds/)).toHaveLength(1);
-    // Wave 7: with the coach's minimum read, the page says how many rounds are still to come (the real number, never a made-up one).
-    showPlayer({ ...PREVIEW_HELM_PLAYER_EMPTY, rounds: 1, roundsToGo: 2 });
-    expect(screen.getAllByText('Post 2 more rounds and CoachHelm starts reading your game.')).toHaveLength(1);
-    showPlayer({ ...PREVIEW_HELM_PLAYER_EMPTY, rounds: 2, roundsToGo: 1 });
-    expect(screen.getAllByText('Post 1 more round and CoachHelm starts reading your game.')).toHaveLength(1);
-    cleanup();
-    showPlayer({ ...PREVIEW_HELM_PLAYER_EMPTY, rounds: 3, roundsToGo: 0 });
-    expect(screen.getAllByText(/^You’ve posted 3 rounds\. CoachHelm needs enough rounds/)).toHaveLength(1);
-  });
-
-  it('CH-13303 only strengths: nothing needs work, and what is working is listed beside it', async () => {
-    showPlayer(PREVIEW_HELM_PLAYER_WORKING);
-    await expectCode('CH-13303', /Nothing needs work right now/);
-    expect(inList('What’s working').getByRole('button', { name: /Double bogey-or-worse rate/ })).toBeTruthy();
-    expect(document.querySelector('.ch-hl-focus')).toBeNull();
-    // Nothing else to look at, so that list isn't drawn empty.
-    expect(screen.queryByRole('region', { name: 'Also worth knowing' })).toBeNull();
-  });
-
-  it('CH-13303 the only read is a measured zero: nothing needs work, no list is promised, and the read is a tap away in the Deep dive', async () => {
-    const user = userEvent.setup();
-    const zero = { ...PREVIEW_HELM_PLAYER.insights.list[1]!, measuredZero: true };
-    showPlayer({ ...PREVIEW_HELM_PLAYER, insights: { list: [zero], error: false } });
-    await expectCode('CH-13303', /^Nothing needs work right now/);
-    expect(code('CH-13303')!.textContent).not.toMatch(/What is working/);
-    router.push.mockClear();
-    await user.click(screen.getByRole('button', { name: '1 more read in the Deep dive' }));
-    expect(router.push).toHaveBeenCalledWith('/golf/dashboard/coachhelm?view=deep-dive');
-  });
-
-  it('nine that need work and three working: three and one on the board, and the other eight counted, a tap from the Deep dive', async () => {
-    const user = userEvent.setup();
-    const [finding, , , strength] = PREVIEW_HELM_PLAYER.insights.list;
-    const list = [...Array.from({ length: 9 }, (_, n) => ({ ...finding!, id: `f${n}` })), ...Array.from({ length: 3 }, (_, n) => ({ ...strength!, id: `s${n}` }))];
-    showPlayer({ ...PREVIEW_HELM_PLAYER, insights: { list, error: false } });
-    expect(document.querySelectorAll('.ch-hl-focus')).toHaveLength(1);
-    expect(inList('Also worth knowing').getAllByRole('button')).toHaveLength(2);
-    expect(inList('What’s working').getAllByRole('button')).toHaveLength(1);
-    router.push.mockClear();
-    await user.click(screen.getByRole('button', { name: '8 more reads in the Deep dive' }));
-    expect(hapticSpy).toHaveBeenCalledWith('select');
-    expect(router.push).toHaveBeenCalledWith('/golf/dashboard/coachhelm?view=deep-dive');
-  });
-
-  it('a board that shows every read says nothing about more', () => {
-    showPlayer(PREVIEW_HELM_PLAYER);
-    expect(screen.queryByRole('button', { name: /more reads? in the Deep dive/ })).toBeNull();
-  });
-
-  it('CH-13701 on the phone, choosing an insight brings the focus into view; on a wider screen the page stays where it is', async () => {
-    const user = userEvent.setup();
-    const scroll = vi.fn();
-    Object.defineProperty(Element.prototype, 'scrollIntoView', { value: scroll, configurable: true, writable: true });
-    const real = window.matchMedia;
-    try {
-      showPlayer(PREVIEW_HELM_PLAYER);
-      await user.click(inList('Also worth knowing').getByRole('button', { name: /Penalty strokes/ }));
-      expect(scroll).not.toHaveBeenCalled();
-      cleanup();
-      window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
-      showPlayer(PREVIEW_HELM_PLAYER);
-      await user.click(inList('Also worth knowing').getByRole('button', { name: /Penalty strokes/ }));
-      expect(scroll).toHaveBeenCalledTimes(1);
-      expect(scroll).toHaveBeenCalledWith({ block: 'start' });
-    } finally {
-      window.matchMedia = real;
-      Reflect.deleteProperty(Element.prototype, 'scrollIntoView');
-    }
-  });
-
-  it('CH-13304 CoachHelm turned off: said plainly, with the coach’s reason when there is one', async () => {
-    showPlayer(PREVIEW_HELM_PLAYER_OFF);
-    await expectCode('CH-13304', /CoachHelm is off for your team.*no insights are being shown/);
-    expect(screen.queryByRole('region', { name: 'What’s working' })).toBeNull();
-  });
-
-  it('CH-13304 the coach’s own words are quoted', () => {
-    showPlayer({ ...PREVIEW_HELM_PLAYER_OFF, off: { reason: 'Off during the offseason' } });
-    expect(code('CH-13304')!.textContent).toMatch(/Your coach turned it off: “Off during the offseason”/);
-  });
-
-  it('131402 CH-13201 the insights fail to load: said so, Try again asks the server again, never "no insights"', async () => {
-    const user = userEvent.setup();
-    showPlayer(PREVIEW_HELM_PLAYER_FAILED);
-    await expectCode('CH-13201', /Your insights didn’t load.*Nothing is lost/);
-    expect(code('CH-13301')).toBeNull();
-    expect(code('CH-13302')).toBeNull();
-    await user.click(within(code('CH-13201') as HTMLElement).getByRole('button', { name: /Try again/ }));
-    expect(router.refresh).toHaveBeenCalled();
-  });
-
-  it('CH-13204 a section that crashes while drawing is contained: the rest of the page stays', async () => {
-    const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
-    const list = PREVIEW_HELM_PLAYER.insights.list;
-    // An insight whose evidence can't be read throws inside the focus card only.
-    showPlayer({ ...PREVIEW_HELM_PLAYER, insights: { list: [{ ...list[0]!, evidence: null as never }, ...list.slice(1)], error: false } });
-    await expectCode('CH-13204', /Your focus couldn’t be shown/);
-    expect(inList('What’s working').getByRole('button', { name: /Double bogey-or-worse rate/ })).toBeTruthy();
-    quiet.mockRestore();
-  });
-});
-
 // ── A focus area a coach proposed, answered on the player's board (Q-77) ───
 
-describe('CoachHelm proposals, on the player’s board', () => {
+// A coach's proposal, answered by the player it is for: `ProposalRow`, as Your week and a read's own page draw it. These ran on the
+// player's old board until it was retired (owner, 2026-11-11); the rows are the same component.
+describe('CoachHelm proposals, answered by the player', () => {
   const user = () => userEvent.setup();
   const okPlayerWrites = (): ChPlayerWrites => ({
     accept: vi.fn(() => Promise.resolve({ success: true })),
     decline: vi.fn(() => Promise.resolve({ success: true })),
   });
+  const rows = (w: ChPlayerWrites, data: ChPlayerHelm) => (
+    <ul>
+      {data.proposals.list.map((p) => (
+        <ProposalRow key={p.id} p={p} writes={w} />
+      ))}
+    </ul>
+  );
   const showProposed = (w: ChPlayerWrites = okPlayerWrites(), data: ChPlayerHelm = PREVIEW_HELM_PLAYER_PROPOSED) => {
-    render(wrap(<PlayerBoard data={data} writes={w} />));
+    render(wrap(rows(w, data)));
     return w;
   };
   const row = (title: string) => screen.getByRole('group', { name: `Answer ${title}` });
-
-  it('CH-13807 130101 what a coach proposed is a labelled section above the insights: each focus, where it came from, and Accept and Decline', () => {
-    showProposed();
-    const sec = within(screen.getByRole('region', { name: 'Proposed for you' }));
-    expect(sec.getByText('Accept to start a focus, or decline to set it aside.')).toBeTruthy();
-    expect(sec.getAllByRole('listitem').map((li) => li.textContent)).toEqual([
-      'Downhill putts inside 6 ftFrom the read “Downhill putts from 4–6\u00a0ft: a real penalty”AcceptDecline',
-      'Lag putting from 30 ftYour coach proposed this as a focus.AcceptDecline',
-    ]);
-    expect(within(row('Lag putting from 30 ft')).getAllByRole('button').map((b) => b.textContent)).toEqual(['Accept', 'Decline']);
-    // It sits above the focus card, and the insights below are as they were.
-    const all = Array.from(document.querySelectorAll('.ch-hl > *'));
-    expect(all.findIndex((n) => n.classList.contains('ch-hl-prop'))).toBeLessThan(all.findIndex((n) => n.classList.contains('ch-hl-grid')));
-    expect(focusHeading()).toBe('Downhill putts from 4–6\u00a0ft: a real penalty');
-  });
-
-  it('with nothing proposed there is no section, and with CoachHelm off there is none either', () => {
-    showPlayer(PREVIEW_HELM_PLAYER);
-    expect(screen.queryByRole('region', { name: 'Proposed for you' })).toBeNull();
-    expect(screen.queryByRole('button', { name: /Accept|Decline/ })).toBeNull();
-    cleanup();
-    showPlayer({ ...PREVIEW_HELM_PLAYER_OFF, proposals: PREVIEW_HELM_PLAYER_PROPOSED.proposals });
-    expect(screen.queryByRole('region', { name: 'Proposed for you' })).toBeNull();
-    expect(code('CH-13304')).not.toBeNull();
-  });
-
-  it('130902 the coach’s board is never handed Accept or Decline: they are the player’s answer', () => {
-    showCoach();
-    expect(screen.queryByRole('button', { name: /^(Accept|Decline)/ })).toBeNull();
-    expect(screen.queryByRole('region', { name: 'Proposed for you' })).toBeNull();
-  });
-
-  it('P013 D10: with more than one proposal each Accept is secondary (one primary per screen); a lone proposal keeps its primary Accept', () => {
-    showProposed();
-    const accepts = screen.getAllByRole('button', { name: 'Accept' });
-    expect(accepts.length).toBeGreaterThan(1);
-    for (const b of accepts) expect(b.className).toContain('ch-btn--secondary');
-    cleanup();
-    const one = { ...PREVIEW_HELM_PLAYER_PROPOSED, proposals: { ...PREVIEW_HELM_PLAYER_PROPOSED.proposals, list: PREVIEW_HELM_PLAYER_PROPOSED.proposals.list.slice(0, 1) } };
-    showProposed(okPlayerWrites(), one);
-    expect(screen.getByRole('button', { name: 'Accept' }).className).toContain('ch-btn--primary');
-  });
 
   it('CH-13704 CH-13404 CH-13902 Accept: the focus id is sent, both buttons wait and say Accepting, then it is Started in place, with the light press and then success', async () => {
     const u = user();
@@ -774,7 +457,7 @@ describe('CoachHelm proposals, on the player’s board', () => {
   it('CH-13912 Undo puts Accept and Decline back and writes nothing; a decline still held when the page goes is written then', async () => {
     const u = user();
     const w = okPlayerWrites();
-    const { unmount } = render(wrap(<PlayerBoard data={PREVIEW_HELM_PLAYER_PROPOSED} writes={w} />));
+    const { unmount } = render(wrap(rows(w, PREVIEW_HELM_PLAYER_PROPOSED)));
     await u.click(within(row('Lag putting from 30 ft')).getByRole('button', { name: 'Decline' }));
     await u.click(within(code('CH-13912') as HTMLElement).getByRole('button', { name: 'Undo' }));
     expect(within(row('Lag putting from 30 ft')).getAllByRole('button').map((b) => b.textContent)).toEqual(['Accept', 'Decline']);
@@ -791,7 +474,7 @@ describe('CoachHelm proposals, on the player’s board', () => {
     unmount();
     expect(w.decline).toHaveBeenCalledTimes(1);
     const w2 = okPlayerWrites();
-    const again = render(wrap(<PlayerBoard data={PREVIEW_HELM_PLAYER_PROPOSED} writes={w2} />));
+    const again = render(wrap(rows(w2, PREVIEW_HELM_PLAYER_PROPOSED)));
     await u.click(within(row('Lag putting from 30 ft')).getByRole('button', { name: 'Decline' }));
     again.unmount();
     expect(w2.decline).toHaveBeenCalledWith('fa-lag');
@@ -829,434 +512,11 @@ describe('CoachHelm proposals, on the player’s board', () => {
     await expectCode('CH-13902', /Declined · Lag putting from 30 ft/);
     expect(w.decline).toHaveBeenCalledTimes(2);
   });
-
-  it('CH-13205 a proposals read that failed is its own notice, never "nothing proposed"; Try again reads the page again and the insights below are still there', async () => {
-    const u = user();
-    showPlayer(PREVIEW_HELM_PLAYER_PROPOSALS_FAILED);
-    await expectCode('CH-13205', /Your proposed focus areas didn’t load.*still waiting for you/);
-    expect(screen.queryByRole('region', { name: 'Proposed for you' })).toBeNull();
-    expect(focusHeading()).toBe('Downhill putts from 4–6\u00a0ft: a real penalty');
-    await u.click(within(code('CH-13205') as HTMLElement).getByRole('button', { name: /Try again/ }));
-    expect(router.refresh).toHaveBeenCalled();
-  });
-
-  it('CH-13204 a proposals section that crashes while drawing is contained: the insights stay', async () => {
-    const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
-    showPlayer({ ...PREVIEW_HELM_PLAYER_PROPOSED, proposals: { list: [null as never], error: false } });
-    await expectCode('CH-13204', /Proposed focus areas couldn’t be shown/);
-    expect(focusHeading()).toBe('Downhill putts from 4–6\u00a0ft: a real penalty');
-    quiet.mockRestore();
-  });
-
-  it('the dev preview’s writes: ?state=failproposal fails both answers, so the toast and its Retry can be seen', async () => {
-    const u = user();
-    render(wrap(<PreviewCoachHelmPlayer data={PREVIEW_HELM_PLAYER_PROPOSED} state="failproposal" />));
-    await u.click(within(row('Lag putting from 30 ft')).getByRole('button', { name: 'Accept' }));
-    await expectCode('CH-13004', /Couldn’t accept Lag putting from 30 ft/);
-  });
 });
 
 // ── The coach's board ──────────────────────────────────────────────────────
 
 describe('CoachHelm for the coach, on screen', () => {
-  const user = () => userEvent.setup();
-  const pick = (u: ReturnType<typeof userEvent.setup>, name: string) => u.click(screen.getByRole('button', { name: new RegExp(name) }));
-
-  it('CH-13969 the Track record link is drawn only when the route hands its address over (flag on), and never with CoachHelm off', () => {
-    showCoach();
-    expect(code('CH-13969')).toBeNull();
-    cleanup();
-    render(wrap(<CoachBoard data={PREVIEW_HELM_COACH} writes={okWrites()} trackRecordHref="/golf/dashboard/coachhelm?view=track-record" />));
-    expect(within(code('CH-13969') as HTMLElement).getByRole('link', { name: 'Track record' }).getAttribute('href')).toBe('/golf/dashboard/coachhelm?view=track-record');
-    cleanup();
-    render(wrap(<CoachBoard data={PREVIEW_HELM_COACH_OFF} writes={okWrites()} trackRecordHref="/golf/dashboard/coachhelm?view=track-record" />));
-    expect(code('CH-13969')).toBeNull();
-  });
-
-  it('CH13-4 D4 the header counts the players with an open signal, never the rows behind them; the pulse is one collapsed line in it, up to three items, in their own words', async () => {
-    const u = user();
-    showCoach();
-    expect(screen.getByText('Coach')).toBeTruthy();
-    // Jonah, Eli and Priya have a finding open; Theo's top card is what is working, which is not an open signal.
-    expect(screen.getByText('3 players have an open signal.')).toBeTruthy();
-    const header = document.querySelector('.ch-hl-h') as HTMLElement;
-    const since = within(header).getByRole('button', { name: /Since you were last here/ });
-    expect(since.getAttribute('aria-expanded')).toBe('false');
-    const list = document.getElementById(since.getAttribute('aria-controls')!)!;
-    expect(list.hidden).toBe(true);
-    await u.click(since);
-    expect(list.hidden).toBe(false);
-    expect([...list.querySelectorAll('li')].map((li) => li.textContent)).toEqual([
-      '2 players haven’t replied to Team dinner Thu, Oct 16, 6:30 PM · 4 of 6 replied',
-      '2 players are scoring worse over their last three rounds Jonah Okafor +2.1 strokes · Eli Brandt +0.8 strokes',
-      '1 active focus area has no recent progress Priya Natarajan: Lag putting',
-    ]);
-    // B11: the open line is a way into What's new.
-    expect(within(list).getByRole('link', { name: 'Everything in What’s new' }).getAttribute('href')).toBe('/golf/dashboard/whats-new');
-    // No block of its own comes before the decision: the header, then By player.
-    expect(screen.queryByRole('region', { name: 'Program pulse' })).toBeNull();
-    // The pulse's own signals item is left out: the header says it.
-    expect(screen.queryByText('7 open signals across 4 players', { exact: false })).toBeNull();
-  });
-
-  it('by player: each with their top signal and how many they have; the most pressing is open first', () => {
-    showCoach();
-    const players = within(screen.getByRole('region', { name: 'By player' }));
-    expect(players.getAllByRole('button').map((b) => b.textContent)).toEqual([
-      'EBEli BrandtPenalty strokes: 1.1 per round2',
-      'JOJonah OkaforDownhill putts from 4–6\u00a0ft: a real penalty3',
-      'PNPriya NatarajanPutting break: under-reading left-to-right (10–20\u00a0ft)1',
-      'TMTheo MarchettiDouble bogey-or-worse rate: 1.6%', // no open signal: no count (P013 D12)
-    ]);
-    expect(players.getByRole('button', { name: /Eli Brandt/ }).getAttribute('aria-pressed')).toBe('true');
-    expect(focusHeading()).toBe('Penalty strokes: 1.1 per round');
-    expect(within(document.querySelector('.ch-hl-focus') as HTMLElement).getByText('Eli · Course management · Priority')).toBeTruthy();
-  });
-
-  it('CH-13701 choosing a player shows their focus, with the selection haptic', async () => {
-    const u = user();
-    showCoach();
-    await pick(u, 'Jonah Okafor');
-    expect(hapticSpy).toHaveBeenCalledWith('select');
-    expect(focusHeading()).toBe('Downhill putts from 4–6\u00a0ft: a real penalty');
-    expect(screen.getByRole('button', { name: /Jonah Okafor/ }).getAttribute('aria-pressed')).toBe('true');
-    expect(screen.getByRole('button', { name: 'Assign as focus' })).toBeTruthy();
-  });
-
-  it("?player= (Roster's View insights) opens the board on that player; an id not on the board opens the most pressing", () => {
-    render(wrap(<CoachBoard data={PREVIEW_HELM_COACH} writes={okWrites()} initialPlayer="pl-theo" />));
-    expect(screen.getByRole('button', { name: /Theo Marchetti/ }).getAttribute('aria-pressed')).toBe('true');
-    expect(focusHeading()).toBe('Double bogey-or-worse rate: 1.6%');
-    cleanup();
-    render(wrap(<CoachBoard data={PREVIEW_HELM_COACH} writes={okWrites()} initialPlayer="someone-else" />));
-    expect(screen.getByRole('button', { name: /Eli Brandt/ }).getAttribute('aria-pressed')).toBe('true');
-  });
-
-  it('Share with the player has no action behind it (players already see their insights), so it is not drawn', () => {
-    showCoach();
-    expect(screen.queryByRole('button', { name: /Share/ })).toBeNull();
-    expect(screen.getAllByRole('button').some((b) => /Share|Send/.test(b.textContent ?? ''))).toBe(false);
-  });
-
-  it('130902 130901 CH-13702 CH-13403 Assign as focus: sends the insight’s own title, first sentence, area, metric and the player’s value now (CH13-22); while it works the button says so; then it is assigned, as a proposal the player accepts', async () => {
-    const u = user();
-    let done!: (v: { success: boolean }) => void;
-    const w = okWrites();
-    vi.mocked(w.assign).mockReturnValueOnce(new Promise((r) => (done = r)));
-    showCoach(PREVIEW_HELM_COACH, w);
-    await pick(u, 'Jonah Okafor');
-    await u.click(screen.getByRole('button', { name: 'Assign as focus' }));
-    expect(hapticSpy).toHaveBeenCalledWith('press');
-    expect(w.assign).toHaveBeenCalledWith({
-      playerId: 'pl-jonah',
-      insightId: 'in-slope',
-      // Typeset as the player reads it, with plain spaces: it is saved, and Fairway draws it too.
-      title: 'Downhill putts from 4–6 ft: a real penalty',
-      description: 'From 4–6 ft, you’re making 58% of downhill putts vs 81% of level putts at the same distance, a 23-point gap.',
-      areaType: 'putting',
-      targetMetric: 'putt_slope_downhill_penalty_pct',
-      // CH13-22: the player's value now is the focus's starting point.
-      currentValue: 23,
-    });
-    await expectCode('CH-13403', /Assigning…/);
-    expect((code('CH-13403')!.closest('button') as HTMLButtonElement).disabled).toBe(true);
-    expect((screen.getByRole('button', { name: /Dismiss/ }) as HTMLButtonElement).disabled).toBe(true);
-    done({ success: true });
-    await expectCode('CH-13601', /Assigned as Jonah’s focus/);
-    // The chip is announced as a status.
-    expect(code('CH-13601')!.getAttribute('role')).toBe('status');
-    expect(screen.queryByRole('button', { name: 'Assign as focus' })).toBeNull();
-    expect(screen.getByText('Jonah sees it as a proposal and accepts it to start.')).toBeTruthy();
-    expect(hapticSpy).toHaveBeenCalledWith('success');
-    // The chip is the confirmation: no toast beside it.
-    expect(document.querySelector('.ch-toast')).toBeNull();
-    // It stays with Jonah when the coach looks at someone else and comes back.
-    await pick(u, 'Eli Brandt');
-    await pick(u, 'Jonah Okafor');
-    expect(code('CH-13601')).not.toBeNull();
-  });
-
-  it('131401 CH-13001 a failed assign says so and keeps the button; Retry that works finishes it, chip included', async () => {
-    const u = user();
-    const w = okWrites();
-    vi.mocked(w.assign).mockResolvedValueOnce({ success: false, error: 'refused' }).mockResolvedValueOnce({ success: true });
-    showCoach(PREVIEW_HELM_COACH, w);
-    await pick(u, 'Jonah Okafor');
-    await u.click(screen.getByRole('button', { name: 'Assign as focus' }));
-    await expectCode('CH-13001', /Couldn’t assign the focus to Jonah/);
-    expect(hapticSpy).toHaveBeenCalledWith('error');
-    expect(screen.getByRole('button', { name: 'Assign as focus' })).toBeTruthy();
-    expect(code('CH-13601')).toBeNull();
-    await u.click(within(code('CH-13001') as HTMLElement).getByRole('button', { name: 'Try again' }));
-    await expectCode('CH-13601', /Assigned as Jonah’s focus/);
-    expect(w.assign).toHaveBeenCalledTimes(2);
-  });
-
-  it('130903 a player who already has an active focus on the metric is the outcome wanted: assigned, said in a toast, not an error', async () => {
-    const u = user();
-    const w = okWrites();
-    vi.mocked(w.assign).mockResolvedValueOnce({ success: false, error: ACTIVE_FOCUS_DUPLICATE_ERROR });
-    showCoach(PREVIEW_HELM_COACH, w);
-    await pick(u, 'Jonah Okafor');
-    await u.click(screen.getByRole('button', { name: 'Assign as focus' }));
-    expect(await screen.findByText('Jonah already has a focus on this')).toBeTruthy();
-    expect(code('CH-13001')).toBeNull();
-    expect(code('CH-13601')).not.toBeNull();
-    // Whether that focus has started is not known, so the proposal note is not claimed.
-    expect(screen.queryByText(/accepts it to start/)).toBeNull();
-    expect(hapticSpy).not.toHaveBeenCalledWith('error');
-  });
-
-  it('CH-13601 an insight that already has a focus made from it opens assigned, still waiting on the player', async () => {
-    showCoach(PREVIEW_HELM_COACH_ASSIGNED);
-    await userEvent.setup().click(screen.getByRole('button', { name: /Jonah Okafor/ }));
-    expect(code('CH-13601')!.textContent).toBe('Assigned as Jonah’s focus');
-    expect(screen.queryByRole('button', { name: 'Assign as focus' })).toBeNull();
-    expect(screen.getByText('Jonah sees it as a proposal and accepts it to start.')).toBeTruthy();
-  });
-
-  it('130105 CH-13703 CH-13901 Dismiss: the warning comes first, then the write; the insight is replaced by a notice that says so, and the count drops', async () => {
-    const u = user();
-    const w = showCoach();
-    await pick(u, 'Jonah Okafor');
-    await u.click(screen.getByRole('button', { name: 'Dismiss' }));
-    expect(hapticSpy.mock.calls.map((c) => c[0]).filter((k) => k === 'warning' || k === 'success')).toEqual(['warning', 'success']);
-    expect(w.dismiss).toHaveBeenCalledWith('in-slope');
-    await expectCode('CH-13901', /Insight dismissed\. It no longer shows on your board or on Jonah’s\. Undo brings it back\./);
-    // The notice is a status, inside the focus's polite live region (CH-13805).
-    expect(code('CH-13901')!.getAttribute('role')).toBe('status');
-    expect(code('CH-13901')!.closest('[aria-live="polite"]')).not.toBeNull();
-    expect(document.querySelector('.ch-hl-focus')).toBeNull();
-    // Jonah still has two more signals open, so he stays in the count of players; his own count drops by the one dismissed.
-    expect(screen.getByText('3 players have an open signal.')).toBeTruthy();
-    const row = screen.getByRole('button', { name: /Jonah Okafor/ });
-    expect(row.textContent).toBe('JOJonah OkaforDismissed2');
-    // The dismissal is saved, so nothing refreshes the page away from the notice.
-    expect(router.refresh).not.toHaveBeenCalled();
-  });
-
-  it('131403 Undo brings it back: the write restores the state it had, and the focus card returns', async () => {
-    const u = user();
-    const w = showCoach();
-    await pick(u, 'Jonah Okafor');
-    await u.click(screen.getByRole('button', { name: 'Dismiss' }));
-    await u.click(await screen.findByRole('button', { name: 'Undo' }));
-    expect(w.undo).toHaveBeenCalledWith('in-slope', 'detected');
-    await waitFor(() => expect(code('CH-13901')).toBeNull());
-    expect(focusHeading()).toBe('Downhill putts from 4–6\u00a0ft: a real penalty');
-    expect(screen.getByText('3 players have an open signal.')).toBeTruthy();
-    expect(screen.getByRole('button', { name: /Jonah Okafor/ }).textContent).toBe('JOJonah OkaforDownhill putts from 4–6\u00a0ft: a real penalty3');
-  });
-
-  it('Undo restores the state the insight had: a matured one comes back matured', async () => {
-    const u = user();
-    const list = PREVIEW_HELM_COACH.players.list.map((p) => (p.name === 'Jonah Okafor' ? { ...p, top: { ...p.top, lifecycle: 'matured' as const } } : p));
-    const w = showCoach({ ...PREVIEW_HELM_COACH, players: { list, error: false } });
-    await pick(u, 'Jonah Okafor');
-    await u.click(screen.getByRole('button', { name: 'Dismiss' }));
-    await u.click(await screen.findByRole('button', { name: 'Undo' }));
-    expect(w.undo).toHaveBeenCalledWith('in-slope', 'matured');
-  });
-
-  it('CH-13403 Undo reads Undoing while it works, and nothing on the board can be tapped until it lands', async () => {
-    const u = user();
-    let done!: (v: { success: boolean }) => void;
-    const w = okWrites();
-    vi.mocked(w.undo).mockReturnValueOnce(new Promise((r) => (done = r)));
-    showCoach(PREVIEW_HELM_COACH, w);
-    await pick(u, 'Jonah Okafor');
-    await u.click(screen.getByRole('button', { name: 'Dismiss' }));
-    await u.click(await screen.findByRole('button', { name: 'Undo' }));
-    const busy = await screen.findByRole('button', { name: 'Undoing…' });
-    expect(busy.querySelector('[data-ch-code="CH-13403"]')).not.toBeNull();
-    expect((busy as HTMLButtonElement).disabled).toBe(true);
-    done({ success: true });
-    await waitFor(() => expect(code('CH-13901')).toBeNull());
-    expect(screen.queryByRole('button', { name: 'Undoing…' })).toBeNull();
-  });
-
-  it('dismissing a player’s last signal takes them out of the count of players as well as of signals', async () => {
-    const u = user();
-    showCoach();
-    await pick(u, 'Priya Natarajan');
-    await u.click(screen.getByRole('button', { name: 'Dismiss' }));
-    await expectCode('CH-13901');
-    expect(screen.getByText('2 players have an open signal.')).toBeTruthy();
-    // P013 D12: no open signal draws no count, never a 0 beside the line.
-    expect(screen.getByRole('button', { name: /Priya Natarajan/ }).textContent).toMatch(/Dismissed$/);
-  });
-
-  it('CH-13002 a failed dismiss says so and keeps the insight; Retry that works shows the notice', async () => {
-    const u = user();
-    const w = okWrites();
-    vi.mocked(w.dismiss).mockResolvedValueOnce({ success: false, error: 'update violates row-level constraint' }).mockResolvedValueOnce({ success: true });
-    showCoach(PREVIEW_HELM_COACH, w);
-    await pick(u, 'Jonah Okafor');
-    await u.click(screen.getByRole('button', { name: 'Dismiss' }));
-    await expectCode('CH-13002', /Couldn’t dismiss the insight.*It’s still on the board/);
-    expect(hapticSpy).toHaveBeenCalledWith('error');
-    expect(document.querySelector('.ch-hl-focus')).not.toBeNull();
-    await u.click(within(code('CH-13002') as HTMLElement).getByRole('button', { name: 'Try again' }));
-    await expectCode('CH-13901');
-    expect(w.dismiss).toHaveBeenCalledTimes(2);
-  });
-
-  it('CH-13003 a failed undo says so and keeps the notice; Retry that works brings the insight back', async () => {
-    const u = user();
-    const w = okWrites();
-    vi.mocked(w.undo).mockResolvedValueOnce({ success: false, error: 'update violates row-level constraint' }).mockResolvedValueOnce({ success: true });
-    showCoach(PREVIEW_HELM_COACH, w);
-    await pick(u, 'Jonah Okafor');
-    await u.click(screen.getByRole('button', { name: 'Dismiss' }));
-    await u.click(await screen.findByRole('button', { name: 'Undo' }));
-    await expectCode('CH-13003', /Couldn’t undo the dismissal.*It’s still dismissed/);
-    expect(code('CH-13901')).not.toBeNull();
-    await u.click(within(code('CH-13003') as HTMLElement).getByRole('button', { name: 'Try again' }));
-    await waitFor(() => expect(code('CH-13901')).toBeNull());
-    expect(document.querySelector('.ch-hl-focus')).not.toBeNull();
-    expect(w.undo).toHaveBeenCalledTimes(2);
-  });
-
-  it('writes refuse offline: nothing is sent and the coach is told, with Retry', async () => {
-    const u = user();
-    const w = showCoach();
-    await pick(u, 'Jonah Okafor');
-    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
-    try {
-      await u.click(screen.getByRole('button', { name: 'Assign as focus' }));
-      await expectCode('CH-1903', /Couldn’t assign the focus to Jonah: you’re offline/);
-      expect(w.assign).not.toHaveBeenCalled();
-    } finally {
-      Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
-    }
-  });
-
-  it('130806 a top insight that is working can be assigned as a keep-doing focus, as the board draws it on Theo (Q-80), or dismissed', async () => {
-    const u = user();
-    const w = okWrites();
-    showCoach(PREVIEW_HELM_COACH, w);
-    await pick(u, 'Theo Marchetti');
-    expect(within(document.querySelector('.ch-hl-focus') as HTMLElement).getByText('Theo · Course management · Working')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Dismiss' })).toBeTruthy();
-    await u.click(screen.getByRole('button', { name: 'Assign as focus' }));
-    expect(w.assign).toHaveBeenCalledWith(expect.objectContaining({ playerId: 'pl-theo', title: 'Double bogey-or-worse rate: 1.6%' }));
-    await expectCode('CH-13601', /Assigned as Theo’s focus/);
-  });
-
-  it('CH-13310 a player with no read yet is a By player row that says so, not a footer; the unnamed are one row', () => {
-    const rows = () => [...document.querySelectorAll('[data-ch-code="CH-13310"]')].map((r) => r.textContent);
-    showCoach();
-    // Named (owner decision, wave 6): the coach sees who to look at, not only how many.
-    expect(rows()).toEqual(['SWSam WhitfieldNo reads yet']);
-    expect(document.querySelector('[data-ch-code="CH-13310"]')!.closest('.ch-hl-plist')).not.toBeNull();
-    // Not a button: there is nothing to open for them.
-    expect(screen.queryByRole('button', { name: /Sam Whitfield/ })).toBeNull();
-    cleanup();
-    showCoach({ ...PREVIEW_HELM_COACH, withoutSignals: 3 });
-    expect(rows()).toEqual(['SWSam WhitfieldNo reads yet', '+22 more playersNo reads yet']);
-    cleanup();
-    showCoach({ ...PREVIEW_HELM_COACH, withoutSignals: 2, withoutNames: ['Sam Whitfield', 'Ada Lee'] });
-    expect(rows()).toEqual(['SWSam WhitfieldNo reads yet', 'ALAda LeeNo reads yet']);
-    cleanup();
-    showCoach({ ...PREVIEW_HELM_COACH, withoutSignals: 1, withoutNames: undefined });
-    expect(rows()).toEqual(['+11 more playerNo reads yet']);
-    cleanup();
-    showCoach({ ...PREVIEW_HELM_COACH, withoutSignals: 0 });
-    expect(rows()).toEqual([]);
-    expect(screen.queryByText(/have no insights yet|has no insights yet/)).toBeNull();
-  });
-
-  it('CH-13306 players on the team but no signal yet: says what will appear, with View roster', async () => {
-    showCoach(PREVIEW_HELM_COACH_EMPTY);
-    await expectCode('CH-13306', /No signals yet.*Each player’s insights appear once they’ve posted enough rounds/);
-    expect(screen.getByRole('link', { name: 'View roster' }).getAttribute('href')).toBe('/golf/dashboard/roster');
-    expect(screen.getByText('CoachHelm reads the rounds your players post.')).toBeTruthy();
-  });
-
-  it('CH-13307 no players on the team yet: a first-run page, with Invite players (Roster’s invite sheet), as Home has', async () => {
-    showCoach(PREVIEW_HELM_COACH_NO_ROSTER);
-    await expectCode('CH-13307', /Add players to start CoachHelm.*Invite your players\. Each one’s insights show up here once they post rounds\./);
-    expect(screen.getByRole('link', { name: 'Invite players' }).getAttribute('href')).toBe('/golf/dashboard/roster?invite=1');
-    expect(screen.queryByRole('link', { name: 'Open roster' })).toBeNull();
-    expect(screen.queryByText(/Since you were last here/)).toBeNull();
-  });
-
-  it('CH-13202 the players fail to load: said so, Try again asks the server again, never "no signals"; the pulse still shows', async () => {
-    const u = user();
-    showCoach(PREVIEW_HELM_COACH_FAILED);
-    await expectCode('CH-13202', /Your players’ insights didn’t load/);
-    expect(code('CH-13306')).toBeNull();
-    expect(screen.getByRole('button', { name: /Since you were last here/ })).toBeTruthy();
-    await u.click(within(code('CH-13202') as HTMLElement).getByRole('button', { name: /Try again/ }));
-    expect(router.refresh).toHaveBeenCalled();
-  });
-
-  it('CH-13202 a failed roster read is the same error, never an empty team', () => {
-    showCoach({ ...PREVIEW_HELM_COACH_NO_ROSTER, roster: { count: 0, error: true } });
-    expect(code('CH-13202')).not.toBeNull();
-    expect(code('CH-13307')).toBeNull();
-  });
-
-  it('CH-13203 the pulse fails to load: said in its place, the players below are unaffected', async () => {
-    const u = user();
-    showCoach(PREVIEW_HELM_COACH_PULSE_FAILED);
-    await expectCode('CH-13203', /What’s new since you were last here didn’t load.*not affected/);
-    expect(screen.getByRole('region', { name: 'By player' })).toBeTruthy();
-    await u.click(within(code('CH-13203') as HTMLElement).getByRole('button', { name: /Try again/ }));
-    expect(router.refresh).toHaveBeenCalled();
-  });
-
-  it('CH-13309 nothing flagged in the pulse says so, and does not claim all is well', () => {
-    showCoach(PREVIEW_HELM_COACH_QUIET);
-    // Visual pass 2026-10-28 (G4 row 88): the quiet line now carries the way into What's new.
-    expect(code('CH-13309')!.textContent).toBe('Nothing new since you were last here. What’s new');
-    expect(within(code('CH-13309') as HTMLElement).getByRole('link', { name: 'What’s new' }).getAttribute('href')).toBe('/golf/dashboard/whats-new');
-  });
-
-  it('CH-13305 CoachHelm turned off for the team: said, with a way to Settings; a global switch has none', () => {
-    showCoach(PREVIEW_HELM_COACH_OFF);
-    expect(code('CH-13305')!.textContent).toMatch(/CoachHelm is off.*Your team has turned CoachHelm off\. Turn it back on in Settings/);
-    expect(screen.getByRole('link', { name: 'Open CoachHelm settings' }).getAttribute('href')).toBe('/golf/dashboard/settings/coaching-intelligence');
-    expect(screen.queryByText(/Since you were last here/)).toBeNull();
-  });
-
-  it('CH-13305 a reason the coach wrote is quoted; a global switch names no team', () => {
-    showCoach({ ...PREVIEW_HELM_COACH_OFF, off: { by: 'user', reason: 'Summer break' } });
-    expect(code('CH-13305')!.textContent).toMatch(/You have turned CoachHelm off: “Summer break”/);
-    showCoach({ ...PREVIEW_HELM_COACH_OFF, off: { by: 'global', reason: null } });
-    const global = [...document.querySelectorAll('[data-ch-code="CH-13305"]')].at(-1)!;
-    expect(global.textContent).toMatch(/turned off for GolfHelm right now/);
-    expect(within(global as HTMLElement).queryByRole('link')).toBeNull();
-  });
-
-  it('CH-13204 a section that crashes while drawing is contained: the rest of the page stays', async () => {
-    const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
-    // A pulse row that can't be drawn throws inside the header line's own boundary only.
-    showCoach({ ...PREVIEW_HELM_COACH, pulse: { rows: [{ id: 'x', headline: {} as never, evidence: 'Some evidence', tone: 'warn', icon: 'flag' }], error: false } });
-    await expectCode('CH-13204', /Since you were last here couldn’t be shown/);
-    expect(screen.getByRole('region', { name: 'By player' })).toBeTruthy();
-    quiet.mockRestore();
-  });
-
-  it('CH-13803 CH-13806 a player row is one button; the focus wears no pill, and a medium finding no stance word (D8)', async () => {
-    const u = user();
-    showCoach();
-    await pick(u, 'Jonah Okafor');
-    expect(document.querySelector('.ch-hl-focus .ch-hl-pri')).toBeNull();
-    expect(within(document.querySelector('.ch-hl-focus') as HTMLElement).getByText('Jonah · Putting')).toBeTruthy();
-  });
-
-  it('on the phone the page is its own layout: the same boards, with the players as a row of pills', () => {
-    const real = window.matchMedia;
-    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
-    try {
-      showCoach();
-      expect(document.querySelector('.ch-hl.is-phone')).not.toBeNull();
-      expect(screen.getByRole('region', { name: 'By player' }).querySelectorAll('button.ch-hl-pl')).toHaveLength(4);
-    } finally {
-      window.matchMedia = real;
-    }
-  });
 
   it('the live writes are the actions the Fairway Brief uses, unchanged', async () => {
     vi.mocked(createFocusAreaFromInsightV2).mockResolvedValue({ success: true });
@@ -1945,49 +1205,6 @@ describe('CoachHelm route', () => {
     };
   });
 
-  it('a coach gets their board for the team the shell resolved; a player gets their own', async () => {
-    session.current = { userId: 'u1', role: 'coach', coach: { id: 'c1', organization_id: 'org1' }, player: null };
-    teamOf.current = { role: 'coach', teamId: 't1', coachId: 'c1' };
-    let askedTeam: unknown;
-    tables.current = {
-      ...tables.current,
-      golf_team_members: (f) => {
-        askedTeam = f.find(([k, a]) => k === 'eq' && a[0] === 'team_id')?.[1][1];
-        return { data: [{ player_id: 'pl-jonah' }] };
-      },
-    };
-    const coach = await resolved(await ClubhouseCoachHelmRoute());
-    render(wrap(coach));
-    // The players read is the resolved team's, not every team the coach staffs.
-    expect(askedTeam).toBe('t1');
-    expect(screen.getByText('Coach')).toBeTruthy();
-    expect(screen.getByRole('region', { name: 'By player' })).toBeTruthy();
-    expect(isCoachHelmEnabledForCoach).toHaveBeenCalledWith('c1');
-    expect(getTopInsightsForPlayers).toHaveBeenCalledWith(['pl-jonah'], { limit: 1 });
-
-    document.body.innerHTML = '';
-    session.current = { userId: 'u2', role: 'player', coach: null, player: { id: 'pl-jonah' } };
-    render(wrap(await resolved(await ClubhouseCoachHelmRoute())));
-    expect(screen.getByText('One thing to work on this week, based on the rounds you’ve posted.')).toBeTruthy();
-    expect(screen.queryByRole('region', { name: 'By player' })).toBeNull();
-    expect(screen.queryByRole('button', { name: /Assign|Dismiss/ })).toBeNull();
-    expect(isCoachHelmEnabledForPlayer).toHaveBeenCalledWith('pl-jonah');
-    expect(getInsightsForPlayer).toHaveBeenCalledWith('pl-jonah', { limit: 30, drawnLater: expect.any(Function), includeMore: true });
-  });
-
-  it('CH-1301 no CoachHelm address says "hasn’t been rebuilt yet" any more: ?view=deep-dive is the Deep dive (coachhelm-dive.test), ?view=insights is the board', async () => {
-    session.current = { userId: 'u2', role: 'player', coach: null, player: { id: 'pl-jonah' } };
-    // The Deep dive is drawn inside the one Suspense every view shares (not keyed by view), whose fallback is the Deep dive's own skeleton.
-    const dive = (await ClubhouseCoachHelmRoute({ view: 'deep-dive' })) as { key?: string | null; type?: unknown; props?: { fallback?: { type?: unknown } } } | null;
-    expect(dive?.type).toBe(Suspense);
-    expect(dive?.key).toBeNull();
-    expect(dive?.props?.fallback?.type).toBe(DiveSkeleton);
-    document.body.innerHTML = '';
-    render(wrap(await resolved(await ClubhouseCoachHelmRoute({ view: 'insights' }))));
-    expect(code('CH-1301')).toBeNull();
-    expect(screen.getByText('One thing to work on this week, based on the rounds you’ve posted.')).toBeTruthy();
-  });
-
   it('?view=development (every stored dev-plan notification) lands on Stats Development, not a placeholder (swap audit §14 D4)', async () => {
     session.current = { userId: 'u2', role: 'player', coach: null, player: { id: 'pl-jonah' } };
     await expect(ClubhouseCoachHelmRoute({ view: 'development' })).rejects.toThrow('redirect:/golf/dashboard/stats?tab=dev');
@@ -2014,11 +1231,12 @@ describe('CoachHelm route', () => {
     expect(getTopInsightsForPlayers).not.toHaveBeenCalled();
   });
 
-  it('130803 a player needs no team: their insights are their own', async () => {
+  it('130803 a player needs no team: their Your week is built from the session’s own player id', async () => {
     session.current = { userId: 'u2', role: 'player', coach: null, player: { id: 'pl-jonah' } };
     teamOf.current = null;
-    render(wrap(await resolved(await ClubhouseCoachHelmRoute())));
-    expect(focusHeading()).toBe('Downhill putts from 4–6\u00a0ft: a real penalty');
+    const out = (await ClubhouseCoachHelmRoute()) as { props: { children: { props: { playerId?: string } } } } | null;
+    expect(out).not.toBeNull();
+    expect(JSON.stringify(out)).toContain('pl-jonah');
   });
 
   const noView = { searchParams: Promise.resolve({}) };

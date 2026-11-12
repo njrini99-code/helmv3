@@ -1,0 +1,2081 @@
+/* Practice (S-PRC.*, S-BLD.*, S-BLDD.*): the tab, the builder, the library, the plan page's bar and Run card, and print.
+   One generation of rules. Flat page, card surfaces, a fill and a ring for what is selected, no stripes. Colour, type, radius and
+   shadow are tokens; controls are the shared ones (Button, Segmented, Badge, .ch-pill, .ch-input). */
+
+/* Page. */
+.ch-prc {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+  align-content: start;
+  max-width: var(--ch-measure-page);
+  margin: 0 auto;
+  padding: var(--ch-page-top-no-eyebrow) var(--ch-page-gutter) var(--ch-page-bottom);
+  color: var(--ch-text-primary);
+}
+/* No colour here: a heading takes the ink of what it sits on (the page's, or the printed sheet's paper, which stays light in dark). */
+.ch-prc h2 {
+  margin: 0;
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
+}
+.ch-prc-h {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px 16px;
+}
+/* On a desk the title is every page's title (shell.css: one style from one place), and the head stands on the page
+   frame: the page opens where a page with no eyebrow does and the head keeps the frame head's own 12px, so the title's
+   top is on every page's line (owner, 11 Nov 2026). This sheet only places it. */
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
+  .ch-prc-h {
+    padding-top: 12px;
+  }
+}
+.ch-prc-h__line {
+  margin: 4px 0 0;
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-text-secondary);
+}
+.ch-prc-h__a {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ch-prc-card {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-card-bg);
+  box-shadow: var(--ch-card-shadow);
+}
+.ch-prc-card > p,
+.ch-prc-note,
+.ch-prc-none {
+  margin: 0;
+  font: var(--ch-type-14);
+  letter-spacing: var(--ch-track-14);
+  color: var(--ch-text-secondary);
+}
+.ch-prc-sec {
+  display: grid;
+  gap: 8px;
+}
+.ch-prc-sec__h {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* The day to scale: a segment a block, its width its minutes. Drawn whole; nothing grows. */
+.ch-prc-day {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.ch-prc-day__bar {
+  display: flex;
+  gap: 2px;
+  height: 8px;
+  overflow: hidden;
+  border-radius: var(--ch-radius-xs);
+}
+.ch-prc-day__bar i {
+  flex-basis: 0;
+  min-width: 2px;
+  /* 60% keeps a plain block 3:1 against the card in both themes (3.2 light, 4.5 dark). */
+  background: color-mix(in srgb, var(--ch-text-tertiary) 60%, var(--ch-card-bg));
+}
+/* The kinds of work wear the groups' family of tones (owner, 11 Nov 2026): skill ochre, random slate, pressure green, never blue or purple.
+   A kind is a bar or a square with its word; a group is a disc with its letter, so the two are never told apart by colour alone. */
+.ch-prc-day__bar i[data-tone='skill'] { background: var(--ch-yr-so); }
+.ch-prc-day__bar i[data-tone='random'] { background: var(--ch-plan-group-d); }
+.ch-prc-day__bar i[data-tone='pressure'] { background: var(--ch-run-group-a); }
+html[data-fw-theme='dark'] .ch-prc-day__bar i[data-tone='skill'] { background: var(--ch-champagne-500); }
+html[data-fw-theme='dark'] .ch-prc-day__bar i[data-tone='random'] { background: var(--ch-plan-group-d-night); }
+/* A suggestion is an outline, in the accent ink that holds 3:1 on the card in light and dark. */
+.ch-prc-day__bar i[data-tone='ghost'] {
+  background: none;
+  box-shadow: inset 0 0 0 1.5px var(--ch-accent-ink);
+}
+.ch-prc-day__bar i[data-tone='open'] {
+  background: var(--ch-well-bg-flat);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-separator);
+}
+.ch-prc-day__ends {
+  display: flex;
+  justify-content: space-between;
+  font: var(--ch-type-12);
+  letter-spacing: var(--ch-track-12);
+  color: var(--ch-text-secondary);
+}
+
+/* This week. */
+.ch-prc-week {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+}
+.ch-prc-tile {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-height: 96px;
+  padding: 12px;
+  border-radius: var(--ch-radius-md);
+  background: var(--ch-card-bg);
+  box-shadow: var(--ch-card-shadow);
+}
+.ch-prc-tile.is-off {
+  background: var(--ch-well-bg-flat);
+  box-shadow: none;
+}
+.ch-prc-tile.is-today {
+  background: var(--ch-selected-bg);
+  box-shadow: 0 0 0 2px var(--ch-border-focus);
+}
+.ch-prc-tile__d {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-text-secondary);
+}
+.ch-prc-tile__d b {
+  font: var(--ch-type-17-strong);
+  letter-spacing: var(--ch-track-17);
+  color: var(--ch-text-primary);
+}
+.ch-prc-tile__none {
+  font: var(--ch-type-12);
+  letter-spacing: var(--ch-track-12);
+  color: var(--ch-text-tertiary);
+}
+.ch-prc-tile__it {
+  display: grid;
+  gap: 4px;
+  justify-items: start;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ch-text-primary);
+  font: var(--ch-type-13-medium);
+  letter-spacing: var(--ch-track-13);
+  text-align: start;
+  text-decoration: none;
+  cursor: pointer;
+}
+span.ch-prc-tile__it {
+  cursor: default;
+}
+
+/* Up next: the page's one feature. */
+.ch-prc-next {
+  gap: 4px;
+  padding: 20px;
+}
+.ch-prc-next__k {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font: var(--ch-type-13-medium);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-text-secondary);
+}
+.ch-prc .ch-prc-next h2 {
+  margin-top: 4px;
+  font: var(--ch-type-22-strong);
+  letter-spacing: var(--ch-track-22);
+}
+.ch-prc-next .ch-prc-next__w {
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+}
+.ch-prc-next .ch-prc-day {
+  margin-top: 16px;
+}
+.ch-prc-next__rows {
+  display: grid;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-prc-next__rows li {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  column-gap: 8px;
+  padding: 8px 0;
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+}
+.ch-prc-next__rows li + li {
+  border-top: var(--ch-hairline-w) solid var(--ch-separator);
+}
+.ch-prc-next__rows li > :first-child {
+  grid-row: 1 / span 2;
+  color: var(--ch-text-secondary);
+}
+.ch-prc-next__rows b {
+  font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
+}
+.ch-prc-next__rows li > :nth-child(3) {
+  grid-column: 2;
+  font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-text-secondary);
+}
+.ch-prc-next .ch-prc-next__more,
+.ch-prc-next .ch-prc-next__none {
+  padding: 8px 0 0;
+}
+.ch-prc-next__a {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+/* Practice, the tab's body: Up next, then the plans. On a Mac, Up next takes three fifths with the plans beside it; a page with no plan to list keeps one column. */
+.ch-prc-home,
+.ch-prc-home__plans {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: inherit;
+  align-content: start;
+  min-width: 0;
+}
+.ch-prc-next .ch-prc-ribbon__mix {
+  margin-top: 8px;
+}
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
+  .ch-prc-home.has-plans {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    align-items: start;
+  }
+  /* The card's keys sit under what they act on, as the first-run card's do. */
+  .ch-prc-next__a {
+    justify-content: flex-start;
+  }
+}
+
+/* First run: one card, three starts. */
+.ch-prc-first {
+  gap: 4px;
+  padding: 20px 20px 8px;
+}
+.ch-prc .ch-prc-first h2 {
+  font: var(--ch-type-20-strong);
+  letter-spacing: var(--ch-track-20);
+}
+.ch-prc-starts {
+  display: grid;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-prc-starts li + li {
+  border-top: var(--ch-hairline-w) solid var(--ch-separator);
+}
+.ch-prc-start {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 60px;
+  padding: 12px 0;
+  border: 0;
+  background: none;
+  color: var(--ch-text-secondary);
+  text-align: start;
+  text-decoration: none;
+  cursor: pointer;
+}
+.ch-prc-start > span {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
+}
+.ch-prc-start b {
+  font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-text-primary);
+}
+.ch-prc-first__a {
+  display: grid;
+  gap: 12px;
+  justify-items: start;
+  padding: 8px 0 12px;
+}
+.ch-prc-first__a p {
+  margin: 0;
+  font: var(--ch-type-14);
+  letter-spacing: var(--ch-track-14);
+  color: var(--ch-text-secondary);
+}
+
+/* Plans, and every list of rows. */
+.ch-prc-rows,
+.ch-prc-list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  list-style: none;
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-card-bg);
+  box-shadow: var(--ch-card-shadow);
+}
+.ch-prc-rows li + li,
+.ch-prc-list li + li {
+  border-top: var(--ch-hairline-w) solid var(--ch-separator);
+}
+.ch-prc-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 12px 16px;
+  color: var(--ch-text-secondary);
+  text-decoration: none;
+}
+.ch-prc-row__m {
+  display: grid;
+  flex: 1;
+  gap: 2px;
+  min-width: 0;
+}
+.ch-prc-row__top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ch-prc-row__top b {
+  overflow: hidden;
+  font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-text-primary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ch-prc-row__w,
+.ch-prc-row__l,
+.ch-prc-row__e {
+  font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
+}
+.ch-prc-row__l {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* A state, not a loss: secondary text with a dot (05, build rule 7). */
+.ch-prc-row__e {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ch-prc-row__e::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.ch-prc-open {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 48px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-card-bg);
+  box-shadow: var(--ch-card-shadow);
+  color: var(--ch-text-primary);
+  font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
+  text-decoration: none;
+  cursor: pointer;
+}
+.ch-prc-open svg {
+  color: var(--ch-text-secondary);
+  transition: transform var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-prc-open[aria-expanded='true'] svg {
+  transform: rotate(90deg);
+}
+
+/* New plan. */
+.ch-prc-new {
+  display: grid;
+  gap: 8px;
+}
+.ch-prc-new h3 {
+  margin: 8px 0 0;
+  font: var(--ch-type-13-strong);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-text-secondary);
+}
+.ch-prc-new__none {
+  margin: 0;
+  font: var(--ch-type-14);
+  letter-spacing: var(--ch-track-14);
+  color: var(--ch-text-secondary);
+}
+/* A form in the desk's modal: its fields, then anything the save had to say. */
+.ch-prc-sheetform {
+  display: grid;
+  gap: 12px;
+}
+/* Ask CoachHelm's two questions, on the sheet's own well. */
+.ch-prc-ask {
+  display: grid;
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-well-bg-flat);
+}
+.ch-prc-ask__q {
+  display: grid;
+  gap: 8px;
+  padding: 12px 16px 16px;
+  font: var(--ch-type-13-strong);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-text-secondary);
+}
+.ch-prc-ask__q + .ch-prc-ask__q {
+  border-top: var(--ch-hairline-w) solid var(--ch-separator);
+}
+.ch-prc-ask__q small {
+  font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
+}
+.ch-prc-new__err {
+  margin: 0;
+  font: var(--ch-type-14);
+  letter-spacing: var(--ch-track-14);
+  color: var(--ch-loss);
+}
+.ch-prc-grp {
+  display: grid;
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-well-bg-flat);
+}
+.ch-prc-opt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  padding: 12px 16px;
+  border: 0;
+  background: none;
+  color: var(--ch-text-primary);
+  text-align: start;
+  cursor: pointer;
+}
+.ch-prc-opt + .ch-prc-opt {
+  border-top: var(--ch-hairline-w) solid var(--ch-separator);
+}
+.ch-prc-opt:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.ch-prc-opt__t {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.ch-prc-opt__t b {
+  font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
+}
+.ch-prc-opt__t span {
+  font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-text-secondary);
+}
+.ch-prc-opt__r {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px var(--ch-border-control);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-prc-opt.is-on .ch-prc-opt__r {
+  background: var(--ch-selected-strong);
+  color: var(--ch-text-on-accent);
+  box-shadow: none;
+}
+
+/* The builder, phone: steps stay under the bar; the plan's head is one card. */
+.ch-prb.is-phone {
+  gap: 12px;
+}
+.ch-prb-sticky {
+  position: sticky;
+  top: calc(var(--ch-phone-topbar-h) + env(safe-area-inset-top));
+  z-index: var(--ch-z-panel);
+  padding: 8px 0;
+  background: var(--ch-bg-page);
+}
+.ch-prb-col {
+  display: grid;
+  gap: 12px;
+}
+.ch-prb-sub {
+  display: grid;
+  gap: 12px;
+  padding: 12px 16px 16px;
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-card-bg);
+  box-shadow: var(--ch-card-shadow);
+}
+.ch-prb-when {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+  font: var(--ch-type-14);
+  letter-spacing: var(--ch-track-14);
+  color: var(--ch-text-secondary);
+}
+.ch-prc-ribbon {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.ch-prc-ribbon__w {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font: var(--ch-type-14);
+  letter-spacing: var(--ch-track-14);
+  color: var(--ch-text-secondary);
+}
+.ch-prc-ribbon__w b {
+  font: var(--ch-type-17-strong);
+  letter-spacing: var(--ch-track-17);
+  color: var(--ch-text-primary);
+}
+.ch-prc-ribbon__w .is-over {
+  color: var(--ch-loss);
+}
+.ch-prc-ribbon__mix {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 0;
+  font: var(--ch-type-12);
+  letter-spacing: var(--ch-track-12);
+  color: var(--ch-text-secondary);
+}
+.ch-prc-ribbon__mix span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.ch-prc-ribbon__mix span::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: var(--ch-radius-mark);
+  background: var(--ch-yr-so);
+}
+.ch-prc-ribbon__mix [data-tone='random']::before { background: var(--ch-plan-group-d); }
+.ch-prc-ribbon__mix [data-tone='pressure']::before { background: var(--ch-run-group-a); }
+html[data-fw-theme='dark'] .ch-prc-ribbon__mix span::before { background: var(--ch-champagne-500); }
+html[data-fw-theme='dark'] .ch-prc-ribbon__mix [data-tone='random']::before { background: var(--ch-plan-group-d-night); }
+html[data-fw-theme='dark'] .ch-prc-ribbon__mix [data-tone='pressure']::before { background: var(--ch-run-group-a); }
+.ch-prc-save {
+  min-height: 16px;
+  font: var(--ch-type-12);
+  letter-spacing: var(--ch-track-12);
+  color: var(--ch-text-secondary);
+}
+.ch-prc-save[data-state='failed'] {
+  color: var(--ch-loss);
+}
+.ch-prc-save button {
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ch-accent-ink);
+  font: var(--ch-type-14-medium);
+  letter-spacing: var(--ch-track-14);
+  cursor: pointer;
+}
+.ch-prc-stale {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-card-bg);
+  box-shadow: 0 0 0 2px var(--ch-border-focus);
+  font: var(--ch-type-14-medium);
+  letter-spacing: var(--ch-track-14);
+  color: var(--ch-text-primary);
+}
+.ch-prc-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: var(--ch-accent-ink);
+  font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
+  cursor: pointer;
+}
+.ch-prc-add.is-between {
+  display: flex;
+  width: 100%;
+  justify-content: center;
+  min-height: 24px;
+  opacity: 0;
+  font: var(--ch-type-13-medium);
+  letter-spacing: var(--ch-track-13);
+  transition: opacity var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-prc-add.is-between:hover,
+.ch-prc-add.is-between:focus-visible,
+.ch-prc-add.is-between[aria-expanded='true'] {
+  opacity: 1;
+}
+.ch-prc-empty {
+  justify-items: start;
+  gap: 4px;
+}
+.ch-prc .ch-prc-empty h2 {
+  font: var(--ch-type-17-strong);
+  letter-spacing: var(--ch-track-17);
+}
+
+/* Blocks. */
+.ch-prc-blocks {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-prb.is-desk .ch-prc-blocks {
+  gap: 0;
+}
+.ch-prc-block {
+  position: relative;
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-card-bg);
+  box-shadow: var(--ch-card-shadow);
+}
+.ch-prc-block.is-on {
+  background: var(--ch-selected-bg);
+  box-shadow: 0 0 0 2px var(--ch-border-focus);
+}
+/* Kept: the outline gives way to the card (design, "Keep a suggestion"). Readable from the first frame. */
+.ch-prc-block.is-kept {
+  animation: ch-prc-kept var(--ch-dur-base) var(--ch-ease) both;
+}
+@keyframes ch-prc-kept {
+  from {
+    opacity: 0.7;
+  }
+}
+/* Time, title and length on the first line; everything under the title runs the card's full width. */
+.ch-prc-block__main {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  gap: 4px 8px;
+  align-items: first baseline;
+  width: 100%;
+  min-height: 56px;
+  padding: 16px;
+  border: 0;
+  background: none;
+  color: var(--ch-text-primary);
+  text-align: start;
+  cursor: pointer;
+}
+.ch-prc-block__tm {
+  grid-area: 1 / 1;
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
+}
+.ch-prc-block__mn {
+  grid-area: 1 / 3;
+  margin-inline-end: 32px;
+  font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-text-secondary);
+  white-space: nowrap;
+}
+.ch-prc-block__t {
+  display: contents;
+}
+.ch-prc-block__t > b {
+  grid-area: 1 / 2;
+  font: var(--ch-type-16-medium);
+  letter-spacing: var(--ch-track-16);
+}
+.ch-prc-block__t > span {
+  grid-column: 2 / -1;
+  font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-text-secondary);
+}
+.ch-prc-block__t > .ch-prc-block__s {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.ch-prc-block__s svg {
+  flex: none;
+}
+.ch-prc-block__t > .ch-prc-block__d {
+  color: var(--ch-accent-ink);
+}
+.ch-prc-block__t > .ch-prc-block__why {
+  margin-top: 4px;
+  font: var(--ch-type-14);
+  letter-spacing: var(--ch-track-14);
+}
+.ch-prc-block__why b {
+  font: var(--ch-type-14-strong);
+  letter-spacing: var(--ch-track-14);
+  color: var(--ch-text-primary);
+}
+.ch-prc-block > .ch-prc-more {
+  position: absolute;
+  top: 4px;
+  inset-inline-end: 0;
+}
+.ch-prc-more {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: none;
+  color: var(--ch-text-secondary);
+  cursor: pointer;
+}
+
+/* The helper: the screen's one feature card until it folds into a quiet row. */
+.ch-prc-feat {
+  display: grid;
+  gap: 4px;
+  padding: 20px;
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-feature-bg);
+  color: var(--ch-feature-ink);
+  box-shadow: var(--ch-feature-shadow);
+}
+.ch-prc .ch-prc-feat h2 {
+  font: var(--ch-type-20-strong);
+  letter-spacing: var(--ch-track-20);
+  color: var(--ch-feature-ink);
+}
+.ch-prc-feat p {
+  margin: 0;
+  font: var(--ch-type-14);
+  letter-spacing: var(--ch-track-14);
+  color: var(--ch-feature-ink-2);
+}
+.ch-prc-feat__facts {
+  display: grid;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-feature-ink-2);
+}
+.ch-prc-feat__facts li {
+  padding: 12px 0;
+  border-top: var(--ch-hairline-w) solid var(--ch-feature-sep);
+}
+.ch-prc-feat__facts b {
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-feature-ink);
+}
+.ch-prc-feat .ch-prc-feat__fail {
+  margin-top: 8px;
+  padding: 8px 12px;
+  border-radius: var(--ch-radius-md);
+  background: var(--ch-feature-icon-bg);
+  color: var(--ch-feature-ink);
+}
+.ch-prc-feat__go {
+  width: 100%;
+  margin-top: 12px;
+}
+/* The helper's key keeps its light face on the green in dark, as Hub's featured card's key does: the dark key read as a hole in the card,
+   its label the faintest thing on it. The ink is the card's own green; the keyboard ring is champagne so it shows on the green. */
+html[data-fw-theme='dark'] .ch-prc-feat .ch-btn--secondary {
+  background: var(--ch-on-green-ink);
+  box-shadow: none;
+  color: var(--ch-feature-bg);
+  text-shadow: none;
+}
+html[data-fw-theme='dark'] .ch-prc-feat .ch-btn--secondary[data-ch-pressed]:not(:disabled) {
+  background: var(--ch-on-green-ink-meta);
+}
+@media (hover: hover) {
+  html[data-fw-theme='dark'] .ch-prc-feat .ch-btn--secondary:active:not(:disabled) {
+    background: var(--ch-on-green-ink-meta);
+  }
+}
+html[data-fw-theme='dark'] .ch-prc-feat .ch-btn--secondary:focus-visible {
+  box-shadow: 0 0 0 2px var(--ch-feature-bg), 0 0 0 4px var(--ch-border-focus-on-dark);
+}
+/* Keyboard focus on the green card is the champagne ring, as Hub's and Tournaments' green cards draw it (CONS-36): the page's green ring was
+   green on green by day, 1.5:1, around the text key and around the white one. */
+.ch-prc-feat :focus-visible {
+  outline-color: var(--ch-border-focus-on-dark);
+}
+.ch-root .ch-prc-feat .ch-btn:focus-visible {
+  box-shadow: 0 0 0 2px var(--ch-feature-bg), 0 0 0 4px var(--ch-border-focus-on-dark);
+}
+.ch-prc-feat__more {
+  min-height: 44px;
+  border: 0;
+  background: none;
+  color: var(--ch-feature-ink-2);
+  font: var(--ch-type-14-medium);
+  letter-spacing: var(--ch-track-14);
+  cursor: pointer;
+}
+.ch-prc-feat__ask {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 8px;
+}
+.ch-prc-feat__ask .ch-input {
+  flex: 1;
+  min-width: 0;
+}
+.ch-prc-fold {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 8px 16px;
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-card-bg);
+  box-shadow: var(--ch-card-shadow);
+  font: var(--ch-type-14);
+  letter-spacing: var(--ch-track-14);
+  color: var(--ch-text-secondary);
+}
+.ch-prc-fold__m {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--ch-radius-sm);
+  background: var(--ch-selected-strong);
+  color: var(--ch-text-on-accent);
+}
+/* Working: the CoachHelm wheel turns one spoke, then holds, as it does in Ask (CONS-24: the one spinner is ui/Spinner, and
+   the brand mark's turn is the named exception, not a second ring). The same keyframes as coachhelm-thread.css, repeated
+   here because this page does not load that stylesheet. */
+.ch-prc-fold__m.is-working svg {
+  animation: ch-th-turn var(--ch-dur-shimmer) var(--ch-ease-io) infinite;
+}
+@keyframes ch-th-turn {
+  70%,
+  100% {
+    transform: rotate(45deg);
+  }
+}
+.ch-prc-fold__t {
+  flex: 1;
+  min-width: 0;
+}
+.ch-prc-fold__t b {
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-text-primary);
+}
+.ch-prc-fold__said {
+  display: block;
+  margin-top: 4px;
+}
+
+/* Suggestions: outlined drafts on the well colour. Nothing is in the plan until kept. */
+.ch-prc-ghosts {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-prc-gb {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  padding: 16px;
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-well-bg-flat);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--ch-accent-ink) 70%, transparent);
+}
+.ch-prc-gb.is-arriving {
+  animation: ch-prc-arrive var(--ch-dur-base) var(--ch-ease) both;
+}
+@keyframes ch-prc-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+.ch-prc-gb__top {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  column-gap: 8px;
+  align-items: first baseline;
+  color: var(--ch-text-primary);
+}
+.ch-prc-gb__top b {
+  min-width: 0;
+  font: var(--ch-type-16-medium);
+  letter-spacing: var(--ch-track-16);
+}
+.ch-prc-gb__tm {
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
+}
+.ch-prc-gb__mn {
+  font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-text-secondary);
+}
+.ch-prc-gb__s {
+  font: var(--ch-type-13-strong);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-accent-ink);
+}
+.ch-prc-gb p {
+  margin: 0;
+  font: var(--ch-type-14);
+  letter-spacing: var(--ch-track-14);
+  color: var(--ch-text-secondary);
+}
+.ch-prc-gb p b {
+  font: var(--ch-type-14-strong);
+  letter-spacing: var(--ch-track-14);
+  color: var(--ch-text-primary);
+}
+.ch-prc-gb__a {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+/* Fields: a block's sheet and the desk's inspector draw the same ones. */
+.ch-prc-fields {
+  display: grid;
+  gap: 12px;
+}
+.ch-prc-fields__two {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.ch-prc-fields__len {
+  margin: 0;
+  font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-text-secondary);
+}
+.ch-prc-step {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 44px;
+  border-radius: var(--ch-radius-md);
+  background: var(--ch-well-bg-flat);
+}
+.ch-prc-step button {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: none;
+  color: var(--ch-text-primary);
+  cursor: pointer;
+}
+.ch-prc-step button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.ch-prc-step output {
+  font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
+}
+.ch-prc-timeform,
+.ch-prc-confirm,
+.ch-prc-changed {
+  display: grid;
+  gap: 12px;
+}
+.ch-prc-changed h3 {
+  margin: 0;
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-text-primary);
+}
+.ch-prc-changed ul {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font: var(--ch-type-14);
+  letter-spacing: var(--ch-track-14);
+  color: var(--ch-text-primary);
+}
+/* Publish: three facts, then the one press under them. */
+.ch-prc-facts {
+  display: grid;
+  margin: 0;
+  border-radius: var(--ch-radius-md);
+  background: var(--ch-well-bg-flat);
+}
+.ch-prc-facts div {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 8px;
+  padding: 12px 16px;
+  font: var(--ch-type-14);
+  letter-spacing: var(--ch-track-14);
+}
+.ch-prc-facts div + div {
+  border-top: var(--ch-hairline-w) solid var(--ch-separator);
+}
+.ch-prc-facts dt {
+  color: var(--ch-text-secondary);
+}
+.ch-prc-facts dd {
+  margin: 0;
+  color: var(--ch-text-primary);
+}
+
+/* The bank. */
+.ch-prc-bank {
+  display: grid;
+  gap: 8px;
+}
+.ch-prc-bank h4 {
+  margin: 8px 0 0;
+  font: var(--ch-type-13-strong);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-text-secondary);
+}
+.ch-prc-bank__q {
+  position: relative;
+  display: block;
+}
+.ch-prc-bank__q svg {
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  transform: translateY(-50%);
+  color: var(--ch-text-secondary);
+}
+.ch-prc-bank__q .ch-input {
+  width: 100%;
+  padding-left: 32px;
+}
+.ch-prc-bank__none {
+  margin: 0;
+  font: var(--ch-type-14);
+  letter-spacing: var(--ch-track-14);
+  color: var(--ch-text-secondary);
+}
+.ch-prc-drill {
+  display: grid;
+  gap: 2px;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: var(--ch-radius-md);
+  background: var(--ch-card-bg);
+  box-shadow: var(--ch-card-shadow);
+  color: var(--ch-text-primary);
+  text-align: start;
+  cursor: pointer;
+}
+.ch-prc-drill b {
+  font: var(--ch-type-14-medium);
+  letter-spacing: var(--ch-track-14);
+}
+.ch-prc-drill span {
+  font: var(--ch-type-12);
+  letter-spacing: var(--ch-track-12);
+  color: var(--ch-text-secondary);
+}
+
+/* Groups. A group's colour always comes with its letter. The tones are the app's own, the sheet's (coachhelm-plan.css): green, ochre,
+   slate, clay, stone and ink by day; at night their lit values, under the dark letter. */
+.ch-prc-groups {
+  display: grid;
+  gap: 12px;
+}
+.ch-prc-groups__a {
+  display: flex;
+  gap: 8px;
+}
+.ch-prc-group {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-card-bg);
+  box-shadow: var(--ch-card-shadow);
+}
+.ch-prc-group header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-text-secondary);
+}
+.ch-prc-group header b {
+  flex: 1;
+  font: var(--ch-type-16-medium);
+  letter-spacing: var(--ch-track-16);
+  color: var(--ch-text-primary);
+}
+.ch-prc-group ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-prc-disc {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--ch-radius-sm);
+  background: var(--ch-run-group-a);
+  color: var(--ch-run-group-on);
+  font: var(--ch-type-13-strong);
+  font-style: normal;
+}
+.ch-prc-group.is-b .ch-prc-disc, .ch-prc-disc.g-B { background: var(--ch-yr-so); }
+.ch-prc-group.is-c .ch-prc-disc, .ch-prc-disc.g-C { background: var(--ch-plan-group-d); }
+.ch-prc-group.is-d .ch-prc-disc, .ch-prc-disc.g-D { background: var(--ch-plan-group-f); }
+.ch-prc-group.is-e .ch-prc-disc, .ch-prc-disc.g-E { background: var(--ch-plan-group-e); }
+.ch-prc-group.is-f .ch-prc-disc, .ch-prc-disc.g-F { background: var(--ch-print-soft); }
+html[data-fw-theme='dark'] :is(.ch-prc-group.is-b .ch-prc-disc, .ch-prc-disc.g-B) { background: var(--ch-champagne-500); }
+html[data-fw-theme='dark'] :is(.ch-prc-group.is-c .ch-prc-disc, .ch-prc-disc.g-C) { background: var(--ch-plan-group-d-night); }
+html[data-fw-theme='dark'] :is(.ch-prc-group.is-d .ch-prc-disc, .ch-prc-disc.g-D) { background: var(--ch-plan-group-f-night); }
+html[data-fw-theme='dark'] :is(.ch-prc-group.is-e .ch-prc-disc, .ch-prc-disc.g-E) { background: var(--ch-plan-group-e-night); }
+html[data-fw-theme='dark'] :is(.ch-prc-group.is-f .ch-prc-disc, .ch-prc-disc.g-F) { background: var(--ch-ink-700); }
+.ch-prc-player {
+  /* A short name ("Eli") is still a 44pt target. */
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--ch-radius-md);
+  background: var(--ch-well-bg-flat);
+  color: var(--ch-text-primary);
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+  cursor: pointer;
+}
+
+/* Drills, the step. */
+.ch-prc-slots {
+  display: grid;
+  gap: 8px;
+}
+.ch-prc-slot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-card-bg);
+  box-shadow: var(--ch-card-shadow);
+}
+.ch-prc-slot.is-on {
+  background: var(--ch-selected-bg);
+  box-shadow: 0 0 0 2px var(--ch-border-focus);
+}
+.ch-prc-slot__t {
+  display: grid;
+  flex: 1;
+  gap: 2px;
+  min-width: 0;
+  font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-text-secondary);
+}
+.ch-prc-slot__t b {
+  font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-text-primary);
+}
+.ch-prc-slot__d {
+  color: var(--ch-accent-ink);
+}
+.ch-prc-slot__w {
+  color: var(--ch-loss);
+}
+
+/* Review. */
+.ch-prc-review {
+  display: grid;
+  gap: 12px;
+}
+.ch-prc-strip .is-err {
+  font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-loss);
+}
+.ch-prc-probs {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font: var(--ch-type-14);
+  letter-spacing: var(--ch-track-14);
+  color: var(--ch-text-secondary);
+}
+.ch-prc-probs button {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ch-text-primary);
+  font: var(--ch-type-14);
+  letter-spacing: var(--ch-track-14);
+  text-align: start;
+  cursor: pointer;
+}
+.ch-prc-strip__a {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+/* The desk: a rail, the board and the inspector, each scrolling on its own under one header. */
+.ch-prb.is-desk {
+  gap: 0;
+  grid-template-rows: auto minmax(0, 1fr);
+  width: 100%;
+  max-width: none;
+  padding: 0;
+  background: var(--ch-grouped-bg);
+}
+.ch-prb-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+  padding: 12px 24px;
+  background: var(--ch-card-bg);
+  border-bottom: var(--ch-hairline-w) solid var(--ch-separator);
+}
+.ch-prb-head__t {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 240px;
+}
+.ch-prb-title {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ch-text-primary);
+  font: var(--ch-type-20-strong);
+  letter-spacing: var(--ch-track-20);
+}
+.ch-prb-title:focus-visible {
+  outline: 0;
+  box-shadow: 0 1px 0 var(--ch-border-focus);
+}
+.ch-prb-head .ch-prb-when {
+  justify-content: flex-start;
+  font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
+}
+.ch-prb-head .ch-prc-ribbon {
+  flex: 0 1 320px;
+  min-width: 240px;
+}
+.ch-prb-head__m {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 12px;
+  min-width: 0;
+}
+/* On a Mac the head is one band, as drawn: Publish never drops to a second line. The title shares its row with the steps and the keys;
+   when and where runs on one line under it, under the steps too, so it never folds into the title's narrow column; the day's strip
+   stands beside both rows with room for its key on one line. */
+@media (min-width: 1100px) {
+  .ch-prb-head {
+    display: grid;
+    grid-template-columns: auto minmax(140px, 1fr) auto minmax(220px, 320px) auto auto;
+    gap: 0 16px;
+    align-items: center;
+  }
+  .ch-prb-head__t { display: contents; }
+  .ch-prb-head > .ch-backlink { grid-area: 1 / 1; align-self: center; }
+  .ch-prb-title { grid-area: 1 / 2; }
+  .ch-prb-head__steps { grid-area: 1 / 3; }
+  .ch-prb-head__m { grid-area: 2 / 2 / 3 / 4; }
+  .ch-prb-head .ch-prc-ribbon { grid-area: 1 / 4 / 3 / 5; min-width: 0; }
+  .ch-prb-head > .ch-btn { grid-row: 1; }
+  .ch-prb-head .ch-prb-when span { white-space: nowrap; }
+}
+/* A notice between the head and the board keeps the board's own margin: on a desk the page has no padding of its own. */
+/* Room under it too: the inspector's panel starts at the board's top edge and would sit over the bar's ring. */
+.ch-prb.is-desk > :is(.ch-prc-stale, .ch-prc-note) {
+  margin: 12px 24px;
+}
+.ch-prb-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+.ch-prb-body.has-rail {
+  grid-template-columns: 300px minmax(0, 1fr) 340px;
+}
+.ch-prb-rail,
+.ch-prb-insp {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  position: sticky;
+  top: 0;
+  max-height: calc(100vh - 160px);
+  overflow-y: auto;
+  padding: 16px;
+}
+.ch-prb-rail {
+  border-right: var(--ch-hairline-w) solid var(--ch-separator);
+}
+.ch-prb-insp {
+  border-left: var(--ch-hairline-w) solid var(--ch-separator);
+  background: var(--ch-card-bg);
+}
+.ch-prb-board {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  width: 100%;
+  max-width: var(--ch-measure-reading);
+  min-width: 0;
+  margin: 0 auto;
+  padding: 20px 24px 40px;
+}
+
+/* The plan page: a reading column the width of its sheet. Back, the plan's name and day, the coach's status line and keys, then the paper. */
+main.ch-prc-planpage {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  align-content: start;
+  box-sizing: border-box;
+  max-width: calc(var(--ch-measure-reading) + 2 * var(--ch-page-gutter));
+  margin: 0 auto;
+  padding: var(--ch-page-top-no-eyebrow) var(--ch-page-gutter) var(--ch-page-bottom);
+  color: var(--ch-text-primary);
+}
+/* The back link sits on its title: half the page's gap. */
+main.ch-prc-planpage > .ch-backlink {
+  margin-block-end: -8px;
+}
+/* On a desk the way back and the title stand where every detail page's do (tokens.css, --ch-page-back-top): the link 2px
+   under the bar, the title's top 82.5px under the link's (the link's 26px, the head's 12px and the page's 16px gap taken
+   off the way). */
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
+  main.ch-prc-planpage > .ch-backlink {
+    margin-block: calc(var(--ch-page-back-top) - var(--ch-page-top-no-eyebrow)) calc(var(--ch-back-to-title) - var(--ch-back-link-h) - 12px - 16px);
+  }
+}
+.ch-prc-planhead {
+  flex-wrap: nowrap;
+}
+.ch-prc-planhead > :first-child {
+  min-width: 0;
+}
+.ch-prc-planhead .ch-large-title {
+  text-wrap: balance;
+}
+.ch-prc-planhead .ch-prc-h__a {
+  flex: none;
+  flex-wrap: nowrap;
+}
+/* The coach's status, one line under the title: what state the plan is in, in words, with its keys at the line's end. */
+.ch-prc-planbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+.ch-prc-planbar__s {
+  display: flex;
+  flex: 1 1 220px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  min-width: 0;
+}
+/* A player's two keys on a phone, side by side. */
+.ch-prc-planacts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ch-prc-planacts > .is-fill {
+  flex: 1 1 0;
+}
+.ch-prc-planbar__s > .ch-btn {
+  margin-inline-start: auto;
+}
+.ch-prc-planbar__s p {
+  margin: 0;
+  font: var(--ch-type-14);
+  letter-spacing: var(--ch-track-14);
+  color: var(--ch-text-secondary);
+}
+.ch-prc-planbar__a {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.ch-prc-seenlist {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-prc-seenlist li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-text-primary);
+}
+
+/* Run (N-00 4.12): what is on now, lit with a fill and a ring; where each group is and goes next; and the rest of the day.
+   Now on the left and the rest beside it on a Mac; one under the other on a phone. */
+.ch-prc-run {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
+  .ch-prc-run {
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  }
+}
+.ch-prc-run__card,
+.ch-prc-run__rest {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  min-width: 0;
+  padding: 16px;
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-card-bg);
+  box-shadow: var(--ch-card-shadow);
+}
+.ch-prc-run__h {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.ch-prc-run__h h2 {
+  margin: 0;
+  font: var(--ch-type-13-strong);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-accent-ink);
+}
+/* Only Now is live: what comes after it is named in plain ink. */
+.ch-prc-run__rest .ch-prc-run__h h2 {
+  color: var(--ch-text-primary);
+}
+.ch-prc-run__h span {
+  font: var(--ch-type-14-medium);
+  letter-spacing: var(--ch-track-14);
+  color: var(--ch-text-secondary);
+}
+.ch-prc-run__now {
+  display: grid;
+  gap: 2px;
+  padding: 12px 16px;
+  border-radius: var(--ch-radius-md);
+  background: var(--ch-selected-bg);
+  box-shadow: inset 0 0 0 2px var(--ch-selected-pill-ring);
+}
+.ch-prc-run__now b {
+  font: var(--ch-type-20-strong);
+  letter-spacing: var(--ch-track-20);
+  color: var(--ch-text-primary);
+}
+.ch-prc-run__now span {
+  font: var(--ch-type-14);
+  letter-spacing: var(--ch-track-14);
+  color: var(--ch-text-secondary);
+}
+.ch-prc-run__groups {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-prc-run__groups li {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  min-height: 56px;
+  padding-block: 8px;
+}
+.ch-prc-run__groups li + li {
+  border-block-start: var(--ch-hairline-w) solid var(--ch-separator);
+}
+.ch-prc-run__groups li b {
+  display: block;
+  font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-text-primary);
+}
+.ch-prc-run__groups li small {
+  display: block;
+  font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-text-secondary);
+}
+.ch-prc-run__a {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 8px;
+  align-items: center;
+  padding-top: 12px;
+  border-top: var(--ch-hairline-w) solid var(--ch-separator);
+  font: var(--ch-type-14);
+  letter-spacing: var(--ch-track-14);
+  color: var(--ch-text-secondary);
+}
+/* The rest of the day reads as Up next does on Practice: the clock, the block, where and how long. */
+.ch-prc-run__rest .ch-prc-next__rows {
+  margin: -8px 0;
+  color: var(--ch-text-primary);
+}
+
+/* The library: Drills, a drill, Groups, Templates (N-00 4.1). */
+/* Practice's tabs on a phone: four equal columns, a label with a little room each side. Where a label would not fit its column
+   (the largest Text Sizes, the narrowest phones; PracticeTabs measures) they are two rows of two, never clipped and never scrolled. */
+.ch-prc-tabs .ch-seg--block {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.ch-prc-tabs .ch-seg--block .ch-seg__b {
+  padding-inline: 8px;
+}
+.ch-prc-tabs.is-two .ch-seg--block {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+/* Finding a drill: the search, then the areas. */
+.ch-prc-find {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.ch-prc-areas {
+  gap: 8px;
+  min-width: 0;
+}
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
+  /* One line on a Mac: the search at a field's width, the areas beside it. */
+  .ch-prc-find {
+    grid-template-columns: minmax(240px, 320px) minmax(0, 1fr);
+    align-items: center;
+  }
+  /* The drills as a shelf, each its own card, three across at the page's width; every card in a row is as tall as its tallest. */
+  .ch-prc-list.is-drills {
+    grid-template-columns: repeat(auto-fill, minmax(288px, 1fr));
+    gap: 12px;
+    overflow: visible;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-prc-list.is-drills li {
+    display: grid;
+    border-radius: var(--ch-radius-lg);
+    background: var(--ch-card-bg);
+    box-shadow: var(--ch-card-shadow);
+  }
+  .ch-prc-list.is-drills li + li {
+    border-top: 0;
+  }
+  .ch-prc-list.is-drills .ch-prc-row {
+    align-items: start;
+    padding: 16px;
+    border-radius: inherit;
+  }
+  .ch-prc-list.is-drills .ch-prc-row > svg {
+    margin-top: 2px;
+  }
+}
+.ch-prc-dfacts {
+  display: grid;
+  margin: 0;
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-card-bg);
+  box-shadow: var(--ch-card-shadow);
+}
+.ch-prc-dfacts:empty {
+  display: none;
+}
+.ch-prc-dfacts div {
+  display: grid;
+  gap: 2px;
+  padding: 12px 16px;
+}
+.ch-prc-dfacts div + div {
+  border-top: var(--ch-hairline-w) solid var(--ch-separator);
+}
+.ch-prc-dfacts dt {
+  font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-text-secondary);
+}
+.ch-prc-dfacts dd {
+  margin: 0;
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-text-primary);
+  overflow-wrap: anywhere;
+}
+.ch-prc-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-prc-gcard {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+  padding: 16px;
+  border: 0;
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-card-bg);
+  box-shadow: var(--ch-card-shadow);
+  text-align: start;
+  font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-text-secondary);
+  cursor: pointer;
+}
+.ch-prc-gcard b,
+.ch-prc-tmpl b {
+  font: var(--ch-type-16-medium);
+  letter-spacing: var(--ch-track-16);
+  color: var(--ch-text-primary);
+}
+.ch-prc-faces {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+.ch-prc-faces small {
+  font: var(--ch-type-12-strong);
+  color: var(--ch-text-secondary);
+}
+.ch-prc-tmpl {
+  position: relative;
+  font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-text-secondary);
+}
+.ch-prc-tmpl > :is([aria-haspopup], .ch-icon-btn) {
+  position: absolute;
+  top: 8px;
+  inset-inline-end: 8px;
+}
+.ch-prc-tmpl__go {
+  display: grid;
+  /* A card stretched to its row's height keeps its lines together at the top. */
+  align-content: start;
+  gap: 4px;
+  min-width: 0;
+  padding: 0;
+  padding-inline-end: 32px;
+  border: 0;
+  background: none;
+  text-align: start;
+  font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-text-secondary);
+  cursor: pointer;
+}
+.ch-prc-tmpl__go small {
+  font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
+}
+/* Only the name and its line make room for the card's ⋯: what the template is and its blocks run to the card's own inset, rule and all. */
+.ch-prc-tmpl__go > small,
+.ch-prc-tmpl__go > .ch-prc-glance {
+  margin-inline-end: -32px;
+}
+.ch-prc-glance {
+  display: grid;
+  gap: 2px;
+  margin: 8px 0 0;
+  padding: 8px 0 0;
+  border-top: var(--ch-hairline-w) solid var(--ch-separator);
+  list-style: none;
+  font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-text-primary);
+}
+.ch-prc-glance li {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 8px;
+}
+.ch-prc-glance li > span:first-child {
+  color: var(--ch-text-secondary);
+}
+.ch-prc-checks {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-prc-checks label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-text-primary);
+}
+.ch-prc-checks li + li {
+  border-top: var(--ch-hairline-w) solid var(--ch-separator);
+}
+
+/* The player's next practice, drawn as their plan page draws it. The page already has its gutters, so the borrowed block brings none. */
+.ch-prc .ch-prc-today {
+  padding: 0;
+}
+.ch-prc-today__go {
+  justify-self: stretch;
+}
+
+/* Phone. */
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
+  .ch-prc,
+  main.ch-prc-planpage {
+    padding: 8px var(--ch-page-x-phone) calc(var(--ch-page-bottom-tall) + env(safe-area-inset-bottom));
+  }
+  .ch-prc {
+    gap: 16px;
+  }
+  /* The week scrolls sideways on a phone, snapped, with today in view. */
+  .ch-prc-week {
+    display: flex;
+    margin: 0 calc(-1 * var(--ch-page-x-phone));
+    padding: 2px var(--ch-page-x-phone);
+    overflow-x: auto;
+    scroll-padding-inline: var(--ch-page-x-phone);
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+  }
+  .ch-prc-week::-webkit-scrollbar {
+    display: none;
+  }
+  .ch-prc-tile {
+    flex: 0 0 112px;
+    scroll-snap-align: start;
+  }
+  .ch-prc-next,
+  .ch-prc-feat {
+    padding: 16px;
+  }
+  .ch-prc-next__a > *,
+  .ch-prc-h__a.is-page > * {
+    flex: 1 1 0;
+  }
+  .ch-prc-h__a.is-page {
+    flex-basis: 100%;
+  }
+  .ch-prc-slot {
+    flex-wrap: wrap;
+  }
+  .ch-prc-slot__t {
+    flex-basis: 100%;
+  }
+  /* The areas are one row that scrolls sideways, out to the screen's edges; the clipped edge fades (.ch-hscroll) and the chosen area is kept whole. */
+  .ch-prc-areas {
+    flex-wrap: nowrap;
+    margin: 0 calc(-1 * var(--ch-page-x-phone));
+    padding: 2px var(--ch-page-x-phone);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .ch-prc-areas::-webkit-scrollbar {
+    display: none;
+  }
+  .ch-prc-areas .ch-pill {
+    flex: none;
+  }
+  /* The coach's keys follow Run on a phone, side by side. */
+  .ch-prc-planbar__a > * {
+    flex: 1 1 0;
+  }
+  /* The state and who has seen it on one line; a draft's and unpublished edits' sentence under it. */
+  .ch-prc-planbar__s p:not(.ch-sr-only) {
+    order: 1;
+    flex-basis: 100%;
+  }
+  .ch-prc-run__a {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .ch-prc-run__a > span {
+    grid-column: 1 / -1;
+  }
+  /* A print option's switch is drawn 40 by 23; a finger gets 44 by 44 around it, the shared reach (controls.css). */
+  .ch-prt-opt .ch-switch {
+    position: relative;
+  }
+  .ch-prt-opt .ch-switch::after {
+    content: '';
+    position: absolute;
+    inset: min(0px, calc(50% - 22px));
+  }
+}
+@media (max-width: 820px) and (min-width: 414px) {
+  .ch-prc,
+  main.ch-prc-planpage {
+    padding-inline: 20px;
+  }
+  .ch-prc-week {
+    margin: 0 -20px;
+    padding: 2px 20px;
+    scroll-padding-inline: 20px;
+  }
+  .ch-prc-areas {
+    margin: 0 -20px;
+    padding: 2px 20px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ch-prc-gb.is-arriving,
+  .ch-prc-block.is-kept,
+  .ch-prc-fold__m.is-working svg {
+    animation: none;
+  }
+  .ch-prc-open svg,
+  .ch-prc-opt__r {
+    transition: none;
+  }
+}
+
+/* Print studio (N-00 4.14): the options in one list, the sheets as paper at their real size, scaled to the column. */
+.ch-prt-layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 32px; align-items: start; }
+.ch-prt-side { grid-column: 2; grid-row: 1; position: sticky; top: 16px; display: grid; gap: 12px; }
+.ch-prt-pages { grid-column: 1; grid-row: 1; display: grid; gap: 24px; min-width: 0; }
+.ch-prt-opts { margin: 0; padding: 0; border-radius: var(--ch-radius-lg); background: var(--ch-card-bg); box-shadow: var(--ch-elevation-lifted); list-style: none; overflow: hidden; --ch-group-inset: 16px; }
+.ch-prt-opt { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-inline: 16px; }
+.ch-prt-opt__t { display: grid; gap: 2px; min-width: 0; }
+.ch-prt-opt__t b { font: var(--ch-type-15-medium); letter-spacing: var(--ch-track-15); color: var(--ch-text-primary); }
+.ch-prt-opt__t span { font: var(--ch-type-13); color: var(--ch-text-secondary); }
+.ch-prt-note { margin: 0; padding-inline: 16px; font: var(--ch-type-13); color: var(--ch-text-secondary); }
+.ch-prt-none { margin: 0; padding: 48px 16px; font: var(--ch-type-15); letter-spacing: var(--ch-track-15); text-align: center; color: var(--ch-text-secondary); }
+.ch-prt-sheet { display: grid; justify-items: center; gap: 8px; margin: 0; min-width: 0; }
+.ch-prt-sheet figcaption { font: var(--ch-type-13); color: var(--ch-text-secondary); }
+.ch-prt-frame { position: relative; width: 100%; overflow: hidden; background: var(--ch-print-paper); border-radius: var(--ch-radius-xs); box-shadow: var(--ch-elevation-lifted); }
+/* Where the printer starts the next sheet, drawn over the paper: a dashed rule and its words. It is the studio's, never printed. */
+.ch-prt-cut { position: absolute; inset-inline: 0; display: flex; justify-content: flex-end; padding: 2px 8px 0; border-block-start: 1px dashed var(--ch-print-soft); font: var(--ch-type-11-medium); letter-spacing: var(--ch-track-11); color: var(--ch-print-soft); pointer-events: none; }
+.ch-prt-paper { position: absolute; inset: 0 auto auto 0; transform-origin: 0 0; visibility: hidden; color: var(--ch-print-ink); }
+.ch-prt-paper[data-ui='clubhouse'] { --ch-type-k: var(--ch-print-k); }
+.ch-prt-paper[data-ready] { visibility: visible; }
+
+/* One sheet, on screen and on paper: ink on white, so it copies the same in black and white. */
+.ch-prt-page { box-sizing: border-box; display: flex; flex-direction: column; gap: 24px; color: var(--ch-print-ink); background: var(--ch-print-paper); }
+/* Every piece is a portrait sheet of US Letter inside the print's own 16mm margin (`printNode` sets it for the length of the print). A landscape sheet cannot be
+   promised: WebKit has no named pages, so it printed the range board and the pocket cards on portrait paper, and Chrome turned the paper and still laid the piece
+   out at the portrait width (both seen 10 Nov 2026). So the paper drawn here is the paper that comes out. */
+.ch-prt-page--tall, .ch-prt-page--wide { min-height: 1056px; padding: 16mm; }
+.ch-prt-page .ch-cp-sheet { flex: none; align-content: start; padding: 0; border-radius: 0; background: none; box-shadow: none; }
+.ch-prt-page .ch-cp-sheet[data-part='rest'] .pp-two { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+.ch-prt-page .ch-cp-sheet[data-part='rest'] .pp-check { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 32px; }
+.ch-prt-page .ch-cp-sheet[data-part='rest'] .pp-check li { padding-block: 8px; border-block-end: var(--ch-hairline-w) solid var(--ch-print-rule); }
+.ch-prt-page .ch-cp-sheet[data-part='rest'] .pp-check li::before { content: none; }
+.ch-prt-page .ch-cp-sheet[data-part='rest'] .pp-lines { gap: 32px; padding-block-start: 16px; }
+.ch-prt-brief h3 { margin: 0 0 8px; padding-block-end: 8px; border-block-end: var(--ch-hairline-w) solid var(--ch-print-ink); font: var(--ch-type-13-strong); color: var(--ch-print-ink); }
+.ch-prt-brief ul { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 32px; margin: 0; padding: 0; list-style: none; }
+.ch-prt-brief li { display: grid; gap: 2px; align-content: start; }
+.ch-prt-brief b { font: var(--ch-type-14-strong); color: var(--ch-print-ink); }
+.ch-prt-brief span { font: var(--ch-type-12); color: var(--ch-print-soft); }
+.ch-prt-from { margin: 0; font: var(--ch-type-15); letter-spacing: var(--ch-track-15); color: var(--ch-print-soft); }
+.ch-prt-run { display: flex; justify-content: space-between; gap: 16px; padding-block-end: 8px; border-block-end: var(--ch-hairline-w) solid var(--ch-print-rule); font: var(--ch-type-13); color: var(--ch-print-soft); }
+.ch-prt-foot { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-block-start: auto; padding-block-start: 12px; border-block-start: var(--ch-hairline-w) solid var(--ch-print-rule); font: var(--ch-type-12); color: var(--ch-print-soft); }
+.ch-prt-foot__l { flex: 1; min-width: 0; }
+.ch-prt-foot__q { display: inline-flex; align-items: center; gap: 8px; }
+.ch-prt-foot__p { flex: none; }
+.ch-prt-qr { display: block; width: 48px; height: 48px; color: var(--ch-print-ink); }
+.ch-prt-qr svg { display: block; width: 100%; height: 100%; }
+
+.ch-prt-board__h { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; }
+.ch-prt-board__h h2 { margin: 4px 0 0; font: var(--ch-type-print-title); letter-spacing: var(--ch-track-28); color: var(--ch-print-ink); }
+.ch-prt-board__t { display: grid; justify-items: end; gap: 2px; font: var(--ch-type-15); letter-spacing: var(--ch-track-15); color: var(--ch-print-soft); }
+.ch-prt-board__t b { font: var(--ch-type-28-strong); letter-spacing: var(--ch-track-28); color: var(--ch-print-ink); }
+.ch-prt-board { flex: 1; width: 100%; border-collapse: collapse; table-layout: fixed; }
+.ch-prt-board thead th { padding: 0 0 12px 16px; text-align: start; vertical-align: bottom; }
+.ch-prt-board thead th b { display: block; font: var(--ch-type-22-strong); letter-spacing: var(--ch-track-22); color: var(--ch-print-ink); }
+.ch-prt-board thead th span { display: block; margin-block-start: 4px; font: var(--ch-type-15); letter-spacing: var(--ch-track-15); color: var(--ch-print-soft); }
+.ch-prt-board thead td { width: 148px; }
+.ch-prt-board tbody th, .ch-prt-board tbody td { padding: 12px 0 12px 16px; border-block-start: var(--ch-hairline-w) solid var(--ch-print-rule); font: var(--ch-type-print-figure); text-align: start; color: var(--ch-print-ink); }
+.ch-prt-board tbody th { padding-inline-start: 0; }
+.ch-prt-board small { font: var(--ch-type-15); letter-spacing: var(--ch-track-15); color: var(--ch-print-soft); }
+.ch-prt-board tbody tr { break-inside: avoid; }
+
+.ch-prt-cards { flex: 1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin: -16mm; }
+.ch-prt-card { display: flex; flex-direction: column; gap: 12px; padding: 16mm 32px; break-inside: avoid; }
+.ch-prt-card + .ch-prt-card { border-inline-start: var(--ch-hairline-w) dashed var(--ch-print-soft); }
+.ch-prt-card header { display: flex; justify-content: space-between; gap: 12px; font: var(--ch-type-12); color: var(--ch-print-soft); }
+.ch-prt-card h3 { margin: 4px 0 0; font: var(--ch-type-28-strong); letter-spacing: var(--ch-track-28); color: var(--ch-print-ink); }
+.ch-prt-card__deck { margin: 0; font: var(--ch-type-14); color: var(--ch-print-soft); }
+.ch-prt-card ol { display: grid; margin: 0; padding: 0; list-style: none; }
+.ch-prt-card li { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 8px; padding-block: 8px; border-block-start: var(--ch-hairline-w) solid var(--ch-print-rule); font: var(--ch-type-13); }
+.ch-prt-card li b { display: block; font: var(--ch-type-13-strong); }
+.ch-prt-card li small { display: block; font: var(--ch-type-12); color: var(--ch-print-soft); }
+.ch-prt-card__bring { margin: 0; font: var(--ch-type-12); color: var(--ch-print-soft); }
+
+.ch-prt-drills { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 32px; align-content: start; }
+.ch-prt-drills article { display: grid; gap: 6px; align-content: start; break-inside: avoid; }
+.ch-prt-drills h3 { margin: 0; font: var(--ch-type-15-strong); letter-spacing: var(--ch-track-15); color: var(--ch-print-ink); }
+.ch-prt-drills small { font: var(--ch-type-12); color: var(--ch-print-soft); }
+.ch-prt-drills p { margin: 0; font: var(--ch-type-13); color: var(--ch-print-ink); }
+.ch-prt-drills ul { display: grid; margin: 0; padding: 0; list-style: none; }
+.ch-prt-drills li { display: flex; justify-content: space-between; gap: 8px; padding-block: 4px; border-block-start: var(--ch-hairline-w) solid var(--ch-print-rule); font: var(--ch-type-12); }
+.ch-prt-dia { display: block; width: 100%; height: auto; padding-block: 8px; border-block: var(--ch-hairline-w) solid var(--ch-print-rule); fill: none; stroke: var(--ch-print-ink); stroke-width: 1.25; }
+.ch-prt-dia .s { fill: var(--ch-print-rule); fill-opacity: 0.35; stroke: none; }
+.ch-prt-dia .f { fill: var(--ch-print-ink); stroke: none; }
+
+@media print {
+  .ch-prt-page { padding: 0; break-after: page; }
+  .ch-prt-page:last-child { break-after: auto; }
+  /* Short of the sheet on purpose. Inside the margins a sheet holds 9.74in; a piece set to fill it exactly sent its footer to a sheet of its own (every piece did,
+     in the paginated render of 10 Nov 2026), so the footer sits near the foot of the sheet and never over it. */
+  .ch-prt-page--tall, .ch-prt-page--wide { min-height: 9.3in; }
+  .ch-prt-cards { margin: 0; }
+  .ch-prt-card { padding: 0 24px; }
+  .ch-prt-card:first-child { padding-inline-start: 0; }
+  .ch-prt-card:last-child { padding-inline-end: 0; }
+}
+.ch-prt-count { display: grid; gap: 2px; margin: 0; padding-inline: 16px; font: var(--ch-type-13); letter-spacing: var(--ch-track-13); color: var(--ch-text-secondary); }
+.ch-prt-count b { font: var(--ch-type-15-medium); letter-spacing: var(--ch-track-15); color: var(--ch-text-primary); }
+
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
+  .ch-prt-layout { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .ch-prt-side { grid-column: 1; grid-row: 1; position: static; }
+  .ch-prt-pages { grid-column: 1; grid-row: 2; }
+}
+
+/* Practice in waiting (PracticeSkeletons.tsx): a page's skeleton is the page's own boxes with the shared bars in them, so these
+   rules only place what the page places by element (the Up next title's margin, a tile's day on its baseline) and show the part
+   the width has: a skeleton is drawn once for both widths, since the server draws it before it knows the width. */
+.ch-prc-sk-next {
+  margin-top: 4px;
+}
+/* The strip's key in waiting: the key's own row (`.ch-prc-ribbon__mix`), without the square it draws before each kind. */
+.ch-prc-sk-mix {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-top: 8px;
+}
+.ch-prc-tile__d.ch-prc-sk-mid {
+  align-items: center;
+}
+.ch-prc-sk-still {
+  cursor: default;
+}
+/* A line of facts in waiting: each fact a bar that wraps whole, as `wholeFacts` keeps the words (facts.ts). */
+.ch-prc-sk-facts {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 6px;
+}
+/* Seen by, at the status line's end as the loaded key is (`.ch-prc-planbar__s > .ch-btn`), its words inside the key's 12px. */
+.ch-prc-sk-end {
+  margin-inline-start: auto;
+  padding-inline: 12px;
+}
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
+  main[aria-busy='true'] .ch-prc-sk-desk {
+    display: none;
+  }
+  /* The large title's bar stands in the title's one line, so the line under it does not move when the word lands. */
+  .ch-prc-sk-title {
+    display: flex;
+    align-items: center;
+    min-height: 1lh;
+  }
+}
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
+  main[aria-busy='true'] .ch-prc-sk-phone {
+    display: none;
+  }
+}

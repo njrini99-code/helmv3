@@ -71,12 +71,12 @@ const lightToken = parseOklch(tokens.match(canvasDecl)![1]!);
 const darkStart = tokens.search(/^\.dark,?\s*$/m);
 const darkToken = parseOklch(tokens.slice(darkStart).match(canvasDecl)![1]!);
 
-/** Clubhouse's page at phone width (the app is always phone width): the light value in the phone block, the dark in the dark theme. */
+/** Clubhouse's page: one light value at every width since 2026-11-10 (the phone-only block is gone), the dark in the dark theme. */
 const ch = read('src/clubhouse/styles/tokens.css');
 const chPage = /--ch-bg-page:\s*(#[0-9a-fA-F]{6});/;
-const chPhone = ch.slice(ch.search(/@media \(max-width: 820px\)[^{]*\{\s*\[data-ui='clubhouse'\] \{/));
+const chLight = ch.slice(ch.search(/^\[data-ui='clubhouse'\] \{/m), ch.search(/html\[data-fw-theme='dark'\] \[data-ui='clubhouse'\] \{/));
 const chDark = ch.slice(ch.search(/html\[data-fw-theme='dark'\] \[data-ui='clubhouse'\] \{/));
-const chLightToken = hexToRgb(chPhone.match(chPage)![1]!);
+const chLightToken = hexToRgb(chLight.match(chPage)![1]!);
 const chDarkToken = hexToRgb(chDark.match(chPage)![1]!);
 
 const native = JSON.parse(read('config/native-canvas.json')) as { active: string; palettes: Record<string, { light: string; dark: string }> };
@@ -90,8 +90,12 @@ describe('native canvas palettes (config/native-canvas.json) match their tokens'
     expectClose(hexToRgb(native.palettes.fairway!.dark), darkToken, 'palette fairway dark');
   });
 
-  it('clubhouse is the phone --ch-bg-page', () => {
-    expect(chLightToken).toEqual(hexToRgb('#ede9df'));
+  it('clubhouse is --ch-bg-page, and it has one light value', () => {
+    expect(chLightToken).toEqual(hexToRgb('#f2f0e9'));
+    // No phone-only page colour comes back without this file and the native palette hearing of it.
+    expect(chLight.match(new RegExp(chPage.source, 'g'))).toHaveLength(1);
+    // The colour behind a rubber-band on the phone is the page's.
+    expect(ch).toMatch(/html:has\(\[data-ui='clubhouse'\]\) body \{\s*background: #f2f0e9;/);
     expect(hexToRgb(native.palettes.clubhouse!.light)).toEqual(chLightToken);
     expect(hexToRgb(native.palettes.clubhouse!.dark)).toEqual(chDarkToken);
   });

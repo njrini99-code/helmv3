@@ -38,8 +38,9 @@ function ui() {
   );
 }
 
+// The desktop book is a table: a round opens from the link in its name cell, which covers the row.
 const firstRow = () => {
-  const link = document.querySelector<HTMLAnchorElement>('a.ch-lgr__row[href*="/rounds/"]');
+  const link = document.querySelector<HTMLAnchorElement>('[role="table"] [role="row"] a.ch-trd-open[href*="/rounds/"]');
   if (!link) throw new Error('no round row');
   return link;
 };
@@ -66,6 +67,22 @@ describe('Team rounds · opening a round', () => {
   });
 });
 
+describe('Team rounds · the desktop book is a table', () => {
+  it('puts every value in a cell under its header, a band for each month', () => {
+    render(ui());
+    const table = screen.getByRole('table', { name: 'Team rounds' });
+    expect([...table.querySelectorAll('[role="columnheader"]')].map((h) => h.textContent)).toEqual(['Date', 'Player', 'Course', 'Tees', 'Type', 'Score', 'To par']);
+    const first = PREVIEW_TEAM_ROUNDS.rounds.list[0]!;
+    // Two players posted on Oct 12: inside a day the rounds run by player, A to Z, so Eli Brooks' 75 is above Jonah Okafor's 72.
+    expect(first.player).toBe('Eli Brooks');
+    const row = firstRow().closest('[role="row"]')!;
+    expect([...row.querySelectorAll('[role="cell"]')].map((c) => c.textContent)).toEqual(['Oct 12', expect.stringContaining(first.player), first.course, 'Blue tees', 'Qualifier', '75', '+3']);
+    expect(screen.getByRole('heading', { level: 2, name: 'October 2026' })).toBeTruthy();
+    // No stretched phone list beside it.
+    expect(document.querySelector('.ch-lgr')).toBeNull();
+  });
+});
+
 describe('Team rounds · a row is a push (A13, A14)', () => {
   it('a finger landing on a row fetches its review whole, once; opening it is silent', () => {
     resetPrefetchTabsForTests();
@@ -79,5 +96,12 @@ describe('Team rounds · a row is a push (A13, A14)', () => {
     expect(prefetch).toHaveBeenCalledWith(a.getAttribute('href'), { kind: PrefetchKind.FULL });
     fireEvent.click(a, { button: 0 });
     expect(hapticSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe('Team rounds · a row says where it came from', () => {
+  it('the review link carries from=rounds, so a reload names Back on the server render', () => {
+    render(ui());
+    expect(firstRow().getAttribute('href')).toMatch(/\/rounds\/[^?]+\?from=rounds$/);
   });
 });

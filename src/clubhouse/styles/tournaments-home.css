@@ -55,24 +55,32 @@
   flex-wrap: wrap;
   margin-top: auto;
 }
-/* Keys on the green: the week's action is an ivory key with forest ink (the plate stays light at night), the second a
-   ringed key in the card's ink. */
-.ch-tour-home-feat__go,
-.ch-tour-home-feat__go:hover:not(:disabled) {
+/* Keys on the green: the week's action is the ivory key with forest ink (the plate stays light at night); a second key
+   is the shared ghost for a green surface (.ch-btn--on-green, ui.css). Written from the card down so they outrank the
+   shared primary key's own face whichever sheet loads last: at one class each the green key won, and the week's action
+   read as a dark ghost on the dark card. */
+.ch-tour-home-feat .ch-tour-home-feat__go,
+.ch-tour-home-feat .ch-tour-home-feat__go:hover:not(:disabled):not(:focus-visible) {
   background: var(--ch-on-green-plate);
   color: var(--ch-green-800);
+  text-shadow: none;
   box-shadow: var(--ch-on-dark-primary-shadow);
 }
-.ch-tour-home-feat__alt,
-.ch-tour-home-feat__alt:hover:not(:disabled) {
-  background: rgb(255 255 255 / 0.1);
-  color: var(--ch-on-green-ink);
-  box-shadow: inset 0 0 0 var(--ch-hairline-w) rgb(255 255 255 / 0.16);
+.ch-tour-home-feat .ch-tour-home-feat__go[data-ch-pressed]:not(:disabled) {
+  background: var(--ch-on-green-plate);
+  filter: brightness(0.94);
 }
-.ch-tour-home-feat__go:focus-visible,
-.ch-tour-home-feat__alt:focus-visible {
+@media (hover: hover) {
+  .ch-tour-home-feat .ch-tour-home-feat__go:active:not(:disabled) {
+    background: var(--ch-on-green-plate);
+    filter: brightness(0.94);
+  }
+}
+/* Focus on the green is the on-dark ring alone: the shared key's ring is drawn for the page's paper. */
+.ch-root .ch-tour-home-feat .ch-btn:focus-visible {
   outline: 2px solid var(--ch-border-focus-on-dark);
   outline-offset: 2px;
+  box-shadow: none;
 }
 .ch-tour-home.is-phone .ch-tour-home-feat {
   padding: 16px;
@@ -95,6 +103,12 @@
   min-height: 44px;
   flex: 1 1 auto;
   justify-content: center;
+}
+
+/* A coming event's own line (the course, the holes, what happens next) wraps on the phone before it is ever cut. */
+.ch-tour-home.is-phone .ch-tour-home-others .ch-lgr__meta {
+  text-overflow: clip;
+  white-space: normal;
 }
 
 /* The date block that leads each other event (board .tr-date): the day over the month, in a soft well. */

@@ -375,7 +375,14 @@ export async function loadPlayerHelmGate(playerId: string): Promise<PlayerHelmGa
   return { status: 'off', reason };
 }
 
-/** The player's own CoachHelm. Their insights are their own, with or without a team. */
+/**
+ * RETIRED PAGE (owner, 2026-11-11): the loader of the player's old CoachHelm board, which no page draws any more. A player's
+ * CoachHelm is Your week, read by `loadPlayerYourWeek` (data/coachhelm-file.ts). Nothing calls this outside its tests; it is kept
+ * only because those tests also pin the helpers the surviving loaders share (the gate, `loadProposals`, `roundsToGo`). Do not
+ * build on it, and do not fix a page bug here.
+ *
+ * What it read: the player's own insights, with or without a team.
+ */
 export async function loadPlayerCoachHelm(input: { playerId: string }): Promise<ChPlayerHelm> {
   const supabase = await createClient();
   const noProposals: ChPlayerHelm['proposals'] = { list: [], error: false };
@@ -499,9 +506,13 @@ export function emptyCoachHelm(off: ChCoachHelmData['off'] = null): ChCoachHelmD
 }
 
 /**
- * The coach's CoachHelm for one team: the program pulse, and each player's top
- * insight with how many signals they have. Only the team's active players are
- * read, whichever other teams the coach staffs.
+ * RETIRED PAGE (owner, 2026-11-11): the loader of the coach's old signal-list board, which no page draws any more. The coach's
+ * CoachHelm Team page is the drawn golf hole, read by `loadCoachTeamBoard` (data/coachhelm-team.ts). Nothing calls this outside
+ * its tests; it is kept only because those tests also pin the helpers the Team page's loader shares (`topInsights`,
+ * `teamPatternsOf`, `pulseLater`, the gate). Do not build on it, and do not fix a page bug here.
+ *
+ * What it read: the program pulse, and each player's top insight with how many signals they have, for the team's active
+ * players only, whichever other teams the coach staffs.
  */
 export async function loadCoachCoachHelm(input: { coachId: string; teamId: string }): Promise<ChCoachHelmData> {
   const supabase = await createClient();
@@ -743,7 +754,7 @@ async function pulseOf(): Promise<ChPulse> {
 /**
  * The pulse as a read the board can draw later: started now, marked handled, and never rejecting, so the loader hands it to the
  * board without waiting for it and an early return leaves nothing unhandled. A pulse that threw is `failed`, which the board draws
- * as the pulse not loading (CH-13203), logged here.
+ * as the pulse not loading, logged here.
  */
 export function pulseLater(): Promise<ChPulseResult> {
   return handled(

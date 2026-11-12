@@ -5,7 +5,7 @@ import { formatSigned, changeTone } from '../../../lib/format';
 import { STATIONS, type ChStation, type ChTeamBoardData } from '../../../data/coachhelm-team-shape';
 import { STATION_NAME, STATION_SHORT } from './hole-geometry';
 
-/** Five equal chips: four spots, then Course after a hairline; its value is the read count (AC-HOLE-07, 14). */
+/** Five equal chips in one row: four spots, then Course after a hairline; its value is the read count (AC-HOLE-07, 14). */
 export function StationControl({
   value,
   onChange,
@@ -21,7 +21,7 @@ export function StationControl({
 }) {
   const words = courseReads === 0 ? 'No reads' : plural(courseReads, 'read');
   return (
-    <div className="stchips" role="group" aria-label="Spots on the hole, and Course" style={courseTab ? undefined : { gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' }}>
+    <div className="stchips" role="group" aria-label="Spots on the hole, and Course">
       {STATIONS.map((s) => {
         const v = stations[s].team;
         return (

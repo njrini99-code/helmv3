@@ -346,118 +346,74 @@ describe('Quiet notices', () => {
   });
 });
 
-describe('Class detail', () => {
-  const openStat = async () => {
-    await userEvent.click(screen.getByRole('button', { name: new RegExp(`^${STAT.code}`) }));
-    return screen.findByRole('dialog', { name: STAT.name, hidden: true });
-  };
-
-  it('adds nothing with the flag off', async () => {
-    show({ aware: false });
-    const dialog = await openStat();
-    expect(within(dialog).queryByText('Use for class status')).toBeNull();
-    expect(within(dialog).queryByText('Add an exam')).toBeNull();
+describe('Classes · a class\u2019s sheet with class status on: what a refusal and a limit do', () => {
+  beforeEach(() => {
+    live.day = myDay();
+    live.status = 'ready';
   });
+  /** Open ECON 310's sheet from its binder. */
+  async function openEcon(user: ReturnType<typeof userEvent.setup>) {
+    await user.click(screen.getByRole('button', { name: /^ECON 310/ }));
+    return screen.findByRole('dialog', { name: 'ECON 310' });
+  }
+  const uses = (sheet: HTMLElement) => within(sheet).getByRole('switch', { name: 'Use for class status' });
+  /** On, whether the switch is a checkbox or says so with aria-checked. */
+  const isOn = (el: HTMLElement) => el.getAttribute('aria-checked') === 'true' || (el as HTMLInputElement).checked === true;
+  /** The Add an exam sheet for ECON 310, filled in. */
+  async function examSheet(user: ReturnType<typeof userEvent.setup>, times: { start: string; end: string }) {
+    const sheet = await openEcon(user);
+    await user.click(within(sheet).getByRole('button', { name: 'Add an exam' }));
+    const exam = await screen.findByRole('dialog', { name: 'Add an exam' });
+    fireEvent.change(within(exam).getByLabelText('Exam date'), { target: { value: '2026-12-14' } });
+    fireEvent.change(within(exam).getByLabelText('Exam start'), { target: { value: times.start } });
+    fireEvent.change(within(exam).getByLabelText('Exam end'), { target: { value: times.end } });
+    return exam;
+  }
 
-  it('CH-12074 the switch writes the class’s status, and a refused write says so', async () => {
-    const { status } = show({ status: statusWrites({ setClassStatusEnabled: vi.fn().mockResolvedValueOnce({ success: false, error: 'no' }).mockResolvedValue({ success: true }) }) });
-    const dialog = await openStat();
-    const sw = within(dialog).getByRole('switch', { name: 'Use for class status' }) as HTMLInputElement;
-    expect(sw.checked).toBe(true);
-    await userEvent.click(sw);
+  it('CH-12074 a refused "Use for class status" says so, changes nothing on the page, and the switch goes back', async () => {
+    const user = userEvent.setup();
+    const status = statusWrites({ setClassStatusEnabled: vi.fn(async () => ({ success: false })) });
+    show({ status });
+    const sheet = await openEcon(user);
+    expect(isOn(uses(sheet))).toBe(true);
+    await user.click(uses(sheet));
     await expectCode('CH-12074', /Couldn’t change class status for this class/);
-    await waitFor(() => expect(sw.checked).toBe(true));
-    await userEvent.click(sw);
-    await waitFor(() => expect(status.setClassStatusEnabled).toHaveBeenLastCalledWith(STAT.id, false));
-    await waitFor(() => expect(sw.checked).toBe(false));
+    expect(code('CH-12074')!.textContent).toMatch(/Nothing was changed\. Try again\./);
+    expect(status.setClassStatusEnabled).toHaveBeenCalledWith(ECON.id, false);
+    await waitFor(() => expect(isOn(uses(sheet))).toBe(true));
+    // Nothing landed, so the day is not read again.
+    expect(live.refetchMine).not.toHaveBeenCalled();
   });
 
-  const fill = (label: string, value: string) => fireEvent.change(screen.getByLabelText(label), { target: { value } });
-  const startExam = async () => {
-    const dialog = await openStat();
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Add an exam' }));
-    return screen.findByRole('dialog', { name: 'Add an exam', hidden: true });
-  };
-
-  it('adds an exam labelled with the class code, lists it, and asks before removing it (CH-12570)', async () => {
-    const { status } = show();
-    const sheet = await startExam();
-    expect((within(sheet).getByRole('textbox', { name: 'Name' }) as HTMLInputElement).value).toBe('STAT 201 exam');
-    fill('Exam date', '2026-12-14');
-    fill('Exam start', '09:00');
-    fill('Exam end', '11:00');
-    await userEvent.click(within(sheet).getByRole('button', { name: 'Add exam' }));
-    await waitFor(() => expect(status.addExam).toHaveBeenCalledWith({ on: '2026-12-14', start: '09:00', end: '11:00', label: 'STAT 201 exam' }));
-    expect(hapticSpy).toHaveBeenCalledWith('success');
-    const list = await screen.findByRole('list', { name: 'Exams', hidden: true });
-    expect(within(list).getByText(/STAT 201 exam · Dec 14/)).toBeTruthy();
-    await userEvent.click(within(list).getByRole('button', { name: /^Remove STAT 201 exam on Dec 14/ }));
-    await expectCode('CH-12570', /Remove STAT 201 exam on Dec 14\?/);
-    expect(status.removeExam).not.toHaveBeenCalled();
-    await userEvent.click(screen.getByRole('button', { name: 'Remove' }));
-    await waitFor(() => expect(status.removeExam).toHaveBeenCalledWith('e1'));
-  });
-
-  it('CH-12170, CH-12171 and CH-12172 say what is wrong before anything is sent', async () => {
-    const { status } = show();
-    const sheet = await startExam();
-    fill('Exam date', '2026-12-14');
-    fill('Exam start', '09:00');
-    fill('Exam end', '08:00');
-    await userEvent.click(within(sheet).getByRole('button', { name: 'Add exam' }));
-    await expectCode('CH-12170', /The exam must end after it starts\./);
-    fill('Exam end', '14:00');
-    await expectCode('CH-12171', /Exams can be up to 4 hours\./);
-    fill('Exam end', '11:00');
-    fill('Exam date', '2027-02-01');
-    await expectCode('CH-12172', /Pick a date in Fall 2026\./);
-    expect(status.addExam).not.toHaveBeenCalled();
-  });
-
-  it('CH-12075 a refused add keeps the sheet; CH-12076 a refused remove keeps the exam', async () => {
-    const exam: ChExam = { id: 'e9', on: '2026-12-14', start: '09:00', end: '11:00', label: 'STAT 201 exam' };
-    const { status } = show({
-      status: statusWrites({ loadExams: vi.fn(async () => [exam]), addExam: vi.fn(async () => ({ success: false, error: 'no' })), removeExam: vi.fn(async () => ({ success: false, error: 'no' })) }),
-    });
-    const sheet = await startExam();
-    fill('Exam date', '2026-12-14');
-    fill('Exam start', '09:00');
-    fill('Exam end', '11:00');
-    await userEvent.click(within(sheet).getByRole('button', { name: 'Add exam' }));
+  it('CH-12075 a refused exam says so and keeps the sheet open with what was typed; no exam is listed', async () => {
+    const user = userEvent.setup();
+    const status = statusWrites({ addExam: vi.fn(async () => ({ success: false })) });
+    show({ status });
+    const exam = await examSheet(user, { start: '09:00', end: '11:00' });
+    await user.click(within(exam).getByRole('button', { name: 'Add exam' }));
     await expectCode('CH-12075', /Couldn’t add the exam/);
-    expect(screen.getByRole('dialog', { name: 'Add an exam', hidden: true })).toBeTruthy();
-    await userEvent.click(within(sheet).getByRole('button', { name: 'Cancel' }));
-    const list = await screen.findByRole('list', { name: 'Exams', hidden: true });
-    await userEvent.click(within(list).getByRole('button', { name: /^Remove/ }));
-    await userEvent.click(await screen.findByRole('button', { name: 'Remove' }));
-    await expectCode('CH-12076', /Couldn’t remove the exam/);
-    expect(status.removeExam).toHaveBeenCalledWith('e9');
-    expect(code('CH-12570')).not.toBeNull();
+    expect(code('CH-12075')!.textContent).toMatch(/Nothing was changed\. Try again\./);
+    expect(status.addExam).toHaveBeenCalledWith({ on: '2026-12-14', start: '09:00', end: '11:00', label: 'ECON 310 exam' });
+    expect(exam.hasAttribute('open')).toBe(true);
+    expect((within(exam).getByLabelText('Exam date') as HTMLInputElement).value).toBe('2026-12-14');
+    expect((within(exam).getByLabelText('Exam end') as HTMLInputElement).value).toBe('11:00');
+    expect(screen.queryByRole('list', { name: 'Exams' })).toBeNull();
   });
-});
 
-describe('The empty state', () => {
-  it('says coaches will see when the player is in class, only with the flag on', () => {
-    const empty = { ...PREVIEW_CLASSES, classes: { list: [], error: false } };
+  it('CH-12171 an exam longer than 4 hours is refused beside its end time and nothing is sent; exactly 4 hours is taken', async () => {
+    const user = userEvent.setup();
     const status = statusWrites();
-    const on = render(
-      <LazyMotion features={domAnimation}>
-        <ToastProvider>
-          <ClubhouseMarker role={ROLE} classAwareness>
-            <ClassesView data={empty} writes={classWrites()} statusWrites={status} />
-          </ClubhouseMarker>
-        </ToastProvider>
-      </LazyMotion>,
-    );
-    expect(document.body.textContent).toContain('Coaches will see when you’re in class, and your pushes wait until class ends.');
-    on.unmount();
-    render(
-      <LazyMotion features={domAnimation}>
-        <ToastProvider>
-          <ClassesView data={empty} writes={classWrites()} />
-        </ToastProvider>
-      </LazyMotion>,
-    );
-    expect(document.body.textContent).toContain('Your coach can see when you’re busy');
+    show({ status });
+    const exam = await examSheet(user, { start: '09:00', end: '13:01' });
+    // Nothing is said until Add exam is pressed.
+    expect(code('CH-12171')).toBeNull();
+    await user.click(within(exam).getByRole('button', { name: 'Add exam' }));
+    await expectCode('CH-12171', /Exams can be up to 4 hours\./);
+    expect(code('CH-12171')!.getAttribute('role')).toBe('alert');
+    expect(status.addExam).not.toHaveBeenCalled();
+    fireEvent.change(within(exam).getByLabelText('Exam end'), { target: { value: '13:00' } });
+    await waitFor(() => expect(code('CH-12171')).toBeNull());
+    await user.click(within(exam).getByRole('button', { name: 'Add exam' }));
+    await waitFor(() => expect(status.addExam).toHaveBeenCalledWith({ on: '2026-12-14', start: '09:00', end: '13:00', label: 'ECON 310 exam' }));
   });
 });

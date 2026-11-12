@@ -3,7 +3,7 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { ArrowRight, ChevronRight, Flag, Plus, ScrollText, Trash2, TriangleAlert } from 'lucide-react';
-import type { ChLibraryRound, ChRoundsLibrary, ChUnfinishedRound } from '../../data/rounds-shape';
+import { countsTowardAverage, type ChLibraryRound, type ChRoundsLibrary, type ChUnfinishedRound } from '../../data/rounds-shape';
 import { formatFixed } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
 import { normalise, useAction } from '../../lib/use-action';
@@ -83,7 +83,7 @@ export function groupRounds(list: ChLibraryRound[], by: Group, q: string): Array
 function GroupHead({ href, name, children }: { href: string | null; name: string; children: ReactNode }) {
   if (!href) return <div className="ch-rd-grp__h">{children}</div>;
   return (
-    <Link className="ch-rd-grp__h is-link" href={href} aria-label={`${name}: your history here`}>
+    <Link prefetch={false} className="ch-rd-grp__h is-link" href={href} aria-label={`${name}: your history here`}>
       {children}
       <Icon icon={ChevronRight} size={16} className="ch-rd-grp__go" />
     </Link>
@@ -183,7 +183,7 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
       {phone && <PhoneTop start heading={false} title="Rounds" />}
       <header className="ch-rd-h" data-canopy-head={phone ? undefined : 'tight'}>
         <div>
-          <span className="ch-rd-k">{counted ? `Since August 1 · ${counted} counted ${pluralWord(counted, 'round')}` : 'Since August 1'}</span>
+          <span className="ch-rd-k ch-num">{counted ? `Since August 1 · ${counted} counted ${pluralWord(counted, 'round')}` : 'Since August 1'}</span>
           {/* CH-11410: a refresh with the page on screen keeps it and says it is updating (a Try again is the usual cause). */}
           <span className="ch-rd-upd" role="status" data-ch-code={refreshing ? 'CH-11410' : undefined}>
             {refreshing ? 'Updating…' : ''}
@@ -270,7 +270,7 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
                         </button>
                       </Tooltip>
                       {href && (
-                        <Link href={href} className="ch-rd-more__go" onClick={() => haptic('press')}>
+                        <Link prefetch={false} href={href} className="ch-rd-more__go" onClick={() => haptic('press')}>
                           {r.readyToSubmit ? 'Post' : 'Continue'}
                         </Link>
                       )}
@@ -287,7 +287,7 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
               {!phone && <RovingRows selector=".ch-rd-book a.ch-rd-sc" within=".ch-rd" />}
               <div className="ch-rd-tools">
                 <SearchField value={q} onChange={setQ} placeholder="Search course…" label="Search rounds by course" />
-                <Segmented redraws
+                <Segmented weight="filter" redraws
                   label="Group rounds"
                   size="sm"
                   value={group}
@@ -302,8 +302,8 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
                 <EmptyState code="CH-11303" kind="filtered" compact title={`No rounds at “${q.trim()}”`} body="Check the spelling, or search part of the course name." />
               ) : (
                 groups.map((g) => {
-                  // Counted 18-hole rounds only, as the season card: a round marked "Not counted" became a group's low.
-                  const full = g.rounds.filter((r) => r.holes === 18 && r.countable !== false);
+                  // The rounds the season card reads, 18 holes, counted and not practice: a round marked "Not counted" became a group's low.
+                  const full = g.rounds.filter((r) => r.holes === 18 && r.countable !== false && countsTowardAverage(r));
                   return (
                     <section key={g.href ?? g.key} className="ch-rd-grp" aria-label={g.key}>
                       <GroupHead href={g.href ?? null} name={g.key}>

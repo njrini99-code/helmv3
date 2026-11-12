@@ -80,7 +80,7 @@ export function LedgerRow({
   return (
     <li className="ch-lgr__item" aria-label={href || onClick ? undefined : label}>
       {href ? (
-        <Link href={href} className={cls} data-ch-code={code} aria-label={label} onClick={onClick} onPointerDown={onPointerDown} data-ch-ahead={ahead}>
+        <Link prefetch={false} href={href} className={cls} data-ch-code={code} aria-label={label} onClick={onClick} onPointerDown={onPointerDown} data-ch-ahead={ahead}>
           {body}
         </Link>
       ) : onClick ? (

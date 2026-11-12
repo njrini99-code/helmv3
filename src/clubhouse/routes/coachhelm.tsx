@@ -6,10 +6,7 @@ import { pickGolfDashboardRole } from '@/lib/auth/golf-dashboard-role';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { isTrackRecordEnabled } from '@/lib/coachhelm/v3/track-record/flag';
 import { isMondayBriefEnabled } from '@/lib/coachhelm/v3/monday-brief/flag';
-import { COURSE_TAB, isTeamBoardEnabled, TEAM_BOARD_FIRST_VIEW } from '@/lib/coachhelm/v3/team-board/flag';
-import { isReadEnabled } from '@/lib/coachhelm/v3/read/flag';
-import { isAskV2Enabled, isPlayerAskEnabled } from '@/lib/coachhelm/v3/chat/ask-flag';
-import { isPlayerFileEnabled } from '@/lib/coachhelm/v3/player-file/flag';
+import { COURSE_TAB } from '@/lib/coachhelm/v3/team-board/flag';
 import { loadCoachPlayerFile, loadFileRoster, loadPlayerYourWeek } from '../data/coachhelm-file';
 import { FileSkeleton } from '../screens/coachhelm/file/FileSkeleton';
 import { PlayerFile } from '../screens/coachhelm/file/PlayerFile';
@@ -17,10 +14,11 @@ import { YourWeek } from '../screens/coachhelm/file/YourWeek';
 import { loadCoachRead, loadPlayerRead } from '../data/coachhelm-read-view';
 import { FILE_BYPASS, FILE_VIEW, PLAYER_HELM_HREF, READ_VIEW, coachPlayerHref, playerFileHref, type PlayerFileCard } from '../data/coachhelm-views-shape';
 import { ReadPage, ReadSkeleton } from '../screens/coachhelm/read/ReadPage';
-import { loadCoachTeamBoard } from '../data/coachhelm-team';
+import { emptyTeamBoard, loadCoachTeamBoard } from '../data/coachhelm-team';
 import { TeamBoard } from '../screens/coachhelm/team/TeamBoard';
 import { TeamBoardSkeleton } from '../screens/coachhelm/team/TeamBoardSkeleton';
-import { emptyCoachHelm, loadCoachCoachHelm, loadCoachHelmGate, loadPlayerCoachHelm, loadPlayerHelmGate } from '../data/coachhelm';
+import { loadCoachHelmGate, loadPlayerHelmGate } from '../data/coachhelm';
+import type { ChCoachHelmData } from '../data/coachhelm-shape';
 import { loadAskPlayer, loadAskCoachHelm } from '../data/coachhelm-chat';
 import { loadCoachPlayerDeepDive, loadCoachPlayerGame, loadCoachPlayerScope, loadCoachPlayerStanding, type ChCoachPlayerScope } from '../data/coachhelm-player';
 import { loadPlayerDeepDive } from '../data/coachhelm-dive';
@@ -28,13 +26,10 @@ import { loadPlayerGame } from '../data/coachhelm-profile';
 import { loadPlayerStanding } from '../data/coachhelm-standing';
 import { loadCoachTrackRecord } from '../data/coachhelm-track-record';
 import { loadCoachMondayBrief } from '../data/coachhelm-monday-brief';
-import { COACH_TRACK_RECORD_HREF } from '../data/coachhelm-track-record-shape';
 import { landsOnGame, PLAYER_HELM_DEVELOPMENT_HREF, playerHelmDrill, type ChViewLoad, type ChViewVoice, type CoachPlayerView as CoachPlayerViewName, type PlayerHelmView } from '../data/coachhelm-views-shape';
 import { Ask } from '../screens/coachhelm/chat/Ask';
 import { AskSkeleton } from '../screens/coachhelm/chat/AskSkeleton';
-import { CoachBoard } from '../screens/coachhelm/CoachBoard';
 import { CoachHelmSkeleton } from '../screens/coachhelm/CoachHelmSkeleton';
-import { PlayerBoard } from '../screens/coachhelm/PlayerBoard';
 import { CoachPlayerFailed, CoachPlayerNotOnTeam } from '../screens/coachhelm/views/CoachPlayerStates';
 import { DeepDive } from '../screens/coachhelm/views/DeepDive';
 import { DiveSkeleton, StandingSkeleton } from '../screens/coachhelm/views/Skeletons';
@@ -63,7 +58,7 @@ import '../styles/coachhelm-plan.css';
  * their team's players, whichever other teams they staff; a player reads only
  * their own insights, with or without a team, and is never handed a coach control.
  *
- * Every view of this page (the coach's Board and Ask, the player's Board, Standing and Deep dive) is one async
+ * Every view of this page (the coach's Team page and Ask, the player's Your week, Standing and Deep dive) is one async
  * component inside ONE Suspense, in the same place and not keyed by view (perf, 2026-10-01). A switch between views is a
  * transition, so React keeps the view on screen, dimmed by the tabs' own pending state (`useViewSwitch`), until the next view is
  * ready, and swaps once: no blank and no skeleton flash. The boundary's fallback is the skeleton of the view the address names,
@@ -73,21 +68,28 @@ import '../styles/coachhelm-plan.css';
  * they return as shown, so a page that is read twice, or ahead of the tap, would count insights nobody saw.
  */
 
-/** The coach's Board or Ask. The Board's loader checks the CoachHelm gate itself; Ask's is checked here, before its read. */
 async function PlayerAskView() {
-  return <Ask load={await loadAskPlayer()} v2 />;
+  return <Ask load={await loadAskPlayer()} />;
+}
+
+/**
+ * "CoachHelm is off" for a coach (CH-13305): the Team page with nothing read, whichever address led here. It is the one off
+ * page a coach has; the older signal-list board that once drew it is retired (owner, 2026-11-11).
+ */
+function CoachHelmOff({ off }: { off: NonNullable<ChCoachHelmData['off']> }) {
+  return <TeamBoard data={emptyTeamBoard(off)} courseTab={COURSE_TAB} />;
 }
 
 async function CoachHelmView({ coachId, teamId, ask, conversationId, initialPlayer, initialInsight }: { initialInsight?: string; coachId: string; teamId: string; ask: boolean; conversationId?: string; initialPlayer?: string }) {
-  if (!ask && isTeamBoardEnabled() && TEAM_BOARD_FIRST_VIEW === 'hole') return <TeamBoard askOn={isAskV2Enabled()} fileOn={isPlayerFileEnabled()} data={await loadCoachTeamBoard({ coachId, teamId })} initialPlayer={initialPlayer} initialInsight={initialInsight} courseTab={COURSE_TAB} readOn={isReadEnabled()} />;
-  if (!ask) return <CoachBoard data={await loadCoachCoachHelm({ coachId, teamId })} initialPlayer={initialPlayer} trackRecordHref={isTrackRecordEnabled() ? COACH_TRACK_RECORD_HREF : undefined} />;
-  // Ask is CoachHelm's, so it is off when CoachHelm is off for this coach, their team or GolfHelm, as the board is: the
-  // address that led here is answered with the board's own "CoachHelm is off" page, and a lookup that failed with Ask's own
+  // The coach's CoachHelm Team page is the drawn golf hole (TeamBoard); its loader checks the CoachHelm gate itself.
+  if (!ask) return <TeamBoard data={await loadCoachTeamBoard({ coachId, teamId })} initialPlayer={initialPlayer} initialInsight={initialInsight} courseTab={COURSE_TAB} />;
+  // Ask is CoachHelm's, so it is off when CoachHelm is off for this coach, their team or GolfHelm, as the Team page is: the
+  // address that led here is answered with the Team page's own "CoachHelm is off", and a lookup that failed with Ask's own
   // "did not load" notice, never with a chat that runs against a switch that is off.
   const gate = await loadCoachHelmGate(coachId);
-  if (gate.status === 'off') return <CoachBoard data={emptyCoachHelm(gate.off)} />;
+  if (gate.status === 'off') return <CoachHelmOff off={gate.off} />;
   if (gate.status === 'failed') return <Ask load={{ status: 'failed' }} />;
-  return <Ask v2={isAskV2Enabled()} slashFlags={{ plans: isFlagEnabled('coachhelm_practice_plans_v1') && isFlagEnabled('golf_practice_plans'), lineup: isFlagEnabled('golf_tournaments_v1') }} load={await loadAskCoachHelm({ conversationId })} />;
+  return <Ask slashFlags={{ plans: true, lineup: isFlagEnabled('golf_tournaments_v1') }} load={await loadAskCoachHelm({ conversationId })} />;
 }
 
 /** One read for a coach: state by state as `CoachPlayerPage` (coachhelm-read 02-PLAN 3.3). */
@@ -95,11 +97,11 @@ async function CoachReadPage({ coachId, teamId, playerId, insight }: { coachId: 
   const checked = await loadCoachPlayerScope({ coachId, teamId, playerId });
   if (checked.status === 'not-member') return <CoachPlayerNotOnTeam />;
   if (checked.status === 'failed') return <CoachPlayerFailed />;
-  if (checked.status === 'coach-off') return <CoachBoard data={emptyCoachHelm(checked.off)} />;
+  if (checked.status === 'coach-off') return <CoachHelmOff off={checked.off} />;
   const head = checked.status === 'ok' ? checked.scope.head : checked.head;
   const voice: ChViewVoice = { role: 'coach', ...head };
   if (checked.status === 'player-off') return <ReadPage load={{ status: 'off', reason: checked.reason }} voice={voice} />;
-  return <ReadPage askOn={isAskV2Enabled()} load={await loadCoachRead({ scope: checked.scope, insightId: insight })} voice={voice} />;
+  return <ReadPage load={await loadCoachRead({ scope: checked.scope, insightId: insight })} voice={voice} />;
 }
 
 const FILE_CARDS: readonly string[] = ['feat', 'plan', 'field', 'reads', 'sg', 'intent', 'track'];
@@ -109,7 +111,7 @@ async function CoachPlayerFilePage({ coachId, teamId, playerId, at, insight }: {
   const checked = await loadCoachPlayerScope({ coachId, teamId, playerId });
   if (checked.status === 'not-member') return <CoachPlayerNotOnTeam />;
   if (checked.status === 'failed') return <CoachPlayerFailed />;
-  if (checked.status === 'coach-off') return <CoachBoard data={emptyCoachHelm(checked.off)} />;
+  if (checked.status === 'coach-off') return <CoachHelmOff off={checked.off} />;
   if (checked.status === 'player-off') return <DeepDive load={{ status: 'off', reason: checked.reason }} voice={{ role: 'coach', ...checked.head }} initialId={null} />;
   const { scope } = checked;
   const card = at && FILE_CARDS.includes(at) ? (at as PlayerFileCard) : undefined;
@@ -135,7 +137,7 @@ async function PlayerReadView({ playerId, insight }: { playerId: string; insight
   const gate = await loadPlayerHelmGate(playerId);
   if (gate.status === 'off') return <ReadPage load={{ status: 'off', reason: gate.reason }} voice={{ role: 'player' }} />;
   if (gate.status === 'failed') return <ReadPage load={{ status: 'failed' }} voice={{ role: 'player' }} />;
-  return <ReadPage askOn={isAskV2Enabled()} load={await loadPlayerRead({ playerId, insightId: insight })} voice={{ role: 'player' }} />;
+  return <ReadPage load={await loadPlayerRead({ playerId, insightId: insight })} voice={{ role: 'player' }} />;
 }
 
 /** The coach's Track record (`?view=track-record`, flag `coachhelm_track_record_v1`; the route checks the flag). Its loader checks the CoachHelm gate. */
@@ -156,8 +158,7 @@ async function CoachMondayBriefView({ coachId, teamId }: { coachId: string; team
  * rows; `at` opens it there (`?view=profile`, CH-13913).
  */
 async function PlayerHelmView({ playerId, drill, insight, at }: { playerId: string; drill: Exclude<PlayerHelmView, 'board'> | null; insight?: string; at?: 'game' }) {
-  if (!drill && isPlayerFileEnabled()) return <PlayerYourWeek playerId={playerId} />;
-  if (!drill) return <PlayerBoard data={await loadPlayerCoachHelm({ playerId })} />;
+  if (!drill) return <PlayerYourWeek playerId={playerId} />;
   const gate = await loadPlayerHelmGate(playerId);
   const closed: ChViewLoad<never> | null = gate.status === 'on' ? null : gate.status === 'off' ? { status: 'off', reason: gate.reason } : { status: 'failed' };
   if (drill === 'standing') {
@@ -181,7 +182,7 @@ async function CoachPlayerPage({ coachId, teamId, playerId, drill, insight, at }
   const checked = await loadCoachPlayerScope({ coachId, teamId, playerId });
   if (checked.status === 'not-member') return <CoachPlayerNotOnTeam />;
   if (checked.status === 'failed') return <CoachPlayerFailed />;
-  if (checked.status === 'coach-off') return <CoachBoard data={emptyCoachHelm(checked.off)} />;
+  if (checked.status === 'coach-off') return <CoachHelmOff off={checked.off} />;
   const head = checked.status === 'ok' ? checked.scope.head : checked.head;
   const voice: ChViewVoice = { role: 'coach', ...head };
   if (checked.status === 'player-off') {
@@ -246,7 +247,7 @@ export async function ClubhouseCoachHelmRoute({ view, player, c, insight, open, 
       );
     }
     // The Track record is the coach's alone, and only with its flag on; with it off the address is the board.
-    if (view === READ_VIEW && isReadEnabled() && typeof player === 'string') {
+    if (view === READ_VIEW && typeof player === 'string') {
       if (typeof insight !== 'string') redirect(coachPlayerHref('deep-dive', player));
       return (
         <Suspense fallback={<ReadSkeleton />}>
@@ -263,7 +264,7 @@ export async function ClubhouseCoachHelmRoute({ view, player, c, insight, open, 
     }
     // A coach's view of one player: the address names the player, and the page checks it against this team before any read.
     const coachDrill = playerHelmDrill(view);
-    if (typeof player === 'string' && isPlayerFileEnabled()) {
+    if (typeof player === 'string') {
       if (view === FILE_VIEW) {
         return (
           <Suspense fallback={<FileSkeleton first={null} />}>
@@ -271,7 +272,7 @@ export async function ClubhouseCoachHelmRoute({ view, player, c, insight, open, 
           </Suspense>
         );
       }
-      if (coachDrill && from !== FILE_BYPASS) redirect(playerFileHref(player, { card: coachDrill === 'deep-dive' ? 'reads' : 'sg', insight: typeof insight === 'string' ? insight : undefined }, true));
+      if (coachDrill && from !== FILE_BYPASS) redirect(playerFileHref(player, { card: coachDrill === 'deep-dive' ? 'reads' : 'sg', insight: typeof insight === 'string' ? insight : undefined }));
     }
     if (coachDrill && typeof player === 'string') {
       return (
@@ -291,15 +292,15 @@ export async function ClubhouseCoachHelmRoute({ view, player, c, insight, open, 
     // The Ask sub-tab is the coach's alone: a player's `?view=ask` falls through to their own board below.
     const ask = view === 'ask';
     return (
-      <Suspense fallback={ask ? <AskSkeleton chained /> : isTeamBoardEnabled() && TEAM_BOARD_FIRST_VIEW === 'hole' ? <TeamBoardSkeleton /> : <CoachHelmSkeleton view="coach" chained />}>
+      <Suspense fallback={ask ? <AskSkeleton chained /> : <TeamBoardSkeleton />}>
         <CoachHelmView coachId={team.coachId} teamId={team.teamId} ask={ask} conversationId={c} initialPlayer={player} initialInsight={open === 'read' && typeof insight === 'string' ? insight : undefined} />
       </Suspense>
     );
   }
   if (session.player) {
     // A player on a coach's file address gets their own CoachHelm, the query dropped by replace; nothing of that player loads (CP-LNS-2).
-    if (view === FILE_VIEW && isPlayerFileEnabled()) redirect(PLAYER_HELM_HREF.board);
-    if (view === READ_VIEW && isReadEnabled()) {
+    if (view === FILE_VIEW) redirect(PLAYER_HELM_HREF.board);
+    if (view === READ_VIEW) {
       if (typeof insight !== 'string') redirect(PLAYER_HELM_HREF['deep-dive']);
       return (
         <Suspense fallback={<ReadSkeleton />}>
@@ -307,7 +308,7 @@ export async function ClubhouseCoachHelmRoute({ view, player, c, insight, open, 
         </Suspense>
       );
     }
-    if (view === 'ask' && isPlayerAskEnabled()) {
+    if (view === 'ask') {
       return (
         <Suspense fallback={<AskSkeleton chained player />}>
           <PlayerAskView />

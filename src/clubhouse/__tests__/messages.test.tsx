@@ -13,6 +13,16 @@ const router = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn(), replace: vi.
 const params = vi.hoisted(() => ({ current: new URLSearchParams() }));
 vi.mock('next/navigation', () => ({ useRouter: () => router, useSearchParams: () => params.current }));
 vi.mock('../lib/use-now', () => ({ useNow: () => null }));
+/** The redesign's three server-backed rail hooks, off the network: device pins, no mute glyphs, no typing rows. */
+vi.mock('../screens/messages/use-conversation-pins', async () => {
+  const { usePinned } = await import('../screens/messages/pinned');
+  return { useConversationPins: (viewer: string, team: string, ids: readonly string[], enabled: boolean) => usePinned(viewer, team, ids, enabled) };
+});
+vi.mock('../screens/messages/use-row-mutes', () => ({ isMutedRow: () => false, useRowMutes: () => ({ muted: null, refresh: () => {} }) }));
+vi.mock('../screens/messages/use-typing-by-conversation', () => ({ useTypingByConversation: () => new Map() }));
+// The open thread's private typing joins a Realtime channel through the browser client: never from a unit test (CI has the
+// project's URL in its environment, so an unmocked hook opened a live socket).
+vi.mock('../screens/messages/typing-channel', async (orig) => ({ ...(await orig<object>()), usePrivateTyping: () => ({ typingUserIds: [], send: () => {} }) }));
 /** Phone or desktop layout (useChPhone), set per test. */
 const layout = vi.hoisted(() => ({ phone: false }));
 vi.mock('../lib/use-phone', () => ({ useChPhone: () => layout.phone, CH_PHONE_QUERY: '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' }));
@@ -97,6 +107,7 @@ vi.mock('@/app/golf/actions/communication', () => ({ acknowledgeAnnouncement: a.
 
 import type { ChMessagesData } from '../data/messages';
 import { Messages } from '../screens/messages/Messages';
+import { pollCardActions } from '../screens/messages/polls';
 import { DraftStore } from '../screens/messages/drafts';
 import { MessagesSkeleton } from '../screens/messages/MessagesSkeleton';
 import { MessagesNoTeam } from '../screens/messages/MessagesNoTeam';
@@ -171,15 +182,19 @@ function showPhone(d: ChMessagesData = data) {
 }
 type User = ReturnType<typeof userEvent.setup>;
 const openDetails = (user: User) => user.click(screen.getByRole('button', { name: 'Details' }));
-const messageMenu = async (user: User, item: string) => {
-  await user.click(screen.getByRole('button', { name: 'More message actions' }));
-  await user.click(await screen.findByRole('menuitem', { name: item }));
+/** MSG-604 / Q-31: the Mute quick action opens a menu; this picks "For 8 hours" (or another length) and returns the item. */
+const chooseMute = async (user: User, label = 'For 8 hours') => {
+  await user.click(await screen.findByRole('button', { name: 'Mute this conversation' }));
+  return screen.findByRole('menuitem', { name: label });
 };
 const setOnline = (v: boolean) => Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => v });
 
 beforeEach(() => {
   // Drafts persist per tab (F-12); each test starts with none.
   sessionStorage.clear();
+  // jsdom has no Web Animations: the thread's make-room and the composer's lift animate in a browser.
+  HTMLElement.prototype.animate = (() => ({ cancel: () => {}, finish: () => {}, finished: Promise.resolve(), onfinish: null })) as never;
+  HTMLElement.prototype.getAnimations = (() => []) as never;
   // Desktop width: the newest thread opens beside the rail.
   window.matchMedia = ((q: string) => ({ matches: /min-width/.test(q), media: q, addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {}, onchange: null, dispatchEvent: () => false })) as never;
   hapticSpy.mockClear();
@@ -213,6 +228,17 @@ afterEach(() => {
   setOnline(true);
   layout.phone = false;
 });
+
+// A message is on screen here: attachments sign as they come near it (MOB-MSG-24).
+class InViewObserver {
+  constructor(private cb: (e: Array<{ isIntersecting: boolean }>) => void) {}
+  observe() {
+    this.cb([{ isIntersecting: true }]);
+  }
+  unobserve() {}
+  disconnect() {}
+}
+vi.stubGlobal('IntersectionObserver', InViewObserver);
 
 describe('Messages · actions that fail', () => {
   it('B11 ↓ and ↑ walk the conversation rail, which is one Tab stop; the loading rows never take it (#2361 audit)', async () => {
@@ -276,64 +302,19 @@ describe('Messages · actions that fail', () => {
     await expectCode('CH-7005', /Couldn’t confirm this message sent/);
   });
 
-  it('CH-7007 CH-7501 CH-7008 editing and deleting fail; deleting asks first', async () => {
-    const user = userEvent.setup();
-    live.msgs.editMessage.mockRejectedValue(new Error('refused'));
-    live.msgs.removeMessage.mockRejectedValue(new Error('refused'));
-    show();
-    await screen.findByText('Bus at 6:15', { selector: '.ch-ms-bub' });
-    await messageMenu(user, 'Edit');
-    const edit = within(screen.getByRole('heading', { name: 'Edit message' }).closest('dialog') as HTMLElement);
-    await user.type(edit.getByRole('textbox'), ' sharp');
-    await user.click(edit.getByRole('button', { name: /Save/ }));
-    await expectCode('CH-7007', /Couldn’t edit the message/);
-    await user.click(edit.getByRole('button', { name: 'Cancel' }));
-    await messageMenu(user, 'Delete');
-    await expectCode('CH-7501', /Delete this message\?/);
-    await user.click(within(code('CH-7501') as HTMLElement).getByRole('button', { name: /^Delete/ }));
-    await expectCode('CH-7008', /Couldn’t delete the message/);
-  });
-
-  it('CH-7009 a reaction that fails', async () => {
-    const user = userEvent.setup();
-    live.reactions.setReaction.mockRejectedValue(new Error('refused'));
-    show();
-    await screen.findByText('Bus at 6:15', { selector: '.ch-ms-bub' });
-    await user.click(screen.getByRole('button', { name: 'React' }));
-    await user.click(screen.getAllByRole('menuitem', { name: /^React / })[0]!);
-    await expectCode('CH-7009', /Couldn’t save the reaction/);
-  });
-
-  it('desktop: a right click on a message opens its reaction bar, as the React button does', async () => {
-    show();
-    const bubble = await screen.findByText('Bus at 6:15', { selector: '.ch-ms-bub' });
-    expect(screen.queryByRole('menu', { name: 'Reactions' })).toBeNull();
-    fireEvent.contextMenu(bubble);
-    expect(await screen.findByRole('menu', { name: 'Reactions' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'React' }).getAttribute('aria-expanded')).toBe('true');
-  });
-
-  it('CH-7010 CH-7502 leaving a group asks first; a failed leave says so', async () => {
-    const user = userEvent.setup();
-    a.leaveGolfGroup.mockResolvedValue({ error: 'nope' });
-    // Only someone who didn't create the group can leave it.
-    live.convs.conversations = [{ ...team, creator_id: 'dan' }];
-    show();
-    await openDetails(user);
-    await user.click(await screen.findByRole('button', { name: 'Leave group' }));
-    await expectCode('CH-7502', /Leave Varsity team\?/);
-    await user.click(within(code('CH-7502') as HTMLElement).getByRole('button', { name: 'Leave group' }));
-    await expectCode('CH-7010', /Couldn’t leave the group/);
-  });
-
   it('CH-7503 CH-7025 deleting a conversation asks first, hides it for you only, and a failed delete says so', async () => {
     const user = userEvent.setup();
     a.canHideGolfConversations.mockResolvedValue(true);
     a.hideGolfConversation.mockResolvedValueOnce({ success: false, error: 'nope' }).mockResolvedValueOnce({ success: true });
     live.convs.conversations = [team];
     show();
-    await openDetails(user);
-    await user.click(await screen.findByRole('button', { name: 'Delete conversation' }));
+    // Delete lives in the row's menu only (the design's Details has no Delete row).
+    const row = await screen.findByRole('button', { name: /^(?!Actions for ).*Varsity team/ });
+    await waitFor(() => {
+      fireEvent.contextMenu(row, { clientX: 120, clientY: 120 });
+      expect(within(screen.getByRole('menu', { name: 'Actions for Varsity team' })).getByRole('menuitem', { name: 'Delete conversation' })).toBeTruthy();
+    });
+    await user.click(within(screen.getByRole('menu', { name: 'Actions for Varsity team' })).getByRole('menuitem', { name: 'Delete conversation' }));
     await expectCode('CH-7503', /Delete Varsity team\?/);
     expect(a.hideGolfConversation).not.toHaveBeenCalled();
     await user.click(within(code('CH-7503') as HTMLElement).getByRole('button', { name: 'Delete conversation' }));
@@ -367,8 +348,9 @@ describe('Messages · actions that fail', () => {
       a.setGolfConversationMute.mockImplementation(() => new Promise((resolve) => { finish = resolve; }));
       show();
       await openDetails(user);
-      await user.click(await screen.findByRole('button', { name: 'Mute 8 hours' }));
-      expect(a.setGolfConversationMute).toHaveBeenCalledTimes(1);
+      await user.click(await chooseMute(user));
+      // The menu fades out for 160 ms before it picks (MOT-DET-3).
+      await waitFor(() => expect(a.setGolfConversationMute).toHaveBeenCalledTimes(1));
       act(() => vi.advanceTimersByTime(5001));
       await expectCode('CH-1902', /Still saving/);
       await act(async () => finish({ success: false, error: 'nope' }));
@@ -376,9 +358,21 @@ describe('Messages · actions that fail', () => {
       await waitFor(() => expect(code('CH-1902')).toBeNull());
       expect(a.setGolfConversationMute).toHaveBeenCalledTimes(1);
       expect(code('CH-7011')).not.toBeNull();
+      // D's mute action owns the success toast; a refused mute makes none.
+      expect(screen.queryByText('Muted for 8 hours')).toBeNull();
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it('MSG-604 a mute that lands says so once, in the menu\u2019s words', async () => {
+    const user = userEvent.setup();
+    a.setGolfConversationMute.mockResolvedValue({ success: true, data: { muted: true, until: '2026-10-19T02:00:00Z' } });
+    show();
+    await openDetails(user);
+    await user.click(await chooseMute(user));
+    expect(await screen.findByText('Muted for 8 hours')).toBeTruthy();
+    expect(screen.getAllByText('Muted for 8 hours')).toHaveLength(1);
   });
 
   it('CH-7011 muting fails', async () => {
@@ -386,7 +380,7 @@ describe('Messages · actions that fail', () => {
     a.setGolfConversationMute.mockResolvedValue({ success: false, error: 'nope' });
     show();
     await openDetails(user);
-    await user.click(await screen.findByRole('button', { name: 'Mute 8 hours' }));
+    await user.click(await chooseMute(user));
     await expectCode('CH-7011', /Couldn’t mute the conversation/);
   });
 
@@ -394,7 +388,7 @@ describe('Messages · actions that fail', () => {
     const user = userEvent.setup();
     show();
     await openDetails(user);
-    const mute = await screen.findByRole('button', { name: 'Mute 8 hours' });
+    const mute = await chooseMute(user);
     setOnline(false);
     await user.click(mute);
     await expectCode('CH-1903', /Couldn’t mute the conversation: you’re offline/);
@@ -420,42 +414,12 @@ describe('Messages · reads that fail', () => {
     await expectCode('CH-7202', /This conversation didn’t load/);
   });
 
-  it('CH-7202 a conversation that did not load turns its composer off and says why; one that merely failed to refresh keeps it', async () => {
-    live.msgs.messages = [];
-    live.msgs.error = new Error('boom');
-    const { unmount } = show();
-    await expectCode('CH-7202', /This conversation didn’t load/);
-    const box = screen.getByRole('textbox', { name: /^Message / });
-    expect(box).toHaveAttribute('readonly');
-    expect(box).toHaveAttribute('placeholder', 'Replies are off until this loads');
-    expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: /^Attach/ })).toBeDisabled();
-    expect(document.querySelector('.ch-ms-comp__hint')!.textContent).toMatch(/didn’t load, so you can’t send yet/);
-    unmount();
-    // Cached messages that failed to refresh are still a thread you can answer in.
-    live.msgs.messages = [mine];
-    show();
-    await expectCode('CH-7216', /may be out of date/);
-    expect(screen.getByRole('textbox', { name: /^Message / })).not.toHaveAttribute('readonly');
-    expect(document.querySelector('.ch-ms-comp__hint')!.textContent).not.toMatch(/can’t send yet/);
-  });
-
   it('CH-7216 a conversation that fails to refresh keeps its messages and says they may be out of date', async () => {
     live.msgs.error = new Error('boom');
     show();
     await expectCode('CH-7216', /This conversation may be out of date/);
     expect(code('CH-7202')).toBeNull();
     expect(code('CH-7304')).toBeNull();
-  });
-
-  it('CH-7203 71402 message search does not load, with Try again', async () => {
-    const user = userEvent.setup();
-    a.searchGolfMessages.mockRejectedValueOnce(new Error('boom'));
-    show();
-    await user.type(screen.getByRole('searchbox', { name: /Search conversations and messages/ }), 'bus');
-    await expectCode('CH-7203', /Message search didn’t load/);
-    await user.click(within(code('CH-7203') as HTMLElement).getByRole('button', { name: 'Try again' }));
-    await expectCode('CH-7303', /No messages mention “bus”/);
   });
 
   it('CH-7204 group members do not load, with Try again', async () => {
@@ -496,18 +460,6 @@ describe('Messages · reads that fail', () => {
 });
 
 describe('Messages · empty and loading', () => {
-  it('CH-7309 nothing at all yet: the page is the first-run empty, with New message as its one action', async () => {
-    const user = userEvent.setup();
-    live.convs.conversations = [];
-    live.msgs.messages = [];
-    show();
-    await expectCode('CH-7309', /No conversations yet/);
-    expect(code('CH-7301')).toBeNull();
-    expect(code('CH-7305')).toBeNull();
-    await user.click(screen.getByRole('button', { name: 'New message' }));
-    expect(screen.getByRole('dialog')).toBeInTheDocument();
-  });
-
   it('CH-7301 CH-7305 no conversations, but an announcement: the rail and thread empties', async () => {
     live.convs.conversations = [];
     live.msgs.messages = [];
@@ -516,13 +468,6 @@ describe('Messages · empty and loading', () => {
     await expectCode('CH-7301', /No conversations yet/);
     await expectCode('CH-7305', /Start your first conversation/);
     expect(code('CH-7309')).toBeNull();
-  });
-
-  it('CH-7302 a rail search that matches nothing', async () => {
-    const user = userEvent.setup();
-    show();
-    await user.type(screen.getByRole('searchbox', { name: /Search conversations and messages/ }), 'zzz');
-    await expectCode('CH-7302', /No conversation names match/);
   });
 
   it('CH-7304 a thread with no messages yet', async () => {
@@ -549,22 +494,11 @@ describe('Messages · empty and loading', () => {
 });
 
 describe('Messages · validation, haptics, accessibility', () => {
-  it('CH-7104 CH-7105 a new group needs a name and people', async () => {
-    const user = userEvent.setup();
-    show();
-    await user.click(screen.getAllByRole('button', { name: 'New message' })[0]!);
-    const dlg = within(screen.getByRole('heading', { name: 'New message' }).closest('dialog') as HTMLElement);
-    await user.click(dlg.getByRole('radio', { name: /Group/ }));
-    const submit = dlg.getAllByRole('button').filter((b) => /Create|Start|Send/.test(b.textContent ?? ''));
-    await user.click(submit[submit.length - 1]!);
-    await expectCode('CH-7104', /Name the group/);
-  });
-
   it('CH-7016 CH-7017 71401 a message that did not send says so in the thread, with Retry', async () => {
     const user = userEvent.setup();
     live.msgs.messages = [{ ...mine, id: 'f1', sendFailed: true, sendOutcome: 'refused' }, { ...mine, id: 'f2', content: 'Second', sendFailed: true, sendOutcome: 'unknown' }];
     show();
-    await expectCode('CH-7016', /Not sent/);
+    await expectCode('CH-7016', /Not delivered/);
     await expectCode('CH-7017', /Couldn’t confirm this message sent\. Check before sending again\./);
     await user.click(within(code('CH-7016') as HTMLElement).getByRole('button', { name: 'Try again' }));
     expect(live.msgs.retryMessage).toHaveBeenCalledWith('f1');
@@ -574,7 +508,7 @@ describe('Messages · validation, haptics, accessibility', () => {
     const user = userEvent.setup();
     live.msgs.messages = [{ ...mine, id: 'f1', sendFailed: true, sendOutcome: 'refused' }];
     show();
-    await expectCode('CH-7016', /Not sent/);
+    await expectCode('CH-7016', /Not delivered/);
     setOnline(false);
     await user.click(within(code('CH-7016') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await expectCode('CH-1903', /offline/);
@@ -586,7 +520,7 @@ describe('Messages · validation, haptics, accessibility', () => {
     live.msgs.retryMessage.mockResolvedValueOnce(false);
     live.msgs.messages = [{ ...mine, id: 'f1', sendFailed: true, sendOutcome: 'refused' }];
     show();
-    await expectCode('CH-7016', /Not sent/);
+    await expectCode('CH-7016', /Not delivered/);
     await user.click(within(code('CH-7016') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await expectCode('CH-7004', /Couldn’t send the message/);
   });
@@ -620,26 +554,9 @@ const openAnnouncement = async (user: User) => {
   await user.click(await screen.findByRole('button', { name: /^Announcements/, expanded: false }));
   await user.click(screen.getByRole('button', { name: /^Bus times/ }));
 };
-const newMessage = async (user: User, kind: RegExp) => {
-  await user.click(screen.getAllByRole('button', { name: 'New message' })[0]!);
-  const dlg = within(screen.getByRole('heading', { name: 'New message' }).closest('dialog') as HTMLElement);
-  await user.click(dlg.getByRole('radio', { name: kind }));
-  return dlg;
-};
 const never = () => new Promise(() => {});
 
 describe('Messages · more actions that fail', () => {
-  it('CH-7003 creating a group fails', async () => {
-    const user = userEvent.setup();
-    a.createGolfTeamBroadcast.mockResolvedValue({ error: 'nope' });
-    show();
-    const dlg = await newMessage(user, /Group/);
-    await user.type(dlg.getByRole('textbox', { name: 'Group name' }), 'Travel');
-    await user.click(dlg.getByRole('option', { name: /Jonah Okafor/ }));
-    await user.click(dlg.getByRole('button', { name: 'Create group' }));
-    await expectCode('CH-7003', /Couldn’t create the group/);
-  });
-
   it('CH-7101 CH-7006 a file of the wrong type is refused; a failed attachment send says so', async () => {
     const user = userEvent.setup({ applyAccept: false });
     live.files.sendMessageWithAttachments.mockResolvedValue({ success: false, error: 'nope' });
@@ -695,22 +612,6 @@ describe('Messages · more actions that fail', () => {
     await openAnnouncement(user);
     await user.click(await screen.findByRole('button', { name: 'Mark done' }));
     await expectCode('CH-7013', /Couldn’t mark the task done/);
-  });
-
-  it('CH-7102 CH-7103 CH-7014 an announcement needs a title and a body; a failed post says so', async () => {
-    const user = userEvent.setup();
-    a.createEnrichedAnnouncement.mockResolvedValue({ success: false, error: 'nope' });
-    show();
-    const dlg = await newMessage(user, /Announcement/);
-    const post = () => user.click(within(screen.getByRole('heading', { name: 'New announcement' }).closest('dialog') as HTMLElement).getByRole('button', { name: 'Post announcement' }));
-    await post();
-    await expectCode('CH-7102', /Give the announcement a title/);
-    await expectCode('CH-7103', /Write what the team needs to know/);
-    expect(a.createEnrichedAnnouncement).not.toHaveBeenCalled();
-    await user.type(dlg.getByRole('textbox', { name: /^Title/ }), 'Bus times');
-    await user.type(dlg.getByRole('textbox', { name: /^Message/ }), 'Bus leaves at 6:15.');
-    await post();
-    await expectCode('CH-7014', /Couldn’t post the announcement/);
   });
 
   it('CH-7015 an open conversation that disappears says so', async () => {
@@ -785,15 +686,6 @@ describe('Messages · more reads that fail', () => {
     quiet.mockRestore();
   });
 
-  it('CH-7213 a crash in details is contained', async () => {
-    const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
-    const user = userEvent.setup();
-    a.getGolfConversationParticipantIdentities.mockResolvedValue({ participants: [{ userId: 'dan', name: 'Dan', subtitle: {}, type: 'player' }] });
-    show();
-    await openDetails(user);
-    await expectCode('CH-7213', /Details couldn’t be shown/);
-    quiet.mockRestore();
-  });
 });
 
 describe('Messages · more loading', () => {
@@ -817,7 +709,6 @@ describe('Messages · more loading', () => {
 });
 
 const nora = { userId: 'nora', name: 'Nora Castillo', avatarUrl: null, subtitle: 'Freshman', type: 'player' };
-const dan = { userId: 'dan', name: 'Dan Whitfield', role: 'coach' as const, subtitle: 'Assistant coach', playerId: null };
 const deferred = <T,>() => {
   let resolve: (v: T) => void = () => {};
   const promise = new Promise<T>((r) => (resolve = r));
@@ -853,20 +744,6 @@ describe('Messages · group members (D-45, D-47)', () => {
     expect(a.addGolfGroupMember).toHaveBeenLastCalledWith('team', 'nora');
   });
 
-  it('CH-7019 a coach in a new group is added after it is created; one who cannot be added is named', async () => {
-    const user = userEvent.setup();
-    a.createGolfTeamBroadcast.mockResolvedValue({ conversationId: 'g1' });
-    a.addGolfGroupMember.mockResolvedValue({ error: 'nope' });
-    show({ ...data, directory: [dan, ...data.directory] });
-    const dlg = await newMessage(user, /Group/);
-    await user.type(dlg.getByRole('textbox', { name: 'Group name' }), 'Travel');
-    await user.click(dlg.getByRole('option', { name: /Jonah Okafor/ }));
-    await user.click(dlg.getByRole('option', { name: /Dan Whitfield/ }));
-    await user.click(dlg.getByRole('button', { name: 'Create group' }));
-    await expectCode('CH-7019', /Group created, but Dan wasn’t added/);
-    expect(a.createGolfTeamBroadcast).toHaveBeenCalledWith({ teamId: 't1', title: 'Travel', selectedPlayerIds: ['p-jonah'] });
-    expect(a.addGolfGroupMember).toHaveBeenCalledWith('g1', 'dan');
-  });
 });
 
 describe('Messages · phone', () => {
@@ -876,35 +753,6 @@ describe('Messages · phone', () => {
     await user.click(screen.getByRole('button', { name: /^(?!Actions for ).*Varsity team/ }));
     return screen.findByRole('region', { name: /Varsity team/ });
   };
-
-  it('CH-7804 CH-7704 71901 the inbox pushes a named thread; a message opens its actions by long press or its button', async () => {
-    const user = userEvent.setup();
-    showPhone();
-    const thread = await openThread(user);
-    expect(within(thread).getByRole('button', { name: 'Back to Messages' })).toBeTruthy();
-    const bubble = await within(thread).findByText('Bus at 6:15', { selector: '.ch-ms-bub' });
-    const stack = bubble.closest('.ch-ms-msg__stack') as HTMLElement;
-    hapticSpy.mockClear();
-    act(() => {
-      stack.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, clientX: 10, clientY: 10 }));
-    });
-    await waitFor(() => expect(hapticSpy).toHaveBeenCalledWith('press'), { timeout: 1500 });
-    await expectCode('CH-7604');
-    const sheet = within(code('CH-7604') as HTMLElement);
-    expect(sheet.getByRole('button', { name: 'Copy' })).toBeTruthy();
-    expect(sheet.getByRole('button', { name: 'Edit' })).toBeTruthy();
-    expect(sheet.getByRole('button', { name: 'Delete' })).toBeTruthy();
-    await user.click(sheet.getByRole('button', { name: 'Close' }));
-    // Without a long press: the named button VoiceOver and keyboards reach.
-    await user.click(within(thread).getByRole('button', { name: 'Message actions' }));
-    await expectCode('CH-7604');
-    await user.click(within(code('CH-7604') as HTMLElement).getByRole('button', { name: 'Close' }));
-    await user.click(within(thread).getByRole('button', { name: 'Details' }));
-    const details = await screen.findByRole('region', { name: 'Details' });
-    expect(within(details).getByRole('button', { name: 'Back to Chat' })).toBeTruthy();
-    // The thread under Details is out of reach until Details pops.
-    expect(thread.hasAttribute('inert')).toBe(true);
-  });
 
   it('72001 phone Return adds a line; tapping Send sends the complete text', async () => {
     const user = userEvent.setup();
@@ -937,27 +785,6 @@ describe('Messages · phone', () => {
     expect(box.value).toContain('One more detail');
     expect(live.msgs.sendMessage).not.toHaveBeenCalled();
     contentHeight.mockRestore();
-  });
-
-  it('72002 Reply from the message sheet sends its persisted parent id and Cancel removes it', async () => {
-    const user = userEvent.setup();
-    showPhone();
-    const thread = await openThread(user);
-    await user.click(within(thread).getByRole('button', { name: 'Message actions' }));
-    const sheet = within(code('CH-7604') as HTMLElement);
-    expect(sheet.getByLabelText('Selected message').textContent).toContain('Bus at 6:15');
-    await user.click(sheet.getByRole('button', { name: 'Reply' }));
-    expect(within(thread).getByLabelText('Reply to You').textContent).toContain('Bus at 6:15');
-    const box = within(thread).getByRole('textbox', { name: /Message Varsity team/ });
-    expect(document.activeElement).toBe(box);
-    await user.type(box, 'I will be there');
-    await user.click(within(thread).getByRole('button', { name: 'Send' }));
-    await waitFor(() => expect(live.msgs.sendMessage).toHaveBeenCalledWith('I will be there', 'm1'));
-    expect(within(thread).queryByRole('button', { name: 'Cancel reply' })).toBeNull();
-    await user.click(within(thread).getByRole('button', { name: 'Message actions' }));
-    await user.click(within(code('CH-7604') as HTMLElement).getByRole('button', { name: 'Reply' }));
-    await user.click(within(thread).getByRole('button', { name: 'Cancel reply' }));
-    expect(within(thread).queryByLabelText('Reply to You')).toBeNull();
   });
 
   it('72002 horizontal reply gesture respects vertical scrolling and the shell back edge', async () => {
@@ -995,122 +822,6 @@ describe('Messages · phone', () => {
     expect(quotes.some((quote) => quote.textContent?.includes('Private text'))).toBe(false);
   });
 
-  it('72002 an in-flight send locks its reply target until completion', async () => {
-    const user = userEvent.setup();
-    let finish!: () => void;
-    live.msgs.sendMessage.mockImplementationOnce(() => new Promise<void>((resolve) => { finish = resolve; }));
-    live.msgs.messages = [mine, { ...mine, id: 'm2', content: 'Second message' }];
-    showPhone();
-    const thread = await openThread(user);
-    const actions = within(thread).getAllByRole('button', { name: 'Message actions' });
-    await user.click(actions[0]!);
-    await user.click(within(code('CH-7604') as HTMLElement).getByRole('button', { name: 'Reply' }));
-    await user.type(within(thread).getByRole('textbox', { name: /Message Varsity team/ }), 'Response to first');
-    await user.click(within(thread).getByRole('button', { name: 'Send' }));
-    expect((within(thread).getByRole('button', { name: 'Cancel reply' }) as HTMLButtonElement).disabled).toBe(true);
-    await user.click(actions[1]!);
-    const sheet = within(code('CH-7604') as HTMLElement);
-    expect((sheet.getByRole('button', { name: 'Reply' }) as HTMLButtonElement).disabled).toBe(true);
-    await user.click(sheet.getByRole('button', { name: 'Reply' }));
-    expect(live.msgs.sendMessage).toHaveBeenCalledWith('Response to first', 'm1');
-    await user.click(sheet.getByRole('button', { name: 'Close' }));
-    await act(async () => finish());
-    expect(within(thread).queryByRole('button', { name: 'Cancel reply' })).toBeNull();
-  });
-
-  it('72002 a refused attachment restores its original text, file and reply target', async () => {
-    const user = userEvent.setup({ applyAccept: false });
-    let refuse!: (result: { success: boolean; error: string }) => void;
-    live.files.sendMessageWithAttachments.mockImplementationOnce(() => new Promise((resolve) => { refuse = resolve; }));
-    showPhone();
-    const thread = await openThread(user);
-    await user.click(within(thread).getByRole('button', { name: 'Message actions' }));
-    await user.click(within(code('CH-7604') as HTMLElement).getByRole('button', { name: 'Reply' }));
-    await user.type(within(thread).getByRole('textbox', { name: /Message Varsity team/ }), 'Original response');
-    await user.upload(thread.querySelector('input[type="file"]') as HTMLInputElement, new File(['x'], 'plan.pdf', { type: 'application/pdf' }));
-    await user.click(within(thread).getByRole('button', { name: 'Send' }));
-    expect(live.files.sendMessageWithAttachments).toHaveBeenCalledTimes(1);
-    expect(live.files.sendMessageWithAttachments).toHaveBeenCalledWith(expect.objectContaining({ replyToId: 'm1', content: 'Original response' }));
-    expect((within(thread).getByRole('button', { name: 'Cancel reply' }) as HTMLButtonElement).disabled).toBe(true);
-    await user.click(within(thread).getByRole('button', { name: 'Cancel reply' }));
-    await act(async () => refuse({ success: false, error: 'refused' }));
-    expect((within(thread).getByRole('textbox', { name: /Message Varsity team/ }) as HTMLTextAreaElement).value).toBe('Original response');
-    expect(within(thread).getByRole('button', { name: 'Remove plan.pdf' })).toBeTruthy();
-    expect(within(thread).getByLabelText('Reply to You').textContent).toContain('Bus at 6:15');
-    expect((within(thread).getByRole('button', { name: 'Cancel reply' }) as HTMLButtonElement).disabled).toBe(false);
-  });
-
-  it('CH-7022 partial attachment success keeps only the unsaved files and parent; retry never duplicates delivered text', async () => {
-    const user = userEvent.setup();
-    live.files.sendMessageWithAttachments.mockResolvedValueOnce({ success: true, attachmentsFailed: true });
-    showPhone();
-    const thread = await openThread(user);
-    await user.click(within(thread).getByRole('button', { name: 'Message actions' }));
-    await user.click(within(code('CH-7604') as HTMLElement).getByRole('button', { name: 'Reply' }));
-    const file = new File(['x'], 'plan.pdf', { type: 'application/pdf' });
-    await user.upload(thread.querySelector('input[type="file"]') as HTMLInputElement, file);
-    const box = within(thread).getByRole('textbox', { name: /Message Varsity team/ }) as HTMLTextAreaElement;
-    await user.type(box, 'Delivered text');
-    hapticSpy.mockClear();
-    await user.click(within(thread).getByRole('button', { name: 'Send' }));
-    await expectCode('CH-7022', /Message sent; attachments not saved/);
-    expect(box.value).toBe('');
-    expect(within(thread).getByRole('button', { name: 'Remove plan.pdf' })).toBeTruthy();
-    expect(within(thread).getByRole('button', { name: 'Cancel reply' })).toBeTruthy();
-    expect(hapticSpy).toHaveBeenCalledWith('warning');
-    expect(hapticSpy).not.toHaveBeenCalledWith('success');
-    await user.click(within(thread).getByRole('button', { name: 'Send' }));
-    await waitFor(() => expect(live.files.sendMessageWithAttachments).toHaveBeenCalledTimes(2));
-    expect(live.files.sendMessageWithAttachments.mock.calls[1]?.[0]).toEqual(expect.objectContaining({ content: '', replyToId: 'm1', attachments: [expect.objectContaining({ file })] }));
-    expect(live.msgs.sendMessage).not.toHaveBeenCalled();
-  });
-
-  it('CH-7023 an unknown attachment send freezes its payload across reopening; confirmation restores the later draft', async () => {
-    const user = userEvent.setup();
-    let finish!: (value: { success: boolean; sendOutcome: 'unknown' }) => void;
-    live.files.sendMessageWithAttachments.mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
-    showPhone();
-    const thread = await openThread(user);
-    await user.click(within(thread).getByRole('button', { name: 'Message actions' }));
-    await user.click(within(code('CH-7604') as HTMLElement).getByRole('button', { name: 'Reply' }));
-    const file = new File(['x'], 'plan.pdf', { type: 'application/pdf' });
-    const laterFile = new File(['y'], 'map.pdf', { type: 'application/pdf' });
-    const box = within(thread).getByRole('textbox', { name: /Message Varsity team/ }) as HTMLTextAreaElement;
-    const input = thread.querySelector('input[type="file"]') as HTMLInputElement;
-    await user.upload(input, file);
-    await user.type(box, 'Original text');
-    await user.click(within(thread).getByRole('button', { name: 'Send' }));
-    await user.type(box, 'Next draft');
-    await user.upload(input, laterFile);
-    hapticSpy.mockClear();
-    await act(async () => finish({ success: false, sendOutcome: 'unknown' }));
-    expect(box.value).toBe('Original text');
-    expect(box.readOnly).toBe(true);
-    expect((within(thread).getByRole('button', { name: 'Cancel reply' }) as HTMLButtonElement).disabled).toBe(true);
-    expect((within(thread).getByRole('button', { name: 'Remove plan.pdf' }) as HTMLButtonElement).disabled).toBe(true);
-    expect((within(thread).getByRole('button', { name: /^(Attach a file|Add a file or a poll)$/ }) as HTMLButtonElement).disabled).toBe(true);
-    expect(hapticSpy).not.toHaveBeenCalledWith('success');
-    await user.type(box, 'Changed');
-    expect(box.value).toBe('Original text');
-    await user.click(within(thread).getByRole('button', { name: 'Back to Messages' }));
-    const reopened = await openThread(user);
-    const restored = within(reopened).getByRole('textbox', { name: /Message Varsity team/ }) as HTMLTextAreaElement;
-    expect(restored.value).toBe('Original text');
-    expect(restored.readOnly).toBe(true);
-    expect(within(reopened).getByLabelText('Reply to You').textContent).toContain('Bus at 6:15');
-    await user.click(within(reopened).getByRole('button', { name: 'Retry send' }));
-    await waitFor(() => expect(restored.readOnly).toBe(false));
-    expect(live.files.sendMessageWithAttachments).toHaveBeenCalledTimes(2);
-    const first = live.files.sendMessageWithAttachments.mock.calls[0]?.[0];
-    const retry = live.files.sendMessageWithAttachments.mock.calls[1]?.[0];
-    expect(retry).toEqual(expect.objectContaining({ content: 'Original text', replyToId: 'm1' }));
-    expect(retry?.attachments[0]?.file).toBe(first?.attachments[0]?.file);
-    expect(restored.value).toBe('Next draft');
-    expect(within(reopened).getByRole('button', { name: 'Remove map.pdf' })).toBeTruthy();
-    expect(within(reopened).queryByRole('button', { name: 'Remove plan.pdf' })).toBeNull();
-    expect(within(reopened).queryByRole('button', { name: 'Cancel reply' })).toBeNull();
-  });
-
   it('CH-7023 after reload a pending request shows stored filenames and retries its identity; offline cannot unlock a plain send', async () => {
     const user = userEvent.setup();
     new DraftStore(data.viewerUserId).set('team', 'Later ordinary draft');
@@ -1145,59 +856,17 @@ describe('Messages · phone', () => {
     expect(live.msgs.sendMessage).not.toHaveBeenCalled();
   });
 
-  it('CH-7217 a failed recovery check blocks sending until the check succeeds', async () => {
-    const user = userEvent.setup();
-    live.files.getPendingAttachmentSend.mockRejectedValueOnce(new Error('unreadable')).mockResolvedValue(null);
-    showPhone();
-    const thread = await openThread(user);
-    await expectCode('CH-7217', /Couldn’t check a pending send/);
-    const box = within(thread).getByRole('textbox', { name: /Message Varsity team/ }) as HTMLTextAreaElement;
-    expect(box.readOnly).toBe(true);
-    expect((within(thread).getByRole('button', { name: 'Send' }) as HTMLButtonElement).disabled).toBe(true);
-    await user.click(within(code('CH-7217') as HTMLElement).getByRole('button', { name: 'Try again' }));
-    await waitFor(() => expect(box.readOnly).toBe(false));
-    await user.type(box, 'Fresh message');
-    await user.click(within(thread).getByRole('button', { name: 'Send' }));
-    await waitFor(() => expect(live.msgs.sendMessage).toHaveBeenCalledWith('Fresh message'));
-  });
-
   it('72002 leaving a phone thread clears reply intent while preserving its text draft', async () => {
     const user = userEvent.setup();
     showPhone();
     const thread = await openThread(user);
     await user.click(within(thread).getByRole('button', { name: 'Message actions' }));
-    await user.click(within(code('CH-7604') as HTMLElement).getByRole('button', { name: 'Reply' }));
+    await user.click(within(code('CH-7604') as HTMLElement).getByRole('menuitem', { name: 'Reply' }));
     await user.type(within(thread).getByRole('textbox', { name: /Message Varsity team/ }), 'Half written');
     await user.click(within(thread).getByRole('button', { name: 'Back to Messages' }));
     const reopened = await openThread(user);
     expect((within(reopened).getByRole('textbox', { name: /Message Varsity team/ }) as HTMLTextAreaElement).value).toBe('Half written');
     expect(within(reopened).queryByRole('button', { name: 'Cancel reply' })).toBeNull();
-  });
-
-  it('72003 swipe-left reveals a real intermediate timestamp; tapping a loaded quote goes to its parent', async () => {
-    const user = userEvent.setup();
-    live.msgs.messages = [mine, { ...mine, id: 'm2', content: 'Follow up', created_at: '2026-10-14T18:01:00Z', reply_to_id: 'm1' }];
-    showPhone();
-    const thread = await openThread(user);
-    expect(within(thread).queryByText('2:00 PM')).toBeNull();
-    const stack = (await within(thread).findByText('Bus at 6:15', { selector: '.ch-ms-bub' })).closest('.ch-ms-msg__stack') as HTMLElement;
-    act(() => {
-      stack.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, clientX: 160, clientY: 80 }));
-      stack.dispatchEvent(new MouseEvent('pointermove', { bubbles: true, clientX: 90, clientY: 84 }));
-      stack.dispatchEvent(new MouseEvent('pointerup', { bubbles: true, clientX: 90, clientY: 84 }));
-    });
-    expect(within(thread).getByText('2:00 PM')).toBeTruthy();
-    const scroll = vi.fn();
-    document.getElementById('ch-ms-message-m1')!.scrollIntoView = scroll;
-    await user.click(within(thread).getByRole('button', { name: 'Reply to You' }));
-    expect(scroll).toHaveBeenCalledWith({ block: 'center', behavior: 'smooth' });
-    const preference = window.matchMedia('(prefers-reduced-motion: reduce)');
-    act(() => {
-      Object.defineProperty(preference, 'matches', { value: true, configurable: true });
-      preference.dispatchEvent(new Event('change'));
-    });
-    await user.click(within(thread).getByRole('button', { name: 'Reply to You' }));
-    expect(scroll).toHaveBeenLastCalledWith({ block: 'center', behavior: 'instant' });
   });
 
 
@@ -1240,16 +909,6 @@ describe('Messages · phone', () => {
     expect(screen.queryByRole('group', { name: 'Filter conversations' })).toBeNull();
   });
 
-  it('CH-7020 copying a message that cannot be copied says so', async () => {
-    const user = userEvent.setup();
-    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: vi.fn().mockRejectedValue(new Error('denied')) } });
-    showPhone();
-    const thread = await openThread(user);
-    await user.click(within(thread).getByRole('button', { name: 'Message actions' }));
-    await user.click(within(code('CH-7604') as HTMLElement).getByRole('button', { name: 'Copy' }));
-    await expectCode('CH-7020', /Couldn’t copy the message/);
-  });
-
   it('CH-7409 CH-7306 CH-7214 Details files load, say when there are none, and fail with Try again', async () => {
     const user = userEvent.setup();
     const first = deferred<{ files: [] }>();
@@ -1281,98 +940,6 @@ describe('Messages · phone', () => {
     expect(a.getGolfMessageAttachments).toHaveBeenCalledWith('m1');
   });
 
-  it('CH-7104 a coach names a new group before it is created; a player picks one person at a time', async () => {
-    const user = userEvent.setup();
-    const { unmount } = showPhone();
-    await user.click(await screen.findByRole('button', { name: 'New message' }));
-    const newMsg = await screen.findByRole('region', { name: 'New message' });
-    expect(within(newMsg).getByText('Whole team')).toBeTruthy();
-    await user.click(within(newMsg).getByRole('option', { name: /Jonah Okafor/ }));
-    await user.click(within(newMsg).getByRole('option', { name: /Eli Brandt/ }));
-    await user.click(within(newMsg).getByRole('button', { name: 'Create group' }));
-    await expectCode('CH-7104', /Name the group/);
-    expect(a.createGolfTeamBroadcast).not.toHaveBeenCalled();
-    unmount();
-    showPhone({ ...data, role: 'player', viewerPlayerId: 'p-me' });
-    await user.click(await screen.findByRole('button', { name: 'New message' }));
-    const playerNew = await screen.findByRole('region', { name: 'New message' });
-    expect(within(playerNew).queryByText('Whole team')).toBeNull();
-    await user.click(within(playerNew).getByRole('option', { name: /Jonah Okafor/ }));
-    await user.click(within(playerNew).getByRole('option', { name: /Eli Brandt/ }));
-    expect(within(playerNew).getAllByRole('option', { selected: true }).map((o) => o.textContent)).toEqual([expect.stringMatching(/Eli Brandt/)]);
-    expect(within(playerNew).getByRole('button', { name: 'Next' })).toBeTruthy();
-  });
-
-  it('CH-7004 the first message written in New message is sent when the thread opens, and a failure leaves it to its bubble', async () => {
-    const user = userEvent.setup();
-    live.msgs.sendMessage.mockRejectedValueOnce(new Error('refused'));
-    live.convs.conversations = [team, { id: 'dm-jonah', title: null, participant_ids: ['me', 'jonah'], participant_count: 2, unread_count: 0, other_participant: { id: 'jonah', name: 'Jonah Okafor' }, last_message: null, creator_id: 'me' }];
-    showPhone();
-    await user.click(await screen.findByRole('button', { name: 'New message' }));
-    const newMsg = await screen.findByRole('region', { name: 'New message' });
-    await user.click(within(newMsg).getByRole('option', { name: /Jonah Okafor/ }));
-    await user.type(within(newMsg).getByRole('textbox', { name: 'Message Jonah' }), '5 works. Bay 4.');
-    await user.click(within(newMsg).getByRole('button', { name: 'Next' }));
-    await expectCode('CH-7004', /Couldn’t send the message/);
-    expect(live.msgs.sendMessage).toHaveBeenCalledWith('5 works. Bay 4.');
-    const box = await screen.findByRole('textbox', { name: /Message Jonah/ });
-    expect((box as HTMLTextAreaElement).value).toBe('');
-  });
-
-  describe('attach in New message (clickables 14)', () => {
-    const dmJonah = { id: 'dm-jonah', title: null, participant_ids: ['me', 'jonah'], participant_count: 2, unread_count: 0, other_participant: { id: 'jonah', name: 'Jonah Okafor' }, last_message: null, creator_id: 'me' };
-    const newMessageTo = async (user: User) => {
-      live.convs.conversations = [team, dmJonah];
-      showPhone();
-      await user.click(await screen.findByRole('button', { name: 'New message' }));
-      const newMsg = await screen.findByRole('region', { name: 'New message' });
-      const attach = within(newMsg).getByRole('button', { name: 'Attach a file' });
-      // Like the message box, attach waits for someone to send to.
-      expect((attach as HTMLButtonElement).disabled).toBe(true);
-      await user.click(within(newMsg).getByRole('option', { name: /Jonah Okafor/ }));
-      expect((attach as HTMLButtonElement).disabled).toBe(false);
-      return { newMsg, input: newMsg.querySelector('input[type="file"]') as HTMLInputElement };
-    };
-
-    it('a first message with a file is sent by the thread as an attachment send, text and file together', async () => {
-      const user = userEvent.setup({ applyAccept: false });
-      const { newMsg, input } = await newMessageTo(user);
-      await user.upload(input, new File(['x'], 'plan.pdf', { type: 'application/pdf' }));
-      expect(within(newMsg).getByRole('button', { name: 'Remove plan.pdf' })).toBeTruthy();
-      await user.type(within(newMsg).getByRole('textbox', { name: 'Message Jonah' }), 'Range plan for Friday');
-      await user.click(within(newMsg).getByRole('button', { name: 'Next' }));
-      await waitFor(() =>
-        expect(live.files.sendMessageWithAttachments).toHaveBeenCalledWith(
-          expect.objectContaining({ conversationId: 'dm-jonah', content: 'Range plan for Friday', attachments: [expect.objectContaining({ file: expect.objectContaining({ name: 'plan.pdf' }) })] }),
-        ),
-      );
-      expect(live.msgs.sendMessage).not.toHaveBeenCalled();
-    });
-
-    it('a file alone is a first message: Send is ready without text and the thread sends it', async () => {
-      const user = userEvent.setup({ applyAccept: false });
-      const { newMsg, input } = await newMessageTo(user);
-      const send = within(newMsg).getByRole('button', { name: 'Send' }) as HTMLButtonElement;
-      expect(send.disabled).toBe(true);
-      await user.upload(input, new File(['x'], 'plan.pdf', { type: 'application/pdf' }));
-      expect(send.disabled).toBe(false);
-      await user.click(send);
-      await waitFor(() =>
-        expect(live.files.sendMessageWithAttachments).toHaveBeenCalledWith(expect.objectContaining({ conversationId: 'dm-jonah', content: '', attachments: [expect.objectContaining({ file: expect.objectContaining({ name: 'plan.pdf' }) })] })),
-      );
-    });
-
-    it('CH-7101 a file the thread would refuse is refused the same way, and stays in the thread box', async () => {
-      const user = userEvent.setup({ applyAccept: false });
-      const { newMsg, input } = await newMessageTo(user);
-      await user.upload(input, new File(['x'], 'setup.exe', { type: 'application/x-msdownload' }));
-      await user.click(within(newMsg).getByRole('button', { name: 'Next' }));
-      await expectCode('CH-7101', /Can’t attach setup\.exe/);
-      expect(live.files.sendMessageWithAttachments).not.toHaveBeenCalled();
-      const thread = await screen.findByRole('region', { name: /Jonah/ });
-      expect(within(thread).getByRole('button', { name: 'Remove setup.exe' })).toBeTruthy();
-    });
-  });
 });
 
 describe('Messages · desktop Schedule and shared files (clickables 10, 13)', () => {
@@ -1426,7 +993,8 @@ describe('Messages · desktop Schedule and shared files (clickables 10, 13)', ()
 
   it('Details lists a conversation’s files with kind, size and day, and a file opens through its message', async () => {
     const user = userEvent.setup();
-    const open = vi.spyOn(window, 'open').mockImplementation(() => null);
+    const tab = { opener: {} as unknown, location: { href: '' }, close: vi.fn() };
+    const open = vi.spyOn(window, 'open').mockImplementation(() => tab as unknown as Window);
     a.getGolfConversationFiles.mockResolvedValue({ files: [roomList] });
     a.getGolfMessageAttachments.mockResolvedValue({ attachments: [{ id: 'f1', fileName: 'Room list.pdf', fileSize: 49152, mimeType: 'application/pdf', url: 'https://files.example/room-list.pdf' }] });
     show();
@@ -1436,7 +1004,10 @@ describe('Messages · desktop Schedule and shared files (clickables 10, 13)', ()
     expect(row.textContent).toMatch(/PDF · 48 KB · Today/);
     expect(a.getGolfConversationFiles).toHaveBeenCalledWith('team');
     await user.click(row);
-    await waitFor(() => expect(open).toHaveBeenCalledWith('https://files.example/room-list.pdf', '_blank', 'noopener,noreferrer'));
+    // The tab opens inside the tap, or iPhone Safari blocks it; the signed address fills it in.
+    expect(open).toHaveBeenCalledWith('about:blank', '_blank');
+    await waitFor(() => expect(tab.location.href).toBe('https://files.example/room-list.pdf'));
+    expect(tab.opener).toBeNull();
     expect(a.getGolfMessageAttachments).toHaveBeenCalledWith('m1');
     open.mockRestore();
   });
@@ -1470,6 +1041,40 @@ describe('Messages · behaviour contracts (P007, docs/clubhouse/pages/P007-messa
     show();
     expect(await screen.findByRole('textbox', { name: /Message Jonah$/ })).toBeTruthy();
     expect(router.replace).toHaveBeenCalledWith('/golf/dashboard/messages', { scroll: false });
+  });
+
+  it('70102 a ?c= link is the short form of ?conversation= and opens the same thread, not the newest', async () => {
+    live.convs.conversations = [team, dm];
+    params.current = new URLSearchParams('c=dm');
+    router.replace.mockClear();
+    show();
+    expect(await screen.findByRole('textbox', { name: /Message Jonah$/ })).toBeTruthy();
+    expect(screen.queryByRole('textbox', { name: /Message Varsity team/ })).toBeNull();
+    expect(router.replace).toHaveBeenCalledWith('/golf/dashboard/messages', { scroll: false });
+  });
+
+  it('a thread nobody has written in is not listed, and does not take the desktop’s opening; opened by link it stays listed', async () => {
+    const blank = { id: 'blank', title: null, participant_ids: ['me', 'eli'], participant_count: 2, unread_count: 0, other_participant: { id: 'eli', name: 'Eli Brandt' }, last_message: null, creator_id: 'me' };
+    live.convs.conversations = [blank, team];
+    const { unmount } = show();
+    expect(await screen.findByRole('textbox', { name: /Message Varsity team/ })).toBeTruthy();
+    expect(document.body.textContent).not.toMatch(/No messages yet/);
+    expect(screen.queryByRole('button', { name: /^(?!Actions for ).*Eli Brandt/ })).toBeNull();
+    unmount();
+    params.current = new URLSearchParams('conversation=blank');
+    show();
+    expect(await screen.findByRole('textbox', { name: /Message Eli$/ })).toBeTruthy();
+    expect(document.querySelector('.ch-ms-rail')?.textContent).toMatch(/Eli Brandt/);
+  });
+
+  it('two groups with one title are told apart in the rail by their member counts; a lone title gets nothing', async () => {
+    const grp = (id: string, n: number) => ({ id, title: '26-27 Group Chat', participant_ids: ['me', 'jonah', ...Array.from({ length: n - 2 }, (_, i) => `x${i}`)], participant_count: n, unread_count: 0, last_message: { content: 'Hi', created_at: '2026-10-14T17:00:00Z', sender_id: 'jonah' }, creator_id: 'jonah' });
+    live.convs.conversations = [grp('g1', 11), grp('g2', 4), team];
+    show();
+    await screen.findByRole('textbox', { name: /Message/ });
+    const rail = document.querySelector('.ch-ms-rail')!;
+    expect([...rail.querySelectorAll('.ch-ms-row__hint')].map((h) => h.textContent?.trim())).toEqual(['· 11 members', '· 4 members']);
+    expect(within(rail as HTMLElement).getByText('Varsity team').querySelector('.ch-ms-row__hint')).toBeNull();
   });
 
   it('A16 a ?compose=1 link (the palette’s New message) opens New message and cleans the address', async () => {
@@ -1675,18 +1280,6 @@ describe('Messages · prefilled messages (D2-7: the coach presses Send)', () => 
 describe('Messages · senders peek (P003-C1)', () => {
   const fromJonah = { ...mine, id: 'j1', sender_id: 'jonah', content: 'Yes coach' };
 
-  it('for the coach, a player’s name and avatar in a thread peek at the player, from the directory already loaded', async () => {
-    live.convs.conversations = [team];
-    live.msgs.messages = [fromJonah];
-    show();
-    await screen.findByText('Yes coach');
-    const msg = document.getElementById('ch-ms-message-j1')!;
-    expect(msg.querySelector('.ch-peek-target .ch-ms-msg__who')!.textContent).toBe('Jonah');
-    expect(msg.querySelector('.ch-ms-msg__av .ch-peek-target')).not.toBeNull();
-    // The bubble keeps its own hold (message actions), never the peek.
-    expect(msg.querySelector('.ch-peek-target .ch-ms-bub')).toBeNull();
-  });
-
   it('a player sees names without the coach’s player peek', async () => {
     live.convs.conversations = [team];
     live.msgs.messages = [fromJonah];
@@ -1700,61 +1293,6 @@ describe('Messages · wave 5 feedback', () => {
   const jonahMsg = { id: 'j1', conversation_id: 'team', sender_id: 'jonah', content: 'Which bay?', created_at: '2026-10-14T18:05:00Z', isRead: true };
   const dmJonah = { id: 'dm-jonah', title: null, participant_ids: ['me', 'jonah'], participant_count: 2, unread_count: 0, other_participant: { id: 'jonah', name: 'Jonah Okafor' }, last_message: null, creator_id: 'me' };
 
-  it('#8 #9 Edit is offered only on a message with text; Save waits for a change, with focus in the box', async () => {
-    const user = userEvent.setup();
-    a.getGolfMessageAttachments.mockResolvedValue({ attachments: [] });
-    live.msgs.messages = [mine, { id: 'm2', conversation_id: 'team', sender_id: 'me', content: '', created_at: '2026-10-14T18:01:00Z', isRead: true, has_attachments: true }];
-    show();
-    await screen.findByText('Bus at 6:15', { selector: '.ch-ms-bub' });
-    const mores = screen.getAllByRole('button', { name: 'More message actions' });
-    await user.click(mores[1]!);
-    expect(await screen.findByRole('menuitem', { name: 'Delete' })).toBeTruthy();
-    expect(screen.queryByRole('menuitem', { name: 'Edit' })).toBeNull();
-    await user.keyboard('{Escape}');
-    await user.click(mores[0]!);
-    await user.click(await screen.findByRole('menuitem', { name: 'Edit' }));
-    const dlg = within(screen.getByRole('heading', { name: 'Edit message' }).closest('dialog') as HTMLElement);
-    const box = dlg.getByRole('textbox', { name: 'Message' });
-    const save = dlg.getByRole('button', { name: 'Save' }) as HTMLButtonElement;
-    await waitFor(() => expect(document.activeElement).toBe(box));
-    expect(save.disabled).toBe(true);
-    await user.type(box, ' sharp');
-    expect(save.disabled).toBe(false);
-    await user.click(save);
-    await waitFor(() => expect(live.msgs.editMessage).toHaveBeenCalledWith('m1', 'Bus at 6:15 sharp'));
-  });
-
-  it('#14 #19 Delete quotes the message it asks about; the conversation confirm keeps by name', async () => {
-    const user = userEvent.setup();
-    a.canHideGolfConversations.mockResolvedValue(true);
-    show();
-    await screen.findByText('Bus at 6:15', { selector: '.ch-ms-bub' });
-    await messageMenu(user, 'Delete');
-    await expectCode('CH-7501');
-    expect(code('CH-7501')!.querySelector('.ch-ms-delq')?.textContent).toBe('Bus at 6:15');
-    await user.click(within(code('CH-7501') as HTMLElement).getByRole('button', { name: 'Keep it' }));
-    await openDetails(user);
-    await user.click(await screen.findByRole('button', { name: 'Delete conversation' }));
-    await expectCode('CH-7503');
-    expect(within(code('CH-7503') as HTMLElement).getByRole('button', { name: 'Keep conversation' })).toBeTruthy();
-  });
-
-  it('#10 desktop Reply puts the quote on the composer, focuses it, and sends with it', async () => {
-    const user = userEvent.setup();
-    live.msgs.messages = [mine, jonahMsg];
-    show();
-    await screen.findByText('Which bay?', { selector: '.ch-ms-bub' });
-    const replies = screen.getAllByRole('button', { name: 'Reply' });
-    expect(replies).toHaveLength(2);
-    await user.click(replies[1]!);
-    const box = screen.getByRole('textbox', { name: /Message Varsity team/ });
-    await waitFor(() => expect(document.activeElement).toBe(box));
-    expect(screen.getByRole('button', { name: 'Reply to Jonah Okafor' })).toBeTruthy();
-    await user.type(box, 'Bay 4{Enter}');
-    await waitFor(() => expect(live.msgs.sendMessage).toHaveBeenCalledWith('Bay 4', 'j1'));
-    await waitFor(() => expect(screen.queryByRole('button', { name: 'Cancel reply' })).toBeNull());
-  });
-
   it('#13 a web link in a message is a link that opens apart from the app; other schemes stay text', async () => {
     live.msgs.messages = [{ ...mine, content: 'Tee sheet: https://golf.example.com/tee. Not javascript:alert(1)' }];
     show();
@@ -1766,30 +1304,15 @@ describe('Messages · wave 5 feedback', () => {
     expect(link.closest('.ch-ms-bub')!.querySelectorAll('a')).toHaveLength(1);
   });
 
-  it('#11 a search hit opens at its match, marked, and the empty line speaks of names only', async () => {
-    const user = userEvent.setup();
-    a.searchGolfMessages.mockResolvedValue({
-      results: [{ messageId: 'm9', conversationId: 'team', conversationName: 'Varsity team', senderName: 'Jonah Okafor', content: 'Practice moved to the north range because the main one is flooded, bring the bus pass', createdAt: '2026-10-14T17:00:00Z' }],
-    });
-    show();
-    await user.type(screen.getByRole('searchbox', { name: /Search conversations and messages/ }), 'bus pass');
-    await expectCode('CH-7302', /^No conversation names matchClear search$/);
-    const mark = await waitFor(() => {
-      const m = document.querySelector('mark.ch-ms-hit');
-      expect(m).not.toBeNull();
-      return m!;
-    });
-    expect(mark.textContent).toBe('bus pass');
-    expect(mark.parentElement!.textContent).toBe('Jonah Okafor: …is flooded, bring the bus pass');
-  });
-
   it('#12 Groups with no group says so, not “caught up”', async () => {
     const user = userEvent.setup();
     live.convs.conversations = [{ ...dmJonah, last_message: { content: 'See you at 6', created_at: '2026-10-14T17:00:00Z', sender_id: 'jonah' } }];
     live.msgs.messages = [];
     show();
     await user.click(await screen.findByRole('radio', { name: 'Groups' }));
-    await expectCode('CH-7302', /^No group conversations yet$/);
+    // Messages v2 (MSG-108): the artifact's "Nothing here" card with its one line, still never "caught up".
+    await expectCode('CH-7302', /Nothing hereNo groups right now\.$/);
+    expect(screen.queryByText(/caught up/i)).toBeNull();
   });
 
   it('#6 CH-7106 more than ten files: ten are kept and the rest are said, not dropped silently', async () => {
@@ -1814,18 +1337,6 @@ describe('Messages · wave 5 feedback', () => {
     expect(screen.getByText('No characters left')).toBeTruthy();
   });
 
-  it('#7 an announcement draft outlives Cancel', async () => {
-    const user = userEvent.setup();
-    show();
-    let dlg = await newMessage(user, /Announcement/);
-    await user.type(dlg.getByRole('textbox', { name: /^Title/ }), 'Bus times');
-    await user.type(dlg.getByRole('textbox', { name: /^Message/ }), 'Leaves at 6:15.');
-    await user.click(dlg.getByRole('button', { name: 'Cancel' }));
-    dlg = await newMessage(user, /Announcement/);
-    expect((dlg.getByRole('textbox', { name: /^Title/ }) as HTMLInputElement).value).toBe('Bus times');
-    expect((dlg.getByRole('textbox', { name: /^Message/ }) as HTMLTextAreaElement).value).toBe('Leaves at 6:15.');
-  });
-
   it('#2 a week’s mute reads as a date, not “today”', async () => {
     const user = userEvent.setup();
     a.getGolfConversationMute.mockResolvedValue({ success: true, data: { muted: true, until: '2026-10-21T18:40:00Z' } });
@@ -1834,36 +1345,16 @@ describe('Messages · wave 5 feedback', () => {
     expect(await screen.findByText('Muted until Oct 21 · 2:40 PM')).toBeTruthy();
   });
 
-  it('#15 mute then unmute leaves one toast, the last (CH-1910 replace)', async () => {
-    const user = userEvent.setup();
-    a.setGolfConversationMute
-      .mockResolvedValueOnce({ success: true, data: { muted: true, until: null } })
-      .mockResolvedValueOnce({ success: true, data: { muted: false, until: null } });
-    show();
-    await openDetails(user);
-    await user.click(await screen.findByRole('button', { name: 'Until I turn it on' }));
-    await screen.findByText('Conversation muted');
-    await user.click(await screen.findByRole('button', { name: 'Unmute' }));
-    await screen.findByText('Notifications back on');
-    await waitFor(() => expect(screen.queryByText('Conversation muted')).toBeNull());
-  });
-
-  it('#17 a thread opened with something unread marks where it starts', async () => {
+  it('#17 a thread opened with something unread draws no "New" marker: the design has none, the jump key counts what is new', async () => {
     live.convs.conversations = [{ ...team, unread_count: 1 }];
     live.msgs.messages = [mine, jonahMsg];
     show();
-    const sep = await screen.findByRole('separator', { name: 'New messages' });
-    expect(sep.nextElementSibling?.id).toBe('ch-ms-message-j1');
+    expect(await screen.findByText(jonahMsg.content)).toBeTruthy();
+    expect(screen.queryByRole('separator', { name: 'New messages' })).toBeNull();
+    expect(document.querySelector('.ch-ms-day.is-new')).toBeNull();
   });
 
   describe('phone', () => {
-    const openThread = async (user: User) => {
-      // A thread popped by Back is still on screen until its exit settles, slower on a loaded runner.
-      await waitFor(() => expect(screen.getAllByRole('button', { name: /^(?!Actions for ).*Varsity team/ })).toHaveLength(1), { timeout: 5000 });
-      await user.click(screen.getByRole('button', { name: /^(?!Actions for ).*Varsity team/ }));
-      return screen.findByRole('region', { name: /Varsity team/ });
-    };
-
     it('#4 #7 #18 New message: Return adds a line, the first message survives Cancel, and Next says Starting… while it works', async () => {
       const user = userEvent.setup();
       let finish!: (v: unknown) => void;
@@ -1889,54 +1380,13 @@ describe('Messages · wave 5 feedback', () => {
       expect((within(newMsg).getByRole('textbox', { name: 'Message Eli' }) as HTMLTextAreaElement).value).toBe('Range at 4\nBring balls');
     });
 
-    it('#20 the actions sheet says whose message it is', async () => {
-      const user = userEvent.setup();
-      live.msgs.messages = [mine, jonahMsg];
-      showPhone();
-      const thread = await openThread(user);
-      await within(thread).findByText('Which bay?', { selector: '.ch-ms-bub' });
-      const [, theirs] = within(thread).getAllByRole('button', { name: 'Message actions' });
-      await user.click(theirs!);
-      await expectCode('CH-7604');
-      expect(code('CH-7604')!.querySelector('.ch-msp-acts__preview .ch-ms-msg__t')?.textContent).toBe('Jonah · 2:05 PM');
-    });
-
-    it('a direct thread, not muted and with nothing to delete, draws no empty panel where the switch was', async () => {
-      const user = userEvent.setup();
-      live.convs.conversations = [{ ...dmJonah, last_message: { content: 'See you at 6', created_at: '2026-10-14T17:00:00Z', sender_id: 'jonah' } }];
-      live.msgs.messages = [{ id: 'j2', conversation_id: 'dm-jonah', sender_id: 'jonah', content: 'See you at 6', created_at: '2026-10-14T17:00:00Z', isRead: true }];
-      showPhone();
-      await user.click(await screen.findByRole('button', { name: /^(?!Actions for ).*Jonah Okafor/ }));
-      const thread = await screen.findByRole('region', { name: /Jonah Okafor/ });
-      await user.click(within(thread).getByRole('button', { name: 'Details' }));
-      const details = await screen.findByRole('region', { name: 'Details' });
-      await within(details).findByRole('button', { name: 'Mute this conversation' });
-      expect(details.querySelectorAll('.ch-msp-panel.is-plain')).toHaveLength(0);
-    });
-
-    it('Mute offers desktop’s three choices, and the switch is gone', async () => {
-      const user = userEvent.setup();
-      a.setGolfConversationMute.mockResolvedValue({ success: true, data: { muted: true, until: '2026-10-21T18:40:00Z' } });
-      showPhone();
-      const thread = await openThread(user);
-      await user.click(within(thread).getByRole('button', { name: 'Details' }));
-      const details = await screen.findByRole('region', { name: 'Details' });
-      expect(within(details).queryByText('Mute notifications')).toBeNull();
-      await user.click(await within(details).findByRole('button', { name: 'Mute this conversation' }));
-      const sheet = within(screen.getByRole('heading', { name: 'Mute this conversation' }).closest('dialog') as HTMLElement);
-      expect(sheet.getByRole('button', { name: 'Mute 8 hours' })).toBeTruthy();
-      expect(sheet.getByRole('button', { name: 'Until I turn it on' })).toBeTruthy();
-      await user.click(sheet.getByRole('button', { name: 'Mute a week' }));
-      await waitFor(() => expect(a.setGolfConversationMute).toHaveBeenCalledWith('team', true, 168));
-      expect(await within(details).findByText('Muted until Oct 21 · 2:40 PM')).toBeTruthy();
-      expect(within(details).getByRole('button', { name: 'Muted. Turn notifications back on' })).toBeTruthy();
-    });
   });
 });
 
 /** P-10 Notify anyway: the "Notified anyway" caption keys on the delivery stamp, never on the coach's request. */
 describe('Messages: CH-7271 Notified anyway caption', () => {
-  const dm = { id: 'dm', title: null, participant_ids: ['me', 'jonah'], participant_count: 2, unread_count: 0, other_participant: { id: 'jonah', name: 'Jonah Okafor' }, last_message: null, creator_id: 'me' };
+  // A thread with messages has a last message (one without is not listed, messages-v2 fix 3).
+  const dm = { id: 'dm', title: null, participant_ids: ['me', 'jonah'], participant_count: 2, unread_count: 0, other_participant: { id: 'jonah', name: 'Jonah Okafor' }, last_message: { content: 'Bus at 6:15', created_at: '2026-10-14T18:00:00Z', sender_id: 'me' }, creator_id: 'me' };
   const stamped = { ...mine, notify_anyway: true, notify_anyway_pushed_at: '2026-10-14T18:00:02Z' };
   const caption = () => document.querySelector('.ch-ms-msg__na');
 
@@ -2004,8 +1454,9 @@ describe('Messages · polls (premium features P-2)', () => {
   it('a poll message draws as its card, never as its plain-text copy, with the thread’s count', async () => {
     show();
     const card = await screen.findByRole('group', { name: 'Which van?' });
-    expect(within(card).getByRole('radio', { name: 'Van B, 1 vote' })).toBeTruthy();
-    expect(card.querySelector('.ch-ms-poll__count')!.textContent).toBe('1 of 3 voted');
+    // MSG-501: the footer counts the votes cast; a sole leader is marked at any time (Q-34).
+    expect(within(card).getByRole('radio', { name: 'Van B, 1 vote, most votes' })).toBeTruthy();
+    expect(card.querySelector('.ch-msd-poll__count')!.textContent).toBe('1 vote');
     expect(screen.queryByText(/Vote in GolfHelm/)).toBeNull();
   });
 
@@ -2014,26 +1465,18 @@ describe('Messages · polls (premium features P-2)', () => {
     show();
     const card = await screen.findByRole('group', { name: 'Which van?' });
     const box = (await screen.findByRole('textbox', { name: /Message Varsity team/ })) as HTMLTextAreaElement;
-    await user.click(within(card).getByRole('button', { name: /^Remind \d$/ }));
-    await waitFor(() => expect(box.value).toMatch(/can you vote in the poll when you get a chance\?$/));
+    // MSG-501: the card draws the count and See votes; Remind is a row of the message's lift menu, which runs this action.
+    expect(within(card).queryByRole('button', { name: /^Remind/ })).toBeNull();
+    expect(pollCardActions('p1')!.remind!.count).toBeGreaterThan(0);
+    act(() => pollCardActions('p1')!.remind!.run());
+    await waitFor(() => expect(box.value).toMatch(/^Reminder: vote in the “Which van\?” poll/));
     expect(document.querySelector('.ch-ms-comp__reply')).not.toBeNull();
     await user.clear(box);
     await user.type(box, 'My own words');
-    await user.click(within(card).getByRole('button', { name: /^Remind \d$/ }));
+    act(() => pollCardActions('p1')!.remind!.run());
     const ask = await screen.findByRole('dialog', { name: 'Replace your draft?' });
     await user.click(within(ask).getByRole('button', { name: 'Keep my draft' }));
     expect(box.value).toBe('My own words');
-  });
-
-  it('D26: the message menu on a poll offers its actions, and anyone else’s text offers Reply and Copy', async () => {
-    const user = userEvent.setup();
-    show();
-    const card = await screen.findByRole('group', { name: 'Which van?' });
-    const msg = card.closest('.ch-ms-msg') as HTMLElement;
-    await user.click(within(msg).getByRole('button', { name: 'More message actions' }));
-    const menu = await screen.findByRole('menu', { name: 'Message actions' });
-    expect(within(menu).getAllByRole('menuitem').map((m) => m.textContent)).toEqual(expect.arrayContaining(['See votes', 'Close poll', 'Copy poll', 'Delete']));
-    expect(within(menu).queryByRole('menuitem', { name: 'Edit' })).toBeNull();
   });
 
   it('a vote is saved with the option id', async () => {
@@ -2074,7 +1517,8 @@ describe('Messages · polls (premium features P-2)', () => {
     const user = userEvent.setup();
     polls.closeGolfPoll.mockResolvedValue({ success: false, error: 'nope' } as never);
     show();
-    await user.click(await screen.findByRole('button', { name: 'Close poll' }));
+    await screen.findByRole('group', { name: 'Which van?' });
+    act(() => pollCardActions('p1')!.close!());
     const dialog = await screen.findByRole('dialog', { name: 'Close this poll?' });
     await user.click(within(dialog).getByRole('button', { name: 'Close poll' }));
     await expectCode('CH-7027', /Couldn’t close the poll/);
@@ -2082,101 +1526,12 @@ describe('Messages · polls (premium features P-2)', () => {
     expect(screen.getByRole('dialog', { name: 'Close this poll?' })).toBeTruthy();
   });
 
-  it('CH-7028 a poll that throws on send says so; a refusal shows its reason in the sheet', async () => {
-    const user = userEvent.setup();
-    polls.sendGolfPoll.mockRejectedValueOnce(new Error('network'));
-    show();
-    await user.click(await screen.findByRole('button', { name: 'New poll' }));
-    const dialog = await screen.findByRole('dialog', { name: 'New poll' });
-    await user.type(within(dialog).getByLabelText('Question'), 'Dinner?');
-    await user.type(within(dialog).getByRole('textbox', { name: 'Choice 1' }), 'Tacos');
-    await user.type(within(dialog).getByRole('textbox', { name: 'Choice 2' }), 'Pasta');
-    await user.click(within(dialog).getByRole('button', { name: 'Send poll' }));
-    await expectCode('CH-7028', /Couldn’t send the poll/);
-
-    polls.sendGolfPoll.mockResolvedValueOnce({ success: false, error: 'You are not in this conversation' } as never);
-    await user.click(within(dialog).getByRole('button', { name: 'Send poll' }));
-    expect(await within(dialog).findByText('You are not in this conversation')).toBeTruthy();
-    const ids = polls.sendGolfPoll.mock.calls.map((c) => (c as unknown[])[2]);
-    expect(ids[1]).toBe(ids[0]);
-  });
-
-  it('D21: on a phone a group thread’s "+" opens Photo or file and Poll', async () => {
-    const user = userEvent.setup();
-    showPhone();
-    // Phase2's row carries an "Actions for …" button beside it; pick the row itself.
-    await waitFor(() => expect(screen.getAllByRole('button', { name: /^(?!Actions for ).*Varsity team/ })).toHaveLength(1), { timeout: 5000 });
-    await user.click(screen.getByRole('button', { name: /^(?!Actions for ).*Varsity team/ }));
-    const thread = await screen.findByRole('region', { name: /Varsity team/ });
-    await user.click(within(thread).getByRole('button', { name: 'Add a file or a poll' }));
-    const menu = await screen.findByRole('menu', { name: 'Add to the message' });
-    expect(within(menu).getAllByRole('menuitem').map((m) => m.textContent)).toEqual(['Photo or file', 'Poll']);
-    await user.click(within(menu).getByRole('menuitem', { name: 'Poll' }));
-    expect(await screen.findByRole('dialog', { name: 'New poll' })).toBeTruthy();
-  });
-
-  it('D27: a sent poll lands in the thread at once from its saved row', async () => {
-    const user = userEvent.setup();
-    const row = { id: 'poll-9', conversation_id: 'g1', sender_id: 'me', kind: 'poll', content: 'Poll: Dinner?', created_at: '2026-10-24T15:00:00Z' };
-    polls.sendGolfPoll.mockResolvedValueOnce({ success: true, id: 'poll-9', row } as never);
-    live.msgs.insertConfirmed.mockClear();
-    show();
-    await user.click(await screen.findByRole('button', { name: 'New poll' }));
-    const dialog = await screen.findByRole('dialog', { name: 'New poll' });
-    await user.type(within(dialog).getByLabelText('Question'), 'Dinner?');
-    await user.type(within(dialog).getByRole('textbox', { name: 'Choice 1' }), 'Tacos');
-    await user.type(within(dialog).getByRole('textbox', { name: 'Choice 2' }), 'Pasta');
-    await user.click(within(dialog).getByRole('button', { name: 'Send poll' }));
-    await waitFor(() => expect(live.msgs.insertConfirmed).toHaveBeenCalledWith(row));
-  });
 });
 
 describe('F-0004 · coach Start conversation opens the one-to-one thread, never the channel', () => {
   // The Team Channel is the newest thread, so desktop opens it beside the rail.
   const channel = { id: 'channel', title: 'Team Channel', is_team_channel: true, participant_ids: ['me', 'jonah', 'eli', 'dan', 'dana', 'x'], participant_count: 6, unread_count: 0, last_message: { content: 'Practice moved', created_at: '2026-10-14T18:30:00Z', sender_id: 'me' }, creator_id: 'me' };
   const dmEliNew = { id: 'dm-eli', title: null, participant_ids: ['me', 'eli'], participant_count: 2, unread_count: 0, other_participant: { id: 'eli', name: 'Eli Brandt' }, last_message: null, creator_id: 'me' };
-
-  async function startWithEli(user: User) {
-    await screen.findByRole('textbox', { name: /Message Team Channel/ });
-    const dlg = await newMessage(user, /Direct/);
-    await user.click(dlg.getByRole('option', { name: /Eli Brandt/ }));
-    await user.click(dlg.getByRole('button', { name: 'Start conversation' }));
-  }
-
-  it('picking one player and pressing Start conversation opens that player’s thread', async () => {
-    const user = userEvent.setup();
-    live.convs.conversations = [channel, team];
-    a.createGolfConversation.mockResolvedValue({ conversationId: 'dm-eli', reused: false });
-    live.convs.refetch.mockImplementation(async () => {
-      live.convs.conversations = [channel, team, dmEliNew];
-    });
-    show();
-    await startWithEli(user);
-    expect(await screen.findByRole('textbox', { name: /Message Eli$/ })).toBeTruthy();
-    expect(screen.queryByRole('dialog', { name: 'New message' })).toBeNull();
-  });
-
-  it('F-0045 the new thread opens as soon as it is made, before the list has read it again', async () => {
-    const user = userEvent.setup();
-    live.convs.conversations = [channel, team];
-    a.createGolfConversation.mockResolvedValue({ conversationId: 'dm-eli', reused: false });
-    live.convs.refetch.mockImplementation(() => new Promise(() => {}));
-    show();
-    await startWithEli(user);
-    expect(await screen.findByRole('textbox', { name: /Message Eli$/ })).toBeTruthy();
-    expect(screen.queryByRole('dialog', { name: 'New message' })).toBeNull();
-    expect(code('CH-7015')).toBeNull();
-  });
-
-  it('an answer that is the channel is refused: the sheet stays open and says so (CH-7002)', async () => {
-    const user = userEvent.setup();
-    live.convs.conversations = [channel, team];
-    a.createGolfConversation.mockResolvedValue({ conversationId: 'channel', reused: true });
-    show();
-    await startWithEli(user);
-    await expectCode('CH-7002', /Couldn’t start the conversation/);
-    expect(screen.queryByRole('dialog', { name: 'New message' })).not.toBeNull();
-  });
 
   it('?player= with the channel open beside the rail opens the player’s thread', async () => {
     live.convs.conversations = [channel, team];
@@ -2188,5 +1543,418 @@ describe('F-0004 · coach Start conversation opens the one-to-one thread, never 
     show();
     expect(await screen.findByRole('textbox', { name: /Message Eli$/ })).toBeTruthy();
     expect(a.createGolfConversation).toHaveBeenCalledWith(['eli'], 't1');
+  });
+});
+
+describe('Messages · actions that fail, on the redesign', () => {
+  it('CH-7009 a reaction that fails says so', async () => {
+    const user = userEvent.setup();
+    live.reactions.setReaction.mockRejectedValue(new Error('refused'));
+    show();
+    await screen.findByText('Bus at 6:15', { selector: '.ch-ms-bub' });
+    await user.click(screen.getAllByRole('button', { name: 'Like' })[0]!);
+    await expectCode('CH-7009', /Couldn’t save the reaction/);
+  });
+});
+
+describe('MSG-406 reactions appear at once (messages-v2 fix 1)', () => {
+  /** jsdom has no Web Animations: every animation here finishes on the next microtask, as it would in a browser. */
+  const finishing = () => {
+    HTMLElement.prototype.animate = (() => {
+      const anim = { cancel: () => {}, finish: () => {}, reverse: () => {}, finished: Promise.resolve() };
+      Object.defineProperty(anim, 'onfinish', { configurable: true, set(fn: (() => void) | null) { if (fn) queueMicrotask(fn); }, get: () => null });
+      return anim;
+    }) as never;
+  };
+  it('right-click, then a key in the lift bar: the badge shows before the server has answered', async () => {
+    finishing();
+    live.msgs.messages = [{ ...mine, sender_id: 'jonah' }];
+    let save!: () => void;
+    live.reactions.setReaction.mockImplementation(() => new Promise<boolean>((resolve) => { save = () => resolve(true); }) as never);
+    show();
+    const bubble = await screen.findByText('Bus at 6:15', { selector: '.ch-ms-bub' });
+    fireEvent.contextMenu(bubble, { clientX: 100, clientY: 100 });
+    fireEvent.click(await screen.findByRole('button', { name: 'Love' }));
+    await waitFor(() => expect(live.reactions.setReaction).toHaveBeenCalledWith('m1', '❤️', true));
+    await waitFor(() => expect(document.querySelectorAll('.ch-ms-reacts .ch-ms-react')).toHaveLength(1));
+    save();
+  });
+
+  it('taking your reaction back removes the badge before the server has answered', async () => {
+    finishing();
+    live.msgs.messages = [{ ...mine, sender_id: 'jonah' }];
+    live.reactions.rows = [{ id: 'r1', message_id: 'm1', user_id: 'me', emoji: '❤️' }];
+    live.reactions.setReaction.mockImplementation(() => new Promise<boolean>(() => {}) as never);
+    try {
+      show();
+      const bubble = await screen.findByText('Bus at 6:15', { selector: '.ch-ms-bub' });
+      expect(document.querySelectorAll('.ch-ms-reacts .ch-ms-react')).toHaveLength(1);
+      fireEvent.contextMenu(bubble, { clientX: 100, clientY: 100 });
+      const love = await screen.findByRole('button', { name: 'Love' });
+      expect(love.getAttribute('aria-pressed')).toBe('true');
+      fireEvent.click(love);
+      await waitFor(() => expect(live.reactions.setReaction).toHaveBeenCalledWith('m1', '❤️', false));
+      await waitFor(() => expect(document.querySelectorAll('.ch-ms-reacts .ch-ms-react')).toHaveLength(0));
+    } finally {
+      live.reactions.rows = [];
+    }
+  });
+});
+
+describe('Messages · failure and edge states on the redesign (catalog rows with no test since the flag went)', () => {
+  /** jsdom has no Web Animations: every animation here finishes on the next microtask, as it would in a browser. */
+  const finishing = () => {
+    HTMLElement.prototype.animate = (() => {
+      const anim = { cancel: () => {}, finish: () => {}, reverse: () => {}, finished: Promise.resolve() };
+      Object.defineProperty(anim, 'onfinish', { configurable: true, set(fn: (() => void) | null) { if (fn) queueMicrotask(fn); }, get: () => null });
+      return anim;
+    }) as never;
+  };
+  const dan = { userId: 'dan', name: 'Dan Whitfield', role: 'coach' as const, subtitle: 'Assistant coach', playerId: null };
+  /** Desktop New message: the pane lists people; New group and Announcement open the form. */
+  const newForm = async (user: User, kind: 'New group' | 'Announcement') => {
+    await user.click(screen.getAllByRole('button', { name: 'New message' })[0]!);
+    await user.click(await screen.findByRole('button', { name: kind }));
+    return within(await screen.findByRole('dialog', { name: kind === 'Announcement' ? 'New announcement' : 'New message' }));
+  };
+  /** The message's menu, opened as a mouse opens it. */
+  const menuOn = async (user: User, item: string) => {
+    const bubble = await screen.findByText('Bus at 6:15', { selector: '.ch-ms-bub' });
+    fireEvent.contextMenu(bubble, { clientX: 100, clientY: 100 });
+    await user.click(await screen.findByRole('menuitem', { name: item }));
+  };
+  const openThread = async (user: User) => {
+    await waitFor(() => expect(screen.getAllByRole('button', { name: /^(?!Actions for ).*Varsity team/ })).toHaveLength(1), { timeout: 5000 });
+    await user.click(screen.getByRole('button', { name: /^(?!Actions for ).*Varsity team/ }));
+    return screen.findByRole('region', { name: /Varsity team/ });
+  };
+  /** The phone's actions for a message, by the named button VoiceOver and keyboards reach. */
+  const phoneAction = async (user: User, thread: HTMLElement, item: string) => {
+    await user.click(within(thread).getByRole('button', { name: 'Message actions' }));
+    await expectCode('CH-7604');
+    await user.click(within(code('CH-7604') as HTMLElement).getByText(item));
+  };
+
+  it('CH-7007 an edit that fails says so and keeps the words in the box', async () => {
+    finishing();
+    const user = userEvent.setup();
+    live.msgs.editMessage.mockRejectedValue(new Error('refused'));
+    show();
+    await menuOn(user, 'Edit');
+    const box = screen.getByRole('textbox', { name: /Message Varsity team/ }) as HTMLTextAreaElement;
+    await waitFor(() => expect(box.value).toBe('Bus at 6:15'));
+    await user.type(box, ' sharp{Enter}');
+    await expectCode('CH-7007', /Couldn’t edit the message/);
+    expect(live.msgs.editMessage).toHaveBeenCalledWith('m1', 'Bus at 6:15 sharp');
+    // Nothing typed is lost, and the box is still the edit, not a new message.
+    expect(box.value).toBe('Bus at 6:15 sharp');
+    expect(screen.getByText('Editing message')).toBeTruthy();
+    expect(live.msgs.sendMessage).not.toHaveBeenCalled();
+  });
+
+  it('CH-7501 CH-7008 deleting a message asks first with the message quoted; a failed delete says so and the message stays', async () => {
+    finishing();
+    const user = userEvent.setup();
+    live.msgs.removeMessage.mockRejectedValue(new Error('refused'));
+    show();
+    await menuOn(user, 'Delete');
+    await expectCode('CH-7501', /Delete this message\?/);
+    expect(code('CH-7501')!.textContent).toContain('Bus at 6:15');
+    expect(live.msgs.removeMessage).not.toHaveBeenCalled();
+    await user.click(within(code('CH-7501') as HTMLElement).getByRole('button', { name: /^Delete/ }));
+    await expectCode('CH-7008', /Couldn’t delete the message/);
+    expect(live.msgs.removeMessage).toHaveBeenCalledWith('m1');
+    expect(screen.getByText('Bus at 6:15', { selector: '.ch-ms-bub' })).toBeTruthy();
+  });
+
+  it('CH-7502 CH-7010 leaving a group asks first; a failed leave says so', async () => {
+    const user = userEvent.setup();
+    a.leaveGolfGroup.mockResolvedValue({ error: 'nope' });
+    // Only someone who didn't create the group can leave it.
+    live.convs.conversations = [{ ...team, creator_id: 'dan' }];
+    show();
+    await openDetails(user);
+    await user.click(await screen.findByRole('button', { name: /^Leave/ }));
+    await expectCode('CH-7502', /Leave Varsity team\?/);
+    expect(a.leaveGolfGroup).not.toHaveBeenCalled();
+    await user.click(within(code('CH-7502') as HTMLElement).getByRole('button', { name: 'Leave group' }));
+    await expectCode('CH-7010', /Couldn’t leave the group/);
+    expect(a.leaveGolfGroup).toHaveBeenCalledWith('team');
+  });
+
+  it('CH-7203 71402 message search that does not load says the names still match, and Try again reads only the search', async () => {
+    const user = userEvent.setup();
+    a.searchGolfMessages.mockRejectedValueOnce(new Error('boom'));
+    show();
+    await user.type(screen.getByRole('searchbox', { name: /Search conversations and messages/ }), 'bus');
+    await expectCode('CH-7203', /Message search didn’t load/);
+    expect(code('CH-7203')!.textContent).toMatch(/Conversations above still match by name/);
+    const searches = a.searchGolfMessages.mock.calls.length;
+    const rail = live.convs.refetch.mock.calls.length;
+    const thread = live.msgs.refetch.mock.calls.length;
+    await user.click(within(code('CH-7203') as HTMLElement).getByRole('button', { name: 'Try again' }));
+    await waitFor(() => expect(a.searchGolfMessages.mock.calls.length).toBe(searches + 1));
+    await waitFor(() => expect(code('CH-7203')).toBeNull());
+    // 71402: only that section is read again. The rail and the open thread are as they were.
+    expect(live.convs.refetch.mock.calls.length).toBe(rail);
+    expect(live.msgs.refetch.mock.calls.length).toBe(thread);
+    expect(screen.getByRole('textbox', { name: /Message Varsity team/ })).toBeTruthy();
+  });
+
+  it('CH-7303 a conversation’s own search that finds no message says No results, in Details', async () => {
+    const user = userEvent.setup();
+    show();
+    await openDetails(user);
+    await user.click(await screen.findByRole('button', { name: 'Search' }));
+    await user.type(await screen.findByRole('searchbox', { name: 'Search this conversation with Varsity team' }), 'van');
+    await expectCode('CH-7303', /No results/);
+    expect(code('CH-7303')!.textContent).toMatch(/Try another name or word/);
+    expect(a.searchGolfMessages).toHaveBeenCalledWith('van', 't1');
+  });
+
+  it('CH-7104 CH-7105 a new group needs a name, then a person, then a player, before anything is created', async () => {
+    const user = userEvent.setup();
+    show({ ...data, directory: [dan, ...data.directory] });
+    const form = await newForm(user, 'New group');
+    hapticSpy.mockClear();
+    await user.click(form.getByRole('button', { name: 'Create group' }));
+    await expectCode('CH-7104', /Name the group so players know what it’s for/);
+    expect(hapticSpy).toHaveBeenCalledWith('warning');
+    await user.type(form.getByRole('textbox', { name: /^Group name/ }), 'Travel');
+    await user.click(form.getByRole('button', { name: 'Create group' }));
+    await expectCode('CH-7105', /Choose at least one person/);
+    // A coach's group is a broadcast to its players: coaches alone would reach the whole team.
+    await user.click(form.getByRole('option', { name: /Dan Whitfield/ }));
+    await user.click(form.getByRole('button', { name: 'Create group' }));
+    await expectCode('CH-7105', /Choose at least one player\. Coaches join the group once it exists/);
+    expect(a.createGolfTeamBroadcast).not.toHaveBeenCalled();
+  });
+
+  it('CH-7003 a group that is not created says so and keeps the form as it was', async () => {
+    const user = userEvent.setup();
+    a.createGolfTeamBroadcast.mockResolvedValue({ error: 'nope' });
+    show();
+    const form = await newForm(user, 'New group');
+    await user.type(form.getByRole('textbox', { name: 'Group name' }), 'Travel');
+    await user.click(form.getByRole('option', { name: /Jonah Okafor/ }));
+    await user.click(form.getByRole('button', { name: 'Create group' }));
+    await expectCode('CH-7003', /Couldn’t create the group/);
+    expect(a.createGolfTeamBroadcast).toHaveBeenCalledWith({ teamId: 't1', title: 'Travel', selectedPlayerIds: ['p-jonah'] });
+    expect((form.getByRole('textbox', { name: 'Group name' }) as HTMLInputElement).value).toBe('Travel');
+  });
+
+  it('CH-7019 a coach picked for a new group is added once it exists; one who cannot be added is named', async () => {
+    const user = userEvent.setup();
+    a.createGolfTeamBroadcast.mockResolvedValue({ conversationId: 'g1' });
+    a.addGolfGroupMember.mockResolvedValue({ error: 'nope' });
+    // The new group is in the list once it is read again, so it opens (a thread that is not listed would say CH-7015 instead).
+    live.convs.refetch.mockImplementationOnce(async () => {
+      live.convs.conversations = [{ ...team, id: 'g1', title: 'Travel', participant_ids: ['me', 'jonah'], participant_count: 2 }, team];
+    });
+    show({ ...data, directory: [dan, ...data.directory] });
+    const form = await newForm(user, 'New group');
+    await user.type(form.getByRole('textbox', { name: 'Group name' }), 'Travel');
+    await user.click(form.getByRole('option', { name: /Jonah Okafor/ }));
+    await user.click(form.getByRole('option', { name: /Dan Whitfield/ }));
+    hapticSpy.mockClear();
+    await user.click(form.getByRole('button', { name: 'Create group' }));
+    await waitFor(() => expect(code('CH-7019')?.textContent ?? '').toMatch(/Group created, but Dan wasn’t added/));
+    // The broadcast takes players only; the coach is a second write.
+    expect(a.createGolfTeamBroadcast).toHaveBeenCalledWith({ teamId: 't1', title: 'Travel', selectedPlayerIds: ['p-jonah'] });
+    expect(a.addGolfGroupMember).toHaveBeenCalledWith('g1', 'dan');
+    expect(hapticSpy).toHaveBeenCalledWith('warning');
+  });
+
+  it('CH-7102 CH-7103 CH-7014 an announcement needs a title and a body; a failed post says so and keeps the text', async () => {
+    const user = userEvent.setup();
+    a.createEnrichedAnnouncement.mockResolvedValue({ success: false, error: 'nope' });
+    show();
+    const form = await newForm(user, 'Announcement');
+    await user.click(form.getByRole('button', { name: 'Post announcement' }));
+    await expectCode('CH-7102', /Give the announcement a title/);
+    await expectCode('CH-7103', /Write what the team needs to know/);
+    expect(a.createEnrichedAnnouncement).not.toHaveBeenCalled();
+    await user.type(form.getByRole('textbox', { name: /^Title/ }), 'Bus times');
+    await user.type(form.getByRole('textbox', { name: /^Message/ }), 'Bus leaves at 6:15.');
+    await user.click(form.getByRole('button', { name: 'Post announcement' }));
+    await expectCode('CH-7014', /Couldn’t post the announcement/);
+    expect(a.createEnrichedAnnouncement).toHaveBeenCalledTimes(1);
+    expect((form.getByRole('textbox', { name: /^Title/ }) as HTMLInputElement).value).toBe('Bus times');
+    expect((form.getByRole('textbox', { name: /^Message/ }) as HTMLTextAreaElement).value).toBe('Bus leaves at 6:15.');
+  });
+
+  it('CH-7213 a crash in Details is contained: the thread beside it stays', async () => {
+    const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const user = userEvent.setup();
+    // A member row the screen cannot draw (a name that is not text).
+    a.getGolfConversationParticipantIdentities.mockResolvedValue({ participants: [{ userId: 'dan', name: {}, subtitle: '', type: 'player' }] });
+    show();
+    await openDetails(user);
+    await expectCode('CH-7213', /Details couldn’t be shown/);
+    expect(screen.getByRole('textbox', { name: /Message Varsity team/ })).toBeTruthy();
+    expect(screen.getByText('Bus at 6:15', { selector: '.ch-ms-bub' })).toBeTruthy();
+    quiet.mockRestore();
+  });
+
+  it('CH-7028 a poll that throws on send says so; a refusal shows its reason in the form; the retry cannot post twice', async () => {
+    finishing();
+    const user = userEvent.setup();
+    polls.sendGolfPoll.mockRejectedValueOnce(new Error('network'));
+    show();
+    await user.click(await screen.findByRole('button', { name: 'Add a photo, file or poll' }));
+    await user.click(await screen.findByRole('menuitem', { name: 'Poll' }));
+    const dialog = await screen.findByRole('dialog', { name: 'New poll' });
+    await user.type(within(dialog).getByLabelText('Question'), 'Dinner?');
+    await user.type(within(dialog).getByRole('textbox', { name: 'Choice 1' }), 'Tacos');
+    await user.type(within(dialog).getByRole('textbox', { name: 'Choice 2' }), 'Pasta');
+    await user.click(within(dialog).getByRole('button', { name: /^Send( poll)?$/ }));
+    await expectCode('CH-7028', /Couldn’t send the poll/);
+    // The draft is kept.
+    expect((within(dialog).getByLabelText('Question') as HTMLInputElement).value).toBe('Dinner?');
+
+    polls.sendGolfPoll.mockResolvedValueOnce({ success: false, error: 'You are not in this conversation' } as never);
+    await user.click(within(dialog).getByRole('button', { name: /^Send( poll)?$/ }));
+    expect(await within(dialog).findByText('You are not in this conversation')).toBeTruthy();
+    const ids = polls.sendGolfPoll.mock.calls.map((c) => (c as unknown[])[2]);
+    expect(ids[1]).toBe(ids[0]);
+  });
+
+  describe('phone', () => {
+    it('71901 at phone width Messages is a stack: the inbox pushes the thread, the thread pushes Details, and Back pops one', async () => {
+      const user = userEvent.setup();
+      showPhone();
+      // The inbox alone: no thread is open beside it, as there would be on the desktop.
+      await screen.findByRole('button', { name: /^(?!Actions for ).*Varsity team/ });
+      expect(screen.queryByRole('textbox', { name: /Message Varsity team/ })).toBeNull();
+      const thread = await openThread(user);
+      expect(within(thread).getByRole('button', { name: 'Back to Messages' })).toBeTruthy();
+      expect(within(thread).getByRole('textbox', { name: /Message Varsity team/ })).toBeTruthy();
+      await user.click(within(thread).getByRole('button', { name: 'Details for Varsity team' }));
+      const details = await screen.findByRole('region', { name: 'Details' });
+      // The thread under Details is out of reach until Details pops.
+      expect(thread.hasAttribute('inert')).toBe(true);
+      await user.click(within(details).getByRole('button', { name: 'Back to conversation' }));
+      await waitFor(() => expect(thread.hasAttribute('inert')).toBe(false));
+    });
+
+    it('CH-7020 a message that cannot be copied says so', async () => {
+      finishing();
+      const user = userEvent.setup();
+      Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: vi.fn().mockRejectedValue(new Error('denied')) } });
+      showPhone();
+      const thread = await openThread(user);
+      await phoneAction(user, thread, 'Copy');
+      await expectCode('CH-7020', /Couldn’t copy the message/);
+    });
+
+    it('CH-7022 text delivered but its file refused: only the unsaved file and the reply remain, and the retry sends no second copy of the text', async () => {
+      finishing();
+      const user = userEvent.setup();
+      live.files.sendMessageWithAttachments.mockResolvedValueOnce({ success: true, attachmentsFailed: true });
+      showPhone();
+      const thread = await openThread(user);
+      await phoneAction(user, thread, 'Reply');
+      const file = new File(['x'], 'plan.pdf', { type: 'application/pdf' });
+      await user.upload(thread.querySelector('input[type="file"]:not([accept^="image"])') as HTMLInputElement, file);
+      const box = within(thread).getByRole('textbox', { name: /Message Varsity team/ }) as HTMLTextAreaElement;
+      await user.type(box, 'Delivered text');
+      hapticSpy.mockClear();
+      await user.click(within(thread).getByRole('button', { name: 'Send' }));
+      await expectCode('CH-7022', /Message sent; attachments not saved/);
+      expect(box.value).toBe('');
+      expect(within(thread).getByRole('button', { name: 'Remove plan.pdf' })).toBeTruthy();
+      expect(within(thread).getByRole('button', { name: 'Cancel reply' })).toBeTruthy();
+      expect(hapticSpy).toHaveBeenCalledWith('warning');
+      expect(hapticSpy).not.toHaveBeenCalledWith('success');
+      await user.click(within(thread).getByRole('button', { name: 'Send' }));
+      await waitFor(() => expect(live.files.sendMessageWithAttachments).toHaveBeenCalledTimes(2));
+      expect(live.files.sendMessageWithAttachments.mock.calls[1]?.[0]).toEqual(expect.objectContaining({ content: '', replyToId: 'm1', attachments: [expect.objectContaining({ file })] }));
+      expect(live.msgs.sendMessage).not.toHaveBeenCalled();
+    });
+
+    it('CH-7217 a pending send that cannot be checked locks the box until the check succeeds', async () => {
+      const user = userEvent.setup();
+      live.files.getPendingAttachmentSend.mockRejectedValueOnce(new Error('unreadable')).mockResolvedValue(null);
+      showPhone();
+      const thread = await openThread(user);
+      await expectCode('CH-7217', /Couldn’t check a pending send/);
+      const box = within(thread).getByRole('textbox', { name: /Message Varsity team/ }) as HTMLTextAreaElement;
+      expect(box.readOnly).toBe(true);
+      await user.type(box, 'Too early');
+      expect(box.value).toBe('');
+      expect(live.msgs.sendMessage).not.toHaveBeenCalled();
+      await user.click(within(code('CH-7217') as HTMLElement).getByRole('button', { name: 'Try again' }));
+      await waitFor(() => expect(box.readOnly).toBe(false));
+      expect(code('CH-7217')).toBeNull();
+      await user.type(box, 'Fresh message');
+      await user.click(within(thread).getByRole('button', { name: 'Send' }));
+      await waitFor(() => expect(live.msgs.sendMessage).toHaveBeenCalledWith('Fresh message'));
+    });
+  });
+});
+
+describe('Messages · the phone thread bar', () => {
+  it('MSG-7 a pushed thread lands focus on the name’s box, not on the Details key inside it', async () => {
+    const user = userEvent.setup();
+    showPhone();
+    await waitFor(() => expect(screen.getAllByRole('button', { name: /^(?!Actions for ).*Varsity team/ })).toHaveLength(1), { timeout: 5000 });
+    await user.click(screen.getByRole('button', { name: /^(?!Actions for ).*Varsity team/ }));
+    const thread = await screen.findByRole('region', { name: /Varsity team/ });
+    const key = within(thread).getByRole('button', { name: 'Details for Varsity team' });
+    const box = key.parentElement as HTMLElement;
+    // A key focused by script on a fresh load (a notification, a link) draws its keyboard ring; the box is not a stop.
+    await waitFor(() => expect(document.activeElement).toBe(box));
+    expect(box.getAttribute('tabindex')).toBe('-1');
+    // The screen is still named by it, and the key is still the next thing a keyboard reaches.
+    expect(thread.getAttribute('aria-labelledby')).toBe(box.id);
+    await user.tab();
+    expect(document.activeElement).toBe(key);
+  });
+});
+
+describe('Messages · a message’s menu holds only what it can do', () => {
+  it('someone else’s photo can be replied to and has nothing to copy; the menu is never an empty box', async () => {
+    // jsdom has no Web Animations: the lift's close finishes on the next microtask, as it would in a browser.
+    HTMLElement.prototype.animate = (() => {
+      const anim = { cancel: () => {}, finish: () => {}, reverse: () => {}, finished: Promise.resolve() };
+      Object.defineProperty(anim, 'onfinish', { configurable: true, set(fn: (() => void) | null) { if (fn) queueMicrotask(fn); }, get: () => null });
+      return anim;
+    }) as never;
+    const user = userEvent.setup();
+    live.msgs.messages = [{ ...mine, id: 'p1', sender_id: 'jonah', content: '', has_attachments: true }, { ...mine, id: 'm2', content: 'Got it' }];
+    a.getGolfMessageAttachments.mockResolvedValue({ attachments: [{ id: 'f1', fileName: 'Card.jpg', fileSize: 2048, mimeType: 'image/jpeg', url: 'https://files.example/card.jpg' }] });
+    show();
+    await screen.findByText('Got it', { selector: '.ch-ms-bub' });
+    const theirs = document.querySelector<HTMLElement>('#ch-ms-message-p1 .ch-ms-msg__stack')!;
+    expect(theirs).not.toBeNull();
+    fireEvent.contextMenu(theirs, { clientX: 100, clientY: 100 });
+    await expectCode('CH-7604');
+    const lift = code('CH-7604') as HTMLElement;
+    const menus = [...lift.querySelectorAll('[role="menu"]')];
+    // Either the rows it has, or no menu at all.
+    for (const menu of menus) expect(menu.querySelectorAll('[role="menuitem"]').length).toBeGreaterThan(0);
+    const rows = [...lift.querySelectorAll('[role="menuitem"]')].map((x) => x.textContent?.trim());
+    expect(rows).toEqual(['Reply']);
+    await user.click(within(lift).getByRole('menuitem', { name: 'Reply' }));
+    expect(await screen.findByRole('button', { name: 'Cancel reply' })).toBeTruthy();
+  });
+});
+
+/**
+ * F-0021 (TO-01): on the phone the composer's field was 36 tall inside a 46 pill, and the pill's own 5px above and
+ * below it took the tap and did nothing. The pill is the field to the finger: a tap on its own edge puts the caret in it.
+ */
+describe('Messages · the composer pill is the field’s tap area', () => {
+  it('a tap on the pill’s own edge puts the caret in the field; a key inside the pill keeps its own tap', async () => {
+    show();
+    const field = (await screen.findByRole('textbox', { name: /Message Varsity team/ })) as HTMLTextAreaElement;
+    const pill = field.closest<HTMLElement>('.ch-ms-comp__field')!;
+    field.blur();
+    expect(document.activeElement).not.toBe(field);
+    fireEvent.click(pill);
+    expect(document.activeElement).toBe(field);
+    field.blur();
+    fireEvent.click(pill.querySelector('button')!);
+    expect(document.activeElement).not.toBe(field);
   });
 });

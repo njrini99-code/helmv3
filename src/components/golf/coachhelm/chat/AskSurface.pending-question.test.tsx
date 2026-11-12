@@ -26,18 +26,26 @@ import { markAskHandoff } from '@/lib/golf/ask-handoff';
 const useChatSpy = vi.fn();
 const sendMessageSpy = vi.fn();
 
-vi.mock('@ai-sdk/react', () => ({
-  useChat: (config: Record<string, unknown>) => {
+// The chat hook itself is the stand-in here: this file is about what the surface does with the hook's state. The hook's own
+// behaviour (what it sends, how it folds the stream, retry and new chat) is covered in __tests__/useCoachHelmChat.test.tsx.
+vi.mock('./useCoachHelmChat', () => ({
+  useCoachHelmChat: (config: Record<string, unknown>) => {
     useChatSpy(config);
     return {
       messages: [],
       status: 'ready',
       error: undefined,
-      sendMessage: sendMessageSpy,
-      regenerate: vi.fn(),
+      send: (text: string) => sendMessageSpy({ text }),
+      retry: vi.fn(),
+      newConversation: vi.fn(),
+      busy: false,
+      conversationId: null,
+      context: [],
+      addContext: vi.fn(),
+      removeContext: vi.fn(),
       stop: vi.fn(),
-      setMessages: vi.fn(),
-      addToolApprovalResponse: vi.fn(),
+      approve: vi.fn(),
+      deny: vi.fn(),
     };
   },
 }));

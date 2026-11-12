@@ -4,15 +4,21 @@ import { Button } from '../../../../ui/Button';
 
 import { Avatar } from '../../../../ui/Avatar';
 
-import { ClipboardList, FolderClosed } from 'lucide-react';
+import { ClipboardList } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
 import { recordPracticePlanOpen } from '@/app/golf/actions/practice-plans';
 import { Icon } from '../../../../ui/Icon';
 import { LargeTitle } from '../../../../ui/LargeTitle';
 import { Segmented } from '../../../../ui/Segmented';
+import { EmptyState } from '../../../../ui/States';
+import { wholeFacts } from '../../../practice/facts';
 
 export interface PlayerStop {
   time: string;
+  /** Epochs for Now and Next, worked out on this phone: a plan left open stays true. */
+  startsAt?: number;
+  endsAt?: number;
   place: string;
   line: string;
   now?: boolean;
@@ -23,10 +29,17 @@ export interface PlayerPracticeData {
   title: string;
   when: string;
   focus: string;
-  group: { name: string; mates: string[] } | null;
+  group: { name: string; mates: string[]; me?: string } | null;
   stops: PlayerStop[];
-  documents: string | null;
+  documents: { label: string; href: string } | null;
   planHref: string | null;
+}
+
+/** Which stop is on now, and which is next, at this moment. */
+export function stopsAt(stops: readonly PlayerStop[], at: number): PlayerStop[] {
+  const nowAt = stops.findIndex((s) => s.startsAt != null && s.endsAt != null && s.startsAt <= at && at < s.endsAt);
+  const nextAt = nowAt >= 0 ? nowAt + 1 : stops.findIndex((s) => s.startsAt != null && s.startsAt > at);
+  return stops.map((s, i) => ({ ...s, now: i === nowAt, next: i === nextAt }));
 }
 
 /** A player's Practice page (S-PLY.practice): their own stops only, with Now and Next. A player's model never carries a Why, an Aim or another group's stops, and the sheet tab is their own copy. */
@@ -35,7 +48,25 @@ export function PlayerPractice({ data, everyone, planId = null }: { data: Player
   useEffect(() => {
     if (planId) void recordPracticePlanOpen({ planId });
   }, [planId]);
-  const [tab, setTab] = useState<'mine' | 'all'>('mine');
+  const asked = useSearchParams().get('view');
+  const [tab, setTab] = useState<'mine' | 'all'>(() => (asked === 'sheet' ? 'all' : 'mine'));
+  // Now and Next from the clock here, and again on a return to the app: the server's answer is only true when it was asked.
+  const [clockAt, setClockAt] = useState<number | null>(null);
+  useEffect(() => {
+    if (!data.stops.some((s) => s.startsAt != null)) return;
+    const tick = () => setClockAt(Date.now());
+    const seen = () => {
+      if (document.visibilityState === 'visible') tick();
+    };
+    tick();
+    const t = window.setInterval(tick, 60_000);
+    document.addEventListener('visibilitychange', seen);
+    return () => {
+      window.clearInterval(t);
+      document.removeEventListener('visibilitychange', seen);
+    };
+  }, [data.stops]);
+  const stops = clockAt == null ? data.stops : stopsAt(data.stops, clockAt);
   return (
     <main className="ch-page ch-cpv ch-cpv-ply" data-ch="player-practice">
       <LargeTitle>Practice</LargeTitle>
@@ -47,14 +78,14 @@ export function PlayerPractice({ data, everyone, planId = null }: { data: Player
           </span>
           <div className="hd">
             <span className="t">{data.title}</span>
-            <span className="m">{data.when}</span>
+            <span className="m ch-num">{wholeFacts(data.when)}</span>
           </div>
         </header>
         {data.focus && <div className="focus">{data.focus}</div>}
         {data.group && (
           <div className="grpl">
             <span className="avs" aria-hidden="true">
-              {data.group.mates.slice(0, 3).map((m) => (
+              {[...(data.group.me ? [data.group.me] : []), ...data.group.mates].slice(0, 3).map((m) => (
                 <Avatar key={m} name={m} size="xs" />
               ))}
             </span>
@@ -75,14 +106,16 @@ export function PlayerPractice({ data, everyone, planId = null }: { data: Player
         ]}
         onChange={setTab}
       />
-      {tab === 'mine' ? (
+      {tab === 'mine' && stops.length === 0 ? (
+        <EmptyState kind="first-run" title="No stops for you in this one" body="Your coach hasn’t put you in a group on this plan yet." />
+      ) : tab === 'mine' ? (
         <section className="art" aria-label="Your stops">
-          {data.stops.map((s) => (
+          {stops.map((s) => (
             <div className="stop" key={s.time + s.place}>
               <span className="tm ch-num">{s.time}</span>
               <div>
                 <div className="pl">{s.place}</div>
-                <div className="dr">{s.line}</div>
+                <div className="dr">{wholeFacts(s.line)}</div>
               </div>
               {s.now ? <span className="now">Now</span> : s.next ? <span className="nx">Next</span> : <span />}
             </div>
@@ -92,21 +125,14 @@ export function PlayerPractice({ data, everyone, planId = null }: { data: Player
         everyone
       )}
       {data.documents && (
-        <section className="art">
-          <header className="art-h is-center">
-            <span className="tile">
-              <Icon icon={FolderClosed} size={18} />
-            </span>
-            <div className="hd">
-              <span className="t">In Documents</span>
-              <span className="m">{data.documents}</span>
-            </div>
-            {data.planHref && (
-              <Button variant="secondary" size="sm" href={data.planHref}>
-                Open the plan
-              </Button>
-            )}
-          </header>
+        <section className="art is-docs">
+          <a className="docrow" href={data.documents.href}>
+            <span className="t">In Documents</span>
+            <span className="m">{data.documents.label}</span>
+          </a>
+          <Button variant="secondary" size="sm" onClick={() => setTab('all')}>
+            Open the plan
+          </Button>
         </section>
       )}
     </main>

@@ -5,14 +5,18 @@ vi.mock('@/app/actions/messages', () => ({ sendMessage: vi.fn() }));
 vi.mock('@/lib/supabase/server', () => ({ createClient: vi.fn() }));
 vi.mock('../../practice-plan/flag', () => ({ isPracticeTabEnabled: () => true, isPracticePlansEnabled: () => true }));
 
-import { practiceDraftTool } from '../practice-draft';
+import { PracticeDraftInput, practiceDraft } from '../practice-draft';
 import type { CoachChatContext } from '../context';
 
-/** The draft tool's limits match `golf_practice_plan_check_body`, so the model hears about a bad plan while it can fix it, not the coach on Save. */
+/** The draft's limits match `golf_practice_plan_check_body`, so the model hears about a bad plan while it can fix it, not the coach on Save. */
 const write = vi.fn();
-const tool = practiceDraftTool({ ctx: {} as CoachChatContext, writer: { write } as never, envelopes: () => [], evidenceByRef: new Map() }).draft_practice_plan as unknown as {
-  inputSchema: { safeParse: (v: unknown) => { success: boolean } };
-  execute: (i: unknown, o: unknown) => Promise<{ status: string; message: string }>;
+const tool = {
+  inputSchema: PracticeDraftInput,
+  execute: async (i: unknown, _o: unknown) => {
+    const built = await practiceDraft({ roster: [], team_id: 't1', team_name: 'Team', timezone: 'UTC' } as unknown as CoachChatContext, PracticeDraftInput.parse(i), new Map());
+    if (built.ok) write(built.card);
+    return { status: built.ok ? 'shown' : 'refused', message: built.message };
+  },
 };
 
 const block = (over: Record<string, unknown> = {}) => ({ id: 'b', kind: 'team', title: 'Warm-up', len: 30, place: 'Range', note: '', aim: '', because: null, routine: true, sources: [], alternatives: [], ...over });

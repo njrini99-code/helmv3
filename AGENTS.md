@@ -17,8 +17,9 @@ migrations, deploys, flags, and cleanup of your own worktrees. Make the call,
 note the assumption in your report, and keep going. Ask the user only when you
 are blocked on information that the repo, the services and a sensible default
 cannot supply. Subagents cannot ask: return the open question with your
-recommended default and carry on. Production has no staging, so verify the
-result after a migration or deploy and know how you would roll it back.
+recommended default and carry on. Production has no staging (Vercel Preview and
+Development use a separate Supabase project, see "Database"), so verify the result after a
+migration or deploy and know how you would roll it back.
 
 ## Done means
 
@@ -126,8 +127,11 @@ unreachable from an old doc or a missing env token.
 ## Database
 
 One production Supabase project (`qmnssrrolpinvwjjnufo`) serves Golf
-(`golf_*`), Baseball (`baseball_*`) and Lift Lab (`helm_lifting_*`), with no
-staging copy. Keep RLS and sport boundaries intact and secrets out of output and
+(`golf_*`), Baseball (`baseball_*`) and Lift Lab (`helm_lifting_*`). It has no staging copy,
+but Vercel Preview and Development point at a second project, "PROSP DATA"
+(`ybmwektreyrwjscxlogv`), refreshed from production (Production
+environment: `qmnssrrolpinvwjjnufo` only). `.env.local` may still point at production: check
+before running a script that writes. Keep RLS and sport boundaries intact and secrets out of output and
 commits. To change production: write a forward-only migration, run the risky
 kinds (RLS, grants, `DROP`, type changes, backfills) through the local Docker
 stack first, apply it with `npm run db:apply -- <file>` or the Supabase MCP,

@@ -3880,24 +3880,72 @@ COMMENT ON FUNCTION "public"."get_feature_health"("p_features" "jsonb") IS 'Helm
 
 CREATE OR REPLACE FUNCTION "public"."get_golf_conversations_with_details"("p_user_id" "uuid") RETURNS TABLE("id" "uuid", "created_at" timestamp with time zone, "updated_at" timestamp with time zone, "creator_id" "uuid", "last_message_content" "text", "last_message_at" timestamp with time zone, "last_message_sender_id" "uuid", "unread_count" bigint, "participant_ids" "uuid"[], "participant_names" "text"[], "is_group" boolean, "title" "text", "participant_count" bigint, "is_team_channel" boolean)
     LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public'
+    SET "search_path" TO ''
     AS $$
-DECLARE v_uid uuid := auth.uid();
+DECLARE
+  v_uid uuid := auth.uid();
 BEGIN
-  IF v_uid IS NULL THEN RETURN; END IF;
+  IF v_uid IS NULL THEN
+    RETURN;
+  END IF;
   RETURN QUERY
-  SELECT c.id, c.created_at, c.updated_at, c.created_by,
-    (SELECT m.content FROM golf_messages m WHERE m.conversation_id=c.id AND m.is_deleted=FALSE ORDER BY m.created_at DESC LIMIT 1),
-    (SELECT m.created_at FROM golf_messages m WHERE m.conversation_id=c.id AND m.is_deleted=FALSE ORDER BY m.created_at DESC LIMIT 1),
-    (SELECT m.sender_id FROM golf_messages m WHERE m.conversation_id=c.id AND m.is_deleted=FALSE ORDER BY m.created_at DESC LIMIT 1),
-    (SELECT COUNT(*) FROM golf_messages m WHERE m.conversation_id=c.id AND m.read=FALSE AND m.is_deleted=FALSE AND m.sender_id!=v_uid),
-    ARRAY(SELECT cp2.user_id FROM golf_conversation_participants cp2 WHERE cp2.conversation_id=c.id),
-    ARRAY(SELECT COALESCE(u.email,'Unknown') FROM golf_conversation_participants cp2 JOIN users u ON u.id=cp2.user_id WHERE cp2.conversation_id=c.id),
-    COALESCE(c.is_team_chat,FALSE), c.title,
-    (SELECT COUNT(*) FROM golf_conversation_participants cp2 WHERE cp2.conversation_id=c.id),
-    COALESCE(c.is_team_channel,FALSE)
-  FROM golf_conversations c JOIN golf_conversation_participants cp ON cp.conversation_id=c.id
-  WHERE cp.user_id=v_uid
+  SELECT
+    c.id,
+    c.created_at,
+    c.updated_at,
+    c.created_by,
+    (SELECT m.content FROM public.golf_messages m
+      WHERE m.conversation_id = c.id AND m.is_deleted = FALSE
+      ORDER BY m.created_at DESC LIMIT 1),
+    (SELECT m.created_at FROM public.golf_messages m
+      WHERE m.conversation_id = c.id AND m.is_deleted = FALSE
+      ORDER BY m.created_at DESC LIMIT 1),
+    (SELECT m.sender_id FROM public.golf_messages m
+      WHERE m.conversation_id = c.id AND m.is_deleted = FALSE
+      ORDER BY m.created_at DESC LIMIT 1),
+    (SELECT COUNT(*) FROM public.golf_messages m
+      WHERE m.conversation_id = c.id
+        AND m.sender_id <> v_uid
+        AND NOT COALESCE(m.is_deleted, FALSE)
+        AND CASE
+              WHEN cp.last_read_at IS NOT NULL THEN m.created_at > cp.last_read_at
+              WHEN COALESCE(c.is_team_chat, FALSE) THEN TRUE
+              ELSE NOT COALESCE(m.read, FALSE)
+            END),
+    ARRAY(SELECT cp2.user_id
+          FROM public.golf_conversation_participants cp2
+          WHERE cp2.conversation_id = c.id
+          ORDER BY cp2.joined_at, cp2.id),
+    ARRAY(SELECT COALESCE(
+              (SELECT NULLIF(btrim(concat_ws(' ', gp.first_name, gp.last_name)), '')
+                 FROM public.golf_players gp
+                WHERE gp.user_id = cp2.user_id
+                ORDER BY gp.id LIMIT 1),
+              (SELECT NULLIF(btrim(gc.full_name), '')
+                 FROM public.golf_coaches gc
+                WHERE gc.user_id = cp2.user_id
+                ORDER BY gc.id LIMIT 1),
+              'Unknown')
+          FROM public.golf_conversation_participants cp2
+          WHERE cp2.conversation_id = c.id
+          ORDER BY cp2.joined_at, cp2.id),
+    COALESCE(c.is_team_chat, FALSE),
+    c.title,
+    (SELECT COUNT(*) FROM public.golf_conversation_participants cp2
+      WHERE cp2.conversation_id = c.id),
+    COALESCE(c.is_team_channel, FALSE)
+  FROM public.golf_conversations c
+  JOIN public.golf_conversation_participants cp ON cp.conversation_id = c.id
+  WHERE cp.user_id = v_uid
+    AND (
+      cp.hidden_at IS NULL
+      OR EXISTS (
+        SELECT 1 FROM public.golf_messages hm
+        WHERE hm.conversation_id = c.id
+          AND hm.is_deleted = FALSE
+          AND hm.created_at > cp.hidden_at
+      )
+    )
   ORDER BY c.is_team_channel DESC NULLS LAST, c.updated_at DESC;
 END;
 $$;
@@ -15462,3 +15510,680 @@ $$;
 
 
 ALTER FUNCTION "public"."golf_tournament_untrack"("p_tournament_id" "uuid", "p_expected_version" integer) OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."golf_tournament_my_lineup"("p_tournament_id" "uuid") RETURNS "jsonb"
+    LANGUAGE "plpgsql" STABLE SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+DECLARE
+  v_uid       uuid := (SELECT auth.uid());
+  v_team      uuid;
+  v_published timestamptz;
+  v_locked    timestamptz;
+  v_player    uuid;
+  v_role      text;
+  v_slot      integer;
+  v_rounds    jsonb;
+BEGIN
+  IF v_uid IS NULL OR p_tournament_id IS NULL THEN
+    RETURN NULL;
+  END IF;
+
+  SELECT t.team_id, t.lineup_published_at, t.lineup_locked_at
+    INTO v_team, v_published, v_locked
+    FROM public.golf_tournaments t
+   WHERE t.id = p_tournament_id;
+
+  -- Unknown tournament, or the coach has not published (or scheduled it for
+  -- later): nothing to reveal.
+  IF v_team IS NULL OR v_published IS NULL OR v_published > now() THEN
+    RETURN NULL;
+  END IF;
+
+  -- The caller's own player row, active on this team. A coach, an outsider or
+  -- another team's player gets NULL.
+  SELECT gp.id
+    INTO v_player
+    FROM public.golf_players gp
+    JOIN public.golf_team_members m ON m.player_id = gp.id
+   WHERE gp.user_id = v_uid
+     AND m.team_id = v_team
+     AND m.status = 'active'
+   LIMIT 1;
+  IF v_player IS NULL THEN
+    RETURN NULL;
+  END IF;
+
+  SELECT e.role, e.slot
+    INTO v_role, v_slot
+    FROM public.golf_tournament_entries e
+   WHERE e.tournament_id = p_tournament_id
+     AND e.player_id = v_player;
+  IF v_role IS NULL THEN
+    v_role := 'not_travelling';
+  END IF;
+
+  WITH field AS (
+    SELECT r.round_event_id, l.player_id, l.role, l.slot
+      FROM public.golf_tournament_rounds r
+      JOIN public.golf_tournament_round_lineups l
+        ON l.round_event_id = r.round_event_id
+     WHERE r.tournament_id = p_tournament_id
+    UNION ALL
+    SELECT r.round_event_id, e.player_id, e.role, e.slot
+      FROM public.golf_tournament_rounds r
+      JOIN public.golf_tournament_entries e
+        ON e.tournament_id = r.tournament_id
+     WHERE r.tournament_id = p_tournament_id
+       AND NOT EXISTS (
+         SELECT 1
+           FROM public.golf_tournament_round_lineups l2
+          WHERE l2.round_event_id = r.round_event_id
+       )
+  )
+  SELECT coalesce(jsonb_agg(jsonb_build_object(
+           'round_event_id', r.round_event_id,
+           'round_number', r.round_number,
+           'my_role', (
+             SELECT f.role
+               FROM field f
+              WHERE f.round_event_id = r.round_event_id
+                AND f.player_id = v_player
+           ),
+           'my_slot', (
+             SELECT f.slot
+               FROM field f
+              WHERE f.round_event_id = r.round_event_id
+                AND f.player_id = v_player
+           ),
+           -- Gated on the caller's role IN THIS ROUND (the locked snapshot
+           -- after a substitution, else the entries), never on the
+           -- tournament-level role: a player substituted out must not keep
+           -- the round's lineup, and one substituted in gets it.
+           'players', CASE
+             WHEN (
+               SELECT f.role
+                 FROM field f
+                WHERE f.round_event_id = r.round_event_id
+                  AND f.player_id = v_player
+             ) = 'lineup' THEN
+               (SELECT coalesce(
+                         jsonb_agg(
+                           jsonb_build_object(
+                             'player_id', f.player_id, 'slot', f.slot
+                           )
+                           ORDER BY f.slot
+                         ),
+                         '[]'::jsonb
+                       )
+                  FROM field f
+                 WHERE f.round_event_id = r.round_event_id
+                   AND f.role = 'lineup')
+             ELSE '[]'::jsonb
+           END
+         ) ORDER BY r.round_number), '[]'::jsonb)
+    INTO v_rounds
+    FROM public.golf_tournament_rounds r
+   WHERE r.tournament_id = p_tournament_id;
+
+  RETURN jsonb_build_object(
+    'published_at', v_published,
+    'locked_at', v_locked,
+    'role', v_role,
+    'slot', v_slot,
+    'rounds', v_rounds
+  );
+END;
+$$;
+
+ALTER FUNCTION "public"."golf_tournament_my_lineup"("p_tournament_id" "uuid") OWNER TO "postgres";
+
+
+-- Messages v2 package M (HELD 20261107090300): typing on a private topic
+CREATE OR REPLACE FUNCTION "public"."golf_typing_topic_allowed"("p_topic" "text") RETURNS boolean
+    LANGUAGE "plpgsql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+DECLARE
+  m text[];
+BEGIN
+  IF p_topic IS NULL THEN
+    RETURN false;
+  END IF;
+  m := regexp_match(p_topic,
+    '^golf-typing:([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$');
+  IF m IS NULL THEN
+    RETURN false;
+  END IF;
+  RETURN public.golf_conversation_has_me(m[1]::uuid);
+END $$;
+
+ALTER FUNCTION "public"."golf_typing_topic_allowed"("p_topic" "text") OWNER TO "postgres";
+
+-- Messages v2 package M, M5 (HELD 20261031150000)
+CREATE OR REPLACE FUNCTION "public"."golf_pin_conversation"("p_conversation_id" "uuid", "p_pinned" boolean) RETURNS jsonb
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+DECLARE
+  v_user uuid := auth.uid();
+  v_team uuid;
+  v_count integer;
+  v_changed boolean := false;
+BEGIN
+  IF v_user IS NULL THEN
+    RAISE EXCEPTION 'not_signed_in' USING ERRCODE = 'P0001';
+  END IF;
+  IF p_conversation_id IS NULL OR p_pinned IS NULL THEN
+    RAISE EXCEPTION 'invalid_arguments' USING ERRCODE = '22023';
+  END IF;
+
+  SELECT c.team_id INTO v_team
+  FROM public.golf_conversations c
+  JOIN public.golf_conversation_participants p
+    ON p.conversation_id = c.id AND p.user_id = v_user
+  WHERE c.id = p_conversation_id AND p.hidden_at IS NULL;
+  IF NOT FOUND THEN
+    -- Unpinning something you can no longer see still clears it.
+    IF NOT p_pinned THEN
+      DELETE FROM public.golf_conversation_pins
+      WHERE user_id = v_user AND conversation_id = p_conversation_id
+      RETURNING team_id INTO v_team;
+      IF FOUND THEN
+        PERFORM helm_private.golf_pins_lock(v_user, v_team);
+        PERFORM helm_private.golf_pins_compact(v_user, v_team);
+        PERFORM helm_private.golf_pins_broadcast(v_user, v_team);
+      END IF;
+      RETURN jsonb_build_object('team_id', v_team, 'pins',
+          to_jsonb(helm_private.golf_pins_list(v_user, v_team)));
+    END IF;
+    RAISE EXCEPTION 'not_a_member' USING ERRCODE = 'P0001';
+  END IF;
+
+  PERFORM helm_private.golf_pins_lock(v_user, v_team);
+
+  IF p_pinned THEN
+    IF NOT EXISTS (
+      SELECT 1 FROM public.golf_conversation_pins
+      WHERE user_id = v_user AND conversation_id = p_conversation_id
+    ) THEN
+      SELECT count(*) INTO v_count FROM public.golf_conversation_pins
+      WHERE user_id = v_user AND team_id IS NOT DISTINCT FROM v_team;
+      IF v_count >= helm_private.golf_pin_limit() THEN
+        RAISE EXCEPTION 'pin_limit' USING ERRCODE = 'P0001',
+          DETAIL = to_jsonb(helm_private.golf_pins_list(v_user, v_team))::text;
+      END IF;
+      INSERT INTO public.golf_conversation_pins (user_id, conversation_id,
+          team_id, position)
+      VALUES (v_user, p_conversation_id, v_team, v_count);
+      v_changed := true;
+    END IF;
+  ELSE
+    DELETE FROM public.golf_conversation_pins
+    WHERE user_id = v_user AND conversation_id = p_conversation_id;
+    IF FOUND THEN
+      PERFORM helm_private.golf_pins_compact(v_user, v_team);
+      v_changed := true;
+    END IF;
+  END IF;
+
+  IF v_changed THEN
+    PERFORM helm_private.golf_pins_broadcast(v_user, v_team);
+  END IF;
+  RETURN jsonb_build_object('team_id', v_team, 'pins',
+      to_jsonb(helm_private.golf_pins_list(v_user, v_team)));
+END $$;
+
+ALTER FUNCTION "public"."golf_pin_conversation"("p_conversation_id" "uuid", "p_pinned" boolean) OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "public"."golf_reorder_conversation_pins"("p_team_id" "uuid", "p_order" "uuid"[]) RETURNS jsonb
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+DECLARE
+  v_user uuid := auth.uid();
+  v_current uuid[];
+BEGIN
+  IF v_user IS NULL THEN
+    RAISE EXCEPTION 'not_signed_in' USING ERRCODE = 'P0001';
+  END IF;
+  IF p_order IS NULL
+      OR cardinality(p_order) <> (SELECT count(DISTINCT x)
+          FROM unnest(p_order) x) THEN
+    RAISE EXCEPTION 'invalid_arguments' USING ERRCODE = '22023';
+  END IF;
+
+  PERFORM helm_private.golf_pins_lock(v_user, p_team_id);
+  v_current := helm_private.golf_pins_list(v_user, p_team_id);
+
+  IF cardinality(v_current) <> cardinality(p_order)
+     OR EXISTS (SELECT 1 FROM unnest(p_order) x
+         WHERE NOT x = ANY (v_current)) THEN
+    RAISE EXCEPTION 'pins_changed'
+        USING ERRCODE = 'P0001', DETAIL = to_jsonb(v_current)::text;
+  END IF;
+
+  IF v_current IS DISTINCT FROM p_order THEN
+    UPDATE public.golf_conversation_pins p
+    SET position = o.ord - 1
+    FROM unnest(p_order) WITH ORDINALITY AS o(conversation_id, ord)
+    WHERE p.user_id = v_user AND p.conversation_id = o.conversation_id;
+    PERFORM helm_private.golf_pins_broadcast(v_user, p_team_id);
+  END IF;
+  RETURN jsonb_build_object('team_id', p_team_id, 'pins',
+      to_jsonb(helm_private.golf_pins_list(v_user, p_team_id)));
+END $$;
+
+ALTER FUNCTION "public"."golf_reorder_conversation_pins"("p_team_id" "uuid", "p_order" "uuid"[]) OWNER TO "postgres";
+
+
+-- Messages v2 package M (HELD 20261107090400 / 20261107090500)
+CREATE OR REPLACE FUNCTION "public"."golf_player_next_class"("p_team_id" "uuid", "p_player_id" "uuid", "p_from" timestamp with time zone DEFAULT "now"()) RETURNS "jsonb"
+    LANGUAGE "plpgsql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+DECLARE
+  v_from    timestamptz := coalesce(p_from, now());
+  v_team_tz text;
+  v_term    public.golf_team_terms;
+  v_zone    text;
+  v_start   date;
+  v_block   record;
+  i         integer;
+BEGIN
+  IF p_team_id IS NULL OR p_player_id IS NULL
+     OR NOT public.is_golf_team_coach(p_team_id) THEN
+    RAISE EXCEPTION 'not a coach of this team' USING ERRCODE = '42501';
+  END IF;
+
+  IF v_from < now() - interval '7 days'
+     OR v_from > now() + interval '14 days' THEN
+    RAISE EXCEPTION 'time out of range' USING ERRCODE = '22023';
+  END IF;
+
+  -- Not shared, not an active member of this team, or not a player at all:
+  -- nothing to say.
+  IF NOT public.golf_player_shares_class_status(p_team_id, p_player_id) THEN
+    RETURN NULL;
+  END IF;
+
+  SELECT public.golf_safe_time_zone(s.timezone) INTO v_team_tz
+  FROM public.golf_team_settings s WHERE s.team_id = p_team_id LIMIT 1;
+  v_team_tz := coalesce(v_team_tz, 'America/New_York');
+
+  -- The date rule of golf_team_class_day: the zone of the term covering the
+  -- instant, else the team zone.
+  v_term := public.golf_class_term_at(p_team_id, v_from);
+  v_zone := coalesce(v_term.time_zone, v_team_tz);
+  v_start := (v_from AT TIME ZONE v_zone)::date;
+
+  FOR i IN 0..14 LOOP
+    SELECT bl.starts_at, bl.ends_at, bl.label, bl.kind
+    INTO v_block
+    FROM public.golf_class_blocks_internal(
+      p_team_id, v_start + i, p_player_id
+    ) bl
+    WHERE bl.starts_at > v_from
+    ORDER BY bl.starts_at
+    LIMIT 1;
+    IF FOUND THEN
+      RETURN jsonb_build_object(
+        'starts_at', v_block.starts_at,
+        'ends_at', v_block.ends_at,
+        'label', v_block.label,
+        'kind', v_block.kind,
+        'time_zone', v_zone
+      );
+    END IF;
+  END LOOP;
+
+  RETURN NULL;
+END $$;
+
+ALTER FUNCTION "public"."golf_player_next_class"("p_team_id" "uuid", "p_player_id" "uuid", "p_from" timestamp with time zone) OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "public"."golf_search_messages"("p_query" "text", "p_conversation_id" "uuid" DEFAULT NULL::"uuid", "p_limit" integer DEFAULT 50) RETURNS TABLE("message_id" "uuid", "conversation_id" "uuid", "sender_id" "uuid", "content" "text", "created_at" timestamp with time zone)
+    LANGUAGE "plpgsql" STABLE
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+DECLARE
+  v_q       text := btrim(coalesce(p_query, ''));
+  v_pattern text;
+  v_limit   integer := least(greatest(coalesce(p_limit, 50), 1), 100);
+BEGIN
+  IF char_length(v_q) < 2 THEN
+    RETURN;
+  END IF;
+  v_pattern := '%'
+    || replace(replace(replace(v_q, '\', '\\'), '%', '\%'), '_', '\_')
+    || '%';
+
+  RETURN QUERY
+  SELECT m.id, m.conversation_id, m.sender_id, m.content, m.created_at
+  FROM public.golf_messages m
+  JOIN public.golf_conversation_participants cp
+    ON cp.conversation_id = m.conversation_id
+   AND cp.user_id = (SELECT auth.uid())
+  WHERE NOT COALESCE(m.is_deleted, FALSE)
+    AND (p_conversation_id IS NULL OR m.conversation_id = p_conversation_id)
+    AND m.content ILIKE v_pattern ESCAPE '\'
+    AND (
+      cp.hidden_at IS NULL
+      OR EXISTS (
+        SELECT 1 FROM public.golf_messages hm
+        WHERE hm.conversation_id = m.conversation_id
+          AND NOT COALESCE(hm.is_deleted, FALSE)
+          AND hm.created_at > cp.hidden_at
+      )
+    )
+  ORDER BY m.created_at DESC
+  LIMIT v_limit;
+END $$;
+
+ALTER FUNCTION "public"."golf_search_messages"("p_query" "text", "p_conversation_id" "uuid", "p_limit" integer) OWNER TO "postgres";
+
+-- Ask level comparison (HELD 20261108100000): the division cohort
+CREATE OR REPLACE FUNCTION "public"."college_level_of"("p_division" "text") RETURNS "text"
+    LANGUAGE "sql" IMMUTABLE PARALLEL SAFE
+    SET "search_path" TO 'public'
+    AS $_$
+  SELECT CASE
+    WHEN p_division IS NULL THEN NULL
+    -- Another association's divisions (NAIA, junior college) have no
+    -- published college level.
+    WHEN lower(p_division) ~ '(naia|njcaa|juco|junior|ccca|cccaa|nccaa)'
+      THEN NULL
+    ELSE (
+      SELECT CASE m[1]
+        WHEN '1' THEN 'd1'
+        WHEN 'i' THEN 'd1'
+        WHEN '2' THEN 'd2'
+        WHEN 'ii' THEN 'd2'
+        WHEN '3' THEN 'd3'
+        WHEN 'iii' THEN 'd3'
+      END
+      FROM (
+        SELECT COALESCE(
+          -- "d1", "NCAA D1", "NCAA Division III", "div 2", "D-II"
+          regexp_match(
+            lower(p_division),
+            '(?:division|div|d)[\s._-]*(iii|ii|i|1|2|3)(?![a-z0-9])'
+          ),
+          -- a bare "1" / "iii"
+          regexp_match(btrim(lower(p_division)), '^(iii|ii|i|1|2|3)$')
+        ) AS m
+      ) x
+    )
+  END
+$_$;
+
+ALTER FUNCTION "public"."college_level_of"("p_division" "text") OWNER TO "postgres";
+
+COMMENT ON FUNCTION "public"."college_level_of"("p_division" "text") IS 'The college level of a division string: d1, d2, d3, or NULL (NAIA, junior college, unset). SQL twin of levelFromDivision() in src/lib/coachhelm/v3/chat/benchmark-reads.ts.';
+
+CREATE OR REPLACE FUNCTION "public"."refresh_division_cohort"() RETURNS integer
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+  -- One instant for the whole run. Every row this run writes carries it, so
+  -- any row that carries another instant was left by an earlier run. It is
+  -- the wall clock, not now(): now() is the transaction's start, which is
+  -- earlier than any clock reading taken inside the transaction, and a row
+  -- stamped with it would look older than the run that wrote it.
+  v_run timestamptz := clock_timestamp();
+  v_rows integer;
+BEGIN
+  WITH team_level AS (
+    SELECT t.id AS team_id,
+           COALESCE(t.gender, 'mens') AS gender,
+           -- The newest season row's division; failing that, the program's
+           -- division (as Ask reads it).
+           COALESCE(
+             public.college_level_of((
+               SELECT ts.division
+               FROM public.golf_team_seasons ts
+               WHERE ts.team_id = t.id
+               ORDER BY ts.season DESC
+               LIMIT 1
+             )),
+             public.college_level_of(o.division)
+           ) AS level
+    FROM public.golf_teams t
+    LEFT JOIN public.organizations o ON o.id = t.organization_id
+  ),
+  members AS (
+    SELECT DISTINCT tm.player_id, tl.gender, tl.level
+    FROM public.golf_team_members tm
+    JOIN team_level tl ON tl.team_id = tm.team_id
+    WHERE tm.status = 'active'::team_member_status
+      AND tl.level IS NOT NULL
+      AND tl.gender IN ('mens', 'womens')
+  ),
+  agg AS (
+    SELECT m.gender,
+           m.level,
+           s.metric_id,
+           AVG(s.player_value) AS cohort_avg,
+           COUNT(DISTINCT s.player_id) AS cohort_n
+    FROM members m
+    JOIN public.golf_player_standing s ON s.player_id = m.player_id
+    GROUP BY m.gender, m.level, s.metric_id
+    HAVING COUNT(DISTINCT s.player_id) >= 8
+  )
+  INSERT INTO public.golf_division_cohort AS c
+    (gender, level, metric_id, cohort_avg, cohort_n, computed_at)
+  SELECT gender, level, metric_id, cohort_avg, cohort_n, v_run FROM agg
+  ON CONFLICT (gender, level, metric_id) DO UPDATE
+  SET cohort_avg = EXCLUDED.cohort_avg,
+      cohort_n = EXCLUDED.cohort_n,
+      computed_at = EXCLUDED.computed_at;
+  GET DIAGNOSTICS v_rows = ROW_COUNT;
+
+  -- A cohort that fell under the floor (or lost its level) was not written by
+  -- this run, so its row still carries an earlier run's instant: remove it.
+  DELETE FROM public.golf_division_cohort WHERE computed_at <> v_run;
+  RETURN v_rows;
+END;
+$$;
+
+ALTER FUNCTION "public"."refresh_division_cohort"() OWNER TO "postgres";
+
+COMMENT ON FUNCTION "public"."refresh_division_cohort"() IS 'Rebuilds golf_division_cohort from golf_player_standing: writes this run''s cohorts and removes every row an earlier run left. Runs with its owner''s rights (search_path pinned); service role only. Call after the standing refresh.';
+
+-- Messages privacy fixes (HELD 20261107090000 / 20261107090100)
+CREATE OR REPLACE FUNCTION "public"."golf_participants_identity_guard"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+BEGIN
+  -- Only client sessions are held to this. service_role, the table owner and
+  -- SECURITY DEFINER functions run as other roles and pass.
+  IF current_user NOT IN ('authenticated', 'anon') THEN
+    RETURN NEW;
+  END IF;
+  IF NEW.id IS DISTINCT FROM OLD.id
+     OR NEW.conversation_id IS DISTINCT FROM OLD.conversation_id
+     OR NEW.user_id IS DISTINCT FROM OLD.user_id
+     OR NEW.joined_at IS DISTINCT FROM OLD.joined_at THEN
+    RAISE EXCEPTION 'A participant row cannot be moved' USING ERRCODE = '42501';
+  END IF;
+  RETURN NEW;
+END $$;
+
+ALTER FUNCTION "public"."golf_participants_identity_guard"() OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "public"."golf_participants_insert_guard"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+BEGIN
+  -- Only client sessions are held to this. service_role, the table owner and
+  -- SECURITY DEFINER functions run as other roles and insert the row as written.
+  IF current_user NOT IN ('authenticated', 'anon') THEN
+    RETURN NEW;
+  END IF;
+  -- A new member starts from the defaults, whoever inserts the row. The state
+  -- columns belong to the member, who sets them afterwards by UPDATE.
+  NEW.joined_at := now();
+  NEW.last_read_at := NULL;
+  NEW.hidden_at := NULL;
+  NEW.muted_until := NULL;
+  NEW.notification_level := 'all';
+  RETURN NEW;
+END $$;
+
+ALTER FUNCTION "public"."golf_participants_insert_guard"() OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "public"."golf_conversations_identity_guard"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+BEGIN
+  -- Client sessions only. service_role, the table owner and definer functions pass,
+  -- and so does Postgres's own ON DELETE SET NULL on team_id (it runs as the owner).
+  IF current_user NOT IN ('authenticated', 'anon') THEN
+    RETURN NEW;
+  END IF;
+  IF NEW.id IS DISTINCT FROM OLD.id
+     OR NEW.created_by IS DISTINCT FROM OLD.created_by
+     OR NEW.team_id IS DISTINCT FROM OLD.team_id
+     OR NEW.is_team_chat IS DISTINCT FROM OLD.is_team_chat
+     OR NEW.is_team_channel IS DISTINCT FROM OLD.is_team_channel
+     OR NEW.created_at IS DISTINCT FROM OLD.created_at THEN
+    RAISE EXCEPTION 'A conversation''s owner, team and kind cannot be changed'
+      USING ERRCODE = '42501';
+  END IF;
+  RETURN NEW;
+END $$;
+
+ALTER FUNCTION "public"."golf_conversations_identity_guard"() OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "public"."golf_messages_identity_guard"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+BEGIN
+  -- Client sessions only. Postgres's ON DELETE SET NULL on reply_to_id runs as the
+  -- table owner, so deleting a message that has replies still works.
+  IF current_user NOT IN ('authenticated', 'anon') THEN
+    RETURN NEW;
+  END IF;
+  IF NEW.id IS DISTINCT FROM OLD.id
+     OR NEW.conversation_id IS DISTINCT FROM OLD.conversation_id
+     OR NEW.sender_id IS DISTINCT FROM OLD.sender_id
+     OR NEW.created_at IS DISTINCT FROM OLD.created_at
+     OR NEW.kind IS DISTINCT FROM OLD.kind
+     OR NEW.reply_to_id IS DISTINCT FROM OLD.reply_to_id THEN
+    RAISE EXCEPTION 'A message cannot be moved, re-attributed, back-dated or re-typed'
+      USING ERRCODE = '42501';
+  END IF;
+  RETURN NEW;
+END $$;
+
+ALTER FUNCTION "public"."golf_messages_identity_guard"() OWNER TO "postgres";
+
+
+-- Applied to production 2026-10-21 by 20261017003000 and missing from this mirror until 2026-11-10
+-- (golf_participants_insert_v2, branch 2).
+CREATE OR REPLACE FUNCTION "public"."golf_user_in_conversation_team_audience"("p_conversation_id" "uuid", "p_user_id" "uuid") RETURNS boolean
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+  select exists (
+    select 1
+      from public.golf_conversations c
+     where c.id = p_conversation_id
+       and c.team_id is not null
+       and (
+         exists (
+           select 1
+             from public.golf_team_members gtm
+             join public.golf_players gp on gp.id = gtm.player_id
+            where gtm.team_id = c.team_id
+              and gtm.status = 'active'
+              and gp.user_id = p_user_id
+         )
+         or exists (
+           select 1
+             from public.golf_team_coach_staff gtcs
+             join public.golf_coaches gc on gc.id = gtcs.coach_id
+            where gtcs.team_id = c.team_id
+              and gc.user_id = p_user_id
+         )
+       )
+  );
+$$;
+
+ALTER FUNCTION "public"."golf_user_in_conversation_team_audience"("p_conversation_id" "uuid", "p_user_id" "uuid") OWNER TO "postgres";
+
+COMMENT ON FUNCTION "public"."golf_user_in_conversation_team_audience"("p_conversation_id" "uuid", "p_user_id" "uuid") IS 'True when p_user_id is on the conversation''s team roster (active rows) or a coach staffed on that team. Bounds who a conversation''s creator may add while it is formed (golf_participants_insert_v2, branch 2). Definer rights avoid re-entering RLS on golf_conversation_participants.';
+
+
+-- Team link on participant INSERT (HELD 20261110090600): false only for a team's channel or team chat when the
+-- caller is not on that team
+CREATE OR REPLACE FUNCTION "public"."golf_conversation_team_link_ok"("p_conversation_id" "uuid") RETURNS boolean
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+  SELECT NOT EXISTS (
+    SELECT 1
+    FROM public.golf_conversations AS c
+    WHERE c.id = p_conversation_id
+      AND c.team_id IS NOT NULL
+      AND (c.is_team_channel OR c.is_team_chat)
+      AND NOT (
+        public.is_golf_team_coach(c.team_id)
+        OR public.is_golf_team_player(c.team_id)
+      )
+  );$$;
+
+ALTER FUNCTION "public"."golf_conversation_team_link_ok"("p_conversation_id" "uuid") OWNER TO "postgres";
+
+-- Coach roster writes (HELD 20261110090700): a join request and a roster row keep their team and player
+CREATE OR REPLACE FUNCTION "public"."golf_team_join_requests_identity_guard"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+BEGIN
+  -- Only client sessions are held to this. service_role, the table owner and
+  -- SECURITY DEFINER functions run as other roles and pass.
+  IF current_user NOT IN ('authenticated', 'anon') THEN
+    RETURN NEW;
+  END IF;
+  IF NEW.id IS DISTINCT FROM OLD.id
+     OR NEW.team_id IS DISTINCT FROM OLD.team_id
+     OR NEW.player_id IS DISTINCT FROM OLD.player_id THEN
+    RAISE EXCEPTION 'A join request cannot be moved to another team or player'
+      USING ERRCODE = '42501';
+  END IF;
+  IF NEW.status = 'pending' AND OLD.status IS DISTINCT FROM 'pending' THEN
+    RAISE EXCEPTION 'A decided join request cannot be reopened'
+      USING ERRCODE = '42501';
+  END IF;
+  RETURN NEW;
+END $$;
+
+ALTER FUNCTION "public"."golf_team_join_requests_identity_guard"() OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "public"."golf_team_members_identity_guard"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+BEGIN
+  -- Only client sessions are held to this. service_role, the table owner and
+  -- SECURITY DEFINER functions run as other roles and pass.
+  IF current_user NOT IN ('authenticated', 'anon') THEN
+    RETURN NEW;
+  END IF;
+  IF NEW.id IS DISTINCT FROM OLD.id
+     OR NEW.team_id IS DISTINCT FROM OLD.team_id
+     OR NEW.player_id IS DISTINCT FROM OLD.player_id THEN
+    RAISE EXCEPTION 'A roster row cannot be moved to another team or player'
+      USING ERRCODE = '42501';
+  END IF;
+  RETURN NEW;
+END $$;
+
+ALTER FUNCTION "public"."golf_team_members_identity_guard"() OWNER TO "postgres";

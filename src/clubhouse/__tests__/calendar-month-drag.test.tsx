@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render } from '@testing-library/react';
+import { renderToString } from 'react-dom/server';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../lib/haptics', () => ({ haptic: vi.fn(), hapticScrub: vi.fn() }));
@@ -55,6 +56,19 @@ describe('the month grid', () => {
     expect(container.querySelector('button.ch-mo__ev.is-qualifier')).not.toBeNull();
     // No button inside a button.
     expect(container.querySelector('button button')).toBeNull();
+  });
+
+  // Every load of the month logged a hydration mismatch: dnd-kit numbers its contexts as they mount, and the server's
+  // count and the browser's differ. The context takes React's id, which the server and the browser agree on.
+  it('the draggables’ description id is the same on every server render, not dnd-kit’s running count', () => {
+    const described = () => {
+      const html = renderToString(<DndMonth anchor="2026-10-14" events={[Q, ...TRIP]} now={{ date: '2026-10-14' }} selDate="2026-10-14" onPick={() => {}} onMove={() => {}} onBarMove={() => {}} coach />);
+      return [...new Set([...html.matchAll(/aria-describedby="([^"]+)"/g)].map((m) => m[1]))];
+    };
+    const first = described();
+    expect(first).toHaveLength(1);
+    expect(first[0]).not.toMatch(/^DndDescribedBy-\d+$/);
+    expect(described()).toEqual(first);
   });
 
   it('a run draws once per week row as a ribbon, cut with a chevron where the week breaks', () => {

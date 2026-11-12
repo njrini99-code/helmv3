@@ -13,13 +13,12 @@ import { EmptyState } from '../../ui/States';
 import { InlineNotice } from '../../ui/Notices';
 import { PageRefreshNotice } from '../../ui/RefreshNotice';
 import { FormBars, FormLine, FormRange } from '../../ui/FormLine';
-import { formRangeWords } from '../../ui/form-range';
 import { Icon } from '../../ui/Icon';
 import { Menu, type MenuItem } from '../../ui/Menu';
 import { useContextMenu, type ContextMenuBind } from '../../ui/ContextMenu';
 import { publishPeople } from '../../shell/command/people';
 import { Modal } from '../../ui/Modal';
-import { PillGroup, Segmented } from '../../ui/Segmented';
+import { Segmented } from '../../ui/Segmented';
 import { SearchField } from '../../ui/SearchField';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { Swap } from '../../ui/Swap';
@@ -39,16 +38,13 @@ import { RosterRequests } from './RosterRequests';
 import { useJoinRequests } from './useJoinRequests';
 import { useCopyText } from './useCopyText';
 import { availabilityCopy, RosterPeek, type AvailabilityControl } from './RosterPeek';
-import { RosterPhone } from './RosterPhone';
-import { FormStubs, RequestsRow, RequestsSheetCrh, RosterPhoneCrh } from './RosterPhoneCrh';
+import { RequestsRow, RequestsSheetCrh, RosterPhoneCrh } from './RosterPhoneCrh';
 import { RosterLeaders } from './RosterLeaders';
 import { RosterTeamCard } from './RosterTeamCard';
 import { useDeepLinkSheet } from '../../shell/use-deep-link-sheet';
 import { useHomeDayRollover } from '../home/use-day-rollover';
-import { PlayerPeek } from '../../ui/PlayerPeek';
 import { Tooltip } from '../../ui/Tooltip';
-import { RosterSpread } from './RosterSpread';
-import { AVAILABILITY_WORD, availabilityLine, earlyNeed, lastFive, rosterFailedParts, rosterPeek, rosterStandings, teamInSentence, yearKeyOf, type RosterClock, type RosterStanding } from './format';
+import { AVAILABILITY_WORD, availabilityLine, earlyNeed, lastFive, rosterFailedParts, rosterStandings, teamInSentence, yearKeyOf, type RosterClock, type RosterStanding } from './format';
 import { StatusConfirm, statusCopy } from './RosterStatus';
 import { classNoteFor, type RosterClassLines } from './class-line';
 import { useRosterClassLines } from './useClassLines';
@@ -89,8 +85,6 @@ const asText = (s: string) => (/^[=+\-@\t\r]/.test(s) ? `'${s}` : s);
 
 /** A `?player=` link's player, held across a remount until the profile opens (see the effect in Roster). */
 let linkedPlayer: string | null = null;
-/** A `?invite=1` arrival (Home's first-run Invite players) not yet shown, held across a remount like the linked player. */
-let linkedInvite = false;
 
 /** The day and 1 August rollover, only behind the lane's flag (06 Wiring W.1). A fixture without a clock stays still. */
 function RosterDayRollover({ clock }: { clock: RosterClock }) {
@@ -98,7 +92,7 @@ function RosterDayRollover({ clock }: { clock: RosterClock }) {
   return null;
 }
 
-export function Roster({ data, crh = false }: { data: ChRoster; /** `clubhouse_classes_roster_home_v1`, from the server. Off renders today's screens. */ crh?: boolean }) {
+export function Roster({ data }: { data: ChRoster; }) {
   const copy = useCopyText();
   const toast = useToast();
   const router = useRouter();
@@ -114,36 +108,21 @@ export function Roster({ data, crh = false }: { data: ChRoster; /** `clubhouse_c
   const [q, setQ] = useChSessionState('q', '');
   const [show, setShow] = useChSessionState<Show>('show', 'active');
   const [sort, setSort] = useChSessionState<Sort>('sort', 'avg');
-  const [view, setView] = useChSessionState<View>('view', crh ? 'list' : 'faces');
+  // The cards are what Roster opens on, as the owner's design does (design/handoff/roster.jsx); the table is the other layout.
+  const [view, setView] = useChSessionState<View>('view', 'faces');
   // Counts the coach's own layout changes: the cards and the table swap with motion on those (CH-3603), never when the
   // kept layout comes back as the page opens.
   const [viewTurn, setViewTurn] = useState(0);
   const [sel, setSel] = useState<string | null>(null);
   const [invite, setInvite] = useState(false);
-  // Behind the flag a link opens the sheet at rest and Back closes it (05 CP.3); off keeps today's handling below.
-  const inviteLink = useDeepLinkSheet('invite', { value: '1', enabled: crh });
-  // `?invite=1` (Home's first-run Invite players) opens the invite sheet once, on desktop and the phone, and the param is
-  // dropped so a reload or Back shows the roster. Only the coach's roster reads it: a player's roster and the no-team page
-  // are other screens and ignore it (wiring audit, 2026-10-17).
-  useEffect(() => {
-    if (crh) return;
-    const url = new URL(window.location.href);
-    if (url.searchParams.get('invite') === '1') {
-      linkedInvite = true;
-      url.searchParams.delete('invite');
-      window.history.replaceState(null, '', url.pathname + url.search);
-    }
-    if (linkedInvite) setInvite(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- once, on arrival
-  }, []);
+  // A link opens the sheet at rest and Back closes it (05 CP.3).
+  const inviteLink = useDeepLinkSheet('invite', { value: '1', enabled: true });
   const closeInvite = useCallback(() => {
-    linkedInvite = false;
     setInvite(false);
     if (inviteLink.open) inviteLink.close();
   }, [inviteLink]);
   // The bell's join-request notice links here with `?tab=requests` (createTeamJoinRequest). The phone opens its requests sheet
-  // (RosterPhone). On desktop the requests are the card under the header: the link takes focus there, scrolling it into view if it
-  // is not, and the param is dropped so a reload or Back shows the roster as it is. With no request waiting (the notice was
+  // (RosterPhone). On desktop the requests are the row under the header: the link opens its sheet, and the param is dropped so a reload or Back shows the roster as it is. With no request waiting (the notice was
   // already decided) or the requests not loaded, there is no card and nothing moves. Read from the media query, not `phone`:
   // a first render on the server's guess must not spend a phone's param.
   // The focus waits for the desktop card to be mounted: a stale phone-layout hint mounts the phone copy at hydration, which
@@ -166,36 +145,23 @@ export function Roster({ data, crh = false }: { data: ChRoster; /** `clubhouse_c
   const [restatus, setRestatus] = useState<ChRosterPlayer | null>(null);
   // Mid-sentence the team is its name, or "your team" when the team row didn't load (P003 #8).
   const teamRef = teamInSentence(data);
-  const jr = useJoinRequests(teamRef, data.requests, crh);
+  const jr = useJoinRequests(teamRef, data.requests);
   const [requestsOpen, setRequestsOpen] = useState(false);
   const phone = useChPhone();
   // P-10: the team's class lines (flag off: nothing is fetched and the map is empty). `hold` keeps them still under a finger.
   const { lines: classLines, press: hold } = useRosterClassLines(data.teamId, players);
   usePageKeys('Roster', phone ? null : ROW_KEYS);
+  // On desktop the requests are the row under the header and its sheet: the link opens the sheet (the row is not a focus
+  // target), and only when a request is still waiting; otherwise nothing moves.
   useEffect(() => {
     if (!focusRequests || phone) return;
-    requestsRef.current?.focus();
+    if (!data.requestsError && jr.reqs.length > 0) setRequestsOpen(true);
     setFocusRequests(false);
-  }, [focusRequests, phone]);
+  }, [focusRequests, phone, data.requestsError, jr.reqs.length]);
   // Phone: the open player is a pushed screen (RosterPhone keeps it in the history, CH-1906).
   // A link with ?player= opens that profile once; the param is dropped so a reload shows the list.
   const [openId, setOpenId] = useState<string | null>(null);
   const [arrivedAtRest, setArrivedAtRest] = useState(false);
-  useEffect(() => {
-    if (!phone || crh) return;
-    const url = new URL(window.location.href);
-    const id = url.searchParams.get('player') ?? linkedPlayer;
-    if (!id) return;
-    // Kept until the profile is on screen: dropping the param can remount this screen (the address changed under the
-    // route), and the new copy would otherwise find no param and open the list (dark a11y scan, 2026-10-17).
-    linkedPlayer = id;
-    if (url.searchParams.has('player')) {
-      url.searchParams.delete('player');
-      window.history.replaceState(null, '', url.pathname + url.search);
-    }
-    setOpenId(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- `crh` comes from the server and never changes on a screen
-  }, [phone]);
   useEffect(() => {
     if (openId && players.some((p) => p.id === openId)) linkedPlayer = null;
   }, [openId, players]);
@@ -210,7 +176,7 @@ export function Roster({ data, crh = false }: { data: ChRoster; /** `clubhouse_c
   // profile at rest over the list; a desktop selects the row and scrolls it into view. Not on this team: the list and a toast that names
   // nobody (CP-8), since the id may be another team's player.
   useEffect(() => {
-    if (!crh) return;
+
     const url = new URL(window.location.href);
     const id = url.searchParams.get('player') ?? linkedPlayer;
     if (!id) return;
@@ -238,7 +204,7 @@ export function Roster({ data, crh = false }: { data: ChRoster; /** `clubhouse_c
   // S-ROSTER.profile.removed: a read that no longer has the open player pops the profile and says so (M-CRH-49).
   const openFirst = useRef<string | null>(null);
   useEffect(() => {
-    if (!crh || !openId) {
+    if (!openId) {
       openFirst.current = null;
       return;
     }
@@ -251,7 +217,7 @@ export function Roster({ data, crh = false }: { data: ChRoster; /** `clubhouse_c
     openFirst.current = null;
     setOpenId(null);
     if (first) toast({ title: `${first} is no longer on the roster.` });
-  }, [crh, openId, players, toast]);
+  }, [openId, players, toast]);
 
   useEffect(() => {
     try {
@@ -282,7 +248,6 @@ export function Roster({ data, crh = false }: { data: ChRoster; /** `clubhouse_c
 
   // Places and the team strip rank the active roster, never the rows a search or filter left (P003 #2).
   const standings = useMemo(() => rosterStandings(players), [players]);
-  const spreadPlayers = useMemo(() => active.filter((p) => standings.byId.has(p.id)), [active, standings]);
   // Avg sorts nothing while season stats are missing: the order falls back to Name (P003 #7).
   const sortBy: Sort = data.statsError && sort === 'avg' ? 'name' : sort;
 
@@ -291,10 +256,8 @@ export function Roster({ data, crh = false }: { data: ChRoster; /** `clubhouse_c
     const list = players.filter((p) => (show === 'all' || p.status === show) && p.name.toLowerCase().includes(needle));
     return sortRoster(list, sortBy);
   }, [players, q, show, sortBy]);
-
-  const attn = players.filter((p) => p.attention && p.status === 'active');
   // Behind the flag the first row by the current sort is selected until the coach picks one (06 7.12).
-  const cur = players.find((p) => p.id === sel) ?? (crh && !sel ? rows[0] : undefined);
+  const cur = players.find((p) => p.id === sel) ?? (!sel ? rows[0] : undefined);
   const select = useCallback((id: string | null) => {
     if (id) chTrail('roster open player');
     haptic('select');
@@ -508,7 +471,7 @@ export function Roster({ data, crh = false }: { data: ChRoster; /** `clubhouse_c
     </>
   );
 
-  if (phone && crh) {
+  if (phone) {
     return (
       <>
         <RosterDayRollover clock={data.clock} />
@@ -535,36 +498,13 @@ export function Roster({ data, crh = false }: { data: ChRoster; /** `clubhouse_c
     );
   }
 
-  if (phone) {
-    return (
-      <RosterPhone
-        data={data}
-        players={players}
-        jr={jr}
-        openId={openId}
-        onOpen={openPlayer}
-        onClose={() => setOpenId(null)}
-        onInvite={() => setInvite(true)}
-        onRemove={setRemoving}
-        onStatus={setRestatus}
-        onNoteSaved={noteSaved}
-        availability={availability}
-        classLines={classLines}
-        hold={hold}
-        onRetry={() => router.refresh()}
-      >
-        {dialogs}
-      </RosterPhone>
-    );
-  }
-
   // Two or more failed reads are told once under the head, with one Try again; each part keeps its title (CH-1209).
   const failed = rosterFailedParts(data);
   const covered = failed.length > 1;
   return (
-    <main className={'ch-rs' + (crh ? ' ch-rsd' : '')} data-canopy={crh ? undefined : ''} data-ch-crh={crh ? 'on' : undefined}>
-      {crh && <RosterDayRollover clock={data.clock} />}
-      <header className="ch-rs-head" data-canopy-head={crh ? undefined : 'tight'} data-canopy-tight-always={crh ? undefined : ''}>
+    <main className={'ch-rs' + ' ch-rsd'} data-canopy={undefined} data-ch-crh="on">
+      <RosterDayRollover clock={data.clock} />
+      <header className="ch-rs-head" data-canopy-head={undefined} data-canopy-tight-always={undefined}>
         <div>
           <span className="ch-rs-team">
             <span className="ch-rs-team__name">{[data.teamName, data.season].filter(Boolean).join(' · ')}</span>
@@ -599,7 +539,7 @@ export function Roster({ data, crh = false }: { data: ChRoster; /** `clubhouse_c
         </div>
         <div className="ch-rs-head__act">
           {players.length > 0 && (
-            <Button variant={crh ? 'secondary' : 'ghost'} leftIcon={Download} onClick={exportCsv}>
+            <Button variant="secondary" leftIcon={Download} onClick={exportCsv}>
               Export
             </Button>
           )}
@@ -614,7 +554,7 @@ export function Roster({ data, crh = false }: { data: ChRoster; /** `clubhouse_c
 
       <PageRefreshNotice parts={failed} />
 
-      {crh && !data.playersError && players.length > 0 && (
+      {!data.playersError && players.length > 0 && (
         <div className="ch-rs-top">
           <RosterTeamCard viewer="coach" season={data.season} players={players} waiting={data.requestsError ? null : jr.reqs.length} statsError={data.statsError} clock={data.clock} />
           <RosterLeaders players={players} statsError={data.statsError} clock={data.clock} onOpen={openSel} />
@@ -622,7 +562,7 @@ export function Roster({ data, crh = false }: { data: ChRoster; /** `clubhouse_c
       )}
 
       <SectionBoundary surface="roster.requests" label="Join requests" code="CH-3204">
-        {crh && !data.requestsError ? (
+        {!data.requestsError ? (
           <div ref={requestsRef as never} className="ch-rsd-reqs">
             <RequestsRow jr={jr} error={false} covered={covered} clock={data.clock} onRetry={() => router.refresh()} onOpen={() => setRequestsOpen(true)} />
             <RequestsSheetCrh open={requestsOpen} atRest={false} onClose={() => setRequestsOpen(false)} data={data} jr={jr} clock={data.clock} />
@@ -640,21 +580,6 @@ export function Roster({ data, crh = false }: { data: ChRoster; /** `clubhouse_c
           onRetry={() => router.refresh()}
           covered={covered}
         />
-      )}
-
-      {!crh && attn.length > 0 && (
-        <section className="ch-rs-attn" aria-label="Needs a look">
-          <span className="ch-rs-attn__l">Needs a look</span>
-          {attn.map((p) => (
-            <PlayerPeek key={p.id} player={rosterPeek(p)}>
-              <button type="button" className="ch-rs-attn__c" onClick={() => openSel(p.id)}>
-                <Avatar name={p.name} id={p.id} size="sm" />
-                <b>{p.firstName}</b>
-                <span className={`ch-rs-attn__n is-${p.attention!.tone}`}>{p.attention!.text}</span>
-              </button>
-            </PlayerPeek>
-          ))}
-        </section>
       )}
 
       {data.playersError ? (
@@ -687,45 +612,34 @@ export function Roster({ data, crh = false }: { data: ChRoster; /** `clubhouse_c
         />
       ) : (
         <>
-          {!crh && !phone && !data.statsError && <RosterSpread players={spreadPlayers} teamAvg={teamAvg} onOpen={openSel} />}
+
           <div className="ch-rs-bar">
             <SearchField className="ch-rs-search" value={q} onChange={setQ} placeholder="Search players by name" label="Search players" />
             <div className="ch-rs-bar__r">
-              <PillGroup<Show>
-                label="Status"
-                value={show}
-                onChange={setShow}
-                options={[
-                  { value: 'active', label: `Active · ${active.length}` },
-                  { value: 'inactive', label: `Inactive · ${inactiveCount}` },
-                  { value: 'all', label: 'All' },
-                ]}
-              />
-              {/* Handoff: two icon toggles in a hairline outline, not a segmented well. */}
-              <div className="ch-rs-vt" role="group" aria-label="Layout">
-                {(
-                  [
-                    ['faces', LayoutGrid, 'Team view'],
-                    ['list', List, 'List view'],
-                  ] as const
-                ).map(([v, icon, label]) => (
-                  <Tooltip key={v}>
-                    <button
-                      type="button"
-                      className="ch-rs-vt__b"
-                      aria-pressed={view === v}
-                      aria-label={label}
-                      onClick={() => {
-                        if (view !== v) haptic('select');
-                        changeView(v);
-                      }}
-                    >
-                      <Icon icon={icon} size={15} />
-                    </button>
-                  </Tooltip>
-                ))}
-              </div>
-              <Segmented<Sort>
+              <>
+                  <Segmented<Show> weight="filter"
+                    size="sm"
+                    label="Status"
+                    value={show}
+                    onChange={setShow}
+                    options={[
+                      { value: 'active', label: `Active · ${active.length}` },
+                      { value: 'inactive', label: `Inactive · ${inactiveCount}` },
+                      { value: 'all', label: 'All' },
+                    ]}
+                  />
+                  <Segmented<'faces' | 'list'>
+                    size="sm"
+                    label="Layout"
+                    value={view}
+                    onChange={changeView}
+                    options={[
+                      { value: 'faces', label: <Icon icon={LayoutGrid} size={15} />, aria: 'Team view' },
+                      { value: 'list', label: <Icon icon={List} size={15} />, aria: 'List view' },
+                    ]}
+                  />
+                </>
+              <Segmented<Sort> weight="filter"
                 size="sm"
                 label="Sort players"
                 value={sortBy}
@@ -747,6 +661,7 @@ export function Roster({ data, crh = false }: { data: ChRoster; /** `clubhouse_c
               <Swap swapKey={viewTurn}>
                 <RosterList
                   rows={rows}
+                  oneStatus={show !== 'all' && !rows.some((p) => p.status === 'active' && p.availability === 'injured')}
                   standings={standings}
                   view={view}
                   sel={sel}
@@ -760,7 +675,6 @@ export function Roster({ data, crh = false }: { data: ChRoster; /** `clubhouse_c
                   sortableAvg={!data.statsError}
                   classLines={classLines}
                   hold={hold}
-                  crh={crh}
                   clock={data.clock}
                   mean={teamAvg}
                   onSelect={openSel}
@@ -773,7 +687,7 @@ export function Roster({ data, crh = false }: { data: ChRoster; /** `clubhouse_c
               </Swap>
             </SectionBoundary>
             <SectionBoundary surface="roster.peek" label="The player panel" code="CH-3206">
-              <RosterPeek p={cur} notesLocked={data.notesError} onClose={() => setSel(null)} onNoteSaved={noteSaved} availability={availability} helm={data.helm} classLine={classNoteFor(cur ?? { availability: 'available' }, cur ? classLines.get(cur.id) : undefined)} crh={crh} clock={data.clock} />
+              <RosterPeek p={cur} notesLocked={data.notesError} onClose={() => setSel(null)} onNoteSaved={noteSaved} availability={availability} helm={data.helm} classLine={classNoteFor(cur ?? { availability: 'available' }, cur ? classLines.get(cur.id) : undefined)} clock={data.clock} />
             </SectionBoundary>
           </div>
         </>
@@ -795,6 +709,7 @@ const profileHref = (id: string) => rebuiltHref(`/golf/dashboard/stats?player=${
  * roster.list boundary contains everything it computes.
  */
 function RosterList({
+  oneStatus = false,
   rows,
   standings,
   view,
@@ -810,14 +725,13 @@ function RosterList({
   sortableAvg,
   classLines,
   hold,
-  crh = false,
   clock,
   mean = null,
   onSelect,
   selected = null,
 }: {
-  /** The lane's flag: year coins, the last five rounds as bars, an amber Injured chip and a row that selects instead of leaving. */
-  crh?: boolean;
+  /** Filtered to one status with no exception to show: "Active" on every row says nothing, so the column goes (QA-13). */
+  oneStatus?: boolean;
   clock?: RosterClock;
   mean?: number | null;
   onSelect?: (id: string) => void;
@@ -845,7 +759,7 @@ function RosterList({
   const press = usePressPrefetch();
   return (
     // B5: every row's form line on one range, so the same height is the same score down the table.
-    <FormRange trends={rows.map((p) => (crh ? lastFive(p.trend) : p.trend))} earlyBelow={3}>
+    <FormRange trends={rows.map((p) => (lastFive(p.trend)))} earlyBelow={3}>
         {rows.length === 0 ? (
           <EmptyState
             kind="filtered"
@@ -883,7 +797,7 @@ function RosterList({
                   )}
                 </span>
                 <span className="ch-rs-face__av">
-                  <Avatar name={p.name} id={p.id} size={76} year={crh ? yearKeyOf(p.gradYear, clock) : null} dim={crh && p.status === 'inactive'} />
+                  <Avatar name={p.name} id={p.id} size={76} year={yearKeyOf(p.gradYear, clock)} dim={p.status === 'inactive'} />
                 </span>
                 <span className="ch-rs-face__name">{p.name}</span>
                 <span className="ch-rs-face__meta">{[p.classYear, p.hometown].filter(Boolean).join(' · ') || ' '}</span>
@@ -912,14 +826,14 @@ function RosterList({
           {/* B11: Up and Down walk the table's players (their name buttons), Home and End go to the ends, and the table is
               one Tab stop. Inside the roster.list boundary, so it runs once that has hydrated. */}
           <RovingRows selector=".ch-rs-list .ch-rs-who" within=".ch-rs-body" />
-          <SideScroll className="ch-rs-list ch-sheet" role="table" aria-label="Roster" /* CH-3801: every value in a cell under a header */>
-            <div className={'ch-rs-row ch-rs-row--head' + (crh ? '' : ' ch-well-soft')} role="row">
+          <SideScroll className={'ch-rs-list ch-sheet' + (oneStatus ? ' is-one-status' : '')} role="table" aria-label="Roster" /* CH-3801: every value in a cell under a header */>
+            <div className={'ch-rs-row ch-rs-row--head' + ''} role="row">
               <SortHeader k="name" sort={sortBy} onSort={onSort}>
                 Player
               </SortHeader>
               <span role="columnheader">Status</span>
               {/* The lines share one range (B5), and the header says its ends (row 102). */}
-              <span role="columnheader">{crh ? 'Last 5' : ['Last 7 rounds', formRangeWords(rows.map((p) => p.trend), 3)].filter(Boolean).join(' · ')}</span>
+              <span role="columnheader">Last 5</span>
               {!sortableAvg ? (
                 <span role="columnheader" className="r">
                   Avg
@@ -932,9 +846,9 @@ function RosterList({
               <SortHeader k="hcp" sort={sortBy} onSort={onSort} end>
                 HCP
               </SortHeader>
-              <span role="columnheader" className="r">{crh ? 'SG/rd' : 'SG / rd'}</span>
+              <span role="columnheader" className="r">{'SG/rd'}</span>
               <SortHeader k="rounds" sort={sortBy} onSort={onSort} end>
-                {crh ? <span title="Rounds this season">Rds</span> : 'Rounds'}
+                <span title="Rounds this season">Rds</span>
               </SortHeader>
               <span role="columnheader">
                 <span className="ch-sr-only">Actions</span>
@@ -944,8 +858,8 @@ function RosterList({
               <div
                 key={p.id}
                 role="row"
-                data-ch-player={crh ? p.id : undefined}
-                className={'ch-rs-row' + ((crh ? selected : sel) === p.id ? ' is-sel' : '') + (p.status === 'inactive' ? ' is-off' : '')}
+                data-ch-player={p.id}
+                className={'ch-rs-row' + (selected === p.id ? ' is-sel' : '') + (p.status === 'inactive' ? ' is-off' : '')}
                 {...bind(p)}
                 {...hold}
               >
@@ -953,11 +867,11 @@ function RosterList({
                   <button
                     type="button"
                     className="ch-rs-who"
-                    onClick={() => (crh && onSelect ? onSelect(p.id) : openProfile(p.id))}
-                    {...(crh ? {} : press(profileHref(p.id)))}
-                    aria-label={crh ? `${p.name}. Show in the panel` : `${p.name}. Open profile`}
+                    onClick={() => (onSelect ? onSelect(p.id) : openProfile(p.id))}
+                    {...({})}
+                    aria-label={`${p.name}. Show in the panel`}
                   >
-                    <Avatar name={p.name} id={p.id} size="lg" year={crh ? yearKeyOf(p.gradYear, clock) : null} dim={crh && p.status === 'inactive'} />
+                    <Avatar name={p.name} id={p.id} size="lg" year={yearKeyOf(p.gradYear, clock)} dim={p.status === 'inactive'} />
                     <span>
                       <b>{p.name}</b>
                       <RowMeta p={p} line={classNoteFor(p, classLines.get(p.id))} />
@@ -965,22 +879,23 @@ function RosterList({
                   </button>
                 </span>
                 <span role="cell">
-                  {crh && p.status === 'active' && p.availability === 'injured' ? (
+                  {p.status === 'active' && p.availability === 'injured' ? (
                     <span className="ch-rsx-chip is-amber">Injured</span>
-                  ) : crh ? (
-                    <span className="ch-rsx-chip">{p.status === 'active' ? 'Active' : 'Inactive'}</span>
                   ) : (
-                    <span className={`ch-rs-status is-${p.status}`}>
-                      <i aria-hidden="true" />
-                      {p.status === 'active' ? 'Active' : 'Inactive'}
-                    </span>
+                    <span className="ch-rsx-chip">{p.status === 'active' ? 'Active' : 'Inactive'}</span>
                   )}
                 </span>
                 <span role="cell">
-                  {crh ? (
-                    p.trend.length >= 3 ? <FormBars data={p.trend} mean={mean} /> : p.trend.length > 0 ? <FormStubs /> : <span className="ch-num">—</span>
-                  ) : (
-                    <FormLine data={p.trend} width={120} height={30} earlyBelow={3} label={`${p.name} form`} />
+                  {(
+                    p.trend.length >= 3 ? <FormBars data={p.trend} mean={mean} /> : (
+                      // Grey bars read as loading (QA-13): no form yet is a dash, and it says why.
+                      <Tooltip>
+                        {/* eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- focusable so a keyboard can open the tooltip that says why */}
+                        <span className="ch-num" role="img" tabIndex={0} aria-label="Needs 3 rounds">
+                          —
+                        </span>
+                      </Tooltip>
+                    )
                   )}
                 </span>
                 <span role="cell" className="r ch-num ch-rs-num">{formatFixed(p.avg)}</span>
@@ -1213,9 +1128,7 @@ function RowMeta({ p, line: classLine }: { p: ChRosterPlayer; line?: ReturnType<
           <span className="ch-rs-who__avail">{AVAILABILITY_WORD[p.availability]}</span>
           {full.slice(AVAILABILITY_WORD[p.availability].length)}
         </>
-      ) : (
-        rest
-      )}
+      ) : rest}
     </span>
   );
 }

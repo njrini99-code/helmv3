@@ -9,22 +9,16 @@ vi.mock('../../AskSheet', async () => {
   const React = await import('react');
   return {
     AskSheetContext: React.createContext(null),
-    AskSheetButton: () => <button type="button">Ask sparkle</button>,
     lookingAt: () => 'Looking at Calendar',
   };
 });
 
-import { AskSheetButton } from '../../AskSheet';
 import { ClubhouseMarker } from '../../context';
-import { HelmKey, QuickChatProvider, useQuickChatPresent } from '../QuickChatProvider';
-import { quickStarts } from '../starts';
+import { HelmKey, QuickChatProvider } from '../QuickChatProvider';
 
 const CAL = '/golf/dashboard/calendar';
 
-/** As `TopBar` picks: the Helm key inside the provider, today's sparkle outside it. */
-function Slot() {
-  return useQuickChatPresent() ? <HelmKey /> : <AskSheetButton />;
-}
+const Slot = HelmKey;
 const show = (role: 'coach' | 'player', opts: { provider?: boolean; enabled?: boolean; pathname?: string } = {}) => {
   const { provider = true, enabled = true, pathname = CAL } = opts;
   return render(
@@ -46,13 +40,7 @@ afterEach(cleanup);
 
 /** Quick chat AC-QC-KEY-07 and 08: SHARED-8 and SHARED-11. */
 describe('who gets the key', () => {
-  it('flag off (no provider): today’s sparkle, and no key', () => {
-    show('coach', { provider: false });
-    expect(screen.getByRole('button', { name: 'Ask sparkle' })).toBeTruthy();
-    expect(key()).toBeNull();
-  });
-
-  it('a player: no key node, no session, and ⌘J does nothing', async () => {
+    it('a player: no key node, no session, and ⌘J does nothing', async () => {
     show('player');
     expect(key()).toBeNull();
     fireEvent.keyDown(window, { key: 'j', metaKey: true });
@@ -72,6 +60,12 @@ describe('who gets the key', () => {
     expect(key()!.getAttribute('aria-label')).toBe('CoachHelm');
     expect(key()!.getAttribute('aria-expanded')).toBe('false');
     expect(key()!.getAttribute('aria-haspopup')).toBe('dialog');
+  });
+
+  it('says what it is, beside the mark, and its name is what it says', () => {
+    show('coach');
+    expect(key()!.querySelector('.hkey__label')!.textContent).toBe('CoachHelm');
+    expect(key()!.getAttribute('aria-label')).toContain(key()!.querySelector('.hkey__label')!.textContent!);
   });
 
   it('on CoachHelm itself: hidden, as today’s key is', () => {
@@ -138,15 +132,3 @@ describe('opening', () => {
 });
 
 /** AC-QC-HEL-03, CP-QC-10. */
-describe('the tiles', () => {
-  it('are always four', () => {
-    for (const p of [CAL, '/golf/dashboard/qualifiers', '/golf/dashboard/messages', '/golf/dashboard']) {
-      expect(quickStarts(p, true)).toHaveLength(4);
-      expect(quickStarts(p, false)).toHaveLength(4);
-    }
-  });
-  it('with plans on, the fourth is the plan; off, no plan tile', () => {
-    expect(quickStarts(CAL, true)[3]!.id).toBe('plan');
-    expect(quickStarts(CAL, false).map((t) => t.id)).not.toContain('plan');
-  });
-});

@@ -184,6 +184,13 @@
   line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
 }
+/* The week's legend is in the week's pinned head, on a line of its own that ends at the grid's right edge (owner,
+   2026-11-11: with the week's button the toolbar wrapped it onto a second row). */
+.ch-wk__top > .ch-cal-legend {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  margin: 0 0 var(--ch-space-2);
+}
 .ch-cal-legend i {
   display: inline-block;
   width: 8px;
@@ -522,6 +529,15 @@
 .ch-ev.is-past.ch-ev--tournament:not(:hover):not(:focus-visible):not(.is-sel) {
   background-color: color-mix(in srgb, var(--ch-green-fill-700) 75%, var(--ch-bg-page));
 }
+/* An ended competition keeps its green: desaturated as well, the lightened fill went grey and a four-hour round read as
+   a disabled slab beside the paper tiles. Its time takes the title's ivory there (the soft ivory measured 3.74:1). */
+.ch-ev.is-past.ch-ev--tournament,
+.ch-mo__cell.is-past .ch-mo__ev.is-major:not(.is-qualifier) {
+  filter: none;
+}
+.ch-ev.is-past.ch-ev--tournament:not(:hover):not(:focus-visible):not(.is-sel) .ch-ev__m {
+  color: var(--ch-on-fill-100);
+}
 .ch-ev.is-past .ch-ev__m {
   opacity: 1;
 }
@@ -744,15 +760,46 @@
 .ch-wk__allday {
   row-gap: var(--ch-space-1);
 }
-.ch-ev-bar--span {
+.ch-ev-bar.ch-ev-bar--span {
   position: relative;
   max-width: none;
   min-width: 0;
-  height: 26px;
+  height: auto;
+  min-height: 26px;
+  /* The bar measures itself: one week column wide at 1440px (under 112px) it has no room for a glyph and a name. */
+  container-type: inline-size;
 }
 .ch-ev-bar--span > span {
   flex: 1;
   min-width: 0;
+}
+/* There the glyph goes: the bar's material still tells its type. */
+@container (max-width: 95.98px) {
+  .ch-ev-bar--span > .ch-ev__g {
+    display: none;
+  }
+}
+/* A bar one week column wide, at any desktop width (the full-width week's column is 151px at 1440 and 175 at most;
+   two columns start past 290): the name takes two lines ("Qualifier · Pinehurst No. 2" was "Qualifie…", and
+   "Qualifier · Pinehu…" beside its glyph); its row in the lane grows with it (views.tsx). The glyph, where there is
+   room for one, stays level with the first line: its box is that line's height and the drawing is centred in it. */
+@container (max-width: 179.98px) {
+  .ch-ev-bar--span > span:not([class]) {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    margin-block: var(--ch-space-1);
+    line-height: var(--ch-lead-label);
+    text-align: start;
+    white-space: normal;
+    overflow-wrap: normal;
+  }
+  .ch-ev-bar--span > .ch-ev__g {
+    align-self: flex-start;
+    height: calc(1em * var(--ch-lead-label));
+    margin-block: var(--ch-space-1);
+  }
 }
 .ch-ev-bar__t {
   flex: none;
@@ -874,13 +921,15 @@ html[data-fw-theme='dark'] .ch-ev-bar.is-held {
     opacity: 1;
   }
 }
-/* The type's leading glyph: 12px before the title, shown on a block at least 64px wide and 24px tall. */
+/* The type's leading glyph: 12px before the title, shown on a block at least 114px wide (a column of 120; the query
+   measures the 98px inside its padding) and 24px tall. In the desktop week's 100px columns it took a fifth of the
+   title's line; the block's material tells its type. */
 .ch-ev__g {
   display: inline-block;
   margin-inline-end: var(--ch-space-1);
   vertical-align: -0.125em;
 }
-@container (max-width: 63.98px) {
+@container (max-width: 97.98px) {
   .ch-ev__g {
     display: none;
   }
@@ -972,6 +1021,92 @@ html[data-fw-theme='dark'] .ch-ev-bar.is-held {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+/* A block's words (views.tsx wraps them unless the block is one short row). In a wide block (the day view) the wrapper
+   is not there, and the title and the time lie as they always did. In a week column the title comes first: it wraps to
+   the lines it needs (--ch-ev-solo, what the block holds), and the time sits under it when a row is left. A time with
+   no row wraps into a second column, out of sight past the block's edge, never cut through. The wrapper reaches the
+   block's bottom edge, as the time always has.
+   The query measures the room inside the block's padding. It was 98px, for the 100px columns the week had beside the
+   panel; the full-width week (owner, 2026-11-11) draws 151px columns at 1440 and 175 at most (129 and 153 of room),
+   where "Busy · Recruiting call", "Putting ladder" and a covered class were cut again by the old layout, so it is every
+   block with under 180px of room. The type's glyph keeps its own, lower mark above (98px): it is back in these
+   columns. */
+.ch-ev__w {
+  display: contents;
+}
+@container (max-width: 179.98px) {
+  .ch-ev .ch-ev__w {
+    display: flex;
+    flex: none;
+    flex-flow: column wrap;
+    align-content: flex-start;
+    gap: 2px var(--ch-space-4);
+    height: calc(100% + 6px);
+    min-width: 0;
+  }
+  .ch-ev--lane .ch-ev__w {
+    height: calc(100% + 4px);
+  }
+  .ch-ev .ch-ev__w > .ch-ev__t,
+  .ch-ev .ch-ev__w > .ch-ev__m {
+    width: 100%;
+  }
+  .ch-ev .ch-ev__w > .ch-ev__t {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: var(--ch-ev-solo, 2);
+    line-clamp: var(--ch-ev-solo, 2);
+    flex-shrink: 0;
+    white-space: normal;
+    overflow-wrap: normal;
+  }
+  .ch-ev .ch-ev__w > .ch-ev__m {
+    display: flex;
+  }
+  /* The overlap or plan mark sits in the bottom corner there instead of lying over the title's last word; the time
+     keeps clear of it (a part that no longer fits goes with the rest, as ever). */
+  .ch-ev.has-mark .ch-ev__warn {
+    top: auto;
+    bottom: 5px;
+  }
+  .ch-ev.has-mark .ch-ev__w > .ch-ev__m {
+    box-sizing: border-box;
+    padding-inline-end: var(--ch-space-5);
+  }
+  /* A short block there is its title alone; its time is its place on the grid, its peek and its name. */
+  .ch-ev--short .ch-ev__m {
+    display: none;
+  }
+  /* A block another lies over (views.tsx coveredFrom): from where that one begins only a strip at the left still shows
+     (23px in a 100px column, 69 in the full-width week's 151), and whatever ran under it was cut off at its side (the
+     class under "Course prep" read "10" and "3:(", and at full width "3:00 PM – 4"). The words keep to the room above
+     it (--ch-ev-room): the title the lines that show whole, and the time its row only when that row does too;
+     otherwise it wraps out of sight with the rest, as a time with no row always has. */
+  .ch-ev.is-covered .ch-ev__w {
+    height: var(--ch-ev-room);
+  }
+  .ch-ev--group .ch-ev__who[data-covered] {
+    display: none;
+  }
+  /* A short block with room for two title lines (45 minutes: 37px, two lines of 18) takes them: "Putting ladder",
+     "Travel briefing" and "1:1 with Jonah" ended at "Putting lad…" on one. Its time is already gone here. */
+  .ch-ev.ch-ev--short.ch-ev--two .ch-ev__t {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    flex: 1;
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: normal;
+  }
+  /* A short block another lies over across its one row: the title goes to the top, under the 4px a cascaded block
+     keeps there, clear of that block. (On the title: a block cannot answer its own container query.) */
+  .ch-ev--short.is-pinned .ch-ev__t {
+    align-self: flex-start;
+    margin-top: var(--ch-space-1);
+  }
 }
 /* An event block's time in whole parts (views.tsx): "8:00", " AM", " – 9:30 AM", " · Finley GC". One line shows; a part
    that doesn't fit wraps out of sight with every part after it, so the block keeps the longest start of its time that
@@ -1544,6 +1679,22 @@ html[data-fw-theme='dark'] .ch-mo__ribbon.is-held {
   white-space: nowrap;
   text-overflow: ellipsis;
 }
+/* A major event with the cell to itself takes two lines before it ellipsizes (the "N more" rows never do). */
+.ch-mo__ev.is-two {
+  align-items: flex-start;
+}
+/* Its glyph stays level with the first line, where a one-line chip centres it: the glyph's box is one line tall and the
+   drawing keeps its size, centred in it. */
+.ch-mo__ev.is-two > svg {
+  height: 1lh;
+}
+.ch-mo__ev.is-two span:first-of-type {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  white-space: normal;
+}
 .ch-mo__ev.is-major {
   margin: 0 -4px;
   padding: 4px 8px;
@@ -1736,7 +1887,9 @@ html[data-fw-theme='dark'] .ch-mo__ribbon.is-held {
 /* Detail panel */
 .ch-in-wrap {
   position: sticky;
-  top: 16px;
+  /* Under the top bar, level with the week's pinned head (it sticks at the bar with 8px of its own above the day
+     names), as the two stand at rest. At 16px the Today card's first row slid under the bar once the week scrolled. */
+  top: calc(var(--ch-topbar-h) + var(--ch-space-2));
   /* A size container (the column is a fixed 340), so the change note reads the panel's width (F-0028). */
   container-type: inline-size;
   max-height: calc(100vh - 110px);
@@ -2299,6 +2452,35 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
   position: relative;
   user-select: none;
 }
+/* Six lanes, their gaps, the axis and the "more invitees" line: the most Find a time draws, kept whatever it holds. */
+.ch-cal-ftb {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(20px + 8px + 14px + 6 * 34px + 6 * 8px + 32px);
+}
+.ch-cal-ftb__idle {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 16px;
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-bg-subtle);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
+  font: var(--ch-type-13);
+  color: var(--ch-text-secondary);
+  text-align: center;
+}
+@media (max-width: 767px) {
+  /* A phone's sheet scrolls, and the check line below already says this. */
+  .ch-cal-ftb {
+    min-height: 0;
+  }
+  .ch-cal-ftb.is-idle {
+    display: none;
+  }
+}
 .ch-cal-ft .ch-lane {
   cursor: crosshair;
 }
@@ -2600,6 +2782,66 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
     max-height: none;
   }
 }
+/* Owner, 2026-11-11: the desktop week takes the page's full width, so its event titles fit their columns (151px a day
+   at 1440, where they were 100). The week's body takes the stacked shape a narrow canvas has just above, at any width:
+   its summary ([data-under]: Today, what needs attention) under the view. Day, Month and List keep the panel beside
+   them.
+   While an event, an overlap or attendance is open ([data-open]) the body is the side-by-side layout again, with the
+   detail panel beside the grid: it sticks under the top bar, so it is on screen wherever the page is scrolled. The
+   summary stays under the grid, in the grid's column, and the panel runs down both rows; the page keeps its height,
+   so nothing moves up or down under the pointer when the panel opens or closes. */
+.ch-cal-body[data-view='week']:not([data-open]) {
+  grid-template-columns: minmax(0, 1fr);
+}
+.ch-cal-body[data-view='week'] > .ch-in-wrap[data-under] {
+  grid-column: 1;
+  position: static;
+  max-height: none;
+}
+.ch-cal-body[data-view='week'] > .ch-in-wrap:not([data-under]) {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  /* The toolbar's button takes the page to its end, where a row of the list opens this panel: it must fit between the
+     top bar and the page's foot there (72px above, 64px and the frame's 8px below), or its Back link slides under the
+     bar (at the 790px it has beside the other views, by 34px). */
+  max-height: calc(100vh - 144px);
+}
+/* Closed, the panel is empty and has no place in the grid; it stays on the page as the live region that says what
+   opens (CH-6802). */
+.ch-cal-body[data-view='week']:not([data-open]) > .ch-in-wrap:not([data-under]) {
+  position: absolute;
+  width: 0;
+  height: 0;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+/* The panel opened after the page was drawn fades in over the base duration; the grid takes its width at once (no
+   width animates, so opening never lays the week out per frame). None with Animations off or reduced motion. */
+.ch-cal-body[data-view='week'] > .ch-in-wrap[data-enter] {
+  animation: ch-cal-panel-in var(--ch-dur-base) var(--ch-ease) both;
+}
+@keyframes ch-cal-panel-in {
+  from {
+    opacity: 0;
+  }
+}
+[data-ui='clubhouse'][data-motion='off'] .ch-cal-body[data-view='week'] > .ch-in-wrap[data-enter] {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ch-cal-body[data-view='week'] > .ch-in-wrap[data-enter] {
+    animation: none;
+  }
+}
+/* A narrow canvas stacks all three: the view, the open panel, the summary. */
+@container (max-width: 1060px) {
+  .ch-cal-body[data-view='week'] > .ch-in-wrap:not([data-under]) {
+    grid-column: auto;
+    grid-row: auto;
+    max-height: none;
+  }
+}
 @container (max-width: 900px) {
   .ch-ed {
     grid-template-columns: minmax(0, 1fr);
@@ -2803,21 +3045,29 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
     grid-template-columns: repeat(7, minmax(0, 1fr));
     gap: 2px;
   }
+  /* The week strip's own height (65.3px, WebKit 390), and the day straight under the skeleton's 24px gap, as the day
+     view sets it under the week: the day's rule waits where it loads (262.1px; it stood at 268). */
   .ch-calm-skel__d {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 8px;
-    height: 64px;
+    height: 65.3px;
     padding-top: 12px;
   }
   .ch-calm-skel__day {
     display: flex;
     flex-direction: column;
-    margin-top: 4px;
   }
-  .ch-calm-skel__dayk {
-    align-items: center;
+  .ch-calm-dayk.ch-calm-skel__dayk {
+    align-items: flex-start;
+  }
+  .ch-calm-skel__step {
+    width: 62px;
+    height: 30px;
+  }
+  .ch-calm-skel__dayk > .ch-skel-ln:last-child {
+    flex-basis: 100%;
   }
   .ch-calm-skel .ch-skel-rows {
     margin-top: 6px;
@@ -2831,6 +3081,7 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
     align-items: center;
   }
   /* B10.4: Today, when the page is away from it, at the right of the year's line; out of flow, so nothing moves. */
+  /* The head opens the sheet with no rule above it, 8px in: the kit's intro does that itself now (ui.css .ch-intro). */
   .ch-calm-head {
     position: relative;
   }
@@ -2847,10 +3098,10 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
   }
 
   /* The week strip is ui/WeekStrip (B18, ui.css). */
-  /* The chosen day: a section on its own double rule, the day in the section heading's sans, its counts beside it. */
-  .ch-calm-dayswap {
-    margin-top: 24px;
-  }
+  /* The chosen day: a section on its own double rule, the day in the section heading's sans, its counts beside it.
+     The day view's own gap (.ch-calm-dayv) sets it 24px under the week, as the week is 24px under the head. The day's
+     swap added 24px more to the day on show alone: 48px under the week against 24 above it, the rule 24px lower than
+     on the day that didn't load, and a neighbouring day coming in on a swipe 24px higher than where it settled. */
   .ch-calm-dayk {
     display: flex;
     flex-wrap: wrap;
@@ -2867,7 +3118,7 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
     font-variant-numeric: tabular-nums;
     letter-spacing: var(--ch-track-20);
     font-variation-settings: 'wdth' 88;
-    color: var(--ch-ledger-ink);
+    color: var(--ch-text-primary);
   }
   .ch-calm-dayk span {
     font: var(--ch-type-13);
@@ -3005,8 +3256,7 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
   .ch-calm-ev.is-past .ch-calm-ev__b b {
     color: var(--ch-text-secondary);
   }
-  .ch-calm-ev.is-past .ch-calm-ev__rail i,
-  .ch-calm-ev.is-past .ch-calm-ev__w {
+  .ch-calm-ev.is-past .ch-calm-ev__rail i {
     opacity: 0.55;
   }
   .ch-calm-ev.is-cancelled b {
@@ -3093,14 +3343,18 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
     line-height: var(--ch-lead-caption);
     color: var(--ch-text-tertiary);
   }
-  .ch-calm-ev__w {
-    display: grid;
-    place-items: center;
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    background: var(--ch-warning-100);
+  /* An overlap, in words under the row's place ("Overlaps Short-game block"): the amber triangle leads the line it
+     used to stand in for, alone at the row's end. Amber ink, never red (red is under par). */
+  .ch-calm-ev__b span.ch-calm-ev__clash {
+    font: var(--ch-type-13-medium);
+    line-height: var(--ch-lead-caption);
     color: var(--ch-warning-600);
+  }
+  /* Inline with the words (the page's reset draws an svg as a block, which put the triangle on a line of its own). */
+  .ch-calm-ev__clash > svg {
+    display: inline-block;
+    margin-right: 4px;
+    vertical-align: -2px;
   }
   /* Now: a pill on the time column and a rule across the day (m.css .m-now). */
   .ch-calm-now {
@@ -3144,6 +3398,12 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
     50% {
       opacity: 1;
     }
+  }
+
+  /* Month lists the chosen day under the grid, on the day's own double rule, as far below the legend as Day's list
+     sits below its week strip. */
+  .ch-calm-monthday {
+    margin-top: 24px;
   }
 
   /* Month: the grid flush on the parchment under the weekdays' engraved rule; a dot for a day with events, a dark one
@@ -3299,7 +3559,7 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
     line-height: var(--ch-lead-tight);
     letter-spacing: var(--ch-track-20);
     font-variation-settings: 'wdth' 88;
-    color: var(--ch-ledger-ink);
+    color: var(--ch-text-primary);
   }
   .ch-calm .ch-ag__when.is-today b {
     color: var(--ch-green-600);
@@ -3437,7 +3697,12 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
     border-radius: var(--ch-radius-lg);
     background: var(--ch-light-surface);
   }
+  /* The head keeps to the week's own width. The card's 8px of side padding is gone here (.ch-wk below), and the head
+     still reached 8px past the grid on each side to cover it: its own light lay over bare canvas there, and at night
+     the head read as a lighter slab set on the page, wider than the week under it. */
   .ch-cal[data-canopy] .ch-wk__top {
+    margin-inline: 0;
+    padding-inline: 0;
     background: var(--ch-light-surface), var(--ch-workspace);
     background-size: 100% calc(var(--ch-hours, 15) * var(--ch-hh, 52px)), auto;
   }
@@ -3483,7 +3748,9 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
   .ch-cal[data-canopy] .ch-wk__nowlbl {
     background: var(--ch-workspace);
   }
-  .ch-cal[data-canopy] .ch-ev--lane {
+  /* Not while it has keyboard focus: this outranks .ch-ev:focus-visible, and turned the focus ring the canvas's own
+     colour on every cascaded block (cream on cream; a block on its own showed the green ring). */
+  .ch-cal[data-canopy] .ch-ev--lane:not(:focus-visible) {
     outline-color: var(--ch-workspace);
   }
 
@@ -3601,6 +3868,20 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
       padding: 24px 0 0;
       box-shadow: inset 0 1px 0 var(--ch-ledger-rule);
     }
+  }
+  /* The week stacks the same way at any width (owner, 2026-11-11; .ch-cal-body[data-view='week'] above): the same
+     three rules, so the summary under the full-width week is the panel a narrow canvas already draws. Its rule is the
+     hairline the column rule it replaces was (row 36), as the page's other Ledger rules are. With something open the
+     body is the Ledger's own two columns and column rule again; the summary keeps its rule, in the grid's column. */
+  .ch-cal[data-canopy] .ch-cal-body[data-view='week']:not([data-open]) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ch-cal[data-canopy] .ch-cal-body[data-view='week']:not([data-open])::before {
+    content: none;
+  }
+  .ch-cal[data-canopy] .ch-cal-body[data-view='week'] > .ch-in-wrap.ch-cal-surface[data-under] {
+    padding: 24px 0 0;
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule);
   }
   /* The agenda's single column: today's tint bleeds past both edges, as its rows' hover does. */
   @container (max-width: 720px) {
@@ -4434,25 +4715,7 @@ html[data-fw-theme='dark'] .ch-ev--busy::after {
   }
 }
 
-/* With clubhouse_refresh_v1 off, the week's tints as they were before the redesign (styles/pre-refresh.css). */
-.ch-root[data-ch-pre-refresh] .ch-wk__col.is-today {
-  background-color: rgb(21 90 57 / 0.025);
-}
-.ch-root[data-ch-pre-refresh] .ch-wk__col.is-past,
-.ch-root[data-ch-pre-refresh] .ch-wk__gone {
-  background-color: color-mix(in oklab, var(--ch-text-primary) 3.5%, transparent);
-}
-.ch-root[data-ch-pre-refresh] .ch-wk__sky > i.is-night {
-  background: rgb(46 58 92 / 0.055);
-}
-html[data-fw-theme='dark'] .ch-root[data-ch-pre-refresh] .ch-wk__col.is-today {
-  background-color: rgb(107 187 140 / 0.04);
-}
-html[data-fw-theme='dark'] .ch-root[data-ch-pre-refresh] .ch-wk__sky > i.is-night {
-  background: rgb(0 0 0 / 0.18);
-}
-@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
-  .ch-root[data-ch-pre-refresh] .ch-cal--skel[data-canopy] > .ch-cal-mast {
-    min-height: 136px;
-  }
-}
+/* A practice's plan (N-00 4.17): the state on the left, the one action on the right. */
+.ch-in__sec.ch-in__plan { flex-direction: row; align-items: center; justify-content: space-between; gap: 12px; }
+.ch-in__plan-s { font: var(--ch-type-14-medium); color: var(--ch-text-secondary); }
+.ch-ev__warn.ch-ev__plan { background: none; box-shadow: none; color: var(--ch-text-tertiary); }

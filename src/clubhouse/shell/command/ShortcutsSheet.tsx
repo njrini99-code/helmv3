@@ -2,7 +2,7 @@
 
 import { Keyboard } from 'lucide-react';
 import { isNativeApp } from '@/lib/utils/capacitor';
-import type { ChRole } from '../nav';
+import type { ChNavFeatures, ChRole } from '../nav';
 import { Modal } from '../../ui/Modal';
 import { Keys } from './Keys';
 import { usePageKeysNow } from './page-keys';
@@ -14,7 +14,7 @@ interface Row {
 }
 
 /** The sheet behind `?`: every shortcut the layer has, grouped, with the platform's own modifier. */
-export function ShortcutsSheet({ open, onClose, role, apple }: { open: boolean; onClose: () => void; role: ChRole; apple: boolean }) {
+export function ShortcutsSheet({ open, onClose, role, features, apple }: { open: boolean; onClose: () => void; role: ChRole; features?: ChNavFeatures | null; apple: boolean }) {
   const mod = modKey(apple);
   const general: Row[] = [
     { label: 'Open the command palette', keys: [mod, 'K'] },
@@ -25,7 +25,7 @@ export function ShortcutsSheet({ open, onClose, role, apple }: { open: boolean; 
     { label: 'Open a row’s menu', keys: ['Shift', 'F10'] },
     { label: 'Close a dialog or menu', keys: ['Esc'] },
   ];
-  const goTo = navLetters(role);
+  const goTo = navLetters(role, features);
   // Drawn only once it is opened, so reading the platform here never differs from the server's HTML.
   const digits = isNativeApp();
   const here = usePageKeysNow();
@@ -51,7 +51,7 @@ export function ShortcutsSheet({ open, onClose, role, apple }: { open: boolean; 
             {goTo.map(({ letter, item }) => {
               // In the app, the first nine sidebar sections also answer Cmd or Ctrl and their digit (owner, decision 13); a
               // browser keeps those keys for its tabs, so the sheet doesn't offer them there.
-              const digit = digits ? digitFor(role, item.id) : undefined;
+              const digit = digits ? digitFor(role, item.id, features) : undefined;
               return (
                 <div key={item.id} className="ch-cmd-row">
                   <dt>{item.label}</dt>

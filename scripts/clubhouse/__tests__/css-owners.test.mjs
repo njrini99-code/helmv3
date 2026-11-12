@@ -18,6 +18,16 @@ test('two page stylesheets anchoring one class are flagged (the Roster and Setup
   assert.match(v[0], /roster\.css and .*rounds-setup\.css both anchor \.ch-rs/);
 });
 
+test('a page split by work package (messages.css + messages-thread.css) owns its classes as one family', () => {
+  const v = checkClassOwners({
+    'messages.css': '.ch-ms-bub{padding:0}',
+    'messages-thread.css': '[data-ch-ms-v2] .ch-ms-bub{padding:1px}',
+    'roster.css': '.ch-rs{display:grid}',
+  });
+  assert.deepEqual(v, []);
+  assert.equal(checkClassOwners({ 'messages-thread.css': '.ch-ms-bub{}', 'roster.css': '.ch-ms-bub{}' }).length, 1);
+});
+
 test("styling another page's class inside your own is not a collision, and shared classes are everyone's", () => {
   const v = checkClassOwners({
     'ui.css': '.ch-btn{}',

@@ -37,7 +37,9 @@ import {
   courseReads,
   STATIONS,
   stationFigures,
-  teamTotalOf,
+  stationsOfTeamSg,
+  worthByRead,
+  type ChReadWorth,
   type ChStation,
   type ChTeamBoardData,
   type ChTeamLeg,
@@ -47,6 +49,10 @@ import {
 } from './coachhelm-team-shape';
 import { roundsForFigures } from './figure-window';
 import { toChTeamLegs } from './coachhelm-team-legs';
+import { teamLastTenRounds, teamLastTenStrokesGained } from './stats-team-sg';
+import { sgPolicyAtSource, sgSourceFor } from './stats-common';
+import { sgMixOf } from './stats-sg-mix';
+import { holeRounds } from './round-scope';
 import { classYearLabel, lastTenFloor, loadSeasonRounds, loadTeamZone, seasonStartDate } from './season';
 import { NEEDS_MAX, WORKING_MAX } from './coachhelm-shape';
 
@@ -64,7 +70,7 @@ export function emptyTeamBoard(off: ChTeamBoardData['off'] = null): ChTeamBoardD
     players: { list: [], error: false },
     legsError: false,
     stations: stationFigures([]),
-    teamTotal: { strokes: null, rounds: 0 },
+    teamTotal: { strokes: null, rounds: 0, seasonRounds: 0 },
     course: { history: null, reads: [], against: null },
     pulse: { rows: [], error: false },
   };
@@ -139,7 +145,15 @@ export async function loadCoachTeamBoard(input: { coachId: string; teamId: strin
   );
 
   const zone = await zoneRead;
-  const roundsRead = handled(loadSeasonRounds(supabase, ids, { surface: 'coachhelm.team', since: lastTenFloor(now) }));
+  // Estimated strokes gained (stats-sg-mix.ts): the policy is applied to the rounds as they load, so the hole, the stations and each
+  // player's legs follow it. The split for the hole's own window is read as soon as the rounds are in, alongside everything else.
+  const roundsRead = handled(
+    loadSeasonRounds(supabase, ids, { surface: 'coachhelm.team', since: lastTenFloor(now) }).then(async (res) => {
+      const policy = await sgPolicyAtSource(supabase, res.rounds, 'coachhelm.team');
+      return { ...res, rounds: policy.rounds, sgEarly: policy.early };
+    }),
+  );
+  const sgSourceRead = handled(roundsRead.then((res) => sgSourceFor(supabase, res.sgEarly, teamLastTenRounds(roundsForFigures(res.rounds), ids), 'coachhelm.team')));
   const [visible, heads] = await Promise.all([loadVisible(supabase, ids), topInsights(ids, { limit: NEEDS_MAX + WORKING_MAX, drawnLater: () => drawn })]);
   const rankedAny = [...heads.values()].some((l) => l.length > 0);
   if (visible.error || (visible.rows.length > 0 && !rankedAny)) {
@@ -167,7 +181,7 @@ export async function loadCoachTeamBoard(input: { coachId: string; teamId: strin
   let patternsFailed = false;
   const newestRead = newestRounds(supabase, ids, earliestStaleFloor([...visible.rows, ...allReads]));
   const openRows = Promise.all([newestRead, tourRead]).then(([n, t]) => visible.rows.filter((r) => isOpenFinding(r, t.baseline, n.days.get(r.player_id) ?? null)));
-  const [drills, assigned, declined, newest, tourResult, patterns, focus, corrections, seasonRounds] = await Promise.all([
+  const [drills, assigned, declined, newest, tourResult, patterns, focus, corrections, seasonRounds, sgSource] = await Promise.all([
     drillTextByInsight(supabase, allReads),
     assignedByInsight(supabase, readIds),
     declinedByInsight(supabase, readIds),
@@ -179,12 +193,21 @@ export async function loadCoachTeamBoard(input: { coachId: string; teamId: strin
     readFocusVerdicts(supabase, readIds, flags.verdicts),
     readCorrections(supabase, { role: 'coach', teamIds: [input.teamId], reads: allReads.map((i) => ({ id: i.id, playerId: i.player_id })) }),
     roundsRead,
+    sgSourceRead,
   ]);
   const tour = tourResult.baseline;
   const iso = now.toISOString();
 
   const countable = roundsForFigures(seasonRounds.rounds);
-  const legs = toChTeamLegs(countable, ids);
+  // The legs read each player's last ten across seasons; "this season" figures (the head's count, Courses, the huddle's trails) read from here.
+  const seasonStart = seasonStartDate(now, zone);
+  const seasonCountable = countable.filter((r) => r.round_date.slice(0, 10) >= seasonStart);
+  const legs = toChTeamLegs(countable, ids, seasonStart);
+  // The hole's figures and the hero: Team stats' own team figure over the same window (one number, one source).
+  const teamSg = teamLastTenStrokesGained(countable, ids);
+  // The same rounds, split by where their strokes gained came from: shot-tracked, or estimated from the scorecard.
+  const lastTenHoles = holeRounds(teamLastTenRounds(countable, ids));
+  const sgMixFor = (playerIds: ReadonlySet<string>) => (seasonRounds.error ? null : sgMixOf(lastTenHoles.filter((r) => playerIds.has(r.player_id)), sgSource));
   const list: ChTeamPlayer[] = roster.map((p) => {
     const first = p.name === NO_NAME ? NO_NAME : firstName(p.name);
     const coach = { role: 'coach', first } as const;
@@ -215,7 +238,8 @@ export async function loadCoachTeamBoard(input: { coachId: string; teamId: strin
       legs: seasonRounds.error ? noLegs() : (leg?.legs ?? noLegs()),
       total: seasonRounds.error ? null : (leg?.total ?? null),
       worst: seasonRounds.error ? null : (leg?.worst ?? null),
-      first10: null,
+      first10: seasonRounds.error ? null : (leg?.first10 ?? null),
+      sgMix: sgMixFor(new Set([p.id])),
       reads: { needs, working: split.working },
       heldBack: heldBack.find((h) => h.id === p.id)?.reads.length ?? 0,
     };
@@ -223,9 +247,8 @@ export async function loadCoachTeamBoard(input: { coachId: string; teamId: strin
   // Counted as shown: what the board draws, at most 3 and 1 a player, no note, no measured zero (W-TEAM-4).
   settleDrawn(list.flatMap((p) => [...p.reads.needs, ...p.reads.working].map((r) => r.id)));
 
-  // The legs read each player's last ten across seasons; "Courses this season" stays the season's.
-  const seasonStart = seasonStartDate(now, zone);
-  const history = seasonRounds.error ? null : toCourseHistory(countable.filter((r) => r.round_date.slice(0, 10) >= seasonStart) as never, ids, iso.slice(0, 10));
+  // "Courses this season" stays the season's.
+  const history = seasonRounds.error ? null : toCourseHistory(seasonCountable as never, ids, iso.slice(0, 10));
   const standings = await loadPlayersStandingMap(ids).catch((err: unknown) => {
     log('standing', err);
     return null;
@@ -239,6 +262,26 @@ export async function loadCoachTeamBoard(input: { coachId: string; teamId: strin
     : null;
 
   const names = new Map(roster.map((p) => [p.id, p.name]));
+  // One read of each player's themes serves the stories and each drawn read's worth.
+  const themed = part('themes', async () => {
+    // At most four at a time, only players the reads say are moving (02-PLAN 4.5).
+    const themes: Record<string, ReturnType<typeof themesByCategory>> = {};
+    const worth: Record<string, ChReadWorth> = {};
+    // A theme only tells a story when it is Improving or Slipping; storiesOf drops the rest.
+    const candidates = [...names.keys()];
+    for (let i = 0; i < candidates.length; i += 4) {
+      await Promise.all(
+        candidates.slice(i, i + 4).map(async (id) => {
+          const t = await readThemes(id, 'coach');
+          if (!t) return;
+          themes[id] = themesByCategory(t, 'coach');
+          const drawn = list.find((p) => p.id === id);
+          Object.assign(worth, worthByRead(drawn ? [...drawn.reads.needs, ...drawn.reads.working].map((r) => r.id) : [], t));
+        }),
+      );
+    }
+    return { themes, worth };
+  });
   const missing = boardMissing({ drills: drills.error, assigned: assigned.error, declined: declined.error, newest: newest.error, tour: tourResult.error });
   return {
     off: null,
@@ -246,8 +289,8 @@ export async function loadCoachTeamBoard(input: { coachId: string; teamId: strin
     roster: { count: roster.length, error: false },
     players: { list, error: false },
     legsError: seasonRounds.error,
-    stations: stationFigures(list),
-    teamTotal: { strokes: teamTotalOf(list), rounds: countable.length },
+    stations: seasonRounds.error ? stationFigures([]) : stationsOfTeamSg(teamSg),
+    teamTotal: { strokes: seasonRounds.error ? null : teamSg.total, rounds: countable.length, seasonRounds: seasonCountable.length, sgMix: sgMixFor(teamSg.ready) },
     course: { history, reads: courseReads(list), against },
     patterns,
     patternsStatus: !teamPatternEnabled() ? 'off' : patternsFailed ? 'failed' : 'ok',
@@ -281,20 +324,8 @@ export async function loadCoachTeamBoard(input: { coachId: string; teamId: strin
       }
       return out;
     }),
-    themes: part('themes', async () => {
-      // At most four at a time, only players the reads say are moving (02-PLAN 4.5).
-      const out: Record<string, ReturnType<typeof themesByCategory>> = {};
-      // A theme only tells a story when it is Improving or Slipping; storiesOf drops the rest.
-      const candidates = [...names.keys()];
-      for (let i = 0; i < candidates.length; i += 4) {
-        await Promise.all(
-          candidates.slice(i, i + 4).map(async (id) => {
-            const t = await readThemes(id, 'coach');
-            if (t) out[id] = themesByCategory(t, 'coach');
-          }),
-        );
-      }
-      return out;
-    }),
+    themes: themed.then((p): ChTeamPart<Record<string, ReturnType<typeof themesByCategory>>> => (p.status === 'ok' ? { status: 'ok', value: p.value.themes } : p)),
+    // One read, one worth: the cascade's figure (`closesFor`), which the Read page and the Player file print, from the themes just read.
+    worth: themed.then((p): ChTeamPart<Record<string, ChReadWorth>> => (p.status === 'ok' ? { status: 'ok', value: p.value.worth } : p)),
   };
 }

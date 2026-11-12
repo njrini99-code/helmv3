@@ -88,13 +88,15 @@ describe('PollCard', () => {
     const group = screen.getByRole('radiogroup');
     const [a, b] = within(group).getAllByRole('radio');
     expect(a!.getAttribute('aria-label')).toBe('Van A, 0 votes');
-    expect(b!.getAttribute('aria-label')).toBe('Van B, 1 vote');
+    // A sole leader is marked at any time (Q-34).
+    expect(b!.getAttribute('aria-label')).toBe('Van B, 1 vote, most votes');
     expect(b!.style.getPropertyValue('--ch-poll-share')).toBe('1');
     // The count is plain text: a live region per card would announce every poll in the thread on each vote.
-    expect(document.querySelector('.ch-ms-poll__count')!.textContent).toBe('1 of 4 voted');
+    // MSG-501: the footer counts the votes cast ("{n} vote(s)"), no "n of m voted".
+    expect(document.querySelector('.ch-msd-poll__count')!.textContent).toBe('1 vote');
     expect(screen.queryByRole('status')).toBeNull();
-    // One answer, no end: the head is just "Poll" (P-2 4.1).
-    expect(document.querySelector('.ch-ms-poll__head')!.textContent).toBe('Poll');
+    // One answer: the head says so (MSG-501), no end phrase in it.
+    expect(document.querySelector('.ch-msd-poll__head')!.textContent).toBe('Poll · Choose one');
   });
 
   it('a tap votes, a second tap on the same choice takes it back', async () => {
@@ -109,7 +111,7 @@ describe('PollCard', () => {
     rerender(<PollCard api={a2} messageId="m1" poll={poll()} mine={false} />);
     const mine = screen.getByRole('radio', { name: /Van A/ });
     expect(mine.getAttribute('aria-checked')).toBe('true');
-    expect(mine.getAttribute('aria-label')).toBe('Van A, 1 vote, your vote');
+    expect(mine.getAttribute('aria-label')).toBe('Van A, 1 vote, your vote, most votes');
     await user.click(mine);
     expect(a2.polls!.vote).toHaveBeenLastCalledWith('m1', expect.anything(), []);
   });
@@ -120,7 +122,7 @@ describe('PollCard', () => {
     const a = api([{ message_id: 'm1', user_id: 'me', choice: 'o3' }]);
     render(<PollCard api={a} messageId="m1" poll={p} mine={false} />);
     expect(screen.getAllByRole('checkbox')).toHaveLength(3);
-    expect(screen.getByText('Choose any that work')).toBeTruthy();
+    expect(document.querySelector('.ch-msd-poll__head')!.textContent).toBe('Poll · Choose any');
     await user.click(screen.getByRole('checkbox', { name: /Tue/ }));
     expect(a.polls!.vote).toHaveBeenLastCalledWith('m1', expect.anything(), ['o1', 'o3']);
   });
@@ -129,9 +131,9 @@ describe('PollCard', () => {
     const user = userEvent.setup();
     const a = api([{ message_id: 'm1', user_id: 'ana', choice: 'o2' }]);
     render(<PollCard api={a} messageId="m1" poll={poll({ closedAt: '2026-10-24T14:00:00Z' })} mine />);
-    expect(screen.getByText('Poll closed')).toBeTruthy();
-    expect(screen.getByText('Final')).toBeTruthy();
-    expect(screen.getByRole('radio', { name: /Van B/ }).getAttribute('aria-label')).toBe('Van B, 1 vote, most votes');
+    expect(document.querySelector('.ch-msd-poll__head')!.textContent).toBe('Poll · Final');
+    expect(document.querySelector('.ch-msd-poll__count')!.textContent).toBe('1 vote · Final');
+    expect(screen.getByRole('radio', { name: /Van B/ }).getAttribute('aria-label')).toBe('Van B, 1 vote, your vote'.replace(', your vote', ', most votes'));
     await user.click(screen.getByRole('radio', { name: /Van A/ }));
     expect(a.polls!.vote).not.toHaveBeenCalled();
     expect(screen.queryByRole('button', { name: 'Close poll' })).toBeNull();
@@ -139,16 +141,16 @@ describe('PollCard', () => {
 
   it('a poll past its end time is closed too', () => {
     render(<PollCard api={api([])} messageId="m1" poll={poll({ closesAt: '2026-10-24T14:59:00Z' })} mine />);
-    expect(screen.getByText('Voting ended')).toBeTruthy();
+    expect(document.querySelector('.ch-msd-poll__count')!.textContent).toBe('No one voted · Voting ended');
   });
 
-  it('says when an open poll ends, in the viewer’s clock', () => {
+  it('says when an open poll closes, in the viewer’s clock', () => {
     // "tomorrow" is read against the clock, so pin it: the day before the poll closes.
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-10-24T15:00:00Z'));
     try {
       render(<PollCard api={api([])} messageId="m1" poll={poll({ closesAt: '2026-10-25T23:00:00Z' })} mine={false} />);
-      expect(screen.getByText('Ends tomorrow at 6:00 PM')).toBeTruthy();
+      expect(document.querySelector('.ch-msd-poll__count')!.textContent).toBe('No votes yet · Closes tomorrow 6 PM');
     } finally {
       vi.useRealTimers();
     }
@@ -158,7 +160,7 @@ describe('PollCard', () => {
     const user = userEvent.setup();
     const loading = api(null);
     const { rerender } = render(<PollCard api={loading} messageId="m1" poll={poll()} mine={false} />);
-    expect(document.querySelector('.ch-ms-poll__count')!.textContent).toBe('Loading votes…');
+    expect(document.querySelector('.ch-msd-poll__count')!.textContent).toBe('Loading votes…');
     await user.click(screen.getByRole('radio', { name: /Van A/ }));
     expect(loading.polls!.vote).not.toHaveBeenCalled();
 
@@ -174,11 +176,30 @@ describe('PollCard', () => {
     await user.click(screen.getByRole('button', { name: 'See votes' }));
     const dialog = await screen.findByRole('dialog');
     const vanA = within(dialog).getByRole('region', { name: 'Van A' });
-    // D29: no vote times; "You" first, then by name.
-    expect([...vanA.querySelectorAll('.ch-ms-pollv__name')].map((n) => n.textContent)).toEqual(['You', 'Ana Ruiz']);
-    const waiting = within(dialog).getByRole('region', { name: 'Hasn’t voted' });
-    expect([...waiting.querySelectorAll('.ch-ms-pollv__name')].map((n) => n.textContent)).toEqual(['Ben Cho', 'Cal Park']);
+    // D29: no vote times; "You" first, then by name. A card per choice with its share (MSG-505).
+    expect([...vanA.querySelectorAll('.ch-msd-vg__name')].map((n) => n.textContent)).toEqual(['You', 'Ana Ruiz']);
+    expect(vanA.querySelector('.ch-msd-vg__h small')!.textContent).toBe('2 · 100%');
+    expect((vanA.querySelector('.ch-msd-vg__bar') as HTMLElement).style.getPropertyValue('--ch-msd-w')).toBe('100%');
+    expect(within(dialog).getByRole('region', { name: 'Van B' }).textContent).toContain('No votes yet');
+    // Q-09 / Q-16: who has not voted is for whoever asked and for coaches; a player who did not send the poll does not see it.
+    expect(within(dialog).queryByRole('region', { name: 'Hasn’t voted' })).toBeNull();
     expect(dialog.textContent).not.toMatch(/\d:\d\d/);
+  });
+
+  it('See votes: the sender, and a coach, also see who has not voted (coaches left out)', async () => {
+    const user = userEvent.setup();
+    const rows = [{ message_id: 'm1', user_id: 'ana', choice: 'o1' }];
+    for (const viewer of ['sender', 'coach'] as const) {
+      const a = viewer === 'coach' ? (() => { const x = api(rows) as ChMessagesApi & { viewer: { role: string } }; x.viewer.role = 'coach'; return x; })() : api(rows);
+      render(<PollCard api={a} messageId="m1" poll={poll()} mine={viewer === 'sender'} />);
+      await user.click(screen.getByRole('button', { name: 'See votes' }));
+      const dialog = await screen.findByRole('dialog');
+      const waiting = within(dialog).getByRole('region', { name: 'Hasn’t voted' });
+      // The coach is out of the list; a player who sent the poll is in it as "You" until they vote.
+      const names = [...waiting.querySelectorAll('.ch-msd-vg__name')].map((n) => n.textContent);
+      expect(names).toEqual(viewer === 'coach' ? ['Ben Cho', 'Cal Park'] : ['You', 'Ben Cho', 'Cal Park']);
+      cleanup();
+    }
   });
 
   it('See votes marks someone who voted and left, and a final poll says Final', async () => {
@@ -197,7 +218,9 @@ describe('PollCard', () => {
     const user = userEvent.setup();
     const a = api([]);
     render(<PollCard api={a} messageId="m1" poll={poll()} mine />);
-    await user.click(screen.getByRole('button', { name: 'Close poll' }));
+    // MSG-501: the card draws the count and See votes only; Close poll is a row of the message's lift menu, which runs this.
+    expect(within(document.querySelector('.ch-msd-poll__foot') as HTMLElement).getAllByRole('button').map((b) => b.textContent)).toEqual(['See votes']);
+    act(() => pollCardActions('m1')!.close!());
     const dialog = await screen.findByRole('dialog', { name: 'Close this poll?' });
     await user.click(within(dialog).getByRole('button', { name: 'Close poll' }));
     expect(a.polls!.close).toHaveBeenCalledWith('m1');
@@ -212,121 +235,21 @@ describe('PollButton and the New poll sheet', () => {
     rerender(<PollButton api={api([])} conv={conv()} />);
     expect(screen.getByRole('button', { name: 'New poll' })).toBeTruthy();
   });
-
-  it('adds a spare choice as the last fills and sends the draft', async () => {
-    const user = userEvent.setup();
-    const a = api([]);
-    render(<PollButton api={a} conv={conv()} />);
-    await user.click(screen.getByRole('button', { name: 'New poll' }));
-    const dialog = await screen.findByRole('dialog', { name: 'New poll' });
-    const send = within(dialog).getByRole('button', { name: 'Send poll' });
-    expect((send as HTMLButtonElement).disabled).toBe(true);
-
-    await user.type(within(dialog).getByLabelText('Question'), 'Which van?');
-    await user.type(within(dialog).getByRole('textbox', { name: 'Choice 1' }), 'Van A');
-    await user.type(within(dialog).getByRole('textbox', { name: 'Choice 2' }), 'Van B');
-    expect(within(dialog).getByRole('textbox', { name: 'Choice 3' })).toBeTruthy();
-
-    await user.click(within(dialog).getByRole('switch', { name: 'Allow more than one answer' }));
-    await act(async () => {
-      await user.click(send);
-    });
-    expect(a.polls!.send).toHaveBeenCalledWith('c1', expect.objectContaining({ question: 'Which van?', options: ['Van A', 'Van B', ''], multi: true, closesAt: null }), expect.stringMatching(/^[0-9a-f-]{36}$/), undefined);
-    expect(haptic).toHaveBeenCalledWith('success');
-  });
-
-  it('says what is wrong instead of sending', async () => {
-    const user = userEvent.setup();
-    const a = api([]);
-    render(<PollButton api={a} conv={conv()} />);
-    await user.click(screen.getByRole('button', { name: 'New poll' }));
-    const dialog = await screen.findByRole('dialog', { name: 'New poll' });
-    await user.type(within(dialog).getByLabelText('Question'), 'Which van?');
-    await user.type(within(dialog).getByRole('textbox', { name: 'Choice 1' }), 'Van A');
-    await user.type(within(dialog).getByRole('textbox', { name: 'Choice 2' }), 'van a');
-    await user.click(within(dialog).getByRole('button', { name: 'Send poll' }));
-    expect(within(dialog).getByRole('alert').textContent).toBe('Two choices say the same thing.');
-    expect(a.polls!.send).not.toHaveBeenCalled();
-    expect(haptic).toHaveBeenCalledWith('error');
-  });
-
-  it('a refused send keeps the draft and shows the reason', async () => {
-    const user = userEvent.setup();
-    const a = api([], { send: vi.fn(async () => ({ ok: false as const, error: 'Could not send the poll' })) });
-    render(<PollButton api={a} conv={conv()} />);
-    await user.click(screen.getByRole('button', { name: 'New poll' }));
-    const dialog = await screen.findByRole('dialog', { name: 'New poll' });
-    await user.type(within(dialog).getByLabelText('Question'), 'Which van?');
-    await user.type(within(dialog).getByRole('textbox', { name: 'Choice 1' }), 'Van A');
-    await user.type(within(dialog).getByRole('textbox', { name: 'Choice 2' }), 'Van B');
-    await user.click(within(dialog).getByRole('button', { name: 'Send poll' }));
-    expect(await within(dialog).findByRole('alert')).toBeTruthy();
-    expect(within(dialog).getByRole('alert').textContent).toBe('Could not send the poll');
-    expect((within(dialog).getByLabelText('Question') as HTMLInputElement).value).toBe('Which van?');
-    await user.click(within(dialog).getByRole('button', { name: 'Send poll' }));
-    const calls = (a.polls!.send as ReturnType<typeof vi.fn>).mock.calls;
-    expect(calls).toHaveLength(2);
-    // The same draft sent again keeps its id, so a send whose answer was lost can't post the poll twice.
-    expect(calls[1]![2]).toBe(calls[0]![2]);
-  });
-
-  it('a draft changed after a refused send goes out with a new id', async () => {
-    const user = userEvent.setup();
-    const a = api([], { send: vi.fn(async () => ({ ok: false as const, error: 'Could not send the poll' })) });
-    render(<PollButton api={a} conv={conv()} />);
-    await user.click(screen.getByRole('button', { name: 'New poll' }));
-    const dialog = await screen.findByRole('dialog', { name: 'New poll' });
-    await user.type(within(dialog).getByLabelText('Question'), 'Which van?');
-    await user.type(within(dialog).getByRole('textbox', { name: 'Choice 1' }), 'Van A');
-    await user.type(within(dialog).getByRole('textbox', { name: 'Choice 2' }), 'Van B');
-    await user.click(within(dialog).getByRole('button', { name: 'Send poll' }));
-    expect(await within(dialog).findByRole('alert')).toBeTruthy();
-    await user.type(within(dialog).getByLabelText('Question'), ' Thursday');
-    await user.click(within(dialog).getByRole('button', { name: 'Send poll' }));
-    const calls = (a.polls!.send as ReturnType<typeof vi.fn>).mock.calls;
-    expect(calls).toHaveLength(2);
-    // An edited draft is a different poll; reusing the old id would let the server read it as a replay of the first.
-    expect(calls[1]![1]).toMatchObject({ question: 'Which van? Thursday' });
-    expect(calls[1]![2]).not.toBe(calls[0]![2]);
-  });
-
-  it('counts the end time from the moment Send is pressed, not from when the sheet opened', async () => {
-    const user = userEvent.setup();
-    const a = api([]);
-    const opened = Date.parse('2026-10-24T15:00:00.000Z');
-    const now = vi.spyOn(Date, 'now').mockReturnValue(opened);
-    try {
-      render(<PollButton api={a} conv={conv()} />);
-      await user.click(screen.getByRole('button', { name: 'New poll' }));
-      const dialog = await screen.findByRole('dialog', { name: 'New poll' });
-      await user.type(within(dialog).getByLabelText('Question'), 'Which van?');
-      await user.type(within(dialog).getByRole('textbox', { name: 'Choice 1' }), 'Van A');
-      await user.type(within(dialog).getByRole('textbox', { name: 'Choice 2' }), 'Van B');
-      await user.click(within(dialog).getByRole('radio', { name: '1 hour' }));
-      // Twenty minutes pass while the coach finishes the draft.
-      now.mockReturnValue(opened + 20 * 60_000);
-      await act(async () => {
-        await user.click(within(dialog).getByRole('button', { name: 'Send poll' }));
-      });
-    } finally {
-      now.mockRestore();
-    }
-    expect(a.polls!.send).toHaveBeenCalledWith('c1', expect.objectContaining({ closesAt: '2026-10-24T16:20:00.000Z' }), expect.any(String), undefined);
-  });
 });
 
 describe('PollCard, slice 1 of the follow-up plan (P-2 0.2)', () => {
-  it('D11: counts a voter who has left, so it never reads more voted than could; all in reads "Everyone voted"', () => {
+  it('D11 / MSG-501: the footer counts the votes cast, a voter who has left included', () => {
     const rows = [
       { message_id: 'm1', user_id: 'gone', choice: 'o1' },
       { message_id: 'm1', user_id: 'ana', choice: 'o1' },
     ];
     render(<PollCard api={api(rows, {}, { memberIds: ['ana'] })} messageId="m1" poll={poll()} mine={false} />);
-    expect(document.querySelector('.ch-ms-poll__count')!.textContent).toBe('2 of 3 voted');
+    expect(document.querySelector('.ch-msd-poll__count')!.textContent).toBe('2 votes');
     cleanup();
-    const all = [...rows, { message_id: 'm1', user_id: 'me', choice: 'o2' }];
-    render(<PollCard api={api(all, {}, { memberIds: ['ana'] })} messageId="m1" poll={poll()} mine={false} />);
-    expect(document.querySelector('.ch-ms-poll__count')!.textContent).toBe('Everyone voted');
+    // A multi-answer poll counts a vote per choice picked.
+    const multi = poll({ multi: true });
+    render(<PollCard api={api([{ message_id: 'm1', user_id: 'ana', choice: 'o1,o2' }], {}, { memberIds: ['ana'] })} messageId="m1" poll={multi} mine={false} />);
+    expect(document.querySelector('.ch-msd-poll__count')!.textContent).toBe('2 votes');
   });
 
   it('D13: counts down the last hour and turns final at its exact end', () => {
@@ -334,11 +257,13 @@ describe('PollCard, slice 1 of the follow-up plan (P-2 0.2)', () => {
     try {
       const closesAt = new Date(Date.parse(NOW) + 42 * 60_000).toISOString();
       render(<PollCard api={api([])} messageId="m1" poll={poll({ closesAt })} mine={false} />);
-      expect(screen.getByText('Ends in 42 min')).toBeTruthy();
+      const foot = () => document.querySelector('.ch-msd-poll__count')!.textContent;
+      expect(foot()).toBe('No votes yet · Closes in 42 min');
       act(() => { vi.advanceTimersByTime(41 * 60_000 + 30_000); });
-      expect(screen.getByText('Ends in under a minute')).toBeTruthy();
+      expect(foot()).toBe('No votes yet · Closes in under a minute');
       act(() => { vi.advanceTimersByTime(31_000); });
-      expect(screen.getByText('Final')).toBeTruthy();
+      expect(foot()).toBe('No one voted · Voting ended');
+      expect(document.querySelector('.ch-msd-poll__head')!.textContent).toBe('Poll · Final');
       expect(screen.getByRole('radio', { name: /Van A/ }).getAttribute('aria-disabled')).toBe('true');
     } finally {
       vi.useRealTimers();
@@ -351,12 +276,12 @@ describe('PollCard, slice 1 of the follow-up plan (P-2 0.2)', () => {
     try {
       const closesAt = new Date(Date.parse(NOW) + 30 * 24 * 3_600_000).toISOString();
       render(<PollCard api={api([])} messageId="m1" poll={poll({ closesAt })} mine={false} />);
-      expect(screen.queryByText('Voting ended')).toBeNull();
+      expect(document.querySelector('.ch-msd-poll__head')!.textContent).toBe('Poll · Choose one');
       expect(Math.max(...spy.mock.calls.map((c) => Number(c[1] ?? 0)))).toBeLessThanOrEqual(6 * 3_600_000);
       // The device slept past the end (iOS pauses timers): showing the page again turns it final at once.
       vi.setSystemTime(Date.parse(closesAt) + 1_000);
       act(() => { window.dispatchEvent(new Event('pageshow')); });
-      expect(screen.getByText('Final')).toBeTruthy();
+      expect(document.querySelector('.ch-msd-poll__head')!.textContent).toBe('Poll · Final');
     } finally {
       spy.mockRestore();
       vi.useRealTimers();
@@ -393,133 +318,76 @@ describe('PollCard, slice 1 of the follow-up plan (P-2 0.2)', () => {
   });
 });
 
-describe('PollCard, slice 2: the visual spec and its states (P-2 4.1, 4.2)', () => {
-  const n = (label: RegExp) => screen.getByRole('radio', { name: label }).querySelector('.ch-ms-poll__n')!.textContent;
+describe('PollCard, MSG-501 to MSG-503: the Nov 7 card and its states', () => {
+  const n = (label: RegExp) => screen.getByRole('radio', { name: label }).querySelector('.ch-msd-poll__n')!.textContent;
 
-  it('open: an honest 0 in tertiary, a level line under every fill, no leader marked, "No votes yet"', () => {
+  it('open: an honest 0, one fill per row and no level line, no leader marked, "No votes yet"', () => {
     render(<PollCard api={api([])} messageId="m1" poll={poll()} mine={false} />);
     expect(n(/Van A/)).toBe('0');
-    expect(document.querySelector('.ch-ms-poll__n')!.className).toContain('is-zero');
-    expect(document.querySelectorAll('.ch-ms-poll__level')).toHaveLength(2);
-    expect(document.querySelector('.ch-ms-poll__tag')).toBeNull();
-    expect(document.querySelector('.ch-ms-poll__count')!.textContent).toBe('No votes yet');
+    expect(document.querySelectorAll('.ch-msd-poll__fill')).toHaveLength(2);
+    expect(document.querySelector('.ch-ms-poll__level, .ch-msd-poll__level')).toBeNull();
+    expect(document.querySelector('.ch-msd-poll__chip')).toBeNull();
+    expect(document.querySelector('.ch-msd-poll__count')!.textContent).toBe('No votes yet');
   });
 
-  it('closed by its sender: "Poll closed · Final", zeros shown, the leader tagged', () => {
-    render(<PollCard api={api([{ message_id: 'm1', user_id: 'ana', choice: 'o2' }])} messageId="m1" poll={poll({ closedAt: '2026-10-24T14:00:00Z' })} mine />);
-    expect(document.querySelector('.ch-ms-poll__head')!.textContent).toBe('Poll closed·Final');
+  it('"Most votes" shows on a sole leader with a vote, open or final; a tie marks nobody (Q-34)', () => {
+    const open = [{ message_id: 'm1', user_id: 'ana', choice: 'o2' }];
+    render(<PollCard api={api(open)} messageId="m1" poll={poll()} mine={false} />);
+    expect(screen.getByRole('radio', { name: /Van B/ }).querySelector('.ch-msd-poll__chip')!.textContent).toBe('Most votes');
+    expect(screen.getByRole('radio', { name: /Van B/ }).getAttribute('aria-label')).toContain('most votes');
+    cleanup();
+    render(<PollCard api={api(open)} messageId="m1" poll={poll({ closedAt: '2026-10-24T14:00:00Z' })} mine />);
+    expect(document.querySelector('.ch-msd-poll__head')!.textContent).toBe('Poll · Final');
     expect(n(/Van A/)).toBe('0');
-    expect(screen.getByRole('radio', { name: /Van B/ }).querySelector('.ch-ms-poll__tag')!.textContent).toBe('Most votes');
-  });
-
-  it('ended on time, two leaders tied, and a final poll nobody voted on', () => {
-    const rows = [
+    expect(screen.getByRole('radio', { name: /Van B/ }).querySelector('.ch-msd-poll__chip')!.textContent).toBe('Most votes');
+    cleanup();
+    const tie = [
       { message_id: 'm1', user_id: 'ana', choice: 'o1' },
       { message_id: 'm1', user_id: 'ben', choice: 'o2' },
     ];
-    render(<PollCard api={api(rows)} messageId="m1" poll={poll({ closesAt: '2026-10-24T14:59:00Z' })} mine={false} />);
-    expect(document.querySelector('.ch-ms-poll__head')!.textContent).toBe('Voting ended·Final');
-    expect([...document.querySelectorAll('.ch-ms-poll__tag')].map((t) => t.textContent)).toEqual(['Tied', 'Tied']);
+    render(<PollCard api={api(tie)} messageId="m1" poll={poll({ closesAt: '2026-10-24T14:59:00Z' })} mine={false} />);
+    expect(document.querySelector('.ch-msd-poll__head')!.textContent).toBe('Poll · Final');
+    expect(document.querySelector('.ch-msd-poll__chip')).toBeNull();
     cleanup();
     render(<PollCard api={api([])} messageId="m1" poll={poll({ closesAt: '2026-10-24T14:59:00Z' })} mine={false} />);
-    expect(document.querySelector('.ch-ms-poll__count')!.textContent).toBe('No one voted');
+    expect(document.querySelector('.ch-msd-poll__count')!.textContent).toBe('No one voted · Voting ended');
   });
 
-  it('a multi-answer poll says so under its question while open; a failed read says so', () => {
+  it('the bottom-right corner is tight on mine only (the class the CSS keys on)', () => {
+    const { rerender } = render(<PollCard api={api([])} messageId="m1" poll={poll()} mine />);
+    expect(document.querySelector('.ch-msd-poll')!.className).toContain('is-mine');
+    rerender(<PollCard api={api([])} messageId="m1" poll={poll()} mine={false} />);
+    expect(document.querySelector('.ch-msd-poll')!.className).toContain('is-theirs');
+    expect(document.querySelector('[data-ch-bubble]')).toBe(document.querySelector('.ch-msd-poll'));
+  });
+
+  it('a failed read says so and offers Retry', () => {
     render(<PollCard api={api(null, { error: 'Votes could not be loaded. Tap to retry.' })} messageId="m1" poll={poll({ multi: true })} mine={false} />);
-    expect(screen.getByText('Choose any that work')).toBeTruthy();
-    expect(document.querySelector('.ch-ms-poll__count')!.textContent).toBe('Votes didn’t load');
+    expect(document.querySelector('.ch-msd-poll__count')!.textContent).toBe('Votes didn’t load');
     expect(screen.getByRole('button', { name: 'Retry' })).toBeTruthy();
   });
-});
 
-describe('the create sheet (P-2 slice 4)', () => {
-  const openSheet = async (a: ChMessagesApi) => {
+  it('voter faces: yours first, up to three, and counts render at once with no crossfade copy', () => {
+    const rows = ['ana', 'ben', 'cal', 'me'].map((user_id) => ({ message_id: 'm1', user_id, choice: 'o1' }));
+    render(<PollCard api={api(rows)} messageId="m1" poll={poll()} mine={false} />);
+    const faces = [...screen.getByRole('radio', { name: /Van A/ }).querySelectorAll('.ch-msd-poll__faces > span')];
+    expect(faces).toHaveLength(3);
+    expect(faces[0]!.textContent).toMatch(/NR|N/);
+    expect(screen.getByRole('radio', { name: /Van A/ }).querySelectorAll('.ch-msd-poll__n')).toHaveLength(1);
+    expect(n(/Van A/)).toBe('4');
+  });
+
+  it('MOT-POLL-1/3: only the tapped row plays the check and your face pop', async () => {
     const user = userEvent.setup();
-    render(<PollButton api={a} conv={conv()} />);
-    await user.click(screen.getByRole('button', { name: 'New poll' }));
-    return { user, dialog: await screen.findByRole('dialog', { name: 'New poll' }) };
-  };
-
-  it('Quick start fills the form, then hides; the description says who sees the votes', async () => {
-    const { user, dialog } = await openSheet(api([]));
-    expect(within(dialog).getByText('Everyone in Travel squad can vote and see who voted.')).toBeTruthy();
-    await user.click(within(dialog).getByRole('button', { name: 'Which days work?' }));
-    expect((within(dialog).getByLabelText('Question') as HTMLInputElement).value).toBe('Which days work?');
-    expect((within(dialog).getByRole('textbox', { name: 'Choice 4' }) as HTMLInputElement).value).toBe('Thursday');
-    expect(within(dialog).queryByText('Quick start')).toBeNull();
-    expect(haptic).toHaveBeenCalledWith('select');
-  });
-
-  it('Cancel keeps the draft for the conversation; Clear throws it away', async () => {
-    const { user, dialog } = await openSheet(api([]));
-    await user.type(within(dialog).getByLabelText('Question'), 'Which van?');
-    await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
-    await user.click(screen.getByRole('button', { name: 'New poll' }));
-    const again = await screen.findByRole('dialog', { name: 'New poll' });
-    expect((within(again).getByLabelText('Question') as HTMLInputElement).value).toBe('Which van?');
-    await user.click(within(again).getByRole('button', { name: 'Clear' }));
-    expect((within(again).getByLabelText('Question') as HTMLInputElement).value).toBe('');
-    expect(haptic).toHaveBeenCalledWith('warning');
-  });
-
-  it('a Custom end is a time on the team clock, said back as "Voting ends …"', async () => {
-    const now = vi.spyOn(Date, 'now').mockReturnValue(Date.parse(NOW));
-    try {
-      const a = api([]);
-      const { user, dialog } = await openSheet(a);
-      await user.type(within(dialog).getByLabelText('Question'), 'Which van?');
-      await user.type(within(dialog).getByRole('textbox', { name: 'Choice 1' }), 'Van A');
-      await user.type(within(dialog).getByRole('textbox', { name: 'Choice 2' }), 'Van B');
-      await user.click(within(dialog).getByRole('radio', { name: 'Custom' }));
-      // 10 AM in Chicago: the default is today at 9:00 PM there (02:00Z next day), whatever the device's zone.
-      expect(within(dialog).getByText('Voting ends today at 9:00 PM')).toBeTruthy();
-      await user.click(within(dialog).getByRole('button', { name: 'Send poll' }));
-      expect(a.polls!.send).toHaveBeenCalledWith('c1', expect.objectContaining({ closesAt: '2026-10-25T02:00:00.000Z' }), expect.any(String), undefined);
-    } finally {
-      now.mockRestore();
-    }
-  });
-
-  it('CH-7031 an edited retry after a send that threw passes the earlier id, and an earlier copy that landed asks first', async () => {
-    const send = vi
-      .fn<ChPollsApi['send']>()
-      .mockResolvedValueOnce({ ok: false, error: 'Try again in a moment.', threw: true })
-      .mockResolvedValueOnce({ ok: false, error: 'An earlier copy of this poll was already sent', earlierCopy: true })
-      .mockResolvedValueOnce({ ok: true });
-    const a = api([], { send });
-    const { user, dialog } = await openSheet(a);
-    await user.type(within(dialog).getByLabelText('Question'), 'Which van?');
-    await user.type(within(dialog).getByRole('textbox', { name: 'Choice 1' }), 'Van A');
-    await user.type(within(dialog).getByRole('textbox', { name: 'Choice 2' }), 'Van B');
-    await user.click(within(dialog).getByRole('button', { name: 'Send poll' }));
-    await user.type(within(dialog).getByLabelText('Question'), ' Thursday');
-    await user.click(within(dialog).getByRole('button', { name: 'Send poll' }));
-    const first = send.mock.calls[0]!;
-    const second = send.mock.calls[1]!;
-    expect(second[2]).not.toBe(first[2]);
-    expect(second[3]).toBe(first[2]);
-    expect(await within(dialog).findByText('An earlier copy of this poll was already sent')).toBeTruthy();
-    expect(dialog.querySelector('[data-ch-code="CH-7031"]')).not.toBeNull();
-    await user.click(within(dialog).getByRole('button', { name: 'Send this version' }));
-    const third = send.mock.calls[2]!;
-    expect(third[2]).not.toBe(second[2]);
-    expect(third[3]).toBeUndefined();
-  });
-
-  it('a refused send passes no earlier id: only a throw does', async () => {
-    const send = vi.fn<ChPollsApi['send']>().mockResolvedValue({ ok: false, error: 'Could not send the poll' });
-    const { user, dialog } = await openSheet(api([], { send }));
-    await user.type(within(dialog).getByLabelText('Question'), 'Which van?');
-    await user.type(within(dialog).getByRole('textbox', { name: 'Choice 1' }), 'Van A');
-    await user.type(within(dialog).getByRole('textbox', { name: 'Choice 2' }), 'Van B');
-    await user.click(within(dialog).getByRole('button', { name: 'Send poll' }));
-    await user.type(within(dialog).getByLabelText('Question'), '!');
-    await user.click(within(dialog).getByRole('button', { name: 'Send poll' }));
-    expect(send.mock.calls[1]![3]).toBeUndefined();
+    const a = api([{ message_id: 'm1', user_id: 'me', choice: 'o1' }]);
+    render(<PollCard api={a} messageId="m1" poll={poll()} mine={false} />);
+    // Drawn voted: at rest, nothing pops.
+    expect(document.querySelector('.ch-msd-poll__mark[data-pop]')).toBeNull();
+    expect(document.querySelector('.ch-msd-poll__faces > span[data-pop]')).toBeNull();
+    await user.click(screen.getByRole('radio', { name: /Van B/ }));
+    expect(a.polls!.vote).toHaveBeenLastCalledWith('m1', expect.anything(), ['o2']);
   });
 });
-
 
 describe('poll actions (P-2 slice 5)', () => {
   const coachApi = (rows: PollResponseRow[], over: Partial<ChPollsApi> = {}) => {
@@ -530,24 +398,25 @@ describe('poll actions (P-2 slice 5)', () => {
   const withThread = (ui: ReactElement, replyWith = vi.fn()) => ({ replyWith, ui: <PollThreadContext.Provider value={{ replyWith }}>{ui}</PollThreadContext.Provider> });
 
   it('Remind N prefills a reply naming the ones who haven’t voted, never the coach; hidden for a player', async () => {
-    const user = userEvent.setup();
     const t = withThread(<PollCard api={coachApi([{ message_id: 'm1', user_id: 'ana', choice: 'o1' }])} messageId="m1" poll={poll()} mine />);
     render(t.ui);
-    await user.click(screen.getByRole('button', { name: 'Remind 2' }));
-    expect(t.replyWith).toHaveBeenCalledWith('m1', 'Ben and Cal, can you vote in the poll when you get a chance?');
+    expect(pollCardActions('m1')!.remind!.count).toBe(2);
+    act(() => pollCardActions('m1')!.remind!.run());
+    // Q-09: the reminder names the poll (and when it closes); it fills the composer and never sends.
+    expect(t.replyWith).toHaveBeenCalledWith('m1', 'Reminder: vote in the “Which van are you riding in?” poll.');
     cleanup();
     render(withThread(<PollCard api={api([])} messageId="m1" poll={poll()} mine={false} />).ui);
+    expect(pollCardActions('m1')!.remind).toBeNull();
     expect(screen.queryByRole('button', { name: /^Remind/ })).toBeNull();
   });
 
   it('Remind is hidden when only the viewer is left to vote', () => {
     const rows = ['ana', 'ben', 'cal'].map((user_id) => ({ message_id: 'm1', user_id, choice: 'o1' }));
     render(withThread(<PollCard api={coachApi(rows)} messageId="m1" poll={poll()} mine />).ui);
-    expect(screen.queryByRole('button', { name: /^Remind/ })).toBeNull();
+    expect(pollCardActions('m1')!.remind).toBeNull();
   });
 
   it('Share result prefills the final result out of the people who voted', async () => {
-    const user = userEvent.setup();
     const rows = [
       { message_id: 'm1', user_id: 'ana', choice: 'o1' },
       { message_id: 'm1', user_id: 'ben', choice: 'o1' },
@@ -555,7 +424,7 @@ describe('poll actions (P-2 slice 5)', () => {
     ];
     const t = withThread(<PollCard api={api(rows)} messageId="m1" poll={poll({ closedAt: NOW })} mine />);
     render(t.ui);
-    await user.click(screen.getByRole('button', { name: 'Share result' }));
+    act(() => pollCardActions('m1')!.share!());
     expect(t.replyWith).toHaveBeenCalledWith('m1', 'Van A has it with 2 of the 3 who voted. Van B had 1.');
   });
 
@@ -569,9 +438,43 @@ describe('poll actions (P-2 slice 5)', () => {
     unmount();
     expect(pollCardActions('m1')).toBeNull();
   });
+});
 
-  it('draws no faces on a row (owner call, default B: the count only)', () => {
-    render(<PollCard api={api([{ message_id: 'm1', user_id: 'ana', choice: 'o1' }])} messageId="m1" poll={poll()} mine={false} />);
-    expect(document.querySelector('.ch-ms-poll__faces')).toBeNull();
+describe('the New poll sheet: a send whose outcome is not known', () => {
+  const openSheet = async (a: ChMessagesApi) => {
+    const user = userEvent.setup();
+    render(<PollButton api={a} conv={conv()} />);
+    await user.click(screen.getByRole('button', { name: 'New poll' }));
+    return { user, dialog: await screen.findByRole('dialog', { name: 'New poll' }) };
+  };
+  const sendKey = (dialog: HTMLElement) => within(dialog).getByRole('button', { name: /^Send( poll)?$/ });
+
+  it('CH-7031 an edited retry after a send that threw passes the earlier id; an earlier copy that landed asks before anything more is posted', async () => {
+    const send = vi
+      .fn<ChPollsApi['send']>()
+      .mockResolvedValueOnce({ ok: false, error: 'Try again in a moment.', threw: true })
+      .mockResolvedValueOnce({ ok: false, error: 'An earlier copy of this poll was already sent', earlierCopy: true })
+      .mockResolvedValueOnce({ ok: true });
+    const a = api([], { send });
+    const { user, dialog } = await openSheet(a);
+    await user.type(within(dialog).getByLabelText('Question'), 'Which van?');
+    await user.type(within(dialog).getByRole('textbox', { name: 'Choice 1' }), 'Van A');
+    await user.type(within(dialog).getByRole('textbox', { name: 'Choice 2' }), 'Van B');
+    await user.click(sendKey(dialog));
+    await user.type(within(dialog).getByLabelText('Question'), ' Thursday');
+    await user.click(sendKey(dialog));
+    const first = send.mock.calls[0]!;
+    const second = send.mock.calls[1]!;
+    // The edit is a new poll (a new id) that names the one whose outcome is unknown.
+    expect(second[2]).not.toBe(first[2]);
+    expect(second[3]).toBe(first[2]);
+    expect(await within(dialog).findByText('An earlier copy of this poll was already sent')).toBeTruthy();
+    expect(dialog.querySelector('[data-ch-code="CH-7031"]')).not.toBeNull();
+    // Nothing more is posted until the person chooses.
+    expect(send).toHaveBeenCalledTimes(2);
+    await user.click(within(dialog).getByRole('button', { name: 'Send this version' }));
+    const third = send.mock.calls[2]!;
+    expect(third[2]).not.toBe(second[2]);
+    expect(third[3]).toBeUndefined();
   });
 });

@@ -446,24 +446,52 @@ closes that gap for a `compose()` caller that opts in.
     RLS mirrors `golf_rounds`' own read policies (self player, team
     coach, admin); only the service role writes it (`authenticated` gets
     `SELECT` only, nothing to `anon`/`PUBLIC`).
-- **Chat vs. recap use two SEPARATE claim-grounding mechanisms — a known
-  open item, not a defect** (audited 2026-09-23): recap/`compose()` gates
-  on `claim-validator.ts`'s typed `validateClaims` (player/window/metric/
-  value/sample-floor/causal-backing against a structured
-  `EvidencePacket`, see above). The coach-chat stream route
-  (`src/app/api/coachhelm/v3/chat/stream/route.ts`) gates on a DIFFERENT,
-  lighter mechanism instead: `chat/provenance.ts`'s `auditNumericClaims`,
-  a numeric-token-vs-tool-evidence scan with no typed claim references or
-  per-metric checks. Both correctly BLOCK ungrounded output from being
-  persisted as `'complete'` (chat: `onFinish` gates `appendMessage` on the
-  audit result and stores `status: 'failed'` instead;
-  `chat/restore.ts`'s `REPLAYABLE` set keeps `'data-grounding-flag'` so a
-  failed turn stays visibly flagged on reload, not silently normal —
-  tested at `src/test/coachhelm/v3/chat-restore.test.ts`, PR #1975).
-  Whether chat should eventually adopt the same typed `validateClaims`
-  gate as recap (chat's real-time streaming shape vs. a single
-  post-generation validation makes this a real design question, not an
-  oversight) is open, not decided here.
+- **Chat gates on both mechanisms, with chat's own rules on two checks
+  (updated 2026-11-05).** Recap/`compose()` gates on `claim-validator.ts`'s
+  typed `validateClaims` alone. The coach-chat stream route
+  (`src/app/api/coachhelm/v3/chat/stream/route.ts`) runs
+  `chat/provenance.ts`'s `auditNumericClaims` first, then, with
+  `coachhelm_chat_claim_gate` on and player figures in the turn,
+  `chat/claims-packet.ts`'s `extractAndValidateChatClaims`. A rejected turn
+  stores `status: 'failed'` and a `data-grounding-flag` part carrying the
+  reason and tokens (`chat/verdict.ts`), which `chat/restore.ts` replays.
+  Chat differs from recap in two places, and recap is unchanged:
+  - **Sample floor.** A figure under `MIN_SAMPLE_N` passes when its own
+    sentence states the measurement's exact sample, nearest to the figure if
+    it states more than one ("72.5 over his 2 rounds"). The value has matched
+    by then, as `checkClaim` checks it first. No sample, another count, a zero
+    sample or a claim tagged `causal` is refused. A thin figure the model leaves
+    out of the block is held to the same rule when it is plainly that figure:
+    its sentence names the player (or, in a one-player turn, says he or she), no
+    other measurement holds that value, and it is not a whole number of 12 or
+    under.
+  - **Causal wording.** Checked sentence by sentence
+    (`unbackedCausalSentences`), not on the whole prose, since chat figures
+    never carry `causal_support`. A cause about play that names nothing
+    measured is refused. A cause naming a measured part of the game with a
+    figure, a reason a figure is missing and a calendar reason pass. A claim
+    tagged `causal` still needs backing.
+- **Numeric audit matching (2026-11-05).** A written number matches at its own
+  precision: half a unit of its last decimal against the raw value, so 72.55
+  supports 72.55, 72.5, 72.6 and 73, and not 72.95. A hedged number ("about")
+  keeps its 10%. A hyphen straight after a number is a range, with both ends
+  audited as positives. A bracketed name after a number ("-3.83 (Bo Ray)") is
+  whose number it is. The second day of a pair ("September 25 and 26") needs an
+  exact evidence date, and a stat unit after it makes it a count.
+- **Dates a chat turn may state (2026-11-05):** tool evidence, the day on a
+  draft card, and the days the coach's own messages name
+  (`coachRequestDates`: today, tomorrow, a weekday, "next" a weekday as the
+  nearest or the following one, or a written date). These support dates only,
+  never a number. Player Ask reads the same set (`chat/player-audit.ts`), and
+  its answer streams live, so its audit records to `golf_coachhelm_llm_calls`
+  rather than withholding.
+- **Season figures (2026-11-05).** `get_season_scoring`, `compare_seasons` and
+  `get_team_rounds` count what Roster counts: a full 18-hole round that counts
+  in a score (`isScoreCountable`, so a total-only round too), practice left out
+  unless practice was asked for. `get_season_scoring` and `compare_seasons` use
+  Roster's own reader (`loadSeasonRounds`, `countsForScoring`,
+  `seasonStartDate`). The stats cache's windows run across seasons and are not
+  a season figure.
 - **Package 8 addendum checklist item (f), "a concise evidence-backed
   review narrative," remains UNBUILT** (audited 2026-09-23): no caller
   and no persistence path. `round-review.ts`'s `composeRoundReview` has a

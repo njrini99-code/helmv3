@@ -12,6 +12,8 @@ export interface PracticePlanRow {
   version: number;
   status: 'draft' | 'published';
   published_version: number | null;
+  /** Kept by the save and publish functions (010500, 010600): true once a published plan's body or title changes, false again on publish. The one source for "Edits not published". */
+  edited_after_publish?: boolean;
   coach_why?: unknown;
   updated_at: string;
 }
