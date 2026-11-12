@@ -24,3 +24,10 @@ Held items:     none
   four Approach players draw four different lengths, the worst full. Team suite: 77 passed.
 - Dev server, `/clubhouse-preview/coachhelm-team` at 1920: losses unchanged on the fixture;
   the two gains (+0.3, +0.5), which were both clamped full, now differ. No page errors.
+
+## 2026-11-12 — The Team board stops at the wide measure on a big screen
+
+- The board had no width of its own and grew with the window ("this screen is uhh very large",
+  1920 wide). On a desk it now stops at `--ch-measure-wide` (plus its 24px sides), from the left
+  edge every page shares. Dev server: 1408px from x 400 at 1920; unchanged at 1440 and 1180.
+  Test: `team/__tests__/team-board-width.test.ts`.
