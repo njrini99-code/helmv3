@@ -1775,7 +1775,7 @@ code, .mono { font-family: var(--f-mono); font-size: 0.84em; padding: 1px 5px; b
     task.classList.add('dimmed');
     const chip = $('.task__h .chip', task); chip.className = 'chip'; chip.textContent = 'Cancelled';
     await grow(() => { f.innerHTML = '<div class="rcpt"><span class="rcpt__g neutral">' + I.x + '</span><span class="rcpt__t"><b>Cancelled</b><span>Nothing was created.</span></span><span></span></div>'; });
-    
+
     cap('Cancelled. Nothing was created.', false); mark('cancelled');
   }
 

@@ -68,4 +68,3 @@ Shots land in `screenshots/<ID>__<state>__{design,app}__{light,dark}.png`, clips
 ## Open for Nick (none blocks the build)
 
 Nothing. Every call is answered or settled as a default he can flip (pin sync defaults D1 to D9 in `pin-sync/PIN-SYNC.md` section 3).
-

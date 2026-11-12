@@ -123,4 +123,3 @@ Engineering calls made while checking every lane against the code on main 03d908
 | Classes, Roster, Home, Stats | Practice rounds | Left out of averages through one `countsForScoring(r)`, under each lane's flag; Stats' pressure gap keeps them on purpose |
 | Practice | Undo of a publish | Take-down: the frozen version stays but is no longer live, so the next publish is version 2 |
 | Practice | Bell row settings | No per-user switch, the same as every `event_reminder` row today |
-
