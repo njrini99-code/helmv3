@@ -36,6 +36,7 @@ import { PLAYER_HELM_HREF } from '../../../data/coachhelm-views-shape';
 import { PlayerHelmTabs } from '../views/PlayerHelmTabs';
 import { COACHHELM_HREF, CoachHelmTabs, type CoachHelmView } from './SubTabs';
 import { AskThread } from './Thread';
+import { MissCompassGate, type MissCompassGateValue } from './studio/compass-gate';
 
 /** The chat implementation: the production hook, or a stand-in for the preview and the tests (nothing goes over the network). */
 export type ChAskChat = typeof useCoachHelmChat;
@@ -228,13 +229,14 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
   }, []);
   // FID-ASK-7: read once, then off the address (below), and taken once: the first send ends it.
   const [seededQuestion, consumeSeed] = useSeedOnce(typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('q'));
-  const send = (text: string) => {
+  const send = (text: string, about?: { evidence_ref: string; key: string }) => {
     consumeSeed();
     setStoppedTurn(null);
     lastSent.current = text;
     expecting.current = openId === null ? epoch.current : null;
     setGone(false);
-    chat.send(text);
+    if (about) chat.send(text, { about });
+    else chat.send(text);
   };
   /** False when it wasn't sent, so a card that sends through this can stay open. */
   const ask = (text: string): boolean => {
@@ -378,8 +380,18 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
   // The phone sheet's subject, kept after it closes so its exit still has the content it showed.
   const [sheetEvidence, setSheetEvidence] = useState<EvidenceFocus | null>(null);
   if (phone && evidenceOpen && evidence !== sheetEvidence) setSheetEvidence(evidence);
+  // The Miss Compass (team flag, coach only): on here, and its "Ask about these shots" sends through the same gate as a starter.
+  const compass: MissCompassGateValue = {
+    on: !!data.missCompass && !player,
+    askAbout: (text, about) => {
+      if (chat.busy || refuseOffline()) return false;
+      send(text, about);
+      return true;
+    },
+  };
 
   return (
+    <MissCompassGate.Provider value={compass}>
     <main ref={askRoot} className={'ch-ask ch-ak-root' +(phone ? ' is-phone' : '') + (showHome ? ' is-home' : '')} aria-label="Ask CoachHelm" aria-busy={sw.pending || chatSw.pending || undefined} data-switch={sw.pending ? 'view' : chatSw.pending ? 'chat' : undefined} data-ch-code="CH-13820" {...sw.enter}>
       {phone && (
         <>
@@ -494,5 +506,6 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
         </>
       )}
     </main>
+    </MissCompassGate.Provider>
   );
 }
