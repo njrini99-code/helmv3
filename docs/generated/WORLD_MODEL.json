@@ -22879,6 +22879,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/season-reads.ts",
+          "anchor": "src/lib/golf/timezone"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/chat/season-rule.ts",
           "anchor": "src/lib/golf/round-score-countable"
         },
