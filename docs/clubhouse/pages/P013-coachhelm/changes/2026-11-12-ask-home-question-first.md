@@ -39,3 +39,17 @@ Held items:     none
   in height, the resting fill, the picker's down rule), the skeleton's shape for a coach and a player. Nine of its 12
   cases fail on the previous code; the two phone cases and the picker's rule (kept as it was) pass on both.
 - `coachhelm-ask-picker-room.test.tsx` (unchanged): under the box with room, above it at 80px for 23 rows.
+- WebKit on the preview (agent/preview-fixes-ui with this change, c38559e7a8), light and dark, the question box's top and
+  bottom edge against the window's height:
+
+  | | 1440 x 900 | 1920 x 990 |
+  |---|---|---|
+  | Coach, chats open | 340 to 546 | 385 to 591 |
+  | Coach, chats closed | 340 to 546 | 385 to 591 |
+  | Player | 364 to 570 | 409 to 615 |
+  | Skeleton (coach) | 340 to 546 | 385 to 591 |
+  | Before this change (coach) | 775 to 947, below the fold | 775 to 947 |
+
+  The page does not scroll in any of them (scroll height equals the pane), the safety line ends at 884 and 974, the
+  skeleton's box lands on the loaded box to the pixel, and the Players picker opens under the box (554 to 850 at 1440).
+  The phone is as it was. Shots: handoff shots/q2/built/.
