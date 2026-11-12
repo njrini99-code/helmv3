@@ -72,3 +72,14 @@ describe('Working on (W11)', () => {
     expect(st).not.toMatch(/font-weight/);
   });
 });
+
+describe('a focus kept from an old read, its title stored with the name (W12’s prefix)', () => {
+  it('reads without the name, and joins the same focus of other players', () => {
+    const old = [area('o1', 'Dylan Park', `Dylan: ${CASCADE}`), area('o2', 'Cole Bennett', `Cole Bennett: ${CASCADE}`), area('o3', 'Owen Carter', 'Owen: Wedges from 50 to 100 yd')];
+    const rows = workingRows(old);
+    expect(rows.map((r) => [r.title, r.areas.length])).toEqual([[CASCADE, 2], ['Wedges from 50 to 100 yd', 1]]);
+    render(<WorkingCard working={old} proposed={[]} failed={false} />);
+    expect(document.body.textContent).toContain('Owen · Wedges from 50 to 100 yd');
+    expect(document.body.textContent).not.toMatch(/Dylan: |Owen: |Cole Bennett: /);
+  });
+});

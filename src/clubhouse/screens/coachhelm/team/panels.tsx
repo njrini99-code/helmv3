@@ -163,7 +163,8 @@ export function ReadPanel({
   const word = read.evidence.read?.word;
   const canLink = fileHost || !!coachReadHref(player.id, read.id, roster);
   const href = !canLink ? null : coach ? readHref(player.id, read.id) : readHref(null, read.id);
-  const ask = coach ? askAboutReadHref({ insightId: read.id, title: read.title, first: player.first }) : null;
+  // The question names the player once: "Tell me about Dylan: …", never "Dylan: Dylan: …" from a title stored with the name.
+  const ask = coach ? askAboutReadHref({ insightId: read.id, title: readTitle(player, read.title), first: player.first }) : null;
   const cx = deep?.base.engine?.corrections;
   // One worth for a read: the file's host hands over the read's own deep figure; the board reads the same function's from its themes.
   const boardWorth = useContext(ReadWorthContext);
