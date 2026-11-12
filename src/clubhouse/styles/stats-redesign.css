@@ -2477,12 +2477,13 @@ p.ch-shs-mini-cap {
 /*
  * On a wide desk the chosen card's detail opens out to the window's right edge (owner's preview, 11 Nov 2026: "clicking on stat
  * should open up the screen fully to the right, its too narrow"). The page keeps the one left edge every page shares (shell.css),
- * the cards keep about the width they have on a 1440 screen, and the detail takes the rest, up to a cap for very wide screens.
- * At 1440 nothing changes: there is no room past the page's own measure. A page with no detail (`is-alone`) keeps the measure.
+ * the cards keep about the width they have on a 1440 screen, and the detail takes the rest, out to the window's edge. No fourth
+ * page width (row 39 keeps three): while a detail is open the page has no cap at all. At 1440 nothing changes, as there is no
+ * room past the page's own measure. A page with no detail (`is-alone`) keeps the measure.
  */
 @media (min-width: 1181px) {
   .ch-st--shs:has(.ch-shs-desk:not(.is-alone)) {
-    max-width: 1680px;
+    max-width: none;
   }
   .ch-shs-desk:not(.is-alone) {
     grid-template-columns: minmax(0, 680px) minmax(420px, 1fr);
