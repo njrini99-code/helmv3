@@ -1688,3 +1688,20 @@ html[data-fw-theme='dark'] .ch-root[data-ch-refresh='on'], html[data-fw-theme='d
   --ch-chart-gain-fill: #4fa877;
   --ch-chart-loss-fill: #e09a35;
 }
+
+/* W1 (owner's preview walk, 11 Nov 2026: "not a lot of contrast", "the text density makes it hard to read"; owner, 12 Nov:
+   ship it). On a 1x screen Instrument Sans at 12 to 15px and weight 400 draws hairline strokes, so text reads grey and thin
+   though its colour passes (15:1). On screens at or under 1.5 device pixels per CSS pixel only, body text is 450 and medium
+   560 (the face is variable), and the 12px labels set at 13. Retina iPhones and Macs are unchanged. */
+@media (max-resolution: 1.5dppx) {
+  [data-ui='clubhouse'] {
+    --ch-type-12: 450 calc(13 * var(--ch-type-k))/calc(17 * var(--ch-type-k)) var(--ch-font-sans);
+    --ch-type-12-medium: 560 calc(13 * var(--ch-type-k))/calc(17 * var(--ch-type-k)) var(--ch-font-sans);
+    --ch-type-13: 450 calc(13 * var(--ch-type-k))/calc(18 * var(--ch-type-k)) var(--ch-font-sans);
+    --ch-type-13-medium: 560 calc(13 * var(--ch-type-k))/calc(18 * var(--ch-type-k)) var(--ch-font-sans);
+    --ch-type-14: 450 calc(14 * var(--ch-type-k))/calc(19 * var(--ch-type-k)) var(--ch-font-sans);
+    --ch-type-14-medium: 560 calc(14 * var(--ch-type-k))/calc(19 * var(--ch-type-k)) var(--ch-font-sans);
+    --ch-type-15: 450 calc(15 * var(--ch-type-k))/calc(20 * var(--ch-type-k)) var(--ch-font-sans);
+    --ch-type-15-medium: 560 calc(15 * var(--ch-type-k))/calc(20 * var(--ch-type-k)) var(--ch-font-sans);
+  }
+}
