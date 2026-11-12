@@ -235,8 +235,9 @@
   color: var(--ch-green-700);
 }
 
-/* Roster controls (owner, 2026-10-08: "ivory buttons ... need to be green"): the chosen sort, filter and layout is the
-   green chip every switcher draws (controls.css, 2026-10-16), the pills and the grid and list toggle with it. */
+/* Roster controls (owner, 2026-10-08: "ivory buttons ... need to be green"): the grid and list toggle is the green chip
+   every mode switch draws (controls.css, 2026-10-16), as the coach's is. The sorts and the status filter take the light
+   chip of a filter (ui/Segmented weight="filter"; owner, 11 Nov 2026). */
 .ch-rs .ch-pill[aria-pressed='true'],
 .ch-rs .ch-rs-vt__b[aria-pressed='true'] {
   background: var(--ch-seg-on-bg);

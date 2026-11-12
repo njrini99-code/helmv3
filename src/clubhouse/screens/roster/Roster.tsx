@@ -628,7 +628,7 @@ export function Roster({ data }: { data: ChRoster; }) {
                       { value: 'all', label: 'All' },
                     ]}
                   />
-                  <Segmented<'faces' | 'list'> weight="filter"
+                  <Segmented<'faces' | 'list'>
                     size="sm"
                     label="Layout"
                     value={view}
