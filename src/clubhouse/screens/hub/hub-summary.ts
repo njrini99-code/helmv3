@@ -47,7 +47,7 @@ export function hubStrip(i: StripInput): StripItem[] {
     const quiet = i.rsvps.reduce((n, r) => n + (r.counts?.none ?? 0), 0);
     if (quiet > 0) out.push({ key: 'replies', n: quiet, after: ` ${pluralWord(quiet, 'reply', 'replies')} due`, tab: 'home' });
     const waiting = i.announcements.filter((a) => a.needAck && a.recipients > 0 && a.ackCount < a.recipients).length;
-    if (waiting > 0) out.push({ key: 'acks', n: waiting, after: ` ${pluralWord(waiting, 'post', 'posts')} awaiting acknowledgement`, tab: 'ann' });
+    if (waiting > 0) out.push({ key: 'acks', n: waiting, after: ` ${pluralWord(waiting, 'post', 'posts')} unacknowledged`, tab: 'ann' });
   } else {
     const mine = (r: ChHubRsvp) => i.replies.get(r.eventId) ?? r.mine ?? 'pending';
     const due = i.rsvps.filter((r) => mine(r) === 'pending').length;
