@@ -4,8 +4,8 @@
    (scripts/clubhouse/css-owners.mjs). Values come from the artifact (design-refresh/messages/redesign) through Clubhouse
    tokens: radii snap to the four-step scale and spacing off the scale is written as a step plus a nudge. */
 
-/* Off-scale steps the artifact draws (9, 10, 11, 14, 18, 26 px), built from the scale so the spacing gates see steps. */
-[data-ch-ms-v2] :is(.ch-msd-ms, .ch-msd-poll, .ch-msd-file, .ch-msd-photo, .ch-msd-empty, .ch-msd-hello, .ch-msd-newpane, .ch-msp-details, .ch-msp-new) {
+/* Off-scale steps the artifact draws (9, 10, 11, 14, 18 px), built from the scale so the spacing gates see steps. */
+[data-ch-ms-v2] :is(.ch-msd-ms, .ch-msd-poll, .ch-msd-file, .ch-msd-photo, .ch-msd-hello, .ch-msd-newpane, .ch-msp-details, .ch-msp-new) {
   --ch-msd-s3: calc(var(--ch-space-1) - 1px);
   --ch-msd-s7: calc(var(--ch-space-1_5) + 1px);
   --ch-msd-s9: calc(var(--ch-space-2) + 1px);
@@ -15,7 +15,6 @@
   --ch-msd-s18: calc(var(--ch-space-4) + var(--ch-space-0_5));
   --ch-msd-s22: calc(var(--ch-space-5) + var(--ch-space-0_5));
   --ch-msd-neg5: calc(var(--ch-space-1_5) * -1 + 1px);
-  --ch-msd-s26: calc(var(--ch-space-6) + var(--ch-space-0_5));
   --ch-msd-sw-travel: var(--ch-dur-word);
   --ch-msd-sw-track: var(--ch-dur-msg-pill-out);
 }
@@ -702,20 +701,7 @@
 }
 
 /* ---------------------------------------------------------------------------------------------------------------------
-   MSG-701 / MSG-222 / MSG-702: first run, the hello card, New message. */
-[data-ch-ms-v2] .ch-msd-empty {
-  gap: var(--ch-msd-s10);
-  padding: var(--ch-msd-s26) var(--ch-space-5) var(--ch-space-5);
-  border-radius: var(--ch-radius-lg);
-}
-[data-ch-ms-v2] .ch-msd-empty h2 {
-  margin: var(--ch-space-1) 0 0;
-  font: var(--ch-type-20-strong);
-  letter-spacing: -0.015em;
-}
-[data-ch-ms-v2] .ch-msd-empty p {
-  max-width: 280px;
-}
+   MSG-222 / MSG-702: the hello card, New message (MSG-701's first run is the shared page empty, ui/States). */
 [data-ch-ms-v2] .ch-msd-hello {
   max-width: none;
   margin: var(--ch-space-4) 0 var(--ch-space-3);

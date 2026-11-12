@@ -116,6 +116,11 @@ export function MarketingScrollProvider({ anchors = false }: MarketingScrollProv
       }
 
       scrollDriver.current?.stop();
+      // Into the app (Log in, Sign up, the demo): its pages draw their own fixed, full-screen frame, so the scroll position
+      // under them never shows. Resetting here jumped the landing back to its hero for as long as the sign in took to
+      // load: on a phone, a tap on the closing section's Log in showed the top of the page for 0.8s, then the sign in
+      // (WebKit film, 2026-11-12; owner: "landing > sign in glitchy"). Lenis is stopped, so it repaints nothing either.
+      if (destination.pathname.startsWith('/golf/')) return;
       scrollDriver.current?.scrollTo(0, { immediate: true, force: true });
       window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
     };

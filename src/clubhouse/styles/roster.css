@@ -3725,6 +3725,21 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
     display: none;
   }
 }
+/* C5 (12 Nov): on a wide desk the top grid flows by column with one named track, the season card's. The rule's `1 / -1`
+   ends at that track, so the line took the card's 320px and the card fell into a 200px track and spilled past its edge
+   (its class bar, Freshmen, Top five). The cards keep the first row; the line sits in the second, under the leaders,
+   as wide as its words. */
+@media (min-width: 1193px) and ((min-height: 501px) or (pointer: fine)) {
+  [data-ch-crh='on'].ch-rsd .ch-rs-top > .ch-rs-tcard,
+  [data-ch-crh='on'].ch-rsd .ch-rs-top .ch-rs-ldr {
+    grid-row: 1;
+  }
+  [data-ch-crh='on'].ch-rsd .ch-rs-top > .ch-rs-ldrs__rule {
+    grid-row: 2;
+    grid-column: 2;
+    width: max-content;
+  }
+}
 :is(.ch-rs, .ch-rsm)[data-ch-crh='on'] [data-year='none'] {
   --ch-rs-y: color-mix(in srgb, var(--ch-on-green-2) 45%, transparent);
 }
