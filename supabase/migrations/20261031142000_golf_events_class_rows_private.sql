@@ -33,9 +33,11 @@
 -- VERIFY:   policyname = 'golf_events_select_team' and qual like
 -- VERIFY:   '%golf_player_owns_class_event%';
 
--- Lock timeout (release review B1, 11 Nov 2026): this file takes an ACCESS EXCLUSIVE lock on a hot table. Without a
--- timeout the DDL waits behind any long reader and every later read and write queues behind it. db:apply runs the
--- file in one transaction, so SET LOCAL holds for exactly this apply. Added after the staging apply: the bytes differ
+-- Lock timeout (release review B1, 11 Nov 2026): this file takes an
+-- ACCESS EXCLUSIVE lock on a hot table. Without a timeout the DDL waits
+-- behind any long reader, and every later read and write queues behind
+-- it. db:apply runs the file in one transaction, so SET LOCAL holds for
+-- exactly this apply. Added after the staging apply: the bytes differ
 -- from staging's copy by this block only (HELD.md).
 SET LOCAL lock_timeout = '3s';
 

@@ -55,8 +55,9 @@
 -- it as a held override, out of timestamp order, like the other held
 -- tournament files.
 --
--- Each VERIFY returns a row only when its check holds (release review B2, 11 Nov 2026: `select <boolean>` returned a row
--- when false too, so a bad apply could not be seen).
+-- Each VERIFY returns a row only when its check holds (release review B2,
+-- 11 Nov 2026): `select <boolean>` returned a row when false too, so a
+-- bad apply could not be seen.
 -- VERIFY: select 1 where to_regprocedure('public.golf_tournament_my_lineup(uuid)') is not null; -- noqa: LT05
 -- VERIFY: select 1 from pg_proc where oid = to_regprocedure('public.golf_tournament_my_lineup(uuid)') and prosecdef and proconfig @> array['search_path=""']; -- noqa: LT05
 -- VERIFY: select 1 from pg_proc p where p.oid = to_regprocedure('public.golf_tournament_my_lineup(uuid)') and not has_function_privilege('anon', p.oid, 'EXECUTE') and has_function_privilege('authenticated', p.oid, 'EXECUTE'); -- noqa: LT05
