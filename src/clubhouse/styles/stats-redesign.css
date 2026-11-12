@@ -45,6 +45,12 @@
   padding: 2px var(--ch-page-x-phone) 8px;
   background: var(--ch-shs-s-bg);
 }
+/* The switch as the page's first line (Team stats, whose title is for screen readers; the skeleton the same): at rest it
+   stands clear of the sheet's top edge as every page's first line does. A sticky box's margin is not kept once it sticks,
+   so the stuck band under the bar is unchanged (phone premium sweep, 12 Nov 2026: it sat 2px under the edge). */
+.ch-shs .ch-shs-ctl:first-child {
+  margin-top: var(--ch-space-4);
+}
 .ch-shs-ctl__row {
   display: flex;
   align-items: center;
