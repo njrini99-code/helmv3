@@ -127,7 +127,7 @@ Motion: M-TEAM-01 to 07, 11, 16.
 - AC-TODAY-02. Tiles scroll sideways with snap to start, gap 10, padding 2 16 16. Tile 138pt × k wide, at least 162 tall, radius 15, well fill, 1pt ring; a tile not yet opened this session has a 2pt accent inset ring. Inside: 44pt picture, headline 14.5/1.25 600, foot 24pt coin and "{first} · {when}" 12.5 ink-2. Check: D, S.
 - AC-TODAY-03. At most three tiles, newest first, from brief read rows, focus progress (`ChBriefWorking`) and Improving or Slipping themes only; "No clear change" never makes a tile. Check: D.
 - AC-TODAY-04. The round story (18-hole strip) appears only for a brief read whose player's newest round is inside the week (04 section 8 T). Check: D.
-- AC-TODAY-05. Desktop: tiles stack in one column as rows (picture 96 × 36, text beside). Check: S `1440`.
+- AC-TODAY-05. Desktop: tiles stack in one column as rows: the text, then the picture (96 × 36) closing the row. A tile with no picture is the same row without it, so every row's text starts on one line (W10, owner's preview walk, 11 Nov 2026). Check: S `1440`, `crowded`.
 - AC-TODAY-06. Opening a tile clears its ring for the session (`useChSessionState`, never the address). Check: D, C `story` (M-TEAM-34).
 
 | State | Capture | Criterion |
