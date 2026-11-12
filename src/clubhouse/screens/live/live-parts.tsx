@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowDownUp } from 'lucide-react';
+import { ArrowDownUp, Radio } from 'lucide-react';
 import { useId } from 'react';
 import { LIVE_COPY } from '../../live/copy';
 import { plural } from '../../lib/plural';
@@ -9,6 +9,7 @@ import type { LiveGroups, LiveLane, LiveSort } from '../../live/model';
 import { Icon } from '../../ui/Icon';
 import { Menu, type MenuItem } from '../../ui/Menu';
 import { Segmented } from '../../ui/Segmented';
+import { EmptyState } from '../../ui/States';
 import type { LiveViewState } from './use-live-view';
 
 /** Pieces the phone and desktop live views share. */
@@ -112,11 +113,11 @@ export function UpdatedPill({ v }: { v: LiveViewState }) {
   );
 }
 
+/**
+ * Nobody on the course (CH-16619). G6 (12 Nov): it was two grey lines with no card, the barest of the app's empty
+ * idioms; it is the shared page empty state the other pages draw, copy unchanged. The one empty-state design is the
+ * owner's (W19/Q3) and lands in EmptyState for every page at once.
+ */
 export function LiveEmpty() {
-  return (
-    <div className="ch-lv-empty" data-ch-code="CH-16619">
-      <p className="ch-lv-empty__title">{LIVE_COPY.emptyTitle}</p>
-      <p className="ch-lv-empty__body">{LIVE_COPY.emptyBody}</p>
-    </div>
-  );
+  return <EmptyState size="page" icon={Radio} code="CH-16619" title={LIVE_COPY.emptyTitle} body={LIVE_COPY.emptyBody} />;
 }
