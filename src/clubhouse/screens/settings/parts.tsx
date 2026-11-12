@@ -120,10 +120,14 @@ export function SavedMark({ show }: { show: boolean }) {
   );
 }
 
-/** One setting: label and help on the left, the control on the right (stacks when narrow). `saved`: it just saved. */
-export function Row({ label, help, htmlFor, children, dim, saved, code }: { label: ReactNode; help?: ReactNode; htmlFor?: string; children: ReactNode; dim?: boolean; saved?: boolean; code?: string }) {
+/**
+ * One setting: label and help on the left, the control on the right (stacks when narrow). `saved`: it just saved.
+ * `stack`: the label over its value, as a form field reads, for a read-only value above the fields that change it (G8:
+ * "Current email" sat 900px from its address on a desk row).
+ */
+export function Row({ label, help, htmlFor, children, dim, saved, code, stack }: { label: ReactNode; help?: ReactNode; htmlFor?: string; children: ReactNode; dim?: boolean; saved?: boolean; code?: string; stack?: boolean }) {
   return (
-    <div className={'ch-set-row' + (dim ? ' is-dim' : '')} data-ch-code={code}>
+    <div className={'ch-set-row' + (dim ? ' is-dim' : '') + (stack ? ' is-stack' : '')} data-ch-code={code}>
       <div className="ch-set-row__txt">
         <span className="ch-set-row__top">
           {htmlFor ? (
