@@ -1,4 +1,4 @@
-import type { ChCoachHome } from '../../data/home';
+import type { ChCoachHome, ChLatestRound } from '../../data/home';
 import type { ChPlayerHome } from '../../data/player-home';
 import type { ChForm } from '../../data/season';
 import { isOut, type ChAvailability } from '../../data/availability';
@@ -90,6 +90,36 @@ function list(parts: string[]): string {
   return parts.length <= 1 ? (parts[0] ?? '') : `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`;
 }
 
+const isQuiet = (r: ChSublineRow) => r.quietDays != null && r.quietDays >= QUIET_DAYS;
+
+/** Most in need first: slipping and quiet, then slipping, then quiet; the longer quiet first within each. */
+function byNeed(a: ChSublineRow, b: ChSublineRow): number {
+  const rank = (r: ChSublineRow) => (r.status === 'slipping' ? 2 : 0) + (isQuiet(r) ? 1 : 0);
+  return rank(b) - rank(a) || (b.quietDays ?? 0) - (a.quietDays ?? 0);
+}
+
+/**
+ * Three or more flagged (W5, owner's preview, 11 Nov 2026: "7 players need a look: Cole, Mason, Owen, Ethan, Jackson, Dylan and
+ * Tyler" named seven of eight and said nothing). A team-wide quiet spell is one sentence about the team, with the longest named;
+ * otherwise the two who need it most, with their reasons, and a count of the rest.
+ */
+function manyFlagged(flagged: ChSublineRow[]): string {
+  const ranked = [...flagged].sort(byNeed);
+  const since = (rows: ChSublineRow[]) => Math.min(...rows.map((r) => r.quietDays ?? Infinity));
+  if (ranked.every((r) => r.status !== 'slipping')) {
+    const longest = ranked[0]!;
+    return `${ranked.length} players haven’t posted a round in ${since(ranked)}+ days, ${firstName(longest.name)} the longest at ${longest.quietDays}.`;
+  }
+  const lead = list(ranked.slice(0, 2).map(reason));
+  const rest = ranked.slice(2);
+  const tail = rest.every((r) => r.status === 'slipping')
+    ? `${rest.length} more ${rest.length === 1 ? 'is' : 'are'} slipping.`
+    : rest.every((r) => r.status !== 'slipping')
+      ? `${rest.length} ${rest.length === 1 ? 'other hasn’t' : 'others haven’t'} posted a round in ${since(rest)}+ days.`
+      : `${rest.length} more need a look.`;
+  return `${lead.charAt(0).toUpperCase()}${lead.slice(1)}. ${tail}`;
+}
+
 /**
  * The line under the greeting: who needs a look (slipping form, or no round
  * in QUIET_DAYS), then the week's next competition, then the rest. Early-read
@@ -121,7 +151,7 @@ export function homeSubline(
     const s = list(flagged.map(reason));
     out.push(`${s.charAt(0).toUpperCase()}${s.slice(1)}.`);
   } else {
-    out.push(`${flagged.length} players need a look: ${list(flagged.map((r) => firstName(r.name)))}.`);
+    out.push(manyFlagged(flagged));
   }
   // A no-break space ahead of a title's dot keeps "· Pinehurst No. 2" from opening a line.
   if (opts.nextCompetition) out.push(`${opts.nextCompetition.title.replace(/ · /g, '\u00a0· ')} is ${opts.nextCompetition.when}.`);
@@ -172,4 +202,53 @@ export function playerFailedParts(data: Pick<ChPlayerHome, 'week' | 'latest' | '
   if (data.scoring.error) parts.push('your scoring');
   if (data.legs?.cacheError) parts.push('some of your figures');
   return parts;
+}
+
+/** One row of the desk's Latest rounds: a round, or one player's rounds of one event, folded (W4). */
+export interface ChLatestRow {
+  key: string;
+  playerId: string;
+  playerName: string;
+  meta: string;
+  /** The round's score, or the event's total when the row folds two or more rounds. */
+  score: number;
+  toPar: number | null;
+  /** The folded rounds' scores, oldest first; null for a single round. */
+  scores: number[] | null;
+}
+
+/** An event's rounds sit within three days of each other. */
+const EVENT_SPAN_DAYS = 2;
+const dayIndex = (d: string | undefined) => (d ? Date.parse(`${d}T12:00:00Z`) / 86_400_000 : Number.NaN);
+
+/**
+ * The desk's Latest rounds, newest first, at most `max` rows. One player's tournament (or qualifier) rounds at one course
+ * within three days are one event and one row: "Springfield CC · Wed 21 Oct · Rounds 74, 77, 73" over the total (W4, owner's preview, 11 Nov 2026: three
+ * rows that read the same). A round with no course or date stands alone.
+ */
+export function latestRows(rounds: ChLatestRound[], max: number): ChLatestRow[] {
+  const groups: ChLatestRound[][] = [];
+  for (const r of rounds) {
+    // Only an event's rounds fold: two practice rounds at the home course on Tuesday and Wednesday are two rounds, not a total.
+    const isEvent = r.kind === 'tournament' || r.kind === 'qualifier';
+    const g = isEvent ? groups.find(([h]) => h!.kind === r.kind && h!.playerId === r.playerId && !!h!.course && h!.course === r.course && Math.abs(dayIndex(h!.date) - dayIndex(r.date)) <= EVENT_SPAN_DAYS) : undefined;
+    if (g) g.push(r);
+    else groups.push([r]);
+  }
+  return groups.slice(0, max).map((g) => {
+    const newest = g[0]!;
+    if (g.length === 1) return { key: newest.id, playerId: newest.playerId, playerName: newest.playerName, meta: newest.meta, score: newest.score, toPar: newest.toPar, scores: null };
+    const oldest = g[g.length - 1]!;
+    const scores = [...g].reverse().map((r) => r.score);
+    const days = oldest.day === newest.day ? newest.day : `${oldest.day}–${newest.day}`;
+    return {
+      key: g.map((r) => r.id).join('+'),
+      playerId: newest.playerId,
+      playerName: newest.playerName,
+      meta: [newest.course, days, `Rounds ${scores.join(', ')}`].filter(Boolean).join(' · '),
+      score: scores.reduce((a, b) => a + b, 0),
+      toPar: g.every((r) => r.toPar != null) ? g.reduce((a, r) => a + r.toPar!, 0) : null,
+      scores,
+    };
+  });
 }

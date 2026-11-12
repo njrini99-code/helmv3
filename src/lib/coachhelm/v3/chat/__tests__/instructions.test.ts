@@ -3,6 +3,7 @@ import type { CoachChatContext } from '../context';
 import type { PlayerChatContext } from '../engine/tool';
 import { instructionBlocks, policyBlock, rulesBlock, teamBlock } from '../instructions';
 import { knowledgeBlocks } from '../knowledge';
+import { findInApp } from '../context/find-in-app';
 import { person } from './pgrst-double';
 
 const ELI = '8091da4b-dbc9-47f3-80f1-be37c96b2c91';
@@ -111,7 +112,7 @@ describe('the whole cached policy', () => {
     expect(rules).toMatch(/Do no arithmetic yourself: no total, no difference, no spread, no count of lines/);
     expect(rules).toMatch(/call summarise_data, or leave that number out/);
     expect(rules.match(/arithmetic/g)).toHaveLength(1);
-    expect(rulesBlock('player')).toMatch(/State only a number a read returned or they gave you, copied exactly\. Do no arithmetic yourself, not even a total or a difference/);
+    expect(rulesBlock('player')).toMatch(/State only a number a read returned or they gave you, rounded to one decimal and otherwise unchanged\. Do no arithmetic yourself, not even a total or a difference/);
     expect(rules).toContain('A task is never called from code: call the task tool directly, so the coach gets the card to confirm.');
     expect(rulesBlock('quick_chat')).toBe(rules);
     expect(rulesBlock('practice_helper')).toBe(rules);
@@ -188,7 +189,11 @@ describe('how answers read', () => {
     expect(rules).toMatch(/Sentence one answers the question asked, with its figure, or says that the data does not show what the question assumes\./);
     expect(rules).toMatch(/is a caution about the sample, or the point of golf or of the app that the question turns on\. Say that point even when the data does not show the case\./);
     expect(rulesBlock('player')).toMatch(/or the point the question turns on, such as which way is good, said even when your data does not show the case/);
-    expect(rules).toMatch(/\nSentence four, only when the data points to an obvious next step, offers it\.\nThen stop: /);
+    expect(rules).toMatch(/\nSentence four, only when the data points to an obvious next step, offers it\.\nThen stop, never on a question: /);
+    // W48 (preview, 12 Nov): "as the read gave them" read as two decimals, nine figures like −4.37 in one answer.
+    expect(rules).toMatch(/6\. Give every figure to one decimal \("−4\.4", not "−4\.37"\)/);
+    expect(rulesBlock('player')).toMatch(/4\. Give every figure to one decimal, with its window and sample in words/);
+    expect(`${rules}${rulesBlock('player')}`).not.toMatch(/as the read gave them/);
     expect(rules).toMatch(/A "why", a "should I worry" and a comparison get four sentences too\. Count your sentences before you finish and cut down to four\./);
     // Short never means leaving out what was asked for (the first full run dropped a course, a count and a comparison player).
     expect(rules).toMatch(/Fit each thing the question asked for \(a figure, a name, a course, a count\) into those sentences\. Never drop one\./);
@@ -198,9 +203,9 @@ describe('how answers read', () => {
     // A long list is the card's or the visual's to carry: the words name the top of it.
     expect(rules).toMatch(/Write a list only when the coach asked for a list or a ranking, of three items at most, one plain line each\. When more belong in it, name the top and say the rest is in the card below, or call show_visual/);
     expect(rules).toMatch(/Write nothing before or between your reads \("Let me check"\), because it stays in the answer/);
-    expect(rules).toMatch(/Give every figure with its window and sample in the same sentence, as the read gave them\. When several figures share one window, say it once/);
+    expect(rules).toMatch(/with its window and sample in the same sentence\. When several figures share one window, say it once/);
     // The full breakdown is still a visual, said once, under "Visuals".
-    expect(rules).toMatch(/Call show_visual once when the answer is a shape/);
+    expect(rules).toMatch(/Call show_visual \(never offer it\) once when the answer is a shape/);
     // The rules follow themselves: nothing in them is bold.
     expect(rules).not.toMatch(/\*\*/);
     // A small sample is said once, under "How your answers read"; its duplicate under "When data is missing" is gone.
@@ -258,9 +263,28 @@ describe('the team block says which baseline strokes gained is measured against'
     for (const who of [base, { ...base, gender: null }, { ...base, gender: 'mixed' }]) expect(teamBlock(who)).not.toMatch(/measured against/);
   });
 
+  it('a coach’s Ask says why the figures are negative when asked, and the first time strokes gained comes up, unasked (Q1, owner 12 Nov 2026)', () => {
+    const rule = 'When a coach asks why the figures are negative, or strokes gained first comes up in a conversation, say in one sentence that the figures are against Tour players and that below zero is normal for a college golfer.';
+    // Every coach's team, whatever its gender; it names no tour, so a team with none set is not told which one.
+    for (const who of [base, { ...base, gender: 'mens' }, { ...base, gender: 'womens' }]) expect(teamBlock(who)).toContain(rule);
+    expect(teamBlock(base)).not.toMatch(/PGA|LPGA|women’s Tour/);
+    // In the per-team block, beside the yardstick: neither the cached rules nor the golf block grow (registry-size, golf-block tests).
+    const { policy } = instructionBlocks('ask', coach());
+    expect(policy).not.toContain(rule);
+    expect(instructionBlocks('ask', coach()).team).toContain(rule);
+  });
+
   it('a player is told the same about their own team, and the line is the same bytes on every call', () => {
     const player = { ...base, gender: 'womens', roster: [{ id: 'p1', name: 'Maya Ortiz', first_name: 'Maya', last_name: 'Ortiz', graduation_year: null }], player_id: 'p1' };
     expect(teamBlock(player)).toContain('measured against the women’s Tour baseline');
     expect(teamBlock(player)).toBe(teamBlock({ ...player }));
+  });
+});
+
+describe('visuals are drawn, not offered, and a dashboard is the Team board (preview, 12 Nov)', () => {
+  it('the coach prompt says so', () => {
+    const { policy } = instructionBlocks('ask', coach());
+    expect(policy).toContain('Call show_visual (never offer it) once when the answer is a shape');
+    expect(findInApp.description).toContain('for a dashboard or the team’s trends: that is the CoachHelm Team board, already built');
   });
 });

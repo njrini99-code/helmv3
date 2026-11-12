@@ -2153,7 +2153,9 @@ html[data-ch-ua-pop] .ch-pscreen::after {
    by attribute, never by a page's class (clubhouse:check, class owners): the Ledger pages (data-canopy) and the redesigned
    desks (data-ch-crh). The player's CoachHelm file fills the frame and centres its own column, so it is left out. */
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
-  [data-ui='clubhouse'] main:is([data-canopy], [data-ch-crh='on']):not([data-ch='your-week']) {
+  /* Practice's pages (main.ch-prc) share the edge too (W40, owner's preview, 11 Nov 2026: Practice sat 76px right of every other
+     page at 1920, so its title jumped between tabs). */
+  [data-ui='clubhouse'] main:is([data-canopy], [data-ch-crh='on'], .ch-prc):not([data-ch='your-week']) {
     margin-inline: max(0px, calc((100vw - var(--ch-sidebar-w) - var(--ch-measure-wide)) / 2)) auto;
   }
 }

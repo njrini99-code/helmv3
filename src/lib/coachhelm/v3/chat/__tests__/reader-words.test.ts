@@ -282,6 +282,17 @@ describe('the reads that are read out field by field', () => {
     expect(faults(text as string)).toEqual([]);
   });
 
+  it('get_season with the comparison keeps this season as a band beside last season, and the season table beside them (preview, 12 Nov)', async () => {
+    const detail = (await run(coach, 'get_season', { compare_last_season: true })).detail as Record<string, unknown>;
+    expect(detail.kind).toBe('season_compare');
+    // A band or nothing, never the season table: the visual's season block draws `this_season` as a band.
+    for (const k of ['this_season', 'last_season'] as const) {
+      const v = detail[k] as Record<string, unknown> | null;
+      if (v !== null) expect(Object.keys(v).sort()).toEqual(['hi', 'lo', 'mean', 'n']);
+    }
+    expect(detail).toHaveProperty('season_table');
+  });
+
   const textOf = async (who: CoachChatContext | PlayerChatContext, tool: string, input: unknown) => ((await run(who, tool, input)) as ToolResult & { model_text: string }).model_text.split('\n').map((l) => l.trim());
 
   it('a row leads with who it is about and ends with the id a later call needs', async () => {

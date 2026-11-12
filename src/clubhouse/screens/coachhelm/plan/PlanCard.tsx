@@ -115,6 +115,34 @@ function KindChip({ kind }: { kind: DrillKind | null | undefined }) {
 }
 
 /** The plan in Ask: writes itself block by block, a Why under every block, Save to, Save draft and Publish. Coach only: never imported by a player surface. */
+/**
+ * A one-line ask inside a sheet. The sheet is itself a <form> (FormSheet), so this is a group, not a second form: a form inside a
+ * form is invalid HTML and broke hydration (capture-2c, 11 Nov 2026: "<form> cannot be a descendant of <form>", 23 issues). Enter
+ * sends here and is kept from submitting the sheet, which would close it.
+ */
+export function AskIn({ label, value, onChange, onSend }: { label: string; value: string; onChange: (v: string) => void; onSend: () => void }) {
+  return (
+    <div className="ask-in" role="group" aria-label={label}>
+      <input
+        enterKeyHint="send"
+        autoCapitalize="sentences"
+        aria-label={label}
+        placeholder={label}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key !== 'Enter' || e.nativeEvent.isComposing) return;
+          e.preventDefault();
+          if (value.trim()) onSend();
+        }}
+      />
+      <button type="button" aria-label="Send" disabled={!value.trim()} onClick={onSend}>
+        <Icon icon={ArrowUp} size={18} />
+      </button>
+    </div>
+  );
+}
+
 export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; onSend: (text: string) => void; fresh?: boolean }) {
   const toast = useToast();
   const preview = useContext(PlanPreview);
@@ -662,18 +690,7 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
                 <div>{draft.why[open.id]!.lean ? 'Lean read' : <><b>Because</b> {draft.why[open.id]!.because}</>}</div>
               </div>
             )}
-            <form
-              className="ask-in"
-              onSubmit={(e) => {
-                e.preventDefault();
-                sendAsk(open.title);
-              }}
-            >
-              <input enterKeyHint="send" autoCapitalize="sentences" aria-label="Ask about this block" placeholder="Ask about this block" value={ask} onChange={(e) => setAsk(e.target.value)} />
-              <button type="submit" aria-label="Send" disabled={!ask.trim()}>
-                <Icon icon={ArrowUp} size={18} />
-              </button>
-            </form>
+            <AskIn label="Ask about this block" value={ask} onChange={setAsk} onSend={() => sendAsk(open.title)} />
           </div>
         )}
       </FormSheet>
@@ -705,18 +722,7 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
               ))}
             </div>
           )}
-          <form
-            className="ask-in"
-            onSubmit={(e) => {
-              e.preventDefault();
-              sendAsk('This station');
-            }}
-          >
-            <input enterKeyHint="send" autoCapitalize="sentences" aria-label="Ask about this station" placeholder="Ask about this station" value={ask} onChange={(e) => setAsk(e.target.value)} />
-            <button type="submit" aria-label="Send" disabled={!ask.trim()}>
-              <Icon icon={ArrowUp} size={18} />
-            </button>
-          </form>
+          <AskIn label="Ask about this station" value={ask} onChange={setAsk} onSend={() => sendAsk('This station')} />
         </div>
       </FormSheet>
       <FormSheet open={sheet?.kind === 'evidence'} onClose={() => setSheet(null)} title="Evidence" actionLabel="Done" onAction={() => setSheet(null)}>

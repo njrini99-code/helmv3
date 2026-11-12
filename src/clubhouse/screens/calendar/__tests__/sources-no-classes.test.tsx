@@ -11,7 +11,7 @@ import '../../../__tests__/dialog-polyfill';
 import { PREVIEW_CALENDAR } from '../../../preview/fixtures-calendar';
 import { Calendar } from '../Calendar';
 import { ToastProvider } from '../../../ui/Toast';
-import type { ChCalendarData } from '../model';
+import type { ChCalendarData } from '../../../data/calendar';
 
 afterEach(cleanup);
 

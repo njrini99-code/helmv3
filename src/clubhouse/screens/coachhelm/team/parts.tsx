@@ -19,6 +19,18 @@ export function Coin({ player, small = false }: { player: Pick<ChTeamPlayer, 'id
   return small ? <Avatar name={player.name} id={player.id} size="xs" dim={!!player.early} /> : <Avatar name={player.name} id={player.id} size="sm" dim={!!player.early} />;
 }
 
+/**
+ * A read's title beside its player's coin or name, without that player's name in front: the row said "Dylan: " before every title,
+ * and reads stored by the old generator carry it in the title too ("Dylan: 50–125 yd approach: …"), so a row read "Dylan: Dylan: …"
+ * (W12's prefix, staging 11 Nov). Only a leading "First: " or "First Last: " goes; a name inside the sentence stays.
+ */
+export function readTitle(player: Pick<ChTeamPlayer, 'first' | 'name'>, title: string): string {
+  for (const who of [player.name, player.first]) {
+    if (who && title.startsWith(`${who}: `)) return title.slice(who.length + 2).trimStart() || title;
+  }
+  return title;
+}
+
 export function Chevron() {
   return (
     <svg className="chev" width="8" height="14" viewBox="0 0 8 14" aria-hidden="true">
@@ -36,8 +48,10 @@ export function ReadRow({ player, read, onOpen }: { player: ChTeamPlayer; read: 
     <button type="button" className="rd tapp" data-ch-press-scale=".97" onClick={() => onOpen(read.id)}>
       <Coin player={player} />
       <span>
+        {/* The coin says whose read it is; the name is said for a screen reader only, since the coin is hidden from it. */}
         <b className="ch-num">
-          {player.first}: {read.title}
+          <span className="ch-sr-only">{player.first}: </span>
+          {readTitle(player, read.title)}
         </b>
         <span className="ev">
           {read.evidence.sample && <span>{read.evidence.sample}</span>}

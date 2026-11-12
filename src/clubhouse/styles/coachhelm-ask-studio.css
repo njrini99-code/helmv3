@@ -502,6 +502,10 @@
   flex-direction: column;
   justify-content: center;
 }
+/* The name keeps its width, so the open arrow sits beside it, not at the far side of a wide first column (W49). */
+.ch-aks-cmp__table .ch-aks-row > .ch-aks-cmp__who {
+  flex: 0 1 auto;
+}
 .ch-aks-cmp__who > b {
   font: var(--ch-type-15-medium);
   letter-spacing: var(--ch-track-15);

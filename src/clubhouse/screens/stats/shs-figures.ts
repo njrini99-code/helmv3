@@ -1,7 +1,7 @@
 import { pluralWord } from '../../lib/plural';
 import type { ChPlayerProfile } from '../../data/stats-player';
 import { isFiltered, basisWords, type ChFilter } from '../../data/stats-filter';
-import { changeTone as changeInk, formatFixed } from '../../lib/format';
+import { changeTone as changeInk, formatFixed, formatSigned } from '../../lib/format';
 import { deltaTone, halvesChange, mean } from '../../lib/stats-signal';
 import { trendRounds } from './round-trend';
 import type { StatsPlayerDetailId } from './detail-route';
@@ -115,6 +115,18 @@ export interface ShsChange {
   words: string;
 }
 
+/**
+ * A scoring change as the chip tells it, by the one rule Home and the Islands hero use (`deltaTone`, `deltaWords`): an arrow and "lower than"
+ * only once the change clears its standard error; under it the signed number, no arrow, and "No clear change" (owner's preview, 11 Nov 2026,
+ * W27: Home said "−0.8 No clear change vs previous 10" while Stats said "↓ 0.8 lower than the 10 before" for the same figure).
+ * `than` follows a clear change ("than the 10 before"); `vs` follows "No clear change" ("vs previous 10").
+ */
+export function scoreChangeChip(delta: number, se: number | null | undefined, lowerIsBetter: boolean, words: { than: string; vs: string }, digits = 1): ShsChange {
+  const tone = changeTone(delta, se, lowerIsBetter);
+  if (tone === 'flat') return { chip: formatSigned(delta, digits), tone, direction: 'flat', words: `No clear change ${words.vs}` };
+  return { chip: `${formatFixed(Math.abs(delta), digits)} ${delta < 0 ? 'lower' : 'higher'}`, tone, direction: delta < 0 ? 'down' : 'up', words: words.than };
+}
+
 function scores(data: ChPlayerProfile): number[] {
   return trendRounds(data.rounds, 'score')
     .map((r) => r.value)
@@ -128,24 +140,14 @@ export function scoringChange(data: ChPlayerProfile): ShsChange {
   if (hasPrevious(data)) {
     const row = data.extra.compare!.rows.find((r) => r.lowerIsBetter && /scor/i.test(r.label));
     if (row?.last != null && row.previous != null) {
-      const d = row.last - row.previous;
-      return {
-        chip: `${formatFixed(Math.abs(d))} ${d < 0 ? 'lower' : 'higher'}`,
-        tone: changeTone(d, row.se, true),
-        direction: d < 0 ? 'down' : d > 0 ? 'up' : 'flat',
-        words: `than the ${data.extra.compare!.previousRounds} before`,
-      };
+      const n = data.extra.compare!.previousRounds;
+      return scoreChangeChip(row.last - row.previous, row.se, true, { than: `than the ${n} before`, vs: `vs previous ${n}` });
     }
   }
   const halves = halvesChange(list, 'score');
   const half = Math.floor(list.length / 2);
   if (!halves) return { chip: null, tone: 'flat', direction: 'flat', words: '' };
-  return {
-    chip: `${formatFixed(Math.abs(halves.delta))} ${halves.delta < 0 ? 'lower' : 'higher'}`,
-    tone: changeTone(halves.delta, halves.se, true),
-    direction: halves.delta < 0 ? 'down' : halves.delta > 0 ? 'up' : 'flat',
-    words: `newest ${half} vs first ${half}`,
-  };
+  return scoreChangeChip(halves.delta, halves.se, true, { than: `newest ${half} vs first ${half}`, vs: `· newest ${half} vs first ${half}` });
 }
 
 export interface ShsCompareBar {
@@ -243,4 +245,21 @@ export function monoPath(pts: ReadonlyArray<readonly [number, number]>): string 
     d += `C${formatFixed((pts[i]![0] + h), 1)},${formatFixed((pts[i]![1] + t[i]! * h), 1)} ${formatFixed((pts[i + 1]![0] - h), 1)},${formatFixed((pts[i + 1]![1] - t[i + 1]! * h), 1)} ${formatFixed(pts[i + 1]![0], 1)},${formatFixed(pts[i + 1]![1], 1)}`;
   }
   return d;
+}
+
+/** Straight segments through the points: a chart of round days draws no value between two days that never happened (W26). */
+export function straightPath(pts: ReadonlyArray<readonly [number, number]>): string {
+  return pts.length < 2 ? '' : pts.map((p, i) => `${i ? 'L' : 'M'}${p[0]},${p[1]}`).join('');
+}
+
+/**
+ * Which round days the team's line joins (W26, owner's preview, 11 Nov 2026: the line's low point was one player's single 87,
+ * drawn as the team's worst day). A day resting on one round or less is a hollow dot off the line; the line joins the days two or more
+ * posted on, unless fewer than two such days exist, when it joins them all. A day with no count is read as a team day.
+ */
+export function teamLineDays(days: ReadonlyArray<{ n?: number }>): { line: number[]; one: Set<number> } {
+  // `n` counts a 9-hole round as half, so a day resting on one round or less is a single player's day.
+  const one = new Set(days.flatMap((d, i) => (d.n != null && d.n <= 1 ? [i] : [])));
+  const team = days.flatMap((_, i) => (one.has(i) ? [] : [i]));
+  return team.length >= 2 ? { line: team, one } : { line: days.map((_, i) => i), one: new Set() };
 }

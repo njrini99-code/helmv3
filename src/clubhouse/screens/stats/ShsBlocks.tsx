@@ -6,7 +6,7 @@ import { formatFixed } from '../../lib/format';
 import { NoData } from '../../ui/NoData';
 import { halvesTone } from '../../lib/stats-signal';
 import { ShsArrow, ShsCard, ShsChevron, ShsPill } from './SummaryCard';
-import { monoPath, type ShsTone } from './shs-figures';
+import { straightPath, type ShsTone } from './shs-figures';
 
 /** The page's words for "How this is measured" (design HOW). */
 export const SHS_HOW = {
@@ -66,7 +66,8 @@ export function Ribbon({
   const last = pts[n - 1]!;
   const top = lowerIsBetter ? Math.min(...vals) : Math.max(...vals);
   const bot = lowerIsBetter ? Math.max(...vals) : Math.min(...vals);
-  const path = monoPath(pts);
+  // Straight between rounds: a curve would draw scores on days nobody played (W26).
+  const path = straightPath(pts);
   const colour = fill(tone);
   // An end of the range that lands on the reference line can't print beside the line's label. The axis still needs two figures to be a
   // scale (a best round at par left "75" alone), so there the line prints its value; the card's head already says what the dashed line is.

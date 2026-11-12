@@ -12,8 +12,8 @@ import { EmptyState } from '../../ui/States';
 import { useChClockText } from '../../lib/use-clock';
 import { formatToPar } from '../../lib/format';
 import { Avatar } from '../../ui/Avatar';
-import { FormLine, FormRange } from '../../ui/FormLine';
 import { rebuiltHref } from '../../shell/nav';
+import { latestRows } from './model';
 
 /** The rows Latest rounds shows (06 11). */
 const DESK_ROUNDS = 4;
@@ -129,39 +129,31 @@ export function DeskTodayFirst() {
 }
 
 /**
- * Latest rounds: the newest four, not tappable (06 11), the score in a well over its to-par. A failed or empty read takes today's
- * section, in the caller. Beside the score, the player's last rounds as a word-sized line (the phone's own, from the same
- * rows), on one range down the list; it is left out when that read failed or the player has fewer than three rounds.
+ * Latest rounds: the newest four rows, not tappable (06 11), the score in a well over its to-par. One player's rounds of one
+ * event fold into one row over the event's total (W4). A failed or empty read takes today's section, in the caller. The form
+ * line that sat beside each score is gone: it had no key, and the leaderboard below draws the same rounds under "Last 7 rounds".
  */
-export function DeskRounds({ rounds, trends = null }: { rounds: ChCoachHome['latestRounds']['rounds']; trends?: ChCoachHome['leaderboard']['rows'] | null }) {
-  const shown = rounds.slice(0, DESK_ROUNDS);
-  const trendOf = new Map((trends ?? []).map((p) => [p.playerId, p.trend]));
+export function DeskRounds({ rounds }: { rounds: ChCoachHome['latestRounds']['rounds'] }) {
+  const shown = latestRows(rounds, DESK_ROUNDS);
   return (
     <section className="ch-dh-card" aria-labelledby="ch-dh-rounds">
       <DeskHead id="ch-dh-rounds" title="Latest rounds" href={rebuiltHref('/golf/dashboard/stats')} link="Team stats" />
-      <FormRange trends={shown.map((r) => trendOf.get(r.playerId))} earlyBelow={3}>
       <ul className="ch-dh-rows ch-dh-rows--rounds">
         {shown.map((r) => (
-          <li key={r.id}>
+          <li key={r.key}>
             <Avatar name={r.playerName} id={r.playerId} size="sm" />
             <span className="ch-dh-rows__b">
               <b>{r.playerName}</b>
               <span>{r.meta}</span>
             </span>
-            {(trendOf.get(r.playerId)?.length ?? 0) >= 3 && (
-              <span className="ch-dh-spark" aria-hidden="true">
-                <FormLine data={trendOf.get(r.playerId)!} width={72} height={20} earlyBelow={3} bare label={`${r.playerName}, last ${trendOf.get(r.playerId)!.length} rounds`} />
-              </span>
-            )}
-            <span className={'ch-dh-score ch-num' + (r.toPar != null && r.toPar < 0 ? ' is-under' : '')}>
+            <span className={'ch-dh-score ch-num' + (r.toPar != null && r.toPar < 0 ? ' is-under' : '')} aria-label={r.scores ? `Total ${r.score}, ${formatToPar(r.toPar)}` : undefined}>
               <b>{r.score}</b>
               <em>{formatToPar(r.toPar)}</em>
             </span>
           </li>
         ))}
       </ul>
-      </FormRange>
-      {rounds.length < DESK_ROUNDS && <p className="ch-dh-rest">New rounds show here as players post them.</p>}
+      {shown.length < DESK_ROUNDS && <p className="ch-dh-rest">New rounds show here as players post them.</p>}
     </section>
   );
 }

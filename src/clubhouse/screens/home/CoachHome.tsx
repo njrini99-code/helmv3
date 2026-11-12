@@ -25,8 +25,8 @@ import { NoTeam } from '../../ui/NoTeam';
 import '../../styles/home.css';
 
 /** The latest round's pane. Its own component, so a malformed read throws inside the section's boundary (CH-2206) and not in the page above it. */
-function DeskLatest({ data, covered, trends = null }: { data: ChCoachHome['latestRounds']; covered: boolean; trends?: ChCoachHome['leaderboard']['rows'] | null }) {
-  return data.rounds.length === 0 ? <LatestRound data={data} covered={covered} /> : <DeskRounds rounds={data.rounds} trends={trends} />;
+function DeskLatest({ data, covered }: { data: ChCoachHome['latestRounds']; covered: boolean }) {
+  return data.rounds.length === 0 ? <LatestRound data={data} covered={covered} /> : <DeskRounds rounds={data.recent ?? data.rounds} />;
 }
 
 /**
@@ -102,7 +102,7 @@ function CoachHomeBody({ data, now, live }: { data: ChCoachHome; now?: string; l
             )}
             {!noRounds && !data.latestRounds.error && (
               <SectionBoundary surface="home.latestRound" label="The latest round" code="CH-2206">
-                <DeskLatest data={data.latestRounds} covered={covered} trends={data.leaderboard.error ? null : data.leaderboard.rows} />
+                <DeskLatest data={data.latestRounds} covered={covered} />
               </SectionBoundary>
             )}
             </div>
@@ -132,7 +132,7 @@ function CoachHomeBody({ data, now, live }: { data: ChCoachHome; now?: string; l
             ) : null}
             {!noRounds && !data.latestRounds.error && (
               <SectionBoundary surface="home.latestRound" label="The latest round" code="CH-2206">
-                <DeskLatest data={data.latestRounds} covered={covered} trends={data.leaderboard.error ? null : data.leaderboard.rows} />
+                <DeskLatest data={data.latestRounds} covered={covered} />
               </SectionBoundary>
             )}
             </div>

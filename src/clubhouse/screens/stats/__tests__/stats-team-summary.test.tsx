@@ -61,13 +61,13 @@ describe('Team Stats, the summary', () => {
     expect(c.querySelector('.ch-shs-bigv')!.textContent).not.toBe(formatSigned(4));
   });
 
-  it('players: the top three by strokes gained, in order, with no link on the summary', async () => {
+  it('players: the top two by strokes gained and the one who loses most, with no link on the summary (W28)', async () => {
     showTeam(TEAM);
     const c = await painted('tplayers');
     const names = [...c.querySelectorAll('.ch-shs-prow .nm')].map((n) => n.textContent);
     expect(names).toHaveLength(3);
-    const ranked = [...TEAM.grid].filter((g) => g.total != null).sort((a, b) => b.total! - a.total!).slice(0, 3).map((g) => g.name);
-    expect(names).toEqual(ranked);
+    const ranked = [...TEAM.grid].filter((g) => g.total != null).sort((a, b) => b.total! - a.total!).map((g) => g.name);
+    expect(names).toEqual(ranked.length > 3 ? [ranked[0], ranked[1], ranked[ranked.length - 1]] : ranked);
     expect(c.querySelectorAll('a, button:not(.ch-shs-sum__key)')).toHaveLength(0);
   });
 });
@@ -170,12 +170,13 @@ describe('Team Stats, figures outside the big values are tabular too', () => {
 });
 
 describe('Team Stats, The round’s note', () => {
-  it('keeps each separator with the words before it, so a wrapped line never starts with the dot', async () => {
+  it('labels the chips in one sentence and does not repeat the page head (W29)', async () => {
     asDesktop();
     showTeam(TEAM);
-    await waitFor(() => expect([...document.querySelectorAll('.ch-shs-anote')].some((p) => p.textContent!.includes('countable rounds only'))).toBe(true));
-    const note = [...document.querySelectorAll('.ch-shs-anote')].find((p) => p.textContent!.includes('countable rounds only'))!;
-    expect(note.textContent).toContain('Varsity · 7 active players · countable rounds only.');
-    expect(note.textContent).not.toMatch(/ · /);
+    await waitFor(() => expect([...document.querySelectorAll('.ch-shs-anote')].some((p) => p.textContent!.startsWith('Chips:'))).toBe(true));
+    const note = [...document.querySelectorAll('.ch-shs-anote')].find((p) => p.textContent!.startsWith('Chips:'))!;
+    expect(note.textContent).toMatch(/^Chips: the change vs the previous \d+ round days, grey when it is inside its likely error\./);
+    expect(note.textContent).not.toContain('countable rounds only');
+    expect(note.textContent).not.toContain('Varsity');
   });
 });

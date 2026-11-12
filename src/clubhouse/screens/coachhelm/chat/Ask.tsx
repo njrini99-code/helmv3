@@ -462,6 +462,9 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
           <div className={'ch-ask-scroll' + (showHome ? ' is-home' : !gone && !data.threadFailed ? ' is-thread' : '')}>
             {body}
             {player && out && <PlayerOut live={ranOutLive} from={data.firstName ? `${data.firstName} · ${data.teamName}` : data.teamName} />}
+            {/* On the new chat the line follows the question box in the page, so it is always a gap under it. Pinned under the
+                scrolling page, it sat on the box's edge, and a short window ran the box beneath it (G7, preview grading 12 Nov). */}
+            {showHome && !phone && <p className="ch-ask-foot is-home">CoachHelm reads {data.teamName} data only. Check the numbers before you act on them.</p>}
           </div>
           {docked && (
             <div className="ch-ask-dock">
@@ -471,7 +474,6 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
               )}
             </div>
           )}
-          {showHome && !phone && <p className="ch-ask-foot is-home">CoachHelm reads {data.teamName} data only. Check the numbers before you act on them.</p>}
         </section>
         {artifact && !phone && artifactView}
         {!phone && evidenceOpen && evidence && (

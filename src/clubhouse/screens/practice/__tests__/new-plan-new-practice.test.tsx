@@ -74,7 +74,7 @@ describe('New plan with no practice to plan', () => {
     fireEvent.click(createButton());
     await waitFor(() => expect(screen.getByRole('alert', { hidden: true }).textContent).toContain('aren’t on'));
     // The practice is on the calendar now: its day and time are a line, not fields that would make a second one.
-    expect(screen.getByText(/On the calendar/, { hidden: true }).textContent).toContain('Friday, Nov 13');
+    expect(screen.getByText(/On the calendar/).textContent).toContain('Friday, Nov 13');
     expect(screen.queryByRole('group', { name: 'When', hidden: true })).toBeNull();
     // The page reads the calendar again, so the practice is listed if the sheet is opened afresh.
     expect(refresh).toHaveBeenCalledTimes(1);

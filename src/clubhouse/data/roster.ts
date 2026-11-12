@@ -28,7 +28,7 @@ import {
 } from './season';
 import { formatFixed } from '../lib/format';
 import { isoDay } from '../lib/dates';
-import { sgBaseline } from '../lib/sg';
+import { sgBaseline, type ChSgTour } from '../lib/sg';
 import { playerStrokesGained, roundsForFigures } from './figure-window';
 import { tourForGender } from './stats-common';
 import { QUIET_DAYS, daysBetween as daysBetweenDates } from '../screens/home/model';
@@ -141,6 +141,8 @@ export interface ChRoster {
   clock?: { tz: string; day: string };
   /** Behind the same flag: the team's baseline name for SG / round ("vs Tour"), never "vs D1". */
   sgVs?: string;
+  /** The tour that baseline is, so the page can say once why a college team's strokes gained sits below zero (lib/sg.ts `whyNamed`). */
+  sgTour?: ChSgTour;
 }
 
 export type ChRosterHelm = { status: 'on'; byPlayer: Record<string, ChReadCount> } | { status: 'off' } | { status: 'failed' };
@@ -336,6 +338,7 @@ export async function loadRoster(input: { teamId: string; coachId: string; }): P
     helm,
     clock: { tz, day: isoDay(now, tz) },
     sgVs: sgBaseline(tourForGender(teamRes.data?.gender)).vs,
+    sgTour: tourForGender(teamRes.data?.gender),
   };
 }
 

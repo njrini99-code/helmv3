@@ -21,7 +21,7 @@ import { askAboutReadHref } from '../chat/ask-links';
 import { Button } from '../../../ui/Button';
 import { toPar } from './CourseCard';
 import { STATION_NAME } from './hole-geometry';
-import { Chevron, Coin, ReadRow, ReadWorthContext } from './parts';
+import { Chevron, Coin, ReadRow, ReadWorthContext, readTitle } from './parts';
 import { sgMixShort } from '../../../data/stats-sg-mix';
 
 const areaName = (r: ChInsight) => (r.area ? STATION_NAME[r.area] : 'Course and scoring');
@@ -163,7 +163,8 @@ export function ReadPanel({
   const word = read.evidence.read?.word;
   const canLink = fileHost || !!coachReadHref(player.id, read.id, roster);
   const href = !canLink ? null : coach ? readHref(player.id, read.id) : readHref(null, read.id);
-  const ask = coach ? askAboutReadHref({ insightId: read.id, title: read.title, first: player.first }) : null;
+  // The question names the player once: "Tell me about Dylan: …", never "Dylan: Dylan: …" from a title stored with the name.
+  const ask = coach ? askAboutReadHref({ insightId: read.id, title: readTitle(player, read.title), first: player.first }) : null;
   const cx = deep?.base.engine?.corrections;
   // One worth for a read: the file's host hands over the read's own deep figure; the board reads the same function's from its themes.
   const boardWorth = useContext(ReadWorthContext);
@@ -172,7 +173,7 @@ export function ReadPanel({
   return (
     <>
       {coach ? <Head lead={<Coin player={player} />} name={player.name} line={`${areaName(read)} · ${player.rounds === 0 ? 'no counted rounds yet' : `last ${plural(player.rounds, 'round')}`}`} onClose={onClose} /> : <Head lead={null} name={areaName(read)} line="" onClose={onClose} />}
-      <h3 className="ch-num">{read.title}</h3>
+      <h3 className="ch-num">{readTitle(player, read.title)}</h3>
       <p className="lede ch-num">{read.lede}</p>
       <div className="evs">
         {read.stale && <Badge>Out of date</Badge>}

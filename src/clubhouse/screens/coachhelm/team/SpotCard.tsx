@@ -12,10 +12,19 @@ const ZERO_AT = 84;
 const LOSS_SCALE = 1.3;
 const GAIN_SCALE = 0.25;
 
-/** A loss of 1.30 fills the 84% to the left, a gain of 0.25 the 16% to the right, clamped beyond (AC-SPOT-03). */
-export const barScale = (v: number): number => (v < 0 ? Math.min(Math.abs(v) / LOSS_SCALE, 1) : Math.min(v / GAIN_SCALE, 1));
+/**
+ * A loss fills the 84% to the left of Tour and a gain the 16% to the right (AC-SPOT-03). The full length is the card's own
+ * largest loss (or gain), never less than 1.30 (0.25): with a fixed 1.30, a real team at −2.0 to −4.4 drew every bar the same
+ * length, so the card said nothing (owner's preview, 11 Nov 2026).
+ */
+export const barScale = (v: number, lossScale = LOSS_SCALE, gainScale = GAIN_SCALE): number => (v < 0 ? Math.min(Math.abs(v) / lossScale, 1) : Math.min(v / gainScale, 1));
 
-function BarRow({ player, station, teamValue, onPlayer }: { player: ChTeamPlayer; station: ChStation; teamValue: number | null; onPlayer: (id: string) => void }) {
+/** The two full lengths for one card: its largest loss and gain, team average included, floored at the design's 1.30 and 0.25. */
+export function spotScales(values: number[]): { loss: number; gain: number } {
+  return { loss: Math.max(LOSS_SCALE, ...values.map((v) => -v)), gain: Math.max(GAIN_SCALE, ...values) };
+}
+
+function BarRow({ player, station, teamValue, scales, onPlayer }: { player: ChTeamPlayer; station: ChStation; teamValue: number | null; scales: { loss: number; gain: number }; onPlayer: (id: string) => void }) {
   const leg = player.legs[station];
   const v = leg.strokes;
   const name = (
@@ -39,8 +48,8 @@ function BarRow({ player, station, teamValue, onPlayer }: { player: ChTeamPlayer
       <span className="bt">
         <i className="z" />
         {/* On the fills' own scale, either side of Tour (TEAM-9). */}
-        {teamValue != null && <i className="avg" style={{ left: `${teamValue < 0 ? ZERO_AT - (Math.min(-teamValue, LOSS_SCALE) / LOSS_SCALE) * ZERO_AT : ZERO_AT + (Math.min(teamValue, GAIN_SCALE) / GAIN_SCALE) * (100 - ZERO_AT)}%` }} />}
-        <i className={`bf ${loss ? 'l' : 'g'}${player.early ? ' early' : ''}`} style={{ transform: `scaleX(${barScale(v)})` }} />
+        {teamValue != null && <i className="avg" style={{ left: `${teamValue < 0 ? ZERO_AT - barScale(teamValue, scales.loss, scales.gain) * ZERO_AT : ZERO_AT + barScale(teamValue, scales.loss, scales.gain) * (100 - ZERO_AT)}%` }} />}
+        <i className={`bf ${loss ? 'l' : 'g'}${player.early ? ' early' : ''}`} style={{ transform: `scaleX(${barScale(v, scales.loss, scales.gain)})` }} />
       </span>
       <span className={'bv ch-num' + (loss ? '' : Math.abs(v) < 0.05 ? ' is-even' : ' g')}>{formatSigned(v)}</span>
     </button>
@@ -66,6 +75,7 @@ export function SpotCard({
   const rank = stationOrder(data.stations).indexOf(station);
   // Players with a figure here (AC-SPOT-02); one with no figure has nothing to draw on the bar.
   const rows = list.filter((p) => p.legs[station].strokes != null).sort((a, b) => (a.legs[station].strokes as number) - (b.legs[station].strokes as number));
+  const scales = spotScales([...rows.map((p) => p.legs[station].strokes as number), ...(teamValue != null ? [teamValue] : [])]);
   const reads = readsAt(list, station);
   const patterns = patternAt(data.patterns, station);
   const names = new Map(list.map((p) => [p.id, p]));
@@ -86,7 +96,7 @@ export function SpotCard({
           {!rows.length && <p className="nordss">No player has enough rounds here yet.</p>}
           <div className="bars">
             {rows.map((p) => (
-              <BarRow key={p.id} player={p} station={station} teamValue={teamValue} onPlayer={onPlayer} />
+              <BarRow key={p.id} player={p} station={station} teamValue={teamValue} scales={scales} onPlayer={onPlayer} />
             ))}
           </div>
           {rows.length > 0 && (

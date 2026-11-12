@@ -56,6 +56,35 @@ function stateData(state: string | undefined): ChTeamBoardData {
     const from: Record<string, ChTeamPlayer['first10']> = { [(list[0] as ChTeamPlayer).id]: { tee: -0.52, approach: -1.41, short_game: -0.3, putting: -0.62 }, [(list[1] as ChTeamPlayer).id]: { tee: -0.1, approach: -0.3, short_game: -0.45, putting: -0.5 } };
     return { ...base, players: { list: list.map((p) => ({ ...p, first10: from[p.id] ?? null })), error: false } };
   }
+  // The board's shape on the owner's preview walk (staging, 11 Nov; W9 to W11): five players losing most at Putting, so its coins
+  // fold into "+N"; This week with a picture on one tile in three (no story rounds, so the reads draw none); and nine focus areas,
+  // most with no target, one shared by three players. Read titles stored with the player's name in front ("Eli: …", W12).
+  if (state === 'crowded') {
+    const crowd = list.map((p, i) => ({ ...p, worst: i < 5 ? ('putting' as const) : p.worst, reads: { ...p.reads, needs: p.reads.needs.map((r) => ({ ...r, title: `${p.first}: ${r.title}` })) } }));
+    const part = base.brief instanceof Promise ? null : base.brief;
+    const brief = part?.status === 'ok' ? part.value : null;
+    const [a, b, c, d, e] = crowd.map((p) => ({ who: p.name, playerId: p.id }));
+    const cascade = 'Lag putts → 3-putt cascade';
+    const area = (id: string, who: typeof a, title: string, progress: { from: number; now: number; target: number } | null = null, word = 'Active') => ({ id, ...who!, title, word, line: progress ? 'Three-putts 0.9 to 0.5 a round · target 0.4' : null, since: '6 rounds since Sep 25', href: '#', progress });
+    const working = [
+      area('c1', a, cascade),
+      area('c2', b, 'Tee shots with driver: penalties'),
+      area('c3', c, cascade),
+      area('c4', d, 'Lag putting from 30 ft and out', { from: 0.9, now: 0.5, target: 0.4 }),
+      area('c5', e, cascade),
+      area('c6', a, 'Bogey after a missed green', null, 'In progress'),
+      area('c7', b, 'Scrambling from sand'),
+      area('c8', c, 'Approach from 125 to 175', null, 'In progress'),
+      area('c9', d, 'Up and down from 30 yd'),
+    ];
+    return {
+      ...base,
+      players: { list: crowd, error: false },
+      stations: stationFigures(crowd),
+      storyRounds: { status: 'ok', value: {} },
+      ...(brief ? { brief: { status: 'ok' as const, value: { ...brief, working: [...brief.working.slice(1), ...working] } } } : {}),
+    } as ChTeamBoardData;
+  }
   if (state === 'long') {
     const worst: ChStation = 'approach';
     const many = Array.from({ length: 15 }, (_, i) => ({ ...(list[i % list.length] as ChTeamPlayer), id: `pl-long-${i}`, first: i % 2 ? 'Elijah' : 'Priyanka', name: i % 2 ? 'Elijah Brandt-Whitaker' : 'Priyanka Natarajan-Okonkwo', worst, reads: i < list.length ? (list[i] as ChTeamPlayer).reads : { needs: [], working: [] } }));

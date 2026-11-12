@@ -197,7 +197,7 @@ describe('ApproachMissGenerator', () => {
     const c = g.composeContent(makeAgg({ bucket: '50_125ft', green_hit_pct: 70, proximity_when_hit_feet: 22, attempts: 30 }));
     expect(c.title).toContain('50-125 yd');
     expect(c.title).toContain('70%');
-    expect(c.title).toContain('22 ft when you do');
+    expect(c.title).toBe('50-125 yd approaches find 70% of greens and finish 22 ft away when they do'); // W12: one sentence, no label colon
     expect(c.content).toContain('30 approaches');
     expect(c.content).toContain('found the green 70%');
     expect(c.content).toContain('PGA Tour ~80%'); // approximate green-hit anchor for 50-125
@@ -216,8 +216,8 @@ describe('ApproachMissGenerator', () => {
   it('frames a reach problem (no reliable proximity) when too few greens are hit', () => {
     const g = new ApproachMissGenerator(PLAYER_ID, '175_plus_ft');
     const c = g.composeContent(makeAgg({ bucket: '175_plus_ft', green_hit_pct: 20, proximity_when_hit_feet: null, attempts: 15 }));
-    expect(c.title).toContain('20% greens hit');
-    expect(c.title).not.toContain('ft when you do');
+    expect(c.title).toBe('175+ yd approaches find 20% of greens');
+    expect(c.title).not.toContain('ft away');
     expect(c.content).toContain('Too few greens hit');
     expect(c.content).toContain('finding the green, not distance control');
   });

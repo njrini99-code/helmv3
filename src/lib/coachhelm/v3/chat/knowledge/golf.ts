@@ -70,6 +70,7 @@ What carries meaning for a player:
 The right reading, in words: approach at minus one and a half with putting close to zero says "you putt near Tour level, and most of your gap is on approach shots, so that is where the strokes are".
 The wrong reading: "your approach play is bad".
 When a player asks why everything is negative, say it plainly: the number is measured against Tour players, a college player is expected to be behind them, and what matters is which part is furthest behind and which way it is moving.
+Say the first two of those in one sentence the first time strokes gained comes up in a conversation, too.
 `;
 
 const SG_LIMITS = `

@@ -505,11 +505,13 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
     const ghDisp = `${agg.green_hit_pct.toFixed(0)}%`;
     const prox = agg.proximity_when_hit_feet;
 
-    // Title leads with reach (green-hit %); proximity-when-hit rides along when reliable.
-    const title = (v: Voice) =>
+    // Title leads with reach (green-hit %); proximity-when-hit rides along when reliable. One plain sentence whose subject is the
+    // approaches, so it reads the same in either voice and after the board's "Dylan: " prefix. The label form ("50–125 yd
+    // approach: 67% greens hit · 20 ft when Dylan does") read as a template on the preview (W12, 12 Nov).
+    const title = (_v: Voice) =>
       prox != null
-        ? `${label} approach: ${ghDisp} greens hit · ${prox.toFixed(0)} ft when ${v.you} do`
-        : `${label} approach: ${ghDisp} greens hit`;
+        ? `${label} approaches find ${ghDisp} of greens and finish ${prox.toFixed(0)} ft away when they do`
+        : `${label} approaches find ${ghDisp} of greens`;
 
     // Reach sentence + (when enough greens) the dial-in sentence — this is what tells the
     // coach whether the leak is finding greens or controlling distance once there.

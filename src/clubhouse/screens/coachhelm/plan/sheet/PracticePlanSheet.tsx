@@ -158,13 +158,15 @@ function Schedule({ plan, title }: { plan: PlanSheetModel; title: string }) {
                 {r.rotation ? (
                   <div className="pp-rot" style={{ ['--ch-pp-turns' as string]: r.rotation.turns.length }}>
                     <span className="h">Station</span>
-                    {r.rotation.turns.map((t) => (
-                      <span className="h ch-num" key={t}>
+                    {/* Keyed by place in the grid, not by text: an undated plan prints every turn as "—", and two stations can share a
+                        place (capture-2c: "two children with the same key, `—`"). The columns and rows never reorder. */}
+                    {r.rotation.turns.map((t, i) => (
+                      <span className="h ch-num" key={`turn-${i}`}>
                         {t}
                       </span>
                     ))}
-                    {r.rotation.rows.map((s) => (
-                      <RotRow key={s.place} place={s.place} note={s.note} cells={s.cells} />
+                    {r.rotation.rows.map((s, i) => (
+                      <RotRow key={`station-${i}`} place={s.place} note={s.note} cells={s.cells} />
                     ))}
                   </div>
                 ) : r.who === 'all' ? (

@@ -1,4 +1,5 @@
 import { plural } from '../lib/plural';
+import type { ChSgTour } from '../lib/sg';
 import type { ChLadderAreaId } from './coachhelm-ladder-shape';
 import type { ChCoachHelmData, ChInsight, ChBoardMissing } from './coachhelm-shape';
 import type { ChCoachBrief, ChBriefWorking } from './coachhelm-coach-brief-shape';
@@ -80,7 +81,8 @@ export interface ChTourRow {
 
 export interface ChTeamBoardData {
   off: ChCoachHelmData['off'];
-  team: { name: string; tourKnown: boolean; baselineLabel: string };
+  /** `sgTour`: which Tour the strokes gained is against (the team's gender), so the hole can say why its figures sit below zero (Q1). */
+  team: { name: string; tourKnown: boolean; baselineLabel: string; sgTour?: ChSgTour };
   roster: { count: number; error: boolean };
   players: { list: ChTeamPlayer[]; error: boolean };
   /** Leg figures from the season's rounds; `error`: that read failed, and the hole says so. */
