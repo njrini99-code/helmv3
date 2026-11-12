@@ -133,6 +133,38 @@ const ProseBlockView = memo(function ProseBlockView({ sig, lead, streaming, tail
   );
 });
 
+/** A stop that ends a short word, not a sentence ("vs. Jackson", "St. Andrews"). */
+const NOT_AN_END = /(?:^|\s)(?:vs|St|Mt|Dr|Mr|Ms|Mrs|No|approx|e\.g|i\.e)$/i;
+
+/**
+ * Where a paragraph's second sentence ends: a stop, a space, then the next sentence's first character. A figure's point ("+0.99")
+ * has no space after it, so it is never an end. Null while the paragraph has two sentences or fewer.
+ */
+export function afterSecondSentence(text: string): number | null {
+  const ends = /[.!?]["”’)]?\s+(?=["“(]?[A-Z0-9])/g;
+  let n = 0;
+  for (let m = ends.exec(text); m; m = ends.exec(text)) {
+    if (NOT_AN_END.test(text.slice(0, m.index))) continue;
+    n += 1;
+    if (n === 2) return m.index + m[0].length;
+  }
+  return null;
+}
+
+/**
+ * The lead (the leaf's first paragraph, set larger in coachhelm-ask-v2.css) is the answer's first two sentences: the answer and
+ * the figure it turns on, as the instructions order them. The model writes its answer as one paragraph, so without this the
+ * whole answer was set at the lead's size (owner's preview, 11 Nov 2026). The cut is made as the words arrive: the third
+ * sentence's first word opens the body paragraph, so no word already drawn changes size.
+ */
+export function splitLead(blocks: ProseBlock[]): ProseBlock[] {
+  const first = blocks[0];
+  if (!first || first.kind !== 'paragraph') return blocks;
+  const at = afterSecondSentence(first.text);
+  if (at === null) return blocks;
+  return [{ kind: 'paragraph', text: first.text.slice(0, at).trimEnd() }, { kind: 'paragraph', text: first.text.slice(at) }, ...blocks.slice(1)];
+}
+
 /**
  * An answer's text: paragraphs, lists, pipe tables, **bold** and roster names. Editorial, not a bubble. The
  * match is against the real roster passed in, so "Wake Forest" is never a link to nowhere.
@@ -143,10 +175,9 @@ const ProseBlockView = memo(function ProseBlockView({ sig, lead, streaming, tail
  */
 export function AskProse({ text, lead = false, playersByName, streaming = false, pending = false, chip }: { /** Ask v2: draws `[e2]` as a read chip. */ chip?: Chip; text: string; lead?: boolean; playersByName: Record<string, string>; streaming?: boolean; /** The turn is live and no words have arrived for a moment. */ pending?: boolean }) {
   const shown = streaming ? settledText(text) : text;
-  const sigs = useMemo(() => parseProse(shown).map((b) => JSON.stringify(b)), [shown]);
-  // The first paragraph is body text like the rest (chat v3): a larger lead could only be chosen once the paragraph was whole, and
-  // changing its size then re-wraps words the coach is already reading.
-  void lead;
+  // The answer's opening text (`lead`) gives its first two sentences a paragraph of their own, which a leaf sets larger. The
+  // paragraph's class never changes: its size comes from its place, and the cut is made as the words arrive (splitLead).
+  const sigs = useMemo(() => (lead ? splitLead(parseProse(shown)) : parseProse(shown)).map((b) => JSON.stringify(b)), [shown, lead]);
   return (
     <div className="ch-th-prose" data-streaming={streaming ? '' : undefined}>
       {sigs.map((sig, i) => (

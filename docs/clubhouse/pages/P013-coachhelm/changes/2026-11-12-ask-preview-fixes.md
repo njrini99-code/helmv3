@@ -20,3 +20,6 @@ Held items:     none
 - A team beside one player is not drawn as a one-column comparison.
 - show_visual takes a read by the name it was cited with (`read:e1`) as well as `e1`; on staging two of four
   chart questions failed on that and answered in words.
+- #16: an answer's lead is its first two sentences, not the whole first paragraph. The model writes one paragraph, so
+  every answer was set at headline size. The cut is made as the words arrive (`splitLead`, Prose.tsx), so no drawn
+  word changes size; a decimal point and "vs." are never a sentence end.
