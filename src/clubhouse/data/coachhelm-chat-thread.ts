@@ -1688,6 +1688,14 @@ export function evidenceBlocks(envelope: ToolEnvelope): AskEvidence[] {
   }
 
   if (envelope.series.length === 0 && ms.length > 0 && first) {
+    // A team read that also lists each player on one measure (team stats with every player's putting, a season read with each
+    // player's scoring) is two things: the players ranked on that measure, and the team's own figures. Mixed, the team's other
+    // measures made it a many-measure "comparison" table of one column (W49, preview 12 Nov). Each half draws on its own.
+    const playerMs = ms.filter((m) => m.entity.kind === 'player');
+    const teamMs = ms.filter((m) => m.entity.kind !== 'player');
+    if (teamMs.length > 0 && new Set(playerMs.map((m) => m.entity.id)).size >= 3 && new Set(playerMs.map((m) => m.metric_id)).size === 1) {
+      return [...blocks, ...evidenceBlocks({ ...envelope, series: [], measurements: playerMs }), ...evidenceBlocks({ ...envelope, series: [], measurements: teamMs })];
+    }
     const players = new Set(ms.map((m) => m.entity.id));
     const metrics = new Set(ms.map((m) => m.metric_id));
     const isRanking = players.size >= 3 && metrics.size === 1;

@@ -25,3 +25,6 @@ Held items:     none
   word changes size; a decimal point and "vs." are never a sentence end.
 - W48: figures are given to one decimal (the rule said "as the read gave them", and reads carry two), and an
   answer never ends on a question. The four-sentence rule stands; not yet re-measured on live answers.
+- W49: a team read that lists every player on one measure draws the players as a ranking and the team's figures as
+  their own card, not a one-column comparison table. The comparison's hidden caption no longer repeats the card's
+  title ("…rounds.: 7 players"), and the open arrow sits beside the player's name.

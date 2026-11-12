@@ -152,7 +152,8 @@ export function Comparison(p: StudioProps<'comparison'>) {
       <Head title={label} />
       <ScrollRegion label={`${label}, scrolls sideways`} className="ch-aks-cmp__wrap" fade={false}>
         <table className="ch-aks-cmp__table">
-          <caption className="ch-sr-only">{`${label}: ${plural(team.players.length, 'player')} across ${plural(team.metrics.length, 'measure')}; the best in each is marked.`}</caption>
+          {/* The head above already names the table; the caption only says its shape (it read "…rounds.: 7 players", W49). */}
+          <caption className="ch-sr-only">{`${plural(team.players.length, 'player')} across ${plural(team.metrics.length, 'measure')}; the best in each is marked.`}</caption>
           <thead>
             <tr>
               <th scope="col">{playersAsRows ? 'Player' : 'Measure'}</th>
