@@ -23,6 +23,9 @@ Held items:     flag coachhelm_miss_compass_v1 is off everywhere; COACHHELM_MISS
   more than the 40 kept, the list says "The newest 40 of 46, by round." Desk: below the compass. Phone: a sheet.
 - "Ask about these shots" sends the next question with the selection (`about`, key `shots:<direction>`), which the server
   checks against the read it stored; it waits, as a starter does, while a reply is on its way.
+- In the studio's look (coachhelm-ask-studio.css): rules under each direction, not boxes; the share as a ruled length in
+  an SVG; the chosen direction ruled in the selected ink. It draws in place: nothing moves when a direction is chosen,
+  with or without reduced motion (the phone's sheet is the app's Modal, with its own reduced-motion handling).
 - Off (no flag, a player, the shell's Ask sheet, Fairway, a composition stored without shots): the drawing as it was, byte
   for byte. The data half is in `memory/features/coachhelm-ai.md` (chat visuals).
 - Preview: `/clubhouse-preview/coachhelm-capabilities?task=studio:distance_compass`.
@@ -31,7 +34,8 @@ Held items:     flag coachhelm_miss_compass_v1 is off everywhere; COACHHELM_MISS
 
 - `studio/__tests__/miss-compass.test.tsx`: off is today's markup byte for byte (no gate, gate off, block without shots,
   both sizes); names and shares; one tab stop; arrow keys; no fetch and no ask on a tap or a key; the drawer's list,
-  links and cap line; close; the ask's payload; no ask without a host; 44 targets; the drawer's motion by opacity and
-  transform only, none with reduced motion or motion off; the phone's sheet.
+  links and cap line; close; the ask's payload; no ask without a host; 44 targets; no animation or transition anywhere
+  on it, no fill or shadow on a direction; the phone's sheet. The studio's own look test (coachhelm-visual-artifact-css)
+  and look-feel-pass-css pass with it.
 - `chat/__tests__/ask-miss-compass.test.tsx`: Ask's page turns it on for a flagged coach team only and sends the selection
   as `about`, not while a reply is on its way.

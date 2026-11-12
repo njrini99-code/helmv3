@@ -163,12 +163,15 @@ describe('touch and motion', () => {
     expect(px('height', close)).toBeGreaterThanOrEqual(44);
   });
 
-  it('the drawer rises by opacity and transform only, and not at all with reduced motion or motion off', () => {
-    const frames = sheet.match(/@keyframes ch-aks-compass-in\s*\{([\s\S]*?)\}\s*\}/)?.[1] ?? '';
-    expect(frames).toMatch(/opacity/);
-    expect(frames.replace(/opacity:[^;]+;|transform:[^;]+;|from\s*\{|\s/g, '')).toBe('');
-    expect(sheet).toMatch(/@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.ch-aks-compass__drawer\s*\{\s*animation:\s*none;/);
-    expect(rule("[data-motion='off'] .ch-aks-compass__drawer")).toMatch(/animation:\s*none/);
+  it('it draws in place: nothing moves when a direction is chosen, with or without reduced motion (the studio’s look)', () => {
+    const compass = [...sheet.matchAll(/([^{}]+)\{([^{}]*)\}/g)].filter(([, s]) => /ch-aks-compass/.test(s!));
+    expect(compass.length).toBeGreaterThan(10);
+    for (const [, sel, body] of compass) expect(body, sel).not.toMatch(/animation|transition/);
+    expect(sheet).not.toMatch(/@keyframes ch-aks-compass/);
+    // Rules, not boxes: no fill or shadow on a direction, the chosen one ruled in the selected ink.
+    expect(rule('.ch-aks-compass__dir')).toMatch(/background: none;/);
+    expect(rule('.ch-aks-compass__dir')).not.toMatch(/box-shadow/);
+    expect(rule('.ch-aks-compass__dir.is-on')).toMatch(/border-bottom: 2px solid var\(--ch-selected-strong\);/);
   });
 });
 
