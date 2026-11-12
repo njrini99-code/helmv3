@@ -295,7 +295,10 @@ export function TeamRounds({ data: fresh, teamId, live, liveNow }: { data: ChTea
           { label: 'Rounds', value: s.rounds ? s.rounds : <NoData />, note: s.players ? note(`${plural(s.players, 'player')}${s.practice && !phone ? ` · ${s.practice} practice` : ''}`) : undefined },
           { label: 'Average', value: s.avg == null ? <NoData /> : formatFixed(s.avg, 1), note: s.avg == null ? undefined : note(!s.practice ? '18 holes' : phone ? 'no practice' : '18 holes, no practice') },
           { label: 'Under par', value: s.scored ? s.underPar : <NoData />, tone: s.underPar ? 'under' : undefined, note: s.scored ? note(`of ${s.scored}`) : undefined },
-          { label: 'Low round', value: best ? best.score : <NoData />, note: best ? note(`${best.player.split(' ')[0]} · ${best.toPar == null ? shortDay(best.date) : formatToPar(best.toPar)}`) : undefined },
+          // W30: the low round leaves practice out, as the average does, and says so where there is practice to leave out
+          // ("Low round 70, Cole −2" sat over a 68 practice round). The phone's quarter holds the name and score only; its
+          // average caption already reads "no practice".
+          { label: 'Low round', value: best ? best.score : <NoData />, note: best ? note(`${best.player.split(' ')[0]} · ${best.toPar == null ? shortDay(best.date) : formatToPar(best.toPar)}${s.practice && !phone ? ' · no practice' : ''}`) : undefined },
         ]}
       />
     </SectionBoundary>
