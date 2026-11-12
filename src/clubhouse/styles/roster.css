@@ -402,16 +402,15 @@
   color: var(--ch-chart-loss);
 }
 /* The coach's card figures, drawn: the player's place on the team's scoring strip and a strokes-gained bar from zero. */
+/* W25: the figures sit on the card itself, under a hairline, not in a beige well with its own shadow inside the card. */
 .ch-rs-figs {
   display: flex;
   flex-direction: column;
   gap: 8px;
   align-self: stretch;
   margin-top: 6px;
-  padding: 12px 12px 8px;
-  border-radius: var(--ch-radius-lg);
-  background: var(--ch-well-soft-bg);
-  box-shadow: var(--ch-well-soft-shadow);
+  padding: 12px 0 0;
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
   text-align: left;
 }
 .ch-rs-fig {
@@ -440,6 +439,13 @@
 }
 .ch-rs-fig > b.is-loss {
   color: var(--ch-chart-loss);
+}
+/* W25: "a round" after the SG figure, in the caption's size and ink. */
+.ch-rs-fig__u {
+  margin-left: 4px;
+  font: var(--ch-type-12-medium);
+  letter-spacing: 0;
+  color: var(--ch-text-tertiary);
 }
 .ch-rs-fig__m {
   grid-area: m;
