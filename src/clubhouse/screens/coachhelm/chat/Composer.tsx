@@ -114,15 +114,27 @@ export interface AskComposerProps {
 const PICK_EDGE = 8;
 /** The gap between the box and the picker (`.ch-ask-pick`'s `calc(100% + 8px)`). */
 const PICK_GAP = 8;
+/** The list's own cap (`.ch-ask-pick__list`'s 296px): the room below that lets the picker open down at its full height. */
+const PICK_FULL = 296;
 
 /**
- * How tall the picker may be where it opens: from the box to the nearest edge that would clip it, on the side it opens
- * to. That edge is the closest ancestor that clips its overflow (the Ask sheet's panel, a page's scroller) or the visible
- * viewport (the phone's keyboard); the CSS caps take the smaller of this and their own height. Remeasured on a resize or
- * the keyboard moving.
+ * Which way a picker that may open either way goes: down when the whole list fits below the box, else to the side with
+ * more room. The desktop's new-chat box sits mid-page (Q2 A), so on a tall window it opens down, over the starters, and on a
+ * short one, or with the box scrolled low, it opens up rather than squeeze.
  */
-function usePickerRoom(anchor: RefObject<HTMLElement | null>, open: boolean, below: boolean): number | null {
-  const [room, setRoom] = useState<number | null>(null);
+export function pickerSide(roomBelow: number, roomAbove: number): 'down' | 'up' {
+  return roomBelow >= PICK_FULL || roomBelow >= roomAbove ? 'down' : 'up';
+}
+
+/**
+ * How tall the picker may be where it opens, and which way it opens: from the box to the nearest edge that would clip it,
+ * on the side it opens to. That edge is the closest ancestor that clips its overflow (the Ask sheet's panel, a page's
+ * scroller) or the visible viewport (the phone's keyboard); the CSS caps take the smaller of this and their own height.
+ * `either`: the box may open down or up (the desktop's new chat); otherwise it opens up, out of the composer the thumb or
+ * the thread is on. Remeasured on a resize or the keyboard moving.
+ */
+function usePickerRoom(anchor: RefObject<HTMLElement | null>, open: boolean, either: boolean): { room: number | null; side: 'down' | 'up' } {
+  const [at, setAt] = useState<{ room: number; side: 'down' | 'up' } | null>(null);
   useLayoutEffect(() => {
     if (!open) return;
     const measure = () => {
@@ -139,8 +151,11 @@ function usePickerRoom(anchor: RefObject<HTMLElement | null>, open: boolean, bel
         top = Math.max(top, pr.top);
         bottom = Math.min(bottom, pr.bottom);
       }
-      const space = below ? bottom - r.bottom : r.top - top;
-      setRoom(Math.max(0, Math.floor(space - PICK_GAP - PICK_EDGE)));
+      const fit = (space: number) => Math.max(0, Math.floor(space - PICK_GAP - PICK_EDGE));
+      const below = fit(bottom - r.bottom);
+      const above = fit(r.top - top);
+      const side = either ? pickerSide(below, above) : 'up';
+      setAt({ room: side === 'down' ? below : above, side });
     };
     measure();
     window.addEventListener('resize', measure);
@@ -152,8 +167,8 @@ function usePickerRoom(anchor: RefObject<HTMLElement | null>, open: boolean, bel
       window.visualViewport?.removeEventListener('resize', measure);
       window.visualViewport?.removeEventListener('scroll', measure);
     };
-  }, [anchor, open, below]);
-  return open ? room : null;
+  }, [anchor, open, either]);
+  return { room: open && at ? at.room : null, side: at?.side ?? (either ? 'down' : 'up') };
 }
 
 /**
@@ -259,7 +274,7 @@ export function AskComposer({ seed, scopeOf, variant, phone, players, busy, fail
   const matches = useMemo(() => (roster ? matchPlayers(players, query ?? '', value) : []), [roster, players, query, value]);
   const stats = useMemo(() => matchStats(ASK_STATS, query ?? '', value), [query, value]);
   const pickable = matches.length + stats.length > 0;
-  const room = usePickerRoom(frame, pickerOpen, hero && !phone);
+  const { room, side } = usePickerRoom(frame, pickerOpen, hero && !phone);
   const typedSlash = slashQuery(value);
   const slashes = useMemo(() => (typedSlash === null || dismissed ? [] : matchSlash(slash, typedSlash)), [slash, typedSlash, dismissed]);
   const [slashAt, setSlashAt] = useState(0);
@@ -516,6 +531,7 @@ export function AskComposer({ seed, scopeOf, variant, phone, players, busy, fail
           <div
             className="ch-ask-pick"
             data-ch-code="CH-13821"
+            data-side={side}
             // The CSS caps the list by this, so a short sheet or a raised keyboard never cuts it off.
             style={room === null ? undefined : { ['--ch-ask-pick-room' as string]: `${room}px` }}
             onMouseDown={(e) => e.preventDefault()}

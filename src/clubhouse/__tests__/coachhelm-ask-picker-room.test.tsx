@@ -81,11 +81,22 @@ describe('CH-13821 the picker never runs past the edge that would clip it', () =
     expect(pickPanel().style.getPropertyValue('--ch-ask-pick-room')).toBe('134px');
   });
 
-  it('below the desktop’s new-chat box, it is capped to the room under the box', async () => {
+  it('below the desktop’s new-chat box when the whole list fits there, capped to the room under the box', async () => {
+    layout({ '.host-panel': { top: 0, bottom: 700 }, '.ch-ask-cmp__box': { top: 200, bottom: 320 } });
+    show({ variant: 'hero', players: ASK_PLAYERS }, true);
+    await userEvent.type(box(), '@');
+    // 700 - 320, less the gap and the edge: 364, room for the list's full 296.
+    expect(pickPanel().dataset.side).toBe('down');
+    expect(pickPanel().style.getPropertyValue('--ch-ask-pick-room')).toBe('364px');
+  });
+
+  it('above the desktop’s new-chat box when it sits low and there is more room above (Q2 A: the box sits mid-page)', async () => {
     layout({ '.host-panel': { top: 0, bottom: 520 }, '.ch-ask-cmp__box': { top: 300, bottom: 420 } });
     show({ variant: 'hero', players: ASK_PLAYERS }, true);
     await userEvent.type(box(), '@');
-    expect(pickPanel().style.getPropertyValue('--ch-ask-pick-room')).toBe('84px');
+    // 84 below would squeeze the list; 284 above takes it.
+    expect(pickPanel().dataset.side).toBe('up');
+    expect(pickPanel().style.getPropertyValue('--ch-ask-pick-room')).toBe('284px');
   });
 
   it('with nothing clipping it, the visible viewport is the edge', async () => {
