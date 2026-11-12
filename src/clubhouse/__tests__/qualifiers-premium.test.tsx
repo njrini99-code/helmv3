@@ -206,6 +206,17 @@ describe('P009-B2 an honest Live state', () => {
     expect(document.querySelector('.ch-qf-hero .ch-qf-status')!.textContent).toBe('Live');
     expect(document.querySelector('.ch-qf-hero .ch-qf-meta')!.textContent).toMatch(/Sep 22 – Oct 1, 2026/);
   });
+
+  it('W33 a coach is asked to close a qualifier past its last day; a player, and a live one in its dates, are not', () => {
+    const { unmount } = wrap(<QualifiersList data={{ ...previewList('coach'), today: '2026-10-08' }} />);
+    expect(document.querySelector('.ch-qf-hero .ch-qf-cta')!.textContent).toBe('Review and close');
+    unmount();
+    const p = wrap(<QualifiersList data={{ ...previewList('player'), today: '2026-10-08' }} />);
+    expect(document.querySelector('.ch-qf-hero .ch-qf-cta')?.textContent ?? '').not.toContain('close');
+    p.unmount();
+    wrap(<QualifiersList data={previewList('coach')} />);
+    expect(document.querySelector('.ch-qf-hero .ch-qf-cta')!.textContent).toBe('View leaderboard');
+  });
 });
 
 describe('P009-A1 standings on hand-hung plates', () => {
