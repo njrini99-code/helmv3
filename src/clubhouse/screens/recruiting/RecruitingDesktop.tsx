@@ -77,7 +77,7 @@ export function RecruitingDesktop({ c }: { c: RecCtx }) {
                   <div className="ch-rec-bar">
                     <SearchField className="ch-rec-search" value={c.query} onChange={c.setQuery} placeholder="Search prospects" label="Search prospects" />
                     {c.rows.length > 0 && (
-                      <Segmented size="sm" label="Sort prospects" value={c.sort} onChange={c.setSort} options={c.sorts.map((s) => ({ value: s.value, label: s.label }))} />
+                      <Segmented weight="filter" size="sm" label="Sort prospects" value={c.sort} onChange={c.setSort} options={c.sorts.map((s) => ({ value: s.value, label: s.label }))} />
                     )}
                   </div>
                   {/* CH-14603: a stage picked or let go settles the list in (base in, quick out); typing a search does not. */}

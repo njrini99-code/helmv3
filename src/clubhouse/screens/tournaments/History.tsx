@@ -120,8 +120,8 @@ function HistoryReady({ data, search, phone }: { data: ChTourHistoryData; search
             title="Across seasons"
             actions={
               <div className="ch-tour-rev-tools">
-                <Segmented size="sm" block={phone} label="Lineup mode" value={state.adjust === 'field' ? 'actual' : state.mode} onChange={(v) => move({ mode: v })} options={[{ value: 'actual', label: 'Actual lineups' }, { value: 'matched', label: 'Returning players', disabled: state.adjust === 'field' }]} />
-                <Segmented size="sm" block={phone} label="Measured against" value={state.adjust} onChange={(v) => move({ adjust: v })} options={[{ value: 'raw', label: 'Course rating' }, { value: 'field', label: 'The field' }]} />
+                <Segmented weight="filter" size="sm" block={phone} label="Lineup mode" value={state.adjust === 'field' ? 'actual' : state.mode} onChange={(v) => move({ mode: v })} options={[{ value: 'actual', label: 'Actual lineups' }, { value: 'matched', label: 'Returning players', disabled: state.adjust === 'field' }]} />
+                <Segmented weight="filter" size="sm" block={phone} label="Measured against" value={state.adjust} onChange={(v) => move({ adjust: v })} options={[{ value: 'raw', label: 'Course rating' }, { value: 'field', label: 'The field' }]} />
               </div>
             }
           >

@@ -62,6 +62,7 @@ export function LiveFilter({ v }: { v: LiveViewState }) {
   return (
     <div data-ch-code="CH-16611">
       <Segmented
+        weight="filter"
         label="Round type"
         size="sm"
         block

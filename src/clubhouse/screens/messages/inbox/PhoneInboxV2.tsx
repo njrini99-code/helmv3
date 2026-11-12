@@ -56,7 +56,7 @@ export function PhoneInboxV2({ api, onNew, onTeam }: { api: ChMessagesApi; onNew
               <Icon icon={SquarePen} size={19} />
             </button>
           </div>
-          <Segmented<ChConvFilter> redraws block plate="thumb" label="Filter conversations" value={filter} onChange={setFilter} options={INBOX_FILTERS} />
+          <Segmented<ChConvFilter> weight="filter" redraws block plate="thumb" label="Filter conversations" value={filter} onChange={setFilter} options={INBOX_FILTERS} />
         </div>
       )}
       {api.convsError ? (

@@ -46,7 +46,7 @@ export function WindowSwitch({
 }) {
   const all = !!onScope && span === 'all';
   return (
-    <Segmented<Shown>
+    <Segmented<Shown> weight="filter"
       size="sm"
       label={onScope ? 'Rounds shown' : 'Window'}
       hook={hook}

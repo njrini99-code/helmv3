@@ -508,7 +508,7 @@ export function TemplatesPage({ teamId, templates, preview = false }: { teamId: 
       <section className="ch-prc-sec" aria-label="Your templates">
         <div className="ch-prc-sec__h">
           <h2>Your templates</h2>
-          <Segmented size="sm" label="Kind" value={kind} onChange={setKind} options={[{ value: 'session', label: 'Session' }, { value: 'block', label: 'Block' }, { value: 'week', label: 'Week' }]} />
+          <Segmented weight="filter" size="sm" label="Kind" value={kind} onChange={setKind} options={[{ value: 'session', label: 'Session' }, { value: 'block', label: 'Block' }, { value: 'week', label: 'Week' }]} />
         </div>
         {mine.length === 0 ? (
           <p className="ch-prc-none">Save a plan as a template from the builder’s menu, and it shows up here.</p>

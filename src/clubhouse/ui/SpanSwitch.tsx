@@ -11,7 +11,7 @@ import { Segmented } from './Segmented';
 export function SpanSwitch({ value, onChange, hook, size = 'sm' }: { value: ChSpan; onChange: (v: ChSpan) => void; hook?: string; size?: 'sm' | 'md' }) {
   return (
     <div className="ch-span" data-ch-span={value}>
-      <Segmented<ChSpan>
+      <Segmented<ChSpan> weight="filter"
         size={size}
         label="Rounds shown"
         hook={hook}

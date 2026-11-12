@@ -513,7 +513,7 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
               Players
             </span>
           </div>
-          <Segmented<Lens>
+          <Segmented<Lens> weight="filter"
             size="sm"
             label="Measure"
             value={lens}

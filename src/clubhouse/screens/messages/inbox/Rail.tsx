@@ -74,7 +74,7 @@ export function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) 
           placeholder="Search"
           label="Search conversations and messages"
         />
-        {!firstRun && <Segmented<ChConvFilter> redraws block plate="thumb" size="sm" label="Filter conversations" value={filter} onChange={setFilter} options={INBOX_FILTERS} />}
+        {!firstRun && <Segmented<ChConvFilter> weight="filter" redraws block plate="thumb" size="sm" label="Filter conversations" value={filter} onChange={setFilter} options={INBOX_FILTERS} />}
       </div>
       <div className="ch-ms-rail__body" ref={body}>
         {api.convsError ? (

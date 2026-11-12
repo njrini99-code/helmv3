@@ -117,7 +117,7 @@ export function WhatsNew({ data: fresh }: { data: ChWhatsNew }) {
       ) : (
         <SectionBoundary surface="whatsnew.feed" label="What’s new" code="CH-13232">
           <div className="ch-rd-tools">
-            <Segmented
+            <Segmented weight="filter"
               redraws
               label="Show"
               size="sm"
