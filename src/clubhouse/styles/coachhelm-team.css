@@ -276,6 +276,13 @@
 .ch-htb .stn.is-gain .core {
   fill:var(--ch-chart-gain);
 }
+/* The "+N" coin's 44px tap target is never drawn. `.scn circle`, `.scn.is-more circle` and the night palette's ring all reach it
+   and outrank the SVG's own fill="transparent", so it was painted as a dark disc twice the coin's size, over the next coin's
+   initials: "+3" over "EB", which read "B" (W9, phone, 12 Nov). This selector outranks all three. */
+.ch-htb .holesvg .scn circle.hit {
+  fill:transparent;
+  stroke:none;
+}
 .ch-htb .stn .hit,
 .ch-htb .scn .hit {
   stroke:none;
