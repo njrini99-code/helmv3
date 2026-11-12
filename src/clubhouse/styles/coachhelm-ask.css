@@ -766,7 +766,8 @@
   transform-origin: 50% 100%;
   animation: ch-ask-pick-in var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-ask-cmp.is-hero:not(.is-phone) .ch-ask-pick {
+/* Below the new-chat box only while there is room there; with too little it opens above (`is-up`, Composer.tsx). */
+.ch-ask-cmp.is-hero:not(.is-phone) .ch-ask-pick:not(.is-up) {
   top: calc(100% + 8px);
   bottom: auto;
   transform-origin: 50% 0;
