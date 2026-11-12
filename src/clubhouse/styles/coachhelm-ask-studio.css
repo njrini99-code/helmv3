@@ -456,7 +456,10 @@
 }
 .ch-aks-cmp__table {
   width: 100%;
-  border-collapse: collapse;
+  /* Separate, not collapsed: WebKit drew a collapsed half-pixel rule only under the sticky first cell, so the header's
+     rule stopped after "Player" (12 Nov). Each cell draws its own rule; with no spacing they meet as one line. */
+  border-collapse: separate;
+  border-spacing: 0;
   font: var(--ch-type-14);
 }
 .ch-aks-cmp__table th,

@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { LazyMotion, domAnimation } from 'motion/react';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -680,7 +682,10 @@ describe('History: the phone drawer', () => {
     expect(drawer().open).toBe(false);
     await userEvent.click(screen.getByRole('button', { name: 'Chats' }));
     expect(drawer().open).toBe(true);
-    expect(within(drawer()).getByText('Chats', { selector: 'b' })).toBeInTheDocument();
+    // Its title takes focus as it opens, not New chat: a tap-opened drawer shows no ring and no tooltip on a key.
+    const title = within(drawer()).getByRole('heading', { name: 'Chats' });
+    await waitFor(() => expect(title).toHaveFocus());
+    expect(within(drawer()).getByRole('button', { name: 'New chat' })).not.toHaveFocus();
     fireEvent(drawer(), new Event('cancel', { cancelable: true }));
     await waitFor(() => expect(drawer().open).toBe(false));
 
@@ -691,6 +696,13 @@ describe('History: the phone drawer', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Chats' }));
     await userEvent.click(within(drawer()).getByRole('link', { name: 'Weekly brief, Sept 29' }));
     await waitFor(() => expect(drawer().open).toBe(false));
+  });
+
+  it('a row centres its title on the 44 line, with no padding above it, so a group heading sits midway between rows', () => {
+    const css = readFileSync(join(__dirname, '../styles/coachhelm-ask.css'), 'utf8');
+    const rule = css.slice(css.indexOf('.ch-ask-drawer .ch-ask-hist__row {'), css.indexOf('}', css.indexOf('.ch-ask-drawer .ch-ask-hist__row {')));
+    expect(rule).toMatch(/line-height: 44px;/);
+    expect(rule).toMatch(/padding-block: 0;/);
   });
 
   it('CH-13621 a drag to the left past 80px closes it; a nudge of a few pixels leaves it open', async () => {

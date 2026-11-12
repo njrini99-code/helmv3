@@ -107,3 +107,15 @@ describe('the legend under a players table says only what the table marks (R8)',
     expect(container.querySelector('caption')!.textContent).toMatch(/; the best in each is marked\.$/);
   });
 });
+
+describe('the comparison table draws its header rule across every column (WebKit, 12 Nov)', () => {
+  it('borders are separate with no spacing: a collapsed half-pixel rule was drawn only under the sticky first cell', async () => {
+    const { readFileSync } = await import('node:fs');
+    const { join } = await import('node:path');
+    const css = readFileSync(join(process.cwd(), 'src/clubhouse/styles/coachhelm-ask-studio.css'), 'utf8');
+    const at = css.indexOf('.ch-aks-cmp__table {');
+    const rule = css.slice(at, css.indexOf('}', at));
+    expect(rule).toMatch(/border-collapse: separate;/);
+    expect(rule).toMatch(/border-spacing: 0;/);
+  });
+});
