@@ -28,6 +28,16 @@ const log = (what: string, err: unknown) => chLogServer('rounds.review', what, e
 export type ChReviewHistoryInput = { playerId: string; coachTeamId: string | null; zoneTeamId: string | null; round: ChHistoryRound };
 
 /**
+ * The team whose rounds a review compares with. For a coach it is the reviewed round's own team, then the coach's: a coach of two
+ * teams reviewing a round posted for the other one compared it with this team's few rounds, and called the player's most putts
+ * "Ties fewest putts this season · 37" (owner's preview, 11 Nov 2026; staging: 17 rounds on one team, 5 on the other). A player
+ * reads all of their own rounds.
+ */
+export function historyTeam(viewer: { role: string; teamId: string | null }, roundTeamId: string | null | undefined): string | null {
+  return viewer.role === 'coach' ? (roundTeamId ?? viewer.teamId) : null;
+}
+
+/**
  * The route's streamed read (P-7 4.8): the history for a review already drawn. It never rejects: a failure is null, logged, and the
  * review says nothing about it.
  */
