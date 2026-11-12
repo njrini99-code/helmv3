@@ -1432,6 +1432,35 @@ html:not([data-fw-theme='dark']) .ch-ask {
   justify-content: center;
   width: 100%;
 }
+/* #6: a saved chat on its way, in the thread's shape (AskSkeleton thread). */
+.ch-ask-sk__thread {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: min(720px, 100%);
+  margin: 24px auto 0;
+  padding: 0 20px;
+}
+.ch-ask-sk__q {
+  display: flex;
+  justify-content: flex-end;
+}
+.ch-ask-sk__leaf {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 20px;
+  border-radius: 20px;
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-separator);
+}
+.ch-ask-sk__leaf > .ch-skel:last-child {
+  margin-top: 12px;
+}
+.ch-ask-sk__dock {
+  width: min(760px, 100%);
+  margin: auto auto 0;
+  padding: 12px 20px;
+}
 .ch-ask-sk__pills {
   display: flex;
   flex-wrap: wrap;

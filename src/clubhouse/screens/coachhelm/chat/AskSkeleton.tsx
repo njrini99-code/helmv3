@@ -1,6 +1,6 @@
-import { SkelLine, Skeleton } from '../../../ui/States';
-import { PlayerHelmTabs } from '../views/PlayerHelmTabs';
-import { CoachHelmTabs } from './SubTabs';
+import { SkelLine, Skeleton } from "../../../ui/States";
+import { PlayerHelmTabs } from "../views/PlayerHelmTabs";
+import { CoachHelmTabs } from "./SubTabs";
 
 /**
  * The Ask view on its way (CH-13420): the sub-tab strip, the chats, the greeting lines and the composer, in place, so nothing
@@ -12,14 +12,58 @@ import { CoachHelmTabs } from './SubTabs';
  * team at the left of the strip and Board | Ask at the right (the strip itself, held: it was a bar at the left, 1,014px from where
  * the control lands), the chats panel's head, New chat, search and two groups of rows; the chat's "New chat" head, then the
  * two-line greeting, the composer, the starter questions and the four capabilities where the new chat draws them.
+ *
+ * `thread`: the address opens a saved chat (`?c=`), so the wait is drawn as that chat, not as the new chat's home: the question
+ * at the right, the answer's leaf (its two-line lead, the body and a card) and the composer docked under it. A coach opening a
+ * chat from History saw the empty home, then the thread replaced it (#6, preview 12 Nov).
  */
-export function AskSkeleton({ chained, player }: { chained?: boolean; player?: boolean } = {}) {
+function ThreadShape() {
   return (
-    <main className="ch-ask ch-ask-sk" aria-busy="true" aria-label="Loading Ask CoachHelm" data-skel={chained ? 'chained' : undefined} data-ch-code="CH-13420">
+    <>
+      <div
+        className="ch-ask-scroll is-thread ch-ask-sk__thread"
+        aria-hidden="true"
+      >
+        <div className="ch-ask-sk__q">
+          <Skeleton width="52%" height={44} radius={22} />
+        </div>
+        <div className="ch-ask-sk__leaf">
+          <SkelLine line={30} bar={20} width="90%" />
+          <SkelLine line={30} bar={20} width="62%" />
+          <SkelLine line={24} bar={13} width="96%" />
+          <SkelLine line={24} bar={13} width="92%" />
+          <SkelLine line={24} bar={13} width="48%" />
+          <Skeleton width="100%" height={176} radius={16} shape="solid" />
+        </div>
+      </div>
+      <div className="ch-ask-sk__dock" aria-hidden="true">
+        <Skeleton width="100%" height={60} radius={24} />
+      </div>
+    </>
+  );
+}
+
+export function AskSkeleton({
+  chained,
+  player,
+  thread,
+}: { chained?: boolean; player?: boolean; thread?: boolean } = {}) {
+  return (
+    <main
+      className="ch-ask ch-ask-sk"
+      aria-busy="true"
+      aria-label="Loading Ask CoachHelm"
+      data-skel={chained ? "chained" : undefined}
+      data-ch-code="CH-13420"
+    >
       {/* The screen's one h1 while it loads, for the page outline (P013 D8). */}
       <h1 className="ch-sr-only">Ask CoachHelm</h1>
       <div className="ch-ask-top">
-        {player ? <PlayerHelmTabs active="ask" held /> : <CoachHelmTabs active="ask" held />}
+        {player ? (
+          <PlayerHelmTabs active="ask" held />
+        ) : (
+          <CoachHelmTabs active="ask" held />
+        )}
         <span className="ch-ask-team ch-ask-sk__desk" aria-hidden="true">
           <i />
           <Skeleton width={104} height={12} />
@@ -47,50 +91,69 @@ export function AskSkeleton({ chained, player }: { chained?: boolean; player?: b
         </aside>
         <section className="ch-ask-main">
           <header className="ch-ask-head ch-ask-sk__desk" aria-hidden="true">
-            <SkelLine line={22} bar={13} width={64} />
+            <SkelLine line={22} bar={13} width={thread ? 260 : 64} />
           </header>
-          <div className="ch-ask-scroll is-home ch-ask-sk__desk" aria-hidden="true">
-            <div className="ch-ask-home">
-              <div className="ch-ask-greet ch-ask-sk__greet">
-                <span className="ch-ask-sk__greet">
-                  <SkelLine line={38} bar={30} width="58%" />
-                  <SkelLine line={38} bar={30} width="50%" />
-                </span>
-                <SkelLine line={26} bar={13} width="56%" />
+          {thread ? (
+            <ThreadShape />
+          ) : (
+            <>
+              <div
+                className="ch-ask-scroll is-home ch-ask-sk__desk"
+                aria-hidden="true"
+              >
+                <div className="ch-ask-home">
+                  <div className="ch-ask-greet ch-ask-sk__greet">
+                    <span className="ch-ask-sk__greet">
+                      <SkelLine line={38} bar={30} width="58%" />
+                      <SkelLine line={38} bar={30} width="50%" />
+                    </span>
+                    <SkelLine line={26} bar={13} width="56%" />
+                  </div>
+                  <Skeleton
+                    width="100%"
+                    height={130}
+                    radius={24}
+                    shape="solid"
+                  />
+                  <div className="ch-ask-sk__pills">
+                    {[197, 308, 233, 167].map((w) => (
+                      <Skeleton key={w} width={w} height={37} radius={18} />
+                    ))}
+                  </div>
+                  <ul className="ch-ask-caps">
+                    {[0, 1, 2, 3].map((i) => (
+                      <li key={i}>
+                        <Skeleton
+                          width="100%"
+                          height={174}
+                          radius={16}
+                          shape="solid"
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
-              <Skeleton width="100%" height={130} radius={24} shape="solid" />
-              <div className="ch-ask-sk__pills">
-                {[197, 308, 233, 167].map((w) => (
-                  <Skeleton key={w} width={w} height={37} radius={18} />
-                ))}
-              </div>
-              <ul className="ch-ask-caps">
-                {[0, 1, 2, 3].map((i) => (
-                  <li key={i}>
-                    <Skeleton width="100%" height={174} radius={16} shape="solid" />
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-          {/* The phone's shape (CSS shows one or the other): the opener and its three question rows at the foot, over the
+              {/* The phone's shape (CSS shows one or the other): the opener and its three question rows at the foot, over the
               composer, as the new chat draws them. */}
-          <div className="ch-ask-sk__ph" aria-hidden="true">
-            <div className="ch-ask-sk__phgreet">
-              <Skeleton width="86%" height={26} radius={7} />
-              <Skeleton width="58%" height={26} radius={7} />
-              <Skeleton width="72%" height={13} />
-            </div>
-            <ul className="ch-ask-sk__phrows">
-              {[34, 46, 40].map((w, i) => (
-                <li key={i}>
-                  <Skeleton width={`${w}%`} height={14} />
-                  <Skeleton width={`${w + 22}%`} height={11} />
-                </li>
-              ))}
-            </ul>
-            <Skeleton width="100%" height={60} radius={24} />
-          </div>
+              <div className="ch-ask-sk__ph" aria-hidden="true">
+                <div className="ch-ask-sk__phgreet">
+                  <Skeleton width="86%" height={26} radius={7} />
+                  <Skeleton width="58%" height={26} radius={7} />
+                  <Skeleton width="72%" height={13} />
+                </div>
+                <ul className="ch-ask-sk__phrows">
+                  {[34, 46, 40].map((w, i) => (
+                    <li key={i}>
+                      <Skeleton width={`${w}%`} height={14} />
+                      <Skeleton width={`${w + 22}%`} height={11} />
+                    </li>
+                  ))}
+                </ul>
+                <Skeleton width="100%" height={60} radius={24} />
+              </div>
+            </>
+          )}
         </section>
       </div>
     </main>

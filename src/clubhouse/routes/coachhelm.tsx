@@ -292,7 +292,7 @@ export async function ClubhouseCoachHelmRoute({ view, player, c, insight, open, 
     // The Ask sub-tab is the coach's alone: a player's `?view=ask` falls through to their own board below.
     const ask = view === 'ask';
     return (
-      <Suspense fallback={ask ? <AskSkeleton chained /> : <TeamBoardSkeleton />}>
+      <Suspense fallback={ask ? <AskSkeleton chained thread={typeof c === 'string' && c.length > 0} /> : <TeamBoardSkeleton />}>
         <CoachHelmView coachId={team.coachId} teamId={team.teamId} ask={ask} conversationId={c} initialPlayer={player} initialInsight={open === 'read' && typeof insight === 'string' ? insight : undefined} />
       </Suspense>
     );
