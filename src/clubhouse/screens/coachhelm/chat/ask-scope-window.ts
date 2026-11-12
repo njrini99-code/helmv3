@@ -44,7 +44,15 @@ export function lastTurnIsGeneral(messages: readonly Pick<UIMessage, 'role' | 'p
 /** Who a question is about: the first player it names (a full name, or a first name), else the team. */
 export function scopeWho(question: string, team: string, names: readonly string[]): string {
   const q = question.toLowerCase();
-  return names.find((n) => q.includes(n.toLowerCase()) || q.includes((n.split(' ')[0] ?? n).toLowerCase())) ?? team;
+  const at = (n: string) => {
+    const full = q.indexOf(n.toLowerCase());
+    return full >= 0 ? full : q.indexOf((n.split(' ')[0] ?? n).toLowerCase());
+  };
+  // Everyone the question names, in its order: "Compare Cole Bennett and Jackson Hale" read as Cole alone (#17). Three or
+  // more is a team question, and the team names it.
+  const named = names.map((n) => ({ n, i: at(n) })).filter((x) => x.i >= 0).sort((a, b) => a.i - b.i).map((x) => x.n);
+  if (named.length === 0 || named.length > 2) return team;
+  return named.join(' and ');
 }
 
 /** The window one turn's reads used, for its leaf's running head: one label when they agree, two when they don't, newest first. */

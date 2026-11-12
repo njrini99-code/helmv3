@@ -313,7 +313,7 @@ export function AskThread({ viewer = 'coach', team, stoppedTurn = null, onArtifa
                 return (
                   <AnswerCard
                     key={answersQuestion ? `answer-${question.id}` : turn.id}
-                    turn={followUps === turn.followUps ? turn : { ...turn, followUps }}
+                    turn={followUps === turn.followUps ? turn : { ...turn, followUps, followUpPrompts: undefined }}
                     fresh={fresh}
                     showFollowUps={showFollowUps}
                     playersByName={playersByName}
