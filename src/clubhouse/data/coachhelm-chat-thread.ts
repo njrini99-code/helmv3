@@ -341,18 +341,28 @@ export function pairProposals(parts: Part[], ctx: { isLast: boolean; busy: boole
   return out;
 }
 
-/** "Read 38 rounds across 8 players": the largest sample per unit, never a sum of overlapping windows. */
+/**
+ * "Read 38 rounds across 8 players": the largest sample per unit, never a sum of overlapping windows. It counts what the answer is
+ * about: a figure whose window ends before the newest window begins (last season, beside this one) is a comparison, said after
+ * ("…, against 76 earlier"), never the headline. On the preview (12 Nov) a this-season answer read "Read 76 rounds", last
+ * season's count.
+ */
 export function describeWork(steps: AskStep[], envelopes: ToolEnvelope[]): string | null {
   if (steps.length === 0) return null;
-  const ms = envelopes.flatMap((e) => e.measurements);
-  const maxBy = (unit: string) => ms.filter((m) => m.sample_unit === unit).reduce((max, m) => Math.max(max, m.sample_size), 0);
-  const rounds = maxBy('rounds');
+  const all = envelopes.flatMap((e) => e.measurements);
+  const starts = all.map((m) => m.window_start).filter((d): d is string => typeof d === 'string' && d.length > 0);
+  const newest = starts.length ? starts.reduce((a, b) => (b > a ? b : a)) : null;
+  const earlier = (m: Measurement) => newest !== null && typeof m.window_end === 'string' && m.window_end < newest;
+  const ms = all.filter((m) => !earlier(m));
+  const maxBy = (list: Measurement[], unit: string) => list.filter((m) => m.sample_unit === unit).reduce((max, m) => Math.max(max, m.sample_size), 0);
+  const rounds = maxBy(ms, 'rounds');
+  const before = maxBy(all.filter(earlier), 'rounds');
   const players = new Set(ms.filter((m) => m.entity.kind === 'player').map((m) => m.entity.id)).size;
   const bits: string[] = [];
   if (rounds > 0) bits.push(plural(rounds, 'round'));
   if (players > 1) bits.push(`${players} players`);
   if (bits.length === 0) return `Worked through ${plural(steps.length, 'step')}`;
-  return `Read ${bits.join(' across ')}`;
+  return `Read ${bits.join(' across ')}${rounds > 0 && before > 0 ? `, against ${before} earlier` : ''}`;
 }
 
 /**
@@ -413,6 +423,19 @@ export function stepsReceipt(steps: readonly AskStep[], seconds: number | null):
 }
 
 const READ_NAME: Record<string, string> = {
+  // The rebuilt chat's reads (registry.ts, 11 Nov). Missing here, each was listed as "Read" in an answer's Sources (preview, 12 Nov).
+  get_team_stats: 'Team stats',
+  get_player_stats: 'Stats',
+  get_season: 'Season scoring',
+  get_rounds: 'Rounds',
+  get_round: 'Round',
+  get_shots: 'Shots',
+  get_schedule: 'Team calendar',
+  get_coachhelm: 'CoachHelm reads',
+  get_reference: 'Benchmarks',
+  find_in_app: 'Where it is in the app',
+  find_thread: 'Messages',
+  show_visual: 'Visual',
   get_team_overview: 'Roster',
   get_player_metrics: 'Statistics',
   get_player_trend: 'Trend',
@@ -476,6 +499,23 @@ export function windowDates(m: Pick<Measurement, 'window_start' | 'window_end'> 
   return yearA !== yearB ? `${a}, ${yearA}–${b}, ${yearB}` : `${a}–${b}`;
 }
 
+/**
+ * A source's name says what was read: the read's kind, whose it is when it is one player's, and its window when the read names one
+ * ("Team stats, this season", "Cole Bennett's stats, last 10 rounds", "This season against last"). A tool with no name in the table
+ * is named by its own summary rather than the bare "Read".
+ */
+export function readNameOf(tool: string, envelope: ToolEnvelope): string {
+  const detail = envelope.detail as { kind?: unknown } | undefined;
+  if (detail?.kind === 'season_compare') return 'This season against last';
+  const base = READ_NAME[tool];
+  if (!base) return envelope.summary?.split(/[.:]/)[0]?.trim().slice(0, 60) || 'Read';
+  const people = [...new Map(envelope.measurements.filter((m) => m.entity.kind === 'player').map((m) => [m.entity.id, m.entity.label])).values()];
+  const teamWide = envelope.measurements.some((m) => m.entity.kind === 'team');
+  const whose = people.length === 1 && !teamWide ? `${people[0]}’s ${base.charAt(0).toLowerCase()}${base.slice(1)}` : base;
+  const window = (envelope as ToolEnvelope & { window_label?: string }).window_label;
+  return window ? `${whose}, ${window}` : whose;
+}
+
 function turnReadsOf(parts: ReadonlyArray<Record<string, unknown> & { type: string }>): AskTurnRead[] {
   const out: AskTurnRead[] = [];
   for (const p of parts) {
@@ -483,7 +523,7 @@ function turnReadsOf(parts: ReadonlyArray<Record<string, unknown> & { type: stri
     const d = dataOf<{ tool?: string; envelope?: ToolEnvelope; ref?: string; via?: string }>(p);
     if (!d?.envelope || !d.ref) continue;
     const tool = d.tool ?? '';
-    const name = READ_NAME[tool] ?? 'Read';
+    const name = readNameOf(tool, d.envelope);
     // The dates the read covers, never a count of days ("By player · 111 days" said nothing a coach could check); no window, just the read's name.
     const win = windowDates(readBasis(d.envelope));
     out.push({ ref: d.ref, tool, name, chip: win ? `${name} · ${win}` : name, envelope: d.envelope, ...(d.via === 'code' ? { via: 'code' as const } : {}) });
@@ -645,6 +685,10 @@ export function buildAssistantTurn(message: UIMessage, ctx: { isLast: boolean; b
     if (p.type !== 'data-evidence') continue;
     const d = dataOf<{ ref?: string; envelope?: ToolEnvelope }>(p);
     if (d?.ref && d.envelope && drawnByVisual(d.envelope)) coveredRefs.add(d.ref);
+    // A turn that drew a visual answers with it. A list read beside it (a calendar, a thread: no figures, only rows) stays in
+    // Sources, where it opens, not as a card under the visual: on the preview (12 Nov) a team-trends dashboard came with the
+    // calendar card of a schedule read the answer never used. A figure read the visual left out still shows, as before.
+    else if (d?.ref && d.envelope && (artifacts.size > 0 || compositions.size > 0) && d.envelope.measurements.length === 0 && d.envelope.series.length === 0 && d.envelope.detail != null) coveredRefs.add(d.ref);
   }
 
   const actionBlocks = (): AskBlock[] => {
@@ -1647,7 +1691,10 @@ export function evidenceBlocks(envelope: ToolEnvelope): AskEvidence[] {
     const players = new Set(ms.map((m) => m.entity.id));
     const metrics = new Set(ms.map((m) => m.metric_id));
     const isRanking = players.size >= 3 && metrics.size === 1;
-    const isComparison = players.size >= 2 && metrics.size >= 1;
+    // A comparison is players beside players: the team's own figures are not a column of it. A team read that carries one player's
+    // figure too (team stats with Cole Bennett's strokes gained, preview 12 Nov) drew a one-column "comparison" titled with both.
+    const playerIds = new Set(ms.filter((m) => m.entity.kind === 'player').map((m) => m.entity.id));
+    const isComparison = playerIds.size >= 2 && metrics.size >= 1;
     const legs = strokesGainedLegs(ms);
     const base = { source: sourceLine(first), note: partialNote(envelope), bench: benchOf(first.benchmark, first.unit) };
     if (isRanking) {
