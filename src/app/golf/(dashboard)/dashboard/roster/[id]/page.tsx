@@ -9,6 +9,7 @@ import { Metadata } from 'next';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { PlayerDetailScreen } from '@/components/fairway/pages/player-detail/PlayerDetailScreen';
 import { loadPlayerDetail } from '@/components/fairway/pages/player-detail/loadPlayerDetail';
+import { readPlayerPrivateFields } from '@/lib/golf/player-private-fields';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -70,8 +71,6 @@ export default async function PlayerProfilePage({ params }: PageProps) {
         state,
         graduation_year,
         handicap,
-        phone,
-        email,
         created_at
       `)
       .eq('id', id)
@@ -126,6 +125,14 @@ export default async function PlayerProfilePage({ params }: PageProps) {
   const firstName = player.first_name?.trim() || 'This player';
   const detail = loadPlayerDetail(supabase, id, firstName);
 
+  // E-mail and phone are not readable from golf_players by a signed-in session (security review 2026-11-11, finding 1): the
+  // coach reads them through golf_player_private_fields, which answers only for their own team. A failed read leaves them blank.
+  const contacts = await readPlayerPrivateFields(supabase, [id]);
+  if (contacts.error) {
+    await logServerError(`[player detail] contact read failed: ${contacts.error.message}`, { action: 'playerDetail.contacts', featureArea: 'roster', playerId: id }, 'warning');
+  }
+  const contact = contacts.data.get(id) ?? null;
+
   return (
     <div className={fairwayScope('min-h-full bg-canvas')}>
       <PlayerDetailScreen
@@ -135,8 +142,8 @@ export default async function PlayerProfilePage({ params }: PageProps) {
           fullName: `${player.first_name ?? ''} ${player.last_name ?? ''}`.trim() || 'Player',
           avatarUrl: player.avatar_url,
           graduationYear: player.graduation_year,
-          email: player.email,
-          phone: player.phone,
+          email: contact?.email ?? null,
+          phone: contact?.phone ?? null,
           membershipStatus: membership.status,
         }}
         detail={detail}

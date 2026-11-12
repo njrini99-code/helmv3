@@ -2,14 +2,16 @@
 --
 -- A coach reads the profile of their own team's inactive member, so Roster can
 -- list them and mark them active again. A coach of another team does not, and
--- neither does a teammate.
+-- neither does a teammate. Once the player is active on another team, the old
+-- coach no longer reads them (owner, 2026-11-11: "Narrow it"); the new team's
+-- coach does, through the active membership.
 --
--- Plan arithmetic: 1 own coach + 1 other coach + 1 teammate = 3.
+-- Plan arithmetic: 1 own coach + 1 other coach + 1 teammate + 2 moved = 5.
 
 BEGIN;
 \ir _helpers.sql
 
-SELECT plan(3);
+SELECT plan(5);
 
 DO $$
 BEGIN
@@ -17,7 +19,8 @@ BEGIN
     ('00000000-0000-0000-0000-000000183001', 'coach@inactive.test', 'authenticated'),
     ('00000000-0000-0000-0000-000000183002', 'other@inactive.test', 'authenticated'),
     ('00000000-0000-0000-0000-000000183003', 'gone@inactive.test', 'authenticated'),
-    ('00000000-0000-0000-0000-000000183004', 'mate@inactive.test', 'authenticated')
+    ('00000000-0000-0000-0000-000000183004', 'mate@inactive.test', 'authenticated'),
+    ('00000000-0000-0000-0000-000000183005', 'moved@inactive.test', 'authenticated')
   ON CONFLICT DO NOTHING;
 
   INSERT INTO public.organizations (id, name, type) VALUES
@@ -42,12 +45,16 @@ BEGIN
 
   INSERT INTO public.golf_players (id, user_id, first_name, last_name) VALUES
     ('00000000-0000-0000-0000-000000183503', '00000000-0000-0000-0000-000000183003', 'Gone', 'Player'),
-    ('00000000-0000-0000-0000-000000183504', '00000000-0000-0000-0000-000000183004', 'Team', 'Mate')
+    ('00000000-0000-0000-0000-000000183504', '00000000-0000-0000-0000-000000183004', 'Team', 'Mate'),
+    ('00000000-0000-0000-0000-000000183505', '00000000-0000-0000-0000-000000183005', 'Moved', 'Player')
   ON CONFLICT DO NOTHING;
 
   INSERT INTO public.golf_team_members (team_id, player_id, status) VALUES
     ('00000000-0000-0000-0000-000000183301', '00000000-0000-0000-0000-000000183503', 'inactive'),
-    ('00000000-0000-0000-0000-000000183301', '00000000-0000-0000-0000-000000183504', 'active')
+    ('00000000-0000-0000-0000-000000183301', '00000000-0000-0000-0000-000000183504', 'active'),
+    -- inactive on the first team, active on the other one
+    ('00000000-0000-0000-0000-000000183301', '00000000-0000-0000-0000-000000183505', 'inactive'),
+    ('00000000-0000-0000-0000-000000183302', '00000000-0000-0000-0000-000000183505', 'active')
   ON CONFLICT DO NOTHING;
 END $$;
 
@@ -78,6 +85,24 @@ SELECT is(
     WHERE id = '00000000-0000-0000-0000-000000183503'),
   0,
   'a teammate does not'
+);
+
+SET LOCAL request.jwt.claims TO
+  '{"sub": "00000000-0000-0000-0000-000000183001", "role": "authenticated"}';
+SELECT is(
+  (SELECT count(*)::int FROM public.golf_players
+    WHERE id = '00000000-0000-0000-0000-000000183505'),
+  0,
+  'the old coach no longer reads a former member who is active on another team'
+);
+
+SET LOCAL request.jwt.claims TO
+  '{"sub": "00000000-0000-0000-0000-000000183002", "role": "authenticated"}';
+SELECT is(
+  (SELECT count(*)::int FROM public.golf_players
+    WHERE id = '00000000-0000-0000-0000-000000183505'),
+  1,
+  'the new team''s coach reads them through the active membership'
 );
 
 SELECT * FROM finish();

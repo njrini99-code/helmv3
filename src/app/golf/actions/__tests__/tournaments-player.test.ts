@@ -8,6 +8,7 @@ const state = vi.hoisted(() => ({
   player: { id: 'p1' } as { id: string } | null,
   membership: { data: { team_id: 'team-1' } as { team_id: string } | null, error: null as null | { message: string } },
   upsert: { error: null as null | { code: string; message: string } },
+  tour: { data: { team_id: 'team-1' } as { team_id: string } | null, error: null as null | { code: string; message: string } },
   calls: [] as string[],
 }));
 vi.mock('@/lib/flags', () => ({ isFlagEnabled: () => state.on }));
@@ -19,6 +20,7 @@ vi.mock('@/lib/admin/observed-action', () => ({ withAdminObserved: (_n: string, 
 vi.mock('@/lib/supabase/server', () => ({
   createClient: async () => ({
     from: (t: string) => ({
+      select: () => ({ eq: () => ({ maybeSingle: async () => state.tour }) }),
       upsert: async (row: unknown, opts: unknown) => {
         state.calls.push(`${t} ${JSON.stringify(row)} ${JSON.stringify(opts)}`);
         return state.upsert;
@@ -37,6 +39,7 @@ beforeEach(() => {
   state.player = { id: 'p1' };
   state.membership = { data: { team_id: 'team-1' }, error: null };
   state.upsert = { error: null };
+  state.tour = { data: { team_id: 'team-1' }, error: null };
   state.calls = [];
 });
 
@@ -68,6 +71,16 @@ describe('saveTournamentReflection', () => {
     await expect(saveTournamentReflection('not-an-id', 'x')).resolves.toMatchObject({ success: false, code: 'invalid' });
     await expect(saveTournamentReflection(ID, '   ')).resolves.toMatchObject({ success: false, code: 'invalid' });
     await expect(saveTournamentReflection(ID, 'x'.repeat(4001))).resolves.toMatchObject({ success: false, code: 'invalid' });
+    expect(state.calls).toEqual([]);
+  });
+
+  it('refuses a tournament that is not on the player’s own team, or that is gone, and writes nothing', async () => {
+    state.tour = { data: { team_id: 'team-2' }, error: null };
+    await expect(saveTournamentReflection(ID, 'x')).resolves.toMatchObject({ success: false, code: 'not_found' });
+    state.tour = { data: null, error: null };
+    await expect(saveTournamentReflection(ID, 'x')).resolves.toMatchObject({ success: false, code: 'not_found' });
+    state.tour = { data: null, error: { code: 'XX000', message: 'boom' } };
+    await expect(saveTournamentReflection(ID, 'x')).resolves.toMatchObject({ success: false, code: 'failed' });
     expect(state.calls).toEqual([]);
   });
 

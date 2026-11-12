@@ -35,7 +35,7 @@ import 'server-only';
  */
 
 import { readFileSync, readdirSync } from 'node:fs';
-import { resolve as resolvePath } from 'node:path';
+import { join } from 'node:path';
 // `yaml` (not `js-yaml`): this file lives under `src/lib/**`, which
 // `tsc --noEmit` DOES type-check (unlike `scripts/**`, excluded in
 // tsconfig.json) — `js-yaml` has no bundled types and `@types/js-yaml` is
@@ -52,7 +52,9 @@ import { scoreChange } from './risk-score';
 import { evaluateRollback, summarizeReliabilityWindow } from './rollback';
 import type { ChangeRiskInput, ChangeRiskScore, RollbackVerdict } from './types';
 
-const ROOT = resolvePath(process.cwd());
+// Every read below names its file with literal path segments under process.cwd(). A bare `process.cwd()`
+// held in a variable makes the bundler trace the WHOLE repository into this page's server function
+// (264 MB on 11 Nov 2026, over Vercel's 250 MB limit, which failed the deploy). Keep each path static.
 
 // ---------------------------------------------------------------------------
 // Rollback recommendation — Supabase + Vercel only, no repo-file reads.
@@ -180,7 +182,7 @@ interface WorldModel {
  *  an empty array (queue read fine, nothing is queued). */
 function readPendingQueueItems(): ReleaseQueueItem[] | null {
   try {
-    const raw = readFileSync(resolvePath(ROOT, 'memory/operations/release-queue.yml'), 'utf8');
+    const raw = readFileSync(join(process.cwd(), 'memory', 'operations', 'release-queue.yml'), 'utf8');
     const parsed = parseYaml(raw) as { items?: ReleaseQueueItem[] } | undefined;
     const items = parsed?.items;
     if (!Array.isArray(items)) return null;
@@ -192,7 +194,7 @@ function readPendingQueueItems(): ReleaseQueueItem[] | null {
 
 function readFeatureCriticality(featureId: string): 'high' | 'medium' | 'low' | null {
   try {
-    const raw = readFileSync(resolvePath(ROOT, 'memory/registry.yml'), 'utf8');
+    const raw = readFileSync(join(process.cwd(), 'memory', 'registry.yml'), 'utf8');
     const parsed = parseYaml(raw) as { features?: Record<string, RegistryFeature> } | undefined;
     return parsed?.features?.[featureId]?.criticality ?? null;
   } catch {
@@ -213,7 +215,7 @@ function readFeatureCriticality(featureId: string): 'high' | 'medium' | 'low' | 
  *  not be read. */
 function readImpactedFeatureCount(featureId: string): number | null {
   try {
-    const raw = readFileSync(resolvePath(ROOT, 'docs/generated/WORLD_MODEL.json'), 'utf8');
+    const raw = readFileSync(join(process.cwd(), 'docs', 'generated', 'WORLD_MODEL.json'), 'utf8');
     const model = JSON.parse(raw) as WorldModel;
     const neighbors = new Set(
       model.edges
@@ -231,7 +233,7 @@ function readImpactedFeatureCount(featureId: string): number | null {
  *  a real "this feature has never had a recorded incident" fact. */
 function readIncidentDensity(featureId: string): number | null {
   try {
-    const dir = resolvePath(ROOT, 'memory/incidents', featureId);
+    const dir = join(process.cwd(), 'memory', 'incidents', featureId);
     return readdirSync(dir).filter((f) => /^INC-.*\.md$/i.test(f)).length;
   } catch {
     // ENOENT (no incidents directory for this feature) is a real zero, not

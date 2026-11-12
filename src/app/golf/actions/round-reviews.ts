@@ -672,7 +672,7 @@ async function getReviewByIdImpl(reviewId: string): Promise<{
         round:golf_rounds!inner(
           *,
           player:golf_players!inner(
-            *,
+            id, user_id, first_name, last_name, avatar_url, graduation_year, handicap, handicap_index,
             profile:profiles!inner(id, first_name, last_name, email, avatar_url)
           ),
           course:golf_courses(*)
@@ -1108,7 +1108,7 @@ async function getTeamReviewsImpl(
         round:golf_rounds!inner(
           *,
           player:golf_players!inner(
-            *,
+            id, user_id, first_name, last_name, avatar_url, graduation_year, handicap, handicap_index,
             profile:profiles!inner(id, first_name, last_name, email, avatar_url)
           ),
           course:golf_courses(*)
@@ -1261,7 +1261,7 @@ async function getPendingCoachReviewsImpl(_coachId?: string): Promise<{
         round:golf_rounds!inner(
           *,
           player:golf_players!inner(
-            *,
+            id, user_id, first_name, last_name, avatar_url, graduation_year, handicap, handicap_index,
             profile:profiles!inner(id, first_name, last_name, email, avatar_url)
           ),
           course:golf_courses(*)
