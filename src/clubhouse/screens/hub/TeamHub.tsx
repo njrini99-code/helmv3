@@ -471,7 +471,7 @@ export function TeamHub({
   // each failed section keeps its heading with a covered notice marking the gap. One failure keeps its own notice.
   const failedParts = [
     // The week and its replies are one part to name: the week tile carries both.
-    (data.week.error || data.rsvps.error) && (data.week.error ? 'this week' : coach ? 'this week’s replies' : 'your events'),
+    (data.week.error || data.rsvps.error) && (data.week.error ? 'the next 7 days' : coach ? 'the replies' : 'your events'),
     data.announcements.error && 'announcements',
     data.trips.error && 'travel',
     data.updates.error && 'updates',
@@ -665,7 +665,7 @@ export function TeamHub({
                   />
                 </SectionBoundary>
                 {!coach && <SectionBoundary surface="hub.queue" label="Your queue" code="CH-10205">{queueTile}</SectionBoundary>}
-                <SectionBoundary surface="hub.week" label="This week" code="CH-10205">
+                <SectionBoundary surface="hub.week" label="Next 7 days" code="CH-10205">
                   <WeekTile week={data.week} role={data.role} rsvps={data.rsvps} replies={replies} isPending={replyPending} onReply={onReply} covered={covered} span={coach ? 5 : 7} />
                 </SectionBoundary>
                 {coach && (
