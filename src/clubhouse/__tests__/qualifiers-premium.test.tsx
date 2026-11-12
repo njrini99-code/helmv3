@@ -217,6 +217,17 @@ describe('P009-B2 an honest Live state', () => {
     wrap(<QualifiersList data={previewList('coach')} />);
     expect(document.querySelector('.ch-qf-hero .ch-qf-cta')!.textContent).toBe('View leaderboard');
   });
+
+  it('W34 the upcoming qualifiers under the hero are headed Upcoming and run by date', () => {
+    const data = previewList('coach');
+    const up = data.items.find((i) => i.status === 'upcoming')!;
+    const items = [...data.items, { ...up, id: 'late', name: 'Late qualifier', startDate: '2026-11-23' }, { ...up, id: 'early', name: 'Early qualifier', startDate: '2026-11-20' }];
+    wrap(<QualifiersList data={{ ...data, items }} />);
+    const sec = screen.getByRole('heading', { level: 2, name: 'Upcoming' }).closest('section') as HTMLElement;
+    const names = [...sec.querySelectorAll('h3')].map((h) => h.textContent);
+    expect(names.indexOf('Early qualifier')).toBeLessThan(names.indexOf('Late qualifier'));
+    expect(screen.queryByRole('heading', { name: 'Lineup decisions' })).toBeNull();
+  });
 });
 
 describe('P009-A1 standings on hand-hung plates', () => {

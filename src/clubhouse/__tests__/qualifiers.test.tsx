@@ -811,7 +811,8 @@ describe('Qualifiers · list', () => {
   it('90101 the list opens on the live qualifier as the hero, then Active and Concluded, with the counts in the head', () => {
     const data = list();
     wrap(<QualifiersList data={data} />);
-    expect(screen.getByRole('heading', { level: 1, name: 'Lineup decisions' })).toBeTruthy();
+    // W34: one name for the page, as the sidebar and breadcrumb say it.
+    expect(screen.getByRole('heading', { level: 1, name: 'Qualifiers' })).toBeTruthy();
     // The pills carry the counts; the eyebrow does not repeat them.
     expect(document.querySelector('.ch-qf-eyebrow')!.textContent).toBe('Qualifiers');
     expect(screen.getByRole('button', { name: /^Active\s*2$/ })).toBeTruthy();
@@ -826,7 +827,8 @@ describe('Qualifiers · list', () => {
     expect(within(hero).getByText(/^Standings · top \d+$/)).toBeTruthy();
     const titles = (heading: string) =>
       [...(screen.getByRole('heading', { level: 2, name: heading }).closest('section') as HTMLElement).querySelectorAll('h3')].map((h) => h.textContent);
-    expect(titles('Also active')).toEqual(['Conference qualifier']);
+    // W34: the rest under the hero are all upcoming, so the section says so.
+    expect(titles('Upcoming')).toEqual(['Conference qualifier']);
     expect(titles('Concluded')).toEqual(['Fall invitational qualifier', 'Preseason qualifier', 'Spring conference qualifier']);
   });
 
@@ -926,7 +928,7 @@ describe('Qualifiers · list', () => {
     const data = list();
     wrap(<QualifiersList data={{ ...data, items: data.items.map((i) => (i.status === 'in_progress' ? { ...i, leaders: null as never } : i)) }} />);
     expect(code('CH-09211')!.textContent).toMatch(/The qualifiers couldn’t be shown/);
-    expect(screen.getByRole('heading', { name: 'Lineup decisions' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 1, name: 'Qualifiers' })).toBeTruthy();
     quiet.mockRestore();
   });
 });

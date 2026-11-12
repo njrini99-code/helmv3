@@ -64,7 +64,11 @@ export function QualifiersList({ data, live }: { data: ChQList; live?: Record<st
     };
   }, [data.items, filter, q]);
   const hero = active.find((i) => i.status === 'in_progress') ?? active[active.length - 1];
-  const rest = active.filter((i) => i !== hero);
+  // W34: under the hero, live ones first, then the upcoming by start date (Nov 20 above Nov 23).
+  const rest = active
+    .filter((i) => i !== hero)
+    .sort((a, b) => Number(b.status === 'in_progress') - Number(a.status === 'in_progress') || a.startDate.localeCompare(b.startDate));
+  const restUpcoming = rest.length > 0 && rest.every((i) => i.status === 'upcoming');
   const choose = (f: Filter) => {
     if (f !== filter) {
       haptic('select');
@@ -73,7 +77,9 @@ export function QualifiersList({ data, live }: { data: ChQList; live?: Record<st
     setFilter(f);
   };
 
-  const title = coach ? 'Lineup decisions' : 'Qualifiers';
+  // W34: one name for the page, the one the sidebar, the breadcrumb and the phone's top bar use ("Lineup decisions" was the
+  // coach's title alone). The lede still says the job.
+  const title = 'Qualifiers';
   const lede = listLede(coach);
 
   return (
@@ -196,7 +202,7 @@ export function QualifiersList({ data, live }: { data: ChQList; live?: Record<st
                 {rest.length > 0 && (
                   <section className="ch-qf-sec" aria-labelledby="ch-qf-active">
                     {/* P009-D14: the section holds upcoming qualifiers as well as live ones; under the Active hero, the rest. */}
-                    <h2 id="ch-qf-active">{hero ? 'Also active' : 'Upcoming and live'}</h2>
+                    <h2 id="ch-qf-active">{restUpcoming ? 'Upcoming' : hero ? 'Also active' : 'Upcoming and live'}</h2>
                     <div className="ch-qf-grid is-ledger">
                       {rest.map((i) => (
                         <Card key={i.id} item={i} standingsError={data.standingsError} today={data.today} line={live?.[i.id]} coach={coach} />
