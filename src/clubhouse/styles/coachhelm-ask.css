@@ -65,6 +65,13 @@
 .ch-ask-body.has-panel.has-evidence {
   grid-template-columns: 280px minmax(0, 1fr) 380px;
 }
+/* A player's Ask has no chats list, so no chats column: the conversation is the first track (Ask.tsx, `is-solo`). */
+.ch-ask-body.is-solo {
+  grid-template-columns: minmax(0, 1fr);
+}
+.ch-ask-body.is-solo.has-evidence {
+  grid-template-columns: minmax(0, 1fr) 380px;
+}
 .ch-ask-main {
   display: flex;
   flex-direction: column;
@@ -1264,6 +1271,9 @@ html:not([data-fw-theme='dark']) .ch-ask {
     .ch-ask-body.has-evidence {
       position: relative;
       grid-template-columns: 0 minmax(0, 1fr);
+    }
+    .ch-ask-body.is-solo.has-evidence {
+      grid-template-columns: minmax(0, 1fr);
     }
     .ch-ask-body.has-evidence > .ch-ask-ev {
       position: absolute;

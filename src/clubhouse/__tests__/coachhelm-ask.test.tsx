@@ -631,6 +631,18 @@ describe('History: the standing panel (desktop)', () => {
     expect(document.querySelector('.ch-ask-head')!.querySelector('button')).toBeNull();
   });
 
+  it("a player's Ask on a desk has no chats column, so the conversation is the body's first track, and New chat is in the header", () => {
+    // Owner's preview, 11 Nov 2026: the coach's empty chats column held a player's whole Ask in 280px.
+    show(ready({ role: 'player' }));
+    const body = document.querySelector('.ch-ask-body')!;
+    expect(body.classList.contains('is-solo')).toBe(true);
+    expect(body.classList.contains('has-panel')).toBe(false);
+    expect(body.firstElementChild?.classList.contains('ch-ask-main')).toBe(true);
+    const head = within(document.querySelector('.ch-ask-head') as HTMLElement);
+    expect(head.queryByRole('button', { name: 'Show chats' })).toBeNull();
+    expect(head.getByRole('button', { name: 'New chat' })).toBeInTheDocument();
+  });
+
   it('New chat starts a fresh thread at once (no server trip), clears the address and closes the evidence', async () => {
     const { chat } = show(ready({ thread: { id: 'c-putting', title: 'Putting inside 6 feet', messages: ASK_MSGS_ANSWER } }), fakeChat(), undefined);
     await userEvent.click(within(screen.getByRole('complementary', { name: 'Chats' })).getByRole('button', { name: 'New chat' }));

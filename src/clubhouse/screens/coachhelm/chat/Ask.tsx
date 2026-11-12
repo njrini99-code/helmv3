@@ -420,7 +420,9 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
         {player && data.allowance && !showHome && !phone && <AllowanceMeter bucket={data.allowance} />}
         {!phone && <TeamLabel name={data.teamName} />}
       </div>
-      <div className={'ch-ask-body' + (!phone && chatsShown ? ' has-panel' : '') + (!phone && evidenceOpen ? ' has-evidence' : '')}>
+      {/* A player's Ask keeps no chats list (HM3), so on a desk its body has no chats column (`is-solo`). The coach's first
+          column, with nothing in it, held a player's whole conversation in 280px (owner's preview, 11 Nov 2026). */}
+      <div className={'ch-ask-body' + (!phone && player ? ' is-solo' : '') + (!phone && !player && chatsShown ? ' has-panel' : '') + (!phone && evidenceOpen ? ' has-evidence' : '')}>
         {!phone && !player && (
           <SectionBoundary surface="coachhelm.ask.history" label="Your chats" code="CH-13225">
             <HistoryPanel {...histProps} heading="CoachHelm" open={chatsShown} onHide={() => setPanelOpen(false)} />
@@ -429,13 +431,16 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
         <section className="ch-ask-main" aria-label="Conversation">
           {!phone && (
             <header className="ch-ask-head">
-              {!chatsShown && (
+              {/* A player has no chats to show, and New chat is their only way out of a thread, as on the phone. */}
+              {(player || !chatsShown) && (
                 <>
-                  <Tooltip>
-                    <button type="button" className="ch-ask-head__btn" aria-label="Show chats" onClick={showChats}>
-                      <Icon icon={PanelLeftOpen} size={19} />
-                    </button>
-                  </Tooltip>
+                  {!player && (
+                    <Tooltip>
+                      <button type="button" className="ch-ask-head__btn" aria-label="Show chats" onClick={showChats}>
+                        <Icon icon={PanelLeftOpen} size={19} />
+                      </button>
+                    </Tooltip>
+                  )}
                   <Tooltip>
                     <button type="button" className="ch-ask-head__btn is-accent" aria-label="New chat" onClick={newChat}>
                       <Icon icon={SquarePen} size={19} />
