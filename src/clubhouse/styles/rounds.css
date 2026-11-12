@@ -793,14 +793,16 @@ a.ch-rd-sc:focus-visible {
   background: var(--ch-bg-inset);
   color: var(--ch-text-secondary);
 }
+/* W31: one badge, three types at one weight. The black tournament pill was the loudest thing on the page; now each
+   type is the same tinted chip, told by its tint as the calendar tells them (practice neutral, qualifier green,
+   tournament a deeper green). */
 .ch-rd-pill.is-qualifier {
   background: var(--ch-green-50);
   color: var(--ch-green-700);
-  box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.18);
 }
 .ch-rd-pill.is-tournament {
-  background: var(--ch-ink-900);
-  color: var(--ch-ivory-100);
+  background: var(--ch-green-100);
+  color: var(--ch-forest-800);
 }
 .ch-rd-pill.is-nc {
   background: none;
@@ -2665,8 +2667,7 @@ html[data-fw-theme='dark'] .ch-rd-rib rect.is-q {
 html[data-fw-theme='dark'] .ch-rd-season__lg i.is-q {
   box-shadow: inset 0 0 0 2px var(--ch-champagne-500);
 }
-html[data-fw-theme='dark'] .ch-rd-more__go,
-html[data-fw-theme='dark'] .ch-rd-pill.is-qualifier {
+html[data-fw-theme='dark'] .ch-rd-more__go {
   box-shadow: inset 0 0 0 1px rgb(107 187 140 / 0.28);
 }
 html[data-fw-theme='dark'] .ch-rd-tee {
