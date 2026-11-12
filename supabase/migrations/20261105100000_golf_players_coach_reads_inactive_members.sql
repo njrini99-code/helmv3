@@ -7,6 +7,10 @@
 -- WHO: signed-in coaches on the player's team staff. Adds read access to the
 --   profile row of that team's inactive members. Rounds, stats and every other
 --   table stay as they are, on an active membership.
+--   The read ends when the player is active on another team (owner, 2026-11-11:
+--   "Narrow it", from release review D4/C6). Production had 1 of its 5
+--   inactive members active elsewhere; that player's old coach no longer reads
+--   the row, and the new team's coaches read it through the active membership.
 -- ORDER: no dependencies.
 -- ROLLBACK:
 --   supabase/rollbacks/20261105100000_golf_players_coach_reads_inactive_members.rollback.sql -- noqa: LT05
@@ -38,6 +42,13 @@ AS $$
     WHERE gc.user_id = auth.uid()
       AND gtm.player_id = check_player_id
       AND gtm.status = 'inactive'
+      AND NOT EXISTS (
+        SELECT 1
+        FROM golf_team_members elsewhere
+        WHERE elsewhere.player_id = check_player_id
+          AND elsewhere.status = 'active'
+          AND elsewhere.team_id <> gtm.team_id
+      )
   )
 $$;
 
