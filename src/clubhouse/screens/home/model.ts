@@ -90,6 +90,36 @@ function list(parts: string[]): string {
   return parts.length <= 1 ? (parts[0] ?? '') : `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`;
 }
 
+const isQuiet = (r: ChSublineRow) => r.quietDays != null && r.quietDays >= QUIET_DAYS;
+
+/** Most in need first: slipping and quiet, then slipping, then quiet; the longer quiet first within each. */
+function byNeed(a: ChSublineRow, b: ChSublineRow): number {
+  const rank = (r: ChSublineRow) => (r.status === 'slipping' ? 2 : 0) + (isQuiet(r) ? 1 : 0);
+  return rank(b) - rank(a) || (b.quietDays ?? 0) - (a.quietDays ?? 0);
+}
+
+/**
+ * Three or more flagged (W5, owner's preview, 11 Nov 2026: "7 players need a look: Cole, Mason, Owen, Ethan, Jackson, Dylan and
+ * Tyler" named seven of eight and said nothing). A team-wide quiet spell is one sentence about the team, with the longest named;
+ * otherwise the two who need it most, with their reasons, and a count of the rest.
+ */
+function manyFlagged(flagged: ChSublineRow[]): string {
+  const ranked = [...flagged].sort(byNeed);
+  const since = (rows: ChSublineRow[]) => Math.min(...rows.map((r) => r.quietDays ?? Infinity));
+  if (ranked.every((r) => r.status !== 'slipping')) {
+    const longest = ranked[0]!;
+    return `${ranked.length} players haven’t posted a round in ${since(ranked)}+ days, ${firstName(longest.name)} the longest at ${longest.quietDays}.`;
+  }
+  const lead = list(ranked.slice(0, 2).map(reason));
+  const rest = ranked.slice(2);
+  const tail = rest.every((r) => r.status === 'slipping')
+    ? `${rest.length} more ${rest.length === 1 ? 'is' : 'are'} slipping.`
+    : rest.every((r) => r.status !== 'slipping')
+      ? `${rest.length} ${rest.length === 1 ? 'other hasn’t' : 'others haven’t'} posted a round in ${since(rest)}+ days.`
+      : `${rest.length} more need a look.`;
+  return `${lead.charAt(0).toUpperCase()}${lead.slice(1)}. ${tail}`;
+}
+
 /**
  * The line under the greeting: who needs a look (slipping form, or no round
  * in QUIET_DAYS), then the week's next competition, then the rest. Early-read
@@ -121,7 +151,7 @@ export function homeSubline(
     const s = list(flagged.map(reason));
     out.push(`${s.charAt(0).toUpperCase()}${s.slice(1)}.`);
   } else {
-    out.push(`${flagged.length} players need a look: ${list(flagged.map((r) => firstName(r.name)))}.`);
+    out.push(manyFlagged(flagged));
   }
   // A no-break space ahead of a title's dot keeps "· Pinehurst No. 2" from opening a line.
   if (opts.nextCompetition) out.push(`${opts.nextCompetition.title.replace(/ · /g, '\u00a0· ')} is ${opts.nextCompetition.when}.`);
