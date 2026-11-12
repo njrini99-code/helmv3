@@ -111,11 +111,19 @@ function Ring({ v }: { v: number }) {
 const namesWords = (names: readonly string[]) => (names.length <= 2 ? names.join(' and ') : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`);
 const focusKey = (title: string) => title.trim().replace(/\s+/g, ' ').toLowerCase();
 
+/** A focus's title without its player's name in front: a focus keeps the read's own title, and an old read's carries "Dylan: ". */
+const focusTitle = (w: ChBriefWorking) => readTitle({ first: w.who.split(' ')[0] ?? w.who, name: w.who }, w.title);
+
 /** Working on's rows: one focus to a row, and a focus two or more players share is one row, in the order the brief lists them. */
-export function workingRows(working: readonly ChBriefWorking[]): Array<{ key: string; areas: ChBriefWorking[] }> {
-  const rows = new Map<string, ChBriefWorking[]>();
-  for (const w of working) rows.set(focusKey(w.title), [...(rows.get(focusKey(w.title)) ?? []), w]);
-  return [...rows].map(([key, areas]) => ({ key, areas }));
+export function workingRows(working: readonly ChBriefWorking[]): Array<{ key: string; title: string; areas: ChBriefWorking[] }> {
+  const rows = new Map<string, { title: string; areas: ChBriefWorking[] }>();
+  for (const w of working) {
+    const title = focusTitle(w);
+    const row = rows.get(focusKey(title));
+    if (row) row.areas.push(w);
+    else rows.set(focusKey(title), { title, areas: [w] });
+  }
+  return [...rows].map(([key, row]) => ({ key, ...row }));
 }
 
 /**
@@ -140,14 +148,14 @@ export function WorkingCard({ working, proposed, failed, onRetry }: { working: r
         <Notice title="Couldn’t load this part" onRetry={onRetry} />
       ) : (
         <div data-work="">
-          {workingRows(working).map(({ key, areas }) => {
+          {workingRows(working).map(({ key, title, areas }) => {
             const w = areas[0] as ChBriefWorking;
             if (areas.length > 1) {
               const words = new Set(areas.map((a) => a.word));
               return (
                 <div className="wk is-shared" key={`shared:${key}`}>
                   <div>
-                    <b className="ch-num">{w.title}</b>
+                    <b className="ch-num">{title}</b>
                     <span>{namesWords(areas.map((a) => a.who.split(' ')[0] as string))}</span>
                     {words.size === 1 && <span className="st">{w.word}</span>}
                   </div>
@@ -158,7 +166,7 @@ export function WorkingCard({ working, proposed, failed, onRetry }: { working: r
               <div className="wk" key={w.id}>
                 <div>
                   <b className="ch-num">
-                    {w.who.split(' ')[0]} · {w.title}
+                    {w.who.split(' ')[0]} · {title}
                   </b>
                   {w.line && <span>{w.line}</span>}
                   <span className="st">{[w.word, w.since].filter(Boolean).join(' · ')}</span>
