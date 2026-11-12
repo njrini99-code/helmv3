@@ -106,11 +106,19 @@ export function EmptyState({
         data-ch-state={state}
       >
         <div className="ch-es__copy">
-          {glyph && (
-            <span className="ch-es__glyph" aria-hidden="true">
-              <Icon icon={glyph} size={page && !compact ? 28 : 16} />
-            </span>
-          )}
+          {glyph &&
+            (page && !compact ? (
+              // Tournaments' medallion (W19 B): the tile on its faint rings, the one picture of the card.
+              <span className="ch-es__glyph" aria-hidden="true">
+                <span className="ch-es__tile">
+                  <Icon icon={glyph} size={26} />
+                </span>
+              </span>
+            ) : (
+              <span className="ch-es__glyph" aria-hidden="true">
+                <Icon icon={glyph} size={16} />
+              </span>
+            ))}
           <div className="ch-es__text">
             <Title className="ch-es__title" role={state === 'filtered' ? 'status' : undefined}>
               {heading}

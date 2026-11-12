@@ -503,10 +503,15 @@
    empty. A medallion on faint rings, a title that names what belongs, one or
    two sentences, one primary action. The block fades in once over base. The
    route error (RouteErrorView) is the same anatomy in the danger tone. */
-.ch-empty-page {
+/* The medallion's colours: the route error's, and every page empty's (W19 B, owner, 12 Nov 2026: each reads as
+   Tournaments' first run did; ui.css .ch-es--page). One source; the danger tone overrides them below. */
+.ch-empty-page,
+.ch-es--page {
   --ch-medallion-bg: var(--ch-green-800);
   --ch-medallion-ink: var(--ch-on-green-plate);
   --ch-medallion-rings: rgb(21 90 57 / 0.1);
+}
+.ch-empty-page {
   display: grid;
   place-items: center;
   min-height: calc(100vh - 140px);
@@ -532,7 +537,8 @@
 .ch-empty-page__in {
   animation: ch-skel-in var(--ch-dur-base) var(--ch-ease) backwards;
 }
-.ch-empty-page__art {
+.ch-empty-page__art,
+.ch-es--page:not(.ch-es--line) .ch-es__glyph {
   position: relative;
   display: grid;
   place-items: center;
@@ -540,7 +546,8 @@
   height: 148px;
   margin-bottom: 4px;
 }
-.ch-empty-page__art::before {
+.ch-empty-page__art::before,
+.ch-es--page:not(.ch-es--line) .ch-es__glyph::before {
   content: '';
   position: absolute;
   inset: 0;
@@ -549,7 +556,8 @@
   -webkit-mask: radial-gradient(circle, #000 30%, transparent 70%);
   mask: radial-gradient(circle, #000 30%, transparent 70%);
 }
-.ch-empty-page__ic {
+.ch-empty-page__ic,
+.ch-es__tile {
   position: relative;
   display: grid;
   place-items: center;
@@ -563,7 +571,8 @@
 /* The title is the Ledger's forest ink on every screen, set here rather than left to the canopy's h2 rule, so a page
    without the framed head and the phone read the same (lead decision under the owner's full-auto brief; owner to
    confirm). */
-.ch-empty-page__title {
+.ch-empty-page__title,
+.ch-es--page .ch-es__title {
   margin: 0;
   font: var(--ch-type-28-strong);
   line-height: var(--ch-lead-tight);
@@ -572,7 +581,8 @@
   color: var(--ch-ledger-ink);
   text-wrap: balance;
 }
-.ch-empty-page__body {
+.ch-empty-page__body,
+.ch-es--page .ch-es__body {
   max-width: 42ch;
   margin: 0;
   font: var(--ch-type-15);
@@ -664,14 +674,17 @@
     min-height: 0;
     padding: 52px 24px 40px;
   }
-  .ch-empty-page__art {
+  .ch-empty-page__art,
+  .ch-es--page:not(.ch-es--line) .ch-es__glyph {
     width: 120px;
     height: 120px;
   }
-  .ch-empty-page__title {
+  .ch-empty-page__title,
+  .ch-es--page .ch-es__title {
     font-size: calc(22 * var(--ch-type-k));
   }
-  .ch-empty-page__body {
+  .ch-empty-page__body,
+  .ch-es--page .ch-es__body {
     font-size: calc(15 * var(--ch-type-k));
   }
   .ch-empty-page__a {
@@ -2734,7 +2747,8 @@ html[data-fw-theme='dark'] .ch-bellp__row:focus-visible {
     background: var(--ch-workspace);
   }
 }
-html[data-fw-theme='dark'] .ch-empty-page {
+html[data-fw-theme='dark'] .ch-empty-page,
+html[data-fw-theme='dark'] .ch-es--page {
   --ch-medallion-rings: rgb(107 187 140 / 0.12);
 }
 html[data-fw-theme='dark'] .ch-empty-page--danger {
