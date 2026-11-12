@@ -113,7 +113,9 @@ describe('the drawer: the shots behind one direction', () => {
     expect(links).toHaveLength(40);
     const kept = WITH.shots!.directions.right!.shots;
     links.forEach((a, i) => expect(a).toHaveAttribute('href', `/golf/dashboard/rounds/${kept[i]!.round_id}`));
-    expect(links[0]).toHaveAccessibleName(/^Open the round: Wed, Nov 4, Hilltop Golf Club, from \d+ yd · left \d+ ft · from the fairway$/);
+    expect(links[0]).toHaveAccessibleName(/^Open the round: Wed, Nov 4, Hilltop Golf Club, \d+ yd from the fairway · \d+ ft left$/);
+    // The distance left is said after its number, as the round review says it, never as a direction ("left 18 ft").
+    for (const a of links) expect(a.textContent).not.toMatch(/\bleft \d/);
   });
 
   it('a direction under the cap says no cap, and closing the drawer clears the choice', () => {
@@ -171,7 +173,9 @@ describe('touch and motion', () => {
     // Rules, not boxes: no fill or shadow on a direction, the chosen one ruled in the selected ink.
     expect(rule('.ch-aks-compass__dir')).toMatch(/background: none;/);
     expect(rule('.ch-aks-compass__dir')).not.toMatch(/box-shadow/);
-    expect(rule('.ch-aks-compass__dir.is-on')).toMatch(/border-bottom: 2px solid var\(--ch-selected-strong\);/);
+    // Selected ink (light at night), not --ch-selected-strong, a plate's fill that stays deep green in the dark.
+    expect(rule('.ch-aks-compass__dir.is-on')).toMatch(/border-bottom: 2px solid var\(--ch-selected-ink\);/);
+    expect(rule('.ch-aks-compass__dir.is-on .ch-aks-compass__word')).toMatch(/color: var\(--ch-selected-ink\);/);
   });
 });
 
@@ -182,6 +186,9 @@ describe('the phone: the shots in a sheet', () => {
     const sheetEl = screen.getByRole('dialog');
     expect(sheetEl).toHaveAccessibleName('9 shots missed short');
     expect(within(sheetEl).getAllByRole('link')).toHaveLength(9);
+    // In the sheet's footer, not at the end of the list: in reach without scrolling past every shot.
+    expect(sheetEl.querySelector('.ch-aks-compass__drawer .ch-aks-compass__ask')).toBeNull();
+    expect(within(sheetEl).getAllByRole('button', { name: 'Ask about these shots' })).toHaveLength(1);
     fireEvent.click(within(sheetEl).getByRole('button', { name: 'Ask about these shots' }));
     expect(askAbout).toHaveBeenCalledWith('Ask about the 9 shots that missed short', { evidence_ref: 'e7', key: 'shots:short' });
     expect(radio(/^Short,/)).toHaveAttribute('aria-checked', 'false');

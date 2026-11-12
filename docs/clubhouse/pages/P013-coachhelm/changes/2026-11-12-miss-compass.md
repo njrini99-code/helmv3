@@ -27,6 +27,10 @@ Held items:     flag coachhelm_miss_compass_v1 is off everywhere; COACHHELM_MISS
   sent ask closes the sheet, so it never sits over the answer; on a desk the drawer stays in the earlier answer.
 - What the model is told about the selection (engine/about.ts): the count and the rounds, each with its id whole, the list
   kept to a length that leaves the closing sentence inside the 900-character line, the rest counted ("and 8 more rounds").
+- Each shot reads as the round review says a shot: "135 yd from the fairway · 18 ft left", the distance left after its
+  number, never "left 18 ft" beside "missed right". On a phone "Ask about these shots" sits in the sheet's footer, in reach
+  above up to 40 rows; on a desk it ends the drawer. The chosen direction is ruled and named in the selected ink, which
+  reads at night (WebKit, 12 Nov: `--ch-selected-strong`, a plate's fill, all but vanished on the dark page).
 - In the studio's look (coachhelm-ask-studio.css): rules under each direction, not boxes; the share as a ruled length in
   an SVG; the chosen direction ruled in the selected ink. It draws in place: nothing moves when a direction is chosen,
   with or without reduced motion (the phone's sheet is the app's Modal, with its own reduced-motion handling).
