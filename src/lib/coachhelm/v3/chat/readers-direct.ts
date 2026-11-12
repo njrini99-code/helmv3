@@ -465,15 +465,21 @@ export const showVisual: ReadTool<z.infer<typeof ShowVisualModelInput>> = {
   run: async (ctx, input) => {
     if (input.kind === 'compose') {
       const parsed = CompositionSpecV2.safeParse(input);
-      if (!parsed.success) return notice('Not drawn: a composition needs a title and at least one block.', { refused: true });
+      if (!parsed.success) return { ...notice(`Not drawn: a composition needs a title and one to six blocks of the listed types (${parsed.error.issues[0]?.path.join('.') || 'input'}: ${parsed.error.issues[0]?.message ?? 'invalid'}).`, { refused: true }), progress_detail: `invalid input: ${parsed.error.issues[0]?.path.join('.') || 'composition'}` };
       const result = compileComposition(parsed.data, ctx.reads);
-      if (!result.ok) return notice(`Not drawn: ${result.message}`, { refused: true, detail: { reason: result.reason, dropped: result.dropped } });
-      return notice(`Shown: ${result.composition.title} (${result.composition.blocks.map((b) => b.type).join(', ')}). Do not repeat its figures; add the one thing it does not say.`, { parts: [{ type: 'data-visual-composition', id: `visual-${result.composition.artifactId}`, data: result.composition }], ...(result.dropped.length ? { detail: { dropped: result.dropped } } : {}) });
+      // The refusal's reason travels to the step (its `detail`), so a failed "Building the visual" says why in the stored thread.
+      if (!result.ok) return { ...notice(`Not drawn: ${result.message}${result.dropped.length ? ` (${result.dropped.join('; ')})` : ''}`, { refused: true, detail: { reason: result.reason, dropped: result.dropped } }), progress_detail: result.dropped[0] ?? result.reason };
+      // A block that could not be drawn is named back to the model, so it does not describe a figure the coach cannot see.
+      const notDrawn = result.dropped.length ? ` Not drawn: ${result.dropped.join('; ')}.` : '';
+      return {
+        ...notice(`Shown: ${result.composition.title} (${result.composition.blocks.map((b) => b.type).join(', ')}).${notDrawn} Do not repeat its figures; add the one thing it does not say.`, { parts: [{ type: 'data-visual-composition', id: `visual-${result.composition.artifactId}`, data: result.composition }], ...(result.dropped.length ? { detail: { dropped: result.dropped } } : {}) }),
+        ...(result.dropped.length ? { progress_detail: `${result.dropped.length} block${result.dropped.length === 1 ? '' : 's'} not drawn` } : {}),
+      };
     }
     const spec = VisualSpec.safeParse(input);
     if (!spec.success) return notice('Not drawn: sg_anatomy needs the evidence_ref of the strokes gained read.', { refused: true });
     const result = compileVisual(spec.data, ctx.reads);
-    if (!result.ok) return notice(`Not drawn: ${result.message}`, { refused: true, detail: { reason: result.reason } });
+    if (!result.ok) return { ...notice(`Not drawn: ${result.message}`, { refused: true, detail: { reason: result.reason } }), progress_detail: result.reason };
     return notice(`Shown: ${result.artifact.title}, for ${result.artifact.entity.label}. Do not repeat its figures; add the one thing it does not say.`, { parts: [{ type: 'data-visual-artifact', id: `visual-${result.artifact.artifactId}`, data: result.artifact }] });
   },
 };

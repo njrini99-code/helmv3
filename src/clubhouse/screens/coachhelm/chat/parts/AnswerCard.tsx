@@ -8,6 +8,7 @@ import { Copy } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { stepsReceipt, type AskAssistantTurn, type AskBlock } from '../../../../data/coachhelm-chat-thread';
 import { Icon } from '../../../../ui/Icon';
+import { chReport } from '../../../../lib/track';
 import { useToast } from '../../../../ui/Toast';
 import { AskEvidenceView } from '../Evidence';
 import { AskProse } from '../Prose';
@@ -134,6 +135,11 @@ export function AnswerCard({ turn, fresh, showFollowUps, playersByName, players,
   const seconds = ran ?? (turn.durationMs != null ? turn.durationMs / 1000 : null);
   const artifacts = turn.artifacts ?? [];
   const toast = useToast();
+  // A stored visual block that could not be drawn is reported once per answer, never hidden in silence (preview, 12 Nov).
+  const faults = (turn.visualFaults ?? []).join(' | ');
+  useEffect(() => {
+    if (faults && !live) chReport(new Error(`Ask visual not fully drawn: ${faults}`), { surface: 'coachhelm-ask', action: 'visual-parse', severity: 'medium', extra: { messageId: turn.id } });
+  }, [faults, live, turn.id]);
   const reads = useMemo(() => turn.reads ?? [], [turn.reads]);
   const known = useMemo(() => new Set(reads.map((r) => r.ref)), [reads]);
   const chip = useMemo(

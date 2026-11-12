@@ -6,7 +6,7 @@ import type { ActionProposal, ActionReceipt } from '@/lib/coachhelm/v3/chat/acti
 import { turnMetaOf } from '@/lib/coachhelm/v3/chat/engine/protocol';
 import type { Measurement, MeasurementSeries, ToolEnvelope } from '@/lib/coachhelm/v3/chat/provenance';
 import { WIDE_READ_CHIPS } from '@/lib/coachhelm/v3/chat/wide-read-names';
-import { ValidatedComposition } from '@/lib/coachhelm/v3/chat/visuals/composition';
+import { salvageComposition, type ValidatedComposition } from '@/lib/coachhelm/v3/chat/visuals/composition';
 import { ValidatedVisualArtifact } from '@/lib/coachhelm/v3/chat/visuals/schema';
 import { changeTone, formatFixed, formatSG, formatToPar, MINUS, NO_DATA } from '../lib/format';
 import { formatWallClock, zoneWallParts } from '../lib/dates';
@@ -221,6 +221,8 @@ export interface AskAssistantTurn {
   pendingVisual?: string[] | null;
   /** Chat v3: how long the server worked on the turn, from its stored meta (`data-turn-meta`). A turn stored before it has none. */
   durationMs?: number | null;
+  /** Blocks of a stored visual that could not be drawn ("block 1 (season_compare): this_season…"): the answer reports them. */
+  visualFaults?: string[];
 }
 
 export type AskTurn = AskUserTurn | AskAssistantTurn;
@@ -617,10 +619,14 @@ export function buildAssistantTurn(message: UIMessage, ctx: { isLast: boolean; b
   });
   // A model-designed composition (visuals/composition.ts) does the same for the reads it draws in full, and only those.
   const compositions = new Map<string, ValidatedComposition>();
+  // What could not be drawn, by name: a stored composition that fails the whole parse keeps the blocks that pass, and the rest are
+  // reported by the answer (it used to vanish whole and say nothing; preview, 12 Nov).
+  const visualFaults: string[] = [];
   parts.forEach((p, i) => {
     if (p.type !== 'data-visual-composition') return;
-    const parsed = ValidatedComposition.safeParse(dataOf<unknown>(p));
-    if (parsed.success) compositions.set(String(p.id ?? `c-${i}`), parsed.data);
+    const { composition, dropped } = salvageComposition(dataOf<unknown>(p));
+    visualFaults.push(...dropped);
+    if (composition) compositions.set(String(p.id ?? `c-${i}`), composition);
   });
   // A model's visual that plots the same metric for the same subjects as a read's own chart stands in for it (the title and the point are the
   // visual's; the same bars twice are noise). A figure the read could not give (no value) is not a subject the visual could plot.
@@ -730,6 +736,7 @@ export function buildAssistantTurn(message: UIMessage, ctx: { isLast: boolean; b
     durationMs: turnMetaOf(parts as never)?.duration_ms ?? null,
     artifacts: artifactsOf(parts as never),
     pendingVisual: pendingVisualOf(parts),
+    ...(visualFaults.length ? { visualFaults } : {}),
   };
 }
 

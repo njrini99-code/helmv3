@@ -4,11 +4,12 @@ import type { Measurement, MeasurementSeries, ToolEnvelope } from '../provenance
 import {
   COMPOSITION_SCHEMA_V2,
   COMPOSITION_SCHEMA_VERSION,
+  ResolvedBlock,
+  ValidatedComposition,
+  blockProblem,
   type CompositionBlockSpec,
   type CompositionBlockSpecV2,
   type CompositionSpec,
-  type ResolvedBlock,
-  type ValidatedComposition,
 } from './composition';
 
 /**
@@ -23,7 +24,7 @@ import {
 
 export type CompositionResult =
   | { ok: true; composition: ValidatedComposition; dropped: string[] }
-  | { ok: false; reason: 'figure_in_text' | 'nothing_to_draw'; message: string; dropped: string[] };
+  | { ok: false; reason: 'figure_in_text' | 'nothing_to_draw' | 'invalid_composition'; message: string; dropped: string[] };
 
 /** Below this a "trend" is a change between two rounds, not a trend. Same rule as the chat's renderers. */
 const MIN_TREND_POINTS = 3;
@@ -222,7 +223,15 @@ export function compileComposition(
       dropped.push(`block ${i + 1} (${b.type}): ${r.why}`);
       return;
     }
-    blocks.push(r.block);
+    // Every block is checked against what the thread will parse before it is kept: a read whose `detail` is not the shape the
+    // block draws (a team season table where a band belongs) is not drawn, and the model is told so, instead of storing a
+    // composition the thread then drops whole.
+    const checked = ResolvedBlock.safeParse(r.block);
+    if (!checked.success) {
+      dropped.push(`block ${i + 1} (${b.type}): not drawn, ${blockProblem(checked.error)}`);
+      return;
+    }
+    blocks.push(checked.data);
     r.drawn.m.forEach((m) => drawnM.add(key(m)));
     r.drawn.s.forEach((s) => drawnS.add(seriesKey(s)));
   });
@@ -257,17 +266,23 @@ export function compileComposition(
 
   const body = { title: spec.title, lede: spec.lede ?? null, layout: spec.layout, blocks, coverageNotes };
   const dataHash = createHash('sha256').update(canonical(body)).digest('hex');
+  const composition = {
+    artifactId: `vc-${dataHash.slice(0, 12)}`,
+    schemaVersion: blocks.some((b) => b.type === 'miss_pattern' || b.type === 'putt_profile' || b.type === 'season_compare' || b.type === 'hole_strip') ? COMPOSITION_SCHEMA_V2 : COMPOSITION_SCHEMA_VERSION,
+    kind: 'compose' as const,
+    ...body,
+    evidenceRefs,
+    dataHash,
+    createdAt: now.toISOString(),
+  };
+  // Never store what the thread would reject: the whole composition is parsed as the thread parses it.
+  const stored = ValidatedComposition.safeParse(composition);
+  if (!stored.success) {
+    return { ok: false, reason: 'invalid_composition', message: `The visual could not be drawn: ${blockProblem(stored.error)}. Answer in words, or draw fewer blocks.`, dropped };
+  }
   return {
     ok: true,
     dropped,
-    composition: {
-      artifactId: `vc-${dataHash.slice(0, 12)}`,
-      schemaVersion: blocks.some((b) => b.type === 'miss_pattern' || b.type === 'putt_profile' || b.type === 'season_compare' || b.type === 'hole_strip') ? COMPOSITION_SCHEMA_V2 : COMPOSITION_SCHEMA_VERSION,
-      kind: 'compose',
-      ...body,
-      evidenceRefs,
-      dataHash,
-      createdAt: now.toISOString(),
-    },
+    composition: stored.data,
   };
 }
