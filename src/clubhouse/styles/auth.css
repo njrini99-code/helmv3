@@ -292,10 +292,9 @@
   overflow: hidden;
   /* What the server draws, and what shows until the scene has loaded: a mid-morning sky over a green (no clock in it, so it never mismatches). */
   background: linear-gradient(180deg, #c7dce2 0%, #f1eddd 38%, #a7baa5 52%, #7e9f5e 58%, #3c6634 100%);
-  /* The course is drawn to the whole frame and shown through a window on the left, so opening it is a clip and a slide
-     (both cheap), not a resize of every layer. */
-  clip-path: inset(0 calc(var(--ch-au-pw) + 8px) 0 0 round 14px);
-  transition: clip-path var(--ch-au-t-photo) var(--ch-au-ease);
+  /* The course is drawn to the whole frame. On a desk the window on the left is the seam's doing (below), not a clip: a
+     clip-path opening repaints on the main thread every frame in WebKit, and the panel faded out long before the clip
+     opened, so the frame's green showed as a slab where the form had been (owner, 2026-11-12: "very clunky"). */
 }
 .ch-au-photo::after {
   content: '';
@@ -864,9 +863,6 @@
   transform: translateX(36px) scale(0.985);
   pointer-events: none;
 }
-.ch-au[data-phase='opening'] .ch-au-photo {
-  clip-path: inset(0 0 0 0 round 14px);
-}
 .ch-au[data-phase='opening'] .ch-au-photo > .ch-au-scene {
   transform: none;
   --ch-au-inl: 0px;
@@ -879,6 +875,46 @@
 }
 .ch-au[data-phase='opening'] .ch-au-say {
   transform: translateY(8px);
+}
+/* The seam (desk): the frame's green between the course and the form, with the window's two rounded corners, drawn over
+   the full-frame course and slid off with the panel. It covers everything right of the window, so the course behind the
+   panel never shows at its rounded corners. Opening, the panel and the seam slide right by the panel's width and the
+   gutter, as far as the course slides: the course's edge stays under them the whole way, nothing is clipped, and the
+   seam's corners end on the photo's own right corners. The panel stays opaque (fading it showed the seam through it);
+   its words fade. Transform and opacity only, so it keeps moving while the welcome loads. */
+.ch-au-seam {
+  display: none;
+}
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
+  .ch-au-seam {
+    display: block;
+    position: absolute;
+    top: 8px;
+    bottom: 8px;
+    right: 8px;
+    width: calc(var(--ch-au-pw) + 22px);
+    pointer-events: none;
+    background:
+      radial-gradient(circle at 0 100%, transparent 13.5px, var(--ch-frame) 14px) left top / 14px 14px no-repeat,
+      radial-gradient(circle at 0 0, transparent 13.5px, var(--ch-frame) 14px) left bottom / 14px 14px no-repeat,
+      linear-gradient(var(--ch-frame), var(--ch-frame)) right / calc(100% - 14px) 100% no-repeat;
+  }
+  .ch-au[data-phase='opening'] {
+    --ch-au-t-photo: var(--ch-au-t-open);
+  }
+  .ch-au[data-phase='opening'] :is(.ch-au-panel, .ch-au-seam) {
+    transform: translateX(calc(var(--ch-au-pw) + 8px));
+    transition: transform var(--ch-au-t-photo) var(--ch-au-ease);
+  }
+  .ch-au[data-phase='opening'] .ch-au-panel {
+    opacity: 1;
+  }
+  .ch-au-panel > * {
+    transition: opacity var(--ch-au-t-panel) var(--ch-au-out);
+  }
+  .ch-au[data-phase='opening'] .ch-au-panel > * {
+    opacity: 0;
+  }
 }
 @keyframes chAuIn {
   from {
@@ -1152,13 +1188,40 @@
 
 /* The hand-off: the course folds into the app canvas, then the dashboard is drawn in place. */
 /* The strip the fold uncovers is the sidebar's own green, so nothing changes colour when the dashboard arrives. */
-.ch-au[data-phase='leaving'] {
-  background: linear-gradient(180deg, #0e4029, var(--ch-frame));
+.ch-au {
+  --ch-au-leave-top: #0e4029;
+  --ch-au-leave-bg: linear-gradient(180deg, var(--ch-au-leave-top), var(--ch-frame));
 }
-.ch-au-photo[data-fold] {
-  /* The photo sits 8px in from the frame; the dashboard's canvas starts at the sidebar's edge. Land exactly on it. */
-  clip-path: inset(0 0 0 calc(var(--ch-sidebar-w) - 8px) round 14px);
-  transition: clip-path var(--ch-au-t-fold) var(--ch-au-ease);
+.ch-au[data-phase='leaving'] {
+  background: var(--ch-au-leave-bg);
+}
+/* Desk: the fold is that green sliding in from the left over the course, to the sidebar's edge where the dashboard's
+   canvas starts, with the window's two rounded corners on its leading edge. It was a clip-path on the photo, which
+   WebKit repaints on the main thread every frame of the 880ms, over the whole painted course; a transform keeps moving
+   whatever the main thread is doing. The green runs top to bottom only, so a slab sliding over the course draws what
+   the clip uncovered. */
+.ch-au-fold {
+  display: none;
+}
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
+  .ch-au-fold {
+    display: block;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: calc(var(--ch-sidebar-w) + 14px);
+    pointer-events: none;
+    transform: translateX(-100%);
+    background:
+      radial-gradient(circle at 100% 100%, transparent 13.5px, var(--ch-au-leave-top) 14px) right top 8px / 14px 14px no-repeat,
+      radial-gradient(circle at 100% 0, transparent 13.5px, var(--ch-frame) 14px) right bottom 8px / 14px 14px no-repeat,
+      var(--ch-au-leave-bg) left top / calc(100% - 14px) 100% no-repeat;
+  }
+  .ch-au-photo[data-fold] ~ .ch-au-fold {
+    transform: none;
+    transition: transform var(--ch-au-t-fold) var(--ch-au-ease);
+  }
 }
 .ch-au-photo[data-fold] .ch-au-paper {
   opacity: 1;
@@ -1613,8 +1676,9 @@ html[data-fw-theme='dark'] .ch-au-wl-hint,
 html[data-fw-theme='dark'] .ch-au-wl-hint kbd {
   color: #1c1b18;
 }
-html[data-fw-theme='dark'] .ch-au[data-phase='leaving'] {
-  background: var(--ch-frame);
+html[data-fw-theme='dark'] .ch-au {
+  --ch-au-leave-top: var(--ch-frame);
+  --ch-au-leave-bg: var(--ch-frame);
 }
 @media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   html[data-fw-theme='dark'] .ch-au-panel {

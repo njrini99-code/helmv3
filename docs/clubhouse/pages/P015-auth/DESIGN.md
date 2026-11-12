@@ -108,10 +108,10 @@ What is on the design's clock, and where it lives:
 
 | Piece | Timing | Where |
 | --- | --- | --- |
-| Welcome's pieces | scrim 1.4s at 0.2s, mark 0.7s at 0.3s, date 0.5s, "Good morning," 1s at 0.64s with opacity and a 16px rise, the name 1.1s at 1.05s, the card 0.9s at 2.25s, each item 140ms after the one before from 2.55s | `auth-motion.ts` variants |
+| Welcome's pieces | scrim 1.4s at 0.2s, mark 0.7s at 0.3s, date 0.5s, "Good morning," 1s at 0.64s with opacity and a 16px rise, the name 1.1s at 1.05s, the card rising 0.9s at 2.25s and opaque in 0.4s, its rows riding its fade and settling 6px, 50ms apart, from 2.25s (owner, 2026-11-12: the card stood empty, then its rows popped in) | `auth-motion.ts` variants |
 | Camera and ball | desktop push to 1.34 over 5.2s; phone push to 1.18 over 2.6s toward the hole; ball flight 1.65s, one hop, a roll to the cup | `auth-tokens.css`, `GolfScene`, `scene-ball` |
-| Sign-in to welcome | form leaves, the course takes the frame, the veil and tagline fade, 720ms | `AuthFrame`, `OPENING_MS` |
-| Hand-off | text slides left and fades 420ms, the course clips to the app canvas over 880ms, paper fades in, the destination is asked for at 1s; 520ms when there is nothing to fold into; a fade to ivory on the phone | `Welcome`, `HANDOFF_MS`, `auth.css` |
+| Sign-in to welcome | desk: the panel's words fade and the panel slides off right with the seam (the frame's green beside the window) as the course slides to full frame, 720ms, transforms only; phone: the sheet drops, 760ms | `AuthFrame`, `OPENING_MS`, `--ch-au-t-open` |
+| Hand-off | text slides left 420ms and is gone in 240ms, the sidebar's green slides in over the course to the app canvas over 880ms (a transform, not a clip), paper fades in, the destination is asked for at 1s; 520ms when there is nothing to fold into; a fade to ivory on the phone | `Welcome`, `HANDOFF_MS`, `auth.css` |
 | Loops | flag wave, water shimmer, oaks, clouds, birds, stars | `auth-tokens.css`, `auth.css` |
 | The form's micro-motion | on the v2 scale, not the design's clock: the key lighting and its label crossfade (quick, base), a refusal's glide (base, transform only), the eye (quick, base); the fields' shake borrows the sign-up code's 380ms | `SignInForm`, `use-glide.ts`, `auth.css` (CH-15607 to CH-15611) |
 

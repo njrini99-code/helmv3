@@ -22,7 +22,7 @@ import { sceneGeometry } from '../screens/auth/scene-geometry';
 import { SKY_KEYS, greetingWord, isDarkSky, mixColor, quantizeHour, skyAt } from '../screens/auth/scene-sky';
 import { sceneMetrics } from '../screens/auth/GolfScene';
 import { failureFor } from '../screens/auth/sign-in-state';
-import { welcomeCard, welcomeLine1 } from '../screens/auth/auth-motion';
+import { WELCOME_AT, welcomeCard, welcomeItem, welcomeLine1 } from '../screens/auth/auth-motion';
 
 /** Sign in, welcome and the painted course (P015): the rules that carry no DOM, each found by its number in docs/clubhouse/catalog/auth.md. */
 
@@ -277,13 +277,32 @@ describe('CH-15303 CH-15301 CH-15302 CH-15201 what the welcome shows', () => {
 
 describe('CH-15605 reduced motion: the welcome lands in a millisecond', () => {
   it('keeps the design timings otherwise', () => {
-    const still = welcomeCard.show as (c: { reduced: boolean }) => { transition: { duration: number; delay: number } };
+    type Tx = { duration: number; delay: number };
+    const still = welcomeCard.show as (c: { reduced: boolean }) => { transition: Tx & { transform: Tx; opacity: Tx } };
     expect(still({ reduced: true }).transition).toEqual({ duration: 0.001, delay: 0 });
-    expect(still({ reduced: false }).transition.duration).toBe(0.9);
-    expect(still({ reduced: false }).transition.delay).toBe(2.25);
+    // The card rises over 0.9s but is opaque in 0.4s, both from 2.25s (owner, 2026-11-12: the card read see-through).
+    expect(still({ reduced: false }).transition.transform).toMatchObject({ duration: 0.9, delay: 2.25 });
+    expect(still({ reduced: false }).transition.opacity).toMatchObject({ duration: 0.4, delay: 2.25 });
     const line = welcomeLine1.show as (c: { reduced: boolean }) => { transition: { duration: number; delay: number } };
     expect(line({ reduced: true }).transition.duration).toBe(0.001);
     expect(line({ reduced: false }).transition.delay).toBe(0.64);
+  });
+});
+
+describe('the welcome card arrives whole (owner, 2026-11-12: "what you missed" sloppy during the animation)', () => {
+  type Tx = { duration: number; delay: number };
+  it('its rows ride the card: no fade of their own, starting with the card, a small step apart', () => {
+    expect(welcomeItem.hidden).toEqual({ transform: 'translate(0px, 6px)' });
+    const row = welcomeItem.show as (c: { reduced: boolean; index?: number }) => { opacity?: number; transition: Tx };
+    expect(row({ reduced: false, index: 0 }).opacity).toBeUndefined();
+    expect(row({ reduced: false, index: 0 }).transition.delay).toBe(WELCOME_AT.card);
+    expect(row({ reduced: false, index: 3 }).transition.delay).toBeCloseTo(WELCOME_AT.card + 3 * 0.05, 5);
+    expect(row({ reduced: true, index: 3 }).transition).toEqual({ duration: 0.001, delay: 0 });
+  });
+  it('leaving, every piece is gone in 0.24s while it slides for 0.42s', () => {
+    const leave = welcomeCard.leave as (c: { reduced: boolean }) => { opacity: number; transition: { transform: Tx; opacity: Tx } };
+    expect(leave({ reduced: false }).transition.opacity.duration).toBe(0.24);
+    expect(leave({ reduced: false }).transition.transform.duration).toBe(0.42);
   });
 });
 

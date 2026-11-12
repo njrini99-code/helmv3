@@ -216,7 +216,7 @@ const RAW_FONT: Record<string, number> = {
 /** Raw `line-height` values per stylesheet after the leading pass (2026-10-24, row 27): fixed-row px leadings and legacy ratios. Only falls. */
 const RAW_LEAD: Record<string, number> = {
   'styles/classes.css': 1,
-  'styles/coachhelm-ask.css': 3,
+  'styles/coachhelm-ask.css': 2,
   'styles/coachhelm-profile.css': 1,
   'styles/coachhelm-thread.css': 1,
   'styles/coachhelm.css': 1,
