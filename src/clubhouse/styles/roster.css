@@ -3696,6 +3696,18 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   --ch-rs-y: var(--ch-yr-fr);
 }
 /* W23: players with no class year: a quiet segment in the legend's own ink at 45%, so the split adds up to the roster. */
+/* W24: the leaders' rule, once under the row; on desktop the row is part of the top grid, so the line spans it. */
+[data-ch-crh='on'] .ch-rs-ldrs__rule {
+  grid-column: 1 / -1;
+  margin: 0;
+  font: var(--ch-type-13);
+  color: var(--ch-text-tertiary);
+}
+@media print {
+  [data-ch-crh='on'] .ch-rs-ldrs__rule {
+    display: none;
+  }
+}
 :is(.ch-rs, .ch-rsm)[data-ch-crh='on'] [data-year='none'] {
   --ch-rs-y: color-mix(in srgb, var(--ch-on-green-2) 45%, transparent);
 }
