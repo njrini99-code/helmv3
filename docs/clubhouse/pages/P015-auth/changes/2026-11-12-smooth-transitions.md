@@ -27,7 +27,11 @@ Held items:     none
   its header and Continue, then the rows popped in (on a phone, a tall blank card). The rows now ride the card's fade and
   settle 6px, 50ms apart; the card is opaque in 0.4s (its rise still 0.9s). Leaving, every piece is gone in 0.24s.
 - **Landing to sign in.** The painted course is fetched while the landing page is idle (`SignInScenePreload`, only with
-  the front door on), so the sign in no longer opens on the daytime still and snaps to the hour's sky. Sign in reads
+  the front door on), and the sign in then renders it directly (`scene-preload.ts`), in its first frame and with no
+  fade-in, so it no longer opens on the daytime still and turns to the hour's sky a beat later (filmed at dusk: grey for
+  300ms, then gold; after: the painted course in the first frame). Through next/dynamic the course went through a
+  Suspense fallback even with its chunk loaded. A hard load is unchanged (no preload; SkyScript's wash, then the fade-in).
+  A sky tint on the still was tried and dropped: as a colour blend it browned the trees at morning and golden hour. Sign in reads
   hydration from the shared store (`useHydrated`), so a client navigation draws it enabled; the server HTML still holds it
   disabled (#1245).
 
@@ -36,3 +40,21 @@ Held items:     none
 All four were filmed in WebKit (video plus a per-frame trace) before the change. A clip-path transition repaints the
 whole painted course on the main thread every frame in WebKit, so it stalls while the next route loads; transforms keep
 moving. Guarded by `screens/auth/__tests__/auth-transform-only.test.tsx` and `auth-logic.test.ts`.
+
+## 2026-11-12 — Log in from the bottom of the landing page no longer jumps to its top first
+
+```text
+Design package: none (owner, 12 Nov 2026: "do on phone too, make sure it all looks premium")
+PR/commit:      agent/preview-fixes-ui
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- `src/lib/motion/gsap/MarketingScrollProvider.tsx` (the landing's scroll, outside Clubhouse): a link into the app
+  (`/golf/...`) stops Lenis but no longer resets the scroll. On a phone, a tap on the closing section's Log in showed the
+  landing's hero for as long as the sign in took to load (0.8s in WebKit), then the sign in. The sign in draws its own fixed,
+  full-screen frame, so the scroll under it never shows; links between marketing pages still reset as before.

@@ -85,6 +85,7 @@ export const MissShotResolved = z.object({
   from_ft: z.number().nullable(),
   left_ft: z.number().nullable(),
   lie_before: z.string().nullable(),
+  player: z.string().nullable().optional(),
 });
 /**
  * The shots behind each wedge, copied by the compiler from the read's `detail.ui_only` (never named by the model), with the

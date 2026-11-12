@@ -1,10 +1,11 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { Component, useLayoutEffect, type ReactNode } from 'react';
+import { Component, useLayoutEffect, useState, type ReactNode } from 'react';
 import { chReport } from '../../lib/track';
 import { useChPhone } from '../../lib/use-phone';
 import type { SceneCamera } from './GolfScene';
+import { preloadedScene } from './scene-preload';
 import { skyAt } from './scene-sky';
 import { clearSkyBoot, SKY_OFFSET_KEY } from './SkyScript';
 import { useLocalHour, useSkyHour } from './use-hour';
@@ -68,10 +69,15 @@ export function SceneMount({ camera = 'rest', play = false, hour: fixedHour }: {
   }, [fixedHour, localHour === null, Math.round((localHour ?? 0) * 4)]); // eslint-disable-line react-hooks/exhaustive-deps
   // CH-15909: 820px or less is the phone layout: the course on top, the form on a sheet.
   const phone = useChPhone();
+  // Arriving from the landing page, whose idle preload already fetched the course: it draws on the route's first frame
+  // with no fade-in, so the daytime still under it never shows (owner, 2026-11-12: "landing > sign in glitchy"). Read
+  // once at mount; false on the server and on a hard load (nothing preloads there), so hydration never disagrees.
+  const [Preloaded] = useState(preloadedScene);
+  const instant = Preloaded !== null;
   return (
     <>
       {/* A still of the actual course is in the server HTML. The form and artwork never wait for the animation chunk. */}
-      <div className="ch-au-poster" aria-hidden="true">
+      <div className="ch-au-poster" aria-hidden="true" data-instant={instant ? '' : undefined}>
         <svg className="ch-au-poster__wide" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMax slice" focusable="false">
           <image href="/clubhouse/auth/course-arrival.jpg" width="1600" height="1000" />
         </svg>
@@ -82,7 +88,11 @@ export function SceneMount({ camera = 'rest', play = false, hour: fixedHour }: {
       </div>
       {hour !== null && (
         <SceneBoundary>
-          <GolfSceneLazy hour={hour} crop={phone ? 'tall' : 'wide'} camera={camera} play={play} />
+          {Preloaded ? (
+            <Preloaded hour={hour} crop={phone ? 'tall' : 'wide'} camera={camera} play={play} />
+          ) : (
+            <GolfSceneLazy hour={hour} crop={phone ? 'tall' : 'wide'} camera={camera} play={play} />
+          )}
         </SceneBoundary>
       )}
     </>

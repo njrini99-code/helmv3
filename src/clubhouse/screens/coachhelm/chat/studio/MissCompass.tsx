@@ -121,7 +121,8 @@ export function MissCompass({ block, shots, compact }: { block: MissPatternBlock
           return sent;
         }
       : undefined;
-  const drawer = picked && kept ? <ShotList direction={picked} count={kept.count} rows={kept.shots} cap={shots.cap} headId={`${id}-h`} onAsk={onAsk} onClose={() => setPicked(null)} /> : null;
+  // On a phone the ask sits in the sheet's footer, in reach above a list of up to 40; on a desk it ends the drawer.
+  const drawer = picked && kept ? <ShotList direction={picked} count={kept.count} rows={kept.shots} cap={shots.cap} headId={`${id}-h`} onAsk={compact ? undefined : onAsk} onClose={() => setPicked(null)} /> : null;
 
   return (
     <figure className="ch-aks-compass" data-size={compact ? 'compact' : 'full'}>
@@ -147,7 +148,7 @@ export function MissCompass({ block, shots, compact }: { block: MissPatternBlock
         {block.no_direction ? ` · ${block.no_direction} with no direction logged, not in the shares` : ''}. Directions, not places on the green.
       </figcaption>
       {compact ? (
-        <Modal open={!!drawer} onClose={() => setPicked(null)} title={picked ? `${plural(kept?.count ?? 0, 'shot')} missed ${saidDirection(picked)}` : 'Shots'} detent={0.62} className="ch-aks-compass__sheet">
+        <Modal open={!!drawer} onClose={() => setPicked(null)} title={picked ? `${plural(kept?.count ?? 0, 'shot')} missed ${saidDirection(picked)}` : 'Shots'} detent={0.62} className="ch-aks-compass__sheet" footer={drawer && onAsk ? <AskKey onAsk={onAsk} /> : undefined}>
           {drawer}
         </Modal>
       ) : (
@@ -173,14 +174,20 @@ function ShotList({ direction, count, rows, cap, headId, onAsk, onClose }: { dir
       {capped && <p className="ch-aks-compass__capped">The newest {Math.min(rows.length, cap)} of {count}, by round.</p>}
       <ul className="ch-aks-compass__shots">
         {rows.map((s) => {
-          const said = [s.from_ft != null && `from ${yards(s.from_ft)}`, s.left_ft != null && `left ${feet(s.left_ft)}`, s.lie_before && `from the ${s.lie_before.replace(/_/g, ' ')}`].filter(Boolean).join(' · ');
+          // The round review's own order (RoundReview: "24 ft left"): where it was hit from, then what it left. Never "left 18 ft",
+          // which reads as a direction beside "missed right".
+          const lie = s.lie_before ? `the ${s.lie_before.replace(/_/g, ' ')}` : null;
+          const from = s.from_ft != null ? `${yards(s.from_ft)}${lie ? ` from ${lie}` : ''}` : lie && `from ${lie}`;
+          const said = [from, s.left_ft != null && `${feet(s.left_ft)} left`].filter(Boolean).join(' · ');
           const when = s.round_date ? weekdayMonthDay(s.round_date) : 'Undated round';
+          // A team-wide read names whose round it was: the player leads, the date and course under it.
+          const where = s.player ? [when, s.course].filter(Boolean).join(' · ') : s.course;
           return (
             <li key={s.id}>
-              <a className="ch-aks-compass__shot" href={shotRoundHref(s.round_id)} aria-label={`Open the round: ${when}${s.course ? `, ${s.course}` : ''}${said ? `, ${said}` : ''}`} data-ch-press="">
+              <a className="ch-aks-compass__shot" href={shotRoundHref(s.round_id)} aria-label={`Open the round: ${s.player ? `${s.player}, ` : ''}${when}${s.course ? `, ${s.course}` : ''}${said ? `, ${said}` : ''}`} data-ch-press="">
                 <span className="ch-aks-compass__when">
-                  <b>{when}</b>
-                  {s.course && <small>{s.course}</small>}
+                  <b>{s.player ?? when}</b>
+                  {where && <small>{where}</small>}
                 </span>
                 <span className="ch-aks-compass__said ch-num">{said}</span>
                 <Icon icon={ArrowUpRight} size={16} />
@@ -189,13 +196,17 @@ function ShotList({ direction, count, rows, cap, headId, onAsk, onClose }: { dir
           );
         })}
       </ul>
-      {onAsk && (
-        <div className="ch-aks-compass__ask">
-          <Button variant="secondary" onClick={() => onAsk()}>
-            Ask about these shots
-          </Button>
-        </div>
-      )}
+      {onAsk && <AskKey onAsk={onAsk} />}
     </section>
+  );
+}
+
+function AskKey({ onAsk }: { onAsk: () => boolean }) {
+  return (
+    <div className="ch-aks-compass__ask">
+      <Button variant="secondary" onClick={() => onAsk()}>
+        Ask about these shots
+      </Button>
+    </div>
   );
 }

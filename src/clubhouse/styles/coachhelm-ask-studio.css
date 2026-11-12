@@ -862,11 +862,13 @@
 .ch-aks-compass__dir.is-most .ch-aks-compass__n {
   color: var(--ch-loss);
 }
+/* Selected INK, not --ch-selected-strong: that one is a plate's fill and stays deep green at night, where the word and its rule
+   all but vanished (WebKit, 12 Nov, dark). */
 .ch-aks-compass__dir.is-on {
-  border-bottom: 2px solid var(--ch-selected-strong);
+  border-bottom: 2px solid var(--ch-selected-ink);
 }
 .ch-aks-compass__dir.is-on .ch-aks-compass__word {
-  color: var(--ch-selected-strong);
+  color: var(--ch-selected-ink);
 }
 .ch-aks-compass__dir:disabled {
   color: var(--ch-text-tertiary);
