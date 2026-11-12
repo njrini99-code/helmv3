@@ -47,9 +47,10 @@ function Chrome({ label, code, view, chained, brief = 2, coach, children }: { la
           {!phone && <div className="ch-hl-h__aside">{tabs}</div>}
         </header>
       ) : phone ? (
-        // The phone's intro at its loaded line heights (the Mobile clubhouse pass): the large title (a player's page has no role eyebrow) and the brief under
-        // the double rule, in the lines the view's own brief takes at the phone's width (`brief`: the Deep dive's runs to three).
-        <header className="ch-hl-h" data-canopy-head="">
+        // The phone's intro at its loaded line heights (the Mobile clubhouse pass): the large title (a player's page has no role eyebrow) and the brief,
+        // in the lines the view's own brief takes at the phone's width (`brief`: the Deep dive's runs to three). The tight head, as the
+        // loaded page's: no double rule over the title (G5).
+        <header className="ch-hl-h" data-canopy-head="tight">
           <LargeTitleSkeleton width={176} />
           <span className="ch-hl-sk__line is-two" style={brief === 3 ? { height: 65.25 } : undefined}>
             <Skeleton width="92%" height={13} />

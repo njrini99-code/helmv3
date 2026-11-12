@@ -24,11 +24,12 @@ function TrackFrame({ children }: { children: ReactNode }) {
   return (
     <main className={'ch-hl ch-htr' + (phone ? ' is-phone' : '')} aria-labelledby="ch-htr-title" data-canopy={phone ? undefined : ''} data-ch-code="CH-13960">
       {phone && <PhoneTop back={{ label: 'CoachHelm', onBack: () => router.push(COACH_BOARD_HREF) }} title="Track record" titleId="ch-htr-title" />}
-      <header className="ch-hl-h ch-htr-h" data-canopy-head="">
+      {/* One title (G12): no "Coach" eyebrow over it, and on the phone, under the pushed screen's bar, no double rule
+          either (the tight head, coachhelm.css). The desk keeps the coach's full head on the sheet. */}
+      <header className="ch-hl-h ch-htr-h" data-canopy-head={phone ? 'tight' : ''}>
         {!phone && (
           <BackLink href={COACH_BOARD_HREF}>CoachHelm</BackLink>
         )}
-        <span className="ch-hl-role">Coach</span>
         {phone ? (
           <LargeTitle as="p" className="ch-hl-h__t">
             Track record

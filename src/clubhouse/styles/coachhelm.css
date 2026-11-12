@@ -881,6 +881,13 @@
     padding: 16px 0 0;
     border-top: var(--ch-ledger-rule-double);
   }
+  /* A page that names itself opens on its title, with no double rule over it: a player's Standing and Deep dive under the view
+     chips, and the coach's Track record and Monday brief under a pushed screen's bar, all on the tight head, as a player's views
+     are on a desk (G5, G12, 12 Nov: "one title per screen", no lone rule; NATIVE_FEEL_RESEARCH §D7). The board keeps the rule. */
+  .ch-hl.is-phone > .ch-hl-h[data-canopy-head='tight'] {
+    padding-top: 0;
+    border-top: 0;
+  }
   .ch-hl.is-phone .ch-hl-role {
     font: var(--ch-type-12-medium);
     letter-spacing: 0.01em;
