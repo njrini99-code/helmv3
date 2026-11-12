@@ -40,3 +40,11 @@ describe('show_visual takes a read by either name', () => {
     expect(out.blocks?.[1]?.ref).toBe('xread:e4');
   });
 });
+
+describe('show_visual says the no-digit rule where the title is written (R2)', () => {
+  it('on the title field, naming a window as a digit too', async () => {
+    const { z } = await import('zod');
+    const schema = z.toJSONSchema(showVisual.input, { io: 'input', unrepresentable: 'any' }) as { properties: { title: { description?: string } } };
+    expect(schema.properties.title.description).toMatch(/No digit \(lede too\), even "last 10"/);
+  });
+});

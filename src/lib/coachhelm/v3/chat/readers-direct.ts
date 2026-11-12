@@ -447,7 +447,7 @@ const VisualBlock = z.object({
 });
 const ShowVisualModelInput = z.object({
   kind: z.enum(['compose', 'sg_anatomy']),
-  title: z.string().min(1).max(90),
+  title: z.string().min(1).max(90).describe('No digit (lede too), even "last 10".'),
   lede: z.string().max(160).optional(),
   layout: z.enum(['stack', 'split']).optional(),
   blocks: z.array(VisualBlock).max(6).optional(),
@@ -473,7 +473,7 @@ export const showVisual: ReadTool<z.infer<typeof ShowVisualModelInput>> = {
   kind: 'read',
   name: 'show_visual',
   description:
-    'Draw one visual from reads already made; the server copies the figures in, so the title and the lede are words with no digits. kind "compose": a title, an optional lede, and blocks in order: kpis (one figure set large, or up to six from one read), trend (one metric over rounds), bars (distance bands, or players on one metric; best_first ranks them), split (signed figures either side of zero, such as strokes gained by area), compare (players across the same metrics), and four drawn from a read that holds them: putt_profile, miss_pattern, season_compare, hole_strip. kind "sg_anatomy": one player\'s four strokes gained areas. If it is refused, fix what it names once or answer in words.',
+    'Draw one visual from reads already made; the server copies the figures in. kind "compose": a title, an optional lede, and blocks in order: kpis (one figure set large, or up to six from one read), trend (one metric over rounds), bars (distance bands, or players on one metric; best_first ranks them), split (signed figures either side of zero, such as strokes gained by area), compare (players across the same metrics), and four drawn from a read that holds them: putt_profile, miss_pattern, season_compare, hole_strip. kind "sg_anatomy": one player\'s four strokes gained areas. If it is refused, fix what it names once or answer in words.',
   input: ShowVisualModelInput,
   progress: () => 'Building the visual',
   run: async (ctx, raw) => {
