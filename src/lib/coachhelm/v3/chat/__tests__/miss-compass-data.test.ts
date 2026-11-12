@@ -12,9 +12,11 @@ vi.mock('server-only', () => ({}));
 
 import type { CoachChatContext } from '../context';
 import { aboutLine } from '../engine/about';
+import type { ToolContext } from '../engine/tool';
 import { supportedNumbers } from '../grounding';
 import type { ToolEnvelope } from '../provenance';
 import { plain } from '../reader-kit';
+import { showVisual } from '../readers-direct';
 import { MISS_DIRECTIONS, MISS_SHOTS_CAP, getShotPattern, missPatternOf, missShotsOf, type ShotRow } from '../shot-reads';
 import { rowsOfEnvelope } from '../summarise-data';
 import { UI_ONLY_KEY, withoutUiOnly } from '../ui-only';
@@ -184,6 +186,23 @@ describe('“Ask about these shots”: a selection resolved against the stored r
     // A read kept without the drawer (the flag off) has no selection to make.
     expect(aboutLine(new Map([['e6', plain(await read(false))]]), { evidence_ref: 'e6', key: 'shots:right' })).toBeNull();
   });
+
+  it('with real round ids and long course names, the line still ends whole: every round id intact, the rest counted', async () => {
+    // Production shapes: uuid round ids, 40-character course names, a summary and a window past their caps, a six-digit ref.
+    const uuid = (i: number) => `0f6c2a4e-9b1d-4c3a-8e7f-${String(i).padStart(12, '0')}`;
+    const course = (i: number) => `The Country Club of North Carolina ${String(i).padStart(2, '0')} Course`;
+    const shots = Array.from({ length: 40 }, (_, i) => ({ id: `s-${i}`, round_id: uuid(i % 12), hole_id: null, round_date: `2026-10-${String(1 + (i % 12)).padStart(2, '0')}`, course: course(i % 12), from_ft: 400, left_ft: 22, lie_before: 'fairway' }));
+    const base = plain(await read(true));
+    const detail = base.detail as Record<string, unknown>;
+    const long: ToolEnvelope = { ...base, summary: 'Approach misses for the team over the last ninety days, '.repeat(6), window_label: 'Since the start of the fall season, every completed round '.repeat(3), detail: { ...detail, [UI_ONLY_KEY]: { miss_shots: { cap: 40, directions: { short_right: { count: 1234, shots } } } } } };
+    const got = aboutLine(new Map([['e123456', long]]), { evidence_ref: 'e123456', key: 'shots:short_right' })!;
+    expect(got.line.length).toBeLessThanOrEqual(900);
+    expect(got.line.endsWith('Answer about that thing; read again if the question needs more than is here.')).toBe(true);
+    const ids = [...got.line.matchAll(/\[([^\]]*)\]/g)].map((m) => m[1]);
+    expect(ids.length).toBeGreaterThanOrEqual(2);
+    for (const id of ids) expect(id).toMatch(/^0f6c2a4e-9b1d-4c3a-8e7f-\d{12}$/);
+    expect(got.line).toContain(`; and ${12 - ids.length} more rounds.`);
+  });
 });
 
 describe('compile: the compiler copies the read’s shots, never the model', () => {
@@ -197,6 +216,13 @@ describe('compile: the compiler copies the read’s shots, never the model', () 
     expect(block.shots?.ref).toBe('e7');
     for (const w of block.wedges) expect(block.shots!.directions[w.direction]!.count).toBe(w.count);
     expect(ValidatedComposition.safeParse(r.composition).success).toBe(true);
+  });
+
+  it('show_visual given the read as it was cited (read:e7) keeps the bare ref on the shots, the one an ask can name', async () => {
+    const r = await showVisual.run({ reads: new Map([['e7', await read(true)]]) } as unknown as ToolContext, { kind: 'compose', title: 'Where the approach misses go', blocks: [{ type: 'miss_pattern', ref: 'read:e7' }] });
+    const part = (r as { parts?: Array<{ type: string; data: { blocks: Array<{ type: string; shots?: { ref: string } }> } }> }).parts?.[0];
+    expect(part?.type).toBe('data-visual-composition');
+    expect(part!.data.blocks[0]!.shots?.ref).toBe('e7');
   });
 
   it('a read without it: the block is today’s, key for key, and so is its hash', async () => {

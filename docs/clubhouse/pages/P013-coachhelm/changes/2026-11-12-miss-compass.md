@@ -22,7 +22,11 @@ Held items:     flag coachhelm_miss_compass_v1 is off everywhere; COACHHELM_MISS
   lie, each opening its round (`/golf/dashboard/rounds/<id>`, where the coach's access is checked); when a direction has
   more than the 40 kept, the list says "The newest 40 of 46, by round." Desk: below the compass. Phone: a sheet.
 - "Ask about these shots" sends the next question with the selection (`about`, key `shots:<direction>`), which the server
-  checks against the read it stored; it waits, as a starter does, while a reply is on its way.
+  checks against the read it stored; it waits, as a starter does, while a reply is on its way. It sends, where a chart mark
+  only fills the composer: the approved design (Phase 0, section 2, step 4) has the drawer's key send the turn. On a phone a
+  sent ask closes the sheet, so it never sits over the answer; on a desk the drawer stays in the earlier answer.
+- What the model is told about the selection (engine/about.ts): the count and the rounds, each with its id whole, the list
+  kept to a length that leaves the closing sentence inside the 900-character line, the rest counted ("and 8 more rounds").
 - In the studio's look (coachhelm-ask-studio.css): rules under each direction, not boxes; the share as a ruled length in
   an SVG; the chosen direction ruled in the selected ink. It draws in place: nothing moves when a direction is chosen,
   with or without reduced motion (the phone's sheet is the app's Modal, with its own reduced-motion handling).
@@ -37,5 +41,8 @@ Held items:     flag coachhelm_miss_compass_v1 is off everywhere; COACHHELM_MISS
   links and cap line; close; the ask's payload; no ask without a host; 44 targets; no animation or transition anywhere
   on it, no fill or shadow on a direction; the phone's sheet. The studio's own look test (coachhelm-visual-artifact-css)
   and look-feel-pass-css pass with it.
+- `lib/coachhelm/v3/chat/__tests__/miss-compass-data.test.ts`: a selection line with uuid round ids, 40-character course
+  names and a summary and window past their caps ends with its closing sentence and every round id whole (it failed before
+  the budget); show_visual given the read as cited (`read:e7`) keeps the bare `e7` on the shots, the ref an ask can name.
 - `chat/__tests__/ask-miss-compass.test.tsx`: Ask's page turns it on for a flagged coach team only and sends the selection
   as `about`, not while a reply is on its way.

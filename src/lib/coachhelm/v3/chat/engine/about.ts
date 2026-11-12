@@ -84,6 +84,12 @@ const rowWords = (row: Record<string, unknown>): string =>
     .join(', ');
 
 const MAX_ROUNDS = 8;
+/**
+ * The rounds of a `shots:` selection stay within this many characters. The line around them (the read's summary and window,
+ * at their caps, and the closing sentence) leaves about 370 of aboutLine's 900, so with real round ids (36-character uuids)
+ * and course names the list ends whole, the closing sentence is kept, and no round id is cut in half. The rest are counted.
+ */
+const ROUNDS_BUDGET = 340;
 
 /**
  * The Miss Compass's selection, from the stored read alone: how many shots missed that way, and the rounds they were played in
@@ -101,11 +107,20 @@ function shotsSelection(envelope: ToolEnvelope, direction: string): string | nul
   for (const s of picked.shots as Array<{ round_id?: unknown; round_date?: unknown; course?: unknown }>) {
     if (typeof s?.round_id !== 'string' || rounds.has(s.round_id)) continue;
     const when = typeof s.round_date === 'string' ? words(s.round_date, 10) : 'an undated round';
-    rounds.set(s.round_id, `${when}${typeof s.course === 'string' && s.course ? ` at ${words(s.course, 60)}` : ''} [${words(s.round_id, 40)}]`);
+    rounds.set(s.round_id, `${when}${typeof s.course === 'string' && s.course ? ` at ${words(s.course, 40)}` : ''} [${words(s.round_id, 40)}]`);
   }
   const listed = [...rounds.values()];
+  const shown: string[] = [];
+  let used = 0;
+  for (const round of listed) {
+    const add = (shown.length ? 2 : 0) + round.length;
+    if (shown.length >= MAX_ROUNDS || used + add > ROUNDS_BUDGET) break;
+    shown.push(round);
+    used += add;
+  }
+  const more = listed.length - shown.length;
   const said = direction.replace('_', ' ');
-  return `the ${count} shot${count === 1 ? '' : 's'} that missed ${said}, selected on the miss compass; played in ${listed.slice(0, MAX_ROUNDS).join('; ')}${listed.length > MAX_ROUNDS ? `; and ${listed.length - MAX_ROUNDS} more rounds` : ''}. Their distances are in that read; read the rounds for more`;
+  return `the ${count} shot${count === 1 ? '' : 's'} that missed ${said}, selected on the miss compass; played in ${shown.join('; ')}${more ? `; and ${more} more round${more === 1 ? '' : 's'}` : ''}. Their distances are in that read; read the rounds for more`;
 }
 
 /** What the element is, in the stored read's own labels and figures. Null when the read holds no such element. */
