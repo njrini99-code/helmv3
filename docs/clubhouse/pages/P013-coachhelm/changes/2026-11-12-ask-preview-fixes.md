@@ -23,3 +23,5 @@ Held items:     none
 - #16: an answer's lead is its first two sentences, not the whole first paragraph. The model writes one paragraph, so
   every answer was set at headline size. The cut is made as the words arrive (`splitLead`, Prose.tsx), so no drawn
   word changes size; a decimal point and "vs." are never a sentence end.
+- W48: figures are given to one decimal (the rule said "as the read gave them", and reads carry two), and an
+  answer never ends on a question. The four-sentence rule stands; not yet re-measured on live answers.

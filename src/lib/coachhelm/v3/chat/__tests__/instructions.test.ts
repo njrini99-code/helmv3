@@ -112,7 +112,7 @@ describe('the whole cached policy', () => {
     expect(rules).toMatch(/Do no arithmetic yourself: no total, no difference, no spread, no count of lines/);
     expect(rules).toMatch(/call summarise_data, or leave that number out/);
     expect(rules.match(/arithmetic/g)).toHaveLength(1);
-    expect(rulesBlock('player')).toMatch(/State only a number a read returned or they gave you, copied exactly\. Do no arithmetic yourself, not even a total or a difference/);
+    expect(rulesBlock('player')).toMatch(/State only a number a read returned or they gave you, rounded to one decimal and otherwise unchanged\. Do no arithmetic yourself, not even a total or a difference/);
     expect(rules).toContain('A task is never called from code: call the task tool directly, so the coach gets the card to confirm.');
     expect(rulesBlock('quick_chat')).toBe(rules);
     expect(rulesBlock('practice_helper')).toBe(rules);
@@ -189,7 +189,11 @@ describe('how answers read', () => {
     expect(rules).toMatch(/Sentence one answers the question asked, with its figure, or says that the data does not show what the question assumes\./);
     expect(rules).toMatch(/is a caution about the sample, or the point of golf or of the app that the question turns on\. Say that point even when the data does not show the case\./);
     expect(rulesBlock('player')).toMatch(/or the point the question turns on, such as which way is good, said even when your data does not show the case/);
-    expect(rules).toMatch(/\nSentence four, only when the data points to an obvious next step, offers it\.\nThen stop: /);
+    expect(rules).toMatch(/\nSentence four, only when the data points to an obvious next step, offers it\.\nThen stop, never on a question: /);
+    // W48 (preview, 12 Nov): "as the read gave them" read as two decimals, nine figures like −4.37 in one answer.
+    expect(rules).toMatch(/6\. Give every figure to one decimal \("−4\.4", not "−4\.37"\)/);
+    expect(rulesBlock('player')).toMatch(/4\. Give every figure to one decimal, with its window and sample in words/);
+    expect(`${rules}${rulesBlock('player')}`).not.toMatch(/as the read gave them/);
     expect(rules).toMatch(/A "why", a "should I worry" and a comparison get four sentences too\. Count your sentences before you finish and cut down to four\./);
     // Short never means leaving out what was asked for (the first full run dropped a course, a count and a comparison player).
     expect(rules).toMatch(/Fit each thing the question asked for \(a figure, a name, a course, a count\) into those sentences\. Never drop one\./);
@@ -199,7 +203,7 @@ describe('how answers read', () => {
     // A long list is the card's or the visual's to carry: the words name the top of it.
     expect(rules).toMatch(/Write a list only when the coach asked for a list or a ranking, of three items at most, one plain line each\. When more belong in it, name the top and say the rest is in the card below, or call show_visual/);
     expect(rules).toMatch(/Write nothing before or between your reads \("Let me check"\), because it stays in the answer/);
-    expect(rules).toMatch(/Give every figure with its window and sample in the same sentence, as the read gave them\. When several figures share one window, say it once/);
+    expect(rules).toMatch(/with its window and sample in the same sentence\. When several figures share one window, say it once/);
     // The full breakdown is still a visual, said once, under "Visuals".
     expect(rules).toMatch(/Call show_visual \(never offer it\) once when the answer is a shape/);
     // The rules follow themselves: nothing in them is bold.
