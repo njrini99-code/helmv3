@@ -203,9 +203,9 @@ describe('the phone card is laid out to hold still (rounds-track.css)', () => {
   });
 
   it('a turned place takes no tap for one base beat', () => {
-    expect(css).toMatch(/\.ch-rt-slot\[data-turn='a'\]::after \{\s*animation: ch-rt-turn-a var\(--ch-dur-base\) step-end;/);
-    expect(css).toMatch(/\.ch-rt-slot\[data-turn='b'\]::after \{\s*animation: ch-rt-turn-b var\(--ch-dur-base\) step-end;/);
-    expect(css).toMatch(/@keyframes ch-rt-turn-a \{\s*from \{\s*visibility: visible;/);
+    expect(css).toMatch(/\.ch-rt-slot\[data-turn='a'\]::after \{\s*animation: ch-rt-face-hold-a var\(--ch-dur-base\) step-end;/);
+    expect(css).toMatch(/\.ch-rt-slot\[data-turn='b'\]::after \{\s*animation: ch-rt-face-hold-b var\(--ch-dur-base\) step-end;/);
+    expect(css).toMatch(/@keyframes ch-rt-face-hold-a \{\s*from \{\s*visibility: visible;/);
   });
 
   it('the card has one least height and the hero gives the screen’s spare height up, so the page has nothing to scroll', () => {

@@ -992,17 +992,17 @@ path.ch-rt-map__shot {
   --ch-rm-animation: var(--ch-dur-base);
 }
 .ch-rt-slot[data-turn='a']::after {
-  animation: ch-rt-turn-a var(--ch-dur-base) step-end;
+  animation: ch-rt-face-hold-a var(--ch-dur-base) step-end;
 }
 .ch-rt-slot[data-turn='b']::after {
-  animation: ch-rt-turn-b var(--ch-dur-base) step-end;
+  animation: ch-rt-face-hold-b var(--ch-dur-base) step-end;
 }
-@keyframes ch-rt-turn-a {
+@keyframes ch-rt-face-hold-a {
   from {
     visibility: visible;
   }
 }
-@keyframes ch-rt-turn-b {
+@keyframes ch-rt-face-hold-b {
   from {
     visibility: visible;
   }
