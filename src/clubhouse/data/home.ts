@@ -1,4 +1,5 @@
 import 'server-only';
+import { roundTypeFromDb } from '@/lib/golf/round-type-utils';
 import { createClient } from '@/lib/supabase/server';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
@@ -91,6 +92,8 @@ export interface ChLatestRound {
   /** The course's name and the day's short label ("Wed 21 Oct"), so a run of one event's rounds can be told as one row (W4). */
   course?: string | null;
   day?: string;
+  /** Tournament and qualifier rounds of one event fold into one row on the desk; practice rounds never do (W4). */
+  kind?: 'practice' | 'tournament' | 'qualifier';
   score: number;
   toPar: number | null;
   /** Null when the round was posted as a total, without hole-by-hole detail. */
@@ -551,6 +554,7 @@ export async function latestWithHoles(
       date: r.round_date.slice(0, 10),
       course: r.course_name,
       day,
+      kind: r.round_type ? roundTypeFromDb(r.round_type) : 'practice',
       score: r.total_score ?? 0,
       toPar: r.score_to_par,
       holes: holes && holes.length === 18 ? holes : null,

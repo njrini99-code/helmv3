@@ -7,13 +7,14 @@ import { latestRows } from '../model';
 
 afterEach(cleanup);
 
-const round = (id: string, playerId: string, score: number, toPar: number | null, date: string, course: string | null = 'Springfield CC'): ChLatestRound => ({
+const round = (id: string, playerId: string, score: number, toPar: number | null, date: string, course: string | null = 'Springfield CC', kind: ChLatestRound['kind'] = 'tournament'): ChLatestRound => ({
   id,
   playerId,
   playerName: playerId === 'cole' ? 'Cole Bennett' : 'Mason Diaz',
   meta: [course, date].filter(Boolean).join(' · '),
   date,
   course,
+  kind,
   day: date === '2026-10-21' ? 'Wed 21 Oct' : date === '2026-10-20' ? 'Tue 20 Oct' : 'Sat 3 Oct',
   score,
   toPar,
@@ -44,6 +45,17 @@ describe('desk Latest rounds (W4: one event, one row)', () => {
     );
     expect(rows.map((r) => r.key)).toEqual(['a', 'b+e', 'c', 'd']);
     expect(rows[1]).toMatchObject({ score: 146, toPar: 2 });
+  });
+
+  it('never folds practice rounds, even at one course on consecutive days', () => {
+    const rows = latestRows([round('p2', 'cole', 77, 5, '2026-10-21', 'Springfield CC', 'practice'), round('p1', 'cole', 74, 2, '2026-10-20', 'Springfield CC', 'practice')], 4);
+    expect(rows.map((r) => r.key)).toEqual(['p2', 'p1']);
+    expect(rows.every((r) => r.scores === null)).toBe(true);
+  });
+
+  it('does not fold a practice round into the tournament beside it, nor a round with no type', () => {
+    const rows = latestRows([round('t2', 'cole', 73, 1, '2026-10-21'), round('p', 'cole', 70, -2, '2026-10-20', 'Springfield CC', 'practice'), { ...round('u', 'cole', 71, -1, '2026-10-20'), kind: undefined }], 4);
+    expect(rows.map((r) => r.key)).toEqual(['t2', 'p', 'u']);
   });
 
   it('a folded row with an unknown to-par has no total to-par', () => {

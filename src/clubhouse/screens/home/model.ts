@@ -222,14 +222,16 @@ const EVENT_SPAN_DAYS = 2;
 const dayIndex = (d: string | undefined) => (d ? Date.parse(`${d}T12:00:00Z`) / 86_400_000 : Number.NaN);
 
 /**
- * The desk's Latest rounds, newest first, at most `max` rows. One player's rounds at one course within three days are one
- * event and one row: "Springfield CC · Wed 21 Oct · Rounds 74, 77, 73" over the total (W4, owner's preview, 11 Nov 2026: three
+ * The desk's Latest rounds, newest first, at most `max` rows. One player's tournament (or qualifier) rounds at one course
+ * within three days are one event and one row: "Springfield CC · Wed 21 Oct · Rounds 74, 77, 73" over the total (W4, owner's preview, 11 Nov 2026: three
  * rows that read the same). A round with no course or date stands alone.
  */
 export function latestRows(rounds: ChLatestRound[], max: number): ChLatestRow[] {
   const groups: ChLatestRound[][] = [];
   for (const r of rounds) {
-    const g = groups.find(([h]) => h!.playerId === r.playerId && !!h!.course && h!.course === r.course && Math.abs(dayIndex(h!.date) - dayIndex(r.date)) <= EVENT_SPAN_DAYS);
+    // Only an event's rounds fold: two practice rounds at the home course on Tuesday and Wednesday are two rounds, not a total.
+    const isEvent = r.kind === 'tournament' || r.kind === 'qualifier';
+    const g = isEvent ? groups.find(([h]) => h!.kind === r.kind && h!.playerId === r.playerId && !!h!.course && h!.course === r.course && Math.abs(dayIndex(h!.date) - dayIndex(r.date)) <= EVENT_SPAN_DAYS) : undefined;
     if (g) g.push(r);
     else groups.push([r]);
   }
