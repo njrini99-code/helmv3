@@ -129,7 +129,7 @@ export function EmptyState({
                 {page && (
                   <span className="ch-es__seg" aria-hidden="true">
                     {Array.from({ length: progress.total }, (_, i) => (
-                      <i key={i} className={i < progress.done ? 'is-on' : undefined} />
+                      <i key={i} className={i < progress.done ? 'is-done' : undefined} />
                     ))}
                   </span>
                 )}
