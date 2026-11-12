@@ -83,11 +83,8 @@ describe('The page empty and the route error share one anatomy', () => {
     render(<EmptyState size="page" code="CH-3301" icon={Users} title="No players yet." body="Share your team code." />);
     // One anatomy for every page empty (W19 B): the honest states' card, not the route error's medallion.
     expect(screen.getByRole('heading', { level: 2, name: 'No players yet' }).className).toBe('ch-es__title');
-    const uiCss = readFileSync(join(root, 'styles/ui.css'), 'utf8');
-    const title = uiCss.slice(uiCss.indexOf('.ch-es--page .ch-es__title {'), uiCss.indexOf('}', uiCss.indexOf('.ch-es--page .ch-es__title {')));
-    expect(title).toContain('color: var(--ch-ledger-ink);');
-    // The route error keeps its own (a dead end keeps the canvas).
-    expect(rule('.ch-empty-page__title')).toContain('color: var(--ch-ledger-ink);');
+    // One rule draws both titles: the route error's and every page empty's (Tournaments' first run is the reference).
+    expect(rule('.ch-empty-page__title,\n.ch-es--page .ch-es__title')).toContain('color: var(--ch-ledger-ink);');
   });
 
   it('CH-1206 the route error is the page empty in the danger tone: no card, Try again first, the reference as a caption', () => {
