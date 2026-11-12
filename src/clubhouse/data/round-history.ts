@@ -33,8 +33,8 @@ export type ChReviewHistoryInput = { playerId: string; coachTeamId: string | nul
  * "Ties fewest putts this season · 37" (owner's preview, 11 Nov 2026; staging: 17 rounds on one team, 5 on the other). A player
  * reads all of their own rounds.
  */
-export function historyTeam(viewer: { role: string; teamId: string | null }, roundTeamId: string | null | undefined): string | null {
-  return viewer.role === 'coach' ? (roundTeamId ?? viewer.teamId) : null;
+export function historyTeam(viewer: { role: string; teamId?: string | null }, roundTeamId: string | null | undefined): string | null {
+  return viewer.role === 'coach' ? (roundTeamId ?? viewer.teamId ?? null) : null;
 }
 
 /**

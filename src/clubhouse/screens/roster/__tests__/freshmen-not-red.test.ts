@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest';
 const read = (p: string) => readFileSync(join(process.cwd(), 'src/clubhouse', p), 'utf8');
 const lum = (hex: string) => {
   const c = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((x) => (x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4));
-  return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+  return 0.2126 * c[0]! + 0.7152 * c[1]! + 0.0722 * c[2]!;
 };
 
 describe('G4 Freshmen are not red on Roster', () => {
@@ -27,7 +27,7 @@ describe('G4 Freshmen are not red on Roster', () => {
 
   it.each([['light', () => light!], ['dark', () => dark!]])('the %s tone is not red-led and holds white text at 4.5:1', (_, get) => {
     const hex = get();
-    const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+    const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)) as [number, number, number];
     expect(r > g && r > b).toBe(false);
     expect(1.05 / (lum(hex) + 0.05)).toBeGreaterThanOrEqual(4.5);
   });
