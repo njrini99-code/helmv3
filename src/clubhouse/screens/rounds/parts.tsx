@@ -22,8 +22,14 @@ export const monthLabel = (iso: string) => fmt({ month: 'long', year: 'numeric' 
 export const shortDay = (iso: string) => fmt({ month: 'short', day: 'numeric' }).format(dateOf(iso));
 const dow = (iso: string) => fmt({ weekday: 'short' }).format(dateOf(iso));
 
-export function TeeSwatch({ color }: { color: ChTeeColor | null }) {
-  return color ? <i className={`ch-rd-tee ch-rd-tee--${color}`} aria-hidden="true" /> : null;
+/**
+ * The tee's colour as a dot. `slot`: a list whose rows line up on the dot keeps its place when the tee's colour isn't known
+ * (Team rounds: "Championship tees" started 16px left of every other row; phone premium sweep, 12 Nov 2026). The slot is
+ * empty, not an outlined dot, which would read as White.
+ */
+export function TeeSwatch({ color, slot = false }: { color: ChTeeColor | null; slot?: boolean }) {
+  if (color) return <i className={`ch-rd-tee ch-rd-tee--${color}`} aria-hidden="true" />;
+  return slot ? <i className="ch-rd-tee ch-rd-tee--none" aria-hidden="true" /> : null;
 }
 
 export function TypePill({ type }: { type: ChRoundType | null }) {

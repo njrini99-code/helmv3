@@ -755,6 +755,11 @@ a.ch-rd-sc:focus-visible {
   border-radius: 50%;
   box-shadow: 0 0 0 1px rgb(28 25 18 / 0.25);
 }
+/* A tee whose colour isn't known keeps the dot's place in a list that lines up on it, and draws nothing there. */
+.ch-rd-tee--none {
+  box-shadow: none;
+  visibility: hidden;
+}
 /* Tee swatches show the tee's own colour; they are data, not status. */
 .ch-rd-tee--black {
   background: #1c1b18;
