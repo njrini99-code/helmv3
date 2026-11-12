@@ -1474,6 +1474,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P008-settings/changes/2026-11-06-landscape-phone.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/changes/2026-11-07-shell-motion.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/changes/2026-11-11-fix-wave.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P008-settings/changes/2026-11-11-private-fields.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P009-qualifiers/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P009-qualifiers/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P009-qualifiers/DESIGN.md` | current | - | - | - | 1 |
