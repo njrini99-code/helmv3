@@ -105,6 +105,20 @@
   align-items: center;
   gap: 6px;
 }
+/* A filter or sort (ui/Segmented `weight="filter"`; owner, 11 Nov 2026, option B "white chip on a pale track"): the
+   flat track the large view switch already draws, and the chosen option a lifted ivory chip in ink. Mode switches keep
+   the green chip above. The press tint, focus ring, sizes and glide are the control's own. */
+.ch-seg--filter {
+  --ch-well-bg: var(--ch-well-bg-flat);
+  --ch-well-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-subtle);
+  --ch-seg-on-bg: var(--ch-card-bg);
+  --ch-seg-on-shadow: var(--ch-seg-pill-lift-shadow);
+  --ch-seg-on-ink: var(--ch-text-primary);
+}
+.ch-seg--filter .ch-seg__b,
+.ch-seg--filter .ch-seg__b.is-on {
+  text-shadow: none;
+}
 
 /* Pills */
 .ch-pills {
@@ -1411,6 +1425,10 @@
    ground's own rule. */
 :where(html[data-fw-theme='dark']) .ch-seg__b {
   text-shadow: 0 1px 0 rgb(0 0 0 / 0.35);
+}
+/* At night the filter's chip is the raised night surface over the flat night track. */
+:where(html[data-fw-theme='dark']) .ch-seg--filter {
+  --ch-seg-on-bg: var(--ch-bg-elevated);
 }
 @media (hover: hover) {
   html[data-fw-theme='dark'] .ch-search__x:hover {
