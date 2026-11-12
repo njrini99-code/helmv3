@@ -6107,12 +6107,6 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   .ch-dh-dot.is-travel {
     background: var(--ch-ink-300);
   }
-  .ch-dh-spark {
-    display: inline-flex;
-    flex: none;
-    align-items: center;
-    margin-inline-start: auto;
-  }
 }
 
 /* The team's game: each half of a line ("Fairways 61%", "Tour 66%"; who gains, who loses) is its own line in the part,

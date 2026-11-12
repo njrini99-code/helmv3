@@ -1,4 +1,4 @@
-import type { ChCoachHome } from '../../data/home';
+import type { ChCoachHome, ChLatestRound } from '../../data/home';
 import type { ChPlayerHome } from '../../data/player-home';
 import type { ChForm } from '../../data/season';
 import { isOut, type ChAvailability } from '../../data/availability';
@@ -202,4 +202,51 @@ export function playerFailedParts(data: Pick<ChPlayerHome, 'week' | 'latest' | '
   if (data.scoring.error) parts.push('your scoring');
   if (data.legs?.cacheError) parts.push('some of your figures');
   return parts;
+}
+
+/** One row of the desk's Latest rounds: a round, or one player's rounds of one event, folded (W4). */
+export interface ChLatestRow {
+  key: string;
+  playerId: string;
+  playerName: string;
+  meta: string;
+  /** The round's score, or the event's total when the row folds two or more rounds. */
+  score: number;
+  toPar: number | null;
+  /** The folded rounds' scores, oldest first; null for a single round. */
+  scores: number[] | null;
+}
+
+/** An event's rounds sit within three days of each other. */
+const EVENT_SPAN_DAYS = 2;
+const dayIndex = (d: string | undefined) => (d ? Date.parse(`${d}T12:00:00Z`) / 86_400_000 : Number.NaN);
+
+/**
+ * The desk's Latest rounds, newest first, at most `max` rows. One player's rounds at one course within three days are one
+ * event and one row: "Springfield CC · Wed 21 Oct · Rounds 74, 77, 73" over the total (W4, owner's preview, 11 Nov 2026: three
+ * rows that read the same). A round with no course or date stands alone.
+ */
+export function latestRows(rounds: ChLatestRound[], max: number): ChLatestRow[] {
+  const groups: ChLatestRound[][] = [];
+  for (const r of rounds) {
+    const g = groups.find(([h]) => h!.playerId === r.playerId && !!h!.course && h!.course === r.course && Math.abs(dayIndex(h!.date) - dayIndex(r.date)) <= EVENT_SPAN_DAYS);
+    if (g) g.push(r);
+    else groups.push([r]);
+  }
+  return groups.slice(0, max).map((g) => {
+    const newest = g[0]!;
+    if (g.length === 1) return { key: newest.id, playerId: newest.playerId, playerName: newest.playerName, meta: newest.meta, score: newest.score, toPar: newest.toPar, scores: null };
+    const oldest = g[g.length - 1]!;
+    const scores = [...g].reverse().map((r) => r.score);
+    const days = oldest.day === newest.day ? newest.day : `${oldest.day}–${newest.day}`;
+    return {
+      key: g.map((r) => r.id).join('+'),
+      playerId: newest.playerId,
+      playerName: newest.playerName,
+      meta: [newest.course, days, `Rounds ${scores.join(', ')}`].filter(Boolean).join(' · '),
+      score: scores.reduce((a, b) => a + b, 0),
+      toPar: g.every((r) => r.toPar != null) ? g.reduce((a, r) => a + r.toPar!, 0) : null,
+      scores,
+    };
+  });
 }
