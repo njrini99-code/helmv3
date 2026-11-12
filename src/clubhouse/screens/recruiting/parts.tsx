@@ -1,7 +1,7 @@
 'use client';
 
 import { CalendarClock, ChevronDown, Mail, NotebookPen, Phone, UserRound, type LucideIcon } from 'lucide-react';
-import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useId, useRef, type CSSProperties, type ReactNode } from 'react';
 import { CH_DIVISIONS } from '../../data/recruiting-calendar';
 import { dateLabel, isNextStepDue, isNextStepLate, mailHref, nextStepLine, stageMeta, telHref, whenLabel, type ChProspect, type ChStage } from '../../data/recruiting-shape';
 import { initials } from '../../lib/format';
@@ -147,6 +147,9 @@ export function EmptyRow({
   actionLabel: string;
   onAction: () => void;
 }) {
+  // The longer line describes the action: the desktop pane draws only "No … yet" and its Add (W42), and a screen reader
+  // still hears the line with the Add.
+  const more = useId();
   return (
     <div className="ch-rec-empty" data-ch-code={code}>
       <span className="ch-rec-empty__ic" aria-hidden="true">
@@ -154,9 +157,9 @@ export function EmptyRow({
       </span>
       <span className="ch-rec-empty__t">
         <b>{title}</b>
-        <span>{body}</span>
+        <span id={more}>{body}</span>
       </span>
-      <button type="button" className="ch-rec-empty__a" onClick={onAction}>
+      <button type="button" className="ch-rec-empty__a" onClick={onAction} aria-describedby={more}>
         {actionLabel}
       </button>
     </div>
