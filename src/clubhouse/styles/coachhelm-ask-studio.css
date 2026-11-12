@@ -903,10 +903,12 @@
 }
 .ch-aks-compass__pin > span {
   font: var(--ch-type-17-strong);
+  letter-spacing: var(--ch-track-17);
   color: var(--ch-text-primary);
 }
 .ch-aks-compass__pin > small {
   font: var(--ch-type-11);
+  letter-spacing: var(--ch-track-11);
 }
 .ch-aks-compass > figcaption {
   font: var(--ch-type-13);
