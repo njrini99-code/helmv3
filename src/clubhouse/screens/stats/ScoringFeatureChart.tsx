@@ -8,7 +8,7 @@ import { useChReducedMotion } from '../../lib/reduced-motion';
 import { CH_MARKS_MS } from '../../lib/motion';
 import { hapticScrub } from '../../lib/haptics';
 import { meanSeries, parLine, type TrendRound } from './round-trend';
-import { monoPath, type ShsTone } from './shs-figures';
+import { monoPath, straightPath, teamLineDays, type ShsTone } from './shs-figures';
 
 const H = 160;
 const BASE_PAD = { l: 4, r: 30, t: 10, b: 26 };
@@ -276,8 +276,11 @@ export function ScoringFeatureChart({ rounds, tone, onRead }: { rounds: readonly
   );
 }
 
-/** The team's feature chart (08 criterion 50): 160 tall, its line and area always the gain fill, the mean dashed and named. Not interactive: the card is the tap. */
-export function TeamFeatureChart({ days, mean }: { days: ReadonlyArray<{ label: string; score: number | null }>; mean: number | null }) {
+/**
+ * The team's feature chart (08 criterion 50): 160 tall, its line and area always the gain fill, the mean dashed and named. Not
+ * interactive: the card is the tap. Straight segments, and a day one player posted on is a hollow dot off the team's line (W26).
+ */
+export function TeamFeatureChart({ days, mean }: { days: ReadonlyArray<{ label: string; score: number | null; n?: number }>; mean: number | null }) {
   const box = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(320);
   useEffect(() => {
@@ -289,7 +292,7 @@ export function TeamFeatureChart({ days, mean }: { days: ReadonlyArray<{ label: 
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
-  const known = days.filter((d): d is { label: string; score: number } => d.score != null);
+  const known = days.filter((d): d is { label: string; score: number; n?: number } => d.score != null);
   const n = known.length;
   if (!n) return null;
   const R = 30;
@@ -301,11 +304,13 @@ export function TeamFeatureChart({ days, mean }: { days: ReadonlyArray<{ label: 
   const x = (i: number) => (n === 1 ? (width - R) / 2 : (i * (width - R)) / (n - 1));
   const y = (q: number) => T + ((q - lo) / (hi - lo || 1)) * (H - T - B);
   const pts = v.map((q, i) => [x(i), y(q)] as const);
-  const line = monoPath(pts);
+  const joined = teamLineDays(known);
+  const linePts = joined.line.map((i) => pts[i]!);
+  const line = straightPath(linePts);
   const ticks: number[] = [];
   for (let q = lo; q <= hi; q++) if ((q - lo) % (hi - lo > 4 ? 2 : 1) === 0) ticks.push(q);
   return (
-    <div ref={box} className="ch-shs-chart" role="img" aria-label={`Team scoring average by round day, from ${formatFixed(v[0]!, 1)} to ${formatFixed(v[n - 1]!, 1)}. Lower scores sit higher.`}>
+    <div ref={box} className="ch-shs-chart" role="img" aria-label={`Team scoring average by round day, from ${formatFixed(v[0]!, 1)} to ${formatFixed(v[n - 1]!, 1)}. Lower scores sit higher.${joined.one.size ? ` ${joined.one.size} ${joined.one.size === 1 ? 'day' : 'days'} with one round ${joined.one.size === 1 ? 'is' : 'are'} drawn apart from the team's line.` : ''}`}>
       <svg viewBox={`0 0 ${width} ${H}`} height={H} aria-hidden="true">
         <defs>
           <linearGradient id="ch-shs-tg" x1="0" x2="0" y1="0" y2="1">
@@ -322,10 +327,10 @@ export function TeamFeatureChart({ days, mean }: { days: ReadonlyArray<{ label: 
           </g>
         ))}
         {mean != null && <line className="ch-shs-parline" x1="0" x2={width - R + 4} y1={y(mean)} y2={y(mean)} />}
-        {line && <path d={`${line}L${pts[n - 1]![0]},${H - B}L0,${H - B}Z`} fill="url(#ch-shs-tg)" />}
+        {line && <path d={`${line}L${linePts[linePts.length - 1]![0]},${H - B}L${linePts[0]![0]},${H - B}Z`} fill="url(#ch-shs-tg)" />}
         {line && <path className="ch-shs-avgline" d={line} stroke="var(--ch-shs-s-gain-fill)" />}
         {pts.map((p, i) => (
-          <circle key={i} className="ch-shs-rdot" cx={p[0]} cy={p[1]} r={i === n - 1 ? 5 : 3.4} />
+          <circle key={i} className={'ch-shs-rdot' + (joined.one.has(i) ? ' is-one' : '')} cx={p[0]} cy={p[1]} r={i === n - 1 ? 5 : 3.4} />
         ))}
         <text className="ch-shs-ax" x="0" y={H - 5}>
           {known[0]!.label}
@@ -341,7 +346,8 @@ export function TeamFeatureChart({ days, mean }: { days: ReadonlyArray<{ label: 
           const atLeft = pts.length > 1 && Math.abs(pts[0]![1] - my) > Math.abs(pts[pts.length - 1]![1] - my);
           return (
             <text className="ch-shs-ax ch-shs-mean-label" x={atLeft ? pts[0]![0] : width - BASE_PAD.r} textAnchor={atLeft ? 'start' : 'end'} y={Math.max(12, my - 6)}>
-              Mean {formatFixed(mean, 1)}
+              {/* Named for what it is, so it never reads as a second scoring average beside the card's figure (W26). */}
+              Avg of these days {formatFixed(mean, 1)}
             </text>
           );
         })()}

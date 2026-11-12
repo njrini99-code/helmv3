@@ -246,3 +246,19 @@ export function monoPath(pts: ReadonlyArray<readonly [number, number]>): string 
   }
   return d;
 }
+
+/** Straight segments through the points: a chart of round days draws no value between two days that never happened (W26). */
+export function straightPath(pts: ReadonlyArray<readonly [number, number]>): string {
+  return pts.length < 2 ? '' : pts.map((p, i) => `${i ? 'L' : 'M'}${p[0]},${p[1]}`).join('');
+}
+
+/**
+ * Which round days the team's line joins (W26, owner's preview, 11 Nov 2026: the line's low point was one player's single 87,
+ * drawn as the team's worst day). A day one player posted on is a hollow dot off the line; the line joins the days two or more
+ * posted on, unless fewer than two such days exist, when it joins them all. A day with no count is read as a team day.
+ */
+export function teamLineDays(days: ReadonlyArray<{ n?: number }>): { line: number[]; one: Set<number> } {
+  const one = new Set(days.flatMap((d, i) => (d.n === 1 ? [i] : [])));
+  const team = days.flatMap((_, i) => (one.has(i) ? [] : [i]));
+  return team.length >= 2 ? { line: team, one } : { line: days.map((_, i) => i), one: new Set() };
+}

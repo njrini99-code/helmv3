@@ -1685,6 +1685,12 @@ li + li > .ch-shs-rrow::before {
 .ch-shs-rdot.is-under {
   fill: var(--ch-shs-s-under);
 }
+/* A day one player posted on: a hollow dot, off the team's line (W26). */
+.ch-shs-rdot.is-one {
+  fill: var(--ch-shs-s-card);
+  stroke: var(--ch-shs-s-ink);
+  stroke-width: 1.5;
+}
 .ch-shs-scrub {
   stroke: var(--ch-shs-s-ink);
   stroke-opacity: 0.6;
