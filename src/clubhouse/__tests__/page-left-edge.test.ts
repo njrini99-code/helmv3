@@ -13,3 +13,13 @@ describe('one left edge for desk pages (W40)', () => {
     expect(rule![1]).toContain('.ch-prc');
   });
 });
+
+// W40 (owner, 12 Nov 2026: "two widths, normal and wide"): the boards share one wide box.
+describe('two page widths (W40)', () => {
+  const read = (f: string) => readFileSync(join(process.cwd(), 'src/clubhouse/styles', f), 'utf8');
+  it('Calendar, the Team board and Stats with a detail open all stop at the wide measure', () => {
+    expect(read('calendar.css')).toMatch(/\.ch-cal \{[^}]*max-width: var\(--ch-measure-wide\)/);
+    expect(read('coachhelm-team.css')).toMatch(/\.ch-htb\.is-desk \{[^}]*max-width: var\(--ch-measure-wide\);/);
+    expect(read('stats-redesign.css')).toMatch(/\.ch-st--shs:has\(\.ch-shs-desk:not\(\.is-alone\)\) \{\s*max-width: var\(--ch-measure-wide\);/);
+  });
+});

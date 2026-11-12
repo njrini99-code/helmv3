@@ -1798,11 +1798,11 @@ html[data-fw-theme='dark'] .ch-htb .skl::after {
 .ch-htb-desk {
   padding: 20px 24px 40px;
 }
-/* At most the wide measure on a desk, from the left edge every page shares (shell.css "One left edge"), so on a big screen the
+/* At most the wide measure on a desk (W40: the same box as Calendar, Recruiting and Stats), from the left edge every page shares (shell.css "One left edge"), so on a big screen the
    hole and its cards stop growing with the window (owner's preview, 11 Nov 2026: "this screen is uhh very large" at 1920). */
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-htb.is-desk {
-    max-width: calc(var(--ch-measure-wide) + 48px);
+    max-width: var(--ch-measure-wide);
     margin-inline: max(0px, calc((100vw - var(--ch-sidebar-w) - var(--ch-measure-wide)) / 2)) auto;
   }
 }
