@@ -67,7 +67,12 @@ export function StudioSpecimenView({ specimen, only, bare = false }: { specimen:
   );
   const readout = (
     <p className="ch-akg-asked" role="status">
-      {asked ? (
+      {asked && specimen.compass ? (
+        // The compass's key sends in the app (Phase 0, step 4), unlike a chart mark, which only fills the composer.
+        <>
+          In Ask this sends <q>{asked.words}</q> with the selection; nothing is sent here. Reference <code>{askRef(asked)}</code>
+        </>
+      ) : asked ? (
         <>
           The composer is filled with <q>{asked.words}</q> and nothing is sent. Reference <code>{askRef(asked)}</code>
         </>

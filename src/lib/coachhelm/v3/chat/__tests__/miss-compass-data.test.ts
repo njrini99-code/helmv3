@@ -33,10 +33,15 @@ beforeEach(() => {
 afterEach(() => vi.useRealTimers());
 
 const TEAM = 'team-1';
-const ctx = { coach_id: 'c1', user_id: 'u1', team_id: TEAM, team_name: 'Finley University', timezone: 'America/New_York', roster: [] } as unknown as CoachChatContext;
+const ROSTER = [
+  { id: 'p-1', name: 'Jonah Okafor', first_name: 'Jonah', last_name: 'Okafor', graduation_year: 2028 },
+  { id: 'p-2', name: 'Priya Natarajan', first_name: 'Priya', last_name: 'Natarajan', graduation_year: 2027 },
+];
+const ctx = { coach_id: 'c1', user_id: 'u1', team_id: TEAM, team_name: 'Finley University', timezone: 'America/New_York', roster: ROSTER } as unknown as CoachChatContext;
 
 // Six rounds, newest last; 50 "right" misses (past the cap), a few of every other kind, putts and shots with no direction.
-const ROUNDS = ['2026-09-02', '2026-09-16', '2026-09-30', '2026-10-14', '2026-10-28', '2026-11-04'].map((round_date, i) => ({ id: `r-${i + 1}`, round_date, course_name: i % 2 ? 'Hilltop' : 'Pine Ridge' }));
+// Two players' rounds, and the newest played by someone no longer on the active roster.
+const ROUNDS = ['2026-09-02', '2026-09-16', '2026-09-30', '2026-10-14', '2026-10-28', '2026-11-04'].map((round_date, i) => ({ id: `r-${i + 1}`, round_date, course_name: i % 2 ? 'Hilltop' : 'Pine Ridge', player_id: i === 5 ? 'p-gone' : `p-${(i % 2) + 1}` }));
 const SPREAD: Array<[string | null, number]> = [['right', 50], ['short_right', 11], ['short', 9], ['long', 4], ['left', 3], ['long_left', 1], [null, 6], ['sideways', 2]];
 const SHOTS: ShotRow[] = [];
 let n = 0;
@@ -116,6 +121,38 @@ describe('off: the read is exactly what it was', () => {
   });
 });
 
+describe('whose shot: named on a team-wide read, from the roster, never on one player’s', () => {
+  it('a team read names each round’s player by the roster; a player no longer on it is null, never an id', async () => {
+    const env = await read(true);
+    const kept = (env.detail as Record<string, { miss_shots: ReturnType<typeof missShotsOf> }>)[UI_ONLY_KEY]!.miss_shots;
+    const playerOf = new Map(ROUNDS.map((r) => [r.id, r.player_id]));
+    const names = new Map(ROSTER.map((p) => [p.id, p.name]));
+    let named = 0;
+    for (const d of MISS_DIRECTIONS)
+      for (const s of kept.directions[d].shots) {
+        expect(s).toHaveProperty('player');
+        expect(s.player).toBe(names.get(playerOf.get(s.round_id)!) ?? null);
+        if (s.player) named++;
+      }
+    expect(named).toBeGreaterThan(0);
+    expect(JSON.stringify(kept)).not.toContain('p-gone');
+  });
+
+  it('a read of one player names no one: every row is theirs', async () => {
+    const env = await getShotPattern(fakeSb(), ctx, { player_id: 'p-1', since_days: 90, mode: 'approach', drawer: true });
+    const kept = (env.detail as Record<string, { miss_shots: ReturnType<typeof missShotsOf> }>)[UI_ONLY_KEY]!.miss_shots;
+    for (const d of MISS_DIRECTIONS) for (const s of kept.directions[d].shots) expect(s).not.toHaveProperty('player');
+  });
+
+  it('the name rides through the compiler to the drawn block', async () => {
+    const r = compileComposition({ title: 'Where the approach misses go', layout: 'stack', blocks: [{ type: 'miss_pattern', ref: 'e7' }] }, new Map([['e7', await read(true)]]), NOW);
+    if (!r.ok) throw new Error(r.reason);
+    const block = r.composition.blocks[0]!;
+    if (block.type !== 'miss_pattern') throw new Error('not a miss pattern');
+    expect(Object.values(block.shots!.directions).flatMap((x) => x.shots.map((s) => s.player))).toContain('Jonah Okafor');
+  });
+});
+
 describe('a sentinel in ui_only reaches nothing the model or a generic table reads', () => {
   const SENTINEL = 'sentinel-shot-x9';
   const ODD = 987654;
@@ -123,16 +160,17 @@ describe('a sentinel in ui_only reaches nothing the model or a generic table rea
     summary: 'Finley University: 12 shots, last 90 days.',
     measurements: [],
     series: [],
-    detail: { team_scope: true, kind: 'miss_pattern', pattern: { total: 12, no_direction: 0, inside_15: 4, inside_25: 7, penalties: 0, lies: {}, wedges: MISS_DIRECTIONS.map((direction) => ({ direction, count: direction === 'right' ? 12 : 0, avg_left_ft: null })) }, rounds: 3, [UI_ONLY_KEY]: { miss_shots: { cap: 40, directions: { right: { count: 12, shots: [{ id: SENTINEL, round_id: 'r-sentinel', hole_id: null, round_date: '2026-10-01', course: 'Sentinel Links', from_ft: ODD, left_ft: ODD, lie_before: 'fairway' }] } } } } },
+    detail: { team_scope: true, kind: 'miss_pattern', pattern: { total: 12, no_direction: 0, inside_15: 4, inside_25: 7, penalties: 0, lies: {}, wedges: MISS_DIRECTIONS.map((direction) => ({ direction, count: direction === 'right' ? 12 : 0, avg_left_ft: null })) }, rounds: 3, [UI_ONLY_KEY]: { miss_shots: { cap: 40, directions: { right: { count: 12, shots: [{ id: SENTINEL, round_id: 'r-sentinel', hole_id: null, round_date: '2026-10-01', course: 'Sentinel Links', from_ft: ODD, left_ft: ODD, lie_before: 'fairway', player: 'Zebulon Quartermaine' }] } } } } },
     coverage: 'complete',
     coverage_note: null,
     as_of: NOW.toISOString(),
   };
 
   it('the model’s text, the supported numbers, summarise_data’s rows', () => {
-    expect(plain(env).model_text).not.toMatch(/sentinel|987654|Sentinel Links/i);
+    expect(plain(env).model_text).not.toMatch(/sentinel|987654|Sentinel Links|Quartermaine/i);
     expect(supportedNumbers([plain(env)]).all).not.toContain(ODD);
-    expect(JSON.stringify(rowsOfEnvelope(env))).not.toMatch(/sentinel|987654/);
+    expect(JSON.stringify(supportedNumbers([plain(env)]))).not.toMatch(/Quartermaine/);
+    expect(JSON.stringify(rowsOfEnvelope(env))).not.toMatch(/sentinel|987654|Quartermaine/);
     expect(rowsOfEnvelope(env, UI_ONLY_KEY)).toBeNull();
   });
 
@@ -143,8 +181,14 @@ describe('a sentinel in ui_only reaches nothing the model or a generic table rea
     for (const key of ['entity:team-1', 'metric:shots_logged']) expect(aboutLine(reads, { evidence_ref: 'e3', key })?.line ?? '').not.toMatch(/sentinel/i);
   });
 
+  it('the player’s name stays with the app: not in the selection line the model is given either', () => {
+    const got = aboutLine(new Map([['e3', env]]), { evidence_ref: 'e3', key: 'shots:right' })!;
+    expect(got.line).toContain('the 12 shots that missed right');
+    expect(got.line).not.toMatch(/Quartermaine|Zebulon/);
+  });
+
   it('the thread’s generic evidence and tables draw none of it', () => {
-    expect(JSON.stringify(evidenceBlocks(env))).not.toMatch(/sentinel|987654/i);
+    expect(JSON.stringify(evidenceBlocks(env))).not.toMatch(/sentinel|987654|Quartermaine/i);
     expect(detailTable(env.detail, 'x')).toBeNull();
   });
 

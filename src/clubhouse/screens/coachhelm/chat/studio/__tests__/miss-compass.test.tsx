@@ -113,9 +113,22 @@ describe('the drawer: the shots behind one direction', () => {
     expect(links).toHaveLength(40);
     const kept = WITH.shots!.directions.right!.shots;
     links.forEach((a, i) => expect(a).toHaveAttribute('href', `/golf/dashboard/rounds/${kept[i]!.round_id}`));
-    expect(links[0]).toHaveAccessibleName(/^Open the round: Wed, Nov 4, Hilltop Golf Club, \d+ yd from the fairway · \d+ ft left$/);
+    expect(links[0]).toHaveAccessibleName(new RegExp(`^Open the round: ${kept[0]!.player}, Wed, Nov 4, Hilltop Golf Club, \\d+ yd from the fairway · \\d+ ft left$`));
+    // A team read: whose round leads, then the date and the course.
+    expect(links[0]!.querySelector('b')).toHaveTextContent(kept[0]!.player!);
+    expect(links[0]!.querySelector('small')).toHaveTextContent('Wed, Nov 4 · Hilltop Golf Club');
     // The distance left is said after its number, as the round review says it, never as a direction ("left 18 ft").
     for (const a of links) expect(a.textContent).not.toMatch(/\bleft \d/);
+  });
+
+  it('a read of one player names no one: each row leads with its date, the course under it', () => {
+    const one: MissPatternBlock = { ...WITH, shots: { ...WITH.shots!, directions: Object.fromEntries(Object.entries(WITH.shots!.directions).map(([d, v]) => [d, { ...v, shots: v.shots.map(({ player: _p, ...s }) => s) }])) } };
+    draw(undefined, one);
+    fireEvent.click(radio(/^Right,/));
+    const first = within(screen.getByRole('region', { name: '46 shots missed right' })).getAllByRole('link')[0]!;
+    expect(first.querySelector('b')).toHaveTextContent('Wed, Nov 4');
+    expect(first.querySelector('small')).toHaveTextContent(/^Hilltop Golf Club$/);
+    expect(first).toHaveAccessibleName(/^Open the round: Wed, Nov 4, Hilltop Golf Club, /);
   });
 
   it('a direction under the cap says no cap, and closing the drawer clears the choice', () => {
