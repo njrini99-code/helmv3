@@ -37,16 +37,19 @@ top bar says ("‹ More").
   "‹ Tournaments" crumb in its body. The built top bar backs one level (an
   event to Tournaments, Review to its event), so the body crumb would repeat
   it: on the phone no view draws the crumb (2026-10-27).
-- **History toggles.** The board has no toggles on the phone trend. The built
-  page keeps the desktop's two (lineup mode, measured against); on the phone the
-  section head wraps and they take their own row under "Across seasons"
-  (visual pass, 2026-10-28).
+- **History filter.** The board has no toggles on the phone trend. The desktop
+  has two (lineup mode, measured against). The phone stacked both under
+  "Across seasons" before any content (visual pass, 2026-10-28) until G17
+  (2026-11-12): returning players has no figure against the field, so only
+  three of the pairs exist, and the phone now has one control of three
+  (Rating, Returning, The field) on its own row under the title. Each writes
+  the same address the desk's pair does.
 - **The trend's dashed line** is the mean of the points shown, as on the board.
 
 ## Checks
 
 - 390 and 375 wide: nothing runs off the right edge; every control is 44px to
   press.
-- Light and dark; Text Size larger: the History toggles and the Compare scopes
-  wrap, never clip.
+- Light and dark; Text Size larger: the History filter's labels and the
+  Compare scopes wrap, never clip.
 - The evidence sheet opens from a score and closes with the swipe and Escape.

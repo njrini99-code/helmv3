@@ -1,6 +1,6 @@
 'use client';
 
-import { Plus } from 'lucide-react';
+import { Plus, Trophy } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, type CSSProperties } from 'react';
@@ -46,6 +46,15 @@ export function History({ data, search, load, phone: forced }: HistoryProps) {
     ready: () => <HistoryReady data={data} search={search} phone={phone} />,
   });
 }
+
+/**
+ * The phone's one filter (G17): the three views the trend has. Returning players has no figure against the field, so of
+ * the desk's two filters only three pairs exist, and a phone shows them as one control rather than two stacked before
+ * any content. Each writes the same address the desk's pair does.
+ */
+type Lens = 'rating' | 'returning' | 'field';
+const LENSES: Record<Lens, ChTourHistorySearch> = { rating: { mode: 'actual', adjust: 'raw' }, returning: { mode: 'matched', adjust: 'raw' }, field: { mode: 'actual', adjust: 'field' } };
+const lensOf = (s: ChTourHistorySearch): Lens => (s.adjust === 'field' ? 'field' : s.mode === 'matched' ? 'returning' : 'rating');
 
 const historyHref = (base: string, s: ChTourHistorySearch) => {
   const q = new URLSearchParams();
@@ -104,7 +113,7 @@ function HistoryReady({ data, search, phone }: { data: ChTourHistoryData; search
         <EmptyState
           size="page"
           code="CH-16340"
-          icon={Plus}
+          icon={Trophy}
           title="No results to compare yet"
           body="Once events are finished, the team’s scoring against the course rating shows here, season by season."
           action={
@@ -120,8 +129,14 @@ function HistoryReady({ data, search, phone }: { data: ChTourHistoryData; search
             title="Across seasons"
             actions={
               <div className="ch-tour-rev-tools">
-                <Segmented weight="filter" size="sm" block={phone} label="Lineup mode" value={state.adjust === 'field' ? 'actual' : state.mode} onChange={(v) => move({ mode: v })} options={[{ value: 'actual', label: 'Actual lineups' }, { value: 'matched', label: 'Returning players', disabled: state.adjust === 'field' }]} />
-                <Segmented weight="filter" size="sm" block={phone} label="Measured against" value={state.adjust} onChange={(v) => move({ adjust: v })} options={[{ value: 'raw', label: 'Course rating' }, { value: 'field', label: 'The field' }]} />
+                {phone ? (
+                  <Segmented weight="filter" size="sm" block label="What the trend shows" value={lensOf(state)} onChange={(v) => move(LENSES[v])} options={[{ value: 'rating', label: 'Rating' }, { value: 'returning', label: 'Returning' }, { value: 'field', label: 'The field' }]} />
+                ) : (
+                  <>
+                    <Segmented weight="filter" size="sm" label="Lineup mode" value={state.adjust === 'field' ? 'actual' : state.mode} onChange={(v) => move({ mode: v })} options={[{ value: 'actual', label: 'Actual lineups' }, { value: 'matched', label: 'Returning players', disabled: state.adjust === 'field' }]} />
+                    <Segmented weight="filter" size="sm" label="Measured against" value={state.adjust} onChange={(v) => move({ adjust: v })} options={[{ value: 'raw', label: 'Course rating' }, { value: 'field', label: 'The field' }]} />
+                  </>
+                )}
               </div>
             }
           >
