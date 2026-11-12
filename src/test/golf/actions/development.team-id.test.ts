@@ -75,7 +75,13 @@ function client(w: World, which: 'scoped' | 'admin' = 'scoped') {
     from: (table: string) => {
       if (table === 'golf_coaches') return chain(() => ({ data: { id: 'coach-1', organization_id: w.organizationId === undefined ? 'org-1' : w.organizationId, full_name: 'Coach Reyes' }, error: null }));
       if (table === 'golf_players') return chain(() => ({ data: { id: 'player-1', user_id: 'user-1' }, error: null }));
-      if (table === 'users') return chain(() => ({ data: { email: 'jonah@example.com' }, error: null }));
+      // public.users RLS is own-row only: a coach's session reads nothing for a player, and `.single()` turns that into
+      // PGRST116 (fingerprint 0f4b92c9). Only the service role can read the email the notice needs.
+      if (table === 'users') {
+        return chain(() => which === 'admin'
+          ? { data: { email: 'jonah@example.com' }, error: null }
+          : { data: null, error: { code: 'PGRST116', message: 'Cannot coerce the result to a single JSON object', details: 'The result contains 0 rows' } });
+      }
       if (table === 'golf_team_members') {
         return chain((f) => {
           // The coach's roster check names the team; the player's own team lookup does not.
@@ -256,6 +262,28 @@ describe('CH13-7 the "New focus area" notification goes where the player can see
     world({ coachTeam: 'team-coach', onCoachTeam: true });
     await createFocusArea({ ...base, status: 'proposed' });
     expect(notifyDevPlanAssigned).toHaveBeenCalledWith('user-1', 'jonah@example.com', 'Lag putting', 'putting', 'Coach Reyes', undefined);
+  });
+
+  it('0f4b92c9: the player is told even though the coach’s session cannot read their users row, and no warning is logged', async () => {
+    world({ coachTeam: 'team-coach', onCoachTeam: true });
+    await createFocusArea({ ...base, status: 'proposed' });
+    expect(notifyDevPlanAssigned).toHaveBeenCalledTimes(1);
+    expect(logServerError.mock.calls.map((c) => String(c[0])).filter((m) => m.includes('email read failed'))).toEqual([]);
+  });
+
+  it('the shared demo account cannot reach a real player through either insight path', async () => {
+    demo.on = true;
+    world({ playerTeam: 'team-player' });
+    await expect(createFocusAreaFromInsightV2({ playerId: 'player-1', insightId: 'insight-1', title: 'Lag putting', description: 'x', areaType: 'putting' })).rejects.toThrow(/read-only demo/);
+    await expect(createFocusAreaFromInsight({ insight_id: 'insight-1', player_id: 'player-1', coach_id: 'coach-1', title: 'Work on putts', description: null, insight_type: 'stat_regression' })).rejects.toThrow(/read-only demo/);
+    expect(inserted).toHaveLength(0);
+    expect(notifyDevPlanAssigned).not.toHaveBeenCalled();
+  });
+
+  it('Clubhouse’s Assign as focus tells the player too', async () => {
+    world({ playerTeam: 'team-player' });
+    await createFocusAreaFromInsightV2({ playerId: 'player-1', insightId: 'insight-1', title: 'Lag putting', description: 'x', areaType: 'putting' });
+    expect(notifyDevPlanAssigned).toHaveBeenCalledTimes(1);
   });
 });
 

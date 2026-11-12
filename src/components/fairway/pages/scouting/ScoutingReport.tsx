@@ -35,7 +35,6 @@ import { PopoverPanel } from '@/components/fairway/overlays/PopoverPanel';
 import { fairwayToast } from '@/components/fairway/feedback/ToastStack';
 import { formatTargetMetricLabel, getProgressPercent } from '@/components/fairway/pages/coachhelm/areaTypes';
 import { useGolfUserOptional } from '@/contexts/golf-user-context';
-import { computeTargetValue } from '@/lib/coachhelm/v3/goals/suggestion-writer';
 import type { ThemeNode } from '@/lib/coachhelm/v3/themes/types';
 
 import { getInsightsForCoachWithMeta, type EvidenceInsight } from '@/app/golf/actions/insight-delivery';
@@ -49,6 +48,7 @@ import {
   buildVerdict,
   changedSinceSeen,
   evidenceSignature,
+  focusNumbersForAssign,
   formatCalendarDate,
   formatHandicap,
   formatPlanValue,
@@ -268,16 +268,7 @@ export function ScoutingReport({ player, rounds, focusAreas, themes, evidenceIns
       setAssignOpen(false);
       if (!coachId) return;
       const e = claim.insight.evidence;
-      const pga =
-        e.comparison_source === 'pga_baseline'
-          ? e.comparison_value
-          : e.secondary_source === 'pga_baseline'
-            ? (e.secondary_value ?? null)
-            : null;
-      const target =
-        Number.isFinite(e.your_value) && pga !== null && Number.isFinite(pga)
-          ? computeTargetValue({ playerValue: e.your_value, anchorValue: pga, metricId: e.metric })
-          : null;
+      const numbers = focusNumbersForAssign(e);
       setAssigningId(claim.id);
       startAssign(async () => {
         try {
@@ -289,8 +280,8 @@ export function ScoutingReport({ player, rounds, focusAreas, themes, evidenceIns
             description: claim.insight.content ?? '',
             insight_type: (claim.insight.category as string | null) ?? 'general',
             target_metric: e.metric,
-            current_value: Number.isFinite(e.your_value) ? e.your_value : null,
-            target_value: target,
+            current_value: numbers.current_value,
+            target_value: numbers.target_value,
           });
           if (res.success) {
             fairwayToast.success(`Focus assigned: ${claim.insight.title}`);

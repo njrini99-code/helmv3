@@ -273,6 +273,7 @@ in `memory/features/coachhelm-ai.md`.
 
 ## Known Risk Areas
 
+- `createTask` reads assignees' `users.email` with the service role (2026-11-05): `public.users` RLS is own-row only, so the coach's session read no rows with no error and no assignee got the email or the `New task` bell row. The ids are already checked by `verifyPlayersOnTeam`.
 - Task reminder auto-send is missing; setting `reminder_at` does not imply notifications will fire.
 - Travel expense split table exists but dedicated split calculation/assignment logic is incomplete.
 - Budget/expense actions may exist even when UI exposure is partial.
