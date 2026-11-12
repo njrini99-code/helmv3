@@ -88,7 +88,7 @@ function useOpenRound(r: ChTeamRound) {
 function TeeCell({ r }: { r: ChTeamRound }) {
   return (
     <span className="ch-trd-meta__tee">
-      <TeeSwatch color={r.teeColor} />
+      <TeeSwatch color={r.teeColor} slot />
       <span className="ch-trd-meta__teen">{r.tee ?? `${r.holes} holes`}</span>
     </span>
   );
