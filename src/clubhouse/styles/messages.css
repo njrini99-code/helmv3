@@ -502,8 +502,9 @@
 .ch-ms-msg.is-first {
   margin-top: var(--ch-ms-px-10);
 }
+/* Room for the badges that rise 22 px above the bubble (messages-overlays.css), plus a 2 px gap to the row above. */
 .ch-ms-msg:has(.ch-ms-reacts) {
-  margin-top: 16px;
+  margin-top: 24px;
 }
 .ch-ms-msg.is-mine {
   justify-content: flex-end;
