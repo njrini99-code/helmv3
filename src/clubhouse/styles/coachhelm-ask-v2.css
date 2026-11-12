@@ -352,6 +352,114 @@ html[data-fw-theme='dark'] .ch-ak-th {
   font: var(--ch-type-13);
   color: var(--ch-text-tertiary);
 }
+
+/* Q2 A, the question first (owner's pick, 12 Nov 2026: "Cramped, basic, not airy or premium"). On a desk the new chat's home
+   fills the pane: auto margins above the greeting and above the foot share the free height, so the greeting and the box sit
+   in its middle and what moved since Monday sits at its foot (Home.tsx draws them in that order). On a short window the
+   margins fall to zero and the page scrolls with the box still under the greeting. The phone keeps its own home. */
+.ch-ak-home:not(.is-phone) {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ch-space-4);
+  max-width: 760px;
+  padding: var(--ch-space-3) 0 0;
+}
+.ch-ak-home:not(.is-phone) .hi {
+  justify-items: center;
+  gap: var(--ch-space-2);
+  margin-top: auto;
+  text-align: center;
+}
+.ch-ak-home:not(.is-phone) .hi .ch-ball {
+  margin-bottom: var(--ch-space-3);
+}
+.ch-ak-home:not(.is-phone) .hi h2 {
+  font: var(--ch-type-34-strong);
+  letter-spacing: var(--ch-track-34);
+  text-wrap: balance;
+}
+.ch-ak-home:not(.is-phone) .hi p {
+  font: var(--ch-type-16);
+  letter-spacing: var(--ch-track-16);
+}
+.ch-ak-home:not(.is-phone) > .ch-ask-cmp {
+  margin-top: var(--ch-space-1);
+}
+.ch-ak-home:not(.is-phone) > .ch-ask-nothing {
+  width: 100%;
+}
+/* The starters: quiet chips in a centred row under the box, the question alone (no arrow, no tag), each a 44 target. */
+.ch-ak-home:not(.is-phone) .sugg {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--ch-space-2);
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+.ch-ak-home:not(.is-phone) .sugg li + li {
+  border-top: 0;
+}
+.ch-ak-home:not(.is-phone) .sugg button {
+  width: auto;
+  min-height: 44px;
+  gap: var(--ch-space-2);
+  padding: 0 var(--ch-space-4);
+  border-radius: var(--ch-radius-panel);
+  background: var(--ch-card-bg);
+  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-control);
+  font: var(--ch-type-14-medium);
+  color: var(--ch-text-secondary);
+  cursor: pointer;
+  transition: box-shadow var(--ch-dur-quick) var(--ch-ease), color var(--ch-dur-quick) var(--ch-ease);
+}
+@media (hover: hover) {
+  .ch-ak-home:not(.is-phone) .sugg button:hover {
+    box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-strong);
+    color: var(--ch-text-primary);
+  }
+}
+.ch-ak-home:not(.is-phone) .sugg button:active {
+  background-image: linear-gradient(var(--ch-ledger-row-press), var(--ch-ledger-row-press));
+}
+/* The foot: what moved since Monday (a player's focus, and their meter), a quiet ruled list in the page's ink rather than
+   the dark feature panel. Its rows keep their 44 target (ASK-10). */
+.ch-ak-home:not(.is-phone) > .foot {
+  display: grid;
+  gap: var(--ch-space-3);
+  width: 100%;
+  max-width: 680px;
+  margin-top: auto;
+}
+.ch-ak-home:not(.is-phone) .pulse {
+  gap: 0;
+  padding: var(--ch-space-3) 0 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-separator);
+  color: var(--ch-text-primary);
+}
+.ch-ak-home:not(.is-phone) .pulse b {
+  margin-bottom: var(--ch-space-1);
+  font: var(--ch-type-13-medium);
+  color: var(--ch-text-secondary);
+}
+.ch-ak-home:not(.is-phone) .pulse .rw {
+  gap: var(--ch-space-3);
+}
+.ch-ak-home:not(.is-phone) .pulse .is-fine {
+  background: var(--ch-green-500);
+}
+.ch-ak-home:not(.is-phone) .pulse .is-flat {
+  background: var(--ch-ink-300);
+}
+.ch-ak-home:not(.is-phone) .pulse small {
+  margin-top: var(--ch-space-1);
+  color: var(--ch-text-tertiary);
+}
 .ch-ak-th .work .sum.is-live {
   display: flex;
   justify-content: space-between;
