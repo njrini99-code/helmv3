@@ -70,7 +70,7 @@ describe('W19 B · one anatomy for a page empty', () => {
   it('progress on a page reads as segments and words', () => {
     const { container } = render(<EmptyState size="page" code="CH-7" title="Your first rounds" progress={{ done: 1, total: 3, label: 'rounds posted' }} />);
     expect(container.querySelectorAll('.ch-es__seg > i')).toHaveLength(3);
-    expect(container.querySelectorAll('.ch-es__seg > i.is-on')).toHaveLength(1);
+    expect(container.querySelectorAll('.ch-es__seg > i.is-done')).toHaveLength(1);
     expect(container.querySelector('.ch-es__prog')!.textContent).toBe('1 of 3 rounds posted');
   });
 
