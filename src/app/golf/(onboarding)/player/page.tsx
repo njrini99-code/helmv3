@@ -22,6 +22,7 @@ import {
 } from '@/components/icons';
 import { StepIndicator, slideVariants, staggerContainer, staggerItem } from '@/components/golf/onboarding/StepIndicator';
 import { ensurePlayerRecord, completePlayerOnboarding } from '@/app/golf/actions/onboarding';
+import { readPlayerPrivateFields } from '@/lib/golf/player-private-fields';
 
 // ─── Types & Constants ──────────────────────────────────────────────────────
 
@@ -114,10 +115,10 @@ function GolfPlayerOnboardingContent() {
       await ensurePlayerRecord();
 
       // Check for existing player record
-      // Named columns: e-mail and phone are not readable through the table (security review 2026-11-11, finding 1).
+      // Named columns: e-mail, phone and GPA are not readable through the table (security review 2026-11-11, finding 1).
       const { data: player } = await supabase
         .from('golf_players')
-        .select('first_name, last_name, gpa, graduation_year, handicap, hometown, state, onboarding_completed')
+        .select('id, first_name, last_name, graduation_year, handicap, hometown, state, onboarding_completed')
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -143,7 +144,10 @@ function GolfPlayerOnboardingContent() {
         );
         setHometown(player.hometown || '');
         setState(player.state || '');
-        setGpa(player.gpa?.toString() || '');
+        // The player's own GPA through golf_player_private_fields. A failed read leaves it blank, and a blank GPA is not
+        // written on submit (completePlayerOnboarding sets gpa only when one is given), so nothing is overwritten.
+        const own = await readPlayerPrivateFields(supabase, [player.id]);
+        setGpa(own.data.get(player.id)?.gpa?.toString() || '');
       }
 
       setAuthLoading(false);

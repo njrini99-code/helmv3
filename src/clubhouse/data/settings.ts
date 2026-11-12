@@ -13,7 +13,7 @@ import type { CoachPhilosophy } from '@/lib/coachhelm/types';
 import { isCustomerEmailEnabled } from '@/lib/email/outbound-gate';
 import { DEFAULT_NOTIFICATION_PREFERENCES } from '@/lib/notifications/types';
 import { chLogServer } from '../lib/track-server';
-import { readPlayerContacts } from '@/lib/golf/player-contacts';
+import { readPlayerPrivateFields } from '@/lib/golf/player-private-fields';
 import type { ChCoachHelmSettings, ChScoring, ChSettingsData } from '../screens/settings/model';
 
 /**
@@ -61,7 +61,7 @@ export async function loadSettings(session: GolfSessionProfile, teamId: string |
 
   // The team's name comes from the team row each role reads below, and the digest from the CoachHelm philosophy row: each
   // table is read once (the loader read golf_teams and golf_coach_philosophy twice each; readiness audit, 2026-10-17).
-  // The player's own phone comes through golf_player_contacts: e-mail and phone are not readable from golf_players by a
+  // The player's own phone comes through golf_player_private_fields: e-mail and phone are not readable from golf_players by a
   // signed-in session (security review 2026-11-11, finding 1).
   const [userRes, deliveryRes, savedPrefsRes, profileRes, contactRes] = await Promise.all([
     supabase.auth.getUser(),
@@ -75,7 +75,7 @@ export async function loadSettings(session: GolfSessionProfile, teamId: string |
           .select('first_name, last_name, avatar_url, handicap, handicap_index, graduation_year, hometown, state')
           .eq('id', playerId!)
           .maybeSingle(),
-    role === 'player' && playerId ? readPlayerContacts(supabase, [playerId]) : Promise.resolve(null),
+    role === 'player' && playerId ? readPlayerPrivateFields(supabase, [playerId]) : Promise.resolve(null),
   ]);
   if (contactRes?.error) log('contact', contactRes.error);
   if (userRes.error) log('user', userRes.error, 'auth');

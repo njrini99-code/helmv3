@@ -126,12 +126,12 @@ END $$;
 SET LOCAL role TO authenticated;
 SET LOCAL request.jwt.claims TO '{"sub": "00000000-0000-0000-0000-000017004001", "role": "authenticated"}';
 
--- E-mail and phone come through golf_player_contacts since 20261112090000 (no table column grant on either, for any row).
+-- E-mail, phone and GPA come through golf_player_private_fields since 20261112090000 (no table column grant on them, for any row).
 SELECT is(
-  (SELECT high_school_name || ' ' || gpa::text FROM public.golf_players WHERE id = '00000000-0000-0000-0000-000017004401')
-  || ' ' || (SELECT email FROM public.golf_player_contacts(ARRAY['00000000-0000-0000-0000-000017004401']::uuid[])),
-  'School1 3.1 p1@scope.test',
-  'a player still reads their own full row (contact columns through golf_player_contacts)'
+  (SELECT high_school_name || ' ' || hometown FROM public.golf_players WHERE id = '00000000-0000-0000-0000-000017004401')
+  || ' ' || (SELECT email FROM public.golf_player_private_fields(ARRAY['00000000-0000-0000-0000-000017004401']::uuid[])),
+  'School1 Town1 p1@scope.test',
+  'a player still reads their own full row (contact columns through golf_player_private_fields)'
 );
 
 SELECT is(
@@ -178,9 +178,9 @@ SET LOCAL request.jwt.claims TO '{"sub": "00000000-0000-0000-0000-000017004005",
 
 SELECT is(
   (SELECT high_school_name FROM public.golf_players WHERE id = '00000000-0000-0000-0000-000017004402')
-  || ' ' || (SELECT email FROM public.golf_player_contacts(ARRAY['00000000-0000-0000-0000-000017004402']::uuid[])),
+  || ' ' || (SELECT email FROM public.golf_player_private_fields(ARRAY['00000000-0000-0000-0000-000017004402']::uuid[])),
   'School2 p2@scope.test',
-  'the team''s coach still reads a player''s full row, email included (through golf_player_contacts)'
+  'the team''s coach still reads a player''s full row, email included (through golf_player_private_fields)'
 );
 
 SELECT is(

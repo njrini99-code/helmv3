@@ -34,7 +34,7 @@ import type { MetricId } from '@/lib/coachhelm/v3/metrics/registry';
 import { teamCohortText } from '@/components/golf/coachhelm/v3/StandingBar/utils';
 import type { PlayersGridFocusArea } from '@/components/fairway';
 import { Metadata } from 'next';
-import { readPlayerContacts } from '@/lib/golf/player-contacts';
+import { readPlayerPrivateFields } from '@/lib/golf/player-private-fields';
 
 export const metadata: Metadata = {
   title: 'Roster',
@@ -323,8 +323,8 @@ export default async function GolfRosterPage() {
     .in('status', ['active', 'inactive']);
 
   // E-mail is not readable from golf_players by a signed-in session (security review 2026-11-11, finding 1): it comes from
-  // golf_player_contacts, which answers a coach for their own team only. A failed read leaves the e-mails blank.
-  const contacts = await readPlayerContacts(
+  // golf_player_private_fields, which answers a coach for their own team only. A failed read leaves the e-mails blank.
+  const contacts = await readPlayerPrivateFields(
     supabase,
     (teamMembersData || []).map((tm) => (tm.player as { id?: string } | null)?.id ?? '').filter(Boolean),
   );

@@ -71,7 +71,7 @@ import { AvatarUpload } from '@/components/ui/avatar-upload';
 import { ConfirmAlert } from '@/components/fairway/overlays/ConfirmAlert';
 import { JoinTeamSection } from '@/components/golf/settings/JoinTeamSection';
 import { CoachHelmToggle } from '@/components/golf/coachhelm/v2';
-import { readPlayerContacts } from '@/lib/golf/player-contacts';
+import { readPlayerPrivateFields } from '@/lib/golf/player-private-fields';
 import {
   IconUser,
   IconMail,
@@ -501,7 +501,7 @@ export function FairwaySettingsGeneral() {
       }
 
       if (golfUser.playerId) {
-        // The player's own phone comes through golf_player_contacts: e-mail and phone are not readable from golf_players by a
+        // The player's own phone comes through golf_player_private_fields: e-mail and phone are not readable from golf_players by a
         // signed-in session (security review 2026-11-11, finding 1).
         const [playerResult, teamResult, contactResult] = await Promise.all([
           supabase
@@ -516,7 +516,7 @@ export function FairwaySettingsGeneral() {
                 .eq('id', golfUser.teamId)
                 .maybeSingle()
             : Promise.resolve({ data: null }),
-          readPlayerContacts(supabase, [golfUser.playerId]),
+          readPlayerPrivateFields(supabase, [golfUser.playerId]),
         ]);
 
         // A failed profile read yields the same null as "this player has filled

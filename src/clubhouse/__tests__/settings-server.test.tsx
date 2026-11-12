@@ -152,8 +152,8 @@ function playerTables(over: ChFakeTables = {}): ChFakeTables {
     golf_players: { data: { first_name: 'Jonah', last_name: 'Okafor', avatar_url: null, handicap: 2.4, handicap_index: 2.1, graduation_year: 2029, hometown: 'Charlotte', state: 'NC', phone: null } },
     golf_teams: (f) => (selects(f, 'name') ? { data: { name: 'Varsity' } } : { data: { id: 't1', name: 'Varsity', organization: { name: 'UNC' } } }),
     golf_player_notification_state: { data: { prefs: { new_insight: { push: true, email: false, in_app: true } }, quiet_mode: true } },
-    // The player's own phone comes through golf_player_contacts (security review 2026-11-11, finding 1); none on file here.
-    'rpc:golf_player_contacts': { data: [] },
+    // The player's own phone comes through golf_player_private_fields (security review 2026-11-11, finding 1); none on file here.
+    'rpc:golf_player_private_fields': { data: [] },
     ...over,
   };
 }
