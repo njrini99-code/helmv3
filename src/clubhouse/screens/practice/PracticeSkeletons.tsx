@@ -437,6 +437,15 @@ export function PracticePlanSkeleton() {
       <span className="ch-backlink ch-prc-sk-desk ch-prc-sk-still" aria-hidden="true">
         <SkelLine line={18} bar={12} width={70} />
       </span>
+      {/* G14: the phone page opens on the plan's large title and its day, so its skeleton does, and the bar's title stays hidden from the first paint. */}
+      <header className="ch-prc-h ch-prc-planhead ch-prc-sk-phone" aria-hidden="true">
+        <div>
+          <LargeTitleSkeleton width={220} className="ch-prc-sk-title" />
+          <p className="ch-prc-h__line">
+            <SkelLine line={20} bar={12} width={200} />
+          </p>
+        </div>
+      </header>
       <header className="ch-prc-h ch-prc-planhead ch-prc-sk-desk" aria-hidden="true">
         <div>
           <SkelLine line={47.5} bar={36} width={379} />
