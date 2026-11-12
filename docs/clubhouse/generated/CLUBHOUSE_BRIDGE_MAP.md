@@ -1221,7 +1221,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 100208 | CH-10408 | 02 Initial loading / skeleton | `A_PLAYERS_EVENT_REPLY_IS_BEING_SENT` | implemented | A player's event reply is being sent |
 | 100209 | CH-10409 | 02 Initial loading / skeleton | `A_PLAYERS_ACKNOWLEDGMENT_IS_BEING_SENT` | implemented | A player's acknowledgment is being sent |
 | 100210 | CH-10410 | 02 Initial loading / skeleton | `A_PLAYERS_TASK_COMPLETION_OR_REOPENING_IS` | implemented | A player's task completion or reopening is being saved |
-| 100401 | CH-10301 | 04 Empty | `NO_EVENTS_NEED_A_REPLY` | implemented | No events this week |
+| 100401 | CH-10301 | 04 Empty | `NO_EVENTS_NEED_A_REPLY` | implemented | No events in the next 7 days |
 | 100402 | CH-10302 | 04 Empty | `NO_UPDATES` | implemented | No updates |
 | 100403 | CH-10303 | 04 Empty | `NO_TASKS` | implemented | No tasks |
 | 100404 | CH-10304 | 04 Empty | `NO_DOCUMENTS` | implemented | No documents |

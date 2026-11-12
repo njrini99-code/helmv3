@@ -11475,7 +11475,7 @@
     "item": 1,
     "name": "NO_EVENTS_NEED_A_REPLY",
     "chCode": "CH-10301",
-    "meaning": "No events this week",
+    "meaning": "No events in the next 7 days",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/hub.md"
   },
