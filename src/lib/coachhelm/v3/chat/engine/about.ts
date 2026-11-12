@@ -13,8 +13,13 @@
  *   point:<metric_id>@<entity_id>#<at>      one point of a trend (`at` as the series gives it; the entity may be left out)
  *   row:<id>                                a row of the read's detail whose `id`, or any field ending `_id`, is <id>
  *                                           (a round in a list, a qualifier, a tournament), or `row:hole:<n>` for a hole
+ *   shots:<direction>                       the Miss Compass's selection: the shots behind one wedge of a miss pattern. The
+ *                                           direction must be one of the eight and must hold shots in the STORED read; the
+ *                                           shots are the ones that read kept (`detail.ui_only`), never ids from the request
  */
 import type { ToolEnvelope } from '../provenance';
+import { isMissDirection } from '../miss-directions';
+import { uiOnlyOf, withoutUiOnly } from '../ui-only';
 
 export interface ChatAbout {
   evidence_ref: string;
@@ -78,6 +83,31 @@ const rowWords = (row: Record<string, unknown>): string =>
     .map(([k, v]) => `${words(k.replace(/_/g, ' '), 40)} ${words(v, 60)}`)
     .join(', ');
 
+const MAX_ROUNDS = 8;
+
+/**
+ * The Miss Compass's selection, from the stored read alone: how many shots missed that way, and the rounds they were played in
+ * (date, course, the round's id for a later read). No shot's distance: those were never shown to the model, so it is told
+ * where to read them, not given them (ui-only.ts). Null when the read is not a miss pattern, or kept no shots that way.
+ */
+function shotsSelection(envelope: ToolEnvelope, direction: string): string | null {
+  if (!isMissDirection(direction)) return null;
+  if ((envelope.detail as { kind?: unknown } | undefined)?.kind !== 'miss_pattern') return null;
+  const kept = uiOnlyOf(envelope.detail)?.miss_shots as { directions?: Record<string, { count?: unknown; shots?: unknown }> } | undefined;
+  const picked = kept?.directions?.[direction];
+  const count = picked?.count;
+  if (typeof count !== 'number' || count <= 0 || !Array.isArray(picked?.shots)) return null;
+  const rounds = new Map<string, string>();
+  for (const s of picked.shots as Array<{ round_id?: unknown; round_date?: unknown; course?: unknown }>) {
+    if (typeof s?.round_id !== 'string' || rounds.has(s.round_id)) continue;
+    const when = typeof s.round_date === 'string' ? words(s.round_date, 10) : 'an undated round';
+    rounds.set(s.round_id, `${when}${typeof s.course === 'string' && s.course ? ` at ${words(s.course, 60)}` : ''} [${words(s.round_id, 40)}]`);
+  }
+  const listed = [...rounds.values()];
+  const said = direction.replace('_', ' ');
+  return `the ${count} shot${count === 1 ? '' : 's'} that missed ${said}, selected on the miss compass; played in ${listed.slice(0, MAX_ROUNDS).join('; ')}${listed.length > MAX_ROUNDS ? `; and ${listed.length - MAX_ROUNDS} more rounds` : ''}. Their distances are in that read; read the rounds for more`;
+}
+
 /** What the element is, in the stored read's own labels and figures. Null when the read holds no such element. */
 function element(envelope: ToolEnvelope, key: string): string | null {
   const colon = key.indexOf(':');
@@ -85,8 +115,10 @@ function element(envelope: ToolEnvelope, key: string): string | null {
   const kind = key.slice(0, colon);
   const rest = key.slice(colon + 1);
   if (!rest) return null;
+  if (kind === 'shots') return shotsSelection(envelope, rest);
   if (kind === 'row') {
-    const row = findRow(envelope.detail, rest);
+    // A row is looked for in what the model was shown; the shots a coach can open are reached by a `shots:` selection only.
+    const row = findRow(withoutUiOnly(envelope.detail), rest);
     return row ? rowWords(row) || null : null;
   }
   if (kind === 'point') {

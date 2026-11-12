@@ -1265,3 +1265,34 @@ flags:
       ladders (until then every brief is empty and nothing is sent) and the
       owner has decided to re-enable customer email. Remove the flag once the
       brief has served coaches for a season.
+
+  # CoachHelm Studio Phase 1, the Miss Compass (owner's pick, 12 Nov 2026). Created
+  # OFF everywhere; turning it on is the owner's call, for the pilot team only.
+  - feature_id: coachhelm_miss_compass_v1
+    owner: golf/coachhelm
+    purpose: >-
+      Gates the Miss Compass in Ask: a coach's approach-miss visual drawn as
+      eight labelled directions whose wedges can be selected, each opening a
+      drawer of the shots behind it (each opening its round), and "Ask about
+      these shots", which sends the next question with that selection. Team
+      scoped: on only for the teams listed in COACHHELM_MISS_COMPASS_TEAM_IDS
+      (comma-separated golf_teams ids; unset or empty is no team). When on for
+      a coach's team, get_shots keeps the shots behind each direction in the
+      read's detail.ui_only (capped at 40 a direction, with the true count),
+      which the model never sees and which no figure is checked against. When
+      off, the read, the model's words and the drawing are exactly as before.
+    type: experiment
+    status: active
+    created_at: "2026-11-12"
+    expires_at: "2027-03-01"
+    default: false
+    environment:
+      production: false
+      preview: false
+      development: false
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      The owner pilots it on his own coach team after the Clubhouse release.
+      If kept, make it the drawing for every coach and remove this flag, the
+      team list and the old drawing's fallback; if not, turn it off and
+      remove MissCompass, the ui_only shot lists and the shots: selection.
