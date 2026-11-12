@@ -1516,11 +1516,11 @@ html:not([data-fw-theme='dark']) .ch-ask {
   justify-content: center;
   gap: var(--ch-space-2);
 }
-/* The new chat's home on its way (Q2 A): the ball's place over the greeting, and the safety line under the home. */
+/* The new chat's home on its way (Q2 A): the ball's place over the greeting, and the safety line under the home. A grid, so
+   the placeholder is a block item and no line box opens under it (the ball is 28 tall, and so is this). */
 .ch-ask-sk__ball {
-  display: block;
+  display: grid;
   margin-bottom: var(--ch-space-3);
-  line-height: 0;
 }
 .ch-ask-sk__foot {
   display: flex;
