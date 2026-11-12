@@ -749,6 +749,18 @@ describe('the container', () => {
     expect(screen.getByText('CoachHelm reads Finley University data only. Check the numbers before you act on them.')).toBeInTheDocument();
   });
 
+  it('G7 on a desk’s new chat the line follows the question box inside the page, not pinned under the scroller, where the box ran beneath it', () => {
+    show();
+    const foot = screen.getByText('CoachHelm reads Finley University data only. Check the numbers before you act on them.');
+    const page = document.querySelector('.ch-ask-scroll.is-home') as HTMLElement;
+    expect(page.contains(foot)).toBe(true);
+    expect(page.lastElementChild).toBe(foot);
+    const question = document.querySelector('.ch-ask-cmp.is-hero') as HTMLElement;
+    expect(page.contains(question)).toBe(true);
+    expect(question.compareDocumentPosition(foot) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(document.querySelectorAll('.ch-ask-foot')).toHaveLength(1);
+  });
+
   it('hands the thread the failed answer as a sentence with what to offer, by the rule of the stream route', () => {
     const cases: Array<[unknown, { message: string; recovery: string }]> = [
       [{ statusCode: 429, responseBody: JSON.stringify({ error: 'Too many requests. Please slow down.' }) }, { message: "Too many questions in a row. Give it a few seconds and try again.", recovery: 'retry' }],

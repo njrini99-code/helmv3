@@ -134,9 +134,11 @@
   color: var(--ch-text-tertiary);
   text-align: center;
 }
+/* The new chat's line sits in the page under the question box (Ask.tsx), on the home column's measure (.ch-ak-home). */
 .ch-ask-foot.is-home {
-  flex: none;
-  padding: 0 24px 16px;
+  max-width: 680px;
+  margin-inline: auto;
+  padding: 0 16px;
 }
 .ch-ask-ev {
   min-width: 0;
