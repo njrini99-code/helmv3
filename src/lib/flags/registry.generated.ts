@@ -251,6 +251,23 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     cleanup_plan: "Flip on once golf_coachhelm_coach_weights has accumulated enough post-fix (corrected v2 causality attribution) samples to trust the persisted weights, or remove the coach-weight read entirely if that ranking signal is abandoned.",
   },
   {
+    feature_id: "coachhelm_miss_compass_v1",
+    owner: "golf/coachhelm",
+    purpose: "Gates the Miss Compass in Ask: a coach's approach-miss visual drawn as eight labelled directions whose wedges can be selected, each opening a drawer of the shots behind it (each opening its round), and \"Ask about these shots\", which sends the next question with that selection. Team scoped: on only for the teams listed in COACHHELM_MISS_COMPASS_TEAM_IDS (comma-separated golf_teams ids; unset or empty is no team). When on for a coach's team, get_shots keeps the shots behind each direction in the read's detail.ui_only (capped at 40 a direction, with the true count), which the model never sees and which no figure is checked against. When off, the read, the model's words and the drawing are exactly as before.",
+    type: "experiment",
+    status: "active",
+    created_at: "2026-11-12",
+    expires_at: "2027-03-01",
+    default: false,
+    environment: {
+      production: false,
+      preview: false,
+      development: false,
+    },
+    kill_switch_behavior: null,
+    cleanup_plan: "The owner pilots it on his own coach team after the Clubhouse release. If kept, make it the drawing for every coach and remove this flag, the team list and the old drawing's fallback; if not, turn it off and remove MissCompass, the ui_only shot lists and the shots: selection.",
+  },
+  {
     feature_id: "coachhelm_monday_brief_v1",
     owner: "golf/coachhelm",
     purpose: "The coach Monday brief (CoachHelm task chs-28; supercharge 04 section 4 and Layout 1). Reason: the design call's \"Monday before practice\" moment wants one screen that says who needs a conversation and what the team practises, instead of a card per player. Effect when on: the Clubhouse coach view /golf/dashboard/coachhelm?view=monday-brief and its link on the coach board show up to five items (the team pattern when one exists, then player reads at Likely or above, one per player, most strokes first) and a counts line (new, cleared, contradicted, out of date); and the Monday 05:00 UTC cron /api/cron/coachhelm-monday-brief emails each opted-in primary coach a non-empty brief. Strengths, Watching, Working hypothesis and reads two or more rounds behind are never in it. The same flag gates the coach Brief (/golf/dashboard/coachhelm?view=brief, par-05), the team view that grows the Monday brief: every player's top read, the team pattern, focus areas, the track record line and goals with standing; with it on, /intelligence and its old sub-links land on the matching section of the Brief, and the board's button opens the Brief. Off: no link, the addresses show the board (as /intelligence did), and the cron returns before it reads or sends anything. Email also needs HELM_CUSTOMER_EMAIL_ENABLED, which is off in production. Clubhouse is off in production, so the view reaches coaches only once it is on.",

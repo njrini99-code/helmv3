@@ -50,7 +50,7 @@ import {
 import { roundsForFigures } from './figure-window';
 import { toChTeamLegs } from './coachhelm-team-legs';
 import { teamLastTenRounds, teamLastTenStrokesGained } from './stats-team-sg';
-import { sgPolicyAtSource, sgSourceFor } from './stats-common';
+import { sgPolicyAtSource, sgSourceFor, tourForGender } from './stats-common';
 import { sgMixOf } from './stats-sg-mix';
 import { holeRounds } from './round-scope';
 import { classYearLabel, lastTenFloor, loadSeasonRounds, loadTeamZone, seasonStartDate } from './season';
@@ -111,7 +111,7 @@ export async function loadCoachTeamBoard(input: { coachId: string; teamId: strin
 
   const pulse = pulseLater();
   const tourRead = handled(coachTour(supabase, input.teamId));
-  const teamRow = handled(Promise.resolve(supabase.from('golf_teams').select('name').eq('id', input.teamId).maybeSingle()));
+  const teamRow = handled(Promise.resolve(supabase.from('golf_teams').select('name, gender').eq('id', input.teamId).maybeSingle()));
   const zoneRead = handled(loadTeamZone(supabase, input.teamId, 'coachhelm.team'));
 
   const none = emptyTeamBoard();
@@ -131,7 +131,9 @@ export async function loadCoachTeamBoard(input: { coachId: string; teamId: strin
   const roster = (people.data ?? []).map((p) => ({ id: p.id, name: [p.first_name, p.last_name].filter(Boolean).join(' ').trim() || NO_NAME, graduationYear: p.graduation_year }));
   const ids = roster.map((p) => p.id);
   const teamInfo = await teamRow;
-  const team = { name: (teamInfo.data as { name?: string | null } | null)?.name ?? '', tourKnown: false, baselineLabel: 'to Tour' };
+  const teamData = teamInfo.data as { name?: string | null; gender?: string | null } | null;
+  // A team row that did not load names no tour (lib/sg.ts: an unknown tour claims neither).
+  const team = { name: teamData?.name ?? '', tourKnown: false, baselineLabel: 'to Tour', sgTour: teamData ? tourForGender(teamData.gender) : null };
   if (!ids.length) return { ...none, team, roster: { count: 0, error: false }, pulse };
 
   // What the board draws is known only after the shaping below; the exposures wait for it, and a failed load records nothing.

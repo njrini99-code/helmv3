@@ -1339,11 +1339,13 @@ html[data-fw-theme='dark'] .ch-cg__head {
 /* P-4 4.1, the type key. Type reads by material first (solid, outline, tint, paper, dashed paper, slate, hatch), then
    the leading glyph, then ink: a 20px sliver with no glyph still tells a tournament (solid green) from a qualifier (a
    green ring) from practice (pale green). No block has a side stripe (owner, 2026-10-24). */
+/* W43 (preview walk): the week read empty on a 1x screen, so each light material is one step stronger (practice green-100
+   for green-50, rings 0.24 for 0.16, a meeting's paper edged in border-strong). Still no side stripe. */
 .ch-ev--practice,
 .ch-ev--workout {
-  background: var(--ch-green-50);
+  background: var(--ch-green-100);
   color: var(--ch-forest-800);
-  box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.16);
+  box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.24);
 }
 .ch-ev--practice .ch-ev__m,
 .ch-ev--workout .ch-ev__m,
@@ -1355,7 +1357,7 @@ html[data-fw-theme='dark'] .ch-cg__head {
 .ch-ev--other {
   background: var(--ch-bg-surface);
   color: var(--ch-text-primary);
-  box-shadow: inset 0 0 0 1px var(--ch-border-control);
+  box-shadow: inset 0 0 0 1px var(--ch-border-strong);
 }
 .ch-ev--meeting .ch-ev__m,
 .ch-ev--other .ch-ev__m {
@@ -1402,7 +1404,7 @@ html[data-fw-theme='dark'] .ch-cg__head {
 .ch-ev--class {
   background: var(--ch-info-100);
   color: var(--ch-info-600);
-  box-shadow: inset 0 0 0 1px rgb(45 92 119 / 0.16);
+  box-shadow: inset 0 0 0 1px rgb(45 92 119 / 0.24);
 }
 @media (hover: hover) {
   .ch-ev--class:hover {
@@ -1542,8 +1544,9 @@ button.ch-mo__ev.is-major {
 button.ch-mo__ev.is-major.is-qualifier {
   background: var(--ch-bg-surface);
 }
+/* W44: the name in primary ink (it read as a grey line); the time beside it stays quieter. */
 button.ch-mo__ev:not(.is-major) {
-  color: var(--ch-text-secondary);
+  color: var(--ch-text-primary);
 }
 .ch-mo__n:focus-visible,
 .ch-mo__ev:focus-visible,
@@ -1667,6 +1670,12 @@ html[data-fw-theme='dark'] .ch-mo__ribbon.is-held {
   min-height: 24px;
   font: var(--ch-type-12-medium);
   color: var(--ch-text-secondary);
+}
+/* W44: the start leads a timed chip, in the chip's own weight, then the name (gap 8 from the dot, 4 to the name). */
+.ch-mo__at {
+  flex: none;
+  margin-right: -4px;
+  color: var(--ch-text-tertiary);
 }
 .ch-mo__ev i {
   flex: none;

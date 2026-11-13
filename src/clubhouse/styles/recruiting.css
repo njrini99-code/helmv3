@@ -705,8 +705,8 @@
   width: 40px;
   height: 40px;
   border-radius: var(--ch-radius-md);
-  background: var(--ch-ivory-100);
-  color: var(--ch-text-tertiary);
+  background: var(--ch-green-50);
+  color: var(--ch-green-700);
 }
 .ch-rec-empty__t {
   display: flex;
@@ -943,7 +943,7 @@
     content: '';
     pointer-events: none;
   }
-  .ch-rec-pipe.is-compact .ch-rec-pipe__stage.is-committed > .ch-rec-pipe__dot::after {
+  .ch-rec-pipe.is-compact .ch-rec-pipe__stage.is-committed:not(.is-zero) > .ch-rec-pipe__dot::after {
     background: rgb(2 18 10 / 0.22);
   }
   .ch-rec-pipe.is-compact .ch-rec-pipe__stage[data-ch-pressed]:not(:disabled) > .ch-rec-pipe__dot::after {
@@ -1787,9 +1787,21 @@
     background: none;
     box-shadow: none;
   }
+  /* W42 (12 Nov): three empty states stood stacked here (Contact, Notes, Documents), each an icon tile, a bold line, a
+     grey line and its Add. Under its heading an empty part is one line now, what is missing and its Add, so the pane
+     reads as a form waiting to be filled; the longer line describes the Add for a screen reader (aria-describedby).
+     W19 B (12 Nov): the line keeps the empty states' order, glyph first, in the section's small tinted tile. */
   .ch-rec[data-canopy] .ch-rec-panel .ch-rec-empty__ic {
-    background: none;
-    box-shadow: inset 0 0 0 1px var(--ch-ledger-rule);
+    width: 28px;
+    height: 28px;
+    border-radius: var(--ch-radius-sm);
+  }
+  .ch-rec[data-canopy] .ch-rec-panel .ch-rec-empty__t b {
+    font: var(--ch-type-14);
+    color: var(--ch-text-secondary);
+  }
+  .ch-rec[data-canopy] .ch-rec-panel .ch-rec-empty__t span {
+    display: none;
   }
   .ch-rec[data-canopy] .ch-rec-panel .ch-rec-empty__a {
     margin-right: -8px;
@@ -2129,4 +2141,17 @@
     position: absolute;
     inset: min(0px, calc(50% - 22px));
   }
+}
+
+/* W41 (12 Nov): "Committed 0" was the only filled dark coin, so the stage with nobody in it was the loudest of the four.
+   A stage's tone is earned by the people in it: a stage at 0 draws the quiet coin, light and dark, after every stage
+   fill above so it wins whatever the stage. Pressed, it keeps its second ring. */
+.ch-rec-pipe__stage.is-zero > .ch-rec-pipe__dot {
+  --ch-rec-ring: var(--ch-ivory-400);
+  background: var(--ch-ivory-25);
+  color: var(--ch-ink-500);
+  box-shadow: 0 0 0 2px var(--ch-rec-ring);
+}
+.ch-rec-pipe__stage.is-zero[aria-pressed='true'] > .ch-rec-pipe__dot {
+  box-shadow: 0 0 0 2px var(--ch-rec-ring), 0 0 0 6px color-mix(in oklab, var(--ch-green-600) 16%, transparent);
 }

@@ -77,9 +77,15 @@ describe('the live view', () => {
     expect(screen.queryByRole('button', { name: /Sort:/ })).toBeNull();
   });
 
-  it('says nobody is out when nobody is (CH-16619) and draws no groups', () => {
+  // G6 (12 Nov): the empty state was two grey lines with no card, the barest of the app's empty idioms. It is the shared
+  // page empty state now (W19 B: the card with its tinted glyph tile that Tournaments and the other pages draw), copy unchanged.
+  it('says nobody is out when nobody is (CH-16619), in the shared page empty state, and draws no groups', () => {
     const { container } = view(PREVIEW_LIVE_EMPTY);
-    expect(container.querySelector('[data-ch-code="CH-16619"]')!.textContent).toBe('No one is on the course right now.Rounds show up here as soon as a player starts one.');
+    const empty = container.querySelector('[data-ch-code="CH-16619"]')!;
+    expect(empty.classList.contains('ch-es--page')).toBe(true);
+    expect(empty.querySelector('h2')!.textContent).toBe('No one is on the course right now');
+    expect(empty.querySelector('.ch-es__body')!.textContent).toBe('Rounds show up here as soon as a player starts one.');
+    expect(empty.querySelector('.ch-es__glyph svg')).not.toBeNull();
     expect(container.querySelector('.ch-lv-group')).toBeNull();
   });
 

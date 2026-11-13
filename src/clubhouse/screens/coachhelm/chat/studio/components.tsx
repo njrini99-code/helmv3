@@ -16,6 +16,9 @@ import { HoleStrip, MissPattern, SeasonCompare } from '../visual/blocks';
 import { AskKey, OpenKey, type AskTarget } from './ask';
 import { HolePlan, RuledTrend, onTheHole, trendReference } from './drawings';
 import type { StudioEvent, StudioHole, StudioProps } from './types';
+import type { MissPatternBlock } from '@/lib/coachhelm/v3/chat/visuals/composition';
+import { useMissCompassGate } from './compass-gate';
+import { MissCompass } from './MissCompass';
 
 /**
  * The studio's components, one per kind (registry.tsx), in the chat's approved look (LOOK.md, "A. The yardage book"):
@@ -123,13 +126,18 @@ export function Comparison(p: StudioProps<'comparison'>) {
   const { team, label, hrefs } = p.data;
   // In the compact size the players are always the rows: a phone reads down a list of names, never across twelve columns.
   const playersAsRows = p.size === 'compact' ? true : team.playersAsRows;
+  // A measure is marked only when one player leads it: a tie, a measure with no better direction, or one player alone marks nothing,
+  // and the legend claims no mark the table does not carry (R8: "The best in each measure" under a table with nothing marked).
+  const marked = team.best.filter((id) => id != null && team.players.some((pl) => pl.id === id)).length;
+  const legend = marked === 0 ? null : marked === team.metrics.length ? 'The best in each measure.' : 'The best in each measure one player leads.';
+  const strokes = team.metrics.some((m) => m.strokes);
   const cell = (pi: number, mi: number) => {
     const c = team.cells[pi]?.[mi];
     const best = team.best[mi] === team.players[pi]?.id;
     return (
       <td key={`${pi}-${mi}`} className="ch-num" data-tone={c && c.tone !== 'plain' ? (c.tone === 'good' ? 'gain' : c.tone) : undefined} data-best={best ? '' : undefined}>
         {best && <span className="ch-aks-cmp__dot" aria-hidden="true" />}
-        {c?.display ?? <span className="ch-aks-none">None</span>}
+        {c?.display ?? <NoData />}
         {best && <span className="ch-sr-only"> (best)</span>}
       </td>
     );
@@ -152,7 +160,8 @@ export function Comparison(p: StudioProps<'comparison'>) {
       <Head title={label} />
       <ScrollRegion label={`${label}, scrolls sideways`} className="ch-aks-cmp__wrap" fade={false}>
         <table className="ch-aks-cmp__table">
-          <caption className="ch-sr-only">{`${label}: ${plural(team.players.length, 'player')} across ${plural(team.metrics.length, 'measure')}; the best in each is marked.`}</caption>
+          {/* The head above already names the table; the caption only says its shape (it read "…rounds.: 7 players", W49). */}
+          <caption className="ch-sr-only">{`${plural(team.players.length, 'player')} across ${plural(team.metrics.length, 'measure')}${marked === 0 ? '.' : marked === team.metrics.length ? '; the best in each is marked.' : '; the best is marked where one player leads.'}`}</caption>
           <thead>
             <tr>
               <th scope="col">{playersAsRows ? 'Player' : 'Measure'}</th>
@@ -176,10 +185,16 @@ export function Comparison(p: StudioProps<'comparison'>) {
           </tbody>
         </table>
       </ScrollRegion>
-      <p className="ch-aks-foot">
-        <span className="ch-aks-cmp__dot" aria-hidden="true" /> The best in each measure.
-        {team.metrics.some((m) => m.strokes) && ' Strokes gained is against the baseline.'}
-      </p>
+      {(legend || strokes) && (
+        <p className="ch-aks-foot">
+          {legend && (
+            <>
+              <span className="ch-aks-cmp__dot" aria-hidden="true" /> {legend}
+            </>
+          )}
+          {strokes && `${legend ? ' ' : ''}Strokes gained is against the baseline.`}
+        </p>
+      )}
     </div>
   );
 }
@@ -329,6 +344,28 @@ export function StrokesGained(p: StudioProps<'strokes_gained'>) {
 const BAND_TONE = { good: 'gain', loss: 'loss', neutral: undefined } as const;
 const TONE_OF = { 'is-gain': 'gain', 'is-loss': 'loss', '': undefined } as const;
 
+/**
+ * Where the misses go. The Miss Compass where Ask's page turns it on (its team flag) and the read kept the shots behind each
+ * direction; otherwise the drawing as it always was, whatever the stored block holds (Studio Phase 1, compass-gate.tsx).
+ */
+function Misses({ block, size }: { block: MissPatternBlock; size: StudioProps['size'] }) {
+  const gate = useMissCompassGate();
+  const { shots } = block;
+  if (gate.on && shots)
+    return (
+      <div className="ch-aks ch-aks-dist" data-size={size}>
+        <Head title="Where the misses go" />
+        <MissCompass block={block} shots={shots} compact={size === 'compact'} />
+      </div>
+    );
+  return (
+    <div className="ch-aks ch-aks-dist" data-size={size}>
+      <Head title="Where the misses go" />
+      <MissPattern block={block} />
+    </div>
+  );
+}
+
 /** Make rate or feet left by distance band, as ruled rows: the band, its attempts, the figure in its tone, and under it what it is set against, in words. Putts and misses keep their own drawings. Each band and each direction asks. */
 export function DistanceProfile(p: StudioProps<'distance_profile'>) {
   const t = targetOf('distance_profile', p);
@@ -360,13 +397,7 @@ export function DistanceProfile(p: StudioProps<'distance_profile'>) {
       </div>
     );
   }
-  if (p.data.form === 'misses')
-    return (
-      <div className="ch-aks ch-aks-dist" data-size={p.size}>
-        <Head title="Where the misses go" />
-        <MissPattern block={p.data.misses} />
-      </div>
-    );
+  if (p.data.form === 'misses') return <Misses block={p.data.misses} size={p.size} />;
   const { bands } = p.data;
   return (
     <div className="ch-aks ch-aks-dist" data-size={p.size}>

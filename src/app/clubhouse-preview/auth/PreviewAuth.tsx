@@ -1,7 +1,8 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useMemo } from 'react';
+import { PrefetchKind } from 'next/dist/client/components/router-reducer/router-reducer-types';
+import { useEffect, useMemo } from 'react';
 import {
   PREVIEW_AUTH_NOW,
   PREVIEW_FAILURES,
@@ -47,11 +48,18 @@ export function PreviewAuth({ screen, state, fail, hour, go, pending }: { screen
     return d;
   }, [hour]);
   const welcome = WELCOMES[(state as keyof typeof WELCOMES) ?? 'coach'] ?? WELCOMES.coach;
+  const home = state === 'player' ? '/clubhouse-preview/home-player' : '/clubhouse-preview/home';
+  // The real welcome fetches the dashboard in full while the greeting plays (Welcome's prefetch), so Continue lands on
+  // a drawn page. Given `navigate`, Welcome skips that, and the preview walk showed ~3s of blank parchment after the fold
+  // that production does not (WebKit film, 2026-11-12). The walk fetches its own destination the same way.
+  useEffect(() => {
+    if (go && screen === 'welcome') router.prefetch(home, { kind: PrefetchKind.FULL });
+  }, [go, screen, home, router]);
   return (
     <FixedClock.Provider value={clock}>
       {screen === 'welcome' ? (
         <WelcomeStage>
-          <Welcome data={welcome} navigate={go ? () => router.replace(state === 'player' ? '/clubhouse-preview/home-player' : '/clubhouse-preview/home') : () => {}} />
+          <Welcome data={welcome} navigate={go ? () => router.replace(home) : () => {}} />
         </WelcomeStage>
       ) : (
         <SignIn

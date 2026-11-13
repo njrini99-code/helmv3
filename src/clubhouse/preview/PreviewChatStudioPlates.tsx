@@ -9,6 +9,7 @@ import { ActivityIsland } from '../screens/coachhelm/chat/island/ActivityIsland'
 import { islandModel } from '../screens/coachhelm/chat/island/model';
 import type { Island } from '../screens/coachhelm/chat/island/useIsland';
 import { Studio, askRef, type StudioAsk, type StudioSize } from '../screens/coachhelm/chat/studio';
+import { MissCompassGate } from '../screens/coachhelm/chat/studio/compass-gate';
 import { useChPhone } from '../lib/use-phone';
 import { Button } from '../ui/Button';
 import { Segmented } from '../ui/Segmented';
@@ -31,10 +32,17 @@ export function StudioSpecimenView({ specimen, only, bare = false }: { specimen:
   const [asked, setAsked] = useState<StudioAsk | null>(null);
   const [phoneSize, setPhoneSize] = useState<StudioSize>(only ?? 'full');
   const phone = useChPhone();
+  const studio = (size: StudioSize) => <Studio part={specimen.part} size={size} read={specimen.read} onAsk={setAsked} roster={CAP_ROSTER} />;
+  // The Miss Compass's specimen draws with its team flag on; "Ask about these shots" shows what it would send, and sends nothing.
+  const compass = {
+    on: true,
+    askAbout: (words: string, about: { evidence_ref: string; key: string }) => {
+      setAsked({ kind: specimen.kind, read: about.evidence_ref, key: about.key, words });
+      return true;
+    },
+  };
   const draw = (size: StudioSize) => (
-    <div className="ch-akg-plain">
-      <Studio part={specimen.part} size={size} read={specimen.read} onAsk={setAsked} roster={CAP_ROSTER} />
-    </div>
+    <div className="ch-akg-plain">{specimen.compass ? <MissCompassGate.Provider value={compass}>{studio(size)}</MissCompassGate.Provider> : studio(size)}</div>
   );
   const one = only ?? (phone ? phoneSize : null);
   const stage = (
@@ -59,7 +67,12 @@ export function StudioSpecimenView({ specimen, only, bare = false }: { specimen:
   );
   const readout = (
     <p className="ch-akg-asked" role="status">
-      {asked ? (
+      {asked && specimen.compass ? (
+        // The compass's key sends in the app (Phase 0, step 4), unlike a chart mark, which only fills the composer.
+        <>
+          In Ask this sends <q>{asked.words}</q> with the selection; nothing is sent here. Reference <code>{askRef(asked)}</code>
+        </>
+      ) : asked ? (
         <>
           The composer is filled with <q>{asked.words}</q> and nothing is sent. Reference <code>{askRef(asked)}</code>
         </>

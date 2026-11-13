@@ -1165,6 +1165,105 @@ Coach chat runs on Claude Sonnet 5.5 at effort medium (`MODEL_FOR_TASK.coach_cha
 Fixture for screenshots: `/fairway-preview/coachhelm-evidence` (`?live` replays
 the motion; dev only).
 
+Miss Compass, data half (CoachHelm Studio Phase 1, flag `coachhelm_miss_compass_v1`,
+off everywhere, 2026-11-12). Team scoped: on only for teams listed in
+`COACHHELM_MISS_COMPASS_TEAM_IDS` (`chat/visuals/miss-compass-flag.ts`, fail
+closed), and for a coach only. Then `get_shots` asks `getShotPattern` for its
+`drawer`: per miss direction, the shots behind the wedge (`missShotsOf`: id,
+round, hole, date, course, from and left in feet, lie; on a team-wide read also
+`player`, the round's player named from `ctx.roster`, null when no longer on
+it; none on a read of one player), at most 40 with the true count, newest round
+first, in `detail.ui_only.miss_shots`. `chat/ui-only.ts`
+names that key; the model's text (`plain`/`detailLines`), the grounding check's
+supported numbers, `summarise_data`'s rows, an `about` `row:` reference and the
+thread's generic tables all pass it over, so with the flag on the model's words
+and the figures an answer is checked against are what they were. It is stored
+with the read, and the compiler copies it, with the read's `evidence_ref`, into
+the `miss_pattern` block's optional `shots` (only when every direction's count
+equals its wedge's). "Ask about these shots" sends `about` with
+`key: "shots:<direction>"`; `engine/about.ts` checks the direction is one of the
+eight and holds shots in the STORED read, and tells the model the count and the
+rounds (date, course, id), never a shot's distance or a player's name. Flag off: no `ui_only`, no
+`shots`, today's read and drawing. Tests: `chat/__tests__/miss-compass-data.test.ts`
+(truth, on/off equality, a sentinel through every reader, the selection, the
+compiler, replay, the flag) and `miss-compass-get-shots.test.ts`.
+
+### Ask after the owner's preview walk (2026-11-12)
+
+Codes are rows in the preview-walk list (Q = owner answer, W = walk note, R = answer review).
+
+**Shared engine.** Every coach's Ask goes through `chat/stream/route.ts`, and the route uses the same `instructionBlocks` and
+`toolsFor` whether or not Clubhouse is on (Clubhouse off drops only `find_in_app`). So the rules below reach Fairway's
+CoachHelm chat as well as Clubhouse Ask.
+
+- **Strokes gained baseline (Q1).** When a coach asks why the figures are negative, or strokes gained first comes up in a
+  conversation, Ask says in one sentence that the figures are against Tour players and that below zero is normal for a
+  college golfer.
+  - The coach's rule sits in the team block beside the yardstick line (`instructions.ts`, `belowZero`). It is outside the
+    cached policy and names no tour, so a team with no gender set is not told one.
+  - The player's golf block (`knowledge/golf.ts`) says the same the first time strokes gained comes up.
+  - Eval case `sg-first-mention-says-tour`. Commit 6fd1b8065f.
+- **Figures to one decimal (W48).** Coach and player rules give every figure to one decimal ("−4.4", not "−4.37"). The
+  grounding check accepts the rounded figure. The coach's answer ends with "Then stop, never on a question". Commit 7ebae93f16.
+- **Draw, never offer (#3).** The rule reads: "Call show_visual (never offer it) once when the answer is a shape".
+  Commit 761796ea6a.
+- **Dashboards (#4, Clubhouse only).** A request for a dashboard or the team's trends goes to the CoachHelm Team board,
+  "already built", and Ask never builds a dashboard in the chat.
+  - The rule lives in `find_in_app`'s description (outside the 12,300-token own-rules budget), and that tool is offered
+    only where Clubhouse is on.
+  - The app map's board entry answers "dashboard", "team dashboard" and "trends". Commit 761796ea6a.
+- **Cited read names (R1).** `show_visual` accepts a read by its cited source name `read:e1` as well as `e1`
+  (`withBareRefs` in `readers-direct.ts`). Both spellings name the same read. Commit c91e4311e5.
+- **A bad block is not drawn; the rest still is (#2).**
+  - `compileComposition` checks each resolved block against `ResolvedBlock` and the result against `ValidatedComposition`.
+    A failing block is left out and named back to the model, and an invalid composition is never stored.
+  - `show_visual`'s refusal reason goes in the step's detail.
+  - `get_season` keeps the comparison's `this_season` band and carries the team table as `season_table`. Overwriting the
+    band was the cause.
+  - The Clubhouse thread salvages a stored composition block by block (`salvageComposition`, `coachhelm-chat-thread.ts`),
+    and the answer says what was not drawn.
+  - Commit acfdda1fe1.
+- **No test players (R4).** `loadActiveRosterResult` (`chat/context.ts`) leaves out `golf_players.is_test` players. Ask's
+  roster and the Ask home's "Since Monday" read it.
+  - A member whose profile did not come back is still kept, as before.
+  - Marking real test accounts is a data change for the owner.
+  - Commit 4eefc1494a.
+- **Approach read title (W12).** The approach-miss read's title is one sentence whose subject is the approaches, so it
+  reads the same in either voice and after a name: "50–125 yd approaches find 67% of greens and finish 20 ft away when
+  they do" (`generators/approach-miss.ts`). Stored reads keep their old title until generated again. Commit fd49b3882c.
+
+**Clubhouse Ask and the Team board only** (`src/clubhouse/**`, behind the Clubhouse release flag):
+
+- **Name prefix (W12).** `readTitle()` (`screens/coachhelm/team/parts.tsx`) drops a leading "First: " or "First Last: "
+  from a read's title; a name inside the sentence stays.
+  - It is used beside the player's coin (ReadRow), in Working on's proposed rows and in the read panel's title. The coin
+    is aria-hidden, so the row keeps the name for screen readers in an `ch-sr-only` span. Commit 7eac006b83.
+  - Working on strips the name before it titles and groups a focus, so a focus kept from an old "Dylan: …" read joins
+    its copies. The read panel's "Ask about this" question uses `readTitle()`. Commit 17171bfa87.
+- **Desk home order (Q2, option A).** On a desk, coach and player alike, the new chat fills the pane in this order:
+  1. the ball, the greeting and its line, centred;
+  2. the question box;
+  3. the starters, as 44px chips with the question alone;
+  4. what moved since Monday (for a player, their focus and meter), as a quiet ruled list at the foot.
+
+  More detail:
+  - Auto margins share the free height. The DOM follows the same order, so the keyboard reaches the box before the
+    starters.
+  - The skeleton waits in this shape. A player's has no chats column (`is-solo`).
+  - The phone keeps its own new chat. Commits c38559e7a8, plus the WebKit fold measurements in 69c97ef3d1. On the
+    preview the box sits at 340–546 at 1440×900 and 385–591 at 1920×990, with no scroll.
+- **Players picker (W51, kept by Q2 A).** The desk new-chat box's picker opens under the box while 240px are free
+  (`PICK_MIN_BELOW`, `Composer.tsx`), otherwise on the roomier side. Its height is measured to the nearest clipping
+  ancestor or the visible viewport. Commits 34697bd723, c38559e7a8.
+- **Players table legend (R8).** `teamTable` marks a measure only when exactly one player leads it; a tie, a measure
+  with no better direction, or a single player marks nothing. The legend and the caption match
+  (`chat/studio/components.tsx`):
+  - every measure led keeps "The best in each measure.";
+  - some led reads "The best in each measure one player leads.";
+  - none led drops the dot and its words.
+
+  Commit 6080690943.
+
 ## Clubhouse redesign behind flags (all off, migrations held)
 
 <!-- schema-drift-absent: golf_coachhelm_coach_facts, golf_practice_plans -->
@@ -1189,8 +1288,10 @@ Screens and data:
 
 Ask v2 rules:
 
-- `src/app/api/coachhelm/v3/chat/stream/route.ts` also serves Fairway's chat. It
-  uses Ask v2 only when the flag is on and Clubhouse is on for the team.
+- `src/app/api/coachhelm/v3/chat/stream/route.ts` also serves Fairway's chat.
+  Since the 2026-11-10 rebuild, every coach gets the same engine, `instructionBlocks` and
+  `toolsFor`. A team without Clubhouse loses only `find_in_app` (`isClubhouseForTeam`,
+  route.ts), so a change to the rules or the readers reaches Fairway's chat too.
 - The Undo hold lasts 8 seconds (`src/lib/coachhelm/v3/chat/undo-hold.ts`). Undo
   inside it leaves no row and tells nobody.
 - `20261101090000_coachhelm_action_runs_hold.sql` adds the column the hold needs.

@@ -52,7 +52,8 @@ describe('Team rounds · the season figures leave practice out', () => {
       ['Rounds', '14', '5 players · 8 practice'],
       ['Average', '73.0', '18 holes, no practice'],
       ['Under par', '0', 'of 6'],
-      ['Low round', '70', 'Priya · E'],
+      // W30: the low round says it leaves practice out, beside a season that has practice to leave out.
+      ['Low round', '70', 'Priya · E · no practice'],
     ]);
     expect(screen.getByText('Varsity · Since August 1 · 6 counted rounds')).toBeTruthy();
   });

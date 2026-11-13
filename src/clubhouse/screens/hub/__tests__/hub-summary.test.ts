@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { ChHubAnnouncement, ChHubDay, ChHubLedgerRow, ChHubRsvp, ChHubTask, ChHubTrip, ChRsvp } from '../../../data/hub';
+import type { ChHubAnnouncement, ChHubDay, ChHubLedgerRow, ChHubRsvp, ChHubTask, ChRsvp } from '../../../data/hub';
 import { firstBusyDay, hubStrip, ledgerSorted, owedBy, queueOf, tabAttention, taskFigures, untouchedLine, type StripInput } from '../hub-summary';
 
 const rsvp = (over: Partial<ChHubRsvp> = {}): ChHubRsvp => ({
@@ -17,88 +17,64 @@ const rsvp = (over: Partial<ChHubRsvp> = {}): ChHubRsvp => ({
 const task = (over: Partial<ChHubTask> = {}): ChHubTask => ({ id: 't1', title: 'Waiver', detail: null, dueDate: '2026-10-17', due: 'Fri 17', status: 'pending', done: null, ...over });
 const ann = (over: Partial<ChHubAnnouncement> = {}): ChHubAnnouncement =>
   ({ id: 'a1', title: 'Pairings', needAck: true, acked: false, ackCount: 5, recipients: 6, ...over }) as ChHubAnnouncement;
-const trip = (over: Partial<ChHubTrip> = {}): ChHubTrip =>
-  ({
-    id: 'tr1',
-    name: 'Carolina Fall Invitational',
-    destination: 'Pine Needles',
-    dates: 'Mon 3 – Wed 5 Nov',
-    depart: 'Mon · 12:00 PM',
-    hotel: 'Mid Pines Inn',
-    back: 'Wed · 5:00 PM',
-    travelerCount: 5,
-    mine: true,
-    upcoming: true,
-    inDays: 20,
-    ...over,
-  }) as ChHubTrip;
-
 const strip = (over: Partial<StripInput> = {}): StripInput => ({
   role: 'coach',
-  players: 6,
   rsvps: [],
   replies: new Map<string, ChRsvp>(),
   announcements: [],
   isAcked: (a) => a.acked,
   tasks: [],
   isDone: (t) => t.status === 'completed',
-  nextTrip: null,
-  pulse: { rounds30: 30, active14: 5, players: 6 },
   ...over,
 });
-const text = (i: StripInput) => hubStrip(i).map((s) => `${s.before ?? ''}${s.n ?? ''}${s.after}`);
+const text = (i: StripInput) => hubStrip(i).map((s) => `${s.n}${s.after}`);
 
+// W20 (12 Nov): the head said five figures as a sentence of links (players, replies, posts, the next trip, tasks). It
+// now says what the team owes, at most three figures, each opening its tab.
 describe('hubStrip', () => {
-  it('a coach’s line names the team, replies due, posts awaiting, the next trip and the tasks open', () => {
+  it('a coach’s figures are the replies due, the posts unacknowledged and the overdue tasks', () => {
     const lines = text(
       strip({
         rsvps: [rsvp({ counts: { going: 4, maybe: 0, no: 0, none: 2 } }), rsvp({ eventId: 'e2', counts: { going: 5, maybe: 0, no: 0, none: 1 } })],
         announcements: [ann()],
-        nextTrip: trip({ inDays: 6 }),
         tasks: [task(), task({ id: 't2', status: 'overdue' })],
       }),
     );
-    expect(lines).toEqual(['6 players', '3 replies due this week', '1 post awaiting acknowledgement', 'next trip in 6 days', '2 tasks open, 1 overdue']);
+    expect(lines).toEqual(['3 replies due', '1 post unacknowledged', '1 task overdue']);
+    expect(hubStrip(strip({ rsvps: [rsvp({ counts: { going: 4, maybe: 0, no: 0, none: 2 } })], announcements: [ann()], tasks: [task()] })).map((s) => s.key)).toEqual(['replies', 'acks', 'tasks']);
   });
 
-  it('a figure that is zero leaves the line, and a failed read is never said as zero', () => {
-    expect(text(strip({ players: 0, pulse: null }))).toEqual([]);
-    expect(text(strip({ announcements: [ann({ ackCount: 6 }), ann({ id: 'a2', needAck: false })] }))).toEqual(['6 players']);
+  it('never says the roster’s size, the next trip or the roster’s quiet: Home’s trip card and Waiting on say those', () => {
+    expect(text(strip())).toEqual([]);
   });
 
-  it('says every open task is overdue when they all are, and takes the warning ink', () => {
-    const items = hubStrip(strip({ tasks: [task({ status: 'overdue' }), task({ id: 't2', status: 'overdue' })] }));
-    const tasks = items.find((s) => s.key === 'tasks')!;
-    expect(`${tasks.n}${tasks.after}`).toBe('2 tasks open, all overdue');
-    expect(tasks.warn).toBe(true);
-    expect(tasks.tab).toBe('tasks');
+  it('a figure that is zero leaves the line', () => {
+    expect(text(strip({ announcements: [ann({ ackCount: 6 }), ann({ id: 'a2', needAck: false })] }))).toEqual([]);
+  });
+
+  it('counts the open tasks when none is overdue, and the overdue ones in the warning ink when any is', () => {
+    const open = hubStrip(strip({ tasks: [task(), task({ id: 't2' })] })).find((s) => s.key === 'tasks')!;
+    expect(`${open.n}${open.after}`).toBe('2 tasks open');
+    expect(open.warn).toBeFalsy();
+    const late = hubStrip(strip({ tasks: [task({ status: 'overdue' }), task({ id: 't2', status: 'overdue' }), task({ id: 't3' })] })).find((s) => s.key === 'tasks')!;
+    expect(`${late.n}${late.after}`).toBe('2 tasks overdue');
+    expect(late.warn).toBe(true);
+    expect(late.tab).toBe('tasks');
   });
 
   it('a done task is not open, whatever its status said', () => {
-    expect(text(strip({ tasks: [task({ status: 'overdue' })], isDone: () => true }))).toEqual(['6 players']);
+    expect(text(strip({ tasks: [task({ status: 'overdue' })], isDone: () => true }))).toEqual([]);
   });
 
-  it('speaks of the roster’s quiet only when players exist and none has played in 14 days', () => {
-    expect(text(strip({ pulse: { rounds30: 0, active14: 0, players: 6 } }))).toContain('no rounds in 14 days');
-    expect(text(strip({ pulse: { rounds30: 0, active14: 0, players: 0 } }))).not.toContain('no rounds in 14 days');
-    expect(text(strip({ pulse: { rounds30: 9, active14: 2, players: 6 } }))).not.toContain('no rounds in 14 days');
-  });
-
-  it('a player’s line counts the replies still pending after what they answered this visit, and the posts they have not acknowledged', () => {
+  it('a player’s figures count the replies still pending after what they answered this visit, and the posts they have not acknowledged', () => {
     const player = strip({
       role: 'player',
       rsvps: [rsvp(), rsvp({ eventId: 'e2', mine: 'accepted' }), rsvp({ eventId: 'e3' })],
       replies: new Map<string, ChRsvp>([['e3', 'tentative']]),
       announcements: [ann(), ann({ id: 'a2', acked: true })],
-      nextTrip: trip({ inDays: 1 }),
       tasks: [task()],
     });
-    expect(text(player)).toEqual(['1 reply due', '1 post to acknowledge', 'traveling in 1 day', '1 task open']);
-  });
-
-  it('a player is not told about a trip they are not on', () => {
-    expect(text(strip({ role: 'player', nextTrip: trip({ mine: false }) }))).toEqual([]);
-    expect(text(strip({ role: 'player', nextTrip: trip({ mine: null }) }))).toEqual([]);
+    expect(text(player)).toEqual(['1 reply due', '1 post to acknowledge', '1 task open']);
   });
 });
 
@@ -165,6 +141,10 @@ describe('ledgerSorted', () => {
     expect(ids(ledgerSorted(rows, 'replies', true))).toBe('aejx');
     expect(ids(ledgerSorted(rows, 'name'))).toBe('aejx');
     expect(ids(ledgerSorted(rows, 'name', true))).toBe('xjea');
+  });
+  it('late sorts by late tasks, most first, and a list that did not load sorts last (W22)', () => {
+    expect(ids(ledgerSorted(rows, 'late'))).toBe('aejx');
+    expect(ids(ledgerSorted(rows, 'late', true))).toBe('ejax');
   });
   it('rounds sort fewest first, so the player who has not played leads', () => {
     expect(ids(ledgerSorted(rows, 'rounds'))[0]).toBe('j');

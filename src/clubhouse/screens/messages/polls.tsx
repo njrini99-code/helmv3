@@ -1,7 +1,7 @@
 "use client";
 
 import { personOf } from "./person-of";
-import { ListChecks, Lock, Minus } from "lucide-react";
+import { ListChecks, Lock, Minus, Plus } from "lucide-react";
 import { createContext, useContext, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore, type KeyboardEvent } from "react";
 import {
   POLL_MAX_OPTIONS,
@@ -577,7 +577,8 @@ function endsWords(iso: string, nowIso: string, timeZone: string, hours: "12" | 
 }
 
 /**
- * Write a poll: a question, two to six choices (a spare row appears as the last one fills, as Reminders adds a row),
+ * Write a poll: a question, two to six choices (a spare row appears as the last one fills, as Reminders adds a row, and an
+ * "Add a choice" key under the list adds one by hand, so more than two is never hidden; #12),
  * more than one answer or not, and an optional end. Send writes it into the thread; nothing is saved before that.
  * Cancel keeps the draft for this conversation for the session; Clear throws it away. Quick start fills the empty form.
  * A Custom end is a date and time on the team's clock (`api.timeZone`), never the device's.
@@ -845,6 +846,27 @@ export function PollSheet({ api, conv, open, onClose }: { api: ChMessagesApi; co
               ))}
             </ListPresence>
           </ol>
+          {/* #12 (preview walk): with two empty rows nothing said a third was possible. The key shows while there is room and
+              no empty spare already waits at the end; it adds a row and moves to it. */}
+          {options.length < POLL_MAX_OPTIONS && !(options.length > POLL_MIN_OPTIONS && !options[options.length - 1]!.trim()) && (
+            <div className="ch-ms-pollf__add">
+              <Button
+                variant="ghost"
+                size="sm"
+                leftIcon={Plus}
+                disabled={busy}
+                onClick={() => {
+                  setRows((prev) => (prev.length < POLL_MAX_OPTIONS ? [...prev, { id: rowIds.current++, text: "" }] : prev));
+                  requestAnimationFrame(() => {
+                    const inputs = list.current?.querySelectorAll<HTMLInputElement>("li:not([data-leaving]) input");
+                    inputs?.[inputs.length - 1]?.focus();
+                  });
+                }}
+              >
+                Add a choice
+              </Button>
+            </div>
+          )}
           {options.length >= POLL_MAX_OPTIONS && options.every((o) => o.trim()) ? (
             <p className="ch-field__help">A poll takes up to 6 choices.</p>
           ) : false}

@@ -62,7 +62,18 @@ export function PlanPageActions({ plan, playerPlanId, editHref = null, coachBar 
   return (
     <>
       {phone ? (
-        <PhoneTop title={plan.title} back={{ label: 'Practice', onBack: back }} action={<PhoneIconAction icon={Printer} label="Print" onClick={print} />} />
+        <>
+          {/* G14 (preview grade): the bar held the plan's name alone and cut it ("Short game and pre…"). The page now opens
+              on its large title, whole, with the day under it; the bar's title waits under it until the title scrolls up
+              (shell/large-title.tsx), and is plain text so the large title is the page's one h1. */}
+          <PhoneTop heading={false} title={plan.title} back={{ label: 'Practice', onBack: back }} action={<PhoneIconAction icon={Printer} label="Print" onClick={print} />} />
+          <header className="ch-prc-h ch-prc-planhead">
+            <div>
+              <LargeTitle id="ch-prc-plan-title">{plan.title}</LargeTitle>
+              {when && <p className="ch-prc-h__line ch-num">{wholeFacts(when)}</p>}
+            </div>
+          </header>
+        </>
       ) : (
         <>
           <BackLink onClick={back}>Practice</BackLink>

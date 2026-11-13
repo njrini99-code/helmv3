@@ -70,6 +70,8 @@ export interface ChPracticeHome {
   /** The active roster, a new plan's players. */
   roster: string[];
   firstRun: boolean;
+  /** The team's zone: a practice New plan makes is on its wall clock (Q7). */
+  zone: string;
 }
 
 export interface ChPlayerPracticeNext {

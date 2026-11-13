@@ -497,7 +497,12 @@ export const STATUS_LABEL: Record<ChQStatus, { tone: 'accent' | 'warning' | 'neu
   completed: { tone: 'neutral', label: 'Concluded' },
 };
 
-export function ctaLabel(status: ChQStatus): string {
+/**
+ * The card's link words. W33 (preview walk, 11 Nov): a qualifier past its last day and still open sat in the list for
+ * weeks as "View leaderboard" with nothing asking the coach to close it; for a coach (`closeDue`) the words say the job.
+ */
+export function ctaLabel(status: ChQStatus, closeDue = false): string {
+  if (closeDue) return 'Review and close';
   return status === 'in_progress' ? 'View leaderboard' : status === 'completed' ? 'View results' : 'View details';
 }
 

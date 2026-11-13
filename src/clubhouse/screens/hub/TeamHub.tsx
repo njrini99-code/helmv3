@@ -1,6 +1,6 @@
 'use client';
 
-import { ClipboardList, Plane, Plus } from 'lucide-react';
+import { Megaphone, Plane, Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { deletePracticePlan } from '@/app/golf/actions/practice-plans';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
@@ -9,7 +9,6 @@ import type { ChHubAnnouncement, ChHubFile, ChHubRsvp, ChHubTask, ChHubTrip, ChH
 import { PROVISIONAL_ID } from '../../data/hub-shape';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
-import { Icon } from '../../ui/Icon';
 import { PageRefreshNotice, RefreshNotice } from '../../ui/RefreshNotice';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { Swap } from '../../ui/Swap';
@@ -445,15 +444,12 @@ export function TeamHub({
   // (a failed read is never shown as zero), and the band is withheld while a read it leans on is down.
   const summary = {
     role: data.role,
-    players: coach && !data.playersError ? data.players.length : 0,
     rsvps: data.rsvps.error ? [] : data.rsvps.rows,
     replies,
     announcements: data.announcements.error ? [] : anns,
     isAcked,
     tasks: data.tasks.error ? [] : tasks.rows,
     isDone: taskDone,
-    nextTrip: data.trips.error ? null : nextTrip,
-    pulse: data.pulse ?? null,
   };
   const strip = hubStrip(summary);
   const attention = tabAttention(summary);
@@ -475,7 +471,7 @@ export function TeamHub({
   // each failed section keeps its heading with a covered notice marking the gap. One failure keeps its own notice.
   const failedParts = [
     // The week and its replies are one part to name: the week tile carries both.
-    (data.week.error || data.rsvps.error) && (data.week.error ? 'this week' : coach ? 'this week’s replies' : 'your events'),
+    (data.week.error || data.rsvps.error) && (data.week.error ? 'the next 7 days' : coach ? 'the replies' : 'your events'),
     data.announcements.error && 'announcements',
     data.trips.error && 'travel',
     data.updates.error && 'updates',
@@ -582,13 +578,6 @@ export function TeamHub({
       )}
       <header className="ch-hb-h" data-canopy-head="tight">
         <div>
-          {/* Coach only (wave 7): a player is never told their own role. */}
-          {coach && (
-            <span className="ch-hb-role">
-              <Icon icon={ClipboardList} size={12} />
-              Coach view
-            </span>
-          )}
           {/* The phone's one large title (owner decision 4); desktop keeps its hero rule (hub.css). Drawn from the first
               paint, before useChPhone hydrates, since its look is the phone's CSS alone. */}
           <LargeTitle id="ch-hb-title">Team Hub</LargeTitle>
@@ -646,6 +635,7 @@ export function TeamHub({
                 size="page"
                 code={coach ? 'CH-10305' : 'CH-10306'}
                 shape="rows"
+                icon={Megaphone}
                 title={coach ? 'Nothing posted yet' : 'No team updates yet'}
                 body={coach ? 'Post an announcement, plan a trip or share a document. Everything you post shows up in your players’ Team Hub.' : 'Announcements, trips and documents from your coaches will show up here.'}
                 // The head's New announcement is the page's one primary action on every tab (states audit b9): the empty
@@ -676,7 +666,7 @@ export function TeamHub({
                   />
                 </SectionBoundary>
                 {!coach && <SectionBoundary surface="hub.queue" label="Your queue" code="CH-10205">{queueTile}</SectionBoundary>}
-                <SectionBoundary surface="hub.week" label="This week" code="CH-10205">
+                <SectionBoundary surface="hub.week" label="Next 7 days" code="CH-10205">
                   <WeekTile week={data.week} role={data.role} rsvps={data.rsvps} replies={replies} isPending={replyPending} onReply={onReply} covered={covered} span={coach ? 5 : 7} />
                 </SectionBoundary>
                 {coach && (
@@ -737,7 +727,8 @@ export function TeamHub({
                 {data.announcements.error ? (
                   <RefreshNotice code="CH-10206" title="Announcements didn’t load." body="Nothing was lost. Try again." covered={covered} />
                 ) : !anns.length ? (
-                  <EmptyState code="CH-10307" shape="rows" shapeCount={3} title="No announcements yet" body={coach ? 'Post one and see who has read it.' : 'Posts from your coaches show here.'} />
+                  // W19 B: the tab's list is the page's content, so its empty is the page's card.
+                  <EmptyState size="page" icon={Megaphone} code="CH-10307" shape="rows" shapeCount={3} title="No announcements yet" body={coach ? 'Post one and see who has read it.' : 'Posts from your coaches show here.'} />
                 ) : (
                   <ListPresence>{anns.map((a, i) => <Announcement key={a.id} a={a} role={data.role} rank={i === 0 ? 'lead' : 'older'} acked={isAcked(a)} pending={ackPending(a)} onAck={onAck} onEdit={setEditing} onDelete={(x) => askDelete({ kind: 'ann', a: x })} files={attachments} />)}</ListPresence>
                 )}
@@ -752,7 +743,7 @@ export function TeamHub({
                 {data.trips.error ? (
                   <RefreshNotice code="CH-10207" title="Travel didn’t load." body="Trips are safe. Try again." covered={covered} />
                 ) : !tripRows.length ? (
-                  <EmptyState code="CH-10308" shape="time" shapeCount={3} title="No trips planned" body={coach ? 'Plan a trip and players see the itinerary here.' : 'Trips your coaches plan show here with the bus time and hotel.'} />
+                  <EmptyState size="page" icon={Plane} code="CH-10308" shape="time" shapeCount={3} title="No trips planned" body={coach ? 'Plan a trip and players see the itinerary here.' : 'Trips your coaches plan show here with the bus time and hotel.'} />
                 ) : (
                   <ListPresence>
                     {nextTrip && <TripPass key={nextTrip.id} t={nextTrip} big role={data.role} focus={tripToFocus === nextTrip.id} onFocused={tripFocused} {...tripActions} />}

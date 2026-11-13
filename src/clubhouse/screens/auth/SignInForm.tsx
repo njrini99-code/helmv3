@@ -25,6 +25,7 @@ import { Icon } from '../../ui/Icon';
 import { Tooltip } from '../../ui/Tooltip';
 import { AuthKeyLabel } from './AuthKey';
 import { AuthNotice, type AuthTone } from './AuthNotice';
+import { useHydrated } from '../../lib/use-hydrated';
 import { KB_LIFT_QUERY, OPENING_PUSH_MS } from './auth-motion';
 import { isPlainClick } from './ForgotPassword';
 import { failureFor, failureForServer, type SignInFailure } from './sign-in-state';
@@ -83,8 +84,11 @@ export function SignInForm({
   // Bumped on every failed attempt so a repeated identical error still moves focus.
   const [errorNonce, setErrorNonce] = useState(0);
   const [showPassword, setShowPassword] = useState(false);
-  // False until the client has mounted; gates submit so a pre-hydration tap cannot fire the action with React's empty initial state (#1245).
-  const [hydrated, setHydrated] = useState(false);
+  // False in the server HTML and through hydration; gates submit so a pre-hydration tap cannot fire the action with React's empty
+  // initial state (#1245). An external store, not an effect: a client navigation (Log in on the landing page) draws the form
+  // already enabled, where an effect left Sign in grey for its first frames (owner, 2026-11-12: "landing > sign in glitchy").
+  // On a cold load the post-hydration render runs after the hydration commit's effects, so the DOM values are adopted first.
+  const hydrated = useHydrated();
   // Email and password are deliberately not behind useHydrationGuard: a read-only box in the server HTML is skipped by the
   // browser's and password managers' page-load fill, and sign in is where returning users rely on it. Submit is held instead.
   const emailRef = useRef<HTMLInputElement>(null);
@@ -136,7 +140,6 @@ export function SignInForm({
   }, []);
   useEffect(() => {
     adoptDomValues();
-    setHydrated(true);
   }, [adoptDomValues]);
 
   useLayoutEffect(() => {

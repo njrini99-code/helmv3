@@ -65,6 +65,13 @@
 .ch-ask-body.has-panel.has-evidence {
   grid-template-columns: 280px minmax(0, 1fr) 380px;
 }
+/* A player's Ask has no chats list, so no chats column: the conversation is the first track (Ask.tsx, `is-solo`). */
+.ch-ask-body.is-solo {
+  grid-template-columns: minmax(0, 1fr);
+}
+.ch-ask-body.is-solo.has-evidence {
+  grid-template-columns: minmax(0, 1fr) 380px;
+}
 .ch-ask-main {
   display: flex;
   flex-direction: column;
@@ -127,9 +134,17 @@
   color: var(--ch-text-tertiary);
   text-align: center;
 }
+/* The new chat's line sits in the page under the question box (Ask.tsx), on the home column's measure (.ch-ak-home). */
 .ch-ask-foot.is-home {
-  flex: none;
-  padding: 0 24px 16px;
+  max-width: 680px;
+  margin-inline: auto;
+  padding: 0 16px;
+}
+/* Q2 A: on a desk the new chat's home fills the pane (coachhelm-ask-v2.css, .ch-ak-home), with this line under it. */
+.ch-ask:not(.is-phone) .ch-ask-scroll.is-home {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: var(--ch-space-2);
 }
 .ch-ask-ev {
   min-width: 0;
@@ -214,7 +229,8 @@
   height: 40px;
   padding: 0 4px 0 8px;
 }
-.ch-ask-hist__head b {
+.ch-ask-hist__head :is(b, h2) {
+  margin: 0;
   font: var(--ch-type-15-strong);
   letter-spacing: -0.01em;
 }
@@ -381,35 +397,6 @@
   cursor: pointer;
 }
 
-/* The new chat page */
-.ch-ask-home {
-  display: flex;
-  flex-direction: column;
-  gap: 32px;
-  width: min(720px, 100%);
-  margin: 0 auto;
-  padding: 72px 0 24px;
-}
-.ch-ask-greet {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  text-align: center;
-}
-.ch-ask-greet h2 {
-  margin: 0;
-  font: var(--ch-type-34-medium);
-  letter-spacing: -0.012em;
-  color: var(--ch-text-primary);
-  text-wrap: balance;
-}
-.ch-ask-greet p {
-  margin: 0;
-  font: var(--ch-type-15);
-  letter-spacing: var(--ch-track-15);
-  color: var(--ch-text-secondary);
-}
 .ch-ask-pills {
   display: flex;
   flex-wrap: wrap;
@@ -664,6 +651,47 @@
   color: var(--ch-text-secondary);
   text-align: center;
 }
+/* Q2 A: the desk's new-chat box is the page's hero: larger, rounder and floating, its text two lines tall before it grows,
+   and its own controls quiet chips on a resting fill with no ring (the send keeps its green). */
+.ch-ask-cmp.is-hero:not(.is-phone) .ch-ask-cmp__box {
+  gap: var(--ch-space-3);
+  padding: var(--ch-space-5) var(--ch-space-5) var(--ch-space-3);
+  border-radius: var(--ch-radius-panel);
+  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline), var(--ch-elevation-sheet);
+}
+.ch-ask-cmp.is-hero:not(.is-phone) .ch-ask-cmp__box:focus-within {
+  box-shadow: var(--ch-elevation-floating-focus);
+}
+.ch-ask-cmp.is-hero:not(.is-phone) .ch-ask-cmp__ta {
+  min-height: 88px;
+  padding: 2px 6px;
+  font: var(--ch-type-17);
+  letter-spacing: var(--ch-track-17);
+}
+.ch-ask-cmp.is-hero:not(.is-phone) .ch-ak-cscope {
+  padding: 0 0 0 2px;
+}
+.ch-ask-cmp.is-hero:not(.is-phone) .ch-ask-cmp__chip:not(.is-set),
+.ch-ask-cmp.is-hero:not(.is-phone) .ch-ask-cmp__round {
+  box-shadow: none;
+  background-color: var(--ch-chip-flat-bg);
+  color: var(--ch-text-secondary);
+}
+.ch-ask-cmp.is-hero:not(.is-phone) .ch-ask-cmp__chip {
+  border-radius: var(--ch-radius-xl);
+}
+@media (hover: hover) {
+  .ch-ask-cmp.is-hero:not(.is-phone) .ch-ask-cmp__chip:not(.is-set):hover,
+  .ch-ask-cmp.is-hero:not(.is-phone) .ch-ask-cmp__round:hover {
+    box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-strong);
+    color: var(--ch-text-primary);
+  }
+}
+.ch-ask-cmp.is-hero:not(.is-phone) .ch-ask-cmp__send {
+  width: 40px;
+  height: 40px;
+}
+
 /* The thread's box is one row: +, the text, @, Send */
 .ch-ask-cmp.is-dock .ch-ask-cmp__box,
 .ch-ask-cmp.is-phone .ch-ask-cmp__box {
@@ -743,9 +771,9 @@
   opacity: 0.55;
 }
 /* The mention picker (cmdk, CH-13821): the roster and the stats, a list docked on the box. Above the box in a thread and
-   on the phone, so it rises out of the composer the thumb is on; below the desktop's new-chat box, which sits high on
-   its page. It floats (the overlay elevation) because it covers the conversation for a moment, and nothing in it takes
-   the focus from the text box. */
+   on the phone, so it rises out of the composer the thumb is on. Under the desktop's new-chat box, which sits mid-page
+   (Q2 A), while there is room there, else above (`data-side="up"`, below). It floats (the overlay elevation) because it covers
+   the conversation for a moment, and nothing in it takes the focus from the text box. */
 .ch-ask-pick {
   position: absolute;
   right: 0;
@@ -759,7 +787,8 @@
   transform-origin: 50% 100%;
   animation: ch-ask-pick-in var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-ask-cmp.is-hero:not(.is-phone) .ch-ask-pick {
+/* Below the new-chat box only while there is room there; with too little it opens above (`data-side="up"`, Composer.tsx). */
+.ch-ask-cmp.is-hero:not(.is-phone) .ch-ask-pick:not([data-side='up']) {
   top: calc(100% + 8px);
   bottom: auto;
   transform-origin: 50% 0;
@@ -913,7 +942,7 @@ body.keyboard-open .ch-ask-hist.is-drawer {
     translate: 0 0;
   }
 }
-.ch-ask-drawer .ch-ask-hist__head b {
+.ch-ask-drawer .ch-ask-hist__head :is(b, h2) {
   font-size: calc(20 * var(--ch-type-k));
   letter-spacing: -0.02em;
 }
@@ -923,6 +952,9 @@ body.keyboard-open .ch-ask-hist.is-drawer {
 }
 .ch-ask-drawer .ch-ask-hist__row {
   min-height: 44px;
+  /* The 44 line centres the title on its own; the panel's 12px padding on top of it set every title 12px low, so a
+     group's heading sat on the row above and far from its own (WebKit, 390, 12 Nov). */
+  padding-block: 0;
   font-size: calc(16 * var(--ch-type-k));
   line-height: 44px;
 }
@@ -999,33 +1031,6 @@ body.keyboard-open .ch-ask-hist.is-drawer {
   }
   .ch-ask-cmp.is-phone .ch-ask-pick__row {
     font-size: calc(16 * var(--ch-type-k));
-  }
-  /* The new chat on the phone (the cardless pass, 2026-10-08): the opener and its question rows sit together at the
-     foot of the screen, just above the composer the screen pins, so the thumb finds all three in one place and nothing
-     floats in the middle of an empty page. */
-  .ch-ask-home {
-    flex: 1;
-    justify-content: flex-end;
-    gap: 0;
-    width: 100%;
-    padding: 0;
-  }
-  .ch-ask-home.is-phone .ch-ask-greet {
-    align-items: stretch;
-    gap: 8px;
-    padding: 0 0 24px;
-    text-align: left;
-  }
-  .ch-ask-greet h2 {
-    max-width: 15em;
-    font-size: calc(28 * var(--ch-type-k));
-    line-height: 1.12;
-    letter-spacing: var(--ch-track-28);
-  }
-  .ch-ask-greet p {
-    max-width: 34em;
-    font-size: calc(15 * var(--ch-type-k));
-    color: var(--ch-text-tertiary);
   }
   .ch-ask-nothing {
     margin-top: 8px;
@@ -1265,6 +1270,9 @@ html:not([data-fw-theme='dark']) .ch-ask {
       position: relative;
       grid-template-columns: 0 minmax(0, 1fr);
     }
+    .ch-ask-body.is-solo.has-evidence {
+      grid-template-columns: minmax(0, 1fr);
+    }
     .ch-ask-body.has-evidence > .ch-ask-ev {
       position: absolute;
       inset-block: 0;
@@ -1283,72 +1291,9 @@ html:not([data-fw-theme='dark']) .ch-ask {
   color: var(--ch-text-tertiary);
 }
 
-/* What the chat can do: four cards under the starter questions. Hairline and lift, no stripes. */
-.ch-ask-caps {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-  width: 100%;
-  max-width: var(--ch-measure-reading);
-  margin: 8px 0 0;
-  padding: 0;
-  list-style: none;
-}
-.ch-ask-cap {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
-  width: 100%;
-  height: 100%;
-  padding: 16px;
-  border: 0;
-  border-radius: var(--ch-radius-xl);
-  background: var(--ch-sheet-bg);
-  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-control), var(--ch-elevation-bubble);
-  text-align: left;
-  color: var(--ch-text-primary);
-  cursor: pointer;
-  transition: box-shadow var(--ch-dur-quick) var(--ch-ease);
-}
-.ch-ask-cap b {
-  font: var(--ch-type-15-strong);
-  letter-spacing: var(--ch-track-15);
-}
-.ch-ask-cap span:not(.ch-ask-cap__ic) {
-  font: var(--ch-type-13);
-  letter-spacing: var(--ch-track-13);
-  color: var(--ch-text-secondary);
-}
-.ch-ask-cap__ic {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  margin-bottom: 4px;
-  border-radius: 50%;
-  background: var(--ch-green-50, var(--ch-bg-subtle));
-  color: var(--ch-green-700);
-}
-@media (hover: hover) {
-  .ch-ask-cap:hover {
-    box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-strong), var(--ch-elevation-raised);
-  }
-}
-.ch-ask-cap:focus-visible {
-  outline: 2px solid var(--ch-border-focus);
-  outline-offset: 2px;
-}
-@media (max-width: 1100px) {
-  .ch-ask-caps {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
 /* Dark green where the coach acts, the way the Board and Ask toggle and the app's primary keys are (owner, 2026-10-25:
    "do dark green, follow my app's UI/UX"): New chat and Send are the accent, a disabled Send is the accent dimmed, not
-   grey, and the capability marks are solid. Chips and starter questions stay the app's quiet keys and take a green
-   hairline on hover. */
+   grey. Chips and starter questions stay the app's quiet keys and take a green hairline on hover. */
 .ch-ask-hist__new {
   background: var(--ch-accent);
   box-shadow: var(--ch-shadow-sm);
@@ -1382,15 +1327,6 @@ html:not([data-fw-theme='dark']) .ch-ask {
     color: var(--ch-green-700);
   }
 }
-.ch-ask-cap__ic {
-  background: var(--ch-accent);
-  color: var(--ch-text-on-accent);
-}
-@media (hover: hover) {
-  .ch-ask-cap:hover {
-    box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-green-600), var(--ch-elevation-raised);
-  }
-}
 
 /* Ask's skeleton on desktop (AskSkeleton.tsx): drawn in the loaded page's own classes, so the strip is where the page puts it
    (the team at the left, Board | Ask at the right) and the greeting, composer, starters and capabilities land in place. Only
@@ -1411,21 +1347,54 @@ html:not([data-fw-theme='dark']) .ch-ask {
 .ch-ask-sk__lines > .ch-skel-ln:first-child {
   margin-top: 8px;
 }
-.ch-ask-sk__greet {
+/* #6: a saved chat on its way, in the thread's shape (AskSkeleton thread). */
+.ch-ask-sk__thread {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  width: 100%;
+  gap: 20px;
+  width: min(720px, 100%);
+  margin: 24px auto 0;
+  padding: 0 20px;
 }
-.ch-ask-sk__greet > .ch-skel-ln {
-  justify-content: center;
-  width: 100%;
+.ch-ask-sk__q {
+  display: flex;
+  justify-content: flex-end;
+}
+.ch-ask-sk__leaf {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 20px;
+  border-radius: var(--ch-radius-xl);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-separator);
+}
+.ch-ask-sk__leaf > .ch-skel:last-child {
+  margin-top: 12px;
+}
+.ch-ask-sk__dock {
+  width: min(760px, 100%);
+  margin: auto auto 0;
+  padding: 12px 20px;
 }
 .ch-ask-sk__pills {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 6px 6px;
+  gap: var(--ch-space-2);
+}
+/* The new chat's home on its way (Q2 A): the ball's place over the greeting, and the safety line under the home. A grid, so
+   the placeholder is a block item and no line box opens under it (the ball is 28 tall, and so is this). */
+.ch-ask-sk__ball {
+  display: grid;
+  margin-bottom: var(--ch-space-3);
+}
+.ch-ask-sk__foot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 17px;
+  box-sizing: border-box;
 }
 @media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-ask.ch-ask-sk .ch-ask-sk__desk {

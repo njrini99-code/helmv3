@@ -78,7 +78,7 @@ their phone placement follows the foundation.
 
 **01 List**
 
-- Count line ("2 active · 3 concluded"), a 28px H1 ("Lineup decisions") and the
+- Count line ("2 active · 3 concluded"), a 28px H1 ("Qualifiers"; was "Lineup decisions" until W34, 2026-11-12) and the
   subline.
 - A full-width large primary "Create qualifier". Coach only.
 - Pills (All, Active, Concluded, with counts), 36px high, not wrapping.

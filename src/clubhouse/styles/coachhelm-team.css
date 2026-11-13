@@ -276,6 +276,13 @@
 .ch-htb .stn.is-gain .core {
   fill:var(--ch-chart-gain);
 }
+/* The "+N" coin's 44px tap target is never drawn. `.scn circle`, `.scn.is-more circle` and the night palette's ring all reach it
+   and outrank the SVG's own fill="transparent", so it was painted as a dark disc twice the coin's size, over the next coin's
+   initials: "+3" over "EB", which read "B" (W9, phone, 12 Nov). This selector outranks all three. */
+.ch-htb .holesvg .scn circle.hit {
+  fill:transparent;
+  stroke:none;
+}
 .ch-htb .stn .hit,
 .ch-htb .scn .hit {
   stroke:none;
@@ -1046,9 +1053,10 @@
   fill:var(--ch-ink-500);
   font: var(--ch-type-11-medium);
   text-anchor:middle; letter-spacing: var(--ch-track-11); }
+/* The words lead; a ring, when the focus has a target, closes the row (W11, Cards.tsx). */
 .ch-htb .wk {
   display:grid;
-  grid-template-columns:auto minmax(0,1fr);
+  grid-template-columns:minmax(0,1fr) auto;
   gap:12px;
   align-items:center;
   padding:8px 16px;
@@ -1064,12 +1072,8 @@
   font: var(--ch-type-14);
   color:var(--ch-ink-600);
 }
+/* The state line is quiet: every row's in one green read as nine alarms (W11). */
 .ch-htb .wk .st {
-  font-weight:var(--ch-fw-600);}
-.ch-htb .wk .st.ok {
-  color:var(--ch-gain);
-}
-.ch-htb .wk .st.wait {
   color:var(--ch-ink-600);
 }
 .ch-htb .ringc .trk {
@@ -1080,10 +1084,6 @@
   transition:stroke-dashoffset var(--ch-dur-sweep) var(--ch-ease);
 }
 .ch-htb .ringc .fil.mid {
-  stroke:var(--ch-chart-flat);
-}
-.ch-htb .ringc.prop .trk {
-  stroke-dasharray:3 3;
   stroke:var(--ch-chart-flat);
 }
 @keyframes ch-htb-popin {from{opacity:0;transform:scale(.94);}}
@@ -1721,8 +1721,11 @@ html[data-fw-theme='dark'] .ch-htb .skl::after {
   flex:none;
   height:36px;
 }
+/* The words lead and take the row; a picture, when the tile has one, closes it at a fixed width (W10, Stories.tsx). */
 .ch-htb.is-desk .tile .tt {
   display:grid;
+  flex:1;
+  min-width:0;
   gap:2px;
 }
 .ch-htb.is-desk .tile .tm {
@@ -1794,6 +1797,14 @@ html[data-fw-theme='dark'] .ch-htb .skl::after {
 }
 .ch-htb-desk {
   padding: 20px 24px 40px;
+}
+/* At most the wide measure on a desk (W40: the same box as Calendar, Recruiting and Stats), from the left edge every page shares (shell.css "One left edge"), so on a big screen the
+   hole and its cards stop growing with the window (owner's preview, 11 Nov 2026: "this screen is uhh very large" at 1920). */
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
+  .ch-htb.is-desk {
+    max-width: var(--ch-measure-wide);
+    margin-inline: max(0px, calc((100vw - var(--ch-sidebar-w) - var(--ch-measure-wide)) / 2)) auto;
+  }
 }
 .ch-htb-deskhead {
   display: flex;

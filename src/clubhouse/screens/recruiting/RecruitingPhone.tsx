@@ -1,7 +1,7 @@
 'use client';
 
 import { AnimatePresence } from 'motion/react';
-import { Check, ChevronDown, ChevronRight, Mail, Phone, Plus } from 'lucide-react';
+import { Check, ChevronDown, ChevronRight, Mail, Phone, Plus, UserSearch } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { CH_STAGES, mailHref, rowLineOf, subtitleOf, telHref, type ChProspect, type ChStage } from '../../data/recruiting-shape';
 import { haptic } from '../../lib/haptics';
@@ -62,6 +62,7 @@ export function RecruitingPhone({ c }: { c: RecCtx }) {
             size="page"
             code="CH-14301"
             shape="rows"
+            icon={UserSearch}
             title="Your prospect list starts here"
             body="Add the golfers you’re watching and move them through Watched, Recruiting, Offered and Committed."
             action={

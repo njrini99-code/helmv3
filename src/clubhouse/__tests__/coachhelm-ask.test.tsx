@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { LazyMotion, domAnimation } from 'motion/react';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -631,6 +633,18 @@ describe('History: the standing panel (desktop)', () => {
     expect(document.querySelector('.ch-ask-head')!.querySelector('button')).toBeNull();
   });
 
+  it("a player's Ask on a desk has no chats column, so the conversation is the body's first track, and New chat is in the header", () => {
+    // Owner's preview, 11 Nov 2026: the coach's empty chats column held a player's whole Ask in 280px.
+    show(ready({ role: 'player' }));
+    const body = document.querySelector('.ch-ask-body')!;
+    expect(body.classList.contains('is-solo')).toBe(true);
+    expect(body.classList.contains('has-panel')).toBe(false);
+    expect(body.firstElementChild?.classList.contains('ch-ask-main')).toBe(true);
+    const head = within(document.querySelector('.ch-ask-head') as HTMLElement);
+    expect(head.queryByRole('button', { name: 'Show chats' })).toBeNull();
+    expect(head.getByRole('button', { name: 'New chat' })).toBeInTheDocument();
+  });
+
   it('New chat starts a fresh thread at once (no server trip), clears the address and closes the evidence', async () => {
     const { chat } = show(ready({ thread: { id: 'c-putting', title: 'Putting inside 6 feet', messages: ASK_MSGS_ANSWER } }), fakeChat(), undefined);
     await userEvent.click(within(screen.getByRole('complementary', { name: 'Chats' })).getByRole('button', { name: 'New chat' }));
@@ -668,7 +682,10 @@ describe('History: the phone drawer', () => {
     expect(drawer().open).toBe(false);
     await userEvent.click(screen.getByRole('button', { name: 'Chats' }));
     expect(drawer().open).toBe(true);
-    expect(within(drawer()).getByText('Chats', { selector: 'b' })).toBeInTheDocument();
+    // Its title takes focus as it opens, not New chat: a tap-opened drawer shows no ring and no tooltip on a key.
+    const title = within(drawer()).getByRole('heading', { name: 'Chats' });
+    await waitFor(() => expect(title).toHaveFocus());
+    expect(within(drawer()).getByRole('button', { name: 'New chat' })).not.toHaveFocus();
     fireEvent(drawer(), new Event('cancel', { cancelable: true }));
     await waitFor(() => expect(drawer().open).toBe(false));
 
@@ -679,6 +696,13 @@ describe('History: the phone drawer', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Chats' }));
     await userEvent.click(within(drawer()).getByRole('link', { name: 'Weekly brief, Sept 29' }));
     await waitFor(() => expect(drawer().open).toBe(false));
+  });
+
+  it('a row centres its title on the 44 line, with no padding above it, so a group heading sits midway between rows', () => {
+    const css = readFileSync(join(__dirname, '../styles/coachhelm-ask.css'), 'utf8');
+    const rule = css.slice(css.indexOf('.ch-ask-drawer .ch-ask-hist__row {'), css.indexOf('}', css.indexOf('.ch-ask-drawer .ch-ask-hist__row {')));
+    expect(rule).toMatch(/line-height: 44px;/);
+    expect(rule).toMatch(/padding-block: 0;/);
   });
 
   it('CH-13621 a drag to the left past 80px closes it; a nudge of a few pixels leaves it open', async () => {
@@ -735,6 +759,18 @@ describe('the container', () => {
     expect(screen.getByTestId('thread')).toBeInTheDocument();
     expect(document.querySelector('.ch-ask-dock')).not.toBeNull();
     expect(screen.getByText('CoachHelm reads Finley University data only. Check the numbers before you act on them.')).toBeInTheDocument();
+  });
+
+  it('G7 on a desk’s new chat the line follows the question box inside the page, not pinned under the scroller, where the box ran beneath it', () => {
+    show();
+    const foot = screen.getByText('CoachHelm reads Finley University data only. Check the numbers before you act on them.');
+    const page = document.querySelector('.ch-ask-scroll.is-home') as HTMLElement;
+    expect(page.contains(foot)).toBe(true);
+    expect(page.lastElementChild).toBe(foot);
+    const question = document.querySelector('.ch-ask-cmp.is-hero') as HTMLElement;
+    expect(page.contains(question)).toBe(true);
+    expect(question.compareDocumentPosition(foot) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(document.querySelectorAll('.ch-ask-foot')).toHaveLength(1);
   });
 
   it('hands the thread the failed answer as a sentence with what to offer, by the rule of the stream route', () => {

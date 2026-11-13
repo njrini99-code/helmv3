@@ -75,6 +75,30 @@ export const CompositionSpec = z.object({
 });
 export type CompositionSpec = z.infer<typeof CompositionSpec>;
 
+/** One shot behind a wedge, as the Miss Compass's drawer lists it (shot-reads.ts `MissShot`). */
+export const MissShotResolved = z.object({
+  id: z.string(),
+  round_id: z.string(),
+  hole_id: z.string().nullable(),
+  round_date: z.string().nullable(),
+  course: z.string().nullable(),
+  from_ft: z.number().nullable(),
+  left_ft: z.number().nullable(),
+  lie_before: z.string().nullable(),
+  player: z.string().nullable().optional(),
+});
+/**
+ * The shots behind each wedge, copied by the compiler from the read's `detail.ui_only` (never named by the model), with the
+ * read they came from so "Ask about these shots" can name it. Each direction keeps its true `count` beside a list of at most
+ * `cap`. Optional: a composition without it (the flag off, or stored before it) parses and draws as it always did.
+ */
+export const MissShotsResolved = z.object({
+  ref: z.string(),
+  cap: z.number(),
+  directions: z.record(z.string(), z.object({ count: z.number(), shots: z.array(MissShotResolved) })),
+});
+export type MissShotsBlock = z.infer<typeof MissShotsResolved>;
+
 /** A block as drawn: the design choices plus the figures, copied from the reads. */
 const MissPatternResolved = z.object({
   type: z.literal('miss_pattern'),
@@ -83,6 +107,7 @@ const MissPatternResolved = z.object({
   inside_15: z.number(),
   inside_25: z.number(),
   wedges: z.array(z.object({ direction: z.string(), count: z.number(), avg_left_ft: z.number().nullable() })),
+  shots: MissShotsResolved.optional(),
 });
 const PuttProfileResolved = z.object({
   type: z.literal('putt_profile'),
@@ -164,3 +189,31 @@ export const CompositionBlockSpecV2 = z.union([
 export type CompositionBlockSpecV2 = z.infer<typeof CompositionBlockSpecV2>;
 export const CompositionSpecV2 = CompositionSpec.extend({ blocks: z.array(CompositionBlockSpecV2).min(1).max(6) });
 export const ShowVisualInputV2 = ShowVisualInput.extend({ blocks: z.array(CompositionBlockSpecV2).max(6).optional() });
+
+/** "season_compare: this_season: Expected object, received …": the first schema problem of a block, in one line for a log or the model. */
+export function blockProblem(error: z.ZodError): string {
+  const issue = error.issues[0];
+  return issue ? `${issue.path.join('.') || 'block'}: ${issue.message}` : 'invalid block';
+}
+
+/**
+ * A stored composition that fails the whole parse, drawn as far as it can be: every block that is a valid `ResolvedBlock` is
+ * kept, in order, and the rest are named in `dropped` (one bad block used to hide the whole visual, silently). Null when the
+ * frame itself (title, layout, refs) is not a composition, or no figure block survives.
+ */
+export function salvageComposition(raw: unknown): { composition: ValidatedComposition | null; dropped: string[] } {
+  const whole = ValidatedComposition.safeParse(raw);
+  if (whole.success) return { composition: whole.data, dropped: [] };
+  const frame = ValidatedComposition.omit({ blocks: true }).safeParse(raw);
+  const rawBlocks = (raw as { blocks?: unknown } | null)?.blocks;
+  if (!frame.success || !Array.isArray(rawBlocks)) return { composition: null, dropped: [`composition: ${blockProblem(whole.error)}`] };
+  const blocks: ResolvedBlock[] = [];
+  const dropped: string[] = [];
+  rawBlocks.forEach((b, i) => {
+    const one = ResolvedBlock.safeParse(b);
+    if (one.success) blocks.push(one.data);
+    else dropped.push(`block ${i + 1} (${String((b as { type?: unknown } | null)?.type ?? 'unknown')}): ${blockProblem(one.error)}`);
+  });
+  if (!blocks.some((b) => b.type !== 'note')) return { composition: null, dropped };
+  return { composition: { ...frame.data, blocks }, dropped };
+}

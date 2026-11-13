@@ -89,6 +89,8 @@ export function SignIn({
           </p>
         </div>
       </div>
+      {/* Desk: the frame's green between the course and the form; it slides off with the panel (auth.css, the seam). */}
+      <div className="ch-au-seam" aria-hidden="true" />
       <main ref={panelRef} className="ch-au-panel" style={tint ? ({ ['--ch-au-paper' as string]: tint } as CSSProperties) : undefined} aria-label={view === 'signin' ? 'Sign in' : 'Reset your password'} aria-hidden={opening || undefined} inert={opening || undefined}>
         <div className="ch-au-top">
           {/* The App Store build has no marketing home to go back to (the proxy sends "/" straight back here), and no sign-up (Guideline 3.1.1).

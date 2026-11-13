@@ -36,6 +36,7 @@ import { PLAYER_HELM_HREF } from '../../../data/coachhelm-views-shape';
 import { PlayerHelmTabs } from '../views/PlayerHelmTabs';
 import { COACHHELM_HREF, CoachHelmTabs, type CoachHelmView } from './SubTabs';
 import { AskThread } from './Thread';
+import { MissCompassGate, type MissCompassGateValue } from './studio/compass-gate';
 
 /** The chat implementation: the production hook, or a stand-in for the preview and the tests (nothing goes over the network). */
 export type ChAskChat = typeof useCoachHelmChat;
@@ -228,13 +229,14 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
   }, []);
   // FID-ASK-7: read once, then off the address (below), and taken once: the first send ends it.
   const [seededQuestion, consumeSeed] = useSeedOnce(typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('q'));
-  const send = (text: string) => {
+  const send = (text: string, about?: { evidence_ref: string; key: string }) => {
     consumeSeed();
     setStoppedTurn(null);
     lastSent.current = text;
     expecting.current = openId === null ? epoch.current : null;
     setGone(false);
-    chat.send(text);
+    if (about) chat.send(text, { about });
+    else chat.send(text);
   };
   /** False when it wasn't sent, so a card that sends through this can stay open. */
   const ask = (text: string): boolean => {
@@ -378,8 +380,18 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
   // The phone sheet's subject, kept after it closes so its exit still has the content it showed.
   const [sheetEvidence, setSheetEvidence] = useState<EvidenceFocus | null>(null);
   if (phone && evidenceOpen && evidence !== sheetEvidence) setSheetEvidence(evidence);
+  // The Miss Compass (team flag, coach only): on here, and its "Ask about these shots" sends through the same gate as a starter.
+  const compass: MissCompassGateValue = {
+    on: !!data.missCompass && !player,
+    askAbout: (text, about) => {
+      if (chat.busy || refuseOffline()) return false;
+      send(text, about);
+      return true;
+    },
+  };
 
   return (
+    <MissCompassGate.Provider value={compass}>
     <main ref={askRoot} className={'ch-ask ch-ak-root' +(phone ? ' is-phone' : '') + (showHome ? ' is-home' : '')} aria-label="Ask CoachHelm" aria-busy={sw.pending || chatSw.pending || undefined} data-switch={sw.pending ? 'view' : chatSw.pending ? 'chat' : undefined} data-ch-code="CH-13820" {...sw.enter}>
       {phone && (
         <>
@@ -420,7 +432,9 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
         {player && data.allowance && !showHome && !phone && <AllowanceMeter bucket={data.allowance} />}
         {!phone && <TeamLabel name={data.teamName} />}
       </div>
-      <div className={'ch-ask-body' + (!phone && chatsShown ? ' has-panel' : '') + (!phone && evidenceOpen ? ' has-evidence' : '')}>
+      {/* A player's Ask keeps no chats list (HM3), so on a desk its body has no chats column (`is-solo`). The coach's first
+          column, with nothing in it, held a player's whole conversation in 280px (owner's preview, 11 Nov 2026). */}
+      <div className={'ch-ask-body' + (!phone && player ? ' is-solo' : '') + (!phone && !player && chatsShown ? ' has-panel' : '') + (!phone && evidenceOpen ? ' has-evidence' : '')}>
         {!phone && !player && (
           <SectionBoundary surface="coachhelm.ask.history" label="Your chats" code="CH-13225">
             <HistoryPanel {...histProps} heading="CoachHelm" open={chatsShown} onHide={() => setPanelOpen(false)} />
@@ -429,13 +443,16 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
         <section className="ch-ask-main" aria-label="Conversation">
           {!phone && (
             <header className="ch-ask-head">
-              {!chatsShown && (
+              {/* A player has no chats to show, and New chat is their only way out of a thread, as on the phone. */}
+              {(player || !chatsShown) && (
                 <>
-                  <Tooltip>
-                    <button type="button" className="ch-ask-head__btn" aria-label="Show chats" onClick={showChats}>
-                      <Icon icon={PanelLeftOpen} size={19} />
-                    </button>
-                  </Tooltip>
+                  {!player && (
+                    <Tooltip>
+                      <button type="button" className="ch-ask-head__btn" aria-label="Show chats" onClick={showChats}>
+                        <Icon icon={PanelLeftOpen} size={19} />
+                      </button>
+                    </Tooltip>
+                  )}
                   <Tooltip>
                     <button type="button" className="ch-ask-head__btn is-accent" aria-label="New chat" onClick={newChat}>
                       <Icon icon={SquarePen} size={19} />
@@ -457,6 +474,9 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
           <div className={'ch-ask-scroll' + (showHome ? ' is-home' : !gone && !data.threadFailed ? ' is-thread' : '')}>
             {body}
             {player && out && <PlayerOut live={ranOutLive} from={data.firstName ? `${data.firstName} · ${data.teamName}` : data.teamName} />}
+            {/* On the new chat the line follows the question box in the page, so it is always a gap under it. Pinned under the
+                scrolling page, it sat on the box's edge, and a short window ran the box beneath it (G7, preview grading 12 Nov). */}
+            {showHome && !phone && <p className="ch-ask-foot is-home">CoachHelm reads {data.teamName} data only. Check the numbers before you act on them.</p>}
           </div>
           {docked && (
             <div className="ch-ask-dock">
@@ -466,7 +486,6 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
               )}
             </div>
           )}
-          {showHome && !phone && <p className="ch-ask-foot is-home">CoachHelm reads {data.teamName} data only. Check the numbers before you act on them.</p>}
         </section>
         {artifact && !phone && artifactView}
         {!phone && evidenceOpen && evidence && (
@@ -487,5 +506,6 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
         </>
       )}
     </main>
+    </MissCompassGate.Provider>
   );
 }

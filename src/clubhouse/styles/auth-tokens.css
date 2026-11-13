@@ -18,6 +18,8 @@
 
   /* The frame: the form leaving and the course filling it. */
   --ch-au-t-photo: 1000ms;
+  /* Desk: the panel sliding off and the course opening behind it, as long as the opening phase (OPENING_MS). */
+  --ch-au-t-open: 720ms;
   --ch-au-t-veil: 900ms;
   --ch-au-t-fade: 400ms;
   --ch-au-t-say: 600ms;
@@ -68,6 +70,7 @@
 @media (prefers-reduced-motion: reduce) {
   [data-ui='clubhouse'] {
     --ch-au-t-photo: 1ms;
+    --ch-au-t-open: 1ms;
     --ch-au-t-veil: 1ms;
     --ch-au-t-fade: 1ms;
     --ch-au-t-say: 1ms;
@@ -97,6 +100,7 @@
 }
 [data-ui='clubhouse'][data-motion='off'] {
   --ch-au-t-photo: 1ms;
+  --ch-au-t-open: 1ms;
   --ch-au-t-veil: 1ms;
   --ch-au-t-fade: 1ms;
   --ch-au-t-say: 1ms;

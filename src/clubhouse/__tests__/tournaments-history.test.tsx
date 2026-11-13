@@ -123,11 +123,65 @@ describe('History, phone', () => {
     // Every bar carries its event's full name, never the short one a column had room for, under its season's name.
     expect(Array.from(bars).map((b) => b.querySelector('.ch-tour-rev-bar__n')?.textContent)).toEqual(data.trend.map((t) => data.events.find((e) => e.id === t.eventId)!.name));
     expect(Array.from(c.querySelectorAll('.ch-tour-rev-bars__k')).map((k) => k.textContent)).toEqual([data.seasons[1]!.label, data.seasons[0]!.label]);
-    // Both filters are the card's full width.
-    expect(c.querySelectorAll('.ch-tour-rev-tools .ch-seg--block')).toHaveLength(2);
+    // G17: one filter, the card's full width (two stacked filters stood before any content).
+    expect(c.querySelectorAll('.ch-tour-rev-tools .ch-seg--block')).toHaveLength(1);
     expect(plain(c.querySelector('.ch-tour-rev-trend__note'))).toContain('Will graduated and Eli and Priya joined the lineup');
     // The ledger lives on Events on the phone.
     expect(c.querySelector('[role="table"]')).toBeNull();
+  });
+});
+
+/**
+ * G17 (12 Nov): on a phone, History stacked two filters (lineup mode, measured against) under the view switch before any
+ * content. Only three of their four pairs exist (returning players has no figure against the field), so the phone has one
+ * control of three; the desk keeps its two.
+ */
+describe('History, phone · one filter', () => {
+  const lens = (c: Element) => within(within(c as HTMLElement).getByRole('radiogroup', { name: 'What the trend shows' }));
+
+  it('offers the three views the trend has, and none of the desk’s two', () => {
+    const c = draw(data, search(), { phone: true });
+    expect(lens(c).getAllByRole('radio').map((r) => r.textContent)).toEqual(['Rating', 'Returning', 'The field']);
+    expect(within(c as HTMLElement).queryByRole('radiogroup', { name: 'Lineup mode' })).toBeNull();
+    expect(within(c as HTMLElement).queryByRole('radiogroup', { name: 'Measured against' })).toBeNull();
+  });
+
+  it('writes the same address the desk does for each', () => {
+    const c = draw(data, search(), { phone: true });
+    fireEvent.click(lens(c).getByRole('radio', { name: 'Returning' }));
+    expect(replace).toHaveBeenLastCalledWith('/golf/dashboard/tournaments/history?mode=matched', { scroll: false });
+    expect(plain(c.querySelector('.ch-tour-rev-trend__s'))).toContain('returning players only');
+    fireEvent.click(lens(c).getByRole('radio', { name: 'The field' }));
+    expect(replace).toHaveBeenLastCalledWith('/golf/dashboard/tournaments/history?adjust=field', { scroll: false });
+    expect(plain(c.querySelector('.ch-tour-rev-trend__t'))).toBe('Team scoring against the field');
+    fireEvent.click(lens(c).getByRole('radio', { name: 'Rating' }));
+    expect(replace).toHaveBeenLastCalledWith('/golf/dashboard/tournaments/history', { scroll: false });
+  });
+
+  it.each([
+    [{ mode: 'actual', adjust: 'raw' }, 'Rating'],
+    [{ mode: 'matched', adjust: 'raw' }, 'Returning'],
+    [{ mode: 'actual', adjust: 'field' }, 'The field'],
+    [{ mode: 'matched', adjust: 'field' }, 'The field'],
+  ] as const)('reads %o from the address as %s', (s, on) => {
+    const c = draw(data, search(s), { phone: true });
+    expect(lens(c).getByRole('radio', { name: on })).toBeChecked();
+  });
+
+  it('the desk keeps both filters', () => {
+    const c = draw(data, search());
+    expect(within(c as HTMLElement).getByRole('radiogroup', { name: 'Lineup mode' })).toBeInTheDocument();
+    expect(within(c as HTMLElement).getByRole('radiogroup', { name: 'Measured against' })).toBeInTheDocument();
+  });
+
+  // The "+" tile: History's empty state drew the action's own glyph, where the Events view beside it draws what will be
+  // there (a trophy). Same page, one switch: the same idiom.
+  it('the empty state draws what will be there, as Events does, not a plus', () => {
+    const c = draw(tourFixture('empty').history, search(), { phone: true });
+    const empty = c.querySelector('[data-ch-code="CH-16340"]');
+    expect(empty?.querySelector('svg.lucide-trophy')).not.toBeNull();
+    // The only plus left is Add event's own.
+    expect(Array.from(empty?.querySelectorAll('svg.lucide-plus') ?? []).every((svg) => svg.closest('.ch-btn'))).toBe(true);
   });
 });
 

@@ -88,7 +88,7 @@ function useOpenRound(r: ChTeamRound) {
 function TeeCell({ r }: { r: ChTeamRound }) {
   return (
     <span className="ch-trd-meta__tee">
-      <TeeSwatch color={r.teeColor} />
+      <TeeSwatch color={r.teeColor} slot />
       <span className="ch-trd-meta__teen">{r.tee ?? `${r.holes} holes`}</span>
     </span>
   );
@@ -176,9 +176,11 @@ function TeamRoundTableRow({ r, by }: { r: ChTeamRound; by: Group }) {
       <span role="cell" className="ch-trd-td--course">
         {by === 'month' ? r.course : opener}
       </span>
+      {/* W32: under the Tees header a round with no tee recorded reads "—", not its length ("18 holes" is not a tee);
+          a nine-hole round keeps its "9 holes" chip either way. */}
       <span role="cell" className="ch-trd-td--tee">
-        <TeeCell r={r} />
-        {r.tee && r.holes === 9 && <span className="ch-rd-pill is-nine">9 holes</span>}
+        {r.tee ? <TeeCell r={r} /> : <NoData />}
+        {r.holes === 9 && <span className="ch-rd-pill is-nine">9 holes</span>}
       </span>
       <span role="cell" className="ch-trd-td--type">
         {r.type ? <TypePill type={r.type} /> : <NoData />}
@@ -295,7 +297,10 @@ export function TeamRounds({ data: fresh, teamId, live, liveNow }: { data: ChTea
           { label: 'Rounds', value: s.rounds ? s.rounds : <NoData />, note: s.players ? note(`${plural(s.players, 'player')}${s.practice && !phone ? ` · ${s.practice} practice` : ''}`) : undefined },
           { label: 'Average', value: s.avg == null ? <NoData /> : formatFixed(s.avg, 1), note: s.avg == null ? undefined : note(!s.practice ? '18 holes' : phone ? 'no practice' : '18 holes, no practice') },
           { label: 'Under par', value: s.scored ? s.underPar : <NoData />, tone: s.underPar ? 'under' : undefined, note: s.scored ? note(`of ${s.scored}`) : undefined },
-          { label: 'Low round', value: best ? best.score : <NoData />, note: best ? note(`${best.player.split(' ')[0]} · ${best.toPar == null ? shortDay(best.date) : formatToPar(best.toPar)}`) : undefined },
+          // W30: the low round leaves practice out, as the average does, and says so where there is practice to leave out
+          // ("Low round 70, Cole −2" sat over a 68 practice round). The phone's quarter holds the name and score only; its
+          // average caption already reads "no practice".
+          { label: 'Low round', value: best ? best.score : <NoData />, note: best ? note(`${best.player.split(' ')[0]} · ${best.toPar == null ? shortDay(best.date) : formatToPar(best.toPar)}${s.practice && !phone ? ' · no practice' : ''}`) : undefined },
         ]}
       />
     </SectionBoundary>

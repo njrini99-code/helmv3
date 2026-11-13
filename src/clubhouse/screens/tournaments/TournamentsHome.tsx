@@ -116,7 +116,7 @@ function HomeReady({ data, phone, live }: { data: ChTourHomeData; phone: boolean
         <InlineNotice code="CH-16210" title="The events didn’t load" body="Nothing has changed. Try again." onRetry={refresh} retrying={refreshing} />
       ) : empty ? (
         <>
-          <FirstRun untracked={untracked.length} newEvent={paths.newEvent()} />
+          <FirstRun untracked={untracked} newEvent={paths.newEvent()} />
           {setUp}
         </>
       ) : (
@@ -250,11 +250,38 @@ function OtherEvents({ events, data, madeToday, arrived, phone = false }: { even
   );
 }
 
+/** The calendar editor on an untracked tournament's first day with Track on (P-5 4.11.3). */
+const setUpHref = (g: ChTourSetupGroup) => `/golf/dashboard/calendar?event=${g.eventIds[0]}&setup=1`;
+
 /**
  * P-5 4.11.1 (CH-16352): the first run. The season starts on the calendar: Add a tournament opens the calendar editor
- * on Tournament; the secondary plans from here, or, when the calendar already has untracked tournaments, points at them.
+ * on Tournament; the secondary plans from here. W38 (preview walk, 11 Nov): when the calendar already holds untracked
+ * tournaments the page leads with them ("2 tournaments on your calendar to set up"), and W36: its primary opens the first
+ * one's setup, where "Set up from calendar (2)" only jumped to the list already on screen.
  */
-function FirstRun({ untracked, newEvent }: { untracked: number; newEvent: string }) {
+function FirstRun({ untracked, newEvent }: { untracked: ChTourSetupGroup[]; newEvent: string }) {
+  const first = untracked[0];
+  if (first) {
+    return (
+      <EmptyState
+        size="page"
+        code="CH-16352"
+        icon={Trophy}
+        title={`${plural(untracked.length, 'tournament')} on your calendar to set up`}
+        body="Set one up and it shows here with its rounds, lineup and results."
+        action={
+          <>
+            <Button variant="primary" href={setUpHref(first)}>
+              {`Set up ${first.title}`}
+            </Button>
+            <Button variant="ghost" leftIcon={CalendarPlus} href="/golf/dashboard/calendar?new=1&type=tournament">
+              Add a tournament
+            </Button>
+          </>
+        }
+      />
+    );
+  }
   return (
     <EmptyState
       size="page"
@@ -267,15 +294,9 @@ function FirstRun({ untracked, newEvent }: { untracked: number; newEvent: string
           <Button variant="primary" leftIcon={CalendarPlus} href="/golf/dashboard/calendar?new=1&type=tournament">
             Add a tournament
           </Button>
-          {untracked > 0 ? (
-            <Button variant="ghost" href="#ch-tour-home-setup-t">
-              {`Set up from calendar (${untracked})`}
-            </Button>
-          ) : (
-            <Button variant="ghost" href={newEvent}>
-              Plan from here instead
-            </Button>
-          )}
+          <Button variant="ghost" href={newEvent}>
+            Plan from here instead
+          </Button>
         </>
       }
     />
@@ -302,7 +323,7 @@ function SetUpFromCalendar({ groups, failed, onRetry, retrying }: { groups: ChTo
           {groups.map((g) => (
             <LedgerRow
               key={g.eventIds[0]}
-              href={`/golf/dashboard/calendar?event=${g.eventIds[0]}&setup=1`}
+              href={setUpHref(g)}
               lead={
                 <span className="ch-tour-home-setup__plate" aria-hidden="true">
                   <Icon icon={Trophy} size={16} />

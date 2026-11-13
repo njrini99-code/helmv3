@@ -158,6 +158,13 @@ describe('choosing a password', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('That password is too easy to guess. Try a longer one.');
     expect(screen.getByRole('alert')).toHaveAttribute('data-ch-code', 'CH-15030');
     expect(newPw()).toHaveFocus();
+    // Said under the new password it is about, before Confirm; tied to that field, and Confirm stays clean.
+    const alert = screen.getByRole('alert');
+    expect(newPw().compareDocumentPosition(alert) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(alert.compareDocumentPosition(confirmPw()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(newPw().getAttribute('aria-describedby')).toContain(alert.id);
+    expect(confirmPw()).not.toHaveAttribute('aria-describedby');
+    expect(confirmPw()).not.toHaveAttribute('aria-invalid', 'true');
     expect(hapticSpy).toHaveBeenCalledWith('error');
   });
 

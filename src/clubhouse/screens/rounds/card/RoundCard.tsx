@@ -319,7 +319,8 @@ export function RoundCard({ review: r, phone, just, settle }: { review: ChRoundR
   return (
     <section id="ch-rcard" className="ch-rcard-wrap ch-rprint-keep" aria-label="Scorecard to keep" data-ch-code="CH-11920">
       <article className={'ch-rcard' + (settle ? ' is-just' : '') + (phone ? ' is-phone' : '')} aria-labelledby="ch-rcard-h">
-        {/* On the page the hero above already names the round, so the card's head is quiet: its name, its tees and its total. */}
+        {/* On the page the hero above already names the round and says its score, so the card's head is quiet: its name and
+            its tees (W47: the total was the score's second telling; the Total column still carries it, and paper its own head). */}
         <div className="ch-rcard-h">
           <div className="ch-rcard-h__l">
             <h2 id="ch-rcard-h">Scorecard</h2>
@@ -337,10 +338,6 @@ export function RoundCard({ review: r, phone, just, settle }: { review: ChRoundR
                   ))}
               </span>
             </span>
-          </div>
-          <div className="ch-rcard-h__s">
-            <b className="ch-num">{figure(m.total.score)}</b>
-            <em className={'ch-num' + tone}>{formatToPar(m.total.toPar)}</em>
           </div>
         </div>
         {/* On paper the card stands alone: the full head (the course, the date, the player, the score) is drawn from data-t

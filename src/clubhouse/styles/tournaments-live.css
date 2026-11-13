@@ -151,6 +151,72 @@
   min-height: 44px;
 }
 
+/* G16, phone: the head's keys in one row, a quiet Suspend play at its own width beside the one primary, which takes the
+   rest (two full-width keys stacked were the loudest thing on the screen). */
+.ch-tour-live.is-phone .ch-tour-head__a .ch-tour-live-acts {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ch-tour-live.is-phone .ch-tour-head__a .ch-tour-live-acts .ch-btn {
+  width: auto;
+}
+.ch-tour-live.is-phone .ch-tour-head__a .ch-tour-live-acts .ch-btn:not(.ch-btn--ghost) {
+  flex: 1 1 auto;
+}
+
+/* G16, phone: an editable lane is one row that opens its score, as a list row opens its detail (the player's event rows):
+   the name and the score on the first line, the chip under the name, a chevron at the end, the pressed wash on touch.
+   Scoring by hole is offered inside the score sheet, so the row carries no keys. */
+.ch-tour-live.is-phone .ch-tour-live-lanes {
+  overflow: hidden;
+}
+.ch-tour-live.is-phone .ch-tour-live-lane.is-tap {
+  display: block;
+  padding: 0;
+}
+.ch-tour-live-lane__tap {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 16px;
+  grid-template-areas:
+    'who v go'
+    'chips chips go';
+  align-items: center;
+  gap: 8px 12px;
+  width: 100%;
+  min-height: 64px;
+  padding: 12px;
+  border: 0;
+  background: none;
+  font: var(--ch-type-14);
+  color: inherit;
+  text-align: start;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.ch-tour-live-lane__tap[data-ch-pressed] {
+  background: var(--ch-press-well);
+}
+@media (hover: hover) {
+  .ch-tour-live-lane__tap:active {
+    background: var(--ch-press-well);
+  }
+}
+.ch-tour-live-lane__tap:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: -2px;
+}
+.ch-tour-live-lane__tap .ch-tour-live-lane__chips:empty {
+  display: none;
+}
+.ch-tour-live-lane__go {
+  grid-area: go;
+  color: var(--ch-text-secondary);
+}
+.ch-tour-live-sheet__holes {
+  align-self: flex-start;
+}
+
 /* The field: place, team, to par. The to par sits in the lanes' score column, right-aligned and tabular. */
 .ch-tour-live-field__row {
   display: grid;

@@ -402,16 +402,15 @@
   color: var(--ch-chart-loss);
 }
 /* The coach's card figures, drawn: the player's place on the team's scoring strip and a strokes-gained bar from zero. */
+/* W25: the figures sit on the card itself, under a hairline, not in a beige well with its own shadow inside the card. */
 .ch-rs-figs {
   display: flex;
   flex-direction: column;
   gap: 8px;
   align-self: stretch;
   margin-top: 6px;
-  padding: 12px 12px 8px;
-  border-radius: var(--ch-radius-lg);
-  background: var(--ch-well-soft-bg);
-  box-shadow: var(--ch-well-soft-shadow);
+  padding: 12px 0 0;
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
   text-align: left;
 }
 .ch-rs-fig {
@@ -440,6 +439,13 @@
 }
 .ch-rs-fig > b.is-loss {
   color: var(--ch-chart-loss);
+}
+/* W25: "a round" after the SG figure, in the caption's size and ink. */
+.ch-rs-fig__u {
+  margin-left: 4px;
+  font: var(--ch-type-12-medium);
+  letter-spacing: 0;
+  color: var(--ch-text-tertiary);
 }
 .ch-rs-fig__m {
   grid-area: m;
@@ -3694,6 +3700,48 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
 }
 :is(.ch-rs, .ch-rsm)[data-ch-crh='on'] [data-year='fr'] {
   --ch-rs-y: var(--ch-yr-fr);
+}
+/* G4 (preview grade): red reads as a warning (D-42 keeps red for under par, the pin flag and destructive acts), so inside
+   Roster the Freshmen tone is a muted violet; the bar, legend, avatars and year chips here move together. The shared
+   --ch-yr-fr token, read by other screens, is left as it is. The tone is mixed from the year tokens (Juniors' blue with the
+   shared Freshmen tone): no raw colour, and the dark theme follows on its own (about #625b66 light, #6b6675 dark; white on it
+   6.1:1 and 5.5:1). It is mixed once on Roster's root, where --ch-yr-fr is still the shared one, and handed down. */
+:is(.ch-rs, .ch-rsm) {
+  --ch-rs-fr: color-mix(in srgb, var(--ch-yr-jr) 60%, var(--ch-yr-fr));
+}
+:is(.ch-rs, .ch-rsm) * {
+  --ch-yr-fr: var(--ch-rs-fr);
+}
+/* W23: players with no class year: a quiet segment in the legend's own ink at 45%, so the split adds up to the roster. */
+/* W24: the leaders' rule, once under the row; on desktop the row is part of the top grid, so the line spans it. */
+[data-ch-crh='on'] .ch-rs-ldrs__rule {
+  grid-column: 1 / -1;
+  margin: 0;
+  font: var(--ch-type-13);
+  color: var(--ch-text-tertiary);
+}
+@media print {
+  [data-ch-crh='on'] .ch-rs-ldrs__rule {
+    display: none;
+  }
+}
+/* C5 (12 Nov): on a wide desk the top grid flows by column with one named track, the season card's. The rule's `1 / -1`
+   ends at that track, so the line took the card's 320px and the card fell into a 200px track and spilled past its edge
+   (its class bar, Freshmen, Top five). The cards keep the first row; the line sits in the second, under the leaders,
+   as wide as its words. */
+@media (min-width: 1193px) and ((min-height: 501px) or (pointer: fine)) {
+  [data-ch-crh='on'].ch-rsd .ch-rs-top > .ch-rs-tcard,
+  [data-ch-crh='on'].ch-rsd .ch-rs-top .ch-rs-ldr {
+    grid-row: 1;
+  }
+  [data-ch-crh='on'].ch-rsd .ch-rs-top > .ch-rs-ldrs__rule {
+    grid-row: 2;
+    grid-column: 2;
+    width: max-content;
+  }
+}
+:is(.ch-rs, .ch-rsm)[data-ch-crh='on'] [data-year='none'] {
+  --ch-rs-y: color-mix(in srgb, var(--ch-on-green-2) 45%, transparent);
 }
 
 /* The lane's desktop table and player in waiting (RosterSkeleton). */

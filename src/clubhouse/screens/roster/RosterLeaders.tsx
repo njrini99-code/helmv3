@@ -6,7 +6,7 @@ import { Avatar } from '../../ui/Avatar';
 import { Icon } from '../../ui/Icon';
 import { formatFixed, formatSigned } from '../../lib/format';
 import { FormBars } from '../../ui/FormLine';
-import { leaderPicks, yearKeyOf, type RosterClock, type RosterLeader } from './format';
+import { leaderPicks, ROSTER_EARLY_FLOOR, yearKeyOf, type RosterClock, type RosterLeader } from './format';
 
 const KIND: Record<RosterLeader['kind'], { label: string; icon: LucideIcon; unit: string | null }> = {
   low: { label: 'Low average', icon: Trophy, unit: null },
@@ -21,7 +21,10 @@ const KIND: Record<RosterLeader['kind'], { label: string; icon: LucideIcon; unit
 export function RosterLeaders({ players, statsError, clock, onOpen }: { players: ChRosterPlayer[]; statsError: boolean; clock: RosterClock; onOpen: (id: string) => void }) {
   const picks = leaderPicks(players, statsError);
   if (picks.length === 0) return null;
+  // W24: the cards count only active players with three counting rounds, so a player with a lower average and fewer rounds
+  // is not "Low average". The row says its rule once, under it.
   return (
+    <>
     <div className="ch-rs-ldrs">
       {picks.map(({ kind, player: p, value }) => {
         const k = KIND[kind];
@@ -50,5 +53,7 @@ export function RosterLeaders({ players, statsError, clock, onOpen }: { players:
         );
       })}
     </div>
+    <p className="ch-rs-ldrs__rule">Leaders count active players with {ROSTER_EARLY_FLOOR}+ counting rounds.</p>
+    </>
   );
 }

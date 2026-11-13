@@ -190,3 +190,9 @@ describe('find_in_app', () => {
     expect(def.description).not.toMatch(/\d{4}-\d{2}-\d{2}/);
   });
 });
+
+describe('a dashboard request finds the Team board (preview, 12 Nov)', () => {
+  it.each(['build me a dashboard showcasing my teams trends this season', 'my team trends this season', 'team dashboard'])('%s', (q) => {
+    expect(searchPlaces('coach', q)[0]?.place.id).toBe('coachhelm_board');
+  });
+});

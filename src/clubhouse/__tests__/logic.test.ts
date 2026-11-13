@@ -333,7 +333,12 @@ describe('home model', () => {
     // An early read alone is never called on track.
     expect(H.homeSubline([rows[3]!], { roundsError: false, nextCompetition: null })).toBeNull();
     const many = rows.map((r) => ({ ...r, status: 'slipping' as const }));
-    expect(H.homeSubline(many, { roundsError: false, nextCompetition: null })).toBe('4 players need a look: Theo, Jonah, Eli and Priya.');
+    // W5: three or more are ranked and capped, never a roll call: the two who need it most, then a count of the rest.
+    expect(H.homeSubline(many, { roundsError: false, nextCompetition: null })).toBe('Eli is slipping and hasn’t posted a round in 9 days and Jonah is slipping. 2 more are slipping.');
+    const quiet = ['Cole Bennett', 'Mason Diaz', 'Owen Park', 'Ethan Cho'].map((name, i) => ({ name, status: 'steady' as const, quietDays: 15 + i * 5 }));
+    expect(H.homeSubline([...quiet, rows[0]!], { roundsError: false, nextCompetition: null })).toBe('4 players haven’t posted a round in 15+ days, Ethan the longest at 30. The rest of the team is on track.');
+    const mixed = [{ ...quiet[0]!, status: 'slipping' as const }, ...quiet.slice(1)];
+    expect(H.homeSubline(mixed, { roundsError: false, nextCompetition: null })).toBe('Cole is slipping and hasn’t posted a round in 15 days and Ethan hasn’t posted a round in 30 days. 2 others haven’t posted a round in 20+ days.');
   });
   it('never calls the team on track while an active player has no 18-hole round this season (A2)', () => {
     const on: H.ChSublineRow = { name: 'Theo Marchetti', status: 'improving', quietDays: 2 };

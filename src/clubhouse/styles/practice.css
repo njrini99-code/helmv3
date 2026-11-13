@@ -319,12 +319,6 @@ span.ch-prc-tile__it {
   justify-items: start;
   padding: 8px 0 12px;
 }
-.ch-prc-first__a p {
-  margin: 0;
-  font: var(--ch-type-14);
-  letter-spacing: var(--ch-track-14);
-  color: var(--ch-text-secondary);
-}
 
 /* Plans, and every list of rows. */
 .ch-prc-rows,
@@ -429,7 +423,21 @@ span.ch-prc-tile__it {
   letter-spacing: var(--ch-track-13);
   color: var(--ch-text-secondary);
 }
-.ch-prc-new__none {
+/* A new practice (Q7): the day takes its own line, the times share the one under it, and the place the last. */
+.ch-prc-when {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 8px;
+}
+.ch-prc-when__day,
+.ch-prc-when__wide {
+  grid-column: 1 / -1;
+}
+.ch-prc-when .ch-field__help {
+  margin: 0;
+}
+/* Once it is on the calendar its day and time are a line: a plan that failed after it is planned on it, not on a second one. */
+.ch-prc-new__made {
   margin: 0;
   font: var(--ch-type-14);
   letter-spacing: var(--ch-track-14);
@@ -1865,6 +1873,13 @@ main.ch-prc-planpage > .ch-backlink {
     flex-basis: 100%;
   }
   /* The areas are one row that scrolls sideways, out to the screen's edges; the clipped edge fades (.ch-hscroll) and the chosen area is kept whole. */
+  /* G13: the row bleeds to the screen's edges, so the fade runs over its side padding too (28 + 16); at the plain 28px most
+     of it fell on the padding and an area was cut at the edge nearly at full ink ("Approac…"). A plain length, not calc():
+     useKeepInView reads the number (parseFloat) to keep the chosen area clear of it. Two classes, so it wins over
+     ui.css's .ch-hscroll phone fade whichever sheet loads last. */
+  .ch-hscroll.ch-prc-areas {
+    --ch-hs-fade: 44px;
+  }
   .ch-prc-areas {
     flex-wrap: nowrap;
     margin: 0 calc(-1 * var(--ch-page-x-phone));
@@ -1912,6 +1927,9 @@ main.ch-prc-planpage > .ch-backlink {
     margin: 0 -20px;
     padding: 2px 20px;
     scroll-padding-inline: 20px;
+  }
+  .ch-hscroll.ch-prc-areas {
+    --ch-hs-fade: 48px;
   }
   .ch-prc-areas {
     margin: 0 -20px;

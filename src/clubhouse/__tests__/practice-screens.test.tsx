@@ -11,12 +11,14 @@ const push = vi.fn();
 vi.mock('@/app/golf/actions/practice-plans', () => ({ savePracticePlan: (...a: unknown[]) => save(...a), deletePracticePlan: (...a: unknown[]) => del(...a), copyPlanBody: (...a: unknown[]) => copy(...a), recordPracticePlanOpen: vi.fn() }));
 vi.mock('@/app/golf/actions/coachhelm-practice-plans', () => ({ savePracticePlanDraft: (...a: unknown[]) => saveDraft(...a), undoPracticePlanDraft: vi.fn(), listPlanFolders: async () => ({ folders: [] }) }));
 vi.mock('@/app/golf/actions/practice-publish', () => ({ publishPracticePlan: (...a: unknown[]) => publish(...a) }));
+vi.mock('@/app/golf/actions/calendar-events', () => ({ createGolfEvent: vi.fn() }));
 vi.mock('@/app/golf/actions/practice-library', () => ({ createTeamDrill: vi.fn() }));
 vi.mock('@/components/golf/coachhelm/chat/useCoachHelmChat', () => ({ useCoachHelmChat: () => ({ messages: [], busy: false, error: undefined, send: vi.fn() }) }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push, refresh: vi.fn(), replace: vi.fn(), back: vi.fn() }), usePathname: () => '/golf/dashboard/practice', useSearchParams: () => new URLSearchParams() }));
 vi.mock('../lib/haptics', () => ({ haptic: vi.fn() }));
 vi.mock('../lib/track', () => ({ chReport: vi.fn(), chTrail: vi.fn(), chTagSession: vi.fn() }));
-vi.mock('../lib/use-phone', () => ({ useChPhone: () => false, CH_PHONE_QUERY: '(max-width: 820px)' }));
+const device = vi.hoisted(() => ({ phone: false }));
+vi.mock('../lib/use-phone', () => ({ useChPhone: () => device.phone, CH_PHONE_QUERY: '(max-width: 820px)' }));
 
 import { emptyBody, makeBlock, addBlock } from '../screens/practice/builder/builder-model';
 import { Builder, type BuilderPreview } from '../screens/practice/builder/Builder';
@@ -94,7 +96,9 @@ describe('Practice in the nav', () => {
   });
 });
 
-const HOME: ChPracticeHome = { teamName: 'Demo', week: [], weekLine: null, upNext: null, drafts: [], published: [], past: [], open: [], copies: [], roster: [], firstRun: true };
+const HOME: ChPracticeHome = { teamName: 'Demo', week: [], weekLine: null, upNext: null, drafts: [], published: [], past: [], open: [], copies: [], roster: [], firstRun: true, zone: 'America/New_York' };
+/** The page's primary keys: the one thing each state asks the coach to do. */
+const primaries = (c: HTMLElement) => [...c.querySelectorAll('.ch-btn--primary')].map((b) => b.textContent?.trim());
 
 describe('the landing', () => {
   it('CH-13396 first run: one card, no empty headers, New plan on the page', () => {
@@ -103,14 +107,70 @@ describe('the landing', () => {
     expect(screen.queryByText('Drafts')).toBeNull();
     expect(screen.getAllByRole('button', { name: /New plan/ }).length).toBeGreaterThan(0);
   });
-  it('CH-13396 a coach with plans and no practice coming is told what to do about it, and the plans still list', () => {
-    render(<PracticeHome data={{ ...HOME, firstRun: false, past: [{ id: 'a', day: 'Tue', title: 'Old', time: '3:00', line: '', state: 'Done', href: '/x' }] }} />);
-    // The week's tiles say "No practice" day by day: the words under them don't say it again.
-    expect(screen.getByText('Add a practice on the calendar')).toBeTruthy();
-    expect(screen.getByText('Then plan it here.')).toBeTruthy();
+  it('CH-13396 a coach with plans and no practice coming is told what to do about it, and the plans still list', async () => {
+    const { container } = render(<PracticeHome data={{ ...HOME, firstRun: false, past: [{ id: 'a', day: 'Tue', title: 'Old', time: '3:00', line: '', state: 'Done', href: '/x' }] }} />);
+    // W13, W52 (owner's preview, 11 Nov 2026): New plan was the page's primary and led to a sheet that could create nothing.
+    // Q7 (owner, 12 Nov): New plan makes the practice itself. So there is one way in, New plan, the page's one primary; the
+    // empty state's own key is New plan too, and the calendar is a quiet link, never a second primary.
+    expect(screen.getByText('No practice on the calendar in the next two weeks')).toBeTruthy();
+    expect(screen.getByText('New plan puts one on the calendar and plans it.')).toBeTruthy();
     expect(screen.queryByText(/No practices? this week/)).toBeNull();
-    expect(screen.getByRole('link', { name: 'Go to Calendar' }).getAttribute('href')).toBe('/golf/dashboard/calendar');
+    expect(screen.queryByRole('link', { name: 'Add a practice' })).toBeNull();
+    expect(primaries(container)).toEqual(['New plan']);
+    const calendar = screen.getByRole('link', { name: 'Open the calendar' });
+    expect(calendar.getAttribute('href')).toBe('/golf/dashboard/calendar');
+    expect(calendar.className).toMatch(/ghost/);
+    const empty = container.querySelector('[data-ch-code="CH-13396"]') as HTMLElement;
+    const own = within(empty).getByRole('button', { name: /New plan/ });
+    expect(own.className).not.toMatch(/primary/);
     expect(screen.getByRole('button', { name: /Past plans \(1\)/ })).toBeTruthy();
+    // And it leads somewhere: the sheet asks when, rather than a Create that can do nothing.
+    fireEvent.click(own);
+    expect(screen.getByRole('group', { name: 'When', hidden: true })).toBeTruthy();
+    expect((screen.getByRole('button', { name: 'Build plan', hidden: true }) as HTMLButtonElement).disabled).toBe(false);
+  });
+  it('New plan is the one primary in every state the coach’s page has', () => {
+    const open = [{ id: 'e', label: 'Thursday, Nov 5', detail: '2:00 to 5:00 PM', title: 'Practice', place: '', allDay: false }];
+    const up = { title: 'Thursday practice', when: 'Thu, Nov 5', rows: [], planHref: null, editHref: null, eventId: 'e' };
+    const states: Array<[string, ChPracticeHome]> = [
+      ['first run, a practice to plan', { ...HOME, open }],
+      ['first run, nothing on the calendar', HOME],
+      ['nothing coming', { ...HOME, firstRun: false }],
+      ['up next without a plan', { ...HOME, firstRun: false, open, upNext: up }],
+      ['up next, a draft', { ...HOME, firstRun: false, upNext: { ...up, state: 'Draft', editHref: '/e', eventId: null } }],
+      ['up next, published', { ...HOME, firstRun: false, upNext: { ...up, state: 'Published', planHref: '/p', editHref: '/e', eventId: null } }],
+    ];
+    for (const [name, d] of states) {
+      const { container, unmount } = render(<PracticeHome data={d} />);
+      expect(primaries(container), name).toEqual(['New plan']);
+      unmount();
+    }
+    // On a phone New plan is the bar's plus (PhoneTop portals it into the shell's bar, which this harness has none of), and
+    // nothing in the page is a primary beside it.
+    device.phone = true;
+    try {
+      for (const [name, d] of states) {
+        const { unmount } = render(<PracticeHome data={d} />);
+        expect(primaries(document.body), `phone: ${name}`).toEqual([]);
+        unmount();
+      }
+    } finally {
+      device.phone = false;
+    }
+  });
+  it('W15 a day with no practice is a quiet dash that still says so to a reader', () => {
+    const week = [
+      { key: 'mon', day: 'Mon', date: '2', today: false, items: [] },
+      { key: 'tue', day: 'Tue', date: '3', today: true, items: [{ time: '3:00 PM', state: 'Done' as const, href: '/golf/dashboard/practice/p1', eventId: null }] },
+    ];
+    const { container } = render(<PracticeHome data={{ ...HOME, firstRun: false, week }} />);
+    expect(container.querySelectorAll('.ch-prc-tile__none')).toHaveLength(1);
+    const none = [...container.querySelectorAll('.ch-prc-tile__none')];
+    expect(none.length).toBeGreaterThan(0);
+    for (const n of none) {
+      expect(n.querySelector('[aria-hidden="true"]')!.textContent).toBe('–');
+      expect(n.querySelector('.ch-sr-only')!.textContent).toBe('No practice');
+    }
   });
   it('CH-13397 a player with nothing published is told so, with no New plan', () => {
     render(<PlayerPracticeHome data={{ next: null, week: [], upcoming: [], past: [] }} />);
@@ -124,7 +184,7 @@ describe('New plan (CH-13395)', () => {
     { id: 'e1', label: 'Thursday, Nov 5', detail: '2:00 to 5:00 PM · Lakeside', title: 'Thursday practice', place: 'Lakeside', allDay: false },
     { id: 'e2', label: 'Monday, Nov 9', detail: 'All day', title: 'Monday practice', place: '', allDay: true },
   ];
-  const sheet = () => render(<NewPlanSheet open onClose={vi.fn()} events={events} copies={[]} roster={ROSTER.map((r) => r.id)} />);
+  const sheet = () => render(<NewPlanSheet open onClose={vi.fn()} events={events} copies={[]} roster={ROSTER.map((r) => r.id)} zone="America/New_York" />);
 
   it('CH-13181 an all-day practice is listed and can’t be picked', () => {
     sheet();

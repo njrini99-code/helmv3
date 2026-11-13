@@ -113,11 +113,11 @@ export function ScoreFlow({
   const [focused, setFocused] = useState(false);
   // The card keeps the last hole it read while it fades out, so it never empties before it is gone.
   const [last, setLast] = useState<number | null>(null);
+  const [svgRef, fs] = useLabelSize(12);
   const pts = flow(holes);
   if (pts.length < 2) return <p className="ch-znmiss">The running score needs two holes with scores.</p>;
   const n = Math.max(...holes.map((h) => h.n));
   const W = 720;
-  const X0 = 52;
   const X1 = 690;
   // The plot runs from just under the best the round got to just over its worst, always with par inside it; up is better.
   const ghostVals = ghost ? ghost.cum.slice(0, n) : [];
@@ -125,20 +125,18 @@ export function ScoreFlow({
   const hi = Math.ceil(Math.max(0, ...pts.map((p) => p.cum), ...ghostVals)) + 1;
   const TOP = 44;
   const H = 150;
+  const stepBy = hi - lo > 8 ? 2 : 1;
+  const ticks: number[] = [];
+  for (let v = Math.ceil(lo / stepBy) * stepBy; v <= hi; v += stepBy) ticks.push(v);
+  const label = (v: number) => (v === 0 ? 'E' : v > 0 ? `+${v}` : `−${Math.abs(v)}`);
+  const { x0: X0, tickGap, alt: tickAlt } = flowAxis({ fs, ticks, label, spacing: (H / (hi - lo)) * stepBy, stepBy });
   const { x, y, split } = flowGeometry({ x0: X0, x1: X1, top: TOP, height: H, holes: n, lo, hi });
   const Y0 = y(0);
   const line = pts.map((p) => `${x(p.n)},${y(p.cum)}`).join(' ');
   const area = `${x(pts[0]!.n)},${Y0} ${line} ${x(pts[pts.length - 1]!.n)},${Y0}`;
-  const stepBy = hi - lo > 8 ? 2 : 1;
-  const ticks: number[] = [];
-  for (let v = Math.ceil(lo / stepBy) * stepBy; v <= hi; v += stepBy) ticks.push(v);
-  // On a phone the words are drawn larger (rounds.css, `chrz`), so where they would touch every other tick and hole
-  // number gives way (`ch-rzsvg__alt`); par and the odd holes always stay.
-  const tickAlt = (v: number) => (H / (hi - lo)) * stepBy < 36 && (v / stepBy) % 2 !== 0;
   const worst = costliest(holes, 1)[0];
   const colBase = TOP + H + 44;
   const height = colBase + 52;
-  const label = (v: number) => (v === 0 ? 'E' : v > 0 ? `+${v}` : `−${Math.abs(v)}`);
   const active = hover ?? (focused ? selected : null);
   const cur = active == null ? null : (pts.find((p) => p.n === active) ?? null);
   const shown = pts.find((p) => p.n === (active ?? last)) ?? null;
@@ -176,6 +174,7 @@ export function ScoreFlow({
   return (
     <div className="ch-rzstage">
       <svg
+        ref={svgRef}
         className="ch-rzsvg"
         viewBox={`0 0 ${W} ${height}`}
         role="slider"
@@ -229,7 +228,7 @@ export function ScoreFlow({
         {ticks.map((v) => (
           <g key={v}>
             <line x1={X0 - 8} y1={y(v)} x2={X1 + 10} y2={y(v)} stroke={v === 0 ? 'var(--ch-stage-ink-soft)' : 'var(--ch-stage-rule)'} strokeWidth={v === 0 ? 1.5 : 1} />
-            <text className={tickAlt(v) ? 'ch-rzsvg__alt ch-num' : 'ch-num'} x={X0 - 14} y={y(v) + 4} textAnchor="end" fontSize={12} fontWeight={v === 0 ? 700 : 500} fill="var(--ch-stage-ink-soft)">
+            <text data-ch-label={v === 0 ? '' : undefined} className={tickAlt(v) ? 'ch-rzsvg__alt ch-num' : 'ch-num'} x={X0 - tickGap} y={y(v) + 4} textAnchor="end" fontSize={12} fontWeight={v === 0 ? 700 : 500} fill="var(--ch-stage-ink-soft)">
               {label(v)}
             </text>
           </g>
@@ -282,7 +281,9 @@ export function ScoreFlow({
             </g>
           ))}
         </g>
-        {worst && !cur && !worstInBand && <WorstLabel at={x(worst.n)} dotY={y(worst.cum)} n={worst.n} delta={worst.delta} x0={X0} x1={X1} foot={TOP + H + 10} />}
+        {worst && !cur && !worstInBand && (
+          <WorstLabel at={x(worst.n)} dotY={y(worst.cum)} n={worst.n} delta={worst.delta} x0={X0} x1={X1} foot={TOP + H + 10} fs={fs} pts={pts.map((p) => ({ x: x(p.n), y: y(p.cum) }))} />
+        )}
         <line x1={X0 - 8} y1={colBase} x2={X1 + 10} y2={colBase} stroke="var(--ch-stage-rule)" />
         {pts.map((p) => (
           <rect
@@ -326,16 +327,57 @@ export function ScoreFlow({
 }
 
 /**
- * The costliest hole's label, under its dot: centred on it, or set from it inward near either end so it never runs into
- * the score labels on the left or off the stage on the right; over the dot when the dot is at the foot of the plot.
+ * The running score's left axis at the size its words are drawn (`fs`, in the picture's units: 12 on a desk, 34 on a phone's
+ * narrow stage, rounds.css `chrz`). The score labels end `tickGap` short of hole 1 and the plot starts far enough in to hold
+ * the widest of them; where the rows would touch, every other tick gives way (`alt`, hidden by rounds.css on the phone).
+ * A desk's 12 keeps the old 52, 14 and 36. Phone premium sweep (12 Nov 2026): at 34 the labels ended 4px from hole 1's dot
+ * and their rows overlapped by a pixel.
  */
-function WorstLabel({ at, dotY, n, delta, x0, x1, foot }: { at: number; dotY: number; n: number; delta: number; x0: number; x1: number; foot: number }) {
+export function flowAxis({ fs, ticks, label, spacing, stepBy }: { fs: number; ticks: readonly number[]; label: (v: number) => string; spacing: number; stepBy: number }) {
+  const tickGap = Math.max(14, Math.ceil(fs * 0.75));
+  const widest = Math.max(1, ...ticks.map((v) => label(v).length)) * fs * 0.62;
+  const x0 = Math.max(52, Math.ceil(6 + widest + tickGap));
+  const crowded = spacing < Math.max(36, fs * 1.25);
+  return { x0, tickGap, alt: (v: number) => crowded && (v / stepBy) % 2 !== 0 };
+}
+
+/**
+ * Where the costliest hole's label goes, sized to its words: under its dot, else over it, whichever covers no dot and no
+ * stretch of the line (under when neither is clear and it fits above the foot); centred on the dot, or set from it inward
+ * near either end so it never runs into the score labels on the left or off the stage on the right. At a desk's 12 an
+ * unobstructed label sits where it always did (30 under, 16 over). Phone premium sweep (12 Nov 2026): at 34 "Hole 2: +1"
+ * ran through the dots of holes 3 and 4.
+ */
+export function worstPlace({ at, dotY, text, fs, pts, x0, x1, foot }: { at: number; dotY: number; text: string; fs: number; pts: readonly { x: number; y: number }[]; x0: number; x1: number; foot: number }): { x: number; y: number; anchor: 'start' | 'middle' | 'end' } {
+  const w = text.length * fs * 0.55;
   const anchor = at < x0 + 60 ? 'start' : at > x1 - 60 ? 'end' : 'middle';
   const lx = anchor === 'start' ? Math.max(x0 + 6, at - 10) : anchor === 'end' ? Math.min(x1 + 6, at + 10) : at;
-  const ly = dotY + 30 > foot ? dotY - 16 : dotY + 30;
+  const left = anchor === 'start' ? lx : anchor === 'end' ? lx - w : lx - w / 2;
+  const below = dotY + Math.max(30, Math.ceil(17 + 0.72 * fs));
+  const above = dotY - Math.max(16, Math.ceil(16 + 0.22 * fs) - 3);
+  const hits = (base: number) => {
+    const top = base - 0.72 * fs - 2;
+    const bottom = base + 0.22 * fs + 2;
+    const inBox = (px: number, py: number, r: number) => px + r > left && px - r < left + w && py + r > top && py - r < bottom;
+    if (pts.some((p) => inBox(p.x, p.y, 9))) return true;
+    for (let i = 1; i < pts.length; i++) {
+      const a = pts[i - 1]!;
+      const b = pts[i]!;
+      for (let s = 1; s < 8; s++) if (inBox(a.x + ((b.x - a.x) * s) / 8, a.y + ((b.y - a.y) * s) / 8, 2)) return true;
+    }
+    return false;
+  };
+  const fitsBelow = below <= foot;
+  const y = fitsBelow && !hits(below) ? below : !hits(above) ? above : fitsBelow ? below : above;
+  return { x: lx, y, anchor };
+}
+
+function WorstLabel({ at, dotY, n, delta, x0, x1, foot, fs, pts }: { at: number; dotY: number; n: number; delta: number; x0: number; x1: number; foot: number; fs: number; pts: readonly { x: number; y: number }[] }) {
+  const text = `Hole ${n}: ${formatSigned(delta, 0)}`;
+  const at2 = worstPlace({ at, dotY, text, fs, pts, x0, x1, foot });
   return (
-    <text x={lx} y={ly} textAnchor={anchor} fontSize={12} fontWeight={700} fill="var(--ch-stage-gold)">
-      Hole {n}: {formatSigned(delta, 0)}
+    <text x={at2.x} y={at2.y} textAnchor={at2.anchor} fontSize={12} fontWeight={700} fill="var(--ch-stage-gold)">
+      {text}
     </text>
   );
 }
@@ -469,6 +511,10 @@ export function ShotTrail({ hole }: { hole: ChReviewHole }) {
   // A label's width, estimated from its length at the size the stylesheet draws it (this face averages ~0.43em a character).
   const width = (text: string) => text.length * fs * 0.46;
   const GAP = fs * 0.6;
+  // The words' baseline: 30 under the line where they are small, and lower as they grow, so their capitals (about 0.72em)
+  // always clear the shot dots (r 9) by 3. On a phone the stylesheet sets them at 34 units, and at +30 the dotted line ran
+  // through "Tee · 518 yds" (phone premium sweep, 12 Nov 2026).
+  const labelY = base + Math.max(30, Math.ceil(12 + fs * 0.72));
   const teeText = hole.yards ? `Tee · ${hole.yards} yds` : 'Tee';
   const puttText = t.putts > 0 ? `${plural(t.putts, 'putt')}${t.firstPutt != null ? ` · from ${t.firstPutt} ft` : ''}` : null;
   const puttLeft = puttText ? RIGHT - width(puttText) : Infinity;
@@ -509,13 +555,13 @@ export function ShotTrail({ hole }: { hole: ChReviewHole }) {
               <circle className="ch-rzshot__dot" cx={b} cy={base} r={9} fill={color} stroke="var(--ch-green-900)" strokeWidth={2.5} />
               <text className="ch-rzsvg__in" x={b} y={base + 3.5} textAnchor="middle" fontSize={10} fontWeight={700} fill="var(--ch-green-900)">{s.n}</text>
               {s.left && shown.has(s.n) && (
-                <text x={b} y={base + 30} textAnchor="middle" fontSize={11.5} fontWeight={600} fill="var(--ch-stage-ink-soft)">{s.left} out</text>
+                <text x={b} y={labelY} textAnchor="middle" fontSize={11.5} fontWeight={600} fill="var(--ch-stage-ink-soft)">{s.left} out</text>
               )}
             </g>
           );
         })}
         <circle cx={X0} cy={base} r={6} fill="var(--ch-stage-ink)" />
-        <text data-ch-label="" x={X0 - 8} y={base + 30} fontSize={11.5} fontWeight={600} fill="var(--ch-stage-ink-soft)">
+        <text data-ch-label="" x={X0 - 8} y={labelY} fontSize={11.5} fontWeight={600} fill="var(--ch-stage-ink-soft)">
           {teeText}
         </text>
         <line x1={X1 + 16} y1={base} x2={X1 + 16} y2={base - 36} stroke="var(--ch-stage-ink)" strokeWidth={2} />
@@ -525,7 +571,7 @@ export function ShotTrail({ hole }: { hole: ChReviewHole }) {
             {Array.from({ length: Math.min(t.putts, 5) }, (_, i) => (
               <circle key={i} cx={X1 + 54 + i * 14} cy={base} r={4.5} fill={t.putts >= 3 ? 'var(--ch-stage-gold)' : 'var(--ch-stage-line)'} />
             ))}
-            <text x={RIGHT} y={base + 30} textAnchor="end" fontSize={11.5} fontWeight={600} fill="var(--ch-stage-ink-soft)">
+            <text x={RIGHT} y={labelY} textAnchor="end" fontSize={11.5} fontWeight={600} fill="var(--ch-stage-ink-soft)">
               {puttText}
             </text>
           </g>

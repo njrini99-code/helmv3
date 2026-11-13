@@ -11,6 +11,7 @@ import { useRefresh } from '../../../lib/use-refresh';
 import { CoachHelmHead } from '../CoachHelmHead';
 import { useChSessionState } from '../../../lib/session-state';
 import { plural } from '../../../lib/plural';
+import { sgBaseline } from '../../../lib/sg';
 import { Notice, ReadWorthContext } from './parts';
 import { rebuiltHref } from '../../../shell/nav';
 import { CoachHelmOffNotice } from '../CoachHelmOffNotice';
@@ -133,7 +134,10 @@ function Hero({
       </div>
       {phone && chips}
       <div className="hfoot">
-        <span>Players stand where they lose most. Hollow: fewer than 5 rounds.</span>
+        {/* The hole's one line also says why a college team's figures sit below zero (Q1, owner 12 Nov 2026). */}
+        <span>
+          {sgBaseline(data.team.sgTour ?? null).why} Players stand where they lose most. Hollow: fewer than 5 rounds.
+        </span>
         {!phone && <span>Tap a spot</span>}
       </div>
     </section>

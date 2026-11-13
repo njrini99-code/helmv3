@@ -90,17 +90,22 @@ describe('112401 Round review, on screen', () => {
     expect(within(screen.getByRole('banner')).getByText('−2').className).toContain('is-under');
   });
 
-  it('111811 the five figures: front and back with to par, putts per hole, fairways and greens with their rates', () => {
+  // W47 (12 Nov): the score was said three times: the hero, the card's head, and a strip of the card's own totals (front,
+  // back, putts, fairways, greens). The hero says it; the card's head is its name and tees; the strip is gone while the
+  // card is drawn (the zones below say the rest: the distribution, the putting split).
+  it('111811 W47 with the card drawn, the score is said once: no total in the card head, no strip of its totals', () => {
     show(PREVIEW_REVIEW);
-    const fig = (k: string) => {
-      const dt = screen.getByText(k, { selector: 'dt' });
-      return [dt.nextSibling!.textContent, dt.nextSibling!.nextSibling!.textContent];
-    };
-    expect(fig('Front 9')).toEqual(['37', '+1']);
-    expect(fig('Back 9')).toEqual(['37', '+1']);
-    expect(fig('Putts')[1]).toMatch(/^\d\.\d \/ hole$/);
-    expect(fig('Fairways')[0]).toBe(`${PREVIEW_REVIEW.fairways!.hit}/14`);
-    expect(fig('Greens')[1]).toBe(`${Math.round((PREVIEW_REVIEW.greens!.hit / 18) * 100)}%`);
+    expect(within(screen.getByRole('banner')).getByText('74')).toBeTruthy();
+    expect(document.querySelector('.ch-rcard-h__s')).toBeNull();
+    expect(document.querySelector('.ch-rv-figs')).toBeNull();
+    for (const k of ['Front 9', 'Back 9', 'Putts', 'Fairways', 'Greens']) expect(screen.queryByText(k, { selector: 'dt' })).toBeNull();
+    // Zone 1's read keeps its headline, not the card's Out and In again.
+    expect(screen.queryByText(/^Out \d+ · In \d+$/)).toBeNull();
+  });
+
+  it('111811 a round posted as a total keeps the five figures: there is no card to say them', () => {
+    show(PREVIEW_REVIEW_TOTAL_ONLY);
+    for (const k of ['Front 9', 'Back 9', 'Putts', 'Fairways', 'Greens']) expect(screen.getByText(k, { selector: 'dt' })).toBeTruthy();
   });
 
   it('110102 opens on the first hole over par, with every shot: club, distances, where it finished, the miss and the read', () => {

@@ -4916,13 +4916,22 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     background: var(--ch-loss);
     transform-origin: right center;
   }
-  .ch-hm[data-ch-crh='on'] .ch-hm-legs__s,
-  .ch-hm[data-ch-crh='on'] .ch-hm-legs__who {
+  .ch-hm[data-ch-crh='on'] .ch-hm-legs__s {
     font: var(--ch-type-15);
     color: var(--ch-text-secondary); letter-spacing: var(--ch-track-15); }
+  /* One change line in one style in every part (W6, owner's preview, 11 Nov 2026): "No clear change" was bold black beside an
+     amber "Worse", so the line that says least was the loudest. The weight is the same; only a real change takes a colour. */
   .ch-hm[data-ch-crh='on'] .ch-hm-legs__c {
-    font: var(--ch-type-13-strong);
+    font: var(--ch-type-13-medium);
     font-style: normal;
+  }
+  .ch-hm[data-ch-crh='on'] .ch-hm-legs__c:not(.is-gain, .is-loss) {
+    color: var(--ch-text-secondary);
+  }
+  /* Who gains and loses: the quiet line under the figures (W6). */
+  .ch-hm[data-ch-crh='on'] .ch-hm-legs__who {
+    font: var(--ch-type-14);
+    color: var(--ch-text-secondary);
   }
   /* Latest rounds. */
   /* The player's line and the score keep to what they need, so the course and its date fit beside them on a 390pt phone. */
@@ -5492,18 +5501,28 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     background: var(--ch-loss);
     transform-origin: right center;
   }
-  .ch-h-main[data-ch-crh='on'] .ch-hm-legs__s,
-  .ch-h-main[data-ch-crh='on'] .ch-hm-legs__who {
+  .ch-h-main[data-ch-crh='on'] .ch-hm-legs__s {
     font: var(--ch-type-15);
     color: var(--ch-text-secondary); letter-spacing: var(--ch-track-15); }
+  /* One change line in one style in every part (W6, owner's preview, 11 Nov 2026): "No clear change" was bold black beside an
+     amber "Worse", so the line that says least was the loudest. The weight is the same; only a real change takes a colour. */
   .ch-h-main[data-ch-crh='on'] .ch-hm-legs__c {
-    font: var(--ch-type-13-strong);
+    font: var(--ch-type-13-medium);
     font-style: normal;
+  }
+  .ch-h-main[data-ch-crh='on'] .ch-hm-legs__c:not(.is-gain, .is-loss) {
+    color: var(--ch-text-secondary);
+  }
+  /* Who gains and loses: the quiet line under the figures (W6). */
+  .ch-h-main[data-ch-crh='on'] .ch-hm-legs__who {
+    font: var(--ch-type-14);
+    color: var(--ch-text-secondary);
   }
   /* The names are the links (06 §11.2): they read as links without the row being one. */
   .ch-h-main[data-ch-crh='on'] .ch-hm-legs__a {
     border-radius: var(--ch-radius-xs);
-    color: var(--ch-green-600);
+    color: var(--ch-text-primary);
+    font: var(--ch-type-14);
     text-decoration: underline;
     text-decoration-thickness: 1px;
     text-underline-offset: 2px;
@@ -6107,12 +6126,6 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   .ch-dh-dot.is-travel {
     background: var(--ch-ink-300);
   }
-  .ch-dh-spark {
-    display: inline-flex;
-    flex: none;
-    align-items: center;
-    margin-inline-start: auto;
-  }
 }
 
 /* The team's game: each half of a line ("Fairways 61%", "Tour 66%"; who gains, who loses) is its own line in the part,
@@ -6122,4 +6135,65 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
 }
 :is(.ch-hm, .ch-h-main)[data-ch-crh='on'] .ch-hm-legs__sep {
   display: none;
+}
+
+/* W3 (owner's preview, 11 Nov 2026): Team scoring's line names its first and last days and marks its best and toughest,
+   and a change the card itself calls noise ("No clear change") is no longer its boldest figure. */
+.ch-hm-delta.is-flat {
+  font: var(--ch-type-16);
+  letter-spacing: var(--ch-track-16);
+  line-height: var(--ch-lead-tight);
+  color: var(--ch-text-tertiary);
+}
+.ch-hm-form__axis {
+  display: flex;
+  justify-content: space-between;
+  margin-top: -4px;
+  font: var(--ch-type-11);
+  letter-spacing: var(--ch-track-11);
+  color: var(--ch-text-tertiary);
+}
+.ch-hm-form__ends {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 8px 0 12px;
+  font: var(--ch-type-12);
+  color: var(--ch-text-secondary);
+}
+.ch-hm-form__ends span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.ch-hm-form__ends i {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+.ch-hm-form__ends i.is-best {
+  background: var(--ch-chart-gain);
+}
+.ch-hm-form__ends i.is-worst {
+  background: var(--ch-chart-loss);
+}
+.ch-hm-form__svg .ch-hm-form__mark {
+  display: inline;
+  fill: none;
+  stroke-width: 7px;
+  stroke-linecap: round;
+}
+.ch-hm-form__svg .ch-hm-form__mark.is-best {
+  stroke: var(--ch-chart-gain);
+}
+.ch-hm-form__svg .ch-hm-form__mark.is-worst {
+  stroke: var(--ch-chart-loss);
+}
+/* The card's parts carry their own inset in the redesign (crh): the plot and the figures sit 16px in, so the labels do too. */
+.ch-hm[data-ch-crh='on'] .ch-hm-form__axis,
+.ch-hm[data-ch-crh='on'] .ch-hm-form__ends,
+.ch-h-main[data-ch-crh='on'] .ch-hm-form__axis,
+.ch-h-main[data-ch-crh='on'] .ch-hm-form__ends {
+  margin-inline: 16px;
 }

@@ -11,7 +11,7 @@ import type { ChInsight } from '../../../data/coachhelm-shape';
 import type { ChTeamPart } from '../../../data/coachhelm-team-shape';
 import type { ChTrackRecord } from '../../../data/coachhelm-track-record-shape';
 import { formatSigned } from '../../../lib/format';
-import { Coin, Notice } from './parts';
+import { Coin, Notice, readTitle } from './parts';
 import { STATION_SHORT } from './hole-geometry';
 import { sgIsEstimate } from '../../../data/stats-sg-mix';
 
@@ -96,17 +96,42 @@ export function ringValue(p: { from: number; now: number; target: number }): num
   return Math.max(0, Math.min(1, (p.from - p.now) / span));
 }
 
-function Ring({ v, proposed = false }: { v: number; proposed?: boolean }) {
+function Ring({ v }: { v: number }) {
   const r = 15;
   const c = 2 * Math.PI * r;
   return (
-    <svg className={'ringc' + (proposed ? ' prop' : '')} width="38" height="38" viewBox="0 0 38 38" aria-hidden="true">
+    <svg className="ringc" width="38" height="38" viewBox="0 0 38 38" aria-hidden="true">
       <circle className="trk" cx="19" cy="19" r={r} fill="none" strokeWidth="4" />
-      {!proposed && <circle className={'fil' + (v < 0.5 ? ' mid' : '')} cx="19" cy="19" r={r} fill="none" strokeWidth="4" strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c * (1 - v)} transform="rotate(-90 19 19)" />}
+      <circle className={'fil' + (v < 0.5 ? ' mid' : '')} cx="19" cy="19" r={r} fill="none" strokeWidth="4" strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c * (1 - v)} transform="rotate(-90 19 19)" />
     </svg>
   );
 }
 
+/** "Cole", "Cole and Dylan", "Cole, Dylan and Jackson". */
+const namesWords = (names: readonly string[]) => (names.length <= 2 ? names.join(' and ') : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`);
+const focusKey = (title: string) => title.trim().replace(/\s+/g, ' ').toLowerCase();
+
+/** A focus's title without its player's name in front: a focus keeps the read's own title, and an old read's carries "Dylan: ". */
+const focusTitle = (w: ChBriefWorking) => readTitle({ first: w.who.split(' ')[0] ?? w.who, name: w.who }, w.title);
+
+/** Working on's rows: one focus to a row, and a focus two or more players share is one row, in the order the brief lists them. */
+export function workingRows(working: readonly ChBriefWorking[]): Array<{ key: string; title: string; areas: ChBriefWorking[] }> {
+  const rows = new Map<string, { title: string; areas: ChBriefWorking[] }>();
+  for (const w of working) {
+    const title = focusTitle(w);
+    const row = rows.get(focusKey(title));
+    if (row) row.areas.push(w);
+    else rows.set(focusKey(title), { title, areas: [w] });
+  }
+  return [...rows].map(([key, row]) => ({ key, ...row }));
+}
+
+/**
+ * Working on (W11, staging 11 Nov: nine focus areas, nearly all with an empty ring, every state line in the same green, and one
+ * focus repeated for three players). The words lead every row; a ring closes it only when the focus has a target to fill toward
+ * (AC-WORK-02), so a focus without one, or a proposal whose player sets it, has none. A focus several players share is one row
+ * with their names and no ring, since one ring for several targets would be a figure nobody measured. The state line is quiet ink.
+ */
 export function WorkingCard({ working, proposed, failed, onRetry }: { working: readonly ChBriefWorking[]; proposed: ReadonlyArray<{ player: ChTeamPlayer; read: ChInsight }>; failed: boolean; onRetry?: () => void }) {
   const n = working.length + proposed.length;
   return (
@@ -123,29 +148,43 @@ export function WorkingCard({ working, proposed, failed, onRetry }: { working: r
         <Notice title="Couldn’t load this part" onRetry={onRetry} />
       ) : (
         <div data-work="">
-          {working.map((w) => (
-            <div className="wk" key={w.id}>
-              <Ring v={w.progress ? ringValue(w.progress) : 0} />
-              <div>
-                <b className="ch-num">
-                  {w.who.split(' ')[0]} · {w.title}
-                </b>
-                {w.line && <span>{w.line}</span>}
-                <span className={'st ' + (w.word === 'Active' ? 'ok' : 'wait')}>{[w.word, w.since].filter(Boolean).join(' · ')}</span>
+          {workingRows(working).map(({ key, title, areas }) => {
+            const w = areas[0] as ChBriefWorking;
+            if (areas.length > 1) {
+              const words = new Set(areas.map((a) => a.word));
+              return (
+                <div className="wk is-shared" key={`shared:${key}`}>
+                  <div>
+                    <b className="ch-num">{title}</b>
+                    <span>{namesWords(areas.map((a) => a.who.split(' ')[0] as string))}</span>
+                    {words.size === 1 && <span className="st">{w.word}</span>}
+                  </div>
+                </div>
+              );
+            }
+            return (
+              <div className="wk" key={w.id}>
+                <div>
+                  <b className="ch-num">
+                    {w.who.split(' ')[0]} · {title}
+                  </b>
+                  {w.line && <span>{w.line}</span>}
+                  <span className="st">{[w.word, w.since].filter(Boolean).join(' · ')}</span>
+                </div>
+                {w.progress && <Ring v={ringValue(w.progress)} />}
               </div>
-            </div>
-          ))}
+            );
+          })}
           {proposed.map(({ player, read }) => (
             <div className="wk" key={read.id}>
-              <Ring v={0} proposed />
               <div>
                 <b className="ch-num">
-                  {player.first} · {read.title}
+                  {player.first} · {readTitle(player, read.title)}
                 </b>
                 <span>
                   From {read.value} now · {player.first} sets the target
                 </span>
-                <span className="st wait">Proposed · {player.first} accepts it in their app</span>
+                <span className="st">Proposed · {player.first} accepts it in their app</span>
               </div>
             </div>
           ))}

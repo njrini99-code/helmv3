@@ -27,6 +27,7 @@ import { findNotTracked } from './not-tracked';
 import { empty, failed, nameOf, notice, notTracked, ownOrOne, part, plain, playerOf, say, sgAgainst, teamOf, together, withText, wordsFor } from './reader-kit';
 import { screenLoaders, STATS_WINDOWS } from './screen-loaders';
 import { getProximityByBand, getShotPattern } from './shot-reads';
+import { missCompassEnabled } from './visuals/miss-compass-flag';
 import { SummariseInputCoach, SummariseInputPlayer, summariseData, type SummariseInput } from './summarise-data';
 import { describeQueryTables, queryTeamData, TeamQueryInput } from './team-query';
 import { getAttendanceSummary, getFocusPractice, getGoals, getTeamSeasonSettings, getTournamentNotes } from './team-reads';
@@ -152,7 +153,9 @@ export const getShots: ReadTool<ShotsInput> = {
     const player_id = ownOrOne(ctx, input.player_id);
     const who = teamOf(ctx);
     if (input.bands?.length) return plain(asOwn(ctx, await getProximityByBand(ctx.sb, who, { player_id, bands: input.bands, since_days: input.since_days })), wordsFor(ctx));
-    return plain(asOwn(ctx, await getShotPattern(ctx.sb, who, { player_id, club_type: input.club_type, from_yards: input.from_yards, to_yards: input.to_yards, since_days: input.since_days, mode: 'approach' })), wordsFor(ctx));
+    // The Miss Compass (team flag, coach only): the shots behind each direction ride on the read for the coach to open.
+    const drawer = !playerOf(ctx) && missCompassEnabled(who.team_id);
+    return plain(asOwn(ctx, await getShotPattern(ctx.sb, who, { player_id, club_type: input.club_type, from_yards: input.from_yards, to_yards: input.to_yards, since_days: input.since_days, mode: 'approach', ...(drawer ? { drawer } : {}) })), wordsFor(ctx));
   },
 };
 
@@ -455,6 +458,20 @@ const ShowVisualModelInput = z.object({
   highlightedMetricId: z.string().optional(),
 });
 
+/**
+ * The model cites a read by the source it was handed, `read:e1` (engine/loop.ts searchResult), and passes that same name to
+ * show_visual, whose reads are keyed `e1`. On staging (12 Nov) two of four chart questions failed on exactly this ("no usable
+ * read named read:e1"), and the coach got "I couldn't draw the chart". Both spellings name the same read.
+ */
+const bareRef = (ref: string) => ref.replace(/^read:/, '');
+export function withBareRefs(input: z.infer<typeof ShowVisualModelInput>): z.infer<typeof ShowVisualModelInput> {
+  return {
+    ...input,
+    ...(input.evidenceRefs ? { evidenceRefs: input.evidenceRefs.map(bareRef) } : {}),
+    ...(input.blocks ? { blocks: input.blocks.map((b) => ({ ...b, ...(b.ref ? { ref: bareRef(b.ref) } : {}), ...(b.refs ? { refs: b.refs.map(bareRef) } : {}) })) } : {}),
+  };
+}
+
 export const showVisual: ReadTool<z.infer<typeof ShowVisualModelInput>> = {
   kind: 'read',
   name: 'show_visual',
@@ -462,18 +479,25 @@ export const showVisual: ReadTool<z.infer<typeof ShowVisualModelInput>> = {
     'Draw one visual from reads already made; the server copies the figures in, so the title and the lede are words with no digits. kind "compose": a title, an optional lede, and blocks in order: kpis (one figure set large, or up to six from one read), trend (one metric over rounds), bars (distance bands, or players on one metric; best_first ranks them), split (signed figures either side of zero, such as strokes gained by area), compare (players across the same metrics), and four drawn from a read that holds them: putt_profile, miss_pattern, season_compare, hole_strip. kind "sg_anatomy": one player\'s four strokes gained areas. If it is refused, fix what it names once or answer in words.',
   input: ShowVisualModelInput,
   progress: () => 'Building the visual',
-  run: async (ctx, input) => {
+  run: async (ctx, raw) => {
+    const input = withBareRefs(raw);
     if (input.kind === 'compose') {
       const parsed = CompositionSpecV2.safeParse(input);
-      if (!parsed.success) return notice('Not drawn: a composition needs a title and at least one block.', { refused: true });
+      if (!parsed.success) return { ...notice(`Not drawn: a composition needs a title and one to six blocks of the listed types (${parsed.error.issues[0]?.path.join('.') || 'input'}: ${parsed.error.issues[0]?.message ?? 'invalid'}).`, { refused: true }), progress_detail: `invalid input: ${parsed.error.issues[0]?.path.join('.') || 'composition'}` };
       const result = compileComposition(parsed.data, ctx.reads);
-      if (!result.ok) return notice(`Not drawn: ${result.message}`, { refused: true, detail: { reason: result.reason, dropped: result.dropped } });
-      return notice(`Shown: ${result.composition.title} (${result.composition.blocks.map((b) => b.type).join(', ')}). Do not repeat its figures; add the one thing it does not say.`, { parts: [{ type: 'data-visual-composition', id: `visual-${result.composition.artifactId}`, data: result.composition }], ...(result.dropped.length ? { detail: { dropped: result.dropped } } : {}) });
+      // The refusal's reason travels to the step (its `detail`), so a failed "Building the visual" says why in the stored thread.
+      if (!result.ok) return { ...notice(`Not drawn: ${result.message}${result.dropped.length ? ` (${result.dropped.join('; ')})` : ''}`, { refused: true, detail: { reason: result.reason, dropped: result.dropped } }), progress_detail: result.dropped[0] ?? result.reason };
+      // A block that could not be drawn is named back to the model, so it does not describe a figure the coach cannot see.
+      const notDrawn = result.dropped.length ? ` Not drawn: ${result.dropped.join('; ')}.` : '';
+      return {
+        ...notice(`Shown: ${result.composition.title} (${result.composition.blocks.map((b) => b.type).join(', ')}).${notDrawn} Do not repeat its figures; add the one thing it does not say.`, { parts: [{ type: 'data-visual-composition', id: `visual-${result.composition.artifactId}`, data: result.composition }], ...(result.dropped.length ? { detail: { dropped: result.dropped } } : {}) }),
+        ...(result.dropped.length ? { progress_detail: `${result.dropped.length} block${result.dropped.length === 1 ? '' : 's'} not drawn` } : {}),
+      };
     }
     const spec = VisualSpec.safeParse(input);
     if (!spec.success) return notice('Not drawn: sg_anatomy needs the evidence_ref of the strokes gained read.', { refused: true });
     const result = compileVisual(spec.data, ctx.reads);
-    if (!result.ok) return notice(`Not drawn: ${result.message}`, { refused: true, detail: { reason: result.reason } });
+    if (!result.ok) return { ...notice(`Not drawn: ${result.message}`, { refused: true, detail: { reason: result.reason } }), progress_detail: result.reason };
     return notice(`Shown: ${result.artifact.title}, for ${result.artifact.entity.label}. Do not repeat its figures; add the one thing it does not say.`, { parts: [{ type: 'data-visual-artifact', id: `visual-${result.artifact.artifactId}`, data: result.artifact }] });
   },
 };

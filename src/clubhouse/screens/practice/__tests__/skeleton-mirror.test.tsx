@@ -32,8 +32,8 @@ describe('Practice in waiting mirrors the loaded pages', () => {
     ['Groups', () => <PracticeLibrarySkeleton tab="groups" />, 1],
     ['Templates', () => <PracticeLibrarySkeleton tab="templates" />, 1],
     ['A plan (player)', () => <PlayerPracticePlanSkeleton />, 1],
-    // A coach's plan page has no large title on a phone: the bar holds the plan's name.
-    ['A plan (coach)', () => <PracticePlanSkeleton />, 0],
+    // G14: a coach's plan page opens on its large title on a phone too (the bar cut the name); the bar's title waits under it.
+    ['A plan (coach)', () => <PracticePlanSkeleton />, 1],
   ];
 
   it.each(ROOTS)('%s is one busy page with the large title block in waiting, never a real heading', (_name, skeleton, titles) => {
@@ -110,10 +110,10 @@ describe('Practice in waiting mirrors the loaded pages', () => {
     expect(templates.querySelectorAll('.ch-prc-sec:last-of-type .ch-prc-tmpl').length).toBe(1);
   });
 
-  it('a plan’s page, the coach’s: back and the head on a Mac only, the status line, the phone’s keys under it, then the sheet in the sheet’s own boxes', () => {
+  it('a plan’s page, the coach’s: back on a Mac only, the head (the phone’s large title, or the Mac’s), the status line, the phone’s keys under it, then the sheet in the sheet’s own boxes', () => {
     const { container } = render(<PracticePlanSkeleton />);
     const main = container.querySelector('main.ch-page.ch-prc-planpage')!;
-    expect(classes(main.children)).toEqual(['ch-backlink ch-prc-sk-desk ch-prc-sk-still', 'ch-prc-h ch-prc-planhead ch-prc-sk-desk', 'ch-prc-planbar', 'ch-prc-planbar__a ch-prc-sk-phone', 'ch-cp-sheet ch-cp-skel']);
+    expect(classes(main.children)).toEqual(['ch-backlink ch-prc-sk-desk ch-prc-sk-still', 'ch-prc-h ch-prc-planhead ch-prc-sk-phone', 'ch-prc-h ch-prc-planhead ch-prc-sk-desk', 'ch-prc-planbar', 'ch-prc-planbar__a ch-prc-sk-phone', 'ch-cp-sheet ch-cp-skel']);
     expect(classes(main.querySelector('.ch-prc-planbar')!.children)).toEqual(['ch-prc-planbar__s', 'ch-prc-planbar__a ch-prc-sk-desk']);
     expect(classes(main.querySelector('.ch-cp-sheet')!.children)).toEqual(['pp-top', 'pp-title', 'pp-focus', 'pp-meta', '', '']);
     expect(main.querySelectorAll('.pp-meta > div').length).toBe(3);

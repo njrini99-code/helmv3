@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import { LandingView } from '@/components/landing/LandingView'
 import { NativeRedirect } from '@/components/NativeRedirect'
+import { isFlagEnabled } from '@/lib/flags/is-enabled'
+import { SignInScenePreload } from '@/clubhouse/screens/auth/ScenePreload'
 
 export const metadata: Metadata = {
   title: 'Helm Sports Labs — College Golf Intelligence',
@@ -35,6 +37,8 @@ export default function LandingPage() {
     <>
       <NativeRedirect to="/golf/login" />
       <LandingView />
+      {/* Log in's painted course, fetched while this page is idle, so the sign in draws it on its first frame. */}
+      {isFlagEnabled('golf_clubhouse_front_door', { skipTelemetry: true }) && <SignInScenePreload />}
     </>
   )
 }

@@ -117,3 +117,22 @@ describe('a read’s worth is one figure on the Team board, in the Player file a
     expect(src('screens/coachhelm/team/parts.tsx')).not.toMatch(/read\.stakes/);
   });
 });
+
+describe('the read panel says the player’s name once (W12’s prefix)', () => {
+  it('a title stored with the name: the heading drops it, and Ask’s question names the player once', () => {
+    const stored = { ...READ, title: `${PLAYER.first}: Long approaches finish short-right` } as ChInsight;
+    function Stored() {
+      const fa = useFocusActions(writes);
+      return <ReadPanel read={stored} player={PLAYER} fa={fa} roster={[{ id: PLAYER.id }]} onClose={() => {}} />;
+    }
+    render(
+      <Wrap>
+        <Stored />
+      </Wrap>,
+    );
+    expect(screen.getByRole('heading', { level: 3 }).textContent).toBe('Long approaches finish short-right');
+    const ask = decodeURIComponent(screen.getByRole('link', { name: /Ask about this/ }).getAttribute('href') ?? '');
+    expect(ask).toContain(`Tell me about ${PLAYER.first}: Long approaches finish short-right`);
+    expect(ask).not.toContain(`${PLAYER.first}: ${PLAYER.first}:`);
+  });
+});

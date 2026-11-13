@@ -283,6 +283,10 @@ function useMaybeDraggable(id: string, data: object, on: boolean) {
 function Chip({ e, two = false, tab, canDrag, onPick, lifted, onAltMove }: { e: ChCalEvent; two?: boolean; tab: boolean; canDrag: boolean; onPick: () => void; lifted: boolean; onAltMove: (days: number) => void }) {
   const { setNodeRef, attributes, listeners } = useMaybeDraggable(`chip:${e.id}`, { e, ribbon: false }, canDrag);
   const mk = useRowMark()(e);
+  const clock = useChClock();
+  // W44: a timed event leads with its start ("3:30 Range and wedges"), as a month in Calendar does; the meridiem is dropped,
+  // the chip is narrow and the day's order already reads morning to evening.
+  const at = e.allDay || e.start == null ? null : fmtHour(e.start, false, clock);
   return (
     <button
       ref={setNodeRef}
@@ -310,6 +314,11 @@ function Chip({ e, two = false, tab, canDrag, onPick, lifted, onAltMove }: { e: 
       }}
     >
       {isMajor(e.type) ? <Icon icon={TYPE_ICON[e.type]} size={11} /> : <i className={`ch-dot-${e.type}`} />}
+      {at && !isMajor(e.type) && (
+        <time className="ch-mo__at ch-num" aria-hidden="true">
+          {at}
+        </time>
+      )}
       <RoundTitle e={e} title={e.title} />
       {mk && !e.cancelled && <Icon icon={markGlyph(mk.change)} size={10} className="ch-mo__chg" />}
     </button>

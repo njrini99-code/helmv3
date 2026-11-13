@@ -193,7 +193,7 @@ import { ChClockProvider } from '@/clubhouse/lib/use-clock';
  *   /clubhouse-preview/coachhelm-practice-print ?state=norotation | nodrills | draft | unread | long | cards   (unread: the drills read failed; long: a 14-drill appendix switched on)
  *   /clubhouse-preview/coachhelm-practice-run ?state=draft | edited
  *   /clubhouse-preview/coachhelm-practice-library ?tab=drills | drill | groups | templates &state=empty | library
- *   /clubhouse-preview/coachhelm-practice-home ?state=empty | firstrun | new | player | player-empty   (Practice, the tab; synthetic plans, nothing reaches a server)
+ *   /clubhouse-preview/coachhelm-practice-home ?state=empty | empty-new | firstrun | new | player | player-empty   (Practice, the tab; synthetic plans, nothing reaches a server)
  *   /clubhouse-preview/coachhelm-practice-builder ?state=empty | blocks | sheet | ghosts | kept | groups | drills | review | publish | stale   (the builder over the design page's plan; nothing reaches a server)
  *   /clubhouse-preview/coachhelm-ask ?state=… &q=…   (the Ask sub-tab; states in src/clubhouse/preview/PreviewAsk.tsx)
  *   /clubhouse-preview/coachhelm-capabilities ?task=<tool> &state=proposed | confirming | held | saved | undone | cancelled | superseded | failed | expired &density=full | compact &variant=… &play=1 | undo   (every chat capability's card)
@@ -204,7 +204,7 @@ import { ChClockProvider } from '@/clubhouse/lib/use-clock';
  *   /clubhouse-preview/coachhelm-track ?state=early | empty | unavailable | failed | off | loading   (the coach's Track record; synthetic counts)
  *   /clubhouse-preview/coachhelm-player-file ?state=accepted | noplan | proposed | seen | declined | early | empty | failed | loading | nofield | fieldfew | nointent | readsfailed | sgfailed | failwrites | duplicate | long | manyreads | oneread &view=coach | player (viewer) &section=lens &q=<card>   (the file on fake writes)
  *   /clubhouse-preview/coachhelm-read ?view=coach | player &state=loading | failed | off | gone | stale | rounds-failed | no-rounds &q=penalties | putts &section=board   (one read, coachhelm_read_v1)
- *   /clubhouse-preview/coachhelm-team ?state=early | empty | failed | failed-all | partial | noplayers | long | loading &open=read | player | story | course &read=assigned | course &all=1 &station=tee | app | sg | putt | course   (the coach's team board, coachhelm_team_board_v1)
+ *   /clubhouse-preview/coachhelm-team ?state=early | empty | failed | failed-all | partial | noplayers | long | crowded | loading &open=read | player | story | course &read=assigned | course &all=1 &station=tee | app | sg | putt | course   (the coach's team board, coachhelm_team_board_v1)
  *   /clubhouse-preview/coachhelm-brief ?state=empty | failed | off | loading   (the coach's Monday brief; synthetic reads through computeMondayBrief)
  *   /clubhouse-preview/recruiting ?state=empty | nomatch | failed | loading | sparse | noteam | detail | add | edit | delete | docsfailed | failwrites | failstage | slow   (the coach; eight prospects, Mason Reilly first)
  *   /clubhouse-preview/tournaments, tournament-desk, -review, -history, -links, -compare, -lineup, -form, -live, -player ?state=loading | empty | failed | partial | thin | provisional | live, &event=, &tab=, &view=edit   (P016; preview/PreviewTournaments.tsx; tournament-player is Jonah)
@@ -683,7 +683,7 @@ export default async function ClubhousePreview({
   for (const [id, path] of Object.entries(TOUR_PREVIEW_PATHS)) screens[id] = { path, node: <PreviewTournaments screen={id} state={state} event={event} tab={tab} view={view} /> };
   const entry = screens[screen];
   if (!entry) notFound();
-  const who = previewViewer(screen, state);
+  const who = previewViewer(screen, state, { viewer: viewerParam ?? view, copy: (await searchParams as { copy?: string }).copy });
   const viewer = who === 'theo' ? { ...PREVIEW_PLAYER_USER, name: 'Theo Marchetti' } : who === 'jonah' ? { ...PREVIEW_PLAYER_USER, name: 'Jonah Okafor' } : PREVIEW_COACH;
   const user = teams === '2' && viewer.role === 'coach' ? { ...viewer, coachTeams: [{ id: 'preview-team', name: 'Varsity', gender: 'mens' }, { id: 'preview-team-w', name: 'Varsity Women', gender: 'womens' }], canSwitchTeams: true } : viewer;
 

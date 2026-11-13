@@ -19,14 +19,14 @@ The route is `/golf/dashboard/team-hub` for both roles. Today a coach there gets
 
 ## Header and tabs
 
-The coach's Coach view pill (a player has none, wave 7), "Team Hub", the team and season. A coach's one primary action is New announcement. Tabs: Home, Announcements, Travel, Documents, and Tasks (coach). `?tab=` opens a tab (the legacy `?tab=` redirects stay for Fairway users only).
+"Team Hub", the team and season (no role pill for either role since W20; a player never had one, wave 7). Under them, what the team owes as at most three figures, each a number over its words that opens its tab: replies due, posts unacknowledged (a player's: to acknowledge), and tasks, overdue when any are, else open (W20). A coach's one primary action is New announcement. Tabs: Home, Announcements, Travel, Documents, and Tasks (coach). `?tab=` opens a tab (the legacy `?tab=` redirects stay for Fairway users only).
 
 ## Board to data
 
 | Board piece | Read | Write |
 | --- | --- | --- |
 | RSVPs (player: "Your RSVPs", Going / Maybe / Can't) | `get_player_hub_events` through `getPlayerHubSummaryData` (events needing a reply, with going and maybe counts) | `respondToEvent(eventId, 'accepted' | 'tentative' | 'declined')`, the same write Calendar's reply uses |
-| RSVPs (coach: this week's replies as a bar) | This week's team events and `golf_event_attendance` counts (the Home week loader's attendance read) | none (Calendar owns the event) |
+| RSVPs (coach: the next 7 days' replies as a bar) | The next 7 days' team events and `golf_event_attendance` counts (the Home week loader's attendance read) | none (Calendar owns the event) |
 | Announcement card and the Announcements tab | Player: `getPlayerHubAnnouncements`; coach: `getAnnouncementsWithMeta` (acknowledged and recipient counts) | Player "Got it": `acknowledgeAnnouncement`. Coach: `createEnrichedAnnouncement` (headline, body, audience all or chosen players, ask to acknowledge, attach from Documents: only files players can open, `is_public`; it returns `attachmentsError` beside the id when the files didn't attach, and the toast says so, CH-10012), `updateAnnouncement`, `deleteAnnouncement` |
 | Next trip pass, Travel tab | `golf_travel_itineraries` through `getPlayerHubSummaryData` (player) or the same select for the team (coach); travelers are the linked event's invitees | Coach Plan a trip: `createGolfTravelItinerary` / `updateGolfTravelItinerary`. Its Travelers step reads the chosen travelers' classes that overlap the trip with `getTravelerClassConflicts` (a coach's read; the class's name, weekdays and hours only) |
 | Updates (Home) | The bell's feed, `getUnifiedNotifications` (one feed, not a second read) | Open marks read, as the bell does |

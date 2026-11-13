@@ -127,7 +127,7 @@ export const PREVIEW_ROSTER_PARTIAL: ChRoster = {
 
 /** `?state=helm-failed`: CoachHelm's counts did not load (the panel's dashes, CH-3212); everything else did. */
 /* Behind the lane's flag (classes-roster-home 05): the team's real name stands in for "Varsity", which has no field, and the states the matrices add. */
-export const PREVIEW_ROSTER_CRH: ChRoster = { ...PREVIEW_ROSTER, teamName: 'Demo University Golf', sgVs: 'vs Tour', clock: { tz: 'America/New_York', day: '2026-10-14' } };
+export const PREVIEW_ROSTER_CRH: ChRoster = { ...PREVIEW_ROSTER, teamName: 'Demo University Golf', sgVs: 'vs Tour', sgTour: 'pga', clock: { tz: 'America/New_York', day: '2026-10-14' } };
 /** `?state=early`: everyone on two rounds, totals only: stubs, no SG, no leaders, no top five (the staging season today). */
 export const PREVIEW_ROSTER_EARLY: ChRoster = {
   ...PREVIEW_ROSTER_CRH,

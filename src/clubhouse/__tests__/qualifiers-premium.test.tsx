@@ -206,6 +206,28 @@ describe('P009-B2 an honest Live state', () => {
     expect(document.querySelector('.ch-qf-hero .ch-qf-status')!.textContent).toBe('Live');
     expect(document.querySelector('.ch-qf-hero .ch-qf-meta')!.textContent).toMatch(/Sep 22 – Oct 1, 2026/);
   });
+
+  it('W33 a coach is asked to close a qualifier past its last day; a player, and a live one in its dates, are not', () => {
+    const { unmount } = wrap(<QualifiersList data={{ ...previewList('coach'), today: '2026-10-08' }} />);
+    expect(document.querySelector('.ch-qf-hero .ch-qf-cta')!.textContent).toBe('Review and close');
+    unmount();
+    const p = wrap(<QualifiersList data={{ ...previewList('player'), today: '2026-10-08' }} />);
+    expect(document.querySelector('.ch-qf-hero .ch-qf-cta')?.textContent ?? '').not.toContain('close');
+    p.unmount();
+    wrap(<QualifiersList data={previewList('coach')} />);
+    expect(document.querySelector('.ch-qf-hero .ch-qf-cta')!.textContent).toBe('View leaderboard');
+  });
+
+  it('W34 the upcoming qualifiers under the hero are headed Upcoming and run by date', () => {
+    const data = previewList('coach');
+    const up = data.items.find((i) => i.status === 'upcoming')!;
+    const items = [...data.items, { ...up, id: 'late', name: 'Late qualifier', startDate: '2026-11-23' }, { ...up, id: 'early', name: 'Early qualifier', startDate: '2026-11-20' }];
+    wrap(<QualifiersList data={{ ...data, items }} />);
+    const sec = screen.getByRole('heading', { level: 2, name: 'Upcoming' }).closest('section') as HTMLElement;
+    const names = [...sec.querySelectorAll('h3')].map((h) => h.textContent);
+    expect(names.indexOf('Early qualifier')).toBeLessThan(names.indexOf('Late qualifier'));
+    expect(screen.queryByRole('heading', { name: 'Lineup decisions' })).toBeNull();
+  });
 });
 
 describe('P009-A1 standings on hand-hung plates', () => {

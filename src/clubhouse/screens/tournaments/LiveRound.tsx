@@ -1,6 +1,6 @@
 'use client';
 
-import { CloudRain, Flag, Pause } from 'lucide-react';
+import { ChevronRight, CloudRain, Flag, Pause } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { enterTournamentScore, setTournamentRoundStatus } from '@/app/golf/actions/tournaments';
@@ -10,6 +10,7 @@ import { useAction } from '../../lib/use-action';
 import { useRefresh } from '../../lib/use-refresh';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
+import { Icon } from '../../ui/Icon';
 import { Menu } from '../../ui/Menu';
 import { Modal } from '../../ui/Modal';
 import { InlineNotice } from '../../ui/Notices';
@@ -92,6 +93,8 @@ function LivePage({ data, phone }: { data: ChTourLiveSnapshot; phone: boolean })
   const lineup = data.lanes.filter((l) => l.role === 'lineup');
   const individuals = data.lanes.filter((l) => l.role === 'individual');
   const course = data.course.name;
+  // Nobody in the round yet: the empty state says so once and offers the lineup; going live has no one to score.
+  const nobody = data.lanes.length === 0;
 
   const status = useAction<[ 'live' | 'suspended_weather' | 'suspended_other' | 'final' ], unknown>(
     'tournaments.roundStatus',
@@ -111,9 +114,11 @@ function LivePage({ data, phone }: { data: ChTourLiveSnapshot; phone: boolean })
 
   const primary =
     r.status === 'upcoming' ? (
-      <Button variant="primary" busy={status.pending} onClick={() => void status.run('live')}>
-        Go live
-      </Button>
+      nobody ? null : (
+        <Button variant="primary" busy={status.pending} onClick={() => void status.run('live')}>
+          Go live
+        </Button>
+      )
     ) : r.status === 'live' ? (
       <Button variant="primary" leftIcon={Flag} busy={status.pending} onClick={() => setFinishing(true)}>
         Finish round
@@ -124,7 +129,8 @@ function LivePage({ data, phone }: { data: ChTourLiveSnapshot; phone: boolean })
       </Button>
     ) : null;
 
-  const actions = (
+  // G16: on a phone the keys sit in one row, Suspend play quiet beside the one primary, not two full-width keys stacked.
+  const keys = (
     <>
       {r.status === 'live' && (
         <Menu
@@ -134,7 +140,7 @@ function LivePage({ data, phone }: { data: ChTourLiveSnapshot; phone: boolean })
             { label: 'Suspend, another reason', icon: Pause, onSelect: () => void status.run('suspended_other') },
           ]}
           trigger={(p) => (
-            <Button variant="secondary" menu={p} disabled={status.pending}>
+            <Button variant={phone ? 'ghost' : 'secondary'} menu={p} disabled={status.pending}>
               Suspend play
             </Button>
           )}
@@ -148,6 +154,7 @@ function LivePage({ data, phone }: { data: ChTourLiveSnapshot; phone: boolean })
       {primary}
     </>
   );
+  const actions = phone ? <div className="ch-tour-live-acts">{keys}</div> : keys;
 
   return (
     <TourMain view="live" phone={phone} labelledBy={TITLE_ID} className="ch-tour-live">
@@ -184,8 +191,8 @@ function LivePage({ data, phone }: { data: ChTourLiveSnapshot; phone: boolean })
         </div>
       )}
       {data.errors.holes && <InlineNotice code="CH-16271" title="Some live scores didn’t load" body="Entered totals are unaffected. Holes from GolfHelm rounds are left out for now." onRetry={refresh} retrying={refreshing} />}
-      <TeamLine data={data} />
-      {data.lanes.length === 0 ? (
+      {!nobody && <TeamLine data={data} />}
+      {nobody ? (
         <EmptyState size="page" kind="first-run" code="CH-16370" title="Nobody is in this round yet" body="Set the lineup, then the lanes show here as scores come in." action={<Button href={paths.lineup(e.id)}>Open the lineup</Button>} />
       ) : (
         <div className="ch-tour-live-body">
@@ -213,7 +220,22 @@ function LivePage({ data, phone }: { data: ChTourLiveSnapshot; phone: boolean })
           roundLabel={`round ${r.number}`}
         />
       )}
-      <ScoreSheet key={entering?.playerId ?? 'none'} data={data} lane={entering} name={entering ? (player(entering.playerId)?.name ?? 'Player') : ''} onClose={() => setEntering(null)} />
+      <ScoreSheet
+        key={entering?.playerId ?? 'none'}
+        data={data}
+        lane={entering}
+        name={entering ? (player(entering.playerId)?.name ?? 'Player') : ''}
+        onClose={() => setEntering(null)}
+        // A phone's lane has one way in, its score; scoring by hole is offered from there (G16).
+        onHoles={
+          phone && canHole && entering
+            ? () => {
+                setByHole(entering);
+                setEntering(null);
+              }
+            : undefined
+        }
+      />
       <Modal
         code="CH-16570"
         open={finishing}
@@ -294,10 +316,11 @@ function Lane({ lane: l, name, phone, onEnter, onHoles, editable }: { lane: ChTo
   const wash = useChangedWash(l.toPar);
   const holes = 18;
   const scored = l.thru != null || l.status !== 'ok';
-  return (
-    <li className={'ch-tour-live-lane' + (l.count === 'counted' ? ' is-counting' : '')} data-ch-lane={l.playerId} data-ch-count={l.count}>
-      {!phone && <Avatar name={name} size="sm" />}
-      <div className="ch-tour-live-lane__who">
+  const cls = 'ch-tour-live-lane' + (l.count === 'counted' ? ' is-counting' : '');
+  // Spans, not divs: on a phone they sit inside the lane's button.
+  const body = (
+    <>
+      <span className="ch-tour-live-lane__who">
         <span className="ch-tour-live-lane__n">
           {l.slot != null && <span className="ch-num ch-tour-live-muted">{l.slot} </span>}
           {name}
@@ -306,12 +329,29 @@ function Lane({ lane: l, name, phone, onEnter, onHoles, editable }: { lane: ChTo
           {thruWords(l, holes)}
           {l.holes.length > 0 ? ' · from their GolfHelm round' : ''}
         </span>
-      </div>
-      <div className="ch-tour-live-lane__chips">
+      </span>
+      <span className="ch-tour-live-lane__chips">
         {l.status !== 'ok' && <TourChip tone="warn">{STATUS_WORDS[l.status]}</TourChip>}
         {COUNT_WORDS[l.count] && <TourChip tone={l.count === 'counted' ? 'ok' : undefined}>{COUNT_WORDS[l.count]}</TourChip>}
-      </div>
-      <div className={'ch-tour-live-lane__v ch-tour-washable' + (wash ? ' ch-tour-changed' : '')}>{l.toPar != null ? <ToPar value={l.toPar} /> : <span className="ch-num">—</span>}</div>
+      </span>
+      <span className={'ch-tour-live-lane__v ch-tour-washable' + (wash ? ' ch-tour-changed' : '')}>{l.toPar != null ? <ToPar value={l.toPar} /> : <span className="ch-num">—</span>}</span>
+    </>
+  );
+  // G16: a phone's lane is one row that opens its score, as a list row opens its detail; no keys of its own.
+  if (phone && editable)
+    return (
+      <li className={cls + ' is-tap'} data-ch-lane={l.playerId} data-ch-count={l.count}>
+        <button type="button" className="ch-tour-live-lane__tap" onClick={() => onEnter(l)}>
+          {body}
+          <span className="ch-sr-only">, {scored ? 'edit score' : 'enter score'}</span>
+          <Icon icon={ChevronRight} size={16} className="ch-tour-live-lane__go" />
+        </button>
+      </li>
+    );
+  return (
+    <li className={cls} data-ch-lane={l.playerId} data-ch-count={l.count}>
+      {!phone && <Avatar name={name} size="sm" />}
+      {body}
       {editable && (
         <div className="ch-tour-live-lane__act">
           {onHoles && (
@@ -360,7 +400,7 @@ function Field({ data }: { data: ChTourLiveSnapshot }) {
 }
 
 /** Enter score: the round total (and the nines, if the card has them), how the round ended, and a note. */
-function ScoreSheet({ data, lane, name, onClose }: { data: ChTourLiveSnapshot; lane: ChTourLivePlayer | null; name: string; onClose: () => void }) {
+function ScoreSheet({ data, lane, name, onClose, onHoles }: { data: ChTourLiveSnapshot; lane: ChTourLivePlayer | null; name: string; onClose: () => void; onHoles?: () => void }) {
   const router = useRouter();
   const row = lane ? data.event.playerRounds.find((p) => p.roundNumber === data.round.number && p.playerId === lane.playerId) : null;
   const [form, setForm] = useState<ScoreForm>(() => (lane ? formOf(row) : emptyForm()));
@@ -422,6 +462,11 @@ function ScoreSheet({ data, lane, name, onClose }: { data: ChTourLiveSnapshot; l
           void write.run(false);
         }}
       >
+        {onHoles && (
+          <Button variant="ghost" size="sm" className="ch-tour-live-sheet__holes" onClick={onHoles}>
+            Score hole by hole instead
+          </Button>
+        )}
         <label className="ch-field">
           <span className="ch-field__label">Round total</span>
           <input className="ch-input" inputMode="numeric" autoComplete="off" value={form.total} aria-invalid={touched && !!errors.total} onChange={(ev) => set({ total: ev.target.value })} placeholder="72" />

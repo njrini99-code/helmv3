@@ -127,7 +127,7 @@ Motion: M-TEAM-01 to 07, 11, 16.
 - AC-TODAY-02. Tiles scroll sideways with snap to start, gap 10, padding 2 16 16. Tile 138pt × k wide, at least 162 tall, radius 15, well fill, 1pt ring; a tile not yet opened this session has a 2pt accent inset ring. Inside: 44pt picture, headline 14.5/1.25 600, foot 24pt coin and "{first} · {when}" 12.5 ink-2. Check: D, S.
 - AC-TODAY-03. At most three tiles, newest first, from brief read rows, focus progress (`ChBriefWorking`) and Improving or Slipping themes only; "No clear change" never makes a tile. Check: D.
 - AC-TODAY-04. The round story (18-hole strip) appears only for a brief read whose player's newest round is inside the week (04 section 8 T). Check: D.
-- AC-TODAY-05. Desktop: tiles stack in one column as rows (picture 96 × 36, text beside). Check: S `1440`.
+- AC-TODAY-05. Desktop: tiles stack in one column as rows: the text, then the picture (96 × 36) closing the row. A tile with no picture is the same row without it, so every row's text starts on one line (W10, owner's preview walk, 11 Nov 2026). Check: S `1440`, `crowded`.
 - AC-TODAY-06. Opening a tile clears its ring for the session (`useChSessionState`, never the address). Check: D, C `story` (M-TEAM-34).
 
 | State | Capture | Criterion |
@@ -328,9 +328,9 @@ Motion: M-TEAM-38.
 
 ### S-TEAM.working
 
-- AC-WORK-01. Card "Working on", meta "{n} focus areas". Rows: ring 38 (r 15, stroke 4, `--track` track; fill in gain fill at 50% and over, neutral fill under, round cap, from 12 o'clock); "{first} · {title}" 15/1.3 500; progress line 13.5 ink-2; state 13.5/600 in gain ("Active · 5 rounds in") or ink-2 ("In progress · 3 rounds in"), or the verdict word. Check: S `work`.
+- AC-WORK-01. Card "Working on", meta "{n} focus areas". Rows: "{first} · {title}" 15/1.3 500; progress line 13.5 ink-2; state 13.5 ink-2 at regular weight ("Active · 5 rounds in", "In progress · 3 rounds in", or the verdict word), never in green. A ring 38 (r 15, stroke 4, `--track` track; fill in gain fill at 50% and over, neutral fill under, round cap, from 12 o'clock) closes the row only when the focus has a target; a row without one has no ring. A focus two or more players share (the same title) is one row: the title, their first names ("Cole, Dylan and Jackson") and the state word when all of them share it, with no ring (W11, owner's preview walk, 11 Nov 2026). Check: S `work`, `crowded`.
 - AC-WORK-02. Ring fill = (baseline − current) / (baseline − target), clamped 0 to 1 (03 section 8). Check: D.
-- AC-WORK-03. A proposal made in this visit appears as a row with a dashed 3/3 neutral track and no fill, "From {now} now · {first} sets the target" and "Proposed · {first} accepts it in their app". The board sends no target. Check: S `assigned-read` then `work`, C `assign`.
+- AC-WORK-03. A proposal made in this visit appears as a row with no ring (it has no target until the player sets one; W11), "From {now} now · {first} sets the target" and "Proposed · {first} accepts it in their app". The board sends no target. Check: S `assigned-read` then `work`, C `assign`.
 - AC-WORK-04. No rows: "Nothing in progress yet. Assign a read as a focus and it shows here." With the brief flag off the card is absent. Check: D.
 
 States: early and empty (the empty line), long (titles wrap), XXL, dark as common.

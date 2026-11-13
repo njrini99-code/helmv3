@@ -15,7 +15,7 @@ import { Icon } from '../../ui/Icon';
 import { RefreshNotice } from '../../ui/RefreshNotice';
 import { WeekStrip } from '../../ui/WeekStrip';
 import { EmptyState } from '../../ui/States';
-import { firstBusyDay, ledgerSorted, owedBy, type LedgerKey, type QueueItem, type TaskFigures } from './hub-summary';
+import { firstBusyDay, lateBy, ledgerSorted, type LedgerKey, type QueueItem, type TaskFigures } from './hub-summary';
 import { Acknowledgement, ReplyChoices, repliesLine, useTaskSave } from './parts';
 import { plural } from '../../lib/plural';
 
@@ -242,11 +242,13 @@ export function TripTile({ trips, role, days, error, covered, onEdit, onPlan, on
   );
 }
 
-// ── This week ───────────────────────────────────────────────────────────────
+// ── Next 7 days ─────────────────────────────────────────────────────────────
 
 /**
- * Seven days you can step through. A dot is an event, gold is a day on the road. The day you pick lists its events;
- * an event that takes replies shows who has replied (coach) or your answer, which you can change in place (player).
+ * Seven days you can step through: today and the six after it. A dot is an event, gold is a day on the road. The day you
+ * pick lists its events; an event that takes replies shows who has replied (coach) or your answer, which you can change
+ * in place (player). W21 (12 Nov): it said "This week" and "Later this week", so on a Wednesday next Tuesday was this
+ * week; it says the next 7 days, and what is coming up in them.
  */
 export function WeekTile({ week, role, rsvps, replies, isPending, onReply, covered, span = 5 }: {
   week: ChTeamHub['week'];
@@ -275,14 +277,14 @@ export function WeekTile({ week, role, rsvps, replies, isPending, onReply, cover
     .slice(0, 3);
   const rsvpFor = (id: string) => (rsvps.error ? null : (rsvps.rows.find((r) => r.eventId === id) ?? null));
   return (
-    <Tile id="ch-hw-week" title="This week" span={span} aside={!week.error && <More href="/golf/dashboard/calendar">Calendar</More>}>
+    <Tile id="ch-hw-week" title="Next 7 days" span={span} aside={!week.error && <More href="/golf/dashboard/calendar">Calendar</More>}>
       {week.error ? (
-        <RefreshNotice code="CH-10201" title="This week didn’t load." body="Nothing was lost. Try again." covered={covered} />
+        <RefreshNotice code="CH-10201" title="The next 7 days didn’t load." body="Nothing was lost. Try again." covered={covered} />
       ) : quiet || !day ? (
         <EmptyState
           compact
           code="CH-10301"
-          title="Nothing on the calendar this week"
+          title="Nothing on the calendar in the next 7 days"
           body={coach ? 'Events you add show here, with who has replied.' : 'Team events show here as your coaches add them.'}
           action={
             coach ? (
@@ -295,7 +297,7 @@ export function WeekTile({ week, role, rsvps, replies, isPending, onReply, cover
       ) : (
         <>
           <WeekStrip
-            label="Days this week"
+            label="The next 7 days"
             days={days.map((d, i) => ({
               date: d.date,
               top: i === 0 ? 'Today' : d.weekday,
@@ -351,7 +353,7 @@ export function WeekTile({ week, role, rsvps, replies, isPending, onReply, cover
           </div>
           {later.length > 0 && (
             <div className="ch-hw-later">
-              <span>Later this week</span>
+              <span>Coming up</span>
               <ol>
                 {later.map(({ e, d, i }) => (
                   <li key={e.id}>
@@ -394,36 +396,32 @@ function ReplyMeter({ c }: { c: { going: number; maybe: number; no: number; none
 
 // ── Waiting on (coach) ──────────────────────────────────────────────────────
 
+/**
+ * W22 (12 Nov): a cell is one figure and its heading says what it counts. "1 late 3" (one late of three tasks) and
+ * "none in 14 days 0" read as one number; late tasks are a column of their own, and rounds are only the count (the foot
+ * says who played in the last 14 days).
+ */
 const COLUMNS: Array<[Exclude<LedgerKey, 'owed'>, string]> = [
   ['name', 'Player'],
   ['replies', 'Replies'],
   ['posts', 'Posts'],
   ['tasks', 'Tasks'],
+  ['late', 'Late'],
   ['rounds', 'Rounds'],
 ];
 
-function Figure({ items, late = 0 }: { items: unknown[] | null; late?: number }) {
-  if (items == null)
+/** One figure: a count, a quiet 0, or a dash when its list didn't load. `warn` takes the warning ink (late, no rounds). */
+function Figure({ n, warn = false }: { n: number | null; warn?: boolean }) {
+  if (n == null)
     return (
       <span className="ch-hw-led__x" title="Didn’t load">
         —<span className="ch-sr-only">didn’t load</span>
       </span>
     );
-  if (!items.length) return <span className="ch-hw-led__0 ch-num">0</span>;
+  if (n === 0 && !warn) return <span className="ch-hw-led__0 ch-num">0</span>;
   return (
     <span className="ch-hw-led__n">
-      <b className="ch-num">{items.length}</b>
-      {late > 0 && <em className="ch-num">{late} late</em>}
-    </span>
-  );
-}
-
-function Rounds({ r }: { r: ChHubLedgerRow['rounds'] }) {
-  if (!r) return <Figure items={null} />;
-  return (
-    <span className="ch-hw-led__n">
-      <b className={'ch-num' + (r.n === 0 ? ' is-zero' : '')}>{r.n}</b>
-      {!r.recent && <em>none in 14 days</em>}
+      <b className={'ch-num' + (warn ? ' is-warn' : '')}>{n}</b>
     </span>
   );
 }
@@ -457,7 +455,7 @@ function Owed({ row, onOpen }: { row: ChHubLedgerRow; onOpen: (tab: ChHubTab) =>
 }
 
 /**
- * Who owes what, one row a player: replies this week, posts not acknowledged, open tasks (late in amber) and rounds in
+ * Who owes what, one row a player: replies due, posts not acknowledged, open tasks (late in amber) and rounds in
  * 30 days. It opens on whoever owes the most; a column heading sorts by it (again to turn it round), and a name opens
  * what they owe by title.
  */
@@ -470,7 +468,7 @@ export function WaitingOn({ rows, pulse, playersError, onOpen }: {
   const phone = useChPhone();
   const [sort, setSort] = useState<{ key: LedgerKey; flipped: boolean }>({ key: 'owed', flipped: false });
   const [open, setOpen] = useState<string | null>(null);
-  const owing = rows.filter((r) => owedBy(r) > 0).length;
+  const lateRows = rows.filter((r) => lateBy(r) > 0).length;
   const sorted = ledgerSorted(rows, sort.key, sort.flipped);
   const by = (key: LedgerKey) => {
     haptic('select');
@@ -492,7 +490,9 @@ export function WaitingOn({ rows, pulse, playersError, onOpen }: {
       title="Waiting on"
       span={8}
       className="ch-hw--ledger"
-      aside={!playersError && rows.length > 0 && <span className="ch-hw__k ch-num">{owing === 0 ? 'Nobody owes anything' : `${owing} of ${rows.length} owe something`}</span>}
+      // W22: who has a late task, not who owes anything (everyone owes a reply in a week with events, so that flagged the
+      // whole team). The ledger itself ranks by what is owed.
+      aside={!playersError && rows.length > 0 && <span className="ch-hw__k ch-num">{lateRows === 0 ? 'Nothing late' : `${lateRows} with a late task`}</span>}
     >
       {playersError ? (
         // The page's own notice (CH-10208, or CH-1209 with another failure) carries Try again: no second one here.
@@ -530,7 +530,7 @@ export function WaitingOn({ rows, pulse, playersError, onOpen }: {
       ) : (
         <table className="ch-hw-led">
           <caption className="ch-sr-only">
-            What each player owes. {sort.key === 'owed' ? 'Most owed first.' : `Sorted by ${sort.key}.`} Choose a heading to sort, a name to see the items.
+            What each player owes: replies due, posts to acknowledge, open tasks, late tasks and rounds in 30 days. {sort.key === 'owed' ? 'Most owed first.' : `Sorted by ${sort.key}.`} Choose a heading to sort, a name to see the items.
           </caption>
           <thead>
             <tr>
@@ -571,21 +571,24 @@ function LedgerRow({ r, open, onToggle, late, onOpen }: { r: ChHubLedgerRow; ope
           </button>
         </th>
         <td>
-          <Figure items={r.replies} />
+          <Figure n={r.replies?.length ?? null} />
         </td>
         <td>
-          <Figure items={r.posts} />
+          <Figure n={r.posts?.length ?? null} />
         </td>
         <td>
-          <Figure items={r.tasks} late={late} />
+          <Figure n={r.tasks?.length ?? null} />
         </td>
         <td>
-          <Rounds r={r.rounds} />
+          <Figure n={r.tasks ? late : null} warn={late > 0} />
+        </td>
+        <td>
+          <Figure n={r.rounds?.n ?? null} warn={r.rounds?.n === 0} />
         </td>
       </tr>
       {open && (
         <tr className="ch-hw-led__more" id={`ch-hw-owe-${r.id}`}>
-          <td colSpan={5}>
+          <td colSpan={COLUMNS.length}>
             <Owed row={r} onOpen={onOpen} />
           </td>
         </tr>

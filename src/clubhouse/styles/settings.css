@@ -274,6 +274,17 @@
 .ch-set-row__c > .ch-btn + .ch-btn {
   margin-left: 8px;
 }
+/* G8: a read-only value under its label, the way the field below it reads, not at the row's far end. */
+.ch-set-row.is-stack {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 4px;
+}
+.ch-set-row.is-stack .ch-set-row__c {
+  justify-content: flex-start;
+  max-width: 100%;
+}
 .ch-set-row.is-dim .ch-set-row__l {
   color: var(--ch-text-secondary);
 }

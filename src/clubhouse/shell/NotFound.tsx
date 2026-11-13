@@ -14,7 +14,7 @@ export function ClubhouseNotFound() {
   return (
     <main className="ch-notyet">
       <EmptyState
-        size="page"
+        size="canvas"
         code="CH-1306"
         icon={Compass}
         title="We couldn’t find that"

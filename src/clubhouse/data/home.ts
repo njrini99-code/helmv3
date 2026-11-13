@@ -1,4 +1,5 @@
 import 'server-only';
+import { roundTypeFromDb } from '@/lib/golf/round-type-utils';
 import { createClient } from '@/lib/supabase/server';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
@@ -88,6 +89,11 @@ export interface ChLatestRound {
   meta: string;
   /** The day it was played, YYYY-MM-DD. */
   date?: string;
+  /** The course's name and the day's short label ("Wed 21 Oct"), so a run of one event's rounds can be told as one row (W4). */
+  course?: string | null;
+  day?: string;
+  /** Tournament and qualifier rounds of one event fold into one row on the desk; practice rounds never do (W4). */
+  kind?: 'practice' | 'tournament' | 'qualifier';
   score: number;
   toPar: number | null;
   /** Null when the round was posted as a total, without hole-by-hole detail. */
@@ -178,6 +184,9 @@ export interface ChTeamForm {
   deltaSe?: number | null;
   /** The team's average on each of its last ten round days (the rounds the average rests on), oldest to newest, for the line. */
   line: number[];
+  /** Each point's day (YYYY-MM-DD) and how many rounds it averages, so the chart can name its ends and its best and worst days (W27/W3). Absent on an older fixture. */
+  lineDays?: string[];
+  lineCounts?: number[];
   /** Countable rounds of either length in the team-local Monday-to-Sunday week: a count on its own basis, not the figures'. */
   roundsThisWeek: number;
   /** What the average, greens and putts rest on: the rounds, their first and last dates, and how many carry greens and putts. */
@@ -257,7 +266,8 @@ export interface ChCoachHome {
   clock?: ChHomeClock;
   week: { days: ChHomeDay[]; agenda: ChAgendaRow[]; error: boolean };
   /** holesError: the rounds loaded but their hole-by-hole detail didn't. */
-  latestRounds: { rounds: ChLatestRound[]; error: boolean; holesError: boolean };
+  /** `recent`: the newest rounds without holes (up to RECENT_ROUNDS), for the desk's list, which folds one event's rounds into a row (W4). */
+  latestRounds: { rounds: ChLatestRound[]; recent?: ChLatestRound[]; error: boolean; holesError: boolean };
   leaderboard: { rows: ChLeaderRow[]; scorecards: number; rosterSize: number; error: boolean; /** The basis the rows are read on (span.ts). Absent is the season. */ span?: ChSpan };
   /** The basis Home's team figures are read on (`?range=all` is All time). Absent is the default: the figures' own windows. */
   span?: ChSpan;
@@ -430,7 +440,7 @@ export async function loadCoachHome(input: {
   const seasonFull = seasonOnly(full, start);
 
   // ── Latest rounds with hole-by-hole (read above, as soon as the rounds were in) ──
-  const { rounds: latestRounds, holesError } = latest;
+  const { rounds: latestRounds, recent: recentRounds, holesError } = latest;
 
   // ── Leaderboard ──
   const byPlayer = groupByPlayer(seasonFull);
@@ -491,7 +501,7 @@ export async function loadCoachHome(input: {
     todayLabel,
     clock: { tz, day },
     week: { ...wk.week, agenda: withWas(wk.week.agenda, changes.byEvent) },
-    latestRounds: { rounds: latestRounds, error: roundsError, holesError },
+    latestRounds: { rounds: latestRounds, recent: recentRounds, error: roundsError, holesError },
     leaderboard: { rows, scorecards: seasonFull.length, rosterSize: roster.length, error: roundsError, ...(input.span === 'all' ? { span: input.span } : {}) },
     ...(input.span === 'all' ? { span: input.span } : {}),
     phone: { next: withChange(wk.next, changes.byEvent), today: wk.todayEvents.map((e) => withChange(e, changes.byEvent)), form, weekNote: wk.weekNote },
@@ -503,6 +513,9 @@ export async function loadCoachHome(input: {
   };
 }
 
+/** The desk's Latest rounds reads this many, so four rows remain after an event's rounds fold into one (W4). */
+const RECENT_ROUNDS = 12;
+
 /**
  * The newest three 18-hole rounds with their hole-by-hole card (null for a
  * round posted as a total). `holesError`: the rounds loaded but the cards
@@ -512,7 +525,7 @@ export async function latestWithHoles(
   supabase: Awaited<ReturnType<typeof createClient>>,
   full: ChRound[],
   nameFor: (playerId: string) => string,
-): Promise<{ rounds: ChLatestRound[]; holesError: boolean }> {
+): Promise<{ rounds: ChLatestRound[]; recent: ChLatestRound[]; holesError: boolean }> {
   const latest = full.slice(0, 3);
   const holesByRound = new Map<string, ChHoleScore[]>();
   let holesError = false;
@@ -530,14 +543,18 @@ export async function latestWithHoles(
     }
   }
   const dateFmt = new Intl.DateTimeFormat('en-GB', { timeZone: 'UTC', weekday: 'short', day: 'numeric', month: 'short' });
-  const rounds = latest.map((r) => {
+  const toRow = (r: ChRound): ChLatestRound => {
     const holes = holesByRound.get(r.id);
+    const day = dateFmt.format(new Date(`${r.round_date.slice(0, 10)}T12:00:00Z`));
     return {
       id: r.id,
       playerId: r.player_id,
       playerName: nameFor(r.player_id),
-      meta: [r.course_name, dateFmt.format(new Date(`${r.round_date.slice(0, 10)}T12:00:00Z`)), r.tees_played ? `${r.tees_played} tees` : null].filter(Boolean).join(' · '),
+      meta: [r.course_name, day, teesLabel(r.tees_played)].filter(Boolean).join(' · '),
       date: r.round_date.slice(0, 10),
+      course: r.course_name,
+      day,
+      kind: r.round_type ? roundTypeFromDb(r.round_type) : 'practice',
       score: r.total_score ?? 0,
       toPar: r.score_to_par,
       holes: holes && holes.length === 18 ? holes : null,
@@ -546,8 +563,16 @@ export async function latestWithHoles(
       putts: recordedPutts(r.total_putts),
       sg: r.strokes_gained_total,
     };
-  });
-  return { rounds, holesError };
+  };
+  return { rounds: latest.map(toRow), recent: full.slice(0, RECENT_ROUNDS).map(toRow), holesError };
+}
+
+
+/** "Blue tees"; a tee name that already says tees ("Jeff Roope Invite Tees") is not given a second one (W4). */
+export function teesLabel(tees: string | null): string | null {
+  const t = tees?.trim();
+  if (!t) return null;
+  return /\btees?\b/i.test(t) ? t : `${t} tees`;
 }
 
 export interface ChHomeWeek {
@@ -913,7 +938,8 @@ export function teamForm(full: ChRound[], roundsThisWeek: number, span?: ChSpan)
     const d = r.round_date.slice(0, 10);
     byDay.set(d, [...(byDay.get(d) ?? []), r.total_score as number]);
   }
-  const line = [...byDay.values()].slice(-10).map((scores) => mean(scores) as number);
+  const lastDays = [...byDay.entries()].slice(-10);
+  const line = lastDays.map(([, scores]) => mean(scores) as number);
   const dates = last.map((r) => r.round_date.slice(0, 10)).sort();
   return {
     ...(span === 'all' ? { span } : {}),
@@ -921,6 +947,8 @@ export function teamForm(full: ChRound[], roundsThisWeek: number, span?: ChSpan)
     delta: prevAvg != null && pairedAvg != null ? pairedAvg - prevAvg : null,
     deltaSe: comparable ? windowChangeSe(lastPaired, prev, scoreOf, 'score') : null,
     line,
+    lineDays: lastDays.map(([day]) => day),
+    lineCounts: lastDays.map(([, scores]) => scores.length),
     roundsThisWeek,
     basis: { rounds: last.length, from: dates[0]!, to: dates[dates.length - 1]!, girRounds: last.filter(hasGir).length, puttsRounds: last.filter((r) => puttsOf(r) != null).length },
     gir: { pct: gir, ...(girFloor.needs ? { needs: girFloor.needs } : {}), delta: gir != null && pairedGir != null && prevGir != null ? pairedGir - prevGir : null, se: comparable ? changeSe(girRates(lastPaired), girRates(prev), null) : null },

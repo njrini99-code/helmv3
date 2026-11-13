@@ -6,7 +6,7 @@ import { placeLabels } from '../../../lib/chart-geometry';
 import { formatSigned, changeTone } from '../../../lib/format';
 import { initials as initialsOf } from '../../../lib/names';
 import { STATIONS, type ChStation, type ChTeamBoardData, type ChTeamPlayer } from '../../../data/coachhelm-team-shape';
-import { HOLE, stationRadius, STATION_NAME, STATION_SHORT } from './hole-geometry';
+import { coinSlots, HOLE, stationRadius, STATION_NAME, STATION_SHORT } from './hole-geometry';
 import { HoleMotion } from './HoleMotion';
 
 /** A coin drawn on a chart wears its class year (`--ch-yr-*`), as the roster's class bars do; a year the app can't place is the neutral mark. */
@@ -73,6 +73,9 @@ export function TeamHole({
   const labelSize = 13 * up;
   const valueSize = 19 * up;
   const coinSize = 12 * up;
+  // A coin is 22px on screen, so it grows in the drawing as the hole draws smaller; its slots fan out with it (W9).
+  const coinR = 11 * up;
+  const coinsAt = (s: ChStation) => coinSlots(H, s, coinR, Math.min(players.filter((p) => p.worst === s).length, H.coins[s].length));
   // Words go beside their own mark, clear of every mark and of each other, inside the drawing, whatever the figures are (TEAM-2, TEAM-3).
   const placed = new Map(
     placeLabels(
@@ -86,10 +89,7 @@ export function TeamHole({
       { x: 4, y: 4, w: H.w - 8, h: H.h - 8 },
       6,
       [
-        ...STATIONS.flatMap((s) => {
-          const n = players.filter((p) => p.worst === s).length;
-          return H.coins[s].slice(0, n).map(([x, y]) => ({ x: x - 11 * up, y: y - 11 * up, w: 22 * up, h: 22 * up }));
-        }),
+        ...STATIONS.flatMap((s) => coinsAt(s).map(([x, y]) => ({ x: x - coinR, y: y - coinR, w: 2 * coinR, h: 2 * coinR }))),
         { x: H.flag.x - 2, y: H.flag.y - 34, w: 18, h: 34 },
       ],
     ).map((l) => [l.id, l]),
@@ -119,9 +119,9 @@ export function TeamHole({
           const signed = changeTone(v, false);
           const tone = !signed ? ' is-even' : signed === 'is-gain' ? ' is-gain' : '';
           const here = players.filter((p) => p.worst === s);
-          const slots = H.coins[s];
+          const slots = coinsAt(s);
           // The drawn slots, then "+N" in the last one (02-PLAN 9.7). A station drawn with fewer slots than three still ends on "+N".
-          const room = Math.max(1, slots.length);
+          const room = Math.max(1, H.coins[s].length);
           const over = here.length > room;
           const shown = over ? here.slice(0, room - 1) : here;
           const moreAt = slots[room - 1];
@@ -160,7 +160,7 @@ export function TeamHole({
                 return (
                   <g key={p.id} className={'scn' + (p.early ? ' early' : '')} data-early={p.early || undefined} data-year={coinYear(p.classYear) ?? undefined} aria-hidden="true">
                     {/* Solid in the class year's colour; hollow, a dashed ring on the hole's own green, under 5 rounds (TEAM-11). */}
-                    <circle cx={c[0]} cy={c[1]} r={11 * up} />
+                    <circle cx={c[0]} cy={c[1]} r={coinR} />
                     <ChartText size={coinSize} weight={600} x={c[0]} y={c[1]}>
                       {initialsOf(p.name)}
                     </ChartText>
@@ -183,7 +183,7 @@ export function TeamHole({
                   }}
                 >
                   <circle className="hit" cx={moreAt[0]} cy={moreAt[1]} r={23 * up} fill="transparent" />
-                  <circle cx={moreAt[0]} cy={moreAt[1]} r={11 * up} />
+                  <circle cx={moreAt[0]} cy={moreAt[1]} r={coinR} />
                   <ChartText size={coinSize} weight={600} x={moreAt[0]} y={moreAt[1]}>
                     +{here.length - shown.length}
                   </ChartText>

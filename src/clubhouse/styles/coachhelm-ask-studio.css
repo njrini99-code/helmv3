@@ -456,7 +456,10 @@
 }
 .ch-aks-cmp__table {
   width: 100%;
-  border-collapse: collapse;
+  /* Separate, not collapsed: WebKit drew a collapsed half-pixel rule only under the sticky first cell, so the header's
+     rule stopped after "Player" (12 Nov). Each cell draws its own rule; with no spacing they meet as one line. */
+  border-collapse: separate;
+  border-spacing: 0;
   font: var(--ch-type-14);
 }
 .ch-aks-cmp__table th,
@@ -501,6 +504,10 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
+}
+/* The name keeps its width, so the open arrow sits beside it, not at the far side of a wide first column (W49). */
+.ch-aks-cmp__table .ch-aks-row > .ch-aks-cmp__who {
+  flex: 0 1 auto;
 }
 .ch-aks-cmp__who > b {
   font: var(--ch-type-15-medium);
@@ -799,6 +806,219 @@
   text-wrap: pretty;
 }
 
+/* The Miss Compass (Studio Phase 1, MissCompass.tsx): eight labelled directions around the pin, never places on a green.
+   In this sheet's look: each direction a 44+ target ruled underneath, with its word, count and share, and its count
+   against the commonest as a ruled length (an SVG, like the drawings); the chosen one ruled in the selected ink. Its shots
+   open below (desk) or in a sheet (phone), drawn in place: nothing moves when a direction is chosen. */
+.ch-aks-compass {
+  display: grid;
+  gap: var(--ch-space-3);
+  margin: 0;
+}
+.ch-aks-compass__rose {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--ch-space-1) var(--ch-space-2);
+  max-width: 420px;
+}
+.ch-aks-compass[data-size='compact'] .ch-aks-compass__rose {
+  max-width: none;
+}
+.ch-aks-compass__dir {
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  gap: 2px;
+  min-width: 44px;
+  min-height: 64px;
+  padding: var(--ch-space-2) var(--ch-space-1);
+  border: 0;
+  border-bottom: var(--ch-hairline-w) solid var(--ch-separator);
+  background: none;
+  color: var(--ch-text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+.ch-aks-compass__word {
+  font: var(--ch-type-12-medium);
+  color: var(--ch-text-secondary);
+}
+.ch-aks-compass__n {
+  font: var(--ch-type-20-strong);
+  letter-spacing: var(--ch-track-20);
+}
+.ch-aks-compass__share {
+  font: var(--ch-type-12);
+  color: var(--ch-text-tertiary);
+}
+.ch-aks-compass__bar {
+  display: block;
+  width: 100%;
+  height: 3px;
+}
+.ch-aks-compass__bar rect {
+  fill: var(--ch-ink-300);
+}
+.ch-aks-compass__dir.is-most .ch-aks-compass__bar rect {
+  fill: var(--ch-chart-loss);
+}
+.ch-aks-compass__dir.is-most .ch-aks-compass__n {
+  color: var(--ch-loss);
+}
+/* Selected INK, not --ch-selected-strong: that one is a plate's fill and stays deep green at night, where the word and its rule
+   all but vanished (WebKit, 12 Nov, dark). */
+.ch-aks-compass__dir.is-on {
+  border-bottom: 2px solid var(--ch-selected-ink);
+}
+.ch-aks-compass__dir.is-on .ch-aks-compass__word {
+  color: var(--ch-selected-ink);
+}
+.ch-aks-compass__dir:disabled {
+  color: var(--ch-text-tertiary);
+  cursor: default;
+}
+.ch-aks-compass__dir:disabled .ch-aks-compass__bar {
+  display: none;
+}
+.ch-aks-compass__dir:focus-visible,
+.ch-aks-compass__close:focus-visible,
+.ch-aks-compass__shot:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+@media (hover: hover) {
+  .ch-aks-compass__dir:not(:disabled):not(.is-on):hover {
+    border-bottom-color: var(--ch-border-strong);
+  }
+}
+.ch-aks-compass__pin {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 2px;
+  min-height: 64px;
+  color: var(--ch-text-secondary);
+}
+.ch-aks-compass__pin > svg {
+  width: 8px;
+  height: 8px;
+}
+.ch-aks-compass__pin circle {
+  fill: var(--ch-ink-900);
+}
+.ch-aks-compass__pin > span {
+  font: var(--ch-type-17-strong);
+  letter-spacing: var(--ch-track-17);
+  color: var(--ch-text-primary);
+}
+.ch-aks-compass__pin > small {
+  font: var(--ch-type-11);
+  letter-spacing: var(--ch-track-11);
+}
+.ch-aks-compass > figcaption {
+  font: var(--ch-type-13);
+  color: var(--ch-text-secondary);
+  text-wrap: pretty;
+}
+.ch-aks-compass__drawer {
+  display: grid;
+  gap: var(--ch-space-2);
+  padding-top: var(--ch-space-3);
+  border-top: var(--ch-hairline-w) solid var(--ch-separator);
+}
+.ch-aks-compass__sheet .ch-aks-compass__drawer {
+  padding-top: 0;
+  border-top: 0;
+}
+.ch-aks-compass__sheet .ch-aks-compass__drawer > header {
+  display: none;
+}
+.ch-aks-compass__drawer > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ch-space-2);
+}
+.ch-aks-compass__drawer h4 {
+  margin: 0;
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
+}
+.ch-aks-compass__close {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--ch-radius-md);
+  background: none;
+  color: var(--ch-text-secondary);
+  cursor: pointer;
+}
+.ch-aks-compass__capped {
+  margin: 0;
+  font: var(--ch-type-13);
+  color: var(--ch-text-secondary);
+}
+.ch-aks-compass__shots {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-aks-compass__shots li + li {
+  border-top: var(--ch-hairline-w) solid var(--ch-separator);
+}
+.ch-aks-compass__shot {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--ch-space-3);
+  min-height: 44px;
+  padding: var(--ch-space-2) 0;
+  color: var(--ch-text-primary);
+  text-decoration: none;
+}
+.ch-aks-compass__when {
+  display: grid;
+  min-width: 0;
+}
+.ch-aks-compass__when b {
+  font: var(--ch-type-14-medium);
+}
+.ch-aks-compass__when small {
+  overflow: hidden;
+  font: var(--ch-type-12);
+  color: var(--ch-text-secondary);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.ch-aks-compass__said {
+  font: var(--ch-type-13);
+  color: var(--ch-text-secondary);
+}
+.ch-aks-compass__shot > svg {
+  color: var(--ch-text-tertiary);
+}
+/* The phone's sheet: at 390 the distances beside the date cut "Hilltop Golf Club" to "Hilltop Golf Cl…" (WebKit, 12 Nov).
+   There the row stacks: whose and when, then the distances under them, the arrow beside both. */
+.ch-aks-compass__sheet .ch-aks-compass__shot {
+  grid-template-columns: minmax(0, 1fr) auto;
+  row-gap: var(--ch-space-1);
+}
+.ch-aks-compass__sheet .ch-aks-compass__said {
+  grid-column: 1;
+  grid-row: 2;
+}
+.ch-aks-compass__sheet .ch-aks-compass__shot > svg {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
+.ch-aks-compass__ask {
+  padding-top: var(--ch-space-1);
+}
+
 /* This season against last: each a ruled row, its interval on one shared scale, its figure at the end. */
 .ch-aks-season {
   display: flex;
@@ -876,6 +1096,13 @@
 }
 .ch-aks-table .ch-th-table :is(th, td):last-child {
   padding-right: 0;
+}
+/* A table of records drawn as items keeps the same ruled lines on the paper, flush to the leaf's edges. */
+.ch-aks-table .ch-th-items > li {
+  padding-inline: 0;
+}
+.ch-aks-table .ch-th-items > li + li {
+  border-top-color: var(--ch-separator);
 }
 
 /* A way into a screen of the app: a ruled row with a chevron, as the leaf's sources are. */

@@ -116,7 +116,7 @@ const HISTORY: CourseHistory = {
 
 export const PREVIEW_TEAM_BOARD: ChTeamBoardData = {
   off: null,
-  team: { name: 'Demo University Golf', tourKnown: true, baselineLabel: 'to Tour' },
+  team: { name: 'Demo University Golf', tourKnown: true, baselineLabel: 'to Tour', sgTour: 'pga' },
   roster: { count: LIST.length, error: false },
   players: { list: LIST, error: false },
   legsError: false,

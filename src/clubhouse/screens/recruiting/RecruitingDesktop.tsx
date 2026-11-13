@@ -1,6 +1,6 @@
 'use client';
 
-import { Ellipsis, Plus, SearchX, Trash2 } from 'lucide-react';
+import { Ellipsis, Plus, SearchX, Trash2, UserSearch } from 'lucide-react';
 import { useRef } from 'react';
 import { CH_STAGES, isNextStepLate, nextStepLine, rowLineOf, stageMeta, subtitleOf, whenLabel, type ChProspect, type ChStage } from '../../data/recruiting-shape';
 import { Button, IconButton } from '../../ui/Button';
@@ -62,6 +62,7 @@ export function RecruitingDesktop({ c }: { c: RecCtx }) {
               size="page"
               code="CH-14301"
               shape="columns"
+              icon={UserSearch}
               title="Your prospect list starts here"
               body="Add the golfers you’re watching. Keep their contact details, notes and documents in one place, and move them through Watched, Recruiting, Offered and Committed. Only coaches see this page."
               action={

@@ -162,7 +162,8 @@ export async function loadCoachPracticeHome(teamId: string, now: Date = new Date
     events.map((event) => {
       const p = byEvent.get(event.id);
       const ended = (event.end_time ? new Date(event.end_time) : new Date(event.start_time)) < now;
-      return { event, state: stateOf(p, ended), href: p ? (p.status === 'draft' ? `${HREF}${p.id}/edit` : `${HREF}${p.id}`) : null, eventId: p ? null : event.id };
+      // A practice that has ended without a plan opens nothing: New plan plans what is coming, and its sheet lists only that (W15).
+      return { event, state: stateOf(p, ended), href: p ? (p.status === 'draft' ? `${HREF}${p.id}/edit` : `${HREF}${p.id}`) : null, eventId: p || ended ? null : event.id };
     }),
     now,
     zone,
@@ -193,7 +194,7 @@ export async function loadCoachPracticeHome(teamId: string, now: Date = new Date
   }
   return {
     status: 'ready',
-    data: { teamName, week, weekLine: weekMin ? `${hours(weekMin)} of practice this week` : null, upNext, drafts, published, past, open, copies: rows.filter((r) => r.state !== 'Draft' || r.ended).slice(0, 20).map((r) => ({ id: r.id, label: `${r.title} · ${r.day}` })), roster: roster.map((r) => r.id), firstRun: plans.length === 0 },
+    data: { teamName, week, weekLine: weekMin ? `${hours(weekMin)} of practice this week` : null, upNext, drafts, published, past, open, copies: rows.filter((r) => r.state !== 'Draft' || r.ended).slice(0, 20).map((r) => ({ id: r.id, label: `${r.title} · ${r.day}` })), roster: roster.map((r) => r.id), firstRun: plans.length === 0, zone },
   };
 }
 

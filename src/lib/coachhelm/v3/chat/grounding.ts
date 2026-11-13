@@ -9,6 +9,7 @@
  * Pure: text and envelopes in, a verdict out.
  */
 import type { ToolEnvelope } from './provenance';
+import { withoutUiOnly } from './ui-only';
 
 export interface GroundingResult {
   /** True when every checked number in the answer is supported by a read. */
@@ -88,11 +89,13 @@ export function supportedNumbers(reads: readonly Read[]): { all: number[]; gaps:
   const all: number[] = [];
   const figures: number[] = [];
   for (const r of reads) {
-    collect({ s: r.summary, n: r.coverage_note, m: r.measurements, series: r.series, d: r.detail, t: r.model_text, w: r.window_label }, all);
+    // A read's `ui_only` rows (the shots a coach can open) were never shown to the model, so they support no figure (ui-only.ts).
+    const d = withoutUiOnly(r.detail);
+    collect({ s: r.summary, n: r.coverage_note, m: r.measurements, series: r.series, d, t: r.model_text, w: r.window_label }, all);
     figures.push(...figuresOf(r));
     // A figure a read states outside its measurements (a team average in its detail) is a decimal there; whole numbers there are mostly counts and ids.
     const stated: number[] = [];
-    collect({ s: r.summary, d: r.detail, t: r.model_text }, stated);
+    collect({ s: r.summary, d, t: r.model_text }, stated);
     figures.push(...stated.filter((n) => !Number.isInteger(n)));
   }
   const capped = figures.slice(0, FIGURE_PAIR_CAP);

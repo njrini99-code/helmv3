@@ -360,6 +360,19 @@ export function Form({ form }: { form: ChTeamForm; }) {
   // Lower scores and fewer putts are better; more greens are better. A change is green or amber only when it clears its standard
   // error (stats visuals Q4); otherwise plain, and the average's says "No clear change" (F-54's zero is inside that).
   const avgTone = deltaTone(form.delta, form.deltaSe, true);
+  // W3 (owner's preview, 11 Nov 2026): "a green area with a V in it", no dates, nothing marked. The line names its first and last
+  // days and marks its best and toughest (the lowest and highest team average; a tie goes to the newer day), saying when one rests
+  // on a single round. Only with the days known (an older fixture has none) and three points or more.
+  const days = form.lineDays?.length === pts.length ? form.lineDays : null;
+  const counts = form.lineCounts?.length === pts.length ? form.lineCounts : null;
+  let best = 0;
+  let worst = 0;
+  pts.forEach((v, i) => {
+    if (v <= pts[best]!) best = i;
+    if (v >= pts[worst]!) worst = i;
+  });
+  const marked = days != null && pts.length >= 3 && pts[best] !== pts[worst];
+  const oneRound = (i: number) => (counts?.[i] === 1 ? ' · 1 round' : '');
   return (
     <section className="ch-hm-form" aria-labelledby="ch-hm-form">
       <div className="ch-hm-form__head">
@@ -380,7 +393,8 @@ export function Form({ form }: { form: ChTeamForm; }) {
           <em id="ch-hm-form">{form.span === 'all' ? 'Average · every round, all time' : 'Average · each player’s last 10'}</em>
           <b className="ch-num">{withPointSpan(formatFixed(form.avg))}</b>
         </span>
-        <span className={'ch-hm-delta ch-num ' + avgTone}>
+        {/* A change the card calls noise is not its loudest figure (W3): plain weight, quiet ink, the words beside it. */}
+        <span className={'ch-hm-delta ch-num ' + (avgTone || (form.delta != null ? 'is-flat' : ''))}>
           {form.delta != null && formatSigned(form.delta)}
           {form.delta != null && <em>{deltaWords(form.delta, avgTone, 'vs previous 10')}</em>}
           <em className="ch-hm-form__basis">{formBasis(form.basis)}</em>
@@ -392,7 +406,31 @@ export function Form({ form }: { form: ChTeamForm; }) {
           <path d={d} className="ch-hm-form__line" vectorEffect="non-scaling-stroke" />
           {/* The last point: a zero-length round stroke, so it stays a circle when the desktop card stretches the plot to its height. */}
           <path d={`M${Math.round(x(pts.length - 1) * 10) / 10},${Math.round(y(pts[pts.length - 1]!) * 10) / 10} h0.01`} className="ch-hm-form__dot" vectorEffect="non-scaling-stroke" />
+          {marked &&
+            ([best, worst] as const).map((i, k) => (
+              <path key={k ? 'worst' : 'best'} d={`M${Math.round(x(i) * 10) / 10},${Math.round(y(pts[i]!) * 10) / 10} h0.01`} className={'ch-hm-form__mark ' + (k ? 'is-worst' : 'is-best')} vectorEffect="non-scaling-stroke" />
+            ))}
         </svg>
+      )}
+      {days && pts.length > 1 && (
+        <div className="ch-hm-form__axis ch-num" aria-hidden="true">
+          <span>{shortDay(days[0]!)}</span>
+          <span>{shortDay(days[days.length - 1]!)}</span>
+        </div>
+      )}
+      {marked && (
+        <p className="ch-hm-form__ends ch-num">
+          <span>
+            <i className="is-best" aria-hidden="true" />
+            Best day {formatFixed(pts[best]!)} · {shortDay(days![best]!)}
+            {oneRound(best)}
+          </span>
+          <span>
+            <i className="is-worst" aria-hidden="true" />
+            Toughest day {formatFixed(pts[worst]!)} · {shortDay(days![worst]!)}
+            {oneRound(worst)}
+          </span>
+        </p>
       )}
       {pts.length <= 1 && <p className="ch-hm-form__noline">The line starts with a second round day.</p>}
       <dl className="ch-hm-form__figs">

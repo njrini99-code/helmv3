@@ -28,8 +28,15 @@ const OUT: Bezier = [0.2, 0.8, 0.2, 1];
 const SMOOTH: Bezier = [0.32, 0.72, 0, 1];
 
 /** CH-15601 first paint and the sign-in landing, CH-15602 the welcome drawing, CH-15603 its scene; CH-15605 reduced motion is a millisecond. */
-export const WELCOME_AT = { scrim: 0.2, mark: 0.3, date: 0.5, line1: 0.64, name: 1.05, card: 2.25, items: 2.55, itemStep: 0.14, hint: 2.8 } as const;
-export const WELCOME_TAKES = { scrim: 1.4, mark: 0.7, date: 0.7, line1: 1.0, name: 1.1, card: 0.9, item: 0.6, hint: 0.7, leave: 0.42 } as const;
+/**
+ * The card's rows arrive with the card (owner, 2026-11-12: "the what you missed UI is sloppy during the animation"). They
+ * used to start 0.3s after it, 0.14s apart, each fading on its own, so the card stood empty (its header and Continue) and
+ * the rows popped in one by one; on a phone that is a tall blank card. Now the rows share the card's fade and only settle
+ * a few pixels a beat apart, and the card is opaque in 0.4s (its rise still takes 0.9s), so it is not see-through over the
+ * moving course for a second. Leaving, every piece is gone in 0.24s while it slides, not a ghost over the fold.
+ */
+export const WELCOME_AT = { scrim: 0.2, mark: 0.3, date: 0.5, line1: 0.64, name: 1.05, card: 2.25, items: 2.25, itemStep: 0.05, hint: 2.8 } as const;
+export const WELCOME_TAKES = { scrim: 1.4, mark: 0.7, date: 0.7, line1: 1.0, name: 1.1, card: 0.9, cardFade: 0.4, item: 0.7, hint: 0.7, leave: 0.42, leaveFade: 0.24 } as const;
 
 /** Reduced motion: a millisecond, which is what the design asks for. */
 const ONE_MS = 0.001;
@@ -39,7 +46,13 @@ const tx = (takes: number, after: number, ease: Bezier, c: AuthCustom): Transiti
 
 /** The welcome leaving: each piece slides 28px left and fades, together. Reduced motion fades only, over the app's quick beat. */
 const leave = (c: AuthCustom) =>
-  c.reduced ? { opacity: 0, transition: { duration: CH_DUR.quick } } : { opacity: 0, transform: 'translate(-28px, 0px)', transition: tx(WELCOME_TAKES.leave, 0, OUT, c) };
+  c.reduced
+    ? { opacity: 0, transition: { duration: CH_DUR.quick } }
+    : {
+        opacity: 0,
+        transform: 'translate(-28px, 0px)',
+        transition: { transform: tx(WELCOME_TAKES.leave, 0, OUT, c), opacity: tx(WELCOME_TAKES.leaveFade, 0, OUT, c) },
+      };
 
 export const welcomeScrim: Variants = {
   hidden: { opacity: 0 },
@@ -80,12 +93,19 @@ export const welcomeName: Variants = {
 };
 export const welcomeCard: Variants = {
   hidden: { opacity: 0, transform: 'translate(0px, 18px)' },
-  show: (c: AuthCustom) => ({ opacity: 1, transform: 'translate(0px, 0px)', transition: tx(WELCOME_TAKES.card, WELCOME_AT.card, SMOOTH, c) }),
+  show: (c: AuthCustom) => ({
+    opacity: 1,
+    transform: 'translate(0px, 0px)',
+    transition: c.reduced
+      ? tx(WELCOME_TAKES.card, WELCOME_AT.card, SMOOTH, c)
+      : { transform: tx(WELCOME_TAKES.card, WELCOME_AT.card, SMOOTH, c), opacity: tx(WELCOME_TAKES.cardFade, WELCOME_AT.card, OUT, c) },
+  }),
   leave,
 };
+/** A row rides the card's fade (no opacity of its own) and settles 6px, a beat behind the row above it. */
 export const welcomeItem: Variants = {
-  hidden: { opacity: 0, transform: 'translate(0px, 10px)' },
-  show: (c: AuthCustom) => ({ opacity: 1, transform: 'translate(0px, 0px)', transition: tx(WELCOME_TAKES.item, WELCOME_AT.items + (c.index ?? 0) * WELCOME_AT.itemStep, OUT, c) }),
+  hidden: { transform: 'translate(0px, 6px)' },
+  show: (c: AuthCustom) => ({ transform: 'translate(0px, 0px)', transition: tx(WELCOME_TAKES.item, WELCOME_AT.items + (c.index ?? 0) * WELCOME_AT.itemStep, SMOOTH, c) }),
 };
 export const welcomeHint: Variants = {
   hidden: { opacity: 0 },

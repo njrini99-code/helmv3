@@ -1,0 +1,38 @@
+/* Loaded by ui/Spinner.tsx itself, so every page that draws a spinner has its ring: the sign-in's front door loads its own
+   sheets (AuthFrame), not the shell's controls.css, and its "Signing in…" key and its "Checking…" lines drew an empty,
+   0x0 span (WebKit, 12 Nov). The reduced-motion exemption stays in base.css. */
+/* The one spinner (ui/Spinner.tsx): a ring whose lit quarter turns once per sweep token. Every wait in Clubhouse draws this,
+   in a Button or alone, so the loop reads the same on every page. The duration is --ch-dur-sweep until tokens.css carries a
+   --ch-dur-spin of its own. It keeps turning under Reduce Motion (OQ-18; base.css exempts it from the reduced-motion
+   floor); Animations off sets the token to 0, which leaves the ring still. */
+.ch-spinner {
+  display: inline-block;
+  flex: none;
+  box-sizing: border-box;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, currentColor 22%, transparent);
+  border-top-color: currentColor;
+  animation: ch-spinner-turn var(--ch-dur-sweep) linear infinite;
+}
+.ch-spinner--sm {
+  width: 12px;
+  height: 12px;
+}
+.ch-spinner--lg {
+  width: 54px;
+  height: 54px;
+  border-width: 3px;
+}
+.ch-spinner--green {
+  color: var(--ch-green-600);
+}
+.ch-spinner--mint {
+  color: var(--ch-hero-mint);
+}
+@keyframes ch-spinner-turn {
+  to {
+    rotate: 360deg;
+  }
+}

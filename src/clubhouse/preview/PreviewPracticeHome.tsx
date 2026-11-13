@@ -55,6 +55,7 @@ const HOME: ChPracticeHome = {
   copies: [{ id: 'a', label: 'Tuesday practice · Tue, Nov 3' }],
   roster: [...PP_NAMES.keys()],
   firstRun: false,
+  zone: 'America/New_York',
 };
 
 const PLAYER: ChPlayerPracticeHome = {
@@ -82,13 +83,16 @@ const PLAYER: ChPlayerPracticeHome = {
   past: [{ id: 'a', day: 'Tue, Nov 3', title: 'Tuesday practice', time: '3:00 to 5:00 PM', line: '3:00 Warm-up · 3:15 Short game', state: 'Done', href: '/golf/dashboard/practice/plan/a' }],
 };
 
-/** `coachhelm-practice-home?state=`: Practice, with nothing reaching a server. `loading` and `player-loading` are the route's loading states. */
+/** `coachhelm-practice-home?state=`: Practice, with nothing reaching a server. `loading` and `player-loading` are the route's loading states; `new` and `empty-new` open New plan, with practices to plan and with none. */
 export function PreviewPracticeHome({ state }: { state?: string }) {
   if (state === 'loading') return <PracticeHomeSkeleton />;
   if (state === 'player-loading') return <PlayerPracticeHomeSkeleton />;
   if (state === 'player') return <PlayerPracticeHome data={PLAYER} />;
   if (state === 'player-empty') return <PlayerPracticeHome data={{ next: null, week: WEEK.map((t) => ({ ...t, items: [] })), upcoming: [], past: [] }} />;
-  if (state === 'empty') return <PracticeHome data={{ ...HOME, upNext: null, drafts: [], published: [], open: [], week: WEEK.map((t) => ({ ...t, items: [] })), weekLine: null }} previewSheet />;
+  const empty = { ...HOME, upNext: null, drafts: [], published: [], open: [], week: WEEK.map((t) => ({ ...t, items: [] })), weekLine: null };
+  if (state === 'empty') return <PracticeHome data={empty} previewSheet />;
+  // Q7: New plan with no practice on the calendar asks the day, start and end, and makes the practice with the plan.
+  if (state === 'empty-new') return <PracticeHome data={empty} openNew previewSheet />;
   if (state === 'firstrun') return <PracticeHome data={{ ...HOME, firstRun: true, upNext: null, drafts: [], published: [], past: [], copies: [] }} previewSheet />;
   return <PracticeHome data={HOME} openNew={state === 'new'} previewSheet />;
 }

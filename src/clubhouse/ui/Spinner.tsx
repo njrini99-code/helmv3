@@ -1,3 +1,6 @@
+// Its ring travels with it: a page that loads its own sheets (the sign-in's AuthFrame) draws it too.
+import '../styles/spinner.css';
+
 /**
  * The one "working" ring. A Button draws it over its own label while `busy` (ui/Button.tsx); a place with no button to
  * hang it on (a sync note, a thread's work line, a full-height wait) draws it alone. One duration: the sweep token, so

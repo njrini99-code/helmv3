@@ -605,19 +605,10 @@ section.ch-lv-card {
   font: var(--ch-type-13-strong);
   color: var(--ch-ink-600);
 }
-.ch-lv-empty {
-  padding: var(--ch-space-10) var(--ch-space-4);
-  text-align: center;
-}
 .ch-lv-empty__title {
   margin: 0;
   font: var(--ch-type-15);
   letter-spacing: var(--ch-track-15);
-  color: var(--ch-ink-500);
-}
-.ch-lv-empty__body {
-  margin: var(--ch-space-1) 0 0;
-  font: var(--ch-type-13);
   color: var(--ch-ink-500);
 }
 /* Wide: the lanes, and a panel beside them (a sheet below 1080 px, or when the desk is under 944 px; drawn by the

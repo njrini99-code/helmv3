@@ -3,7 +3,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { logServerError } from '@/lib/server-error-logger';
-import { todayIsoInZone } from '@/lib/golf/timezone';
+import { offsetMinutesFor, todayIsoInZone } from '@/lib/golf/timezone';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { requireRosterPlayer, type CoachChatContext } from './context';
 import { nowIso, unavailableEnvelope, type ToolEnvelope } from './provenance';
 import { seasonStartDate } from './season-rule';
@@ -63,32 +64,120 @@ function scopeIds(ctx: CoachChatContext, playerId?: string): { ids: string[]; pl
 // Attendance
 // ---------------------------------------------------------------------------
 
-/** Attendance per player: events counted, attended, excused, absent and the percentage, from the attendance summary the team keeps. */
+export type AttendanceMark = 'present' | 'late' | 'no_show';
+
+/**
+ * The attendance a row records, by the rule the attendance screen writes and reads (`persistedMark`, src/app/golf/actions/attendance.ts):
+ * `attendance_status` first, then the convention from before migration 20260610080000 (checked in is present; a check-in stamp without a
+ * check-in is a no-show). Null: nobody marked it. A reply (`status`: accepted, declined, maybe) is not attendance.
+ */
+export function attendanceMarkOf(row: { attendance_status: string | null; checked_in: boolean | null; checked_in_at: string | null }): AttendanceMark | null {
+  if (row.attendance_status === 'present' || row.attendance_status === 'late' || row.attendance_status === 'no_show') return row.attendance_status;
+  if (row.checked_in === true) return 'present';
+  if (row.checked_in_at !== null) return 'no_show';
+  return null;
+}
+
+/** This season's first instant: midnight on 1 August on the team's clock (`seasonStartDate`, the rule every season read here uses). */
+function seasonStartsAt(now: Date, zone: string): { date: string; instant: string } {
+  const date = seasonStartDate(now, zone);
+  const offset = offsetMinutesFor(date, '00:00:00', zone) ?? 0;
+  return { date, instant: new Date(Date.parse(`${date}T00:00:00Z`) + offset * 60_000).toISOString() };
+}
+
+type AttendanceRow = {
+  id: string;
+  player_id: string;
+  status: string | null;
+  attendance_status: string | null;
+  checked_in: boolean | null;
+  checked_in_at: string | null;
+  golf_events: { id: string; start_time: string; event_type: string | null; status: string | null } | null;
+};
+
+type AttendanceCount = { events: number; attended: number; late: number; excused: number; absent: number; unmarked: number };
+
+const attendanceZero = (): AttendanceCount => ({ events: 0, attended: 0, late: 0, excused: 0, absent: 0, unmarked: 0 });
+
+/** Attended over recorded (attended plus absent), 0 to 100, as the attendance screen counts it. Null when nothing was recorded. */
+const attendanceRate = (c: AttendanceCount): number | null => (c.attended + c.absent > 0 ? round1((c.attended / (c.attended + c.absent)) * 100) : null);
+
+/**
+ * Attendance this season, from 1 August on the team's clock to now: what coaches marked on each event (`golf_event_attendance`), per
+ * player and for the team. Present and late are attended (late is also counted on its own); a no-show is absent; an event a player was
+ * excused from and nobody marked is excused. The percentage is attended over attended plus absent, weighted over every mark (never a
+ * mean of the players' percentages), as the attendance screen counts it (`getPlayerAttendanceStats`). Excused and unmarked events stay
+ * out of it, and the counts say how many there were.
+ *
+ * Scoped as the Clubhouse calendar reads attendance: the rows of this team's events, through the event, in pages ordered by id, so the
+ * 1,000-row cap never shortens a season and no id list is sent. Class blocks and cancelled events are not events anyone attends.
+ * Until 12 Nov 2026 this read `golf_attendance_summary`, which nothing writes, and told every team "No attendance on record".
+ */
 export async function getAttendanceSummary(sb: Sb, ctx: CoachChatContext, input: { player_id?: string }): Promise<ToolEnvelope> {
   const { ids, player } = scopeIds(ctx, input.player_id);
   if (ids.length === 0) return envelope('No players on the roster.', { rows: [] }, 'empty');
-  let q = sb.from('golf_attendance_summary').select('player_id, period_start_date, period_end_date, total_events, attended_count, excused_count, absent_count, attendance_percentage').eq('team_id', ctx.team_id).order('period_end_date', { ascending: false }).limit(ROW_CAP);
-  if (player) q = q.eq('player_id', player.id);
-  const { data, error } = await q;
+  const now = new Date();
+  const season = seasonStartsAt(now, ctx.timezone);
+  const { data, error } = await fetchAllRowsResult<AttendanceRow>((from, to) => {
+    let q = sb
+      .from('golf_event_attendance')
+      .select('id, player_id, status, attendance_status, checked_in, checked_in_at, golf_events!inner(id, start_time, event_type, status)')
+      .eq('golf_events.team_id', ctx.team_id)
+      .gte('golf_events.start_time', season.instant)
+      .lte('golf_events.start_time', now.toISOString());
+    if (player) q = q.eq('player_id', player.id);
+    return q.order('id', { ascending: true }).range(from, to) as unknown as PromiseLike<{ data: AttendanceRow[] | null; error: { message: string; code?: string | null } | null }>;
+  });
   if (error) {
     await failed('getAttendanceSummary failed', 'coachhelm.ask.attendance', ctx, error);
     return unavailableEnvelope('Could not read attendance.', 'The attendance query failed. This is not the same as no attendance.');
   }
   const onRoster = new Set(ids);
   const who = names(ctx);
-  const rows = (data ?? []).filter((r) => onRoster.has(r.player_id));
-  if (rows.length === 0) return envelope(player ? `No attendance on record for ${player.name}.` : 'No attendance on record.', { rows: [] }, 'empty');
-  // The newest period per player (rows are newest first): the team figure is the mean of those.
-  const latest = new Map<string, (typeof rows)[number]>();
-  for (const r of rows) if (!latest.has(r.player_id)) latest.set(r.player_id, r);
-  const rates = [...latest.values()].flatMap((r) => (typeof r.attendance_percentage === 'number' ? [r.attendance_percentage] : []));
+  const byPlayer = new Map<string, AttendanceCount>();
+  const team = attendanceZero();
+  const events = new Set<string>();
+  for (const r of data ?? []) {
+    const event = r.golf_events;
+    if (!event || event.event_type === 'class' || event.status === 'cancelled' || !onRoster.has(r.player_id)) continue;
+    const c = byPlayer.get(r.player_id) ?? attendanceZero();
+    const mark = attendanceMarkOf(r);
+    const key: keyof AttendanceCount = mark === 'present' || mark === 'late' ? 'attended' : mark === 'no_show' ? 'absent' : r.status === 'excused' ? 'excused' : 'unmarked';
+    for (const t of [c, team]) {
+      t.events += 1;
+      t[key] += 1;
+      if (mark === 'late') t.late += 1;
+    }
+    byPlayer.set(r.player_id, c);
+    events.add(event.id);
+  }
+  const window = { from: season.date, to: todayIsoInZone(ctx.timezone, now) };
+  const whose = player ? ` for ${player.name}` : '';
+  if (byPlayer.size === 0) return envelope(`No attendance on record${whose} this season.`, { window, rows: [] }, 'empty');
+  const rows = ctx.roster
+    .filter((p) => byPlayer.has(p.id))
+    .map((p) => {
+      const c = byPlayer.get(p.id)!;
+      return { player_id: p.id, player: who.get(p.id) ?? 'A player', ...c, attendance_percentage: attendanceRate(c) };
+    });
+  const recorded = team.attended + team.absent + team.excused;
   const detail = {
-    rows: rows.map((r) => ({ player_id: r.player_id, player: who.get(r.player_id) ?? 'A player', period_start: r.period_start_date, period_end: r.period_end_date, events: r.total_events, attended: r.attended_count, excused: r.excused_count, absent: r.absent_count, attendance_percentage: r.attendance_percentage })),
-    ...(player || rates.length === 0 ? {} : { team: { team_scope: true, players_counted: rates.length, average_attendance_percentage: round1(rates.reduce((a, b) => a + b, 0) / rates.length) } }),
+    window,
+    rows,
+    // The team's counts are marks summed over its players (one per player per event); `events` is how many events they came from.
+    ...(player ? {} : { team: { team_scope: true, players_counted: rows.length, ...team, events: events.size, attendance_percentage: attendanceRate(team) } }),
   };
-  const missing = ids.length - latest.size;
-  const capped = (data ?? []).length >= ROW_CAP;
-  return envelope(player ? `Attendance for ${player.name}.` : `Attendance for ${latest.size} player${latest.size === 1 ? '' : 's'}.`, detail, capped || (!player && missing > 0) ? 'partial' : 'complete', capped ? `Only the ${ROW_CAP} newest periods are listed.` : !player && missing > 0 ? `${missing} rostered player${missing === 1 ? ' has' : 's have'} no attendance on record.` : null);
+  if (recorded === 0) {
+    // Replies but no marks: say so, never "none" and never a rate of zero.
+    return envelope(`No attendance marked${whose} this season: ${events.size} event${events.size === 1 ? '' : 's'} had players on them, and nobody was marked present, late, absent or excused.`, detail, 'complete');
+  }
+  const missing = ids.length - rows.length;
+  return envelope(
+    player ? `Attendance this season for ${player.name}.` : `Attendance this season for ${rows.length} player${rows.length === 1 ? '' : 's'}.`,
+    detail,
+    !player && missing > 0 ? 'partial' : 'complete',
+    !player && missing > 0 ? `${missing} rostered player${missing === 1 ? ' has' : 's have'} no attendance this season.` : null,
+  );
 }
 
 // ---------------------------------------------------------------------------

@@ -209,8 +209,8 @@ describe('CH-13930 the player’s sub-navigation', () => {
       expect(screen.getByRole('radio', { name: where === 'board' ? 'Board' : 'Deep dive' })).toHaveAttribute('aria-checked', 'false');
       // The page is still drawn, not swapped for a skeleton, and the header (which stays crisp) is on it.
       expect(main.getAttribute('aria-label')).toBeNull();
-      // Your week names itself; the Deep dive keeps the page's name.
-      expect(screen.getByRole('heading', { level: 1, name: where === 'board' ? 'Your week' : 'CoachHelm' })).toBeTruthy();
+      // Each page names itself: Your week, and the Deep dive (G5, G12: it read "CoachHelm", the section's name).
+      expect(screen.getByRole('heading', { level: 1, name: where === 'board' ? 'Your week' : 'Deep dive' })).toBeTruthy();
       cleanup();
     }
     router.push.mockReset();

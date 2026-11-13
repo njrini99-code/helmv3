@@ -3,6 +3,7 @@
 import { AlertTriangle, ChartColumn, Flag, Medal } from 'lucide-react';
 import { AnimatePresence } from 'motion/react';
 import { Button } from '../../ui/Button';
+import { sgBaseline } from '../../lib/sg';
 import { useBigText } from './StatsPlayerPhoneShs';
 import { useRefresh } from '../../lib/use-refresh';
 import { useSegFade } from './seg-fade';
@@ -29,7 +30,7 @@ import { LEGS_LIST } from './legs';
 import { MiniDiverging } from './MiniCharts';
 import { TeamFeatureChart } from './ScoringFeatureChart';
 import { Ribbon, SHS_HOW } from './ShsBlocks';
-import { divergeBar, filterKey, sgTone, windowShort, type ShsTone } from './shs-figures';
+import { divergeBar, filterKey, scoreChangeChip, sgTone, windowShort, type ShsTone } from './shs-figures';
 import { useStuck, WindowCrossfade } from './shs-motion';
 import { EarlyRead, NineHint } from './StatsFilter';
 import { DetailHero, StatsDetailScreen } from './StatsDetailScreen';
@@ -65,14 +66,10 @@ function scoringFigure(data: ChTeamStats) {
 function changeBits(data: ChTeamStats): { chip: string | null; tone: ShsTone; direction: 'down' | 'up' | 'flat'; words: string } {
   const f = scoringFigure(data);
   if (!f || f.delta == null) return { chip: null, tone: 'flat', direction: 'flat', words: 'Nothing earlier to compare with' };
-  const t = deltaTone(f.delta, f.se, f.lowerIsBetter);
-  return {
-    chip: `${formatFixed(Math.abs(f.delta), f.digits)} ${f.delta < 0 ? 'lower' : 'higher'}`,
-    tone: t === 'is-gain' ? 'gain' : t === 'is-loss' ? 'loss' : 'flat',
-    direction: f.delta < 0 ? 'down' : f.delta > 0 ? 'up' : 'flat',
-    // One phrasing with My stats ("0.9 lower than the 10 before"); the loader's own reason, when it gives one, stays as written.
-    words: f.context ? f.context.replace(/^vs (?:the )?previous (\d+)$/i, 'than the $1 before') : `than the ${data.last} before`,
-  };
+  // One phrasing with My stats ("0.9 lower than the 10 before") and one rule with Home ("No clear change vs previous 10" under the
+  // standard error, W27); the loader's own reason, when it gives one, stays as written.
+  const vs = f.context || `vs previous ${data.last}`;
+  return scoreChangeChip(f.delta, f.se, f.lowerIsBetter, { than: vs.replace(/^vs (?:the )?previous (\d+)$/i, 'than the $1 before'), vs }, f.digits);
 }
 
 function Change({ data }: { data: ChTeamStats }) {
@@ -81,7 +78,8 @@ function Change({ data }: { data: ChTeamStats }) {
     <>
       {c.chip && (
         <ShsPill tone={c.tone}>
-          <ShsArrow direction={c.direction} />
+          {/* No glyph for no clear change: a dash beside a signed number read as "— −0.8" (the Islands hero's rule). */}
+          {c.direction !== 'flat' && <ShsArrow direction={c.direction} />}
           {c.chip}
         </ShsPill>
       )}
@@ -366,7 +364,8 @@ function TeamGameCard({ data, onOpen }: { data: ChTeamStats; onOpen: () => void 
             {formatSigned(data.team.sgMean)}
             {est && <small>est.</small>}
           </span>
-          <div className="ch-shs-cap">Team strokes a round against the Tour</div>
+          {/* The card's one caption also says why a college team's figures sit below zero (Q1, owner 12 Nov 2026). */}
+          <div className="ch-shs-cap">Team strokes a round. {sgBaseline(data.tour).why}</div>
           {mix && (
             <p className="ch-shs-mini-cap" data-ch-sg-mix="">
               {mix}
@@ -396,10 +395,13 @@ function TeamGameCard({ data, onOpen }: { data: ChTeamStats; onOpen: () => void 
   );
 }
 
-/** Fixed ±8 for player rows, the bar and figure toned by sign (08 criterion 52). */
-function PlayerRow({ rank, name, value }: { rank: string; name: string; value: number | null }) {
+/**
+ * A player row, the bar and figure toned by sign (08 criterion 52). `scale` is the card's own largest figure (W28: on a fixed
+ * ±8, −4.2 and −4.9 drew the same length); the default keeps the old fixed ±8.
+ */
+function PlayerRow({ rank, name, value, scale = 8 }: { rank: string; name: string; value: number | null; scale?: number }) {
   const tone = sgTone(value);
-  const bar = value == null ? null : divergeBar(value, 8);
+  const bar = value == null ? null : divergeBar(value, scale);
   return (
     <div className="ch-shs-prow">
       <span className="rk">{rank}</span>
@@ -413,22 +415,52 @@ function PlayerRow({ rank, name, value }: { rank: string; name: string; value: n
   );
 }
 
+/**
+ * Who gains and loses, the summary card (W28, owner's preview, 11 Nov 2026). The rows are the top two and, when more are ranked,
+ * the one who loses most at their own rank, so the sentence under them names players on the card. When everyone loses, the
+ * title says so. The bars run to the card's largest figure (floor 2), and players with no strokes gained are counted, not dropped.
+ */
+export function playersCard<T extends { value: number | null }>(ranked: readonly T[]): { title: string; rows: Array<{ row: T; rank: number }>; scale: number } {
+  const known = ranked.filter((r) => r.value != null);
+  const rows = known.length <= 3 ? known.map((row, i) => ({ row, rank: i + 1 })) : [{ row: known[0]!, rank: 1 }, { row: known[1]!, rank: 2 }, { row: known[known.length - 1]!, rank: known.length }];
+  const scale = Math.max(2, ...rows.map((r) => Math.abs(r.row.value!)));
+  const title = known.length > 0 && known.every((r) => r.value! < 0) ? 'Who loses least and most' : 'Who gains and loses';
+  return { title, rows, scale };
+}
+
 function TeamPlayersCard({ data, onOpen }: { data: ChTeamStats; onOpen: () => void }) {
   const rows = teamRankRows(data.grid, 'sg');
   const ranked = rows.filter((r) => r.value != null);
   const said = teamSentence(ranked.map((r) => ({ name: r.name, value: r.value })));
+  const card = playersCard(ranked);
+  const unranked = Math.max(0, data.activeCount - ranked.length);
+  const meta = `${ranked.length} ${pluralWord(ranked.length, 'player')}`;
   return (
-    <SummaryCard go="tplayers" onOpen={onOpen} title="Who gains and loses" meta={`${data.grid.length} ${pluralWord(data.grid.length, 'player')}`} ariaLabel={`Who gains and loses: ${data.grid.length} ${pluralWord(data.grid.length, 'player')}. Open details`}>
+    <SummaryCard go="tplayers" onOpen={onOpen} title={card.title} meta={meta} ariaLabel={`${card.title}: ${meta}. Open details`}>
       <div className="ch-shs-flushrows">
-        {ranked.slice(0, 3).map((r, i) => (
-          <PlayerRow key={r.id} rank={String(i + 1)} name={r.name} value={r.value} />
+        {card.rows.map(({ row: r, rank }) => (
+          <PlayerRow key={r.id} rank={String(rank)} name={r.name} value={r.value} scale={card.scale} />
         ))}
       </div>
-      {said && <p className="ch-shs-sumfoot">{said}</p>}
+      {said && (
+        <p className="ch-shs-sumfoot">
+          {said}
+          {ranked.length > 0 && unranked > 0 && ` ${unranked} more ${unranked === 1 ? 'has' : 'have'} no strokes gained in this window.`}
+        </p>
+      )}
       {/* No player has strokes gained to rank: the card says what fills it, rather than a title over nothing. */}
       {ranked.length === 0 && <p className="ch-shs-sumfoot">Fills in from rounds posted with shots.</p>}
     </SummaryCard>
   );
+}
+
+/**
+ * The Round's note (W29, owner's preview, 11 Nov 2026: three chips with no label over four grey lines explaining grey): one
+ * sentence that says what the chips are and what grey means, then coverage and the caller's context.
+ */
+export function roundNote(data: Pick<ChTeamStats, 'window' | 'filter' | 'last'>, chips: boolean, coverage: string | null, note?: string | null): string {
+  const before = data.window === 'last10' && !isFiltered(data.filter) ? `the previous ${data.last} round days` : 'the window before';
+  return [chips ? `Chips: the change vs ${before}, grey when it is inside its likely error.` : null, coverage ? `${coverage}.` : null, note].filter(Boolean).join(' ');
 }
 
 function TheRound({ data, note }: { data: ChTeamStats; note?: string | null }) {
@@ -454,7 +486,7 @@ function TheRound({ data, note }: { data: ChTeamStats; note?: string | null }) {
           );
         })}
       </dl>
-      <p className="ch-shs-anote">{[coverage ? `${coverage}.` : null, 'Grey means the change is inside its likely error.', note].filter(Boolean).join(' ')}</p>
+      <p className="ch-shs-anote">{roundNote(data, rows.some((f) => f.delta != null), coverage, note)}</p>
     </ShsCard>
   );
 }
@@ -475,19 +507,19 @@ function TeamScoringDetail({
 }) {
   const f = scoringFigure(data);
   // The separators keep to the words before them, as the page head's do: a wrapped line never starts with the dot.
-  const context = `${data.teamName}\u00a0· ${data.activeCount} active ${pluralWord(data.activeCount, 'player')}\u00a0· countable rounds only.`;
   // Today's trend reading, on the card that now draws the trend. One round day is a point, not a trend.
   const trend = days.length >= 2 ? teamTrendReading(data, days.length) : null;
   return (
     <>
       {!beside && <DetailHero figure={f ? figureValue(f) : <NoData />} caption={['Team scoring average', toPar(data), windowDays(data)].filter(Boolean).join(' · ')} chips={<Change data={data} />} />}
       {!beside && days.length > 0 && (
-        <ShsCard title="By round day" meta={mean == null ? undefined : 'Team mean dashed'}>
-          <Ribbon points={days.map((d) => ({ label: d.label, value: d.score }))} lowerIsBetter reference={mean == null ? null : { value: mean, label: 'Mean' }} format={(v) => formatFixed(v, 1)} tone={trend?.tone === 'is-gain' ? 'gain' : trend?.tone === 'is-loss' ? 'loss' : 'flat'} />
+        <ShsCard title="By round day" meta={mean == null ? undefined : 'Average dashed'}>
+          <Ribbon points={days.map((d) => ({ label: d.label, value: d.score }))} lowerIsBetter reference={mean == null ? null : { value: mean, label: 'Avg of these days' }} format={(v) => formatFixed(v, 1)} tone={trend?.tone === 'is-gain' ? 'gain' : trend?.tone === 'is-loss' ? 'loss' : 'flat'} />
           <p className="ch-shs-mini-cap">{trend ? `Lower is better. ${trend.reading}` : 'The trend draws once the team has rounds on a second day.'}</p>
         </ShsCard>
       )}
-      <TheRound data={data} note={context} />
+      {/* The page head says the team, its active players and that only countable rounds count; the note doesn't repeat it (W29). */}
+      <TheRound data={data} />
       <ShsCard title="Round days" meta={`${days.length} ${pluralWord(days.length, 'day')}`}>
         <table className="ch-shs-tbl">
           <thead>

@@ -755,6 +755,11 @@ a.ch-rd-sc:focus-visible {
   border-radius: 50%;
   box-shadow: 0 0 0 1px rgb(28 25 18 / 0.25);
 }
+/* A tee whose colour isn't known keeps the dot's place in a list that lines up on it, and draws nothing there. */
+.ch-rd-tee--none {
+  box-shadow: none;
+  visibility: hidden;
+}
 /* Tee swatches show the tee's own colour; they are data, not status. */
 .ch-rd-tee--black {
   background: #1c1b18;
@@ -793,14 +798,16 @@ a.ch-rd-sc:focus-visible {
   background: var(--ch-bg-inset);
   color: var(--ch-text-secondary);
 }
+/* W31: one badge, three types at one weight. The black tournament pill was the loudest thing on the page; now each
+   type is the same tinted chip, told by its tint as the calendar tells them (practice neutral, qualifier green,
+   tournament a deeper green). */
 .ch-rd-pill.is-qualifier {
   background: var(--ch-green-50);
   color: var(--ch-green-700);
-  box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.18);
 }
 .ch-rd-pill.is-tournament {
-  background: var(--ch-ink-900);
-  color: var(--ch-ivory-100);
+  background: var(--ch-green-100);
+  color: var(--ch-forest-800);
 }
 .ch-rd-pill.is-nc {
   background: none;
@@ -2665,8 +2672,7 @@ html[data-fw-theme='dark'] .ch-rd-rib rect.is-q {
 html[data-fw-theme='dark'] .ch-rd-season__lg i.is-q {
   box-shadow: inset 0 0 0 2px var(--ch-champagne-500);
 }
-html[data-fw-theme='dark'] .ch-rd-more__go,
-html[data-fw-theme='dark'] .ch-rd-pill.is-qualifier {
+html[data-fw-theme='dark'] .ch-rd-more__go {
   box-shadow: inset 0 0 0 1px rgb(107 187 140 / 0.28);
 }
 html[data-fw-theme='dark'] .ch-rd-tee {
@@ -4822,34 +4828,6 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 }
 .ch-rcard-nw {
   white-space: nowrap;
-}
-.ch-rcard-h__s {
-  display: flex;
-  flex: none;
-  align-items: baseline;
-  gap: 8px;
-}
-.ch-rcard-h__s b {
-  font: var(--ch-type-34-strong);
-  line-height: var(--ch-lead-tight);
-
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.03em;
-}
-.ch-rcard-h__s em {
-  font: var(--ch-type-16-strong);
-  letter-spacing: var(--ch-track-16);
-  line-height: var(--ch-lead-tight);
-
-  font-variant-numeric: tabular-nums;
-  font-style: normal;
-  color: var(--ch-text-primary);
-}
-.ch-rcard-h__s em.is-under {
-  color: var(--ch-score-under);
-}
-.ch-rcard-h__s em.is-over {
-  color: var(--ch-chart-loss);
 }
 /* The printed head: course, date and score at paper size. Hidden on the page, where the hero says the same. */
 .ch-rcard-pr {

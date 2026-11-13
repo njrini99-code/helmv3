@@ -6,7 +6,7 @@ import { fullName } from './season';
 import { tourForGender } from './stats-common';
 import { readRoundTypeOptions } from './rounds-type-options';
 import { loadRoundDebrief } from './round-debrief';
-import type { ChReviewHistoryInput } from './round-history';
+import { historyTeam, type ChReviewHistoryInput } from './round-history';
 import { currentRoundType, reviewTour, toHoles, toReview, type ChHoleRow, type ChReviewRoundRow, type ChReviewTypeEdit, type ChRoundReview, type ChShotRow } from './round-review-shape';
 
 export type * from './round-review-shape';
@@ -123,7 +123,8 @@ export async function loadRoundReview(roundId: string, viewerIn: ChReviewViewer 
   // from what is known here, so the review does not wait for it.
   const historyFrom: ChReviewHistoryInput = {
     playerId: round.player_id,
-    coachTeamId: viewer.role === 'coach' ? viewer.teamId : null,
+    // The reviewed round's own team first: its history is the rounds posted for that team (historyTeam).
+    coachTeamId: historyTeam(viewer, row.team_id ?? null),
     zoneTeamId: viewer.teamId ?? null,
     round: {
       id: round.id,

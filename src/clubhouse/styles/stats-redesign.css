@@ -45,6 +45,12 @@
   padding: 2px var(--ch-page-x-phone) 8px;
   background: var(--ch-shs-s-bg);
 }
+/* The switch as the page's first line (Team stats, whose title is for screen readers; the skeleton the same): at rest it
+   stands clear of the sheet's top edge as every page's first line does. A sticky box's margin is not kept once it sticks,
+   so the stuck band under the bar is unchanged (phone premium sweep, 12 Nov 2026: it sat 2px under the edge). */
+.ch-shs .ch-shs-ctl:first-child {
+  margin-top: var(--ch-space-4);
+}
 .ch-shs-ctl__row {
   display: flex;
   align-items: center;
@@ -1685,6 +1691,12 @@ li + li > .ch-shs-rrow::before {
 .ch-shs-rdot.is-under {
   fill: var(--ch-shs-s-under);
 }
+/* A day one player posted on: a hollow dot, off the team's line (W26). */
+.ch-shs-rdot.is-one {
+  fill: var(--ch-shs-s-card);
+  stroke: var(--ch-shs-s-ink);
+  stroke-width: 1.5;
+}
 .ch-shs-scrub {
   stroke: var(--ch-shs-s-ink);
   stroke-opacity: 0.6;
@@ -2473,6 +2485,23 @@ p.ch-shs-mini-cap {
 }
 .ch-shs-desk.is-alone {
   grid-template-columns: minmax(0, 1fr);
+}
+/*
+ * On a wide desk the chosen card's detail opens out to the window's right edge (owner's preview, 11 Nov 2026: "clicking on stat
+ * should open up the screen fully to the right, its too narrow"). The page keeps the one left edge every page shares (shell.css),
+ * the cards keep about the width they have on a 1440 screen, and the detail takes the rest, out to the wide measure (W40). A page
+ * with no detail (`is-alone`) keeps the normal measure.
+ */
+@media (min-width: 1181px) {
+  /* W40 (owner, 12 Nov 2026: two page widths, normal and wide; the boards, Stats among them, take the wide one): with a detail
+     open the page runs to the wide measure, not the window's edge. At 1920 the detail is about 580px (it was 360 to 420 before
+     the 11 Nov fix); at 1440 nothing changes. */
+  .ch-st--shs:has(.ch-shs-desk:not(.is-alone)) {
+    max-width: var(--ch-measure-wide);
+  }
+  .ch-shs-desk:not(.is-alone) {
+    grid-template-columns: minmax(0, 680px) minmax(420px, 1fr);
+  }
 }
 .ch-shs-desk__sum {
   display: grid;

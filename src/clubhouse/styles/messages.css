@@ -198,6 +198,16 @@
   white-space: nowrap;
   text-overflow: ellipsis;
 }
+/* W18: the team's channel carries the school and team ("Demo University Golf — Varsity"); its name may take two lines
+   instead of being cut. Other rows keep one line, as Messages does. */
+.ch-ms-row.is-channel .ch-ms-row__top b {
+  display: -webkit-box;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
 .ch-ms-row.is-sel .ch-ms-row__top b {
   font-weight: 600;
   color: var(--ch-green-700);
@@ -502,8 +512,9 @@
 .ch-ms-msg.is-first {
   margin-top: var(--ch-ms-px-10);
 }
+/* Room for the badges that rise 22 px above the bubble (messages-overlays.css), plus a 2 px gap to the row above. */
 .ch-ms-msg:has(.ch-ms-reacts) {
-  margin-top: 16px;
+  margin-top: 24px;
 }
 .ch-ms-msg.is-mine {
   justify-content: flex-end;
@@ -3066,6 +3077,11 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   color: var(--ch-text-tertiary);
   text-align: right;
 }
+/* #12: "Add a choice" sits under the rows, its icon on the choice inputs' left edge (past the 16 px number and 8 px gap). */
+.ch-ms-pollf__add {
+  display: flex;
+  padding-left: 24px;
+}
 .ch-ms-pollf__set .ch-field__help {
   display: flex;
   align-items: center;
@@ -3513,11 +3529,21 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   }
 }
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
+  /* W17: the hover time sits beside the bubble on the side facing the middle (after theirs, before yours), in the row's
+     own flow, so a full-width thread never pushes it off the pane (#9: it hung far right on wide windows). */
   [data-ch-ms-v2] .ch-msv-time {
+    position: static;
+    flex: none;
+    align-self: center;
     right: auto;
-    left: 100%;
+    left: auto;
+    transform: none;
     opacity: 0;
     transition: opacity var(--ch-dur-quick) var(--ch-ease);
+  }
+  [data-ch-ms-v2] .ch-ms-msg.is-mine .ch-msv-time {
+    order: -1;
+    text-align: right;
   }
   [data-ch-ms-v2] .ch-ms-msg:is(:hover, :focus-within) .ch-msv-time {
     opacity: 1;
@@ -3625,9 +3651,15 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   [data-ch-ms-v2] .ch-ms-th .ch-avatar {
     flex: none;
   }
+  /* W17: as Messages on the Mac, the thread spans its pane: their messages start at the pane's left edge and yours end at
+     its right, on the composer's 28 px inset, instead of a 760 px column in the middle of a 1130 px pane. */
   [data-ch-ms-v2] .ch-ms-msgs {
-    max-width: var(--ch-measure-reading);
-    margin-inline: auto;
+    max-width: none;
+    margin-inline: 0;
+    padding-inline: calc(var(--ch-space-6) + var(--ch-space-1));
+  }
+  [data-ch-ms-v2] .ch-ms-comp__field {
+    max-width: none;
   }
 }
 [data-ch-ms-v2] .ch-ms-msg__fail {
@@ -3801,18 +3833,18 @@ body:has([data-ch-ms-v2]) .ch-toast {
 }
 
 /* Redesign: first run, the hello card, details (06 S-MSG.empty, .fresh, .details, .groupdetails, .mute). */
-[data-ch-ms-v2] .ch-msv-empty__illo {
-  width: 168px;
-  height: 120px;
-}
-[data-ch-ms-v2] .ch-ms-thread.is-empty:has(.ch-msv-empty) {
+[data-ch-ms-v2] .ch-ms-thread.is-empty:has(> .ch-es--page) {
   display: grid;
   place-items: center;
   padding: 16px;
 }
+/* The first run is the shared page empty (W19 B): a card at a reading measure in the middle of the pane. */
+[data-ch-ms-v2] .ch-ms-thread.is-empty > .ch-es--page {
+  width: min(640px, 100%);
+}
 /* MSG-701 First run: the card is centred in the page under the bar (the page is as tall as the screen less the bar and
    the home indicator's room, so centre means the middle of what the person sees), at the page edge on a phone. */
-.ch-msp-home:has(> .ch-msv-empty) {
+.ch-msp-home:has(> .ch-es--page) {
   display: grid;
   align-content: center;
   justify-items: center;
@@ -3820,29 +3852,6 @@ body:has([data-ch-ms-v2]) .ch-toast {
   min-height: calc(var(--ch-vv-h, 100dvh) - env(safe-area-inset-top) - var(--ch-phone-topbar-h) - env(safe-area-inset-bottom) - var(--ch-space-5));
   padding-inline: var(--ch-page-x-phone);
 }
-[data-ch-ms-v2] .ch-msv-empty {
-  display: grid;
-  justify-items: center;
-  gap: 8px;
-  box-sizing: border-box;
-  width: min(360px, 100%);
-  margin: 0 auto;
-  padding: 24px 20px 20px;
-  border-radius: var(--ch-radius-lg);
-  background: var(--ch-card-bg);
-  box-shadow: var(--ch-card-shadow);
-  text-align: center;
-}
-[data-ch-ms-v2] .ch-msv-empty h2 {
-  margin: 0;
-  font: var(--ch-type-20-strong);
-  letter-spacing: -0.01em;
-}
-[data-ch-ms-v2] .ch-msv-empty p {
-  margin: 0;
-  font: var(--ch-type-15);
-  color: var(--ch-text-secondary); letter-spacing: var(--ch-track-15); }
-/* The two actions are the shared Button (primary, ghost): no lane copy of either. */
 [data-ch-ms-v2] .ch-msv-hello {
   display: grid;
   justify-items: center;

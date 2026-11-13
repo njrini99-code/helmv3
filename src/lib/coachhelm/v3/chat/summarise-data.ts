@@ -4,6 +4,7 @@ import { nowIso, type Measurement, type ToolEnvelope } from './provenance';
 import { TeamQueryInput } from './team-query';
 import { rowsCaption } from './rows-caption';
 import { coverWords, opWords } from './summary-labels';
+import { withoutUiOnly } from './ui-only';
 
 /**
  * `summarise_data`: arithmetic done by the server, over rows the turn has already read. A count, a rank, an average, a join or a
@@ -106,7 +107,9 @@ const isRecord = (v: unknown): v is Row => !!v && typeof v === 'object' && !Arra
 
 /** The rows of a read: the list asked for, else `detail.rows`, else the first list of records in `detail`, else its measurements. */
 export function rowsOfEnvelope(envelope: ToolEnvelope, list?: string): { rows: Row[]; name: string } | null {
-  const detail = isRecord(envelope.detail) ? envelope.detail : {};
+  // The shots a coach can open (`ui_only`) are not rows to count over: the model never saw them (ui-only.ts).
+  const kept = withoutUiOnly(envelope.detail);
+  const detail = isRecord(kept) ? kept : {};
   if (list === 'measurements') return { rows: measurementRows(envelope), name: 'measurements' };
   if (list) {
     const v = detail[list];

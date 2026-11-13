@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { ReactNode } from 'react';
-import { COACH_PLAYER_VIEWS, coachBoardFor, helmViewHref, PLAYER_HELM_VIEWS, PLAYER_VOICE, type ChViewVoice, type PlayerHelmView } from '../../../data/coachhelm-views-shape';
+import { COACH_PLAYER_VIEWS, coachBoardFor, helmViewHref, PLAYER_HELM_TAB_LABEL, PLAYER_HELM_VIEWS, PLAYER_VOICE, type ChViewVoice, type PlayerHelmView } from '../../../data/coachhelm-views-shape';
 import { useChPhone } from '../../../lib/use-phone';
 import { usePageCrumbs } from '../../../shell/crumbs';
 import { rebuiltHref } from '../../../shell/nav';
@@ -16,7 +16,8 @@ import { PlayerHelmTabs } from './PlayerHelmTabs';
 
 /**
  * The page every view of the player's CoachHelm is drawn in: the shell's phone top bar, the sub-navigation, and the page's own
- * header (the role chip, "CoachHelm", one line), as the board has them. The sub-navigation sits above the header on the phone and
+ * header (the view's own name, as the strip names it, and one line), as Your week names itself. It read "CoachHelm" under the
+ * strip's "Standing" or "Deep dive", naming the section and not the page (G5, G12; one title per screen). The sub-navigation sits above the header on the phone and
  * below it on desktop, as the coach's does. With CoachHelm off nothing is read and nothing leads anywhere, so it is not drawn
  * (CH-13304, as CH-13305 for the coach). The main landmark is labelled by the page's h1 (CH-13801).
  *
@@ -62,7 +63,7 @@ export function PlayerHelmFrame({ view, line, off = false, covered = false, afte
             <span className="ch-num">{coach.line}</span>
           </Head>
         ) : (
-          <Head phone={phone} tight={!coach} aside={!phone ? tabs : undefined}>
+          <Head phone={phone} tight={!coach} aside={!phone ? tabs : undefined} title={PLAYER_HELM_TAB_LABEL[view]}>
             {line}
           </Head>
         )}

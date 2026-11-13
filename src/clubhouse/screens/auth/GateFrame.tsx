@@ -85,6 +85,8 @@ export function GateFrame({
           </p>
         </div>
       </div>
+      {/* Desk: the frame's green between the course and the form; it slides off with the panel (auth.css, the seam). */}
+      <div className="ch-au-seam" aria-hidden="true" />
       <main
         ref={panelRef}
         className="ch-au-panel"

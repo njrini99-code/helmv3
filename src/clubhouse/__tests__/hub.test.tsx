@@ -333,7 +333,7 @@ describe('Team Hub · player', () => {
   it('100101 Home: the trip counting down, the queue of what is asked, the week, the latest post, Updates and files', () => {
     show(PREVIEW_HUB_PLAYER);
     expect(screen.getByRole('heading', { level: 1, name: 'Team Hub' })).toBeTruthy();
-    // A player is never shown their own role (wave 7); the coach keeps "Coach view" (100101 below).
+    // A player is never shown their own role (wave 7); since W20 neither is the coach (100101 below).
     expect(screen.queryByText('Player view')).toBeNull();
     expect(document.querySelector('.ch-hb-role')).toBeNull();
     // A tab that asks for something carries its figure (aria-hidden: the strip says it to a screen reader).
@@ -349,7 +349,7 @@ describe('Team Hub · player', () => {
     expect(within(queue).getByRole('radiogroup', { name: 'Your reply for Team dinner' })).toBeTruthy();
     expect(within(queue).getByRole('button', { name: 'Show all 5' })).toBeTruthy();
     expect(within(screen.getByRole('region', { name: 'Latest post' })).getByRole('button', { name: 'Got it' })).toBeTruthy();
-    expect(within(screen.getByRole('region', { name: 'This week' })).getByText('Short-game block')).toBeTruthy();
+    expect(within(screen.getByRole('region', { name: 'Next 7 days' })).getByText('Short-game block')).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Updates' })).toBeTruthy();
     expect(within(screen.getByRole('region', { name: 'Files' })).getByText('Pairings and tee times')).toBeTruthy();
     // RSVPs are no longer Home's centre: no RSVP section, no band.
@@ -449,7 +449,7 @@ describe('Team Hub · player', () => {
     cleanup();
     // A week with nothing on it says so in its tile.
     show({ ...PREVIEW_HUB_PLAYER, week: PREVIEW_HUB_PLAYER_EMPTY.week });
-    expect(code('CH-10301')!.textContent).toMatch(/Nothing on the calendar this week/);
+    expect(code('CH-10301')!.textContent).toMatch(/Nothing on the calendar in the next 7 days/);
   });
 
   it('CH-10302 CH-10303 CH-10304 CH-10307 CH-10308 each empty tab says what fills it', async () => {
@@ -461,19 +461,21 @@ describe('Team Hub · player', () => {
     expect(code('CH-10303')!.textContent).toMatch(/Nothing is asked of you/);
     await tab('Tasks');
     expect(code('CH-10303')!.textContent).toMatch(/No tasks right now/);
+    // W19 B (owner, 12 Nov): a tab whose list is empty is the page's content, so it is the page's card with its glyph.
     await tab('Announcements');
-    expect(code('CH-10307')).not.toBeNull();
+    expect(code('CH-10307')!.classList.contains('ch-es--page')).toBe(true);
     await tab('Travel');
-    expect(code('CH-10308')).not.toBeNull();
+    expect(code('CH-10308')!.classList.contains('ch-es--page')).toBe(true);
     await tab('Documents');
-    expect(code('CH-10304')).not.toBeNull();
+    expect(code('CH-10304')!.classList.contains('ch-es--page')).toBe(true);
+    for (const c of ['CH-10304']) expect(code(c)!.querySelector('.ch-es__tile svg'), c).not.toBeNull();
   });
 
   it('CH-10205 102301 a section that crashes stays inside its section, and is reported under its own surface', () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
     show({ ...PREVIEW_HUB_PLAYER, updates: { rows: null as never, error: false } });
     expect(code('CH-10205')).not.toBeNull();
-    expect(screen.getByRole('heading', { name: 'This week' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Next 7 days' })).toBeTruthy();
     expect(track.chReport).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ surface: 'hub.updates', severity: 'high' }));
     spy.mockRestore();
   });
@@ -508,11 +510,13 @@ describe('Team Hub · coach', () => {
   it('100101 Home: the trip, the week with replies as counts, who owes what, the newest post’s receipts and the tasks', async () => {
     const user = userEvent.setup();
     show(PREVIEW_HUB_COACH);
-    expect(screen.getByText('Coach view')).toBeTruthy();
+    // W20 (12 Nov): no "Coach view" chip over the title; the coach knows whose page it is.
+    expect(screen.queryByText('Coach view')).toBeNull();
+    expect(document.querySelector('.ch-hb-role')).toBeNull();
     expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Home', 'Announcements1', 'Travel', 'Documents', 'Tasks1']);
     expect(within(screen.getByRole('region', { name: 'Next trip' })).getByText('5 players traveling')).toBeTruthy();
     // The week opens on today; a day with an event that takes replies shows how many have.
-    const week = screen.getByRole('region', { name: 'This week' });
+    const week = screen.getByRole('region', { name: 'Next 7 days' });
     await user.click(within(week).getByRole('button', { name: 'Wed 15: 1 event' }));
     expect(hapticSpy).toHaveBeenCalledWith('select');
     expect(within(week).getByText(/5 of 6 replied/)).toBeTruthy();
@@ -531,7 +535,10 @@ describe('Team Hub · coach', () => {
     const user = userEvent.setup();
     show(PREVIEW_HUB_COACH);
     const owe = screen.getByRole('region', { name: 'Waiting on' });
-    expect(within(owe).getByText('6 of 6 owe something')).toBeTruthy();
+    // W22 (12 Nov): "6 of 6 owe something" flagged everyone, because replies due count and they are not late. The
+    // heading counts who has a late task (here one overdue task no one has finished).
+    expect(within(owe).getByText('6 with a late task')).toBeTruthy();
+    expect(within(owe).queryByText(/owe something/)).toBeNull();
     const names = () => within(owe).getAllByRole('rowheader').map((r) => r.textContent);
     expect(names()[0]).toBe('Jonah Okafor');
     await user.click(within(owe).getByRole('button', { name: /^Rounds/ }));
@@ -550,6 +557,28 @@ describe('Team Hub · coach', () => {
     expect(within(owe).getByText('34 rounds in 30 days · 5 of 6 played in the last 14')).toBeTruthy();
     await user.click(within(owe).getByRole('button', { name: /Announcements/ }));
     expect(screen.getByRole('tab', { name: 'Announcements' }).getAttribute('aria-selected')).toBe('true');
+  });
+
+  // W22 (12 Nov): cells read as one figure: "1 late 3" (1 late of 3 tasks) and "none in 14 days 0". Each cell is one
+  // figure now, its meaning in its heading: late tasks have a column of their own, and rounds are only the count.
+  it('W22 Waiting on: one figure a cell, its meaning in the heading, Late a column of its own', async () => {
+    const user = userEvent.setup();
+    show(PREVIEW_HUB_COACH);
+    const owe = screen.getByRole('region', { name: 'Waiting on' });
+    expect(within(owe).getAllByRole('columnheader').map((h) => h.textContent)).toEqual(['Player', 'Replies', 'Posts', 'Tasks', 'Late', 'Rounds 30 d']);
+    const jonah = within(owe).getByRole('rowheader', { name: 'Jonah Okafor' }).closest('tr')!;
+    const cells = [...jonah.querySelectorAll('td')].map((td) => td.textContent);
+    expect(cells).toEqual(['2', '1', '3', '1', '0']);
+    for (const c of cells) expect(c).toMatch(/^\d+$/);
+    await user.click(within(owe).getByRole('button', { name: /^Late/ }));
+    expect(within(owe).getByRole('columnheader', { name: /Late/ }).getAttribute('aria-sort')).toBe('descending');
+    await user.click(within(owe).getByRole('button', { name: 'Jonah Okafor' }));
+    expect(owe.querySelector('.ch-hw-led__more > td')?.getAttribute('colspan')).toBe('6');
+  });
+
+  it('W22 Waiting on says nothing is late when nothing is', () => {
+    show({ ...PREVIEW_HUB_COACH, ledger: PREVIEW_HUB_COACH.ledger!.map((r) => ({ ...r, tasks: r.tasks?.map((t) => ({ ...t, late: false })) ?? null })) });
+    expect(within(screen.getByRole('region', { name: 'Waiting on' })).getByText('Nothing late')).toBeTruthy();
   });
 
   it('CH-10101 CH-10109 CH-10102 CH-10402 101201 posting: a headline, a message (the server requires one), an audience; the post keeps its text when it fails (CH-10005)', async () => {
@@ -980,7 +1009,7 @@ describe('Team Hub · coach', () => {
 
   it('CH-10201 the coach’s failed reads', () => {
     show(PREVIEW_HUB_COACH_FAILED);
-    expect(code('CH-10201')!.textContent).toMatch(/This week didn’t load/);
+    expect(code('CH-10201')!.textContent).toMatch(/The next 7 days didn’t load/);
   });
 
   it('CH-10309 no team: coach and player each get their own words', async () => {
@@ -1905,7 +1934,7 @@ describe('Team Hub · roles, states and layout', () => {
     const user = userEvent.setup();
     show(PREVIEW_HUB_COACH_FAILED);
     const page = code('CH-1209') as HTMLElement;
-    expect(page.textContent).toMatch(/This week, announcements, travel, updates, tasks, documents and the team list didn’t load/);
+    expect(page.textContent).toMatch(/The next 7 days, announcements, travel, updates, tasks, documents and the team list didn’t load/);
     expect(within(page).getAllByRole('button', { name: 'Try again' })).toHaveLength(1);
     for (const c of ['CH-10201', 'CH-10202', 'CH-10206', 'CH-10207']) {
       expect(code(c)).not.toBeNull();

@@ -28,11 +28,12 @@ function BriefFrame({ sub, children }: { sub?: string; children: ReactNode }) {
   return (
     <main className={'ch-hl ch-hmb' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hmb-title" data-canopy={phone ? undefined : ''} data-ch-code="CH-13932">
       {phone && <PhoneTop back={{ label: 'CoachHelm', onBack: () => router.push(COACH_BOARD_HREF) }} title="Monday brief" titleId="ch-hmb-title" />}
-      <header className="ch-hl-h ch-hmb-h" data-canopy-head="">
+      {/* One title (G12): no "Coach" eyebrow over it, and on the phone, under the pushed screen's bar, no double rule
+          either (the tight head, coachhelm.css). The desk keeps the coach's full head on the sheet. */}
+      <header className="ch-hl-h ch-hmb-h" data-canopy-head={phone ? 'tight' : ''}>
         {!phone && (
           <BackLink href={COACH_BOARD_HREF}>CoachHelm</BackLink>
         )}
-        <span className="ch-hl-role">Coach</span>
         {phone ? (
           <LargeTitle as="p" className="ch-hl-h__t">
             Monday brief

@@ -214,6 +214,8 @@ export interface ChAskData {
   /** The player's own focus lines on Ask's home. */
   /** `trend`: how it's going, when the focus area has an outcome. Left out, its dot says nothing. */
   focus?: Array<{ text: string; ask: string | null; trend?: 'up' | 'warn' }>;
+  /** The Miss Compass is on for this coach's team (flag `coachhelm_miss_compass_v1` and its team list). Absent: off. */
+  missCompass?: boolean;
 }
 
 export type ChAskLoad =
