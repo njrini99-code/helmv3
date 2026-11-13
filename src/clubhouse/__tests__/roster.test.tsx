@@ -503,9 +503,9 @@ describe('Roster · availability (injured, away)', () => {
   it('Needs a look leaves out a player who is out, and the row note is the availability word', () => {
     const s = { rounds: 10, avg: 74, sgPerRound: null, trend: [], status: 'slipping', formChange: 2.1, recent: [], lastRoundDate: null } as unknown as Parameters<typeof attentionFor>[0];
     const now = new Date('2026-10-21T12:00:00Z');
-    expect(attentionFor(s, now, true)).toEqual({ tone: 'loss', text: 'Scoring up 2.1' });
-    expect(attentionFor(s, now, true, 'injured')).toBeNull();
-    expect(attentionFor(s, now, true, 'away')).toBeNull();
+    expect(attentionFor(s, now)).toEqual({ tone: 'loss', text: 'Scoring 2.1 worse' });
+    expect(attentionFor(s, now, 'injured')).toBeNull();
+    expect(attentionFor(s, now, 'away')).toBeNull();
     expect(rowNote(ava, false)).toEqual({ text: 'Injured', tone: null });
     expect(rowNote(luca, true)).toEqual({ text: 'Away', tone: null });
     expect(availabilityLine(theo)).toBeNull();
@@ -1079,17 +1079,17 @@ describe('Roster · data truth', () => {
     // 21:00 Eastern on 14 Oct is 01:00 UTC on the 15th: the last round was on the 7th, so 7 team-local days.
     const now = new Date('2026-10-15T01:00:00Z');
     const quiet = summary({ lastRoundDate: '2026-10-07' });
-    expect(attentionFor(quiet, now, true, 'available', NY)).toEqual({ tone: 'warning', text: 'No rounds in 7 days' });
+    expect(attentionFor(quiet, now, 'available', NY)).toEqual({ tone: 'warning', text: 'No rounds in 7 days' });
     // Six days is not quiet.
-    expect(attentionFor(summary({ lastRoundDate: '2026-10-08' }), now, true, 'available', NY)).toBeNull();
+    expect(attentionFor(summary({ lastRoundDate: '2026-10-08' }), now, 'available', NY)).toBeNull();
     // A day earlier it is 6 team-local days.
-    expect(attentionFor(quiet, new Date('2026-10-14T01:00:00Z'), true, 'available', NY)).toBeNull();
+    expect(attentionFor(quiet, new Date('2026-10-14T01:00:00Z'), 'available', NY)).toBeNull();
   });
 
   it('A6 "slipping" is Home’s form status: a raw 1.5-stroke swing that does not clear its standard error is not flagged', () => {
     const now = new Date('2026-10-14T16:00:00Z');
-    expect(attentionFor(summary({ status: 'steady', formChange: 2.4 }), now, true, 'available', NY)).toBeNull();
-    expect(attentionFor(summary({ status: 'slipping', formChange: 2.4 }), now, true, 'available', NY)).toEqual({ tone: 'loss', text: 'Scoring up 2.4' });
+    expect(attentionFor(summary({ status: 'steady', formChange: 2.4 }), now, 'available', NY)).toBeNull();
+    expect(attentionFor(summary({ status: 'slipping', formChange: 2.4 }), now, 'available', NY)).toEqual({ tone: 'loss', text: 'Scoring 2.4 worse' });
   });
 
   it('A12 a join request shows the handicap index when the player has one, as the roster will after approval', async () => {

@@ -34,3 +34,17 @@ Held items:     none
 - No writer in the app stores a 0 default (onboarding sends nothing for an
   empty field; there is no column default). The zeros came with the team's own
   data, the same on the original team as on the Test Copy.
+
+## "Needs a look" says why, and Home and Roster agree
+
+- The Needs a look card shows its reason as the figure ("Scoring 4.0 worse",
+  "No rounds in 51 days") with the strokes gained it was ranked by under it. It
+  had shown "−7.1 SG/rd" for Will Gruse, who was there for his scoring.
+- "Scoring up 4.0" is "Scoring 4.0 worse": a rise in strokes read as good news.
+- A player with no round in 7 team-local days is flagged whether or not the
+  team is posting, as Home's hero flags him (`attentionFor` lost its
+  `teamPosting` argument). Home said Samanyu "hasn't posted in 51 days" while
+  Roster said "Steady". In the off-season every quiet player is flagged on both.
+- Existing tests changed on purpose: `logic.test.ts` (quiet regardless of the
+  team; "worse"), `roster.test.tsx` (no `teamPosting`; "worse"), and the preview
+  fixture's note.

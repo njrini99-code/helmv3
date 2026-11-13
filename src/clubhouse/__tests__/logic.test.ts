@@ -110,19 +110,19 @@ const round = (id: string, date: string, score: number, extra: Partial<ChRound> 
 
 describe('roster attention', () => {
   const now = new Date('2026-10-14T12:00:00Z');
-  it('flags a quiet player only while the team is posting', () => {
+  // Coach audit 13 Nov 2026 (§8 #6): Home flags a quiet player whether or not the team is posting, and Roster now agrees.
+  it('flags a quiet player, as Home does', () => {
     const s = summarizePlayer([round('a', '2026-10-01', 74), round('b', '2026-09-28', 75)]);
-    expect(attentionFor(s, now, true)).toEqual({ tone: 'warning', text: 'No rounds in 13 days' });
-    expect(attentionFor(s, now, false)).toBeNull();
+    expect(attentionFor(s, now)).toEqual({ tone: 'warning', text: 'No rounds in 13 days' });
   });
-  it('flags scoring up by 1.5 or more', () => {
+  it('flags scoring 1.5 or more worse', () => {
     const s = summarizePlayer(['76', '76', '75', '73', '72', '72'].map((x, i) => round(`r${i}`, `2026-10-1${3 - Math.min(i, 3)}`, Number(x))));
-    expect(attentionFor(s, now, false)?.text).toMatch(/^Scoring up/);
+    expect(attentionFor(s, now)?.text).toMatch(/^Scoring \d+\.\d worse$/);
   });
   it('praises four straight rounds under a player’s average', () => {
     const scores = [70, 71, 70, 71, 76, 77, 76, 77];
     const s = summarizePlayer(scores.map((x, i) => round(`r${i}`, `2026-10-${String(13 - i).padStart(2, '0')}`, x)));
-    expect(attentionFor(s, now, false)).toEqual({ tone: 'gain', text: '4 rounds under average' });
+    expect(attentionFor(s, now)).toEqual({ tone: 'gain', text: '4 rounds under average' });
   });
   it('keeps strokes gained null below three rounds with SG', () => {
     const s = summarizePlayer([round('a', '2026-10-01', 72, { strokes_gained_total: 1 }), round('b', '2026-09-30', 72, { strokes_gained_total: 2 })]);

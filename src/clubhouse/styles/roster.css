@@ -2906,6 +2906,17 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
 [data-ch-crh='on'] .ch-rs-ldr__v.is-loss {
   color: var(--ch-chart-loss);
 }
+/* Needs a look shows its reason as the figure (coach audit 13 Nov 2026, §8 #4): words at 20, and the strokes gained it was
+   ranked by on its own line under them. */
+[data-ch-crh='on'] .ch-rs-ldr__v.is-words {
+  font: var(--ch-type-20-strong);
+  letter-spacing: var(--ch-track-20);
+  white-space: normal;
+}
+[data-ch-crh='on'] .ch-rs-ldr__v.is-words small {
+  display: block;
+  margin: 2px 0 0;
+}
 [data-ch-crh='on'] .ch-rs-ldr__v small {
   margin-left: 4px;
   font: var(--ch-type-13-medium);
