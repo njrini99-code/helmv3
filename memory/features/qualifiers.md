@@ -133,6 +133,12 @@ Leaderboard reads qualifier (FairwayQualifierLeaderboard)
   unavailable, the player-facing error must explain the accurate next step:
   continue a saved round, ask the coach to reopen it, or ask the coach to raise
   the configured round count.
+- Past its last day (P009-D3, `endedLive`, held against `endDayFor`), an open
+  qualifier, live or never started, reads "Waiting on n rounds" or "Past last
+  day", never "Live" or "Upcoming", and the coach is asked to close it ("Review
+  and close"; Close qualifier on the page). The close question names who is a
+  round short (`missingRounds`: "Samanyu: no R3 posted"). Nothing closes on its
+  own: closing stays the coach's act.
 - Multi-round progression always returns the first unused configured round
   number (1 → 2 → 3). It must not use `max(completed) + 1`, because historic or
   out-of-order rows can contain a gap that should be repaired rather than

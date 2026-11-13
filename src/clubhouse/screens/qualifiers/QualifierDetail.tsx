@@ -20,7 +20,7 @@ import { useLastGood } from '../../lib/use-last-good';
 import { useRefresh } from '../../lib/use-refresh';
 import { chTrail } from '../../lib/track';
 import { formatFixed } from '../../lib/format';
-import { boardCaption, dayLabel, endedLive, plural, positionLabel, sampleNote, shortRange, viewerSelection, yearOf, type ChQBoard, type ChQHole, type ChQRound, type ChQRow, type ChQStatus } from './model';
+import { boardCaption, dayLabel, endedLive, missingRounds, plural, positionLabel, sampleNote, shortRange, viewerSelection, yearOf, type ChQBoard, type ChQHole, type ChQRound, type ChQRow, type ChQStatus } from './model';
 import { Pos, qualifierPeek, StateBadge, StatusPill, ThruDots, ToPar, ToParPlate, ViewerLineCard, MixedRounds } from './parts';
 import { PlayerPeek } from '../../ui/PlayerPeek';
 import { useLiveStandings, type ChLiveFeed, type LiveFeedView } from './live';
@@ -28,6 +28,7 @@ import { useRankSlide } from './rank-slide';
 import { Courses, LiveChip, Selections, StaleStandings } from './QualifierSections';
 import { PrintHead } from './PrintHead';
 import { StandingsSpread } from './StandingsSpread';
+import { RulesText } from './RulesText';
 import { createOpenRow, PlayerRounds, type OpenRow } from './RoundsShowcase';
 import { QualifierDetailPhone } from './QualifierDetailPhone';
 import { LiveOnCourse } from './LiveOnCourse';
@@ -136,6 +137,8 @@ export function QualifierDetail({
   const topScore = Math.max(0, data.squad - data.picks);
   const phone = useChPhone();
   const reopenNow = () => reopen.run();
+  // Past its last day, the question names who is a round short before the coach closes it (coach audit, 13 Nov 2026).
+  const short = feed.ended && data.board ? missingRounds(data.board.rows, data.numRounds) : [];
 
   const closeConfirm = (
     <Modal
@@ -145,7 +148,7 @@ export function QualifierDetail({
       width={460}
       icon={Lock}
       title="Close this qualifier?"
-      description={`Players won’t be able to enter or submit rounds in ${data.name}, including rounds already started, until you reopen it. It moves to Concluded.`}
+      description={`${short.length ? `${short.join('. ')}. ` : ''}Players won’t be able to enter or submit rounds in ${data.name}, including rounds already started, until you reopen it. It moves to Concluded.`}
       footer={
         <>
           <Button variant="ghost" onClick={() => setConfirmClose(false)}>
@@ -219,7 +222,7 @@ export function QualifierDetail({
               <Button leftIcon={Pencil} href={`${LIST}/${data.id}/edit`}>
                 Edit qualifier
               </Button>
-              {status === 'in_progress' && (
+              {(status === 'in_progress' || !!feed.ended) && (
                 <Button
                   variant="ghost"
                   leftIcon={Lock}
@@ -293,9 +296,7 @@ export function QualifierDetail({
                     {coach && <p>Shown to players</p>}
                   </div>
                 </div>
-                <p className="ch-qf-why" style={{ marginTop: 0 }}>
-                  {data.rules}
-                </p>
+                <RulesText text={data.rules} />
               </section>
             )}
           </div>
@@ -614,7 +615,6 @@ function Leaderboard({
       </div>
       <p className="ch-qf-cap">
         {boardCaption(b, data.picks, data.numRounds, status)}
-        {data.rules ? ` ${data.rules}` : ''}
       </p>
     </section>
   );

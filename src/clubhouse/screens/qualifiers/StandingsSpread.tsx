@@ -46,6 +46,9 @@ export function StandingsSpread({ rows, topScore, viewerId }: { rows: ChQRow[]; 
     for (let v = Math.ceil(lo / step) * step; v <= hi; v += step) ticks.push(v);
     return { placed, cut, ticks, at, lanes: lastX.length };
   }, [rows, topScore]);
+  // A card a round behind the field (coach audit, 13 Nov 2026: Samanyu, 2 of 3 rounds at +14, looked tied with Connor's three) is
+  // drawn hollow, a dashed ring: its to-par is a round short. Mid-round, cards level with the field are drawn as they are.
+  const most = rows.reduce((m, r) => Math.max(m, r.played), 0);
   if (!layout) return null;
   const even = layout.at(0);
   const height = layout.lanes * 40 + 6;
@@ -63,7 +66,13 @@ export function StandingsSpread({ rows, topScore, viewerId }: { rows: ChQRow[]; 
           {layout.placed.map(({ r, x, lane }) => (
             <li
               key={r.playerId}
-              className={'is-' + (KIND[r.state as NonNullable<ChQRowState>] ?? 'out') + (viewerId != null && r.playerId === viewerId ? ' is-me' : '') + (hot === r.playerId ? ' is-hot' : '')}
+              className={
+                'is-' +
+                (KIND[r.state as NonNullable<ChQRowState>] ?? 'out') +
+                (r.played < most ? ' is-short' : '') +
+                (viewerId != null && r.playerId === viewerId ? ' is-me' : '') +
+                (hot === r.playerId ? ' is-hot' : '')
+              }
               style={{ '--ch-qf-x': x, top: lane * 40 } as CSSProperties}
               onPointerEnter={() => setHot(r.playerId)}
             >

@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowRight, CalendarPlus, ChevronDown, ClipboardCheck, GitCompare, Plus, Radio, Send, Trophy, Users, type LucideIcon } from 'lucide-react';
+import { ArrowRight, CalendarPlus, ChevronDown, ClipboardCheck, Flag, GitCompare, Link2, Plus, Radio, Send, Trophy, Users, type LucideIcon } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { todayIsoInZone } from '@/lib/golf/timezone';
@@ -13,7 +13,7 @@ import { InlineNotice } from '../../ui/Notices';
 import { Section } from '../../ui/Section';
 import { EmptyState, SkelRows, Skeleton } from '../../ui/States';
 import { useRefresh } from '../../lib/use-refresh';
-import { countLabel, countsEachRound, holesLabel, inDays, daysUntil, teamToday, plural, playLabel, tourDay, tourRange } from './format';
+import { closeLabel, countLabel, countsEachRound, holesLabel, daysUntil, showChip, teamToday, plural, playLabel, tourDay, tourRange } from './format';
 import { SeasonLedger } from './SeasonLedger';
 import { TourChip, TourFailed, TourHead, TourLoading, TourMain, TourPhoneTop, TourViewSwitch, tourGate, useTourPhone } from './parts';
 import { useTourPaths } from './paths';
@@ -30,6 +30,8 @@ const ACTION: Record<ChTourNextUp['action'], { label: string; icon: LucideIcon; 
   open: { label: 'Open event', icon: ArrowRight, to: 'desk' },
   follow: { label: 'Follow live', icon: Radio, to: 'live' },
   review: { label: 'Open review', icon: ClipboardCheck, to: 'review' },
+  // The label names the round (closeLabel); this is its icon and where it goes.
+  close: { label: 'Close the round', icon: Flag, to: 'live' },
 };
 
 /**
@@ -108,6 +110,12 @@ function HomeReady({ data, phone, live }: { data: ChTourHomeData; phone: boolean
         actions={
           <>
             <TourViewSwitch current="home" phone={phone} />
+            {/* Link rounds (coach audit, 13 Nov 2026): the inbox existed and nothing opened it. Always here, with its count, 0 too. */}
+            {(data.links || data.errors.links) && (
+              <Button leftIcon={Link2} href={paths.links()}>
+                {data.links ? `Link rounds (${data.links.candidates})` : 'Link rounds'}
+              </Button>
+            )}
             {add}
           </>
         }
@@ -168,10 +176,14 @@ function HomeReady({ data, phone, live }: { data: ChTourHomeData; phone: boolean
 function NextCard({ event: e, data, phone, today = false, arrived = false }: { event: ChTourEvent; data: ChTourHomeData; phone: boolean; today?: boolean; arrived?: boolean }) {
   const paths = useTourPaths();
   const next = data.next?.eventId === e.id ? data.next : null;
-  const act = ACTION[next?.action ?? 'open'];
-  const href = { lineup: paths.lineup(e.id), desk: paths.desk(e.id), live: paths.live(e.id), review: paths.review(e.id) }[act.to];
-  const missing = next?.readiness.find((r) => !r.done);
-  const live = e.status === 'live';
+  // Past its day and not final, the event asks to be closed: "Finish round 1" when it was left live, "Score round 1" when it never
+  // started (coach audit, 13 Nov 2026). It is never "Live now".
+  const closing = e.show === 'needs_closing' ? e.close : null;
+  const base = ACTION[closing ? 'close' : (next?.action ?? 'open')];
+  const act = closing ? { ...base, label: closeLabel(closing) } : base;
+  const href = closing ? paths.live(e.id, closing.round) : { lineup: paths.lineup(e.id), desk: paths.desk(e.id), live: paths.live(e.id), review: paths.review(e.id) }[act.to];
+  const missing = closing ? undefined : next?.readiness.find((r) => !r.done);
+  const live = e.show === 'live';
   const days = daysUntil(teamToday(data.now, data.team.timezone), e.startDate);
   const place = data.courses[e.courseIds[0] ?? '']?.name;
   const summary = `${holesLabel(e)} · ${playLabel(e.format)}${countsEachRound(e.format) ? ` · ${countLabel(e.format)} each round` : ` · ${countLabel(e.format)}`}.`;
@@ -180,8 +192,8 @@ function NextCard({ event: e, data, phone, today = false, arrived = false }: { e
     <FeatureCard
       className={'ch-tour-home-feat ch-tour-washable' + (arrived ? ' ch-tour-changed' : '')}
       kicker={`${tourRange(e.startDate, e.endDate)}${place ? ` · ${place}` : ''}`}
-      chip={live ? 'Live now' : inDays(teamToday(data.now, data.team.timezone), e.startDate)}
-      soon={live || (days >= 0 && days <= 1)}
+      chip={showChip(e, teamToday(data.now, data.team.timezone))}
+      soon={live || !!closing || e.show === 'today' || (days >= 0 && days <= 1)}
       label={`Up next: ${e.name}`}
       title={
         <Link href={paths.desk(e.id)} className="ch-tour-home-feat__t">
@@ -239,7 +251,17 @@ function OtherEvents({ events, data, madeToday, arrived, phone = false }: { even
           trail={
             <>
               {madeToday(e) && <span className="ch-tour-home__today">Set up today</span>}
-              {e.status === 'live' ? <TourChip tone="live">Live</TourChip> : !phone && <TourChip>Upcoming</TourChip>}
+              {e.show === 'needs_closing' ? (
+                <TourChip tone="warn" dot>
+                  Needs closing
+                </TourChip>
+              ) : e.show === 'live' ? (
+                <TourChip tone="live">Live</TourChip>
+              ) : e.show === 'today' ? (
+                <TourChip tone="live">Today</TourChip>
+              ) : (
+                !phone && <TourChip>Upcoming</TourChip>
+              )}
             </>
           }
           meta={[data.courses[e.courseIds[0] ?? '']?.name, holesLabel(e), e.note].filter(Boolean).join(' · ')}
