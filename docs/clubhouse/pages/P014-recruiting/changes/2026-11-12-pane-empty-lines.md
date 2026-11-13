@@ -13,7 +13,9 @@ Held items:     the empty-state design (W19/Q3, the owner's)
 
 ### Changed
 
-- Desktop: under its heading an empty part is one line, the "No … yet" and its Add, no icon tile; the longer line describes the Add (aria-describedby). The phone's rows on seams are unchanged.
+- Desktop: under its heading an empty part is one line, the "No … yet" and its
+  Add, no icon tile; the longer line describes the Add (aria-describedby). The
+  phone's rows on seams are unchanged.
 
 ### Why
 
@@ -21,4 +23,5 @@ Held items:     the empty-state design (W19/Q3, the owner's)
 
 ### Verification
 
-- `pane-empty-lines.test.ts` (new), `recruiting.test.tsx` (the Add's description), hairline guard lowered where the tile's ring went: exit 0.
+- `pane-empty-lines.test.ts` (new), `recruiting.test.tsx` (the Add's
+  description), hairline guard lowered where the tile's ring went: exit 0.

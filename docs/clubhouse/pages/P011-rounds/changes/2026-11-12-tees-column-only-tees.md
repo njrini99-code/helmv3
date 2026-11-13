@@ -14,8 +14,10 @@ Held items:     R1/R2/R3 on event rounds: the team list carries no tournament ro
 
 ### Changed
 
-- In the desktop table a round with no tee recorded shows the no-data dash under Tees instead of "18 holes". A
-  nine-hole round keeps its "9 holes" chip with or without a tee. The phone row, which has no Tees header, is unchanged.
+- In the desktop table a round with no tee recorded shows the no-data dash under
+  Tees instead of "18 holes". A
+  nine-hole round keeps its "9 holes" chip with or without a tee. The phone row,
+  which has no Tees header, is unchanged.
 
 ### Why
 

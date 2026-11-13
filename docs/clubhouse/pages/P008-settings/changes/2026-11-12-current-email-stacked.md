@@ -13,14 +13,17 @@ Held items:     other read-only rows (Version, On the roster) keep the label-lef
 
 ### Changed
 
-- In Account's email section, "Current email" and its address stack, label over value, as the New email field under it
+- In Account's email section, "Current email" and its address stack, label over
+  value, as the New email field under it
   reads. `Row` takes `stack` for this.
 
 ### Why
 
-- Preview grade G8: on a desk the label and the address sat at opposite ends of a wide row.
+- Preview grade G8: on a desk the label and the address sat at opposite ends of
+  a wide row.
 
 ### Verification
 
-- `screens/settings/__tests__/row-stack.test.tsx`; settings suites with look-feel-pass-css, 35 files, 490 tests, exit 0;
+- `screens/settings/__tests__/row-stack.test.tsx`; settings suites with
+  look-feel-pass-css, 35 files, 490 tests, exit 0;
   eslint exit 0. Not re-shot in WebKit.

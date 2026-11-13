@@ -13,21 +13,32 @@ Held items:     none
 
 ### Changed
 
-- On staging, the Approach card drew Ethan −4.4, Owen −4.2, Cole −3.6 and Dylan −2.0 as the
-  same full bar: the scale stopped at a loss of 1.30 (the fixture's size) and clamped beyond.
-  The full length is now the card's largest loss (and largest gain), team average included,
-  never less than the design's 1.30 (0.25). The team-average mark uses the same scale.
+- On staging, the Approach card drew Ethan −4.4, Owen −4.2, Cole −3.6 and Dylan
+  −2.0 as the
+  same full bar: the scale stopped at a loss of 1.30 (the fixture's size) and
+  clamped beyond.
+  The full length is now the card's largest loss (and largest gain), team
+  average included,
+  never less than the design's 1.30 (0.25). The team-average mark uses the same
+  scale.
 
 ### Verification
 
-- `team/__tests__/spot-scale.test.tsx` (new): the floor holds for fixture-sized figures; staging's
-  four Approach players draw four different lengths, the worst full. Team suite: 77 passed.
-- Dev server, `/clubhouse-preview/coachhelm-team` at 1920: losses unchanged on the fixture;
-  the two gains (+0.3, +0.5), which were both clamped full, now differ. No page errors.
+- `team/__tests__/spot-scale.test.tsx` (new): the floor holds for fixture-sized
+  figures; staging's
+  four Approach players draw four different lengths, the worst full. Team suite:
+  77 passed.
+- Dev server, `/clubhouse-preview/coachhelm-team` at 1920: losses unchanged on
+  the fixture;
+  the two gains (+0.3, +0.5), which were both clamped full, now differ. No page
+  errors.
 
 ## 2026-11-12 — The Team board stops at the wide measure on a big screen
 
-- The board had no width of its own and grew with the window ("this screen is uhh very large",
-  1920 wide). On a desk it now stops at `--ch-measure-wide` (plus its 24px sides), from the left
-  edge every page shares. Dev server: 1408px from x 400 at 1920; unchanged at 1440 and 1180.
+- The board had no width of its own and grew with the window ("this screen is
+  uhh very large",
+  1920 wide). On a desk it now stops at `--ch-measure-wide` (plus its 24px
+  sides), from the left
+  edge every page shares. Dev server: 1408px from x 400 at 1920; unchanged at
+  1440 and 1180.
   Test: `team/__tests__/team-board-width.test.ts`.

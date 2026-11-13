@@ -13,8 +13,10 @@ Held items:     none
 
 ### Changed
 
-- The season card's class bar and legend add "N not set" for players whose class year is missing or past, drawn as a quiet
-  segment (the legend's ink at 45%), so the split always adds up to the roster count above it.
+- The season card's class bar and legend add "N not set" for players whose class
+  year is missing or past, drawn as a quiet
+  segment (the legend's ink at 45%), so the split always adds up to the roster
+  count above it.
 - `format.ts` gains `classUnset`; `classMix` is unchanged.
 
 ### Why
@@ -23,5 +25,6 @@ Held items:     none
 
 ### Verification
 
-- `screens/roster/__tests__/class-mix-unset.test.tsx`: the count, the segment, a label that sums to the roster, and nothing
+- `screens/roster/__tests__/class-mix-unset.test.tsx`: the count, the segment, a
+  label that sums to the roster, and nothing
   drawn when every year is set. Roster suites: 9 + 8 files, all pass.

@@ -13,8 +13,10 @@ Held items:     none
 
 ### Changed
 
-- Reaction badges hang 22 px above the bubble (was 14). A 26 px badge now overlaps the bubble's top by 4 px, inside its
-  rounded corner and padding, so it never sits on a word. They still sit 10 px past the corner that faces the other side
+- Reaction badges hang 22 px above the bubble (was 14). A 26 px badge now
+  overlaps the bubble's top by 4 px, inside its
+  rounded corner and padding, so it never sits on a word. They still sit 10 px
+  past the corner that faces the other side
   of the thread.
 - A row with badges leaves 24 px above it (was 16) for the risen badges.
 
@@ -24,5 +26,7 @@ Held items:     none
 
 ### Verification
 
-- `screens/messages/__tests__/reaction-badge-placement.test.ts` pins the overlap at 6 px or less and the row's room.
-- Not yet seen in WebKit; for the coordinator's check on :3100 (`/clubhouse-preview/messages`, a thread with reactions).
+- `screens/messages/__tests__/reaction-badge-placement.test.ts` pins the overlap
+  at 6 px or less and the row's room.
+- Not yet seen in WebKit; for the coordinator's check on :3100
+  (`/clubhouse-preview/messages`, a thread with reactions).

@@ -13,7 +13,8 @@ Held items:     an Add link beside it (where classes are added is the player's C
 
 ### Changed
 
-- The coach's side panel, Sources: with no class schedules on the calendar the line reads "No class schedules added yet".
+- The coach's side panel, Sources: with no class schedules on the calendar the
+  line reads "No class schedules added yet".
   With some, it still reads "Class schedules for N players".
 
 ### Why
@@ -22,4 +23,5 @@ Held items:     an Add link beside it (where classes are added is the player's C
 
 ### Verification
 
-- `screens/calendar/__tests__/sources-no-classes.test.tsx`; calendar suites 6 files, 215 tests, exit 0.
+- `screens/calendar/__tests__/sources-no-classes.test.tsx`; calendar suites 6
+  files, 215 tests, exit 0.

@@ -14,14 +14,18 @@ Held items:     the pill keeps "Waiting on n rounds" / "Past last day" (F-0068 k
 
 ### Changed
 
-- For a coach, a live qualifier past its last day reads "Review and close" as its card's link words, on the hero and
-  on the smaller cards, instead of "View leaderboard". Players and qualifiers inside their dates are unchanged.
+- For a coach, a live qualifier past its last day reads "Review and close" as
+  its card's link words, on the hero and
+  on the smaller cards, instead of "View leaderboard". Players and qualifiers
+  inside their dates are unchanged.
 
 ### Why
 
-- Nick's walk (W33): "Fall Invitational Qualifier" ran Sep 25 to 29, sat as Active and "Waiting on 7 rounds" six weeks
+- Nick's walk (W33): "Fall Invitational Qualifier" ran Sep 25 to 29, sat as
+  Active and "Waiting on 7 rounds" six weeks
   on, and nothing asked the coach to close it.
 
 ### Verification
 
-- `qualifiers-premium.test.tsx` (W33 case); qualifier suites 29 files, 386 tests, exit 0; eslint exit 0.
+- `qualifiers-premium.test.tsx` (W33 case); qualifier suites 29 files, 386
+  tests, exit 0; eslint exit 0.

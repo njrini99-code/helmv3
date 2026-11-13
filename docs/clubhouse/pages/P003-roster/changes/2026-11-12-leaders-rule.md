@@ -13,14 +13,17 @@ Held items:     using the cards' rule (no floor) instead; that changes what "Low
 
 ### Changed
 
-- Under the coach's leader cards (Low average, On a heater, Needs a look) one quiet line: "Leaders count active players
+- Under the coach's leader cards (Low average, On a heater, Needs a look) one
+  quiet line: "Leaders count active players
   with 3+ counting rounds." On desktop it spans the top grid. Hidden in print.
 
 ### Why
 
-- Nick's walk (W24): Low average named a 77.5 while player cards below showed 72.0; those players had fewer than three
+- Nick's walk (W24): Low average named a 77.5 while player cards below showed
+  72.0; those players had fewer than three
   counting rounds, and nothing said so.
 
 ### Verification
 
-- `screens/roster/__tests__/leaders-rule.test.tsx`; roster suites 17 files, 147 tests, exit 0.
+- `screens/roster/__tests__/leaders-rule.test.tsx`; roster suites 17 files, 147
+  tests, exit 0.

@@ -13,18 +13,24 @@ Held items:     type-coloured fills for every month chip (see Why)
 
 ### Changed
 
-- Desktop Month: a timed event's chip leads with its start, without the meridiem ("3:30 Range and wedges"), quieter than
+- Desktop Month: a timed event's chip leads with its start, without the meridiem
+  ("3:30 Range and wedges"), quieter than
   the name. All-day events and the tournament and qualifier chips are unchanged.
-- The name of a minor event is primary ink (was secondary), so the month no longer reads as grey lines.
+- The name of a minor event is primary ink (was secondary), so the month no
+  longer reads as grey lines.
 
 ### Why
 
 - Nick's walk (W44): events were grey dot lines cut after a few words.
-- Not changed: W44 also asks for a type-coloured chip for every event. The month's type key (P-4 4.4) draws practice,
-  meetings, travel and classes as dots and only tournaments and qualifiers as chips; filling every event is a change to
-  that key, which is the owner's call. On staging every event drew the same grey dot because they are meetings or
+- Not changed: W44 also asks for a type-coloured chip for every event. The
+  month's type key (P-4 4.4) draws practice,
+  meetings, travel and classes as dots and only tournaments and qualifiers as
+  chips; filling every event is a change to
+  that key, which is the owner's call. On staging every event drew the same grey
+  dot because they are meetings or
   "other", the types that share the ink dot.
 
 ### Verification
 
-- `screens/calendar/__tests__/month-time-first.test.tsx`; month, calendar and type-role tests pass.
+- `screens/calendar/__tests__/month-time-first.test.tsx`; month, calendar and
+  type-role tests pass.

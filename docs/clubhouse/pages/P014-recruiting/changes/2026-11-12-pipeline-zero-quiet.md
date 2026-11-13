@@ -13,7 +13,8 @@ Held items:     none
 
 ### Changed
 
-- A stage at 0 draws the quiet ivory coin whatever its stage, light and dark; pressed, it keeps its second ring.
+- A stage at 0 draws the quiet ivory coin whatever its stage, light and dark;
+  pressed, it keeps its second ring.
 
 ### Why
 

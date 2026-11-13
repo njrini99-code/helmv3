@@ -13,27 +13,41 @@ Held items:     none
 
 ### Fixed
 
-- The spinner had no ring on the sign-in family. `.ch-spinner` lived in controls.css, which the shell loads and AuthFrame
-  does not, so "Signing in…" (AuthKey) and every "Checking…" line (GateChecking) drew a 0x0 span, and the checking lines
-  sat 8px in from their heading for the gap beside it. Live on /golf/login as well as the preview. The ring now lives in
-  spinner.css, which ui/Spinner.tsx loads itself, so any page that draws one has it; it is defined once (one-spinner test).
-- A notice's action (Switch account, Go to sign in) goes under its words, lined up with them. Beside them it squeezed
-  "This account already belongs to another program. Use a different email to join this one." into four short lines, at
+- The spinner had no ring on the sign-in family. `.ch-spinner` lived in
+  controls.css, which the shell loads and AuthFrame
+  does not, so "Signing in…" (AuthKey) and every "Checking…" line (GateChecking)
+  drew a 0x0 span, and the checking lines
+  sat 8px in from their heading for the gap beside it. Live on /golf/login as
+  well as the preview. The ring now lives in
+  spinner.css, which ui/Spinner.tsx loads itself, so any page that draws one has
+  it; it is defined once (one-spinner test).
+- A notice's action (Switch account, Go to sign in) goes under its words, lined
+  up with them. Beside them it squeezed
+  "This account already belongs to another program. Use a different email to
+  join this one." into four short lines, at
   390 and on the desk panel.
-- The password's four needs sit two by two. As a wrapped row they broke three and one, "A symbol" alone, on a phone and on
+- The password's four needs sit two by two. As a wrapped row they broke three
+  and one, "A symbol" alone, on a phone and on
   the desk panel.
 
 ### Changed (owner calls, 12 Nov)
 
-- Staff invite, an account that belongs to another program (CH-15944): Switch account is the lit key; Accept invitation
-  stays under it, secondary and off, the warning its reason (aria-describedby). Accepting into the wrong program is not
+- Staff invite, an account that belongs to another program (CH-15944): Switch
+  account is the lit key; Accept invitation
+  stays under it, secondary and off, the warning its reason (aria-describedby).
+  Accepting into the wrong program is not
   the easy tap.
-- Reset, a refusal of the new password (CH-15030): said under that field and its needs, tied to it; Confirm stays clean.
-- A notice's action (Go to sign in) reaches 44 under any pointer, drawn as it is.
+- Reset, a refusal of the new password (CH-15030): said under that field and its
+  needs, tied to it; Confirm stays clean.
+- A notice's action (Go to sign in) reaches 44 under any pointer, drawn as it
+  is.
 
 ### Verification
 
-- WebKit at 390 and 1440, light and dark: 54 states of signin, forgot, the six refusals, reset, join, joinconfirm, staff,
-  pending and demo; the load, the change to the forgot view and back, and an empty Sign in and Send.
-- `screens/auth/__tests__/auth-notice-rules-layout.test.ts`, `__tests__/one-spinner.test.ts`; the auth tests and the
+- WebKit at 390 and 1440, light and dark: 54 states of signin, forgot, the six
+  refusals, reset, join, joinconfirm, staff,
+  pending and demo; the load, the change to the forgot view and back, and an
+  empty Sign in and Send.
+- `screens/auth/__tests__/auth-notice-rules-layout.test.ts`,
+  `__tests__/one-spinner.test.ts`; the auth tests and the
   repo-wide style guards pass (24 files, 235 tests).

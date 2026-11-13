@@ -18,7 +18,8 @@ Held items:     none
   line below ("Best day 73.4 · Oct 13", "Toughest day 74.6 · Sep 2"). A marked
   day that rests on one round says so ("· 1 round").
 - A change under its standard error is no longer the card's boldest figure. It
-  is set in plain weight and tertiary ink beside "No clear change vs previous 10".
+  is set in plain weight and tertiary ink beside "No clear change vs previous
+  10".
   A clear change keeps its gain or loss colour.
 - `ChTeamForm` gains `lineDays` and `lineCounts`, filled by `teamForm` from the
   same round days the line already reads. With neither (an older fixture), the
@@ -34,4 +35,5 @@ Held items:     none
 
 - WebKit on `/clubhouse-preview/home` at 1920 and 390: labels inset with the
   plot, both marks drawn, the change in quiet type.
-- `screens/home/__tests__/form-line-ends.test.tsx` (4 cases) with `home.test.tsx`: 80 passed.
+- `screens/home/__tests__/form-line-ends.test.tsx` (4 cases) with
+  `home.test.tsx`: 80 passed.

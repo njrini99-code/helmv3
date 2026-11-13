@@ -13,12 +13,16 @@ Held items:     none
 
 ### Changed
 
-- Each entry failure toast carries its own `replace` key, so raised again it takes the place of the one on screen instead of stacking a copy.
+- Each entry failure toast carries its own `replace` key, so raised again it
+  takes the place of the one on screen instead of stacking a copy.
 
 ### Why
 
-- Grading 2d-A (G18): the entry preview showed each toast twice (Strict Mode runs its mount effect twice in development); the real round can raise "updated on another device" for two refused saves.
+- Grading 2d-A (G18): the entry preview showed each toast twice (Strict Mode
+  runs its mount effect twice in development); the real round can raise "updated
+  on another device" for two refused saves.
 
 ### Verification
 
-- `round-entry.test.tsx` (twice, and a Strict Mode mount), `round-entry-continue`, `round-entry-wiring`, `preview-entry-layout`: exit 0.
+- `round-entry.test.tsx` (twice, and a Strict Mode mount),
+  `round-entry-continue`, `round-entry-wiring`, `preview-entry-layout`: exit 0.

@@ -13,14 +13,18 @@ Held items:     one team-average definition across Rounds, Stats and Roster (75.
 
 ### Changed
 
-- On desktop, when the season has practice rounds, the Low round caption reads "Cole · −2 · no practice", as the
-  Average caption already does. The phone keeps "Cole · −2"; its Average caption says "no practice".
+- On desktop, when the season has practice rounds, the Low round caption reads
+  "Cole · −2 · no practice", as the
+  Average caption already does. The phone keeps "Cole · −2"; its Average caption
+  says "no practice".
 
 ### Why
 
-- Nick's walk (W30): "Low round 70 (Cole −2)" sat over a 68 for Cole three rows down, a practice round, and nothing said
+- Nick's walk (W30): "Low round 70 (Cole −2)" sat over a 68 for Cole three rows
+  down, a practice round, and nothing said
   practice was out.
 
 ### Verification
 
-- `team-rounds-season.test.tsx` (expected caption updated); rounds suites 151 files, 1060 tests, exit 0.
+- `team-rounds-season.test.tsx` (expected caption updated); rounds suites 151
+  files, 1060 tests, exit 0.

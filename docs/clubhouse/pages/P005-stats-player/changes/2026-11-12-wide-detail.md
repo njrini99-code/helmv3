@@ -14,9 +14,12 @@ Held items:     none
 ### Changed
 
 - The detail beside the cards was 360px to 420px wide at every screen size, and
-  the page stopped at its 1200px measure, so a 1920 screen had a blank band to the
-  right of a narrow detail. Above 1180px the page has no width cap while a detail is
-  open (no fourth page width: row 39 keeps three), keeping the left edge every page shares. The cards keep about
+  the page stopped at its 1200px measure, so a 1920 screen had a blank band to
+  the
+  right of a narrow detail. Above 1180px the page has no width cap while a
+  detail is
+  open (no fourth page width: row 39 keeps three), keeping the left edge every
+  page shares. The cards keep about
   their 1440 width (up to 680px) and the detail takes the rest (420px at least).
   At 1440 nothing moves. The same grid serves Team stats (P004).
 

@@ -14,6 +14,7 @@ Held items:     none
 ### Changed
 
 - Team stats shares the player page's desk grid (`.ch-shs-desk`), so its detail
-  also opens out to the right on a wide screen: the page has no width cap while a
+  also opens out to the right on a wide screen: the page has no width cap while
+  a
   detail is open, the cards keep up to 680px and the detail takes the rest. See
   P005's fragment of the same date for the reason and the measurements.

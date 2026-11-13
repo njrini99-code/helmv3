@@ -14,7 +14,8 @@ Held items:     none
 ### Changed
 
 - My stats' scoring chip, on the feature card and the Scoring hero, now uses the
-  team page's rule (P004's fragment of the same date). Under the standard error it
+  team page's rule (P004's fragment of the same date). Under the standard error
+  it
   shows the signed number with no arrow and "No clear change vs previous 10", or
   "No clear change · newest 5 vs first 5". A clear change keeps its arrow and
   "lower than the 10 before".
