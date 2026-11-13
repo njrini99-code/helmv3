@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowRight, CalendarPlus, ChevronDown, ClipboardCheck, Flag, GitCompare, Plus, Radio, Send, Trophy, Users, type LucideIcon } from 'lucide-react';
+import { ArrowRight, CalendarPlus, ChevronDown, ClipboardCheck, Flag, GitCompare, Link2, Plus, Radio, Send, Trophy, Users, type LucideIcon } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { todayIsoInZone } from '@/lib/golf/timezone';
@@ -110,6 +110,12 @@ function HomeReady({ data, phone, live }: { data: ChTourHomeData; phone: boolean
         actions={
           <>
             <TourViewSwitch current="home" phone={phone} />
+            {/* Link rounds (coach audit, 13 Nov 2026): the inbox existed and nothing opened it. Always here, with its count, 0 too. */}
+            {(data.links || data.errors.links) && (
+              <Button leftIcon={Link2} href={paths.links()}>
+                {data.links ? `Link rounds (${data.links.candidates})` : 'Link rounds'}
+              </Button>
+            )}
             {add}
           </>
         }

@@ -382,13 +382,18 @@ function nextUp(e: ChTourEvent, courses: Record<string, ChTourCourse>): ChTourNe
   return { eventId: e.id, readiness: r1 ? readiness : readiness.slice(1), ticks, alsoThisWeek: [], action };
 }
 
-async function linkTeaser(ctx: TourCtx, events: ChTourEvent[]): Promise<{ candidates: number; high: number } | null> {
+async function linkTeaser(ctx: TourCtx, events: ChTourEvent[]): Promise<{ candidates: number; high: number; matched: number } | null> {
   if (ctx.role !== 'coach') return null;
   const { data, error } = await ctx.supabase.rpc('golf_tournament_link_candidates' as never, { p_team_id: ctx.teamId } as never);
   if (error) throw isTourSchemaMissing(error) ? new NotSetUp('linkCandidates') : new ReadFailed('linkCandidates', error);
   const rows = (data ?? []) as TourLinkCandidateRow[];
   const suggestions = suggestLinks(rows.map(candidateOf), eventRoundsOf(events));
-  return { candidates: rows.length, high: suggestions.filter((s) => s.match?.confidence === 'high' && !s.ambiguous).length };
+  return {
+    candidates: rows.length,
+    high: suggestions.filter((s) => s.match?.confidence === 'high' && !s.ambiguous).length,
+    // Rounds matched to one of these events: the desk's "Link rounds (n)" for its event.
+    matched: suggestions.filter((s) => s.match).length,
+  };
 }
 
 const candidateOf = (r: TourLinkCandidateRow): LinkCandidateRound => ({ id: r.round_id, playerId: r.player_id, date: r.round_date, courseId: r.course_id, courseName: r.course_name, score: r.total_score, roundType: r.round_type });
@@ -539,6 +544,7 @@ export async function loadTournamentDesk(ctx: TourCtx, eventId: string): Promise
       const scored = event.playerRounds.filter((p) => p.total != null).map((p) => p.roundNumber).sort((a, b) => a - b)[0] ?? null;
       return { version: raw.t.version, cancelled: rows.length > 0 && rows.every((r) => r.status === 'cancelled'), official: raw.t.official_at != null, scoredRound: scored, entries: event.rounds.length };
     });
+    const links = await section('desk', 'links', () => linkTeaser(ctx, [event]));
     const previous = read.events
       .filter((e) => e.id !== event.id && e.startDate < event.startDate && e.courseIds.some((c) => event.courseIds.includes(c)))
       .sort((a, b) => b.startDate.localeCompare(a.startDate))[0];
@@ -561,6 +567,8 @@ export async function loadTournamentDesk(ctx: TourCtx, eventId: string): Promise
         previous: previous ? { eventId: previous.id, name: previous.name } : null,
         errors: { ...(holes.ok ? {} : { holes: true as const }), ...(review.ok ? {} : { review: true as const }) },
         track: track.ok ? track.value : null,
+        // A coach's "Link rounds (n)" for this event; a player has no inbox.
+        ...(ctx.role === 'coach' ? { links: links.ok && links.value ? links.value.matched : null } : {}),
       },
     };
   });

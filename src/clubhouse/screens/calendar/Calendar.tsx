@@ -32,6 +32,7 @@ import { useToast } from '../../ui/Toast';
 import { friendlyReason, isOffline, normalise, useAction } from '../../lib/use-action';
 import { Attendance, EventDetail, Overlap, Summary, attentionOf, type ChInsp, type InspCtx } from './inspector';
 import { CancelEvent, DeleteEvent, EventEditor, SubscribeSheet, type ChTournamentSaved, type EditorSeed } from './editor';
+import { setUpLanding } from './editor-tournament';
 import { roundsOverlay } from './round-overlay';
 import { RoundEditor } from './editor-round';
 import { roundMoveQuestion, roundMoveRefusal } from './round-label';
@@ -671,7 +672,21 @@ function CalendarBody({
     }),
     [],
   );
-  const onTournamentSaved = useCallback((t: ChTournamentSaved) => setMade(roundsOverlay(t)), []);
+  // Set up from calendar (the season home's, `initialSetUp`): once that event is saved as a tournament, go where the work is,
+  // Link rounds for an event already played, its desk for one still to come (coach audit, 13 Nov 2026: it ended here).
+  const fromSetUp = useRef(initialSetUp && initialEvent ? initialEvent : null);
+  const leaving = useRef(false);
+  const onTournamentSaved = useCallback(
+    (t: ChTournamentSaved) => {
+      setMade(roundsOverlay(t));
+      if (fromSetUp.current && t.fromEventId === fromSetUp.current) {
+        fromSetUp.current = null;
+        leaving.current = true;
+        router.push(setUpLanding({ tournamentId: t.tournamentId, firstDay: t.state.firstDay }, now.date));
+      }
+    },
+    [router, now.date],
+  );
   const refreshQuiet = useCallback(() => router.refresh(), [router]);
   // P-5 should 5: a round or tournament cancel strikes through at once and is written when its Undo runs out.
   const heldCancel = useHeldCancel(data.events, refreshQuiet, preview);
@@ -1097,6 +1112,8 @@ function CalendarBody({
           onSaved={(d) => {
             setEditor(null);
             setInsp(null);
+            // Set up from calendar is on its way to Tournaments: no move here to race it.
+            if (leaving.current) return;
             if (d < data.range.from || d > data.range.to) go(view, d);
             else refresh();
           }}

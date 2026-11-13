@@ -518,6 +518,11 @@ export interface ChTourDeskData {
    * read: the menu then offers nothing rather than a write that would be refused.
    */
   track?: ChTourTrack | null;
+  /**
+   * This event's rounds waiting in Link rounds (players' GolfHelm rounds matched to its rounds), for the coach's "Link rounds
+   * (n)": null when the count didn't load, left out for a player.
+   */
+  links?: number | null;
 }
 
 export interface ChTourTrack {

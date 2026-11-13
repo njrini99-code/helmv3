@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowRight, ArrowUpRight, ClipboardCheck, Flag, GitCompare, Radio, Users } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, ClipboardCheck, Flag, GitCompare, Link2, Radio, Users } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { Button } from '../../ui/Button';
@@ -143,6 +143,12 @@ function DeskReady({ data, search, phone }: { data: ChTourDeskData; search: ChTo
         </p>
       )}
       <div className="ch-tour-head__a">
+        {/* Link rounds from every event (coach audit, 13 Nov 2026), with this event's waiting rounds, 0 too. */}
+        {data.links !== undefined && (
+          <Button leftIcon={Link2} href={paths.links()}>
+            {data.links == null ? 'Link rounds' : `Link rounds (${data.links})`}
+          </Button>
+        )}
         {e.resultsUrl && !phone && (
           <a className="ch-tour-desk-link" href={e.resultsUrl} target="_blank" rel="noopener noreferrer">
             <Icon icon={ArrowUpRight} size={15} />

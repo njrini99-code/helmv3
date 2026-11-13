@@ -596,3 +596,12 @@ export const hhmmToHour = (t: string | null): number | null => {
   const [h, m] = t.split(':').map(Number);
   return Number.isFinite(h) ? (h ?? 0) + (m ?? 0) / 60 : null;
 };
+
+/**
+ * How many of the invited are on the list shown beside the count: an invitee with no player profile isn't listed, so they
+ * aren't counted (coach audit, 13 Nov 2026: "Invite · 12 of 11").
+ */
+export function listedCount(ids: readonly string[], people: ReadonlyArray<{ id: string }>): number {
+  const listed = new Set(people.map((p) => p.id));
+  return ids.filter((id) => listed.has(id)).length;
+}
