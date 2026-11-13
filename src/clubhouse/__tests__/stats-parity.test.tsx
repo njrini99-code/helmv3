@@ -515,8 +515,10 @@ describe('Game detail · More detail', () => {
     expect([...panel('Fairways by tee type').querySelectorAll('.ch-cmp__l')].map((l) => l.firstChild!.textContent)).toEqual(['Par 4', 'Par 5', 'Driver', 'Other clubs']);
     expect(cells(rowOf(panel('Tee miss by club'), 'Driver'))).toEqual(['58%', '42%']);
     const grid = panel('Where tee shots finish').querySelector('.ch-gx-sec')!;
-    expect(grid.getAttribute('aria-label')).toContain('118 tee shots by sector');
-    expect(grid.querySelector('.is-top')!.textContent).toContain('71');
+    // One row since 12 Nov (Nick): Left, Center, Right; the fixture's long, short and short-left shots fold into
+    // center and left, so center is 71 + 2.
+    expect(grid.getAttribute('aria-label')).toContain('118 tee shots by side: Left 25, Center 73, Right 20');
+    expect(grid.querySelector('.is-top')!.textContent).toContain('73');
     expect(panel('Where tee shots finish').querySelector('.ch-gm-p__n')!.textContent).toContain('no direction logged count as center');
     expect(panel('Fairways by round').querySelector('svg.ch-gx-line')!.getAttribute('aria-label')).toContain('Aug 30 57%');
   });

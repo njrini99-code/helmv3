@@ -1336,6 +1336,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-12-one-change-rule.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-12-sg-below-zero.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-12-wide-detail.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P004-stats-team/changes/2026-11-13-tee-finish-one-row.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P005-stats-player/DESIGN.md` | current | - | - | - | - |
@@ -1384,6 +1385,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-12-one-change-rule.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-12-sg-below-zero.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-12-wide-detail.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P005-stats-player/changes/2026-11-13-tee-finish-one-row.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P006-calendar/DESIGN.md` | current | - | - | - | - |

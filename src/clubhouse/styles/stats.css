@@ -2921,6 +2921,10 @@
   background: var(--ch-green-50);
   box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.18);
 }
+/* Tee shots on one row (Left, Center, Right): taller cells so the row reads as the hole's width, not a strip. */
+.ch-gx-sec--sides .ch-gx-sec__c {
+  padding-block: var(--ch-space-4);
+}
 .ch-gx-pars {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
