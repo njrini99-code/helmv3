@@ -21406,6 +21406,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/visuals/miss-compass-flag.ts",
+          "anchor": "src/lib/flags/is-enabled"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/composite/hole-sequence-loader.ts",
           "anchor": "src/lib/supabase/admin"
         },
