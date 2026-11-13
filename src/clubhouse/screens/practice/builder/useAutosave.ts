@@ -49,7 +49,7 @@ export function restoredDraft(planId: string): Snapshot | null {
  */
 export function useAutosave({ planId, version, snapshot, folder = 'Practice plans', preview = false }: { planId: string; version: number; snapshot: Snapshot; folder?: string; preview?: boolean }) {
   const [status, setStatus] = useState<SaveStatus>('saved');
-  // Why the last save failed, from the action (CH-17104 "A block names a group that isn't in this plan"), so the head can say it.
+  // Why the last save failed, in the action's own words ("A block names a group that isn't in this plan"), so the head can say it.
   const [error, setError] = useState<{ code: string; message: string } | null>(null);
   const latest = useRef(snapshot);
   const saved = useRef(JSON.stringify(snapshot));
