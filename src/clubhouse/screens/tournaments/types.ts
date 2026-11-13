@@ -69,6 +69,13 @@ export type ChTourEntryRole = 'lineup' | 'alternate' | 'individual';
 export type ChTourSquad = 'A' | 'B';
 /** The event desk's emphasis across the week (principle 3). */
 export type ChTourMood = 'prep' | 'live' | 'result' | 'review';
+
+/**
+ * What the coach is told about a round or an event on the team's calendar day (coach audit, 13 Nov 2026). The stored
+ * status can be stale: a round left `live` after its day, or never started, needs closing; it is never "Live now" or
+ * "Upcoming". `live` is a round in play today.
+ */
+export type ChRoundShow = 'upcoming' | 'today' | 'live' | 'needs_closing' | 'final';
 /** A player's score in a round, as Who counted draws it. */
 export type ChTourCount = 'counted' | 'dropped' | 'tie' | 'individual' | 'none';
 export type ChTourDivision = 'd1' | 'd2' | 'd3' | 'naia' | 'njcaa';
@@ -262,6 +269,10 @@ export interface ChTourEvent {
   kind: ChTourEventKind;
   tiebreak: ChTourTiebreak;
   status: 'upcoming' | 'live' | 'complete';
+  /** What a coach is told now, on the team's day: `status` stays for logic, this is for words and chips. */
+  show: ChRoundShow;
+  /** The first round to close when `show` is `needs_closing`, and whether it was left live (Finish it) or never started. */
+  close: { round: number; live: boolean } | null;
   trust: ChTourTrust;
   mood: ChTourMood;
   rounds: ChTourRound[];
@@ -306,7 +317,8 @@ export interface ChTourNextUp {
   ticks: ChTourWeekTick[];
   alsoThisWeek: Array<{ eventId: string; label: string }>;
   /** The hero's one primary action by state (5.1.1). */
-  action: 'build' | 'publish' | 'open' | 'follow' | 'review';
+  /** `close`: the event is past its day and not final (`ChTourEvent.close` names the round). */
+  action: 'build' | 'publish' | 'open' | 'follow' | 'review' | 'close';
 }
 
 export interface ChTourFinishPlace {
@@ -936,6 +948,8 @@ export interface ChTourPlayerData {
     endDate: string;
     courseName: string;
     status: ChTourEvent['status'];
+    /** What the player is told now, on the team's day (`ChTourEvent.show`). */
+    show: ChTourEvent['show'];
     /** The event's days in round order, each with its first tee where one is set: the card for the next event reads them. */
     days: Array<{ number: number; date: string; firstTeeAt: string | null }>;
     /**

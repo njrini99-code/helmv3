@@ -109,3 +109,24 @@ export function andList(names: readonly string[]): string {
 
 /** "1 event", "3 events": lib/plural's, re-exported for the tournament views. */
 export { plural } from '../../lib/plural';
+
+/** "Finish round 1" for a round left live after its day, "Score round 1" for one that never started. */
+export function closeLabel(close: { round: number; live: boolean }): string {
+  return `${close.live ? 'Finish' : 'Score'} round ${close.round}`;
+}
+
+/**
+ * The coach's word for an event now, on the team's day: "Needs closing" past its day and not final, "Live now" in play
+ * today, "Today" on its first day before play, else how far off it is.
+ */
+export function showChip(e: { show: 'upcoming' | 'today' | 'live' | 'needs_closing' | 'final'; startDate: string }, today: string): string {
+  if (e.show === 'needs_closing') return 'Needs closing';
+  if (e.show === 'live') return 'Live now';
+  if (e.show === 'today') return 'Today';
+  return inDays(today, e.startDate);
+}
+
+/** The player's word for an event now: a past event the coach hasn't closed is "Scores pending" (closing is the coach's job). */
+export function playerShowChip(e: { show: 'upcoming' | 'today' | 'live' | 'needs_closing' | 'final'; startDate: string }, today: string): string {
+  return e.show === 'needs_closing' ? 'Scores pending' : showChip(e, today);
+}

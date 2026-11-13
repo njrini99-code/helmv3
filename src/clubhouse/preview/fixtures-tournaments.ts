@@ -356,6 +356,8 @@ function buildEvent(def: EventDef, trust: ChTourTrust = 'official'): ChTourEvent
     kind: def.id === 'e24' ? 'conference' : 'regular',
     tiebreak: def.id === 'e24' ? 'ncaa' : 'ties_stand',
     status: done ? 'complete' : 'upcoming',
+    show: done ? 'final' : 'upcoming',
+    close: null,
     trust: done ? trust : 'upcoming',
     mood: done ? 'result' : 'prep',
     rounds,
@@ -813,6 +815,7 @@ function liveSnapshot(e34: ChTourEvent): ChTourLiveSnapshot {
     event: {
       ...e34,
       status: 'live',
+      show: 'live',
       trust: 'live',
       mood: 'live',
       rounds: [round, e34.rounds[1]!],
@@ -878,6 +881,7 @@ function events(state: ChTourPreviewState): ChTourEvent[] {
     const e34 = out.find((e) => e.id === 'e34');
     if (e34) {
       e34.status = 'live';
+      e34.show = 'live';
       e34.trust = 'live';
       e34.mood = 'live';
       e34.rounds[0] = { ...e34.rounds[0]!, status: 'live' };
@@ -1162,7 +1166,7 @@ export function tourFixture(state: ChTourPreviewState): ChTourFixture {
   const list = [...all]
     .filter((e) => e.seasonId === '2026-27')
     .sort((a, b) => (a.status === 'complete') === (b.status === 'complete') ? (a.status === 'complete' ? b.startDate.localeCompare(a.startDate) : a.startDate.localeCompare(b.startDate)) : a.status === 'complete' ? 1 : -1)
-    .map((e) => ({ eventId: e.id, name: e.name, startDate: e.startDate, endDate: e.endDate, courseName: COURSES[e.courseIds[0]!]?.name ?? '', status: e.status, days: e.rounds.map((r) => ({ number: r.number, date: r.date, firstTeeAt: r.firstTeeAt })), mine: e.status === 'complete' ? mineIn(e) : null }));
+    .map((e) => ({ eventId: e.id, name: e.name, startDate: e.startDate, endDate: e.endDate, courseName: COURSES[e.courseIds[0]!]?.name ?? '', status: e.status, show: e.show, days: e.rounds.map((r) => ({ number: r.number, date: r.date, firstTeeAt: r.firstTeeAt })), mine: e.status === 'complete' ? mineIn(e) : null }));
   const seasonRounds = pool.filter((r) => r.playerId === 'jonah' && r.date >= '2026-08-01');
   const per18 = (ctx: ChTourCompareRound['context']) => {
     const rs = seasonRounds.filter((r) => r.context === ctx && r.holes === 18);

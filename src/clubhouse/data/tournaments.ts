@@ -356,7 +356,7 @@ async function readEvents(ctx: TourCtx, tz: string, opts: { ids?: string[]; own?
       fieldScores: fieldScores.filter((s) => ftIds.has(s.field_team_id)),
     };
   });
-  return { events: raws.map((r) => shapeEvent(r, ctx.now)), raws, courses, linkedIds };
+  return { events: raws.map((r) => shapeEvent(r, ctx.now, isoDay(ctx.now, tz))), raws, courses, linkedIds };
 }
 
 // ── Season home ─────────────────────────────────────────────────────────────────────────────────────────────────
@@ -376,7 +376,9 @@ function nextUp(e: ChTourEvent, courses: Record<string, ChTourCourse>): ChTourNe
     ...(e.lineup.locksAt ? [{ at: e.lineup.locksAt, kind: 'lock' as const, label: 'Lineup locks', done: e.lineup.status === 'locked' }] : []),
     ...e.rounds.filter((r) => r.firstTeeAt).map((r) => ({ at: r.firstTeeAt!, kind: 'round' as const, label: `Round ${r.number}`, done: r.status !== 'upcoming' })),
   ].sort((a, b) => a.at.localeCompare(b.at));
-  const action: ChTourNextUp['action'] = e.status === 'live' ? 'follow' : e.lineup.status === 'none' || e.lineup.status === 'draft' ? 'build' : 'open';
+  // On the team's day (coach audit, 13 Nov 2026): a round left live after its day is closed, not followed.
+  const action: ChTourNextUp['action'] =
+    e.show === 'needs_closing' ? 'close' : e.show === 'live' ? 'follow' : e.lineup.status === 'none' || e.lineup.status === 'draft' ? 'build' : 'open';
   return { eventId: e.id, readiness: r1 ? readiness : readiness.slice(1), ticks, alsoThisWeek: [], action };
 }
 
@@ -1108,7 +1110,7 @@ export async function loadPlayerTournaments(ctx: TourCtx, eventId: string | null
     const list = read.events
       .filter((e) => e.seasonId === season && !e.cancelled)
       .sort((a, b) => (a.status === 'complete') === (b.status === 'complete') ? (a.status === 'complete' ? b.startDate.localeCompare(a.startDate) : a.startDate.localeCompare(b.startDate)) : a.status === 'complete' ? 1 : -1)
-      .map((e) => ({ eventId: e.id, name: e.name, startDate: e.startDate, endDate: e.endDate, courseName: read.courses[e.courseIds[0] ?? '']?.name ?? '', status: e.status, days: e.rounds.map((r) => ({ number: r.number, date: r.date, firstTeeAt: r.firstTeeAt })), mine: mineOf(e) }));
+      .map((e) => ({ eventId: e.id, name: e.name, startDate: e.startDate, endDate: e.endDate, courseName: read.courses[e.courseIds[0] ?? '']?.name ?? '', status: e.status, show: e.show, days: e.rounds.map((r) => ({ number: r.number, date: r.date, firstTeeAt: r.firstTeeAt })), mine: mineOf(e) }));
     const open = eventId ? read.events.find((e) => e.id === eventId) : null;
     if (eventId && !open) return { kind: 'missing' };
     // Their reflection and the notes their coach shared with them (the policies return only those).

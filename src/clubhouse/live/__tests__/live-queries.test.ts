@@ -59,6 +59,24 @@ describe('fetchLiveSnapshot', () => {
     expect(snap.events).toEqual([{ tournamentId: 'tour-1', name: 'Fall Invitational' }]);
   });
 
+  // Coach audit 13 Nov 2026: Tar Heel R1 was left live on 25 Oct and Home and Rounds said "Live now" for 18 days.
+  it('lists a live tournament only on its round’s day in the team’s zone', async () => {
+    const at = { ...args, now: new Date('2026-11-13T03:30:00Z') }; // 22:30 on 12 Nov in New York
+    const tables = (rounds: unknown[]) => ({
+      golf_round_live: { data: [] },
+      golf_tournament_rounds: { data: rounds },
+      golf_tournaments: { data: [{ id: 'tour-1', name: 'Tar Heel Shootout' }, { id: 'tour-2', name: 'Showcase' }] },
+      ...profiles,
+    });
+    const stale = { tournament_id: 'tour-1', event: { start_time: '2026-10-25T13:00:00Z', all_day: false } };
+    const today = { tournament_id: 'tour-2', event: { start_time: '2026-11-12T19:00:00Z', all_day: false } };
+    expect((await fetchLiveSnapshot(await client(tables([stale])), at)).events).toEqual([]);
+    expect((await fetchLiveSnapshot(await client(tables([stale, today])), at)).events).toEqual([{ tournamentId: 'tour-2', name: 'Showcase' }]);
+    // An all-day round is dated by its calendar day, not by the zone.
+    const allDay = { tournament_id: 'tour-2', event: { start_time: '2026-11-12T00:00:00Z', all_day: true } };
+    expect((await fetchLiveSnapshot(await client(tables([allDay])), at)).events).toEqual([{ tournamentId: 'tour-2', name: 'Showcase' }]);
+  });
+
   it('keeps an untracked tournament round as a lane when the link table is absent', async () => {
     const tour = { ...pollRound, id: 'r2', round_type: 'tournament' };
     const snap = await fetchLiveSnapshot(await client({ golf_round_live: absent, golf_rounds: { data: [tour] }, golf_tournament_player_rounds: absent, golf_tournament_rounds: absent, ...profiles }), args);

@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowRight, ArrowUpRight, ClipboardCheck, GitCompare, Radio, Users } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, ClipboardCheck, Flag, GitCompare, Radio, Users } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { Button } from '../../ui/Button';
@@ -16,7 +16,7 @@ import { tabListKeys } from '../../lib/tabs';
 import { useRefresh } from '../../lib/use-refresh';
 import { deskRows, roundSets, type DeskRow, type HoleCardRow } from './desk-model';
 import { EvidenceDrawer, type DeskEvidence } from './EvidenceDrawer';
-import { countLabel, countsEachRound, formatToPar, holesLabel, playLabel, tourDayTime, tourRange } from './format';
+import { closeLabel, countLabel, countsEachRound, formatToPar, holesLabel, playLabel, tourDayTime, tourRange } from './format';
 import { HoleGrid } from './HoleGrid';
 import { Review } from './Review';
 import { TourChip, TourCrumb, TourFailed, TourHead, TourLoading, TourMain, TourPhoneTop, ToPar, tourGate, useTourPhone } from './parts';
@@ -116,6 +116,8 @@ function DeskReady({ data, search, phone }: { data: ChTourDeskData; search: ChTo
   const withShots = e.coverage.withShots;
 
   const primary = (() => {
+    // Past its day and not final, the one action closes the round it left open (coach audit, 13 Nov 2026), never Follow live.
+    if (e.show === 'needs_closing' && e.close) return { label: closeLabel(e.close), icon: Flag, href: paths.live(e.id, e.close.round) };
     switch (e.mood) {
       case 'prep':
         return { label: e.lineup.status === 'none' ? 'Build lineup' : 'Edit lineup', icon: Users, href: paths.lineup(e.id) };
@@ -173,8 +175,11 @@ function DeskReady({ data, search, phone }: { data: ChTourDeskData; search: ChTo
         {holesLabel(e)} · {playLabel(e.format)}
       </TourChip>
       {countsEachRound(e.format) && <TourChip>{countLabel(e.format)} each round</TourChip>}
-      <TourChip tone={e.status === 'live' ? 'live' : e.status === 'complete' ? 'ok' : undefined} dot={e.status !== 'upcoming'}>
-        {e.status === 'complete' ? 'Completed' : e.status === 'live' ? 'Live' : 'Upcoming'}
+      <TourChip
+        tone={e.status === 'complete' ? 'ok' : e.show === 'needs_closing' ? 'warn' : e.show === 'live' || e.show === 'today' ? 'live' : undefined}
+        dot={e.status === 'complete' || e.show !== 'upcoming'}
+      >
+        {e.status === 'complete' ? 'Completed' : e.show === 'needs_closing' ? 'Needs closing' : e.show === 'live' ? 'Live' : e.show === 'today' ? 'Today' : 'Upcoming'}
       </TourChip>
       {e.trust !== 'upcoming' && e.status !== 'live' && <TrustChip state={e.trust} />}
       {covered > 0 && (
