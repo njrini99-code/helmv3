@@ -135,7 +135,7 @@ describe('The event attachment picker and an event’s files leave a plan row ou
   it('an event’s attachments list the file and not the plan', async () => {
     const res = await getEventDocuments(EVENT);
     expect(res.success).toBe(true);
-    expect(res.success && res.data.map((r) => r.document.id)).toEqual([FILE_ID]);
+    expect(res.success ? (res.data ?? []).map((r) => r.document.id) : null).toEqual([FILE_ID]);
   });
 
   it('attaching a plan row is refused with the reason, before anything is written', async () => {
