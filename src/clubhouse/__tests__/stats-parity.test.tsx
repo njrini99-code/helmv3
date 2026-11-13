@@ -219,6 +219,10 @@ describe('where drives finish (C-16)', () => {
     cleanup();
     render(<FairwayStrip opportunities={4} hit={2} left={1} right={1} />);
     expect([...document.querySelectorAll('.ch-fws__z')].map((z) => z.textContent)).toEqual(['25%Left', '50%Fairway', '25%Right']);
+    cleanup();
+    // Thirds: rounded one by one they read 33 + 33 + 33; together they add to 100.
+    render(<FairwayStrip opportunities={3} hit={1} left={1} right={1} />);
+    expect([...document.querySelectorAll('.ch-fws__z')].map((z) => z.textContent)).toEqual(['34%Left', '33%Fairway', '33%Right']);
   });
 });
 

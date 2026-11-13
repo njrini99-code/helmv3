@@ -1,3 +1,4 @@
+import { roundShares } from '../../lib/shares';
 import { ArrowDownRight, ArrowUpRight, Flag } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { ChSgChange } from '../../data/stats-common';
@@ -216,26 +217,29 @@ export function FairwayStrip({ opportunities, hit, left: leftN, right: rightN }:
   const fw = share(hit);
   const left = share(leftN);
   const right = share(rightN);
-  const other = share(Math.max(0, opportunities - hit - leftN - rightN));
+  const otherN = Math.max(0, opportunities - hit - leftN - rightN);
+  const other = share(otherN);
   const bias = left - right;
+  // Shown together, so rounded together: the four zones add to 100.
+  const [leftP, fwP, rightP, otherP] = roundShares([leftN, hit, rightN, otherN]);
   return (
     <div className="ch-fws">
       <div className="ch-fws__strip">
         <span className="ch-fws__z is-rough" style={{ flex: Math.max(left, 1) }}>
-          <b className="ch-num">{Math.round(left)}%</b>
+          <b className="ch-num">{leftP}%</b>
           <em>Left</em>
         </span>
         <span className="ch-fws__z is-fw" style={{ flex: Math.max(fw, 1) }}>
-          <b className="ch-num">{Math.round(fw)}%</b>
+          <b className="ch-num">{fwP}%</b>
           <em>Fairway</em>
         </span>
         <span className="ch-fws__z is-rough" style={{ flex: Math.max(right, 1) }}>
-          <b className="ch-num">{Math.round(right)}%</b>
+          <b className="ch-num">{rightP}%</b>
           <em>Right</em>
         </span>
         {other > 0 && (
           <span className="ch-fws__z is-rough" style={{ flex: Math.max(other, 1) }}>
-            <b className="ch-num">{Math.round(other)}%</b>
+            <b className="ch-num">{otherP}%</b>
             <em>Other</em>
           </span>
         )}

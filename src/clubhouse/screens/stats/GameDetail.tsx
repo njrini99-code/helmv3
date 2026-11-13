@@ -1,6 +1,7 @@
 'use client';
 
 import { breakMake } from './break-make';
+import { roundSplit } from '../../lib/shares';
 import { ArrowRight, CircleDot, Crosshair, Flag, FlagTriangleRight, MoveUpRight, type LucideIcon } from 'lucide-react';
 import Link from 'next/link';
 import { Suspense, use, useEffect, useState, type ReactNode } from 'react';
@@ -442,10 +443,12 @@ export function GameDetail({
   const benchPen = bench.penalty_rate_per_round ?? null;
   const yds = (v: number | null | undefined) => (v == null ? NO_DATA : `${Math.round(v)} yds`);
   const driveTotal = s.fairwayOpportunities || 1;
+  // Shown together, so rounded together (with the drives that had no side logged): the three never read 99.
+  const [leftP, fwP, rightP] = roundSplit([s.missLeftCount, s.fairwaysHit, s.missRightCount], driveTotal);
   const driveSplit = [
-    { label: 'Left', share: (s.missLeftCount / driveTotal) * 100, cls: 'ch-shs-fill-flat' },
-    { label: 'Fairway', share: (s.fairwaysHit / driveTotal) * 100, cls: 'ch-shs-fill-gain' },
-    { label: 'Right', share: (s.missRightCount / driveTotal) * 100, cls: 'ch-shs-fill-miss' },
+    { label: 'Left', share: (s.missLeftCount / driveTotal) * 100, p: leftP, cls: 'ch-shs-fill-flat' },
+    { label: 'Fairway', share: (s.fairwaysHit / driveTotal) * 100, p: fwP, cls: 'ch-shs-fill-gain' },
+    { label: 'Right', share: (s.missRightCount / driveTotal) * 100, p: rightP, cls: 'ch-shs-fill-miss' },
   ];
 
   // Approach
@@ -680,7 +683,7 @@ export function GameDetail({
                     <div key={d.label}>
                       <i className={d.cls} aria-hidden="true" />
                       {d.label}
-                      <b className="ch-num">{Math.round(d.share)}%</b>
+                      <b className="ch-num">{d.p}%</b>
                     </div>
                   ))}
                 </div>

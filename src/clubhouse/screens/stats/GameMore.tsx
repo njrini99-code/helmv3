@@ -1,3 +1,4 @@
+import { roundShares } from '../../lib/shares';
 import type { ReactNode } from 'react';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import type { ChPuttBand } from '../../data/stats-common';
@@ -342,6 +343,8 @@ export function PuttingMore({ s, x, sixBands }: { s: GolfStats; x: ChProfileExtr
   const rec = s as unknown as Record<string, number | null>;
   const nine = x.puttBandsNine;
   const hasPutts = s.totalPutts > 0;
+  // First putts from each band are shares of one whole, so they are rounded together and add to 100 (it read 102%).
+  const firstShares = roundShares(BANDS.map(([, key]) => s.firstPuttDistanceByBand?.[key] ?? 0));
   const rows = BANDS.map(([label, key, field, effKey, proxKey], i) => {
     const b = nine?.[i];
     // Shot-level counts when they loaded (every band has an exact count); the calculator's own rate otherwise (counts only for the first five).
@@ -354,7 +357,7 @@ export function PuttingMore({ s, x, sixBands }: { s: GolfStats; x: ChProfileExtr
     return {
       key,
       head: label,
-      cells: [make, n == null ? NO_DATA : String(n), share == null ? NO_DATA : pct(share), leave == null ? NO_DATA : ft(leave), num(rec[effKey], 2), ft(rec[proxKey])],
+      cells: [make, n == null ? NO_DATA : String(n), share == null ? NO_DATA : `${firstShares[i]}%`, leave == null ? NO_DATA : ft(leave), num(rec[effKey], 2), ft(rec[proxKey])],
     };
   });
   const cell = (brk: (typeof BREAKS)[number][0], field: string) => {
