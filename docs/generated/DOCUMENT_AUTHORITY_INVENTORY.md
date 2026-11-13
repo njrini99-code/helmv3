@@ -1202,6 +1202,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-12-practice-left-edge.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-13-bell-teams.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-13-quick-chat-team.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P001-shell/changes/2026-11-13-search-ranking.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P002-home/DESIGN.md` | current | - | - | - | - |

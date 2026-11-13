@@ -296,7 +296,12 @@ entries are history. The tool list and the prompt are described where the tools 
   under. Every step event carries the turn's sequence number, and each state change is sent once. A running
   calculation re-sends its tally at most every 250 ms. Nothing is estimated and no step is announced before it is
   running. `done.work` and `data-turn-meta` give the turn's step count and the time at least one step was running.
-  The rows are stored with the turn; `restoreUIMessages(rows, { steps: true })` keeps them on reload. A tool declares
+  The rows are stored with the turn; `restoreUIMessages(rows, { steps: true })` keeps them on reload. A failed step
+  with a later step of the same tool reads as a retry ("One drawing was retried"), whether that try is running or done;
+  only a miss with nothing after it shows as failed (coach audit 13 Nov 2026, §3c). An answer never leads with the
+  model talking to itself: rule 8 says never to mention a slip it fixed ("Oops"), and `withoutSelfTalk`
+  (`v3/chat/self-talk.ts`) takes one off the first text both when the turn is drawn and when it is restored. Ask's
+  "computed <day>" is that day in the team's zone (`sourceLine(m, zone)`); a stamp at midnight UTC exactly is read as a date. A tool declares
   its own step (`ToolBase.step`: a kind, or `{ kind, doneLabel(input, result), subjects(input, ctx) }`): the finished
   row's wording (`done_label`) is the tool's own sentence or is not sent, and what a tool says its step is about is
   checked against the caller's roster and team before it is sent (on a player's turn, only the player). A step lists at
