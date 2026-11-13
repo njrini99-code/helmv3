@@ -9,9 +9,11 @@ import { AskEvidenceView, DataTable } from './Evidence';
 import { Studio } from './studio';
 import '../../../styles/coachhelm-thread.css';
 import { IconButton } from '../../../ui/Button';
+import { useLightPlace } from '../../../shell/light';
 
 /** The figures behind an action card, beside the conversation on desktop and in a sheet on a phone. */
 export function AskEvidencePanel({ focus, messages, phone, onClose, open = true }: { focus: EvidenceFocus; messages: UIMessage[]; phone: boolean; onClose: () => void; open?: boolean }) {
+  const zone = useLightPlace().timeZone;
   const model = useMemo(() => buildEvidencePanel(messages, focus), [messages, focus]);
   // A chip's read (chat v3): that one read, as the server returned it, with its window and sample under the name.
   const read = useMemo(() => readForFocus(messages, focus), [messages, focus]);
@@ -27,7 +29,7 @@ export function AskEvidencePanel({ focus, messages, phone, onClose, open = true 
       )}
     </div>
   );
-  const subtitle = read ? (basis ? sourceLine(basis) : 'What CoachHelm read') : model.subtitle;
+  const subtitle = read ? (basis ? sourceLine(basis, zone) : 'What CoachHelm read') : model.subtitle;
   const title = read ? focus.label : 'Evidence';
   const body = readBody || (
     // `is-phone`: the sheet's figures are rows on the sheet, not tiles (coachhelm-thread.css, the cardless pass).

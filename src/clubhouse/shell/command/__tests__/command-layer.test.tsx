@@ -12,7 +12,7 @@ vi.mock('next/navigation', () => ({ useRouter: () => ({ push, replace: vi.fn(), 
 vi.mock('../../../lib/haptics', () => ({ haptic: vi.fn() }));
 vi.mock('@/hooks/golf/use-appearance-preferences', () => ({ useAppearancePreferences: () => ({ showAnimations: false }) }));
 // The real loader is a server action; each test hands CommandLayer its own (loadPeople).
-vi.mock('../../../data/palette-people', () => ({ getPalettePeople: vi.fn(async () => null) }));
+vi.mock('../../../data/palette-people', () => ({ getPalettePeople: vi.fn(async () => null), getPaletteEvents: vi.fn(async () => null) }));
 // The iOS app or a browser: Cmd or Ctrl and 1 to 9 are bound only in the app (decision 13).
 const native = { on: false };
 vi.mock('@/lib/utils/capacitor', async (importOriginal) => ({ ...(await importOriginal<typeof import('@/lib/utils/capacitor')>()), isNativeApp: () => native.on }));

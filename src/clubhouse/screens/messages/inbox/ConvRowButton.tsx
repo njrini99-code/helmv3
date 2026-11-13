@@ -6,7 +6,7 @@ import type { ContextMenuBind } from '../../../ui/ContextMenu';
 import { Icon } from '../../../ui/Icon';
 import { Flag, Users, BellOff, ListChecks } from 'lucide-react';
 import { Avatar } from '../../../ui/Avatar';
-import { convAvatarId, convYear } from '../shared/conv-ui';
+import { convAvatarId, convAvatarName, convYear } from '../shared/conv-ui';
 import { TypingMini, typingLabel } from './TypingMini';
 import { titleHints } from './model';
 import { personOf } from '../person-of';
@@ -30,7 +30,7 @@ export function ConvRowButton({ api, c, onOpen, bind, plain = false }: { api: Ch
           <Icon icon={c.channel ? Flag : Users} size={15} />
         </span>
       ) : (
-        <Avatar name={c.title} id={convAvatarId(api, c)} size="lg" year={convYear(api, c)} />
+        <Avatar name={convAvatarName(c)} id={convAvatarId(api, c)} size="lg" year={convYear(api, c)} />
       )}
       <span className="ch-ms-row__main">
         <span className="ch-ms-row__top">

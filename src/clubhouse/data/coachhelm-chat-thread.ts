@@ -1,3 +1,4 @@
+import { withoutSelfTalk } from '@/lib/coachhelm/v3/chat/self-talk';
 import { MODEL_FACING_NOTE, rowsCaption } from '@/lib/coachhelm/v3/chat/rows-caption';
 import { artifactsOf, type AskArtifact } from '../screens/coachhelm/chat/parts/artifacts';
 import type { UIMessage } from 'ai';
@@ -66,9 +67,23 @@ export function formatValue(value: number | null, unit: Measurement['unit'], met
   }
 }
 
-/** "Sep 29", read from the digits so no zone moves the day. */
-export function fmtDay(iso: string | null | undefined): string | null {
+/**
+ * "Sep 29", read from the digits so no zone moves the day. A moment (a timestamp with a time) is read in `zone`, the team's,
+ * when one is given: 11 PM Eastern on 12 Nov is "Nov 12", not the UTC "Nov 13" (coach audit 13 Nov 2026, §3c).
+ */
+export function fmtDay(iso: string | null | undefined, zone?: string | null): string | null {
   if (!iso) return null;
+  // Midnight UTC exactly is a date stored as a moment (a day, not a time), and is read as written.
+  if (zone && /T\d{2}:\d{2}/.test(iso) && !/T00:00(?::00(?:\.0+)?)?(?:Z|\+00:?00)$/.test(iso)) {
+    const at = new Date(iso);
+    if (!Number.isNaN(at.getTime())) {
+      try {
+        return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: zone }).format(at);
+      } catch {
+        // An unknown zone: read the digits, as below.
+      }
+    }
+  }
   const d = new Date(`${iso.slice(0, 10)}T12:00:00Z`);
   if (Number.isNaN(d.getTime())) return null;
   return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }).format(d);
@@ -80,12 +95,12 @@ export function sampleWords(n: number, unit: Measurement['sample_unit']): string
   return `${n} ${word}`;
 }
 
-/** The provenance line under every block: the sample, the window and when it was computed. */
-export function sourceLine(m: { sample_size: number; sample_unit: Measurement['sample_unit']; window_start: string | null; window_end: string | null; as_of: string }): string {
+/** The provenance line under every block: the sample, the window and when it was computed (that day in the team's zone). */
+export function sourceLine(m: { sample_size: number; sample_unit: Measurement['sample_unit']; window_start: string | null; window_end: string | null; as_of: string }, zone?: string | null): string {
   const start = fmtDay(m.window_start);
   const end = fmtDay(m.window_end);
   const window = start && end && start !== end ? `${start} to ${end}` : (end ?? start);
-  const computed = fmtDay(m.as_of);
+  const computed = fmtDay(m.as_of, zone);
   return [m.sample_size > 0 ? sampleWords(m.sample_size, m.sample_unit) : null, window, computed ? `computed ${computed}` : null].filter(Boolean).join(' · ');
 }
 
@@ -556,10 +571,10 @@ function turnReadsOf(parts: ReadonlyArray<Record<string, unknown> & { type: stri
 }
 
 /** What a read chip's popover says: only what the envelope holds (AK2). */
-export function readRows(read: AskTurnRead): Array<{ label: string; value: string }> {
+export function readRows(read: AskTurnRead, zone?: string | null): Array<{ label: string; value: string }> {
   const m = readBasis(read.envelope);
   if (!m) return [{ label: 'Read', value: read.name }];
-  const line = sourceLine(m);
+  const line = sourceLine(m, zone);
   return [
     ...(m.sample_size > 0 ? [{ label: 'Sample', value: sampleWords(m.sample_size, m.sample_unit) }] : []),
     ...(windowDates(m) ? [{ label: 'Window', value: windowDates(m) as string }] : windowWords(m) ? [{ label: 'Window', value: windowWords(m) as string }] : []),
@@ -670,9 +685,14 @@ export function buildAssistantTurn(message: UIMessage, ctx: { isLast: boolean; b
       shadowed.add((a.score > b.score ? b : a).ev.i);
     }
   }
-  const retriedWords = (tool: string) => (tool === 'summarise_data' ? 'One calculation was retried' : 'One read was retried');
-  const steps: AskStep[] = parts
-    .filter((p) => p.type === 'data-progress')
+  const retriedWords = (tool: string) => (tool === 'summarise_data' ? 'One calculation was retried' : tool === 'show_visual' ? 'One drawing was retried' : 'One read was retried');
+  const progress = parts.filter((p) => p.type === 'data-progress');
+  // A step of the same tool after a miss is the model trying again (coach audit 13 Nov 2026, §3c: "Couldn't build the visual"
+  // twice before the visual came). The miss reads as a retry whether that try is still running or done; only a miss with
+  // nothing after it is told as a failure.
+  const toolOf = (p: (typeof progress)[number]) => dataOf<{ tool?: string }>(p)?.tool;
+  const triedAgain = (i: number, tool: string) => progress.slice(i + 1).some((later) => toolOf(later) === tool);
+  const steps: AskStep[] = progress
     .map((p, i) => {
       const d = dataOf<{ label?: string; tool?: string; state?: AskStep['state'] | 'waiting'; done?: string; done_label?: string; detail?: string; picture?: ReadPictureData; kind?: AskStep['kind']; parent_id?: string; subjects?: AskStepSubject[]; count?: AskStep['count']; covers?: AskStep['covers']; evidence_ref?: string; started_at?: string; ended_at?: string }>(p);
       // The island's fields (chat v3), passed through as sent. A step the server knows is coming and has not started is `waiting`.
@@ -687,8 +707,8 @@ export function buildAssistantTurn(message: UIMessage, ctx: { isLast: boolean; b
         ...(d?.ended_at ? { endedAt: d.ended_at } : {}),
       };
       const left = d?.tool ? (retriedTools.get(d.tool) ?? 0) : 0;
-      if (d?.state === 'failed' && d.tool && left > 0) {
-        retriedTools.set(d.tool, left - 1);
+      if (d?.state === 'failed' && d.tool && (left > 0 || triedAgain(i, d.tool))) {
+        if (left > 0) retriedTools.set(d.tool, left - 1);
         return { id: String(p.id ?? `step-${i}`), label: stepLabel(d.label), state: 'done' as const, done: retriedWords(d.tool) };
       }
       const state = d?.state === 'waiting' ? ('next' as const) : d?.state;
@@ -770,7 +790,8 @@ export function buildAssistantTurn(message: UIMessage, ctx: { isLast: boolean; b
   const texts: string[] = [];
   parts.forEach((p, i) => {
     if (p.type === 'text') {
-      const text = String(p.text ?? '');
+      // The answer's lead is its headline: the model's talk to itself is never it (self-talk.ts).
+      const text = lead ? withoutSelfTalk(String(p.text ?? '')) : String(p.text ?? '');
       if (!text.trim()) return;
       blocks.push({ kind: 'text', key: `t-${i}`, text, lead });
       lead = false;
@@ -1363,7 +1384,7 @@ function seriesTable(s: MeasurementSeries): AskTable {
   };
 }
 
-export function trendBlock(s: MeasurementSeries): Extract<AskEvidence, { kind: 'trend' }> {
+export function trendBlock(s: MeasurementSeries, zone?: string | null): Extract<AskEvidence, { kind: 'trend' }> {
   const values = s.points.map((p) => p.value);
   // A rate's average is its made count over its attempts (3 of 9 is 33%), so each round counts by its sample; without samples, plainly.
   const weight = s.points.reduce((a, p) => a + p.sample_size, 0);
@@ -1385,14 +1406,14 @@ export function trendBlock(s: MeasurementSeries): Extract<AskEvidence, { kind: '
     summary: `${s.metric_label} for ${s.entity.label}: ${formatValue(first, s.unit, s)} to ${formatValue(last, s.unit, s)} across ${s.points.length} rounds.`,
     goodDirection: s.direction === 'higher_better' ? 'up' : s.direction === 'lower_better' ? 'down' : null,
     toPar: isToPar(s),
-    source: sourceLine({ sample_size: s.points.length, sample_unit: 'rounds', window_start: s.window_start, window_end: s.window_end, as_of: s.as_of }),
+    source: sourceLine({ sample_size: s.points.length, sample_unit: 'rounds', window_start: s.window_start, window_end: s.window_end, as_of: s.as_of }, zone),
     note: partialNote(s),
     bench: benchOf(s.benchmark, s.unit),
     table: seriesTable(s),
   };
 }
 
-export function bucketBlock(s: MeasurementSeries, highlight: string | null = null): Extract<AskEvidence, { kind: 'bars' }> {
+export function bucketBlock(s: MeasurementSeries, highlight: string | null = null, zone?: string | null): Extract<AskEvidence, { kind: 'bars' }> {
   const rows = s.points.map((p) => ({ label: p.bucket ?? fmtDay(p.at) ?? p.at, value: p.value, n: p.sample_size }));
   const max = s.unit === 'percent' ? 100 : Math.max(1, ...rows.map((r) => Math.abs(r.value)));
   const values = rows.map((r) => r.value);
@@ -1410,7 +1431,7 @@ export function bucketBlock(s: MeasurementSeries, highlight: string | null = nul
       tone: !flagged ? 'neutral' : r.value === weak ? 'loss' : 'good',
       ...(highlight && r.label === highlight ? { highlight: true } : {}),
     })),
-    source: sourceLine({ sample_size: rows.reduce((a, r) => a + r.n, 0), sample_unit: 'attempts', window_start: s.window_start, window_end: s.window_end, as_of: s.as_of }),
+    source: sourceLine({ sample_size: rows.reduce((a, r) => a + r.n, 0), sample_unit: 'attempts', window_start: s.window_start, window_end: s.window_end, as_of: s.as_of }, zone),
     note: partialNote(s),
     bench: benchOf(s.benchmark, s.unit),
     table: seriesTable(s),
@@ -1703,7 +1724,7 @@ export const emptyNote = (envelope: ToolEnvelope): string => {
  * A `summarise_data` result. Its `detail` holds the operations' results and, for a list, the rows: the rows are the table (columns picked as any
  * record table's), and the figures that are not the list's own count go to the same figure card any read gets. Nothing is drawn twice.
  */
-function summaryBlocks(envelope: ToolEnvelope): AskEvidence[] {
+function summaryBlocks(envelope: ToolEnvelope, zone?: string | null): AskEvidence[] {
   const d = envelope.detail as { rows?: unknown; matching_rows?: unknown; row_count?: unknown; timezone?: unknown } | undefined;
   const blocks: AskEvidence[] = [];
   const rows = Array.isArray(d?.rows) ? (d?.rows as unknown[]).filter((r): r is Record<string, unknown> => !!r && typeof r === 'object' && !Array.isArray(r)) : [];
@@ -1720,7 +1741,7 @@ function summaryBlocks(envelope: ToolEnvelope): AskEvidence[] {
     .map((m) => (typeof titles?.[m.metric_id] === 'string' ? { ...m, metric_label: titles[m.metric_id] as string } : m));
   if (figures.length > 0) {
     const caption = (envelope.detail as { caption?: unknown } | undefined)?.caption;
-    const rest = evidenceBlocks({ ...envelope, detail: typeof caption === 'string' ? { caption } : undefined, measurements: figures });
+    const rest = evidenceBlocks({ ...envelope, detail: typeof caption === 'string' ? { caption } : undefined, measurements: figures }, zone);
     blocks.push(...rest.filter((b) => b.kind !== 'empty'));
   }
   if (blocks.length === 0) return envelope.coverage === 'empty' ? [{ kind: 'empty', note: coachWords(envelope.coverage_note, 'No rows matched.') }] : [];
@@ -1728,14 +1749,15 @@ function summaryBlocks(envelope: ToolEnvelope): AskEvidence[] {
 }
 
 /** One tool's output as the block this screen draws. The choice is made from the SHAPE of the evidence, never from what the model asked for. */
-export function evidenceBlocks(envelope: ToolEnvelope): AskEvidence[] {
+/** `zone`: the team's, for the day each block was computed on. */
+export function evidenceBlocks(envelope: ToolEnvelope, zone?: string | null): AskEvidence[] {
   // A failed read is never "no data": it is the honest "could not read this".
   if (envelope.coverage === 'unavailable') return [{ kind: 'unavailable', note: coachWords(envelope.coverage_note, coachWords(envelope.summary, 'The read did not come back.')) }];
   // Golf knowledge and metric definitions are words, not figures: they show as the step that read them and as chips in the answer's prose, never as a card.
   const kind = (envelope.detail as { kind?: unknown } | undefined)?.kind;
   if (kind === 'reference' || kind === 'definition') return [];
   // A worked-out result (summarise_data) is the answer's own figures: a list of rows is the table, a count, rank or difference is one compact figure card.
-  if (kind === 'summary') return summaryBlocks(envelope);
+  if (kind === 'summary') return summaryBlocks(envelope, zone);
   // A benchmark read draws only as a picture of where one player stands, or not at all.
   if (kind === 'benchmark_read') {
     const b = benchmarkBlock(envelope);
@@ -1751,11 +1773,11 @@ export function evidenceBlocks(envelope: ToolEnvelope): AskEvidence[] {
   for (const s of timeSeries) {
     if (s.points.length === 0) continue;
     // Rule: two points are a change, not a trend.
-    blocks.push(s.points.length < MIN_TREND_POINTS ? { kind: 'table', title: s.metric_label, source: null, note: partialNote(s), bench: benchOf(s.benchmark, s.unit), table: seriesTable(s) } : trendBlock(s));
+    blocks.push(s.points.length < MIN_TREND_POINTS ? { kind: 'table', title: s.metric_label, source: null, note: partialNote(s), bench: benchOf(s.benchmark, s.unit), table: seriesTable(s) } : trendBlock(s, zone));
   }
   for (const s of bucketSeries) {
     if (s.points.length === 0) continue;
-    blocks.push(s.points.length < 2 ? { kind: 'table', title: s.metric_label, source: null, note: partialNote(s), bench: benchOf(s.benchmark, s.unit), table: seriesTable(s) } : bucketBlock(s));
+    blocks.push(s.points.length < 2 ? { kind: 'table', title: s.metric_label, source: null, note: partialNote(s), bench: benchOf(s.benchmark, s.unit), table: seriesTable(s) } : bucketBlock(s, null, zone));
   }
 
   if (envelope.series.length === 0 && ms.length > 0 && first) {
@@ -1765,7 +1787,7 @@ export function evidenceBlocks(envelope: ToolEnvelope): AskEvidence[] {
     const playerMs = ms.filter((m) => m.entity.kind === 'player');
     const teamMs = ms.filter((m) => m.entity.kind !== 'player');
     if (teamMs.length > 0 && new Set(playerMs.map((m) => m.entity.id)).size >= 3 && new Set(playerMs.map((m) => m.metric_id)).size === 1) {
-      return [...blocks, ...evidenceBlocks({ ...envelope, series: [], measurements: playerMs }), ...evidenceBlocks({ ...envelope, series: [], measurements: teamMs })];
+      return [...blocks, ...evidenceBlocks({ ...envelope, series: [], measurements: playerMs }, zone), ...evidenceBlocks({ ...envelope, series: [], measurements: teamMs }, zone)];
     }
     const players = new Set(ms.map((m) => m.entity.id));
     const metrics = new Set(ms.map((m) => m.metric_id));
@@ -1775,7 +1797,7 @@ export function evidenceBlocks(envelope: ToolEnvelope): AskEvidence[] {
     const playerIds = new Set(ms.filter((m) => m.entity.kind === 'player').map((m) => m.entity.id));
     const isComparison = playerIds.size >= 2 && metrics.size >= 1;
     const legs = strokesGainedLegs(ms);
-    const base = { source: sourceLine(first), note: partialNote(envelope), bench: benchOf(first.benchmark, first.unit) };
+    const base = { source: sourceLine(first, zone), note: partialNote(envelope), bench: benchOf(first.benchmark, first.unit) };
     if (isRanking) {
       const ranked = ms.filter((m) => m.value !== null);
       const missing = ms.length - ranked.length;
@@ -1785,7 +1807,7 @@ export function evidenceBlocks(envelope: ToolEnvelope): AskEvidence[] {
         kind: 'ranking',
         title: first.metric_label,
         ...base,
-        source: oneUnit ? sourceLine({ ...first, sample_size: ranked.reduce((sum, m) => sum + m.sample_size, 0) }) : base.source,
+        source: oneUnit ? sourceLine({ ...first, sample_size: ranked.reduce((sum, m) => sum + m.sample_size, 0) }, zone) : base.source,
         note: missing > 0 ? `${missing} player${missing === 1 ? ' has' : 's have'} no recorded data for this.` : base.note,
         ...rankRows(ranked),
         table: { caption: first.metric_label, columns: ['Rank', 'Player', first.metric_label, 'Sample'], rows: ranked.map((m, i) => [String(i + 1), m.entity.label, formatValue(m.value, m.unit, m), m.sample_size > 0 ? sampleWords(m.sample_size, m.sample_unit) : NO_DATA]) },
@@ -1829,7 +1851,7 @@ export function evidenceBlocks(envelope: ToolEnvelope): AskEvidence[] {
         kind: 'tiles',
         title: envelope.summary,
         ...base,
-        source: allRestate ? sourceLine({ ...first, sample_size: 0 }) || null : base.source,
+        source: allRestate ? sourceLine({ ...first, sample_size: 0 }, zone) || null : base.source,
         tiles: ms.map((m) => {
           const t = m.unit === 'strokes' ? changeTone(m.value, false, 1) : '';
           return {

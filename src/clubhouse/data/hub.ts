@@ -8,6 +8,7 @@ import { getDocuments } from '@/app/golf/actions/documents';
 import { getPlayerHubSummaryData } from '@/app/golf/actions/player-hub-data';
 import { getPlayerHubAnnouncements } from '@/app/golf/actions/player-notifications';
 import { getUnifiedNotifications } from '@/app/golf/actions/unified-notifications';
+import { forTeam } from '@/app/golf/actions/unified-notifications-model';
 import { isGolfTaskOverdueInZone } from '@/lib/golf/task-overdue';
 import { isSafeInternalPath } from '@/lib/utils/safe-redirect';
 import type { GolfAnnouncementMeta } from '@/lib/types/golf';
@@ -299,6 +300,9 @@ async function hiddenTestRows(supabase: Awaited<ReturnType<typeof createClient>>
 
 const without = <T extends { id: string }>(rows: T[], hidden: Set<string>): T[] => (hidden.size ? rows.filter((r) => !hidden.has(r.id)) : rows);
 
+/** How many notifications Team Hub reads to find this team's newest six. */
+const HUB_UPDATES_PAGE = 30;
+
 export async function loadTeamHub(input: { role: ChHubRole; teamId: string; userId: string; playerId: string | null }): Promise<ChTeamHub> {
   const supabase = await createClient();
   const now = new Date();
@@ -321,7 +325,9 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
     supabase.from('golf_teams').select('name').eq('id', input.teamId).maybeSingle(),
     rosterRead,
     getDocuments(input.teamId).catch((err: unknown) => ({ data: null, error: err instanceof Error ? err.message : 'failed' })),
-    getUnifiedNotifications({ limit: 6 }).catch(() => ({ success: false as const, error: 'failed' })),
+    // A page past the six shown: another team's items are left out below (coach audit 13 Nov 2026, §7), and this team's
+    // newest six may sit under them.
+    getUnifiedNotifications({ limit: HUB_UPDATES_PAGE }).catch(() => ({ success: false as const, error: 'failed' })),
     hiddenTestRows(supabase, input.teamId),
   ]);
   const { tz } = clock;
@@ -347,7 +353,7 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
     documents: { folders: docsRes.error ? [] : folders(without(docsRes.data ?? [], hidden.documents), f), error: !!docsRes.error },
     updates: {
       rows: updatesRes.success && updatesRes.data
-        ? updatesRes.data.items.slice(0, 6).map((n) => ({
+        ? forTeam(updatesRes.data.items, input.teamId).slice(0, 6).map((n) => ({
             id: n.id,
             title: n.title,
             body: n.body,

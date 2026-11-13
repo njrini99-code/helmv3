@@ -12,7 +12,7 @@ import { IconButton } from '../../../ui/Button';
 import { X, Users } from 'lucide-react';
 import { Icon } from '../../../ui/Icon';
 import { Avatar } from '../../../ui/Avatar';
-import { convAvatarId, convYear } from '../shared/conv-ui';
+import { convAvatarId, convAvatarName, convYear } from '../shared/conv-ui';
 import { ThreadClassSection } from '../ThreadClassSection';
 import { LeaveGroupModal, AddMembersModal, RemoveMemberModal } from './group-modals';
 import { InlineNotice } from '../../../ui/Notices';
@@ -64,7 +64,7 @@ export function Details({
               <Icon icon={Users} size={22} />
             </span>
           ) : (
-            <Avatar name={conv.title} id={convAvatarId(api, conv)} size="xl" ring={false} year={convYear(api, conv)} />
+            <Avatar name={convAvatarName(conv)} id={convAvatarId(api, conv)} size="xl" ring={false} year={convYear(api, conv)} />
           )}
           <b>{conv.title}</b>
           <span>{detailsLine(conv, api.teamName, !!api.mute?.muted)}</span>

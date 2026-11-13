@@ -172,7 +172,7 @@ export function ReadPanel({
   const worthPending = !deep && boardWorth.pending;
   return (
     <>
-      {coach ? <Head lead={<Coin player={player} />} name={player.name} line={`${areaName(read)} · ${player.rounds === 0 ? 'no counted rounds yet' : `last ${plural(player.rounds, 'round')}`}`} onClose={onClose} /> : <Head lead={null} name={areaName(read)} line="" onClose={onClose} />}
+      {coach ? <Head lead={<Coin player={player} />} name={player.name} line={`${areaName(read)} · ${read.evidence.span ?? (player.rounds === 0 ? 'no counted rounds yet' : `last ${plural(player.rounds, 'round')}`)}`} onClose={onClose} /> : <Head lead={null} name={areaName(read)} line="" onClose={onClose} />}
       <h3 className="ch-num">{readTitle(player, read.title)}</h3>
       <p className="lede ch-num">{read.lede}</p>
       <div className="evs">

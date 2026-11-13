@@ -10,6 +10,8 @@ import { useChReducedMotion } from '../lib/reduced-motion';
 import { Icon } from '../ui/Icon';
 import { InlineNotice } from '../ui/Notices';
 import { ago, moreLabel, notificationKey, openStack, stackFeed, type ChNotificationStack } from './notification-stacks';
+import { otherTeamOf } from './notification-team';
+import { useGolfUserOptional } from '@/contexts/golf-user-context';
 
 /** Each kind's glyph and name: the settings panel's notification categories. */
 export const CH_NOTIFICATION_KIND: Record<NotificationCategoryId, { icon: LucideIcon; label: string }> = {
@@ -326,6 +328,9 @@ function Card({
   onClear: () => void;
 }) {
   const kind = CH_NOTIFICATION_KIND[item.category];
+  // Another team's item says whose it is (coach audit 13 Nov 2026, §2). Read here, not passed down: the feed is memoized
+  // on its items, and a team switch must relabel the cards.
+  const other = otherTeamOf(item, useGolfUserOptional()?.teamId);
   const dragged = useRef(false);
   const clearLabel = useRef<HTMLSpanElement>(null);
   const unread = isUnread(item);
@@ -439,6 +444,7 @@ function Card({
             <Icon icon={kind.icon} size={13} />
           </span>
           <span>{kind.label}</span>
+          {other && <span className="ch-bst-card__team">{other.name}</span>}
           <span className="ch-bst-card__when ch-num">
             {unread && (
               <>

@@ -81,6 +81,8 @@ export interface ChHelmEvidence {
   sample: string;
   /** "90 days", "All rounds"; null when the generator gave no window. */
   window: string | null;
+  /** "37 rounds since Feb 27": the rounds the read was made from; null (or absent) when it counts none. */
+  span?: string | null;
   /** The confidence read: a level of three and its word (the canonical Solid, Early and Thin read, `lib/coachhelm/confidence-label.ts`); null when the evidence has none. Drawn as the word only. */
   read: { level: 1 | 2 | 3; word: string } | null;
   /** "As of Sep 30": the day the read was last refreshed, else the day its window ended; null when the row says neither. */
