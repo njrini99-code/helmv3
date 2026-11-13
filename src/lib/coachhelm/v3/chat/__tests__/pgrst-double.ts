@@ -35,7 +35,8 @@ export function pgrst(tables: Tables, opts: { maxRows?: number } = {}) {
       gte: (c: string, v: unknown) => (log('gte', c, v), (rows = rows.filter((r) => (at(r, c) as never) >= (v as never))), q),
       lte: (c: string, v: unknown) => (log('lte', c, v), (rows = rows.filter((r) => (at(r, c) as never) <= (v as never))), q),
       is: (c: string, v: unknown) => (log('is', c, v), (rows = rows.filter((r) => (v === null ? at(r, c) == null : at(r, c) === v))), q),
-      not: (...a: unknown[]) => (log('not', ...a), q),
+      // `not(col, 'is', null)` keeps rows with a value, as the server does; other operators are only recorded.
+      not: (c: string, op: string, v: unknown) => (log('not', c, op, v), (rows = op === 'is' ? rows.filter((r) => (v === null ? at(r, c) != null : at(r, c) !== v)) : rows), q),
       or: (...a: unknown[]) => (log('or', ...a), q),
       order: (c: string, o?: { ascending?: boolean }) => (log('order', c, o), ordering.push({ col: c, ascending: o?.ascending !== false }), q),
       limit: (n: number) => (log('limit', n), (cap = Math.min(cap, n)), q),

@@ -65,7 +65,7 @@ function makeChain(
   resolveSingle?: () => { data: unknown; error: unknown },
 ) {
   const chain: Record<string, unknown> = {};
-  for (const method of ['select', 'eq', 'order', 'in', 'limit']) {
+  for (const method of ['select', 'eq', 'not', 'order', 'in', 'limit']) {
     chain[method] = vi.fn(() => chain);
   }
   chain.single = vi.fn(async () => (resolveSingle ? resolveSingle() : resolveList()));
@@ -112,7 +112,7 @@ beforeEach(() => {
       table === 'golf_documents'
         ? makeChain(
             () => ({ data: null, error: null }),
-            () => ({ data: { team_id: TEAM_ID }, error: null }),
+            () => ({ data: { team_id: TEAM_ID, file_url: 'https://storage.example/file.pdf' }, error: null }),
           )
         : table === 'golf_coaches'
           ? makeChain(
@@ -194,6 +194,9 @@ describe('getDocumentVersions / getVersionHistory (#w4-document-preview)', () =>
 describe('getPreviewUrl (#w4-document-preview)', () => {
   it('returns noContent (not an error) when the document has zero version rows', async () => {
     versionsRows = [];
+    // Nothing signable either: the legacy path recovered from file_url is not in storage (every file row has a file_url
+    // since the N-10 reader shim reads it; a row without one is a practice plan, covered in documents-plan-rows.test.ts).
+    createSignedUrlMock.mockResolvedValueOnce({ data: null, error: { message: 'Object not found' } });
     const result = await getPreviewUrl(DOC_ID);
     expect(result.error).toBeNull();
     expect(result.data).toBeNull();
