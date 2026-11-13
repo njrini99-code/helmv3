@@ -217,7 +217,7 @@ const TABLES: Tables = {
   golf_practice_plans: { rows: [{ id: '00000000-0000-4000-8000-0000000000b2', team_id: 'team-1', event_id: EVENT, title: 'Range day', step: 'ready', status: 'draft', version: 1, published_version: null, updated_at: '2026-11-02T10:00:00Z' }] },
   golf_team_drills: { rows: [{ id: DRILL, team_id: 'team-1', name: 'Gate drill', area: 'putting', kind: 'block', minutes: 15, archived_at: null }] },
   golf_drills: { rows: [{ id: 'ladder', title: 'Distance ladder', category: 'short_game', duration_min: 20 }] },
-  golf_documents: { rows: [{ id: '00000000-0000-4000-8000-0000000000b3', team_id: 'team-1', title: 'Travel plan', folder: 'November', category: 'other', is_public: false, updated_at: '2026-11-03T12:00:00Z' }] },
+  golf_documents: { rows: [{ id: '00000000-0000-4000-8000-0000000000b3', team_id: 'team-1', title: 'Travel plan', folder: 'November', category: 'other', is_public: false, file_url: 'https://storage.example/travel-plan.pdf', updated_at: '2026-11-03T12:00:00Z' }] },
   golf_team_seasons: { rows: [{ team_id: 'team-1', season: '2026', conference: 'ODAC', division: 'D3', official_rank: 12, official_rank_at: '2026-10-01' }] },
   golf_team_terms: { rows: [{ team_id: 'team-1', label: 'Fall 2026', classes_start: '2026-08-24', classes_end: '2026-12-04', exams_end: '2026-12-12', time_zone: 'America/New_York' }] },
   golf_team_settings: { rows: [{ team_id: 'team-1', scoring_format: 'stroke', handicap_system: 'usga', default_tees: 'blue', sg_baseline: 'pga', sg_benchmark_level: 'd3', timezone: 'America/New_York' }] },

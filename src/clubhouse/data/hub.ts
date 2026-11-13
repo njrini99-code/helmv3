@@ -320,7 +320,8 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
     clockRead,
     supabase.from('golf_teams').select('name').eq('id', input.teamId).maybeSingle(),
     rosterRead,
-    getDocuments(input.teamId).catch((err: unknown) => ({ data: null, error: err instanceof Error ? err.message : 'failed' })),
+    // Team Hub draws practice-plan rows in their folders (folders() below), so it is the one reader that asks for them.
+    getDocuments(input.teamId, { plans: true }).catch((err: unknown) => ({ data: null, error: err instanceof Error ? err.message : 'failed' })),
     getUnifiedNotifications({ limit: 6 }).catch(() => ({ success: false as const, error: 'failed' })),
     hiddenTestRows(supabase, input.teamId),
   ]);

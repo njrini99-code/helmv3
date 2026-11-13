@@ -385,7 +385,8 @@ export function FairwayEditShotModal({
                   <div>
                     <p className={sectionLabel}>Miss Direction</p>
                     <div className="grid grid-cols-2 gap-2">
-                      {['left', 'right', 'short', 'long'].map((dir) => (
+                      {/* A tee shot records its side only, as the live logger does; short and long were never read as such (they count as center). */}
+                      {['left', 'right'].map((dir) => (
                         <Button variant="ghost"
                           key={dir}
                           type="button"

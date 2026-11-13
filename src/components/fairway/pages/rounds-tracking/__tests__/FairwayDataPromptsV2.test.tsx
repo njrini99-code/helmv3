@@ -84,9 +84,9 @@ describe('recovery tap', () => {
     mount({ recoveryPrompt: true });
     const row = recoveryRow()!;
     expect(row).not.toBeNull();
-    expect(within(row).getByText('Tee shot, other lie')).toBeTruthy();
+    expect(within(row).getByText('Tee shot, other lie. Recovery / layup only if you couldn’t go at the green.')).toBeTruthy();
     expect(within(row).getByRole('button', { name: 'Clear shot' })).toBeTruthy();
-    expect(within(row).getByRole('button', { name: 'Blocked / punch out' })).toBeTruthy();
+    expect(within(row).getByRole('button', { name: 'Recovery / layup' })).toBeTruthy();
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(within(row).queryAllByRole('button').every((b) => b.getAttribute('data-variant') !== 'primary')).toBe(true);
   });
@@ -94,12 +94,12 @@ describe('recovery tap', () => {
   it('one tap writes the answer on the tee shot through the save path', async () => {
     const user = userEvent.setup();
     const { autosaves } = mount({ recoveryPrompt: true });
-    await user.click(within(recoveryRow()!).getByRole('button', { name: 'Blocked / punch out' }));
+    await user.click(within(recoveryRow()!).getByRole('button', { name: 'Recovery / layup' }));
     const last = autosaves[autosaves.length - 1]!;
     expect(last).toEqual([{ ...TEE_INTO_TREES, lieAfterRecovery: true }]);
     const row = recoveryRow()!;
-    expect(within(row).getByRole('status').textContent).toBe('Saved: a recovery shot');
-    expect(within(row).getByRole('button', { name: 'Blocked / punch out' }).getAttribute('aria-pressed')).toBe('true');
+    expect(within(row).getByRole('status').textContent).toBe('Saved: a recovery or layup');
+    expect(within(row).getByRole('button', { name: 'Recovery / layup' }).getAttribute('aria-pressed')).toBe('true');
     // Corrects on a second tap.
     await user.click(within(recoveryRow()!).getByRole('button', { name: 'Clear shot' }));
     expect(autosaves[autosaves.length - 1]![0]!.lieAfterRecovery).toBe(false);

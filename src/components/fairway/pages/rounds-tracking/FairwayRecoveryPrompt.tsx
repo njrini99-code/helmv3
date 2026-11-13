@@ -5,7 +5,8 @@
  * Slice 8b, design 01 row 7 and 03 §3.3).
  *
  * One compact row after a tee shot that finished in the rough or an 'other'
- * lie: "Next shot from there? Clear shot · Blocked / punch out" and Skip.
+ * lie: "Next shot from there? Clear shot · Recovery / layup" and Skip (the
+ * choices are `RECOVERY_CHOICES`, shared with Clubhouse).
  * Never a modal, never blocking: the screen's one primary action (Next shot)
  * is untouched and the chips are secondary. State and the write live in
  * `useRecoveryPrompt` and `useShotTracking.handleTagRecovery`; this file only
@@ -14,17 +15,13 @@
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/fairway/controls/button';
+import { RECOVERY_CHOICES as CHOICES, recoveryHint, recoverySavedLine } from '@/lib/golf/data-prompts/recovery';
 import type { RecoveryPromptView } from './useRecoveryPrompt';
-
-const CHOICES: readonly { value: boolean; label: string }[] = [
-  { value: false, label: 'Clear shot' },
-  { value: true, label: 'Blocked / punch out' },
-];
 
 export function FairwayRecoveryPrompt({ prompt }: { prompt: RecoveryPromptView | null }) {
   if (!prompt) return null;
   const { saved, result } = prompt;
-  const caption = result === 'other' ? 'Tee shot, other lie' : 'Tee shot, rough';
+  const caption = saved === null ? recoveryHint(result) : result === 'other' ? 'Tee shot, other lie' : 'Tee shot, rough';
   return (
     <section
       aria-label="Was the next shot a recovery"
@@ -68,7 +65,7 @@ export function FairwayRecoveryPrompt({ prompt }: { prompt: RecoveryPromptView |
       </div>
       {saved !== null && (
         <p role="status" aria-live="polite" className="mt-2 font-fw-sans text-caption text-text-tertiary">
-          {saved ? 'Saved: a recovery shot' : 'Saved: a clear shot'}
+          {recoverySavedLine(saved)}
         </p>
       )}
     </section>

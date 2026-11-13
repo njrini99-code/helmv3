@@ -89,6 +89,8 @@ export default async function GolfAnnouncementsPage() {
           .from('golf_documents')
           .select('id, title, file_type, file_size')
           .eq('team_id', teamId)
+          // Files only: a practice-plan row (N-00 010400, file_url NULL) is not an attachment (N-10 shim).
+          .not('file_url', 'is', null)
           .order('created_at', { ascending: false })
           .limit(200),
       ]);

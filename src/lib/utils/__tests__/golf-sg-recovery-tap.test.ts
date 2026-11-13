@@ -8,6 +8,7 @@ import {
 } from '../golf-stats-calculator-shots';
 import { attachShotStrokesGained } from '@/components/golf/coachhelm/round-review/shot-strokes-gained';
 import { makeRawShot } from '@/test/fixtures/golf-shots';
+import { RECOVERY_CHOICES } from '@/lib/golf/data-prompts/recovery';
 
 // A par 4: drive into the trees, punch out, wedge on, two putts (5 strokes).
 function blockedHole(flag: boolean | null, punchLie = 'other'): RawShot[] {
@@ -98,5 +99,48 @@ describe('recovery tap (golf_shots.lie_after_recovery)', () => {
     const reviewed = attachShotStrokesGained(hole);
     const engine = perShotSg(hole);
     reviewed.forEach((s, i) => expect(s.sg).toBeCloseTo(engine[i]!, 6));
+  });
+});
+
+// 2026-11-12: the tap's true answer is now "Recovery / layup" (the next shot could not go at the green). Same stored value,
+// same pricing; a strategic layup from a clean lie is "Clear shot".
+describe('Recovery / layup prices as the punch-out did', () => {
+  const LAYUP = RECOVERY_CHOICES.find((c) => c.label === 'Recovery / layup')!.value;
+  const CLEAR = RECOVERY_CHOICES.find((c) => c.label === 'Clear shot')!.value;
+
+  // A par 4: drive into deep rough 230 out, a forced layup to 100, wedge on, two putts.
+  function layupHole(flag: boolean | null): RawShot[] {
+    return [
+      makeRawShot({ id: 'tee', shot_number: 1, shot_type: 'tee', lie_before: 'tee', distance_to_hole_before: 420,
+        result: 'rough', lie_after: 'rough', distance_to_hole_after: 230, lie_after_recovery: flag }),
+      makeRawShot({ id: 'layup', shot_number: 2, shot_type: 'approach', lie_before: 'rough', distance_to_hole_before: 230,
+        result: 'fairway', lie_after: 'fairway', distance_to_hole_after: 100 }),
+      makeRawShot({ id: 'wedge', shot_number: 3, shot_type: 'approach', lie_before: 'fairway', distance_to_hole_before: 100,
+        result: 'green', lie_after: 'green', distance_to_hole_after: 15, distance_unit_after: 'feet' }),
+      makeRawShot({ id: 'putt1', shot_number: 4, shot_type: 'putting', lie_before: 'green', distance_to_hole_before: 15,
+        distance_unit_before: 'feet', result: 'green', lie_after: 'green', distance_to_hole_after: 2, distance_unit_after: 'feet' }),
+      makeRawShot({ id: 'putt2', shot_number: 5, shot_type: 'putting', lie_before: 'green', distance_to_hole_before: 2,
+        distance_unit_before: 'feet', result: 'hole', putt_made: true, distance_to_hole_after: 0 }),
+    ];
+  }
+
+  it('a forced layup tagged Recovery / layup starts on the recovery curve, and the drive carries the cost', () => {
+    const hole = layupHole(LAYUP);
+    expect(withRecoveryStart(hole[1]!, hole).lie_before).toBe('recovery');
+    const [drive, layup] = perShotSg(hole);
+    expect(drive).toBeCloseTo(getExpectedStrokes('tee', 420) - 1 - getExpectedStrokes('recovery', 230), 6);
+    expect(layup).toBeCloseTo(getExpectedStrokes('recovery', 230) - 1 - getExpectedStrokes('fairway', 100), 6);
+  });
+
+  it('a strategic layup answered Clear shot stays on the rough curve', () => {
+    const hole = layupHole(CLEAR);
+    expect(withRecoveryStart(hole[1]!, hole).lie_before).toBe('rough');
+    const [drive] = perShotSg(hole);
+    expect(drive).toBeCloseTo(getExpectedStrokes('tee', 420) - 1 - getExpectedStrokes('rough', 230), 6);
+  });
+
+  it('a hole saved under Blocked or punch out (true) prices exactly as the same hole tagged Recovery / layup', () => {
+    expect(perShotSg(blockedHole(LAYUP))).toEqual(perShotSg(blockedHole(true)));
+    expect(perShotSg(layupHole(LAYUP))).toEqual(perShotSg(layupHole(true)));
   });
 });

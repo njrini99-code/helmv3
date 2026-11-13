@@ -8,6 +8,7 @@ import { loadTeamStrokesGained } from './team-sg';
 import { parsePlanBody, parseVersionBody, type PlanBodyV2, type PlanWhy } from '@/lib/coachhelm/v3/practice-plan/model';
 import { practiceTables, type PracticePlanRow, type PracticePlanVersionRow, type TeamDrillRow } from '@/lib/golf/practice-db';
 import { isPracticeMissing } from '@/lib/golf/practice-errors';
+import { profilesById, readGolfPlayerProfiles } from '@/lib/golf/player-profiles';
 import { isoDay, formatWith } from '../lib/dates';
 import { editedAfterPublish, loadPlayerPractice } from './practice-plan';
 import { blockDaySegs, keyOfDrill } from '../screens/practice/builder/builder-model';
@@ -110,11 +111,16 @@ async function teamBasics(sb: Sb, teamId: string) {
   return error || !data ? null : { name: data.name ?? '', zone: data.timezone ?? 'America/New_York', org: data.organization_id };
 }
 
+/** The active roster with names, read as the plan page reads it (practice-plan.ts `context`): names through golf_player_profiles, not an embed. */
 async function activeRoster(sb: Sb, teamId: string): Promise<Array<{ id: string; name: string }> | null> {
-  const { data, error } = await sb.from('golf_team_members').select('player_id, golf_players(first_name, last_name)').eq('team_id', teamId).eq('status', 'active');
-  if (error) return null;
+  const [{ data, error }, profiles] = await Promise.all([
+    sb.from('golf_team_members').select('player_id').eq('team_id', teamId).eq('status', 'active'),
+    readGolfPlayerProfiles(sb, { teamIds: [teamId] }),
+  ]);
+  if (error || profiles.error) return null;
+  const byId = profilesById(profiles.data);
   return (data ?? []).flatMap((m) => {
-    const p = m.golf_players as { first_name: string | null; last_name: string | null } | null;
+    const p = m.player_id ? byId.get(m.player_id) : undefined;
     return m.player_id && p ? [{ id: m.player_id, name: [p.first_name, p.last_name].filter(Boolean).join(' ') }] : [];
   });
 }
