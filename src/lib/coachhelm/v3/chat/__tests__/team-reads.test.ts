@@ -1,52 +1,108 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CoachChatContext } from '../context';
 
 vi.mock('server-only', () => ({}));
 vi.mock('@/lib/server-error-logger', () => ({ logServerError: vi.fn(async () => {}) }));
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => { throw new Error('the service client must not be used'); } }));
 
-import { getAttendanceSummary, getFocusPractice, getGoals, getTeamSeasonSettings, getTournamentNotes, ROW_CAP } from '../team-reads';
+import { getAttendanceSummary, getFocusPractice, getGoals, getTeamSeasonSettings, getTournamentNotes } from '../team-reads';
 import { person, pgrst } from './pgrst-double';
 
 const ctx: CoachChatContext = { coach_id: 'c1', user_id: 'u1', team_id: 'team-1', team_name: 'Varsity', timezone: 'America/New_York', roster: [person('p1', 'Owen Carter'), person('p2', 'Cole Bennett')] };
 const eqs = (calls: Array<{ method: string; args: unknown[] }>) => calls.filter((c) => c.method === 'eq').map((c) => c.args);
 
-describe('get_attendance_summary', () => {
-  const rows = [
-    { player_id: 'p1', team_id: 'team-1', period_start_date: '2026-09-01', period_end_date: '2026-10-01', total_events: 20, attended_count: 18, excused_count: 1, absent_count: 1, attendance_percentage: 90 },
-    { player_id: 'p1', team_id: 'team-1', period_start_date: '2026-08-01', period_end_date: '2026-09-01', total_events: 10, attended_count: 5, excused_count: 0, absent_count: 5, attendance_percentage: 50 },
-    { player_id: 'p2', team_id: 'team-1', period_start_date: '2026-09-01', period_end_date: '2026-10-01', total_events: 20, attended_count: 15, excused_count: 0, absent_count: 5, attendance_percentage: 75 },
-    { player_id: 'gone', team_id: 'team-1', period_start_date: '2026-09-01', period_end_date: '2026-10-01', total_events: 20, attended_count: 1, excused_count: 0, absent_count: 19, attendance_percentage: 5 },
-    { player_id: 'p9', team_id: 'team-2', period_start_date: '2026-09-01', period_end_date: '2026-10-01', total_events: 20, attended_count: 20, excused_count: 0, absent_count: 0, attendance_percentage: 100 },
-  ];
+describe('get_attendance_summary: this season, from the marks on each event', () => {
+  // 12 Nov 2026, midday in New York: the season began at midnight on 1 August there (04:00 UTC, daylight time).
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-11-12T17:00:00Z'));
+  });
+  afterEach(() => vi.useRealTimers());
 
-  it('is scoped to the team and the active roster, with the team average of each player’s newest period', async () => {
-    const { sb, of } = pgrst({ golf_attendance_summary: { rows } });
+  const ev = (id: string, start_time: string, over: Record<string, unknown> = {}) => ({ id, team_id: 'team-1', start_time, event_type: 'practice', status: 'scheduled', ...over });
+  const E1 = ev('e1', '2026-10-01T20:00:00Z');
+  const E2 = ev('e2', '2026-10-08T20:00:00Z', { event_type: 'qualifier' });
+  const E3 = ev('e3', '2026-10-15T20:00:00Z', { event_type: 'meeting' });
+  let n = 0;
+  const mark = (player_id: string, golf_events: Record<string, unknown>, over: Record<string, unknown> = {}) => ({ id: `a${String(++n).padStart(5, '0')}`, player_id, event_id: golf_events.id, status: 'pending', attendance_status: null, checked_in: false, checked_in_at: null, golf_events, ...over });
+  const rows = [
+    mark('p1', E1, { attendance_status: 'present', checked_in: true, checked_in_at: '2026-10-01T20:01:00Z' }),
+    mark('p1', E2, { attendance_status: 'late', checked_in: true, checked_in_at: '2026-10-08T20:20:00Z' }),
+    mark('p1', E3, { attendance_status: 'no_show', checked_in_at: '2026-10-15T20:30:00Z' }),
+    // Marked before attendance_status existed: checked in is present.
+    mark('p2', E1, { status: 'accepted', checked_in: true, checked_in_at: '2026-10-01T20:02:00Z' }),
+    mark('p2', E2, { status: 'excused' }),
+    mark('p2', E3, { status: 'accepted' }),
+    // None of these count: off the roster, a class block, a cancelled event, last season, still to come, another team.
+    mark('gone', E1, { attendance_status: 'present', checked_in: true }),
+    mark('p1', ev('class', '2026-10-02T14:00:00Z', { event_type: 'class' }), { attendance_status: 'present', checked_in: true }),
+    mark('p1', ev('off', '2026-10-20T20:00:00Z', { status: 'cancelled' }), { attendance_status: 'no_show' }),
+    mark('p1', ev('july', '2026-07-20T20:00:00Z'), { attendance_status: 'no_show' }),
+    mark('p1', ev('next', '2026-11-20T20:00:00Z')),
+    mark('p9', ev('elsewhere', '2026-10-01T20:00:00Z', { team_id: 'team-2' }), { attendance_status: 'present', checked_in: true }),
+  ];
+  type Count = { player_id?: string; events: number; attended: number; late: number; excused: number; absent: number; unmarked: number; attendance_percentage: number | null };
+
+  it('counts present, late, excused and absent per player and for the team, through the team’s own events, paged by id', async () => {
+    const { sb, of } = pgrst({ golf_event_attendance: { rows } });
     const e = await getAttendanceSummary(sb, ctx, {});
-    expect(eqs(of('golf_attendance_summary'))).toContainEqual(['team_id', 'team-1']);
-    expect(of('golf_attendance_summary').some((c) => c.method === 'limit' && c.args[0] === ROW_CAP)).toBe(true);
-    const d = e.detail as { rows: Array<{ player_id: string }>; team: { team_scope: boolean; average_attendance_percentage: number; players_counted: number } };
-    expect(d.rows.map((r) => r.player_id)).toEqual(['p1', 'p2', 'p1']);
-    expect(d.team).toEqual({ team_scope: true, players_counted: 2, average_attendance_percentage: 82.5 });
-    expect(JSON.stringify(d)).not.toContain('gone');
+    const calls = of('golf_event_attendance');
+    expect(eqs(calls)).toContainEqual(['golf_events.team_id', 'team-1']);
+    expect(calls.find((c) => c.method === 'gte')!.args).toEqual(['golf_events.start_time', '2026-08-01T04:00:00.000Z']);
+    expect(calls.find((c) => c.method === 'order')!.args[0]).toBe('id');
+    expect(calls.some((c) => c.method === 'range')).toBe(true);
+    // No id list goes to the server, and no row cap stands in for paging.
+    expect(calls.some((c) => c.method === 'in' || c.method === 'limit')).toBe(false);
+    expect(of('golf_attendance_summary')).toEqual([]);
+    const d = e.detail as { window: { from: string; to: string }; rows: Count[]; team: Count & { team_scope: boolean; players_counted: number } };
+    expect(e.summary).toBe('Attendance this season for 2 players.');
+    expect(e.coverage).toBe('complete');
+    expect(d.window).toEqual({ from: '2026-08-01', to: '2026-11-12' });
+    expect(d.rows).toEqual([
+      { player_id: 'p1', player: 'Owen Carter', events: 3, attended: 2, late: 1, excused: 0, absent: 1, unmarked: 0, attendance_percentage: 66.7 },
+      { player_id: 'p2', player: 'Cole Bennett', events: 3, attended: 1, late: 0, excused: 1, absent: 0, unmarked: 1, attendance_percentage: 100 },
+    ]);
+    // Weighted over every mark: 3 attended of 4 recorded is 75, not the mean of 66.7 and 100.
+    expect(d.team).toEqual({ team_scope: true, players_counted: 2, events: 3, attended: 3, late: 1, excused: 1, absent: 1, unmarked: 1, attendance_percentage: 75 });
+    expect(JSON.stringify(d)).not.toMatch(/gone|p9|class|july/);
   });
 
   it('reads one player and refuses one off the roster', async () => {
-    const { sb, of } = pgrst({ golf_attendance_summary: { rows } });
+    const { sb, of } = pgrst({ golf_event_attendance: { rows } });
     const e = await getAttendanceSummary(sb, ctx, { player_id: 'p2' });
-    expect((e.detail as { rows: unknown[] }).rows).toHaveLength(1);
-    expect(eqs(of('golf_attendance_summary'))).toContainEqual(['player_id', 'p2']);
-    const other = pgrst({ golf_attendance_summary: { rows } });
+    expect(eqs(of('golf_event_attendance'))).toContainEqual(['player_id', 'p2']);
+    expect(e.summary).toBe('Attendance this season for Cole Bennett.');
+    expect((e.detail as { rows: Count[] }).rows.map((r) => r.player_id)).toEqual(['p2']);
+    expect(e.detail).not.toHaveProperty('team');
+    const other = pgrst({ golf_event_attendance: { rows } });
     await expect(getAttendanceSummary(other.sb, ctx, { player_id: 'p9' })).rejects.toMatchObject({ status: 403 });
     expect(other.calls).toEqual([]);
   });
 
-  it('says it could not read, not that there is none, and marks a full page partial', async () => {
-    expect((await getAttendanceSummary(pgrst({ golf_attendance_summary: { error: { message: 'down' } } }).sb, ctx, {})).coverage).toBe('unavailable');
-    const many = Array.from({ length: ROW_CAP + 5 }, (_, i) => ({ ...rows[0]!, period_end_date: `2025-${String((i % 12) + 1).padStart(2, '0')}-01` }));
-    const e = await getAttendanceSummary(pgrst({ golf_attendance_summary: { rows: many } }).sb, ctx, {});
+  it('a team with no attendance this season says none; a team with replies but no marks says nobody was marked, never a rate of zero', async () => {
+    const none = await getAttendanceSummary(pgrst({ golf_event_attendance: { rows: rows.filter((r) => r.player_id === 'p9') } }).sb, ctx, {});
+    expect(none.coverage).toBe('empty');
+    expect(none.summary).toBe('No attendance on record this season.');
+    const replies = [mark('p1', E1, { status: 'accepted' }), mark('p2', E1), mark('p2', E2, { status: 'declined' })];
+    const unmarked = await getAttendanceSummary(pgrst({ golf_event_attendance: { rows: replies } }).sb, ctx, {});
+    expect(unmarked.summary).toBe('No attendance marked this season: 2 events had players on them, and nobody was marked present, late, absent or excused.');
+    expect((unmarked.detail as { team: Count }).team).toMatchObject({ attended: 0, absent: 0, unmarked: 3, attendance_percentage: null });
+  });
+
+  it('pages past the 1,000-row cap, so a long season is never undercounted', async () => {
+    const many = Array.from({ length: 1200 }, (_, i) => mark('p1', ev(`m${i}`, new Date(Date.UTC(2026, 7, 2) + i * 3_600_000).toISOString()), { attendance_status: i % 4 === 0 ? 'no_show' : 'present' }));
+    const { sb, of } = pgrst({ golf_event_attendance: { rows: many } });
+    const e = await getAttendanceSummary(sb, ctx, {});
+    expect(of('golf_event_attendance').filter((c) => c.method === 'range').map((c) => c.args)).toEqual([[0, 999], [1000, 1999]]);
+    expect((e.detail as { team: Count }).team).toMatchObject({ events: 1200, attended: 900, absent: 300, attendance_percentage: 75 });
+    // Cole has no attendance: the read says so, and does not call the team figure whole.
     expect(e.coverage).toBe('partial');
-    expect(e.coverage_note).toMatch(new RegExp(String(ROW_CAP)));
+    expect(e.coverage_note).toBe('1 rostered player has no attendance this season.');
+  });
+
+  it('says it could not read, not that there is none', async () => {
+    const e = await getAttendanceSummary(pgrst({ golf_event_attendance: { error: { message: 'down' } } }).sb, ctx, {});
+    expect(e.coverage).toBe('unavailable');
   });
 });
 
