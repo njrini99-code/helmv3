@@ -1420,6 +1420,272 @@ html[data-fw-theme='dark'] :is(.ch-prc-group.is-f .ch-prc-disc, .ch-prc-disc.g-F
   padding: 20px 24px 40px;
 }
 
+/* The desk with contrast (owner, 13 Nov 2026: "we need more contrast … black text on the off white … looks awful. be creative").
+   Three moves, all in the Clubhouse's own colours:
+   1. The head is the sidebar's green, so green frames the work on two sides and the plan's name reads in ivory. Publish is
+      the one ivory plate on it.
+   2. The board is a table one step darker than its cards; Drills and the Inspector are light panels at its sides, painted
+      full height on the body so they never stop where their sticky content ends.
+   3. Each block starts on a tee-time stub: the start in ivory on green, its length under it, the way a tee sheet reads. A
+      break's stub is quiet. */
+.ch-prb.is-desk {
+  --ch-prb-table: var(--ch-ivory-200);
+  --ch-prb-stub: 84px;
+  /* The frame's full height (the shell's own recipe, shell.css), so a short step's table and panels run to the bottom. */
+  min-height: calc(100dvh - var(--ch-topbar-h) - 16px);
+  background: var(--ch-prb-table);
+}
+html[data-fw-theme='dark'] .ch-prb.is-desk {
+  /* At night the table sits below the cards, as by day: the page's darkest ground. */
+  --ch-prb-table: var(--ch-grouped-bg);
+}
+.ch-prb.is-desk .ch-prb-head {
+  padding-block: 16px;
+  border-bottom: 0;
+  background: var(--ch-feature-bg);
+  color: var(--ch-feature-ink);
+  box-shadow: 0 1px 0 rgb(2 18 10 / 0.24), 0 6px 16px -10px rgb(2 18 10 / 0.5);
+  /* The step control on green: a faint ivory track and an ivory chip, the way the sidebar marks where you are. */
+  --ch-well-bg: rgb(244 241 232 / 0.08);
+  --ch-well-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-feature-sep);
+  --ch-seg-on-bg: var(--ch-on-green-plate);
+  --ch-seg-on-shadow: 0 1px 2px rgb(2 18 10 / 0.4);
+  --ch-seg-on-ink: var(--ch-green-800);
+}
+.ch-prb.is-desk .ch-prb-head .ch-seg__b {
+  color: var(--ch-feature-ink-2);
+  text-shadow: none;
+}
+.ch-prb.is-desk .ch-prb-head .ch-seg__b.is-on {
+  color: var(--ch-seg-on-ink);
+}
+.ch-prb.is-desk .ch-prb-head .ch-seg__b:not(.is-on)[data-ch-pressed] {
+  background: rgb(244 241 232 / 0.1);
+}
+.ch-prb.is-desk .ch-prb-title {
+  color: var(--ch-feature-ink);
+  font: var(--ch-type-22-strong);
+  letter-spacing: var(--ch-track-22);
+}
+.ch-prb.is-desk .ch-prb-title:focus-visible {
+  box-shadow: 0 2px 0 var(--ch-feature-ink);
+}
+.ch-prb.is-desk .ch-prb-head > .ch-backlink {
+  color: var(--ch-feature-ink-2);
+}
+@media (hover: hover) {
+  .ch-prb.is-desk .ch-prb-head > .ch-backlink:hover {
+    background: rgb(244 241 232 / 0.1);
+    color: var(--ch-feature-ink);
+  }
+}
+.ch-prb.is-desk .ch-prb-head .ch-prb-when {
+  color: var(--ch-feature-ink-2);
+}
+.ch-prb.is-desk .ch-prb-head .ch-prb-when .ch-btn {
+  background: none;
+  box-shadow: none;
+  color: var(--ch-feature-ink);
+  text-decoration: underline;
+  text-decoration-color: rgb(244 241 232 / 0.45);
+  text-underline-offset: 3px;
+  text-shadow: none;
+}
+.ch-prb.is-desk .ch-prb-head .ch-prc-save {
+  color: var(--ch-feature-ink-3);
+}
+.ch-prb.is-desk .ch-prb-head .ch-prc-save[data-state='failed'] {
+  color: var(--ch-feature-loss);
+}
+.ch-prb.is-desk .ch-prb-head .ch-prc-save button {
+  color: var(--ch-feature-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+/* The day's strip on green: the kinds take their night tones, which are the ones drawn for a dark ground. */
+.ch-prb.is-desk .ch-prb-head .ch-prc-ribbon__w {
+  color: var(--ch-feature-ink-2);
+}
+.ch-prb.is-desk .ch-prb-head .ch-prc-ribbon__w b {
+  color: var(--ch-feature-ink);
+}
+.ch-prb.is-desk .ch-prb-head .ch-prc-ribbon__w .is-over {
+  color: var(--ch-feature-loss);
+}
+.ch-prb.is-desk .ch-prb-head :is(.ch-prc-ribbon__mix, .ch-prc-day__ends) {
+  color: var(--ch-feature-ink-2);
+}
+.ch-prb.is-desk .ch-prb-head .ch-prc-day__bar i {
+  background: rgb(244 241 232 / 0.55);
+}
+.ch-prb.is-desk .ch-prb-head :is(.ch-prc-day__bar i[data-tone='skill'], .ch-prc-ribbon__mix span::before) {
+  background: var(--ch-champagne-300);
+}
+.ch-prb.is-desk .ch-prb-head :is(.ch-prc-day__bar i[data-tone='random'], .ch-prc-ribbon__mix [data-tone='random']::before) {
+  background: var(--ch-plan-group-d-night);
+}
+.ch-prb.is-desk .ch-prb-head :is(.ch-prc-day__bar i[data-tone='pressure'], .ch-prc-ribbon__mix [data-tone='pressure']::before) {
+  background: var(--ch-feature-gain-fill);
+}
+.ch-prb.is-desk .ch-prb-head .ch-prc-day__bar i[data-tone='ghost'] {
+  background: none;
+  box-shadow: inset 0 0 0 1.5px var(--ch-feature-ink);
+}
+.ch-prb.is-desk .ch-prb-head .ch-prc-day__bar i[data-tone='open'] {
+  background: rgb(244 241 232 / 0.14);
+  box-shadow: none;
+}
+/* Preview is an outline on the green; Publish is the ivory plate, the brightest thing in the head. */
+.ch-prb.is-desk .ch-prb-head > .ch-btn--secondary {
+  background: rgb(244 241 232 / 0.08);
+  box-shadow: inset 0 0 0 1px rgb(244 241 232 / 0.32);
+  color: var(--ch-feature-ink);
+  text-shadow: none;
+}
+.ch-prb.is-desk .ch-prb-head > .ch-btn--primary {
+  background: var(--ch-on-green-plate);
+  box-shadow: 0 1px 2px rgb(2 18 10 / 0.4), inset 0 -1px 0 rgb(28 25 18 / 0.1);
+  color: var(--ch-green-800);
+  text-shadow: none;
+}
+.ch-prb.is-desk .ch-prb-head > :is(.ch-btn--secondary, .ch-btn--primary)[data-ch-pressed]:not(:disabled) {
+  background: var(--ch-on-green-ink-meta);
+  color: var(--ch-green-800);
+}
+@media (hover: hover) {
+  .ch-prb.is-desk .ch-prb-head > .ch-btn--secondary:hover:not(:disabled) {
+    background: rgb(244 241 232 / 0.16);
+  }
+  .ch-prb.is-desk .ch-prb-head > .ch-btn--primary:hover:not(:disabled) {
+    background: var(--ch-on-green-bright);
+  }
+}
+.ch-prb.is-desk .ch-prb-head > .ch-btn--primary:disabled:not([aria-busy='true']) {
+  background: rgb(244 241 232 / 0.2);
+  box-shadow: none;
+  color: var(--ch-feature-ink-3);
+}
+/* The side panels, full height whatever their content: drawn on the body, with their hairlines. */
+.ch-prb.is-desk .ch-prb-body.has-rail {
+  background:
+    linear-gradient(var(--ch-separator), var(--ch-separator)) 300px 0 / var(--ch-hairline-w) 100% no-repeat,
+    linear-gradient(var(--ch-separator), var(--ch-separator)) calc(100% - 340px) 0 / var(--ch-hairline-w) 100% no-repeat,
+    linear-gradient(to right, var(--ch-card-bg) 300px, var(--ch-prb-table) 300px calc(100% - 340px), var(--ch-card-bg) calc(100% - 340px));
+}
+.ch-prb.is-desk :is(.ch-prb-rail, .ch-prb-insp) {
+  border: 0;
+  background: none;
+}
+/* Drills on the light panel sit in the table's tone, so each reads as a thing to pick up; the chosen area is a green chip. */
+.ch-prb.is-desk .ch-prb-rail .ch-prc-drill {
+  background: var(--ch-card-bg-raised);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-separator);
+}
+.ch-prb.is-desk .ch-prb-rail .ch-pill[aria-pressed='true'] {
+  background: var(--ch-feature-bg);
+  box-shadow: none;
+  color: var(--ch-feature-ink);
+}
+/* Tee-time stubs. The time and the length leave the card's grid for a stub at its start; the title takes the first line. */
+.ch-prb.is-desk .ch-prc-block {
+  box-shadow: var(--ch-card-shadow), 0 2px 6px -3px rgb(28 25 18 / 0.18);
+}
+.ch-prb.is-desk .ch-prc-block__main {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 4px;
+  min-height: 72px;
+  padding: 16px 56px 16px calc(var(--ch-prb-stub) + 20px);
+}
+.ch-prb.is-desk .ch-prc-block__tm {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  display: grid;
+  align-content: start;
+  justify-items: center;
+  width: var(--ch-prb-stub);
+  padding-top: 15px;
+  border-start-start-radius: var(--ch-radius-lg);
+  border-end-start-radius: var(--ch-radius-lg);
+  background: var(--ch-feature-bg);
+  color: var(--ch-feature-ink);
+  font: var(--ch-type-20-strong);
+  letter-spacing: var(--ch-track-20);
+}
+.ch-prb.is-desk .ch-prc-block__mn {
+  position: absolute;
+  top: 44px;
+  inset-inline-start: 0;
+  width: var(--ch-prb-stub);
+  margin: 0;
+  color: var(--ch-feature-ink-2);
+  font: var(--ch-type-13-medium);
+  letter-spacing: var(--ch-track-13);
+  text-align: center;
+}
+.ch-prb.is-desk .ch-prc-block[data-kind='break'] .ch-prc-block__tm {
+  background: var(--ch-well-bg-flat);
+  box-shadow: inset calc(-1 * var(--ch-hairline-w)) 0 0 var(--ch-separator);
+  color: var(--ch-text-primary);
+}
+.ch-prb.is-desk .ch-prc-block[data-kind='break'] .ch-prc-block__mn {
+  color: var(--ch-text-secondary);
+}
+.ch-prb.is-desk .ch-prc-block__t > b {
+  grid-area: auto;
+  grid-column: 1 / -1;
+  font: var(--ch-type-17-strong);
+  letter-spacing: var(--ch-track-17);
+}
+.ch-prb.is-desk .ch-prc-block__t > span {
+  grid-column: 1 / -1;
+}
+.ch-prb.is-desk .ch-prc-block > .ch-prc-more {
+  top: 10px;
+  inset-inline-end: 6px;
+}
+/* A suggestion has a hollow stub: the same tee time in green ink on a green tint, behind a dashed edge. Filled is in the
+   plan; hollow is only offered. The stub stands inside the card's 2px outline so the outline runs all the way round. */
+.ch-prb.is-desk .ch-prc-gb {
+  position: relative;
+  padding: 16px 16px 16px calc(var(--ch-prb-stub) + 20px);
+  background: var(--ch-card-bg);
+}
+.ch-prb.is-desk .ch-prc-gb__top {
+  grid-template-columns: minmax(0, 1fr);
+}
+.ch-prb.is-desk .ch-prc-gb__top b {
+  font: var(--ch-type-17-strong);
+  letter-spacing: var(--ch-track-17);
+}
+.ch-prb.is-desk .ch-prc-gb__tm {
+  position: absolute;
+  inset-block: 2px;
+  inset-inline-start: 2px;
+  display: grid;
+  align-content: start;
+  justify-items: center;
+  width: calc(var(--ch-prb-stub) - 2px);
+  padding-top: 13px;
+  border-inline-end: 2px dashed color-mix(in srgb, var(--ch-accent-ink) 55%, transparent);
+  border-start-start-radius: calc(var(--ch-radius-lg) - 2px);
+  border-end-start-radius: calc(var(--ch-radius-lg) - 2px);
+  background: var(--ch-accent-tint);
+  color: var(--ch-accent-ink);
+  font: var(--ch-type-20-strong);
+  letter-spacing: var(--ch-track-20);
+}
+.ch-prb.is-desk .ch-prc-gb__mn {
+  position: absolute;
+  top: 44px;
+  inset-inline-start: 2px;
+  width: calc(var(--ch-prb-stub) - 2px);
+  color: var(--ch-accent-ink);
+  font: var(--ch-type-13-medium);
+  letter-spacing: var(--ch-track-13);
+  text-align: center;
+}
+
 /* The plan page: a reading column the width of its sheet. Back, the plan's name and day, the coach's status line and keys, then the paper. */
 main.ch-prc-planpage {
   display: grid;

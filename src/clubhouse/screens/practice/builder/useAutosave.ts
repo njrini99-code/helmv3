@@ -49,6 +49,8 @@ export function restoredDraft(planId: string): Snapshot | null {
  */
 export function useAutosave({ planId, version, snapshot, folder = 'Practice plans', preview = false }: { planId: string; version: number; snapshot: Snapshot; folder?: string; preview?: boolean }) {
   const [status, setStatus] = useState<SaveStatus>('saved');
+  // Why the last save failed, in the action's own words ("A block names a group that isn't in this plan"), so the head can say it.
+  const [error, setError] = useState<{ code: string; message: string } | null>(null);
   const latest = useRef(snapshot);
   const saved = useRef(JSON.stringify(snapshot));
   const savedWhy = useRef(JSON.stringify(snapshot.why));
@@ -78,11 +80,15 @@ export function useAutosave({ planId, version, snapshot, folder = 'Practice plan
           if ('stale' in res && res.stale) return setStatus('stale');
           if (/changed|latest|another coach/i.test(res.error)) return setStatus('stale');
           tries.current += 1;
-          if (tries.current >= MAX_TRIES) return setStatus('failed');
+          if (tries.current >= MAX_TRIES) {
+            setError({ code: 'code' in res && typeof res.code === 'string' ? res.code : 'CH-13080', message: res.error });
+            return setStatus('failed');
+          }
           timer.current = window.setTimeout(() => void run(), 2000);
           return;
         }
         tries.current = 0;
+        setError(null);
         versionRef.current = res.version;
         saved.current = json;
         savedWhy.current = whyJson;
@@ -91,7 +97,10 @@ export function useAutosave({ planId, version, snapshot, folder = 'Practice plan
         else timer.current = window.setTimeout(() => void run(), DEBOUNCE_MS);
       } catch {
         tries.current += 1;
-        if (tries.current >= MAX_TRIES) setStatus('failed');
+        if (tries.current >= MAX_TRIES) {
+          setError({ code: 'CH-13080', message: 'The connection dropped.' });
+          setStatus('failed');
+        }
         else timer.current = window.setTimeout(() => void run(), 2000);
       }
     };
@@ -132,5 +141,8 @@ export function useAutosave({ planId, version, snapshot, folder = 'Practice plan
     void run();
   }, [run]);
 
-  return { status: preview ? ('saved' as const) : status, flush, retry };
+  /** Whether this tab holds edits no save has landed: Back asks before it leaves them (coach audit 13 Nov: work lost silently). */
+  const unsaved = useCallback(() => !preview && JSON.stringify(latest.current) !== saved.current, [preview]);
+
+  return { status: preview ? ('saved' as const) : status, error: preview ? null : error, flush, retry, unsaved };
 }

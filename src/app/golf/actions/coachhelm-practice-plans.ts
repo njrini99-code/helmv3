@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { logServerError } from '@/lib/server-error-logger';
-import { parsePlanBody, type PlanDraft } from '@/lib/coachhelm/v3/practice-plan/model';
+import { parsePlanBody, toSaveBody, type PlanDraft } from '@/lib/coachhelm/v3/practice-plan/model';
 import { practiceRpc, practiceTables } from '@/lib/golf/practice-db';
 import { isPracticeMissing, practiceErrorOf } from '@/lib/golf/practice-errors';
 import { resolveCoachChatContext } from '@/lib/coachhelm/v3/chat/context';
@@ -26,7 +26,7 @@ async function savePracticePlanDraftImpl(input: { eventId: string | null; planId
   const body = parsePlanBody(input.draft.body);
   if (!body) return { success: false, error: 'That plan couldn’t be saved.' };
   const sb = await createClient();
-  const saved = await practiceRpc(sb, 'golf_practice_plan_save', { p_event_id: input.planId ? null : input.eventId, p_plan_id: input.planId, p_expected_version: input.version, p_title: input.title, p_step: input.step ?? 'review', p_body: body });
+  const saved = await practiceRpc(sb, 'golf_practice_plan_save', { p_event_id: input.planId ? null : input.eventId, p_plan_id: input.planId, p_expected_version: input.version, p_title: input.title, p_step: input.step ?? 'review', p_body: toSaveBody(body) });
   if (saved.error) {
     const m = practiceErrorOf(saved.error.message);
     await logServerError(`savePracticePlanDraft: ${saved.error.message}`, { action: 'coachhelm.plan.save' }, 'warning');

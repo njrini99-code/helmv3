@@ -305,11 +305,24 @@ export function DrillPage({ teamId, drill, preview = false }: { teamId: string; 
   );
 }
 
+/** A saved or edited group in the list as the server orders it (by name), in place of its old row. */
+function withGroup(list: ChPracticeGroup[], group: ChPracticeGroup): ChPracticeGroup[] {
+  return [...list.filter((g) => g.id !== group.id), group].sort((a, b) => a.name.localeCompare(b.name));
+}
+
 /** Saved groups (N-00 4.1): a card opens the sheet. Deleting never changes plans that copied it. */
-export function GroupsPage({ teamId, groups, roster, preview = false }: { teamId: string; groups: ChPracticeGroup[]; roster: ChRosterRow[]; preview?: boolean }) {
+export function GroupsPage({ teamId, groups: fromServer, roster, preview = false }: { teamId: string; groups: ChPracticeGroup[]; roster: ChRosterRow[]; preview?: boolean }) {
   const phone = useChPhone();
   const toast = useToast();
   const { refresh } = useRefresh();
+  // The list shows a save or a delete the moment the action answers, not when the page's next server render lands (coach audit,
+  // 13 Nov 2026: the list still said "No saved groups yet" until a reload). That render, when it comes, replaces it.
+  const [groups, setGroups] = useState(fromServer);
+  const [served, setServed] = useState(fromServer);
+  if (served !== fromServer) {
+    setServed(fromServer);
+    setGroups(fromServer);
+  }
   const [editing, setEditing] = useState<ChPracticeGroup | 'new' | null>(null);
   const [name, setName] = useState('');
   const [picked, setPicked] = useState<string[]>([]);
@@ -330,6 +343,7 @@ export function GroupsPage({ teamId, groups, roster, preview = false }: { teamId
     const r = await savePracticeGroup({ teamId, groupId: editing && editing !== 'new' ? editing.id : null, name, playerIds: picked }).catch(() => ({ success: false as const, error: 'Couldn’t save the group.' }));
     setBusy(false);
     if (!r.success) return setProblem(r.error ?? 'Couldn’t save the group.');
+    setGroups((list) => withGroup(list, { id: r.id, name: name.trim(), playerIds: picked, usedIn: editing && editing !== 'new' ? editing.usedIn : null }));
     setEditing(null);
     refresh();
   };
@@ -340,6 +354,8 @@ export function GroupsPage({ teamId, groups, roster, preview = false }: { teamId
     setBusy(false);
     setDeleting(false);
     if (!r.success) return toast({ tone: 'error', title: r.error ?? 'Couldn’t delete the group.' });
+    const gone = editing.id;
+    setGroups((list) => list.filter((g) => g.id !== gone));
     setEditing(null);
     refresh();
   };
