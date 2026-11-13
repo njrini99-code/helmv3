@@ -15,3 +15,11 @@ Held items:     none
   gained, never less than 3 (`sgBarScale`, `sgBarWidth`). Capped at ±3, every
   Guilford bar was full, as every player is past −3. The scale is the whole
   team's, so a search or filter never rescales the bars.
+
+## The side panel follows the coach's pick
+
+- A click on a card's body shows that player in the side panel; the face and
+  the name still open the profile, and so does Command-Enter on a focused card
+  (Enter picks it). The whole card had opened the profile, so the panel never
+  left the first player. A second click keeps the player (it no longer toggles
+  back to the first). The picked card carries the selected look.

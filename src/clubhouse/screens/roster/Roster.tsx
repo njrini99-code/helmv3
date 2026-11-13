@@ -784,12 +784,27 @@ function RosterList({
               <button
                 key={p.id}
                 type="button"
-                className={'ch-rs-face' + (sel === p.id ? ' is-sel' : '') + (p.status === 'inactive' ? ' is-off' : '')}
-                aria-label={`${faceLabel(p, standings.byId.get(p.id))}${classNoteFor(p, classLines.get(p.id)) ? `, ${classNoteFor(p, classLines.get(p.id))!.text}` : ''}. Open profile`}
-                onClick={() => openProfile(p.id)}
+                className={'ch-rs-face' + ((onSelect ? selected : sel) === p.id ? ' is-sel' : '') + (p.status === 'inactive' ? ' is-off' : '')}
+                aria-label={`${faceLabel(p, standings.byId.get(p.id))}${classNoteFor(p, classLines.get(p.id)) ? `, ${classNoteFor(p, classLines.get(p.id))!.text}` : ''}. ${onSelect ? 'Show in the panel; Command-Enter opens the profile' : 'Open profile'}`}
+                // The card's body shows the player in the panel; the face and the name open their profile (coach audit
+                // 13 Nov 2026, §8 #1: the whole card went to the profile, so the panel never left the first player).
+                onClick={(e) => {
+                  const toProfile = (e.target as Element | null)?.closest?.('.ch-rs-face__av, .ch-rs-face__name');
+                  if (toProfile || !onSelect) openProfile(p.id);
+                  else onSelect(p.id);
+                }}
                 {...press(profileHref(p.id))}
                 {...bind(p)}
                 {...hold}
+                // After the context menu's own keys (Shift-F10, the menu key): Command-Enter opens the profile.
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                    e.preventDefault();
+                    openProfile(p.id);
+                    return;
+                  }
+                  bind(p).onKeyDown(e);
+                }}
               >
                 <span className="ch-rs-face__top">
                   <span />
