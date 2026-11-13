@@ -47,3 +47,30 @@ Held items:     C5 (widen the candidates to a lineup player's practice rounds) w
   the count didn't load); every event's desk offers "Link rounds (n)" with the
   rounds matched to that event (`ChTourDeskData.links`, from `linkTeaser`'s new
   `matched`).
+
+## 2026-11-13 — Small truths on the event pages
+
+```text
+Design package: none (coach audit, 13 Nov 2026, §11 #5, #7, #8)
+PR/commit:      agent/coach-fix-tournaments
+Contract IDs:   none new
+Actions:        none new
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- A finish carries the field size the coach entered (`finish.field`, from
+  `field_size`). Where fewer teams have a score than the field, the ledger
+  says "4 of 4 scored · 12 teams" and the desk the same (`finishOf`,
+  `finishTeams`); the place is never said "of 12" alone, since it was taken
+  among the teams scored. Guilford's ledger read "4 of 4", "1 of 6", "T2 of 5"
+  against fields of 12, 14 and 10.
+- History's eyebrow names the team (`teamName`) with the season, as the other
+  tabs do; it said "Varsity" for every team.
+- The desk's eyebrow leaves out the tees when none are set: "Oct 5 – 7, 2026 ·
+  The Cardinal ·" had a dangling separator.
+- Who counted folds alternates who played none of the rounds shown into one
+  line under the table ("Alternates: Charley, James"); each had a row of "No
+  data".

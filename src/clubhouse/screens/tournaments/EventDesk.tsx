@@ -16,7 +16,7 @@ import { tabListKeys } from '../../lib/tabs';
 import { useRefresh } from '../../lib/use-refresh';
 import { deskRows, roundSets, type DeskRow, type HoleCardRow } from './desk-model';
 import { EvidenceDrawer, type DeskEvidence } from './EvidenceDrawer';
-import { closeLabel, countLabel, countsEachRound, formatToPar, holesLabel, playLabel, tourDayTime, tourRange } from './format';
+import { closeLabel, countLabel, finishTeams, countsEachRound, formatToPar, holesLabel, playLabel, tourDayTime, tourRange } from './format';
 import { HoleGrid } from './HoleGrid';
 import { Review } from './Review';
 import { TourChip, TourCrumb, TourFailed, TourHead, TourLoading, TourMain, TourPhoneTop, ToPar, tourGate, useTourPhone } from './parts';
@@ -132,12 +132,12 @@ function DeskReady({ data, search, phone }: { data: ChTourDeskData; search: ChTo
   const actions = (
     <div className="ch-tour-desk-side">
       {result?.total != null && (
-        <p className="ch-tour-desk-res" aria-label={`${e.short}: ${result.total}, ${formatToPar(result.toPar)}${e.finish ? `, ${e.finish.place} of ${e.finish.of} teams` : ''}`}>
+        <p className="ch-tour-desk-res" aria-label={`${e.short}: ${result.total}, ${formatToPar(result.toPar)}${e.finish ? `, ${e.finish.place} ${finishTeams(e.finish)}` : ''}`}>
           <b className="ch-num">{result.total}</b>
           <ToPar value={result.toPar} />
           {e.finish && (
             <em>
-              {e.finish.place} of {e.finish.of} teams
+              {e.finish.place} {finishTeams(e.finish)}
             </em>
           )}
         </p>
@@ -205,7 +205,7 @@ function DeskReady({ data, search, phone }: { data: ChTourDeskData; search: ChTo
         phone={phone}
         // The phone bar carries Back (TourPhoneTop); a second crumb under it said the same thing twice.
         crumb={phone ? undefined : <TourCrumb href={paths.home()} />}
-        eyebrow={`${tourRange(e.startDate, e.endDate)}${phone ? '' : `, ${e.startDate.slice(0, 4)}`}${course ? ` · ${course.name}` : ''}${course && !phone ? ` · ${course.tees}` : ''}`}
+        eyebrow={`${tourRange(e.startDate, e.endDate)}${phone ? '' : `, ${e.startDate.slice(0, 4)}`}${course ? ` · ${course.name}` : ''}${course?.tees && !phone ? ` · ${course.tees}` : ''}`}
         title={e.name}
         meta={meta}
         actions={actions}

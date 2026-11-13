@@ -652,6 +652,7 @@ export async function loadTournamentHistory(ctx: TourCtx): Promise<TourLoad<ChTo
       kind: 'ready',
       data: {
         now: ctx.now,
+        teamName: info.team.name,
         seasons: seasonsFor(read.events.map((e) => e.startDate), info.today, info.gender, profiles),
         players,
         courses: read.courses,

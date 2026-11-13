@@ -130,3 +130,16 @@ export function showChip(e: { show: 'upcoming' | 'today' | 'live' | 'needs_closi
 export function playerShowChip(e: { show: 'upcoming' | 'today' | 'live' | 'needs_closing' | 'final'; startDate: string }, today: string): string {
   return e.show === 'needs_closing' ? 'Scores pending' : showChip(e, today);
 }
+
+/**
+ * A finish's "of": the teams with a score, and the field too when it is larger (coach audit, 13 Nov 2026: "4 of 4" against a
+ * field of 12). The place is among the teams scored, so it is never said "of 12" alone.
+ */
+export function finishOf(f: { of: number; field?: number | null }): string {
+  return f.field != null && f.field > f.of ? `of ${f.of} scored · ${f.field} teams` : `of ${f.of}`;
+}
+
+/** The desk's "of 14 teams", or the scored and the field when they differ ("of 4 scored · 12 teams"). */
+export function finishTeams(f: { of: number; field?: number | null }): string {
+  return f.field != null && f.field > f.of ? finishOf(f) : `of ${f.of} teams`;
+}

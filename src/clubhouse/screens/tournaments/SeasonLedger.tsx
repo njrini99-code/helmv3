@@ -6,7 +6,7 @@ import { Icon } from '../../ui/Icon';
 import { EmptyState } from '../../ui/States';
 import { SideScroll } from '../../ui/SideScroll';
 import { NoData } from '../../ui/NoData';
-import { countShort, firstNames, holesLabel, tourDay, tourRange } from './format';
+import { countShort, finishOf, firstNames, holesLabel, tourDay, tourRange } from './format';
 import { Coverage, ToPar } from './parts';
 import { useTourPaths } from './paths';
 import type { ChTourEvent, ChTourPlayer, ChTourSeason } from './types';
@@ -130,7 +130,7 @@ function DeskRow({ event: e, course, players }: { event: ChTourEvent; course: st
         {e.finish ? (
           <>
             <span className="ch-num">{e.finish.place}</span>
-            <em> of {e.finish.of}</em>
+            <em> {finishOf(e.finish)}</em>
           </>
         ) : (
           <NoData />
@@ -170,7 +170,7 @@ function PhoneRow({ event: e, course, past }: { event: ChTourEvent; course: stri
         <span className="ch-tour-led__mv">
           <b className="ch-num">
             {e.finish ? e.finish.place : <NoData />}
-            {e.finish && <small> of {e.finish.of}</small>}
+            {e.finish && <small> {finishOf(e.finish)}</small>}
           </b>
           <em className="ch-num">
             {past || r?.total == null ? '' : `${r.total} · `}

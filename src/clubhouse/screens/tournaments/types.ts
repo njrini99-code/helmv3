@@ -280,7 +280,8 @@ export interface ChTourEvent {
   playerRounds: ChTourPlayerRound[];
   team: { rounds: ChTourTeamRound[]; result: TeamEventResult | null };
   field: ChTourField | null;
-  finish: { place: string; placeN: number; of: number } | null;
+  /** `of` counts the teams with a score; `field` is the field size the coach entered, when set (it can be larger). */
+  finish: { place: string; placeN: number; of: number; field?: number | null } | null;
   /** The W-L-T this event added to the season (2.3), A squad only. */
   record: ChTourRecord | null;
   coverage: { scorecards: number; withShots: number };
@@ -615,6 +616,8 @@ export interface ChTourHistorySearch {
 
 export interface ChTourHistoryData {
   now: string;
+  /** The team's name for the eyebrow, as the other tabs say it (coach audit, 13 Nov 2026: History said "Varsity"). */
+  teamName?: string;
   seasons: ChTourSeason[];
   players: ChTourPlayer[];
   courses: Record<string, ChTourCourse>;

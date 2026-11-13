@@ -365,7 +365,7 @@ function buildEvent(def: EventDef, trust: ChTourTrust = 'official'): ChTourEvent
     playerRounds,
     team: { rounds: teamRounds, result },
     field,
-    finish: def.finish && done ? { place: String(def.finish[0]), placeN: def.finish[0], of: def.finish[1] } : null,
+    finish: def.finish && done ? { place: String(def.finish[0]), placeN: def.finish[0], of: def.finish[1], field: field?.size ?? null } : null,
     record: field ? recordOf(field) : null,
     coverage: { scorecards: team.length, withShots: team.filter((p) => p.shotData).length },
     resultsUrl: done ? `https://results.example.org/${def.id}` : null,

@@ -409,7 +409,7 @@ export function shapeEvent(raw: TourRawEvent, now: string, today: string = now.s
   const us = field?.teams.find((x) => x.us) ?? null;
   // The place is among the teams with an entered score, so it is "of" them: "T2 of 10" with five entered claimed a place
   // among teams nobody had scored.
-  const finish = us && us.placeN != null && us.place ? { place: us.place, placeN: us.placeN, of: field!.entered } : null;
+  const finish = us && us.placeN != null && us.place ? { place: us.place, placeN: us.placeN, of: field!.entered, field: raw.t.field_size ?? null } : null;
   const team = playerRounds.filter((p) => p.role !== 'individual' && p.total != null);
 
   return {
