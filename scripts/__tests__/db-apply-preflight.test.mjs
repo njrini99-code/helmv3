@@ -119,7 +119,10 @@ describe('isHeldInRegister', () => {
       names.filter((name) => !isHeldInRegister(register, name)).map((name) => `${name}: ${status}`),
     );
     expect(leaks).toEqual([]);
-    expect(isHeldInRegister(register, '20261031150000_golf_conversation_pins.sql')).toBe(true);
+    // A qualified HOLD ("**HOLD — held until owner yes; …**") stays blocked. Pins, the earlier sentinel here, was applied to
+    // production on 2026-11-13 (step 0 of the 12 Nov release), so its row is APPLIED and db:apply lets it through.
+    expect(isHeldInRegister(register, '20261112090000_golf_players_coaches_contact_columns.sql')).toBe(true);
+    expect(isHeldInRegister(register, '20261031150000_golf_conversation_pins.sql')).toBe(false);
   });
 
   it('the old regex missed it — this is the regression being locked', () => {
