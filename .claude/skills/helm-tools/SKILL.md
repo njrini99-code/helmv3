@@ -63,7 +63,12 @@ Signing in: no agent types a password, ever.
 `node scripts/clubhouse/audit/session.mjs --role coach|player --base <preview or local URL>`
 mints a staging-only session for a Demo University Golf demo account, writes
 `.auth/staging-<role>.json`, and refuses any other project or account.
-`--help` lists the rest.
+`--help` lists the rest. One file per browser: Supabase rotates refresh
+tokens, so two browsers on one file sign each other out. The audit servers read
+`staging-player.json` (`playwright-webkit`), `staging-coach.json`
+(`playwright-webkit-coach`) and `staging-coach-desktop.json` (`playwright`):
+mint each with `--out` right before that server's first page, and again after a
+`browser_close`.
 
 Start an audit session with only the audit servers:
 `HELM_AUDIT=1 claude --strict-mcp-config --mcp-config .claude/audit.mcp.json`.

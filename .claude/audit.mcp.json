@@ -53,7 +53,7 @@
         "1440x932",
         "--isolated",
         "--storage-state",
-        ".auth/staging-coach.json",
+        ".auth/staging-coach-desktop.json",
         "--output-dir",
         "${HOME}/helm-audit-runs/mcp"
       ]
