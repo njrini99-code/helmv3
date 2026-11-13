@@ -12,6 +12,7 @@ describe('who counts as a demo account', () => {
     expect(isDemoEmail('coach@demo.helmsportslabs.com', '')).toBe(true);
     expect(isDemoEmail('demo@golfhelmdemo.com', '')).toBe(true);
     expect(isDemoEmail('demo.jackson.hale@helmsportslabs.com', '')).toBe(true);
+    expect(isDemoEmail('player.one@example.com', '')).toBe(true);
   });
 
   it('refuses every other address, staff and personal ones included', () => {
@@ -22,8 +23,8 @@ describe('who counts as a demo account', () => {
   });
 
   it('takes an exact address only when it is listed locally', () => {
-    expect(isDemoEmail('tester@example.com', 'tester@example.com, other@example.com')).toBe(true);
-    expect(isDemoEmail('tester@example.com', '')).toBe(false);
+    expect(isDemoEmail('tester@school.edu', 'tester@school.edu, other@school.edu')).toBe(true);
+    expect(isDemoEmail('tester@school.edu', '')).toBe(false);
   });
 });
 

@@ -17,8 +17,8 @@
 // app's), and hands the cookies to the browser. The key lives only in memory and in .auth/.staging-admin.json
 // (owner-only, deleted by --sign-out-all) and is never printed.
 //
-// Who can be signed in: a demo address (on demo.helmsportslabs.com or golfhelmdemo.com, or a helmsportslabs.com address
-// with "demo" in it; exact extra addresses only through HELM_AUDIT_DEMO_EMAILS, comma-separated, set locally) that is
+// Who can be signed in: a demo address (on demo.helmsportslabs.com, golfhelmdemo.com or example.com, or a helmsportslabs.com
+// address with "demo" in it; exact extra addresses only through HELM_AUDIT_DEMO_EMAILS, comma-separated, set locally) that is
 // the coach or an active player of Demo University Golf and of no other team. Every other account is refused.
 //
 // Exit 0 ok. 1 refused or failed (the message says why). 2 no usable staging key: ask Nick to run `npx supabase login`.
@@ -69,7 +69,8 @@ export function isDemoEmail(email, listed = process.env.HELM_AUDIT_DEMO_EMAILS) 
   if (extra.includes(e)) return true;
   const [local, domain] = e.split('@');
   if (!local || !domain) return false;
-  return domain === 'demo.helmsportslabs.com' || domain === 'golfhelmdemo.com' || (domain === 'helmsportslabs.com' && local.includes('demo'));
+  // example.com is reserved for examples and tests (RFC 2606): no real person has an address there.
+  return domain === 'demo.helmsportslabs.com' || domain === 'golfhelmdemo.com' || domain === 'example.com' || (domain === 'helmsportslabs.com' && local.includes('demo'));
 }
 
 const jwtPayload = (k) => {
@@ -96,9 +97,10 @@ function keysFromCli() {
       let list;
       try { list = JSON.parse(r.stdout); } catch { continue; }
       if (!Array.isArray(list)) continue;
-      const pick = (want, ok) => list.find((k) => want(k) && ok(k.api_key))?.api_key;
-      const secret = pick((k) => k.type === 'secret' || k.name === 'service_role', looksSecret);
-      const pub = pick((k) => k.type === 'publishable' || k.name === 'anon', looksPublic);
+      // The new key types first; the legacy JWT pair only if a project has no new keys.
+      const pick = (types, names, ok) => (list.find((k) => types.includes(k.type) && ok(k.api_key)) ?? list.find((k) => names.includes(k.name) && ok(k.api_key)))?.api_key;
+      const secret = pick(['secret'], ['service_role'], looksSecret);
+      const pub = pick(['publishable'], ['anon'], looksPublic);
       if (secret && pub) return { secret, pub, source: 'Supabase CLI' };
     }
   }
@@ -110,8 +112,10 @@ async function provedStaging({ secret, pub }) {
     if (k.includes(PROD_REF)) return false;
     if (isJwt(k)) { const p = jwtPayload(k); if (p?.ref && p.ref !== STAGING_REF) return false; }
   }
-  // A key from any other project is rejected by staging's own Auth, so a 200 here proves the key is staging's.
-  const admin = await fetch(`${STAGING_URL}/auth/v1/admin/users?page=1&per_page=1`, { headers: { apikey: secret, ...(isJwt(secret) ? { authorization: `Bearer ${secret}` } : {}) } }).catch(() => null);
+  // A key from any other project is rejected by staging's own API, so a 200 here proves the key is staging's. The proof
+  // reads one team row rather than listing Auth users: staging's user list answers 500 ("Database error finding users").
+  const auth = isJwt(secret) ? { authorization: `Bearer ${secret}` } : {};
+  const admin = await fetch(`${STAGING_URL}/rest/v1/golf_teams?select=id&id=eq.${DEMO_TEAM_ID}`, { headers: { apikey: secret, ...auth } }).catch(() => null);
   const anon = await fetch(`${STAGING_URL}/auth/v1/settings`, { headers: { apikey: pub } }).catch(() => null);
   return !!admin?.ok && !!anon?.ok;
 }
@@ -150,10 +154,17 @@ export async function demoUsers() {
   if (cachedUsers) return cachedUsers;
   await stagingKeys();
   const admin = adminClient();
-  const { data: list, error } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
-  if (error) refuse(`staging Auth: ${error.message}`);
-  const byId = new Map(list.users.map((u) => [u.id, u]));
   const q = async (p) => { const { data, error: e } = await p; if (e) refuse(`staging read: ${e.message}`); return data || []; };
+  // One Auth lookup per team member. Listing every Auth user is not used: staging's user list answers 500.
+  const accounts = new Map();
+  const account = async (userId) => {
+    if (!userId) return null;
+    if (!accounts.has(userId)) {
+      const { data, error } = await admin.auth.admin.getUserById(userId);
+      accounts.set(userId, error ? null : data?.user ?? null);
+    }
+    return accounts.get(userId);
+  };
 
   const staff = await q(admin.from('golf_team_coach_staff').select('coach_id, team_id'));
   const coachIds = [...new Set(staff.filter((s) => s.team_id === DEMO_TEAM_ID).map((s) => s.coach_id))];
@@ -165,11 +176,11 @@ export async function demoUsers() {
   const out = [];
   const onlyDemoTeam = (rows, key, id) => rows.filter((r) => r[key] === id).every((r) => r.team_id === DEMO_TEAM_ID);
   for (const c of coaches) {
-    const u = byId.get(c.user_id);
+    const u = await account(c.user_id);
     if (u && isDemoEmail(u.email) && onlyDemoTeam(staff, 'coach_id', c.id)) out.push({ role: 'coach', email: u.email, userId: u.id, name: c.full_name || '', rounds: null });
   }
   for (const p of players) {
-    const u = byId.get(p.user_id);
+    const u = await account(p.user_id);
     if (!u || !isDemoEmail(u.email) || !onlyDemoTeam(members, 'player_id', p.id)) continue;
     const { count } = await admin.from('golf_rounds').select('id', { count: 'exact', head: true }).eq('player_id', p.id);
     out.push({ role: 'player', email: u.email, userId: u.id, name: `${p.first_name || ''} ${p.last_name || ''}`.trim(), rounds: count ?? 0 });
