@@ -1725,7 +1725,9 @@ them would bury everything above.
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-07-shell-motion.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-11-old-boards-retired.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-12-ask-home-question-first.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-12-ask-phone-premium-pass.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-12-ask-preview-fixes.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-12-ask-records-as-items.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-12-drill-areas-fade.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-12-miss-compass.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-12-preview-walk-fixes.md` | current | - | - | - | - |
@@ -1769,6 +1771,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P015-auth/changes/2026-11-07-welcome-team-date.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P015-auth/changes/2026-11-11-fix-wave.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P015-auth/changes/2026-11-12-name-fields-boxed.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P015-auth/changes/2026-11-12-sign-in-family-sweep.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P015-auth/changes/2026-11-12-smooth-transitions.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/CONTRACT.md` | current | - | - | - | - |
