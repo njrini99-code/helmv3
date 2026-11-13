@@ -3,7 +3,7 @@
 import { CalendarPlus, ChevronLeft, ChevronRight, Info, MessageSquare, Plus, Sparkles, Target } from 'lucide-react';
 import Link from 'next/link';
 import { memo, useDeferredValue, useEffect, useRef, useState, useTransition, type CSSProperties, type FormEvent, type ReactNode } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { createFocusArea } from '@/app/golf/actions/development';
 import type { ChPlayerProfile } from '../../data/stats-player';
 import type { ChReadsSource } from './GameDetail';
@@ -33,6 +33,7 @@ import { TERMS } from '../../lib/glossary';
 import { sgBaseline } from '../../lib/sg';
 import { rebuiltHref } from '../../shell/nav';
 import { usePageCrumbs } from '../../shell/crumbs';
+import { statsBackLink } from './links';
 import { GAME_SECTION_IDS, gameSectionFromHash, LEGS_LIST, LEG_SECTION } from './legs';
 import { SgChangeChip } from './charts';
 import { ROUND_TYPE } from './detail';
@@ -171,6 +172,8 @@ export function StatsPlayer({
   const go = (player: string | null, f: ChFilter) => start(() => pushOnce(href(player, f), { scroll: false }));
   // Changing the window or the filter while offline requests nothing (CH-5901); one that is slow says so once (CH-5902).
   const here = href(data.id, data.filter);
+  // Opened from Roster, the way back is Roster (§8 #7); otherwise Team stats.
+  const back = statsBackLink(useSearchParams()?.get('from') ?? null);
   const [loading, setLoading] = useState<ChFilter | null>(null);
   useEffect(() => setLoading(null), [here]);
   // A choice back to what is already on screen (a quick Season, Qualifiers, Season) has nothing left to wait for: its slow notice ends with the tap.
@@ -269,8 +272,8 @@ export function StatsPlayer({
           <header className="ch-shs-dhead" data-canopy-head="tight">
             {coach && (
               <div className="ch-st-back">
-                <Button size="sm" variant="ghost" leftIcon={ChevronLeft} href={href(null, data.filter)}>
-                  Team stats
+                <Button size="sm" variant="ghost" leftIcon={ChevronLeft} href={back?.href ?? href(null, data.filter)}>
+                  {back?.label ?? 'Team stats'}
                 </Button>
                 {data.nav && (
                   <div className="ch-st-back__nav">
@@ -339,8 +342,8 @@ export function StatsPlayer({
         <PrintHead subject={`${data.name} · Player stats`} />
         {coach && (
           <div className="ch-st-back">
-            <Button size="sm" variant="ghost" leftIcon={ChevronLeft} href={href(null, data.filter)}>
-              Team stats
+            <Button size="sm" variant="ghost" leftIcon={ChevronLeft} href={back?.href ?? href(null, data.filter)}>
+              {back?.label ?? 'Team stats'}
             </Button>
             {data.nav && (
               <div className="ch-st-back__nav">

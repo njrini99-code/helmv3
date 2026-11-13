@@ -48,3 +48,13 @@ Held items:     none
 - Existing tests changed on purpose: `logic.test.ts` (quiet regardless of the
   team; "worse"), `roster.test.tsx` (no `teamPosting`; "worse"), and the preview
   fixture's note.
+
+## Drill-down keeps Roster's place
+
+- A player opened from Roster (a card's face or name, the panel's "Open full
+  profile") carries `from=roster`. The sidebar keeps Roster lit
+  (`activeNavItemFrom`, from the address's query), and the profile's back link
+  reads "Roster" and goes there (`statsBackLink`), where it said "Team stats"
+  and Stats lit up.
+- Not changed: the profile's previous and next player links, and the round
+  review a profile opens, drop the `from` (Stats and Rounds light as before).

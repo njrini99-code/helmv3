@@ -709,7 +709,8 @@ export function Roster({ data }: { data: ChRoster; }) {
 const ROW_KEYS: readonly ChPageKey[] = [{ label: 'Move between players', keys: ['Up', 'Down'] }];
 
 /** A player's profile, where Stats is rebuilt for the coach; otherwise null (the peek opens instead). */
-const profileHref = (id: string) => rebuiltHref(`/golf/dashboard/stats?player=${id}`);
+// `from=roster`: the profile keeps Roster lit in the sidebar and as its way back (coach audit 13 Nov 2026, §8 #7).
+const profileHref = (id: string) => rebuiltHref(`/golf/dashboard/stats?player=${id}&from=roster`);
 
 /**
  * The roster itself, as cards or a table. Its own component so the

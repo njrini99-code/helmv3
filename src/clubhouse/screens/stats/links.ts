@@ -18,3 +18,12 @@ export function legDetailHref(id: string, filter: ChFilter, leg: ChLeg): string 
 export function gridPeek(g: { id: string; name: string; rounds: number; avg: number | null; last?: ChPlayerPeek['lastRound'] }): ChPlayerPeek {
   return { id: g.id, name: g.name, sub: `${plural(g.rounds, 'round')} in this window`, lastRound: g.last ?? null, avg: g.avg };
 }
+
+/**
+ * Where a player's page goes back to when it was opened from another section (`from`): "Roster" for a player opened from the
+ * roster (coach audit 13 Nov 2026, §8 #7: the link said "Team stats"). Null: the page's own, Team stats.
+ */
+export function statsBackLink(from: string | null): { label: string; href: string } | null {
+  return from === 'roster' ? { label: 'Roster', href: '/golf/dashboard/roster' } : null;
+}
+

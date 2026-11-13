@@ -72,6 +72,8 @@ describe('a roster card', () => {
     fireEvent.click(second.querySelector('.ch-rs-face__name')!);
     expect(push).toHaveBeenCalledTimes(1);
     expect(String(push.mock.calls[0]![0])).toMatch(/\/golf\/dashboard\/stats\?player=/);
+    // Opened from Roster, the profile keeps Roster in the sidebar and as its way back (§8 #7).
+    expect(String(push.mock.calls[0]![0])).toMatch(/[?&]from=roster(&|$)/);
     fireEvent.click(second.querySelector('.ch-rs-face__av')!);
     expect(push).toHaveBeenCalledTimes(2);
   });
