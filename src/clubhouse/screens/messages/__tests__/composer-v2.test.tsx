@@ -178,6 +178,23 @@ describe('Enter', () => {
     await waitFor(() => expect(api.send).toHaveBeenCalledWith('hello'));
   });
 
+  it('an input method committing a word does not send, Safari order included (composition ends before the Enter)', async () => {
+    vi.useFakeTimers();
+    try {
+      const api = fakeApi();
+      show(api);
+      fireEvent.change(field(), { target: { value: 'こんにちは' } });
+      fireEvent.keyDown(field(), { key: 'Enter', keyCode: 229 });
+      fireEvent.compositionStart(field());
+      fireEvent.compositionEnd(field());
+      fireEvent.keyDown(field(), { key: 'Enter', keyCode: 13 });
+      expect(api.send).not.toHaveBeenCalled();
+      vi.runAllTimers();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('Shift+Enter does not send', () => {
     const api = fakeApi();
     show(api);

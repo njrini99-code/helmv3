@@ -16,6 +16,7 @@ import {
 import { ASK_STATS, matchStats } from '../../../data/coachhelm-mentions';
 import { matchSlash, slashQuery, type ChAskSlash } from '../../../data/coachhelm-slash';
 import { haptic } from '../../../lib/haptics';
+import { useImeGuard } from '../../../lib/ime-guard';
 import { isOffline } from '../../../lib/use-action';
 import { Avatar } from '../../../ui/Avatar';
 import { Icon } from '../../../ui/Icon';
@@ -190,6 +191,7 @@ export function AskComposer({ seed, scopeOf, variant, phone, players, busy, fail
   const [dismissed, setDismissed] = useState(false);
   const [pickIds, setPickIds] = useState<PickerIds>({});
   const box = useRef<HTMLTextAreaElement>(null);
+  const ime = useImeGuard();
   // S-ASK.toolcard.ask-about: a chart mark fills the field; it never sends.
   useEffect(() => {
     const fill = (e: Event) => {
@@ -323,8 +325,9 @@ export function AskComposer({ seed, scopeOf, variant, phone, players, busy, fail
   };
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // 229: a soft keyboard (iOS autocorrect, an IME) still has the key; the event handed to cmdk would lose that mark.
-    if (e.nativeEvent.isComposing || e.keyCode === 229) return;
+    // An input method is mid-word: this Enter commits it, it does not send or pick. 229: a soft keyboard (iOS autocorrect, an
+    // IME) still has the key; the event handed to cmdk would lose that mark. Safari ends composition before the key (ime-guard).
+    if (ime.composing(e)) return;
     if (slashes.length > 0) {
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
         e.preventDefault();
@@ -461,6 +464,7 @@ export function AskComposer({ seed, scopeOf, variant, phone, players, busy, fail
             opened.current = null;
           }}
           onKeyDown={onKeyDown}
+          {...ime.composition}
         />
         <div className="ch-ask-cmp__bar" data-ch-code="CH-13821">
           {plus}

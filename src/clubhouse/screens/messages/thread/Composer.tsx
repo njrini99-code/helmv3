@@ -8,6 +8,7 @@ import { type ChConv, type ChMsg, firstName, MESSAGE_MAX } from '../model';
 import { takeThreadFiles, subscribeThreadFiles } from '../prefill';
 import { useAddAttachments, useAutosize, AttachChips, CharsLeft } from './composer-parts';
 import { useComposerInset } from '../composer-inset';
+import { useImeGuard } from '../../../lib/ime-guard';
 import { CH_MS } from '../../../lib/motion';
 import { msAnimate } from '../motion/messages-motion';
 import { HOUSE_EASE, playArrowLeave, playFieldReturn } from '../motion/messages-beats';
@@ -113,6 +114,7 @@ export function Composer({
   const sendingRef = useRef(false);
   const flights = useRef(0);
   const ta = useRef<HTMLTextAreaElement | null>(null);
+  const ime = useImeGuard();
   const composerReduced = useChReducedMotion();
   // Redesign: Edit fills the field, focused, caret at the end; leaving it empties the field again.
   const editId = editing?.id ?? null;
@@ -320,12 +322,14 @@ export function Composer({
   const [mac, setMac] = useState(false);
   useEffect(() => setMac(/mac|iphone|ipad/i.test(navigator.platform || navigator.userAgent)), []);
   const onKey = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (!phone && notify && isNotifyChord(e) && !e.nativeEvent.isComposing) {
+    // An input method is committing a word: this Enter is not a send (Safari ends composition before it; see ime-guard).
+    if (ime.composing(e)) return;
+    if (!phone && notify && isNotifyChord(e)) {
       e.preventDefault();
       void send(true);
       return;
     }
-    if (!phone && e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+    if (!phone && e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       void send();
     }
@@ -386,6 +390,7 @@ export function Composer({
             );
           }}
           onKeyDown={onKey}
+          {...ime.composition}
           maxLength={MESSAGE_MAX}
           enterKeyHint={phone ? "enter" : "send"}
         />

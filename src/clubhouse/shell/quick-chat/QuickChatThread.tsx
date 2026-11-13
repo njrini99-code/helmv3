@@ -9,6 +9,7 @@ import { describeChatError } from '../../data/coachhelm-chat-error';
 import { ASK_STARTERS } from '../../data/coachhelm-chat-shape';
 import { buildTurns, pendingApproval, type AskProposalView, type EvidenceFocus } from '../../data/coachhelm-chat-thread';
 import { isoDay } from '../../lib/dates';
+import { useImeGuard } from '../../lib/ime-guard';
 import { haptic } from '../../lib/haptics';
 import { CH_EASE, CH_FADE_MS } from '../../lib/motion';
 import type { ChMotionMode } from '../../lib/reduced-motion';
@@ -140,6 +141,7 @@ export function QuickChatThread({ chat: useChatImpl, conversationId, initialMess
   // Moment 8: the page behind as the proof.
   const confirmAt = useRef(0);
   const fieldFocusAt = useRef(0);
+  const ime = useImeGuard();
   const state = useRef({ text, busy: chat.busy });
   state.current = { text, busy: chat.busy };
   const land = useLandingDriver({
@@ -454,7 +456,10 @@ export function QuickChatThread({ chat: useChatImpl, conversationId, initialMess
                 el.style.height = `${Math.min(el.scrollHeight, 4 * parseFloat(getComputedStyle(el).lineHeight || '22'))}px`;
               }}
               enterKeyHint="send"
+              {...ime.composition}
               onKeyDown={(e) => {
+                // An input method is committing a word: this Enter (or Backspace) belongs to it, not to send or the chip.
+                if (ime.composing(e)) return;
                 // A phone's blue send key sends, as Messages' does.
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();
