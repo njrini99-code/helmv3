@@ -36,7 +36,7 @@ import { PhoneScreen } from '../../shell/PhoneScreen';
 import { PhoneTop } from '../../shell/phone-chrome';
 import { useDeepLinkSheet } from '../../shell/use-deep-link-sheet';
 import { classNoteFor, NO_CLASS_LINES, type RosterClassLine, type RosterClassLines } from './class-line';
-import { lastFive, rosterFailedParts, rosterPeek, rowNote, yearKeyOf, yearLineOf, type RosterClock } from './format';
+import { hcpWords, lastFive, rosterFailedParts, rosterPeek, rowNote, yearKeyOf, yearLineOf, type RosterClock } from './format';
 import type { AvailabilityControl, NoteSaved } from './RosterPeek';
 import { RosterLeaders } from './RosterLeaders';
 import { RosterProfileCrh } from './RosterProfileCrh';
@@ -426,7 +426,7 @@ export function RosterRowCrh({
           {kind === 'active' && (p.trend.length >= 3 ? <FormBars data={p.trend} mean={mean} /> : p.trend.length > 0 ? <FormStubs /> : null)}
           <span className="ch-rsm-row__v ch-rsx-row__v" data-sort={bySg ? 'sg' : undefined}>
             <b className={`ch-num ${bySg ? (sg == null ? 'is-none' : changeTone(sg, false)) : p.avg == null ? 'is-none' : ''}`.trim()}>{bySg ? (sg == null ? <NoData /> : formatSigned(sg)) : p.avg == null ? <NoData /> : formatFixed(p.avg)}</b>
-            <span className="ch-num">{bySg ? 'SG / rd' : `${formatHcp(p.handicap)} ${TERMS.handicap.short}`}</span>
+            <span className="ch-num">{bySg ? 'SG / rd' : (hcpWords(p.handicap) ?? '')}</span>
           </span>
           <span className="ch-rsm-row__chev" aria-hidden="true">
             <Icon icon={ChevronRight} size={15} />

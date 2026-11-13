@@ -23,3 +23,14 @@ Held items:     none
   (Enter picks it). The whole card had opened the profile, so the panel never
   left the first player. A second click keeps the player (it no longer toggles
   back to the first). The picked card carries the selected look.
+
+## Unknown handicaps are unknown
+
+- `displayHandicap` reads a `handicap` of 0 with no `handicap_index` as not
+  known. Five Guilford players carry it and showed as the team's best ("0.0").
+  An index of 0 (a verified scratch) and every other handicap stay. Not known
+  is "—" in the table, sorts last, and the phone rows leave the slot empty
+  rather than "— HCP" (`hcpWords`).
+- No writer in the app stores a 0 default (onboarding sends nothing for an
+  empty field; there is no column default). The zeros came with the team's own
+  data, the same on the original team as on the Test Copy.

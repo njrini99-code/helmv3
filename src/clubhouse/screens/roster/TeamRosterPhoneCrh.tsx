@@ -138,8 +138,13 @@ function TeammateRowCrh({ p, clock }: { p: ChTeammate; clock: RosterClock }) {
           </span>
         </span>
         <span className="ch-rsm-row__v ch-rsx-row__v">
-          <b className="ch-num">{formatHcp(p.handicap)}</b>
-          <span>{TERMS.handicap.short}</span>
+          {/* A handicap that isn't known leaves the slot empty, never "— HCP" (coach audit 13 Nov 2026, §8). */}
+          {p.handicap != null && (
+            <>
+              <b className="ch-num">{formatHcp(p.handicap)}</b>
+              <span>{TERMS.handicap.short}</span>
+            </>
+          )}
         </span>
       </span>
     </GroupRow>

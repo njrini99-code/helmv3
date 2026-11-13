@@ -272,7 +272,11 @@ export function fullName(p: { first_name: string | null; last_name: string | nul
  * they typed. Settings' identity line holds the same order on its strings (SettingsPhone).
  */
 export function displayHandicap(p: { handicap_index: number | null; handicap: number | null } | null | undefined): number | null {
-  return p?.handicap_index ?? p?.handicap ?? null;
+  if (p?.handicap_index != null) return p.handicap_index;
+  // A 0 with no index is not a known scratch: five Guilford players carry it with nothing behind it, and showed as the
+  // team's best (coach audit 13 Nov 2026, §8). An index of 0 is kept above.
+  const handicap = p?.handicap ?? null;
+  return handicap === 0 ? null : handicap;
 }
 
 /** "Oct 12" for a round date (a calendar date, not an instant). */
