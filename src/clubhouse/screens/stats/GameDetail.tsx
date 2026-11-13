@@ -1,5 +1,6 @@
 'use client';
 
+import { breakMake } from './break-make';
 import { ArrowRight, CircleDot, Crosshair, Flag, FlagTriangleRight, MoveUpRight, type LucideIcon } from 'lucide-react';
 import Link from 'next/link';
 import { Suspense, use, useEffect, useState, type ReactNode } from 'react';
@@ -506,11 +507,10 @@ export function GameDetail({
   const lag = Object.entries(s.approachPuttAvgLeaveByBand ?? {})
     .filter(([, v]) => v != null)
     .sort(([a], [b]) => parseFloat(a) - parseFloat(b));
-  const brk = (['straight', 'left_to_right', 'right_to_left'] as const).map((k) => ({
-    label: k === 'straight' ? 'Straight' : k === 'left_to_right' ? 'Left to right' : 'Right to left',
-    value: avgMake(s.puttingByBreak[k]),
-    sub: `${s.puttingByBreak[k].count0_3 + s.puttingByBreak[k].count3_5 + s.puttingByBreak[k].count5_10} putts inside 10 ft`,
-  }));
+  const brk = (['straight', 'left_to_right', 'right_to_left'] as const).map((k) => {
+    const m = breakMake(s.puttingByBreak[k]);
+    return { label: k === 'straight' ? 'Straight' : k === 'left_to_right' ? 'Left to right' : 'Right to left', value: m.rate, sub: `${m.putts} putts, 3–10 ft` };
+  });
 
   // Every figure below but the scoring average reads the rounds with their holes scored; a round posted as a total only is a score and nothing else (Q-123).
   const holeCount = x.holeRounds ?? rounds;
@@ -973,23 +973,16 @@ export function GameDetail({
             <EmptyState compact code="CH-5317" title="No long first putts logged." />
           )}
         </Panel>
-        <Panel title="Make rate by break" note={brk.some((r) => r.value != null) ? 'Putts inside 10 feet.' : undefined}>
+        <Panel title="Make rate by break" note={brk.some((r) => r.value != null) ? 'Putts from 3 to 10 feet.' : undefined}>
           {brk.some((r) => r.value != null) ? (
             <Compare unit="%" max={100} rows={brk} />
           ) : (
-            <EmptyState compact code="CH-5317" title="No putts inside 10 feet have a break logged yet." />
+            <EmptyState compact code="CH-5317" title="No putts from 3 to 10 feet have a break logged yet." />
           )}
         </Panel>
       </Sec>
     </div>
   );
-}
-
-function avgMake(b: GolfStats['puttingByBreak']['straight']): number | null {
-  const n = b.count0_3 + b.count3_5 + b.count5_10;
-  if (!n) return null;
-  const made = (b.makePct0_3 ?? 0) * b.count0_3 + (b.makePct3_5 ?? 0) * b.count3_5 + (b.makePct5_10 ?? 0) * b.count5_10;
-  return made / n;
 }
 
 /** CoachHelm's reads didn't load (CH-5215): said in place with Try again, which re-runs the page's read (F-0061). */
