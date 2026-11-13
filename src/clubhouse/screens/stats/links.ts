@@ -26,4 +26,3 @@ export function gridPeek(g: { id: string; name: string; rounds: number; avg: num
 export function statsBackLink(from: string | null): { label: string; href: string } | null {
   return from === 'roster' ? { label: 'Roster', href: '/golf/dashboard/roster' } : null;
 }
-
