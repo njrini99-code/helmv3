@@ -32,6 +32,8 @@ import { useDictation } from './useDictation';
 import { phaseIsNow, useLandingDriver, type TaskPhase } from './use-landing-driver';
 // The turn, the card and the island are styled beside Ask's own rules; the panel can open before Ask has ever been visited.
 import '../../styles/coachhelm-ask-v2.css';
+import { useGolfUserOptional } from '@/contexts/golf-user-context';
+import { rememberQcTeam } from './qc-team';
 
 const ease = `cubic-bezier(${CH_EASE.join(',')})`;
 const Ico = ({ d, size }: { d: string; size?: number }) => (
@@ -104,6 +106,12 @@ export function QuickChatThread({ chat: useChatImpl, conversationId, initialMess
     return () => setSession(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- the hook's result changes when the run does
   }, [chat.messages, chat.busy, chat.conversationId]);
+
+  // The team this thread began on, so it is only ever picked up again for that team (coach audit, 13 Nov 2026).
+  const teamId = useGolfUserOptional()?.teamId ?? null;
+  useEffect(() => {
+    if (chat.conversationId && teamId && !restored) rememberQcTeam(chat.conversationId, teamId);
+  }, [chat.conversationId, teamId, restored]);
 
   // Nothing is sent that the chip does not show: the hook's player context follows the chip.
   const chipPlayer = chip?.playerId ?? null;

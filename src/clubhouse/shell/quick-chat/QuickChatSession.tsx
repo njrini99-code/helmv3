@@ -1,6 +1,7 @@
 'use client';
 
-import { ArrowUpRight, X } from 'lucide-react';
+import { ArrowUpRight, SquarePen, X } from 'lucide-react';
+import { useGolfUserOptional } from '@/contexts/golf-user-context';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useCoachHelmChat } from '@/components/golf/coachhelm/chat/useCoachHelmChat';
@@ -74,12 +75,15 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
   const live = chat === useCoachHelmChat && !seam;
   const [restored, setRestored] = useState<{ id: string; messages: ChatUIMessage[] } | null>(null);
   const [restoring, setRestoring] = useState(live);
+  // Only this team's thread is picked up again (coach audit, 13 Nov 2026); New chat starts over without leaving the panel.
+  const teamId = useGolfUserOptional()?.teamId ?? null;
+  const [fresh, setFresh] = useState(0);
   const sessionAt = useRef(session);
   sessionAt.current = session;
   useEffect(() => {
     if (!live) return;
     let alive = true;
-    void readTodayThread().then((thread) => {
+    void readTodayThread(new Date(), teamId).then((thread) => {
       if (!alive) return;
       // A question asked before the read answered starts its own conversation; the earlier one stays in Ask.
       if (thread && !sessionAt.current?.messages.length && !sessionAt.current?.busy) setRestored(thread);
@@ -88,7 +92,7 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
     return () => {
       alive = false;
     };
-  }, [live]);
+  }, [live, teamId]);
 
   // The panel hangs 6px under the bar on both layouts; the pour's origin is the key's centre.
   const place = useCallback(() => {
@@ -294,6 +298,20 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
           <b className="qc__ttl">CoachHelm</b>
           {/* The activity island's place: one line here while CoachHelm works, opening over the body; empty otherwise. */}
           <span className="qc__isl" ref={setIslandSlot} />
+          {conversationId && (
+            <IconButton
+              icon={SquarePen}
+              label="New chat"
+              size="sm"
+              className="qc__new"
+              onClick={() => {
+                setRestored(null);
+                setFresh((n) => n + 1);
+                setText('');
+                requestAnimationFrame(() => field.current?.focus());
+              }}
+            />
+          )}
           <Button variant="ghost" size="sm" className="qc__full" rightIcon={ArrowUpRight} aria={{ label: conversationId ? 'Open in Ask' : 'Open Ask' }} onClick={toAsk}>
             <span className="qc__full-l">{conversationId ? 'Open in Ask' : 'Open Ask'}</span>
           </Button>
@@ -301,7 +319,7 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
         </header>
         <div className="qc__sheet">
           <QuickChatThread
-            key={restored?.id ?? 'fresh'}
+            key={restored?.id ?? `fresh-${fresh}`}
             chat={chat}
             conversationId={restored?.id ?? null}
             initialMessages={restored?.messages}
