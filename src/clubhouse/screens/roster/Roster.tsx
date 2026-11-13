@@ -45,7 +45,7 @@ import { RosterTeamCard } from './RosterTeamCard';
 import { useDeepLinkSheet } from '../../shell/use-deep-link-sheet';
 import { useHomeDayRollover } from '../home/use-day-rollover';
 import { Tooltip } from '../../ui/Tooltip';
-import { AVAILABILITY_WORD, availabilityLine, lastFive, rosterFailedParts, rosterStandings, teamInSentence, yearKeyOf, type RosterClock, type RosterStanding } from './format';
+import { AVAILABILITY_WORD, availabilityLine, lastFive, rosterFailedParts, rosterStandings, sgBarScale, sgBarWidth, teamInSentence, yearKeyOf, type RosterClock, type RosterStanding } from './format';
 import { StatusConfirm, statusCopy } from './RosterStatus';
 import { classNoteFor, type RosterClassLines } from './class-line';
 import { useRosterClassLines } from './useClassLines';
@@ -249,6 +249,8 @@ export function Roster({ data }: { data: ChRoster; }) {
 
   // Places and the team strip rank the active roster, never the rows a search or filter left (P003 #2).
   const standings = useMemo(() => rosterStandings(players), [players]);
+  // The whole team's, so a search or a filter never rescales the bars under the coach.
+  const sgScale = useMemo(() => sgBarScale(players.map((p) => p.sgPerRound)), [players]);
   // Avg sorts nothing while season stats are missing: the order falls back to Name (P003 #7).
   const sortBy: Sort = data.statsError && sort === 'avg' ? 'name' : sort;
 
@@ -667,6 +669,7 @@ export function Roster({ data }: { data: ChRoster; }) {
                   rows={rows}
                   oneStatus={show !== 'all' && !rows.some((p) => p.status === 'active' && p.availability === 'injured')}
                   standings={standings}
+                  sgScale={sgScale}
                   view={view}
                   sel={sel}
                   q={q}
@@ -716,6 +719,7 @@ function RosterList({
   oneStatus = false,
   rows,
   standings,
+  sgScale,
   view,
   sel,
   q,
@@ -742,6 +746,8 @@ function RosterList({
   selected?: string | null;
   rows: ChRosterPlayer[];
   standings: ReturnType<typeof rosterStandings>;
+  /** The team's strokes-gained bar scale (`sgBarScale`). */
+  sgScale: number;
   view: View;
   sel: string | null;
   q: string;
@@ -808,7 +814,7 @@ function RosterList({
                 <span className="ch-rs-face__form">
                   <FormLine data={p.trend} width={150} height={30} earlyBelow={3} label={`${p.name} form`} />
                 </span>
-                <FaceFigures p={p} avgs={standings.avgs} standing={standings.byId.get(p.id)} />
+                <FaceFigures p={p} avgs={standings.avgs} standing={standings.byId.get(p.id)} sgScale={sgScale} />
                 {/* A trip, then injured or away, then a class, take the note slot in plain ink, in place of a Needs a look
                     reason (CH-3809: a word). A class line never hides an injury (class-line.ts). */}
                 {classNoteFor(p, classLines.get(p.id)) ? (
@@ -1051,12 +1057,15 @@ function FaceFigures({
   p,
   avgs,
   standing,
+  sgScale,
 }: {
   p: { avg: number | null; sgPerRound: number | null; handicap: number | null; rounds: number };
   /** The ranked team's averages (active, past the early floor), for the strip. */
   avgs: number[];
   /** This player's place among them; undefined when they aren't ranked (inactive, early, no average). */
   standing: RosterStanding | undefined;
+  /** The list's largest strokes gained, never under 3 (`sgBarScale`): the bars differ as the players do. */
+  sgScale: number;
 }) {
   const lo = avgs.length ? Math.min(...avgs) : 0;
   const hi = avgs.length ? Math.max(...avgs) : 0;
@@ -1065,7 +1074,7 @@ function FaceFigures({
   // scoring caption no longer repeats it as "Needs N more"; it reads "Avg", as a player with no place does.
   const ord = (n: number) => `${n}${n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] ?? 'th'}`;
   const sg = p.sgPerRound;
-  const sgW = sg == null ? 0 : Math.min(50, (Math.abs(sg) / 3) * 50);
+  const sgW = sgBarWidth(sg, sgScale);
   return (
     <span className="ch-rs-figs">
       <span className="ch-rs-fig">
