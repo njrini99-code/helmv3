@@ -137,7 +137,7 @@ export function Comparison(p: StudioProps<'comparison'>) {
     return (
       <td key={`${pi}-${mi}`} className="ch-num" data-tone={c && c.tone !== 'plain' ? (c.tone === 'good' ? 'gain' : c.tone) : undefined} data-best={best ? '' : undefined}>
         {best && <span className="ch-aks-cmp__dot" aria-hidden="true" />}
-        {c?.display ?? <span className="ch-aks-none">None</span>}
+        {c?.display ?? <NoData />}
         {best && <span className="ch-sr-only"> (best)</span>}
       </td>
     );

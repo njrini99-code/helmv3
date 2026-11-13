@@ -119,3 +119,18 @@ describe('the comparison table draws its header rule across every column (WebKit
     expect(rule).toMatch(/border-spacing: 0;/);
   });
 });
+
+describe('a measure a player has no figure for (screenshot review, 12 Nov)', () => {
+  it('reads as the shared no-data dash, never the word "None" in a column of figures', () => {
+    const team = teamTable([
+      m(COLE, 'avg', 'Scoring average', 74.2, 'score', 'lower_better'),
+      m(DYLAN, 'avg', 'Scoring average', 75.1, 'score', 'lower_better'),
+      m(COLE, 'putts', 'Putts per round', 30.1, 'count', 'lower_better'),
+    ]);
+    const { container } = render(<Studio part={{ kind: 'comparison', data: { label: 'Seasons', team } }} size="full" onAsk={() => undefined} />);
+    const cells = [...container.querySelectorAll('td')].map((td) => td.textContent);
+    expect(cells.some((t) => t?.includes('None'))).toBe(false);
+    expect(container.querySelectorAll('td .ch-nodata')).toHaveLength(1);
+    expect(container.querySelector('td .ch-nodata')?.textContent).toBe('—No data');
+  });
+});
