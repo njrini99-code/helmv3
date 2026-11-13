@@ -1737,6 +1737,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-12-miss-compass.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-12-preview-walk-fixes.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-12-team-spot-scale.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-13-ask-own-failures.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-13-shell-and-ask.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/CONTRACT.md` | current | - | - | yes | - |

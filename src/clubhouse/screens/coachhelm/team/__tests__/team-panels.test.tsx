@@ -101,3 +101,21 @@ describe('Open the full read (W-TEAM-12)', () => {
   });
 
 });
+
+/**
+ * Coach audit 13 Nov 2026 (§3a): the drawer's header said "last 10 rounds" (the player's board count) over a read made from
+ * 37 rounds since 27 Feb. It says the read's own rounds when the read has them.
+ */
+describe('the header names the read’s own rounds', () => {
+  it('"37 rounds since Feb 27", not the player’s board count', () => {
+    show({ ins: read({ evidence: { label: 'Putts made 5-10 ft', window: '237 days', sample: '191 putts', span: '37 rounds since Feb 27' } } as never) });
+    expect(screen.getByText(/37 rounds since Feb 27/)).toBeTruthy();
+    expect(screen.queryByText(/last 8 rounds/)).toBeNull();
+  });
+
+  it('a read without its own count keeps the player’s', () => {
+    show();
+    expect(screen.getByText(/last 8 rounds/)).toBeTruthy();
+  });
+});
+
