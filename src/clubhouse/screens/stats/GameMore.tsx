@@ -172,7 +172,7 @@ export function TeeMore({ s, x, onRetry }: { s: GolfStats; x: ChProfileExtra; on
       </Panel>
       <Panel title="Where tee shots finish" wide note="Shots with no direction logged count as center.">
         <Shots error={x.sprayError} code="CH-5212" what="Where shots finish" onRetry={onRetry}>
-          {x.spray && x.spray.driving.shots > 0 ? <SectorGrid g={x.spray.driving} unit="tee shots" /> : <Empty code="CH-5315">No tee shots with a finish are logged in this window.</Empty>}
+          {x.spray && x.spray.driving.shots > 0 ? <SectorGrid g={x.spray.driving} unit="tee shots" sides /> : <Empty code="CH-5315">No tee shots with a finish are logged in this window.</Empty>}
         </Shots>
       </Panel>
       <Panel title="Fairways by round" wide>

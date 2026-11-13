@@ -290,30 +290,79 @@ const SECTORS: Array<[string, string]> = [
   ['short_right', 'Short right'],
 ];
 
+/** A tee shot records a side or none: each sector's side. Short, long and none read as center (Nick, 12 Nov). */
+const SIDE_OF: Readonly<Record<string, 'left' | 'center' | 'right'>> = {
+  left: 'left',
+  short_left: 'left',
+  long_left: 'left',
+  center: 'center',
+  short: 'center',
+  long: 'center',
+  right: 'right',
+  short_right: 'right',
+  long_right: 'right',
+};
+const SIDES: ReadonlyArray<readonly ['left' | 'center' | 'right', string]> = [
+  ['left', 'Left'],
+  ['center', 'Center'],
+  ['right', 'Right'],
+];
+
+/** Whole-number shares of `counts` that add to exactly 100 (largest remainder); all zero when there is nothing. */
+export function wholeShares(counts: readonly number[]): number[] {
+  const total = counts.reduce((a, b) => a + b, 0);
+  if (total <= 0) return counts.map(() => 0);
+  const raw = counts.map((c) => (c / total) * 100);
+  const out = raw.map(Math.floor);
+  const order = raw.map((r, i) => ({ i, rem: r - Math.floor(r) })).sort((a, b) => b.rem - a.rem || a.i - b.i);
+  let short = 100 - out.reduce((a, b) => a + b, 0);
+  for (let k = 0; short > 0; k++, short--) {
+    const i = order[k % order.length]!.i;
+    out[i] = (out[i] ?? 0) + 1;
+  }
+  return out;
+}
+
+/**
+ * Tee shots on one row: Left, Center, Right. The logger records a tee shot's side only, so the long and short rows
+ * of the grid were always empty. A shot that an older edit logged as short or long counts as center, a diagonal as
+ * its side, so every shot is counted once and the shares add to 100.
+ */
+export function teeSides(g: ChSprayGroup): Array<{ key: 'left' | 'center' | 'right'; label: string; count: number; pct: number }> {
+  const counts = { left: 0, center: 0, right: 0 };
+  for (const b of g.bands) {
+    const side = SIDE_OF[b.sector];
+    if (side) counts[side] += b.count;
+  }
+  const shares = wholeShares(SIDES.map(([k]) => counts[k]));
+  return SIDES.map(([key, label], i) => ({ key, label, count: counts[key], pct: shares[i]! }));
+}
+
 /**
  * Where shots finish, by sector: a grid (the target is the middle), each cell its count and share, then the
  * averages and the outcomes. Counts, not a scatter: production's dots are placed from the sector and the distance,
- * so they show no measured dispersion.
+ * so they show no measured dispersion. `sides` draws tee shots on one row (Left, Center, Right); approaches keep the
+ * grid, since an approach records long and short.
  */
-export function SectorGrid({ g, unit }: { g: ChSprayGroup; unit: string }) {
-  const by = new Map(g.bands.map((b) => [b.sector, b]));
-  const top = [...g.bands].sort((a, b) => b.count - a.count)[0];
-  const summary = SECTORS.map(([k, l]) => `${l} ${by.get(k)?.count ?? 0}`).join(', ');
+export function SectorGrid({ g, unit, sides = false }: { g: ChSprayGroup; unit: string; sides?: boolean }) {
   const n = (v: number | null) => (v == null ? NO_DATA : `${Math.round(v)} yds`);
+  const by = new Map(g.bands.map((b) => [b.sector, b]));
+  const cells = sides
+    ? teeSides(g)
+    : SECTORS.map(([k, l]) => ({ key: k, label: l, count: by.get(k)?.count ?? 0, pct: Math.round(by.get(k)?.pct ?? 0) }));
+  const total = cells.reduce((a, c) => a + c.count, 0);
+  const topKey = total > 0 ? [...cells].sort((a, b) => b.count - a.count)[0]!.key : null;
+  const summary = cells.map((c) => `${c.label} ${c.count}`).join(', ');
   return (
     <>
-      <div className="ch-gx-sec" role="img" aria-label={`${g.shots} ${unit} by sector: ${summary}`}>
-        {SECTORS.map(([k, l]) => {
-          const b = by.get(k);
-          const top1 = !!top && top.count > 0 && b?.sector === top.sector;
-          return (
-            <span key={k} className={'ch-gx-sec__c' + (b && b.count ? '' : ' is-zero') + (top1 ? ' is-top' : '')}>
-              <b className="ch-num">{b?.count ?? 0}</b>
-              <i className="ch-num">{b && g.shots ? `${Math.round(b.pct)}%` : <NoData />}</i>
-              <em>{l}</em>
-            </span>
-          );
-        })}
+      <div className={'ch-gx-sec' + (sides ? ' ch-gx-sec--sides' : '')} role="img" aria-label={`${g.shots} ${unit} by ${sides ? 'side' : 'sector'}: ${summary}`}>
+        {cells.map((c) => (
+          <span key={c.key} className={'ch-gx-sec__c' + (c.count ? '' : ' is-zero') + (c.key === topKey ? ' is-top' : '')}>
+            <b className="ch-num">{c.count}</b>
+            <i className="ch-num">{g.shots ? `${c.pct}%` : <NoData />}</i>
+            <em>{c.label}</em>
+          </span>
+        ))}
       </div>
       <Tiles
         label={`${unit}: distances and outcomes`}
