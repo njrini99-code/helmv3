@@ -203,6 +203,19 @@
       "connected": "no",
       "exposed": "no",
       "allowed": "no"
+    },
+    {
+      "service": "Supabase",
+      "namespace": "mcp__supabase-staging-ro__*",
+      "capability": "read",
+      "observed_at": "2026-11-13",
+      "result": "NOT_EXERCISED",
+      "evidence": "Configured in .mcp.json and .claude/audit.mcp.json (staging ybmwektreyrwjscxlogv, read_only=true). Not loaded in the session that added it: none of its tools were in that session tool inventory, and its first use signs in with OAuth. The first audit session (HELM_AUDIT=1) exercises it; re-record then.",
+      "configuration_fingerprint": "376d3b07815cbfd5",
+      "configured": "yes",
+      "connected": "unknown",
+      "exposed": "no",
+      "allowed": "yes"
     }
   ]
 }

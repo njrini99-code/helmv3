@@ -1,0 +1,80 @@
+{
+  "mcpServers": {
+    "supabase-staging-ro": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp?project_ref=ybmwektreyrwjscxlogv&read_only=true&features=database%2Cdocs%2Cdebugging"
+    },
+    "playwright-webkit": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "--no-install",
+        "playwright",
+        "mcp",
+        "--browser",
+        "webkit",
+        "--device",
+        "iPhone 17 Pro",
+        "--isolated",
+        "--storage-state",
+        ".auth/staging-player.json",
+        "--output-dir",
+        "${HOME}/helm-audit-runs/mcp"
+      ]
+    },
+    "playwright-webkit-coach": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "--no-install",
+        "playwright",
+        "mcp",
+        "--browser",
+        "webkit",
+        "--device",
+        "iPhone 17 Pro",
+        "--isolated",
+        "--storage-state",
+        ".auth/staging-coach.json",
+        "--output-dir",
+        "${HOME}/helm-audit-runs/mcp"
+      ]
+    },
+    "playwright": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "--no-install",
+        "playwright",
+        "mcp",
+        "--browser",
+        "chromium",
+        "--viewport-size",
+        "1440x932",
+        "--isolated",
+        "--storage-state",
+        ".auth/staging-coach.json",
+        "--output-dir",
+        "${HOME}/helm-audit-runs/mcp"
+      ]
+    },
+    "safari-native": {
+      "type": "stdio",
+      "command": "/usr/bin/safaridriver",
+      "args": [
+        "--mcp"
+      ]
+    },
+    "chrome-devtools": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "--no-install",
+        "chrome-devtools-mcp",
+        "--isolated",
+        "--no-usage-statistics",
+        "--no-performance-crux"
+      ]
+    }
+  }
+}
