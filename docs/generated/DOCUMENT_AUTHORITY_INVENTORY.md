@@ -1287,6 +1287,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P003-roster/changes/2026-11-12-leaders-rule.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/changes/2026-11-12-season-card-track.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/changes/2026-11-12-sg-below-zero.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P003-roster/changes/2026-11-13-roster-truths.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P004-stats-team/DESIGN.md` | current | - | - | - | - |
@@ -1577,6 +1578,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P010-hub/changes/2026-11-12-head-figures.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/changes/2026-11-12-next-7-days.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/changes/2026-11-12-waiting-on-late-column.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P010-hub/changes/2026-11-13-active-assignees.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P011-rounds/DESIGN.md` | current | - | - | - | - |

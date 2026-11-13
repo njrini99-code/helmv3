@@ -154,25 +154,26 @@ function quietDaysSince(roundDate: string, now: Date, tz: string) {
 
 /**
  * "Needs a look": deterministic, from data the coach can verify.
- *   quiet     - an active player with no round in QUIET_DAYS+ team-local days (Home's rule and day count) while the team is posting
- *   slipping  - the SE-cleared form status Home's leaderboard uses (`summarizePlayer().status`)
+ *   quiet     - an active player with no round in QUIET_DAYS+ team-local days (Home's rule and day count), whether or not the
+ *               team is posting: Home flags him either way, and the two must agree (coach audit 13 Nov 2026, §8 #6)
+ *   slipping  - the SE-cleared form status Home's leaderboard uses (`summarizePlayer().status`): "Scoring 4.0 worse" (a rise
+ *               in strokes read as worse, never "Scoring up", which read as good news; §8 #5)
  *   hot       - the last four rounds all under their season average
  * A player who is injured or away is not asked about: the coach already knows why (their availability says so).
  */
 export function attentionFor(
   s: ReturnType<typeof summarizePlayer>,
   now: Date,
-  teamPosting: boolean,
   availability: ChAvailability = 'available',
   tz: string = SEASON_DEFAULT_TZ,
 ): ChRosterPlayer['attention'] {
   if (availability !== 'available') return null;
-  if (teamPosting && s.lastRoundDate) {
+  if (s.lastRoundDate) {
     const days = quietDaysSince(s.lastRoundDate, now, tz);
     if (days >= QUIET_DAYS) return { tone: 'warning', text: `No rounds in ${days} days` };
   }
   if (s.status === 'slipping' && s.formChange != null && s.formChange > 0) {
-    return { tone: 'loss', text: `Scoring up ${formatFixed(s.formChange, 1)}` };
+    return { tone: 'loss', text: `Scoring ${formatFixed(s.formChange, 1)} worse` };
   }
   const last4 = s.recent.slice(0, 4).map((r) => r.total_score as number);
   if (s.avg != null && s.rounds >= 8 && last4.length === 4 && last4.every((x) => x < s.avg!)) {
@@ -243,7 +244,6 @@ export async function loadRoster(input: { teamId: string; coachId: string; }): P
   const byPlayer = groupByPlayer(counted);
   // Averages, form and the floors read the cut rounds; Recent rounds and "All N" list every round the player posted (SHARED: Latest rounds lists every round).
   const everyRound = groupByPlayer(season.rounds);
-  const teamPosting = season.rounds.some((r) => quietDaysSince(r.round_date, now, tz) < QUIET_DAYS);
 
   const players: ChRosterPlayer[] = members.map((m) => {
     const p = m.player;
@@ -283,8 +283,8 @@ export async function loadRoster(input: { teamId: string; coachId: string; }): P
       focusAreas: focus.error ? null : (focus.counts.get(p.id) ?? 0),
       goals: goals.error ? null : (goals.counts.get(p.id) ?? 0),
       coachNote: notes.notes.get(p.id) ?? null,
-      attention: status === 'active' && !season.error ? attentionFor(s, now, teamPosting, availability, tz) : null,
-      attentionIfAvailable: status === 'active' && !season.error ? attentionFor(s, now, teamPosting, 'available', tz) : null,
+      attention: status === 'active' && !season.error ? attentionFor(s, now, availability, tz) : null,
+      attentionIfAvailable: status === 'active' && !season.error ? attentionFor(s, now, 'available', tz) : null,
       availability,
       availabilityUpdated: m.availability_updated_at,
       availabilityCoachNote: availNotes.notes.get(p.id) ?? null,

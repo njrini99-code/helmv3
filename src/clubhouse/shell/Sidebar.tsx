@@ -7,7 +7,7 @@ import { useNotificationBadges } from "@/contexts/notification-badge-context";
 import { Avatar } from "../ui/Avatar";
 import { Icon } from "../ui/Icon";
 import type { ChShellData } from "../data/shell";
-import { activeNavItem, CH_NAV_SECTIONS, navFor } from "./nav";
+import { activeNavItemFrom, CH_NAV_SECTIONS, navFor } from "./nav";
 import { NavPlate } from "./NavPlate";
 import { ResumeRoundCard } from "./Dock";
 import { badgeCount } from "./badge-count";
@@ -29,12 +29,15 @@ export function Sidebar({
   userData,
   shell,
   pathname,
+  search = '',
   teamSwitch = null,
   folded = false,
 }: {
   userData: GolfUserData;
   shell: ChShellData;
   pathname: string;
+  /** The address's query: a page opened from a section (`from=roster`) keeps that section lit (`activeNavItemFrom`). */
+  search?: string;
   /** The coach's teams when they can switch among them; the team line is a plain label without it. */
   teamSwitch?: ChTeamSwitch | null;
   /** Folded to the icon rail (RailToggle): the labels give way to a name tip on hover and focus. */
@@ -42,7 +45,7 @@ export function Sidebar({
 }) {
   const badges = useNotificationBadges();
   const nav = navFor(userData.role, shell);
-  const current = activeNavItem(pathname, userData.role, shell)?.id;
+  const current = activeNavItemFrom(pathname, search, userData.role, shell)?.id;
   const sections = CH_NAV_SECTIONS;
 
   const brandWrite = useBrandWrite();

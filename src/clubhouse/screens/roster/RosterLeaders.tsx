@@ -29,16 +29,20 @@ export function RosterLeaders({ players, statsError, clock, onOpen }: { players:
       {picks.map(({ kind, player: p, value }) => {
         const k = KIND[kind];
         const year = yearKeyOf(p.gradYear, clock);
-        const figure = kind === 'look' ? formatSigned(value) : formatFixed(value);
+        // Needs a look shows why (its reason) as the figure, and the strokes gained it was ranked by under it (coach audit
+        // 13 Nov 2026, §8 #4: "−7.1 SG/rd" was not why Will Gruse was there).
+        const reason = kind === 'look' ? p.attention?.text ?? null : null;
+        const figure = reason ?? (kind === 'look' ? formatSigned(value) : formatFixed(value));
+        const unit = reason ? `${formatSigned(value)} ${k.unit}` : k.unit;
         return (
           <button key={kind} type="button" className="ch-rs-ldr" data-year={year ?? undefined} data-ch-press-scale=".97" aria-label={`${k.label}, ${p.name}, ${figure}. Open profile`} onClick={() => onOpen(p.id)}>
             <span className="ch-rs-ldr__k">
               {k.label}
               <Icon icon={k.icon} size={15} />
             </span>
-            <span className={'ch-rs-ldr__v ch-num' + (kind === 'look' ? ' is-loss' : '')}>
+            <span className={'ch-rs-ldr__v ch-num' + (kind === 'look' ? ' is-loss' : '') + (reason ? ' is-words' : '')}>
               {figure}
-              {k.unit && <small>{k.unit}</small>}
+              {unit && <small>{unit}</small>}
             </span>
             <span className="ch-rs-ldr__p">
               <Avatar name={p.name} id={p.id} size="sm" year={year} />

@@ -462,7 +462,7 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
   const owedPosts = new Map<string, string[]>();
   const [attendance, assignments, authors, waiting, pulse] = await Promise.all([
     attendanceFor(supabase, [...events.map((e) => e.id), ...trips.map((t) => t.event_id).filter((id): id is string => !!id), ...tripEvents.map((e) => e.id)]),
-    assignmentsFor(supabase, tasks.map((t) => t.id)),
+    assignmentsFor(supabase, tasks.map((t) => t.id), rosterRes.error ? null : new Set(names.keys())),
     authorNames(supabase, anns),
     // An all-team post's audience is the roster: without it, who is left is unknown.
     rosterRes.error ? null : notAckedFor(supabase, anns.filter((a) => a.requires_acknowledgement).map((a) => a.id), names, owedPosts),
@@ -733,7 +733,11 @@ async function closedReplies(
   return closed;
 }
 
-export async function assignmentsFor(supabase: Awaited<ReturnType<typeof createClient>>, taskIds: string[]) {
+/**
+ * `active`: the team's active players, when known. An inactive member's assignments are left out of the counts (coach audit
+ * 13 Nov 2026, §7 #4: every task read "0/12" with 11 active players). Null or absent counts every assignee.
+ */
+export async function assignmentsFor(supabase: Awaited<ReturnType<typeof createClient>>, taskIds: string[], active?: ReadonlySet<string> | null) {
   const byTask = new Map<string, { done: number; total: number }>();
   /** Each player's tasks not yet completed (Home's Waiting on), from the same rows. */
   const openByPlayer = new Map<string, string[]>();
@@ -747,6 +751,7 @@ export async function assignmentsFor(supabase: Awaited<ReturnType<typeof createC
       return { byTask, openByPlayer, error: true };
     }
     for (const a of data ?? []) {
+      if (active && !(a.player_id && active.has(a.player_id))) continue;
       const cur = byTask.get(a.task_id) ?? { done: 0, total: 0 };
       const finished = a.status === 'completed';
       byTask.set(a.task_id, { done: cur.done + (finished ? 1 : 0), total: cur.total + 1 });

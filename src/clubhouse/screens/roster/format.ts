@@ -1,6 +1,7 @@
 import type { ChAvailability, ChRoster, ChRosterPlayer } from '../../data/roster';
 import { classYearKey, classYearLineFor, type ChYearKey } from '../../lib/class-year';
-import { MINUS } from '../../lib/format';
+import { formatHcp, MINUS } from '../../lib/format';
+import { TERMS } from '../../lib/glossary';
 import type { ChPlayerPeek } from '../../ui/PlayerPeek';
 import { displayPlaces } from '../../lib/rank';
 import { plural } from '../../lib/plural';
@@ -198,3 +199,22 @@ export function leaderPicks(players: ChRosterPlayer[], statsError = false): Rost
 
 /** The last five rounds' range on one scale for the whole list: bars draw the same five they colour (R10). */
 export const lastFive = (trend: readonly number[]): readonly number[] => trend.slice(-5);
+
+/**
+ * The strokes-gained bar's scale: the largest strokes gained on the list, either sign, and never under 3 (coach audit
+ * 13 Nov 2026, §8 #2: capped at ±3, every Guilford bar was full, as every player is past −3).
+ */
+export function sgBarScale(values: ReadonlyArray<number | null | undefined>): number {
+  return Math.max(3, ...values.map((v) => (typeof v === 'number' && Number.isFinite(v) ? Math.abs(v) : 0)));
+}
+
+/** The bar's half-width, 0 to 50 (% of the track, from its middle), for `sg` against `scale`. */
+export function sgBarWidth(sg: number | null, scale: number): number {
+  if (sg == null || !Number.isFinite(sg) || scale <= 0) return 0;
+  return Math.min(50, Math.round((Math.abs(sg) / scale) * 500) / 10);
+}
+
+/** "2.4 HCP", "+1.2 HCP"; null when the handicap isn't known, so a row never reads "— HCP" (coach audit 13 Nov 2026, §8). */
+export function hcpWords(handicap: number | null): string | null {
+  return handicap == null ? null : `${formatHcp(handicap)} ${TERMS.handicap.short}`;
+}
