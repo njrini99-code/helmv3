@@ -45,8 +45,12 @@ import { useStatsDetail, type StatsArrivalState } from './use-stats-detail';
 
 const TITLE: Readonly<Record<StatsTeamDetailId, string>> = { tscore: 'Team scoring', tgame: 'Team game', tplayers: 'Players' };
 
-/** "10 round days": the unit is a day the team played, never a calendar day, and it stays short enough to sit beside the card's title on one line. */
-const windowDays = (data: ChTeamStats) => (data.window === 'last10' && !isFiltered(data.filter) ? `${data.last} round days` : windowShort(data.filter));
+/**
+ * The window the figures read: Last 10 is each player's newest ten rounds (the loader's roundsInFilter, per player), so it says so. It
+ * read "10 round days", which is what the trend draws, not what the figure averages (coach audit 13 Nov: 75.8 beside "Avg of these
+ * days 76.4"). Short enough to sit beside a card's title on one line.
+ */
+const windowDays = (data: ChTeamStats) => (data.window === 'last10' && !isFiltered(data.filter) ? `Each player’s last ${data.last}` : windowShort(data.filter));
 
 
 /** "Sam gains the most; Lee loses the most", and "loses the least" when everyone is below zero (08 criterion 57). */
@@ -459,7 +463,7 @@ function TeamPlayersCard({ data, onOpen }: { data: ChTeamStats; onOpen: () => vo
  * sentence that says what the chips are and what grey means, then coverage and the caller's context.
  */
 export function roundNote(data: Pick<ChTeamStats, 'window' | 'filter' | 'last'>, chips: boolean, coverage: string | null, note?: string | null): string {
-  const before = data.window === 'last10' && !isFiltered(data.filter) ? `the previous ${data.last} round days` : 'the window before';
+  const before = data.window === 'last10' && !isFiltered(data.filter) ? `each player’s previous ${data.last} rounds` : 'the window before';
   return [chips ? `Chips: the change vs ${before}, grey when it is inside its likely error.` : null, coverage ? `${coverage}.` : null, note].filter(Boolean).join(' ');
 }
 
