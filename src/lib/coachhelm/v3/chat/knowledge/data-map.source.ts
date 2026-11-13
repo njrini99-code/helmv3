@@ -174,7 +174,6 @@ export const QUERY_TABLE_NOTES: Record<TeamQueryTable, string> = {
   golf_round_stats_cache: 'one row per round with its counted figures (birdies, three-putts, scrambles). Order by the round, never by updated_at.',
   golf_player_stats_cache: 'one row per player: lifetime figures over every completed round, practice included. Not a window.',
   golf_player_standing: 'one row per player and metric: lifetime value, team average and level average. Not the Stats page\'s team average.',
-  golf_attendance_summary: 'one row per player and period: events, attended, excused, absent.',
   golf_goals: 'one row per goal; baseline, current and target are in the unit of its metric.',
   golf_player_focus_areas: 'one row per focus area.',
   golf_focus_area_practice_sessions: 'one row per practice logged toward a focus area.',

@@ -68,12 +68,6 @@ export const TEAM_QUERY_TABLES = {
     columns: ['metric_id', 'player_value', 'level_avg', 'level_n', 'level_pct', 'team_avg', 'team_n', 'team_pct', 'basis', 'computed_at'],
     order: { column: 'metric_id', ascending: true },
   },
-  golf_attendance_summary: {
-    label: 'attendance',
-    scope: 'player',
-    columns: ['period_start_date', 'period_end_date', 'total_events', 'attended_count', 'excused_count', 'absent_count', 'attendance_percentage'],
-    order: { column: 'period_end_date', ascending: false },
-  },
   golf_goals: {
     label: 'goals',
     scope: 'player',

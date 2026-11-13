@@ -162,15 +162,6 @@ export const DATA_DICTIONARY = {
     basis: c('code', 'How a shot-based metric was measured (approach proximity only): on_green means only shots that found the green, all_shot means every approach.', { values: 'on_green, all_shot', null_when: 'the metric has no basis' }),
     computed_at: c('time', 'When this standing was computed.'),
   },
-  golf_attendance_summary: {
-    period_start_date: c('date', 'First day of the period the counts cover.'),
-    period_end_date: c('date', 'Last day of the period the counts cover.'),
-    total_events: c('count', 'Events in the period that expected the player.'),
-    attended_count: c('count', 'Events attended.'),
-    excused_count: c('count', 'Events missed with an excuse.'),
-    absent_count: c('count', 'Events missed without one.'),
-    attendance_percentage: c('percent', 'Attendance for the period, 0 to 100. How an excused absence counts in it is not shown by the code read.', { null_when: 'no events in the period or not computed' }),
-  },
   golf_goals: {
     id: ID,
     title: c('text', 'The goal, as worded when it was set.'),
