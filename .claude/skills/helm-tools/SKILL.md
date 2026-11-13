@@ -58,12 +58,23 @@ card-in-card, page edge), `contrast.mjs` (painted contrast against the real
 background), `motion.mjs` (animation inventory and transition timing),
 `safari-vitals.js` (INP and LCP from Safari's Event Timing and LCP APIs; INP
 needs a real tap or native click, since a scripted click records no event).
+A second accessibility engine finds what axe misses: install
+`accessibility-checker-engine` (IBM Equal Access, 26 MB, no browser download)
+outside the repo, inject its `ace-window.js` with `page.addScriptTag`, then
+`new ace.Checker().check(document, ['IBM_Accessibility'])` (works in WebKit).
+On the coach home, 13 Nov, it found a duplicate `id` and content outside a
+landmark; axe found a label/name mismatch.
 
 Signing in: no agent types a password, ever.
 `node scripts/clubhouse/audit/session.mjs --role coach|player --base <preview or local URL>`
 mints a staging-only session for a Demo University Golf demo account, writes
 `.auth/staging-<role>.json`, and refuses any other project or account.
-`--help` lists the rest. One file per browser: Supabase rotates refresh
+`--help` lists the rest. Previews sit behind Vercel's login: run
+`node scripts/clubhouse/audit/preview-bypass.mjs --fetch` once (it copies the
+project's existing Protection Bypass for Automation secret into `.auth/`, never
+printed, nothing in Vercel changes; Nick's yes, 13 Nov 2026) and every minted
+session carries Vercel's cookie. `--check --base <url>` shows whether it opens;
+`--forget` at clean-up. One file per browser: Supabase rotates refresh
 tokens, so two browsers on one file sign each other out. The audit servers read
 `staging-player.json` (`playwright-webkit`), `staging-coach.json`
 (`playwright-webkit-coach`) and `staging-coach-desktop.json` (`playwright`):

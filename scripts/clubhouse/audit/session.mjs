@@ -28,6 +28,7 @@ import { chmodSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync }
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { bypassCookies } from './preview-bypass.mjs';
 import { attachStagingGuard, DEMO_TEAM_ID, PROD_REF, STAGING_REF, TEAM_NAME } from './staging-guard.mjs';
 
 export const STAGING_URL = `https://${STAGING_REF}.supabase.co`;
@@ -46,7 +47,8 @@ const HELP = `Hands-off staging sign-in for the Clubhouse audit (demo accounts o
   --sign-out-all                  end every demo session and delete the key file
 
 The base must be a Vercel preview (https://…vercel.app) or local dev (http://localhost or 127.0.0.1). Production is
-refused. The staging key comes from the signed-in Supabase CLI and is never printed.`;
+refused. The staging key comes from the signed-in Supabase CLI and is never printed. A preview behind Vercel's login
+needs .auth/preview-share.json or .auth/preview-bypass.json (preview-bypass.mjs --fetch) first.`;
 
 class Refused extends Error {}
 const refuse = (why) => { throw new Refused(why); };
@@ -258,7 +260,10 @@ export async function mintState({ role, email, base }) {
   const u = checkBase(base);
   await stagingKeys();
   const user = await pickUser({ role, email });
-  const cookies = [...(await shareCookie(u)), ...(await sessionCookies(user, u))];
+  // Past Vercel's wall: a share link for this preview if one is kept, else the project's automation bypass (preview-bypass.mjs).
+  const share = await shareCookie(u);
+  const wall = share.length ? share : (await bypassCookies(u)).cookies;
+  const cookies = [...wall, ...(await sessionCookies(user, u))];
   return { state: { cookies, origins: [] }, user };
 }
 
