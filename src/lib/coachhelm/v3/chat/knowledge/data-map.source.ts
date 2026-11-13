@@ -91,7 +91,7 @@ export const THINGS: readonly MapThing[] = [
     name: 'Schedule, attendance and travel',
     means: 'Calendar events, each player\'s reply and check-in, attendance totals, who is in class during an event, school terms, and trips with transport and hotel.',
     readers: ['get_schedule'],
-    backing: ['golf_events', 'golf_event_attendance', 'golf_attendance_summary', 'golf_team_terms', 'golf_travel_itineraries'],
+    backing: ['golf_events', 'golf_event_attendance', 'golf_team_terms', 'golf_travel_itineraries'],
     player: { name: 'Schedule', means: 'Your team\'s coming events and your own reply to each.', readers: ['get_schedule'] },
   },
   {

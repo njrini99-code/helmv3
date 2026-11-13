@@ -200,8 +200,14 @@ const standard = (metric: string, v: Record<string, number>) => ({ tour: 'pga', 
 
 const TABLES: Tables = {
   golf_events: { rows: [{ id: EVENT, team_id: 'team-1', title: 'Tuesday range', event_type: 'practice', start_time: soon(1), end_time: soon(1.1), location: 'Range', status: 'scheduled', requires_rsvp: true, rsvp_deadline: soon(0.5) }] },
-  golf_event_attendance: { rows: [{ event_id: EVENT, player_id: ELI, status: 'accepted', checked_in: true }, { event_id: EVENT, player_id: MAYA, status: null, checked_in: false }] },
-  golf_attendance_summary: { rows: [{ player_id: ELI, team_id: 'team-1', period_start_date: '2026-09-01', period_end_date: '2026-10-01', total_events: 20, attended_count: 18, excused_count: 1, absent_count: 1, attendance_percentage: 90 }] },
+  golf_event_attendance: {
+    rows: [
+      { event_id: EVENT, player_id: ELI, status: 'accepted', checked_in: true },
+      { event_id: EVENT, player_id: MAYA, status: null, checked_in: false },
+      // This season's attendance (get_schedule's `attendance`): a mark on an event a minute ago, read through the event.
+      { id: 'att-1', event_id: 'past-1', player_id: ELI, status: 'accepted', attendance_status: 'present', checked_in: true, checked_in_at: soon(0), golf_events: { id: 'past-1', team_id: 'team-1', start_time: new Date(Date.now() - 60_000).toISOString(), event_type: 'practice', status: 'scheduled' } },
+    ],
+  },
   golf_goals: { rows: [{ id: GOAL, player_id: ELI, title: 'Gain on the greens', category: 'putting', metric_id: 'sg_putting', state: 'active', origin: 'coach', baseline_value: -0.4, current_value: -0.1, target_value: 0.2, started_at: '2026-09-01T00:00:00Z', ends_at: soon(20), window_days: 90 }] },
   golf_player_focus_areas: { rows: [{ id: FOCUS, player_id: ELI, team_id: 'team-1', title: 'Lag putting', status: 'active', area_type: 'putting', target_metric: 'sg_putting', created_at: '2026-10-01T00:00:00Z' }] },
   golf_focus_area_practice_sessions: { rows: [{ focus_area_id: FOCUS, player_id: ELI, practiced_at: new Date().toISOString(), reps: 30 }] },
@@ -296,7 +302,7 @@ describe('the reads that are read out field by field', () => {
   const textOf = async (who: CoachChatContext | PlayerChatContext, tool: string, input: unknown) => ((await run(who, tool, input)) as ToolResult & { model_text: string }).model_text.split('\n').map((l) => l.trim());
 
   it('a row leads with who it is about and ends with the id a later call needs', async () => {
-    expect(await textOf(coach, 'get_schedule', { include: ['attendance'] })).toContain(`Eli Brandt: period start: ${dayWords('2026-09-01')}; period end: ${dayWords('2026-10-01')}; events: 20; attended: 18; excused: 1; absent: 1; attendance percentage: 90% [player ${ELI}]`);
+    expect(await textOf(coach, 'get_schedule', { include: ['attendance'] })).toContain(`Eli Brandt: events: 1; attended: 1; late: 0; excused: 0; absent: 0; unmarked: 0; attendance percentage: 100% [player ${ELI}]`);
     expect(await textOf(coach, 'get_practice', { what: ['drill_bank'] })).toContain(`Gate drill: category: putting; minutes: 15; kind: block [ref team:${DRILL}]`);
     expect(await textOf(maya, 'get_schedule', {})).toContainEqual(expect.stringMatching(/^Tuesday range: event type: practice; .*my reply: no reply \[event /));
   });
