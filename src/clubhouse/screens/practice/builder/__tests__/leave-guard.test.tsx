@@ -18,7 +18,8 @@ vi.mock('../../../../lib/use-phone', () => ({ useChPhone: () => room.phone, CH_P
 
 import type { ChBuilderData } from '../../../../data/practice-home-shape';
 import { ToastProvider } from '../../../../ui/Toast';
-import { Builder } from '../Builder';
+import { Builder, type BuilderPreview } from '../Builder';
+import { PT_PLAN } from '../../../../preview/fixtures-practice-thread';
 import { addBlock, emptyBody, makeBlock } from '../builder-model';
 
 const ROSTER = [{ id: '11111111-1111-4111-8111-111111111111', name: 'Ava Lind' }, { id: '22222222-2222-4222-8222-222222222222', name: 'Eli Brandt' }];
@@ -46,12 +47,12 @@ const data: ChBuilderData = {
   helperOn: false,
   facts: [],
 };
-const show = () =>
+const show = (preview?: BuilderPreview) =>
   render(
     <LazyMotion features={domAnimation}>
       <div className="ch-root" data-ui="clubhouse">
         <ToastProvider>
-          <Builder data={data} />
+          <Builder data={data} preview={preview} />
         </ToastProvider>
       </div>
     </LazyMotion>,
@@ -92,5 +93,36 @@ describe('a failed save in the builder', () => {
     fireEvent.click(screen.getAllByRole('button', { name: /Practice/ })[0]!);
     await waitFor(() => expect(nav.push).toHaveBeenCalledWith('/golf/dashboard/practice'));
     expect(screen.queryByRole('dialog', { name: 'Leave without saving?' })).toBeNull();
+  });
+});
+
+/** Coach audit 13 Nov, §5 #3b: CoachHelm's suggested blocks vanished when the coach left without keeping them, with no word. */
+describe('un-kept CoachHelm suggestions', () => {
+  beforeEach(() => {
+    autosave.state = { status: 'saved', error: null, unsaved: false };
+  });
+  it('Back asks before leaving them, and stays on Cancel', async () => {
+    show({ ghosts: PT_PLAN });
+    fireEvent.click(screen.getAllByRole('button', { name: /Practice/ })[0]!);
+    const ask = await screen.findByRole('dialog', { name: 'Leave without keeping the suggestions?' });
+    expect(ask.textContent).toMatch(/CoachHelm’s \d+ suggestions aren’t in the plan/);
+    expect(nav.push).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Leave without keeping the suggestions?' })).toBeNull());
+    expect(nav.push).not.toHaveBeenCalled();
+  });
+  it('leaves at once once they are kept', async () => {
+    show({ ghosts: PT_PLAN, kept: true });
+    fireEvent.click(screen.getAllByRole('button', { name: /Practice/ })[0]!);
+    await waitFor(() => expect(nav.push).toHaveBeenCalledWith('/golf/dashboard/practice'));
+  });
+  it('one question names both when edits also did not save', async () => {
+    autosave.state = { status: 'failed', error: { code: 'CH-13080', message: 'The connection dropped.' }, unsaved: true };
+    show({ ghosts: PT_PLAN });
+    fireEvent.click(screen.getAllByRole('button', { name: /Practice/ })[0]!);
+    const ask = await screen.findByRole('dialog', { name: 'Leave without saving?' });
+    expect(ask.textContent).toContain('Your latest changes haven’t saved.');
+    expect(ask.textContent).toMatch(/suggestions aren’t in the plan/);
+    expect(screen.getAllByRole('dialog').filter((d) => d.hasAttribute('open'))).toHaveLength(1);
   });
 });

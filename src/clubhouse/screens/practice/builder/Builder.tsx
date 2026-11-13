@@ -86,7 +86,10 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
   const [deleting, setDeleting] = useState(false);
   const [askDelete, setAskDelete] = useState(false);
   // Back with edits no save has landed asks first (coach audit 13 Nov: a failed save's block and groups were lost silently).
+  // What Back would lose, asked once: edits that didn't save, CoachHelm's suggestions not yet kept, or both (coach audit, 13 Nov 2026).
+  // Kept after the sheet closes, so its words don't change while it slides away.
   const [askLeave, setAskLeave] = useState(false);
+  const [lose, setLose] = useState<{ unsaved: boolean; ghosts: number }>({ unsaved: false, ghosts: 0 });
   const [restored, setRestored] = useState(false);
   const [inspector, setInspector] = useState<'block' | 'coachhelm'>(data.helperOn && preview?.sheet !== 'block' ? 'coachhelm' : 'block');
   const [ask, setAsk] = useState('');
@@ -304,8 +307,11 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
   const leave = () => router.push('/golf/dashboard/practice');
   const goBack = async () => {
     await save.flush();
-    if (save.unsaved()) return setAskLeave(true);
-    leave();
+    const unsaved = save.unsaved();
+    const unkept = helper.k === 'ghosts' ? ghosts.length : 0;
+    if (!unsaved && unkept === 0) return leave();
+    setLose({ unsaved, ghosts: unkept });
+    setAskLeave(true);
   };
   const printIt = () => void printPlan(sheetModel);
 
@@ -886,8 +892,23 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
           }
         />
       )}
-      <PracticeSheet open={askLeave} onClose={() => setAskLeave(false)} title="Leave without saving?" actionLabel="Leave" danger onAction={leave} code="CH-13080">
-        <p className="ch-prc-note">Your latest changes haven’t saved. If you leave now, they’re lost.</p>
+      <PracticeSheet
+        open={askLeave}
+        onClose={() => setAskLeave(false)}
+        title={lose.unsaved ? 'Leave without saving?' : 'Leave without keeping the suggestions?'}
+        actionLabel="Leave"
+        danger
+        onAction={leave}
+        code={lose.unsaved ? 'CH-13080' : undefined}
+      >
+        {lose.unsaved && <p className="ch-prc-note">Your latest changes haven’t saved. If you leave now, they’re lost.</p>}
+        {lose.ghosts > 0 && (
+          <p className="ch-prc-note">
+            {lose.ghosts === 1
+              ? 'CoachHelm’s suggestion isn’t in the plan. If you leave now, it’s gone.'
+              : `CoachHelm’s ${plural(lose.ghosts, 'suggestion')} aren’t in the plan. If you leave now, they’re gone.`}
+          </p>
+        )}
       </PracticeSheet>
       <PracticeSheet open={askDelete} onClose={() => setAskDelete(false)} title="Delete this draft?" actionLabel="Delete" danger onAction={() => void doDelete()} busy={deleting} code="CH-13082">
         <p className="ch-prc-note">Players never saw it. This can’t be undone.</p>
