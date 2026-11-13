@@ -3,7 +3,8 @@
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { createClient } from '@/lib/supabase/server';
 import { resolveClubhouseTeam } from '../routes/team';
-import { loadPalettePeople, type ChShellPerson } from './shell';
+import { loadPaletteEvents, loadPalettePeople, type ChShellPerson } from './shell';
+import type { ChPaletteEvent } from '../shell/command/commands';
 import { chLogServer } from '../lib/track-server';
 
 /**
@@ -22,6 +23,24 @@ export async function getPalettePeople(): Promise<ChShellPerson[] | null> {
     return await loadPalettePeople(await createClient(), team.teamId);
   } catch (err) {
     chLogServer('shell', 'palettePeople', err, 'teams');
+    return null;
+  }
+}
+
+/**
+ * The palette's tournaments and qualifiers for the signed-in coach's team (coach audit 13 Nov 2026, §2: "tar" did not find
+ * the Tar Heel Shootout). Names, ids and first days, read when the palette first opens, like the players. Null for anyone
+ * who is not a coach, and on any failure (search then finds sections, players and actions as before).
+ */
+export async function getPaletteEvents(): Promise<ChPaletteEvent[] | null> {
+  try {
+    const session = await getGolfSessionProfile();
+    if (!session) return null;
+    const team = await resolveClubhouseTeam(session);
+    if (team?.role !== 'coach') return null;
+    return await loadPaletteEvents(await createClient(), team.teamId);
+  } catch (err) {
+    chLogServer('shell', 'paletteEvents', err, 'tournaments');
     return null;
   }
 }
