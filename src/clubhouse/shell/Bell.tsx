@@ -8,6 +8,8 @@ import { createPortal } from 'react-dom';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
 import { isSafeInternalPath } from '@/lib/utils/safe-redirect';
 import { getUnifiedNotifications, markAllNotificationsRead, markNotificationRead } from '@/app/golf/actions/unified-notifications';
+import { setActiveTeam } from '@/app/golf/actions/team-switcher';
+import { useGolfUserOptional } from '@/contexts/golf-user-context';
 import {
   DAY_BUCKET_LABEL,
   NOTIFICATION_CATEGORY_IDS,
@@ -34,6 +36,8 @@ import { BellStacks, CH_NOTIFICATION_KIND } from './BellStacks';
 import { BellHeldRow } from './BellHeldRow';
 import { ago, markLocallyRead, notificationKey } from './notification-stacks';
 import { armRelink } from './relink';
+import { bellOpenPlan, otherTeamOf } from './notification-team';
+import { TEAM_SWITCH_REFUSED, teamSwitchFor } from './team-switch';
 import { chReport, chTrail } from '../lib/track';
 import { useAction, type ServerResult } from '../lib/use-action';
 import { ListPresence, PresenceRow } from '../ui/ListPresence';
@@ -407,7 +411,39 @@ export function Bell() {
     else setItems(before);
   };
 
+  const golfUser = useGolfUserOptional();
+  const activeTeamId = golfUser?.teamId ?? null;
+  const switchable = useMemo(() => (golfUser ? (teamSwitchFor(golfUser)?.choices.map((c) => c.id) ?? []) : []), [golfUser]);
+  const activeTeamName = golfUser?.coachTeams?.find((t) => t.id === activeTeamId)?.name ?? golfUser?.teamName ?? 'this team';
+  const switchFailed = (teamName: string, body: string) => {
+    haptic('error');
+    toast({ tone: 'error', title: `Couldn’t switch to ${teamName}`, body, code: 'CH-1003' });
+  };
+
+  /**
+   * Opens another team's item on its own team (coach audit 13 Nov 2026, §2: Guilford's Messages opened on Demo
+   * University's conversation with nothing in it). The switch writes the active-team cookie and revalidates the dashboard,
+   * so the pushed screen renders for that team; the toast says where the coach now is. A refusal says why and opens
+   * nothing (CH-1003, the switcher's own failure).
+   */
+  const openOnTeam = async (url: string, team: { id: string; name: string }) => {
+    const res = await setActiveTeam(team.id).catch(() => null);
+    if (!res?.success) {
+      switchFailed(team.name, (res && TEAM_SWITCH_REFUSED[res.reason]) || `You’re still on ${activeTeamName}. Try again.`);
+      return;
+    }
+    toast({ title: `Switched to ${team.name}` });
+    armRelink(url);
+    router.push(url);
+  };
+
   const openItem = (item: UnifiedNotificationItem) => {
+    const plan = bellOpenPlan(item, activeTeamId, switchable);
+    if (plan.kind === 'refused') {
+      // Left unread and the panel stays: nothing was opened.
+      switchFailed(plan.team.name, TEAM_SWITCH_REFUSED['switching-not-permitted'] ?? 'You can’t switch teams here.');
+      return;
+    }
     haptic('select');
     chTrail('bell open notification', { category: item.category });
     if (isUnread(item)) {
@@ -419,8 +455,11 @@ export function Bell() {
     // Stored links are only followed inside GolfHelm: a notification can never send someone off-site. One to the screen
     // already open, naming another item, mounts that screen again so the item opens (relink.ts).
     if (isSafeInternalPath(item.action_url)) {
-      armRelink(item.action_url);
-      router.push(item.action_url);
+      if (plan.kind === 'switch') void openOnTeam(item.action_url, plan.team);
+      else {
+        armRelink(item.action_url);
+        router.push(item.action_url);
+      }
     }
   };
 
@@ -514,6 +553,7 @@ export function Bell() {
               {g.items.map((item) => {
                 const cat = CATEGORY[item.category] ?? CATEGORY.messages;
                 const unreadRow = isUnread(item);
+                const other = otherTeamOf(item, activeTeamId);
                 return (
                   <PresenceRow as="button" key={`${item.source}:${item.id}`} type="button" className={'ch-bellp__row' + (unreadRow ? ' is-unread' : '')} onClick={() => openItem(item)}>
                     <span className="ch-bellp__ic">
@@ -529,6 +569,7 @@ export function Bell() {
                           {ago(item.created_at)}
                         </time>
                       </span>
+                      {other && <span className="ch-bellp__team">{other.name}</span>}
                       {item.body && <span className="ch-bellp__txt">{item.body}</span>}
                     </span>
                     <span className="ch-bellp__dot" aria-hidden />

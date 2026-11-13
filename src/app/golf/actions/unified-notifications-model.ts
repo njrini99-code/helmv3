@@ -55,7 +55,21 @@ export interface UnifiedNotificationItem {
   action_url: string | null;
   created_at: string;
   read_at: string | null;
+  /**
+   * The team the item is for, when it points at one (a message's conversation, a row whose data names a team); null when
+   * it points at none (a direct message) or the team could not be read. Absent on items built before teams were read.
+   * Clubhouse labels another team's item in the bell and leaves it out of Team Hub (coach audit 13 Nov 2026, §2 and §7).
+   */
+  team?: NotificationTeam | null;
 }
+
+export interface NotificationTeam {
+  id: string;
+  name: string;
+}
+
+/** What a raw row says about its team before anything is read: a team id in its data, or the conversation it links to. */
+export type NotificationTeamRef = { kind: 'team'; id: string } | { kind: 'conversation'; id: string };
 
 /** Subset of `notifications` columns the list/count queries select. */
 export interface RawNotificationRow {
@@ -394,4 +408,31 @@ export function partitionExpiredReceipts(
     if (r.read_at == null) expiredUnread++;
   }
   return { expired, expiredUnread };
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** The conversation a stored link opens (`?conversation=<id>`, the message fan-out's deep link), or null. */
+export function conversationIdOf(actionUrl: string | null): string | null {
+  if (!actionUrl) return null;
+  const query = (actionUrl.split('#')[0] ?? '').split('?')[1];
+  if (!query) return null;
+  const id = new URLSearchParams(query).get('conversation');
+  return id && UUID.test(id) ? id : null;
+}
+
+/**
+ * Where a row's team can be read from. Neither table has a team column: a `notifications` row may name one in its data
+ * (`team_join`), and a message row links to its conversation, whose team is read in one batch.
+ */
+export function notificationTeamRef(row: { action_url: string | null; data?: Json | null }): NotificationTeamRef | null {
+  const teamId = readJsonObject(row.data ?? null).team_id;
+  if (typeof teamId === 'string' && UUID.test(teamId)) return { kind: 'team', id: teamId };
+  const conversation = conversationIdOf(row.action_url);
+  return conversation ? { kind: 'conversation', id: conversation } : null;
+}
+
+/** The items for one team's screens: this team's, and those that name no team (a direct message, an unread team). */
+export function forTeam<T extends Pick<UnifiedNotificationItem, 'team'>>(items: readonly T[], teamId: string): T[] {
+  return items.filter((i) => !i.team || i.team.id === teamId);
 }
