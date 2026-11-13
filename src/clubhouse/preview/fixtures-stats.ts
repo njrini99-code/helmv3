@@ -190,6 +190,7 @@ function jonahStats(): GolfStats {
     drivingDistanceDriverOnly: 266,
     drivingDistanceNonDriverOnly: 238,
     penaltiesPerRound: 0.6,
+    teePenaltiesPerRound: 0.3,
     girOpportunities: 164,
     girPercentage: 47,
     girPct50_75: 77,

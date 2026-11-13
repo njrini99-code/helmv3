@@ -642,7 +642,7 @@ export function GameDetail({
               ? `${s.fairwaysHit} of ${s.fairwayOpportunities} fairways so far: too few rounds to read as a rate yet.`
               : `${first} ${verb('finds', 'find')} ${Math.round(fw)}% of fairways.${
                 left != null && right != null && Math.abs(left - right) >= 1 ? ` When the drive misses it goes ${left > right ? 'left' : 'right'} more often` : ''
-              }${s.penaltiesPerRound ? `, and ${formatFixed(s.penaltiesPerRound)} penalty strokes a round come from the tee` : ''}.`
+              }${s.teePenaltiesPerRound ? `, and ${formatFixed(s.teePenaltiesPerRound)} penalty strokes a round come off the tee on par 4s and 5s` : ''}.`
         }
         figs={[
           floorFig('Fairways hit', 'fraction', fwRounds, fw, s.fairwayOpportunities ? `${s.fairwaysHit} of ${s.fairwayOpportunities} attempts` : null, undefined),

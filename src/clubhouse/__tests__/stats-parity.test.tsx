@@ -512,6 +512,9 @@ describe('Game detail · More detail', () => {
     await openTab(/Game detail/);
     const t = section('tee');
     expect(t.textContent).toContain('74 of 118 attempts');
+    // The lead's penalty clause is the tee's own share (par 4s and 5s), never every penalty of the round.
+    expect(t.textContent).toContain('0.3 penalty strokes a round come off the tee on par 4s and 5s');
+    expect(t.textContent).not.toContain('0.6 penalty strokes a round');
     expect(panel('Distance by club').textContent).toContain('All tee shots');
     expect(panel('Distance by club').textContent).toContain('259');
     expect([...panel('Fairways by tee type').querySelectorAll('.ch-cmp__l')].map((l) => l.firstChild!.textContent)).toEqual(['Par 4', 'Par 5', 'Driver', 'Other clubs']);
