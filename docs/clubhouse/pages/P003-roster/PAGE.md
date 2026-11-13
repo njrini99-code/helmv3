@@ -86,7 +86,7 @@ their own team's access rules, and the loader asks for no more than it shows
 ### Information hierarchy
 
 1. The players: a card or row each, with average, strokes gained, handicap, and a form line.
-2. Why a player needs a look: the Needs a look chips (no round in 9 or more days while the team is posting, scoring up 1.5 or more, or the last four rounds all under the season average). They are worked out from the rounds and can be checked against them.
+2. Why a player needs a look: the Needs a look chips (no round in 7 or more team-local days, as Home flags it, whether or not the team is posting; scoring 1.5 or more worse, read "Scoring 4.0 worse"; or the last four rounds all under the season average). They are worked out from the rounds and can be checked against them. The Needs a look card shows that reason as its figure, with the strokes gained it was ranked by under it.
 3. Who is waiting: the join requests, above the list on desktop and as a banner on the phone.
 4. The open player: figures, form, recent rounds, development counts (desktop), the coach's note.
 
