@@ -1,5 +1,7 @@
 'use client';
 
+import { breakMake } from './break-make';
+import { roundSplit } from '../../lib/shares';
 import { ArrowRight, CircleDot, Crosshair, Flag, FlagTriangleRight, MoveUpRight, type LucideIcon } from 'lucide-react';
 import Link from 'next/link';
 import { Suspense, use, useEffect, useState, type ReactNode } from 'react';
@@ -441,10 +443,12 @@ export function GameDetail({
   const benchPen = bench.penalty_rate_per_round ?? null;
   const yds = (v: number | null | undefined) => (v == null ? NO_DATA : `${Math.round(v)} yds`);
   const driveTotal = s.fairwayOpportunities || 1;
+  // Shown together, so rounded together (with the drives that had no side logged): the three never read 99.
+  const [leftP, fwP, rightP] = roundSplit([s.missLeftCount, s.fairwaysHit, s.missRightCount], driveTotal);
   const driveSplit = [
-    { label: 'Left', share: (s.missLeftCount / driveTotal) * 100, cls: 'ch-shs-fill-flat' },
-    { label: 'Fairway', share: (s.fairwaysHit / driveTotal) * 100, cls: 'ch-shs-fill-gain' },
-    { label: 'Right', share: (s.missRightCount / driveTotal) * 100, cls: 'ch-shs-fill-miss' },
+    { label: 'Left', share: (s.missLeftCount / driveTotal) * 100, p: leftP, cls: 'ch-shs-fill-flat' },
+    { label: 'Fairway', share: (s.fairwaysHit / driveTotal) * 100, p: fwP, cls: 'ch-shs-fill-gain' },
+    { label: 'Right', share: (s.missRightCount / driveTotal) * 100, p: rightP, cls: 'ch-shs-fill-miss' },
   ];
 
   // Approach
@@ -506,11 +510,10 @@ export function GameDetail({
   const lag = Object.entries(s.approachPuttAvgLeaveByBand ?? {})
     .filter(([, v]) => v != null)
     .sort(([a], [b]) => parseFloat(a) - parseFloat(b));
-  const brk = (['straight', 'left_to_right', 'right_to_left'] as const).map((k) => ({
-    label: k === 'straight' ? 'Straight' : k === 'left_to_right' ? 'Left to right' : 'Right to left',
-    value: avgMake(s.puttingByBreak[k]),
-    sub: `${s.puttingByBreak[k].count0_3 + s.puttingByBreak[k].count3_5 + s.puttingByBreak[k].count5_10} putts inside 10 ft`,
-  }));
+  const brk = (['straight', 'left_to_right', 'right_to_left'] as const).map((k) => {
+    const m = breakMake(s.puttingByBreak[k]);
+    return { label: k === 'straight' ? 'Straight' : k === 'left_to_right' ? 'Left to right' : 'Right to left', value: m.rate, sub: `${m.putts} putts, 3–10 ft` };
+  });
 
   // Every figure below but the scoring average reads the rounds with their holes scored; a round posted as a total only is a score and nothing else (Q-123).
   const holeCount = x.holeRounds ?? rounds;
@@ -642,7 +645,7 @@ export function GameDetail({
               ? `${s.fairwaysHit} of ${s.fairwayOpportunities} fairways so far: too few rounds to read as a rate yet.`
               : `${first} ${verb('finds', 'find')} ${Math.round(fw)}% of fairways.${
                 left != null && right != null && Math.abs(left - right) >= 1 ? ` When the drive misses it goes ${left > right ? 'left' : 'right'} more often` : ''
-              }${s.penaltiesPerRound ? `, and ${formatFixed(s.penaltiesPerRound)} penalty strokes a round come from the tee` : ''}.`
+              }${s.teePenaltiesPerRound ? `, and ${formatFixed(s.teePenaltiesPerRound)} penalty strokes a round come off the tee on par 4s and 5s` : ''}.`
         }
         figs={[
           floorFig('Fairways hit', 'fraction', fwRounds, fw, s.fairwayOpportunities ? `${s.fairwaysHit} of ${s.fairwayOpportunities} attempts` : null, undefined),
@@ -680,7 +683,7 @@ export function GameDetail({
                     <div key={d.label}>
                       <i className={d.cls} aria-hidden="true" />
                       {d.label}
-                      <b className="ch-num">{Math.round(d.share)}%</b>
+                      <b className="ch-num">{d.p}%</b>
                     </div>
                   ))}
                 </div>
@@ -973,23 +976,16 @@ export function GameDetail({
             <EmptyState compact code="CH-5317" title="No long first putts logged." />
           )}
         </Panel>
-        <Panel title="Make rate by break" note={brk.some((r) => r.value != null) ? 'Putts inside 10 feet.' : undefined}>
+        <Panel title="Make rate by break" note={brk.some((r) => r.value != null) ? 'Putts from 3 to 10 feet.' : undefined}>
           {brk.some((r) => r.value != null) ? (
             <Compare unit="%" max={100} rows={brk} />
           ) : (
-            <EmptyState compact code="CH-5317" title="No putts inside 10 feet have a break logged yet." />
+            <EmptyState compact code="CH-5317" title="No putts from 3 to 10 feet have a break logged yet." />
           )}
         </Panel>
       </Sec>
     </div>
   );
-}
-
-function avgMake(b: GolfStats['puttingByBreak']['straight']): number | null {
-  const n = b.count0_3 + b.count3_5 + b.count5_10;
-  if (!n) return null;
-  const made = (b.makePct0_3 ?? 0) * b.count0_3 + (b.makePct3_5 ?? 0) * b.count3_5 + (b.makePct5_10 ?? 0) * b.count5_10;
-  return made / n;
 }
 
 /** CoachHelm's reads didn't load (CH-5215): said in place with Try again, which re-runs the page's read (F-0061). */

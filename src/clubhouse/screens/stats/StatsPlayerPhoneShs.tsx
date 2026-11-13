@@ -1,5 +1,6 @@
 'use client';
 
+import { roundSplit } from '../../lib/shares';
 import { Flag, MessageSquare, Plus, Share } from 'lucide-react';
 import { AnimatePresence } from 'motion/react';
 import Link from 'next/link';
@@ -719,10 +720,12 @@ function PartCard({ data, part, onOpen }: { data: ChPlayerProfile; part: (typeof
   const rails = partRails(data, part.id);
   const strip = partStrip(data, part.id);
   const opp = s?.fairwayOpportunities ?? 0;
+  // Shown together, so rounded together (with the drives that had no side logged): the three never read 99.
+  const teeP = s && opp > 0 ? roundSplit([s.missLeftCount, s.fairwaysHit, s.missRightCount], opp) : [0, 0, 0];
   const tee = part.id === 'tee' && s && opp > 0 ? [
-    { label: 'Left', share: (s.missLeftCount / opp) * 100, cls: 'ch-shs-fill-flat' },
-    { label: 'Fairway', share: (s.fairwaysHit / opp) * 100, cls: 'ch-shs-fill-gain' },
-    { label: 'Right', share: (s.missRightCount / opp) * 100, cls: 'ch-shs-fill-miss' },
+    { label: 'Left', share: (s.missLeftCount / opp) * 100, p: teeP[0], cls: 'ch-shs-fill-flat' },
+    { label: 'Fairway', share: (s.fairwaysHit / opp) * 100, p: teeP[1], cls: 'ch-shs-fill-gain' },
+    { label: 'Right', share: (s.missRightCount / opp) * 100, p: teeP[2], cls: 'ch-shs-fill-miss' },
   ] : null;
   return (
     <SummaryCard go={part.id} onOpen={onOpen} icon={part.icon} title={part.name} ariaLabel={`${part.name}: ${kf.label} ${kf.value == null ? 'no value' : `${kf.value}${kf.unit}`}. Open details`}>
@@ -749,7 +752,7 @@ function PartCard({ data, part, onOpen }: { data: ChPlayerProfile; part: (typeof
           <div className="ch-shs-mini-key">
             {tee.map((x) => (
               <span key={x.label}>
-                {x.label} <b>{Math.round(x.share)}%</b>
+                {x.label} <b>{x.p}%</b>
               </span>
             ))}
           </div>

@@ -36,7 +36,7 @@ describe('The round’s note (W29)', () => {
   const last10 = { window: 'last10' as const, filter: filterFor('last10'), last: 10 as const };
   it('labels the chips and says what grey means in one sentence', () => {
     expect(roundNote(last10, true, null, '7 active players, countable rounds only.')).toBe(
-      'Chips: the change vs the previous 10 round days, grey when it is inside its likely error. 7 active players, countable rounds only.',
+      'Chips: the change vs each player’s previous 10 rounds, grey when it is inside its likely error. 7 active players, countable rounds only.',
     );
   });
   it('says nothing about chips when there are none', () => {

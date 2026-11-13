@@ -482,6 +482,9 @@ export interface GolfStats {
   // only when the hole row does not carry the field). Per-18-hole rate.
   totalPenalties: number;
   penaltiesPerRound: number | null;
+  /** Penalty shot rows SG-4 charges to the tee (earned by a tee shot on a par 4 or 5), and their per-18-hole rate. */
+  teePenalties: number;
+  teePenaltiesPerRound: number | null;
 
   // Strokes Gained (vs PGA Tour averages)
   strokesGainedTotal: number | null;
@@ -1851,6 +1854,8 @@ function aggregateRoundStats(rounds: Array<{
     atgProximityByLie: { fairway: null, rough: null, sand: null },
     totalPenalties: 0,
     penaltiesPerRound: null,
+    teePenalties: 0,
+    teePenaltiesPerRound: null,
     strokesGainedTotal: null,
     strokesGainedTee: null,
     strokesGainedApproach: null,
@@ -2705,6 +2710,7 @@ function aggregateRoundStats(rounds: Array<{
         if (isPenaltyShot) {
           const penaltyCategory = getPenaltyCategory(shot, hole.par, hole.shots);
           if (penaltyCategory === 'tee') {
+            stats.teePenalties++;
             sgTee -= 1;
             sgTeeCount++;
           } else if (penaltyCategory === 'around_green') {
@@ -3337,6 +3343,9 @@ function aggregateRoundStats(rounds: Array<{
   // total_penalties / total_holes * 18) and stat-formulas.computePerRound18.
   stats.penaltiesPerRound = stats.holesPlayed > 0
     ? Math.round(((stats.totalPenalties / stats.holesPlayed) * 18) * 100) / 100
+    : null;
+  stats.teePenaltiesPerRound = stats.holesPlayed > 0
+    ? Math.round(((stats.teePenalties / stats.holesPlayed) * 18) * 100) / 100
     : null;
 
   return stats;

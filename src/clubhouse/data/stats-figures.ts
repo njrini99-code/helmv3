@@ -232,6 +232,8 @@ export function triplePlusCount(holes: ChHoleRow[]): number {
 
 export interface ChHole {
   hole: number;
+  /** The course the hole is on: a hole number is a different hole at each course. */
+  course: string;
   par: number;
   avgToPar: number;
   plays: number;
@@ -244,23 +246,41 @@ export interface ChToughest {
   minPlays: number;
 }
 
+/** A course's grouping key and name for a round: its course id, else its name folded (case, spacing, a club suffix). */
+export function courseKeyOf(r: { course_id?: string | null; course_name: string | null }): { key: string; name: string } | null {
+  const name = r.course_name?.trim().replace(/\s+/g, ' ') ?? '';
+  if (r.course_id) return { key: r.course_id, name: name || COURSE_FALLBACK };
+  if (!name) return null;
+  const key = name
+    .toLowerCase()
+    .replace(/\s+(country club|golf club|golf course|cc|gc)$/, '')
+    .trim();
+  return { key: `name:${key}`, name };
+}
+
 /**
- * The five toughest holes by average to par, grouped by hole number as production does (each play keeps its own
- * par: a hole number is a different hole at each course) and ranked with its floor, so one blow-up cannot crown a
- * hole.
+ * The five toughest holes by average to par, each hole on its own course (hole 8 at one course is not hole 8 at
+ * another), ranked with its floor, so one blow-up cannot crown a hole. A round with no course is left out. Fairway's
+ * getWorstHoleAnalysis still groups by hole number across courses; this deliberately does not (coach audit 13 Nov).
  */
-export function toughestHoles(holes: ChHoleRow[], minPlays: number = DEFAULT_MIN_PLAYS): ChToughest {
-  const byNumber = new Map<number, Array<{ score: number; par: number }>>();
+export function toughestHoles(
+  holes: ChHoleRow[],
+  courseOf: (roundId: string) => { key: string; name: string } | null,
+  minPlays: number = DEFAULT_MIN_PLAYS,
+): ChToughest {
+  const byHole = new Map<string, { hole: number; course: string; plays: Array<{ score: number; par: number }> }>();
   for (const h of holes) {
     if (h.hole_number < 1 || h.hole_number > 18) continue;
-    const list = byNumber.get(h.hole_number) ?? [];
-    list.push({ score: h.score, par: h.par });
-    byNumber.set(h.hole_number, list);
+    const course = courseOf(h.round_id);
+    if (!course) continue;
+    const id = `${course.key}#${h.hole_number}`;
+    const entry = byHole.get(id) ?? { hole: h.hole_number, course: course.name, plays: [] };
+    entry.plays.push({ score: h.score, par: h.par });
+    byHole.set(id, entry);
   }
   const analyses: HoleAnalysis[] = [];
-  for (let n = 1; n <= 18; n++) {
-    const plays = byNumber.get(n);
-    if (!plays?.length) continue;
+  const courseOfAnalysis = new Map<HoleAnalysis, string>();
+  for (const { hole, course, plays } of byHole.values()) {
     const parCounts = new Map<number, number>();
     for (const p of plays) parCounts.set(p.par, (parCounts.get(p.par) ?? 0) + 1);
     const par = [...parCounts.entries()].sort((a, b) => b[1] - a[1])[0]![0];
@@ -276,8 +296,8 @@ export function toughestHoles(holes: ChHoleRow[], minPlays: number = DEFAULT_MIN
       else if (d === 1) bogeys++;
       else doublePlus++;
     }
-    analyses.push({
-      holeNumber: n,
+    const analysis: HoleAnalysis = {
+      holeNumber: hole,
       par,
       averageScore: Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 100) / 100,
       averageToPar: Math.round((plays.reduce((a, p) => a + (p.score - p.par), 0) / plays.length) * 100) / 100,
@@ -287,11 +307,13 @@ export function toughestHoles(holes: ChHoleRow[], minPlays: number = DEFAULT_MIN
       bogeys,
       doublePlus,
       trend: 'stable',
-    });
+    };
+    analyses.push(analysis);
+    courseOfAnalysis.set(analysis, course);
   }
   const { worstHoles } = rankHoleAnalyses(analyses, minPlays);
   return {
-    holes: worstHoles.map((h) => ({ hole: h.holeNumber, par: h.par, avgToPar: h.averageToPar, plays: h.timesPlayed, doublePlus: h.doublePlus })),
+    holes: worstHoles.map((h) => ({ hole: h.holeNumber, course: courseOfAnalysis.get(h)!, par: h.par, avgToPar: h.averageToPar, plays: h.timesPlayed, doublePlus: h.doublePlus })),
     belowFloor: analyses.length > 0 && worstHoles.length === 0,
     minPlays,
   };
