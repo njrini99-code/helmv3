@@ -68,7 +68,8 @@ export function QualifiersList({ data, live }: { data: ChQList; live?: Record<st
   const rest = active
     .filter((i) => i !== hero)
     .sort((a, b) => Number(b.status === 'in_progress') - Number(a.status === 'in_progress') || a.startDate.localeCompare(b.startDate));
-  const restUpcoming = rest.length > 0 && rest.every((i) => i.status === 'upcoming');
+  // One past its last day is not upcoming, whatever its status (coach audit, 13 Nov 2026).
+  const restUpcoming = rest.length > 0 && rest.every((i) => i.status === 'upcoming' && !endedOf(i, data.standingsError, data.today));
   const choose = (f: Filter) => {
     if (f !== filter) {
       haptic('select');

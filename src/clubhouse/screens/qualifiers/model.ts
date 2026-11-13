@@ -23,6 +23,7 @@
 
 import { boardOrder, rankStandings } from '@/lib/coachhelm/v3/qualifying/ranking';
 import { plural, pluralWord } from '../../lib/plural';
+import { firstName } from '../../lib/names';
 
 export type ChQStatus = 'upcoming' | 'in_progress' | 'completed';
 export type ChQSelectionState = 'open' | 'scoring' | 'closed' | 'selected';
@@ -470,8 +471,27 @@ export function endedLive(input: {
   numRounds: number;
   submitted: number | null;
 }): { outstanding: number | null } | null {
-  if (input.status !== 'in_progress' || !input.endDate || !input.today || input.today.slice(0, 10) <= input.endDate.slice(0, 10)) return null;
+  if (input.status === 'completed' || !input.endDate || !input.today || input.today.slice(0, 10) <= input.endDate.slice(0, 10)) return null;
+  // One that never started is past its last day too (coach audit, 13 Nov 2026: "Test Qualy", 17–19 Sep, still said Upcoming in
+  // November). Nothing was played, so there is no count of rounds to wait on: it reads "Past last day".
+  if (input.status === 'upcoming') return { outstanding: null };
   return { outstanding: input.submitted == null ? null : Math.max(0, input.entrants * input.numRounds - input.submitted) };
+}
+
+/**
+ * Who is a round short, by name and round ("Samanyu: no R3 posted", "Luke: no R2 or R3 posted"), for the question before a
+ * qualifier past its last day is closed (coach audit, 13 Nov 2026: Laurel Valley waited weeks on one R3 that nothing named).
+ * Only a card with some rounds in and some missing; a player with none posted is not "a round short".
+ */
+export function missingRounds(rows: ReadonlyArray<{ name: string; rounds: ReadonlyArray<{ number: number }> }>, numRounds: number): string[] {
+  return rows.flatMap((row) => {
+    const have = new Set(row.rounds.map((r) => r.number));
+    if (have.size === 0) return [];
+    const gone = Array.from({ length: numRounds }, (_, i) => i + 1).filter((n) => !have.has(n)).map((n) => `R${n}`);
+    if (!gone.length) return [];
+    const list = gone.length === 1 ? gone[0]! : `${gone.slice(0, -1).join(', ')} or ${gone.at(-1)!}`;
+    return [`${firstName(row.name)}: no ${list} posted`];
+  });
 }
 
 /**

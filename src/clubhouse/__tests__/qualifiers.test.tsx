@@ -2902,9 +2902,14 @@ describe('Qualifiers · phone (docs/clubhouse/phone/qualifiers.md)', () => {
     const running = inPhone(<QualifierDetail data={detail('live', 'coach', { today: '2026-09-25' })} writes={fakeWrites()} live={false} />);
     expect(keys()).toEqual(['Manage selections']);
     running.unmount();
-    const upcoming = inPhone(<QualifierDetail data={detail('upcoming', 'coach', { today: '2026-12-31' })} writes={fakeWrites()} live={false} />);
+    // The upcoming sample runs 19–23 Oct.
+    const upcoming = inPhone(<QualifierDetail data={detail('upcoming', 'coach', { today: '2026-10-12' })} writes={fakeWrites()} live={false} />);
     expect(keys()).toEqual(['Manage selections']);
     upcoming.unmount();
+    // One that never started is past its last day too, and closing it is the job (coach audit, 13 Nov 2026: "Test Qualy").
+    const never = inPhone(<QualifierDetail data={detail('upcoming', 'coach', { today: '2026-12-31' })} writes={fakeWrites()} live={false} />);
+    expect(keys()).toEqual(['Manage selections', 'Close qualifier']);
+    never.unmount();
     const closed = inPhone(<QualifierDetail data={detail('completed', 'coach', { today: '2026-12-31' })} writes={fakeWrites()} live={false} />);
     expect(keys()).not.toContain('Close qualifier');
     closed.unmount();
