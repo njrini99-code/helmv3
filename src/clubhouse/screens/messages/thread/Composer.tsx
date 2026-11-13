@@ -129,7 +129,9 @@ export function Composer({
   const chipRise = useChipRise(composerReduced);
   const footer = useRef<HTMLElement | null>(null);
   const typingTimer = useRef<number | null>(null);
-  const ready = (draft.trim() || files.length || resumed) && !locked && !checking && !checkFailed && !unavailable;
+  // A thread with a former member takes no reply: there is no one to send it to (coach audit 13 Nov 2026, §6).
+  const closed = unavailable || conv.former === true;
+  const ready = (draft.trim() || files.length || resumed) && !locked && !checking && !checkFailed && !closed;
   const addFiles = useAddAttachments();
   const [replacing, setReplacing] = useState<string | null>(null);
   const applySeed = (text: string) => {
@@ -316,7 +318,7 @@ export function Composer({
   // below changes: same placeholder, same Send, same hint, and Cmd/Ctrl+Shift+Enter keeps meaning a new line.
   const classText = useClassText(api.classDay?.day ? { teamTimeZone: api.classDay.day.teamTimeZone, classTimeZone: api.classDay.day.classTimeZone } : null);
   const notifyRule = sendNotify(api.classDay, conv, (id) => personOf(api, id), classText);
-  const notify = notifyRule && !files.length && !resumed && !unconfirmed && !checking && !checkFailed && !unavailable ? notifyRule : null;
+  const notify = notifyRule && !files.length && !resumed && !unconfirmed && !checking && !checkFailed && !closed ? notifyRule : null;
   const [mac, setMac] = useState(false);
   useEffect(() => setMac(/mac|iphone|ipad/i.test(navigator.platform || navigator.userAgent)), []);
   const onKey = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -354,7 +356,7 @@ export function Composer({
       {missingFiles.length > 0 && <div role="status" className="ch-ms-to" aria-label="Attachments to choose again">Choose these files again: {missingFiles.map((name, i) => <span key={`${name}-${i}`} className="ch-ms-to__c">{name}<Tooltip><button type="button" aria-label={`Dismiss ${name}`} onClick={() => setMissingFiles((now) => now.filter((_, j) => j !== i))}><Icon icon={X} size={12} /></button></Tooltip></span>)}</div>}
       {conv.group && api.classDay && <GroupClassLine cls={api.classDay} conv={conv} personOf={(id) => personOf(api, id)} />}
       <AttachChips
-        disabled={unconfirmed || checking || checkFailed || unavailable}
+        disabled={unconfirmed || checking || checkFailed || closed}
         files={files}
         onRemove={(i) => setFiles((s) => s.filter((_, j) => j !== i))}
       />
@@ -364,7 +366,7 @@ export function Composer({
         <ComposerPlusV2
             api={api}
             conv={conv}
-            disabled={unconfirmed || checking || checkFailed || unavailable}
+            disabled={unconfirmed || checking || checkFailed || closed}
             onPick={(picked) => { setFiles(addFiles(filesRef.current, picked)); setMissingFiles((names) => names.filter((name) => !picked.some((file) => file.name === name))); }}
           />
         <textarea
@@ -372,10 +374,10 @@ export function Composer({
           rows={1}
           // CH-7802: desktop Enter sends; phone Return adds a line and the Send button sends.
           aria-label={`Message ${label}`}
-          placeholder={unavailable ? "Replies are off until this loads" : (notify?.placeholder ?? `Message ${label}`)}
+          placeholder={conv.former ? "Replies are off" : unavailable ? "Replies are off until this loads" : (notify?.placeholder ?? `Message ${label}`)}
           data-ch-code={notify?.placeholder ? "CH-7270" : undefined}
           value={draft}
-          readOnly={unconfirmed || checking || checkFailed || unavailable}
+          readOnly={unconfirmed || checking || checkFailed || closed}
           onChange={(e) => {
             setDraft(e.target.value);
             api.onTyping(true);
@@ -391,7 +393,9 @@ export function Composer({
         />
         <SendKeyHolder ready={!!ready || unconfirmed}><SendCluster phone={phone} ready={!!ready} unconfirmed={unconfirmed} notify={notify} mac={mac} onSend={(notifyAnyway) => void send(notifyAnyway)} /></SendKeyHolder>
       </div>
-      {unavailable ? (
+      {conv.former ? (
+        <span className="ch-ms-comp__hint">They’re no longer on the team, so this conversation is read-only.</span>
+      ) : unavailable ? (
         <span className="ch-ms-comp__hint">
           This conversation didn’t load, so you can’t send yet. Try again above.
         </span>

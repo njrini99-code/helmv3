@@ -34,6 +34,8 @@ export interface ChConv {
   /** The last message is a poll's plain-text copy (`isPollFallbackText`): the row shows its glyph and question. */
   lastIsPoll?: boolean;
   creatorId: string | null;
+  /** The other person of a direct message has no player or coach profile and is not on the team: "Former member", read-only. */
+  former?: boolean;
   /** Messages redesign: the viewer muted this conversation (the row's glyph). Absent with the flag off or before the read lands. */
   muted?: boolean;
 }
@@ -280,3 +282,15 @@ export { firstName } from '../../lib/names';
 export { type ChConvFilter, railTime, isUnread, filterConvs, pinnedThreads } from './inbox/model';
 export { clock, dayLabel, untilLabel, sectionOf } from './model-time';
 export { type ChThreadItem, threadItems, firstUnreadId } from './thread/model';
+
+/** The name a direct message with a former member reads by (coach audit 13 Nov 2026, §6: it read "Conversation member", "CM"). */
+export const FORMER_MEMBER = 'Former member';
+
+/**
+ * The other person of a direct message is a former member when their account has no player or coach profile (the identities
+ * read gives them the bare `member` type) and the team's directory does not have them. A group is never one.
+ */
+export function isFormerMember({ group, other, known }: { group: boolean; other: { type?: string } | null | undefined; known: boolean }): boolean {
+  return !group && !known && other?.type === 'member';
+}
+
