@@ -24,13 +24,22 @@ export function stateTone(state: string): BadgeTone {
   return 'neutral';
 }
 
+/** A clock time as the last piece of a date: "3 PM", "3:30 PM", "15:00". A year ("2026") is not one. */
+const CLOCK = /^\d{1,2}(?::\d{2}(?:\s?[AaPp]\.?[Mm]\.?)?|\s?[AaPp]\.?[Mm]\.?)$/;
+
+/** "Oct 30, 2026, 3 PM" is the day "Oct 30, 2026" and the time "3 PM"; "Oct 12, 2026" is a day with no time. */
+function dayAndTime(when: string): [string, string | null] {
+  const cut = when.lastIndexOf(', ');
+  return cut > 0 && CLOCK.test(when.slice(cut + 2)) ? [when.slice(0, cut), when.slice(cut + 2)] : [when, null];
+}
+
 /** "Oct 30, 3 PM" to "Oct 30, 5 PM" is "Oct 30, 3 PM – 5 PM": the end drops the day it shares with the start. */
 export function rangeOf(start: string, end: string): string {
   if (start === NONE || !start) return end === NONE ? '' : `Until ${end}`;
   if (end === NONE || !end || end === start) return start;
-  const [sDay, ...sTime] = start.split(', ');
-  const [eDay, ...eTime] = end.split(', ');
-  return sTime.length > 0 && eTime.length > 0 && sDay === eDay ? `${start} – ${eTime.join(', ')}` : `${start} – ${end}`;
+  const [sDay, sTime] = dayAndTime(start);
+  const [eDay, eTime] = dayAndTime(end);
+  return sTime && eTime && sDay === eDay ? `${start} – ${eTime}` : `${start} – ${end}`;
 }
 
 export interface TableItem {
@@ -77,6 +86,8 @@ export function itemsOf(table: AskTable): TableItem[] {
  * its value, which already read as a list. Anything else is a table of records, drawn as items.
  */
 export function staysTable(table: AskTable, numeric: boolean[]): boolean {
+  // No rows: there is no record to draw as an item, and an empty list reads "list, 0 items". It stays the header-only table it was.
+  if (table.rows.length === 0) return true;
   const after = table.columns.length - 1;
   return after <= 1 || numeric.slice(1).filter(Boolean).length * 2 >= after;
 }

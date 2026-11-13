@@ -45,6 +45,13 @@ describe('a table of records reads as items', () => {
     expect(rangeOf('—', 'Nov 3')).toBe('Until Nov 3');
   });
 
+  it('a year is part of the day, never read as the time (review, 12 Nov)', () => {
+    expect(rangeOf('Oct 12, 2026', 'Oct 12, 2027')).toBe('Oct 12, 2026 – Oct 12, 2027');
+    expect(rangeOf('Oct 30, 2026, 3 PM', 'Oct 30, 2026, 5 PM')).toBe('Oct 30, 2026, 3 PM – 5 PM');
+    expect(rangeOf('Oct 30, 2026, 3 PM', 'Oct 31, 2026, 9 AM')).toBe('Oct 30, 2026, 3 PM – Oct 31, 2026, 9 AM');
+    expect(rangeOf('Oct 30, 3:30 PM', 'Oct 30, 5:00 PM')).toBe('Oct 30, 3:30 PM – 5:00 PM');
+  });
+
   it('a state is toned by what it means', () => {
     expect(stateTone('Done')).toBe('positive');
     expect(stateTone('In progress')).toBe('accent');
@@ -75,6 +82,12 @@ describe('a grid of figures, or a label and its value, stays a table', () => {
   it('two columns stay a table: a label and its value already read as a list', () => {
     render(<DataTable table={{ caption: 'Bag', columns: ['Club', 'Note'], rows: [['7-iron', 'New grips']] }} />);
     expect(screen.getByRole('table')).toBeInTheDocument();
+  });
+
+  it('a table with no rows stays a table: an empty list would read "list, 0 items" (review, 12 Nov)', () => {
+    render(<DataTable table={{ ...events, rows: [] }} />);
+    expect(screen.getByRole('table')).toBeInTheDocument();
+    expect(screen.queryByRole('list')).toBeNull();
   });
 
   it('players against their figures is still a table, comparing is the point', () => {
