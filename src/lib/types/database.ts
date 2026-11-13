@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.15"
+    PostgrestVersion: "14.18"
   }
   graphql_public: {
     Tables: {
@@ -367,6 +367,99 @@ export type Database = {
             columns: ["shot_id"]
             isOneToOne: true
             referencedRelation: "golf_shots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ask_credit_requests: {
+        Row: {
+          created_at: string
+          id: string
+          note: string
+          player_id: string
+          release_at: string
+          released_at: string | null
+          sent_at: string | null
+          team_id: string
+          week_start: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          note?: string
+          player_id: string
+          release_at: string
+          released_at?: string | null
+          sent_at?: string | null
+          team_id: string
+          week_start: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          note?: string
+          player_id?: string
+          release_at?: string
+          released_at?: string | null
+          sent_at?: string | null
+          team_id?: string
+          week_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ask_credit_requests_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "golf_players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ask_credit_requests_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "golf_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ask_usage_weekly: {
+        Row: {
+          cap_micros: number | null
+          cost_micros: number
+          player_id: string
+          team_id: string
+          updated_at: string
+          week_start: string
+        }
+        Insert: {
+          cap_micros?: number | null
+          cost_micros?: number
+          player_id: string
+          team_id: string
+          updated_at?: string
+          week_start: string
+        }
+        Update: {
+          cap_micros?: number | null
+          cost_micros?: number
+          player_id?: string
+          team_id?: string
+          updated_at?: string
+          week_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ask_usage_weekly_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "golf_players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ask_usage_weekly_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "golf_teams"
             referencedColumns: ["id"]
           },
         ]
@@ -12023,6 +12116,7 @@ export type Database = {
           proposed_at: string
           proposed_input: Json
           result: Json | null
+          run_at: string | null
           status: string
           team_id: string
           tool_name: string
@@ -12040,6 +12134,7 @@ export type Database = {
           proposed_at?: string
           proposed_input: Json
           result?: Json | null
+          run_at?: string | null
           status?: string
           team_id: string
           tool_name: string
@@ -12057,6 +12152,7 @@ export type Database = {
           proposed_at?: string
           proposed_input?: Json
           result?: Json | null
+          run_at?: string | null
           status?: string
           team_id?: string
           tool_name?: string
@@ -12095,29 +12191,38 @@ export type Database = {
       golf_coachhelm_chat_conversations: {
         Row: {
           archived_at: string | null
-          coach_id: string
+          coach_id: string | null
           created_at: string
           id: string
           pinned: boolean
+          player_id: string | null
+          surface: string | null
           title: string | null
+          tone: string | null
           updated_at: string
         }
         Insert: {
           archived_at?: string | null
-          coach_id: string
+          coach_id?: string | null
           created_at?: string
           id?: string
           pinned?: boolean
+          player_id?: string | null
+          surface?: string | null
           title?: string | null
+          tone?: string | null
           updated_at?: string
         }
         Update: {
           archived_at?: string | null
-          coach_id?: string
+          coach_id?: string | null
           created_at?: string
           id?: string
           pinned?: boolean
+          player_id?: string | null
+          surface?: string | null
           title?: string | null
+          tone?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -12126,6 +12231,13 @@ export type Database = {
             columns: ["coach_id"]
             isOneToOne: false
             referencedRelation: "golf_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_coachhelm_chat_conversations_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "golf_players"
             referencedColumns: ["id"]
           },
         ]
@@ -12138,6 +12250,8 @@ export type Database = {
           cost_usd: number | null
           created_at: string
           id: string
+          model_messages: Json | null
+          pending_decision: Json | null
           role: string
           status: string | null
           tool_calls: Json | null
@@ -12151,6 +12265,8 @@ export type Database = {
           cost_usd?: number | null
           created_at?: string
           id?: string
+          model_messages?: Json | null
+          pending_decision?: Json | null
           role: string
           status?: string | null
           tool_calls?: Json | null
@@ -12164,6 +12280,8 @@ export type Database = {
           cost_usd?: number | null
           created_at?: string
           id?: string
+          model_messages?: Json | null
+          pending_decision?: Json | null
           role?: string
           status?: string | null
           tool_calls?: Json | null
@@ -12176,6 +12294,48 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "golf_coachhelm_chat_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      golf_coachhelm_coach_facts: {
+        Row: {
+          coach_id: string
+          created_at: string
+          id: string
+          team_id: string
+          text: string
+          updated_at: string
+        }
+        Insert: {
+          coach_id: string
+          created_at?: string
+          id?: string
+          team_id: string
+          text: string
+          updated_at?: string
+        }
+        Update: {
+          coach_id?: string
+          created_at?: string
+          id?: string
+          team_id?: string
+          text?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_coachhelm_coach_facts_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "golf_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_coachhelm_coach_facts_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "golf_teams"
             referencedColumns: ["id"]
           },
         ]
@@ -12684,6 +12844,38 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      golf_conversation_pins: {
+        Row: {
+          conversation_id: string
+          pinned_at: string
+          position: number
+          team_id: string | null
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          pinned_at?: string
+          position: number
+          team_id?: string | null
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          pinned_at?: string
+          position?: number
+          team_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_conversation_pins_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "golf_conversations"
             referencedColumns: ["id"]
           },
         ]
@@ -13202,6 +13394,41 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_crm_coaches_by_school"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      golf_division_cohort: {
+        Row: {
+          cohort_avg: number
+          cohort_n: number
+          computed_at: string
+          gender: string
+          level: string
+          metric_id: string
+        }
+        Insert: {
+          cohort_avg: number
+          cohort_n: number
+          computed_at?: string
+          gender: string
+          level: string
+          metric_id: string
+        }
+        Update: {
+          cohort_avg?: number
+          cohort_n?: number
+          computed_at?: string
+          gender?: string
+          level?: string
+          metric_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_division_cohort_metric_id_fkey"
+            columns: ["metric_id"]
+            isOneToOne: false
+            referencedRelation: "golf_metrics"
+            referencedColumns: ["metric_id"]
           },
         ]
       }
@@ -15906,6 +16133,387 @@ export type Database = {
           },
         ]
       }
+      golf_practice_groups: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          name: string
+          player_ids: string[]
+          team_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          name: string
+          player_ids?: string[]
+          team_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          name?: string
+          player_ids?: string[]
+          team_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_practice_groups_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "golf_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      golf_practice_plan_formats: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          name: string
+          sections: Json
+          source_document_id: string | null
+          team_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          name: string
+          sections: Json
+          source_document_id?: string | null
+          team_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          name?: string
+          sections?: Json
+          source_document_id?: string | null
+          team_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_practice_plan_formats_source_document_id_fkey"
+            columns: ["source_document_id"]
+            isOneToOne: false
+            referencedRelation: "golf_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_practice_plan_formats_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: true
+            referencedRelation: "golf_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      golf_practice_plan_lines: {
+        Row: {
+          block_id: string
+          line: string
+          plan_id: string
+          player_id: string
+          team_id: string
+          version: number
+        }
+        Insert: {
+          block_id: string
+          line: string
+          plan_id: string
+          player_id: string
+          team_id: string
+          version: number
+        }
+        Update: {
+          block_id?: string
+          line?: string
+          plan_id?: string
+          player_id?: string
+          team_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_practice_plan_lines_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "golf_players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_practice_plan_lines_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "golf_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_practice_plan_lines_version_fk"
+            columns: ["plan_id", "version"]
+            isOneToOne: false
+            referencedRelation: "golf_practice_plan_versions"
+            referencedColumns: ["plan_id", "version"]
+          },
+        ]
+      }
+      golf_practice_plan_opens: {
+        Row: {
+          first_opened_at: string
+          last_opened_at: string
+          plan_id: string
+          player_id: string
+          team_id: string
+          version: number
+        }
+        Insert: {
+          first_opened_at?: string
+          last_opened_at?: string
+          plan_id: string
+          player_id: string
+          team_id: string
+          version: number
+        }
+        Update: {
+          first_opened_at?: string
+          last_opened_at?: string
+          plan_id?: string
+          player_id?: string
+          team_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_practice_plan_opens_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "golf_practice_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_practice_plan_opens_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "golf_players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_practice_plan_opens_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "golf_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      golf_practice_plan_versions: {
+        Row: {
+          body: Json
+          changes: Json
+          event_id: string | null
+          for_player_id: string | null
+          id: string
+          is_live: boolean
+          kind: string
+          notified: boolean
+          plan_id: string
+          published_at: string
+          published_by: string
+          team_id: string
+          title: string
+          version: number
+        }
+        Insert: {
+          body: Json
+          changes?: Json
+          event_id?: string | null
+          for_player_id?: string | null
+          id?: string
+          is_live?: boolean
+          kind: string
+          notified?: boolean
+          plan_id: string
+          published_at?: string
+          published_by: string
+          team_id: string
+          title: string
+          version: number
+        }
+        Update: {
+          body?: Json
+          changes?: Json
+          event_id?: string | null
+          for_player_id?: string | null
+          id?: string
+          is_live?: boolean
+          kind?: string
+          notified?: boolean
+          plan_id?: string
+          published_at?: string
+          published_by?: string
+          team_id?: string
+          title?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_practice_plan_versions_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "golf_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_practice_plan_versions_for_player_id_fkey"
+            columns: ["for_player_id"]
+            isOneToOne: false
+            referencedRelation: "golf_players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_practice_plan_versions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "golf_practice_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_practice_plan_versions_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "golf_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      golf_practice_plans: {
+        Row: {
+          active_variant: string
+          body: Json
+          chat_message_id: string | null
+          completed_at: string | null
+          created_at: string
+          created_by: string
+          due_on: string | null
+          edited_after_publish: boolean
+          event_id: string | null
+          first_published_at: string | null
+          for_player_id: string | null
+          id: string
+          kind: string
+          published_at: string | null
+          published_version: number | null
+          source_plan_id: string | null
+          status: string
+          step: string
+          taken_down_at: string | null
+          team_id: string
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          active_variant?: string
+          body: Json
+          chat_message_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by: string
+          due_on?: string | null
+          edited_after_publish?: boolean
+          event_id?: string | null
+          first_published_at?: string | null
+          for_player_id?: string | null
+          id?: string
+          kind?: string
+          published_at?: string | null
+          published_version?: number | null
+          source_plan_id?: string | null
+          status?: string
+          step?: string
+          taken_down_at?: string | null
+          team_id: string
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          active_variant?: string
+          body?: Json
+          chat_message_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string
+          due_on?: string | null
+          edited_after_publish?: boolean
+          event_id?: string | null
+          first_published_at?: string | null
+          for_player_id?: string | null
+          id?: string
+          kind?: string
+          published_at?: string | null
+          published_version?: number | null
+          source_plan_id?: string | null
+          status?: string
+          step?: string
+          taken_down_at?: string | null
+          team_id?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_practice_plans_chat_message_id_fkey"
+            columns: ["chat_message_id"]
+            isOneToOne: false
+            referencedRelation: "golf_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_practice_plans_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "golf_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_practice_plans_for_player_id_fkey"
+            columns: ["for_player_id"]
+            isOneToOne: false
+            referencedRelation: "golf_players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_practice_plans_source_plan_id_fkey"
+            columns: ["source_plan_id"]
+            isOneToOne: false
+            referencedRelation: "golf_practice_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_practice_plans_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "golf_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       golf_practice_sessions: {
         Row: {
           created_at: string
@@ -15937,6 +16545,50 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "golf_players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      golf_practice_templates: {
+        Row: {
+          body: Json
+          created_at: string
+          created_by: string
+          id: string
+          kind: string
+          minutes: number | null
+          name: string
+          team_id: string
+          updated_at: string
+        }
+        Insert: {
+          body: Json
+          created_at?: string
+          created_by: string
+          id?: string
+          kind: string
+          minutes?: number | null
+          name: string
+          team_id: string
+          updated_at?: string
+        }
+        Update: {
+          body?: Json
+          created_at?: string
+          created_by?: string
+          id?: string
+          kind?: string
+          minutes?: number | null
+          name?: string
+          team_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_practice_templates_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "golf_teams"
             referencedColumns: ["id"]
           },
         ]
@@ -18046,6 +18698,93 @@ export type Database = {
             foreignKeyName: "golf_team_coachhelm_settings_team_id_fkey"
             columns: ["team_id"]
             isOneToOne: true
+            referencedRelation: "golf_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      golf_team_drills: {
+        Row: {
+          archived_at: string | null
+          area: string
+          copied_from_drill_id: string | null
+          created_at: string
+          created_by: string
+          diagram: string
+          equipment: Json
+          goal: string
+          id: string
+          kind: string
+          levels: Json
+          media_url: string | null
+          minutes: number
+          name: string
+          players: string
+          scoring: Json
+          setup: string
+          tags: string[]
+          team_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          archived_at?: string | null
+          area: string
+          copied_from_drill_id?: string | null
+          created_at?: string
+          created_by: string
+          diagram?: string
+          equipment?: Json
+          goal?: string
+          id?: string
+          kind?: string
+          levels?: Json
+          media_url?: string | null
+          minutes: number
+          name: string
+          players?: string
+          scoring?: Json
+          setup?: string
+          tags?: string[]
+          team_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          archived_at?: string | null
+          area?: string
+          copied_from_drill_id?: string | null
+          created_at?: string
+          created_by?: string
+          diagram?: string
+          equipment?: Json
+          goal?: string
+          id?: string
+          kind?: string
+          levels?: Json
+          media_url?: string | null
+          minutes?: number
+          name?: string
+          players?: string
+          scoring?: Json
+          setup?: string
+          tags?: string[]
+          team_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_team_drills_copied_from_drill_id_fkey"
+            columns: ["copied_from_drill_id"]
+            isOneToOne: false
+            referencedRelation: "golf_drills"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_team_drills_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
             referencedRelation: "golf_teams"
             referencedColumns: ["id"]
           },
@@ -22795,6 +23534,7 @@ export type Database = {
         Args: { p_org_id: string }
         Returns: boolean
       }
+      college_level_of: { Args: { p_division: string }; Returns: string }
       current_coach_id: { Args: never; Returns: string }
       current_player_id: { Args: never; Returns: string }
       find_baseball_player_by_email_for_roster: {
@@ -23322,6 +24062,10 @@ export type Database = {
         }[]
       }
       golf_normalize_name: { Args: { p: string }; Returns: string }
+      golf_pin_conversation: {
+        Args: { p_conversation_id: string; p_pinned: boolean }
+        Returns: Json
+      }
       golf_player_invited_to_event: {
         Args: { p_event_id: string }
         Returns: boolean
@@ -23349,6 +24093,29 @@ export type Database = {
       }
       golf_player_shares_class_status: {
         Args: { p_player_id: string; p_team_id: string }
+        Returns: boolean
+      }
+      golf_practice_plan_check_body: {
+        Args: { p_body: Json; p_solo: boolean; p_team: string }
+        Returns: undefined
+      }
+      golf_practice_plan_save: {
+        Args: {
+          p_body: Json
+          p_event_id: string
+          p_expected_version: number
+          p_plan_id: string
+          p_step: string
+          p_title: string
+        }
+        Returns: {
+          plan_id: string
+          plan_updated_at: string
+          plan_version: number
+        }[]
+      }
+      golf_practice_players_on_team: {
+        Args: { p_players: string[]; p_team: string }
         Returns: boolean
       }
       golf_push_hold_put: {
@@ -23499,6 +24266,10 @@ export type Database = {
         Returns: boolean
       }
       golf_readable_round_ids: { Args: never; Returns: string[] }
+      golf_reorder_conversation_pins: {
+        Args: { p_order: string[]; p_team_id: string }
+        Returns: Json
+      }
       golf_round_live_set_next_share: {
         Args: { p_remember?: boolean; p_share: string }
         Returns: Json
@@ -23554,6 +24325,10 @@ export type Database = {
       golf_tournament_mark: {
         Args: { p_id: string; p_reason?: string; p_state: string }
         Returns: undefined
+      }
+      golf_tournament_my_lineup: {
+        Args: { p_tournament_id: string }
+        Returns: Json
       }
       golf_tournament_publish: {
         Args: { p_at?: string; p_id: string }
@@ -24034,6 +24809,7 @@ export type Database = {
         Returns: string
       }
       refresh_crm_coach_engagement: { Args: never; Returns: undefined }
+      refresh_division_cohort: { Args: never; Returns: number }
       refresh_player_standing: {
         Args: { p_team_ids: string[] }
         Returns: {
@@ -24210,6 +24986,10 @@ export type Database = {
       update_user_last_seen: {
         Args: { target_user_id: string }
         Returns: undefined
+      }
+      user_coaches_inactive_golf_member: {
+        Args: { check_player_id: string }
+        Returns: boolean
       }
       user_conversation_ids: { Args: { p_user_id: string }; Returns: string[] }
       user_has_pending_join_request_to_coach_team: {
