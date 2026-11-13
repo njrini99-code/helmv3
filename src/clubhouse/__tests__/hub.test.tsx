@@ -1216,7 +1216,8 @@ describe('Team Hub · the loader', () => {
       },
       golf_task_assignments: () => {
         reads.assignments += 1;
-        return { data: [{ task_id: 'k1', status: 'completed' }, { task_id: 'k1', status: 'pending' }] };
+        // Each assignment is a roster player's, as every real row is (the counts are the active roster's, §7 #4).
+        return { data: [{ task_id: 'k1', player_id: 'p1', status: 'completed' }, { task_id: 'k1', player_id: 'p2', status: 'pending' }] };
       },
     };
     const data = await loadTeamHub({ role: 'coach', teamId: 't1', userId: 'u1', playerId: null });
