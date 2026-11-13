@@ -831,7 +831,8 @@ flags:
       round's next update, like any other round field (the round's pars and
       yardages are not changed). Skip hides it for the round. Recovery tap: after a tee shot that finished in the
       rough or an "other" lie, one row asks "Next shot from there?" with
-      Clear shot / Blocked or punch out; the answer is stored on the tee shot
+      Clear shot / Recovery / layup (renamed 2026-11-12 from Blocked or
+      punch out, same stored true); the answer is stored on the tee shot
       as golf_shots.lie_after_recovery the way a miss chip is (device copy
       first). Clubhouse round entry (CH-11961 recovery tap, CH-11962 course
       nudge, library-only picker) asks the same questions over the same

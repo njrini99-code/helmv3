@@ -148,9 +148,11 @@ export interface ShotRecord {
   /**
    * CoachHelm Slice 8b (`coachhelm_data_prompts_v2`): on a tee shot that
    * finished in the rough or an 'other' lie, whether the next shot was a
-   * recovery (blocked, punch out) — true — or a clear shot — false. Absent
-   * when nobody was asked. Stored as `golf_shots.lie_after_recovery` once the
-   * held migration is applied; see `lib/golf/data-prompts/recovery.ts`.
+   * recovery or a forced layup ("Recovery / layup": it could not go at the
+   * green) — true — or a clear shot — false. Absent when nobody was asked.
+   * Stored as `golf_shots.lie_after_recovery`; rows saved under the old
+   * "Blocked or punch out" label mean the same `true`. See
+   * `lib/golf/data-prompts/recovery.ts`.
    */
   lieAfterRecovery?: boolean;
 }
