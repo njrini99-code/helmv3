@@ -119,15 +119,15 @@ export function ScoringMore({ s, x, onRetry }: { s: GolfStats; x: ChProfileExtra
           ]}
         />
       </Panel>
-      <Panel title="Toughest holes" wide note={`Average to par by hole number across these rounds. A hole needs ${x.toughest?.minPlays ?? 3} plays to be ranked.`}>
+      <Panel title="Toughest holes" wide note={`Average to par by course and hole. A hole needs ${x.toughest?.minPlays ?? 3} plays on its course to be ranked.`}>
         <Shots error={x.holesError} code="CH-5209" what="Toughest holes" onRetry={onRetry}>
           {x.toughest && x.toughest.holes.length > 0 ? (
             <ol className="ch-gx-rank">
               {x.toughest.holes.map((h, i) => (
-                <li key={h.hole}>
+                <li key={`${h.course}#${h.hole}`}>
                   <span className="ch-gx-rank__n ch-num">{i + 1}</span>
                   <b>
-                    Hole {h.hole} · Par {h.par}
+                    Hole {h.hole} · {h.course} · Par {h.par}
                   </b>
                   <em className="ch-num">
                     {h.plays} plays · {h.doublePlus} double or worse
@@ -137,7 +137,7 @@ export function ScoringMore({ s, x, onRetry }: { s: GolfStats; x: ChProfileExtra
               ))}
             </ol>
           ) : x.toughest?.belowFloor ? (
-            <Empty code="CH-5311">Need {x.toughest.minPlays}+ plays of a hole before it can be ranked. No hole has been played that often in this window yet.</Empty>
+            <Empty code="CH-5311">Need {x.toughest.minPlays}+ plays of a hole on one course before it can be ranked. No hole has been played that often in this window yet.</Empty>
           ) : (
             <Empty code={NOTHING}>No hole-by-hole scores in this window.</Empty>
           )}

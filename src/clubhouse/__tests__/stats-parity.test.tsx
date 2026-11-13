@@ -249,6 +249,7 @@ describe('the opening hole', () => {
 
 describe('the toughest holes', () => {
   const h = (n: number, par: number, score: number, r: string): ChHoleRow => ({ round_id: r, hole_number: n, par, score });
+  const oneCourse = () => ({ key: 'c', name: 'The Cardinal' });
   it('by hole number with each play graded against its own par; a hole needs three plays; the five worst, worst first', () => {
     const rows: ChHoleRow[] = [
       // Hole 7: a par 4 at one course, a par 5 at another; +2, +2 (on the par 5), +0: average 1.33, two double bogeys or worse, shown as a par 4 (the par it was played at most).
@@ -259,16 +260,17 @@ describe('the toughest holes', () => {
       h(2, 4, 7, 'a'),
       ...[1, 3, 4, 5, 6, 8].flatMap((n, i) => ['a', 'b', 'c'].map((r) => h(n, 4, 4 + (i % 2), r))),
     ];
-    const t = toughestHoles(rows);
-    expect(t.holes[0]).toEqual({ hole: 7, par: 4, avgToPar: 1.33, plays: 3, doublePlus: 2 });
+    // One course for every round here: the floor and the order are what this pins (course grouping: data/__tests__/toughest-holes).
+    const t = toughestHoles(rows, oneCourse);
+    expect(t.holes[0]).toEqual({ hole: 7, course: 'The Cardinal', par: 4, avgToPar: 1.33, plays: 3, doublePlus: 2 });
     expect(t.holes.some((x) => x.hole === 2)).toBe(false);
     expect(t.holes).toHaveLength(5);
     expect(t.holes.map((x) => x.avgToPar)).toEqual([...t.holes.map((x) => x.avgToPar)].sort((a, b) => b - a));
     expect(t.belowFloor).toBe(false);
   });
   it('holes scored but none played three times say so; no holes say nothing is under a floor', () => {
-    expect(toughestHoles([h(1, 4, 5, 'a'), h(2, 4, 6, 'a')])).toMatchObject({ holes: [], belowFloor: true, minPlays: 3 });
-    expect(toughestHoles([])).toMatchObject({ holes: [], belowFloor: false });
+    expect(toughestHoles([h(1, 4, 5, 'a'), h(2, 4, 6, 'a')], oneCourse)).toMatchObject({ holes: [], belowFloor: true, minPlays: 3 });
+    expect(toughestHoles([], oneCourse)).toMatchObject({ holes: [], belowFloor: false });
   });
 });
 
@@ -500,7 +502,7 @@ describe('Game detail · More detail', () => {
     expect([...streaks.querySelectorAll('dl.ch-gx-tiles > div')].map((d) => d.querySelector('dd')!.textContent)).toEqual(['4', '2', '6', '34', '42 yds']);
     const holes = [...panel('Toughest holes').querySelectorAll('.ch-gx-rank li')];
     expect(holes).toHaveLength(5);
-    expect(holes[0]!.textContent).toContain('Hole 7 · Par 4');
+    expect(holes[0]!.textContent).toContain('Hole 7 · The Cardinal · Par 4');
     expect(holes[0]!.textContent).toContain('+0.90');
     expect(holes[0]!.querySelector('.ch-loss')).not.toBeNull();
   });
@@ -623,7 +625,7 @@ describe('Game detail · states', () => {
   it('CH-5311 holes were scored but none has been played three times: toughest holes says how many plays it needs', async () => {
     showPlayer(withExtra({ toughest: { holes: [], belowFloor: true, minPlays: 3 } }));
     await openTab(/Game detail/);
-    expect(code('CH-5311')!.textContent).toContain('Need 3+ plays of a hole before it can be ranked.');
+    expect(code('CH-5311')!.textContent).toContain('Need 3+ plays of a hole on one course before it can be ranked.');
     expect(panel('Toughest holes').querySelector('.ch-gx-rank')).toBeNull();
   });
 
