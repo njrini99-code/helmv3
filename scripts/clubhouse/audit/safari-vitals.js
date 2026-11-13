@@ -21,7 +21,8 @@
  *
  * INP needs real input. Event Timing records only trusted events, and a scripted click (the Safari MCP's
  * page_interactions, element.click(), dispatchEvent) makes none, so inp stays null after one. Measure INP from a real
- * tap on the iPhone (tier D, Web Inspector) or a native click; LCP needs no input.
+ * tap on the iPhone (tier D, Web Inspector); LCP needs no input. A Simulator tap through WebDriverAgent doesn't count
+ * either: it arrives as a trusted click with no touch or pointer events and records no entry (tested 13 Nov 2026).
  */
 (() => {
   if (window.__chVitals) return;
