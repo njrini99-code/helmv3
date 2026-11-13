@@ -85,6 +85,8 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
   const [publishError, setPublishError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [askDelete, setAskDelete] = useState(false);
+  // Back with edits no save has landed asks first (coach audit 13 Nov: a failed save's block and groups were lost silently).
+  const [askLeave, setAskLeave] = useState(false);
   const [restored, setRestored] = useState(false);
   const [inspector, setInspector] = useState<'block' | 'coachhelm'>(data.helperOn && preview?.sheet !== 'block' ? 'coachhelm' : 'block');
   const [ask, setAsk] = useState('');
@@ -299,9 +301,11 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
     }
   };
 
+  const leave = () => router.push('/golf/dashboard/practice');
   const goBack = async () => {
     await save.flush();
-    router.push('/golf/dashboard/practice');
+    if (save.unsaved()) return setAskLeave(true);
+    leave();
   };
   const printIt = () => void printPlan(sheetModel);
 
@@ -322,7 +326,7 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
       {statusLine}
       {save.status === 'failed' && (
         <>
-          Couldn’t save ·{' '}
+          {save.error ? `Couldn’t save: ${save.error.message}` : 'Couldn’t save'} ·{' '}
           <button type="button" onClick={save.retry}>
             Try again
           </button>
@@ -882,6 +886,9 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
           }
         />
       )}
+      <PracticeSheet open={askLeave} onClose={() => setAskLeave(false)} title="Leave without saving?" actionLabel="Leave" danger onAction={leave} code="CH-13080">
+        <p className="ch-prc-note">Your latest changes haven’t saved. If you leave now, they’re lost.</p>
+      </PracticeSheet>
       <PracticeSheet open={askDelete} onClose={() => setAskDelete(false)} title="Delete this draft?" actionLabel="Delete" danger onAction={() => void doDelete()} busy={deleting} code="CH-13082">
         <p className="ch-prc-note">Players never saw it. This can’t be undone.</p>
       </PracticeSheet>
