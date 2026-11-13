@@ -118,4 +118,3 @@ describe('the header names the read’s own rounds', () => {
     expect(screen.getByText(/last 8 rounds/)).toBeTruthy();
   });
 });
-

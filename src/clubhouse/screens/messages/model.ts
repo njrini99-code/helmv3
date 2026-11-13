@@ -293,4 +293,3 @@ export const FORMER_MEMBER = 'Former member';
 export function isFormerMember({ group, other, known }: { group: boolean; other: { type?: string } | null | undefined; known: boolean }): boolean {
   return !group && !known && other?.type === 'member';
 }
-
