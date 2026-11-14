@@ -121,13 +121,14 @@ html[data-fw-theme='dark'] .ch-prc-day__bar i[data-tone='random'] { background: 
   grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 8px;
 }
+/* A tile is a card: the card's corner (CR-05), as the plan rows under it have. */
 .ch-prc-tile {
   display: grid;
   align-content: start;
   gap: 8px;
   min-height: 96px;
   padding: 12px;
-  border-radius: var(--ch-radius-md);
+  border-radius: var(--ch-radius-card);
   background: var(--ch-card-bg);
   box-shadow: var(--ch-card-shadow);
 }
@@ -135,9 +136,28 @@ html[data-fw-theme='dark'] .ch-prc-day__bar i[data-tone='random'] { background: 
   background: var(--ch-well-bg-flat);
   box-shadow: none;
 }
+/* Today as Calendar marks it (calendar.css .ch-wk__day.is-today): the date on the accent disc, the day in ink, on the selected
+   fill. A 2px ring in the focus colour read as keyboard focus, and doubled up with a focused practice's own ring inside it. */
 .ch-prc-tile.is-today {
   background: var(--ch-selected-bg);
-  box-shadow: 0 0 0 2px var(--ch-border-focus);
+}
+.ch-prc-tile.is-today .ch-prc-tile__d {
+  font: var(--ch-type-13-strong);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-text-primary);
+}
+/* The disc is 30 tall on the date's 22px line: the 4px it overhangs each way is taken back, so today's practice sits on the same
+   line as every other tile's. */
+.ch-prc-tile.is-today .ch-prc-tile__d b {
+  display: inline-grid;
+  place-items: center;
+  min-width: calc(30 * var(--ch-type-k));
+  height: calc(30 * var(--ch-type-k));
+  margin: calc(-4 * var(--ch-type-k)) -4px;
+  padding-inline: 4px;
+  border-radius: 999px;
+  background: var(--ch-green-fill-600);
+  color: var(--ch-text-on-accent);
 }
 .ch-prc-tile__d {
   display: flex;
@@ -1825,6 +1845,13 @@ main.ch-prc-planpage > .ch-backlink {
 .ch-prc .ch-prc-today {
   padding: 0;
 }
+/* A player's plans on a desk read at a reading measure, as the coach's sit in their column: a row 1,112px wide put its name and
+   its chevron a screen apart (CR-14). The week above keeps the page's width. */
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
+  .ch-prc--ply .ch-prc-rows {
+    max-width: var(--ch-measure-reading);
+  }
+}
 .ch-prc-today__go {
   justify-self: stretch;
 }
@@ -1839,20 +1866,23 @@ main.ch-prc-planpage > .ch-backlink {
     gap: 16px;
   }
   /* The week scrolls sideways on a phone, snapped, with today in view. */
+  /* Three tiles to the page's width, snapped whole: every place the strip rests (today first, or the week's last three) starts and
+     ends on the page's edges, 16 or 20 (CR-01). Fixed 112px tiles came to rest with today 34px in and a sliver of the day before
+     cut at the screen's edge. */
   .ch-prc-week {
     display: flex;
     margin: 0 calc(-1 * var(--ch-page-x-phone));
     padding: 2px var(--ch-page-x-phone);
     overflow-x: auto;
     scroll-padding-inline: var(--ch-page-x-phone);
-    scroll-snap-type: x proximity;
+    scroll-snap-type: x mandatory;
     scrollbar-width: none;
   }
   .ch-prc-week::-webkit-scrollbar {
     display: none;
   }
   .ch-prc-tile {
-    flex: 0 0 112px;
+    flex: 0 0 calc((100% - 2 * 8px) / 3);
     scroll-snap-align: start;
   }
   .ch-prc-next,

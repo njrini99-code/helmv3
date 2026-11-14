@@ -27,7 +27,7 @@ export function PlayerPracticeHome({ data }: { data: ChPlayerPracticeHome }) {
   const at = next ? Math.max(0, next.stops.findIndex((s) => s.now || s.next)) : 0;
   const stops = next ? next.stops.slice(at, at + HOME_STOPS) : [];
   return (
-    <main className={'ch-page ch-prc' + (phone ? ' is-phone' : '')} data-ch="practice" aria-labelledby="ch-prc-title">
+    <main className={'ch-page ch-prc ch-prc--ply' + (phone ? ' is-phone' : '')} data-ch="practice" aria-labelledby="ch-prc-title">
       {phone && <PhoneTop start title="Practice" />}
       <header className="ch-prc-h">
         <div>

@@ -501,14 +501,20 @@
 .ch-rs-sgbar i.is-loss {
   background: var(--ch-chart-loss-fill);
 }
+/* Handicap, the quiet third figure: its label at the left and its figure on the right edge, under the two above it. */
 .ch-rs-face__hcp {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
   font: var(--ch-type-12-medium);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
 .ch-rs-face__hcp b {
-  margin-left: 4px;
-  font-weight: 600;
+  font: var(--ch-type-14-strong);
+  letter-spacing: var(--ch-track-14);
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-primary);
 }
 .ch-rs-face__note {
@@ -1987,8 +1993,16 @@ a.ch-rs-peek__dev:focus-visible,
 .ch-rs-face--static {
   cursor: default;
 }
+/* A teammate's handicap sits at the card's foot, so it lines up across a row whether or not the card has a class line (it rode
+   20px higher on a card without one), and flat on the card under a hairline, as the coach's card figures are (W25). */
 .ch-rs-face__figs--one {
   grid-template-columns: 1fr;
+  margin-top: auto;
+  padding: 12px 0 0;
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
 }
 .ch-rs-face__figs--one span {
   align-items: center;
@@ -2813,14 +2827,16 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   justify-items: end;
   gap: 4px;
 }
+/* The total on the redline's leading, 34/.9, and its word on one tight line (06 7.2), so the column ends where the season's
+   does. On the steps' own 41 and 18px lines "players" hung 12px under the counts line it sits beside. */
 [data-ch-crh='on'] .ch-rs-tcard__n b {
   font: var(--ch-type-34-strong);
-
+  line-height: var(--ch-lead-figure);
   letter-spacing: var(--ch-track-34);
 }
 [data-ch-crh='on'] .ch-rs-tcard__n span {
   font: var(--ch-type-13-medium);
-
+  line-height: var(--ch-lead-tight);
   color: var(--ch-on-green-3);
 }
 [data-ch-crh='on'] .ch-rs-mix {
@@ -2957,6 +2973,11 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   }
   [data-ch-crh='on'] .ch-rsx-sec.is-tight {
     margin-top: 12px;
+  }
+  /* The leaders' wrapper with no leader in it (an early season): drawn, its 12px stacked on the sort's own 12 and the team card
+     stood 30px over the sort where the redline has 18 (06 7.5; CR-06). */
+  [data-ch-crh='on'] .ch-rsx-sec:empty {
+    display: none;
   }
   [data-ch-crh='on'] .ch-rsx-lists > :first-child {
     margin-top: 2px;
@@ -3370,10 +3391,14 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
     -webkit-text-fill-color: currentcolor;
     background: none;
   }
+  /* The head's line at the text measure (CR-14): run across the desk it was some 150 characters on one line, and it pushed
+     Export and Invite players off the title's row to wrap under it. */
   [data-ch-crh='on'].ch-rsd .ch-rs-head p {
+    max-width: var(--ch-measure-text);
     margin: 0;
     font: var(--ch-type-14-medium);
     color: var(--ch-text-secondary);
+    text-wrap: pretty;
   }
   [data-ch-crh='on'].ch-rsd .ch-rs-head {
     padding: 0;
