@@ -183,7 +183,7 @@ export function ClubhouseFrame({
                         Skip to content
                       </a>
                       <div className="ch-app" data-ch-rail={folded ? 'folded' : undefined} data-ch-refresh="on">
-                        <Sidebar userData={userData} shell={shell} pathname={pathname} teamSwitch={teamSwitch} folded={folded} />
+                        <Sidebar userData={userData} shell={shell} pathname={pathname} search={search} teamSwitch={teamSwitch} folded={folded} />
                         <RailToggle folded={folded} onFold={setFolded} />
                         <div className="ch-canvas" id="ch-canvas">
                           <TopBar item={item} pathname={pathname} teamName={userData.teamName ?? null} pushed={pushed} />

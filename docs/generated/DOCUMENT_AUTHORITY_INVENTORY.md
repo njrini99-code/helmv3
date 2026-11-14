@@ -1224,6 +1224,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-12-practice-left-edge.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-13-bell-teams.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-13-builder-fits-desk.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P001-shell/changes/2026-11-13-from-section.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-13-label-in-name.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-13-quick-chat-team.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-13-search-ranking.md` | current | - | - | - | - |
@@ -1320,6 +1321,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P003-roster/changes/2026-11-12-season-card-track.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/changes/2026-11-12-sg-below-zero.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/changes/2026-11-13-craft-pass.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P003-roster/changes/2026-11-13-roster-truths.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/changes/2026-11-13-row-name.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/changes/2026-11-13-sg-window-and-past-class.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/CHANGELOG.md` | current | - | - | - | - |
@@ -1369,6 +1371,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-12-one-change-rule.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-12-sg-below-zero.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-12-wide-detail.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P004-stats-team/changes/2026-11-13-back-to-roster.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-13-heading-and-tiles.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-13-round-day-avg-key.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/CHANGELOG.md` | current | - | - | - | - |
@@ -1419,6 +1422,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-12-one-change-rule.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-12-sg-below-zero.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-12-wide-detail.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P005-stats-player/changes/2026-11-13-back-to-roster.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-13-heading-and-tiles.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-13-shared-chart-file.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/CHANGELOG.md` | current | - | - | - | - |
@@ -1624,6 +1628,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P010-hub/changes/2026-11-12-head-figures.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/changes/2026-11-12-next-7-days.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/changes/2026-11-12-waiting-on-late-column.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P010-hub/changes/2026-11-13-active-assignees.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/changes/2026-11-13-updates-this-team.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/changes/2026-11-13-week-day-names.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/CHANGELOG.md` | current | - | - | - | - |
