@@ -1,5 +1,16 @@
 [
   {
+    "file": "CLUBHOUSE_AUDIT_2026-11-13.md",
+    "title": "Page-by-page audit on main 9e7c86b (staging preview)",
+    "kind": "audit",
+    "date": "2026-11-13",
+    "scope": "All page families, coach and player, phone (WebKit 402/375, light/dark, Reduce Motion) and desktop (Chromium and WebKit 1440): measured layout, contrast, accessibility, press pass, staging number checks and route-switch traces. Data in docs/clubhouse/audit/2026-11-13/.",
+    "status": "done",
+    "note": "measurements only (no calibrated critic); tier S signed-in, tier D and the hand test not covered",
+    "allPages": true,
+    "pages": []
+  },
+  {
     "file": "COMPLETION_PLAN_2026-10-18.md",
     "title": "Complete and elevate: the full-auto plan",
     "kind": "plan",
