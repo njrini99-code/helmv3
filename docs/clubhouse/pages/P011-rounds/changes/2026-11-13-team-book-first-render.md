@@ -39,3 +39,10 @@ Held items:     the frame-gap measurement on a device
   `RoundReview` still builds a formatter per label (the review page, not this
   book), and each round row still calls `usePressPrefetch` (a closure, not
   layout work).
+
+### Also (follow-up in the same PR)
+
+- The round review's kicker and the card's date ("Wed Oct 14") read one
+  helper, `kickerDay` (`rounds/labels.ts`), which keeps its formatters per
+  zone instead of building two per review or card. Test:
+  `screens/rounds/__tests__/review-formatters.test.ts`.

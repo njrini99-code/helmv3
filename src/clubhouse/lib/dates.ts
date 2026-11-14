@@ -44,7 +44,7 @@ export function zoneWallParts(at: number, timeZone: string): { year: number; mon
 export function zoneShortName(timeZone: string, at: number): string | null {
   try {
     for (const style of ['shortGeneric', 'short'] as const) {
-      const part = new Intl.DateTimeFormat('en-US', { timeZone, timeZoneName: style }).formatToParts(at).find((p) => p.type === 'timeZoneName');
+      const part = zoneFormat('en-US', timeZone, `short-name:${style}`, { timeZoneName: style }).formatToParts(at).find((p) => p.type === 'timeZoneName');
       if (part?.value) return part.value;
     }
   } catch {

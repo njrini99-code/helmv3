@@ -1,6 +1,6 @@
 import type { ChReviewHole, ChRoundReview } from '../../../data/round-review-shape';
 import { formatFixed, formatSigned, NO_DATA } from '../../../lib/format';
-import { dateOf, TYPE_LABEL } from '../labels';
+import { kickerDay, TYPE_LABEL } from '../labels';
 import { flow, headline, resultOf } from '../round-insights';
 
 /**
@@ -132,7 +132,7 @@ export function buildCard(r: ChRoundReview, who: CardWho = {}): CardModel {
   const sg = r.strokesGained
     ? { total: r.strokesGained.total, legs: SG_LEGS.map(([k, label, short]) => ({ label, short, value: r.strokesGained![k] })) }
     : null;
-  const date = `${new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'short' }).format(dateOf(r.date))} ${new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric' }).format(dateOf(r.date))}`;
+  const date = kickerDay(r.date);
   return {
     course: r.course,
     kicker: [r.playerName ?? who.name ?? null, date, r.type ? TYPE_LABEL[r.type] : null].filter(Boolean).join(' · '),

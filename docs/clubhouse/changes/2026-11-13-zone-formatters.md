@@ -27,3 +27,10 @@ Held items:     the frame-gap measurement on a device
 - `screens/calendar/__tests__/zone-formatters.test.ts` and
   `screens/messages/__tests__/model-time-formatters.test.ts`: no formatter is
   built after the first call however many follow; values unchanged.
+
+### Also (follow-up in the same PR)
+
+- `lib/dates.ts` `zoneShortName` ("CT", drawn on a class line shown in a zone
+  other than the team's, once a player on Roster and Classes) keeps its
+  formatters per zone and style instead of building up to two a call. Same
+  test file as the round kicker (`screens/rounds/__tests__/review-formatters.test.ts`).

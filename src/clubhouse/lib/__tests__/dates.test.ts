@@ -68,8 +68,6 @@ const ALLOW_DATES: Record<string, number> = {
   'screens/home/nudge-draft.ts': 1,
   'screens/home/use-day-rollover.ts': 1,
   'screens/qualifiers/CoursePicker.tsx': 1,
-  'screens/rounds/RoundReview.tsx': 1,
-  'screens/rounds/card/card-model.ts': 1,
   'screens/rounds/entry/session.ts': 1,
   'screens/rounds/setup/AddCourseSheet.tsx': 2,
   'screens/rounds/setup/CoursePicker.tsx': 2,
