@@ -1,6 +1,6 @@
 # 2026-11-13 — Week strip gap and team-legs link height
 
-## 2026-11-13 — The week's days stay 44 wide at 375; the team-legs names are 24 tall on desktop
+## 2026-11-13 — Days stay 44 wide at 375; team-legs names 24 tall
 
 ```text
 Design package: none (audit fixes, 13 Nov 2026: F-0017, F-0018)
@@ -13,14 +13,14 @@ Held items:     none
 
 ### Changed
 
-- `home.css` `.ch-hm-week`: the strip's 4px gap is set as
-  `--ch-wks-gap-max: 4px` instead of `gap`, so the shared strip
-  (`docs/clubhouse/changes/2026-11-13-phone-type-floor-and-week-strip.md`)
-  can shrink it before a day goes under 44. At 375 the days were 43 wide;
-  now the gap is about 3px there and each day is 44.
-- `home.css` desktop `.ch-hm-legs__a` (The team's game names):
-  `padding-block: 4px`. The link is inline, so the box is 26 tall and the
-  line does not move (it measured 18).
+- `home.css` `.ch-hm-week`: the strip's 4px gap is set as `--ch-wks-gap-max:
+  4px` instead of `gap`, so the shared strip
+  (`docs/clubhouse/changes/2026-11-13-phone-type-floor-and-week-strip.md`) can
+  shrink it before a day goes under 44. At 375 the days were 43 wide; now the
+  gap is about 3px there and each day is 44.
+- `home.css` desktop `.ch-hm-legs__a` (The team's game names): `padding-block:
+  4px`. The link is inline, so the box is 26 tall and the line does not move (it
+  measured 18).
 
 ### Why
 

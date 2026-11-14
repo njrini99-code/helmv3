@@ -1,6 +1,6 @@
 # Shared — 2026-11-13
 
-## 2026-11-13 — A strokes gained window in words; Practice's empty day takes NO_DATA (F-0005, F-0026)
+## 2026-11-13 — SG window in words; empty Practice day is NO_DATA
 
 ```text
 Design package: none (audit 2026-11-13, F-0005 and F-0026)
@@ -13,12 +13,12 @@ Held items:     none
 
 ### Changed
 
-- `lib/sg-window-line.ts`: `sgWindowLine` ("Last 8 · Jun–Jul", both years
-  when the window crosses one) and `sgWindowSpoken`, client-safe; the window is
-  found server-side in `data/sg-window.ts`. Roster draws it (P003).
-- `screens/practice/PracticeHome.tsx` (no page manifest): a day with no
-  practice draws the shared no-data mark `NO_DATA` ("—") in place of an en
-  dash; a reader still hears "No practice".
+- `lib/sg-window-line.ts`: `sgWindowLine` ("Last 8 · Jun–Jul", both years when
+  the window crosses one) and `sgWindowSpoken`, client-safe; the window is found
+  server-side in `data/sg-window.ts`. Roster draws it (P003).
+- `screens/practice/PracticeHome.tsx` (no page manifest): a day with no practice
+  draws the shared no-data mark `NO_DATA` ("—") in place of an en dash; a reader
+  still hears "No practice".
 
 ### Why
 

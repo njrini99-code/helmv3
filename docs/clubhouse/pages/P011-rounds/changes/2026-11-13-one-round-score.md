@@ -1,6 +1,6 @@
 # P011 Rounds — 2026-11-13
 
-## 2026-11-13 — One score for a round: its holes, else its nines, else the stored total (F-0003)
+## 2026-11-13 — One score: holes, else nines, else stored total
 
 ```text
 Design package: none (audit 2026-11-13, F-0003)
@@ -27,11 +27,10 @@ Held items:     none
 
 ### Why
 
-- Audit F-0003: Dylan's 19 Jul round (4625ba2c) sums to 79 (Out 40, In 39,
-  +7) while its stored `total_score` is 78. The review, the Rounds library,
-  Team rounds and the season loaders already printed 79 (front plus back since
-  PR #2110); of the Rounds shapes, the course glance was the one still printing
-  78.
+- Audit F-0003: Dylan's 19 Jul round (4625ba2c) sums to 79 (Out 40, In 39, +7)
+  while its stored `total_score` is 78. The review, the Rounds library, Team
+  rounds and the season loaders already printed 79 (front plus back since PR
+  #2110); of the Rounds shapes, the course glance was the one still printing 78.
 - Not closed here (follow-ups): the stored totals stay stale until a repair and
   a trigger land (no database writes in this slice); Clubhouse readers outside
   this slice still read the raw `total_score`: `data/qualifiers.ts:231` with

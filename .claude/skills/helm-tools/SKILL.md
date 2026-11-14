@@ -6,10 +6,10 @@ description: "Which tools this repo gives an agent and how to use each: browsers
 # Helm tools: what you have and how to use it
 
 Check, don't assume. Start every session that touches a browser, database or
-phone with: `claude mcp list` (what's connected), and for the phone
-`xcrun devicectl list devices` and `xcrun simctl list devices booted`. Write
-what you found as AVAILABLE / NOT CONNECTED / NEEDS NICK before you measure.
-Authority between connector namespaces: `docs/TOOL_AUTHORITY_MATRIX.md`.
+phone with: `claude mcp list` (what's connected), and for the phone `xcrun
+devicectl list devices` and `xcrun simctl list devices booted`. Write what you
+found as AVAILABLE / NOT CONNECTED / NEEDS NICK before you measure. Authority
+between connector namespaces: `docs/TOOL_AUTHORITY_MATRIX.md`.
 
 ## 1. Databases: which project each tool reaches
 
@@ -23,11 +23,12 @@ Authority between connector namespaces: `docs/TOOL_AUTHORITY_MATRIX.md`.
 | Local Docker stack (`npx supabase start`) | local | read/write | Rehearsing migrations, `clubhouse:perf` |
 
 Rules:
+
 - Vercel Preview and local development read **staging**. Production reads
   **production**. A preview is safe to click through; it is not production.
 - During an audit, only `supabase-staging-ro` is used. The audit session
-  (`HELM_AUDIT=1`) runs `.claude/hooks/no-prod-in-audit.mjs`, which refuses
-  any other Supabase server and any MCP call that names `qmnssrrolpinvwjjnufo`.
+  (`HELM_AUDIT=1`) runs `.claude/hooks/no-prod-in-audit.mjs`, which refuses any
+  other Supabase server and any MCP call that names `qmnssrrolpinvwjjnufo`.
 - Read `src/lib/types/database.ts` before writing SQL.
 - `is_test` rounds exist on staging. Say whether a number includes them.
 
@@ -57,37 +58,37 @@ Probes (`scripts/clubhouse/audit/`, run through `browser_evaluate` /
 card-in-card, page edge), `contrast.mjs` (painted contrast against the real
 background), `motion.mjs` (animation inventory and transition timing),
 `safari-vitals.js` (INP and LCP from Safari's Event Timing and LCP APIs; INP
-needs a real tap or native click, since a scripted click records no event).
-A second accessibility engine finds what axe misses: install
+needs a real tap or native click, since a scripted click records no event). A
+second accessibility engine finds what axe misses: install
 `accessibility-checker-engine` (IBM Equal Access, 26 MB, no browser download)
-outside the repo, inject its `ace-window.js` with `page.addScriptTag`, then
-`new ace.Checker().check(document, ['IBM_Accessibility'])` (works in WebKit).
-On the coach home, 13 Nov, it found a duplicate `id` and content outside a
-landmark; axe found a label/name mismatch.
+outside the repo, inject its `ace-window.js` with `page.addScriptTag`, then `new
+ace.Checker().check(document, ['IBM_Accessibility'])` (works in WebKit). On the
+coach home, 13 Nov, it found a duplicate `id` and content outside a landmark;
+axe found a label/name mismatch.
 
-Signing in: no agent types a password, ever.
-`node scripts/clubhouse/audit/session.mjs --role coach|player --base <preview or local URL>`
-mints a staging-only session for a Demo University Golf demo account, writes
-`.auth/staging-<role>.json`, and refuses any other project or account.
-`--help` lists the rest. Previews sit behind Vercel's login: run
-`node scripts/clubhouse/audit/preview-bypass.mjs --fetch` once (it copies the
+Signing in: no agent types a password, ever. `node
+scripts/clubhouse/audit/session.mjs --role coach|player --base <preview or local
+URL>` mints a staging-only session for a Demo University Golf demo account,
+writes `.auth/staging-<role>.json`, and refuses any other project or account.
+`--help` lists the rest. Previews sit behind Vercel's login: run `node
+scripts/clubhouse/audit/preview-bypass.mjs --fetch` once (it copies the
 project's existing Protection Bypass for Automation secret into `.auth/`, never
 printed, nothing in Vercel changes; Nick's yes, 13 Nov 2026) and every minted
 session carries Vercel's cookie. `--check --base <url>` shows whether it opens;
-`--forget` at clean-up. One file per browser: Supabase rotates refresh
-tokens, so two browsers on one file sign each other out. The audit servers read
+`--forget` at clean-up. One file per browser: Supabase rotates refresh tokens,
+so two browsers on one file sign each other out. The audit servers read
 `staging-player.json` (`playwright-webkit`), `staging-coach.json`
 (`playwright-webkit-coach`) and `staging-coach-desktop.json` (`playwright`):
 mint each with `--out` right before that server's first page, and again after a
 `browser_close`.
 
-Start an audit session with only the audit servers:
-`HELM_AUDIT=1 claude --strict-mcp-config --mcp-config .claude/audit.mcp.json`.
+Start an audit session with only the audit servers: `HELM_AUDIT=1 claude
+--strict-mcp-config --mcp-config .claude/audit.mcp.json`.
 
 ## 3. Pages that write when you open them
 
-Opening these writes rows, even on a read-only walk. On staging that is
-allowed; log each one in the run's `writes.md`. List and file:line in
+Opening these writes rows, even on a read-only walk. On staging that is allowed;
+log each one in the run's `writes.md`. List and file:line in
 `docs/clubhouse/audit/WRITES-ON-OPEN.md`.
 
 ## 4. Scripts (read the file's `--help` first)

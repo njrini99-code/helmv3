@@ -1,7 +1,8 @@
 # Clubhouse views that write when opened
 
-Read from the code on `origin/main` 9e7c86bfd9 and re-checked line by line against it. Update a row whenever its
-loader changes. The audit tooling (`.claude/skills/helm-tools/SKILL.md` §3) points here.
+Read from the code on `origin/main` 9e7c86bfd9 and re-checked line by line
+against it. Update a row whenever its loader changes. The audit tooling
+(`.claude/skills/helm-tools/SKILL.md` §3) points here.
 
 **What this means for an audit:**
 
@@ -11,15 +12,16 @@ loader changes. The audit tooling (`.claude/skills/helm-tools/SKILL.md` §3) poi
 
 ## Read this first: prefetch writes before you open a page
 
-In production builds, `src/clubhouse/shell/use-prefetch-tabs.ts:50-55` (`fetchAhead`) prefetches every tab. When the
-browser is idle it also sweeps the other sections (Roster, Settings, …). Only `/golf/dashboard/coachhelm` is left out
-(`src/clubhouse/lib/prefetch-guard.ts`).
+In production builds, `src/clubhouse/shell/use-prefetch-tabs.ts:50-55`
+(`fetchAhead`) prefetches every tab. When the browser is idle it also sweeps the
+other sections (Roster, Settings, …). Only `/golf/dashboard/coachhelm` is left
+out (`src/clubhouse/lib/prefetch-guard.ts`).
 
-So a page that writes while it renders on the server can write before the auditor ever opens it. Rows 2 and 3 are
-exposed to this.
+So a page that writes while it renders on the server can write before the
+auditor ever opens it. Rows 2 and 3 are exposed to this.
 
-**Rule:** count prefetch writes as page writes. The run's write log starts when the first page loads, not when a page
-is opened on purpose.
+**Rule:** count prefetch writes as page writes. The run's write log starts when
+the first page loads, not when a page is opened on purpose.
 
 ## 1. Paid AI call on open (the one to watch)
 
@@ -30,10 +32,12 @@ is opened on purpose.
 **Audit rule:**
 
 - Open round reviews only for rounds that already have a recap.
-- Or count the calls and their cost against the staging team's budget, and say so in the run log.
+- Or count the calls and their cost against the staging team's budget, and say
+  so in the run log.
 - A round review opened twice costs nothing the second time.
 
-CoachHelm Ask and quick chat make **no** AI call on open. `?q=` only fills in the box.
+CoachHelm Ask and quick chat make **no** AI call on open. `?q=` only fills in
+the box.
 
 ## 2. Database writes on open
 
@@ -57,24 +61,29 @@ CoachHelm Ask and quick chat make **no** AI call on open. `?q=` only fills in th
 
 These show up as POST requests but don't write. Don't log them as writes:
 
-- **New round** setup: `getPlayerQualifiers`, `getPlayerSavedCourses`, `getRecentCoursesForPlayer`,
-  `loadSetupQualifiers`, `getNextQualifierRoundNumber`.
+- **New round** setup: `getPlayerQualifiers`, `getPlayerSavedCourses`,
+  `getRecentCoursesForPlayer`, `loadSetupQualifiers`,
+  `getNextQualifierRoundNumber`.
 - **Badges:** `getNotificationBadgeBundle`, every 45 seconds.
 - **Continue round:** `checkRoundStaleness`.
-- **Bell:** `getUnifiedNotifications`. Marking read happens only on a tap or swipe.
+- **Bell:** `getUnifiedNotifications`. Marking read happens only on a tap or
+  swipe.
 - **Push prompt:** `shouldShowPushSoftAsk`.
 
 ## 4. Checked and read-only
 
-- Loaders for Home, Calendar, Roster, Stats, Rounds, Tournaments, Recruiting, Qualifiers and Classes.
+- Loaders for Home, Calendar, Roster, Stats, Rounds, Tournaments, Recruiting,
+  Qualifiers and Classes.
 - `whats-new.ts` and `welcome.ts`.
 - The Ask chat loader and the Monday brief.
 - Opening the practice builder (autosave fires only on a change).
-- Not database writes: change marks (a cookie), the typing indicator (Realtime broadcast), PostHog page views.
+- Not database writes: change marks (a cookie), the typing indicator (Realtime
+  broadcast), PostHog page views.
 
 ## 5. End-of-run check (staging SQL)
 
-After the run, count the rows written since the run started, by demo coach and player, in each table above:
+After the run, count the rows written since the run started, by demo coach and
+player, in each table above:
 
 - `golf_insight_exposure`
 - `golf_conversation_participants`

@@ -1,4 +1,6 @@
-# P002 Home: numbers vs staging (Demo University Golf, tz America/New_York, season from 2026-08-01)
+# P002 Home: numbers vs staging
+
+Demo University Golf, tz America/New_York, season from 2026-08-01.
 
 | Shown (coach, 13 Nov) | Expected (staging) | Verdict | Query |
 | --- | --- | --- | --- |

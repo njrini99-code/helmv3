@@ -1,16 +1,19 @@
 # Clubhouse audit, 13 Nov 2026
 
-Page-by-page audit of Clubhouse, both roles, graded on a Vercel preview of `main`
-with staging data. The data is in [`audit/2026-11-13/`](audit/2026-11-13/):
-`scorecard.json`, `findings.jsonl` (worst first), `writes.md`, and `numbers/`
-(every figure checked against staging SQL). Screenshots, traces and raw
-measurements stay outside git, in `~/helm-audit-runs/2026-11-13-main-9e7c86b/`.
+Page-by-page audit of Clubhouse, both roles, graded on a Vercel preview of
+`main` with staging data. The data is in
+[`audit/2026-11-13/`](audit/2026-11-13/): `scorecard.json`, `findings.jsonl`
+(worst first), `writes.md`, and `numbers/` (every figure checked against staging
+SQL). Screenshots, traces and raw measurements stay outside git, in
+`~/helm-audit-runs/2026-11-13-main-9e7c86b/`.
 
 ## Result
 
 - **Phone B (82.7), desktop B (83.3), overall B (82.9).** Home is the low page
-  (C+ on both surfaces). Every other family sits at B or B-.
-- **26 findings:** 1 S1, 12 S2, 10 S3, 3 S4. 9 are marked `blocks-flip`.
+  (C+ on both surfaces). Every other family sits at B.
+- **24 findings:** 1 S1, 10 S2, 10 S3, 3 S4. 7 are marked `blocks-flip`.
+  Two more (F-0004, F-0008) were withdrawn on 14 Nov as harness artifacts; see
+  "Withdrawn".
 - **Grades come from measurements only.** No design critic was calibrated (see
   "Critic"). Motion is graded C everywhere except where a trace says more,
   because there was no device run.
@@ -22,12 +25,14 @@ Worst three:
    good day to play a round", while Team Hub shows the team on the road.
 2. **F-0002 (S2)** Home's Team scoring "This season" pill shows each player's
    last 10 rounds, reaching back to May: 75.6 where Roster's true season average
-   is 73.4. (Stats prints the same 75.6 under its "10" window, labelled as such.)
-3. **F-0003 (S2)** A round's stored total (78, +6) is a stroke off its holes
-   and nines (79, +7) on 15 of the team's 93 rounds with full holes. The review,
-   Rounds, Home and Stats print 79. Round setup's course summary prints the stale
-   78, and in code Qualifiers and two CoachHelm reads still use the stored total.
-   (Corrected after the fix pass: the first version said the lists read 78.)
+   is 73.4. (Stats prints the same 75.6 under its "10" window, labelled as
+   such.)
+3. **F-0003 (S2)** A round's stored total (78, +6) is a stroke off its holes and
+   nines (79, +7) on 15 of the team's 93 rounds with full holes. The review,
+   Rounds, Home and Stats print 79. Round setup's course summary prints the
+   stale 78, and in code Qualifiers and two CoachHelm reads still use the stored
+   total. (Corrected after the fix pass: the first version said the lists read
+   78.)
 
 Nothing is S0. The S1 and the wrong-number S2s (F-0002, F-0003, F-0005) are the
 ones to land before the next production deploy, since every Clubhouse flag is on
@@ -37,7 +42,7 @@ in production.
 
 | | |
 | --- | --- |
-| Preview | https://helmv3-i966d6x7b-nick-rinis-projects.vercel.app (preview only; Vercel SSO) |
+| Preview | <https://helmv3-i966d6x7b-nick-rinis-projects.vercel.app> (preview only; Vercel SSO) |
 | Commit | `8c6e5f84d2` (PR #2512). Its app code equals `main` `9e7c86bfd9`: only a test file differs under `src/`. |
 | Data | Staging `ybmwektreyrwjscxlogv` (PROSP DATA), team Demo University Golf, America/New_York, season from 1 Aug 2026 |
 | Flags | Deployment target preview. The 31 `golf_clubhouse_*` and `coachhelm_*` flags in the yml preview column match the registry compiled into the graded commit (0 mismatches); Clubhouse renders for both roles. |
@@ -51,20 +56,20 @@ in production.
   - **Desktop:** Chromium at 1440 × 932 (light and dark), plus a WebKit pass at
     1440.
 - **Measurements:** per page, role and variant, the kit's probes ran: layout
-  scan, painted contrast, non-text contrast, the animations at rest, LCP, axe and
-  IBM Equal Access.
-- **Press pass:** every visible button was pressed up to its first write
-  (Nick: view-only), recording what opened, whether focus moved in and came back,
-  dead controls, errors and requests.
+  scan, painted contrast, non-text contrast, the animations at rest, LCP, axe
+  and IBM Equal Access.
+- **Press pass:** every visible button was pressed up to its first write (Nick:
+  view-only), recording what opened, whether focus moved in and came back, dead
+  controls, errors and requests.
 - **Numbers:** each page's headline figures were cross-checked against staging
   SQL using the app's own definitions.
 - **Motion:**
   - Chromium traces of nine sidebar section switches at 1× and 4× CPU.
   - On the phone, the census of the bell sheet with Reduce Motion off and on.
-- **Staging only, without the audit hook:** the audit ran in an ordinary session,
-  so the `HELM_AUDIT` hook wasn't active. Instead, every browser context carried
-  the staging guard (blocking production), and SQL went only to the staging
-  project.
+- **Staging only, without the audit hook:** the audit ran in an ordinary
+  session, so the `HELM_AUDIT` hook wasn't active. Instead, every browser
+  context carried the staging guard (blocking production), and SQL went only to
+  the staging project.
 - **Teammate:** one teammate graded Roster, Classes, Tournaments, Settings,
   Practice and Recruiting from the saved measurements and staging SQL, with no
   browser. Its 4 findings are merged here.
@@ -75,9 +80,9 @@ in production.
 | --- | --- | --- |
 | Shell & navigation | B (83.9) | B (84) |
 | Home | C+ (77) | C+ (77) |
-| CoachHelm | B (83) | B (83.7) |
+| CoachHelm | B (83) | B (84) |
 | Rounds & round review | B (82.6) | B (83.5) |
-| Stats (team) | B- (81.9) | B (83.7) |
+| Stats (team) | B (82.8) | B (84) |
 | Stats (player) | B (83.5) | B (84) |
 | Messages | B (83.5) | B (84) |
 | Calendar | B (83.5) | B (84) |
@@ -91,7 +96,8 @@ in production.
 | Recruiting | B (83.5) | B (84) |
 | Sign-in | B (83.5) | B (85.1) |
 
-**Method** (the audit kit's `01-RUBRIC.md` weights and caps; the kit lives outside the repo in `~/clubhouse-audit/`):
+**Method** (the audit kit's `01-RUBRIC.md` weights and caps; the kit lives
+outside the repo in `~/clubhouse-audit/`):
 
 - **Starting points:**
   - a dimension with measured evidence starts at B+;
@@ -103,8 +109,8 @@ in production.
 - **Overall:** phone 65 %, desktop 35 %, weighted by how much each page is used.
 
 Pages with no finding of their own still sit at B. That's because two findings
-reach nearly every page (F-0011 accessible names, F-0014 phone text size), and motion
-has no device evidence.
+reach nearly every page (F-0011 accessible names, F-0014 phone text size), and
+motion has no device evidence.
 
 ## What is good
 
@@ -123,6 +129,23 @@ has no device evidence.
 - **Writes on open:** opening desktop Messages didn't mark the thread read,
   which is WRITES-ON-OPEN's promise. No paid AI call was made.
 
+## Withdrawn
+
+Two findings were withdrawn on 14 Nov, after the fix pass's preview showed the
+audit's own tools caused them. They stay in `findings.jsonl` with
+`status: withdrawn` and the evidence; the scorecard leaves them out.
+
+- **F-0004** (Stats card chart swallows clicks). On the preview a tap in the
+  middle of each team Stats card opened all three on the phone, and a desk click
+  on a card's chart swapped the detail. The audit's click timed out on the
+  card's hidden keyboard button, and its desk retest used the card already open.
+- **F-0008** (player CoachHelm button contrast). A fresh page passes axe (six
+  runs). The failure appeared only after the audit's contrast probe, which hid
+  the text and lifted the hide with the page's colour transitions on, so axe
+  caught the button mid-fade. The probe now lifts it with transitions off
+  (`scripts/clubhouse/audit/contrast.mjs`), and axe after it finds nothing. The
+  same artifact made the map's station buttons fail on the coach's CoachHelm.
+
 ## Critic
 
 **Not calibrated; measurements only (Nick, 13 Nov).** Two reasons:
@@ -136,8 +159,8 @@ has no device evidence.
 
 - **Real Safari (tier S) on signed-in pages:** Nick chose not to put the Vercel
   bypass secret into a tool call. Signed-out sign-in was covered in WebKit.
-- **Real iPhone (tier D)** and the hand test (the kit's `03-DEVICE-MATRIX` §5): no iPhone
-  was connected. This is the next step.
+- **Real iPhone (tier D)** and the hand test (the kit's `03-DEVICE-MATRIX` §5):
+  no iPhone was connected. This is the next step.
 - **WebKit census of route switches:** the WebKit renderer crashed under the
   probe's census on the second switch. Chromium traces cover the same switches.
 - **Accounts that don't exist on staging:** assistant coach, dual-role and
@@ -152,7 +175,8 @@ has no device evidence.
 request and the end-of-run SQL. Two rows were marked read (the team-channel
 thread, opened on the phone) and one row recorded the player's travel-seen time.
 There were no LLM calls, no round updates, no new error logs, and no table
-outside WRITES-ON-OPEN (`docs/clubhouse/audit/WRITES-ON-OPEN.md`, PR #2512) changed.
+outside WRITES-ON-OPEN (`docs/clubhouse/audit/WRITES-ON-OPEN.md`, PR #2512)
+changed.
 
 ## For the next run
 

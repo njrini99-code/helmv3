@@ -13,9 +13,10 @@ Held items:     none
 
 ### Changed
 
-- `StatsPlayerPhoneShs.tsx` is shared with this page's manifest; the change is the
-  player's page (P005): see `P005-stats-player/changes/2026-11-13-heading-and-tiles.md`.
-  Team stats renders nothing different.
+- `StatsPlayerPhoneShs.tsx` is shared with this page's manifest; the change is
+  the player's page (P005): see
+  `P005-stats-player/changes/2026-11-13-heading-and-tiles.md`. Team stats
+  renders nothing different.
 
 ### Why
 

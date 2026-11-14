@@ -1,6 +1,15 @@
-# P003 Roster: numbers vs staging (Demo University Golf, tz America/New_York, season from 2026-08-01)
+# P003 Roster: numbers vs staging
 
-App definitions: `src/clubhouse/data/roster.ts` (loadRoster). Season rounds = golf_rounds is_test false, completed, total_score not null, round_date >= 2026-08-01, practice out (`countsForScoring`), 18 holes for averages (`summarizePlayer`/`isFull18`), total from front+back nine when both are set. The coach's RLS only sees rounds whose team_id is this team. SG = `playerStrokesGained`: the last ten 18-hole scored rounds since 2025-11-13 (total-only rounds count toward the ten), mean of strokes_gained_total over those with holes.
+Demo University Golf, tz America/New_York, season from 2026-08-01.
+
+App definitions: `src/clubhouse/data/roster.ts` (loadRoster). Season rounds =
+golf_rounds is_test false, completed, total_score not null, round_date >=
+2026-08-01, practice out (`countsForScoring`), 18 holes for averages
+(`summarizePlayer`/`isFull18`), total from front+back nine when both are set.
+The coach's RLS only sees rounds whose team_id is this team. SG =
+`playerStrokesGained`: the last ten 18-hole scored rounds since 2025-11-13
+(total-only rounds count toward the ten), mean of strokes_gained_total over
+those with holes.
 
 | Shown (coach, 13 Nov) | Expected (staging) | Verdict | Query |
 | --- | --- | --- | --- |
@@ -12,5 +21,16 @@ App definitions: `src/clubhouse/data/roster.ts` (loadRoster). Season rounds = go
 | SG −6.1 / −4.9 / −6.7 a round (Cole / Mason / Owen; peek "SG / round −6.1" beside "Rounds 2") | −6.08 / −4.87 / −6.74 — but over 8 rounds from 8 Jun–10 Jul 2026 (Cole), i.e. last season: the two season qualifiers are total-only and carry no SG | Value right; window unlabelled and outside the season the page names — filed (F-0005) (S2) | last-ten SG CTE (row_number over round_date desc, id asc; mean where front_nine and back_nine not null) |
 
 Queries (all `-- staging only:`, project ybmwektreyrwjscxlogv):
-- members/season: `with m as (select tm.player_id, tm.status, p.* from golf_team_members tm join golf_players p on p.id = tm.player_id where tm.team_id = '6ecdd1a6-…' and tm.status in ('active','inactive')), r as (select … coalesce(front_nine+back_nine, total_score) tot from golf_rounds where team_id = '6ecdd1a6-…' and is_test = false and status = 'completed' and total_score is not null and round_date >= '2026-08-01') select … count/avg filter (where holes 18 and round_type in ('tournament','qualifying','qualifier'))`
-- SG: `row_number() over (partition by player_id order by round_date desc, id) rn … where round_date >= '2025-11-13' and holes 18 and non-practice and (both nines set or both null) … avg(strokes_gained_total) filter (where rn <= 10 and both nines set)`
+
+- members/season: `with m as (select tm.player_id, tm.status, p.* from
+  golf_team_members tm join golf_players p on p.id = tm.player_id where
+  tm.team_id = '6ecdd1a6-…' and tm.status in ('active','inactive')), r as
+  (select … coalesce(front_nine+back_nine, total_score) tot from golf_rounds
+  where team_id = '6ecdd1a6-…' and is_test = false and status = 'completed' and
+  total_score is not null and round_date >= '2026-08-01') select … count/avg
+  filter (where holes 18 and round_type in
+  ('tournament','qualifying','qualifier'))`
+- SG: `row_number() over (partition by player_id order by round_date desc, id)
+  rn … where round_date >= '2025-11-13' and holes 18 and non-practice and (both
+  nines set or both null) … avg(strokes_gained_total) filter (where rn <= 10 and
+  both nines set)`

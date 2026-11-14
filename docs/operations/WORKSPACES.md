@@ -161,8 +161,9 @@ fetches and never changes the checkout.
 Most worktrees symlink the canonical checkout's `node_modules` ("deps: symlinked"),
 so one `npm` write is felt by every worktree sharing it. `.claude/hooks/deps-hygiene.mjs`
 is advisory only (it never blocks, per `AGENTS.md`) and runs on SessionStart and after
-every Bash call (PostToolUse on purpose: this repo keeps no PreToolUse hook outside an audit
-session, see `src/test/scripts/control-plane-enforcement.test.ts`):
+every Bash call (PostToolUse on purpose: this repo keeps no PreToolUse hook
+outside an audit session, see
+`src/test/scripts/control-plane-enforcement.test.ts`):
 
 - **SessionStart:** reports a broken `node_modules` link, a borrowed `node_modules` whose
   donor `package-lock.json` differs from this checkout's, and a Node major that differs

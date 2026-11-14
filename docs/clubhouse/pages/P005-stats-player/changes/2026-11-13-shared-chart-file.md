@@ -16,8 +16,8 @@ Held items:     none
 - Nothing a player sees. `screens/stats/ScoringFeatureChart.tsx` and
   `styles/stats-redesign.css` are shared with Team Stats: the team chart's
   dashed average moved from a label on its line to a key under the drawing
-  (`.ch-shs-mean-label` replaced by `.ch-shs-mean-key`; P004's entry of the
-  same date). The player's `ScoringFeatureChart` is unchanged.
+  (`.ch-shs-mean-label` replaced by `.ch-shs-mean-key`; P004's entry of the same
+  date). The player's `ScoringFeatureChart` is unchanged.
 
 ### Verification
 

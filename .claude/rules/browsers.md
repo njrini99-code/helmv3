@@ -28,14 +28,15 @@ doesn't name its tier is not evidence.
 ## Defaults
 
 - **Phone:** W first, every screen. Escalate to S when W shows something that
-  could be a WebKit-build quirk, or when the check is on the "never" list for
-  W. Escalate to D only for motion and feel.
+  could be a WebKit-build quirk, or when the check is on the "never" list for W.
+  Escalate to D only for motion and feel.
 - **Desktop:** C at 1440×932 for the sweep, plus one W pass at the same size.
-- **CI:** the existing specs keep their engines (`playwright.clubhouse.config.ts`:
-  Chromium and WebKit × motion on/off; the gate's phone project is WebKit).
+- **CI:** the existing specs keep their engines
+  (`playwright.clubhouse.config.ts`: Chromium and WebKit × motion on/off; the
+  gate's phone project is WebKit).
 - **Claims:** "smooth", "60 fps", "native feel" and "passed on iPhone" need D
-  evidence (`helm-safari-performance`). "Looks right on iPhone" needs W and,
-  for anything with blur, safe areas or the keyboard, S.
+  evidence (`helm-safari-performance`). "Looks right on iPhone" needs W and, for
+  anything with blur, safe areas or the keyboard, S.
 
 ## Signing in
 
@@ -48,5 +49,5 @@ Chrome, after you click Allow) only when you ask for it in that session.
 
 Playwright's WebKit video is capped at 25 fps (Playwright 1.64 release notes),
 too coarse to time a 150 to 300 ms transition. Use it only to spot sequence
-bugs, such as two pages showing at once. For timing, use the Simulator
-(`xcrun simctl io <udid> recordVideo`) or D.
+bugs, such as two pages showing at once. For timing, use the Simulator (`xcrun
+simctl io <udid> recordVideo`) or D.

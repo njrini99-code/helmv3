@@ -13,15 +13,15 @@ Held items:     none
 
 ### Changed
 
-- `rounds.css` `.ch-trd-open`: `padding-block: 4px` with `margin-block:
-  -4px`. The link's box is 27 tall (it measured 19); the row keeps its
-  height and the name does not move.
+- `rounds.css` `.ch-trd-open`: `padding-block: 4px` with `margin-block: -4px`.
+  The link's box is 27 tall (it measured 19); the row keeps its height and the
+  name does not move.
 
 ### Why
 
-- F-0018 (WCAG 2.5.8, desktop 24). The row was already the target (the
-  link's `::after` covers the positioned row), so this satisfies the scan
-  of the link itself rather than changing what a click reaches.
+- F-0018 (WCAG 2.5.8, desktop 24). The row was already the target (the link's
+  `::after` covers the positioned row), so this satisfies the scan of the link
+  itself rather than changing what a click reaches.
 
 ### Verification
 

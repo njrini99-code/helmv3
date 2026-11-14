@@ -20,7 +20,7 @@
   "assistant coach, dual-role, teamless passes: no such demo accounts",
   "player data: the only sign-in-able player has 0 rounds"
  ],
- "method": "measurements only (no calibrated critic); see the header of harness/score.mjs in the run folder (~/helm-audit-runs/2026-11-13-main-9e7c86b, outside git)",
+ "method": "measurements only (no calibrated critic); see the header of harness/score.mjs; withdrawn findings (status: withdrawn) are left out",
  "phone": {
   "score": 82.7,
   "grade": "B"
@@ -148,11 +148,10 @@
    {
     "page": "P004",
     "surface": "phone",
-    "score": 81.9,
-    "grade": "B-",
+    "score": 82.8,
+    "grade": "B",
     "cap": "B",
     "findings": [
-     "F-0004",
      "F-0009",
      "F-0011",
      "F-0012",
@@ -162,7 +161,7 @@
      "motion": 74,
      "craft": 84,
      "touch": 87,
-     "correctness": 80,
+     "correctness": 87,
      "contrast": 80,
      "speed": 84,
      "states": 87,
@@ -538,12 +537,11 @@
    {
     "page": "P013",
     "surface": "desktop",
-    "score": 83.7,
+    "score": 84,
     "grade": "B",
     "cap": "B",
     "findings": [
      "F-0007",
-     "F-0008",
      "F-0010",
      "F-0011",
      "F-0024"
@@ -553,7 +551,7 @@
      "craft": 87,
      "touch": 87,
      "correctness": 87,
-     "contrast": 80,
+     "contrast": 87,
      "speed": 84,
      "states": 87,
      "a11y": 80,
@@ -593,18 +591,17 @@
    {
     "page": "P004",
     "surface": "desktop",
-    "score": 83.7,
+    "score": 84,
     "grade": "B",
     "cap": "B",
     "findings": [
-     "F-0004",
      "F-0011"
     ],
     "dims": {
      "motion": 74,
      "craft": 87,
      "touch": 87,
-     "correctness": 80,
+     "correctness": 87,
      "contrast": 87,
      "speed": 84,
      "states": 87,
@@ -914,13 +911,17 @@
   ]
  },
  "findings": {
-  "total": 26,
+  "total": 24,
   "bySeverity": {
    "S1": 1,
-   "S2": 12,
+   "S2": 10,
    "S3": 10,
    "S4": 3
   },
-  "blocksFlip": 9
+  "blocksFlip": 7,
+  "withdrawn": [
+   "F-0004",
+   "F-0008"
+  ]
  }
 }

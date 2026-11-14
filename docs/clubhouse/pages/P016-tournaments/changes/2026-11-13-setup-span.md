@@ -27,6 +27,6 @@ Held items:     none
 
 ### Verification
 
-- `src/clubhouse/screens/tournaments/__tests__/setup-groups-span.test.ts`
-  (RED, then GREEN); `src/clubhouse/__tests__/tournaments-p5.test.tsx` passes.
+- `src/clubhouse/screens/tournaments/__tests__/setup-groups-span.test.ts` (RED,
+  then GREEN); `src/clubhouse/__tests__/tournaments-p5.test.tsx` passes.
 - No screenshots: no browser in this slice (lead's instruction).

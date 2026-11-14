@@ -1,6 +1,8 @@
 # Write log: Clubhouse audit 13 Nov 2026 (staging, view-only)
 
-Every non-GET request the audit browsers sent, 1946 in all. Next.js server actions are POSTs even when they only read, so this is a superset of real writes. Session refreshes (`/auth/v1/token`) and the Sentry tunnel are left out.
+Every non-GET request the audit browsers sent, 1946 in all. Next.js server
+actions are POSTs even when they only read, so this is a superset of real
+writes. Session refreshes (`/auth/v1/token`) and the Sentry tunnel are left out.
 
 | Requests | Kind | Count |
 | --- | --- | --- |
@@ -24,12 +26,16 @@ Every non-GET request the audit browsers sent, 1946 in all. Next.js server actio
 
 What they were, checked against the code and the database:
 
-- The bell opening (`getUnifiedNotifications`) and the search palette are reads; badges stayed unread across every open.
+- The bell opening (`getUnifiedNotifications`) and the search palette are reads;
+  badges stayed unread across every open.
 - `golf_my_class_day` and `golf_team_class_day` RPCs are reads.
 - "Set a goal" opened its sheet only: no `golf_goals` row was created.
-- Opening the team channel thread on the phone marked it read for the demo coach and the demo player (WRITES-ON-OPEN row 4). Desktop Messages, which opens the thread by itself, did not.
+- Opening the team channel thread on the phone marked it read for the demo coach
+  and the demo player (WRITES-ON-OPEN row 4). Desktop Messages, which opens the
+  thread by itself, did not.
 - Opening the player's Travel tab updated `last_travel_seen_at` (row 6).
-- Round reviews were opened only for rounds that already had a recap; no Claude call was made.
+- Round reviews were opened only for rounds that already had a recap; no Claude
+  call was made.
 
 ## End-of-run check (WRITES-ON-OPEN §5), rows since 17:50 ET
 
@@ -43,4 +49,5 @@ What they were, checked against the code and the database:
 | golf_team_coachhelm_settings | 0 |
 | error_logs (demo users / all users) | 0 / 0 |
 
-No table outside the list changed and no error was logged, so the run raised no write finding.
+No table outside the list changed and no error was logged, so the run raised no
+write finding.
