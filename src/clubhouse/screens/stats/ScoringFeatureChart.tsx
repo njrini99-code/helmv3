@@ -279,6 +279,7 @@ export function ScoringFeatureChart({ rounds, tone, onRead }: { rounds: readonly
 /**
  * The team's feature chart (08 criterion 50): 160 tall, its line and area always the gain fill, the mean dashed and named. Not
  * interactive: the card is the tap. Straight segments, and a day one player posted on is a hollow dot off the team's line (W26).
+ * The dashed mean is named in a key under the drawing, never on the line: the scoring line crossed its words there (F-0009).
  */
 export function TeamFeatureChart({ days, mean }: { days: ReadonlyArray<{ label: string; score: number | null; n?: number }>; mean: number | null }) {
   const box = useRef<HTMLDivElement>(null);
@@ -310,6 +311,7 @@ export function TeamFeatureChart({ days, mean }: { days: ReadonlyArray<{ label: 
   const ticks: number[] = [];
   for (let q = lo; q <= hi; q++) if ((q - lo) % (hi - lo > 4 ? 2 : 1) === 0) ticks.push(q);
   return (
+    <>
     <div ref={box} className="ch-shs-chart" role="img" aria-label={`Team scoring average by round day, from ${formatFixed(v[0]!, 1)} to ${formatFixed(v[n - 1]!, 1)}. Lower scores sit higher.${joined.one.size ? ` ${joined.one.size} ${pluralWord(joined.one.size, 'day', 'days')} with one round ${joined.one.size === 1 ? 'is' : 'are'} drawn apart from the team’s line.` : ''}`}>
       <svg viewBox={`0 0 ${width} ${H}`} height={H} aria-hidden="true">
         <defs>
@@ -340,18 +342,18 @@ export function TeamFeatureChart({ days, mean }: { days: ReadonlyArray<{ label: 
             {known[n - 1]!.label}
           </text>
         )}
-        {mean != null && (() => {
-          // The label sits at the end of the dash where the line is farther from it, so the line rarely runs through the words.
-          const my = y(mean);
-          const atLeft = pts.length > 1 && Math.abs(pts[0]![1] - my) > Math.abs(pts[pts.length - 1]![1] - my);
-          return (
-            <text className="ch-shs-ax ch-shs-mean-label" x={atLeft ? pts[0]![0] : width - BASE_PAD.r} textAnchor={atLeft ? 'start' : 'end'} y={Math.max(12, my - 6)}>
-              {/* Named for what it is, so it never reads as a second scoring average beside the card's figure (W26). */}
-              Avg of these days {formatFixed(mean, 1)}
-            </text>
-          );
-        })()}
       </svg>
     </div>
+    {mean != null && (
+      // Named for what it is, an average of the round days drawn, so it never reads as a second scoring average beside the card's
+      // figure (W26, F-0009). Its mark is the line's own dash.
+      <p className="ch-shs-mean-key ch-num">
+        <svg width="16" height="2" viewBox="0 0 16 2" aria-hidden="true">
+          <line className="ch-shs-parline" x1="0" x2="16" y1="1" y2="1" />
+        </svg>
+        Round-day avg {formatFixed(mean, 1)}
+      </p>
+    )}
+    </>
   );
 }
