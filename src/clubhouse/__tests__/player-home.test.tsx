@@ -509,7 +509,7 @@ describe('Player Home · what the loader reads, on the redesign', () => {
     });
     await loadPlayerHome(player);
     const read = [...new Set(seen.map((s) => s.table))].sort();
-    expect(read).toEqual(['golf_coaches', 'golf_event_attendance', 'golf_events', 'golf_holes', 'golf_pga_standards', 'golf_players', 'golf_rounds', 'golf_task_assignments', 'golf_team_settings', 'golf_teams', 'rpc:get_player_hub_events'].sort());
+    expect(read).toEqual(['golf_coaches', 'golf_event_attendance', 'golf_events', 'golf_holes', 'golf_pga_standards', 'golf_players', 'golf_rounds', 'golf_task_assignments', 'golf_team_settings', 'golf_teams', 'golf_travel_itineraries', 'rpc:get_player_hub_events'].sort());
     expect(read).not.toContain('golf_team_members');
     const filtersOf = (table: string) => seen.filter((s) => s.table === table).flatMap((s) => s.filters);
     // Their own replies and their own tasks: never a teammate's.
@@ -518,6 +518,9 @@ describe('Player Home · what the loader reads, on the redesign', () => {
     }
     expect(filtersOf('golf_rounds')).toContainEqual(['in', ['player_id', ['p1']]]);
     expect(filtersOf('golf_players')).toContainEqual(['eq', ['id', 'p1']]);
+    // The team's trips (F-0001), as Team Hub shows every member: this team's, never a test trip.
+    expect(filtersOf('golf_travel_itineraries')).toContainEqual(['eq', ['team_id', player.teamId]]);
+    expect(filtersOf('golf_travel_itineraries')).toContainEqual(['eq', ['is_test', false]]);
   });
 
   it('22101 a failed read never throws: the page loads, each section says it failed, and every read is logged', async () => {

@@ -64,6 +64,8 @@ export interface ChPlayerHome {
   next: ChHomeEvent | null;
   today: ChHomeEvent[];
   weekNote: ChHomeWeek['weekNote'];
+  /** With nothing left this week, the first event or trip after it (F-0006; no meeting past the loaded window). Optional for fixtures. */
+  after?: ChHomeEvent | null;
   latest: { rounds: ChLatestRound[]; error: boolean; holesError: boolean };
   /** Oldest to newest, 18-hole countable rounds, up to SCORING_MAX. */
   scoring: { points: ChScoringPoint[]; error: boolean };
@@ -198,6 +200,7 @@ export async function loadPlayerHome(input: { teamId: string; playerId: string; 
     next: wk.next ? withChange(coachOnlyOut(wk.next), changes.byEvent) : null,
     today: wk.todayEvents.map((e) => withChange(coachOnlyOut(e), changes.byEvent)),
     weekNote: wk.weekNote,
+    after: wk.after ? coachOnlyOut(wk.after) : null,
     latest: { rounds: latest.rounds, error: roundsRes.error, holesError: latest.holesError },
     scoring: { points, error: roundsRes.error },
     sgPerRound: sg?.total ?? null,

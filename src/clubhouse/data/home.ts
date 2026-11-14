@@ -33,6 +33,7 @@ import type { MarkEntries } from '../lib/marks-cookie';
 import type { ChCalChange } from '../screens/calendar/change-view';
 import type { ChHomeChange } from '../screens/home/change-rows';
 import { loadHomeChanges, withChange, withWas } from './home-changes';
+import { HOME_TRIP_COLUMNS, tripBack, tripDates, tripLeaves, tripTitle, type ChHomeTripRow } from './home-trips';
 
 export { classYearLabel, formStatus } from './season';
 export { homeClock } from './home-clock';
@@ -58,6 +59,11 @@ export interface ChHomeDay {
   hasCompetition: boolean;
   /** The day's competition, for its mark (calendar TYPE_ICON): a tournament outranks a qualifier on the same day. */
   competitionType: 'tournament' | 'qualifier' | null;
+  /**
+   * The trip the team is on, leaving or coming home that day, by Team Hub's name for it (F-0001); null when none. A trip is
+   * a mark on the day, not one of its events (`eventCount`). Absent on an older fixture.
+   */
+  trip?: string | null;
 }
 
 export interface ChAgendaRow {
@@ -168,6 +174,12 @@ export interface ChHomeEvent {
   conflict: boolean;
   /** Coach only: the event asks for replies and the server would still take one (not started, not past its deadline). */
   replyOpen?: boolean;
+  /**
+   * A team trip with no calendar event of its own (F-0001), drawn as an all-day row from leaving to coming home: `id` is the
+   * itinerary's (the row opens it on Team Hub), `leaves` the departure as an instant when a time is saved (the countdown's
+   * end), `back` the last day (YYYY-MM-DD). Absent on an event.
+   */
+  trip?: { id: string; leaves: string | null; back: string };
 }
 
 /**
@@ -282,6 +294,8 @@ export interface ChCoachHome {
     form: ChTeamForm | null;
     /** The first competition later this week, for the week strip's note. */
     weekNote: { weekday: string; title: string } | null;
+    /** With nothing left this week (`next` null), the first event or trip after it (F-0006); null when nothing is ahead. Optional for fixtures. */
+    after?: ChHomeEvent | null;
   };
   /** The team's four parts under the form (desktop and phone); null when the rounds didn't load or there are none. Optional for fixtures. */
   legs?: ChTeamLegs | null;
@@ -504,7 +518,7 @@ export async function loadCoachHome(input: {
     latestRounds: { rounds: latestRounds, recent: recentRounds, error: roundsError, holesError },
     leaderboard: { rows, scorecards: seasonFull.length, rosterSize: roster.length, error: roundsError, ...(input.span === 'all' ? { span: input.span } : {}) },
     ...(input.span === 'all' ? { span: input.span } : {}),
-    phone: { next: withChange(wk.next, changes.byEvent), today: wk.todayEvents.map((e) => withChange(e, changes.byEvent)), form, weekNote: wk.weekNote },
+    phone: { next: withChange(wk.next, changes.byEvent), today: wk.todayEvents.map((e) => withChange(e, changes.byEvent)), form, weekNote: wk.weekNote, after: wk.after },
     legs,
     yearById: Object.fromEntries(roster.flatMap((p) => { const y = classYearKey(p.graduation_year, now, tz); return y ? [[p.id, y]] : []; })),
     queue,
@@ -587,6 +601,11 @@ export interface ChHomeWeek {
   todayEvents: ChHomeEvent[];
   /** The first competition later this week, for the week strip's note. */
   weekNote: { weekday: string; title: string } | null;
+  /**
+   * F-0006: with nothing left this week (`next` null), the first event or trip after it, for "Nothing else this week" and its
+   * Next line; null when nothing is ahead at all, or when the week is. A player's meetings past the loaded window are left out.
+   */
+  after: ChHomeEvent | null;
   /** Every meeting the viewer sees in the loaded window (a player's own invited meetings, Decision B), for scoping their change marks. */
   meetingIds: Set<string>;
 }
@@ -650,7 +669,34 @@ export async function loadHomeWeek(
           .range(from, to),
       )
     : null;
-  const [tz, wideRes, ownRes] = await Promise.all([input.tz, eventsRead, ownRead]);
+  // F-0001: the team's trips, read beside the events as Team Hub reads them (a test trip is never shown): every one not
+  // over before the widest window, so a trip after the week can be Up next's "Next" too (F-0006). Cut to the week below.
+  const wideFromDay = wide.from.slice(0, 10);
+  const tripsRead = Promise.resolve(
+    supabase
+      .from('golf_travel_itineraries')
+      .select(HOME_TRIP_COLUMNS)
+      .eq('team_id', input.teamId)
+      .eq('is_test', false)
+      .or(`return_date.gte.${wideFromDay},and(return_date.is.null,departure_date.gte.${wideFromDay})`)
+      .order('departure_date', { ascending: true })
+      .limit(HOME_TRIP_CAP),
+  );
+  // F-0006: the first events past the widest window, beside the rest, so a week with nothing left can name what comes next
+  // without another round trip. The ones between the week's own window and the widest are in the events read already.
+  const afterRead = Promise.resolve(
+    supabase
+      .from('golf_events')
+      .select('id, title, event_type, start_time, end_time, all_day, location, requires_rsvp, rsvp_deadline')
+      .eq('team_id', input.teamId)
+      .neq('event_type', CLASS_EVENT_TYPE)
+      .is('cancelled_at', null)
+      .gte('start_time', wide.to)
+      .order('start_time', { ascending: true })
+      .order('id', { ascending: true })
+      .limit(AFTER_LOOK),
+  );
+  const [tz, wideRes, ownRes, tripsRes, afterRes] = await Promise.all([input.tz, eventsRead, ownRead, tripsRead, afterRead]);
   /** The player's own reply by event; null when it didn't load (then no meeting is dropped here, and no reply is claimed). */
   let own: Map<string, ChRsvp> | null = null;
   if (ownRes?.error) log('ownReplies', ownRes.error);
@@ -676,18 +722,69 @@ export async function loadHomeWeek(
   // The shared calendar contract preserves UTC-midnight all-day dates and
   // treats their end day as inclusive. Cache each span once for the week.
   const calendarDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  const events = (eventsRes.error ? [] : (eventsRes.data ?? [])).flatMap((e) => {
+  type WeekRow = {
+    id: string;
+    title: string;
+    event_type: string;
+    start_time: string;
+    end_time: string | null;
+    all_day: boolean | null;
+    location: string | null;
+    requires_rsvp: boolean | null;
+    rsvp_deadline: string | null;
+    localDate: string;
+    lastDate: string;
+    trip?: ChHomeEvent['trip'];
+  };
+  const withDays = (e: Omit<WeekRow, 'localDate' | 'lastDate'>): WeekRow[] => {
     const span = eventDaySpan(e, tz);
+    return span ? [{ ...e, localDate: calendarDate(span.first), lastDate: calendarDate(span.last) }] : [];
+  };
+  const eventRows: WeekRow[] = (eventsRes.error ? [] : (eventsRes.data ?? [])).flatMap((e) => {
     // Decision B (owner, wave 7): a meeting the player isn't invited to is not on their week: not a day's count, not the
     // agenda, not Up next (which moves on to the next event they can see).
     if (playerId && e.event_type === 'meeting' && !playerSeesMeeting(own ? own.has(e.id) : null, invitedFallback?.get(e.id) ?? null)) return [];
-    return span ? [{ ...e, localDate: calendarDate(span.first), lastDate: calendarDate(span.last) }] : [];
+    return withDays(e);
   });
-  const runsOn = (e: (typeof events)[number], date: string) => e.localDate <= date && e.lastDate >= date;
-  const notOver = (e: (typeof events)[number]) => e.all_day ? e.lastDate >= today : new Date(e.end_time ?? e.start_time) > now;
+
+  // ── Trips (F-0001) ──
+  // A failed read is logged and leaves the week as its events say (a trip is extra to them; the events are the calendar).
+  if (tripsRes.error) log('trips', tripsRes.error);
+  if (afterRes.error) log('after', afterRes.error);
+  const afterRows = afterRes.error ? [] : (afterRes.data ?? []);
+  // A trip whose event is on the calendar is drawn once, as that event (Calendar links the two).
+  const eventIds = new Set([...(wideRes.error ? [] : (wideRes.data ?? [])), ...afterRows].map((e) => e.id));
+  const trips = (tripsRes.error ? [] : ((tripsRes.data ?? []) as ChHomeTripRow[])).flatMap((t) => {
+    const back = tripBack(t);
+    // The flag is checked again here, as Team Hub does, so an answer that ignores the filter never shows a test trip.
+    if (!back || t.is_test === true) return [];
+    const row: WeekRow = {
+      id: `trip-${t.id}`,
+      title: tripTitle(t),
+      event_type: 'travel',
+      // All day, on the calendar's own convention (UTC midnight, inclusive end), so it sorts and spans as an all-day event does.
+      start_time: `${t.departure_date}T00:00:00Z`,
+      end_time: `${back}T00:00:00Z`,
+      all_day: true,
+      location: t.event_name ? t.destination : null,
+      requires_rsvp: false,
+      rsvp_deadline: null,
+      localDate: t.departure_date!,
+      lastDate: back,
+      trip: { id: t.id, leaves: tripLeaves(t, tz), back },
+    };
+    return [{ row, linked: !!t.event_id && eventIds.has(t.event_id) }];
+  });
+  // The week's trips: any day from Monday to the Monday after (Up next's window runs a day past the week).
+  const weekTrips = eventsRes.error ? [] : trips.filter(({ row }) => row.localDate <= addDays(weekEnd, 1) && row.lastDate >= weekStart);
+  const byStart = (a: WeekRow, b: WeekRow) => Date.parse(a.start_time) - Date.parse(b.start_time);
+  const events: WeekRow[] = [...eventRows, ...weekTrips.filter((x) => !x.linked).map((x) => x.row)].sort(byStart);
+  const runsOn = (e: WeekRow, date: string) => e.localDate <= date && e.lastDate >= date;
+  const notOver = (e: WeekRow) => e.all_day ? e.lastDate >= today : new Date(e.end_time ?? e.start_time) > now;
   const days: ChHomeDay[] = WEEKDAYS.map((weekday, i) => {
     const date = addDays(weekStart, i);
-    const dayEvents = events.filter((e) => runsOn(e, date));
+    // A trip marks its days (Team Hub's week, linked to an event or not); it is not one of the day's events.
+    const dayEvents = events.filter((e) => !e.trip && runsOn(e, date));
     return {
       date,
       weekday,
@@ -700,6 +797,7 @@ export async function loadHomeWeek(
         : dayEvents.some((e) => e.event_type === 'qualifier')
           ? 'qualifier'
           : null,
+      trip: weekTrips.find(({ row }) => runsOn(row, date))?.row.title ?? null,
     };
   });
 
@@ -709,9 +807,12 @@ export async function loadHomeWeek(
   const clockHm = (iso: string) => hmFmt.format(new Date(iso));
   const todays = events.filter((e) => runsOn(e, today));
   const later = events.filter((e) => e.localDate > today && e.localDate <= weekEnd && COMPETITION_TYPES.has(e.event_type));
-  const nextId = todays.find(notOver)?.id;
+  // A trip under way gives "next" to an event still ahead today (a practice round at the venue); with none left today, the
+  // trip is what's next.
+  const nextId = (todays.find((e) => !e.trip && notOver(e)) ?? todays.find(notOver))?.id;
   // The phone's Up next: the first event not over yet, today or after (the window runs a day past the week).
-  const upcoming = events.find((e) => e.lastDate >= today && notOver(e)) ?? null;
+  const firstUp = events.find((e) => e.lastDate >= today && notOver(e)) ?? null;
+  const upcoming = firstUp?.trip && runsOn(firstUp, today) ? (events.find((e) => !e.trip && runsOn(e, today) && notOver(e)) ?? firstUp) : firstUp;
 
   // Who is invited, and who has said yes, for the rows shown. A failed read
   // drops the counts and names, never shows "0 players".
@@ -721,7 +822,8 @@ export async function loadHomeWeek(
   /** Rows the coach's invitation wrote (`notified_at`): none means the event is open to the whole team. */
   const coachInvited = new Map<string, number>();
   let attendanceError = false;
-  const weekIds = [...new Set([...todays, ...later, ...(upcoming ? [upcoming] : [])].map((e) => e.id))];
+  // Trips have no invitees or replies (their travellers are their event's): only events are asked about.
+  const weekIds = [...new Set([...todays, ...later, ...(upcoming ? [upcoming] : [])].filter((e) => !e.trip).map((e) => e.id))];
   // A player's Home: counts only (migration 20261017102000). `missing` (not applied yet) falls through to the rows.
   const counts = input.viewer === 'player' ? await loadAttendanceCounts(supabase, weekIds) : null;
   const countsByEvent: Map<string, ChAttendanceCounts> | null = counts?.kind === 'ok' ? counts.byEvent : null;
@@ -794,9 +896,9 @@ export async function loadHomeWeek(
   const clockAmPm = (iso: string) => timeFmt.format(new Date(iso));
   const meridiemOf = (iso: string) => /[AP]M$/.exec(clockAmPm(iso))?.[0] ?? '';
   const timed = todays.filter((e) => !e.all_day && e.end_time);
-  const overlaps = (e: (typeof events)[number]) =>
+  const overlaps = (e: WeekRow) =>
     !e.all_day && !!e.end_time && timed.some((o) => o.id !== e.id && new Date(o.start_time) < new Date(e.end_time!) && new Date(e.start_time) < new Date(o.end_time!));
-  const phoneBase = (e: (typeof events)[number]) => ({
+  const phoneBase = (e: WeekRow) => ({
     id: e.id,
     title: e.title,
     type: HOME_TYPES.has(e.event_type) ? (e.event_type as ChHomeEvent['type']) : ('other' as const),
@@ -806,20 +908,36 @@ export async function loadHomeWeek(
     endIso: e.end_time,
     allDay: !!e.all_day,
     startLabel: e.all_day ? 'All day' : clockAmPm(e.start_time),
-    rangeLabel: e.all_day ? 'All day' : e.end_time ? `${meridiemOf(e.start_time) === meridiemOf(e.end_time) ? clock(e.start_time) : clockAmPm(e.start_time)} – ${clockAmPm(e.end_time)}` : clockAmPm(e.start_time),
+    // A trip says its days ("Fri 13 – Sun 15 Nov"): it spans them, and its departure time is `trip.leaves`.
+    rangeLabel: e.trip
+      ? tripDates(e.localDate, e.lastDate)
+      : e.all_day ? 'All day' : e.end_time ? `${meridiemOf(e.start_time) === meridiemOf(e.end_time) ? clock(e.start_time) : clockAmPm(e.start_time)} – ${clockAmPm(e.end_time)}` : clockAmPm(e.start_time),
     location: e.location,
+  });
+  /** A trip, or an event past the loaded window: nothing read about who is on it, so nothing is claimed (never "0 invited"). */
+  const unasked = (e: WeekRow): ChHomeEvent => ({
+    ...phoneBase(e),
+    invitees: null,
+    going: null,
+    awaiting: null,
+    inviteeIds: null,
+    invitedCount: null,
+    ...(playerId ? { mine: null } : {}),
+    conflict: false,
+    ...(e.trip ? { trip: e.trip } : {}),
   });
   /**
    * The player's own reply (`mine`), by the rule the sidebar's card uses too (playerMine): only on an event that asks for
    * one, while the server would take it (`replyClosedAt`), and, with no row of theirs, when the coach invited no one so
    * the whole team may reply. Unknown (a failed read) claims nothing.
    */
-  const mineOf = (e: (typeof events)[number]): ChHomeEvent['mine'] => {
+  const mineOf = (e: WeekRow): ChHomeEvent['mine'] => {
     if (!own || e.requires_rsvp !== true) return null;
     const open = attendanceError ? null : countsByEvent ? (countsByEvent.get(e.id)?.coachInvited ?? 0) === 0 : (coachInvited.get(e.id) ?? 0) === 0;
     return playerMine(own.get(e.id), replyClosedAt(e, now.getTime()), open);
   };
-  const toPhone = (e: (typeof events)[number]): ChHomeEvent => {
+  const toPhone = (e: WeekRow): ChHomeEvent => {
+    if (e.trip) return unasked(e);
     const ids = inviteesOf(e.id);
     const invitees = ids ? ids.map((id) => names.get(id)).filter((n): n is string => !!n) : null;
     // Replies count, and the unanswered get a nudge, only on an event that asks for them (owner, 2026-10-08). Without
@@ -857,6 +975,22 @@ export async function loadHomeWeek(
   };
   const firstLater = later.find((e) => e.localDate > today);
 
+  // ── F-0006: with nothing left this week, what comes after it ──
+  // The events past the week's own window (some are in the events read already, the rest past the widest window), and the
+  // trips that leave after it. A player's own replies reach only the loaded window, so a meeting past it can't be shown to be
+  // theirs: it is left out (Decision B fails closed).
+  const after = ((): ChHomeEvent | null => {
+    if (eventsRes.error || upcoming) return null;
+    const seen = new Set<string>();
+    const beyond = [...(wideRes.data ?? []), ...afterRows]
+      .filter((e) => Date.parse(e.start_time) >= to && !seen.has(e.id) && !!seen.add(e.id))
+      .filter((e) => !(input.viewer === 'player' && e.event_type === 'meeting'))
+      .flatMap(withDays);
+    const tripsAfter = trips.filter((x) => !x.linked && x.row.localDate > addDays(weekEnd, 1)).map((x) => x.row);
+    const first = [...beyond, ...tripsAfter].sort((a, b) => a.localDate.localeCompare(b.localDate) || byStart(a, b))[0];
+    return first ? unasked(first) : null;
+  })();
+
   return {
     today,
     weekStart,
@@ -866,10 +1000,16 @@ export async function loadHomeWeek(
     next: eventsRes.error || !upcoming ? null : toPhone(upcoming),
     todayEvents: eventsRes.error ? [] : todays.map(toPhone),
     weekNote: firstLater ? { weekday: weekdayOf(firstLater.localDate), title: firstLater.title } : null,
+    after,
     meetingIds: new Set(eventsRes.error ? [] : events.filter((e) => e.event_type === 'meeting').map((e) => e.id)),
   };
 
 }
+
+/** The trips Home reads, at most (Team Hub reads as many). */
+const HOME_TRIP_CAP = 50;
+/** How many events past the widest window Up next looks through for the next one (F-0006). */
+const AFTER_LOOK = 20;
 
 const HOME_TYPES = new Set(['practice', 'qualifier', 'tournament', 'meeting', 'travel', 'other']);
 
