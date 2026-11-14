@@ -1090,6 +1090,7 @@ them would bury everything above.
 | `docs/clubhouse/changes/2026-11-13-phone-type-floor-and-week-strip.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-13-practice-builder-contrast.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-13-practice-craft.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-11-13-quick-chat-new-key.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-13-span-switch-labels.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-13-zone-formatters.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/CAPABILITIES.md` | current | - | - | - | - |
@@ -1221,8 +1222,11 @@ them would bury everything above.
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-07-shell-motion.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-11-fix-wave.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-12-practice-left-edge.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P001-shell/changes/2026-11-13-bell-teams.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-13-builder-fits-desk.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-13-label-in-name.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P001-shell/changes/2026-11-13-quick-chat-team.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P001-shell/changes/2026-11-13-search-ranking.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-13-type-scale-upward-only.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CONTRACT.md` | current | - | - | yes | - |
@@ -1515,6 +1519,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P007-messages/changes/2026-11-12-poll-add-choice.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-11-12-reactions-above-text.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-11-12-thread-spans-pane.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P007-messages/changes/2026-11-13-former-member.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-11-13-time-formatters.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-11-13-unread-conversations.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/CHANGELOG.md` | current | - | - | - | - |
@@ -1619,6 +1624,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P010-hub/changes/2026-11-12-head-figures.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/changes/2026-11-12-next-7-days.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/changes/2026-11-12-waiting-on-late-column.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P010-hub/changes/2026-11-13-updates-this-team.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/changes/2026-11-13-week-day-names.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/CONTRACT.md` | current | - | - | yes | - |
@@ -1780,6 +1786,9 @@ them would bury everything above.
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-12-miss-compass.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-12-preview-walk-fixes.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-12-team-spot-scale.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-13-ask-own-failures.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-13-read-drawer-truth.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-13-shell-and-ask.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-13-story-focus.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-13-team-board-first-paint.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-13-team-week-tiles-and-map.md` | current | - | - | - | - |

@@ -25,6 +25,7 @@
 import { isChatErrorKind, type ChatUIMessage as UIMessage } from './engine/protocol';
 import type { ChatMessage } from './types';
 import { STREAM_INCOMPLETE_NOTE } from './verdict';
+import { withoutSelfTalk } from './self-talk';
 
 /** A part shape we are willing to replay. Anything else is dropped. */
 const REPLAYABLE = new Set([
@@ -146,7 +147,7 @@ export function restoreUIMessages(messages: ChatMessage[], options: { steps?: bo
         out.push({
           id: row.id,
           role: row.role === 'user' ? 'user' : 'assistant',
-          parts: parts as UIMessage['parts'],
+          parts: (row.role === 'assistant' ? withoutLeadSelfTalk(parts) : parts) as UIMessage['parts'],
         });
         continue;
       }
@@ -160,11 +161,23 @@ export function restoreUIMessages(messages: ChatMessage[], options: { steps?: bo
     out.push({
       id: row.id,
       role: row.role === 'user' ? 'user' : 'assistant',
-      parts: [{ type: 'text', text: row.content }],
+      parts: [{ type: 'text', text: row.role === 'assistant' ? withoutSelfTalk(row.content) : row.content }],
     });
   }
 
   return out;
+}
+
+/**
+ * An answer's first text, without the model talking to itself at its top (self-talk.ts; coach audit 13 Nov 2026, §3c: a
+ * stored answer led with "Oops, I added a stray key."). Only the first text part: it is the one drawn as the headline.
+ */
+function withoutLeadSelfTalk(parts: Array<{ type: string }>): Array<{ type: string }> {
+  const at = parts.findIndex((p) => p.type === 'text' && typeof (p as { text?: unknown }).text === 'string');
+  if (at < 0) return parts;
+  const first = parts[at] as { type: string; text: string };
+  const text = withoutSelfTalk(first.text);
+  return text === first.text ? parts : parts.map((p, i) => (i === at ? { ...first, text } : p));
 }
 
 /**

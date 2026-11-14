@@ -5,6 +5,7 @@ import { sourceLine } from '../../../../data/coachhelm-chat-thread';
 import { formatSG } from '../../../../lib/format';
 import { useChPhone } from '../../../../lib/use-phone';
 import { Studio, fillComposer, type StudioLeg } from '../studio';
+import { useLightPlace } from '../../../../shell/light';
 
 const ANNOTATION_WORD = { measured: 'Measured', association: 'Pattern', hypothesis: 'To test' } as const;
 
@@ -30,6 +31,7 @@ export function CoachVisualArtifact({ artifact }: { artifact: ValidatedVisualArt
  */
 function SgAnatomy({ artifact }: { artifact: ValidatedVisualArtifact }) {
   const phone = useChPhone();
+  const zone = useLightPlace().timeZone;
   const legs: StudioLeg[] = artifact.legs.map((l) => ({ key: l.metricId, label: l.label, value: l.value, display: formatSG(l.value, 1), sample: `over ${l.sampleSize} ${l.sampleSize === 1 ? l.sampleUnit.replace(/s$/, '') : l.sampleUnit}` }));
   const mostRounds = Math.max(...artifact.legs.map((l) => l.sampleSize));
   const partial = artifact.legs.filter((l) => l.coverage !== 'complete' && l.coverageNote);
@@ -63,7 +65,7 @@ function SgAnatomy({ artifact }: { artifact: ValidatedVisualArtifact }) {
           )}
         </div>
       )}
-      <p className="ch-aks-src ch-num">{sourceLine({ sample_size: mostRounds, sample_unit: 'rounds', window_start: artifact.window.start, window_end: artifact.window.end, as_of: artifact.sourceAsOf })}</p>
+      <p className="ch-aks-src ch-num">{sourceLine({ sample_size: mostRounds, sample_unit: 'rounds', window_start: artifact.window.start, window_end: artifact.window.end, as_of: artifact.sourceAsOf }, zone)}</p>
     </figure>
   );
 }

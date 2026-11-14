@@ -1,8 +1,8 @@
-import { ChartColumn, Flag, GraduationCap, Megaphone, MessageSquarePlus, CalendarPlus, Sparkles, Trophy, type LucideIcon } from 'lucide-react';
+import { ChartColumn, Flag, GraduationCap, Medal, Megaphone, MessageSquarePlus, CalendarPlus, Sparkles, Trophy, type LucideIcon } from 'lucide-react';
 import { activeNavItem, CH_SETTINGS_ITEM, navFor, rebuiltHref, type ChNavFeatures, type ChNavItem, type ChRole } from '../nav';
 import { letterFor } from './shortcuts';
 
-export type ChCmdGroup = 'recent' | 'goto' | 'people' | 'actions';
+export type ChCmdGroup = 'recent' | 'goto' | 'people' | 'events' | 'actions';
 
 export interface ChCommand {
   /** Stable across renders and unique in the palette ("goto:roster", "action:new-round", "person:<id>"). */
@@ -27,6 +27,18 @@ export interface ChPerson {
   id: string;
   name: string;
   detail?: string;
+}
+
+/**
+ * A tournament or qualifier on the coach's team, by name (coach audit 13 Nov 2026, §2: "tar" did not find the Tar Heel
+ * Shootout). Read when the palette first opens, with the players (data/palette-people.ts).
+ */
+export interface ChPaletteEvent {
+  id: string;
+  name: string;
+  kind: 'tournament' | 'qualifier';
+  /** Its first day (YYYY-MM-DD). */
+  date: string | null;
 }
 
 /** A section the person has been in, most recent first. */
@@ -102,10 +114,33 @@ export function peopleCommands(role: ChRole, people: readonly ChPerson[]): ChCom
   });
 }
 
+const EVENT_DAY = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+
+/** "Tournament · Oct 25, 2026": the kind, and the first day as stored (a calendar date, so read in UTC). */
+function eventDetail(e: ChPaletteEvent): string {
+  const kind = e.kind === 'tournament' ? 'Tournament' : 'Qualifier';
+  const day = e.date && /^\d{4}-\d{2}-\d{2}$/.test(e.date) ? EVENT_DAY.format(new Date(`${e.date}T12:00:00Z`)) : null;
+  return day ? `${kind} · ${day}` : kind;
+}
+
+/** A coach's tournaments (to the event's desk, where Tournaments is on for the team) and qualifiers (to the qualifier). */
+export function eventCommands(role: ChRole, events: readonly ChPaletteEvent[], features?: ChNavFeatures | null): ChCommand[] {
+  if (role !== 'coach') return [];
+  return events.flatMap((e): ChCommand[] => {
+    const tournament = e.kind === 'tournament';
+    const href = rebuiltHref(`/golf/dashboard/${tournament ? 'tournaments' : 'qualifiers'}/${encodeURIComponent(e.id)}`, role, features);
+    return href
+      ? [{ id: `event:${e.kind}:${e.id}`, group: 'events', label: e.name, href, icon: tournament ? Medal : Trophy, detail: eventDetail(e), keywords: tournament ? ['tournament', 'event'] : ['qualifier', 'qualifying'] }]
+      : [];
+  });
+}
+
 export interface ChCommandInput {
   role: ChRole;
   pathname: string;
   people: readonly ChPerson[];
+  /** A coach's tournaments and qualifiers, once read. */
+  events?: readonly ChPaletteEvent[];
   recent: readonly ChRecent[];
   /** The flagged sections this team has, so the palette lists what the sidebar lists. */
   features?: ChNavFeatures | null;
@@ -113,9 +148,9 @@ export interface ChCommandInput {
 
 /**
  * Everything the palette can show, for one person: Recent (the last five sections they were in, not this one), Go to,
- * People (a coach's players) and Actions. Pure, so what each role is offered is tested, not eyeballed.
+ * People (a coach's players), Events (a coach's tournaments and qualifiers) and Actions. Pure, so what each role is offered is tested, not eyeballed.
  */
-export function buildCommands({ role, pathname, people, recent, features }: ChCommandInput): ChCommand[] {
+export function buildCommands({ role, pathname, people, events = [], recent, features }: ChCommandInput): ChCommand[] {
   const sections = sectionsFor(role, features);
   const here = activeNavItem(pathname.replace(/\/$/, '') || '/', role)?.id ?? (pathname.startsWith(CH_SETTINGS_ITEM.href) ? CH_SETTINGS_ITEM.id : undefined);
   const recents = recent
@@ -126,7 +161,7 @@ export function buildCommands({ role, pathname, people, recent, features }: ChCo
   // N starts a new event from Home, and only there (HomeActions): the key is drawn where it works.
   const onHome = (pathname.replace(/\/$/, '') || '/') === '/golf/dashboard';
   const actions = actionsFor(role).map((a) => (onHome && a.id === 'action:new-event' ? { ...a, keys: ['N'] } : a));
-  return [...recents, ...sections.map((s) => gotoCommand(s, role, 'goto', features)), ...peopleCommands(role, people), ...actions];
+  return [...recents, ...sections.map((s) => gotoCommand(s, role, 'goto', features)), ...peopleCommands(role, people), ...eventCommands(role, events, features), ...actions];
 }
 
 /** The section that reads closest to a search, for "No results" to offer: the best word-start match, else the fewest edits. */

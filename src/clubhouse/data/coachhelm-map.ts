@@ -3,6 +3,7 @@ import { strokesAtStake } from './coachhelm-strokes';
 import { areaOf } from './coachhelm-ladder-shape';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import type { InsightEvidence, InsightUnit } from '@/lib/coachhelm/v2/insights/types';
+import { getMetricDirection } from '@/lib/coachhelm/v3/metrics/registry';
 import { confidenceLabel, confidenceTier, type ConfidenceTier } from '@/lib/coachhelm/confidence-label';
 import { buildInsightUnit, fmtShortDate } from '@/components/golf/coachhelm/home/buildPlayerHubViewModel';
 import { MINUS } from '../lib/format';
@@ -227,9 +228,25 @@ function evidenceFor(ins: EvidenceInsight, kind: ChKind, tour: ChTourBaseline | 
     gauge: gauge ? { ...gauge, cmp: say(gauge.cmp), sec: gauge.sec != null ? say(gauge.sec) : null } : null,
     sample: n != null && n > 0 ? `${n} ${nounFor(ev, n)}` : '',
     window: windowFor(ev),
+    span: spanFor(ev),
     read: readFor(ev),
     asOf,
   };
+}
+
+/**
+ * The rounds the read was made from and the day they start: "37 rounds since Feb 27" (coach audit 13 Nov 2026, §3a: the drawer
+ * said "last 10 rounds", the player's board count, over a read made from 37). The count is the engine's (`rounds_n`), else the
+ * rounds it names; a lifetime read says no start. Null when the read counts no rounds.
+ */
+function spanFor(ev: InsightEvidence): string | null {
+  const named = Array.isArray(ev.source_round_ids) ? ev.source_round_ids.length : 0;
+  const rounds = num(ev.rounds_n) ?? (named > 0 ? named : null);
+  if (rounds == null || rounds <= 0) return null;
+  const count = `${rounds} ${rounds === 1 ? 'round' : 'rounds'}`;
+  const lifetime = ev.window_basis === 'lifetime' || ev.detail?.window_kind === 'lifetime';
+  const since = lifetime || typeof ev.window_start !== 'string' ? null : fmtShortDate(ev.window_start.slice(0, 10));
+  return since ? `${count} since ${since}` : count;
 }
 
 function weekFor(ins: EvidenceInsight, unit: ReturnType<typeof buildInsightUnit>, drillText: string | null | undefined, say: (text: string) => string, keep: (text: string | null | undefined) => string | null | undefined): ChHelmWeek | null {
@@ -291,7 +308,9 @@ function compareOf(ev: InsightEvidence, tour: ChTourBaseline | null): ChInsight[
     own: num(ev.your_value),
     team: pool,
     tour: tourBarOf(ev, tour),
-    higherBetter: ev.polarity === 'higher_better',
+    // A read stored without its polarity takes the metric's from the registry: "Putts Made 5-10 ft" had none and drew
+    // "Lower is better" (coach audit 13 Nov 2026, §3a).
+    higherBetter: (ev.polarity ?? getMetricDirection(ev.metric)) === 'higher_better',
     unit: ev.unit === 'percent' ? '%' : '',
   };
 }

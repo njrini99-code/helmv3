@@ -6,6 +6,7 @@ import { restoreUIMessages } from '@/lib/coachhelm/v3/chat/restore';
 import type { ChatMessage } from '@/lib/coachhelm/v3/chat/types';
 import { formatClock, isoDay } from '../../lib/dates';
 import { plural } from '../../lib/plural';
+import { QC_RESTORE_MS, qcTeamOf } from './qc-team';
 
 export type QcEarlier = { title: string; line: string; at: string };
 
@@ -51,11 +52,20 @@ export function useEarlierToday(open: boolean, enabled: boolean): QcEarlier | nu
  * surface is not known yet (null until the held migration is applied) counts, so today's thread is then the newest one
  * started today, as before, and narrows to quick chat's own by itself once the surface is stored.
  */
-export async function readTodayThread(now: Date = new Date()): Promise<{ id: string; messages: ChatUIMessage[] } | null> {
+export async function readTodayThread(now: Date = new Date(), teamId: string | null = null): Promise<{ id: string; messages: ChatUIMessage[] } | null> {
+  if (!teamId) return null;
   const get = (url: string) => fetch(url).then((r) => (r.ok ? r.json() : null)).catch(() => null);
-  const list = (await get('/api/coachhelm/v3/chat/conversations')) as { conversations?: Array<{ id: string; created_at: string; surface?: string }> } | null;
+  const list = (await get('/api/coachhelm/v3/chat/conversations')) as { conversations?: Array<{ id: string; created_at: string; updated_at?: string; surface?: string | null }> } | null;
   const today = isoDay(now);
-  const mine = (list?.conversations ?? []).filter((c) => isoDay(c.created_at) === today && (c.surface == null || c.surface === 'quick_chat'));
+  // This team's, and touched in the last 30 minutes (coach audit, 13 Nov 2026): another team's thread, or one with no team on
+  // record in this browser, opens fresh.
+  const mine = (list?.conversations ?? []).filter(
+    (c) =>
+      isoDay(c.created_at) === today &&
+      (c.surface == null || c.surface === 'quick_chat') &&
+      now.getTime() - Date.parse(c.updated_at ?? c.created_at) <= QC_RESTORE_MS &&
+      qcTeamOf(c.id) === teamId,
+  );
   const first = mine[0];
   if (!first) return null;
   const one = (await get(`/api/coachhelm/v3/chat/conversations/${encodeURIComponent(first.id)}`)) as { messages?: ChatMessage[] } | null;
