@@ -15,6 +15,7 @@ vi.mock('../../AskSheet', async () => {
 
 import { ClubhouseMarker } from '../../context';
 import { HelmKey, QuickChatProvider } from '../QuickChatProvider';
+import { accessibleName, expectLabelInName } from '../../../__tests__/label-in-name';
 
 const CAL = '/golf/dashboard/calendar';
 
@@ -35,7 +36,10 @@ const show = (role: 'coach' | 'player', opts: { provider?: boolean; enabled?: bo
 };
 const key = () => document.querySelector<HTMLElement>('[data-ch-qc-key]');
 
-beforeEach(() => session.mockClear());
+beforeEach(() => {
+  session.mockClear();
+  session.mockImplementation(() => null);
+});
 afterEach(cleanup);
 
 /** Quick chat AC-QC-KEY-07 and 08: SHARED-8 and SHARED-11. */
@@ -57,7 +61,7 @@ describe('who gets the key', () => {
 
   it('a coach: the key, named, closed', () => {
     show('coach');
-    expect(key()!.getAttribute('aria-label')).toBe('CoachHelm');
+    expect(accessibleName(key()!)).toBe('CoachHelm');
     expect(key()!.getAttribute('aria-expanded')).toBe('false');
     expect(key()!.getAttribute('aria-haspopup')).toBe('dialog');
   });
@@ -65,7 +69,24 @@ describe('who gets the key', () => {
   it('says what it is, beside the mark, and its name is what it says', () => {
     show('coach');
     expect(key()!.querySelector('.hkey__label')!.textContent).toBe('CoachHelm');
-    expect(key()!.getAttribute('aria-label')).toContain(key()!.querySelector('.hkey__label')!.textContent!);
+    // F-0011: named by its words, never an aria-label the ⌘J caps beside them would disagree with (axe label-content-name-mismatch).
+    expect(key()).not.toHaveAttribute('aria-label');
+    expectLabelInName(key()!, key()!.querySelector('.hkey__label')!.textContent!);
+  });
+
+  it('F-0015: points at the panel only while the panel is there', async () => {
+    // The session mounts the panel (QuickChatSession's section#ch-qc-panel) only once it has been opened.
+    session.mockImplementation(((p: { open: boolean }) => (p.open ? <section id="ch-qc-panel" /> : null)) as never);
+    show('coach');
+    expect(key()).not.toHaveAttribute('aria-controls');
+    await act(async () => {
+      fireEvent.click(key()!);
+      await Promise.resolve();
+    });
+    expect(key()!.getAttribute('aria-expanded')).toBe('true');
+    const id = key()!.getAttribute('aria-controls');
+    expect(id).toBe('ch-qc-panel');
+    expect(document.getElementById(id!)).not.toBeNull();
   });
 
   it('on CoachHelm itself: hidden, as today’s key is', () => {

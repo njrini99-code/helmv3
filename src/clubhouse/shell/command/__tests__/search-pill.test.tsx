@@ -6,6 +6,7 @@ import { CommandLayer } from '../CommandLayer';
 import { SearchPill } from '../SearchPill';
 import { clearPeople } from '../people';
 import { resetRecent } from '../recent';
+import { expectLabelInName } from '../../../__tests__/label-in-name';
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn(), prefetch: vi.fn(), back: vi.fn(), refresh: vi.fn() }), usePathname: () => '/golf/dashboard' }));
 vi.mock('../../../lib/haptics', () => ({ haptic: vi.fn() }));
@@ -48,6 +49,13 @@ function mount() {
 }
 
 describe('the top bar search pill (B11)', () => {
+  it('F-0011: named by the word on it, Search, with the key caps left to aria-keyshortcuts', () => {
+    mount();
+    const pill = screen.getByRole('button', { name: 'Search Clubhouse' });
+    expect(pill).not.toHaveAttribute('aria-label');
+    expectLabelInName(pill, 'Search');
+  });
+
   it('opens the one command palette, the same one Cmd K opens', () => {
     mount();
     const pill = screen.getByRole('button', { name: 'Search Clubhouse' });

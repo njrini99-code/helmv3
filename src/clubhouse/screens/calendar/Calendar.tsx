@@ -1231,7 +1231,13 @@ function CalendarBody({
         <div className="ch-cal-mast__l">
           <button ref={jumpBtn} type="button" className="ch-cal-title" onClick={() => setJump(!jump)} aria-expanded={jump} aria-haspopup="dialog" aria-label={`${title.main}${title.year ? ` ${title.year}` : ''}. Jump to a date`}>
             <h1>{title.main}</h1>
-            {title.year && <span className="ch-cal-title__yr">{title.year}</span>}
+            {/* F-0011: the space is not drawn (the title is a flex row) but keeps "October 2026" apart for the name to match it. */}
+            {title.year && (
+              <>
+                {' '}
+                <span className="ch-cal-title__yr">{title.year}</span>
+              </>
+            )}
             <Icon icon={ChevronDown} size={16} />
           </button>
           <div className="ch-cal-sub">

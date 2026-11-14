@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { WeekStrip, type WeekStripDay } from '../WeekStrip';
+import { accessibleName, expectLabelInName } from '../../__tests__/label-in-name';
 
 const hapticSpy = vi.fn();
 vi.mock('../../lib/haptics', () => ({ haptic: (k: string) => hapticSpy(k) }));
@@ -15,10 +16,34 @@ afterEach(() => {
 const week = (from: number): WeekStripDay[] =>
   Array.from({ length: 7 }, (_, i) => {
     const n = from + i;
-    return { date: `2026-10-${String(n).padStart(2, '0')}`, top: 'SMTWTFS'[i]!, num: n, isToday: n === 14, dots: i % 3, label: `Day ${n}` };
+    // A label that opens with the face ("Day 15" over "Day", 15) is the day's name as it stands (F-0011, below).
+    return { date: `2026-10-${String(n).padStart(2, '0')}`, top: 'Day', num: n, isToday: n === 14, dots: i % 3, label: `Day ${n}` };
   });
 
 describe('WeekStrip (B18)', () => {
+  /** F-0011 (WCAG 2.5.3, axe label-content-name-mismatch): the phone calendar's "S 8" was named "Sun 8, 0 events". */
+  it('F-0011: a day’s name opens with what its face shows, then its words', () => {
+    const days: WeekStripDay[] = [
+      { date: '2026-11-08', top: 'S', num: 8, dots: 0, label: 'Sun 8, 0 events' },
+      { date: '2026-11-09', top: 'Today', num: 9, isToday: true, dots: 1, label: 'Today 9, Mon: 1 event' },
+      { date: '2026-11-10', top: 'Tue', num: 10, dots: 0, label: 'Tue 10: nothing on' },
+    ];
+    render(<WeekStrip label="This week" days={days} selected="2026-11-09" onSelect={() => {}} />);
+    const buttons = within(screen.getByRole('list', { name: 'This week' })).getAllByRole('button');
+    expect(buttons.map(accessibleName)).toEqual(['S 8, Sun 8, 0 events', 'Today 9, Mon: 1 event', 'Tue 10: nothing on']);
+    for (const b of buttons) expectLabelInName(b);
+  });
+
+  it('F-0011: as links and as plain days, the words read open with the face too', () => {
+    const days: WeekStripDay[] = [{ date: '2026-11-08', top: 'S', num: 8, dots: 0, label: 'Sun 8, 0 events', href: '/cal?date=2026-11-08' }];
+    const { unmount } = render(<WeekStrip label="Days this week" days={days} />);
+    expect(accessibleName(screen.getByRole('link'))).toBe('S 8, Sun 8, 0 events');
+    expectLabelInName(screen.getByRole('link'), 'S 8');
+    unmount();
+    render(<WeekStrip label="Days this week" days={days.map(({ href: _, ...d }) => d)} />);
+    expect(screen.getByRole('list').querySelector('.ch-sr-only')!.textContent).toBe('S 8, Sun 8, 0 events');
+  });
+
   it('marks the chosen day and today, and puts the plate under the chosen day', () => {
     render(<WeekStrip label="This week" days={week(11)} selected="2026-10-15" onSelect={() => {}} />);
     const strip = screen.getByRole('list', { name: 'This week' });

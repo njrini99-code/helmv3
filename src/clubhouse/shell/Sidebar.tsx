@@ -151,6 +151,7 @@ function IdentityMenu({ userData, headCoach, teams = [] }: { userData: GolfUserD
       toast({ tone: "error", title: SIGN_OUT_FAILED.title, body: SIGN_OUT_FAILED.body, action: { label: SIGN_OUT_FAILED.retry, run: () => void signOut() } });
     }
   };
+  const meta = (userData.role === "coach" ? (headCoach ? "Head coach" : "Coach") : "Player") + (userData.teamName ? ` · ${userData.teamName}` : "");
   const items: MenuItem[] = [
     { label: "Settings", icon: Settings, href: "/golf/dashboard/settings" },
     ...(teams.length ? [{ kind: "separator" } as const, ...teams, { kind: "separator" } as const] : []),
@@ -167,19 +168,18 @@ function IdentityMenu({ userData, headCoach, teams = [] }: { userData: GolfUserD
           ref={t.ref}
           type="button"
           className="ch-identity"
-          aria-label={`${userData.name}. Account`}
           aria-expanded={t["aria-expanded"]}
           aria-haspopup={t["aria-haspopup"]}
           aria-controls={t["aria-expanded"] ? t["aria-controls"] : undefined}
           onClick={t.onClick}
         >
           <Avatar name={userData.name} size={30} />
-          <span className="ch-identity__txt">
-            <span className="ch-identity__name">{userData.name}</span>
-            <span className="ch-identity__meta">
-              {userData.role === "coach" ? (headCoach ? "Head coach" : "Coach") : "Player"}
-              {userData.teamName ? ` · ${userData.teamName}` : ""}
-            </span>
+          {/* F-0011 (WCAG 2.5.3): named by the words it shows, not an aria-label the initials and role line disagreed with. The
+              name is its own hidden copy because the folded rail hides the drawn block (shell.css), which would leave it nameless. */}
+          <span className="ch-sr-only">{`${userData.name}, ${meta}`}</span>
+          <span className="ch-identity__txt" aria-hidden="true">
+            <span className="ch-identity__name">{userData.name}</span>{" "}
+            <span className="ch-identity__meta">{meta}</span>
           </span>
         </button>
       )}

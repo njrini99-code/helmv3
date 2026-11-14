@@ -118,10 +118,10 @@ export function HelmKey() {
       <button
         type="button"
         className={'hkey' + (open ? ' is-on' : '') + (open && run.state === 'work' ? ' is-working' : '') + (flag ? ' has-flag' : '')}
-        aria-label="CoachHelm"
         aria-haspopup="dialog"
         aria-expanded={open}
-        aria-controls="ch-qc-panel"
+        // F-0015: the panel (QuickChatSession's #ch-qc-panel) is in the page only once it opens.
+        aria-controls={open ? 'ch-qc-panel' : undefined}
         data-ch-qc-key=""
         data-ch-press=""
         style={live ? { visibility: 'hidden' } : undefined}
@@ -138,6 +138,9 @@ export function HelmKey() {
       >
         <span className="hkey__disc" />
         <HelmMark className="hkey__mark" />
+        {/* F-0011 (WCAG 2.5.3): named by its word, not an aria-label the ⌘J caps beside it disagreed with. The word is drawn
+            only on a tab root and a wide desk, so the name is its own hidden copy and the drawn one stays out of it. */}
+        <span className="ch-sr-only">CoachHelm</span>
         <span className="hkey__label" aria-hidden="true">
           CoachHelm
         </span>
