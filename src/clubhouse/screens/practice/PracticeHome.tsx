@@ -41,11 +41,14 @@ export function StateChip({ state }: { state: ChPracticeState }) {
 /** This week: seven tiles, Monday to Sunday in the team's zone. A tile with a plan opens it; one without starts New plan on that practice. */
 export function WeekStrip({ week, onPlan }: { week: ChPracticeTile[]; onPlan?: (eventId: string) => void }) {
   const strip = useRef<HTMLDivElement>(null);
-  // A phone's strip scrolls: today starts in view, without moving the page.
+  // A phone's strip scrolls: today starts in view, on the page's edge (the strip's own padding: 16, or 20 from 414 wide), without
+  // moving the page. Late in the week the strip rests at its end instead, where its last three tiles fill the width edge to edge.
   useEffect(() => {
     const box = strip.current;
     const today = box?.querySelector<HTMLElement>('.is-today');
-    if (box && today && box.scrollWidth > box.clientWidth) box.scrollLeft = Math.max(0, today.offsetLeft - box.offsetLeft - 16);
+    if (!box || !today || box.scrollWidth <= box.clientWidth) return;
+    const edge = parseFloat(getComputedStyle(box).paddingLeft) || 0;
+    box.scrollLeft = Math.max(0, today.offsetLeft - box.offsetLeft - edge);
   }, []);
   return (
     <div ref={strip} className="ch-prc-week" role="list" aria-label="This week">
@@ -160,12 +163,14 @@ export function PracticeHome({ data, openNew = false, previewSheet = false, temp
         )}
       </header>
 
+      {/* The tabs sit under the head on all four of their pages, at both widths, so switching tabs never moves them (they were
+          under Up next on a phone here and under the title on Drills, Groups and Templates). Plans' own week follows them. */}
+      <PracticeTabs active="plans" />
+
       <section aria-label="This week">
         <WeekStrip week={data.week} onPlan={(event) => setSheet({ event })} />
       </section>
 
-      {/* On a Mac the tabs sit over both columns: Up next, with the plans beside it. On a phone they sit over the plans, under Up next. */}
-      {!phone && <PracticeTabs active="plans" />}
       <div className={'ch-prc-home' + (listed ? ' has-plans' : '')}>
       {data.firstRun ? (
         <section className="ch-prc-card ch-prc-first" data-ch-code="CH-13396" aria-labelledby="ch-prc-first">
@@ -264,8 +269,6 @@ export function PracticeHome({ data, openNew = false, previewSheet = false, temp
           )}
         </>
       )}
-
-      {phone && <PracticeTabs active="plans" />}
 
       {listed && (
         <div className="ch-prc-home__plans">

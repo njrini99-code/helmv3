@@ -1063,17 +1063,20 @@ function FaceFigures({
   const hi = avgs.length ? Math.max(...avgs) : 0;
   const at = (v: number) => (hi === lo ? 50 : ((v - lo) / (hi - lo)) * 100);
   // W25: an early player's card already says "Early read" over its form line (FormLine, under three points), so the
-  // scoring caption no longer repeats it as "Needs N more"; it reads "Avg", as a player with no place does.
+  // scoring caption no longer repeats it as "Needs N more"; it reads "Scoring avg" on one line, as a player with no place does.
   const ord = (n: number) => `${n}${n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] ?? 'th'}`;
   const sg = p.sgPerRound;
   const sgW = sg == null ? 0 : Math.min(50, (Math.abs(sg) / 3) * 50);
+  const placed = standing && standing.of > 1 ? standing : null;
   return (
     <span className="ch-rs-figs">
       <span className="ch-rs-fig">
-        <span className="ch-rs-fig__k">Scoring</span>
+        {/* With no place to show, the label says what the figure is on its own line ("Scoring avg"): a lone "Avg" caption under
+            "Scoring" read as the label wrapped, and made this figure a line taller than strokes gained beside it. */}
+        <span className="ch-rs-fig__k">{placed ? 'Scoring' : 'Scoring avg'}</span>
         <b className="ch-num">{formatFixed(p.avg)}</b>
-        <span className="ch-rs-fig__m">{standing && standing.of > 1 ? `${standing.tied ? `T${standing.place}` : ord(standing.place)} of ${standing.of}` : 'Avg'}</span>
-        {p.avg != null && standing && standing.of > 1 && (
+        {placed && <span className="ch-rs-fig__m">{`${placed.tied ? `T${placed.place}` : ord(placed.place)} of ${placed.of}`}</span>}
+        {p.avg != null && placed && (
           <span className="ch-rs-strip" aria-hidden="true">
             {avgs.map((v, k) => (
               <i key={k} style={{ left: `${at(v)}%` }} />
