@@ -34,3 +34,10 @@ Held items:     the frame-gap measurement (below)
   device or Simulator run. Calendar (`zonedNow`, `daylightOn`) and Home
   (`DayCard` `minutesOf`, `sunsetExtra`) also build formatters per call and
   can take the same cache once the Messages result is measured.
+
+### Also (follow-up in the same PR)
+
+- The announcement letterhead's date (`letterDate`) builds its three
+  formatters once per zone, through the shared cache (`lib/zone-format.ts`,
+  logged in `docs/clubhouse/changes/2026-11-13-zone-formatters.md`).
+  `screens/calendar/__tests__/zone-formatters.test.ts` covers it.

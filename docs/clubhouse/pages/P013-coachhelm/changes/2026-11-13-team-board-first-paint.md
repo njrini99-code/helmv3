@@ -42,3 +42,20 @@ Held items:     the lab measurement (below)
 - No browser, build or database was used. The LCP target (2.5 s) and the
   100 ms route skeleton need a WebKit phone-lab run on staging
   (`scripts/phone/`); the loader's depth is proven in tests, the seconds are not.
+
+### Also (follow-up in the same PR)
+
+- `loadSeasonRounds` (`data/season.ts`, read by this board and several other
+  pages) reads its 200-id slices up to four at a time (`SEASON_CHUNKS_AT_ONCE`)
+  instead of one after another. Each slice still pages past PostgREST's
+  1000-row cap on its own, the rows come back sorted as before, and a failed
+  slice is still a failed read with no partial season. Test:
+  `data/__tests__/season-chunks.test.ts` (fails with one slice at a time).
+- Not done: painting the hero and the hole before the per-station reads. The
+  loader's serial depth is now five rounds (gate; roster, zone, team, pulse;
+  insights, rounds, heads, standings; drills and focus areas; the newest-round
+  read), and the last two wait on the heads. The hero (`teamTotal`) and the
+  stations need only the rounds, but the hole's spots draw each player's
+  reads, so a split is a new data contract (a frame promise and a reads
+  promise) and two Suspense boundaries inside `TeamBoard`/`TeamHole`: a design
+  change, written up in the PR body, not made here.
