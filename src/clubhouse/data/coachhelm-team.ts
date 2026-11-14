@@ -19,7 +19,6 @@ import { isNotEnoughYet, notEnoughOf, notEnoughRead, splitFirm, type ChNotEnough
 import { toChInsight } from './coachhelm-map';
 import {
   assignedByInsight,
-  coachTour,
   declinedByInsight,
   drillTextByInsight,
   earliestStaleFloor,
@@ -29,7 +28,9 @@ import {
   newestRounds,
   pulseLater,
   teamPatternsOf,
+  tourBaselineOf,
   topInsights,
+  type TourRead,
 } from './coachhelm';
 import { shapeReadsLifecycle } from './coachhelm-engine-shape';
 import { boardMissing, firstName, partitionInsights } from './coachhelm-shape';
@@ -110,31 +111,40 @@ export async function loadCoachTeamBoard(input: { coachId: string; teamId: strin
   if (gate.status === 'off') return emptyTeamBoard(gate.off);
 
   const pulse = pulseLater();
-  const tourRead = handled(coachTour(supabase, input.teamId));
+  // One read of the team's row serves its name, its tour and the Tour's values (a second read of the same row is no longer made).
   const teamRow = handled(Promise.resolve(supabase.from('golf_teams').select('name, gender').eq('id', input.teamId).maybeSingle()));
+  const tourRead = handled(
+    teamRow.then(async (res): Promise<TourRead> => {
+      if (res.error) {
+        log('team', res.error);
+        return { baseline: null, error: true };
+      }
+      return tourBaselineOf(supabase, res.data as { gender: string | null } | null);
+    }),
+  );
   const zoneRead = handled(loadTeamZone(supabase, input.teamId, 'coachhelm.team'));
+  // A team row that did not load names no tour (lib/sg.ts: an unknown tour claims neither). Awaited only where it is drawn, never in front of a read.
+  const teamNamed = handled(
+    teamRow.then((info) => {
+      const teamData = info.data as { name?: string | null; gender?: string | null } | null;
+      return { name: teamData?.name ?? '', tourKnown: false, baselineLabel: 'to Tour', sgTour: teamData ? tourForGender(teamData.gender) : null };
+    }),
+  );
 
   const none = emptyTeamBoard();
-  const members = await supabase.from('golf_team_members').select('player_id').eq('team_id', input.teamId).eq('status', 'active');
+  // The roster in one read: each member row carries the player it names. A player the coach cannot read comes back null and is left out,
+  // as the separate read of `golf_players` left it out.
+  const members = await supabase.from('golf_team_members').select('player_id, player:golf_players(id, first_name, last_name, graduation_year)').eq('team_id', input.teamId).eq('status', 'active');
   if (members.error) {
     log('roster', members.error);
     return { ...none, roster: { count: 0, error: true }, pulse };
   }
-  const memberIds = (members.data ?? []).map((m) => m.player_id);
-  const people = memberIds.length
-    ? await supabase.from('golf_players').select('id, first_name, last_name, graduation_year').in('id', memberIds)
-    : { data: [] as Array<{ id: string; first_name: string | null; last_name: string | null; graduation_year: number | null }>, error: null };
-  if (people.error) {
-    log('players', people.error);
-    return { ...none, roster: { count: 0, error: true }, pulse };
-  }
-  const roster = (people.data ?? []).map((p) => ({ id: p.id, name: [p.first_name, p.last_name].filter(Boolean).join(' ').trim() || NO_NAME, graduationYear: p.graduation_year }));
+  const roster = (members.data ?? []).flatMap((m) => {
+    const p = m.player as { id: string; first_name: string | null; last_name: string | null; graduation_year: number | null } | null;
+    return p ? [{ id: p.id, name: [p.first_name, p.last_name].filter(Boolean).join(' ').trim() || NO_NAME, graduationYear: p.graduation_year }] : [];
+  });
   const ids = roster.map((p) => p.id);
-  const teamInfo = await teamRow;
-  const teamData = teamInfo.data as { name?: string | null; gender?: string | null } | null;
-  // A team row that did not load names no tour (lib/sg.ts: an unknown tour claims neither).
-  const team = { name: teamData?.name ?? '', tourKnown: false, baselineLabel: 'to Tour', sgTour: teamData ? tourForGender(teamData.gender) : null };
-  if (!ids.length) return { ...none, team, roster: { count: 0, error: false }, pulse };
+  if (!ids.length) return { ...none, team: await teamNamed, roster: { count: 0, error: false }, pulse };
 
   // What the board draws is known only after the shaping below; the exposures wait for it, and a failed load records nothing.
   let settleDrawn: (ids: readonly string[]) => void = () => {};
@@ -146,7 +156,6 @@ export async function loadCoachTeamBoard(input: { coachId: string; teamId: strin
     }),
   );
 
-  const zone = await zoneRead;
   // Estimated strokes gained (stats-sg-mix.ts): the policy is applied to the rounds as they load, so the hole, the stations and each
   // player's legs follow it. The split for the hole's own window is read as soon as the rounds are in, alongside everything else.
   const roundsRead = handled(
@@ -156,11 +165,19 @@ export async function loadCoachTeamBoard(input: { coachId: string; teamId: strin
     }),
   );
   const sgSourceRead = handled(roundsRead.then((res) => sgSourceFor(supabase, res.sgEarly, teamLastTenRounds(roundsForFigures(res.rounds), ids), 'coachhelm.team')));
+  // The standings need only the ids, and nothing else waits for them: they start with the rounds and are awaited where the Tour comparison
+  // is built, instead of after every other read. A failed read is that comparison undrawn (null), never the board's failure.
+  const standingsRead = handled(
+    loadPlayersStandingMap(ids).catch((err: unknown) => {
+      log('standing', err);
+      return null;
+    }),
+  );
   const [visible, heads] = await Promise.all([loadVisible(supabase, ids), topInsights(ids, { limit: NEEDS_MAX + WORKING_MAX, drawnLater: () => drawn })]);
   const rankedAny = [...heads.values()].some((l) => l.length > 0);
   if (visible.error || (visible.rows.length > 0 && !rankedAny)) {
     failDrawn(new Error('the reads did not load'));
-    return { ...none, team, roster: { count: roster.length, error: false }, players: { list: [], error: true }, pulse };
+    return { ...none, team: await teamNamed, roster: { count: roster.length, error: false }, players: { list: [], error: true }, pulse };
   }
 
   const flags = readEngineFlags();
@@ -183,7 +200,7 @@ export async function loadCoachTeamBoard(input: { coachId: string; teamId: strin
   let patternsFailed = false;
   const newestRead = newestRounds(supabase, ids, earliestStaleFloor([...visible.rows, ...allReads]));
   const openRows = Promise.all([newestRead, tourRead]).then(([n, t]) => visible.rows.filter((r) => isOpenFinding(r, t.baseline, n.days.get(r.player_id) ?? null)));
-  const [drills, assigned, declined, newest, tourResult, patterns, focus, corrections, seasonRounds, sgSource] = await Promise.all([
+  const [drills, assigned, declined, newest, tourResult, patterns, focus, corrections, seasonRounds, sgSource, zone, team] = await Promise.all([
     drillTextByInsight(supabase, allReads),
     assignedByInsight(supabase, readIds),
     declinedByInsight(supabase, readIds),
@@ -196,6 +213,8 @@ export async function loadCoachTeamBoard(input: { coachId: string; teamId: strin
     readCorrections(supabase, { role: 'coach', teamIds: [input.teamId], reads: allReads.map((i) => ({ id: i.id, playerId: i.player_id })) }),
     roundsRead,
     sgSourceRead,
+    zoneRead,
+    teamNamed,
   ]);
   const tour = tourResult.baseline;
   const iso = now.toISOString();
@@ -251,18 +270,6 @@ export async function loadCoachTeamBoard(input: { coachId: string; teamId: strin
 
   // "Courses this season" stays the season's.
   const history = seasonRounds.error ? null : toCourseHistory(seasonCountable as never, ids, iso.slice(0, 10));
-  const standings = await loadPlayersStandingMap(ids).catch((err: unknown) => {
-    log('standing', err);
-    return null;
-  });
-  const against: ChTourRow[] | null = standings
-    ? TOUR_ROWS.map((id) => {
-        const rows = ids.map((pid) => standings.get(pid)?.get(id as never)).filter((s): s is NonNullable<typeof s> => s != null && s.player_value != null);
-        const tourValue = rows.find((s) => s.pga_value != null && !s.pga_omitted)?.pga_value ?? null;
-        return { id, team: rows.length ? rows.reduce((a, s) => a + (s.player_value as number), 0) / rows.length : null, tour: tourValue, n: rows.length };
-      })
-    : null;
-
   const names = new Map(roster.map((p) => [p.id, p.name]));
   // One read of each player's themes serves the stories and each drawn read's worth.
   const themed = part('themes', async () => {
@@ -284,6 +291,42 @@ export async function loadCoachTeamBoard(input: { coachId: string; teamId: strin
     }
     return { themes, worth };
   });
+  const storyRounds = part('storyRounds', async () => {
+    // AC-TODAY-04: only a round inside the week earns the strip; a player's newest one.
+    const since = new Date(now.getTime() - 7 * 86_400_000).toISOString().slice(0, 10);
+    const { data: rounds, error } = await supabase.from('golf_rounds').select('id, player_id, round_date, course_name').eq('is_test', false).eq('status', 'completed').in('player_id', [...names.keys()]).gte('round_date', since).order('round_date', { ascending: false });
+    if (error) throw error;
+    const newest = new Map<string, { id: string; player_id: string; round_date: string; course_name: string | null }>();
+    for (const r of rounds ?? []) if (!newest.has(r.player_id)) newest.set(r.player_id, r);
+    const roundIds = [...newest.values()].map((r) => r.id);
+    if (!roundIds.length) return {};
+    const { data: holes, error: holesError } = await supabase.from('golf_holes').select('round_id, hole_number, par, score, putts, fairway_hit, gir').in('round_id', roundIds).order('hole_number', { ascending: true });
+    if (holesError) throw holesError;
+    const out: Record<string, ChStoryRound> = {};
+    for (const r of newest.values()) {
+      const mine = (holes ?? []).filter((h) => h.round_id === r.id);
+      const name = names.get(r.player_id);
+      if (!name || !mine.length) continue;
+      out[name] = {
+        date: r.round_date,
+        course: r.course_name,
+        holes: mine.map((h) => ({ n: h.hole_number, toPar: h.score == null ? null : h.score - h.par })),
+        tracked: mine.filter((h) => h.putts != null || h.fairway_hit != null || h.gir != null).length,
+      };
+    }
+    return out;
+  });
+
+  // The streamed parts above are started first; the Tour comparison (whose read began with the rounds) is the last thing awaited.
+  const standings = await standingsRead;
+  const against: ChTourRow[] | null = standings
+    ? TOUR_ROWS.map((id) => {
+        const rows = ids.map((pid) => standings.get(pid)?.get(id as never)).filter((s): s is NonNullable<typeof s> => s != null && s.player_value != null);
+        const tourValue = rows.find((s) => s.pga_value != null && !s.pga_omitted)?.pga_value ?? null;
+        return { id, team: rows.length ? rows.reduce((a, s) => a + (s.player_value as number), 0) / rows.length : null, tour: tourValue, n: rows.length };
+      })
+    : null;
+
   const missing = boardMissing({ drills: drills.error, assigned: assigned.error, declined: declined.error, newest: newest.error, tour: tourResult.error });
   return {
     off: null,
@@ -301,31 +344,7 @@ export async function loadCoachTeamBoard(input: { coachId: string; teamId: strin
     pulse,
     ...(isMondayBriefEnabled() ? { brief: part('brief', () => ready('brief', loadCoachBrief({ coachId: input.coachId, teamId: input.teamId, now }))) } : {}),
     ...(isTrackRecordEnabled() ? { record: part('record', () => ready('record', loadCoachTrackRecord({ coachId: input.coachId, teamId: input.teamId, now }))) } : {}),
-    storyRounds: part('storyRounds', async () => {
-      // AC-TODAY-04: only a round inside the week earns the strip; a player's newest one.
-      const since = new Date(now.getTime() - 7 * 86_400_000).toISOString().slice(0, 10);
-      const { data: rounds, error } = await supabase.from('golf_rounds').select('id, player_id, round_date, course_name').eq('is_test', false).eq('status', 'completed').in('player_id', [...names.keys()]).gte('round_date', since).order('round_date', { ascending: false });
-      if (error) throw error;
-      const newest = new Map<string, { id: string; player_id: string; round_date: string; course_name: string | null }>();
-      for (const r of rounds ?? []) if (!newest.has(r.player_id)) newest.set(r.player_id, r);
-      const roundIds = [...newest.values()].map((r) => r.id);
-      if (!roundIds.length) return {};
-      const { data: holes, error: holesError } = await supabase.from('golf_holes').select('round_id, hole_number, par, score, putts, fairway_hit, gir').in('round_id', roundIds).order('hole_number', { ascending: true });
-      if (holesError) throw holesError;
-      const out: Record<string, ChStoryRound> = {};
-      for (const r of newest.values()) {
-        const mine = (holes ?? []).filter((h) => h.round_id === r.id);
-        const name = names.get(r.player_id);
-        if (!name || !mine.length) continue;
-        out[name] = {
-          date: r.round_date,
-          course: r.course_name,
-          holes: mine.map((h) => ({ n: h.hole_number, toPar: h.score == null ? null : h.score - h.par })),
-          tracked: mine.filter((h) => h.putts != null || h.fairway_hit != null || h.gir != null).length,
-        };
-      }
-      return out;
-    }),
+    storyRounds,
     themes: themed.then((p): ChTeamPart<Record<string, ReturnType<typeof themesByCategory>>> => (p.status === 'ok' ? { status: 'ok', value: p.value.themes } : p)),
     // One read, one worth: the cascade's figure (`closesFor`), which the Read page and the Player file print, from the themes just read.
     worth: themed.then((p): ChTeamPart<Record<string, ChReadWorth>> => (p.status === 'ok' ? { status: 'ok', value: p.value.worth } : p)),

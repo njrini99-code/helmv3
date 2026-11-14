@@ -23,6 +23,7 @@
 
 import { boardOrder, rankStandings } from '@/lib/coachhelm/v3/qualifying/ranking';
 import { plural, pluralWord } from '../../lib/plural';
+import { zoneFormat } from '../../lib/zone-format';
 
 export type ChQStatus = 'upcoming' | 'in_progress' | 'completed';
 export type ChQSelectionState = 'open' | 'scoring' | 'closed' | 'selected';
@@ -540,8 +541,9 @@ export function roundPars(input: {
   return { byRound, single: known.size === 1 && !known.has(null) ? byRound[0]! : null };
 }
 
-const DAY = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric' });
-const DAY_YEAR = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric', year: 'numeric' });
+// Built on first use, not when the module loads: the list's chunk evaluates in the first frame of a route switch (F-0010).
+const DAY = { format: (d: Date) => zoneFormat('en-US', 'UTC', 'q-day', { month: 'short', day: 'numeric' }).format(d) };
+const DAY_YEAR = { format: (d: Date) => zoneFormat('en-US', 'UTC', 'q-day-year', { month: 'short', day: 'numeric', year: 'numeric' }).format(d) };
 const asDate = (d: string) => new Date(`${d.slice(0, 10)}T12:00:00Z`);
 
 /** "Sep 22" for a calendar date. */
