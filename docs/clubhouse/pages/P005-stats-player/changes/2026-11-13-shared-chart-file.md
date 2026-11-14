@@ -21,5 +21,5 @@ Held items:     none
 
 ### Verification
 
-- The player's chart suites (`chart-resize-morph`, `stats-visuals-trend`,
-  `stats-summary-cards`) run in `npm run check:changed`.
+- The player's chart suites pass unchanged: `npm run test:file --
+  chart-resize-morph stats-visuals-trend stats-summary-cards`.

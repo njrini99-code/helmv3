@@ -21,6 +21,10 @@ Held items:     F-0004 reported as a harness artifact, see Verification
   no longer reads as a second scoring average under the card's headline.
 - `screens/stats/StatsTeamPhoneShs.tsx`: the detail's By round day ribbon
   names its reference line "Round-day avg" too.
+- `screens/stats/ShsSkeleton.tsx`: the team Scoring average card's held
+  height grows by the key's line (300 to 326), so the card does not jump on
+  landing. Arithmetic from the key's CSS (8px margin, a 13/18 line), not a
+  measurement: the lead's visual pass should confirm it.
 
 ### Why
 

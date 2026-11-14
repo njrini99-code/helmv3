@@ -29,7 +29,8 @@ const SECTIONS: ReadonlyArray<{ name: string; cards: ReadonlyArray<{ title: stri
 ];
 
 const TEAM_SECTIONS: typeof SECTIONS = [
-  { name: 'Overview', cards: [{ title: 'Scoring average', height: 300, feature: true }] },
+  // 300 measured, plus the round-day average's key under the chart (F-0009): 8px above a 13/18 line.
+  { name: 'Overview', cards: [{ title: 'Scoring average', height: 326, feature: true }] },
   { name: 'Team game', cards: [{ title: 'Strokes gained by leg', height: 298 }] },
   { name: 'Players', cards: [{ title: 'Who gains and loses', height: 262 }] },
 ];
