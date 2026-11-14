@@ -10,7 +10,7 @@ import { RosterTeamCard } from '../RosterTeamCard';
  */
 
 afterEach(cleanup);
-// The class year turns on 1 August: hold the clock on the audit's day so 2027 stays the Seniors.
+// The class year turns on 1 August: hold the clock on the audit’s day so 2027 stays the Seniors.
 beforeAll(() => {
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(new Date('2026-11-13T15:00:00Z'));
@@ -30,7 +30,7 @@ describe('F-0022 a past class year is named, not "not set"', () => {
     ]);
   });
 
-  it("a past year's row reads its class; a missing year still reads nothing", () => {
+  it("a past year’s row reads its class; a missing year still reads nothing", () => {
     expect(yearLineOf(2026, CLOCK)).toBe('Class of 2026');
     expect(yearLineOf(2027, CLOCK)).toBe('Senior · Class of 2027');
     expect(yearLineOf(null, CLOCK)).toBeNull();

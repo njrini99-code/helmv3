@@ -1944,7 +1944,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 .ch-wks {
   /* A day is never under 44 wide (F-0017, TO-01): the gap gives up its width first, (strip - 7 x 44) / 6, between 0 and
      --ch-wks-gap-max. A page widens the gap through that variable, never through gap. */
-  --ch-wks-gap: clamp(0px, calc((100% - 7 * 44px) / 6), var(--ch-wks-gap-max, 2px));
+  --ch-wks-gap: clamp(0px, calc((100% - 7 * var(--ch-target-min)) / 6), var(--ch-wks-gap-max, 2px));
   position: relative;
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
@@ -1963,7 +1963,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   bottom: 0;
   left: calc(-1 * var(--ch-wks-gap));
   width: calc((100% + var(--ch-wks-gap)) / 7);
-  clip-path: inset(0 0 0 clamp(0px, calc(100% - 44px), var(--ch-wks-gap-max, 2px)) round var(--ch-radius-md));
+  clip-path: inset(0 0 0 clamp(0px, calc(100% - var(--ch-target-min)), var(--ch-wks-gap-max, 2px)) round var(--ch-radius-md));
   background: var(--ch-green-fill-600);
   transform: translateX(calc(var(--ch-wks-at, 0) * 100%));
   transition: transform var(--ch-dur-base) var(--ch-ease);

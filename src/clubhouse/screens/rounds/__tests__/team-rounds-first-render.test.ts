@@ -7,7 +7,7 @@ import { groupTeamRounds } from '../TeamRounds';
 import { monthLabel, shortDay } from '../parts';
 
 /**
- * F-0010 (route-switch frame cost): the coach's Rounds book labels every row (the month it falls in, its short day twice) in the first
+ * F-0010 (route-switch frame cost): the coach’s Rounds book labels every row (the month it falls in, its short day twice) in the first
  * frame after a switch. A date formatter is expensive to build, so each kind is built once, and the desktop book, which draws a season
  * of rows, skips the groups that are off screen.
  */
@@ -50,7 +50,7 @@ describe('F-0010 the team rounds book labels its rows with reused formatters', (
   it('says what it always said', () => {
     expect(monthLabel('2026-10-14')).toBe('October 2026');
     expect(shortDay('2026-10-14')).toBe('Oct 14');
-    // Read in UTC: a date is a calendar day, never moved by the viewer's zone.
+    // Read in UTC: a date is a calendar day, never moved by the viewer’s zone.
     expect(shortDay('2026-10-01')).toBe('Oct 1');
     const groups = groupTeamRounds([round(0), round(1), round(40)], 'month', '', 'all');
     expect(groups.map((g) => g.title)).toEqual(['August 2026', 'September 2026']);
@@ -64,7 +64,7 @@ describe('F-0010 the desktop team rounds book skips its off-screen groups', () =
     return at < 0 ? '' : css.slice(at, css.indexOf('}', at));
   };
 
-  it("each month's or player's group draws only near the screen, with an intrinsic size", () => {
+  it("each month’s or player’s group draws only near the screen, with an intrinsic size", () => {
     const r = rule(".ch-trd-tbl > [role='rowgroup'][aria-labelledby]");
     expect(r).toMatch(/content-visibility: auto;/);
     expect(r).toMatch(/contain-intrinsic-size: auto \d+px;/);

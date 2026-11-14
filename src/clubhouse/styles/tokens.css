@@ -510,6 +510,7 @@
   --ch-topbar-h: 56px;
   /* Phone chrome (owner design, design/handoff/mobile/m-shell.jsx, m.css; D-40, D-43) */
   --ch-phone-topbar-h: 50px; /* a 44px row and 6px below it, under the status bar */
+  --ch-target-min: 44px; /* the smallest tap target on a phone (TO-01): a week day never narrows past it */
   --ch-tabbar-h: 0px; /* no bottom bar on the phone since the section strip (section-strip.md); kept for its readers */
 
   /* The global light (P001-A1, D3-1; owner 2026-10-08). One sun for the whole Clubhouse, from the team's course location

@@ -19,13 +19,13 @@ describe('F-0025 a calendar entry carries its last day', () => {
     expect(setUpLine(g!)).toBe('Aug 27 – 29 · 1 calendar entry');
   });
 
-  it("Fall Invitational: all day on the team's own day edges (04:00Z to 03:59Z) is 2 and 3 Oct, not a third day", () => {
+  it("Fall Invitational: all day on the team’s own day edges (04:00Z to 03:59Z) is 2 and 3 Oct, not a third day", () => {
     const e = calendarEntryOf({ id: 'f', title: 'Fall Invitational', start_time: '2026-10-02T04:00:00+00:00', end_time: '2026-10-04T03:59:00+00:00', all_day: true }, TZ);
     expect([e.date, e.end]).toEqual(['2026-10-02', '2026-10-03']);
     expect(setUpLine(setupGroups([e])[0]!)).toBe('Oct 2 – 3 · 1 calendar entry');
   });
 
-  it("the app's own all-day rows (UTC midnight, inclusive end) keep their dates", () => {
+  it("the app’s own all-day rows (UTC midnight, inclusive end) keep their dates", () => {
     const e = calendarEntryOf({ id: 'a', title: 'Labor Day Classic', start_time: '2026-09-03T00:00:00+00:00', end_time: '2026-09-06T00:00:00+00:00', all_day: true }, TZ);
     expect([e.date, e.end]).toEqual(['2026-09-03', '2026-09-06']);
   });
