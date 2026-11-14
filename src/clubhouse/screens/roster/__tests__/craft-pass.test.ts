@@ -37,6 +37,8 @@ describe('Roster craft pass', () => {
     expect(figures).toContain("placed ? 'Scoring' : 'Scoring avg'");
     expect(figures).not.toContain(": 'Avg'");
     expect(figures).toMatch(/\{placed && <span className="ch-rs-fig__m">/);
+    // With nothing drawn under it, the figure is its one row, not two empty rows' gaps.
+    expect(rule('.ch-rs-fig:not(:has(> .ch-rs-strip, > .ch-rs-sgbar, > .ch-rs-fig__m))')).toContain("grid-template-areas: 'k v'");
   });
 
   it('the card’s handicap figure sits on the right edge with the two figures above it', () => {

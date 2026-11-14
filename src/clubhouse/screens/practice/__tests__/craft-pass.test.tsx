@@ -75,6 +75,10 @@ describe('Practice craft pass (13 Nov 2026)', () => {
     expect(PHONE).toBeGreaterThan(0);
     expect(rule('  .ch-prc-week', PHONE)).toContain('scroll-snap-type: x mandatory');
     expect(rule('  .ch-prc-tile', PHONE)).toContain('flex: 0 0 calc((100% - 2 * 8px) / 3)');
+    // A phone on its side shares its width among all seven, after the portrait rule so it wins there.
+    const side = css.indexOf('@media (max-height: 500px) and (pointer: coarse) {', PHONE);
+    expect(side).toBeGreaterThan(PHONE);
+    expect(rule('  .ch-prc-tile', side)).toContain('flex: 0 0 calc((100% - 6 * 8px) / 7)');
   });
 
   it('a player’s plans read at a reading measure on a desk (CR-14); the week keeps the page’s width', () => {

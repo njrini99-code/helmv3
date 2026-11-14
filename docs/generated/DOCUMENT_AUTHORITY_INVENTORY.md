@@ -1070,6 +1070,7 @@ them would bury everything above.
 | `docs/clubhouse/changes/2026-11-12-empty-state-b.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-12-preview-walk-fixes.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-12-sg-below-zero.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-11-13-practice-craft.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/CAPABILITIES.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/LOOK.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/MOTION.md` | current | - | - | - | - |
@@ -1287,6 +1288,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P003-roster/changes/2026-11-12-leaders-rule.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/changes/2026-11-12-season-card-track.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/changes/2026-11-12-sg-below-zero.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P003-roster/changes/2026-11-13-craft-pass.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P004-stats-team/DESIGN.md` | current | - | - | - | - |
@@ -1817,6 +1819,7 @@ them would bury everything above.
 | `docs/clubhouse/phone/join-team.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/live.md` | current | - | - | - | 1 |
 | `docs/clubhouse/phone/messages.md` | current | - | - | - | - |
+| `docs/clubhouse/phone/practice.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/push-opt-in.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/qualifiers.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/recruiting.md` | current | - | - | - | - |

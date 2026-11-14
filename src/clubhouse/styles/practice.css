@@ -1948,6 +1948,13 @@ main.ch-prc-planpage > .ch-backlink {
     inset: min(0px, calc(50% - 22px));
   }
 }
+/* A phone on its side has the width for the whole week: seven tiles share it edge to edge and nothing scrolls. (Three to the
+   width there made each tile some 270px and hid four days.) */
+@media (max-height: 500px) and (pointer: coarse) {
+  .ch-prc-tile {
+    flex: 0 0 calc((100% - 6 * 8px) / 7);
+  }
+}
 @media (max-width: 820px) and (min-width: 414px) {
   .ch-prc,
   main.ch-prc-planpage {

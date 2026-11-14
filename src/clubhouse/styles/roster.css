@@ -420,6 +420,10 @@
   row-gap: 4px;
   align-items: baseline;
 }
+/* A figure with nothing drawn under it (no place, no bar) is its one row: the empty rows' gaps left 8px of air under it. */
+.ch-rs-fig:not(:has(> .ch-rs-strip, > .ch-rs-sgbar, > .ch-rs-fig__m)) {
+  grid-template-areas: 'k v';
+}
 .ch-rs-fig__k {
   grid-area: k;
   font: var(--ch-type-12-strong);
