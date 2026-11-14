@@ -23,9 +23,11 @@ Worst three:
 2. **F-0002 (S2)** Home's Team scoring "This season" pill shows each player's
    last 10 rounds, reaching back to May: 75.6 where Roster's true season average
    is 73.4. (Stats prints the same 75.6 under its "10" window, labelled as such.)
-3. **F-0003 (S2)** A round's review sums its holes (79, +7) while lists and
-   averages read its stored total (78, +6). 15 of the team's 93 rounds with full
-   holes disagree on staging.
+3. **F-0003 (S2)** A round's stored total (78, +6) is a stroke off its holes
+   and nines (79, +7) on 15 of the team's 93 rounds with full holes. The review,
+   Rounds, Home and Stats print 79. Round setup's course summary prints the stale
+   78, and in code Qualifiers and two CoachHelm reads still use the stored total.
+   (Corrected after the fix pass: the first version said the lists read 78.)
 
 Nothing is S0. The S1 and the wrong-number S2s (F-0002, F-0003, F-0005) are the
 ones to land before the next production deploy, since every Clubhouse flag is on
