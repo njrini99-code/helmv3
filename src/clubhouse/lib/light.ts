@@ -10,6 +10,7 @@
  * evening sun on the right, a high sun near the top.
  */
 import { sunAt, type LatLng, type SunPosition } from './sun';
+import { zoneFormat } from './zone-format';
 
 export interface ClubhouseLight {
   /** Where the light comes from across the screen: 0 left (morning), 0.5 overhead, 1 right (evening). */
@@ -64,7 +65,7 @@ export const ZONE_POINTS: Readonly<Record<string, LatLng>> = {
 /** The zone's standard offset in hours at an instant (-5 for New York in winter), or null for an unknown zone. */
 function zoneOffsetHours(timeZone: string, at: number): number | null {
   try {
-    const parts = new Intl.DateTimeFormat('en-US', { timeZone, timeZoneName: 'longOffset' }).formatToParts(at);
+    const parts = zoneFormat('en-US', timeZone, 'long-offset', { timeZoneName: 'longOffset' }).formatToParts(at);
     const name = parts.find((p) => p.type === 'timeZoneName')?.value ?? '';
     const m = /GMT([+-])(\d{1,2})(?::(\d{2}))?/.exec(name);
     if (!m) return name === 'GMT' ? 0 : null;

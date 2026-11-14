@@ -2,6 +2,7 @@
  * Where the sun is, computed locally (NOAA's low-precision solar position, good to about a tenth of a degree for the
  * years this app will run). No network, no ephemeris: the global light (lib/light.ts) reads only this.
  */
+import { zoneFormat } from './zone-format';
 
 export interface LatLng {
   lat: number;
@@ -58,7 +59,7 @@ function zoneMidnight(dayYmd: string, timeZone: string): number {
   const utc = Date.UTC(y ?? 1970, (m ?? 1) - 1, d ?? 1);
   // The zone's offset at that instant, read back from the formatter, then applied once more for a DST edge.
   const offsetAt = (t: number): number => {
-    const parts = new Intl.DateTimeFormat('en-US', { timeZone, hourCycle: 'h23', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric' }).formatToParts(t);
+    const parts = zoneFormat('en-US', timeZone, 'sun-wall', { hourCycle: 'h23', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric' }).formatToParts(t);
     const get = (type: string) => Number(parts.find((p) => p.type === type)?.value ?? 0);
     return Date.UTC(get('year'), get('month') - 1, get('day'), get('hour'), get('minute')) - t;
   };
