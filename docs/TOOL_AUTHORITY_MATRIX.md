@@ -33,7 +33,7 @@ human has to remember to invalidate them.
 
 | Service | Authority | Scope | Source | Runtime evidence |
 | --- | --- | --- | --- | --- |
-| Supabase | `mcp__supabase__*` | project-scoped: qmnssrrolpinvwjjnufo, read/write | .mcp.json (this repo) | **STALE** — observed 2026-09-08T14:44:38.455Z under config 0c81fcff3e2212cf; config is now 52adbe08aabb3e39 |
+| Supabase | `mcp__supabase__*` | project-scoped: qmnssrrolpinvwjjnufo, read/write | .mcp.json (this repo) | **STALE** — observed 2026-09-08T14:44:38.455Z under config 0c81fcff3e2212cf; config is now 376d3b07815cbfd5 |
 | Sentry | `mcp__claude_ai_Sentry__*` | org helm-xs | account connector | **STALE** — observed 2026-08-29 under config 6965b945cbb523f5; config is now 4d81ab6283cd58ec |
 | Vercel | `mcp__claude_ai_Vercel__*` | account | account connector | **STALE** — observed 2026-09-01 under config 5b174c1ef5d936bb; config is now 5646affbd13ae3a5 |
 | GitHub | `gh CLI (gh api)` | repo njrini99-code/helmv3 | scripts/worktree-lifecycle.mjs | **EXERCISED** — 2026-08-29 — exercised three ways: MERGED #1676 -> head 7843291b2; OPEN #1659 -> head 03a13075d; feat/ask-nav-and-opening -> NONE. A failed lookup classifies UNKNOWN_PR, never NONE (#1668). Capability is fingerprintable after all: the authenticated account id, the repository id and the OAuth scope set (X-Oauth-Scopes response header) are all stable and carry no secret material. Recorded 2026-08-30; control-plane:verify re-measures them live and reports drift. |
@@ -46,6 +46,7 @@ human has to remember to invalidate them.
 | `mcp__claude_ai_Supabase__*` | Supabase | ALTERNATIVE | yes | unknown (stale observation) | unknown (stale observation) | not denied by project | STALE |
 | `mcp__e139bbde-4728-4ed3-977f-7b1b22f4b69c__*` | Supabase | ALTERNATIVE | yes (account connector, no file in this repo) | unknown (stale observation) | unknown (stale observation) | not denied by project | STALE |
 | `mcp__plugin_supabase_supabase__*` | Supabase | ALTERNATIVE | no | unknown (stale observation) | unknown (stale observation) | not denied by project | STALE |
+| `mcp__supabase-staging-ro__*` | Supabase | ALTERNATIVE | yes | unknown | no | not denied by project | NOT_EXERCISED |
 | `mcp__claude_ai_Sentry__*` | Sentry | AUTHORITY | yes | unknown (stale observation) | unknown (stale observation) | not denied by project | STALE |
 | `mcp__plugin_sentry_sentry__*` | Sentry | ALTERNATIVE | yes | unknown (stale observation) | unknown (stale observation) | not denied by project | STALE |
 | `mcp__7524981b-0003-40de-9f86-c5275420784a__*` | Sentry | ALTERNATIVE | yes (account connector, no file in this repo) | unknown (stale observation) | unknown (stale observation) | not denied by project | STALE |
@@ -69,6 +70,10 @@ Use if installed, connected, and suitable for the task. This namespace is not pe
 **`mcp__plugin_supabase_supabase__*`** — ALTERNATIVE
 
 Use if installed, connected, and suitable for the task. This namespace is not permanently disabled. Current permissions are in .claude/settings.json; historical connectivity must be rechecked.
+
+**`mcp__supabase-staging-ro__*`** — ALTERNATIVE
+
+Staging, "PROSP DATA" (ybmwektreyrwjscxlogv), read-only: what a Vercel preview or local dev shows. The only Supabase server an audit session uses (HELM_AUDIT=1, .claude/audit.mcp.json); it cannot reach production.
 
 **`mcp__plugin_sentry_sentry__*`** — ALTERNATIVE
 
@@ -101,7 +106,7 @@ When a fingerprint changes, every EXERCISED claim under it becomes STALE.
 
 | Service | Fingerprint | Drift detectable? |
 | --- | --- | --- |
-| Supabase | `52adbe08aabb3e39` | yes — derived from the allow/deny/ask rules and `.mcp.json` entries naming this service |
+| Supabase | `376d3b07815cbfd5` | yes — derived from the allow/deny/ask rules and `.mcp.json` entries naming this service |
 | Sentry | `4d81ab6283cd58ec` | yes — derived from the allow/deny/ask rules and `.mcp.json` entries naming this service |
 | Vercel | `5646affbd13ae3a5` | yes — derived from the allow/deny/ask rules and `.mcp.json` entries naming this service |
 | GitHub | `ungoverned:87544794` | **NO** — no allow/deny/ask rule or `.mcp.json` entry in this repo governs it, so there is nothing here to fingerprint |
