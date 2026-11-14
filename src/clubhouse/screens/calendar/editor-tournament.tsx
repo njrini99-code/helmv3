@@ -98,6 +98,14 @@ export const TournamentSection = forwardRef<HTMLElement, {
  * CH-6040: the toast after a tournament is set up. No Undo (4.34.5): players may already have seen it, so deleting or
  * stopping tracking from the desk is the undo. Open goes to the desk.
  */
+/**
+ * Where Set up from calendar lands once the tournament is saved (coach audit, 13 Nov 2026: it ended on Calendar): an event
+ * already under way or played goes to Link rounds, where its players' rounds are waiting; one still to come, to its desk.
+ */
+export function setUpLanding(t: { tournamentId: string; firstDay: string }, today: string): string {
+  return t.firstDay <= today ? '/golf/dashboard/tournaments/links' : `/golf/dashboard/tournaments/${t.tournamentId}`;
+}
+
 export function tournamentSavedToast(name: string, tournamentId: string) {
   return { code: 'CH-6040', title: `${name} is set up in Tournaments`, action: 'Open', href: `/golf/dashboard/tournaments/${tournamentId}` } as const;
 }

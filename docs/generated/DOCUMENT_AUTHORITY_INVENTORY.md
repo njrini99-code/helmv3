@@ -1459,6 +1459,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P006-calendar/changes/2026-11-12-sources-no-classes.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/changes/2026-11-12-week-fills.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/changes/2026-11-13-label-in-name.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P006-calendar/changes/2026-11-13-set-up-lands.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/changes/2026-11-13-zone-formatters.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/CHANGELOG.md` | current | - | - | yes | 1 |
 | `docs/clubhouse/pages/P007-messages/CONTRACT.md` | current | - | - | yes | - |
@@ -1582,6 +1583,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P009-qualifiers/changes/2026-11-12-review-and-close.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P009-qualifiers/changes/2026-11-12-upcoming-by-date-one-name.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P009-qualifiers/changes/2026-11-13-first-render-formatters.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P009-qualifiers/changes/2026-11-13-past-last-day.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P010-hub/DESIGN.md` | current | - | - | - | - |
@@ -1677,6 +1679,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P011-rounds/changes/2026-11-12-review-score-once.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/changes/2026-11-12-tees-column-only-tees.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/changes/2026-11-12-type-chips-one-weight.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P011-rounds/changes/2026-11-13-live-now-today-only.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/changes/2026-11-13-one-round-score.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/changes/2026-11-13-round-link-target.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/changes/2026-11-13-row-name.md` | current | - | - | - | - |
@@ -1854,6 +1857,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-11-12-history-one-filter.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-11-12-live-round-empty-real.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-11-12-live-round-phone-one-primary.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P016-tournaments/changes/2026-11-13-needs-closing.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-11-13-row-name.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-11-13-setup-span.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/auth.md` | current | - | - | - | - |

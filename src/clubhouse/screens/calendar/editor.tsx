@@ -28,7 +28,7 @@ import { haptic } from '../../lib/haptics';
 import { useChPhone } from '../../lib/use-phone';
 import { useChClock } from '../../lib/use-clock';
 import { clockAxisLabel } from '../../lib/clock-format';
-import { TYPE_LABEL, addDays, busyFor, dayNum, dowOf, fmtHour, monthName, overlaps, seedWindow, type ChCalEvent, type ChCalPerson, type ChCalType } from './model';
+import { TYPE_LABEL, addDays, busyFor, dayNum, dowOf, fmtHour, monthName, overlaps, listedCount, seedWindow, type ChCalEvent, type ChCalPerson, type ChCalType } from './model';
 import { TYPE_ICON } from './views';
 import { tournamentSavedToast, TournamentSaveNotice, TournamentSection, type TrackBlock } from './editor-tournament';
 import { LIVE_WRITES, type ChQWrites } from '../qualifiers/writes';
@@ -830,7 +830,7 @@ export function EventEditor({
           <div>
             <div className="ch-in__sechead" style={{ marginBottom: 6 }}>
               <span className="ch-ed__lbl" style={{ margin: 0 }}>
-                {peopleError && !people.length ? 'Invite' : `Invite · ${invited.length} of ${people.length}`}
+                {peopleError && !people.length ? 'Invite' : `Invite · ${listedCount(invited, people)} of ${people.length}`}
               </span>
               <Button size="sm" variant="ghost" onClick={() => setInvited(allOn ? [] : people.map((p) => p.id))}>
                 {allOn ? 'Clear' : 'Select all'}

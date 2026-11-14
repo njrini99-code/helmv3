@@ -356,7 +356,7 @@ async function readEvents(ctx: TourCtx, tz: string, opts: { ids?: string[]; own?
       fieldScores: fieldScores.filter((s) => ftIds.has(s.field_team_id)),
     };
   });
-  return { events: raws.map((r) => shapeEvent(r, ctx.now)), raws, courses, linkedIds };
+  return { events: raws.map((r) => shapeEvent(r, ctx.now, isoDay(ctx.now, tz))), raws, courses, linkedIds };
 }
 
 // ── Season home ─────────────────────────────────────────────────────────────────────────────────────────────────
@@ -376,17 +376,24 @@ function nextUp(e: ChTourEvent, courses: Record<string, ChTourCourse>): ChTourNe
     ...(e.lineup.locksAt ? [{ at: e.lineup.locksAt, kind: 'lock' as const, label: 'Lineup locks', done: e.lineup.status === 'locked' }] : []),
     ...e.rounds.filter((r) => r.firstTeeAt).map((r) => ({ at: r.firstTeeAt!, kind: 'round' as const, label: `Round ${r.number}`, done: r.status !== 'upcoming' })),
   ].sort((a, b) => a.at.localeCompare(b.at));
-  const action: ChTourNextUp['action'] = e.status === 'live' ? 'follow' : e.lineup.status === 'none' || e.lineup.status === 'draft' ? 'build' : 'open';
+  // On the team's day (coach audit, 13 Nov 2026): a round left live after its day is closed, not followed.
+  const action: ChTourNextUp['action'] =
+    e.show === 'needs_closing' ? 'close' : e.show === 'live' ? 'follow' : e.lineup.status === 'none' || e.lineup.status === 'draft' ? 'build' : 'open';
   return { eventId: e.id, readiness: r1 ? readiness : readiness.slice(1), ticks, alsoThisWeek: [], action };
 }
 
-async function linkTeaser(ctx: TourCtx, events: ChTourEvent[]): Promise<{ candidates: number; high: number } | null> {
+async function linkTeaser(ctx: TourCtx, events: ChTourEvent[]): Promise<{ candidates: number; high: number; matched: number } | null> {
   if (ctx.role !== 'coach') return null;
   const { data, error } = await ctx.supabase.rpc('golf_tournament_link_candidates' as never, { p_team_id: ctx.teamId } as never);
   if (error) throw isTourSchemaMissing(error) ? new NotSetUp('linkCandidates') : new ReadFailed('linkCandidates', error);
   const rows = (data ?? []) as TourLinkCandidateRow[];
   const suggestions = suggestLinks(rows.map(candidateOf), eventRoundsOf(events));
-  return { candidates: rows.length, high: suggestions.filter((s) => s.match?.confidence === 'high' && !s.ambiguous).length };
+  return {
+    candidates: rows.length,
+    high: suggestions.filter((s) => s.match?.confidence === 'high' && !s.ambiguous).length,
+    // Rounds matched to one of these events: the desk's "Link rounds (n)" for its event.
+    matched: suggestions.filter((s) => s.match).length,
+  };
 }
 
 const candidateOf = (r: TourLinkCandidateRow): LinkCandidateRound => ({ id: r.round_id, playerId: r.player_id, date: r.round_date, courseId: r.course_id, courseName: r.course_name, score: r.total_score, roundType: r.round_type });
@@ -537,6 +544,7 @@ export async function loadTournamentDesk(ctx: TourCtx, eventId: string): Promise
       const scored = event.playerRounds.filter((p) => p.total != null).map((p) => p.roundNumber).sort((a, b) => a - b)[0] ?? null;
       return { version: raw.t.version, cancelled: rows.length > 0 && rows.every((r) => r.status === 'cancelled'), official: raw.t.official_at != null, scoredRound: scored, entries: event.rounds.length };
     });
+    const links = await section('desk', 'links', () => linkTeaser(ctx, [event]));
     const previous = read.events
       .filter((e) => e.id !== event.id && e.startDate < event.startDate && e.courseIds.some((c) => event.courseIds.includes(c)))
       .sort((a, b) => b.startDate.localeCompare(a.startDate))[0];
@@ -559,6 +567,8 @@ export async function loadTournamentDesk(ctx: TourCtx, eventId: string): Promise
         previous: previous ? { eventId: previous.id, name: previous.name } : null,
         errors: { ...(holes.ok ? {} : { holes: true as const }), ...(review.ok ? {} : { review: true as const }) },
         track: track.ok ? track.value : null,
+        // A coach's "Link rounds (n)" for this event; a player has no inbox.
+        ...(ctx.role === 'coach' ? { links: links.ok && links.value ? links.value.matched : null } : {}),
       },
     };
   });
@@ -642,6 +652,7 @@ export async function loadTournamentHistory(ctx: TourCtx): Promise<TourLoad<ChTo
       kind: 'ready',
       data: {
         now: ctx.now,
+        teamName: info.team.name,
         seasons: seasonsFor(read.events.map((e) => e.startDate), info.today, info.gender, profiles),
         players,
         courses: read.courses,
@@ -1108,7 +1119,7 @@ export async function loadPlayerTournaments(ctx: TourCtx, eventId: string | null
     const list = read.events
       .filter((e) => e.seasonId === season && !e.cancelled)
       .sort((a, b) => (a.status === 'complete') === (b.status === 'complete') ? (a.status === 'complete' ? b.startDate.localeCompare(a.startDate) : a.startDate.localeCompare(b.startDate)) : a.status === 'complete' ? 1 : -1)
-      .map((e) => ({ eventId: e.id, name: e.name, startDate: e.startDate, endDate: e.endDate, courseName: read.courses[e.courseIds[0] ?? '']?.name ?? '', status: e.status, days: e.rounds.map((r) => ({ number: r.number, date: r.date, firstTeeAt: r.firstTeeAt })), mine: mineOf(e) }));
+      .map((e) => ({ eventId: e.id, name: e.name, startDate: e.startDate, endDate: e.endDate, courseName: read.courses[e.courseIds[0] ?? '']?.name ?? '', status: e.status, show: e.show, days: e.rounds.map((r) => ({ number: r.number, date: r.date, firstTeeAt: r.firstTeeAt })), mine: mineOf(e) }));
     const open = eventId ? read.events.find((e) => e.id === eventId) : null;
     if (eventId && !open) return { kind: 'missing' };
     // Their reflection and the notes their coach shared with them (the policies return only those).

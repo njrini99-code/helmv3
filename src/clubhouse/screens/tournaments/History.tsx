@@ -42,7 +42,7 @@ export function History({ data, search, load, phone: forced }: HistoryProps) {
         {!phone && <SkelRows rows={5} trail />}
       </TourLoading>
     ),
-    failed: () => <TourFailed view="history" phone={phone} id={TITLE_ID} eyebrow={data.seasons[0] ? `Varsity · ${data.seasons[0].label}` : 'Tournaments'} title="Tournaments" className="ch-tour-rev-hist" />,
+    failed: () => <TourFailed view="history" phone={phone} id={TITLE_ID} eyebrow={data.seasons[0] ? [data.teamName, data.seasons[0].label].filter(Boolean).join(' · ') : 'Tournaments'} title="Tournaments" className="ch-tour-rev-hist" />,
     ready: () => <HistoryReady data={data} search={search} phone={phone} />,
   });
 }
@@ -93,7 +93,7 @@ function HistoryReady({ data, search, phone }: { data: ChTourHistoryData; search
       <TourHead
         id={TITLE_ID}
         phone={phone}
-        eyebrow={data.seasons[0] ? `Varsity · ${data.seasons[0].label}` : 'Tournaments'}
+        eyebrow={data.seasons[0] ? [data.teamName, data.seasons[0].label].filter(Boolean).join(' · ') : 'Tournaments'}
         title="Tournaments"
         line={LINE}
         actions={

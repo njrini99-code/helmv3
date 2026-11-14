@@ -977,6 +977,28 @@
   font-weight: 600;
   color: var(--ch-text-primary);
 }
+/* The scoring rules, said once with the coach's own line breaks; long ones start folded to three lines (coach audit, 13 Nov 2026). */
+.ch-qf-rules {
+  margin-top: 0;
+  white-space: pre-line;
+}
+.ch-qf-rules.is-folded {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+}
+.ch-qf-rules__more {
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ch-accent-ink);
+  font: var(--ch-type-14-medium);
+  letter-spacing: var(--ch-track-14);
+  cursor: pointer;
+}
 
 /* Form */
 /* Nobody on the roster (CH-09305): said over the form, with room before the first section. */
@@ -3204,6 +3226,29 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
 }
 .ch-qf-sp__plot li.is-hot > span {
   transform: scale(1.14);
+}
+/* A card a round behind the field (coach audit, 13 Nov 2026): no fill, a dashed ring in its state's colour, so a total a round
+   short never reads as level with the complete cards around it. */
+.ch-qf-sp__plot li.is-short > span {
+  box-sizing: border-box;
+  border: 2px dashed var(--ch-ink-400);
+  background: var(--ch-bg-surface);
+  box-shadow: none;
+  color: var(--ch-ink-600);
+}
+.ch-qf-sp__plot li.is-short.is-score > span {
+  border-color: var(--ch-green-700);
+  color: var(--ch-green-800);
+}
+.ch-qf-sp__plot li.is-short.is-pick > span,
+.ch-qf-sp__plot li.is-short.is-bubble > span {
+  border-color: var(--ch-champagne-500);
+  color: var(--ch-ledger-eyebrow);
+}
+.ch-qf-sp__plot li.is-me.is-short > span {
+  box-shadow:
+    0 0 0 2px var(--ch-bg-surface),
+    0 0 0 3.5px var(--ch-green-700);
 }
 .ch-qf-sp__even,
 .ch-qf-sp__cut {
