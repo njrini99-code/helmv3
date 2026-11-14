@@ -1959,6 +1959,14 @@ a.ch-trd-open:focus-visible {
   color: var(--ch-ink-500);
 }
 /* The band that opens a month or a player: its name, and the count and average at the row's end. */
+/* F-0010: a season of team rounds is hundreds of rows, and the desktop book drew every one in the first frame. A month's or a
+   player's group off screen keeps the height it last drew (its band and its rows, 56px each, before it first draws). Everything a
+   row draws is inside its own box (the tint, the hairline above it, the focus ring is inset), so the containment clips nothing;
+   the desktop book only, which is a table (the phone's list is a Section per group). */
+.ch-trd-tbl > [role='rowgroup'][aria-labelledby] {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 480px;
+}
 .ch-trd-grp {
   display: block;
   background: var(--ch-card-bg-raised);
