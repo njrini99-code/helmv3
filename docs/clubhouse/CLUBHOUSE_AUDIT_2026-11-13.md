@@ -9,7 +9,7 @@ measurements stay outside git, in `~/helm-audit-runs/2026-11-13-main-9e7c86b/`.
 ## Result
 
 - **Phone B (82.7), desktop B (83.3), overall B (82.9).** Home is the low page
-  (C+ on both surfaces). Every other family sits at B or B−.
+  (C+ on both surfaces). Every other family sits at B or B-.
 - **26 findings:** 1 S1, 12 S2, 10 S3, 3 S4. 9 are marked `blocks-flip`.
 - **Grades come from measurements only.** No design critic was calibrated (see
   "Critic"). Motion is graded C everywhere except where a trace says more,
@@ -97,7 +97,7 @@ in production.
   - motion is C (no device run; the Chromium traces confirm the cap).
 - **Findings:** the worst finding in a dimension sets it to that severity's
   anchor.
-- **Screen caps:** one S1 gives C+, any S2 gives B, any S3 gives A−.
+- **Screen caps:** one S1 gives C+, any S2 gives B, any S3 gives A-.
 - **Overall:** phone 65 %, desktop 35 %, weighted by how much each page is used.
 
 Pages with no finding of their own still sit at B. That's because two findings
