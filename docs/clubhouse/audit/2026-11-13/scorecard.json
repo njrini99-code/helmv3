@@ -10,7 +10,7 @@
  "scope": "MAC-PROMPT part 2: 17 page families, coach and player, phone W402 (light/dark, Reduce Motion off/on) + W375 overflow, desktop C1440 (light/dark) + W1440; press pass up to the first write; staging SQL cross-checks; Chromium route-switch traces; phone overlay motion census",
  "critic": {
   "calibrated": false,
-  "reason": "Owner chose \"measurements only\" (13 Nov): every one of the twelve owner grades was already in the grader's context, so a held-out score would be contaminated; and the only player who can sign in has no rounds, so player screens could not match the graded ones. Letter grades below come from measured findings by the rubric's weights and caps (method in harness/score.mjs)."
+  "reason": "Owner chose \"measurements only\" (13 Nov): every one of the twelve owner grades was already in the grader's context, so a held-out score would be contaminated; and the only player who can sign in has no rounds, so player screens could not match the graded ones. Letter grades below come from measured findings by the rubric's weights and caps (method in harness/score.mjs in the run folder, outside git)."
  },
  "notCovered": [
   "tier S (real Safari) on signed-in pages: owner chose \"not covered\" (the bypass secret would have had to go into a tool call)",
@@ -20,7 +20,7 @@
   "assistant coach, dual-role, teamless passes: no such demo accounts",
   "player data: the only sign-in-able player has 0 rounds"
  ],
- "method": "measurements only (no calibrated critic); see the header of harness/score.mjs",
+ "method": "measurements only (no calibrated critic); see the header of harness/score.mjs in the run folder (~/helm-audit-runs/2026-11-13-main-9e7c86b, outside git)",
  "phone": {
   "score": 82.7,
   "grade": "B"

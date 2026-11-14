@@ -39,7 +39,7 @@ in production.
 | Commit | `8c6e5f84d2` (PR #2512). Its app code equals `main` `9e7c86bfd9`: only a test file differs under `src/`. |
 | Data | Staging `ybmwektreyrwjscxlogv` (PROSP DATA), team Demo University Golf, America/New_York, season from 1 Aug 2026 |
 | Flags | Deployment target preview. The 31 `golf_clubhouse_*` and `coachhelm_*` flags in the yml preview column match the registry compiled into the graded commit (0 mismatches); Clubhouse renders for both roles. |
-| Accounts | Demo coach (head coach) and the audit test player (0 rounds). Signed in with `scripts/clubhouse/audit/session.mjs`, no password. |
+| Accounts | Demo coach (head coach) and the audit test player (0 rounds). Signed in with `scripts/clubhouse/audit/session.mjs` (added in PR #2512), no password. |
 
 ## How it was run
 
@@ -75,7 +75,7 @@ in production.
 | Home | C+ (77) | C+ (77) |
 | CoachHelm | B (83) | B (83.7) |
 | Rounds & round review | B (82.6) | B (83.5) |
-| Stats (team) | B− (81.9) | B (83.7) |
+| Stats (team) | B- (81.9) | B (83.7) |
 | Stats (player) | B (83.5) | B (84) |
 | Messages | B (83.5) | B (84) |
 | Calendar | B (83.5) | B (84) |
@@ -89,7 +89,7 @@ in production.
 | Recruiting | B (83.5) | B (84) |
 | Sign-in | B (83.5) | B (85.1) |
 
-**Method** (`01-RUBRIC.md` weights and caps):
+**Method** (the audit kit's `01-RUBRIC.md` weights and caps; the kit lives outside the repo in `~/clubhouse-audit/`):
 
 - **Starting points:**
   - a dimension with measured evidence starts at B+;
@@ -101,7 +101,7 @@ in production.
 - **Overall:** phone 65 %, desktop 35 %, weighted by how much each page is used.
 
 Pages with no finding of their own still sit at B. That's because two findings
-reach every page (F-0011 accessible names, F-0014 phone text size), and motion
+reach nearly every page (F-0011 accessible names, F-0014 phone text size), and motion
 has no device evidence.
 
 ## What is good
@@ -117,7 +117,7 @@ has no device evidence.
   - Home's queue counts, Roster's averages and handicaps, Recruiting's pipeline,
     Practice and Tournaments;
   - the last-10 scoring average (75.6) agrees between Home and Stats.
-  - The two that don't are F-0002 and F-0003.
+  - The ones that don't are F-0002, F-0003, F-0005 and F-0022.
 - **Writes on open:** opening desktop Messages didn't mark the thread read,
   which is WRITES-ON-OPEN's promise. No paid AI call was made.
 
@@ -134,7 +134,7 @@ has no device evidence.
 
 - **Real Safari (tier S) on signed-in pages:** Nick chose not to put the Vercel
   bypass secret into a tool call. Signed-out sign-in was covered in WebKit.
-- **Real iPhone (tier D)** and the hand test (`03-DEVICE-MATRIX` §5): no iPhone
+- **Real iPhone (tier D)** and the hand test (the kit's `03-DEVICE-MATRIX` §5): no iPhone
   was connected. This is the next step.
 - **WebKit census of route switches:** the WebKit renderer crashed under the
   probe's census on the second switch. Chromium traces cover the same switches.
@@ -150,7 +150,7 @@ has no device evidence.
 request and the end-of-run SQL. Two rows were marked read (the team-channel
 thread, opened on the phone) and one row recorded the player's travel-seen time.
 There were no LLM calls, no round updates, no new error logs, and no table
-outside WRITES-ON-OPEN changed.
+outside WRITES-ON-OPEN (`docs/clubhouse/audit/WRITES-ON-OPEN.md`, PR #2512) changed.
 
 ## For the next run
 
