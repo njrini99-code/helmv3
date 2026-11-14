@@ -84,8 +84,11 @@
   color:var(--ch-ink-600);
   padding:6px 16px 6px;
 }
+/* This week (F-0019): one container, the section's card. Each tile is a plain well in it, as tall as its own words: the row no
+   longer stretches every tile to the one with a picture, and the byline follows the title instead of sinking to the foot. */
 .ch-htb .tiles {
   display:flex;
+  align-items:flex-start;
   gap:8px;
   overflow-x:auto;
   scrollbar-width:none;
@@ -98,10 +101,8 @@
 .ch-htb .tile {
   flex:none;
   width:calc(138 * var(--ch-type-k, 1));
-  min-height:162px;
   border-radius: var(--ch-radius-lg);
   background:var(--ch-well-bg-flat);
-  box-shadow:inset 0 0 0 var(--ch-hairline-w) var(--ch-card-ring);
   padding:8px 12px 12px;
   display:flex;
   flex-direction:column;
@@ -109,8 +110,15 @@
   position:relative;
   scroll-snap-align:start;
 }
-.ch-htb .tile.new {
-  box-shadow:inset 0 0 0 2px var(--ch-green-600);
+/* Unseen: a small dot closing the byline, as an unread conversation's (messages.css), never an outline or a rail. */
+.ch-htb .tile.new .tm::after {
+  content:'';
+  flex:none;
+  width:8px;
+  height:8px;
+  margin-left:auto;
+  border-radius:50%;
+  background:var(--ch-green-600);
 }
 .ch-htb .tile .tv {
   height:44px;
@@ -144,7 +152,6 @@
 .ch-htb .tile b {
   font: var(--ch-type-14-strong); letter-spacing: var(--ch-track-14); }
 .ch-htb .tile .tm {
-  margin-top:auto;
   display:flex;
   align-items:center;
   gap:6px;
@@ -1705,6 +1712,7 @@ html[data-fw-theme='dark'] .ch-htb .skl::after {
 }
 .ch-htb.is-desk .tiles {
   flex-direction:column;
+  align-items:stretch;
   overflow:visible;
   padding:2px 16px 16px;
 }
