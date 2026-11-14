@@ -95,6 +95,20 @@ export const wcag = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((m, n) => n
 export const apca = (text, bg) => Math.abs(APCAcontrast(sRGBtoY(text), sRGBtoY(bg)));
 const blend = ([r, g, b], a, bg) => [r * a + bg[0] * (1 - a), g * a + bg[1] * (1 - a), b * a + bg[2] * (1 - a)].map(Math.round);
 
+// Hiding text or icons for one screenshot and lifting it again must not start the page's own colour transitions: lifted with
+// them on, every control faded back from transparent, and whatever ran next (axe, on 13 Nov) measured it mid-fade. Transitions
+// stay off from before the hide until the page has its colours back, then a style flush, then they are on again.
+const NO_TRANSITIONS = '*,*::before,*::after{transition:none!important}';
+async function shotWithout(page, css) {
+  const still = await page.addStyleTag({ content: NO_TRANSITIONS });
+  const hide = await page.addStyleTag({ content: css });
+  const bare = PNG.sync.read(await page.screenshot({ animations: 'disabled' }));
+  await hide.evaluate((el) => el.remove());
+  await page.evaluate(() => getComputedStyle(document.documentElement).color);
+  await still.evaluate((el) => el.remove());
+  return bare;
+}
+
 // Floors: 01-RUBRIC.md §4.5, CT-01 to CT-04. `kind` comes from probe.js textBoxes (body, meta, large, placeholder).
 export const floors = ({ fontSize, fontWeight = 400, placeholder = false, kind = null }) => {
   const large = fontSize >= 24 || (fontSize >= 18.66 && fontWeight >= 700);
@@ -109,9 +123,7 @@ export async function measureContrast(page, { label = '', inset = 1, sampleStep 
   const dpr = await page.evaluate(() => devicePixelRatio);
   const boxes = await page.evaluate(() => window.__chAudit.textBoxes());
   const painted = PNG.sync.read(await page.screenshot({ animations: 'disabled' }));
-  const style = await page.addStyleTag({ content: HIDE_TEXT });
-  const bare = PNG.sync.read(await page.screenshot({ animations: 'disabled' }));
-  await style.evaluate((el) => el.remove());
+  const bare = await shotWithout(page, HIDE_TEXT);
 
   const rows = [];
   for (const b of boxes) {
@@ -198,9 +210,7 @@ export async function measureNonText(page, { label = '' } = {}) {
   const dpr = await page.evaluate(() => devicePixelRatio);
   const parts = await page.evaluate(() => window.__chAudit.nonTextBoxes());
   const painted = PNG.sync.read(await page.screenshot({ animations: 'disabled' }));
-  const style = await page.addStyleTag({ content: HIDE_ICONS });
-  const bare = PNG.sync.read(await page.screenshot({ animations: 'disabled' }));
-  await style.evaluate((el) => el.remove());
+  const bare = await shotWithout(page, HIDE_ICONS);
   const rows = [];
   for (const p of parts) {
     const [r, g, b, a] = p.rgba;
