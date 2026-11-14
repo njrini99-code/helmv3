@@ -1618,12 +1618,18 @@ li + li > .ch-shs-rrow::before {
   border-radius: var(--ch-radius-mark);
   background: var(--ch-shs-s-ink);
 }
-/* The mean's label keeps a halo of the card under it, so a line crossing it can't strike through the words. */
-.ch-shs-mean-label {
-  paint-order: stroke;
-  stroke: var(--ch-shs-s-card);
-  stroke-width: 4px;
-  stroke-linejoin: round;
+/* The dashed mean's key, under the team chart (F-0009): on the line, the scoring line ran through its words. */
+.ch-shs-mean-key {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0 0;
+  font: var(--ch-type-13);
+  color: var(--ch-shs-s-ink-2);
+}
+.ch-shs-mean-key svg {
+  flex: none;
+  overflow: visible;
 }
 .ch-shs-early-key {
   margin-top: 6px;

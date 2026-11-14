@@ -514,7 +514,7 @@ function TeamScoringDetail({
       {!beside && <DetailHero figure={f ? figureValue(f) : <NoData />} caption={['Team scoring average', toPar(data), windowDays(data)].filter(Boolean).join(' · ')} chips={<Change data={data} />} />}
       {!beside && days.length > 0 && (
         <ShsCard title="By round day" meta={mean == null ? undefined : 'Average dashed'}>
-          <Ribbon points={days.map((d) => ({ label: d.label, value: d.score }))} lowerIsBetter reference={mean == null ? null : { value: mean, label: 'Avg of these days' }} format={(v) => formatFixed(v, 1)} tone={trend?.tone === 'is-gain' ? 'gain' : trend?.tone === 'is-loss' ? 'loss' : 'flat'} />
+          <Ribbon points={days.map((d) => ({ label: d.label, value: d.score }))} lowerIsBetter reference={mean == null ? null : { value: mean, label: 'Round-day avg' }} format={(v) => formatFixed(v, 1)} tone={trend?.tone === 'is-gain' ? 'gain' : trend?.tone === 'is-loss' ? 'loss' : 'flat'} />
           <p className="ch-shs-mini-cap">{trend ? `Lower is better. ${trend.reading}` : 'The trend draws once the team has rounds on a second day.'}</p>
         </ShsCard>
       )}
