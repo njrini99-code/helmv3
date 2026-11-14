@@ -1942,24 +1942,30 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 /* B18: the one week strip (ui/WeekStrip.tsx). A flat row of seven days; the chosen day on the accent plate, which glides
    from day to day (CH-6606); today ringed; events as dots, a reply owed amber, a day on the road gold. */
 .ch-wks {
+  /* A day is never under 44 wide (F-0017, TO-01): the gap gives up its width first, (strip - 7 x 44) / 6, between 0 and
+     --ch-wks-gap-max. A page widens the gap through that variable, never through gap. */
+  --ch-wks-gap: clamp(0px, calc((100% - 7 * 44px) / 6), var(--ch-wks-gap-max, 2px));
   position: relative;
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 2px;
+  column-gap: var(--ch-wks-gap);
   margin: 0;
   padding: 0;
   list-style: none;
 }
+/* The plate is one step wide (a day and the gap after it), so the glide moves it by its own width; the gap is clipped off
+   its leading edge, and the box starts one gap early so the slack lies before the strip, never past its end. In the clip,
+   100% is the step: the step less 44 is the gap while the gap gives way, and the full gap once the days pass 44. */
 .ch-wks[data-chosen]::before {
   position: absolute;
   z-index: 0;
   top: 0;
   bottom: 0;
-  left: 0;
-  width: calc((100% - 12px) / 7);
-  border-radius: var(--ch-radius-md);
+  left: calc(-1 * var(--ch-wks-gap));
+  width: calc((100% + var(--ch-wks-gap)) / 7);
+  clip-path: inset(0 0 0 clamp(0px, calc(100% - 44px), var(--ch-wks-gap-max, 2px)) round var(--ch-radius-md));
   background: var(--ch-green-fill-600);
-  transform: translateX(calc(var(--ch-wks-at, 0) * (100% + 2px)));
+  transform: translateX(calc(var(--ch-wks-at, 0) * 100%));
   transition: transform var(--ch-dur-base) var(--ch-ease);
   content: '';
   pointer-events: none;

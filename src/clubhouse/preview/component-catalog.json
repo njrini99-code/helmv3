@@ -18441,6 +18441,11 @@
           "scope": ".ch-h-form"
         },
         {
+          "name": "--ch-wks-gap-max",
+          "value": "4px",
+          "scope": ".ch-hm[data-ch-crh='on'] .ch-hm-week"
+        },
+        {
           "name": "--ch-home-shadow-1",
           "value": "0 18px 40px -24px rgb(11 58 37 / 0.6)",
           "scope": ".ch-app"
@@ -31087,6 +31092,11 @@
           "name": "--ch-av-ring",
           "value": "var(--ch-avatar-neutral-ring)",
           "scope": "@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) → html[data-fw-theme='dark'] .ch-avatar[data-tone]"
+        },
+        {
+          "name": "--ch-wks-gap",
+          "value": "clamp(0px, calc((100% - 7 * 44px) / 6), var(--ch-wks-gap-max, 2px))",
+          "scope": ".ch-wks"
         },
         {
           "name": "--ch-group-inset",
