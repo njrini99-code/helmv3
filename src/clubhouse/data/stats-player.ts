@@ -44,6 +44,7 @@ import {
   personalBests,
   pressureGap,
   toughestHoles,
+  courseKeyOf,
   triplePlusCount,
   windowCompare,
   type ChBests,
@@ -484,7 +485,9 @@ export async function loadPlayerProfile(input: {
   // The pressure gap sets practice against tournament play, so it keeps the uncut window on purpose.
   const pressure = pressureGap(roundsInFilter(allMine, f, start));
   const opening = holes.error ? null : openingDelta(holes.rows);
-  const toughest = holes.error ? null : toughestHoles(holes.rows);
+  // Toughest holes rank each course's own holes: a hole number is a different hole at each course.
+  const courseByRound = new Map(allMine.map((r) => [r.id, courseKeyOf(r)]));
+  const toughest = holes.error ? null : toughestHoles(holes.rows, (id) => courseByRound.get(id) ?? null);
 
   // Standing, in the window: the same metrics production grades against the Tour (and, for a coach, against the team where the window's own
   // round cache has the figure). A figure with no sample or no Tour value is null, never a zero.

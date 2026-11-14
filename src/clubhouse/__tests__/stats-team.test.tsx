@@ -598,8 +598,9 @@ describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
     // On Team stats the card is "Scoring average", as on My stats: the page is the team, and the title and its window share one line.
     for (const t of ['Scoring average', 'Strokes gained by leg', 'Who gains and loses']) expect(titles).toContain(t);
     expect(titles).not.toContain('Team scoring average');
-    expect(document.querySelector('.ch-shs-feature')!.textContent).toContain('10 round days');
-    expect(document.querySelector('.ch-shs-feature')!.textContent).not.toContain('Last 10 round days');
+    // The figure is each player's last 10 rounds; "10 round days" was what the trend draws (coach audit 13 Nov).
+    expect(document.querySelector('.ch-shs-feature')!.textContent).toContain('Each player’s last 10');
+    expect(document.querySelector('.ch-shs-feature')!.textContent).not.toContain('10 round days');
   });
 
   it('CH-4703 CH-4805 on Players, sorting by Avg or SG is one selection tick and the chosen sort again is silent; each row is one link read as name, rounds, average and strokes gained', async () => {
