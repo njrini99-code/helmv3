@@ -43,6 +43,34 @@ describe('the team scoring line (W26)', () => {
     const d = container.querySelector('.ch-shs-avgline')!.getAttribute('d')!;
     expect(d).not.toMatch(/[CQS]/);
     expect(d.match(/L/g)).toHaveLength(2);
-    expect(container.textContent).toContain('Avg of these days 75.3');
+    expect(container.textContent).toContain('Round-day avg 75.3');
+  });
+
+  // F-0009 (audit, 13 Nov 2026, coach phone): "Avg of these days 76.4" was drawn on the dashed line where the scoring line crossed
+  // it, so the line ran through the words (1.93:1 painted), and it read as a second scoring average under the 75.6 headline. The
+  // name says which average it is, and it is the chart's key under the drawing: no line can cross it, whatever the rounds do.
+  it('names the dashed average in a key under the chart, never in the drawing', () => {
+    const { container } = render(
+      <TeamFeatureChart
+        days={[
+          { label: 'Sep 3', score: 74.6, n: 6 },
+          { label: 'Sep 20', score: 76.4, n: 7 },
+          { label: 'Oct 1', score: 78.1, n: 7 },
+        ]}
+        mean={76.4}
+      />,
+    );
+    const svg = container.querySelector('.ch-shs-chart svg')!;
+    expect([...svg.querySelectorAll('text')].map((t) => t.textContent).join(' ')).not.toMatch(/avg/i);
+    const key = container.querySelector('.ch-shs-mean-key')!;
+    expect(key.closest('svg')).toBeNull();
+    expect(key.textContent).toBe('Round-day avg 76.4');
+    // The key's mark is the line's own dash.
+    expect(key.querySelector('line.ch-shs-parline')).not.toBeNull();
+  });
+
+  it('draws no key when there is no average', () => {
+    const { container } = render(<TeamFeatureChart days={[{ label: 'Sep 3', score: 74.6 }, { label: 'Sep 20', score: 76.4 }]} mean={null} />);
+    expect(container.querySelector('.ch-shs-mean-key')).toBeNull();
   });
 });

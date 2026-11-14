@@ -177,5 +177,7 @@ GitHub branch protection requires the checks on `main` (`CI aggregate`,
 `.claude/rules/code-review-tooling.md`), and the git hooks run `gitleaks` when it
 is installed. No permission rule or hook denies, asks for, or blocks Bash, Git, Supabase, or
 Vercel, except one owner-set `ask`: Vercel MCP deploy, promote, rollback and
-domain-purchase tools prompt first (the Vercel CLI is not gated).
+domain-purchase tools prompt first (the Vercel CLI is not gated). In an audit
+session only (`HELM_AUDIT=1`), `.claude/hooks/no-prod-in-audit.mjs` refuses MCP
+calls that name production or reach a Supabase server other than staging.
 `docs/CONTROL_PLANE_ENFORCEMENT.md` lists what is wired.

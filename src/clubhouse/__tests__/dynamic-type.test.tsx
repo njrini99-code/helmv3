@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { readDynamicTypeScale } from '../lib/dynamic-type';
+import { typeScaleFor } from '../lib/type-scale';
 
 const tokens = readFileSync(join(__dirname, '../styles/tokens.css'), 'utf8');
 
@@ -20,5 +21,13 @@ describe('real Dynamic Type (P008-C1)', () => {
   it("reads nothing on a Mac, whose -apple-system-body is 13px whatever the setting (it would shrink every page)", () => {
     const doc = { defaultView: { matchMedia: () => ({ matches: false }) } } as unknown as Document;
     expect(readDynamicTypeScale(doc)).toBeNull();
+  });
+
+  // F-0014 (CR-03): phone text is never under 12px, and the 12 step is a step, so the scale never goes under 1.
+  it('follows Text Size upward only: a body under the default leaves every step at its size', () => {
+    for (const px of [12, 13, 14, 15, 16, 17]) expect(typeScaleFor(px)).toBeNull();
+    expect(typeScaleFor(19)).toBeCloseTo(19 / 17);
+    expect(typeScaleFor(30)).toBeCloseTo(23 / 17);
+    for (let px = 10; px <= 30; px += 0.5) expect(12 * (typeScaleFor(px) ?? 1)).toBeGreaterThanOrEqual(12);
   });
 });

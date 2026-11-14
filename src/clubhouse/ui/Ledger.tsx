@@ -16,7 +16,8 @@ interface KitProps {
   className?: string;
   /** Catalog number (docs/clubhouse/catalog), as `data-ch-code`. */
   code?: string;
-  /** The accessible name (`aria-label`). */
+  /** The accessible name (`aria-label`). A row that opens something is named by its own words; give it one only when they
+   * don't say enough, and open it with them (F-0011, WCAG 2.5.3 Label in Name). */
   label?: string;
 }
 
@@ -65,14 +66,30 @@ export function LedgerRow({
   /** The row that is happening now or selected: its lead and title take the green. */
   current?: boolean;
 }) {
+  // The spaces between the parts are not drawn (the row and its text are flex boxes) but keep the words apart in the
+  // row's name, "Sat 26 Sept Dylan Brooks", not "Sat 26 SeptDylan Brooks" (F-0011).
   const body = (
     <>
-      {lead != null && <span className="ch-lgr__lead">{lead}</span>}
+      {lead != null && (
+        <>
+          <span className="ch-lgr__lead">{lead}</span>{' '}
+        </>
+      )}
       <span className="ch-lgr__txt">
         <span className="ch-lgr__title">{title}</span>
-        {meta != null && <span className="ch-lgr__meta">{meta}</span>}
+        {meta != null && (
+          <>
+            {' '}
+            <span className="ch-lgr__meta">{meta}</span>
+          </>
+        )}
       </span>
-      {trail != null && <span className="ch-lgr__trail ch-num">{trail}</span>}
+      {trail != null && (
+        <>
+          {' '}
+          <span className="ch-lgr__trail ch-num">{trail}</span>
+        </>
+      )}
       {(href || onClick) && <Icon icon={ChevronRight} className="ch-lgr__go" size={16} />}
     </>
   );

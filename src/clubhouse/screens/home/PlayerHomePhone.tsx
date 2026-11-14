@@ -19,7 +19,9 @@ import { usePhoneHero } from '../../shell/phone-chrome';
 import { rebuiltHref } from '../../shell/nav';
 import { CoachAsks } from './CoachAsks';
 import { Countdown } from './Countdown';
+import { countdownTo } from './event-links';
 import { Today, UpNext, WeekStrip } from './HomePhone';
+import { NextBeyond } from './NextBeyond';
 import { SinceYouLooked } from './DayCard';
 import { noRoundsYet, playerFailedParts } from './model';
 import { OwnLiveCard } from './OwnLiveCard';
@@ -42,7 +44,9 @@ export function PlayerHomePhone({ data, now: frozen, live, playerId }: { data: C
   usePhoneHero(true);
   const ticking = useNow();
   const now = useMemo(() => (frozen ? new Date(frozen) : ticking), [frozen, ticking]);
-  const nothingAhead = !data.week.error && !data.next && data.week.days.every((d) => d.eventCount === 0);
+  // Nothing on this week: no event, and no day on the road (F-0001).
+  const nothingAhead = !data.week.error && !data.next && data.week.days.every((d) => d.eventCount === 0 && !d.trip);
+  const until = data.next ? countdownTo(data.next) : null;
   const post = postRoundHref();
   // Two or more failed reads are told once under the greeting, with one Try again; each part keeps its title (CH-1209).
   const failed = playerFailedParts(data);
@@ -61,8 +65,12 @@ export function PlayerHomePhone({ data, now: frozen, live, playerId }: { data: C
             <RefreshNotice code="CH-2201" title="This week’s schedule didn’t load" body="Your events are safe. Try again." covered={covered} />
           ) : data.next ? (
             <UpNext e={data.next} now={now} kicker="Up next">
-              {!data.next.allDay && <Countdown to={data.next.startIso} frozen={frozen} />}
+              {/* A trip counts down to when it leaves (F-0001); an all-day event has no time to count to. */}
+              {until && <Countdown to={until} frozen={frozen} lead={data.next.trip ? 'Leaves in' : undefined} />}
             </UpNext>
+          ) : data.after ? (
+            // Nothing left this week, but something after it (F-0006): never "No events scheduled".
+            <NextBeyond e={data.after} />
           ) : (
             <div className="ch-hm-next is-static" data-ch-code="CH-2309">
               <span className="ch-hm-next__k">

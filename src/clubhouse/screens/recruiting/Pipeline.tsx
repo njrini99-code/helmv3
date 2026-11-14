@@ -64,7 +64,6 @@ export function Pipeline({
               // W41: a stage at 0 draws the quiet coin (recruiting.css), whatever its stage's tone.
               className={`ch-rec-pipe__stage is-${s.value}` + (n === 0 ? ' is-zero' : '')}
               aria-pressed={on}
-              aria-label={`${s.label}, ${plural(n, 'prospect')}`}
               disabled={empty}
               onClick={() => {
                 // CH-14701: a stage picked as the filter is a selection.
@@ -72,10 +71,20 @@ export function Pipeline({
                 onPick(on ? null : s.value);
               }}
             >
-              <span className="ch-rec-pipe__dot ch-num">{n}</span>
+              {/* F-0011 (WCAG 2.5.3): named by the stage it shows, then how many are in it, in place of an aria-label the
+                  count coin and the line disagreed with. The coin's count is read in words after the name. */}
+              <span className="ch-rec-pipe__dot ch-num" aria-hidden="true">
+                {n}
+              </span>
               <span className="ch-rec-pipe__txt">
                 <b>{s.label}</b>
-                {!compact && <span>{on ? 'Showing only these' : stageMeta(s.value).blurb}</span>}
+                <span className="ch-sr-only">{`, ${plural(n, 'prospect')}`}</span>
+                {!compact && (
+                  <>
+                    {' '}
+                    <span>{on ? 'Showing only these' : stageMeta(s.value).blurb}</span>
+                  </>
+                )}
               </span>
             </button>
           );

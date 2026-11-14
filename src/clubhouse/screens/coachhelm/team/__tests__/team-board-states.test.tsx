@@ -193,4 +193,12 @@ describe('why the hole’s figures sit below zero (Q1, owner 12 Nov 2026)', () =
     expect(said('lpga').foot).toContain('Measured against LPGA Tour pros');
     expect(said(undefined).foot).toContain('Measured against Tour pros');
   });
+
+  // F-0024 (audit, 13 Nov 2026): the desk's hint said "Tap a spot" to a mouse. One verb that is right for a mouse, a trackpad and an
+  // iPad that gets the desk layout.
+  it('the desk’s hint under the hole names no input', () => {
+    const { foot } = said('pga');
+    expect(foot).toMatch(/Choose a spot$/);
+    expect(foot).not.toMatch(/\bTap\b/);
+  });
 });

@@ -28,7 +28,8 @@ import { ScoreMark } from '../../ui/ScoreMark';
 import { Swap } from '../../ui/Swap';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { EmptyState } from '../../ui/States';
-import { dateOf, TeeSwatch, TYPE_LABEL } from './parts';
+import { TeeSwatch, TYPE_LABEL } from './parts';
+import { kickerDay } from './labels';
 import { approachFinish, costliest, flow, headline, puttSplit, teeMisses, turningStretch } from './round-insights';
 import { RoundSays, saysFigures } from './RoundSays';
 import { RecordChips } from './RecordChips';
@@ -52,7 +53,6 @@ import type { ChDebrief } from '../../data/round-debrief-shape';
 import { plural, pluralWord } from '../../lib/plural';
 
 const LIE_LABEL: Record<string, string> = { fairway: 'Fairway', rough: 'Rough', sand: 'Sand', green: 'Green', hole: 'Holed', penalty: 'Penalty', other: 'Other', tee: 'Tee' };
-const fmt = (o: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', ...o });
 const pct = (hit: number, of: number) => `${Math.round((hit / of) * 100)}%`;
 
 /** A coach is looking at a player's round. The loader says so outright; a name alone also means it, for a review built without it (a fixture). */
@@ -577,7 +577,7 @@ export function RoundReview({
     if (!stepBack()) router.push(back.href);
   };
   const under = r.toPar != null && r.toPar < 0;
-  const kicker = [r.playerName, `${fmt({ weekday: 'short' }).format(dateOf(r.date))} ${fmt({ month: 'short', day: 'numeric' }).format(dateOf(r.date))}`, r.type ? TYPE_LABEL[r.type] : null]
+  const kicker = [r.playerName, kickerDay(r.date), r.type ? TYPE_LABEL[r.type] : null]
     .filter(Boolean)
     .join(' · ');
   const step = (d: -1 | 1) => {

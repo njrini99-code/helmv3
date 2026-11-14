@@ -31,6 +31,7 @@ import { RovingRows } from '../../ui/RovingRows';
 import { usePageKeys, type ChPageKey } from '../../shell/command/page-keys';
 import { chTrail } from '../../lib/track';
 import { changeTone, formatAvg, formatFixed, formatHcp, formatSigned, NO_DATA } from '../../lib/format';
+import { sgWindowLine, type ChSgWindow } from '../../lib/sg-window-line';
 import { coachPlayerHref } from '../../data/coachhelm-views-shape';
 import { rebuiltHref } from '../../shell/nav';
 import { usePressPrefetch } from '../../shell/use-prefetch-tabs';
@@ -1052,7 +1053,7 @@ function FaceFigures({
   avgs,
   standing,
 }: {
-  p: { avg: number | null; sgPerRound: number | null; handicap: number | null; rounds: number };
+  p: { avg: number | null; sgPerRound: number | null; sgWindow?: ChSgWindow | null; handicap: number | null; rounds: number };
   /** The ranked team's averages (active, past the early floor), for the strip. */
   avgs: number[];
   /** This player's place among them; undefined when they aren't ranked (inactive, early, no average). */
@@ -1062,17 +1063,20 @@ function FaceFigures({
   const hi = avgs.length ? Math.max(...avgs) : 0;
   const at = (v: number) => (hi === lo ? 50 : ((v - lo) / (hi - lo)) * 100);
   // W25: an early player's card already says "Early read" over its form line (FormLine, under three points), so the
-  // scoring caption no longer repeats it as "Needs N more"; it reads "Avg", as a player with no place does.
+  // scoring caption no longer repeats it as "Needs N more"; it reads “Scoring avg” on one line, as a player with no place does.
   const ord = (n: number) => `${n}${n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] ?? 'th'}`;
   const sg = p.sgPerRound;
   const sgW = sg == null ? 0 : Math.min(50, (Math.abs(sg) / 3) * 50);
+  const placed = standing && standing.of > 1 ? standing : null;
   return (
     <span className="ch-rs-figs">
       <span className="ch-rs-fig">
-        <span className="ch-rs-fig__k">Scoring</span>
+        {/* With no place to show, the label says what the figure is on its own line (“Scoring avg”): a lone "Avg" caption under
+            "Scoring" read as the label wrapped, and made this figure a line taller than strokes gained beside it. */}
+        <span className="ch-rs-fig__k">{placed ? 'Scoring' : TERMS.scoringAvg.short}</span>
         <b className="ch-num">{formatFixed(p.avg)}</b>
-        <span className="ch-rs-fig__m">{standing && standing.of > 1 ? `${standing.tied ? `T${standing.place}` : ord(standing.place)} of ${standing.of}` : 'Avg'}</span>
-        {p.avg != null && standing && standing.of > 1 && (
+        {placed && <span className="ch-rs-fig__m">{`${placed.tied ? `T${placed.place}` : ord(placed.place)} of ${placed.of}`}</span>}
+        {p.avg != null && placed && (
           <span className="ch-rs-strip" aria-hidden="true">
             {avgs.map((v, k) => (
               <i key={k} style={{ left: `${at(v)}%` }} />
@@ -1093,6 +1097,8 @@ function FaceFigures({
             <i className={changeTone(sg, false, 1)} style={sg >= 0 ? { left: '50%', width: `${sgW}%` } : { right: '50%', width: `${sgW}%` }} />
           </span>
         )}
+        {/* F-0005: the figure reads the player's last ten rounds, which can start before the season the page names: say which. */}
+        {sg != null && sgWindowLine(p.sgWindow) && <span className="ch-rs-fig__m">{sgWindowLine(p.sgWindow)}</span>}
       </span>
       <span className="ch-rs-face__hcp">
         Handicap <b className="ch-num">{formatHcp(p.handicap)}</b>

@@ -18,6 +18,7 @@ import { useAction, type ActionCopy } from '../../lib/use-action';
 import { chTween } from '../../lib/motion';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { changeTone, formatFixed, formatHcp, formatSigned, NO_DATA } from '../../lib/format';
+import { sgWindowLine } from '../../lib/sg-window-line';
 import { rebuiltHref } from '../../shell/nav';
 import { AVAILABILITY_WORD, relativeAgo, yearKeyOf, yearLineOf, type RosterClock } from './format';
 import { usePressPrefetch } from '../../shell/use-prefetch-tabs';
@@ -104,10 +105,11 @@ function PeekBody({
   /** P-10: the class line for this player (a trip, or a class when nothing outranks it), with its source. */
   classLine?: RosterClassLine | null;
 }) {
-  const figs: Array<[string, string]> = [
+  // F-0005: strokes gained reads the last ten rounds, which can start before the season "Rounds" counts; it names its window.
+  const figs: Array<[string, string, (string | null)?]> = [
     ['Scoring avg', formatFixed(p.avg)],
     ['Handicap', formatHcp(p.handicap)],
-    [SG_FIGURE, p.sgPerRound == null ? NO_DATA : formatSigned(p.sgPerRound)],
+    [SG_FIGURE, p.sgPerRound == null ? NO_DATA : formatSigned(p.sgPerRound), p.sgPerRound == null ? null : sgWindowLine(p.sgWindow)],
     ['Rounds', String(p.rounds)],
   ];
   const messageHref = rebuiltHref(`/golf/dashboard/messages?player=${encodeURIComponent(p.id)}`);
@@ -133,10 +135,12 @@ function PeekBody({
             {classLine.source && <small>{classLine.source}</small>}
           </span>
         )}
+        {/* Both keys are secondary: the page beside the panel already has its one primary, Invite players in the head (CR-07).
+            The phone's pushed profile is a screen of its own, where Message stays the primary. */}
         {(messageHref || planHref) && (
           <div className="ch-rs-peek__quick">
             {messageHref && (
-              <Button size="md" variant="primary" leftIcon={MessageSquare} href={messageHref}>
+              <Button size="md" leftIcon={MessageSquare} href={messageHref}>
                 Message
               </Button>
             )}
@@ -150,10 +154,11 @@ function PeekBody({
       </div>
 
       <dl className="ch-rs-peek__figs">
-        {figs.map(([l, v]) => (
+        {figs.map(([l, v, f]) => (
           <div key={l}>
             <dt>{l}</dt>
             <dd className={'ch-num' + (l === SG_FIGURE ? ' ' + changeTone(p.sgPerRound, false, 1) : '')}>{v}</dd>
+            {f && <dd className="ch-rs-peek__f ch-num">{f}</dd>}
           </div>
         ))}
       </dl>

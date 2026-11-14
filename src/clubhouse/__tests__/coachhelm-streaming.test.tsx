@@ -51,7 +51,13 @@ const arrange = () => {
   );
   pulseRead.read.mockResolvedValue(pulseOf([{ id: 'movement-decline', headline: '2 players are scoring worse over their last three rounds', evidence: 'Jonah Okafor +2.1', tone: 'attention', weight: 80 }]));
   tables.current = {
-    golf_team_members: { data: [{ player_id: jonah.id }, { player_id: eli.id }] },
+    // The roster is one read: each member row carries the player it names.
+    golf_team_members: {
+      data: [
+        { player_id: jonah.id, player: { id: jonah.id, first_name: 'Jonah', last_name: 'Okafor', graduation_year: null } },
+        { player_id: eli.id, player: { id: eli.id, first_name: 'Eli', last_name: 'Brandt', graduation_year: null } },
+      ],
+    },
     golf_players: {
       data: [
         { id: eli.id, first_name: 'Eli', last_name: 'Brandt' },

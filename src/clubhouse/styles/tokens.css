@@ -307,7 +307,8 @@
   --ch-font-mono: var(--ch-font-jetbrains), ui-monospace, 'SF Mono', Menlo, monospace;
   /* Real Dynamic Type (P008-C1): every type step is a multiple of --ch-type-k, one CSS pixel at the default size. It
      follows the root size (a browser's default text size, or a 130% root: rem) and the iPhone's Text Size
-     (--ch-type-scale on <html>, from -apple-system-body, capped at XXL: lib/dynamic-type.ts). */
+     (--ch-type-scale on <html>, from -apple-system-body, capped at XXL: lib/dynamic-type.ts), upward only: under 1 the
+     12 step would draw under 12px (F-0014, CR-03). */
   --ch-type-k: calc(var(--ch-type-scale, 1) * 1rem / 16);
   --ch-fw-400: 400;
   --ch-fw-500: 500;
@@ -386,6 +387,8 @@
   --ch-track-34: -0.03em;
   /* A single-line label (a pill, a tab, a figure's caption on one line) takes this leading in place of its step's. */
   --ch-lead-tight: 1.1;
+  /* A big figure set solid beside a heading, as the redlines draw it (Roster's team card total, 34/.9: classes-roster-home 06 7.2). */
+  --ch-lead-figure: 0.9;
   /* The legacy caption and label leadings (1.4, 1.3), kept as tokens so the rules moved off --ch-type-caption, -label and
      -label-s onto the step roles render exactly as before (S1 item 5). A ratio, so it follows a rule's own font-size. */
   --ch-lead-caption: 1.4;
@@ -507,6 +510,7 @@
   --ch-topbar-h: 56px;
   /* Phone chrome (owner design, design/handoff/mobile/m-shell.jsx, m.css; D-40, D-43) */
   --ch-phone-topbar-h: 50px; /* a 44px row and 6px below it, under the status bar */
+  --ch-target-min: 44px; /* the smallest tap target on a phone (TO-01): a week day never narrows past it */
   --ch-tabbar-h: 0px; /* no bottom bar on the phone since the section strip (section-strip.md); kept for its readers */
 
   /* The global light (P001-A1, D3-1; owner 2026-10-08). One sun for the whole Clubhouse, from the team's course location

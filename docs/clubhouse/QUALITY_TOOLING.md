@@ -34,7 +34,7 @@ Setup reads the existing config directly and atomically replaces it with a
 private file. It does not write through a config-file symlink; unrelated
 settings from the existing file are retained.
 
-Chrome DevTools MCP 1.10.1 is also pinned in development dependencies and
+Chrome DevTools MCP 1.12.0 is also pinned in development dependencies and
 configured in `.mcp.json` and the portable Codex template. The setup command
 updates both DevTools server sections and their nested settings, retaining
 other servers. Reload the MCP client after setup. Chrome launches with an
@@ -50,7 +50,8 @@ Safari/iPhone checks or prove smoothness across the whole app. See the
 [official tool reference](https://github.com/ChromeDevTools/chrome-devtools-mcp/blob/main/docs/tool-reference.md).
 
 Local setup/doctor and the Chrome MCP initialization handshake passed on
-2026-10-06. The server reported version 1.10.1 and 30 tools, including trace
+2026-10-06 (then version 1.10.1, 30 tools). Re-run on 2026-11-13 against the
+lockfile's pin: the server reported version 1.12.0 and 32 tools, including trace
 start/stop/insights, CSS, console, network and screenshots. All 89 tooling
 tests passed. This validates installation and tool discovery; a connected
 browser audit requires the client reload and a subsequent profiling session.

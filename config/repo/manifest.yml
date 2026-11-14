@@ -96,6 +96,7 @@ vercel:
     - .cursor/mcp.json                 # sbp_ Supabase access token (.gitleaks.toml)
     - context7.json                    # Context7 api_key
     - playwright/.auth/                # Supabase session cookies (storage state)
+    - .auth/                           # audit sign-in: staging admin key, Vercel bypass copy, session cookies
     - momentic/auth/                   # test-account auth
     - .momentic-mcp/                   # captured environment values incl. credentials
     - android/keystore.properties      # upload keystore password

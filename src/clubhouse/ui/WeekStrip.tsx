@@ -18,10 +18,24 @@ export interface WeekStripDay {
   flag?: 'reply' | 'trip';
   /** A competition day draws its type's mark in place of the dots. */
   mark?: LucideIcon;
-  /** The day read as words. A button carries it as its name; a link or a plain day as hidden text. */
+  /** The day read as words. A button carries it as its name; a link or a plain day as hidden text. Opening with the face
+   * ("Sat 15: nothing on" under "Sat", 15) it is the name as it stands; otherwise the face goes first ("S 8, Sun 8, 0 events"). */
   label: string;
   /** A link to the day (Home), when the strip doesn't choose a day itself. */
   href?: string;
+}
+
+/** Lowercase words and digits only, for comparing a face with a label. */
+const words = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+
+/**
+ * F-0011 (WCAG 2.5.3 Label in Name): the day's name opens with what its face shows, the top line and the number, so a
+ * voice-control user who says "S 8" reaches the day the screen calls "S 8". A label that already opens with the face is
+ * the name as it stands.
+ */
+export function weekDayName(d: Pick<WeekStripDay, 'top' | 'num' | 'label'>): string {
+  const face = `${d.top} ${d.num}`;
+  return (words(d.label) + ' ').startsWith(words(face) + ' ') ? d.label : `${face}, ${d.label}`;
 }
 
 /**
@@ -100,9 +114,12 @@ export function WeekStrip({
     >
       {ds.map((d, i) => {
         const cls = 'ch-wks__d' + (live && i === at ? ' is-on' : '') + (d.isToday ? ' is-today' : '') + (live && d.date === dropDate ? ' is-drop' : '');
+        const name = weekDayName(d);
+        // The space between the top line and the number is not drawn (the day is a flex column) but keeps the face's words
+        // apart, "S 8" not "S8", as a name compared with it reads them (F-0011).
         const face = (
           <>
-            <em aria-hidden="true">{d.top}</em>
+            <em aria-hidden="true">{d.top}</em>{' '}
             <b className="ch-num" aria-hidden="true">
               {d.num}
             </b>
@@ -123,7 +140,7 @@ export function WeekStrip({
                 type="button"
                 className={cls}
                 aria-pressed={live && i === at}
-                aria-label={d.label}
+                aria-label={name}
                 data-date={live ? d.date : undefined}
                 tabIndex={!live ? -1 : i === (at >= 0 ? at : 0) ? 0 : -1}
                 onClick={() => onSelect(d.date)}
@@ -134,12 +151,12 @@ export function WeekStrip({
             ) : d.href ? (
               <Link prefetch={false} href={d.href} className={cls} tabIndex={live ? undefined : -1}>
                 {face}
-                <span className="ch-sr-only">{d.label}</span>
+                <span className="ch-sr-only">{name}</span>
               </Link>
             ) : (
               <span className={cls}>
                 {face}
-                <span className="ch-sr-only">{d.label}</span>
+                <span className="ch-sr-only">{name}</span>
               </span>
             )}
           </li>
