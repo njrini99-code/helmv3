@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { logServerError } from '@/lib/server-error-logger';
-import { parsePlanBody, validatePlan, type PlanBodyV2 } from '@/lib/coachhelm/v3/practice-plan/model';
+import { parsePlanBody, toSaveBody, validatePlan, type PlanBodyV2 } from '@/lib/coachhelm/v3/practice-plan/model';
 import { practiceRpc, practiceTables } from '@/lib/golf/practice-db';
 import { isPracticeMissing, practiceErrorOf } from '@/lib/golf/practice-errors';
 
@@ -22,7 +22,7 @@ async function savePracticePlanImpl(input: { eventId?: string | null; planId?: s
   const limit = validatePlan(parsed).errors.find((e) => e.code === 'CH-17109');
   if (limit) return { success: false, error: limit.message, code: limit.code };
   const sb = await createClient();
-  const { data, error } = await practiceRpc(sb, 'golf_practice_plan_save', { p_event_id: input.eventId ?? null, p_plan_id: input.planId ?? null, p_expected_version: input.expectedVersion, p_title: input.title ?? null, p_step: input.step ?? 'blocks', p_body: parsed });
+  const { data, error } = await practiceRpc(sb, 'golf_practice_plan_save', { p_event_id: input.eventId ?? null, p_plan_id: input.planId ?? null, p_expected_version: input.expectedVersion, p_title: input.title ?? null, p_step: input.step ?? 'blocks', p_body: toSaveBody(parsed) });
   if (error) {
     await logServerError(`savePracticePlan: ${error.message}`, { action: 'practice.save', errorCode: 'CH-17001' }, 'warning');
     return fail(error);

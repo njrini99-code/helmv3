@@ -512,6 +512,8 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/audit/2026-11-13/writes.md` | current | - | - | - | - |
 | `docs/clubhouse/audit/WRITES-ON-OPEN.md` | current | - | - | - | - |
 | `docs/clubhouse/foundation-v2/01_REPO_AUDIT_AND_RECOMMENDATION.md` | current | - | - | yes | - |
+| `docs/clubhouse/pages/P004-stats-team/changes/2026-11-13-coach-audit-figures.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P005-stats-player/changes/2026-11-13-coach-audit-figures.md` | current | - | - | - | - |
 | `docs/observability/SENTRY_PHASE_A_FINDINGS.md` | current | - | - | yes | 4 |
 | `docs/reports/REPO_WIRING_AUDIT_2026-08-30.md` | current | - | - | - | - |
 | `docs/security/S4_TEAMMATE_READ_AUDIT_2026-10-21.md` | current | - | - | - | - |
@@ -1086,6 +1088,7 @@ them would bury everything above.
 | `docs/clubhouse/changes/2026-11-13-a11y-names-focus.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-13-data-honesty.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-13-phone-type-floor-and-week-strip.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-11-13-practice-builder-contrast.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-13-practice-craft.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-13-span-switch-labels.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-13-zone-formatters.md` | current | - | - | - | - |
@@ -1218,6 +1221,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-07-shell-motion.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-11-fix-wave.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-12-practice-left-edge.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P001-shell/changes/2026-11-13-builder-fits-desk.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-13-label-in-name.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-13-type-scale-upward-only.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CHANGELOG.md` | current | - | - | - | - |

@@ -89,11 +89,32 @@ export interface PlanDraft {
 
 export const stationsLen = (b: Pick<StationsBlock, 'turns' | 'turnMin' | 'moveMin'>): number => b.turns * b.turnMin + (b.turns - 1) * b.moveMin;
 
+/** A layout whose Stations blocks all carry `grid`: a block saved without one is on its automatic grid (null). */
+function withGrids(layout: PlanLayout): PlanLayout {
+  if (!layout.blocks.some((x) => x.kind === 'stations' && (x as Partial<StationsBlock>).grid === undefined)) return layout;
+  return { ...layout, blocks: layout.blocks.map((x) => (x.kind === 'stations' && (x as Partial<StationsBlock>).grid === undefined ? { ...x, grid: null } : x)) };
+}
+
 export function parsePlanBody(json: unknown): PlanBodyV2 | null {
   if (!json || typeof json !== 'object') return null;
   const b = json as Partial<PlanBodyV2>;
   if (b.v !== 2 || !b.variants || !Array.isArray(b.variants.main?.blocks)) return null;
-  return { v: 2, focus: b.focus ?? '', notes: b.notes ?? '', place: b.place ?? '', arrivalBufferMin: b.arrivalBufferMin ?? 15, bring: b.bring ?? [], players: b.players ?? [], groups: b.groups ?? [], variants: { main: b.variants.main, rain: b.variants.rain ?? null } };
+  const rain = b.variants.rain ?? null;
+  return { v: 2, focus: b.focus ?? '', notes: b.notes ?? '', place: b.place ?? '', arrivalBufferMin: b.arrivalBufferMin ?? 15, bring: b.bring ?? [], players: b.players ?? [], groups: b.groups ?? [], variants: { main: withGrids(b.variants.main), rain: rain && Array.isArray(rain.blocks) ? withGrids(rain) : rain } };
+}
+
+/**
+ * The body golf_practice_plan_save is sent: a Stations block on its automatic grid (`grid: null`) goes without the key. The
+ * save's group check walks `lax $.blocks[*].grid[*][*]`, which turns a null grid into one null "cell" naming no group, so every
+ * automatic-grid Stations block was refused as practice_plan_block_group (coach audit 13 Nov); a missing grid yields no cells
+ * and is allowed. parsePlanBody reads a missing grid back as null. Everything else is passed through untouched.
+ */
+export function toSaveBody(body: PlanBodyV2): unknown {
+  const strip = (layout: PlanLayout): PlanLayout =>
+    layout.blocks.some((x) => x.kind === 'stations' && x.grid === null)
+      ? { ...layout, blocks: layout.blocks.map((x) => (x.kind === 'stations' && x.grid === null ? (({ grid: _auto, ...rest }) => rest)(x) : x) as PlanBlock) }
+      : layout;
+  return { ...body, variants: { main: strip(body.variants.main), rain: body.variants.rain ? strip(body.variants.rain) : null } };
 }
 
 /**
