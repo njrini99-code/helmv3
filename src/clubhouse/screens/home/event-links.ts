@@ -51,11 +51,12 @@ const clockAt = (iso: string, timezone?: string) => formatClock(iso, getValidTim
 /**
  * A trip's when (F-0001): before it leaves, when it leaves, counting down to its departure time on the day ("Leaves in 2 h 10
  * min", "Leaves tomorrow · 7:30 AM", "Leaves Mon" with no time saved); once gone, "On the road" and when the team is back,
- * through the return day. Before the clock is known, the day it leaves.
+ * through the return day. Before the clock is known, its days ("Fri – Sun"), which are true either way.
  */
 function tripWhen(e: ChHomeEvent, trip: NonNullable<ChHomeEvent['trip']>, now: Date | null): { text: string; soon: boolean } {
   const leavesAt = trip.leaves ? ` · ${clockAt(trip.leaves, e.timezone)}` : '';
-  if (!now) return { text: `Leaves ${weekday(e.date)}${leavesAt}`, soon: false };
+  // Before the clock is known (the server and the first paint) the team may already be away: the days only, no verb.
+  if (!now) return { text: trip.back === e.date ? weekday(e.date) : `${weekday(e.date)} – ${weekday(trip.back)}`, soon: false };
   const toLeave = dayDiff(e.date, now, e.timezone);
   const gone = trip.leaves ? Date.parse(trip.leaves) <= now.getTime() : toLeave <= 0;
   if (gone) {

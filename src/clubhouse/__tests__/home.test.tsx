@@ -874,6 +874,20 @@ describe('Home · after this week, and trips (audit 2026-11-13)', () => {
     expect(hero.textContent).toContain('Confirm live check');
   });
 
+  it('F-0001 on the desk, with no frozen clock (as in production), the hero says the team is away once the page is up, never "Leaves"', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(PREVIEW_HOME_NOW));
+    try {
+      wrap(<CoachHome data={emptyWeek({ next: TRIP, today: [TRIP] })} />);
+      const hero = document.querySelector('.ch-h-herocard__next') as HTMLElement;
+      await waitFor(() => expect(hero.textContent).toContain('On the road · back tomorrow'));
+      expect(hero.textContent).not.toMatch(/Leaves/);
+      expect(hero.getAttribute('href')).toBe('/golf/dashboard/team-hub?tab=travel&trip=t1');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('CH-2309 with nothing after it either, Up next still says "No events scheduled"', () => {
     phone();
     wrap(<CoachHome data={emptyWeek({ after: null })} now={PREVIEW_HOME_NOW} />);

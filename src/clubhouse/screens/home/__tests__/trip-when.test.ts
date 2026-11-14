@@ -49,6 +49,12 @@ describe('a trip’s when-label', () => {
     expect(whenLabel(trip({}, '2026-11-13T12:30:00.000Z'), at('2026-11-13T13:00:00Z')).text).toBe('On the road · back Sun');
   });
 
+  it('F-0001 before the clock is known (the server, the first paint): its days only, true whether or not it has left', () => {
+    expect(whenLabel(trip(), null)).toEqual({ text: 'Fri – Sun', soon: false });
+    expect(whenLabel(trip({}, '2026-11-13T12:30:00.000Z'), null).text).toBe('Fri – Sun');
+    expect(whenLabel(trip({ trip: { id: 't1', leaves: null, back: '2026-11-13' } }), null).text).toBe('Fri');
+  });
+
   it('F-0001 opens the trip on Team Hub’s Travel', () => {
     expect(eventHref(trip())).toBe('/golf/dashboard/team-hub?tab=travel&trip=t1');
   });
