@@ -127,6 +127,14 @@ describe('My stats empty and early', () => {
     levels.forEach((l, i) => i > 0 && expect(l - levels[i - 1]!).toBeLessThanOrEqual(1));
   });
 
+  it('F-0020: on a desk with no rounds, one h1 (the head’s), and the first-run title is an h2 (axe heading-order)', async () => {
+    asDesktop();
+    showPlayer(previewShsPlayer('empty')!);
+    const title = await screen.findByRole('heading', { name: 'Your stats start with your first round' });
+    expect(title.tagName).toBe('H2');
+    expect(screen.getAllByRole('heading', { level: 1 }).map((h) => h.textContent)).toEqual(['My stats']);
+  });
+
   it('a window with nothing in it is not a first run', async () => {
     showPlayer(previewShsPlayer('filterempty')!);
     await waitFor(() => expect(code('CH-5320')).not.toBeNull());

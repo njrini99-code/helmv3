@@ -16,7 +16,10 @@ const EASE = `cubic-bezier(${CH_EASE.join(', ')})`;
 let lastPress: { el: HTMLElement; at: number } | null = null;
 const PRESSABLE =
   'button, a[href], input, select, textarea, summary, [role="button"], [role="link"], [role="menuitem"], [role="menuitemradio"], [role="option"], [role="tab"], [role="radio"], [role="checkbox"], [role="switch"], [tabindex]';
-/** A press older than this opened nothing that is opening now (a hold peek opens about half a second in). */
+/** A press this recent is what is opening a dialog now, even over a control left focused by an earlier sheet (a hold
+ * peek opens about half a second in). */
+const PRESS_NOW_MS = 1000;
+/** A press older than this opened nothing that is opening now. */
 const PRESS_FRESH_MS = 5000;
 function notePress(e: Event) {
   const el = e.target instanceof Element ? e.target.closest<HTMLElement>(PRESSABLE) : null;
@@ -27,12 +30,22 @@ if (typeof document !== 'undefined') {
   document.addEventListener('click', notePress, true);
 }
 
-/** What is opening a dialog now: the focused control, or, where the tap focused nothing, the control it pressed. */
+/**
+ * What is opening a dialog now: the control just pressed; else the focused control; else, where a tap focused nothing,
+ * the control it pressed a moment ago. A click in Chromium, Enter on a focused key and a VoiceOver activation all press
+ * the focused control, so the order matters only where a tap did not move focus: Safari's, after an earlier sheet handed
+ * focus back to its own opener.
+ */
 export function chDialogOpener(): HTMLElement | null {
+  // A control in a sheet that has closed under it (the picker's Add a course, which hands the picker's focus back to
+  // Browse as it opens its own sheet) is no opener to return to.
+  const live = (el: HTMLElement) => el.isConnected && !el.closest('[inert], dialog:not([open])');
+  const press = lastPress && live(lastPress.el) ? lastPress : null;
+  const age = press ? Date.now() - press.at : Infinity;
+  if (press && age < PRESS_NOW_MS) return press.el;
   const active = document.activeElement;
   if (active instanceof HTMLElement && active !== document.body) return active;
-  const press = lastPress;
-  return press && press.el.isConnected && Date.now() - press.at < PRESS_FRESH_MS ? press.el : null;
+  return press && age < PRESS_FRESH_MS ? press.el : null;
 }
 
 /**

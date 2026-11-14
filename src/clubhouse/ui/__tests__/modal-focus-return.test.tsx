@@ -56,6 +56,33 @@ describe('a sheet hands focus back to what opened it, even when the tap never fo
     expect(document.activeElement).toBe(opener);
   });
 
+  it('a second sheet in a row hands focus back to its own opener, not the first one’s', () => {
+    function Two() {
+      const [open, setOpen] = useState<'a' | 'b' | null>(null);
+      return (
+        <div className="ch-root" data-ui="clubhouse">
+          <button type="button" onClick={() => setOpen('a')}>
+            Term dates
+          </button>
+          <button type="button" onClick={() => setOpen('b')}>
+            Filter
+          </button>
+          <Modal open={open != null} onClose={() => setOpen(null)} title={open === 'b' ? 'Filter rounds' : 'Fall 2026 term'} />
+        </div>
+      );
+    }
+    render(<Two />);
+    const a = screen.getByRole('button', { name: 'Term dates' });
+    const b = screen.getByRole('button', { name: 'Filter' });
+    tap(a);
+    act(() => void screen.getByRole('dialog').dispatchEvent(new Event('cancel', { cancelable: true })));
+    expect(document.activeElement).toBe(a);
+    // A focused A does not lose focus to a tap on B (Safari focuses no button it clicks): B is still what opened the sheet.
+    tap(b);
+    act(() => void screen.getByRole('dialog', { name: 'Filter rounds' }).dispatchEvent(new Event('cancel', { cancelable: true })));
+    expect(document.activeElement).toBe(b);
+  });
+
   it('a press long gone is not taken for the opener of a sheet that opened by itself', () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     try {

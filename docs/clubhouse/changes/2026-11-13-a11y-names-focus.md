@@ -21,11 +21,13 @@ Held items:     none
   and the number ("S 8, Sun 8, 0 events"); a label that already opens with the face
   ("Wed 15: 1 event") is kept. The space between the top line and the number is not
   drawn (a flex column).
-- `lib/dialog-lifetime.ts` (F-0012): a sheet's opener is the focused control or, where
-  a tap focused nothing (Safari and the iOS app focus no button they click), the
-  control pressed in the last five seconds, tracked by one capture listener for
-  pointerdown and click. Both close paths hand focus back to it. Every Modal,
-  FormSheet, Peek, Ask and History sheet goes through this hook.
+- `lib/dialog-lifetime.ts` (F-0012): `chDialogOpener()` names a sheet's opener: the
+  control pressed in the last second; else the focused control; else a control pressed
+  in the last five seconds. One capture listener for pointerdown and click tracks the
+  presses. Safari and the iOS app focus no button they click, so a tapped sheet found
+  the page focused, or the opener of the sheet before it. Both close paths hand focus
+  back to it. Every Modal, FormSheet, Peek, Ask and History sheet goes through this
+  hook, and the CoachHelm story viewer now reads the same function.
 - Test helper `src/clubhouse/__tests__/label-in-name.ts` mirrors axe's reading of a
   control's face and its string comparison.
 
@@ -43,5 +45,6 @@ Held items:     none
 
 - `ui/__tests__/Ledger-name.test.tsx`, `ui/__tests__/WeekStrip.test.tsx`,
   `ui/__tests__/modal-focus-return.test.tsx` (phone and desktop: a tap that focuses
-  nothing still gets focus back; a press a minute old is not taken for the opener).
+  nothing still gets focus back; a second sheet in a row goes back to its own opener;
+  a press a minute old is not taken for the opener).
 - Not checked in Safari in this change (the lead verifies on a preview).
