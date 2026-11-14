@@ -1472,7 +1472,7 @@
     "item": 9,
     "name": "NOTHING_ON_THE_CALENDAR_AHEAD",
     "chCode": "CH-2309",
-    "meaning": "Nothing on the calendar ahead (phone). A player: \"Your coach’s practices and events will show here with a countdown.\", no quick adds",
+    "meaning": "Nothing on the calendar ahead, this week or after it: no event and no trip (phone). A player: \"Your coach’s practices and events will show here with a countdown.\", no quick adds",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/home.md"
   },
@@ -1550,6 +1550,17 @@
     "name": "NOBODY_ON_THE_TEAM_HAS_A_CLASS",
     "chCode": "CH-2370",
     "meaning": "Nobody on the team has a class today (the sheet is open)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20417,
+    "page": "P002",
+    "category": 4,
+    "item": 17,
+    "name": "NOTHING_LEFT_THIS_WEEK_BUT_AN_EVENT",
+    "chCode": "CH-2316",
+    "meaning": "Nothing left this week, but an event or a trip after it (F-0006; a player is not told of a meeting past the loaded week)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/home.md"
   },
@@ -2141,7 +2152,7 @@
     "item": 2,
     "name": "EACH_DAY_IN_THE_WEEK_STRIP_IS",
     "chCode": "CH-2802",
-    "meaning": "Each day in the week strip is read as words (\"Tuesday 14, 4 events\", \"competition, 1 event\"); today is marked",
+    "meaning": "Each day in the week strip is read as words (\"Tuesday 14, 4 events\", \"competition, 1 event\", \"on the road (Fall Invitational)\"); today is marked",
     "status": "reserved",
     "catalog": "docs/clubhouse/catalog/home.md"
   },

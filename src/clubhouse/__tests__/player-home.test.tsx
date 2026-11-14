@@ -180,6 +180,33 @@ describe('Player Home · phone (Player - Home - Mobile.html)', () => {
     expect(screen.queryByRole('link', { name: /Add event/ })).toBeNull();
   });
 
+  it('CH-2316 F-0006 nothing left this week: Up next names the next event after it, with no Add event', () => {
+    const after = { ...PREVIEW_PLAYER_HOME.next!, id: 'range', title: 'Range session', type: 'practice' as const, date: '2026-10-20', allDay: false, startLabel: '4:00 PM', startIso: '2026-10-20T20:00:00Z', endIso: null, location: 'Range' };
+    show(home({ next: null, today: [], after }));
+    expect(code('CH-2309')).toBeNull();
+    const card = code('CH-2316') as HTMLElement;
+    expect(card.textContent).toContain('Nothing else this week');
+    expect(card.textContent).toContain('Next: Range session, Tue 20 Oct, 4:00 PM');
+    expect(card.closest('a')!.getAttribute('href')).toBe('/golf/dashboard/calendar?date=2026-10-20&event=range');
+    expect(screen.queryByRole('link', { name: /Add event/ })).toBeNull();
+  });
+
+  it('F-0001 a trip with no event is Up next, counting down to when it leaves, and opens on Team Hub', () => {
+    const trip = {
+      ...PREVIEW_PLAYER_HOME.next!,
+      id: 'trip-t1', title: 'Fall Invitational', type: 'travel' as const, date: '2026-10-15', allDay: true, startLabel: 'All day', rangeLabel: 'Thu 15 – Sat 17 Oct',
+      startIso: '2026-10-15T00:00:00Z', endIso: '2026-10-17T00:00:00Z', location: 'Pinehurst', invitees: null, going: null, mine: null,
+      trip: { id: 't1', leaves: '2026-10-15T11:30:00.000Z', back: '2026-10-17' },
+    };
+    show(home({ next: trip }));
+    const card = document.querySelector('.ch-hm-hero .ch-hm-next') as HTMLElement;
+    expect(card.getAttribute('href')).toBe('/golf/dashboard/team-hub?tab=travel&trip=t1');
+    expect(card.textContent).toContain('Leaves tomorrow · 7:30 AM');
+    expect(card.textContent).toContain('Thu 15 – Sat 17 Oct · Pinehurst');
+    // An all-day row, but the trip has a departure time: the countdown runs to it (16 h 50 min from the preview's clock).
+    expect(within(card).getByRole('timer').getAttribute('aria-label')).toBe('Leaves in 16 hours and 50 minutes');
+  });
+
   it('21703 Your latest round pages inline, with a selection tick', async () => {
     const user = userEvent.setup();
     show();

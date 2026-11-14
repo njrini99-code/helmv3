@@ -58,7 +58,7 @@ vi.mock('@/app/golf/actions/player-hub-data', () => ({ getPlayerHubSummaryData: 
 vi.mock('@/app/golf/actions/teams', () => ({ getTeamJoinRequests: async () => ({ success: true, data: [] }) }));
 
 import GolfDashboardPage from '@/app/golf/(dashboard)/dashboard/page';
-import { loadCoachHome, teamForm, type ChCoachHome } from '../data/home';
+import { loadCoachHome, teamForm, type ChCoachHome, type ChHomeEvent } from '../data/home';
 import { groupByPlayer, seasonStartDate, type ChRound } from '../data/season';
 import { previousInFilter, roundsInFilter } from '../data/stats-common';
 import { filterFor } from '../data/stats-filter';
@@ -796,6 +796,109 @@ describe('Home · Coach Home’s own contracts', () => {
     expect(screen.queryByRole('link', { name: 'Post a round' })).toBeNull();
     expect(screen.queryByRole('heading', { name: 'Scoring' })).toBeNull();
     expect(document.querySelector('.ch-cd')).toBeNull();
+  });
+});
+
+/** Home's week with nothing left in it (no events this week), for what comes after it and for trips (audit 2026-11-13). */
+function emptyWeek(phone: Partial<ChCoachHome['phone']> = {}): ChCoachHome {
+  const base = PREVIEW_HOME;
+  return {
+    ...base,
+    week: { ...base.week, agenda: [], days: base.week.days.map((d) => ({ ...d, eventCount: 0, hasCompetition: false, competitionType: null })) },
+    phone: { ...base.phone, next: null, today: [], weekNote: null, ...phone },
+  };
+}
+/** Tuesday 17 November, 2 PM: the next event after the week (F-0006). */
+const AFTER: ChHomeEvent = {
+  ...PREVIEW_HOME.phone.next!,
+  id: 'confirm',
+  title: 'Confirm live check',
+  type: 'meeting',
+  date: '2026-11-17',
+  startIso: '2026-11-17T19:00:00Z',
+  endIso: null,
+  allDay: false,
+  startLabel: '2:00 PM',
+  rangeLabel: '2:00 PM',
+  location: 'Team room',
+  invitees: null,
+  going: null,
+  awaiting: null,
+  inviteeIds: null,
+  invitedCount: null,
+  conflict: false,
+};
+/** A trip with no calendar event, Tuesday to Thursday of the preview's week (F-0001). */
+const TRIP: ChHomeEvent = {
+  ...AFTER,
+  id: 'trip-t1',
+  title: 'Fall Invitational',
+  type: 'travel',
+  date: '2026-10-13',
+  startIso: '2026-10-13T00:00:00Z',
+  endIso: '2026-10-15T00:00:00Z',
+  allDay: true,
+  startLabel: 'All day',
+  rangeLabel: 'Tue 13 – Thu 15 Oct',
+  location: 'Pinehurst',
+  trip: { id: 't1', leaves: null, back: '2026-10-15' },
+};
+
+describe('Home · after this week, and trips (audit 2026-11-13)', () => {
+  const real = window.matchMedia;
+  const phone = () => {
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
+  };
+  afterEach(() => {
+    window.matchMedia = real;
+  });
+
+  it('CH-2316 F-0006 nothing left this week: Up next says so and names the next event after it, which it opens; never "No events scheduled"', () => {
+    phone();
+    wrap(<CoachHome data={emptyWeek({ after: AFTER })} now={PREVIEW_HOME_NOW} />);
+    expect(code('CH-2309')).toBeNull();
+    const card = code('CH-2316') as HTMLElement;
+    expect(within(card).getByRole('heading', { name: 'Nothing else this week' })).toBeTruthy();
+    expect(card.textContent).toContain('Next: Confirm live check, Tue 17 Nov, 2:00 PM');
+    expect(card.closest('a')!.getAttribute('href')).toBe('/golf/dashboard/calendar?date=2026-11-17&event=confirm');
+    // Nothing is on this week, so the week strip still steps aside.
+    expect(screen.queryByRole('heading', { name: 'This week' })).toBeNull();
+  });
+
+  it('CH-2316 F-0006 on the desk, the hero names it beside the greeting', () => {
+    wrap(<CoachHome data={emptyWeek({ after: AFTER })} now={PREVIEW_HOME_NOW} />);
+    const hero = code('CH-2316') as HTMLElement;
+    expect(hero.getAttribute('href')).toBe('/golf/dashboard/calendar?date=2026-11-17&event=confirm');
+    expect(hero.textContent).toContain('Nothing else this week');
+    expect(hero.textContent).toContain('Tue 17 Nov · 2:00 PM');
+    expect(hero.textContent).toContain('Confirm live check');
+  });
+
+  it('CH-2309 with nothing after it either, Up next still says "No events scheduled"', () => {
+    phone();
+    wrap(<CoachHome data={emptyWeek({ after: null })} now={PREVIEW_HOME_NOW} />);
+    expect(code('CH-2316')).toBeNull();
+    expect(code('CH-2309')!.textContent).toMatch(/No events scheduled/);
+  });
+
+  it('F-0001 a trip with no event is the day card while the team is away: "On the road", its dates, and it opens on Team Hub', () => {
+    phone();
+    const days = emptyWeek().week.days.map((d) => ({ ...d, trip: d.date >= '2026-10-13' && d.date <= '2026-10-15' ? 'Fall Invitational' : null }));
+    wrap(<CoachHome data={{ ...emptyWeek({ next: TRIP, today: [TRIP] }), week: { ...PREVIEW_HOME.week, agenda: [], days } }} now={PREVIEW_HOME_NOW} />);
+    expect(code('CH-2309')).toBeNull();
+    const card = document.querySelector('.ch-hm-day') as HTMLElement;
+    expect(card.querySelector('.ch-hm-next__type')!.textContent).toBe('Travel');
+    expect(card.querySelector('.ch-hm-next__when')!.textContent).toBe('On the road · back tomorrow');
+    expect(card.textContent).toContain('Tue 13 – Thu 15 Oct · Pinehurst');
+    expect(within(card).getByRole('link', { name: 'Fall Invitational' }).getAttribute('href')).toBe('/golf/dashboard/team-hub?tab=travel&trip=t1');
+    // The week strip marks the trip's days, in words too, as Team Hub's does.
+    const strip = screen.getByRole('heading', { name: 'This week' }).closest('section')!;
+    expect(strip.querySelectorAll('span.is-trip')).toHaveLength(3);
+    expect([...strip.querySelectorAll('.ch-sr-only')].map((n) => n.textContent).filter((t) => t!.includes('on the road'))).toEqual([
+      'Tue 13, 0 events, on the road (Fall Invitational)',
+      'Wed 14, today, 0 events, on the road (Fall Invitational)',
+      'Thu 15, 0 events, on the road (Fall Invitational)',
+    ]);
   });
 });
 

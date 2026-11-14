@@ -81,8 +81,9 @@ function EventCard({ e, live, now, today, years }: { e: ChHomeEvent; live: boole
       <span className="ch-hm-next__k">
         <span className="ch-hm-next__type">
           <Icon icon={TYPE_ICON[e.type]} size={13} />
-          {/* The lane names the type and leaves the time to the line under the title (06 §11.1). */}
-          {!live && !e.allDay ? TYPE_LABEL[e.type] : kicker}
+          {/* The lane names the type and leaves the time to the line under the title (06 §11.1). A trip spans days: its
+              when-label carries leaving or "On the road" (F-0001), so the kicker names the type, never "Friday · all day". */}
+          {e.trip || (!live && !e.allDay) ? TYPE_LABEL[e.type] : kicker}
         </span>
         <span className={'ch-hm-next__when ch-num' + (when.soon ? ' is-soon' : '')}>{t(when.text)}</span>
       </span>
@@ -92,7 +93,7 @@ function EventCard({ e, live, now, today, years }: { e: ChHomeEvent; live: boole
           {e.title}
         </Link>
       </h2>
-      <p className="ch-num">{[live || e.allDay ? null : t(e.rangeLabel), e.location ?? TYPE_LABEL[e.type]].filter(Boolean).join(' · ')}</p>
+      <p className="ch-num">{[e.trip ? e.rangeLabel : live || e.allDay ? null : t(e.rangeLabel), e.location ?? TYPE_LABEL[e.type]].filter(Boolean).join(' · ')}</p>
       {e.invitees && people.length > 0 && (
         <span className="ch-hm-next__f ch-hm-day__people">
           <span className="ch-hm-stack ch-hm-day__stack" aria-hidden="true">

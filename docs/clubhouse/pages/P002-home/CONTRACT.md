@@ -45,6 +45,19 @@ span; an event active today remains in Today and Up next. The timed countdown
 reserves its space before the client clock is available. No schema or event
 write changes.
 
+Trips, 2026-11-13 (audit F-0001): a team trip with no calendar event of its own
+(Team Hub's Plan trip makes the event optional) is on Home as Team Hub has it.
+Its days carry the week strip's gold travel mark and say "on the road (name)"
+in words; from leaving to coming home it is an all-day row in Today and Up
+next, saying when it leaves (counting down to a saved departure time) and "On
+the road · back Sun" while the team is away, and it opens on Team Hub's Travel.
+A trip whose event is on the calendar is drawn once, as that event; its days
+keep the mark. While away, Up next gives way to an event still ahead today. A
+test trip is never shown, and a failed trips read is logged and leaves the week
+as its events say. With nothing left this week, Up next names the next event
+or trip after it (20417); a player is never told of a meeting past the loaded
+week, since their own replies reach only that window.
+
 ## 01 — Default / core UI
 
 Status: DEFINED
@@ -130,8 +143,12 @@ failed. Both roles: nothing on the calendar today (20401), no rounds this season
 (20402), and the newest round posted as a total (20403). Coach Home: no players
 (20404), players but no 18-hole rounds (20405), a player with fewer than three
 rounds reads Early read (20406), nothing ahead on the phone, with quick adds
-(20409), a coach with no team (20407) and a team with nothing yet (20408).
+(20409), nothing left this week but an event or trip after it, named in Up next
+on the phone and in the desk's hero (20417), a coach with no team (20407) and a
+team with nothing yet (20408).
 Player Home: nothing ahead in the player's wording, with no quick adds (20409),
+nothing left this week but something after it (20417, never a meeting past the
+loaded week),
 fewer than two rounds for the Scoring line (20410), nothing to break down
 (20411), a new player (20412) and a player on no team (20413). The no-team and
 first-run states are the v2 page empty state (D-71). Which viewer meets which is
@@ -147,7 +164,7 @@ the route's decision (20802).
 | 20406 | CH-2306 | `A_PLAYER_HAS_FEWER_THAN_THREE_ROUNDS` | A player has fewer than three rounds |
 | 20407 | CH-2307 | `A_COACH_WITH_NO_ACTIVE_TEAM` | A coach with no active team |
 | 20408 | CH-2308 | `A_TEAM_WITH_NOTHING_YET_NO_PLAYERS` | A team with nobody on it yet: no players, no rounds, and every read answered (events or not: it rests on the people, not the calendar) |
-| 20409 | CH-2309 | `NOTHING_ON_THE_CALENDAR_AHEAD` | Nothing on the calendar ahead (phone). A player: "Your coach’s practices and events will show here with a countdown.", no quick adds |
+| 20409 | CH-2309 | `NOTHING_ON_THE_CALENDAR_AHEAD` | Nothing on the calendar ahead, this week or after it: no event and no trip (phone). A player: "Your coach’s practices and events will show here with a countdown.", no quick adds |
 | 20410 | CH-2310 | `FEWER_THAN_TWO_18_HOLE_ROUNDS` | Fewer than two 18-hole rounds (player Home Scoring) |
 | 20411 | CH-2311 | `NO_FAIRWAYS_GREENS_SCRAMBLING_OR_PUTTS_LOGGED` | No fairways, greens, scrambling or putts logged (player Home) |
 | 20412 | CH-2312 | `A_NEW_PLAYER_NO_ROUNDS_NOTHING_ON` | A new player: no rounds, every read answered (v2 first-run, D-71) |
@@ -155,6 +172,7 @@ the route's decision (20802).
 | 20414 | CH-2314 | `NO_ROUND_IN_THE_TEAMS_LAST_10` | No round in the team's last 10 has hole scores (coach Home, the team's four parts) |
 | 20415 | CH-2315 | `ROUNDS_WITH_HOLE_SCORES_BUT_NO_PLAYER` | Rounds with hole scores, but no player with 3 of them (coach Home, the team's four parts) |
 | 20416 | CH-2370 | `NOBODY_ON_THE_TEAM_HAS_A_CLASS` | Nobody on the team has a class today (the sheet is open) |
+| 20417 | CH-2316 | `NOTHING_LEFT_THIS_WEEK_BUT_AN_EVENT` | Nothing left this week, but an event or a trip after it (F-0006; a player is not told of a meeting past the loaded week) |
 
 ## 05 — Validation
 
@@ -470,7 +488,7 @@ CH-1842, 11825 CH-1816.
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 21801 | CH-2801 | `N_OPENS_A_NEW_EVENT_FROM_ANYWHERE` | N opens a new event from anywhere on Home, but never while typing or inside a dialog |
-| 21802 | CH-2802 | `EACH_DAY_IN_THE_WEEK_STRIP_IS` | Each day in the week strip is read as words ("Tuesday 14, 4 events", "competition, 1 event"); today is marked |
+| 21802 | CH-2802 | `EACH_DAY_IN_THE_WEEK_STRIP_IS` | Each day in the week strip is read as words ("Tuesday 14, 4 events", "competition, 1 event", "on the road (Fall Invitational)"); today is marked |
 | 21803 | CH-2803 | `THE_LEADERBOARD_AND_BOTH_NINES_OF_THE` | The leaderboard and both nines of the scorecard are tables: every value sits in a cell under a column header |
 | 21804 | CH-2804 | `THE_ROUND_PAGER_ANNOUNCES_2_OF_3` | The round pager announces "2 of 3"; each form line has a text equivalent ("last 7 rounds: 72, 71…") |
 | 21805 | CH-2805 | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_STATE` | No axe violations in any preview state, 1280px and 390px |

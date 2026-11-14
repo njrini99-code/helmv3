@@ -1,4 +1,5 @@
 import { zonedWallTimeToInstant } from '@/lib/golf/message-polls';
+import { formatWith, weekdayShortUtc } from '../lib/dates';
 
 /**
  * The team's trips on Home (F-0001, audit 2026-11-13). Team Hub's Plan trip makes the calendar event optional, so a trip
@@ -38,14 +39,19 @@ export function tripLeaves(t: Pick<ChHomeTripRow, 'departure_date' | 'departure_
   return zonedWallTimeToInstant(t.departure_date, t.departure_time.slice(0, 5), tz)?.at ?? null;
 }
 
-const DAY = new Intl.DateTimeFormat('en-GB', { timeZone: 'UTC', weekday: 'short', day: 'numeric' });
-const MONTH = new Intl.DateTimeFormat('en-GB', { timeZone: 'UTC', month: 'short' });
+// Calendar dates already in the team's zone (YYYY-MM-DD), read at UTC noon so no zone moves them.
 const at = (ymd: string) => new Date(`${ymd}T12:00:00Z`);
+const weekdayDay = (ymd: string) => `${weekdayShortUtc(at(ymd))} ${Number(ymd.slice(8, 10))}`;
+const month = (ymd: string) => formatWith(at(ymd), { timeZone: 'UTC', month: 'short' });
 
-/** "Fri 13 – Sun 15 Nov", "Sat 31 Oct – Mon 2 Nov", "Fri 13 Nov": calendar dates already in the team's zone. */
+/** "Tue 17 Nov", as Home names a day (Latest rounds' "Wed 21 Oct"). */
+export function dayMonth(ymd: string): string {
+  return `${weekdayDay(ymd)} ${month(ymd)}`;
+}
+
+/** "Fri 13 – Sun 15 Nov", "Sat 31 Oct – Mon 2 Nov", "Fri 13 Nov". */
 export function tripDates(from: string, to: string): string {
-  const head = DAY.format(at(from));
-  if (from === to) return `${head} ${MONTH.format(at(from))}`;
+  if (from === to) return dayMonth(from);
   const sameMonth = from.slice(0, 7) === to.slice(0, 7);
-  return `${head}${sameMonth ? '' : ` ${MONTH.format(at(from))}`} – ${DAY.format(at(to))} ${MONTH.format(at(to))}`;
+  return `${weekdayDay(from)}${sameMonth ? '' : ` ${month(from)}`} – ${dayMonth(to)}`;
 }

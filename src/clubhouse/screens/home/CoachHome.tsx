@@ -1,6 +1,7 @@
 'use client';
 
 import { DeskHead, DeskNext, DeskRounds, DeskToday, DeskTodayFirst } from './HomeDeskCrh';
+import { DeskNextBeyond } from './NextBeyond';
 import { CALENDAR } from './event-links';
 import { CalendarPlus, ChevronRight, Flag, Sparkles, UserPlus } from 'lucide-react';
 import Link from 'next/link';
@@ -74,7 +75,7 @@ function CoachHomeBody({ data, now, live }: { data: ChCoachHome; now?: string; l
             {data.teamId && data.clock && <ClassHomeLine teamId={data.teamId} today={data.clock.day} teamTimeZone={data.clock.tz} variant="desktop" />}
             <CoachQueue queue={data.queue} covered={covered} phone />
           </div>
-          {data.phone.next && <DeskNext e={data.phone.next} now={now ? new Date(now) : null} />}
+          {data.phone.next ? <DeskNext e={data.phone.next} now={now ? new Date(now) : null} /> : !data.week.error && data.phone.after ? <DeskNextBeyond e={data.phone.after} /> : null}
         </header>
         {live && (
           <SectionBoundary surface="home.live" label="Live now">
