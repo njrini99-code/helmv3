@@ -133,10 +133,12 @@ function PeekBody({
             {classLine.source && <small>{classLine.source}</small>}
           </span>
         )}
+        {/* Both keys are secondary: the page beside the panel already has its one primary, Invite players in the head (CR-07).
+            The phone's pushed profile is a screen of its own, where Message stays the primary. */}
         {(messageHref || planHref) && (
           <div className="ch-rs-peek__quick">
             {messageHref && (
-              <Button size="md" variant="primary" leftIcon={MessageSquare} href={messageHref}>
+              <Button size="md" leftIcon={MessageSquare} href={messageHref}>
                 Message
               </Button>
             )}
