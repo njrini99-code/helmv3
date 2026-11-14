@@ -1,6 +1,5 @@
 import { tidyCourseName } from '../lib/course-name';
-import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
-import { recordedPutts } from './round-scope';
+import { recordedPutts, roundTotals } from './round-scope';
 import type { ChSgTour } from '../lib/sg';
 import type { ChDebrief } from './round-debrief-shape';
 import type { ChReviewHistory } from './round-history-shape';
@@ -304,9 +303,9 @@ export function toReview(
     coachNoteError?: boolean;
   },
 ): ChRoundReview {
-  const c = withCanonicalRoundTotal(r);
-  // No total is no total: it is never drawn as 0 strokes.
-  const score = c.total_score;
+  // F-0003: the round's card when every hole is in, else its nines, else the stored total (round-scope `roundTotals`), so the header,
+  // Out and In and the scorecard print one score. No total is no total: it is never drawn as 0 strokes.
+  const { total: score, toPar } = roundTotals(r, input.holes);
   const facts = [input.teeYards ? `${input.teeYards.toLocaleString('en-US')} yds` : null, r.course_rating && r.course_slope ? `${r.course_rating} / ${r.course_slope}` : null].filter(Boolean);
   const front = input.holes.length ? nineOf(input.holes, 1, 9) : { score: r.front_nine, toPar: null };
   const back = input.holes.length ? nineOf(input.holes, 10, 18) : { score: r.back_nine, toPar: null };
@@ -323,7 +322,7 @@ export function toReview(
     teeFacts: facts.length ? facts.join(' · ') : null,
     holesPlayed: r.holes_played ?? 18,
     score,
-    toPar: c.score_to_par,
+    toPar,
     front,
     back: (r.holes_played ?? 18) === 9 ? { score: null, toPar: null } : back,
     // A stored 0 is "not recorded" (round-scope recordedPutts), as the library reads it: the review said "0 putts".

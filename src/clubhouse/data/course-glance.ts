@@ -1,6 +1,6 @@
 import { normalizeName } from '@/lib/golf/course-library';
 import { courseKeyString, groupCourseRounds } from './course-key';
-import { isScoreCountable } from './round-scope';
+import { isScoreCountable, roundTotals } from './round-scope';
 
 /*
  * P-7 4.6: the player's history at each course, small enough to show beside a course picked in round setup ("Your history
@@ -33,7 +33,9 @@ export interface ChCourseGlance {
 /** Every course the player has countable rounds at, by course key. `list` is newest first. */
 export function courseGlances(list: readonly ChGlanceRow[]): Record<string, ChCourseGlance> {
   const out: Record<string, ChCourseGlance> = {};
-  for (const [key, g] of groupCourseRounds(list)) {
+  // F-0003: the total the course page and the review print (the nines over a stale total_score, round-scope `roundTotals`).
+  const canonical = list.map((r) => ({ ...r, total_score: roundTotals({ ...r, score_to_par: null }).total }));
+  for (const [key, g] of groupCourseRounds(canonical)) {
     const scored = g.rounds.filter((r) => r.total_score != null && isScoreCountable(r));
     if (!scored.length) continue;
     const eighteens = scored.filter((r) => (r.holes_played ?? 18) === 18).map((r) => r.total_score as number);
