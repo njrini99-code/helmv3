@@ -1300,7 +1300,7 @@
     "category": 1,
     "item": 3,
     "name": "LINKS_OPEN_WHAT_THEY_NAME",
-    "meaning": "Every link out of Home opens the thing it names: Message team the team chat (?conversation=) or Messages when the chat did not load, Up next and a Today row that event in Calendar (?date=&event=), a week day Calendar's day view (?view=day&date=), New event, Plan, Add event and the quick event types the editor (?new=1, with &type=), a leaderboard row and a latest round's stats link that player's stats (?player=), My stats the player's own stats, Message coach the coach's thread (?user=), the first run's Invite players Roster with its invite sheet open (/golf/dashboard/roster?invite=1), each part of the coach's \"Waiting on you\" the screen that holds it (join requests Roster, replies that event in Calendar when one event holds them and Calendar when more do, overdue tasks Team Hub's Tasks ?tab=tasks, posts awaiting acknowledgement its Announcements ?tab=ann), a name in the team's four parts that player's Game tab on Stats on the same Last 10 (?player=&tab=game) and Team stats Stats, the coach's Next row Nudge Messages prefilled for who hasn't replied (the phone day card's own link, never sent), and CoachHelm in the player peek and the phone's round sheet that player's deep dive (/golf/dashboard/coachhelm?view=deep-dive&player=); a link to a screen not yet rebuilt for the viewer's role is not drawn.",
+    "meaning": "Every link out of Home opens the thing it names: Message team the team chat (?conversation=) or Messages when the chat did not load, Up next and a Today row that event in Calendar (?date=&event=), or a trip with no event of its own that trip on Team Hub's Travel (/golf/dashboard/team-hub?tab=travel&trip=), and Up next's \"Nothing else this week\" card the next event or trip it names, a week day Calendar's day view (?view=day&date=), New event, Plan, Add event and the quick event types the editor (?new=1, with &type=), a leaderboard row and a latest round's stats link that player's stats (?player=), My stats the player's own stats, Message coach the coach's thread (?user=), the first run's Invite players Roster with its invite sheet open (/golf/dashboard/roster?invite=1), each part of the coach's \"Waiting on you\" the screen that holds it (join requests Roster, replies that event in Calendar when one event holds them and Calendar when more do, overdue tasks Team Hub's Tasks ?tab=tasks, posts awaiting acknowledgement its Announcements ?tab=ann), a name in the team's four parts that player's Game tab on Stats on the same Last 10 (?player=&tab=game) and Team stats Stats, the coach's Next row Nudge Messages prefilled for who hasn't replied (the phone day card's own link, never sent), and CoachHelm in the player peek and the phone's round sheet that player's deep dive (/golf/dashboard/coachhelm?view=deep-dive&player=); a link to a screen not yet rebuilt for the viewer's role is not drawn.",
     "status": "implemented",
     "where": "src/clubhouse/screens/home/HomeActions.tsx#HomeActions; src/clubhouse/screens/home/HomePhone.tsx#UpNext, Today, WeekStrip, NoEvents, RoundSheet; src/clubhouse/screens/home/Leaderboard.tsx#Row; src/clubhouse/screens/home/LatestRound.tsx#LatestRound; src/clubhouse/screens/home/player-links.ts; src/clubhouse/screens/home/CoachQueue.tsx#queueParts; src/clubhouse/screens/home/TeamLegs.tsx#legPlayerHref; src/clubhouse/screens/home/Week.tsx#nextReplies; src/clubhouse/ui/PlayerPeek.tsx#coachHelmPlayerHref",
     "tests": [
@@ -1472,7 +1472,7 @@
     "item": 9,
     "name": "NOTHING_ON_THE_CALENDAR_AHEAD",
     "chCode": "CH-2309",
-    "meaning": "Nothing on the calendar ahead (phone). A player: \"Your coach’s practices and events will show here with a countdown.\", no quick adds",
+    "meaning": "Nothing on the calendar ahead, this week or after it: no event and no trip (phone). A player: \"Your coach’s practices and events will show here with a countdown.\", no quick adds",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/home.md"
   },
@@ -1550,6 +1550,17 @@
     "name": "NOBODY_ON_THE_TEAM_HAS_A_CLASS",
     "chCode": "CH-2370",
     "meaning": "Nobody on the team has a class today (the sheet is open)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20417,
+    "page": "P002",
+    "category": 4,
+    "item": 17,
+    "name": "NOTHING_LEFT_THIS_WEEK_BUT_AN_EVENT",
+    "chCode": "CH-2316",
+    "meaning": "Nothing left this week, but an event or a trip after it (F-0006; a player is not told of a meeting past the loaded week)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/home.md"
   },
@@ -2141,7 +2152,7 @@
     "item": 2,
     "name": "EACH_DAY_IN_THE_WEEK_STRIP_IS",
     "chCode": "CH-2802",
-    "meaning": "Each day in the week strip is read as words (\"Tuesday 14, 4 events\", \"competition, 1 event\"); today is marked",
+    "meaning": "Each day in the week strip is read as words (\"Tuesday 14, 4 events\", \"competition, 1 event\", \"on the road (Fall Invitational)\"); today is marked",
     "status": "reserved",
     "catalog": "docs/clubhouse/catalog/home.md"
   },
