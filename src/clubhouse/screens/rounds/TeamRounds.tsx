@@ -122,7 +122,8 @@ function TeamRoundRow({ r, by }: { r: ChTeamRound; by: Group }) {
       href={open.href ?? undefined}
       {...open.press}
       onClick={open.onClick}
-      label={open.label}
+      // F-0011 (WCAG 2.5.3): named by what the row shows, the day, the player, the course and the score, not by the
+      // desktop table's label, which reads them in another order.
     />
   );
 }

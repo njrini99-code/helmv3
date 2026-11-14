@@ -37,6 +37,7 @@ import { refusalNotice } from '../screens/tournaments/fields/refusals';
 import { ToastProvider } from '../ui/Toast';
 import type { ChTourEvent, ChTourHomeData, ChTourTrack } from '../screens/tournaments/types';
 import './dialog-polyfill';
+import { expectLabelInName } from './label-in-name';
 
 const TID = '00000000-0000-4000-8000-0000000000f1';
 const track = (over: Partial<ChTourTrack> = {}): ChTourTrack => ({ version: 7, cancelled: false, official: false, scoredRound: null, entries: 3, ...over });
@@ -183,9 +184,24 @@ describe('P-5 season home', () => {
     expect(within(lead).getByRole('link', { name: 'Add a tournament' })).toHaveAttribute('href', '/golf/dashboard/calendar?new=1&type=tournament');
     expect(within(lead).queryByRole('link', { name: /Set up from calendar/ })).toBeNull();
     expect(c.querySelectorAll('.ch-btn--primary')).toHaveLength(1);
-    const row = within(c.querySelector('#ch-tour-home-setup-t')!.closest('section') as HTMLElement).getByRole('link', { name: /^Set up Fall Classic, / });
+    // F-0011: the row is named by what it shows, the tournament, its line and Set up, with no aria-label in another order.
+    const row = within(c.querySelector('#ch-tour-home-setup-t')!.closest('section') as HTMLElement).getByRole('link', { name: /^Fall Classic .*Set up$/ });
+    expect(row).not.toHaveAttribute('aria-label');
+    expectLabelInName(row, 'Fall Classic');
     expect(row).toHaveAttribute('href', '/golf/dashboard/calendar?event=x1&setup=1');
     expect(row.textContent).toMatch(/2 calendar entries/);
+  });
+
+  it('F-0011: a row on the rest of the calendar is named by what it shows, its date first', () => {
+    const c = draw(ready);
+    const rows = within(c.querySelector('.ch-tour-home-others') as HTMLElement).getAllByRole('link');
+    expect(rows.length).toBeGreaterThan(0);
+    for (const row of rows) {
+      expect(row).not.toHaveAttribute('aria-label');
+      const day = row.querySelector('.ch-tour-home-date')!;
+      expect(day).not.toHaveAttribute('aria-hidden');
+      expectLabelInName(row, `${day.querySelector('b')!.textContent} ${day.querySelector('span')!.textContent} ${row.querySelector('.ch-lgr__title')!.textContent}`);
+    }
   });
 
   it('CH-16253: a failed untracked read says so in place; the rest of the home stands', () => {

@@ -229,9 +229,11 @@ function OtherEvents({ events, data, madeToday, arrived, phone = false }: { even
           href={paths.desk(e.id)}
           // P-5 M9 (CH-16650): arrived while the page was open, washed once; on a fresh load the caption says it instead.
           className={'ch-tour-washable' + (arrived.has(e.id) ? ' ch-tour-changed' : '')}
+          // F-0011 (WCAG 2.5.3): the row is named by what it shows, the date first; the space between the day and the month
+          // is not drawn (a flex column) but keeps them apart in the name.
           lead={
-            <span className="ch-tour-home-date" aria-hidden="true">
-              <b className="ch-num">{tourDay(e.startDate, { day: 'numeric' })}</b>
+            <span className="ch-tour-home-date">
+              <b className="ch-num">{tourDay(e.startDate, { day: 'numeric' })}</b>{' '}
               <span>{tourDay(e.startDate, { month: 'short' })}</span>
             </span>
           }
@@ -243,7 +245,6 @@ function OtherEvents({ events, data, madeToday, arrived, phone = false }: { even
             </>
           }
           meta={[data.courses[e.courseIds[0] ?? '']?.name, holesLabel(e), e.note].filter(Boolean).join(' · ')}
-          label={`${e.name}, ${tourRange(e.startDate, e.endDate)}`}
         />
       ))}
     </LedgerList>
@@ -332,7 +333,6 @@ function SetUpFromCalendar({ groups, failed, onRetry, retrying }: { groups: ChTo
               title={g.title}
               meta={setUpLine(g)}
               trail={<span className="ch-tour-home-setup__go">Set up</span>}
-              label={`Set up ${g.title}, ${setUpLine(g)}`}
             />
           ))}
         </LedgerList>
