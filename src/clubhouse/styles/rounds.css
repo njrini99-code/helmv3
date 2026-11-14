@@ -1896,6 +1896,10 @@ a.ch-rd-sc:focus-visible {
 .ch-trd-open {
   min-width: 0;
   overflow: hidden;
+  /* The row is the target (::after below), but the link itself measured 19 tall (F-0018): 24 and up, paid back by an
+     equal margin so the row keeps its height. */
+  padding-block: 4px;
+  margin-block: -4px;
   font: var(--ch-type-14-strong);
   color: var(--ch-text-primary);
   text-decoration: none;

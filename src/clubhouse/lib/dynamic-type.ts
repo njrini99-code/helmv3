@@ -4,7 +4,8 @@ import { useLayoutEffect } from 'react';
 import { typeScaleFor, typeScaleValue } from './type-scale';
 
 /**
- * The iPhone's text size as a scale (P008-C1): 1 at the default, less below it, more above it, capped at XXL. Read from WebKit's
+ * The iPhone's text size as a scale (P008-C1): more than 1 above the default, capped at XXL; null at and under it (F-0014:
+ * never under 1, so no phone step draws under its size). Read from WebKit's
  * `-apple-system-body` font, which follows Settings > Display & Brightness > Text Size; null where the browser has no
  * such font (every other platform, where rem and the browser's own text size do the work).
  */
