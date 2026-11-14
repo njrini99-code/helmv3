@@ -14332,12 +14332,13 @@
     "category": 15,
     "item": 1,
     "name": "TOTALS_AND_SEASON_MATCH_HOME_AND_STATS",
-    "meaning": "A round's total is the canonical one (withCanonicalRoundTotal: front plus back over a stale stored total), in the library and in the review. The season figures and the ribbon come from countable 18-hole rounds since August 1, the rule Home and Stats use, so the numbers agree across screens; the window and the sample are stated in the words (\"Since August 1\", \"18-hole\", \"Not counted\").",
+    "meaning": "A round's total is the canonical one (round-scope `roundTotals`, F-0003: its holes when every one is in hand and scored, else front plus back, else the stored total; withCanonicalRoundTotal), in the library, the review and the course glance in round setup. The season figures and the ribbon come from countable 18-hole rounds since August 1, the rule Home and Stats use, so the numbers agree across screens; the window and the sample are stated in the words (\"Since August 1\", \"18-hole\", \"Not counted\").",
     "status": "implemented",
-    "where": "src/clubhouse/data/rounds-shape.ts#toLibraryRound; src/clubhouse/data/rounds-shape.ts#seasonFrom; src/clubhouse/data/round-review-shape.ts#toReview",
+    "where": "src/clubhouse/data/rounds-shape.ts#toLibraryRound; src/clubhouse/data/rounds-shape.ts#seasonFrom; src/clubhouse/data/round-review-shape.ts#toReview; src/clubhouse/data/round-scope.ts#roundTotals; src/clubhouse/data/course-glance.ts#courseGlances",
     "tests": [
       "src/clubhouse/__tests__/rounds.test.tsx",
-      "src/clubhouse/__tests__/round-review.test.tsx"
+      "src/clubhouse/__tests__/round-review.test.tsx",
+      "src/clubhouse/data/__tests__/round-total-parity.test.ts"
     ]
   },
   {

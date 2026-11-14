@@ -31,6 +31,7 @@ import { RovingRows } from '../../ui/RovingRows';
 import { usePageKeys, type ChPageKey } from '../../shell/command/page-keys';
 import { chTrail } from '../../lib/track';
 import { changeTone, formatAvg, formatFixed, formatHcp, formatSigned, NO_DATA } from '../../lib/format';
+import { sgWindowLine, type ChSgWindow } from '../../lib/sg-window-line';
 import { coachPlayerHref } from '../../data/coachhelm-views-shape';
 import { rebuiltHref } from '../../shell/nav';
 import { usePressPrefetch } from '../../shell/use-prefetch-tabs';
@@ -1052,7 +1053,7 @@ function FaceFigures({
   avgs,
   standing,
 }: {
-  p: { avg: number | null; sgPerRound: number | null; handicap: number | null; rounds: number };
+  p: { avg: number | null; sgPerRound: number | null; sgWindow?: ChSgWindow | null; handicap: number | null; rounds: number };
   /** The ranked team's averages (active, past the early floor), for the strip. */
   avgs: number[];
   /** This player's place among them; undefined when they aren't ranked (inactive, early, no average). */
@@ -1093,6 +1094,8 @@ function FaceFigures({
             <i className={changeTone(sg, false, 1)} style={sg >= 0 ? { left: '50%', width: `${sgW}%` } : { right: '50%', width: `${sgW}%` }} />
           </span>
         )}
+        {/* F-0005: the figure reads the player's last ten rounds, which can start before the season the page names: say which. */}
+        {sg != null && sgWindowLine(p.sgWindow) && <span className="ch-rs-fig__m">{sgWindowLine(p.sgWindow)}</span>}
       </span>
       <span className="ch-rs-face__hcp">
         Handicap <b className="ch-num">{formatHcp(p.handicap)}</b>

@@ -809,6 +809,12 @@
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.03em;
 }
+/* F-0005: a figure's window under it ("Last 8 · Jun–Jul"), in its label's size and ink. */
+.ch-rs-peek__figs dd.ch-rs-peek__f {
+  font: var(--ch-type-12-medium);
+  letter-spacing: 0;
+  color: var(--ch-text-tertiary);
+}
 .ch-rs-peek__sec {
   display: flex;
   flex-direction: column;
@@ -3631,6 +3637,11 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   }
   [data-ch-crh='on'].ch-rsd .ch-rs-peek__figs dd.is-loss {
     color: var(--ch-chart-loss);
+  }
+  [data-ch-crh='on'].ch-rsd .ch-rs-peek__figs dd.ch-rs-peek__f {
+    font: var(--ch-type-13);
+    letter-spacing: normal;
+    color: var(--ch-text-secondary);
   }
   /* Under three rounds a quiet line in place of the chart, not a box that looks empty. */
   [data-ch-crh='on'].ch-rsd .ch-rs-peek__early {

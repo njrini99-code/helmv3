@@ -32,9 +32,12 @@ export const RAIL_ROWS = ".ch-ms-row, .ch-ms-fold, .ch-ms-more";
 /** B11: the rail's keys, as the shortcuts sheet lists them. */
 const RAIL_KEYS: readonly ChPageKey[] = [{ label: "Move between conversations", keys: ["Up", "Down"] }];
 
-/** "3 unread · 7 conversations" on the desktop rail. */
+/**
+ * "3 unread conversations" on the desktop rail, "7 conversations" with none unread. F-0021: it counts conversations, and says so, so it
+ * never reads as a smaller count of the unread messages the sidebar badge counts ("1 unread" beside a badge of 2).
+ */
 export function inboxContextDesktop(unread: number, total: number): string {
-  return `${unread} unread · ${plural(total, "conversation")}`;
+  return unread > 0 ? plural(unread, "unread conversation") : plural(total, "conversation");
 }
 
 export function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
