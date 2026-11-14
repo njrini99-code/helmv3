@@ -46,7 +46,7 @@ import {
 import { candidateStats } from '../screens/tournaments/lineup-model';
 import { cardOf, revealOf, type FinalScore, type MyLineupRow } from '../screens/tournaments/reveal-model';
 import { buildLive, type LiveHoleRow } from '../screens/tournaments/live-model';
-import { setupGroups } from '../screens/tournaments/setup-groups';
+import { calendarEntryOf, setupGroups } from '../screens/tournaments/setup-groups';
 import type {
   ChTourCompareData,
   ChTourCompareRound,
@@ -412,10 +412,10 @@ export async function loadTournamentsHome(ctx: TourCtx): Promise<TourLoad<ChTour
     const untracked = ctx.role === 'coach'
       ? await section('home', 'untracked', async () => {
           const from = `${seasonIdOf(info.today).slice(0, 4)}-08-01T00:00:00Z`;
-          const rows = await all<{ id: string; title: string; start_time: string; all_day: boolean | null }>('untracked', (a, b) =>
+          const rows = await all<{ id: string; title: string; start_time: string; end_time: string | null; all_day: boolean | null }>('untracked', (a, b) =>
             ctx.supabase
               .from('golf_events')
-              .select('id, title, start_time, all_day')
+              .select('id, title, start_time, end_time, all_day')
               .eq('team_id', ctx.teamId)
               .eq('event_type', 'tournament')
               .neq('status', 'cancelled')
@@ -426,8 +426,8 @@ export async function loadTournamentsHome(ctx: TourCtx): Promise<TourLoad<ChTour
               .order('id', { ascending: true })
               .range(a, b),
           );
-          return setupGroups(rows.filter((r) => !tracked.has(r.id)).map((r) => ({ id: r.id, title: r.title, // An all-day event is stored at UTC midnight of its date (the calendar's convention).
-            date: r.all_day ? r.start_time.slice(0, 10) : isoDay(r.start_time, info.team.timezone) })));
+          // F-0025: each entry with its own last day, so one entry for a three-day event reads its three days (calendarEntryOf).
+          return setupGroups(rows.filter((r) => !tracked.has(r.id)).map((r) => calendarEntryOf(r, info.team.timezone)));
         })
       : null;
     return {

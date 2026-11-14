@@ -6,6 +6,7 @@ import { CalendarDays, ChevronRight, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import type { ChPracticeHome, ChPracticeRow, ChPracticeState, ChPracticeTile } from '../../data/practice-home-shape';
+import { NO_DATA } from '../../lib/format';
 import { pluralWord } from '../../lib/plural';
 import { useChPhone } from '../../lib/use-phone';
 import { PhoneTop } from '../../shell/phone-chrome';
@@ -54,10 +55,10 @@ export function WeekStrip({ week, onPlan }: { week: ChPracticeTile[]; onPlan?: (
             <span>{t.day}</span>
             <b className="ch-num">{t.date}</b>
           </span>
-          {/* A quiet dash, not six lines of "No practice" (W15); a reader still hears the words. */}
+          {/* A quiet dash, not six lines of "No practice" (W15); a reader still hears the words. F-0026: the shared no-data mark. */}
           {t.items.length === 0 && (
             <span className="ch-prc-tile__none">
-              <span aria-hidden="true">–</span>
+              <span aria-hidden="true">{NO_DATA}</span>
               <span className="ch-sr-only">No practice</span>
             </span>
           )}

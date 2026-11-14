@@ -1,3 +1,4 @@
+import { deriveRoundTotal, deriveScoreToPar } from '@/lib/golf/round-total';
 import { plural } from '../lib/plural';
 
 /*
@@ -30,6 +31,27 @@ export function hasHoleScores(r: { total_only?: boolean }): boolean {
  */
 export function recordedPutts(putts: number | null | undefined): number | null {
   return typeof putts === 'number' && putts > 0 ? putts : null;
+}
+
+/**
+ * A round's score, one rule for every Clubhouse shape that prints one (F-0003). `golf_rounds.total_score` is written once, when the round is
+ * posted, and no trigger rewrites it when a hole is edited later (lib/golf/round-total.ts), so it can sit a stroke off the card. The order:
+ * a round with all its holes in hand, every one scored, reads its total and to-par from them (the review has them); otherwise its nines,
+ * written with the holes (`withCanonicalRoundTotal`, what the list and season loaders read); otherwise the stored total. A to-par with a
+ * hole's par missing is the stored one shifted by the same strokes as the total. The holes correct a recorded score; they never make one
+ * for a round with none recorded, which no list or figure counts (the loaders drop it), so the review says "Score not recorded" (110102).
+ */
+export function roundTotals(
+  r: { total_score: number | null; score_to_par: number | null; front_nine: number | null; back_nine: number | null; holes_played: number | null },
+  holes?: ReadonlyArray<{ par: number | null; score: number | null }>,
+): { total: number | null; toPar: number | null } {
+  const shifted = (total: number | null) => (total == null || r.total_score == null || r.score_to_par == null ? r.score_to_par : r.score_to_par + (total - r.total_score));
+  const recorded = r.total_score != null || (r.front_nine != null && r.back_nine != null);
+  if (recorded && holes && holes.length > 0 && holes.length === (r.holes_played ?? 18) && holes.every((h) => h.score != null)) {
+    const total = holes.reduce((a, h) => a + (h.score as number), 0);
+    return { total, toPar: holes.every((h) => h.par != null) ? total - holes.reduce((a, h) => a + (h.par as number), 0) : shifted(total) };
+  }
+  return { total: deriveRoundTotal(r).total, toPar: deriveScoreToPar(r) };
 }
 
 /** The rounds the hole-level figures read: the window's rounds without the ones posted as a total only. Order is kept. */

@@ -30,6 +30,7 @@ import { formatFixed } from '../lib/format';
 import { isoDay } from '../lib/dates';
 import { sgBaseline, type ChSgTour } from '../lib/sg';
 import { playerStrokesGained, roundsForFigures } from './figure-window';
+import { sgWindowOf, type ChSgWindow } from './sg-window';
 import { tourForGender } from './stats-common';
 import { QUIET_DAYS, daysBetween as daysBetweenDates } from '../screens/home/model';
 
@@ -58,6 +59,11 @@ export interface ChRosterPlayer {
   sgPerRound: number | null;
   /** Strokes gained per round by leg over the same rounds as `sgPerRound` (summarizePlayer); null for a leg with too few rounds. */
   sgLegs: { tee: number | null; approach: number | null; around: number | null; putting: number | null };
+  /**
+   * The rounds `sgPerRound` reads (F-0005): its last ten can reach back past the season start (QA-1), so the figure names them where it
+   * is drawn ("Last 8 · Jun–Jul"). Null with no figure; absent in older fixtures.
+   */
+  sgWindow?: ChSgWindow | null;
   trend: number[];
   form: ChForm;
   recent: Array<{ id: string; course: string; date: string; score: number; toPar: number | null }>;
@@ -271,6 +277,7 @@ export async function loadRoster(input: { teamId: string; coachId: string; }): P
       avg: s.avg,
       sgPerRound: sg.total,
       sgLegs: sg.legs,
+      sgWindow: sg.total == null ? null : sgWindowOf(wideByPlayer.get(p.id) ?? []),
       trend: s.trend,
       form: s.status,
       recent: every.recent.slice(0, 3).map((r) => ({
