@@ -45,6 +45,7 @@ import './dialog-polyfill';
 import type { ChClassBlock, ChClassDay, ChClassDayPlayer, ChClassTerm } from '../data/class-day-shape';
 import { ClubhouseMarker } from '../shell/context';
 import { ClassHomeLine } from '../screens/home/ClassHomeLine';
+import { expectLabelInName } from './label-in-name';
 import { InClassSheet } from '../screens/classes/InClassSheet';
 import { TeamBreakSheet } from '../screens/classes/TeamBreakSheet';
 import { TermSheet } from '../screens/classes/TermSheet';
@@ -372,6 +373,16 @@ describe('Coach Home’s class line', () => {
     expect(button.getAttribute('aria-haspopup')).toBe('dialog');
     await userEvent.click(button);
     expect(await screen.findByRole('dialog', { hidden: true, name: 'In class now' })).toBeTruthy();
+  });
+
+  it.each(['phone', 'desktop'] as const)('F-0011: on the %s its name opens with the words it shows, with no aria-label to disagree', (variant) => {
+    live.day = day(nine());
+    line(true, variant);
+    const button = screen.getByRole('button', { name: /^4 of 9 in class now\. Everyone out of class/ });
+    // axe label-content-name-mismatch: the phone's two lines ran together ("nowEveryone") against an aria-label that put a
+    // full stop between them, and the desktop's " · " was never in it.
+    expect(button).not.toHaveAttribute('aria-label');
+    expectLabelInName(button, '4 of 9 in class now');
   });
 
   it('CH-2670 changes in place: the same line, new words, when the minute turns', async () => {
