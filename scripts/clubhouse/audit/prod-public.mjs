@@ -1,3 +1,4 @@
+/* global window -- page.evaluate callbacks run in the page */
 // The logged-out production lane: what an iPhone visitor gets on the five public pages of the live site, checked in W
 // (Playwright WebKit, the iPhone 17 Pro preset), with nothing written anywhere.
 //

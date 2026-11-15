@@ -44,7 +44,7 @@ function recorder(watchMs: number) {
       seen.add(a);
       const effect = a.effect as KeyframeEffect | null;
       const timing = effect?.getComputedTiming?.() ?? {};
-      let frames: Keyframe[] = [];
+      let frames: Keyframe[];
       try { frames = effect?.getKeyframes?.() ?? []; } catch { frames = []; }
       const named = a as Animation & { animationName?: string; transitionProperty?: string };
       let props = [...new Set(frames.flatMap((f) => Object.keys(f)))].filter((p) => !['offset', 'computedOffset', 'easing', 'composite'].includes(p));
@@ -77,7 +77,7 @@ async function watch(page: Page, ms: number, act: () => Promise<void>): Promise<
         w.__chWatch.seen.add(a);
         const effect = a.effect as KeyframeEffect | null;
         const timing = effect?.getComputedTiming?.() ?? {};
-        let frames: Keyframe[] = [];
+        let frames: Keyframe[];
         try { frames = effect?.getKeyframes?.() ?? []; } catch { frames = []; }
         const named = a as Animation & { animationName?: string; transitionProperty?: string };
         let props = [...new Set(frames.flatMap((f) => Object.keys(f)))].filter((p) => !['offset', 'computedOffset', 'easing', 'composite'].includes(p));
