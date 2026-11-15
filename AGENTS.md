@@ -110,7 +110,10 @@ config-only edits need the affected tooling tests, not the suite. Do not weaken,
 skip or delete a test, or raise a baseline, to get green. No hook blocks you from finishing a turn. Reviewer agents are optional and risk-based.
 
 New tests go next to the code in a `__tests__/` folder; the other test
-locations in the repo are legacy.
+locations in the repo are legacy. Unit tests run offline
+(`src/test/network-isolation.ts`): every test gets an offline Supabase
+client and only loopback is reachable, so a test that needs a client mocks
+`@/lib/supabase/client` and one that needs the network stubs `fetch`.
 
 ## Session habits
 
