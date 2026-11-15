@@ -1387,20 +1387,23 @@ export function calculateHoleStatsFromShots(
   // Sand save = up-and-down from a greenside bunker. Prefer the canonical
   // golf_holes.sand_save flag (the SAME source the DB cache uses, per
   // stat-formulas) so the engine and cache agree: attempt = flag is non-null
-  // (a greenside-bunker visit was recorded), made = flag === true. The old
-  // `score <= par` rule wrongly credited GIR pars (green reached in regulation,
-  // never in a bunker) as saves. When the flag is absent (number-only path),
-  // fall back to shot-derived detection requiring an actual up-and-down: a
-  // greenside-bunker visit on a missed green, holed in <=2 from the sand shot.
+  // (a greenside-bunker visit was recorded), made = flag === true. When the
+  // flag is absent (number-only path), fall back to the shots, on the PGA
+  // Tour's definition (SC-02, the one shot-helpers' calculateHoleStats writes
+  // the flag with): the hole's first greenside-bunker shot, holed in two
+  // strokes or fewer counting that shot, whatever the score and whether or not
+  // the green was hit in regulation. Strokes are the non-penalty shots, as the
+  // tracker counts them.
   const sandFlag = holeInfo.sand_save;
-  const sandShotIdx = aroundGreenShot ? normalizedShots.indexOf(aroundGreenShot) : -1;
-  const strokesFromSand = sandShotIdx >= 0 ? normalizedShots.length - sandShotIdx : Infinity;
+  const nonPenalty = normalizedShots.filter((s) => !s.is_penalty);
+  const sandShot = nonPenalty.find((s) => s.lie_before === 'sand' && s.shot_type === 'around_green');
+  const strokesFromSand = sandShot ? nonPenalty.length - nonPenalty.indexOf(sandShot) : Infinity;
   const sandSaveAttempt = sandFlag !== undefined
     ? sandFlag !== null
-    : aroundGreenShot?.lie_before === 'sand';
+    : sandShot !== undefined;
   const sandSaveMade = sandFlag !== undefined
     ? sandFlag === true
-    : (aroundGreenShot?.lie_before === 'sand' && !greenInRegulation && strokesFromSand <= 2);
+    : (sandShot !== undefined && strokesFromSand <= 2);
 
   // Penalties. ONE count: golf_holes.penalty_strokes (null = 0, like the DB
   // cache's COALESCE(penalty_strokes, 0) and the Standing rate). The is_penalty

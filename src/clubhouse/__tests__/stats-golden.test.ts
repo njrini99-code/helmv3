@@ -114,7 +114,12 @@ describe('G1 through the tracker (calculateHoleStats)', () => {
     expect(stats.filter((s) => s.sandSaveAttempt).length).toBe(G1_EXPECTED.sandSavesTour.of);
   });
 
-  it.todo('sand saves on the Tour definition: 3 of 4 (SC-02, lands with Part 3)');
+  it('sand saves on the Tour definition: 3 of 4 (SC-02)', () => {
+    const made = stats.filter((s) => s.sandSaveMade).length;
+    expect([made, stats.filter((s) => s.sandSaveAttempt).length]).toEqual([G1_EXPECTED.sandSavesTour.made, G1_EXPECTED.sandSavesTour.of]);
+    // The old par-or-better rule read 2 of 4: the bogey out in two is the difference.
+    expect(made).not.toBe(G1_EXPECTED.sandSavesOldAppRule.made);
+  });
 });
 
 describe('G1 through the shot calculator (calculateStatsFromShots)', () => {

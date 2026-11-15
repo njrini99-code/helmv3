@@ -1810,3 +1810,7 @@ GRANT ALL ON FUNCTION "public"."golf_team_join_requests_identity_guard"() TO "se
 REVOKE ALL ON FUNCTION "public"."golf_team_members_identity_guard"() FROM PUBLIC, "anon";
 GRANT ALL ON FUNCTION "public"."golf_team_members_identity_guard"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."golf_team_members_identity_guard"() TO "service_role";
+
+REVOKE ALL ON FUNCTION "helm_private"."golf_hole_sand_save_tour"("p_hole_id" "uuid") FROM PUBLIC, "anon", "authenticated";
+
+REVOKE ALL ON FUNCTION "helm_private"."golf_backfill_sand_save_tour"() FROM PUBLIC, "anon", "authenticated";

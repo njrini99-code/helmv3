@@ -1759,3 +1759,148 @@ BEGIN
 END $$;
 
 ALTER FUNCTION "helm_private"."golf_team_channel_backfill"() OWNER TO "postgres";
+
+-- SC-02, 20261115200000 (HELD): sand saves on the PGA Tour's definition.
+CREATE OR REPLACE FUNCTION helm_private.golf_hole_sand_save_tour(p_hole_id uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SET search_path = ''
+AS $$
+  -- Sand save on the PGA Tour's definition (SC-02): the hole's first
+  -- greenside-bunker shot, holed in two strokes or fewer counting it, whatever
+  -- the score. NULL: no greenside-bunker shot. Strokes are the non-penalty
+  -- shots (src/lib/utils/shot-helpers.ts calculateHoleStats). A shot belongs to
+  -- the hole by hole_id, or by round and hole number when an old row has none.
+  WITH hole AS (
+    SELECT h.id, h.round_id, h.hole_number
+    FROM public.golf_holes AS h
+    WHERE h.id = p_hole_id
+  ),
+  strokes AS (
+    SELECT s.shot_number, s.shot_type, s.lie_before
+    FROM public.golf_shots AS s
+    INNER JOIN hole ON (
+      s.hole_id = hole.id
+      OR (s.hole_id IS NULL AND s.round_id = hole.round_id AND s.hole_number = hole.hole_number)
+    )
+    WHERE s.is_penalty IS NOT TRUE
+  ),
+  first_sand AS (
+    SELECT min(strokes.shot_number) AS shot_number
+    FROM strokes
+    WHERE strokes.lie_before = 'sand' AND strokes.shot_type = 'around_green'
+  )
+  SELECT CASE
+    WHEN f.shot_number IS NULL THEN NULL
+    ELSE (SELECT count(*) FROM strokes WHERE strokes.shot_number >= f.shot_number) <= 2
+  END
+  FROM first_sand AS f;
+$$;
+
+ALTER FUNCTION "helm_private"."golf_hole_sand_save_tour"("p_hole_id" "uuid") OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION helm_private.golf_backfill_sand_save_tour()
+RETURNS integer
+LANGUAGE plpgsql
+SET search_path = ''
+AS $$
+DECLARE
+  v_changed integer;
+  v_unfixed integer;
+  v_cache_off integer;
+BEGIN
+  -- Archive every hole whose stored flag differs from the Tour rule: holes of
+  -- completed rounds whose shots hole out. Scorecard-only holes and holes
+  -- whose shots stop short of the hole are never read.
+  INSERT INTO helm_private.golf_holes_sand_save_fix_20261115 (
+    hole_id, round_id, old_sand_save, new_sand_save, stats_cache_before
+  )
+  SELECT
+    h.id,
+    h.round_id,
+    h.sand_save,
+    t.tour,
+    (SELECT to_jsonb(c) FROM public.golf_round_stats_cache AS c WHERE c.round_id = h.round_id)
+  FROM public.golf_holes AS h
+  INNER JOIN public.golf_rounds AS r ON r.id = h.round_id
+  CROSS JOIN LATERAL (SELECT helm_private.golf_hole_sand_save_tour(h.id) AS tour) AS t
+  WHERE r.status = 'completed'
+    AND EXISTS (
+      SELECT 1
+      FROM public.golf_shots AS s
+      WHERE (s.hole_id = h.id OR (s.hole_id IS NULL AND s.round_id = h.round_id AND s.hole_number = h.hole_number))
+        AND s.result = 'hole'
+        AND s.is_penalty IS NOT TRUE
+    )
+    AND h.sand_save IS DISTINCT FROM t.tour
+  ON CONFLICT (hole_id) DO UPDATE SET
+    round_id = excluded.round_id,
+    old_sand_save = excluded.old_sand_save,
+    new_sand_save = excluded.new_sand_save,
+    stats_cache_before = excluded.stats_cache_before,
+    archived_at = excluded.archived_at;
+
+  -- The lifecycle guards let postgres change a completed round's holes under
+  -- the transaction-local 'atomic' mark; defer_round_totals keeps the hole
+  -- trigger from recomputing round totals (sand_save is not one).
+  PERFORM set_config('helm.golf_lifecycle_write', 'atomic', true);
+  PERFORM set_config('helm.defer_round_totals', 'on', true);
+
+  UPDATE public.golf_holes AS h
+  SET sand_save = a.new_sand_save
+  FROM helm_private.golf_holes_sand_save_fix_20261115 AS a
+  WHERE a.hole_id = h.id
+    AND a.archived_at = now()
+    AND h.sand_save IS NOT DISTINCT FROM a.old_sand_save;
+  GET DIAGNOSTICS v_changed = ROW_COUNT;
+
+  PERFORM set_config('helm.defer_round_totals', '', true);
+
+  -- Refresh each touched round's stats cache: trg_update_round_stats_cache
+  -- fires on UPDATE OF status (it recounts sand_saves and sand_attempts from
+  -- the holes), and the cache row's own trigger refreshes the player's.
+  UPDATE public.golf_rounds AS r
+  SET status = r.status
+  WHERE r.id IN (
+    SELECT a.round_id
+    FROM helm_private.golf_holes_sand_save_fix_20261115 AS a
+    WHERE a.archived_at = now()
+  );
+
+  PERFORM set_config('helm.golf_lifecycle_write', '', true);
+
+  SELECT count(*) INTO v_unfixed
+  FROM helm_private.golf_holes_sand_save_fix_20261115 AS a
+  INNER JOIN public.golf_holes AS h ON h.id = a.hole_id
+  WHERE a.archived_at = now()
+    AND h.sand_save IS DISTINCT FROM a.new_sand_save;
+  IF v_unfixed > 0 THEN
+    RAISE EXCEPTION 'sand_save backfill left % archived holes unchanged; rolling back', v_unfixed;
+  END IF;
+
+  SELECT count(*) INTO v_cache_off
+  FROM (
+    SELECT DISTINCT a.round_id
+    FROM helm_private.golf_holes_sand_save_fix_20261115 AS a
+    WHERE a.archived_at = now()
+  ) AS touched
+  INNER JOIN public.golf_round_stats_cache AS c ON c.round_id = touched.round_id
+  CROSS JOIN LATERAL (
+    SELECT
+      count(*) FILTER (WHERE h.sand_save) AS saves,
+      count(*) FILTER (WHERE h.sand_save IS NOT NULL) AS attempts
+    FROM public.golf_holes AS h
+    WHERE h.round_id = touched.round_id
+  ) AS k
+  WHERE c.sand_saves IS DISTINCT FROM k.saves
+    OR c.sand_attempts IS DISTINCT FROM k.attempts;
+  IF v_cache_off > 0 THEN
+    RAISE EXCEPTION 'sand_save backfill: % round stats caches disagree with their holes; rolling back', v_cache_off;
+  END IF;
+
+  RETURN v_changed;
+END
+$$;
+
+ALTER FUNCTION "helm_private"."golf_backfill_sand_save_tour"() OWNER TO "postgres";
