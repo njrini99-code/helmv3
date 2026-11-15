@@ -843,44 +843,44 @@
   --ch-notice-body: var(--ch-notice-on-green-body);
 }
 
-/* Skeleton sheen (audit A-13, 2026-10-14): one layer per block, slid by transform, on every width. The desktop used a
-   viewport-fixed 200vw gradient whose background-position animated, which repainted every block on every frame while a
-   page loaded (the phone moved off it 2026-10-12 for the same reason; iOS ignored the fixed attachment anyway). A shade
-   deeper than the first pass (states audit, 2026-10-08): about 1.2:1 on the workspace, with a soft sheen. */
+/* Skeletons (MOTION-AND-VISUAL 3.9, 3.12): static blocks shaped like the content, with no shimmer and no pulse. A shade
+   deeper than the first pass (states audit, 2026-10-08): about 1.2:1 on the workspace.
+   Draw nothing new for the busy delay (3.9, lib/use-busy.ts): a block shows only once the wait has passed, so a load that
+   lands within 150 ms never draws one, while the page's frame (the bar, the title, the strip) is there from the first frame
+   (S4.4). A wait, not motion: it holds under Reduce Motion and Animations off, and it ends in an instant (no fade). A
+   skeleton that useBusy put up has waited already (data-ch-busy="skeleton"), and one chained after the route's own in the
+   same place (data-skel="chained") takes its place with no gap. Page skeletons with blocks of their own take the same
+   animation on them (stats-redesign.css, messages-inbox.css, coachhelm-team.css, coachhelm-file.css). */
+@keyframes ch-busy-wait {
+  from {
+    visibility: hidden;
+  }
+}
 .ch-skel {
   display: block;
   position: relative;
   overflow: hidden;
   background: var(--ch-skel-base);
+  animation: ch-busy-wait 0s var(--ch-dur-busy-delay) backwards;
 }
-.ch-skel::before {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(100deg, transparent 30%, var(--ch-skel-sheen) 50%, transparent 70%);
-  transform: translateX(-100%);
-  animation: ch-shimmer-x var(--ch-dur-shimmer) linear infinite;
-  content: '';
+:is([data-skel='chained'], [data-ch-busy='skeleton']) .ch-skel {
+  animation: none;
 }
-/* A green feature card in waiting (a hero), on the loaded card's ground and lift, its sweep the pale ink Home's skeleton
-   bars use, so the page doesn't flash pale to green when it lands (F-0060). */
+/* A green feature card in waiting (a hero), on the loaded card's ground and lift, so the page doesn't flash pale to green
+   when it lands (F-0060). */
 .ch-skel.ch-skel--feature {
   background: var(--ch-feature-bg);
   box-shadow: var(--ch-elevation-feature);
 }
-.ch-skel--feature::before {
-  background: linear-gradient(100deg, transparent 30%, rgb(244 241 232 / 0.12) 50%, transparent 70%);
-}
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   /* A block in waiting (a fluid Skeleton from 56px tall, or shape="block") is drawn in the Ledger as the Ledger draws
      what it stands for: a rule along its top and two lines of type under it, not a filled card. It keeps its box, so
-     nothing moves when the page lands; a real object that loads filled asks for shape="solid". Its two lines breathe
-     (opacity, on the compositor) rather than sweep: their pseudo-elements are the lines, so there is no layer to slide. */
+     nothing moves when the page lands; a real object that loads filled asks for shape="solid". The lines are still. */
   [data-ui='clubhouse'] main[data-canopy] .ch-skel--block {
     position: relative;
     overflow: visible;
     border-radius: 0 !important;
     background: linear-gradient(var(--ch-ledger-rule), var(--ch-ledger-rule)) 0 0 / 100% 1px no-repeat;
-    animation: none;
   }
   [data-ui='clubhouse'] main[data-canopy] .ch-skel--block::before,
   [data-ui='clubhouse'] main[data-canopy] .ch-skel--block::after {
@@ -889,8 +889,6 @@
     left: 0;
     border-radius: var(--ch-radius-sm);
     background: var(--ch-skel-base);
-    transform: none;
-    animation: ch-skel-breathe var(--ch-dur-shimmer) ease-in-out infinite;
     content: '';
   }
   [data-ui='clubhouse'] main[data-canopy] .ch-skel--block::before {
@@ -934,41 +932,6 @@
   flex-direction: column;
   gap: 8px;
   min-width: 0;
-}
-/* Animations off in Settings: skeletons hold still (a Ledger block's lines too), from the first frame (ThemeScript
-   marks <html> before hydration). */
-[data-motion='off'] .ch-root .ch-skel::before,
-.ch-root[data-motion='off'] .ch-skel::before {
-  animation: none;
-  display: none;
-}
-[data-motion='off'] .ch-root main[data-canopy] .ch-skel--block::before,
-[data-motion='off'] .ch-root main[data-canopy] .ch-skel--block::after,
-.ch-root[data-motion='off'] main[data-canopy] .ch-skel--block::before,
-.ch-root[data-motion='off'] main[data-canopy] .ch-skel--block::after {
-  display: block;
-  animation: none;
-}
-@keyframes ch-shimmer-x {
-  to {
-    transform: translateX(100%);
-  }
-}
-@keyframes ch-skel-breathe {
-  50% {
-    opacity: 0.55;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .ch-skel,
-  .ch-skel::before,
-  .ch-skel--block::before,
-  .ch-skel--block::after {
-    animation: none !important;
-  }
-  .ch-skel:not(.ch-skel--block)::before {
-    display: none;
-  }
 }
 .ch-toast__txt {
   display: flex;
@@ -2718,10 +2681,6 @@ html[data-fw-theme='dark'] .ch-bellp__row:focus-visible {
       box-shadow: 0 0 0 1px var(--ch-border-strong);
     }
   }
-  html[data-fw-theme='dark'] [data-ui='clubhouse'] main[data-canopy] .ch-skel--block::before,
-  html[data-fw-theme='dark'] [data-ui='clubhouse'] main[data-canopy] .ch-skel--block::after {
-    background: linear-gradient(100deg, var(--ch-skel-base) 42%, var(--ch-skel-sheen) 50%, var(--ch-skel-base) 58%) 0 0 / 200vw 100% fixed;
-  }
 }
 @media (min-width: 821px) and (prefers-reduced-transparency: reduce) and ((min-height: 501px) or (pointer: fine)) {
   html[data-fw-theme='dark'] .ch-topbar {
@@ -2737,9 +2696,6 @@ html[data-fw-theme='dark'] .ch-empty-page--danger {
 }
 html[data-fw-theme='dark'] .ch-empty-page__seg i {
   background: rgb(237 231 216 / 0.12);
-}
-:where(html[data-fw-theme='dark']) .ch-skel {
-  background: linear-gradient(100deg, var(--ch-skel-base) 42%, var(--ch-skel-sheen) 50%, var(--ch-skel-base) 58%) 0 0 / 200vw 100% fixed;
 }
 html[data-fw-theme='dark'] .ch-scrim {
   background: rgb(0 0 0 / 0.55);

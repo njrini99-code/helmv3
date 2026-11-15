@@ -710,9 +710,10 @@
 }
 
 /* ------------------------------------------------------------------------------------------------------------------
-   Loading (MSG-112, MSG-126, MOT-X-15): the same card and row heights as the loaded list. 1.4 s ease-in-out between
-   opacity 1 and .55; it stops under Reduce Motion and Animations off. Also drawn by the route skeleton, which has no
-   data-ch-ms-v2 ancestor of its own, so these are not scoped by it.
+   Loading (MSG-112, MSG-126, MOT-X-15): the same card and row heights as the loaded list, static (MOTION-AND-VISUAL 3.9:
+   the 1.4 s pulse is gone). The blocks wait the busy delay (shell.css ch-busy-wait), so a list that lands within 150 ms
+   draws none. Also drawn by the route skeleton, which has no data-ch-ms-v2 ancestor of its own, so these are not scoped
+   by it.
    ------------------------------------------------------------------------------------------------------------------ */
 .ch-inb-sk,
 .ch-inb-sk__face,
@@ -723,32 +724,7 @@
 .ch-inb-sk__seg {
   display: block;
   background: color-mix(in srgb, var(--ch-text-primary) 9%, transparent);
-  animation: ch-inb-pulse var(--ch-dur-skeleton, 1.4s) ease-in-out infinite;
-}
-@keyframes ch-inb-pulse {
-  50% {
-    opacity: 0.55;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .ch-inb-sk,
-  .ch-inb-sk__face,
-  .ch-inb-sk__title,
-  .ch-inb-sk__search,
-  .ch-inb-sk__new,
-  .ch-inb-sk__ctx,
-  .ch-inb-sk__seg {
-    animation: none;
-  }
-}
-[data-motion='off'] .ch-inb-sk,
-[data-motion='off'] .ch-inb-sk__face,
-[data-motion='off'] .ch-inb-sk__title,
-[data-motion='off'] .ch-inb-sk__search,
-[data-motion='off'] .ch-inb-sk__new,
-[data-motion='off'] .ch-inb-sk__ctx,
-[data-motion='off'] .ch-inb-sk__seg {
-  animation: none;
+  animation: ch-busy-wait 0s var(--ch-dur-busy-delay) backwards;
 }
 .ch-inb-sk {
   height: calc(11 * var(--ch-type-k));

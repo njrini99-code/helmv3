@@ -1511,31 +1511,18 @@
   color:var(--ch-feature-ink-2);
   white-space:nowrap;
 }
+/* Static blocks that wait the busy delay, as .ch-skel does (MOTION-AND-VISUAL 3.9; shell.css ch-busy-wait). */
 .ch-htb .skl {
   display:block;
   background:var(--ch-well-bg-flat);
   border-radius: var(--ch-radius-sm);
   position:relative;
   overflow:hidden;
-}
-.ch-htb .skl::after {
-  content:"";
-  position:absolute;
-  inset:0;
-  background:linear-gradient(90deg,transparent,color-mix(in srgb, var(--ch-ivory-0) 45%, transparent),transparent);
-  transform:translateX(-100%);
-  animation:ch-htb-shim var(--ch-dur-shimmer) var(--ch-ease) infinite;
-}
-html[data-fw-theme='dark'] .ch-htb .skl::after {
-  background:linear-gradient(90deg,transparent,color-mix(in srgb, var(--ch-ivory-0) 6%, transparent),transparent);
+  animation: ch-busy-wait 0s var(--ch-dur-busy-delay) backwards;
 }
 .ch-htb .feat .skl {
   background:color-mix(in srgb, var(--ch-feature-ink) 9%, transparent);
 }
-.ch-htb .feat .skl::after {
-  background:linear-gradient(90deg,transparent,color-mix(in srgb, var(--ch-feature-ink) 10%, transparent),transparent);
-}
-@keyframes ch-htb-shim {to{transform:translateX(100%);}}
 .ch-htb .sklc {
   padding:16px;
   display:grid;
@@ -1786,14 +1773,6 @@ html[data-fw-theme='dark'] .ch-htb .skl::after {
 .ch-htb .insh .cicon,
 .ch-htb .drill .dicon {
   color:var(--ch-green-600);
-}
-
-/* Reduce Motion: var(--ch-dur-quick) opacity only (.dev[data-rm] on the page). */
-@media (prefers-reduced-motion: reduce) {
-  .ch-htb .skl::after {
-    animation: none;
-    opacity: 0;
-  }
 }
 
 /* The app's own frame around the page's blocks. */
@@ -2053,7 +2032,6 @@ html[data-fw-theme='dark'] .ch-htb .skl::after {
   }
 }
 /* Animations off: the duration tokens are 0 there (tokens.css), so a transition lands at once; these are the keyframes. */
-[data-motion='off'] .ch-htb .skl::after,
 [data-motion='off'] .ch-htb .story,
 [data-motion='off'] .ch-htb .sto-b,
 [data-motion='off'] .ch-htb .wk.is-new,
