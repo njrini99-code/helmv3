@@ -2212,8 +2212,11 @@ html[data-fw-theme='dark'] .ch-htb .scn circle {
   transition: opacity var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-htb[aria-busy='true']:not([aria-label^='Loading']) > * {
-  opacity: 0.55;
   pointer-events: none;
+}
+/* The dim waits the busy delay and holds the busy hold (data-ch-busy, lib/use-busy.ts; MOTION-AND-VISUAL 3.9). */
+.ch-htb[data-ch-busy='skeleton'] > * {
+  opacity: 0.55;
 }
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-htb[data-ch-enter]:not(.is-phone) > * {
