@@ -38,7 +38,7 @@ export async function flyDraftHome(card: HTMLElement, draft: HTMLElement, slot: 
     const smooth = chSpringCurve('smooth');
     const frames = arc(b.left - a.left, b.top - a.top, b.width / Math.max(a.width, 1), b.height / Math.max(a.height, 1));
     await settled(flyer.animate(frames, { duration: smooth.ms, delay: LIFT_MS, easing: smooth.linear, fill: 'both' }));
-    const pop = chSpringCurve('pop');
+    const pop = chSpringCurve('settle');
     await settled(slot.animate([{ transform: 'scale(0.9)' }, { transform: 'none' }], { duration: pop.ms, easing: pop.linear }));
   } finally {
     flyer.remove();
@@ -67,6 +67,6 @@ export async function flyPageToFolder(page: HTMLElement, folder: HTMLElement, re
 /** M-ASK-78: the folder takes the page, 1.08 by 0.94 back to rest. */
 export async function squashFolder(folder: HTMLElement, reduced: boolean): Promise<void> {
   if (reduced || !folder.animate) return;
-  const pop = chSpringCurve('pop');
+  const pop = chSpringCurve('settle');
   await settled(folder.animate([{ transform: 'scale(1.08, 0.94)' }, { transform: 'none' }], { duration: pop.ms, easing: pop.linear }));
 }

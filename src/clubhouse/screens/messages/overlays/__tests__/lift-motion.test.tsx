@@ -101,15 +101,15 @@ describe('MSG-402 / 403 the lift', () => {
     expect(row.style.visibility).toBe('hidden');
   });
 
-  it('MOT-HOLD-2/3/4/5: copy lifts on lift from the press scale, bar pops, menu unfolds on lift, scrim fades on smooth', () => {
+  it('MOT-HOLD-2/3/4/5: copy lifts, bar and menu unfold, all on settle (3.12: pop and lift retired), scrim fades on smooth', () => {
     mount();
     const by = (cls: string) => calls().find((c) => c.node.className.includes(cls))!;
-    expect(by('ch-mso-lift__copy').spring).toBe('lift');
+    expect(by('ch-mso-lift__copy').spring).toBe('settle');
     expect(String(by('ch-mso-lift__copy').keyframes[0]!.transform)).toMatch(/^translateY\(0\) scale\((0\.9\d{0,2}|1)\)$/);
     expect(by('ch-mso-lift__copy').keyframes[1]).toEqual({ transform: 'translateY(0px) scale(1.02)' });
-    expect(by('ch-mso-rbar').spring).toBe('pop');
+    expect(by('ch-mso-rbar').spring).toBe('settle');
     expect(by('ch-mso-rbar').keyframes[0]).toEqual({ transform: 'scale(.5)', opacity: 0 });
-    expect(by('ch-mso-menu').spring).toBe('lift');
+    expect(by('ch-mso-menu').spring).toBe('settle');
     expect(by('ch-mso-menu').keyframes[0]).toEqual({ transform: 'scale(.8)', opacity: 0 });
     expect(by('ch-mso-lift__scrim').spring).toBe('smooth');
     expect(by('ch-mso-lift__copy').node.style.transformOrigin).toBe('290px 20px');
@@ -166,12 +166,12 @@ describe('MSG-402 / 403 the lift', () => {
 });
 
 describe('MOT-RX-1 badge pop', () => {
-  it('scales .4 to 1 on pop, once per badge; Reduce Motion hands it over reduced (appears)', () => {
+  it('scales .4 to 1 on settle (3.12: pop retired), once per badge; Reduce Motion hands it over reduced (appears)', () => {
     const el = document.createElement('button');
     popBadge(el, false);
     popBadge(el, false);
     expect(calls()).toHaveLength(1);
-    expect(calls()[0]).toMatchObject({ spring: 'pop', keyframes: [{ transform: 'scale(.4)' }, { transform: 'scale(1)' }] });
+    expect(calls()[0]).toMatchObject({ spring: 'settle', keyframes: [{ transform: 'scale(.4)' }, { transform: 'scale(1)' }] });
     const b = document.createElement('button');
     popBadge(b, true);
     expect(calls()[1]!.opts).toMatchObject({ reduced: true });
@@ -205,11 +205,11 @@ describe('MOT-ATT-2 / MC-06 the attach menu', () => {
   const show = () => render(<ComposerPlusV2 api={api} conv={conv} onPick={() => {}} />);
   const key = () => screen.getByRole('button', { name: /Add a photo|Close/ });
 
-  it('grows 0.4 to 1 on lift from the +; exactly Photos and File in a DM', () => {
+  it('grows 0.4 to 1 on settle (3.12: lift retired) from the +; exactly Photos and File in a DM', () => {
     show();
     fireEvent.click(key());
     expect(ATTACH_IN[0]).toEqual({ transform: 'scale(.4)', opacity: 0 });
-    expect(calls()[0]).toMatchObject({ spring: 'lift' });
+    expect(calls()[0]).toMatchObject({ spring: 'settle' });
     expect(calls()[0]!.keyframes).toEqual([...ATTACH_IN]);
     expect(screen.getAllByRole('menuitem').map((r) => r.textContent)).toEqual(['Photos', 'File']);
   });
@@ -233,7 +233,7 @@ describe('MOT-ATT-2 / MC-06 the attach menu', () => {
     const out = calls()[calls().length - 1]!;
     played.calls.length = 0;
     fireEvent.click(screen.getByRole('button', { name: /Add a photo|Close/ }));
-    expect(calls()[0]).toMatchObject({ spring: 'lift' });
+    expect(calls()[0]).toMatchObject({ spring: 'settle' });
     expect(calls()[0]!.opts).toMatchObject({ live: true });
     expect(out.anim.cancel).toHaveBeenCalled();
     expect(screen.getAllByRole('menu')).toHaveLength(1);

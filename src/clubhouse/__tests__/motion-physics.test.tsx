@@ -46,38 +46,29 @@ afterEach(() => {
 
 describe('D-64 springs (extension, 2026-10-08)', () => {
   it('keep the D-64 base duration (the drop\'s reveal spring: D-64\'s reveal) with no bounce, handed to framer as stiffness and damping so velocity carries', () => {
-    // Bounce 0 on every tap-opened surface (production audit 2026-11-15, S3.1, MOT-08). Named exceptions: a sent and a
-    // launched bubble keep at most 0.08 (physical objects), and the gesture spring is Apple's 0.5 s.
-    const named = new Set(['send', 'launch', 'gesture']);
+    // Bounce 0 on every spring (production audit 2026-11-15, S3.1, MOT-08; MOTION-AND-VISUAL 3.1 rule 4). The gesture spring
+    // is Apple's 0.5 s.
     for (const [kind, { visualDuration, bounce }] of Object.entries(CH_SPRINGS)) {
-      if (named.has(kind)) continue;
-      expect(visualDuration).toBe(kind === 'reveal' ? CH_DUR.reveal : CH_DUR.base);
       expect(bounce, kind).toBe(0);
+      if (kind === 'gesture') continue;
+      expect(visualDuration).toBe(kind === 'reveal' ? CH_DUR.reveal : CH_DUR.base);
     }
+    // MOTION-AND-VISUAL 3.12 deletes the pop, launch and lift springs, and 3.5 makes a sent message an insert (the base beat on
+    // the iOS curve), so send goes with them. pop stays only while ui/Toast.tsx (the overlays thread's) still names it.
+    expect(Object.keys(CH_SPRINGS).sort()).toEqual(['gesture', 'pop', 'reveal', 'settle', 'smooth']);
     // framer's own reading of visualDuration and bounce (motion-dom spring.mjs).
     const root = (2 * Math.PI) / (CH_DUR.base * 1.2);
     expect(chSpring('smooth')).toEqual({ type: 'spring', stiffness: root * root, damping: 2 * root, mass: 1 });
     expect(chSpring('settle')).toEqual(chSpring('smooth'));
     expect(chSpring('pop')).toEqual(chSpring('smooth'));
-    expect(chSpring('lift')).toEqual(chSpring('smooth'));
     expect(chSpring('smooth', false, 900)).toMatchObject({ velocity: 900 });
     expect(chSpring('settle', true)).toEqual({ duration: 0 });
     // The one gesture-release spring (S3.1): Apple's 0.5 s, bounce 0.
     expect(chSpring('gesture')).toMatchObject({ stiffness: expect.closeTo(157.9, 1), damping: expect.closeTo(25.13, 2), mass: 1 });
   });
 
-  it('send and launch keep a bounce of at most 0.08, and nothing else passes its mark from rest (S3.1)', () => {
-    for (const [kind, visualDuration, bounce] of [
-      ['send', 0.32, 0.06],
-      ['launch', 0.35, 0.08],
-    ] as const) {
-      expect(CH_SPRINGS[kind]).toEqual({ visualDuration, bounce });
-      let high = 0;
-      for (let t = 0; t <= 1.5; t += 0.001) high = Math.max(high, chSpringAt(kind, t));
-      expect(high).toBeGreaterThan(1);
-      expect(high).toBeLessThan(1.01);
-    }
-    for (const kind of ['smooth', 'settle', 'pop', 'lift', 'reveal', 'gesture'] as const) {
+  it('no script spring passes its mark from rest (S3.1; 3.5 retired the send and launch overshoot with the send flight)', () => {
+    for (const kind of ['smooth', 'settle', 'pop', 'reveal', 'gesture'] as const) {
       let high = 0;
       for (let t = 0; t <= 1.5; t += 0.001) high = Math.max(high, chSpringAt(kind, t));
       expect(high, kind).toBeLessThanOrEqual(1);

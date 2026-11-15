@@ -109,7 +109,7 @@ export function SeenFaces({ api, ids, size, max }: { api: ChMessagesApi; ids: re
     <span className="ch-msv-faces" aria-hidden="true">
       <AnimatePresence initial={false}>
         {ids.slice(0, max).map((id) => (
-          <M.span key={id} className="ch-msv-faces__f" initial={reduced ? false : { scale: 0.4, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={chSpring("pop", reduced)}>
+          <M.span key={id} className="ch-msv-faces__f" initial={reduced ? false : { scale: 0.4, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={chSpring("settle", reduced)}>
             <Avatar name={personOf(api, id)?.name ?? "Member"} id={personOf(api, id)?.playerId ?? id} size={size} />
           </M.span>
         ))}

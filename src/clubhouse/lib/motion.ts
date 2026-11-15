@@ -95,20 +95,17 @@ const CH_SPRING_BASE = { visualDuration: CH_DUR.base, bounce: 0 } as const;
 export const CH_SPRINGS = {
   smooth: CH_SPRING_BASE,
   /**
-   * Bounce 0 on every tap-opened surface (production audit 2026-11-15, S3.1, MOT-08): settle (a free part arriving), pop
-   * (the reaction bar, a toast, the jump key, the Ask island) and lift (a held bubble, a menu) are the smooth spring.
-   * The names stay for their callers; the 0.1 to 0.35 overshoots they carried are gone.
+   * Bounce 0 on every tap-opened surface (production audit 2026-11-15, S3.1, MOT-08): settle (a free part arriving: the
+   * reaction bar, a held bubble, a menu, the jump key, the Ask island) is the smooth spring.
    */
   settle: CH_SPRING_BASE,
-  /** Retiring (3.12): pop and lift are the smooth spring under other names, until their last callers move to settle. */
+  /**
+   * Retiring (3.12): the smooth spring under its old name, kept only for the toast's pill (ui/Toast.tsx, the overlays
+   * thread's), until it moves to settle. lift, launch and send are gone: a sent message is an insert (3.5), the base beat
+   * on the iOS curve (ui/ListPresence), and every held or popped surface settles.
+   */
   pop: CH_SPRING_BASE,
-  lift: CH_SPRING_BASE,
   reveal: { visualDuration: CH_DUR.reveal, bounce: 0 },
-  // A sent bubble and a launched one are physical objects, so they keep a soft overshoot, at most 0.08 (S3.1): the send
-  // lands in about 0.32 s, the launch rises out of the field in about 0.35 s (MOT-08's fix; Messages' owner sign-off of
-  // 31 Oct 2026 covered larger bounces, which the audit spec replaces).
-  send: { visualDuration: 0.32, bounce: 0.06 },
-  launch: { visualDuration: 0.35, bounce: 0.08 },
   /**
    * CH_SPRING, the one spring a released gesture finishes on (production audit 2026-11-15, S3.1, S4.2): Apple's 0.5 s
    * with no bounce, seeded with the finger's speed. framer reads a visual duration as 1.2 times shorter than Apple's,
@@ -117,9 +114,6 @@ export const CH_SPRINGS = {
    */
   gesture: { visualDuration: 0.5 / 1.2, bounce: 0 },
 } as const;
-/** Messages v2 send easings (MOT-SEND-6): the green fill coming up under the typed words, and the arrow leaving the send key. */
-export const CH_FILL_EASE_POINTS = [0.3, 0, 0.5, 1] as const;
-export const CH_ARROW_EASE_POINTS = [0.4, 0, 0.9, 0.3] as const;
 /**
  * The iOS curve (--ch-ease-ios; audit spec S3.1, 15 Nov 2026): UIKit's own page push, sheet and keyboard curve, as the
  * best web replicas measure it. Every tap-started enter and exit rides it: a push and its pop over the reveal beat
