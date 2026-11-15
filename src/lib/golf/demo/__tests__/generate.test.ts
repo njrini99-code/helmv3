@@ -8,8 +8,9 @@ import { summarizeDataset } from '../summary';
 import { DEMO_ROSTER } from '../story';
 
 const COACH = '00000000-0000-4000-8000-0000000000c1';
+const COACH_ROW = '00000000-0000-4000-8000-0000000000c3';
 const CHANNEL = '00000000-0000-4000-8000-0000000000c2';
-const base: GenerateInput = { teamId: DEMO_TEAM_ID, today: '2026-11-15', timeZone: 'America/New_York', coachUserId: COACH, teamChannelId: CHANNEL };
+const base: GenerateInput = { teamId: DEMO_TEAM_ID, today: '2026-11-15', timeZone: 'America/New_York', coachUserId: COACH, coachId: COACH_ROW, teamChannelId: CHANNEL };
 
 const cache = new Map<string, DemoDataset>();
 function gen(over: Partial<GenerateInput> = {}): DemoDataset {
@@ -93,7 +94,10 @@ describe('generateDemoTeam', () => {
     expect(within(t.golf_qualifier_entries, 'qualifier_id', qualifiers)).toEqual([]);
     expect(within(t.golf_qualifier_entries, 'round_id', rounds)).toEqual([]);
     expect(within(t.golf_qualifier_selections, 'qualifier_id', qualifiers)).toEqual([]);
-    expect(within(t.golf_qualifiers, 'target_tournament_id', tournaments)).toEqual([]);
+    expect(within(t.golf_qualifiers, 'target_tournament_id', events)).toEqual([]);
+    // ... and that event is round 1 of a tournament (the app's link, 20261025040000).
+    const roundOnes = new Set(t.golf_tournament_rounds.filter((r) => r.round_number === 1).map((r) => String(r.round_event_id)));
+    expect(t.golf_qualifiers.filter((q) => !roundOnes.has(String(q.target_tournament_id)))).toEqual([]);
     expect(within(t.golf_practice_plans, 'event_id', events)).toEqual([]);
     expect(within(t.golf_practice_plan_versions, 'plan_id', plans)).toEqual([]);
     expect(within(t.golf_task_assignments, 'task_id', tasks)).toEqual([]);
@@ -177,7 +181,8 @@ describe('the demo story on 15 Nov 2026 (default seed)', () => {
   it('has the live qualifier, with the spring opener lineup three of five set', () => {
     const q = t.golf_qualifiers.find((x) => x.status === 'in_progress');
     expect(q?.name).toBe('Spring opener qualifier');
-    const opener = t.golf_tournaments.find((x) => x.id === q!.target_tournament_id)!;
+    const openerId = t.golf_tournament_rounds.find((r) => r.round_event_id === q!.target_tournament_id)!.tournament_id;
+    const opener = t.golf_tournaments.find((x) => x.id === openerId)!;
     expect(opener.start_date).toBe('2027-02-08');
     expect(t.golf_tournament_entries.filter((e) => e.tournament_id === opener.id && e.role === 'lineup')).toHaveLength(3);
   });

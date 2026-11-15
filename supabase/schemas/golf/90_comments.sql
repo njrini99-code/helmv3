@@ -323,3 +323,7 @@ COMMENT ON TABLE "public"."golf_conversation_pins" IS 'Clubhouse Messages pins, 
 
 -- Ask level comparison (HELD 20261108100000): the division cohort
 COMMENT ON TABLE "public"."golf_division_cohort" IS 'Mean of golf_player_standing.player_value over the players on Helm at one college level and gender, one row per metric, only for cohorts of 8 or more. Aggregates only: no player column. Rebuilt by refresh_division_cohort().';
+
+COMMENT ON COLUMN "public"."golf_messages"."is_test" IS 'QA row: hidden from team reads once the reads filter on it (DD-13).';
+
+COMMENT ON COLUMN "public"."golf_events"."is_test" IS 'QA row: hidden from team reads once the reads filter on it (DD-13).';

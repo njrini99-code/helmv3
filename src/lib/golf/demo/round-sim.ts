@@ -113,7 +113,6 @@ export function playHole(rng: Rng, hole: DemoHole, holeNumber: number, s: DaySki
   let n = 0;
   let penalties = 0;
   let fairwayHit: boolean | null = hole.par === 3 ? null : false;
-  let firstPuttStroke: number | null = null;
   let playedFromSand = false;
   const push = (shot: Omit<SimShot, 'shot_number'>) => {
     n += 1;
@@ -208,7 +207,6 @@ export function playHole(rng: Rng, hole: DemoHole, holeNumber: number, s: DaySki
   }
 
   // Putting.
-  firstPuttStroke = n + 1;
   let putts = 0;
   while (putts < 5) {
     putts += 1;
@@ -223,15 +221,16 @@ export function playHole(rng: Rng, hole: DemoHole, holeNumber: number, s: DaySki
     push({ shot_type: 'putting', club_type: 'putter', lie_before: 'green', distance_to_hole_before: feet, distance_unit_before: 'feet', result: 'green', lie_after: 'green', distance_to_hole_after: next, distance_unit_after: 'feet', shot_distance: 0, is_penalty: false, penalty_type: null, putt_made: false, putt_distance_feet: feet, miss_direction: null });
     feet = next;
   }
-  return finish(hole, holeNumber, shots, penalties, fairwayHit, firstPuttStroke, playedFromSand);
+  return finish(hole, holeNumber, shots, penalties, fairwayHit, playedFromSand);
 }
 
-function finish(hole: DemoHole, holeNumber: number, shots: SimShot[], penalties: number, fairwayHit: boolean | null, firstPuttStroke: number | null, playedFromSand: boolean): SimHole {
+function finish(hole: DemoHole, holeNumber: number, shots: SimShot[], penalties: number, fairwayHit: boolean | null, playedFromSand: boolean): SimHole {
   const score = shots.length;
   const putts = shots.filter((x) => x.shot_type === 'putting').length;
-  // On the green in regulation: the strokes before the first putt (penalties count) leave two for par.
-  const strokesToGreen = firstPuttStroke === null ? score : firstPuttStroke - 1;
-  const gir = firstPuttStroke !== null && strokesToGreen <= hole.par - 2;
+  // Green in regulation, by the database's own rule (golf_holes_set_gir_fn):
+  // the strokes that were not putts leave at least two for par.
+  const toGreen = score - putts;
+  const gir = hole.par >= 3 && score > 0 && toGreen > 0 && toGreen <= hole.par - 2;
   const upAndDown = gir ? null : score <= hole.par;
   return {
     hole_number: holeNumber,

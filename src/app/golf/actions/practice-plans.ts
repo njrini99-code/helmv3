@@ -56,8 +56,8 @@ async function copyPlanBodyImpl(input: { planId: string }): Promise<PracticeResu
   return body ? { success: true, body } : { success: false, error: 'That plan couldn’t be copied.' };
 }
 
-const observedSave = withAdminObserved('savePracticePlan', { sport: 'golf', feature: 'practice_plans' }, savePracticePlanImpl);
-const observedDelete = withAdminObserved('deletePracticePlan', { sport: 'golf', feature: 'practice_plans' }, deletePracticePlanImpl);
+const observedSave = withAdminObserved('savePracticePlan', { sport: 'golf', feature: 'practice_plans', demoSafe: true }, savePracticePlanImpl);
+const observedDelete = withAdminObserved('deletePracticePlan', { sport: 'golf', feature: 'practice_plans', demoSafe: true }, deletePracticePlanImpl);
 const observedOpen = withAdminObserved('recordPracticePlanOpen', { sport: 'golf', feature: 'practice_plans' }, recordPracticePlanOpenImpl);
 
 const observedCopy = withAdminObserved('copyPlanBody', { sport: 'golf', feature: 'practice_plans' }, copyPlanBodyImpl);

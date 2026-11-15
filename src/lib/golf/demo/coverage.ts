@@ -22,6 +22,7 @@ export type CoverageTable = Extract<
   | 'golf_events'
   | 'golf_event_attendance'
   | 'golf_tournaments'
+  | 'golf_tournament_rounds'
   | 'golf_tournament_entries'
   | 'golf_qualifiers'
   | 'golf_qualifier_entries'
@@ -273,7 +274,9 @@ export function checkDemoCoverage(snap: DemoSnapshot): CoverageReport {
   add('next-tournament', 'DD-09', 'warn', summer || (!!next && daysBetween(today, day(next, 'start_date')) <= 100), next ? `${str(next, 'name')} on ${day(next, 'start_date')}` : 'none scheduled');
   if (next) {
     const lineup = rows('golf_tournament_entries').filter((e) => e.tournament_id === next.id && str(e, 'role') === 'lineup');
-    const q = rows('golf_qualifiers').find((x) => x.target_tournament_id === next.id);
+    // A qualifier names the tournament by its round-1 calendar event.
+    const nextEvents = new Set(rows('golf_tournament_rounds').filter((r) => r.tournament_id === next.id).map((r) => String(r.round_event_id)));
+    const q = rows('golf_qualifiers').find((x) => nextEvents.has(String(x.target_tournament_id)));
     const due = daysBetween(today, day(next, 'start_date')) <= 21 || (!!q && day(q, 'start_date') < today);
     add('next-lineup', 'DD-09', 'warn', !due || lineup.length >= 3, `${lineup.length} lineup entries for ${str(next, 'name')}`);
   }

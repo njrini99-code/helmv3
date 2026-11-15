@@ -4,7 +4,7 @@ import { generateDemoTeam, type DemoRow } from '../generate';
 import { checkDemoCoverage, inTerm, wrongWeekdays, type DemoSnapshot } from '../coverage';
 
 const today = '2026-11-15';
-const clean = generateDemoTeam({ teamId: DEMO_TEAM_ID, today, timeZone: 'America/New_York', coachUserId: '00000000-0000-4000-8000-0000000000c1', teamChannelId: '00000000-0000-4000-8000-0000000000c2' });
+const clean = generateDemoTeam({ teamId: DEMO_TEAM_ID, today, timeZone: 'America/New_York', coachUserId: '00000000-0000-4000-8000-0000000000c1', coachId: '00000000-0000-4000-8000-0000000000c3', teamChannelId: '00000000-0000-4000-8000-0000000000c2' });
 
 /** A copy of the clean snapshot with one table changed. */
 function tamper(table: keyof DemoSnapshot['tables'], change: (rows: DemoRow[]) => DemoRow[]): DemoSnapshot {

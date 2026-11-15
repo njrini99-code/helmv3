@@ -221,3 +221,40 @@ CREATE OR REPLACE TRIGGER "golf_team_coach_staff_leave_team_chats" AFTER DELETE 
 CREATE OR REPLACE TRIGGER "golf_participants_unpin_on_leave" AFTER DELETE ON "public"."golf_conversation_participants" FOR EACH ROW EXECUTE FUNCTION "helm_private"."golf_unpin_on_participant_change"();
 
 CREATE OR REPLACE TRIGGER "golf_participants_unpin_on_hide" AFTER UPDATE OF "hidden_at" ON "public"."golf_conversation_participants" FOR EACH ROW WHEN ((("new"."hidden_at" IS NOT NULL) AND ("old"."hidden_at" IS NULL))) EXECUTE FUNCTION "helm_private"."golf_unpin_on_participant_change"();
+
+-- Demo write guard (HELD 20261115210100, DD-13): signed-in accounts cannot write demo-team rows
+CREATE OR REPLACE TRIGGER "golf_demo_write_guard" BEFORE INSERT OR DELETE OR UPDATE ON "public"."golf_announcements" FOR EACH ROW EXECUTE FUNCTION "helm_private"."golf_demo_write_guard"();
+
+CREATE OR REPLACE TRIGGER "golf_demo_write_guard" BEFORE INSERT OR DELETE OR UPDATE ON "public"."golf_documents" FOR EACH ROW EXECUTE FUNCTION "helm_private"."golf_demo_write_guard"();
+
+CREATE OR REPLACE TRIGGER "golf_demo_write_guard" BEFORE INSERT OR DELETE OR UPDATE ON "public"."golf_event_attendance" FOR EACH ROW EXECUTE FUNCTION "helm_private"."golf_demo_write_guard"('event_id', 'golf_events');
+
+CREATE OR REPLACE TRIGGER "golf_demo_write_guard" BEFORE INSERT OR DELETE OR UPDATE ON "public"."golf_events" FOR EACH ROW EXECUTE FUNCTION "helm_private"."golf_demo_write_guard"();
+
+CREATE OR REPLACE TRIGGER "golf_demo_write_guard" BEFORE INSERT OR DELETE OR UPDATE ON "public"."golf_holes" FOR EACH ROW EXECUTE FUNCTION "helm_private"."golf_demo_write_guard"('round_id', 'golf_rounds');
+
+CREATE OR REPLACE TRIGGER "golf_demo_write_guard" BEFORE INSERT OR DELETE OR UPDATE ON "public"."golf_message_attachments" FOR EACH ROW EXECUTE FUNCTION "helm_private"."golf_demo_write_guard"('message_id', 'golf_messages');
+
+CREATE OR REPLACE TRIGGER "golf_demo_write_guard" BEFORE INSERT OR DELETE OR UPDATE ON "public"."golf_messages" FOR EACH ROW EXECUTE FUNCTION "helm_private"."golf_demo_write_guard"('conversation_id', 'golf_conversations');
+
+CREATE OR REPLACE TRIGGER "golf_demo_write_guard" BEFORE INSERT OR DELETE OR UPDATE ON "public"."golf_practice_plans" FOR EACH ROW EXECUTE FUNCTION "helm_private"."golf_demo_write_guard"();
+
+CREATE OR REPLACE TRIGGER "golf_demo_write_guard" BEFORE INSERT OR DELETE OR UPDATE ON "public"."golf_qualifier_entries" FOR EACH ROW EXECUTE FUNCTION "helm_private"."golf_demo_write_guard"('qualifier_id', 'golf_qualifiers');
+
+CREATE OR REPLACE TRIGGER "golf_demo_write_guard" BEFORE INSERT OR DELETE OR UPDATE ON "public"."golf_qualifiers" FOR EACH ROW EXECUTE FUNCTION "helm_private"."golf_demo_write_guard"();
+
+CREATE OR REPLACE TRIGGER "golf_demo_write_guard" BEFORE INSERT OR DELETE OR UPDATE ON "public"."golf_rounds" FOR EACH ROW EXECUTE FUNCTION "helm_private"."golf_demo_write_guard"();
+
+CREATE OR REPLACE TRIGGER "golf_demo_write_guard" BEFORE INSERT OR DELETE OR UPDATE ON "public"."golf_shots" FOR EACH ROW EXECUTE FUNCTION "helm_private"."golf_demo_write_guard"('round_id', 'golf_rounds');
+
+CREATE OR REPLACE TRIGGER "golf_demo_write_guard" BEFORE INSERT OR DELETE OR UPDATE ON "public"."golf_task_assignments" FOR EACH ROW EXECUTE FUNCTION "helm_private"."golf_demo_write_guard"('task_id', 'golf_tasks');
+
+CREATE OR REPLACE TRIGGER "golf_demo_write_guard" BEFORE INSERT OR DELETE OR UPDATE ON "public"."golf_tasks" FOR EACH ROW EXECUTE FUNCTION "helm_private"."golf_demo_write_guard"();
+
+CREATE OR REPLACE TRIGGER "golf_demo_write_guard" BEFORE INSERT OR DELETE OR UPDATE ON "public"."golf_team_members" FOR EACH ROW EXECUTE FUNCTION "helm_private"."golf_demo_write_guard"();
+
+CREATE OR REPLACE TRIGGER "golf_demo_write_guard" BEFORE INSERT OR DELETE OR UPDATE ON "public"."golf_tournament_entries" FOR EACH ROW EXECUTE FUNCTION "helm_private"."golf_demo_write_guard"();
+
+CREATE OR REPLACE TRIGGER "golf_demo_write_guard" BEFORE INSERT OR DELETE OR UPDATE ON "public"."golf_tournaments" FOR EACH ROW EXECUTE FUNCTION "helm_private"."golf_demo_write_guard"();
+
+CREATE OR REPLACE TRIGGER "golf_demo_write_guard" BEFORE INSERT OR DELETE OR UPDATE ON "public"."golf_travel_itineraries" FOR EACH ROW EXECUTE FUNCTION "helm_private"."golf_demo_write_guard"();

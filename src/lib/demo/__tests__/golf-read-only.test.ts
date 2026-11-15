@@ -21,6 +21,8 @@ vi.mock('@/lib/supabase/server', () => ({
 import {
   GolfDemoReadOnlyError,
   isGolfDemoReadOnlyError,
+  isGolfDemoDatabaseRefusal,
+  isGolfDemoRefusal,
   isCurrentSessionGolfDemo,
   assertGolfDemoWritable,
 } from '@/lib/demo/golf-read-only';
@@ -130,5 +132,20 @@ describe('isGolfDemoReadOnlyError', () => {
     expect(isGolfDemoReadOnlyError(new Error('nope'))).toBe(false);
     expect(isGolfDemoReadOnlyError(null)).toBe(false);
     expect(isGolfDemoReadOnlyError('GOLF_DEMO_READ_ONLY')).toBe(false);
+  });
+});
+
+describe('the database refusal (DD-13 demo write guard)', () => {
+  const refusal = { code: '42501', details: 'golf_demo_read_only', message: 'This is a shared demo team: changes are not saved.' };
+
+  it('recognises the PostgREST error the guard returns', () => {
+    expect(isGolfDemoDatabaseRefusal(refusal)).toBe(true);
+    expect(isGolfDemoRefusal(refusal)).toBe(true);
+  });
+
+  it('counts the app refusal too, and nothing else', () => {
+    expect(isGolfDemoRefusal(new GolfDemoReadOnlyError())).toBe(true);
+    expect(isGolfDemoRefusal({ code: '42501', details: 'permission denied' })).toBe(false);
+    expect(isGolfDemoDatabaseRefusal(null)).toBe(false);
   });
 });

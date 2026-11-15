@@ -16217,3 +16217,397 @@ BEGIN
 END $$;
 
 ALTER FUNCTION "public"."golf_team_members_identity_guard"() OWNER TO "postgres";
+
+-- Demo team generator (HELD 20261115210000): service role only, the demo team only; src/lib/golf/demo/writer.ts
+CREATE OR REPLACE FUNCTION "public"."golf_demo_apply"("p_team" "uuid", "p_table" "text", "p_items" "jsonb", "p_version" integer) RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $_$
+DECLARE
+  v_rel regclass;
+  v_cols text[];
+  v_pk text[];
+  v_keyed jsonb;
+  v_parent record;
+  v_bad bigint;
+  v_skipped text[];
+  v_written text[];
+  v_rows jsonb;
+  v_update text;
+  v_join text;
+BEGIN
+  PERFORM helm_private.golf_demo_check(p_team, p_table);
+  IF p_version IS NULL OR p_version < 1 THEN
+    RAISE EXCEPTION 'golf_demo_apply: a generator version is required';
+  END IF;
+  IF pg_catalog.jsonb_typeof(p_items) IS DISTINCT FROM 'array' THEN
+    RAISE EXCEPTION 'golf_demo_apply: items must be a JSON array';
+  END IF;
+  IF pg_catalog.jsonb_array_length(p_items) = 0 THEN
+    RETURN pg_catalog.jsonb_build_object('written', 0, 'skipped', '[]'::jsonb);
+  END IF;
+  IF pg_catalog.jsonb_array_length(p_items) > 2000 THEN
+    RAISE EXCEPTION 'golf_demo_apply: at most 2000 rows per call';
+  END IF;
+  v_rel := pg_catalog.to_regclass('public.' || pg_catalog.quote_ident(p_table));
+
+  -- Every item is {hash, row}; every row in one call carries the same columns,
+  -- and each is a real, writable column of the table.
+  IF EXISTS (
+    SELECT 1 FROM pg_catalog.jsonb_array_elements(p_items) AS e
+     WHERE pg_catalog.jsonb_typeof(e->'row') IS DISTINCT FROM 'object'
+        OR coalesce(e->>'hash', '') = ''
+  ) THEN
+    RAISE EXCEPTION 'golf_demo_apply: every item needs a hash and a row object';
+  END IF;
+  SELECT pg_catalog.array_agg(k ORDER BY k) INTO v_cols
+    FROM pg_catalog.jsonb_object_keys(p_items->0->'row') AS k;
+  IF EXISTS (
+    SELECT 1 FROM pg_catalog.jsonb_array_elements(p_items) AS e
+     WHERE (SELECT pg_catalog.array_agg(k ORDER BY k) FROM pg_catalog.jsonb_object_keys(e->'row') AS k)
+           IS DISTINCT FROM v_cols
+  ) THEN
+    RAISE EXCEPTION 'golf_demo_apply: every row in one call must carry the same columns';
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM pg_catalog.unnest(v_cols) AS c
+     WHERE NOT EXISTS (
+       SELECT 1 FROM pg_catalog.pg_attribute AS a
+        WHERE a.attrelid = v_rel AND a.attname = c AND a.attnum > 0
+          AND NOT a.attisdropped AND a.attgenerated = '')
+  ) THEN
+    RAISE EXCEPTION 'golf_demo_apply: a row names a column % does not have', p_table;
+  END IF;
+  SELECT pg_catalog.array_agg(pk.col ORDER BY pk.ord) INTO v_pk FROM helm_private.golf_demo_pk(p_table) AS pk;
+  IF v_pk IS NULL OR NOT (v_pk <@ v_cols) THEN
+    RAISE EXCEPTION 'golf_demo_apply: every % row must carry its primary key', p_table;
+  END IF;
+
+  -- The demo team only: by the row's own team_id, or through its parent.
+  IF EXISTS (
+    SELECT 1 FROM pg_catalog.pg_attribute AS a
+     WHERE a.attrelid = v_rel AND a.attname = 'team_id' AND a.attnum > 0 AND NOT a.attisdropped
+  ) THEN
+    IF NOT ('team_id' = ANY (v_cols)) OR EXISTS (
+      SELECT 1 FROM pg_catalog.jsonb_array_elements(p_items) AS e
+       WHERE e->'row'->>'team_id' IS DISTINCT FROM p_team::text
+    ) THEN
+      RAISE EXCEPTION 'golf_demo_apply: every % row must belong to the demo team', p_table
+        USING ERRCODE = '42501';
+    END IF;
+  ELSE
+    SELECT * INTO v_parent FROM helm_private.golf_demo_parent(p_table);
+    IF v_parent.parent_table IS NOT NULL THEN
+      IF NOT (v_parent.fk_column = ANY (v_cols)) THEN
+        RAISE EXCEPTION 'golf_demo_apply: every % row must carry %', p_table, v_parent.fk_column;
+      END IF;
+      EXECUTE pg_catalog.format(
+        'SELECT pg_catalog.count(*) FROM pg_catalog.jsonb_array_elements($1) AS e
+          WHERE NOT EXISTS (
+            SELECT 1 FROM public.%I AS p
+             WHERE p.id = (e->''row''->>%L)::uuid AND p.team_id = $2)',
+        v_parent.parent_table, v_parent.fk_column)
+        INTO v_bad USING p_items, p_team;
+      IF v_bad > 0 THEN
+        RAISE EXCEPTION 'golf_demo_apply: % % rows hang off a % row that is not the demo team''s',
+          v_bad, p_table, v_parent.parent_table
+          USING ERRCODE = '42501';
+      END IF;
+    END IF;
+  END IF;
+
+  -- Key every item once.
+  EXECUTE pg_catalog.format(
+    'SELECT pg_catalog.jsonb_agg(pg_catalog.jsonb_build_object(''k'', %s, ''h'', e->>''hash'', ''row'', e->''row''))
+       FROM pg_catalog.jsonb_array_elements($1) AS e',
+    helm_private.golf_demo_key_sql(p_table, '(e->''row''->>%L)'))
+    INTO v_keyed USING p_items;
+  IF (SELECT pg_catalog.count(DISTINCT x->>'k') FROM pg_catalog.jsonb_array_elements(v_keyed) AS x)
+     <> pg_catalog.jsonb_array_length(v_keyed) THEN
+    RAISE EXCEPTION 'golf_demo_apply: the same % key appears twice in one call', p_table;
+  END IF;
+
+  -- A key that exists but is not in the ledger is someone else's row: skip it.
+  SELECT pg_catalog.string_agg(pg_catalog.format('t.%1$I = r.%1$I', c), ' AND ') INTO v_join
+    FROM pg_catalog.unnest(v_pk) AS c;
+  EXECUTE pg_catalog.format(
+    'SELECT coalesce(pg_catalog.array_agg(x->>''k''), ''{}''::text[])
+       FROM pg_catalog.jsonb_array_elements($1) AS x
+      WHERE EXISTS (
+              SELECT 1 FROM pg_catalog.jsonb_populate_record(NULL::public.%1$I, x->''row'') AS r
+              JOIN public.%1$I AS t ON %2$s)
+        AND NOT EXISTS (
+              SELECT 1 FROM helm_private.golf_demo_ledger AS l
+               WHERE l.team_id = $2 AND l.table_name = $3 AND l.row_key = x->>''k'')',
+    p_table, v_join)
+    INTO v_skipped USING v_keyed, p_team, p_table;
+
+  SELECT coalesce(pg_catalog.jsonb_agg(x->'row'), '[]'::jsonb) INTO v_rows
+    FROM pg_catalog.jsonb_array_elements(v_keyed) AS x
+   WHERE NOT ((x->>'k') = ANY (v_skipped));
+  IF pg_catalog.jsonb_array_length(v_rows) = 0 THEN
+    RETURN pg_catalog.jsonb_build_object('written', 0, 'skipped', pg_catalog.to_jsonb(v_skipped));
+  END IF;
+
+  PERFORM helm_private.golf_demo_marks(p_table);
+
+  SELECT pg_catalog.string_agg(pg_catalog.format('%1$I = EXCLUDED.%1$I', c), ', ') INTO v_update
+    FROM pg_catalog.unnest(v_cols) AS c
+   WHERE NOT (c = ANY (v_pk));
+  EXECUTE pg_catalog.format(
+    'WITH w AS (
+       INSERT INTO public.%1$I AS t (%2$s)
+       SELECT %2$s FROM pg_catalog.jsonb_populate_recordset(NULL::public.%1$I, $1)
+       ON CONFLICT (%3$s) DO %4$s
+       RETURNING %5$s AS k
+     )
+     SELECT coalesce(pg_catalog.array_agg(w.k), ''{}''::text[]) FROM w',
+    p_table,
+    (SELECT pg_catalog.string_agg(pg_catalog.quote_ident(c), ', ') FROM pg_catalog.unnest(v_cols) AS c),
+    (SELECT pg_catalog.string_agg(pg_catalog.quote_ident(c), ', ') FROM pg_catalog.unnest(v_pk) AS c),
+    CASE WHEN v_update IS NULL THEN 'NOTHING' ELSE 'UPDATE SET ' || v_update END,
+    helm_private.golf_demo_key_sql(p_table, 't.%I::text'))
+    INTO v_written USING v_rows;
+
+  INSERT INTO helm_private.golf_demo_ledger AS l (team_id, table_name, row_key, row_hash, generator_version, written_at)
+  SELECT p_team, p_table, x->>'k', x->>'h', p_version, pg_catalog.now()
+    FROM pg_catalog.jsonb_array_elements(v_keyed) AS x
+   WHERE (x->>'k') = ANY (v_written)
+  ON CONFLICT (team_id, table_name, row_key) DO UPDATE
+    SET row_hash = EXCLUDED.row_hash,
+        generator_version = EXCLUDED.generator_version,
+        written_at = EXCLUDED.written_at;
+
+  RETURN pg_catalog.jsonb_build_object(
+    'written', pg_catalog.cardinality(v_written),
+    'skipped', pg_catalog.to_jsonb(v_skipped));
+END
+$_$;
+
+
+ALTER FUNCTION "public"."golf_demo_apply"("p_team" "uuid", "p_table" "text", "p_items" "jsonb", "p_version" integer) OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "public"."golf_demo_begin"("p_team" "uuid", "p_prune" boolean DEFAULT true) RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $_$
+DECLARE
+  v_table text;
+  v_match text;
+  v_n integer;
+  v_pruned integer := 0;
+  v_tables jsonb;
+BEGIN
+  PERFORM helm_private.golf_demo_check(p_team, NULL);
+
+  FOREACH v_table IN ARRAY CASE WHEN p_prune THEN helm_private.golf_demo_tables() ELSE '{}'::text[] END LOOP
+    SELECT pg_catalog.string_agg(
+             pg_catalog.format('t.%I = pg_catalog.split_part(l.row_key, ''|'', %s)::%s', pk.col, pk.ord, pk.typ),
+             ' AND ' ORDER BY pk.ord)
+      INTO v_match
+      FROM helm_private.golf_demo_pk(v_table) AS pk;
+    EXECUTE pg_catalog.format(
+      'DELETE FROM helm_private.golf_demo_ledger AS l
+        WHERE l.team_id = $1 AND l.table_name = $2
+          AND NOT EXISTS (SELECT 1 FROM public.%I AS t WHERE %s)',
+      v_table, v_match)
+      USING p_team, v_table;
+    GET DIAGNOSTICS v_n = ROW_COUNT;
+    v_pruned := v_pruned + v_n;
+  END LOOP;
+
+  IF p_prune THEN
+    DELETE FROM helm_private.golf_demo_ledger AS l
+     WHERE l.team_id = p_team AND l.table_name = 'golf_rounds#finished'
+       AND NOT EXISTS (SELECT 1 FROM public.golf_rounds AS r WHERE r.id = l.row_key::uuid);
+    GET DIAGNOSTICS v_n = ROW_COUNT;
+    v_pruned := v_pruned + v_n;
+  END IF;
+
+  SELECT coalesce(pg_catalog.jsonb_object_agg(s.table_name, s.keys), '{}'::jsonb)
+    INTO v_tables
+    FROM (
+      SELECT l.table_name, pg_catalog.jsonb_object_agg(l.row_key, l.row_hash) AS keys
+        FROM helm_private.golf_demo_ledger AS l
+       WHERE l.team_id = p_team
+       GROUP BY l.table_name
+    ) AS s;
+
+  RETURN pg_catalog.jsonb_build_object('pruned', v_pruned, 'tables', v_tables);
+END
+$_$;
+
+
+ALTER FUNCTION "public"."golf_demo_begin"("p_team" "uuid", "p_prune" boolean) OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "public"."golf_demo_finish_rounds"("p_team" "uuid", "p_rounds" "jsonb", "p_version" integer) RETURNS integer
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+DECLARE
+  v_round record;
+  v_player uuid;
+  v_players uuid[] := '{}';
+  v_done integer := 0;
+BEGIN
+  PERFORM helm_private.golf_demo_check(p_team, NULL);
+  IF pg_catalog.jsonb_typeof(p_rounds) IS DISTINCT FROM 'array' THEN
+    RAISE EXCEPTION 'golf_demo_finish_rounds: rounds must be a JSON array of {id, hash}';
+  END IF;
+  IF pg_catalog.jsonb_array_length(p_rounds) > 50 THEN
+    RAISE EXCEPTION 'golf_demo_finish_rounds: at most 50 rounds per call';
+  END IF;
+
+  FOR v_round IN
+    SELECT r.id, r.player_id, x->>'hash' AS hash
+      FROM pg_catalog.jsonb_array_elements(p_rounds) AS x
+      JOIN public.golf_rounds AS r ON r.id = (x->>'id')::uuid
+     WHERE r.team_id = p_team
+       AND coalesce(x->>'hash', '') <> ''
+       AND EXISTS (
+         SELECT 1 FROM helm_private.golf_demo_ledger AS l
+          WHERE l.team_id = p_team AND l.table_name = 'golf_rounds' AND l.row_key = r.id::text)
+     ORDER BY r.round_date, r.id
+  LOOP
+    -- Each stats function may set its own mark; set ours again before each.
+    PERFORM helm_private.golf_demo_marks('golf_rounds');
+    PERFORM public.recompute_golf_round_totals(v_round.id);
+    UPDATE public.golf_rounds SET status = status WHERE id = v_round.id AND status = 'completed';
+    PERFORM helm_private.golf_demo_marks('golf_rounds');
+    PERFORM public.recalculate_round_strokes_gained(v_round.id);
+    INSERT INTO helm_private.golf_demo_ledger AS l (team_id, table_name, row_key, row_hash, generator_version, written_at)
+    VALUES (p_team, 'golf_rounds#finished', v_round.id::text, v_round.hash, p_version, pg_catalog.now())
+    ON CONFLICT (team_id, table_name, row_key) DO UPDATE
+      SET row_hash = EXCLUDED.row_hash,
+          generator_version = EXCLUDED.generator_version,
+          written_at = EXCLUDED.written_at;
+    v_players := pg_catalog.array_append(v_players, v_round.player_id);
+    v_done := v_done + 1;
+  END LOOP;
+
+  FOR v_player IN SELECT DISTINCT p FROM pg_catalog.unnest(v_players) AS p LOOP
+    PERFORM helm_private.golf_demo_marks('golf_rounds');
+    PERFORM public.update_player_stats_strokes_gained(v_player);
+    PERFORM helm_private.golf_demo_marks('golf_rounds');
+    PERFORM public.refresh_player_stats_cache(v_player);
+  END LOOP;
+
+  RETURN v_done;
+END
+$$;
+
+
+ALTER FUNCTION "public"."golf_demo_finish_rounds"("p_team" "uuid", "p_rounds" "jsonb", "p_version" integer) OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "public"."golf_demo_remove"("p_team" "uuid", "p_table" "text", "p_keys" "jsonb") RETURNS integer
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $_$
+DECLARE
+  v_owned jsonb;
+  v_join text;
+  v_team text := '';
+  v_removed integer;
+  v_match text;
+  v_players uuid[] := '{}';
+  v_player uuid;
+BEGIN
+  PERFORM helm_private.golf_demo_check(p_team, p_table);
+  IF pg_catalog.jsonb_typeof(p_keys) IS DISTINCT FROM 'array' THEN
+    RAISE EXCEPTION 'golf_demo_remove: keys must be a JSON array of primary-key objects';
+  END IF;
+  IF pg_catalog.jsonb_array_length(p_keys) = 0 THEN
+    RETURN 0;
+  END IF;
+  IF pg_catalog.jsonb_array_length(p_keys) > 5000 THEN
+    RAISE EXCEPTION 'golf_demo_remove: at most 5000 keys per call';
+  END IF;
+
+  -- Only rows the generator wrote for the demo team.
+  EXECUTE pg_catalog.format(
+    'SELECT coalesce(pg_catalog.jsonb_agg(e), ''[]''::jsonb)
+       FROM pg_catalog.jsonb_array_elements($1) AS e
+      WHERE EXISTS (
+        SELECT 1 FROM helm_private.golf_demo_ledger AS l
+         WHERE l.team_id = $2 AND l.table_name = $3 AND l.row_key = %s)',
+    helm_private.golf_demo_key_sql(p_table, '(e->>%L)'))
+    INTO v_owned USING p_keys, p_team, p_table;
+  IF pg_catalog.jsonb_array_length(v_owned) = 0 THEN
+    RETURN 0;
+  END IF;
+
+  SELECT pg_catalog.string_agg(pg_catalog.format('t.%1$I = r.%1$I', pk.col), ' AND ' ORDER BY pk.ord) INTO v_join
+    FROM helm_private.golf_demo_pk(p_table) AS pk;
+  IF EXISTS (
+    SELECT 1 FROM pg_catalog.pg_attribute AS a
+     WHERE a.attrelid = pg_catalog.to_regclass('public.' || pg_catalog.quote_ident(p_table))
+       AND a.attname = 'team_id' AND a.attnum > 0 AND NOT a.attisdropped
+  ) THEN
+    v_team := ' AND t.team_id = $2';
+  END IF;
+
+  PERFORM helm_private.golf_demo_marks(p_table);
+  IF p_table = 'golf_rounds' THEN
+    -- The round lifecycle guard keeps completed rounds as permanent history,
+    -- and under the owner-write mark it skips a DELETE without an error (it
+    -- returns NEW, which a delete does not have). So a generator round is set
+    -- aside first (status 'abandoned', which the mark allows), then deleted
+    -- without the mark: the guard lets a round that is neither completed nor
+    -- in progress go, and no discard tombstone or live broadcast fires.
+    WITH gone AS (
+      UPDATE public.golf_rounds AS t
+         SET status = 'abandoned'
+        FROM pg_catalog.jsonb_populate_recordset(NULL::public.golf_rounds, v_owned) AS r
+       WHERE t.id = r.id AND t.team_id = p_team
+      RETURNING t.player_id
+    )
+    SELECT coalesce(pg_catalog.array_agg(DISTINCT gone.player_id), '{}') INTO v_players FROM gone;
+    PERFORM pg_catalog.set_config('helm.golf_lifecycle_write', '', true);
+  END IF;
+  EXECUTE pg_catalog.format(
+    'DELETE FROM public.%1$I AS t
+      USING pg_catalog.jsonb_populate_recordset(NULL::public.%1$I, $1) AS r
+      WHERE %2$s%3$s',
+    p_table, v_join, v_team)
+    USING v_owned, p_team;
+  GET DIAGNOSTICS v_removed = ROW_COUNT;
+
+  -- Forget only the rows that are gone: a row a trigger kept stays in the
+  -- ledger, so the next run tries again instead of losing track of it.
+  SELECT pg_catalog.string_agg(
+           pg_catalog.format('t.%I = pg_catalog.split_part(l.row_key, ''|'', %s)::%s', pk.col, pk.ord, pk.typ),
+           ' AND ' ORDER BY pk.ord)
+    INTO v_match
+    FROM helm_private.golf_demo_pk(p_table) AS pk;
+  EXECUTE pg_catalog.format(
+    'DELETE FROM helm_private.golf_demo_ledger AS l
+      USING pg_catalog.jsonb_array_elements($1) AS e
+      WHERE l.team_id = $2 AND l.table_name = $3 AND l.row_key = %s
+        AND NOT EXISTS (SELECT 1 FROM public.%I AS t WHERE %s)',
+    helm_private.golf_demo_key_sql(p_table, '(e->>%L)'), p_table, v_match)
+    USING v_owned, p_team, p_table;
+
+  IF p_table = 'golf_rounds' THEN
+    DELETE FROM helm_private.golf_demo_ledger AS l
+     WHERE l.team_id = p_team AND l.table_name = 'golf_rounds#finished'
+       AND NOT EXISTS (SELECT 1 FROM public.golf_rounds AS r WHERE r.id = l.row_key::uuid);
+    -- The season figures of the players whose rounds went.
+    FOREACH v_player IN ARRAY v_players LOOP
+      PERFORM helm_private.golf_demo_marks('golf_rounds');
+      PERFORM public.update_player_stats_strokes_gained(v_player);
+      PERFORM helm_private.golf_demo_marks('golf_rounds');
+      PERFORM public.refresh_player_stats_cache(v_player);
+    END LOOP;
+  END IF;
+
+  RETURN v_removed;
+END
+$_$;
+
+
+ALTER FUNCTION "public"."golf_demo_remove"("p_team" "uuid", "p_table" "text", "p_keys" "jsonb") OWNER TO "postgres";
+
+COMMENT ON FUNCTION "public"."golf_demo_apply"("p_team" "uuid", "p_table" "text", "p_items" "jsonb", "p_version" integer) IS 'Demo generator only (service_role): upsert rows of one generator table for the demo team, never overwriting a row the generator did not write. See src/lib/golf/demo/writer.ts.';
+COMMENT ON FUNCTION "public"."golf_demo_begin"("p_team" "uuid", "p_prune" boolean) IS 'Demo generator only (service_role): drop ledger rows whose table row is gone (unless p_prune is false), then return the ledger.';
+COMMENT ON FUNCTION "public"."golf_demo_finish_rounds"("p_team" "uuid", "p_rounds" "jsonb", "p_version" integer) IS 'Demo generator only (service_role): recompute totals, stats cache and strokes gained for generator rounds.';
+COMMENT ON FUNCTION "public"."golf_demo_remove"("p_team" "uuid", "p_table" "text", "p_keys" "jsonb") IS 'Demo generator only (service_role): delete rows the generator wrote for the demo team.';

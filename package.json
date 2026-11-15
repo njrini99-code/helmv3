@@ -47,6 +47,8 @@
     "dev:stop-idle": "node scripts/dev-stop-idle.mjs",
     "ios:dev": "bash scripts/ios-dev.sh",
     "gates:review": "node scripts/review-gate-local.mjs",
+    "golf:demo:refresh": "tsx scripts/golf-demo-refresh.ts",
+    "golf:demo:verify": "tsx scripts/verify-golf-demo-coverage.ts",
     "docs:check": "npm run docs:inventory-check && npm run docs:schema-drift && npm run docs:path-drift && npm run enforcement:check && npm run tool-authority:check && npm run docs:rules-current && npm run knowledge:check && npm run knowledge:world-model:check && npm run knowledge:entry-points:check && npm run knowledge:front-door-check && npm run db:retention-table:check",
     "docs:inventory-check": "node scripts/regen-docs.mjs --check",
     "docs:path-drift": "node scripts/check-doc-path-drift.mjs",

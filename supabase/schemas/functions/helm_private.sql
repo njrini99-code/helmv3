@@ -1759,3 +1759,211 @@ BEGIN
 END $$;
 
 ALTER FUNCTION "helm_private"."golf_team_channel_backfill"() OWNER TO "postgres";
+
+-- Demo team generator (HELD 20261115210000) and demo write guard (HELD 20261115210100): src/lib/golf/demo/writer.ts
+CREATE OR REPLACE FUNCTION "helm_private"."golf_demo_check"("p_team" "uuid", "p_table" "text") RETURNS "void"
+    LANGUAGE "plpgsql" STABLE
+    SET "search_path" TO ''
+    AS $$
+BEGIN
+  IF p_team IS DISTINCT FROM helm_private.golf_demo_team_id() THEN
+    RAISE EXCEPTION 'golf_demo: refusing team %, the generator writes the demo team only', p_team
+      USING ERRCODE = '42501';
+  END IF;
+  IF p_table IS NOT NULL AND NOT (p_table = ANY (helm_private.golf_demo_tables())) THEN
+    RAISE EXCEPTION 'golf_demo: % is not one of the generator''s tables', p_table
+      USING ERRCODE = '42501';
+  END IF;
+END
+$$;
+
+
+ALTER FUNCTION "helm_private"."golf_demo_check"("p_team" "uuid", "p_table" "text") OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "helm_private"."golf_demo_key_sql"("p_table" "text", "p_source" "text") RETURNS "text"
+    LANGUAGE "sql" STABLE
+    SET "search_path" TO ''
+    AS $$
+  SELECT 'pg_catalog.concat_ws(''|'', '
+    || pg_catalog.string_agg(pg_catalog.format(p_source, pk.col), ', ' ORDER BY pk.ord)
+    || ')'
+  FROM helm_private.golf_demo_pk(p_table) AS pk
+$$;
+
+
+ALTER FUNCTION "helm_private"."golf_demo_key_sql"("p_table" "text", "p_source" "text") OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "helm_private"."golf_demo_marks"("p_table" "text") RETURNS "void"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+BEGIN
+  PERFORM pg_catalog.set_config('helm.golf_demo_writer', 'generator', true);
+  PERFORM pg_catalog.set_config('helm.golf_lifecycle_write', 'atomic', true);
+  PERFORM pg_catalog.set_config('helm.round_live_off', 'on', true);
+  PERFORM pg_catalog.set_config('helm.defer_round_totals', 'on', true);
+  PERFORM pg_catalog.set_config(
+    'helm.tournament_write',
+    CASE
+      WHEN p_table = 'golf_events' THEN 'rounds'
+      WHEN p_table IN ('golf_tournament_entries', 'golf_tournament_round_lineups') THEN 'substitute'
+      ELSE ''
+    END,
+    true);
+END
+$$;
+
+
+ALTER FUNCTION "helm_private"."golf_demo_marks"("p_table" "text") OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "helm_private"."golf_demo_parent"("p_table" "text", OUT "parent_table" "text", OUT "fk_column" "text") RETURNS "record"
+    LANGUAGE "sql" IMMUTABLE
+    SET "search_path" TO ''
+    AS $$
+  SELECT m.parent_table, m.fk_column
+  FROM (VALUES
+    ('golf_event_attendance', 'golf_events', 'event_id'),
+    ('golf_qualifier_round_courses', 'golf_qualifiers', 'qualifier_id'),
+    ('golf_holes', 'golf_rounds', 'round_id'),
+    ('golf_shots', 'golf_rounds', 'round_id'),
+    ('golf_qualifier_entries', 'golf_qualifiers', 'qualifier_id'),
+    ('golf_qualifier_selections', 'golf_qualifiers', 'qualifier_id'),
+    ('golf_task_assignments', 'golf_tasks', 'task_id'),
+    ('golf_messages', 'golf_conversations', 'conversation_id')
+  ) AS m (child, parent_table, fk_column)
+  WHERE m.child = p_table
+$$;
+
+
+ALTER FUNCTION "helm_private"."golf_demo_parent"("p_table" "text", OUT "parent_table" "text", OUT "fk_column" "text") OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "helm_private"."golf_demo_pk"("p_table" "text") RETURNS TABLE("col" "text", "typ" "text", "ord" integer)
+    LANGUAGE "sql" STABLE
+    SET "search_path" TO ''
+    AS $$
+  SELECT a.attname::text, pg_catalog.format_type(a.atttypid, a.atttypmod), k.ord::integer
+  FROM pg_catalog.pg_index AS i
+  CROSS JOIN LATERAL pg_catalog.unnest(i.indkey::smallint[]) WITH ORDINALITY AS k (attnum, ord)
+  JOIN pg_catalog.pg_attribute AS a ON a.attrelid = i.indrelid AND a.attnum = k.attnum
+  WHERE i.indrelid = pg_catalog.to_regclass('public.' || pg_catalog.quote_ident(p_table))
+    AND i.indisprimary
+  ORDER BY k.ord
+$$;
+
+
+ALTER FUNCTION "helm_private"."golf_demo_pk"("p_table" "text") OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "helm_private"."golf_demo_tables"() RETURNS "text"[]
+    LANGUAGE "sql" IMMUTABLE
+    SET "search_path" TO ''
+    AS $$
+  SELECT ARRAY[
+    'golf_players',
+    'golf_team_members',
+    'golf_team_seasons',
+    'golf_events',
+    'golf_event_attendance',
+    'golf_tournaments',
+    'golf_tournament_rounds',
+    'golf_tournament_entries',
+    'golf_tournament_round_lineups',
+    'golf_tournament_field_teams',
+    'golf_tournament_field_scores',
+    'golf_qualifiers',
+    'golf_qualifier_round_courses',
+    'golf_rounds',
+    'golf_holes',
+    'golf_shots',
+    'golf_qualifier_entries',
+    'golf_qualifier_selections',
+    'golf_tournament_player_rounds',
+    'golf_practice_plans',
+    'golf_practice_plan_versions',
+    'golf_tasks',
+    'golf_task_assignments',
+    'golf_announcements',
+    'golf_travel_itineraries',
+    'golf_messages'
+  ]::text[]
+$$;
+
+
+ALTER FUNCTION "helm_private"."golf_demo_tables"() OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "helm_private"."golf_demo_team_id"() RETURNS "uuid"
+    LANGUAGE "sql" IMMUTABLE
+    SET "search_path" TO ''
+    AS $$
+  SELECT '6ecdd1a6-63fe-4beb-b094-00118f334163'::uuid
+$$;
+
+
+ALTER FUNCTION "helm_private"."golf_demo_team_id"() OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "helm_private"."golf_demo_write_guard"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+DECLARE
+  v_rows jsonb[];
+  v_row jsonb;
+  v_ref uuid;
+  v_team uuid;
+BEGIN
+  IF pg_catalog.current_setting('helm.golf_demo_writer', true) = 'generator' OR auth.uid() IS NULL THEN
+    RETURN CASE WHEN TG_OP = 'DELETE' THEN OLD ELSE NEW END;
+  END IF;
+
+  v_rows := CASE TG_OP
+    WHEN 'INSERT' THEN ARRAY[pg_catalog.to_jsonb(NEW)]
+    WHEN 'DELETE' THEN ARRAY[pg_catalog.to_jsonb(OLD)]
+    ELSE ARRAY[pg_catalog.to_jsonb(OLD), pg_catalog.to_jsonb(NEW)]
+  END;
+
+  FOREACH v_row IN ARRAY v_rows LOOP
+    v_team := NULL;
+    IF TG_NARGS = 0 THEN
+      v_team := (v_row->>'team_id')::uuid;
+    ELSE
+      v_ref := (v_row->>TG_ARGV[0])::uuid;
+      IF v_ref IS NOT NULL THEN
+        CASE TG_ARGV[1]
+          WHEN 'golf_rounds' THEN
+            SELECT r.team_id INTO v_team FROM public.golf_rounds AS r WHERE r.id = v_ref;
+          WHEN 'golf_events' THEN
+            SELECT e.team_id INTO v_team FROM public.golf_events AS e WHERE e.id = v_ref;
+          WHEN 'golf_conversations' THEN
+            SELECT c.team_id INTO v_team FROM public.golf_conversations AS c WHERE c.id = v_ref;
+          WHEN 'golf_messages' THEN
+            SELECT c.team_id INTO v_team
+              FROM public.golf_messages AS m
+              JOIN public.golf_conversations AS c ON c.id = m.conversation_id
+             WHERE m.id = v_ref;
+          WHEN 'golf_tasks' THEN
+            SELECT t.team_id INTO v_team FROM public.golf_tasks AS t WHERE t.id = v_ref;
+          WHEN 'golf_qualifiers' THEN
+            SELECT q.team_id INTO v_team FROM public.golf_qualifiers AS q WHERE q.id = v_ref;
+          ELSE
+            RAISE EXCEPTION 'golf_demo_write_guard: no lookup for %', TG_ARGV[1];
+        END CASE;
+      END IF;
+    END IF;
+
+    IF v_team = helm_private.golf_demo_team_id() THEN
+      RAISE EXCEPTION USING
+        ERRCODE = '42501',
+        MESSAGE = 'This is a shared demo team: changes are not saved.',
+        DETAIL = 'golf_demo_read_only',
+        HINT = 'The demo team is rewritten each day by its generator (src/lib/golf/demo).';
+    END IF;
+  END LOOP;
+
+  RETURN CASE WHEN TG_OP = 'DELETE' THEN OLD ELSE NEW END;
+END
+$$;
+
+
+ALTER FUNCTION "helm_private"."golf_demo_write_guard"() OWNER TO "postgres";
+
+COMMENT ON FUNCTION "helm_private"."golf_demo_team_id"() IS 'The one team the demo generator writes (src/lib/demo/config.ts DEMO_TEAM_ID).';
+COMMENT ON FUNCTION "helm_private"."golf_demo_write_guard"() IS 'DD-13: refuses a signed-in account''s writes to demo-team rows. The generator (helm.golf_demo_writer = generator) and writes with no signed-in user pass.';

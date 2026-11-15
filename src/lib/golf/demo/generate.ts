@@ -118,8 +118,10 @@ export interface GenerateInput {
   today: string;
   /** The team's IANA zone (golf_team_settings.timezone). */
   timeZone: string;
-  /** The auth user id of the demo team's head coach: author of plans, tasks, announcements and messages. */
+  /** The demo coach's login (auth user id): author of messages, practice plans, tournaments and selections. */
   coachUserId: string;
+  /** The same coach's golf_coaches.id: creator of events, qualifiers, tasks, announcements and trips (those columns point at golf_coaches). */
+  coachId: string;
   /** The team channel conversation; without one no messages are generated. */
   teamChannelId?: string | null;
   seed?: string;
@@ -232,7 +234,7 @@ const HANDICAP: Record<string, number> = {
 /** Generate the demo team as it should look on `today`. */
 export function generateDemoTeam(input: GenerateInput): DemoDataset {
   const seed = input.seed ?? DEFAULT_SEED;
-  const { teamId, today, timeZone, coachUserId } = input;
+  const { teamId, today, timeZone, coachUserId, coachId } = input;
   const id = (key: string) => stableUuid(seed, key);
   const at = (date: string, hhmm: string) => instantAt(date, hhmm, timeZone);
   const year = academicYearFor(today);
@@ -252,11 +254,13 @@ export function generateDemoTeam(input: GenerateInput): DemoDataset {
   const players: PlayerRecord[] = [];
   for (const story of DEMO_ROSTER) {
     const joined = addDays(year.anchor, story.joinedDay);
-    if (story.joinedDay > 0 && joined > today) continue;
+    const onTeam = story.joinedDay === 0 || joined <= today;
     const p: PlayerRecord = { story, id: id(`player:${story.key}`) };
-    players.push(p);
+    if (onTeam) players.push(p);
     const entryAug = `${graduationYear(story, year) - 4}-08-15`;
-    const joinedAt = story.joinedDay > 0 ? at(joined, '10:00') : at(entryAug, '10:00');
+    // A mid-year transfer joined a year earlier as far as the player row knows,
+    // so the row stays put between the new season and the day they join again.
+    const joinedAt = story.joinedDay === 0 ? at(entryAug, '10:00') : at(onTeam ? joined : addDays(joined, -365), '10:00');
     const playerRow: TablesInsert<'golf_players'> = {
       id: p.id,
       first_name: story.firstName,
@@ -272,7 +276,10 @@ export function generateDemoTeam(input: GenerateInput): DemoDataset {
       email: null,
       created_at: joinedAt,
     };
+    // Every player row is always written, so the yearly turn of the season never
+    // deletes a player (and with it their rounds) only to add them back later.
     put('golf_players', playerRow);
+    if (!onTeam) continue;
     const member: TablesInsert<'golf_team_members'> = {
       id: id(`member:${story.key}`),
       team_id: teamId,
@@ -546,7 +553,7 @@ export function generateDemoTeam(input: GenerateInput): DemoDataset {
   const addEvent = (plan: SeasonPlan, key: string, e: Omit<TablesInsert<'golf_events'>, 'id' | 'team_id'>, date: string, attendance: boolean) => {
     const eventId = id(`event:${plan.year.startYear}:${key}`);
     const createdAt = at(addDays(date, -14), '09:00');
-    put('golf_events', { id: eventId, team_id: teamId, status: 'confirmed', created_by: coachUserId, created_at: createdAt, updated_at: createdAt, recurring: false, ...e });
+    put('golf_events', { id: eventId, team_id: teamId, status: 'confirmed', created_by: coachId, created_at: createdAt, updated_at: createdAt, recurring: false, description: null, ...e });
     if (attendance) addAttendance(plan, eventId, date, String(e.start_time), String(e.event_type));
     return eventId;
   };
@@ -563,6 +570,13 @@ export function generateDemoTeam(input: GenerateInput): DemoDataset {
         event_id: eventId,
         player_id: p.id,
         created_at: at(addDays(date, -7), '12:00'),
+        // Every row carries every field, so a later change can clear one.
+        status: 'pending',
+        attendance_status: null,
+        checked_in: false,
+        checked_in_at: null,
+        notes: null,
+        rsvp_at: null,
       };
       if (injured && type !== 'meeting') {
         Object.assign(row, { status: 'excused', notes: 'Injury: cleared by the trainer for meetings only', rsvp_at: at(addDays(date, -2), '18:00') });
@@ -664,8 +678,10 @@ export function generateDemoTeam(input: GenerateInput): DemoDataset {
         selection_slots_coach_pick: 0,
         selection_state: status === 'completed' ? 'selected' : status === 'in_progress' ? 'scoring' : 'open',
         spots_available: q.spots,
-        target_tournament_id: id(`tournament:${plan.year.startYear}:${t.key}`),
-        created_by: coachUserId,
+        // The qualifier points at the tournament's round-1 calendar event, as the app links them
+        // (golf_qualifiers.target_tournament_id references golf_events; 20261025040000).
+        target_tournament_id: id(`event:${plan.year.startYear}:tournament:${t.key}:1`),
+        created_by: coachId,
         is_test: false,
         created_at: at(addDays(first, -10), '09:00'),
         updated_at: at(status === 'upcoming' ? addDays(first, -10) : addDays(last < today ? last : addDays(today, -1), 0), '18:00'),
@@ -814,7 +830,8 @@ export function generateDemoTeam(input: GenerateInput): DemoDataset {
           status: 'confirmed',
           requires_rsvp: false,
           recurring: false,
-          created_by: coachUserId,
+          description: null,
+          created_by: coachId,
           created_at: at(addDays(first, -60), '09:00'),
           updated_at: at(addDays(first, -60), '09:00'),
         } satisfies TablesInsert<'golf_events'>);
@@ -961,7 +978,7 @@ export function generateDemoTeam(input: GenerateInput): DemoDataset {
           requires_rsvp: false,
           recurring: false,
           description: 'Vans leave from the athletics center. Practice round on arrival.',
-          created_by: coachUserId,
+          created_by: coachId,
           created_at: at(addDays(first, -21), '09:00'),
           updated_at: at(addDays(first, -21), '09:00'),
         } satisfies TablesInsert<'golf_events'>);
@@ -992,7 +1009,7 @@ export function generateDemoTeam(input: GenerateInput): DemoDataset {
           uniform_requirements: 'Round 1 navy, round 2 white, round 3 grey.',
           notes: null,
           is_test: false,
-          created_by: coachUserId,
+          created_by: coachId,
           created_at: at(addDays(first, -21), '09:00'),
           updated_at: at(addDays(first, -21), '09:00'),
         } satisfies TablesInsert<'golf_travel_itineraries'>);
@@ -1087,7 +1104,7 @@ export function generateDemoTeam(input: GenerateInput): DemoDataset {
         status: done ? 'completed' : 'pending',
         category: 'travel',
         task_type: 'form',
-        assigned_by: coachUserId,
+        assigned_by: coachId,
         is_test: false,
         completed_at: done ? at(due, '20:00') : null,
         created_at: at(created, '09:00'),
@@ -1126,7 +1143,7 @@ export function generateDemoTeam(input: GenerateInput): DemoDataset {
         publish_at: at(announceOn, '16:00'),
         published_at: at(announceOn, '16:00'),
         is_test: false,
-        created_by: coachUserId,
+        created_by: coachId,
         created_at: at(announceOn, '15:30'),
         updated_at: at(announceOn, '16:00'),
       } satisfies TablesInsert<'golf_announcements'>);
