@@ -25,7 +25,7 @@ import { rsvpOf } from './calendar';
 import { parseAvailability, type ChAvailability } from './availability';
 import { playerMine, playerSeesMeeting, replyClosedAt, type ChRsvp } from '../screens/calendar/model';
 import { loadAttendanceCounts, loadInvitedCounts, type ChAttendanceCounts } from './attendance-counts';
-import { compareLeaderRows, confirmedLine, homeSubline, inviteDetail, quietDaysSince } from '../screens/home/model';
+import { compareLeaderRows, confirmedLine, homeSubline, inviteDetail, quietOf } from '../screens/home/model';
 import { firstName } from '../lib/names';
 import { weekdayMonthDay } from '../lib/dates';
 import type { MarkEntries } from '../lib/marks-cookie';
@@ -372,7 +372,7 @@ export async function loadCoachHome(input: {
   const coachFirst = firstName(input.coachName) || 'Coach';
   type RosterPlayer = { id: string; first_name: string | null; last_name: string | null; graduation_year: number | null };
   const rosterRead = Promise.resolve(
-    supabase.from('golf_team_members').select('availability, player:golf_players(id, first_name, last_name, graduation_year)').eq('team_id', input.teamId).eq('status', 'active'),
+    supabase.from('golf_team_members').select('availability, joined_at, player:golf_players(id, first_name, last_name, graduation_year)').eq('team_id', input.teamId).eq('status', 'active'),
   );
   const rosterOf = (res: Awaited<typeof rosterRead>) =>
     ((res.data ?? []) as Array<{ player: RosterPlayer | null }>).map((m) => m.player).filter((p): p is RosterPlayer => p !== null);
@@ -450,8 +450,10 @@ export async function loadCoachHome(input: {
   if (rosterRes.error) log('roster', rosterRes.error);
   const roster = rosterOf(rosterRes);
   const availabilityById = new Map<string, ChAvailability>();
-  for (const m of (rosterRes.data ?? []) as unknown as Array<{ availability: string | null; player: RosterPlayer | null }>) {
+  const joinedById = new Map<string, string | null>();
+  for (const m of (rosterRes.data ?? []) as unknown as Array<{ availability: string | null; joined_at?: string | null; player: RosterPlayer | null }>) {
     if (m.player) availabilityById.set(m.player.id, parseAvailability(m.availability));
+    if (m.player) joinedById.set(m.player.id, m.joined_at ?? null);
   }
   const { today, weekStart, weekEnd } = wk;
 
@@ -473,10 +475,13 @@ export async function loadCoachHome(input: {
   // Strokes gained: the one source, each player's last ten (QA-1).
   const wideByPlayer = groupByPlayer(readRounds);
   // Recency counts any countable round, nine holes included, on Roster's rounds and Roster's day count, whatever the span (prod audit
-  // 2026-11-15, HOME-P-01: Home, Roster and Ask gave three different "days since a round"): the season's counted rounds
-  // (`roundsForFigures`), the newest of them, and `quietDaysSince`.
+  // 2026-11-15, HOME-P-01: Home, Roster and Ask gave three different "days since a round"): the counted rounds (`roundsForFigures`),
+  // the newest of them, and `quietOf`. The read reaches a year back, so a player whose last round was before the season has a count
+  // too, and a player with none is quiet since the season started or they joined (DF-C-04: both were never named).
   const lastPlayed = new Map<string, string>();
-  for (const r of roundsForFigures(seasonOnly(readRounds, seasonStartDate(now, tz)))) {
+  const seasonStart = seasonStartDate(now, tz);
+  const quiet = (id: string) => quietOf(lastPlayed.get(id) ?? null, { seasonStart, joined: joinedById.get(id) ?? null }, today);
+  for (const r of roundsForFigures(readRounds)) {
     const d = r.round_date.slice(0, 10);
     if (!lastPlayed.has(r.player_id) || d > lastPlayed.get(r.player_id)!) lastPlayed.set(r.player_id, d);
   }
@@ -501,7 +506,7 @@ export async function loadCoachHome(input: {
       trend: season.trend,
       sgPerRound: playerStrokesGained(wideByPlayer.get(p.id) ?? []).total,
       status: season.status,
-      quietDays: lastPlayed.has(p.id) ? quietDaysSince(lastPlayed.get(p.id)!, today) : null,
+      quietDays: quiet(p.id).days,
       lastRound: lastScored.get(p.id) ?? null,
       availability: availabilityById.get(p.id) ?? 'available',
     });
@@ -528,7 +533,7 @@ export async function loadCoachHome(input: {
     subline: homeSubline(rows, {
       roundsError,
       nextCompetition: wk.nextCompetition,
-      unposted: roster.filter((p) => !byPlayer.get(p.id)?.length).map((p) => ({ name: nameOf(p), availability: availabilityById.get(p.id) ?? 'available' })),
+      unposted: roster.filter((p) => !byPlayer.get(p.id)?.length).map((p) => ({ name: nameOf(p), availability: availabilityById.get(p.id) ?? 'available', quietDays: quiet(p.id).days, none: quiet(p.id).none })),
     }),
     todayLabel,
     clock: { tz, day },
