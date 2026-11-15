@@ -284,6 +284,8 @@ before, after, baseline or evidence.
 | `P015__staff-invite__none__390x844__create-dark__after__667ce28.png` | after | 667ce28 | staff-invite (none), 390x844px, create-dark |
 | `P015__staff-invite__none__390x844__invalid__after__667ce28.png` | after | 667ce28 | staff-invite (none), 390x844px, invalid |
 | `P015__staff-invite__none__390x844__wrong-account__after__667ce28.png` | after | 667ce28 | staff-invite (none), 390x844px, wrong-account |
+| `P015__signup-pane__none__402__welcome__before__db3a99e.png` | before | db3a99e | signup-pane (none), 402x681px (iPhone 17 Pro, WebKit), welcome: the phone pane paints near-white |
+| `P015__signup-pane__none__402__welcome__after__db3a99e.png` | after | db3a99e | signup-pane (none), 402x681px (iPhone 17 Pro, WebKit), welcome: the phone pane paints the desktop's ivory paper (production page with the fixed rule injected) |
 
 ## Historical verification gaps
 
