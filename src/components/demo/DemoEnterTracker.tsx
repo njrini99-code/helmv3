@@ -21,8 +21,9 @@
 
 import { useEffect, useRef } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
-import posthog from 'posthog-js';
 import { DEMO_ENTER_EVENT } from '@/lib/demo/config';
+// posthog-js loads on first use, never in the first-load JavaScript (MAC-11; PostHogProvider.tsx).
+import { loadPostHog } from '@/components/providers/PostHogProvider';
 
 export function DemoEnterTracker() {
   const searchParams = useSearchParams();
@@ -37,11 +38,13 @@ export function DemoEnterTracker() {
     if (searchParams.get('demo') !== '1') return;
     fired.current = true;
 
-    // posthog-js is a no-op when not initialised (key absent / localhost),
-    // so this call is always safe.
-    posthog.capture(DEMO_ENTER_EVENT, {
-      $set_once: { demo_first_seen: new Date().toISOString() },
-    });
+    // Null when PostHog is off (key absent / localhost), so this call is always safe.
+    const firstSeen = new Date().toISOString();
+    void loadPostHog().then((posthog) =>
+      posthog?.capture(DEMO_ENTER_EVENT, {
+        $set_once: { demo_first_seen: firstSeen },
+      }),
+    );
 
     // Clean the param from the URL so it doesn't appear in subsequent navigations
     const next = new URLSearchParams(searchParams.toString());
