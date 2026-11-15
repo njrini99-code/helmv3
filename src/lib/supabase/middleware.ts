@@ -20,6 +20,7 @@ import {
   parseLastActivity,
 } from '@/lib/auth/session-idle-shared';
 import { getUserResilient } from '@/lib/auth/resilient-get-user';
+import { golfPlayerRedirect, isGolfPlayerOnly } from '@/lib/golf/player-redirects';
 import {
   isBounceWhenAuthedRoute,
   resolvePostAuthDestination,
@@ -890,6 +891,24 @@ export async function updateSession(request: NextRequest) {
     }
     url.searchParams.set('returnTo', pathname);
     return NextResponse.redirect(url);
+  }
+
+  // PMAC-11: a coach-only GolfHelm address opened by a player answers with a 307 here, before anything renders. Its
+  // layout redirect ran inside the dashboard's loading boundary, after the 200 had started streaming, so the player saw
+  // the coach page's title and a client-side bounce. Two indexed reads, and only on these few addresses.
+  if (user && sport === 'golf') {
+    const playerTarget = golfPlayerRedirect(pathname);
+    if (playerTarget) {
+      const [coachRow, playerRow] = await Promise.all([
+        supabase.from('golf_coaches').select('id').eq('user_id', user.id).maybeSingle(),
+        supabase.from('golf_players').select('id').eq('user_id', user.id).maybeSingle(),
+      ]);
+      if (!coachRow.error && !playerRow.error && isGolfPlayerOnly({ coach: coachRow.data, player: playerRow.data })) {
+        const res = NextResponse.redirect(new URL(playerTarget, request.url));
+        supabaseResponse.cookies.getAll().forEach((cookie) => res.cookies.set(cookie));
+        return res;
+      }
+    }
   }
 
   // Check role-based authorization for authenticated users

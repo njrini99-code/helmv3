@@ -16,7 +16,7 @@ import { ClubhouseContinueRoundRoute } from '@/clubhouse/routes/round-continue';
 import { frontierIndex, lastPlayIndex, normalizeStartHole } from '@/lib/golf/round-session/play-order';
 
 export const metadata: Metadata = {
-  title: 'Continue Round',
+  title: 'Continue round',
   description: 'Resume tracking your in-progress golf round shot by shot.',
 };
 

@@ -8,7 +8,7 @@ import { ClubhouseWhatsNewRoute } from '@/clubhouse/routes/whats-new';
 // ============================================================================
 
 export const metadata = {
-  title: "What's New",
+  title: "What's new",
   description: 'Lifecycle activity across your team in the past 7 days',
 };
 
@@ -38,7 +38,7 @@ export default async function WhatsNewPage() {
     // it was crashing on) entirely rather than papering over it.
     return (
       <FeatureUnavailable
-        title="What's New"
+        title="What's new"
         message={
           player
             ? "What's New is a coach-only feature. Players can see their own activity from CoachHelm."

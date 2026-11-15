@@ -373,9 +373,10 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
     if (evidenceOpen && narrowDesktop()) setEvidence(null);
   };
   const [settingsOpen, setSettingsOpen] = useState(false);
-  // ASK-2: on Safari the keyboard covers the page without moving it, and --keyboard-height is the app's. The box follows what's visible.
+  // ASK-2, ASK-P-01: on Safari the keyboard covers the page without moving it, and --keyboard-height is the app's. The shell's
+  // bar and the box follow what's visible together, so the heading stays under the bar and the dock sits on the keys.
   const askRoot = useRef<HTMLElement>(null);
-  useSafariKeyboardFit(askRoot, phone);
+  useSafariKeyboardFit(askRoot, phone, 'shell');
   const artifactView = artifact && <ArtifactView key={artifact.id} artifact={artifact} phone={phone} body={(b) => <ArtifactBody body={b} />} onPublish={(title) => { if (phone) setArtifact(null); ask(`Publish “${title}” for the team.`); }} onClose={() => setArtifact(null)} />;
   // The phone sheet's subject, kept after it closes so its exit still has the content it showed.
   const [sheetEvidence, setSheetEvidence] = useState<EvidenceFocus | null>(null);

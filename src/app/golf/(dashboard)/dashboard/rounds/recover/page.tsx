@@ -1,8 +1,11 @@
+import type { Metadata } from 'next';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import { FeatureUnavailable } from '@/components/fairway';
 import { getGolfDashboardRole } from '@/lib/auth/get-golf-dashboard-role';
 import { ClubhouseRoundRecoverRoute } from '@/clubhouse/routes/round-recover';
+
+export const metadata: Metadata = { title: 'Recover round' };
 
 export default async function RecoverRoundPage() {
   const session = await getGolfSessionProfile();

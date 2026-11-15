@@ -4,7 +4,7 @@ import { ClubhouseQualifiersRoute } from '@/clubhouse/routes/qualifiers';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 
 export const metadata: Metadata = {
-  title: 'Edit Qualifier',
+  title: 'Edit qualifier',
   description: 'Edit an existing team qualifier',
 };
 

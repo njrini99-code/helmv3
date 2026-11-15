@@ -335,10 +335,15 @@ function usePhoneEdges(hero: boolean) {
       body.style.backgroundColor = page;
       // The status area is always the frame's green; the bar's own ::before carries it up through a pull (owner call, sweep).
       meta.content = green;
+      // So the app's status bar draws light glyphs on it in both themes (CHROME-P-01; CapacitorProvider watches this).
+      const glyphsWere = html.dataset.statusBar;
+      html.dataset.statusBar = 'light';
       const tag = meta;
       restore = () => {
         html.style.backgroundColor = was.html;
         body.style.backgroundColor = was.body;
+        if (glyphsWere === undefined) delete html.dataset.statusBar;
+        else html.dataset.statusBar = glyphsWere;
         if (created) tag.remove();
         else tag.content = before;
       };
