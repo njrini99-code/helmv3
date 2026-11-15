@@ -34,3 +34,24 @@ describe('isEmojiOnly (MSG-204)', () => {
     for (const t of ['ok 👍', '👍👍👍👍', '12', '  ', '']) expect(isEmojiOnly(t), t).toBe(false);
   });
 });
+
+describe('threadItems keys (Sentry JAVASCRIPT-NEXTJS-1EH / 1MG)', () => {
+  it('gives every item a unique React key even when a day comes back round (out-of-order input)', () => {
+    // 2026-11-15: /clubhouse-preview/messages logged "Encountered two children with the same key, `d2026-10-15`"
+    // 35 times in an hour. A day separator keyed on the day alone collides when the thread revisits a day.
+    const items = threadItems(
+      [msg('a', 'dan', '2026-10-15T15:00:00Z'), msg('b', 'amy', '2026-10-16T15:00:00Z'), msg('c', 'dan', '2026-10-15T16:00:00Z')],
+      NOW,
+      TZ,
+    );
+    const keys = items.map((i) => i.key);
+    expect(new Set(keys).size).toBe(keys.length);
+  });
+
+  it('keeps one separator key stable for a day as long as its first message is unchanged', () => {
+    const first = threadItems([msg('a', 'dan', '2026-10-15T15:00:00Z')], NOW, TZ)[0]!;
+    const more = threadItems([msg('a', 'dan', '2026-10-15T15:00:00Z'), msg('b', 'dan', '2026-10-15T15:05:00Z')], NOW, TZ)[0]!;
+    expect(first.kind).toBe('day');
+    expect(more.key).toBe(first.key);
+  });
+});
