@@ -956,28 +956,34 @@
   --ch-green-raised-shadow: 0 1px 2px rgb(8 43 28 / 0.2), 0 6px 12px -4px rgb(8 43 28 / 0.36),
     inset 0 1px 0 rgb(255 255 255 / 0.18), inset 0 -1px 0 rgb(0 0 0 / 0.15);
 
-  /* Motion (D-64, the v2 design's gh-polish.css and gh-core.js). No count-ups and no staggers.
-     press: a key (.ch-btn, or [data-ch-press] up to 240px) shrinks about 6px (lib/press.ts) and springs back over
-     release; a row or a wider control deepens its tint instead (--ch-ledger-row-press).
-     quick: hover, toggles, the tab underline. base: sheets, panels, pushes, crossfades and swaps (ui/Swap.tsx).
-     reveal: the sign-in handoff curtain lifting (lib/handoff.ts) and a deliberate single rise (--ch-reveal-rise). The
-     staggered first-paint reveal ended on 2026-10-01: a page is visible at once under the page crossfade. */
-  --ch-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --ch-ease-io: cubic-bezier(0.65, 0, 0.35, 1);
-  /* The one curve for a tap-started enter or exit (production audit 2026-11-15, S3.1): sheets, covers, a phone push and
-     pop. Front-loaded, so a surface leaves at speed as if thrown; a released drag finishes on CH_SPRING instead. */
-  --ch-ease-ios: cubic-bezier(0.32, 0.72, 0, 1);
+  /* Motion: the whole vocabulary (MOTION-AND-VISUAL 3.2, production audit 2026-11-15 S3), mirrored in lib/motion.ts.
+     Three things move: the page (push, pop, back swipe), the overlay (sheet, menu, palette, toast) and the control under
+     the finger (press, segment thumb, strip pill). Content never moves on its own: first paint is still, late content
+     crossfades over quick, and nothing overshoots or loops but the working dots while work runs. Reduce Motion turns
+     every travel into a quick opacity fade.
+     press 110: press down, a menu out. quick 180: fades, a menu in, crossfades, Reduce Motion. base 260: the pill, the
+     thumb, a toast in, a list insert, a FLIP. release 280: a press let go, a sheet out. marks 360: chart marks gliding,
+     first-view bars. reveal 520: a push, a pop, a sheet in.
+     ease-ios travels (everything that moves across the screen); ease-out is a press going down and things leaving. */
   --ch-dur-press: 110ms;
   --ch-dur-quick: 180ms;
   --ch-dur-base: 260ms;
   --ch-dur-release: 280ms;
+  --ch-dur-marks: 360ms;
   --ch-dur-reveal: 520ms;
-  /* A row's pressed tint waits this long after the finger lands (UIKit delays a cell's highlight the same way), so a
-     scroll that starts on a row never flashes it; letting go clears it at once. Kept with reduced motion: it isn't motion. */
-  --ch-dur-press-delay: 50ms;
-  /* Stats dims for a window change only after this beat (A11), so a fast answer never flickers; leaving busy clears at
-     once. Kept with reduced motion and Animations off: it is a wait, not motion. */
+  --ch-ease-ios: cubic-bezier(0.32, 0.72, 0, 1);
+  --ch-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  /* Loading (3.9): draw nothing new for busy-delay; once a skeleton shows, hold it busy-min so it never flashes
+     (lib/use-busy.ts). A wait, not motion: kept with reduced motion and Animations off. */
   --ch-dur-busy-delay: 150ms;
+  --ch-dur-busy-min: 300ms;
+
+  /* Retiring (3.2): every motion token below is outside the vocabulary. Each may only lose uses (the motion gate,
+     src/clubhouse/__tests__/motion-gate.test.ts, holds the count in config/clubhouse/motion-ratchet.json); write the
+     vocabulary token in new code. --ch-ease is --ch-ease-out under its old name; --ch-ease-sheet stays one release. */
+  --ch-ease: var(--ch-ease-out);
+  --ch-ease-io: cubic-bezier(0.65, 0, 0.35, 1);
+  --ch-dur-press-delay: 50ms;
   --ch-ease-sheet: var(--ch-ease-ios);
   /* Messages v2: the iOS keyboard's ride (MOT-KB-1), on --ch-ease-sheet; lib/motion.ts CH_MS.keyboard. */
   --ch-dur-keyboard: 480ms;
@@ -1009,8 +1015,7 @@
   --ch-dur-live: 2.8s;
   /* The pending hairline's sweep (LinkPending, shell.css). */
   --ch-dur-sweep: 900ms;
-  /* The mockups' own beats: chart marks settling (360), a story's body (420), a typing dot's cycle and its step, a story. */
-  --ch-dur-marks: 360ms;
+  /* The mockups' own beats: a story's body (420), a typing dot's cycle and its step, a story. */
   --ch-dur-word: 320ms;
   --ch-dur-crossfade-rm: 180ms;
   --ch-dur-story-body: 420ms;

@@ -77,7 +77,7 @@ describe('D-64 springs (extension, 2026-10-08)', () => {
       expect(high).toBeGreaterThan(1);
       expect(high).toBeLessThan(1.01);
     }
-    for (const kind of ['smooth', 'settle', 'pop', 'lift', 'pour', 'reveal', 'gesture'] as const) {
+    for (const kind of ['smooth', 'settle', 'pop', 'lift', 'reveal', 'gesture'] as const) {
       let high = 0;
       for (let t = 0; t <= 1.5; t += 0.001) high = Math.max(high, chSpringAt(kind, t));
       expect(high, kind).toBeLessThanOrEqual(1);

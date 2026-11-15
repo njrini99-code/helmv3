@@ -99,8 +99,8 @@ describe('CH-1606 press', () => {
 });
 
 describe('v2 durations', () => {
-  it('are press 110, quick 180, base 260, release 280 and reveal 520ms', () => {
-    expect(CH_DUR).toEqual({ press: 0.11, quick: 0.18, base: 0.26, release: 0.28, reveal: 0.52 });
+  it('are press 110, quick 180, base 260, release 280, marks 360 and reveal 520ms (3.2)', () => {
+    expect(CH_DUR).toEqual({ press: 0.11, quick: 0.18, base: 0.26, release: 0.28, marks: 0.36, reveal: 0.52 });
   });
 });
 

@@ -1,22 +1,27 @@
 import type { Transition } from 'motion/react';
 
 /**
- * Clubhouse motion (D-64, the v2 design's gh-polish.css and gh-core.js),
- * mirrored from the tokens:
- *   press 110ms, quick 180ms (hover, toggles, the tab underline), base 260ms
- *   (sheets, panels, pushes, crossfades), release 280ms on the spring,
- *   reveal 520ms (the sign-in handoff curtain lifting, lib/handoff.ts; the staggered first-paint reveal ended on
- *   2026-10-01, so a page is visible at once under the page crossfade).
- *   Curves: ease-out (.22,1,.36,1), in-out (.65,0,.35,1) and the iOS curve (.32,.72,0,1) for every tap-started enter
- *   and exit (CH_EASE_IOS; production audit 2026-11-15, S3.1). The overshooting (.34,1.3,.64,1) is gone (MOT-08).
- *   Since 2026-10-08, real springs on the same durations for what moves and can be interrupted or thrown (CH_SPRINGS).
- * Banned: count-ups and staggers, except the quick chat's content rise on open and its told coins (coachhelm 07 M-CONTENT, M-TOLD). One exception (owner decision 1, 2026-10-24, OQ-16 / B9): when a chart's figures change
- * (a new window), its bars, dots and lines glide to their new places over the base beat (useGlide, lib/motion-glide.ts).
- * Never on first paint, never under reduced motion, and the digits beside them do not roll: they take the new figure at once.
+ * Clubhouse motion: the whole vocabulary (MOTION-AND-VISUAL 3.2; production audit 2026-11-15, S3), mirrored from
+ * styles/tokens.css. Three things move: the page, the overlay and the control under the finger. Content never moves on
+ * its own, first paint is still, nothing overshoots, and the working dots are the one loop.
+ *   Durations (CH_DUR in seconds for motion/react, CH_DUR_MS in ms for WAAPI and timers): press 110 (press down, a menu
+ *   out), quick 180 (fades, a menu in, crossfades, Reduce Motion), base 260 (the pill, the thumb, a toast in, a list
+ *   insert, a FLIP), release 280 (a press let go, a sheet out), marks 360 (chart marks gliding, first-view bars),
+ *   reveal 520 (a push, a pop, a sheet in).
+ *   Curves: the iOS curve (.32,.72,0,1) for everything that travels (CH_EASE_IOS), ease-out (.22,1,.36,1) for a press
+ *   going down and things leaving (CH_EASE_OUT). The overshooting (.34,1.3,.64,1) is gone (MOT-08).
+ *   One spring (CH_SPRING): critically damped, for a released gesture, seeded with the finger's speed.
+ *   Loading (CH_BUSY): nothing for 150 ms, then a static skeleton held at least 300 ms (lib/use-busy.ts).
+ * Banned: count-ups and staggers, and first-paint motion. A chart's figures changing (a new window) glide its marks to
+ * their new places over the marks beat (useGlide, lib/motion-glide.ts); the digits beside them take the new figure at once.
  */
-export const CH_EASE = [0.22, 1, 0.36, 1] as const;
+/** A press going down and things leaving (--ch-ease-out). */
+export const CH_EASE_OUT = [0.22, 1, 0.36, 1] as const;
+/** Retiring: CH_EASE_OUT under its old name. */
+export const CH_EASE = CH_EASE_OUT;
+/** Retiring (3.2): the in-out curve. New code travels on CH_EASE_IOS or leaves on CH_EASE_OUT. */
 export const CH_EASE_IO = [0.65, 0, 0.35, 1] as const;
-/** A chart's marks settling on a changed value, in ms (--ch-dur-marks): the Stats scoring line's morph on a window change. */
+/** A chart's marks gliding to a changed value, and a bar chart's first-view growth, in ms (--ch-dur-marks). */
 export const CH_MARKS_MS = 360;
 /** One pass of the progress sweep, in ms (--ch-dur-sweep). */
 export const CH_SWEEP_MS = 900;
@@ -26,8 +31,29 @@ export const CH_DUR = {
   quick: 0.18,
   base: 0.26,
   release: 0.28,
+  marks: 0.36,
   reveal: 0.52,
 } as const;
+/** CH_DUR in milliseconds, the tokens' own unit, for WAAPI and timers. */
+export const CH_DUR_MS = {
+  press: 110,
+  quick: 180,
+  base: 260,
+  release: 280,
+  marks: 360,
+  reveal: 520,
+} as const;
+
+/** The one spring (3.2): mass 1, stiffness 157.9, damping 25.13, exactly critically damped (WWDC23's 0.5 s, bounce 0). */
+export const CH_SPRING = { mass: 1, stiffness: 157.9, damping: 25.13 } as const;
+/** How far past its stop a dragged surface follows the finger (UIKit's rubber band coefficient). */
+export const CH_RUBBER_BAND = 0.55;
+/** The back swipe (S4.2): starts within `edge` px of the left edge, commits past `commitProgress` of the width or above `commitVelocity` px/ms. */
+export const CH_SWIPE = { edge: 20, commitProgress: 0.5, commitVelocity: 0.7 } as const;
+/** A sheet dragged down (3.4): dismisses past `commitFraction` of its height or above `commitVelocity` px/ms. */
+export const CH_SHEET = { commitFraction: 0.25, commitVelocity: 0.4 } as const;
+/** Loading (3.9), in ms: draw nothing new for `delay`; once a skeleton shows, hold it at least `min`. */
+export const CH_BUSY = { delay: 150, min: 300 } as const;
 
 /** Wheel easing on the desktop canvas (smooth-scroll.ts): how long a wheel step glides. Scrolling, not UI motion, so it
  *  sits outside CH_DUR; reduced motion and Animations off turn it off entirely. */
@@ -74,6 +100,7 @@ export const CH_SPRINGS = {
    * The names stay for their callers; the 0.1 to 0.35 overshoots they carried are gone.
    */
   settle: CH_SPRING_BASE,
+  /** Retiring (3.12): pop and lift are the smooth spring under other names, until their last callers move to settle. */
   pop: CH_SPRING_BASE,
   lift: CH_SPRING_BASE,
   reveal: { visualDuration: CH_DUR.reveal, bounce: 0 },
@@ -82,12 +109,11 @@ export const CH_SPRINGS = {
   // 31 Oct 2026 covered larger bounces, which the audit spec replaces).
   send: { visualDuration: 0.32, bounce: 0.06 },
   launch: { visualDuration: 0.35, bounce: 0.08 },
-  /** The quick chat panel pouring out of the Helm key: the smooth spring (MOT-09; the panel opens as a popover, S3.5). */
-  pour: CH_SPRING_BASE,
   /**
-   * The one spring a released gesture finishes on (production audit 2026-11-15, S3.1, S4.2): Apple's 0.5 s with no
-   * bounce, mass 1, stiffness 157.9, damping 25.13, seeded with the finger's speed. framer reads a visual duration as
-   * 1.2 times shorter than Apple's, so 0.5 s is written as 0.5 / 1.2. The back swipe's commit and its spring home ride it.
+   * CH_SPRING, the one spring a released gesture finishes on (production audit 2026-11-15, S3.1, S4.2): Apple's 0.5 s
+   * with no bounce, seeded with the finger's speed. framer reads a visual duration as 1.2 times shorter than Apple's,
+   * so 0.5 s is written as 0.5 / 1.2 (stiffness (2π / 0.5)² = 157.9, damping 2√157.9 = 25.13). The back swipe's commit
+   * and its spring home ride it.
    */
   gesture: { visualDuration: 0.5 / 1.2, bounce: 0 },
 } as const;
