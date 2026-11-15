@@ -7,8 +7,8 @@ import { Button } from '../../ui/Button';
 /**
  * How many rounds a rounds list draws at first, and adds each time "Show earlier rounds" is pressed (production audit
  * 2026-11-15, MAC-01 and PMAC-02). A team's whole history drawn at once made the tap that left Rounds a 1.1 s task on a
- * phone (4.4 s at 4x CPU): the list unmounted every row in one commit. The newest two months show, at most this many
- * rows; older months wait for the press.
+ * phone (4.4 s at 4x CPU): the list unmounted every row in one commit. By month the list opens on whole months that fit
+ * in a page; older months wait for the press.
  */
 export const ROUNDS_PAGE = 40;
 
@@ -35,11 +35,19 @@ export function windowGroups<T, G extends { rounds: readonly T[] }>(groups: read
   return { shown, hidden };
 }
 
-/** The first window: by month, the newest two months (at most a page of rows); any other grouping, a page of rows. */
+/**
+ * The first window. By month: the newest whole months that fit in a page, so a short history shows whole and a long one
+ * stops at a month's end; a page when they come to less than half of one (a month cut short keeps its heading's count
+ * and average). Any other grouping: a page.
+ */
 export function firstWindow(groups: readonly { rounds: readonly unknown[] }[], byMonth: boolean): number {
   if (!byMonth) return ROUNDS_PAGE;
-  const two = groups.slice(0, 2).reduce((n, g) => n + g.rounds.length, 0);
-  return Math.max(1, Math.min(ROUNDS_PAGE, two));
+  let whole = 0;
+  for (const g of groups) {
+    if (whole + g.rounds.length > ROUNDS_PAGE) break;
+    whole += g.rounds.length;
+  }
+  return whole * 2 < ROUNDS_PAGE ? ROUNDS_PAGE : whole;
 }
 
 /**
