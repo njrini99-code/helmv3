@@ -12,6 +12,8 @@ on:
       - 'src/app/clubhouse-preview/**'
       - 'e2e/clubhouse-quality.spec.ts'
       - 'e2e/clubhouse-gate.spec.ts'
+      - 'e2e/clubhouse-motion-gate.spec.ts'
+      - 'e2e/clubhouse-pixels.spec.ts'
       - 'e2e/clubhouse-gate/**'
       - 'e2e/clubhouse-playground.spec.ts'
       - 'e2e/clubhouse-quality.setup.ts'
@@ -25,6 +27,10 @@ on:
       - '.github/workflows/clubhouse-quality.yml'
       - 'package.json'
       - 'package-lock.json'
+  # Nightly on main (tool-08): the check never ran on main before, so main's state was unknown between PRs (it was red
+  # from 13 Nov and nobody saw). The nightly run also renders the pixel baselines every PR run compares against.
+  schedule:
+    - cron: '23 8 * * *'
   workflow_dispatch:
     inputs:
       full:
@@ -39,6 +45,10 @@ on:
         description: Workflow run containing clubhouse-quality-baselines artifact for matching Linux/browser version
         type: string
         required: false
+      screens:
+        description: Also open every public page and every Clubhouse fixture state, phone and desk, light and dark, into one gallery
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -68,7 +78,7 @@ jobs:
     # (`gh workflow run clubhouse-quality.yml --ref <branch>`).
     if: github.event_name != 'pull_request' || (github.event.pull_request.draft != true && github.event.action != 'synchronize')
     runs-on: ubuntu-latest
-    timeout-minutes: 75
+    timeout-minutes: 180
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
@@ -104,14 +114,84 @@ jobs:
         run: >-
           ./node_modules/.bin/playwright test --config playwright.clubhouse.config.ts
           --project chromium-no-preference --project chromium-reduce --project webkit-no-preference --project webkit-reduce
+          --output test-results/clubhouse-quality/smoke
       # Boxes leaving their card, clipped text, nested cards, small type and targets, contrast, page edge: at 390x844 in WebKit and
       # 1440x900 in Chromium, light and dark, on stress fixtures. A known failure is marked with its bug and must keep failing until fixed.
+      # Each step keeps its own output folder: Playwright empties its output folder when it starts, so a shared one kept
+      # only the last step's evidence. The gate runs even when the smoke fails (it is a separate question).
       - name: Presentation gate
-        if: ${{ !inputs.visual }}
+        if: ${{ !cancelled() && !inputs.visual }}
         timeout-minutes: 40
         env:
           CH_GATE_REPORT: test-results/clubhouse-quality/gate-report.jsonl
-        run: ./node_modules/.bin/playwright test --config playwright.clubhouse.config.ts --project gate-phone --project gate-desktop
+        run: ./node_modules/.bin/playwright test --config playwright.clubhouse.config.ts --project gate-phone --project gate-desktop --output test-results/clubhouse-quality/gate
+      # Motion is a release gate (owner): what animates on every phone gate screen, from its first frame, with and
+      # without Reduce Motion, against D-64 (e2e/clubhouse-motion-gate.spec.ts; known breaks may only shrink).
+      - name: Motion gate (WebKit, phone)
+        if: ${{ !cancelled() && !inputs.visual }}
+        # Advisory for its first week on main: its known list was recorded on a Mac, and a week of Linux runs shows
+        # whether timing moves any entry. Then remove this line so a new break fails the job.
+        continue-on-error: true
+        timeout-minutes: 20
+        env:
+          CH_MOTION_REPORT: test-results/clubhouse-quality/motion-report.jsonl
+        run: ./node_modules/.bin/playwright test --config playwright.clubhouse.config.ts --project motion-phone --output test-results/clubhouse-quality/motion
+      # Pixel regression (advisory). Nightly on main renders the baselines; a PR or dispatch run compares against the
+      # newest nightly set from main, so both sides are the same Linux image and browser build.
+      - name: Render pixel baselines (nightly on main)
+        if: ${{ !cancelled() && github.event_name == 'schedule' }}
+        timeout-minutes: 25
+        env:
+          CH_PIXELS: '1'
+          CH_VISUAL_BASELINES: ${{ github.workspace }}/.helm/screenshots/clubhouse/pixel-baselines
+        run: >-
+          ./node_modules/.bin/playwright test --config playwright.clubhouse.config.ts
+          --project pixels-phone --project pixels-desktop --update-snapshots=all
+          --output test-results/clubhouse-quality/pixels
+      - name: Upload pixel baselines
+        if: ${{ !cancelled() && github.event_name == 'schedule' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        with:
+          name: clubhouse-pixel-baselines
+          path: .helm/screenshots/clubhouse/pixel-baselines/
+          if-no-files-found: error
+          retention-days: 30
+      - name: Fetch the newest pixel baselines from main
+        id: baselines
+        if: ${{ !cancelled() && github.event_name != 'schedule' && !inputs.visual }}
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          run_id="$(gh run list -R "$REPO" --workflow clubhouse-quality.yml --branch main --event schedule --status success -L 1 --json databaseId --jq '.[0].databaseId // empty')"
+          if [ -z "$run_id" ]; then echo "No nightly baseline run on main yet; pixel comparison skipped."; exit 0; fi
+          gh run download "$run_id" -R "$REPO" -n clubhouse-pixel-baselines -D .helm/screenshots/clubhouse/pixel-baselines
+          echo "found=1" >> "$GITHUB_OUTPUT"
+          echo "Comparing against nightly run $run_id."
+      - name: Pixel comparison against main (advisory)
+        if: ${{ !cancelled() && steps.baselines.outputs.found == '1' }}
+        continue-on-error: true
+        timeout-minutes: 25
+        env:
+          CH_PIXELS: '1'
+          CH_VISUAL_BASELINES: ${{ github.workspace }}/.helm/screenshots/clubhouse/pixel-baselines
+        run: ./node_modules/.bin/playwright test --config playwright.clubhouse.config.ts --project pixels-phone --project pixels-desktop --output test-results/clubhouse-quality/pixels
+      # Every screen that needs no session: the public pages of all three products and every Clubhouse fixture state
+      # (scripts/screens/sweep.mjs, its own next dev with the env blanked). Mock data only, so the gallery is safe to upload.
+      - name: Every public and fixture screen (gallery)
+        if: ${{ !cancelled() && inputs.screens }}
+        timeout-minutes: 60
+        run: node scripts/screens/sweep.mjs --start-dev --access public,fixture --out screens-gallery
+      - name: Upload the screen gallery
+        if: ${{ !cancelled() && inputs.screens }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        with:
+          name: screens-gallery-${{ github.run_id }}
+          path: screens-gallery/
+          if-no-files-found: warn
+          retention-days: 14
       - name: Upload diagnostic screenshots, reports and failure traces
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2

@@ -1629,7 +1629,6 @@ li + li > .ch-shs-rrow::before {
 }
 .ch-shs-mean-key svg {
   flex: none;
-  overflow: visible;
 }
 .ch-shs-early-key {
   margin-top: 6px;

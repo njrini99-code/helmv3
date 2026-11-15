@@ -6,6 +6,7 @@
 import { chromium } from 'playwright';
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { helpOnly } from './lib/cli-guard.mjs';
+import { refuseProduction } from './lib/production-site-guard.mjs';
 
 helpOnly({
   name: 'scripts/ui-smoke.mjs',
@@ -15,6 +16,8 @@ helpOnly({
 });
 
 const BASE = process.env.SMOKE_BASE || 'http://localhost:3000';
+// It signs in, and a signed-in page writes on open: never the production site by accident (HELM_ALLOW_PRODUCTION=1 overrides).
+refuseProduction({ what: 'scripts/ui-smoke.mjs', baseUrl: BASE });
 const EMAIL = process.env.SMOKE_EMAIL || 'demo@golfhelmdemo.com';
 const PASSWORD = process.env.SMOKE_PASSWORD || 'Demo2026';
 const SHOTS = '/tmp/ui-shots';

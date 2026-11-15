@@ -1,10 +1,13 @@
 #!/usr/bin/env node
-// PreToolUse hook, matcher `mcp__.*`. During an audit (HELM_AUDIT=1) the only database a session may reach is the
-// read-only staging server, and no MCP call may name production. Outside an audit the settings entry exits before
-// this file runs, so normal sessions are unchanged.
+// PreToolUse hook, matchers `mcp__.*` and `Bash|WebFetch`. During an audit (HELM_AUDIT=1) the only database a session
+// may reach is the read-only staging server, and no tool call may name production. Outside an audit the settings entry
+// exits before this file runs, so normal sessions are unchanged.
 //
 // Denies, while HELM_AUDIT=1:
-//   - any MCP call whose input names the production project ref, or a helmsportslabs.com web address;
+//   - any MCP, Bash or WebFetch call whose input names the production project ref or the production site, with or
+//     without a scheme (`https://helmsportslabs.com`, `//helmsportslabs.com`, `www.helmsportslabs.com/golf`); an email
+//     address at the domain is not a site and stays allowed (15 Nov 2026 audit: a bare host, a protocol-relative URL,
+//     WebFetch and Bash `curl` all got through);
 //   - any Supabase server other than `supabase-staging-ro`, whether named for Supabase (`supabase`,
 //     `supabase-readonly`, `claude_ai_Supabase`, `plugin_supabase_supabase`) or listed as a Supabase account connector
 //     by id in config/mcp-connector-ids.json (the account connector appears as `mcp__<uuid>__…`).
@@ -20,8 +23,11 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 export const PROD_REF = 'qmnssrrolpinvwjjnufo';
 export const STAGING_SERVER = 'supabase-staging-ro';
-// The input is checked as JSON text, so the host can end at a quote as well as at a path or port.
-const PROD_WEB = /https?:\/\/(?:[a-z0-9-]+\.)*helmsportslabs\.com(?![a-z0-9-])/i;
+// The input is checked as JSON text, so the host can end at a quote as well as at a path or port. Any host under the
+// domain counts, written with a scheme, protocol-relative or bare; one right after `@` is an email address, not a site.
+const PROD_WEB = /(?<![@\w.-])(?:[a-z0-9-]+\.)*helmsportslabs\.com(?![a-z0-9-])/i;
+// Built-in tools this hook also watches (settings matcher `Bash|WebFetch`): they reach the network, but are no database.
+const NETWORK_TOOLS = new Set(['Bash', 'WebFetch']);
 const HERE = dirname(fileURLToPath(import.meta.url));
 
 /** The server part of `mcp__<server>__<tool>`; null for a tool that isn't an MCP tool. */
@@ -47,7 +53,8 @@ export function supabaseConnectorIds(file = resolve(HERE, '../../config/mcp-conn
 export function decide({ toolName, toolInput, audit, supabaseIds = supabaseConnectorIds() }) {
   if (!audit) return { deny: false };
   const server = serverOf(toolName);
-  if (server === null) return { deny: false };
+  const network = NETWORK_TOOLS.has(String(toolName));
+  if (server === null && !network) return { deny: false };
   const text = JSON.stringify(toolInput ?? {});
   if (text.includes(PROD_REF)) {
     return { deny: true, reason: `Audit session: this call names the production Supabase project (${PROD_REF}). Use ${STAGING_SERVER}.` };
@@ -55,7 +62,7 @@ export function decide({ toolName, toolInput, audit, supabaseIds = supabaseConne
   if (PROD_WEB.test(text)) {
     return { deny: true, reason: 'Audit session: this call opens the production site (helmsportslabs.com). Audit the staging preview instead.' };
   }
-  if (server === STAGING_SERVER) return { deny: false };
+  if (network || server === STAGING_SERVER) return { deny: false };
   if (/supabase/i.test(server) || supabaseIds.includes(server)) {
     return { deny: true, reason: `Audit session: only ${STAGING_SERVER} may answer database questions; ${server} can reach production.` };
   }

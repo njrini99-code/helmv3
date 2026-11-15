@@ -1,8 +1,10 @@
 name: Visual Audit
 
-# Manual-only production screenshot crawl (e2e/visual-audit.spec.ts). NOT part
-# of any PR gate or push trigger — this hits a real, deployed base_url (prod
-# by default) as both the baseball coach and player roles, discovers every
+# Manual-only screenshot crawl (e2e/visual-audit.spec.ts). NOT part
+# of any PR gate or push trigger — this hits a real, deployed base_url (a
+# staging preview; since 15 Nov 2026 there is no default, and the production
+# site is refused unless allow_production is ticked, because signing in writes
+# on open) as both the baseball coach and player roles, discovers every
 # visible nav route from the LIVE DOM, and captures full-page screenshots at
 # phone (390x844) and desktop (1440x900) viewports for a human/follow-up
 # review pass to look at. Screenshots are data capture, not assertions — the
@@ -34,10 +36,14 @@ on:
   workflow_dispatch:
     inputs:
       base_url:
-        description: Base URL to crawl (playwright.config.ts baseURL)
-        required: false
-        default: "https://helmsportslabs.com"
+        description: Base URL to crawl (playwright.config.ts baseURL). A staging preview; the production site is refused unless allow_production is ticked
+        required: true
         type: string
+      allow_production:
+        description: Owner-approved run against the production site (signs in, so it writes on open)
+        required: false
+        default: false
+        type: boolean
 
 concurrency:
   group: visual-audit-${{ github.ref }}
@@ -53,6 +59,8 @@ jobs:
     timeout-minutes: 30
     env:
       PLAYWRIGHT_BASE_URL: ${{ inputs.base_url }}
+      # playwright.config.ts refuses the production site unless this is 1 (scripts/lib/production-site-guard.mjs).
+      HELM_ALLOW_PRODUCTION: ${{ inputs.allow_production && '1' || '0' }}
       VISUAL_AUDIT: "1"
       # Fail loud (not a graceful skip) on missing/bad creds — this run is
       # pointless without a real authenticated crawl.

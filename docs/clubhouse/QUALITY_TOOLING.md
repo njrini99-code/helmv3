@@ -12,6 +12,29 @@ The premium audit profile includes all 15 manifest page families and their
 shared owners. Expanding that profile is coverage configuration, not evidence
 that an external premium-design audit has passed.
 
+## The checks that gate, and what each can prove (15 Nov 2026)
+
+Rebuilt from the 15 Nov UI tooling audit (QUEUE rows tool-01 to tool-09). Every
+check names its tier (`.claude/rules/browsers.md`): W Playwright WebKit, S real
+Safari, D the real iPhone, C Chromium. None of them is a required check on
+`main` yet; making one required is a GitHub setting the owner holds.
+
+| Check | Catches | Tier | Runs | Local command |
+| --- | --- | --- | --- | --- |
+| CSS ratchet and lint | Raw hex, SVG `overflow: visible`, layout transitions, untokened shadows; counts may only fall | static | Presentation workflow, first | `npm run clubhouse:css` |
+| Presentation gate | 36 fixture screens × light/dark: card escape, clipped and cramped text, nested surfaces, phone text, 44 pt targets, row inset, page edge, contrast | W 390, C 1440 | PRs (ready), nightly on `main` | `npm run clubhouse:quality` |
+| Motion gate | Every phone gate screen from its first frame, Reduce Motion on and off, plus every popup opening: no layout property animated, every duration a `--ch-dur-*` token, no first-paint entrance or stagger, nothing moving under Reduce Motion. Known breaks in `e2e/clubhouse-gate/motion-known.ts` (recorded 15 Nov from a Mac run and a CI run) may only shrink | W 390 | Same, after the gate; advisory for its first week on `main`, then it fails the job | `CH_QUALITY=1 npx playwright test -c playwright.clubhouse.config.ts --project motion-phone` |
+| Pixel regression | Any changed pixel on the gate screens, phone and desktop, light and dark | W 390, C 1440 | Nightly on `main` renders baselines (artifact `clubhouse-pixel-baselines`); PRs compare against the newest, advisory | `CH_QUALITY=1 CH_PIXELS=1 CH_VISUAL_BASELINES=<dir> npx playwright test -c playwright.clubhouse.config.ts --project pixels-phone --project pixels-desktop` |
+| Write journeys | Calendar, Qualifiers, Team Hub, Settings and Messages writes, and the round, each checked in the database | W + C, local Supabase | Nightly | `CH_BASE=… npx playwright test -c playwright.clubhouse-journeys.config.ts` |
+| Production public lane | The five public pages of the live site: status, sideways scroll, axe WCAG 2.2 AA, LCP, targets, clipped text, console errors, origins, any write tried on load. GET only; telemetry held | W, iPhone 17 Pro | Nightly (`clubhouse-prod-public.yml`) | `node scripts/clubhouse/audit/prod-public.mjs` |
+| Every screen | All 410 screens from the filesystem (GolfHelm, BaseballHelm, Lift Lab, admin, public, Clubhouse fixture states), each in phone and desk, light and dark, with probe and axe findings in one filterable gallery | W phone, C desk | Dispatch: `clubhouse-quality.yml` `screens: true` (public and fixtures), `clubhouse-journeys.yml` `screens: true` (signed-in GolfHelm, seeded) | `node scripts/screens/sweep.mjs --start-dev --access public,fixture` |
+| UI tools check | Every tool above and the devices and sign-ins they need, with one fix each | n/a | Local | `npm run doctor -- --ui` |
+| Production guards | Suites and scripts that sign in refuse production; the audit hook refuses production in MCP, Bash and WebFetch; no runnable test names the live site | static | Unit tests in CI | `npm run test:file -- scripts/lib/__tests__ scripts/__tests__/hooks scripts/__tests__/no-production-test-targets.test.mjs` |
+
+What none of these prove: smoothness and feel (D only, `helm-safari-performance`),
+real Safari rendering and safe areas (S), INP (a real tap on D), and anything
+signed in on production (never run; see `docs/clubhouse/audit/WRITES-ON-OPEN.md`).
+
 ## Local tools
 
 ```sh

@@ -6,23 +6,30 @@
 // mechanism; the one allowed is the audit-only no-prod-in-audit.mjs), so this hook reports
 // right after the command instead of before it.
 //
-// Why: most worktrees do not own a node_modules, they symlink the canonical
-// checkout's (scripts/lib/create-workspace.mjs, "deps: symlinked"). That makes
-// three mistakes cheap and silent, all of which happened on 2026-10-10:
-//   1. an install/uninstall/dedupe run through a symlinked node_modules rewrites
-//      node_modules/.package-lock.json for EVERY worktree that shares it, even
-//      with --package-lock-only;
-//   2. a worktree whose package-lock.json differs from the one it borrows
-//      node_modules from resolves the wrong versions without any error;
-//   3. heavy, rarely-run tools (momentic, promptfoo) were dependencies of every
-//      install; they now run through pinned npx and a bare/unpinned call drifts.
+// Why: every checkout's node_modules is an APFS clone of the deps store entry
+// for its own lockfile (scripts/lib/deps-store.mjs). SessionStart is the
+// backstop for checkouts the post-checkout hook did not reach:
+//   - node_modules missing: clone it now (a store hit takes 10-20 s), or say
+//     the one command that fills the store;
+//   - node_modules a symlink: unsupported. A symlinked tree resolves whatever
+//     the donor has (canonical was 70 packages behind main on 2026-11-15),
+//     Turbopack refuses it, and an npm write through it rewrites the donor's
+//     tree for everyone (2026-10-10, 2026-11-15);
+//   - node_modules a real tree for another lockfile: say so. It is never
+//     replaced here: a dev server may be running from it (--refresh does that).
+// After Bash it still warns about npm writes through a symlink, and about
+// heavy rarely-run tools (momentic, promptfoo) that run through pinned npx.
 //
 // Never blocks and never throws; every failure
 // degrades to a silent exit 0. Silent when there is nothing to say.
-import { execFileSync } from 'node:child_process';
-import { createHash } from 'node:crypto';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync, lstatSync, statSync, readFileSync, readlinkSync, realpathSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { dirMatchesLock, keyForDir, readMarker } from '../../scripts/lib/deps-store.mjs';
+
+/** The helper next to this hook (same checkout, same version). */
+const ENSURE = resolve(dirname(fileURLToPath(import.meta.url)), '../../scripts/ensure-worktree-deps.mjs');
 
 // name -> pinned invocation. Keep in sync with package.json scripts / CI.
 export const ON_DEMAND_TOOLS = {
@@ -47,14 +54,6 @@ function emit(eventName, additionalContext) {
   process.stdout.write(
     `${JSON.stringify({ hookSpecificOutput: { hookEventName: eventName, additionalContext } })}\n`,
   );
-}
-
-function sha1(path) {
-  try {
-    return createHash('sha1').update(readFileSync(path)).digest('hex').slice(0, 12);
-  } catch {
-    return null;
-  }
 }
 
 function git(args, cwd) {
@@ -119,19 +118,41 @@ function liveBuilds() {
   }
 }
 
+/** Clone node_modules for a checkout that has none: one line saying what happened. */
+function cloneMissing(root) {
+  if (!existsSync(join(root, 'package-lock.json')) || !existsSync(ENSURE)) return null;
+  const r = spawnSync('node', [ENSURE, root, '--clone-only', '--quiet'], { encoding: 'utf-8', timeout: 50_000 });
+  const state = (r.stdout || '').trim().split('\n').pop() || '';
+  if (state === 'deps: cloned') return `node_modules was missing; cloned it from the deps store for this lockfile.`;
+  if (state === 'deps: missing') {
+    return `node_modules is missing and the deps store has no tree for this lockfile yet. Fill it once (one npm ci; every checkout on this lockfile clones it after that): node scripts/ensure-worktree-deps.mjs ${root}`;
+  }
+  const why = (r.stderr || '').trim().split('\n')[0] || (r.error ? r.error.message : state || 'no answer');
+  return `node_modules is missing and could not be cloned (${why}). Run: node scripts/ensure-worktree-deps.mjs ${root}`;
+}
+
 function sessionStart(root) {
   const notes = [];
   const nm = nodeModulesState(root);
   if (nm.kind === 'dangling') {
-    notes.push(`node_modules is a broken link -> ${nm.target}. Fix: node scripts/ensure-worktree-deps.mjs ${root}`);
+    notes.push(`node_modules is a broken link -> ${nm.target}. Replace it with a clone: node scripts/ensure-worktree-deps.mjs ${root}`);
   } else if (nm.kind === 'link') {
-    const donor = join(dirname(nm.target), 'package-lock.json');
-    const mineLock = sha1(join(root, 'package-lock.json'));
-    const donorLock = sha1(donor);
-    if (mineLock && donorLock && mineLock !== donorLock) {
-      notes.push(
-        `this checkout borrows node_modules from ${dirname(nm.target)} but their package-lock.json differ (${mineLock} vs ${donorLock}); installed versions may not match this branch. Give it its own install: node scripts/ensure-worktree-deps.mjs ${root}`,
-      );
+    notes.push(
+      `node_modules is a symlink -> ${nm.target}, which is not supported: it resolves whatever versions that tree has, Turbopack refuses it, and an npm write through it changes the other checkout. Replace it with a clone of this lockfile's tree: node scripts/ensure-worktree-deps.mjs ${root}`,
+    );
+  } else if (nm.kind === 'missing') {
+    const note = cloneMissing(root);
+    if (note) notes.push(note);
+  } else if (nm.kind === 'dir') {
+    const key = keyForDir(root);
+    const marker = readMarker(root);
+    if (key && marker?.key !== key) {
+      const match = dirMatchesLock(root);
+      if (!match.ok && match.mismatches.length && !match.mismatches[0].startsWith('unreadable')) {
+        notes.push(
+          `node_modules was installed for a different lockfile (${match.mismatches.length} packages differ, e.g. ${match.mismatches.slice(0, 2).join('; ')}). Tests and tools here run those versions. When nothing is running from it: node scripts/ensure-worktree-deps.mjs ${root} --refresh`,
+        );
+      }
     }
   }
   try {
