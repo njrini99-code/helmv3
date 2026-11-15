@@ -15,8 +15,6 @@ export default function Error({
       reset={reset}
       route="/golf/dashboard/qualifiers/[id]/selection"
       component="QualifierSelectionPage"
-      title="Failed to load selections"
-      message="We couldn't load this qualifier's selections. Please try again."
       homePath="/golf/dashboard/qualifiers"
     />
   );

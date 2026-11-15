@@ -163,7 +163,7 @@ import { ChClockProvider } from '@/clubhouse/lib/use-clock';
  * handoff's sample data, with no auth and no database, for comparison with
  * design/handoff/screenshots. 404 in production.
  *
- *   /clubhouse-preview/home   ?state=early | empty | eventsonly | norounds | noevents | failed | loading | error | cachefailed | tourfailed | queuefailed | noholes | unranked | totalsonly | oneday | realshape   (empty and eventsonly are the first-run page)
+ *   /clubhouse-preview/home   ?state=early | empty | eventsonly | norounds | noevents | failed | loading | error | error-offline | cachefailed | tourfailed | queuefailed | noholes | unranked | totalsonly | oneday | realshape   (empty and eventsonly are the first-run page; error-offline is the route error's offline page, CH-1290)
  *   any screen &at=HH:MM holds the global light; &round=1 adds a round in progress (the Resume accessory)
  *   /clubhouse-preview/home &live=busy | one | many | finished | event | failed   (the Live now card; P-6)
  *   /clubhouse-preview/live ?state=busy | one | many | finished | starts | event | longnames | empty | failed | denied   (the coach's live view; P-6)
@@ -255,8 +255,8 @@ export default async function ClubhousePreview({
       node:
         state === 'loading' ? (
           <HomeSkeleton />
-        ) : state === 'error' ? (
-          <PreviewError kind="unknown" />
+        ) : state === 'error' || state === 'error-offline' ? (
+          <PreviewError kind={state === 'error-offline' ? 'offline' : 'unknown'} />
         ) : (
           <CoachHome
             data={state === 'stress' ? rewriteDeep(PREVIEW_HOME, longNames) : state === 'empty' ? PREVIEW_HOME_EMPTY : state === 'failed' ? PREVIEW_HOME_FAILED : state === 'noevents' ? PREVIEW_HOME_NO_EVENTS : state === 'eventsonly' ? PREVIEW_HOME_EVENTS_ONLY : state === 'norounds' ? PREVIEW_HOME_NO_ROUNDS : state === 'cachefailed' ? PREVIEW_HOME_LEGS_CACHE_FAILED : state === 'tourfailed' ? PREVIEW_HOME_LEGS_TOUR_FAILED : state === 'queuefailed' ? PREVIEW_HOME_QUEUE_FAILED : state === 'noholes' ? PREVIEW_HOME_LEGS_NO_HOLES : state === 'unranked' ? PREVIEW_HOME_LEGS_UNRANKED : state === 'totalsonly' ? PREVIEW_HOME_TOTALS_ONLY : state === 'oneday' ? PREVIEW_HOME_ONE_DAY : state === 'realshape' ? PREVIEW_HOME_REAL_SHAPE : state === 'early' ? PREVIEW_HOME_EARLY : PREVIEW_HOME}

@@ -43,7 +43,8 @@ import { FOUND_FOR_MS } from './use-focus-message';
 import { onRoster, seedThreadFiles, takePrefill } from './prefill';
 import { seedPollDraft } from './polls';
 import { attachmentKindOf, useAttachmentFacts } from './attachment-facts';
-import { directWith, firstName, FORMER_MEMBER, groupLacksPlayer, isDirect, isFormerMember, isGroupRow, isNamedForOneOfTwo, toChAnnouncement, type ChAnnouncement, type ChAnnouncementDetail, type ChConv, type ChFile, type ChMember, type ChMsg, type ChMute, type ChReaction, type ChReactionKey } from './model';
+import { useAnnouncementsRead } from './use-announcements-read';
+import { directWith, firstName, FORMER_MEMBER, groupLacksPlayer, isDirect, isFormerMember, isGroupRow, isNamedForOneOfTwo, toChAnnouncement, type ChAnnouncementDetail, type ChConv, type ChFile, type ChMember, type ChMsg, type ChMute, type ChReaction, type ChReactionKey } from './model';
 
 const isGroup = isGroupRow;
 
@@ -514,33 +515,15 @@ export function Messages({ data }: { data: ChMessagesData }) {
 
   // Announcements: the team feed, pinned above conversations.
   // The route reads them with the page; when it couldn't (or in the preview), the first read is here.
-  const [anns, setAnns] = useState<ChAnnouncement[]>(data.announcements ?? []);
-  const [annError, setAnnError] = useState(false);
-  // Announcements sit above the conversations: until their first read answers, the inbox keeps its skeleton.
-  const [annLoaded, setAnnLoaded] = useState(data.announcements != null);
-  const [selectedAnnId, setSelectedAnnId] = useState<string | null>(null);
-  const loadAnns = useCallback(async () => {
-    try {
-      const res = await getAnnouncementsWithMeta(data.teamId, data.viewerUserId, data.role === 'coach', data.viewerPlayerId);
-      if (!res.success || !res.data) throw new Error(res.error || 'announcements read failed');
-      setAnnError(false);
-      setAnns(res.data.map(toChAnnouncement));
-    } catch (err) {
-      chReport(err, { surface: 'messages.announcements', severity: 'low' });
-      setAnnError(true);
-    } finally {
-      setAnnLoaded(true);
-    }
+  // They have their own wait (GAP-S-11): the conversations draw as soon as they arrive, the section says when it is slow,
+  // and a read that never answers becomes the failed notice (use-announcements-read.ts).
+  const readAnns = useCallback(async () => {
+    const res = await getAnnouncementsWithMeta(data.teamId, data.viewerUserId, data.role === 'coach', data.viewerPlayerId);
+    if (!res.success || !res.data) throw new Error(res.error || 'announcements read failed');
+    return res.data.map(toChAnnouncement);
   }, [data.teamId, data.viewerUserId, data.role, data.viewerPlayerId]);
-  const annsPreloaded = useRef(data.announcements != null);
-  useEffect(() => {
-    // Read with the page: the first read is already on screen.
-    if (annsPreloaded.current) {
-      annsPreloaded.current = false;
-      return;
-    }
-    void loadAnns();
-  }, [loadAnns]);
+  const { anns, annError, annLoaded, annSlow, loadAnns } = useAnnouncementsRead(readAnns, data.announcements);
+  const [selectedAnnId, setSelectedAnnId] = useState<string | null>(null);
 
   const announcementDetail = useCallback(
     async (id: string): Promise<ChAnnouncementDetail | null> => {
@@ -705,6 +688,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
     addCandidates,
     annError,
     annLoaded,
+    annSlow,
     announcementDetail,
     anns,
     attachmentRecovery,

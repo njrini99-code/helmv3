@@ -9,6 +9,7 @@ import type { ChHubAnnouncement, ChHubFile, ChHubRsvp, ChHubTask, ChHubTrip, ChH
 import { PROVISIONAL_ID } from '../../data/hub-shape';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
+import { FAILURE_COPY } from '../../ui/Notices';
 import { PageRefreshNotice, RefreshNotice } from '../../ui/RefreshNotice';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { Swap } from '../../ui/Swap';
@@ -725,7 +726,7 @@ export function TeamHub({
               <div className={'ch-hb-list' + (anns.length ? ' is-edited' : '') + (coach && !phone && anns.length ? ' has-margin' : '')}>
                 {coach && <NewAnnouncementLine name={viewerName} onOpen={() => setCompose(true)} />}
                 {data.announcements.error ? (
-                  <RefreshNotice code="CH-10206" title="Announcements didn’t load." body="Nothing was lost. Try again." covered={covered} />
+                  <RefreshNotice code="CH-10206" title="Announcements didn’t load." body={FAILURE_COPY.page} covered={covered} />
                 ) : !anns.length ? (
                   // W19 B: the tab's list is the page's content, so its empty is the page's card.
                   <EmptyState size="page" icon={Megaphone} code="CH-10307" shape="rows" shapeCount={3} title="No announcements yet" body={coach ? 'Post one and see who has read it.' : 'Posts from your coaches show here.'} />

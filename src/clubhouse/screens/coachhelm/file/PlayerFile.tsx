@@ -20,6 +20,7 @@ import { PhoneTop } from '../../../shell/phone-chrome';
 import { Icon } from '../../../ui/Icon';
 import { Menu } from '../../../ui/Menu';
 import { Modal } from '../../../ui/Modal';
+import { FAILURE_COPY } from '../../../ui/Notices';
 import { PhoneIconAction } from '../../../ui/PhoneBar';
 import { Segmented } from '../../../ui/Segmented';
 import { Swap } from '../../../ui/Swap';
@@ -108,7 +109,7 @@ export function FileFailed({ who, onRetry }: { who: string; onRetry: () => void 
           <Icon icon={TriangleAlert} size={22} />
         </span>
         <b>Couldn’t load {who}</b>
-        <p>Nothing was lost. Try again.</p>
+        <p>{FAILURE_COPY.page}</p>
         <Button data={{ 'data-ch-hf-retry': '' }} variant="secondary" size="lg" onClick={onRetry}>
           Try again
         </Button>
