@@ -75,6 +75,16 @@ function interpolate(table: ReadonlyArray<readonly [number, number]>, x: number)
   return table[table.length - 1]![1];
 }
 
+/**
+ * Chance a chip, pitch or bunker shot from `yards` goes in, for a solid college
+ * player (interpolated). Calibrated so about 0.7% of holes end in a hole-out
+ * from off the green, as on the real teams (0.56% to 1.13% by team, staging,
+ * 15 Nov 2026).
+ */
+const HOLE_OUT: ReadonlyArray<readonly [number, number]> = [
+  [2, 0.06], [5, 0.04], [10, 0.025], [20, 0.012], [30, 0.007], [45, 0.003],
+];
+
 const logit = (p: number) => Math.log(p / (1 - p));
 const sigmoid = (z: number) => 1 / (1 + Math.exp(-z));
 
@@ -89,8 +99,8 @@ const GREEN_RADIUS_FT = 40;
 /** Feet from the hole after an approach from `yards` on `lie`. */
 function approachProximity(rng: Rng, yards: number, lie: Lie, s: DaySkill): number {
   const lieFactor = lie === 'rough' ? 1.35 : lie === 'sand' ? 1.6 : 1;
-  const median = (6.5 + 0.165 * yards) * lieFactor * Math.exp(-0.38 * s.approach);
-  return median * Math.exp(rng.normal(0, 0.6));
+  const median = (6.6 + 0.165 * yards) * lieFactor * Math.exp(-0.38 * s.approach);
+  return median * Math.exp(rng.normal(0, 0.7));
 }
 
 /** Feet from the hole after a chip, pitch or bunker shot from `yards`. */
@@ -126,7 +136,7 @@ export function playHole(rng: Rng, hole: DemoHole, holeNumber: number, s: DaySki
       teeAgain = false;
       const useDriver = hole.yards - s.drive > 90 || hole.par === 5;
       const carry = useDriver ? s.drive + rng.normal(0, 13) : hole.yards - 125 + rng.normal(0, 10);
-      const penaltyP = clamp(s.penaltyRate + s.wild * 0.04, 0, 0.35);
+      const penaltyP = clamp(s.penaltyRate * 1.35 + s.wild * 0.04, 0, 0.35);
       if (rng.chance(penaltyP)) {
         const kind: 'water' | 'ob' = rng.chance(0.55) ? 'water' : 'ob';
         const miss = rng.chance(0.5) ? 'left' : 'right';
@@ -196,7 +206,8 @@ export function playHole(rng: Rng, hole: DemoHole, holeNumber: number, s: DaySki
       yards = left;
       continue;
     }
-    const prox = shortGameProximity(rng, yards, lie, s);
+    const holeOut = interpolate(HOLE_OUT, yards) * (lie === 'sand' ? 0.6 : 1) * Math.exp(0.35 * s.shortGame);
+    const prox = rng.chance(holeOut) ? 0 : shortGameProximity(rng, yards, lie, s);
     if (prox < 0.9) {
       push({ shot_type: 'around_green', club_type: 'non_driver', lie_before: lie, distance_to_hole_before: yards, distance_unit_before: 'yards', result: 'hole', lie_after: null, distance_to_hole_after: 0, distance_unit_after: 'feet', shot_distance: yards, is_penalty: false, penalty_type: null, putt_made: null, putt_distance_feet: null, miss_direction: null });
       return finish(hole, holeNumber, shots, penalties, fairwayHit, playedFromSand);
@@ -210,12 +221,12 @@ export function playHole(rng: Rng, hole: DemoHole, holeNumber: number, s: DaySki
   let putts = 0;
   while (putts < 5) {
     putts += 1;
-    const pMake = putts >= 4 ? 1 : sigmoid(logit(clamp(interpolate(MAKE, feet), 0.005, 0.997)) + 0.5 * s.putting - 0.1);
+    const pMake = putts >= 4 ? 1 : sigmoid(logit(clamp(interpolate(MAKE, feet), 0.005, 0.997)) + 0.5 * s.putting - 0.15);
     if (rng.chance(pMake)) {
       push({ shot_type: 'putting', club_type: 'putter', lie_before: 'green', distance_to_hole_before: feet, distance_unit_before: 'feet', result: 'hole', lie_after: null, distance_to_hole_after: 0, distance_unit_after: 'feet', shot_distance: 0, is_penalty: false, penalty_type: null, putt_made: true, putt_distance_feet: feet, miss_direction: null });
       break;
     }
-    const leaveMedian = feet <= 8 ? 1.7 : 1.5 + 0.08 * feet;
+    const leaveMedian = feet <= 8 ? 1.7 : 1.45 + 0.07 * feet;
     const leave = round1(leaveMedian * Math.exp(rng.normal(0, 0.45) - 0.2 * s.putting));
     const next = Math.min(leave, Math.max(1, feet - 1));
     push({ shot_type: 'putting', club_type: 'putter', lie_before: 'green', distance_to_hole_before: feet, distance_unit_before: 'feet', result: 'green', lie_after: 'green', distance_to_hole_after: next, distance_unit_after: 'feet', shot_distance: 0, is_penalty: false, penalty_type: null, putt_made: false, putt_distance_feet: feet, miss_direction: null });

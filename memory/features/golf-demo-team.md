@@ -27,7 +27,14 @@ Launch readiness DD-01 to DD-18 (15 Nov 2026), except DD-14.
    opener, breaks) in `calendar.ts`; hole-by-hole play with shots in
    `round-sim.ts`. Ids are stable (`stableUuid`), and each round draws from its
    own random stream, so a past round is identical on every later day (DD-04).
-   No real name appears anywhere.
+   No real name appears anywhere. The simulation is calibrated against the
+   eight real teams on staging (read-only, 15 Nov 2026, 1,061 full rounds):
+   scoring, putts, one- and three-putts, chip-ins, greens, fairways,
+   scrambling, penalties, par 3/4/5 averages and every strokes-gained
+   category (computed by the production function from the generated shots)
+   fall inside the real teams' range. The invented courses play to the real
+   teams' course length, and every hole's yardage fits its par
+   (`YARDS_FOR_PAR`, checked when `story.ts` loads).
 2. **Plan** (`writer.ts`, `planDemoWrite`): diffs the dataset against the
    ledger (row key to a 24-hex hash of the row). New and changed rows are sent,
    and rows the generator wrote that are no longer generated are removed. Each
@@ -46,7 +53,8 @@ Launch readiness DD-01 to DD-18 (15 Nov 2026), except DD-14.
    `checkDemoCoverage` checks it the way a prospect sees it. The checks cover
    the roster, test rows, future or abandoned rounds, headers equal to hole
    sums, one shot per stroke, no shared scorecards, and believable putting
-   (32 to 34 per 18, three-putts 8 to 11%). They also cover seed tags,
+   (within the real teams' range: 31.2 to 34.4 per 18, three-putts 4.3%
+   to 14.2%). They also cover seed tags,
    weekdays in copy, upcoming events, tournaments and lineups, qualifiers
    closed and scored, practice plans, attendance, and the season row
    (DATA-04).
@@ -86,6 +94,10 @@ recognises both the app and the database refusal.
   not have, so **the delete is skipped without an error**. `golf_demo_remove`
   and the cleanup SQL set the round to `abandoned` under the mark, clear the
   mark, then delete.
+- Any change to `round-sim.ts` or `story.ts` reshuffles every random draw:
+  bump `GENERATOR_VERSION`, recheck the figures against the real teams, and
+  pick a `DEFAULT_SEED` whose draw still tells each story (the story tests in
+  `generate.test.ts` fail otherwise; about 1 seed in 150 passes them all).
 - `DEMO_TABLES` and the SQL array in `golf_demo_tables()` must match;
   `writer.test.ts` checks it.
 - After changing a function in the migration, regenerate the declarative

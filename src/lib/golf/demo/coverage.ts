@@ -215,7 +215,10 @@ export function checkDemoCoverage(snap: DemoSnapshot): CoverageReport {
   const rounds18 = completed.filter((r) => (holesBy.get(str(r, 'id')!) ?? []).length === 18).length;
   const puttsPer18 = rounds18 ? putts / rounds18 : 0;
   const threeRate = greens ? threePutts / greens : 0;
-  add('believable-putting', 'DD-16', 'warn', puttsPer18 >= 30.5 && puttsPer18 <= 34.5 && threeRate >= 0.04 && threeRate <= 0.13, `${puttsPer18.toFixed(1)} putts a round, three-putts on ${(threeRate * 100).toFixed(1)}% of greens (want 32 to 34, and 8 to 11%)`);
+  // The band is the spread of the eight real teams on staging (15 Nov 2026,
+  // 1,061 rounds): 31.2 to 34.4 putts a round, three-putts on 4.3% to 14.2%
+  // of holes (pooled 32.0 and 7.2%).
+  add('believable-putting', 'DD-16', 'warn', puttsPer18 >= 30.5 && puttsPer18 <= 34.5 && threeRate >= 0.04 && threeRate <= 0.145, `${puttsPer18.toFixed(1)} putts a round, three-putts on ${(threeRate * 100).toFixed(1)}% of greens (real teams: 31.2 to 34.4, and 4.3% to 14.2%)`);
   const doubleRate = holeCount ? doubles / holeCount : 0;
   add('doubles-exist', 'DD-11', 'warn', doubleRate >= 0.02 && doubleRate <= 0.15, `${(doubleRate * 100).toFixed(1)}% of holes are double bogey or worse`);
 

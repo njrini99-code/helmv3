@@ -5,7 +5,7 @@ import { DEMO_TEAM_ID } from '@/lib/demo/config';
 import { generateDemoTeam, DEMO_TABLES, rowKey, type DemoDataset, type DemoRow, type GenerateInput } from '../generate';
 import { checkDemoCoverage, formatCoverage } from '../coverage';
 import { summarizeDataset } from '../summary';
-import { DEMO_ROSTER } from '../story';
+import { DEMO_ROSTER, DEMO_VENUES, YARDS_FOR_PAR } from '../story';
 
 const COACH = '00000000-0000-4000-8000-0000000000c1';
 const COACH_ROW = '00000000-0000-4000-8000-0000000000c3';
@@ -170,6 +170,33 @@ describe('generateDemoTeam', () => {
       }
     }
   }, 120_000);
+});
+
+describe('the invented courses', () => {
+  // A hole's yardage must read as its par on a scorecard: five of six venues once
+  // paired a 571-yard hole with par 3 and a 177-yard hole with par 5.
+  it.each(DEMO_VENUES.map((v) => [v.key, v] as const))('%s is a par 72 whose every hole fits its par', (_key, v) => {
+    expect(v.holes).toHaveLength(18);
+    expect(v.holes.reduce((t, h) => t + h.par, 0)).toBe(72);
+    expect(v.holes.filter((h) => h.par === 3)).toHaveLength(4);
+    expect(v.holes.filter((h) => h.par === 5)).toHaveLength(4);
+    for (const [i, h] of v.holes.entries()) {
+      const [min, max] = YARDS_FOR_PAR[h.par];
+      expect(h.yards, `hole ${i + 1}, par ${h.par}`).toBeGreaterThanOrEqual(min);
+      expect(h.yards, `hole ${i + 1}, par ${h.par}`).toBeLessThanOrEqual(max);
+    }
+  });
+
+  it('plays about as long as the real teams\' courses (par 3s 186, par 4s 406, par 5s 528 yards)', () => {
+    const holes = DEMO_VENUES.flatMap((v) => v.holes);
+    const avg = (par: number) => holes.filter((h) => h.par === par).reduce((t, h) => t + h.yards, 0) / holes.filter((h) => h.par === par).length;
+    expect(avg(3)).toBeGreaterThan(176);
+    expect(avg(3)).toBeLessThan(196);
+    expect(avg(4)).toBeGreaterThan(396);
+    expect(avg(4)).toBeLessThan(426);
+    expect(avg(5)).toBeGreaterThan(513);
+    expect(avg(5)).toBeLessThan(543);
+  });
 });
 
 describe('the demo story on 15 Nov 2026 (default seed)', () => {

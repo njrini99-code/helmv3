@@ -9,10 +9,10 @@
  */
 
 /** Bump on any change that alters generated rows. The writer stores it on every ledger row. */
-export const GENERATOR_VERSION = 1;
+export const GENERATOR_VERSION = 2;
 
 /** The seed every production run uses. A different seed gives a different, equally valid team (tests use several). */
-export const DEFAULT_SEED = 'demo-university-golf-100';
+export const DEFAULT_SEED = 'demo-university-golf-298';
 
 export type ClassYear = 'freshman' | 'sophomore' | 'junior' | 'senior';
 
@@ -165,7 +165,7 @@ export const DEMO_ROSTER: readonly DemoPlayerStory[] = [
     storyLine: 'Slumping senior: scoring up three to five shots since early October, and the approach play is the cause.',
     skill: skill({ drive: 290, fairway: 0.64, approach: 0.45, shortGame: 0.2, putting: 0.1, penaltyRate: 0.02, volatility: 0.28 }),
     shifts: [
-      { fromDay: 62, rampDays: 14, delta: { approach: -0.4 } },
+      { fromDay: 62, rampDays: 14, delta: { approach: -0.6 } },
     ],
     lineupRegular: true,
     joinedDay: 0,
@@ -276,9 +276,17 @@ export interface DemoVenue {
   holes: readonly DemoHole[];
 }
 
+/** Men's college back-tee yardage for each par: a hole outside its band reads wrong on a scorecard. */
+export const YARDS_FOR_PAR = { 3: [140, 240], 4: [330, 490], 5: [490, 610] } as const satisfies Record<3 | 4 | 5, readonly [number, number]>;
+
 function layout(spec: string, yards: readonly number[]): DemoHole[] {
   if (spec.length !== 18 || yards.length !== 18) throw new Error('A venue needs 18 pars and 18 yardages');
-  return spec.split('').map((p, i) => ({ par: Number(p) as 3 | 4 | 5, yards: yards[i]! }));
+  return spec.split('').map((p, i) => {
+    const par = Number(p) as 3 | 4 | 5;
+    const [min, max] = YARDS_FOR_PAR[par];
+    if (yards[i]! < min || yards[i]! > max) throw new Error(`Hole ${i + 1}: ${yards[i]} yards is not a par ${par}`);
+    return { par, yards: yards[i]! };
+  });
 }
 
 /** Invented venues. The home course hosts practice rounds and qualifiers; the others host the tournaments. */
@@ -289,9 +297,9 @@ export const DEMO_VENUES: readonly DemoVenue[] = [
     city: 'Millbrook',
     state: 'NC',
     tees: 'Blue',
-    rating: 73.4,
+    rating: 72.8,
     slope: 136,
-    holes: layout('454343445435443454', [412, 548, 431, 188, 446, 214, 468, 401, 437, 427, 205, 539, 455, 392, 176, 418, 571, 441]),
+    holes: layout('454343445435443454', [398, 529, 416, 181, 430, 207, 452, 387, 509, 412, 198, 520, 439, 378, 170, 403, 551, 426]),
   },
   {
     key: 'lakes',
@@ -299,9 +307,9 @@ export const DEMO_VENUES: readonly DemoVenue[] = [
     city: 'Port Ellis',
     state: 'SC',
     tees: 'Black',
-    rating: 74.1,
+    rating: 73.5,
     slope: 139,
-    holes: layout('443454534454343445', [421, 438, 201, 455, 552, 409, 177, 571, 444, 403, 448, 541, 229, 433, 187, 452, 418, 559]),
+    holes: layout('443454354445343445', [406, 423, 194, 439, 533, 395, 171, 551, 428, 389, 432, 522, 221, 418, 180, 436, 403, 539]),
   },
   {
     key: 'pines',
@@ -309,9 +317,9 @@ export const DEMO_VENUES: readonly DemoVenue[] = [
     city: 'Ashdale',
     state: 'GA',
     tees: 'Gold',
-    rating: 73.0,
+    rating: 72.4,
     slope: 133,
-    holes: layout('445434354445343454', [398, 429, 537, 194, 441, 383, 168, 551, 452, 416, 404, 529, 211, 447, 185, 436, 566, 425]),
+    holes: layout('445344354445343454', [384, 414, 518, 187, 426, 370, 162, 532, 436, 401, 390, 510, 204, 431, 179, 421, 546, 410]),
   },
   {
     key: 'links',
@@ -319,9 +327,9 @@ export const DEMO_VENUES: readonly DemoVenue[] = [
     city: 'Briar Falls',
     state: 'VA',
     tees: 'Blue',
-    rating: 72.6,
+    rating: 72.0,
     slope: 131,
-    holes: layout('435443454453434544', [409, 197, 544, 433, 381, 216, 452, 559, 427, 418, 533, 174, 446, 403, 548, 189, 437, 455]),
+    holes: layout('435443454453445344', [395, 190, 525, 418, 368, 208, 436, 539, 412, 403, 514, 168, 430, 389, 529, 182, 422, 439]),
   },
   {
     key: 'dunes',
@@ -329,9 +337,9 @@ export const DEMO_VENUES: readonly DemoVenue[] = [
     city: 'Carver',
     state: 'NC',
     tees: 'Black',
-    rating: 74.4,
+    rating: 73.8,
     slope: 140,
-    holes: layout('454434534445435344', [439, 561, 423, 207, 452, 418, 183, 574, 446, 431, 448, 412, 553, 196, 444, 221, 587, 459]),
+    holes: layout('454344354444534354', [424, 541, 408, 200, 436, 403, 177, 554, 430, 416, 432, 398, 534, 189, 428, 213, 566, 443]),
   },
   {
     key: 'oaks',
@@ -339,9 +347,9 @@ export const DEMO_VENUES: readonly DemoVenue[] = [
     city: 'Haddon',
     state: 'TN',
     tees: 'Blue',
-    rating: 72.9,
+    rating: 72.3,
     slope: 134,
-    holes: layout('454345434443545344', [404, 552, 436, 186, 415, 538, 421, 172, 447, 410, 433, 195, 541, 429, 568, 181, 422, 451]),
+    holes: layout('454345434443545344', [390, 533, 421, 179, 400, 519, 406, 166, 431, 396, 418, 188, 522, 414, 548, 175, 407, 435]),
   },
 ];
 
