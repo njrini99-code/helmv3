@@ -162,6 +162,11 @@ alongside (not duplicated here).
   `sentry-profiling-header.test.ts`, `sentry-replay-privacy.test.ts`,
   `src/components/fairway/feedback/ReportProblemButton.test.tsx` — client
   experience.
+- `src/__tests__/instrumentation-held-migration-ignore.test.ts` — the
+  server `ignoreErrors` entries for objects whose migration is HELD: each
+  drops its exact object on both runtimes, a live object of the same shape
+  still pages, and the suite fails once the migration's `HELD.md` row is no
+  longer `**HOLD**`.
 
 ## Consumers (who instruments AGAINST the telemetry vocabulary)
 
@@ -232,6 +237,13 @@ alongside (not duplicated here).
 
 ## Business Rules
 
+- A HELD migration's missing RPC, table or column is an environment fact,
+  not an incident, when the calling code already handles it. The Supabase
+  integration still captures it at the driver, so the server
+  `sharedIgnoreErrors` (`src/instrumentation.ts`) lists it by exact object
+  name, never as a generic "Could not find" pattern, and the entry is
+  deleted in the change that applies the migration (the held-migration test
+  enforces it against `supabase/migrations/HELD.md`).
 - Never capture request/response bodies or auth headers in Replay —
   `networkDetailAllowUrls` stays unset.
 - Breadcrumb `data` is allow-listed; never an id, name, or email.
