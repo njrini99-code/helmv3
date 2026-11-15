@@ -3453,7 +3453,8 @@ html[data-fw-theme='dark'] .ch-offline {
     outline: 2px solid var(--ch-border-focus-on-dark);
     outline-offset: 2px;
   }
-  /* The green bar's selected pill: one ivory plate that glides between pills (layoutId, the settle spring). */
+  /* The green bar's selected pill: one ivory plate that glides between pills (lib/slide-plate.ts: 260ms on the iOS curve,
+     translate and width, MOTION-AND-VISUAL 3.3; under Reduce Motion it fades in at its new place). */
   .ch-strip__plate {
     position: absolute;
     inset: 0;

@@ -1,6 +1,7 @@
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { haptic } from '../../lib/haptics';
 import { Segmented } from '../Segmented';
 
 vi.mock('../../lib/haptics', () => ({ haptic: vi.fn() }));
@@ -73,6 +74,24 @@ describe('Segmented (B17)', () => {
     expect(keyframes[0].transform).toMatch(/^translate\(-160px, 0px\)/);
     expect(keyframes[1].transform).toBe('none');
     expect(screen.getByRole('radio', { name: 'List' }).querySelector('.ch-seg__pill')).not.toBeNull();
+  });
+
+  // MOTION-AND-VISUAL 3.3 and 4.2's motion line: the thumb over the base beat on the iOS curve (translate and width, MAC-17),
+  // the content swapping at once, and a selection haptic on each change, none on a tap of the current option.
+  it('the thumb takes 260 ms on the iOS curve, and each change ticks the selection haptic', async () => {
+    vi.mocked(haptic).mockClear();
+    const onChange = vi.fn();
+    render(<Harness onChange={onChange} />);
+    await frame();
+    fireEvent.click(screen.getByRole('radio', { name: 'Day' }));
+    expect(haptic).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('radio', { name: 'Month' }));
+    expect(onChange).toHaveBeenLastCalledWith('month');
+    expect(animate).toHaveBeenCalledTimes(1);
+    const [keyframes, options] = animate.mock.calls[0]!;
+    expect(options).toMatchObject({ duration: 260, easing: 'cubic-bezier(0.32, 0.72, 0, 1)' });
+    expect(Object.keys(keyframes[0])).toEqual(expect.arrayContaining(['transform', 'width']));
+    expect(vi.mocked(haptic).mock.calls).toEqual([['select']]);
   });
 });
 
