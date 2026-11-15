@@ -8187,23 +8187,53 @@ CREATE OR REPLACE FUNCTION "public"."recompute_golf_round_totals"("p_round_id" "
 BEGIN
   UPDATE golf_rounds r
   SET
-    total_putts = COALESCE(t.sum_putts, 0),
+    -- NULL when no hole has a putt count: "not recorded", never 0 putts.
+    total_putts = t.sum_putts,
     total_gir = COALESCE(t.sum_gir, 0),
-    total_gir_possible = COALESCE(t.cnt, 0),
+    total_gir_possible = COALESCE(t.cnt_gir_known, 0),
     total_fairways_hit = COALESCE(t.sum_fwy_hit, 0),
-    total_fairways = COALESCE(t.cnt_par4plus, 0)
+    total_fairways = COALESCE(t.cnt_par4plus, 0),
+    -- totals follow holes (20261114090100): on a completed round whose hole
+    -- rows number holes_played and are all scored, total_score and
+    -- score_to_par are the holes' own sums, as round-submit.ts computes them.
+    -- Anything else (an in-progress save, the middle of a submit's hole
+    -- rewrite) keeps what is stored.
+    total_score = CASE
+      WHEN r.status = 'completed'
+       AND t.helm_holes > 0
+       AND t.helm_holes = r.holes_played
+       AND t.helm_scored = t.helm_holes
+      THEN t.helm_score_sum
+      ELSE r.total_score
+    END,
+    score_to_par = CASE
+      WHEN r.status = 'completed'
+       AND t.helm_holes > 0
+       AND t.helm_holes = r.holes_played
+       AND t.helm_scored = t.helm_holes
+      THEN t.helm_score_sum - t.helm_par_sum
+      ELSE r.score_to_par
+    END
   FROM (
     SELECT
       SUM(putts) AS sum_putts,
+      COUNT(*) AS helm_holes,
+      COUNT(score) AS helm_scored,
+      SUM(score) AS helm_score_sum,
+      SUM(par) AS helm_par_sum,
+      -- GIR needs the putt count: a hole without one is never credited.
       SUM(CASE
             WHEN par >= 3
              AND score > 0
-             AND (score - COALESCE(putts, 0)) > 0
-             AND (score - COALESCE(putts, 0)) <= (par - 2)
+             AND putts IS NOT NULL
+             AND (score - putts) > 0
+             AND (score - putts) <= (par - 2)
             THEN 1 ELSE 0
           END) AS sum_gir,
-      COUNT(*) AS cnt,
+      -- denominator: scored holes with a recorded putt count (was: every hole row)
+      SUM(CASE WHEN score > 0 AND putts IS NOT NULL THEN 1 ELSE 0 END) AS cnt_gir_known,
       SUM(CASE WHEN par >= 4 AND fairway_hit = true THEN 1 ELSE 0 END) AS sum_fwy_hit,
+      -- denominator: par-4/5 holes with a recorded fairway result (was: all par-4/5)
       SUM(CASE WHEN par >= 4 AND fairway_hit IS NOT NULL THEN 1 ELSE 0 END) AS cnt_par4plus
     FROM golf_holes
     WHERE round_id = p_round_id

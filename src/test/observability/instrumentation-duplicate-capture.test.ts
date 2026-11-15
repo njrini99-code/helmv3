@@ -269,41 +269,48 @@ describe('sharedIgnoreErrors — a HELD migration RPC the app already falls back
     return ignoreErrors.some((p) => (p instanceof RegExp ? p.test(message) : typeof p === 'string' && message.includes(p)));
   }
 
-  it('drops the PGRST202 auto-capture for golf_qualifier_selection_reasons, and only that function', async () => {
+  // Three ignores were dropped once their migrations were applied in production (all three 2026-10-21, ledger
+  // re-checked 2026-11-15): golf_qualifier_selection_reasons (20260929200000), the flight recorder's batch writer
+  // helm_debug_record_trace_steps (20261007106000, Sentry -196) and golf_conversation_participants.hidden_at
+  // (20261008160000, Sentry -1A0). Each going missing now is a real fault and must page.
+  it('no longer drops the PGRST202 auto-capture for golf_qualifier_selection_reasons (applied)', async () => {
     await register();
     const ignoreErrors = mocks.init.mock.calls[0]![0].ignoreErrors as unknown[];
     expect(
       matches(ignoreErrors, 'Could not find the function public.golf_qualifier_selection_reasons(p_qualifier_id) in the schema cache'),
-    ).toBe(true);
-    // A live RPC that goes missing must still page.
-    expect(
-      matches(ignoreErrors, 'Could not find the function public.get_player_hub_events(p_player_id, p_since, p_team_id) in the schema cache'),
     ).toBe(false);
     expect(matches(ignoreErrors, 'permission denied for function golf_qualifier_selection_reasons')).toBe(false);
   });
 
-  // Sentry JAVASCRIPT-NEXTJS-196 (34 events in 24h to 2026-10-15): the flight recorder's batch RPC is HELD
-  // (20261007106000) and helm-flight-recorder.ts falls back to per-step writes on PGRST202.
-  it('drops the PGRST202 auto-capture for helm_debug_record_trace_steps (the batch), not the live per-step RPC', async () => {
+  it('no longer drops the PGRST202 auto-capture for helm_debug_record_trace_steps (applied), nor the per-step RPC', async () => {
     await register();
     const ignoreErrors = mocks.init.mock.calls[0]![0].ignoreErrors as unknown[];
     expect(
       matches(ignoreErrors, 'Could not find the function public.helm_debug_record_trace_steps(p_steps, p_trace_id) in the schema cache'),
-    ).toBe(true);
-    // The live single-step writer going missing must still page.
+    ).toBe(false);
     expect(
       matches(ignoreErrors, 'Could not find the function public.helm_debug_record_trace_step(p_layer, p_metadata) in the schema cache'),
     ).toBe(false);
   });
 
-  // Sentry JAVASCRIPT-NEXTJS-1A0 (87 events in 24h to 2026-10-15): golf_conversation_participants.hidden_at is
-  // HELD (20261008160000); conversation-hide.ts probes the column and reads 42703 as "not available yet".
-  it('drops the 42703 auto-capture for golf_conversation_participants.hidden_at, and only that column', async () => {
+  it('no longer drops the 42703 auto-capture for golf_conversation_participants.hidden_at (applied)', async () => {
     await register();
     const ignoreErrors = mocks.init.mock.calls[0]![0].ignoreErrors as unknown[];
-    expect(matches(ignoreErrors, 'column golf_conversation_participants.hidden_at does not exist')).toBe(true);
-    expect(matches(ignoreErrors, 'column golf_conversation_participants.last_read_at does not exist')).toBe(false);
+    expect(matches(ignoreErrors, 'column golf_conversation_participants.hidden_at does not exist')).toBe(false);
     expect(matches(ignoreErrors, 'column golf_messages.hidden_at does not exist')).toBe(false);
+  });
+
+  // 20260903150000_helm_debug_agent_runs.sql is still HELD (not in the production ledger, 2026-11-15), so its three
+  // facades stay ignored by name, and a live helm_debug RPC going missing still pages.
+  it('still drops the PGRST202 auto-capture for the three HELD agent-run facades, and only those', async () => {
+    await register();
+    const ignoreErrors = mocks.init.mock.calls[0]![0].ignoreErrors as unknown[];
+    for (const fn of ['helm_debug_record_agent_run', 'helm_debug_list_agent_runs', 'helm_debug_get_agent_run']) {
+      expect(matches(ignoreErrors, `Could not find the function public.${fn}(p_run) in the schema cache`)).toBe(true);
+    }
+    expect(
+      matches(ignoreErrors, 'Could not find the function public.helm_debug_record_trace_step(p_layer, p_metadata) in the schema cache'),
+    ).toBe(false);
   });
 
   // Sentry JAVASCRIPT-NEXTJS-1D3 (production, 2026-10-21 to 2026-11-15) was the pre-apply PGRST202 for
