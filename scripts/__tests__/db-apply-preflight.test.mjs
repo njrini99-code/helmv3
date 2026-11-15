@@ -121,7 +121,10 @@ describe('isHeldInRegister', () => {
       names.filter((name) => !isHeldInRegister(register, name)).map((name) => `${name}: ${status}`),
     );
     expect(leaks).toEqual([]);
-    expect(isHeldInRegister(register, '20261031150000_golf_conversation_pins.sql')).toBe(true);
+    // Locked on a fixture: the pins row was applied on 2026-11-15, so the real register no longer carries its
+    // held status. This is that row's status as it stood until then.
+    const pinsRow = '| `20261031150000_golf_conversation_pins.sql` | **HOLD — WRITTEN, NOT APPLIED** | Pins. |';
+    expect(isHeldInRegister(pinsRow, '20261031150000_golf_conversation_pins.sql')).toBe(true);
   });
 
   it('the old regex missed it — this is the regression being locked', () => {
