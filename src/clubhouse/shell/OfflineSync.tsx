@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { getSyncEngine } from '@/lib/offline/sync-engine';
 import { useOfflineSyncStore } from '@/stores/offline-sync-store';
+import { useServiceWorker } from '@/hooks/golf/use-service-worker';
 import { chReport } from '../lib/track';
 
 /**
@@ -11,8 +12,15 @@ import { chReport } from '../lib/track';
  * round screen was open, so a round, hole or shot queued offline waited until
  * the player opened a round again. No UI: the store it feeds drives
  * Clubhouse's own offline banner and round screens.
+ *
+ * It also registers the service worker (public/sw.js), which only Fairway's
+ * OfflineProvider used to do: the offline page, the cached dashboard pages and
+ * the Background Sync wake-up. The hook turns the worker's SYNC_REQUESTED
+ * message into the `sw-sync-requested` event handled below. Production builds
+ * only; in development the hook unregisters any worker instead.
  */
 export function OfflineSync() {
+  useServiceWorker({ immediate: true });
   useEffect(() => {
     const engine = getSyncEngine();
     engine.setCallbacks({
