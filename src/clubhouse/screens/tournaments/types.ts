@@ -188,6 +188,12 @@ export interface ChTourPlayerRound {
   trust: ChTourTrust;
   /** The linked `golf_rounds` id, or null for an entered score. */
   roundId: string | null;
+  /**
+   * The linked card is still open (its golf_rounds row is in progress: a card kept hole by hole here, or a round being
+   * played), so its holes can be corrected as hole scoring does. False once submitted (completed rounds are never
+   * changed, D-82); left out for an entered score.
+   */
+  cardOpen?: boolean;
   /** Hole-by-hole scores exist (a totals-only round counts in team scores, never in hole figures). */
   holesKnown: boolean;
   /** Strokes-gained data exists for this round (the design's shot dot). */

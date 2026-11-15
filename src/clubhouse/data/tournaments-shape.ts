@@ -194,6 +194,8 @@ const TRUST_OF_ROUND: Record<ChTourRoundStatus, ChTourTrust> = { upcoming: 'upco
 export interface TourLinkedRound {
   total: number | null;
   completed: boolean;
+  /** Submitted (golf_rounds completed): never changed by the event. A full card still in progress is `completed`, not this. */
+  submitted?: boolean;
   holes: boolean;
   shots: boolean;
 }
@@ -210,7 +212,7 @@ export function linkedRoundOf(
   hasHoles: boolean,
 ): TourLinkedRound {
   const full = r.status !== 'completed' && card != null && card.n >= (r.holes_played ?? 18);
-  return { total: full ? card.sum : r.total_score, completed: r.status === 'completed' || full, holes: hasHoles, shots: r.strokes_gained_total != null };
+  return { total: full ? card.sum : r.total_score, completed: r.status === 'completed' || full, submitted: r.status === 'completed', holes: hasHoles, shots: r.strokes_gained_total != null };
 }
 
 export interface TourRawRound extends TourRoundRow {
@@ -383,6 +385,7 @@ export function shapeEvent(raw: TourRawEvent, now: string, today: string = now.s
         source: row?.entered_total != null ? 'coach' : 'card',
         trust: TRUST_OF_ROUND[view.status],
         roundId: row?.round_id ?? null,
+        ...(row?.round_id && linked ? { cardOpen: !linked.submitted } : {}),
         holesKnown: !!linked?.holes && row?.entered_total == null,
         shotData: !!linked?.shots && row?.entered_total == null,
         officialTotal: null,
