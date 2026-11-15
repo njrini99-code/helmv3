@@ -19,7 +19,8 @@
 --   that filters on the column is deployed: a filter on a missing column
 --   fails the query.
 --
--- ROLLBACK (supabase/rollbacks/20261115210200_golf_messages_events_is_test.rollback.sql):
+-- ROLLBACK (supabase/rollbacks/
+--   20261115210200_golf_messages_events_is_test.rollback.sql):
 -- ROLLBACK:   ALTER TABLE public.golf_messages DROP COLUMN is_test;
 -- ROLLBACK:   ALTER TABLE public.golf_events DROP COLUMN is_test;
 --   Cost of rolling back: the flags set since are lost.

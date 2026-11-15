@@ -85,7 +85,11 @@ function fakeSupabase(seed: Rows) {
       if (args.p_prune !== false) {
         for (const t of DEMO_TABLES) {
           const live = new Set(rows(t).map((r) => rowKey(t, r)));
-          for (const k of Object.keys(ledger[t] ?? {})) if (!live.has(k)) (delete ledger[t]![k], (pruned += 1));
+          for (const k of Object.keys(ledger[t] ?? {})) {
+            if (live.has(k)) continue;
+            delete ledger[t]![k];
+            pruned += 1;
+          }
         }
       }
       return { data: { pruned, tables: structuredClone(ledger) }, error: null };

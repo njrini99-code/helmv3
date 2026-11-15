@@ -46,7 +46,8 @@
 -- VERIFY:   and t.tgenabled = 'O') = 18;
 -- VERIFY: select 1 where exists (select 1 from pg_catalog.pg_proc p
 -- VERIFY:   join pg_catalog.pg_namespace n on n.oid = p.pronamespace
--- VERIFY:   where n.nspname = 'helm_private' and p.proname = 'golf_demo_write_guard'
+-- VERIFY:   where n.nspname = 'helm_private'
+-- VERIFY:   and p.proname = 'golf_demo_write_guard'
 -- VERIFY:   and p.prosecdef
 -- VERIFY:   and p.proconfig @> array['search_path=""']);
 --
@@ -127,65 +128,118 @@ BEGIN
 END
 $$;
 
-REVOKE ALL ON FUNCTION helm_private.golf_demo_write_guard() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION helm_private.golf_demo_write_guard()
+FROM public, anon, authenticated;
 
 COMMENT ON FUNCTION helm_private.golf_demo_write_guard() IS
-  'DD-13: refuses a signed-in account''s writes to demo-team rows. The generator (helm.golf_demo_writer = generator) and writes with no signed-in user pass.';
+'DD-13: refuses a signed-in account''s writes to demo-team rows. '
+'The generator (helm.golf_demo_writer = generator) and writes with no '
+'signed-in user pass.';
 
 -- Tables with their own team_id.
 DROP TRIGGER IF EXISTS golf_demo_write_guard ON public.golf_rounds;
-CREATE TRIGGER golf_demo_write_guard BEFORE INSERT OR UPDATE OR DELETE ON public.golf_rounds
-  FOR EACH ROW EXECUTE FUNCTION helm_private.golf_demo_write_guard();
+CREATE TRIGGER golf_demo_write_guard
+BEFORE INSERT OR UPDATE OR DELETE ON public.golf_rounds
+FOR EACH ROW
+EXECUTE FUNCTION helm_private.golf_demo_write_guard();
 DROP TRIGGER IF EXISTS golf_demo_write_guard ON public.golf_events;
-CREATE TRIGGER golf_demo_write_guard BEFORE INSERT OR UPDATE OR DELETE ON public.golf_events
-  FOR EACH ROW EXECUTE FUNCTION helm_private.golf_demo_write_guard();
+CREATE TRIGGER golf_demo_write_guard
+BEFORE INSERT OR UPDATE OR DELETE ON public.golf_events
+FOR EACH ROW
+EXECUTE FUNCTION helm_private.golf_demo_write_guard();
 DROP TRIGGER IF EXISTS golf_demo_write_guard ON public.golf_announcements;
-CREATE TRIGGER golf_demo_write_guard BEFORE INSERT OR UPDATE OR DELETE ON public.golf_announcements
-  FOR EACH ROW EXECUTE FUNCTION helm_private.golf_demo_write_guard();
+CREATE TRIGGER golf_demo_write_guard
+BEFORE INSERT OR UPDATE OR DELETE ON public.golf_announcements
+FOR EACH ROW
+EXECUTE FUNCTION helm_private.golf_demo_write_guard();
 DROP TRIGGER IF EXISTS golf_demo_write_guard ON public.golf_tasks;
-CREATE TRIGGER golf_demo_write_guard BEFORE INSERT OR UPDATE OR DELETE ON public.golf_tasks
-  FOR EACH ROW EXECUTE FUNCTION helm_private.golf_demo_write_guard();
+CREATE TRIGGER golf_demo_write_guard
+BEFORE INSERT OR UPDATE OR DELETE ON public.golf_tasks
+FOR EACH ROW
+EXECUTE FUNCTION helm_private.golf_demo_write_guard();
 DROP TRIGGER IF EXISTS golf_demo_write_guard ON public.golf_qualifiers;
-CREATE TRIGGER golf_demo_write_guard BEFORE INSERT OR UPDATE OR DELETE ON public.golf_qualifiers
-  FOR EACH ROW EXECUTE FUNCTION helm_private.golf_demo_write_guard();
+CREATE TRIGGER golf_demo_write_guard
+BEFORE INSERT OR UPDATE OR DELETE ON public.golf_qualifiers
+FOR EACH ROW
+EXECUTE FUNCTION helm_private.golf_demo_write_guard();
 DROP TRIGGER IF EXISTS golf_demo_write_guard ON public.golf_practice_plans;
-CREATE TRIGGER golf_demo_write_guard BEFORE INSERT OR UPDATE OR DELETE ON public.golf_practice_plans
-  FOR EACH ROW EXECUTE FUNCTION helm_private.golf_demo_write_guard();
+CREATE TRIGGER golf_demo_write_guard
+BEFORE INSERT OR UPDATE OR DELETE ON public.golf_practice_plans
+FOR EACH ROW
+EXECUTE FUNCTION helm_private.golf_demo_write_guard();
 DROP TRIGGER IF EXISTS golf_demo_write_guard ON public.golf_team_members;
-CREATE TRIGGER golf_demo_write_guard BEFORE INSERT OR UPDATE OR DELETE ON public.golf_team_members
-  FOR EACH ROW EXECUTE FUNCTION helm_private.golf_demo_write_guard();
+CREATE TRIGGER golf_demo_write_guard
+BEFORE INSERT OR UPDATE OR DELETE ON public.golf_team_members
+FOR EACH ROW
+EXECUTE FUNCTION helm_private.golf_demo_write_guard();
 DROP TRIGGER IF EXISTS golf_demo_write_guard ON public.golf_documents;
-CREATE TRIGGER golf_demo_write_guard BEFORE INSERT OR UPDATE OR DELETE ON public.golf_documents
-  FOR EACH ROW EXECUTE FUNCTION helm_private.golf_demo_write_guard();
+CREATE TRIGGER golf_demo_write_guard
+BEFORE INSERT OR UPDATE OR DELETE ON public.golf_documents
+FOR EACH ROW
+EXECUTE FUNCTION helm_private.golf_demo_write_guard();
 DROP TRIGGER IF EXISTS golf_demo_write_guard ON public.golf_travel_itineraries;
-CREATE TRIGGER golf_demo_write_guard BEFORE INSERT OR UPDATE OR DELETE ON public.golf_travel_itineraries
-  FOR EACH ROW EXECUTE FUNCTION helm_private.golf_demo_write_guard();
+CREATE TRIGGER golf_demo_write_guard
+BEFORE INSERT OR UPDATE OR DELETE ON public.golf_travel_itineraries
+FOR EACH ROW
+EXECUTE FUNCTION helm_private.golf_demo_write_guard();
 DROP TRIGGER IF EXISTS golf_demo_write_guard ON public.golf_tournaments;
-CREATE TRIGGER golf_demo_write_guard BEFORE INSERT OR UPDATE OR DELETE ON public.golf_tournaments
-  FOR EACH ROW EXECUTE FUNCTION helm_private.golf_demo_write_guard();
+CREATE TRIGGER golf_demo_write_guard
+BEFORE INSERT OR UPDATE OR DELETE ON public.golf_tournaments
+FOR EACH ROW
+EXECUTE FUNCTION helm_private.golf_demo_write_guard();
 DROP TRIGGER IF EXISTS golf_demo_write_guard ON public.golf_tournament_entries;
-CREATE TRIGGER golf_demo_write_guard BEFORE INSERT OR UPDATE OR DELETE ON public.golf_tournament_entries
-  FOR EACH ROW EXECUTE FUNCTION helm_private.golf_demo_write_guard();
+CREATE TRIGGER golf_demo_write_guard
+BEFORE INSERT OR UPDATE OR DELETE ON public.golf_tournament_entries
+FOR EACH ROW
+EXECUTE FUNCTION helm_private.golf_demo_write_guard();
 
 -- Tables that reach their team through a parent.
 DROP TRIGGER IF EXISTS golf_demo_write_guard ON public.golf_holes;
-CREATE TRIGGER golf_demo_write_guard BEFORE INSERT OR UPDATE OR DELETE ON public.golf_holes
-  FOR EACH ROW EXECUTE FUNCTION helm_private.golf_demo_write_guard('round_id', 'golf_rounds');
+CREATE TRIGGER golf_demo_write_guard
+BEFORE INSERT OR UPDATE OR DELETE ON public.golf_holes
+FOR EACH ROW
+EXECUTE FUNCTION helm_private.golf_demo_write_guard(
+    'round_id', 'golf_rounds'
+);
 DROP TRIGGER IF EXISTS golf_demo_write_guard ON public.golf_shots;
-CREATE TRIGGER golf_demo_write_guard BEFORE INSERT OR UPDATE OR DELETE ON public.golf_shots
-  FOR EACH ROW EXECUTE FUNCTION helm_private.golf_demo_write_guard('round_id', 'golf_rounds');
+CREATE TRIGGER golf_demo_write_guard
+BEFORE INSERT OR UPDATE OR DELETE ON public.golf_shots
+FOR EACH ROW
+EXECUTE FUNCTION helm_private.golf_demo_write_guard(
+    'round_id', 'golf_rounds'
+);
 DROP TRIGGER IF EXISTS golf_demo_write_guard ON public.golf_event_attendance;
-CREATE TRIGGER golf_demo_write_guard BEFORE INSERT OR UPDATE OR DELETE ON public.golf_event_attendance
-  FOR EACH ROW EXECUTE FUNCTION helm_private.golf_demo_write_guard('event_id', 'golf_events');
+CREATE TRIGGER golf_demo_write_guard
+BEFORE INSERT OR UPDATE OR DELETE ON public.golf_event_attendance
+FOR EACH ROW
+EXECUTE FUNCTION helm_private.golf_demo_write_guard(
+    'event_id', 'golf_events'
+);
 DROP TRIGGER IF EXISTS golf_demo_write_guard ON public.golf_messages;
-CREATE TRIGGER golf_demo_write_guard BEFORE INSERT OR UPDATE OR DELETE ON public.golf_messages
-  FOR EACH ROW EXECUTE FUNCTION helm_private.golf_demo_write_guard('conversation_id', 'golf_conversations');
+CREATE TRIGGER golf_demo_write_guard
+BEFORE INSERT OR UPDATE OR DELETE ON public.golf_messages
+FOR EACH ROW
+EXECUTE FUNCTION helm_private.golf_demo_write_guard(
+    'conversation_id', 'golf_conversations'
+);
 DROP TRIGGER IF EXISTS golf_demo_write_guard ON public.golf_message_attachments;
-CREATE TRIGGER golf_demo_write_guard BEFORE INSERT OR UPDATE OR DELETE ON public.golf_message_attachments
-  FOR EACH ROW EXECUTE FUNCTION helm_private.golf_demo_write_guard('message_id', 'golf_messages');
+CREATE TRIGGER golf_demo_write_guard
+BEFORE INSERT OR UPDATE OR DELETE ON public.golf_message_attachments
+FOR EACH ROW
+EXECUTE FUNCTION helm_private.golf_demo_write_guard(
+    'message_id', 'golf_messages'
+);
 DROP TRIGGER IF EXISTS golf_demo_write_guard ON public.golf_task_assignments;
-CREATE TRIGGER golf_demo_write_guard BEFORE INSERT OR UPDATE OR DELETE ON public.golf_task_assignments
-  FOR EACH ROW EXECUTE FUNCTION helm_private.golf_demo_write_guard('task_id', 'golf_tasks');
+CREATE TRIGGER golf_demo_write_guard
+BEFORE INSERT OR UPDATE OR DELETE ON public.golf_task_assignments
+FOR EACH ROW
+EXECUTE FUNCTION helm_private.golf_demo_write_guard(
+    'task_id', 'golf_tasks'
+);
 DROP TRIGGER IF EXISTS golf_demo_write_guard ON public.golf_qualifier_entries;
-CREATE TRIGGER golf_demo_write_guard BEFORE INSERT OR UPDATE OR DELETE ON public.golf_qualifier_entries
-  FOR EACH ROW EXECUTE FUNCTION helm_private.golf_demo_write_guard('qualifier_id', 'golf_qualifiers');
+CREATE TRIGGER golf_demo_write_guard
+BEFORE INSERT OR UPDATE OR DELETE ON public.golf_qualifier_entries
+FOR EACH ROW
+EXECUTE FUNCTION helm_private.golf_demo_write_guard(
+    'qualifier_id', 'golf_qualifiers'
+);
