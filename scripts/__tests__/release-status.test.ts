@@ -34,6 +34,8 @@ let shas: string[];
 let server: Server;
 let site: string;
 let stamp = '';
+// Turbopack builds (#2193) serve chunks under /_next/static/immutable/chunks/.
+let chunkDir = '/_next/static/chunks';
 
 beforeAll(async () => {
   tmp = realpathSync(mkdtempSync(join(tmpdir(), 'helm-release-status-')));
@@ -51,8 +53,8 @@ beforeAll(async () => {
 
   server = createServer((req, res) => {
     if (req.url === '/') {
-      res.end('<html><script src="/_next/static/chunks/main-abc.js"></script></html>');
-    } else if (req.url === '/_next/static/chunks/main-abc.js') {
+      res.end(`<html><script src="${chunkDir}/main-abc.js"></script></html>`);
+    } else if (req.url === `${chunkDir}/main-abc.js`) {
       res.end(`self.__SENTRY_RELEASE__={id:"${stamp}"};`);
     } else {
       res.statusCode = 404;
@@ -89,6 +91,20 @@ describe('release-status', () => {
     const out = JSON.parse(stdout);
     expect(out.deployed).toBe(shas[9]);
     expect(out.behind).toBe(70);
+  });
+
+  it('reads the stamp from a Turbopack build, whose chunks sit under immutable/', async () => {
+    chunkDir = '/_next/static/immutable/chunks';
+    stamp = shas[79];
+    try {
+      const { code, stdout } = await releaseStatus();
+      expect(code).toBe(0);
+      const out = JSON.parse(stdout);
+      expect(out.deployed).toBe(shas[79]);
+      expect(out.behind).toBe(0);
+    } finally {
+      chunkDir = '/_next/static/chunks';
+    }
   });
 
   it('stays UNKNOWN when the served stamp is not on main', async () => {
