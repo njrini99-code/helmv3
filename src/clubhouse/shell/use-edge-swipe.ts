@@ -77,7 +77,7 @@ export function useEdgeSwipeBack(screen: RefObject<HTMLElement | null>, { enable
     // The one listener that can hold up a scroll (it may preventDefault) is on only while a touch that landed at the edge
     // is being read (S4.6, MOT-02), so every other touch on the screen scrolls without waiting on script.
     const MOVE = { passive: false } as const;
-    const disarm = () => el.removeEventListener('touchmove', onMove, MOVE);
+    const disarm = () => el.removeEventListener('touchmove', onMove);
     /** The screens a touch at the edge may move are composited from the moment it lands, not on its first move (MOT-03). */
     const lift = () => {
       for (const n of [el, ...covered]) n.style.willChange = 'transform';
