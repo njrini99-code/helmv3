@@ -133,7 +133,7 @@
     "item": 6,
     "name": "A_DASHBOARD_URL_THAT_MATCHES_NOTHING_OR",
     "chCode": "CH-1306",
-    "meaning": "A dashboard URL that matches nothing, or an id that no longer exists (a deleted round or player), inside the Clubhouse shell",
+    "meaning": "A dashboard URL that matches nothing, or an id that answered with no row (a deleted round, player, plan or drill, or a malformed id), inside the Clubhouse shell",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
@@ -16462,6 +16462,17 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
+    "id": 130490,
+    "page": "P013",
+    "category": 4,
+    "item": 90,
+    "name": "WHATS_NEW_SOMEONE_WITH_NO_TEAM",
+    "chCode": "CH-13385",
+    "meaning": "What’s new: someone with no team (no organization, or no team resolved; GAP-S-36)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 130501,
     "page": "P013",
     "category": 5,
@@ -16833,7 +16844,7 @@
     "item": 39,
     "name": "WHATS_NEW_THE_FEED_DOESNT_LOAD",
     "chCode": "CH-13231",
-    "meaning": "What’s new: the feed doesn’t load (the action fails, or the coach’s team can’t be resolved)",
+    "meaning": "What’s new: the feed doesn’t load (the action fails, or every kind's read fails: insights, patterns with the roster behind them, and focus areas; GAP-S-02)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -16955,6 +16966,28 @@
     "name": "REMOVE_FOCUS_ON_A_READ_FAILS",
     "chCode": "CH-13008",
     "meaning": "Remove focus on a read fails (written when its Undo toast goes)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130690,
+    "page": "P013",
+    "category": 6,
+    "item": 90,
+    "name": "WHATS_NEW_ONE_OR_TWO_KINDS_DONT",
+    "chCode": "CH-13285",
+    "meaning": "What’s new: one or two kinds don’t load (insights, patterns or the roster behind them, focus areas) while the rest answered (GAP-S-02)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130691,
+    "page": "P013",
+    "category": 6,
+    "item": 91,
+    "name": "PRACTICE_ONE_PART_OF_A_PAGE_DOESNT",
+    "chCode": "CH-13286",
+    "meaning": "Practice: one part of a page doesn’t load: the team's plan format (on a plan, or on Plan format), a saved template picked for New plan, or part of the drill bank (GAP-S-03, GAP-S-07, GAP-S-28, GAP-S-37)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -19543,6 +19576,17 @@
     "name": "DEMO_ENTRY_THE_SERVER_REFUSES_OR_THE",
     "chCode": "CH-15036",
     "meaning": "Demo entry: the server refuses (a rate limit, anything `enterDemo` words) or the request fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150690,
+    "page": "P015",
+    "category": 6,
+    "item": 90,
+    "name": "A_NEW_PLAYERS_QUESTIONS_THE_READ_OF",
+    "chCode": "CH-15290",
+    "meaning": "A new player's questions (/golf/player): the read of who this account is fails (the coach or player profile, or the declared role when both profiles are unfinished; GAP-S-04)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },

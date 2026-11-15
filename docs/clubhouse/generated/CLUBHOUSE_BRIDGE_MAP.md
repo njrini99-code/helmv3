@@ -165,9 +165,9 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P010 | 3 | 10 |  | 16 | 10 | 25 | 1 | 4 | 1 |  | 4 | 1 | 1 | 2 | 1 | 2 | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 90 |
 | P011 | 16 | 15 |  | 26 | 11 | 44 | 22 | 5 | 2 |  | 24 | 2 | 1 | 4 | 4 | 4 | 11 | 11 | 3 | 1 | 1 |  | 1 | 2 |  | 210 |
 | P012 | 3 | 3 |  | 8 | 19 | 22 | 3 | 3 | 2 |  | 5 | 1 |  | 4 | 4 | 2 | 5 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 96 |
-| P013 | 6 | 13 |  | 31 | 3 | 42 | 62 | 7 | 3 |  | 3 | 1 |  | 3 | 3 | 4 | 10 | 19 | 1 |  | 1 |  | 1 |  |  | 213 |
+| P013 | 6 | 13 |  | 32 | 3 | 44 | 62 | 7 | 3 |  | 3 | 1 |  | 3 | 3 | 4 | 10 | 19 | 1 |  | 1 |  | 1 |  |  | 216 |
 | P014 | 1 | 3 | 4 | 7 | 11 | 10 | 4 | 2 | 4 |  | 2 | 1 | 1 | 1 | 1 | 4 | 3 | 8 | 1 | 1 |  |  |  |  |  | 69 |
-| P015 |  | 7 | 2 | 3 | 12 | 21 | 27 | 2 | 2 |  |  | 3 |  | 1 |  | 17 | 7 | 6 | 2 | 1 | 1 |  | 1 |  |  | 115 |
+| P015 |  | 7 | 2 | 3 | 12 | 22 | 27 | 2 | 2 |  |  | 3 |  | 1 |  | 17 | 7 | 6 | 2 | 1 | 1 |  | 1 |  |  | 116 |
 | P016 | 31 | 1 | 1 | 26 |  | 35 | 1 | 1 |  | 2 | 4 | 1 |  |  | 5 | 2 |  | 3 |  |  |  |  |  |  |  | 113 |
 
 ## P001 Shell
@@ -185,7 +185,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 10403 | CH-1303 | 04 Empty | `THE_BELLS_FILTER_HAS_NOTHING` | implemented | The bell's filter has nothing |
 | 10404 | CH-1304 | 04 Empty | `NOTHING_IS_SCHEDULED` | deprecated | Retired 2026-11-07 (Dashboard cuts). Nothing is scheduled |
 | 10405 | CH-1305 | 04 Empty | `A_COACH_WITH_ONE_TEAM_A_COACH` | implemented | A coach with one team, a coach who cannot switch (an assistant on several teams), or a player |
-| 10406 | CH-1306 | 04 Empty | `A_DASHBOARD_URL_THAT_MATCHES_NOTHING_OR` | implemented | A dashboard URL that matches nothing, or an id that no longer exists (a deleted round or player), inside the Clubhouse shell |
+| 10406 | CH-1306 | 04 Empty | `A_DASHBOARD_URL_THAT_MATCHES_NOTHING_OR` | implemented | A dashboard URL that matches nothing, or an id that answered with no row (a deleted round, player, plan or drill, or a malformed id), inside the Clubhouse shell |
 | 10407 | CH-1307 | 04 Empty | `MORE_UNREAD_THAN_THE_BELL_LISTS` | implemented | More unread than the bell lists |
 | 10601 | CH-1001 | 06 Server / system error | `MARK_ALL_READ_IN_THE_BELL_FAILS` | implemented | "Mark all read" in the bell fails |
 | 10602 | CH-1201 | 06 Server / system error | `THE_BELLS_LIST_DOESNT_LOAD` | implemented | The bell's list doesn't load |
@@ -1670,6 +1670,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130436 | CH-13395 | 04 Empty | `PRACTICE_NEW_PLAN_AND_SOMEONE_WITH_NO` | implemented | Practice: New plan, and someone with no team |
 | 130437 | CH-13396 | 04 Empty | `PRACTICE_A_COACHS_FIRST_PLAN_OR_NO` | implemented | Practice: a coach's first plan, or no practice this week |
 | 130438 | CH-13397 | 04 Empty | `PRACTICE_A_PLAYER_WITH_NOTHING_PUBLISHED` | implemented | Practice: a player with nothing published |
+| 130490 | CH-13385 | 04 Empty | `WHATS_NEW_SOMEONE_WITH_NO_TEAM` | implemented | What’s new: someone with no team (no organization, or no team resolved; GAP-S-36) |
 | 130501 | CH-13120 | 05 Validation | `ASK_SEND_WHILE_AN_ACTION_CARD_WAITS` | implemented | Ask: Send while an action card waits for Confirm or Cancel |
 | 130502 | CH-13180 | 05 Validation | `PRACTICE_A_DRILL_RUNS_PAST_ITS_TURN` | implemented | Practice: a drill runs past its turn |
 | 130503 | CH-13181 | 05 Validation | `PRACTICE_AN_ALL_DAY_PRACTICE_IN_NEW` | implemented | Practice: an all-day practice in New plan |
@@ -1703,7 +1704,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130636 | CH-13272 | 06 Server / system error | `STANDING_THE_COHORT_LOOKUP_FAILED` | implemented | Standing: the cohort lookup (their team's gender, which picks the Tour) failed |
 | 130637 | CH-13261 | 06 Server / system error | `PROFILE_WHAT_COACHHELM_SEES_DOESNT_LOAD` | deprecated | (retired with the Game profile, chs-37) Profile: what CoachHelm sees doesn't load |
 | 130638 | CH-13230 | 06 Server / system error | `WHATS_NEW_A_REFRESH_FAILS_AFTER_THE` | implemented | What’s new: a refresh fails after the week loaded |
-| 130639 | CH-13231 | 06 Server / system error | `WHATS_NEW_THE_FEED_DOESNT_LOAD` | implemented | What’s new: the feed doesn’t load (the action fails, or the coach’s team can’t be resolved) |
+| 130639 | CH-13231 | 06 Server / system error | `WHATS_NEW_THE_FEED_DOESNT_LOAD` | implemented | What’s new: the feed doesn’t load (the action fails, or every kind's read fails: insights, patterns with the roster behind them, and focus areas; GAP-S-02) |
 | 130640 | CH-13232 | 06 Server / system error | `WHATS_NEW_THE_FEED_CRASHES_WHILE_DRAWING` | implemented | What’s new: the feed crashes while drawing |
 | 130641 | CH-13209 | 06 Server / system error | `COACH_PLAYER_PAGE_DID_NOT_LOAD_ON` | implemented | Coach player page did not load: on a coach's view of one player (`?view=…&player=`), the check that the player is on this coach's team failed (the membership, the name, the newest round, or a CoachHelm gate lookup) |
 | 130642 | CH-13007 | 06 Server / system error | `RECHECK_RATE_LIMITED` | implemented | Re-check rate-limited |
@@ -1715,6 +1716,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130648 | CH-13083 | 06 Server / system error | `PRACTICE_A_NEW_DRILL_SAVED` | implemented | Practice: a new drill saved |
 | 130649 | CH-13084 | 06 Server / system error | `PRACTICE_OFFLINE_WHILE_EDITING` | implemented | Practice: offline while editing |
 | 130650 | CH-13008 | 06 Server / system error | `REMOVE_FOCUS_ON_A_READ_FAILS` | implemented | Remove focus on a read fails (written when its Undo toast goes) |
+| 130690 | CH-13285 | 06 Server / system error | `WHATS_NEW_ONE_OR_TWO_KINDS_DONT` | implemented | What’s new: one or two kinds don’t load (insights, patterns or the roster behind them, focus areas) while the rest answered (GAP-S-02) |
+| 130691 | CH-13286 | 06 Server / system error | `PRACTICE_ONE_PART_OF_A_PAGE_DOESNT` | implemented | Practice: one part of a page doesn’t load: the team's plan format (on a plan, or on Plan format), a saved template picked for New plan, or part of the drill bank (GAP-S-03, GAP-S-07, GAP-S-28, GAP-S-37) |
 | 130701 | CH-13901 | 07 Network / offline | `AN_INSIGHT_IS_DISMISSED` | implemented | An insight is dismissed |
 | 130702 |  | 07 Network / offline | `WRITES_REFUSE_OFFLINE` | implemented | Assign as focus, Dismiss and Undo are refused while the browser is offline, before anything is sent: the shell's toast (CH-1903) names what did not happen (Couldn’t assign the focus to Jonah: you’re offline), the error haptic fires and Retry is offered. Dismiss's warning haptic has already fired when the refusal comes. |
 | 130703 | CH-13902 | 07 Network / offline | `A_PROPOSED_FOCUS_AREA_IS_ACCEPTED_OR` | implemented | A proposed focus area is accepted or declined |
@@ -1957,6 +1960,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 150619 | CH-15034 | 06 Server / system error | `STAFF_INVITATION_THE_SERVER_REFUSES_THE_ACCOUNT` | implemented | Staff invitation: the server refuses the account or the accept for any reason but the wrong account (CH-15944) |
 | 150620 | CH-15035 | 06 Server / system error | `NEW_COACH_THE_PROGRAM_COULD_NOT_BE` | implemented | New coach: the program could not be made (the action rolls the organization, team and coach back together) |
 | 150621 | CH-15036 | 06 Server / system error | `DEMO_ENTRY_THE_SERVER_REFUSES_OR_THE` | implemented | Demo entry: the server refuses (a rate limit, anything `enterDemo` words) or the request fails |
+| 150690 | CH-15290 | 06 Server / system error | `A_NEW_PLAYERS_QUESTIONS_THE_READ_OF` | implemented | A new player's questions (/golf/player): the read of who this account is fails (the coach or player profile, or the declared role when both profiles are unfinished; GAP-S-04) |
 | 150701 | CH-15004 | 07 Network / offline | `THE_SERVER_CANNOT_BE_REACHED` | implemented | The server cannot be reached |
 | 150705 | CH-15930 | 07 Network / offline | `THE_RESET_LINK_IS_SPENT_EXPIRED_OR` | implemented | The reset link is spent, expired or has no token (or the session ran out between the check and Save) |
 | 150706 | CH-15931 | 07 Network / offline | `THE_RESET_LINK_WAS_OPENED_ON_A` | implemented | The reset link was opened on a device signed in as someone else |

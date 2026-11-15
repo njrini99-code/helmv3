@@ -144,6 +144,7 @@ that throws and is logged (CH-15021), says so and can be sent again.
 | 150619 | CH-15034 | `STAFF_INVITATION_THE_SERVER_REFUSES_THE_ACCOUNT` | Staff invitation: the server refuses the account or the accept for any reason but the wrong account (CH-15944) |
 | 150620 | CH-15035 | `NEW_COACH_THE_PROGRAM_COULD_NOT_BE` | New coach: the program could not be made (the action rolls the organization, team and coach back together) |
 | 150621 | CH-15036 | `DEMO_ENTRY_THE_SERVER_REFUSES_OR_THE` | Demo entry: the server refuses (a rate limit, anything `enterDemo` words) or the request fails |
+| 150690 | CH-15290 | `A_NEW_PLAYERS_QUESTIONS_THE_READ_OF` | A new player's questions (/golf/player): the read of who this account is fails (the coach or player profile, or the declared role when both profiles are unfinished; GAP-S-04) |
 
 ## 07 — Network / offline
 
