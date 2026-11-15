@@ -15,9 +15,9 @@ import { coachDiveCore, loadCoachPlayerStanding, type ChCoachPlayerScope } from 
 import { firstName, partitionInsights, type ChHelmLifecycle } from './coachhelm-shape';
 import type { ChDeepInsight } from './coachhelm-dive-shape';
 import { loadPlayerStanding, readStandingRows } from './coachhelm-standing';
-import { classYearLabel, countsForScoring, lastTenFloor, loadSeasonRounds, loadTeamZone, seasonStartDate, type ChRound } from './season';
-import { lastTenRounds, playerStrokesGained, roundsForFigures } from './figure-window';
-import { sgPolicyAtSource, sgSourceFor } from './stats-common';
+import { classYearLabel, lastTenFloor, loadSeasonRounds, loadTeamZone, seasonStartDate, type ChRound } from './season';
+import { figureWindowRounds, lastTenRounds, playerStrokesGained, roundCount, roundsForFigures } from './figure-window';
+import { loadRoundCache, sgPolicyAtSource, sgSourceFor } from './stats-common';
 import { sgMixOf, type ChSgMix } from './stats-sg-mix';
 import { holeRounds } from './round-scope';
 import { teamLastTenStrokesGained } from './stats-team-sg';
@@ -185,34 +185,35 @@ export async function loadFileTrack(scope: ChCoachPlayerScope, zone: string): Pr
   }
 }
 
-/** How many of the newest rounds the penalty strip reads before it keeps the counted ones: practice rounds are dropped after the read. */
+/** How many rounds the penalty strip draws. */
+const PENALTY_ROUNDS = 8;
+/** How many of the newest hole rounds have their stats rows read, so a round without one never shortens the strip. */
 const PENALTY_READ = 24;
 
 /**
- * `golf_rounds.total_penalties` for the last 8 countable rounds, oldest first (04 8 N): completed, scored, never a test round, and
- * practice out, as every other figure on the page counts them (prod audit 2026-11-15, PL-CH-03, N13P-16: the read had no test filter,
- * and counted practice rounds Home and My stats leave out, so the strip said 1.5 a round where Home said 0.5).
+ * Penalty strokes for the player's last 8 rounds, oldest first (04 8 N), counted as every figure on the page counts them (DF-P-06): the
+ * one figures helper's rounds (`figureWindowRounds`: completed, never a test round, practice out, countable, eighteen holes), only those
+ * with their holes (a round posted as a total has no penalties to show), and each round's penalty strokes from its stats row, the
+ * source My stats and Ask read. Before, the strip read `golf_rounds.total_penalties` over the last 8 rounds of any length, so a nine
+ * sat beside eighteens and a total-only round showed a zero nobody recorded (prod audit PL-CH-03 had taken out test and practice).
  */
 export async function loadFilePenalties(supabase: Supabase, playerId: string, zone: string): Promise<Array<{ label: string; value: number }> | null> {
-  const { data, error } = await supabase
-    .from('golf_rounds')
-    .select('round_date, total_penalties, round_type')
-    .eq('player_id', playerId)
-    .eq('status', 'completed')
-    .eq('is_test', false)
-    .not('total_score', 'is', null)
-    .not('total_penalties', 'is', null)
-    .order('round_date', { ascending: false })
-    .limit(PENALTY_READ);
-  if (error) {
-    log('penalties', error);
+  const read = await loadSeasonRounds(supabase, [playerId], { surface: 'coachhelm.file.penalties', since: lastTenFloor() });
+  if (read.error) return null;
+  const newest = holeRounds(figureWindowRounds(read.rounds, { window: 'all', tz: zone })).slice(0, PENALTY_READ);
+  if (!newest.length) return [];
+  const cache = await loadRoundCache(supabase, newest.map((r) => r.id), 'coachhelm.file.penalties');
+  if (cache.error) {
+    log('penalties', 'stats rows read failed');
     return null;
   }
-  return (data ?? [])
-    .filter(countsForScoring)
-    .slice(0, 8)
-    .reverse()
-    .map((r) => ({ label: fileDay(r.round_date, zone) ?? '', value: r.total_penalties as number }));
+  return newest
+    .flatMap((r) => {
+      const value = roundCount(r, cache.byRound, 'penalties');
+      return value == null ? [] : [{ label: fileDay(r.round_date, zone) ?? '', value }];
+    })
+    .slice(0, PENALTY_ROUNDS)
+    .reverse();
 }
 
 /**
