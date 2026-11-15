@@ -4,6 +4,12 @@
  *
  * Checks the four things agent sessions repeatedly trip over on this machine
  * and prints the EXACT fix for each. Read-only; never mutates anything.
+ *
+ * `npm run doctor -- --ui` adds every UI dev tool (browsers, Safari, Simulator,
+ * the iPhone, Appium, axe, Lighthouse, MCP servers and their sign-in, staging
+ * sessions, where the env files point, disk) as AVAILABLE / MISSING /
+ * NOT CONNECTED / NEEDS NICK with one fix each (scripts/lib/ui-tools-check.mjs).
+ * That section reports; it never changes the exit code.
  */
 import { execSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
@@ -99,6 +105,11 @@ if (missing.length === 0) {
 } else {
   console.log(`  ! missing: ${missing.join(', ')}`);
   console.log('    fix: brew bundle   (Python linters: see the uv line at the bottom of Brewfile)');
+}
+
+if (process.argv.includes('--ui')) {
+  const { checkUiTools, printUiTools } = await import('./lib/ui-tools-check.mjs');
+  printUiTools(checkUiTools(repo));
 }
 
 console.log(failures === 0 ? '\nAll clear.' : `\n${failures} issue(s) — fixes above are copy-pasteable.`);

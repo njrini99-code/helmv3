@@ -182,6 +182,10 @@ GitHub branch protection requires the checks on `main` (`CI aggregate`,
 is installed. No permission rule or hook denies, asks for, or blocks Bash, Git, Supabase, or
 Vercel, except one owner-set `ask`: Vercel MCP deploy, promote, rollback and
 domain-purchase tools prompt first (the Vercel CLI is not gated). In an audit
-session only (`HELM_AUDIT=1`), `.claude/hooks/no-prod-in-audit.mjs` refuses MCP
-calls that name production or reach a Supabase server other than staging.
+session only (`HELM_AUDIT=1`), `.claude/hooks/no-prod-in-audit.mjs` refuses MCP,
+Bash and WebFetch calls that name production or reach a Supabase server other
+than staging. Outside hooks, browser suites and scripts that sign in refuse a
+production target unless `HELM_ALLOW_PRODUCTION=1`
+(`scripts/lib/production-site-guard.mjs`), and `debugger`, `helm-worker` and
+`helm-ui-worker` carry no production write tools.
 `docs/CONTROL_PLANE_ENFORCEMENT.md` lists what is wired.

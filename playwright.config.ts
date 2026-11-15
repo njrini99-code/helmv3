@@ -1,6 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 import dotenv from 'dotenv';
 import path from 'node:path';
+import { isProductionDatabase, productionAllowed, refuseProduction } from './scripts/lib/production-site-guard.mjs';
 
 /**
  * Load .env.local into THIS process before Playwright collects/imports any
@@ -17,6 +18,25 @@ import path from 'node:path';
  * fills the gap for a local run that relies on .env.local.
  */
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
+
+/**
+ * Never production by accident (15 Nov 2026 tooling audit): this suite signs in, and a signed-in run writes production rows
+ * on open; it once wrote 37 production rounds. A production base URL is refused everywhere. A production Supabase (the
+ * `.env.local` default) is refused on a local run; in CI it is a warning until the owner confirms which project the
+ * nightly secret names. HELM_ALLOW_PRODUCTION=1 is the deliberate override.
+ */
+{
+  const baseUrl = process.env.PLAYWRIGHT_BASE_URL;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  refuseProduction({ what: 'The root Playwright suite (playwright.config.ts)', baseUrl });
+  if (process.env.CI) {
+    if (isProductionDatabase(supabaseUrl) && !productionAllowed()) {
+      console.warn('::warning::The root Playwright suite is running against the production Supabase project. Point this job at staging.');
+    }
+  } else {
+    refuseProduction({ what: 'The root Playwright suite (playwright.config.ts)', supabaseUrl });
+  }
+}
 
 /**
  * Playwright E2E Test Configuration

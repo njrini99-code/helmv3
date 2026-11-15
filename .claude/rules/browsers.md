@@ -33,7 +33,11 @@ doesn't name its tier is not evidence.
 - **Desktop:** C at 1440×932 for the sweep, plus one W pass at the same size.
 - **CI:** the existing specs keep their engines
   (`playwright.clubhouse.config.ts`: Chromium and WebKit × motion on/off; the
-  gate's phone project is WebKit).
+  gate's phone project is WebKit). The motion gate (`motion-phone`) and the
+  phone pixel diff (`pixels-phone`) are WebKit; the desktop pixel diff is
+  Chromium. The logged-out production lane
+  (`scripts/clubhouse/audit/prod-public.mjs`, nightly) is W on the iPhone 17 Pro
+  preset, GET only.
 - **Claims:** "smooth", "60 fps", "native feel" and "passed on iPhone" need D
   evidence (`helm-safari-performance`). "Looks right on iPhone" needs W and, for
   anything with blur, safe areas or the keyboard, S.

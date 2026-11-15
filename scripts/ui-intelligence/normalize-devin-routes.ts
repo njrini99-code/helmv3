@@ -1,4 +1,9 @@
 /**
+ * SUPERSEDED (15 Nov 2026): `scripts/screens/list.mjs` lists every screen of every product from the filesystem and
+ * `scripts/screens/sweep.mjs` opens each in WebKit and Chromium into one gallery. This golf-only, hand-kept, Fairway-era
+ * pipeline stays until the owner decides to delete it; it refuses production (scripts/lib/production-site-guard.mjs).
+ */
+/**
  * normalize-devin-routes.ts
  *
  * Deterministically emits routes/routes.json from an EMBEDDED classification
