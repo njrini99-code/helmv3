@@ -1,0 +1,33 @@
+schema_version: 1
+replay_id: thread-day-key-collision-2026-11-15
+incident_id: sentry:JAVASCRIPT-NEXTJS-1EH
+feature_id: team_communications
+title: >-
+  Clubhouse Messages keyed each day separator on the day alone (`d<day>`), so a
+  thread whose messages come back round to a day rendered two children with the
+  same React key; the separator key now also names the message that opens it.
+bad_version: db3a99ee193da02291b06da3e82d8e3daffecdaa
+fixed_version: 92f0b8d161d15a757962528636a73a3e10539fcb
+fixture:
+  - source: thread-model.test.ts
+    target: src/clubhouse/screens/messages/__tests__/thread-model.test.ts
+test_command: "./node_modules/.bin/vitest run --project unit src/clubhouse/screens/messages/__tests__/thread-model.test.ts"
+expected:
+  bad_version: fail
+  fixed_version: pass
+expected_failure_mode: assertion
+sanitization:
+  reviewed: true
+  contains_production_data: false
+  notes: >-
+    Synthetic message ids, sender ids and timestamps written for the test; no
+    production rows, user data, tokens or Sentry payloads. The event counts
+    are described here, not stored.
+source_incident_status: open
+created_at: "2026-11-15"
+notes: >-
+  On bad_version 1 of 7 tests fails (the out-of-order case: 3 keys, 2 unique);
+  the stable-key case passes on both versions. Seen in Sentry environment
+  development only (1EH 42 events since 2026-11-04, 1MG 35 events 14:57-15:48Z
+  on 2026-11-15, /clubhouse-preview/messages on 127.0.0.1:3100). Why the
+  message list reached threadItems out of order is not established.
