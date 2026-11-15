@@ -3,11 +3,16 @@ import { LazyMotion, domMax } from 'motion/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ListPresence, PresenceRow } from '../ListPresence';
 
+/** Settings › Animations, which the list reads with the OS setting (useChMotionMode). */
+const prefs = vi.hoisted(() => ({ showAnimations: true }));
+vi.mock('@/hooks/golf/use-appearance-preferences', () => ({ useAppearancePreferences: () => prefs }));
+
 const realMatchMedia = window.matchMedia;
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
   window.matchMedia = realMatchMedia;
+  prefs.showAnimations = true;
 });
 
 const list = (ids: string[]) => (
@@ -30,7 +35,7 @@ const reduceMotion = () => {
     ({ matches: query.includes('reduce'), media: query, onchange: null, addListener: vi.fn(), removeListener: vi.fn(), addEventListener: vi.fn(), removeEventListener: vi.fn(), dispatchEvent: vi.fn() }) as unknown as MediaQueryList) as typeof window.matchMedia;
 };
 
-/** B7: rows arrive and leave in place, and a removed row stays until its height has closed. */
+/** B7, S3.10: rows arrive and leave in place, a removed row stays until it has faded, and no height ever animates. */
 describe('ListPresence', () => {
   it('a removed row stays mounted, marked leaving and hidden, until its animation ends, then unmounts', async () => {
     const { rerender } = render(list(['a', 'b', 'c']));
@@ -44,6 +49,14 @@ describe('ListPresence', () => {
     expect(screen.getAllByRole('listitem').map((li) => li.textContent)).toEqual(['a', 'c']);
   });
 
+  it('a removed row fades and shrinks to .96 and never closes its height, padding or margins (MOT-04)', async () => {
+    const { rerender } = render(list(['a', 'b', 'c']));
+    rerender(list(['a', 'c']));
+    const leaving = screen.getByText('b');
+    await waitFor(() => expect(leaving.style.transform).toMatch(/scale\(0\.9\d*\)/), { timeout: 3000 });
+    expect(leaving.getAttribute('style') ?? '').not.toMatch(/height|padding|margin|border|overflow/);
+  });
+
   it('first paint does not animate, and leaves the rows to their own stylesheet', () => {
     render(list(['a', 'b']));
     for (const li of screen.getAllByRole('listitem')) {
@@ -53,31 +66,50 @@ describe('ListPresence', () => {
     }
   });
 
-  it('an arriving row opens in, then hands its height, opacity and overflow back', async () => {
+  it('an arriving row takes its height at once and rises 8px as it fades in, then hands its opacity and transform back (MOT-04)', async () => {
     const { rerender } = render(list(['a', 'c']));
     rerender(list(['a', 'b', 'c']));
     const b = screen.getByText('b');
-    expect(b.style.overflow).toBe('clip');
-    await waitFor(() => expect(b.style.height).toBe(''), { timeout: 3000 });
-    expect(b.style.opacity).toBe('');
-    expect(b.style.overflow).toBe('');
+    expect(b.style.opacity).toBe('0');
+    expect(b.style.transform).toBe('translateY(8px)');
+    expect(b.getAttribute('style') ?? '').not.toMatch(/height|overflow/);
+    await waitFor(() => expect(b.style.opacity).toBe(''), { timeout: 3000 });
+    expect(b.style.transform).toBe('');
     expect(screen.getByText('a').getAttribute('style') ?? '').not.toMatch(/height|opacity|overflow/);
   });
 
-  it('with reduced motion a removed row unmounts at once', () => {
+  it('with Reduce Motion a removed row fades out, opacity only, never a snap; then it unmounts', async () => {
     reduceMotion();
+    const { rerender } = render(list(['a', 'b', 'c']));
+    rerender(list(['a', 'c']));
+    const leaving = screen.getByText('b');
+    expect(leaving.hasAttribute('data-leaving')).toBe(true);
+    await waitFor(() => expect(screen.queryByText('b')).toBeNull(), { timeout: 3000 });
+    expect(leaving.getAttribute('style') ?? '').not.toMatch(/transform|height/);
+  });
+
+  it('with Animations off a removed row unmounts at once', () => {
+    prefs.showAnimations = false;
     const { rerender } = render(list(['a', 'b', 'c']));
     rerender(list(['a', 'c']));
     expect(screen.queryByText('b')).toBeNull();
   });
 
-  it('turning reduced motion on keeps the same row elements (nothing in the list remounts), and an arrival then appears unstyled', () => {
+  it('turning Reduce Motion on keeps the same row elements (nothing in the list remounts), and an arrival then only fades in', () => {
     const { rerender } = render(list(['a', 'b']));
     const before = screen.getByText('a');
     reduceMotion();
     rerender(list(['a', 'b', 'c']));
     expect(screen.getByText('a')).toBe(before);
-    expect(screen.getByText('c').getAttribute('style') ?? '').not.toMatch(/height|opacity|overflow/);
+    expect(screen.getByText('c').style.opacity).toBe('0');
+    expect(screen.getByText('c').getAttribute('style') ?? '').not.toMatch(/transform|height|overflow/);
+  });
+
+  it('with Animations off an arrival appears unstyled', () => {
+    const { rerender } = render(list(['a', 'b']));
+    prefs.showAnimations = false;
+    rerender(list(['a', 'b', 'c']));
+    expect(screen.getByText('c').getAttribute('style') ?? '').not.toMatch(/height|opacity|overflow|transform/);
   });
 
   it('noArrival (a row with a motion of its own) skips the list\'s arrival but still closes when it leaves', async () => {
@@ -117,7 +149,7 @@ describe('ListPresence', () => {
     );
     const { rerender } = render(flat(['b', 'c']));
     rerender(flat(['a', 'b', 'c']));
-    expect(screen.getByText('a').style.overflow).toBe('clip');
+    expect(screen.getByText('a').style.opacity).toBe('0');
     expect(screen.getByText('b').style.transform).toBe('');
   });
 
