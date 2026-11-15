@@ -984,37 +984,20 @@
   color: var(--ch-shs-s-ink-2);
   text-wrap: pretty; letter-spacing: var(--ch-track-15); }
 
-/* Skeleton: the loaded page's own card heights; off under Reduce Motion. */
+/* Skeleton: the loaded page's own card heights, static (3.9): the cards and their titles are there at once, and the
+   blocks wait the busy delay (shell.css ch-busy-wait), so a load that lands within 150 ms draws none. */
 .ch-shs-skel {
   position: relative;
   display: block;
   overflow: hidden;
   background: var(--ch-skel-base);
   border-radius: var(--ch-radius-tail);
-}
-.ch-shs-skel::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(100deg, transparent 30%, var(--ch-skel-sheen) 50%, transparent 70%);
-  transform: translateX(-100%);
-  animation: ch-shs-sheen 1.9s linear infinite;
-}
-@keyframes ch-shs-sheen {
-  to {
-    transform: translateX(100%);
-  }
-}
-@keyframes ch-shs-skelin {
-  from {
-    opacity: 0;
-  }
+  animation: ch-busy-wait 0s var(--ch-dur-busy-delay) backwards;
 }
 .ch-shs-is-loading {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  animation: ch-shs-skelin var(--ch-dur-base) var(--ch-ease) backwards;
 }
 /* A coach's view of a player while loading: the head's block at the loaded head's geometry (stats.css .ch-spm-head: 4px
    in, the 40px avatar centred beside the name's own line and the facts' two lines at a 390pt phone). */
@@ -2061,15 +2044,8 @@ p.ch-shs-mini-cap {
   opacity: 1;
 }
 
-/* Reduce Motion and Animations off: nothing travels; the sheen stops. */
+/* Reduce Motion and Animations off: nothing travels. */
 @media (prefers-reduced-motion: reduce) {
-  .ch-shs-skel::before {
-    animation: none;
-    opacity: 0;
-  }
-  .ch-shs-is-loading {
-    animation: none;
-  }
   .ch-shs-sum,
   .ch-shs-whisk,
   .ch-shs-rrow,
@@ -2077,13 +2053,6 @@ p.ch-shs-mini-cap {
   .ch-shs-ctl::before {
     transition: none;
   }
-}
-[data-motion='off'] .ch-shs-skel::before {
-  animation: none;
-  opacity: 0;
-}
-[data-motion='off'] .ch-shs-is-loading {
-  animation: none;
 }
 
 .ch-shs-skel-sec {

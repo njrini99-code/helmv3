@@ -843,44 +843,44 @@
   --ch-notice-body: var(--ch-notice-on-green-body);
 }
 
-/* Skeleton sheen (audit A-13, 2026-10-14): one layer per block, slid by transform, on every width. The desktop used a
-   viewport-fixed 200vw gradient whose background-position animated, which repainted every block on every frame while a
-   page loaded (the phone moved off it 2026-10-12 for the same reason; iOS ignored the fixed attachment anyway). A shade
-   deeper than the first pass (states audit, 2026-10-08): about 1.2:1 on the workspace, with a soft sheen. */
+/* Skeletons (MOTION-AND-VISUAL 3.9, 3.12): static blocks shaped like the content, with no shimmer and no pulse. A shade
+   deeper than the first pass (states audit, 2026-10-08): about 1.2:1 on the workspace.
+   Draw nothing new for the busy delay (3.9, lib/use-busy.ts): a block shows only once the wait has passed, so a load that
+   lands within 150 ms never draws one, while the page's frame (the bar, the title, the strip) is there from the first frame
+   (S4.4). A wait, not motion: it holds under Reduce Motion and Animations off, and it ends in an instant (no fade). A
+   skeleton that useBusy put up has waited already (data-ch-busy="skeleton"), and one chained after the route's own in the
+   same place (data-skel="chained") takes its place with no gap. Page skeletons with blocks of their own take the same
+   animation on them (stats-redesign.css, messages-inbox.css, coachhelm-team.css, coachhelm-file.css). */
+@keyframes ch-busy-wait {
+  from {
+    visibility: hidden;
+  }
+}
 .ch-skel {
   display: block;
   position: relative;
   overflow: hidden;
   background: var(--ch-skel-base);
+  animation: ch-busy-wait 0s var(--ch-dur-busy-delay) backwards;
 }
-.ch-skel::before {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(100deg, transparent 30%, var(--ch-skel-sheen) 50%, transparent 70%);
-  transform: translateX(-100%);
-  animation: ch-shimmer-x var(--ch-dur-shimmer) linear infinite;
-  content: '';
+:is([data-skel='chained'], [data-ch-busy='skeleton']) .ch-skel {
+  animation: none;
 }
-/* A green feature card in waiting (a hero), on the loaded card's ground and lift, its sweep the pale ink Home's skeleton
-   bars use, so the page doesn't flash pale to green when it lands (F-0060). */
+/* A green feature card in waiting (a hero), on the loaded card's ground and lift, so the page doesn't flash pale to green
+   when it lands (F-0060). */
 .ch-skel.ch-skel--feature {
   background: var(--ch-feature-bg);
   box-shadow: var(--ch-elevation-feature);
 }
-.ch-skel--feature::before {
-  background: linear-gradient(100deg, transparent 30%, rgb(244 241 232 / 0.12) 50%, transparent 70%);
-}
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   /* A block in waiting (a fluid Skeleton from 56px tall, or shape="block") is drawn in the Ledger as the Ledger draws
      what it stands for: a rule along its top and two lines of type under it, not a filled card. It keeps its box, so
-     nothing moves when the page lands; a real object that loads filled asks for shape="solid". Its two lines breathe
-     (opacity, on the compositor) rather than sweep: their pseudo-elements are the lines, so there is no layer to slide. */
+     nothing moves when the page lands; a real object that loads filled asks for shape="solid". The lines are still. */
   [data-ui='clubhouse'] main[data-canopy] .ch-skel--block {
     position: relative;
     overflow: visible;
     border-radius: 0 !important;
     background: linear-gradient(var(--ch-ledger-rule), var(--ch-ledger-rule)) 0 0 / 100% 1px no-repeat;
-    animation: none;
   }
   [data-ui='clubhouse'] main[data-canopy] .ch-skel--block::before,
   [data-ui='clubhouse'] main[data-canopy] .ch-skel--block::after {
@@ -889,8 +889,6 @@
     left: 0;
     border-radius: var(--ch-radius-sm);
     background: var(--ch-skel-base);
-    transform: none;
-    animation: ch-skel-breathe var(--ch-dur-shimmer) ease-in-out infinite;
     content: '';
   }
   [data-ui='clubhouse'] main[data-canopy] .ch-skel--block::before {
@@ -934,41 +932,6 @@
   flex-direction: column;
   gap: 8px;
   min-width: 0;
-}
-/* Animations off in Settings: skeletons hold still (a Ledger block's lines too), from the first frame (ThemeScript
-   marks <html> before hydration). */
-[data-motion='off'] .ch-root .ch-skel::before,
-.ch-root[data-motion='off'] .ch-skel::before {
-  animation: none;
-  display: none;
-}
-[data-motion='off'] .ch-root main[data-canopy] .ch-skel--block::before,
-[data-motion='off'] .ch-root main[data-canopy] .ch-skel--block::after,
-.ch-root[data-motion='off'] main[data-canopy] .ch-skel--block::before,
-.ch-root[data-motion='off'] main[data-canopy] .ch-skel--block::after {
-  display: block;
-  animation: none;
-}
-@keyframes ch-shimmer-x {
-  to {
-    transform: translateX(100%);
-  }
-}
-@keyframes ch-skel-breathe {
-  50% {
-    opacity: 0.55;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .ch-skel,
-  .ch-skel::before,
-  .ch-skel--block::before,
-  .ch-skel--block::after {
-    animation: none !important;
-  }
-  .ch-skel:not(.ch-skel--block)::before {
-    display: none;
-  }
 }
 .ch-toast__txt {
   display: flex;
@@ -1910,7 +1873,7 @@ button.ch-more__row[disabled] {
 
 /* -- Page crossfade (RouteFrame's <ViewTransition>, owner 2026-10-01) ------------------------------------------------
    Only a desktop page change and a phone page change under Reduce Motion crossfade (production audit 2026-11-15, S4.8):
-   a section switch, and every phone navigation with motion on, start no view transition at all (RouteFrame), so nothing
+   with motion on, a section switch and every phone navigation start no view transition at all (RouteFrame), so nothing
    full-page is snapshotted on a tap. The view-transition pseudo-elements hang off :root, outside [data-ui='clubhouse'],
    so their timings are tokens set on <html> (tokens.css, --ch-dur-vt-*). The old and new pages crossfade together, in
    opacity only. The shell (root) is anchored: its new snapshot shows at once and the old one is hidden, so the sidebar,
@@ -2003,10 +1966,10 @@ html[data-ch-vt-hold]:has([data-ui='clubhouse'])::view-transition-old(ch-page) {
     will-change: transform;
   }
 }
-/* Reduce Motion (owner decision 2, 2026-10-24, OQ-15): a page change crossfades, the old page out and the new one in
-   together over --ch-dur-vt-fade (180ms), in opacity only, as iOS swaps its slides for fades (S4.9). No push, pop,
-   parallax, dim or hold; the bars stay put and a section switch still swaps at once (RouteFrame starts no transition for
-   it). Settings › Animations off never starts a transition (RouteFrame renders without one). */
+/* Reduce Motion (owner decision 2, 2026-10-24, OQ-15; MOTION-AND-VISUAL 3.3, 3.11): a page change crossfades, the old
+   page out and the new one in together over --ch-dur-vt-fade (180ms), in opacity only, as iOS swaps its slides for fades.
+   No push, pop, parallax or dim, and on a phone a section switch fades the same way (lib/nav-motion.ts chNavCrossfades);
+   the bars stay put. Settings › Animations off never starts a transition (RouteFrame renders without one). */
 @media (prefers-reduced-motion: reduce) {
   html:has([data-ui='clubhouse'])::view-transition-group(*),
   html:has([data-ui='clubhouse'])::view-transition-old(*),
@@ -2718,10 +2681,6 @@ html[data-fw-theme='dark'] .ch-bellp__row:focus-visible {
       box-shadow: 0 0 0 1px var(--ch-border-strong);
     }
   }
-  html[data-fw-theme='dark'] [data-ui='clubhouse'] main[data-canopy] .ch-skel--block::before,
-  html[data-fw-theme='dark'] [data-ui='clubhouse'] main[data-canopy] .ch-skel--block::after {
-    background: linear-gradient(100deg, var(--ch-skel-base) 42%, var(--ch-skel-sheen) 50%, var(--ch-skel-base) 58%) 0 0 / 200vw 100% fixed;
-  }
 }
 @media (min-width: 821px) and (prefers-reduced-transparency: reduce) and ((min-height: 501px) or (pointer: fine)) {
   html[data-fw-theme='dark'] .ch-topbar {
@@ -2737,9 +2696,6 @@ html[data-fw-theme='dark'] .ch-empty-page--danger {
 }
 html[data-fw-theme='dark'] .ch-empty-page__seg i {
   background: rgb(237 231 216 / 0.12);
-}
-:where(html[data-fw-theme='dark']) .ch-skel {
-  background: linear-gradient(100deg, var(--ch-skel-base) 42%, var(--ch-skel-sheen) 50%, var(--ch-skel-base) 58%) 0 0 / 200vw 100% fixed;
 }
 html[data-fw-theme='dark'] .ch-scrim {
   background: rgb(0 0 0 / 0.55);
@@ -3091,8 +3047,10 @@ html[data-fw-theme='dark'] .ch-offline {
    section switcher always shows, over a page's large title too, whether the shell draws it (.ch-topbar__ptitle) or the
    page's own bar holds it (.ch-sw in a .ch-pbar__title: Roster, Settings, Qualifiers, Recruiting) (owner, 2026-10-16:
    on Stats the switcher seemed gone while "Team stats" was in view). A pushed page that opens with its own large title does not also
-   show its name in the bar: while the large title is in view the bar's pushed title is hidden, and as it scrolls up
-   under the bar (the bar is marked data-large-title="tucked") it fades in, on opacity and a 3px rise only. The :has()
+   show its name in the bar: the bar's pushed title is hidden at rest and fades in from 36 to 52px of the page's scroll,
+   in opacity only, as the large title goes under the bar (MOTION-AND-VISUAL 3.3; production audit S4.3). Scroll-driven
+   where Safari has a scroll timeline (26 and later), the same fade from shell/large-title.tsx before that; no curve and
+   no script per frame, and the same under Reduce Motion (the person's own scroll drives it). The :has()
    list is CH_LARGE_TITLES and must stay in step with it; it holds from the first paint. The bar's title keeps its
    place in the accessibility tree and stays the focus target for a pushed page. Pages with no large title, the green
    hero's bar and desktop are untouched. The scroll edge: a soft shade under the bar once content has scrolled under
@@ -3132,10 +3090,25 @@ html[data-fw-theme='dark'] .ch-offline {
           .ch-large-title
         ):not(.ch-sr-only, .ch-pscreen *, dialog *)
     )
-    .ch-topbar:not([data-large-title='tucked'])
+    .ch-topbar
     :is(.ch-topbar__pslot > .ch-pbar__title, .ch-topbar__pstand .ch-pbar__title):not(:has(.ch-sw)) {
     opacity: 0;
-    translate: 0 3px;
+    transition: none;
+  }
+  @supports (animation-timeline: scroll()) {
+    [data-ui='clubhouse']:not([data-phone-hero]):has(
+        #ch-canvas
+          :is(
+            .ch-large-title
+          ):not(.ch-sr-only, .ch-pscreen *, dialog *)
+      )
+      .ch-topbar
+      :is(.ch-topbar__pslot > .ch-pbar__title, .ch-topbar__pstand .ch-pbar__title):not(:has(.ch-sw)) {
+      --ch-lt-to: 1;
+      animation: ch-lt-under linear both;
+      animation-timeline: scroll(root block);
+      animation-range: 36px 52px;
+    }
   }
   [data-ui='clubhouse'] .ch-topbar::before {
     position: absolute;
@@ -3453,7 +3426,8 @@ html[data-fw-theme='dark'] .ch-offline {
     outline: 2px solid var(--ch-border-focus-on-dark);
     outline-offset: 2px;
   }
-  /* The green bar's selected pill: one ivory plate that glides between pills (layoutId, the settle spring). */
+  /* The green bar's selected pill: one ivory plate that glides between pills (lib/slide-plate.ts: 260ms on the iOS curve,
+     translate and width, MOTION-AND-VISUAL 3.3; under Reduce Motion it fades in at its new place). */
   .ch-strip__plate {
     position: absolute;
     inset: 0;
@@ -4430,9 +4404,11 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
     display: none;
   }
 }
+/* One keyframe for both ends of the collapse (MOTION-AND-VISUAL 3.3): the large title from its own 1 to 0.1, and the bar's
+   title from its resting 0 to --ch-lt-to: 1. */
 @keyframes ch-lt-under {
   to {
-    opacity: 0.1;
+    opacity: var(--ch-lt-to, 0.1);
   }
 }
 

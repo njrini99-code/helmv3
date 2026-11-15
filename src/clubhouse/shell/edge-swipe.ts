@@ -1,5 +1,6 @@
 'use client';
 
+import { CH_DUR_MS, CH_EASE_IOS, CH_EASE_IOS_CSS, CH_SWIPE, chBezier } from '../lib/motion';
 import { releaseSpeed } from '../lib/sheet-drag';
 
 /**
@@ -9,12 +10,11 @@ import { releaseSpeed } from '../lib/sheet-drag';
  * thresholds, and the rules for when the gesture may run at all. `use-edge-swipe.ts` binds it to a screen.
  */
 
-/** The gesture starts only within this many pixels of the left edge, where iOS's own back swipe begins. */
-export const CH_EDGE_ZONE_PX = 20;
-/** Past half the width at the moment of release the screen pops (S4.2, Tusker's measured system values). */
-export const CH_EDGE_COMMIT = 0.5;
-/** So does a flick faster than this (px per ms), once it has moved a little: 700 points a second, as UIKit's (S4.2). */
-export const CH_EDGE_FLICK_PX_PER_MS = 0.7;
+/*
+ * The thresholds are the vocabulary's (CH_SWIPE, lib/motion.ts; MOTION-AND-VISUAL 3.3): the gesture starts only within
+ * `edge` px of the left edge, where iOS's own back swipe begins; let go past `commitProgress` of the width, or flicked
+ * faster than `commitVelocity` px/ms once it has moved a little (700 points a second, as UIKit's), and the screen pops.
+ */
 /** A finger must travel this far before the gesture decides whether it is a swipe or a scroll. */
 export const CH_EDGE_SLOP_PX = 8;
 /** …and a flick counts only after the screen has moved this much. */
@@ -24,6 +24,22 @@ const FLICK_MIN_PX = 10;
  * its swipe arms. A pushed route page doesn't: it is grabbed where it stands (C1, use-route-swipe.ts).
  */
 export const CH_EDGE_ENTRY_SETTLE_MS = 480;
+
+/** The shortest a released swipe's finish runs, as a share of the reveal beat (MOTION-AND-VISUAL 3.3): 182 ms. */
+export const CH_SWIPE_FINISH_FLOOR = 0.35;
+
+/**
+ * A released back swipe's finish (MOTION-AND-VISUAL 3.3): from where the finger let go, over 520 ms times the share of
+ * the way still to go (`left`, 0 to 1), never under 35% of it, on the iOS curve. A commit's way is what is left to the
+ * right edge; a cancel's is the way home, on the same curve. The finger's speed decides commit or cancel and nothing
+ * more: above the floor the finish averages the width per 520 ms (0.75 px/ms on a 390 px phone) and the iOS curve
+ * leaves at 2.25 times that, about 1.7 px/ms, so a page let go at a flick's 0.7 px/ms does not slow as it is handed
+ * over. Only a page let go within 35% of its end starts slower, over the floor's 182 ms.
+ */
+export function swipeFinish(left: number): { ms: number; easing: string; ease: (p: number) => number } {
+  const share = Math.max(CH_SWIPE_FINISH_FLOOR, Math.min(1, Number.isFinite(left) ? left : 1));
+  return { ms: Math.round(CH_DUR_MS.reveal * share), easing: CH_EASE_IOS_CSS, ease: chBezier(CH_EASE_IOS) };
+}
 
 export type EdgePhase = 'idle' | 'pending' | 'dragging' | 'refused';
 export type EdgeOutcome = 'commit' | 'cancel';
@@ -37,13 +53,12 @@ export interface EdgeFrame {
   past: boolean;
 }
 
+/** A move. No haptic marks the commit mark, either way: iOS's back swipe is silent (MOTION-AND-VISUAL 3.3, 3.10). */
 export interface EdgeMove {
   /** The swipe owns this touch: the caller stops the page from scrolling with it. */
   claim: boolean;
   /** The screen's place now, when the swipe owns the touch. */
   frame: EdgeFrame | null;
-  /** The commit mark was crossed (either way) by this move: the selection haptic. */
-  crossed: boolean;
 }
 
 export interface EdgeRelease {
@@ -54,7 +69,7 @@ export interface EdgeRelease {
   speed: number;
 }
 
-const NONE: EdgeMove = { claim: false, frame: null, crossed: false };
+const NONE: EdgeMove = { claim: false, frame: null };
 
 /**
  * One touch's worth of state. `start` arms it when the finger lands in the edge zone; `move` decides, after a few
@@ -71,7 +86,7 @@ export function createEdgeSwipe(width: number, from = 0) {
   let offset = 0;
   let past = false;
   let samples: Array<[number, number]> = [];
-  const mark = Math.max(1, width) * CH_EDGE_COMMIT;
+  const mark = Math.max(1, width) * CH_SWIPE.commitProgress;
   const base = Math.min(Math.max(0, width), Math.max(0, from));
 
   const reset = () => {
@@ -89,7 +104,7 @@ export function createEdgeSwipe(width: number, from = 0) {
     start(x: number, y: number, t: number): boolean {
       if (phase === 'pending' || phase === 'dragging') return false;
       reset();
-      if (x > CH_EDGE_ZONE_PX || x < 0 || !(width > 0)) {
+      if (x > CH_SWIPE.edge || x < 0 || !(width > 0)) {
         phase = 'refused';
         return false;
       }
@@ -117,10 +132,8 @@ export function createEdgeSwipe(width: number, from = 0) {
       offset = Math.min(width, Math.max(0, base + dx));
       samples.push([t, offset]);
       if (samples.length > 12) samples.shift();
-      const nowPast = offset >= mark;
-      const crossed = nowPast !== past;
-      past = nowPast;
-      return { claim: true, frame: { offset, progress: offset / width, past }, crossed };
+      past = offset >= mark;
+      return { claim: true, frame: { offset, progress: offset / width, past } };
     },
     /** The finger lifted: null when this touch was never a swipe. */
     end(t: number): EdgeRelease | null {
@@ -131,8 +144,8 @@ export function createEdgeSwipe(width: number, from = 0) {
       phase = 'idle';
       if (!dragging) return null;
       let outcome: EdgeOutcome;
-      if (speed < -CH_EDGE_FLICK_PX_PER_MS) outcome = 'cancel';
-      else if (where > FLICK_MIN_PX && speed > CH_EDGE_FLICK_PX_PER_MS) outcome = 'commit';
+      if (speed < -CH_SWIPE.commitVelocity) outcome = 'cancel';
+      else if (where > FLICK_MIN_PX && speed > CH_SWIPE.commitVelocity) outcome = 'commit';
       else outcome = where >= mark ? 'commit' : 'cancel';
       return { outcome, offset: where, speed };
     },

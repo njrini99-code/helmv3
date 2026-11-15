@@ -6,14 +6,15 @@ import { useEffect, type RefObject } from 'react';
 /**
  * The phone's large titles (iOS large-title behaviour, owner 2026-10-08 "cardless, native-feeling phone Clubhouse").
  * The bar's section switcher always shows (owner, 2026-10-16: on Stats it seemed gone while "Team stats" was in view).
- * A pushed page that opens with its own large title does not show its name twice: while the large title is in view
- * the bar's pushed title is hidden, and as the large title scrolls up under the bar it fades in. Pages with no large
- * title keep the bar's title.
+ * A pushed page that opens with its own large title does not show its name twice: the bar's pushed title is hidden at
+ * rest and fades in from 36 to 52px of scroll as the large title goes up under the bar (MOTION-AND-VISUAL 3.3). Pages
+ * with no large title keep the bar's title.
  *
  * Which element is a page's large title is decided once, by one class: `.ch-large-title` (ui/LargeTitle.tsx, owner
  * decision 4, 2026-10-24: one 34 semibold sans title on every phone section root, CONS-27). The same class drives the
- * CSS (styles/shell.css, "Phone large titles"), whose `:has()` hides the bar's title from the first paint; this hook
- * only adds `data-large-title="tucked"` to the bar once the title has gone under it. Every section root's loading
+ * CSS (styles/shell.css, "Phone large titles"), whose `:has()` hides the bar's title from the first paint and, where
+ * Safari has a scroll timeline, fades both titles from the scroll itself; this hook is the older phones' fallback for
+ * those fades, and marks the bar's scroll edge. Every section root's loading
  * skeleton draws the same title block (ui/LargeTitle.tsx LargeTitleSkeleton, CONS-13), so the bar's title stays hidden
  * from the skeleton to the page and nothing flickers as the page lands.
  *
@@ -36,14 +37,6 @@ export function findLargeTitle(root: ParentNode): HTMLElement | null {
   return null;
 }
 
-/**
- * Whether a large title has gone up under the bar: it no longer shows below the bar's bottom edge, and it is above
- * that edge rather than below the fold.
- */
-export function isTucked(entry: Pick<IntersectionObserverEntry, 'isIntersecting' | 'boundingClientRect'>, barBottom: number): boolean {
-  return !entry.isIntersecting && entry.boundingClientRect.bottom <= barBottom + 1;
-}
-
 const PHONE = CH_PHONE_QUERY;
 
 /** Refresh: the shade under the bar waits for 8px of scroll (DESIGN_LANGUAGE 5). */
@@ -64,44 +57,42 @@ export function titleOnScroll(y: number): number {
   return 1 - (1 - REFRESH_TITLE_MIN_OPACITY) * p;
 }
 
+/**
+ * The scroll over which the bar's title fades in (MOTION-AND-VISUAL 3.3; S4.3): from 36 to 52px, the last third of the
+ * large title's way under the bar, so the page shows its name once, the large title or the bar's, never both at rest.
+ */
+export const CH_BAR_TITLE_RANGE = { from: 36, to: 52 } as const;
+
+/** The bar title's opacity at scroll `y`: 0 until 36px, 1 from 52px, linear between. Scroll-linked, so no curve. */
+export function barTitleOnScroll(y: number): number {
+  const { from, to } = CH_BAR_TITLE_RANGE;
+  return Math.min(1, Math.max(0, (y - from) / (to - from)));
+}
+
+/** The bar's pushed title, which a page's large title hides at rest (never the section switcher it may hold). */
+function barTitleOf(bar: HTMLElement): HTMLElement | null {
+  for (const el of Array.from(bar.querySelectorAll<HTMLElement>('.ch-topbar__pslot > .ch-pbar__title, .ch-topbar__pstand .ch-pbar__title'))) {
+    if (!el.querySelector('.ch-sw')) return el;
+  }
+  return null;
+}
+
 /** Whether CSS drives the title's fade from the scroll itself (no script per frame). */
 function scrollDriven(): boolean {
   return typeof CSS !== 'undefined' && typeof CSS.supports === 'function' && CSS.supports('animation-timeline: scroll()');
 }
 
 /**
- * Watches the page's large title and the page's scroll for the shell's top bar `bar`, inside `canvas`. Sets on the
- * bar `data-large-title="tucked"` once the large title is under it (the bar's title fades in), and `data-scrolled`
- * once any content has scrolled under it (the bar's scroll edge). One IntersectionObserver on the title and one
- * passive scroll listener; a MutationObserver on the canvas finds the title again as pages and their skeletons swap.
- * Returns the teardown, which leaves the bar as it found it.
+ * Watches the page's large title and the page's scroll for the shell's top bar `bar`, inside `canvas`. Marks the bar
+ * `data-scrolled` once any content has scrolled under it (the bar's scroll edge), and, where CSS has no scroll timeline,
+ * fades the large title out over 0 to 52px and the bar's title in over 36 to 52px from the scroll (MOTION-AND-VISUAL
+ * 3.3). One passive scroll listener, read once a frame; a MutationObserver on the canvas finds the title again as pages
+ * and their skeletons swap. Returns the teardown, which leaves the bar and the titles as it found them.
  */
 export function watchLargeTitle(bar: HTMLElement, canvas: HTMLElement): () => void {
   let target: HTMLElement | null = null;
-  let io: IntersectionObserver | null = null;
-  const setTucked = (on: boolean) => {
-    if (on) bar.setAttribute('data-large-title', 'tucked');
-    else bar.removeAttribute('data-large-title');
-  };
-  const watch = () => {
-    const next = findLargeTitle(canvas);
-    if (next === target) return;
-    io?.disconnect();
-    io = null;
-    target = next;
-    // A new page starts with its title in view; the observer's first report corrects a restored scroll.
-    setTucked(false);
-    if (!next || typeof IntersectionObserver === 'undefined') return;
-    const edge = Math.max(0, Math.round(bar.getBoundingClientRect().bottom));
-    io = new IntersectionObserver(
-      (entries) => {
-        const e = entries[entries.length - 1];
-        if (e) setTucked(isTucked(e, e.rootBounds?.top ?? edge));
-      },
-      { rootMargin: `-${edge}px 0px 0px 0px`, threshold: 0 },
-    );
-    io.observe(next);
-  };
+  /** The bar title the fallback last wrote, so a page swap or the teardown hands it back to the stylesheet. */
+  let written: HTMLElement | null = null;
   let frame = 0;
   const cssFade = scrollDriven();
   const edgeNow = () => {
@@ -109,10 +100,23 @@ export function watchLargeTitle(bar: HTMLElement, canvas: HTMLElement): () => vo
     const y = window.scrollY;
     const scrolled = y > REFRESH_EDGE_AT;
     if (bar.hasAttribute('data-scrolled') !== scrolled) bar.toggleAttribute('data-scrolled', scrolled);
-    if (target && !cssFade) {
+    if (cssFade) return;
+    if (target) {
       const opacity = titleOnScroll(y);
       target.style.opacity = opacity === 1 ? '' : String(opacity);
     }
+    // The bar's title is hidden at rest by the stylesheet only on a page with a large title; elsewhere it is left alone.
+    const title = target ? barTitleOf(bar) : null;
+    if (written && written !== title) written.style.opacity = '';
+    written = title;
+    if (title) title.style.opacity = String(barTitleOnScroll(y));
+  };
+  const watch = () => {
+    const next = findLargeTitle(canvas);
+    if (next === target) return;
+    if (target) target.style.opacity = '';
+    target = next;
+    edgeNow();
   };
   const onScroll = () => {
     if (!frame) frame = requestAnimationFrame(edgeNow);
@@ -125,12 +129,11 @@ export function watchLargeTitle(bar: HTMLElement, canvas: HTMLElement): () => vo
   edgeNow();
   return () => {
     mo.disconnect();
-    io?.disconnect();
     window.removeEventListener('scroll', onScroll);
     if (frame) cancelAnimationFrame(frame);
-    bar.removeAttribute('data-large-title');
     bar.removeAttribute('data-scrolled');
     if (target) target.style.opacity = '';
+    if (written) written.style.opacity = '';
   };
 }
 
@@ -159,8 +162,7 @@ export function watchCanvasScroll(bar: HTMLElement, canvas: HTMLElement): () => 
 
 /**
  * `watchLargeTitle` for the shell's top bar on the phone, and `watchCanvasScroll` (the scroll edge only) on desktop; a
- * resize across 820px swaps them. The fade is CSS on the D-64 quick duration; reduced motion and Animations off swap at
- * once.
+ * resize across 820px swaps them. The titles' fades follow the scroll, so they are the same under Reduce Motion.
  */
 export function usePhoneLargeTitle(bar: RefObject<HTMLElement | null>): void {
   useEffect(() => {

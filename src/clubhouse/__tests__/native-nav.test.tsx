@@ -68,6 +68,25 @@ describe('a section switch swaps at once, with no view transition (mot-03; produ
     expect(chNavCrossfades()).toBe(true);
   });
 
+  // MOTION-AND-VISUAL 3.3 and 3.11: on a phone with motion on a section switch swaps at once; under Reduce Motion it
+  // becomes the 180 ms crossfade, like a push and a pop.
+  it('on a phone a section switch swaps at once, and under Reduce Motion crossfades like any other page change', () => {
+    let reduce = false;
+    vi.mocked(window.matchMedia).mockImplementation(
+      (query: string) =>
+        ({ matches: query === '(prefers-reduced-motion: reduce)' ? reduce : query.includes('max-width: 820px'), media: query, onchange: null, addListener: vi.fn(), removeListener: vi.fn(), addEventListener: vi.fn(), removeEventListener: vi.fn(), dispatchEvent: vi.fn() }) as unknown as MediaQueryList,
+    );
+    tap('ch-strip', '/golf/dashboard/calendar');
+    expect(chNavCrossfades()).toBe(false);
+    tap('ch-page-links', '/golf/dashboard/roster');
+    expect(chNavCrossfades()).toBe(false);
+    reduce = true;
+    tap('ch-strip', '/golf/dashboard/stats');
+    expect(chNavCrossfades()).toBe(true);
+    tap('ch-page-links', '/golf/dashboard/roster');
+    expect(chNavCrossfades()).toBe(true);
+  });
+
   it('marks nothing on <html> (MOT-20), and the shell keeps no tab or fade-through rules', () => {
     tap('ch-strip', '/golf/dashboard/calendar');
     expect(document.documentElement.hasAttribute('data-ch-tab')).toBe(false);
