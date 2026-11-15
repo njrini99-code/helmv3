@@ -34,12 +34,9 @@ import { join } from 'node:path';
  * it is the highest-reach instance of the three. Measured live on `/baseball`
  * 2026-08-17: `Privacy` 39x18, `Terms` 32x18.
  */
-const AUTH_PAGES = [
-  'src/app/golf/(auth)/login/page.tsx',
-  'src/app/golf/(auth)/signup/page.tsx',
-  'src/app/golf/(auth)/demo/page.tsx',
-  'src/components/landing/Footer.tsx',
-];
+// The golf login, sign-up and demo pages that carried this pattern were retired with the old entrance pages
+// (2026-11-14); Clubhouse's entrance draws its legal links in its own styles. The landing footer keeps the pattern.
+const AUTH_PAGES = ['src/components/landing/Footer.tsx'];
 
 /** The 44px hit-area marker, matching the signup gate's implementation. */
 const HIT_AREA = 'min-h-[44px]';
@@ -54,7 +51,7 @@ function privacyLinkTag(src: string): string | null {
 }
 
 describe('legal link touch targets', () => {
-  it('finds all three auth pages (guards the fixture)', () => {
+  it('finds the pages it checks (guards the fixture)', () => {
     for (const p of AUTH_PAGES) {
       expect(existsSync(join(process.cwd(), p)), p).toBe(true);
     }
@@ -67,7 +64,7 @@ describe('legal link touch targets', () => {
     expect(tag, `no href="/privacy" link found in ${page}`).not.toBeNull();
     expect(
       tag,
-      `the Privacy link in ${page} needs ${HIT_AREA} (see signup/page.tsx for the `
+      `the Privacy link in ${page} needs ${HIT_AREA} (the `
         + `px-3 py-3 -my-3 pattern that expands the target without moving layout)`,
     ).toContain(HIT_AREA);
   });

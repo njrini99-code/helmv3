@@ -28,7 +28,7 @@ vi.mock('@/lib/supabase/server', () => ({
 const feed = vi.hoisted(() => ({ result: null as unknown }));
 vi.mock('@/app/golf/actions/unified-notifications', () => ({ getUnifiedNotifications: async () => feed.result }));
 const gate = vi.hoisted(() => ({ clubhouse: true }));
-vi.mock('../gate', () => ({ isClubhouseFor: (role: string | null) => (role === 'coach' || role === 'player') && gate.clubhouse, isClubhouseFrontDoor: () => true }));
+vi.mock('../gate', () => ({ isClubhouseFor: (role: string | null) => (role === 'coach' || role === 'player') && gate.clubhouse }));
 
 const request = vi.hoisted(() => ({ reads: 0 }));
 vi.mock('next/headers', () => ({

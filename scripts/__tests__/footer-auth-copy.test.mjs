@@ -17,13 +17,9 @@ import { join, resolve } from 'node:path';
  *
  *   1. The footer brand line is the new coaching-intelligence sentence and the
  *      old "Premium tools…" line is gone.
- *   2. The signup "Create your account" subtitle is the new "You're in. Let's
- *      set up your team." line and the old "Start tracking your golf journey"
- *      line is gone.
- *   3. The signup page reuses CoastalScene + CourseScene (the login scenes) and
- *      no longer hand-rolls the floating-orb field or the 60px grid overlay.
- *   4. The signup forms / submit handlers / validation are preserved (the
- *      access-code gate form + GolfSignUpForm + validateAccessCode are intact).
+ *
+ * Its signup cases (2 to 4) went with the old golf signup page when the
+ * entrance pages were retired (2026-11-14); Clubhouse's sign-up replaced it.
  *
  * Allowlist (ALLOWLIST RULE): none required here — every asserted string is a
  * plain JSX text node with no CSS-var / canvas / email-HTML constraint.
@@ -34,24 +30,15 @@ import { join, resolve } from 'node:path';
 const REPO_ROOT = resolve(import.meta.dirname, '..', '..');
 
 const FOOTER_FILE = join(REPO_ROOT, 'src', 'components', 'landing', 'Footer.tsx');
-const SIGNUP_FILE = join(REPO_ROOT, 'src', 'app', 'golf', '(auth)', 'signup', 'page.tsx');
 
 // New, on-voice strings that MUST be present.
 const NEW_FOOTER_BRAND_LINE =
   'The coaching intelligence layer for college golf — strokes-gained, qualifiers, and the conversations that matter.';
-const NEW_SIGNUP_SUBTITLE = "You're in. Let's set up your team.";
 
 // Old strings that MUST be gone (regression markers). The signup subtitle is
 // authored with HTML entities (&apos;) in source, so the banned form is the
 // plain prose only — the new line never contains "golf journey".
 const OLD_FOOTER_BRAND_LINE = 'Premium tools for coaches who care about performance and clarity.';
-const OLD_SIGNUP_SUBTITLE = 'Start tracking your golf journey';
-
-// Decorative patterns the access-code gate + signup surface must NOT reintroduce.
-const BANNED_ORB_CLASS = /\bauth-orb\b/;
-const BANNED_ORB_COMMENT = /Animated floating orbs/;
-const BANNED_GRID_COMMENT = /Grid pattern overlay/;
-const BANNED_GRID_SIZE = /backgroundSize:\s*'60px 60px'/;
 
 /**
  * The new subtitle uses JSX HTML entities for the apostrophes so React renders
@@ -86,72 +73,4 @@ test('footer carries the new coaching-intelligence brand line, not the old one',
     !src.includes(OLD_FOOTER_BRAND_LINE),
     'Footer still contains the OLD brand line (regression): ' + OLD_FOOTER_BRAND_LINE,
   );
-});
-
-test('signup subtitle is the new "You\'re in…" line, not the old journey copy', async () => {
-  assert.ok(await exists(SIGNUP_FILE), `Expected signup page at ${SIGNUP_FILE}`);
-  const src = decodeApos(await readFile(SIGNUP_FILE, 'utf8'));
-
-  assert.ok(
-    src.includes(NEW_SIGNUP_SUBTITLE),
-    'Signup must render the new subtitle:\n' + NEW_SIGNUP_SUBTITLE,
-  );
-  assert.ok(
-    !src.includes(OLD_SIGNUP_SUBTITLE),
-    'Signup still contains the OLD subtitle (regression): ' + OLD_SIGNUP_SUBTITLE,
-  );
-});
-
-test('signup reuses the login scenes and drops the orb field + 60px grid', async () => {
-  const src = await readFile(SIGNUP_FILE, 'utf8');
-
-  // Reuses the canonical login scenes…
-  assert.match(
-    src,
-    /from\s+['"]@\/components\/golf\/scenes\/CoastalScene['"]/,
-    'Signup must import CoastalScene from the canonical scenes module',
-  );
-  assert.match(
-    src,
-    /from\s+['"]@\/components\/golf\/scenes\/CourseScene['"]/,
-    'Signup must import CourseScene from the canonical scenes module',
-  );
-  assert.match(src, /<CoastalScene\b/, 'Signup must render <CoastalScene>');
-  assert.match(src, /<CourseScene\b/, 'Signup must render <CourseScene>');
-
-  // …and no longer hand-rolls the floating-orb field or the 60px grid.
-  // Strip block comments so the explanatory comment that *names* the dropped
-  // system isn't a false positive.
-  const noBlockComments = src.replace(/\/\*[\s\S]*?\*\//g, ' ');
-  assert.ok(
-    !BANNED_ORB_CLASS.test(noBlockComments),
-    'Signup still references an `auth-orb` element (the dropped orb field)',
-  );
-  assert.ok(
-    !BANNED_ORB_COMMENT.test(noBlockComments),
-    'Signup still labels an "Animated floating orbs" block',
-  );
-  assert.ok(
-    !BANNED_GRID_COMMENT.test(noBlockComments),
-    'Signup still labels a "Grid pattern overlay" block',
-  );
-  assert.ok(
-    !BANNED_GRID_SIZE.test(noBlockComments),
-    "Signup still paints the 60px grid overlay (backgroundSize: '60px 60px')",
-  );
-});
-
-test('signup auth functionality is preserved (forms, submit, validation)', async () => {
-  const src = await readFile(SIGNUP_FILE, 'utf8');
-
-  // Access-code gate form: onSubmit handler + validation call intact.
-  assert.match(src, /onSubmit=\{handleCodeSubmit\}/, 'Access-code <form> onSubmit handler must remain');
-  assert.match(src, /async function handleCodeSubmit/, 'handleCodeSubmit handler must remain');
-  assert.match(src, /validateAccessCode\(/, 'Access-code validation call must remain');
-  assert.match(src, /type="submit"/, 'The gate submit button must remain');
-
-  // Account-creation form + its returnTo-aware sign-in link.
-  assert.match(src, /<GolfSignUpForm\b/, 'GolfSignUpForm must still render');
-  assert.match(src, /joinCode=\{joinCode\}/, 'GolfSignUpForm must still receive the joinCode prop');
-  assert.match(src, /<SignInLink\b/, 'The returnTo-preserving SignInLink must remain');
 });

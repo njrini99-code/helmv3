@@ -29,17 +29,6 @@ export async function isClubhouseFor(role: 'coach' | 'player' | null | undefined
 }
 
 /**
- * The switch between the current entrance pages (sign in and the welcome) and
- * Clubhouse's. Those pages are drawn for a visitor with no role, so the
- * per-role check above cannot apply; this flag is its own (off in production
- * until the owner says so). It chooses the page that is drawn, never what
- * signing in does: both call the same server actions and follow the same redirects.
- */
-export function isClubhouseFrontDoor(): boolean {
-  return isFlagEnabled('golf_clubhouse_front_door');
-}
-
-/**
  * Tournaments (P016) is a Clubhouse page behind its own release flag, `golf_tournaments_v1` (off in production until
  * the owner applies its held migrations and turns it on). Every Tournaments route, loader and server action asks this
  * first, so with the flag off nothing reads a tournament table and the routes answer not found. A `'use server'` export

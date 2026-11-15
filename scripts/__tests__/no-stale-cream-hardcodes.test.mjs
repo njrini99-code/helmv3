@@ -60,8 +60,6 @@ const ALLOWLIST = new Set([
   'src/styles/tokens.css',
   // Scene palette feeds the auth splash CourseScene gradient.
   'src/components/golf/scenes/palette.ts',
-  // Auth splash pages — intentional marketing gradient.
-  'src/app/golf/(auth)/welcome/page.tsx',
   // Email + notification templates — literal hex required for email
   // client compat (cannot reference CSS vars).
   'src/lib/email/coach-digest-template.ts',

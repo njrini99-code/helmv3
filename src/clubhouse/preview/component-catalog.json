@@ -762,16 +762,6 @@
       "fixture": "Contextual module"
     },
     {
-      "file": "src/clubhouse/routes/front-door.tsx",
-      "group": "routes",
-      "exports": [
-        "FrontDoorProvider"
-      ],
-      "styles": [],
-      "examples": [],
-      "fixture": "Contextual module"
-    },
-    {
       "file": "src/clubhouse/routes/hub.tsx",
       "group": "routes",
       "exports": [

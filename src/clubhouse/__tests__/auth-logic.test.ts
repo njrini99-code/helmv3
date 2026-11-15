@@ -14,7 +14,6 @@ import {
   resolveSignInHref,
 } from '@/lib/auth/golf-sign-in-logic';
 import type { UnifiedNotificationItem } from '@/app/golf/actions/unified-notifications-model';
-import { evaluateFlag } from '@/lib/flags/is-enabled';
 import { FLAG_REGISTRY } from '@/lib/flags/registry.generated';
 import { formatLastHere, isDashboardDestination, pickWelcomeItems, resolveWelcomeName, shapeWelcomeNews, welcomeDestination } from '../data/welcome-shape';
 import { BALL_AT_REST, BALL_MS, BALL_TOTAL_MS, CUP, ballAt } from '../screens/auth/scene-ball';
@@ -306,13 +305,8 @@ describe('the welcome card arrives whole (owner, 2026-11-12: "what you missed" s
   });
 });
 
-describe('the front door flag (owner turned production on 2026-10-31)', () => {
-  it('is registered, default off, on in production, preview and development', () => {
-    const flag = FLAG_REGISTRY.find((f) => f.feature_id === 'golf_clubhouse_front_door');
-    expect(flag).toBeDefined();
-    expect(flag?.default).toBe(false);
-    expect(evaluateFlag('golf_clubhouse_front_door', { environment: 'production', skipTelemetry: true }).value).toBe(true);
-    expect(evaluateFlag('golf_clubhouse_front_door', { environment: 'development', skipTelemetry: true }).value).toBe(true);
-    expect(evaluateFlag('golf_clubhouse_front_door', { environment: 'preview', skipTelemetry: true }).value).toBe(true);
+describe('the front door flag is retired (owner, 2026-11-14)', () => {
+  it('is no longer registered: the Clubhouse entrance is the only one', () => {
+    expect(FLAG_REGISTRY.find((f) => f.feature_id === 'golf_clubhouse_front_door')).toBeUndefined();
   });
 });

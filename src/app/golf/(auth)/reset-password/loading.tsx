@@ -1,15 +1,6 @@
-import { CheckingCard, ResetShell } from './reset-shell';
+import { GateLoading } from '@/clubhouse/screens/auth/GateLoading';
 
-/**
- * Route Suspense fallback for /golf/reset-password.
- *
- * The page's first paint is the "checking your link" card inside ResetShell,
- * so the fallback is that exact frame: when the page takes over, nothing moves.
- */
+/** Route Suspense fallback for /golf/reset-password: the reset page's own room. */
 export default function Loading() {
-  return (
-    <ResetShell>
-      <CheckingCard />
-    </ResetShell>
-  );
+  return <GateLoading label="Choose a new password" title="Choose a new password" line="Opening…" say={{ title: 'Back on the course in a minute.', line: 'A new password, and you’re in' }} />;
 }

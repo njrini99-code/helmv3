@@ -8,8 +8,9 @@ import { describe, expect, it } from 'vitest';
  * dynamic import, a re-export, `require`, `vi.mock` / `vi.importActual`, or a path string a test reads a source by.
  *
  * What stays under a retired folder is listed in KEPT, each with the reason. Fairway's shared primitives
- * (`src/components/fairway/{controls,charts,feedback,modules,...}`) are not retired: admin, baseball, auth and the CRM
- * use them.
+ * (`src/components/fairway/{controls,charts,feedback,overlays,...}`) are not retired: admin, baseball, auth and the CRM
+ * use them. Fairway components no route reaches any more were deleted with the pages
+ * (src/test/route-reachability.test.ts).
  */
 
 const ROOT = resolve(__dirname, '../..');
@@ -21,6 +22,11 @@ export const RETIRED = [
   'src/app/golf/(dashboard)/FairwayDashboardShell',
   'src/app/fairway-preview/',
   'src/app/vizlab/',
+  // The old entrance pages' pieces (golf_clubhouse_front_door retired with them).
+  'src/components/auth/GolfAuthShell',
+  'src/components/auth/golf-sign-in-form',
+  'src/components/auth/golf-sign-up-form',
+  'src/app/golf/(auth)/AuthHomeLink',
 ];
 
 /** Files under a retired folder that stay, and why. */
@@ -29,20 +35,7 @@ export const KEPT: Array<[prefix: string, reason: string]> = [
   ['src/components/golf/documents/ImagePreview', "BaseballHelm's document preview"],
   ['src/components/golf/documents/PDFViewer', "BaseballHelm's document preview"],
   ['src/components/golf/documents/TextPreview', "BaseballHelm's document preview"],
-];
-
-/**
- * Importers still being retired in this change. Each one is deleted or rewritten to Clubhouse in the deletion commit,
- * which empties this list; it must stay empty after that.
- */
-const PENDING: string[] = [
-  'src/app/golf/(auth)/demo/page.tsx',
-  'src/app/golf/(auth)/signup/page.tsx',
-  'src/app/golf/(onboarding)/coach/page.tsx',
-  'src/app/golf/(onboarding)/player/__tests__/page.field-validation.test.tsx',
-  'src/app/golf/(onboarding)/player/page.tsx',
-  'src/components/auth/golf-auth-canvas.tsx',
-  'src/components/auth/GolfAuthShell.tsx',
+  ['src/components/golf/scenes/', 'the auth canvas (components/auth/golf-auth-canvas) draws them on /golf/forgot-password, which a signed-in visitor keeps (CH-15920)'],
 ];
 
 const isRetired = (repoPath: string) =>
@@ -104,8 +97,23 @@ describe('Fairway retirement: nothing imports the retired Fairway trees', () => 
   walk(join(ROOT, 'src'), files);
 
   it('no file outside the retired trees imports, mocks or reads one', () => {
-    const found = retiredImports(files).filter((line) => !PENDING.some((p) => line.startsWith(p)));
-    expect(found).toEqual([]);
+    expect(retiredImports(files)).toEqual([]);
+  });
+
+  it('every retired path is gone, but for its KEPT files', () => {
+    const left: string[] = [];
+    for (const r of RETIRED) {
+      const candidates = r.endsWith('/') ? [r] : [`${r}.ts`, `${r}.tsx`, r];
+      for (const c of candidates) {
+        const abs = join(ROOT, c);
+        if (!existsSync(abs)) continue;
+        const inside: string[] = [];
+        if (statSync(abs).isDirectory()) walk(abs, inside);
+        else inside.push(abs);
+        left.push(...inside.map((f) => relative(ROOT, f)).filter((f) => !KEPT.some(([k]) => f.startsWith(k))));
+      }
+    }
+    expect(left).toEqual([]);
   });
 
   it('every KEPT entry still exists (drop it when its last file goes)', () => {

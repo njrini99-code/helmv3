@@ -17,7 +17,7 @@ export const CLUBHOUSE_IMPORT_ALLOWLIST = [
   'src/components/errors/RouteErrorBoundary.tsx',
 ];
 
-// TODO(phase-7b): 40 files import src/lib/error-logging.ts. Migrate to server-error-logger (logServerError / logServerEvent) or observed-action.
+// TODO(phase-7b): 39 files import src/lib/error-logging.ts. Migrate to server-error-logger (logServerError / logServerEvent) or observed-action.
 export const ERROR_LOGGING_ALLOWLIST = [
   'src/app/admin/_components/PanelBoundary.tsx',
   'src/app/baseball/(dashboard)/dashboard/roster/RosterClient.tsx',
@@ -31,7 +31,6 @@ export const ERROR_LOGGING_ALLOWLIST = [
   'src/clubhouse/screens/auth/ForgotPassword.tsx',
   'src/clubhouse/screens/auth/SignInForm.tsx',
   'src/components/auth/baseball-sign-in-form.tsx',
-  'src/components/auth/golf-sign-in-form.tsx',
   'src/components/baseball/performance/PlayerLiftToday.tsx',
   'src/components/baseball/postgame/PostgameReviewClient.tsx',
   'src/components/baseball/staff-decision-room/StaffDecisionRoomClient.tsx',

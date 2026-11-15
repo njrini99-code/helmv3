@@ -523,23 +523,6 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     cleanup_plan: "Turn on only after the owner applies 20261020120000_golf_focus_area_prescription.sql (HELD.md row; the code treats the missing columns as not available, so the order is not a correctness issue) and runs npm run test:rls. Remove the flag and its checks once the Layout 5 verdict view ships and the verdict job has run stably for a month.",
   },
   {
-    feature_id: "golf_clubhouse_front_door",
-    owner: "golf/clubhouse",
-    purpose: "Draws the Clubhouse entrance pages (the first page a visitor sees, the greeting after it, and the pages that bring a new person in) in place of the current ones. Presentation only: the same server actions and redirects sit behind both.",
-    type: "release",
-    status: "active",
-    created_at: "2026-09-30",
-    expires_at: null,
-    default: false,
-    environment: {
-      production: true,
-      preview: true,
-      development: true,
-    },
-    kill_switch_behavior: null,
-    cleanup_plan: "When the owner turns production on and the old entrance pages are retired, delete them, the layout branch that chooses between them, and this flag in the same change.",
-  },
-  {
     feature_id: "golf_tournaments_v1",
     owner: "golf/clubhouse",
     purpose: "Draws the Clubhouse Tournaments pages (season home, event desk, review, history, comparison, link inbox, event form, lineup and live round) and their nav entry for coaches and players, and lets the tournament server actions run. Off: the routes answer not found and the nav entry is hidden.",

@@ -37,7 +37,6 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { ThemeScript } from '@/components/theme/ThemeScript';
 import { SkyScript } from '@/clubhouse/screens/auth/SkyScript';
 import { TypeScaleScript } from '@/clubhouse/shell/TypeScaleScript';
-import { isFlagEnabled } from '@/lib/flags/is-enabled';
 import { MarketingAnimGate } from '@/components/landing/MarketingAnimGate';
 
 export const metadata: Metadata = {
@@ -124,7 +123,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     >
       <head>
         <ThemeScript />
-        <SkyScript frontDoor={isFlagEnabled('golf_clubhouse_front_door', { skipTelemetry: true })} />
+        <SkyScript />
         {/* The iPhone's Text Size before first paint, so a Clubhouse page never resizes its words at hydration. */}
         <TypeScaleScript />
         <MarketingAnimGate />

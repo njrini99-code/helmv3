@@ -1,6 +1,4 @@
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { isClubhouseFrontDoor } from '@/clubhouse/gate';
 import { ClubhouseCoachPendingRoute } from '@/clubhouse/routes/auth';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -98,48 +96,6 @@ export default async function CoachPendingPage() {
     programName = org?.name ?? null;
   }
 
-  // golf_clubhouse_front_door chooses the page that is drawn; every read and redirect above is the same.
-  if (isClubhouseFrontDoor()) return <ClubhouseCoachPendingRoute programName={programName} />;
-
-  return (
-    <main className="mx-auto flex min-h-screen w-full max-w-lg flex-col justify-center px-6 py-16">
-      <div className="rounded-card border border-border-subtle bg-surface p-8">
-        <h1 className="font-fw-display text-h1 font-semibold tracking-tight text-text-primary">
-          You&rsquo;re all set, pending approval
-        </h1>
-        <p className="mt-3 text-text-secondary">
-          Your account is created{programName ? <> and your request to join <strong className="font-semibold text-text-primary">{programName}</strong> as an assistant coach has been sent</> : <> and your request has been sent</>}.
-          Your head coach approves it from{' '}
-          <strong className="font-semibold text-text-primary">Team → Team settings</strong>.
-        </p>
-        <p className="mt-4 text-sm text-text-secondary">
-          Nothing else is needed from you. Team data appears the moment they
-          approve, reload this page to check.
-        </p>
-
-        <div className="mt-8 flex flex-wrap gap-3">
-          <Link
-            href="/golf/coach/pending"
-            className="rounded-fw-sm bg-accent-fill px-4 py-2.5 text-sm font-medium text-text-on-accent-fill transition-colors hover:bg-accent-fill-hover"
-          >
-            Check again
-          </Link>
-          <Link
-            href="/golf/login"
-            className="rounded-fw-sm border border-border-strong px-4 py-2.5 text-sm font-medium text-text-secondary transition-colors hover:bg-surface-sunken"
-          >
-            Sign out
-          </Link>
-        </div>
-      </div>
-
-      <p className="mt-6 text-center text-sm text-text-secondary">
-        Expected to be a player instead?{' '}
-        <Link href="/golf/signup" className="font-medium text-accent-ink hover:underline">
-          Sign up with your team code as a player
-        </Link>
-        .
-      </p>
-    </main>
-  );
+  // Every read and redirect above decides; this draws the answer.
+  return <ClubhouseCoachPendingRoute programName={programName} />;
 }

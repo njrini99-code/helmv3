@@ -15,7 +15,6 @@ vi.mock('@/lib/supabase/client', () => ({ createClient: vi.fn() }));
 vi.mock('@/lib/utils/capacitor', () => ({ isNativeApp: () => false }));
 vi.mock('../screens/auth/SceneMount', () => ({ SceneMount: () => null }));
 
-import { describeResetFailure as todays } from '../../app/golf/(auth)/reset-password/reset-errors';
 import { ResetPassword } from '../screens/auth/ResetPassword';
 import { describeResetFailure, resetFieldProblem, RESET_LINK_EXPIRED, sameAccount } from '../screens/auth/reset-state';
 import type { ResetWrites } from '../screens/auth/reset-writes';
@@ -207,24 +206,32 @@ describe('choosing a password', () => {
 });
 
 describe('the words and the calls are today’s', () => {
-  it('describeResetFailure answers every case as today’s page does', () => {
-    const cases = [{ code: 'same_password' }, { code: 'weak_password' }, { message: 'Password is pwned' }, { code: 'session_not_found' }, { status: 401 }, { message: 'Auth session missing!' }, { status: 429 }, { name: 'AuthRetryableFetchError' }, { message: 'Failed to fetch' }, { message: 'something else' }, {}];
-    for (const c of cases) expect(describeResetFailure(c)).toEqual(todays(c));
+  // The old reset page was retired on 2026-11-14. Its answers, recorded from its describeResetFailure
+  // (reset-errors.ts) before it was deleted, stay the oracle.
+  it('describeResetFailure answers every case as the old page did', () => {
+    const recorded: Array<[Record<string, unknown>, unknown]> = [
+      [{"code": "same_password"}, {"kind": "field", "message": "Choose a password you haven’t used here before."}],
+      [{"code": "weak_password"}, {"kind": "field", "message": "That password is too easy to guess. Try a longer one."}],
+      [{"message": "Password is pwned"}, {"kind": "field", "message": "That password is too easy to guess. Try a longer one."}],
+      [{"code": "session_not_found"}, {"kind": "expired"}],
+      [{"status": 401}, {"kind": "expired"}],
+      [{"message": "Auth session missing!"}, {"kind": "expired"}],
+      [{"status": 429}, {"kind": "banner", "message": "Too many tries. Wait a minute, then try again."}],
+      [{"name": "AuthRetryableFetchError"}, {"kind": "banner", "message": "Couldn’t save. Check your connection and try again."}],
+      [{"message": "Failed to fetch"}, {"kind": "banner", "message": "Couldn’t save. Check your connection and try again."}],
+      [{"message": "something else"}, {"kind": "banner", "message": "Couldn’t save your password. Try again."}],
+      [{}, {"kind": "banner", "message": "Couldn’t save your password. Try again."}],
+    ];
+    for (const [c, answer] of recorded) expect(describeResetFailure(c)).toEqual(answer);
   });
 
-  it('the expired sentence is today’s', () => {
-    const page = readFileSync('src/app/golf/(auth)/reset-password/page.tsx', 'utf8').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ');
-    expect(page).toContain(RESET_LINK_EXPIRED.replace('we’ll', 'we’ll').slice(0, 40));
-    expect(page).toContain('Enter your email and we’ll send a new one.');
+  it('the expired sentence is the old page’s', () => {
+    expect(RESET_LINK_EXPIRED).toBe('Reset links work once and expire after 1 hour. Enter your email and we’ll send a new one.');
   });
 
-  it('the page calls the same three Supabase auth methods in today’s order', () => {
+  it('the page calls the same three Supabase auth methods the old page did, in its order', () => {
     const mine = readFileSync('src/clubhouse/screens/auth/reset-writes.ts', 'utf8');
-    const today = readFileSync('src/app/golf/(auth)/reset-password/page.tsx', 'utf8');
-    for (const call of ['verifyOtp(', "type: 'recovery'", 'updateUser({ password })', "scope: 'others'"]) {
-      expect(mine).toContain(call);
-      expect(today).toContain(call);
-    }
+    for (const call of ['verifyOtp(', "type: 'recovery'", 'updateUser({ password })', "scope: 'others'"]) expect(mine).toContain(call);
     expect(sameAccount(' Maya@x.edu', 'maya@x.edu')).toBe(true);
   });
 });

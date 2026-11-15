@@ -31,12 +31,12 @@ const BOOT_COVER =
   "document.head.appendChild(st);" +
   "document.addEventListener('DOMContentLoaded',function(){r.removeAttribute('data-ch-au-boot');s.removeProperty('--ch-au-boot-sky');st.remove()});";
 
-/** The boot script; `frontDoor` when the Clubhouse sign in is the one drawn (golf_clubhouse_front_door). */
-export function skyBoot(frontDoor: boolean): string {
-  return `(function(){try{var p=location.pathname;if(p!='/golf/login'&&p!='/golf/welcome')return;var K=${KEYS},d=new Date(),o=0;try{o=parseFloat(localStorage.getItem('${SKY_OFFSET_KEY}'))||0}catch(e){}var h=d.getHours()+d.getMinutes()/60+o;h=((h%24)+24)%24;var i=0;while(K[i+1][0]<h)i++;var a=K[i],b=K[i+1],t=(h-a[0])/(b[0]-a[0]);t=t*t*(3-2*t);function c(x){return[1,3,5].map(function(j){return parseInt(x.slice(j,j+2),16)})}function m(x,y){var f=c(x),g=c(y);return'#'+f.map(function(v,j){return('0'+Math.round(v+(g[j]-v)*t).toString(16)).slice(-2)}).join('')}var top=m(a[1],b[1]),amb=m(a[2],b[2]),A=a[3]+(b[3]-a[3])*t,S=a[4]+(b[4]-a[4])*t,r=document.documentElement,s=r.style;s.setProperty('--ch-au-wash-bg','linear-gradient(to bottom, '+top+', '+amb+')');s.setProperty('--ch-au-wash-a',String(Math.min(0.88,Math.round(A*1.4*100)/100)));if(A>0.3)r.setAttribute('data-ch-au-dark','');${frontDoor ? BOOT_COVER : ''}if(A>=0.02){var q=c(S>0.6?'#e8b46a':amb);s.setProperty('--ch-au-paper','rgb('+q[0]+' '+q[1]+' '+q[2]+' / '+Math.round(Math.min(0.06,0.02+A*0.06)*1000)/1000+')')}}catch(e){}})();`;
+/** The boot script: the hour's sky, and the cover that keeps the route skeleton hidden until the sign in is read. */
+export function skyBoot(): string {
+  return `(function(){try{var p=location.pathname;if(p!='/golf/login'&&p!='/golf/welcome')return;var K=${KEYS},d=new Date(),o=0;try{o=parseFloat(localStorage.getItem('${SKY_OFFSET_KEY}'))||0}catch(e){}var h=d.getHours()+d.getMinutes()/60+o;h=((h%24)+24)%24;var i=0;while(K[i+1][0]<h)i++;var a=K[i],b=K[i+1],t=(h-a[0])/(b[0]-a[0]);t=t*t*(3-2*t);function c(x){return[1,3,5].map(function(j){return parseInt(x.slice(j,j+2),16)})}function m(x,y){var f=c(x),g=c(y);return'#'+f.map(function(v,j){return('0'+Math.round(v+(g[j]-v)*t).toString(16)).slice(-2)}).join('')}var top=m(a[1],b[1]),amb=m(a[2],b[2]),A=a[3]+(b[3]-a[3])*t,S=a[4]+(b[4]-a[4])*t,r=document.documentElement,s=r.style;s.setProperty('--ch-au-wash-bg','linear-gradient(to bottom, '+top+', '+amb+')');s.setProperty('--ch-au-wash-a',String(Math.min(0.88,Math.round(A*1.4*100)/100)));if(A>0.3)r.setAttribute('data-ch-au-dark','');${BOOT_COVER}if(A>=0.02){var q=c(S>0.6?'#e8b46a':amb);s.setProperty('--ch-au-paper','rgb('+q[0]+' '+q[1]+' '+q[2]+' / '+Math.round(Math.min(0.06,0.02+A*0.06)*1000)/1000+')')}}catch(e){}})();`;
 }
 
-export const SKY_BOOT = skyBoot(false);
+export const SKY_BOOT = skyBoot();
 
 /** Clears what SKY_BOOT stamped, once React draws the real hour. */
 export function clearSkyBoot(): void {
@@ -50,6 +50,6 @@ export function clearSkyBoot(): void {
   document.getElementById('ch-au-boot')?.remove();
 }
 
-export function SkyScript({ frontDoor = false }: { frontDoor?: boolean }) {
-  return <script dangerouslySetInnerHTML={{ __html: skyBoot(frontDoor) }} />;
+export function SkyScript() {
+  return <script dangerouslySetInnerHTML={{ __html: SKY_BOOT }} />;
 }

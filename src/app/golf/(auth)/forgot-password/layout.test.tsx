@@ -1,12 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-// The forgot-password layout under golf_clubhouse_front_door: a signed-out
-// visitor resets inside the sign-in panel (/golf/login?view=forgot); a
-// signed-in one keeps today's page, which the proxy deliberately lets them
-// reach. Flag off, the page is untouched and no session is read.
+// The forgot-password layout: a signed-out visitor resets inside the sign-in
+// panel (/golf/login?view=forgot); a signed-in one keeps this page, which the
+// proxy deliberately lets them reach.
 
 const mocks = vi.hoisted(() => ({
-  frontDoor: vi.fn(() => false),
   getUser: vi.fn(),
   getSession: vi.fn(),
   createClient: vi.fn(),
@@ -16,7 +14,6 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('next/navigation', () => ({ redirect: mocks.redirect }));
-vi.mock('@/clubhouse/gate', () => ({ isClubhouseFrontDoor: mocks.frontDoor }));
 vi.mock('@/lib/supabase/server', () => ({ createClient: mocks.createClient }));
 
 import ForgotPasswordLayout from './layout';
@@ -44,16 +41,14 @@ beforeEach(() => {
 });
 
 describe('golf forgot-password layout', () => {
-  it('flag on, signed out: redirects into the sign-in panel reset', async () => {
-    mocks.frontDoor.mockReturnValue(true);
+  it('signed out: redirects into the sign-in panel reset', async () => {
     mocks.getUser.mockResolvedValue(signedOut);
 
     await expect(ForgotPasswordLayout({ children: page })).rejects.toThrow('REDIRECT:/golf/login?view=forgot');
     expect(mocks.redirect).toHaveBeenCalledWith('/golf/login?view=forgot');
   });
 
-  it('flag on, signed in: keeps today’s page', async () => {
-    mocks.frontDoor.mockReturnValue(true);
+  it('signed in: keeps today’s page', async () => {
     mocks.getUser.mockResolvedValue(signedIn);
 
     await expect(ForgotPasswordLayout({ children: page })).resolves.toBe(page);
@@ -61,8 +56,7 @@ describe('golf forgot-password layout', () => {
     expect(mocks.redirect).not.toHaveBeenCalled();
   });
 
-  it('flag on, auth server down with a session in the cookie: degraded counts as signed in, no redirect', async () => {
-    mocks.frontDoor.mockReturnValue(true);
+  it('auth server down with a session in the cookie: degraded counts as signed in, no redirect', async () => {
     mocks.getUser.mockResolvedValue(authDown);
     mocks.getSession.mockResolvedValue({ data: { session: cookieSession }, error: null });
 
@@ -71,28 +65,9 @@ describe('golf forgot-password layout', () => {
     expect(mocks.redirect).not.toHaveBeenCalled();
   });
 
-  it('flag on, auth server down with no session in the cookie: still signed out, redirects', async () => {
-    mocks.frontDoor.mockReturnValue(true);
+  it('auth server down with no session in the cookie: still signed out, redirects', async () => {
     mocks.getUser.mockResolvedValue(authDown);
 
     await expect(ForgotPasswordLayout({ children: page })).rejects.toThrow('REDIRECT:/golf/login?view=forgot');
-  });
-
-  it('flag off, signed out: keeps today’s page without reading the session', async () => {
-    mocks.frontDoor.mockReturnValue(false);
-    mocks.getUser.mockResolvedValue(signedOut);
-
-    await expect(ForgotPasswordLayout({ children: page })).resolves.toBe(page);
-    expect(mocks.createClient).not.toHaveBeenCalled();
-    expect(mocks.redirect).not.toHaveBeenCalled();
-  });
-
-  it('flag off, signed in: keeps today’s page without reading the session', async () => {
-    mocks.frontDoor.mockReturnValue(false);
-    mocks.getUser.mockResolvedValue(signedIn);
-
-    await expect(ForgotPasswordLayout({ children: page })).resolves.toBe(page);
-    expect(mocks.createClient).not.toHaveBeenCalled();
-    expect(mocks.redirect).not.toHaveBeenCalled();
   });
 });
