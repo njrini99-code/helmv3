@@ -168,7 +168,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P013 | 6 | 13 |  | 31 | 3 | 42 | 62 | 7 | 3 |  | 3 | 1 |  | 3 | 3 | 4 | 10 | 19 | 1 |  | 1 |  | 1 |  |  | 213 |
 | P014 | 1 | 3 | 4 | 7 | 11 | 10 | 4 | 2 | 4 |  | 2 | 1 | 1 | 1 | 1 | 4 | 3 | 8 | 1 | 1 |  |  |  |  |  | 69 |
 | P015 |  | 7 | 2 | 3 | 12 | 21 | 27 | 2 | 2 |  |  | 3 |  | 1 |  | 17 | 7 | 6 | 2 | 1 | 1 |  | 1 |  |  | 115 |
-| P016 | 31 | 1 | 1 | 26 |  | 35 | 1 | 1 |  | 2 | 4 | 1 |  |  | 5 | 2 |  | 3 |  |  |  |  |  |  |  | 113 |
+| P016 | 31 | 2 | 1 | 28 | 4 | 37 | 2 | 1 |  | 2 | 6 | 1 |  |  | 5 | 2 |  | 4 |  |  |  |  |  |  |  | 126 |
 
 ## P001 Shell
 
@@ -2064,6 +2064,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 160130 | CH-16685 | 01 Default / core UI | `COACH_HOME_A_TOURNAMENT_TRACKS_A_LIVE` | implemented | Coach Home, a tournament tracks a live round |
 | 160131 | CH-16606 | 01 Default / core UI | `MORE_LANES_THAN_THE_CARD_SHOWS` | implemented | More lanes than the card shows |
 | 160201 | CH-16401 | 02 Initial loading / skeleton | `A_TOURNAMENTS_VIEW_IS_ON_ITS_WAY` | implemented | A Tournaments view is on its way (`load: 'loading'`) |
+| 160280 | CH-16480 | 02 Initial loading / skeleton | `IMPORT_RESULTS_THE_FILE_IS_BEING_READ` | implemented | Import results: the file is being read on the device |
 | 160301 | CH-16604 | 03 Background loading / refresh | `A_LIVE_READ_FAILED_OR_THE_FEED` | implemented | A live read failed or the feed dropped |
 | 160401 | CH-16301 | 04 Empty | `A_VIEW_ITS_LANE_HASNT_BUILT_YET` | deprecated | Retired 2026-11-07: a view its lane hasn't built yet. Every Tournaments view is built, so no screen draws it |
 | 160402 | CH-16310 | 04 Empty | `HOME_NO_EVENT_IN_THE_SEASON_NOTHING` | deprecated | Retired 2026-10-25 (P-5 4.11.1): replaced by CH-16352. Home: no event in the season, nothing failed |
@@ -2091,6 +2092,12 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 160424 | CH-16391 | 04 Empty | `PLAYER_EVENT_THE_EVENT_HAS_NO_ROUNDS` | implemented | Player event: the event has no rounds yet |
 | 160425 | CH-16392 | 04 Empty | `PLAYER_EVENT_THE_COACH_HAS_SHARED_NOTHING` | implemented | Player event: the coach has shared nothing |
 | 160426 | CH-16393 | 04 Empty | `PLAYER_EVENT_THE_TEAMS_RESULT_IS_NOT` | implemented | Player event: the team’s result is not on the player’s page (teammates’ scores and the lineup are the coach’s until held file 4) |
+| 160480 | CH-16380 | 04 Empty | `IMPORT_RESULTS_NONE_OF_OUR_PLAYERS_ARE` | implemented | Import results: none of our players are in the file, or the file has team scores only |
+| 160481 | CH-16381 | 04 Empty | `ENTER_HOLES_NO_GRID_FOR_THE_ROUND` | implemented | Enter holes: no grid for the round (the course has no hole pars, no one is in the round) |
+| 160580 | CH-16180 | 05 Validation | `IMPORT_RESULTS_THE_FILE_CANT_BE_READ` | implemented | Import results: the file can’t be read (the old binary .xls, a PDF, a picture, another type, a damaged file, over 8 MB, empty) |
+| 160581 | CH-16181 | 05 Validation | `IMPORT_RESULTS_THE_FILE_OPENED_BUT_NO` | implemented | Import results: the file opened, but no column reads as players with scores |
+| 160582 | CH-16182 | 05 Validation | `ENTER_HOLES_A_CELL_CANT_BE_SAVED` | implemented | Enter holes: a cell can’t be saved (not a whole number, over 15 strokes, a saved hole emptied) |
+| 160583 | CH-16183 | 05 Validation | `IMPORT_RESULTS_READ_RESULTS_WITH_NOTHING_PASTED` | implemented | Import results: Read results with nothing pasted |
 | 160601 | CH-16201 | 06 Server / system error | `A_TOURNAMENTS_VIEWS_ONE_READ_FAILS` | implemented | A Tournaments view's one read fails (any view; `load: 'failed'`) |
 | 160602 | CH-16210 | 06 Server / system error | `HOME_THE_EVENTS_READ_FAILS_WHILE_THE` | implemented | Home: the events read fails while the page itself loads (`errors.events`) |
 | 160603 | CH-16220 | 06 Server / system error | `EVENT_DESK_HOLES_TAB_THE_SCORECARDS_READ` | implemented | Event desk, Holes tab: the scorecards read fails (`errors.holes`) |
@@ -2126,7 +2133,10 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 160633 | CH-16292 | 06 Server / system error | `PLAYER_EVENT_THE_PLAYERS_REFLECTION_READ_FAILS` | implemented | Player event: the player’s reflection read fails (`errors.reflection`) |
 | 160634 | CH-16293 | 06 Server / system error | `PLAYER_EVENT_THE_PLAYERS_OWN_SPOT_FAILS` | implemented | Player event: the player’s own spot (the lineup reveal) fails to load (`errors.reveal`) |
 | 160635 | CH-16072 | 06 Server / system error | `HOLE_BY_HOLE_SAVING_ONE_HOLE_FAILS` | implemented | Hole by hole: saving one hole fails or is refused (not in the round’s lineup, a total already entered, results official, not set up) |
+| 160680 | CH-16080 | 06 Server / system error | `IMPORT_RESULTS_SAVING_FAILS_OR_IS_REFUSED` | implemented | Import results: saving fails or is refused (the results are official, not a coach, a round that isn’t the event’s, a field row that isn’t) |
+| 160681 | CH-16081 | 06 Server / system error | `ENTER_HOLES_SAVING_THE_GRID_FAILS_OR` | implemented | Enter holes: saving the grid fails or is refused |
 | 160701 | CH-16605 | 07 Network / offline | `THE_DEVICE_IS_OFFLINE_WHILE_THE_CARD` | implemented | The device is offline while the card or the live view is open |
+| 160780 | CH-16980 | 07 Network / offline | `IMPORT_RESULTS_A_ROUND_IN_THE_FILE` | implemented | Import results: a round in the file differs from the player’s card or submitted round |
 | 160801 | CH-16609 | 08 Permission / authorization | `THE_COACH_HAS_NO_TEAM_OR_LOST` | implemented | The coach has no team, or lost access to it |
 | 161001 | CH-16920 | 10 Warning | `EVENT_DESK_THE_HOSTS_PUBLISHED_NUMBER_DIFFERS` | implemented | Event desk: the host's published number differs from our scorecard (`officialTotal` set and unequal) |
 | 161002 | CH-16665 | 10 Warning | `A_ROUNDS_SHARING_WAS_CHANGED_30_TIMES` | implemented | A round's sharing was changed 30 times (slice 2) |
@@ -2134,6 +2144,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 161102 | CH-16551 | 11 Destructive | `CANCEL_TOURNAMENT_FROM_THE_DESKS_TOURNAMENT_MENU` | implemented | Cancel tournament, from the desk's tournament menu (P-5; the calendar's CH-6541) |
 | 161103 | CH-16560 | 11 Destructive | `LOCK_THE_LINEUP_FROM_THE_LINEUP_BUILDER` | implemented | Lock the lineup, from the lineup builder |
 | 161104 | CH-16570 | 11 Destructive | `FINISH_THE_ROUND_FROM_THE_LIVE_ROUND` | implemented | Finish the round, from the live round |
+| 161180 | CH-16580 | 11 Destructive | `IMPORT_RESULTS_START_OVER_ONCE_CHOICES_ARE` | implemented | Import results: Start over once choices are made on the check step |
+| 161181 | CH-16581 | 11 Destructive | `ENTER_HOLES_CLOSING_WITH_HOLES_TYPED_AND` | implemented | Enter holes: closing with holes typed and not saved |
 | 161201 | CH-16621 | 12 State preservation | `A_PLAYER_WITH_THEIR_OWN_ROUND_ON` | implemented | A player with their own round on this qualifier (slice 4) |
 | 161501 | CH-16614 | 15 Data freshness / sync | `LANES_WITH_NO_WORD_FOR_90_MINUTES` | implemented | Lanes with no word for 90 minutes |
 | 161502 | CH-16672 | 15 Data freshness / sync | `A_LANE_SILENT_FOR_10_MINUTES_WITH` | implemented | A lane silent for 10 minutes with the last hole at least as old |
@@ -2145,6 +2157,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 161801 | CH-16801 | 18 Accessibility | `A_SIGNED_DIFFERENCE_OR_A_TRUST_STATE` | reserved | A signed difference or a trust state is read |
 | 161802 | CH-16641 | 18 Accessibility | `CALENDAR_GRID_BLOCK` | implemented | Calendar grid block (slice 4) |
 | 161803 | CH-16850 | 18 Accessibility | `HOME_A_TOURNAMENT_ARRIVES_WHILE_THE_PAGE_2` | implemented | Home: a tournament arrives while the page is open |
+| 161880 | CH-16880 | 18 Accessibility | `ENTER_HOLES_THE_GRID_BY_KEYBOARD_AND` | implemented | Enter holes: the grid by keyboard and screen reader |
 
 ## Tombstones
 

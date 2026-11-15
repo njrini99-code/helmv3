@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { findLayout, intOf, mapColumns, personName, placeOf, readResults, statusOf, withColumn } from '../results';
+import { columnName, findLayout, intOf, mapColumns, personName, placeOf, readResults, statusOf, withColumn, withRun } from '../results';
 import type { ChResultsSheet } from '../sheets';
 
 const HOLES = Array.from({ length: 18 }, (_, i) => String(i + 1));
@@ -46,6 +46,15 @@ describe('results import: finding the columns', () => {
     const moved = withColumn(layout, 'total', null);
     expect(moved.kind).toBe('none');
     expect(withColumn(moved, { round: 1 }, 1).kind).toBe('rounds');
+  });
+
+  it('moves a run of hole columns together, and names columns as a spreadsheet does', () => {
+    const layout = findLayout({ name: 'S', rows: [['Golfer', 'Out', ...HOLES.slice(0, 9)]] }, 0);
+    const front = withRun(layout, 'hole', 1, 2, 9);
+    expect(front.columns.holes.slice(0, 10)).toEqual([2, 3, 4, 5, 6, 7, 8, 9, 10, null]);
+    expect(front.kind).toBe('holes');
+    expect(withRun(front, 'hole', 1, null, 9).columns.holes.every((h) => h == null)).toBe(true);
+    expect([0, 25, 26, 51, 52].map(columnName)).toEqual(['A', 'Z', 'AA', 'AZ', 'BA']);
   });
 });
 
@@ -130,7 +139,8 @@ describe('results import: cells', () => {
   it('names', () => {
     expect(personName('SMITH, John (a)')).toEqual({ name: 'John Smith', team: null });
     expect(personName('John Smith (Demo University)')).toEqual({ name: 'John Smith', team: 'Demo University' });
-    expect(personName("o'neil, sean*")).toEqual({ name: "Sean O'Neil", team: null });
+    // A file's straight apostrophe is kept as the file has it (written as an escape: page copy is curly).
+    expect(personName('o\u0027neil, sean*')).toEqual({ name: 'Sean O\u0027Neil', team: null });
     expect(personName('McKenzie Lee')).toEqual({ name: 'McKenzie Lee', team: null });
   });
   it('places, statuses and numbers', () => {

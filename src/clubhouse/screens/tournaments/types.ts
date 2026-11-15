@@ -508,6 +508,8 @@ export interface ChTourTrip {
 
 export interface ChTourDeskData {
   now: string;
+  /** Our team's name as the roster has it, for finding our rows in an imported results file (F-01). */
+  teamName?: string | null;
   event: ChTourEvent;
   players: ChTourPlayer[];
   courses: Record<string, ChTourCourse>;

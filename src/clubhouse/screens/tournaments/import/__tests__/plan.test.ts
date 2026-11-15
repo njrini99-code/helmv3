@@ -1,57 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { buildPlan, importInput, matchNames, nameScore, planCounts, sameTeam, type ChPlanContext } from '../plan';
+import { buildPlan, fileTeams, importInput, matchNames, nameScore, planCounts, sameTeam, withChoices, type ChPlanContext } from '../plan';
 import { readResults } from '../results';
-import type { ChTourCourse, ChTourEvent, ChTourField, ChTourHoleLedger, ChTourPlayer, ChTourPlayerRound } from '../../types';
-
-const PARS = [4, 4, 3, 4, 5, 4, 3, 4, 5, 4, 4, 3, 5, 4, 4, 3, 4, 5];
-const HOLES = PARS.map((_, i) => String(i + 1));
-/** A card that is par everywhere but `extra` strokes over on hole `on` (1 based). */
-const card = (extra = 0, on = 1) => PARS.map((p, i) => p + (i === on - 1 ? extra : 0));
-const total = (c: readonly number[]) => c.reduce((a, b) => a + b, 0);
-
-const player = (id: string, name: string): ChTourPlayer => ({ id, name, first: name.split(' ')[0]!, initials: 'XX', year: 'Senior', avatarUrl: null, alumni: false, availability: 'available' });
-const ROSTER = [player('ava', 'Ava Lindqvist'), player('theo', 'Theo Marchetti'), player('sofia', 'Sofia Alvarez'), player('jonah', 'Jonah Okafor'), player('eli', 'Eli Brandt'), player('will', 'William Harper')];
-const COURSE: ChTourCourse = { id: 'pin', name: 'Pinehurst No. 2', tees: 'Blue', par: 72, rating: 75.3, holes: PARS.map((par, i) => ({ n: i + 1, par, handicap: null, yards: null })) };
-
-function pr(over: Partial<ChTourPlayerRound> & { playerId: string; roundNumber: number }): ChTourPlayerRound {
-  return { eventId: 'e1', roundEventId: `r${over.roundNumber}`, role: 'lineup', slot: 1, squad: 'A', total: null, toPar: null, status: 'ok', source: 'card', trust: 'live', roundId: null, holesKnown: false, shotData: false, officialTotal: null, count: 'none', ...over };
-}
-
-function event(over: Partial<ChTourEvent> = {}): ChTourEvent {
-  return {
-    id: 'e1',
-    seasonId: '2026-27',
-    name: 'Fall Invitational',
-    short: 'Fall Inv.',
-    host: null,
-    startDate: '2026-10-20',
-    endDate: '2026-10-21',
-    courseIds: ['pin'],
-    format: { kind: '5c4', players: 5, counting: 4, holes: 18 },
-    kind: 'regular',
-    tiebreak: 'ncaa',
-    status: 'live',
-    show: 'live',
-    close: null,
-    trust: 'live',
-    mood: 'live',
-    rounds: [1, 2].map((n) => ({ roundEventId: `r${n}`, eventId: 'e1', number: n, date: `2026-10-2${n - 1}`, courseId: 'pin', startType: 'tee_times', firstTeeAt: null, status: 'live', par: 72, thirtySix: false })),
-    entries: ['ava', 'theo', 'sofia', 'jonah', 'eli'].map((playerId, i) => ({ playerId, role: 'lineup', slot: i + 1, squad: 'A' })).concat([{ playerId: 'will', role: 'alternate', slot: null, squad: 'A' }]) as ChTourEvent['entries'],
-    playerRounds: [],
-    team: { rounds: [], result: null },
-    field: null,
-    finish: null,
-    record: null,
-    coverage: { scorecards: 0, withShots: 0 },
-    resultsUrl: null,
-    lineup: { status: 'locked', locksAt: null, publishAt: null, publishedAt: null, seen: null, set: 5, of: 5 } as ChTourEvent['lineup'],
-    note: null,
-    legacy: false,
-    ...over,
-  };
-}
-
-const ctx = (over: Partial<ChTourEvent> = {}, ledger: ChTourHoleLedger | null = null): ChPlanContext => ({ event: event(over), players: ROSTER, ledger, courses: { pin: COURSE }, teamName: 'Demo University' });
+import type { ChTourField, ChTourHoleLedger } from '../../types';
+import { COURSE, HOLES, PARS, ROSTER, card, ctx, player, pr, total } from './fixtures';
 
 /** A hole-by-hole file: our five and Elon's five, two rounds. */
 function holesFile(cards: Record<string, [number[], number[]]>) {
@@ -201,5 +152,42 @@ describe('results import: the field and places', () => {
   it('counts what the Save button says', () => {
     const plan = buildPlan(holesFile({ ...OURS, ...ELON }), ctx());
     expect(planCounts(plan)).toMatchObject({ cards: 10, same: 0, differs: 0, unmatched: 0, teams: 1, newTeams: 1 });
+  });
+});
+
+describe('results import: the coach’s choices', () => {
+  it('lists the file’s teams once each, and lets the coach say which is ours', () => {
+    const read = holesFile({ ...OURS, ...ELON });
+    expect(fileTeams(read).map((t) => t.name)).toEqual(['Demo University', 'Elon University']);
+    // Told Elon is ours, the plan lists Elon's five (none on our roster) and Demo becomes a field team.
+    const plan = buildPlan(read, ctx(), { team: 'elon university' });
+    expect(plan.players.map((p) => p.fileName)).toEqual(['Kai Ito', 'Bo Kim', 'Max Roy', 'Lu Chen', 'Ren Ota']);
+    expect(plan.players.every((p) => p.playerId == null)).toBe(true);
+    expect(plan.teams.find((t) => t.us)?.name).toBe('Elon University');
+    // A key the file doesn't have is ignored.
+    expect(buildPlan(read, ctx(), { team: 'nobody' }).teams.find((t) => t.us)?.name).toBe('Demo University');
+  });
+
+  it('applies the card-or-file choice to a differing round only, and leaves a team out of the save', () => {
+    const ledger: ChTourHoleLedger = {
+      courseId: 'pin',
+      pars: PARS,
+      handicaps: [],
+      totalsOnly: [],
+      cards: [{ playerId: 'theo', roundNumber: 1, roundEventId: 'r1', startHole: 1, holes: card(1, 5).map((s, i) => ({ n: i + 1, par: PARS[i]!, strokes: s, source: 'card', disputed: false })) }],
+    };
+    const c = ctx({ playerRounds: [pr({ playerId: 'theo', roundNumber: 1, roundId: 'g2', total: 73, holesKnown: true, cardOpen: true })] }, ledger);
+    const base = buildPlan(holesFile({ ...OURS, ...ELON }), c);
+    const theoKey = base.players.find((p) => p.playerId === 'theo')!.key;
+    const elonKey = base.teams.find((t) => !t.us)!.key;
+    const chosen = withChoices(base, { [`${theoKey}:1`]: 'file', [`${theoKey}:2`]: 'card' }, new Set([elonKey]));
+    const theo = chosen.players.find((p) => p.playerId === 'theo')!;
+    expect(theo.rounds[0]).toMatchObject({ action: 'differs', use: 'file' });
+    // Round 2 is new, not differing: the choice doesn't touch it.
+    expect(theo.rounds[1]).toMatchObject({ action: 'new', use: 'file' });
+    const input = importInput(chosen, c);
+    expect(input.cards.some((x) => x.playerId === 'theo' && x.roundEventId === 'r1' && x.replace)).toBe(true);
+    expect(input.teams.some((t) => !t.us)).toBe(false);
+    expect(planCounts(chosen)).toMatchObject({ teams: 0, newTeams: 0 });
   });
 });

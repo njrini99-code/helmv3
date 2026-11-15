@@ -206,7 +206,7 @@ function numberText(raw: string): string {
   const n = Number(raw);
   if (!Number.isFinite(n)) return raw;
   const r = Math.round(n);
-  return Math.abs(n - r) < 1e-9 ? String(r) : String(Number(n.toFixed(6)));
+  return Math.abs(n - r) < 1e-9 ? String(r) : String(Math.round(n * 1e6) / 1e6);
 }
 
 export function readXlsx(bytes: Uint8Array): ChSheetsRead {

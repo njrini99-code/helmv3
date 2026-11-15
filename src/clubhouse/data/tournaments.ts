@@ -552,6 +552,7 @@ export async function loadTournamentDesk(ctx: TourCtx, eventId: string): Promise
       kind: 'ready',
       data: {
         now: ctx.now,
+        teamName: info.team.name,
         event,
         players,
         courses: read.courses,

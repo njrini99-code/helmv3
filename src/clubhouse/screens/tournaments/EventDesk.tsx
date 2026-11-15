@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowRight, ArrowUpRight, ClipboardCheck, Flag, GitCompare, Link2, Radio, Users } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, ClipboardCheck, Flag, GitCompare, Link2, Radio, Table2, Upload, Users } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { Button } from '../../ui/Button';
@@ -17,7 +17,9 @@ import { useRefresh } from '../../lib/use-refresh';
 import { deskRows, roundSets, type DeskRow, type HoleCardRow } from './desk-model';
 import { EvidenceDrawer, type DeskEvidence } from './EvidenceDrawer';
 import { closeLabel, countLabel, finishTeams, countsEachRound, formatToPar, holesLabel, playLabel, tourDayTime, tourRange } from './format';
+import { HoleEntry } from './HoleEntry';
 import { HoleGrid } from './HoleGrid';
+import { ImportResults } from './ImportResults';
 import { Review } from './Review';
 import { TourChip, TourCrumb, TourFailed, TourHead, TourLoading, TourMain, TourPhoneTop, ToPar, tourGate, useTourPhone } from './parts';
 import { useTourPaths, type ChTourPaths } from './paths';
@@ -97,6 +99,11 @@ function DeskReady({ data, search, phone }: { data: ChTourDeskData; search: ChTo
   const rows = useMemo(() => deskRows(e, data.players), [e, data.players]);
   const course = data.courses[e.courseIds[0] ?? ''];
   const [evidence, setEvidence] = useState<DeskEvidence | null>(null);
+  // F-01: results come in from a file (Import results) or by hand for a whole round (Enter holes, desktop). Not once the
+  // results are official, nor for a calendar entry not set up as a tournament.
+  const [importing, setImporting] = useState(false);
+  const [entering, setEntering] = useState(false);
+  const canImport = !data.track?.official && e.trust !== 'official' && !e.legacy && !e.cancelled && e.rounds.length > 0;
   const openScore = (row: DeskRow | null, pr: ChTourPlayerRound) => setEvidence(scoreEvidence(data, row, pr));
   const openHole = (r: HoleCardRow) => {
     const pr = e.playerRounds.find((p) => p.playerId === r.playerId && p.roundNumber === r.card.roundNumber);
@@ -154,6 +161,11 @@ function DeskReady({ data, search, phone }: { data: ChTourDeskData; search: ChTo
             <Icon icon={ArrowUpRight} size={15} />
             <span>Official results</span>
           </a>
+        )}
+        {canImport && !phone && (
+          <Button leftIcon={Upload} onClick={() => setImporting(true)}>
+            Import results
+          </Button>
         )}
         {e.status !== 'complete' && primary.href !== paths.lineup(e.id) && !phone && (
           <Button leftIcon={Users} href={paths.lineup(e.id)}>
@@ -230,7 +242,7 @@ function DeskReady({ data, search, phone }: { data: ChTourDeskData; search: ChTo
         {tab === 'overview' && (
           <>
             <Section id="ch-tour-desk-who" title="Who counted" meta={hasScores ? `Lowest ${e.format.counting} whole-round scores each round make the team total` : undefined}>
-              {data.errors.rounds ? <RoundsFailed onRetry={refresh} retrying={refreshing} /> : hasScores ? <WhoCounted event={e} rows={rows} round="all" view="team" phone={phone} onOpen={openScore} /> : <NoScores event={e} />}
+              {data.errors.rounds ? <RoundsFailed onRetry={refresh} retrying={refreshing} /> : hasScores ? <WhoCounted event={e} rows={rows} round="all" view="team" phone={phone} onOpen={openScore} /> : <NoScores event={e} onImport={canImport ? () => setImporting(true) : undefined} />}
             </Section>
             {data.findings.length > 0 && (
               <Section id="ch-tour-desk-find" title="Where the event turned" meta="Each finding opens its rounds">
@@ -261,12 +273,23 @@ function DeskReady({ data, search, phone }: { data: ChTourDeskData; search: ChTo
                 <WhoCounted event={e} rows={rows} round={state.round} view={state.view} phone={phone} onOpen={openScore} />
               </>
             ) : (
-              <NoScores event={e} />
+              <NoScores event={e} onImport={canImport ? () => setImporting(true) : undefined} />
             )}
           </Section>
         )}
         {tab === 'holes' && (
-          <Section id="ch-tour-desk-holes" title="Hole analysis" meta={course ? `${course.name} · ${course.tees} · tap a hole for the scorecard` : undefined}>
+          <Section
+            id="ch-tour-desk-holes"
+            title="Hole analysis"
+            meta={course ? `${course.name} · ${course.tees} · tap a hole for the scorecard` : undefined}
+            actions={
+              canImport && !phone ? (
+                <Button size="sm" leftIcon={Table2} onClick={() => setEntering(true)}>
+                  Enter holes
+                </Button>
+              ) : undefined
+            }
+          >
             <HoleGrid
               event={e}
               players={data.players}
@@ -308,6 +331,8 @@ function DeskReady({ data, search, phone }: { data: ChTourDeskData; search: ChTo
       </div>
 
       <EvidenceDrawer evidence={evidence} onClose={() => setEvidence(null)} />
+      {canImport && <ImportResults open={importing} onClose={() => setImporting(false)} data={data} />}
+      {canImport && !phone && <HoleEntry open={entering} onClose={() => setEntering(false)} data={data} round={holesRound} />}
     </TourMain>
   );
 }
@@ -375,8 +400,8 @@ function RoundsFailed({ onRetry, retrying }: { onRetry: () => void; retrying: bo
   return <InlineNotice code="CH-16222" title="The rounds didn’t load" body="Scores are saved; they just can’t be shown right now. Try again." onRetry={onRetry} retrying={retrying} />;
 }
 
-/** Nothing scored yet: the empty line, and where the event stands. */
-function NoScores({ event: e }: { event: ChTourEvent }) {
+/** Nothing scored yet: the empty line, where the event stands, and (F-01) the way to bring the results in. */
+function NoScores({ event: e, onImport }: { event: ChTourEvent; onImport?: () => void }) {
   const l = e.lineup;
   const state =
     l.status === 'none'
@@ -386,7 +411,22 @@ function NoScores({ event: e }: { event: ChTourEvent }) {
         : l.status === 'locked'
           ? 'The lineup is locked.'
           : `Lineup ${l.status}${l.seen ? ` · seen by ${l.seen.by} of ${l.seen.of}` : ''}.`;
-  return <EmptyState compact kind="first-run" code="CH-16320" title="No scores yet" body={`Scores show here as rounds are entered. ${state}${e.note ? ` ${e.note}.` : ''}`} />;
+  return (
+    <EmptyState
+      compact
+      kind="first-run"
+      code="CH-16320"
+      title="No scores yet"
+      body={`Scores show here as rounds are entered${onImport ? ', or import the results file' : ''}. ${state}${e.note ? ` ${e.note}.` : ''}`}
+      action={
+        onImport ? (
+          <Button leftIcon={Upload} onClick={onImport}>
+            Import results
+          </Button>
+        ) : undefined
+      }
+    />
+  );
 }
 
 /** A finding (board `tr-find__c`): a chip, the finding, what it rests on, and where to see it. */

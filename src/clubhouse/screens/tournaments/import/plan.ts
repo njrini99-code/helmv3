@@ -280,11 +280,29 @@ export function ourTeamKey(read: ChResultsRead, ctx: ChPlanContext): string | nu
 
 const resolveRound = (n: number, pick: number | null) => (n === 0 ? pick : n);
 
-export function buildPlan(read: ChResultsRead, ctx: ChPlanContext, opts: { pickRound?: number | null; picks?: Record<string, string | null> } = {}): ChImportPlan {
+/** What the coach chose on the check step, over what the file and the roster suggest. */
+export interface ChPlanChoices {
+  /** The event round the file's unnamed round is. */
+  pickRound?: number | null;
+  /** A file player's roster match, by the file player's key: an id, or null for "not on our roster". */
+  picks?: Record<string, string | null>;
+  /** Which file team is ours, by team key, when the file has several. */
+  team?: string | null;
+}
+
+/** The teams a file names (its team rows and its players' teams), once each, in file order. */
+export function fileTeams(read: ChResultsRead): Array<{ key: string; name: string }> {
+  const seen = new Map<string, string>();
+  for (const t of read.teams) if (!seen.has(t.key)) seen.set(t.key, t.name);
+  for (const p of read.players) if (p.team && !seen.has(keyOf(p.team))) seen.set(keyOf(p.team), p.team);
+  return [...seen.entries()].map(([key, name]) => ({ key, name }));
+}
+
+export function buildPlan(read: ChResultsRead, ctx: ChPlanContext, opts: ChPlanChoices = {}): ChImportPlan {
   const ev = ctx.event;
   const warnings = [...read.warnings];
   const pickRound = read.rounds.includes(0) ? (opts.pickRound ?? defaultPickRound(ev)) : null;
-  const usKey = ourTeamKey(read, ctx);
+  const usKey = opts.team !== undefined && (opts.team === null || fileTeams(read).some((t) => t.key === opts.team)) ? opts.team : ourTeamKey(read, ctx);
   const ours = read.players.filter((p) => usKey == null || keyOf(p.team ?? '') === usKey);
   const matched = matchNames(
     ours.map((p) => p.name),
@@ -386,6 +404,24 @@ function placesOf(read: ChResultsRead, ctx: ChPlanContext, teams: readonly ChPla
   void usKey;
   const placed = placeField(rows, 'ncaa', ncaaTeamTiebreak);
   return { places: 'ladder', byKey: new Map(placed.filter((p) => p.place != null).map((p) => [p.id, { n: p.place!, tied: p.tied }])) };
+}
+
+/**
+ * The plan with the coach's two remaining choices applied: for a round that differs, the file's score or the card's
+ * (`uses`, keyed `playerKey:round`), and the teams left out of the save (`drop`, by team key).
+ */
+export function withChoices(plan: ChImportPlan, uses: Readonly<Record<string, 'file' | 'card'>>, drop: ReadonlySet<string>): ChImportPlan {
+  return {
+    ...plan,
+    players: plan.players.map((p) => ({
+      ...p,
+      rounds: p.rounds.map((r) => {
+        const use = uses[`${p.key}:${r.roundNumber}`];
+        return r.action === 'differs' && use ? { ...r, use } : r;
+      }),
+    })),
+    teams: plan.teams.map((t) => (drop.has(t.key) ? { ...t, keep: false } : t)),
+  };
 }
 
 // ── What is saved ────────────────────────────────────────────────────────────────────────────────────────────

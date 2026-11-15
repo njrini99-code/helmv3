@@ -105,7 +105,7 @@ export const normHeader = (s: string) =>
   s
     .toLowerCase()
     .normalize('NFKD')
-    .replace(/[̀-ͯ]/g, '')
+    .replace(/[\u0300-\u036f]/g, '')
     .replace(/[#.:_\-/()]+/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
@@ -296,7 +296,7 @@ export function personName(raw: string): { name: string; team: string | null } {
     s = bracket[1]!.trim();
     team = bracket[2]!.trim();
   }
-  s = s.replace(/\s*\((?:a|am)\)\s*/gi, ' ').replace(/[*†‡]+/g, '').trim();
+  s = s.replace(/\s*\((?:a|am)\)\s*/gi, ' ').replace(/[*\u2020\u2021]+/g, '').trim();
   const comma = /^([^,]+),\s*(.+)$/.exec(s);
   if (comma) s = `${comma[2]} ${comma[1]}`;
   return { name: title(s.replace(/\s+/g, ' ').trim()), team };
@@ -306,7 +306,7 @@ export const keyOf = (s: string) =>
   s
     .toLowerCase()
     .normalize('NFKD')
-    .replace(/[̀-ͯ]/g, '')
+    .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9]+/g, ' ')
     .trim();
 
@@ -512,4 +512,26 @@ export function withColumn(layout: ChSheetLayout, field: ChColumnKey | { hole: n
   else if ('hole' in field) columns.holes[field.hole - 1] = col;
   else columns.rounds[field.round - 1] = col;
   return { ...layout, columns, kind: kindOf(columns) };
+}
+
+/**
+ * One sheet's layout with a run of hole or round columns moved together: hole `first` at `col`, the next at `col + 1`
+ * and so on for `count` (the column editor's "Hole 1 is column D" and "Round 1 is column E"). Null clears the run.
+ */
+export function withRun(layout: ChSheetLayout, kind: 'hole' | 'round', first: number, col: number | null, count: number): ChSheetLayout {
+  let out = layout;
+  for (let i = 0; i < count; i += 1) out = withColumn(out, kind === 'hole' ? { hole: first + i } : { round: first + i }, col == null ? null : col + i);
+  return out;
+}
+
+/** "A", "B", … "AA": a spreadsheet's name for a column. */
+export function columnName(col: number): string {
+  let n = col + 1;
+  let s = '';
+  while (n > 0) {
+    const r = (n - 1) % 26;
+    s = String.fromCharCode(65 + r) + s;
+    n = Math.floor((n - 1) / 26);
+  }
+  return s;
 }
