@@ -2,6 +2,7 @@
 
 import type { ChMessagesApi } from '../api/types';
 import { useState, useRef, useEffect } from 'react';
+import { useBusy, useBusyReveal } from '../../../lib/use-busy';
 import { type ChConvFilter, INBOX_FILTERS, filterConvs, pinnedThreads } from './model';
 import { RailEmpty } from '../RailEmpty';
 import { isMessagesFirstRun, MessagesFirstRun } from '../MessagesFirstRun';
@@ -37,7 +38,12 @@ export function PhoneInboxV2({ api, onNew, onTeam }: { api: ChMessagesApi; onNew
   useEffect(() => {
     lastScope.current = scope;
   });
-  const loading = (api.convsLoading && !api.convs.length) || api.annLoading;
+  const loading = (api.convsLoading && !api.convs.length) || !!api.annLoading;
+  // 3.5 late content, 3.9: the skeleton waits 150 ms, holds 300 ms once shown, and the list that takes its place fades in
+  // over the quick beat (opacity only).
+  const busy = useBusy(loading);
+  const reveal = useBusyReveal<HTMLDivElement>(busy);
+  const shown = busy === "skeleton" ? "skeleton" : loading ? "idle" : "ready";
   const pinned = api.pins ? pinnedThreads(api.convs, api.pins.ids) : [];
   const firstRun = isMessagesFirstRun(api);
   const searching = q.trim().length > 0;
@@ -61,12 +67,12 @@ export function PhoneInboxV2({ api, onNew, onTeam }: { api: ChMessagesApi; onNew
       )}
       {api.convsError ? (
         <InlineNotice code="CH-7201" title="Conversations didn’t load" body="Your messages are safe. Try again." onRetry={api.refetchConvs} />
-      ) : loading ? (
+      ) : shown === "skeleton" ? (
         <InboxSkeleton layout="card" />
-      ) : firstRun ? (
+      ) : shown === "idle" ? null : firstRun ? (
         <MessagesFirstRun coach={api.viewer.role === "coach"} teamName={api.teamName ?? undefined} onNew={onNew} onTeam={api.viewer.role === "coach" ? onTeam : undefined} />
       ) : (
-        <div className="ch-msp-list">
+        <div className="ch-msp-list" ref={reveal}>
           {pinned.length > 0 && (
             <section className="ch-msv-card" aria-label="Pinned">
               <h2 className="ch-msv-card__h">Pinned</h2>
