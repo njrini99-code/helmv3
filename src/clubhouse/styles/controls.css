@@ -387,6 +387,10 @@
   background: var(--ch-sel, var(--ch-press-well));
   box-shadow: none;
 }
+/* The touch half sits just before the hover query and draws what `:active` draws there (B6, pressed-sweep). */
+.ch-menu__item[data-ch-pressed] {
+  background: var(--ch-sel, var(--ch-press-well));
+}
 @media (hover: hover) {
   .ch-menu__item:hover {
     outline: none;
@@ -397,9 +401,6 @@
   .ch-menu__item:active {
     background: var(--ch-sel, var(--ch-press-well));
   }
-}
-.ch-menu__item[data-ch-pressed] {
-  background: var(--ch-sel, var(--ch-press-well));
 }
 .ch-menu__item.is-danger,
 .ch-menu__item.is-danger svg {
