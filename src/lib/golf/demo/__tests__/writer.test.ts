@@ -89,7 +89,7 @@ function fakeDb(preexisting: Partial<Record<DemoTable, DemoRow[]>> = {}) {
       }
       return { pruned, ledger: structuredClone(ledger) as DemoLedger };
     },
-    async apply(teamId, table, items, version) {
+    async apply(_teamId, table, items, version) {
       calls.push(`apply ${table} ${items.length} v${version}`);
       const skipped: string[] = [];
       let written = 0;
@@ -105,7 +105,7 @@ function fakeDb(preexisting: Partial<Record<DemoTable, DemoRow[]>> = {}) {
       }
       return { written, skipped };
     },
-    async remove(teamId, table, keys) {
+    async remove(_teamId, table, keys) {
       calls.push(`remove ${table} ${keys.length}`);
       let removed = 0;
       for (const key of keys) {
@@ -117,7 +117,7 @@ function fakeDb(preexisting: Partial<Record<DemoTable, DemoRow[]>> = {}) {
       }
       return removed;
     },
-    async finishRounds(teamId, rounds, version) {
+    async finishRounds(_teamId, rounds, version) {
       calls.push(`finish ${rounds.length} v${version}`);
       for (const r of rounds) (ledger[FINISHED_ROUNDS] ??= {})[r.id] = r.hash;
       finishedRounds += rounds.length;
@@ -318,7 +318,7 @@ describe('writing the generated team day after day (fake database)', () => {
 
   it('never overwrites a row it did not write, and leaves it out of the ledger', async () => {
     const d = gen('2026-11-15');
-    const foreign = { ...d.tables.golf_events[0]!, title: 'Written by a coach' };
+    const foreign: DemoRow = { ...d.tables.golf_events[0]!, title: 'Written by a coach' };
     const db = fakeDb({ golf_events: [foreign] });
     const result = await applyDemoWrite(db.port, planDemoWrite(d, {}));
     const events = result.tables.find((t) => t.table === 'golf_events')!;

@@ -199,7 +199,7 @@ export function playHole(rng: Rng, hole: DemoHole, holeNumber: number, s: DaySki
     const prox = shortGameProximity(rng, yards, lie, s);
     if (prox < 0.9) {
       push({ shot_type: 'around_green', club_type: 'non_driver', lie_before: lie, distance_to_hole_before: yards, distance_unit_before: 'yards', result: 'hole', lie_after: null, distance_to_hole_after: 0, distance_unit_after: 'feet', shot_distance: yards, is_penalty: false, penalty_type: null, putt_made: null, putt_distance_feet: null, miss_direction: null });
-      return finish(hole, holeNumber, shots, penalties, fairwayHit, null, playedFromSand);
+      return finish(hole, holeNumber, shots, penalties, fairwayHit, playedFromSand);
     }
     feet = round1(prox);
     push({ shot_type: 'around_green', club_type: 'non_driver', lie_before: lie, distance_to_hole_before: yards, distance_unit_before: 'yards', result: 'green', lie_after: 'green', distance_to_hole_after: feet, distance_unit_after: 'feet', shot_distance: yards, is_penalty: false, penalty_type: null, putt_made: null, putt_distance_feet: null, miss_direction: null });

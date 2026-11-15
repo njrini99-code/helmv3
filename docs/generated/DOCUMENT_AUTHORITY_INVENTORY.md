@@ -214,6 +214,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/features/coachhelm-ai.md` | current | yes | - | yes | - |
 | `memory/features/crm_outreach.md` | current | yes | - | - | - |
 | `memory/features/email_outbound.md` | current | yes | - | - | - |
+| `memory/features/golf-demo-team.md` | current | yes | - | - | - |
 | `memory/features/golf-round-lifecycle.md` | current | yes | - | yes | - |
 | `memory/features/ios-native-shell.md` | current | yes | - | - | - |
 | `memory/features/observability-sentry.md` | current | yes | - | - | - |
