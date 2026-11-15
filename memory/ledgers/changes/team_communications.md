@@ -124,7 +124,7 @@
 ## 2026-09-07 — the conversations list runs on one cadence; G-32 partly reversed
 
 - SHA: pending (this commit).
-- Change: `src/components/fairway/pages/messages/MessageConversationRail.tsx` —
+- Change: `src/components/fairway/pages/messages/MessageConversationRail.tsx` (was removed with Fairway, 2026-11-14) —
   the three conversation lists become `divide-y divide-border-subtle` instead
   of `flex flex-col gap-1.5`; every row gets identical `p-3` and loses its
   radius; unread stops being an elevated card and becomes a `bg-surface`
@@ -344,7 +344,7 @@
 ## 2026-09-07 — group details: the entry point, the data and the sheet (G-33 · D-03a · G-30 · G-57)
 
 - SHA: 0897e63cc.
-- Change: new `src/components/fairway/pages/messages/GroupDetailsSheet.tsx`; a
+- Change: new `src/components/fairway/pages/messages/GroupDetailsSheet.tsx` (was removed with Fairway, 2026-11-14); a
   trailing info control in `MessageThreadPane.tsx`'s header behind a new
   `onOpenGroupDetails` prop; `FairwayMessages.tsx` widens the participant join
   and owns the sheet's open state; `use-golf-messages.ts` stops dropping
@@ -838,7 +838,7 @@
 
 ## 2026-09-07 — the composer's last legacy-palette child (G-46)
 
-- `src/components/golf/messages/AttachmentPreview.tsx` renders inside every
+- `src/components/golf/messages/AttachmentPreview.tsx` (was removed with Fairway, 2026-11-14) renders inside every
   composer attachment state and was still painting from `warm-*`, `cream-*`,
   `red-*`, `primary-*` and `purple-*` — every one banned by
   `.claude/rules/design-system.md`. It is now on Fairway tokens, and off the
@@ -896,7 +896,7 @@
 - Correction to the manifest, which calls the target class `rounded-fw-card`:
   that class is defined nowhere in `tailwind.config.ts`. The name is
   `rounded-card`. Related referral, found while checking: `rounded-fw-card` IS
-  used once in the tree, at `src/components/golf/courses/CourseCard.tsx:152`,
+  used once in the tree, at `src/components/golf/courses/CourseCard.tsx (was removed with Fairway, 2026-11-14):152`,
   where it therefore emits no rule at all and the card renders with square
   corners. One site, outside the messages tree and another feature's lease —
   recorded, not fixed.
@@ -1124,7 +1124,7 @@
   day separators closed by G-50a, and pagination deferred to G-17 as recorded.
 
 ## G-49a — the bubble measure cap is absolute, not a percentage of the pane
-`src/components/fairway/pages/messages/MessageThreadPane.tsx`
+`src/components/fairway/pages/messages/MessageThreadPane.tsx` (was removed with Fairway, 2026-11-14)
 
 - G-50b applied `max-w-[288px]` and deliberately KEPT `sm:max-w-[70%]`, writing in
   its own comment that every artboard is a 390px phone scene and supplies no
@@ -1156,7 +1156,7 @@
   invented constant.
 
 ## G-49b — the bubble depth system
-`src/components/fairway/pages/messages/MessageThreadPane.tsx`
+`src/components/fairway/pages/messages/MessageThreadPane.tsx` (was removed with Fairway, 2026-11-14)
 
 - F14: "Bubbles and canvas are flat single colors with zero box-shadow. The
   artboard gives every surface a gradient + inset highlight + drop shadow. Hues
@@ -1202,7 +1202,7 @@
   the escape; narrowed to forbid a hand-typed `oklch(`/`rgb(` instead.
 
 ## G-20a — the "Didn't send" banner, and the half of it that already shipped
-`src/components/fairway/pages/messages/MessageComposer.tsx`
+`src/components/fairway/pages/messages/MessageComposer.tsx` (was removed with Fairway, 2026-11-14)
 
 - THE EIGHTH CORRECTION FROM MEASUREMENT, and it changed what got built. G-20
   says Did-not-send "has no implementation in MessageComposer.tsx — no failure

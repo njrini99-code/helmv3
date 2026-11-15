@@ -12,7 +12,7 @@
 - SHA: 79f6e1a07.
 - Added `supabase/tests/rls/golf_group_membership_management.sql` (14 pgTAP
   assertions), 31 tests to
-  `src/components/fairway/pages/messages/GroupDetailsSheet.test.ts` (45 → 76),
+  `src/components/fairway/pages/messages/GroupDetailsSheet.test.ts` (was removed with Fairway, 2026-11-14) (45 → 76),
   and `GroupDetailsSheet.membership.test.tsx` (24 jsdom render tests, of which
   19 fail against the pre-change component — the 5 that pass are correctly the
   read-only assertions).
@@ -88,7 +88,7 @@
 ## 2026-09-07 — W7 GroupDetailsSheet.test.ts
 
 - SHA: 0897e63cc.
-- Added `src/components/fairway/pages/messages/GroupDetailsSheet.test.ts`
+- Added `src/components/fairway/pages/messages/GroupDetailsSheet.test.ts` (was removed with Fairway, 2026-11-14)
   (45 tests). Verified to fail (12 of 45) against the pre-fix tree: the three
   tracked files were reverted to HEAD, the suite run, and the tree restored.
   The new component cannot be reverted (the suite imports it), so the 12 are
@@ -143,7 +143,7 @@
 ## 2026-09-07 — G-56 action sheet, and two suites re-anchored
 
 - SHA: 0a6f67aef.
-- Added `src/components/fairway/pages/messages/MessageThreadPane.actionSheet.test.ts`
+- Added `src/components/fairway/pages/messages/MessageThreadPane.actionSheet.test.ts` (was removed with Fairway, 2026-11-14)
   (18 tests). Verified to fail (6 of 18) against the pre-fix component.
 - THE ASSERTION THAT EARNED ITS KEEP BY FAILING: "the 16px label has no token,
   which is why it is an A03 request". It went red, and the reason was that a
@@ -189,7 +189,7 @@
 ## 2026-09-07 — G-42 incoming actions and the desktop path
 
 - SHA: fa83dbf42.
-- Added `src/components/fairway/pages/messages/MessageThreadPane.incomingActions.test.ts`
+- Added `src/components/fairway/pages/messages/MessageThreadPane.incomingActions.test.ts` (was removed with Fairway, 2026-11-14)
   (15 tests). Verified to fail (10 of 15) against the pre-fix component; 11 of
   the two suites' 27 fail together, because one assertion in the G-55 suite was
   strengthened at the same time.
@@ -228,7 +228,7 @@
 ## 2026-09-07 — G-55 separator and action order
 
 - SHA: 70844b57b.
-- Added `src/components/fairway/pages/messages/MessageThreadPane.actionOrder.test.ts`
+- Added `src/components/fairway/pages/messages/MessageThreadPane.actionOrder.test.ts` (was removed with Fairway, 2026-11-14)
   (12 tests). Verified to fail (4 of 12) against the pre-fix component.
 - The 8 that pass pre-fix are not filler: they assert the SOURCES, and they
   are what makes the correction to the finding auditable. Three parse both
@@ -365,7 +365,7 @@
 
 ## 2026-09-07 — AttachmentPreview token migration (G-46)
 
-`src/components/golf/messages/AttachmentPreview.tokens.test.ts` — 10 tests,
+`src/components/golf/messages/AttachmentPreview.tokens.test.ts` (was removed with Fairway, 2026-11-14) — 10 tests,
 8 failing against the pre-fix file.
 
 Asserted on the source. The classes are strings in JSX with no runtime
@@ -381,7 +381,7 @@ the legacy `IconButton` import), so a future reader does not "fix" them.
 
 ## 2026-09-07 — bubble radius (G-48)
 
-`src/components/fairway/pages/messages/MessageThreadPane.bubbleRadius.test.ts`
+`src/components/fairway/pages/messages/MessageThreadPane.bubbleRadius.test.ts` (was removed with Fairway, 2026-11-14)
 — 6 tests, 3 failing against the pre-fix file.
 
 The measurement IS the test. Three of the six read `--fw-radius-card` out of
@@ -398,7 +398,7 @@ the swap by inventing radius steps.
 
 ## 2026-09-07 — unread-row lift and page wash (G-32)
 
-`src/components/fairway/pages/messages/MessageConversationRail.unreadLift.test.ts`
+`src/components/fairway/pages/messages/MessageConversationRail.unreadLift.test.ts` (was removed with Fairway, 2026-11-14)
 — 5 tests, 3 failing against the pre-fix files.
 
 Measured on both sides, like the bubble-radius suite: the shadow is read out of

@@ -48,7 +48,7 @@
   covers `components/golf/player-hub` and
   `lib/coachhelm/v3/{brief,composite,insights}` (zero hits, unchanged
   pass).
-- Updated: `src/test/golf/components/DiagnosisPanel.test.tsx`'s
+- Updated: `src/test/golf/components/DiagnosisPanel.test.tsx` (was removed with Fairway, 2026-11-14)'s
   observed_sequence case now asserts "Preceded by" and explicitly asserts
   "Caused by" is ABSENT (was: only asserted "Caused by" present).
   `src/test/golf/components/InsightCard.test.tsx`'s OutcomeBadge describe (this file was removed in the 2026-09-24 golf audit dead-code sweep)

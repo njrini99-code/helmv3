@@ -7,7 +7,7 @@
  *   - Team: the figures the Fairway Team stats page (`dashboard/stats/team/page.tsx`, the props it handed `TeamStatsBoard`, and
  *     `buildTeamBoardViewModel`'s pooled figures) computed for each fixture here. That page was retired with Fairway
  *     (2026-11-14); its output for every fixture was recorded from the page itself the same day, before it was deleted, and
- *     is read back from `fixtures/stats-fairway-team-oracle.json`. A changed fixture has no oracle any more and fails loudly.
+ *     is read back from `stats-fairway-team-oracle.json`. A changed fixture has no oracle any more and fails loudly.
  *   - Player: `getDetailedStats` (the shot-level calculator behind the player stats) on the round ids Clubhouse read.
  *
  * The caller's test file registers the mocks (auth, the server and admin clients, the page's unrelated reads); this file
@@ -71,7 +71,8 @@ export interface FairwayTeam {
   fundamentals: { fairwayPct: number | null; girPct: number | null; scramblingPct: number | null; puttsPerRound: number | null; birdiesPerRound: number | null };
 }
 
-const ORACLE = join(__dirname, 'fixtures', 'stats-fairway-team-oracle.json');
+// Beside the tests, not in a folder: scripts/clubhouse/check.mjs reads every entry of __tests__ as a file.
+const ORACLE = join(__dirname, 'stats-fairway-team-oracle.json');
 
 /** The fixture a figure was recorded for: the team, the (faked) clock and every row. */
 function oracleKey(db: EvalDb, teamId: string): string {

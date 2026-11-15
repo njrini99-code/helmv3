@@ -1,5 +1,5 @@
 # Feature: Qualifiers
-<!-- schema-drift-absent: golf_clubhouse_ui, golf_qualifier_db_hardening, golf_qualifier_selection_reasons -->
+<!-- schema-drift-absent: golf_qualifier_db_hardening, golf_qualifier_selection_reasons -->
 
 ## Status
 
@@ -19,8 +19,9 @@ There are three user surfaces:
 - Player "My Qualifiers" view for entered qualifiers.
 - CoachHelm V3 qualifying surfaces for more intelligence-oriented standing/board views.
 
-Behind the `golf_clubhouse_ui` flag, the same routes render the Clubhouse
-screens in place (see "Clubhouse surfaces" below).
+The routes render the Clubhouse screens, the only coach and player UI since
+Fairway retired on 2026-11-14 (see "Clubhouse surfaces" below). "My
+qualifiers" is a `next.config.mjs` redirect to Qualifiers.
 
 ## Primary Entry Points
 
@@ -30,21 +31,21 @@ screens in place (see "Clubhouse surfaces" below).
 - `src/app/golf/(dashboard)/dashboard/qualifiers/new/page.tsx`
 - `src/app/golf/(dashboard)/dashboard/qualifiers/[id]/page.tsx`
 - `src/app/golf/(dashboard)/dashboard/qualifiers/[id]/edit/page.tsx`
-- `src/app/golf/(dashboard)/dashboard/my-qualifiers/page.tsx`
+- `src/app/golf/(dashboard)/dashboard/my-qualifiers/page.tsx` (was removed with Fairway, 2026-11-14)
 - `src/app/golf/(dashboard)/dashboard/coachhelm/qualifying/**`
 
 ### Components
 
 - `src/components/golf/qualifiers/**`
 - `src/components/golf/coachhelm/v3/QualifyingBoard/**`
-- `src/components/fairway/pages/qualifiers/FairwayQualifiers.tsx`
-- `src/components/fairway/pages/qualifiers/QualifierRoundSegments.tsx`
-- `src/components/fairway/pages/qualifiers/FairwayQualifierDetail.tsx`
-- `src/components/fairway/pages/qualifiers/FairwayQualifierLeaderboard.tsx`
-- `src/components/fairway/pages/qualifiers/qualifier-season.ts`
-- `src/components/fairway/pages/qualifiers/FairwayQualifierFieldStats.tsx`
-- `src/components/fairway/pages/qualifiers/qualifier-stats.ts`
-- `src/components/fairway/pages/my-qualifiers/FairwayMyQualifiers.tsx`
+- `src/components/fairway/pages/qualifiers/FairwayQualifiers.tsx` (was removed with Fairway, 2026-11-14)
+- `src/components/fairway/pages/qualifiers/QualifierRoundSegments.tsx` (was removed with Fairway, 2026-11-14)
+- `src/components/fairway/pages/qualifiers/FairwayQualifierDetail.tsx` (was removed with Fairway, 2026-11-14)
+- `src/components/fairway/pages/qualifiers/FairwayQualifierLeaderboard.tsx` (was removed with Fairway, 2026-11-14)
+- `src/components/fairway/pages/qualifiers/qualifier-season.ts` (was removed with Fairway, 2026-11-14)
+- `src/components/fairway/pages/qualifiers/FairwayQualifierFieldStats.tsx` (was removed with Fairway, 2026-11-14)
+- `src/components/fairway/pages/qualifiers/qualifier-stats.ts` (was removed with Fairway, 2026-11-14)
+- `src/components/fairway/pages/my-qualifiers/FairwayMyQualifiers.tsx` (was removed with Fairway, 2026-11-14)
 - Clubhouse: `src/clubhouse/screens/qualifiers/**`, loader
   `src/clubhouse/data/qualifiers.ts`, route `src/clubhouse/routes/qualifiers.tsx`
 
@@ -297,7 +298,7 @@ Leaderboard reads qualifier (FairwayQualifierLeaderboard)
   place on score are "Tie at cut" (Q-114), never in/out by row order. Still
   different from Clubhouse: the average counts every round, and the Bubble has
   no ⌈rounds ÷ 2⌉ gate. Test:
-  `src/components/fairway/pages/qualifiers/__tests__/standings-parity.test.tsx`.
+  `src/components/fairway/pages/qualifiers/__tests__/standings-parity.test.tsx` (was removed with Fairway, 2026-11-14).
 - Squad size is 1 to 12 in the New form and `createGolfQualifier`'s schema,
   the database's check constraint on `golf_qualifiers.selection_slots_total` (1 to 12).
 

@@ -88,6 +88,16 @@ describe('old addresses one place for both roles are config redirects (Fairway r
     expect(isAliased(source.replace(':id', '00000000-0000-0000-0000-000000000001'))).toBe(false);
   });
 
+  it('100103 a task notification’s ?task= rides the /tasks redirect to the Tasks tab, and Team Hub hands it to its route, which drops a value that is not an id', async () => {
+    const { default: config } = (await import('../../../next.config.mjs')) as { default: { redirects: () => Promise<Array<{ source: string; destination: string }>> } };
+    // A config redirect passes the request's query through, so /tasks?task=<id> lands on team-hub?tab=tasks&task=<id>.
+    expect((await config.redirects()).find((r) => r.source === '/golf/dashboard/tasks')?.destination).toBe('/golf/dashboard/team-hub?tab=tasks');
+    const page = readFileSync(join(process.cwd(), 'src/app/golf/(dashboard)/dashboard/team-hub/page.tsx'), 'utf8');
+    expect(page).toContain("task={typeof task === 'string' ? task : undefined}");
+    const route = readFileSync(join(process.cwd(), 'src/clubhouse/routes/hub.tsx'), 'utf8');
+    expect(route).toContain('const focusTask = task && /^[\\w-]{1,64}$/.test(task) ? task : null;');
+  });
+
   it('every destination is a rebuilt screen for both roles', () => {
     for (const [, destination] of MOVED) {
       const path = destination.replace(':id', '00000000-0000-0000-0000-000000000001').split('?')[0]!;

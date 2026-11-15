@@ -265,9 +265,9 @@ features:
     code:
       routes:
         - src/app/golf/(dashboard)/dashboard/coachhelm/**
-        - src/app/golf/(dashboard)/dashboard/analytics/coachhelm/**
       components:
-        - src/components/golf/coachhelm/**
+        # The chat client hook, moved out of Fairway's tree when Fairway retired (2026-11-14).
+        - src/hooks/coachhelm/**
       api:
         - src/app/api/coachhelm/**
         - src/app/api/cron/coachhelm-calibration/**
@@ -454,13 +454,9 @@ features:
       routes:
         - src/app/golf/(dashboard)/dashboard/rounds/**
       components:
-        - src/components/fairway/pages/rounds/**
-        - src/components/fairway/pages/rounds-new/**
-        - src/components/fairway/pages/rounds-recover/**
         # The shot screen's logic, shared by the Fairway and Clubhouse
         # renderers; mapped by name like the other golf hooks.
         - src/hooks/golf/use-shot-tracking.ts
-        - src/components/fairway/pages/rounds-tracking/**
       api:
         - src/app/api/golf/rounds/**
       actions:
@@ -607,11 +603,8 @@ features:
     code:
       routes:
         - src/app/golf/(dashboard)/dashboard/qualifiers/**
-        - src/app/golf/(dashboard)/dashboard/my-qualifiers/**
         - src/app/golf/(dashboard)/dashboard/coachhelm/qualifying/**
       components:
-        - src/components/fairway/pages/qualifiers/**
-        - src/components/fairway/pages/my-qualifiers/**
         - src/clubhouse/screens/qualifiers/**
         - src/clubhouse/data/qualifiers.ts
         - src/clubhouse/routes/qualifiers.tsx
@@ -675,11 +668,6 @@ features:
         - src/app/golf/(dashboard)/dashboard/rounds/new/**
         - src/app/golf/(dashboard)/dashboard/rounds/continue/**
         - src/app/golf/(dashboard)/dashboard/rounds/recover/**
-      components:
-        - src/components/fairway/pages/rounds-tracking/**
-        - src/components/fairway/pages/rounds/**
-        - src/components/fairway/pages/rounds-new/**
-        - src/components/fairway/pages/rounds-recover/**
       api:
         - src/app/api/golf/rounds/**
       actions:
@@ -775,7 +763,6 @@ features:
         - src/app/golf/(dashboard)/dashboard/stats/**
         - src/app/golf/(dashboard)/dashboard/roster/**
       components:
-        - src/components/golf/stats/**
         - src/clubhouse/screens/stats/**
       api: []
       actions:
@@ -861,22 +848,6 @@ features:
         - src/clubhouse/screens/classes/**
         - src/clubhouse/data/classes.ts
         - src/clubhouse/data/classes-shape.ts
-        # The SHIPPED calendar UI is the Fairway tree (event editor, detail
-        # drawer, month/week/agenda views); only the older golf/calendar tree
-        # was mapped, so `knowledge:map` resolved the live components to NO
-        # feature — feature-aware routing and PR context packs silently skipped
-        # the code that actually renders the calendar. Unlike the insights.ts
-        # entry above this was never a guard trip: `src/components/fairway/**`
-        # is outside GOVERNED_PATTERNS (.claude/hooks/lib/feature-map.mjs),
-        # which covers src/app|lib|components/golf, not the Fairway tree.
-        - src/components/fairway/pages/calendar/**
-        # The iOS-style time drum (TimeWheel/WheelColumn) EventWhenFields
-        # mounts for the event editor's start/end fields. Lives in
-        # fairway/controls/, not fairway/pages/calendar/ — same class of gap
-        # as the comment above (`knowledge:map` resolving to no feature).
-        # Currently calendar-only; re-home this entry (or make it shared) if
-        # another feature ever adopts the control.
-        - src/components/fairway/controls/wheel-picker.*
       api:
         - src/app/api/calendar/**
       actions:
@@ -959,15 +930,7 @@ features:
     code:
       routes:
         - src/app/golf/(dashboard)/dashboard/intelligence/**
-        - src/app/golf/(dashboard)/dashboard/analytics/coachhelm/**
         - src/app/golf/(dashboard)/dashboard/settings/coaching-intelligence/**
-      components:
-        - src/components/golf/coachhelm/triage/**
-        - src/components/fairway/pages/coachhelm/**
-        - src/components/golf/coachhelm/insights/**
-        - src/components/golf/coachhelm/coach/**
-        - src/components/golf/coachhelm/settings/**
-        - src/components/golf/coachhelm/v2/**
       api:
         - src/app/api/cron/coachhelm-calibration/**
         - src/app/api/cron/coachhelm-insight-lifecycle/**
@@ -1041,15 +1004,6 @@ features:
     code:
       routes:
         - src/app/golf/(dashboard)/dashboard/coachhelm/**
-        - src/app/golf/(dashboard)/dashboard/my-development/**
-        - src/app/golf/(dashboard)/dashboard/rounds/[id]/review/**
-      components:
-        - src/components/golf/coachhelm/player/**
-        - src/components/golf/coachhelm/round-review/**
-        - src/components/golf/coachhelm/insight-card/**
-        - src/components/golf/coachhelm/v3/GoalCreationModal/**
-        - src/components/golf/coachhelm/v3/StandingBar/**
-        - src/components/fairway/pages/coachhelm/**
       api:
         - src/app/api/coachhelm/v3/**
       actions:
@@ -1106,15 +1060,9 @@ features:
     code:
       routes:
         - src/app/golf/(dashboard)/dashboard/messages/**
-        - src/app/golf/(dashboard)/dashboard/announcements/**
       components:
-        - src/components/golf/messages/**
         - src/clubhouse/screens/messages/**
         - src/clubhouse/styles/messages.css
-        - src/components/golf/announcements/**
-      api:
-        - src/components/fairway/pages/messages/**
-        - src/components/fairway/pages/announcements/**
       actions:
         - src/app/actions/messages.ts
         - src/app/golf/actions/messages.ts
@@ -1239,21 +1187,13 @@ features:
         - docs/operations/2026-05-17-p0-runbook.md
     code:
       routes:
-        - src/app/golf/(dashboard)/dashboard/tasks/**
-        - src/app/golf/(dashboard)/dashboard/documents/**
-        - src/app/golf/(dashboard)/dashboard/travel/**
         - src/app/golf/(dashboard)/dashboard/team-hub/**
         - src/app/golf/(dashboard)/dashboard/practice/**
       components:
-        - src/components/fairway/pages/tasks/**
         - src/components/golf/documents/**
-        - src/components/fairway/pages/travel/**
-        - src/components/fairway/pages/team-hub/**
         - src/clubhouse/screens/home/**
         - src/clubhouse/screens/hub/**
         - src/clubhouse/screens/practice/**
-      api:
-        - src/components/fairway/pages/documents/**
       actions:
         - src/app/golf/actions/tasks.ts
         - src/app/golf/actions/task-reminders.ts
@@ -1290,7 +1230,6 @@ features:
         - supabase/migrations/20261112090000_golf_players_coaches_contact_columns.sql
       tests:
         - src/app/golf/actions/__tests__/travel.test.ts
-        - src/components/fairway/pages/team-hub/FairwayTeamHub.logic.test.ts
         - src/clubhouse/__tests__/home.test.tsx
         - src/clubhouse/__tests__/player-home.test.tsx
         - src/clubhouse/__tests__/home-data-completeness.test.ts
@@ -1329,13 +1268,8 @@ features:
       routes:
         - src/app/golf/(dashboard)/dashboard/roster/**
         - src/app/golf/(dashboard)/dashboard/team/**
-      components:
-        - src/components/golf/roster/**
-        - src/components/fairway/pages/dashboard/FairwayCoachDashboard.tsx
       api:
         - src/app/api/golf/players/**
-        - src/components/fairway/pages/roster/**
-        - src/components/fairway/pages/team/**
       actions:
         - src/app/golf/actions/roster.ts
         - src/app/golf/actions/team-management.ts
@@ -1389,7 +1323,6 @@ features:
       routes:
         - src/app/golf/(dashboard)/dashboard/recruiting/**
       components:
-        - src/components/fairway/pages/recruiting/**
         - src/clubhouse/screens/recruiting/**
         - src/clubhouse/data/recruiting.ts
         - src/clubhouse/data/recruiting-shape.ts
@@ -1444,8 +1377,6 @@ features:
         - src/app/golf/(onboarding)/**
         - src/app/golf/join/**
       components:
-        - src/components/golf/onboarding/**
-        - src/components/golf/settings/JoinTeamSection.tsx
         - src/clubhouse/screens/auth/**
       api:
         - src/app/api/golf/auth/**
@@ -1505,12 +1436,8 @@ features:
       routes:
         - src/app/golf/(dashboard)/dashboard/settings/**
       components:
-        - src/components/golf/settings/**
-        - src/components/golf/coachhelm/settings/**
         - src/clubhouse/screens/settings/**
         - src/clubhouse/styles/settings.css
-      api:
-        - src/components/fairway/pages/settings/**
       actions:
         - src/app/golf/actions/v3/notification-prefs.ts
         - src/app/golf/actions/coaching-philosophy.ts
@@ -1562,8 +1489,6 @@ features:
     code:
       routes: []  # /golf/dashboard/hub is a next.config.mjs redirect now (page deleted in plan phase 7b)
       components: []
-      api:
-        - src/components/fairway/pages/hub/**
       actions:
         - src/app/golf/actions/dashboard-data.ts
         - src/app/golf/actions/travel.ts
@@ -2172,11 +2097,6 @@ features:
         - src/app/golf/(dashboard)/dashboard/roster/**
         - src/app/golf/join/**
         - src/app/golf/admin/**
-      components:
-        - src/components/golf/settings/**
-        - src/components/golf/roster/**
-        - src/components/fairway/pages/team/**
-        - src/components/fairway/pages/team-hub/**
       api:
         - src/app/api/admin/**
         - src/app/api/golf/auth/**
@@ -2254,9 +2174,7 @@ features:
         - docs/plans/IOS_PREMIUM_NATIVE_UPDATE_2026-08-25.md
     code:
       routes:
-        - src/app/golf/(dashboard)/dashboard/dev/**
       components:
-        - src/components/golf/PushPermissionSoftAsk.tsx
         - src/components/providers/CapacitorProvider.tsx
       services:
         - src/lib/native/**
@@ -2324,15 +2242,15 @@ features:
         - npm run typecheck
         - npm run test:rls
   clubhouse:
-    name: Clubhouse UI (flagged, off in production)
+    name: Clubhouse UI (the coach and player UI)
     status: active
     owner: product
     criticality: medium
     observability:
       feature_keys: []
       reason: >-
-        Clubhouse is a flagged alternative UI over the golf features it
-        renders. Telemetry attributes to those features, so a Clubhouse key
+        Clubhouse is the GolfHelm coach and player UI (Fairway retired
+        2026-11-14) over the golf features it renders. Telemetry attributes to those features, so a Clubhouse key
         would double-count.
     docs:
       feature: src/clubhouse/AGENTS.md

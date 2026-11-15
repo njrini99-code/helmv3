@@ -13,14 +13,13 @@ paths:
   (`vercel.json`). Don't reintroduce `INNGEST_*` env vars or `/api/inngest`.
 - **No Mapbox / no map provider** — there is no src/lib/mapbox/ and no
   `CourseMap` component in the repo. Round Review (#23) hole visuals are a
-  synthetic SVG shot-path reconstruction built from `golf_shots` data
-  (`HoleShotPath`, `src/components/golf/coachhelm/v3/HoleShotPath/`), not a
+  synthetic SVG shot-path reconstruction built from `golf_shots` data, not a
   map. If a map provider is added later, document it here — don't assume
   one exists.
 - **Sonner** (toasts), **cmdk** (command palette), **Number Flow**
   (animated stats) — already wired. Toaster lives in `src/app/layout.tsx`;
-  command palettes at `src/components/CommandPalette.tsx` and
-  `src/components/golf/CommandPalette.tsx`; animated stat numbers via
+  command palettes at `src/components/CommandPalette.tsx` and Clubhouse's
+  `src/clubhouse/shell/command/Palette.tsx`; animated stat numbers via
   `src/components/ui/animated-number.tsx` (with mount-roll stagger).
 - **fast-check** (property-based testing) — example suite at
   `src/lib/coachhelm/v2/shot-analysis/__tests__/shot-level-sg.property.test.ts`.

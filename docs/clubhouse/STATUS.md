@@ -9,7 +9,58 @@ wins; the stale ones found by this audit are listed at the end. `PROGRESS.md`
 keeps the full history (gates, decisions, questions, data gaps, verification
 log). What is left, and who has it: [QUEUE.md](QUEUE.md).
 
-## Current state (2026-11-07)
+## Current state (2026-11-14): Clubhouse is the only UI
+
+- The owner decided on 2026-11-14: "No allowlist, complete replacement of
+  fairway". Clubhouse is the only coach and player UI, for every team. It went
+  to every team in production from `main` in its own deploy; the retirement
+  change (`agent/retire-fairway`) lands after that deploy has been watched.
+- Fairway's coach and player screens are deleted: `FairwayDashboardShell`,
+  `src/components/fairway/pages/**`, the Fairway-only `src/components/golf/**`
+  (BaseballHelm's calendar and document previews stay) and the Fairway branch
+  of every dashboard page, layout and loading boundary. The old entrance pages
+  are deleted too; `/golf/forgot-password` stays for a signed-in visitor
+  (CH-15920).
+- `golf_clubhouse_ui`, `golf_clubhouse_front_door` and the
+  `HELM_CLUBHOUSE_TEAMS` allowlist (with its `check-required-env` rule) are
+  removed. `isClubhouseFor` is a role check that still tags `ui:clubhouse`, so
+  the monitoring below keeps working. The `HELM_CLUBHOUSE_TEAMS` value in the
+  Vercel environment is no longer read and can be deleted.
+- Old addresses: tasks, announcements, documents and travel go to their Team
+  Hub tabs, `my-qualifiers` to Qualifiers and `rounds/[id]/review` to the
+  round, all as `next.config.mjs` redirects. Addresses whose target depends on
+  the role keep their layout redirect (`src/clubhouse/routes/alias.ts`).
+- The service worker (`public/sw.js`) is registered from the Clubhouse session
+  (`shell/OfflineSync.tsx`), and its Background Sync message runs a sync pass.
+  Only Fairway's offline provider registered it before.
+- Nine Fairway-only features are retired; see "Retired by the owner
+  (2026-11-14)" below.
+- Rollback: there is no flag. Promote an earlier production deployment
+  (`docs/setup/DEPLOY.md`) or revert the retirement change and deploy.
+
+The "turn it on", "turn-on criteria" and allowlist rollback sections below are
+history.
+
+## Retired by the owner (2026-11-14)
+
+These Fairway-only features are not in Clubhouse and are not coming back. The
+data stays in the tables and the screens are gone. Production usage was
+verified by SQL on 2026-11-14: zero rows from any real team; the only rows are
+"Guilford College Men's Golf (Test Copy)" and Demo University.
+
+| Retired feature | What happens to the data |
+| --- | --- |
+| Travel expenses, budgets and receipts | Kept in its tables; no screen |
+| Document version history | Kept in its tables; no screen |
+| Task templates and reminders | Kept in its tables; no screen |
+| Adding a second team | Kept in its tables; no screen |
+| The stored round-review narrative and annotations | Kept in its tables; no screen |
+| The calendar conflict center and scheduling | Kept in its tables; no screen |
+| Per-player attendance notes and bulk check-in | Kept in its tables; no screen |
+| Logging a focus-area practice session, and rating or acknowledging an insight | Kept in its tables; no screen |
+| Signal triage | Kept in its tables; no screen |
+
+## Earlier state (2026-11-07)
 
 - The 13 redesign flags are retired (the redesign is the only version); the
   eight CoachHelm and

@@ -36,7 +36,7 @@ Native surface today:
   selection.
 - **Push**: `src/lib/utils/push-registration.ts` park-then-flush token state
   machine (persistence deferred until an authenticated session), value-first
-  pre-prompt `src/components/golf/PushPermissionSoftAsk.tsx`, deep links
+  pre-prompt `src/components/golf/PushPermissionSoftAsk.tsx` (was removed with Fairway, 2026-11-14), deep links
   validated by `isSafeInternalPath`. Clubhouse has its own ask
   (`src/clubhouse/shell/PushAsk.tsx`, CH-1911) on the same shared functions
   and the same stored answer, and a Settings row for the app's push
@@ -119,9 +119,9 @@ offline page. `src/test/proxy-middleware.test.ts` pins the exemption.
   the round-entry routes (`/golf/dashboard/rounds/new`, `/rounds/continue`)
   and while the page reports an open sheet or dialog through the `helmNav`
   script message (`{ overlayOpen }`, sent by
-  `src/components/golf/NativeSwipeBackBridge.tsx`). Both live in
+  `src/components/native/NativeSwipeBackBridge.tsx`). Both live in
   `GolfBridgeViewController.swift` (MOT-13, RE-D1); older binaries ignore the
-  message. Test: `src/components/golf/__tests__/NativeSwipeBackBridge.test.tsx`.
+  message. Test: `src/components/native/__tests__/NativeSwipeBackBridge.test.tsx`.
 - It is also off while a Clubhouse pushed screen runs the in-page edge swipe:
   the page posts `{ webSwipe: true | false }` on the same `helmNav` handler
   (`claimWebSwipe`, `src/clubhouse/shell/edge-swipe.ts`), and the shell

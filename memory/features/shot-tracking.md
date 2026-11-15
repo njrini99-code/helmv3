@@ -381,10 +381,10 @@ the hole index the checkpoint started on.
 
 ### Components
 
-- `src/components/fairway/pages/rounds-tracking/FairwayShotTracking.tsx`
-- `src/app/golf/(dashboard)/dashboard/rounds/new/new-round-client.tsx` (the new-round screen)
+- `src/components/fairway/pages/rounds-tracking/FairwayShotTracking.tsx` (was removed with Fairway, 2026-11-14)
+- `src/app/golf/(dashboard)/dashboard/rounds/new/new-round-client.tsx` (was removed with Fairway, 2026-11-14) (the new-round screen)
 - `src/lib/golf/round-session/use-new-round-session.ts` (the new-round engine the screen calls: setup, holes, tracking, autosave, recovery, submit; moved out of the screen 2026-09-30). A second renderer starts a round with `start(form)`: it runs over the form it is handed (not state) and adopts nothing until the form passes every check (`start-form.ts`, a plain module: the start gate, the hole rules, and for a qualifier round the server's `getNextQualifierRoundNumber`, because `savePartialRound` enforces neither `num_rounds` nor entry). It numbers the holes 1..N (a back nine included), refuses a call while one runs or a round is already tracking, then the engine runs under that form. A refusal is `{ ok: false, reason, error }`; `qualifier_round_active` carries the round to Continue instead. The screen's Back to setup, Change course and submit-overlay actions live in the engine too. Its routes and error-log tags are optional inputs (`routes.ts`) that default to the Fairway values.
-- `src/app/golf/(dashboard)/dashboard/rounds/continue/[id]/continue-round-client.tsx` (the continue-round screen)
+- `src/app/golf/(dashboard)/dashboard/rounds/continue/[id]/continue-round-client.tsx` (was removed with Fairway, 2026-11-14) (the continue-round screen)
 - `src/lib/golf/round-session/use-continue-round-session.ts` (the continue-round engine the screen calls: resume tracking, autosave, recovery, submit; moved out of the screen 2026-09-30). Its toast is a port (the legacy screen passes what `useToast()` gives it each render, on purpose, so callback identity is unchanged), its routes are optional inputs (`routes.ts`) defaulting to the Fairway ones, and the recovery, qualifier-round-number and submit-overlay actions live in it. It has no nav or haptic port because the screen never used either.
 - `src/components/fairway/pages/rounds-tracking/**`
 - `src/components/fairway/pages/rounds-recover/**`
@@ -1108,15 +1108,15 @@ signal keys, and every client branches on the keys before it shows anything.
   `continue-round-client.conflict-block.test.ts` (B2/B9),
   `continue-round-client.hole-invalid-checkpoint.test.ts` and
   `new-round-client.hardening.test.ts` (B2/B4/B5/B6/B7/B9 for New Round))
-- `src/components/fairway/pages/rounds-tracking/__tests__/FairwayShotEntry.distance-bound.test.tsx`
+- `src/components/fairway/pages/rounds-tracking/__tests__/FairwayShotEntry.distance-bound.test.tsx` (was removed with Fairway, 2026-11-14)
   (B5/B8 — distance-remaining bounds and the 0-distance blocker)
-- `src/components/fairway/pages/rounds-tracking/__tests__/FairwayShotTracking.ready-state-parity.test.ts`
+- `src/components/fairway/pages/rounds-tracking/__tests__/FairwayShotTracking.ready-state-parity.test.ts` (was removed with Fairway, 2026-11-14)
   (B5/B8 — `isReadyForNextShot` mirrors `nextShotBlocker`'s bounds VERBATIM)
-- `src/components/fairway/pages/rounds-tracking/__tests__/FairwayShotTracking.stale-checkpoint.test.ts`
+- `src/components/fairway/pages/rounds-tracking/__tests__/FairwayShotTracking.stale-checkpoint.test.ts` (was removed with Fairway, 2026-11-14)
   (B8 — a stale checkpoint resolution cannot set status for a hole the
   player has navigated away from)
-- `src/components/fairway/pages/rounds-new/__tests__/FairwayHoleConfig.bounds.test.tsx` (B5)
-- `src/components/fairway/pages/rounds-recover/FairwayRecoverRound.raw-key.test.ts` (B6)
+- `src/components/fairway/pages/rounds-new/__tests__/FairwayHoleConfig.bounds.test.tsx` (was removed with Fairway, 2026-11-14) (B5)
+- `src/components/fairway/pages/rounds-recover/FairwayRecoverRound.raw-key.test.ts` (was removed with Fairway, 2026-11-14) (B6)
 - `src/test/coachhelm/v2/shot-analysis/**`
 - Browser validation on mobile viewports for changed round-entry screens.
 

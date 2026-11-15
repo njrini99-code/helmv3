@@ -188,7 +188,7 @@
   `src/lib/auth/__tests__/resilient-get-user.test.ts`,
   `src/lib/offline/__tests__/`, `src/lib/utils/emergency-save.test.ts`,
   `src/app/golf/(dashboard)/dashboard/rounds/`,
-  `src/components/fairway/pages/rounds-recover/`, and
+  `src/components/fairway/pages/rounds-recover/` (was removed with Fairway, 2026-11-14), and
   `src/hooks/golf/__tests__/` (142 files, 1300 tests, 0 failures).
 
 ## 2026-09-02 (follow-up) — hole_invalid client-surfacing wiring
@@ -314,9 +314,9 @@ the stated reason, then implemented. Full defect descriptions in
   `npm run docs:path-drift` (0, baseline 0), and `npx vitest run` over
   every file listed above plus
   `src/app/golf/(dashboard)/dashboard/rounds/`, `src/app/golf/actions/`,
-  `src/components/fairway/pages/rounds-new/`,
-  `src/components/fairway/pages/rounds-recover/`,
-  `src/components/fairway/pages/rounds-tracking/`, `src/hooks/golf/`,
+  `src/components/fairway/pages/rounds-new/` (was removed with Fairway, 2026-11-14),
+  `src/components/fairway/pages/rounds-recover/` (was removed with Fairway, 2026-11-14),
+  `src/components/fairway/pages/rounds-tracking/` (was removed with Fairway, 2026-11-14), `src/hooks/golf/`,
   `src/lib/golf/`, `src/lib/offline/`, `src/lib/admin/`, `src/lib/auth/`,
   and `src/lib/utils/` (278 files, 3274 tests, 0 failures).
 
@@ -325,23 +325,23 @@ the stated reason, then implemented. Full defect descriptions in
 Each written red first against the pre-fix source; defect descriptions in
 `memory/ledgers/changes/shot_tracking.md`, same date.
 
-- `src/app/golf/(dashboard)/dashboard/rounds/new/new-round-client.discard-race.test.ts`
-  and `src/app/golf/(dashboard)/dashboard/rounds/continue/[id]/continue-round-client.discard-race.test.ts`
+- `src/lib/golf/round-session/__tests__/use-new-round-session.discard-race.test.ts`
+  and `src/lib/golf/round-session/__tests__/use-continue-round-session.discard-race.test.ts`
   (C1, new): the `roundDiscardedRef` guard on every `round_missing` branch of
   both screens.
 - `src/lib/golf/__tests__/round-missing-recovery.test.ts` (C3, extended):
   `isQualifierClosedError` cases.
-- `src/app/golf/(dashboard)/dashboard/rounds/new/new-round-client.qualifier-closed.test.ts`,
-  `src/app/golf/(dashboard)/dashboard/rounds/continue/[id]/continue-round-client.qualifier-closed.test.ts`
-  and `src/components/fairway/pages/rounds-recover/FairwayRecoverRound.qualifier-closed.test.ts`
+- `src/lib/golf/round-session/__tests__/use-new-round-session.qualifier-closed.test.ts`,
+  `src/lib/golf/round-session/__tests__/use-continue-round-session.qualifier-closed.test.ts`
+  and `src/components/fairway/pages/rounds-recover/ (was removed with Fairway, 2026-11-14)FairwayRecoverRound.qualifier-closed.test.ts`
   (C3, new): the qualifier-closed exclusion ahead of `isCompletedRoundError`,
   and the `qualifierClosed` state's wiring on both screens.
-- `src/components/fairway/pages/rounds-new/__tests__/FairwayRoundSubmitOverlay.secondary-action.test.tsx`
+- `src/components/fairway/pages/rounds-new/ (was removed with Fairway, 2026-11-14)__tests__/FairwayRoundSubmitOverlay.secondary-action.test.tsx`
   (C3, new, render): the `secondaryActionLabel`/`onSecondaryAction` pair.
 - `src/lib/utils/emergency-save.test.ts` (C5, extended): the
   `EMERGENCY_SAVE_DEGRADED_EVENT` once-per-session cases.
-- `src/app/golf/(dashboard)/dashboard/rounds/new/new-round-client.emergency-save-degraded.test.ts`
-  and `src/app/golf/(dashboard)/dashboard/rounds/continue/[id]/continue-round-client.emergency-save-degraded.test.ts`
+- `src/lib/golf/round-session/__tests__/use-new-round-session.emergency-save-degraded.test.ts`
+  and `src/lib/golf/round-session/__tests__/use-continue-round-session.emergency-save-degraded.test.ts`
   (C5, new): both screens subscribe and show the one-time toast.
 - `src/lib/utils/emergency-save.test.ts` (C4, NOT shipped): the `(C4)`
   describe block is the red-first spec `7d05175ad` committed ahead of a

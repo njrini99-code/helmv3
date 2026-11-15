@@ -40,7 +40,7 @@ one.
 
 ## Verification
 
-- `src/components/fairway/pages/calendar/__tests__/FairwayEventEditor.test.tsx`
+- `src/components/fairway/pages/calendar/__tests__/FairwayEventEditor.test.tsx` (was removed with Fairway, 2026-11-14)
   "coaches are not invitees" — fails on `96b3992a8` (coach offered as a picker
   option), passes with the fix.
 - Replay: `replay/manifests/calendar-coach-invitees-conflict-deny-2026-09-23.yml`.

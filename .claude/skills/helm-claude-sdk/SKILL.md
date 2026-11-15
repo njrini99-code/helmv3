@@ -86,5 +86,5 @@ the tie-breaker.
 | Tool registry and tools | `src/lib/coachhelm/v3/chat/registry.ts` and its siblings |
 | Prompt | `src/lib/coachhelm/v3/chat/instructions.ts` |
 | Route | `src/app/api/coachhelm/v3/chat/stream/route.ts` |
-| Client hook | `src/components/golf/coachhelm/chat/useCoachHelmChat.ts` |
+| Client hook | `src/hooks/coachhelm/useCoachHelmChat.ts` |
 | Feature doc | `memory/features/coachhelm-ai.md` |

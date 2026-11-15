@@ -21,8 +21,8 @@ Coaches use roster/team views to manage membership and inspect players. Players 
 ### Components
 
 - `src/components/golf/roster/**`
-- `src/components/fairway/pages/team/FairwayTeamSettings.tsx`
-- `src/components/fairway/pages/team/FairwayTeamInfo.tsx`
+- `src/components/fairway/pages/team/FairwayTeamSettings.tsx` (was removed with Fairway, 2026-11-14)
+- `src/components/fairway/pages/team/FairwayTeamInfo.tsx` (was removed with Fairway, 2026-11-14)
 - team-pulse-card was removed; no successor component
 
 ### Actions
@@ -89,7 +89,7 @@ Team page
 - Team page must visibly distinguish coach-editable settings from player read-only info.
 - Team Info staff rows name the role once, in the pill. A stored
   `golf_coaches.title` shows only when it says something else, like "Director
-  of Golf" (`src/components/fairway/pages/team/staff-title.ts`, 2026-09-27).
+  of Golf" (`src/components/fairway/pages/team/staff-title.ts` (was removed with Fairway, 2026-11-14), 2026-09-27).
 - Empty states should distinguish no players, no pending requests, and no recent player activity.
 - A route's `loading.tsx` reserves the page's paint at t=0 — for a
   `'use client'` page holding its own `loading` state that is that

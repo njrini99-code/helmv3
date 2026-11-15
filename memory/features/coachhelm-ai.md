@@ -344,7 +344,7 @@ entries are history. The tool list and the prompt are described where the tools 
   the coach's next question: that response begins with the earlier message's recorded `decision` and `receipt`
   events, each carrying `message_id`, and the hook folds them into that message. No reload is needed.
 - Tests: `src/app/api/coachhelm/v3/chat/stream/__tests__/route.turns.test.ts` (the route against a scripted model and
-  an in-memory database) and `src/components/golf/coachhelm/chat/__tests__/useCoachHelmChat.test.tsx`.
+  an in-memory database) and `src/hooks/coachhelm/__tests__/useCoachHelmChat.test.tsx`.
 
 - One-team canary (`src/lib/coachhelm/canary.ts`, env `HELM_COACHHELM_TEAMS`,
   2026-10-21): the v3 flags `coachhelm_reads_v1_copy`,
@@ -1462,7 +1462,7 @@ Plan storage and publishing are in `memory/features/team-operations.md`.
 - **`CoachHelmSubNav.tsx`'s header comment can lag the `COACH_TABS` array it
   describes.** A skeleton or nav consumer that hand-draws the tab strip from
   the file's header comment rather than importing `COACH_TABS`
-  (`src/components/fairway/pages/coachhelm/CoachHelmSubNav.tsx`) can drift —
+  (`src/components/fairway/pages/coachhelm/CoachHelmSubNav.tsx` (was removed with Fairway, 2026-11-14)) can drift —
   one skeleton was written against a stale "single Brief tab" claim while the
   array actually carried two (`brief` + `ask`), and the strip grew a second
   tab on hydrate. `resolveTabFromPath` branches on `tabs.length === 1`, so
@@ -1477,10 +1477,10 @@ Plan storage and publishing are in `memory/features/team-operations.md`.
   development, analytics) are now permanent-redirect shims forwarding query
   params onto `?area=`/`?view=` — treat those params as the canonical nav for
   these surfaces rather than resurrecting the retired tab routes. New summary
-  UI on these pages should compose from `src/components/fairway/modules/`
+  UI on these pages should compose from `src/components/fairway/modules/` (was removed with Fairway, 2026-11-14)
   (present in this repo) rather than reintroducing a DetailGrid-style text
   table. (STU, source: `spine-stage-redesign.md` dated 2026-07-20; verified
-  2026-09-05 that `src/components/fairway/modules/` exists.)
+  2026-09-05 that `src/components/fairway/modules/` (was removed with Fairway, 2026-11-14) exists.)
   **Exception, 2026-09-24:** the Player CoachHelm overview
   (`/golf/dashboard/coachhelm`, no `?view=`) no longer uses the spine or the
   bento. It is `PlayerHubFeed` (`components/golf/coachhelm/home/`), a

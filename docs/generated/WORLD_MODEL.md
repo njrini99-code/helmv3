@@ -104,9 +104,9 @@ Calendar And Events · active · criticality high · owner product
 
 ### `clubhouse`
 
-Clubhouse UI (flagged, off in production) · active · criticality medium · owner product
+Clubhouse UI (the coach and player UI) · active · criticality medium · owner product
 
-- **Relations:** 0 doc/structurally-evidenced, 9 import-graph-only (weak)
+- **Relations:** 0 doc/structurally-evidenced, 7 import-graph-only (weak)
 - **Tables:** `golf_class_exceptions`, `golf_class_hold_dirty`, `golf_player_class_settings`, `golf_push_hold_heartbeat`, `golf_push_holds`, `golf_saved_comparisons`, `golf_team_seasons`, `golf_team_terms`, `golf_tournament_advice_givers`, `golf_tournament_coach_presence`, `golf_tournament_entries`, `golf_tournament_entry_notes`, `golf_tournament_field_scores`, `golf_tournament_field_teams`, `golf_tournament_link_dismissals`, `golf_tournament_player_notes`, `golf_tournament_player_rounds`, `golf_tournament_reflections`, `golf_tournament_result_marks`, `golf_tournament_reviews`, `golf_tournament_round_lineups`, `golf_tournament_rounds`, `golf_tournaments`
 - **RPCs:** `golf_coachhelm_shown_reads`, `golf_event_attendance_counts`, `golf_tournament_link_candidates`, `golf_tournament_my_lineup`, `sg_scale_for_player`
 - **Test surfaces:** 2
@@ -319,7 +319,7 @@ Team Operations · active · criticality high · owner product
 - **Relations:** 0 doc/structurally-evidenced, 8 import-graph-only (weak)
 - **Tables:** `golf_practice_groups`, `golf_practice_plan_formats`, `golf_practice_plan_lines`, `golf_practice_plan_opens`, `golf_practice_plan_versions`, `golf_practice_plans`, `golf_practice_templates`
 - **RPCs:** `get_player_hub_events`
-- **Test surfaces:** 5
+- **Test surfaces:** 4
 - **Sentry/admin_events signals:** `coach_dashboard`, `documents`, `practice_plans`, `task_management`, `travel`
 
 ---
@@ -447,13 +447,13 @@ Team Operations · active · criticality high · owner product
 | `feature_awareness_system` | `admin_selfheal` | feature_doc_contract |
 | `golf_round_lifecycle` | `admin_platform` | import_graph (weak) |
 | `golf_round_lifecycle` | `auth_onboarding_join` | import_graph (weak) |
-| `golf_round_lifecycle` | `clubhouse` | import_graph (weak) |
 | `golf_round_lifecycle` | `coach_intelligence_triage` | import_graph (weak) |
 | `golf_round_lifecycle` | `coachhelm_ai` | import_graph (weak) |
 | `golf_round_lifecycle` | `email_outbound` | import_graph (weak) |
 | `golf_round_lifecycle` | `ios_native_shell` | import_graph (weak) |
 | `golf_round_lifecycle` | `observability_sentry` | import_graph (weak) |
 | `golf_round_lifecycle` | `player_coachhelm_development` | import_graph (weak) |
+| `golf_round_lifecycle` | `qualifiers` | import_graph (weak) |
 | `golf_round_lifecycle` | `roster_team` | import_graph (weak) |
 | `golf_round_lifecycle` | `shot_tracking` | import_graph (weak) |
 | `golf_round_lifecycle` | `stats_analytics` | import_graph (weak) |
@@ -494,7 +494,6 @@ Team Operations · active · criticality high · owner product
 | `player_hub` | `team_communications` | import_graph (weak) |
 | `qualifiers` | `admin_platform` | import_graph (weak) |
 | `qualifiers` | `auth_onboarding_join` | import_graph (weak) |
-| `qualifiers` | `clubhouse` | import_graph (weak) |
 | `qualifiers` | `email_outbound` | import_graph (weak) |
 | `qualifiers` | `golf_round_lifecycle` | import_graph (weak) |
 | `qualifiers` | `player_coachhelm_development` | import_graph (weak) |

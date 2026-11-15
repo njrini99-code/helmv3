@@ -19,7 +19,15 @@ Evidence labels: **Source-confirmed**, **Reproduced** (with test and SHA),
 | Clubhouse candidate (#2102) | `c221d1ca2` | `agent/clubhouse` |
 | Release train | PR #2110, `agent/release-train` at `c0f1b17fe` (#2102, #2104 round engine, #2108 security, #2109 stats engine, plus the audit fixes) | local `next build` exit 0 at `24a4bbca2` (later commits: docs, lint layout, the Hub read fix, one test timeout); CI rerunning at `c0f1b17fe` |
 
-**Production flag state (updated 2026-10-12):** `golf_clubhouse_ui` and
+**Fairway retired (2026-11-14).** The owner made Clubhouse the only coach and
+player UI ("No allowlist, complete replacement of fairway"). The swap this
+audit tracked is complete: the Fairway screens, `golf_clubhouse_ui`,
+`golf_clubhouse_front_door` and the `HELM_CLUBHOUSE_TEAMS` allowlist are gone,
+and "flag on" below now means every coach and player. The route table in §3 is
+updated; the findings are kept as the record. Current state and the retired
+features: [STATUS.md](STATUS.md).
+
+**Production flag state (updated 2026-10-12, history):** `golf_clubhouse_ui` and
 `golf_clubhouse_front_door` are off in production and on in preview and
 development (`config/feature-flags.yml`). `golf_clubhouse_ui` was on in
 production from 2026-10-08 to 2026-10-11 through #2180 by mistake; #2188 turned
@@ -43,7 +51,7 @@ on" affects no customer until the owner turns the flag on.
 | Phone/accessibility | **Partly exercised**: 46-page sweep, both roles at 390 and 1440 px (dev for visuals, the preview for timing). Fixed: F-29, F-30, F-35..F-39, F-41..F-50. Not run: real iPhone, VoiceOver, keyboard pass | §4 Full sweep |
 | Build/regression | Local gates on `c7e24b4f9`: typecheck, lint ratchet, Supabase-error and fail-open audits, `clubhouse:check`, `docs:check` all 0; unit suite 2067 files, 22182 tests, all pass; local production build used for the F-56 timings. CI on PR #2111 at `9d65dd3ff`: see §4 | §4 |
 | Cutover/rollback | Q-131 built: `HELM_CLUBHOUSE_TEAMS` allowlist (`a49a75f6a`); Q-132 held migration written (`9a49d3bf9`). **Open**: setting the allowlist, applying the held files, the flag flip (all owner) | §18 §7 |
-| Legacy retirement | **Not ready**: no retirement until every row in §3 has a destination (F-13) | F-13 |
+| Legacy retirement | **Done (2026-11-14)**: every row in §3 has a destination; the Fairway screens are deleted and the redirect-only pages are `next.config.mjs` redirects (F-13) | F-13, [STATUS.md](STATUS.md) |
 
 ## 3. Role × route table (F-01)
 
@@ -99,8 +107,10 @@ Every row the audit left open is now an alias or built. Route files are under
 | `/players/[id]/game/print` (printable scouting report) | coach | **RETIRED** (owner, 2026-10-12); covered by the `players/[id]` alias to `stats?player=<id>` | `players/[playerId]/layout.tsx` |
 | `/coachhelm/genome/compare` | coach | **RETIRED** (owner, 2026-10-12); alias to `stats/team` | `coachhelm/genome/compare/layout.tsx` |
 | `/team` | both | Alias: coach to `settings?section=team`, player to `settings?section=golf` | `team/layout.tsx` |
-| `/rounds` | coach | Alias to `stats/team` (v2 has no coach library, Q-79); on the frame's aliased list since 2026-10-17, when a plain `redirect()` left the coach on NotRebuilt | `rounds/page.tsx` |
-| `/my-qualifiers` | coach | Alias to `qualifiers` (a player's screen; since 2026-10-17) | `my-qualifiers/page.tsx` |
+| `/rounds` | coach | Team rounds (rebuilt for both roles) | `rounds/page.tsx` |
+| `/my-qualifiers` | both | `next.config.mjs` redirect to `qualifiers` (since 2026-11-14; the page is deleted) | `next.config.mjs` |
+| `/tasks`, `/announcements`, `/documents`, `/travel` | both | `next.config.mjs` redirects to their Team Hub tabs (since 2026-11-14; the pages are deleted) | `next.config.mjs` |
+| `/rounds/[id]/review` | both | `next.config.mjs` redirect to `rounds/[id]` (since 2026-11-14) | `next.config.mjs` |
 | `/stats/team` | player | Alias to `stats` (coach-only; whoever the dashboard draws as a player; since 2026-10-17) | `stats/team/page.tsx` |
 | `/coachhelm/qualifying/[id]` | coach | Alias to `qualifiers/[id]/selection` | `coachhelm/qualifying/[id]/layout.tsx` |
 | `/coachhelm/chat` | both | Alias: coach to `coachhelm?view=ask`, player to `coachhelm` | `coachhelm/chat/layout.tsx` |
@@ -108,7 +118,7 @@ Every row the audit left open is now an alias or built. Route files are under
 | `/whats-new` | both | Alias to Home | `whats-new/layout.tsx` |
 | Settings display density, date format, score display | both | **RETIRED** (owner, 2026-10-12); not shown in Clubhouse Settings | `src/clubhouse/screens/settings/Preferences.tsx` |
 | `/hub`, `/my-insights` | both | redirect to rebuilt routes | none needed |
-| `/dev/haptics`, `[...missing]` | — | dev and catch-all; any route `isRebuilt` does not list still draws the NotRebuilt fallback (CH-1301) | `src/clubhouse/shell/nav.ts` |
+| `[...missing]` | — | catch-all; any route `isRebuilt` does not list still draws the NotRebuilt fallback (CH-1301). `/dev/haptics` was deleted with Fairway | `src/clubhouse/shell/nav.ts` |
 
 ### Live notification destinations (production, read-only, last 180 days)
 
@@ -122,9 +132,9 @@ Every row the audit left open is now an alias or built. Route files are under
 | `roster` | 65 | rebuilt. `roster?tab=requests` (code source) is **ignored** by Clubhouse Roster; requests show in the Roster header instead (P2) |
 | `team` | 3 | aliased: coach to `settings?section=team`, player to `settings?section=golf` |
 
-Code-only link sources not seen in recent rows: `tasks?task=<id>` (the alias
-keeps `task`: the proxy hands the query to the layout in `x-helm-search`, and
-Team Hub scrolls to the task, `tasks/layout.tsx`), `intelligence*`,
+Code-only link sources not seen in recent rows: `tasks?task=<id>` (the
+`next.config.mjs` redirect keeps `task`, since a config redirect passes the
+request's query through, and Team Hub scrolls to the task), `intelligence*`,
 `my-development`, `coachhelm?view=development`.
 
 ## 4. Findings
