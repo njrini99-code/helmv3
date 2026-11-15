@@ -73,7 +73,9 @@
 
 /* Something that arrives where it will stay, once, in the two owner exceptions: a live Ask visual's sections rise
    (--ch-arrive-t: translateY(8px)), the course view's hole settles (opacity 0.4, scale 1.06) and a landing number pops
-   (scale 0.4). Opacity and transform only; a rule names its own start. */
+   (scale 0.4). Outside them it is only a fade that starts part way, where a tap swapped the view (CoachHelm's view switch
+   rises from the opacity the old view dimmed to, --ch-arrive-o, with no transform). Opacity and transform only; a rule
+   names its own start. */
 @keyframes ch-arrive {
   from {
     opacity: var(--ch-arrive-o, 0);

@@ -184,7 +184,8 @@
   font: var(--ch-type-13-medium);
   line-height: var(--ch-lead-tight);
   color: var(--ch-green-700);
-  animation: ch-fade var(--ch-dur-quick) var(--ch-ease);
+  /* The word a save brings crossfades in over the quick beat (motion.css ch-in). */
+  animation: ch-in var(--ch-dur-quick) var(--ch-ease-ios);
 }
 .ch-set-matrix__what > .ch-set-row__top {
   font: inherit;
@@ -611,14 +612,6 @@
 }
 .ch-set-rank__i:first-child {
   border-top: 0;
-}
-.ch-set-rank__i.is-moved {
-  animation: ch-set-moved var(--ch-dur-base) var(--ch-ease);
-}
-@keyframes ch-set-moved {
-  from {
-    background: rgb(21 90 57 / 0.07);
-  }
 }
 .ch-set-rank__n {
   display: grid;
@@ -1423,16 +1416,16 @@
   .ch-setm-rank__i.is-held::before {
     display: none;
   }
-  /* The lifted row (the overlay, portaled into the Clubhouse root): its shadow rises over quick as it leaves the list
-     and falls away over release as it settles into its row (dnd-kit's drop, .is-settling). Instant with reduced motion and with
-     Animations off, where the duration tokens are zero and the drop does not animate. */
+  /* The lifted row (the overlay, portaled into the Clubhouse root): its shadow is there as the finger lifts it (the
+     shadow's own rise, a paint keyframe, is gone: MOTION-AND-VISUAL 3.12) and falls away over release as it settles into
+     its row (dnd-kit's drop, .is-settling). Instant with reduced motion and with Animations off, where the duration tokens
+     are zero and the drop does not animate. */
   .ch-setm-rank__i.is-lifted {
     margin: 0 4px;
     border-radius: var(--ch-radius-md);
     background: var(--ch-green-50);
     box-shadow: var(--ch-elevation-overlay);
     cursor: grabbing;
-    animation: ch-setm-rank-rise var(--ch-dur-quick) var(--ch-ease) backwards;
     transition:
       box-shadow var(--ch-dur-release) var(--ch-ease),
       background-color var(--ch-dur-release) var(--ch-ease);
@@ -1443,13 +1436,7 @@
   }
   @media (prefers-reduced-motion: reduce) {
     .ch-setm-rank__i.is-lifted {
-      animation: none;
       transition: none;
-    }
-  }
-  @keyframes ch-setm-rank-rise {
-    from {
-      box-shadow: none;
     }
   }
   .ch-setm-rank__n {
