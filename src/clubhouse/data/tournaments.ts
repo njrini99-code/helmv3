@@ -7,6 +7,7 @@ import { todayIsoInZone } from '@/lib/golf/timezone';
 import { logServerEvent } from '@/lib/server-error-logger';
 import { isTourSchemaMissing } from '@/lib/golf/tournament-refusals';
 import { isoDay } from '../lib/dates';
+import { isScoreCountable } from './round-scope';
 import { chLogServer } from '../lib/track-server';
 import { suggestLinks, type LinkCandidateRound, type LinkEventRound } from '../screens/tournaments/links';
 import {
@@ -680,6 +681,8 @@ interface PoolRound {
   course_id: string | null;
   total_score: number | null;
   holes_played: number | null;
+  front_nine: number | null;
+  back_nine: number | null;
   score_to_par: number | null;
   total_putts: number | null;
   total_penalties: number | null;
@@ -721,6 +724,18 @@ export function holeStats(holes: readonly PoolHole[], round: Pick<PoolRound, 'to
   };
 }
 
+/**
+ * Whether a GolfHelm round enters the comparison pool (launch readiness 2026-11-15, DF-P-07): a round that counts in a score, by the
+ * rule every Stats figure uses (`isScoreCountable`: 9 or 18 holes all scored, or an 18-hole total), never a 14-hole card read as 18
+ * holes (its 58 read −14 to par). A linked event round marked WD or DQ stays whatever its length, so its evidence can say why; every
+ * figure leaves it out (10.3).
+ */
+export function poolRoundCounts(r: Pick<PoolRound, 'total_score' | 'holes_played' | 'front_nine' | 'back_nine' | 'total_putts'>, own: readonly Pick<PoolHole, 'score'>[], linkedStatus: ChTourEvent['playerRounds'][number]['status'] | null): boolean {
+  if (r.total_score == null) return false;
+  if (linkedStatus === 'wd' || linkedStatus === 'dq' || linkedStatus === 'dq_pending') return true;
+  return isScoreCountable({ ...r, recorded_holes: own.filter((h) => h.score != null).length });
+}
+
 /** A WD or DQ event round stays in the pool so its evidence can say why, but every figure leaves it out (10.3). */
 const outStatus = (status: ChTourEvent['playerRounds'][number]['status']): Pick<ChTourCompareRound, 'status'> =>
   status === 'wd' ? { status: 'wd' } : status === 'dq' || status === 'dq_pending' ? { status: 'dq' } : {};
@@ -741,7 +756,7 @@ async function readPool(ctx: TourCtx, read: EventsRead, playerIds: readonly stri
   const rounds = await allIn<PoolRound>('poolRounds', playerIds, (chunk, from, to) =>
     ctx.supabase
       .from('golf_rounds')
-      .select('id, player_id, round_date, round_type, course_id, total_score, holes_played, score_to_par, total_putts, total_penalties, strokes_gained_tee, strokes_gained_approach, strokes_gained_around_green, strokes_gained_putting')
+      .select('id, player_id, round_date, round_type, course_id, total_score, holes_played, front_nine, back_nine, score_to_par, total_putts, total_penalties, strokes_gained_tee, strokes_gained_approach, strokes_gained_around_green, strokes_gained_putting')
       .in('player_id', chunk)
       .eq('status', 'completed')
       .eq('is_test', false)
@@ -772,13 +787,13 @@ async function readPool(ctx: TourCtx, read: EventsRead, playerIds: readonly stri
   };
   const out: ChTourCompareRound[] = [];
   for (const r of rounds) {
-    if (r.total_score == null) continue;
+    const own = byRound.get(r.id) ?? [];
+    const link = linkedTo.get(r.id);
+    if (r.total_score == null || !poolRoundCounts(r, own, link?.pr.status ?? null)) continue;
     const holesPlayed: 9 | 18 = (r.holes_played ?? 18) <= 9 ? 9 : 18;
     const course = r.course_id ? read.courses[r.course_id] : undefined;
-    const own = byRound.get(r.id) ?? [];
     const par = poolRoundPar(own, holesPlayed, course?.par ?? null, r.score_to_par != null ? r.total_score - r.score_to_par : null);
     const rating = course?.rating != null ? (holesPlayed === 9 ? course.rating / 2 : course.rating) : null;
-    const link = linkedTo.get(r.id);
     const sg = r.strokes_gained_tee != null && r.strokes_gained_approach != null && r.strokes_gained_around_green != null && r.strokes_gained_putting != null ? { ott: r.strokes_gained_tee, app: r.strokes_gained_approach, arg: r.strokes_gained_around_green, putt: r.strokes_gained_putting } : null;
     const fpr = link ? fieldPerRound(link.e, link.pr.roundNumber) : null;
     out.push({
