@@ -1011,22 +1011,15 @@
   --ch-reveal-offset: 40ms;
   --ch-reveal-step: 55ms;
   --ch-reveal-rise: 10px;
-  /* No skeleton reads it any more (3.9: skeletons are static). Its last users are the CoachHelm wheel's turn, the thread's
-     step dot and the Classes scan, which go with the delete list (3.12); then this goes too. */
-  --ch-dur-shimmer: 1.9s;
-  /* A live marker's slow breath (the calendar's now line): one cycle, ambient, never a call to act. */
-  --ch-dur-live: 2.8s;
-  /* The pending hairline's sweep (LinkPending, shell.css). */
-  --ch-dur-sweep: 900ms;
-  /* The mockups' own beats: a story's body (420), a typing dot's cycle and its step, a story. */
+  /* The mockups' own beats: a story's body (420), a typing dot's cycle and its step, a story. The typing dot's cycle is
+     the working beat: the one loop (MOTION-AND-VISUAL 3.1, 3.9), the working indicator (motion.css ch-working) and every
+     busy ring and wheel while work runs. */
   --ch-dur-word: 320ms;
   --ch-dur-crossfade-rm: 180ms;
   --ch-dur-story-body: 420ms;
   --ch-dur-typing: 1200ms;
   --ch-dur-typing-step: 160ms;
   --ch-dur-story: 5200ms;
-  /* The selected station's ring on Team's hole (M-TEAM-06): one slow pulse, played twice, then still. */
-  --ch-dur-station-pulse: 2400ms;
   --ch-ease-typing: cubic-bezier(0.45, 0, 0.55, 1);
 
   /* Z: the ladder (CONS-35). Values 0 to 5 stay local literals inside one component. */
@@ -1444,18 +1437,14 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-reveal-offset: 0ms;
   --ch-reveal-step: 0ms;
   --ch-reveal-rise: 0px;
-  /* The loops too, so the wheel's turn, the calendar's live pulse and the pending sweep hold still from the first
-     frame: ThemeScript marks <html> before hydration, ahead of the rules that stop them by name. */
-  --ch-dur-shimmer: 0ms;
-  --ch-dur-live: 0ms;
-  --ch-dur-sweep: 0ms;
+  /* The working beat too (--ch-dur-typing below), so the working sign holds still from the first frame: ThemeScript marks
+     <html> before hydration, ahead of the rules that stop it by name. */
   --ch-dur-marks: 0ms;
   --ch-dur-word: 0ms;
   --ch-dur-story-body: 0ms;
   --ch-dur-typing: 0ms;
   --ch-dur-typing-step: 0ms;
   --ch-dur-story: 0ms;
-  --ch-dur-station-pulse: 0ms;
 }
 
 /* The page crossfade's timings (RouteFrame's <ViewTransition>, shell.css). The view-transition pseudo-elements hang off

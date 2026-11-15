@@ -61,13 +61,14 @@ describe('Clubhouse motion durations (D-64 as built)', () => {
     expect(CH_SPRING_SETTLE_MS).toBe(462);
   });
 
-  it('the loops: shimmer 1.9s, live pulse 2.8s, sweep 900ms', () => {
-    expect([token('ch-dur-shimmer'), token('ch-dur-live'), token('ch-dur-sweep')]).toEqual(['1.9s', '2.8s', '900ms']);
+  it('the one loop: the working indicator on the working beat, 1.2s, its dots 160ms apart (MOTION-AND-VISUAL 3.1, 3.9)', () => {
+    expect([token('ch-dur-typing'), token('ch-dur-typing-step')]).toEqual(['1200ms', '160ms']);
+    for (const gone of ['ch-dur-shimmer', 'ch-dur-live', 'ch-dur-sweep', 'ch-dur-station-pulse']) expect(css, gone).not.toContain(`--${gone}:`);
   });
 
   it('Animations off zeroes every one of them', () => {
     const off = css.slice(css.indexOf("[data-motion='off']") >= 0 ? css.indexOf("[data-motion='off']") : css.indexOf('[data-motion="off"]'));
-    for (const name of ['ch-dur-press', 'ch-dur-quick', 'ch-dur-base', 'ch-dur-release', 'ch-dur-reveal', 'ch-dur-spring-smooth', 'ch-dur-shimmer', 'ch-dur-live', 'ch-dur-sweep']) {
+    for (const name of ['ch-dur-press', 'ch-dur-quick', 'ch-dur-base', 'ch-dur-release', 'ch-dur-reveal', 'ch-dur-spring-smooth', 'ch-dur-typing', 'ch-dur-typing-step']) {
       expect(token(name, off), name).toBe('0ms');
     }
   });

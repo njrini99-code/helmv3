@@ -23,8 +23,6 @@ export const CH_EASE = CH_EASE_OUT;
 export const CH_EASE_IO = [0.65, 0, 0.35, 1] as const;
 /** A chart's marks gliding to a changed value, and a bar chart's first-view growth, in ms (--ch-dur-marks). */
 export const CH_MARKS_MS = 360;
-/** One pass of the progress sweep, in ms (--ch-dur-sweep). */
-export const CH_SWEEP_MS = 900;
 
 export const CH_DUR = {
   press: 0.11,
