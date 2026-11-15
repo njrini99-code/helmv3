@@ -8,8 +8,8 @@ import { eventDaySpan } from '@/lib/calendar/timezone';
 import { chLogServer } from '../lib/track-server';
 import { homeClock, ymd } from './home-clock';
 import { classYearKey, type ChYearKey } from '../lib/class-year';
-import { playerStrokesGained, roundsForFigures } from './figure-window';
-import { classYearLabel, countsForScoring, fullName, groupByPlayer, isFull18, lastTenFloor, loadSeasonRounds, mean, MIN_SG_ROUNDS, roundsForSpan, seasonStartDate, summarizePlayer, type ChForm, type ChRound } from './season';
+import { playerStrokesGained, pooledRate, roundCount, roundRate, roundsForFigures } from './figure-window';
+import { classYearLabel, fullName, groupByPlayer, isFull18, lastTenFloor, loadSeasonRounds, mean, MIN_SG_ROUNDS, roundsForSpan, seasonStartDate, summarizePlayer, type ChForm, type ChRound } from './season';
 import { spanFloorsLeaderboard, spanSince, spanStart, type ChFormWindow, type ChSpan } from './span';
 import { LEGS, sgLegs, teamGrid, type ChLeg } from './stats-team';
 import { teamStrokesGained } from './stats-team-sg';
@@ -17,7 +17,7 @@ import { legRows } from './leg-rows';
 import { loadCoachQueue, type ChCoachQueue } from './home-queue';
 import { teamRankRows, type TeamRankMetric, type TeamRankRow } from '../screens/stats/team-rank';
 import type { ChSgTour } from '../lib/sg';
-import { hasHoleScores, holeRounds, recordedPutts } from './round-scope';
+import { holeRounds, recordedPutts } from './round-scope';
 import { loadRoundCache, previousInFilter, readTourBenchmarks, roundsInFilter, seasonOnly, tourForGender, type ChRoundCache } from './stats-common';
 import { filterFor } from './stats-filter';
 import { effectiveCount, weightedMean, windowChangeSe } from './stats-weight';
@@ -410,8 +410,14 @@ export async function loadCoachHome(input: {
   const benchRead = teamRead.then((team) => (team.error || !team.data ? null : readTourBenchmarks(supabase, tourForGender(team.data.gender), 'home')));
   // The cache is read for the parts' own rounds (`partsRounds`): it read each player's newest ten with practice in, while the parts
   // read them with practice out, so a player who had practised lost rounds' up-and-down counts (prod audit 2026-11-15, STATS-P-12).
-  const cacheRead = roundsRead.then((res) => {
-    const ids = res.error ? [] : holeRounds(teamWindows(partsRounds(res.rounds, now)).last).map((r) => r.id);
+  // The team form's greens and putts read the same stats rows (DF-C-16), so its rounds (the window and the one it is compared with) are read too.
+  const cacheRead = Promise.all([roundsRead, clockRead]).then(([res, c]) => {
+    if (res.error) return { byRound: new Map<string, ChRoundCache>(), error: false };
+    const parts = teamWindows(partsRounds(res.rounds, now)).last;
+    const formFull = roundsForSpan(res.rounds, input.span).filter(isFull18);
+    const formWindow: ChFormWindow = input.formWindow ?? (input.span === 'all' ? 'all' : 'last10');
+    const form = teamFormWindows(formFull, formWindow, seasonStartDate(now, c.tz));
+    const ids = [...new Set(holeRounds([...parts, ...form.last, ...form.prev]).map((r) => r.id))];
     return ids.length ? loadRoundCache(supabase, ids, 'home') : { byRound: new Map<string, ChRoundCache>(), error: false };
   });
   // What is waiting on the coach: its own reads, each part on its own.
@@ -509,7 +515,7 @@ export async function loadCoachHome(input: {
   // ── Phone: the team's form ──
   const week = rounds.filter((r) => r.round_date.slice(0, 10) >= weekStart && r.round_date.slice(0, 10) <= weekEnd).length;
   const formWindow: ChFormWindow = input.formWindow ?? (input.span === 'all' ? 'all' : 'last10');
-  const form = roundsError ? null : teamForm(full, week, formWindow, seasonStartDate(now, tz));
+  const form = roundsError ? null : teamForm(full, cache.byRound, week, formWindow, seasonStartDate(now, tz));
   // ── The team's four parts, on the form's rounds ──
   // The parts are each player's last ten (Stats' Last 10, across seasons within the read's year) whichever basis the average is on: All time reads
   // further back and keeps practice, so the parts are cut back to the rounds and the year they are read on by default.
@@ -1060,23 +1066,21 @@ export function teamWindows(full: ChRound[]): { last: ChRound[]; prev: ChRound[]
  * `window` (span.ts `ChFormWindow`, HOME-P-10): Season reads the 18-hole rounds since `seasonStart`, and All time every round in
  * `full`; neither has a previous window. Exported for the tests.
  */
-export function teamForm(full: ChRound[], roundsThisWeek: number, window: ChFormWindow = 'last10', seasonStart: string = seasonStartDate()): ChTeamForm | null {
-  const none = [] as ChRound[];
-  const { last, prev, lastPaired } =
-    window === 'all' ? { last: full, prev: none, lastPaired: none } : window === 'season' ? { last: seasonOnly(full, seasonStart), prev: none, lastPaired: none } : teamWindows(full);
+export function teamForm(full: ChRound[], cache: ReadonlyMap<string, ChRoundCache>, roundsThisWeek: number, window: ChFormWindow = 'last10', seasonStart: string = seasonStartDate()): ChTeamForm | null {
+  const { last, prev, lastPaired } = teamFormWindows(full, window, seasonStart);
   if (!last.length) return null;
-  // Greens and putts are hole-level: a round posted as a total only has none (Q-123), whatever its row holds.
-  const hasGir = (r: ChRound) => hasHoleScores(r) && r.total_gir != null && !!r.total_gir_possible;
-  const girOf = (list: ChRound[]) => {
-    const withGir = list.filter(hasGir);
-    const possible = withGir.reduce((a, r) => a + (r.total_gir_possible as number), 0);
-    return possible ? (withGir.reduce((a, r) => a + (r.total_gir as number), 0) / possible) * 100 : null;
-  };
+  // Greens and putts are hole-level (a round posted as a total only has none, Q-123) and come from each round's stats row, as Stats'
+  // own greens and putts do, never the `golf_rounds` columns (launch readiness DF-C-16, DF-P-01: `roundRate`, `roundCount`).
+  const hasGir = (r: ChRound) => roundRate(r, cache, 'gir') != null;
+  const girOf = (list: ChRound[]) => pooledRate(list, cache, 'gir').pct;
   const scoreOf = (r: ChRound) => r.total_score;
-  // Putts as Stats counts them: per 18, and a round written 0 putts has none recorded (recordedPutts, cachedPutts).
-  const puttsOf = (r: ChRound) => (hasHoleScores(r) ? recordedPutts(r.total_putts) : null);
+  // Putts as Stats counts them: per 18, and a round written 0 putts has none recorded (cachedPutts).
+  const puttsOf = (r: ChRound) => roundCount(r, cache, 'putts');
   // A round's own green rate, for the standard error of the greens' change.
-  const girRates = (list: ChRound[]) => list.filter(hasGir).map((r) => ((r.total_gir as number) / (r.total_gir_possible as number)) * 100);
+  const girRates = (list: ChRound[]) => list.flatMap((r) => {
+    const g = roundRate(r, cache, 'gir');
+    return g ? [(g.made / g.total) * 100] : [];
+  });
   const comparable = prev.length > 0;
   const avg = weightedMean(last, scoreOf) as number;
   const prevAvg = comparable ? weightedMean(prev, scoreOf) : null;
@@ -1113,13 +1117,19 @@ export function teamForm(full: ChRound[], roundsThisWeek: number, window: ChForm
   };
 }
 
+/** The rounds `teamForm` reads for a window, and the ones it compares them with: Last 10 against each player's ten before; none for Season and All time. */
+export function teamFormWindows(full: ChRound[], window: ChFormWindow, seasonStart: string): { last: ChRound[]; prev: ChRound[]; lastPaired: ChRound[] } {
+  const none = [] as ChRound[];
+  return window === 'all' ? { last: full, prev: none, lastPaired: none } : window === 'season' ? { last: seasonOnly(full, seasonStart), prev: none, lastPaired: none } : teamWindows(full);
+}
+
 /**
  * The rounds the four parts read, whatever the span: the counted 18-hole rounds (practice out) within Stats' Last 10 read, of which
  * `teamWindows` takes each player's newest ten. The same rounds feed the cache read, so a part's rate counts every round it names.
  */
 export function partsRounds(read: ChRound[], now: Date): ChRound[] {
   const floor = lastTenFloor(now);
-  return read.filter((r) => countsForScoring(r) && isFull18(r) && r.round_date.slice(0, 10) >= floor);
+  return roundsForFigures(read).filter((r) => isFull18(r) && r.round_date.slice(0, 10) >= floor);
 }
 
 const LEG_KEYS: readonly ChTeamLegKey[] = ['tee', 'approach', 'around', 'putting'];
