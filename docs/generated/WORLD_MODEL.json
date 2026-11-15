@@ -953,6 +953,11 @@
         "category": "components"
       },
       {
+        "id": "components:src/components/fairway/pages/scouting/**",
+        "pattern": "src/components/fairway/pages/scouting/**",
+        "category": "components"
+      },
+      {
         "id": "components:src/components/fairway/pages/tasks/**",
         "pattern": "src/components/fairway/pages/tasks/**",
         "category": "components"
@@ -14869,6 +14874,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/components/fairway/pages/coachhelm/**"
+        }
+      ]
+    },
+    {
+      "source": "coach_intelligence_triage",
+      "target": "components:src/components/fairway/pages/scouting/**",
+      "kind": "feature_component",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/components/fairway/pages/scouting/**"
         }
       ]
     },
