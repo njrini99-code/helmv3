@@ -23,6 +23,7 @@
 import { beforeAll, describe, it, expect } from 'vitest';
 import { existsSync, readdirSync, readFileSync, statSync } from 'fs';
 import { join } from 'path';
+import { pathToFileURL } from 'url';
 import {
   GOLF_COACH_HUBS,
   GOLF_PLAYER_HUBS,
@@ -79,7 +80,8 @@ function routeExists(href: string): boolean {
 // redirects when Fairway retired (2026-11-14): such an href resolves when the redirect's destination does.
 let REDIRECTS: Array<{ source: string; destination: string }> = [];
 beforeAll(async () => {
-  const { default: config } = (await import('../../../next.config.mjs')) as { default: { redirects: () => Promise<Array<{ source: string; destination: string }>> } };
+  // A computed specifier, so check:cycles (madge) does not walk from this test into next.config.mjs's build-only imports.
+  const { default: config } = (await import(pathToFileURL(join(process.cwd(), 'next.config.mjs')).href)) as { default: { redirects: () => Promise<Array<{ source: string; destination: string }>> } };
   REDIRECTS = await config.redirects();
 });
 

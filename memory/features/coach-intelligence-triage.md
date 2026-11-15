@@ -50,7 +50,7 @@ Coaching philosophy saves use one authoritative hook write path with downstream 
 ### Components
 
 - `src/components/golf/coachhelm/triage/**` (the desk, its views and cards)
-- `src/components/golf/coachhelm/home/CoachIntelligenceHome.tsx` (was removed with Fairway, 2026-11-14) (empty-roster gate, greeting, Chat tab)
+- src/components/golf/coachhelm/home/CoachIntelligenceHome.tsx (was removed with Fairway, 2026-11-14) (empty-roster gate, greeting, Chat tab)
 - `src/components/golf/coachhelm/alerts/**`
 - `src/components/golf/coachhelm/patterns/**`
 - `src/components/golf/coachhelm/insights/**`
@@ -134,7 +134,7 @@ CoachHelm generates insight/pattern/prediction
 
 - `src/components/golf/coachhelm/triage/__tests__/**` (desk navigation)
 - `src/components/golf/coachhelm/intel/**/__tests__/**` and `src/lib/golf/team-intelligence/__tests__/**` (Home's Team intelligence)
-- `src/components/golf/coachhelm/home/__tests__/CoachIntelligenceHome.hasData.test.tsx` (was removed with Fairway, 2026-11-14)
+- src/components/golf/coachhelm/home/__tests__/CoachIntelligenceHome.hasData.test.tsx (was removed with Fairway, 2026-11-14)
 - `src/test/golf/actions/coachhelm-analytics.test.ts`
 - `src/test/coachhelm/v2/**`
 - `src/test/api/cron/coachhelm*.test.ts`

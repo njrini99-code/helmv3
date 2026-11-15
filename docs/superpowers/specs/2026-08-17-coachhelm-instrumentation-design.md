@@ -53,7 +53,7 @@ Two consequences, and the product one is worse than the diagnostic one:
    including several framings in the current issue backlog, and including part
    of the review that produced this spec.
 
-`src/components/golf/coachhelm/triage/SignalDossier.tsx` already hit this and did
+src/components/golf/coachhelm/triage/SignalDossier.tsx already hit this and did
 the right thing: it deleted its "55d ago" age label rather than render a wrong
 number, and left a comment naming the fix — an explicit content timestamp. That
 column does not exist yet. Creating it is the first item here.

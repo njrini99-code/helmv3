@@ -90,7 +90,7 @@ Team Stats, Round Review) share the same failure modes:
 
 ## 4. Foundation modules (Phase 1 deliverable)
 
-New directory: `src/components/fairway/modules/` (client components; pure presentational;
+New directory: src/components/fairway/modules/ (client components; pure presentational;
 all data via props; no Supabase imports). All styling via Fairway tokens — no new colors,
 no `bg-white/N`, no `text-[Npx]`, banned-color lint stays green.
 

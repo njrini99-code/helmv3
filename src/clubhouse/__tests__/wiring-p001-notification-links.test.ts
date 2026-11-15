@@ -10,6 +10,7 @@
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const redirect = vi.fn((href: string) => {
@@ -43,7 +44,8 @@ const LAYOUTS: Record<string, () => Promise<{ default: unknown }>> = {
 /** next.config.mjs's plain redirects (a `:param` source, no pattern): the ones a notification address can meet. */
 let RULES: Array<{ source: string; destination: string }> = [];
 beforeAll(async () => {
-  const { default: config } = (await import('../../../next.config.mjs')) as { default: { redirects: () => Promise<Array<{ source: string; destination: string }>> } };
+  // A computed specifier, so check:cycles (madge) does not walk from this test into next.config.mjs's build-only imports.
+  const { default: config } = (await import(pathToFileURL(join(process.cwd(), 'next.config.mjs')).href)) as { default: { redirects: () => Promise<Array<{ source: string; destination: string }>> } };
   RULES = (await config.redirects()).filter((r) => r.source.startsWith('/golf/dashboard/') && !/[(*]/.test(r.source));
 });
 

@@ -38,14 +38,14 @@ qualifiers" is a `next.config.mjs` redirect to Qualifiers.
 
 - `src/components/golf/qualifiers/**`
 - `src/components/golf/coachhelm/v3/QualifyingBoard/**`
-- `src/components/fairway/pages/qualifiers/FairwayQualifiers.tsx` (was removed with Fairway, 2026-11-14)
-- `src/components/fairway/pages/qualifiers/QualifierRoundSegments.tsx` (was removed with Fairway, 2026-11-14)
-- `src/components/fairway/pages/qualifiers/FairwayQualifierDetail.tsx` (was removed with Fairway, 2026-11-14)
-- `src/components/fairway/pages/qualifiers/FairwayQualifierLeaderboard.tsx` (was removed with Fairway, 2026-11-14)
-- `src/components/fairway/pages/qualifiers/qualifier-season.ts` (was removed with Fairway, 2026-11-14)
-- `src/components/fairway/pages/qualifiers/FairwayQualifierFieldStats.tsx` (was removed with Fairway, 2026-11-14)
-- `src/components/fairway/pages/qualifiers/qualifier-stats.ts` (was removed with Fairway, 2026-11-14)
-- `src/components/fairway/pages/my-qualifiers/FairwayMyQualifiers.tsx` (was removed with Fairway, 2026-11-14)
+- src/components/fairway/pages/qualifiers/FairwayQualifiers.tsx (was removed with Fairway, 2026-11-14)
+- src/components/fairway/pages/qualifiers/QualifierRoundSegments.tsx (was removed with Fairway, 2026-11-14)
+- src/components/fairway/pages/qualifiers/FairwayQualifierDetail.tsx (was removed with Fairway, 2026-11-14)
+- src/components/fairway/pages/qualifiers/FairwayQualifierLeaderboard.tsx (was removed with Fairway, 2026-11-14)
+- src/components/fairway/pages/qualifiers/qualifier-season.ts (was removed with Fairway, 2026-11-14)
+- src/components/fairway/pages/qualifiers/FairwayQualifierFieldStats.tsx (was removed with Fairway, 2026-11-14)
+- src/components/fairway/pages/qualifiers/qualifier-stats.ts (was removed with Fairway, 2026-11-14)
+- src/components/fairway/pages/my-qualifiers/FairwayMyQualifiers.tsx (was removed with Fairway, 2026-11-14)
 - Clubhouse: `src/clubhouse/screens/qualifiers/**`, loader
   `src/clubhouse/data/qualifiers.ts`, route `src/clubhouse/routes/qualifiers.tsx`
 
@@ -298,7 +298,7 @@ Leaderboard reads qualifier (FairwayQualifierLeaderboard)
   place on score are "Tie at cut" (Q-114), never in/out by row order. Still
   different from Clubhouse: the average counts every round, and the Bubble has
   no ⌈rounds ÷ 2⌉ gate. Test:
-  `src/components/fairway/pages/qualifiers/__tests__/standings-parity.test.tsx` (was removed with Fairway, 2026-11-14).
+  src/components/fairway/pages/qualifiers/__tests__/standings-parity.test.tsx (was removed with Fairway, 2026-11-14).
 - Squad size is 1 to 12 in the New form and `createGolfQualifier`'s schema,
   the database's check constraint on `golf_qualifiers.selection_slots_total` (1 to 12).
 

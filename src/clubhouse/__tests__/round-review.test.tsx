@@ -1,3 +1,5 @@
+import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { LazyMotion, domAnimation } from 'motion/react';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -591,7 +593,8 @@ describe('Round review · loading', () => {
   });
 
   it('Bridge 110206 the old /review address is a redirect to the review, so it never draws a loading of its own', async () => {
-    const { default: config } = (await import('../../../next.config.mjs')) as { default: { redirects: () => Promise<Array<{ source: string; destination: string }>> } };
+    // A computed specifier, so check:cycles (madge) does not walk from this test into next.config.mjs's build-only imports.
+    const { default: config } = (await import(pathToFileURL(join(process.cwd(), 'next.config.mjs')).href)) as { default: { redirects: () => Promise<Array<{ source: string; destination: string }>> } };
     const rules = await config.redirects();
     expect(rules.find((r) => r.source === '/golf/dashboard/rounds/:id/review')?.destination).toBe('/golf/dashboard/rounds/:id');
   });

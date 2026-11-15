@@ -36,7 +36,7 @@ Native surface today:
   selection.
 - **Push**: `src/lib/utils/push-registration.ts` park-then-flush token state
   machine (persistence deferred until an authenticated session), value-first
-  pre-prompt `src/components/golf/PushPermissionSoftAsk.tsx` (was removed with Fairway, 2026-11-14), deep links
+  pre-prompt src/components/golf/PushPermissionSoftAsk.tsx (was removed with Fairway, 2026-11-14), deep links
   validated by `isSafeInternalPath`. Clubhouse has its own ask
   (`src/clubhouse/shell/PushAsk.tsx`, CH-1911) on the same shared functions
   and the same stored answer, and a Settings row for the app's push

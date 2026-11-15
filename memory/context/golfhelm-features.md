@@ -163,7 +163,7 @@ Players create rounds with shot-by-shot tracking. Rounds populate stats, trigger
 | Route (review) | `src/app/golf/(dashboard)/dashboard/rounds/[id]/review/page.tsx` (was removed with Fairway, 2026-11-14) |
 | Route (continue) | `src/app/golf/(dashboard)/dashboard/rounds/continue/[id]/page.tsx` |
 | Client wizard | `src/app/golf/(dashboard)/dashboard/rounds/new/new-round-client.tsx` (was removed with Fairway, 2026-11-14) |
-| Shot tracking | `src/components/fairway/pages/rounds-tracking/` (was removed with Fairway, 2026-11-14) (FairwayShotTracking.tsx) |
+| Shot tracking | `src/clubhouse/screens/rounds/` (Clubhouse; Fairway's src/components/fairway/pages/rounds-tracking/, with FairwayShotTracking.tsx, was removed 2026-11-14) |
 | Actions | `src/app/golf/actions/round-submit.ts`, `round-partial.ts`, `shot-actions.ts` (submit, save, delete) |
 | Drafts | `src/app/golf/actions/round-drafts.ts` |
 | Reviews | `src/app/golf/actions/round-reviews.ts` |
@@ -236,7 +236,7 @@ Player profile:
 | Route (team) | `src/app/golf/(dashboard)/dashboard/stats/team/page.tsx` |
 | Actions | `src/app/golf/actions/stats.ts`, `stats-data.ts`, `stats-leak-maps.ts` (leak maps, coach+player), `stats-intelligence.ts` (CoachHelm engine reads) |
 | Player stats | `src/app/golf/actions/player-profile-stats.ts` |
-| Components | `src/components/golf/stats/` (was removed with Fairway, 2026-11-14) |
+| Components | `src/clubhouse/screens/stats/` (Clubhouse; Fairway's src/components/golf/stats/ was removed 2026-11-14) |
 | Cache calculator | `src/lib/cache/golf-stats-calculator.ts` |
 
 ### DB Tables
@@ -279,7 +279,7 @@ Display: getQualifierLeaderboard() → positions, ties, totals
 | Route (detail) | `src/app/golf/(dashboard)/dashboard/qualifiers/[id]/page.tsx` |
 | Route (new) | `src/app/golf/(dashboard)/dashboard/qualifiers/new/page.tsx` |
 | Actions | `src/app/golf/actions/qualifier-actions.ts` (qualifier functions) |
-| Components | `src/components/fairway/pages/qualifiers/` (was removed with Fairway, 2026-11-14) |
+| Components | `src/clubhouse/screens/qualifiers/` (Clubhouse; Fairway's src/components/fairway/pages/qualifiers/ was removed 2026-11-14) |
 | Hook | `src/hooks/golf/use-qualifier-realtime.ts` |
 
 ### DB Tables
@@ -326,7 +326,7 @@ Calendar views: MonthView, WeekView, DayView, MobileListView
 | Type | Path |
 |------|------|
 | Route | `src/app/golf/(dashboard)/dashboard/calendar/page.tsx` |
-| Wrapper | `src/components/fairway/pages/calendar/FairwayCalendar.tsx` (was removed with Fairway, 2026-11-14) |
+| Wrapper | `src/clubhouse/screens/calendar/` (Clubhouse; Fairway's src/components/fairway/pages/calendar/FairwayCalendar.tsx was removed 2026-11-14) |
 | Views | `MonthView.tsx`, `WeekView.tsx`, `DayView.tsx`, `MobileCalendarWrapper.tsx` |
 | Actions | `event-lifecycle.ts`, `recurring-events.ts`, `attendance.ts` |
 | Polling | _not built — no files exist (backlog)_ |
@@ -378,7 +378,7 @@ Player profile (/roster/[id]):
 | Route (detail) | `src/app/golf/(dashboard)/dashboard/roster/[id]/page.tsx` |
 | Join flow | `src/app/golf/join/[code]/page.tsx` |
 | Actions | `src/app/golf/actions/roster.ts` |
-| Components | `src/components/golf/roster/` (was removed with Fairway, 2026-11-14) |
+| Components | `src/clubhouse/screens/roster/` (Clubhouse; Fairway's src/components/golf/roster/ was removed 2026-11-14) |
 
 ### DB Tables
 golf_players, golf_team_members, golf_team_join_requests, golf_teams, golf_team_coach_staff, users (last_seen)
@@ -403,7 +403,7 @@ setTaskReminder() → sets golf_tasks.reminder_at (NOT auto-triggered)
 |------|------|
 | Route | `src/app/golf/(dashboard)/dashboard/tasks/page.tsx` (was removed with Fairway, 2026-11-14) |
 | Actions | `tasks.ts`, `task-templates.ts`, `task-reminders.ts` |
-| Components | `src/components/fairway/pages/tasks/` (was removed with Fairway, 2026-11-14) |
+| Components | `src/clubhouse/screens/hub/` (Clubhouse; Fairway's src/components/fairway/pages/tasks/ was removed 2026-11-14) |
 | Hook | `src/hooks/golf/use-task-realtime.ts` |
 
 ### DB Tables
@@ -436,7 +436,7 @@ sendGolfMessageWithAttachments()
 |------|------|
 | Route | `src/app/golf/(dashboard)/dashboard/messages/page.tsx` |
 | Actions | `messages.ts`, `message-attachments.ts` |
-| Components | `src/components/golf/messages/` (was removed with Fairway, 2026-11-14) |
+| Components | `src/clubhouse/screens/messages/` (Clubhouse; Fairway's src/components/golf/messages/ was removed 2026-11-14) |
 | Hook | `src/hooks/golf/use-golf-messages.ts` |
 
 ### DB Tables
@@ -466,7 +466,7 @@ createEnrichedAnnouncement() (transaction):
 |------|------|
 | Route | `src/app/golf/(dashboard)/dashboard/announcements/page.tsx` (was removed with Fairway, 2026-11-14) |
 | Actions | `src/app/golf/actions/announcements.ts` |
-| Components | `src/components/golf/announcements/` (was removed with Fairway, 2026-11-14) |
+| Components | `src/clubhouse/screens/hub/` (Clubhouse; Fairway's src/components/golf/announcements/ was removed 2026-11-14) |
 
 ### DB Tables
 golf_announcements, golf_announcement_acknowledgements, golf_announcement_documents, golf_announcement_recipients, golf_announcement_tasks
@@ -521,7 +521,7 @@ Budget/Expenses (IMPLEMENTED in travel.ts):
 |------|------|
 | Route | `src/app/golf/(dashboard)/dashboard/travel/page.tsx` (was removed with Fairway, 2026-11-14) |
 | Actions | `src/app/golf/actions/travel.ts` |
-| Components | `src/components/fairway/pages/travel/` (was removed with Fairway, 2026-11-14) |
+| Components | `src/clubhouse/screens/hub/` (Clubhouse; Fairway's src/components/fairway/pages/travel/ was removed 2026-11-14) |
 
 ### DB Tables
 golf_travel_itineraries, golf_travel_budgets, golf_travel_expenses, golf_travel_expense_splits
@@ -561,7 +561,7 @@ Calendar integration:
 | Type | Path |
 |------|------|
 | Route | `src/app/golf/(dashboard)/dashboard/classes/page.tsx` |
-| Components | `src/components/golf/classes/` (was removed with Fairway, 2026-11-14) (AddClassModal, UploadScheduleModal, ConfirmClassesModal, ClassDetailModal) |
+| Components | `src/clubhouse/screens/classes/` (Clubhouse; Fairway's src/components/golf/classes/, with AddClassModal, UploadScheduleModal, ConfirmClassesModal, ClassDetailModal, was removed 2026-11-14) |
 
 ### DB Tables
 | Table | Role |
@@ -638,7 +638,7 @@ ROUND REVIEW PIPELINE:
 | Persistence | src/lib/coachhelm/v2/services/ was removed; see `src/lib/coachhelm/v3/chat/persistence.ts` |
 | Types & constants | `src/lib/coachhelm/types.ts`, `constants.ts` |
 | Actions | `insight-management.ts`, `pattern-management.ts`, `round-reviews.ts`, `alerts.ts`, `coachhelm-analytics.ts`, `development.ts` |
-| UI (80+ components) | `src/components/golf/coachhelm/` (was removed with Fairway, 2026-11-14) |
+| UI (80+ components) | `src/clubhouse/screens/coachhelm/` (Clubhouse; Fairway's src/components/golf/coachhelm/ was removed 2026-11-14) |
 
 ### DB Tables (18 CoachHelm tables)
 golf_coach_philosophy, golf_coachhelm_settings, golf_team_coachhelm_settings, golf_coach_insights, golf_player_focus_areas, golf_round_reviews, golf_review_events, golf_review_insights, golf_patterns_v2, golf_predictions, golf_validations, golf_learned_behavior, golf_insight_generation_log, golf_insight_effectiveness, golf_insight_feedback, golf_insight_weights, golf_prediction_model_performance, golf_player_insight_preferences
@@ -770,7 +770,7 @@ Filters:
 |------|------|
 | Redirect | `next.config.mjs` `redirects()`: `/golf/dashboard/insights` to `/golf/dashboard/intelligence?view=signals&filter=insights` (the page was deleted in plan phase 7b) |
 | Actions | `src/app/golf/actions/insight-management.ts`, `insight-evidence.ts` |
-| Components | `src/components/golf/coachhelm/ (was removed with Fairway, 2026-11-14)insights/` (InsightCard, InsightListView, InsightFiltersPanel, InsightSearchBar, InsightBulkActions, InsightExportModal) |
+| Components | `src/clubhouse/screens/coachhelm/` (Clubhouse; Fairway's src/components/golf/coachhelm/insights/, with InsightCard, InsightListView, InsightFiltersPanel, InsightSearchBar, InsightBulkActions, InsightExportModal, was removed 2026-11-14) |
 
 ### DB Tables
 golf_coach_insights, golf_insight_effectiveness, golf_insight_feedback
@@ -863,7 +863,7 @@ Coach configures CoachHelm AI philosophy — priorities, alert sensitivity, thre
 | Type | Path |
 |------|------|
 | Route | `src/app/golf/(dashboard)/dashboard/settings/coaching-intelligence/page.tsx` |
-| Components | `src/components/golf/coachhelm/ (was removed with Fairway, 2026-11-14)settings/` (PriorityRanker, ThresholdSlider, SensitivitySlider, WeightDistributor, AlertTypeToggles) |
+| Components | `src/clubhouse/screens/coachhelm/` (Clubhouse; Fairway's src/components/golf/coachhelm/settings/, with PriorityRanker, ThresholdSlider, SensitivitySlider, WeightDistributor, AlertTypeToggles, was removed 2026-11-14) |
 
 ### DB Tables
 golf_coach_philosophy (all philosophy columns)
@@ -944,8 +944,8 @@ triage (honest-empty, not a placeholder).
 | Redirect (former Hub route) | `next.config.mjs` `redirects()`: `/golf/dashboard/hub` to `/golf/dashboard` (the page was deleted in plan phase 7b) |
 | Data | `src/app/golf/actions/player-hub-data.ts` (`getPlayerHubSummaryData`) |
 | Component | none — src/components/fairway/pages/dashboard/PlayerActionCenter.tsx was removed and nothing replaced it |
-| Host component | `src/components/fairway/pages/dashboard/FairwayPlayerDashboard.tsx` (was removed with Fairway, 2026-11-14) |
-| Shared presentational parts | `src/components/fairway/pages/hub/hub-parts.tsx` (was removed with Fairway, 2026-11-14) (TaskRow, RSVPRow, TripRow, TripDetailSheet, AnnouncementsList) |
+| Host component | `src/clubhouse/screens/home/` (Clubhouse; Fairway's src/components/fairway/pages/dashboard/FairwayPlayerDashboard.tsx was removed 2026-11-14) |
+| Shared presentational parts | `src/clubhouse/screens/hub/parts.tsx` (Clubhouse; Fairway's src/components/fairway/pages/hub/hub-parts.tsx, with TaskRow, RSVPRow, TripRow, TripDetailSheet, AnnouncementsList, was removed 2026-11-14) |
 | Management surface | `src/app/golf/(dashboard)/dashboard/team-hub/**` (full tasks/travel CRUD) |
 
 ### DB Tables
@@ -980,7 +980,7 @@ Note: /golf/dashboard/my-insights REDIRECTS here (deprecated route kept for book
 | Route | `src/app/golf/(dashboard)/dashboard/coachhelm/page.tsx` |
 | Redirect | `next.config.mjs` `redirects()`: `/golf/dashboard/my-insights` to `/golf/dashboard/coachhelm` (the page was deleted in plan phase 7b) |
 | Actions | `src/app/golf/actions/shot-analytics.ts`, `intelligence-dashboard.ts` |
-| Components | `src/components/golf/coachhelm/ (was removed with Fairway, 2026-11-14)home/PlayerCoachHelmHome.tsx` |
+| Components | `src/clubhouse/screens/coachhelm/` (Clubhouse; Fairway's src/components/golf/coachhelm/home/PlayerCoachHelmHome.tsx was removed 2026-11-14) |
 
 ### DB Tables
 golf_players, golf_rounds, golf_shots, golf_coach_philosophy, golf_patterns_v2, golf_predictions, golf_coachhelm_settings
@@ -1214,7 +1214,7 @@ Danger Zone: Delete account
 |------|------|
 | Route | `src/app/golf/(dashboard)/dashboard/settings/page.tsx` |
 | Sub-route | `settings/coaching-intelligence/page.tsx` (see Feature 18) |
-| Components | `src/components/golf/settings/` (was removed with Fairway, 2026-11-14) (PersonalInfoPanel, EmailPanel, PasswordPanel, NotificationsPanel, AppearancePanel, LocationPanel, GolfScoringPanel, PlayerGolfDetailsPanel, TeamSettingsPanel, InviteSettingsPanel, CoachHelmToggle) |
+| Components | `src/clubhouse/screens/settings/` (Clubhouse; Fairway's src/components/golf/settings/, with PersonalInfoPanel, EmailPanel, PasswordPanel, NotificationsPanel, AppearancePanel, LocationPanel, GolfScoringPanel, PlayerGolfDetailsPanel, TeamSettingsPanel, InviteSettingsPanel, CoachHelmToggle, was removed 2026-11-14) |
 
 ### DB Tables
 users, golf_coaches, golf_players, golf_teams, golf_team_settings, golf_coachhelm_settings, golf_coach_philosophy

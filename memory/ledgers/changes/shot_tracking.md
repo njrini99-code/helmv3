@@ -294,7 +294,7 @@
   already builds — instead of falling through to the generic fallback that
   throws/toasts `result.error` (the bare key `'hole_invalid'`) verbatim.
   `new-round-client.tsx`'s throw reaches `FairwaySaveRoundModal`
-  (`src/components/fairway/pages/rounds-new/ (was removed with Fairway, 2026-11-14)FairwaySaveRoundModal.tsx`),
+  (src/components/fairway/pages/rounds-new/FairwaySaveRoundModal.tsx (was removed with Fairway, 2026-11-14)),
   which renders `err.message` directly in the exit-round sheet;
   `continue-round-client.tsx`'s toast rendered `result.error` the same way.
 - Why: `hole_invalid` is a new result shape this same review pass introduced

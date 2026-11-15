@@ -87,7 +87,7 @@ The route is shared by coaches and players, but permissions and actions differ. 
 
 ### Components
 
-- `src/components/fairway/pages/calendar/FairwayCalendar.tsx` (was removed with Fairway, 2026-11-14)
+- src/components/fairway/pages/calendar/FairwayCalendar.tsx (was removed with Fairway, 2026-11-14)
 - `src/components/golf/calendar/PremiumCalendarClient.tsx`
 - `src/components/golf/calendar/MonthView.tsx`
 - `src/components/golf/calendar/WeekView.tsx`
@@ -307,7 +307,7 @@ legacy `is_recurring` flag in sync for older consumers.
 
 - Time fields (event editor start/end, busy-time editor) are the iOS Clock
   drum on desktop and mobile alike (owner request, 2026-09-10):
-  `TimeWheel` in `src/components/fairway/controls/wheel-picker.tsx` (was removed with Fairway, 2026-11-14) — hour ·
+  `TimeWheel` in src/components/fairway/controls/wheel-picker.tsx (was removed with Fairway, 2026-11-14) — hour ·
   minute · AM/PM columns, one continuous selection band, snap-on-settle,
   keyboard listbox per column. Minutes are offered at 1-minute granularity
   (the old list stepped by 15). `TimeChooser` (EventWhenFields.tsx) still

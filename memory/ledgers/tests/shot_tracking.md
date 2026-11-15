@@ -333,10 +333,10 @@ Each written red first against the pre-fix source; defect descriptions in
   `isQualifierClosedError` cases.
 - `src/lib/golf/round-session/__tests__/use-new-round-session.qualifier-closed.test.ts`,
   `src/lib/golf/round-session/__tests__/use-continue-round-session.qualifier-closed.test.ts`
-  and `src/components/fairway/pages/rounds-recover/ (was removed with Fairway, 2026-11-14)FairwayRecoverRound.qualifier-closed.test.ts`
+  and src/components/fairway/pages/rounds-recover/FairwayRecoverRound.qualifier-closed.test.ts (was removed with Fairway, 2026-11-14)
   (C3, new): the qualifier-closed exclusion ahead of `isCompletedRoundError`,
   and the `qualifierClosed` state's wiring on both screens.
-- `src/components/fairway/pages/rounds-new/ (was removed with Fairway, 2026-11-14)__tests__/FairwayRoundSubmitOverlay.secondary-action.test.tsx`
+- src/components/fairway/pages/rounds-new/__tests__/FairwayRoundSubmitOverlay.secondary-action.test.tsx (was removed with Fairway, 2026-11-14)
   (C3, new, render): the `secondaryActionLabel`/`onSecondaryAction` pair.
 - `src/lib/utils/emergency-save.test.ts` (C5, extended): the
   `EMERGENCY_SAVE_DEGRADED_EVENT` once-per-session cases.

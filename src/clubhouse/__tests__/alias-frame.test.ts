@@ -1,7 +1,11 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { isAliased, isRebuilt } from '../shell/nav';
+
+// A computed specifier, so check:cycles (madge) does not walk from this test into next.config.mjs's build-only imports.
+const NEXT_CONFIG_URL = pathToFileURL(join(process.cwd(), 'next.config.mjs')).href;
 
 /** Every layout or page under src/app that calls redirectToClubhouse, as the address it serves (a [param] as `x`). */
 function aliasedAddresses(): string[] {
@@ -80,7 +84,7 @@ describe('old addresses one place for both roles are config redirects (Fairway r
   ];
 
   it.each(MOVED)('%s goes to %s, and its route folder is gone', async (source, destination, folder) => {
-    const { default: config } = (await import('../../../next.config.mjs')) as { default: { redirects: () => Promise<Array<{ source: string; destination: string; permanent: boolean }>> } };
+    const { default: config } = (await import(NEXT_CONFIG_URL)) as { default: { redirects: () => Promise<Array<{ source: string; destination: string; permanent: boolean }>> } };
     const rule = (await config.redirects()).find((r) => r.source === source);
     expect(rule, source).toMatchObject({ destination, permanent: false });
     expect(existsSync(join(process.cwd(), 'src/app/golf/(dashboard)/dashboard', folder)), folder).toBe(false);
@@ -89,7 +93,7 @@ describe('old addresses one place for both roles are config redirects (Fairway r
   });
 
   it('100103 a task notification’s ?task= rides the /tasks redirect to the Tasks tab, and Team Hub hands it to its route, which drops a value that is not an id', async () => {
-    const { default: config } = (await import('../../../next.config.mjs')) as { default: { redirects: () => Promise<Array<{ source: string; destination: string }>> } };
+    const { default: config } = (await import(NEXT_CONFIG_URL)) as { default: { redirects: () => Promise<Array<{ source: string; destination: string }>> } };
     // A config redirect passes the request's query through, so /tasks?task=<id> lands on team-hub?tab=tasks&task=<id>.
     expect((await config.redirects()).find((r) => r.source === '/golf/dashboard/tasks')?.destination).toBe('/golf/dashboard/team-hub?tab=tasks');
     const page = readFileSync(join(process.cwd(), 'src/app/golf/(dashboard)/dashboard/team-hub/page.tsx'), 'utf8');

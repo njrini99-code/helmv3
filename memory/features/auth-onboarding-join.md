@@ -44,7 +44,7 @@ Coach and player onboarding are separate routes. Join-code links can redirect us
 
 - `src/components/golf/onboarding/**`
 - `src/app/golf/join/[code]/golf-join-team-client.tsx` (was removed with Fairway, 2026-11-14)
-- `src/components/golf/settings/JoinTeamSection.tsx` (was removed with Fairway, 2026-11-14)
+- src/components/golf/settings/JoinTeamSection.tsx (was removed with Fairway, 2026-11-14)
 
 ### Actions And Services
 
