@@ -1,4 +1,4 @@
-import { CH_NAV_SECTIONS, CH_SETTINGS_ITEM, navFor, type ChNavItem, type ChRole } from '../nav';
+import { CH_NAV_SECTIONS, CH_SETTINGS_ITEM, navFor, type ChNavFeatures, type ChNavItem, type ChRole } from '../nav';
 
 /** After G, the next key must land within this long, or it is just a key (the sequence lapses). */
 export const SEQUENCE_WINDOW_MS = 1000;
@@ -55,8 +55,8 @@ export interface ChLetter {
 }
 
 /** The G-sequence letters for a role, one per sidebar section and Settings, none repeated. */
-export function navLetters(role: ChRole): ChLetter[] {
-  const items = [...navFor(role), CH_SETTINGS_ITEM];
+export function navLetters(role: ChRole, features?: ChNavFeatures | null): ChLetter[] {
+  const items = [...navFor(role, features), CH_SETTINGS_ITEM];
   const taken = new Set<string>();
   const out = new Map<string, string>();
   // The owner's letters first, so a new section can never take one of them.
@@ -82,21 +82,21 @@ export function navLetters(role: ChRole): ChLetter[] {
 }
 
 /** The letter that reaches a section for this role, if it has one. */
-export function letterFor(role: ChRole, id: string): string | undefined {
-  return navLetters(role).find((l) => l.item.id === id)?.letter;
+export function letterFor(role: ChRole, id: string, features?: ChNavFeatures | null): string | undefined {
+  return navLetters(role, features).find((l) => l.item.id === id)?.letter;
 }
 
 /** The section a letter reaches after G. */
-export function itemForLetter(role: ChRole, letter: string): ChNavItem | undefined {
-  return navLetters(role).find((l) => l.letter === letter.toLowerCase())?.item;
+export function itemForLetter(role: ChRole, letter: string, features?: ChNavFeatures | null): ChNavItem | undefined {
+  return navLetters(role, features).find((l) => l.letter === letter.toLowerCase())?.item;
 }
 
 /**
  * The sections in the order the sidebar draws them: grouped under its headings (CH_NAV_SECTIONS), as Sidebar.tsx groups
  * them. Settings is not among them (it lives in the top bar's gear and has Cmd or Ctrl comma).
  */
-export function sidebarOrder(role: ChRole): ChNavItem[] {
-  const nav = navFor(role);
+export function sidebarOrder(role: ChRole, features?: ChNavFeatures | null): ChNavItem[] {
+  const nav = navFor(role, features);
   return CH_NAV_SECTIONS.flatMap((section) => nav.filter((i) => i.section === section));
 }
 
@@ -104,14 +104,14 @@ export function sidebarOrder(role: ChRole): ChNavItem[] {
 export const DIGIT_SECTIONS = 9;
 
 /** The section Cmd or Ctrl and a digit (1 to 9) reaches, in sidebar order. */
-export function itemForDigit(role: ChRole, digit: number): ChNavItem | undefined {
+export function itemForDigit(role: ChRole, digit: number, features?: ChNavFeatures | null): ChNavItem | undefined {
   if (!Number.isInteger(digit) || digit < 1 || digit > DIGIT_SECTIONS) return undefined;
-  return sidebarOrder(role)[digit - 1];
+  return sidebarOrder(role, features)[digit - 1];
 }
 
 /** The digit that reaches a section with Cmd or Ctrl, if it is among the first nine. */
-export function digitFor(role: ChRole, id: string): number | undefined {
-  const at = sidebarOrder(role).findIndex((i) => i.id === id);
+export function digitFor(role: ChRole, id: string, features?: ChNavFeatures | null): number | undefined {
+  const at = sidebarOrder(role, features).findIndex((i) => i.id === id);
   return at >= 0 && at < DIGIT_SECTIONS ? at + 1 : undefined;
 }
 

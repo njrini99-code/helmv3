@@ -1,0 +1,6 @@
+{
+  // Line length (MD013) is judged on prose only: a table row and a code line cannot be wrapped,
+  // so they are not counted. Headings and everything else keep the default 80 columns.
+  // scripts/markdown-lint-ratchet.mjs counts what is left against .markdownlint-baseline.json.
+  "MD013": { "tables": false, "code_blocks": false }
+}

@@ -1,7 +1,6 @@
 import 'server-only';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { pickGolfDashboardRole } from '@/lib/auth/golf-dashboard-role';
-import { isFlagEnabled } from '@/lib/flags/is-enabled';
 import { loadRoster } from '../data/roster';
 import { loadPlayerRoster } from '../data/roster-player';
 import { Roster } from '../screens/roster/Roster';
@@ -24,9 +23,7 @@ export async function ClubhouseRosterRoute() {
   // the onboarded one (an unfinished coach profile beside it) is a player here, as the layout and the page's gate have
   // it, and gets their team's roster rather than the coach's no-team page (wiring audit, 2026-10-17).
   const team = await resolveClubhouseTeam(session);
-  // The lane's flag is server only, so it reaches the screen as a prop (design-refresh/classes-roster-home 06 Wiring).
-  const crh = isFlagEnabled('clubhouse_classes_roster_home_v1');
-  if (team?.role === 'coach') return <Roster crh={crh} data={await loadRoster({ teamId: team.teamId, coachId: team.coachId, crh })} />;
-  if (team?.role === 'player') return <TeamRoster crh={crh} data={await loadPlayerRoster({ teamId: team.teamId, playerId: team.playerId, crh })} />;
+  if (team?.role === 'coach') return <Roster data={await loadRoster({ teamId: team.teamId, coachId: team.coachId })} />;
+  if (team?.role === 'player') return <TeamRoster data={await loadPlayerRoster({ teamId: team.teamId, playerId: team.playerId })} />;
   return <RosterNoTeam viewer={pickGolfDashboardRole(session) === 'player' ? 'player' : 'coach'} />;
 }

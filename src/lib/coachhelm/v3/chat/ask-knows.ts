@@ -11,11 +11,14 @@ export interface AskKnows {
 
 /** Tone and standing facts. Until HM2 is applied the table and column are missing and this answers null: the UI is hidden and tone is Straight. */
 export async function readAskKnows(sb: SupabaseClient<Database>, input: { coachId: string; teamId: string; conversationId: string | null }): Promise<AskKnows | null> {
-  const facts = await askTables(sb).from('golf_coachhelm_coach_facts').select('id, text').eq('coach_id', input.coachId).eq('team_id', input.teamId).order('created_at');
+  // The two reads are independent: one round trip's wait, not two.
+  const [facts, row] = await Promise.all([
+    askTables(sb).from('golf_coachhelm_coach_facts').select('id, text').eq('coach_id', input.coachId).eq('team_id', input.teamId).order('created_at'),
+    input.conversationId ? askTables(sb).from('golf_coachhelm_chat_conversations').select('tone').eq('id', input.conversationId).maybeSingle() : null,
+  ]);
   if (facts.error) return null;
   let tone: AskTone = 'straight';
-  if (input.conversationId) {
-    const row = await askTables(sb).from('golf_coachhelm_chat_conversations').select('tone').eq('id', input.conversationId).maybeSingle();
+  if (row) {
     if (row.error) return null;
     tone = ((row.data as { tone?: AskTone } | null)?.tone ?? 'straight') as AskTone;
   }

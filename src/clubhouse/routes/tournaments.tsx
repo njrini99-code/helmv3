@@ -92,7 +92,8 @@ export async function ClubhouseTournamentsRoute({ view, id, search = {} }: { vie
       return load.kind === 'ready' ? <LineupBuilder data={load.data} /> : notReady(load, true, 'Lineup');
     }
     case 'live': {
-      const load = await loadTournamentLive(ctx, id!);
+      const round = Number(one(search.round));
+      const load = await loadTournamentLive(ctx, id!, Number.isInteger(round) && round >= 1 && round <= 6 ? round : null);
       return load.kind === 'ready' ? <LiveRound data={load.data} /> : notReady(load, true, 'Live round');
     }
   }

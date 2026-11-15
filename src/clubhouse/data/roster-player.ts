@@ -49,7 +49,7 @@ export interface ChPlayerRoster {
   clock?: { tz: string; day: string };
 }
 
-export async function loadPlayerRoster(input: { teamId: string; playerId: string; crh?: boolean }): Promise<ChPlayerRoster> {
+export async function loadPlayerRoster(input: { teamId: string; playerId: string; }): Promise<ChPlayerRoster> {
   const supabase = await createClient();
   const now = new Date();
 
@@ -95,7 +95,7 @@ export async function loadPlayerRoster(input: { teamId: string; playerId: string
     players,
     playersError: !!membersRes.error,
     coaches: staffRes.error ? null : coachesOf((staffRes.data ?? []) as unknown as Staff[]),
-    ...(input.crh ? { clock: { tz, day: isoDay(now, tz) } } : {}),
+    clock: { tz, day: isoDay(now, tz) },
   };
 }
 

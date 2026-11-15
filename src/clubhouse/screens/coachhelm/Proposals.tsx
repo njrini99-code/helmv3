@@ -2,13 +2,11 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Check, MessageSquare } from 'lucide-react';
-import type { ChPlayerHelm, ChProposal } from '../../data/coachhelm-shape';
+import type { ChProposal } from '../../data/coachhelm-shape';
 import { haptic } from '../../lib/haptics';
 import { isOffline, normalise, useAction } from '../../lib/use-action';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
-import { RefreshNotice } from '../../ui/RefreshNotice';
-import { SectionBoundary } from '../../ui/SectionBoundary';
 import { useToast } from '../../ui/Toast';
 import { messageCoachHref } from '../home/player-links';
 import type { ChPlayerWrites } from './writes';
@@ -130,36 +128,5 @@ export function ProposalRow({ p, writes, quiet = false }: { p: ChProposal; write
         </span>
       )}
     </li>
-  );
-}
-
-function ProposalSection({ list, writes }: { list: ChProposal[]; writes: ChPlayerWrites }) {
-  return (
-    <section className="ch-hl-prop" aria-labelledby="ch-hl-prop-h">
-      <h2 id="ch-hl-prop-h">Proposed for you</h2>
-      <p className="ch-hl-note">Accept to start a focus, or decline to set it aside.</p>
-      <ul>
-        {list.map((p) => (
-          // More than one proposal: each Accept is secondary, so the page keeps one primary action (P013 D10).
-          <ProposalRow key={p.id} p={p} writes={writes} quiet={list.length > 1} />
-        ))}
-      </ul>
-    </section>
-  );
-}
-
-/**
- * The focus areas a coach proposed to this player, above their insights (Q-77). A read that failed is its own notice (CH-13205),
- * never "nothing proposed"; with nothing proposed there is no section. A section that crashes is contained (CH-13204).
- */
-export function Proposals({ proposals, writes }: { proposals: ChPlayerHelm['proposals']; writes: ChPlayerWrites }) {
-  if (proposals.error) {
-    return <RefreshNotice code="CH-13205" title="Your proposed focus areas didn’t load" body="Nothing is lost. Anything your coach proposed is still waiting for you; try again in a moment." />;
-  }
-  if (proposals.list.length === 0) return null;
-  return (
-    <SectionBoundary surface="coachhelm.proposals" label="Proposed focus areas" code="CH-13204">
-      <ProposalSection list={proposals.list} writes={writes} />
-    </SectionBoundary>
   );
 }

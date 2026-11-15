@@ -26,7 +26,7 @@ Admin Incidents · active · criticality high · owner platform
 
 Admin Platform · active · criticality high · owner platform
 
-- **Relations:** 13 doc/structurally-evidenced, 23 import-graph-only (weak)
+- **Relations:** 13 doc/structurally-evidenced, 24 import-graph-only (weak)
 - **Tables:** `admin_allowlist`, `admin_error_resolutions`, `baseball_ai_audit`, `baseball_staff_audit_events`, `baseball_strength_group_audit`, `billing_customers`, `billing_invoices`, `crm_stage_transitions`, `crm_unmatched_inbound`, `helm_debug`, `helm_lifting_group_audit`
 - **RPCs:** `admin_auto_resolve_error_fingerprint`, `admin_mark_error_regressed`, `get_active_sessions`, `get_admin_dashboard_rollup`, `get_crm_coach_stage_history`, `get_crm_email_stats`, `get_crm_events_in_range`, `get_crm_funnel`, `get_crm_stage_ages`, `get_crm_time_to_open`, `get_crm_weekly_kpis`, `get_feature_health`, `get_platform_health_stats`, `helm_debug_db_health_snapshot`, `helm_debug_db_lock_snapshot`, `helm_debug_get_agent_run`, `helm_debug_list_agent_runs`, `helm_debug_list_traces`, `helm_debug_prune_observability`, `helm_debug_read_statement_alert_state`, `helm_debug_record_agent_run`, `helm_debug_stat_statements_snapshot`, `is_super_admin`, `recalculate_round_strokes_gained`, `record_db_error_event`, `record_db_health_sample`, `record_db_lock_incident`, `record_db_platform_sample`, `record_db_stat_snapshot`, `record_db_statement_samples`, `refresh_player_stats_cache`, `revoke_user_sessions`
 - **Test surfaces:** 3
@@ -108,7 +108,7 @@ Clubhouse UI (flagged, off in production) · active · criticality medium · own
 
 - **Relations:** 0 doc/structurally-evidenced, 9 import-graph-only (weak)
 - **Tables:** `golf_class_exceptions`, `golf_class_hold_dirty`, `golf_player_class_settings`, `golf_push_hold_heartbeat`, `golf_push_holds`, `golf_saved_comparisons`, `golf_team_seasons`, `golf_team_terms`, `golf_tournament_advice_givers`, `golf_tournament_coach_presence`, `golf_tournament_entries`, `golf_tournament_entry_notes`, `golf_tournament_field_scores`, `golf_tournament_field_teams`, `golf_tournament_link_dismissals`, `golf_tournament_player_notes`, `golf_tournament_player_rounds`, `golf_tournament_reflections`, `golf_tournament_result_marks`, `golf_tournament_reviews`, `golf_tournament_round_lineups`, `golf_tournament_rounds`, `golf_tournaments`
-- **RPCs:** `golf_coachhelm_shown_reads`, `golf_tournament_link_candidates`, `sg_scale_for_player`
+- **RPCs:** `golf_coachhelm_shown_reads`, `golf_tournament_link_candidates`, `golf_tournament_my_lineup`, `sg_scale_for_player`
 - **Test surfaces:** 2
 - **Sentry/admin_events signals:** none
 
@@ -126,7 +126,7 @@ Coach Intelligence Triage · active · criticality high · owner product
 
 CoachHelm AI · active · criticality high · owner product
 
-- **Relations:** 5 doc/structurally-evidenced, 15 import-graph-only (weak)
+- **Relations:** 5 doc/structurally-evidenced, 16 import-graph-only (weak)
 - **Tables:** `ask_credit_requests`, `ask_usage_weekly`, `golf_coachhelm_action_runs`, `golf_coachhelm_coach_facts`, `golf_coachhelm_corrections`, `golf_coachhelm_player_state`, `golf_coachhelm_run_log`, `golf_insight_action`, `golf_insight_exposure`, `golf_insight_outcome`
 - **RPCs:** `claim_round_recap_lock`, `prune_stale_player_standing`, `refresh_player_standing`, `refresh_player_stats_cache`, `release_round_recap_lock`
 - **Test surfaces:** 3
@@ -168,7 +168,7 @@ Golf Round Lifecycle · active · criticality high · owner product
 
 - **Relations:** 2 doc/structurally-evidenced, 27 import-graph-only (weak)
 - **Tables:** `golf_course_edit_history`, `golf_course_tee_edit_history`, `golf_course_tee_holes`, `golf_course_tees`, `golf_demo_sessions`, `golf_round_discards`, `golf_round_live`, `golf_round_live_prefs`, `golf_round_recap_locks`, `golf_round_recap_provenance`, `golf_team_saved_courses`, `helm_private`
-- **RPCs:** `golf_event_attendance_counts`, `golf_player_profiles`, `golf_set_course_image`, `reclassify_golf_round`, `record_round_coachhelm_terminal_state`, `save_partial_round_atomic`, `submit_round_atomic`
+- **RPCs:** `golf_event_attendance_counts`, `golf_player_private_fields`, `golf_player_profiles`, `golf_set_course_image`, `reclassify_golf_round`, `record_round_coachhelm_terminal_state`, `save_partial_round_atomic`, `submit_round_atomic`
 - **Test surfaces:** 3
 - **Sentry/admin_events signals:** `course_library`, `round_tracking`
 
@@ -216,7 +216,7 @@ Supabase Database Observability — Zero-Cost Error/Health Control Plane · acti
 
 Player CoachHelm And Development · active · criticality high · owner product
 
-- **Relations:** 1 doc/structurally-evidenced, 26 import-graph-only (weak)
+- **Relations:** 1 doc/structurally-evidenced, 27 import-graph-only (weak)
 - **Tables:** `golf_focus_area_criteria`, `golf_focus_area_practice_sessions`
 - **RPCs:** `golf_team_class_day`, `ingest_external_round_atomic`, `sg_scale_for_player`
 - **Test surfaces:** 3
@@ -287,7 +287,7 @@ Shot Tracking · active · criticality high · owner product
 Stats And Analytics · active · criticality high · owner product
 
 - **Relations:** 0 doc/structurally-evidenced, 9 import-graph-only (weak)
-- **Tables:** `baseball_legacy_backfill_manifest`, `golf_player_standing_season`, `golf_standing_refresh_queue`
+- **Tables:** `baseball_legacy_backfill_manifest`, `golf_division_cohort`, `golf_player_standing_season`, `golf_standing_refresh_queue`
 - **RPCs:** `recalculate_round_strokes_gained`, `recompute_team_sg`, `refresh_player_stats_cache`, `sg_scale_for_player`
 - **Test surfaces:** 4
 - **Sentry/admin_events signals:** `my_game_profile`, `stats_analytics`
@@ -306,7 +306,7 @@ Team Access Control And RLS · active · criticality high · owner platform
 
 Team Communications · active · criticality high · owner product
 
-- **Relations:** 0 doc/structurally-evidenced, 9 import-graph-only (weak)
+- **Relations:** 0 doc/structurally-evidenced, 10 import-graph-only (weak)
 - **Tables:** `golf_conversation_pins`, `golf_conversation_read_marks`, `golf_message_mentions`, `golf_message_reactions`, `golf_message_responses`
 - **RPCs:** `get_player_hub_announcements`, `golf_message_seen_times`, `golf_pin_conversation`, `mark_golf_messages_read`
 - **Test surfaces:** 16
@@ -377,6 +377,7 @@ Team Operations · active · criticality high · owner product
 | `admin_platform` | `crm_outreach` | import_graph (weak) |
 | `admin_platform` | `golf_round_lifecycle` | feature_doc_contract, import_graph |
 | `admin_platform` | `observability_sentry` | import_graph (weak) |
+| `admin_platform` | `player_coachhelm_development` | import_graph (weak) |
 | `admin_platform` | `player_hub` | import_graph (weak) |
 | `admin_reliability_collector` | `admin_incidents` | feature_doc_contract |
 | `admin_reliability_collector` | `admin_platform` | feature_doc_contract, import_graph |
@@ -434,6 +435,7 @@ Team Operations · active · criticality high · owner product
 | `coachhelm_ai` | `player_coachhelm_development` | feature_doc_contract, import_graph |
 | `coachhelm_ai` | `shot_tracking` | import_graph (weak) |
 | `coachhelm_ai` | `stats_analytics` | import_graph (weak) |
+| `coachhelm_ai` | `team_communications` | import_graph (weak) |
 | `coachhelm_ai` | `team_operations` | import_graph (weak) |
 | `crm_outreach` | `auth_onboarding_join` | import_graph (weak) |
 | `email_outbound` | `admin_platform` | import_graph (weak) |

@@ -39,7 +39,6 @@ import { LightProvider } from './light';
 import { DockProvider, PhoneDock } from './Dock';
 import { PushAsk } from './PushAsk';
 import { useQuietRefresh } from './use-quiet-refresh';
-import { AskSheetProvider } from './AskSheet';
 import { QuickChatProvider } from './quick-chat/QuickChatProvider';
 import { CrumbProvider } from './crumbs';
 import { PhoneChromeProvider, PhoneUnderlay, usePhoneChromeState } from './phone-chrome';
@@ -47,7 +46,6 @@ import '../styles/tokens.css';
 import '../styles/base.css';
 import '../styles/ui.css';
 import '../styles/shell.css';
-import '../styles/pre-refresh.css';
 import '../styles/controls.css';
 import '../styles/command.css';
 import { useCanvasSmoothScroll, useSmoothWheelEverywhere } from '../lib/smooth-scroll';
@@ -175,16 +173,16 @@ export function ClubhouseFrame({
         <PhoneChromeProvider>
           <SectionSwitchProvider pathname={pathname} role={role} shell={shell}>
             {/* The toast region renders inside .ch-root so it gets the Clubhouse tokens and fonts. */}
-            <FrameRoot crh={shell.crh ?? false} preRefresh={shell.refresh === false} motionOff={!showAnimations} fullScreen={fullScreen} homeRoot={rebuilt && pathname.replace(/\/$/, '') === '/golf/dashboard'}>
+            <FrameRoot role={role} motionOff={!showAnimations} fullScreen={fullScreen} homeRoot={rebuilt && pathname.replace(/\/$/, '') === '/golf/dashboard'}>
               <ToastProvider scope={userData.teamId ?? ''}>
                 <CrumbProvider>
-                  <MaybeQuickChat on={shell.quickChat ?? false} plans={shell.practicePlans ?? false} pathname={pathname} search={search} enabled={shell.askAvailable ?? false}>
+                  <QuickChatProvider plans pathname={pathname} search={search} enabled={shell.askAvailable ?? false}>
                     <DockProvider>
                       {/* The first Tab on any page: jump past the navigation to the page itself (CH-1607: it slides into view). */}
                       <a className="ch-skip" href="#ch-content" data-ch-code="CH-1801">
                         Skip to content
                       </a>
-                      <div className="ch-app" data-ch-rail={folded ? 'folded' : undefined} data-ch-refresh={shell.refresh ? 'on' : undefined}>
+                      <div className="ch-app" data-ch-rail={folded ? 'folded' : undefined} data-ch-refresh="on">
                         <Sidebar userData={userData} shell={shell} pathname={pathname} teamSwitch={teamSwitch} folded={folded} />
                         <RailToggle folded={folded} onFold={setFolded} />
                         <div className="ch-canvas" id="ch-canvas">
@@ -192,9 +190,7 @@ export function ClubhouseFrame({
                           <OfflineBanner />
                           {/* A new team is a new page: the route remounts, so nothing the old team's screen held (a search, an open panel, a live feed) carries over. */}
                           <RouteFrame routeKey={`${chNavPath(pathname, search)}\u0000${userData.teamId ?? ''}${relink ? `\u0000${relink}` : ''}`} scrollKey={`${pathname}\u0000${userData.teamId ?? ''}\u0000${screenParam(search)}`}>
-                            {rebuilt || !known ? (
-                              children
-                            ) : (
+                            {rebuilt || !known ? children : (
                               <>
                                 {/* An old address on its way somewhere draws a blank canvas, not "not rebuilt" (A30). */}
                                 {aliased ? (
@@ -220,14 +216,14 @@ export function ClubhouseFrame({
                       <PhoneDock round={shell.roundInProgress ?? null} pathname={pathname} />
                       <SectionStrip pathname={pathname} role={role} user={{ name: userData.name }} />
                       {/* Desktop only: Cmd K's palette, G-then-letter jumps, / and ? (shell/command). */}
-                      <CommandLayer role={role} pathname={pathname} userId={userData.userId} teamId={userData.teamId ?? null} />
+                      <CommandLayer role={role} features={shell} pathname={pathname} userId={userData.userId} teamId={userData.teamId ?? null} />
                       <AccountSheet pathname={pathname} role={role} user={{ name: userData.name, teamName: userData.teamName ?? null, headCoach: shell.viewerIsHeadCoach ?? false }} teamSwitch={teamSwitch} />
                       {/* The iPhone app's pull to refresh (CH-1909); nothing in a browser. */}
                       <PullToRefresh pathname={pathname} />
                       {/* The iPhone app's push ask, once, at a calm moment (CH-1911); nothing in a browser. */}
                       <PushAsk pathname={pathname} role={role} screenKey={screenParam(search)} />
                     </DockProvider>
-                  </MaybeQuickChat>
+                  </QuickChatProvider>
                 </CrumbProvider>
               </ToastProvider>
             </FrameRoot>
@@ -240,7 +236,7 @@ export function ClubhouseFrame({
 }
 
 /** `.ch-root`, marked while a pushed phone screen covers the page, so toasts sit above its composer instead of the hidden tab bar. */
-function FrameRoot({ crh, preRefresh, motionOff, fullScreen, homeRoot, children }: { crh: boolean; preRefresh: boolean; motionOff: boolean; fullScreen: boolean; homeRoot: boolean; children: ReactNode }) {
+function FrameRoot({ role, motionOff, fullScreen, homeRoot, children }: { role: string; motionOff: boolean; fullScreen: boolean; homeRoot: boolean; children: ReactNode }) {
   const { immersive, noTabs, hero: pageHero } = usePhoneChromeState();
   const sections = useSectionSwitch();
   // P001-D4: Home's phone bar is the green hero's from the server's first paint (the device's last layout, F-36), not
@@ -265,8 +261,9 @@ function FrameRoot({ crh, preRefresh, motionOff, fullScreen, homeRoot, children 
     <div
       ref={rootRef}
       className={`ch-root ${clubhouseFontVariables}`}
-      data-ch-crh={crh ? 'on' : undefined}
-      data-ch-pre-refresh={preRefresh ? '' : undefined}
+      data-ch-crh="on"
+      // Player Home is the 2026-10-28 version (owner, 2026-11-07): its loading skeleton too, so the coach-only skeleton rules skip players.
+      data-ch-role={role}
       data-ui="clubhouse"
       data-motion={motionOff ? 'off' : undefined}
       data-phone-immersive={immersive ? '' : undefined}
@@ -281,7 +278,6 @@ function FrameRoot({ crh, preRefresh, motionOff, fullScreen, homeRoot, children 
     </div>
   );
 }
-
 
 /**
  * The phone's top and bottom edges carry the app's colour (F-49): the hero bar's green under the
@@ -379,17 +375,4 @@ function useReloadFromBackForwardCache(): void {
     window.addEventListener('pageshow', onShow);
     return () => window.removeEventListener('pageshow', onShow);
   }, []);
-}
-
-/** Flag off, today's Ask sheet; on, the Helm key and Glass panel. */
-function MaybeQuickChat({ on, plans, pathname, search, enabled, children }: { on: boolean; plans: boolean; pathname: string; search: string; enabled: boolean; children: ReactNode }) {
-  return on ? (
-    <QuickChatProvider plans={plans} pathname={pathname} search={search} enabled={enabled}>
-      {children}
-    </QuickChatProvider>
-  ) : (
-    <AskSheetProvider pathname={pathname} search={search} enabled={enabled}>
-      {children}
-    </AskSheetProvider>
-  );
 }

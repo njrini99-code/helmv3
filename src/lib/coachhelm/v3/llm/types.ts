@@ -3,7 +3,7 @@
  *
  * Three task classes per master plan Part XI.1. Each task has a fixed
  * model assignment (Part XI.5 amended 2026-05-25): Haiku for
- * round_review + hero_narrative, Sonnet for coach_chat.
+ * round_review + hero_narrative, Sonnet for coach_chat (see 2026-11-10 below).
  *
  * 2026-07-25 — coach_chat moved to Sonnet 5. The chat agent is the one task
  * that runs a multi-step tool loop and has to reason about which reads to make
@@ -12,6 +12,13 @@
  * 2026-10-29 — coach_chat moved to Sonnet 5.5 (owner request). Hyphenated id,
  * like the Haiku entry: the direct-key path strips `anthropic/` and hands the
  * rest to the Anthropic API, whose id is `claude-sonnet-5-5`.
+ *
+ * 2026-11-10 — the chat engine picks its model by surface from a profile
+ * (`chat/engine/model.ts`): coach_chat (Ask, quick chat, the practice helper)
+ * is Claude Sonnet 5.5; the player's Ask is Claude Haiku 5.5
+ * (`PLAYER_CHAT_MODEL`). For a few hours that day coach_chat was Haiku 5.5.
+ * Each call is priced in the engine at the rate of the model that ran it.
+ * Other tasks are unchanged.
  *
  * 2026-09-23 — round_review_narrative added (Package 8, owner decision).
  * Its own task key, deliberately NOT a reuse of round_review (round-recap.ts's
@@ -40,6 +47,30 @@ export const MODEL_FOR_TASK: Record<ComposeTask, string> = {
   coach_chat: 'anthropic/claude-sonnet-5-5',
   round_review_narrative: 'anthropic/claude-haiku-4-5',
 };
+
+/**
+ * Reading a sample practice plan's layout (`src/app/golf/actions/coachhelm-plan-format.ts`): one structured call on an
+ * image or a PDF through the AI SDK, not a chat turn and not a budgeted compose task. It used `coach_chat`'s model
+ * until 10 Nov 2026; it keeps the model it ran on then, so the chat's move to Claude Haiku 5.5 does not move it unseen.
+ */
+export const PLAN_FORMAT_MODEL = 'anthropic/claude-sonnet-5-5';
+
+/**
+ * The player's read-only Ask (`chat/engine/model.ts`, the `player` surface). Its own model, beside `coach_chat`'s.
+ * Not a `ComposeTask` (it has no compose path and no fallback priority).
+ */
+export const PLAYER_CHAT_MODEL = 'anthropic/claude-haiku-5-5';
+
+/**
+ * The chat's own ledger tasks, beside `coach_chat`: a player's Ask turn, and the small call after a coach's answer that
+ * asks what to ask next. The ledger's `task` column has a CHECK that lists the tasks, and these two are added by the
+ * held migration 20261111090000. Until it is applied the database refuses them: a player's turn is then written as
+ * `coach_chat` (as it always was) and a suggestions call writes no row (its cost is still in the day's budget, under
+ * its own key). `chat/ledger.ts` does both.
+ */
+export const PLAYER_CHAT_TASK = 'player_chat' as const;
+export const CHAT_SUGGESTIONS_TASK = 'chat_suggestions' as const;
+export type ChatLedgerTask = 'coach_chat' | typeof PLAYER_CHAT_TASK | typeof CHAT_SUGGESTIONS_TASK;
 
 /**
  * Per-task fallback priority on budget exhaustion (Part XI.4).
@@ -112,6 +143,9 @@ const MODEL_COST_USD_PER_MTOK: Record<string, { input: number; output: number }>
   // Sonnet 5.5 — the AI Gateway's published rate on 2026-10-29
   // (ai-gateway.vercel.sh/v1/models: $2/M in, $10/M out).
   'anthropic/claude-sonnet-5-5':  { input: 2.0,  output: 10.0 },
+  // The rate card for a prompt of 100K tokens or fewer. Above that the model bills $0.50 / $2.50; the chat engine prices each call
+  // itself with both cards and the cache multipliers (src/lib/coachhelm/v3/chat/engine/model.ts), this row is the pre-flight estimate's.
+  'anthropic/claude-haiku-5-5':   { input: 0.1,  output: 0.5  },
   'anthropic/claude-opus-4-7':    { input: 15.0, output: 75.0 },
 };
 

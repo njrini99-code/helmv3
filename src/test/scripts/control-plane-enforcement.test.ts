@@ -74,9 +74,12 @@ describe('hook wiring is real', () => {
     }
   });
 
-  it('no PreToolUse hook blocks tool calls (owner grant: full permissions)', () => {
+  it('the only PreToolUse hook is the audit-only production guard (owner grant: full permissions outside an audit)', () => {
+    // Full permissions stay the default. The one blocking hook runs only when HELM_AUDIT=1: its command exits before
+    // node starts otherwise, so a normal session is never refused anything. Any other PreToolUse hook fails here.
     const blocking = hookRows().filter((r) => r.event === 'PreToolUse');
-    expect(blocking).toEqual([]);
+    expect(blocking.map((r) => [r.matcher, scriptPath(r.command)])).toEqual([['mcp__.*', '.claude/hooks/no-prod-in-audit.mjs']]);
+    expect(blocking[0]?.command).toMatch(/^\[ "\$HELM_AUDIT" = "1" \] \|\| exit 0;/);
   });
 
   it('no hook claims to cover MCP unless one actually matches mcp__', () => {

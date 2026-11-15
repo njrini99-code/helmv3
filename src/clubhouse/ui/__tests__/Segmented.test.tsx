@@ -75,3 +75,24 @@ describe('Segmented (B17)', () => {
     expect(screen.getByRole('radio', { name: 'List' }).querySelector('.ch-seg__pill')).not.toBeNull();
   });
 });
+
+describe('Segmented: two weights (owner, 11 Nov 2026)', () => {
+  const opts = [
+    { value: 'a', label: 'Last 5' },
+    { value: 'b', label: 'Last 10' },
+  ] as const;
+
+  it('a mode switch is the default: the green chip, no filter class', () => {
+    render(<Segmented label="View" value="a" options={opts} onChange={() => {}} />);
+    const well = screen.getByRole('radiogroup', { name: 'View' });
+    expect(well.className).not.toContain('ch-seg--filter');
+  });
+
+  it('a filter or sort takes the light weight: the filter class on the well, the same radios', () => {
+    render(<Segmented weight="filter" label="Rounds shown" value="b" options={opts} onChange={() => {}} />);
+    const well = screen.getByRole('radiogroup', { name: 'Rounds shown' });
+    expect(well.className.split(' ')).toEqual(expect.arrayContaining(['ch-seg', 'ch-well', 'ch-seg--filter']));
+    expect(within(well).getByRole('radio', { name: 'Last 10' })).toHaveAttribute('aria-checked', 'true');
+    expect(within(well).getByRole('radio', { name: 'Last 10' }).querySelector('.ch-seg__pill')).not.toBeNull();
+  });
+});

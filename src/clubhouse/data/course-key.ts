@@ -1,3 +1,4 @@
+import { tidyCourseName } from '../lib/course-name';
 import { normalizeName } from '@/lib/golf/course-library';
 import { isUuid } from '@/lib/utils/uuid';
 
@@ -82,7 +83,7 @@ export function groupCourseRounds<T extends ChCourseRoundLite>(rounds: readonly 
     const k = courseKeyString(key);
     const g = groups.get(k);
     if (g) g.rounds.push(r);
-    else groups.set(k, { key, name: (r.course_name ?? '').trim(), rounds: [r] });
+    else groups.set(k, { key, name: tidyCourseName(r.course_name), rounds: [r] });
   }
   return groups;
 }

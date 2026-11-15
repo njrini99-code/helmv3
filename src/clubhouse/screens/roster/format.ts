@@ -1,6 +1,6 @@
 import type { ChAvailability, ChRoster, ChRosterPlayer } from '../../data/roster';
 import { classYearKey, classYearLineFor, type ChYearKey } from '../../lib/class-year';
-import { formatSigned, MINUS } from '../../lib/format';
+import { MINUS } from '../../lib/format';
 import type { ChPlayerPeek } from '../../ui/PlayerPeek';
 import { displayPlaces } from '../../lib/rank';
 import { plural } from '../../lib/plural';
@@ -116,32 +116,22 @@ export const LEG_WORD: Record<keyof ChRosterPlayer['sgLegs'], string> = {
   putting: 'putting',
 };
 
-/**
- * The roster's strokes-by-leg caption (spec D build B), in parts so the figure can take its tone: the leg that loses the most
- * ("Loses most putting, −1.1 a round"), or, with none losing, the leg that gains the most ("Gains in every leg; most on approach,
- * +0.4", or "Gains most on approach, +0.4" when a leg has too few rounds to say "every"). Null with no strokes gained for the season
- * or no leg read. Rule-based on the season's own figures; nothing is estimated.
- */
-export function legsCaption(p: Pick<ChRosterPlayer, 'sgPerRound' | 'sgLegs'>): { lead: string; figure: string; tail: string; tone: 'gain' | 'loss' } | null {
-  if (p.sgPerRound == null) return null;
-  const legs = (Object.entries(p.sgLegs) as Array<[keyof ChRosterPlayer['sgLegs'], number | null]>).filter((e): e is [keyof ChRosterPlayer['sgLegs'], number] => e[1] != null);
-  if (legs.length === 0) return null;
-  const worst = legs.reduce((a, b) => (b[1] < a[1] ? b : a));
-  // A leg that rounds to 0.0 neither loses nor gains in what is drawn.
-  if (Number(worst[1].toFixed(1)) < 0) return { lead: `Loses most ${LEG_WORD[worst[0]]}, `, figure: formatSigned(worst[1]), tail: ' a round', tone: 'loss' };
-  const best = legs.reduce((a, b) => (b[1] > a[1] ? b : a));
-  const every = legs.length === Object.keys(p.sgLegs).length;
-  return { lead: every ? `Gains in every leg; most ${LEG_WORD[best[0]]}, ` : `Gains most ${LEG_WORD[best[0]]}, `, figure: formatSigned(best[1]), tail: '', tone: 'gain' };
-}
-
 /** The team's zone and day, on the roster's data behind the lane's flag; a fixture has none and reads the product default. */
 export type RosterClock = { tz: string; day: string } | undefined;
 
 /** A player's year key on the team's calendar: null keeps the neutral coin. */
 export const yearKeyOf = (gradYear: number | null | undefined, clock: RosterClock): ChYearKey | null => classYearKey(gradYear, new Date(), clock?.tz);
 
-/** "Junior · Class of 2028" on the team's calendar, a far class once, null for a past or missing year. */
-export const yearLineOf = (gradYear: number | null | undefined, clock: RosterClock): string | null => classYearLineFor(gradYear, new Date(), clock?.tz);
+/** A graduation year that is set and already past on the team's calendar (a fifth year, or a row not moved on). */
+const isPastYear = (gradYear: number | null | undefined, clock: RosterClock): gradYear is number =>
+  !!gradYear && !yearKeyOf(gradYear, clock) && classYearLineFor(gradYear, new Date(), clock?.tz) == null;
+
+/**
+ * "Junior · Class of 2028" on the team's calendar, a far class once, "Class of 2026" for a past year (F-0022: the year is set, so the
+ * row says it rather than losing its line), null for a missing year.
+ */
+export const yearLineOf = (gradYear: number | null | undefined, clock: RosterClock): string | null =>
+  classYearLineFor(gradYear, new Date(), clock?.tz) ?? (isPastYear(gradYear, clock) ? `Class of ${gradYear}` : null);
 
 const YEAR_ORDER: readonly ChYearKey[] = ['sr', 'jr', 'so', 'fr'];
 const YEAR_WORD: Record<ChYearKey, [one: string, many: string]> = {
@@ -152,6 +142,23 @@ const YEAR_WORD: Record<ChYearKey, [one: string, many: string]> = {
 };
 
 export type ClassMixRow = { key: ChYearKey; count: number; label: string };
+
+/**
+ * W23: the players whose class year is missing (or too far out to be a class), so the mix still adds up to the roster ("1 not set"). A
+ * past year is set, and is counted by `classPast` instead (F-0022).
+ */
+export function classUnset(players: ReadonlyArray<{ gradYear: number | null }>, clock: RosterClock): number {
+  return players.filter((p) => !yearKeyOf(p.gradYear, clock) && !isPastYear(p.gradYear, clock)).length;
+}
+
+export type ClassPastRow = { year: number; count: number; label: string };
+
+/** F-0022: the players whose class year is set and past, one row a year, oldest first ("2 Class of 2026"). */
+export function classPast(players: ReadonlyArray<{ gradYear: number | null }>, clock: RosterClock): ClassPastRow[] {
+  const counts = new Map<number, number>();
+  for (const p of players) if (isPastYear(p.gradYear, clock)) counts.set(p.gradYear, (counts.get(p.gradYear) ?? 0) + 1);
+  return [...counts].sort(([a], [b]) => a - b).map(([year, count]) => ({ year, count, label: `Class of ${year}` }));
+}
 
 /** The class mix in year order: one row per year, a year with none included (the legend shows 0, as drawn). An unknown year is not counted. */
 export function classMix(players: ReadonlyArray<{ gradYear: number | null }>, clock: RosterClock): ClassMixRow[] {

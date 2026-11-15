@@ -28,8 +28,9 @@ import {
 } from './season';
 import { formatFixed } from '../lib/format';
 import { isoDay } from '../lib/dates';
-import { sgBaseline } from '../lib/sg';
+import { sgBaseline, type ChSgTour } from '../lib/sg';
 import { playerStrokesGained, roundsForFigures } from './figure-window';
+import { sgWindowOf, type ChSgWindow } from './sg-window';
 import { tourForGender } from './stats-common';
 import { QUIET_DAYS, daysBetween as daysBetweenDates } from '../screens/home/model';
 
@@ -58,6 +59,11 @@ export interface ChRosterPlayer {
   sgPerRound: number | null;
   /** Strokes gained per round by leg over the same rounds as `sgPerRound` (summarizePlayer); null for a leg with too few rounds. */
   sgLegs: { tee: number | null; approach: number | null; around: number | null; putting: number | null };
+  /**
+   * The rounds `sgPerRound` reads (F-0005): its last ten can reach back past the season start (QA-1), so the figure names them where it
+   * is drawn ("Last 8 · Jun–Jul"). Null with no figure; absent in older fixtures.
+   */
+  sgWindow?: ChSgWindow | null;
   trend: number[];
   form: ChForm;
   recent: Array<{ id: string; course: string; date: string; score: number; toPar: number | null }>;
@@ -141,6 +147,8 @@ export interface ChRoster {
   clock?: { tz: string; day: string };
   /** Behind the same flag: the team's baseline name for SG / round ("vs Tour"), never "vs D1". */
   sgVs?: string;
+  /** The tour that baseline is, so the page can say once why a college team's strokes gained sits below zero (lib/sg.ts `whyNamed`). */
+  sgTour?: ChSgTour;
 }
 
 export type ChRosterHelm = { status: 'on'; byPlayer: Record<string, ChReadCount> } | { status: 'off' } | { status: 'failed' };
@@ -179,7 +187,7 @@ export function attentionFor(
   return null;
 }
 
-export async function loadRoster(input: { teamId: string; coachId: string; /** The lane's flag: practice rounds leave every figure (DECISIONS). Off counts as today. */ crh?: boolean }): Promise<ChRoster> {
+export async function loadRoster(input: { teamId: string; coachId: string; }): Promise<ChRoster> {
   const supabase = await createClient();
   const now = new Date();
 
@@ -237,16 +245,16 @@ export async function loadRoster(input: { teamId: string; coachId: string; /** T
   const seasonFrom = seasonStartDate(now, tz);
   const season = { ...wide, rounds: wide.rounds.filter((r) => r.round_date.slice(0, 10) >= seasonFrom) };
   const wideByPlayer = groupByPlayer(wide.rounds);
-  const counted = input.crh ? roundsForFigures(season.rounds) : season.rounds;
+  const counted = roundsForFigures(season.rounds);
   const byPlayer = groupByPlayer(counted);
   // Averages, form and the floors read the cut rounds; Recent rounds and "All N" list every round the player posted (SHARED: Latest rounds lists every round).
-  const everyRound = input.crh ? groupByPlayer(season.rounds) : byPlayer;
+  const everyRound = groupByPlayer(season.rounds);
   const teamPosting = season.rounds.some((r) => quietDaysSince(r.round_date, now, tz) < QUIET_DAYS);
 
   const players: ChRosterPlayer[] = members.map((m) => {
     const p = m.player;
     const s = summarizePlayer(byPlayer.get(p.id) ?? []);
-    const every = input.crh ? summarizePlayer(everyRound.get(p.id) ?? []) : s;
+    const every = summarizePlayer(everyRound.get(p.id) ?? []);
     const sg = playerStrokesGained(wideByPlayer.get(p.id) ?? []);
     const status = m.status === 'inactive' ? 'inactive' : 'active';
     const availability: ChAvailability = parseAvailability(m.availability);
@@ -269,6 +277,7 @@ export async function loadRoster(input: { teamId: string; coachId: string; /** T
       avg: s.avg,
       sgPerRound: sg.total,
       sgLegs: sg.legs,
+      sgWindow: sg.total == null ? null : sgWindowOf(wideByPlayer.get(p.id) ?? []),
       trend: s.trend,
       form: s.status,
       recent: every.recent.slice(0, 3).map((r) => ({
@@ -334,7 +343,9 @@ export async function loadRoster(input: { teamId: string; coachId: string; /** T
     requests,
     requestsError: !requestsRes.success,
     helm,
-    ...(input.crh ? { clock: { tz, day: isoDay(now, tz) }, sgVs: sgBaseline(tourForGender(teamRes.data?.gender)).vs } : {}),
+    clock: { tz, day: isoDay(now, tz) },
+    sgVs: sgBaseline(tourForGender(teamRes.data?.gender)).vs,
+    sgTour: tourForGender(teamRes.data?.gender),
   };
 }
 

@@ -167,6 +167,11 @@ docs/generated/*
 context7.json
 playwright/.auth/
 momentic/auth/
+# Audit sign-in state (scripts/clubhouse/audit): the staging admin key, the Vercel bypass copy, session cookies.
+# 2026-11-13: a worktree preview deploy uploaded .auth/.staging-admin.json because only playwright/.auth/ was
+# listed. File-level entry too, as for .codex/ below.
+.auth/
+.auth/**
 android/keystore.properties
 *.keystore
 *.jks

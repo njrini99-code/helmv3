@@ -104,7 +104,7 @@ function DeskRow({ event: e, course, players }: { event: ChTourEvent; course: st
   return (
     <div className="ch-tour-led__row" role="row">
       <span role="cell" className="ch-tour-led__name">
-        <Link href={paths.desk(e.id)} className="ch-tour-led__open">
+        <Link prefetch={false} href={paths.desk(e.id)} className="ch-tour-led__open">
           {e.name}
         </Link>
         <span className="ch-tour-led__t2">
@@ -153,7 +153,7 @@ function PhoneRow({ event: e, course, past }: { event: ChTourEvent; course: stri
   const cardsOnly = e.coverage.withShots === 0;
   return (
     <li>
-      <Link href={paths.desk(e.id)} className="ch-tour-led__m">
+      <Link prefetch={false} href={paths.desk(e.id)} className="ch-tour-led__m">
         <span className="ch-tour-led__mt">
           <b>{e.name}</b>
           <em>

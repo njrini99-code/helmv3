@@ -76,7 +76,7 @@ search or filter, so it has no filtered empty state.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 100401 | CH-10301 | `NO_EVENTS_NEED_A_REPLY` | No events this week |
+| 100401 | CH-10301 | `NO_EVENTS_NEED_A_REPLY` | No events in the next 7 days |
 | 100402 | CH-10302 | `NO_UPDATES` | No updates |
 | 100403 | CH-10303 | `NO_TASKS` | No tasks |
 | 100404 | CH-10304 | `NO_DOCUMENTS` | No documents |

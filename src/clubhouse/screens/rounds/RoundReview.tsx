@@ -28,7 +28,8 @@ import { ScoreMark } from '../../ui/ScoreMark';
 import { Swap } from '../../ui/Swap';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { EmptyState } from '../../ui/States';
-import { dateOf, TeeSwatch, TYPE_LABEL } from './parts';
+import { TeeSwatch, TYPE_LABEL } from './parts';
+import { kickerDay } from './labels';
 import { approachFinish, costliest, flow, headline, puttSplit, teeMisses, turningStretch } from './round-insights';
 import { RoundSays, saysFigures } from './RoundSays';
 import { RecordChips } from './RecordChips';
@@ -52,7 +53,6 @@ import type { ChDebrief } from '../../data/round-debrief-shape';
 import { plural, pluralWord } from '../../lib/plural';
 
 const LIE_LABEL: Record<string, string> = { fairway: 'Fairway', rough: 'Rough', sand: 'Sand', green: 'Green', hole: 'Holed', penalty: 'Penalty', other: 'Other', tee: 'Tee' };
-const fmt = (o: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', ...o });
 const pct = (hit: number, of: number) => `${Math.round((hit / of) * 100)}%`;
 
 /** A coach is looking at a player's round. The loader says so outright; a name alone also means it, for a review built without it (a fixture). */
@@ -456,12 +456,15 @@ export function RoundReview({
   history: historyIn,
   typeEdit = null,
   initialHole = null,
+  fromRounds = false,
 }: {
   review: ChRoundReview;
   /** P-7 stage 3, streamed by the server after the review (it never rejects); a fixture puts it in `review.history` instead. */
   history?: PromiseLike<ChReviewHistory | null>;
   typeEdit?: ChReviewTypeEdit | null;
   /** P-7: `?hole=`, a hole to open on. */ initialHole?: number | null;
+  /** `?from=rounds`, Team rounds' own link: the server knows where Back goes, so it is right on the first paint and after a reload. */
+  fromRounds?: boolean;
 }) {
   const [streamed, setStreamed] = useState<{ from: PromiseLike<ChReviewHistory | null>; history: ChReviewHistory | null } | null>(null);
   useEffect(() => {
@@ -506,11 +509,12 @@ export function RoundReview({
   // A coach who opened this round from Team rounds goes back there, as a player goes back to the library. The note is in
   // session storage: read during render on the client (an in-app open, the only way a note exists), so the back label is
   // right before the first paint (visual pass 2026-10-28; it was set after mount and swapped "Stats" for "Rounds" in
-  // view). A server render reads no note, and a hydrating page takes the client's answer straight after.
+  // view). A server render reads no note, which is why Team rounds also says so in its link (`fromRounds`): a reload's
+  // server render and its hydration then agree, and "Stats" is never painted.
   const fromList = useSyncExternalStore(
     noSubscribe,
-    () => openedFromLibrary(r.id),
-    () => false,
+    () => fromRounds || openedFromLibrary(r.id),
+    () => fromRounds,
   );
   const back = coach && fromList ? { label: 'Rounds', href: '/golf/dashboard/rounds' } : reviewBack(r);
   const insight = useMemo(() => headline(r), [r]);
@@ -573,7 +577,7 @@ export function RoundReview({
     if (!stepBack()) router.push(back.href);
   };
   const under = r.toPar != null && r.toPar < 0;
-  const kicker = [r.playerName, `${fmt({ weekday: 'short' }).format(dateOf(r.date))} ${fmt({ month: 'short', day: 'numeric' }).format(dateOf(r.date))}`, r.type ? TYPE_LABEL[r.type] : null]
+  const kicker = [r.playerName, kickerDay(r.date), r.type ? TYPE_LABEL[r.type] : null]
     .filter(Boolean)
     .join(' · ');
   const step = (d: -1 | 1) => {
@@ -634,15 +638,20 @@ export function RoundReview({
 
       {hasCard(r) && <RoundCard review={r} phone={phone} just={justSubmitted} settle={justSubmitted && !reduced} />}
 
-      <dl className="ch-rv-figs">
-        {figs.map(([k, v, m]) => (
-          <div key={k}>
-            <dt>{k}</dt>
-            <dd className="ch-num">{v}</dd>
-            <dd className="ch-num">{m}</dd>
-          </div>
-        ))}
-      </dl>
+      {/* W47 (12 Nov): with the card drawn, these five were the card's own Out, In and Total cells told a third time (after
+          the hero and the card's head), and what else they could say the zones below already do (the distribution, the
+          putting split). So they stand only for a round posted as a total, which has no card to say them. */}
+      {!hasCard(r) && (
+        <dl className="ch-rv-figs">
+          {figs.map(([k, v, m]) => (
+            <div key={k}>
+              <dt>{k}</dt>
+              <dd className="ch-num">{v}</dd>
+              <dd className="ch-num">{m}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
 
       {typeEdit && <ChangeRoundType roundId={r.id} edit={typeEdit} />}
 
@@ -669,7 +678,8 @@ export function RoundReview({
             <>
               <ZoneBig value={formatToPar(r.toPar)} tone={changeVerdict(r.toPar, true, 0)} />
               <div className="ch-znlines">
-                {r.holesPlayed === 18 && r.front.score != null && r.back.score != null && (
+                {/* W47: the card's Out and In cells say this when it is drawn. */}
+                {!hasCard(r) && r.holesPlayed === 18 && r.front.score != null && r.back.score != null && (
                   <span>
                     <b>
                       Out {r.front.score} · In {r.back.score}

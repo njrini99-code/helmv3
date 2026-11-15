@@ -23,6 +23,7 @@
 
 import { boardOrder, rankStandings } from '@/lib/coachhelm/v3/qualifying/ranking';
 import { plural, pluralWord } from '../../lib/plural';
+import { zoneFormat } from '../../lib/zone-format';
 
 export type ChQStatus = 'upcoming' | 'in_progress' | 'completed';
 export type ChQSelectionState = 'open' | 'scoring' | 'closed' | 'selected';
@@ -497,14 +498,19 @@ export const STATUS_LABEL: Record<ChQStatus, { tone: 'accent' | 'warning' | 'neu
   completed: { tone: 'neutral', label: 'Concluded' },
 };
 
-export function ctaLabel(status: ChQStatus): string {
+/**
+ * The card's link words. W33 (preview walk, 11 Nov): a qualifier past its last day and still open sat in the list for
+ * weeks as "View leaderboard" with nothing asking the coach to close it; for a coach (`closeDue`) the words say the job.
+ */
+export function ctaLabel(status: ChQStatus, closeDue = false): string {
+  if (closeDue) return 'Review and close';
   return status === 'in_progress' ? 'View leaderboard' : status === 'completed' ? 'View results' : 'View details';
 }
 
 /** The list's lede, by who reads it. The list and its skeleton say the same sentence, so the skeleton's lines wrap where the page's do. */
-export function listLede(coach: boolean, mode: 'all' | 'mine'): string {
+export function listLede(coach: boolean): string {
   if (coach) return 'Rank players over counted rounds and pick who travels.';
-  return mode === 'mine' ? 'The qualifiers you’re entered in, and where you stand.' : 'Your team’s qualifiers, and where you stand in the ones you’re entered in.';
+  return 'Your team’s qualifiers, and where you stand in the ones you’re entered in.';
 }
 
 /**
@@ -535,8 +541,9 @@ export function roundPars(input: {
   return { byRound, single: known.size === 1 && !known.has(null) ? byRound[0]! : null };
 }
 
-const DAY = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric' });
-const DAY_YEAR = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric', year: 'numeric' });
+// Built on first use, not when the module loads: the list's chunk evaluates in the first frame of a route switch (F-0010).
+const DAY = { format: (d: Date) => zoneFormat('en-US', 'UTC', 'q-day', { month: 'short', day: 'numeric' }).format(d) };
+const DAY_YEAR = { format: (d: Date) => zoneFormat('en-US', 'UTC', 'q-day-year', { month: 'short', day: 'numeric', year: 'numeric' }).format(d) };
 const asDate = (d: string) => new Date(`${d.slice(0, 10)}T12:00:00Z`);
 
 /** "Sep 22" for a calendar date. */

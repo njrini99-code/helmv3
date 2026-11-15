@@ -11,6 +11,7 @@ import { InlineNotice } from '../../ui/Notices';
 import { Surface } from '../../ui/Surface';
 import { changeTone, formatFixed, formatHcp, formatSigned, formatToPar } from '../../lib/format';
 import { NoData } from '../../ui/NoData';
+import { sgWindowLine } from '../../lib/sg-window-line';
 import { rebuiltHref } from '../../shell/nav';
 import { AvailabilityPanel, CoachNote, HelmPanel, type AvailabilityControl, type NoteSaved } from './RosterPeek';
 import { AVAILABILITY_WORD, rowNote, yearKeyOf, yearLineOf, type RosterClock } from './format';
@@ -101,6 +102,8 @@ export function RosterProfileCrh({
             <div>
               <dt>SG / round</dt>
               <dd className={'ch-num ' + (sg == null ? 'is-none' : changeTone(sg, false, 1))}>{sg == null ? <NoData /> : formatSigned(sg)}</dd>
+              {/* F-0005: inside "This season", the figure says its rounds: the last ten can start before the season. */}
+              {sg != null && sgWindowLine(p.sgWindow) && <dd className="ch-rsx-figs__f ch-num">{sgWindowLine(p.sgWindow)}</dd>}
               <dd className="ch-rsx-figs__f">{sgVs}</dd>
             </div>
           </dl>

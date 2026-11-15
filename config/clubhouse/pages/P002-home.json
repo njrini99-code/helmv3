@@ -146,27 +146,10 @@
       ]
     },
     {
-      "id": "ACT-P002-MESSAGE-TEAM",
-      "label": "Message the team (coach)",
-      "component": "src/clubhouse/screens/home/HomeActions.tsx#HomeActions",
-      "handler": "the Message team link",
-      "service": null,
-      "data": [
-        "golf_conversations"
-      ],
-      "bridge": {
-        "links": 20103,
-        "loadFailed": 20608
-      },
-      "tests": [
-        "src/clubhouse/__tests__/home.test.tsx"
-      ]
-    },
-    {
       "id": "ACT-P002-NEW-EVENT",
       "label": "Add an event (coach): New event, or N",
-      "component": "src/clubhouse/screens/home/HomeActions.tsx#HomeActions",
-      "handler": "the New event link and the N key handler",
+      "component": "src/clubhouse/screens/home/CoachHome.tsx#CoachHome",
+      "handler": "the New event link on the first-run page",
       "service": null,
       "data": [],
       "bridge": {

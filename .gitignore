@@ -44,6 +44,9 @@ dist/
 .env.test.local
 .env.production.local
 
+# Audit sign-in sessions and the staging key cache (scripts/clubhouse/audit/session.mjs)
+.auth/
+
 # Debug logs
 npm-debug.log*
 yarn-debug.log*

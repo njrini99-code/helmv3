@@ -30,7 +30,6 @@
  */
 
 import type {
-  InsightConfidenceFactors,
   InsightPriority,
 } from '@/lib/coachhelm/shared/evidence-types';
 
@@ -121,28 +120,5 @@ export function enforcePriorityConfidenceGate(
   return priority;
 }
 
-/**
- * Plain-language confidence reason from the confidence factors (P0-05). Lets a
- * downstream surface explain WHY a number is trusted (or not) without re-running
- * the blend. Pure + sport-agnostic — reads only the shared confidence factors
- * and the observation count.
- */
-export function buildConfidenceReason(evidence: {
-  sample_n: number;
-  confidence_factors: InsightConfidenceFactors;
-}): string {
-  const f = evidence.confidence_factors;
-  const parts: string[] = [`${evidence.sample_n} observations`];
-  if (f.factors_measured === true) {
-    parts.push(`recency measured ${f.recency.toFixed(2)}`);
-    parts.push(`variance measured ${f.variance.toFixed(2)}`);
-  } else if (f.factors_measured === false) {
-    parts.push('recency/variance not measured (sample-adequacy only)');
-  }
-  parts.push(
-    f.sample_adequacy >= 1
-      ? 'sample adequate'
-      : `sample ${(f.sample_adequacy * 100).toFixed(0)}% of target`,
-  );
-  return parts.join('; ');
-}
+/** Plain-language confidence reason (P0-05, READ-S1): one implementation, `confidence-reason.ts`. */
+export { buildConfidenceReason } from './confidence-reason';

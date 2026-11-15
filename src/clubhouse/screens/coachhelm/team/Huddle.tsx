@@ -1,11 +1,10 @@
 'use client';
 
 import { ChartText } from '../../../ui/charts/ChartText';
-import { avatarTone } from '../../../ui/Avatar';
 import { formatSigned } from '../../../lib/format';
 import { initials } from '../../../lib/names';
 import { huddlePoint, STATIONS, type ChStation, type ChTeamBoardData, type ChTeamPlayer } from '../../../data/coachhelm-team-shape';
-import { coinColor } from './TeamHole';
+import { coinYear } from './TeamHole';
 import { STATION_SHORT } from './hole-geometry';
 
 const W = 320;
@@ -27,13 +26,21 @@ export function huddleRange(points: ReadonlyArray<{ x: number; y: number }>): { 
   return { lo, hi };
 }
 
-/** Ball striking against scoring. No trails (02-PLAN 9.2 A), so the legend's Line item isn't drawn. */
+/** Where a player stood over their first 10 rounds this season, when the board carries that window (`first10`: twenty or more counted season rounds, 02-PLAN 9.2 B). */
+function firstPoint(p: ChTeamPlayer): { x: number; y: number } | null {
+  const f = p.first10;
+  if (!f || f.tee == null || f.approach == null || f.short_game == null || f.putting == null) return null;
+  return { x: f.tee + f.approach, y: f.short_game + f.putting };
+}
+
+/** Ball striking against scoring. A player with a first-10 window trails a line from there to now, drawn at rest (Q-153); the legend names the line only when one is drawn. */
 export function Huddle({ data, onPlayer }: { data: ChTeamBoardData; onPlayer: (id: string) => void }) {
   const list = data.players.list;
   const plotted = list.map((p) => ({ p, at: huddlePoint(p) })).filter((x): x is { p: ChTeamPlayer; at: { x: number; y: number } } => !!x.at);
   const missing = list.filter((p) => !huddlePoint(p));
   if (!plotted.length && !missing.length) return null;
-  const { lo, hi } = huddleRange(plotted.map((x) => x.at));
+  const trails = plotted.map(({ p, at }) => ({ p, at, from: firstPoint(p) })).filter((t): t is { p: ChTeamPlayer; at: { x: number; y: number }; from: { x: number; y: number } } => !!t.from);
+  const { lo, hi } = huddleRange([...plotted.map((x) => x.at), ...trails.map((t) => t.from)]);
   const X = (v: number) => L + ((v - lo) / (hi - lo)) * (W - L - R);
   const Y = (v: number) => T + ((hi - v) / (hi - lo)) * (H - T - B);
   const st = data.stations;
@@ -82,11 +89,17 @@ export function Huddle({ data, onPlayer }: { data: ChTeamBoardData; onPlayer: (i
           <ChartText className="axl" size={12} transform={`translate(12 ${(T + H - B) / 2}) rotate(-90)`} textAnchor="middle">
             Scoring: short game, putting
           </ChartText>
+          {trails.map(({ p, at, from }) => (
+            <g key={p.id} className="trailg" data-year={coinYear(p.classYear) ?? undefined} data-ch-team-trail={p.id}>
+              <circle className="ghost" cx={X(from.x)} cy={Y(from.y)} r={4} />
+              <line className="trail" x1={X(from.x)} y1={Y(from.y)} x2={X(at.x)} y2={Y(at.y)} />
+            </g>
+          ))}
           {plotted.map(({ p, at }) => (
             <g
               key={p.id}
               className={'hp' + (p.early ? ' early' : '')}
-              data-tone={avatarTone(p.id)}
+              data-year={coinYear(p.classYear) ?? undefined}
               role="button"
               tabIndex={0}
               aria-label={`${p.name}: striking ${formatSigned(at.x)}, scoring ${formatSigned(at.y)}`}
@@ -99,7 +112,7 @@ export function Huddle({ data, onPlayer }: { data: ChTeamBoardData; onPlayer: (i
               }}
             >
               <circle className="hit" cx={X(at.x)} cy={Y(at.y)} r={22} fill="transparent" />
-              <circle className="dotc" cx={X(at.x)} cy={Y(at.y)} r={13} fill={coinColor(p.id)} stroke={coinColor(p.id)} />
+              <circle className="dotc" cx={X(at.x)} cy={Y(at.y)} r={13} />
               <ChartText size={12} weight={600} x={X(at.x)} y={Y(at.y)}>
                 {initials(p.name)}
               </ChartText>
@@ -108,6 +121,7 @@ export function Huddle({ data, onPlayer }: { data: ChTeamBoardData; onPlayer: (i
         </svg>
       </div>
       <div className="legend">
+        {trails.length > 0 && <span>Line: from their first 10 rounds this season to their last 10</span>}
         <span>Dashed: team average</span>
         <span>Hollow: fewer than 5 rounds</span>
       </div>

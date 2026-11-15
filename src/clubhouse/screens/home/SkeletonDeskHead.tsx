@@ -28,7 +28,7 @@ export function SkeletonDeskHead() {
   return (
     // Line for line as loaded (perf 2026-10-01, measured with `npm run clubhouse:perf`): the date, the greeting, a two-line sentence and the two actions.
     <header className="ch-h-head" data-canopy-head="">
-      <Line height={14}>
+      <Line height={18}>
         <Skeleton width={140} height={13} />
       </Line>
       {/* The sans greeting's line in the framed head (44px type, 47.5px line; WebKit 1440, 2026-10-07). */}
@@ -142,13 +142,13 @@ export function SkeletonDeskCrh() {
         </div>
       </div>
       <div className="ch-h-sk-dcrh__grid">
-        <CrhCard minHeight={334} rows={['82%', '64%', '76%', '58%', '70%']} />
-        <CrhCard minHeight={334} rows={[120, '100%', '74%']} />
+        <CrhCard minHeight={326} rows={['82%', '64%', '76%', '58%', '70%']} />
+        <CrhCard minHeight={326} rows={[120, '100%', '74%']} />
       </div>
-      <CrhCard minHeight={297} rows={['100%', '86%', '92%']} />
+      <CrhCard minHeight={296} rows={['100%', '86%', '92%']} />
       <div className="ch-h-sk-dcrh__grid">
-        <CrhCard minHeight={314} rows={['74%', '100%', '66%']} />
-        <CrhCard minHeight={314} rows={['88%', '80%', '84%', '76%', '82%']} />
+        <CrhCard minHeight={306} rows={['74%', '100%', '66%']} />
+        <CrhCard minHeight={306} rows={['88%', '80%', '84%', '76%', '82%']} />
       </div>
     </div>
   );

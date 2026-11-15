@@ -117,17 +117,20 @@ export function FileFailed({ who, onRetry }: { who: string; onRetry: () => void 
   );
 }
 
-/** A coach's file on one player (S-FILE, coachhelm_player_file_v1). */
+/** A coach's file on one player (S-FILE). */
 export function PlayerFile({ load, at, insight, roster, writes = LIVE_COACHHELM_WRITES, saveIntent = LIVE_SAVE_INTENT, initialLens = 'coach' }: FileHostProps) {
   const router = useRouter();
   const { refresh } = useRefresh();
   const phone = useChPhone();
   if (load.status !== 'ready') {
     return (
-      <main className={'ch-hf' + (phone ? ' is-phone' : '')}>
-        {phone && <PhoneTop back={{ label: 'Back', onBack: () => (window.history.length > 1 ? router.back() : router.push(PLAYER_HELM_HREF.board)) }} title="CoachHelm" />}
-        <div className="ch-hf-flow">
-          <FileFailed who="this player’s file" onRetry={() => refresh()} />
+      // On a desk the card takes the page's own gutters and a reading width (it sat edge to edge, under the top bar).
+      <main className={'ch-hf' + (phone ? ' is-phone' : ' is-desk is-failed')}>
+        {phone && <PhoneTop back={{ label: 'CoachHelm', onBack: () => (window.history.length > 1 ? router.back() : router.push(PLAYER_HELM_HREF.board)) }} title="CoachHelm" />}
+        <div className={phone ? undefined : 'dfile'}>
+          <div className="ch-hf-flow">
+            <FileFailed who="this player’s file" onRetry={() => refresh()} />
+          </div>
         </div>
       </main>
     );
@@ -247,7 +250,7 @@ function Ready({ data, at, insight, roster, writes, saveIntent, initialLens }: {
       </section>
     ) : shown.feat ? (
       <Swap swapKey={lens}>
-        <FeatureCard d={shown.feat} lens={lens} first={first} name={head.name} team={shown.featTeam} stage={planNow?.stage ?? 'none'} coach={planNow?.coach ?? 'Your coach'} actions={featActions} onOpen={() => setOpenRead(shown.feat!.base.id)} />
+        <FeatureCard d={shown.feat} lens={lens} first={first} name={head.name} team={shown.featTeam} teamBasis={shown.featTeamBasis} stage={planNow?.stage ?? 'none'} coach={planNow?.coach ?? 'Your coach'} actions={featActions} onOpen={() => setOpenRead(shown.feat!.base.id)} />
       </Swap>
     ) : (
       <Swap swapKey={lens}>
@@ -325,7 +328,7 @@ function Ready({ data, at, insight, roster, writes, saveIntent, initialLens }: {
     <main className={'ch-hf' + (phone ? ' is-phone' : ' is-desk')} aria-label={`${head.name}’s file`} data-ch="player-file">
       {phone && (
         <PhoneTop
-          back={{ label: 'Back', onBack: () => (window.history.length > 1 ? router.back() : router.push(PLAYER_HELM_HREF.board)) }}
+          back={{ label: 'CoachHelm', onBack: () => (window.history.length > 1 ? router.back() : router.push(PLAYER_HELM_HREF.board)) }}
           title={head.name}
           action={more(((p: { ref: (el: HTMLButtonElement | null) => void; onClick: () => void }) => <PhoneIconAction icon={Ellipsis} label={`More for ${first}`} onClick={p.onClick} />) as never)}
         />
@@ -340,7 +343,7 @@ function Ready({ data, at, insight, roster, writes, saveIntent, initialLens }: {
               </div>
               <div className="rows">
                 {roster.map((r) => (
-                  <Link key={r.id} replace prefetch={false} href={playerFileHref(r.id, undefined, true)} className={'r' + (r.id === head.playerId ? ' is-sel' : '')} aria-current={r.id === head.playerId ? 'page' : undefined} data-ch-hf-open="">
+                  <Link key={r.id} replace prefetch={false} href={playerFileHref(r.id)} className={'r' + (r.id === head.playerId ? ' is-sel' : '')} aria-current={r.id === head.playerId ? 'page' : undefined} data-ch-hf-open="">
                     <Avatar name={r.name} size="md" />
                     <span className="r__t">
                       <b>{r.name}</b>
@@ -380,7 +383,7 @@ function Ready({ data, at, insight, roster, writes, saveIntent, initialLens }: {
         <div className="ins">
           {openRead &&
             (deepOpen ? (
-              <ReadPanel read={deepOpen.base} deep={deepOpen} penalties={penalties} player={sheetPlayer} fa={lens === 'coach' ? fa : undefined} role={lens} missing={undefined} readOn={data.readOn} roster={[{ id: head.playerId }]} dismissible fileHost onClose={() => setOpenRead(null)} />
+              <ReadPanel read={deepOpen.base} deep={deepOpen} penalties={penalties} player={sheetPlayer} fa={lens === 'coach' ? fa : undefined} role={lens} missing={undefined} roster={[{ id: head.playerId }]} dismissible fileHost onClose={() => setOpenRead(null)} />
             ) : (
               <GonePanel onClose={() => setOpenRead(null)} />
             ))}

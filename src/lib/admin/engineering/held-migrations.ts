@@ -31,7 +31,12 @@ export interface HeldMigrationRow {
   decided: string | null;
 }
 
-const ROW_PATTERN = /^\|\s*`([^`]+)`[^|]*\|\s*\*\*([^*]+)\*\*\s*\|(.*)\|([^|]*)\|\s*$/;
+/**
+ * The status is the FIRST bold span of its cell; the cell may go on after it. The four team channel rows (2026-11-10)
+ * carry a second bold span and a sentence there ("**HOLD — …** **RELEASE ORDER: …** The build live before it…"), and a
+ * pattern that required the cell to end at the first span dropped all four while the Command Deck's parser kept them.
+ */
+const ROW_PATTERN = /^\|\s*`([^`]+)`[^|]*\|\s*\*\*([^*]+)\*\*[^|]*\|(.*)\|([^|]*)\|\s*$/;
 
 function isDecisionWorthy(status: string): boolean {
   const s = status.trim().toUpperCase();

@@ -14,12 +14,13 @@
 .ch-hv-chips {
   display: flex;
   gap: 8px;
-  margin: 0 -16px;
+  margin: 0 calc(-1 * var(--ch-page-x-phone));
   /* The chip's tap area reaches 4px past it (below); the row scrolls, so it clips there unless the padding leaves that room. */
-  padding: 4px 16px;
+  padding: 4px var(--ch-page-x-phone);
   overflow-x: auto;
   scrollbar-width: none;
-  scroll-snap-type: x proximity;
+  /* It scrolls freely, as Team Hub's tab row does: the clipped edge fades (.ch-hscroll) and the current chip is kept
+     whole (PlayerHelmTabs). It snapped each chip to the centre, which left a chip cut on both sides of it. */
   -webkit-overflow-scrolling: touch;
 }
 .ch-hv-chips::-webkit-scrollbar {
@@ -43,7 +44,6 @@
   white-space: nowrap;
   box-shadow: var(--ch-elevation-control);
   cursor: pointer;
-  scroll-snap-align: center;
   touch-action: manipulation;
   transition: background-color var(--ch-dur-quick) var(--ch-ease), color var(--ch-dur-quick) var(--ch-ease);
 }

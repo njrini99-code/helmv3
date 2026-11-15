@@ -11,6 +11,7 @@ import type { ChDiveTheme } from '../../../data/coachhelm-dive-shape';
 import { useChSessionState } from '../../../lib/session-state';
 import { useChReducedMotion } from '../../../lib/reduced-motion';
 import { CH_DUR } from '../../../lib/motion';
+import { chDialogOpener } from '../../../lib/dialog-lifetime';
 import { useOverlayScrollLock } from '../../../lib/overlay-scroll';
 import { Button } from '../../../ui/Button';
 import { Icon } from '../../../ui/Icon';
@@ -40,9 +41,10 @@ function TileVisual({ story, round }: { story: ChTeamStory; round: ChStoryRound 
     const w = (v: number) => Math.max(8, (Math.abs(v) / top) * 108);
     return (
       <svg viewBox="0 0 108 40" aria-hidden="true">
-        <rect x="0" y="4" width={w(p.from)} height="12" rx="6" fill="var(--ch-tb-track)" />
-        <rect x="0" y="24" width={w(p.now)} height="12" rx="6" fill="var(--ch-tb-gain-fill)" />
-        <rect x={w(p.target) - 1} y="20" width="2" height="20" fill="var(--ch-tb-ink)" />
+        <rect x="0" y="4" width={w(p.from)} height="12" rx="6" fill="var(--ch-chart-track)" />
+        <rect x="0" y="24" width={w(p.now)} height="12" rx="6" fill="var(--ch-chart-gain-fill)" />
+        {/* The target is a line through both bars, as the story's: beside the lower bar alone it read as a divider (W10). */}
+        <rect x={w(p.target) - 1} y="0" width="2" height="40" fill="var(--ch-ink-900)" />
       </svg>
     );
   }
@@ -165,7 +167,8 @@ function StoryViewer({
   };
   const next = () => (i < stories.length - 1 ? setI(i + 1) : leave());
   useEffect(() => {
-    opener.current = document.activeElement as HTMLElement | null;
+    // F-0012: the tile a Safari tap pressed, which it never focused; the sheets' own rule (lib/dialog-lifetime.ts).
+    opener.current = chDialogOpener();
     // The viewer takes focus, not its Close: a screen reader lands on the story, and no ring shows on a button nobody chose.
     box.current?.focus({ preventScroll: true });
     return () => opener.current?.focus?.({ preventScroll: true });
@@ -353,6 +356,14 @@ export function StoriesCard({
               </span>
             </>
           );
+          // A tile's picture only when it has a true one (its round, or a focus's progress). On the phone it heads the tile's card; on a
+          // desk it closes the row, so every row's words start on one line whether it has a picture or not (W10, staging 11 Nov: of
+          // three rows, the one picture pushed the middle row's words in, beside a target tick that read as a divider).
+          const figure = (s.kind === 'read' ? roundOf(s) : s.kind === 'working' ? s.progress : null) ? (
+            <span className="tv">
+              <TileVisual story={s} round={roundOf(s)} />
+            </span>
+          ) : null;
           return (
             <button
               key={s.id}
@@ -365,12 +376,17 @@ export function StoriesCard({
                 else onDesk(s);
               }}
             >
-              {(s.kind === 'read' ? roundOf(s) : s.kind === 'working' ? s.progress : null) && (
-                <span className="tv">
-                  <TileVisual story={s} round={roundOf(s)} />
-                </span>
+              {phone ? (
+                <>
+                  {figure}
+                  {text}
+                </>
+              ) : (
+                <>
+                  <span className="tt">{text}</span>
+                  {figure}
+                </>
               )}
-              {phone ? text : <span className="tt">{text}</span>}
             </button>
           );
         })}

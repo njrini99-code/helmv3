@@ -20,12 +20,12 @@
     "crh-negative-margin": 0
   },
   "src/clubhouse/styles/classes.css": {
-    "hex": 55,
+    "hex": 51,
     "svg-overflow-visible": 0,
-    "crh-negative-margin": 1
+    "crh-negative-margin": 0
   },
   "src/clubhouse/styles/coachhelm-ask-v2.css": {
-    "hex": 14,
+    "hex": 6,
     "svg-overflow-visible": 0,
     "crh-negative-margin": 0
   },
@@ -40,32 +40,12 @@
     "crh-negative-margin": 0
   },
   "src/clubhouse/styles/coachhelm-file.css": {
-    "hex": 42,
+    "hex": 0,
     "svg-overflow-visible": 1,
     "crh-negative-margin": 0
   },
   "src/clubhouse/styles/coachhelm-plan.css": {
-    "hex": 50,
-    "svg-overflow-visible": 0,
-    "crh-negative-margin": 0
-  },
-  "src/clubhouse/styles/coachhelm-read.css": {
-    "hex": 33,
-    "svg-overflow-visible": 0,
-    "crh-negative-margin": 0
-  },
-  "src/clubhouse/styles/coachhelm-standing.css": {
-    "hex": 2,
-    "svg-overflow-visible": 0,
-    "crh-negative-margin": 0
-  },
-  "src/clubhouse/styles/coachhelm-team.css": {
-    "hex": 37,
-    "svg-overflow-visible": 0,
-    "crh-negative-margin": 0
-  },
-  "src/clubhouse/styles/coachhelm-thread.css": {
-    "hex": 1,
+    "hex": 47,
     "svg-overflow-visible": 0,
     "crh-negative-margin": 0
   },
@@ -100,7 +80,7 @@
     "crh-negative-margin": 0
   },
   "src/clubhouse/styles/messages.css": {
-    "hex": 9,
+    "hex": 1,
     "svg-overflow-visible": 0,
     "crh-negative-margin": 0
   },
@@ -114,18 +94,13 @@
     "svg-overflow-visible": 0,
     "crh-negative-margin": 0
   },
-  "src/clubhouse/styles/quick-chat.css": {
-    "hex": 51,
-    "svg-overflow-visible": 0,
-    "crh-negative-margin": 0
-  },
   "src/clubhouse/styles/recruiting.css": {
     "hex": 3,
     "svg-overflow-visible": 0,
     "crh-negative-margin": 0
   },
   "src/clubhouse/styles/roster.css": {
-    "hex": 9,
+    "hex": 7,
     "svg-overflow-visible": 0,
     "crh-negative-margin": 2
   },
@@ -145,12 +120,12 @@
     "crh-negative-margin": 0
   },
   "src/clubhouse/styles/shell.css": {
-    "hex": 32,
+    "hex": 28,
     "svg-overflow-visible": 0,
     "crh-negative-margin": 0
   },
   "src/clubhouse/styles/stats-redesign.css": {
-    "hex": 4,
+    "hex": 2,
     "svg-overflow-visible": 3,
     "crh-negative-margin": 0
   },
@@ -165,7 +140,7 @@
     "crh-negative-margin": 0
   },
   "src/clubhouse/styles/ui.css": {
-    "hex": 102,
+    "hex": 101,
     "svg-overflow-visible": 0,
     "crh-negative-margin": 0
   }

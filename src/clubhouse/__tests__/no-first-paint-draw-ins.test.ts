@@ -27,7 +27,7 @@ describe('Clubhouse graphics are not drawn in at first paint (Q-139 extended)', 
   });
 
   it('the components no longer wait to be seen', () => {
-    for (const f of ['screens/home/TeamForm.tsx', 'screens/roster/RosterSpread.tsx', 'screens/rounds/RoundZones.tsx', 'screens/rounds/parts.tsx', 'screens/qualifiers/StandingsSpread.tsx']) {
+    for (const f of ['screens/rounds/RoundZones.tsx', 'screens/rounds/parts.tsx', 'screens/qualifiers/StandingsSpread.tsx']) {
       expect(read(`src/clubhouse/${f}`), f).not.toMatch(/useInViewOnce/);
     }
   });

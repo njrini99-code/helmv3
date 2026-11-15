@@ -14,7 +14,7 @@ import { PREVIEW_LEGS, PREVIEW_QUEUE } from '../preview/fixtures';
 import { PREVIEW_PLAYER_HOME } from '../preview/fixtures-player-home';
 import { CoachQueue } from '../screens/home/CoachQueue';
 import { TeamLegs, TeamLegsPhone } from '../screens/home/TeamLegs';
-import { UpNext, whenLabel } from '../screens/home/HomePhone';
+import { UpNextRow, whenLabel } from '../screens/home/HomePhone';
 import { PlayerGame } from '../screens/home/PlayerGame';
 import { ToastProvider } from '../ui/Toast';
 
@@ -42,7 +42,7 @@ describe('Home event labels use the team clock', () => {
   });
 
   it('omits the paired attendance claim when identities cannot supply the complete denominator', () => {
-    render(<UpNext e={event({ invitees: ['Ada Lin', 'Bo Fox'], going: null })} now={new Date('2026-10-01T16:00:00Z')} />);
+    render(<UpNextRow e={event({ invitees: ['Ada Lin', 'Bo Fox'], going: null })} now={new Date('2026-10-01T16:00:00Z')} />);
     expect(screen.queryByText(/of 2 going/)).toBeNull();
     expect(screen.getByRole('link', { name: /Tournament/ })).toBeTruthy();
   });

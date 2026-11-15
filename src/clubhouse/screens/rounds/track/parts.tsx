@@ -58,6 +58,7 @@ export function Seg<T extends string>({
 export function Sec({
   label,
   hint,
+  aside,
   tint,
   htmlFor,
   reserved = false,
@@ -65,6 +66,8 @@ export function Sec({
 }: {
   label: string;
   hint?: 'Optional' | 'Required';
+  /** What the heading's right end says in place of the hint, once there is something to say (the shot's length). */
+  aside?: ReactNode;
   tint?: boolean;
   htmlFor?: string;
   /** Held in the card before it is needed: hidden and inert, keeping its height so nothing jumps when it appears (F-0019). */
@@ -80,7 +83,7 @@ export function Sec({
     >
       <div className="ch-rt-sec__h">
         {htmlFor ? <label htmlFor={htmlFor}>{label}</label> : <span>{label}</span>}
-        {hint && <em className={'ch-rt-hint' + (hint === 'Required' ? ' is-required' : '')}>{hint}</em>}
+        {aside ?? (hint && <em className={'ch-rt-hint' + (hint === 'Required' ? ' is-required' : '')}>{hint}</em>)}
       </div>
       {children}
     </section>
@@ -99,9 +102,10 @@ function toParWords(score: number, par: number): string {
  * button (any earlier hole, a later one with a score, and the next unplayed);
  * the rest are marks. CH-11805: each is named by hole, score, to par and
  * whether it is the one you're on ("Hole 2, 6, 2 over", "Hole 4, current",
- * "Hole 6"). On the phone each is one compact chip (the score once played, the
- * hole number until then) centred in a 44px hit area, and the strip keeps the
- * current hole in view.
+ * "Hole 6"). On the phone each is one compact chip in a 44px hit area: its hole
+ * number always, and under it, once played, its score as the scorecard's small
+ * mark (owner, 2026-11-11: no chip shows a bare score where a number belongs).
+ * The strip keeps the current hole in view.
  */
 export function TrackStrip({ holes, current, onJump, startHole = 1 }: { holes: RoundHole[]; current: number; onJump?: (index: number) => void; startHole?: number }) {
   // The strip reads by hole number; where you can go follows play order (a shotgun start's holes before its start are
@@ -154,6 +158,19 @@ export function TrackStrip({ holes, current, onJump, startHole = 1 }: { holes: R
       </div>
     </div>
   );
+}
+
+const NBSP = '\u00A0';
+/**
+ * The collapsed log's line for the last shot ("Last: Tee · Driver → fairway · 142 yds left"), spaced so the line can only
+ * end between facts or between the words of the shot's name: "Last:" holds its first word, and each mark ("·", "→") holds
+ * the fact after it, whose own words hold together. The line shows what fits of it, whole (rounds-track.css, B5).
+ */
+export function lastShotWords(shot: ShotRecord, pref: DistancePreference): string {
+  const fact = (s: string) => s.split(' ').join(NBSP);
+  const title = shotTitle(shot).split(' · ').join(` ·${NBSP}`);
+  const finish = shot.isPenalty ? '' : ` →${NBSP}${shotFinish(shot, pref).split(' · ').map(fact).join(` ·${NBSP}`)}`;
+  return `Last:${NBSP}${title}${finish}`;
 }
 
 /** Where a shot finished, as the log and the map colour it. */
@@ -241,14 +258,16 @@ export function HoleMap({
   const flagW = wide ? 13 : 16;
   const name = `Hole ${hole.number}, par ${hole.par}: ${plotted.length === 0 ? 'no shots yet' : `${plural(plotted.length, 'shot')} so far${holed ? ', holed' : ''}`}`;
   return (
-    <svg viewBox={`0 0 ${s.w} ${s.h}`} preserveAspectRatio="xMidYMid slice" className={'ch-rt-map ch-rt-map--' + frame + (className ? ' ' + className : '')} role="img" aria-label={name}>
+    // The wide frame (the shot screen's hero on a phone) fits whole at the right of a box shorter than its shape, never
+    // cropped; its ground then runs past the drawing so the smaller hole has no edge. The tall frame fills its box.
+    <svg viewBox={`0 0 ${s.w} ${s.h}`} preserveAspectRatio={wide ? 'xMaxYMid meet' : 'xMidYMid slice'} className={'ch-rt-map ch-rt-map--' + frame + (className ? ' ' + className : '')} role="img" aria-label={name}>
       <defs>
         <pattern id={`ch-rt-mow-${id}`} width="14" height="14" patternUnits="userSpaceOnUse" patternTransform={wide ? 'rotate(40)' : 'rotate(8)'}>
           <rect width="14" height="14" className="ch-rt-map__mow-a" />
           <rect width="7" height="14" className="ch-rt-map__mow-b" />
         </pattern>
       </defs>
-      <rect x="0" y="0" width={s.w} height={s.h} className="ch-rt-map__bg" />
+      <rect x={wide ? -4 * s.w : 0} y={wide ? -s.h : 0} width={wide ? 5 * s.w : s.w} height={wide ? 3 * s.h : s.h} className="ch-rt-map__bg" />
       <g className="ch-rt-map__tree">
         {trees.map((t, i) => (
           <circle key={i} cx={t.x} cy={t.y} r={t.r} />
@@ -342,9 +361,12 @@ export function ShotLog({
   onEdit,
   editDisabled = false,
   saved = null,
+  onOpenChange,
 }: {
   shots: ShotRecord[];
   pref: DistancePreference;
+  /** Told as the log opens and closes, in the same turn (the shot screen holds the stage above it still). */
+  onOpenChange?: (open: boolean) => void;
   /**
    * CH-11505 mid-hole: a recorded shot in the open log is tapped to change or delete it (useShotTracking's
    * handleEditShot), as Fairway's shot pills do before the hole is holed. Without it the rows are read-only.
@@ -371,10 +393,19 @@ export function ShotLog({
     );
   const last = shots[shots.length - 1]!;
   const penalties = shots.filter((s) => s.isPenalty).length;
-  const lastText = last.isPenalty ? shotTitle(last) : `${shotTitle(last)} → ${shotFinish(last, pref)}`;
+  const lastText = lastShotWords(last, pref);
   return (
     <div className={'ch-rt-log' + (open ? ' is-open' : '')}>
-      <button type="button" className="ch-rt-log__h" aria-expanded={open} aria-controls={bodyId} onClick={() => setOpen(!open)}>
+      <button
+        type="button"
+        className="ch-rt-log__h"
+        aria-expanded={open}
+        aria-controls={bodyId}
+        onClick={() => {
+          onOpenChange?.(!open);
+          setOpen(!open);
+        }}
+      >
         <span className="ch-rt-log__dots" aria-hidden="true">
           {shots.map((s, i) => (
             <i key={i} className={lieClass(s)}>
@@ -389,7 +420,7 @@ export function ShotLog({
           </b>
           {/* The new line settles in on the next shot instead of swapping in place (F-0020); at once under reduced motion. */}
           <Swap swapKey={shots.length} inline>
-            <em>Last: {lastText}</em>
+            <em>{lastText}</em>
           </Swap>
         </span>
         <Icon icon={ChevronDown} size={16} className="ch-rt-log__chev" />

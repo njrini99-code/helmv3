@@ -80,4 +80,15 @@ describe('the Ask composer fits its text again when it wraps differently', () =>
     unmount();
     expect(disconnect).toHaveBeenCalled();
   });
+
+  it('a player out of Ask keeps the box, paused, saying why (E-OUT)', () => {
+    const onSend = vi.fn();
+    render(
+      <ToastProvider>
+        <AskComposer variant="dock" phone players={[]} busy={false} failed={false} blocked={false} paused="Ask is paused until Monday" onSend={onSend} onStop={vi.fn()} />
+      </ToastProvider>,
+    );
+    expect(box().disabled).toBe(true);
+    expect(box().placeholder).toBe('Ask is paused until Monday');
+  });
 });

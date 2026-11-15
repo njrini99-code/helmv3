@@ -17,6 +17,7 @@ vi.mock('../../../shell/phone-chrome', () => ({
 
 import '../../../__tests__/dialog-polyfill';
 import { PREVIEW_LIVE_EMPTY, PREVIEW_LIVE_FAILED, PREVIEW_LIVE_NOW } from '../../../preview/fixtures-live';
+import { LIVE_COPY } from '../../../live/copy';
 import { LiveView } from '../LiveView';
 
 afterEach(cleanup);
@@ -29,6 +30,18 @@ describe('Live on a phone, when the feed fails (F-0012)', () => {
     expect(screen.getByRole('button', { name: 'Try again' })).toBeTruthy();
     expect(code('CH-16619')).toBeNull();
     expect(document.querySelector('.ch-lv-chip[data-feed="live"]')).toBeNull();
+  });
+
+  it('the chip says what the page says, in the page’s words, and the page keeps the one Try again', () => {
+    render(<LiveView initial={PREVIEW_LIVE_FAILED} frozen now={PREVIEW_LIVE_NOW} />);
+    const chip = document.querySelector('.ch-lv-chip')!;
+    expect(chip.textContent).toBe(LIVE_COPY.cantRefresh);
+    expect(chip.textContent).not.toMatch(/Connecting/);
+    expect(code('CH-16604')!.textContent).toContain(LIVE_COPY.cantRefresh);
+    expect(chip.querySelector('button')).toBeNull();
+    expect(screen.getAllByRole('button', { name: 'Try again' })).toHaveLength(1);
+    // The notice is the announcement: the chip is not a second live region.
+    expect(chip.getAttribute('role')).toBeNull();
   });
 
   it('an empty feed that loaded is still the empty state', () => {

@@ -13,12 +13,14 @@ describe('the poll card styles', () => {
     expect(css).toContain("html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {");
   });
 
-  it('rings the mark in ink-500, moves the fill on --ch-dur-release, and takes its radii from tokens', () => {
-    expect(poll).toMatch(/--ch-poll-mark-ring: var\(--ch-ink-500\);/);
-    expect(poll).toMatch(/transform var\(--ch-dur-release\) var\(--ch-ease\)/);
-    expect(poll).not.toMatch(/transform var\(--ch-dur-base\)/);
-    expect(poll).toMatch(/border-radius: var\(--ch-radius-card\);/);
-    expect(poll).toMatch(/border-bottom-right-radius: var\(--ch-radius-tail\);/);
+  it('rings the mark in the tertiary ink, moves the fill on the smooth spring, and takes its radii from tokens (package D, messages-details.css)', () => {
+    const details = readFileSync(join(process.cwd(), 'src/clubhouse/styles/messages-details.css'), 'utf8');
+    const rule = (sel: string) => details.slice(details.indexOf(`${sel} {`), details.indexOf('}', details.indexOf(`${sel} {`)));
+    expect(rule('[data-ch-ms-v2] .ch-msd-poll__mark')).toMatch(/inset 0 0 0 1\.5px var\(--ch-text-tertiary\)/);
+    expect(rule('[data-ch-ms-v2] .ch-msd-poll__fill')).toMatch(/transform var\(--ch-dur-spring-smooth\) var\(--ch-ease-spring-smooth\)/);
+    expect(rule('[data-ch-ms-v2] .ch-msd-poll__fill')).not.toMatch(/transform var\(--ch-dur-base\)/);
+    expect(details.slice(details.indexOf('[data-ch-ms-v2] .ch-msd-poll {'), details.indexOf('}', details.indexOf('[data-ch-ms-v2] .ch-msd-poll {')))).toMatch(/border-radius: var\(--ch-radius-xl\);/);
+    expect(details).toMatch(/\.ch-msd-poll\.is-mine \{\s*border-bottom-right-radius: var\(--ch-radius-tail\);/);
     expect(poll).not.toMatch(/border-radius: 6px/);
   });
 

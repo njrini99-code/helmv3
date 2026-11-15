@@ -80,6 +80,29 @@ describe('ListPresence', () => {
     expect(screen.getByText('c').getAttribute('style') ?? '').not.toMatch(/height|opacity|overflow/);
   });
 
+  it('noArrival (a row with a motion of its own) skips the list\'s arrival but still closes when it leaves', async () => {
+    const own = (ids: string[]) => (
+      <LazyMotion features={domMax}>
+        <ul>
+          <ListPresence arrive="rise">
+            {ids.map((id) => (
+              <PresenceRow key={id} noArrival={id === 'b'}>
+                {id}
+              </PresenceRow>
+            ))}
+          </ListPresence>
+        </ul>
+      </LazyMotion>
+    );
+    const { rerender } = render(own(['a', 'c']));
+    rerender(own(['a', 'b', 'c', 'd']));
+    // 'd' rises in from 8 px and transparent; 'b' takes the page with no arrival style at all.
+    expect(screen.getByText('d').style.opacity).toBe('0');
+    expect(screen.getByText('b').getAttribute('style') ?? '').not.toMatch(/opacity|transform|height|overflow/);
+    rerender(own(['a', 'c', 'd']));
+    expect(screen.getByText('b').hasAttribute('data-leaving')).toBe(true);
+  });
+
   it('flip={false} (a thread, whose scroller sets its own position) keeps arrivals but takes no layout transform', () => {
     const flat = (ids: string[]) => (
       <LazyMotion features={domMax}>

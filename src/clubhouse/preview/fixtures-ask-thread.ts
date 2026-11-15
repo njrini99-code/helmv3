@@ -384,6 +384,18 @@ const composeTurn = (id: string) =>
     text('Putting is the only other leg below zero, and it is small. I would put the next two practices on approach shots from 125 to 175 yards before touching his putting.'),
   ]);
 export const ASK_MSGS_COMPOSE: UIMessage[] = [user('u1', 'How is Jonah doing, and where is he losing strokes?'), composeTurn('a1')];
+/** Ask v2's read chips: the same answer with the model's `[eN]` markers on its sentences. */
+export const ASK_MSGS_CHIPS: UIMessage[] = [
+  user('u1', 'How is Jonah doing, and where is he losing strokes?'),
+  assistant('a1', [
+    step(1, 'Reading recorded statistics', 'get_player_metrics'),
+    step(2, 'Reading his last 7 rounds', 'get_player_trend'),
+    text("Jonah's scoring is trending the right way [e2], but **approach** is still costing him close to a stroke a round [e1]."),
+    evRef('sg', 'e1', ASK_EV_JONAH_SG),
+    evRef('trend', 'e2', ASK_EV_JONAH_TREND, 'get_player_trend'),
+    { type: 'data-visual-composition', id: 'visual-vc-preview0001', data: ASK_COMPOSITION },
+  ]),
+];
 
 // ── The staging transcript (owner, 2026-10-29: "its the coachhelm chat. its ass") ──────────────────────────────────
 // Real envelope shapes from read-tools.ts: roster, tasks, tournaments, events, a team ranking and comparison, and an old
@@ -485,6 +497,7 @@ export const ASK_THREAD_STATES: Record<string, { messages: UIMessage[]; busy?: b
   answer: { messages: ASK_MSGS_ANSWER },
   visual: { messages: ASK_MSGS_VISUAL },
   compose: { messages: ASK_MSGS_COMPOSE },
+  chips: { messages: ASK_MSGS_CHIPS },
   // The same answer as it arrives: the turn is live when it mounts, so its visual comes in with the playbook's motion.
   composelive: { messages: ASK_MSGS_COMPOSE, busy: true },
   staging: { messages: ASK_MSGS_STAGING },

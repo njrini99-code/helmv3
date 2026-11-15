@@ -1,0 +1,247 @@
+{
+ "kind": "compose",
+ "lede": "Scoring against last season, strokes gained by area and putting by distance.",
+ "title": "Team trends this season",
+ "blocks": [
+  {
+   "type": "season_compare",
+   "method": "Usual range is last season’s mean plus or minus one standard deviation of round values.",
+   "metric": "Score to par per 18",
+   "last_season": {
+    "n": 76,
+    "hi": 8.35,
+    "lo": -0.12,
+    "mean": 4.12
+   },
+   "this_season": {
+    "season": "2026–27",
+    "players": [
+     {
+      "form": "early",
+      "place": 1,
+      "player": "Player F",
+      "rounds": 2,
+      "player_id": "9458ca63-9dbe-4020-ab13-9e2b70f70c80",
+      "sg_per_round": -4.87,
+      "scoring_average": 72
+     },
+     {
+      "form": "early",
+      "place": 2,
+      "player": "Player G",
+      "rounds": 2,
+      "player_id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+      "sg_per_round": -6.74,
+      "scoring_average": 72.5
+     },
+     {
+      "form": "early",
+      "place": 3,
+      "player": "Player D",
+      "rounds": 2,
+      "player_id": "8e382583-2ce6-4d15-8568-5088cf02dbd1",
+      "sg_per_round": -7.11,
+      "scoring_average": 73
+     },
+     {
+      "form": "early",
+      "place": 4,
+      "player": "Player E",
+      "rounds": 2,
+      "player_id": "b40a650a-bce0-4e46-87cd-365b0256ee21",
+      "sg_per_round": -6.08,
+      "scoring_average": 73.5
+     },
+     {
+      "form": "early",
+      "place": 5,
+      "player": "Player C",
+      "rounds": 2,
+      "player_id": "ed1ff03e-b33a-4a80-891e-09685b7db3d0",
+      "sg_per_round": -4.24,
+      "scoring_average": 75
+     },
+     {
+      "form": "improving",
+      "place": 6,
+      "player": "Player B",
+      "rounds": 13,
+      "player_id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+      "sg_per_round": -7.31,
+      "scoring_average": 77.5
+     },
+     {
+      "form": "early",
+      "place": 7,
+      "player": "Player H",
+      "rounds": 2,
+      "player_id": "faced578-b271-416f-b757-ac3aee5bd9e5",
+      "sg_per_round": -4.2,
+      "scoring_average": 77.5
+     },
+     {
+      "form": "early",
+      "place": null,
+      "player": "Player A",
+      "rounds": 0,
+      "player_id": "b6b87c4d-0673-4166-9f8c-44e60936a034",
+      "sg_per_round": null,
+      "scoring_average": null
+     }
+    ],
+    "team_average": 75.8
+   }
+  },
+  {
+   "type": "split",
+   "measurements": [
+    {
+     "unit": "strokes",
+     "as_of": "2026-11-12T03:49:34.417Z",
+     "value": -1.36,
+     "entity": {
+      "id": "6ecdd1a6-63fe-4beb-b094-00118f334163",
+      "kind": "team",
+      "label": "Test Team"
+     },
+     "method": "team_stats_window",
+     "source": "Team Stats page",
+     "coverage": "complete",
+     "benchmark": null,
+     "direction": "higher_better",
+     "metric_id": "sg_tee",
+     "window_end": null,
+     "denominator": null,
+     "sample_size": 11,
+     "sample_unit": "rounds",
+     "metric_label": "SG off the tee",
+     "window_start": null,
+     "coverage_note": null
+    },
+    {
+     "unit": "strokes",
+     "as_of": "2026-11-12T03:49:34.417Z",
+     "value": -4.37,
+     "entity": {
+      "id": "6ecdd1a6-63fe-4beb-b094-00118f334163",
+      "kind": "team",
+      "label": "Test Team"
+     },
+     "method": "team_stats_window",
+     "source": "Team Stats page",
+     "coverage": "complete",
+     "benchmark": null,
+     "direction": "higher_better",
+     "metric_id": "sg_approach",
+     "window_end": null,
+     "denominator": null,
+     "sample_size": 11,
+     "sample_unit": "rounds",
+     "metric_label": "SG approach",
+     "window_start": null,
+     "coverage_note": null
+    },
+    {
+     "unit": "strokes",
+     "as_of": "2026-11-12T03:49:34.417Z",
+     "value": 0.07,
+     "entity": {
+      "id": "6ecdd1a6-63fe-4beb-b094-00118f334163",
+      "kind": "team",
+      "label": "Test Team"
+     },
+     "method": "team_stats_window",
+     "source": "Team Stats page",
+     "coverage": "complete",
+     "benchmark": null,
+     "direction": "higher_better",
+     "metric_id": "sg_around_green",
+     "window_end": null,
+     "denominator": null,
+     "sample_size": 11,
+     "sample_unit": "rounds",
+     "metric_label": "SG around green",
+     "window_start": null,
+     "coverage_note": null
+    },
+    {
+     "unit": "strokes",
+     "as_of": "2026-11-12T03:49:34.417Z",
+     "value": -2.4,
+     "entity": {
+      "id": "6ecdd1a6-63fe-4beb-b094-00118f334163",
+      "kind": "team",
+      "label": "Test Team"
+     },
+     "method": "team_stats_window",
+     "source": "Team Stats page",
+     "coverage": "complete",
+     "benchmark": null,
+     "direction": "higher_better",
+     "metric_id": "sg_putting",
+     "window_end": null,
+     "denominator": null,
+     "sample_size": 11,
+     "sample_unit": "rounds",
+     "metric_label": "SG putting",
+     "window_start": null,
+     "coverage_note": null
+    }
+   ]
+  },
+  {
+   "type": "putt_profile",
+   "buckets": [
+    {
+     "id": "0_3_ft",
+     "made": 145,
+     "rate": 98.6,
+     "label": "0–3 ft",
+     "attempts": 147
+    },
+    {
+     "id": "3_5_ft",
+     "made": 24,
+     "rate": 72.7,
+     "label": "3–5 ft",
+     "attempts": 33
+    },
+    {
+     "id": "5_10_ft",
+     "made": 18,
+     "rate": 39.1,
+     "label": "5–10 ft",
+     "attempts": 46
+    },
+    {
+     "id": "10_15_ft",
+     "made": 8,
+     "rate": 20.5,
+     "label": "10–15 ft",
+     "attempts": 39
+    },
+    {
+     "id": "15_25_ft",
+     "made": 2,
+     "rate": 4.2,
+     "label": "15–25 ft",
+     "attempts": 48
+    },
+    {
+     "id": "25_ft",
+     "made": 0,
+     "rate": 0,
+     "label": "25+ ft",
+     "attempts": 42
+    }
+   ]
+  }
+ ],
+ "layout": "stack",
+ "dataHash": "b146581b1b470030444c51f205d5a2c2fb59ec35009ad6a9ca1d83dec6fb4a1e",
+ "createdAt": "2026-11-12T03:49:38.746Z",
+ "artifactId": "vc-b146581b1b47",
+ "evidenceRefs": [],
+ "coverageNotes": [],
+ "schemaVersion": 2
+}

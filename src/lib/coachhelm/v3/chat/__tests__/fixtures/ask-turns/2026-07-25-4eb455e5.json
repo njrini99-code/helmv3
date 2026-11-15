@@ -1,0 +1,246 @@
+{
+ "id": "4eb455e5",
+ "messageId": "4eb455e5-7401-47b2-9bcb-a23215ad3e1a",
+ "source": {
+  "project": "staging",
+  "team": "Demo University Golf",
+  "exportedBy": "scripts/coachhelm/export-ask-turns.mjs"
+ },
+ "timezone": "America/New_York",
+ "roster": [
+  {
+   "id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+   "name": "Cole Bennett",
+   "first_name": "Cole",
+   "last_name": "Bennett"
+  },
+  {
+   "id": "ed1ff03e-b33a-4a80-891e-09685b7db3d0",
+   "name": "Dylan Brooks",
+   "first_name": "Dylan",
+   "last_name": "Brooks"
+  },
+  {
+   "id": "9458ca63-9dbe-4020-ab13-9e2b70f70c80",
+   "name": "Mason Rivers",
+   "first_name": "Mason",
+   "last_name": "Rivers"
+  },
+  {
+   "id": "b40a650a-bce0-4e46-87cd-365b0256ee21",
+   "name": "Jackson Hale",
+   "first_name": "Jackson",
+   "last_name": "Hale"
+  },
+  {
+   "id": "8e382583-2ce6-4d15-8568-5088cf02dbd1",
+   "name": "Ethan Park",
+   "first_name": "Ethan",
+   "last_name": "Park"
+  },
+  {
+   "id": "faced578-b271-416f-b757-ac3aee5bd9e5",
+   "name": "Tyler Hayes",
+   "first_name": "Tyler",
+   "last_name": "Hayes"
+  },
+  {
+   "id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+   "name": "Owen Carter",
+   "first_name": "Owen",
+   "last_name": "Carter"
+  },
+  {
+   "id": "b6b87c4d-0673-4166-9f8c-44e60936a034",
+   "name": "Audit Testplayer",
+   "first_name": "Audit",
+   "last_name": "Testplayer"
+  }
+ ],
+ "userMessage": {
+  "content": "What is Mason Rivers' weakest area across his recorded history?",
+  "createdAt": "2026-07-25T21:15:02.565499+00:00"
+ },
+ "priorMessages": [
+  {
+   "role": "user",
+   "createdAt": "2026-07-25T21:15:02.565499+00:00",
+   "content": "What is Mason Rivers' weakest area across his recorded history?",
+   "evidence": []
+  }
+ ],
+ "turn": {
+  "createdAt": "2026-07-25T21:15:11.426726+00:00",
+  "status": "failed",
+  "costUsd": null,
+  "content": "Mason Rivers' furthest gap relative to his teammates is strokes gained around the green: **-0.45 strokes** per round over his last 12 recorded rounds (May 28 – Jul 10), against a team average of -0.09 among the 6 peers compared — a gap of roughly 0.36 strokes/round.\n\nOther areas trailing team norms in that same window (12 rounds):\n- Putts per round: 33.17 vs. team average 32.8 (higher is worse)\n- One-putt rate: 24.54% vs. team average 26.24%\n- Strokes gained approach: -2.44 vs. team average -2.43 (essentially even with the team here, so this isn't a relative weakness despite the raw number looking large)\n\nThe around-the-green number is the standout gap — worth a look at his short-game data if you want to dig further.\n\n_Some figures in this answer could not be traced back to your program's data, so I've flagged it rather than presenting them as fact. Please ask again._",
+  "tools": [
+   {
+    "name": "find_player",
+    "input": {
+     "name": "Mason Rivers"
+    }
+   },
+   {
+    "name": "get_player_weakest_areas",
+    "input": {
+     "player_id": "9458ca63-9dbe-4020-ab13-9e2b70f70c80"
+    }
+   }
+  ],
+  "evidence": [
+   {
+    "tool": "get_player_weakest_areas",
+    "ref": null,
+    "envelope": {
+     "as_of": "2026-07-23T11:39:47.911234+00:00",
+     "detail": {
+      "gaps": [
+       {
+        "unit": "strokes",
+        "direction": "higher_better",
+        "metric_id": "sg_around_green",
+        "metric_label": "Strokes gained around the green",
+        "player_value": -0.45,
+        "team_average": -0.09,
+        "team_peers_compared": 6
+       },
+       {
+        "unit": "percent",
+        "direction": "higher_better",
+        "metric_id": "one_putt_pct",
+        "metric_label": "One-putt rate",
+        "player_value": 24.54,
+        "team_average": 26.24,
+        "team_peers_compared": 6
+       },
+       {
+        "unit": "count",
+        "direction": "lower_better",
+        "metric_id": "putts_per_round",
+        "metric_label": "Putts per round",
+        "player_value": 33.17,
+        "team_average": 32.8,
+        "team_peers_compared": 6
+       },
+       {
+        "unit": "strokes",
+        "direction": "higher_better",
+        "metric_id": "sg_approach",
+        "metric_label": "Strokes gained approach",
+        "player_value": -2.44,
+        "team_average": -2.43,
+        "team_peers_compared": 6
+       }
+      ],
+      "recorded_rounds": 12
+     },
+     "series": [],
+     "summary": "Mason Rivers is furthest behind the team on strokes gained around the green.",
+     "coverage": "complete",
+     "measurements": [
+      {
+       "unit": "strokes",
+       "as_of": "2026-07-23T11:39:47.911234+00:00",
+       "value": -0.45,
+       "entity": {
+        "id": "9458ca63-9dbe-4020-ab13-9e2b70f70c80",
+        "kind": "player",
+        "label": "Mason Rivers"
+       },
+       "method": "sg_per_round_vs_broadie_baseline",
+       "source": "stats cache",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "higher_better",
+       "metric_id": "sg_around_green",
+       "window_end": "2026-07-10",
+       "denominator": null,
+       "sample_size": 12,
+       "sample_unit": "rounds",
+       "metric_label": "Strokes gained around the green",
+       "window_start": "2026-05-28",
+       "coverage_note": null
+      },
+      {
+       "unit": "percent",
+       "as_of": "2026-07-23T11:39:47.911234+00:00",
+       "value": 24.54,
+       "entity": {
+        "id": "9458ca63-9dbe-4020-ab13-9e2b70f70c80",
+        "kind": "player",
+        "label": "Mason Rivers"
+       },
+       "method": "one_putt_holes_over_holes",
+       "source": "stats cache",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "higher_better",
+       "metric_id": "one_putt_pct",
+       "window_end": "2026-07-10",
+       "denominator": null,
+       "sample_size": 12,
+       "sample_unit": "holes",
+       "metric_label": "One-putt rate",
+       "window_start": "2026-05-28",
+       "coverage_note": null
+      },
+      {
+       "unit": "count",
+       "as_of": "2026-07-23T11:39:47.911234+00:00",
+       "value": 33.17,
+       "entity": {
+        "id": "9458ca63-9dbe-4020-ab13-9e2b70f70c80",
+        "kind": "player",
+        "label": "Mason Rivers"
+       },
+       "method": "total_putts_over_rounds",
+       "source": "stats cache",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "lower_better",
+       "metric_id": "putts_per_round",
+       "window_end": "2026-07-10",
+       "denominator": null,
+       "sample_size": 12,
+       "sample_unit": "rounds",
+       "metric_label": "Putts per round",
+       "window_start": "2026-05-28",
+       "coverage_note": null
+      },
+      {
+       "unit": "strokes",
+       "as_of": "2026-07-23T11:39:47.911234+00:00",
+       "value": -2.44,
+       "entity": {
+        "id": "9458ca63-9dbe-4020-ab13-9e2b70f70c80",
+        "kind": "player",
+        "label": "Mason Rivers"
+       },
+       "method": "sg_per_round_vs_broadie_baseline",
+       "source": "stats cache",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "higher_better",
+       "metric_id": "sg_approach",
+       "window_end": "2026-07-10",
+       "denominator": null,
+       "sample_size": 12,
+       "sample_unit": "rounds",
+       "metric_label": "Strokes gained approach",
+       "window_start": "2026-05-28",
+       "coverage_note": null
+      }
+     ],
+     "coverage_note": null
+    }
+   }
+  ],
+  "recorded": {
+   "outcome": "rejected",
+   "reason": "unknown",
+   "unmatchedTokens": [],
+   "misattributedTokens": []
+  }
+ }
+}

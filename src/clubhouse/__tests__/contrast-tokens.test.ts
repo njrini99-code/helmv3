@@ -169,7 +169,9 @@ describe('hairlines a touch darker (owner, 2026-10-24, decision 6)', () => {
   });
 });
 
-describe('the Ask thread at night: the avatar mark and a chosen visual row (2026-10-28)', () => {
+// The chosen visual row (.ch-th-va__row.is-on) this block also pinned is gone with the old visual artifact's rules
+// (2026-11-11): the studio draws visuals now and has no selected row.
+describe('the Ask thread at night: the avatar mark (2026-10-28)', () => {
   const thread = css('coachhelm-thread.css').replace(/\/\*[\s\S]*?\*\//g, '');
   /** The token a rule reads for `prop`, from the rule whose selector list holds exactly `sel`. */
   const reads = (sel: string, prop: string) => {
@@ -178,7 +180,6 @@ describe('the Ask thread at night: the avatar mark and a chosen visual row (2026
     if (!m) throw new Error(`${sel} sets no ${prop} token`);
     return m[1]!;
   };
-  const dark = (s: string) => `:where(html[data-fw-theme='dark']) ${s}`;
 
   it("the avatar's wheel reads at 3:1 or more on its own disc, day and night (non-text mark)", () => {
     expect(reads('.ch-th-mk-helm', 'stroke')).toBe('ch-hero-mint');
@@ -191,19 +192,7 @@ describe('the Ask thread at night: the avatar mark and a chosen visual row (2026
     expect(contrast(mint, hex(token('ch-green-fill-700', 'dark'))), 'dark').toBeGreaterThanOrEqual(3);
   });
 
-  it('a chosen visual row is ringed at 3:1 or more on the night card', () => {
-    const ring = reads(dark('.ch-th-va__row.is-on'), 'box-shadow');
-    expect(ring).toBe('ch-selected-ink');
-    // --ch-selected-ink is the green-700 step, which the dark block redefines.
-    expect(tokens).toMatch(/--ch-selected-ink: var\(--ch-green-700\);/);
-    const card = hex(token('ch-bg-subtle', 'dark'));
-    expect(contrast(hex(token('ch-green-700', 'dark')), card)).toBeGreaterThanOrEqual(3);
-    // Its fill alone is within a shade of the card: why the ring is needed.
-    expect(contrast(hex(token('ch-bg-selected', 'dark')), card)).toBeLessThan(1.5);
-  });
-
-  it('light keeps its deep-green mark and its unringed selected fill', () => {
-    expect(reads('.ch-th-va__row.is-on', 'background')).toBe('ch-selected-bg');
+  it('light keeps its deep-green mark', () => {
     expect(contrast(hex(token('ch-green-800', 'light')), hex(token('ch-sheet-bg', 'light')))).toBeGreaterThanOrEqual(3);
   });
 });

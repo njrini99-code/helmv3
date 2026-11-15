@@ -19,7 +19,7 @@ export interface ChTourPaths {
   newEvent: () => string;
   editEvent: (eventId: string) => string;
   lineup: (eventId: string) => string;
-  live: (eventId: string) => string;
+  live: (eventId: string, round?: number) => string;
   player: (eventId?: string | null) => string;
   qualifier: (qualifierId: string) => string;
 }
@@ -37,7 +37,7 @@ export const TOUR_ROUTES: ChTourPaths = {
   newEvent: () => `${BASE}/new`,
   editEvent: (id) => `${BASE}/${id}/edit`,
   lineup: (id) => `${BASE}/${id}/lineup`,
-  live: (id) => `${BASE}/${id}/live`,
+  live: (id, round) => `${BASE}/${id}/live${round ? `?round=${round}` : ''}`,
   player: (id) => (id ? `${BASE}/${id}` : BASE),
   qualifier: (id) => `/golf/dashboard/qualifiers/${id}`,
 };
@@ -61,7 +61,7 @@ export function tourPreviewPaths(state?: string | null): ChTourPaths {
     newEvent: () => at('tournament-form'),
     editEvent: () => at('tournament-form', { view: 'edit' }),
     lineup: () => at('tournament-lineup'),
-    live: () => at('tournament-live'),
+    live: (_id, round) => at('tournament-live', { round: round ? String(round) : null }),
     player: (id) => at('tournament-player', { event: id ?? null }),
     qualifier: () => '/clubhouse-preview/qualifier',
   };

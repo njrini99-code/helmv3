@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
 import { askTables } from './ask-db';
 import type { ActionReceipt } from './action-types';
+import { logServerError } from '@/lib/server-error-logger';
 import { recordOutcome } from './action-runs';
 
 type Sb = SupabaseClient<Database>;
@@ -33,6 +34,7 @@ export interface HeldRow {
   run_at: string;
   /** The row's scoped ledger key: the write's request id comes from it, so a rebuilt write hits the same row. */
   idempotency_key: string;
+  conversation_id?: string | null;
 }
 /** How to write a held row. Nothing has started until `run` is called, and only the winner of `takeHeld` calls it. */
 export interface HeldCommit {
@@ -42,7 +44,7 @@ export interface HeldCommit {
 /** Null: not this request's to write (another team's row); it stays held. */
 export type HeldResolver = (row: HeldRow) => HeldCommit | null;
 
-const HELD_COLUMNS = 'id, tool_name, proposed_input, team_id, run_at, idempotency_key';
+const HELD_COLUMNS = 'id, tool_name, proposed_input, team_id, run_at, idempotency_key, conversation_id';
 
 /**
  * Held to approved in one update: whoever wins runs it, and `claimForExecution`'s in-flight and TTL rules then apply unchanged.
@@ -53,6 +55,26 @@ async function takeHeld(sb: Sb, where: { run_id: string }): Promise<string | nul
   if (error) return null;
   return (data as { id?: string } | null)?.id ?? null;
 }
+
+/**
+ * Held to approved for several rows in ONE update. A batch whose shared window has closed is taken whole, so no card of it can be
+ * written by another request (a card's own ring-end, the sweep) while an earlier card of the batch is still being written.
+ * Returns the ids taken; a row the coach undid, or that was opened early, is not among them. Null when the update itself failed:
+ * nothing is known to be taken, and the caller says what that means.
+ */
+export async function takeHeldMany(sb: Sb, args: { run_ids: string[] }): Promise<Set<string> | null> {
+  if (args.run_ids.length === 0) return new Set();
+  const { data, error } = await askTables(sb).from(TABLE).update({ status: 'approved', decided_at: new Date().toISOString() } as never).eq('status', 'held').in('id', args.run_ids).select('id');
+  if (error) {
+    void logServerError('coachhelm held batch not taken', { action: 'coachhelm.tool.take_held', feature: 'coachhelm_chat', handled: true, extra: { code: error.code ?? null, rows: args.run_ids.length } }, 'error');
+    return null;
+  }
+  if (!Array.isArray(data)) return new Set();
+  return new Set((data as Array<{ id: string }>).map((row) => row.id));
+}
+
+/** Write a row this request has already taken, and record what happened. */
+export const runTaken = (sb: Sb, args: { run_id: string; run: () => Promise<ActionReceipt> }): Promise<ActionReceipt> => execute(sb, args.run_id, args.run);
 
 const waitUntil = (at: string) => new Promise<void>((r) => setTimeout(r, Math.max(0, Date.parse(at) - Date.now())));
 
@@ -75,7 +97,11 @@ async function execute(sb: Sb, run_id: string, run: () => Promise<ActionReceipt>
     const found = await readBack().catch(() => null);
     if (found) receipt = found;
   }
-  await recordOutcome(sb, { run_id, receipt });
+  const recorded = await recordOutcome(sb, { run_id, receipt });
+  if (!recorded) {
+    // The write has happened (or failed) either way; an unrecorded outcome would later read as an interrupted run.
+    void logServerError('coachhelm held action outcome not recorded', { action: 'coachhelm.tool.outcome', feature: 'coachhelm_chat', handled: true, extra: { status: receipt.status } }, 'error');
+  }
   return receipt;
 }
 

@@ -57,18 +57,17 @@ const tree = () => (
 );
 
 describe('P003 · 30102 desktop link when the layout hint was stale', () => {
-  it('keeps the request to focus the card until the desktop card mounts', async () => {
+  it('keeps the request to open the requests sheet until the desktop layout mounts', async () => {
     window.history.replaceState(null, '', '/golf/dashboard/roster?tab=requests');
     const view = render(tree());
-    // The hint said phone: no desktop card yet, the param is already spent.
-    expect(screen.queryByRole('region', { name: 'Join requests' })).toBeNull();
+    // The hint said phone: the desktop row is not drawn, the param is already spent and nothing is open.
     expect(window.location.search).toBe('');
+    expect(document.querySelector('.ch-rsd-reqs')).toBeNull();
     // The layout corrects to desktop a render later.
     phoneHint.value = false;
     await act(async () => {
       view.rerender(tree());
     });
-    const card = await screen.findByRole('region', { name: 'Join requests' });
-    await waitFor(() => expect(document.activeElement).toBe(card));
+    await waitFor(() => expect(screen.getByRole('dialog', { name: 'Join requests' })).toBeTruthy());
   });
 });

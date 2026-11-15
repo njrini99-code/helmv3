@@ -1,8 +1,10 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const nav = vi.hoisted(() => ({ push: vi.fn() }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: nav.push, refresh: vi.fn(), replace: vi.fn() }) }));
+const update = vi.hoisted(() => vi.fn());
+vi.mock('@/app/golf/actions/tournaments', () => ({ updateTournament: update }));
 const create = vi.hoisted(() => vi.fn());
 vi.mock('@/app/golf/actions/tournaments-calendar', () => ({ createTournamentFromCalendar: create }));
 vi.mock('../screens/qualifiers/writes', () => ({ LIVE_WRITES: { courses: vi.fn(async () => []), tees: vi.fn(async () => []) } }));
@@ -31,6 +33,7 @@ const submit = () => fireEvent.click(screen.getByRole('button', { name: 'Create 
 afterEach(cleanup);
 beforeEach(() => {
   create.mockReset();
+  update.mockReset();
   nav.push.mockReset();
   toast.mockReset();
   haptic.mockReset();
@@ -49,6 +52,19 @@ describe('New event (Tournaments page)', () => {
     expect(container.querySelector('[data-ch-tour-view="form"] h1')?.textContent).toBe('New event');
     expect(container.querySelector('[data-ch-code="CH-16301"]')).toBeNull();
     expect(screen.getByLabelText('Name')).toBeInTheDocument();
+  });
+
+  it('lays the fields at the left and, at the right, what creating does with the two keys; each day stands under its own name', () => {
+    const { container } = draw();
+    const side = container.querySelector('.ch-tour-lu-form__side') as HTMLElement;
+    expect(within(side).getByRole('button', { name: 'Create tournament' })).toBeInTheDocument();
+    expect(within(side).getByRole('link', { name: 'Cancel' })).toBeInTheDocument();
+    expect(side.querySelector('.ch-tour-lu-form__receipt')?.textContent).toMatch(/^Creates the tournament/);
+    const main = container.querySelector('.ch-tour-lu-form__main') as HTMLElement;
+    expect(within(main).getByLabelText('Name')).toBeInTheDocument();
+    // The shared tournament fields (stubbed here) and the qualifier are with the name, not in the held column.
+    expect(within(main).getByRole('button', { name: 'Pick Pinehurst' })).toBeInTheDocument();
+    expect(main.querySelector('#ch-tour-form-qual')).not.toBeNull();
   });
 
   it('CH-6147 and CH-6140: a missing name and course are said together and nothing is sent', () => {
@@ -126,9 +142,61 @@ describe('New event (Tournaments page)', () => {
     expect(screen.queryByRole('alert')).toBeNull();
   });
 
-  it('editing an event is still the placeholder', () => {
-    const { container } = draw(f.form.edit);
-    expect(container.querySelector('[data-ch-code="CH-16301"]')).not.toBeNull();
+});
+
+describe('Edit event (Tournaments page)', () => {
+  const edit = f.form.edit;
+  const save = () => fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
+
+  it('is the same page on the event’s saved values, with no placeholder', () => {
+    const { container } = draw(edit);
+    expect(container.querySelector('[data-ch-tour-view="form"] h1')?.textContent).toBe('Edit event');
+    expect(container.querySelector('[data-ch-code="CH-16301"]')).toBeNull();
+    expect(screen.getByLabelText('Name')).toHaveValue(edit.initial.name);
+    expect(screen.queryByRole('button', { name: 'Create tournament' })).toBeNull();
+  });
+
+  it('saves through updateTournament at the version it was opened at, then opens the desk (CH-16061)', async () => {
+    update.mockResolvedValue({ success: true, data: { version: (edit.initial.version ?? 0) + 1 } });
+    draw(edit);
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Renamed Classic' } });
+    save();
+    await waitFor(() => expect(update).toHaveBeenCalledTimes(1));
+    const [id, input, version] = update.mock.calls[0]!;
+    expect(id).toBe(edit.eventId);
+    expect(input.name).toBe('Renamed Classic');
+    expect(input.rounds).toHaveLength(edit.initial.rounds.length);
+    expect(version).toBe(edit.initial.version);
+    await waitFor(() => expect(nav.push).toHaveBeenCalledWith(`/golf/dashboard/tournaments/${edit.eventId}`));
+    expect(toast).toHaveBeenCalledWith(expect.objectContaining({ code: 'CH-16061' }));
+  });
+
+  it('a stale event is refused with its words and a Reload key, and the typed name stays (CH-16060)', async () => {
+    update.mockResolvedValue({ success: false, error: 'stale', code: 'stale' });
+    draw(edit);
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Mine' } });
+    save();
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveAttribute('data-ch-code', 'CH-16060');
+    expect(alert.textContent).toContain('Couldn’t save the changes. Nothing was changed.');
+    expect(alert.textContent).toContain('changed since you opened it');
+    expect(screen.getByRole('button', { name: 'Reload the event' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Name')).toHaveValue('Mine');
+    expect(nav.push).not.toHaveBeenCalled();
+  });
+
+  it('says a missing name before sending anything', () => {
+    draw(edit);
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: '' } });
+    save();
+    expect(screen.getByLabelText('Name')).toHaveAttribute('aria-invalid', 'true');
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  it('draws its loading state as Edit event', () => {
+    const { container } = render(<EventForm data={edit} load="loading" phone={false} />);
+    expect(container.querySelector('[data-ch-tour-view="form"]')).toHaveAttribute('data-ch-code', 'CH-16401');
+    expect(container.querySelector('[data-ch-tour-view="form"]')).toHaveAttribute('aria-label', 'Loading edit event');
   });
 });
 

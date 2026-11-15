@@ -17,12 +17,13 @@ counts include wrappers rather than unique popups.
 
 ```text
 Routes:                  /golf/dashboard/qualifiers, /qualifiers/new, /qualifiers/[id], /qualifiers/[id]/edit,
-                         /qualifiers/[id]/selection, /golf/dashboard/my-qualifiers
+                         /qualifiers/[id]/selection; /golf/dashboard/my-qualifiers redirects to
+                         /golf/dashboard/qualifiers in Clubhouse (retired 2026-11-11; Fairway keeps its page)
 Pages:                   src/app/golf/(dashboard)/dashboard/qualifiers/**/page.tsx and my-qualifiers/page.tsx
                          (session; isClubhouseFor -> Clubhouse, else Fairway; the selection page sends the
                          Fairway side to the CoachHelm qualifying workspace)
 Clubhouse route adapter: src/clubhouse/routes/qualifiers.tsx ClubhouseQualifiersRoute({ view, id })
-                         (views: list, mine, detail, new, edit, selection; no session -> nothing;
+                         (views: list, detail, new, edit, selection; no session -> nothing;
                          no team -> QualifiersNoTeam, CH-09309; a player on new/edit/selection -> CoachOnly, CH-09311;
                          a bad or other-team id -> NotFound, CH-09310; a failed selection read -> CH-09218)
 Server loaders:          src/clubhouse/data/qualifiers.ts loadQualifierList, loadQualifierDetail, loadQualifierForm,
@@ -40,7 +41,7 @@ Skeletons:               QualifiersSkeleton.tsx: QualifiersSkeleton (CH-09401), 
                          The role's own parts come from the shell's role (useClubhouseRole): SkeletonCoachActions.tsx
                          (a qualifier's coach actions) and SkeletonListParts.tsx (the list's Create action, its lede
                          sentence from model.ts listLede, by role, and a player's Mine lines).
-                         my-qualifiers/loading.tsx passes `mode="mine"` for that page's own sentence.
+                         my-qualifiers/loading.tsx holds the list's skeleton while the address redirects.
                          The phone skeletons draw the pages' own sentences from model.ts: listLede, FORM_LEDE,
                          FORM_HELP and stageNoteText, which QualifiersList, QualifierForm and QualifierSelection
                          render too.
@@ -106,7 +107,7 @@ only the write (CHANGELOG).
 
 | Path | Purpose | States |
 | --- | --- | --- |
-| `screens/qualifiers/QualifiersList.tsx` | The list: pills, search (filter and search kept by the shell's `useChSessionState`), hero, Active and Concluded cards, the player's own first, `/my-qualifiers` | 90101, 90401 to 90403, 90406, 90605, 90606, 90615, 91904 |
+| `screens/qualifiers/QualifiersList.tsx` | The list: pills, search (filter and search kept by the shell's `useChSessionState`), hero, Active and Concluded cards, the player's own first | 90101, 90401 to 90403, 90605, 90606, 90615, 91904 |
 | `screens/qualifiers/QualifierDetail.tsx` | One qualifier: head, facts, `Leaderboard` (scorecard tray), round-by-round, Close and Reopen, the live listener | 90102, 90302, 90303, 90404, 90407, 90603, 90604, 90607, 90608, 90609, 90616 to 90619, 91001, 91101, 91803 |
 | `screens/qualifiers/QualifierSections.tsx` | Selections, Course per round (streamed) and the stale-standings notice | 90610, 90611 |
 | `screens/qualifiers/streamed.tsx` | `Streamed` (`use()` of the loader's `secondary` inside its own `Suspense`), `SecondaryProvider`, the placeholders `CoursesSkeleton`, `CardBodySkeleton`, `NinesSkeleton`, `ParLineSkeleton` | CH-09410 |

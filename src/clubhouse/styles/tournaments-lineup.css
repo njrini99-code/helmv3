@@ -2,13 +2,35 @@
    Owned by the lineup area (src/clubhouse/screens/tournaments/README.md). Every class here starts .ch-tour-lu-; shared
    pieces (the view root .ch-tour, the changed-wash) live in tournaments.css. Tokens only. */
 
-/* New event: the name, the shared tournament fields (.ch-tfx, tournament-fields.css), the qualifier, the receipt sentence
-   and the two actions. A single column on the page's measure; the phone stacks the actions, Create first. */
+/* New event and Edit event, in the qualifier form's layout: the fields at the left under one heading, and at the right,
+   held in view, what saving does and the two keys. One column on the phone and in a narrow window, in the same order,
+   the keys stacked with Create first. Every label stands over its field: the shared tournament fields (.ch-tfx,
+   tournament-fields.css) are drawn flat here, with their labels moved up from the left. */
 .ch-tour-lu-form__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  align-items: start;
+  gap: 40px 48px;
+}
+.ch-tour-lu-form__body > .ch-tfx-note {
+  grid-column: 1 / -1;
+}
+.ch-tour-lu-form__main,
+.ch-tour-lu-form__side {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+}
+.ch-tour-lu-form__side {
+  position: sticky;
+  top: calc(var(--ch-topbar-h) + 20px);
+}
+.ch-tour-lu-form__fields {
   display: flex;
   flex-direction: column;
   gap: var(--ch-space-4);
-  max-width: var(--ch-measure-reading);
+  min-width: 0;
 }
 .ch-tour-lu-form__name,
 .ch-tour-lu-form__qual {
@@ -16,31 +38,354 @@
   flex-direction: column;
   gap: var(--ch-space-2);
 }
-.ch-tour-lu-form__lbl {
+.ch-tour-lu-form__lbl,
+.ch-tour-lu-form .ch-tfx__sublbl {
   font: var(--ch-type-13-medium);
   letter-spacing: var(--ch-track-13);
   color: var(--ch-text-secondary);
 }
 .ch-tour-lu-form__input {
   width: 100%;
-  height: 44px;
 }
-.ch-tour-lu-form__body .ch-tfx {
+.ch-tour-lu-form .ch-tfx {
   margin-top: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
 }
-.ch-tour-lu-form__receipt {
+.ch-tour-lu-form .ch-tfx__body {
+  gap: var(--ch-space-4);
+}
+.ch-tour-lu-form .ch-tfx__row {
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--ch-space-2);
+}
+.ch-tour-lu-form .ch-tfx__lbl {
+  padding-top: 0;
+}
+/* First day and Last day, side by side at every width, each under its own name; the row's "Days" is left to assistive
+   tech, which reads it as the pair's name (EventForm passes `daysLabelHidden`: the shared .ch-sr-only). */
+.ch-tour-lu-form .ch-tfx__pair {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--ch-space-3);
+}
+.ch-tour-lu-form .ch-tfx__sub {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ch-space-2);
+  min-width: 0;
+}
+.ch-tour-lu-form .ch-tfx__sublbl {
+  display: block;
+}
+/* The course's field is the height of the fields around it. */
+.ch-tour-lu-form .ch-tfx__course {
+  min-height: 40px;
+}
+/* A round's day and its tee time share the round's line on the phone, Add time at its end: with the fields drawn
+   flat the row has the room. A custom round, whose day is a field of its own, still drops the time under it. */
+@container (max-width: 359px) {
+  .ch-tour-lu-form .ch-tfx__round:has(> .ch-tfx__day > b) {
+    flex-wrap: nowrap;
+  }
+  .ch-tour-lu-form .ch-tfx__round:has(> .ch-tfx__day > b) > .ch-tfx__tee {
+    order: 0;
+    width: auto;
+    min-width: 104px;
+    margin-left: 0;
+    text-align: right;
+  }
+}
+/* What saving does, in the form's quiet well. Two classes: `.ch-root p` (base.css) would otherwise zero its margins. */
+.ch-tour-lu-form .ch-tour-lu-form__receipt {
   margin: 0;
+  padding: 12px 16px;
   font: var(--ch-type-14);
   color: var(--ch-text-secondary);
 }
+/* The commit sits under a seam at the foot of the held column, as the qualifier form's does. */
 .ch-tour-lu-form__actions {
   display: flex;
   justify-content: flex-end;
   gap: var(--ch-space-2);
+  padding-top: 20px;
+  box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
+}
+@media (max-width: 1100px) {
+  .ch-tour-lu-form__body {
+    grid-template-columns: minmax(0, 1fr);
+    max-width: var(--ch-measure-reading);
+  }
+  .ch-tour-lu-form__side {
+    position: static;
+  }
+}
+.ch-tour-lu-form.is-phone .ch-tour-lu-form__body {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+}
+.ch-tour-lu-form.is-phone .ch-tour-lu-form__main,
+.ch-tour-lu-form.is-phone .ch-tour-lu-form__side {
+  gap: 16px;
+}
+.ch-tour-lu-form.is-phone .ch-tour-lu-form__side {
+  position: static;
+}
+/* On the phone a section is a card (ui.css): its first label stands clear of the head's rule. */
+.ch-tour-lu-form.is-phone .ch-tour-lu-form__fields,
+.ch-tour-lu.is-phone .ch-tour-lu-extra {
+  padding-top: 12px;
+}
+.ch-tour-lu-form.is-phone .ch-tour-lu-form__input,
+.ch-tour-lu-form.is-phone .ch-tfx__course {
+  min-height: 44px;
 }
 .ch-tour-lu-form.is-phone .ch-tour-lu-form__actions {
   flex-direction: column-reverse;
+  padding-top: 0;
+  box-shadow: none;
 }
 .ch-tour-lu-form.is-phone .ch-tour-lu-form__actions .ch-btn {
   width: 100%;
+}
+
+/* Lineup builder: the spots, the alternate and individuals, and the roster with each player's form.
+   Desktop: two panes, the lineup being built at the left and the roster to build it from at the right, which stays in
+   view as the page moves. Phone: one column, every key 44px, and the screen's keys in one bar at the foot. */
+.ch-tour-lu-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ch-space-2);
+  margin-top: var(--ch-space-2);
+}
+.ch-tour-lu-hint {
+  margin: 0;
+  font: var(--ch-type-14);
+  color: var(--ch-text-secondary);
+}
+.ch-tour-lu-body {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  min-width: 0;
+}
+.ch-tour-lu-cols,
+.ch-tour-lu-col {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  min-width: 0;
+}
+/* One column keeps the reading measure (a narrow desktop window, the tablet tier). */
+.ch-tour-lu-cols,
+.ch-tour-lu-notes {
+  max-width: var(--ch-measure-reading);
+}
+@media (min-width: 1180px) {
+  .ch-tour-lu:not(.is-phone) .ch-tour-lu-cols {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+    gap: 40px 48px;
+    max-width: none;
+  }
+  .ch-tour-lu:not(.is-phone) .ch-tour-lu-side {
+    position: sticky;
+    top: calc(var(--ch-topbar-h) + 20px);
+  }
+  /* A long roster scrolls in its own pane, so its last player is never below the window while the pane is held. */
+  .ch-tour-lu:not(.is-phone) .ch-tour-lu-side .ch-tour-lu-roster {
+    max-height: calc(100dvh - var(--ch-topbar-h) - 140px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}
+.ch-tour-lu.is-phone .ch-tour-lu-body,
+.ch-tour-lu.is-phone .ch-tour-lu-cols,
+.ch-tour-lu.is-phone .ch-tour-lu-col {
+  gap: 20px;
+}
+.ch-tour-lu-notes {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ch-tour-lu-note {
+  padding: 12px 16px;
+  border-radius: var(--ch-radius-md);
+  font: var(--ch-type-13);
+  background: var(--ch-warning-100);
+  color: var(--ch-text-primary);
+}
+.ch-tour-lu-note.is-block {
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-warning-600);
+}
+.ch-tour-lu-slots,
+.ch-tour-lu-roster {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-radius: var(--ch-radius-card);
+  background: var(--ch-bg-surface);
+  box-shadow: var(--ch-elevation-reading);
+}
+.ch-tour-lu-slot,
+.ch-tour-lu-r {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+}
+.ch-tour-lu-slot + .ch-tour-lu-slot,
+.ch-tour-lu-r + .ch-tour-lu-r {
+  box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-border-hairline);
+}
+.ch-tour-lu-slot__n {
+  flex: none;
+  width: 24px;
+  font: var(--ch-type-14-strong);
+  color: var(--ch-text-secondary);
+}
+.ch-tour-lu-slot__who,
+.ch-tour-lu-r__who {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ch-tour-lu-r .ch-avatar {
+  flex: none;
+}
+/* The name, the year and, for a player who is injured or out, the chip that says so: one line that wraps as a line. */
+.ch-tour-lu-r__n {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 6px;
+  font: var(--ch-type-14-strong);
+  color: var(--ch-text-primary);
+}
+.ch-tour-lu-r__act {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+.ch-tour-lu-muted {
+  font: var(--ch-type-13);
+  color: var(--ch-text-secondary);
+}
+.ch-tour-lu-lbl {
+  font: var(--ch-type-13-medium);
+  color: var(--ch-text-secondary);
+}
+.ch-tour-lu-form-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+}
+.ch-tour-lu-strip {
+  display: inline-flex;
+  gap: 8px;
+  font: var(--ch-type-13);
+  color: var(--ch-text-primary);
+}
+.ch-tour-lu-strip .is-out {
+  color: var(--ch-text-tertiary);
+}
+.ch-tour-lu-extra {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.ch-tour-lu-extra__row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ch-tour-lu-extra__ind {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.ch-tour-lu-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px 2px 12px;
+  border-radius: 999px;
+  background: var(--ch-bg-selected);
+  font: var(--ch-type-13-medium);
+  color: var(--ch-text-primary);
+}
+
+/* Phone: a section is already a card there (ui.css), so its list is flat inside it, and a row is one line: portrait,
+   name over form, then the spot's chip or Add at the right end. Add is drawn small and takes a 44px tap. */
+.ch-tour-lu.is-phone .ch-tour-lu-slots,
+.ch-tour-lu.is-phone .ch-tour-lu-roster {
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+.ch-tour-lu.is-phone .ch-tour-lu-slot,
+.ch-tour-lu.is-phone .ch-tour-lu-r {
+  padding: 12px 0;
+}
+.ch-tour-lu.is-phone .ch-tour-lu-r {
+  min-height: 64px;
+}
+.ch-tour-lu.is-phone .ch-tour-lu-r__act .ch-btn::after {
+  content: '';
+  position: absolute;
+  inset: -8px -4px;
+}
+
+/* The phone's bar: the screen's keys at the foot, over the home indicator, in reach of a thumb. A solid toolbar the
+   width of the screen (the tab bar is away on a pushed page); the list fades into it under one shade, as the round
+   setup's dock does. It closes the page, so it cancels the foot padding under it (the view's 32px and the phone
+   canvas's 20px plus the safe area, shell.css) and keeps the safe area as its own padding: the keys stand above the
+   home indicator and the bar's paper runs to the screen's edge, at the end of the page as while it scrolls. */
+.ch-tour-lu-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 calc(-1 * var(--ch-page-x-phone)) calc(-52px - env(safe-area-inset-bottom, 0px));
+  padding: var(--ch-space-2) var(--ch-page-x-phone) calc(var(--ch-space-2) + env(safe-area-inset-bottom, 0px));
+  background: var(--ch-bg-surface);
+}
+.ch-tour-lu-bar::before {
+  position: absolute;
+  right: 0;
+  bottom: 100%;
+  left: 0;
+  height: var(--ch-scroll-edge-h);
+  background: var(--ch-scroll-edge-up);
+  content: '';
+  pointer-events: none;
+}
+.ch-tour-lu-bar__s {
+  flex: 1 1 auto;
+  min-width: 0;
+  font: var(--ch-type-14-strong);
+  color: var(--ch-text-primary);
+  white-space: nowrap;
+}
+.ch-tour-lu-bar .ch-btn {
+  --ch-btn-pad-x: 16px;
+  flex: none;
+}
+.ch-tour-lu-bar .ch-btn--primary {
+  flex: 1 1 auto;
+  max-width: 190px;
+  margin-left: auto;
 }

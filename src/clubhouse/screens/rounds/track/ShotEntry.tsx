@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState, type Dispatch, type ReactNode, type RefObject } from 'react';
-import { ArrowRight, Check, FlagTriangleRight, TriangleAlert, Undo2 } from 'lucide-react';
+import { useEffect, useLayoutEffect, useRef, useState, type Dispatch, type ReactNode, type RefObject } from 'react';
+import { ArrowRight, Check, ChevronDown, FlagTriangleRight, TriangleAlert, Undo2, type LucideIcon } from 'lucide-react';
 import type { ShotAction } from '@/hooks/golf/use-shot-state-machine';
 import { displayToFeet, displayToYards, yardsToDisplay, type DistancePreference } from '@/lib/golf/distance-units';
 import {
@@ -23,6 +23,7 @@ import { roving } from '../../../ui/use-roving';
 import { useChReducedMotion } from '../../../lib/reduced-motion';
 import { Button } from '../../../ui/Button';
 import { Icon } from '../../../ui/Icon';
+import { Swap } from '../../../ui/Swap';
 import { APPROACH_GRID, BREAK_OPTIONS, cleanDistance, isDistanceText, PUTT_TAGS, quickPicks, RESULT_LABEL, SLOPE_OPTIONS, shotTitle } from './labels';
 import { Sec, Seg } from './parts';
 
@@ -61,13 +62,42 @@ export interface ShotEntryProps {
   /** Resolves true once the tap in's hole is saved. */
   onTapIn?: () => Promise<boolean>;
   /**
-   * The one-tap data prompts (CH-11960 to CH-11962), drawn first in the card: the round screen owns them, so a tap
-   * survives the entry being re-keyed for the next shot. Absent, the card is what it was.
+   * Whether the putt's optional Break and slope row is open. The round screen holds it, so once opened it stays open on
+   * every putt for the rest of the round; closed until then.
+   */
+  puttReadOpen: boolean;
+  onPuttReadOpen: (open: boolean) => void;
+  /**
+   * The one-tap data prompts (CH-11960 to CH-11962). The round screen owns them, so a tap survives the entry's change to
+   * the next shot. They stand in the distance row's place, which is held empty until a result is picked: a fixed place
+   * that pushes nothing as a prompt comes, is answered or is skipped (owner, 2026-11-11). Absent, the card is what it was.
    */
   prompts?: ReactNode;
+  /** A prompt is asking now (not one held, hidden, after it went): it shows until a result is picked. */
+  asking?: boolean;
+  /** Which way the round last moved between holes: the card's words turn with the hole (1 to a later hole). */
+  holeDir?: 1 | -1;
+  /**
+   * The hole is holed: its review stands in the card where the shot was, and the bar carries the review's actions. The
+   * card and the bar stay where they are (owner, 2026-11-11: nothing moves under the thumb).
+   */
+  review?: ChHoleReviewView | null;
+}
+
+/** A holed hole, as the card and the bar show it (RoundTracking builds it). */
+export interface ChHoleReviewView {
+  /** The hole's shots (HoleReview), in the card's place for the shot. */
+  content: ReactNode;
+  /** The holed score: while the hole saves, or after its save failed, Next shot keeps the words that were tapped. */
+  score: number;
+  /** The hole's save or an undo is running: Undo waits (CH-11402). */
+  busy: boolean;
+  /** Next shot's place: back to the next hole to play, or Review and post once every hole is in (CH-11910). */
+  action: { label: string; icon: LucideIcon; disabled: boolean; onClick: () => void } | null;
 }
 
 const DIST_ID = 'ch-rt-dist';
+const READ_ID = 'ch-rt-read';
 const BLOCKER_ID = 'ch-rt-blocker';
 
 /**
@@ -79,6 +109,16 @@ const BLOCKER_ID = 'ch-rt-blocker';
  */
 export function ShotEntry(p: ShotEntryProps) {
   const [confirmedKey, setConfirmedKey] = useState<string | null>(null);
+  // The shot whose result is being changed (the fold's way back): held by shot, so it never carries to the next one.
+  const [changingAt, setChangingAt] = useState<string | null>(null);
+  const shotKey = `${p.currentHole.number}:${p.currentShot}`;
+  // A new hole turns the card's words as the hole turns above it (the hero's slide); a new shot, the hole's review and an
+  // undo settle in. Read during the render that changes the hole, before the effect.
+  const shownHole = useRef(p.currentHole.number);
+  const holeTurned = shownHole.current !== p.currentHole.number;
+  useEffect(() => {
+    shownHole.current = p.currentHole.number;
+  }, [p.currentHole.number]);
   const meters = p.pref === 'meters';
   const result = p.resultOfShot === 'penalty' ? null : (p.resultOfShot as ShotResult | null);
   const input: ShotEntryInput = {
@@ -115,6 +155,31 @@ export function ShotEntry(p: ShotEntryProps) {
   const teeMiss = p.isTeeShot && !!result && ['rough', 'sand', 'other'].includes(result);
   const approachMiss = p.isApproachOrAroundGreen && !!result && !['green', 'hole'].includes(result);
   const puttMissed = p.isPutting && !!result && result !== 'hole';
+  // The result's place holds one of two faces, both always in the card so the place keeps the taller one's height: the
+  // results to pick from, or, once a result that asks something more is picked, that question with the pick folded into
+  // its heading ("Rough · Change"). A result that asks nothing more (fairway from the tee, the green, holed) stays lit in
+  // the grid. Nothing below moves either way (owner, 2026-11-11: nothing moves under the thumb).
+  const face: 'pick' | 'follow' = (teeMiss || approachMiss || puttMissed) && changingAt !== shotKey ? 'follow' : 'pick';
+  const [turned, setTurned] = useState({ key: shotKey, face, count: 0 });
+  if (turned.key !== shotKey) setTurned({ key: shotKey, face, count: 0 });
+  else if (turned.face !== face) setTurned({ key: shotKey, face, count: turned.count + 1 });
+  const turn = turned.key === shotKey && turned.count > 0 ? (turned.count % 2 ? 'a' : 'b') : undefined;
+  // The Break and slope row stays where it was tapped. Where the hero has height to give, the card grows up into it and
+  // the row does not move; where it has none (a small phone), the card can only grow down the page, so the page is
+  // scrolled by exactly what the row moved, at once, before the frame is painted.
+  const readRow = useRef<HTMLButtonElement>(null);
+  const readRowWas = useRef<number | null>(null);
+  useLayoutEffect(() => {
+    const was = readRowWas.current;
+    readRowWas.current = null;
+    const row = readRow.current;
+    if (was === null || !row) return;
+    const moved = row.getBoundingClientRect().top - was;
+    if (Math.abs(moved) >= 1) window.scrollBy({ top: moved, behavior: 'instant' });
+  }, [p.puttReadOpen]);
+  const puttRead = [BREAK_OPTIONS.find(([v]) => v === p.puttBreak)?.[1], SLOPE_OPTIONS.find(([v]) => v === p.puttSlope)?.[1]].filter(Boolean).join(' · ');
+  const resultLabel = p.isPutting ? 'Putt result' : 'Shot result';
+  const followLabel = p.isPutting ? 'What happened' : 'Miss direction';
 
   const shotYards = (() => {
     if (!p.distanceAfterShot || distanceInvalid || holed) return null;
@@ -151,184 +216,255 @@ export function ShotEntry(p: ShotEntryProps) {
   ) : null;
   const noticeAtDistance = issue?.rule === 'distance_not_decreasing';
   const lastShot = p.shotHistory[p.shotHistory.length - 1];
+  const review = p.review ?? null;
+  // Next shot's place on the bar. Before the hole is holed: the shot's gate (CH-11101) or Next shot; once holed, the
+  // review's way on, or the hole-out words that were tapped, held while the hole saves.
+  const goLabel = review ? (review.action?.label ?? `Hole out · ${review.score}`) : (blocker ?? (holed ? `Hole out · ${p.currentShot}` : 'Next shot'));
+  const goIcon = review ? (review.action?.icon ?? Check) : blocker ? null : holed ? Check : ArrowRight;
+  const goBlocked = !review && !!blocker;
 
   return (
-    <section className="ch-rt-panel" aria-label={`Shot ${p.currentShot}`}>
-      {/* Board 3: the entry is one ivory card; the bar under it sits on the green (phone). */}
+    <section className="ch-rt-panel" aria-label={review ? undefined : `Shot ${p.currentShot}`}>
+      {/* Board 3: the entry is one ivory card; the bar under it sits on the green (phone). The card and the bar are
+          mounted for the whole round: Next shot, holing out and a new hole change what they hold, never where they stand
+          (owner, 2026-11-11). What the card asks about the shot (or the holed hole's review) turns in place (Swap): a new
+          shot or the review settles in, a new hole turns with the hole above. */}
       <div className="ch-rt-card">
-        {p.prompts}
-        {p.isTeeShot && p.currentHole.par !== 3 && (
-          <Sec label="Club off tee">
-            <Seg
-              label="Club off tee"
-              value={p.usedDriver === null ? null : p.usedDriver ? 'driver' : 'other'}
-              onChange={(v) => p.dispatch({ type: 'SET_DRIVER', payload: v === 'driver' })}
-              options={[
-                { value: 'driver', label: 'Driver' },
-                { value: 'other', label: 'Non-driver' },
-              ]}
-            />
-          </Sec>
-        )}
+        <Swap swapKey={review ? `review:${p.currentHole.number}` : shotKey} kind={holeTurned ? 'slide' : 'settle'} dir={p.holeDir ?? 1} className="ch-rt-cardswap">
+          {review ? review.content : (
+            <div className="ch-rt-card__head">
+              {p.isTeeShot && p.currentHole.par !== 3 && (
+                <Sec label="Club off tee">
+                  <Seg
+                    label="Club off tee"
+                    value={p.usedDriver === null ? null : p.usedDriver ? 'driver' : 'other'}
+                    onChange={(v) => p.dispatch({ type: 'SET_DRIVER', payload: v === 'driver' })}
+                    options={[
+                      { value: 'driver', label: 'Driver' },
+                      { value: 'other', label: 'Non-driver' },
+                    ]}
+                  />
+                </Sec>
+              )}
 
-        {p.isPutting && (
-          <Sec label="Putting details" hint="Optional" tint>
-            <div className="ch-rt-sub">
-              <em>Break</em>
-              <Seg label="Putt break" value={p.puttBreak} onChange={(v) => p.dispatch({ type: 'SET_PUTT_BREAK', payload: v })} options={BREAK_OPTIONS.map(([value, label]) => ({ value, label }))} />
+              <div className="ch-rt-slot" data-face={face} data-turn={turn}>
+                <div className="ch-rt-face" data-face="pick" inert={face !== 'pick' || undefined} aria-hidden={face !== 'pick' || undefined}>
+                  <Sec label={resultLabel}>
+                    <Seg
+                      label={resultLabel}
+                      // A putt's four results stand in one row, so the leave distance sits directly under them.
+                      cols={p.isPutting ? 4 : 3}
+                      value={result}
+                      onChange={(v) => {
+                        setChangingAt(null);
+                        p.onResultSelect(v);
+                      }}
+                      options={shotResultOptions({ isPutting: p.isPutting, isTeeShot: p.isTeeShot, par: p.currentHole.par, currentShot: p.currentShot }).map((o) => ({
+                        value: o.value,
+                        label: RESULT_LABEL[o.value],
+                        note: o.note,
+                        rare: o.rare,
+                      }))}
+                    />
+                    {p.tapIn && p.onTapIn ? <TapIn plan={p.tapIn} pref={p.pref} onTapIn={p.onTapIn} /> : p.isPutting && p.onTapIn ? <div className="ch-rt-tapin is-held" aria-hidden="true" /> : null}
+                  </Sec>
+                </div>
+                {/* The follow-up is in the card from the first frame, hidden and inert until its result is picked: it is what
+                    holds the place's height, so the pick grows nothing. */}
+                <div className="ch-rt-face" data-face="follow" inert={face !== 'follow' || undefined} aria-hidden={face !== 'follow' || undefined}>
+                  <section className="ch-rt-sec ch-rt-follow" aria-label={followLabel}>
+                    <div className="ch-rt-sec__h">
+                      <span>{followLabel}</span>
+                      {p.isPutting && <em className="ch-rt-hint">Optional</em>}
+                      <button type="button" className="ch-rt-pick" aria-label={`${resultLabel}: ${result ? RESULT_LABEL[result] : 'none'}. Change`} onClick={() => setChangingAt(shotKey)}>
+                        <b>{result ? RESULT_LABEL[result] : RESULT_LABEL.fairway}</b>
+                        <span>Change</span>
+                      </button>
+                    </div>
+                    {p.isTeeShot && (
+                      <Seg
+                        label="Miss direction"
+                        value={p.missDirection as 'left' | 'right' | null}
+                        onChange={(v) => p.dispatch({ type: 'SET_MISS_DIRECTION', payload: v })}
+                        options={[
+                          { value: 'left', label: 'Left' },
+                          { value: 'right', label: 'Right' },
+                        ]}
+                      />
+                    )}
+                    {p.isApproachOrAroundGreen && (
+                      <div className="ch-rt-amissw">
+                        <span className="ch-rt-amiss__k">Behind the green</span>
+                        <div className="ch-rt-amiss" role="radiogroup" aria-label="Where it missed the green" {...roving}>
+                          {APPROACH_GRID.map(([v, l]) =>
+                            v === null ? (
+                              <span key="green" className="ch-rt-amiss__g" aria-hidden="true">
+                                <i />
+                              </span>
+                            ) : (
+                              <button
+                                key={v}
+                                type="button"
+                                role="radio"
+                                aria-checked={p.approachMissDirection === v}
+                                onClick={() => {
+                                  haptic('select');
+                                  p.dispatch({ type: 'SET_APPROACH_MISS', payload: { direction: v } });
+                                }}
+                              >
+                                {l}
+                              </button>
+                            ),
+                          )}
+                        </div>
+                        <span className="ch-rt-amiss__k">You · short of the green</span>
+                      </div>
+                    )}
+                    {p.isPutting && (
+                      <div className="ch-rt-tags" role="group" aria-label="How the putt missed">
+                        {PUTT_TAGS.map(([tag, label]) => (
+                          <button
+                            key={tag}
+                            type="button"
+                            aria-pressed={p.puttMissTags.includes(tag)}
+                            onClick={() => {
+                              haptic('select');
+                              p.dispatch({ type: 'SET_PUTT_MISS_TAGS', payload: togglePuttMissTag(p.puttMissTags, tag) });
+                            }}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </section>
+                </div>
+              </div>
+              {!noticeAtDistance && notice}
             </div>
-            <div className="ch-rt-sub">
-              <em>Slope</em>
-              <Seg label="Putt slope" value={p.puttSlope} onChange={(v) => p.dispatch({ type: 'SET_PUTT_SLOPE', payload: v })} options={SLOPE_OPTIONS.map(([value, label]) => ({ value, label }))} />
-            </div>
-          </Sec>
-        )}
+          )}
+        </Swap>
 
-        <Sec label={p.isPutting ? 'Putt result' : 'Shot result'}>
-          <Seg
-            label={p.isPutting ? 'Putt result' : 'Shot result'}
-            cols={3}
-            value={result}
-            onChange={(v) => p.onResultSelect(v)}
-            options={shotResultOptions({ isPutting: p.isPutting, isTeeShot: p.isTeeShot, par: p.currentHole.par, currentShot: p.currentShot }).map((o) => ({
-              value: o.value,
-              label: RESULT_LABEL[o.value],
-              note: o.note,
-              rare: o.rare,
-            }))}
-          />
-          {!noticeAtDistance && notice}
-          {p.tapIn && p.onTapIn && <TapIn plan={p.tapIn} pref={p.pref} onTapIn={p.onTapIn} />}
-        </Sec>
-
-        {teeMiss && (
-          <Sec label="Miss direction">
-            <Seg
-              label="Miss direction"
-              value={p.missDirection as 'left' | 'right' | null}
-              onChange={(v) => p.dispatch({ type: 'SET_MISS_DIRECTION', payload: v })}
-              options={[
-                { value: 'left', label: 'Left' },
-                { value: 'right', label: 'Right' },
-              ]}
-            />
-          </Sec>
-        )}
-        {approachMiss && (
-          <Sec label="Miss direction">
-            <div className="ch-rt-amissw">
-              <span className="ch-rt-amiss__k">Behind the green</span>
-              <div className="ch-rt-amiss" role="radiogroup" aria-label="Where it missed the green" {...roving}>
-                {APPROACH_GRID.map(([v, l]) =>
-                  v === null ? (
-                    <span key="green" className="ch-rt-amiss__g" aria-hidden="true">
-                      <i />
-                    </span>
-                  ) : (
+        {/* The card's foot band. The distance row is held in it from the first frame, hidden and inert until a result is
+            picked, so the card neither grows on the pick nor shrinks on Next shot (F-0019, F-0020); and held the same way
+            once the ball is holed, which asks no distance, so Holed takes no height off the card either. A data prompt
+            shares the band: it shows while the row is still held (no result yet) and gives the band to the row once one is
+            picked. Layout only: the field, its value and its dispatches are unchanged. The foot stays mounted from shot
+            to shot, outside the swap above (its row is held, hidden, as each shot opens), so the field and its ids are
+            never also in a copy that is leaving. */}
+        {!review && (
+          <>
+            <div className="ch-rt-band" data-face={p.prompts && p.asking && !result ? 'ask' : 'distance'}>
+            {p.prompts && <div className="ch-rt-band__ask">{p.prompts}</div>}
+            <Sec
+              label={distLabel}
+              hint="Required"
+              // Once the box holds a distance the heading says how far the shot went, where "Required" was: a line of its own
+              // under the box grew the card as the quick pick was tapped (review 3, A.2).
+              aside={
+                shotYards != null && shotYards > 0 ? (
+                  <em className="ch-rt-shotlen">
+                    Shot distance <b>~{meters ? `${yardsToDisplay(shotYards, 'meters')} m` : `${shotYards} yds`}</b>
+                  </em>
+                ) : undefined
+              }
+              tint
+              htmlFor={DIST_ID}
+              reserved={!result || holed}
+            >
+              <div className="ch-rt-dist">
+                {/* CH-11807: labelled by its section, aria-invalid with its message when it isn't a number. */}
+                <input
+                  id={DIST_ID}
+                  ref={p.distanceInputRef}
+                  type="text"
+                  inputMode={meters ? 'decimal' : 'numeric'}
+                  autoComplete="off"
+                  enterKeyHint="done"
+                  placeholder="0"
+                  aria-invalid={distanceInvalid || undefined}
+                  aria-describedby={distanceInvalid ? 'ch-rt-dist-err' : undefined}
+                  value={p.distanceAfterShot}
+                  onChange={(e) => p.dispatch({ type: 'SET_DISTANCE_AFTER', payload: cleanDistance(e.target.value) })}
+                />
+                <em>{unitWord}</em>
+                <div className="ch-rt-quick" role="group" aria-label="Quick distances">
+                  {quickPicks(afterUnit === 'feet' ? (p.isPutting ? 'putt' : 'feet') : p.isTeeShot ? 'tee' : 'approach', p.pref).map((q) => (
                     <button
-                      key={v}
+                      key={q}
                       type="button"
-                      role="radio"
-                      aria-checked={p.approachMissDirection === v}
+                      aria-pressed={p.distanceAfterShot === String(q)}
                       onClick={() => {
                         haptic('select');
-                        p.dispatch({ type: 'SET_APPROACH_MISS', payload: { direction: v } });
+                        p.dispatch({ type: 'SET_DISTANCE_AFTER', payload: String(q) });
+                        p.dispatch({ type: 'SET_DISTANCE_AFTER_UNIT', payload: afterUnit });
                       }}
                     >
-                      {l}
+                      {q}
                     </button>
-                  ),
-                )}
+                  ))}
+                </div>
               </div>
-              <span className="ch-rt-amiss__k">You · short of the green</span>
+              {distanceInvalid && (
+                // CH-11104: a distance that isn't a number says so under the box.
+                <p className="ch-rt-error" id="ch-rt-dist-err" data-ch-code="CH-11104">
+                  Enter the distance as a number, like {afterUnit === 'feet' ? (meters ? 3 : 10) : meters ? 137 : 150}.
+                </p>
+              )}
+              {noticeAtDistance && notice}
+            </Sec>
             </div>
-          </Sec>
-        )}
-        {puttMissed && (
-          <Sec label="What happened" hint="Optional">
-            <div className="ch-rt-tags" role="group" aria-label="How the putt missed">
-              {PUTT_TAGS.map(([tag, label]) => (
+
+            {p.isPutting && (
+              // The putt's read, one optional row under the leave distance (owner, 2026-11-11): closed until the player opens
+              // it, then open on every putt for the rest of the round. Closed, it still says what the putt carries.
+              <section className={'ch-rt-sec ch-rt-read' + (p.puttReadOpen ? ' is-open' : '')} aria-label="Break and slope">
                 <button
-                  key={tag}
+                  ref={readRow}
                   type="button"
-                  aria-pressed={p.puttMissTags.includes(tag)}
-                  onClick={() => {
-                    haptic('select');
-                    p.dispatch({ type: 'SET_PUTT_MISS_TAGS', payload: togglePuttMissTag(p.puttMissTags, tag) });
+                  className="ch-rt-read__h"
+                  aria-expanded={p.puttReadOpen}
+                  aria-controls={READ_ID}
+                  onClick={(e) => {
+                    readRowWas.current = e.currentTarget.getBoundingClientRect().top;
+                    p.onPuttReadOpen(!p.puttReadOpen);
                   }}
                 >
-                  {label}
+                  <span>Break and slope</span>
+                  {puttRead ? <b>{puttRead}</b> : <em className="ch-rt-hint">Optional</em>}
+                  <Icon icon={ChevronDown} size={16} className="ch-rt-read__chev" />
                 </button>
-              ))}
-            </div>
-          </Sec>
-        )}
+                <div className="ch-rt-read__b" id={READ_ID} hidden={!p.puttReadOpen}>
+                  <div className="ch-rt-sub">
+                    <em>Break</em>
+                    <Seg label="Putt break" value={p.puttBreak} onChange={(v) => p.dispatch({ type: 'SET_PUTT_BREAK', payload: v })} options={BREAK_OPTIONS.map(([value, label]) => ({ value, label }))} />
+                  </div>
+                  <div className="ch-rt-sub">
+                    <em>Slope</em>
+                    <Seg label="Putt slope" value={p.puttSlope} onChange={(v) => p.dispatch({ type: 'SET_PUTT_SLOPE', payload: v })} options={SLOPE_OPTIONS.map(([value, label]) => ({ value, label }))} />
+                  </div>
+                </div>
+              </section>
+            )}
 
-        {/* Held from the first frame, hidden and inert until a result is picked, so the card neither grows on the pick nor
-            shrinks on Next shot (F-0019, F-0020). Layout only: the field, its value and its dispatches are unchanged. */}
-        {!holed && (
-          <Sec label={distLabel} hint="Required" tint htmlFor={DIST_ID} reserved={!result}>
-            <div className="ch-rt-dist">
-              {/* CH-11807: labelled by its section, aria-invalid with its message when it isn't a number. */}
-              <input
-                id={DIST_ID}
-                ref={p.distanceInputRef}
-                type="text"
-                inputMode={meters ? 'decimal' : 'numeric'}
-                autoComplete="off"
-                enterKeyHint="done"
-                placeholder="0"
-                aria-invalid={distanceInvalid || undefined}
-                aria-describedby={distanceInvalid ? 'ch-rt-dist-err' : undefined}
-                value={p.distanceAfterShot}
-                onChange={(e) => p.dispatch({ type: 'SET_DISTANCE_AFTER', payload: cleanDistance(e.target.value) })}
-              />
-              <em>{unitWord}</em>
-              <div className="ch-rt-quick" role="group" aria-label="Quick distances">
-                {quickPicks(afterUnit === 'feet' ? (p.isPutting ? 'putt' : 'feet') : p.isTeeShot ? 'tee' : 'approach', p.pref).map((q) => (
-                  <button
-                    key={q}
-                    type="button"
-                    aria-pressed={p.distanceAfterShot === String(q)}
-                    onClick={() => {
-                      haptic('select');
-                      p.dispatch({ type: 'SET_DISTANCE_AFTER', payload: String(q) });
-                      p.dispatch({ type: 'SET_DISTANCE_AFTER_UNIT', payload: afterUnit });
-                    }}
-                  >
-                    {q}
-                  </button>
-                ))}
-              </div>
-            </div>
-            {distanceInvalid && (
-              // CH-11104: a distance that isn't a number says so under the box.
-              <p className="ch-rt-error" id="ch-rt-dist-err" data-ch-code="CH-11104">
-                Enter the distance as a number, like {afterUnit === 'feet' ? (meters ? 3 : 10) : meters ? 137 : 150}.
+            {p.currentShot >= 12 && (
+              // CH-11106: the 15-stroke limit, from shot 12.
+              <p className="ch-rt-note is-warn ch-rt-note--flat" data-ch-code="CH-11106">
+                <Icon icon={TriangleAlert} size={15} />
+                <span>{p.currentShot >= 15 ? 'This is the most strokes a hole can record (15). Hole out or pick up.' : `Shot ${p.currentShot} of 15. ${15 - p.currentShot} more before the limit.`}</span>
               </p>
             )}
-            {shotYards != null && shotYards > 0 && (
-              <p className="ch-rt-shotlen">
-                Shot distance <b>~{meters ? `${yardsToDisplay(shotYards, 'meters')} m` : `${shotYards} yds`}</b>
-              </p>
-            )}
-            {noticeAtDistance && notice}
-          </Sec>
-        )}
 
-        {p.currentShot >= 12 && (
-          // CH-11106: the 15-stroke limit, from shot 12.
-          <p className="ch-rt-note is-warn ch-rt-note--flat" data-ch-code="CH-11106">
-            <Icon icon={TriangleAlert} size={15} />
-            <span>{p.currentShot >= 15 ? 'This is the most strokes a hole can record (15). Hole out or pick up.' : `Shot ${p.currentShot} of 15. ${15 - p.currentShot} more before the limit.`}</span>
-          </p>
+            {p.showUndoConfirm && lastShot && <UndoConfirm shots={p.shotHistory} saving={p.undoSaving} error={p.undoError} dispatch={p.dispatch} onUndo={p.onUndoLastShot} />}
+          </>
         )}
-
-        {p.showUndoConfirm && lastShot && <UndoConfirm shots={p.shotHistory} saving={p.undoSaving} error={p.undoError} dispatch={p.dispatch} onUndo={p.onUndoLastShot} />}
       </div>
 
+      {/* The bar is the same three keys from the first shot to the last: once the hole is holed, Undo is the review's
+          undo, Penalty rests, and Next shot's place holds the hole-out words while the hole saves, then the review's way
+          on (Back to hole N, Review and post). */}
       <div className="ch-rt-bar">
-        {blocker && (
+        {goBlocked && (
           // CH-11101: the one thing still missing. The disabled button shows it in place of its label; this line keeps the
           // live announcement for screen readers.
           <p className="ch-rt-blocker ch-sr-only" id={BLOCKER_ID} role="status" aria-live="polite" data-ch-code="CH-11101">
@@ -336,28 +472,39 @@ export function ShotEntry(p: ShotEntryProps) {
           </p>
         )}
         <div className="ch-rt-bar__row">
-          <button type="button" className="ch-rt-bar__i" disabled={!p.shotHistory.length || p.undoSaving} aria-label="Undo last shot" onClick={() => p.dispatch({ type: 'SHOW_UNDO_CONFIRM' })}>
+          <button
+            type="button"
+            className="ch-rt-bar__i"
+            data-ch-press=""
+            disabled={review ? review.busy : !p.shotHistory.length || p.undoSaving}
+            aria-label="Undo last shot"
+            onClick={() => p.dispatch({ type: 'SHOW_UNDO_CONFIRM' })}
+          >
             <Icon icon={Undo2} size={18} />
             <span>Undo</span>
           </button>
-          <button type="button" className="ch-rt-bar__i" aria-label="Add penalty stroke" onClick={p.onAddPenalty}>
+          <button type="button" className="ch-rt-bar__i" data-ch-press="" disabled={!!review} aria-label="Add penalty stroke" onClick={p.onAddPenalty}>
             <Icon icon={FlagTriangleRight} size={18} />
             <span>Penalty</span>
           </button>
           <button
             type="button"
-            className={'ch-btn ch-btn--primary ch-btn--lg ch-rt-bar__go' + (blocker ? ' is-blocked' : '')}
-            disabled={!canRecord}
-            aria-describedby={blocker ? BLOCKER_ID : undefined}
-            aria-label={holed ? `Complete hole with score ${p.currentShot}` : 'Record next shot'}
+            className={'ch-btn ch-btn--primary ch-btn--lg ch-rt-bar__go' + (goBlocked ? ' is-blocked' : '')}
+            disabled={review ? !review.action || review.action.disabled : !canRecord}
+            aria-describedby={goBlocked ? BLOCKER_ID : undefined}
+            aria-label={review ? (review.action ? undefined : `Complete hole with score ${review.score}`) : holed ? `Complete hole with score ${p.currentShot}` : 'Record next shot'}
             onClick={() => {
+              if (review) {
+                review.action?.onClick();
+                return;
+              }
               // CH-11705: a shot logged is the medium tap, once.
               haptic('commit');
               p.onNextShot();
             }}
           >
-            <span aria-hidden={blocker ? true : undefined}>{blocker ?? (holed ? `Hole out · ${p.currentShot}` : 'Next shot')}</span>
-            {!blocker && <Icon icon={holed ? Check : ArrowRight} size={16} />}
+            <span aria-hidden={goBlocked ? true : undefined}>{goLabel}</span>
+            {goIcon && <Icon icon={goIcon} size={16} />}
           </button>
         </div>
       </div>

@@ -46,9 +46,16 @@ describe('the jump key', () => {
     expect(screen.queryByRole('button', { name: /Jump to latest/ })).toBeNull();
   });
 
-  it('shows at the end when something arrived unseen, with the count', () => {
+  // MSG-211 (Messages v2): a count alone never shows the key; it appears once the reader is far, and then carries the count.
+  it('does not show at the end for a count alone', async () => {
     render(<Jump box={{ scrollHeight: 2000, clientHeight: 500, scrollTop: 1500 }} unseen={2} />);
-    const key = screen.getByRole('button', { name: 'Jump to latest, 2 new' });
+    await raf();
+    expect(screen.queryByRole('button', { name: /Jump to latest/ })).toBeNull();
+  });
+
+  it('shows the count of what arrived while the reader is far above the end', async () => {
+    render(<Jump box={{ scrollHeight: 2000, clientHeight: 500, scrollTop: 0 }} unseen={2} />);
+    const key = await screen.findByRole('button', { name: 'Jump to latest, 2 new' });
     expect(key.querySelector('b')!.textContent).toBe('2');
   });
 

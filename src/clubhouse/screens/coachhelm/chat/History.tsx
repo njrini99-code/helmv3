@@ -1,6 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import { Button } from '../../../ui/Button';
 import { MessagesSquare, PanelLeftClose, SquarePen } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useRef } from 'react';
@@ -58,9 +59,9 @@ function HistoryList({ conversations, openId, nowIso, timezone, onNew, onNavigat
         </span>
         <b>No chats yet</b>
         <span>Ask your first question and it will be kept here.</span>
-        <button type="button" className="ch-ask-hist__emptynew" onClick={onNew}>
+        <Button variant="secondary" onClick={onNew}>
           New chat
-        </button>
+        </Button>
       </div>
     );
   }
@@ -141,7 +142,9 @@ export function HistoryPanel(props: AskHistoryProps & { open: boolean; onHide: (
  */
 export function HistoryDrawer(props: AskHistoryProps & { open: boolean; onClose: () => void }) {
   const { open, onClose, onNew } = props;
-  const { ref, reduced, retainContent } = useDialogLifetime(open, { direction: 'left', surfaceSelector: '.ch-ask-hist' });
+  // The title takes focus as it opens, as a Modal's does: on the first focusable (New chat) WebKit drew a focus ring and its
+  // tooltip on a tap-opened drawer, the tip pinned over the search field mid-slide (iPhone WebKit, 12 Nov).
+  const { ref, reduced, retainContent } = useDialogLifetime(open, { direction: 'left', surfaceSelector: '.ch-ask-hist', focusSelector: '.ch-ask-hist__title' });
   const aside = useRef<HTMLElement>(null);
   const drag = useSheetDrag(aside, onClose, { direction: 'left', reduced });
 
@@ -164,7 +167,9 @@ export function HistoryDrawer(props: AskHistoryProps & { open: boolean; onClose:
       {retainContent(open && (
         <aside ref={aside} className="ch-ask-hist is-drawer" aria-label="Chats" onPointerDown={drag.onPointerDown}>
           <div className="ch-ask-hist__head">
-            <b>Chats</b>
+            <h2 className="ch-ask-hist__title" tabIndex={-1}>
+              Chats
+            </h2>
             <Tooltip>
               <button
                 type="button"

@@ -43,6 +43,7 @@ import { Calendar } from '../screens/calendar/Calendar';
 import { ToastProvider } from '../ui/Toast';
 import { PREVIEW_CALENDAR, PREVIEW_CALENDAR_PLAYER } from '../preview/fixtures-calendar';
 import './dialog-polyfill';
+import { expectLabelInName, faceText } from './label-in-name';
 
 function wrap(data: ChCalendarData, props: { initialEvent?: string; initialNew?: boolean } = {}) {
   return render(
@@ -102,6 +103,13 @@ describe.each(roles)('Calendar keyboard · %s', (_role, data) => {
     } finally {
       replace.mockRestore();
     }
+  });
+
+  it('F-0011: the title’s name opens with the month and year it shows, apart (axe read "October2026")', () => {
+    wrap(data);
+    const trigger = screen.getByRole('button', { name: /Jump to a date/ });
+    expect(faceText(trigger)).toMatch(/\S \d{4}$/);
+    expectLabelInName(trigger);
   });
 
   it('A-23 the jump panel takes focus as it opens; Esc, Close and a picked day hand it back to the title, and Esc leaves the open event alone', async () => {

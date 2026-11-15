@@ -1,9 +1,10 @@
 'use client';
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react';
+import { JUMP_CLEAR_PX, PIN_PX } from './motion/messages-beats';
 
-/** Within this of the end counts as reading the newest messages. */
-export const NEAR_END_PX = 120;
+/** Within this of the end counts as reading the newest messages: an arrival keeps the bottom (MSG-203, 60 px). */
+export const NEAR_END_PX = PIN_PX.arrive;
 
 /** How long a newly shown thread is held at its end while a push or hydration settles (P007 D1). */
 export const THREAD_SETTLE_MS = 700;
@@ -79,8 +80,10 @@ export function useThreadAnchor(
       // A keyboard/composer resize can emit scroll before ResizeObserver runs.
       // Preserve the reader's previous intent until that new geometry is anchored.
       if (viewportHeight.current !== null && viewportHeight.current > 0 && s.clientHeight !== viewportHeight.current) return;
-      nearEnd.current = s.scrollHeight - s.scrollTop - s.clientHeight <= NEAR_END_PX;
-      if (nearEnd.current) setUnseen(0);
+      const away = s.scrollHeight - s.scrollTop - s.clientHeight;
+      nearEnd.current = away <= NEAR_END_PX;
+      // MSG-211: the count clears once the reader is within 8 px of the bottom, not merely near it.
+      if (away <= JUMP_CLEAR_PX) setUnseen(0);
       setAtEnd(nearEnd.current);
     };
     s.addEventListener('scroll', onScroll, { passive: true });

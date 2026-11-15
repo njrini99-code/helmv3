@@ -1,6 +1,6 @@
 import { LazyMotion, domAnimation } from 'motion/react';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
-import { cleanup, render, screen, within } from '@testing-library/react';
+import { cleanup, render, screen } from '@testing-library/react';
 import { Suspense } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { resolved } from './route-view';
@@ -30,14 +30,10 @@ vi.mock('../screens/coachhelm/chat/Ask', () => ({ Ask: ({ load }: { load: { stat
 import { getInsightsForPlayer, getTopInsightsForPlayers } from '@/app/golf/actions/insight-delivery';
 import { isCoachHelmEnabledForCoach, isCoachHelmEnabledForPlayer } from '@/lib/coachhelm/v2/gate';
 import { getCoachProgramPulse } from '@/lib/coachhelm/v3/chat/request-cache';
-import { emptyCoachHelm, loadCoachCoachHelm, loadCoachHelmGate, loadPlayerCoachHelm } from '../data/coachhelm';
+import { loadCoachCoachHelm, loadCoachHelmGate, loadPlayerCoachHelm } from '../data/coachhelm';
 import { loadAskCoachHelm } from '../data/coachhelm-chat';
-import { toChInsight } from '../data/coachhelm-map';
-import type { ChCoachHelmData, ChInsight, ChPlayerHelm } from '../data/coachhelm-shape';
 import { ClubhouseCoachHelmRoute } from '../routes/coachhelm';
-import { CoachBoard } from '../screens/coachhelm/CoachBoard';
-import { PlayerBoard } from '../screens/coachhelm/PlayerBoard';
-import { bigNumber, breakBias, HELM_PLAYERS, parType, penalties, PREVIEW_TOUR, puttBalanced, slope, teeInconclusive } from '../preview/fixtures-coachhelm';
+import { bigNumber, HELM_PLAYERS, parType, penalties, puttBalanced, slope, teeInconclusive } from '../preview/fixtures-coachhelm';
 import { ToastProvider } from '../ui/Toast';
 
 const jonah = HELM_PLAYERS.jonah;
@@ -329,155 +325,5 @@ describe('CH13-20 the Ask address respects the CoachHelm switch, as the board do
     render(wrap(await resolved(await ClubhouseCoachHelmRoute({ view: 'ask' }))));
     expect(screen.getByTestId('ask').getAttribute('data-status')).toBe('failed');
     expect(loadAskCoachHelm).not.toHaveBeenCalled();
-  });
-
-  it('a player’s ?view=ask is still their own board, and reads no coach gate', async () => {
-    session.current = { userId: 'u2', role: 'player', coach: null, player: { id: jonah.id } };
-    vi.mocked(isCoachHelmEnabledForPlayer).mockResolvedValue({ ...on });
-    vi.mocked(getInsightsForPlayer).mockResolvedValue([slope(jonah.id)]);
-    tables.current = { golf_team_members: { data: null }, golf_drills: { data: [] }, golf_player_focus_areas: { data: [] } };
-    render(wrap(await resolved(await ClubhouseCoachHelmRoute({ view: 'ask' }))));
-    expect(screen.getByText('One thing to work on this week, based on the rounds you’ve posted.')).toBeTruthy();
-    expect(isCoachHelmEnabledForCoach).not.toHaveBeenCalled();
-  });
-
-  it('CH-13923 the board with CoachHelm off draws no Board and Ask strip, and the board with it on does', () => {
-    render(wrap(<CoachBoard data={emptyCoachHelm({ by: 'user', reason: null })} />));
-    expect(code('CH-13923')).toBeNull();
-    cleanup();
-    render(wrap(<CoachBoard data={coachData(chTop(slope(jonah.id)))} />));
-    expect(code('CH-13923')).not.toBeNull();
-  });
-});
-
-// ── The screens ────────────────────────────────────────────────────────────
-
-const chTop = (i: EvidenceInsight, extra: Parameters<typeof toChInsight>[1] = {}): ChInsight => toChInsight(i, { tour: PREVIEW_TOUR, ...extra });
-const coachData = (top: ChInsight, count = 1): ChCoachHelmData => ({
-  off: null,
-  roster: { count: 1, error: false },
-  pulse: { rows: [], error: false },
-  players: { list: [{ id: jonah.id, name: jonah.name, count, top }], error: false },
-  withoutSignals: 0,
-});
-const playerData = (...list: ChInsight[]): ChPlayerHelm => ({ off: null, proposals: { list: [], error: false }, insights: { list, error: false }, rounds: null });
-const focus = () => within(document.querySelector('.ch-hl-focus') as HTMLElement);
-/** The stance word in the card's eyebrow (D8: a word, never a pill); null when the eyebrow says none. */
-const pill = () => ({ textContent: /· (Priority|Working|Note|Out of date|Assigned|Acknowledged)$/.exec(document.querySelector('.ch-hl-focus .ch-hl-focus__k')!.textContent ?? '')?.[1] ?? null });
-
-describe('the cards, on screen', () => {
-  it('CH13-13 the ledger names the player on the coach’s board and says You on the player’s own', () => {
-    const legend = () => document.querySelector('.ch-hl-focus .ch-hl-ledger li')!.textContent;
-    render(wrap(<CoachBoard data={coachData(chTop(penalties(jonah.id)))} />));
-    expect(legend()).toBe('Jonah1.1');
-    cleanup();
-    render(wrap(<PlayerBoard data={playerData(chTop(penalties(jonah.id)))} />));
-    expect(legend()).toBe('You1.1');
-  });
-
-  it('CH13-16 the stance is a word that is never a fresh Priority once the insight is assigned or acknowledged; a medium finding says none', () => {
-    const word = (top: ChInsight) => {
-      render(wrap(<CoachBoard data={coachData(top)} />));
-      const w = pill().textContent;
-      cleanup();
-      return w;
-    };
-    expect(word(chTop(slope(jonah.id)))).toBeNull();
-    expect(word(chTop(penalties(jonah.id)))).toBe('Priority');
-    expect(word(chTop(slope(jonah.id), { assigned: 'proposed' }))).toBe('Assigned');
-    expect(word(chTop({ ...slope(jonah.id), status: 'acknowledged' }))).toBe('Acknowledged');
-    expect(word(chTop(bigNumber(jonah.id)))).toBe('Working');
-    expect(word(chTop(teeInconclusive(jonah.id)))).toBe('Note');
-    expect(word(chTop(refreshedOn(slope(jonah.id), '2026-09-01T00:00:00Z'), { newestRound: '2026-09-30' }))).toBe('Out of date');
-  });
-
-  it('CH13-16 an assignment made in this visit changes the pill at once', async () => {
-    const userEvent = (await import('@testing-library/user-event')).default;
-    const w = { assign: vi.fn(() => Promise.resolve({ success: true })), dismiss: vi.fn(), undo: vi.fn() };
-    render(wrap(<CoachBoard data={coachData(chTop(slope(jonah.id)))} writes={w} />));
-    expect(pill().textContent).toBeNull();
-    await userEvent.setup().click(screen.getByRole('button', { name: 'Assign as focus' }));
-    await screen.findByText(/Assigned as Jonah’s focus/);
-    expect(pill().textContent).toBe('Assigned');
-  });
-
-  it('CH13-13 a focus area made from the coach’s board is saved in the insight’s own words, never the board’s rewrite for the coach', async () => {
-    const userEvent = (await import('@testing-library/user-event')).default;
-    const w = { assign: vi.fn(() => Promise.resolve({ success: true })), dismiss: vi.fn(), undo: vi.fn() };
-    const top = chTop(slope(jonah.id), { viewer: { role: 'coach', first: 'Jonah' } });
-    render(wrap(<CoachBoard data={coachData(top)} writes={w} />));
-    // The coach reads it about Jonah; the focus area, which Jonah reads, is the insight's own claim.
-    expect(focus().getByText(/From 4–6 ft, Jonah is making 58%/)).toBeTruthy();
-    await userEvent.setup().click(screen.getByRole('button', { name: 'Assign as focus' }));
-    expect(w.assign).toHaveBeenCalledWith(
-      expect.objectContaining({
-        playerId: jonah.id,
-        title: 'Downhill putts from 4–6 ft: a real penalty',
-        description: 'From 4–6 ft, you’re making 58% of downhill putts vs 81% of level putts at the same distance, a 23-point gap.',
-      }),
-    );
-  });
-
-  it('CH13-16 on the player’s board an acknowledged insight’s row and card say so', () => {
-    render(wrap(<PlayerBoard data={playerData(chTop(penalties(jonah.id)), chTop({ ...slope(jonah.id), status: 'acknowledged' }))} />));
-    expect(pill().textContent).toBe('Priority');
-    expect(within(screen.getByRole('region', { name: 'Also worth knowing' })).getByRole('button').textContent).toContain('Acknowledged');
-  });
-
-  it('CH-13904 CH13-11 a note has no Assign and no Dismiss, no number and no gauge; it says why', () => {
-    render(wrap(<CoachBoard data={coachData(chTop(parType(jonah.id)), 0)} />));
-    expect(screen.queryByRole('button', { name: /Assign|Dismiss/ })).toBeNull();
-    expect(code('CH-13904')!.textContent).toMatch(/states no finding/);
-    expect(focus().getByRole('heading', { level: 2 }).textContent).toBe('Scoring by par type');
-    expect(document.querySelector('.ch-hl-focus .ch-hl-g')).toBeNull();
-    expect(document.querySelector('.ch-hl-focus .ch-hl-ev')).toBeNull();
-    expect(focus().getByText(/Par 3: 3\.27.*Par 5: 4\.91/)).toBeTruthy();
-    // The player's row says nothing is open, never a count of one: it draws no count at all (P013 D12).
-    expect(screen.getByRole('button', { name: /Jonah Okafor/ }).textContent).not.toMatch(/\d$/);
-  });
-
-  it('CH-13903 CH-13906 CH13-3 an out-of-date read says so beside the claim, keeps Dismiss, and offers no Assign', () => {
-    const top = chTop(refreshedOn(slope(jonah.id), '2026-09-28T02:30:43Z'), { newestRound: '2026-09-30' });
-    render(wrap(<CoachBoard data={coachData(top, 0)} />));
-    expect(code('CH-13903')!.textContent).toMatch(/A round played Sep 30 isn’t in this read yet/);
-    expect(code('CH-13905')!.textContent).toBe('As of Sep 28');
-    expect(screen.queryByRole('button', { name: 'Assign as focus' })).toBeNull();
-    expect(screen.getByRole('button', { name: 'Dismiss' })).toBeTruthy();
-    expect(code('CH-13906')!.textContent).toMatch(/older than Jonah’s newest round/);
-  });
-
-  it('CH-13907 CH13-23 a focus the player declined says so, and Assign reads Propose again', () => {
-    render(wrap(<CoachBoard data={coachData(chTop(slope(jonah.id), { declined: true }))} />));
-    expect(screen.queryByRole('button', { name: 'Assign as focus' })).toBeNull();
-    expect(screen.getByRole('button', { name: 'Propose again' })).toBeTruthy();
-    expect(code('CH-13907')!.textContent).toMatch(/Jonah declined this as a focus/);
-    cleanup();
-    // A focus that stands now wins over an old decline: the card reads Assigned, with no decline note.
-    render(wrap(<CoachBoard data={coachData(chTop(slope(jonah.id), { declined: true, assigned: 'active' }))} />));
-    expect(code('CH-13907')).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Propose again' })).toBeNull();
-  });
-
-  it('CH13-3 the player’s board puts a current finding first and the out-of-date one after it, marked', () => {
-    const stale = chTop(refreshedOn(slope(jonah.id), '2026-09-28T02:30:43Z'), { newestRound: '2026-09-30' });
-    render(wrap(<PlayerBoard data={playerData(stale, chTop(penalties(jonah.id)))} />));
-    expect(focus().getByRole('heading', { level: 2 }).textContent).toBe('Penalty strokes: 1.1 per round');
-    expect(within(screen.getByRole('region', { name: 'Also worth knowing' })).getByRole('button').textContent).toContain('Out of date');
-  });
-
-  it('CH-13905 CH13-9 the card says when the read was made, and the sample in the generator’s own unit', () => {
-    const own = refreshedOn({ ...slope(jonah.id), evidence: { ...slope(jonah.id).evidence, metric: 'something_unlisted', sample_n: 26, detail: { sample_unit: 'rounds', downhill_pct: 58, level_pct: 81 } } }, '2026-09-30T02:30:43Z');
-    render(wrap(<PlayerBoard data={playerData(chTop(own))} />));
-    expect(code('CH-13905')!.textContent).toBe('As of Sep 30');
-    expect(focus().getByText('26 rounds')).toBeTruthy();
-  });
-
-  it('CH13-10 the read says Solid, Early or Thin, never Strong or Fair', () => {
-    render(wrap(<PlayerBoard data={playerData(chTop(slope(jonah.id)))} />));
-    expect(focus().getByText('Solid read')).toBeTruthy();
-    expect(document.body.textContent).not.toMatch(/Strong read|Fair read/);
-    cleanup();
-    render(wrap(<PlayerBoard data={playerData(chTop(breakBias(jonah.id)))} />));
-    expect(focus().getByText('Early read')).toBeTruthy();
   });
 });

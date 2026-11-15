@@ -168,6 +168,21 @@ export interface TourLinkedRound {
   shots: boolean;
 }
 
+/**
+ * What a linked golf_rounds row brings to the tournament. A round still in progress whose every hole is scored is a
+ * finished card: its total is the holes' sum, so a tournament scored hole by hole (the round the coach or player keeps in
+ * golf_rounds and golf_holes) reaches the desk without a second score store. The round stays Fairway's: submitting it
+ * there later completes it with the same holes. A completed round's total is its own.
+ */
+export function linkedRoundOf(
+  r: { status: string | null; total_score: number | null; strokes_gained_total: number | null; holes_played: number | null },
+  card: { n: number; sum: number } | undefined,
+  hasHoles: boolean,
+): TourLinkedRound {
+  const full = r.status !== 'completed' && card != null && card.n >= (r.holes_played ?? 18);
+  return { total: full ? card.sum : r.total_score, completed: r.status === 'completed' || full, holes: hasHoles, shots: r.strokes_gained_total != null };
+}
+
 export interface TourRawRound extends TourRoundRow {
   /** yyyy-mm-dd of the round day on the team's clock (from its golf_events row). */
   date: string;

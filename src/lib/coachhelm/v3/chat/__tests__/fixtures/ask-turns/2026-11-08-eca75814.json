@@ -1,0 +1,83 @@
+{
+ "id": "eca75814",
+ "messageId": "eca75814-4543-4116-a841-762dc1a1d1a9",
+ "source": {
+  "project": "staging",
+  "team": "Demo University Golf",
+  "exportedBy": "scripts/coachhelm/export-ask-turns.mjs"
+ },
+ "timezone": "America/New_York",
+ "roster": [
+  {
+   "id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+   "name": "Cole Bennett",
+   "first_name": "Cole",
+   "last_name": "Bennett"
+  },
+  {
+   "id": "ed1ff03e-b33a-4a80-891e-09685b7db3d0",
+   "name": "Dylan Brooks",
+   "first_name": "Dylan",
+   "last_name": "Brooks"
+  },
+  {
+   "id": "9458ca63-9dbe-4020-ab13-9e2b70f70c80",
+   "name": "Mason Rivers",
+   "first_name": "Mason",
+   "last_name": "Rivers"
+  },
+  {
+   "id": "b40a650a-bce0-4e46-87cd-365b0256ee21",
+   "name": "Jackson Hale",
+   "first_name": "Jackson",
+   "last_name": "Hale"
+  },
+  {
+   "id": "8e382583-2ce6-4d15-8568-5088cf02dbd1",
+   "name": "Ethan Park",
+   "first_name": "Ethan",
+   "last_name": "Park"
+  },
+  {
+   "id": "faced578-b271-416f-b757-ac3aee5bd9e5",
+   "name": "Tyler Hayes",
+   "first_name": "Tyler",
+   "last_name": "Hayes"
+  },
+  {
+   "id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+   "name": "Owen Carter",
+   "first_name": "Owen",
+   "last_name": "Carter"
+  },
+  {
+   "id": "b6b87c4d-0673-4166-9f8c-44e60936a034",
+   "name": "Audit Testplayer",
+   "first_name": "Audit",
+   "last_name": "Testplayer"
+  }
+ ],
+ "userMessage": {
+  "content": "hi",
+  "createdAt": "2026-11-08T05:48:32.137287+00:00"
+ },
+ "priorMessages": [
+  {
+   "role": "user",
+   "createdAt": "2026-11-08T05:48:32.137287+00:00",
+   "content": "hi",
+   "evidence": []
+  }
+ ],
+ "turn": {
+  "createdAt": "2026-11-08T05:48:34.224126+00:00",
+  "status": "complete",
+  "costUsd": null,
+  "content": "Hi, coach. What do you want to look at: the team, a player, practice, or the lineup?",
+  "tools": [],
+  "evidence": [],
+  "recorded": {
+   "outcome": "accepted"
+  }
+ }
+}

@@ -5,8 +5,11 @@ import type { QcSeamValue } from '../shell/quick-chat/qc-seam';
 /** The design page's demo values (coachhelm 03 Fixture): team Varsity, Mon 3 Nov, 11 active players, Travel squad of 6. */
 export interface QcFixture {
   messages: UIMessage[];
+  /** A card that moves when Confirm is pressed: held for `holdMs`, then saved (or failed). No network, no model. */
+  script?: { holdMs: number; fails?: boolean };
   busy?: boolean;
   closed?: boolean;
+  failed?: boolean;
 }
 
 type Kind = 'cal' | 'msg' | 'qual';
@@ -49,7 +52,7 @@ const step = (i: number, label: string, done = true) => ({ type: 'data-progress'
 const STEPS = [step(1, 'Checked Thursday · lift ends at 2:45'), step(2, 'Found 11 active players'), step(3, 'Drafted the practice')];
 const assistant = (parts: unknown[]) => ({ id: 'a1', role: 'assistant', parts }) as unknown as UIMessage;
 
-function task(kind: Kind, phase: 'confirm' | 'held' | 'done' | 'failed' | 'cancelled'): UIMessage[] {
+function task(kind: Kind, phase: 'confirm' | 'busy' | 'held' | 'done' | 'failed' | 'cancelled'): UIMessage[] {
   const p = proposal(kind);
   const approved = phase !== 'confirm' && phase !== 'cancelled';
   const tool = { type: `tool-${TOOL[kind]}`, toolCallId: 'call-1', input: {}, state: phase === 'confirm' ? 'approval-requested' : 'approval-responded', approval: { id: 'approval-1', ...(phase === 'confirm' ? {} : { approved }) } };
@@ -105,32 +108,68 @@ const askQual = brief('Two things before I set it', '“Top 5 travel” doesn’
   ['tees', 'Tees', ['White', 'Blue', 'Black']],
 ]);
 
-const FOLDERS = [{ name: 'Practice plans', count: 4 }, { name: 'Qualifier prep', count: 2 }, { name: 'Team', count: 7 }];
 /** What a signed-in read would have given the panel, per `?qc=`. */
 export function seamFor(state: string): QcSeamValue {
-  const base: QcSeamValue = {
-    planOn: true,
-    earlier: { title: 'Moved Team lift to 2:00 PM', line: 'Mon 3 Nov · 11 players told', at: '9:12 AM' },
-    week: {
-      days: ['02', '03', '04', '05', '06', '07', '08'].map((d, i) => ({ date: `2026-11-${d}`, hasEvent: i % 2 === 1 })),
-      items: [{ title: 'Team lift', start: '2026-11-06T14:00:00Z', end: '2026-11-06T14:45:00Z' }],
-    },
-  };
-  if (state.startsWith('undone-') && state !== 'undone-plan') return { ...base, taskPhase: 'undone' };
-  const plan = (phase: NonNullable<QcSeamValue['plan']>['phase'], menu?: 'open' | 'new') => ({ ...base, plan: { phase, menu, folders: FOLDERS } });
-  if (state === 'confirm-plan') return plan('draft');
-  if (state === 'folder') return plan('draft', 'open');
-  if (state === 'folder-new') return plan('draft', 'new');
-  if (state === 'receipt-plan') return plan('saved');
-  if (state === 'told-plan') return plan('told');
-  if (state === 'undone-plan') return plan('undone');
-  if (state === 'failed-plan') return plan('failed');
-  return base;
+  if (state === 'hello-kb') return { planOn: true, keyboard: 336 };
+  if (state === 'today') return { planOn: true, today: true };
+  return { planOn: true };
 }
+
+/** A task for one player: a flow with no picture of its own, whose home is the Team Hub's tasks (QUICK-CHAT.md, Moment 8). */
+const TASK_PROPOSAL = {
+  affects: [{ kind: 'player', label: 'Eli Brandt' }],
+  missing: [],
+  idempotency_key: 'qc-task',
+  action: 'Add task',
+  summary: 'Putting ladder for Eli',
+  facts: [
+    { label: 'Task', value: 'Putting ladder: 3, 6 and 9 ft, three in a row' },
+    { label: 'For', value: 'Eli Brandt' },
+    { label: 'Due', value: 'Fri 14 Nov' },
+  ],
+  notifications: ['Eli gets a push once Undo closes.'],
+} as unknown as ActionProposal;
+export const taskReceipt = (status: 'held' | 'completed' | 'failed', holdMs = 8000): ActionReceipt =>
+  ({
+    status,
+    ...(status === 'held' ? { held_until: new Date(Date.now() + holdMs).toISOString() } : {}),
+    action: TASK_PROPOSAL.action,
+    summary: status === 'failed' ? 'Tasks didn’t answer. Nothing was saved.' : 'Putting ladder for Eli · due Fri 14 Nov',
+    created: status === 'completed' ? [{ kind: 'task', count: 1, href: '/golf/dashboard/team-hub?tab=tasks', label: TASK_PROPOSAL.summary }] : [],
+    notifications: status === 'completed' ? [{ channel: 'push', recipients: 1, status: 'sent' as const }] : [],
+    partial_failures: [],
+    retryable: status === 'failed',
+    at: new Date().toISOString(),
+  }) as ActionReceipt;
+/** The task thread at one step of its life. `receipt` null is the card waiting for Confirm. */
+export const taskThread = (receipt: ActionReceipt | null, approved = !!receipt): UIMessage[] => [
+  user('u1', 'Give Eli a putting ladder task due Friday'),
+  assistant([
+    step(1, 'Read Eli’s putting · 38 rounds'),
+    { type: 'text', text: 'Eli is losing most inside 10 feet. Here’s the task.', state: 'done' },
+    { type: 'tool-create_task', toolCallId: 'call-1', input: {}, state: approved ? 'approval-responded' : 'approval-requested', approval: { id: 'approval-1', ...(approved ? { approved: true } : {}) } },
+    { type: 'data-action-proposal', id: 'proposal-qc-task', data: { ...TASK_PROPOSAL, tool: 'create_task' } },
+    ...(receipt ? [{ type: 'data-action-receipt', id: 'receipt-qc-task', data: receipt }] : []),
+  ]),
+];
+const TODAY: UIMessage[] = [
+  user('t1', 'How is Eli putting?'),
+  { id: 't2', role: 'assistant', parts: [step(1, 'Read Eli’s putting · 38 rounds'), { type: 'text', text: 'Eli makes 61% from 3 to 6 feet, down from 70% in September. Outside 10 feet he is level with the team.', state: 'done' }] } as unknown as UIMessage,
+  user('t3', 'Give Eli a putting ladder task due Friday'),
+  { id: 't4', role: 'assistant', parts: (taskThread(taskReceipt('completed'))[1] as unknown as { parts: unknown[] }).parts } as unknown as UIMessage,
+];
 
 const kinds: Kind[] = ['cal', 'msg', 'qual'];
 export const QC_FIXTURES: Record<string, QcFixture> = {
   hello: { messages: [] },
+  // The empty start with the phone's keyboard up (the capture browser has none: a block stands where it would be).
+  'hello-kb': { messages: [] },
+  // `ST-9.qc.today`: reopened later the same day.
+  today: { messages: TODAY },
+  // Moment 8: a task through Confirm, the hold and the save, with the page behind as the proof. `-fast` holds 1.6 s.
+  land: { messages: taskThread(null), script: { holdMs: 8000 } },
+  'land-fast': { messages: taskThread(null), script: { holdMs: 1600 } },
+  'land-fail': { messages: taskThread(null), script: { holdMs: 1600, fails: true } },
   closed: { messages: [], closed: true },
   steps: { messages: [user('u1', ASK.cal), assistant([step(1, 'Checked Thursday · lift ends at 2:45'), step(2, 'Finding everyone on the active roster', false)])], busy: true },
   stopped: { messages: [user('u1', ASK.cal), assistant([step(1, 'Checked Thursday · lift ends at 2:45')])] },
@@ -142,8 +181,17 @@ export const QC_FIXTURES: Record<string, QcFixture> = {
     [`failed-${k}`, { messages: task(k, 'failed') }],
     [`undone-${k}`, { messages: task(k, 'held') }],
   ])),
+  ...Object.fromEntries(kinds.map((k) => [`busy-${k}`, { messages: task(k, 'busy') }])),
+  // S-LIVE at work: the panel closed while a step runs.
+  'live-work': { messages: [user('u1', ASK.cal), assistant([step(1, 'Finding everyone on the active roster', false)])], busy: true, closed: true },
+  // AC-QC-CMP-06: the stream went mid-run.
+  // The states the sweep asked to see (QC-23).
+  error: { messages: [user('u1', ASK.cal), assistant([step(1, 'Checked Thursday · lift ends at 2:45')])], failed: true },
+  'task-failed': { messages: task('cal', 'failed') },
+  'task-cancelled': { messages: task('cal', 'cancelled') },
+  'stream-error': { messages: [user('u1', ASK.cal), assistant([step(1, 'Checked Thursday · lift ends at 2:45')])], failed: true },
   cancelled: { messages: task('cal', 'cancelled') },
   asking: { messages: [user('u1', 'Make a practice plan for Tuesday'), assistant([step(1, 'Checked Tuesday · nothing else on the calendar'), askPlan])] },
   'asking-qual': { messages: [user('u1', ASK.qual), assistant([step(1, 'Read the course’s tees'), askQual])] },
-  ...Object.fromEntries(['confirm-plan', 'folder', 'folder-new', 'receipt-plan', 'told-plan', 'undone-plan', 'failed-plan'].map((k) => [k, { messages: planThread() }])),
+  ...Object.fromEntries(['confirm-plan', 'folder', 'folder-menu', 'folder-new', 'receipt-plan', 'told-plan', 'undone-plan', 'failed-plan'].map((k) => [k, { messages: planThread() }])),
 };

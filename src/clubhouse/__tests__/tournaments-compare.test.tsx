@@ -47,12 +47,13 @@ describe('Compare on the desktop', () => {
     expect(plain(rows[0]!.querySelector('.ch-tour-cmp-m b'))).toBe('Scoring average');
   });
 
-  it('draws one primary action, Add event, linking to the event form', () => {
+  it('draws Add event as the head’s quiet key, as on Events, linking to the event form', () => {
     const c = draw(data);
-    const primaries = Array.from(c.querySelectorAll('.ch-btn')).filter((b) => b.className.includes('primary'));
-    expect(primaries).toHaveLength(1);
-    expect(plain(primaries[0])).toBe('Add event');
-    expect(primaries[0]).toHaveAttribute('href', expect.stringContaining('/tournaments/new'));
+    const add = Array.from(c.querySelectorAll('.ch-btn')).filter((b) => plain(b) === 'Add event');
+    expect(add).toHaveLength(1);
+    expect(add[0]!.className).toContain('ch-btn--secondary');
+    expect(add[0]).toHaveAttribute('href', expect.stringContaining('/tournaments/new'));
+    expect(Array.from(c.querySelectorAll('.ch-btn')).filter((b) => b.className.includes('primary'))).toHaveLength(0);
   });
 
   it('names the difference with a sign or a word, never colour alone', () => {

@@ -26,13 +26,24 @@ describe('Monday brief (chs-28)', () => {
     expect(d.team).toBe('9 players · 6 with enough rounds · 14 countable rounds last week');
   });
 
-  it('CH-13932 CH-13939 draws the rows, each with one Open action, and the counts line last', () => {
+  it('CH-13932 CH-13939 draws the team pattern as the lead and a row per player, each one target, and the counts line', () => {
     render(<MondayBrief load={{ status: 'ready', data: PREVIEW_MONDAY_BRIEF }} />);
     expect(screen.getByRole('heading', { level: 1, name: 'Monday brief' })).toBeTruthy();
+    // The team pattern is the week's lead panel, with its practice block and one way in.
+    const lead = document.querySelector<HTMLElement>('.ch-hmb-lead')!;
+    expect(within(lead).getByRole('heading', { level: 3, name: 'Wedges 50–125 yd · finishing short' })).toBeTruthy();
+    expect(lead.textContent).toContain('Practice block');
+    expect(within(lead).getAllByRole('link')).toHaveLength(1);
+    expect(within(lead).getByRole('link', { name: 'Open the pattern' }).getAttribute('href')).toBe('/golf/dashboard/coachhelm');
+    // Each player is one row and the row is the one target: no key inside it.
     const rows = screen.getAllByRole('listitem').filter((li) => li.className.includes('ch-hmb-row'));
-    expect(rows).toHaveLength(5);
-    for (const r of rows) expect(within(r).getAllByRole('link', { name: 'Open' })).toHaveLength(1);
-    expect(within(rows[1]!).getByRole('link', { name: 'Open' }).getAttribute('href')).toBe('/golf/dashboard/coachhelm?player=pv-priya');
+    expect(rows).toHaveLength(4);
+    for (const r of rows) {
+      expect(within(r).getAllByRole('link')).toHaveLength(1);
+      expect(within(r).queryByRole('button')).toBeNull();
+    }
+    expect(within(rows[0]!).getByRole('link').textContent).toContain('Priya Shah');
+    expect(within(rows[0]!).getByRole('link').getAttribute('href')).toBe('/golf/dashboard/coachhelm?player=pv-priya');
     expect(screen.getByText('2 new · 1 cleared · 0 contradicted · 2 out of date')).toBeTruthy();
     expect(document.body.textContent).not.toMatch(/\d%/);
   });

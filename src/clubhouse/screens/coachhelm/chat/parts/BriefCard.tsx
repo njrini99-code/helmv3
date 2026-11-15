@@ -1,6 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { ClipboardList } from 'lucide-react';
+import { Button } from '../../../../ui/Button';
+import { useRef, useState } from 'react';
+import { Icon } from '../../../../ui/Icon';
 
 export interface BriefQuestion {
   id: string;
@@ -23,12 +26,20 @@ export function BriefCard({ title, questions, onDone }: { title: string; questio
   };
   const [answers, setAnswers] = useState<Record<string, string[]>>(() => Object.fromEntries(questions.map((q) => [q.id, q.pick ?? []])));
   const [done, setDone] = useState(false);
+  const sent = useRef<string | null>(null);
+  // E-QCARD: the last question ends with a free line, for what the options didn't cover.
+  const [freeOpen, setFreeOpen] = useState(false);
+  const [free, setFree] = useState('');
   const q = questions[at];
   if (!q) return null;
   const summary = () => questions.map((x) => (answers[x.id] ?? []).map((id) => x.options.find((o) => o.id === id)?.label).filter(Boolean).join(', ')).filter(Boolean);
   const finish = () => {
+    const line = [...summary(), free.trim()].filter(Boolean).join(' · ');
+    // S-ASK.brief.change: changed answers go back as a new turn, so the plan is rebuilt on them; the same ones just fold.
+    if (line === sent.current) return setDone(true);
     // Not sent (a reply is still running, or offline): the answers stay open to send again.
-    if (onDone(answers, summary().join(' · ')) === false) return;
+    if (onDone(answers, line) === false) return;
+    sent.current = line;
     setDone(true);
   };
   if (done)
@@ -36,7 +47,7 @@ export function BriefCard({ title, questions, onDone }: { title: string; questio
       <section className="qcard">
         <div className="qsum">
           <div className="pills">
-            {summary().map((s, i) => (
+            {[...summary(), free.trim()].filter(Boolean).map((s, i) => (
               <span key={s} style={{ ['--ch-i' as string]: i }}>{s}</span>
             ))}
           </div>
@@ -51,7 +62,15 @@ export function BriefCard({ title, questions, onDone }: { title: string; questio
   return (
     <section className="qcard" aria-label={title}>
       <div className="qh">
-        <b>{title}</b>
+        <span className="qic" aria-hidden="true">
+          <Icon icon={ClipboardList} size={16} />
+        </span>
+        <span className="qtt">
+          <b>{title}</b>
+          <small className="ch-num">
+            Question {at + 1} of {questions.length}
+          </small>
+        </span>
         <span className="qdots" aria-hidden="true">
           {questions.map((x, i) => (
             <i key={x.id} className={(i <= at ? 'on' : '') + (i === at ? ' cur' : '')} />
@@ -61,7 +80,7 @@ export function BriefCard({ title, questions, onDone }: { title: string; questio
       <div key={q.id} className={'qpane' + (at === 0 && !back ? '' : back ? ' is-back' : ' is-next')}>
         <h5>{q.title}</h5>
         {q.why && <p className="why">{q.why}</p>}
-        <div className="opts" role={q.multi ? 'group' : 'radiogroup'} aria-label={q.title}>
+        <div className="opts" role="group" aria-label={q.title}>
           {q.options.map((o) => (
             <button key={o.id} type="button" className={'opt' + (q.multi ? ' multi' : '')} aria-pressed={chosen.includes(o.id)} onClick={() => toggle(o.id)}>
               <span className="bx" aria-hidden="true">
@@ -74,20 +93,26 @@ export function BriefCard({ title, questions, onDone }: { title: string; questio
             </button>
           ))}
         </div>
+        {at === questions.length - 1 &&
+          (freeOpen ? (
+            // eslint-disable-next-line jsx-a11y/no-autofocus -- the coach just asked for this field
+            <input autoFocus className="free" aria-label="Anything else?" placeholder="Anything else?" value={free} maxLength={280} onChange={(e) => setFree(e.target.value)} />
+          ) : (
+            <button type="button" className="free is-closed" onClick={() => setFreeOpen(true)}>
+              Anything else?
+            </button>
+          ))}
       </div>
       <div className="qft">
-        {at > 0 ? (
-          <button type="button" className="c" onClick={() => go(at - 1)}>
-            Back
-          </button>
-        ) : (
-          <button type="button" className="sk" onClick={finish}>
-            Skip, just build
-          </button>
-        )}
-        <button type="button" className="p" data-ch-press="" onClick={() => (at === questions.length - 1 ? finish() : go(at + 1))}>
+        <Button variant="ghost" disabled={at === 0} onClick={() => go(at - 1)}>
+          Back
+        </Button>
+        <Button variant="ghost" onClick={finish}>
+          Skip, just build
+        </Button>
+        <Button variant="primary" className="p" onClick={() => (at === questions.length - 1 ? finish() : go(at + 1))}>
           {at === questions.length - 1 ? 'Build it' : 'Next'}
-        </button>
+        </Button>
       </div>
     </section>
   );

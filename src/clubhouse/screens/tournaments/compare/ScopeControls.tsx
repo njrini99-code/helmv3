@@ -119,7 +119,7 @@ export function ScopeControls({
         <Select label={`Player ${S}`} value={subjectValue} options={subjectOptions} onChange={setSubject} />
         <Select label={`Period ${S}`} value={choice} options={periodOptions} onChange={setPeriod} />
       </div>
-      <Segmented
+      <Segmented weight="filter"
         size="sm"
         label={`Context ${S}`}
         block
@@ -139,7 +139,7 @@ export function ScopeControls({
             options={finished.map((e) => ({ value: e.id, label: `${e.name} · ${tourDay(e.startDate, { month: 'short', year: 'numeric' })}` }))}
             onChange={(id) => onChange({ ...scope, context: { kind: 'event', id, rounds: null } })}
           />
-          <Segmented
+          <Segmented weight="filter"
             size="sm"
             label={`Rounds ${S}`}
             value={ev.rounds?.length === 1 ? `r${ev.rounds[0]}` : 'all'}

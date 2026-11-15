@@ -12,10 +12,10 @@ vi.mock('@/lib/coachhelm/v2/gate', () => ({ isCoachHelmEnabledForPlayer: m.isCoa
 vi.mock('../player-context', () => ({ resolvePlayerChatContext: m.resolvePlayerChatContext }));
 vi.mock('../player-allowance', () => ({ readBucket: m.readBucket, recordPlayerSpend: vi.fn() }));
 vi.mock('@/lib/auth/rate-limit', () => ({ checkRateLimit: m.checkRateLimit, RATE_LIMITS: { API_GENERAL: {} } }));
-vi.mock('@/lib/ai/model-provider', () => ({ resolveModelProvider: vi.fn() }));
+vi.mock('../registry', () => ({ toolsFor: vi.fn(() => []) }));
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: vi.fn() }));
 vi.mock('@/lib/server-error-logger', () => ({ logServerError: vi.fn() }));
-vi.mock('../player-tools', () => ({ buildPlayerTools: vi.fn(), PLAYER_INSTRUCTIONS: vi.fn() }));
+vi.mock('../instructions', () => ({ instructionBlocks: vi.fn(() => ({ policy: '', team: '' })) }));
 
 import { CoachContextError, resolveCoachChatContext } from '../context';
 import { runPlayerTurn } from '../player-turn';
@@ -32,16 +32,16 @@ describe('the player turn’s gates', () => {
   it('CoachHelm off for the team answers nothing: 403, before the allowance is read or a model is called', async () => {
     m.isCoachHelmEnabledForPlayer.mockResolvedValue({ effectivelyEnabled: false });
     m.readBucket.mockResolvedValue(null);
-    const res = await runPlayerTurn(sb, { messages: [] }, signal);
+    const res = await runPlayerTurn(sb, { text: 'How am I putting?', clientTurnId: 't1' }, signal, () => ({}));
     expect(res.status).toBe(403);
-    expect(await res.json()).toEqual({ error: 'CoachHelm is off for your team.' });
+    expect(await res.json()).toEqual({ error: 'CoachHelm is off for your team.', kind: 'off' });
     expect(m.isCoachHelmEnabledForPlayer).toHaveBeenCalledWith('me');
     expect(m.readBucket).not.toHaveBeenCalled();
   });
 
   it('someone who is not a player stays denied', async () => {
     m.resolvePlayerChatContext.mockRejectedValue(new CoachContextError('This surface is for players', 403));
-    const res = await runPlayerTurn(sb, { messages: [] }, signal);
+    const res = await runPlayerTurn(sb, { text: 'How am I putting?', clientTurnId: 't1' }, signal, () => ({}));
     expect(res.status).toBe(403);
     expect(m.isCoachHelmEnabledForPlayer).not.toHaveBeenCalled();
   });

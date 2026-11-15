@@ -119,8 +119,9 @@ export function HoleGrid({
   return (
     <div className={'ch-tour-desk-hg' + (phone ? ' is-phone' : '')}>
       <div className="ch-tour-desk-hg__tools">
-        <Segmented size="sm" label="Round" value={`r${round}`} onChange={(v) => onRound(Number(v.slice(1)))} options={event.rounds.map((r) => ({ value: `r${r.number}`, label: phone ? `R${r.number}` : `Round ${r.number}` }))} />
+        <Segmented weight="filter" size="sm" label="Round" value={`r${round}`} onChange={(v) => onRound(Number(v.slice(1)))} options={event.rounds.map((r) => ({ value: `r${r.number}`, label: phone ? `R${r.number}` : `Round ${r.number}` }))} />
         <Segmented
+          weight="filter"
           size="sm"
           label="Hole view"
           value={mode}

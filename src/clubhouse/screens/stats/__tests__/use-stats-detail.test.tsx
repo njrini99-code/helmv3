@@ -8,7 +8,7 @@ const at = (url: string, state: unknown = null) => window.history.replaceState(s
 /** jsdom runs `history.back()` as a task: wait for the popstate it fires. */
 const popped = () => new Promise<void>((resolve) => window.addEventListener('popstate', () => resolve(), { once: true }));
 
-const hook = (props: { tab?: string; state?: StatsArrivalState; screen?: 'player' | 'team' } = {}) => renderHook(() => useStatsDetail({ screen: props.screen ?? 'player', tab: props.tab, state: props.state }));
+const hook = (props: { tab?: string; area?: string; state?: StatsArrivalState; screen?: 'player' | 'team' } = {}) => renderHook(() => useStatsDetail({ screen: props.screen ?? 'player', tab: props.tab, area: props.area, state: props.state }));
 
 beforeEach(() => {
   window.sessionStorage.clear();
@@ -69,6 +69,33 @@ describe('useStatsDetail', () => {
     await act(async () => pop);
     expect(result.current.detail).toBeNull();
     expect(window.location.search).toBe('?player=p1');
+  });
+
+  it("production’s ?area= opens that area’s detail, then one Back reaches the summary with the area gone", async () => {
+    at('/golf/dashboard/stats?player=p1&area=putting&window=last10');
+    const pushed = vi.spyOn(window.history, 'pushState');
+    const { result } = hook({ area: 'putting' });
+    expect(result.current.detail).toBe('putting');
+    expect(window.location.hash).toBe('#gm-putting');
+    expect(pushed).toHaveBeenCalledTimes(1);
+    pushed.mockRestore();
+    const pop = popped();
+    act(() => result.current.close());
+    await act(async () => pop);
+    expect(result.current.detail).toBeNull();
+    expect(window.location.search).toBe('?player=p1&window=last10');
+  });
+
+  it('?area=standing opens Strokes gained; the team screen opens its game area; an unknown area opens nothing', () => {
+    at('/golf/dashboard/stats?area=standing');
+    expect(hook({ area: 'standing' }).result.current.detail).toBe('sg');
+    cleanup();
+    at('/golf/dashboard/stats?area=game');
+    expect(hook({ screen: 'team', area: 'game' }).result.current.detail).toBe('tgame');
+    cleanup();
+    at('/golf/dashboard/stats?area=home');
+    expect(hook({ area: 'home' }).result.current.detail).toBeNull();
+    expect(window.location.hash).toBe('');
   });
 
   it('a Back onto a { chPhone: 1 } entry opens the detail with no new entry (S-STATS.return)', () => {

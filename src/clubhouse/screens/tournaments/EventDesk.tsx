@@ -2,14 +2,16 @@
 
 import { ArrowRight, ArrowUpRight, ClipboardCheck, GitCompare, Radio, Users } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useMemo, useState, type KeyboardEvent } from 'react';
+import { useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { InlineNotice } from '../../ui/Notices';
 import { Section } from '../../ui/Section';
 import { EmptyState, SkelRows, Skeleton } from '../../ui/States';
 import { TrustChip } from '../../ui/TrustChip';
+import { useHScroll, useKeepInView } from '../../ui/use-hscroll';
 import { haptic } from '../../lib/haptics';
+import { useChReducedMotion } from '../../lib/reduced-motion';
 import { tabListKeys } from '../../lib/tabs';
 import { useRefresh } from '../../lib/use-refresh';
 import { deskRows, roundSets, type DeskRow, type HoleCardRow } from './desk-model';
@@ -299,11 +301,18 @@ function DeskReady({ data, search, phone }: { data: ChTourDeskData; search: ChTo
   );
 }
 
-/** The tab strip (a scroller on the phone). Real tabs: each controls its panel, the arrows move between them. */
+/**
+ * The tab strip (a scroller on the phone). Real tabs: each controls its panel, the arrows move between them. Where the
+ * strip runs past the screen it fades at that edge, never cutting a word with no sign of more, and the chosen tab is
+ * always whole and clear of the fade (ui/use-hscroll.ts, as Team Hub's strip).
+ */
 function DeskTabs({ tabs, tab, onPick, reviewCount }: { tabs: readonly ChTourDeskTab[]; tab: ChTourDeskTab; onPick: (t: ChTourDeskTab) => void; reviewCount: number }) {
   const keys = tabListKeys(tabs, tab, onPick, (t) => `ch-tour-desk-tab-${t}`);
+  const row = useRef<HTMLDivElement>(null);
+  const edges = useHScroll<HTMLDivElement>(row);
+  useKeepInView(row, '[aria-selected="true"]', tab, useChReducedMotion());
   return (
-    <div className="ch-hscroll ch-tour-desk-tabs" role="tablist" aria-label="Event sections">
+    <div ref={edges} className="ch-hscroll ch-tour-desk-tabs" role="tablist" aria-label="Event sections">
       {tabs.map((t) => (
         <button
           key={t}

@@ -46,6 +46,16 @@ describe('roundsFromRange', () => {
     expect(one[0]!.tee).toBe('08:42');
     expect(one[0]!.id).toBe(three[0]!.id);
   });
+  it('gives the same form the same row ids wherever it is built, each one its own in the list', () => {
+    // The server renders the form and the browser hydrates it: both build this state, and the row's id is in the page.
+    const server = initialTourState('2026-11-05', '2026-11-07');
+    const browser = initialTourState('2026-11-05', '2026-11-07');
+    expect(browser.rounds.map((x) => x.id)).toEqual(server.rounds.map((x) => x.id));
+    // Growing, shrinking and adding never hands out an id a row in the list already has.
+    const grown = roundsFromRange('2026-11-05', '2026-11-09', roundsFromRange('2026-11-05', '2026-11-06', server.rounds));
+    const more = addRound(addRound(grown));
+    expect(new Set(more.map((x) => x.id)).size).toBe(more.length);
+  });
   it('7 days draw 7 rows, and validate refuses them with CH-6142', () => {
     const s = state({ firstDay: '2026-11-01', lastDay: '2026-11-07', rounds: roundsFromRange('2026-11-01', '2026-11-07', []) });
     expect(s.rounds).toHaveLength(7);

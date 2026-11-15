@@ -19,7 +19,12 @@
       "mcp__claude_ai_Supabase",
       "mcp__claude_ai_Vercel",
       "mcp__claude_ai_Sentry",
-      "mcp__supabase-readonly"
+      "mcp__supabase-readonly",
+      "mcp__supabase-staging-ro",
+      "mcp__playwright-webkit",
+      "mcp__playwright-webkit-coach",
+      "mcp__safari-native",
+      "mcp__chrome-devtools"
     ],
     "deny": [],
     "ask": [
@@ -114,6 +119,18 @@
             "command": "test -f \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/save-session-state.mjs || exit 0; node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/save-session-state.mjs",
             "timeout": 10,
             "statusMessage": "engineering-os: save session state"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "mcp__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ \"$HELM_AUDIT\" = \"1\" ] || exit 0; test -f \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/no-prod-in-audit.mjs || exit 0; node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/no-prod-in-audit.mjs",
+            "timeout": 10
           }
         ]
       }

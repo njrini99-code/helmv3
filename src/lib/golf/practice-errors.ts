@@ -40,5 +40,10 @@ export function practiceErrorOf(message: string | null | undefined): { code: str
   return token ? { ...PRACTICE_ERRORS[token]!, token } : { code: 'CH-17001', message: 'That plan couldn’t be saved.', token: null };
 }
 
-/** The errors that mean the held block isn't applied: Practice is unavailable, never a crash (N-00 §0.5). */
-export const isPracticeMissing = (code: string | null | undefined): boolean => code === 'PGRST205' || code === 'PGRST202' || code === '42P01' || code === '42883';
+/**
+ * The errors that mean the held block isn't applied, or only part of it is: Practice is unavailable, never a crash and never "didn't load" (N-00 §0.5).
+ * A missing table (PGRST205, 42P01), a missing function (PGRST202, 42883), and a missing column (PGRST204, 42703): a database with some of the
+ * twelve migrations answers a read that names a later one's column with the last two.
+ */
+const PRACTICE_MISSING = new Set(['PGRST205', 'PGRST202', 'PGRST204', '42P01', '42883', '42703']);
+export const isPracticeMissing = (code: string | null | undefined): boolean => !!code && PRACTICE_MISSING.has(code);

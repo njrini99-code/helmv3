@@ -46,8 +46,8 @@ afterEach(() => {
 
 describe('D-64 springs (extension, 2026-10-08)', () => {
   it('keep the D-64 base duration (the drop\'s reveal spring: D-64\'s reveal) with a bounce of 0 to 0.1, handed to framer as stiffness and damping so velocity carries', () => {
-    // Named, signed-off exceptions: Messages' send, pop and lift (owner, 31 Oct 2026, "as long as it's smooth"; messages 02 §2.2) and the quick chat's pour (coachhelm 07).
-    const named = new Set(['send', 'pop', 'lift', 'pour']);
+    // Named, signed-off exceptions: Messages' send, pop and lift (owner, 31 Oct 2026, "as long as it's smooth"; messages 02 §2.2), Messages v2's launch (Q-04 default, bounce 0.2, owner to confirm) and the quick chat's pour (coachhelm 07).
+    const named = new Set(['send', 'pop', 'lift', 'launch', 'pour']);
     for (const [kind, { visualDuration, bounce }] of Object.entries(CH_SPRINGS)) {
       if (named.has(kind)) continue;
       expect(visualDuration).toBe(kind === 'reveal' ? CH_DUR.reveal : CH_DUR.base);
@@ -62,11 +62,12 @@ describe('D-64 springs (extension, 2026-10-08)', () => {
     expect(chSpring('settle', true)).toEqual({ duration: 0 });
   });
 
-  it('the three Messages springs keep the values the owner signed off', () => {
+  it('the four Messages springs keep the values the owner signed off', () => {
     for (const [kind, stiffness, damping, peak] of [
       ['send', 155, 21.9, 1.003],
       ['pop', 439, 27.2, 1.068],
       ['lift', 350, 31.8, 1.006],
+      ['launch', 110, 16.8, 1.015],
     ] as const) {
       expect(chSpring(kind)).toMatchObject({ stiffness: expect.closeTo(stiffness, 0), damping: expect.closeTo(damping, 1) });
       let high = 0;
@@ -77,7 +78,7 @@ describe('D-64 springs (extension, 2026-10-08)', () => {
 
   it('the tokens for those springs are their sampled curves', () => {
     const tokens = readFileSync(join(process.cwd(), 'src/clubhouse/styles/tokens.css'), 'utf8');
-    for (const kind of ['send', 'pop', 'lift'] as const) {
+    for (const kind of ['send', 'pop', 'lift', 'launch'] as const) {
       expect(tokens).toContain(`--ch-ease-spring-${kind}: ${chSpringCurve(kind).linear};`);
       expect(tokens).toContain(`--ch-dur-spring-${kind}: ${chSpringCurve(kind).ms}ms;`);
     }

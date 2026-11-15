@@ -1,17 +1,21 @@
 'use client';
+import { readTypeK } from '../../lib/type-k';
 import { pluralWord } from '../../lib/plural';
 import { formatFixed } from '../../lib/format';
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type PointerEvent } from 'react';
 import { useChReducedMotion } from '../../lib/reduced-motion';
+import { CH_MARKS_MS } from '../../lib/motion';
 import { hapticScrub } from '../../lib/haptics';
 import { meanSeries, parLine, type TrendRound } from './round-trend';
-import { monoPath, type ShsTone } from './shs-figures';
+import { monoPath, straightPath, teamLineDays, type ShsTone } from './shs-figures';
 
 const H = 160;
-const PAD = { l: 4, r: 30, t: 10, b: 26 };
+const BASE_PAD = { l: 4, r: 30, t: 10, b: 26 };
+const HOLD_MS = 120;
+const SIDEWAYS_PX = 6;
 /** The line's morph on a window change (07 M-STATS-10). */
-const MORPH_MS = 360;
+const MORPH_MS = CH_MARKS_MS;
 const morphEase = (t: number) => 1 - Math.pow(1 - t, 3.2);
 
 type Pt = readonly [number, number];
@@ -39,6 +43,15 @@ export function ScoringFeatureChart({ rounds, tone, onRead }: { rounds: readonly
   const box = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(320);
   const [read, setRead] = useState<number | null>(null);
+  // The axis type follows Text Size, so its gutters do too: fixed ones clip the figures at large sizes (STATS-9).
+  const [k, setK] = useState(1);
+  useEffect(() => setK(readTypeK(document.documentElement)), []);
+  const PAD = { ...BASE_PAD, r: BASE_PAD.r * k, b: BASE_PAD.b * k };
+  const pending = useRef<{ x0: number; timer: number } | null>(null);
+  const cancelPending = () => {
+    if (pending.current) window.clearTimeout(pending.current.timer);
+    pending.current = null;
+  };
   useEffect(() => {
     const el = box.current;
     if (!el) return;
@@ -78,17 +91,31 @@ export function ScoringFeatureChart({ rounds, tone, onRead }: { rounds: readonly
   const shape = useRef<{ dots: readonly Pt[]; avg: readonly Pt[] } | null>(null);
   const roundsKey = shown.map((r) => r.id).join();
   const dotPts: Pt[] = shown.map((r, i) => [x(i), y(r.value)]);
+  const morphedKey = useRef<string | null>(null);
   useLayoutEffect(() => {
     const was = shape.current;
     const end = { dots: dotPts, avg };
-    if (!was || reduced || was.dots.length === 0) {
+    const bottom = H - PAD.b;
+    const circles = Array.from(dotsEl.current?.querySelectorAll('circle') ?? []);
+    // The shape as the elements hold it: a morph writes them itself, so whoever stops one must leave them on a whole shape.
+    const paint = (a: readonly Pt[], d: readonly Pt[]) => {
+      const path = monoPath(a);
+      if (lineEl.current) lineEl.current.setAttribute('d', path);
+      if (areaEl.current) areaEl.current.setAttribute('d', path ? `${path}L${a[a.length - 1]![0]},${bottom}L${a[0]![0]},${bottom}Z` : '');
+      circles.forEach((c, i) => d[i] && c.setAttribute('cy', String(d[i]![1])));
+    };
+    const sameRounds = morphedKey.current === roundsKey;
+    morphedKey.current = roundsKey;
+    // Only a new set of rounds morphs. A new width (the card is measured after its first paint, and a desk's card is far wider than
+    // the first guess) or a motion setting that lands late redraws at rest: a morph begun at the old width would otherwise keep
+    // writing the old width's line over the new one, leaving the average half as long as its rounds.
+    if (!was || reduced || was.dots.length === 0 || sameRounds) {
+      paint(avg, dotPts);
       shape.current = end;
       return;
     }
     const startDots = dotPts.map((p) => heightAt(was.dots, p[0]) ?? p[1]);
     const startAvg = avg.map((p) => heightAt(was.avg, p[0]) ?? p[1]);
-    const bottom = H - PAD.b;
-    const circles = Array.from(dotsEl.current?.querySelectorAll('circle') ?? []);
     let raf = 0;
     const t0 = performance.now();
     const step = (now: number) => {
@@ -96,17 +123,14 @@ export function ScoringFeatureChart({ rounds, tone, onRead }: { rounds: readonly
       const a = avg.map((p, i) => [p[0], startAvg[i]! + (p[1] - startAvg[i]!) * t] as const);
       const d = dotPts.map((p, i) => [p[0], startDots[i]! + (p[1] - startDots[i]!) * t] as const);
       shape.current = { dots: d, avg: a };
-      const path = monoPath(a);
-      if (lineEl.current) lineEl.current.setAttribute('d', path);
-      if (areaEl.current && path) areaEl.current.setAttribute('d', `${path}L${a[a.length - 1]![0]},${bottom}L${a[0]![0]},${bottom}Z`);
-      circles.forEach((c, i) => d[i] && c.setAttribute('cy', String(d[i]![1])));
+      paint(a, d);
       if (t < 1) raf = requestAnimationFrame(step);
       else shape.current = end;
     };
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- a new set of rounds starts it; a resize just redraws
-  }, [roundsKey, reduced]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the geometry is read from this render; the keys say when it changed
+  }, [roundsKey, reduced, width]);
 
   const set = useCallback(
     (i: number | null) => {
@@ -152,19 +176,49 @@ export function ScoringFeatureChart({ rounds, tone, onRead }: { rounds: readonly
       aria-valuetext={interactive ? (read == null ? `Latest ${Math.round(last.value)}, ${last.label}` : `${Math.round(shown[read]!.value)}, ${shown[read]!.label}`) : undefined}
       onPointerDown={(e) => {
         if (!interactive) return;
-        e.currentTarget.setPointerCapture(e.pointerId);
-        hapticScrub('start');
-        pick(e);
+        // A scroll that starts here isn't a read: nothing lights and nothing buzzes until a hold or a sideways move (MOB-STATS-4).
+        if (e.pointerType !== 'touch') {
+          e.currentTarget.setPointerCapture(e.pointerId);
+          hapticScrub('start');
+          pick(e);
+          return;
+        }
+        const el = e.currentTarget;
+        const id = e.pointerId;
+        const x0 = e.clientX;
+        const at = { clientX: e.clientX };
+        pending.current = {
+          x0,
+          timer: window.setTimeout(() => {
+            pending.current = null;
+            el.setPointerCapture(id);
+            hapticScrub('start');
+            pick(at as never);
+          }, HOLD_MS),
+        };
       }}
       onPointerMove={(e) => {
+        const wait = pending.current;
+        if (wait && Math.abs(e.clientX - wait.x0) >= SIDEWAYS_PX) {
+          window.clearTimeout(wait.timer);
+          pending.current = null;
+          e.currentTarget.setPointerCapture(e.pointerId);
+          hapticScrub('start');
+          pick(e);
+          return;
+        }
         if (interactive && e.currentTarget.hasPointerCapture(e.pointerId)) pick(e);
       }}
       onPointerUp={() => {
+        cancelPending();
         if (read == null) return;
         hapticScrub('end');
         set(null);
       }}
-      onPointerCancel={() => set(null)}
+      onPointerCancel={() => {
+        cancelPending();
+        set(null);
+      }}
       onBlur={() => set(null)}
       onKeyDown={(e) => {
         if (!interactive) return;
@@ -222,8 +276,12 @@ export function ScoringFeatureChart({ rounds, tone, onRead }: { rounds: readonly
   );
 }
 
-/** The team's feature chart (08 criterion 50): 160 tall, its line and area always the gain fill, the mean dashed and named. Not interactive: the card is the tap. */
-export function TeamFeatureChart({ days, mean }: { days: ReadonlyArray<{ label: string; score: number | null }>; mean: number | null }) {
+/**
+ * The team's feature chart (08 criterion 50): 160 tall, its line and area always the gain fill, the mean dashed and named. Not
+ * interactive: the card is the tap. Straight segments, and a day one player posted on is a hollow dot off the team's line (W26).
+ * The dashed mean is named in a key under the drawing, never on the line: the scoring line crossed its words there (F-0009).
+ */
+export function TeamFeatureChart({ days, mean }: { days: ReadonlyArray<{ label: string; score: number | null; n?: number }>; mean: number | null }) {
   const box = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(320);
   useEffect(() => {
@@ -235,7 +293,7 @@ export function TeamFeatureChart({ days, mean }: { days: ReadonlyArray<{ label: 
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
-  const known = days.filter((d): d is { label: string; score: number } => d.score != null);
+  const known = days.filter((d): d is { label: string; score: number; n?: number } => d.score != null);
   const n = known.length;
   if (!n) return null;
   const R = 30;
@@ -247,11 +305,14 @@ export function TeamFeatureChart({ days, mean }: { days: ReadonlyArray<{ label: 
   const x = (i: number) => (n === 1 ? (width - R) / 2 : (i * (width - R)) / (n - 1));
   const y = (q: number) => T + ((q - lo) / (hi - lo || 1)) * (H - T - B);
   const pts = v.map((q, i) => [x(i), y(q)] as const);
-  const line = monoPath(pts);
+  const joined = teamLineDays(known);
+  const linePts = joined.line.map((i) => pts[i]!);
+  const line = straightPath(linePts);
   const ticks: number[] = [];
   for (let q = lo; q <= hi; q++) if ((q - lo) % (hi - lo > 4 ? 2 : 1) === 0) ticks.push(q);
   return (
-    <div ref={box} className="ch-shs-chart" role="img" aria-label={`Team scoring average by round day, from ${formatFixed(v[0]!, 1)} to ${formatFixed(v[n - 1]!, 1)}. Lower scores sit higher.`}>
+    <>
+    <div ref={box} className="ch-shs-chart" role="img" aria-label={`Team scoring average by round day, from ${formatFixed(v[0]!, 1)} to ${formatFixed(v[n - 1]!, 1)}. Lower scores sit higher.${joined.one.size ? ` ${joined.one.size} ${pluralWord(joined.one.size, 'day', 'days')} with one round ${joined.one.size === 1 ? 'is' : 'are'} drawn apart from the team’s line.` : ''}`}>
       <svg viewBox={`0 0 ${width} ${H}`} height={H} aria-hidden="true">
         <defs>
           <linearGradient id="ch-shs-tg" x1="0" x2="0" y1="0" y2="1">
@@ -268,10 +329,10 @@ export function TeamFeatureChart({ days, mean }: { days: ReadonlyArray<{ label: 
           </g>
         ))}
         {mean != null && <line className="ch-shs-parline" x1="0" x2={width - R + 4} y1={y(mean)} y2={y(mean)} />}
-        {line && <path d={`${line}L${pts[n - 1]![0]},${H - B}L0,${H - B}Z`} fill="url(#ch-shs-tg)" />}
+        {line && <path d={`${line}L${linePts[linePts.length - 1]![0]},${H - B}L${linePts[0]![0]},${H - B}Z`} fill="url(#ch-shs-tg)" />}
         {line && <path className="ch-shs-avgline" d={line} stroke="var(--ch-shs-s-gain-fill)" />}
         {pts.map((p, i) => (
-          <circle key={i} className="ch-shs-rdot" cx={p[0]} cy={p[1]} r={i === n - 1 ? 5 : 3.4} />
+          <circle key={i} className={'ch-shs-rdot' + (joined.one.has(i) ? ' is-one' : '')} cx={p[0]} cy={p[1]} r={i === n - 1 ? 5 : 3.4} />
         ))}
         <text className="ch-shs-ax" x="0" y={H - 5}>
           {known[0]!.label}
@@ -281,12 +342,18 @@ export function TeamFeatureChart({ days, mean }: { days: ReadonlyArray<{ label: 
             {known[n - 1]!.label}
           </text>
         )}
-        {mean != null && (
-          <text className="ch-shs-ax" x="4" y={y(mean) - 6}>
-            Mean {formatFixed(mean, 1)}
-          </text>
-        )}
       </svg>
     </div>
+    {mean != null && (
+      // Named for what it is, an average of the round days drawn, so it never reads as a second scoring average beside the card's
+      // figure (W26, F-0009). Its mark is the line's own dash.
+      <p className="ch-shs-mean-key ch-num">
+        <svg width="16" height="2" viewBox="0 0 16 2" aria-hidden="true">
+          <line className="ch-shs-parline" x1="0" x2="16" y1="1" y2="1" />
+        </svg>
+        Round-day avg {formatFixed(mean, 1)}
+      </p>
+    )}
+    </>
   );
 }

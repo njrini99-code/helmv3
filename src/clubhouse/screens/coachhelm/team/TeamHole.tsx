@@ -1,16 +1,23 @@
 'use client';
 
 import { useLayoutEffect, useRef, useState } from 'react';
-import { avatarTone } from '../../../ui/Avatar';
 import { ChartText } from '../../../ui/charts/ChartText';
 import { placeLabels } from '../../../lib/chart-geometry';
 import { formatSigned, changeTone } from '../../../lib/format';
 import { initials as initialsOf } from '../../../lib/names';
 import { STATIONS, type ChStation, type ChTeamBoardData, type ChTeamPlayer } from '../../../data/coachhelm-team-shape';
-import { HOLE, stationRadius, STATION_NAME, STATION_SHORT } from './hole-geometry';
+import { coinSlots, HOLE, stationRadius, STATION_NAME, STATION_SHORT } from './hole-geometry';
+import { HoleMotion } from './HoleMotion';
 
-const TONE_FILL: Record<string, string> = { sand: '#8A5A2B', stone: '#5E6B3A', sage: '#2F6B4F', mist: '#4B5F8A', clay: '#8A4D3A', heather: '#7A4E6E' };
-export const coinColor = (id: string): string => TONE_FILL[avatarTone(id)] ?? TONE_FILL.sage!;
+/** A coin drawn on a chart wears its class year (`--ch-yr-*`), as the roster's class bars do; a year the app can't place is the neutral mark. */
+export function coinYear(classYear: string | null | undefined): 'sr' | 'jr' | 'so' | 'fr' | null {
+  const y = (classYear ?? '').trim().toLowerCase();
+  if (/^(senior|sr)\b/.test(y)) return 'sr';
+  if (/^(junior|jr)\b/.test(y)) return 'jr';
+  if (/^(sophomore|so)\b/.test(y)) return 'so';
+  if (/^(freshman|fr)\b/.test(y)) return 'fr';
+  return null;
+}
 
 /** The drawing's scale on screen, so its words can hold the 12px floor on the narrowest phone (MOB-TEAM-6). */
 function useDrawnScale(svg: React.RefObject<SVGSVGElement | null>, width: number): number {
@@ -33,7 +40,11 @@ function useDrawnScale(svg: React.RefObject<SVGSVGElement | null>, width: number
 /** A word's width in the drawing, at about 0.56em: close enough to place it, and placeLabels keeps a margin. */
 const wide = (text: string, size: number) => text.length * size * 0.56;
 
-/** One SVG: the hole at rest, with no motion on first paint (owner, TEAM-33). A coin stands where its player loses most; the third slot turns into "+N" past three. */
+/**
+ * The hole, complete and readable in its first frame: every station, figure and coin is drawn at rest. Over it, once a session, a ball
+ * flies tee to green and each station answers as it passes (`HoleMotion`, the owner's signature moment); it adds to the drawing and
+ * hides none of it. A coin stands where its player loses most; the third slot turns into "+N" past three.
+ */
 export function TeamHole({
   stations,
   players,
@@ -41,6 +52,8 @@ export function TeamHole({
   onStation,
   orientation,
   bare = false,
+  arrive = false,
+  picks = 0,
 }: {
   stations: ChTeamBoardData['stations'];
   players: readonly ChTeamPlayer[];
@@ -48,6 +61,10 @@ export function TeamHole({
   onStation: (s: ChStation) => void;
   orientation: 'v' | 'h';
   bare?: boolean;
+  /** The arrival may play here (the live hole, not the empty one or a picture of it). */
+  arrive?: boolean;
+  /** How many times the coach has chosen a station (the pulse answers a choice, never a first paint). */
+  picks?: number;
 }) {
   const H = HOLE[orientation];
   const svg = useRef<SVGSVGElement | null>(null);
@@ -56,6 +73,9 @@ export function TeamHole({
   const labelSize = 13 * up;
   const valueSize = 19 * up;
   const coinSize = 12 * up;
+  // A coin is 22px on screen, so it grows in the drawing as the hole draws smaller; its slots fan out with it (W9).
+  const coinR = 11 * up;
+  const coinsAt = (s: ChStation) => coinSlots(H, s, coinR, Math.min(players.filter((p) => p.worst === s).length, H.coins[s].length));
   // Words go beside their own mark, clear of every mark and of each other, inside the drawing, whatever the figures are (TEAM-2, TEAM-3).
   const placed = new Map(
     placeLabels(
@@ -69,17 +89,20 @@ export function TeamHole({
       { x: 4, y: 4, w: H.w - 8, h: H.h - 8 },
       6,
       [
-        ...STATIONS.flatMap((s) => {
-          const n = players.filter((p) => p.worst === s).length;
-          return H.coins[s].slice(0, n).map(([x, y]) => ({ x: x - 11 * up, y: y - 11 * up, w: 22 * up, h: 22 * up }));
-        }),
+        ...STATIONS.flatMap((s) => coinsAt(s).map(([x, y]) => ({ x: x - coinR, y: y - coinR, w: 2 * coinR, h: 2 * coinR }))),
         { x: H.flag.x - 2, y: H.flag.y - 34, w: 18, h: 34 },
       ],
     ).map((l) => [l.id, l]),
   );
   const label = STATIONS.map((s) => `${STATION_NAME[s].toLowerCase()} ${stations[s].team == null ? 'not measured' : formatSigned(stations[s].team)}`).join(', ');
+  // The live hole holds its stations' buttons, so it is a named group: an image's children are hidden from a screen reader (F-0007).
+  // The empty hole has nothing to press and stays one image that says what it shows.
+  const named = bare
+    ? { role: 'img', 'aria-label': `A golf hole showing where the team loses strokes to Tour: ${label} a round.` }
+    : { role: 'group', 'aria-label': 'Where the team loses strokes to Tour, by part of the hole' };
   return (
-    <svg ref={svg} className="holesvg" viewBox={`0 0 ${H.w} ${H.h}`} role="img" aria-label={`A golf hole showing where the team loses strokes to Tour: ${label} a round.`}>
+    <div className="holebox">
+    <svg ref={svg} className="holesvg" viewBox={`0 0 ${H.w} ${H.h}`} {...named}>
       <path className="fair" d={H.path} strokeWidth={H.fw} />
       <path className="mow" d={H.path} strokeWidth={H.fw * 0.42} />
       <ellipse className="fringe" {...H.fringe} />
@@ -101,9 +124,9 @@ export function TeamHole({
           const signed = changeTone(v, false);
           const tone = !signed ? ' is-even' : signed === 'is-gain' ? ' is-gain' : '';
           const here = players.filter((p) => p.worst === s);
-          const slots = H.coins[s];
+          const slots = coinsAt(s);
           // The drawn slots, then "+N" in the last one (02-PLAN 9.7). A station drawn with fewer slots than three still ends on "+N".
-          const room = Math.max(1, slots.length);
+          const room = Math.max(1, H.coins[s].length);
           const over = here.length > room;
           const shown = over ? here.slice(0, room - 1) : here;
           const moreAt = slots[room - 1];
@@ -115,7 +138,8 @@ export function TeamHole({
                 role="button"
                 tabIndex={0}
                 aria-pressed={station === s}
-                aria-label={`${STATION_NAME[s]}, ${v == null ? 'not measured' : `${formatSigned(v)} a round`}`}
+                // Starts with the words drawn on it, the short name and the figure, so a voice user can say what they see (label in name).
+                aria-label={`${STATION_SHORT[s]}, ${v == null ? 'Not measured' : `${formatSigned(v)} a round`}${STATION_SHORT[s] === STATION_NAME[s] ? '' : `, ${STATION_NAME[s].toLowerCase()}`}`}
                 onClick={() => onStation(s)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
@@ -127,7 +151,6 @@ export function TeamHole({
               >
                 {/* The 44 a thumb needs, whatever the halo's size (TEAM-12). */}
                 <circle className="hit" cx={t.x} cy={t.y} r={23 * up} fill="transparent" />
-                {v != null && <circle key={station === s ? 'on' : 'off'} className="pulse" cx={t.x} cy={t.y} r={r} />}
                 {v != null && <circle className="halo" cx={t.x} cy={t.y} r={r} />}
                 {v != null && <circle className="core" cx={t.x} cy={t.y} r={4.5} />}
                 <ChartText className="sl" size={labelSize} weight={station === s ? 600 : 500} x={textX} y={spot.y + labelSize} textAnchor={spot.anchor}>
@@ -141,9 +164,9 @@ export function TeamHole({
                 const c = slots[i];
                 if (!c) return null;
                 return (
-                  <g key={p.id} className={'scn' + (p.early ? ' early' : '')} data-early={p.early || undefined} aria-hidden="true">
-                    {/* Hollow: a ring in the player's colour on the hole's own green (TEAM-11). */}
-                    <circle cx={c[0]} cy={c[1]} r={11 * up} fill={p.early ? 'var(--ch-tb-feat)' : coinColor(p.id)} style={p.early ? { stroke: coinColor(p.id) } : undefined} />
+                  <g key={p.id} className={'scn' + (p.early ? ' early' : '')} data-early={p.early || undefined} data-year={coinYear(p.classYear) ?? undefined} aria-hidden="true">
+                    {/* Solid in the class year's colour; hollow, a dashed ring on the hole's own green, under 5 rounds (TEAM-11). */}
+                    <circle cx={c[0]} cy={c[1]} r={coinR} />
                     <ChartText size={coinSize} weight={600} x={c[0]} y={c[1]}>
                       {initialsOf(p.name)}
                     </ChartText>
@@ -156,7 +179,7 @@ export function TeamHole({
                   data-ch-team-more={s}
                   role="button"
                   tabIndex={0}
-                  aria-label={`${here.length - shown.length} more at ${STATION_NAME[s]}`}
+                  aria-label={`+${here.length - shown.length} more at ${STATION_SHORT[s]}`}
                   onClick={() => onStation(s)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
@@ -166,7 +189,7 @@ export function TeamHole({
                   }}
                 >
                   <circle className="hit" cx={moreAt[0]} cy={moreAt[1]} r={23 * up} fill="transparent" />
-                  <circle cx={moreAt[0]} cy={moreAt[1]} r={11 * up} fill="var(--ch-tb-feat)" />
+                  <circle cx={moreAt[0]} cy={moreAt[1]} r={coinR} />
                   <ChartText size={coinSize} weight={600} x={moreAt[0]} y={moreAt[1]}>
                     +{here.length - shown.length}
                   </ChartText>
@@ -175,7 +198,8 @@ export function TeamHole({
             </g>
           );
         })}
-      <circle className="ball" r={4.2} cx={-20} cy={-20} opacity={0} />
     </svg>
+    {!bare && <HoleMotion hole={H} stations={stations} station={station} arrive={arrive} picks={picks} />}
+    </div>
   );
 }

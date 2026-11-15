@@ -11,7 +11,11 @@ name: helmv3 CodeQL config
 #     fixtures under .coderabbit/**/__test__/ are DELIBERATELY broken code);
 #   - archive/**, which AGENTS.md defines as historical evidence only and
 #     which nothing deploys;
-#   - docs and public assets, which CodeQL's JavaScript extractor still walks.
+#   - docs and public assets, which CodeQL's JavaScript extractor still walks;
+#   - design-refresh/**, the static design reference pages (self-contained
+#     HTML with hardcoded sample data, opened by hand, never built, served or
+#     deployed). Their inline scripts produced alerts of the same kind as the
+#     docs pages did (added 2026-11-10, alert #665).
 #
 # What stays in scope is everything that ships or runs: src/ (minus tests),
 # scripts/, supabase/functions/, tools/, and the workflow files the `actions`
@@ -27,6 +31,7 @@ paths-ignore:
   - 'e2e/**'
   - 'archive/**'
   - 'docs/**'
+  - 'design-refresh/**'
   - 'public/**'
   - '.next/**'
   - '.coderabbit/**/__test__/**'

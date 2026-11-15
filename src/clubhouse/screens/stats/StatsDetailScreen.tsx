@@ -4,7 +4,6 @@ import { useEffect, useRef, type MouseEvent, type ReactNode, type RefObject } fr
 import { PhoneBar } from '../../ui/PhoneBar';
 import { PhoneScreen } from '../../shell/PhoneScreen';
 import { useChReducedMotion } from '../../lib/reduced-motion';
-import { useGrowOnce } from './shs-motion';
 
 /** Focus moves to Back this long after a keyboard push (07 M-STATS-27; at once under Reduce Motion). */
 const FOCUS_BACK_MS = 80;
@@ -60,7 +59,6 @@ export function StatsDetailScreen({
   useEffect(() => {
     if (body.current) body.current.scrollTop = restoreScroll ?? 0;
   }, [id, restoreScroll]);
-  useGrowOnce(body, reduced, [id, loading]);
   useEffect(() => {
     if (!anchor || loading) return;
     const timer = window.setTimeout(() => body.current?.querySelector(`[data-ch-anchor="${anchor}"]`)?.scrollIntoView({ block: 'start', behavior: 'auto' }), reduced ? 0 : PUSH_SETTLE_MS);

@@ -122,6 +122,8 @@ const H4_PUTT_MISS = shot({
   puttDistanceFeet: 8,
 });
 const H4_TEE_ROUGH = shot({ ...H4_TEE, result: 'rough', missDirection: 'right', distanceToHoleAfter: 151, shotDistance: 230 });
+// The approach that misses short into the rough, 20 yds out: the next shot is a chip (around the green).
+const H4_APPROACH_SHORT = shot({ ...H4_APPROACH, result: 'rough', approachMissDirection: 'short', distanceToHoleAfter: 20, distanceUnitAfter: 'yards', shotDistance: 122 });
 
 /** A read waiting on putt miss tags from 5–10 ft: 3 tagged since it was written, 6 wanted ("3 of 6 for your 5–10 ft putt read"). */
 export const PREVIEW_PUTT_ASK: DataGapAsk = {
@@ -171,6 +173,8 @@ export function trackingFixture(state: string | undefined): ChTrackFixture {
       return { ...base, shotsByHole: on4([H4_TEE]) };
     case 'meters':
       return { ...base, shotsByHole: on4([H4_TEE]), meters: true };
+    case 'chip':
+      return { ...base, shotsByHole: on4([H4_TEE, H4_APPROACH_SHORT]) };
     case 'putt':
       return { ...base, shotsByHole: on4([H4_TEE, H4_APPROACH]) };
     // CoachHelm's one-tap prompts: Which side? after the missed first putt; Next shot from there? after the tee shot in the

@@ -266,6 +266,7 @@
     "docs/clubhouse/held/data/tournaments.md",
     "docs/clubhouse/held/data/tournaments-rls.md",
     "docs/clubhouse/held/data/tournaments-rpcs.md",
-    "docs/clubhouse/held/data/tournaments-round-write.md"
+    "docs/clubhouse/held/data/tournaments-round-write.md",
+    "docs/clubhouse/held/data/tournaments-player-reveal.md"
   ]
 }

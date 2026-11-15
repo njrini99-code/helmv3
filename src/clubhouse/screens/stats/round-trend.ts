@@ -50,11 +50,20 @@ export function meanSeries(rounds: TrendRound[]): Array<number | null> {
   );
 }
 
-/** Three or so round ticks that cover [lo, hi]: a step of 0.5, 1, 2, 5 or 10 so the labels are plain numbers. */
+/**
+ * Three or so round ticks that cover [lo, hi]: a step of 0.5, 1, 2, 5 or 10 so the labels are plain numbers. An axis with one
+ * label has no scale (scores from 70.5 to 78.4 on a step of 5 printed "75" alone), so a step that lands fewer than two inside
+ * the range gives way to the next finer one.
+ */
 export function niceTicks(lo: number, hi: number, want = 3): number[] {
+  const STEPS = [0.5, 1, 2, 5, 10, 20];
   const span = Math.max(hi - lo, 1e-6);
   const raw = span / want;
-  const step = [0.5, 1, 2, 5, 10, 20].find((s) => s >= raw) ?? 20;
+  const inside = (s: number) => Math.floor((hi + 1e-9) / s) - Math.ceil(lo / s) + 1;
+  let at = STEPS.findIndex((s) => s >= raw);
+  if (at < 0) at = STEPS.length - 1;
+  while (at > 0 && inside(STEPS[at]!) < 2) at -= 1;
+  const step = STEPS[at]!;
   const first = Math.ceil(lo / step) * step;
   const out: number[] = [];
   for (let v = first; v <= hi + 1e-9; v += step) out.push(Number(v.toFixed(2)));

@@ -55,6 +55,14 @@ print `--help`, and writers are a dry run until you pass `--apply`.
   worktree, `git switch` in a clean checkout, or EnterWorktree / ExitWorktree.
   No hook or permission rule blocks it; only another session's dirty files do.
 
+## Tools, browsers and databases
+Before you open a browser, run SQL or measure anything, load the `helm-tools`
+skill: which Supabase project each connector reaches (two of the `.mcp.json`
+Supabase servers are production), how to sign in without a password, and the
+browser standard (`.claude/rules/browsers.md`): phone in Playwright WebKit,
+real Safari to confirm, the iPhone for feel, Chromium only for what only it
+measures. A number or screenshot without its engine tier is not evidence.
+
 ## Slash commands
 `/context` feature docs · `/gates` pick checks · `/worktree` isolate ·
 `/land` merge + sync + retire · `/status` repo health · `/held` held
@@ -79,4 +87,7 @@ multi-agent PR review · `/helm-fix-ci` red CI on agent PRs.
 Skills: `finish-task` (definition of done and green-gate traps),
 `helm-supabase` (Supabase client and query traps), `helm-sentry` (read-only
 production error investigation), `helm-safari-performance` (measuring
-smoothness in Safari, the Simulator and on the iPhone; `scripts/phone/`).
+smoothness in Safari, the Simulator and on the iPhone; `scripts/phone/`),
+`helm-claude-sdk` (how Helm calls Claude: CoachHelm chat's turn runner, tools,
+prompt, model settings, keys and evals; load the bundled `claude-api` skill
+before writing SDK code).

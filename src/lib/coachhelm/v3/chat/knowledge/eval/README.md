@@ -1,0 +1,60 @@
+# Golf-sense eval for CoachHelm chat
+
+`golf-sense.json` holds 76 questions a college coach or player really asks, written to test whether the assistant
+reads golf figures the way a coach's analyst would. They complement the data questions in
+`scripts/coachhelm/ask-eval.mjs`, which check that figures are right; these check meaning, direction and caution.
+
+Nothing here calls a model. `index.ts` only loads and compiles the file, and `../__tests__/eval.test.ts` checks it.
+
+## Shape (the harness's own, so `ask-eval.mjs` can run it later)
+
+Each question: `id`, `area`, `viewer` (`coach` or `player`), `ask`, `readers`, `facts`, `forbid`, `note`.
+
+- `facts`: what a correct answer must state. `{ label, kind: "phrase", re, flags }`, the harness's `phrase` kind
+  with the pattern as a string. No figure is expected: figures depend on the data and belong to the data questions.
+- `forbid`: what it must not state. `{ label, pattern }` names a shared pattern in `patterns` (a swing diagnosis, a
+  Tour figure from memory, a label on a player, a promise, a weather guess, a tool or table name).
+- `readers`: the reads a correct turn uses, as the harness records them in `toolCalls`. Any one of them counts
+  unless the note says both. An empty list means the prompt or the reference answers it and no read of team data
+  is required.
+- `global_forbid` (top of the file): the writing rules, scored against every answer whatever the question: the
+  sample as notation (`n=4`, `N-4`, a bare count in brackets), a heading or a table, a bold label at the start of a
+  line or list item (`- **Overall:** ...`), an abbreviation a coach would not say aloud (`SG`, `GIR`, `avg`, `vs`,
+  `L10`, and `ft` or `yd` after a number or in a band: a distance is "from 3 to 5 feet", "281 yards"), Title Case
+  stat names or a lower-case "tour", a sentence or list line that starts lower-case, a proper noun not as it is
+  written (PGA Tour, NCAA, Division I), a tool or table name, a hyphen for a minus sign (`-0.31`; the reads
+  give `−0.31`), and a date as digits (`2026-05-18`, `5/18/26`; say "18 May"). They follow the prompt's own section "How your answers read" (`instructions.ts`).
+- Names as stored: `golfSenseQuestions(names, { people, places })` adds the team's own proper names to the
+  proper-noun rule, so "eli brandt" or "PINE VALLEY INVITATIONAL" fails when the roster has "Eli Brandt" and the
+  event is stored "Pine Valley Invitational". Pass the roster as `people` and the course and event names the turn's
+  reads returned as `places`.
+- `style.max_sentences` (the `writing` questions, and every question that ends in a yes/no question: 6, which is
+  the answer, at most three supporting points and one caveat or offer): the answer fails when it runs longer. `index.ts` exports the
+  `sentenceCount` these limits mean.
+- Placeholders `{player}`, `{player2}`, `{new_player}`, `{no_shots_player}`, `{teammate}` are filled from the staging roster.
+
+## To run it later
+
+In `ask-eval.mjs`, after the roster is read: load the JSON, fill the placeholders, turn each `re` into
+`new RegExp(re, flags)` and each `forbid.pattern` into the shared pattern, and append to `QUESTIONS`. Two scoring
+rules the data questions do not have: the `tour_figure_from_memory` pattern is skipped when the turn called
+`get_reference` (the figure was read, not remembered), and `readers` is scored against the turn's tool calls.
+Run it against staging only, with the owner's approval of the spend.
+
+## Loosened after the first full run (11 Nov 2026)
+
+Five lines failed answers a coach would call right, and were loosened by the overnight lead's decision; nothing else
+changed. The coach's choice also matches "the choice is yours" and "the choice stays with you". "Normally" matches where
+"normal" did. A Tour or level figure counts as read when any read of the turn returned it: the harness passes the
+ledger's list of figures found in no read, and only a Tour figure on that list is "from memory" (with no ledger row,
+only `get_reference` lifts the guard). In the harness, `window-tyler-last3-rounds` and `sum-rounds-by-type-since-sep1`
+pass on either reading of which rounds count, and only when the answer says which.
+
+## Loosened after the reruns (11 Nov 2026)
+
+Again by the overnight lead's decision, and nothing else. `sg-estimated` accepts "shots are logged";
+`sg-player-everything-negative` accepts "widest". `career-vs-window` expects no read: it names no player and the
+harness has none on screen, so a right answer says the point and asks which player. In the harness, the facts on
+`compare-owen-approach` about who ranks below him and his greens in regulation are optional (the question does not ask
+for them), and the abbreviation rule is read with the team's stored names taken out (players, courses, events and the
+drill bank's titles), so a drill stored as "6-10ft Edge Drill" is not an abbreviation the answer chose.

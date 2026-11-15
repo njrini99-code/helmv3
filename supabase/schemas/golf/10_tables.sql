@@ -364,7 +364,9 @@ CREATE TABLE IF NOT EXISTS "public"."golf_coachhelm_chat_conversations" (
     "pinned" boolean DEFAULT false NOT NULL,
     "archived_at" timestamp with time zone,
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
-    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "surface" "text",
+    CONSTRAINT "golf_coachhelm_chat_conversations_surface_known" CHECK ((("surface" IS NULL) OR ("surface" = ANY (ARRAY['ask'::"text", 'quick_chat'::"text", 'practice_helper'::"text"]))))
 );
 
 ALTER TABLE "public"."golf_coachhelm_chat_conversations" OWNER TO "postgres";
@@ -381,7 +383,11 @@ CREATE TABLE IF NOT EXISTS "public"."golf_coachhelm_chat_messages" (
     "client_turn_id" "text",
     "status" "text",
     "ui_parts" "jsonb",
+    "model_messages" "jsonb",
+    "pending_decision" "jsonb",
     CONSTRAINT "golf_coachhelm_chat_messages_cost_usd_check" CHECK ((("cost_usd" IS NULL) OR ("cost_usd" >= (0)::numeric))),
+    CONSTRAINT "golf_coachhelm_chat_messages_model_messages_array" CHECK ((("model_messages" IS NULL) OR ("jsonb_typeof"("model_messages") = 'array'::"text"))),
+    CONSTRAINT "golf_coachhelm_chat_messages_pending_decision_object" CHECK ((("pending_decision" IS NULL) OR ("jsonb_typeof"("pending_decision") = 'object'::"text"))),
     CONSTRAINT "golf_coachhelm_chat_messages_role_check" CHECK (("role" = ANY (ARRAY['user'::"text", 'assistant'::"text", 'tool'::"text"])))
 );
 
@@ -430,7 +436,7 @@ CREATE TABLE IF NOT EXISTS "public"."golf_coachhelm_llm_calls" (
     CONSTRAINT "golf_coachhelm_llm_calls_completion_tokens_check" CHECK (("completion_tokens" >= 0)),
     CONSTRAINT "golf_coachhelm_llm_calls_cost_usd_check" CHECK (("cost_usd" >= (0)::numeric)),
     CONSTRAINT "golf_coachhelm_llm_calls_prompt_tokens_check" CHECK (("prompt_tokens" >= 0)),
-    CONSTRAINT "golf_coachhelm_llm_calls_task_check" CHECK (("task" = ANY (ARRAY['round_review'::"text", 'hero_narrative'::"text", 'coach_chat'::"text", 'round_review_narrative'::"text"])))
+    CONSTRAINT "golf_coachhelm_llm_calls_task_check" CHECK (("task" = ANY (ARRAY['round_review'::"text", 'hero_narrative'::"text", 'coach_chat'::"text", 'round_review_narrative'::"text", 'player_chat'::"text", 'chat_suggestions'::"text"])))
 );
 
 ALTER TABLE "public"."golf_coachhelm_llm_calls" OWNER TO "postgres";
@@ -498,6 +504,7 @@ CREATE TABLE IF NOT EXISTS "public"."golf_conversation_participants" (
     "last_read_at" timestamp with time zone,
     "notification_level" "text" DEFAULT 'all'::"text" NOT NULL,
     "muted_until" timestamp with time zone,
+    "hidden_at" timestamp with time zone,
     CONSTRAINT "golf_participants_notification_level_check" CHECK (("notification_level" = ANY (ARRAY['all'::"text", 'mentions'::"text", 'muted'::"text"])))
 );
 
@@ -2678,3 +2685,30 @@ CREATE TABLE IF NOT EXISTS "public"."golf_class_hold_dirty" (
 );
 
 ALTER TABLE "public"."golf_class_hold_dirty" OWNER TO "postgres";
+
+-- Messages v2 package M, M5 (HELD 20261031150000): Clubhouse Messages pins
+CREATE TABLE IF NOT EXISTS "public"."golf_conversation_pins" (
+    "user_id" "uuid" NOT NULL,
+    "conversation_id" "uuid" NOT NULL,
+    "team_id" "uuid",
+    "position" smallint NOT NULL,
+    "pinned_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "golf_conversation_pins_position_check" CHECK ((("position" >= 0) AND ("position" <= 8)))
+);
+
+ALTER TABLE "public"."golf_conversation_pins" OWNER TO "postgres";
+
+-- Ask level comparison (HELD 20261108100000): the division cohort
+CREATE TABLE IF NOT EXISTS "public"."golf_division_cohort" (
+    "gender" "text" NOT NULL,
+    "level" "text" NOT NULL,
+    "metric_id" "text" NOT NULL,
+    "cohort_avg" numeric NOT NULL,
+    "cohort_n" bigint NOT NULL,
+    "computed_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "golf_division_cohort_cohort_n_check" CHECK (("cohort_n" >= 8)),
+    CONSTRAINT "golf_division_cohort_gender_check" CHECK (("gender" = ANY (ARRAY['mens'::"text", 'womens'::"text"]))),
+    CONSTRAINT "golf_division_cohort_level_check" CHECK (("level" = ANY (ARRAY['d1'::"text", 'd2'::"text", 'd3'::"text"])))
+);
+
+ALTER TABLE "public"."golf_division_cohort" OWNER TO "postgres";

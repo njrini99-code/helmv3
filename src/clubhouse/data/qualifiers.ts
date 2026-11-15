@@ -7,7 +7,7 @@ import { readQualifierSelectionReasons } from '@/lib/golf/qualifier-selection-re
 import { loadQualifyingWorkspace } from '@/lib/coachhelm/v3/qualifying/loader';
 import type { QualifyingWorkspace } from '@/lib/coachhelm/v3/qualifying/types';
 import { chLogServer } from '../lib/track-server';
-import { classYearLabel, fullName, loadTeamZone } from './season';
+import { classYearLabel, currentSeasonLabel, fullName, loadTeamZone } from './season';
 import {
   buildBoard,
   countsOnBoard,
@@ -96,15 +96,13 @@ export interface ChQListItem {
 
 export interface ChQList {
   role: Role;
-  mode: 'all' | 'mine';
   items: ChQListItem[];
   /** The qualifiers didn't load: shown as a notice, never as "no qualifiers". */
   listError: boolean;
   /** Entries or rounds didn't load: counts and leaders are missing, not zero. */
   standingsError: boolean;
   /**
-   * The entries didn't load: who is entered is unknown, so a player's own list (/my-qualifiers) is a failed read and
-   * never "you aren't entered in any qualifiers". Left out of a fixture, it is false.
+   * The entries didn't load: who is entered is unknown. Left out of a fixture, it is false.
    */
   entriesError?: boolean;
   /**
@@ -112,6 +110,11 @@ export interface ChQList {
    * Stamped by the loader; left out (a fixture, a test), nothing is reconciled.
    */
   today?: string;
+  /**
+   * The squad and the season a player's list head opens with ("Varsity · 2026–27", as the Tournaments head): read for a player
+   * only. Left out (a coach, a fixture) or null (the team's name didn't load), the head names the page instead.
+   */
+  teamLabel?: string | null;
 }
 
 export interface ChQRoundCourse {
@@ -320,11 +323,13 @@ async function readScorecards(supabase: Supabase, roundIds: string[]): Promise<{
 }
 
 /** The team's qualifiers, newest first. `mine` keeps only the ones the player is entered in. */
-export async function loadQualifierList(input: { role: Role; teamId: string; playerId: string | null; mode: 'all' | 'mine' }): Promise<ChQList> {
+export async function loadQualifierList(input: { role: Role; teamId: string; playerId: string | null }): Promise<ChQList> {
   const supabase = await createClient();
   const now = new Date();
   // The class year turns on 1 August in the team's zone (decision 9); read beside the page's other reads.
   const tzRead = loadTeamZone(supabase, input.teamId, 'qualifiers');
+  // A player's head opens with the squad and the season; read beside the list, and a failed read only leaves it out.
+  const labelRead = input.role === 'player' ? readTeamLabel(supabase, input.teamId, now, tzRead) : null;
   const listRes = await supabase
     .from('golf_qualifiers')
     .select(Q_COLUMNS)
@@ -335,7 +340,7 @@ export async function loadQualifierList(input: { role: Role; teamId: string; pla
     .limit(1000);
   if (listRes.error) {
     chLogServer('qualifiers', 'list', listRes.error, 'qualifiers');
-    return { role: input.role, mode: input.mode, items: [], listError: true, standingsError: false, entriesError: false };
+    return { role: input.role, items: [], listError: true, standingsError: false, entriesError: false, ...(labelRead ? { teamLabel: await labelRead } : {}) };
   }
   const qs = (listRes.data ?? []) as QRow[];
   const ids = qs.map((q) => q.id);
@@ -403,10 +408,17 @@ export async function loadQualifierList(input: { role: Role; teamId: string; pla
     };
   });
 
-  const visible = input.mode === 'mine' ? items.filter((i) => i.mine?.entered) : items;
-  // A player's own qualifiers come first within the list order (D-30).
-  const ordered = input.role === 'player' ? [...visible.filter((i) => i.mine?.entered), ...visible.filter((i) => !i.mine?.entered)] : visible;
-  return { role: input.role, mode: input.mode, items: ordered, listError: false, standingsError, entriesError: entries.error, today: endDayFor(now) };
+  // A player's own qualifiers come first within the list order (D-30): theirs is the one Qualifiers page (My qualifiers is retired).
+  const ordered = input.role === 'player' ? [...items.filter((i) => i.mine?.entered), ...items.filter((i) => !i.mine?.entered)] : items;
+  return { role: input.role, items: ordered, listError: false, standingsError, entriesError: entries.error, today: endDayFor(now), ...(labelRead ? { teamLabel: await labelRead } : {}) };
+}
+
+/** "Varsity · 2026–27": the team's name and the season that is on in its zone (the one season format, F-0002). Null when the name didn't load. */
+async function readTeamLabel(supabase: Supabase, teamId: string, now: Date, zone: Promise<string>): Promise<string | null> {
+  const { data, error } = await supabase.from('golf_teams').select('name').eq('id', teamId).maybeSingle();
+  if (error) chLogServer('qualifiers', 'team', error, 'qualifiers');
+  const name = (data as { name?: string | null } | null)?.name?.trim();
+  return name ? `${name} · ${currentSeasonLabel(now, await zone)}` : null;
 }
 
 /** A player's next round in a live qualifier: its number, at the course set for it (else the qualifier's). Null with every round in. */

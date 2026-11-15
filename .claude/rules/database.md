@@ -32,8 +32,9 @@ and current code/live truth rather than memory. Plugin skill names are
 convenient when available, not a prerequisite.
 
 ## Migrations are additive
-One shared production database serves Golf, Baseball and Lift Lab, no
-staging copy. No hook or permission rule blocks destructive SQL
+One shared production database (`qmnssrrolpinvwjjnufo`) serves Golf, Baseball and Lift Lab. Vercel
+Preview and Development use a second project, "PROSP DATA" (`ybmwektreyrwjscxlogv`), refreshed from
+production; production has no other copy. No hook or permission rule blocks destructive SQL
 (`docs/CONTROL_PLANE_ENFORCEMENT.md`): a `DROP`, `TRUNCATE`, WHERE-less
 `DELETE`, or `DROP COLUMN` against production runs as typed. Rehearse those
 (and RLS, grants, type changes, backfills) on the local Docker stack first, and

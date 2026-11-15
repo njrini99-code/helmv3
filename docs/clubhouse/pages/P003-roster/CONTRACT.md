@@ -184,7 +184,6 @@ refused change shows the server's own sentence when it is short and readable
 | 30612 | CH-3205 | `THE_ROSTER_LIST_CRASHES` | The roster list crashes |
 | 30613 | CH-3206 | `THE_PLAYER_PANEL_CRASHES` | The player panel crashes |
 | 30614 | CH-3207 | `THE_TEAM_ROW_DOESNT_LOAD` | The team row doesn't load |
-| 30615 | CH-3208 | `FOCUS_AREAS_OR_GOALS_DONT_LOAD` | Focus areas or goals don't load |
 | 30616 | CH-3209 | `THIS_COACHS_NOTES_DONT_LOAD` | This coach's notes don't load |
 | 30617 | CH-3210 | `THE_PLAYERS_ROSTER_DOESNT_LOAD` | The player's roster doesn't load (a player's own team's members) |
 | 30618 | CH-3211 | `THE_PLAYERS_ROSTER_LIST_CRASHES` | The player's roster list crashes |

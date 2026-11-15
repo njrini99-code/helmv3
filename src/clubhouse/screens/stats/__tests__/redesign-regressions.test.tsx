@@ -26,20 +26,20 @@ describe('redesign regressions', () => {
   it('BUG-1 player Try again works again after a retry that failed again', async () => {
     router.refresh.mockClear(); asPhone();
     const d = { ...PREVIEW_PLAYER_SHS_SELF, roundsError: true };
-    const { rerender } = render(tree(<StatsPlayer data={d} coachId={null} shs />));
+    const { rerender } = render(tree(<StatsPlayer data={d} coachId={null} />));
     await waitFor(() => expect(document.querySelector('[data-ch="stats-retry"]')).not.toBeNull());
     fireEvent.click(document.querySelector('[data-ch="stats-retry"]')!);
-    rerender(tree(<StatsPlayer data={{ ...d }} coachId={null} shs />));
+    rerender(tree(<StatsPlayer data={{ ...d }} coachId={null} />));
     fireEvent.click(document.querySelector('[data-ch="stats-retry"]')!);
     expect(router.refresh).toHaveBeenCalledTimes(2);
   });
   it('BUG-1b team Try again works again after a retry that failed again', async () => {
     router.refresh.mockClear(); asPhone();
     const t = { ...PREVIEW_TEAM_STATS, roundsError: true };
-    const { rerender } = render(tree(<StatsTeam data={t} shs />));
+    const { rerender } = render(tree(<StatsTeam data={t} />));
     await waitFor(() => expect(document.querySelector('[data-ch="stats-retry"]')).not.toBeNull());
     fireEvent.click(document.querySelector('[data-ch="stats-retry"]')!);
-    rerender(tree(<StatsTeam data={{ ...t }} shs />));
+    rerender(tree(<StatsTeam data={{ ...t }} />));
     fireEvent.click(document.querySelector('[data-ch="stats-retry"]')!);
     expect(router.refresh).toHaveBeenCalledTimes(2);
   });

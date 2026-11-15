@@ -41,7 +41,17 @@ function write(key: string, value: string | null): void {
   }
 }
 
-export function useAskDraft(draftKey: string | null): [string, Dispatch<SetStateAction<string>>] {
+/**
+ * A question the address carried (`?q=`, "Ask about this"): a starting point for the box, taken once. The page swaps the hero
+ * composer for the docked one on the first send, and a composer seeds itself when it mounts, so a seed that lived on would put
+ * the sent question back in the new box. `consume` ends it; call it from the send.
+ */
+export function useSeedOnce(initial: string | null): [string | null, () => void] {
+  const [seed, setSeed] = useState(initial);
+  return [seed, () => setSeed(null)];
+}
+
+export function useAskDraft(draftKey: string | null): [string, Dispatch<SetStateAction<string>>, () => void] {
   const scope = useContext(RouteScope);
   const key = draftKey && scope ? `${DRAFT}${scope}\u0000${draftKey}` : null;
   const [value, setValue] = useState('');
@@ -73,7 +83,13 @@ export function useAskDraft(draftKey: string | null): [string, Dispatch<SetState
     if (key) write(key, value);
   }, [key, value]);
 
-  return [value, setValue];
+  /** Forget the stored draft now. Clearing the text is not enough: the write above is an effect, and a box that unmounts in the
+   *  commit that sent its text (the hero swapped for the docked one) never runs it, so the sent text stayed in storage. */
+  const clear = () => {
+    if (key) write(key, null);
+  };
+
+  return [value, setValue, clear];
 }
 
 /**

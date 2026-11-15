@@ -1,7 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
-import { CH_NAV_COACH, CH_NAV_PLAYER } from '../../nav';
-import { CH_NAV_SECTIONS } from '../../nav';
+import { CH_NAV_SECTIONS, navFor } from '../../nav';
 import { digitFor, interpretKey, isInOverlay, isTypingTarget, itemForDigit, itemForLetter, letterFor, modalOpen, navLetters, SEQUENCE_WINDOW_MS, sidebarOrder, type ChKeyInput } from '../shortcuts';
 
 const key = (k: string, extra: Partial<ChKeyInput> = {}): ChKeyInput => ({
@@ -121,7 +120,7 @@ describe('the letter map', () => {
   it('gives each section of each role one letter, never repeated', () => {
     for (const role of ['coach', 'player'] as const) {
       const letters = navLetters(role);
-      const nav = role === 'coach' ? CH_NAV_COACH : CH_NAV_PLAYER;
+      const nav = navFor(role);
       expect(letters.length).toBe(nav.length + 1);
       expect(new Set(letters.map((l) => l.letter)).size).toBe(letters.length);
       for (const i of nav) expect(letterFor(role, i.id), i.id).toBeTruthy();
@@ -179,8 +178,8 @@ describe('Cmd or Ctrl and 1 to 9 (owner, decision 13)', () => {
   });
 
   it('follows the sidebar: its groups in order, each group\'s sections in order, never Settings', () => {
-    for (const nav of [CH_NAV_COACH, CH_NAV_PLAYER]) {
-      const role = nav === CH_NAV_COACH ? 'coach' : 'player';
+    for (const role of ['coach', 'player'] as const) {
+      const nav = navFor(role);
       const grouped = CH_NAV_SECTIONS.flatMap((section) => nav.filter((i) => i.section === section)).map((i) => i.id);
       expect(sidebarOrder(role).map((i) => i.id)).toEqual(grouped);
       expect(sidebarOrder(role).map((i) => i.id)).not.toContain('settings');
@@ -189,12 +188,12 @@ describe('Cmd or Ctrl and 1 to 9 (owner, decision 13)', () => {
 
   it('numbers a coach\'s and a player\'s first nine sections; the tenth has only its letter', () => {
     expect([1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => itemForDigit('coach', d)?.id)).toEqual([
-      'home', 'coachhelm', 'calendar', 'messages', 'hub', 'roster', 'stats', 'rounds', 'qualifiers',
+      'home', 'coachhelm', 'calendar', 'practice', 'messages', 'hub', 'roster', 'stats', 'rounds',
     ]);
     expect(digitFor('coach', 'recruiting')).toBeUndefined();
     expect(letterFor('coach', 'recruiting')).toBe('e');
     expect([1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => itemForDigit('player', d)?.id)).toEqual([
-      'home', 'coachhelm', 'calendar', 'messages', 'hub', 'roster', 'qualifiers', 'rounds', 'stats',
+      'home', 'coachhelm', 'calendar', 'practice', 'messages', 'hub', 'roster', 'qualifiers', 'rounds',
     ]);
     expect(digitFor('player', 'classes')).toBeUndefined();
     expect(itemForDigit('coach', 0)).toBeUndefined();

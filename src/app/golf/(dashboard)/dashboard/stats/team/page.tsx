@@ -104,7 +104,7 @@ function CoachHelmAction() {
   );
 }
 
-export default async function TeamStatsPage() {
+export default async function TeamStatsPage(props?: { searchParams?: Promise<{ area?: string }> }) {
   const session = await getGolfSessionProfile();
   if (!session) redirect('/golf/login');
 
@@ -120,7 +120,7 @@ export default async function TeamStatsPage() {
   // (a redirect() from a conditional branch is what crashed /stats, see the
   // note in ../page.tsx). Players never reach this page.
   // The role is the dashboard layout's (getGolfDashboardRole), as on ../page.tsx; Fairway below keeps the session's.
-  if ((await isClubhouseFor('coach')) && (await getGolfDashboardRole()) === 'coach') return <ClubhouseStatsRoute />;
+  if ((await isClubhouseFor('coach')) && (await getGolfDashboardRole()) === 'coach') return <ClubhouseStatsRoute area={(await props?.searchParams)?.area} />;
 
   const supabase = await createClient();
 

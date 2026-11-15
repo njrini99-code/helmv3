@@ -47,7 +47,33 @@ type RowTag = 'li' | 'div' | 'article' | 'section' | 'button';
 /** A row's own attributes; a button row takes its `type`. */
 type RowProps = HTMLAttributes<HTMLElement> & { type?: 'button' };
 
-export function PresenceRow({ as = 'li', children, ref, ...rest }: { as?: RowTag; children: ReactNode; ref?: Ref<HTMLElement> } & RowProps) {
+/**
+ * Whether the row that calls this mounted after its list had painted (an arrival, not first paint), latched at mount. For a
+ * row that plays something once it has arrived (Messages' receipt rise); false outside a `ListPresence`.
+ */
+export function useRowArrived(): boolean {
+  const list = useContext(ListCtx);
+  const [arrived] = useState(() => !!list && list.painted.current);
+  return arrived;
+}
+
+export function PresenceRow({
+  as = 'li',
+  children,
+  ref,
+  noArrival = false,
+  ...rest
+}: {
+  as?: RowTag;
+  children: ReactNode;
+  ref?: Ref<HTMLElement>;
+  /**
+   * The row has a motion of its own when it arrives (your own sent message flies out of the field; a reply grows out of the
+   * typing bubble), so the list's arrival (the 8px rise, or the opening of its height) is skipped. Leaving is unchanged:
+   * a deleted message still closes in place.
+   */
+  noArrival?: boolean;
+} & RowProps) {
   const list = useContext(ListCtx);
   if (list == null) {
     const Tag = as as 'div';
@@ -58,18 +84,18 @@ export function PresenceRow({ as = 'li', children, ref, ...rest }: { as?: RowTag
     );
   }
   return (
-    <Moving as={as} keys={list.keys} flip={list.flip && !list.reduced} still={list.reduced} rise={list.rise} inbox={list.inbox} cut={list.cut} arrives={list.painted.current} rowRef={ref} {...rest}>
+    <Moving as={as} keys={list.keys} flip={list.flip && !list.reduced} still={list.reduced} noArrival={noArrival} rise={list.rise} inbox={list.inbox} cut={list.cut} arrives={list.painted.current} rowRef={ref} {...rest}>
       {children}
     </Moving>
   );
 }
 
-function Moving({ as, keys, flip, still, rise, inbox, cut, arrives, rowRef, children, ...rest }: { as: RowTag; keys: string; flip: boolean; still: boolean; rise: boolean; inbox: boolean; cut: boolean; arrives: boolean; rowRef?: Ref<HTMLElement>; children: ReactNode } & RowProps) {
+function Moving({ as, keys, flip, still, noArrival, rise, inbox, cut, arrives, rowRef, children, ...rest }: { as: RowTag; keys: string; flip: boolean; still: boolean; noArrival: boolean; rise: boolean; inbox: boolean; cut: boolean; arrives: boolean; rowRef?: Ref<HTMLElement>; children: ReactNode } & RowProps) {
   const present = useIsPresent();
   // A row there at first paint is never styled by the list; one that arrives later opens in, then hands its height,
   // opacity and overflow back to its own stylesheet. Under reduced motion nothing opens, closes or slides.
   const [arrived] = useState(arrives);
-  const arriving = arrived && !still;
+  const arriving = arrived && !still && !noArrival;
   const el = useRef<HTMLElement | null>(null);
   const ref = useCallback(
     (node: HTMLElement | null) => {

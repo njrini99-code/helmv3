@@ -201,6 +201,10 @@ declare module 'ai' {
       cacheReadTokens?: number;
       cacheWriteTokens?: number;
     };
+    outputTokenDetails?: {
+      textTokens?: number;
+      reasoningTokens?: number;
+    };
   }
 
   export interface StreamTextResult {
@@ -214,13 +218,12 @@ declare module 'ai' {
    * The system prompt. A bare string still works; the object form carries
    * `providerOptions`, which is where an Anthropic cache breakpoint goes.
    */
-  export type Instructions =
-    | string
-    | {
-        role: 'system';
-        content: string;
-        providerOptions?: Record<string, Record<string, unknown>>;
-      };
+  export type SystemModelMessage = {
+    role: 'system';
+    content: string;
+    providerOptions?: Record<string, Record<string, unknown>>;
+  };
+  export type Instructions = string | SystemModelMessage | SystemModelMessage[];
 
   export function streamText(options: {
     model: unknown;
@@ -239,6 +242,16 @@ declare module 'ai' {
       [key: string]: unknown;
     }) => 'user-approval' | 'not-applicable' | 'approved' | 'denied' | undefined;
     stopWhen?: unknown;
+    /** Runs before each step; a returned `messages` replaces the step's messages and carries forward. */
+    prepareStep?: (options: { messages: ModelMessage[]; stepNumber: number; [key: string]: unknown }) => { messages?: ModelMessage[]; [key: string]: unknown } | undefined | Promise<{ messages?: ModelMessage[]; [key: string]: unknown } | undefined>;
+    onLanguageModelCallStart?: (event: { [key: string]: unknown }) => void;
+    /** One finished model call (one step), with the provider's own timing. */
+    onLanguageModelCallEnd?: (event: {
+      usage: LanguageModelUsage;
+      finishReason: string;
+      performance: { responseTimeMs: number; timeToFirstOutputMs: number | undefined; outputTokensPerSecond: number | undefined };
+      [key: string]: unknown;
+    }) => void;
     onChunk?: (event: { [key: string]: unknown }) => void;
     onError?: (event: { error: unknown }) => void;
     onFinish?: (event: { [key: string]: unknown }) => void | Promise<void>;

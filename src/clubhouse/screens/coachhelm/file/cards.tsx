@@ -10,11 +10,12 @@ import Link from 'next/link';
 import { Check, Eye, Flag, Lock, MessageSquare, Target, Users, X } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { ChDeepInsight } from '../../../data/coachhelm-dive-shape';
-import { FILE_SIGN, fileAimLabel, fileAlertLabel, fileAreaLabel, playerKicker, type ChFileCards, type ChFileField, type ChFileIntent, type ChFilePlan, type ChFileSg, type ChFileStage, type ChFileTrack } from '../../../data/coachhelm-file-shape';
+import { FILE_SG_FLOOR, FILE_SIGN, fileAimLabel, fileAlertLabel, fileAreaLabel, playerKicker, type ChFileCards, type ChFileField, type ChFileIntent, type ChFilePlan, type ChFileSg, type ChFileStage, type ChFileTrack } from '../../../data/coachhelm-file-shape';
 import { stanceOf, type ChInsight } from '../../../data/coachhelm-shape';
 import { formatFixed } from '../../../lib/format';
 import { Icon } from '../../../ui/Icon';
 import type { ChFocusActions } from '../parts';
+import { sgIsEstimate, sgMixWords } from '../../../data/stats-sg-mix';
 
 export type FileLens = 'coach' | 'player';
 
@@ -40,7 +41,9 @@ function cmpCells(i: ChInsight, team: number | null) {
   const you = c?.own ?? null;
   const tour = c?.tour ?? null;
   const youLoses = you != null && tour != null && (c?.higherBetter ? you < tour : you > tour);
-  return { you: c ? fmt(you) : (i.evidence.gauge?.you ?? i.value), team: fmt(team), tour: fmt(tour), youLoses };
+  // The read's own team figure first, so a read shows one Team number here and on the Team board's sheet (which draws only the read's);
+  // the standing average stands in only for a read that carries none.
+  return { you: c ? fmt(you) : (i.evidence.gauge?.you ?? i.value), team: fmt(c?.team ?? team), tour: fmt(tour), youLoses };
 }
 
 /** The one green card: the top read, its comparison, its evidence (none hideable), and what can be done from here. The whole card opens the read. */
@@ -50,6 +53,7 @@ export function FeatureCard({
   first,
   name,
   team,
+  teamBasis,
   stage,
   coach,
   actions,
@@ -60,6 +64,8 @@ export function FeatureCard({
   first: string;
   name: string;
   team: number | null;
+  /** The standing rows' window ("all time"), said under the Team cell when the figure is theirs and not the read's own. */
+  teamBasis?: string | null;
   stage: ChFileStage;
   coach: string;
   actions: ReactNode;
@@ -92,7 +98,7 @@ export function FeatureCard({
         <div className="feat__k">{playerKicker(stage, coach)}</div>
       )}
       <h3 className="feat__t">
-        <button type="button" className="feat__open" aria-label={`Open the read: ${b.title}`} onClick={onOpen}>
+        <button type="button" className="feat__open ch-num" aria-label={`Open the read: ${b.title}`} onClick={onOpen}>
           {b.title}
         </button>
       </h3>
@@ -103,14 +109,25 @@ export function FeatureCard({
         </div>
         <div>
           <b className="ch-num">{cells.team}</b>
-          <span>Team</span>
+          {/* A team figure from the standing rows names their window, so it is never read as Team stats' figure for its window. The
+              window is its own line by design: "Team, all time" does not fit the phone's cell, and broke after "all". */}
+          <span>
+            {b.compare?.team == null && team != null && teamBasis ? (
+              <>
+                Team<span className="ch-sr-only">, </span>
+                <small>{teamBasis}</small>
+              </>
+            ) : (
+              'Team'
+            )}
+          </span>
         </div>
         <div>
           <b className="ch-num">{cells.tour}</b>
           <span>Tour</span>
         </div>
       </div>
-      <p className="feat__p">
+      <p className="feat__p ch-num">
         {b.lede}
         {d.closes && (
           <>
@@ -277,6 +294,9 @@ function GoalBlock({ goal }: { goal: NonNullable<ChFilePlan['goal']> }) {
   const x = (i: number) => (goal.points.length < 2 ? W / 2 : 6 + (i * (W - 12)) / (goal.points.length - 1));
   const y = (v: number) => 8 + ((hi + pad - v) / (hi - lo + 2 * pad)) * (H - 26);
   const chip = goal.word === 'Improved' ? 'gain' : goal.word === 'Worse' ? 'loss' : 'plain';
+  const firstPoint = goal.points[0];
+  const lastPoint = goal.points[goal.points.length - 1];
+  const goalAtStart = goal.target != null && firstPoint != null && lastPoint != null && Math.abs(y(firstPoint.value) - y(goal.target)) > Math.abs(y(lastPoint.value) - y(goal.target));
   return (
     <div className="goal">
       <div className="goal__t">
@@ -289,7 +309,8 @@ function GoalBlock({ goal }: { goal: NonNullable<ChFilePlan['goal']> }) {
           {goal.target != null && (
             <>
               <line x1="0" x2={W} y1={y(goal.target)} y2={y(goal.target)} className="gl" />
-              <text x={W} y={y(goal.target) - 4} textAnchor="end" className="gt">
+              {/* The label takes the end of the goal line the trend is farther from, so it never sits on a round's dot. */}
+              <text x={goalAtStart ? 0 : W} y={y(goal.target) - 8} textAnchor={goalAtStart ? 'start' : 'end'} className="gt" data-ch-file-goal={goalAtStart ? 'start' : 'end'}>
                 Goal {goal.target}
               </text>
             </>
@@ -345,9 +366,14 @@ export function FieldCard({ field }: { field: ChFileField }) {
 }
 
 export function SgCard({ sg, who, standingHref }: { sg: ChFileSg; who: string; standingHref: string | null }) {
+  // Where the rounds' strokes gained came from (stats-sg-mix.ts): figures that are all estimate are marked in the head, and the note
+  // says how many rounds were shot-tracked. Nothing is added when every round was.
+  const mix = sg.needsHoles ? null : sgMixWords(sg.mix);
+  const est = !sg.needsHoles && sgIsEstimate(sg.mix);
   return (
     <section className="card" aria-labelledby="ch-hf-sg" data-ch-anchor="sg">
-      <CardHead id="ch-hf-sg" title="Where the strokes go" meta={`${who} vs Tour and team`} />
+      {/* The mark leads and stands in for the name: added at the end it was the part the phone's head cut off. */}
+      <CardHead id="ch-hf-sg" title="Where the strokes go" meta={`${est ? 'Est.' : who} vs Tour${sg.hasTeam ? ' and team' : ''}`} />
       <div className="card__b">
         <div className="sg">
           {sg.rows.map((r) => {
@@ -380,14 +406,15 @@ export function SgCard({ sg, who, standingHref }: { sg: ChFileSg; who: string; s
           )}
         </div>
       </div>
-      <p className="card__n">
-        {sg.needsHoles ? 'Strokes gained needs hole-by-hole scores. ' : sg.note ? `${sg.note} ` : ''}
-        {sg.source}.
+      <p className="card__n ch-num">
+        {sg.needsHoles ? (sg.needs === 'rounds' ? `Strokes gained shows from ${FILE_SG_FLOOR} rounds posted hole by hole. ` : 'Strokes gained needs hole-by-hole scores. ') : sg.note ? `${sg.note} ` : ''}
+        {/* A separator never starts a line: the space before each "·" does not break. */}
+        {sg.source.replace(/ · /g, '\u00a0· ')}.{mix && <span data-ch-sg-mix=""> {mix}.</span>}
         {standingHref && (
           <>
             {' '}
             <Link className="lnk" href={standingHref}>
-              Full standing
+              {sg.standing ? `Full standing, ${sg.standing.toLowerCase()}` : 'Full standing'}
             </Link>
           </>
         )}
@@ -402,11 +429,11 @@ function readRow(d: ChDeepInsight, lens: FileLens, assigned: boolean, onOpen: (i
   const area = AREA[d.area] ?? 'Course and scoring';
   const firm = lens === 'player' ? d.base.evidence.read?.word : d.firmness;
   return (
-    <button type="button" className="r" key={d.base.id} data-ch-hf-read={d.base.id} onClick={() => onOpen(d.base.id)}>
+    <button type="button" className="r r--chip" key={d.base.id} data-ch-hf-read={d.base.id} onClick={() => onOpen(d.base.id)}>
       <Badge tone={CHIP_TONE[tone] ?? 'neutral'}>{stance.word}</Badge>
       <span className="r__t">
-        <b className="l2">{d.base.title}</b>
-        <small>{[area, d.base.value, firm].filter(Boolean).join(' · ')}</small>
+        <b className="l2 ch-num">{d.base.title}</b>
+        <small className="ch-num">{[area, d.base.value, firm].filter(Boolean).join(' · ')}</small>
       </span>
       <span className="r__e">
         <svg width="8" height="14" viewBox="0 0 8 14" aria-hidden="true">
@@ -449,7 +476,7 @@ export function ReadsCard({ cards, lens, fa, onOpen, moreLine }: { cards: ChFile
                   <Icon icon={X} size={16} />
                 </span>
                 <span className="r__t">
-                  <b>Dismissed: {x.title}</b>
+                  <b className="ch-num">Dismissed: {x.title}</b>
                 </span>
                 <button
                   type="button"
@@ -475,15 +502,18 @@ export function ReadsCard({ cards, lens, fa, onOpen, moreLine }: { cards: ChFile
 export function WorkingCard({ list, onOpen }: { list: ChDeepInsight[]; onOpen: (id: string) => void }) {
   const d = list[0];
   if (!d) return null;
+  // The second line as the reads rows say theirs: the area, the figure, and how firm the read is. A title that already states the
+  // figure ("Double bogey-or-worse rate: 1.6%") is not followed by it again.
+  const meta = [AREA[d.area] ?? 'Course and scoring', d.base.title.includes(d.base.value) ? null : d.base.value, d.base.evidence.read?.word].filter(Boolean).join(' · ');
   return (
     <section className="card" aria-labelledby="ch-hf-working">
       <CardHead id="ch-hf-working" title="What’s working" meta="Top strength" />
       <div className="rows">
-        <button type="button" className="r" data-ch-hf-read={d.base.id} onClick={() => onOpen(d.base.id)}>
+        <button type="button" className="r r--chip" data-ch-hf-read={d.base.id} onClick={() => onOpen(d.base.id)}>
           <Badge tone="positive">Working</Badge>
           <span className="r__t">
-            <b className="l2">{d.base.title}</b>
-            <small>{d.base.value}</small>
+            <b className="l2 ch-num">{d.base.title}</b>
+            <small className="ch-num">{meta}</small>
           </span>
         </button>
       </div>
@@ -519,7 +549,7 @@ export function IntentCard({ intent, first, onEdit }: { intent: ChFileIntent | n
               )}
             </dl>
           </div>
-          <p className="card__n">
+          <p className="card__n ch-num">
             <button type="button" className="lnk ch-hf-44" data-ch-hf-intent-edit="" onClick={onEdit}>
               Edit plan
             </button>
@@ -568,10 +598,10 @@ export function TrackCard({ track, first }: { track: ChFileTrack; first: string 
           {measured && (
             <div className="rows ch-hf-trackrows">
               {track.rows.map((r) => (
-                <div className="r static" key={r.id}>
+                <div className="r r--chip static" key={r.id}>
                   <Badge tone={r.word === 'Improved' ? 'positive' : 'neutral'}>{r.word}</Badge>
                   <span className="r__t">
-                    <b>{r.title}</b>
+                    <b className="ch-num">{r.title}</b>
                     {r.meta && <small className="ch-num">{r.meta}</small>}
                   </span>
                 </div>

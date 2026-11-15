@@ -144,7 +144,7 @@ const BASE = {
       { id: 'n1', title: 'Coach Reyes posted', body: 'Pairings for Thursday are up', href: '/golf/dashboard/team-hub?tab=ann', when: 'Today 2:28 PM', unread: true },
       { id: 'n2', title: 'Travel updated', body: 'Carolina Fall Invitational · hotel confirmed', href: '/golf/dashboard/team-hub?tab=travel', when: 'Today 1:40 PM', unread: true },
       { id: 'n3', title: 'Task due tomorrow', body: 'Sign travel waiver', href: null, when: 'Today 11:02 AM', unread: true },
-      { id: 'n4', title: 'Qualifier standings moved', body: 'You’re 4th · 2 shots inside the line', href: '/golf/dashboard/my-qualifiers', when: 'Yesterday', unread: false },
+      { id: 'n4', title: 'Qualifier standings moved', body: 'You’re 4th · 2 shots inside the line', href: '/golf/dashboard/qualifiers', when: 'Yesterday', unread: false },
       { id: 'n5', title: 'New document', body: 'Local rules · Pinehurst No. 2', href: null, when: 'Yesterday', unread: false },
     ],
   },

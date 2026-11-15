@@ -176,6 +176,63 @@ describe('ThemeScript Animations off', () => {
 });
 
 describe('ThemeScript Dynamic Type (OD-06, TYPE-02)', () => {
+  /** A touch screen whose `-apple-system-body` reads `px`: jsdom has no system fonts, so the probe's size is stubbed. */
+  function phoneBody(px: number): () => void {
+    Object.defineProperty(window, 'matchMedia', { configurable: true, value: vi.fn((q: string) => ({ matches: q === '(pointer: coarse)' })) });
+    const proto = CSSStyleDeclaration.prototype;
+    const had = Object.getOwnPropertyDescriptor(proto, 'font');
+    Object.defineProperty(proto, 'font', {
+      configurable: true,
+      get(this: { __font?: string }) {
+        return this.__font ?? '';
+      },
+      set(this: { __font?: string }, v: string) {
+        this.__font = v;
+      },
+    });
+    const real = window.getComputedStyle.bind(window);
+    const spy = vi.spyOn(window, 'getComputedStyle').mockImplementation((el: Element, pseudo?: string | null) =>
+      el instanceof HTMLElement && el.style.font === '-apple-system-body' ? ({ fontSize: `${px}px` } as unknown as CSSStyleDeclaration) : real(el, pseudo),
+    );
+    return () => {
+      spy.mockRestore();
+      if (had) Object.defineProperty(proto, 'font', had);
+      else delete (proto as unknown as Record<string, unknown>).font;
+      document.documentElement.style.removeProperty('--ch-type-scale');
+    };
+  }
+
+  // F-0014 (audit 13 Nov 2026, CR-03): this boot stamped Clubhouse's scale at 14/17 under the default Text Size on every
+  // /golf path, sign-in included, so the 12 step drew at 9.9px. It follows Text Size upward only, as lib/type-scale.ts.
+  it.each([13, 14, 16])('leaves the Clubhouse type scale alone at a %ipx body on /golf/login', (px) => {
+    installLocalStorage();
+    window.history.replaceState({}, '', '/golf/login');
+    const restore = phoneBody(px);
+    try {
+      runBoot();
+      expect(document.documentElement.style.getPropertyValue('--ch-type-scale')).toBe('');
+    } finally {
+      restore();
+    }
+  });
+
+  it('stamps the Clubhouse type scale above the default Text Size, capped at XXL', () => {
+    installLocalStorage();
+    window.history.replaceState({}, '', '/golf/login');
+    for (const [px, want] of [
+      [21, '1.235'],
+      [26, '1.353'],
+    ] as const) {
+      const restore = phoneBody(px);
+      try {
+        runBoot();
+        expect(document.documentElement.style.getPropertyValue('--ch-type-scale')).toBe(want);
+      } finally {
+        restore();
+      }
+    }
+  });
+
   it('reads the iOS body size and caps the reading-text scale at XXL', () => {
     const html = renderToStaticMarkup(<ThemeScript />);
     expect(html).toContain("q.style.font='-apple-system-body'");

@@ -2,10 +2,13 @@
 import { Button } from '../../../../ui/Button';
 
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
-import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
-import { PhoneTop } from '../../../../shell/phone-chrome';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { PhoneScreen } from '../../../../shell/PhoneScreen';
+import { PhoneBar } from '../../../../ui/PhoneBar';
 import { Icon } from '../../../../ui/Icon';
+import { AskProse } from '../Prose';
 import { KIND_LABEL, type AskArtifact } from './artifacts';
+import { SaveCard } from './SaveCard';
 
 /** A card in the stream: the tile scans while it writes. */
 export function ArtifactCard({ artifact, writing, onOpen }: { artifact: AskArtifact; writing: boolean; onOpen: () => void }) {
@@ -25,6 +28,39 @@ export function ArtifactCard({ artifact, writing, onOpen }: { artifact: AskArtif
   );
 }
 
+const words = (key: string) => key.replace(/[_-]+/g, ' ').replace(/^./, (c) => c.toUpperCase());
+
+/** The artifact's words, never its raw data (ASK-1): text as prose; a record as labelled rows, a list as a list, however deep. */
+export function ArtifactBody({ body }: { body: unknown }) {
+  if (body == null) return null;
+  if (typeof body === 'string') return <AskProse text={body} playersByName={{}} />;
+  if (typeof body !== 'object') return <p className="ch-th-p">{String(body)}</p>;
+  if (Array.isArray(body))
+    return (
+      <ul className="ch-th-list">
+        {body.map((item, i) => (
+          <li key={i}>
+            <ArtifactBody body={item} />
+          </li>
+        ))}
+      </ul>
+    );
+  return (
+    <dl className="ch-ak-rec">
+      {Object.entries(body as Record<string, unknown>)
+        .filter(([key, v]) => v != null && v !== '' && !/(^|_)id$/.test(key))
+        .map(([key, v]) => (
+          <div key={key}>
+            <dt>{words(key)}</dt>
+            <dd>
+              <ArtifactBody body={v} />
+            </dd>
+          </div>
+        ))}
+    </dl>
+  );
+}
+
 function Versions({ n, at, onGo }: { n: number; at: number; onGo: (i: number) => void }) {
   if (n < 2) return null;
   return (
@@ -40,20 +76,37 @@ function Versions({ n, at, onGo }: { n: number; at: number; onGo: (i: number) =>
   );
 }
 
-function Actions({ builderHref }: { builderHref: string | null }) {
-  // The plan's own Save row does the saving in the thread (one Save row, practice-plan 02). Here, only the builder when it exists.
-  if (!builderHref) return null;
+function Actions({ artifact, body, builderHref, onPublish }: { artifact: AskArtifact; body: unknown; builderHref: string | null; onPublish?: (title: string) => void }) {
+  const [saving, setSaving] = useState(false);
+  // The plan's own Save row does the saving in the thread (one Save row, practice-plan 02). Everything else saves from here (E-APANEL).
+  const words = artifact.kind !== 'practice_plan' && typeof body === 'string' && body.trim() ? body : null;
+  if (!builderHref && !words) return null;
   return (
-    <div className="apf">
-      <Button variant="secondary" href={builderHref}>
-        Edit in builder
-      </Button>
-    </div>
+    <>
+      {words && saving && <SaveCard title={artifact.title} body={words} onClose={() => setSaving(false)} />}
+      <div className="apf">
+        {builderHref && (
+          <Button variant="secondary" href={builderHref}>
+            Edit in builder
+          </Button>
+        )}
+        {words && (
+          <Button variant="secondary" aria-expanded={saving} onClick={() => setSaving(true)}>
+            Save draft…
+          </Button>
+        )}
+        {words && onPublish && (
+          <Button variant="primary" onClick={() => onPublish(artifact.title)}>
+            Publish…
+          </Button>
+        )}
+      </div>
+    </>
   );
 }
 
 /** Desktop: the right pane, the chat usable beside it. Phone: a pushed screen under the green bar. Same body, same versions. */
-export function ArtifactView({ artifact, phone, body, onClose, builderHref = null }: { artifact: AskArtifact; phone: boolean; body: (versionBody: unknown) => ReactNode; onClose: () => void; builderHref?: string | null }) {
+export function ArtifactView({ artifact, phone, body, onClose, builderHref = null, onPublish }: { onPublish?: (title: string) => void; artifact: AskArtifact; phone: boolean; body: (versionBody: unknown) => ReactNode; onClose: () => void; builderHref?: string | null }) {
   const [at, setAt] = useState(artifact.versions.length - 1);
   const v = artifact.versions[Math.min(at, artifact.versions.length - 1)];
   // M-ASK-30: it slides back out, then leaves. With nothing to wait for (Animations off), it leaves at once.
@@ -72,16 +125,17 @@ export function ArtifactView({ artifact, phone, body, onClose, builderHref = nul
     };
   }, [leaving, onClose]);
   const close = () => setLeaving(true);
+  // A pushed screen: edge swipe back, focus and modality come with it, and its bar is the only one (ASK-3, MOB-ASK-5, MOB-ASK-19, MOT-14).
   if (phone) {
     return (
-      <div ref={root as RefObject<HTMLDivElement>} className={'ch-ak-push' + (leaving ? ' is-leaving' : '')} role="dialog" aria-label={artifact.title}>
-        <PhoneTop back={{ label: 'Ask', onBack: close }} title={artifact.title} />
+      <PhoneScreen labelledBy={`ch-ak-push-${artifact.id}`} className="ch-ak-push">
+        <PhoneBar back={{ label: 'Ask', onBack: onClose }} title={artifact.title} titleId={`ch-ak-push-${artifact.id}`} />
         <div className="apb">{v && body(v.body)}</div>
         <div className="apdock">
           <Versions n={artifact.versions.length} at={at} onGo={setAt} />
-          <Actions builderHref={builderHref} />
+          <Actions artifact={artifact} body={v?.body} builderHref={builderHref} onPublish={onPublish} />
         </div>
-      </div>
+      </PhoneScreen>
     );
   }
   return (
@@ -97,7 +151,7 @@ export function ArtifactView({ artifact, phone, body, onClose, builderHref = nul
         </button>
       </header>
       <div className="apb">{v && body(v.body)}</div>
-      <Actions builderHref={builderHref} />
+      <Actions artifact={artifact} body={v?.body} builderHref={builderHref} onPublish={onPublish} />
     </aside>
   );
 }

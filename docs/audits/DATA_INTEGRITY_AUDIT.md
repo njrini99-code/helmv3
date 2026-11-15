@@ -16,7 +16,7 @@ KEPT FOR HISTORY -- do not delete this file.
 ## Executive Summary
 
 | Metric | Value | Status |
-|--------|-------|--------|
+| -------- | ------- | -------- |
 | Total Issues Found | 4 | - |
 | Critical Issues | 2 | RED |
 | Warnings | 2 | YELLOW |
@@ -45,7 +45,7 @@ All 19 users in the `users` table have corresponding profiles:
 These are player records in the `players` table with **NULL user_id** - no associated user account.
 
 | # | Name | ID | Created |
-|---|------|-----|---------|
+| --- | ------ | ----- | --------- |
 | 1 | Dylan Anderson | 5da39fce-... | 2025-12-17 |
 | 2 | Chase Taylor | 76dbef4b-... | 2025-12-17 |
 | 3 | Cole Thomas | 69790abf-... | 2025-12-17 |

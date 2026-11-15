@@ -300,6 +300,11 @@ Leaderboard reads qualifier (FairwayQualifierLeaderboard)
 Owner decisions D-30 to D-33 (`docs/clubhouse/PROGRESS.md`); numbered states
 in `docs/clubhouse/catalog/qualifiers.md` (CH-09xxx).
 
+- Players have one Qualifiers page in Clubhouse (owner, 2026-11-11): the
+  team's list with the qualifiers they are entered in first. "My qualifiers"
+  is retired there, and `/golf/dashboard/my-qualifiers` redirects to
+  `/golf/dashboard/qualifiers` for a coach and a player. Fairway keeps its My
+  Qualifiers page.
 - Players get a read-only view of their team's qualifiers (D-30): standings
   with their own row marked, their own scorecards only, and the squad once the
   coach confirms it (`selection_state = 'selected'`), never the pick

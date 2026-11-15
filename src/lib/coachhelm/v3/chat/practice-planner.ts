@@ -247,6 +247,8 @@ export function practiceIdempotencyKey(ctx: CoachChatContext, plan: RecurringPra
 export async function executeRecurringPractice(
   ctx: CoachChatContext,
   plan: RecurringPracticePlan,
+  /** The card's own request id: it becomes the series' row id, so a second run of the same card lands on the first one's series. */
+  requestId?: string,
 ): Promise<ActionReceipt> {
   const at = new Date().toISOString();
   const { createRecurringEvent } = await import('@/app/golf/actions/recurring-events');
@@ -278,6 +280,7 @@ export async function executeRecurringPractice(
     teamId: ctx.team_id,
     timezoneOffset,
     attendeeIds: plan.invited_player_ids,
+    ...(requestId ? { requestId } : {}),
   });
 
   if (!result.success) {
@@ -305,8 +308,10 @@ export async function executeRecurringPractice(
       {
         kind: 'practice',
         count: plan.occurrence_count,
-        href: '/golf/dashboard/calendar',
+        // The series is one calendar row that repeats: its id, and the Calendar on the first practice's day with it open.
+        href: result.data?.eventId ? `/golf/dashboard/calendar?date=${plan.start_date}&event=${result.data.eventId}` : `/golf/dashboard/calendar?date=${plan.start_date}`,
         label: plan.title,
+        ...(result.data?.eventId ? { id: result.data.eventId, ids: [result.data.eventId] } : {}),
       },
       ...(plan.requires_rsvp
         ? [{ kind: 'RSVP request', count: invited, href: '/golf/dashboard/calendar' }]

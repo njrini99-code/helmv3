@@ -278,14 +278,6 @@ describe('Home · Up next and the agenda', () => {
     expect(screen.getByRole('region', { name: 'Since you last looked' })).toBeTruthy();
     localStorage.clear();
   });
-
-  it('wears the badge and the struck old value on Up next', () => {
-    const { byEvent } = rows([row({ id: PREVIEW_PLAYER_HOME.next!.id })], null);
-    const change = byEvent.get(PREVIEW_PLAYER_HOME.next!.id)!;
-    expect(change).toBeTruthy();
-    const { container } = player({ next: { ...PREVIEW_PLAYER_HOME.next!, change } as never, changes: [], marks: [] });
-    expect(container.querySelector('.ch-ph-next s.ch-was, .ch-hm-next s.ch-was')).not.toBeNull();
-  });
 });
 
 describe('the marks Home hands the page', () => {

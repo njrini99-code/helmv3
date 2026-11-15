@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { NextRequest } from 'next/server';
 
 const hold = vi.hoisted(() => ({ cancelHeld: vi.fn(), commitHeldNow: vi.fn(), receiptFor: vi.fn(), heldCommitFor: vi.fn() }));
-const state = vi.hoisted(() => ({ askOn: true, user: { id: 'u1' } as { id: string } | null, coach: { id: 'coach-1' } as { id: string } | null, ctx: { coach_id: 'coach-1' } as { coach_id: string } | null }));
+const state = vi.hoisted(() => ({ user: { id: 'u1' } as { id: string } | null, coach: { id: 'coach-1' } as { id: string } | null, ctx: { coach_id: 'coach-1' } as { coach_id: string } | null }));
 
 vi.mock('@/lib/supabase/server', () => ({
   createClient: async () => ({
@@ -10,7 +10,6 @@ vi.mock('@/lib/supabase/server', () => ({
     from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: state.coach, error: null }) }) }) }),
   }),
 }));
-vi.mock('@/lib/coachhelm/v3/chat/ask-flag', () => ({ isAskV2Enabled: () => state.askOn }));
 vi.mock('@/lib/coachhelm/v3/chat/context', () => ({ resolveCoachChatContext: async () => state.ctx }));
 vi.mock('@/lib/coachhelm/v3/chat/held-runner', () => ({ heldCommitFor: hold.heldCommitFor }));
 vi.mock('@/lib/coachhelm/v3/chat/undo-hold', () => ({ cancelHeld: hold.cancelHeld, commitHeldNow: hold.commitHeldNow, receiptFor: hold.receiptFor }));
@@ -25,7 +24,6 @@ const req = (query = '', method = 'POST') => new NextRequest(`http://localhost/a
 const held = (over: Record<string, unknown> = {}) => ({ status: 'held', run_at: new Date(Date.now() + 8000).toISOString(), ...over });
 
 beforeEach(() => {
-  state.askOn = true;
   state.user = { id: 'u1' };
   state.coach = { id: 'coach-1' };
   state.ctx = { coach_id: 'coach-1' };
@@ -43,15 +41,12 @@ describe('whose key it is', () => {
     expect(hold.commitHeldNow).not.toHaveBeenCalled();
   });
 
-  it('a signed-in player, signed-out caller or flag off is a 404 before any read', async () => {
+  it('a signed-in player or a signed-out caller is a 404 before any read', async () => {
     state.coach = null;
     expect((await DELETE(req('', 'DELETE'), params)).status).toBe(404);
     state.coach = { id: 'coach-1' };
     state.user = null;
     expect((await POST(req('?now=1'), params)).status).toBe(404);
-    state.user = { id: 'u1' };
-    state.askOn = false;
-    expect((await GET(req('', 'GET'), params)).status).toBe(404);
     expect(hold.receiptFor).not.toHaveBeenCalled();
   });
 });

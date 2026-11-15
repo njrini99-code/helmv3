@@ -1,4 +1,4 @@
-import type { ChCoachHome } from '../../data/home';
+import type { ChCoachHome, ChLatestRound } from '../../data/home';
 import type { ChPlayerHome } from '../../data/player-home';
 import type { ChForm } from '../../data/season';
 import { isOut, type ChAvailability } from '../../data/availability';
@@ -14,6 +14,22 @@ import { plural } from '../../lib/plural';
 
 /** A player with no countable round (any length) for this many days reads "No rounds N days". */
 export const QUIET_DAYS = 7;
+
+/**
+ * The leaderboard's order, the one Fairway's Top performers uses: an early read (fewer than three 18-hole rounds) last, then the
+ * average AT THE PRECISION THE ROW PRINTS (one decimal), so two players who both read 74.8 are level and the player with more
+ * rounds ranks first, then the name. Ordering on the hidden second decimal put a 20-round 74.8 behind a 19-round 74.8 for no reason
+ * anyone could see (parity check, staging 2026-11-07).
+ */
+export function compareLeaderRows(
+  a: { status: string; avg: number; rounds: number; name: string },
+  b: { status: string; avg: number; rounds: number; name: string },
+  /** False on All time (span.ts): Fairway has no floor, so a short sample ranks on its average like any other. */
+  floor = true,
+): number {
+  const early = (r: { status: string }) => (floor && r.status === 'early' ? 1 : 0);
+  return early(a) - early(b) || Math.round(a.avg * 10) - Math.round(b.avg * 10) || b.rounds - a.rounds || a.name.localeCompare(b.name);
+}
 
 /** Whole days from one YYYY-MM-DD to another (negative when `to` is earlier). */
 export function daysBetween(from: string, to: string): number {
@@ -74,6 +90,39 @@ function list(parts: string[]): string {
   return parts.length <= 1 ? (parts[0] ?? '') : `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`;
 }
 
+const isQuiet = (r: ChSublineRow) => r.quietDays != null && r.quietDays >= QUIET_DAYS;
+
+/** Most in need first: slipping and quiet, then slipping, then quiet; the longer quiet first within each. */
+function byNeed(a: ChSublineRow, b: ChSublineRow): number {
+  const rank = (r: ChSublineRow) => (r.status === 'slipping' ? 2 : 0) + (isQuiet(r) ? 1 : 0);
+  return rank(b) - rank(a) || (b.quietDays ?? 0) - (a.quietDays ?? 0);
+}
+
+/**
+ * Three or more flagged (W5, owner's preview, 11 Nov 2026: "7 players need a look: Cole, Mason, Owen, Ethan, Jackson, Dylan and
+ * Tyler" named seven of eight and said nothing). A team-wide quiet spell is one sentence about the team, with the longest named;
+ * otherwise the two who need it most, with their reasons, and a count of the rest.
+ */
+function manyFlagged(flagged: ChSublineRow[]): string {
+  const ranked = [...flagged].sort(byNeed);
+  const since = (rows: ChSublineRow[]) => Math.min(...rows.map((r) => r.quietDays ?? Infinity));
+  if (ranked.every((r) => r.status !== 'slipping')) {
+    const longest = ranked[0]!;
+    const floor = since(ranked);
+    // F-0016: a longest is named only when one player is strictly longest; all tied, the team's line says the one figure.
+    if (longest.quietDays === floor) return `${ranked.length} players haven’t posted a round in ${floor} days.`;
+    return `${ranked.length} players haven’t posted a round in ${floor}+ days, ${firstName(longest.name)} the longest at ${longest.quietDays}.`;
+  }
+  const lead = list(ranked.slice(0, 2).map(reason));
+  const rest = ranked.slice(2);
+  const tail = rest.every((r) => r.status === 'slipping')
+    ? `${rest.length} more ${rest.length === 1 ? 'is' : 'are'} slipping.`
+    : rest.every((r) => r.status !== 'slipping')
+      ? `${rest.length} ${rest.length === 1 ? 'other hasn’t' : 'others haven’t'} posted a round in ${since(rest)}+ days.`
+      : `${rest.length} more need a look.`;
+  return `${lead.charAt(0).toUpperCase()}${lead.slice(1)}. ${tail}`;
+}
+
 /**
  * The line under the greeting: who needs a look (slipping form, or no round
  * in QUIET_DAYS), then the week's next competition, then the rest. Early-read
@@ -84,7 +133,7 @@ export function homeSubline(
   opts: {
     roundsError: boolean;
     nextCompetition: { title: string; when: string } | null;
-    /** Active players with no 18-hole round this season: no leaderboard row, so never "on track" either. */
+    /** Active players with no 18-hole round this season: no leaderboard row, so never "on track" either, and never a sentence of their own (HOME-S5). */
     unposted?: Pick<ChSublineRow, 'name' | 'availability'>[];
   },
 ): string | null {
@@ -105,19 +154,11 @@ export function homeSubline(
     const s = list(flagged.map(reason));
     out.push(`${s.charAt(0).toUpperCase()}${s.slice(1)}.`);
   } else {
-    out.push(`${flagged.length} players need a look: ${list(flagged.map((r) => firstName(r.name)))}.`);
+    out.push(manyFlagged(flagged));
   }
   // A no-break space ahead of a title's dot keeps "· Pinehurst No. 2" from opening a line.
   if (opts.nextCompetition) out.push(`${opts.nextCompetition.title.replace(/ · /g, '\u00a0· ')} is ${opts.nextCompetition.when}.`);
   if (flagged.length > 0 && onTrack.length > 0) out.push(partial ? 'The others with enough rounds are on track.' : 'The rest of the team is on track.');
-  // With no rows at all the leaderboard's own empty state says it.
-  if (unposted.length > 0 && rows.length > 0) {
-    out.push(
-      unposted.length <= 2
-        ? `${list(unposted.map((r) => firstName(r.name)))} ${unposted.length === 1 ? 'has' : 'have'} no 18-hole round this season.`
-        : `${unposted.length} players have no 18-hole round this season.`,
-    );
-  }
   return out.length ? out.join(' ') : null;
 }
 
@@ -164,4 +205,53 @@ export function playerFailedParts(data: Pick<ChPlayerHome, 'week' | 'latest' | '
   if (data.scoring.error) parts.push('your scoring');
   if (data.legs?.cacheError) parts.push('some of your figures');
   return parts;
+}
+
+/** One row of the desk's Latest rounds: a round, or one player's rounds of one event, folded (W4). */
+export interface ChLatestRow {
+  key: string;
+  playerId: string;
+  playerName: string;
+  meta: string;
+  /** The round's score, or the event's total when the row folds two or more rounds. */
+  score: number;
+  toPar: number | null;
+  /** The folded rounds' scores, oldest first; null for a single round. */
+  scores: number[] | null;
+}
+
+/** An event's rounds sit within three days of each other. */
+const EVENT_SPAN_DAYS = 2;
+const dayIndex = (d: string | undefined) => (d ? Date.parse(`${d}T12:00:00Z`) / 86_400_000 : Number.NaN);
+
+/**
+ * The desk's Latest rounds, newest first, at most `max` rows. One player's tournament (or qualifier) rounds at one course
+ * within three days are one event and one row: "Springfield CC · Wed 21 Oct · Rounds 74, 77, 73" over the total (W4, owner's preview, 11 Nov 2026: three
+ * rows that read the same). A round with no course or date stands alone.
+ */
+export function latestRows(rounds: ChLatestRound[], max: number): ChLatestRow[] {
+  const groups: ChLatestRound[][] = [];
+  for (const r of rounds) {
+    // Only an event's rounds fold: two practice rounds at the home course on Tuesday and Wednesday are two rounds, not a total.
+    const isEvent = r.kind === 'tournament' || r.kind === 'qualifier';
+    const g = isEvent ? groups.find(([h]) => h!.kind === r.kind && h!.playerId === r.playerId && !!h!.course && h!.course === r.course && Math.abs(dayIndex(h!.date) - dayIndex(r.date)) <= EVENT_SPAN_DAYS) : undefined;
+    if (g) g.push(r);
+    else groups.push([r]);
+  }
+  return groups.slice(0, max).map((g) => {
+    const newest = g[0]!;
+    if (g.length === 1) return { key: newest.id, playerId: newest.playerId, playerName: newest.playerName, meta: newest.meta, score: newest.score, toPar: newest.toPar, scores: null };
+    const oldest = g[g.length - 1]!;
+    const scores = [...g].reverse().map((r) => r.score);
+    const days = oldest.day === newest.day ? newest.day : `${oldest.day}–${newest.day}`;
+    return {
+      key: g.map((r) => r.id).join('+'),
+      playerId: newest.playerId,
+      playerName: newest.playerName,
+      meta: [newest.course, days, `Rounds ${scores.join(', ')}`].filter(Boolean).join(' · '),
+      score: scores.reduce((a, b) => a + b, 0),
+      toPar: g.every((r) => r.toPar != null) ? g.reduce((a, r) => a + r.toPar!, 0) : null,
+      scores,
+    };
+  });
 }

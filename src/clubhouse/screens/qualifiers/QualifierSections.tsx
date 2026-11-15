@@ -14,6 +14,7 @@ import { plural, type ChQStatus } from './model';
 import type { LiveFeedView } from './live';
 import { ToPar } from './parts';
 import { CoursesSkeleton, Streamed } from './streamed';
+import { zoneFormat } from '../../lib/zone-format';
 
 /** The detail's side sections, shared by desktop (QualifierDetail) and the phone (QualifierDetailPhone). */
 
@@ -31,8 +32,9 @@ export function StaleStandings() {
   );
 }
 
-const CLOCK = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit' });
-const CLOCK_24 = new Intl.DateTimeFormat('en-US', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+// Built on first use, not when the module loads (F-0010); no zone is the browser's own, as before.
+const CLOCK = { format: (d: Date) => zoneFormat('en-US', undefined, 'q-clock', { hour: 'numeric', minute: '2-digit' }).format(d) };
+const CLOCK_24 = { format: (d: Date) => zoneFormat('en-US', undefined, 'q-clock24', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(d) };
 /** "4:12 PM" (or "16:12"): when the standings on screen were read, in the reader's own time. */
 export function clockLabel(at: number, hours: ChClock = '12'): string {
   return (hours === '24' ? CLOCK_24 : CLOCK).format(new Date(at));

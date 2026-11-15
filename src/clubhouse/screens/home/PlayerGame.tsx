@@ -1,7 +1,6 @@
 'use client';
 
-import { ChevronRight, Pencil } from 'lucide-react';
-import Link from 'next/link';
+import { Pencil } from 'lucide-react';
 import { useId, type ReactNode } from 'react';
 import type { ChPlayerHome, ChPlayerLeg, ChScoringPoint } from '../../data/player-home';
 import { EmptyState } from '../../ui/States';
@@ -9,15 +8,11 @@ import { Icon } from '../../ui/Icon';
 import { RefreshNotice } from '../../ui/RefreshNotice';
 import { Segmented } from '../../ui/Segmented';
 import { changeTone, formatFixed, formatHcp, formatSigned, NO_DATA } from '../../lib/format';
-import { pluralWord } from '../../lib/plural';
 import { NoData } from '../../ui/NoData';
 import { changeSe, deltaTone, deltaWords, halvesChange } from '../../lib/stats-signal';
 import { sgBaseline, type ChSgTour } from '../../lib/sg';
 import { monotonePath } from '../../lib/chart';
 import { useChSessionState } from '../../lib/session-state';
-import { ShsIcon, ShsPill, type ShsIconName } from '../stats/SummaryCard';
-import { MY_STATS } from './player-links';
-import '../../styles/stats-redesign.css';
 
 type Span = 5 | 10 | 20;
 const SPANS: Span[] = [5, 10, 20];
@@ -29,21 +24,16 @@ const SPANS: Span[] = [5, 10, 20];
  * rounds against par and the player's own mean, four figures, one sentence,
  * then the four parts of the game against the Tour where a benchmark exists.
  */
-export function PlayerGame({ data, phone = false, part, covered = false, shs = false }: { data: ChPlayerHome; phone?: boolean; shs?: boolean; part?: 'scoring' | 'legs'; covered?: boolean }) {
+export function PlayerGame({ data, phone = false, part, covered = false }: { data: ChPlayerHome; phone?: boolean; part?: 'scoring' | 'legs'; covered?: boolean }) {
   // `part`: desktop Home draws Scoring inside its one continuous surface and the parts of the game below it.
   // `covered`: the page's notice (CH-1209) carries the one Try again, so a failed read keeps only its notice's title.
   return (
     <>
       {part !== 'legs' && <Scoring data={data} phone={phone} covered={covered} />}
-      {part !== 'scoring' && (phone && shs ? <YourGameCard legs={data.legs} tour={data.tour} covered={covered} /> : <Legs legs={data.legs} tour={data.tour} phone={phone} covered={covered} />)}
+      {part !== 'scoring' && <Legs legs={data.legs} tour={data.tour} phone={phone} covered={covered} />}
     </>
   );
 }
-
-const METER_UNDER = 5;
-const METER_OVER = 15;
-/** The strokes-gained bar's reach each side of zero. Past it the bar stops at its end with an overflow mark; the number beside it is the figure. */
-const SG_BAR_RANGE = 10;
 
 /** The par every round in the window was played to, or null when they differ (a par line would be wrong for some). */
 function commonPar(points: ChScoringPoint[]): number | null {
@@ -66,9 +56,9 @@ function Scoring({ data, phone, covered }: { data: ChPlayerHome; phone: boolean;
   const under = withPar.filter((p) => p.score < p.par).length;
   // Each figure drawn against a real reference (owner, 2026-10-06: no bare numbers): the average against the previous
   // window's, strokes gained from zero, and one mark per round for under par. Decorative: the words carry it.
-  // A fixed scale, par-relative, so the meter holds still when the span changes: par at the left third, -5 to +15 strokes (shots to par on 72 by default).
-  const parBase = commonPar(shown) ?? 72;
-  const at = (v: number) => Math.max(0, Math.min(100, ((v - parBase + METER_UNDER) / (METER_UNDER + METER_OVER)) * 100));
+  const lo = Math.min(mean ?? 0, prevMean ?? mean ?? 0) - 1.5;
+  const hi = Math.max(mean ?? 0, prevMean ?? mean ?? 0) + 1.5;
+  const at = (v: number) => ((v - lo) / (hi - lo)) * 100;
   const sg = data.sgPerRound;
   const viz: Record<string, ReactNode> = {
     'Scoring avg':
@@ -83,8 +73,8 @@ function Scoring({ data, phone, covered }: { data: ChPlayerHome; phone: boolean;
       ) : null,
     'Strokes gained':
       sg != null ? (
-        <span className={'ch-ph-viz ch-ph-viz--sg' + (Math.abs(sg) > SG_BAR_RANGE ? ' is-over' : '')} aria-hidden="true">
-          <i className={changeTone(sg, false, 1)} style={{ [sg >= 0 ? 'left' : 'right']: '50%', width: `${Math.min(50, (Math.abs(sg) / SG_BAR_RANGE) * 50)}%` }} />
+        <span className="ch-ph-viz ch-ph-viz--sg" aria-hidden="true">
+          <i className={changeTone(sg, false, 1)} style={sg >= 0 ? { left: '50%', width: `${Math.min(50, (sg / 3) * 50)}%` } : { right: '50%', width: `${Math.min(50, (-sg / 3) * 50)}%` }} />
         </span>
       ) : null,
     'Under par': withPar.length ? (
@@ -97,7 +87,7 @@ function Scoring({ data, phone, covered }: { data: ChPlayerHome; phone: boolean;
   };
   const figs: Array<[string, string, string, string]> = [
     ['Scoring avg', formatFixed(mean), delta == null ? `Last ${shown.length}` : `${formatSigned(delta)} · ${deltaWords(delta, deltaSignal, `vs previous ${before.length}`)}`, deltaSignal],
-    ['Strokes gained', data.sgPerRound == null ? NO_DATA : formatSigned(data.sgPerRound), data.sgPerRound == null ? 'After three rounds' : `Last 10, per round ${sgBaseline(data.tour).vs}`, changeTone(data.sgPerRound, false)],
+    ['Strokes gained', data.sgPerRound == null ? NO_DATA : formatSigned(data.sgPerRound), data.sgPerRound == null ? 'After three rounds' : `Season, per round ${sgBaseline(data.tour).vs}`, changeTone(data.sgPerRound, false)],
     ['Handicap', formatHcp(data.handicap), 'Index', ''],
     ['Under par', withPar.length ? `${under} of ${withPar.length}` : NO_DATA, withPar.length < shown.length ? 'Rounds with par recorded' : 'Rounds in this window', ''],
   ];
@@ -105,7 +95,7 @@ function Scoring({ data, phone, covered }: { data: ChPlayerHome; phone: boolean;
   // The phone's card always offers all three windows, as the board's does; the desktop's only the ones with rounds to fill them.
   const options = (phone ? SPANS : SPANS.filter((k) => k === 5 || all.length > k / 2)).map((k) => ({ value: `${k}` as `${Span}`, label: `Last ${k}` }));
   const picker = (
-    <Segmented<`${Span}`> redraws size={phone ? 'md' : 'sm'} label="Rounds shown" value={`${n}`} onChange={(v) => setN(Number(v) as Span)} options={options} />
+    <Segmented<`${Span}`> weight="filter" redraws size={phone ? 'md' : 'sm'} label="Rounds shown" value={`${n}`} onChange={(v) => setN(Number(v) as Span)} options={options} />
   );
   const body = data.scoring.error ? (
     <RefreshNotice code="CH-2215" title="Your rounds didn’t load" body="Posted rounds are safe. Try again." covered={covered} />
@@ -328,7 +318,7 @@ function Legs({ legs, tour, phone, covered }: { legs: ChPlayerHome['legs']; tour
   return (
     <section className={phone ? 'ch-hm-sec ch-ph-legs-sec is-phone' : 'ch-ph-legs-sec'} aria-labelledby="ch-ph-legs">
       {phone ? (
-        // The board's one-line meta beside the title. The stats and each part's strokes gained are the last 10 rounds: each pill says so to a screen reader, and the desktop's caption in full.
+        // The board's one-line meta beside the title. The stats are the last 10 rounds and each part's strokes gained is the season's: each pill says so to a screen reader, and the desktop's caption in full.
         <div className="ch-hm-sec__h">
           <h2 id="ch-ph-legs">Your game</h2>
           <span className="ch-hm-meta">Strokes gained {sgBaseline(tour).vs}</span>
@@ -337,8 +327,8 @@ function Legs({ legs, tour, phone, covered }: { legs: ChPlayerHome['legs']; tour
         <div className="ch-ph-game__h">
           <div>
             <h2 id="ch-ph-legs">Your game</h2>
-            {/* The stats are the last 10 rounds; each part's strokes gained is theirs too, against the Tour; a stat with a Tour average draws it as a mark. */}
-            <span>Last 10 rounds · strokes gained {sgBaseline(tour).vs}</span>
+            {/* The stats are the last 10 rounds; each part's strokes gained is the season's, against the Tour; a stat with a Tour average draws it as a mark. */}
+            <span>Last 10 rounds · strokes gained this season {sgBaseline(tour).vs}</span>
           </div>
         </div>
       )}
@@ -374,7 +364,7 @@ function Leg({ g, tour }: { g: ChPlayerLeg; tour: ChSgTour }) {
         {g.sg != null && (
           <span className={'ch-ph-leg__sg ch-num ' + (changeTone(g.sg, false) || 'is-flat')}>
             {formatSigned(g.sg)}
-            <span className="ch-sr-only"> strokes gained a round, last 10</span>
+            <span className="ch-sr-only"> strokes gained a round this season</span>
           </span>
         )}
       </div>
@@ -448,178 +438,5 @@ function Spark({ data, lowerIsBetter, label }: { data: number[]; lowerIsBetter: 
         <span className="ch-ph-spark__word">{word}</span>
       </figcaption>
     </figure>
-  );
-}
-
-const LEG_ICON: Readonly<Record<ChPlayerLeg['key'], ShsIconName>> = { tee: 'tee', approach: 'target', short: 'chip', putting: 'putt' };
-
-/** Each leg opens its part on My stats (`#gm-<part>`) with no slide; one Back reaches the Stats summary (08 criterion 75). */
-export const ownLegHref = (key: ChPlayerLeg['key']): string => `/golf/dashboard/stats#gm-${key}`;
-
-/**
- * "Your game" behind clubhouse_stats_redesign_v1 (stats-home S-HOMEGAME): one card, a row per leg that opens its part. Strokes gained, the
- * figures and the sparks all read the last ten rounds, and strokes gained waits for its third round with shots. Nothing is coloured until a difference is clear.
- */
-/**
- * Player Home's lead (dashboard cuts, 6): Your game under the greeting, opening on one line of scoring average and strokes gained over
- * My stats' window, which links there. The figures' home is My stats; Home draws no meter of its own for them.
- */
-export function YourGameLead({ data, covered }: { data: ChPlayerHome; covered: boolean }) {
-  // The figures are the loader's, over the window My stats prints them on, never worked out again here.
-  const last = data.scoringLast10;
-  const sum =
-    !last ? null : (
-      <Link href={MY_STATS} className="ch-shs-yg__sum ch-num">
-        <span>{last.n ? `Last ${last.n}` : 'Last 10'}</span>
-        <span>
-          <b>{last.avg == null ? <NoData /> : formatFixed(last.avg)}</b> avg
-        </span>
-        <span>
-          <b>{data.sgPerRound == null ? <NoData /> : formatSigned(data.sgPerRound)}</b> SG per round
-        </span>
-        <span className="ch-shs-yg__go">
-          My stats
-          <Icon icon={ChevronRight} size={15} />
-        </span>
-      </Link>
-    );
-  return <YourGameCard legs={data.legs} tour={data.tour} covered={covered} summary={sum} always />;
-}
-
-function YourGameCard({ legs, tour, covered, summary, always = false }: { legs: ChPlayerHome['legs']; tour: ChSgTour; covered: boolean; summary?: ReactNode; always?: boolean }) {
-  if (!legs && !always) return null;
-  if (!legs) {
-    return (
-      <section className="ch-shs-home ch-shs-yg" aria-labelledby="ch-ph-legs">
-        <div className="ch-shs-yg__h">
-          <h2 id="ch-ph-legs">Your game</h2>
-        </div>
-        {summary}
-      </section>
-    );
-  }
-  const any = legs.rows.some((l) => l.value != null || l.needs);
-  const anyEarly = legs.rows.some((l) => l.early);
-  const anySg = legs.rows.some((l) => l.sg != null);
-  const footnote = anyEarly
-    ? 'Each figure shows with an early-read tag and nothing is coloured until a difference is clear. Strokes gained starts from the third round.'
-    : anySg
-      ? 'Figures are your last 10 rounds, strokes gained too. A line turns green or amber only when the newer rounds differ by more than their likely error.'
-      : 'Figures are your last 10 rounds; strokes gained shows from the third round with shots. A line turns green or amber only when the newer rounds differ by more than their likely error.';
-  return (
-    <section className="ch-shs-home ch-shs-yg" aria-labelledby="ch-ph-legs">
-      <div className="ch-shs-yg__h">
-        <h2 id="ch-ph-legs">Your game</h2>
-        <span>Strokes gained {sgBaseline(tour).vs}</span>
-      </div>
-      {summary}
-      {legs.cacheError && (
-        <div className="ch-shs-yg__notice">
-          <RefreshNotice code="CH-2216" title="Some of your figures didn’t load" body="Scores, greens and putts are right; scrambling is missing." covered={covered} />
-        </div>
-      )}
-      {!any ? (
-        legs.cacheError ? null : (
-          <div className="ch-shs-yg__none" data-ch-code="CH-2311">
-            <b>Nothing to break down yet.</b>
-            <span>Fairways, greens, scrambling and putts fill in from rounds posted with those stats.</span>
-          </div>
-        )
-      ) : (
-        <>
-          {legs.rows.map((g) => (
-            <YourGameLeg key={g.key} g={g} tour={tour} />
-          ))}
-          <p className="ch-shs-yg__foot">{footnote}</p>
-        </>
-      )}
-    </section>
-  );
-}
-
-function YourGameLeg({ g, tour }: { g: ChPlayerLeg; tour: ChSgTour }) {
-  const fmt = (v: number) => (g.unit === '%' ? `${Math.round(v)}%` : formatFixed(v, g.digits));
-  const sgInk = changeTone(g.sg, false);
-  const tone = sgInk === 'is-gain' ? 'gain' : sgInk === 'is-loss' ? 'loss' : 'flat';
-  const against = g.value != null && g.bench != null && !g.early ? (changeTone(g.value - g.bench, g.lowerIsBetter, g.unit === '%' ? 0 : g.digits) === 'is-gain' ? 'gain' : changeTone(g.value - g.bench, g.lowerIsBetter, g.unit === '%' ? 0 : g.digits) === 'is-loss' ? 'loss' : 'flat') : 'flat';
-  const note = g.early && g.note ? `Early read · ${g.note}` : g.needs ?? g.note;
-  return (
-    <Link href={ownLegHref(g.key)} className="ch-shs-leg" data-ch="home-leg" aria-label={[g.label, g.value == null ? null : `${g.stat} ${fmt(g.value)}`, g.sg == null ? null : `${formatSigned(g.sg)} strokes gained a round, last 10`].filter(Boolean).join(', ')}>
-      <span className="ch-shs-leg__h">
-        <ShsIcon name={LEG_ICON[g.key]} />
-        <b>{g.label}</b>
-        {g.sg != null && <ShsPill tone={tone}>{formatSigned(g.sg)} SG</ShsPill>}
-      </span>
-      <span className="ch-shs-leg__m">
-        <span>
-          <span className={'ch-shs-leg__v' + (g.value == null ? ' ch-shs-none' : '')}>{g.value == null ? <NoData /> : fmt(g.value)}</span>
-          <span className="ch-shs-leg__s">{g.stat}</span>
-        </span>
-        <YourGameSpark data={g.trend} lowerIsBetter={g.lowerIsBetter} label={g.stat} />
-      </span>
-      {g.value != null && g.bench != null && (
-        <span className="ch-shs-leg__bench">
-          <span className="ch-shs-hrail" aria-hidden="true">
-            <i className={`ch-shs-fill-${against}`} style={{ width: `${Math.max(0, Math.min(100, g.value))}%` }} />
-            <span className="ch-shs-tour" style={{ left: `${Math.max(0, Math.min(100, g.bench))}%` }} />
-          </span>
-          <span className="ch-shs-bench-k">
-            <span className={against === 'flat' ? undefined : `ch-shs-${against}`}>You {fmt(g.value)}</span>
-            <span>
-              {sgBaseline(tour).mark} {fmt(g.bench)}
-            </span>
-          </span>
-        </span>
-      )}
-      {note && <span className="ch-shs-leg__n ch-num">{note}</span>}
-    </Link>
-  );
-}
-
-/** A leg's rounds, 46 tall: a line in its tone, the mean dashed, the end dot; one round is the dot alone, with "Last round" (CP-126). */
-function YourGameSpark({ data, lowerIsBetter, label }: { data: number[]; lowerIsBetter: boolean; label: string }) {
-  const gid = useId();
-  if (!data.length) return <span />;
-  const w = 240;
-  const h = 46;
-  const pad = 6;
-  const span = Math.max(...data) - Math.min(...data) || 1;
-  const lo = Math.min(...data) - span * 0.15;
-  const hi = Math.max(...data) + span * 0.15;
-  const x = (i: number) => (data.length === 1 ? w / 2 : (i * w) / (data.length - 1));
-  const y = (v: number) => pad + ((lowerIsBetter ? v - lo : hi - v) / (hi - lo)) * (h - pad * 2);
-  const ch = data.length >= 2 ? halvesChange(data, null) : null;
-  const t = ch ? deltaTone(ch.delta, ch.se, lowerIsBetter) : '';
-  const tone = t === 'is-gain' ? 'gain' : t === 'is-loss' ? 'loss' : 'flat';
-  const word = t === 'is-gain' ? 'Improving' : t === 'is-loss' ? 'Slipping' : 'No clear change';
-  const mean = data.reduce((a, b) => a + b, 0) / data.length;
-  const pts = data.map((v, i) => [x(i), y(v)] as [number, number]);
-  const line = data.length >= 2 ? monotonePath(pts) : '';
-  const last = pts[pts.length - 1]!;
-  return (
-    <span className={`ch-shs-spark is-${tone}`}>
-      <span className="ch-shs-spark__plot">
-        <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" role="img" aria-label={`${label}, your last ${data.length} ${pluralWord(data.length, 'round')}, ${word.toLowerCase()}`}>
-          {line && (
-            <>
-              <defs>
-                <linearGradient id={gid} x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="0" className="f0" />
-                  <stop offset="1" className="f1" />
-                </linearGradient>
-              </defs>
-              <path d={`${line} L${w},${h} L0,${h} Z`} fill={`url(#${gid})`} />
-              <line x1={0} x2={w} y1={y(mean)} y2={y(mean)} className="mn" />
-              <path d={line} className="ln" />
-            </>
-          )}
-        </svg>
-        <i className="dot" style={{ left: `${(last[0] / w) * 100}%`, top: `${(last[1] / h) * 100}%` }} aria-hidden="true" />
-      </span>
-      <span className="ch-shs-spark__cap">
-        <span>Last {data.length} {pluralWord(data.length, 'round')}</span>
-        {data.length >= 2 && <span className="w">{word}</span>}
-      </span>
-    </span>
   );
 }

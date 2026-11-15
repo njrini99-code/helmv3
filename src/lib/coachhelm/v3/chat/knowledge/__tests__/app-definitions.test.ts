@@ -1,0 +1,234 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { describe, expect, it } from 'vitest';
+import { SG_BASELINE_OPTIONS, defaultSgBaseline } from '@/lib/golf/sg-benchmarks';
+import { COUNTABLE_HOLE_COUNTS, isCountableRound, roundExclusionReason } from '@/lib/golf/round-countable';
+import { isScoreCountable, isTotalOnlyCountable } from '@/lib/golf/round-score-countable';
+import { roundTypeFromDb } from '@/lib/golf/round-type-utils';
+import { boardOrder, compareStandings } from '@/lib/coachhelm/v3/qualifying/ranking';
+import { ALL_METRIC_SPECS } from '../../metrics-catalog';
+import { STATS_WINDOWS } from '../../screen-loaders';
+import { parseChecks } from '../data-map-build';
+import { APP_DEFINITIONS, golfBlock } from '../golf';
+
+/**
+ * Every statement in the golf block about how THIS app defines something, checked against the code that defines it.
+ * `SOURCES.md` beside the block lists the same statements with file and line. Where the definition lives in a pure
+ * library module it is imported and exercised; where it lives in a Clubhouse loader (which `src/lib` may not import) or
+ * in SQL, the defining line is read from the file, so a change there fails here and the prompt is re-read by a person.
+ */
+const read = (path: string) => readFileSync(resolve(process.cwd(), path), 'utf8');
+const block = golfBlock('ask');
+const says = (sentence: string) => expect(block).toContain(sentence);
+
+const round = { status: 'completed', is_test: false, holes_played: 18, total_score: 74, front_nine: 37, back_nine: 37, total_putts: 31 };
+
+describe('the app definitions the golf block states', () => {
+  const sql = read('supabase/schemas/functions/public.sql');
+  const fnBody = (name: string, nth = 0) => {
+    const marker = `CREATE OR REPLACE FUNCTION "public"."${name}"(`;
+    let at = -1;
+    for (let i = 0; i <= nth; i += 1) at = sql.indexOf(marker, at + 1);
+    return sql.slice(at, sql.indexOf('$$;', at));
+  };
+
+  it('strokes gained is measured against the Tour benchmark, matched to the team: two baselines, by gender, and no other', () => {
+    says(APP_DEFINITIONS.sgBaseline);
+    says(APP_DEFINITIONS.sgNoOtherBaseline);
+    expect(SG_BASELINE_OPTIONS.map((o) => o.key)).toEqual(['pga_tour', 'womens']);
+    expect(defaultSgBaseline('mens')).toBe('pga_tour');
+    expect(defaultSgBaseline('womens')).toBe('womens');
+    expect(defaultSgBaseline(null)).toBe('pga_tour');
+    const checks = parseChecks(read('supabase/schemas/golf/10_tables.sql'));
+    expect(checks['golf_team_settings.sg_baseline']).toEqual(['pga_tour', 'womens']);
+    // The database picks the scale from the team's gender when no baseline is set.
+    expect(sql).toMatch(/sg_baseline_scale\(COALESCE\(v_baseline, CASE WHEN v_gender = 'womens' THEN 'womens' ELSE 'pga_tour' END\)\)/);
+    // "The same expected-strokes curve scaled for the women's game": one curve, multiplied by the baseline's scale, and the men's scale is one.
+    expect(SG_BASELINE_OPTIONS.find((o) => o.key === 'pga_tour')!.scale).toBe(1);
+    expect(SG_BASELINE_OPTIONS.find((o) => o.key === 'womens')!.scale).toBeGreaterThan(1);
+    expect(fnBody('sg_baseline_scale')).toMatch(/WHEN 'pga_tour' THEN 1\.000\s+WHEN 'womens'\s+THEN 1\.\d+\s+ELSE 1\.000/);
+    expect(fnBody('sg_expected_strokes', 1)).toMatch(/RETURN v_es \* COALESCE\(p_scale, 1\.0\);/);
+    // The Stats page draws no Tour figure beside strokes gained: zero is Tour level.
+    expect(read('src/clubhouse/data/stats-player.ts')).toMatch(/Strokes gained against the Tour \(its benchmark is zero by definition\)/);
+    // The removal is recorded where the baselines are defined.
+    expect(read('src/lib/golf/sg-benchmarks.ts')).toMatch(/Strokes-gained baselines are PGA Tour \(men\) and LPGA \(women\) ONLY\. NCAA\s+\/\/ division \(D1\/D2\/D3\) and scratch scales were removed 2026-06-22/);
+  });
+
+  it('a shot\'s strokes gained is expected before, less expected after, less the stroke; the parts add up to the total', () => {
+    says(APP_DEFINITIONS.sgFormula);
+    says(APP_DEFINITIONS.sgTotal);
+    says('the four parts add up to the round\'s total');
+    const body = fnBody('recalculate_round_strokes_gained');
+    expect(body).toMatch(/sg_expected_strokes\(lie_before_norm,dist_before_yards,v_scale\) END AS exp_before/);
+    expect(body).toMatch(/category='approach' AND has_after THEN exp_before-exp_after-1 END/);
+    // A holed shot leaves nothing expected, so a hole's shots sum to (expected from the tee) less (strokes taken): the total is against the same holes from the same tees.
+    expect(body).toMatch(/WHEN is_holed THEN 0 WHEN dist_after_yards>0 THEN sg_expected_strokes\(lie_after_norm,dist_after_yards,v_scale\) ELSE 0 END AS exp_after/);
+    expect(body).toMatch(/WHEN shot_type='putting' THEN 'putting'\s+WHEN shot_type='tee' THEN 'off_tee'\s+WHEN shot_type='around_green' THEN 'around_green'\s+ELSE 'approach'/);
+    expect(body).toMatch(/v_sg_total := ROUND\(\(COALESCE\(v_sg_off_tee,0\)\+COALESCE\(v_sg_approach,0\)\+COALESCE\(v_sg_around,0\)\+COALESCE\(v_sg_putting,0\)\)/);
+  });
+
+  it('with no shots logged it is an estimate from the scorecard, which is not measured against the Tour and is not marked', () => {
+    says('With shots logged, a round\'s strokes gained is measured shot by shot as above.');
+    says(APP_DEFINITIONS.sgEstimate);
+    says(APP_DEFINITIONS.sgEstimateUnmarked);
+    const body = fnBody('recalculate_round_strokes_gained');
+    expect(body).toMatch(/IF v_shot_count > 0 THEN/);
+    expect(body).toMatch(/ELSE\s+SELECT sg_off_tee, sg_approach, sg_around_green, sg_putting\s+INTO[^;]+FROM sg_estimate_from_holes\(p_round_id\);/);
+    // The estimate reads the hole card only (fairway, green, putts, up-and-down, sand save) and never the expected-strokes curve or the team's scale.
+    const estimate = fnBody('sg_estimate_from_holes');
+    expect(estimate).toMatch(/FROM golf_holes h/);
+    for (const column of ['h.putts', 'h.fairway_hit', 'h.gir', 'h.up_and_down', 'h.sand_save']) expect(estimate).toContain(column);
+    expect(estimate).not.toMatch(/sg_expected_strokes|sg_scale_for_player|golf_shots/);
+    // No column on a round or its stat line says whether its strokes gained was measured or estimated.
+    const schema = read('src/lib/types/database.ts');
+    const rowOf = (table: string) => schema.slice(schema.indexOf(`      ${table}: {\n        Row: {`), schema.indexOf('        Insert: {', schema.indexOf(`      ${table}: {\n        Row: {`)));
+    for (const table of ['golf_rounds', 'golf_round_stats_cache']) expect(rowOf(table)).not.toMatch(/estimat|sg_source|sg_method|sg_basis/i);
+  });
+
+  it('a tee shot on a par 3 is logged as an approach shot', () => {
+    says('- Approach: shots into the green, including the tee shot on a par 3.');
+    expect(read('src/hooks/golf/use-shot-state-machine.ts')).toMatch(/currentLie === 'tee'\) return currentHole\?\.par === 3 \? 'approach' : 'tee'/);
+  });
+
+  it('a strokes gained figure needs three rounds that have one', () => {
+    says(APP_DEFINITIONS.sgFloor);
+    expect(read('src/clubhouse/data/season.ts')).toMatch(/export const MIN_SG_ROUNDS = 3;/);
+    expect(read('src/clubhouse/data/stats-weight.ts')).toMatch(/effective >= MIN_SG_ROUNDS \? weightedMean\(list, \(r\) => r\.strokes_gained_total\) : null/);
+  });
+
+  it('a counted round is finished, 9 or 18 holes, fully scored, plausible and not a test round', () => {
+    says(APP_DEFINITIONS.countedRound);
+    expect([...COUNTABLE_HOLE_COUNTS]).toEqual([9, 18]);
+    expect(isCountableRound(round)).toBe(true);
+    expect(roundExclusionReason({ ...round, status: 'in_progress' })).toBe('not_completed');
+    expect(roundExclusionReason({ ...round, is_test: true })).toBe('test_round');
+    expect(roundExclusionReason({ ...round, holes_played: 12 })).toBe('unsupported_length');
+    expect(roundExclusionReason({ ...round, back_nine: null })).toBe('holes_missing');
+    expect(roundExclusionReason({ ...round, total_score: 37, front_nine: 18, back_nine: 19, total_putts: 18 })).toBe('implausible_score');
+  });
+
+  it('a round posted as a total only counts in scores and in nothing hole-level', () => {
+    says(APP_DEFINITIONS.totalOnly);
+    const totalOnly = { ...round, front_nine: null, back_nine: null, total_putts: null };
+    expect(isCountableRound(totalOnly)).toBe(false);
+    expect(isTotalOnlyCountable(totalOnly)).toBe(true);
+    expect(isScoreCountable(totalOnly)).toBe(true);
+    // Only an 18-hole total: a nine-hole total has no holes to tell it from half a round.
+    expect(isTotalOnlyCountable({ ...totalOnly, holes_played: 9 })).toBe(false);
+    expect(read('src/clubhouse/data/round-scope.ts')).toMatch(/never in a HOLE-level one \(birdies, pars, doubles, greens, fairways, putts, scrambling, strokes gained/);
+  });
+
+  it('Stats and Roster figures leave practice out and read 18-hole rounds', () => {
+    says(APP_DEFINITIONS.practiceOut);
+    expect(read('src/clubhouse/data/season.ts')).toMatch(/return r\.round_type == null \|\| roundTypeFromDb\(r\.round_type\) !== 'practice';/);
+    expect(read('src/clubhouse/data/stats-common.ts')).toMatch(/return f\.types\.length === 0 && f\.pick\?\.mode !== 'only' && f\.span !== 'all';/);
+    expect(read('src/clubhouse/data/stats-filter.ts')).toMatch(/return \{ window, last, types: \[\], holes: '18',/);
+    expect(read('src/clubhouse/data/figure-window.ts')).toMatch(/countsForScoring\(r\) && isScoreCountable\(/);
+  });
+
+  it('the round kinds are practice, qualifier and tournament', () => {
+    says(APP_DEFINITIONS.roundKinds);
+    for (const kind of ['practice', 'qualifier', 'tournament']) expect(roundTypeFromDb(kind)).toBe(kind);
+    expect(roundTypeFromDb('qualifying')).toBe('qualifier');
+  });
+
+  it('the windows are the last 5, 10 and 20 counted rounds, whenever played, and this season from 1 August on the team\'s calendar', () => {
+    says(APP_DEFINITIONS.windows);
+    says(APP_DEFINITIONS.season);
+    expect([...STATS_WINDOWS]).toEqual(['last5', 'last10', 'last20', 'season']);
+    const filter = read('src/clubhouse/data/stats-filter.ts');
+    expect(filter).toMatch(/export const LAST_CHOICES = \[5, 10, 20\] as const;/);
+    // Last N is not bounded by the season; the season and qualifier windows are.
+    expect(filter).toMatch(/if \(isAllTime\(f\) \|\| f\.window === 'last10'\) return true;\s+if \(row\.date < seasonStart\) return false;/);
+    expect(filter).toMatch(/return cutsToLastN\(f\) \? list\.slice\(0, f\.last\) : list;/);
+    const season = read('src/clubhouse/data/season.ts');
+    expect(season).toMatch(/return `\$\{month >= 8 \? year : year - 1\}-08-01`;/);
+    expect(season).toMatch(/new Intl\.DateTimeFormat\('en-US', \{ timeZone: tz, year: 'numeric', month: 'numeric' \}\)/);
+  });
+
+  it('team figures pool every player\'s own window; team strokes gained counts only players with enough rounds', () => {
+    says('For the team, a last-10 window is every player\'s own last 10, pooled.');
+    says('Team averages pool the rounds, so a player with more rounds in the window weighs more.');
+    says('Team strokes gained counts only players with enough rounds that have it.');
+    const team = read('src/clubhouse/data/stats-team.ts');
+    expect(team).toMatch(/const cur = roundsInFilter\(list, f, start\);\s+windowRounds\.push\(\.\.\.cur\);/);
+    expect(team).toMatch(/const scoring = weightedMean\(windowRounds, \(r\) => r\.total_score\);/);
+    expect(team).toMatch(/effectiveCount\(rs\.filter\(\(r\) => r\.player_id === p\.id\), sgOf\) >= MIN_SG_ROUNDS/);
+    expect(read('src/clubhouse/data/stats-common.ts')).toMatch(/return t > 0 \? \(m \/ t\) \* 100 : null;/);
+  });
+
+  it('a qualifier ranks by to par, then strokes, then more rounds played, with a short card below every complete one', () => {
+    says(APP_DEFINITIONS.qualifierOrder);
+    says(APP_DEFINITIONS.qualifierShort);
+    const key = (toPar: number, total: number, played: number, name = 'A') => ({ toPar, total, played, name });
+    expect(compareStandings(key(-1, 143, 2), key(0, 144, 2))).toBeLessThan(0);
+    expect(compareStandings(key(0, 143, 2), key(0, 144, 2))).toBeLessThan(0);
+    expect(compareStandings(key(0, 144, 3), key(0, 144, 2))).toBeLessThan(0);
+    const cards = [key(-3, 69, 1, 'short'), key(2, 146, 2, 'full')];
+    const order = boardOrder(cards);
+    expect([...cards].sort(order.compare).map((c) => c.name)).toEqual(['full', 'short']);
+    const model = read('src/clubhouse/screens/qualifiers/model.ts');
+    expect(model).toMatch(/const topScore = Math\.max\(0, squad - Math\.max\(0, input\.picks\)\);/);
+    expect(model).toMatch(/const confirmed = input\.selectionState === 'selected' && input\.selections/);
+  });
+
+  it('the pressure gap is competitive rounds less practice rounds, to par, so positive is worse under pressure', () => {
+    says(APP_DEFINITIONS.pressureGap);
+    const figures = read('src/clubhouse/data/stats-figures.ts');
+    expect(figures).toMatch(/\(roundTypeFromDb\(r\.round_type\) === 'practice' \? prac : press\)\.push\(r\);/);
+    expect(figures).toMatch(/\(weightedMean\(press, toPar\) as number\) - \(weightedMean\(prac, toPar\) as number\)/);
+  });
+
+  it('the Roster form words are the four the block lists', () => {
+    says(APP_DEFINITIONS.form);
+    expect(read('src/clubhouse/data/season.ts')).toMatch(/export type ChForm = 'improving' \| 'steady' \| 'slipping' \| 'early';/);
+  });
+
+  it('the Tour beside a figure is the team\'s own tour, and no college division average has passed the source check', () => {
+    says('Read it with get_reference (topic standards), which uses the right tour for this team.');
+    says('No published average for a college division is in the app');
+    expect(read('src/clubhouse/data/stats-common.ts')).toMatch(/return gender === 'womens' \|\| gender === 'women' \|\| gender === 'female' \? 'lpga' : 'pga';/);
+    expect(read('src/lib/coachhelm/v3/chat/benchmark-reads.ts')).toMatch(/export const SOURCED_LEVEL_FIGURES: Record<string, Partial<Record<TableLevel, LevelFigureSource>>> = \{\};/);
+  });
+
+  it('toughest holes are grouped by hole number, whatever the course', () => {
+    says('Toughest holes here are grouped by hole number across whatever courses were played');
+    expect(read('src/clubhouse/data/stats-figures.ts')).toMatch(/grouped by hole number as production does \(each play keeps its own\s+\* par: a hole number is a different hole at each course\)/);
+  });
+});
+
+describe('the direction of every catalogued metric', () => {
+  // The sentence of the golf block that gives each catalogue metric its direction. A metric added to the catalogue without a line here fails.
+  const SAID: Record<string, RegExp> = {
+    scoring_average: /Score is strokes; to par is strokes against the course's par\. For both, lower is better/,
+    scoring_average_vs_par: /For both, lower is better, and a negative to par is under par/,
+    sg_total: /What is left is what that shot gained or lost against a Tour player\. Positive is better\./,
+    sg_putting: /Positive is better\./,
+    sg_approach: /Positive is better\./,
+    sg_tee: /Positive is better\./,
+    sg_around_green: /Positive is better\./,
+    gir_pct: /Greens in regulation: on the green with two putts left for par\. Higher is better\./,
+    driving_accuracy_pct: /Fairways hit: tee shots on par 4s and 5s that finish in the fairway\. Higher is better/,
+    scrambling_pct: /Scrambling: par or better after missing the green\. Higher is better\./,
+    sand_save_pct: /Sand saves: the same from a greenside bunker\./,
+    putts_per_round: /Putts per round: lower is better/,
+    three_putt_pct: /Three-putts: fewer is better\./,
+    penalties_per_round: /Penalty strokes: fewer is better\./,
+  };
+  // In the catalogue but on no Stats read, so the block does not teach it; listed so a new metric cannot join it by accident.
+  const NOT_TAUGHT = ['one_putt_pct'];
+  const LOWER = /lower is better|fewer is better/i;
+
+  it('is the direction the golf block teaches', () => {
+    for (const spec of ALL_METRIC_SPECS.filter((m) => !NOT_TAUGHT.includes(m.id))) {
+      const sentence = SAID[spec.id];
+      expect(sentence, `${spec.id} has a sentence in the golf block`).toBeTruthy();
+      const found = block.match(sentence!);
+      expect(found, `${spec.id}: ${sentence}`).toBeTruthy();
+      // "The same" (sand saves) inherits scrambling's direction.
+      const lower = LOWER.test(found![0]);
+      expect(lower ? 'lower_better' : 'higher_better', spec.id).toBe(spec.direction);
+    }
+    expect([...Object.keys(SAID), ...NOT_TAUGHT].sort()).toEqual(ALL_METRIC_SPECS.map((s) => s.id).sort());
+  });
+});

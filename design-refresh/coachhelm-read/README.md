@@ -1,5 +1,7 @@
 # Start here: CoachHelm read build package (BUILD_BRIEF CR0 to CR6)
 
+> **7 Nov 2026: the design page was rebuilt.** `redesign/coachhelm-read.html` is now the owner's 7 Nov page (v6, same link, artifact SUL5hLtah5MmBd2dkU8mTK), drawn on the app's own components and CSS. Where it differs from `05-SCREENS.md`, `06-SCREEN-SPECS.md`, `07-MOTION.md` or `08-ACCEPTANCE.md` (and from 04), the 7 Nov page wins: its studio, component map, motion table with the "Never" list, and data tables are the contract. The 05 to 08 files are kept as written for their reasoning. Build notes: `docs/clubhouse/coachhelm-read-v2/`.
+
 Nick approved the CoachHelm read design on 31 Oct ("Beautiful, polish it and let's get it ready for implementation"). This folder is everything a Claude Code agent needs to build it to match. Prep only: no deploy, no migration, no flag flip.
 
 Design page: https://claude.ai/artifact/SUL5hLtah5MmBd2dkU8mTK (version 5, 3 Nov: every subscreen, sheet, menu and state is live and linkable). Local copy: `redesign/coachhelm-read.html`.

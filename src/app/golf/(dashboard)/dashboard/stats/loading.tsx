@@ -1,6 +1,5 @@
 import { ClubhouseSwitch } from '@/clubhouse/shell/ClubhouseSwitch';
 import { StatsRouteSkeleton } from '@/clubhouse/screens/stats/StatsRouteSkeleton';
-import { statsRedesignEnabled } from '@/clubhouse/gate';
 import { Skeleton } from '@/components/fairway';
 import { fairwayScope } from '@/lib/redesign/flag';
 import {
@@ -29,7 +28,7 @@ import {
 export default function Loading() {
   return (
     <ClubhouseSwitch
-      clubhouse={<StatsRouteSkeleton shs={statsRedesignEnabled()} />}
+      clubhouse={<StatsRouteSkeleton />}
       fallback={<div className={fairwayScope('min-h-full bg-canvas')}>
       <div className="w-full py-2">
         <div

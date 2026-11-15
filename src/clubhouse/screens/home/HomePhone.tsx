@@ -1,6 +1,6 @@
 'use client';
 
-import { RotateCw, Sparkles, ArrowRight, ChartColumn, BrainCircuit, CalendarDays, CalendarPlus, ChevronRight, MessageSquare, Plus, Sun, TriangleAlert } from 'lucide-react';
+import { RotateCw, Sparkles, ArrowRight, ChartColumn, CalendarDays, CalendarPlus, ChevronRight, MessageSquare, Plus, Sun, TriangleAlert } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useState, type ReactNode } from 'react';
 import type { ChCoachHome, ChHomeEvent, ChLatestRound, ChTeamForm } from '../../data/home';
@@ -13,8 +13,7 @@ import { EmptyState } from '../../ui/States';
 import { FormLine, FormRange } from '../../ui/FormLine';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
-import { PageRefreshNotice, RefreshNotice } from '../../ui/RefreshNotice';
-import { Nine } from '../../ui/Nine';
+import { RefreshNotice } from '../../ui/RefreshNotice';
 import { coachHelmPlayerHref, PlayerPeek, type ChPlayerPeek } from '../../ui/PlayerPeek';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { WeekStrip as DayStrip } from '../../ui/WeekStrip';
@@ -41,12 +40,14 @@ import { leaderPeek } from './Leaderboard';
 import { MineBadge } from './CoachAsks';
 import { competitionExtra, DayCard, dayPhase, LaterToday, SinceYouLooked, sunsetExtra } from './DayCard';
 import { useLightPlace } from '../../shell/light';
-import { MarkBadge, markSub, useRowMark } from '../calendar/change-note';
 
 export { CALENDAR, eventHref, whenLabel } from './event-links';
+export { UpNext } from './UpNext';
 import { CALENDAR, eventHref, whenLabel } from './event-links';
 import { plural } from '../../lib/plural';
 import { ClassHomeLine } from './ClassHomeLine';
+import { HomeSpanSwitch } from './HomeSpanSwitch';
+import { NextBeyond } from './NextBeyond';
 const newEventHref = (type?: ChHomeEvent['type']) => `${CALENDAR}?new=1${type ? `&type=${type}` : ''}`;
 
 /**
@@ -57,13 +58,14 @@ const newEventHref = (type?: ChHomeEvent['type']) => `${CALENDAR}?new=1${type ? 
  * phone's extra figures come from `data.phone`. `now` freezes the clock for
  * the preview and the tests.
  */
-export function HomePhone({ data, now: frozen, live, crh = false }: { crh?: boolean; data: ChCoachHome; now?: string; /** Who is on the course now (P-6); omitted, the card is not drawn. */ live?: LiveSnapshot }) {
+export function HomePhone({ data, now: frozen, live }: { data: ChCoachHome; now?: string; /** Who is on the course now (P-6); omitted, the card is not drawn. */ live?: LiveSnapshot }) {
   usePhoneHero(true);
   const ticking = useNow();
   const now = useMemo(() => (frozen ? new Date(frozen) : ticking), [frozen, ticking]);
   const [open, setOpen] = useState<ChLatestRound | null>(null);
   const { phone } = data;
-  const nothingAhead = !data.week.error && !phone.next && data.week.days.every((d) => d.eventCount === 0);
+  // Nothing on this week: no event, and no day on the road (F-0001).
+  const nothingAhead = !data.week.error && !phone.next && data.week.days.every((d) => d.eventCount === 0 && !d.trip);
   // Two or more failed reads are told once under the greeting, with one Try again; each part keeps its title (CH-1209).
   const failed = coachFailedParts(data, true);
   const covered = failed.length > 1;
@@ -73,26 +75,26 @@ export function HomePhone({ data, now: frozen, live, crh = false }: { crh?: bool
   const rounds = data.latestRounds.error ? [] : data.latestRounds.rounds;
 
   return (
-    <main className="ch-hm" aria-label="Home" data-ch-crh={crh ? 'on' : undefined}>
+    <main className="ch-hm" aria-label="Home" data-ch-crh="on">
       <header className="ch-hm-hero">
         <span className="ch-hm-hero__date">{data.todayLabel}</span>
         <h1>{data.greeting}</h1>
-        {(data.subline || (crh && failed.length > 0)) && (
+        {(data.subline || (failed.length > 0)) && (
           <p className="ch-hm-hero__brief">
-            {crh && <Icon icon={Sparkles} size={14} />}
-            {crh && failed.length > 0 ? CRH_PART_FAILED : data.subline}
+            <Icon icon={Sparkles} size={14} />
+            {failed.length > 0 ? CRH_PART_FAILED : data.subline}
           </p>
         )}
         <CoachQueue queue={data.queue} covered={covered} phone />
-        {!crh && <PageRefreshNotice parts={failed} />}
+
         <SectionBoundary surface="home.upNext" label="Up next" code="CH-2213">
-          {data.week.error && crh ? null : data.week.error ? (
+          {data.week.error ? null : data.week.error ? (
             // On the sheet, not in the green card: inside it the notice took the card's ivory ink and its words vanished.
             <FailedSec id="ch-hm-upnext-failed" title="Up next">
               <RefreshNotice code="CH-2201" title="This week’s schedule didn’t load" body="Your events are safe. Try again." covered={covered} />
             </FailedSec>
           ) : (
-            <Day crh={crh} phone={phone} rounds={rounds} now={now} today={today} onOpenRound={setOpen} years={crh ? data.yearById : undefined} />
+            <Day phone={phone} rounds={rounds} now={now} today={today} onOpenRound={setOpen} years={data.yearById} />
           )}
         </SectionBoundary>
       </header>
@@ -106,15 +108,15 @@ export function HomePhone({ data, now: frozen, live, crh = false }: { crh?: bool
           </SectionBoundary>
         )}
         <SectionBoundary surface="home.today" label="Today" code="CH-2214">
-          <Later crh={crh} data={data} rounds={rounds} now={now} today={today} quiet={nothingAhead} onOpenRound={setOpen} />
+          <Later data={data} rounds={rounds} now={now} today={today} quiet={nothingAhead} onOpenRound={setOpen} />
         </SectionBoundary>
 
         {phone.form ? (
           <SectionBoundary surface="home.form" label="Team scoring" code="CH-2212">
-            <Form form={phone.form} crh={crh} />
+            <Form form={phone.form} />
           </SectionBoundary>
-        ) : data.latestRounds.error && crh ? (
-          <CrhFailedCard id="ch-hm-form-failed" title="Team scoring" href={rebuiltHref('/golf/dashboard/stats') ?? '#'} link="Team stats" code="CH-2211" what="Scoring didn’t load" body="Your rounds are safe. Try again in a moment." />
+        ) : data.latestRounds.error ? (
+          <CrhFailedCard id="ch-hm-form-failed" title="Team scoring" href={rebuiltHref('/golf/dashboard/stats')} link="Team stats" code="CH-2211" what="Scoring didn’t load" body="Your rounds are safe. Try again in a moment." />
         ) : data.latestRounds.error ? (
           <FailedSec id="ch-hm-form-failed" title="Team scoring">
             <RefreshNotice code="CH-2211" title="Team scoring didn’t load" body="Posted rounds are safe. Try again." covered={covered} />
@@ -123,45 +125,46 @@ export function HomePhone({ data, now: frozen, live, crh = false }: { crh?: bool
 
         {phone.form && data.legs && (
           <SectionBoundary surface="home.legs" label="The team’s game" code="CH-2221">
-            <TeamLegsPhone legs={data.legs} covered={covered} crh={crh} />
+            <TeamLegsPhone legs={data.legs} covered={covered} />
           </SectionBoundary>
         )}
 
         {!data.week.error && !nothingAhead && (
           <SectionBoundary surface="home.week" label="This week" code="CH-2205">
-            <WeekStrip days={data.week.days} note={phone.weekNote} />
+            <WeekStrip calendar days={data.week.days} note={phone.weekNote} />
           </SectionBoundary>
         )}
 
-        {!(crh && data.latestRounds.error) && <SectionBoundary surface="home.latestRound" label="Latest rounds" code="CH-2206">
-          <Rounds years={crh ? data.yearById : undefined} data={data.latestRounds} trends={data.leaderboard.error ? null : data.leaderboard.rows} onOpen={setOpen} covered={covered} />
+        {!data.latestRounds.error && <SectionBoundary surface="home.latestRound" label="Latest rounds" code="CH-2206">
+          <Rounds years={data.yearById} data={data.latestRounds} trends={data.leaderboard.error ? null : data.leaderboard.rows} onOpen={setOpen} covered={covered} />
         </SectionBoundary>}
       </div>
 
-      <RoundSheet crh={crh} round={open} holesError={data.latestRounds.holesError} onClose={() => setOpen(null)} />
+      <RoundSheet round={open} holesError={data.latestRounds.holesError} onClose={() => setOpen(null)} />
     </main>
   );
 }
 
 type DayProps = { rounds: ChLatestRound[]; now: Date | null; today: string | null; onOpenRound: (r: ChLatestRound) => void };
 
-/** Up next's place: the day card, or how to add the first event. */
-function Day({ phone, rounds, now, today, onOpenRound, years, crh = false }: DayProps & { crh?: boolean; phone: ChCoachHome['phone']; years?: Record<string, ChYearKey> }) {
+/** Up next's place: the day card; with nothing left this week, the next thing after it (F-0006); else how to add the first event. */
+function Day({ phone, rounds, now, today, onOpenRound, years }: DayProps & { phone: ChCoachHome['phone']; years?: Record<string, ChYearKey> }) {
   const phase = dayPhase(phone.next, phone.today, rounds, now, today);
-  return phase ? <DayCard crh={crh} years={years} phase={phase} now={now} today={today} onOpenRound={onOpenRound} /> : <NoEvents />;
+  if (phase) return <DayCard years={years} phase={phase} now={now} today={today} onOpenRound={onOpenRound} />;
+  return phone.after ? <NextBeyond e={phone.after} /> : <NoEvents />;
 }
 
 /**
  * Today's place: an empty day keeps Today's own empty state (with Plan); otherwise the rail of what's left after the
  * card, and what changed since the coach last looked.
  */
-function Later({ crh = false, data, rounds, now, today, quiet, onOpenRound }: DayProps & { crh?: boolean; data: ChCoachHome; quiet: boolean }) {
+function Later({ data, rounds, now, today, quiet, onOpenRound }: DayProps & { data: ChCoachHome; quiet: boolean }) {
   const { phone } = data;
   const place = useLightPlace();
   const clock = useChClock();
   // The lane: one Today card with every event of the day, the next one marked (06 §11.2); "Later today" is the flag-off page's rail.
-  if (crh && data.week.error) return <CrhFailedCard id="ch-hm-today-failed" title="Today" href={CALENDAR} link="Calendar" code="CH-2201" what="Today didn’t load" body="Your events are safe. Try again." />;
-  if (crh && phone.today.length) {
+  if (data.week.error) return <CrhFailedCard id="ch-hm-today-failed" title="Today" href={CALENDAR} link="Calendar" code="CH-2201" what="Today didn’t load" body="Your events are safe. Try again." />;
+  if (phone.today.length) {
     return (
       <>
         <Today card list={phone.today} now={now} failed={false} quiet={quiet} />
@@ -170,7 +173,7 @@ function Later({ crh = false, data, rounds, now, today, quiet, onOpenRound }: Da
     );
   }
   if (!data.week.error && !phone.today.length && quiet) return null;
-  if (data.week.error || !phone.today.length) return <Today card={crh} list={phone.today} now={now} failed={data.week.error} quiet={quiet} />;
+  if (data.week.error || !phone.today.length) return <Today card={true} list={phone.today} now={now} failed={data.week.error} quiet={quiet} />;
   const phase = dayPhase(phone.next, phone.today, rounds, now, today);
   const card = phase?.kind === 'event' ? phase.e : null;
   const later = data.week.agenda.find((a) => a.when === 'later' && a.id !== card?.id);
@@ -179,57 +182,6 @@ function Later({ crh = false, data, rounds, now, today, quiet, onOpenRound }: Da
       <LaterToday todays={phone.today} cardId={card?.id ?? null} now={now} extras={[...sunsetExtra(today, now, place, clock), ...competitionExtra(later, clock)]} />
       {!data.latestRounds.error && <SinceYouLooked rounds={rounds} event={card} changes={data.changes ?? []} onOpenRound={onOpenRound} />}
     </>
-  );
-}
-
-
-/** `children`: what closes the card (the player's countdown). `kicker`: the player's "Up next · Qualifier" (the coach's card names the type alone). */
-export function UpNext({ e, now, children, kicker }: { e: ChHomeEvent; now: Date | null; children?: ReactNode; kicker?: string }) {
-  const t = useChClockText();
-  const clock = useChClock();
-  // P-14: a changed event wears a badge in the kicker and its old value struck under the range, until Got it.
-  const mark = useRowMark()(e);
-  const was = mark && !mark.change.partial ? markSub(e.location, mark.change, clock, false) : null;
-  const when = whenLabel(e, now);
-  const people = e.invitees ?? [];
-  return (
-    <Link href={eventHref(e)} className="ch-hm-next" onClick={() => chTrail('home open next event')}>
-      <span className="ch-hm-next__k">
-        <span className="ch-hm-next__type">
-          <Icon icon={TYPE_ICON[e.type]} size={13} />
-          {kicker ? `${kicker} · ${TYPE_LABEL[e.type]}` : TYPE_LABEL[e.type]}
-          {mark && <MarkBadge change={mark.change} />}
-        </span>
-        <span className={'ch-hm-next__when ch-num' + (when.soon ? ' is-soon' : '')}>{t(when.text)}</span>
-      </span>
-      <h2>{e.title}</h2>
-      <p className="ch-num">{[t(e.rangeLabel), e.location].filter(Boolean).join(' · ')}</p>
-      {was && <p className="ch-hm-next__was ch-num">{was}</p>}
-      {e.invitees && people.length > 0 && (
-        <span className="ch-hm-next__f">
-          <span className="ch-hm-stack" aria-hidden="true">
-            {people.slice(0, 5).map((n) => (
-              <Avatar key={n} name={n} size="xs" />
-            ))}
-          </span>
-          <span className="ch-hm-next__rsvp ch-num">
-            {e.going != null ? (
-              <>
-                <b>{e.going}</b> of {people.length} going
-              </>
-            ) : (
-              // An event that doesn't ask for replies (or whose replies didn't load) says who is on it, as the desk card does.
-              `${people.length} invited`
-            )}
-          </span>
-          <Icon icon={ChevronRight} size={17} />
-        </span>
-      )}
-      {/* A player's own reply (their Home only; a coach's card never carries `mine`). */}
-      <MineBadge mine={e.mine} />
-      {children}
-      <LinkPending />
-    </Link>
   );
 }
 
@@ -300,7 +252,7 @@ function NoEvents() {
  * reads "Now"; with none under way, the next one reads "Next". A row that has passed keeps its ink: only its time
  * steps back, so it never looks disabled.
  */
-export function Today({ list, now, failed, quiet, canPlan = true, inline = false, card = false }: { /** The coach's card, with the lane's flag: a Clash chip in words. Player Home's calls never pass it. */ card?: boolean; list: ChHomeEvent[]; now: Date | null; failed: boolean; quiet: boolean; canPlan?: boolean; inline?: boolean }) {
+export function Today({ list, now, failed, quiet, canPlan = true, inline = false, card = false }: { /** The coach's card, with the lane's flag: an Overlap chip in words. Player Home's calls never pass it. */ card?: boolean; list: ChHomeEvent[]; now: Date | null; failed: boolean; quiet: boolean; canPlan?: boolean; inline?: boolean }) {
   const t12 = useChClockText();
   if (failed) return null;
   const t = now?.getTime();
@@ -340,7 +292,7 @@ export function Today({ list, now, failed, quiet, canPlan = true, inline = false
               {e.conflict ? (
                 <span className="ch-hm-tl__w" title="Overlaps another event">
                   <Icon icon={TriangleAlert} size={13} />
-                  {card ? <span>Clash</span> : <span className="ch-sr-only">Overlaps another event</span>}
+                  <span>Overlap</span>
                 </span>
               ) : mark ? (
                 <span className="ch-hm-now">{live ? 'Now' : 'Next'}</span>
@@ -379,22 +331,27 @@ export function Today({ list, now, failed, quiet, canPlan = true, inline = false
 const SHORT_DAY = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric' });
 const shortDay = (ymd: string) => SHORT_DAY.format(new Date(`${ymd}T12:00:00Z`));
 
+/** "2 of 3 rounds" when a figure rests on fewer rounds than the average; blank when it rests on all of them, or on none (the figure is then —). */
+function partOf(n: number, of: number): string {
+  return n > 0 && n < of ? `${n} of ${of} rounds` : ' ';
+}
+
+/** Under a figure's dash on the card: why there is none, so totals-only rounds read as what they are and not as a gap. */
+export function figureMissing(rounds: number, needs?: string): string {
+  return rounds > 0 ? (needs ?? 'Too few rounds') : 'Totals only so far';
+}
+
 /** What the average, greens and putts rest on: "3 rounds · Aug 2", "24 rounds · Sep 1 – Sep 28". */
 export function formBasis(b: ChTeamForm['basis']): string {
   const span = b.from === b.to ? shortDay(b.from) : `${shortDay(b.from)} – ${shortDay(b.to)}`;
   return `${plural(b.rounds, 'round')} · ${span}`;
 }
 
-/** "2 of 3 rounds" when a figure rests on fewer rounds than the average; blank when it rests on all of them, or on none (the figure is then —). */
-export function partOf(n: number, of: number): string {
-  return n > 0 && n < of ? `${n} of ${of} rounds` : ' ';
-}
-
 /**
  * The team's scoring form: the average, its change, the line, and three figures. Gains green, losses amber (D-42).
  * The average, greens and putts share one basis, which the strip states (`formBasis`); the week's count is its own.
  */
-export function Form({ form, crh = false }: { form: ChTeamForm; crh?: boolean }) {
+export function Form({ form }: { form: ChTeamForm; }) {
   const W = 320;
   const H = 64;
   const pts = form.line;
@@ -406,35 +363,79 @@ export function Form({ form, crh = false }: { form: ChTeamForm; crh?: boolean })
   // Lower scores and fewer putts are better; more greens are better. A change is green or amber only when it clears its standard
   // error (stats visuals Q4); otherwise plain, and the average's says "No clear change" (F-54's zero is inside that).
   const avgTone = deltaTone(form.delta, form.deltaSe, true);
+  // W3 (owner's preview, 11 Nov 2026): "a green area with a V in it", no dates, nothing marked. The line names its first and last
+  // days and marks its best and toughest (the lowest and highest team average; a tie goes to the newer day), saying when one rests
+  // on a single round. Only with the days known (an older fixture has none) and three points or more.
+  const days = form.lineDays?.length === pts.length ? form.lineDays : null;
+  const counts = form.lineCounts?.length === pts.length ? form.lineCounts : null;
+  let best = 0;
+  let worst = 0;
+  pts.forEach((v, i) => {
+    if (v <= pts[best]!) best = i;
+    if (v >= pts[worst]!) worst = i;
+  });
+  const marked = days != null && pts.length >= 3 && pts[best] !== pts[worst];
+  const oneRound = (i: number) => (counts?.[i] === 1 ? ' · 1 round' : '');
   return (
     <section className="ch-hm-form" aria-labelledby="ch-hm-form">
-      {crh && (
-        <div className="ch-hm-form__head">
+      <div className="ch-hm-form__head">
           <h2>Team scoring</h2>
-          <Link href={rebuiltHref('/golf/dashboard/stats') ?? '#'} className="ch-hm-link">
-            Team stats
-          </Link>
+          {rebuiltHref('/golf/dashboard/stats') && (
+            <Link href={rebuiltHref('/golf/dashboard/stats') as string} className="ch-hm-link">
+              Team stats
+            </Link>
+          )}
         </div>
-      )}
+      {/* The window picker has a row of its own: between the title and the link it wrapped both to two lines on a phone. */}
+      <div className="ch-hm-form__span">
+        <HomeSpanSwitch span={form.span ?? 'season'} />
+      </div>
       <div className="ch-hm-form__top">
         <span>
           {/* The lane: the label is real text, not the old rule's ::after (06 §11.2). */}
-          <em id="ch-hm-form">{crh ? 'Average · last 10 rounds' : 'Team scoring average'}</em>
+          <em id="ch-hm-form">{form.span === 'all' ? 'Average · every round, all time' : 'Average · each player’s last 10'}</em>
           <b className="ch-num">{withPointSpan(formatFixed(form.avg))}</b>
         </span>
-        <span className={'ch-hm-delta ch-num ' + avgTone}>
+        {/* A change the card calls noise is not its loudest figure (W3): plain weight, quiet ink, the words beside it. */}
+        <span className={'ch-hm-delta ch-num ' + (avgTone || (form.delta != null ? 'is-flat' : ''))}>
           {form.delta != null && formatSigned(form.delta)}
           {form.delta != null && <em>{deltaWords(form.delta, avgTone, 'vs previous 10')}</em>}
           <em className="ch-hm-form__basis">{formBasis(form.basis)}</em>
         </span>
       </div>
       {pts.length > 1 && (
-        <svg viewBox={`0 0 ${W} ${H}`} className="ch-hm-form__svg" role="img" aria-label={`Team scoring, the team’s average on each of its last ${pts.length} round days, from ${formatFixed(pts[0]!)} to ${formatFixed(pts[pts.length - 1]!)}`}>
+        <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="ch-hm-form__svg" role="img" aria-label={`Team scoring, the team’s average on each of its last ${pts.length} round days, from ${formatFixed(pts[0]!)} to ${formatFixed(pts[pts.length - 1]!)}`}>
           <path d={`${d} L${x(pts.length - 1)},${H} L${x(0)},${H} Z`} className="ch-hm-form__fill" />
-          <path d={d} className="ch-hm-form__line" />
-          <circle cx={x(pts.length - 1)} cy={y(pts[pts.length - 1]!)} r="3.6" className="ch-hm-form__dot" />
+          <path d={d} className="ch-hm-form__line" vectorEffect="non-scaling-stroke" />
+          {/* The last point: a zero-length round stroke, so it stays a circle when the desktop card stretches the plot to its height. */}
+          <path d={`M${Math.round(x(pts.length - 1) * 10) / 10},${Math.round(y(pts[pts.length - 1]!) * 10) / 10} h0.01`} className="ch-hm-form__dot" vectorEffect="non-scaling-stroke" />
+          {marked &&
+            ([best, worst] as const).map((i, k) => (
+              <path key={k ? 'worst' : 'best'} d={`M${Math.round(x(i) * 10) / 10},${Math.round(y(pts[i]!) * 10) / 10} h0.01`} className={'ch-hm-form__mark ' + (k ? 'is-worst' : 'is-best')} vectorEffect="non-scaling-stroke" />
+            ))}
         </svg>
       )}
+      {days && pts.length > 1 && (
+        <div className="ch-hm-form__axis ch-num" aria-hidden="true">
+          <span>{shortDay(days[0]!)}</span>
+          <span>{shortDay(days[days.length - 1]!)}</span>
+        </div>
+      )}
+      {marked && (
+        <p className="ch-hm-form__ends ch-num">
+          <span>
+            <i className="is-best" aria-hidden="true" />
+            Best day {formatFixed(pts[best]!)} · {shortDay(days![best]!)}
+            {oneRound(best)}
+          </span>
+          <span>
+            <i className="is-worst" aria-hidden="true" />
+            Toughest day {formatFixed(pts[worst]!)} · {shortDay(days![worst]!)}
+            {oneRound(worst)}
+          </span>
+        </p>
+      )}
+      {pts.length <= 1 && <p className="ch-hm-form__noline">The line starts with a second round day.</p>}
       <dl className="ch-hm-form__figs">
         <div>
           <dt>Rounds</dt>
@@ -443,13 +444,13 @@ export function Form({ form, crh = false }: { form: ChTeamForm; crh?: boolean })
         </div>
         <div>
           <dt>GIR</dt>
-          <dd className="ch-num">{form.gir.pct != null ? `${Math.round(form.gir.pct)}%` : (form.gir.needs ?? <NoData />)}</dd>
-          <dd className={'ch-num ' + deltaTone(form.gir.delta, form.gir.se, false)}>{form.gir.delta != null ? `${formatSigned(form.gir.delta, 0)} pts` : partOf(form.basis.girRounds, form.basis.rounds)}</dd>
+          <dd className="ch-num">{form.gir.pct != null ? `${Math.round(form.gir.pct)}%` : <NoData />}</dd>
+          <dd className={'ch-num ' + deltaTone(form.gir.delta, form.gir.se, false)}>{form.gir.delta != null ? `${formatSigned(form.gir.delta, 0)} pts` : form.gir.pct == null ? figureMissing(form.basis.girRounds, form.gir.needs) : partOf(form.basis.girRounds, form.basis.rounds)}</dd>
         </div>
         <div>
           <dt>Putts</dt>
           <dd className="ch-num">{form.putts.avg != null ? formatFixed(form.putts.avg) : <NoData />}</dd>
-          <dd className={'ch-num ' + deltaTone(form.putts.delta, form.putts.se, true)}>{form.putts.delta != null ? formatSigned(form.putts.delta) : partOf(form.basis.puttsRounds, form.basis.rounds)}</dd>
+          <dd className={'ch-num ' + deltaTone(form.putts.delta, form.putts.se, true)}>{form.putts.delta != null ? formatSigned(form.putts.delta) : form.putts.avg == null ? figureMissing(form.basis.puttsRounds) : partOf(form.basis.puttsRounds, form.basis.rounds)}</dd>
         </div>
       </dl>
     </section>
@@ -457,12 +458,27 @@ export function Form({ form, crh = false }: { form: ChTeamForm; crh?: boolean })
 }
 
 /** `children`: what follows the week inside its section (the player's Today). A competition day carries its type's mark, the one the calendar draws. */
-export function WeekStrip({ days, note, children }: { days: ChCoachHome['week']['days']; note: ChCoachHome['phone']['weekNote']; children?: ReactNode }) {
+export function WeekStrip({ days, note, children, calendar = false }: { calendar?: boolean; days: ChCoachHome['week']['days']; note: ChCoachHome['phone']['weekNote']; children?: ReactNode }) {
   return (
     <section className="ch-hm-sec" aria-labelledby="ch-hm-week">
       <div className="ch-hm-sec__h">
         <h2 id="ch-hm-week">This week</h2>
+        {calendar && (
+          <Link className="ch-hm-link" href={CALENDAR}>
+            Calendar
+          </Link>
+        )}
       </div>
+      <WeekDays days={days} note={note} />
+      {children}
+    </section>
+  );
+}
+
+/** The week's seven days and the line under them, without a card: the phone's This week card and the desktop's Today card both hold it. */
+export function WeekDays({ days, note }: { days: ChCoachHome['week']['days']; note: ChCoachHome['phone']['weekNote'] }) {
+  return (
+    <>
       <DayStrip
         label="This week"
         className="ch-hm-week"
@@ -472,8 +488,10 @@ export function WeekStrip({ days, note, children }: { days: ChCoachHome['week'][
           num: d.dayOfMonth,
           isToday: d.isToday,
           dots: d.eventCount,
+          // A day on the road wears Team Hub's gold travel dot (F-0001), and says so in words.
+          flag: d.trip ? 'trip' : undefined,
           mark: d.hasCompetition ? TYPE_ICON[d.competitionType ?? 'tournament'] : undefined,
-          label: `${d.weekday} ${d.dayOfMonth}${d.isToday ? ', today' : ''}${d.hasCompetition ? ', competition' : ''}, ${plural(d.eventCount, 'event')}`,
+          label: `${d.weekday} ${d.dayOfMonth}${d.isToday ? ', today' : ''}${d.hasCompetition ? ', competition' : ''}, ${plural(d.eventCount, 'event')}${d.trip ? `, on the road (${d.trip})` : ''}`,
           href: `${CALENDAR}?view=day&date=${d.date}`,
         }))}
       />
@@ -482,8 +500,7 @@ export function WeekStrip({ days, note, children }: { days: ChCoachHome['week'][
           <b>{note.weekday}</b> {note.title}
         </p>
       )}
-      {children}
-    </section>
+    </>
   );
 }
 
@@ -497,15 +514,17 @@ export function WeekStrip({ days, note, children }: { days: ChCoachHome['week'][
  */
 /** The drawn failed state (06 §11.3): the page says so under the greeting, each card keeps its head and offers its own Try again. */
 export const CRH_PART_FAILED = 'Some of today didn’t load. What did is below.';
-export function CrhFailedCard({ id, title, href, link, code, what, body }: { id: string; title: string; href: string; link: string; code: string; what: string; body: string }) {
+export function CrhFailedCard({ id, title, href, link, code, what, body }: { id: string; title: string; href?: string | null; link: string; code: string; what: string; body: string }) {
   const { refresh, refreshing } = useRefresh();
   return (
     <section className="ch-hm-sec ch-dh-failed" aria-labelledby={id}>
       <div className="ch-hm-sec__h">
         <h2 id={id}>{title}</h2>
-        <Link href={href} className="ch-hm-link">
-          {link}
-        </Link>
+        {href && (
+          <Link href={href} className="ch-hm-link">
+            {link}
+          </Link>
+        )}
       </div>
       <CrhStateBlock kind="failed" code={code} title={what} body={body}>
         <Button leftIcon={RotateCw} busy={refreshing} onClick={refresh}>
@@ -563,14 +582,14 @@ function Rounds({ years, data, trends, onOpen, covered }: { years?: Record<strin
                       onOpen(r);
                     }}
                   >
-                    <Avatar name={r.playerName} id={r.playerId} size={38} year={years?.[r.playerId] ?? null} />
+                    <Avatar name={r.playerName} id={r.playerId} size="sm" year={years?.[r.playerId] ?? null} />
                     <span className="ch-hm-rd__b">
                       <b>{r.playerName}</b>
                       <RoundMeta meta={r.meta} />
                     </span>
                     {(trendOf.get(r.playerId)?.length ?? 0) >= 3 && (
                       <span className="ch-hm-rd__spark" aria-hidden="true">
-                        <FormLine data={trendOf.get(r.playerId)!} width={64} height={18} earlyBelow={3} bare label={`${r.playerName}, last ${trendOf.get(r.playerId)!.length} rounds: ${trendOf.get(r.playerId)!.join(', ')}`} />
+                        <FormLine data={trendOf.get(r.playerId)!} width={36} height={18} earlyBelow={3} bare label={`${r.playerName}, last ${trendOf.get(r.playerId)!.length} rounds: ${trendOf.get(r.playerId)!.join(', ')}`} />
                       </span>
                     )}
                     <span className={'ch-hm-score ch-num' + (r.toPar != null && r.toPar < 0 ? ' is-under' : '')}>
@@ -659,7 +678,7 @@ function CrhScorecard({ holes }: { holes: NonNullable<ChLatestRound['holes']> })
   );
 }
 
-function RoundSheet({ crh = false, round, holesError, onClose }: { crh?: boolean; round: ChLatestRound | null; holesError: boolean; onClose: () => void }) {
+function RoundSheet({ round, holesError, onClose }: { round: ChLatestRound | null; holesError: boolean; onClose: () => void }) {
   const message = round ? rebuiltHref(`/golf/dashboard/messages?player=${round.playerId}`) : null;
   const recap = round ? roundHref(round.id, 'coach') : null;
   const stats = round ? rebuiltHref(`/golf/dashboard/stats?player=${round.playerId}`) : null;
@@ -669,7 +688,7 @@ function RoundSheet({ crh = false, round, holesError, onClose }: { crh?: boolean
     <Modal
       open={!!round}
       onClose={onClose}
-      detent={crh ? 0.74 : undefined}
+      detent={0.74}
       title={round?.playerName ?? ''}
       description={round?.meta}
       footer={
@@ -692,22 +711,17 @@ function RoundSheet({ crh = false, round, holesError, onClose }: { crh?: boolean
                 </Button>
               )
             )}
-            {helm && !crh && (
-              <Button leftIcon={BrainCircuit} href={helm}>
-                CoachHelm
-              </Button>
-            )}
           </>
         )
       }
     >
       {round && (
-        <div className={'ch-hm-sheet' + (crh ? ' is-crh' : '')}>
+        <div className={'ch-hm-sheet' + ' is-crh'}>
           <dl className="ch-hm-strip ch-well-soft">
             <div>
               <dt>Score</dt>
               <dd className="ch-num">
-                {round.score} <span className={crh && (round.toPar ?? 0) < 0 ? 'is-under' : undefined}>{formatToPar(round.toPar)}</span>
+                {round.score} <span className={(round.toPar ?? 0) < 0 ? 'is-under' : undefined}>{formatToPar(round.toPar)}</span>
               </dd>
             </div>
             <div>
@@ -720,7 +734,7 @@ function RoundSheet({ crh = false, round, holesError, onClose }: { crh?: boolean
             </div>
             <div>
               <dt>SG</dt>
-              <dd className={'ch-num' + (crh && round.sg != null ? ` ${changeInk(round.sg)}` : '')}>{round.sg != null ? formatSigned(round.sg) : <NoData />}</dd>
+              <dd className={'ch-num' + (round.sg != null ? ` ${changeInk(round.sg)}` : '')}>{round.sg != null ? formatSigned(round.sg) : <NoData />}</dd>
             </div>
           </dl>
           {holesError ? (
@@ -728,12 +742,7 @@ function RoundSheet({ crh = false, round, holesError, onClose }: { crh?: boolean
               Hole-by-hole scores didn’t load for this round. The total is right.
             </p>
           ) : round.holes ? (
-            crh ? (
-              <CrhScorecard holes={round.holes} />
-            ) : <>
-              <Nine label="Out" holes={round.holes.filter((h) => h.n <= 9)} caption="Front nine" />
-              <Nine label="In" holes={round.holes.filter((h) => h.n > 9)} caption="Back nine" />
-            </>
+            <CrhScorecard holes={round.holes} />
           ) : (
             <p className="ch-hm-muted" data-ch-code="CH-2303">
               Posted as a total. Hole-by-hole scores weren’t recorded for this round.

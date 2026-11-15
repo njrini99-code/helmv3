@@ -11,6 +11,9 @@ import { Tooltip } from './Tooltip';
 type Variant = 'primary' | 'secondary' | 'ghost' | 'ink' | 'danger';
 type Size = 'sm' | 'md' | 'lg';
 
+/** What ui/Menu's `trigger` hands the key that opens it. */
+export type ChMenuTrigger = { ref: (el: HTMLButtonElement | null) => void; onClick: () => void; 'aria-expanded': boolean; 'aria-haspopup': 'menu'; 'aria-controls': string };
+
 interface CommonProps {
   variant?: Variant;
   size?: Size;
@@ -21,7 +24,7 @@ interface CommonProps {
   feel?: ChHaptic | null;
   className?: string;
   /** The states a key carries for assistive tech (CONS-2): a name that differs from its label, a disclosure it opens, a toggle's state. */
-  aria?: { label?: string; expanded?: boolean; controls?: string; pressed?: boolean };
+  aria?: { label?: string; expanded?: boolean; controls?: string; pressed?: boolean; /** What says why: a disabled key's reason (an id). */ describedby?: string };
   /** A `data-ch-code` for the state this key starts (the CH- catalog). */
   code?: string;
   /** Extra `data-*` hooks, for a capture tool or a test to find this key. */
@@ -30,12 +33,14 @@ interface CommonProps {
 }
 
 type ButtonProps = CommonProps &
-  ({ href: string; onClick?: never; type?: never; disabled?: never; busy?: never } | {
+  ({ href: string; onClick?: never; type?: never; disabled?: never; busy?: never; menu?: never } | {
     href?: undefined;
     onClick?: (e: MouseEvent<HTMLButtonElement>) => void;
     type?: 'button' | 'submit';
     /** Not available: unlit and not clickable. Use `busy` for an action that is on its way. */
     disabled?: boolean;
+    /** A menu's trigger props (ui/Menu's `trigger`): the key with words opens that menu, as IconButton's does. */
+    menu?: ChMenuTrigger;
     /** The action this button starts is in flight: aria-busy, no second press, and it stays lit (working, not unavailable). */
     busy?: boolean;
   });
@@ -68,13 +73,16 @@ export function Button(props: ButtonProps) {
   }
   return (
     <button
+      ref={props.menu?.ref}
       type={props.type ?? 'button'}
       className={cls}
       aria-keyshortcuts={kbd}
       aria-label={aria?.label}
-      aria-expanded={aria?.expanded}
-      aria-controls={aria?.controls}
+      aria-expanded={props.menu?.['aria-expanded'] ?? aria?.expanded}
+      aria-haspopup={props.menu?.['aria-haspopup']}
+      aria-controls={props.menu?.['aria-controls'] ?? aria?.controls}
       aria-pressed={aria?.pressed}
+      aria-describedby={aria?.describedby}
       data-ch-code={code}
       {...data}
       disabled={props.disabled || props.busy}
@@ -83,6 +91,7 @@ export function Button(props: ButtonProps) {
         if (props.busy) return;
         if (feel) haptic(feel);
         props.onClick?.(e);
+        props.menu?.onClick();
       }}
     >
       {inner}
@@ -112,7 +121,7 @@ interface IconButtonKey extends IconButtonBase {
   /** A toggle's state, when the key is one. */
   pressed?: boolean;
   /** A menu's trigger props (ui/Menu's `trigger`): the key opens that menu (CONS-2). */
-  menu?: { ref: (el: HTMLButtonElement | null) => void; onClick: () => void; 'aria-expanded': boolean; 'aria-haspopup': 'menu'; 'aria-controls': string };
+  menu?: ChMenuTrigger;
 }
 
 /** The icon key as a link (Stats' previous and next player): a link can't be disabled, open a menu or run a click. */

@@ -88,7 +88,7 @@ the rail version stays until this page's v2 pass.
 | --- | --- | --- | --- |
 | 70401 | CH-7301 | `NO_CONVERSATIONS_YET` | No conversations yet |
 | 70402 | CH-7302 | `A_RAIL_SEARCH_OR_THE_UNREAD_FILTER` | A rail search or a filter has nothing |
-| 70403 | CH-7303 | `NO_MESSAGE_MENTIONS_THE_SEARCH` | No message mentions the search |
+| 70403 | CH-7303 | `NO_MESSAGE_MENTIONS_THE_SEARCH` | A conversation’s own search (Details › Search) finds no message |
 | 70404 | CH-7304 | `A_THREAD_WITH_NO_MESSAGES` | A thread with no messages |
 | 70405 | CH-7305 | `NOTHING_OPEN` | Nothing open |
 | 70406 | CH-7306 | `NOTHING_HAS_BEEN_SHARED_IN_THE_CONVERSATION` | Nothing has been shared in the conversation (Details) |

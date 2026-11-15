@@ -32,6 +32,18 @@ describe('parseHeldMigrations', () => {
     expect(rows[0]?.status).toBe('HOLD — R3, not yet reviewed');
   });
 
+  it('reads the first bold span as the status when the status cell goes on after it', () => {
+    const md =
+      HEADER +
+      '| `20261110090200_golf_team_channel_auto_join.sql` | **HOLD — new behaviour** **RELEASE ORDER: apply only after the new app is deployed.** The build live before it reads the old shape. | Adds the trigger. | 2026-11-10 |\n';
+    const rows = parseHeldMigrations(md);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.migrationFile).toBe('20261110090200_golf_team_channel_auto_join.sql');
+    expect(rows[0]?.status).toBe('HOLD — new behaviour');
+    expect(rows[0]?.reasonExcerpt).toBe('Adds the trigger.');
+    expect(rows[0]?.decided).toBe('2026-11-10');
+  });
+
   it('truncates a long reason to a bounded excerpt rather than returning the whole paragraph', () => {
     const longWhy = 'x'.repeat(1000);
     const md = HEADER + `| \`20260101000000_a.sql\` | **HOLD** | ${longWhy} | 2026-01-01 |\n`;

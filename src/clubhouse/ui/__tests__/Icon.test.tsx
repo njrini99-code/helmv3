@@ -22,6 +22,13 @@ describe('Icon stroke (B12)', () => {
     expect([12, 17, 20, 22, 26].map((s) => drawn(s))).toEqual([12, 17, 20, 22, 26].map((s) => iconStroke(s)).map((w) => expect.closeTo(w, 5)));
     expect([iconStroke(13), iconStroke(17), iconStroke(18), iconStroke(22), iconStroke(24)]).toEqual([1.5, 1.5, 1.75, 1.75, 2]);
   });
+  it('takes an explicit stroke for the one glyph a spec draws heavier (the Messages send arrow, MSG-304: 18 px at 2.4)', () => {
+    const { container } = render(<Icon icon={Check} size={18} stroke={2.4} />);
+    const svg = container.querySelector('svg')!;
+    expect((Number(svg.getAttribute('stroke-width')) * 18) / Number(svg.getAttribute('viewBox')!.split(' ')[2])).toBeCloseTo(2.4, 5);
+    cleanup();
+    expect(drawn(18)).toBeCloseTo(1.75, 5);
+  });
   it('no Clubhouse source draws a Lucide glyph outside ui/Icon', () => {
     // A file may import glyphs to hand to <Icon icon={…}>; none may render one itself.
     const raw: string[] = [];

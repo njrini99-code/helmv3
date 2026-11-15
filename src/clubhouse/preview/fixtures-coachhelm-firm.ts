@@ -1,9 +1,9 @@
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
-import { notEnoughOf, notEnoughRead, splitFirm, type ChNotEnoughPlayer } from '../data/coachhelm-firm';
+import { notEnoughRead, splitFirm, type ChNotEnoughPlayer } from '../data/coachhelm-firm';
 import { toChInsight } from '../data/coachhelm-map';
-import { firstName, sortCoachPlayers, type ChCoachHelmData, type ChCoachPlayer } from '../data/coachhelm-shape';
+import { firstName, type ChCoachPlayer } from '../data/coachhelm-shape';
 import type { ChViewer } from '../data/coachhelm-voice';
-import { bigNumber, breakBias, HELM_PLAYERS, penalties, PREVIEW_HELM_COACH, PREVIEW_TOUR, slope, teeInconclusive } from './fixtures-coachhelm';
+import { bigNumber, breakBias, HELM_PLAYERS, penalties, PREVIEW_TOUR, slope, teeInconclusive } from './fixtures-coachhelm';
 import { ENGINE_BIG, ENGINE_NOW, ENGINE_ON, ENGINE_PENALTIES, ENGINE_SLOPE } from './fixtures-coachhelm-engine';
 
 /**
@@ -47,12 +47,3 @@ for (const { p, reads, count } of READS) {
   if (!split.head) continue;
   list.push({ id: p.id, name: p.name, count, top: toChInsight(split.head, { tour: PREVIEW_TOUR, viewer, engine: { flags: ENGINE_ON, lifecycle: null, focus: null, now: ENGINE_NOW } }) });
 }
-
-export const PREVIEW_HELM_COACH_NOT_ENOUGH: ChCoachHelmData = {
-  ...PREVIEW_HELM_COACH,
-  roster: { count: 4, error: false },
-  players: { list: sortCoachPlayers(list), error: false },
-  withoutSignals: 0,
-  withoutNames: [],
-  notEnough: notEnoughOf(held),
-};

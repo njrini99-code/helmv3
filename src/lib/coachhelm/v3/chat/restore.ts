@@ -22,7 +22,7 @@
  * this override (#1997 review) — see `restoreFailedTurn`'s doc comment.
  * ========================================================================== */
 
-import type { UIMessage } from 'ai';
+import { isChatErrorKind, type ChatUIMessage as UIMessage } from './engine/protocol';
 import type { ChatMessage } from './types';
 import { STREAM_INCOMPLETE_NOTE } from './verdict';
 
@@ -38,8 +38,19 @@ const REPLAYABLE = new Set([
   'data-brief',
   'data-practice-plan',
   'data-handoff',
+  // A report, lineup or recap the turn wrote: its card and every version come back with the thread.
+  'data-artifact',
   'data-action-proposal',
   'data-action-receipt',
+  // A link button to a screen of the app (`find_in_app`) and the chip for a note saved or removed: both are part of what the turn did.
+  'data-app-link',
+  'data-coach-note',
+  // When the turn began, how long it took and how many reads it made (`engine/protocol.ts`, `ChatTurnMeta`). Drawn by nobody that does not know it.
+  'data-turn-meta',
+  // What a run of the model's code covered: the reads behind a figure it worked out (`ChatComputed`).
+  'data-computed',
+  // What to ask next, written after the answer (`ChatSuggestion`). Every message's come back; the thread draws the last answer's only.
+  'data-suggestions',
   // The live grounding flag (route.ts's `execute`, N15) is written into the
   // persisted assistant turn's `ui_parts` the same way a receipt is. Without
   // it here, the flag showed only during the original streaming session —
@@ -76,6 +87,27 @@ const ACTION_PART_TYPES = new Set(['data-action-proposal', 'data-action-receipt'
  */
 const GENERIC_FAILURE_NOTE = STREAM_INCOMPLETE_NOTE;
 
+/** The ledger keys of a row's action cards. */
+function proposalKeys(parts: readonly unknown[]): Set<string> {
+  const keys = new Set<string>();
+  for (const p of parts) {
+    const part = p as { type?: unknown; data?: { idempotency_key?: unknown } } | null;
+    if (part?.type === 'data-action-proposal' && typeof part.data?.idempotency_key === 'string') keys.add(part.data.idempotency_key);
+  }
+  return keys;
+}
+
+/**
+ * A card's decision state, as the rebuilt engine stores it: a `tool-<name>` part whose approval id IS the card's ledger
+ * key. It is replayed, so a card that still waits can be confirmed after a reload and an answered one shows its answer.
+ * Tool parts of the previous stack carry an SDK approval id that names nothing the server holds; they stay dropped, and
+ * their cards draw as undecided, as they always have after a reload.
+ */
+function isCardDecision(p: unknown, cardKeys: ReadonlySet<string>): boolean {
+  const part = p as { type?: unknown; approval?: { id?: unknown } } | null;
+  return typeof part?.type === 'string' && part.type.startsWith('tool-') && typeof part.approval?.id === 'string' && cardKeys.has(part.approval.id);
+}
+
 /**
  * Rebuild the UI message list from durable history.
  *
@@ -85,7 +117,11 @@ const GENERIC_FAILURE_NOTE = STREAM_INCOMPLETE_NOTE;
  * Progress parts are deliberately NOT replayed. "Reading 28 recorded rounds" is
  * true while it is happening and misleading a day later.
  */
-export function restoreUIMessages(messages: ChatMessage[]): UIMessage[] {
+/**
+ * `steps`: also keep each turn's steps of work (its `data-progress` rows), for a thread that can open an earlier turn's steps.
+ * Off by default: a thread that draws a row as running while its turn streams would otherwise redraw old turns' rows.
+ */
+export function restoreUIMessages(messages: ChatMessage[], options: { steps?: boolean } = {}): UIMessage[] {
   const out: UIMessage[] = [];
 
   for (const row of messages) {
@@ -97,14 +133,16 @@ export function restoreUIMessages(messages: ChatMessage[]): UIMessage[] {
     }
 
     if (Array.isArray(row.ui_parts) && row.ui_parts.length > 0) {
+      const cardKeys = proposalKeys(row.ui_parts);
       const parts = row.ui_parts.filter(
         (p): p is { type: string } =>
           Boolean(p) &&
           typeof p === 'object' &&
           typeof (p as { type?: unknown }).type === 'string' &&
-          REPLAYABLE.has((p as { type: string }).type),
+          (REPLAYABLE.has((p as { type: string }).type) || isCardDecision(p, cardKeys) || (options.steps === true && (p as { type: string }).type === 'data-progress')),
       );
-      if (parts.length > 0) {
+      // The turn's meta and its steps alone are not something to draw.
+      if (parts.some((p) => p.type !== 'data-turn-meta' && p.type !== 'data-progress')) {
         out.push({
           id: row.id,
           role: row.role === 'user' ? 'user' : 'assistant',
@@ -151,7 +189,7 @@ export function restoreUIMessages(messages: ChatMessage[]): UIMessage[] {
 function restoreFailedTurn(row: ChatMessage): UIMessage {
   const parts = Array.isArray(row.ui_parts) ? row.ui_parts : [];
   const verdictPart = parts.find(
-    (p): p is { type: string; id?: unknown; data?: { note?: unknown } } =>
+    (p): p is { type: string; id?: unknown; data?: { note?: unknown; kind?: unknown } } =>
       Boolean(p) && typeof p === 'object' && VERDICT_PART_TYPES.has((p as { type?: unknown }).type as string),
   );
   const note =
@@ -167,41 +205,9 @@ function restoreFailedTurn(row: ChatMessage): UIMessage {
     id: row.id,
     role: 'assistant',
     parts: [
-      { type: partType, id: 'restored-verdict', data: { note } },
+      // `kind` (turns stored from 10 Nov 2026) lets the thread pick the notice the live turn showed.
+      { type: partType, id: 'restored-verdict', data: { note, ...(isChatErrorKind(verdictPart?.data?.kind) ? { kind: verdictPart.data.kind } : {}) } },
       ...actionParts,
     ] as UIMessage['parts'],
   };
-}
-
-/** One chunk of an AI SDK UI message stream — the shape `writer.write` takes. */
-export type StoredTurnChunk = { type: string; id?: string; delta?: string; data?: unknown };
-
-/**
- * A stored, already-answered turn as the UI message stream the browser expects.
- *
- * The stream route answers a retry of a turn that already has an answer with
- * that stored answer instead of running the (paid) agent again. It used to send
- * JSON with a 200, which the chat client cannot read: the SDK parsed it as an
- * empty stream, so Try again finished with no answer and no error — a dead end,
- * with the answer sitting in the database until the next reload.
- *
- * Built from {@link restoreUIMessages}, so it carries exactly what a reload
- * would show: the prose and the `data-*` parts (evidence, action cards), and
- * none of the progress parts. Tool parts are not replayed, so a replayed action
- * card cannot be confirmed — the same as after a reload.
- */
-export function storedTurnChunks(row: ChatMessage): StoredTurnChunk[] {
-  const chunks: StoredTurnChunk[] = [{ type: 'start' }];
-  const [message] = restoreUIMessages([row]);
-  (message?.parts ?? []).forEach((part, index) => {
-    if (part.type === 'text') {
-      const id = `replay-text-${index}`;
-      chunks.push({ type: 'text-start', id }, { type: 'text-delta', id, delta: String(part.text ?? '') }, { type: 'text-end', id });
-    } else if (part.type.startsWith('data-')) {
-      const { id, data } = part as { id?: string; data?: unknown };
-      chunks.push({ type: part.type, ...(id === undefined ? {} : { id }), data });
-    }
-  });
-  chunks.push({ type: 'finish' });
-  return chunks;
 }

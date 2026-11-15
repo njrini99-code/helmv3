@@ -1,7 +1,7 @@
 'use client';
 
 import { ChevronLeft, type LucideIcon } from 'lucide-react';
-import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { Icon } from './Icon';
 
 /**
@@ -33,19 +33,28 @@ export interface ChPhoneBarParts {
   heading?: boolean;
 }
 
+/** The gap kept between the back link's words and the centred title. */
+const BACK_GAP = 8;
+
 /**
- * UINavigationBar's back title: the parent's name while it clears the centred title, then "Back", then the chevron alone
- * (MOB-SHELL-3). The title's box starts at 24% of the bar (its max-width is 52%, centred).
+ * UINavigationBar's back title: the parent's name ("‹ Practice", "‹ CoachHelm", "‹ My stats") while it clears the
+ * centred title, then "Back", then the chevron alone (MOB-SHELL-3). The room is measured to the title as drawn: it is
+ * centred, as wide as its words up to 52% of the bar, so a short title leaves the parent's name its place. (It was
+ * measured to a title assumed to fill its 52%, so on a phone only a five-letter parent ever showed.) The title's width
+ * is its content's (`scrollWidth`), which holds while a large title keeps the bar's own title faded out.
  */
 function BackLabel({ label, fits }: { label: string; fits: boolean }) {
   const ref = useRef<HTMLSpanElement>(null);
   const [step, setStep] = useState<0 | 1 | 2>(0);
   useLayoutEffect(() => {
     const el = ref.current;
-    const bar = el?.closest('.ch-pbar, .ch-topbar');
+    const bar = el?.closest<HTMLElement>('.ch-pbar, .ch-topbar');
     if (!el || !fits || !bar || typeof ResizeObserver === 'undefined') return;
+    const title = el.closest('button')?.parentElement?.querySelector<HTMLElement>(':scope > .ch-pbar__title:not(.is-start)') ?? null;
     const measure = () => {
-      const room = bar.clientWidth * 0.24 - el.getBoundingClientRect().left + bar.getBoundingClientRect().left - 4;
+      const width = bar.clientWidth;
+      const titleWidth = title ? Math.min(title.scrollWidth, width * 0.52) : width * 0.52;
+      const room = (width - titleWidth) / 2 - (el.getBoundingClientRect().left - bar.getBoundingClientRect().left) - BACK_GAP;
       const em = parseFloat(getComputedStyle(el).fontSize) || 17;
       // Character widths at about 0.55em: exact enough to choose a step, and the CSS ellipsis catches what's left.
       const wide = (t: string) => t.length * em * 0.55;
@@ -54,6 +63,7 @@ function BackLabel({ label, fits }: { label: string; fits: boolean }) {
     measure();
     const seen = new ResizeObserver(measure);
     seen.observe(bar);
+    if (title) seen.observe(title);
     return () => seen.disconnect();
   }, [label, fits]);
   return (
@@ -63,6 +73,48 @@ function BackLabel({ label, fits }: { label: string; fits: boolean }) {
   );
 }
 
+/** The gap kept between the centred title and whatever stands to its right. */
+const TITLE_GAP = 8;
+
+/**
+ * The centred title ends before what stands at the bar's right: the page's action and, in the shell's bar, the CoachHelm
+ * key before it (design review, 10 Nov 2026: "Player stats" ran under the key, and a wide action was no better). The
+ * title stays centred in the bar, so its room is twice the way from the bar's centre to the nearest of them, less the
+ * gap; it is handed to the stylesheet as `--ch-pbar-title-max`, which never lets it pass 52% of the bar, and a longer
+ * name ends in its ellipsis there. Measured, because an action is as wide as its words at the reader's Text Size.
+ * `right` is the bar's own action slot; a left-aligned title (`lead`, `start`) is in the row and needs none of this.
+ */
+function useTitleRoom(right: RefObject<HTMLSpanElement | null>, centred: boolean) {
+  useLayoutEffect(() => {
+    const slot = right.current;
+    const bar = slot?.closest<HTMLElement>('.ch-pbar, .ch-topbar');
+    const title = slot?.parentElement?.querySelector<HTMLElement>(':scope > .ch-pbar__title:not(.is-start)') ?? null;
+    if (!centred || !slot || !bar || !title || typeof ResizeObserver === 'undefined') return;
+    // The shell's bar keeps its shared actions (the key) in its own box, beside the page's slot.
+    const shared = bar.querySelector<HTMLElement>(':scope > .ch-topbar__actions');
+    const sides = shared ? [slot, shared] : [slot];
+    const measure = () => {
+      const box = bar.getBoundingClientRect();
+      const centre = box.left + box.width / 2;
+      let edge = Infinity;
+      for (const side of sides) {
+        const at = side.getBoundingClientRect();
+        if (at.width > 0) edge = Math.min(edge, at.left);
+      }
+      if (edge === Infinity) title.style.removeProperty('--ch-pbar-title-max');
+      else title.style.setProperty('--ch-pbar-title-max', `${Math.max(0, Math.floor(2 * (edge - TITLE_GAP - centre)))}px`);
+    };
+    measure();
+    const seen = new ResizeObserver(measure);
+    seen.observe(bar);
+    for (const side of sides) seen.observe(side);
+    return () => {
+      seen.disconnect();
+      title.style.removeProperty('--ch-pbar-title-max');
+    };
+  }, [right, centred]);
+}
+
 /**
  * `heading: false` draws the title as plain text, not the page's h1: a page that has its own h1, and the shell's stand-in
  * for a page's own top while the page loads (CH-1402), which leaves the heading to the page.
@@ -70,6 +122,8 @@ function BackLabel({ label, fits }: { label: string; fits: boolean }) {
 export function PhoneBarParts({ back, title, lead = false, start = false, action, titleId, heading = true }: ChPhoneBarParts) {
   const chevron = back?.chevron !== false;
   const Title = heading ? 'h1' : 'span';
+  const right = useRef<HTMLSpanElement>(null);
+  useTitleRoom(right, !lead && !start);
   return (
     <>
       {back && (
@@ -95,7 +149,9 @@ export function PhoneBarParts({ back, title, lead = false, start = false, action
           {typeof title === 'string' ? <span className="ch-pbar__tt">{title}</span> : title}
         </Title>
       )}
-      <span className="ch-pbar__right">{action}</span>
+      <span className="ch-pbar__right" ref={right}>
+        {action}
+      </span>
     </>
   );
 }

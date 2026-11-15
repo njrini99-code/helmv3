@@ -1,3 +1,7 @@
+'use client';
+
+import { useChPhone } from '../../../lib/use-phone';
+
 const Lines = () => (
   <div className="sk">
     <i className="ch-skel" style={{ width: '82%' }} />
@@ -18,8 +22,9 @@ const Card = ({ title }: { title: string }) => (
 /** Each card keeps its head; the lens control is drawn but off; no tap opens a sheet (06 §13). */
 export function FileSkeleton({ first }: { first: string | null }) {
   const who = first ?? 'This player';
+  const phone = useChPhone();
   return (
-    <main className="ch-hf is-loading" aria-busy="true">
+    <main className={'ch-hf is-loading ' + (phone ? 'is-phone' : 'is-desk')} aria-busy="true">
       <div className="ch-hf-flow">
         <section className="feat" aria-busy="true">
           <div className="sk">

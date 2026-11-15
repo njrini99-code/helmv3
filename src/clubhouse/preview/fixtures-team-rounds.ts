@@ -61,6 +61,17 @@ export const PREVIEW_TEAM_ROUNDS: ChTeamRounds = {
   season: teamSeasonFrom(list, SEASON_START),
 };
 
+/** The list runs back past 1 August: two rounds from last season, so the page marks where this season's figures stop. */
+const earlier = toTeamRounds(
+  [
+    ...rows,
+    { ...rows[0]!, id: previewRoundId(290), player_id: 'jonah', round_date: '2026-05-09', round_type: 'tournament', total_score: 73, score_to_par: 1, front_nine: 36, back_nine: 37 },
+    { ...rows[0]!, id: previewRoundId(291), player_id: 'priya', round_date: '2026-05-08', round_type: 'tournament', total_score: 70, score_to_par: -2, front_nine: 35, back_nine: 35 },
+  ],
+  names,
+).list;
+export const PREVIEW_TEAM_ROUNDS_EARLIER: ChTeamRounds = { ...PREVIEW_TEAM_ROUNDS, rounds: { list: earlier, error: false }, season: teamSeasonFrom(earlier, SEASON_START) };
+
 export const PREVIEW_TEAM_ROUNDS_EMPTY: ChTeamRounds = { ...PREVIEW_TEAM_ROUNDS, rounds: { list: [], error: false }, season: teamSeasonFrom([], SEASON_START) };
 export const PREVIEW_TEAM_ROUNDS_FAILED: ChTeamRounds = { ...PREVIEW_TEAM_ROUNDS, rounds: { list: [], error: true }, season: teamSeasonFrom([], SEASON_START) };
 export const PREVIEW_TEAM_ROUNDS_ROSTER_FAILED: ChTeamRounds = { ...PREVIEW_TEAM_ROUNDS, rounds: { list: [], error: false }, rosterError: true, players: [], season: teamSeasonFrom([], SEASON_START) };

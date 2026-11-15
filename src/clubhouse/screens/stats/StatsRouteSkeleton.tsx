@@ -4,25 +4,28 @@ import { useSearchParams } from 'next/navigation';
 import { ShsPlayerSkeleton, ShsTeamSkeleton } from './ShsSkeleton';
 import { useClubhouseRole } from '../../shell/context';
 import { StatsProfileSkeleton, StatsSkeleton } from './StatsSkeleton';
-import { StatsPlayerPhoneSkeleton, StatsTeamPhoneSkeleton } from './StatsPhoneSkeleton';
 import { useChPhone } from '../../lib/use-phone';
+import { parseFilter } from '../../data/stats-filter';
 
 /** `/stats` loads a profile for a player (their own) or for a coach with `?player=` (CH-5403); otherwise the team page (CH-4401). */
-export function StatsRouteSkeleton({ shs = false }: { /** clubhouse_stats_redesign_v1, read by the route's loading file. */ shs?: boolean } = {}) {
-  const player = useSearchParams().get('player');
+export function StatsRouteSkeleton() {
+  const params = useSearchParams();
+  const player = params.get('player');
   const role = useClubhouseRole();
   const profile = role === 'player' || !!player;
   // The phone draws the phone page's own skeleton (F-44), never the desktop one.
   const phone = useChPhone();
-  if (phone && shs) return profile ? <ShsPlayerSkeleton /> : <ShsTeamSkeleton />;
-  if (phone) return profile ? <StatsPlayerPhoneSkeleton /> : <StatsTeamPhoneSkeleton />;
+  // The address already names the window, so the loading page draws the real switch on it.
+  const filter = parseFilter(Object.fromEntries(params));
+  if (phone) return profile ? <ShsPlayerSkeleton filter={filter} coach={role === 'coach'} /> : <ShsTeamSkeleton filter={filter} />;
+
   return profile ? <StatsProfileSkeleton coach={role === 'coach'} /> : <StatsSkeleton />;
 }
 
 /** The same choice for a known page (the dev preview): the phone's own skeleton on a phone (P004-D6, P005-D13). */
-export function StatsSkeletonFor({ profile, coach = true, shs = false }: { profile: boolean; coach?: boolean; shs?: boolean }) {
+export function StatsSkeletonFor({ profile, coach = true }: { profile: boolean; coach?: boolean; }) {
   const phone = useChPhone();
-  if (phone && shs) return profile ? <ShsPlayerSkeleton /> : <ShsTeamSkeleton />;
-  if (phone) return profile ? <StatsPlayerPhoneSkeleton /> : <StatsTeamPhoneSkeleton />;
+  if (phone) return profile ? <ShsPlayerSkeleton coach={coach} /> : <ShsTeamSkeleton />;
+
   return profile ? <StatsProfileSkeleton coach={coach} /> : <StatsSkeleton />;
 }

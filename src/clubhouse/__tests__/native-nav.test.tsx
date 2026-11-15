@@ -1,10 +1,4 @@
-/**
- * Native-feel phone navigation (docs/clubhouse/NATIVE_FEEL_PERF_AUDIT_2026-10-08.md): which way a navigation moves
- * (P1-1, P1-2), the push and pop keyframes, the tab prefetch (P0-2), the More sheet leaving before a drill-in (P0-3) and
- * the phone Roster's sorted column (P1-3).
- */
-import { LazyMotion, domAnimation } from 'motion/react';
-import { render, screen } from '@testing-library/react';
+
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -14,8 +8,6 @@ vi.mock('../lib/haptics', () => ({ haptic: vi.fn() }));
 import { classifyNav, takeRunningPush } from '../lib/nav-motion';
 import { chSpringCurve } from '../lib/motion';
 import { prefetchAllowed } from '../shell/use-prefetch-tabs';
-import { RosterPhoneRow } from '../screens/roster/RosterPhone';
-import { PREVIEW_ROSTER } from '../preview/fixtures-roster';
 
 const css = (f: string) => readFileSync(join(process.cwd(), 'src/clubhouse/styles', f), 'utf8');
 const TABS = ['/golf/dashboard', '/golf/dashboard/coachhelm', '/golf/dashboard/calendar', '/golf/dashboard/stats'];
@@ -143,47 +135,5 @@ describe('the tab prefetch', () => {
     expect(prefetchAllowed({ onLine: false } as Navigator)).toBe(false);
     expect(prefetchAllowed({ onLine: true, connection: { saveData: true } } as unknown as Navigator)).toBe(false);
     expect(prefetchAllowed(undefined)).toBe(false);
-  });
-});
-
-describe('the phone Roster shows the figure it is sorted by (P1-3)', () => {
-  const players = PREVIEW_ROSTER.players.filter((p) => p.sgPerRound != null);
-  const gainer = players.find((p) => (p.sgPerRound ?? 0) > 0.05)!;
-  const loser = players.find((p) => (p.sgPerRound ?? 0) < -0.05)!;
-  const row = (p: typeof gainer, sort?: 'avg' | 'sg' | 'name') =>
-    render(
-      <LazyMotion features={domAnimation}>
-        <RosterPhoneRow p={p} statsError={false} sort={sort} onOpen={() => {}} />
-      </LazyMotion>,
-    );
-
-  it('SG: strokes gained a round in the trailing column, gains green and losses amber, and says so to VoiceOver', () => {
-    const { container, unmount } = row(gainer, 'sg');
-    const v = container.querySelector('.ch-rsm-row__v')!;
-    expect(v.querySelector('b')!.textContent).toMatch(/^\+\d\.\d$/);
-    expect(v.querySelector('b')!.className).toContain('is-gain');
-    expect(v.textContent).toContain('SG / rd');
-    expect(v.textContent).not.toContain('HCP');
-    expect(screen.getByRole('button').getAttribute('aria-label')).toMatch(/strokes gained \+\d\.\d a round/);
-    unmount();
-    const lost = row(loser, 'sg');
-    const b = lost.container.querySelector('.ch-rsm-row__v b')!;
-    expect(b.textContent!.startsWith('−')).toBe(true);
-    expect(b.className).toContain('is-loss');
-    lost.unmount();
-  });
-
-  it('Avg (the default) and Name: the scoring average and handicap, as before', () => {
-    for (const sort of [undefined, 'avg', 'name'] as const) {
-      const { container, unmount } = row(gainer, sort);
-      const v = container.querySelector('.ch-rsm-row__v')!;
-      expect(v.querySelector('b')!.textContent).toBe(gainer.avg == null ? '—' : gainer.avg.toFixed(1));
-      expect(v.textContent).toContain('HCP');
-      unmount();
-    }
-  });
-
-  it('losses are never red', () => {
-    expect(css('roster.css')).toMatch(/\.ch-rsm-row__v b\.is-loss \{\s*color: var\(--ch-chart-loss\);/);
   });
 });

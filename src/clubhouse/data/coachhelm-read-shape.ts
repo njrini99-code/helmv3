@@ -2,6 +2,7 @@ import { splitSentences } from '@/lib/utils/sentences';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import type { InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
 import { CAUSAL } from '@/lib/coachhelm/reads/player-cause';
+import { plainConfidenceReason } from '@/lib/coachhelm/shared/confidence-reason';
 import { teamPoolLine } from '@/lib/coachhelm/reads/team-pool-line';
 import type { ChInsight } from './coachhelm-shape';
 import type { ChViewer } from './coachhelm-voice';
@@ -153,12 +154,13 @@ export function writeUpFor(text: string, traced: boolean): string | null {
 
 /**
  * "Compared with the Tour 0.3": the comparison the card draws (the gauge's, or the slope read's own label), only when it has a name.
- * A read carrying a team pool as its primary comparison (written only with `coachhelm_team_pool_v1` on) says the team line instead,
- * "Team pool 72% (240 putts)": one pooled number and its count, never a teammate.
+ * A coach's read carrying a team pool as its primary comparison (written only with `coachhelm_team_pool_v1` on) says the team line
+ * instead, "Team pool 72% (240 putts)": one pooled number and its count, never a teammate. A player's never does (10 Nov 2026).
  */
-function benchmarkOf(raw: EvidenceInsight, base: ChInsight, say: (t: string) => string): string | null {
-  const team = teamPoolLine(raw.evidence);
-  if (team) return team;
+export function benchmarkOf(raw: EvidenceInsight, base: ChInsight, say: (t: string) => string, team = true): string | null {
+  // `team: false` (a player's copy, on every surface): the comparison the card draws, never the pooled line. The team pool is the coach's.
+  const pool = team ? teamPoolLine(raw.evidence) : null;
+  if (pool) return pool;
   const g = base.evidence.gauge;
   const parts = g ? [g.cmp, g.sec].filter((x): x is string => !!x && /[a-z]/i.test(x)) : base.evidence.bars ? [say(raw.evidence.comparison_label ?? '').trim()].filter((x) => /[a-z]/i.test(x)) : [];
   if (parts.length === 0) return null;
@@ -180,10 +182,9 @@ export function causeShown(level: 'observed' | 'hypothesis', role: ChViewer['rol
   return level === 'observed' || role === 'coach';
 }
 
-/** The generators' stock confidence reason ("sample adequate", generator-base.ts buildConfidenceReason) says nothing worth a line. */
+/** The generators' stored bookkeeping ("sample adequate", "recency/variance not measured") says nothing a reader can use (READ-S1). */
 export function meaningfulReason(reason: string | null | undefined): string | null {
-  const r = reason?.trim() ?? '';
-  return r && !/^sample adequate\.?$/i.test(r) ? r : null;
+  return plainConfidenceReason(reason);
 }
 
 function whyOf(d: ChReadInputs['diagnosis'], role: ChViewer['role'], say: (t: string) => string): ChReadWhy {
@@ -219,7 +220,7 @@ export function toChRead(raw: EvidenceInsight, base: ChInsight, inputs: ChReadIn
       subject: base.evidence.label || say(ev.metric_label),
       value,
       sample: sampleOf(ev, base.evidence.sample),
-      benchmark: benchmarkOf(raw, base, say),
+      benchmark: benchmarkOf(raw, base, say, inputs.role === 'coach'),
       strokes: strokesOf(ev, inputs.closes),
       word: base.evidence.read?.word ?? null,
     },

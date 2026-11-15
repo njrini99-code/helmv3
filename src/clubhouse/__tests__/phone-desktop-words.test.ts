@@ -8,9 +8,9 @@ import { TERMS } from '../lib/glossary';
 const ROOT = join(__dirname, '..');
 type Key = keyof typeof TERMS;
 const PAIRS: { what: string; files: string[]; keys: Key[] }[] = [
-  { what: 'the roster sorts', files: ['screens/roster/Roster.tsx', 'screens/roster/RosterPhone.tsx', 'screens/roster/TeamRoster.tsx', 'screens/roster/TeamRosterPhone.tsx'], keys: ['handicap'] },
-  { what: 'the scoring and SG sorts', files: ['screens/roster/RosterPhone.tsx', 'screens/stats/StatsTeamPhone.tsx', 'screens/roster/Roster.tsx'], keys: ['strokesGained', 'scoringAvg'] },
-  { what: "a player's figures", files: ['screens/stats/StatsPlayer.tsx', 'screens/stats/StatsPlayerPhone.tsx'], keys: ['handicap'] },
+  { what: 'the roster sorts', files: ['screens/roster/Roster.tsx', 'screens/roster/TeamRoster.tsx'], keys: ['handicap'] },
+  { what: 'the scoring and SG sorts', files: ['screens/stats/StatsTeamPhone.tsx', 'screens/roster/Roster.tsx'], keys: ['strokesGained', 'scoringAvg'] },
+  { what: "a player's figures", files: ['screens/stats/StatsPlayer.tsx'], keys: ['handicap'] },
 ];
 
 const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

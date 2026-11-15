@@ -40,7 +40,7 @@ beforeEach(() => {
 });
 
 describe('ClubhouseCoachHelmRoute picks the view by the dashboard role', () => {
-  it('an onboarded player profile beside an unfinished coach profile gets the player’s own CoachHelm, with or without a team', async () => {
+  it('130101 an onboarded player profile beside an unfinished coach profile gets the player’s own CoachHelm, with or without a team', async () => {
     session.current = dual(false);
     team.resolve.mockResolvedValue({ role: 'player', teamId: 'team-p', playerId: 'player-1' });
     const out = view(await ClubhouseCoachHelmRoute({ view: 'standing' }));
@@ -50,7 +50,7 @@ describe('ClubhouseCoachHelmRoute picks the view by the dashboard role', () => {
     expect(view(await ClubhouseCoachHelmRoute({})).name).toBe('PlayerHelmView');
   });
 
-  it('both profiles onboarded is the coach, as the layout draws it: the coach’s board for the resolved team', async () => {
+  it('130101 both profiles onboarded is the coach, as the layout draws it: the coach’s CoachHelm for the resolved team', async () => {
     session.current = dual(true);
     team.resolve.mockResolvedValue({ role: 'coach', teamId: 'team-c', coachId: 'coach-1' });
     const out = view(await ClubhouseCoachHelmRoute({ view: 'ask', c: 'conv-1' }));

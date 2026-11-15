@@ -9,6 +9,8 @@ export interface QcRun {
 }
 
 export interface Ctx {
+  /** The shell's pathname: the page the chat is over. */
+  pathname: string;
   on: boolean;
   open: boolean;
   setOpen: (v: boolean) => void;

@@ -8,7 +8,6 @@ const ALLOW_TERNARY: Record<string, number> = {
   'data/coachhelm-monday-brief-shape.ts': 1,
   'data/stats-filter.ts': 1,
   'screens/classes/ImportSchedule.tsx': 1,
-  'screens/coachhelm/PlayerBoard.tsx': 1,
 };
 
 describe('one plural helper (CONS-14)', () => {

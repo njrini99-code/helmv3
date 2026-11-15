@@ -1,10 +1,9 @@
-import { redirect } from 'next/navigation';
 import { PracticePlanRoute } from '@/clubhouse/routes/practice';
-import { isPracticeTabEnabled } from '@/lib/coachhelm/v3/practice-plan/flag';
+import { redirectUnlessClubhousePractice } from '@/clubhouse/routes/practice-gate';
 
-/** The deep link from a push, a bell row or Documents. Flag off: Calendar, never a 404 (N-00 §0.2). */
+/** The deep link from a push, a bell row or Documents. */
 export default async function Page({ params }: { params: Promise<{ planId: string }> }) {
-  if (!isPracticeTabEnabled()) redirect('/golf/dashboard/calendar');
+  await redirectUnlessClubhousePractice();
   const { planId } = await params;
   return <PracticePlanRoute planId={planId} />;
 }

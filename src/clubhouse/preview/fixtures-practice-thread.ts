@@ -186,5 +186,6 @@ export const PT_STATES: Record<string, { messages: UIMessage[]; busy?: boolean; 
   publishing: { messages: built(proposalParts([approval('approval-responded', true)])), plan: WITH },
   published: { messages: built(proposalParts([approval('approval-responded', true), { type: 'data-action-receipt', id: 'receipt-key-plan', data: receipt('held') }])), plan: WITH },
   told: { messages: built(proposalParts([approval('approval-responded', true), { type: 'data-action-receipt', id: 'receipt-key-plan', data: receipt('completed') }])), plan: WITH },
-  v2: { messages: built(), plan: { ...WITH, swapped: true, full: true } },
+  // A redraft in the thread: the pane's switch reads "2 of 2" (phone and Mac).
+  v2: { messages: [...built(), user('u3', 'Make it 2 hours'), assistant('a3', [{ type: 'data-practice-plan', id: 'plan-2', data: { ...PT_PLAN, version: 2, draft: { ...PT_PLAN.draft, version: 2 } } }])], plan: { ...WITH, swapped: true, full: true } },
 };

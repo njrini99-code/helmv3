@@ -35,7 +35,7 @@ export function recheckRunningLabel(players: number | null): string {
 }
 
 /**
- * Re-check reads (CH-13944): the coach's one way, on the Clubhouse board, to run CoachHelm again for the whole team, as
+ * Re-check reads (CH-13944): the coach's one way, on the CoachHelm Team page, to run CoachHelm again for the whole team, as
  * Fairway's Triage desk "Scan team" does. A quiet secondary action under the board, never its primary. It calls the same
  * server action (`refreshTeamAnalysisAsCoach` through `writes.recheck`), which resolves the coach and the team from the
  * session and spends the engine's rate limit once: nothing here sends a team or a player id.
@@ -47,6 +47,17 @@ export function recheckRunningLabel(players: number | null): string {
  * than that as a rule, and the outcome here is the line, not a toast.
  */
 export function RecheckReads({ players, writes = LIVE_RECHECK_WRITES }: { players: number | null; writes?: ChRecheckWrites }) {
+  const { trigger, status } = useRecheckReads({ players, writes });
+  return (
+    <div className="ch-hl-rck" data-ch-code="CH-13944">
+      {trigger}
+      {status}
+    </div>
+  );
+}
+
+/** The action as its two pieces, the key and the outcome line; `RecheckReads` is the two together, as the Team page draws them. */
+function useRecheckReads({ players, writes = LIVE_RECHECK_WRITES }: { players: number | null; writes?: ChRecheckWrites }) {
   const [state, setState] = useState<RecheckState>({ kind: 'idle' });
   const inFlight = useRef(false);
   const { refresh } = useRefresh();
@@ -86,11 +97,12 @@ export function RecheckReads({ players, writes = LIVE_RECHECK_WRITES }: { player
   };
 
   const running = state.kind === 'running';
-  return (
-    <div className="ch-hl-rck" data-ch-code="CH-13944">
-      <Button variant="secondary" leftIcon={RotateCw} busy={running} onClick={() => void run()}>
-        {running ? recheckRunningLabel(players) : 'Re-check reads'}
-      </Button>
+  const trigger = (
+    <Button variant="secondary" leftIcon={RotateCw} busy={running} onClick={() => void run()}>
+      {running ? recheckRunningLabel(players) : 'Re-check reads'}
+    </Button>
+  );
+  const status = (
       <p className={'ch-hl-rck__s' + (state.kind === 'failed' || state.kind === 'limited' ? ' is-failed' : '')} role="status">
         {state.kind === 'running' && (
           <>
@@ -104,6 +116,6 @@ export function RecheckReads({ players, writes = LIVE_RECHECK_WRITES }: { player
         {state.kind === 'limited' && <span data-ch-code="CH-13007">{COACHHELM_ENGINE_RATE_LIMITED}</span>}
         {state.kind === 'failed' && <span data-ch-code="CH-13006">{state.line}</span>}
       </p>
-    </div>
   );
+  return { trigger, status };
 }

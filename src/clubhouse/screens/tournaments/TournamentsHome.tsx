@@ -116,7 +116,7 @@ function HomeReady({ data, phone, live }: { data: ChTourHomeData; phone: boolean
         <InlineNotice code="CH-16210" title="The events didn’t load" body="Nothing has changed. Try again." onRetry={refresh} retrying={refreshing} />
       ) : empty ? (
         <>
-          <FirstRun untracked={untracked.length} newEvent={paths.newEvent()} />
+          <FirstRun untracked={untracked} newEvent={paths.newEvent()} />
           {setUp}
         </>
       ) : (
@@ -128,12 +128,12 @@ function HomeReady({ data, phone, live }: { data: ChTourHomeData; phone: boolean
               {hero ? <NextCard event={hero} data={data} phone today={madeToday(hero)} arrived={arrived.has(hero.id)} /> : <EmptyState compact kind="first-run" code="CH-16312" title="Nothing on the calendar" body="Add an event and it shows here with its lineup and travel." />}
               {others.length > 0 && (
                 <Section id="ch-tour-home-more" title="Coming up">
-                  <OtherEvents events={others} data={data} madeToday={madeToday} arrived={arrived} />
+                  <OtherEvents events={others} data={data} madeToday={madeToday} arrived={arrived} phone />
                 </Section>
               )}
               {setUp}
               <SeasonLedger events={data.events} seasons={data.seasons} players={data.players} courseName={courseName} currentSeasonId={data.season.id} phone />
-              <NextSeason events={later} data={data} madeToday={madeToday} arrived={arrived} />
+              <NextSeason events={later} data={data} madeToday={madeToday} arrived={arrived} phone />
             </>
           ) : (
             <>
@@ -204,7 +204,7 @@ function NextCard({ event: e, data, phone, today = false, arrived = false }: { e
             {act.label}
           </Button>
           {!phone && pickLineup && (
-            <Button size="sm" leftIcon={GitCompare} href={paths.compare(e.id)} className="ch-tour-home-feat__alt">
+            <Button size="sm" variant="ghost" leftIcon={GitCompare} href={paths.compare(e.id)} className="ch-btn--on-green">
               Compare lineup options
             </Button>
           )}
@@ -214,8 +214,12 @@ function NextCard({ event: e, data, phone, today = false, arrived = false }: { e
   );
 }
 
-/** The rest of the calendar: a date, the event and where, each one a link to its desk. */
-function OtherEvents({ events, data, madeToday, arrived }: { events: ChTourEvent[]; data: ChTourHomeData; madeToday: (e: ChTourEvent) => boolean; arrived: ReadonlySet<string> }) {
+/**
+ * The rest of the calendar: a date, the event and where, each one a link to its desk. On the phone the list stands under
+ * a heading that already says these are coming up, so a row carries no "Upcoming" chip there (it cut the row's own line
+ * short at 390px); a live event still says Live.
+ */
+function OtherEvents({ events, data, madeToday, arrived, phone = false }: { events: ChTourEvent[]; data: ChTourHomeData; madeToday: (e: ChTourEvent) => boolean; arrived: ReadonlySet<string>; phone?: boolean }) {
   const paths = useTourPaths();
   return (
     <LedgerList label="Also on the calendar" className="ch-tour-home-others">
@@ -225,9 +229,11 @@ function OtherEvents({ events, data, madeToday, arrived }: { events: ChTourEvent
           href={paths.desk(e.id)}
           // P-5 M9 (CH-16650): arrived while the page was open, washed once; on a fresh load the caption says it instead.
           className={'ch-tour-washable' + (arrived.has(e.id) ? ' ch-tour-changed' : '')}
+          // F-0011 (WCAG 2.5.3): the row is named by what it shows, the date first; the space between the day and the month
+          // is not drawn (a flex column) but keeps them apart in the name.
           lead={
-            <span className="ch-tour-home-date" aria-hidden="true">
-              <b className="ch-num">{tourDay(e.startDate, { day: 'numeric' })}</b>
+            <span className="ch-tour-home-date">
+              <b className="ch-num">{tourDay(e.startDate, { day: 'numeric' })}</b>{' '}
               <span>{tourDay(e.startDate, { month: 'short' })}</span>
             </span>
           }
@@ -235,22 +241,48 @@ function OtherEvents({ events, data, madeToday, arrived }: { events: ChTourEvent
           trail={
             <>
               {madeToday(e) && <span className="ch-tour-home__today">Set up today</span>}
-              <TourChip tone={e.status === 'live' ? 'live' : undefined}>{e.status === 'live' ? 'Live' : 'Upcoming'}</TourChip>
+              {e.status === 'live' ? <TourChip tone="live">Live</TourChip> : !phone && <TourChip>Upcoming</TourChip>}
             </>
           }
           meta={[data.courses[e.courseIds[0] ?? '']?.name, holesLabel(e), e.note].filter(Boolean).join(' · ')}
-          label={`${e.name}, ${tourRange(e.startDate, e.endDate)}`}
         />
       ))}
     </LedgerList>
   );
 }
 
+/** The calendar editor on an untracked tournament's first day with Track on (P-5 4.11.3). */
+const setUpHref = (g: ChTourSetupGroup) => `/golf/dashboard/calendar?event=${g.eventIds[0]}&setup=1`;
+
 /**
  * P-5 4.11.1 (CH-16352): the first run. The season starts on the calendar: Add a tournament opens the calendar editor
- * on Tournament; the secondary plans from here, or, when the calendar already has untracked tournaments, points at them.
+ * on Tournament; the secondary plans from here. W38 (preview walk, 11 Nov): when the calendar already holds untracked
+ * tournaments the page leads with them ("2 tournaments on your calendar to set up"), and W36: its primary opens the first
+ * one's setup, where "Set up from calendar (2)" only jumped to the list already on screen.
  */
-function FirstRun({ untracked, newEvent }: { untracked: number; newEvent: string }) {
+function FirstRun({ untracked, newEvent }: { untracked: ChTourSetupGroup[]; newEvent: string }) {
+  const first = untracked[0];
+  if (first) {
+    return (
+      <EmptyState
+        size="page"
+        code="CH-16352"
+        icon={Trophy}
+        title={`${plural(untracked.length, 'tournament')} on your calendar to set up`}
+        body="Set one up and it shows here with its rounds, lineup and results."
+        action={
+          <>
+            <Button variant="primary" href={setUpHref(first)}>
+              {`Set up ${first.title}`}
+            </Button>
+            <Button variant="ghost" leftIcon={CalendarPlus} href="/golf/dashboard/calendar?new=1&type=tournament">
+              Add a tournament
+            </Button>
+          </>
+        }
+      />
+    );
+  }
   return (
     <EmptyState
       size="page"
@@ -263,15 +295,9 @@ function FirstRun({ untracked, newEvent }: { untracked: number; newEvent: string
           <Button variant="primary" leftIcon={CalendarPlus} href="/golf/dashboard/calendar?new=1&type=tournament">
             Add a tournament
           </Button>
-          {untracked > 0 ? (
-            <Button variant="ghost" href="#ch-tour-home-setup-t">
-              {`Set up from calendar (${untracked})`}
-            </Button>
-          ) : (
-            <Button variant="ghost" href={newEvent}>
-              Plan from here instead
-            </Button>
-          )}
+          <Button variant="ghost" href={newEvent}>
+            Plan from here instead
+          </Button>
         </>
       }
     />
@@ -298,7 +324,7 @@ function SetUpFromCalendar({ groups, failed, onRetry, retrying }: { groups: ChTo
           {groups.map((g) => (
             <LedgerRow
               key={g.eventIds[0]}
-              href={`/golf/dashboard/calendar?event=${g.eventIds[0]}&setup=1`}
+              href={setUpHref(g)}
               lead={
                 <span className="ch-tour-home-setup__plate" aria-hidden="true">
                   <Icon icon={Trophy} size={16} />
@@ -307,7 +333,6 @@ function SetUpFromCalendar({ groups, failed, onRetry, retrying }: { groups: ChTo
               title={g.title}
               meta={setUpLine(g)}
               trail={<span className="ch-tour-home-setup__go">Set up</span>}
-              label={`Set up ${g.title}, ${setUpLine(g)}`}
             />
           ))}
         </LedgerList>
@@ -317,7 +342,7 @@ function SetUpFromCalendar({ groups, failed, onRetry, retrying }: { groups: ChTo
 }
 
 /** P-5 4.11.2: next season's events, folded at the end of the ledger: "Next season · 2027–28 (2)". */
-function NextSeason({ events, data, madeToday, arrived }: { events: ChTourEvent[]; data: ChTourHomeData; madeToday: (e: ChTourEvent) => boolean; arrived: ReadonlySet<string> }) {
+function NextSeason({ events, data, madeToday, arrived, phone = false }: { events: ChTourEvent[]; data: ChTourHomeData; madeToday: (e: ChTourEvent) => boolean; arrived: ReadonlySet<string>; phone?: boolean }) {
   const [open, setOpen] = useState(false);
   if (!events.length) return null;
   const id = events[0]!.seasonId;
@@ -331,7 +356,7 @@ function NextSeason({ events, data, madeToday, arrived }: { events: ChTourEvent[
       </button>
       {open && (
         <div id="ch-tour-home-next-list">
-          <OtherEvents events={events} data={data} madeToday={madeToday} arrived={arrived} />
+          <OtherEvents events={events} data={data} madeToday={madeToday} arrived={arrived} phone={phone} />
         </div>
       )}
     </div>

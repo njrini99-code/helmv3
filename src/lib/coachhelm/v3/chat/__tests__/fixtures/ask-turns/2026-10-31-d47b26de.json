@@ -1,0 +1,1492 @@
+{
+ "id": "d47b26de",
+ "messageId": "d47b26de-aa1a-4136-861a-ec5fc3735c53",
+ "source": {
+  "project": "staging",
+  "team": "Demo University Golf",
+  "exportedBy": "scripts/coachhelm/export-ask-turns.mjs"
+ },
+ "timezone": "America/New_York",
+ "roster": [
+  {
+   "id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+   "name": "Cole Bennett",
+   "first_name": "Cole",
+   "last_name": "Bennett"
+  },
+  {
+   "id": "ed1ff03e-b33a-4a80-891e-09685b7db3d0",
+   "name": "Dylan Brooks",
+   "first_name": "Dylan",
+   "last_name": "Brooks"
+  },
+  {
+   "id": "9458ca63-9dbe-4020-ab13-9e2b70f70c80",
+   "name": "Mason Rivers",
+   "first_name": "Mason",
+   "last_name": "Rivers"
+  },
+  {
+   "id": "b40a650a-bce0-4e46-87cd-365b0256ee21",
+   "name": "Jackson Hale",
+   "first_name": "Jackson",
+   "last_name": "Hale"
+  },
+  {
+   "id": "8e382583-2ce6-4d15-8568-5088cf02dbd1",
+   "name": "Ethan Park",
+   "first_name": "Ethan",
+   "last_name": "Park"
+  },
+  {
+   "id": "faced578-b271-416f-b757-ac3aee5bd9e5",
+   "name": "Tyler Hayes",
+   "first_name": "Tyler",
+   "last_name": "Hayes"
+  },
+  {
+   "id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+   "name": "Owen Carter",
+   "first_name": "Owen",
+   "last_name": "Carter"
+  },
+  {
+   "id": "b6b87c4d-0673-4166-9f8c-44e60936a034",
+   "name": "Audit Testplayer",
+   "first_name": "Audit",
+   "last_name": "Testplayer"
+  }
+ ],
+ "userMessage": {
+  "content": "what",
+  "createdAt": "2026-10-31T02:42:21.82423+00:00"
+ },
+ "priorMessages": [
+  {
+   "role": "user",
+   "createdAt": "2026-10-31T02:40:51.440864+00:00",
+   "content": "make a visual of my teams data this year",
+   "evidence": []
+  },
+  {
+   "role": "assistant",
+   "createdAt": "2026-10-31T02:40:59.899347+00:00",
+   "content": "Scoring this year is closely grouped, but strokes gained spreads the roster out more.\n\n- **Coverage:** The visual covers 124 completed rounds by 7 of your 8 players since January 3. Audit Testplayer has no recorded rounds.\n- **Rounds are uneven:** Cole Bennett has 37 rounds and the others have between 13 and 17. His averages rest on a much larger and more varied sample, including some very high scores on The Cardinal and at Poplar Grove.\n- **Strokes gained is a different window:** It is cached through September 26 and starts between mid-May and early June depending on the player. It doesn't include the October rounds, so Cole's three tournament rounds on October 21 aren't in it.\n- **Weekly trend:** Some weeks have only one logged round, so those swings say little about the team.\n\nIf you want a cleaner read of current form, I can narrow this to tournament and qualifier rounds only, or to a single player's recent rounds.",
+   "evidence": [
+    {
+     "as_of": "2026-10-31T02:40:52.580Z",
+     "detail": {
+      "players": [
+       {
+        "name": "Cole Bennett",
+        "player_id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+        "last_round_date": "2026-10-21",
+        "rounds_recorded": 37,
+        "last_round_to_par": 5
+       },
+       {
+        "name": "Owen Carter",
+        "player_id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+        "last_round_date": "2026-09-26",
+        "rounds_recorded": 14,
+        "last_round_to_par": -1
+       },
+       {
+        "name": "Ethan Park",
+        "player_id": "8e382583-2ce6-4d15-8568-5088cf02dbd1",
+        "last_round_date": "2026-09-26",
+        "rounds_recorded": 15,
+        "last_round_to_par": 1
+       },
+       {
+        "name": "Mason Rivers",
+        "player_id": "9458ca63-9dbe-4020-ab13-9e2b70f70c80",
+        "last_round_date": "2026-09-26",
+        "rounds_recorded": 14,
+        "last_round_to_par": 0
+       },
+       {
+        "name": "Jackson Hale",
+        "player_id": "b40a650a-bce0-4e46-87cd-365b0256ee21",
+        "last_round_date": "2026-09-26",
+        "rounds_recorded": 17,
+        "last_round_to_par": 0
+       },
+       {
+        "name": "Audit Testplayer",
+        "player_id": "b6b87c4d-0673-4166-9f8c-44e60936a034",
+        "last_round_date": null,
+        "rounds_recorded": 0,
+        "last_round_to_par": null
+       },
+       {
+        "name": "Dylan Brooks",
+        "player_id": "ed1ff03e-b33a-4a80-891e-09685b7db3d0",
+        "last_round_date": "2026-09-26",
+        "rounds_recorded": 14,
+        "last_round_to_par": 2
+       },
+       {
+        "name": "Tyler Hayes",
+        "player_id": "faced578-b271-416f-b757-ac3aee5bd9e5",
+        "last_round_date": "2026-09-26",
+        "rounds_recorded": 13,
+        "last_round_to_par": 5
+       }
+      ],
+      "timezone": "America/New_York",
+      "team_name": "Demo University Golf",
+      "latest_round_date": "2026-10-21",
+      "profiles_resolved": 8,
+      "active_roster_count": 8,
+      "players_with_rounds": 7,
+      "unresolved_player_ids": []
+     },
+     "series": [],
+     "summary": "Demo University Golf has 8 active players.",
+     "coverage": "partial",
+     "measurements": [
+      {
+       "unit": "count",
+       "as_of": "2026-10-31T02:40:52.580Z",
+       "value": 8,
+       "entity": {
+        "id": "6ecdd1a6-63fe-4beb-b094-00118f334163",
+        "kind": "team",
+        "label": "Demo University Golf"
+       },
+       "method": "count_active_team_members",
+       "source": "roster",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": null,
+       "metric_id": "active_roster_count",
+       "window_end": null,
+       "denominator": null,
+       "sample_size": 8,
+       "sample_unit": "players",
+       "metric_label": "Active roster",
+       "window_start": null,
+       "coverage_note": null
+      }
+     ],
+     "coverage_note": "1 player has no recorded rounds (Audit Testplayer)"
+    },
+    {
+     "as_of": "2026-10-31T02:40:52.599Z",
+     "detail": {
+      "since": "2026-01-03",
+      "players": [
+       {
+        "name": "Dylan Brooks",
+        "rounds": 14,
+        "avg_putts": 33.2,
+        "avg_score": 74.9,
+        "player_id": "ed1ff03e-b33a-4a80-891e-09685b7db3d0",
+        "avg_to_par": 3.1
+       },
+       {
+        "name": "Jackson Hale",
+        "rounds": 17,
+        "avg_putts": 31.8,
+        "avg_score": 72.9,
+        "player_id": "b40a650a-bce0-4e46-87cd-365b0256ee21",
+        "avg_to_par": 3.2
+       },
+       {
+        "name": "Mason Rivers",
+        "rounds": 14,
+        "avg_putts": 33.2,
+        "avg_score": 75.1,
+        "player_id": "9458ca63-9dbe-4020-ab13-9e2b70f70c80",
+        "avg_to_par": 3.3
+       },
+       {
+        "name": "Tyler Hayes",
+        "rounds": 13,
+        "avg_putts": 32.6,
+        "avg_score": 75.2,
+        "player_id": "faced578-b271-416f-b757-ac3aee5bd9e5",
+        "avg_to_par": 3.5
+       },
+       {
+        "name": "Owen Carter",
+        "rounds": 14,
+        "avg_putts": 32.3,
+        "avg_score": 76.1,
+        "player_id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+        "avg_to_par": 4.4
+       },
+       {
+        "name": "Cole Bennett",
+        "rounds": 37,
+        "avg_putts": 32.5,
+        "avg_score": 75.4,
+        "player_id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+        "avg_to_par": 4.6
+       },
+       {
+        "name": "Ethan Park",
+        "rounds": 15,
+        "avg_putts": 31.7,
+        "avg_score": 74.1,
+        "player_id": "8e382583-2ce6-4d15-8568-5088cf02dbd1",
+        "avg_to_par": 4.7
+       }
+      ],
+      "round_type": null,
+      "round_count": 124,
+      "recent_rounds": [
+       {
+        "date": "2026-10-21",
+        "putts": 37,
+        "course": "Springfield Country Club",
+        "player": "Cole Bennett",
+        "to_par": 5,
+        "round_id": "aa7df910-2aa6-4a04-aa7e-beb1e53ce08a",
+        "round_type": "tournament",
+        "total_score": 77,
+        "qualifier_round": null
+       },
+       {
+        "date": "2026-10-21",
+        "putts": 30,
+        "course": "Springfield Country Club",
+        "player": "Cole Bennett",
+        "to_par": 1,
+        "round_id": "cf57aee4-4841-4e49-b1c6-f77362506e85",
+        "round_type": "tournament",
+        "total_score": 73,
+        "qualifier_round": null
+       },
+       {
+        "date": "2026-10-21",
+        "putts": 37,
+        "course": "Springfield Country Club",
+        "player": "Cole Bennett",
+        "to_par": 2,
+        "round_id": "1cc387ec-2462-4acf-b863-9c231ef946f6",
+        "round_type": "tournament",
+        "total_score": 74,
+        "qualifier_round": null
+       },
+       {
+        "date": "2026-10-06",
+        "putts": 31,
+        "course": "Bryan Park Champs",
+        "player": "Cole Bennett",
+        "to_par": 10,
+        "round_id": "95635c67-d866-43a6-a1fb-73996e708ece",
+        "round_type": "practice",
+        "total_score": 82,
+        "qualifier_round": null
+       },
+       {
+        "date": "2026-09-30",
+        "putts": 30,
+        "course": "Starmount Forest",
+        "player": "Cole Bennett",
+        "to_par": 4,
+        "round_id": "ad8f1681-7f9e-4e92-9782-9249cea75fab",
+        "round_type": "practice",
+        "total_score": 75,
+        "qualifier_round": null
+       },
+       {
+        "date": "2026-09-29",
+        "putts": 31,
+        "course": "Bryan Park Players",
+        "player": "Cole Bennett",
+        "to_par": -4,
+        "round_id": "77c29538-d102-4aa7-bdc2-203a10ab5d7f",
+        "round_type": "practice",
+        "total_score": 68,
+        "qualifier_round": null
+       },
+       {
+        "date": "2026-09-26",
+        "putts": null,
+        "course": "Home course",
+        "player": "Owen Carter",
+        "to_par": -1,
+        "round_id": "98daf97c-6d5e-4a70-836c-1e27fd587df7",
+        "round_type": "qualifier",
+        "total_score": 71,
+        "qualifier_round": 2
+       },
+       {
+        "date": "2026-09-26",
+        "putts": null,
+        "course": "Home course",
+        "player": "Dylan Brooks",
+        "to_par": 2,
+        "round_id": "1fe04923-577c-4fea-a8fb-ca2fce9438ca",
+        "round_type": "qualifier",
+        "total_score": 74,
+        "qualifier_round": 2
+       },
+       {
+        "date": "2026-09-26",
+        "putts": null,
+        "course": "Home course",
+        "player": "Jackson Hale",
+        "to_par": 0,
+        "round_id": "a49ca290-12ed-4b99-a546-819957413afb",
+        "round_type": "qualifier",
+        "total_score": 72,
+        "qualifier_round": 2
+       },
+       {
+        "date": "2026-09-26",
+        "putts": null,
+        "course": "Home course",
+        "player": "Mason Rivers",
+        "to_par": 0,
+        "round_id": "a39870e8-771a-44b3-95bc-e60f951df91b",
+        "round_type": "qualifier",
+        "total_score": 72,
+        "qualifier_round": 2
+       },
+       {
+        "date": "2026-09-26",
+        "putts": null,
+        "course": "Home course",
+        "player": "Ethan Park",
+        "to_par": 1,
+        "round_id": "d3273243-a08c-4bb6-b3cc-f7e1447f2cbf",
+        "round_type": "qualifier",
+        "total_score": 73,
+        "qualifier_round": 2
+       },
+       {
+        "date": "2026-09-26",
+        "putts": null,
+        "course": "Home course",
+        "player": "Cole Bennett",
+        "to_par": -2,
+        "round_id": "f1ef1570-f497-40b2-8bbd-265d2c1906e8",
+        "round_type": "qualifier",
+        "total_score": 70,
+        "qualifier_round": 2
+       },
+       {
+        "date": "2026-09-26",
+        "putts": null,
+        "course": "Home course",
+        "player": "Tyler Hayes",
+        "to_par": 5,
+        "round_id": "c43853a9-8c70-45df-ab89-bfd3ba4ad560",
+        "round_type": "qualifier",
+        "total_score": 77,
+        "qualifier_round": 2
+       },
+       {
+        "date": "2026-09-25",
+        "putts": null,
+        "course": "Home course",
+        "player": "Cole Bennett",
+        "to_par": -1,
+        "round_id": "f86d3c6c-fba8-49f7-9eb2-56aa329122c1",
+        "round_type": "qualifier",
+        "total_score": 71,
+        "qualifier_round": 1
+       },
+       {
+        "date": "2026-09-25",
+        "putts": null,
+        "course": "Home course",
+        "player": "Ethan Park",
+        "to_par": 1,
+        "round_id": "69d8359c-77f3-4d69-989d-80d07834027b",
+        "round_type": "qualifier",
+        "total_score": 73,
+        "qualifier_round": 1
+       },
+       {
+        "date": "2026-09-25",
+        "putts": null,
+        "course": "Home course",
+        "player": "Mason Rivers",
+        "to_par": 0,
+        "round_id": "10eb1874-df2a-434e-be50-e46160924a05",
+        "round_type": "qualifier",
+        "total_score": 72,
+        "qualifier_round": 1
+       },
+       {
+        "date": "2026-09-25",
+        "putts": null,
+        "course": "Home course",
+        "player": "Dylan Brooks",
+        "to_par": 4,
+        "round_id": "fe243ad3-7993-4321-83e1-205fb19de1a5",
+        "round_type": "qualifier",
+        "total_score": 76,
+        "qualifier_round": 1
+       },
+       {
+        "date": "2026-09-25",
+        "putts": null,
+        "course": "Home course",
+        "player": "Tyler Hayes",
+        "to_par": 6,
+        "round_id": "e8ba024e-c4c0-464a-b454-0c87e1136976",
+        "round_type": "qualifier",
+        "total_score": 78,
+        "qualifier_round": 1
+       },
+       {
+        "date": "2026-09-25",
+        "putts": null,
+        "course": "Home course",
+        "player": "Jackson Hale",
+        "to_par": 3,
+        "round_id": "5066eae2-00fd-4ed3-acd4-fb50ec54c3f7",
+        "round_type": "qualifier",
+        "total_score": 75,
+        "qualifier_round": 1
+       },
+       {
+        "date": "2026-09-25",
+        "putts": null,
+        "course": "Home course",
+        "player": "Owen Carter",
+        "to_par": 2,
+        "round_id": "19a846d4-895d-4e3c-ab51-ebd91a24faa3",
+        "round_type": "qualifier",
+        "total_score": 74,
+        "qualifier_round": 1
+       },
+       {
+        "date": "2026-09-15",
+        "putts": 30,
+        "course": "Bryan Park Players",
+        "player": "Cole Bennett",
+        "to_par": 5,
+        "round_id": "5db35bed-1a4b-4950-89ad-f8f4ea23ae52",
+        "round_type": "qualifier",
+        "total_score": 77,
+        "qualifier_round": 2
+       },
+       {
+        "date": "2026-09-13",
+        "putts": 31,
+        "course": "The Cardinal",
+        "player": "Cole Bennett",
+        "to_par": 16,
+        "round_id": "d46f6dd4-0c7a-4b93-9133-640a8a1932fa",
+        "round_type": "qualifier",
+        "total_score": 87,
+        "qualifier_round": 1
+       },
+       {
+        "date": "2026-09-06",
+        "putts": 36,
+        "course": "The Cardinal",
+        "player": "Cole Bennett",
+        "to_par": 11,
+        "round_id": "283dca56-97ce-4324-9404-7d517d82a357",
+        "round_type": "practice",
+        "total_score": 82,
+        "qualifier_round": null
+       },
+       {
+        "date": "2026-08-27",
+        "putts": 34,
+        "course": "Bryan Park Champs",
+        "player": "Cole Bennett",
+        "to_par": 9,
+        "round_id": "ad881a58-3698-46e1-a00a-484e3bb58931",
+        "round_type": "qualifier",
+        "total_score": 81,
+        "qualifier_round": 3
+       },
+       {
+        "date": "2026-08-26",
+        "putts": 31,
+        "course": "Starmount Forest",
+        "player": "Cole Bennett",
+        "to_par": 6,
+        "round_id": "7826e1a0-3026-40b1-9b55-04c6cd9b61fc",
+        "round_type": "qualifier",
+        "total_score": 77,
+        "qualifier_round": 2
+       },
+       {
+        "date": "2026-08-25",
+        "putts": 31,
+        "course": "Starmount Forest",
+        "player": "Cole Bennett",
+        "to_par": 5,
+        "round_id": "711655ec-4624-49ce-9979-a313cc3a9618",
+        "round_type": "qualifier",
+        "total_score": 76,
+        "qualifier_round": 1
+       },
+       {
+        "date": "2026-08-23",
+        "putts": 31,
+        "course": "The Cardinal",
+        "player": "Cole Bennett",
+        "to_par": 12,
+        "round_id": "a162f3a8-405a-4102-80f4-061af21e73df",
+        "round_type": "qualifier",
+        "total_score": 83,
+        "qualifier_round": 3
+       },
+       {
+        "date": "2026-08-22",
+        "putts": 31,
+        "course": "Bryan Park Champs",
+        "player": "Cole Bennett",
+        "to_par": 11,
+        "round_id": "3f19cd04-ca02-4df7-87bf-b4a15191baa0",
+        "round_type": "qualifier",
+        "total_score": 83,
+        "qualifier_round": 2
+       },
+       {
+        "date": "2026-08-21",
+        "putts": 32,
+        "course": "Bryan Park Champs",
+        "player": "Cole Bennett",
+        "to_par": 6,
+        "round_id": "6f18d77c-08ef-4db2-8d52-1de9f0e3ecea",
+        "round_type": "qualifier",
+        "total_score": 78,
+        "qualifier_round": 1
+       },
+       {
+        "date": "2026-08-19",
+        "putts": 31,
+        "course": "Bryan Park Champs",
+        "player": "Cole Bennett",
+        "to_par": 6,
+        "round_id": "05d18971-adb7-446a-9cf6-478002e48097",
+        "round_type": "practice",
+        "total_score": 78,
+        "qualifier_round": null
+       },
+       {
+        "date": "2026-08-16",
+        "putts": 31,
+        "course": "The Cardinal",
+        "player": "Cole Bennett",
+        "to_par": 17,
+        "round_id": "40d7ae8e-901f-47f9-bba6-9d448a219368",
+        "round_type": "practice",
+        "total_score": 88,
+        "qualifier_round": null
+       },
+       {
+        "date": "2026-08-02",
+        "putts": 39,
+        "course": "Pebble Beach Golf Club",
+        "player": "Cole Bennett",
+        "to_par": -1,
+        "round_id": "10cbccd9-9e9e-4c40-9b30-fb130e03b867",
+        "round_type": "practice",
+        "total_score": 71,
+        "qualifier_round": null
+       },
+       {
+        "date": "2026-08-02",
+        "putts": 38,
+        "course": "Pebble Beach Golf Club",
+        "player": "Cole Bennett",
+        "to_par": -2,
+        "round_id": "d00fd97f-1956-40fd-a831-c67516e3071c",
+        "round_type": "practice",
+        "total_score": 70,
+        "qualifier_round": null
+       },
+       {
+        "date": "2026-08-02",
+        "putts": 37,
+        "course": "Pebble Beach Golf Club",
+        "player": "Cole Bennett",
+        "to_par": -3,
+        "round_id": "15c2df9a-85a7-4f25-9af4-bd7684bc6b1a",
+        "round_type": "practice",
+        "total_score": 69,
+        "qualifier_round": null
+       },
+       {
+        "date": "2026-07-19",
+        "putts": 32,
+        "course": "Poplar Grove (real)",
+        "player": "Dylan Brooks",
+        "to_par": 6,
+        "round_id": "4625ba2c-654c-4080-8623-c716f04169d0",
+        "round_type": "tournament",
+        "total_score": 78,
+        "qualifier_round": null
+       },
+       {
+        "date": "2026-07-18",
+        "putts": 34,
+        "course": "Poplar Grove (real)",
+        "player": "Dylan Brooks",
+        "to_par": 6,
+        "round_id": "64b501c1-9e25-4d79-a99a-8231461be1e8",
+        "round_type": "tournament",
+        "total_score": 78,
+        "qualifier_round": null
+       },
+       {
+        "date": "2026-07-17",
+        "putts": 32,
+        "course": "Poplar Grove (real)",
+        "player": "Dylan Brooks",
+        "to_par": 1,
+        "round_id": "1083bd5d-79aa-41d1-8083-c283c0f52bdf",
+        "round_type": "tournament",
+        "total_score": 73,
+        "qualifier_round": null
+       },
+       {
+        "date": "2026-07-13",
+        "putts": 36,
+        "course": "Golden Horseshoe gold course",
+        "player": "Dylan Brooks",
+        "to_par": 8,
+        "round_id": "49df19ff-a0e3-418e-a343-03b3e8e3a7bb",
+        "round_type": "tournament",
+        "total_score": 79,
+        "qualifier_round": null
+       },
+       {
+        "date": "2026-07-13",
+        "putts": 31,
+        "course": "Golden Horseshoe gold course",
+        "player": "Dylan Brooks",
+        "to_par": 6,
+        "round_id": "c00d3c0f-cb6d-4f08-9732-de03b24a5acf",
+        "round_type": "practice",
+        "total_score": 77,
+        "qualifier_round": null
+       },
+       {
+        "date": "2026-07-13",
+        "putts": 35,
+        "course": "Golden Horseshoe gold course",
+        "player": "Dylan Brooks",
+        "to_par": 3,
+        "round_id": "47d06d29-2086-4cb6-aff4-a1e6bee66e1e",
+        "round_type": "practice",
+        "total_score": 74,
+        "qualifier_round": null
+       },
+       {
+        "date": "2026-07-12",
+        "putts": 28,
+        "course": "Poplar Grove (real)",
+        "player": "Tyler Hayes",
+        "to_par": -2,
+        "round_id": "dc52325f-13ef-4cb6-9b8d-ef91a9d29656",
+        "round_type": "practice",
+        "total_score": 70,
+        "qualifier_round": null
+       },
+       {
+        "date": "2026-07-10",
+        "putts": 35,
+        "course": "Poplar Grove (real)",
+        "player": "Jackson Hale",
+        "to_par": 12,
+        "round_id": "fdb2eb64-b7d5-4eb2-836a-0a897a97a744",
+        "round_type": "tournament",
+        "total_score": 84,
+        "qualifier_round": null
+       },
+       {
+        "date": "2026-07-10",
+        "putts": 30,
+        "course": "Poplar Grove (real)",
+        "player": "Owen Carter",
+        "to_par": 2,
+        "round_id": "ff74226b-e0e1-4f28-9273-c201df22ac21",
+        "round_type": "tournament",
+        "total_score": 74,
+        "qualifier_round": null
+       },
+       {
+        "date": "2026-07-10",
+        "putts": 35,
+        "course": "Poplar Grove (real)",
+        "player": "Cole Bennett",
+        "to_par": 13,
+        "round_id": "b126b8f6-cd60-4086-b5ca-744c45d4fa78",
+        "round_type": "tournament",
+        "total_score": 85,
+        "qualifier_round": null
+       },
+       {
+        "date": "2026-07-10",
+        "putts": 33,
+        "course": "Poplar Grove (real)",
+        "player": "Ethan Park",
+        "to_par": -1,
+        "round_id": "e761af58-868d-456d-b3a0-85531402abff",
+        "round_type": "tournament",
+        "total_score": 71,
+        "qualifier_round": null
+       },
+       {
+        "date": "2026-07-10",
+        "putts": 32,
+        "course": "Poplar Grove (real)",
+        "player": "Mason Rivers",
+        "to_par": 8,
+        "round_id": "713ff6ad-0141-4593-ab9b-6d4641a3490c",
+        "round_type": "tournament",
+        "total_score": 80,
+        "qualifier_round": null
+       },
+       {
+        "date": "2026-07-09",
+        "putts": 29,
+        "course": "Poplar Grove (real)",
+        "player": "Owen Carter",
+        "to_par": 1,
+        "round_id": "f3df82e7-f6de-4917-9c23-33939f4fbf1d",
+        "round_type": "tournament",
+        "total_score": 73,
+        "qualifier_round": null
+       },
+       {
+        "date": "2026-07-09",
+        "putts": 33,
+        "course": "Poplar Grove (real)",
+        "player": "Cole Bennett",
+        "to_par": 15,
+        "round_id": "fb9c6ef8-b152-4da0-bc46-13c89637537b",
+        "round_type": "tournament",
+        "total_score": 87,
+        "qualifier_round": null
+       },
+       {
+        "date": "2026-07-09",
+        "putts": 33,
+        "course": "Poplar Grove (real)",
+        "player": "Jackson Hale",
+        "to_par": 14,
+        "round_id": "c93a98d4-6e55-4bab-9e44-48c5cb575edc",
+        "round_type": "tournament",
+        "total_score": 86,
+        "qualifier_round": null
+       },
+       {
+        "date": "2026-07-09",
+        "putts": 29,
+        "course": "Poplar Grove (real)",
+        "player": "Tyler Hayes",
+        "to_par": -2,
+        "round_id": "077a68f6-14eb-4482-9460-742f88da3bcf",
+        "round_type": "tournament",
+        "total_score": 70,
+        "qualifier_round": null
+       },
+       {
+        "date": "2026-07-09",
+        "putts": 34,
+        "course": "Poplar Grove (real)",
+        "player": "Mason Rivers",
+        "to_par": 8,
+        "round_id": "58abde33-15bc-4349-9d14-700421c870a6",
+        "round_type": "tournament",
+        "total_score": 80,
+        "qualifier_round": null
+       },
+       {
+        "date": "2026-07-09",
+        "putts": 32,
+        "course": "Poplar Grove (real)",
+        "player": "Ethan Park",
+        "to_par": 5,
+        "round_id": "fdd41083-3297-4086-994e-809c555c3a99",
+        "round_type": "tournament",
+        "total_score": 77,
+        "qualifier_round": null
+       },
+       {
+        "date": "2026-07-08",
+        "putts": 30,
+        "course": "Poplar Grove (real)",
+        "player": "Owen Carter",
+        "to_par": 10,
+        "round_id": "186f37f7-6248-4541-81a8-077987b6781c",
+        "round_type": "tournament",
+        "total_score": 82,
+        "qualifier_round": null
+       },
+       {
+        "date": "2026-07-08",
+        "putts": 32,
+        "course": "Poplar Grove (real)",
+        "player": "Jackson Hale",
+        "to_par": 3,
+        "round_id": "81f468d8-c4f0-49d6-a0e1-af05049b6a0b",
+        "round_type": "tournament",
+        "total_score": 75,
+        "qualifier_round": null
+       },
+       {
+        "date": "2026-07-08",
+        "putts": 32,
+        "course": "Poplar Grove (real)",
+        "player": "Cole Bennett",
+        "to_par": 4,
+        "round_id": "eb83dca4-d37d-4fa1-8c9c-bccefde16581",
+        "round_type": "tournament",
+        "total_score": 76,
+        "qualifier_round": null
+       },
+       {
+        "date": "2026-07-08",
+        "putts": 32,
+        "course": "Poplar Grove (real)",
+        "player": "Mason Rivers",
+        "to_par": 3,
+        "round_id": "f28b195a-40f9-4d1c-885d-01a141663edd",
+        "round_type": "tournament",
+        "total_score": 75,
+        "qualifier_round": null
+       },
+       {
+        "date": "2026-07-08",
+        "putts": 30,
+        "course": "Poplar Grove (real)",
+        "player": "Ethan Park",
+        "to_par": 10,
+        "round_id": "2be08afb-a687-4756-952d-9fc40c775508",
+        "round_type": "tournament",
+        "total_score": 82,
+        "qualifier_round": null
+       },
+       {
+        "date": "2026-07-08",
+        "putts": 32,
+        "course": "Poplar Grove (real)",
+        "player": "Tyler Hayes",
+        "to_par": 8,
+        "round_id": "08a3f63d-f5fb-4347-85c1-3727c32124fd",
+        "round_type": "tournament",
+        "total_score": 80,
+        "qualifier_round": null
+       },
+       {
+        "date": "2026-07-04",
+        "putts": 34,
+        "course": "Golden Horseshoe gold course",
+        "player": "Tyler Hayes",
+        "to_par": 7,
+        "round_id": "7418614d-69b8-4755-9926-48e0498e1534",
+        "round_type": "practice",
+        "total_score": 78,
+        "qualifier_round": null
+       },
+       {
+        "date": "2026-07-04",
+        "putts": 31,
+        "course": "Golden Horseshoe gold course",
+        "player": "Mason Rivers",
+        "to_par": 8,
+        "round_id": "6e3c6280-b1b0-40d4-85bb-f698c3e90b0e",
+        "round_type": "practice",
+        "total_score": 79,
+        "qualifier_round": null
+       }
+      ]
+     },
+     "series": [
+      {
+       "unit": "score",
+       "as_of": "2026-10-31T02:40:52.598Z",
+       "entity": {
+        "id": "6ecdd1a6-63fe-4beb-b094-00118f334163",
+        "kind": "team",
+        "label": "Demo University Golf"
+       },
+       "method": "weekly mean of completed rounds",
+       "points": [
+        {
+         "at": "2026-05-18",
+         "value": 1.1,
+         "bucket": null,
+         "sample_size": 7
+        },
+        {
+         "at": "2026-05-25",
+         "value": 4,
+         "bucket": null,
+         "sample_size": 16
+        },
+        {
+         "at": "2026-06-01",
+         "value": 0.7,
+         "bucket": null,
+         "sample_size": 3
+        },
+        {
+         "at": "2026-06-08",
+         "value": 2.5,
+         "bucket": null,
+         "sample_size": 18
+        },
+        {
+         "at": "2026-06-15",
+         "value": 2,
+         "bucket": null,
+         "sample_size": 4
+        },
+        {
+         "at": "2026-06-29",
+         "value": 4.9,
+         "bucket": null,
+         "sample_size": 18
+        },
+        {
+         "at": "2026-07-06",
+         "value": 6.2,
+         "bucket": null,
+         "sample_size": 18
+        },
+        {
+         "at": "2026-07-13",
+         "value": 5,
+         "bucket": null,
+         "sample_size": 6
+        },
+        {
+         "at": "2026-07-27",
+         "value": -2,
+         "bucket": null,
+         "sample_size": 3
+        },
+        {
+         "at": "2026-08-10",
+         "value": 17,
+         "bucket": null,
+         "sample_size": 1
+        },
+        {
+         "at": "2026-08-17",
+         "value": 8.8,
+         "bucket": null,
+         "sample_size": 4
+        },
+        {
+         "at": "2026-08-24",
+         "value": 6.7,
+         "bucket": null,
+         "sample_size": 3
+        },
+        {
+         "at": "2026-08-31",
+         "value": 11,
+         "bucket": null,
+         "sample_size": 1
+        },
+        {
+         "at": "2026-09-07",
+         "value": 16,
+         "bucket": null,
+         "sample_size": 1
+        },
+        {
+         "at": "2026-09-14",
+         "value": 5,
+         "bucket": null,
+         "sample_size": 1
+        },
+        {
+         "at": "2026-09-21",
+         "value": 1.4,
+         "bucket": null,
+         "sample_size": 14
+        },
+        {
+         "at": "2026-09-28",
+         "value": 0,
+         "bucket": null,
+         "sample_size": 2
+        },
+        {
+         "at": "2026-10-05",
+         "value": 10,
+         "bucket": null,
+         "sample_size": 1
+        },
+        {
+         "at": "2026-10-19",
+         "value": 2.7,
+         "bucket": null,
+         "sample_size": 3
+        }
+       ],
+       "source": "rounds",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "lower_better",
+       "metric_id": "team_rounds_avg_to_par_weekly",
+       "window_end": "2026-10-30",
+       "metric_label": "Average score to par, by week",
+       "window_start": "2026-01-03",
+       "coverage_note": null
+      }
+     ],
+     "summary": "124 completed rounds by 7 players since 2026-01-03.",
+     "coverage": "complete",
+     "measurements": [
+      {
+       "unit": "score",
+       "as_of": "2026-10-31T02:40:52.598Z",
+       "value": 3.1,
+       "entity": {
+        "id": "ed1ff03e-b33a-4a80-891e-09685b7db3d0",
+        "kind": "player",
+        "label": "Dylan Brooks"
+       },
+       "method": "mean of completed rounds",
+       "source": "rounds",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "lower_better",
+       "metric_id": "team_rounds_avg_to_par",
+       "window_end": "2026-10-30",
+       "denominator": null,
+       "sample_size": 14,
+       "sample_unit": "rounds",
+       "metric_label": "Average score to par",
+       "window_start": "2026-01-03",
+       "coverage_note": null
+      },
+      {
+       "unit": "score",
+       "as_of": "2026-10-31T02:40:52.598Z",
+       "value": 3.2,
+       "entity": {
+        "id": "b40a650a-bce0-4e46-87cd-365b0256ee21",
+        "kind": "player",
+        "label": "Jackson Hale"
+       },
+       "method": "mean of completed rounds",
+       "source": "rounds",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "lower_better",
+       "metric_id": "team_rounds_avg_to_par",
+       "window_end": "2026-10-30",
+       "denominator": null,
+       "sample_size": 17,
+       "sample_unit": "rounds",
+       "metric_label": "Average score to par",
+       "window_start": "2026-01-03",
+       "coverage_note": null
+      },
+      {
+       "unit": "score",
+       "as_of": "2026-10-31T02:40:52.598Z",
+       "value": 3.3,
+       "entity": {
+        "id": "9458ca63-9dbe-4020-ab13-9e2b70f70c80",
+        "kind": "player",
+        "label": "Mason Rivers"
+       },
+       "method": "mean of completed rounds",
+       "source": "rounds",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "lower_better",
+       "metric_id": "team_rounds_avg_to_par",
+       "window_end": "2026-10-30",
+       "denominator": null,
+       "sample_size": 14,
+       "sample_unit": "rounds",
+       "metric_label": "Average score to par",
+       "window_start": "2026-01-03",
+       "coverage_note": null
+      },
+      {
+       "unit": "score",
+       "as_of": "2026-10-31T02:40:52.598Z",
+       "value": 3.5,
+       "entity": {
+        "id": "faced578-b271-416f-b757-ac3aee5bd9e5",
+        "kind": "player",
+        "label": "Tyler Hayes"
+       },
+       "method": "mean of completed rounds",
+       "source": "rounds",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "lower_better",
+       "metric_id": "team_rounds_avg_to_par",
+       "window_end": "2026-10-30",
+       "denominator": null,
+       "sample_size": 13,
+       "sample_unit": "rounds",
+       "metric_label": "Average score to par",
+       "window_start": "2026-01-03",
+       "coverage_note": null
+      },
+      {
+       "unit": "score",
+       "as_of": "2026-10-31T02:40:52.598Z",
+       "value": 4.4,
+       "entity": {
+        "id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+        "kind": "player",
+        "label": "Owen Carter"
+       },
+       "method": "mean of completed rounds",
+       "source": "rounds",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "lower_better",
+       "metric_id": "team_rounds_avg_to_par",
+       "window_end": "2026-10-30",
+       "denominator": null,
+       "sample_size": 14,
+       "sample_unit": "rounds",
+       "metric_label": "Average score to par",
+       "window_start": "2026-01-03",
+       "coverage_note": null
+      },
+      {
+       "unit": "score",
+       "as_of": "2026-10-31T02:40:52.598Z",
+       "value": 4.6,
+       "entity": {
+        "id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+        "kind": "player",
+        "label": "Cole Bennett"
+       },
+       "method": "mean of completed rounds",
+       "source": "rounds",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "lower_better",
+       "metric_id": "team_rounds_avg_to_par",
+       "window_end": "2026-10-30",
+       "denominator": null,
+       "sample_size": 37,
+       "sample_unit": "rounds",
+       "metric_label": "Average score to par",
+       "window_start": "2026-01-03",
+       "coverage_note": null
+      },
+      {
+       "unit": "score",
+       "as_of": "2026-10-31T02:40:52.598Z",
+       "value": 4.7,
+       "entity": {
+        "id": "8e382583-2ce6-4d15-8568-5088cf02dbd1",
+        "kind": "player",
+        "label": "Ethan Park"
+       },
+       "method": "mean of completed rounds",
+       "source": "rounds",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "lower_better",
+       "metric_id": "team_rounds_avg_to_par",
+       "window_end": "2026-10-30",
+       "denominator": null,
+       "sample_size": 15,
+       "sample_unit": "rounds",
+       "metric_label": "Average score to par",
+       "window_start": "2026-01-03",
+       "coverage_note": null
+      }
+     ],
+     "coverage_note": null
+    },
+    {
+     "as_of": "2026-10-31T02:40:52.616Z",
+     "detail": {
+      "direction": "higher_better",
+      "metric_id": "sg_total",
+      "metric_label": "Strokes gained total"
+     },
+     "series": [],
+     "summary": "Strokes gained total across Demo University Golf.",
+     "coverage": "partial",
+     "measurements": [
+      {
+       "unit": "strokes",
+       "as_of": "2026-09-29T02:20:34.950563+00:00",
+       "value": -1.61,
+       "entity": {
+        "id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+        "kind": "player",
+        "label": "Cole Bennett"
+       },
+       "method": "sg_per_round_vs_broadie_baseline",
+       "source": "stats cache",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "higher_better",
+       "metric_id": "sg_total",
+       "window_end": "2026-09-26",
+       "denominator": null,
+       "sample_size": 23,
+       "sample_unit": "rounds",
+       "metric_label": "Strokes gained total",
+       "window_start": "2026-05-18",
+       "coverage_note": null
+      },
+      {
+       "unit": "strokes",
+       "as_of": "2026-09-29T02:20:35.251487+00:00",
+       "value": -4.13,
+       "entity": {
+        "id": "ed1ff03e-b33a-4a80-891e-09685b7db3d0",
+        "kind": "player",
+        "label": "Dylan Brooks"
+       },
+       "method": "sg_per_round_vs_broadie_baseline",
+       "source": "stats cache",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "higher_better",
+       "metric_id": "sg_total",
+       "window_end": "2026-09-26",
+       "denominator": null,
+       "sample_size": 15,
+       "sample_unit": "rounds",
+       "metric_label": "Strokes gained total",
+       "window_start": "2026-06-06",
+       "coverage_note": null
+      },
+      {
+       "unit": "strokes",
+       "as_of": "2026-09-29T02:20:35.389298+00:00",
+       "value": -4.21,
+       "entity": {
+        "id": "faced578-b271-416f-b757-ac3aee5bd9e5",
+        "kind": "player",
+        "label": "Tyler Hayes"
+       },
+       "method": "sg_per_round_vs_broadie_baseline",
+       "source": "stats cache",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "higher_better",
+       "metric_id": "sg_total",
+       "window_end": "2026-09-26",
+       "denominator": null,
+       "sample_size": 14,
+       "sample_unit": "rounds",
+       "metric_label": "Strokes gained total",
+       "window_start": "2026-05-31",
+       "coverage_note": null
+      },
+      {
+       "unit": "strokes",
+       "as_of": "2026-09-29T02:20:34.761502+00:00",
+       "value": -4.44,
+       "entity": {
+        "id": "b40a650a-bce0-4e46-87cd-365b0256ee21",
+        "kind": "player",
+        "label": "Jackson Hale"
+       },
+       "method": "sg_per_round_vs_broadie_baseline",
+       "source": "stats cache",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "higher_better",
+       "metric_id": "sg_total",
+       "window_end": "2026-09-26",
+       "denominator": null,
+       "sample_size": 17,
+       "sample_unit": "rounds",
+       "metric_label": "Strokes gained total",
+       "window_start": "2026-05-18",
+       "coverage_note": null
+      },
+      {
+       "unit": "strokes",
+       "as_of": "2026-09-29T02:20:35.125594+00:00",
+       "value": -4.88,
+       "entity": {
+        "id": "9458ca63-9dbe-4020-ab13-9e2b70f70c80",
+        "kind": "player",
+        "label": "Mason Rivers"
+       },
+       "method": "sg_per_round_vs_broadie_baseline",
+       "source": "stats cache",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "higher_better",
+       "metric_id": "sg_total",
+       "window_end": "2026-09-26",
+       "denominator": null,
+       "sample_size": 14,
+       "sample_unit": "rounds",
+       "metric_label": "Strokes gained total",
+       "window_start": "2026-05-28",
+       "coverage_note": null
+      },
+      {
+       "unit": "strokes",
+       "as_of": "2026-09-29T02:20:34.429142+00:00",
+       "value": -6.45,
+       "entity": {
+        "id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+        "kind": "player",
+        "label": "Owen Carter"
+       },
+       "method": "sg_per_round_vs_broadie_baseline",
+       "source": "stats cache",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "higher_better",
+       "metric_id": "sg_total",
+       "window_end": "2026-09-26",
+       "denominator": null,
+       "sample_size": 14,
+       "sample_unit": "rounds",
+       "metric_label": "Strokes gained total",
+       "window_start": "2026-05-28",
+       "coverage_note": null
+      },
+      {
+       "unit": "strokes",
+       "as_of": "2026-09-29T02:20:35.508238+00:00",
+       "value": -6.6,
+       "entity": {
+        "id": "8e382583-2ce6-4d15-8568-5088cf02dbd1",
+        "kind": "player",
+        "label": "Ethan Park"
+       },
+       "method": "sg_per_round_vs_broadie_baseline",
+       "source": "stats cache",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "higher_better",
+       "metric_id": "sg_total",
+       "window_end": "2026-09-26",
+       "denominator": null,
+       "sample_size": 15,
+       "sample_unit": "rounds",
+       "metric_label": "Strokes gained total",
+       "window_start": "2026-05-18",
+       "coverage_note": null
+      }
+     ],
+     "coverage_note": "No strokes gained total recorded for Audit Testplayer."
+    }
+   ]
+  },
+  {
+   "role": "user",
+   "createdAt": "2026-10-31T02:41:58.272299+00:00",
+   "content": "create a travel plan for me",
+   "evidence": []
+  },
+  {
+   "role": "assistant",
+   "createdAt": "2026-10-31T02:42:02.60259+00:00",
+   "content": "I can't build a travel plan yet. I have no tool for itineraries, flights, hotels or logistics, and the calendar has nothing scheduled in the next 60 days. There's no event for me to plan around.\n\nHere's what I can do in CoachHelm:\n\n- **Announcement:** I can draft a travel announcement to the team, with the date, departure time and what to bring, that players have to acknowledge.\n- **Tasks:** I can assign travel tasks to the roster, such as submitting rooming preferences or confirming dietary needs.\n- **Practice:** I can put a pre-trip practice on the calendar.\n\nYou also have an open task, \"Submit Spring Invitational Travel Preferences Form\", that was due July 27 and is still pending. If a trip is coming up, that form is probably still outstanding from the players.\n\nTo draft any of these, I need the event name, the dates and the departure time. Then I can write it up for you to confirm.",
+   "evidence": [
+    {
+     "as_of": "2026-10-31T02:41:59.791Z",
+     "detail": {
+      "events": []
+     },
+     "series": [],
+     "summary": "Nothing scheduled in the next 60 days.",
+     "coverage": "empty",
+     "measurements": [],
+     "coverage_note": null
+    },
+    {
+     "as_of": "2026-10-31T02:41:59.793Z",
+     "detail": {
+      "tasks": [
+       {
+        "title": "Update Yardage Book — Home Course",
+        "status": "in_progress",
+        "overdue": true,
+        "task_id": "a1a68717-a6db-4d00-8ca5-427ff894eaf6",
+        "due_date": "2026-07-22",
+        "priority": "high"
+       },
+       {
+        "title": "Complete Swing Mechanics Self-Assessment Video",
+        "status": "in_progress",
+        "overdue": true,
+        "task_id": "5be36a2e-cbd3-4c78-97f4-388a170dc5d5",
+        "due_date": "2026-07-24",
+        "priority": "medium"
+       },
+       {
+        "title": "Submit Spring Invitational Travel Preferences Form",
+        "status": "pending",
+        "overdue": true,
+        "task_id": "1dd41a13-16d9-46bb-8c38-29f727487f49",
+        "due_date": "2026-07-27",
+        "priority": "medium"
+       },
+       {
+        "title": "Watch Pre-Tournament Course Overview Video",
+        "status": "pending",
+        "overdue": true,
+        "task_id": "5402b6d3-ac25-4927-8f5f-deea2baa33a7",
+        "due_date": "2026-07-28",
+        "priority": "high"
+       },
+       {
+        "title": "Individual Goal-Setting Meeting with Coach",
+        "status": "pending",
+        "overdue": true,
+        "task_id": "fdab3687-5928-4fdf-9631-899ef0690557",
+        "due_date": "2026-08-04",
+        "priority": "low"
+       },
+       {
+        "title": "Momentic Task 213604",
+        "status": "pending",
+        "overdue": false,
+        "task_id": "c11b0533-ac7c-4b25-99cb-f47d73ec4908",
+        "due_date": null,
+        "priority": "normal"
+       }
+      ],
+      "open_count": 6,
+      "overdue_count": 5
+     },
+     "series": [],
+     "summary": "6 open tasks, 5 overdue.",
+     "coverage": "complete",
+     "measurements": [],
+     "coverage_note": null
+    }
+   ]
+  },
+  {
+   "role": "user",
+   "createdAt": "2026-10-31T02:42:21.82423+00:00",
+   "content": "what",
+   "evidence": []
+  }
+ ],
+ "turn": {
+  "createdAt": "2026-10-31T02:42:24.4487+00:00",
+  "status": "failed",
+  "costUsd": null,
+  "content": "Sorry, that was confusing. I can't make a travel plan. I have no way to book flights or hotels or to build an itinerary.\n\nI also checked your calendar and nothing is scheduled for the next 60 days, so there's no trip for me to work from.\n\nWhat I can do is write a message to your team about a trip, or assign players travel-related tasks. For either one, I need to know where the trip is, which dates, and what time you're leaving. Which of those would help?",
+  "tools": [],
+  "evidence": [],
+  "recorded": {
+   "outcome": "rejected",
+   "reason": "ungrounded_claims",
+   "unmatchedTokens": [
+    "60"
+   ],
+   "misattributedTokens": []
+  }
+ }
+}

@@ -9,22 +9,17 @@ vi.mock('../../AskSheet', async () => {
   const React = await import('react');
   return {
     AskSheetContext: React.createContext(null),
-    AskSheetButton: () => <button type="button">Ask sparkle</button>,
     lookingAt: () => 'Looking at Calendar',
   };
 });
 
-import { AskSheetButton } from '../../AskSheet';
 import { ClubhouseMarker } from '../../context';
-import { HelmKey, QuickChatProvider, useQuickChatPresent } from '../QuickChatProvider';
-import { quickStarts } from '../starts';
+import { HelmKey, QuickChatProvider } from '../QuickChatProvider';
+import { accessibleName, expectLabelInName } from '../../../__tests__/label-in-name';
 
 const CAL = '/golf/dashboard/calendar';
 
-/** As `TopBar` picks: the Helm key inside the provider, today's sparkle outside it. */
-function Slot() {
-  return useQuickChatPresent() ? <HelmKey /> : <AskSheetButton />;
-}
+const Slot = HelmKey;
 const show = (role: 'coach' | 'player', opts: { provider?: boolean; enabled?: boolean; pathname?: string } = {}) => {
   const { provider = true, enabled = true, pathname = CAL } = opts;
   return render(
@@ -41,18 +36,15 @@ const show = (role: 'coach' | 'player', opts: { provider?: boolean; enabled?: bo
 };
 const key = () => document.querySelector<HTMLElement>('[data-ch-qc-key]');
 
-beforeEach(() => session.mockClear());
+beforeEach(() => {
+  session.mockClear();
+  session.mockImplementation(() => null);
+});
 afterEach(cleanup);
 
 /** Quick chat AC-QC-KEY-07 and 08: SHARED-8 and SHARED-11. */
 describe('who gets the key', () => {
-  it('flag off (no provider): today’s sparkle, and no key', () => {
-    show('coach', { provider: false });
-    expect(screen.getByRole('button', { name: 'Ask sparkle' })).toBeTruthy();
-    expect(key()).toBeNull();
-  });
-
-  it('a player: no key node, no session, and ⌘J does nothing', async () => {
+    it('a player: no key node, no session, and ⌘J does nothing', async () => {
     show('player');
     expect(key()).toBeNull();
     fireEvent.keyDown(window, { key: 'j', metaKey: true });
@@ -69,9 +61,32 @@ describe('who gets the key', () => {
 
   it('a coach: the key, named, closed', () => {
     show('coach');
-    expect(key()!.getAttribute('aria-label')).toBe('CoachHelm');
+    expect(accessibleName(key()!)).toBe('CoachHelm');
     expect(key()!.getAttribute('aria-expanded')).toBe('false');
     expect(key()!.getAttribute('aria-haspopup')).toBe('dialog');
+  });
+
+  it('says what it is, beside the mark, and its name is what it says', () => {
+    show('coach');
+    expect(key()!.querySelector('.hkey__label')!.textContent).toBe('CoachHelm');
+    // F-0011: named by its words, never an aria-label the ⌘J caps beside them would disagree with (axe label-content-name-mismatch).
+    expect(key()).not.toHaveAttribute('aria-label');
+    expectLabelInName(key()!, key()!.querySelector('.hkey__label')!.textContent!);
+  });
+
+  it('F-0015: points at the panel only while the panel is there', async () => {
+    // The session mounts the panel (QuickChatSession's section#ch-qc-panel) only once it has been opened.
+    session.mockImplementation(((p: { open: boolean }) => (p.open ? <section id="ch-qc-panel" /> : null)) as never);
+    show('coach');
+    expect(key()).not.toHaveAttribute('aria-controls');
+    await act(async () => {
+      fireEvent.click(key()!);
+      await Promise.resolve();
+    });
+    expect(key()!.getAttribute('aria-expanded')).toBe('true');
+    const id = key()!.getAttribute('aria-controls');
+    expect(id).toBe('ch-qc-panel');
+    expect(document.getElementById(id!)).not.toBeNull();
   });
 
   it('on CoachHelm itself: hidden, as today’s key is', () => {
@@ -138,15 +153,3 @@ describe('opening', () => {
 });
 
 /** AC-QC-HEL-03, CP-QC-10. */
-describe('the tiles', () => {
-  it('are always four', () => {
-    for (const p of [CAL, '/golf/dashboard/qualifiers', '/golf/dashboard/messages', '/golf/dashboard']) {
-      expect(quickStarts(p, true)).toHaveLength(4);
-      expect(quickStarts(p, false)).toHaveLength(4);
-    }
-  });
-  it('with plans on, the fourth is the plan; off, no plan tile', () => {
-    expect(quickStarts(CAL, true)[3]!.id).toBe('plan');
-    expect(quickStarts(CAL, false).map((t) => t.id)).not.toContain('plan');
-  });
-});

@@ -12,7 +12,8 @@ import {
   evaluateAndPersistFocusAreas,
 } from '@/lib/golf/progress-drivers';
 import { enqueueJob, isHelmQueueEnabled } from '@/lib/jobs/enqueue';
-import { revalidatePath, updateTag } from 'next/cache';
+import { revalidatePath } from 'next/cache';
+import { updateTag } from '@/lib/cache/safe-update-tag';
 import { CACHE_TAGS } from '@/lib/cache/tags';
 import type { HoleStats } from '@/lib/types/golf';
 import { z } from 'zod';

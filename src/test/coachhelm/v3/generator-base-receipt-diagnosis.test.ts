@@ -304,18 +304,19 @@ describe('buildDiagnosis / buildConfidenceReason (pure)', () => {
     expect(d.symptom).toContain('43%');
   });
 
-  it('confidence reason names the sample count and the unmeasured factors', () => {
-    const reason = buildConfidenceReason(evidence);
-    expect(reason).toContain('30 observations');
-    expect(reason).toContain('not measured');
+  it('confidence reason names the sample count and the tier, in a coach’s words (READ-S1)', () => {
+    const reason = buildConfidenceReason({ ...evidence, confidence: 0.9 });
+    expect(reason).toBe('30 observations. Enough for a solid read.');
   });
 
-  it('confidence reason reports measured factors when factors_measured=true', () => {
-    const reason = buildConfidenceReason({
-      sample_n: 30,
-      confidence_factors: { sample_adequacy: 1, recency: 0.8, variance: 0.6, factors_measured: true },
-    });
-    expect(reason).toContain('recency measured 0.80');
-    expect(reason).toContain('variance measured 0.60');
+  it('confidence reason never says how the blend was made, measured or not', () => {
+    for (const factors_measured of [true, false, undefined]) {
+      const reason = buildConfidenceReason({
+        sample_n: 30,
+        confidence_factors: { sample_adequacy: 0.6, recency: 0.8, variance: 0.6, factors_measured },
+      });
+      expect(reason).toBe('30 observations. Enough for an early read.');
+      expect(reason).not.toMatch(/recency|variance|not measured|adequa|of target/i);
+    }
   });
 });

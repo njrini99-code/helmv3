@@ -1,0 +1,83 @@
+{
+ "id": "e8b71de1",
+ "messageId": "e8b71de1-7f23-427e-a4f9-8236afedf1ef",
+ "source": {
+  "project": "staging",
+  "team": "Demo University Golf",
+  "exportedBy": "scripts/coachhelm/export-ask-turns.mjs"
+ },
+ "timezone": "America/New_York",
+ "roster": [
+  {
+   "id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+   "name": "Cole Bennett",
+   "first_name": "Cole",
+   "last_name": "Bennett"
+  },
+  {
+   "id": "ed1ff03e-b33a-4a80-891e-09685b7db3d0",
+   "name": "Dylan Brooks",
+   "first_name": "Dylan",
+   "last_name": "Brooks"
+  },
+  {
+   "id": "9458ca63-9dbe-4020-ab13-9e2b70f70c80",
+   "name": "Mason Rivers",
+   "first_name": "Mason",
+   "last_name": "Rivers"
+  },
+  {
+   "id": "b40a650a-bce0-4e46-87cd-365b0256ee21",
+   "name": "Jackson Hale",
+   "first_name": "Jackson",
+   "last_name": "Hale"
+  },
+  {
+   "id": "8e382583-2ce6-4d15-8568-5088cf02dbd1",
+   "name": "Ethan Park",
+   "first_name": "Ethan",
+   "last_name": "Park"
+  },
+  {
+   "id": "faced578-b271-416f-b757-ac3aee5bd9e5",
+   "name": "Tyler Hayes",
+   "first_name": "Tyler",
+   "last_name": "Hayes"
+  },
+  {
+   "id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+   "name": "Owen Carter",
+   "first_name": "Owen",
+   "last_name": "Carter"
+  },
+  {
+   "id": "b6b87c4d-0673-4166-9f8c-44e60936a034",
+   "name": "Audit Testplayer",
+   "first_name": "Audit",
+   "last_name": "Testplayer"
+  }
+ ],
+ "userMessage": {
+  "content": "What can you do?",
+  "createdAt": "2026-11-08T05:35:54.022304+00:00"
+ },
+ "priorMessages": [
+  {
+   "role": "user",
+   "createdAt": "2026-11-08T05:35:54.022304+00:00",
+   "content": "What can you do?",
+   "evidence": []
+  }
+ ],
+ "turn": {
+  "createdAt": "2026-11-08T05:35:58.48776+00:00",
+  "status": "complete",
+  "costUsd": null,
+  "content": "I can read your team's data, draft actions for you to confirm, and write documents.\n\n**Analyze performance**\n- Look at one player: scoring, strokes gained by area, putting by distance, trends over recent rounds, and where he's losing the most strokes.\n- Compare players, rank the roster on any stat, and read the team's strokes gained and putting profile.\n- Check players and the team against Division level averages, the team average and the Tour.\n- Pull up round-by-round detail, hole-by-hole scoring, tournament and qualifier results, and season-over-season changes.\n\n**Track development**\n- Goals, focus areas and how much practice players have logged toward them.\n- Attendance, open signals and shared patterns across the roster.\n\n**Plan and organize (I draft, you confirm)**\n- Practice plans built from your drill bank, single or recurring practices, and calendar events.\n- Trips, qualifiers, lineups and lineup locks.\n- Goals, focus areas, tasks, team announcements, round notes and availability notes.\n- Messages, polls and boards for players (nothing sends until you press Send).\n- Written reports, round recaps and lineup documents.\n\nNothing changes in the program until you confirm it. I only state figures that come from your data, and I tell you the window and sample behind each one.\n\nTry something like \"Who's putting best over the last ten rounds?\" or \"Where is Cole losing strokes?\"",
+  "tools": [],
+  "evidence": [],
+  "recorded": {
+   "outcome": "accepted"
+  }
+ }
+}

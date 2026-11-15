@@ -62,7 +62,6 @@ afterEach(() => vi.unstubAllGlobals());
 const SCREENS: Array<[string, () => ReactNode]> = [
   ['list coach', () => <QualifiersList data={previewList('coach')} />],
   ['list player', () => <QualifiersList data={previewList('player')} />],
-  ['mine', () => <QualifiersList data={previewList('player', 'mine')} />],
   ['detail coach', () => <QualifierDetail data={previewDetail(0, 'coach')} />],
   ['detail player', () => <QualifierDetail data={previewDetail(0, 'player')} />],
   ['detail completed', () => <QualifierDetail data={previewDetail(3, 'coach')} />],

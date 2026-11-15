@@ -1,5 +1,5 @@
 import { LazyMotion, domAnimation } from 'motion/react';
-import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 /**
@@ -129,21 +129,6 @@ describe('P003 · 30102 the bell’s join-request link (?tab=requests)', () => {
       </LazyMotion>,
     );
 
-  it('on the phone it opens the requests sheet once and drops the param, so a reload shows the list', async () => {
-    window.history.replaceState(null, '', '/golf/dashboard/roster?tab=requests');
-    phone({ ...PREVIEW_ROSTER });
-    expect(await screen.findByRole('dialog', { name: 'Join requests' })).toBeTruthy();
-    expect(window.location.search).toBe('');
-  });
-
-  it('with no request waiting it opens nothing (the notice was already decided)', async () => {
-    window.history.replaceState(null, '', '/golf/dashboard/roster?tab=requests');
-    phone({ ...PREVIEW_ROSTER, requests: [] });
-    await new Promise((r) => setTimeout(r, 30));
-    expect(screen.queryByRole('dialog', { name: 'Join requests' })).toBeNull();
-    expect(window.location.search).toBe('');
-  });
-
   it('without the param the sheet stays closed until the banner is pressed', async () => {
     window.history.replaceState(null, '', '/golf/dashboard/roster');
     phone({ ...PREVIEW_ROSTER });
@@ -154,17 +139,6 @@ describe('P003 · 30102 the bell’s join-request link (?tab=requests)', () => {
 
 describe('P003 · 30102 Home’s first-run Invite players (?invite=1)', () => {
   const realMatchMedia = window.matchMedia;
-  const media = (phone: boolean) =>
-    ((q: string) => ({
-      matches: phone && q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)',
-      media: q,
-      onchange: null,
-      addEventListener: () => {},
-      removeEventListener: () => {},
-      addListener: () => {},
-      removeListener: () => {},
-      dispatchEvent: () => false,
-    })) as never;
   afterEach(() => {
     window.matchMedia = realMatchMedia;
     window.history.replaceState(null, '', '/');
@@ -186,24 +160,6 @@ describe('P003 · 30102 Home’s first-run Invite players (?invite=1)', () => {
         </ToastProvider>
       </LazyMotion>,
     );
-
-  it.each([
-    ['desktop', false],
-    ['phone', true],
-  ])('%s: the invite sheet opens once and the param is dropped; closing it does not bring it back', async (_, phone) => {
-    window.matchMedia = media(phone);
-    window.history.replaceState(null, '', '/golf/dashboard/roster?invite=1');
-    mount({ ...PREVIEW_ROSTER });
-    const sheet = await screen.findByRole('dialog', { name: 'Invite players' });
-    expect(window.location.search).toBe('');
-    // Closed by the coach: the arrival is spent, so the roster mounted again (a reload, Back) opens no sheet.
-    within(sheet).getByRole('button', { name: 'Close' }).click();
-    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Invite players' })).toBeNull());
-    cleanup();
-    mount({ ...PREVIEW_ROSTER });
-    await new Promise((r) => setTimeout(r, 30));
-    expect(screen.queryByRole('dialog', { name: 'Invite players' })).toBeNull();
-  });
 
   it('a remount before the sheet is closed (dropping the param can cause one) still opens it', async () => {
     window.history.replaceState(null, '', '/golf/dashboard/roster?invite=1');

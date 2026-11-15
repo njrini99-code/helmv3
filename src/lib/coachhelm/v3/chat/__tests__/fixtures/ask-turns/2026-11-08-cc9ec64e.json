@@ -1,0 +1,456 @@
+{
+ "id": "cc9ec64e",
+ "messageId": "cc9ec64e-56c6-46fb-9430-0b3ad0fe5939",
+ "source": {
+  "project": "staging",
+  "team": "Demo University Golf",
+  "exportedBy": "scripts/coachhelm/export-ask-turns.mjs"
+ },
+ "timezone": "America/New_York",
+ "roster": [
+  {
+   "id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+   "name": "Cole Bennett",
+   "first_name": "Cole",
+   "last_name": "Bennett"
+  },
+  {
+   "id": "ed1ff03e-b33a-4a80-891e-09685b7db3d0",
+   "name": "Dylan Brooks",
+   "first_name": "Dylan",
+   "last_name": "Brooks"
+  },
+  {
+   "id": "9458ca63-9dbe-4020-ab13-9e2b70f70c80",
+   "name": "Mason Rivers",
+   "first_name": "Mason",
+   "last_name": "Rivers"
+  },
+  {
+   "id": "b40a650a-bce0-4e46-87cd-365b0256ee21",
+   "name": "Jackson Hale",
+   "first_name": "Jackson",
+   "last_name": "Hale"
+  },
+  {
+   "id": "8e382583-2ce6-4d15-8568-5088cf02dbd1",
+   "name": "Ethan Park",
+   "first_name": "Ethan",
+   "last_name": "Park"
+  },
+  {
+   "id": "faced578-b271-416f-b757-ac3aee5bd9e5",
+   "name": "Tyler Hayes",
+   "first_name": "Tyler",
+   "last_name": "Hayes"
+  },
+  {
+   "id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+   "name": "Owen Carter",
+   "first_name": "Owen",
+   "last_name": "Carter"
+  },
+  {
+   "id": "b6b87c4d-0673-4166-9f8c-44e60936a034",
+   "name": "Audit Testplayer",
+   "first_name": "Audit",
+   "last_name": "Testplayer"
+  }
+ ],
+ "userMessage": {
+  "content": "Show attendance and goal progress for the whole team.",
+  "createdAt": "2026-11-08T04:37:58.663027+00:00"
+ },
+ "priorMessages": [
+  {
+   "role": "user",
+   "createdAt": "2026-11-08T04:36:55.514746+00:00",
+   "content": "How does Owen Carter's approach play compare with his level, the team and the Tour over his last 10 rounds?",
+   "evidence": []
+  },
+  {
+   "role": "assistant",
+   "createdAt": "2026-11-08T04:37:07.336508+00:00",
+   "content": "Owen's approach play is well behind all three references. Over his last 10-round window his strokes gained on approach is -4.16 per round. That window holds only 8 recorded rounds (9 June to 26 September), so it is a slightly thin read.\n\n- **Level:** there is no college figure for strokes gained, so I can't compare him with the Division I average on this stat.\n- **Team:** the team average is -2.33, and Owen ranks 7th of 7 on it. He is about 1.8 strokes per round below that average.\n- **Tour:** the PGA Tour baseline is 0. He is about 4.2 strokes per round below it. A college player trailing the Tour is expected, so the team comparison is the more useful one.\n\nGreens in regulation show less of a gap. He hit 61.11% over 144 holes in the same window. The Division I average is 60%, and he sits 36th percentile among college players in the system. The team average is 66.25%, which puts him 6th of 7. The PGA Tour figure is 66%. So he is near the college level at reaching greens, and the loss comes from the quality of his approach shots. I don't have proximity or miss-pattern data for him in this read.",
+   "evidence": [
+    {
+     "as_of": "2026-11-08T04:36:59.993Z",
+     "detail": {
+      "kind": "benchmark_read",
+      "note": "Benchmarks are published or estimated averages, never this team’s results. Name the level and the source when you use one.",
+      "standing": {
+       "rows": [
+        {
+         "gaps": {
+          "vs_team": -1.5,
+          "vs_tour": -3.83,
+          "vs_level": null
+         },
+         "direction": "higher_better",
+         "metric_id": "sg_approach",
+         "comparisons": [
+          {
+           "kind": "level",
+           "note": "There is no college figure for this metric.",
+           "label": "Division I average",
+           "value": null,
+           "place_of": null,
+           "place_percent": null,
+           "missing_reason": "no college figure"
+          },
+          {
+           "kind": "team",
+           "note": null,
+           "label": "Team average",
+           "value": -2.33,
+           "place_of": 7,
+           "place_percent": 0,
+           "missing_reason": null
+          },
+          {
+           "kind": "tour",
+           "note": null,
+           "label": "PGA Tour",
+           "value": 0,
+           "place_of": null,
+           "place_percent": null,
+           "missing_reason": null
+          }
+         ],
+         "computed_at": "2026-11-07T02:20:34.954747+00:00",
+         "metric_label": "SG: Approach",
+         "metric_scope": "sg_approach",
+         "player_value": -3.83
+        }
+       ],
+       "player": "Owen Carter",
+       "window": "all recorded rounds, refreshed nightly",
+       "player_id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91"
+      },
+      "benchmarks": [
+       {
+        "kind": "benchmark",
+        "unit": "strokes",
+        "levels": {
+         "pga": {
+          "label": "PGA Tour",
+          "value": 0
+         }
+        },
+        "season": "2024",
+        "source": "\"Scheffler routinely >1.0\" per Research doc §2 SG benchmarks; elite ~0.5+.",
+        "direction": "higher_better",
+        "metric_id": "sg_approach",
+        "metric_label": "SG: Approach",
+        "metric_scope": "sg_approach",
+        "source_label": "2024 reference table",
+        "tour_percentiles": {
+         "p25": -0.3,
+         "p50": 0,
+         "p75": 0.5
+        }
+       }
+      ],
+      "team_level": "Division I average"
+     },
+     "series": [],
+     "summary": "Division I average, PGA Tour for 1 metric, with 1 standing row.",
+     "coverage": "complete",
+     "measurements": [],
+     "coverage_note": null
+    },
+    {
+     "as_of": "2026-11-08T04:36:59.680Z",
+     "series": [],
+     "summary": "2 metrics for Owen Carter, over the newest ten rounds.",
+     "coverage": "complete",
+     "measurements": [
+      {
+       "unit": "strokes",
+       "as_of": "2026-11-08T04:36:59.680Z",
+       "value": -4.16,
+       "entity": {
+        "id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+        "kind": "player",
+        "label": "Owen Carter"
+       },
+       "method": "sg_approach_per_18_over_the_window_as_stats_reads_it",
+       "source": "rounds",
+       "coverage": "complete",
+       "benchmark": {
+        "value": 0,
+        "source": "PGA Tour 2024",
+        "version": "2024",
+        "omitted_for_cohort": false
+       },
+       "direction": "higher_better",
+       "metric_id": "sg_approach",
+       "window_end": "2026-09-26",
+       "comparisons": [
+        {
+         "kind": "level",
+         "note": "There is no college figure for this metric.",
+         "label": "Division I average",
+         "value": null,
+         "place_of": null,
+         "place_percent": null,
+         "missing_reason": "no college figure"
+        },
+        {
+         "kind": "team",
+         "note": null,
+         "label": "Team average",
+         "value": -2.33,
+         "place_of": 7,
+         "place_percent": 0,
+         "missing_reason": null
+        },
+        {
+         "kind": "tour",
+         "note": null,
+         "label": "PGA Tour",
+         "value": 0,
+         "place_of": null,
+         "place_percent": null,
+         "missing_reason": null
+        }
+       ],
+       "denominator": null,
+       "sample_size": 8,
+       "sample_unit": "rounds",
+       "metric_label": "Strokes gained approach",
+       "window_start": "2026-06-09",
+       "coverage_note": null
+      },
+      {
+       "unit": "percent",
+       "as_of": "2026-11-08T04:36:59.680Z",
+       "value": 61.11,
+       "entity": {
+        "id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+        "kind": "player",
+        "label": "Owen Carter"
+       },
+       "method": "gir_pct_per_18_over_the_window_as_stats_reads_it",
+       "source": "rounds",
+       "coverage": "complete",
+       "benchmark": {
+        "value": 60,
+        "source": "Division I average 2024",
+        "version": "2024",
+        "omitted_for_cohort": false
+       },
+       "direction": "higher_better",
+       "metric_id": "gir_pct",
+       "window_end": "2026-09-26",
+       "comparisons": [
+        {
+         "kind": "level",
+         "note": "Place is among college players on helm.",
+         "label": "Division I average",
+         "value": 60,
+         "place_of": 71,
+         "place_percent": 36,
+         "missing_reason": null
+        },
+        {
+         "kind": "team",
+         "note": null,
+         "label": "Team average",
+         "value": 66.25,
+         "place_of": 7,
+         "place_percent": 17,
+         "missing_reason": null
+        },
+        {
+         "kind": "tour",
+         "note": null,
+         "label": "PGA Tour",
+         "value": 66,
+         "place_of": null,
+         "place_percent": null,
+         "missing_reason": null
+        }
+       ],
+       "denominator": 144,
+       "sample_size": 144,
+       "sample_unit": "holes",
+       "metric_label": "Greens in regulation",
+       "window_start": "2026-06-09",
+       "coverage_note": null
+      }
+     ],
+     "window_label": "last 10 rounds",
+     "coverage_note": null
+    }
+   ]
+  },
+  {
+   "role": "user",
+   "createdAt": "2026-11-08T04:37:58.663027+00:00",
+   "content": "Show attendance and goal progress for the whole team.",
+   "evidence": []
+  }
+ ],
+ "turn": {
+  "createdAt": "2026-11-08T04:38:08.305686+00:00",
+  "status": "failed",
+  "costUsd": null,
+  "content": "I can't show attendance, and no goals are active right now.\n\n**Attendance:** the read came back empty for all 8 players. That means no attendance is recorded, not that everyone attended. Check whether events are being checked in, or whether attendance has been logged at all for this period.\n\n**Goals:** no active goals are visible for the team [e2]. Five goals exist in the full history, all closed and all belonging to two players [e3]. Goals show only what a coach set or a player shared with you, so a private goal would not appear.\n\n- **Cole Bennett:**\n  - Wedge distance control (80-120 yards) was achieved. His recorded value ended better than the target, at 127% progress.\n  - Short putting consistency (3-6 feet) was missed. His make rate fell from the baseline, and progress is negative.\n- **Owen Carter:**\n  - Tighten 150-180y approach dispersion was missed, but narrowly, at 89% progress.\n  - Rebuild 5-10 ft make rate was missed. It moved the wrong way from the baseline.\n  - Improve short-side scrambling was missed, and no current value was recorded.\n\nAll five goals ended in July. The other six players have no goals visible. Owen's three missed goals cover approach, putting and short game, so he is the clearest candidate for new ones. His approach strokes gained is also the lowest on t",
+  "tools": [
+   {
+    "name": "get_attendance_summary",
+    "input": {}
+   },
+   {
+    "name": "get_goals",
+    "input": {
+     "limit": 40,
+     "state": "active"
+    }
+   },
+   {
+    "name": "get_goals",
+    "input": {
+     "limit": 40,
+     "state": "all"
+    }
+   }
+  ],
+  "evidence": [
+   {
+    "tool": "get_attendance_summary",
+    "ref": "e1",
+    "envelope": {
+     "as_of": "2026-11-08T04:38:01.194Z",
+     "detail": {
+      "rows": []
+     },
+     "series": [],
+     "summary": "No attendance on record.",
+     "coverage": "empty",
+     "measurements": [],
+     "coverage_note": null
+    }
+   },
+   {
+    "tool": "get_goals",
+    "ref": "e2",
+    "envelope": {
+     "as_of": "2026-11-08T04:38:01.339Z",
+     "detail": {
+      "goals": [],
+      "visibility": "Goals a coach set or a player shared with the coach, recorded against this team. A goal a player keeps private, or one with no team on it, is not visible here."
+     },
+     "series": [],
+     "summary": "No active goals visible for the team.",
+     "coverage": "empty",
+     "measurements": [],
+     "coverage_note": null
+    }
+   },
+   {
+    "tool": "get_goals",
+    "ref": "e3",
+    "envelope": {
+     "as_of": "2026-11-08T04:38:02.942Z",
+     "detail": {
+      "goals": [
+       {
+        "state": "achieved",
+        "title": "Wedge Distance Control (80-120 yards)",
+        "player": "Cole Bennett",
+        "set_by": "manual",
+        "ends_at": "2026-07-10T23:18:27.289064+00:00",
+        "goal_id": "0f4887e0-01ad-48fd-8ee5-e44ca5a45298",
+        "category": "approach",
+        "metric_id": "approach_proximity_50_125ft",
+        "player_id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+        "started_at": "2026-04-11T23:18:27.289064+00:00",
+        "target_value": 18,
+        "current_value": 15.285714285714286,
+        "baseline_value": 28,
+        "progress_percent": 127
+       },
+       {
+        "state": "missed",
+        "title": "Short Putting Consistency (3-6 feet)",
+        "player": "Cole Bennett",
+        "set_by": "manual",
+        "ends_at": "2026-07-10T23:18:27.289064+00:00",
+        "goal_id": "62cb5fc4-2bc9-49ec-9f6d-83bbe41358d4",
+        "category": "putting",
+        "metric_id": "putts_made_3_5ft_pct",
+        "player_id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+        "started_at": "2026-04-11T23:18:27.289064+00:00",
+        "target_value": 92,
+        "current_value": 46.5,
+        "baseline_value": 82,
+        "progress_percent": -355
+       },
+       {
+        "state": "missed",
+        "title": "Tighten 150–180y approach dispersion",
+        "player": "Owen Carter",
+        "set_by": "manual",
+        "ends_at": "2026-07-14T14:23:39.074461+00:00",
+        "goal_id": "5dffd036-f2aa-4a1b-8ffe-d19db5f12f0e",
+        "category": "approach",
+        "metric_id": "approach_proximity_50_125ft",
+        "player_id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+        "started_at": "2026-04-15T14:23:39.074461+00:00",
+        "target_value": 15,
+        "current_value": 15.94915254237288,
+        "baseline_value": 24,
+        "progress_percent": 89
+       },
+       {
+        "state": "missed",
+        "title": "Rebuild 5–10 ft make rate",
+        "player": "Owen Carter",
+        "set_by": "manual",
+        "ends_at": "2026-07-17T14:23:39.074461+00:00",
+        "goal_id": "ae71ede9-4528-4710-ae02-0bcbd01ce99d",
+        "category": "putting",
+        "metric_id": "putts_made_5_10ft_pct",
+        "player_id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+        "started_at": "2026-04-18T14:23:39.074461+00:00",
+        "target_value": 75,
+        "current_value": 34.5,
+        "baseline_value": 58,
+        "progress_percent": -138
+       },
+       {
+        "state": "missed",
+        "title": "Improve short-side scrambling",
+        "player": "Owen Carter",
+        "set_by": "manual",
+        "ends_at": "2026-07-20T14:23:39.074461+00:00",
+        "goal_id": "d96797ea-b34b-4ff3-becc-c6e2a01f206a",
+        "category": "short_game",
+        "metric_id": "scrambling_pct_rough",
+        "player_id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+        "started_at": "2026-04-21T14:23:39.074461+00:00",
+        "target_value": 55,
+        "current_value": null,
+        "baseline_value": 35
+       }
+      ],
+      "visibility": "Goals a coach set or a player shared with the coach, recorded against this team. A goal a player keeps private, or one with no team on it, is not visible here."
+     },
+     "series": [],
+     "summary": "5 goals.",
+     "coverage": "complete",
+     "measurements": [],
+     "coverage_note": null
+    }
+   }
+  ],
+  "recorded": {
+   "outcome": "rejected",
+   "reason": "stream_incomplete",
+   "unmatchedTokens": [],
+   "misattributedTokens": []
+  }
+ }
+}

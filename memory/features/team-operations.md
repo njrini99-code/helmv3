@@ -187,8 +187,9 @@ Player Team Hub
 <!-- schema-drift-absent: golf_practice_plans, golf_practice_plan_versions, golf_practice_plan_lines, golf_practice_plan_opens, golf_team_drills, golf_practice_groups, golf_practice_templates, golf_practice_plan_formats -->
 The tables and functions in this section do not exist in production yet.
 
-`golf_practice_plans` is the flag for the Clubhouse plan page and its writes. It
-is off in every environment. The migrations are written and not applied.
+The Clubhouse plan page and its writes are always on (the `golf_practice_plans` flag was retired
+2026-11-07; the table keeps the name). The migrations are written and held for
+production; the second Supabase project, which preview reads, has them.
 `supabase/migrations/HELD.md` is authoritative for their order and preconditions.
 
 - Route: `src/app/golf/(dashboard)/dashboard/practice/plan/[planId]/page.tsx`
@@ -197,9 +198,21 @@ is off in every environment. The migrations are written and not applied.
 unpublished,
   or the tables missing) shows an empty state with a way to Calendar. It never
   shows a 404.
+- `src/app/golf/(dashboard)/dashboard/practice/page.tsx` is the Practice tab, in
+  the nav with the flag (`practiceNavEnabled`, `ChNavFeatures.practice`):
+  `loadCoachPracticeHome` for a coach, `loadPlayerPracticeHome` for a player,
+  which reads live versions only. `practice/plan/[planId]/edit/page.tsx` is the
+  coach's builder (`loadPlanForBuilder`, `screens/practice/builder/`); a player
+  on it is sent to the plan page.
+- The builder saves by id with the version it read, 800ms after an edit
+  (`useAutosave`). `savePracticePlan` takes a null version only for a first save
+  by event, and a save on a plan another coach changed is stale, never merged.
+- CoachHelm's Fill the draft runs the Ask stream
+  and `draft_practice_plan`, which writes nothing. Its blocks are suggestions
+  until kept; a kept Why reaches `coach_why` through `savePracticePlanDraft`.
 - Save and publish check the flag. The other plan and drill writes do not.
 - `src/app/golf/actions/practice-plans.ts`: `savePracticePlan`,
-  `deletePracticePlan`, `recordPracticePlanOpen`.
+  `deletePracticePlan`, `recordPracticePlanOpen`, `copyPlanBody`.
 - `src/app/golf/actions/practice-publish.ts`: `publishPracticePlan`,
   `takeDownPracticePlan`. Push and bell go out through
   `src/lib/golf/practice-fanout.ts`.

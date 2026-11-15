@@ -42,6 +42,7 @@ import type { Diagnosis, DiagnosisDriver, InsightCauseState } from '@/lib/coachh
 import { formatValue } from './format-value';
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
 import { InsightCallout } from './InsightCallout';
+import { plainConfidenceReason } from '@/lib/coachhelm/shared/confidence-reason';
 
 /** Effectiveness-ledger trust status (P1-12). Optional decoration. */
 export type DiagnosisTrust =
@@ -224,7 +225,7 @@ export function DiagnosisPanel({
 
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2 pt-0.5">
         {confWord !== null ? (
-          <span className="text-caption text-text-tertiary" title={diagnosis.confidence_reason}>
+          <span className="text-caption text-text-tertiary" title={plainConfidenceReason(diagnosis.confidence_reason) ?? undefined}>
             {confWord}
           </span>
         ) : null}

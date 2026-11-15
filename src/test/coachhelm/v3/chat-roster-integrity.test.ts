@@ -1,6 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
 import { loadActiveRoster, requireRosterPlayer, resolveRosterPlayerByName, CoachContextError } from '@/lib/coachhelm/v3/chat/context';
-import { getTeamOverview } from '@/lib/coachhelm/v3/chat/read-tools';
 import type { CoachChatContext } from '@/lib/coachhelm/v3/chat/context';
 
 /**
@@ -73,62 +72,6 @@ const player = (id: string, first: string | null, last: string | null) => ({
   first_name: first,
   last_name: last,
   graduation_year: null,
-});
-
-describe('getTeamOverview', () => {
-  it('reports the AUTHORITATIVE roster count, not the number of readable joins', async () => {
-    const roster = [
-      player('p1', 'Nick', 'Rini'),
-      player('p2', 'Sam', 'Fox'),
-      player('p3', null, null),
-    ];
-    const sb = sbWith({
-      golf_rounds: {
-        data: [
-          { player_id: 'p1', score_to_par: 2, total_score: 74, round_date: '2026-07-20' },
-          { player_id: 'p2', score_to_par: 5, total_score: 77, round_date: '2026-07-19' },
-        ],
-      },
-    });
-
-    const envelope = await getTeamOverview(sb, ctx(roster));
-    const detail = envelope.detail as { active_roster_count: number; profiles_resolved: number };
-
-    expect(detail.active_roster_count).toBe(3);
-    expect(detail.profiles_resolved).toBe(2);
-    expect(envelope.summary).toContain('3 active players');
-    // The gap is REPORTED, so the answer degrades honestly instead of shrinking.
-    expect(envelope.coverage).toBe('partial');
-    expect(envelope.coverage_note).toMatch(/no readable profile/);
-  });
-
-  it('names the players with no recorded rounds instead of omitting them', async () => {
-    const roster = [player('p1', 'Nick', 'Rini'), player('p2', 'Sam', 'Fox')];
-    const sb = sbWith({
-      golf_rounds: {
-        data: [{ player_id: 'p1', score_to_par: 2, total_score: 74, round_date: '2026-07-20' }],
-      },
-    });
-
-    const envelope = await getTeamOverview(sb, ctx(roster));
-    expect(envelope.coverage).toBe('partial');
-    expect(envelope.coverage_note).toContain('Sam Fox');
-    const detail = envelope.detail as { players: { player_id: string }[] };
-    // Sam is still in the payload — "no rounds" is not "not on the team".
-    expect(detail.players.map((p) => p.player_id)).toEqual(['p1', 'p2']);
-  });
-
-  it('does not read a failed query as "no rounds"', async () => {
-    const sb = sbWith({ golf_rounds: { data: null, error: { message: 'boom' } } });
-    const envelope = await getTeamOverview(sb, ctx([player('p1', 'Nick', 'Rini')]));
-    expect(envelope.coverage).toBe('unavailable');
-    expect(envelope.coverage).not.toBe('empty');
-  });
-
-  it('reports a genuinely empty roster as empty', async () => {
-    const envelope = await getTeamOverview(sbWith({}), ctx([]));
-    expect(envelope.coverage).toBe('empty');
-  });
 });
 
 /**

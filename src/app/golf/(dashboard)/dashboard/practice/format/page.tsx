@@ -1,9 +1,8 @@
-import { redirect } from 'next/navigation';
 import { PlanFormatRoute } from '@/clubhouse/routes/practice';
-import { isPracticePlansEnabled } from '@/lib/coachhelm/v3/practice-plan/flag';
+import { redirectUnlessClubhousePractice } from '@/clubhouse/routes/practice-gate';
 
-/** Practice › Plan format. Flag off: Calendar, never a 404 (N-00 §0.2). */
+/** Practice › Plan format. */
 export default async function Page() {
-  if (!isPracticePlansEnabled()) redirect('/golf/dashboard/calendar');
+  await redirectUnlessClubhousePractice();
   return <PlanFormatRoute />;
 }

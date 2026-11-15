@@ -31,7 +31,14 @@ export function SearchField({
         placeholder={placeholder}
         aria-label={label}
         onChange={(e) => onChange(e.target.value)}
-        onKeyDown={(e) => e.key === 'Escape' && value && (e.stopPropagation(), onChange(''))}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape' && value) {
+            e.stopPropagation();
+            onChange('');
+          }
+          // The Search key puts the keyboard away, so the results can be read.
+          if (e.key === 'Enter') e.currentTarget.blur();
+        }}
         enterKeyHint="search"
         autoCapitalize="none"
         autoCorrect="off"

@@ -174,11 +174,11 @@ Each local copy matches the published page as of 4 Nov 2026 (only the document w
 | `coachhelm-read/06-SCREEN-SPECS.md` | 51805 | `534107f1472298dbef9009203d7ea15be14dfac429f7d84b91ca65806e902a62` |
 | `coachhelm-read/07-MOTION.md` | 17262 | `c777b85528527ffe67bb8f098ef59330f12d837583d725f08f4f1f54e327b197` |
 | `coachhelm-read/08-ACCEPTANCE.md` | 50525 | `5e61e4c538129282a8c43209d85663784a77bc844cb782d2968c862e0825e72d` |
-| `coachhelm-read/README.md` | 8579 | `52801a845d6b5581ed7b227ddb91165f7fd215b7d215f29c3197992b8fadd43a` |
+| `coachhelm-read/README.md` | 9122 | `dbe97c3494f4a7623d1168b4ef2dc7ecc4eff36794f6bbb3ffd370af2272739f` |
 | `coachhelm-read/capture/capture.mjs` | 32552 | `8ac8652d8c6d053a2cb293016406e7ec2133bd3f3f8ea3bb80c7a6b8456efc51` |
 | `coachhelm-read/capture/contrast-table.txt` | 5117 | `dfc7906f732ffc1292331cf8e98d85389ea7fbe7b2a0ee5bc9001b7c0e7800a9` |
 | `coachhelm-read/capture/contrast.py` | 2961 | `335243674f582864511436b8c5a55a900546c67684d0b78ca36424c8d619147c` |
-| `coachhelm-read/redesign/coachhelm-read.html` | 162969 | `cb85659e84a7c24195435ea070c1dad3e062a7632e79a85ab06ea729b53a8d27` |
+| `coachhelm-read/redesign/coachhelm-read.html` | 1050919 | `70ec0ad00d4305e1685f8f0710adc45a136d97cf6ac217299d4476f87198606c` |
 | `coachhelm-read/screenshots/after/assigned-approach-coach-desktop-light.png` | 493812 | `fe41050efff1f4697cc36de28d8e5dea5b029039da86a02023831a9ef108ab45` |
 | `coachhelm-read/screenshots/after/assigned-approach-coach-phone-390-light.png` | 156151 | `cd8021499b672b0e23f68b575760f0a5f318325a261e875b09c0cefe048c48d7` |
 | `coachhelm-read/screenshots/after/assigned-penalties-coach-desktop-light.png` | 479863 | `d4b4970412dd2fd57291ea2a6f7b8e6452e54edf3e860e830d4bad0204c4905c` |

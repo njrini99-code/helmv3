@@ -49,7 +49,7 @@ function corner(v, capsule, tail) {
 
 for (const file of positionals) {
   const src = readFileSync(file, 'utf8');
-  const messages = basename(file) === 'messages.css';
+  const messages = /^messages(-[a-z]+)?\.css$/.test(basename(file));
   let moved = 0;
   const next = src.replace(/([^{}]*)\{([^{}]*)\}/g, (whole, sel, body) => {
     const selector = sel.replace(/\/\*[\s\S]*?\*\//g, '').trim();

@@ -38,7 +38,7 @@ import {
   PREVIEW_HELM_COACH_ENGINE,
   PREVIEW_HELM_PLAYER_ENGINE,
 } from '../preview/fixtures-coachhelm-engine';
-import { ClearedLines, EngineState, WhyAudit } from '../screens/coachhelm/EngineState';
+import { EngineState, WhyAudit } from '../screens/coachhelm/EngineState';
 
 /** CoachHelm surfaces A: what the engine now knows, drawn on the Clubhouse coach surfaces, each part behind its own flag. */
 
@@ -63,15 +63,6 @@ describe('every flag off', () => {
     const shaped = shapeReadsLifecycle(rows, false, PLAYER, ENGINE_NOW);
     expect(shaped.kept).toEqual(rows);
     expect(shaped.cleared).toEqual([]);
-  });
-
-  it('draws nothing from an empty engine', () => {
-    const { container } = render(<EngineState engine={undefined} />);
-    expect(container).toBeEmptyDOMElement();
-    render(<WhyAudit lines={undefined} />);
-    render(<ClearedLines lines={[]} />);
-    expect(screen.queryByText('Why do you think so?')).toBeNull();
-    expect(screen.queryByText('Cleared')).toBeNull();
   });
 });
 
@@ -251,11 +242,6 @@ describe('the surfaces', () => {
     expect(within(list).getByText('Data gap')).toBeInTheDocument();
     expect(within(list).getByText('Worked')).toBeInTheDocument();
     expect(list.textContent).not.toMatch(/q =|0\.04/);
-  });
-
-  it('lists the Cleared reads under their heading', () => {
-    render(<ClearedLines lines={PREVIEW_HELM_PLAYER_ENGINE.cleared} />);
-    expect(screen.getByRole('region', { name: 'Cleared' })).toHaveTextContent('4–6 ft putts · Cleared');
   });
 
   it('gives the player’s Deep dive the cause, the verdict and the audit, and never the support pass', () => {

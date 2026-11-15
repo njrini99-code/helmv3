@@ -1,6 +1,6 @@
 'use client';
 
-import type { KeyboardEvent, MouseEvent, ReactNode } from 'react';
+import type { MouseEvent, ReactNode } from 'react';
 import { haptic } from '../../lib/haptics';
 
 /** The drawn 8 x 14 chevron. */
@@ -54,7 +54,8 @@ export function ShsIcon({ name }: { name: ShsIconName }) {
 }
 
 /**
- * A summary card: the whole card pushes its detail (Enter and Space too), and presses at 0.97 with the wash (08 CP-131). A chart inside
+ * A summary card: the whole card pushes its detail (Enter and Space too). A press deepens the surface (the pressed wash, `data-ch-pressed`)
+ * and never scales the card (CH-1606; the owner's newest design: "presses deepen the surface and never scale"). A chart inside
  * marks itself `data-ch-no-open`, so a drag reads the chart and never opens the page.
  */
 export function SummaryCard({
@@ -85,30 +86,23 @@ export function SummaryCard({
     if ((e.target as Element).closest?.('[data-ch-no-open]')) return;
     open();
   };
-  const onKeyDown = (e: KeyboardEvent<HTMLElement>) => {
-    if (e.target !== e.currentTarget || (e.key !== 'Enter' && e.key !== ' ')) return;
-    e.preventDefault();
-    open();
-  };
   return (
+    // A press anywhere opens the card; VoiceOver and the keyboard get the one real button inside it (STATS-8).
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- the button below is the keyboard path
     <section
       className={'ch-shs-card ch-shs-sum' + (feature ? ' ch-shs-feature' : '')} suppressHydrationWarning
       data-go={go}
       data-ch="stats-card"
-      data-ch-press-scale=".97"
-      // eslint-disable-next-line jsx-a11y/no-noninteractive-element-to-interactive-role -- the whole summary card is the control (stats-home 06)
-      role="link"
-      tabIndex={0}
-      aria-label={ariaLabel}
+      data-ch-pressable=""
       onClick={onClick}
-      onKeyDown={onKeyDown}
     >
+      <button type="button" className="ch-shs-sum__key" data-ch-no-open aria-label={ariaLabel} onClick={open} />
       <div className="ch-shs-ah">
         <h3>
           {icon && <ShsIcon name={icon} />}
           {title}
         </h3>
-        {meta != null && <span className="ch-shs-ah__meta">{meta}</span>}
+        {meta != null && <span className="ch-shs-ah__meta ch-num">{meta}</span>}
         {feature ? (
           // The chevron is the keyboard's way in when the chart holds focus: 24 drawn, 44 to the finger.
           <button
@@ -137,7 +131,7 @@ export function ShsCard({ title, meta, flush = false, anchor, children }: { titl
     <section className={'ch-shs-card' + (flush ? ' is-flushb' : '')} suppressHydrationWarning aria-label={title} data-ch-anchor={anchor}>
       <div className="ch-shs-ah">
         <h3>{title}</h3>
-        {meta != null && <span className="ch-shs-ah__meta">{meta}</span>}
+        {meta != null && <span className="ch-shs-ah__meta ch-num">{meta}</span>}
       </div>
       {children}
     </section>

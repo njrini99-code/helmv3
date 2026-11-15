@@ -7,7 +7,7 @@ const row = (over: Partial<ChTeamRoundRow> & Pick<ChTeamRoundRow, 'id' | 'player
   ({
     course_name: 'Finley GC',
     tees_played: 'Blue',
-    round_type: 'practice',
+    round_type: 'tournament',
     total_score: 72,
     score_to_par: 0,
     front_nine: 36,
@@ -70,9 +70,30 @@ describe('teamSeasonFrom', () => {
     expect(s.best).toMatchObject({ score: 70, toPar: -2, player: 'Ben Ortiz' });
   });
 
+  it('leaves practice rounds out of the average, under par and the low round, and still counts them', () => {
+    const s = teamSeasonFrom(
+      toTeamRounds(
+        [
+          row({ id: 'p', player_id: 'a', round_date: '2026-08-10', round_type: 'practice', total_score: 66, score_to_par: -6, back_nine: 30 }),
+          row({ id: 'q', player_id: 'b', round_date: '2026-09-10', round_type: 'qualifier', total_score: 74, score_to_par: 2, back_nine: 38 }),
+          row({ id: 't', player_id: 'b', round_date: '2026-09-11', round_type: 'tournament', total_score: 72, score_to_par: 0, back_nine: 36 }),
+        ],
+        names,
+      ).list,
+      '2026-08-01',
+    );
+    expect(s).toMatchObject({ rounds: 3, players: 2, practice: 1, scored: 2, avg: 73, underPar: 0 });
+    expect(s.best).toMatchObject({ score: 72, player: 'Ben Ortiz' });
+  });
+
+  it('a season of practice only lists and counts its rounds and has no average, no under par and no low round', () => {
+    const s = teamSeasonFrom(toTeamRounds([row({ id: 'p', player_id: 'a', round_date: '2026-08-10', round_type: 'practice', total_score: 70, score_to_par: -2, back_nine: 34 })], names).list, '2026-08-01');
+    expect(s).toMatchObject({ rounds: 1, players: 1, practice: 1, scored: 0, avg: null, underPar: 0, best: null });
+  });
+
   it('is empty, not NaN, when nothing is in the season', () => {
     const s = teamSeasonFrom(rounds, '2027-08-01');
-    expect(s).toMatchObject({ rounds: 0, players: 0, avg: null, underPar: 0, best: null });
+    expect(s).toMatchObject({ rounds: 0, players: 0, practice: 0, scored: 0, avg: null, underPar: 0, best: null });
   });
 
   it('falls back to the lowest gross score for the low round when no round has a score to par', () => {

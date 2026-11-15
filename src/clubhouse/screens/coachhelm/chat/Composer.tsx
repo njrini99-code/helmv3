@@ -74,6 +74,8 @@ export function useRefuseOffline(): () => boolean {
 }
 
 export interface AskComposerProps {
+  /** Ask v2's scope chips (E-COMP): what the next answer will read, from the words so far. None: no chips. */
+  scopeOf?: (text: string) => string[];
   /** Ask v2's `/` list (ask 05). A pick fills the box. */
   slash?: readonly ChAskSlash[];
   /** `hero`: the new chat's big box with its Players and date chips. `dock`: the one-line box at the foot of a thread. */
@@ -82,17 +84,23 @@ export interface AskComposerProps {
   players: ChAskPlayer[];
   /** Ask v2's home line, one line on a phone (E-HOME). */
   hint?: string;
+  /** A task card waits for the coach. The box stays open (a new question sets the card aside) and its hint says so. */
+  waiting?: boolean;
   /** A reply is on its way: Send becomes Stop. */
   busy: boolean;
   /** The last send failed: its text comes back into the box (once, and only into an empty box). */
   failed: boolean;
   /** An action card is waiting for Confirm or Cancel: a new question can't go over it (PR #2105 fixes that on the server). */
   blocked: boolean;
+  /** A player out of Ask: the box stays, says why and takes nothing (E-OUT). */
+  paused?: string;
   onSend: (text: string) => void;
   onStop: () => void;
   autoFocus?: boolean;
   /** A new chat (no messages yet): the box invites a first question, whatever its shape (the phone's new chat is the one-row box). */
   fresh?: boolean;
+  /** "Ask about this" from another page (`?q=`): the question waits in the box, unsent. */
+  seed?: string | null;
   /** Who and which chat the unsent text belongs to ("coach:chat"), so it comes back when the coach returns to this page; none, none kept. */
   draftKey?: string | null;
   /**
@@ -106,15 +114,20 @@ export interface AskComposerProps {
 const PICK_EDGE = 8;
 /** The gap between the box and the picker (`.ch-ask-pick`'s `calc(100% + 8px)`). */
 const PICK_GAP = 8;
+/**
+ * The room the picker needs under the desktop's new-chat box to open there (about five rows). With less, it opens above
+ * when that side has more: the box sits low on its page now, and the list had 80px for 23 rows (owner's preview, 11 Nov 2026).
+ */
+const PICK_MIN_BELOW = 240;
 
 /**
- * How tall the picker may be where it opens: from the box to the nearest edge that would clip it, on the side it opens
- * to. That edge is the closest ancestor that clips its overflow (the Ask sheet's panel, a page's scroller) or the visible
- * viewport (the phone's keyboard); the CSS caps take the smaller of this and their own height. Remeasured on a resize or
- * the keyboard moving.
+ * Where the picker opens and how tall it may be there: from the box to the nearest edge that would clip it. That edge is
+ * the closest ancestor that clips its overflow (the Ask sheet's panel, a page's scroller) or the visible viewport (the
+ * phone's keyboard); the CSS caps take the smaller of this and their own height. `preferBelow` (the desktop's new-chat
+ * box) opens below while it has PICK_MIN_BELOW, else on the roomier side. Remeasured on a resize or the keyboard moving.
  */
-function usePickerRoom(anchor: RefObject<HTMLElement | null>, open: boolean, below: boolean): number | null {
-  const [room, setRoom] = useState<number | null>(null);
+function usePickerRoom(anchor: RefObject<HTMLElement | null>, open: boolean, preferBelow: boolean): { room: number | null; below: boolean } {
+  const [fit, setFit] = useState<{ room: number; below: boolean } | null>(null);
   useLayoutEffect(() => {
     if (!open) return;
     const measure = () => {
@@ -131,8 +144,10 @@ function usePickerRoom(anchor: RefObject<HTMLElement | null>, open: boolean, bel
         top = Math.max(top, pr.top);
         bottom = Math.min(bottom, pr.bottom);
       }
-      const space = below ? bottom - r.bottom : r.top - top;
-      setRoom(Math.max(0, Math.floor(space - PICK_GAP - PICK_EDGE)));
+      const under = Math.max(0, Math.floor(bottom - r.bottom - PICK_GAP - PICK_EDGE));
+      const over = Math.max(0, Math.floor(r.top - top - PICK_GAP - PICK_EDGE));
+      const below = preferBelow && (under >= PICK_MIN_BELOW || under >= over);
+      setFit((was) => (was && was.room === (below ? under : over) && was.below === below ? was : { room: below ? under : over, below }));
     };
     measure();
     window.addEventListener('resize', measure);
@@ -144,8 +159,8 @@ function usePickerRoom(anchor: RefObject<HTMLElement | null>, open: boolean, bel
       window.visualViewport?.removeEventListener('resize', measure);
       window.visualViewport?.removeEventListener('scroll', measure);
     };
-  }, [anchor, open, below]);
-  return open ? room : null;
+  }, [anchor, open, preferBelow]);
+  return open && fit ? fit : { room: null, below: preferBelow };
 }
 
 /**
@@ -162,11 +177,15 @@ function usePickerRoom(anchor: RefObject<HTMLElement | null>, open: boolean, bel
  *  - Offline, Send is refused before anything is sent: an error toast (CH-1903) and the text stays.
  *  - A send that failed puts its text back (once, into an empty box); a card awaiting a decision disables Send.
  */
-export function AskComposer({ variant, phone, players, busy, failed, blocked, onSend, onStop, autoFocus, fresh = false, draftKey = null, roster = true, hint, slash = [] }: AskComposerProps) {
+export function AskComposer({ seed, scopeOf, variant, phone, players, busy, failed, blocked, paused, onSend, onStop, autoFocus, fresh = false, draftKey = null, roster = true, hint, waiting = false, slash = [] }: AskComposerProps) {
   const refuseOffline = useRefuseOffline();
   const finePointer = useFinePointer();
   const hero = variant === 'hero';
-  const [value, setValue] = useAskDraft(draftKey);
+  const [value, setValue, clearDraft] = useAskDraft(draftKey);
+  useEffect(() => {
+    if (seed) setValue(seed);
+    // Mount only: it is a starting point, not a value to hold on to.
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [range, setRange] = useState<ChAskRange | null>(null);
   const [dismissed, setDismissed] = useState(false);
   const [pickIds, setPickIds] = useState<PickerIds>({});
@@ -247,7 +266,7 @@ export function AskComposer({ variant, phone, players, busy, failed, blocked, on
   const matches = useMemo(() => (roster ? matchPlayers(players, query ?? '', value) : []), [roster, players, query, value]);
   const stats = useMemo(() => matchStats(ASK_STATS, query ?? '', value), [query, value]);
   const pickable = matches.length + stats.length > 0;
-  const room = usePickerRoom(frame, pickerOpen, hero && !phone);
+  const { room, below: pickBelow } = usePickerRoom(frame, pickerOpen, hero && !phone);
   const typedSlash = slashQuery(value);
   const slashes = useMemo(() => (typedSlash === null || dismissed ? [] : matchSlash(slash, typedSlash)), [slash, typedSlash, dismissed]);
   const [slashAt, setSlashAt] = useState(0);
@@ -267,12 +286,13 @@ export function AskComposer({ variant, phone, players, busy, failed, blocked, on
 
   const submit = () => {
     const typed = value.trim();
-    if (!typed || busy || blocked) return;
+    if (!typed || busy || blocked || paused) return;
     if (refuseOffline()) return;
     last.current = { text: typed, range };
     haptic('press');
     onSend(withRangeClause(typed, range));
     setValue('');
+    clearDraft();
     setRange(null);
     setDismissed(false);
     opened.current = null;
@@ -338,20 +358,26 @@ export function AskComposer({ variant, phone, players, busy, failed, blocked, on
       opened.current = null;
       return;
     }
-    if (e.key === 'Enter' && !e.shiftKey && finePointer) {
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       submit();
     }
   };
 
-  const canSend = value.trim().length > 0 && !blocked;
+  const canSend = value.trim().length > 0 && !blocked && !paused;
+  // The key's return motion (the square leaving, the arrow coming back) belongs to a turn that ran in this visit, never to first paint.
+  const [hasRun, setHasRun] = useState(false);
+  if (busy && !hasRun) setHasRun(true);
+  // The phone's scope line already says it until the coach types; a chip only earns its row there once the words change the scope.
+  const scopeChips = scopeOf && (!phone || value.trim()) ? scopeOf(value) : [];
   const first = hero || fresh;
-  const placeholder = first && hint ? hint : first ? (phone ? 'Ask about a player, a stat, or the week' : 'Ask about a player, a stat, or the week ahead') : 'Ask a follow-up';
+  const placeholder = paused ? paused : waiting ? 'Ask, or answer the card' : first && hint ? hint : first ? (phone ? 'Ask about a player, a stat, or the week' : 'Ask about a player, a stat, or the week ahead') : 'Ask a follow-up';
 
   const plus = (
     <Menu
       label="Add to your question"
       align="start"
+      keepFocus
       items={ASK_STARTERS.map((s) => ({
         label: s.label,
         onSelect: () => {
@@ -373,16 +399,25 @@ export function AskComposer({ variant, phone, players, busy, failed, blocked, on
     />
   );
 
-  const send = busy ? (
+  // One key, in one place, whose meaning changes in the frame of the tap (MOTION MO-3-3, MO-3-6): the arrow leaves upward, the
+  // ink disc and the stop square come up under it; when the turn ends the square goes and the arrow comes back from below.
+  const send = (
     <Tooltip>
-      <button type="button" className="ch-ask-cmp__send is-stop" aria-label="Stop generating" data-ch-code="CH-13421" onClick={onStop}>
-        <Icon icon={Square} size={14} />
-      </button>
-    </Tooltip>
-  ) : (
-    <Tooltip>
-      <button type="button" className="ch-ask-cmp__send" aria-label="Send" disabled={!canSend} onClick={submit}>
-        <Icon icon={ArrowUp} size={18} />
+      <button
+        type="button"
+        className={'ch-ask-cmp__send' + (busy ? ' is-stop' : '') + (hasRun ? ' has-run' : '')}
+        aria-label={busy ? 'Stop generating' : 'Send'}
+        data-ch-code={busy ? 'CH-13421' : undefined}
+        disabled={!busy && !canSend}
+        onClick={busy ? onStop : submit}
+      >
+        <span className="ink" aria-hidden="true" />
+        <span className="g g-send" aria-hidden="true">
+          <Icon icon={ArrowUp} size={18} />
+        </span>
+        <span className="g g-stop" aria-hidden="true">
+          <Icon icon={Square} size={14} />
+        </span>
       </button>
     </Tooltip>
   );
@@ -396,6 +431,13 @@ export function AskComposer({ variant, phone, players, busy, failed, blocked, on
   return (
     <div className={'ch-ask-cmp is-' + variant + (phone ? ' is-phone' : '')}>
       <div className="ch-ask-cmp__box" ref={frame}>
+        {scopeChips.length > 0 && (
+          <div className="ch-ak-cscope" role="group" aria-label="What the next answer reads">
+            {scopeChips.map((c) => (
+              <span key={c}>{c}</span>
+            ))}
+          </div>
+        )}
         <label className="ch-ask-cmp__label" htmlFor={`${listId}-ta`}>
           {first ? 'Ask CoachHelm' : 'Reply to CoachHelm'}
         </label>
@@ -405,6 +447,7 @@ export function AskComposer({ variant, phone, players, busy, failed, blocked, on
           className="ch-ask-cmp__ta"
           rows={hero && !phone ? 2 : 1}
           value={value}
+          disabled={!!paused}
           placeholder={placeholder}
           enterKeyHint="send"
           autoComplete="off"
@@ -479,6 +522,7 @@ export function AskComposer({ variant, phone, players, busy, failed, blocked, on
           // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- not a control; it only keeps the focus in the text box
           <div
             className="ch-ask-pick"
+            data-side={hero && !phone && !pickBelow ? 'up' : undefined}
             data-ch-code="CH-13821"
             // The CSS caps the list by this, so a short sheet or a raised keyboard never cuts it off.
             style={room === null ? undefined : { ['--ch-ask-pick-room' as string]: `${room}px` }}

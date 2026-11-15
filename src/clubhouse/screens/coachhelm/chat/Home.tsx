@@ -1,23 +1,13 @@
 'use client';
 
+import { formatWith } from '../../../lib/dates';
 import { AllowanceMeter } from './parts/Allowance';
-import { ArrowRight, CalendarPlus, ChartLine, Target, Trophy, Users, type LucideIcon } from 'lucide-react';
+import { ArrowRight, Users } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { askSuggestionSub, type ChAskData, type ChAskSuggestion } from '../../../data/coachhelm-chat-shape';
+import { type ChAskData, type ChAskSuggestion } from '../../../data/coachhelm-chat-shape';
 import { haptic } from '../../../lib/haptics';
-import { useChClockText } from '../../../lib/use-clock';
 import { Icon } from '../../../ui/Icon';
-
-function Greeting({ team, phone, children }: { team: string; phone: boolean; children?: ReactNode }) {
-  return (
-    <div className="ch-ask-greet">
-      {/* The mockup's spark tile was dropped (owner, 2026-10-06: no stock AI marks); the serif question carries it. */}
-      <h2>What do you want to know about {team}?</h2>
-      <p>Answers come from your recorded rounds, signals and schedule.</p>
-      {phone && children}
-    </div>
-  );
-}
+import { BallMark } from './BallMark';
 
 /** Players, and not one recorded round between them: nothing to report yet, and the chat still works. */
 function NothingYet({ phone }: { phone: boolean }) {
@@ -36,187 +26,106 @@ function NothingYet({ phone }: { phone: boolean }) {
   );
 }
 
-/** What the chat does besides answer: each opens a real conversation with that tool, so the card is never a promise the chat can't keep. */
-const CAPABILITIES: Array<{ icon: LucideIcon; title: string; body: string; ask: string }> = [
-  { icon: ChartLine, title: 'Chart it', body: 'Scoring, putting and strokes gained over time, by player or team.', ask: 'Chart our team scoring to par by week this season' },
-  { icon: Trophy, title: 'Rank and compare', body: 'Who is ahead on any stat, in a qualifier or at a tournament.', ask: 'Rank my players by scoring average in the last qualifier' },
-  { icon: Target, title: 'Set a focus', body: 'Turn a weakness into a focus area with criteria for one player.', ask: 'Who needs a focus area right now, and on what?' },
-  { icon: CalendarPlus, title: 'Plan practice', body: 'Build a practice around what the data says the team is losing.', ask: 'Plan this week’s practice around where we are losing the most strokes' },
-];
-
-function Capabilities({ onAsk }: { onAsk: (text: string) => void }) {
-  return (
-    <ul className="ch-ask-caps" aria-label="What CoachHelm can do">
-      {CAPABILITIES.map((c) => (
-        <li key={c.title}>
-          <button
-            type="button"
-            className="ch-ask-cap"
-            onClick={() => {
-              haptic('select');
-              onAsk(c.ask);
-            }}
-          >
-            <span className="ch-ask-cap__ic" aria-hidden="true">
-              <Icon icon={c.icon} size={18} />
-            </span>
-            <b>{c.title}</b>
-            <span>{c.body}</span>
-          </button>
-        </li>
-      ))}
-    </ul>
-  );
+const TAG: Record<ChAskSuggestion['id'], string> = { brief: 'Team', strokes: 'Strokes gained', trending: 'Season', week: 'Practice plan' };
+const DOT: Record<string, string> = { warn: 'is-warn', loss: 'is-warn', down: 'is-warn', gain: 'is-fine', up: 'is-fine' };
+const greeting = (hour: number) => (hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening');
+/** The hour in the team's zone, so the server's render and the browser's say the same words. */
+export function zoneHour(iso: string, timezone: string): number {
+  return Number(formatWith(new Date(iso), { hour: 'numeric', hourCycle: 'h23', timeZone: timezone }));
 }
 
-function Pills({ suggestions, onAsk }: { suggestions: ChAskSuggestion[]; onAsk: (text: string) => void }) {
-  if (suggestions.length === 0) return null;
-  return (
-    <ul className="ch-ask-pills" aria-label="Questions to start with">
-      {suggestions.map((s) => (
+/**
+ * Ask v2's home (06 E-HOME): the greeting, what moved since Monday from the Board (each line asks about itself), and starter rows with their tag. A player reads their own focus and
+ * the Ask this week word instead; the meter is the screen's. The team's or player's scope sits above it, in the screen's scope line.
+ * The chat's mark, the ball, sits over the greeting at rest: nothing is being worked on here.
+ *
+ * On a desk the question comes first (Q2, direction A, owner's pick 12 Nov 2026: "Cramped, basic, not airy or premium"): the
+ * greeting and the question box are the page's middle, the starters sit under the box as chips, and what moved since Monday
+ * (a player's focus) is a quiet list at the foot. The page reads in that order, so the focus moves in it too. The phone keeps
+ * its own order: the opener and its rows over the box the screen pins.
+ */
+export function AskHomeV2({ data, phone, heroComposer, onAsk, focus }: { data: ChAskData; phone: boolean; heroComposer: ReactNode; onAsk: (text: string) => void; focus?: ReadonlyArray<{ text: string; ask: string | null; trend?: 'up' | 'warn' }> }) {
+  const player = data.role === 'player';
+  const findings = data.pulse?.findings ?? [];
+  const hour = zoneHour(data.nowIso, data.timezone);
+  const pulse = player
+    ? !!focus?.length && (
+        <div className="pulse">
+          <b>Your focus</b>
+          {focus.map((l) => {
+            // A focus area with no outcome yet has no dot, and no empty 8px slot holding its words off the edge.
+            const dot = l.trend ? DOT[l.trend] : undefined;
+            return (
+              <button type="button" className="rw" data-ch-ask-source="" key={l.text} disabled={!l.ask} onClick={() => l.ask && onAsk(l.ask)}>
+                {dot && <i className={dot} />}
+                <span>{l.text}</span>
+              </button>
+            );
+          })}
+        </div>
+      )
+    : findings.length > 0 && (
+        <div className="pulse">
+          <b>Since Monday</b>
+          {findings.slice(0, 3).map((f) => (
+            // "Tap any line to ask" holds for every line: a finding with no question of its own asks about its headline.
+            <button type="button" className="rw" data-ch-ask-source="" key={f.id} onClick={() => onAsk(f.ask ?? `${f.headline}. What’s behind it, and what should I do?`)}>
+              <i className={DOT[String(f.tone)] ?? 'is-flat'} />
+              <span>{f.headline}</span>
+            </button>
+          ))}
+          <small>From the CoachHelm board · tap any line to ask</small>
+        </div>
+      );
+  const meter = player && data.allowance && <AllowanceMeter bucket={data.allowance} />;
+  const starters = data.suggestions.length > 0 && (
+    <ul className="sugg" aria-label="Questions to start with">
+      {data.suggestions.slice(0, 4).map((s) => (
         <li key={s.id}>
           <button
             type="button"
-            className="ch-ask-pill"
+            data-ch-ask-source=""
             data-ch-code="CH-13721"
             onClick={() => {
               haptic('select');
               onAsk(s.text);
             }}
           >
-            {s.text}
+            {/* A chip on a desk is the question alone; the phone's row keeps its arrow and its tag. */}
+            {phone && <Icon icon={ArrowRight} size={18} />}
+            <span>{s.text}</span>
+            {phone && <small>{TAG[s.id]}</small>}
           </button>
         </li>
       ))}
     </ul>
   );
-}
-
-const TAG: Record<ChAskSuggestion['id'], string> = { brief: 'Team', strokes: 'Strokes gained', trending: 'Season', week: 'Practice plan' };
-const DOT: Record<string, string> = { warn: 'is-warn', loss: 'is-warn', down: 'is-warn', gain: 'is-fine', up: 'is-fine' };
-const greeting = (hour: number) => (hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening');
-
-/**
- * Ask v2's home (06 E-HOME): the greeting, what moved since Monday from the Board (each line asks about itself), and starter rows with their tag. A player reads their own focus and
- * the Ask this week word instead; the meter is the screen's. The team's or player's scope sits above it, in the screen's scope line.
- */
-export function AskHomeV2({ data, phone, heroComposer, onAsk, focus }: { data: ChAskData; phone: boolean; heroComposer: ReactNode; onAsk: (text: string) => void; focus?: ReadonlyArray<{ text: string; ask: string | null }> }) {
-  const player = data.role === 'player';
-  const findings = data.pulse?.findings ?? [];
-  const hour = new Date(data.nowIso).getHours();
   return (
     <div className={'ch-ak-home' + (phone ? ' is-phone' : '')} data-ch="ask-home">
       <div className="hi">
+        <BallMark state="rest" on="paper" size="lg" />
         <h2>{player ? `${greeting(hour).replace('Good ', '').replace(/^./, (c) => c.toUpperCase())}${data.firstName ? `, ${data.firstName}` : ''}` : `${greeting(hour)}, ${data.firstName ?? 'Coach'}`}</h2>
         <p>{player ? 'I read your rounds and shots. Only you and your coaches see this.' : `I can read every round, shot, practice and event for ${data.teamName}.`}</p>
       </div>
       {data.noRounds && <NothingYet phone={phone} />}
-      {player
-        ? !!focus?.length && (
-            <div className="pulse">
-              <b>Your focus</b>
-              {focus.map((l) => (
-                <button type="button" className="rw" key={l.text} disabled={!l.ask} onClick={() => l.ask && onAsk(l.ask)}>
-                  <i className="is-warn" />
-                  <span>{l.text}</span>
-                </button>
-              ))}
-            </div>
-          )
-        : findings.length > 0 && (
-            <div className="pulse">
-              <b>Since Monday</b>
-              {findings.slice(0, 3).map((f) => (
-                <button type="button" className="rw" key={f.id} disabled={!f.ask} onClick={() => f.ask && onAsk(f.ask)}>
-                  <i className={DOT[String(f.tone)] ?? 'is-flat'} />
-                  <span>{f.headline}</span>
-                </button>
-              ))}
-              <small>From the CoachHelm board · tap any line to ask</small>
+      {phone ? (
+        <>
+          {pulse}
+          {meter}
+          {starters}
+        </>
+      ) : (
+        <>
+          {heroComposer}
+          {starters}
+          {(pulse || meter) && (
+            <div className="foot">
+              {pulse}
+              {meter}
             </div>
           )}
-      {player && data.allowance && <AllowanceMeter bucket={data.allowance} />}
-      {data.suggestions.length > 0 && (
-        <ul className="sugg" aria-label="Questions to start with">
-          {data.suggestions.slice(0, 4).map((s) => (
-            <li key={s.id}>
-              <button
-                type="button"
-                data-ch-code="CH-13721"
-                onClick={() => {
-                  haptic('select');
-                  onAsk(s.text);
-                }}
-              >
-                <Icon icon={ArrowRight} size={18} />
-                <span>{s.text}</span>
-                <small>{TAG[s.id]}</small>
-              </button>
-            </li>
-          ))}
-        </ul>
+        </>
       )}
-      {!phone && heroComposer}
-    </div>
-  );
-}
-
-/**
- * The new chat. Desktop: the greeting, the big composer and up to five questions. Phone: the greeting (with the
- * nothing-to-report line when there are no rounds) and up to three question rows under it, the two set at the foot of the
- * screen just above the composer the screen pins. What is new since the last visit is the Board's header line, not here.
- */
-export function AskHome({ data, phone, heroComposer, onAsk }: { data: ChAskData; phone: boolean; heroComposer: ReactNode; onAsk: (text: string) => void }) {
-  const t = useChClockText();
-  if (phone) {
-    const cards = data.suggestions.filter((s) => s.id !== 'week').slice(0, 3);
-    return (
-      <div className="ch-ask-home is-phone">
-        <Greeting team={data.teamName} phone>
-          {data.noRounds && <NothingYet phone />}
-        </Greeting>
-        {/* The cardless pass (owner, 2026-10-08): the questions are action rows under the opener, between seams, their
-            words in the green ink as an iPhone action row's are, not a sideways rail of outlined cards. The composer under
-            them stays the anchor. */}
-        {cards.length > 0 && (
-          <ul className="ch-ask-cards" aria-label="Questions to start with">
-            {cards.map((s) => (
-              <li key={s.id}>
-                <button
-                  type="button"
-                  className="ch-ask-card"
-                  data-ch-code="CH-13721"
-                  onClick={() => {
-                    haptic('select');
-                    onAsk(s.text);
-                  }}
-                >
-                  <b>{s.title}</b>
-                  <span>{askSuggestionSub(s, data.teamName)}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-    );
-  }
-  return (
-    <div className="ch-ask-home">
-      <Greeting team={data.teamName} phone={false} />
-      {heroComposer}
-      <Pills suggestions={data.suggestions} onAsk={onAsk} />
-      <Capabilities onAsk={onAsk} />
-      {/* Who the answers cover: a caveat on Ask's own answers, kept when the findings left. */}
-      {data.pulse?.coverage && (
-        <p className="ch-ask-cov">
-          {data.pulse.coverage}
-          {data.pulse.asOfLabel ? ` As of ${t(data.pulse.asOfLabel)}.` : ''}
-        </p>
-      )}
-      {/* The findings block ("Since you were last here") moved to the Board's header line (design call D4); the greeting keeps
-          the starter pills, and says when no player has a round yet. */}
-      {data.noRounds && <NothingYet phone={false} />}
     </div>
   );
 }

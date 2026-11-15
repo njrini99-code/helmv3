@@ -342,6 +342,13 @@ export function zonedWallTimeToInstant(date: string, time: string, zone: string)
   return { at: new Date(wall - before).toISOString(), shifted: true };
 }
 
+/** An instant as the sheet's Custom end fields, on the team's clock. */
+export function customEndOf(at: number, zone: string): { date: string; time: string } {
+  const w = wallOf(at, zone);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return { date: `${w.y}-${pad(w.mo)}-${pad(w.d)}`, time: `${pad(w.h)}:${pad(w.mi)}` };
+}
+
 /** The Custom end's default, on the team's clock: today at 9:00 PM before 8:00 PM, else tomorrow at 9:00 PM. */
 export function defaultCustomEnd(now: number, zone: string): { date: string; time: string } {
   const w = wallOf(now, zone);
@@ -361,6 +368,14 @@ export function pollRemindDraft(input: { firstNames: readonly string[]; endsPhra
   const n = input.firstNames.length;
   const ask = n >= 7 ? `${n} of you haven’t voted yet. Can you vote in the poll when you get a chance?` : `${listWords(input.firstNames)}, can you vote in the poll when you get a chance?`;
   return input.endsPhrase ? `${ask} It ends ${input.endsPhrase}.` : ask;
+}
+
+/**
+ * Draft a reminder (Messages v2, Q-09): `Reminder: vote in the "{question}" poll by {when}.`, `by` being the closing time as the
+ * card words it ("tomorrow at 6:00 PM"); no end, no "by". Prefilled only: the person presses Send.
+ */
+export function pollReminderLine(input: { question: string; by: string | null }): string {
+  return `Reminder: vote in the “${input.question.trim()}” poll${input.by ? ` by ${input.by}` : ''}.`;
 }
 
 /**

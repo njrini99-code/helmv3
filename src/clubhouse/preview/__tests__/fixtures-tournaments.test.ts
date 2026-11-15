@@ -93,6 +93,21 @@ describe('Tournaments fixture: preview states', () => {
     expect(tourFixture('thin').home.ladder.every((r) => r.early)).toBe(true);
   });
 
+  // G15 (12 Nov): tournament-live?state=empty drew the full lineup, the same as ready, because the live snapshot ignored
+  // the state. Empty is Pinehurst's first round with nobody in it yet, built by the loader's own engine (buildLive), so
+  // the view takes its real no-lanes path.
+  it('puts nobody in Pinehurst round 1 for empty: no lanes, no team line, the round still upcoming', () => {
+    const live = tourFixture('empty').live;
+    expect(live.lanes).toEqual([]);
+    expect(live.team.kind).toBe('none');
+    expect(live.round.status).toBe('upcoming');
+    expect(live.event.entries).toEqual([]);
+    expect(live.field).toBeNull();
+    expect(live.moments).toEqual([]);
+    expect(live.presence).toEqual([]);
+    expect(tourFixture('ready').live.lanes.length).toBeGreaterThan(0);
+  });
+
   it('shows the card against the official total on provisional', () => {
     const e33 = tourFixture('provisional').desks.e33!.event;
     expect(e33.trust).toBe('final');

@@ -269,14 +269,6 @@ export const PREVIEW_HELM_PLAYER_PROPOSED: ChPlayerHelm = {
     error: false,
   },
 };
-/** The proposals did not load; the insights did. */
-export const PREVIEW_HELM_PLAYER_PROPOSALS_FAILED: ChPlayerHelm = { ...PREVIEW_HELM_PLAYER, proposals: { list: [], error: true } };
-/** Rounds posted, no insight yet. */
-export const PREVIEW_HELM_PLAYER_EMPTY: ChPlayerHelm = { off: null, proposals: NO_PROPOSALS, insights: { list: [], error: false }, rounds: 3 };
-/** No round posted at all. */
-export const PREVIEW_HELM_PLAYER_NO_ROUNDS: ChPlayerHelm = { off: null, proposals: NO_PROPOSALS, insights: { list: [], error: false }, rounds: 0 };
-export const PREVIEW_HELM_PLAYER_FAILED: ChPlayerHelm = { off: null, proposals: NO_PROPOSALS, insights: { list: [], error: true }, rounds: null };
-export const PREVIEW_HELM_PLAYER_OFF: ChPlayerHelm = { off: { reason: null }, proposals: NO_PROPOSALS, insights: { list: [], error: false }, rounds: null };
 /** Only strengths: nothing needs work. */
 export const PREVIEW_HELM_PLAYER_WORKING: ChPlayerHelm = { off: null, proposals: NO_PROPOSALS, insights: { list: [chTour(bigNumber(jonah), ME)], error: false }, rounds: null };
 
@@ -345,20 +337,6 @@ export const PREVIEW_HELM_PLAYER_MANY: ChPlayerHelm = {
   rounds: null,
 };
 
-/** `?state=zero`: the zero-estimate read leads (its "Projected impact: ~0.00 strokes per round" sits under Why we think this), then the placeholder-cause reads. */
-export const PREVIEW_HELM_PLAYER_ZERO: ChPlayerHelm = {
-  ...PREVIEW_HELM_PLAYER_MANY,
-  insights: { list: [chTour(MANY_FINDINGS[0]!, ME), chTour(MANY_FINDINGS[1]!, ME), chTour(penalties(jonah), ME), chSlope(jonah, ME), chTour(bigNumber(jonah), ME)], error: false },
-};
-/** `?state=stale`: current reads first, then the one older than the player's newest round (Out of date). */
-export const PREVIEW_HELM_PLAYER_STALE: ChPlayerHelm = {
-  ...PREVIEW_HELM_PLAYER_MANY,
-  insights: {
-    list: [chSlope(jonah, ME), chTour(penalties(jonah), ME), toChInsight(MANY_STALE, { tour: PREVIEW_TOUR, viewer: ME, newestRound: MANY_NEWEST_ROUND }), chTour(bigNumber(jonah), ME)],
-    error: false,
-  },
-};
-
 const PULSE_ITEMS: PulseItem[] = [
   { id: 'rsvp-e1', headline: '2 players haven’t replied to Team dinner', evidence: 'Thu, Oct 16, 6:30 PM · 4 of 6 replied', tone: 'attention', weight: 85 },
   { id: 'movement-decline', headline: '2 players are scoring worse over their last three rounds', evidence: 'Jonah Okafor +2.1 strokes · Eli Brandt +0.8 strokes', tone: 'attention', weight: 80 },
@@ -386,29 +364,4 @@ export const PREVIEW_HELM_COACH: ChCoachHelmData = {
   withoutSignals: 1,
   withoutNames: ['Sam Whitfield'],
   withoutIds: ['pl-sam'],
-};
-/** Jonah's slope insight already has a focus area made from it, waiting for him to accept. */
-export const PREVIEW_HELM_COACH_ASSIGNED: ChCoachHelmData = {
-  ...PREVIEW_HELM_COACH,
-  players: { list: sortCoachPlayers([player(HELM_PLAYERS.jonah, chSlope(jonah, coachOf(HELM_PLAYERS.jonah), 'in-slope', 'proposed'), 3), ...COACH_PLAYERS.filter((p) => p.id !== HELM_PLAYERS.jonah.id)]), error: false },
-};
-/** Players on the team, none with a signal yet. */
-export const PREVIEW_HELM_COACH_EMPTY: ChCoachHelmData = { ...PREVIEW_HELM_COACH, players: { list: [], error: false }, withoutSignals: 5, withoutNames: [...Object.values(HELM_PLAYERS).map((p) => p.name), 'Sam Whitfield'], withoutIds: [...Object.values(HELM_PLAYERS).map((p) => p.id), 'pl-sam'] };
-/** No players on the team yet. */
-export const PREVIEW_HELM_COACH_NO_ROSTER: ChCoachHelmData = {
-  off: null,
-  roster: { count: 0, error: false },
-  pulse: { rows: [], error: false },
-  players: { list: [], error: false },
-  withoutSignals: 0,
-};
-export const PREVIEW_HELM_COACH_FAILED: ChCoachHelmData = { ...PREVIEW_HELM_COACH, players: { list: [], error: true }, withoutSignals: 0 };
-export const PREVIEW_HELM_COACH_PULSE_FAILED: ChCoachHelmData = { ...PREVIEW_HELM_COACH, pulse: { rows: [], error: true } };
-export const PREVIEW_HELM_COACH_QUIET: ChCoachHelmData = { ...PREVIEW_HELM_COACH, pulse: { rows: [], error: false } };
-export const PREVIEW_HELM_COACH_OFF: ChCoachHelmData = {
-  off: { by: 'team', reason: null },
-  roster: { count: 0, error: false },
-  pulse: { rows: [], error: false },
-  players: { list: [], error: false },
-  withoutSignals: 0,
 };

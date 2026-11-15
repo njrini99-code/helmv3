@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ReactElement } from 'react';
-import { resolved } from './route-view';
 
 /**
  * Ask CoachHelm (P013): the server loader and the route that hands it to a coach and never to a player
@@ -29,8 +28,6 @@ vi.mock('../data/coachhelm', () => ({
   loadCoachHelmGate: gateSpy,
   emptyCoachHelm: (off: unknown) => ({ board: 'off', off }),
 }));
-vi.mock('../screens/coachhelm/CoachBoard', () => ({ CoachBoard: () => null }));
-vi.mock('../screens/coachhelm/PlayerBoard', () => ({ PlayerBoard: () => null }));
 vi.mock('../screens/coachhelm/chat/Ask', () => ({ Ask: () => null }));
 
 import { ClubhouseCoachHelmRoute } from '../routes/coachhelm';
@@ -152,6 +149,19 @@ describe('loadAskCoachHelm', () => {
     expect(res.data.suggestions.map((s) => s.id)).toEqual(['week']);
   });
 
+  it('greets the coach by first name, and a name that does not read costs only the name', async () => {
+    tables.current.golf_coaches = { data: { full_name: 'Maya Reyes' } };
+    const named = await load();
+    if (named.status !== 'ready') throw new Error('not ready');
+    expect(named.data.firstName).toBe('Maya');
+    tables.current.golf_coaches = { error: { message: 'boom' } };
+    const unnamed = await load();
+    if (unnamed.status !== 'ready') throw new Error('not ready');
+    expect(unnamed.data.firstName).toBeUndefined();
+    expect(logServer).toHaveBeenCalledWith('coachhelm.ask', 'coach name', expect.anything(), 'coachhelm');
+    delete tables.current.golf_coaches;
+  });
+
   it('a finding whose screen moved opens it in Clubhouse (Tasks is Team Hub’s tab); one with no Clubhouse screen keeps its text and loses its link', async () => {
     ctxState.pulse = pulse({
       items: [
@@ -222,7 +232,6 @@ describe('loadAskCoachHelm', () => {
 
 describe('ClubhouseCoachHelmRoute: the Ask sub-tab is the coach\'s alone', () => {
   const coach = { coach: { id: 'c1', organization_id: 'o1' }, player: null };
-  const player = { coach: null, player: { id: 'pl1' } };
 
   it('a coach on ?view=ask gets the Ask inside a Suspense boundary with the Ask skeleton, and the loader gets ?c=', async () => {
     session.current = coach;
@@ -240,24 +249,4 @@ describe('ClubhouseCoachHelmRoute: the Ask sub-tab is the coach\'s alone', () =>
     expect(gateSpy).toHaveBeenCalledWith('c1');
   });
 
-  it('a coach without ?view=ask still gets the board, and a coach with no team gets the no-team page before any chat read', async () => {
-    session.current = coach;
-    teamOf.current = { role: 'coach', teamId: 't1', coachId: 'c1' };
-    await resolved(await ClubhouseCoachHelmRoute({}));
-    expect(loadCoachCoachHelm).toHaveBeenCalled();
-    expect(askSpy).not.toHaveBeenCalled();
-    teamOf.current = null;
-    const el = (await ClubhouseCoachHelmRoute({ view: 'ask' })) as ReactElement;
-    expect(el.type).toBe('main');
-    expect(askSpy).not.toHaveBeenCalled();
-  });
-
-  it('a player on ?view=ask gets their own board: the chat loader is never called, so no other player\'s stats are read', async () => {
-    session.current = player;
-    teamOf.current = { role: 'player', teamId: 't1', playerId: 'pl1' };
-    const el = (await resolved(await ClubhouseCoachHelmRoute({ view: 'ask', c: CONV }))) as ReactElement<{ data: unknown }>;
-    expect(loadPlayerCoachHelm).toHaveBeenCalledWith({ playerId: 'pl1' });
-    expect(el.props.data).toEqual({ board: 'player' });
-    expect(askSpy).not.toHaveBeenCalled();
-  });
 });

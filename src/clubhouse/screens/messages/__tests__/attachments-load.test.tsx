@@ -12,7 +12,24 @@ import { Attachments } from '../MessagesView';
 
 const file = (url: string): ChAttachment => ({ id: 'a1', name: 'range.png', size: 1200, mime: 'image/png', url });
 
-beforeEach(() => vi.useFakeTimers());
+// In view from the start, unless a test says otherwise: these are about what happens once a message is near.
+let intersecting = true;
+let wake: (() => void) | null = null;
+class StubObserver {
+  constructor(private cb: (e: Array<{ isIntersecting: boolean }>) => void) {
+    wake = () => cb([{ isIntersecting: true }]);
+  }
+  observe() {
+    if (intersecting) this.cb([{ isIntersecting: true }]);
+  }
+  disconnect() {}
+}
+vi.stubGlobal('IntersectionObserver', StubObserver);
+
+beforeEach(() => {
+  vi.useFakeTimers();
+  intersecting = true;
+});
 afterEach(() => vi.useRealTimers());
 
 const flush = async (ms = 0) => {
@@ -22,6 +39,15 @@ const flush = async (ms = 0) => {
 };
 
 describe('Attachments', () => {
+  it('signs nothing until the message is close to the screen (MOB-MSG-24)', async () => {
+    intersecting = false;
+    const load = vi.fn().mockResolvedValue([]);
+    render(<Attachments load={load} id="far" mine={false} />);
+    expect(load).not.toHaveBeenCalled();
+    act(() => wake?.());
+    await flush();
+    expect(load).toHaveBeenCalled();
+  });
   it('asks again once when the first answer is empty, then shows the files that arrived', async () => {
     const load = vi.fn<(id: string) => Promise<ChAttachment[] | null>>()
       .mockResolvedValueOnce([])

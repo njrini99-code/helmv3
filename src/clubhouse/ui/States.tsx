@@ -1,4 +1,4 @@
-import { CircleAlert, ListFilter, Lock, type LucideIcon } from 'lucide-react';
+import { CalendarDays, ChartLine, CircleAlert, Clock, Columns3, ListFilter, Lock, Rows3, Users, type LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { EmptyShape, type EmptyShapeKind } from './EmptyShape';
 import { Icon } from './Icon';
@@ -33,6 +33,8 @@ export function stateTitle(title: string): string {
 export type EmptyKind = 'first-run' | 'filtered' | 'restricted';
 
 const KIND_GLYPH: Record<EmptyKind, LucideIcon | undefined> = { 'first-run': undefined, filtered: ListFilter, restricted: Lock };
+/** A page's first run with no glyph of its own takes its layout's: every page empty has its tile (W19 B). */
+const SHAPE_GLYPH: Record<EmptyShapeKind, LucideIcon> = { people: Users, time: Clock, rows: Rows3, columns: Columns3, chart: ChartLine, week: CalendarDays };
 
 export function EmptyState({
   icon,
@@ -61,11 +63,12 @@ export function EmptyState({
   progress?: { done: number; total: number; label: string };
   compact?: boolean;
   /**
-   * `section` for a part of a page: a line set flush on the Ledger, its glyph, title, sentence and action read left
-   * to right from the section's edge. `page` when the whole page body is empty (the v2 empty state: a medallion, a
-   * title that names what belongs, one or two sentences on how the space fills, one primary action).
+   * `section` for a part of a page, compact: its glyph, title, sentence and action, in that order. `page` when the
+   * empty is the page's content (W19 B, owner, 12 Nov 2026): a roomy card that holds the space the content will take,
+   * a tinted glyph tile, a title that names what belongs, one sentence, its action. `canvas` for a dead end that keeps
+   * the whole canvas (not found): the route error's medallion, without the danger tone.
    */
-  size?: 'section' | 'page';
+  size?: 'section' | 'page' | 'canvas';
   /**
    * Page size only. `danger`: the page's one read failed, so nothing can show under its head (CH-1211). The route
    * error's anatomy (a brick medallion, CircleAlert unless `icon` is given), as an alert, with Try again first: it
@@ -86,34 +89,54 @@ export function EmptyState({
   shapeCount?: number;
 }) {
   const heading = stateTitle(title);
-  if ((shape || kind) && tone !== 'danger') {
+  const danger = tone === 'danger';
+  // A page empty (W19 B) and a section's that opts in to the honest states share one anatomy, page or compact.
+  if (!danger && size !== 'canvas' && (size === 'page' || shape || kind)) {
     const state = kind ?? 'first-run';
-    // The shape is the picture of a first run; a filter or a lock shows its own glyph instead (the caller's, or the kind's).
-    const glyph = state === 'first-run' ? undefined : (icon ?? KIND_GLYPH[state]);
+    const page = size === 'page';
+    // The caller's glyph; else a filter or a lock shows the kind's, and a page's first run its layout's.
+    const glyph = icon ?? (state === 'first-run' ? (page && shape ? SHAPE_GLYPH[shape] : undefined) : KIND_GLYPH[state]);
     const drawn = shape && state === 'first-run' && !compact;
-    const Root = size === 'page' ? 'section' : 'div';
-    const Title = size === 'page' ? 'h2' : 'p';
+    const Root = page ? 'section' : 'div';
+    const Title = page ? 'h2' : 'p';
     return (
       <Root
-        className={`ch-es ch-es--${size} ch-es--${state}${compact ? ' ch-es--line' : ''}${drawn ? ' ch-es--shaped' : ''}`}
+        className={`ch-es ch-es--${page ? 'page' : 'section'} ch-es--${state}${compact ? ' ch-es--line' : ''}${drawn ? ' ch-es--shaped' : ''}`}
         data-ch-code={code}
         data-ch-state={state}
       >
         <div className="ch-es__copy">
-          {glyph && (
-            <span className="ch-es__glyph" aria-hidden="true">
-              <Icon icon={glyph} size={16} />
-            </span>
-          )}
+          {glyph &&
+            (page && !compact ? (
+              // Tournaments' medallion (W19 B): the tile on its faint rings, the one picture of the card.
+              <span className="ch-es__glyph" aria-hidden="true">
+                <span className="ch-es__tile">
+                  <Icon icon={glyph} size={26} />
+                </span>
+              </span>
+            ) : (
+              <span className="ch-es__glyph" aria-hidden="true">
+                <Icon icon={glyph} size={16} />
+              </span>
+            ))}
           <div className="ch-es__text">
             <Title className="ch-es__title" role={state === 'filtered' ? 'status' : undefined}>
               {heading}
             </Title>
             {body && <p className="ch-es__body">{body}</p>}
             {progress && (
-              <p className="ch-es__prog ch-num">
-                {progress.done} of {progress.total} {progress.label}
-              </p>
+              <div className="ch-es__prog">
+                {page && (
+                  <span className="ch-es__seg" aria-hidden="true">
+                    {Array.from({ length: progress.total }, (_, i) => (
+                      <i key={i} className={i < progress.done ? 'is-done' : undefined} />
+                    ))}
+                  </span>
+                )}
+                <span className="ch-num">
+                  {progress.done} of {progress.total} {progress.label}
+                </span>
+              </div>
             )}
           </div>
           {(action || secondaryAction) && (
@@ -127,8 +150,8 @@ export function EmptyState({
       </Root>
     );
   }
-  if (size === 'page') {
-    const danger = tone === 'danger';
+  // The route error's anatomy: a page whose one read failed, and a dead end that keeps the whole canvas.
+  if (size !== 'section') {
     const glyph = icon ?? (danger ? CircleAlert : undefined);
     return (
       <section

@@ -11,7 +11,7 @@ import type { GolfUserData } from '@/contexts/golf-user-context';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { resolveGolfCoachEntry } from '@/lib/golf/coach-entry-path';
-import { isClubhouseFor, refreshEnabled, tournamentsNavEnabled } from '@/clubhouse/gate';
+import { isClubhouseFor, tournamentsNavEnabled } from '@/clubhouse/gate';
 import { ClubhouseShell } from '@/clubhouse/shell/ClubhouseShell';
 import { SplashHide } from '@/clubhouse/shell/SplashHide';
 import { loadClubhouseShell } from '@/clubhouse/data/shell';
@@ -299,8 +299,8 @@ export default async function GolfDashboardLayout({
       <>
         {/* A15: the app's splash comes down on the first painted frame, not after hydration. */}
         <SplashHide />
-        {/* Tournaments (golf_tournaments_v1) rides in the shell's data: the nav is drawn on the client, the flag is read here. */}
-        <ClubhouseShell userData={userData} shell={{ ...shell, ...(tournamentsNavEnabled() ? { tournaments: true } : {}), refresh: refreshEnabled() }} phone={phone} folded={folded} clock={clock}>
+        {/* Tournaments (golf_tournaments_v1) and Practice (golf_practice_plans) ride in the shell's data: the nav is drawn on the client, the flags are read here. */}
+        <ClubhouseShell userData={userData} shell={{ ...shell, ...(tournamentsNavEnabled() ? { tournaments: true } : {}) }} phone={phone} folded={folded} clock={clock}>
           {children}
         </ClubhouseShell>
       </>

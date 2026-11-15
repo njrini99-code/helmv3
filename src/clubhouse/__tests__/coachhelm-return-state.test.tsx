@@ -32,15 +32,12 @@ vi.mock('../data/coachhelm', async (orig) => ({ ...(await orig<typeof import('..
 vi.mock('../data/coachhelm-chat', () => ({ loadAskCoachHelm: vi.fn() }));
 vi.mock('../data/coachhelm-dive', () => ({ loadPlayerDeepDive: vi.fn() }));
 
-import { PREVIEW_HELM_COACH, PREVIEW_HELM_PLAYER } from '../preview/fixtures-coachhelm';
+import { PREVIEW_HELM_PLAYER } from '../preview/fixtures-coachhelm';
 import { PREVIEW_DIVE } from '../preview/fixtures-coachhelm-views';
 import type { ChDeepDive } from '../data/coachhelm-dive-shape';
-import type { ChCoachHelmData } from '../data/coachhelm-shape';
 import type { ChViewLoad } from '../data/coachhelm-views-shape';
 import { markAppRunning, RouteScope } from '../lib/session-state';
 import { ClubhouseCoachHelmRoute } from '../routes/coachhelm';
-import { CoachBoard } from '../screens/coachhelm/CoachBoard';
-import { PlayerBoard } from '../screens/coachhelm/PlayerBoard';
 import { DeepDive } from '../screens/coachhelm/views/DeepDive';
 import { ToastProvider } from '../ui/Toast';
 
@@ -58,14 +55,12 @@ const wrap = (node: ReactNode) => (
   </LazyMotion>
 );
 const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
-const focusHeading = () => within(document.querySelector('.ch-hl-focus') as HTMLElement).getByRole('heading', { level: 2 }).textContent;
 const escapeRe = (s: string) => new RegExp(s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
 const replaceState = vi.spyOn(window.history, 'replaceState');
 const pushState = vi.spyOn(window.history, 'pushState');
 const historyWrites = () => replaceState.mock.calls.length + pushState.mock.calls.length;
 const routerCalls = () => router.push.mock.calls.length + router.replace.mock.calls.length;
 const stored = () => Object.keys(sessionStorage).filter((k) => k.startsWith('ch:screen:'));
-const pressed = (name: RegExp) => expect(screen.getByRole('button', { name })).toHaveAttribute('aria-pressed', 'true');
 
 beforeEach(() => {
   markAppRunning();
@@ -79,121 +74,6 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   window.history.replaceState(null, '', '/');
-});
-
-describe('CH-13911 the coach’s board returns to the player the coach picked', () => {
-  const players = PREVIEW_HELM_COACH.players.list;
-  const show = (data: ChCoachHelmData = PREVIEW_HELM_COACH, initialPlayer?: string) => render(wrap(<CoachBoard data={data} initialPlayer={initialPlayer} />));
-
-  it('a pick is kept for the tab and writes nothing to the address or the history; a remount (Back) opens on that player', async () => {
-    const u = userEvent.setup();
-    const first = show();
-    await u.click(screen.getByRole('button', { name: /Priya Natarajan/ }));
-    const picked = focusHeading();
-    expect(stored()).toHaveLength(1);
-    expect(historyWrites()).toBe(0);
-    expect(window.location.search).toBe('');
-    expect(routerCalls()).toBe(0);
-    first.unmount();
-    show();
-    pressed(/Priya Natarajan/);
-    expect(focusHeading()).toBe(picked);
-    expect(historyWrites()).toBe(0);
-  });
-
-  it('with nothing kept the board opens on the most pressing player and stores nothing', () => {
-    show();
-    pressed(new RegExp(players[0]!.name));
-    expect(stored()).toHaveLength(0);
-    expect(historyWrites()).toBe(0);
-  });
-
-  it('a player ?player= names wins over a kept pick (a link from Roster must open that player), and the kept pick returns where the address names none', async () => {
-    const u = userEvent.setup();
-    const first = show();
-    await u.click(screen.getByRole('button', { name: /Eli Brandt/ }));
-    first.unmount();
-    show(PREVIEW_HELM_COACH, 'pl-jonah');
-    pressed(/Jonah Okafor/);
-    cleanup();
-    show();
-    pressed(/Eli Brandt/);
-  });
-
-  it('a player ?player= names who is not on the board is ignored: the kept pick, else the most pressing player', async () => {
-    const u = userEvent.setup();
-    show(PREVIEW_HELM_COACH, 'pl-nobody');
-    pressed(new RegExp(players[0]!.name));
-    await u.click(screen.getByRole('button', { name: /Theo Marchetti/ }));
-    cleanup();
-    show(PREVIEW_HELM_COACH, 'pl-nobody');
-    pressed(/Theo Marchetti/);
-  });
-
-  it('a new ?player= from the server (a link to this page for another player) is a new opening on a live board, even after a pick by hand', async () => {
-    const u = userEvent.setup();
-    const view = show(PREVIEW_HELM_COACH, 'pl-jonah');
-    pressed(/Jonah Okafor/);
-    await u.click(screen.getByRole('button', { name: /Theo Marchetti/ }));
-    pressed(/Theo Marchetti/);
-    view.rerender(wrap(<CoachBoard data={PREVIEW_HELM_COACH} initialPlayer="pl-priya" />));
-    pressed(/Priya Natarajan/);
-  });
-
-  it('a refresh (the server answering again, as Try again or a revalidating action makes it) keeps the pick, and the address stays as it was', async () => {
-    const u = userEvent.setup();
-    window.history.replaceState(null, '', '/golf/dashboard/coachhelm?player=pl-jonah');
-    replaceState.mockClear();
-    const view = show(PREVIEW_HELM_COACH, 'pl-jonah');
-    await u.click(screen.getByRole('button', { name: /Theo Marchetti/ }));
-    view.rerender(wrap(<CoachBoard data={{ ...PREVIEW_HELM_COACH }} initialPlayer="pl-jonah" />));
-    pressed(/Theo Marchetti/);
-    expect(window.location.search).toBe('?player=pl-jonah');
-    expect(historyWrites()).toBe(0);
-  });
-
-  it('Roster’s View insights for Eli, the players read failing and then Try again answering: the board opens on Eli, not on the first player', () => {
-    const failed: ChCoachHelmData = { ...PREVIEW_HELM_COACH, players: { list: [], error: true }, withoutSignals: 0 };
-    const view = show(failed, 'pl-eli');
-    expect(screen.queryByRole('button', { name: /Eli Brandt/ })).toBeNull();
-    view.rerender(wrap(<CoachBoard data={PREVIEW_HELM_COACH} initialPlayer="pl-eli" />));
-    pressed(/Eli Brandt/);
-    expect(screen.getByRole('button', { name: new RegExp(players[0]!.name) })).toHaveAttribute('aria-pressed', players[0]!.id === 'pl-eli' ? 'true' : 'false');
-  });
-});
-
-describe('CH-13911 the player’s board returns to the read the player picked', () => {
-  const list = PREVIEW_HELM_PLAYER.insights.list;
-  const show = () => render(wrap(<PlayerBoard data={PREVIEW_HELM_PLAYER} />));
-  const row = (title: string) => screen.getByRole('button', { name: escapeRe(title) });
-
-  it('a pick is kept for the tab and writes nothing to the address or the history; a remount opens on it', async () => {
-    const u = userEvent.setup();
-    const first = show();
-    const picked = list[1]!;
-    await u.click(row(picked.title));
-    expect(stored()).toHaveLength(1);
-    expect(historyWrites()).toBe(0);
-    expect(window.location.search).toBe('');
-    expect(routerCalls()).toBe(0);
-    first.unmount();
-    show();
-    expect(focusHeading()).toBe(picked.title);
-    expect(code('CH-13909')).toBeNull();
-  });
-
-  it('the board reads no ?insight= from the address (that names a read on the Deep dive only), and a refresh keeps the pick', async () => {
-    const u = userEvent.setup();
-    window.history.replaceState(null, '', `/golf/dashboard/coachhelm?insight=${list[2]!.id}`);
-    replaceState.mockClear();
-    const view = show();
-    expect(focusHeading()).toBe(list[0]!.title);
-    await u.click(row(list[1]!.title));
-    view.rerender(wrap(<PlayerBoard data={{ ...PREVIEW_HELM_PLAYER }} />));
-    expect(focusHeading()).toBe(list[1]!.title);
-    expect(window.location.search).toBe(`?insight=${list[2]!.id}`);
-    expect(historyWrites()).toBe(0);
-  });
 });
 
 describe('CH-13911 the Deep dive returns to the read that was open', () => {
@@ -288,26 +168,6 @@ describe('CH-13911 the Deep dive returns to the read that was open', () => {
 });
 
 describe('CH-13911 a switch of view never carries the last view’s pick, and the address is not what a screen reads', () => {
-  const dive = PREVIEW_DIVE.list;
-  const insights = PREVIEW_HELM_PLAYER.insights.list;
-  const diveHeading = () => within(document.querySelector('.ch-hd-main') as HTMLElement).getByRole('heading', { level: 2 }).textContent;
-
-  it('Board with a read picked, then the Deep dive: it opens on its first read (the tab links carry no ?insight=), and the other way round', async () => {
-    const u = userEvent.setup();
-    const board1 = render(wrap(<PlayerBoard data={PREVIEW_HELM_PLAYER} />));
-    await u.click(screen.getByRole('button', { name: escapeRe(insights[1]!.title) }));
-    board1.unmount();
-    // The next view mounts before the address commits: the old view's ?insight= is still in it, and is not read.
-    window.history.replaceState(null, '', `/golf/dashboard/coachhelm?insight=${dive[2]!.base.id}`);
-    const view = render(wrap(<DeepDive load={{ status: 'ready', data: PREVIEW_DIVE }} initialId={null} />));
-    expect(diveHeading()).toBe(dive[0]!.base.title);
-    expect(code('CH-13910')).toBeNull();
-    await u.click(within(screen.getByRole('navigation', { name: 'Your insights' })).getByRole('button', { name: escapeRe(dive[1]!.base.title) }));
-    view.unmount();
-    render(wrap(<PlayerBoard data={PREVIEW_HELM_PLAYER} />));
-    expect(focusHeading()).toBe(insights[1]!.title);
-    expect(code('CH-13909')).toBeNull();
-  });
 
   it('the route hands only the Deep dive the read ?insight= names; the Board and the other views get none', async () => {
     session.current = { userId: 'u2', role: 'player', coach: null, player: { id: 'pl-jonah' } };
@@ -353,25 +213,6 @@ describe('CH-13911 a kept pick is never drawn while the screen hydrates', () => 
     act(() => root?.unmount());
     host.remove();
   }
-
-  it('the coach’s board', async () => {
-    const u = userEvent.setup();
-    await hydratesCleanly(
-      () => <CoachBoard data={PREVIEW_HELM_COACH} />,
-      () => u.click(screen.getByRole('button', { name: /Priya Natarajan/ })),
-      (host) => expect(within(host).getByRole('button', { name: /Priya Natarajan/ })).toHaveAttribute('aria-pressed', 'true'),
-    );
-  });
-
-  it('the player’s board', async () => {
-    const u = userEvent.setup();
-    const target = PREVIEW_HELM_PLAYER.insights.list[1]!;
-    await hydratesCleanly(
-      () => <PlayerBoard data={PREVIEW_HELM_PLAYER} />,
-      () => u.click(screen.getByRole('button', { name: escapeRe(target.title) })),
-      (host) => expect(within(host.querySelector('.ch-hl-focus') as HTMLElement).getByRole('heading', { level: 2 }).textContent).toBe(target.title),
-    );
-  });
 
   it('the Deep dive', async () => {
     const u = userEvent.setup();

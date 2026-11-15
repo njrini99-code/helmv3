@@ -1,0 +1,613 @@
+{
+ "id": "bd48ac5e",
+ "messageId": "bd48ac5e-cf36-47fb-81ac-4360b1cb007b",
+ "source": {
+  "project": "staging",
+  "team": "Demo University Golf",
+  "exportedBy": "scripts/coachhelm/export-ask-turns.mjs"
+ },
+ "timezone": "America/New_York",
+ "roster": [
+  {
+   "id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+   "name": "Cole Bennett",
+   "first_name": "Cole",
+   "last_name": "Bennett"
+  },
+  {
+   "id": "ed1ff03e-b33a-4a80-891e-09685b7db3d0",
+   "name": "Dylan Brooks",
+   "first_name": "Dylan",
+   "last_name": "Brooks"
+  },
+  {
+   "id": "9458ca63-9dbe-4020-ab13-9e2b70f70c80",
+   "name": "Mason Rivers",
+   "first_name": "Mason",
+   "last_name": "Rivers"
+  },
+  {
+   "id": "b40a650a-bce0-4e46-87cd-365b0256ee21",
+   "name": "Jackson Hale",
+   "first_name": "Jackson",
+   "last_name": "Hale"
+  },
+  {
+   "id": "8e382583-2ce6-4d15-8568-5088cf02dbd1",
+   "name": "Ethan Park",
+   "first_name": "Ethan",
+   "last_name": "Park"
+  },
+  {
+   "id": "faced578-b271-416f-b757-ac3aee5bd9e5",
+   "name": "Tyler Hayes",
+   "first_name": "Tyler",
+   "last_name": "Hayes"
+  },
+  {
+   "id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+   "name": "Owen Carter",
+   "first_name": "Owen",
+   "last_name": "Carter"
+  },
+  {
+   "id": "b6b87c4d-0673-4166-9f8c-44e60936a034",
+   "name": "Audit Testplayer",
+   "first_name": "Audit",
+   "last_name": "Testplayer"
+  }
+ ],
+ "userMessage": {
+  "content": "Summarize how Owen Carter has been playing lately.",
+  "createdAt": "2026-11-08T05:36:45.021542+00:00"
+ },
+ "priorMessages": [
+  {
+   "role": "user",
+   "createdAt": "2026-11-08T05:36:45.021542+00:00",
+   "content": "Summarize how Owen Carter has been playing lately.",
+   "evidence": []
+  }
+ ],
+ "turn": {
+  "createdAt": "2026-11-08T05:37:01.698036+00:00",
+  "status": "complete",
+  "costUsd": null,
+  "content": "Owen Carter is scoring 76.0 over his last ten rounds (June 9 to September 26), and his approach play accounts for most of the loss. His most recent recorded round is September 26, so nothing newer is in the data.\n\n- **Total strokes gained:** -6.74 per round, over 8 rounds that have strokes gained. That puts him 5th of 7 on the team, whose average is -5.79. There is no college figure for this metric. The Tour baseline is 0.\n- **Approach:** -4.16 per round, 6th of 7 on the team. The team average is -3.09. This is the largest loss in his game.\n- **Off the tee:** -0.32 per round, 6th of 7. The team average is +0.41.\n- **Putting:** -2.06 per round, 2nd of 7. The team average is -3.03, so this is relatively strong for this group.\n- **Around the green:** -0.20 per round, 4th of 7. The team average is -0.09.\n- **Greens in regulation:** 61.1% over 144 holes. That is just above the Division I average of 60%. It is below his team's average of 62.8%, which puts him 5th of 7. The Tour figure is 66%.\n\nHis last five rounds were uneven:\n- On September 25 and 26, he shot 74 and 71 in a qualifier.\n- On July 8 to 10, he shot 82, 73 and 74 at Poplar Grove. The 82 had a total strokes gained of -10.96, and the other two were -1.56 and -2.82.\n\nThat 82 pulls his ten-round average up noticeably. Two of the qualifier rounds have no putts or strokes gained recorded, so the strokes gained figures rest on 8 of the 10 rounds.\n\nApproach is the area to work on. His putting is holding up relative to the team.",
+  "tools": [
+   {
+    "name": "get_player_metrics",
+    "input": {
+     "window": "last10",
+     "player_id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+     "metric_ids": [
+      "scoring_average",
+      "scoring_average_vs_par",
+      "sg_total",
+      "sg_tee",
+      "sg_approach",
+      "sg_around_green",
+      "sg_putting",
+      "gir_pct"
+     ]
+    }
+   },
+   {
+    "name": "get_recent_rounds",
+    "input": {
+     "last_n": 5,
+     "player_id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91"
+    }
+   }
+  ],
+  "evidence": [
+   {
+    "tool": "get_recent_rounds",
+    "ref": "e1",
+    "envelope": {
+     "as_of": "2026-11-08T05:36:47.351Z",
+     "detail": {
+      "player": {
+       "name": "Owen Carter",
+       "player_id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91"
+      },
+      "rounds": [
+       {
+        "date": "2026-09-26",
+        "holes": 18,
+        "putts": null,
+        "course": "Home course",
+        "to_par": -1,
+        "round_id": "98daf97c-6d5e-4a70-836c-1e27fd587df7",
+        "sg_total": null,
+        "round_type": "qualifier",
+        "total_score": 71,
+        "counts_in_averages": true
+       },
+       {
+        "date": "2026-09-25",
+        "holes": 18,
+        "putts": null,
+        "course": "Home course",
+        "to_par": 2,
+        "round_id": "19a846d4-895d-4e3c-ab51-ebd91a24faa3",
+        "sg_total": null,
+        "round_type": "qualifier",
+        "total_score": 74,
+        "counts_in_averages": true
+       },
+       {
+        "date": "2026-07-10",
+        "holes": 18,
+        "putts": 30,
+        "course": "Poplar Grove (real)",
+        "to_par": 2,
+        "round_id": "ff74226b-e0e1-4f28-9273-c201df22ac21",
+        "sg_total": -2.82,
+        "round_type": "tournament",
+        "total_score": 74,
+        "counts_in_averages": true
+       },
+       {
+        "date": "2026-07-09",
+        "holes": 18,
+        "putts": 29,
+        "course": "Poplar Grove (real)",
+        "to_par": 1,
+        "round_id": "f3df82e7-f6de-4917-9c23-33939f4fbf1d",
+        "sg_total": -1.56,
+        "round_type": "tournament",
+        "total_score": 73,
+        "counts_in_averages": true
+       },
+       {
+        "date": "2026-07-08",
+        "holes": 18,
+        "putts": 30,
+        "course": "Poplar Grove (real)",
+        "to_par": 10,
+        "round_id": "186f37f7-6248-4541-81a8-077987b6781c",
+        "sg_total": -10.96,
+        "round_type": "tournament",
+        "total_score": 82,
+        "counts_in_averages": true
+       }
+      ]
+     },
+     "series": [],
+     "summary": "Owen Carter's last 5 recorded rounds.",
+     "coverage": "complete",
+     "measurements": [],
+     "window_label": "last 5 rounds",
+     "coverage_note": null
+    }
+   },
+   {
+    "tool": "get_player_metrics",
+    "ref": "e2",
+    "envelope": {
+     "as_of": "2026-11-08T05:36:47.516Z",
+     "detail": {
+      "window": "last10"
+     },
+     "series": [],
+     "summary": "8 metrics for Owen Carter, over the newest ten rounds.",
+     "coverage": "complete",
+     "measurements": [
+      {
+       "unit": "score",
+       "as_of": "2026-11-08T05:36:47.516Z",
+       "value": 76,
+       "entity": {
+        "id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+        "kind": "player",
+        "label": "Owen Carter"
+       },
+       "method": "scoring_average_per_18_over_the_window_as_stats_reads_it",
+       "source": "rounds",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "lower_better",
+       "metric_id": "scoring_average",
+       "window_end": "2026-09-26",
+       "denominator": null,
+       "sample_size": 10,
+       "sample_unit": "rounds",
+       "metric_label": "Scoring average",
+       "window_start": "2026-06-09",
+       "coverage_note": null
+      },
+      {
+       "unit": "score",
+       "as_of": "2026-09-29T02:20:34.429142+00:00",
+       "value": 4.43,
+       "entity": {
+        "id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+        "kind": "player",
+        "label": "Owen Carter"
+       },
+       "method": "mean_score_to_par_over_completed_rounds",
+       "source": "stats cache",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "lower_better",
+       "metric_id": "scoring_average_vs_par",
+       "window_end": "2026-09-26",
+       "denominator": null,
+       "sample_size": 14,
+       "sample_unit": "rounds",
+       "metric_label": "Scoring average to par",
+       "window_start": "2026-05-28",
+       "coverage_note": null
+      },
+      {
+       "unit": "strokes",
+       "as_of": "2026-11-08T05:36:47.516Z",
+       "value": -6.74,
+       "entity": {
+        "id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+        "kind": "player",
+        "label": "Owen Carter"
+       },
+       "method": "sg_total_per_18_over_the_window_as_stats_reads_it",
+       "source": "rounds",
+       "coverage": "complete",
+       "benchmark": {
+        "value": 0,
+        "source": "PGA Tour 2024",
+        "version": "2024",
+        "omitted_for_cohort": false
+       },
+       "direction": "higher_better",
+       "metric_id": "sg_total",
+       "window_end": "2026-09-26",
+       "comparisons": [
+        {
+         "kind": "level",
+         "note": "There is no college figure for this metric.",
+         "label": "Division I average",
+         "place": null,
+         "value": null,
+         "place_of": null,
+         "place_percent": null,
+         "missing_reason": "no college figure"
+        },
+        {
+         "kind": "team",
+         "note": "Rank 5 of 7 players with a figure; 1 is best.",
+         "label": "Team average over the last 10 rounds",
+         "place": 5,
+         "value": -5.79,
+         "place_of": 7,
+         "place_percent": null,
+         "missing_reason": null
+        },
+        {
+         "kind": "tour",
+         "note": null,
+         "label": "PGA Tour",
+         "place": null,
+         "value": 0,
+         "place_of": null,
+         "place_percent": null,
+         "missing_reason": null
+        }
+       ],
+       "denominator": null,
+       "sample_size": 8,
+       "sample_unit": "rounds",
+       "metric_label": "Strokes gained total",
+       "window_start": "2026-06-09",
+       "coverage_note": null
+      },
+      {
+       "unit": "strokes",
+       "as_of": "2026-11-08T05:36:47.516Z",
+       "value": -0.32,
+       "entity": {
+        "id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+        "kind": "player",
+        "label": "Owen Carter"
+       },
+       "method": "sg_tee_per_18_over_the_window_as_stats_reads_it",
+       "source": "rounds",
+       "coverage": "complete",
+       "benchmark": {
+        "value": 0,
+        "source": "PGA Tour 2024",
+        "version": "2024",
+        "omitted_for_cohort": false
+       },
+       "direction": "higher_better",
+       "metric_id": "sg_tee",
+       "window_end": "2026-09-26",
+       "comparisons": [
+        {
+         "kind": "level",
+         "note": "There is no college figure for this metric.",
+         "label": "Division I average",
+         "place": null,
+         "value": null,
+         "place_of": null,
+         "place_percent": null,
+         "missing_reason": "no college figure"
+        },
+        {
+         "kind": "team",
+         "note": "Rank 6 of 7 players with a figure; 1 is best.",
+         "label": "Team average over the last 10 rounds",
+         "place": 6,
+         "value": 0.41,
+         "place_of": 7,
+         "place_percent": null,
+         "missing_reason": null
+        },
+        {
+         "kind": "tour",
+         "note": null,
+         "label": "PGA Tour",
+         "place": null,
+         "value": 0,
+         "place_of": null,
+         "place_percent": null,
+         "missing_reason": null
+        }
+       ],
+       "denominator": null,
+       "sample_size": 8,
+       "sample_unit": "rounds",
+       "metric_label": "Strokes gained off the tee",
+       "window_start": "2026-06-09",
+       "coverage_note": null
+      },
+      {
+       "unit": "strokes",
+       "as_of": "2026-11-08T05:36:47.516Z",
+       "value": -4.16,
+       "entity": {
+        "id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+        "kind": "player",
+        "label": "Owen Carter"
+       },
+       "method": "sg_approach_per_18_over_the_window_as_stats_reads_it",
+       "source": "rounds",
+       "coverage": "complete",
+       "benchmark": {
+        "value": 0,
+        "source": "PGA Tour 2024",
+        "version": "2024",
+        "omitted_for_cohort": false
+       },
+       "direction": "higher_better",
+       "metric_id": "sg_approach",
+       "window_end": "2026-09-26",
+       "comparisons": [
+        {
+         "kind": "level",
+         "note": "There is no college figure for this metric.",
+         "label": "Division I average",
+         "place": null,
+         "value": null,
+         "place_of": null,
+         "place_percent": null,
+         "missing_reason": "no college figure"
+        },
+        {
+         "kind": "team",
+         "note": "Rank 6 of 7 players with a figure; 1 is best.",
+         "label": "Team average over the last 10 rounds",
+         "place": 6,
+         "value": -3.09,
+         "place_of": 7,
+         "place_percent": null,
+         "missing_reason": null
+        },
+        {
+         "kind": "tour",
+         "note": null,
+         "label": "PGA Tour",
+         "place": null,
+         "value": 0,
+         "place_of": null,
+         "place_percent": null,
+         "missing_reason": null
+        }
+       ],
+       "denominator": null,
+       "sample_size": 8,
+       "sample_unit": "rounds",
+       "metric_label": "Strokes gained approach",
+       "window_start": "2026-06-09",
+       "coverage_note": null
+      },
+      {
+       "unit": "strokes",
+       "as_of": "2026-11-08T05:36:47.516Z",
+       "value": -0.2,
+       "entity": {
+        "id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+        "kind": "player",
+        "label": "Owen Carter"
+       },
+       "method": "sg_around_green_per_18_over_the_window_as_stats_reads_it",
+       "source": "rounds",
+       "coverage": "complete",
+       "benchmark": {
+        "value": 0,
+        "source": "PGA Tour 2024",
+        "version": "2024",
+        "omitted_for_cohort": false
+       },
+       "direction": "higher_better",
+       "metric_id": "sg_around_green",
+       "window_end": "2026-09-26",
+       "comparisons": [
+        {
+         "kind": "level",
+         "note": "There is no college figure for this metric.",
+         "label": "Division I average",
+         "place": null,
+         "value": null,
+         "place_of": null,
+         "place_percent": null,
+         "missing_reason": "no college figure"
+        },
+        {
+         "kind": "team",
+         "note": "Rank 4 of 7 players with a figure; 1 is best.",
+         "label": "Team average over the last 10 rounds",
+         "place": 4,
+         "value": -0.09,
+         "place_of": 7,
+         "place_percent": null,
+         "missing_reason": null
+        },
+        {
+         "kind": "tour",
+         "note": null,
+         "label": "PGA Tour",
+         "place": null,
+         "value": 0,
+         "place_of": null,
+         "place_percent": null,
+         "missing_reason": null
+        }
+       ],
+       "denominator": null,
+       "sample_size": 8,
+       "sample_unit": "rounds",
+       "metric_label": "Strokes gained around the green",
+       "window_start": "2026-06-09",
+       "coverage_note": null
+      },
+      {
+       "unit": "strokes",
+       "as_of": "2026-11-08T05:36:47.516Z",
+       "value": -2.06,
+       "entity": {
+        "id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+        "kind": "player",
+        "label": "Owen Carter"
+       },
+       "method": "sg_putting_per_18_over_the_window_as_stats_reads_it",
+       "source": "rounds",
+       "coverage": "complete",
+       "benchmark": {
+        "value": 0,
+        "source": "PGA Tour 2024",
+        "version": "2024",
+        "omitted_for_cohort": false
+       },
+       "direction": "higher_better",
+       "metric_id": "sg_putting",
+       "window_end": "2026-09-26",
+       "comparisons": [
+        {
+         "kind": "level",
+         "note": "There is no college figure for this metric.",
+         "label": "Division I average",
+         "place": null,
+         "value": null,
+         "place_of": null,
+         "place_percent": null,
+         "missing_reason": "no college figure"
+        },
+        {
+         "kind": "team",
+         "note": "Rank 2 of 7 players with a figure; 1 is best.",
+         "label": "Team average over the last 10 rounds",
+         "place": 2,
+         "value": -3.03,
+         "place_of": 7,
+         "place_percent": null,
+         "missing_reason": null
+        },
+        {
+         "kind": "tour",
+         "note": null,
+         "label": "PGA Tour",
+         "place": null,
+         "value": 0,
+         "place_of": null,
+         "place_percent": null,
+         "missing_reason": null
+        }
+       ],
+       "denominator": null,
+       "sample_size": 8,
+       "sample_unit": "rounds",
+       "metric_label": "Strokes gained putting",
+       "window_start": "2026-06-09",
+       "coverage_note": null
+      },
+      {
+       "unit": "percent",
+       "as_of": "2026-11-08T05:36:47.516Z",
+       "value": 61.11,
+       "entity": {
+        "id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+        "kind": "player",
+        "label": "Owen Carter"
+       },
+       "method": "gir_pct_per_18_over_the_window_as_stats_reads_it",
+       "source": "rounds",
+       "coverage": "complete",
+       "benchmark": {
+        "value": 60,
+        "source": "Division I average 2024",
+        "version": "2024",
+        "omitted_for_cohort": false
+       },
+       "direction": "higher_better",
+       "metric_id": "gir_pct",
+       "window_end": "2026-09-26",
+       "comparisons": [
+        {
+         "kind": "level",
+         "note": "Place is among college players on helm over all recorded rounds.",
+         "label": "Division I average",
+         "place": null,
+         "value": 60,
+         "place_of": 71,
+         "place_percent": 36,
+         "missing_reason": null
+        },
+        {
+         "kind": "team",
+         "note": "Rank 5 of 7 players with a figure; 1 is best.",
+         "label": "Team average over the last 10 rounds",
+         "place": 5,
+         "value": 62.76,
+         "place_of": 7,
+         "place_percent": null,
+         "missing_reason": null
+        },
+        {
+         "kind": "tour",
+         "note": null,
+         "label": "PGA Tour",
+         "place": null,
+         "value": 66,
+         "place_of": null,
+         "place_percent": null,
+         "missing_reason": null
+        }
+       ],
+       "denominator": 144,
+       "sample_size": 144,
+       "sample_unit": "holes",
+       "metric_label": "Greens in regulation",
+       "window_start": "2026-06-09",
+       "coverage_note": null
+      }
+     ],
+     "window_label": "last 10 rounds",
+     "coverage_note": null
+    }
+   }
+  ],
+  "recorded": {
+   "outcome": "accepted"
+  }
+ }
+}

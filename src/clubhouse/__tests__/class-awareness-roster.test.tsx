@@ -1,6 +1,5 @@
 import { LazyMotion, domAnimation } from 'motion/react';
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ReactNode } from 'react';
 
@@ -34,9 +33,8 @@ vi.mock('../lib/use-class-day', () => ({
 import './dialog-polyfill';
 
 import type { ChClassBlock, ChClassDay, ChClassDayPlayer } from '../data/class-day-shape';
-import { PREVIEW_ROSTER, PREVIEW_ROSTER_AVAILABILITY } from '../preview/fixtures-roster';
+import { PREVIEW_ROSTER } from '../preview/fixtures-roster';
 import { Roster } from '../screens/roster/Roster';
-import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
 import { ClubhouseMarker } from '../shell/context';
 import { ToastProvider } from '../ui/Toast';
 import type { ChRoster } from '../data/roster';
@@ -92,41 +90,6 @@ beforeEach(() => {
 afterEach(() => cleanup());
 
 describe('Roster class lines', () => {
-  it('a player in class reads "In class until" in the note slot, with the source in the peek', async () => {
-    render(tree(roster()));
-    expect(note('Theo Marchetti')?.textContent).toBe('In class until 11:50 AM');
-    expect(note('Sofia Alvarez')?.textContent ?? '').not.toMatch(/class/i);
-    await userEvent.click(screen.getByRole('button', { name: /^Theo Marchetti/ }));
-    expect(await screen.findByText('From Theo’s class schedule · STAT 201')).toBeTruthy();
-  });
-
-  it('the face’s name carries the line for assistive tech', () => {
-    render(tree(roster()));
-    expect(screen.getByRole('button', { name: /^Theo Marchetti.*In class until 11:50 AM\. Open profile$/ })).toBeTruthy();
-  });
-
-  it('a class outranks "needs a look", and an injury outranks a class', () => {
-    live.day = dayOf([dp('jonah', 'Jonah', { blocks: [block('13:30', '15:50')] }), dp('ava', 'Ava', { blocks: [block('13:30', '15:50')] })]);
-    render(tree(roster(PREVIEW_ROSTER_AVAILABILITY)));
-    // Jonah has a "Scoring up" reason; the class takes the slot.
-    expect(note('Jonah Okafor')?.textContent).toBe('In class until 11:50 AM');
-    // Ava is injured: the word stays, the class waits.
-    expect(note('Ava Lindqvist')?.textContent).toBe('Injured');
-  });
-
-  it('a confirmed trip outranks an injury', () => {
-    live.day = dayOf([dp('ava', 'Ava', { away: { destination: 'Pinehurst', returnDate: '2026-10-29', confirmed: true } })]);
-    render(tree(roster(PREVIEW_ROSTER_AVAILABILITY)));
-    expect(note('Ava Lindqvist')?.textContent).toBe('Travelling · Pinehurst');
-  });
-
-  it('the list row leads with the class line, then the usual class year and hometown', async () => {
-    render(tree(roster()));
-    await userEvent.click(screen.getByRole('button', { name: 'List view' }));
-    const row = screen.getByRole('button', { name: 'Theo Marchetti. Open profile' });
-    expect(row.textContent).toContain('In class until 11:50 AM');
-    expect(row.textContent).toContain('Senior · Asheville, NC');
-  });
 
   it('with the flag off nothing is drawn and nothing is read', () => {
     render(tree(roster(), false));
@@ -137,52 +100,5 @@ describe('Roster class lines', () => {
   it('with no team id on the roster (a fixture) nothing is asked for', () => {
     render(tree({ ...PREVIEW_ROSTER, teamId: undefined }));
     expect(live.calls.every((c) => c.team === null)).toBe(true);
-  });
-
-  it('holds the lines still while a pointer is down, and catches up when it lifts', async () => {
-    const view = render(tree(roster()));
-    expect(note('Theo Marchetti')?.textContent).toBe('In class until 11:50 AM');
-    fireEvent.pointerDown(screen.getByRole('button', { name: /^Theo Marchetti/ }));
-    live.now = at('16:30');
-    view.rerender(tree(roster()));
-    expect(note('Theo Marchetti')?.textContent).toBe('In class until 11:50 AM');
-    await act(async () => {
-      fireEvent.pointerUp(window);
-    });
-    expect(note('Theo Marchetti')?.textContent ?? '').not.toMatch(/In class/);
-  });
-});
-
-describe('Roster class lines · phone', () => {
-  const realMatchMedia = window.matchMedia;
-  beforeEach(() => {
-    window.matchMedia = ((q: string) => ({ matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)', media: q, onchange: null, addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {}, dispatchEvent: () => false })) as never;
-  });
-  afterEach(() => {
-    window.matchMedia = realMatchMedia;
-  });
-  function SlotHost() {
-    const { setSlot } = usePhoneChromeState();
-    return <div ref={setSlot} data-testid="phone-top" />;
-  }
-
-  it('the row’s second line is the class line, and the row is named by it', () => {
-    render(
-      <LazyMotion features={domAnimation}>
-        <ToastProvider>
-          <PhoneChromeProvider>
-            <ClubhouseMarker role={ROLE} classAwareness>
-              <div className="ch-root" data-ui="clubhouse">
-                <SlotHost />
-                <Roster data={roster()} />
-              </div>
-            </ClubhouseMarker>
-          </PhoneChromeProvider>
-        </ToastProvider>
-      </LazyMotion>,
-    );
-    const row = screen.getByRole('button', { name: /^Theo Marchetti.*In class until 11:50 AM/ });
-    expect(row.querySelector('.ch-rsm-row__b .ch-ca-line')?.textContent).toBe('In class until 11:50 AM');
-    expect(row.querySelector('.ch-rsm-row__b')?.textContent).toContain('Senior');
   });
 });

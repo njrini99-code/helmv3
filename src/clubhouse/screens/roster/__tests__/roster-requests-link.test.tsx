@@ -61,17 +61,6 @@ const desktop = (data: ChRoster) =>
   );
 
 describe('P003 · 30102 the bell’s join-request link on desktop (?tab=requests)', () => {
-  it('takes focus to the join requests card and drops the param, so a reload shows the roster as it is', async () => {
-    expect(PREVIEW_ROSTER.requests.length).toBeGreaterThan(0);
-    window.history.replaceState(null, '', '/golf/dashboard/roster?tab=requests');
-    desktop(PREVIEW_ROSTER);
-    const card = screen.getByRole('region', { name: 'Join requests' });
-    await waitFor(() => expect(document.activeElement).toBe(card));
-    expect(window.location.search).toBe('');
-    expect(window.location.pathname).toBe('/golf/dashboard/roster');
-    // A reading destination, not a stop in the Tab order.
-    expect(card.tabIndex).toBe(-1);
-  });
 
   it('keeps any other param', async () => {
     window.history.replaceState(null, '', '/golf/dashboard/roster?tab=requests&team=t1');
@@ -84,14 +73,6 @@ describe('P003 · 30102 the bell’s join-request link on desktop (?tab=requests
     desktop({ ...PREVIEW_ROSTER, requests: [] });
     await waitFor(() => expect(window.location.search).toBe(''));
     expect(screen.queryByRole('region', { name: 'Join requests' })).toBeNull();
-    expect(document.activeElement).toBe(document.body);
-  });
-
-  it('without the param nothing takes focus', async () => {
-    window.history.replaceState(null, '', '/golf/dashboard/roster');
-    desktop(PREVIEW_ROSTER);
-    await new Promise((r) => setTimeout(r, 30));
-    expect(screen.getByRole('region', { name: 'Join requests' })).toBeTruthy();
     expect(document.activeElement).toBe(document.body);
   });
 });

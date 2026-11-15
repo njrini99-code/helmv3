@@ -1,6 +1,5 @@
 import { LazyMotion, domAnimation } from 'motion/react';
 import { cleanup, render, screen, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import '../../../../__tests__/dialog-polyfill';
@@ -112,11 +111,12 @@ describe('the reads an answer names', () => {
     expect(coachReadHref('p-jonah', 'in/odd', ASK_PLAYERS)).toBe('/golf/dashboard/coachhelm?view=deep-dive&player=p-jonah&insight=in%2Fodd');
   });
 
-  it('View as table shows the same reads as a table', async () => {
+  it('has no Table key: the reads are rows already, each with its area, its title and its value', () => {
     show();
     const fig = reads().closest('figure') as HTMLElement;
-    await userEvent.click(within(fig).getByRole('button', { name: 'View as table' }));
-    expect(within(fig).getAllByRole('row').map((r) => r.textContent)).toEqual(['ReadAreaValue', 'Downhill putts, 4 to 6 feetPutting41%', 'Penalties off the teeCourse management1.1', 'Approach from 125 to 175 yardsApproach27 ft']);
+    expect(within(fig).queryByRole('button', { name: 'View as table' })).toBeNull();
+    expect(within(fig).queryByRole('table')).toBeNull();
+    expect(within(reads()).getAllByRole('listitem').map((r) => r.textContent)).toEqual(['PuttingDownhill putts, 4 to 6 feet41%', 'Course managementPenalties off the tee1.1', 'ApproachApproach from 125 to 175 yards27 ft']);
   });
 
   it('a link that does not lead to the Deep dive is never drawn for a read (no Stats link, no plain anchor)', () => {

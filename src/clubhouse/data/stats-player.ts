@@ -29,7 +29,10 @@ import {
   type ChRoundCache,
   type ChSgChange,
   type ChWindow,
+  sgPolicyAtSource,
+  sgSourceFor,
 } from './stats-common';
+import { sgMixOf, type ChSgMix } from './stats-sg-mix';
 import { holeRounds } from './round-scope';
 import { floorRate } from '../lib/stats-signal';
 import { effectiveWindow, filterFor, roundKind, type ChFilter, type ChFilterOptions, type ChLast } from './stats-filter';
@@ -162,6 +165,11 @@ export interface ChGoalSuggestion {
 
 export interface ChPlayerProfile {
   viewer: ChViewer;
+  /**
+   * Of the window's rounds with strokes gained, how many were shot-tracked and how many estimated from the scorecard
+   * (stats-sg-mix.ts). Null when that read failed, absent on data built elsewhere: the screen then says nothing.
+   */
+  sgMix?: ChSgMix | null;
   window: ChWindow;
   /** How many rounds Last N counts (read with `window: 'last10'`). */
   last: ChLast;
@@ -233,12 +241,11 @@ export async function loadPlayerProfile(input: {
   window: ChWindow;
   /** The round filter; omitted, it is the window alone. */
   filter?: ChFilter;
-  /** clubhouse_stats_redesign_v1: practice rounds leave the default figures (below). Off, they count as they always have. */
-  shs?: boolean;
 }): Promise<ChPlayerProfile | null> {
   const f = input.filter ?? filterFor(input.window);
   // With the redesign on, the figures leave practice rounds out unless the filter asks for a type or picks rounds by hand (data/season.ts).
-  const counted = (rounds: ChRound[]) => (practiceCut(input.shs, f) ? rounds.filter(countsForScoring) : rounds);
+  // All time (span.ts) is Fairway's basis: practice in, and no round posted as a total only (Fairway's isCountableRound reads none).
+  const counted = (rounds: ChRound[]) => (practiceCut(f) ? rounds.filter(countsForScoring) : f.span === 'all' ? holeRounds(rounds) : rounds);
   const supabase = await createClient();
   const now = new Date();
   const coach = input.viewer === 'coach';
@@ -263,7 +270,14 @@ export async function loadPlayerProfile(input: {
   // earliest the season can start anywhere (UTC−12) and trimmed to the team's own start once the zone is in (below).
   const tzRead = loadTeamZone(supabase, input.teamId, 'stats');
   const wide = seasonStartDate(now, 'Etc/GMT+12');
-  const ownRoundsRead = loadSeasonRounds(supabase, [input.playerId], { surface: 'stats', since: loadSince(f, wide) });
+  // Estimated strokes gained (stats-sg-mix.ts): the policy is applied to the rounds as they load, the player's and the teammates',
+  // so every figure below follows it. Under today's policy this reads nothing and changes nothing.
+  const withSgPolicy = <T extends { rounds: ChRound[] }>(read: PromiseLike<T>) =>
+    Promise.resolve(read).then(async (res) => {
+      const policy = await sgPolicyAtSource(supabase, res.rounds, 'stats');
+      return { ...res, rounds: policy.rounds, sgEarly: policy.early };
+    });
+  const ownRoundsRead = withSgPolicy(loadSeasonRounds(supabase, [input.playerId], { surface: 'stats', since: loadSince(f, wide) }));
   // The personal-best card's attesting coach (P005-C2): the team's primary coach on staff. A failed read only drops the line.
   const coachRead = attestingCoachName(supabase, input.teamId);
   const focusRead = Promise.resolve(
@@ -305,10 +319,12 @@ export async function loadPlayerProfile(input: {
     if (res.error) chLogServer('stats', 'teamMembers', res.error, 'teams');
     return [...new Set([input.playerId, ...(res.data ?? []).map((m) => m.player_id)])];
   });
-  const othersRoundsRead = teamIdsRead.then((ids) => {
-    const others = ids.filter((id) => id !== input.playerId);
-    return others.length ? loadSeasonRounds(supabase, others, { surface: 'stats', since: loadSince(f, wide) }) : { rounds: [] as ChRound[], error: false };
-  });
+  const othersRoundsRead = withSgPolicy(
+    teamIdsRead.then((ids) => {
+      const others = ids.filter((id) => id !== input.playerId);
+      return others.length ? loadSeasonRounds(supabase, others, { surface: 'stats', since: loadSince(f, wide) }) : { rounds: [] as ChRound[], error: false };
+    }),
+  );
   // The teammates' cache rows: the window's rounds of every other player on the team (the comparisons' team column).
   const othersCacheRead = Promise.all([teamIdsRead, othersRoundsRead, tzRead]).then(([ids, others, tz]) => {
     if (!coach || others.error) return { byRound: new Map<string, ChRoundCache>(), error: false };
@@ -348,7 +364,7 @@ export async function loadPlayerProfile(input: {
   // Every shot-level figure counts exactly the window's own rounds with their holes (the ones the Rounds table lists, of the lengths the filter chose),
   // newest 100 at most: the detail read is given these ids instead of a date preset, which would count a different set.
   const scopeIds = ownHole.slice(0, DETAIL_MAX_ROUNDS).map((r) => r.id);
-  const [detailRead, cacheOwnRead, puttsRead, holesRead, approachRead, sprayReadRaw] = await Promise.all([
+  const [detailRead, cacheOwnRead, puttsRead, holesRead, approachRead, sprayReadRaw, sgSourceRead] = await Promise.all([
     scopeIds.length
       ? inStatsContext(sharedContext, () => getDetailedStats(input.playerId, scopeIds)).then(
           (s) => ({ stats: s, error: false }),
@@ -364,6 +380,8 @@ export async function loadPlayerProfile(input: {
     loadHoles(supabase, scopeIds),
     loadApproachShots(supabase, scopeIds),
     scopeIds.length ? inStatsContext(sharedContext, () => loadSpray(input.playerId, scopeIds)) : Promise.resolve({ spray: null, error: false }),
+    // Which of the window's rounds were shot-tracked and which estimated from the scorecard: two rows a round at most.
+    sgSourceFor(supabase, ownRes.sgEarly, ownHole, 'stats'),
   ]);
   const [othersRead, cacheOthers, benchRes, focusRes, goalsRes, suggestionsRes] = await Promise.all([othersRoundsRead, othersCacheRead, benchRead, focusRead, goalsRead, suggestionsRead]);
   const othersRes = trim(othersRead);
@@ -394,7 +412,9 @@ export async function loadPlayerProfile(input: {
   const mine = counted(allMine);
   const winRounds = roundsInFilter(mine, f, start);
   // A custom range, and Last 10, can read rounds from before the season: the season's own figures count this season only.
-  const season = summarizePlayer(seasonOnly(mine, start));
+  // The "This season" block and the Next/Previous order stay the season's own on All time (practice out): only the window's figures change basis.
+  const seasonBasis = (rounds: ChRound[]) => (f.span === 'all' ? rounds.filter(countsForScoring) : counted(rounds));
+  const season = summarizePlayer(seasonOnly(seasonBasis(allMine), start));
   const win = summarizeWindow(winRounds);
   // Q-123: a round posted as a total only is a score and nothing else. Every hole-level figure reads the window's rounds with their holes.
   const holeWin = holeRounds(winRounds);
@@ -450,7 +470,7 @@ export async function loadPlayerProfile(input: {
   // a round posted as a total only: restated (stats-weight).
   const perRoundStats = detailFailed || !detail.stats ? null : perEighteen(detail.stats, winRounds);
   // GameMore's by-type row compares practice with tournament play, so its Practice cell keeps the uncut window on purpose.
-  const s = perRoundStats && practiceCut(input.shs, f) ? withPracticeRow(perRoundStats, roundsInFilter(allMine, f, start)) : perRoundStats;
+  const s = perRoundStats && practiceCut(f) ? withPracticeRow(perRoundStats, roundsInFilter(allMine, f, start)) : perRoundStats;
 
   // Strokes gained against the previous 10 matching rounds; only the newest-ten cut has one (not a range, not picked rounds).
   const prevList = previousInFilter(mine, f, start);
@@ -560,7 +580,7 @@ export async function loadPlayerProfile(input: {
   let nav: ChPlayerProfile['nav'] = null;
   if (input.viewer === 'coach') {
     const order = teamIds
-      .map((id) => ({ id, avg: summarizePlayer(seasonOnly(counted(byPlayer.get(id) ?? []), start)).avg }))
+      .map((id) => ({ id, avg: summarizePlayer(seasonOnly(seasonBasis(byPlayer.get(id) ?? []), start)).avg }))
       // The same order whichever player is open: ties (and every player with no average yet) break on the id, so Next
       // walks the whole team instead of bouncing between the viewed player and a tie (audit 2026-10-31).
       .sort((a, b) => (a.avg ?? 999) - (b.avg ?? 999) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
@@ -579,6 +599,7 @@ export async function loadPlayerProfile(input: {
   return {
     attestingCoach,
     viewer: input.viewer,
+    sgMix: roundsFailed ? null : sgMixOf(ownHole, sgSourceRead),
     window: f.window,
     last: f.last,
     filter: f,

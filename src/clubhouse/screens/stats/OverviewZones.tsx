@@ -46,7 +46,7 @@ function Track({ value, lo = 0, hi = 100, team, tour, bad = false, neutral = fal
   );
 }
 
-export function OverviewZones({ data, coach, ribbon, onOpenLeg, shs = false }: { data: ChPlayerProfile; coach: boolean; ribbon: ReactNode; onOpenLeg?: (label: string) => void; /** clubhouse_stats_redesign_v1: Missed short reads the calculator's own figure. */ shs?: boolean }) {
+export function OverviewZones({ data, coach, ribbon, onOpenLeg }: { data: ChPlayerProfile; coach: boolean; ribbon: ReactNode; onOpenLeg?: (label: string) => void; }) {
   const w = data.win;
   const s: Stats | null = data.stats && !data.statsError ? data.stats : null;
   const cmp = (label: string) => data.comparisons.find((c) => c.label === label);
@@ -108,7 +108,7 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg, shs = false }: {
 
   // 4 · approach
   const miss = s && s.approachMissTotal > 0 ? s : null;
-  const { short: mShort, long: mLong } = miss ? missSplit(miss, shs) : { short: 0, long: 0 };
+  const { short: mShort, long: mLong } = miss ? missSplit(miss) : { short: 0, long: 0 };
   const mLeft = miss ? (miss.approachMissLeftPct ?? 0) : 0;
   const mRight = miss ? (miss.approachMissRightPct ?? 0) : 0;
   const mSum = Math.max(1, mShort + mLong + mLeft + mRight);
@@ -583,7 +583,8 @@ function ParDots({ rows }: { rows: Array<{ p: 3 | 4 | 5; you: number | null; tou
 
 /** A green seen from above, its four edges thickened by the share of missed approaches that finish there. */
 export function GreenDiagram({ short, long, left, right, gir }: { short: number; long: number; left: number; right: number; gir: number | null }) {
-  const stroke = (v: number) => 5 + (v / 100) * 28;
+  // Capped, so a thick arc never reaches the label beside it (STATS-2).
+  const stroke = (v: number) => Math.min(18, 5 + (v / 100) * 28);
   const worst = Math.max(short, long, left, right);
   const tone = (v: number) => (v === worst ? 'var(--ch-warning-600)' : 'var(--ch-champagne-500)');
   // The side most misses finish on is the one in bold, by the same test as its colour, never "Short" by default (A8.6).
@@ -597,7 +598,7 @@ export function GreenDiagram({ short, long, left, right, gir }: { short: number;
         <path d="M150 90 l16 6 l-16 6 z" fill="var(--ch-chart-flag)" />
         {gir != null && (
           <>
-            <text x={150} y={132} textAnchor="middle" fontSize={26} fontWeight={700} fill="var(--ch-green-900)" letterSpacing={-1}>{Math.round(gir)}%</text>
+            <text x={150} y={132} textAnchor="middle" fontSize={26} fontWeight={700} fill="var(--ch-forest-900)" letterSpacing={-1}>{Math.round(gir)}%</text>
             <text x={150} y={148} textAnchor="middle" fontSize={11} fill="var(--ch-text-secondary)">greens hit</text>
           </>
         )}

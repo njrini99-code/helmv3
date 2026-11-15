@@ -1,5 +1,13 @@
 # P013 — CoachHelm: wiring map
 
+> Retired on 11 Nov 2026 (owner): `CoachBoard.tsx`, `PlayerBoard.tsx`,
+> `TeamPatterns.tsx`, `CoursePlan.tsx` and `MyCoursePlan.tsx` are deleted, and
+> the rows below that name them describe pages that no longer exist. The route
+> draws `team/TeamBoard.tsx` for a coach (`loadCoachTeamBoard`) and
+> `file/YourWeek.tsx` for a player (`loadPlayerYourWeek`). `loadCoachCoachHelm`
+> and `loadPlayerCoachHelm` are still in `data/coachhelm.ts`, marked retired:
+> no page reads them. See CONTRACT.md, "Retired on 11 Nov 2026".
+
 <!-- clubhouse:release-audit:start -->
 ## Current ownership audit — 2026-10-06
 

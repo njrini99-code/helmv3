@@ -10,10 +10,14 @@ import { positionLabel, type ChQRow, type ChQRowState } from './model';
  * It holds nothing of its own: the rows, their to-par and their states are the leaderboard's. A coin's colour is its state (mint
  * on score, gold a coach's pick, a gold ring the bubble, ivory the rest); it is drawn in place at first paint (Q-153: no first-paint
  * draw-ins); a coin glides only when the data moves it. A pointer reads a name and a place; the leaderboard under it is the route for the keyboard and screen readers.
+ * A player's own coin is ringed (`is-me`), as their dot is on a round's field strip. The even-par rule runs behind the coins and
+ * rises past them, so a coin that sits on it is crossed by the rule and never looks pointed at.
  */
+/** How far the even-par rule rises above the coins' row. */
+const EVEN_RISE = 12;
 const KIND: Partial<Record<NonNullable<ChQRowState>, 'score' | 'pick' | 'bubble'>> = { qualifying: 'score', qualified: 'score', selected: 'score', pick: 'pick', bubble: 'bubble' };
 
-export function StandingsSpread({ rows, topScore }: { rows: ChQRow[]; topScore: number }) {
+export function StandingsSpread({ rows, topScore, viewerId }: { rows: ChQRow[]; topScore: number; viewerId?: string | null }) {
   const [hot, setHot] = useState<string | null>(null);
   const layout = useMemo(() => {
     const scored = rows.filter((r) => r.toPar != null);
@@ -49,7 +53,7 @@ export function StandingsSpread({ rows, topScore }: { rows: ChQRow[]; topScore: 
   return (
     <div className="ch-qf-sp" onPointerLeave={() => setHot(null)}>
       <div className="ch-qf-sp__plot" style={{ height: height + 30 }} aria-hidden="true">
-        <i className="ch-qf-sp__even" style={{ left: `${even}%`, height: height + 6 }} />
+        <i className="ch-qf-sp__even" style={{ left: `${even}%`, top: -EVEN_RISE, height: height + 6 + EVEN_RISE }} />
         {layout.cut != null && (
           <i className="ch-qf-sp__cut" style={{ left: `${layout.cut}%`, height: height + 6 }}>
             <span>Top {topScore} on score</span>
@@ -59,7 +63,7 @@ export function StandingsSpread({ rows, topScore }: { rows: ChQRow[]; topScore: 
           {layout.placed.map(({ r, x, lane }) => (
             <li
               key={r.playerId}
-              className={'is-' + (KIND[r.state as NonNullable<ChQRowState>] ?? 'out') + (hot === r.playerId ? ' is-hot' : '')}
+              className={'is-' + (KIND[r.state as NonNullable<ChQRowState>] ?? 'out') + (viewerId != null && r.playerId === viewerId ? ' is-me' : '') + (hot === r.playerId ? ' is-hot' : '')}
               style={{ '--ch-qf-x': x, top: lane * 40 } as CSSProperties}
               onPointerEnter={() => setHot(r.playerId)}
             >

@@ -40,14 +40,20 @@ export function useConversationFiles(api: ChMessagesApi, conv: ChConv) {
     };
   }, [load, conv.id, attempt]);
   const open = async (f: ChFile) => {
+    // The tab opens inside the tap, or iPhone Safari blocks it as a pop-up; the signed address fills it in.
+    const tab = window.open("about:blank", "_blank");
     const list = await api.attachments(f.messageId).catch(() => null);
     const hit = list?.find((x) => x.id === f.id) ?? null;
     if (!hit?.url) {
+      tab?.close();
       haptic("error");
       toast({ tone: "error", title: `Couldn’t open ${f.name}`, body: "Try again in a moment.", code: "CH-7021" });
       return;
     }
-    window.open(hit.url, "_blank", "noopener,noreferrer");
+    if (tab) {
+      tab.opener = null;
+      tab.location.href = hit.url;
+    } else window.location.assign(hit.url);
   };
   return { files, failed, retry: () => setAttempt((n) => n + 1), open };
 }
@@ -58,3 +64,22 @@ export const fileKind = (mime: string) =>
 /** "PDF · 48 KB · Today", the second line of a file row. */
 export const fileMeta = (f: ChFile, api: ChMessagesApi) =>
   [fileKind(f.mime), fileSize(f.size), f.sentAt ? dayLabel(f.sentAt, api.now, api.timeZone) : null].filter(Boolean).join(" · ");
+
+/** The label on a file bubble's tile (MSG-221): the extension when there is one ("PDF", "MOV"), else the kind in capitals. */
+export function fileTypeLabel(name: string, mime: string): string {
+  const ext = /\.([a-z0-9]{1,4})$/i.exec(name)?.[1];
+  if (ext) return ext.toUpperCase();
+  return mime === "application/pdf" ? "PDF" : mime.startsWith("video/") ? "MOV" : mime.startsWith("audio/") ? "AUDIO" : "FILE";
+}
+
+/** "0:42", "12:05": a clip's length for the file bubble's second line ("Video · 0:42"). */
+export function durationLabel(seconds: number): string {
+  const s = Math.max(0, Math.round(seconds));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+}
+
+/** The file bubble's second line: "Video · 0:42" when the length is known, else "PDF · 96 KB" (MSG-221). */
+export function fileSubline(f: { mime: string; size: number; durationSeconds?: number | null }): string {
+  if (f.durationSeconds && (f.mime.startsWith("video/") || f.mime.startsWith("audio/"))) return `${fileKind(f.mime)} · ${durationLabel(f.durationSeconds)}`;
+  return [fileKind(f.mime), fileSize(f.size)].filter(Boolean).join(" · ");
+}

@@ -1,0 +1,83 @@
+{
+ "id": "e0e84a03",
+ "messageId": "e0e84a03-3cb4-48b2-a649-480a63162ec7",
+ "source": {
+  "project": "staging",
+  "team": "Demo University Golf",
+  "exportedBy": "scripts/coachhelm/export-ask-turns.mjs"
+ },
+ "timezone": "America/New_York",
+ "roster": [
+  {
+   "id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+   "name": "Cole Bennett",
+   "first_name": "Cole",
+   "last_name": "Bennett"
+  },
+  {
+   "id": "ed1ff03e-b33a-4a80-891e-09685b7db3d0",
+   "name": "Dylan Brooks",
+   "first_name": "Dylan",
+   "last_name": "Brooks"
+  },
+  {
+   "id": "9458ca63-9dbe-4020-ab13-9e2b70f70c80",
+   "name": "Mason Rivers",
+   "first_name": "Mason",
+   "last_name": "Rivers"
+  },
+  {
+   "id": "b40a650a-bce0-4e46-87cd-365b0256ee21",
+   "name": "Jackson Hale",
+   "first_name": "Jackson",
+   "last_name": "Hale"
+  },
+  {
+   "id": "8e382583-2ce6-4d15-8568-5088cf02dbd1",
+   "name": "Ethan Park",
+   "first_name": "Ethan",
+   "last_name": "Park"
+  },
+  {
+   "id": "faced578-b271-416f-b757-ac3aee5bd9e5",
+   "name": "Tyler Hayes",
+   "first_name": "Tyler",
+   "last_name": "Hayes"
+  },
+  {
+   "id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+   "name": "Owen Carter",
+   "first_name": "Owen",
+   "last_name": "Carter"
+  },
+  {
+   "id": "b6b87c4d-0673-4166-9f8c-44e60936a034",
+   "name": "Audit Testplayer",
+   "first_name": "Audit",
+   "last_name": "Testplayer"
+  }
+ ],
+ "userMessage": {
+  "content": "What can you do?",
+  "createdAt": "2026-11-08T05:29:36.836508+00:00"
+ },
+ "priorMessages": [
+  {
+   "role": "user",
+   "createdAt": "2026-11-08T05:29:36.836508+00:00",
+   "content": "What can you do?",
+   "evidence": []
+  }
+ ],
+ "turn": {
+  "createdAt": "2026-11-08T05:29:42.285917+00:00",
+  "status": "complete",
+  "costUsd": null,
+  "content": "I can pull answers from your team's data and set up the admin work around them. Nothing gets created or sent until you confirm it.\n\n**Analysis**\n- **Players:** scoring, strokes gained by area, putting by distance, approach proximity, scrambling, penalties, and round-by-round trends. I can also show where a player is losing the most strokes.\n- **Team:** rankings on any stat, team strokes gained, patterns shared across several players, and this season against last.\n- **Comparisons:** player against player, and a player against the Division average, the team average and the Tour.\n- **Competition:** qualifier standings, tournament results, and the reasoning behind past selections.\n- **Development:** goals, focus areas, how much players have actually practised them, and attendance.\n\n**Drafting and planning**\n- Practice plans built from your drill bank, and new drills.\n- Lineups for tournaments. I can lock one only when you tell me to.\n- Qualifiers, calendar events, recurring practices, trips, terms and team breaks.\n- Goals, focus areas, tasks, and round notes for players.\n- Team announcements, messages, polls, and player boards or reports.\n- Recruit entries.\n\n**Visuals**\nFor most questions I can build one chart or dashboard from the data, such as a strokes gained breakdown, a ranked bar chart or a team comparison table.\n\nA few questions to start with:\n- \"Who is putting best on the team over the last ten rounds?\"\n- \"Where is Cole Bennett losing the most strokes?\"\n- \"Draft a practice plan for Tuesday focused on approach.\"",
+  "tools": [],
+  "evidence": [],
+  "recorded": {
+   "outcome": "accepted"
+  }
+ }
+}

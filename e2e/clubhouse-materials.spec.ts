@@ -33,7 +33,7 @@ const SCREENS: Array<{ name: string; path: string; act?: (page: Page, size: stri
   { name: 'rounds', path: '/clubhouse-preview/rounds' },
   { name: 'classes', path: '/clubhouse-preview/classes' },
   { name: 'hub', path: '/clubhouse-preview/hub' },
-  { name: 'coachhelm', path: '/clubhouse-preview/coachhelm' },
+  { name: 'coachhelm', path: '/clubhouse-preview/coachhelm-team' },
   { name: 'settings-switches', path: '/clubhouse-preview/settings?section=notifications' },
   {
     name: 'messages',

@@ -197,14 +197,36 @@ describe('P009-B2 an honest Live state', () => {
   });
 
   it('D3 on the list: a live qualifier past its end says what it waits on on its card; with no day it stays Live', () => {
-    const { unmount } = wrap(<QualifiersList data={{ ...previewList('coach', 'all'), today: '2026-10-08' }} />);
+    const { unmount } = wrap(<QualifiersList data={{ ...previewList('coach'), today: '2026-10-08' }} />);
     expect(within(document.querySelector('.ch-qf-hero') as HTMLElement).getByText('Waiting on 11 rounds')).toBeTruthy();
     // The year is dropped inside the current season (D11).
     expect(document.querySelector('.ch-qf-hero .ch-qf-meta')!.textContent).toMatch(/Sep 22 – Oct 1(?!,)/);
     unmount();
-    wrap(<QualifiersList data={previewList('coach', 'all')} />);
+    wrap(<QualifiersList data={previewList('coach')} />);
     expect(document.querySelector('.ch-qf-hero .ch-qf-status')!.textContent).toBe('Live');
     expect(document.querySelector('.ch-qf-hero .ch-qf-meta')!.textContent).toMatch(/Sep 22 – Oct 1, 2026/);
+  });
+
+  it('W33 a coach is asked to close a qualifier past its last day; a player, and a live one in its dates, are not', () => {
+    const { unmount } = wrap(<QualifiersList data={{ ...previewList('coach'), today: '2026-10-08' }} />);
+    expect(document.querySelector('.ch-qf-hero .ch-qf-cta')!.textContent).toBe('Review and close');
+    unmount();
+    const p = wrap(<QualifiersList data={{ ...previewList('player'), today: '2026-10-08' }} />);
+    expect(document.querySelector('.ch-qf-hero .ch-qf-cta')?.textContent ?? '').not.toContain('close');
+    p.unmount();
+    wrap(<QualifiersList data={previewList('coach')} />);
+    expect(document.querySelector('.ch-qf-hero .ch-qf-cta')!.textContent).toBe('View leaderboard');
+  });
+
+  it('W34 the upcoming qualifiers under the hero are headed Upcoming and run by date', () => {
+    const data = previewList('coach');
+    const up = data.items.find((i) => i.status === 'upcoming')!;
+    const items = [...data.items, { ...up, id: 'late', name: 'Late qualifier', startDate: '2026-11-23' }, { ...up, id: 'early', name: 'Early qualifier', startDate: '2026-11-20' }];
+    wrap(<QualifiersList data={{ ...data, items }} />);
+    const sec = screen.getByRole('heading', { level: 2, name: 'Upcoming' }).closest('section') as HTMLElement;
+    const names = [...sec.querySelectorAll('h3')].map((h) => h.textContent);
+    expect(names.indexOf('Early qualifier')).toBeLessThan(names.indexOf('Late qualifier'));
+    expect(screen.queryByRole('heading', { name: 'Lineup decisions' })).toBeNull();
   });
 });
 
@@ -280,7 +302,7 @@ describe('P009-A1 standings on hand-hung plates', () => {
   });
 
   it('the list’s live card: the leaders on plates with their movement', () => {
-    wrap(<QualifiersList data={previewList('coach', 'all')} />);
+    wrap(<QualifiersList data={previewList('coach')} />);
     const lead = document.querySelector('.ch-qf-lead') as HTMLElement;
     expect(lead.querySelectorAll('.ch-qf-plate.is-card').length).toBe(5);
     expect(lead.querySelector('.ch-qf-move.is-gain')).not.toBeNull();
@@ -336,6 +358,26 @@ describe('P009-B1 rows move only when the standings change', () => {
     window.dispatchEvent(new Event('scroll'));
     rerender({ order: ['a', 'b'], held: false });
     expect(result.current).toBe(false);
+  });
+
+  it('a dialog that is mounted but put away does not hold the slide: the phone’s notification drop is always there, hidden and inert', async () => {
+    // Past the scroll-quiet window: the test above ends on a scroll, which holds the slide for 300ms on its own.
+    await new Promise((r) => setTimeout(r, 320));
+    // shell/Bell.tsx keeps the phone's drop rendered (role="dialog", inert, aria-hidden) so opening it only moves it.
+    // Counted as "a dialog up", it stopped every slide on the phone.
+    const drop = document.body.appendChild(document.createElement('div'));
+    drop.setAttribute('role', 'dialog');
+    drop.setAttribute('aria-hidden', 'true');
+    drop.setAttribute('inert', '');
+    const { result, rerender } = renderHook(({ order }: { order: string[] }) => useRankSlide(order, false), { initialProps: { order: ['a', 'b'] } });
+    rerender({ order: ['b', 'a'] });
+    expect(result.current).toBe(true);
+    // Opened, it is a dialog up like any other, and the rows stay put under it.
+    drop.removeAttribute('aria-hidden');
+    drop.removeAttribute('inert');
+    rerender({ order: ['a', 'b'] });
+    expect(result.current).toBe(false);
+    drop.remove();
   });
 
   it('with Animations off the rows never slide', () => {

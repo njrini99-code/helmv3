@@ -40,7 +40,8 @@ describe('radii and hairlines (B3)', () => {
     const ui = css('ui.css');
     const rule = ui.slice(ui.indexOf('.ch-surface {'), ui.indexOf('}', ui.indexOf('.ch-surface {')));
     expect(rule).toMatch(/border-radius: var\(--ch-radius-card\);/);
-    expect(rule).toMatch(/box-shadow: var\(--ch-elevation-card\);/);
+    // The one card recipe by its name for a card (tokens.css: --ch-card-shadow is --ch-elevation-card).
+    expect(rule).toMatch(/box-shadow: var\(--ch-card-shadow\);/);
   });
 
   it('no stylesheet writes a radius in pixels a token names', () => {

@@ -135,11 +135,3 @@ export const PREVIEW_HELM_COACH_NARROWING: ChCoachHelmData = {
   ...PREVIEW_HELM_COACH,
   players: { list: [card(priya, approachNarrowed(priya.id, 'in-gir-priya'), 2), ...REST(priya.id)], error: false },
 };
-
-/** `?state=noreads`: two roster players with no read yet, one named and one with no name on file, as By player rows. */
-export const PREVIEW_HELM_COACH_NO_READS: ChCoachHelmData = {
-  ...PREVIEW_HELM_COACH,
-  roster: { count: 6, error: false },
-  withoutSignals: 2,
-  withoutNames: ['Sam Whitfield'],
-};

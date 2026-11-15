@@ -4,7 +4,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('../haptics', () => ({ haptic: vi.fn(), hapticScrub: vi.fn() }));
 
 import { Line } from '../../ui/charts/Line';
-import { SgBars } from '../../screens/stats/SgBars';
 import { CH_GLIDE_MS, useGlide, type ChGlideGeometry } from '../motion-glide';
 
 const realMatchMedia = window.matchMedia;
@@ -80,30 +79,6 @@ describe('useGlide (B9)', () => {
 });
 
 describe('charts glide on a change, and their digits do not roll (B9)', () => {
-  const legs = (approach: number) => [
-    { label: 'Off the tee', value: 0.5 },
-    { label: 'Approach', value: approach },
-  ];
-  const bar = (c: HTMLElement) => c.querySelectorAll<HTMLElement>('.ch-stm-leg__v')[1]!;
-
-  it('SgBars: first paint is in place; a new window glides the bar, through zero, while the figure changes at once', () => {
-    const { container, rerender } = render(<SgBars rows={legs(1)} />);
-    const before = bar(container).style.width;
-    expect(bar(container).style.left).toBe('50%');
-    expect(vi.getTimerCount()).toBe(0);
-    rerender(<SgBars rows={legs(-1)} />);
-    // The digits are the new figure already; the bar has not moved yet.
-    expect(container.querySelectorAll('.ch-stm-leg b')[1]!.textContent).toContain('1.0');
-    expect(container.querySelectorAll('.ch-stm-leg b')[1]!.textContent).not.toContain('+');
-    expect(bar(container).style.width).toBe(before);
-    frames(16);
-    frames(CH_GLIDE_MS / 2);
-    expect(parseFloat(bar(container).style.width)).toBeLessThan(parseFloat(before));
-    frames(CH_GLIDE_MS);
-    // A loss ends anchored on the zero line, growing left, the same length as the gain it was.
-    expect(bar(container).style.right).toBe('50%');
-    expect(bar(container).style.width).toBe(before);
-  });
 
   it('Line: a new window moves the path between its old and new heights, and lands on the new one', () => {
     const pts = (ys: number[]) => ys.map((y, i) => ({ x: `R${i + 1}`, y }));

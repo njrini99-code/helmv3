@@ -226,8 +226,11 @@ describe('the CSS that hides and fades the bar title', () => {
     expect(shell).not.toContain('data-switch-quiet');
   });
   it('sets the one large title on the large-title role, phone only, and nothing else in the stylesheets sets it (owner decision 4)', () => {
-    expect(block).toMatch(/\[data-ui='clubhouse'\] \.ch-large-title \{\s*margin: 0;\s*font: var\(--ch-type-large-title\);\s*letter-spacing: var\(--ch-track-large-title\);\s*font-variation-settings: var\(--ch-wdth-dense\);\s*color: var\(--ch-ledger-ink\);/);
+    expect(block).toMatch(/\[data-ui='clubhouse'\] \.ch-large-title \{\s*margin: 0;\s*font: var\(--ch-type-large-title\);\s*letter-spacing: var\(--ch-track-large-title\);\s*font-variation-settings: var\(--ch-wdth-dense\);\s*color: var\(--ch-title-ink\);/);
     const tokens = readFileSync(join(process.cwd(), 'src/clubhouse/styles/tokens.css'), 'utf8');
+    // The title's ink is one token (owner, 11 Nov 2026: page titles are near-black on every page): the deepest forest step by day, the Ledger's ink at night.
+    expect(tokens).toMatch(/--ch-title-ink: var\(--ch-green-900\);/);
+    expect(tokens).toMatch(/--ch-title-ink: var\(--ch-ledger-ink\);/);
     expect(tokens).toMatch(/--ch-type-large-title: 600 calc\(34 \* var\(--ch-type-k\)\)\/calc\(41 \* var\(--ch-type-k\)\) var\(--ch-font-sans\);/);
     // The screens' old title rules are gone: no stylesheet styles a large title by its own class any more.
     const dir = join(process.cwd(), 'src/clubhouse/styles');

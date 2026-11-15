@@ -9,7 +9,7 @@ export function PreviewPracticeThread({ state }: { state?: string }) {
   const s = PT_STATES[state ?? 'card'] ?? PT_STATES.card!;
   return (
     <PlanPreview.Provider value={s.plan ?? {}}>
-      <PreviewAsk v2 messages={s.messages} busy={s.busy} state={undefined} />
+      <PreviewAsk messages={s.messages} busy={s.busy} state={undefined} />
     </PlanPreview.Provider>
   );
 }

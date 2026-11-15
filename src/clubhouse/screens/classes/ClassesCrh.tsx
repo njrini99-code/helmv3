@@ -196,7 +196,7 @@ function DayRibbon({ iso, classes, events }: { iso: string; classes: readonly Ch
         {classes.map((c) => {
           const a = toMinutes(c.start);
           const b = toMinutes(c.end);
-          return a != null && b != null ? <i key={c.id} className={`ch-cl-t-${c.tone}`} style={ribbonBox(a, b)} /> : null;
+          return a != null && b != null ? <i key={c.id} className={`ch-cl-t-${c.tone}${b <= RIBBON_FROM || a >= RIBBON_FROM + RIBBON_SPAN ? ' is-out' : ''}`} style={ribbonBox(a, b)} /> : null;
         })}
         {events.map((e) => {
           const w = eventWindowOn(e, iso);
@@ -205,8 +205,12 @@ function DayRibbon({ iso, classes, events }: { iso: string; classes: readonly Ch
       </div>
       <span className="ch-cl-ribbon__axis ch-num" aria-hidden="true">
         <span>7 AM</span>
-        <span>10</span>
-        <span>1 PM</span>
+        <span className="is-at" style={{ left: '30%' }}>
+          10
+        </span>
+        <span className="is-at" style={{ left: '60%' }}>
+          1 PM
+        </span>
         <span>5 PM</span>
       </span>
     </div>
@@ -215,6 +219,7 @@ function DayRibbon({ iso, classes, events }: { iso: string; classes: readonly Ch
 
 /** Today (06 §4.3): a class day is rows only; a day off is the ribbon, then the next class day's rows. */
 export function TodayCard({ classes, term, todayIso, week, onOpen }: { classes: readonly ChClass[]; term: ChTerm; todayIso: string; week: ChWeek; onOpen: (c: ChClass) => void }) {
+  const hours = useChClock();
   const today = meetingsOn(classes, term, todayIso);
   let next: { iso: string; list: ChClass[] } | null = null;
   if (!today.length) {
@@ -229,8 +234,20 @@ export function TodayCard({ classes, term, todayIso, week, onOpen }: { classes: 
   const events = !shown || week.error ? [] : week.events.filter((e) => eventWindowOn(e, shown));
   const weekday = formatWith(dateOf(todayIso), { weekday: 'long', timeZone: 'UTC' });
   const nextWords = next ? `Next: ${DAY_LONG[dayToken(next.iso)]}, ${shortDay(next.iso)}` : null;
+  const first = today[0];
   return (
     <Surface variant="card" level={2} padded={false} title="Today" actions={<span className="ch-cl-meta">{weekday}</span>}>
+      {/* A class day gets the same day strip as a day off: how many, when the first one starts, and where they fall
+          from 7 to 5. Nothing here reads a clock, so the server and the phone draw the same line. */}
+      {first && (
+        <div className="ch-cl-today2">
+          <div className="ch-cl-today2__h">
+            <b className="ch-num">{plural(today.length, 'class', 'classes')} today</b>
+            {first.start && <span className="ch-num">First at {timeLabel(first.start, hours)}</span>}
+          </div>
+          <DayRibbon iso={todayIso} classes={today} events={events} />
+        </div>
+      )}
       {!today.length && (
         <div className="ch-cl-today2" data-ch-code="CH-12308">
           <div className="ch-cl-today2__h">

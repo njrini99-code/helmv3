@@ -20,6 +20,8 @@ export const CH_SPRING = [0.34, 1.3, 0.64, 1] as const;
 /** How long the shared springs take to settle, in ms: a spring's length is its physics, not a step on the scale. */
 export const CH_SPRING_SETTLE_MS = 462;
 export const CH_SPRING_POP_MS = 507;
+/** A chart's marks settling on a changed value, in ms (--ch-dur-marks): the Stats scoring line's morph on a window change. */
+export const CH_MARKS_MS = 360;
 /** One pass of the progress sweep, in ms (--ch-dur-sweep). */
 export const CH_SWEEP_MS = 900;
 
@@ -35,8 +37,13 @@ export const CH_DUR = {
  *  sits outside CH_DUR; reduced motion and Animations off turn it off entirely. */
 export const CH_SCROLL_DUR = 0.85;
 
+/** Settings > Animations off, as ThemeScript marks it on <html> before hydration. */
+const animationsOff = () => typeof document !== 'undefined' && document.documentElement.dataset.motion === 'off';
+
+/** Reduced is the 180ms fade, never a jump (MOT-22); with Animations off it is instant. Callers drop their transforms. */
 export function chTween(duration: keyof typeof CH_DUR = 'base', reduced = false): Transition {
-  return { duration: reduced ? 0 : CH_DUR[duration], ease: CH_EASE };
+  if (reduced) return { duration: animationsOff() ? 0 : CH_DUR.quick, ease: CH_EASE };
+  return { duration: CH_DUR[duration], ease: CH_EASE };
 }
 
 /**
@@ -71,12 +78,35 @@ export const CH_SPRINGS = {
   send: { visualDuration: 0.42, bounce: 0.12 },
   pop: { visualDuration: 0.25, bounce: 0.35 },
   lift: { visualDuration: 0.28, bounce: 0.15 },
+  // Messages v2 (Q-04, default; the owner to confirm the 0.2): a sent bubble rising out of the field with one soft overshoot
+  // (MOT-SPR-5, 812 ms by chSpringCurve). Named beside send, pop and lift in motion-physics.test.tsx.
+  launch: { visualDuration: 0.5, bounce: 0.2 },
   /** The quick chat panel pouring out of the Helm key (2026-10-31): a native sheet's settle, no bounce. */
   pour: { visualDuration: 0.42, bounce: 0 },
 } as const;
+/** Messages v2 send easings (MOT-SEND-6): the green fill coming up under the typed words, and the arrow leaving the send key. */
+export const CH_FILL_EASE_POINTS = [0.3, 0, 0.5, 1] as const;
+export const CH_ARROW_EASE_POINTS = [0.4, 0, 0.9, 0.3] as const;
 /** The iOS sheet curve: the quick chat's close, live pill out, and the down half of press dips. */
 export const CH_EASE_SHEET = [0.32, 0.72, 0, 1] as const;
 export type ChSpringKind = keyof typeof CH_SPRINGS;
+
+/**
+ * Messages v2 beats in milliseconds (MOTION.md), named so a TSX file never carries a literal `duration:` or timer
+ * length (clubhouse:check rejects the literal; a CSS use goes through a token in tokens.css instead). They are the
+ * artifact's own numbers, not steps on the CH_DUR scale; `crossfade` is not here because Reduce Motion uses the shared
+ * CH_FADE_MS (Q-05).
+ *   fill      150  the words becoming the bubble: the green fill and ink coming up (MOT-SEND-6); a file or poll fades in
+ *   fillInk   160  the same fill's ink, and an attach menu closing (MOT-ATT-2)
+ *   arrow     200  the send arrow leaving the key (MOT-SEND-6), the desktop bar's hairline (MOT-THR-1)
+ *   field     220  the field's placeholder fading back (MOT-SEND-8), the hover bar's slide (MSG-224)
+ *   receipt   260  Delivered rising into place after the bubble lands (MOT-SEND-8)
+ *   keyboard  480  the iOS keyboard's ride (MOT-KB-1), on CH_KEYBOARD_EASE
+ *   reveal    520  content opening out (the reveal spring's own length)
+ */
+export const CH_MS = { fill: 150, fillInk: 160, arrow: 200, field: 220, receipt: 260, keyboard: 480, reveal: 520 } as const;
+/** The iOS keyboard curve as a CSS easing string (--ch-ease-sheet in tokens.css is the same curve). */
+export const CH_KEYBOARD_EASE = `cubic-bezier(${CH_EASE_SHEET.join(', ')})`;
 
 /** framer's own reading of a visual duration and a bounce (motion-dom spring.mjs): ω = 2π / (1.2 × duration), ζ = 1 − bounce. */
 function physics(kind: ChSpringKind): { omega: number; zeta: number } {

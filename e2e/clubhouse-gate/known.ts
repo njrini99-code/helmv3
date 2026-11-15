@@ -4,9 +4,7 @@
  * go green; a new failure is a bug to fix.
  */
 export const KNOWN: Record<string, string> = {
-  'ask-v2|390|dark|page-edge': 'ASK-12',
   'ask-v2|390|dark|tap-target': 'ASK-10',
-  'ask-v2|390|light|page-edge': 'ASK-12',
   'ask-v2|390|light|tap-target': 'ASK-10',
   'ask|390|dark|page-edge': 'ASK-12',
   'ask|390|light|page-edge': 'ASK-12',
@@ -82,15 +80,9 @@ export const KNOWN: Record<string, string> = {
   'practice-plan|390|light|tap-target': 'PP-22',
   'practice-thread|1440|dark|nested-surface': 'PP-2',
   'practice-thread|1440|light|nested-surface': 'PP-2',
-  'practice-thread|390|dark|nested-surface': 'PP-2',
-  'practice-thread|390|dark|page-edge': 'PP-25',
   'practice-thread|390|dark|tap-target': 'PP-22',
-  'practice-thread|390|light|nested-surface': 'PP-2',
-  'practice-thread|390|light|page-edge': 'PP-25',
   'practice-thread|390|light|tap-target': 'PP-22',
-  'quick-chat|390|dark|page-edge': 'FID-QC-8',
   'quick-chat|390|dark|tap-target': 'MOB-QC-11',
-  'quick-chat|390|light|page-edge': 'FID-QC-8',
   'quick-chat|390|light|tap-target': 'MOB-QC-11',
   'read-player|390|dark|card-escape': 'RC-8',
   'read-player|390|light|card-escape': 'RC-8',

@@ -65,6 +65,8 @@ export interface FocusAreaPlanInput {
 export interface FocusAreaPlan extends FocusAreaPlanInput {
   player_name: string;
   coach_id: string;
+  /** The players this reaches as the card saw them, each with whether they have an account to be told on. Set by the server in `plan`. */
+  seen_people?: Array<{ id: string; name: string; account: boolean }>;
 }
 
 /**
@@ -176,7 +178,8 @@ export async function executeFocusArea(plan: FocusAreaPlan): Promise<ActionRecei
       {
         kind: 'focus area',
         count: 1,
-        href: '/golf/dashboard/intelligence?view=players',
+        // The player the focus area belongs to. The app's action does not say which row it wrote, so there is no id here.
+        href: `/golf/dashboard/roster?player=${plan.player_id}`,
         label: plan.title,
       },
     ],
@@ -205,6 +208,8 @@ export interface TaskPlan extends TaskPlanInput {
   team_id: string;
   assignee_names: string[];
   assignee_ids: string[];
+  /** The players this reaches as the card saw them, each with whether they have an account to be told on. Set by the server in `plan`. */
+  seen_people?: Array<{ id: string; name: string; account: boolean }>;
 }
 
 export function planTask(
@@ -244,6 +249,7 @@ export function planTask(
     proposal: {
       action: 'Assign a task',
       summary: `${title}: ${ids.length} player${ids.length === 1 ? '' : 's'}.`,
+      visual: { kind: 'task', title, due: input.due_date ?? null, who: names },
       facts,
       affects: ids.map((id, i) => ({ kind: 'player' as const, id, label: names[i] ?? 'Player' })),
       notifications: [`${ids.length} player${ids.length === 1 ? ' is' : 's are'} notified in-app`],
@@ -285,7 +291,7 @@ export async function executeTask(plan: TaskPlan): Promise<ActionReceipt> {
     action: 'Assign a task',
     summary: `${plan.title} assigned to ${plan.assignee_ids.length} player${plan.assignee_ids.length === 1 ? '' : 's'}.`,
     created: [
-      { kind: 'task', count: 1, href: '/golf/dashboard/tasks', label: plan.title },
+      { kind: 'task', count: 1, href: '/golf/dashboard/tasks', label: plan.title, ...(result.data?.taskId ? { id: result.data.taskId, ids: [result.data.taskId] } : {}) },
       { kind: 'assignment', count: plan.assignee_ids.length },
     ],
     notifications: [{ channel: 'In-app', recipients: plan.assignee_ids.length, status: 'sent' }],
@@ -311,6 +317,8 @@ export interface AnnouncementPlanInput {
 export interface AnnouncementPlan extends AnnouncementPlanInput {
   recipient_names: string[];
   recipient_ids: string[] | null;
+  /** The players this reaches as the card saw them, each with whether they have an account to be told on. Set by the server in `plan`. */
+  seen_people?: Array<{ id: string; name: string; account: boolean }>;
 }
 
 /**
@@ -409,6 +417,7 @@ export async function executeAnnouncement(plan: AnnouncementPlan): Promise<Actio
         count: 1,
         href: '/golf/dashboard/announcements',
         label: plan.title,
+        ...(result.data?.announcementId ? { id: result.data.announcementId, ids: [result.data.announcementId] } : {}),
       },
     ],
     notifications: [{ channel: 'In-app', recipients: count, status: 'sent' }],

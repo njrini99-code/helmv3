@@ -35,11 +35,11 @@ const media = (phone: boolean) =>
       }) as unknown as MediaQueryList,
   );
 
-const ui = (data: ChRoster, crh = true) => (
+const ui = (data: ChRoster) => (
   <LazyMotion features={domAnimation}>
     <ToastProvider>
       <div className="ch-root" data-ui="clubhouse">
-        <Roster data={data} crh={crh} />
+        <Roster data={data} />
       </div>
     </ToastProvider>
   </LazyMotion>

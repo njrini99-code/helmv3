@@ -1,7 +1,14 @@
 'use client';
 
 import { useLayoutEffect, useRef, type RefObject } from 'react';
-import { CH_DUR, CH_EASE, chSpringCurve, type ChSpringKind } from './motion';
+import { CH_DUR, CH_EASE, CH_SPRING, chSpringCurve, type ChSpringKind } from './motion';
+
+/**
+ * Messages' filter thumb (MOT-X-2, MOT-LIST-4): 360 ms on the overshooting CSS spring `(.34, 1.3, .64, 1)` the artifact
+ * draws, not the settle spring. `tween: 'thumb'`; under Reduce Motion the plate jumps like every other.
+ */
+export const CH_THUMB = { ms: 360, ease: CH_SPRING } as const;
+export type SlidePlateTween = keyof typeof CH_DUR | 'thumb';
 
 /**
  * A selected plate that slides from the option it left to the one chosen (a segmented chip, the strip's plate, a tab
@@ -16,7 +23,7 @@ export function useSlidePlate(
   container: RefObject<HTMLElement | null>,
   plate: string,
   key: string | null,
-  { reduced = false, still, kind = 'settle', tween, ink }: { ink?: string; reduced?: boolean; still?: () => boolean; kind?: ChSpringKind; tween?: keyof typeof CH_DUR } = {},
+  { reduced = false, still, kind = 'settle', tween, ink }: { ink?: string; reduced?: boolean; still?: () => boolean; kind?: ChSpringKind; tween?: SlidePlateTween } = {},
 ): void {
   const last = useRef<Box | null>(null);
   // The move in flight, so a choice mid-glide starts from where the plate is, at its speed (F-0017).
@@ -67,7 +74,9 @@ export function useSlidePlate(
     const velocity = live && left > 0 ? (live.vx * dx + live.vy * dy) / (left * left) : 0;
     // A tween where the plate's design gives one (CH_DUR on CH_EASE), otherwise the spring.
     const curve = tween
-      ? { ms: CH_DUR[tween] * 1000, linear: `cubic-bezier(${CH_EASE.join(', ')})`, ease: tweenEase }
+      ? tween === 'thumb'
+        ? { ms: CH_THUMB.ms, linear: `cubic-bezier(${CH_SPRING.join(', ')})`, ease: bezierEase(CH_SPRING) }
+        : { ms: CH_DUR[tween] * 1000, linear: `cubic-bezier(${CH_EASE.join(', ')})`, ease: tweenEase }
       : chSpringCurve(kind, { velocity });
     // Translate and width only: a scale squashed the pill's rounded corners mid-glide (owner, 2026-11-07). The plate may be narrower than its option (an underline), so its width goes by the options' ratio.
     const plateW = el.offsetWidth;
@@ -106,16 +115,22 @@ export function plateCrossing(ease: (p: number) => number, ms: number, distance:
 
 /** CH_EASE as a function, close enough to place a tweened plate mid-move: a cubic bezier solved for x by bisection. */
 function tweenEase(p: number): number {
-  const [x1, y1, x2, y2] = CH_EASE;
+  return bezierEase(CH_EASE)(p);
+}
+
+/** A cubic bezier `(x1, y1, x2, y2)` as a function of progress: solved for x by bisection (x is monotonic, y may overshoot 1). */
+export function bezierEase([x1, y1, x2, y2]: readonly [number, number, number, number]): (p: number) => number {
   const at = (a: number, b: number, t: number) => 3 * a * t * (1 - t) ** 2 + 3 * b * t * t * (1 - t) + t ** 3;
-  let lo = 0;
-  let hi = 1;
-  for (let i = 0; i < 24; i++) {
-    const mid = (lo + hi) / 2;
-    if (at(x1, x2, mid) < p) lo = mid;
-    else hi = mid;
-  }
-  return at(y1, y2, (lo + hi) / 2);
+  return (p: number) => {
+    let lo = 0;
+    let hi = 1;
+    for (let i = 0; i < 24; i++) {
+      const mid = (lo + hi) / 2;
+      if (at(x1, x2, mid) < p) lo = mid;
+      else hi = mid;
+    }
+    return at(y1, y2, (lo + hi) / 2);
+  };
 }
 
 /** Where a running glide has the plate now, and its velocity in pixels per second; null when none is running. */

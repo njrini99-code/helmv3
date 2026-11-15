@@ -15,9 +15,8 @@ import { correctionsOf, ENGINE_OFF, laterRoundsLeft, snoozeRoundsSince, type ChC
 import { toChInsight } from '../../../data/coachhelm-map';
 import { haptic } from '../../../lib/haptics';
 import { PREVIEW_TOUR, slope } from '../../../preview/fixtures-coachhelm';
-import { PREVIEW_DIVE_CORRECTIONS, PREVIEW_HELM_COACH_CORRECTIONS } from '../../../preview/fixtures-coachhelm-engine';
+import { PREVIEW_DIVE_CORRECTIONS } from '../../../preview/fixtures-coachhelm-engine';
 import { CorrectionChips, CorrectionWritesProvider, answerLine } from '../Corrections';
-import { FocusCard } from '../parts';
 import type { ChCorrectionWrites } from '../writes';
 
 const READ_ID = '00000000-0000-4000-8000-000000000001';
@@ -134,28 +133,6 @@ describe('correction chips: taps', () => {
 });
 
 describe('correction chips on the coach card', () => {
-  const jonah = () => PREVIEW_HELM_COACH_CORRECTIONS.corrections!.players.list.find((p) => p.top.id === 'in-slope')!.top;
-
-  it('hides the read at once on Show later and brings it back when the save fails', async () => {
-    const user = userEvent.setup();
-    let fail: (r: CorrectionResult) => void = () => {};
-    const record = vi.fn(() => new Promise<CorrectionResult>((r) => (fail = r)));
-    withWrites({ record }, <FocusCard ins={jonah()} who="Jonah" />);
-    expect(screen.queryByText(/Held back for now/)).toBeNull();
-    await user.click(screen.getByRole('button', { name: /^Show later/ }));
-    expect(screen.getByText(/Held back for now/).textContent).toMatch(/after 2 more rounds are posted/);
-    await act(async () => fail({ status: 'failed', error: 'x' }));
-    expect(screen.queryByText(/Held back for now/)).toBeNull();
-    expect(screen.getByRole('alert')).toBeTruthy();
-  });
-
-  it('draws a read held back after a reload with the rounds left, and its answer', () => {
-    const held = PREVIEW_HELM_COACH_CORRECTIONS['corrections-later']!.players.list.find((p) => p.top.id === 'in-slope')!.top;
-    const { writes } = writesThat({ status: 'recorded', id: 'x' });
-    withWrites(writes, <FocusCard ins={held} who="Jonah" />);
-    expect(screen.getByText(/Held back for now/)).toBeTruthy();
-    expect(screen.getByRole('status').textContent).toBe('Your answer: Show later.');
-  });
 
   it('gives a player on their own Deep dive read only Not this and Good read', () => {
     const read = PREVIEW_DIVE_CORRECTIONS.list[0]!.base;

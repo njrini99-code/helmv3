@@ -187,6 +187,14 @@ function NewPassword({
   const message = problem?.message ?? live;
   const code = problem?.code ?? (live ? 'CH-15133' : undefined);
   const field = problem?.field ?? (live ? 'confirm' : null);
+  const aboutPassword = field === 'password' && !!message;
+  const notice = (message || banner) && (
+    <div className="ch-au-err" key={`${nonce}-${message ? 'f' : 'b'}`}>
+      <AuthNotice tone="danger" id={errorId} code={message ? code : 'CH-15031'}>
+        {message || banner}
+      </AuthNotice>
+    </div>
+  );
 
   const refuse = (p: ResetFieldProblem & { server?: boolean }) => {
     haptic(p.server ? 'error' : 'warning');
@@ -273,6 +281,8 @@ function NewPassword({
           }}
         />
         <PasswordRules id={rulesId} password={password} />
+        {/* A refusal of the new password is said under it, not under Confirm (WebKit sweep, 12 Nov). */}
+        {aboutPassword && notice}
         <PasswordInput
           id={`${ids}-confirm`}
           label="Confirm new password"
@@ -293,13 +303,7 @@ function NewPassword({
           }}
         />
       </div>
-      {(message || banner) && (
-        <div className="ch-au-err" key={`${nonce}-${message ? 'f' : 'b'}`}>
-          <AuthNotice tone="danger" id={errorId} code={message ? code : 'CH-15031'}>
-            {message || banner}
-          </AuthNotice>
-        </div>
-      )}
+      {!aboutPassword && notice}
       {/* Never greyed out: pressing it with something missing points at the box that needs it. */}
       <GateKey idle="Save password" working="Saving…" busy={busy} code="CH-15431" />
       <p className="ch-au-alt">

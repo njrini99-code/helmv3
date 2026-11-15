@@ -13,10 +13,12 @@ import type { ChStatsReads } from '../data/stats-reads';
 import type { ChPlayerSeason } from '../data/season';
 import type { ChWindowSeason } from '../data/stats-weight';
 import { filterFor, type ChFilter, type ChFilterOptions, type ChPickRound, type ChRoundKind } from '../data/stats-filter';
+import { PREVIEW_TEAM_SG, previewSgRow } from './fixtures-team-sg';
 
 const WEEKS = ['Aug 30', 'Sep 6', 'Sep 13', 'Sep 20', 'Sep 27', 'Oct 4', 'Oct 12'];
 const P = [
-  ['theo', 'Theo Marchetti', [72, 71, 71, 70, 70, 71, 70], [1.1, 1.2, 1.4, 1.5, 1.6, 1.7, 1.7]],
+  // Theo is the cast's freshman on four rounds: his line sits where the shared table (fixtures-team-sg.ts) puts him.
+  ['theo', 'Theo Marchetti', [78, 77, 77, 76, 76, 77, 76], [-2.8, -2.7, -2.5, -2.4, -2.3, -2.2, -2.2]],
   ['sofia', 'Sofia Alvarez', [72, 72, 71, 72, 71, 71, 71], [0.9, 1.0, 1.0, 1.1, 1.2, 1.2, 1.2]],
   ['ava', 'Ava Lindqvist', [73, 74, 72, 72, 72, 73, 72], [0.4, 0.3, 0.5, 0.6, 0.5, 0.6, 0.6]],
   ['jonah', 'Jonah Okafor', [72, 72, 73, 74, 75, 74, 75], [0.8, 0.5, 0.2, -0.3, -0.6, -0.8, -0.9]],
@@ -26,7 +28,7 @@ const P = [
 
 /** Each player's window means (what the trend's list shows and sorts by): the grid's total and scoring average. */
 const MEANS: Record<(typeof P)[number][0], { sgMean: number; scoreMean: number }> = {
-  theo: { sgMean: 1.7, scoreMean: 70.9 },
+  theo: { sgMean: previewSgRow('theo').total as number, scoreMean: 76.4 },
   sofia: { sgMean: 1.2, scoreMean: 71.6 },
   ava: { sgMean: 0.6, scoreMean: 72.4 },
   jonah: { sgMean: -0.9, scoreMean: 74.1 },
@@ -93,6 +95,12 @@ const TEAM_PICK_ROUNDS: ChPickRound[] = P.flatMap(([id, name, scores], pi) =>
 /** A grid row's leg samples for the ranked dot plot: `n` whole rounds with shots, each leg's own spread about 1.2 a round. */
 const rankLegs = (n: number) => [1.1, 1.3, 0.9, 1.2].map((sd) => ({ n, se: hundredths(sd / Math.sqrt(n)) }));
 
+/** A grid row's identity and strokes gained from the shared table. */
+const gridSg = (id: string) => {
+  const r = previewSgRow(id);
+  return { id: r.cast.id, name: r.cast.name, rounds: r.rounds, legs: r.legs ?? [null, null, null, null], total: r.total };
+};
+
 export const PREVIEW_TEAM_STATS: ChTeamStats = {
   teamName: 'Varsity',
   season: 'Fall 2026',
@@ -104,7 +112,7 @@ export const PREVIEW_TEAM_STATS: ChTeamStats = {
   roundCount: 64,
   roundsEffective: 64,
   figures: [
-    { key: 'sg', series: [-1.0, -0.8, -0.6, -0.3, -0.1, 0.0, 0.0], label: 'Team SG per round', value: -0.5, unit: '', digits: 1, signed: true, delta: 0.4, se: 0.7, lowerIsBetter: false, context: 'vs previous 10', note: 'vs Tour · 58 rounds with shots', gauge: { kind: 'sg' } },
+    { key: 'sg', series: [-1.0, -0.8, -0.6, -0.3, -0.1, 0.0, 0.0], label: 'Team SG per round', value: PREVIEW_TEAM_SG.total, unit: '', digits: 1, signed: true, delta: 0.4, se: 0.7, lowerIsBetter: false, context: 'vs previous 10', note: `vs Tour · ${PREVIEW_TEAM_SG.rounds} rounds with shots`, gauge: { kind: 'sg' } },
     { key: 'score', series: [74.8, 74.4, 74.2, 73.9, 73.1, 73.5, 73.4], label: 'Scoring average', value: 73.6, unit: '', digits: 1, delta: -0.9, se: 0.76, lowerIsBetter: true, context: 'vs previous 10', gauge: { kind: 'par', toPar: 1.6 } },
     { key: 'gir', series: [56, 57, 59, 60, 60, 62, 63], label: 'Greens in regulation', value: 61, unit: '%', digits: 0, delta: 3, se: 2.4, lowerIsBetter: false, context: 'Tour averages 66%', gauge: { kind: 'rate', ref: 66 } },
     { key: 'putts', series: [31.2, 30.9, 30.8, 30.5, 30.4, 30.1, 30.4], label: 'Putts per round', value: 30.4, unit: '', digits: 1, delta: 0.3, se: 0.42, lowerIsBetter: true, context: 'vs previous 10', gauge: { kind: 'putts' } },
@@ -115,21 +123,22 @@ export const PREVIEW_TEAM_STATS: ChTeamStats = {
   days: ['Aug 30', 'Sep 3', 'Sep 9', 'Sep 14', 'Sep 20', 'Sep 25', 'Sep 29', 'Oct 4', 'Oct 8', 'Oct 12'].map((label, i) => ({ label, score: TEAM_DAYS[i]! })),
   // About six rounds a round day, nine a week (64 rounds), on the team's own spread: scoring's halves clear their standard error.
   daysHalves: halvesOf(TEAM_DAYS, 3.4, 6.4),
-  team: { sg: [...TEAM_SG], score: [...TEAM_SCORE], sgMean: -0.5, scoreMean: 73.6, sgHalves: halvesOf(TEAM_SG, 3.8, 9), scoreHalves: halvesOf(TEAM_SCORE, 3.4, 9) },
+  team: { sg: [...TEAM_SG], score: [...TEAM_SCORE], sgMean: PREVIEW_TEAM_SG.total, scoreMean: 73.6, sgHalves: halvesOf(TEAM_SG, 3.8, 9), scoreHalves: halvesOf(TEAM_SCORE, 3.4, 9) },
   // A player plays about one and a half rounds a week: no player's halves clear one round's spread over seven weeks.
   players: P.map(([id, name, score, sg]) => ({ id, name, first: name.split(' ')[0]!, score: [...score], sg: [...sg], ...MEANS[id], sgHalves: halvesOf(sg, 3.8, 1.5), scoreHalves: halvesOf(score, 3.6, 1.5) })),
   legWeeks: LEG_WEEKS,
   legHalves: Object.fromEntries(Object.entries(LEG_WEEKS).map(([leg, weeks]) => [leg, halvesOf(weeks, 1.2, 9)])),
+  // Each player's legs and total are the shared table's (fixtures-team-sg.ts), so the Team board and the Player file print the same.
   grid: [
-    { id: 'theo', name: 'Theo Marchetti', rounds: 10, legs: [0.4, 0.7, 0.2, 0.4], total: 1.7, change: 0.6, avg: 70.9, spread: { sg: { n: 10, se: 0.63 }, legs: rankLegs(10), score: { n: 10, se: 0.85 } } },
-    { id: 'sofia', name: 'Sofia Alvarez', rounds: 10, legs: [0.4, 0.5, 0.1, 0.4], total: 1.2, change: 0.3, avg: 71.6, spread: { sg: { n: 10, se: 0.66 }, legs: rankLegs(10), score: { n: 10, se: 0.8 } } },
-    { id: 'ava', name: 'Ava Lindqvist', rounds: 10, legs: [0.2, 0.3, 0.1, 0.3], total: 0.6, change: 0.2, avg: 72.4, spread: { sg: { n: 10, se: 0.6 }, legs: rankLegs(10), score: { n: 10, se: 0.9 } } },
-    { id: 'eli', name: 'Eli Brandt', rounds: 10, legs: [0.0, -0.4, 0.0, 0.0], total: -0.5, change: -0.3, avg: 74.8, spread: { sg: { n: 6, se: 0.82 }, legs: rankLegs(6), score: { n: 10, se: 1.0 } } },
-    { id: 'priya', name: 'Priya Natarajan', rounds: 10, legs: [-0.6, -0.8, -0.2, -0.3], total: -1.2, change: 1.7, avg: 75.2, spread: { sg: { n: 10, se: 0.7 }, legs: rankLegs(10), score: { n: 10, se: 0.95 } } },
-    { id: 'jonah', name: 'Jonah Okafor', rounds: 10, legs: [0.3, -1.2, -0.1, 0.2], total: -0.9, change: -1.7, avg: 73.6, spread: { sg: { n: 10, se: 0.68 }, legs: rankLegs(10), score: { n: 10, se: 0.88 } } },
-    { id: 'luca', name: 'Luca Ferraro', rounds: 2, legs: [null, null, null, null], total: null, change: null, avg: 76.5, spread: { sg: { n: 2, se: 2.69 }, legs: rankLegs(2), score: { n: 2, se: 2.55 } } },
+    { ...gridSg('theo'), change: null, avg: 76.4, spread: { sg: { n: 4, se: 1.9 }, legs: rankLegs(4), score: { n: 4, se: 1.8 } } },
+    { ...gridSg('sofia'), change: 0.3, avg: 71.6, spread: { sg: { n: 10, se: 0.66 }, legs: rankLegs(10), score: { n: 10, se: 0.8 } } },
+    { ...gridSg('ava'), change: 0.2, avg: 72.4, spread: { sg: { n: 10, se: 0.6 }, legs: rankLegs(10), score: { n: 10, se: 0.9 } } },
+    { ...gridSg('eli'), change: -0.3, avg: 74.8, spread: { sg: { n: 6, se: 0.82 }, legs: rankLegs(6), score: { n: 10, se: 1.0 } } },
+    { ...gridSg('priya'), change: 1.7, avg: 75.2, spread: { sg: { n: 10, se: 0.7 }, legs: rankLegs(10), score: { n: 10, se: 0.95 } } },
+    { ...gridSg('jonah'), change: -1.7, avg: 73.6, spread: { sg: { n: 10, se: 0.68 }, legs: rankLegs(10), score: { n: 10, se: 0.88 } } },
+    { ...gridSg('sam'), change: null, avg: 76.5, spread: { sg: { n: 2, se: 2.69 }, legs: rankLegs(2), score: { n: 2, se: 2.55 } } },
   ],
-  legTotals: [0.4, -0.7, 0.1, -0.3],
+  legTotals: [...PREVIEW_TEAM_SG.legs],
   putting: {
     putts: 220 + 211,
     bands: [
@@ -150,7 +159,7 @@ export const PREVIEW_TEAM_STATS: ChTeamStats = {
   ],
   tour: 'pga',
   sgChange: { delta: 0.4, context: 'vs previous 10', se: 0.7 },
-  sgRounds: 58,
+  sgRounds: PREVIEW_TEAM_SG.rounds,
   roundsError: false,
   cacheError: false,
   puttsError: false,
@@ -574,11 +583,11 @@ export const PREVIEW_PLAYER: ChPlayerProfile = {
     sgLegs: [0.2, Math.round((sg - 0.2) * 10) / 10, -0.1, 0.1] as [number, number, number, number],
   })),
   comparisons: [
-    { label: 'SG total', group: 'Strokes gained', you: -0.9, team: -0.5, bench: null, unit: '', digits: 1, lowerIsBetter: false, sg: true },
-    { label: 'SG off the tee', group: 'Strokes gained', you: 0.3, team: 0.4, bench: null, unit: '', digits: 1, lowerIsBetter: false, sg: true },
-    { label: 'SG approach', group: 'Strokes gained', you: -1.2, team: -0.7, bench: null, unit: '', digits: 1, lowerIsBetter: false, sg: true },
-    { label: 'SG around green', group: 'Strokes gained', you: -0.1, team: 0.1, bench: null, unit: '', digits: 1, lowerIsBetter: false, sg: true },
-    { label: 'SG putting', group: 'Strokes gained', you: 0.2, team: -0.3, bench: null, unit: '', digits: 1, lowerIsBetter: false, sg: true },
+    { label: 'SG total', group: 'Strokes gained', you: -0.9, team: PREVIEW_TEAM_SG.total, bench: null, unit: '', digits: 1, lowerIsBetter: false, sg: true },
+    { label: 'SG off the tee', group: 'Strokes gained', you: 0.3, team: PREVIEW_TEAM_SG.legs[0], bench: null, unit: '', digits: 1, lowerIsBetter: false, sg: true },
+    { label: 'SG approach', group: 'Strokes gained', you: -1.2, team: PREVIEW_TEAM_SG.legs[1], bench: null, unit: '', digits: 1, lowerIsBetter: false, sg: true },
+    { label: 'SG around green', group: 'Strokes gained', you: -0.1, team: PREVIEW_TEAM_SG.legs[2], bench: null, unit: '', digits: 1, lowerIsBetter: false, sg: true },
+    { label: 'SG putting', group: 'Strokes gained', you: 0.2, team: PREVIEW_TEAM_SG.legs[3], bench: null, unit: '', digits: 1, lowerIsBetter: false, sg: true },
     { label: 'Scoring avg', group: 'Scoring', you: 74.1, team: 72.8, bench: null, unit: '', digits: 1, lowerIsBetter: true },
     { label: 'Par 3 scoring', group: 'Scoring', you: 3.3, team: null, bench: 3.0, unit: '', digits: 2, lowerIsBetter: true },
     { label: 'Par 4 scoring', group: 'Scoring', you: 4.32, team: null, bench: 3.97, unit: '', digits: 2, lowerIsBetter: true },
@@ -641,11 +650,11 @@ export const PREVIEW_PLAYER: ChPlayerProfile = {
 
 export const PREVIEW_PLAYER_EARLY: ChPlayerProfile = {
   ...PREVIEW_PLAYER,
-  id: 'luca',
-  name: 'Luca Ferraro',
-  firstName: 'Luca',
-  classYear: 'Freshman',
-  gradYear: 2030,
+  id: 'sam',
+  name: 'Sam Whitfield',
+  firstName: 'Sam',
+  classYear: 'Junior',
+  gradYear: 2028,
   hometown: 'Bologna, IT',
   handicap: 6.0,
   season: { ...season(76.5, [77, 76], null, 2, 'early'), sgLegs: { tee: null, approach: null, around: null, putting: null } },
@@ -686,6 +695,33 @@ export const PREVIEW_TEAM_NOMATCH: ChTeamStats = {
   bests: [],
 };
 /** Two rounds match: the early-read note, and the figures still draw. */
+/**
+ * `?state=totalsonly`: what most real players look like today. Six rounds posted as totals, so a scoring average and a line, and
+ * nothing that needs holes or shots: no greens, putts or strokes gained.
+ */
+export const PREVIEW_PLAYER_TOTALS: ChPlayerProfile = {
+  ...PREVIEW_PLAYER_EARLY,
+  season: { ...season(76.5, [77, 76, 78, 75, 77, 76], null, 6, 'steady'), sgLegs: { tee: null, approach: null, around: null, putting: null } },
+  win: { ...windowSeason({ ...season(76.5, [77, 76, 78, 75, 77, 76], null, 6, 'steady'), sgLegs: { tee: null, approach: null, around: null, putting: null } }), holeRounds: 0 },
+  rounds: PREVIEW_PLAYER.rounds.slice(0, 6).map((r) => ({ ...r, sg: null })),
+  extra: { ...PREVIEW_PLAYER_EARLY.extra, holeRounds: 0, series: { ...PREVIEW_PLAYER_EARLY.extra.series, score: PREVIEW_PLAYER.extra.series.score.slice(-6), gir: [], fairway: [] } },
+  comparisons: PREVIEW_PLAYER.comparisons.map((c) => ({ ...c, you: null, team: null })),
+};
+
+/** `?state=totalsonly`: the team, the same way. An average and its line, and every shot figure empty. */
+export const PREVIEW_TEAM_TOTALS: ChTeamStats = {
+  ...PREVIEW_TEAM_STATS,
+  holeRoundCount: 0,
+  roundsEffective: 24,
+  figures: PREVIEW_TEAM_STATS.figures.map((f) => (f.key === 'score' ? f : { ...f, value: null, delta: null, series: f.series.map(() => null) })),
+  team: { ...PREVIEW_TEAM_STATS.team, sg: PREVIEW_TEAM_STATS.team.sg.map(() => null), sgMean: null },
+  players: PREVIEW_TEAM_STATS.players.map((p) => ({ ...p, sg: p.sg.map(() => null) })),
+  legWeeks: Object.fromEntries(Object.keys(PREVIEW_TEAM_STATS.legWeeks).map((k) => [k, []])) as unknown as ChTeamStats['legWeeks'],
+  legTotals: [null, null, null, null] as never,
+  grid: PREVIEW_TEAM_STATS.grid.map((g) => ({ ...g, legs: g.legs.map(() => null), total: null, change: null })),
+  putting: null as never,
+};
+
 export const PREVIEW_TEAM_EARLY_FILTER: ChTeamStats = { ...PREVIEW_TEAM_STATS, filter: { ...filterFor('last10'), courses: ['Oakmont CC'] }, roundCount: 2 };
 
 /**
@@ -824,3 +860,18 @@ export const PREVIEW_SELF_READS: ChStatsReads = {
   },
 };
 export const PREVIEW_READS_FAILED: ChStatsReads = { status: 'failed' };
+
+/**
+ * Team stats with rounds whose strokes gained was estimated from the scorecard (stats-sg-mix.ts): some of them, then all. The preview
+ * route does not offer these yet (it needs one line there); the screen tests draw them.
+ */
+export const PREVIEW_TEAM_STATS_SGMIXED: ChTeamStats = {
+  ...PREVIEW_TEAM_STATS,
+  sgMix: { measured: 44, estimated: 6, estimatedCounted: true },
+  grid: PREVIEW_TEAM_STATS.grid.map((g, i) => ({ ...g, sgMix: i === 1 ? { measured: Math.max(0, g.rounds - 6), estimated: Math.min(6, g.rounds), estimatedCounted: true } : { measured: g.rounds, estimated: 0, estimatedCounted: true } })),
+};
+export const PREVIEW_TEAM_STATS_SGEST: ChTeamStats = {
+  ...PREVIEW_TEAM_STATS,
+  sgMix: { measured: 0, estimated: 50, estimatedCounted: true },
+  grid: PREVIEW_TEAM_STATS.grid.map((g) => ({ ...g, sgMix: { measured: 0, estimated: g.rounds, estimatedCounted: true } })),
+};

@@ -6,7 +6,7 @@ import type { InsightEvidence, InsightUnit } from '@/lib/coachhelm/v2/insights/t
 import { confidenceLabel, confidenceTier, type ConfidenceTier } from '@/lib/coachhelm/confidence-label';
 import { buildInsightUnit, fmtShortDate } from '@/components/golf/coachhelm/home/buildPlayerHubViewModel';
 import { MINUS } from '../lib/format';
-import { COLLEGE_NO_TOUR, COLLEGE_SOURCES, dayOf, drawnComparison, kindOf, refreshedDay, staleSince } from './coachhelm-classify';
+import { COLLEGE_NO_TOUR, COLLEGE_SOURCES, dayOf, drawnComparison, kindOf, refreshedDay, staleSince, tourValueFor } from './coachhelm-classify';
 import { isMeasuredZero, withoutZeroImpact } from './coachhelm-strokes';
 import { TOUR_LABEL, type ChHelmAssigned, type ChHelmBar, type ChHelmEvidence, type ChHelmGauge, type ChHelmLifecycle, type ChHelmPri, type ChHelmWeek, type ChInsight, type ChKind, type ChStale, type ChTourBaseline } from './coachhelm-shape';
 import { readTextFor, speak, type ChViewer } from './coachhelm-voice';
@@ -272,6 +272,17 @@ const LIFECYCLES: readonly string[] = ['detected', 'matured', 'addressed', 'reso
  * is in (the player's first name for a coach, the player's own for the player; none leaves it as stored).
  * A strength is better than the comparison the card draws, not than a stored one the page does not show.
  */
+/**
+ * The Tour bar beside a read (TEAM-S1): the figure the read itself states as the Tour's, so the bar and the sentence agree; else the
+ * Tour's row for the metric, in the read's own unit. None when the units differ, and never another comparison called Tour.
+ */
+function tourBarOf(ev: InsightEvidence, tour: ChTourBaseline | null): number | null {
+  if (COLLEGE_NO_TOUR.has(ev.comparison_source)) return null;
+  if (ev.comparison_source === 'pga_baseline') return drawnComparison(ev, tour);
+  if (ev.secondary_source === 'pga_baseline') return num(ev.secondary_value);
+  return tourValueFor(ev, tour);
+}
+
 /** The comparison's numbers for the team board's read sheet. */
 function compareOf(ev: InsightEvidence, tour: ChTourBaseline | null): ChInsight['compare'] {
   const p = ev.comparison?.primary;
@@ -279,7 +290,7 @@ function compareOf(ev: InsightEvidence, tour: ChTourBaseline | null): ChInsight[
   return {
     own: num(ev.your_value),
     team: pool,
-    tour: tour?.values.get(ev.metric ?? '') ?? null,
+    tour: tourBarOf(ev, tour),
     higherBetter: ev.polarity === 'higher_better',
     unit: ev.unit === 'percent' ? '%' : '',
   };

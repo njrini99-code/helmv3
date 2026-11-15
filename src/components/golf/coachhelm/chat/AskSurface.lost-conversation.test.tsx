@@ -21,19 +21,26 @@ const useChatSpy = vi.fn();
 const responseBody = JSON.stringify({ error: 'Conversation not found' });
 const lostConversation = Object.assign(new Error(responseBody), { statusCode: 404, responseBody });
 
-vi.mock('@ai-sdk/react', () => ({
-  useChat: (config: Record<string, unknown>) => {
-    useChatSpy(config);
+// The chat hook itself is the stand-in here: this file is about what the surface does with the hook's state. The hook's own
+// behaviour (what it sends, how it folds the stream, retry and new chat) is covered in __tests__/useCoachHelmChat.test.tsx.
+vi.mock('./useCoachHelmChat', () => ({
+  useCoachHelmChat: (options: { initialMessages?: unknown[] }) => {
+    useChatSpy({ messages: options.initialMessages });
     return {
       messages: [{ id: 'u1', role: 'user', parts: [{ type: 'text', text: 'How is the team putting?' }] }],
       status: 'error',
       error: lostConversation,
-      sendMessage: vi.fn(),
-      regenerate: vi.fn(),
+      send: vi.fn(),
+      retry: vi.fn(),
+      newConversation: vi.fn(),
+      busy: false,
+      conversationId: null,
+      context: [],
+      addContext: vi.fn(),
+      removeContext: vi.fn(),
       stop: vi.fn(),
-      setMessages: vi.fn(),
-      clearError: vi.fn(),
-      addToolApprovalResponse: vi.fn(),
+      approve: vi.fn(),
+      deny: vi.fn(),
     };
   },
 }));

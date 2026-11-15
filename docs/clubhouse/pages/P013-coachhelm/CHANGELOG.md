@@ -1,5 +1,58 @@
 # P013 — CoachHelm: changelog
 
+## 2026-11-10 — Practice: the day to scale, honest states, and print that matches the paper
+
+```text
+Design package: design-refresh/practice-plan/redesign/coachhelm-practice.html
+                (05-SCREENS S-PRC rows); gap list and page notes in
+                docs/clubhouse/practice-v2/GAP.md and PAGE.md
+PR/commit:      see git log (agent/clubhouse-release-train, Practice lane)
+Contract IDs:   CH-13081, CH-13395, CH-13396, CH-13397, CH-13896 reworded;
+                five behaviours have tests and no code yet (PAGE.md, "Rows
+                the catalog does not have yet")
+Actions:        none new. New plan's Ask CoachHelm passes its two picks to
+                the helper's first message through the existing chat send
+Data impact:    none written and no migration. `isPracticeMissing` also
+                reads a missing column (42703, PGRST204) as "not on yet"
+Held items:     the twelve Practice migrations stay held; without them every
+                Practice address says "Practice isn't on yet"
+```
+
+### Changed
+
+- Home, builder, Run, library and print are one generation of CSS on the
+  shared primitives. The builder's head carries the day to scale: a segment a
+  block, as wide as its minutes, coloured by its drill's kind, suggestions
+  outlined, the rest of the window empty.
+- A plan says which of three states it is in, from one source
+  (`edited_after_publish`): Draft, Published, or published with edits players
+  do not have.
+- The plan page and print say "Practice isn't on yet" on a database without
+  the held migrations, instead of "This plan isn't available".
+- New plan, with Ask CoachHelm picked, asks how long and what to work on. The
+  helper's first message carries both.
+- Forms are the shared sheet on a phone and the shared modal on a desk.
+- Run gives the clock once a row. The helper calls
+  `useCoachHelmChat({ surface: 'practice_helper' })`.
+- Print: every piece is a portrait sheet inside the print's 16mm margin. The
+  studio measures each piece, counts the sheets that will come out, and marks
+  each break on the paper. The printed plan carries its fonts. The appendix is
+  four drills a sheet.
+
+### Verified
+
+- Tests beside the code: `screens/practice/__tests__/` (states, New plan's
+  ask, the form, Run), `routes/__tests__/practice-unavailable.test.tsx`,
+  `data/__tests__/practice-plan-failed-reads.test.ts`,
+  `screens/coachhelm/plan/__tests__/page-cuts.test.ts`,
+  `src/lib/golf/__tests__/practice-errors.test.ts`.
+- WebKit captures of every preview state: phone light and dark, desktop
+  light; Reduce Motion and the largest Text Size on Home, the builder and Run.
+- A paginated file at US Letter from the studio's own Print press (Chrome):
+  the studio's sheet count equals the file's page count, and no schedule row,
+  rotation, card or drill is split.
+- Not verified: a print from Safari itself, and the Save as PDF file.
+
 ## 2026-10-21 — No club names in read copy
 
 ```text

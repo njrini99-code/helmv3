@@ -4,20 +4,9 @@ import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('server-only', () => ({}));
 
-const yml = readFileSync(resolve(process.cwd(), 'config/feature-flags.yml'), 'utf8');
-
-/** W-STATS-1, CP-114. The render half (main's tree, no lane hook, `#sd-*` ignored) grows with each PR that adds a screen behind the flag. */
-describe('clubhouse_stats_redesign_v1', () => {
-  it('exists, off in production and development, on in Preview (staging)', () => {
-    const entry = yml.split('- feature_id: clubhouse_stats_redesign_v1')[1]!.split('- feature_id:')[0]!;
-    expect(entry).toMatch(/type: release/);
-    expect(entry).toMatch(/default: false/);
-    expect(entry).toMatch(/production: false/);
-    expect(entry).toMatch(/preview: true/);
-    expect(entry).toMatch(/development: false/);
-  });
-
-  it('is read only on the server: no client module under screens/stats names it', () => {
+/** W-STATS-1, CP-114. The phone Stats redesign is the only Stats (the flag is retired): no client module under screens/stats reads a flag. */
+describe('the Stats screens', () => {
+  it('read no flag: the server decides, and the clients get props', () => {
     const files = ['StatsPlayer.tsx', 'StatsTeam.tsx', 'StatsDetailScreen.tsx', 'use-stats-detail.ts'];
     for (const f of files) {
       expect(readFileSync(resolve(process.cwd(), 'src/clubhouse/screens/stats', f), 'utf8')).not.toMatch(/isFlagEnabled|statsRedesignEnabled/);
@@ -36,14 +25,12 @@ describe('countsForScoring', () => {
 });
 
 describe('practiceCut', () => {
-  it('cuts only with the flag on, no type chosen, and no picked rounds', async () => {
+  it('cuts with no type chosen and no picked rounds', async () => {
     const { practiceCut } = await import('../../../data/stats-common');
     const { filterFor } = await import('../../../data/stats-filter');
     const base = filterFor('last10');
-    expect(practiceCut(false, base)).toBe(false);
-    expect(practiceCut(undefined, base)).toBe(false);
-    expect(practiceCut(true, base)).toBe(true);
-    expect(practiceCut(true, { ...base, types: ['practice'] })).toBe(false);
-    expect(practiceCut(true, { ...base, pick: { mode: 'only', ids: ['r1'] } })).toBe(false);
+    expect(practiceCut(base)).toBe(true);
+    expect(practiceCut({ ...base, types: ['practice'] })).toBe(false);
+    expect(practiceCut({ ...base, pick: { mode: 'only', ids: ['r1'] } })).toBe(false);
   });
 });

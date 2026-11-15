@@ -15,7 +15,8 @@ describe('Guard scan helper (CONS-0)', () => {
     const tokens = walk().find((f) => f.endsWith('styles/tokens.css'))!;
     expect(code(tokens)).not.toMatch(/\/\*/);
     const found = hits(/--ch-bg-page:/g, [tokens]);
-    expect(found.length).toBeGreaterThanOrEqual(3);
+    // One value by day and one at night: the phone-only page colour is gone (styles/__tests__/page-colour.test.ts).
+    expect(found.length).toBeGreaterThanOrEqual(2);
     expect(found[0]).toMatchObject({ file: 'styles/tokens.css', text: expect.stringMatching(/^--ch-bg-page:/) });
   });
 

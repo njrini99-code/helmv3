@@ -19,7 +19,7 @@ export type * from './team-rounds-shape';
  */
 
 const LIST_COLUMNS =
-  'id, player_id, course_name, tees_played, round_date, round_type, total_score, score_to_par, front_nine, back_nine, holes_played, total_putts, total_gir, total_gir_possible, total_fairways_hit, total_fairways';
+  'id, player_id, course_name, tees_played, round_date, round_type, total_score, score_to_par, front_nine, back_nine, holes_played, total_putts, total_gir, total_gir_possible, total_fairways_hit, total_fairways, qualifier_round_number, created_at';
 
 const log = (what: string, err: unknown) => chLogServer('rounds.team', what, err, 'teams');
 

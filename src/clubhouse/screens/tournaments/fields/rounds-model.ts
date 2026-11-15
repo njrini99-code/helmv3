@@ -72,9 +72,17 @@ export interface ChTourState {
   lockMinutes: number;
 }
 
-let seq = 0;
-/** A round row's stable id (React keys and the re-sort FLIP); not stored. */
-export const nextRoundId = () => `rd${++seq}`;
+/**
+ * A round row's stable id (React keys and the re-sort FLIP); not stored. It is the next free number among the rows it
+ * joins, so the same form state gets the same ids wherever it is built. A counter held by the module ran on across the
+ * server's requests while the browser's started at one, and the page hydrated a row the server called rd8 as rd1.
+ */
+export const nextRoundId = (among: ReadonlyArray<{ id: string }> = []): string => {
+  const taken = new Set(among.map((r) => r.id));
+  let n = among.length + 1;
+  while (taken.has(`rd${n}`)) n += 1;
+  return `rd${n}`;
+};
 
 /** "08:42" to minutes after midnight. */
 export const teeMinutes = (tee: string) => {
@@ -123,10 +131,13 @@ export function initialTourState(first: string, last = first, over: Partial<ChTo
  */
 export function roundsFromRange(first: string, last: string, prev: readonly ChRoundDraft[]): ChRoundDraft[] {
   const n = Math.max(1, Math.min(MAX_ROUNDS + 1, daysBetween(first, last) + 1));
-  return Array.from({ length: n }, (_, i) => {
+  const out: ChRoundDraft[] = [];
+  for (let i = 0; i < n; i += 1) {
     const was = prev[i];
-    return { id: was?.id ?? nextRoundId(), date: addDays(first, i), tee: was?.tee ?? null, startType: was?.startType ?? 'tee_times', ...(was?.courseId !== undefined ? { courseId: was.courseId, courseLabel: was.courseLabel } : {}) };
-  });
+    // A new row's id is free among the rows before it and the ones just made.
+    out.push({ id: was?.id ?? nextRoundId([...prev, ...out]), date: addDays(first, i), tee: was?.tee ?? null, startType: was?.startType ?? 'tee_times', ...(was?.courseId !== undefined ? { courseId: was.courseId, courseLabel: was.courseLabel } : {}) });
+  }
+  return out;
 }
 
 /** The second round of a 36-hole day: the previous first tee plus 5:30, or none when there is none (or it would pass midnight). */
@@ -140,8 +151,8 @@ export function defaultSecondTee(prevTee: string | null): string | null {
 export function addRound(list: readonly ChRoundDraft[]): ChRoundDraft[] {
   if (list.length >= MAX_ROUNDS) return [...list];
   const last = list[list.length - 1];
-  if (!last) return [{ id: nextRoundId(), date: '', tee: null, startType: 'tee_times' }];
-  return [...list, { id: nextRoundId(), date: last.date, tee: defaultSecondTee(last.tee), startType: last.startType }];
+  if (!last) return [{ id: nextRoundId(list), date: '', tee: null, startType: 'tee_times' }];
+  return [...list, { id: nextRoundId(list), date: last.date, tee: defaultSecondTee(last.tee), startType: last.startType }];
 }
 
 /** Only the last round can be removed, so round numbers never have a gap. One round always stays. */

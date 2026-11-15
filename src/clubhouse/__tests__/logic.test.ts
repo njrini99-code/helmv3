@@ -259,13 +259,17 @@ describe('messages model', async () => {
     expect(M.sectionOf('2026-10-02T13:00:00Z', NOW, TZ)).toBe('earlier');
   });
 
-  it('groups a sender’s run within five minutes and puts day separators between days', () => {
+  // MSG-205 (Messages v2): a run is one sender on one day, with no five-minute rule, and a poll is never part of a run.
+  it('groups a sender’s run on one day (no gap rule), breaks it at a poll, and puts day separators between days', () => {
     const items = M.threadItems(
       [m('a', 'dan', '2026-10-13T22:20:00Z'), m('b', 'dan', '2026-10-13T22:22:00Z'), m('c', 'dan', '2026-10-13T22:40:00Z'), m('d', 'me', '2026-10-14T17:52:00Z')],
       NOW,
       TZ,
     );
-    expect(items.map((i) => (i.kind === 'day' ? i.label : `${i.m.id}${i.first ? 'F' : ''}${i.last ? 'L' : ''}`))).toEqual(['Yesterday', 'aF', 'bL', 'cFL', 'Today', 'dFL']);
+    expect(items.map((i) => (i.kind === 'day' ? i.label : `${i.m.id}${i.first ? 'F' : ''}${i.last ? 'L' : ''}`))).toEqual(['Yesterday', 'aF', 'b', 'cL', 'Today', 'dFL']);
+    const poll = { ...m('p', 'dan', '2026-10-13T22:21:00Z'), poll: {} as never };
+    const withPoll = M.threadItems([m('a', 'dan', '2026-10-13T22:20:00Z'), poll, m('c', 'dan', '2026-10-13T22:22:00Z')], NOW, TZ);
+    expect(withPoll.map((i) => (i.kind === 'day' ? i.label : `${i.m.id}${i.first ? 'F' : ''}${i.last ? 'L' : ''}`))).toEqual(['Yesterday', 'aFL', 'pFL', 'cFL']);
   });
 
   it('filters by unread, groups and search across title and preview', () => {
@@ -329,17 +333,19 @@ describe('home model', () => {
     // An early read alone is never called on track.
     expect(H.homeSubline([rows[3]!], { roundsError: false, nextCompetition: null })).toBeNull();
     const many = rows.map((r) => ({ ...r, status: 'slipping' as const }));
-    expect(H.homeSubline(many, { roundsError: false, nextCompetition: null })).toBe('4 players need a look: Theo, Jonah, Eli and Priya.');
+    // W5: three or more are ranked and capped, never a roll call: the two who need it most, then a count of the rest.
+    expect(H.homeSubline(many, { roundsError: false, nextCompetition: null })).toBe('Eli is slipping and hasn’t posted a round in 9 days and Jonah is slipping. 2 more are slipping.');
+    const quiet = ['Cole Bennett', 'Mason Diaz', 'Owen Park', 'Ethan Cho'].map((name, i) => ({ name, status: 'steady' as const, quietDays: 15 + i * 5 }));
+    expect(H.homeSubline([...quiet, rows[0]!], { roundsError: false, nextCompetition: null })).toBe('4 players haven’t posted a round in 15+ days, Ethan the longest at 30. The rest of the team is on track.');
+    const mixed = [{ ...quiet[0]!, status: 'slipping' as const }, ...quiet.slice(1)];
+    expect(H.homeSubline(mixed, { roundsError: false, nextCompetition: null })).toBe('Cole is slipping and hasn’t posted a round in 15 days and Ethan hasn’t posted a round in 30 days. 2 others haven’t posted a round in 20+ days.');
   });
   it('never calls the team on track while an active player has no 18-hole round this season (A2)', () => {
     const on: H.ChSublineRow = { name: 'Theo Marchetti', status: 'improving', quietDays: 2 };
-    expect(H.homeSubline([on], { roundsError: false, nextCompetition: null, unposted: [{ name: 'Ava Lin' }] })).toBe(
-      'Everyone with enough rounds is on track. Ava has no 18-hole round this season.',
-    );
+    // The wording still says "with enough rounds", but a player with no rounds is never a sentence of their own (HOME-S5).
+    expect(H.homeSubline([on], { roundsError: false, nextCompetition: null, unposted: [{ name: 'Ava Lin' }] })).toBe('Everyone with enough rounds is on track.');
     const three = ['Ava Lin', 'Bo Park', 'Cy Dunn'].map((name) => ({ name }));
-    expect(H.homeSubline([on], { roundsError: false, nextCompetition: null, unposted: three })).toBe(
-      'Everyone with enough rounds is on track. 3 players have no 18-hole round this season.',
-    );
+    expect(H.homeSubline([on], { roundsError: false, nextCompetition: null, unposted: three })).toBe('Everyone with enough rounds is on track.');
     // An injured player without rounds is not news; nobody with a row leaves it to the board's empty state.
     expect(H.homeSubline([on], { roundsError: false, nextCompetition: null, unposted: [{ name: 'Ava Lin', availability: 'injured' }] })).toBe('The team is on track.');
     expect(H.homeSubline([], { roundsError: false, nextCompetition: null, unposted: three })).toBeNull();

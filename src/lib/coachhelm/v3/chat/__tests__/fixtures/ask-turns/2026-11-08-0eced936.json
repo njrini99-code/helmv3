@@ -1,0 +1,262 @@
+{
+ "id": "0eced936",
+ "messageId": "0eced936-d8fc-4f24-a2b8-d2b6d442df0f",
+ "source": {
+  "project": "staging",
+  "team": "Demo University Golf",
+  "exportedBy": "scripts/coachhelm/export-ask-turns.mjs"
+ },
+ "timezone": "America/New_York",
+ "roster": [
+  {
+   "id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+   "name": "Cole Bennett",
+   "first_name": "Cole",
+   "last_name": "Bennett"
+  },
+  {
+   "id": "ed1ff03e-b33a-4a80-891e-09685b7db3d0",
+   "name": "Dylan Brooks",
+   "first_name": "Dylan",
+   "last_name": "Brooks"
+  },
+  {
+   "id": "9458ca63-9dbe-4020-ab13-9e2b70f70c80",
+   "name": "Mason Rivers",
+   "first_name": "Mason",
+   "last_name": "Rivers"
+  },
+  {
+   "id": "b40a650a-bce0-4e46-87cd-365b0256ee21",
+   "name": "Jackson Hale",
+   "first_name": "Jackson",
+   "last_name": "Hale"
+  },
+  {
+   "id": "8e382583-2ce6-4d15-8568-5088cf02dbd1",
+   "name": "Ethan Park",
+   "first_name": "Ethan",
+   "last_name": "Park"
+  },
+  {
+   "id": "faced578-b271-416f-b757-ac3aee5bd9e5",
+   "name": "Tyler Hayes",
+   "first_name": "Tyler",
+   "last_name": "Hayes"
+  },
+  {
+   "id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+   "name": "Owen Carter",
+   "first_name": "Owen",
+   "last_name": "Carter"
+  },
+  {
+   "id": "b6b87c4d-0673-4166-9f8c-44e60936a034",
+   "name": "Audit Testplayer",
+   "first_name": "Audit",
+   "last_name": "Testplayer"
+  }
+ ],
+ "userMessage": {
+  "content": "Where is the team losing the most strokes this season? Show me.",
+  "createdAt": "2026-11-08T02:11:02.846221+00:00"
+ },
+ "priorMessages": [
+  {
+   "role": "user",
+   "createdAt": "2026-11-08T02:11:02.846221+00:00",
+   "content": "Where is the team losing the most strokes this season? Show me.",
+   "evidence": []
+  }
+ ],
+ "turn": {
+  "createdAt": "2026-11-08T02:11:12.675272+00:00",
+  "status": "failed",
+  "costUsd": null,
+  "content": "Approach play is where the team loses the most strokes, and putting is close behind. The team's strokes gained by area, over 66 player rounds from June 17 to October 21:\n\n- **Approach:** -3.37\n- **Putting:** -3.01\n- **Short game:** -0.26\n- **Off the tee:** +0.52\n\nApproach and putting together account for nearly all of the loss. Short game is close to even. Off the tee is the only area that gains strokes.\n\nThe read doesn't state whether these are per round or totals, so compare them with each other rather than treating them as strokes per round. The chart wouldn't draw from this read, so I've given the figures in text.\n\nSeven of your eight players have recorded rounds. Audit Testplayer has none, so the figures cover seven players. Cole Bennett has 37 rounds recorded, and the others have 13 to 17 each. His rounds probably make up a large share of the 66, so the team figures may lean toward his game. Say if you want approach and putting split out by player.",
+  "tools": [
+   {
+    "name": "get_team_strokes_gained",
+    "input": {
+     "rounds": 30
+    }
+   },
+   {
+    "name": "get_team_overview",
+    "input": {}
+   },
+   {
+    "name": "show_visual",
+    "input": {
+     "kind": "compose",
+     "lede": "Team strokes gained by part of the game, from the most recent recorded rounds.",
+     "title": "Approach play and putting are where the team loses strokes",
+     "blocks": [
+      {
+       "refs": [
+        "e1"
+       ],
+       "type": "split"
+      },
+      {
+       "kind": "measured",
+       "text": "Tee play is the only clearly positive area; short game is close to even.",
+       "type": "note"
+      }
+     ],
+     "intent": "locate",
+     "layout": "stack",
+     "evidenceRefs": []
+    }
+   }
+  ],
+  "evidence": [
+   {
+    "tool": "get_team_strokes_gained",
+    "ref": "e1",
+    "envelope": {
+     "as_of": "2026-11-08T02:11:05.729Z",
+     "detail": {
+      "areas": {
+       "tee": 0.52,
+       "short": -0.26,
+       "putting": -3.01,
+       "approach": -3.37
+      },
+      "window_end": "2026-10-21",
+      "sample_size": 66,
+      "window_start": "2026-06-17"
+     },
+     "series": [],
+     "summary": "Team strokes gained over 66 player rounds.",
+     "coverage": "complete",
+     "measurements": [],
+     "coverage_note": null
+    }
+   },
+   {
+    "tool": "get_team_overview",
+    "ref": "e2",
+    "envelope": {
+     "as_of": "2026-11-08T02:11:05.771Z",
+     "detail": {
+      "players": [
+       {
+        "name": "Cole Bennett",
+        "player_id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+        "last_round_date": "2026-10-21",
+        "rounds_recorded": 37,
+        "last_round_holes": 18,
+        "last_round_to_par": 2
+       },
+       {
+        "name": "Owen Carter",
+        "player_id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+        "last_round_date": "2026-09-26",
+        "rounds_recorded": 14,
+        "last_round_holes": 18,
+        "last_round_to_par": -1
+       },
+       {
+        "name": "Ethan Park",
+        "player_id": "8e382583-2ce6-4d15-8568-5088cf02dbd1",
+        "last_round_date": "2026-09-26",
+        "rounds_recorded": 15,
+        "last_round_holes": 18,
+        "last_round_to_par": 1
+       },
+       {
+        "name": "Mason Rivers",
+        "player_id": "9458ca63-9dbe-4020-ab13-9e2b70f70c80",
+        "last_round_date": "2026-09-26",
+        "rounds_recorded": 14,
+        "last_round_holes": 18,
+        "last_round_to_par": 0
+       },
+       {
+        "name": "Jackson Hale",
+        "player_id": "b40a650a-bce0-4e46-87cd-365b0256ee21",
+        "last_round_date": "2026-09-26",
+        "rounds_recorded": 17,
+        "last_round_holes": 18,
+        "last_round_to_par": 0
+       },
+       {
+        "name": "Audit Testplayer",
+        "player_id": "b6b87c4d-0673-4166-9f8c-44e60936a034",
+        "last_round_date": null,
+        "rounds_recorded": 0,
+        "last_round_holes": null,
+        "last_round_to_par": null
+       },
+       {
+        "name": "Dylan Brooks",
+        "player_id": "ed1ff03e-b33a-4a80-891e-09685b7db3d0",
+        "last_round_date": "2026-09-26",
+        "rounds_recorded": 14,
+        "last_round_holes": 18,
+        "last_round_to_par": 2
+       },
+       {
+        "name": "Tyler Hayes",
+        "player_id": "faced578-b271-416f-b757-ac3aee5bd9e5",
+        "last_round_date": "2026-09-26",
+        "rounds_recorded": 13,
+        "last_round_holes": 18,
+        "last_round_to_par": 5
+       }
+      ],
+      "timezone": "America/New_York",
+      "team_name": "Demo University Golf",
+      "latest_round_date": "2026-10-21",
+      "profiles_resolved": 8,
+      "active_roster_count": 8,
+      "players_with_rounds": 7,
+      "unresolved_player_ids": []
+     },
+     "series": [],
+     "summary": "Demo University Golf has 8 active players.",
+     "coverage": "partial",
+     "measurements": [
+      {
+       "unit": "count",
+       "as_of": "2026-11-08T02:11:05.771Z",
+       "value": 8,
+       "entity": {
+        "id": "6ecdd1a6-63fe-4beb-b094-00118f334163",
+        "kind": "team",
+        "label": "Demo University Golf"
+       },
+       "method": "count_active_team_members",
+       "source": "roster",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": null,
+       "metric_id": "active_roster_count",
+       "window_end": null,
+       "denominator": null,
+       "sample_size": 8,
+       "sample_unit": "players",
+       "metric_label": "Active roster",
+       "window_start": null,
+       "coverage_note": null
+      }
+     ],
+     "coverage_note": "1 player has no recorded rounds (Audit Testplayer)"
+    }
+   }
+  ],
+  "recorded": {
+   "outcome": "rejected",
+   "reason": "ungrounded_claims",
+   "unmatchedTokens": [
+    "13",
+    "17"
+   ],
+   "misattributedTokens": [
+    "13",
+    "17"
+   ]
+  }
+ }
+}

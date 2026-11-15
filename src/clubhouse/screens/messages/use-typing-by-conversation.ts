@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { joinPrivateTyping } from './typing-channel';
 
 export const TYPING_EXPIRY_MS = 5000;
 export const TYPING_CHANNEL_CAP = 30;
@@ -23,7 +24,7 @@ export function typersAt(entries: Entries, now: number): Map<string, string[]> {
  * `golf-conversation:<id>`; only the open thread listens today. This joins that channel for the conversations on screen, listens for
  * `typing` only, ignores the viewer's own id, and expires each typer 5 seconds after their last event. The open conversation is
  * skipped: its thread hook holds that channel, and joining one topic twice from one client breaks the first subscription. Capped at
- * 30 channels; rows past that show their preview. With `enabled` false nothing is joined.
+ * 30 conversations (each on its public and its private `golf-typing:<id>` topic, M4); rows past that show their preview. With `enabled` false nothing is joined.
  */
 export function useTypingByConversation(viewerUserId: string, conversationIds: readonly string[], openId: string | null, enabled: boolean, seed?: ReadonlyMap<string, string[]>): ReadonlyMap<string, string[]> {
   const [typing, setTyping] = useState<ReadonlyMap<string, string[]>>(seed ?? new Map());
@@ -41,23 +42,30 @@ export function useTypingByConversation(viewerUserId: string, conversationIds: r
       const next = Math.min(...[...entries.values()].flatMap((m) => [...m.values()]).filter((t) => t > now));
       if (Number.isFinite(next)) timer = window.setTimeout(publish, next - now + 1);
     };
-    const channels = key.split('\u0000').map((id) =>
+    const heard = (id: string, userId: string | undefined, isTyping: boolean | undefined) => {
+      if (!userId || userId === viewerUserId) return;
+      const users = entries.get(id) ?? new Map<string, number>();
+      if (isTyping) users.set(userId, Date.now() + TYPING_EXPIRY_MS);
+      else users.delete(userId);
+      entries.set(id, users);
+      publish();
+    };
+    const ids = key.split('\u0000');
+    // The public topic Fairway still sends on, and the private one Clubhouse sends on (M4): a row hears either.
+    const channels = ids.map((id) =>
       supabase
         .channel(`golf-conversation:${id}`)
         .on('broadcast', { event: 'typing' }, (payload) => {
           const { userId, isTyping } = (payload.payload ?? {}) as { userId?: string; isTyping?: boolean };
-          if (!userId || userId === viewerUserId) return;
-          const users = entries.get(id) ?? new Map<string, number>();
-          if (isTyping) users.set(userId, Date.now() + TYPING_EXPIRY_MS);
-          else users.delete(userId);
-          entries.set(id, users);
-          publish();
+          heard(id, userId, isTyping);
         })
         .subscribe(),
     );
+    const privates = ids.map((id) => joinPrivateTyping(supabase, id, ({ userId, isTyping }) => heard(id, userId, isTyping)));
     return () => {
       window.clearTimeout(timer);
       for (const c of channels) void supabase.removeChannel(c);
+      for (const p of privates) p.leave();
       setTyping(new Map());
     };
   }, [key, viewerUserId]);

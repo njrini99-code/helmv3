@@ -5,11 +5,12 @@ import { CREDENTIALS_MESSAGE, NETWORK_MESSAGE, RATE_LIMIT_MESSAGE, STALE_BUNDLE_
 /**
  * Sample data for /clubhouse-preview/auth: the design's own people and the
  * states its boards draw (design/handoff/auth/screenshots). The date is held
- * still (Tuesday 14 October 2025, 10:00 local) so every screenshot reads the same.
+ * still (Wednesday 14 October 2026, 10:00 local) so every screenshot reads the same, and the same day as the other
+ * previews (`PREVIEW_HOME_NOW`): held in 2025 the welcome said "Tuesday 14 October" beside Home's "Wednesday".
  */
-export const PREVIEW_AUTH_NOW = new Date(2025, 9, 14, 10, 0, 0);
-const lastSunday = new Date(2025, 9, 12, 21, 12, 0).toISOString();
-const lastSundayLate = new Date(2025, 9, 12, 22, 40, 0).toISOString();
+export const PREVIEW_AUTH_NOW = new Date(2026, 9, 14, 10, 0, 0);
+const lastSunday = new Date(2026, 9, 11, 21, 12, 0).toISOString();
+const lastSundayLate = new Date(2026, 9, 11, 22, 40, 0).toISOString();
 
 const base = { isAdmin: false, clubhouseDashboard: true } as const;
 

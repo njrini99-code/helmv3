@@ -1,14 +1,17 @@
 import 'server-only';
 import { createHash } from 'node:crypto';
 import type { Measurement, MeasurementSeries, ToolEnvelope } from '../provenance';
+import { uiOnlyOf } from '../ui-only';
 import {
   COMPOSITION_SCHEMA_V2,
   COMPOSITION_SCHEMA_VERSION,
+  MissShotsResolved,
+  ResolvedBlock,
+  ValidatedComposition,
+  blockProblem,
   type CompositionBlockSpec,
   type CompositionBlockSpecV2,
   type CompositionSpec,
-  type ResolvedBlock,
-  type ValidatedComposition,
 } from './composition';
 
 /**
@@ -23,7 +26,7 @@ import {
 
 export type CompositionResult =
   | { ok: true; composition: ValidatedComposition; dropped: string[] }
-  | { ok: false; reason: 'figure_in_text' | 'nothing_to_draw'; message: string; dropped: string[] };
+  | { ok: false; reason: 'figure_in_text' | 'nothing_to_draw' | 'invalid_composition'; message: string; dropped: string[] };
 
 /** Below this a "trend" is a change between two rounds, not a trend. Same rule as the chat's renderers. */
 const MIN_TREND_POINTS = 3;
@@ -59,7 +62,12 @@ function resolveV2(block: Exclude<CompositionBlockSpecV2, CompositionBlockSpec>,
   if (block.type === 'miss_pattern') {
     if (d.kind !== 'miss_pattern') return none;
     const p = d.pattern as { total: number; no_direction: number; inside_15: number; inside_25: number; wedges: Array<{ direction: string; count: number; avg_left_ft: number | null }> };
-    return { ok: true, block: { type: 'miss_pattern', total: p.total, no_direction: p.no_direction, inside_15: p.inside_15, inside_25: p.inside_25, wedges: p.wedges }, drawn };
+    // The shots behind each wedge (the Miss Compass), only where the read kept them (its team's flag) and only as the read
+    // kept them: each direction's count must be its wedge's, or none are drawn. The model never names a shot.
+    const kept = MissShotsResolved.omit({ ref: true }).safeParse(uiOnlyOf(d)?.miss_shots);
+    const agrees = kept.success && p.wedges.every((w) => (kept.data.directions[w.direction]?.count ?? 0) === w.count);
+    const shots = agrees ? { shots: { ref: block.ref, ...kept.data } } : {};
+    return { ok: true, block: { type: 'miss_pattern', total: p.total, no_direction: p.no_direction, inside_15: p.inside_15, inside_25: p.inside_25, wedges: p.wedges, ...shots }, drawn };
   }
   if (block.type === 'putt_profile') {
     if (d.kind !== 'putt_profile') return none;
@@ -222,7 +230,15 @@ export function compileComposition(
       dropped.push(`block ${i + 1} (${b.type}): ${r.why}`);
       return;
     }
-    blocks.push(r.block);
+    // Every block is checked against what the thread will parse before it is kept: a read whose `detail` is not the shape the
+    // block draws (a team season table where a band belongs) is not drawn, and the model is told so, instead of storing a
+    // composition the thread then drops whole.
+    const checked = ResolvedBlock.safeParse(r.block);
+    if (!checked.success) {
+      dropped.push(`block ${i + 1} (${b.type}): not drawn, ${blockProblem(checked.error)}`);
+      return;
+    }
+    blocks.push(checked.data);
     r.drawn.m.forEach((m) => drawnM.add(key(m)));
     r.drawn.s.forEach((s) => drawnS.add(seriesKey(s)));
   });
@@ -257,17 +273,23 @@ export function compileComposition(
 
   const body = { title: spec.title, lede: spec.lede ?? null, layout: spec.layout, blocks, coverageNotes };
   const dataHash = createHash('sha256').update(canonical(body)).digest('hex');
+  const composition = {
+    artifactId: `vc-${dataHash.slice(0, 12)}`,
+    schemaVersion: blocks.some((b) => b.type === 'miss_pattern' || b.type === 'putt_profile' || b.type === 'season_compare' || b.type === 'hole_strip') ? COMPOSITION_SCHEMA_V2 : COMPOSITION_SCHEMA_VERSION,
+    kind: 'compose' as const,
+    ...body,
+    evidenceRefs,
+    dataHash,
+    createdAt: now.toISOString(),
+  };
+  // Never store what the thread would reject: the whole composition is parsed as the thread parses it.
+  const stored = ValidatedComposition.safeParse(composition);
+  if (!stored.success) {
+    return { ok: false, reason: 'invalid_composition', message: `The visual could not be drawn: ${blockProblem(stored.error)}. Answer in words, or draw fewer blocks.`, dropped };
+  }
   return {
     ok: true,
     dropped,
-    composition: {
-      artifactId: `vc-${dataHash.slice(0, 12)}`,
-      schemaVersion: blocks.some((b) => b.type === 'miss_pattern' || b.type === 'putt_profile' || b.type === 'season_compare' || b.type === 'hole_strip') ? COMPOSITION_SCHEMA_V2 : COMPOSITION_SCHEMA_VERSION,
-      kind: 'compose',
-      ...body,
-      evidenceRefs,
-      dataHash,
-      createdAt: now.toISOString(),
-    },
+    composition: stored.data,
   };
 }

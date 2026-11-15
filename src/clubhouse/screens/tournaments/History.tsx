@@ -1,9 +1,9 @@
 'use client';
 
-import { Plus } from 'lucide-react';
+import { Plus, Trophy } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { Button } from '../../ui/Button';
 import { InlineNotice } from '../../ui/Notices';
 import { Section } from '../../ui/Section';
@@ -46,6 +46,15 @@ export function History({ data, search, load, phone: forced }: HistoryProps) {
     ready: () => <HistoryReady data={data} search={search} phone={phone} />,
   });
 }
+
+/**
+ * The phone's one filter (G17): the three views the trend has. Returning players has no figure against the field, so of
+ * the desk's two filters only three pairs exist, and a phone shows them as one control rather than two stacked before
+ * any content. Each writes the same address the desk's pair does.
+ */
+type Lens = 'rating' | 'returning' | 'field';
+const LENSES: Record<Lens, ChTourHistorySearch> = { rating: { mode: 'actual', adjust: 'raw' }, returning: { mode: 'matched', adjust: 'raw' }, field: { mode: 'actual', adjust: 'field' } };
+const lensOf = (s: ChTourHistorySearch): Lens => (s.adjust === 'field' ? 'field' : s.mode === 'matched' ? 'returning' : 'rating');
 
 const historyHref = (base: string, s: ChTourHistorySearch) => {
   const q = new URLSearchParams();
@@ -90,8 +99,10 @@ function HistoryReady({ data, search, phone }: { data: ChTourHistoryData; search
         actions={
           <>
             <TourViewSwitch current="history" phone={phone} />
+            {/* Add event is the head's quiet key on Events, Compare and History alike, on a phone and a desk (owner,
+                11 Nov 2026): the three are one page under one switch, so the key beside it never turns green on one view. */}
             {!empty && (
-              <Button variant="primary" leftIcon={Plus} href={paths.newEvent()}>
+              <Button leftIcon={Plus} href={paths.newEvent()}>
                 Add event
               </Button>
             )}
@@ -102,7 +113,7 @@ function HistoryReady({ data, search, phone }: { data: ChTourHistoryData; search
         <EmptyState
           size="page"
           code="CH-16340"
-          icon={Plus}
+          icon={Trophy}
           title="No results to compare yet"
           body="Once events are finished, the team’s scoring against the course rating shows here, season by season."
           action={
@@ -118,8 +129,14 @@ function HistoryReady({ data, search, phone }: { data: ChTourHistoryData; search
             title="Across seasons"
             actions={
               <div className="ch-tour-rev-tools">
-                <Segmented size="sm" label="Lineup mode" value={state.adjust === 'field' ? 'actual' : state.mode} onChange={(v) => move({ mode: v })} options={[{ value: 'actual', label: 'Actual lineups' }, { value: 'matched', label: 'Returning players', disabled: state.adjust === 'field' }]} />
-                <Segmented size="sm" label="Measured against" value={state.adjust} onChange={(v) => move({ adjust: v })} options={[{ value: 'raw', label: 'Course rating' }, { value: 'field', label: 'The field' }]} />
+                {phone ? (
+                  <Segmented weight="filter" size="sm" block label="What the trend shows" value={lensOf(state)} onChange={(v) => move(LENSES[v])} options={[{ value: 'rating', label: 'Rating' }, { value: 'returning', label: 'Returning' }, { value: 'field', label: 'The field' }]} />
+                ) : (
+                  <>
+                    <Segmented weight="filter" size="sm" label="Lineup mode" value={state.adjust === 'field' ? 'actual' : state.mode} onChange={(v) => move({ mode: v })} options={[{ value: 'actual', label: 'Actual lineups' }, { value: 'matched', label: 'Returning players', disabled: state.adjust === 'field' }]} />
+                    <Segmented weight="filter" size="sm" label="Measured against" value={state.adjust} onChange={(v) => move({ adjust: v })} options={[{ value: 'raw', label: 'Course rating' }, { value: 'field', label: 'The field' }]} />
+                  </>
+                )}
               </div>
             }
           >
@@ -210,26 +227,48 @@ function Trend({ points, state, note }: { points: TrendPoint[]; state: ChTourHis
   );
 }
 
-/** The phone's History (board `MHistory`): one bar a finished event, taller the closer to the mark, this season in green. */
+/** How much of the track the shortest bar still fills, so the weakest figure is a bar and not a sliver. */
+const BAR_MIN = 0.14;
+
+/**
+ * The phone's History (board `MHistory`): one bar a finished event, down the page in the order they were played. The
+ * event's full name stands at the left, the bar runs from it, longer the closer to the mark, and the figure sits at the
+ * bar's end. A season is named over its events and this season's bars are the green ones. (Upright bars left each
+ * name a seventh of the card, so every one was cut to a stub.)
+ */
 function TrendBars({ points, data, state, note }: { points: TrendPoint[]; data: ChTourHistoryData; state: ChTourHistorySearch; note: string | null }) {
   const paths = useTourPaths();
-  const { lo, hi } = trendScale(points, 0.5);
+  // No room either side of the range: the best figure's bar is the whole track, the weakest the least a bar may be.
+  const { lo, hi } = trendScale(points, 0);
   const current = data.seasons[0]?.id;
+  const runs = seasonRuns(points);
   return (
     <div className="ch-tour-rev-trend is-phone">
       <p className="ch-tour-rev-trend__t">{WHAT[state.adjust].title}</p>
       <p className="ch-tour-rev-trend__s">Per round · lower is better · {lineup(state)}</p>
-      <ol className="ch-tour-rev-bars" style={{ gridTemplateColumns: `repeat(${Math.max(points.length, 1)}, minmax(0, 1fr))` }}>
-        {points.map((p) => (
-          <li key={p.event.id}>
-            <Link href={paths.desk(p.event.id)} className={'ch-tour-rev-bar' + (p.event.seasonId === current ? ' is-now' : '')} aria-label={label(p)}>
-              <b className="ch-num">{p.value == null ? <NoData /> : formatSigned(p.value, 1)}</b>
-              <i style={{ height: p.value == null ? 14 : 14 + (1 - trendY(p.value, lo, hi)) * 70 }} />
-              <span>{p.event.short}</span>
-            </Link>
-          </li>
-        ))}
-      </ol>
+      <div className="ch-tour-rev-bars">
+        {runs.map((r) => {
+          const season = data.seasons.find((x) => x.id === r.seasonId)?.label;
+          return (
+            <section key={r.from} className="ch-tour-rev-bars__g" aria-label={season}>
+              {season && runs.length > 1 && <p className="ch-tour-rev-bars__k ch-num">{season}</p>}
+              <ol>
+                {points.slice(r.from, r.to + 1).map((p) => (
+                  <li key={p.event.id}>
+                    <Link href={paths.desk(p.event.id)} className={'ch-tour-rev-bar' + (p.event.seasonId === current ? ' is-now' : '')} aria-label={label(p)}>
+                      <span className="ch-tour-rev-bar__n">{p.event.name}</span>
+                      <span className="ch-tour-rev-bar__t">
+                        <i style={{ '--ch-tour-rev-len': p.value == null ? 0 : Math.round((BAR_MIN + (1 - trendY(p.value, lo, hi)) * (1 - BAR_MIN)) * 1000) / 1000 } as CSSProperties} />
+                        <b className="ch-num">{p.value == null ? <NoData /> : formatSigned(p.value, 1)}</b>
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          );
+        })}
+      </div>
       {note && <p className="ch-tour-rev-trend__note">{note}</p>}
     </div>
   );

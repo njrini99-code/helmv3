@@ -7,7 +7,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
  * localStorage, so pins are per device until 11h. Storage can be absent or refuse writes (private mode, quota): every access is
  * guarded, and the list in memory still works for the visit. A new pin goes at the end, so a coach's arrangement stays steady.
  */
-export const PIN_LIMIT = 3;
+import { PIN_LIMIT } from './pin-limit';
+
+export { PIN_LIMIT };
 const keyOf = (viewer: string, team: string) => `ch:msg:pinned:${viewer}:${team}`;
 
 export function readPinned(viewer: string, team: string): string[] {

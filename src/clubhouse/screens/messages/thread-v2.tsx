@@ -2,16 +2,48 @@
 
 import { ArrowDown } from 'lucide-react';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react';
-import { CH_FADE_MS, chSpringCurve, CH_EASE, chSpringAt, CH_DUR, CH_SPRING_SETTLE_MS } from '../../lib/motion';
+import { CH_FADE_MS, chSpringCurve, CH_SPRING_SETTLE_MS, CH_MS } from '../../lib/motion';
+import { useChReducedMotion } from '../../lib/reduced-motion';
 import { Icon } from '../../ui/Icon';
 import { THREAD_SETTLE_MS } from './use-thread-anchor';
+import { msAnimate, springScroll } from './motion/messages-motion';
+import { stampSend } from './thread/send-stamps';
+import { HOUSE_EASE, JUMP_FAR, JUMP_SCALE, PILL_GAP, PILL_HIDE_MS, SEND_KEY_SCALE_FROM, planSendRise, playSendRise } from './motion/messages-beats';
 
-const DATE_PILL_HIDE_MS = 1000;
+/** One day marker's box, in viewport px, for the floating date pill. */
+export interface PillMarker {
+  top: number;
+  bottom: number;
+  label: string;
+}
 
-/** The day of the topmost visible message, shown while the thread scrolls and hidden 1 second after it stops (S-MSG.date-pill). */
+/**
+ * MSG-210 / MOT-X-1: which day the floating pill names, and whether a marker is close enough to take it over. The day is
+ * the last marker that has gone above the pill's own spot; within PILL_GAP of any marker (above or below the spot) the
+ * pill is `linked` and its opacity follows the scroll (`near / PILL_GAP`), so it never stacks on a marker.
+ */
+export function pillRead(markers: readonly PillMarker[], spot: { top: number; bottom: number }, gap = PILL_GAP): { label: string | null; near: number; linked: boolean; opacity: number } {
+  let label: string | null = null;
+  let near = Infinity;
+  for (const m of markers) {
+    if (m.top < spot.top) label = m.label;
+    const d = m.bottom < spot.top ? spot.top - m.bottom : m.top > spot.bottom ? m.top - spot.bottom : 0;
+    near = Math.min(near, d);
+  }
+  const linked = label != null && near < gap;
+  return { label, near, linked, opacity: linked ? Math.max(0, Math.min(1, near / gap)) : 1 };
+}
+
+/**
+ * The day of the topmost message that has passed the pill's own spot, shown while the thread scrolls and hidden a second after it stops
+ * (MSG-210). The pill's spot is an always-mounted anchor (`.ch-msv-datepillspot`) so it can be measured before the pill shows.
+ */
 export function ThreadDatePill({ scroller, forced = false }: { scroller: RefObject<HTMLElement | null>; forced?: boolean }) {
   const [label, setLabel] = useState<string | null>(null);
   const [on, setOn] = useState(forced);
+  const [linked, setLinked] = useState(false);
+  const spot = useRef<HTMLDivElement | null>(null);
+  const pill = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     const el = scroller.current;
     if (!el) return;
@@ -20,19 +52,27 @@ export function ThreadDatePill({ scroller, forced = false }: { scroller: RefObje
     const read = () => {
       frame = 0;
       const top = el.getBoundingClientRect().top;
-      let day: string | null = null;
-      let inFlow = false;
-      for (const d of Array.from(el.querySelectorAll<HTMLElement>('.ch-ms-day'))) {
-        const at = d.getBoundingClientRect();
-        // Trap 6: a day pill already on screen near the top says the day, so the floating one doesn't double it.
-        if (at.bottom > top && at.top < top + 60) inFlow = true;
-        if (at.top > top + 8) break;
-        day = d.querySelector('span')?.firstChild?.textContent ?? d.textContent;
-      }
-      setLabel(day);
-      setOn(day != null && !inFlow);
+      const box = spot.current?.getBoundingClientRect();
+      // jsdom has no layout: with a spot that has no box the pill sits at the scroller's top.
+      const at = box && (box.top !== 0 || box.height !== 0) ? { top: box.top, bottom: pill.current?.getBoundingClientRect().bottom ?? box.top } : { top: top + 8, bottom: top + 8 };
+      const markers: PillMarker[] = Array.from(el.querySelectorAll<HTMLElement>('.ch-ms-day')).map((d) => {
+        const r = d.getBoundingClientRect();
+        return { top: r.top, bottom: r.bottom ?? r.top, label: d.querySelector('span')?.firstChild?.textContent ?? d.textContent ?? '' };
+      });
+      const r = pillRead(markers, at);
+      setLabel(r.label);
+      setLinked(r.linked);
+      setOn(r.label != null && !r.linked);
+      const node = pill.current;
+      if (node) node.style.opacity = r.linked ? String(r.opacity) : '';
       window.clearTimeout(timer);
-      if (!forced) timer = window.setTimeout(() => setOn(false), DATE_PILL_HIDE_MS);
+      if (!forced) {
+        timer = window.setTimeout(() => {
+          setOn(false);
+          setLinked(false);
+          if (pill.current) pill.current.style.opacity = '';
+        }, PILL_HIDE_MS);
+      }
     };
     const onScroll = () => {
       if (!frame) frame = requestAnimationFrame(read);
@@ -45,20 +85,26 @@ export function ThreadDatePill({ scroller, forced = false }: { scroller: RefObje
       if (frame) cancelAnimationFrame(frame);
     };
   }, [scroller, forced]);
-  if (!label) return null;
   return (
-    <div className={'ch-msv-datepill' + (on ? ' is-on' : '')} aria-hidden="true">
-      {label}
-    </div>
+    <>
+      <div ref={spot} className="ch-msv-datepillspot" aria-hidden="true" />
+      {label && (
+        <div ref={pill} className={'ch-msv-datepill' + (on ? ' is-on' : '') + (linked ? ' linked' : '')} aria-hidden="true">
+          {label}
+        </div>
+      )}
+    </>
   );
 }
 
 /**
- * The jump key (S-MSG.jump): a 40 glass circle with the unseen count, shown more than 0.9 of the scroller's height above the end, or
- * whenever something arrived unseen. It pops in on `pop` and leaves on 160ms (CSS). The count hides once the reader reaches the end.
+ * The jump key (MSG-211): a 40 glass circle with the unseen count, shown only once the reader is more than 0.9 of the scroller's
+ * height above the end (a count alone never shows it). It scales in from 0.6 on `pop`, leaves in 160 ms to 0.8, and a return
+ * mid-leave pops from the live frame on the same node (MC-09). Reduce Motion crossfades both. The count hides at the end.
  */
 export function ThreadJumpKey({ scroller, unseen, onJump }: { scroller: RefObject<HTMLElement | null>; unseen: number; onJump: () => void }) {
   const [far, setFar] = useState(false);
+  const reduced = useChReducedMotion();
   useEffect(() => {
     const el = scroller.current;
     if (!el) return;
@@ -68,7 +114,7 @@ export function ThreadJumpKey({ scroller, unseen, onJump }: { scroller: RefObjec
     let settling = el.scrollTop === 0 && el.scrollHeight <= el.clientHeight;
     const read = () => {
       frame = 0;
-      if (!settling) setFar(el.scrollHeight - el.clientHeight - el.scrollTop > el.clientHeight * 0.9);
+      if (!settling) setFar(el.scrollHeight - el.clientHeight - el.scrollTop > el.clientHeight * JUMP_FAR);
     };
     const onScroll = () => {
       if (!frame) frame = requestAnimationFrame(read);
@@ -81,19 +127,23 @@ export function ThreadJumpKey({ scroller, unseen, onJump }: { scroller: RefObjec
     const input = ['wheel', 'touchstart', 'pointerdown', 'keydown'] as const;
     for (const t of input) el.addEventListener(t, settled, { passive: true, once: true });
     el.addEventListener('scroll', onScroll, { passive: true });
+    // The keyboard or a turn changes how far the end is, with no scroll to say so.
+    const resized = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(onScroll);
+    resized?.observe(el);
     read();
     return () => {
       clearTimeout(timer);
       for (const t of input) el.removeEventListener(t, settled);
+      resized?.disconnect();
       el.removeEventListener('scroll', onScroll);
       if (frame) cancelAnimationFrame(frame);
     };
   }, [scroller]);
-  // M-MSG-24a, b: leaving is a fade from the live values, and coming back mid-fade pops from there on the same node (case 9).
-  const wanted = far || unseen > 0;
+  const wanted = far;
   const [mounted, setMounted] = useState(wanted);
   const key = useRef<HTMLButtonElement | null>(null);
   const leave = useRef<Animation | null>(null);
+  const shown = useRef(false);
   if (wanted && !mounted) setMounted(true);
   useLayoutEffect(() => {
     const el = key.current;
@@ -102,25 +152,33 @@ export function ThreadJumpKey({ scroller, unseen, onJump }: { scroller: RefObjec
       return;
     }
     if (wanted) {
-      if (!leave.current) return;
-      const live = getComputedStyle(el);
-      const from = { opacity: live.opacity, transform: live.transform };
-      leave.current.onfinish = null;
-      leave.current.cancel();
-      leave.current = null;
-      const curve = chSpringCurve('pop');
-      el.animate([from, { opacity: 1, transform: 'none' }], { duration: curve.ms, easing: curve.linear });
+      if (leave.current) {
+        // Back mid-leave: pop from where the key is now, on the same node (MOT-JMP-1, MC-09).
+        const live = getComputedStyle(el);
+        const from = { opacity: live.opacity, transform: live.transform };
+        leave.current.onfinish = null;
+        leave.current.cancel();
+        leave.current = null;
+        msAnimate(el, [from, { opacity: 1, transform: 'none' }], 'pop', { reduced });
+      } else if (!shown.current) {
+        msAnimate(el, [{ opacity: 0, transform: `scale(${JUMP_SCALE.from})` }, { opacity: 1, transform: 'none' }], 'pop', { reduced });
+      }
+      shown.current = true;
       return;
     }
+    shown.current = false;
     const live = getComputedStyle(el);
-    const gone = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'none' : 'scale(0.8)';
-    const out = el.animate([{ opacity: live.opacity, transform: live.transform }, { opacity: 0, transform: gone }], { duration: CH_DUR.quick * 1000, easing: `cubic-bezier(${CH_EASE.join(', ')})`, fill: 'forwards' });
+    const out = msAnimate(el, [{ opacity: live.opacity, transform: live.transform }, { opacity: 0, transform: `scale(${JUMP_SCALE.to})` }], null, { reduced, fill: 'forwards', timing: { ms: CH_MS.fillInk, easing: HOUSE_EASE } });
+    if (!out) {
+      setMounted(false);
+      return;
+    }
     out.onfinish = () => {
       leave.current = null;
       setMounted(false);
     };
     leave.current = out;
-  }, [wanted]);
+  }, [wanted, reduced]);
   if (!mounted) return null;
   return (
     <button ref={key} type="button" className="ch-msv-jump" aria-label={unseen > 0 ? `Jump to latest, ${unseen} new` : 'Jump to latest'} onClick={onJump}>
@@ -131,32 +189,14 @@ export function ThreadJumpKey({ scroller, unseen, onJump }: { scroller: RefObjec
 }
 
 /**
- * Jump to latest (M-MSG-24c): 921ms on `reveal`, the end re-read each frame so a message landing mid-glide is included. A wheel, a
- * touch or a press on the thread stops it where it is. Reduce Motion: straight to the end.
+ * Jump to latest (MOT-JMP-3): `reveal` (921 ms) toward the live bottom, read from layout each frame so a message landing mid-glide is
+ * included. A wheel, a touch or a press on the thread stops it where it is. Reduce Motion: straight to the end.
  */
 export function useSpringToEnd(scroller: RefObject<HTMLElement | null>, toEnd: () => void, reduced: boolean): () => void {
   return () => {
     const el = scroller.current;
     if (!el || reduced) return toEnd();
-    const from = el.scrollTop;
-    const started = performance.now();
-    let frame = 0;
-    const stop = () => {
-      cancelAnimationFrame(frame);
-      for (const type of ['wheel', 'touchstart', 'pointerdown']) el.removeEventListener(type, stop);
-    };
-    for (const type of ['wheel', 'touchstart', 'pointerdown']) el.addEventListener(type, stop, { passive: true });
-    const step = (now: number) => {
-      const t = (now - started) / 1000;
-      if (t >= 0.921) {
-        stop();
-        toEnd();
-        return;
-      }
-      el.scrollTop = from + (el.scrollHeight - el.clientHeight - from) * chSpringAt('reveal', t);
-      frame = requestAnimationFrame(step);
-    };
-    frame = requestAnimationFrame(step);
+    springScroll(el, 'end', 'reveal', false);
   };
 }
 
@@ -304,7 +344,17 @@ export function useFaceFlight(enabled: boolean, reduced: boolean): void {
   }, [enabled, reduced]);
 }
 
-/** The real bubble rises from the field to its slot (M-MSG-07a): it starts over the field's text, on `send`, from its tail corner. A second send starts its own. Reduce Motion fades in place. */
+/**
+ * Send (MOT-SEND-6, -7; Q-19 fallback shape): the REAL bubble leaves the field. Up on `launch` (one soft overshoot), sideways on
+ * the house ease over 62% of it, scale .92 > 1 on `pop` from its lower left; a text bubble starts as the plain words exactly where
+ * they sat in the field and the green fill comes up under them in 160 ms; the tail grows in last; a file or poll also fades in.
+ * Several bubbles sent at once are delayed 40 ms and lifted 8 px a step. Reduce Motion: the bubble crossfades in place.
+ *
+ * Runs after useThreadMakeRoom, whose glide is already holding the rows low when the boxes are read: the bubble's resting place is
+ * its measured box less that hold, and the glide is cancelled on the new row alone (`counter`), so the bubble starts on the field
+ * and follows the launch spring only. (It used to subtract the row's height from a box that already included the hold, and so
+ * began one row above the field: the words never left the composer, they appeared over it.)
+ */
 export function useSendRise(scroller: RefObject<HTMLElement | null>, count: number, enabled: boolean, reduced: boolean): void {
   const seen = useRef(count);
   useLayoutEffect(() => {
@@ -312,27 +362,48 @@ export function useSendRise(scroller: RefObject<HTMLElement | null>, count: numb
     seen.current = count;
     const el = scroller.current;
     if (!enabled || !el || count <= before || before === 0) return;
-    const rows = el.querySelectorAll<HTMLElement>('.ch-ms-msg');
-    const row = rows[rows.length - 1];
-    if (!row?.classList.contains('is-mine')) return;
-    const bub = row.querySelector<HTMLElement>('.ch-ms-bub, .ch-ms-img');
-    if (!bub?.animate) return;
-    if (reduced) {
-      bub.animate([{ opacity: 0 }, { opacity: 1 }], { duration: CH_FADE_MS });
-      return;
-    }
+    const rows = Array.from(el.querySelectorAll<HTMLElement>('.ch-ms-msg'));
+    const added = Math.min(count - before, 4);
+    const fresh = rows.slice(-added);
+    if (!fresh[fresh.length - 1]?.classList.contains('is-mine')) return;
     const field = document.querySelector<HTMLElement>('.ch-ms-comp textarea');
-    if (!field) return;
-    const f = field.getBoundingClientRect();
-    const b = bub.getBoundingClientRect();
-    const d = row.getBoundingClientRect().height;
-    const curve = chSpringCurve('send');
-    bub.style.transformOrigin = '100% 100%';
-    bub.animate(
-      [{ transform: `translate(${f.left - 9 - b.left}px, ${f.bottom - b.bottom - d}px) scale(0.96)`, opacity: 0.85 }, { transform: 'none', opacity: 1 }],
-      { duration: curve.ms, easing: curve.linear },
-    );
+    const f = field?.getBoundingClientRect();
+    const glide = reduced ? null : readGlide(el.querySelector<HTMLElement>('.ch-ms-msgs'));
+    fresh.forEach((row, n) => {
+      if (!row.classList.contains('is-mine')) return;
+      stampSend(row.id.replace(/^ch-ms-message-/, ''));
+      const bub = row.querySelector<HTMLElement>('.ch-ms-bub, .ch-ms-img');
+      if (!bub?.animate) return;
+      if (reduced || !f) {
+        playSendRise(bub, planSendRise({ field: { left: 0, bottom: 0 }, bubble: { left: 0, bottom: 0 }, text: false }), { reduced: true });
+        return;
+      }
+      const b = bub.getBoundingClientRect();
+      const text = bub.classList.contains('ch-ms-bub') && !bub.classList.contains('ch-ms-bub--file');
+      const plan = planSendRise({ field: { left: f.left, bottom: f.bottom }, bubble: { left: b.left, bottom: b.bottom - (glide?.now ?? 0) }, text, step: fresh.length - 1 - n });
+      const line = row.querySelector<HTMLElement>('.ch-ms-msg__line');
+      playSendRise(bub, plan, {
+        reduced: false,
+        tail: bub.querySelector<HTMLElement>('.ch-msv-tail'),
+        carrier: row.querySelector<HTMLElement>('.ch-ms-msg__stack'),
+        counter: glide && line ? { el: line, from: glide.from, ms: glide.ms, easing: glide.easing } : null,
+        ink: text && field ? getComputedStyle(field).color : null,
+      });
+    });
   }, [scroller, count, enabled, reduced]);
+}
+
+/**
+ * The thread's make-room glide as it stands: how far it holds the list low right now (already in every measured box), where it
+ * began, and its clock, so a send can cancel it on its own row. Null when the list is not gliding (a reader further up, jsdom).
+ */
+function readGlide(list: HTMLElement | null): { now: number; from: number; ms: number; easing: string } | null {
+  const running = list?.getAnimations?.().find((a) => a.effect instanceof KeyframeEffect && a.effect.getKeyframes().some((k) => typeof k.transform === 'string' && k.transform !== 'none'));
+  if (!list || !running || typeof DOMMatrixReadOnly === 'undefined') return null;
+  const effect = running.effect as KeyframeEffect;
+  const timing = effect.getTiming();
+  const y = (transform: string) => (transform && transform !== 'none' ? new DOMMatrixReadOnly(transform).m42 : 0);
+  return { now: y(getComputedStyle(list).transform), from: y(String(effect.getKeyframes()[0]?.transform ?? 'none')), ms: Number(timing.duration) || 0, easing: String(timing.easing ?? 'linear') };
 }
 
 /** The send key: hidden with an empty field, springs in on `pop`, and shrinks out from where it is before it hides (M-MSG-06). */
@@ -353,8 +424,8 @@ export function useSendKeyPop(ready: boolean, reduced: boolean): { ref: RefObjec
     const live = getComputedStyle(el);
     const anim = el.animate(
       ready
-        ? [{ transform: 'scale(0.4)', opacity: 0 }, { transform: 'none', opacity: 1 }]
-        : [{ transform: live.transform === 'none' ? 'none' : live.transform, opacity: live.opacity }, { transform: 'scale(0.4)', opacity: 0 }],
+        ? [{ transform: `scale(${SEND_KEY_SCALE_FROM})`, opacity: 0 }, { transform: 'none', opacity: 1 }]
+        : [{ transform: live.transform === 'none' ? 'none' : live.transform, opacity: live.opacity }, { transform: `scale(${SEND_KEY_SCALE_FROM})`, opacity: 0 }],
       { duration: curve.ms, easing: curve.linear, fill: 'none' },
     );
     if (!ready) {

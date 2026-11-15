@@ -1,5 +1,6 @@
 'use client';
 
+import { useSheetKeyboardFit } from './sheet-keyboard';
 import { createContext, useContext, useEffect, useId, useRef, useState, type MouseEvent, type ReactNode, type SyntheticEvent } from 'react';
 import { haptic } from '../lib/haptics';
 import { useDialogLifetime } from '../lib/dialog-lifetime';
@@ -84,6 +85,7 @@ export interface FormSheetProps {
  */
 export function FormSheet({ open, onClose, title, actionLabel = 'Save', onAction, actionDisabled, danger, busy, dirty, full, code, note, children }: FormSheetProps) {
   const titleId = useId();
+  useSheetKeyboardFit(open);
   const [asking, setAsking] = useState(false);
   const { dialogProps, drag, requestClose, retainContent } = useSheetDialog(open, onClose, { busy, dirty, ask: () => setAsking(true) });
   // While open, a Back that would pop the page under this sheet asks it first, through the same close as Cancel.

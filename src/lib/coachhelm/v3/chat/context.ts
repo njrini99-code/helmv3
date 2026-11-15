@@ -44,6 +44,11 @@ export interface CoachChatContext {
   /** IANA zone from `golf_teams.timezone` (NOT NULL in the schema). */
   timezone: string;
   /**
+   * `golf_teams.gender` ('mens' or 'womens'): it decides which baseline the team's strokes gained is measured against.
+   * Optional, so a context built without it (older callers, tests) says nothing about it.
+   */
+  gender?: string | null;
+  /**
    * Every ACTIVE roster member. This is the authoritative roster — the count
    * here is what "how many players do I have" means, and it is never derived
    * from how many rows a later join happened to succeed on.
@@ -95,14 +100,12 @@ export async function resolveCoachChatContext(sb: Sb): Promise<CoachChatContext>
   const teamId = await resolveCoachTeamIdWithCookie(sb, coach.organization_id, coach.id);
   if (!teamId) throw new CoachContextError('No active team for this coach', 404);
 
-  const { data: team } = await sb
-    .from('golf_teams')
-    .select('id, name, timezone')
-    .eq('id', teamId)
-    .maybeSingle();
+  // The team row and the roster only need the team id, so they are read together (a missing team still answers 404; the roster read is then discarded).
+  const [{ data: team }, { roster, failed }] = await Promise.all([
+    sb.from('golf_teams').select('id, name, timezone, gender').eq('id', teamId).maybeSingle(),
+    loadActiveRosterResult(sb, teamId),
+  ]);
   if (!team) throw new CoachContextError('Active team not found', 404);
-
-  const { roster, failed } = await loadActiveRosterResult(sb, teamId);
 
   return {
     coach_id: coach.id,
@@ -110,6 +113,7 @@ export async function resolveCoachChatContext(sb: Sb): Promise<CoachChatContext>
     team_id: team.id,
     team_name: team.name,
     timezone: team.timezone,
+    gender: team.gender ?? null,
     roster,
     ...(failed ? { roster_failed: true } : {}),
   };
@@ -159,12 +163,15 @@ export async function loadActiveRosterResult(
 
   const { data: profiles } = await sb
     .from('golf_players')
-    .select('id, first_name, last_name, graduation_year')
+    .select('id, first_name, last_name, graduation_year, is_test')
     .in('id', memberIds);
 
   const byId = new Map((profiles ?? []).map((p) => [p.id, p]));
+  // An account marked as a test player is not on the roster Ask reads: it was named in answers and in the Ask home's
+  // "Since Monday" (preview, 12 Nov). The rounds reads already leave out test rounds; this leaves out the test player.
+  const flagged = new Set((profiles ?? []).filter((p) => p.is_test === true).map((p) => p.id));
 
-  const roster = memberIds.map((id) => {
+  const roster = memberIds.filter((id) => !flagged.has(id)).map((id) => {
     const p = byId.get(id);
     const name = `${p?.first_name ?? ''} ${p?.last_name ?? ''}`.trim();
     return {

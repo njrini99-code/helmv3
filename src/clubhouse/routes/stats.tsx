@@ -12,7 +12,6 @@ import { StatsPlayer } from '../screens/stats/StatsPlayer';
 import { EmptyState } from '../ui/States';
 import { Button } from '../ui/Button';
 import { resolveClubhouseTeam } from './team';
-import { statsRedesignEnabled } from '../gate';
 import { NoTeam } from '../ui/NoTeam';
 import '../styles/stats.css';
 import '../styles/stats-redesign.css';
@@ -22,26 +21,25 @@ import '../styles/stats-redesign.css';
  *   coach  - team stats, or ?player=<id> for any player on their team
  *   player - always their own profile; ?player= is ignored, never trusted
  * The team is always the caller's own (resolveClubhouseTeam), never one named in the address.
- * `?tab=` opens a profile tab (overview, game, rounds, dev). The round filter (window, type, from, to, course, only, skip) is
+ * `?tab=` opens a profile tab (overview, game, rounds, dev). `?area=` is production's stats-board address (scoring, driving, approach, short-game,
+ * putting, standing, rounds for a player; scoring, game, players for the team): on the phone it opens that area's detail, so a saved production link lands. The round filter (window, type, from, to, course, only, skip) is
  * read from `query` by `parseFilter`, which drops anything unusable; `window` alone is the older, narrower way in.
  */
-export async function ClubhouseStatsRoute({ player, window, tab, query }: { player?: string; window?: string; tab?: string; query?: ChFilterQuery }) {
+export async function ClubhouseStatsRoute({ player, window, tab, area, query }: { player?: string; window?: string; tab?: string; area?: string; query?: ChFilterQuery }) {
   const session = await getGolfSessionProfile();
   if (!session) return null;
   const team = await resolveClubhouseTeam(session);
   if (!team) return <StatsNoTeam coach={!!session.coach} />;
   const filter = parseFilter({ ...query, ...(window !== undefined ? { window } : {}) });
   const win = filter.window;
-  // The phone Stats redesign (clubhouse_stats_redesign_v1): read here, once, and passed down; no client module reads a flag.
-  const shs = statsRedesignEnabled();
 
   if (team.role === 'player') {
     // Game detail's "CoachHelm sees…" reads beside the profile, for the session's own player id (never the address's).
     const [profile, reads] = await Promise.all([
-      loadPlayerProfile({ viewer: 'player', teamId: team.teamId, playerId: team.playerId, window: win, filter, ...(shs ? { shs } : {}) }),
+      loadPlayerProfile({ viewer: 'player', teamId: team.teamId, playerId: team.playerId, window: win, filter }),
       loadStatsReads({ role: 'player', playerId: team.playerId }),
     ]);
-    return profile ? <StatsPlayer data={profile} coachId={null} initialTab={tab} reads={reads} shs={shs} /> : <NotOnTeam coach={false} />;
+    return profile ? <StatsPlayer data={profile} coachId={null} initialTab={tab} initialArea={area} reads={reads} /> : <NotOnTeam coach={false} />;
   }
 
   if (player) {
@@ -53,10 +51,10 @@ export async function ClubhouseStatsRoute({ player, window, tab, query }: { play
     const reads: Promise<ChStatsReads> = loadCoachPlayerScope({ coachId: team.coachId, teamId: team.teamId, playerId: player })
       .then(readsForScope)
       .catch((): ChStatsReads => ({ status: 'failed' }));
-    const profile = await loadPlayerProfile({ viewer: 'coach', teamId: team.teamId, playerId: player, window: win, filter, ...(shs ? { shs } : {}) });
-    return profile ? <StatsPlayer data={profile} coachId={team.coachId} initialTab={tab} reads={reads} shs={shs} /> : <NotOnTeam coach />;
+    const profile = await loadPlayerProfile({ viewer: 'coach', teamId: team.teamId, playerId: player, window: win, filter });
+    return profile ? <StatsPlayer data={profile} coachId={team.coachId} initialTab={tab} initialArea={area} reads={reads} /> : <NotOnTeam coach />;
   }
-  return <StatsTeam data={await loadTeamStats({ teamId: team.teamId, window: win, filter, ...(shs ? { shs } : {}) })} shs={shs} />;
+  return <StatsTeam data={await loadTeamStats({ teamId: team.teamId, window: win, filter })} initialArea={area} />;
 }
 
 export function StatsNoTeam({ coach }: { coach: boolean }) {
@@ -78,8 +76,9 @@ export function NotOnTeam({ coach }: { coach: boolean }) {
         body={coach ? 'They may have been removed, or the link is from another team.' : 'You aren’t on an active team roster right now.'}
         action={
           coach ? (
-            <Button size="sm" href="/golf/dashboard/stats">
-              Back to team stats
+            // The roster is where a coach sees who is on the team now, which is the question this page leaves open.
+            <Button size="sm" href="/golf/dashboard/roster">
+              Back to roster
             </Button>
           ) : undefined
         }

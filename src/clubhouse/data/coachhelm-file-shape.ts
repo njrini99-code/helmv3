@@ -9,7 +9,10 @@ import type { ChDeepInsight, ChDiveCleared } from './coachhelm-dive-shape';
 import type { ChLadder } from './coachhelm-ladder-shape';
 import type { ChCoachPlayerHead } from './coachhelm-views-shape';
 import type { ChHelmLifecycle } from './coachhelm-shape';
-import { formatSigned, formatFixed } from '../lib/format';
+import { changeTone, formatSigned, formatFixed } from '../lib/format';
+import { plural } from '../lib/plural';
+import type { ChFigures, ChLegKey } from './figure-window';
+import type { ChSgMix } from './stats-sg-mix';
 
 /** The file's shapes, pure and client-safe (coachhelm-lenses 02-PLAN 2.3). A coach-only card is simply absent from every shape built for a player or the lens. */
 
@@ -32,13 +35,22 @@ export interface ChFileSg {
   hasTeam: boolean;
   /** "Against the Tour, off the tee costs Eli 0.9 a round; against the team, 0.7." */
   note: string | null;
-  /** "All time · 21 rounds · strokes per round". */
+  /** "Last 10 rounds · strokes per round": the rounds the figures read. */
   source: string;
-  /** Totals-only rounds: every row is "—" and the note says why. */
+  /** The Standing page's own window ("All time", "This season"), said on the link to it: its legs are that window's, not these. */
+  standing?: string | null;
+  /** No figure to draw: every row is "—" and the note says why (`needs`). */
   needsHoles: boolean;
+  /** Why: no round posted hole by hole (`holes`), or fewer than the three such rounds a figure needs (`rounds`). Absent: read as `holes`. */
+  needs?: 'holes' | 'rounds' | null;
+  /** Of the rounds the legs read, how many were shot-tracked and how many estimated from the scorecard (stats-sg-mix.ts); null or absent when unread. */
+  mix?: ChSgMix | null;
 }
 
-/** One figure for one leg: as the ladder states it, with the team's tick only when the team is five or more (02 13.11). */
+/**
+ * The card from the Standing ladder's rows (`golf_player_standing`, a season or all time). The loaders no longer call this: the file
+ * reads `toChFileSgOver`, the rounds' own figures, so its legs are the hole's and Stats'. Kept for the Standing-sourced fixtures and tests.
+ */
 export function toChFileSg(ladder: ChLadder, rows: readonly PlayerStanding[], who: { you: boolean; first: string }, source: { window: string; rounds: number | null }): ChFileSg {
   const metric: Record<string, string> = { tee: 'sg_ott', approach: 'sg_approach', short_game: 'sg_around_green', putting: 'sg_putting' };
   const byMetric = new Map(rows.map((r) => [r.metric_id as string, r]));
@@ -71,6 +83,57 @@ export function toChFileSg(ladder: ChLadder, rows: readonly PlayerStanding[], wh
     source: `${source.window}${source.rounds != null ? ` · ${source.rounds} rounds` : ''} · strokes per round`,
     needsHoles: known.length === 0,
   };
+}
+
+/** The team's tick on the file needs this many players at the strokes-gained floor (S-FILE 14, 02 13.11). */
+export const FILE_TEAM_FLOOR = 5;
+
+const FILE_LEGS: ReadonlyArray<{ id: string; label: string; key: ChLegKey }> = [
+  { id: 'tee', label: 'Off the tee', key: 'tee' },
+  { id: 'approach', label: 'Approach', key: 'approach' },
+  { id: 'short_game', label: 'Around the green', key: 'around' },
+  { id: 'putting', label: 'Putting', key: 'putting' },
+];
+
+/** The window line under the card: the rounds the figures really read, so it can never be taken for another screen's window. */
+/** How many hole-by-hole rounds a strokes gained figure needs (`MIN_SG_ROUNDS`, season.ts; a test holds the two together). */
+export const FILE_SG_FLOOR = 3;
+
+export function fileSgSource(fig: Pick<ChFigures, 'rounds' | 'holeRounds'>): string {
+  if (fig.rounds === 0) return 'No counted rounds yet · strokes per round';
+  const window = fig.rounds >= 10 ? 'Last 10 rounds' : `Last ${plural(fig.rounds, 'round')}`;
+  return `${window}${fig.holeRounds < fig.rounds ? ` · ${fig.holeRounds} with hole scores` : ''} · strokes per round`;
+}
+
+/**
+ * "Where the strokes go" from the one strokes-gained source (owner rule: one number, one source). `fig` is `playerStrokesGained` over
+ * the player's rounds: their newest ten counted 18-hole rounds, which CoachHelm Team, Home, the roster and Stats' default all read, so
+ * a leg here is the leg on the hole and in Stats on Last 10, to the decimal. `team` is `teamStrokesGained` over the roster's same
+ * window, drawn only with five players at the floor; null for a player's own page, which never carries a figure built from teammates'
+ * rounds. Figures print to one decimal, as the hole and Stats print them.
+ */
+export function toChFileSgOver(fig: ChFigures, team: { legs: ReadonlyArray<number | null>; ready: { size: number } } | null, who: { you: boolean; first: string }): ChFileSg {
+  const teamLegs = team && team.ready.size >= FILE_TEAM_FLOOR ? team.legs : null;
+  const out: ChFileSgRow[] = FILE_LEGS.map((a, i) => {
+    const value = fig.legs[a.key];
+    // The tone of the figure as it prints: a leg that prints 0.0 has none (lib/format's changeTone, the one owner).
+    const toned = changeTone(value, false, 1);
+    return { id: a.id, label: a.label, strokes: value, figure: value == null ? '—' : formatSigned(value), tone: toned === 'is-gain' ? 'gain' : toned === 'is-loss' ? 'loss' : 'none', team: value == null ? null : (teamLegs?.[i] ?? null) };
+  });
+  const known = out.filter((r) => r.strokes != null);
+  const worst = known.length ? known.reduce((x, y) => ((y.strokes as number) < (x.strokes as number) ? y : x)) : null;
+  const costs = (v: number) => formatFixed(Math.abs(v), 1);
+  let note: string | null = null;
+  if (worst && Number(formatFixed(worst.strokes as number, 1)) < 0) {
+    note = `Against the Tour, ${worst.label.toLowerCase()} costs ${who.you ? 'you' : who.first} ${costs(worst.strokes as number)} a round`;
+    // "Against the team" only when the player is behind the team there, and by a figure that prints.
+    const gap = worst.team == null ? null : (worst.strokes as number) - worst.team;
+    note += gap != null && Number(formatFixed(gap, 1)) < 0 ? `; against the team, ${costs(gap)}.` : '.';
+  }
+  // No figure at all: either no round was posted hole by hole, or there are fewer than the three such rounds a figure needs. The card
+  // used to give the first reason for both, which told a player with two hole-by-hole rounds that those rounds were missing.
+  const needs = known.length > 0 ? null : fig.holeRounds > 0 ? ('rounds' as const) : ('holes' as const);
+  return { rows: out, hasTeam: out.some((r) => r.team != null), note, source: fileSgSource(fig), needsHoles: known.length === 0, needs };
 }
 
 /** The team's figure for one metric, with its floor (S-FILE 14): null below five. */
@@ -292,6 +355,11 @@ export interface ChFileCards {
   feat: ChDeepInsight | null;
   /** Team on the top read's own metric; null below five. */
   featTeam: number | null;
+  /**
+   * Where `featTeam` comes from when the read carries no team figure of its own: the standing rows' window ("all time", or "this
+   * season" once the season table is used). The Team cell says it, so it is never read as Team stats' window figure.
+   */
+  featTeamBasis?: string | null;
   reads: ChDeepInsight[];
   cleared: ChDiveCleared[];
   dismissed: ChFileDismissed[];

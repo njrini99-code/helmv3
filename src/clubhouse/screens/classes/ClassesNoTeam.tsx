@@ -8,7 +8,7 @@ import { NoTeam } from '../../ui/NoTeam';
 export function ClassesNoTeam() {
   return (
     <main className="ch-cl is-noteam" aria-labelledby="ch-cl-title" data-canopy="">
-      <header className="ch-cl-h" data-canopy-head="">
+      <header className="ch-cl-h" data-canopy-head="tight">
         <div>
           <h1 id="ch-cl-title">Classes</h1>
         </div>

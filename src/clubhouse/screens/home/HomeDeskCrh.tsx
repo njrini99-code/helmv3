@@ -1,17 +1,19 @@
 'use client';
 
-import { TriangleAlert } from 'lucide-react';
+import { CalendarPlus, TriangleAlert } from 'lucide-react';
 import Link from 'next/link';
 import type { ChCoachHome, ChHomeEvent } from '../../data/home';
 import { TYPE_LABEL } from '../calendar/model';
 import { TYPE_ICON } from '../calendar/views';
 import { CALENDAR, eventHref, whenLabel } from './event-links';
+import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { EmptyState } from '../../ui/States';
 import { useChClockText } from '../../lib/use-clock';
 import { formatToPar } from '../../lib/format';
 import { Avatar } from '../../ui/Avatar';
 import { rebuiltHref } from '../../shell/nav';
+import { latestRows } from './model';
 
 /** The rows Latest rounds shows (06 11). */
 const DESK_ROUNDS = 4;
@@ -47,7 +49,7 @@ export function DeskNext({ e, now }: { e: ChHomeEvent; now: Date | null }) {
 }
 
 /** A card's title over a hairline, with the card's one link on the right when that route is rebuilt (06 §1.3). */
-function DeskHead({ id, title, href, link }: { id: string; title: string; href: string | null; link: string }) {
+export function DeskHead({ id, title, href, link }: { id: string; title: string; href: string | null; link: string }) {
   return (
     <div className="ch-dh-card__h">
       <h2 id={id} className="ch-dh-card__t">
@@ -82,6 +84,7 @@ export function DeskToday({ events, now }: { events: readonly ChHomeEvent[]; now
               <li key={e.id}>
                 <Link href={eventHref(e)} className="ch-dh-rows__a">
                   <span className="ch-dh-time ch-num">{e.allDay ? 'All day' : t12(e.startLabel)}</span>
+                  <i className={`ch-dh-dot is-${e.type}`} aria-hidden="true" />
                   <span className="ch-dh-rows__b">
                     <b>{e.title}</b>
                     {e.location && <span>{e.location}</span>}
@@ -89,7 +92,7 @@ export function DeskToday({ events, now }: { events: readonly ChHomeEvent[]; now
                   {e.conflict ? (
                     <span className="ch-dh-clash" title="Overlaps another event">
                       <Icon icon={TriangleAlert} size={13} />
-                      Clash
+                      Overlap
                     </span>
                   ) : live ? (
                     <span className="ch-hm-now">Now</span>
@@ -104,30 +107,53 @@ export function DeskToday({ events, now }: { events: readonly ChHomeEvent[]; now
   );
 }
 
+/** Today on the first run, before anything is on the calendar: the card says what will show here and offers the first event. */
+export function DeskTodayFirst() {
+  return (
+    <section className="ch-dh-card" aria-labelledby="ch-dh-today">
+      <DeskHead id="ch-dh-today" title="Today" href={CALENDAR} link="Calendar" />
+      <EmptyState
+        compact
+        kind="first-run"
+        code="CH-2301"
+        title="Nothing on the calendar today"
+        body="New events show here with who’s going."
+        action={
+          <Button size="sm" leftIcon={CalendarPlus} href="/golf/dashboard/calendar?new=1">
+            New event
+          </Button>
+        }
+      />
+    </section>
+  );
+}
+
 /**
- * Latest rounds: the newest four, not tappable (06 11), the score in a well over its to-par. A failed or empty read takes today's
- * section, in the caller. No sparkline: a round row carries no per-round line of its own, and a trend counts other rounds.
+ * Latest rounds: the newest four rows, not tappable (06 11), the score in a well over its to-par. One player's rounds of one
+ * event fold into one row over the event's total (W4). A failed or empty read takes today's section, in the caller. The form
+ * line that sat beside each score is gone: it had no key, and the leaderboard below draws the same rounds under "Last 7 rounds".
  */
 export function DeskRounds({ rounds }: { rounds: ChCoachHome['latestRounds']['rounds'] }) {
+  const shown = latestRows(rounds, DESK_ROUNDS);
   return (
     <section className="ch-dh-card" aria-labelledby="ch-dh-rounds">
       <DeskHead id="ch-dh-rounds" title="Latest rounds" href={rebuiltHref('/golf/dashboard/stats')} link="Team stats" />
       <ul className="ch-dh-rows ch-dh-rows--rounds">
-        {rounds.slice(0, DESK_ROUNDS).map((r) => (
-          <li key={r.id}>
+        {shown.map((r) => (
+          <li key={r.key}>
             <Avatar name={r.playerName} id={r.playerId} size="sm" />
             <span className="ch-dh-rows__b">
               <b>{r.playerName}</b>
               <span>{r.meta}</span>
             </span>
-            <span className={'ch-dh-score ch-num' + (r.toPar != null && r.toPar < 0 ? ' is-under' : '')}>
+            <span className={'ch-dh-score ch-num' + (r.toPar != null && r.toPar < 0 ? ' is-under' : '')} role={r.scores ? 'img' : undefined} aria-label={r.scores ? `Total ${r.score}, ${formatToPar(r.toPar)}` : undefined}>
               <b>{r.score}</b>
               <em>{formatToPar(r.toPar)}</em>
             </span>
           </li>
         ))}
       </ul>
-      {rounds.length < DESK_ROUNDS && <p className="ch-dh-rest">New rounds show here as players post them.</p>}
+      {shown.length < DESK_ROUNDS && <p className="ch-dh-rest">New rounds show here as players post them.</p>}
     </section>
   );
 }

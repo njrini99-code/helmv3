@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { LazyMotion, domAnimation } from 'motion/react';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -227,42 +229,6 @@ describe('CH-13923 the sub-tab strip', () => {
   });
 });
 
-describe('the new chat page (desktop)', () => {
-  it('CH-13721 greets with the team, offers the openers as pills that send with the select haptic, and says who the answers cover', async () => {
-    const { chat } = show();
-    expect(screen.getByRole('heading', { name: 'What do you want to know about Finley University?' })).toBeInTheDocument();
-    expect(screen.getByText('Answers come from your recorded rounds, signals and schedule.')).toBeInTheDocument();
-    const pills = within(screen.getByRole('list', { name: 'Questions to start with' })).getAllByRole('button');
-    expect(pills.map((b) => b.textContent)).toEqual(['Brief me on Finley University', 'Where is the team losing the most strokes?', 'Who is trending up this month?', "What’s on this week?"]);
-    await userEvent.click(pills[1]!);
-    expect(chat.calls.send).toHaveBeenCalledWith('Where is the team losing the most strokes?');
-    expect(hapticSpy).toHaveBeenCalledWith('select');
-    expect(screen.getByText('6 of 8 players have a round in the last 30 days. Answers cover those 6. As of 2:00 PM.')).toBeInTheDocument();
-  });
-
-  it('D4 the findings block is the Board’s header line now: Ask draws no "Since you were last here", no finding and none of its states', () => {
-    const findings = [{ id: 'a', category: 'Putting', headline: 'Downhill putts dropped to 58%', evidence: 'Uphill is 81%.', tone: 'attention' as const, ask: 'Why are we missing short putts?', link: null }];
-    show(ready({ pulse: { findings, coverage: null, asOfLabel: null } }));
-    expect(screen.queryByRole('region', { name: 'Since you were last here' })).toBeNull();
-    expect(screen.queryByText('Downhill putts dropped to 58%')).toBeNull();
-    cleanup();
-    show(ready({ pulse: { findings: [], coverage: null, asOfLabel: null } }));
-    expect(code('CH-13325')).toBeNull();
-    cleanup();
-    show(ready({ pulse: null }));
-    expect(code('CH-13223')).toBeNull();
-    expect(code('CH-13322')).toBeNull();
-    expect(screen.getByRole('textbox', { name: 'Ask CoachHelm' })).toBeInTheDocument();
-  });
-
-  it('CH-13322 players and no recorded round is "Nothing to report yet", and the chat is still there', () => {
-    show(ready(PREVIEW_ASK_NOROUNDS));
-    expect(code('CH-13322')?.textContent).toMatch(/Nothing to report yet.*No player has a recorded round yet\. You can still ask about your roster and schedule\./);
-    expect(screen.getByRole('textbox', { name: 'Ask CoachHelm' })).toBeInTheDocument();
-    expect(within(screen.getByRole('list', { name: 'Questions to start with' })).getAllByRole('button').map((b) => b.textContent)).toEqual(["What’s on this week?"]);
-  });
-});
-
 describe('the composer', () => {
   it('Enter sends on a fine pointer, with the press haptic, and the box empties; Shift+Enter is a new line', async () => {
     const { chat } = show();
@@ -283,14 +249,12 @@ describe('the composer', () => {
     expect(box().value).toBe('にほん');
   });
 
-  it('without a fine pointer Enter is a new line and only Send sends', async () => {
+  it('on a phone the blue send key sends: Enter does what its label says (MOB-ASK)', async () => {
     fine = false;
     const { chat } = show();
     await userEvent.type(box(), 'Hello{Enter}');
-    expect(chat.calls.send).not.toHaveBeenCalled();
-    expect(box().value).toBe('Hello\n');
-    await userEvent.click(screen.getByRole('button', { name: 'Send' }));
-    expect(chat.calls.send).toHaveBeenCalledWith('Hello');
+    expect(chat.calls.send).toHaveBeenCalledTimes(1);
+    expect(box().value).toBe('');
   });
 
   it('Send is off until there is text', async () => {
@@ -460,28 +424,18 @@ describe('the composer', () => {
     expect(box().value).toBe('Brief me');
   });
 
-  it('CH-13920 a pill tapped offline is refused the same way', async () => {
-    const { chat } = show();
-    setOnline(false);
-    await userEvent.click(screen.getByRole('button', { name: 'Brief me on Finley University' }));
-    expect(chat.calls.send).not.toHaveBeenCalled();
-    await waitFor(() => expect(code('CH-1903')).not.toBeNull());
-  });
-
-  it('CH-13120 while an action card awaits Confirm or Cancel, Send is off and Enter sends nothing, and the box says why', async () => {
+  it('while an action card waits the composer stays open: a new question is sent (the server sets the card aside first), and the box says so', async () => {
     const { chat } = show(ready({ thread: { id: 'c-putting', title: 'Putting inside 6 feet', messages: ASK_MSGS_ACTION } }), fakeChat());
+    expect(box().placeholder).toBe('Ask, or answer the card');
     await userEvent.type(box(), 'What about Eli?{Enter}');
-    expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled();
-    expect(chat.calls.send).not.toHaveBeenCalled();
-    expect(code('CH-13120')?.textContent).toBe('Confirm or cancel the action above first');
-    expect(box()).toHaveAccessibleDescription('Confirm or cancel the action above first');
-    expect(box().value).toBe('What about Eli?');
+    expect(chat.calls.send).toHaveBeenCalledWith('What about Eli?');
+    expect(code('CH-13120')).toBeNull();
   });
 
-  it('CH-13120 a pill or a follow-up sent over a waiting card is not sent either', async () => {
+  it('a pill or a follow-up sent over a waiting card is sent too', async () => {
     const { chat } = show(ready({ thread: { id: 'c-putting', title: 'Putting inside 6 feet', messages: ASK_MSGS_ACTION } }), fakeChat());
     await userEvent.click(screen.getByRole('button', { name: 'stub follow-up' }));
-    expect(chat.calls.send).not.toHaveBeenCalled();
+    expect(chat.calls.send).toHaveBeenCalled();
   });
 
   it('CH-13421 while a reply streams Send is Stop, and Stop is silent', async () => {
@@ -515,6 +469,40 @@ describe('the composer', () => {
     await userEvent.type(box(), 'Second');
     view.rerenderWith(ready(), fakeChat({ error: new Error('x') }));
     expect(box().value).toBe('Second');
+  });
+});
+
+describe('a stream that ends with no answer', () => {
+  const asked: UIMessage[] = [{ id: 'u1', role: 'user', parts: [{ type: 'text', text: 'Who should play Saturday?' }] } as UIMessage];
+  const noticeOf = () => JSON.parse(screen.getByTestId('thread-props').textContent ?? '{}').error as { message: string; recovery: string } | null;
+
+  it('says the answer did not finish and offers Retry, instead of showing the question alone', () => {
+    show(ready({ thread: { id: 'c', title: 't', messages: asked } }), fakeChat());
+    expect(noticeOf()).toEqual({ message: "This answer didn't finish coming through.", recovery: 'retry' });
+  });
+
+  it('Retry asks the same question again through the hook, once', async () => {
+    const { chat } = show(ready({ thread: { id: 'c', title: 't', messages: asked } }), fakeChat());
+    await userEvent.click(screen.getByRole('button', { name: 'stub retry' }));
+    expect(chat.calls.retry).toHaveBeenCalledTimes(1);
+    expect(chat.calls.send).not.toHaveBeenCalled();
+  });
+
+  it('is also said when the answer holds only progress steps', () => {
+    const steps: UIMessage[] = [...asked, { id: 'a1', role: 'assistant', parts: [{ type: 'data-progress', id: 's1', data: { label: 'Reading the team', state: 'active' } }] } as unknown as UIMessage];
+    show(ready({ thread: { id: 'c', title: 't', messages: steps } }), fakeChat());
+    expect(noticeOf()?.message).toBe("This answer didn't finish coming through.");
+  });
+
+  it('is not said while the reply is still streaming, after an answer, or when a real error is showing', () => {
+    show(ready({ thread: { id: 'c', title: 't', messages: asked } }), fakeChat({ busy: true }));
+    expect(noticeOf()).toBeNull();
+    cleanup();
+    show(ready({ thread: { id: 'c', title: 't', messages: ASK_MSGS_ANSWER } }), fakeChat());
+    expect(noticeOf()).toBeNull();
+    cleanup();
+    show(ready({ thread: { id: 'c', title: 't', messages: asked } }), fakeChat({ error: new Error('Something went wrong') }));
+    expect(noticeOf()?.message).toBe('Something went wrong');
   });
 });
 
@@ -564,26 +552,6 @@ describe('the composer on the phone', () => {
 describe('the new chat page (phone)', () => {
   beforeEach(() => {
     phoneState.on = true;
-  });
-
-  it('draws the greeting and the shortcut cards (three at most), no pills and no findings, and keeps the tab bar', async () => {
-    const { chat } = show();
-    expect(screen.getByRole('heading', { name: 'What do you want to know about Finley University?' })).toBeInTheDocument();
-    const cards = within(screen.getByRole('list', { name: 'Questions to start with' })).getAllByRole('button');
-    expect(cards.map((c) => c.textContent)).toEqual(['Brief meon Finley University', 'Losing strokeswhere the team loses most', 'Trending upwho’s improving this month']);
-    expect(document.querySelector('.ch-ask-pills')).toBeNull();
-    expect(screen.queryByRole('region', { name: 'Since you were last here' })).toBeNull();
-    expect(screen.getByTestId('probe')).toHaveAttribute('data-notabs', 'false');
-    await userEvent.click(cards[0]!);
-    expect(chat.calls.send).toHaveBeenCalledWith('Brief me on Finley University');
-  });
-
-  it('the one-row box invites a first question on a new chat, and asks for a follow-up inside a thread', () => {
-    show();
-    expect(screen.getByRole('textbox', { name: 'Ask CoachHelm' })).toHaveAttribute('placeholder', 'Ask about a player, a stat, or the week');
-    cleanup();
-    show(ready({ thread: { id: 'c', title: 't', messages: ASK_MSGS_ANSWER } }), fakeChat());
-    expect(screen.getByRole('textbox', { name: 'Reply to CoachHelm' })).toHaveAttribute('placeholder', 'Ask a follow-up');
   });
 
   it('CH-13322 with no recorded round the greeting carries the nothing-to-report line, and the cards are only what the data supports', () => {
@@ -665,6 +633,18 @@ describe('History: the standing panel (desktop)', () => {
     expect(document.querySelector('.ch-ask-head')!.querySelector('button')).toBeNull();
   });
 
+  it("a player's Ask on a desk has no chats column, so the conversation is the body's first track, and New chat is in the header", () => {
+    // Owner's preview, 11 Nov 2026: the coach's empty chats column held a player's whole Ask in 280px.
+    show(ready({ role: 'player' }));
+    const body = document.querySelector('.ch-ask-body')!;
+    expect(body.classList.contains('is-solo')).toBe(true);
+    expect(body.classList.contains('has-panel')).toBe(false);
+    expect(body.firstElementChild?.classList.contains('ch-ask-main')).toBe(true);
+    const head = within(document.querySelector('.ch-ask-head') as HTMLElement);
+    expect(head.queryByRole('button', { name: 'Show chats' })).toBeNull();
+    expect(head.getByRole('button', { name: 'New chat' })).toBeInTheDocument();
+  });
+
   it('New chat starts a fresh thread at once (no server trip), clears the address and closes the evidence', async () => {
     const { chat } = show(ready({ thread: { id: 'c-putting', title: 'Putting inside 6 feet', messages: ASK_MSGS_ANSWER } }), fakeChat(), undefined);
     await userEvent.click(within(screen.getByRole('complementary', { name: 'Chats' })).getByRole('button', { name: 'New chat' }));
@@ -702,7 +682,10 @@ describe('History: the phone drawer', () => {
     expect(drawer().open).toBe(false);
     await userEvent.click(screen.getByRole('button', { name: 'Chats' }));
     expect(drawer().open).toBe(true);
-    expect(within(drawer()).getByText('Chats', { selector: 'b' })).toBeInTheDocument();
+    // Its title takes focus as it opens, not New chat: a tap-opened drawer shows no ring and no tooltip on a key.
+    const title = within(drawer()).getByRole('heading', { name: 'Chats' });
+    await waitFor(() => expect(title).toHaveFocus());
+    expect(within(drawer()).getByRole('button', { name: 'New chat' })).not.toHaveFocus();
     fireEvent(drawer(), new Event('cancel', { cancelable: true }));
     await waitFor(() => expect(drawer().open).toBe(false));
 
@@ -713,6 +696,13 @@ describe('History: the phone drawer', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Chats' }));
     await userEvent.click(within(drawer()).getByRole('link', { name: 'Weekly brief, Sept 29' }));
     await waitFor(() => expect(drawer().open).toBe(false));
+  });
+
+  it('a row centres its title on the 44 line, with no padding above it, so a group heading sits midway between rows', () => {
+    const css = readFileSync(join(__dirname, '../styles/coachhelm-ask.css'), 'utf8');
+    const rule = css.slice(css.indexOf('.ch-ask-drawer .ch-ask-hist__row {'), css.indexOf('}', css.indexOf('.ch-ask-drawer .ch-ask-hist__row {')));
+    expect(rule).toMatch(/line-height: 44px;/);
+    expect(rule).toMatch(/padding-block: 0;/);
   });
 
   it('CH-13621 a drag to the left past 80px closes it; a nudge of a few pixels leaves it open', async () => {
@@ -769,6 +759,18 @@ describe('the container', () => {
     expect(screen.getByTestId('thread')).toBeInTheDocument();
     expect(document.querySelector('.ch-ask-dock')).not.toBeNull();
     expect(screen.getByText('CoachHelm reads Finley University data only. Check the numbers before you act on them.')).toBeInTheDocument();
+  });
+
+  it('G7 on a desk’s new chat the line follows the question box inside the page, not pinned under the scroller, where the box ran beneath it', () => {
+    show();
+    const foot = screen.getByText('CoachHelm reads Finley University data only. Check the numbers before you act on them.');
+    const page = document.querySelector('.ch-ask-scroll.is-home') as HTMLElement;
+    expect(page.contains(foot)).toBe(true);
+    expect(page.lastElementChild).toBe(foot);
+    const question = document.querySelector('.ch-ask-cmp.is-hero') as HTMLElement;
+    expect(page.contains(question)).toBe(true);
+    expect(question.compareDocumentPosition(foot) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(document.querySelectorAll('.ch-ask-foot')).toHaveLength(1);
   });
 
   it('hands the thread the failed answer as a sentence with what to offer, by the rule of the stream route', () => {

@@ -8,7 +8,7 @@ import { askTables } from '@/lib/coachhelm/v3/chat/ask-db';
 import { logServerError } from '@/lib/server-error-logger';
 import { isCustomerEmailEnabled } from '@/lib/email/outbound-gate';
 import { sendOpsAlert } from '@/lib/admin/digest/transport';
-import { isPlayerAskEnabled } from '@/lib/coachhelm/v3/chat/ask-flag';
+import { getAppBaseUrl } from '@/lib/app-base-url';
 import { weekStart } from '@/lib/coachhelm/v3/chat/player-allowance';
 import { resolvePlayerChatContext } from '@/lib/coachhelm/v3/chat/player-context';
 
@@ -18,13 +18,12 @@ const UNDO_MS = 8_000;
  * Request more: the player's one write. The row is the 8 second hold (HM4): Undo deletes it before `release_at`, and the release alone sends. It follows HELM_CUSTOMER_EMAIL_ENABLED: off means logged, no email (DECISIONS).
  */
 async function requestAskCreditsImpl(note?: string): Promise<{ success: boolean; id?: string; error?: string }> {
-  if (!isPlayerAskEnabled()) return { success: false, error: 'Ask is off.' };
   const sb = await createClient();
   const ctx = await resolvePlayerChatContext(sb).catch(() => null);
   if (!ctx) return { success: false, error: 'Unauthorized' };
   const admin = createAdminClient();
   const { data, error } = await askTables(admin).from('ask_credit_requests')
-    .insert({ player_id: ctx.player_id, team_id: ctx.team_id, week_start: weekStart(new Date(), ctx.timezone), note: note?.trim().slice(0, 280) || null, release_at: new Date(Date.now() + UNDO_MS).toISOString() } as never)
+    .insert({ player_id: ctx.player_id, team_id: ctx.team_id, week_start: weekStart(new Date(), ctx.timezone), note: note?.trim().slice(0, 280) || '', release_at: new Date(Date.now() + UNDO_MS).toISOString() } as never)
     .select('id')
     .maybeSingle();
   if (error) {
@@ -37,6 +36,11 @@ async function requestAskCreditsImpl(note?: string): Promise<{ success: boolean;
   return { success: true, id };
 }
 
+/**
+ * After the Undo window, release the request and tell ops. The e-mail carries the request id and the team only (security review
+ * 2026-11-11, finding 5; owner: "Request number and team only"): a player's name and free-text note never travel by e-mail.
+ * Ops reads both in the admin console (`/admin/golf#ask-requests`, `AskRequestsPanel`).
+ */
 async function releaseRequest(id: string, teamName: string): Promise<void> {
   await new Promise((r) => setTimeout(r, UNDO_MS));
   const admin = createAdminClient();
@@ -44,15 +48,18 @@ async function releaseRequest(id: string, teamName: string): Promise<void> {
     .update({ released_at: new Date().toISOString() } as never)
     .eq('id', id)
     .is('released_at', null)
-    .select('id, note')
+    .select('id')
     .maybeSingle();
-  const row = error ? null : (data as { id: string; note: string | null } | null);
+  const row = error ? null : (data as { id: string } | null);
   if (!row) return; // Undone.
   if (!isCustomerEmailEnabled()) {
     await logServerError('ask credits request held by the email gate', { action: 'coachhelm.ask.requestCredits', extra: { requestId: id } }, 'warning');
     return;
   }
-  const sent = await sendOpsAlert({ subject: `Ask: more requested (${teamName})`, text: row.note ?? 'A player asked for more Ask this week.' });
+  const sent = await sendOpsAlert({
+    subject: `Ask: request for more (${teamName})`,
+    text: `Request ${id} on ${teamName} asked for more Ask this week.\n\nWho asked and their note: ${getAppBaseUrl()}/admin/golf#ask-requests`,
+  });
   if (sent.sent) await askTables(admin).from('ask_credit_requests').update({ sent_at: new Date().toISOString() } as never).eq('id', id);
 }
 

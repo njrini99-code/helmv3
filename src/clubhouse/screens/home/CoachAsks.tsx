@@ -36,7 +36,8 @@ export function CoachAsks({ asks }: { asks: ChPlayerAsks | null | undefined }) {
           <Fragment key={p}>
             {i > 0 && ' '}
             <span className="ch-ph-asks__p">
-              {i > 0 ? '· ' : ''}
+              {/* The dot is in the words for a reader; on a phone the stylesheet draws it between parts on a line instead. */}
+              {i > 0 && <span className="ch-ph-asks__dot">· </span>}
               {p}
             </span>
           </Fragment>

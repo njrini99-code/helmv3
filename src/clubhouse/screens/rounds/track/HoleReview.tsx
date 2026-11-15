@@ -1,7 +1,7 @@
 'use client';
 
 import type { Dispatch } from 'react';
-import { ArrowRight, Pencil, Send, TriangleAlert, Undo2 } from 'lucide-react';
+import { Pencil, TriangleAlert } from 'lucide-react';
 import type { ShotAction } from '@/hooks/golf/use-shot-state-machine';
 import type { DistancePreference } from '@/lib/golf/distance-units';
 import type { RoundHole, ShotRecord } from '@/lib/types/golf';
@@ -18,23 +18,22 @@ import { UndoConfirm } from './ShotEntry';
  * A holed-out hole (board "Shot review"): every stroke, tap one to change it.
  * The round screen moves on by itself once the hole is saved, so this shows
  * while the hole saves (CH-11402), when the save failed (CH-11003, with Retry)
- * and when the player goes back to a finished hole (then "Back to hole N").
- * Once every hole is in, its footer action is "Review and post" (CH-11910), in
- * the thumb zone rather than only under the top bar.
+ * and when the player goes back to a finished hole. It stands in the shot
+ * card, where the shot was, and its actions are the bar's keys under the card
+ * (ShotEntry): Undo, then "Back to hole N" or, once every hole is in, "Review
+ * and post" (CH-11910) in Next shot's place, in the thumb zone. The card and
+ * the bar stay where they are as the hole is holed (owner, 2026-11-11).
  */
 export function HoleReview({
   hole,
   shots,
   pref,
   checkpointStatus,
-  backTo,
-  onReviewRound,
   showUndoConfirm,
   undoSaving,
   undoError,
   dispatch,
   onEditShot,
-  onNavigateToHole,
   onRetryCheckpoint,
   onUndoLastShot,
 }: {
@@ -42,22 +41,17 @@ export function HoleReview({
   shots: ShotRecord[];
   pref: DistancePreference;
   checkpointStatus: 'idle' | 'saving' | 'failed';
-  /** The next unplayed hole, when the player is looking back at a finished one. */
-  backTo: { index: number; number: number } | null;
-  /** Every hole is in: opens the finished round to post it. */
-  onReviewRound?: () => void;
   showUndoConfirm: boolean;
   undoSaving: boolean;
   undoError: string | null;
   dispatch: Dispatch<ShotAction>;
   onEditShot: (shot: ShotRecord) => void;
-  onNavigateToHole: (index: number) => void;
   onRetryCheckpoint: () => void;
   onUndoLastShot: () => void;
 }) {
   const saving = checkpointStatus === 'saving';
   return (
-    <section className="ch-rt-panel ch-rt-review" aria-label={`Hole ${hole.number} shots`}>
+    <section className="ch-rt-review" aria-label={`Hole ${hole.number} shots`}>
       <div className="ch-rt-review__h">
         <b>Shot review</b>
         <span>Tap a shot to change it</span>
@@ -107,21 +101,6 @@ export function HoleReview({
         ))}
       </ol>
       {showUndoConfirm && <UndoConfirm shots={shots} saving={undoSaving} error={undoError} dispatch={dispatch} onUndo={onUndoLastShot} />}
-      <div className="ch-rt-review__f">
-        <Button variant="ghost" leftIcon={Undo2} disabled={saving || undoSaving} onClick={() => dispatch({ type: 'SHOW_UNDO_CONFIRM' })}>Undo last shot</Button>
-        {backTo && (
-          <button type="button" className="ch-btn ch-btn--primary ch-btn--lg" disabled={saving} onClick={() => onNavigateToHole(backTo.index)}>
-            <span>Back to hole {backTo.number}</span>
-            <Icon icon={ArrowRight} size={16} />
-          </button>
-        )}
-        {onReviewRound && (
-          <button type="button" className="ch-btn ch-btn--primary ch-btn--lg" disabled={saving || undoSaving} onClick={onReviewRound}>
-            <span>Review and post</span>
-            <Icon icon={Send} size={16} />
-          </button>
-        )}
-      </div>
     </section>
   );
 }

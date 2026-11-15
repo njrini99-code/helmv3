@@ -9,7 +9,9 @@ import { chLogServer } from '../lib/track-server';
 import { assignedByInsight, countCountableRounds, drillTextByInsight, earliestStaleFloor, handled, loadPlayerDismissed, loadVisible, newestRounds, PLAYER_FEED_LIMIT, playerTeam } from './coachhelm';
 import { kindOf } from './coachhelm-classify';
 import { boardMissing } from './coachhelm-shape';
-import { diveCounts, exampleRoundIds, orderDive, roundIdsToRead, themesByCategory, toChDeepInsight, toDiveCleared, type ChDeepDive, type ChDeepInsight, type DiveFocusRow, type DiveRoundRow } from './coachhelm-dive-shape';
+import { diveCounts, exampleRoundIds, orderDive, roundIdsToRead, roundWindowOf, themesByCategory, toChDeepInsight, toDiveCleared, type ChDeepDive, type ChDeepInsight, type DiveFocusRow, type DiveRoundRow } from './coachhelm-dive-shape';
+import { SOURCE_ROUND_IDS_CAP } from '@/lib/coachhelm/v3/engine/source-rounds';
+import type { InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
 import { readEngineFlags, readFocusVerdicts } from './coachhelm-engine';
 import { readCorrections } from './coachhelm-corrections';
 import { shapeReadsLifecycle } from './coachhelm-engine-shape';
@@ -44,6 +46,31 @@ export async function readRounds(supabase: Supabase, playerId: string, ids: stri
     for (const r of res.data ?? []) out.set(r.id, r);
   }
   return out;
+}
+
+/**
+ * The rounds behind the one read a page opens, when the read names none (READ-S2): rows written before the engine stamped its rounds
+ * carry a window and no ids, and the same rule gives the same rounds (source-rounds.ts). `[]`: no read to look up, it names its own, or
+ * it has no window. `null`: the read failed, which the card says as a failure, never as "no rounds".
+ */
+export async function readWindowRounds(supabase: Supabase, playerId: string, ev: InsightEvidence | undefined): Promise<DiveRoundRow[] | null> {
+  if (!ev || (Array.isArray(ev.source_round_ids) && ev.source_round_ids.length > 0)) return [];
+  const window = roundWindowOf(ev, new Date().toISOString().slice(0, 10));
+  if (!window) return [];
+  let read = supabase
+    .from('golf_rounds')
+    .select('id, round_date, course_name, total_score, score_to_par, holes_played')
+    .eq('player_id', playerId)
+    .eq('is_test', false)
+    .eq('status', 'completed')
+    .lte('round_date', window.to);
+  if (window.from) read = read.gte('round_date', window.from);
+  const res = await read.order('round_date', { ascending: false }).limit(SOURCE_ROUND_IDS_CAP);
+  if (res.error) {
+    log('dive.window-rounds', res.error);
+    return null;
+  }
+  return res.data ?? [];
 }
 
 /**
@@ -112,7 +139,7 @@ export async function loadPlayerDeepDive(input: { playerId: string }): Promise<C
 }
 
 /** The Deep dive's one read, with the raw rows. `drawn` narrows what counts as shown: the read page records only the read it shows. */
-export async function playerDiveCore(input: { playerId: string }, opts: { drawn?: (list: readonly ChDeepInsight[], feedOrder: readonly string[]) => string[] } = {}): Promise<{ load: ChViewLoad<ChDeepDive>; raw: ReadonlyMap<string, EvidenceInsight> }> {
+export async function playerDiveCore(input: { playerId: string }, opts: { drawn?: (list: readonly ChDeepInsight[], feedOrder: readonly string[]) => string[]; behind?: string } = {}): Promise<{ load: ChViewLoad<ChDeepDive>; raw: ReadonlyMap<string, EvidenceInsight> }> {
   let raw: ReadonlyMap<string, EvidenceInsight> = new Map();
   const load = await playerDiveLoad(input, opts, (m) => {
     raw = m;
@@ -120,7 +147,7 @@ export async function playerDiveCore(input: { playerId: string }, opts: { drawn?
   return { load, raw };
 }
 
-async function playerDiveLoad(input: { playerId: string }, opts: { drawn?: (list: readonly ChDeepInsight[], feedOrder: readonly string[]) => string[] }, keep: (raw: ReadonlyMap<string, EvidenceInsight>) => void): Promise<ChViewLoad<ChDeepDive>> {
+async function playerDiveLoad(input: { playerId: string }, opts: { drawn?: (list: readonly ChDeepInsight[], feedOrder: readonly string[]) => string[]; behind?: string }, keep: (raw: ReadonlyMap<string, EvidenceInsight>) => void): Promise<ChViewLoad<ChDeepDive>> {
   const { playerId } = input;
   // CH13-21: only the cards this page draws count as shown, and with coachhelm_recheck_v1 on it knows that only once the lifecycle
   // shaping has dropped the cleared reads, the retired contradictions and a pair's second member. Every return says which ids it drew
@@ -168,7 +195,7 @@ async function playerDiveLoad(input: { playerId: string }, opts: { drawn?: (list
     const viewer = { role: 'player' } as const;
     const shaped = shapeReadsLifecycle(drawn, flags.recheck, viewer, now);
     keep(new Map(drawn.map((i) => [i.id, i])));
-    const [drills, assigned, newest, rounds, plans, themes, focus, corrections] = await Promise.all([
+    const [drills, assigned, newest, rounds, plans, themes, focus, corrections, windowRounds] = await Promise.all([
       drillTextByInsight(supabase, drawn),
       assignedByInsight(
         supabase,
@@ -186,6 +213,7 @@ async function playerDiveLoad(input: { playerId: string }, opts: { drawn?: (list
       ),
       // The player's own Not this / Good read on their reads (coachhelm_corrections_v1; null with it off or the table missing).
       readCorrections(supabase, { role: 'player', teamIds: team.teamId ? [team.teamId] : [], reads: shaped.kept.map((i) => ({ id: i.id, playerId })) }),
+      readWindowRounds(supabase, playerId, drawn.find((i) => i.id === opts.behind)?.evidence),
     ]);
     const newestRound = newest.days.get(playerId) ?? null;
     // One viewer for the card, the words and the Read: the signed-in player (a player never sees an inferred cause).
@@ -199,14 +227,14 @@ async function playerDiveLoad(input: { playerId: string }, opts: { drawn?: (list
         viewer,
         engine: { flags, lifecycle: shaped.byId.get(raw.id) ?? null, focus: focus.get(raw.id) ?? null, now, corrections: corrections?.get(raw.id) ?? null },
       });
-      return toChDeepInsight(raw, base, { rounds: rounds ?? new Map(), focusAreas: plans?.focusAreas ?? [], goals: plans?.goals ?? [], themes }, say, viewer.role);
+      return toChDeepInsight(raw, base, { rounds: rounds ?? new Map(), ...(raw.id === opts.behind ? { windowRounds: windowRounds ?? [] } : {}), focusAreas: plans?.focusAreas ?? [], goals: plans?.goals ?? [], themes }, say, viewer.role);
     }));
     // A failed team read (or Tour read) leaves every read without its Tour comparison: the page says so, not "no comparison".
     const missing = boardMissing({ drills: drills.error, assigned: assigned.error, newest: newest.error, tour: team.error || team.tourError });
     return done(
       {
         status: 'ready',
-        data: { list, tour: tourName, rounds: null, themes: themesByCategory(themes), roundsFailed: rounds === null, plansFailed: plans === null, themesFailed: themes === null, counts: diveCounts(list), ...(missing ? { missing } : {}), ...(shaped.clearedReads.length > 0 ? { cleared: shaped.clearedReads.map((c) => toDiveCleared(c.read, c.line)) } : {}) },
+        data: { list, tour: tourName, rounds: null, themes: themesByCategory(themes), roundsFailed: rounds === null || windowRounds === null, plansFailed: plans === null, themesFailed: themes === null, counts: diveCounts(list), ...(missing ? { missing } : {}), ...(shaped.clearedReads.length > 0 ? { cleared: shaped.clearedReads.map((c) => toDiveCleared(c.read, c.line)) } : {}) },
       },
       opts.drawn?.(list, drawn.map((i) => i.id)) ?? list.map((i) => i.base.id),
     );

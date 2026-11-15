@@ -1,4 +1,5 @@
 import 'server-only';
+import { roundTypeFromDb } from '@/lib/golf/round-type-utils';
 import { createClient } from '@/lib/supabase/server';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
@@ -8,8 +9,10 @@ import { chLogServer } from '../lib/track-server';
 import { homeClock, ymd } from './home-clock';
 import { classYearKey, type ChYearKey } from '../lib/class-year';
 import { playerStrokesGained } from './figure-window';
-import { classYearLabel, countsForScoring, fullName, groupByPlayer, isFull18, lastTenFloor, loadSeasonRounds, mean, MIN_SG_ROUNDS, seasonStartDate, summarizePlayer, type ChForm, type ChRound } from './season';
+import { classYearLabel, countsForScoring, fullName, groupByPlayer, isFull18, lastTenFloor, loadSeasonRounds, mean, MIN_SG_ROUNDS, roundsForSpan, seasonStartDate, summarizePlayer, type ChForm, type ChRound } from './season';
+import { spanFloorsLeaderboard, spanSince, spanStart, type ChSpan } from './span';
 import { LEGS, sgLegs, teamGrid, type ChLeg } from './stats-team';
+import { teamStrokesGained } from './stats-team-sg';
 import { legRows } from './leg-rows';
 import { loadCoachQueue, type ChCoachQueue } from './home-queue';
 import { teamRankRows, type TeamRankMetric, type TeamRankRow } from '../screens/stats/team-rank';
@@ -23,13 +26,14 @@ import { rsvpOf } from './calendar';
 import { parseAvailability, type ChAvailability } from './availability';
 import { playerMine, playerSeesMeeting, replyClosedAt, type ChRsvp } from '../screens/calendar/model';
 import { loadAttendanceCounts, loadInvitedCounts, type ChAttendanceCounts } from './attendance-counts';
-import { confirmedLine, daysBetween, homeSubline, inviteDetail } from '../screens/home/model';
+import { compareLeaderRows, confirmedLine, daysBetween, homeSubline, inviteDetail } from '../screens/home/model';
 import { firstName } from '../lib/names';
 import { weekdayMonthDay } from '../lib/dates';
 import type { MarkEntries } from '../lib/marks-cookie';
 import type { ChCalChange } from '../screens/calendar/change-view';
 import type { ChHomeChange } from '../screens/home/change-rows';
 import { loadHomeChanges, withChange, withWas } from './home-changes';
+import { HOME_TRIP_COLUMNS, tripBack, tripDates, tripLeaves, tripTitle, type ChHomeTripRow } from './home-trips';
 
 export { classYearLabel, formStatus } from './season';
 export { homeClock } from './home-clock';
@@ -55,6 +59,11 @@ export interface ChHomeDay {
   hasCompetition: boolean;
   /** The day's competition, for its mark (calendar TYPE_ICON): a tournament outranks a qualifier on the same day. */
   competitionType: 'tournament' | 'qualifier' | null;
+  /**
+   * The trip the team is on, leaving or coming home that day, by Team Hub's name for it (F-0001); null when none. A trip is
+   * a mark on the day, not one of its events (`eventCount`). Absent on an older fixture.
+   */
+  trip?: string | null;
 }
 
 export interface ChAgendaRow {
@@ -86,6 +95,11 @@ export interface ChLatestRound {
   meta: string;
   /** The day it was played, YYYY-MM-DD. */
   date?: string;
+  /** The course's name and the day's short label ("Wed 21 Oct"), so a run of one event's rounds can be told as one row (W4). */
+  course?: string | null;
+  day?: string;
+  /** Tournament and qualifier rounds of one event fold into one row on the desk; practice rounds never do (W4). */
+  kind?: 'practice' | 'tournament' | 'qualifier';
   score: number;
   toPar: number | null;
   /** Null when the round was posted as a total, without hole-by-hole detail. */
@@ -160,6 +174,12 @@ export interface ChHomeEvent {
   conflict: boolean;
   /** Coach only: the event asks for replies and the server would still take one (not started, not past its deadline). */
   replyOpen?: boolean;
+  /**
+   * A team trip with no calendar event of its own (F-0001), drawn as an all-day row from leaving to coming home: `id` is the
+   * itinerary's (the row opens it on Team Hub), `leaves` the departure as an instant when a time is saved (the countdown's
+   * end), `back` the last day (YYYY-MM-DD). Absent on an event.
+   */
+  trip?: { id: string; leaves: string | null; back: string };
 }
 
 /**
@@ -167,6 +187,8 @@ export interface ChHomeEvent {
  * rounds this season against each player's ten before (`teamForm`).
  */
 export interface ChTeamForm {
+  /** `all`: every 18-hole round, practice included, on Fairway's rules (span.ts); no previous window to set it against. Absent is each player's last 10. */
+  span?: ChSpan;
   avg: number;
   /** Against each player's previous ten; null when no player has three rounds before their newest ten. */
   delta: number | null;
@@ -174,6 +196,9 @@ export interface ChTeamForm {
   deltaSe?: number | null;
   /** The team's average on each of its last ten round days (the rounds the average rests on), oldest to newest, for the line. */
   line: number[];
+  /** Each point's day (YYYY-MM-DD) and how many rounds it averages, so the chart can name its ends and its best and worst days (W27/W3). Absent on an older fixture. */
+  lineDays?: string[];
+  lineCounts?: number[];
   /** Countable rounds of either length in the team-local Monday-to-Sunday week: a count on its own basis, not the figures'. */
   roundsThisWeek: number;
   /** What the average, greens and putts rest on: the rounds, their first and last dates, and how many carry greens and putts. */
@@ -253,8 +278,11 @@ export interface ChCoachHome {
   clock?: ChHomeClock;
   week: { days: ChHomeDay[]; agenda: ChAgendaRow[]; error: boolean };
   /** holesError: the rounds loaded but their hole-by-hole detail didn't. */
-  latestRounds: { rounds: ChLatestRound[]; error: boolean; holesError: boolean };
-  leaderboard: { rows: ChLeaderRow[]; scorecards: number; rosterSize: number; error: boolean };
+  /** `recent`: the newest rounds without holes (up to RECENT_ROUNDS), for the desk's list, which folds one event's rounds into a row (W4). */
+  latestRounds: { rounds: ChLatestRound[]; recent?: ChLatestRound[]; error: boolean; holesError: boolean };
+  leaderboard: { rows: ChLeaderRow[]; scorecards: number; rosterSize: number; error: boolean; /** The basis the rows are read on (span.ts). Absent is the season. */ span?: ChSpan };
+  /** The basis Home's team figures are read on (`?range=all` is All time). Absent is the default: the figures' own windows. */
+  span?: ChSpan;
   /** Behind the lane's flag: each rostered player's class year, for the coins. */
   yearById?: Record<string, ChYearKey>;
   /** The phone Home's extra reads (docs/clubhouse/phone/home.md). Each follows its source's error flag. */
@@ -266,6 +294,8 @@ export interface ChCoachHome {
     form: ChTeamForm | null;
     /** The first competition later this week, for the week strip's note. */
     weekNote: { weekday: string; title: string } | null;
+    /** With nothing left this week (`next` null), the first event or trip after it (F-0006); null when nothing is ahead. Optional for fixtures. */
+    after?: ChHomeEvent | null;
   };
   /** The team's four parts under the form (desktop and phone); null when the rounds didn't load or there are none. Optional for fixtures. */
   legs?: ChTeamLegs | null;
@@ -317,8 +347,6 @@ export function wideEventWindow(now: Date): { from: string; to: string } {
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 export async function loadCoachHome(input: {
-  /** `clubhouse_classes_roster_home_v1`: practice rounds leave the averages, and each player's year reaches the coins. */
-  crh?: boolean;
   teamId: string;
   coachName: string;
   /** For Team Hub's announcements read (the queue); it reads the session itself. */
@@ -327,6 +355,8 @@ export async function loadCoachHome(input: {
   coachId?: string | null;
   /** The device's seen and cleared change marks (phone-hint.ts `marksHint`). */
   marks?: MarkEntries;
+  /** `all`: the team's scoring on Fairway's rules, every round ever posted (span.ts). Absent: as before. */
+  span?: ChSpan;
 }): Promise<ChCoachHome> {
   const supabase = await createClient();
   const now = new Date();
@@ -357,7 +387,8 @@ export async function loadCoachHome(input: {
     const players = rosterOf(res);
     if (res.error || players.length === 0) return { rounds: [], error: !!res.error };
     // The team's form is Stats' Last 10, which reaches back across seasons (Q-122): read as far as it does; the rest of Home is this season.
-    return loadSeasonRounds(supabase, players.map((p) => p.id), { surface: 'home', since: lastTenFloor() });
+    // All time reads every round there is.
+    return loadSeasonRounds(supabase, players.map((p) => p.id), { surface: 'home', since: spanSince(input.span, lastTenFloor()) });
   });
   const playerById = rosterRead.then((res) => new Map(rosterOf(res).map((p) => [p.id, p])));
   // The season turns on 1 August in the team's zone (owner decision 9), the clock's.
@@ -400,7 +431,7 @@ export async function loadCoachHome(input: {
     changesRead,
   ]);
   if (teamRes.error) log('team', teamRes.error);
-  // CH-2208: without the team chat, Message team opens Messages instead.
+  // Home has no Message team action now; the read stays logged so a failing chat read is still seen.
   if (chatRes.error) log('team chat', chatRes.error);
 
   // ── Roster ──
@@ -415,14 +446,15 @@ export async function loadCoachHome(input: {
   // ── Season rounds ──
   const { rounds: readRounds, error: roundsError } = seasonRead;
   // Behind the lane's flag, practice rounds stay out of every scoring figure below (DECISIONS); Latest rounds is read apart and lists them.
-  const rounds = input.crh ? readRounds.filter(countsForScoring) : readRounds;
+  // All time (span.ts) is Fairway's basis instead: every round type, and no round posted as a total only.
+  const rounds = roundsForSpan(readRounds, input.span);
   const full = rounds.filter(isFull18);
-  const start = seasonStartDate(now, tz);
+  const start = spanStart(input.span, seasonStartDate(now, tz));
   const seasonRounds = seasonOnly(rounds, start);
   const seasonFull = seasonOnly(full, start);
 
   // ── Latest rounds with hole-by-hole (read above, as soon as the rounds were in) ──
-  const { rounds: latestRounds, holesError } = latest;
+  const { rounds: latestRounds, recent: recentRounds, holesError } = latest;
 
   // ── Leaderboard ──
   const byPlayer = groupByPlayer(seasonFull);
@@ -458,13 +490,18 @@ export async function loadCoachHome(input: {
     });
   }
   // C-24(d): an early read (fewer than three 18-hole rounds) never outranks a player with a sample; ties go to more rounds, then the name.
-  const early = (r: ChLeaderRow) => (r.status === 'early' ? 1 : 0);
-  rows.sort((a, b) => early(a) - early(b) || a.avg - b.avg || b.rounds - a.rounds || a.name.localeCompare(b.name));
+  // Ties are read at the printed precision, as Fairway's Top performers does (compareLeaderRows).
+  const floor = spanFloorsLeaderboard(input.span);
+  rows.sort((a, b) => compareLeaderRows(a, b, floor));
 
   // ── Phone: the team's form ──
-  const form = roundsError ? null : teamForm(full, rounds.filter((r) => r.round_date.slice(0, 10) >= weekStart && r.round_date.slice(0, 10) <= weekEnd).length);
+  const week = rounds.filter((r) => r.round_date.slice(0, 10) >= weekStart && r.round_date.slice(0, 10) <= weekEnd).length;
+  const form = roundsError ? null : teamForm(full, week, input.span);
   // ── The team's four parts, on the form's rounds ──
-  const legs = form ? teamLegs({ full, players: roster, cache, bench, tour: teamRes.error || !teamRes.data ? null : tourForGender(teamRes.data.gender) }) : null;
+  // The parts are each player's last ten (Stats' Last 10, across seasons within the read's year) whichever basis the average is on: All time reads
+  // further back and keeps practice, so the parts are cut back to the rounds and the year they are read on by default.
+  const partsFull = input.span === 'all' ? readRounds.filter(countsForScoring).filter(isFull18).filter((r) => r.round_date.slice(0, 10) >= lastTenFloor(now)) : full;
+  const legs = form ? teamLegs({ full: partsFull, players: roster, cache, bench, tour: teamRes.error || !teamRes.data ? null : tourForGender(teamRes.data.gender) }) : null;
 
   return {
     teamId: input.teamId,
@@ -478,16 +515,20 @@ export async function loadCoachHome(input: {
     todayLabel,
     clock: { tz, day },
     week: { ...wk.week, agenda: withWas(wk.week.agenda, changes.byEvent) },
-    latestRounds: { rounds: latestRounds, error: roundsError, holesError },
-    leaderboard: { rows, scorecards: seasonFull.length, rosterSize: roster.length, error: roundsError },
-    phone: { next: withChange(wk.next, changes.byEvent), today: wk.todayEvents.map((e) => withChange(e, changes.byEvent)), form, weekNote: wk.weekNote },
+    latestRounds: { rounds: latestRounds, recent: recentRounds, error: roundsError, holesError },
+    leaderboard: { rows, scorecards: seasonFull.length, rosterSize: roster.length, error: roundsError, ...(input.span === 'all' ? { span: input.span } : {}) },
+    ...(input.span === 'all' ? { span: input.span } : {}),
+    phone: { next: withChange(wk.next, changes.byEvent), today: wk.todayEvents.map((e) => withChange(e, changes.byEvent)), form, weekNote: wk.weekNote, after: wk.after },
     legs,
-    ...(input.crh ? { yearById: Object.fromEntries(roster.flatMap((p) => { const y = classYearKey(p.graduation_year, now, tz); return y ? [[p.id, y]] : []; })) } : {}),
+    yearById: Object.fromEntries(roster.flatMap((p) => { const y = classYearKey(p.graduation_year, now, tz); return y ? [[p.id, y]] : []; })),
     queue,
     changes: changes.rows,
     marks: input.marks ?? [],
   };
 }
+
+/** The desk's Latest rounds reads this many, so four rows remain after an event's rounds fold into one (W4). */
+const RECENT_ROUNDS = 12;
 
 /**
  * The newest three 18-hole rounds with their hole-by-hole card (null for a
@@ -498,7 +539,7 @@ export async function latestWithHoles(
   supabase: Awaited<ReturnType<typeof createClient>>,
   full: ChRound[],
   nameFor: (playerId: string) => string,
-): Promise<{ rounds: ChLatestRound[]; holesError: boolean }> {
+): Promise<{ rounds: ChLatestRound[]; recent: ChLatestRound[]; holesError: boolean }> {
   const latest = full.slice(0, 3);
   const holesByRound = new Map<string, ChHoleScore[]>();
   let holesError = false;
@@ -516,14 +557,18 @@ export async function latestWithHoles(
     }
   }
   const dateFmt = new Intl.DateTimeFormat('en-GB', { timeZone: 'UTC', weekday: 'short', day: 'numeric', month: 'short' });
-  const rounds = latest.map((r) => {
+  const toRow = (r: ChRound): ChLatestRound => {
     const holes = holesByRound.get(r.id);
+    const day = dateFmt.format(new Date(`${r.round_date.slice(0, 10)}T12:00:00Z`));
     return {
       id: r.id,
       playerId: r.player_id,
       playerName: nameFor(r.player_id),
-      meta: [r.course_name, dateFmt.format(new Date(`${r.round_date.slice(0, 10)}T12:00:00Z`)), r.tees_played ? `${r.tees_played} tees` : null].filter(Boolean).join(' · '),
+      meta: [r.course_name, day, teesLabel(r.tees_played)].filter(Boolean).join(' · '),
       date: r.round_date.slice(0, 10),
+      course: r.course_name,
+      day,
+      kind: r.round_type ? roundTypeFromDb(r.round_type) : 'practice',
       score: r.total_score ?? 0,
       toPar: r.score_to_par,
       holes: holes && holes.length === 18 ? holes : null,
@@ -532,8 +577,16 @@ export async function latestWithHoles(
       putts: recordedPutts(r.total_putts),
       sg: r.strokes_gained_total,
     };
-  });
-  return { rounds, holesError };
+  };
+  return { rounds: latest.map(toRow), recent: full.slice(0, RECENT_ROUNDS).map(toRow), holesError };
+}
+
+
+/** "Blue tees"; a tee name that already says tees ("Jeff Roope Invite Tees") is not given a second one (W4). */
+export function teesLabel(tees: string | null): string | null {
+  const t = tees?.trim();
+  if (!t) return null;
+  return /\btees?\b/i.test(t) ? t : `${t} tees`;
 }
 
 export interface ChHomeWeek {
@@ -548,6 +601,11 @@ export interface ChHomeWeek {
   todayEvents: ChHomeEvent[];
   /** The first competition later this week, for the week strip's note. */
   weekNote: { weekday: string; title: string } | null;
+  /**
+   * F-0006: with nothing left this week (`next` null), the first event or trip after it, for "Nothing else this week" and its
+   * Next line; null when nothing is ahead at all, or when the week is. A player's meetings past the loaded window are left out.
+   */
+  after: ChHomeEvent | null;
   /** Every meeting the viewer sees in the loaded window (a player's own invited meetings, Decision B), for scoping their change marks. */
   meetingIds: Set<string>;
 }
@@ -611,7 +669,34 @@ export async function loadHomeWeek(
           .range(from, to),
       )
     : null;
-  const [tz, wideRes, ownRes] = await Promise.all([input.tz, eventsRead, ownRead]);
+  // F-0001: the team's trips, read beside the events as Team Hub reads them (a test trip is never shown): every one not
+  // over before the widest window, so a trip after the week can be Up next's "Next" too (F-0006). Cut to the week below.
+  const wideFromDay = wide.from.slice(0, 10);
+  const tripsRead = Promise.resolve(
+    supabase
+      .from('golf_travel_itineraries')
+      .select(HOME_TRIP_COLUMNS)
+      .eq('team_id', input.teamId)
+      .eq('is_test', false)
+      .or(`return_date.gte.${wideFromDay},and(return_date.is.null,departure_date.gte.${wideFromDay})`)
+      .order('departure_date', { ascending: true })
+      .limit(HOME_TRIP_CAP),
+  );
+  // F-0006: the first events past the widest window, beside the rest, so a week with nothing left can name what comes next
+  // without another round trip. The ones between the week's own window and the widest are in the events read already.
+  const afterRead = Promise.resolve(
+    supabase
+      .from('golf_events')
+      .select('id, title, event_type, start_time, end_time, all_day, location, requires_rsvp, rsvp_deadline')
+      .eq('team_id', input.teamId)
+      .neq('event_type', CLASS_EVENT_TYPE)
+      .is('cancelled_at', null)
+      .gte('start_time', wide.to)
+      .order('start_time', { ascending: true })
+      .order('id', { ascending: true })
+      .limit(AFTER_LOOK),
+  );
+  const [tz, wideRes, ownRes, tripsRes, afterRes] = await Promise.all([input.tz, eventsRead, ownRead, tripsRead, afterRead]);
   /** The player's own reply by event; null when it didn't load (then no meeting is dropped here, and no reply is claimed). */
   let own: Map<string, ChRsvp> | null = null;
   if (ownRes?.error) log('ownReplies', ownRes.error);
@@ -637,18 +722,69 @@ export async function loadHomeWeek(
   // The shared calendar contract preserves UTC-midnight all-day dates and
   // treats their end day as inclusive. Cache each span once for the week.
   const calendarDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  const events = (eventsRes.error ? [] : (eventsRes.data ?? [])).flatMap((e) => {
+  type WeekRow = {
+    id: string;
+    title: string;
+    event_type: string;
+    start_time: string;
+    end_time: string | null;
+    all_day: boolean | null;
+    location: string | null;
+    requires_rsvp: boolean | null;
+    rsvp_deadline: string | null;
+    localDate: string;
+    lastDate: string;
+    trip?: ChHomeEvent['trip'];
+  };
+  const withDays = (e: Omit<WeekRow, 'localDate' | 'lastDate'>): WeekRow[] => {
     const span = eventDaySpan(e, tz);
+    return span ? [{ ...e, localDate: calendarDate(span.first), lastDate: calendarDate(span.last) }] : [];
+  };
+  const eventRows: WeekRow[] = (eventsRes.error ? [] : (eventsRes.data ?? [])).flatMap((e) => {
     // Decision B (owner, wave 7): a meeting the player isn't invited to is not on their week: not a day's count, not the
     // agenda, not Up next (which moves on to the next event they can see).
     if (playerId && e.event_type === 'meeting' && !playerSeesMeeting(own ? own.has(e.id) : null, invitedFallback?.get(e.id) ?? null)) return [];
-    return span ? [{ ...e, localDate: calendarDate(span.first), lastDate: calendarDate(span.last) }] : [];
+    return withDays(e);
   });
-  const runsOn = (e: (typeof events)[number], date: string) => e.localDate <= date && e.lastDate >= date;
-  const notOver = (e: (typeof events)[number]) => e.all_day ? e.lastDate >= today : new Date(e.end_time ?? e.start_time) > now;
+
+  // ── Trips (F-0001) ──
+  // A failed read is logged and leaves the week as its events say (a trip is extra to them; the events are the calendar).
+  if (tripsRes.error) log('trips', tripsRes.error);
+  if (afterRes.error) log('after', afterRes.error);
+  const afterRows = afterRes.error ? [] : (afterRes.data ?? []);
+  // A trip whose event is on the calendar is drawn once, as that event (Calendar links the two).
+  const eventIds = new Set([...(wideRes.error ? [] : (wideRes.data ?? [])), ...afterRows].map((e) => e.id));
+  const trips = (tripsRes.error ? [] : ((tripsRes.data ?? []) as ChHomeTripRow[])).flatMap((t) => {
+    const back = tripBack(t);
+    // The flag is checked again here, as Team Hub does, so an answer that ignores the filter never shows a test trip.
+    if (!back || t.is_test === true) return [];
+    const row: WeekRow = {
+      id: `trip-${t.id}`,
+      title: tripTitle(t),
+      event_type: 'travel',
+      // All day, on the calendar's own convention (UTC midnight, inclusive end), so it sorts and spans as an all-day event does.
+      start_time: `${t.departure_date}T00:00:00Z`,
+      end_time: `${back}T00:00:00Z`,
+      all_day: true,
+      location: t.event_name ? t.destination : null,
+      requires_rsvp: false,
+      rsvp_deadline: null,
+      localDate: t.departure_date!,
+      lastDate: back,
+      trip: { id: t.id, leaves: tripLeaves(t, tz), back },
+    };
+    return [{ row, linked: !!t.event_id && eventIds.has(t.event_id) }];
+  });
+  // The week's trips: any day from Monday to the Monday after (Up next's window runs a day past the week).
+  const weekTrips = eventsRes.error ? [] : trips.filter(({ row }) => row.localDate <= addDays(weekEnd, 1) && row.lastDate >= weekStart);
+  const byStart = (a: WeekRow, b: WeekRow) => Date.parse(a.start_time) - Date.parse(b.start_time);
+  const events: WeekRow[] = [...eventRows, ...weekTrips.filter((x) => !x.linked).map((x) => x.row)].sort(byStart);
+  const runsOn = (e: WeekRow, date: string) => e.localDate <= date && e.lastDate >= date;
+  const notOver = (e: WeekRow) => e.all_day ? e.lastDate >= today : new Date(e.end_time ?? e.start_time) > now;
   const days: ChHomeDay[] = WEEKDAYS.map((weekday, i) => {
     const date = addDays(weekStart, i);
-    const dayEvents = events.filter((e) => runsOn(e, date));
+    // A trip marks its days (Team Hub's week, linked to an event or not); it is not one of the day's events.
+    const dayEvents = events.filter((e) => !e.trip && runsOn(e, date));
     return {
       date,
       weekday,
@@ -661,6 +797,7 @@ export async function loadHomeWeek(
         : dayEvents.some((e) => e.event_type === 'qualifier')
           ? 'qualifier'
           : null,
+      trip: weekTrips.find(({ row }) => runsOn(row, date))?.row.title ?? null,
     };
   });
 
@@ -670,9 +807,12 @@ export async function loadHomeWeek(
   const clockHm = (iso: string) => hmFmt.format(new Date(iso));
   const todays = events.filter((e) => runsOn(e, today));
   const later = events.filter((e) => e.localDate > today && e.localDate <= weekEnd && COMPETITION_TYPES.has(e.event_type));
-  const nextId = todays.find(notOver)?.id;
+  // A trip under way gives "next" to an event still ahead today (a practice round at the venue); with none left today, the
+  // trip is what's next.
+  const nextId = (todays.find((e) => !e.trip && notOver(e)) ?? todays.find(notOver))?.id;
   // The phone's Up next: the first event not over yet, today or after (the window runs a day past the week).
-  const upcoming = events.find((e) => e.lastDate >= today && notOver(e)) ?? null;
+  const firstUp = events.find((e) => e.lastDate >= today && notOver(e)) ?? null;
+  const upcoming = firstUp?.trip && runsOn(firstUp, today) ? (events.find((e) => !e.trip && runsOn(e, today) && notOver(e)) ?? firstUp) : firstUp;
 
   // Who is invited, and who has said yes, for the rows shown. A failed read
   // drops the counts and names, never shows "0 players".
@@ -682,7 +822,8 @@ export async function loadHomeWeek(
   /** Rows the coach's invitation wrote (`notified_at`): none means the event is open to the whole team. */
   const coachInvited = new Map<string, number>();
   let attendanceError = false;
-  const weekIds = [...new Set([...todays, ...later, ...(upcoming ? [upcoming] : [])].map((e) => e.id))];
+  // Trips have no invitees or replies (their travellers are their event's): only events are asked about.
+  const weekIds = [...new Set([...todays, ...later, ...(upcoming ? [upcoming] : [])].filter((e) => !e.trip).map((e) => e.id))];
   // A player's Home: counts only (migration 20261017102000). `missing` (not applied yet) falls through to the rows.
   const counts = input.viewer === 'player' ? await loadAttendanceCounts(supabase, weekIds) : null;
   const countsByEvent: Map<string, ChAttendanceCounts> | null = counts?.kind === 'ok' ? counts.byEvent : null;
@@ -753,10 +894,11 @@ export async function loadHomeWeek(
 
   // ── Phone: Up next and Today ──
   const clockAmPm = (iso: string) => timeFmt.format(new Date(iso));
+  const meridiemOf = (iso: string) => /[AP]M$/.exec(clockAmPm(iso))?.[0] ?? '';
   const timed = todays.filter((e) => !e.all_day && e.end_time);
-  const overlaps = (e: (typeof events)[number]) =>
+  const overlaps = (e: WeekRow) =>
     !e.all_day && !!e.end_time && timed.some((o) => o.id !== e.id && new Date(o.start_time) < new Date(e.end_time!) && new Date(e.start_time) < new Date(o.end_time!));
-  const phoneBase = (e: (typeof events)[number]) => ({
+  const phoneBase = (e: WeekRow) => ({
     id: e.id,
     title: e.title,
     type: HOME_TYPES.has(e.event_type) ? (e.event_type as ChHomeEvent['type']) : ('other' as const),
@@ -766,20 +908,36 @@ export async function loadHomeWeek(
     endIso: e.end_time,
     allDay: !!e.all_day,
     startLabel: e.all_day ? 'All day' : clockAmPm(e.start_time),
-    rangeLabel: e.all_day ? 'All day' : e.end_time ? `${clock(e.start_time)} – ${clockAmPm(e.end_time)}` : clockAmPm(e.start_time),
+    // A trip says its days ("Fri 13 – Sun 15 Nov"): it spans them, and its departure time is `trip.leaves`.
+    rangeLabel: e.trip
+      ? tripDates(e.localDate, e.lastDate)
+      : e.all_day ? 'All day' : e.end_time ? `${meridiemOf(e.start_time) === meridiemOf(e.end_time) ? clock(e.start_time) : clockAmPm(e.start_time)} – ${clockAmPm(e.end_time)}` : clockAmPm(e.start_time),
     location: e.location,
+  });
+  /** A trip, or an event past the loaded window: nothing read about who is on it, so nothing is claimed (never "0 invited"). */
+  const unasked = (e: WeekRow): ChHomeEvent => ({
+    ...phoneBase(e),
+    invitees: null,
+    going: null,
+    awaiting: null,
+    inviteeIds: null,
+    invitedCount: null,
+    ...(playerId ? { mine: null } : {}),
+    conflict: false,
+    ...(e.trip ? { trip: e.trip } : {}),
   });
   /**
    * The player's own reply (`mine`), by the rule the sidebar's card uses too (playerMine): only on an event that asks for
    * one, while the server would take it (`replyClosedAt`), and, with no row of theirs, when the coach invited no one so
    * the whole team may reply. Unknown (a failed read) claims nothing.
    */
-  const mineOf = (e: (typeof events)[number]): ChHomeEvent['mine'] => {
+  const mineOf = (e: WeekRow): ChHomeEvent['mine'] => {
     if (!own || e.requires_rsvp !== true) return null;
     const open = attendanceError ? null : countsByEvent ? (countsByEvent.get(e.id)?.coachInvited ?? 0) === 0 : (coachInvited.get(e.id) ?? 0) === 0;
     return playerMine(own.get(e.id), replyClosedAt(e, now.getTime()), open);
   };
-  const toPhone = (e: (typeof events)[number]): ChHomeEvent => {
+  const toPhone = (e: WeekRow): ChHomeEvent => {
+    if (e.trip) return unasked(e);
     const ids = inviteesOf(e.id);
     const invitees = ids ? ids.map((id) => names.get(id)).filter((n): n is string => !!n) : null;
     // Replies count, and the unanswered get a nudge, only on an event that asks for them (owner, 2026-10-08). Without
@@ -817,6 +975,22 @@ export async function loadHomeWeek(
   };
   const firstLater = later.find((e) => e.localDate > today);
 
+  // ── F-0006: with nothing left this week, what comes after it ──
+  // The events past the week's own window (some are in the events read already, the rest past the widest window), and the
+  // trips that leave after it. A player's own replies reach only the loaded window, so a meeting past it can't be shown to be
+  // theirs: it is left out (Decision B fails closed).
+  const after = ((): ChHomeEvent | null => {
+    if (eventsRes.error || upcoming) return null;
+    const seen = new Set<string>();
+    const beyond = [...(wideRes.data ?? []), ...afterRows]
+      .filter((e) => Date.parse(e.start_time) >= to && !seen.has(e.id) && !!seen.add(e.id))
+      .filter((e) => !(input.viewer === 'player' && e.event_type === 'meeting'))
+      .flatMap(withDays);
+    const tripsAfter = trips.filter((x) => !x.linked && x.row.localDate > addDays(weekEnd, 1)).map((x) => x.row);
+    const first = [...beyond, ...tripsAfter].sort((a, b) => a.localDate.localeCompare(b.localDate) || byStart(a, b))[0];
+    return first ? unasked(first) : null;
+  })();
+
   return {
     today,
     weekStart,
@@ -826,10 +1000,16 @@ export async function loadHomeWeek(
     next: eventsRes.error || !upcoming ? null : toPhone(upcoming),
     todayEvents: eventsRes.error ? [] : todays.map(toPhone),
     weekNote: firstLater ? { weekday: weekdayOf(firstLater.localDate), title: firstLater.title } : null,
+    after,
     meetingIds: new Set(eventsRes.error ? [] : events.filter((e) => e.event_type === 'meeting').map((e) => e.id)),
   };
 
 }
+
+/** The trips Home reads, at most (Team Hub reads as many). */
+const HOME_TRIP_CAP = 50;
+/** How many events past the widest window Up next looks through for the next one (F-0006). */
+const AFTER_LOOK = 20;
 
 const HOME_TYPES = new Set(['practice', 'qualifier', 'tournament', 'meeting', 'travel', 'other']);
 
@@ -864,8 +1044,9 @@ export function teamWindows(full: ChRound[]): { last: ChRound[]; prev: ChRound[]
  * (as Stats' scoring trend draws it), oldest to newest: one point a day, not one a round. `basis` says how many rounds and which dates the figures rest on, so a strip built on three August
  * rounds says so. Exported for the tests.
  */
-export function teamForm(full: ChRound[], roundsThisWeek: number): ChTeamForm | null {
-  const { last, prev, lastPaired } = teamWindows(full);
+export function teamForm(full: ChRound[], roundsThisWeek: number, span?: ChSpan): ChTeamForm | null {
+  // All time (span.ts) is every round the team has posted, with no previous window to set it against; the default is each player's last ten.
+  const { last, prev, lastPaired } = span === 'all' ? { last: full, prev: [] as ChRound[], lastPaired: [] as ChRound[] } : teamWindows(full);
   if (!last.length) return null;
   // Greens and putts are hole-level: a round posted as a total only has none (Q-123), whatever its row holds.
   const hasGir = (r: ChRound) => hasHoleScores(r) && r.total_gir != null && !!r.total_gir_possible;
@@ -897,13 +1078,17 @@ export function teamForm(full: ChRound[], roundsThisWeek: number): ChTeamForm | 
     const d = r.round_date.slice(0, 10);
     byDay.set(d, [...(byDay.get(d) ?? []), r.total_score as number]);
   }
-  const line = [...byDay.values()].slice(-10).map((scores) => mean(scores) as number);
+  const lastDays = [...byDay.entries()].slice(-10);
+  const line = lastDays.map(([, scores]) => mean(scores) as number);
   const dates = last.map((r) => r.round_date.slice(0, 10)).sort();
   return {
+    ...(span === 'all' ? { span } : {}),
     avg,
     delta: prevAvg != null && pairedAvg != null ? pairedAvg - prevAvg : null,
     deltaSe: comparable ? windowChangeSe(lastPaired, prev, scoreOf, 'score') : null,
     line,
+    lineDays: lastDays.map(([day]) => day),
+    lineCounts: lastDays.map(([, scores]) => scores.length),
     roundsThisWeek,
     basis: { rounds: last.length, from: dates[0]!, to: dates[dates.length - 1]!, girRounds: last.filter(hasGir).length, puttsRounds: last.filter((r) => puttsOf(r) != null).length },
     gir: { pct: gir, ...(girFloor.needs ? { needs: girFloor.needs } : {}), delta: gir != null && pairedGir != null && prevGir != null ? pairedGir - prevGir : null, se: comparable ? changeSe(girRates(lastPaired), girRates(prev), null) : null },
@@ -937,7 +1122,8 @@ export function legPeople(rows: TeamRankRow[]): { gains: ChLegPeople | null; los
 
 /**
  * The team's four parts (spec B §1), on the form's own Last 10 rounds (`teamWindows`), hole-level throughout (Q-123):
- * strokes gained per round in each part (MIN_SG_ROUNDS whole rounds with it, else null), its change against each
+ * strokes gained per round in each part (Team Stats' `teamStrokesGained`: the rounds of the players with MIN_SG_ROUNDS whole
+ * rounds with strokes gained in the window, else null), its change against each
  * player's previous ten (the same players, Q-112, with the standard error Team Stats uses for strokes gained), the
  * part's plain stat pooled over the same rounds with the Tour's mark (Player Home's legRows), and who gains and loses
  * most (Team Stats' ranking). `players` is the active roster: no one else's round reaches the grid. Null with no round.
@@ -961,10 +1147,13 @@ export function teamLegs(input: {
   const grid = teamGrid(input.players, full, filterFor('last10'));
   const marks = input.bench && !input.bench.error ? input.bench.bench : null;
   const stats = legRows(holeLast, input.cache.byRound, marks, { tee: null, approach: null, around: null, putting: null });
+  // The four figures are the one team figure (`teamStrokesGained`, Team Stats' own, A4): only the players with three whole rounds
+  // with strokes gained in the window are read, so a player's first round or two never moves a part here and not on Stats.
+  const teamSg = teamStrokesGained(holeLast, input.players.map((p) => p.id));
   let ranked = false;
   const rows = LEG_KEYS.map((key, i): ChTeamLeg => {
     const pick = (r: ChRound) => sgLegs(r)[i] ?? null;
-    const sg = effectiveCount(holeLast, pick) >= MIN_SG_ROUNDS ? weightedMean(holeLast, pick) : null;
+    const sg = teamSg.legs[i] ?? null;
     const prevSg = effectiveCount(holePrev, pick) >= MIN_SG_ROUNDS ? weightedMean(holePrev, pick) : null;
     const pairedSg = weightedMean(holePaired, pick);
     const delta = sg != null && prevSg != null && pairedSg != null ? pairedSg - prevSg : null;

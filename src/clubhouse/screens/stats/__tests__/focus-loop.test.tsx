@@ -13,7 +13,7 @@ vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn(), refresh: 
 vi.mock('@/app/golf/actions/development', () => ({ createFocusArea: vi.fn(), acceptFocusArea: vi.fn(), declineFocusArea: vi.fn() }));
 
 import type { ChPlayerProfile } from '../../../data/stats-player';
-import { PREVIEW_PLAYER, PREVIEW_PLAYER_LOOPS, PREVIEW_PLAYER_LOOPS_SELF } from '../../../preview/fixtures-stats';
+import { PREVIEW_PLAYER, PREVIEW_PLAYER_LOOPS_SELF } from '../../../preview/fixtures-stats';
 import { StatsPlayer } from '../StatsPlayer';
 import { ToastProvider } from '../../../ui/Toast';
 import { CrumbProvider } from '../../../shell/crumbs';
@@ -27,7 +27,7 @@ const show = (data: ChPlayerProfile, coachId: string | null = 'c1') =>
         <CrumbProvider>
           <PhoneChromeProvider>
             <div className="ch-root" data-ui="clubhouse">
-              <StatsPlayer data={data} coachId={coachId} initialTab="dev" />
+              <StatsPlayer layout="tabs" data={data} coachId={coachId} initialTab="dev" />
             </div>
           </PhoneChromeProvider>
         </CrumbProvider>
@@ -36,9 +36,6 @@ const show = (data: ChPlayerProfile, coachId: string | null = 'c1') =>
   );
 
 const real = window.matchMedia;
-const asPhone = () => {
-  window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
-};
 afterEach(() => {
   window.matchMedia = real;
   cleanup();
@@ -52,22 +49,6 @@ const loopOf = (title: string) => {
 };
 
 describe('CoachHelm verdict loop on the focus areas (chs-11)', () => {
-  for (const [where, setup] of [
-    ['desktop', () => {}],
-    ['phone', asPhone],
-  ] as const) {
-    it(`${where}: target, progress and Too early before the horizon; the verdict and its line at it; nothing on an area with no prescription`, () => {
-      setup();
-      show(PREVIEW_PLAYER_LOOPS);
-      expect(loopOf('Short putts')).toEqual(['Target: 85% or better over 40 putts', 'Progress: 22 of 40 putts in · 82% so far', 'Verdict: Too early']);
-      expect(loopOf('5–10 ft putts')).toEqual([
-        'Target: 70% or better over 40 putts',
-        'Verdict: Worked5–10 ft putts · Worked — 31 of 42 (74%) against 18 of 31 (58%) before. Expected without coaching: about 64% (bounce-back). Lower bound 65% clears it. Target was 70%.',
-      ]);
-      expect(loopOf('Greens in regulation')?.[1]).toMatch(/^Verdict: Did not move/);
-      expect(loopOf('Approach 125–150 yds')).toBeNull();
-    });
-  }
 
   it('the player reads their own verdict in their own voice', () => {
     show(PREVIEW_PLAYER_LOOPS_SELF, null);

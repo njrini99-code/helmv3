@@ -10,6 +10,45 @@ import { chFocusQuietly } from './focus-quietly';
 const EASE = `cubic-bezier(${CH_EASE.join(', ')})`;
 
 /**
+ * F-0012: the control a finger, a click or VoiceOver last pressed, and when. Safari (and the iOS app's WKWebView) focuses
+ * no button it clicks, so a tapped sheet found focus on the page, not on its opener, and handed it back there on close.
+ */
+let lastPress: { el: HTMLElement; at: number } | null = null;
+const PRESSABLE =
+  'button, a[href], input, select, textarea, summary, [role="button"], [role="link"], [role="menuitem"], [role="menuitemradio"], [role="option"], [role="tab"], [role="radio"], [role="checkbox"], [role="switch"], [tabindex]';
+/** A press this recent is what is opening a dialog now, even over a control left focused by an earlier sheet (a hold
+ * peek opens about half a second in). */
+const PRESS_NOW_MS = 1000;
+/** A press older than this opened nothing that is opening now. */
+const PRESS_FRESH_MS = 5000;
+function notePress(e: Event) {
+  const el = e.target instanceof Element ? e.target.closest<HTMLElement>(PRESSABLE) : null;
+  if (el) lastPress = { el, at: Date.now() };
+}
+if (typeof document !== 'undefined') {
+  document.addEventListener('pointerdown', notePress, true);
+  document.addEventListener('click', notePress, true);
+}
+
+/**
+ * What is opening a dialog now: the control just pressed; else the focused control; else, where a tap focused nothing,
+ * the control it pressed a moment ago. A click in Chromium, Enter on a focused key and a VoiceOver activation all press
+ * the focused control, so the order matters only where a tap did not move focus: Safari's, after an earlier sheet handed
+ * focus back to its own opener.
+ */
+export function chDialogOpener(): HTMLElement | null {
+  // A control in a sheet that has closed under it (the picker's Add a course, which hands the picker's focus back to
+  // Browse as it opens its own sheet) is no opener to return to.
+  const live = (el: HTMLElement) => el.isConnected && !el.closest('[inert], dialog:not([open])');
+  const press = lastPress && live(lastPress.el) ? lastPress : null;
+  const age = press ? Date.now() - press.at : Infinity;
+  if (press && age < PRESS_NOW_MS) return press.el;
+  const active = document.activeElement;
+  if (active instanceof HTMLElement && active !== document.body) return active;
+  return press && age < PRESS_FRESH_MS ? press.el : null;
+}
+
+/**
  * Pauses the opening animation on `surface`, and holds the scrim clear, until two frames have painted. With `fade` (the
  * OS Reduce Motion setting, owner decision 2, OQ-15) the surface fades in over the quick beat instead, in opacity only:
  * the CSS rise or pop is floored to 1ms there (base.css), so nothing slides or scales, and the scrim fades alongside.
@@ -65,8 +104,8 @@ export function useDialogLifetime(open: boolean, {
     if (!present) return;
     const dialog = ref.current;
     const release = acquireOverlayScroll();
-    // What had focus as it opened, to hand focus back to quietly (F-0058).
-    const opener = document.activeElement instanceof HTMLElement && document.activeElement !== document.body ? document.activeElement : null;
+    // What opened it, to hand focus back to quietly (F-0058): what had focus, or the control a Safari tap pressed (F-0012).
+    const opener = chDialogOpener();
     return () => {
       // The browser's own restoration is not quiet: marked first, so a peek target it lands on doesn't open (F-0058).
       if (opener?.isConnected) opener.dataset.chPeekQuiet = '';
@@ -107,7 +146,7 @@ export function useDialogLifetime(open: boolean, {
           : { duration: CH_DUR.base * 1000, easing: `cubic-bezier(${CH_EASE.join(', ')})` });
       }
       if (!dialog.open) {
-        opener.current = document.activeElement;
+        opener.current = chDialogOpener();
         // The rise (and the scrim's fade) wait, paused at their first frame, until the sheet has painted: its CSS
         // animation's clock starts when its style lands, so the frames spent laying out a long sheet were taken off the
         // start of the rise and it jumped up from part way (phone, owner 2026-10-15: "needs to be smoother"). Two

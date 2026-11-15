@@ -123,6 +123,25 @@ describe('MarketingScrollProvider route and hash positioning', () => {
     });
   });
 
+  it('into the app (Log in) it stops Lenis but leaves the page where it is: the sign in draws its own fixed frame', () => {
+    // Owner, 2026-11-12, "landing > sign in glitchy": a tap on the closing section's Log in jumped the landing back to its
+    // hero for as long as the sign in took to load (0.8s on a phone in WebKit).
+    render(<MarketingScrollProvider anchors />);
+    vi.mocked(window.scrollTo).mockClear();
+    mocks.lenis.scrollTo.mockClear();
+    mocks.lenis.stop.mockClear();
+
+    const link = document.createElement('a');
+    link.href = '/golf/login';
+    link.addEventListener('click', (event) => event.preventDefault());
+    document.body.appendChild(link);
+    link.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, button: 0 }));
+
+    expect(mocks.lenis.stop).toHaveBeenCalled();
+    expect(mocks.lenis.scrollTo).not.toHaveBeenCalled();
+    expect(window.scrollTo).not.toHaveBeenCalled();
+  });
+
   it('preserves a load-time hash and repositions through Lenis after refresh', () => {
     window.history.replaceState(null, '', '/products#stats');
     const target = document.createElement('section');

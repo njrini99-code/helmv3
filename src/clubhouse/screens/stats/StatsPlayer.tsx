@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { createFocusArea } from '@/app/golf/actions/development';
 import type { ChPlayerProfile } from '../../data/stats-player';
 import type { ChReadsSource } from './GameDetail';
-import { basisWords, clearFilters, HOLES_ADJ, hasRange, per18, type ChHoles, isFiltered, isWindowChange, statsHref, rangeOf, withScope, type ChFilter, type ChRange } from '../../data/stats-filter';
+import { basisWords, clearFilters, HOLES_ADJ, hasRange, per18, type ChHoles, isFiltered, isWindowChange, statsHref, rangeOf, type ChFilter } from '../../data/stats-filter';
 import { Avatar } from '../../ui/Avatar';
 import { Button, IconButton } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
@@ -33,7 +33,7 @@ import { TERMS } from '../../lib/glossary';
 import { sgBaseline } from '../../lib/sg';
 import { rebuiltHref } from '../../shell/nav';
 import { usePageCrumbs } from '../../shell/crumbs';
-import { gameSectionFromHash, LEGS_LIST, LEG_SECTION } from './legs';
+import { GAME_SECTION_IDS, gameSectionFromHash, LEGS_LIST, LEG_SECTION } from './legs';
 import { SgChangeChip } from './charts';
 import { ROUND_TYPE } from './detail';
 import { GameDetail } from './GameDetail';
@@ -42,9 +42,8 @@ import type { ChFocusLoop } from '../../data/focus-loop-shape';
 import { FocusLoop } from './FocusLoop';
 import { ProposalAnswer } from './ProposalAnswer';
 import { GoalSetButton, GoalStatus, GoalSuggestions } from './Goals';
-import { StatsPlayerPhone } from './StatsPlayerPhone';
 import { StatsPlayerPhoneShs } from './StatsPlayerPhoneShs';
-import { changeWords, UpdatingNote, WindowSwitch } from './WindowSwitch';
+import { changeWords, UpdatingNote, WindowSwitch, withPick } from './WindowSwitch';
 import { useChSessionState } from '../../lib/session-state';
 import { CACHE_ERROR, countWords, FORM_STEADY, shotsWords } from './notes';
 import { PlayerStage } from './PlayerStage';
@@ -57,7 +56,7 @@ import { pluralWord } from '../../lib/plural';
 import { PlayerInsight } from './StatsInsight';
 import { NoData } from '../../ui/NoData';
 import { usePushOnce } from '../../lib/nav-once';
-import { desktopTabOfHash } from './detail-route';
+import { areaDetail, desktopTabOfHash, tabOfDetail } from './detail-route';
 
 type Tab = 'overview' | 'game' | 'rounds' | 'dev';
 const TABS: readonly Tab[] = ['overview', 'game', 'rounds', 'dev'];
@@ -74,10 +73,29 @@ export function formNote(first: string, scores: number[]): string {
 }
 
 /**
- * `initialTab` is the URL's `tab` (Roster's "All N" opens `tab=rounds`, D-53); anything else opens Overview. `reads` is what CoachHelm
+ * `initialTab` is the URL's `tab` (Roster's "All N" opens `tab=rounds`, D-53); anything else opens Overview. `initialArea` is production's
+ * `?area=`: on the phone it opens that area's detail, on desktop the tab (and, for a game part, the section) it lives under. `reads` is what CoachHelm
  * sees per Game detail section (data/stats-reads.ts); without it Game detail draws no count line.
  */
-export function StatsPlayer({ data, coachId, initialTab, reads, shs = false }: { data: ChPlayerProfile; coachId: string | null; initialTab?: string; reads?: ChReadsSource; /** clubhouse_stats_redesign_v1, read on the server. Off, this page is main's. */ shs?: boolean }) {
+export function StatsPlayer({
+  data,
+  coachId,
+  initialTab,
+  initialArea,
+  reads,
+  layout = 'bento',
+}: {
+  data: ChPlayerProfile;
+  coachId: string | null;
+  initialTab?: string;
+  initialArea?: string;
+  reads?: ChReadsSource;
+  /**
+   * The desktop page. `bento` (the default, what a browser shows): the rebuilt cards with the chosen area's drill beside them.
+   * `tabs`: the tabbed tables, which paper still prints (printing always takes it). The phone has one page and ignores this.
+   */
+  layout?: 'bento' | 'tabs';
+}) {
   const router = useRouter();
   const pushOnce = usePushOnce(router);
   const toast = useToast();
@@ -88,10 +106,11 @@ export function StatsPlayer({ data, coachId, initialTab, reads, shs = false }: {
   // The tab comes back when the coach returns to the page (PAGE_PERFORMANCE.md rule 1); an address that names one (Roster's "All N" opens
   // `?tab=rounds`, D-53) wins until a tab is chosen.
   const [keptTab, setKeptTab] = useChSessionState<Tab>('profile-tab', 'overview');
-  const named = useRef<Tab | undefined>(TABS.find((t) => t === initialTab));
+  const areaTarget = areaDetail(initialArea, 'player');
+  const named = useRef<Tab | undefined>(TABS.find((t) => t === initialTab) ?? (areaTarget ? tabOfDetail(areaTarget) : undefined));
   // A phone's shared `#sd-rounds` or `#sd-goals` link means something on desktop too: its tab (08 criterion 77). Any other `#sd-*` opens Overview.
   useEffect(() => {
-    if (!shs || phone) return;
+    if (phone) return;
     const t = desktopTabOfHash(window.location.hash);
     if (t) setTab(t);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps -- read once, as the page opens
@@ -114,6 +133,8 @@ export function StatsPlayer({ data, coachId, initialTab, reads, shs = false }: {
   // On the phone the hash picks the section Game detail draws (GameDetail reads it itself), so this scroll is the desktop's.
   useEffect(() => {
     if (!wantSection.current && !phone && gameSectionFromHash(window.location.hash)) wantSection.current = window.location.hash.slice(1);
+    // `?area=putting` on desktop: the Game detail tab, scrolled to that part (Scoring lives on Overview, Strokes gained has no section).
+    else if (!wantSection.current && !phone && areaTarget && tabOfDetail(areaTarget) === 'game' && (GAME_SECTION_IDS as readonly string[]).includes(areaTarget)) wantSection.current = `gm-${areaTarget}`;
   }, []); // eslint-disable-line react-hooks/exhaustive-deps -- read once, as the page opens
   useEffect(() => {
     const id = wantSection.current;
@@ -172,7 +193,6 @@ export function StatsPlayer({ data, coachId, initialTab, reads, shs = false }: {
     setLoading(next);
     go(data.id, next);
   };
-  const changeWindow = (r: ChRange) => changeFilter(withScope(data.filter, r));
   // Row 15: once the window has settled, the windows either side are fetched whole when idle, so a switch to one is instant.
   useIdleFetchAhead(loading || pending ? [] : windowsAhead(data.filter).map((f) => href(data.id, f)));
   const filterCodes = { empty: 'CH-5320', pickEmpty: 'CH-5321', pickCap: 'CH-5322', range: 'CH-5102', holes: 'CH-5323' };
@@ -217,17 +237,18 @@ export function StatsPlayer({ data, coachId, initialTab, reads, shs = false }: {
 
   // CH-5903: the figures on screen are dimmed until the new ones land; this says which ones they are.
   const updating = <UpdatingNote from={data.filter} to={loading} code="CH-5903" />;
-  if (phone && shs)
+  if (phone)
     return (
       <main className="ch-st is-phone" aria-busy={pending} data-ch-code={pending ? 'CH-5402' : undefined}>
         <StatsPlayerPhoneShs
           data={data}
           initialTab={initialTab}
+          initialArea={initialArea}
           reads={reads}
           playerHref={href(data.id, data.filter)}
           messageHref={messageHref}
           windowShown={rangeOf(loading ?? data.filter)}
-          onWindow={changeWindow}
+          spanShown={(loading ?? data.filter).span ?? 'season'}
           onFilter={changeFilter}
           onBackToTeam={() => go(null, data.filter)}
           onAddFocus={coach && coachId ? () => setFocusOpen(true) : null}
@@ -237,30 +258,81 @@ export function StatsPlayer({ data, coachId, initialTab, reads, shs = false }: {
         {sheet}
       </main>
     );
-  if (phone)
+
+  // The desktop page (stats-home, "Desktop"): the phone's own cards as a bento on a flat canvas, the chosen area's drill beside them.
+  // One head, no figure in it: every number lives in its card, once. `is-desk`: the server renders desktop; at phone width it stays
+  // hidden until the phone view takes over at hydration.
+  if (!printing && layout === 'bento')
     return (
       <>
-        <main className="ch-st is-phone" aria-busy={pending} data-ch-code={pending ? 'CH-5402' : undefined}>
-          <StatsPlayerPhone
+        <main className="ch-st is-desk ch-st--shs" aria-busy={pending} data-ch-code={pending ? 'CH-5402' : undefined} data-canopy="">
+          <header className="ch-shs-dhead" data-canopy-head="tight">
+            {coach && (
+              <div className="ch-st-back">
+                <Button size="sm" variant="ghost" leftIcon={ChevronLeft} href={href(null, data.filter)}>
+                  Team stats
+                </Button>
+                {data.nav && (
+                  <div className="ch-st-back__nav">
+                    <IconButton icon={ChevronLeft} size="sm" label="Previous player" href={href(data.nav.prev, data.filter)} scroll={false} />
+                    <span className="ch-num">
+                      {data.nav.index} of {data.nav.total}
+                    </span>
+                    <IconButton icon={ChevronRight} size="sm" label="Next player" href={href(data.nav.next, data.filter)} scroll={false} />
+                  </div>
+                )}
+              </div>
+            )}
+            <div className="ch-shs-dhead__row">
+              <Avatar name={data.name} id={data.id} size="lg" />
+              <div className="ch-shs-dhead__id">
+                <h1 className="ch-display">{coach ? data.name : 'My stats'}</h1>
+                {/* A no-break space ahead of each dot: a wrapped line never starts with a dot. */}
+                <p>{[coach ? null : data.name, data.classYear, data.gradYear ? `Class of ${data.gradYear}` : null, data.hometown].filter(Boolean).join('\u00a0· ')}</p>
+              </div>
+              {coach && (
+                <div className="ch-shs-dhead__act">
+                  {messageHref && (
+                    <Button leftIcon={MessageSquare} href={messageHref}>
+                      Message
+                    </Button>
+                  )}
+                  {planHref && (
+                    <Button leftIcon={CalendarPlus} href={planHref}>
+                      Schedule 1:1
+                    </Button>
+                  )}
+                  {insightsHref && (
+                    <Button leftIcon={Sparkles} href={insightsHref}>
+                      CoachHelm
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
+          </header>
+          <StatsPlayerPhoneShs
+            desk
             data={data}
             initialTab={initialTab}
+            initialArea={initialArea}
             reads={reads}
             playerHref={href(data.id, data.filter)}
             messageHref={messageHref}
             windowShown={rangeOf(loading ?? data.filter)}
-            onWindow={changeWindow}
+            spanShown={(loading ?? data.filter).span ?? 'season'}
             onFilter={changeFilter}
             onBackToTeam={() => go(null, data.filter)}
             onAddFocus={coach && coachId ? () => setFocusOpen(true) : null}
             onRetry={() => router.refresh()}
+            updating={updating}
           />
-          {sheet}
         </main>
-        {updating}
+        {sheet}
       </>
     );
 
-  // `is-desk`: the server renders desktop; at phone width it stays hidden until the phone view takes over at hydration.
+  // The tabbed page from here: what paper prints (PrintHead, the Rounds table, Game detail), which a bento is not.
   return (
     <>
       <main className="ch-st is-desk" aria-busy={pending} data-ch-code={pending ? 'CH-5402' : undefined} data-canopy="">
@@ -355,7 +427,7 @@ export function StatsPlayer({ data, coachId, initialTab, reads, shs = false }: {
             ))}
           </div>
           {/* The switch moves on the tap: the window being loaded, not the one whose figures are still showing (F-55). */}
-          <WindowSwitch value={rangeOf(loading ?? data.filter)} onChange={changeWindow} custom={hasRange(data.filter)} />
+          <WindowSwitch value={rangeOf(loading ?? data.filter)} span={(loading ?? data.filter).span ?? 'season'} onScope={(v) => changeFilter(withPick(data.filter, v))} custom={hasRange(data.filter)} />
         </div>
 
         {showFilter && <StatsFilter filter={data.filter} options={data.filterOptions} count={w.rounds} onChange={changeFilter} codes={filterCodes} />}
@@ -392,7 +464,7 @@ export function StatsPlayer({ data, coachId, initialTab, reads, shs = false }: {
             {shownTab === 'overview' && !emptyFilter && !failed && (
               <SectionBoundary surface="stats.player.overview" label="The overview" code="CH-5204">
                 {data.cacheError && <InlineNotice code="CH-5213" title={CACHE_ERROR.title} body={CACHE_ERROR.body} onRetry={() => router.refresh()} />}
-                <Overview data={data} coach={coach} onOpenLeg={openLeg} shs={shs} />
+                <Overview data={data} coach={coach} onOpenLeg={openLeg} />
               </SectionBoundary>
             )}
 
@@ -406,7 +478,7 @@ export function StatsPlayer({ data, coachId, initialTab, reads, shs = false }: {
                     onRetry={() => router.refresh()}
                   />
                 ) : data.stats && data.stats.roundsPlayed > 0 ? (
-                  <GameDetail s={data.stats} x={data.extra} bench={data.bench} tour={data.tour} first={coach ? first : 'You'} rounds={w.rounds} window={data.window} basis={basisWords(data.filter)} holes={data.filter.holes} puttBands={data.puttBands} reads={reads} onRetry={() => router.refresh()} shs={shs} />
+                  <GameDetail s={data.stats} x={data.extra} bench={data.bench} tour={data.tour} first={coach ? first : 'You'} rounds={w.rounds} window={data.window} basis={basisWords(data.filter)} holes={data.filter.holes} puttBands={data.puttBands} reads={reads} onRetry={() => router.refresh()} />
                 ) : (
                   <div className="ch-st-card">
                     <EmptyState code="CH-5301" title="No shot-by-shot rounds in this window." body="Game detail fills in from rounds posted hole by hole with shots. Totals-only rounds still count toward scoring." />
@@ -456,7 +528,7 @@ export function StatsPlayer({ data, coachId, initialTab, reads, shs = false }: {
  */
 
 /** Memoised: the seven zones are the page's heaviest read, and the tab's own state (the focus sheet, a transition) must not recompute them. */
-const Overview = memo(function Overview({ data, coach, onOpenLeg, shs }: { data: ChPlayerProfile; coach: boolean; onOpenLeg: (label: string) => void; shs: boolean }) {
+const Overview = memo(function Overview({ data, coach, onOpenLeg }: { data: ChPlayerProfile; coach: boolean; onOpenLeg: (label: string) => void; }) {
   const first = data.firstName;
   const trendRounds = [...data.rounds].reverse().slice(-10).map((r) => ({ label: r.date, course: r.course, score: per18(r.score, r.holes), toPar: r.toPar == null ? null : per18(r.toPar, r.holes), holes: r.holes }));
   // Seven zones, one per stat area; the last holds the scoring-form ribbon. Every figure is read from the profile (see OverviewZones).
@@ -465,7 +537,6 @@ const Overview = memo(function Overview({ data, coach, onOpenLeg, shs }: { data:
       data={data}
       coach={coach}
       onOpenLeg={onOpenLeg}
-      shs={shs}
       ribbon={
         <PlayerStage
           rounds={trendRounds.map((r) => ({ label: r.label, course: r.course, score: r.score, toPar: r.toPar, holes: r.holes }))}

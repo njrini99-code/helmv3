@@ -17,13 +17,12 @@ import { resolveClubhouseTeam } from './team';
 import { NoTeam } from '../ui/NoTeam';
 import '../styles/qualifiers.css';
 
-export type ChQView = 'list' | 'mine' | 'detail' | 'new' | 'edit' | 'selection';
+export type ChQView = 'list' | 'detail' | 'new' | 'edit' | 'selection';
 
 /**
  * Qualifiers in Clubhouse, every address rendered in place (D-23, never a
  * redirect):
- *   /qualifiers            list, coach and player
- *   /my-qualifiers         a player's own entries (a coach sees the list)
+ *   /qualifiers            list, coach and player (a player's own first, D-30)
  *   /qualifiers/[id]       detail, coach and player
  *   /qualifiers/new        create, coach only
  *   /qualifiers/[id]/edit  edit, coach only
@@ -36,11 +35,10 @@ export async function ClubhouseQualifiersRoute({ view, id }: { view: ChQView; id
   if (!team) return <QualifiersNoTeam coach={!!session.coach} />;
   const playerId = team.role === 'player' ? team.playerId : null;
 
-  if (view === 'list' || view === 'mine') {
-    const mode = view === 'mine' && team.role === 'player' ? 'mine' : 'all';
+  if (view === 'list') {
     // A coach also sees which qualifiers have players on the course now (CH-16622); a failed live read only leaves the line out.
     const [list, liveNow] = await Promise.all([
-      loadQualifierList({ role: team.role, teamId: team.teamId, playerId, mode }),
+      loadQualifierList({ role: team.role, teamId: team.teamId, playerId }),
       team.role === 'coach' ? loadLiveRounds({ teamId: team.teamId, viewer: { role: 'coach', playerId: null } }) : null,
     ]);
     return <QualifiersList data={list} live={liveNow && !liveNow.error ? qualifierLiveLines(liveNow.lanes, Date.now()) : undefined} />;

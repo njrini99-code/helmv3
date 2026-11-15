@@ -12,8 +12,6 @@ export interface ChMessagesData {
   viewerName: string;
   /** golf_players.id when the viewer is a player (announcement acknowledgements and tasks). */
   viewerPlayerId: string | null;
-  /** golf_messages_redesign_v1 is on (read in routes/messages.tsx): the redesigned screens. */
-  redesign?: boolean;
   teamId: string;
   teamName: string | null;
   timeZone: string;

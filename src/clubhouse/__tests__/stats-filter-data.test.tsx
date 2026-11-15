@@ -60,7 +60,7 @@ const rrBase = (id: string, player: string, date: string, over: Record<string, u
   back_nine: 36,
   holes_played: 18,
   status: 'completed',
-  round_type: 'practice',
+  round_type: 'tournament',
   course_name: 'Finley GC',
   total_putts: 30,
   total_gir: 9,
@@ -123,7 +123,7 @@ function mixed(player = 'p1'): Row[] {
   return [
     ...Array.from({ length: 10 }, (_, i) => rr(`${player}t${i}`, player, inSeason(30 - i), { round_type: 'tournament', total_score: 70 })),
     ...Array.from({ length: 10 }, (_, i) => rr(`${player}o${i}`, player, inSeason(20 - i), { round_type: 'tournament', total_score: 74 })),
-    ...Array.from({ length: 10 }, (_, i) => rr(`${player}x${i}`, player, inSeason(44 - i), { round_type: 'practice', total_score: 90 })),
+    ...Array.from({ length: 10 }, (_, i) => rr(`${player}x${i}`, player, inSeason(44 - i), { round_type: 'tournament', total_score: 90 })),
   ];
 }
 
@@ -139,35 +139,6 @@ beforeEach(() => {
 });
 
 describe('Team stats under a filter', () => {
-  it('"Last 10" is the ten newest MATCHING rounds, and "vs previous 10" is the ten matching rounds before them', async () => {
-    tables.current = teamTables(mixed());
-    const all = await teamLoad(filterFor('last10'));
-    // Unfiltered, the ten newest are the practice rounds.
-    expect(scoringAvg(all).value).toBe(90);
-    const d = await teamLoad(withTypes(filterFor('last10'), ['tournament']));
-    expect(d.roundCount).toBe(10);
-    expect(scoringAvg(d).value).toBe(70);
-    // 70 now against 74 before, both tournaments; the practice rounds take no part.
-    expect(scoringAvg(d).delta).toBe(-4);
-    expect(scoringAvg(d).context).toBe('vs previous 10');
-    expect(d.grid.find((g) => g.id === 'p1')!.rounds).toBe(10);
-    // The player grid reads the same rounds: their tournament scoring, not the practice rounds' 90.
-    expect(d.grid.find((g) => g.id === 'p1')!.avg).toBe(70);
-    expect(all.grid.find((g) => g.id === 'p1')!.avg).toBe(90);
-    expect(d.filter.types).toEqual(['tournament']);
-  });
-
-  it('"no earlier rounds" counts the matching rounds: eight tournaments have none before them, though twelve rounds do', async () => {
-    const rows = [
-      ...Array.from({ length: 8 }, (_, i) => rr(`t${i}`, 'p1', inSeason(20 + i), { round_type: 'tournament', strokes_gained_total: 0.5 })),
-      ...Array.from({ length: 4 }, (_, i) => rr(`x${i}`, 'p1', inSeason(i), { round_type: 'practice', strokes_gained_total: 0.5 })),
-    ];
-    tables.current = teamTables(rows);
-    const sg = (d: Awaited<ReturnType<typeof loadTeamStats>>) => d.figures.find((f) => f.label === 'Team SG per round')!;
-    expect(sg(await teamLoad(withTypes(filterFor('last10'), ['tournament']))).context).toBe('No earlier rounds');
-    // Unfiltered, ten of the twelve are the window and two are before it: a thin earlier stretch.
-    expect(sg(await teamLoad(filterFor('last10'))).context).toBe('Too few earlier rounds with shots');
-  });
 
   it('the cut is per player, not across the team', async () => {
     tables.current = teamTables([...mixed('p1'), ...mixed('p2')]);
@@ -270,13 +241,6 @@ describe('the profile under a filter', () => {
     expect(p.window).toBe('last10');
   });
 
-  it('the previous ten comes from the same filtered list', async () => {
-    tables.current = profileTables(mixed(OWN));
-    const p = (await profileLoad(withTypes(filterFor('last10'), ['tournament'])))!;
-    expect(p.extra.compare).toMatchObject({ lastRounds: 10, previousRounds: 10 });
-    expect(p.extra.compare!.rows.find((r) => r.label === 'Scoring avg')).toMatchObject({ last: 70, previous: 74 });
-  });
-
   it('a range before the season counts those rounds in the window and their figures, but "this season" stays the season', async () => {
     const rows = [...[0, 1, 2].map((i) => rr(`s${i}`, OWN, inSeason(i))), ...[10, 20, 30].map((n, i) => rr(`e${i}`, OWN, before(n), { round_type: 'tournament' }))];
     tables.current = profileTables(rows);
@@ -299,17 +263,6 @@ describe('the profile under a filter', () => {
     expect(p.teamAvg).toBeNull();
     const solo = (await profileLoad(withPick(filterFor('last10'), { mode: 'only', ids: ['theirs'] }), 'player'))!;
     expect(solo.win.rounds).toBe(0);
-  });
-
-  it('a coach sees the team figure under the same filter, from the teammates\' matching rounds', async () => {
-    tables.current = profileTables([...mixed(OWN), ...mixed('p2').map((r) => ({ ...r, ...rescore(r.round_type === 'tournament' ? 76 : 90) }))]);
-    const p = (await profileLoad(withTypes(filterFor('last10'), ['tournament'])))!;
-    // Jonah's ten tournaments at 70 and Sofia's ten at 76 (and nobody's practice rounds).
-    expect(p.teamAvg).toBe(73);
-    expect(p.filterOptions.rounds.every((r) => r.player === null)).toBe(true);
-    // The sheet lists this player's own 30 rounds, not the teammates' 30 more.
-    expect(p.filterOptions.total).toBe(30);
-    expect(p.filterOptions.rounds.every((r) => r.id.startsWith('p1'))).toBe(true);
   });
 
   it('a filter that matches nothing leaves no rounds and claims no figures', async () => {

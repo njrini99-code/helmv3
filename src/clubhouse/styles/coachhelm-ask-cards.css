@@ -1,0 +1,330 @@
+/* CoachHelm chat v3: what goes inside a task card, one body per capability (docs/clubhouse/coachhelm-chat-v3/CAPABILITIES.md).
+   The shell (frame, head, buttons, ring, receipt) is the chat UI lead's; this sheet is the body's parts (prefix ch-akc) and, at
+   the end, the gallery that shows them (prefix ch-akg, preview only). Layout on tokens: no colour of its own, no motion of its
+   own. A body is drawn whole; a disclosure changes its height in one frame on the coach's tap.
+
+   Direction A (owner, 11 Nov): the card is the thing itself on the paper leaf. Who it is for is one quiet line of small coins
+   and names; the thing is its name and plain lines; words that are sent are a quote behind a hairline; a fact left over is a
+   quiet sentence; who is told and where it appears is one quiet line under a rule. No box inside the card, no chip, no table. */
+
+.ch-akc { display: flex; flex-direction: column; gap: 16px; min-width: 0; color: var(--ch-text-primary); container-type: inline-size; }
+.ch-akc > * { min-width: 0; margin: 0; }
+.ch-akc[data-density='compact'] { gap: 12px; }
+.ch-akc b { font-weight:var(--ch-fw-600); }
+
+/* The plan's own sentence, for a task whose body does not draw its subject: it names the card. Padding, not margin: it sits
+   in the shell's body, whose paragraphs carry no margin. */
+.ch-akc-sum { padding-bottom: 12px; font: var(--ch-type-17-strong); letter-spacing: var(--ch-track-17); color: var(--ch-text-primary); text-wrap: balance; overflow-wrap: anywhere; }
+
+/* ---------- 1. who it is for: small coins and names, every name one tap away ---------- */
+.ch-akc-who { display: flex; flex-direction: column; gap: 4px; }
+.ch-akc-who:empty { display: none; }
+/* The name belongs to the thing under it: the two sit closer than two parts of the card do. */
+.ch-akc-who + .ch-akc-thing, .ch-akc-who + .ch-akc-subject { margin-top: -8px; }
+.ch-akc[data-density='compact'] .ch-akc-who + .ch-akc-thing, .ch-akc[data-density='compact'] .ch-akc-who + .ch-akc-subject { margin-top: -4px; }
+
+.ch-akc-people { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.ch-akc-people__line { display: flex; align-items: center; gap: 8px; min-height: 24px; min-width: 0; font: var(--ch-type-13-medium); color: var(--ch-text-secondary); }
+.ch-akc-people__line.is-key { width: 100%; min-height: 44px; margin: -8px 0; padding: 0; border: 0; background: none; text-align: start; cursor: pointer; border-radius: var(--ch-radius-sm); -webkit-tap-highlight-color: transparent; }
+.ch-akc-people__line.is-key:focus-visible { outline: 2px solid var(--ch-border-focus); outline-offset: 2px; }
+.ch-akc-people__chev { flex: none; color: var(--ch-text-tertiary); }
+.ch-akc-people__line[aria-expanded='true'] > .ch-akc-people__chev { transform: rotate(180deg); }
+.ch-akc-people__coins { display: inline-flex; flex: none; align-items: center; gap: 4px; }
+.ch-akc-people__names { min-width: 0; overflow-wrap: anywhere; }
+.ch-akc-people__line.is-key > .ch-akc-people__names { flex: 0 1 auto; }
+.ch-akc-people__all { display: grid; grid-template-columns: repeat(auto-fill, minmax(144px, 1fr)); gap: 8px 12px; margin: 0; padding: 4px 0; list-style: none; }
+.ch-akc-people__all > li { display: flex; align-items: center; gap: 8px; min-width: 0; font: var(--ch-type-13); color: var(--ch-text-primary); }
+.ch-akc-people__all > li > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ch-akc-people__gap, .ch-akc-gap { margin: 0; font: var(--ch-type-13); color: var(--ch-text-tertiary); overflow-wrap: anywhere; }
+.ch-akc-missed { margin: 0; font: var(--ch-type-13); color: var(--ch-loss); overflow-wrap: anywhere; }
+
+/* ---------- 2. the thing itself: its name, then what it says in plain lines ---------- */
+.ch-akc-thing { display: grid; gap: 4px; min-width: 0; }
+.ch-akc-thing > * { min-width: 0; margin: 0; }
+.ch-akc-thing__t { font: var(--ch-type-20-strong); letter-spacing: var(--ch-track-20); color: var(--ch-text-primary); text-wrap: balance; overflow-wrap: anywhere; }
+.ch-akc[data-density='compact'] .ch-akc-thing__t { font: var(--ch-type-17-strong); letter-spacing: var(--ch-track-17); }
+.ch-akc-thing__l { font: var(--ch-type-15); letter-spacing: var(--ch-track-15); color: var(--ch-text-primary); text-wrap: pretty; overflow-wrap: anywhere; }
+.ch-akc-thing > .ch-akc-clamp > .ch-akc-clamp__t { font: var(--ch-type-15); letter-spacing: var(--ch-track-15); }
+.ch-akc-thing > .ch-akc-days { margin-top: 8px; }
+.ch-akc-subject { margin: 0; font: var(--ch-type-15-strong); letter-spacing: var(--ch-track-15); overflow-wrap: anywhere; }
+.ch-akc [data-unset] { color: var(--ch-text-tertiary); }
+.ch-akc-goal__now { color: var(--ch-text-primary); font-weight:var(--ch-fw-600); }
+.ch-akc-goal__unit { font-weight:var(--ch-fw-400); }
+
+/* Every date of a series: the weekday over the day, a month to a row. The first and last wear the accent. */
+.ch-akc-days { display: flex; flex-direction: column; gap: 8px; }
+.ch-akc-days > .ch-btn { align-self: flex-start; }
+.ch-akc-days__month { display: grid; grid-template-columns: calc(32 * var(--ch-type-k)) minmax(0, 1fr); align-items: end; gap: 8px; }
+.ch-akc-days__month > small { font: var(--ch-type-12-strong); color: var(--ch-text-tertiary); }
+.ch-akc-days__month > ol { display: flex; flex-wrap: wrap; gap: 8px 4px; margin: 0; padding: 0; list-style: none; }
+.ch-akc-tile { display: inline-grid; flex: none; place-items: center; width: 32px; }
+.ch-akc-tile > small { font: var(--ch-type-11); letter-spacing: var(--ch-track-11); color: var(--ch-text-tertiary); }
+.ch-akc-tile > b { font: var(--ch-type-15-strong); letter-spacing: var(--ch-track-15); color: var(--ch-text-primary); }
+.ch-akc-tile[data-tone='edge'] > b { color: var(--ch-ask-accent); }
+.ch-akc-days__text { margin: 0; font: var(--ch-type-13); color: var(--ch-text-secondary); }
+
+/* A lineup is a list, so it is drawn as one: the seat, the player, a rule between. */
+.ch-akc-lineup { display: flex; flex-direction: column; gap: 8px; }
+.ch-akc-lineup > small { font: var(--ch-type-12-strong); color: var(--ch-text-tertiary); }
+.ch-akc-lineup > ol { display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; }
+.ch-akc-lineup li { display: grid; grid-template-columns: 20px auto minmax(0, 1fr); align-items: center; gap: 8px; min-height: 36px; font: var(--ch-type-14); }
+.ch-akc-lineup li + li { border-top: var(--ch-hairline-w) solid var(--ch-separator); }
+.ch-akc-lineup__n { font: var(--ch-type-13-strong); color: var(--ch-text-tertiary); text-align: center; }
+.ch-akc-lineup li > span:last-child { display: flex; flex-direction: column; min-width: 0; padding: 4px 0; }
+.ch-akc-lineup li small { font: var(--ch-type-12); color: var(--ch-text-tertiary); }
+
+.ch-akc-roll { display: flex; flex-direction: column; gap: 12px; }
+.ch-akc-roll > section { display: flex; flex-direction: column; gap: 4px; }
+.ch-akc-roll h5 { margin: 0; font: var(--ch-type-13-strong); color: var(--ch-text-primary); }
+.ch-akc-roll h5 > span { margin-inline-start: 4px; color: var(--ch-text-tertiary); font-weight:var(--ch-fw-400); }
+
+/* ---------- 3. words that are sent: a quote behind a hairline, never a box ---------- */
+.ch-akc-words { display: flex; flex-direction: column; gap: 8px; margin: 0; min-width: 0; }
+.ch-akc-words > figcaption { font: var(--ch-type-13); color: var(--ch-text-secondary); }
+.ch-akc-notice, .ch-akc-quote > blockquote { display: flex; flex-direction: column; gap: 4px; min-width: 0; margin: 0; padding: 0 0 0 12px; border-inline-start: var(--ch-hairline-w) solid var(--ch-border-strong); }
+.ch-akc-notice > b { font: var(--ch-type-15-strong); letter-spacing: var(--ch-track-15); color: var(--ch-text-primary); overflow-wrap: anywhere; }
+.ch-akc-notice .ch-akc-clamp__t, .ch-akc-quote .ch-akc-clamp__t { font: var(--ch-type-15); letter-spacing: var(--ch-track-15); }
+.ch-akc-quote.is-quiet > blockquote { color: var(--ch-text-secondary); }
+.ch-akc-quote.is-struck .ch-akc-clamp__t { text-decoration: line-through; color: var(--ch-text-tertiary); }
+
+.ch-akc-clamp { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.ch-akc-clamp > .ch-btn { align-self: flex-start; }
+/* Clamped, the paragraphs run on as one, so the last line shown is never a blank one; open, they are the writer's own. */
+.ch-akc-clamp__t { display: -webkit-box; overflow: hidden; margin: 0; font: var(--ch-type-14); color: inherit; white-space: normal; overflow-wrap: anywhere; -webkit-box-orient: vertical; -webkit-line-clamp: var(--ch-akc-lines, 6); line-clamp: var(--ch-akc-lines, 6); }
+.ch-akc-clamp[data-open] > .ch-akc-clamp__t { display: block; overflow: visible; white-space: pre-line; -webkit-line-clamp: none; line-clamp: none; }
+
+/* A message is drawn as Messages draws it: the bubbles are the thing, and nothing frames them. */
+.ch-akc-thread { display: flex; flex-direction: column; gap: 8px; }
+.ch-akc-thread__before { align-self: flex-start; max-width: 84%; margin: 0; padding: 8px 12px; border-radius: var(--ch-radius-bubble); background: var(--ch-bubble-theirs-bg); color: var(--ch-text-secondary); font: var(--ch-type-14); overflow-wrap: anywhere; }
+.ch-akc-thread__mine { align-items: flex-end; }
+.ch-akc-thread__mine > .ch-btn { align-self: flex-end; }
+.ch-akc-clamp__t.ch-akc-bubble { align-self: flex-end; max-width: 84%; padding: 8px 12px; border-radius: var(--ch-radius-bubble); border-end-end-radius: var(--ch-radius-tail); background: var(--ch-bubble-mine-fill); color: var(--ch-bubble-mine-ink); }
+
+.ch-akc-delivery > .ch-seg, .ch-akc-delivery > .ch-select { align-self: flex-start; max-width: 100%; }
+
+/* ---------- 4. a fact left over: one quiet sentence, its label and its value in the same ink ---------- */
+.ch-akc-rows { display: grid; gap: 4px; margin: 0; }
+.ch-akc-row { min-width: 0; font: var(--ch-type-13); color: var(--ch-text-secondary); overflow-wrap: anywhere; }
+.ch-akc-row > dt { display: inline; }
+.ch-akc-row > dt::after { content: ': '; }
+.ch-akc-row > dd { display: inline; margin: 0; }
+.ch-akc-row .ch-akc-clamp__t { font: var(--ch-type-13); }
+.ch-akc-row__unset { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; color: var(--ch-loss); font-weight:var(--ch-fw-600); vertical-align: middle; }
+.ch-akc-row__src { margin-inline-start: 4px; font: var(--ch-type-13); color: var(--ch-text-tertiary); }
+.ch-akc-meta { margin: 0; font: var(--ch-type-13); color: var(--ch-text-secondary); overflow-wrap: anywhere; }
+.ch-akc-change { margin: 0; font: var(--ch-type-13); color: var(--ch-text-secondary); }
+.ch-akc-change b { color: var(--ch-text-primary); }
+
+/* What changes: how it stands now, struck through, and how it will stand under it. */
+.ch-akc-diff { display: grid; gap: 4px; }
+.ch-akc-diff > p { margin: 0; font: var(--ch-type-15); letter-spacing: var(--ch-track-15); overflow-wrap: anywhere; text-wrap: pretty; }
+.ch-akc-diff > .is-now > span { color: var(--ch-text-tertiary); text-decoration: line-through; }
+.ch-akc-diff > .is-after > b { font: var(--ch-type-15-strong); letter-spacing: var(--ch-track-15); }
+
+/* Something that cannot be taken back: amber ink and its mark, no fill. It is the one coloured line a card may carry. */
+.ch-akc-warn { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; margin: 0; color: var(--ch-loss); font: var(--ch-type-14); text-wrap: pretty; }
+.ch-akc-warn > svg { margin-top: 2px; }
+
+/* ---------- 5. the foot: under one rule, who is told and where it appears, then only what cannot be taken back.
+   Everything else the plan says waits behind the one Details key. ---------- */
+.ch-akc-foot { display: flex; flex-direction: column; gap: 4px; padding-top: 12px; border-top: var(--ch-hairline-w) solid var(--ch-separator-strong); }
+.ch-akc-foot > * { min-width: 0; margin: 0; }
+.ch-akc-told { font: var(--ch-type-13); color: var(--ch-text-secondary); overflow-wrap: anywhere; }
+.ch-akc-told > span { color: var(--ch-text-tertiary); }
+.ch-akc-final { font: var(--ch-type-13); color: var(--ch-text-secondary); overflow-wrap: anywhere; }
+.ch-akc-after { font: var(--ch-type-13); color: var(--ch-text-tertiary); overflow-wrap: anywhere; }
+/* The keys' words sit on the card's left edge with the lines above them; the first key's own padding hangs outside. */
+.ch-akc-keys { display: flex; flex-wrap: wrap; align-items: center; gap: 0 4px; margin-top: 4px; margin-inline-start: -12px; }
+/* Details is the quieter of the two: the card's own ink, not the action colour. */
+.ch-akc-keys > .ch-btn[data-ch-card-more] { color: var(--ch-text-secondary); }
+.ch-akc-keys > .ch-btn[aria-expanded='true'] > svg { transform: rotate(180deg); }
+.ch-akc-more { display: flex; flex-direction: column; gap: 4px; }
+.ch-akc-more > * { min-width: 0; margin: 0; }
+
+/* ---------- edit mode: the plan's editable fields, each in the app's own control ---------- */
+.ch-akc-edit { display: flex; flex-direction: column; gap: 12px; padding-top: 12px; border-top: var(--ch-hairline-w) solid var(--ch-separator-strong); }
+.ch-akc-edit > * { min-width: 0; margin: 0; }
+.ch-akc-edit__lede, .ch-akc-edit__fixed { font: var(--ch-type-13); color: var(--ch-text-secondary); }
+.ch-akc-edit__fixed { color: var(--ch-text-tertiary); }
+.ch-akc-edit fieldset { padding: 0; border: 0; }
+.ch-akc-edit legend { display: flex; align-items: baseline; gap: 8px; width: 100%; padding: 0; margin-bottom: 6px; }
+.ch-akc-edit__pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(132px, 1fr)); gap: 8px; }
+.ch-akc-edit__toggle { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; }
+.ch-akc-edit__people > div { display: grid; grid-template-columns: repeat(auto-fill, minmax(152px, 1fr)); gap: 4px 12px; }
+.ch-akc-edit__list { display: flex; flex-direction: column; gap: 6px; }
+.ch-akc-edit__list > .ch-btn { align-self: flex-start; }
+.ch-akc-edit__item { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 6px; margin-bottom: 6px; }
+.ch-akc-edit__keys { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+
+/* ---------- the small things an answer can carry: a link, a note, a calculation, "not tracked" ---------- */
+.ch-akc-link { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px; min-height: 44px; border-radius: var(--ch-radius-sm); color: var(--ch-text-primary); text-decoration: none; }
+.ch-akc-link > span:nth-child(2) { display: flex; flex-direction: column; min-width: 0; }
+.ch-akc-link b { font: var(--ch-type-14-strong); overflow-wrap: anywhere; }
+.ch-akc-link small { font: var(--ch-type-13); color: var(--ch-text-secondary); overflow-wrap: anywhere; }
+.ch-akc-link > svg, .ch-akc-link__ico { color: var(--ch-ask-accent); }
+
+.ch-akc-noted { display: inline-grid; align-self: flex-start; justify-self: start; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px; max-width: 100%; }
+.ch-akc-noted > svg { color: var(--ch-ask-accent); }
+.ch-akc-noted__tx { display: flex; flex-direction: column; min-width: 0; padding: 2px 0; }
+.ch-akc-noted__tx > b { font: var(--ch-type-12-strong); color: var(--ch-text-tertiary); }
+.ch-akc-noted__tx > span { display: -webkit-box; overflow: hidden; font: var(--ch-type-14); overflow-wrap: anywhere; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; }
+.ch-akc-noted__tx > small { font: var(--ch-type-12); color: var(--ch-text-tertiary); }
+.ch-akc-noted[data-op='removed'] .ch-akc-noted__tx > span { text-decoration: line-through; color: var(--ch-text-tertiary); }
+
+.ch-akc-worked { display: flex; flex-direction: column; gap: 12px; }
+.ch-akc-worked__how { margin: 0; font: var(--ch-type-15); letter-spacing: var(--ch-track-15); text-wrap: pretty; }
+.ch-akc-worked__read { display: grid; grid-template-columns: repeat(auto-fit, minmax(88px, 1fr)); gap: 8px; margin: 0; }
+.ch-akc-worked__read > div { display: flex; flex-direction: column; gap: 2px; padding-top: 8px; border-top: var(--ch-hairline-w) solid var(--ch-separator-strong); }
+.ch-akc-worked__read dt { font: var(--ch-type-12); color: var(--ch-text-tertiary); }
+.ch-akc-worked__read dd { margin: 0; font: var(--ch-type-17-strong); letter-spacing: var(--ch-track-17); }
+.ch-akc-untracked { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; }
+.ch-akc-untracked > svg { margin-top: 2px; color: var(--ch-text-tertiary); }
+.ch-akc-untracked > div { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.ch-akc-untracked b { font: var(--ch-type-14-strong); overflow-wrap: anywhere; }
+.ch-akc-untracked ul { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0; padding: 0; list-style: none; font: var(--ch-type-13); color: var(--ch-text-secondary); }
+
+/* ---------- drafts: a card that writes nothing ---------- */
+.ch-akc-poll { display: flex; flex-direction: column; gap: 8px; }
+.ch-akc-poll > small { font: var(--ch-type-13); color: var(--ch-text-secondary); }
+.ch-akc-poll > b { font: var(--ch-type-20-strong); letter-spacing: var(--ch-track-20); text-wrap: balance; overflow-wrap: anywhere; }
+.ch-akc-poll > ul { display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.ch-akc-poll > ul { gap: 0; }
+.ch-akc-poll li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 40px; font: var(--ch-type-15); letter-spacing: var(--ch-track-15); overflow-wrap: anywhere; }
+.ch-akc-poll li + li { border-top: var(--ch-hairline-w) solid var(--ch-separator); }
+.ch-akc-poll li > i { width: 18px; height: 18px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--ch-border-strong); }
+.ch-akc-poll[data-multi] li > i { border-radius: var(--ch-radius-xs); }
+.ch-akc-poll li > span:last-child { font: var(--ch-type-13); color: var(--ch-text-tertiary); }
+.ch-akc-plan { display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; }
+.ch-akc-plan > li { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; gap: 4px 12px; padding: 12px 0; }
+.ch-akc-plan > li + li { border-top: var(--ch-hairline-w) solid var(--ch-separator); }
+.ch-akc-plan time { font: var(--ch-type-13-strong); color: var(--ch-text-secondary); }
+.ch-akc-plan li > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ch-akc-plan b { font: var(--ch-type-15-strong); letter-spacing: var(--ch-track-15); overflow-wrap: anywhere; }
+.ch-akc-plan small { font: var(--ch-type-13); color: var(--ch-text-secondary); overflow-wrap: anywhere; }
+.ch-akc-plan em { font: var(--ch-type-13); font-style: normal; color: var(--ch-text-tertiary); white-space: nowrap; }
+.ch-akc-plan__why { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 2px; }
+.ch-akc-brief { display: flex; flex-direction: column; gap: 12px; }
+.ch-akc-brief > section { display: flex; flex-direction: column; gap: 6px; }
+.ch-akc-brief h4 { margin: 0; font: var(--ch-type-14-strong); }
+.ch-akc-brief ul { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.ch-akc-brief li { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 12px; border-radius: var(--ch-radius-sm); background: var(--ch-well-bg-flat); box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-control); font: var(--ch-type-14); }
+.ch-akc-brief li[data-on] { background: var(--ch-selected-tint); box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-selected-pill-ring); color: var(--ch-selected-ink); font-weight:var(--ch-fw-600); }
+.ch-akc-brief li > small { font: var(--ch-type-12); color: var(--ch-text-tertiary); }
+.ch-akc-board { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; }
+.ch-akc-board > p { grid-column: 1 / -1; margin: 0; font: var(--ch-type-15); letter-spacing: var(--ch-track-15); overflow-wrap: anywhere; }
+.ch-akc-board > div { display: flex; flex-direction: column; gap: 2px; padding-top: 8px; border-top: var(--ch-hairline-w) solid var(--ch-separator-strong); }
+.ch-akc-board > div > small { font: var(--ch-type-12); color: var(--ch-text-tertiary); }
+.ch-akc-board > div > b { font: var(--ch-type-20-strong); letter-spacing: var(--ch-track-20); }
+
+/* ---------- several cards in one turn: the one safe "approve all" (cards/ApproveAll.tsx) ---------- */
+/* The last of several cards and the bar under it are one block of the turn. */
+.ch-akc-deck { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; min-width: 0; }
+/* It sits in the turn under the cards it speaks for, on the same paper leaf and at the same measure: what approving them
+   does, the one key, then each card as a quiet line. */
+.ch-akc-all { box-sizing: border-box; display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 520px; padding: 16px 20px; border-radius: var(--ch-radius-card); background: var(--ch-chart-paper); box-shadow: var(--ch-elevation-card); container-type: inline-size; }
+.ch-akc-all__top { display: flex; align-items: center; gap: 12px; }
+.ch-akc-all__tx { display: flex; flex: 1 1 0; flex-direction: column; gap: 4px; min-width: 0; }
+.ch-akc-all__tx > b { display: inline-flex; align-items: center; gap: 8px; font: var(--ch-type-15-strong); letter-spacing: var(--ch-track-15); color: var(--ch-text-primary); }
+.ch-akc-all__tx > span { font: var(--ch-type-13); color: var(--ch-text-secondary); }
+.ch-akc-all[data-phase='stopped'] .ch-akc-all__tx > b { color: var(--ch-loss); }
+.ch-akc-all__top > .ch-btn { flex: none; min-height: 44px; }
+.ch-akc-all__list { display: flex; flex-direction: column; gap: 4px; margin: 0; padding: 12px 0 0; list-style: none; border-top: var(--ch-hairline-w) solid var(--ch-separator-strong); }
+.ch-akc-all__list > li { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0 12px; font: var(--ch-type-13); color: var(--ch-text-primary); }
+.ch-akc-all__list > li[data-left] > span { color: var(--ch-text-tertiary); }
+.ch-akc-all__list small { font: var(--ch-type-13); color: var(--ch-text-secondary); }
+.ch-akc-all__list > li[data-left] > small { color: var(--ch-text-tertiary); }
+@container (max-width: 400px) { .ch-akc-all__top { flex-direction: column; align-items: stretch; } }
+
+/* The studio's own rules (prefix ch-aks; chat/studio/**) live in coachhelm-ask-studio.css, loaded by the studio's registry. */
+
+/* =====================================================================================================================
+   The gallery (preview only): /clubhouse-preview/coachhelm-capabilities. The card frame here is a stand-in for the
+   chat UI lead's shell, built to SPEC Moment 7, so the bodies can be seen in every state before the shell exports.
+   ===================================================================================================================== */
+.ch-akg { display: flex; flex-direction: column; gap: 32px; width: 100%; max-width: var(--ch-measure-page); margin: 0 auto; padding: 16px 16px 96px; }
+@media (min-width: 414px) { .ch-akg { padding-inline: 20px; } }
+.ch-akg--one { max-width: var(--ch-measure-reading); gap: 12px; }
+.ch-akg__intro { display: flex; flex-direction: column; gap: 8px; }
+.ch-akg__intro > h1 { margin: 0; font: var(--ch-type-28-strong); letter-spacing: var(--ch-track-28); text-wrap: balance; }
+.ch-akg__intro > p { max-width: 68ch; margin: 0; font: var(--ch-type-15); letter-spacing: var(--ch-track-15); color: var(--ch-text-secondary); text-wrap: pretty; }
+.ch-akg__nav { display: flex; flex-wrap: wrap; gap: 8px; }
+.ch-akg__group { display: flex; flex-direction: column; gap: 20px; scroll-margin-top: 72px; }
+.ch-akg__group > header { display: flex; flex-direction: column; gap: 4px; padding-bottom: 8px; border-bottom: var(--ch-hairline-w) solid var(--ch-separator-strong); }
+.ch-akg__group > header > h2 { margin: 0; font: var(--ch-type-22-strong); letter-spacing: var(--ch-track-22); }
+.ch-akg__group > header > p { max-width: 68ch; margin: 0; font: var(--ch-type-14); color: var(--ch-text-secondary); }
+
+.ch-akg-spec { display: flex; flex-direction: column; gap: 12px; scroll-margin-top: 72px; }
+.ch-akg-spec__hd { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
+.ch-akg-spec__hd > h3 { margin: 0; font: var(--ch-type-17-strong); letter-spacing: var(--ch-track-17); }
+.ch-akg-spec__hd > code { font: var(--ch-type-12); font-family: var(--ch-font-mono); color: var(--ch-text-tertiary); }
+.ch-akg-spec__hd > span { font: var(--ch-type-13); color: var(--ch-text-tertiary); }
+.ch-akg-spec__bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.ch-akg-spec__bar > .ch-select { flex: 0 1 240px; width: auto; min-width: 168px; }
+.ch-akg-spec__bar > label { display: inline-flex; align-items: center; gap: 6px; font: var(--ch-type-13); color: var(--ch-text-secondary); }
+.ch-akg-spec__stage { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (min-width: 1024px) { .ch-akg-spec__stage[data-both] { grid-template-columns: minmax(0, 640px) 372px; gap: 32px; } }
+.ch-akg-spec__col { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.ch-akg-spec__col > small { font: var(--ch-type-12-strong); color: var(--ch-text-tertiary); }
+.ch-akg-spec__col[data-density='compact'] { max-width: 372px; }
+.ch-akg-forms { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 16px; align-items: start; }
+.ch-akg-form { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.ch-akg-form > small { font: var(--ch-type-12-strong); color: var(--ch-text-tertiary); }
+.ch-akg-form > p { margin: 0; font: var(--ch-type-13); color: var(--ch-text-secondary); }
+.ch-akg-plain { padding: 16px; border-radius: var(--ch-radius-card); background: var(--ch-card-bg); box-shadow: var(--ch-elevation-card); }
+.ch-akg-words { width: 100%; border-collapse: collapse; }
+.ch-akg-words th, .ch-akg-words td { padding: 12px 12px 12px 0; border-top: var(--ch-hairline-w) solid var(--ch-separator); font: var(--ch-type-14); text-align: start; vertical-align: top; overflow-wrap: break-word; }
+.ch-akg-words th { width: 32%; font: var(--ch-type-13-strong); color: var(--ch-text-secondary); }
+.ch-akg-words tr:first-child > * { border-top: 0; }
+.ch-akg-words td > span { display: inline-block; margin: 0 6px 4px 0; }
+
+/* The stand-in frame. */
+.ch-akg-card { box-sizing: border-box; display: flex; flex-direction: column; gap: 16px; width: 100%; max-width: 520px; padding: 16px 20px; border-radius: var(--ch-radius-card); background: var(--ch-chart-paper); box-shadow: var(--ch-elevation-card); }
+.ch-akg-card[data-density='compact'] { gap: 12px; padding: 12px 16px; }
+.ch-akg-card__hd { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 12px; border-bottom: var(--ch-hairline-w) solid var(--ch-border-hairline); }
+.ch-akg-card__hd > b { font: var(--ch-type-13-strong); color: var(--ch-text-primary); }
+.ch-akg-card__sum { margin: 0; font: var(--ch-type-17-strong); letter-spacing: var(--ch-track-17); text-wrap: balance; overflow-wrap: anywhere; }
+.ch-akg-card__body { transition: opacity var(--ch-dur-quick) var(--ch-ease); }
+.ch-akg-card__body[data-dim] { opacity: 0.55; }
+.ch-akg-card__ft { display: flex; flex-direction: column; gap: 8px; }
+.ch-akg-card__ft:empty { display: none; }
+.ch-akg-card__btns { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 8px; min-height: 44px; }
+.ch-akg-card__btns > :only-child { grid-column: 1 / -1; }
+.ch-akg-card__btns > .ch-btn { min-height: 44px; }
+.ch-akg-card__why { margin: 0; font: var(--ch-type-13); color: var(--ch-loss); text-align: end; }
+.ch-akg-card__line { margin: 0; font: var(--ch-type-14); color: var(--ch-text-secondary); }
+.ch-akg-rcpt { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 44px; }
+.ch-akg-rcpt__tx { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ch-akg-rcpt__tx > b { font: var(--ch-type-14-strong); overflow-wrap: anywhere; }
+.ch-akg-rcpt__tx > span { font: var(--ch-type-13); color: var(--ch-text-secondary); overflow-wrap: anywhere; }
+.ch-akg-rcpt__acts { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.ch-akg-ring { position: relative; display: grid; place-items: center; width: 32px; height: 32px; }
+.ch-akg-ring > svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+.ch-akg-ring circle { fill: none; stroke-width: 2.5; }
+.ch-akg-ring .trk { stroke: var(--ch-separator-strong); }
+.ch-akg-ring .drn { stroke: var(--ch-ask-accent); stroke-linecap: round; stroke-dasharray: 81.68; }
+.ch-akg-ring[data-run] .drn { animation: ch-akg-drain linear forwards; }
+.ch-akg-ring > b { font: var(--ch-type-13-strong); }
+@keyframes ch-akg-drain { to { stroke-dashoffset: 81.68; } }
+.ch-akg-mark { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; }
+.ch-akg-mark[data-tone='ok'] { background: var(--ch-ask-accent); color: var(--ch-ask-on-accent); }
+.ch-akg-mark[data-tone='warn'] { background: var(--ch-warning-100); color: var(--ch-loss); }
+.ch-akg-told { margin: 0; font: var(--ch-type-13); color: var(--ch-text-secondary); }
+.ch-akg-note { padding: 12px; border-radius: var(--ch-radius-sm); background: var(--ch-info-100); color: var(--ch-info-600); font: var(--ch-type-13); }
+
+.ch-akg-work { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; min-height: 28px; }
+@media (max-width: 640px) {
+  .ch-akg-words, .ch-akg-words tbody, .ch-akg-words tr, .ch-akg-words th, .ch-akg-words td { display: block; width: auto; }
+  .ch-akg-words th { padding-bottom: 4px; }
+  .ch-akg-words td { padding-top: 0; border-top: 0; }
+  .ch-akg-words tr:first-child > th { padding-top: 0; }
+}
+.ch-akg-work > b { font: var(--ch-type-15-strong); letter-spacing: var(--ch-track-15); }
+
+/* The gallery's plates: what a tap asks, several cards at once, the workspace. */
+.ch-akg-asked { margin: 0; font: var(--ch-type-13); color: var(--ch-text-secondary); overflow-wrap: anywhere; }
+.ch-akg-asked > q { color: var(--ch-text-primary); }
+.ch-akg-asked > code { font: var(--ch-type-12); font-family: var(--ch-font-mono); color: var(--ch-text-tertiary); }
+.ch-akg-batch { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 640px; }
+.ch-akg-batch[data-density='compact'] { max-width: 361px; }
+.ch-akg-isl { position: relative; width: 100%; max-width: 640px; min-height: 380px; border-radius: var(--ch-radius-card); background: var(--ch-well-bg-flat); }
+.ch-akg-isl[data-density='compact'] { max-width: 361px; }

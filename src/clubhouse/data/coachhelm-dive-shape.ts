@@ -13,6 +13,7 @@ import { rebuiltHref } from '../shell/nav';
 import { formatComparison } from './coachhelm-map';
 import { toChRead, writeUpFor, type ChRead } from './coachhelm-read-shape';
 import { playerSeesCause } from '@/lib/coachhelm/reads/player-cause';
+import { plainConfidenceReason } from '@/lib/coachhelm/shared/confidence-reason';
 import type { ChViewer } from './coachhelm-voice';
 import { stanceOf, type ChBoardMissing, type ChInsight, type ChStance } from './coachhelm-shape';
 import { figure } from './coachhelm-standing-shape';
@@ -221,6 +222,8 @@ export interface ChDeepDive {
 /** What the loader reads for the parts beside the insights. */
 export interface ChDiveInputs {
   rounds: ReadonlyMap<string, DiveRoundRow>;
+  /** The read page's own read (READ-S2): the rounds in the window of a read that names none. Absent everywhere else. */
+  windowRounds?: readonly DiveRoundRow[];
   focusAreas: readonly DiveFocusRow[];
   goals: readonly Goal[];
   themes: AssembledThemes | null;
@@ -251,13 +254,32 @@ export function roundIdsToRead(ev: Pick<InsightEvidence, 'source_round_ids'> | u
   return Array.isArray(ids) ? ids.filter((x): x is string => typeof x === 'string').slice(0, DIVE_ROUNDS_READ) : [];
 }
 
+/**
+ * The days a read that names no rounds was made over, by the engine's own rule (read-window.ts `stampFromRange`, source-rounds.ts): its
+ * window, an empty end being today, an empty start being the beginning, and both empty the last `window_days`. A lifetime value with no
+ * bounds has no window to go on (its `window_days` is only a span), so null: it is the read that says it names none.
+ */
+export function roundWindowOf(ev: Pick<InsightEvidence, 'window_start' | 'window_end' | 'window_days' | 'window_basis'> | undefined, today: string): { from: string | null; to: string } | null {
+  if (!ev) return null;
+  const day = (v: unknown) => (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}/.test(v) && !Number.isNaN(Date.parse(v.slice(0, 10))) ? v.slice(0, 10) : null);
+  const start = day(ev.window_start);
+  const end = day(ev.window_end);
+  if (start || end) return start && end && start > end ? null : { from: start, to: end ?? today };
+  const days = num(ev.window_days);
+  if (ev.window_basis === 'lifetime' || days == null || days <= 0) return null;
+  return { from: new Date(Date.parse(`${today}T00:00:00Z`) - days * 86_400_000).toISOString().slice(0, 10), to: today };
+}
+
 /** `role`: whose page lists the rounds; each links to that role's round review (the coach's, on a coach's page). */
-function roundsFor(ev: InsightEvidence | undefined, byId: ReadonlyMap<string, DiveRoundRow>, role: ChViewer['role'] = 'player'): ChDiveRounds {
+function roundsFor(ev: InsightEvidence | undefined, byId: ReadonlyMap<string, DiveRoundRow>, role: ChViewer['role'] = 'player', windowRounds: readonly DiveRoundRow[] = []): ChDiveRounds {
   const named = Array.isArray(ev?.source_round_ids) ? (ev as InsightEvidence).source_round_ids!.filter((x): x is string => typeof x === 'string') : [];
-  const found = roundIdsToRead(ev)
-    .map((id) => byId.get(id))
-    .filter((r): r is DiveRoundRow => !!r)
-    .sort((a, b) => (a.round_date < b.round_date ? 1 : a.round_date > b.round_date ? -1 : 0));
+  const inWindow = named.length === 0 ? windowRounds : [];
+  const found = [
+    ...roundIdsToRead(ev)
+      .map((id) => byId.get(id))
+      .filter((r): r is DiveRoundRow => !!r),
+    ...inWindow,
+  ].sort((a, b) => (a.round_date < b.round_date ? 1 : a.round_date > b.round_date ? -1 : 0));
   const list = found.slice(0, DIVE_ROUNDS_SHOWN).map((r): ChDiveRound => {
     const holes = num(r.holes_played) ?? 18;
     const toPar = num(r.score_to_par);
@@ -276,7 +298,7 @@ function roundsFor(ev: InsightEvidence | undefined, byId: ReadonlyMap<string, Di
     .reverse()
     .map((r) => r.toPar18)
     .filter((v): v is number => v != null);
-  return { total: named.length, list, strip: strip.length >= 3 ? strip : [] };
+  return { total: named.length || inWindow.length, list, strip: strip.length >= 3 ? strip : [] };
 }
 
 /** Whether a metric is better when its value is higher, from the generator's own polarity, else the registry's. */
@@ -349,7 +371,7 @@ function diagnosisFor(ev: InsightEvidence, say: (t: string) => string, role: ChV
         value: formatComparison(x.value, x.unit),
         n: num(x.sample_n) && (x.sample_n as number) > 0 ? (x.sample_n as number) : null,
       })),
-    reason: d.confidence_reason?.trim() ? say(d.confidence_reason.trim()) : null,
+    reason: ((text) => (text ? say(text) : null))(plainConfidenceReason(d.confidence_reason)),
   };
 }
 
@@ -390,7 +412,7 @@ function planFor(raw: EvidenceInsight, focusAreas: readonly DiveFocusRow[], goal
  * cascade anchors it on the team's average when it has one (the player's value, the team's and the Tour's all known), and
  * otherwise carries the whole gap to the Tour (`CauseNode.strokesSavedPerRound`), so the page says which.
  */
-function closesFor(raw: EvidenceInsight, themes: AssembledThemes | null): ChDeepInsight['closes'] {
+export function closesFor(raw: EvidenceInsight, themes: AssembledThemes | null): ChDeepInsight['closes'] {
   const cause = themes?.themes.flatMap((t) => t.causes).find((c) => c.insight_id === raw.id);
   if (!cause || cause.counterfactualSuppressed || !(cause.strokesSavedPerRound > 0)) return null;
   const team = cause.standingTeamAvgValue != null && cause.standingPlayerValue != null && cause.standingPgaValue != null;
@@ -537,14 +559,14 @@ export function clearedShown(cleared: readonly ChDiveCleared[], all: boolean): S
 export function toChDeepInsight(
   raw: EvidenceInsight,
   base: ChInsight,
-  inputs: Pick<ChDiveInputs, 'rounds' | 'focusAreas' | 'goals' | 'themes'>,
+  inputs: Pick<ChDiveInputs, 'rounds' | 'windowRounds' | 'focusAreas' | 'goals' | 'themes'>,
   say: (t: string) => string = (t) => t,
   role: ChViewer['role'] = 'player',
 ): ChDeepInsight {
   const ev = raw.evidence;
   const diagnosis = diagnosisFor(ev, say, role);
   const closes = closesFor(raw, inputs.themes);
-  const rounds = roundsFor(ev, inputs.rounds, role);
+  const rounds = roundsFor(ev, inputs.rounds, role, inputs.windowRounds);
   const read = toChRead(raw, base, { diagnosis, closes, newestListed: rounds.list[0]?.date ?? null, windowEnd: fmtShortDate(ev.window_end || null), role }, say);
   // CR0: the view already drops these sentences when it draws the write-up; a cause a player is not shown leaves the payload as well.
   const withheld = role !== 'coach' && read.why.level === null && !!base.why;

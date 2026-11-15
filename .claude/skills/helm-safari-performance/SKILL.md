@@ -40,8 +40,10 @@ for what Safari cannot do (CPU throttling, CDP traces), and you say so.
   against the local Supabase stack; about 12 minutes and several GB, so not on
   a busy laptop). Never time a dev server.
 - **Never deploy production** to test something. Preview only.
-- Previews read and write the one production database: navigate, scroll and
-  type freely, but send, save or delete only on test-account data.
+- Vercel Preview and local development read and write staging, "PROSP DATA"
+  (`ybmwektreyrwjscxlogv`), not production (AGENTS.md "Database"; local dev
+  only once `.env.local` points there). Navigate, scroll and type freely; send,
+  save or delete only on test-account data.
 - The owner signs in on devices and in the Simulator. Do not type passwords.
 
 ## 3. The cycle

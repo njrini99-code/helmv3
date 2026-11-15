@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 const ROOT = process.cwd();
 const yml = readFileSync(resolve(ROOT, 'config/feature-flags.yml'), 'utf8');
 
-/** Every lane's flag: START_HERE section 4 and the wiring sections. */
+/** Every flag the redesign lanes used, all retired: the redesign is the only version of each page. */
 const LANE_FLAGS = [
   'clubhouse_refresh_v1',
   'clubhouse_stats_redesign_v1',
@@ -22,21 +22,30 @@ const LANE_FLAGS = [
   'golf_documents_library',
 ] as const;
 
-const entryOf = (flag: string) => {
-  const at = yml.indexOf(`- feature_id: ${flag}\n`);
-  expect(at, `${flag} is registered`).toBeGreaterThan(-1);
-  const end = yml.indexOf('- feature_id:', at + 1);
-  return yml.slice(at, end < 0 ? undefined : end);
-};
+/** The redesign replaced the old pages (owner decision, 2026-11-07): these flags are retired, so no flag entry and no read of one may come back. */
+describe('the retired redesign flags are gone', () => {
+  const walkAll = (dir: string, out: string[] = []): string[] => {
+    for (const name of readdirSync(dir)) {
+      const p = join(dir, name);
+      if (statSync(p).isDirectory()) {
+        if (name !== 'node_modules' && name !== '.next') walkAll(p, out);
+      } else if (/\.(ts|tsx)$/.test(name) && !/\.test\./.test(name) && !name.endsWith('.generated.ts')) out.push(p);
+    }
+    return out;
+  };
 
-/** SHARED-8. A flag that isn't off everywhere can't promise "flag off renders today's screens" anywhere. */
-describe('every lane’s flag is a release flag, off in production and development, on in Preview (staging)', () => {
-  it.each(LANE_FLAGS)('%s', (flag) => {
-    const e = entryOf(flag);
-    expect(e).toMatch(/default: false/);
-    expect(e).toMatch(/production: false/);
-    expect(e).toMatch(/preview: true/);
-    expect(e).toMatch(/development: false/);
+  it.each(LANE_FLAGS)('%s has no entry in feature-flags.yml', (flag) => {
+    expect(yml, flag).not.toContain(`- feature_id: ${flag}\n`);
+  });
+
+  it('no source file reads a retired flag by id', () => {
+    // `golf_practice_plans` is also a table name, so only a flag read (a call or a `_FLAG =` constant) counts.
+    const reads = LANE_FLAGS.map((f) => new RegExp(`(?:isFlagEnabled|evaluateFlag|_FLAG\\s*=)\\s*\\(?\\s*['"]${f}['"]`));
+    const hits = walkAll(resolve(ROOT, 'src')).filter((f) => {
+      const src = readFileSync(f, 'utf8');
+      return reads.some((r) => r.test(src));
+    });
+    expect(hits).toEqual([]);
   });
 });
 

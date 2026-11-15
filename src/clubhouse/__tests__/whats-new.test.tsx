@@ -7,7 +7,8 @@ import type { WhatsNewItem } from '@/app/golf/actions/whats-new';
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn(), replace: vi.fn() }), usePathname: () => '/golf/dashboard/whats-new' }));
 vi.mock('../lib/haptics', () => ({ haptic: vi.fn() }));
 vi.mock('../lib/track', () => ({ chReport: vi.fn(), chTrail: vi.fn(), chTagSession: vi.fn() }));
-vi.mock('../lib/use-phone', () => ({ useChPhone: () => false }));
+const phoneState = vi.hoisted(() => ({ phone: false }));
+vi.mock('../lib/use-phone', () => ({ useChPhone: () => phoneState.phone }));
 const refreshState = vi.hoisted(() => ({ refreshing: false }));
 vi.mock('../lib/use-refresh', () => ({ useRefresh: () => ({ refresh: vi.fn(), refreshing: refreshState.refreshing }) }));
 vi.mock('../lib/session-state', async () => {
@@ -23,6 +24,7 @@ import { WhatsNewSkeleton } from '../screens/whats-new/WhatsNewSkeleton';
 afterEach(() => {
   cleanup();
   refreshState.refreshing = false;
+  phoneState.phone = false;
 });
 
 const NOW = Date.UTC(2026, 9, 14, 20, 0);
@@ -73,6 +75,19 @@ describe('WhatsNew', () => {
     const today = screen.getByRole('list', { name: /^Today, 3 updates/ });
     expect(within(today).getByText('Short putts inside six feet')).toBeTruthy();
     expect(within(today).getByText('Insight resolved')).toBeTruthy();
+  });
+
+  it('leads a desktop row with its time; on the phone the time opens the line under the title, so the text has the row', () => {
+    const { unmount } = render(<WhatsNew data={PREVIEW_WHATS_NEW} />);
+    const desk = within(screen.getByRole('list', { name: /^Today, 3 updates/ })).getAllByRole('listitem')[0]!;
+    expect(desk.querySelector('.ch-lgr__lead')!.textContent).toBe('1:42 PM');
+    expect(desk.querySelector('.ch-wn-who')!.textContent).toBe('Jonah Okafor · Insight resolved');
+    unmount();
+    phoneState.phone = true;
+    render(<WhatsNew data={PREVIEW_WHATS_NEW} />);
+    const phone = within(screen.getByRole('list', { name: /^Today, 3 updates/ })).getAllByRole('listitem')[0]!;
+    expect(phone.querySelector('.ch-lgr__lead')).toBeNull();
+    expect(phone.querySelector('.ch-wn-who')!.textContent).toBe('1:42 PM · Jonah Okafor · Insight resolved');
   });
 
   it('opens a focus area on the player’s Development tab and the rest on their stats', () => {

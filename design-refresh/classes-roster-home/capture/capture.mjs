@@ -85,14 +85,18 @@ const DESIGN_CLICK = {
 async function design(browser) {
   for (const theme of THEMES) {
     for (const width of WIDTHS) {
-      const ctx = await browser.newContext({ viewport: { width: 1700, height: 1200 }, deviceScaleFactor: 2, colorScheme: theme, reducedMotion: 'reduce' });
+      const ctx = await browser.newContext({ viewport: { width: 2000, height: 1200 }, deviceScaleFactor: 2, colorScheme: theme, reducedMotion: 'reduce' });
       const page = await ctx.newPage();
       for (const [, stem, hash, , click, extra] of SHOTS) {
         const desk = hash.includes('desktop');
         if (desk && width !== 390) continue; // desktop has one size
         const name = `${stem}-${theme}${desk ? '' : '-' + width}`;
         await record(name, async () => {
+          // A fresh load each shot: a hash change alone left the last state on screen (a desk Home that was still "failed").
+          await page.goto('about:blank');
           await page.goto(`${PAGE}#${hash}-${theme}-reduce${extra === 'xxl' ? '-xxl' : ''}`);
+          // The page's own grid squeezes the device to the width left over; give it a column of its own.
+          if (!desk) await page.addStyleTag({ content: '.stage{grid-template-columns:240px minmax(460px,auto) minmax(0,1fr)!important}' });
           await page.evaluate(() => window.dispatchEvent(new HashChangeEvent('hashchange')));
           if (!desk && width === 430) await page.click('button[data-set="size"][data-v="69"]');
           await page.waitForTimeout(400);

@@ -1,5 +1,5 @@
-import { LazyMotion, domAnimation } from 'motion/react';
-import { cleanup, render, screen, within } from '@testing-library/react';
+
+import { cleanup } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
 import type { ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -28,17 +28,8 @@ vi.mock('next/link', () => ({
 }));
 
 import { askLinkHref } from '../data/coachhelm-chat-links';
-import { AskReceiptCard } from '../screens/coachhelm/chat/ActionCard';
 
 afterEach(cleanup);
-
-const wrap = (node: ReactNode) => (
-  <LazyMotion features={domAnimation}>
-    <div className="ch-root" data-ui="clubhouse">
-      {node}
-    </div>
-  </LazyMotion>
-);
 
 describe('askLinkHref: the chat engine’s addresses, opened in Clubhouse for a coach', () => {
   it('a moved address opens the screen its alias redirect opens, in one step', () => {
@@ -64,39 +55,5 @@ describe('askLinkHref: the chat engine’s addresses, opened in Clubhouse for a 
     const hrefs = [...new Set(files.flatMap((src) => [...src.matchAll(/href:\s*['`](\/golf\/dashboard[^'`]*)['`]/g)].map((m) => m[1]!)))];
     expect(hrefs.length).toBeGreaterThan(3);
     for (const href of hrefs) expect([href, askLinkHref(href)]).toEqual([href, expect.stringMatching(/^\/golf\/dashboard/)]);
-  });
-});
-
-describe('Ask’s receipt chips', () => {
-  it('a created task is a link to Team Hub’s Tasks, as production’s chip links to Tasks; an announcement to its tab', () => {
-    render(
-      wrap(
-        <AskReceiptCard
-          onAskAgain={vi.fn()}
-          receipt={{
-            status: 'completed',
-            action: 'Assign a task',
-            summary: 'Assigned to 3 players',
-            created: [
-              { kind: 'task', count: 1, href: '/golf/dashboard/tasks', label: 'Putting ladder' },
-              { kind: 'announcement', count: 1, href: '/golf/dashboard/announcements' },
-              { kind: 'note', count: 2 },
-            ],
-            notifications: [],
-            partial_failures: [],
-            retryable: false,
-            at: '2026-10-17T12:00:00.000Z',
-          }}
-        />,
-      ),
-    );
-    const card = screen.getByRole('region', { name: 'Assign a task, completed' });
-    const links = within(card).getAllByRole('link');
-    expect(links.map((a) => [a.textContent, a.getAttribute('href')])).toEqual([
-      ['1 task', '/golf/dashboard/team-hub?tab=tasks'],
-      ['1 announcement', '/golf/dashboard/team-hub?tab=ann'],
-    ]);
-    // No address, no link: the count is text.
-    expect(within(card).getByText('2 notes').tagName).toBe('SPAN');
   });
 });

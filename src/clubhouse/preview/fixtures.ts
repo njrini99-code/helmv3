@@ -177,6 +177,8 @@ export const PREVIEW_HOME: ChCoachHome = {
       delta: -0.9,
       deltaSe: 1.0,
       line: [74.6, 74.4, 74.5, 74.1, 74.0, 73.9, 74.0, 73.7, 73.6, 73.5, 73.6, 73.4],
+      lineDays: ['2026-09-02', '2026-09-06', '2026-09-10', '2026-09-14', '2026-09-18', '2026-09-22', '2026-09-26', '2026-09-30', '2026-10-03', '2026-10-07', '2026-10-10', '2026-10-13'],
+      lineCounts: [3, 2, 3, 1, 3, 2, 3, 3, 2, 3, 2, 3],
       roundsThisWeek: 11,
       basis: { rounds: 30, from: '2026-09-02', to: '2026-10-13', girRounds: 30, puttsRounds: 30 },
       gir: { pct: 61, delta: 3, se: 3.9 },
@@ -262,6 +264,57 @@ export const PREVIEW_HOME_EARLY: ChCoachHome = {
     ...PREVIEW_HOME.leaderboard,
     rows: PREVIEW_HOME.leaderboard.rows.map((r) => ({ ...r, rounds: 2, trend: r.trend.slice(-2), sgPerRound: null, status: 'early' as const })),
   },
+};
+
+/**
+ * `?state=totalsonly`: what most real teams look like today. Rounds posted as totals, one event this week, two round days,
+ * no greens or putts, no holes under the four parts and nobody with a place yet.
+ */
+export const PREVIEW_HOME_TOTALS_ONLY: ChCoachHome = {
+  ...PREVIEW_HOME_EARLY,
+  subline: null,
+  legs: { ...PREVIEW_LEGS, holeRounds: 0 },
+  phone: {
+    ...PREVIEW_HOME.phone,
+    form: {
+      avg: 78.6,
+      delta: null,
+      deltaSe: null,
+      line: [79.2, 78.0],
+      roundsThisWeek: 1,
+      basis: { rounds: 4, from: '2026-10-05', to: '2026-10-12', girRounds: 0, puttsRounds: 0 },
+      gir: { pct: null, delta: null },
+      putts: { avg: null, delta: null },
+    },
+  },
+};
+
+/**
+ * `?state=realshape`: phone Home on the text a real team produces. Ties on the four parts ("Tyler H. and 2 others"), a long week note,
+ * long course and player names and a long event title.
+ */
+const tieOf = (names: string[], value: number) => ({ ids: names.map((_, i) => `tie-${i}`), names, value });
+export const PREVIEW_HOME_REAL_SHAPE: ChCoachHome = {
+  ...PREVIEW_HOME,
+  legs: {
+    ...PREVIEW_LEGS,
+    rows: PREVIEW_LEGS.rows.map((r) => ({ ...r, gains: tieOf(['Tyler H.', 'Cole B.', 'Dylan B.'], 0.6), loses: tieOf(['Ethan P.', 'Noah R.', 'Owen C.'], -0.8) })),
+  },
+  phone: {
+    ...PREVIEW_HOME.phone,
+    weekNote: { weekday: 'Saturday', title: 'Spring Preview Tournament' },
+    today: PREVIEW_HOME.phone.today.map((e, i) => (i === 0 ? { ...e, title: 'Short-game block and putting ladder', location: 'Practice green behind the clubhouse' } : e)),
+  },
+  latestRounds: {
+    ...PREVIEW_HOME.latestRounds,
+    rounds: PREVIEW_HOME.latestRounds.rounds.map((r) => ({ ...r, playerName: 'Maximilian Featherstonehaugh', meta: 'Carolina Trace Country Club · Sat 31 Oct · Championship tees' })),
+  },
+};
+
+/** `?state=oneday`: totals only, on a single round day, so there is no line to draw. */
+export const PREVIEW_HOME_ONE_DAY: ChCoachHome = {
+  ...PREVIEW_HOME_TOTALS_ONLY,
+  phone: { ...PREVIEW_HOME_TOTALS_ONLY.phone, form: { ...PREVIEW_HOME_TOTALS_ONLY.phone.form!, line: [78.6], roundsThisWeek: 0 } },
 };
 
 /** Rounds with holes but nobody with enough of them to rank (CH-2315). */
