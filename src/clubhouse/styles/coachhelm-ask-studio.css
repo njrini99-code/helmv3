@@ -1329,33 +1329,19 @@
    the line's path length only, on the D-64 beats: each section rises 8px over the base beat, 80 ms apart (capped at six,
    --ch-b), and the trend's line draws over the reveal beat once its section has mostly arrived (--ch-cv-lag). The offsets
    are set by CoachComposition, since only durations are tokens. Numbers are never counted up. */
-@keyframes ch-aks-rise {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-}
-@keyframes ch-aks-draw {
-  from {
-    stroke-dashoffset: 1;
-  }
-}
-@keyframes ch-aks-fade {
-  from {
-    opacity: 0;
-  }
-}
+/* The keyframes are motion.css's: ch-arrive (from 8px down), ch-draw and ch-in. */
 .ch-aks-cv[data-live] .ch-aks-cv__in {
-  animation: ch-aks-rise var(--ch-dur-base) var(--ch-ease) backwards;
+  --ch-arrive-t: translateY(8px);
+  animation: ch-arrive var(--ch-dur-base) var(--ch-ease-ios) backwards;
   animation-delay: var(--ch-b);
 }
 .ch-aks-cv[data-live] .ch-aks-ruled[data-draw] .ch-aks-ruled__path {
   stroke-dasharray: 1;
-  animation: ch-aks-draw var(--ch-dur-reveal) var(--ch-ease) backwards;
+  animation: ch-draw var(--ch-dur-reveal) var(--ch-ease-ios) backwards;
   animation-delay: calc(var(--ch-b) + var(--ch-cv-lag));
 }
 .ch-aks-cv[data-live] .ch-aks-ruled[data-draw] :is(.ch-aks-ruled__pt, .ch-aks-ruled__first, .ch-aks-ruled__last) {
-  animation: ch-aks-fade var(--ch-dur-quick) var(--ch-ease) backwards;
+  animation: ch-in var(--ch-dur-quick) var(--ch-ease-out) backwards;
   animation-delay: calc(var(--ch-b) + var(--ch-cv-lag) + var(--ch-dur-reveal));
 }
 /* The delays are not durations, so Animations off and Reduce Motion end every one here too, in case a live mark outlives

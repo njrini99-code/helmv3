@@ -314,19 +314,9 @@ html[data-ch-vt-hold] [data-ui='clubhouse'] main[aria-busy='true'][aria-label^='
     transition-duration: var(--ch-dur-crossfade-rm) !important;
     transition-timing-function: linear !important;
     animation-duration: var(--ch-rm-animation, 1ms) !important;
-    /* A looping animation at 1ms would strobe: run it once and stop. */
+    /* A looping animation at 1ms would strobe: run it once and stop. The working indicator too: under Reduce Motion it
+       stands still (MOTION-AND-VISUAL 3.9, 3.11), and the words beside it say what is working. */
     animation-iteration-count: 1 !important;
-  }
-  /* Except the one spinner (OQ-18, rubric H19): it keeps turning, as iOS's activity indicator does under Reduce Motion. A
-     ring turning in place moves nothing across the screen, and a still ring reads as stuck. Animations off still stops
-     it (--ch-dur-sweep is 0 there). */
-  .ch-root .ch-spinner,
-  .ch-root .ch-qcs .live__spin,
-  .ch-root .ch-qck .live__spin,
-  .ch-root .ch-hr .spin,
-  .ch-root .ch-htb .spin {
-    animation-duration: var(--ch-dur-sweep) !important;
-    animation-iteration-count: infinite !important;
   }
   /* The large title's fade runs on the page's scroll, not on time (S4.3, S4.9: the person's own scroll drives it, so it
      stays under Reduce Motion); a 1ms duration would cut it to a jump. */

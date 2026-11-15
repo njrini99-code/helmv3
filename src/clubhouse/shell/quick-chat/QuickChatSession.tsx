@@ -291,10 +291,9 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
       {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- the dialog keeps Tab inside itself (AC-QC-PNL-08) */}
       <section id="ch-qc-panel" ref={panel} className="qc" role="dialog" aria-modal="true" aria-label="CoachHelm" tabIndex={-1} hidden={!shown} data-ch-qc-panel="" onKeyDown={onPanelKey}>
         <header className="qc__h" data-qc-drag="" {...handle}>
-          {/* The chat's mark, at rest. While CoachHelm works the island's line carries the ball, thinking, and this one steps back with the name.
-              Its rings play once as the panel opens and once more when the work ends and the mark comes back with the answer (MAC-15). */}
+          {/* The chat's mark, at rest and still. While CoachHelm works the island's line carries the ball, thinking, and this one steps back with the name. */}
           <span className="qc__mark">
-            <BallMark state="rest" on="paper" news={session?.busy ? 'working' : 'idle'} />
+            <BallMark state="rest" on="paper" />
           </span>
           <b className="qc__ttl">CoachHelm</b>
           {/* The activity island's place: one line here while CoachHelm works, opening over the body; empty otherwise. */}

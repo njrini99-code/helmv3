@@ -3,6 +3,7 @@ import { clubhouseFontVariables } from '../lib/fonts';
 import { Skeleton } from '../ui/States';
 import '../styles/tokens.css';
 import '../styles/base.css';
+import '../styles/motion.css';
 import '../styles/ui.css';
 import '../styles/shell.css';
 

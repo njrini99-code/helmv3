@@ -1995,8 +1995,8 @@ html[data-ch-ua-pop] .ch-pscreen::after {
 
 /* -- A nav tap before its page arrives (LinkPending) -----------------------------------------------------------------
    The tapped row or tab takes the selected look on the first frame; the hairline at the top of the page only fades in
-   if the wait passes --ch-dur-press, so a prefetched page never flickers it. Reduced motion keeps the bar (the signal matters)
-   without its sweep. */
+   if the wait passes --ch-dur-press, so a prefetched page never flickers it. It stands still: no sweep runs across it
+   (MOTION-AND-VISUAL 3.12: the only loop is the working indicator). */
 .ch-lp {
   display: contents;
 }
@@ -2009,19 +2009,6 @@ html[data-ch-ua-pop] .ch-pscreen::after {
 .ch-nav:has(.ch-lp) .ch-navitem[aria-current='page']:not(:has(.ch-lp)) svg {
   color: inherit;
 }
-@keyframes ch-lp-show {
-  from {
-    opacity: 0;
-  }
-}
-@keyframes ch-lp-sweep {
-  from {
-    transform: translateX(-60%) scaleX(0.4);
-  }
-  to {
-    transform: translateX(100%) scaleX(0.4);
-  }
-}
 .ch-lp__bar {
   position: fixed;
   /* Below the clock and island in the home-screen app (MOB-SHELL-13). */
@@ -2030,26 +2017,17 @@ html[data-ch-ua-pop] .ch-pscreen::after {
   height: 2px;
   overflow: hidden;
   pointer-events: none;
-  animation: ch-lp-show var(--ch-dur-quick) var(--ch-ease) var(--ch-dur-press) backwards;
+  animation: ch-in var(--ch-dur-quick) var(--ch-ease-out) var(--ch-dur-press) backwards;
 }
 .ch-lp__bar::after {
   content: '';
   position: absolute;
   inset: 0;
   background: var(--ch-green-600, currentColor);
-  transform-origin: left center;
-  animation: ch-lp-sweep var(--ch-dur-sweep) var(--ch-ease-io) var(--ch-dur-press) infinite;
+  opacity: 0.6;
 }
-[data-ui='clubhouse'][data-motion='off'] .ch-lp__bar,
-[data-ui='clubhouse'][data-motion='off'] .ch-lp__bar::after {
+[data-ui='clubhouse'][data-motion='off'] .ch-lp__bar {
   animation: none;
-}
-@media (prefers-reduced-motion: reduce) {
-  .ch-lp__bar::after {
-    animation: none !important;
-    transform: none;
-    opacity: 0.6;
-  }
 }
 
 /* The navigation glass, with an opaque fallback (owner 2026-10-01, audit F04): where backdrop-filter is missing, or the

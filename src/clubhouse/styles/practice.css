@@ -930,17 +930,11 @@ html[data-fw-theme='dark'] .ch-prc-feat .ch-btn--secondary:focus-visible {
   background: var(--ch-selected-strong);
   color: var(--ch-text-on-accent);
 }
-/* Working: the CoachHelm wheel turns one spoke, then holds, as it does in Ask (CONS-24: the one spinner is ui/Spinner, and
-   the brand mark's turn is the named exception, not a second ring). The same keyframes as coachhelm-thread.css, repeated
-   here because this page does not load that stylesheet. */
+/* Working: the CoachHelm wheel turns one spoke, then holds, as it does in Ask, on the working beat while the helper runs
+   (the one loop, MOTION-AND-VISUAL 3.1; CONS-24: the one spinner is ui/Spinner, and the brand mark's turn is the named
+   exception, not a second ring). Its @keyframes is in motion.css, which every Clubhouse page loads. */
 .ch-prc-fold__m.is-working svg {
-  animation: ch-th-turn var(--ch-dur-shimmer) var(--ch-ease-io) infinite;
-}
-@keyframes ch-th-turn {
-  70%,
-  100% {
-    transform: rotate(45deg);
-  }
+  animation: ch-th-turn var(--ch-dur-typing) var(--ch-ease-typing) infinite;
 }
 .ch-prc-fold__t {
   flex: 1;

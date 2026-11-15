@@ -1808,18 +1808,6 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   }
 }
 
-/* A reading that is replaced by another (a picked hole): the new one settles in. Not a count-up, and not on first paint. */
-@keyframes ch-zn-settle {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-}
-.ch-znbig.is-settle {
-  display: inline-block;
-  animation: ch-zn-settle var(--ch-dur-base) var(--ch-ease) backwards;
-}
-
 /* The one line chart (ui/charts/Line.tsx, B5): better is up, a missing value is a gap, ticks in tabular figures. The line
    takes --ch-line-ink from itself or a parent (the ink when none sets it; a screen sets the gain green). A point reads in a line above the plot or a tip
    over its top corner. */
@@ -2099,10 +2087,8 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   }
 }
 
-/* P-14 change marks: the old value of a changed event, struck. The line is a pseudo-element so it can draw. A mark this
-   device has not seen is `pending` and draws once with a CSS animation, so it ends struck with no script; a seen one is
-   `done` from the first frame and never moves. Only transform animates, and the colour is the quiet ink from the first
-   frame. With Animations off the durations are zero, so it is struck at once. */
+/* P-14 change marks: the old value of a changed event, struck from the first frame in the quiet ink (MOTION-AND-VISUAL
+   3.12: no first-paint draw-ins). The line is a pseudo-element so it sits across the figures, not under their ink. */
 .ch-was {
   position: relative;
   text-decoration: none;
@@ -2118,22 +2104,6 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   background: currentColor;
   transform-origin: left center;
   content: '';
-}
-.ch-was[data-draw='pending']::after {
-  animation: ch-was-strike var(--ch-dur-release) var(--ch-ease) var(--ch-dur-quick) both;
-}
-@keyframes ch-was-strike {
-  from {
-    transform: scaleX(0);
-  }
-  to {
-    transform: scaleX(1);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .ch-was[data-draw='pending']::after {
-    animation: none;
-  }
 }
 
 /* A signed difference against a baseline (ui/DeltaChip.tsx, P016 7.A): toned only past one standard error. The triangle
@@ -2198,26 +2168,11 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   height: 6px;
   border-radius: 50%;
   background: var(--ch-green-600);
-  animation: ch-trust-live var(--ch-dur-live) var(--ch-ease-io) infinite;
 }
 .ch-trust__at,
 .ch-trust__src {
   font: var(--ch-type-12-medium);
   color: var(--ch-text-tertiary);
-}
-@keyframes ch-trust-live {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.35;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .ch-trust__dot {
-    animation: none;
-  }
 }
 
 /* Clubhouse refresh, PR 2. A Surface takes the card's face; its head is title plus meta over a hairline inset 16, and
