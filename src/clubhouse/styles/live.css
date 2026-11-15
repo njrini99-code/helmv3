@@ -248,9 +248,10 @@ section.ch-lv-card {
   background: var(--ch-live-bead-eagle);
 }
 .ch-lv-bead[data-kind='birdie'] {
-  --ch-lv-ink: var(--ch-score-under-fill);
+  /* A step lighter than the eagle disc (2.5:1 apart), so a birdie and an eagle stay two marks. */
+  --ch-lv-ink: var(--ch-score-birdie-fill);
   border-radius: 50%;
-  background: var(--ch-score-under-fill);
+  background: var(--ch-score-birdie-fill);
 }
 .ch-lv-bead[data-kind='par']::after,
 .ch-lv-bead[data-kind='unknown']::after {

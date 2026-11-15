@@ -13,8 +13,11 @@ Held items:     none
 
 ### Changed
 
-- The desktop page title is the large title; the round hero, the setup band and the tracking panel take the card elevation instead of their own deep shadows; the big figures are 600.
-- The shared change (bar material, the Practice style's sizes, nine type roles, five radii, three elevations) is logged once in
+- The desktop page title is the large title; the round hero, the setup band and
+  the tracking panel take the card elevation instead of their own deep shadows;
+  the big figures are 600.
+- The shared change (bar material, the Practice style's sizes, nine type roles,
+  five radii, three elevations) is logged once in
   [docs/clubhouse/changes/2026-11-15-motion-visual-system.md](../../../changes/2026-11-15-motion-visual-system.md).
 
 ### Why
@@ -23,4 +26,6 @@ Held items:     none
 
 ### Verification
 
-- Unit tests for type roles, radii, elevations, the toggle and the CSS ratchets; before and after screenshots at 393 and 1440, light and dark, Chromium (tier C), in the PR.
+- Unit tests for type roles, radii, elevations, the toggle and the CSS ratchets;
+  before and after screenshots at 393 and 1440, light and dark, Chromium (tier
+  C), in the PR.

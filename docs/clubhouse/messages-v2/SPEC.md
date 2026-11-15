@@ -364,10 +364,11 @@ MSG-400's menu.
 **MSG-301 Composer pill** [both] One glass pill holds + , field, send key.
 `.comp` absolute bottom, phone padding 8 10 30 (430: 8 14 30; shot 8), desk
 padding 10 28 18. Pill: padding 5, gap 6, radius 24, max-width 760 centred,
-glass-strong on the one glass (blur 20 saturate 140, MOTION-AND-VISUAL 4.1), flat with
-the 1px control ring `--ch-field-ring` and on the page's own gutter (the Nov 15
-audit's DM-07; it was the gutter less 6 with the float shadow); focus-within ring
-`0 0 0 1.5px color-mix(in oklab, accent-text 55%, transparent)`. **MSG-302 Plus key** [both]
+glass-strong on the one glass (blur 20 saturate 140, MOTION-AND-VISUAL 4.1),
+flat with the 1px control ring `--ch-field-ring` and on the page's own gutter
+(the Nov 15 audit's DM-07; it was the gutter less 6 with the float shadow);
+focus-within ring `0 0 0 1.5px color-mix(in oklab, accent-text 55%,
+transparent)`. **MSG-302 Plus key** [both]
 36 circle, page-2 fill, ink-2 icon, aria "Add photo, file or poll",
 `aria-expanded`. Open state: icon rotates 45 degrees (MOT-ATT-1). It is the
 origin of the attach menu. **MSG-303 Field** [both] Textarea, 1 row, placeholder

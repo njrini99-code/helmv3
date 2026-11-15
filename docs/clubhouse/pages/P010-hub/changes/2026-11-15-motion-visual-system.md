@@ -13,8 +13,10 @@ Held items:     none
 
 ### Changed
 
-- The announcement heading is the title role (22/28, was 34); the pass count and the board's figures are 600.
-- The shared change (bar material, the Practice style's sizes, nine type roles, five radii, three elevations) is logged once in
+- The announcement heading is the title role (22/28, was 34); the pass count and
+  the board's figures are 600.
+- The shared change (bar material, the Practice style's sizes, nine type roles,
+  five radii, three elevations) is logged once in
   [docs/clubhouse/changes/2026-11-15-motion-visual-system.md](../../../changes/2026-11-15-motion-visual-system.md).
 
 ### Why
@@ -23,4 +25,6 @@ Held items:     none
 
 ### Verification
 
-- Unit tests for type roles, radii, elevations, the toggle and the CSS ratchets; before and after screenshots at 393 and 1440, light and dark, Chromium (tier C), in the PR.
+- Unit tests for type roles, radii, elevations, the toggle and the CSS ratchets;
+  before and after screenshots at 393 and 1440, light and dark, Chromium (tier
+  C), in the PR.

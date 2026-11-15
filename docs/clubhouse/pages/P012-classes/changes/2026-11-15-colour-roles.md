@@ -23,4 +23,5 @@ Held items:     none
 
 ### Verification
 
-- Unit tests for the red check and the under-par tokens; before and after screenshots at 393 and 1440, light and dark, Chromium (tier C), in the PR.
+- Unit tests for the red check and the under-par tokens; before and after
+  screenshots at 393 and 1440, light and dark, Chromium (tier C), in the PR.

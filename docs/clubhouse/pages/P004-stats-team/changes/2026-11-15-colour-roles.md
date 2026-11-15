@@ -13,7 +13,8 @@ Held items:     none
 
 ### Changed
 
-- The scoring mix shows birdie in the lighter gain step and eagle or better in the full gain fill; under-par figures are the gain.
+- The scoring mix shows birdie in the lighter gain step and eagle or better in
+  the full gain fill; under-par figures are the gain.
 - The shared change is logged once in
   [docs/clubhouse/changes/2026-11-15-colour-roles.md](../../../changes/2026-11-15-colour-roles.md).
 
@@ -23,4 +24,5 @@ Held items:     none
 
 ### Verification
 
-- Unit tests for the red check and the under-par tokens; before and after screenshots at 393 and 1440, light and dark, Chromium (tier C), in the PR.
+- Unit tests for the red check and the under-par tokens; before and after
+  screenshots at 393 and 1440, light and dark, Chromium (tier C), in the PR.

@@ -2155,15 +2155,17 @@ html[data-ch-ua-pop] .ch-pscreen::after {
   backdrop-filter: none;
 }
 @media (min-width: 821px) and (prefers-reduced-transparency: reduce) and ((min-height: 501px) or (pointer: fine)) {
-  /* :root, to beat the desktop glass rule below it in the file. */
-  :root .ch-topbar {
+  /* :root, to beat the desktop glass rule below it in the file, and its clear bar at rest. */
+  :root .ch-topbar,
+  :root .ch-topbar:not([data-scrolled]) {
     background: var(--ch-workspace);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
 }
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
-  :root[data-reduce-transparency] .ch-topbar {
+  :root[data-reduce-transparency] .ch-topbar,
+  :root[data-reduce-transparency] .ch-topbar:not([data-scrolled]) {
     background: var(--ch-workspace);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
@@ -2415,16 +2417,25 @@ html[data-ch-ua-pop] .ch-pscreen::after {
     content: '';
     pointer-events: none;
   }
-  /* Opaque. The bar was its paper at 88% over the page with the glass blur behind it, and the blur did not hide what
-     scrolled under: "Today", "Calendar" and a card's figures stayed legible behind the breadcrumb, the search and the
-     bell (design review, 10 Nov 2026, every 1440 still; WebKit). It is now that paper mixed with the page at the same
-     strength, so at rest it is the colour it was, and nothing under it shows; the scroll edge below it (data-scrolled)
-     still says content has gone under. */
+  /* Opaque once anything is under it. The bar was its paper at 88% over the page with the glass blur behind it, and the
+     blur did not hide what scrolled under: "Today", "Calendar" and a card's figures stayed legible behind the breadcrumb,
+     the search and the bell (design review, 10 Nov 2026, every 1440 still; WebKit). Once the canvas has scrolled under it
+     (data-scrolled) it is that paper mixed with the page at the same strength, so nothing under it shows, and the scroll
+     edge below it says content has gone under. At rest nothing is under it, so it is clear: the canvas's ivory light and
+     the green mist in its top left read through it, as on the desk before the Nov 11 release train (Nick, 15 Nov 2026:
+     "the green upper left corner and the ivory"). Reduce Transparency keeps the solid bar (below). */
   .ch-topbar {
     border-bottom-color: rgb(110 98 62 / 0.08);
     background: color-mix(in srgb, var(--ch-topbar-paper) 88%, var(--ch-grouped-bg));
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
+    transition: background-color var(--ch-dur-quick) var(--ch-ease);
+  }
+  .ch-topbar:not([data-scrolled]) {
+    background: transparent;
+  }
+  [data-ui='clubhouse'][data-motion='off'] .ch-topbar {
+    transition: none;
   }
 }
 
@@ -2747,9 +2758,13 @@ html[data-fw-theme='dark'] .ch-bellp__row:focus-visible {
   html[data-fw-theme='dark'] .ch-canvas {
     box-shadow: var(--ch-elevation-framed), 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
   }
-  /* Opaque at night too (see the light bar above): the workspace over the page, nothing let through. */
+  /* Opaque at night too once anything is under it (see the light bar above): the workspace over the page, nothing let
+     through; clear at rest, over the canvas. */
   html[data-fw-theme='dark'] .ch-topbar {
     background: color-mix(in srgb, var(--ch-workspace) 88%, var(--ch-grouped-bg));
+  }
+  html[data-fw-theme='dark'] .ch-topbar:not([data-scrolled]) {
+    background: transparent;
   }
   html[data-fw-theme='dark'] [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] {
     box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule-soft);
@@ -2784,7 +2799,8 @@ html[data-fw-theme='dark'] .ch-bellp__row:focus-visible {
   }
 }
 @media (min-width: 821px) and (prefers-reduced-transparency: reduce) and ((min-height: 501px) or (pointer: fine)) {
-  html[data-fw-theme='dark'] .ch-topbar {
+  html[data-fw-theme='dark'] .ch-topbar,
+  html[data-fw-theme='dark'] .ch-topbar:not([data-scrolled]) {
     background: var(--ch-workspace);
   }
 }

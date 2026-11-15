@@ -1,3 +1,5 @@
+# 2026-11-15 — stats
+
 ## 2026-11-15 — Stats desk: the detail pane is a column, not a card
 
 ```text
@@ -11,14 +13,19 @@ Held items:     none
 
 ### Changed
 
-- The desktop detail pane has no fill or shadow (STATS-D-05), so its cards are the only cards; its title and cards align to the column edges.
-- The pane also carries the pushed screen's class, which painted a second page gradient and an edge shadow from the pane's top down; the after shots showed the seam, and the pane now clears both.
+- The desktop detail pane has no fill or shadow (STATS-D-05), so its cards are
+  the only cards; its title and cards align to the column edges.
+- The pane also carries the pushed screen's class, which painted a second page
+  gradient and an edge shadow from the pane's top down; the after shots showed
+  the seam, and the pane now clears both.
 
 ### Why
 
-- The production audit's rows (Nov 15), fixed to its specs, with Nick's MOTION-AND-VISUAL.md winning where the two differ.
+- The production audit's rows (Nov 15), fixed to its specs, with Nick's
+  MOTION-AND-VISUAL.md winning where the two differ.
 
 ### Verification
 
 - Unit: the Stats suite.
-- Before and after screenshots at 393 and 1440, light and dark, Chromium (tier C), in the PR.
+- Before and after screenshots at 393 and 1440, light and dark, Chromium (tier
+  C), in the PR.

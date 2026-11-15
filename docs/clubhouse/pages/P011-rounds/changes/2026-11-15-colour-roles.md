@@ -13,7 +13,10 @@ Held items:     none
 
 ### Changed
 
-- Scorecard marks, the hole map, the round review's stage, the round strip, the live beads and the shot screen's hole strip show under par in the gain; the hole strip's under-par mark is a solid gain disc. The pin flag and a penalty stake stay red.
+- Scorecard marks, the hole map, the round review's stage, the round strip, the
+  live beads and the shot screen's hole strip show under par in the gain; the
+  hole strip's under-par mark is a solid gain disc. The pin flag and a penalty
+  stake stay red.
 - The shared change is logged once in
   [docs/clubhouse/changes/2026-11-15-colour-roles.md](../../../changes/2026-11-15-colour-roles.md).
 
@@ -23,4 +26,5 @@ Held items:     none
 
 ### Verification
 
-- Unit tests for the red check and the under-par tokens; before and after screenshots at 393 and 1440, light and dark, Chromium (tier C), in the PR.
+- Unit tests for the red check and the under-par tokens; before and after
+  screenshots at 393 and 1440, light and dark, Chromium (tier C), in the PR.
