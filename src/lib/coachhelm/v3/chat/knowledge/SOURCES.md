@@ -94,7 +94,7 @@ model to say "the Tour benchmark" and to name a tour only when a read named it.
 | Big numbers: holes at double bogey or worse, as a share of holes. | `src/clubhouse/data/stats-weight.ts:105-115` |
 | Pressure gap: tournament and qualifier rounds against practice rounds, in strokes to par a round; positive means the competitive rounds are worse. | `src/clubhouse/data/stats-figures.ts:175-199` |
 | Opening hole: hole 1 against the other holes, in strokes to par a hole. | `src/clubhouse/data/stats-figures.ts:208-222` |
-| Toughest holes are grouped by hole number across whatever courses were played. | `src/clubhouse/data/stats-figures.ts:247-259` |
+| Toughest holes keep each hole on its own course; a round with no course is left out. | `src/clubhouse/data/stats-figures.ts:261-265` |
 | The Tour column is the team's own tour (PGA for a men's team, LPGA for a women's), never a division figure. | `src/clubhouse/data/stats-common.ts:233-261`; `src/clubhouse/data/stats-team.ts:205-208` |
 | A player's Stats page has no team column: a player is never compared with teammates. | `src/clubhouse/data/stats-player.ts:411`, `:417-435`; `src/lib/coachhelm/v3/chat/registry.ts:8-13` |
 | Form on Roster (improving, steady, slipping, early) is the newer half of the recent scores against the older half, called a change only when it clears its own noise. | `src/clubhouse/data/season.ts:173-185` |
