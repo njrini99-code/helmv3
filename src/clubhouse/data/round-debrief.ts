@@ -8,6 +8,7 @@ import { kindOf } from './coachhelm-classify';
 import { loadPlayerDismissed, loadPlayerHelmGate, loadVisible } from './coachhelm';
 import { buildDebrief, DEBRIEF_HISTORY_MAX, type ChDebrief, type ChDebriefHistoryRow, type ChDebriefNextInput, type ChDebriefReadInput } from './round-debrief-shape';
 import type { ChRoundReview } from './round-review-shape';
+import { cachedPutts, loadRoundCache } from './stats-common';
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
 
@@ -36,7 +37,21 @@ async function readHistory(supabase: Supabase, r: ChRoundReview): Promise<ChDebr
     log('history', res.error);
     return null;
   }
-  return (res.data ?? []).filter((row) => isCountableRound(row)).slice(0, DEBRIEF_HISTORY_MAX);
+  const rounds = (res.data ?? []).filter((row) => isCountableRound(row)).slice(0, DEBRIEF_HISTORY_MAX);
+  // Greens, fairways and putts from each round's stats row, as Stats reads them (DF-P-08, one source per rate); a row that did not
+  // read leaves those figures out, and score to par still stands.
+  const cache = await loadRoundCache(supabase, rounds.map((row) => row.id), 'rounds.review');
+  return rounds.map((row) => {
+    const c = cache.error ? undefined : cache.byRound.get(row.id);
+    return {
+      score_to_par: row.score_to_par,
+      total_putts: cachedPutts(c),
+      total_fairways_hit: c?.fairways_hit ?? null,
+      total_fairways: c?.fairways_total ?? null,
+      total_gir: c?.greens_hit ?? null,
+      total_gir_possible: c?.greens_total ?? null,
+    };
+  });
 }
 
 /** The player's top open read (the Board's ranking over their visible rows, findings only, less their own dismissals). */
