@@ -406,7 +406,8 @@ async function createDocumentImpl(
 
     if (versionError) throw versionError;
 
-    revalidatePath('/golf/dashboard/documents');
+    // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
+    revalidatePath('/golf/dashboard/team-hub');
     return { data: document as GolfDocument, error: null };
   } catch (error) {
     await logServerError(
@@ -558,7 +559,8 @@ async function saveTextDocumentImpl(
       });
     if (versionError) throw versionError;
 
-    revalidatePath('/golf/dashboard/documents');
+    // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
+    revalidatePath('/golf/dashboard/team-hub');
     return { data: document as GolfDocument, error: null };
   } catch (error) {
     await logServerError(
@@ -647,7 +649,8 @@ async function updateDocumentImpl(
 
     if (error) throw error;
 
-    revalidatePath('/golf/dashboard/documents');
+    // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
+    revalidatePath('/golf/dashboard/team-hub');
     return { data: data as GolfDocument, error: null };
   } catch (error) {
     await logServerError(
@@ -755,7 +758,8 @@ async function deleteDocumentImpl(documentId: string): Promise<{ success: boolea
       }
     }
 
-    revalidatePath('/golf/dashboard/documents');
+    // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
+    revalidatePath('/golf/dashboard/team-hub');
     return { success: true, error: null };
   } catch (error) {
     await logServerError(
@@ -869,7 +873,8 @@ async function uploadNewVersionImpl(
 
     if (updateError) throw updateError;
 
-    revalidatePath('/golf/dashboard/documents');
+    // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
+    revalidatePath('/golf/dashboard/team-hub');
     return {
       success: true,
       version: {
@@ -1060,7 +1065,8 @@ async function revertToVersionImpl(
 
     if (updateError) throw updateError;
 
-    revalidatePath('/golf/dashboard/documents');
+    // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
+    revalidatePath('/golf/dashboard/team-hub');
     return { success: true, error: null };
   } catch (error) {
     await logServerError(
@@ -1574,7 +1580,8 @@ async function createGolfDocumentImpl(data: {
       // Version record creation failed but don't fail the whole operation
     }
 
-    revalidatePath('/golf/dashboard/documents');
+    // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
+    revalidatePath('/golf/dashboard/team-hub');
     return { success: true, data: document as GolfDocument };
   } catch (error) {
     await logServerError(
@@ -1776,7 +1783,8 @@ async function deleteVersionImpl(
 
     if (deleteError) throw deleteError;
 
-    revalidatePath('/golf/dashboard/documents');
+    // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
+    revalidatePath('/golf/dashboard/team-hub');
     return { success: true, error: null };
   } catch (error) {
     await logServerError(

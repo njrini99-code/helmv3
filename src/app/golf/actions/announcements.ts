@@ -743,7 +743,9 @@ async function createEnrichedAnnouncementImpl(input: {
         .eq('id', announcementId);
     }
 
-    revalidatePath('/golf/dashboard/announcements');
+    // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
+    revalidatePath('/golf/dashboard/team-hub');
+    revalidatePath('/golf/dashboard/messages');
     updateTag(CACHE_TAGS.DASHBOARD);
     return { success: true, data: { announcementId, ...(attachmentsError ? { attachmentsError } : {}) } };
 
@@ -1368,7 +1370,9 @@ async function completeAnnouncementTaskImpl(
       return { success: false, error: "That task isn't assigned to you." };
     }
 
-    revalidatePath('/golf/dashboard/announcements');
+    // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
+    revalidatePath('/golf/dashboard/team-hub');
+    revalidatePath('/golf/dashboard/messages');
     updateTag(CACHE_TAGS.DASHBOARD);
     return { success: true };
 
@@ -1456,7 +1460,9 @@ async function deleteAnnouncementImpl(
       return { success: false, error: "Couldn't delete this announcement. It may already be gone." };
     }
 
-    revalidatePath('/golf/dashboard/announcements');
+    // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
+    revalidatePath('/golf/dashboard/team-hub');
+    revalidatePath('/golf/dashboard/messages');
     updateTag(CACHE_TAGS.DASHBOARD);
     return { success: true };
 
@@ -1594,7 +1600,9 @@ async function updateAnnouncementImpl(
       return { success: false, error: "Couldn't save your changes. The announcement may have been deleted." };
     }
 
-    revalidatePath('/golf/dashboard/announcements');
+    // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
+    revalidatePath('/golf/dashboard/team-hub');
+    revalidatePath('/golf/dashboard/messages');
     updateTag(CACHE_TAGS.DASHBOARD);
     return { success: true };
 

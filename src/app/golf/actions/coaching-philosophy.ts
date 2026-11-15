@@ -88,10 +88,8 @@ async function revalidateCoachingPhilosophyPathsImpl(): Promise<void> {
   if (!user) return;
 
   revalidatePath('/golf/dashboard/settings/coaching-intelligence');
-  revalidatePath('/golf/dashboard/insights');
-  revalidatePath('/golf/dashboard/alerts');
-  revalidatePath('/golf/dashboard/patterns');
-  revalidatePath('/golf/dashboard/intelligence');
+  // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
+  revalidatePath('/golf/dashboard/coachhelm');
 }
 
 const observedRevalidateCoachingPhilosophyPaths = withAdminObserved(

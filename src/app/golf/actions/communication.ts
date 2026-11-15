@@ -120,7 +120,9 @@ async function acknowledgeAnnouncementImpl(
       return { success: false, error: insertError.message };
     }
 
-    revalidatePath('/golf/dashboard/announcements');
+    // Clubhouse addresses: the old Fairway ones only redirect now (GAP-R-14).
+    revalidatePath('/golf/dashboard/team-hub');
+    revalidatePath('/golf/dashboard/messages');
     return { success: true };
   } catch (error) {
     await logServerError(`acknowledgeAnnouncement failed: ${describeError(error)}`, {
