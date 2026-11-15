@@ -163,10 +163,10 @@ describe('Round recovery: the address (swap audit F-02)', () => {
     expect(on.props.playerId).toBe('p1');
   });
 
-  it('the page keeps its message for a session with no player (a coach has no rounds to recover)', async () => {
+  it('the page draws Clubhouse’s players-only state for a session with no player (a coach has no rounds to recover; CH-11390, GAP-R-11)', async () => {
     mocks.session.current = { userId: 'u2', role: 'coach', player: null, coach: { id: 'c1' } };
     const on = (await RecoverRoundPage()) as ReactElement;
-    expect(nameOf(on)).toBe('FeatureUnavailable');
+    expect(nameOf(on)).toBe('PlayersOnlyRounds');
   });
 
   it('CH-11408 the route loads with the recovery skeleton', () => {

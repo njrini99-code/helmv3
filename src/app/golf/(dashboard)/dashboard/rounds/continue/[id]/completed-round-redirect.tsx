@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { fairwayScope } from '@/lib/redesign/flag';
+import { RoundReviewSkeleton } from '@/clubhouse/screens/rounds/RoundsSkeleton';
 
 /**
  * Continue Round for a round that is no longer in progress.
@@ -26,16 +26,17 @@ export function CompletedRoundRedirect({ href }: { href: string }) {
     router.replace(href);
   }, [href, router]);
 
+  // The review's own skeleton while the replace lands (GAP-R-11): never a flash of the retired Fairway look. The line and
+  // the link stay for a screen reader, and for the rare browser where the replace doesn't run.
   return (
-    <div
-      className={fairwayScope('flex min-h-[50vh] flex-col items-center justify-center gap-3 bg-canvas px-4 text-center')}
-      role="status"
-      aria-live="polite"
-    >
-      <p className="text-sm text-text-secondary">This round is complete. Opening your round…</p>
-      <Link href={href} replace className="text-sm font-medium text-accent-ink underline-offset-4 hover:underline">
-        View round
-      </Link>
-    </div>
+    <>
+      <RoundReviewSkeleton />
+      <p className="ch-sr-only" role="status" aria-live="polite">
+        This round is complete. Opening your round…{' '}
+        <Link href={href} replace>
+          View round
+        </Link>
+      </p>
+    </>
   );
 }
