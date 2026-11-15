@@ -227,11 +227,6 @@ export function rateSample(rows: ChRoundCache[], total: keyof ChRoundCache, unit
   return n;
 }
 
-export function perRound(rows: ChRoundCache[], key: keyof ChRoundCache): number | null {
-  const vals = rows.map((r) => r[key]).filter((v): v is number => typeof v === 'number');
-  return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
-}
-
 export type ChTour = 'pga' | 'lpga';
 
 /**
