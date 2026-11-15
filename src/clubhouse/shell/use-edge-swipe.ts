@@ -75,7 +75,10 @@ export function useEdgeSwipeBack(screen: RefObject<HTMLElement | null>, { enable
       for (const c of covered) c.style.translate = `${(COVERED_SHIFT * frame.offset).toFixed(2)}px 0`;
     };
     // The one listener that can hold up a scroll (it may preventDefault) is on only while a touch that landed at the edge
-    // is being read (S4.6, MOT-02), so every other touch on the screen scrolls without waiting on script.
+    // is being read (S4.6, MOT-02), so every other touch on the screen scrolls without waiting on script. The cost: WebKit
+    // settles at touchstart whether a touch's moves can be cancelled (PullToRefresh.tsx), so on iOS this swipe's moves are
+    // not cancellable and a claimed swipe cannot hold the screen's scroll still. Owed: a real-iPhone check of how far a
+    // swipe with vertical drift scrolls the screen (#2544).
     const MOVE = { passive: false } as const;
     const disarm = () => el.removeEventListener('touchmove', onMove);
     /** The screens a touch at the edge may move are composited from the moment it lands, not on its first move (MOT-03). */
@@ -214,7 +217,7 @@ export function useEdgeSwipeBack(screen: RefObject<HTMLElement | null>, { enable
         }
         return;
       }
-      // Ours: the page does not scroll with it. (iOS lets a touch be claimed only before it has started panning.)
+      // Ours: where the browser lets a move be cancelled, the page does not scroll with it (not on iOS: see MOVE above).
       if (e.cancelable) e.preventDefault();
       if (!live) {
         live = true;
