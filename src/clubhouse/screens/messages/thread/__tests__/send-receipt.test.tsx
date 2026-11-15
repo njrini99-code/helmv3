@@ -1,35 +1,32 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render } from '@testing-library/react';
-import { chSpringCurve } from '../../../../lib/motion';
-import { LAUNCH_RECEIPT_SHARE, playReceiptRise, receiptDelayAfter } from '../../motion/messages-beats';
+import { cleanup } from '@testing-library/react';
+import { CH_DUR_MS } from '../../../../lib/motion';
+import { playReceiptFade, receiptDelayAfter } from '../../motion/messages-beats';
 import { SEND_STAMP_TTL_MS, stampSend, takeSendStamp } from '../send-stamps';
-import { TYPING_REPLY_GRACE_MS, typingRecentlyShown, TypingRows } from '../TypingRows';
 
 afterEach(() => cleanup());
 
-/** MOT-SEND-8: Delivered rises after 70% of the launch, counted from the send, not from when the receipt mounts. */
+/** MOT-SEND-8, MOTION-AND-VISUAL 3.5: Delivered is late content, faded in once the bubble's rise has landed, counted from the send. */
 describe('receipt delay (MOT-SEND-8)', () => {
-  const full = Math.round(chSpringCurve('launch').ms * LAUNCH_RECEIPT_SHARE);
-  it('is 70% of the launch spring (309 ms at 442; production audit 2026-11-15, MOT-08)', () => {
-    expect(chSpringCurve('launch').ms).toBe(442);
-    expect(full).toBe(309);
-    expect(receiptDelayAfter(0)).toBe(309);
+  it('is the base beat, the insert rise the bubble takes (260 ms)', () => {
+    expect(receiptDelayAfter(0)).toBe(CH_DUR_MS.base);
+    expect(CH_DUR_MS.base).toBe(260);
   });
-  it('counts the wait from the send: a fast confirm waits out the rest, a slow one rises at once', () => {
-    expect(receiptDelayAfter(100)).toBe(209);
-    expect(receiptDelayAfter(309)).toBe(0);
+  it('counts the wait from the send: a fast confirm waits out the rest, a slow one fades in at once', () => {
+    expect(receiptDelayAfter(100)).toBe(160);
+    expect(receiptDelayAfter(260)).toBe(0);
     expect(receiptDelayAfter(2400)).toBe(0);
-    expect(receiptDelayAfter(-50)).toBe(309);
+    expect(receiptDelayAfter(-50)).toBe(260);
   });
-  it('plays 4 px / opacity 0 > 1 on the receipt beat after that delay, and not at all under Reduce Motion', () => {
+  it('fades opacity 0 > 1 over the quick beat after that delay, never moving, and not at all under Reduce Motion', () => {
     const el = document.createElement('span');
     const animate = vi.fn(() => ({}) as Animation);
     el.animate = animate as never;
-    playReceiptRise(el, { receiptDelayMs: receiptDelayAfter(100) }, false);
+    playReceiptFade(el, receiptDelayAfter(100), false);
     const [frames, timing] = animate.mock.calls[0] as unknown as [Keyframe[], KeyframeAnimationOptions];
-    expect(frames).toEqual([{ translate: '0 4px', opacity: 0 }, { translate: '0 0', opacity: 1 }]);
-    expect(timing).toMatchObject({ duration: 260, delay: 209, fill: 'backwards' });
-    expect(playReceiptRise(el, { receiptDelayMs: 0 }, true)).toBeNull();
+    expect(frames).toEqual([{ opacity: 0 }, { opacity: 1 }]);
+    expect(timing).toMatchObject({ duration: CH_DUR_MS.quick, delay: 160, fill: 'backwards' });
+    expect(playReceiptFade(el, 0, true)).toBeNull();
   });
 });
 
@@ -46,20 +43,5 @@ describe('send stamps', () => {
     stampSend('old', 0);
     stampSend('new', SEND_STAMP_TTL_MS + 5);
     expect(takeSendStamp('old', SEND_STAMP_TTL_MS + 6)).toBeNull();
-  });
-});
-
-describe('typingRecentlyShown (the reply row has its own arrival)', () => {
-  it('is false with no dots, true while they show, and true for a beat after they leave', () => {
-    const t = performance.now();
-    expect(typingRecentlyShown(t + 100_000)).toBe(false);
-    const api = { typing: true, typingUserIds: ['u2'], typingByConv: new Map(), directory: [], viewer: { role: 'coach' } } as never;
-    const conv = { id: 'c', group: false, memberIds: ['u2'], title: 'Cole' } as never;
-    const { unmount } = render(<TypingRows api={api} conv={conv} />);
-    expect(typingRecentlyShown()).toBe(true);
-    unmount();
-    const ended = performance.now();
-    expect(typingRecentlyShown(ended + TYPING_REPLY_GRACE_MS - 50)).toBe(true);
-    expect(typingRecentlyShown(ended + TYPING_REPLY_GRACE_MS + 50)).toBe(false);
   });
 });

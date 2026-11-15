@@ -12,7 +12,7 @@ import { type PollThreadActions, PollThreadContext, notePollHold } from '../poll
 import { useThreadAnchor } from '../use-thread-anchor';
 import { useFocusMessage } from '../use-focus-message';
 import { useThreadDragTimes } from '../use-thread-drag-times';
-import { useThreadMakeRoom, useSpringToEnd, useReplyFromTyping, useFaceFlight, useSendRise, ThreadDatePill, ThreadJumpKey } from '../thread-v2';
+import { useThreadMakeRoom, useSpringToEnd, useFaceFlight, useSendStamps, ThreadDatePill, ThreadJumpKey } from '../thread-v2';
 import { haptic } from '../../../lib/haptics';
 import { PhoneScreen } from '../../../shell/PhoneScreen';
 import { PhoneBar, PhoneIconAction } from '../../../ui/PhoneBar';
@@ -113,9 +113,8 @@ export function PhoneThread({
   useThreadDragTimes(scroller, true, threadReduced);
   useThreadMakeRoom(scroller, api.msgs.length, true, threadReduced);
   const jumpToEnd = useSpringToEnd(scroller, anchor.toEnd, threadReduced);
-  useReplyFromTyping(scroller, api.msgs.length, !!api.typing, true, threadReduced);
   useFaceFlight(true, threadReduced);
-  useSendRise(scroller, api.msgs.length, true, threadReduced);
+  useSendStamps(scroller, api.msgs.length, true);
   // MSG-201/203/307: the scroller runs under the bar and the composer, and both ride the keyboard.
   useThreadLayers(scroller, { kind: 'phone', convId: conv.id, reduced: threadReduced });
   const titleId = `ch-msp-thread-${conv.id}`;

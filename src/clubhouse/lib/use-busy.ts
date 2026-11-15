@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { CH_BUSY, CH_DUR_MS, CH_EASE_OUT } from './motion';
 import { chMotionModeNow } from './reduced-motion';
 
@@ -26,7 +26,10 @@ export function useBusy(pending: boolean, { delay = CH_BUSY.delay, min = CH_BUSY
   const [phase, setPhase] = useState<ChBusyPhase>(pending ? 'idle' : 'ready');
   // When the skeleton went up, while it is up; null once the content has taken its place.
   const shownAt = useRef<number | null>(null);
-  useEffect(() => {
+  // A layout effect, so the render that ends a request also clears the skeleton's timer before anything can paint. As a
+  // passive effect, the timer could fire between that render and its effect: the content drew, then the skeleton came back
+  // for its 300 ms hold, then the content again, remounted (seen on the Messages rail).
+  useLayoutEffect(() => {
     let timer: number | undefined;
     if (pending) {
       if (shownAt.current !== null) setPhase('skeleton');

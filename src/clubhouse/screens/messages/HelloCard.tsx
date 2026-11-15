@@ -23,7 +23,7 @@ export function HelloCard({ name, id, role, coach, year, onStarter }: { name: st
     onStarter(text);
     // The page's composer, not one inside the card: the pill is a sibling of the thread's scroller.
     const pill = (card.current?.closest('.ch-ms-thread, .ch-msp-thread, .ch-msp-screen, main') ?? document).querySelector<HTMLElement>(COMPOSER_PILL);
-    if (pill) msAnimate(pill, [{ transform: 'scale(0.98)' }, { transform: 'scale(1)' }], 'pop', { reduced, rd: null });
+    if (pill) msAnimate(pill, [{ transform: 'scale(0.98)' }, { transform: 'scale(1)' }], 'settle', { reduced, rd: null });
   };
   return (
     <section ref={card} className="ch-msv-hello ch-msd-hello">

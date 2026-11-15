@@ -34,12 +34,12 @@ afterEach(() => {
 const css = readFileSync(resolve(process.cwd(), 'src/clubhouse/styles/messages-details.css'), 'utf8');
 
 describe('MOT-DET-3: the mute menu and the quick action', () => {
-  it('the menu grows 0.8 > 1 with opacity on the lift spring from its corner; Reduce Motion is a fade', () => {
+  it('the menu grows 0.8 > 1 with opacity on the settle spring from its corner (3.12: lift retired); Reduce Motion is a fade', () => {
     render(<MuteMenu anchor={{ left: 10, top: 20, above: true }} onPick={vi.fn()} onClose={vi.fn()} />);
     const [frames, opts] = animate.mock.calls[0]!;
     expect(frames).toEqual([{ transform: 'scale(0.8)', opacity: 0 }, { transform: 'scale(1)', opacity: 1 }]);
-    expect(opts.duration).toBe(chSpringCurve('lift').ms);
-    expect(opts.easing).toBe(chSpringCurve('lift').linear);
+    expect(opts.duration).toBe(chSpringCurve('settle').ms);
+    expect(opts.easing).toBe(chSpringCurve('settle').linear);
     expect(screen.getByRole('menu').style.transformOrigin).toBe('0 100%');
     cleanup();
     animate.mockClear();
@@ -71,12 +71,12 @@ describe('MOT-DET-3: the mute menu and the quick action', () => {
     expect(muteToast(false, null)).toBe('Unmuted');
   });
 
-  it('the tile pops 0.92 > 1 on pop; nothing moves under Reduce Motion', () => {
+  it('the tile grows 0.92 > 1 on settle (3.12: pop retired); nothing moves under Reduce Motion', () => {
     const el = document.createElement('button');
     const { result } = renderHook(() => usePopIn());
     result.current(el, 0.92);
     expect(animate.mock.calls[0]![0]).toEqual([{ transform: 'scale(0.92)' }, { transform: 'scale(1)' }]);
-    expect(animate.mock.calls[0]![1].duration).toBe(chSpringCurve('pop').ms);
+    expect(animate.mock.calls[0]![1].duration).toBe(chSpringCurve('settle').ms);
     animate.mockClear();
     reduce.current = true;
     const r2 = renderHook(() => usePopIn());

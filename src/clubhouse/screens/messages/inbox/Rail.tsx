@@ -3,7 +3,8 @@
 import { type ChPageKey, usePageKeys } from '../../../shell/command/page-keys';
 import { plural } from '../../../lib/plural';
 import type { ChMessagesApi } from '../api/types';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useBusy, useBusyReveal } from '../../../lib/use-busy';
 import { usePanelSmoothScroll } from '../../../lib/smooth-scroll';
 import { useRovingRows } from '../../../lib/roving';
 import { type ChConvFilter, INBOX_FILTERS, isUnread, filterConvs } from './model';
@@ -59,6 +60,19 @@ export function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) 
   });
   // The lane's first run (S-MSG.empty): the rail keeps Messages, New and Search; the card in the pane says the rest.
   const firstRun = isMessagesFirstRun(api);
+  // 3.5 late content, 3.9: the list waits 150 ms before its skeleton shows, holds it 300 ms once shown, and the
+  // conversations that take its place fade in over the quick beat (the body's opacity, no translate).
+  const pending = (api.convsLoading && !api.convs.length) || !!api.annLoading;
+  const busy = useBusy(pending);
+  const reveal = useBusyReveal<HTMLDivElement>(busy);
+  const shown = busy === "skeleton" ? "skeleton" : pending ? "idle" : "ready";
+  const bodyRef = useCallback(
+    (el: HTMLDivElement | null) => {
+      body.current = el;
+      reveal(el);
+    },
+    [reveal],
+  );
   return (
     <aside className="ch-ms-rail ch-inb ch-inb--rail" aria-label="Conversations">
       <div className="ch-ms-rail__head">
@@ -77,9 +91,9 @@ export function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) 
           placeholder="Search"
           label="Search conversations and messages"
         />
-        {!firstRun && <Segmented<ChConvFilter> weight="filter" redraws block plate="thumb" size="sm" label="Filter conversations" value={filter} onChange={setFilter} options={INBOX_FILTERS} />}
+        {!firstRun && <Segmented<ChConvFilter> weight="filter" redraws block size="sm" label="Filter conversations" value={filter} onChange={setFilter} options={INBOX_FILTERS} />}
       </div>
-      <div className="ch-ms-rail__body" ref={body}>
+      <div className="ch-ms-rail__body" ref={bodyRef}>
         {api.convsError ? (
           // The rail's full width (states audit c9): at the body's inset its body wrapped to a narrow column.
           <div className="ch-ms-rail__notice">
@@ -90,9 +104,9 @@ export function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) 
               onRetry={api.refetchConvs}
             />
           </div>
-        ) : (api.convsLoading && !api.convs.length) || api.annLoading ? (
+        ) : shown === "skeleton" ? (
           <InboxSkeleton layout="rail" labelled={!!api.pins?.ids.length} />
-        ) : firstRun ? null : !api.convs.length ? (
+        ) : shown === "idle" || firstRun ? null : !api.convs.length ? (
           <EmptyState
             code="CH-7301"
             kind="first-run"

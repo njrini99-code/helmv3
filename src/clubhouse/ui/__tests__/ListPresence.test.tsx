@@ -1,5 +1,7 @@
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { LazyMotion, domMax } from 'motion/react';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ListPresence, PresenceRow } from '../ListPresence';
 
@@ -112,27 +114,36 @@ describe('ListPresence', () => {
     expect(screen.getByText('c').getAttribute('style') ?? '').not.toMatch(/height|opacity|overflow|transform/);
   });
 
-  it('noArrival (a row with a motion of its own) skips the list\'s arrival but still closes when it leaves', async () => {
-    const own = (ids: string[]) => (
+  // MOTION-AND-VISUAL 3.5 made the list the one insert: a sent message rises like any row, so no row opts out of the arrival
+  // any more (the old `noArrival` and Messages' `arrive="inbox"` are gone). A filter or search change is a content swap (3.3).
+  it('cut (a filter or search change) swaps the content at once: arrivals unstyled, leavings gone', async () => {
+    const swap = (ids: string[], cut = false) => (
       <LazyMotion features={domMax}>
         <ul>
-          <ListPresence arrive="rise">
+          <ListPresence cut={cut}>
             {ids.map((id) => (
-              <PresenceRow key={id} noArrival={id === 'b'}>
-                {id}
-              </PresenceRow>
+              <PresenceRow key={id}>{id}</PresenceRow>
             ))}
           </ListPresence>
         </ul>
       </LazyMotion>
     );
-    const { rerender } = render(own(['a', 'c']));
-    rerender(own(['a', 'b', 'c', 'd']));
-    // 'd' rises in from 8 px and transparent; 'b' takes the page with no arrival style at all.
+    const { rerender } = render(swap(['a', 'b']));
+    rerender(swap(['b', 'c'], true));
+    expect(screen.getByText('c').getAttribute('style') ?? '').not.toMatch(/opacity|transform|height|overflow/);
+    await waitFor(() => expect(screen.queryByText('a')).toBeNull(), { timeout: 500 });
+    // The next ordinary insert rises again.
+    rerender(swap(['b', 'c', 'd']));
     expect(screen.getByText('d').style.opacity).toBe('0');
-    expect(screen.getByText('b').getAttribute('style') ?? '').not.toMatch(/opacity|transform|height|overflow/);
-    rerender(own(['a', 'c', 'd']));
-    expect(screen.getByText('b').hasAttribute('data-leaving')).toBe(true);
+    expect(screen.getByText('d').style.transform).toBe('translateY(8px)');
+  });
+
+  it('rides the vocabulary: insert and FLIP on the base beat and the iOS curve, remove on the quick beat and ease-out (3.5)', () => {
+    const src = readFileSync(join(process.cwd(), 'src/clubhouse/ui/ListPresence.tsx'), 'utf8');
+    expect(src).toContain('const MOVE = { duration: CH_DUR.base, ease: CH_EASE_IOS };');
+    expect(src).toContain("const RISE_FROM = { opacity: 0, transform: 'translateY(8px)' };");
+    expect(src).toContain("const LEAVE = { opacity: 0, transform: 'scale(0.96)', transition: { duration: CH_DUR.quick, ease: CH_EASE_OUT } };");
+    expect(src).not.toMatch(/chSpringCurve|CH_SPRING_SETTLE_MS|CH_EASE_SHEET/);
   });
 
   it('flip={false} (a thread, whose scroller sets its own position) keeps arrivals but takes no layout transform', () => {
