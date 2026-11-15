@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext } from 'react';
-import type { UseCoachHelmChatResult } from '@/components/golf/coachhelm/chat/useCoachHelmChat';
+import type { UseCoachHelmChatResult } from '@/hooks/coachhelm/useCoachHelmChat';
 
 export interface QcRun {
   state: 'idle' | 'work' | 'wait' | 'done' | 'failed';

@@ -3,7 +3,7 @@
 import type { UIMessage } from 'ai';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import type { UseCoachHelmChatOptions, UseCoachHelmChatResult } from '@/components/golf/coachhelm/chat/useCoachHelmChat';
+import type { UseCoachHelmChatOptions, UseCoachHelmChatResult } from '@/hooks/coachhelm/useCoachHelmChat';
 import type { ChAskSheetChat } from '../shell/AskSheet';
 import { useLandings } from '../shell/quick-chat/landing';
 import { LandingSlot } from '../shell/quick-chat/LandingSlot';

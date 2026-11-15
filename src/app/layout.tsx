@@ -34,7 +34,7 @@ import { StaleDeploymentRecoveryScript } from '@/components/providers/StaleDeplo
 import { VercelAnalyticsProvider } from '@/components/providers/VercelAnalyticsProvider';
 import { PostHogProvider } from '@/components/providers/PostHogProvider';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { ThemeScript } from '@/components/golf/theme/ThemeScript';
+import { ThemeScript } from '@/components/theme/ThemeScript';
 import { SkyScript } from '@/clubhouse/screens/auth/SkyScript';
 import { TypeScaleScript } from '@/clubhouse/shell/TypeScaleScript';
 import { isFlagEnabled } from '@/lib/flags/is-enabled';

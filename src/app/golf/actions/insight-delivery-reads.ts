@@ -14,7 +14,7 @@
  * takeaway, the feeds, the coach chat tool) runs the same `deliverReads`, so
  * they keep agreeing on it with the flag on.
  */
-import { deriveTone, isNegativePolarityMetric } from '@/components/golf/coachhelm/insight-card/tone-derivation';
+import { deriveTone, isNegativePolarityMetric } from '@/lib/coachhelm/tone-derivation';
 import type { InsightComparisonSource, InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
 import type { RankableEvidenceInsight } from './insight-delivery-ranking';
 

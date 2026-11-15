@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getUserResilient } from '@/lib/auth/resilient-get-user';
-import { AdminNativeGuard } from '@/components/golf/AdminNativeGuard';
+import { AdminNativeGuard } from '@/components/native/AdminNativeGuard';
 import { SessionActivityProvider } from '@/components/providers/SessionActivityProvider';
 import { AdminMotionProvider } from './_motion-provider';
 

@@ -4,7 +4,7 @@ import {
   DEMO_PRICING_NUDGE_DELAY_MS,
   resolveNudgeArming,
   shouldFireNudge,
-} from './arm-nudge';
+} from '../arm-nudge';
 
 describe('shouldFireNudge', () => {
   it('does not fire before either threshold is reached', () => {

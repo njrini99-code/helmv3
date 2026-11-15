@@ -22,7 +22,7 @@ import { validateCoachTeamAccess } from '@/lib/golf/resolve-team';
 import { getPlayerHubAnnouncements } from '@/app/golf/actions/player-notifications';
 import { getTopInsightForPlayer } from '@/app/golf/actions/insight-delivery';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
-import type { TripData, PlayerTask, EventInvite } from '@/components/fairway/pages/hub/hub-parts';
+import type { TripData, PlayerTask, EventInvite } from '@/lib/golf/player-hub-types';
 import type { GolfAnnouncementMeta } from '@/lib/types/golf';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { logServerError } from '@/lib/server-error-logger';

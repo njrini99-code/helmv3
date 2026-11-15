@@ -1,6 +1,6 @@
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import type { InsightComparisonSource, InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
-import { deriveTone, isNegativePolarityMetric } from '@/components/golf/coachhelm/insight-card/tone-derivation';
+import { deriveTone, isNegativePolarityMetric } from '@/lib/coachhelm/tone-derivation';
 import { getMetricDefinition, isGolfMetricId } from '@/lib/golf/metrics/display-registry';
 import type { ChKind, ChTourBaseline } from './coachhelm-shape';
 

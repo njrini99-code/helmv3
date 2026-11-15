@@ -8,8 +8,8 @@ import {
 } from "@/contexts/golf-user-context";
 import { NotificationBadgeProvider } from "@/contexts/notification-badge-context";
 import { SessionActivityProvider } from "@/components/providers/SessionActivityProvider";
-import { NativeSwipeBackBridge } from "@/components/golf/NativeSwipeBackBridge";
-import { ThemeApplier } from "@/components/golf/theme/ThemeApplier";
+import { NativeSwipeBackBridge } from "@/components/native/NativeSwipeBackBridge";
+import { ThemeApplier } from "@/components/theme/ThemeApplier";
 import type { ChShellData } from "../data/shell";
 import { ChMotionFeatures, ClubhouseFrame } from "./ClubhouseFrame";
 import { useWarmInbox } from "./use-warm-inbox";

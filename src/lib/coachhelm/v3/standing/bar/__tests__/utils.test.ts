@@ -15,7 +15,7 @@ import {
   teamComparisonText,
   teamRelativeText,
   toScalePct,
-} from './utils';
+} from '../utils';
 
 describe('toScalePct — NaN guard', () => {
   it('returns 0 instead of NaN for a NaN value', () => {

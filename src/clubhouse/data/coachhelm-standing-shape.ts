@@ -1,6 +1,6 @@
 import { formatDateOnlyShort } from '@/lib/golf/date-only';
-import { TEAM_MARKER_MIN_N } from '@/components/golf/coachhelm/v3/StandingBar/types';
-import { fitScale, formatValue, pgaOmissionNote, teamCohortText, toScalePct, valuesDisplayEqual } from '@/components/golf/coachhelm/v3/StandingBar/utils';
+import { TEAM_MARKER_MIN_N } from '@/lib/coachhelm/v3/standing/bar/types';
+import { fitScale, formatValue, pgaOmissionNote, teamCohortText, toScalePct, valuesDisplayEqual } from '@/lib/coachhelm/v3/standing/bar/utils';
 import { computeCounterfactual } from '@/lib/coachhelm/v3/counterfactual/compute';
 import { capByParentSg, parentSgMetric, sgBehindTour } from '@/lib/coachhelm/v3/counterfactual/parent-cap';
 import { METRIC_IDS, type MetricId } from '@/lib/coachhelm/v3/metrics/registry';

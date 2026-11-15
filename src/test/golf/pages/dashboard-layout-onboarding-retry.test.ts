@@ -47,7 +47,7 @@ vi.mock('@/app/golf/(dashboard)/FairwayDashboardShell', () => ({
     return null;
   },
 }));
-vi.mock('@/components/golf/theme/ThemeApplier', () => ({
+vi.mock('@/components/theme/ThemeApplier', () => ({
   ThemeApplier: function ThemeApplier() {
     return null;
   },

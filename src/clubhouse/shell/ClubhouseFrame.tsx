@@ -18,7 +18,7 @@ import type { ChShellData } from '../data/shell';
 import { useRouter } from 'next/navigation';
 import { useNavOnce } from '../lib/nav-once';
 import { DemoEnterTracker } from '@/components/demo/DemoEnterTracker';
-import { DemoPricingNudge } from '@/components/golf/demo/DemoPricingNudge';
+import { DemoPricingNudge } from '@/components/demo/DemoPricingNudge';
 import { activeNavItem, isAliased, isKnownDashboardPath, isRebuilt, phoneFullScreen, phonePushedTop, routeLabel, withoutCoachParams } from './nav';
 import { Sidebar } from './Sidebar';
 import { RailToggle } from './RailToggle';

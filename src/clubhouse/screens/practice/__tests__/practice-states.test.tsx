@@ -21,7 +21,7 @@ vi.mock('@/app/golf/actions/practice-publish', () => ({ takeDownPracticePlan: vi
 vi.mock('@/app/golf/actions/coachhelm-practice-plans', () => ({ postPracticePlanToChat: vi.fn() }));
 vi.mock('@/app/golf/actions/practice-plans', () => ({ savePracticePlan: vi.fn(), copyPlanBody: vi.fn() }));
 vi.mock('@/app/golf/actions/calendar-events', () => ({ createGolfEvent: vi.fn() }));
-vi.mock('@/components/golf/coachhelm/chat/useCoachHelmChat', () => ({ useCoachHelmChat: (...a: unknown[]) => chat(...a) }));
+vi.mock('@/hooks/coachhelm/useCoachHelmChat', () => ({ useCoachHelmChat: (...a: unknown[]) => chat(...a) }));
 
 const status: ChPlanStatus = { planId: 'p1', title: 'Plan', version: 2, status: 'published', edited: false, seen: { names: ['Sofia'], of: 9 } };
 

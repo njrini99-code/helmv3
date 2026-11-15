@@ -76,7 +76,7 @@ import { requireCronAuth } from '@/lib/cron/auth';
 import { notifyInsightResolved } from '@/lib/notifications/insight-notifier';
 import { recordJobRun } from '@/lib/admin/job-log';
 import { describeError } from '@/lib/utils/describe-error';
-import { isNegativePolarityMetric } from '@/components/golf/coachhelm/insight-card/tone-derivation';
+import { isNegativePolarityMetric } from '@/lib/coachhelm/tone-derivation';
 import { runFocusAreaVerdicts } from '@/lib/coachhelm/v3/verdicts/verdict-job';
 import { isRecheckEnabled } from '@/lib/coachhelm/v3/lifecycle/flag';
 import { loadCanaryPlayerTeams, runWithCoachHelmTeams } from '@/lib/coachhelm/canary';

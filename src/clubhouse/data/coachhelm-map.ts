@@ -5,7 +5,7 @@ import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import type { InsightEvidence, InsightUnit } from '@/lib/coachhelm/v2/insights/types';
 import { getMetricDirection } from '@/lib/coachhelm/v3/metrics/registry';
 import { confidenceLabel, confidenceTier, type ConfidenceTier } from '@/lib/coachhelm/confidence-label';
-import { buildInsightUnit, fmtShortDate } from '@/components/golf/coachhelm/home/buildPlayerHubViewModel';
+import { buildInsightUnit, fmtShortDate } from '@/lib/coachhelm/player-hub/buildPlayerHubViewModel';
 import { MINUS } from '../lib/format';
 import { plural } from '../lib/plural';
 import { COLLEGE_NO_TOUR, COLLEGE_SOURCES, dayOf, drawnComparison, kindOf, refreshedDay, staleSince, tourValueFor } from './coachhelm-classify';

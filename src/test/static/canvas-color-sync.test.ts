@@ -4,7 +4,7 @@
  * The web's page canvas is the `--fw-color-canvas` token (src/styles/design-tokens.css,
  * light in :root, dark in the `.dark` block). Web places that can't read CSS carry a copy of it:
  *   - the theme-color fallback in src/lib/golf/theme.ts,
- *   - the ThemeScript pre-paint theme-color (src/components/golf/theme/ThemeScript.tsx),
+ *   - the ThemeScript pre-paint theme-color (src/components/theme/ThemeScript.tsx),
  *   - public/offline.html, which renders with no app CSS.
  *
  * The native app's canvas is one switch (A15): config/native-canvas.json names the active palette, Fairway's
@@ -157,7 +157,7 @@ describe('--fw-color-canvas copies stay in sync', () => {
   });
 
   it('ThemeScript pre-paint theme-color (dark + light)', () => {
-    const m = read('src/components/golf/theme/ThemeScript.tsx').match(/d\?'(#[0-9a-fA-F]{6})':'(#[0-9a-fA-F]{6})'/);
+    const m = read('src/components/theme/ThemeScript.tsx').match(/d\?'(#[0-9a-fA-F]{6})':'(#[0-9a-fA-F]{6})'/);
     expect(m).not.toBeNull();
     expectClose(hexToRgb(m![1]!), darkToken, 'ThemeScript theme-color dark');
     expectClose(hexToRgb(m![2]!), lightToken, 'ThemeScript theme-color light');

@@ -1,6 +1,6 @@
 import { act, cleanup, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { useCoachHelmChat } from '@/components/golf/coachhelm/chat/useCoachHelmChat';
+import { useCoachHelmChat } from '@/hooks/coachhelm/useCoachHelmChat';
 import { pendingDecisionKeys, type ChatUIPart } from '@/lib/coachhelm/v3/chat/engine/protocol';
 import { ASK_SCRIPT_NAMES, askScript, installScriptedChat, partsOfScript, SCRIPTED_CHAT_ENDPOINT, SCRIPTED_HOLD_MS, taskScript } from '../ask-script';
 import { ASK_PROPOSAL, ASK_RECEIPT_DONE } from '../fixtures-ask-thread';

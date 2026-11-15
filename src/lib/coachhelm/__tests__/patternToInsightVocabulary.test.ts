@@ -35,7 +35,7 @@ import {
   patternToSignalRow,
   insightToSignalRow,
   insightsToSignalRows,
-} from './patternToInsightVocabulary';
+} from '../patternToInsightVocabulary';
 import type { ExtendedPattern } from '@/app/golf/actions/pattern-management';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import type { InsightEvidence } from '@/lib/coachhelm/v2/insights/types';

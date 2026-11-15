@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext } from 'react';
-import type { useCoachHelmChat } from '@/components/golf/coachhelm/chat/useCoachHelmChat';
+import type { useCoachHelmChat } from '@/hooks/coachhelm/useCoachHelmChat';
 import { activeNavItem, routeLabel } from './nav';
 
 /**

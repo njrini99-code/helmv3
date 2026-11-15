@@ -14,7 +14,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // ---------------------------------------------------------------------------
 // StandingBar utils — pure function, no mocks needed
 // ---------------------------------------------------------------------------
-import { pgaReferenceLabel } from '@/components/golf/coachhelm/v3/StandingBar/utils';
+import { pgaReferenceLabel } from '@/lib/coachhelm/v3/standing/bar/utils';
 
 describe('pgaReferenceLabel — LPGA label for women\'s teams', () => {
   it('returns "PGA" / "PGA Tour" for men\'s teams (is_womens=false)', () => {
