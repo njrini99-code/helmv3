@@ -21,7 +21,8 @@ Held items:     none
   branch draws the chart on `toPar` (par line at 0) and owns its caption and copy.
 - `data/stats-weight.ts` `roundHalves`: a change needs `MIN_TREND_POINTS` (four) points with a value, two a half; with three the
   middle point was in neither half and the verdict was the last week against the first (CH-10). The team halves still pair each
-  player with themselves (NP-01).
+  player with themselves (NP-01). The phone trend's reading (`StatsTeamPhone.tsx` `teamTrendReading`) needs the same four round
+  days before it colours or words a change; `MIN_TREND_POINTS` lives in `lib/stats-signal.ts` so the client screen can read it.
 
 ### Why
 

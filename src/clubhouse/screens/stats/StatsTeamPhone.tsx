@@ -13,7 +13,7 @@ import { StatsTeamFirstRun } from './StatsTeamFirstRun';
 import { Icon } from '../../ui/Icon';
 import { SectionBoundary, SectionGroup, SectionGroupNotice } from '../../ui/SectionBoundary';
 import { Segmented } from '../../ui/Segmented';
-import { deltaTone, deltaWords, halvesTone } from '../../lib/stats-signal';
+import { deltaTone, deltaWords, halvesTone, MIN_TREND_POINTS } from '../../lib/stats-signal';
 import { changeInk, changeTone, formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { TERMS } from '../../lib/glossary';
 import { haptic } from '../../lib/haptics';
@@ -224,15 +224,16 @@ export function teamDaysMean(days: Array<{ score: number; n?: number }>): number
  * The newer half of the round days against the older half, worded as a change only past its standard error (A1), which the loader takes from
  * the rounds behind each half: a day's mean of six rounds is not read as one round. The line's ink follows the same test as the words (row 69).
  * The change compares each player with themselves (prod audit 2026-11-15, NP-01, `roundHalves`), so with fewer than three of the same
- * players on both sides there is no change to read, and the line says that instead of "no clear change".
+ * players on both sides there is no change to read, and the line says that instead of "no clear change". It needs four round days,
+ * two a half (CH-10), and is judged against par (CH-01).
  */
 export function teamTrendReading(data: Pick<ChTeamStats, 'daysHalves'>, known: number): { tone: '' | 'is-gain' | 'is-loss'; reading: string } {
   const change = data.daysHalves;
-  const tone = known < 3 ? '' : halvesTone(change, true);
+  const tone = known < MIN_TREND_POINTS ? '' : halvesTone(change, true);
   return {
     tone,
     reading:
-      known >= 3 && change == null
+      known >= MIN_TREND_POINTS && change == null
         ? 'Not enough of the same players on both halves to read a change.'
         : tone === ''
           ? 'No clear change across these round days.'

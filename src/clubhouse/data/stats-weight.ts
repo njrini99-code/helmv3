@@ -2,7 +2,9 @@ import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import { formStatus, MIN_SG_ROUNDS, TREND_LENGTH, type ChPlayerSeason, type ChRound } from './season';
 import { hasHoleScores, holeRounds } from './round-scope';
 import { per18, roundKind, type ChRoundKind } from './stats-filter';
-import { changeSe, type SpreadKind } from '../lib/stats-signal';
+import { changeSe, MIN_TREND_POINTS, type SpreadKind } from '../lib/stats-signal';
+
+export { MIN_TREND_POINTS } from '../lib/stats-signal';
 
 export { per18, roundsWord } from './stats-filter';
 
@@ -88,11 +90,6 @@ export interface ChHalves {
 export const MIN_TREND_PLAYERS = 3;
 /** The whole rounds a player needs in each half to count in a team trend's like-for-like change. */
 export const MIN_TREND_HALF_ROUNDS = 2;
-/**
- * The points with a value a trend needs before it reads a change: two a half (prod audit 2026-11-15, CH-10). With three, the middle
- * point sat in neither half, so "better over these weeks" was the last week against the first.
- */
-export const MIN_TREND_POINTS = 4;
 
 /**
  * A trend's newer half against its older half, from the rounds behind it (A1). `groups` are the rounds behind each point of the

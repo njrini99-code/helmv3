@@ -40,6 +40,9 @@ describe('a team trend compares the same players (NP-01)', () => {
   it('says why when the same players are too few, rather than "no clear change"', () => {
     expect(teamTrendReading({ daysHalves: null }, 6).reading).toBe('Not enough of the same players on both halves to read a change.');
     expect(teamTrendReading({ daysHalves: null }, 2).reading).toBe('No clear change across these round days.');
+    // CH-10: three round days are too few for any verdict, so a null there is not about the players.
+    expect(teamTrendReading({ daysHalves: null }, 3).reading).toBe('No clear change across these round days.');
+    expect(teamTrendReading({ daysHalves: { delta: -2.04, se: 0.3 } }, 3).tone).toBe('');
     expect(teamTrendReading({ daysHalves: { delta: -2.04, se: 0.3 } }, 6).reading).toBe('Down 2.0 strokes a round, same players, newer half vs older half.');
   });
 });

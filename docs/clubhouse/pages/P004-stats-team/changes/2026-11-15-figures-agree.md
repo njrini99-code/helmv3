@@ -20,8 +20,9 @@ Held items:     none
   each half; under three such players there is no change to read (NP-01).
 - `screens/stats/shs-figures.ts` `teamLineDays`: the line joins every day in the window; a one-round day is a hollow dot on it
   (STATS-P-05, spec S2.4).
-- `StatsTeamPhone.tsx`, `StatsTeamIslands.tsx`: the trend's words say "same players", and say when too few of the same players are on
-  both halves to read a change.
+- `StatsTeamPhone.tsx`: the phone trend's words say "same players", and say when too few of the same players are on both halves to
+  read a change. The desktop trend's note (`StatsTeamIslands.tsx`) takes the same wording in the "Make charts tell the truth" branch,
+  which rewrites that note for the to-par lens.
 
 ### Why
 
