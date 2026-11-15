@@ -46,6 +46,8 @@ Phase is before, after, baseline or evidence.
 | `P016__import-results__coach__402__check-full-sheet__after__d2b1386.png` | after | d2b1386 | import-results (coach), 402px, check-full-sheet; /clubhouse-preview/tournament-desk?event=e34&state=live, synthetic preview fixture with a Golf Genius style round 1 CSV, 61 players, 12 teams |
 | `P016__import-results__coach__402__check-players__after__d2b1386.png` | after | d2b1386 | import-results (coach), 402px, check-players; /clubhouse-preview/tournament-desk?event=e34&state=live, synthetic preview fixture with a Golf Genius style round 1 CSV, 61 players, 12 teams |
 | `P016__import-results__coach__402__choose-file__after__d2b1386.png` | after | d2b1386 | import-results (coach), 402px, choose-file; /clubhouse-preview/tournament-desk?event=e34&state=live, synthetic preview fixture |
+| `P016__event-desk__coach__1440__who-counted-exported__after__6e3fc1f.png` | after | 6e3fc1f | event-desk (coach), 1440px, who-counted-exported; preview |
+| `P016__event-desk__coach__402__who-counted-export__after__6e3fc1f.png` | after | 6e3fc1f | event-desk (coach), 402px, who-counted-export; preview |
 
 ## Open verification gaps
 
