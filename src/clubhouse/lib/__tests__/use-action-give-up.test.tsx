@@ -76,7 +76,7 @@ describe('Slow saves give up (GAP-S-31)', () => {
     await act(async () => screen.getByRole('button', { name: 'Cancel' }).click());
     await waitFor(() => expect(onResult).toHaveBeenCalledWith({ success: false, error: 'cancelled' }));
     expect(code('CH-1990')).toBeNull();
-    expect(code('CH-1590')?.textContent).toMatch(/Stopped waiting/);
+    expect(code('CH-1991')?.textContent).toMatch(/Stopped waiting/);
     // The button is free again and the note is still there.
     expect((screen.getByRole('button', { name: 'Save' }) as HTMLButtonElement).disabled).toBe(false);
     expect((screen.getByRole('textbox', { name: 'Note' }) as HTMLInputElement).value).toBe('Bring the yardage book');
@@ -88,7 +88,7 @@ describe('Slow saves give up (GAP-S-31)', () => {
     await screen.findByText('Note saved');
   });
 
-  it('CH-1590 a second Save while the stopped save is still out is not sent twice: it says so, and works once that answers', async () => {
+  it('CH-1991 a second Save while the stopped save is still out is not sent twice: it says so, and works once that answers', async () => {
     let answer: (v: { success: boolean }) => void = () => {};
     const save = vi.fn(() => new Promise<{ success: boolean }>((r) => (answer = r)));
     const onResult = mount(save);
@@ -99,7 +99,7 @@ describe('Slow saves give up (GAP-S-31)', () => {
 
     await act(async () => screen.getByRole('button', { name: 'Save' }).click());
     expect(save).toHaveBeenCalledTimes(1);
-    expect(code('CH-1590')?.textContent).toMatch(/Your last save hasn’t answered yet/);
+    expect(code('CH-1991')?.textContent).toMatch(/Your last save hasn’t answered yet/);
 
     await act(async () => answer({ success: false }));
     await waitFor(() => expect(code('CH-8001')).not.toBeNull());

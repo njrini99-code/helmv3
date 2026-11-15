@@ -236,7 +236,7 @@ Report a problem check nothing first and fail with their own toast (80602,
 | 80780 | CH-8980 | `SETTINGS_PREFERENCES_TIME_FORMAT` | Settings › Preferences › Time format (a device preference, like the distance unit) |
 
 From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903,
-10704 CH-1905, 10705 CH-1909, 10706 CH-1910.
+10704 CH-1905, 10705 CH-1909, 10706 CH-1910, 10790 CH-1990, 10791 CH-1991.
 
 ## 08 — Permission / authorization
 

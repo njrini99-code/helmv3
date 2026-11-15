@@ -28,6 +28,7 @@ vi.mock('../routes/team', () => ({ resolveClubhouseTeam: () => Promise.resolve(t
 
 import { loadRoundReview } from '../data/round-review';
 import { distribution, nineOf, toHoles, toShot, type ChRoundReview, type ChShotRow } from '../data/round-review-shape';
+import { HISTORY_FAILED } from '../data/round-history-shape';
 import { ClubhouseRoundReviewRoute } from '../routes/round-review';
 import { firstHole, RoundReview } from '../screens/rounds/RoundReview';
 import { isRebuilt } from '../shell/nav';
@@ -388,6 +389,16 @@ describe('Round review: never a wrong figure or a silent difference', () => {
     await expectCode('CH-11216', /Some details of this round didn’t load.*The tee’s yardage is missing; the scores are right/);
     expect(heroScore()).toBe('74');
     await user.click(within(code('CH-11216') as HTMLElement).getByRole('button', { name: /Try again/ }));
+    expect(router.refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it('CH-11290 a history read that failed is said once, with Try again; the round’s own figures stay (GAP-S-27)', async () => {
+    const user = userEvent.setup();
+    wrap(<RoundReview review={{ ...PREVIEW_REVIEW, history: undefined }} history={Promise.resolve(HISTORY_FAILED)} />);
+    await expectCode('CH-11290', /History didn’t load.*Records and past rounds are left out\. This round’s own figures are unaffected/);
+    expect(document.querySelectorAll('[data-ch-code="CH-11290"]')).toHaveLength(1);
+    expect(screen.queryByRole('list', { name: 'Records' })).toBeNull();
+    await user.click(within(code('CH-11290') as HTMLElement).getByRole('button', { name: /Try again/ }));
     expect(router.refresh).toHaveBeenCalledTimes(1);
   });
 

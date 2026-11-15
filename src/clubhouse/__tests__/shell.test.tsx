@@ -271,6 +271,7 @@ describe('Shell · page states', () => {
     ['stale-action', 'CH-1203', /out of date/],
     ['transient', 'CH-1204', /slow to respond/],
     ['load', 'CH-1205', /didn.t finish loading/],
+    ['offline', 'CH-1290', /You’re offline.*It loads by itself when you’re back online/],
     ['unknown', 'CH-1206', /Something went wrong/],
   ] as const)('%s → %s', async (kind, c, text) => {
     wrap(<RouteErrorView kind={kind as RouteErrorKind} isRetrying={false} retryCount={0} onRetry={vi.fn()} homePath="/golf/dashboard" />);
@@ -1288,12 +1289,21 @@ describe('Shell · behaviour contracts (P001)', () => {
     unmount();
     // A coach's old page that moves for coaches only: a player is told the same, not that it is unavailable.
     const old = render(
-      <ClubhouseFrame userData={player} shell={shell} pathname="/golf/dashboard/courses">
-        <p>Courses body</p>
+      <ClubhouseFrame userData={player} shell={shell} pathname="/golf/dashboard/intelligence">
+        <p>Intelligence body</p>
       </ClubhouseFrame>,
     );
     expect(screen.getByRole('heading', { level: 1 }).textContent).toMatch(/^Only coaches use /);
     old.unmount();
+    // Courses has nothing of either role's, so a player is sent Home like a coach (GAP-R-12): the wait for that, never
+    // "Courses isn’t available here".
+    const courses = render(
+      <ClubhouseFrame userData={player} shell={shell} pathname="/golf/dashboard/courses">
+        <p>Courses body</p>
+      </ClubhouseFrame>,
+    );
+    expect(screen.queryByRole('heading', { level: 1, name: /isn.t available here$|^Only coaches use / })).toBeNull();
+    courses.unmount();
     // A coach on an address rebuilt for players only (Classes) still reads the plain notice.
     render(
       <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/classes">

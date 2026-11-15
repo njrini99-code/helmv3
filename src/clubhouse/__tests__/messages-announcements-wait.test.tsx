@@ -14,7 +14,7 @@ const router = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn(), replace: vi.
 vi.mock('next/navigation', () => ({ useRouter: () => router, useSearchParams: () => new URLSearchParams() }));
 vi.mock('@/clubhouse/lib/use-now', () => ({ useNow: () => null }));
 vi.mock('@/clubhouse/screens/messages/use-conversation-pins', async () => {
-  const { usePinned } = await import('../pinned');
+  const { usePinned } = await import('../screens/messages/pinned');
   return { useConversationPins: (viewer: string, team: string, ids: readonly string[], enabled: boolean) => usePinned(viewer, team, ids, enabled) };
 });
 vi.mock('@/clubhouse/screens/messages/use-row-mutes', () => ({ isMutedRow: () => false, useRowMutes: () => ({ muted: null, refresh: () => {} }) }));
@@ -74,9 +74,9 @@ vi.mock('@/app/golf/actions/announcements', () => ({
 vi.mock('@/app/golf/actions/communication', () => ({ acknowledgeAnnouncement: vi.fn() }));
 
 import type { ChMessagesData } from '@/clubhouse/data/messages';
-import { Messages } from '../Messages';
-import { CH_ANN_GIVE_UP_AFTER, CH_ANN_SLOW_AFTER, useAnnouncementsRead } from '../use-announcements-read';
-import type { ChAnnouncement } from '../model';
+import { Messages } from '../screens/messages/Messages';
+import { CH_ANN_GIVE_UP_AFTER, CH_ANN_SLOW_AFTER, useAnnouncementsRead } from '../screens/messages/use-announcements-read';
+import type { ChAnnouncement } from '../screens/messages/model';
 import { ToastProvider } from '@/clubhouse/ui/Toast';
 import '@/clubhouse/__tests__/dialog-polyfill';
 

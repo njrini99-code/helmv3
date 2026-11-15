@@ -14,12 +14,12 @@ const state = vi.hoisted(() => ({
 vi.mock('server-only', () => ({}));
 vi.mock('next/navigation', () => ({ redirect: vi.fn(), useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }), usePathname: () => '/golf/dashboard/rounds/course/x' }));
 vi.mock('@/lib/auth/session', () => ({ getGolfSessionProfile: async () => ({ role: state.role, player: state.role === 'player' ? { id: 'pl-1' } : null }) }));
-vi.mock('../team', () => ({ resolveClubhouseTeam: async () => ({ teamId: 't-1', role: state.role, playerId: 'pl-1' }) }));
-vi.mock('../../data/course-history', () => ({ loadCourseHistory: () => state.load() }));
-vi.mock('../../screens/rounds/CoursePage', () => ({ CoursePage: () => null }));
-vi.mock('../../screens/rounds/CourseLoadFailed', () => ({ CourseLoadFailed: () => null }));
+vi.mock('../routes/team', () => ({ resolveClubhouseTeam: async () => ({ teamId: 't-1', role: state.role, playerId: 'pl-1' }) }));
+vi.mock('../data/course-history', () => ({ loadCourseHistory: () => state.load() }));
+vi.mock('../screens/rounds/CoursePage', () => ({ CoursePage: () => null }));
+vi.mock('../screens/rounds/CourseLoadFailed', () => ({ CourseLoadFailed: () => null }));
 
-const { ClubhouseCourseHistoryRoute } = await import('../course-history');
+const { ClubhouseCourseHistoryRoute } = await import('../routes/course-history');
 
 const KEY = 'n-finley%20gc';
 const PLAYER = '00000000-0000-4000-8000-000000000001';

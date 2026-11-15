@@ -80,12 +80,12 @@ the thread with Retry (CH-7016), and the draft is never lost.
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-7201 | Conversations don't load | "Conversations didn’t load" + "Your messages are safe…" Try again | `Rail` | messages.test › CH-7201 |
+| CH-7201 | Conversations don't load, or the read hasn’t answered in 15 seconds (GAP-S-11) | "Conversations didn’t load" + "Your messages are safe…" Try again | `Rail`, `useGolfConversations` (gives up after 15 s) | messages.test › CH-7201, use-golf-conversations.give-up |
 | CH-7202 | A conversation's messages don't load | "This conversation didn’t load" + "Nothing was lost…" Try again; the composer is off (read-only box, "Replies are off until this loads", Send and Attach disabled, one line under it) | `Thread`, `Composer` | messages.test › CH-7202 |
 | CH-7203 | Message search doesn't load | "Message search didn’t load" + "Conversations above still match by name." Try again | `MessageHits` | messages.test › CH-7203 |
 | CH-7204 | Group members don't load | "Members didn’t load" Try again | `Details` | messages.test › CH-7204 |
 | CH-7205 | The team list doesn't load (New message) | "Your team list didn’t load" Try again | `NewMessage` | messages.test › CH-7205 |
-| CH-7206 | Announcements don't load | "Announcements didn’t load" Try again | `Announcements` | messages.test › CH-7206 |
+| CH-7206 | Announcements don't load, or the read hasn’t answered in 15 seconds (GAP-S-11) | "Announcements didn’t load" Try again; the conversations stay | `Announcements`, `useAnnouncementsRead` | messages.test › CH-7206, announcements-wait |
 | CH-7207 | An announcement's replies, tasks and files don't load | "The details didn’t load" + "The announcement above is complete." Try again | `AnnouncementPane` | messages.test › CH-7207 |
 | CH-7208 | The mute setting doesn't load | "The mute setting didn’t load" Try again | `Details` | messages.test › CH-7208 |
 | CH-7209 | A message's attachments don't load | "Attachment didn’t load" + "Tap to try again" in place of the file tile | `Attachments` | messages.test › CH-7209 |
@@ -131,6 +131,7 @@ the thread with Retry (CH-7016), and the draft is never lost.
 | CH-7406 | An announcement's details are loading | Skeletons where replies and tasks go | `AnnouncementPane` | messages.test › CH-7406 |
 | CH-7407 | The mute setting is loading | A skeleton row | `Details` | messages.test › CH-7407 |
 | CH-7408 | A message's attachments are loading | A skeleton file tile | `Attachments` | messages.test › CH-7408 |
+| CH-7490 | The announcements read hasn’t answered while the conversations have (GAP-S-11) | The conversations draw at once; Announcements waits in its own section with a one-row skeleton (`aria-busy`). After 4 seconds its label adds "· Still loading…" (a status); after 15 seconds it becomes "Announcements didn’t load" (CH-7206) with Try again | `AnnouncementsWait` (announcements.tsx), `useAnnouncementsRead` | announcements-wait.test › CH-7490 |
 | CH-7409 | The shared files are loading (Details) | A skeleton row | `FilesPanel`, `FilesSection` | messages.test › CH-7409 |
 | CH-7410 | The Add sheet's list is loading | Three skeleton rows | `AddMembersModal` | messages.test › CH-7410 |
 | CH-7411 | The Seen by list is loading | Three skeleton rows, `aria-busy`; the title reads "Seen by" alone | `SeenByBody` | messages-seen-by.test › CH-7411 |

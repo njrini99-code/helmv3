@@ -82,14 +82,14 @@ export function useAction<A extends unknown[], T>(
   // The gate is a ref, not `pending`: a toast's Retry and a second quick tap both call a `run` made in an earlier render,
   // whose `pending` is stale (true after the action settled, false before it started).
   const inFlight = useRef(false);
-  // A save someone stopped waiting for (CH-1590) that is still out: a second Save would send it twice (a second plan, a
+  // A save someone stopped waiting for (CH-1991) that is still out: a second Save would send it twice (a second plan, a
   // second message), so it waits for that answer and says so.
   const stoppedOut = useRef(false);
 
   const run = useCallback(
     async (...args: A): Promise<ActionResult<T>> => {
       if (inFlight.current) {
-        if (stoppedOut.current) toast({ title: 'Your last save hasn’t answered yet', body: 'You’ll see here when it does. Then you can save again.', code: 'CH-1590', replace: SLOW_SAVE_KEY });
+        if (stoppedOut.current) toast({ title: 'Your last save hasn’t answered yet', body: 'You’ll see here when it does. Then you can save again.', code: 'CH-1991', replace: SLOW_SAVE_KEY });
         return { success: false, error: 'busy' };
       }
       let c = typeof copy === 'function' ? copy(...args) : copy;
@@ -167,7 +167,7 @@ export function useAction<A extends unknown[], T>(
       setPending(false);
       if (first === 'stopped') {
         chTrail(`action ${name} stopped waiting`);
-        toast({ title: 'Stopped waiting', body: 'Your changes are kept. If it saves after all, you’ll see it here.', code: 'CH-1590', replace: SLOW_SAVE_KEY });
+        toast({ title: 'Stopped waiting', body: 'Your changes are kept. If it saves after all, you’ll see it here.', code: 'CH-1991', replace: SLOW_SAVE_KEY });
         // Its answer still lands, and is told as any other: saved, or what failed with Try again.
         // The button is free again, but the gate stays shut until that answer lands, so nothing is sent twice.
         stoppedOut.current = true;

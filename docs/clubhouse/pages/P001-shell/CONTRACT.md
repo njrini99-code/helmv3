@@ -145,6 +145,7 @@ one read fails (10614, `EmptyState size="page" tone="danger"`).
 | 10615 | CH-1270 | `DELIVER_NOW_IN_THE_BELL_IS_REFUSED` | Deliver now in the bell is refused (P-10) |
 | 10616 | CH-1271 | `A_PLAYERS_PUSHES_ARE_HELD_FOR_CLASS` | A player's pushes are held for class (P-10) |
 | 10617 | CH-1004 | `OPENING_OR_CLEARING_A_NOTIFICATION_THE_SERVER` | Opening or clearing a notification: the server did not keep the read (it answered `success: false`, or the call failed) |
+| 10690 | CH-1290 | `A_ROUTE_FAILS_TO_LOAD_WHILE_THE` | A route fails to load (a transient or load error) while the device is offline (GAP-S-05, GAP-S-30, GAP-S-35) |
 
 ## 07 — Network / offline
 
@@ -174,6 +175,8 @@ remain four seconds and errors eight seconds.
 | 10704 | CH-1905 | `SOMEONE_PRESSES_TRY_AGAIN_ON_A_NOTICE` | Someone presses Try again on a notice, or on a page that didn't load, while offline |
 | 10705 | CH-1909 | `IN_THE_IPHONE_APP_PULLING_A_PHONE` | In the iPhone app, pulling a phone page down from its top |
 | 10706 | CH-1910 | `TWO_NOTICES_ABOUT_THE_SAME_THING_IN` | Two notices about the same thing in a row (Conversation muted, then Notifications back on) |
+| 10790 | CH-1990 | `A_SAVE_STILL_HASNT_ANSWERED_AFTER_20` | A save still hasn’t answered after 20 seconds (GAP-S-31) |
+| 10791 | CH-1991 | `SOMEONE_PRESSED_CANCEL_ON_CH_1990_OR` | Someone pressed Cancel on CH-1990, or presses Save again while that stopped save is still out |
 
 ## 08 — Permission / authorization
 

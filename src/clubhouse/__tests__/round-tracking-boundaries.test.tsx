@@ -1,8 +1,8 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { RoundHole } from '@/lib/types/golf';
-import { ToastProvider } from '../../../../ui/Toast';
-import '../../../../__tests__/dialog-polyfill';
+import { ToastProvider } from '../ui/Toast';
+import './dialog-polyfill';
 
 /**
  * GAP-S-10: on the tracking screen the hole map and the shot log are sections. A drawing that throws is named in place
@@ -10,8 +10,8 @@ import '../../../../__tests__/dialog-polyfill';
  */
 const broken = vi.hoisted(() => ({ map: false, log: false }));
 vi.mock('@/app/golf/actions/shot-actions', () => ({ deleteShot: vi.fn(), updateShot: vi.fn() }));
-vi.mock('../parts', async (importOriginal) => {
-  const real = await importOriginal<typeof import('../parts')>();
+vi.mock('../screens/rounds/track/parts', async (importOriginal) => {
+  const real = await importOriginal<typeof import('../screens/rounds/track/parts')>();
   return {
     ...real,
     HoleMap: (p: Parameters<typeof real.HoleMap>[0]) => {
@@ -27,7 +27,7 @@ vi.mock('../parts', async (importOriginal) => {
 
 Element.prototype.scrollIntoView ??= function () {};
 
-const { RoundTracking } = await import('../RoundTracking');
+const { RoundTracking } = await import('../screens/rounds/track/RoundTracking');
 
 const HOLES: RoundHole[] = [
   { number: 1, par: 4, yardage: 420, score: null },

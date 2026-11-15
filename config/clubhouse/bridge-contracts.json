@@ -336,6 +336,17 @@
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
+    "id": 10690,
+    "page": "P001",
+    "category": 6,
+    "item": 90,
+    "name": "A_ROUTE_FAILS_TO_LOAD_WHILE_THE",
+    "chCode": "CH-1290",
+    "meaning": "A route fails to load (a transient or load error) while the device is offline (GAP-S-05, GAP-S-30, GAP-S-35)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
     "id": 10701,
     "page": "P001",
     "category": 7,
@@ -399,6 +410,28 @@
     "chCode": "CH-1910",
     "meaning": "Two notices about the same thing in a row (Conversation muted, then Notifications back on)",
     "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 10790,
+    "page": "P001",
+    "category": 7,
+    "item": 90,
+    "name": "A_SAVE_STILL_HASNT_ANSWERED_AFTER_20",
+    "chCode": "CH-1990",
+    "meaning": "A save still hasn’t answered after 20 seconds (GAP-S-31)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 10791,
+    "page": "P001",
+    "category": 7,
+    "item": 91,
+    "name": "SOMEONE_PRESSED_CANCEL_ON_CH_1990_OR",
+    "chCode": "CH-1991",
+    "meaning": "Someone pressed Cancel on CH-1990, or presses Save again while that stopped save is still out",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -6932,6 +6965,17 @@
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
   {
+    "id": 70290,
+    "page": "P007",
+    "category": 2,
+    "item": 90,
+    "name": "THE_ANNOUNCEMENTS_READ_HASNT_ANSWERED_WHILE_THE",
+    "chCode": "CH-7490",
+    "meaning": "The announcements read hasn’t answered while the conversations have (GAP-S-11)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
     "id": 70301,
     "page": "P007",
     "category": 3,
@@ -7314,7 +7358,7 @@
     "item": 17,
     "name": "CONVERSATIONS_DONT_LOAD",
     "chCode": "CH-7201",
-    "meaning": "Conversations don't load",
+    "meaning": "Conversations don't load, or the read hasn’t answered in 15 seconds (GAP-S-11)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
@@ -7369,7 +7413,7 @@
     "item": 22,
     "name": "ANNOUNCEMENTS_DONT_LOAD",
     "chCode": "CH-7206",
-    "meaning": "Announcements don't load",
+    "meaning": "Announcements don't load, or the read hasn’t answered in 15 seconds (GAP-S-11)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
@@ -13000,7 +13044,7 @@
     "item": 24,
     "name": "A_COURSE_PAGE_THIS_VIEWER_HAS_NO",
     "chCode": "CH-11330",
-    "meaning": "A course page this viewer has no rounds at: an unknown key, or another player's course",
+    "meaning": "A course page this viewer has no rounds at: a valid key with no rounds, or another player's course",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
@@ -13011,7 +13055,7 @@
     "item": 25,
     "name": "A_COACHS_COURSE_PAGE_FOR_A_PLAYER",
     "chCode": "CH-11331",
-    "meaning": "A coach's course page for a player who isn't on their team, or no player named",
+    "meaning": "A coach's course page for a player who isn't on their team",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
@@ -13023,6 +13067,28 @@
     "name": "THE_COURSE_PAGES_HOLE_BY_HOLE_WITH",
     "chCode": "CH-11333",
     "meaning": "The course page's Hole by hole with no round here entered hole by hole (or the holes didn't load)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110490,
+    "page": "P011",
+    "category": 4,
+    "item": 90,
+    "name": "A_COACH_ON_A_PLAYERS_ROUND_FLOW",
+    "chCode": "CH-11390",
+    "meaning": "A coach on a player's round flow: /rounds/new, /rounds/recover or /rounds/continue/[id] (GAP-R-12)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110491,
+    "page": "P011",
+    "category": 4,
+    "item": 91,
+    "name": "A_COACH_ON_A_COURSE_PAGE_WITH",
+    "chCode": "CH-11391",
+    "meaning": "A coach on a course page with no player named, or a player id that isn't one (GAP-S-20)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
@@ -13633,6 +13699,28 @@
     "name": "A_ROUNDS_COACH_NOTE_CANT_BE_CHECKED",
     "chCode": "CH-11222",
     "meaning": "A round's coach note can't be checked (the read of `golf_round_reviews.coach_notes` failed)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110690,
+    "page": "P011",
+    "category": 6,
+    "item": 90,
+    "name": "A_ROUND_REVIEWS_HISTORY_READ_FAILS_ON",
+    "chCode": "CH-11290",
+    "meaning": "A round review's history read fails, on the server or as a stream cut off in the browser (GAP-S-27)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110691,
+    "page": "P011",
+    "category": 6,
+    "item": 91,
+    "name": "A_SECTION_OF_ROUND_TRACKING_OR_OF",
+    "chCode": "CH-11291",
+    "meaning": "A section of round tracking or of the course page throws while drawing (GAP-S-10)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
@@ -21395,6 +21483,28 @@
     "catalog": "docs/clubhouse/catalog/tournaments.md"
   },
   {
+    "id": 160690,
+    "page": "P016",
+    "category": 6,
+    "item": 90,
+    "name": "A_SECTION_OF_THE_LIVE_ROUND_THE",
+    "chCode": "CH-16294",
+    "meaning": "A section of the live round, the lineup builder, History or Live throws while drawing (GAP-S-10)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160691,
+    "page": "P016",
+    "category": 6,
+    "item": 91,
+    "name": "HISTORY_THE_ROSTER_OR_THE_SEASON_PROFILES",
+    "chCode": "CH-16295",
+    "meaning": "History: the roster or the season profiles read fails (`errors.profiles`, GAP-S-08)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
     "id": 160701,
     "page": "P016",
     "category": 7,
@@ -21412,7 +21522,7 @@
     "item": 1,
     "name": "THE_COACH_HAS_NO_TEAM_OR_LOST",
     "chCode": "CH-16609",
-    "meaning": "The coach has no team, or lost access to it",
+    "meaning": "Live: the coach has no active team, or a team they may not read (GAP-S-12)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/tournaments.md"
   },

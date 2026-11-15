@@ -153,22 +153,22 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 
 | Page | 01 | 02 | 03 | 04 | 05 | 06 | 07 | 08 | 09 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 | 25 | Total |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| P001 | 3 | 2 | 1 | 7 |  | 17 | 6 | 4 | 1 |  |  |  | 1 | 2 |  | 22 | 9 | 28 | 1 | 3 | 1 | 3 | 1 | 1 |  | 113 |
+| P001 | 3 | 2 | 1 | 7 |  | 18 | 8 | 4 | 1 |  |  |  | 1 | 2 |  | 22 | 9 | 28 | 1 | 3 | 1 | 3 | 1 | 1 |  | 116 |
 | P002 | 5 | 2 | 1 | 17 | 8 | 26 | 1 | 6 |  |  | 1 |  |  | 2 |  | 3 | 3 | 8 | 1 |  | 1 |  | 1 | 1 |  | 87 |
 | P003 | 2 | 3 | 3 | 9 | 4 | 24 | 2 | 6 | 1 |  | 2 | 3 | 1 | 3 |  | 4 | 4 | 10 | 1 | 1 | 1 |  | 1 | 1 |  | 86 |
 | P004 | 2 | 1 | 1 | 19 | 2 | 12 | 3 | 2 | 1 |  |  | 1 |  | 1 |  | 4 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 64 |
 | P005 | 4 | 4 | 2 | 23 | 3 | 25 | 3 | 6 | 1 |  | 1 | 2 |  | 1 | 1 | 4 | 3 | 10 | 1 | 1 | 1 |  | 1 | 1 |  | 98 |
 | P006 | 4 | 5 | 3 | 10 | 14 | 58 | 1 | 8 | 1 | 2 | 7 | 3 | 2 | 2 | 1 | 7 | 3 | 10 | 1 | 1 | 1 |  | 1 | 1 |  | 146 |
-| P007 | 2 | 11 | 1 | 11 | 6 | 48 | 1 | 2 | 2 | 1 | 4 | 2 | 1 | 2 | 1 | 9 | 5 | 6 | 1 | 1 | 1 |  | 2 | 1 |  | 121 |
+| P007 | 2 | 12 | 1 | 11 | 6 | 48 | 1 | 2 | 2 | 1 | 4 | 2 | 1 | 2 | 1 | 9 | 5 | 6 | 1 | 1 | 1 |  | 2 | 1 |  | 122 |
 | P008 | 2 | 1 | 3 | 6 | 15 | 44 | 3 | 10 | 3 | 3 | 8 | 6 | 2 | 2 | 1 | 9 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 138 |
 | P009 | 7 | 7 | 4 | 12 | 14 | 34 | 8 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 3 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 137 |
 | P010 | 3 | 10 |  | 16 | 10 | 25 | 1 | 4 | 1 |  | 4 | 1 | 1 | 2 | 1 | 2 | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 90 |
-| P011 | 16 | 15 |  | 26 | 11 | 44 | 22 | 5 | 2 |  | 24 | 2 | 1 | 4 | 4 | 4 | 11 | 11 | 3 | 1 | 1 |  | 1 | 2 |  | 210 |
+| P011 | 16 | 15 |  | 28 | 11 | 46 | 22 | 5 | 2 |  | 24 | 2 | 1 | 4 | 4 | 4 | 11 | 11 | 3 | 1 | 1 |  | 1 | 2 |  | 214 |
 | P012 | 3 | 3 |  | 8 | 19 | 22 | 3 | 3 | 2 |  | 5 | 1 |  | 4 | 4 | 2 | 5 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 96 |
 | P013 | 6 | 13 |  | 32 | 3 | 44 | 62 | 7 | 3 |  | 3 | 1 |  | 3 | 3 | 4 | 10 | 19 | 1 |  | 1 |  | 1 |  |  | 216 |
 | P014 | 1 | 3 | 4 | 7 | 11 | 10 | 4 | 2 | 4 |  | 2 | 1 | 1 | 1 | 1 | 4 | 3 | 8 | 1 | 1 |  |  |  |  |  | 69 |
 | P015 |  | 7 | 2 | 3 | 12 | 22 | 27 | 2 | 2 |  |  | 3 |  | 1 |  | 17 | 7 | 6 | 2 | 1 | 1 |  | 1 |  |  | 116 |
-| P016 | 31 | 1 | 1 | 26 |  | 35 | 1 | 1 |  | 2 | 4 | 1 |  |  | 5 | 2 |  | 3 |  |  |  |  |  |  |  | 113 |
+| P016 | 31 | 1 | 1 | 26 |  | 37 | 1 | 1 |  | 2 | 4 | 1 |  |  | 5 | 2 |  | 3 |  |  |  |  |  |  |  | 115 |
 
 ## P001 Shell
 
@@ -204,12 +204,15 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 10615 | CH-1270 | 06 Server / system error | `DELIVER_NOW_IN_THE_BELL_IS_REFUSED` | implemented | Deliver now in the bell is refused (P-10) |
 | 10616 | CH-1271 | 06 Server / system error | `A_PLAYERS_PUSHES_ARE_HELD_FOR_CLASS` | implemented | A player's pushes are held for class (P-10) |
 | 10617 | CH-1004 | 06 Server / system error | `OPENING_OR_CLEARING_A_NOTIFICATION_THE_SERVER` | implemented | Opening or clearing a notification: the server did not keep the read (it answered `success: false`, or the call failed) |
+| 10690 | CH-1290 | 06 Server / system error | `A_ROUTE_FAILS_TO_LOAD_WHILE_THE` | implemented | A route fails to load (a transient or load error) while the device is offline (GAP-S-05, GAP-S-30, GAP-S-35) |
 | 10701 | CH-1901 | 07 Network / offline | `THE_DEVICE_GOES_OFFLINE` | implemented | The device goes offline |
 | 10702 | CH-1902 | 07 Network / offline | `A_SAVE_TAKES_LONGER_THAN_5_SECONDS` | implemented | A save takes longer than 5 seconds (forms, switches and CoachHelm settings) |
 | 10703 | CH-1903 | 07 Network / offline | `SOMEONE_SAVES_WHILE_OFFLINE` | implemented | Someone saves while offline |
 | 10704 | CH-1905 | 07 Network / offline | `SOMEONE_PRESSES_TRY_AGAIN_ON_A_NOTICE` | implemented | Someone presses Try again on a notice, or on a page that didn't load, while offline |
 | 10705 | CH-1909 | 07 Network / offline | `IN_THE_IPHONE_APP_PULLING_A_PHONE` | implemented | In the iPhone app, pulling a phone page down from its top |
 | 10706 | CH-1910 | 07 Network / offline | `TWO_NOTICES_ABOUT_THE_SAME_THING_IN` | reserved | Two notices about the same thing in a row (Conversation muted, then Notifications back on) |
+| 10790 | CH-1990 | 07 Network / offline | `A_SAVE_STILL_HASNT_ANSWERED_AFTER_20` | implemented | A save still hasn’t answered after 20 seconds (GAP-S-31) |
+| 10791 | CH-1991 | 07 Network / offline | `SOMEONE_PRESSED_CANCEL_ON_CH_1990_OR` | implemented | Someone pressed Cancel on CH-1990, or presses Save again while that stopped save is still out |
 | 10801 |  | 08 Permission / authorization | `CLUBHOUSE_GATE` | implemented | Clubhouse renders for a coach or a player (isClubhouseFor); it is the only coach and player UI since Fairway's retirement (owner, 2026-11-14). Anyone with no dashboard role gets no Clubhouse screen, and held server actions refuse them through the same check. |
 | 10802 |  | 08 Permission / authorization | `ROLE_SCOPED_NAV` | implemented | Each role sees only its own navigation (D-66), and an address not rebuilt for the viewer's role shows the not-rebuilt notice inside the Clubhouse frame, never another role's page or a Fairway page. |
 | 10803 |  | 08 Permission / authorization | `TEAM_SWITCH_IS_A_HEAD_COACHS` | implemented | Only a head coach staffed on more than one team is offered the team switch (canSwitchTeams and two or more teams), the same gate setActiveTeam enforces: a coach on one team, an assistant on several, and a player see the team as a plain label, and a forged or unstaffed team id is refused by the server, so the switch can never be wider than the server's answer. |
@@ -811,6 +814,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 70209 | CH-7409 | 02 Initial loading / skeleton | `THE_SHARED_FILES_ARE_LOADING` | implemented | The shared files are loading (Details) |
 | 70210 | CH-7410 | 02 Initial loading / skeleton | `THE_ADD_SHEETS_LIST_IS_LOADING` | implemented | The Add sheet's list is loading |
 | 70211 | CH-7411 | 02 Initial loading / skeleton | `THE_SEEN_BY_LIST_IS_LOADING` | implemented | The Seen by list is loading |
+| 70290 | CH-7490 | 02 Initial loading / skeleton | `THE_ANNOUNCEMENTS_READ_HASNT_ANSWERED_WHILE_THE` | implemented | The announcements read hasn’t answered while the conversations have (GAP-S-11) |
 | 70301 |  | 03 Background loading / refresh | `REALTIME_UPDATES_ARRIVE` | implemented | New messages, edits, deletes and reactions arrive over realtime while the page is open, without a reload; the rail refreshes its last message and unread counts the same way. |
 | 70401 | CH-7301 | 04 Empty | `NO_CONVERSATIONS_YET` | implemented | No conversations yet |
 | 70402 | CH-7302 | 04 Empty | `A_RAIL_SEARCH_OR_THE_UNREAD_FILTER` | implemented | A rail search or a filter has nothing |
@@ -845,12 +849,12 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 70614 | CH-7018 | 06 Server / system error | `ADDING_SOMEONE_TO_A_GROUP_FAILS` | implemented | Adding someone to a group fails (the group's creator, desktop or phone Details › Add) |
 | 70615 | CH-7020 | 06 Server / system error | `COPYING_A_MESSAGE_FAILS` | implemented | Copying a message fails (phone, from the long-press sheet; desktop, from the message menu) |
 | 70616 | CH-7021 | 06 Server / system error | `A_SHARED_FILE_WONT_OPEN` | implemented | A shared file won't open (Details › Files, or an announcement's Files) |
-| 70617 | CH-7201 | 06 Server / system error | `CONVERSATIONS_DONT_LOAD` | implemented | Conversations don't load |
+| 70617 | CH-7201 | 06 Server / system error | `CONVERSATIONS_DONT_LOAD` | implemented | Conversations don't load, or the read hasn’t answered in 15 seconds (GAP-S-11) |
 | 70618 | CH-7202 | 06 Server / system error | `A_CONVERSATIONS_MESSAGES_DONT_LOAD` | implemented | A conversation's messages don't load |
 | 70619 | CH-7203 | 06 Server / system error | `MESSAGE_SEARCH_DOESNT_LOAD` | implemented | Message search doesn't load |
 | 70620 | CH-7204 | 06 Server / system error | `GROUP_MEMBERS_DONT_LOAD` | implemented | Group members don't load |
 | 70621 | CH-7205 | 06 Server / system error | `THE_TEAM_LIST_DOESNT_LOAD` | implemented | The team list doesn't load (New message) |
-| 70622 | CH-7206 | 06 Server / system error | `ANNOUNCEMENTS_DONT_LOAD` | implemented | Announcements don't load |
+| 70622 | CH-7206 | 06 Server / system error | `ANNOUNCEMENTS_DONT_LOAD` | implemented | Announcements don't load, or the read hasn’t answered in 15 seconds (GAP-S-11) |
 | 70623 | CH-7207 | 06 Server / system error | `AN_ANNOUNCEMENTS_REPLIES_TASKS_AND_FILES_DONT` | implemented | An announcement's replies, tasks and files don't load |
 | 70624 | CH-7208 | 06 Server / system error | `THE_MUTE_SETTING_DOESNT_LOAD` | implemented | The mute setting doesn't load |
 | 70625 | CH-7209 | 06 Server / system error | `A_MESSAGES_ATTACHMENTS_DONT_LOAD` | implemented | A message's attachments don't load |
@@ -1358,9 +1362,11 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 110421 | CH-11320 | 04 Empty | `TEAM_ROUNDS_NO_ROUND_POSTED_BY_ANYONE` | implemented | Team rounds: no round posted by anyone |
 | 110422 | CH-11321 | 04 Empty | `TEAM_ROUNDS_THE_SEARCH_OR_PLAYER_FILTER` | implemented | Team rounds: the search or player filter matches nothing |
 | 110423 | CH-11322 | 04 Empty | `TEAM_ROUNDS_COMPLETED_ROUNDS_WITH_NO_SCORE` | implemented | Team rounds: completed rounds with no score at all |
-| 110424 | CH-11330 | 04 Empty | `A_COURSE_PAGE_THIS_VIEWER_HAS_NO` | implemented | A course page this viewer has no rounds at: an unknown key, or another player's course |
-| 110425 | CH-11331 | 04 Empty | `A_COACHS_COURSE_PAGE_FOR_A_PLAYER` | implemented | A coach's course page for a player who isn't on their team, or no player named |
+| 110424 | CH-11330 | 04 Empty | `A_COURSE_PAGE_THIS_VIEWER_HAS_NO` | implemented | A course page this viewer has no rounds at: a valid key with no rounds, or another player's course |
+| 110425 | CH-11331 | 04 Empty | `A_COACHS_COURSE_PAGE_FOR_A_PLAYER` | implemented | A coach's course page for a player who isn't on their team |
 | 110426 | CH-11333 | 04 Empty | `THE_COURSE_PAGES_HOLE_BY_HOLE_WITH` | implemented | The course page's Hole by hole with no round here entered hole by hole (or the holes didn't load) |
+| 110490 | CH-11390 | 04 Empty | `A_COACH_ON_A_PLAYERS_ROUND_FLOW` | implemented | A coach on a player's round flow: /rounds/new, /rounds/recover or /rounds/continue/[id] (GAP-R-12) |
+| 110491 | CH-11391 | 04 Empty | `A_COACH_ON_A_COURSE_PAGE_WITH` | implemented | A coach on a course page with no player named, or a player id that isn't one (GAP-S-20) |
 | 110501 | CH-11101 | 05 Validation | `NEXT_SHOT_CANT_BE_RECORDED_YET` | implemented | Next shot can't be recorded yet |
 | 110502 | CH-11102 | 05 Validation | `A_SHOT_IS_POSSIBLE_BUT_UNUSUAL` | implemented | A shot is possible but unusual (a 420-yard drive onto the green; a shot that ends farther away) |
 | 110503 | CH-11103 | 05 Validation | `A_SHOT_THAT_CANT_HAPPEN` | implemented | A shot that can't happen (a 540-yard drive onto the green) |
@@ -1416,6 +1422,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 110642 | CH-11220 | 06 Server / system error | `TEAM_ROUNDS_THE_ROSTER_DOESNT_LOAD` | implemented | Team rounds: the roster doesn't load |
 | 110643 | CH-11221 | 06 Server / system error | `TEAM_ROUNDS_THE_POSTED_ROUNDS_DONT_LOAD` | implemented | Team rounds: the posted rounds don't load |
 | 110644 | CH-11222 | 06 Server / system error | `A_ROUNDS_COACH_NOTE_CANT_BE_CHECKED` | implemented | A round's coach note can't be checked (the read of `golf_round_reviews.coach_notes` failed) |
+| 110690 | CH-11290 | 06 Server / system error | `A_ROUND_REVIEWS_HISTORY_READ_FAILS_ON` | implemented | A round review's history read fails, on the server or as a stream cut off in the browser (GAP-S-27) |
+| 110691 | CH-11291 | 06 Server / system error | `A_SECTION_OF_ROUND_TRACKING_OR_OF` | implemented | A section of round tracking or of the course page throws while drawing (GAP-S-10) |
 | 110701 | CH-11901 | 07 Network / offline | `THE_ROUND_SAVES_IN_THE_BACKGROUND` | implemented | The round saves in the background |
 | 110702 |  | 07 Network / offline | `WRITES_REFUSE_OFFLINE` | implemented | Discard (the library) and Start (setup) go through useAction: while the browser is offline nothing is sent, the error haptic fires and the shell's toast names what did not happen, with Retry (10703). On the shot screen, Try again on a hole that did not save, while offline, gives the warning haptic and sends nothing (the card already says "Reconnect, then try again."). Round entry's Start and Save for later are forced offline in round-entry-wiring.test (CH-1903: nothing is sent, and a browser that says offline but reaches the server goes ahead); the library's Discard, setup's Start and the hole's Try again are driven offline (the browser's own flag) in rounds-contracts.test.tsx. Exit's Discard is forced offline in round-entry-wiring.test (nothing is sent and a hole that exists only on the device keeps its device copy). A discard whose request never lands keeps the device copy and the queued entry (rounds.test for the library's write, use-new-round-session.preservation.test for the engine's). The shell's tests cover useAction's refusal. |
 | 110703 | CH-11902 | 07 Network / offline | `THE_ROUND_CHANGED_ON_ANOTHER_DEVICE_AND` | implemented | The round changed on another device and this one stopped saving |
@@ -2130,8 +2138,10 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 160633 | CH-16292 | 06 Server / system error | `PLAYER_EVENT_THE_PLAYERS_REFLECTION_READ_FAILS` | implemented | Player event: the player’s reflection read fails (`errors.reflection`) |
 | 160634 | CH-16293 | 06 Server / system error | `PLAYER_EVENT_THE_PLAYERS_OWN_SPOT_FAILS` | implemented | Player event: the player’s own spot (the lineup reveal) fails to load (`errors.reveal`) |
 | 160635 | CH-16072 | 06 Server / system error | `HOLE_BY_HOLE_SAVING_ONE_HOLE_FAILS` | implemented | Hole by hole: saving one hole fails or is refused (not in the round’s lineup, a total already entered, results official, not set up) |
+| 160690 | CH-16294 | 06 Server / system error | `A_SECTION_OF_THE_LIVE_ROUND_THE` | implemented | A section of the live round, the lineup builder, History or Live throws while drawing (GAP-S-10) |
+| 160691 | CH-16295 | 06 Server / system error | `HISTORY_THE_ROSTER_OR_THE_SEASON_PROFILES` | implemented | History: the roster or the season profiles read fails (`errors.profiles`, GAP-S-08) |
 | 160701 | CH-16605 | 07 Network / offline | `THE_DEVICE_IS_OFFLINE_WHILE_THE_CARD` | implemented | The device is offline while the card or the live view is open |
-| 160801 | CH-16609 | 08 Permission / authorization | `THE_COACH_HAS_NO_TEAM_OR_LOST` | implemented | The coach has no team, or lost access to it |
+| 160801 | CH-16609 | 08 Permission / authorization | `THE_COACH_HAS_NO_TEAM_OR_LOST` | implemented | Live: the coach has no active team, or a team they may not read (GAP-S-12) |
 | 161001 | CH-16920 | 10 Warning | `EVENT_DESK_THE_HOSTS_PUBLISHED_NUMBER_DIFFERS` | implemented | Event desk: the host's published number differs from our scorecard (`officialTotal` set and unequal) |
 | 161002 | CH-16665 | 10 Warning | `A_ROUNDS_SHARING_WAS_CHANGED_30_TIMES` | implemented | A round's sharing was changed 30 times (slice 2) |
 | 161101 | CH-16550 | 11 Destructive | `STOP_TRACKING_FROM_THE_DESKS_TOURNAMENT_MENU` | implemented | Stop tracking, from the desk's tournament menu (P-5) |

@@ -1,17 +1,17 @@
 // @vitest-environment jsdom
 import { cleanup, render } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { toCourseHistory, type ChCourseListRow } from '../../../data/course-page-shape';
+import { toCourseHistory, type ChCourseListRow } from '../data/course-page-shape';
 
 /**
  * GAP-S-10: the course page's parts are sections. One that throws is named in place (CH-11291) and the rest of the page
  * stays; two that throw are said once under the hero (CH-1210), each keeping its title.
  */
 const broken = vi.hoisted(() => ({ plays: false, rounds: false }));
-vi.mock('../../../lib/track', () => ({ chReport: vi.fn(), chTrail: vi.fn(), chTagSession: vi.fn() }));
+vi.mock('../lib/track', () => ({ chReport: vi.fn(), chTrail: vi.fn(), chTagSession: vi.fn() }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ replace: vi.fn(), push: vi.fn(), refresh: vi.fn() }), useSearchParams: () => new URLSearchParams() }));
-vi.mock('../HowItPlays', async (importOriginal) => {
-  const real = await importOriginal<typeof import('../HowItPlays')>();
+vi.mock('../screens/rounds/HowItPlays', async (importOriginal) => {
+  const real = await importOriginal<typeof import('../screens/rounds/HowItPlays')>();
   return {
     ...real,
     HowItPlays: (p: Parameters<typeof real.HowItPlays>[0]) => {
@@ -20,8 +20,8 @@ vi.mock('../HowItPlays', async (importOriginal) => {
     },
   };
 });
-vi.mock('../RoundsHere', async (importOriginal) => {
-  const real = await importOriginal<typeof import('../RoundsHere')>();
+vi.mock('../screens/rounds/RoundsHere', async (importOriginal) => {
+  const real = await importOriginal<typeof import('../screens/rounds/RoundsHere')>();
   return {
     ...real,
     RoundsHere: (p: Parameters<typeof real.RoundsHere>[0]) => {
@@ -31,7 +31,7 @@ vi.mock('../RoundsHere', async (importOriginal) => {
   };
 });
 
-const { CoursePage } = await import('../CoursePage');
+const { CoursePage } = await import('../screens/rounds/CoursePage');
 
 const row = (id: string, total: number, date: string): ChCourseListRow => ({
   id, course_id: '0b3c6a1e-1111-4222-8333-944455556666', course_name: 'Finley GC', course_city: null, course_state: null, tee_id: null, tees_played: 'Blue', round_date: date, round_type: null,
