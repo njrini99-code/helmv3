@@ -7,6 +7,27 @@
 
 > **2026-09-05:** `scripts/lib/sentry-cron-checkin.mjs` (removed) and the launchd `scripts/run-selfheal-repair.mjs` (removed) it served no longer exist — both were removed when Repair moved to `.github/workflows/selfheal-repair.yml` only. See `memory/features/admin-selfheal.md`. The entry below is left exactly as written at the time.
 
+## 2026-11-15 — server `ignoreErrors` names the objects of two HELD migrations
+
+- Branch: `agent/health-20261105-2347` (health routine PR #2486). Sentry
+  JAVASCRIPT-NEXTJS-1M6 (119 events in 24h, one per 5-minute
+  `standing-refresh-dirty` tick), -1DM and -1ME.
+- `src/instrumentation.ts` `sharedIgnoreErrors`: three exact-name patterns
+  for the season-standing RPC and table (migration `20261024151000`, HOLD)
+  and the three extended columns of the prediction-performance table
+  (migration `20261023150000`, HOLD). Each code path already handles the
+  missing object (skip, `missing`, retry without the columns); the Supabase
+  integration captured it at the driver anyway
+  (`auto.db.supabase.postgres`, handled: no). Same shape as the helm_debug
+  agent-run precedent above it.
+- `src/__tests__/instrumentation-held-migration-ignore.test.ts`: positive and
+  live-object negative cases on both runtimes, plus a guard that fails once
+  either `HELD.md` row leaves `**HOLD**`, so the patterns are deleted in the
+  change that applies the migration. Replay:
+  `replay/manifests/sentry-held-migration-ignore-2026-11-15.yml`.
+- Not changed: the reliability collector still files the same 5-minute
+  PostgREST 404 (rel:09079093) until Step 7b is applied.
+
 ## 2026-09-09 — fresh-slate fixes: `next dev` never production, terminal check-in flushed, closed `admin_events.source`
 
 - Branch: `agent/telemetry-env-guard`. Issues #1919, #1918, #1917 (filed from the
