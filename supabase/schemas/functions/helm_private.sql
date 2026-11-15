@@ -1904,3 +1904,87 @@ END
 $$;
 
 ALTER FUNCTION "helm_private"."golf_backfill_sand_save_tour"() OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION helm_private.golf_backfill_one_gir_rule()
+RETURNS integer
+LANGUAGE plpgsql
+SET search_path = ''
+AS $$
+DECLARE
+  v_changed integer;
+  v_unfixed integer;
+BEGIN
+  -- Archive every scored hole whose flag the rule reads differently, or that
+  -- carries an up-and-down on a green hit in regulation.
+  INSERT INTO helm_private.golf_holes_gir_fix_20261115 (
+    hole_id, round_id, old_gir, new_gir, old_up_and_down, new_up_and_down, stats_cache_before
+  )
+  SELECT
+    h.id,
+    h.round_id,
+    h.gir,
+    g.gir,
+    h.up_and_down,
+    CASE WHEN g.gir IS TRUE THEN NULL ELSE h.up_and_down END,
+    (SELECT to_jsonb(c) FROM public.golf_round_stats_cache AS c WHERE c.round_id = h.round_id)
+  FROM public.golf_holes AS h
+  CROSS JOIN LATERAL (
+    SELECT public.golf_hole_gir(
+      h.par, h.score, h.putts,
+      public.golf_hole_shot_to_green(h.round_id, h.hole_number, h.score)
+    ) AS gir
+  ) AS g
+  WHERE h.score IS NOT NULL
+    AND (h.gir IS DISTINCT FROM g.gir OR (g.gir IS TRUE AND h.up_and_down IS NOT NULL))
+  -- A hole only matches while it is off the rule, so a re-run archives its
+  -- current state again.
+  ON CONFLICT (hole_id) DO UPDATE SET
+    round_id = excluded.round_id,
+    old_gir = excluded.old_gir,
+    new_gir = excluded.new_gir,
+    old_up_and_down = excluded.old_up_and_down,
+    new_up_and_down = excluded.new_up_and_down,
+    stats_cache_before = excluded.stats_cache_before,
+    archived_at = excluded.archived_at;
+  GET DIAGNOSTICS v_changed = ROW_COUNT;
+
+  -- Completed rounds' holes change only under the lifecycle guard's
+  -- transaction-local 'atomic' mark. The per-hole totals trigger is deferred
+  -- and each touched round is recomputed once; that UPDATE of golf_rounds
+  -- fires trg_update_round_stats_cache (greens, scrambling), whose cache row
+  -- refreshes the player's in turn.
+  PERFORM set_config('helm.golf_lifecycle_write', 'atomic', true);
+  PERFORM set_config('helm.defer_round_totals', 'on', true);
+
+  UPDATE public.golf_holes AS h
+  SET gir = a.new_gir,
+      up_and_down = a.new_up_and_down
+  FROM helm_private.golf_holes_gir_fix_20261115 AS a
+  WHERE a.hole_id = h.id
+    AND a.archived_at = now();
+
+  PERFORM set_config('helm.defer_round_totals', '', true);
+
+  PERFORM public.recompute_golf_round_totals(x.round_id)
+  FROM (
+    SELECT DISTINCT a.round_id
+    FROM helm_private.golf_holes_gir_fix_20261115 AS a
+    WHERE a.archived_at = now()
+  ) AS x;
+
+  PERFORM set_config('helm.golf_lifecycle_write', '', true);
+
+  SELECT count(*) INTO v_unfixed
+  FROM helm_private.golf_holes_gir_fix_20261115 AS a
+  INNER JOIN public.golf_holes AS h ON h.id = a.hole_id
+  WHERE a.archived_at = now()
+    AND (h.gir IS DISTINCT FROM a.new_gir OR h.up_and_down IS DISTINCT FROM a.new_up_and_down);
+  IF v_unfixed > 0 THEN
+    RAISE EXCEPTION 'one GIR rule backfill left % archived holes off the rule; rolling back', v_unfixed;
+  END IF;
+
+  RETURN v_changed;
+END
+$$;
+
+ALTER FUNCTION "helm_private"."golf_backfill_one_gir_rule"() OWNER TO "postgres";

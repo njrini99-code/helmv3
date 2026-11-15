@@ -4911,6 +4911,47 @@ $$;
 
 ALTER FUNCTION "public"."golf_event_documents_assert_same_team"() OWNER TO "postgres";
 
+CREATE OR REPLACE FUNCTION public.golf_hole_gir(p_par integer, p_score integer, p_putts integer, p_shot_to_green integer)
+RETURNS boolean
+LANGUAGE sql
+IMMUTABLE
+SET search_path = ''
+AS $$
+  -- A green in regulation: on the putting surface in par minus 2 strokes or
+  -- fewer (PGA Tour). From the shots when they record the hole, else from the
+  -- scorecard's score minus putts; unknown (NULL) when neither can tell.
+  SELECT CASE
+    WHEN p_par IS NULL OR p_score IS NULL OR p_score <= 0 THEN NULL
+    WHEN p_shot_to_green IS NOT NULL THEN p_shot_to_green <= p_par - 2
+    WHEN p_putts IS NULL THEN NULL
+    ELSE (p_score - p_putts) > 0 AND (p_score - p_putts) <= p_par - 2
+  END;
+$$;
+
+ALTER FUNCTION "public"."golf_hole_gir"("p_par" integer, "p_score" integer, "p_putts" integer, "p_shot_to_green" integer) OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION public.golf_hole_shot_to_green(p_round_id uuid, p_hole_number integer, p_score integer)
+RETURNS integer
+LANGUAGE sql
+STABLE
+SET search_path = ''
+AS $$
+  -- The stroke that first reached the green (or holed), counting penalty
+  -- rows, but only when the hole's shot rows are the whole hole: numbered 1
+  -- to the score with none missing. Otherwise NULL, and the rule falls back
+  -- to score minus putts (a penalty stroke never logged as a shot, a hole
+  -- logged in part).
+  SELECT CASE
+    WHEN count(*) = p_score AND min(s.shot_number) = 1 AND max(s.shot_number) = p_score
+    THEN min(s.shot_number) FILTER (WHERE s.result IN ('green', 'hole'))
+  END
+  FROM public.golf_shots AS s
+  WHERE s.round_id = p_round_id
+    AND s.hole_number = p_hole_number;
+$$;
+
+ALTER FUNCTION "public"."golf_hole_shot_to_green"("p_round_id" "uuid", "p_hole_number" integer, "p_score" integer) OWNER TO "postgres";
+
 CREATE OR REPLACE FUNCTION "public"."golf_holes_recompute_round_totals_fn"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -4948,16 +4989,23 @@ $$;
 
 ALTER FUNCTION "public"."golf_holes_recompute_round_totals_fn"() OWNER TO "postgres";
 
-CREATE OR REPLACE FUNCTION "public"."golf_holes_set_gir_fn"() RETURNS "trigger"
-    LANGUAGE "plpgsql"
-    SET "search_path" TO 'public'
+CREATE OR REPLACE FUNCTION public.golf_holes_set_gir_fn() RETURNS trigger
+    LANGUAGE plpgsql
+    SET search_path TO 'public'
     AS $$
 BEGIN
+  -- One GIR rule (20261115230000): public.golf_hole_gir, from the hole's
+  -- shots when they record the whole hole, else from score minus putts. The
+  -- round totals (recompute_golf_round_totals) read the same function.
   IF NEW.par IS NOT NULL AND NEW.score IS NOT NULL THEN
-    NEW.gir := (NEW.par >= 3
-                AND NEW.score > 0
-                AND (NEW.score - COALESCE(NEW.putts, 0)) > 0
-                AND (NEW.score - COALESCE(NEW.putts, 0)) <= (NEW.par - 2));
+    NEW.gir := public.golf_hole_gir(
+      NEW.par, NEW.score, NEW.putts,
+      public.golf_hole_shot_to_green(NEW.round_id, NEW.hole_number, NEW.score)
+    );
+  END IF;
+  -- An up-and-down is a missed green got down in two: never on a GIR hole.
+  IF NEW.gir IS TRUE THEN
+    NEW.up_and_down := NULL;
   END IF;
   RETURN NEW;
 END
@@ -5588,6 +5636,42 @@ CREATE OR REPLACE FUNCTION "public"."golf_shot_detail_round_ids"() RETURNS SETOF
 $$;
 
 ALTER FUNCTION "public"."golf_shot_detail_round_ids"() OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION public.golf_shots_refresh_hole_gir_fn() RETURNS trigger
+    LANGUAGE plpgsql
+    SECURITY DEFINER
+    SET search_path = ''
+    AS $$
+DECLARE
+  v_round uuid;
+  v_hole integer;
+BEGIN
+  FOR v_round, v_hole IN
+    SELECT DISTINCT t.round_id, t.hole_number
+    FROM (VALUES
+      (CASE WHEN TG_OP <> 'DELETE' THEN NEW.round_id END, CASE WHEN TG_OP <> 'DELETE' THEN NEW.hole_number END),
+      (CASE WHEN TG_OP <> 'INSERT' THEN OLD.round_id END, CASE WHEN TG_OP <> 'INSERT' THEN OLD.hole_number END)
+    ) AS t (round_id, hole_number)
+    WHERE t.round_id IS NOT NULL AND t.hole_number IS NOT NULL
+  LOOP
+    UPDATE public.golf_holes AS gh
+    SET gir = g.gir
+    FROM (
+      SELECT h.id, public.golf_hole_gir(
+        h.par, h.score, h.putts,
+        public.golf_hole_shot_to_green(h.round_id, h.hole_number, h.score)
+      ) AS gir
+      FROM public.golf_holes AS h
+      WHERE h.round_id = v_round AND h.hole_number = v_hole AND h.score IS NOT NULL
+    ) AS g
+    WHERE gh.id = g.id
+      AND gh.gir IS DISTINCT FROM g.gir;
+  END LOOP;
+  RETURN NULL;
+END
+$$;
+
+ALTER FUNCTION "public"."golf_shots_refresh_hole_gir_fn"() OWNER TO "postgres";
 
 COMMENT ON FUNCTION "public"."golf_shot_detail_round_ids"() IS 'Readable rounds whose shot details I may read on the coach/owner side (conjunct B of can_read_golf_shot_detail). Used once per statement by the putt_details and approach_miss_details SELECT policies.';
 
@@ -8180,9 +8264,10 @@ $$;
 
 ALTER FUNCTION "public"."reclassify_golf_round"("p_round_id" "uuid", "p_round_type" "text", "p_qualifier_id" "uuid", "p_qualifier_round_number" integer) OWNER TO "postgres";
 
-CREATE OR REPLACE FUNCTION "public"."recompute_golf_round_totals"("p_round_id" "uuid") RETURNS "void"
-    LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public'
+CREATE OR REPLACE FUNCTION public.recompute_golf_round_totals(p_round_id uuid) RETURNS void
+    LANGUAGE plpgsql
+    SECURITY DEFINER
+    SET search_path TO 'public'
     AS $$
 BEGIN
   UPDATE golf_rounds r
@@ -8216,27 +8301,27 @@ BEGIN
     END
   FROM (
     SELECT
-      SUM(putts) AS sum_putts,
+      SUM(h.putts) AS sum_putts,
       COUNT(*) AS helm_holes,
-      COUNT(score) AS helm_scored,
-      SUM(score) AS helm_score_sum,
-      SUM(par) AS helm_par_sum,
-      -- GIR needs the putt count: a hole without one is never credited.
-      SUM(CASE
-            WHEN par >= 3
-             AND score > 0
-             AND putts IS NOT NULL
-             AND (score - putts) > 0
-             AND (score - putts) <= (par - 2)
-            THEN 1 ELSE 0
-          END) AS sum_gir,
-      -- denominator: scored holes with a recorded putt count (was: every hole row)
-      SUM(CASE WHEN score > 0 AND putts IS NOT NULL THEN 1 ELSE 0 END) AS cnt_gir_known,
-      SUM(CASE WHEN par >= 4 AND fairway_hit = true THEN 1 ELSE 0 END) AS sum_fwy_hit,
+      COUNT(h.score) AS helm_scored,
+      SUM(h.score) AS helm_score_sum,
+      SUM(h.par) AS helm_par_sum,
+      -- One GIR rule (20261115230000): public.golf_hole_gir, the function the
+      -- hole's own flag is written by (shots when they record the whole hole,
+      -- else score minus putts). A hole it cannot read is in neither count.
+      SUM(CASE WHEN g.gir IS TRUE THEN 1 ELSE 0 END) AS sum_gir,
+      SUM(CASE WHEN g.gir IS NOT NULL THEN 1 ELSE 0 END) AS cnt_gir_known,
+      SUM(CASE WHEN h.par >= 4 AND h.fairway_hit = true THEN 1 ELSE 0 END) AS sum_fwy_hit,
       -- denominator: par-4/5 holes with a recorded fairway result (was: all par-4/5)
-      SUM(CASE WHEN par >= 4 AND fairway_hit IS NOT NULL THEN 1 ELSE 0 END) AS cnt_par4plus
-    FROM golf_holes
-    WHERE round_id = p_round_id
+      SUM(CASE WHEN h.par >= 4 AND h.fairway_hit IS NOT NULL THEN 1 ELSE 0 END) AS cnt_par4plus
+    FROM golf_holes AS h
+    CROSS JOIN LATERAL (
+      SELECT public.golf_hole_gir(
+        h.par, h.score, h.putts,
+        public.golf_hole_shot_to_green(h.round_id, h.hole_number, h.score)
+      ) AS gir
+    ) AS g
+    WHERE h.round_id = p_round_id
   ) t
   WHERE r.id = p_round_id;
 END
@@ -12370,7 +12455,8 @@ BEGIN
     COALESCE(NEW.total_score, v_front_nine + v_back_nine),
     COALESCE(NEW.score_to_par, (v_front_nine + v_back_nine) - (SELECT COALESCE(SUM(par),0) FROM golf_holes WHERE round_id = NEW.id)),
     v_front_nine, v_back_nine,
-    COALESCE(NEW.total_fairways_hit, (SELECT COUNT(*) FROM golf_holes WHERE round_id = NEW.id AND fairway_hit = true)),
+    -- SC-12 (20261115231000): the fallback counts par 4 and 5 fairways only, as its denominator below does.
+    COALESCE(NEW.total_fairways_hit, (SELECT COUNT(*) FROM golf_holes WHERE round_id = NEW.id AND par >= 4 AND fairway_hit = true)),
     COALESCE(NEW.total_fairways, (SELECT COUNT(*) FROM golf_holes WHERE round_id = NEW.id AND par > 3 AND fairway_hit IS NOT NULL)),
     COALESCE(NEW.total_gir, (SELECT COUNT(*) FROM golf_holes WHERE round_id = NEW.id AND gir = true)),
     COALESCE(NEW.total_gir_possible, v_hole_count),

@@ -1814,3 +1814,16 @@ GRANT ALL ON FUNCTION "public"."golf_team_members_identity_guard"() TO "service_
 REVOKE ALL ON FUNCTION "helm_private"."golf_hole_sand_save_tour"("p_hole_id" "uuid") FROM PUBLIC, "anon", "authenticated";
 
 REVOKE ALL ON FUNCTION "helm_private"."golf_backfill_sand_save_tour"() FROM PUBLIC, "anon", "authenticated";
+
+REVOKE ALL ON FUNCTION "public"."golf_hole_gir"("p_par" integer, "p_score" integer, "p_putts" integer, "p_shot_to_green" integer) FROM PUBLIC, "anon";
+GRANT ALL ON FUNCTION "public"."golf_hole_gir"("p_par" integer, "p_score" integer, "p_putts" integer, "p_shot_to_green" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."golf_hole_gir"("p_par" integer, "p_score" integer, "p_putts" integer, "p_shot_to_green" integer) TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."golf_hole_shot_to_green"("p_round_id" "uuid", "p_hole_number" integer, "p_score" integer) FROM PUBLIC, "anon";
+GRANT ALL ON FUNCTION "public"."golf_hole_shot_to_green"("p_round_id" "uuid", "p_hole_number" integer, "p_score" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."golf_hole_shot_to_green"("p_round_id" "uuid", "p_hole_number" integer, "p_score" integer) TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."golf_shots_refresh_hole_gir_fn"() FROM PUBLIC, "anon", "authenticated";
+GRANT ALL ON FUNCTION "public"."golf_shots_refresh_hole_gir_fn"() TO "service_role";
+
+REVOKE ALL ON FUNCTION "helm_private"."golf_backfill_one_gir_rule"() FROM PUBLIC, "anon", "authenticated";
