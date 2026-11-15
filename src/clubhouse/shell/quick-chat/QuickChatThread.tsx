@@ -1,7 +1,7 @@
 'use client';
 
 import { ArrowUpRight, MapPin, X } from 'lucide-react';
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type RefObject } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import type { ActionReceipt } from '@/lib/coachhelm/v3/chat/action-types';
 import type { ChatUIMessage } from '@/lib/coachhelm/v3/chat/engine/protocol';
@@ -22,7 +22,7 @@ import { Badge } from '../../ui/Badge';
 import { Icon } from '../../ui/Icon';
 import { Menu } from '../../ui/Menu';
 import type { ChAskSheetChat } from '../AskSheet';
-import { subscribeOnline } from '../AskSheetBody';
+import { useOnline } from '../../lib/use-online';
 import { saveLanding } from './landing';
 import { useQcCtx } from './qc-context';
 import { useQcSeam } from './qc-seam';
@@ -74,7 +74,7 @@ export interface QuickChatThreadProps {
 export function QuickChatThread({ chat: useChatImpl, conversationId, initialMessages, restored, restoring, open, onClose, leaveTo, looking, pathname, planOn, phone, mode, text, setText, field, islandSlot }: QuickChatThreadProps) {
   const reduced = mode !== 'full';
   const seam = useQcSeam();
-  const online = useSyncExternalStore(subscribeOnline, () => navigator.onLine, () => true);
+  const online = useOnline();
   const { setRun, setFlag, setSession } = useQcCtx();
 
   // The context chip: what the chat was opened on, and so what goes with the question.

@@ -35,7 +35,8 @@ describe('the dim is driven, not a keyframe (A9)', () => {
     // Named, not counted: Settings' and Recruiting's sheets share one rule since CONS-23 (ui/FormSheet.tsx).
     const named = new Set(fading.flatMap((b) => b.selector.match(/\.ch-[\w-]+(?=::backdrop)/g) ?? []));
     for (const d of ['.ch-modal', '.ch-fsheet-dlg', '.ch-fsheet-act', '.ch-peek']) expect(named.has(d), d).toBe(true);
-    expect(fading.length).toBeGreaterThanOrEqual(6);
+    // Five since the retired Ask sheet's dialog and its dim were deleted (OVL-19).
+    expect(fading.length).toBeGreaterThanOrEqual(5);
     for (const b of fading) expect(b.body, `${b.file} ${b.selector}`).toMatch(/opacity:\s*var\(--ch-scrim-a/);
   });
 

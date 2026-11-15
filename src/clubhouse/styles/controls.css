@@ -352,6 +352,10 @@
   overflow-y: auto;
   overscroll-behavior: contain;
 }
+/* The menu takes focus as it opens (MENU-01); the open menu is its own sign of where focus is, so it draws no ring. */
+.ch-menu:focus {
+  outline: none;
+}
 .ch-menu__item {
   display: flex;
   align-items: center;

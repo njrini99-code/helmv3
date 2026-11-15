@@ -70,6 +70,11 @@ function holdRise(dialog: HTMLElement, surface: HTMLElement | null, fade: boolea
   );
 }
 
+/** Whether focus can go back to `el`: still on the page and not inside something inert. */
+function reachable(el: Element | null): el is HTMLElement {
+  return el instanceof HTMLElement && el.isConnected && !el.closest('[inert]');
+}
+
 /** Native modal lifetime shared by custom bars, action sheets and drawers. */
 export function useDialogLifetime(open: boolean, {
   direction = 'bottom',
@@ -83,7 +88,8 @@ export function useDialogLifetime(open: boolean, {
   direction?: 'bottom' | 'left' | 'center';
   surfaceSelector?: string;
   focusSelector?: string;
-  /** Where focus goes when the dialog closes and what opened it has gone (a deleted event: its day, the grid). */
+  /** Where focus goes when the dialog closes and what opened it has gone or sits in something inert (a deleted event:
+   * its day, the grid; the account sheet: the section title, since the strip that held its opener has shut). */
   fallbackFocus?: () => HTMLElement | null;
 } = {}) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -112,9 +118,9 @@ export function useDialogLifetime(open: boolean, {
       // Native focus restoration must happen while the underlying page is locked,
       // including route unmounts and nested dialogs released in either order.
       dialog?.close();
-      const back = opener?.isConnected ? opener : (fallbackRef.current?.() ?? null);
+      const back = reachable(opener) ? opener : (fallbackRef.current?.() ?? null);
       if (back) chFocusQuietly(back);
-      else if (opener) delete opener.dataset.chPeekQuiet;
+      if (opener && opener !== back) delete opener.dataset.chPeekQuiet;
       release();
     };
   }, [present]);
@@ -168,7 +174,10 @@ export function useDialogLifetime(open: boolean, {
       dialog.close();
       setRetained(false);
       const target = opener.current;
-      if (target instanceof HTMLElement && target.isConnected && !target.closest('[inert]')) chFocusQuietly(target);
+      // An opener that has gone, or sits in something that closed under the dialog (the section strip's Account pill),
+      // hands focus to the caller's fallback instead (OVL-12).
+      const back = target instanceof HTMLElement && reachable(target) ? target : (fallbackRef.current?.() ?? null);
+      if (back) chFocusQuietly(back);
     };
     dialog.setAttribute('data-closing', '');
     if (surface) surface.inert = true;

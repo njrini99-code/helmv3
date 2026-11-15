@@ -71,10 +71,9 @@ export function useSectionSwitch(): ChSectionSwitch | null {
 }
 
 /** The title button that is visible now (the shell bar's, or a page's own start title), for focus to return to. */
-export function focusSectionTitle(): void {
+export function sectionTitle(): HTMLElement | null {
   const all = Array.from(document.querySelectorAll<HTMLElement>('.ch-root .ch-sw'));
-  const el = all.find((b) => b.offsetParent !== null) ?? all[0];
-  el?.focus({ preventScroll: true, focusVisible: false } as FocusOptions);
+  return all.find((b) => b.offsetParent !== null) ?? all[0] ?? null;
 }
 
 export function SectionSwitchProvider({
@@ -217,7 +216,7 @@ export function SectionSwitchProvider({
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return;
       setOpen(false);
-      focusSectionTitle();
+      sectionTitle()?.focus({ preventScroll: true, focusVisible: false } as FocusOptions);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);

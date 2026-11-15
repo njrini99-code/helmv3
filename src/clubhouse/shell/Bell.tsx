@@ -3,7 +3,7 @@
 import { AnimatePresence, m } from 'motion/react';
 import { Bell as BellIcon, BellOff, ChevronDown } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { createContext, useCallback, useContext, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
 import { isSafeInternalPath } from '@/lib/utils/safe-redirect';
@@ -27,6 +27,7 @@ import { InlineNotice } from '../ui/Notices';
 import { Menu } from '../ui/Menu';
 import { EmptyState, Skeleton } from '../ui/States';
 import { haptic } from '../lib/haptics';
+import { sheetDragOffset, takeSheetFling, useSheetDrag } from '../lib/sheet-drag';
 import { useAfterPaint } from '../lib/use-painted';
 import { CH_POP, chFade, chSpring, chSpringCurve } from '../lib/motion';
 import { useChMotionMode, useChReducedMotion } from '../lib/reduced-motion';
@@ -159,13 +160,12 @@ export function Bell() {
   const sw = useSectionSwitch();
   // CH-1612 (owner 2026-10-12, with the section strip): on the phone the sheet drops from under the top bar, as the strip
   // does, on the smooth spring, and goes back up under it on the same spring, at the speed it was thrown when swiped up.
-  // The finger's offset, on the CSS `translate` property, which composes with the `transform` the drop opens and closes
-  // on: transform strings, not framer's `y`, so Motion hands them to the compositor (WAAPI) and the drop keeps moving
-  // while the page under it is busy (owner, 2026-10-15: "All transitions need fixed. All popups").
-  const dragY = useRef(0);
+  // The finger's offset is the shared sheet drag's (lib/sheet-drag.ts, `up`; OVL-11, OVL-17), on the CSS `translate`
+  // property, which composes with the `transform` the drop opens and closes on: transform strings, not framer's `y`, so
+  // Motion hands them to the compositor (WAAPI) and the drop keeps moving while the page under it is busy (owner,
+  // 2026-10-15: "All transitions need fixed. All popups").
   // The drop and the veil move a painted frame after the state changes, from where they are (lib/use-painted.ts).
   const moving = useAfterPaint(open);
-  const fling = useRef(0);
   const sheetMotion = {
     // The stacks drop from under the bar and land with the settle spring's slight give, a touch smaller as they come.
     // Transform and opacity only, nothing that re-rasterizes (no scale, no blur), so WebKit keeps it on the compositor.
@@ -173,13 +173,13 @@ export function Bell() {
     gone: () => {
       if (reduced) return { opacity: 0, transition: chFade(mode), transitionEnd: { visibility: 'hidden' } };
       // Back up under the bar from where the finger left it, at the speed it was thrown, fading as it goes.
-      const from = dragY.current;
-      dragY.current = 0;
-      if (panel.current) panel.current.style.translate = '';
+      const el = panel.current;
+      const from = -sheetDragOffset(el, 'up');
+      if (el) el.style.translate = '';
       const travel = 140;
       const left = travel + from;
-      const out = chSpringCurve('smooth', { velocity: left > 0 ? fling.current / left : 0, rest: 0.5 / Math.max(left, 1) });
-      fling.current = 0;
+      const fling = takeSheetFling(el, { peek: true }) * 1000;
+      const out = chSpringCurve('smooth', { velocity: left > 0 ? fling / left : 0, rest: 0.5 / Math.max(left, 1) });
       return {
         transform: [`translateY(${from}px)`, `translateY(${-travel}px)`],
         opacity: 0,
@@ -188,53 +188,8 @@ export function Bell() {
       };
     },
   };
-  /** The sheet follows the finger up from its header or grab (CH-1611): past a third of its height, or flicked, it closes. */
-  const onSheetDrag = (e: ReactPointerEvent) => {
-    if (reduced || (e.pointerType === 'mouse' && e.button !== 0)) return;
-    const start = e.clientY;
-    const el = e.currentTarget as HTMLElement;
-    const sheet = panel.current;
-    sheet?.getAnimations?.().forEach((a) => a.cancel());
-    let last = start;
-    let lastT = performance.now();
-    let v = 0;
-    try {
-      el.setPointerCapture(e.pointerId);
-    } catch {
-      // A pointer that already went away.
-    }
-    const move = (ev: PointerEvent) => {
-      const now = performance.now();
-      v = 0.8 * ((ev.clientY - last) / Math.max(1, now - lastT)) + 0.2 * v;
-      last = ev.clientY;
-      lastT = now;
-      const dy = ev.clientY - start;
-      dragY.current = dy < 0 ? dy : dy * 0.15;
-      if (sheet) sheet.style.translate = `0 ${dragY.current}px`;
-    };
-    const up = () => {
-      el.removeEventListener('pointermove', move);
-      el.removeEventListener('pointerup', up);
-      el.removeEventListener('pointercancel', up);
-      const h = panel.current?.offsetHeight ?? 600;
-      if (dragY.current < -h / 3 || v < -0.5) {
-        fling.current = -v * 1000;
-        haptic('commit');
-        close();
-        return;
-      }
-      // Springs back from where it was let go, at the speed it was moving.
-      const from = dragY.current;
-      dragY.current = 0;
-      if (!sheet || !from) return;
-      const back = chSpringCurve('smooth', { velocity: (-Math.sign(from) * v * 1000) / Math.abs(from) });
-      sheet.style.translate = '';
-      sheet.animate?.([{ translate: `0 ${from}px` }, { translate: '0 0' }], { duration: back.ms, easing: back.linear });
-    };
-    el.addEventListener('pointermove', move);
-    el.addEventListener('pointerup', up);
-    el.addEventListener('pointercancel', up);
-  };
+  /** The sheet follows the finger up from its header or grab (CH-1611): past 80px, or flicked, it closes. */
+  const drag = useSheetDrag(panel, close, { enabled: phone, direction: 'up', reduced });
 
   // The phone drop opens on its cards: the feed is read once the page settles, so the first open of a visit doesn't start
   // on the skeleton and swap the feed in mid-drop, which jumped the cards and stalled the drop (Simulator, 2026-10-14).
@@ -683,7 +638,7 @@ export function Bell() {
                 {/* No OverlayScrollLock: freezing the body re-lays out the whole page in the drop's first frame (and again as
                     it closes), the stutter. The drop covers the screen and takes the touches (touch-action in shell.css),
                     and its list contains its own scroll, so the page under it cannot move anyway. */}
-                <div className="ch-bst__head" onPointerDown={onSheetDrag}>
+                <div className="ch-bst__head" onPointerDown={drag.onPointerDown}>
                   <b>Notifications</b>
                   {shownUnread > 0 && (
                     <button type="button" className="ch-bst__all" disabled={markAll.pending} onClick={() => void markAllNow()}>
@@ -703,7 +658,7 @@ export function Bell() {
                   <BellStacks items={items} failed={listFailed} onRetry={() => setAttempt((x) => x + 1)} onOpen={openItem} onClear={clearItems} />
                   {olderNote}
                 </div>
-                <div className="ch-bst__drag" aria-hidden="true" onPointerDown={onSheetDrag}>
+                <div className="ch-bst__drag" aria-hidden="true" onPointerDown={drag.onPointerDown}>
                   <span className="ch-grab" />
                 </div>
               </m.div>

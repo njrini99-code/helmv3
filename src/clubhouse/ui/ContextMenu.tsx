@@ -273,8 +273,9 @@ function ContextMenuSurface<T>({ at, label, items, onClose }: { at: Open<T>; lab
     window.addEventListener('blur', away);
     const frame = requestAnimationFrame(() => {
       const first = list.current?.querySelector<HTMLElement>('[role="menuitem"],[role="menuitemradio"]');
-      // A mouse-opened menu starts with nothing lit (as a native one); the arrows take it from there.
-      (at.keyboard ? first : list.current)?.focus({ preventScroll: true });
+      // A mouse-opened menu starts with nothing lit (as a native one); the arrows take it from there. A keyboard-opened one
+      // lights its first row, unless that row is destructive (MENU-01): then the menu itself takes focus.
+      (at.keyboard && first && !first.classList.contains('is-danger') ? first : list.current)?.focus({ preventScroll: true });
     });
     return () => {
       cancelAnimationFrame(frame);

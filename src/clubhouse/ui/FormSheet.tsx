@@ -209,6 +209,7 @@ export function ActionSheet({
   cancelLabel = 'Cancel',
   busy,
   code,
+  warn = true,
 }: {
   open: boolean;
   onClose: () => void;
@@ -218,13 +219,15 @@ export function ActionSheet({
   cancelLabel?: string;
   busy?: boolean;
   code?: string;
+  /** False when the caller already warned in the tap that opened it (Team Hub's deletes), so the warning ticks once. */
+  warn?: boolean;
 }) {
   const titleId = useId();
   const messageId = useId();
   const { ref, retainContent } = useDialogLifetime(open, { focusSelector: '.ch-fsheet-act__cancel' });
   useEffect(() => {
-    if (open) haptic('warning');
-  }, [open]);
+    if (open && warn) haptic('warning');
+  }, [open, warn]);
   const close = () => {
     if (!busy) onClose();
   };

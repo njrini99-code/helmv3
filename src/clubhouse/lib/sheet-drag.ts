@@ -80,11 +80,24 @@ export function chSupportsLinear(): boolean {
   return typeof CSS !== 'undefined' && typeof CSS.supports === 'function' && CSS.supports('transition-timing-function', 'linear(0, 1)');
 }
 
-/** The sheet's offset now, mid spring-back included, so a new drag takes it from where it is. */
-function offsetNow(el: HTMLElement, direction: 'down' | 'left'): number {
-  const parts = getComputedStyle(el).translate.split(' ').map(parseFloat);
-  const v = direction === 'left' ? -(parts[0] ?? 0) : (parts[1] ?? 0);
+/** Which way a sheet closes: a bottom sheet down, a drawer left, a drop that hangs from the top bar (the bell) up. */
+export type ChSheetDirection = 'down' | 'left' | 'up';
+
+/** A `translate` value's distance toward closing. */
+function along(translate: string, direction: ChSheetDirection): number {
+  const parts = translate.split(' ').map(parseFloat);
+  const v = direction === 'left' ? -(parts[0] ?? 0) : direction === 'up' ? -(parts[1] ?? 0) : (parts[1] ?? 0);
   return Number.isFinite(v) ? v : 0;
+}
+
+/** The sheet's offset now, mid spring-back included, so a new drag takes it from where it is. */
+function offsetNow(el: HTMLElement, direction: ChSheetDirection): number {
+  return along(getComputedStyle(el).translate, direction);
+}
+
+/** How far a drag has carried `el` toward closing, from its inline `translate` (what an exit starts from). */
+export function sheetDragOffset(el: HTMLElement | null | undefined, direction: ChSheetDirection): number {
+  return el ? along(el.style.translate, direction) : 0;
 }
 
 /**
@@ -158,7 +171,7 @@ export function chScrimAt(offset: number, size: number): number {
 export function useSheetDrag(
   sheet: RefObject<HTMLElement | null>,
   onClose: () => void,
-  { enabled = true, direction = 'down', reduced = false, variant = 'default' }: { enabled?: boolean; direction?: 'down' | 'left'; reduced?: boolean; variant?: 'default' | 'messages' } = {},
+  { enabled = true, direction = 'down', reduced = false, variant = 'default' }: { enabled?: boolean; direction?: ChSheetDirection; reduced?: boolean; variant?: 'default' | 'messages' } = {},
 ) {
   const reducedRef = useRef(reduced);
   reducedRef.current = reduced;
@@ -192,7 +205,7 @@ export function useSheetDrag(
 
   const begin = useCallback(
     (el: HTMLElement, pointerId: number, at: number, timeStamp: number, capture: Element | null) => {
-      const coordinate = (event: { clientX: number; clientY: number }) => (direction === 'left' ? -event.clientX : event.clientY);
+      const coordinate = (event: { clientX: number; clientY: number }) => (direction === 'left' ? -event.clientX : direction === 'up' ? -event.clientY : event.clientY);
       flings.delete(el);
       const shown = settling.current ? offsetNow(el, direction) : 0;
       settling.current?.();
@@ -214,7 +227,7 @@ export function useSheetDrag(
       const size = direction === 'left' ? el.offsetWidth : el.offsetHeight;
       const put = (offset: number) => {
         if (offset < 0 && direction === 'down') floor();
-        el.style.translate = direction === 'left' ? `${-offset}px 0` : `0 ${offset}px`;
+        el.style.translate = direction === 'left' ? `${-offset}px 0` : direction === 'up' ? `0 ${-offset}px` : `0 ${offset}px`;
         if (dialog) chSetScrim(dialog, chScrimAt(offset, size), 0);
       };
       el.style.transition = 'none';
@@ -225,7 +238,7 @@ export function useSheetDrag(
       const move = (ev: PointerEvent) => {
         if (ev.pointerId !== pointerId) return;
         const raw = from + coordinate(ev) - at;
-        // Only a sheet rising from the bottom has a floor to stretch over; a drawer stops at its open edge.
+        // Only a sheet rising from the bottom has a floor to stretch over; a drawer or a drop stops at its open edge.
         dy = raw >= 0 ? raw : direction === 'down' ? -(messages ? msRubberBand(-raw) : rubberBand(-raw)) : 0;
         put(dy);
         samples.push([ev.timeStamp, dy]);
@@ -255,7 +268,7 @@ export function useSheetDrag(
           // Toward rest from wherever it is, at the speed it was moving (progress per second), cut within half a pixel.
           // Thrown back hard, a sheet carries on past its open position as when pulled there, over its floor; a drawer
           // stops at its open edge, so thrown back too hard to stop there it starts slower instead.
-          const curve = chSpringCurve('smooth', { velocity: (-speed * 1000) / dy, rest: 0.5 / Math.abs(dy), hold: direction === 'left' });
+          const curve = chSpringCurve('smooth', { velocity: (-speed * 1000) / dy, rest: 0.5 / Math.abs(dy), hold: direction !== 'down' });
           if (direction === 'down' && dy > 0 && Array.from({ length: 49 }, (_, i) => curve.ease(i / 48)).some((p) => p > 1)) floor();
           ms = curve.ms;
           el.style.transition = `translate ${curve.ms}ms ${curve.linear}`;
@@ -306,7 +319,7 @@ export function useSheetDrag(
       if (e.isPrimary === false || stop.current) return;
       if ((e.target as Element).closest('button, a, input, textarea, select')) return;
       if (typeof e.pointerId === 'number') e.currentTarget.setPointerCapture?.(e.pointerId);
-      begin(el, e.pointerId, direction === 'left' ? -e.clientX : e.clientY, e.timeStamp, e.currentTarget);
+      begin(el, e.pointerId, direction === 'left' ? -e.clientX : direction === 'up' ? -e.clientY : e.clientY, e.timeStamp, e.currentTarget);
     },
     [sheet, enabled, direction, begin],
   );

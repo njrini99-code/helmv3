@@ -13,12 +13,13 @@ import { Modal } from '../../../ui/Modal';
 import { useSafariKeyboardFit } from '../../../shell/PhoneScreen';
 import { useRouter } from 'next/navigation';
 import { announceLanding } from '../../../shell/quick-chat/landing';
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useCoachHelmChat } from '@/hooks/coachhelm/useCoachHelmChat';
 import { CHAT_ERROR_DID_NOT_FINISH, describeChatError } from '../../../data/coachhelm-chat-error';
 import { titleFromQuestion, type ChAskConversation, type ChAskData, type ChAskLoad } from '../../../data/coachhelm-chat-shape';
 import { answerNeverCame, pendingApproval, type EvidenceFocus } from '../../../data/coachhelm-chat-thread';
 import { useChPhone } from '../../../lib/use-phone';
+import { useOnline } from '../../../lib/use-online';
 import { noteSendSource } from './send-source';
 import { PhoneIconAction } from '../../../ui/PhoneBar';
 import { Icon } from '../../../ui/Icon';
@@ -48,17 +49,6 @@ export interface ChAskInitial {
   panelOpen?: boolean;
 }
 
-function subscribeOnline(cb: () => void) {
-  window.addEventListener('online', cb);
-  window.addEventListener('offline', cb);
-  return () => {
-    window.removeEventListener('online', cb);
-    window.removeEventListener('offline', cb);
-  };
-}
-function useOnline(): boolean {
-  return useSyncExternalStore(subscribeOnline, () => navigator.onLine, () => true);
-}
 
 /** The `useViewSwitch` value that stands for "no chat open". */
 const NEW_CHAT = 'new';

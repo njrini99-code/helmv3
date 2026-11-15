@@ -37,8 +37,6 @@ describe('elevation tokens (B4)', () => {
     ['ui.css', '.ch-popover'],
     ['ui.css', '.ch-peek__card'],
     ['ui.css', '.ch-peek__menu'],
-    ['shell.css', '.ch-more'],
-    ['shell.css', '.ch-asks__panel'],
   ])('%s %s: dark sits on the elevated surface', (file, selector) => {
     const rules = [...css(file).matchAll(/([^{}]*)\{([^{}]*)\}/g)].filter(
       (m) => m[1]!.includes("[data-fw-theme='dark']") && m[1]!.split(',').some((s) => s.trim().endsWith(selector)) && /background:/.test(m[2]!),

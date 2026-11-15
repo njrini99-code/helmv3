@@ -2881,14 +2881,12 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 @media (pointer: coarse) {
   .ch-toast__action,
   .ch-toast__close,
-  .ch-asks__open,
   .ch-ask-cmp__send,
   .ch-rv-back {
     position: relative;
   }
   .ch-toast__action::before,
   .ch-toast__close::before,
-  .ch-asks__open::before,
   .ch-ask-cmp__send::before,
   .ch-rv-back::before {
     content: '';

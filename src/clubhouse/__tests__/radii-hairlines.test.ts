@@ -13,8 +13,6 @@ const SHEETS: Array<[file: string, selector: string]> = [
   ['auth.css', '.ch-au-panel'],
   ['controls.css', '.ch-fsheet'],
   ['rounds-track.css', '.ch-rtcv__sheet'],
-  ['shell.css', '.ch-more'],
-  ['shell.css', '.ch-asks__panel'],
 ];
 const TOKEN_PX = new Set([2, 4, 6, 8, 12, 16, 20]);
 
