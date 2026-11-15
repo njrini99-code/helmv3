@@ -3976,10 +3976,11 @@ html[data-fw-theme='dark'] .ch-offline {
   color: var(--ch-hero-mint);
 }
 /* The entrance after sign in (owner, 2026-10-16: "more premium. i do like the wheel turning"), about 3.5s in all:
-   the dashboard settles for about 0.55s; the word writes in left to right behind a wide feathered edge while it comes
-   into focus (blur and a 3px rise settling out), over about 1.5s; the wheel spins in three quarters of a turn from
-   small and slows to a stop with a slight settle, overlapping the last of the word; then one glint of light crosses
-   the frosted panel. */
+   the dashboard settles for about 0.55s; the word writes in left to right behind a wide feathered edge while it rises
+   the last 3px into place, over about 1.5s; the wheel spins in three quarters of a turn from small and slows to a stop
+   with a slight settle, overlapping the last of the word; then one glint of light crosses the frosted panel. The rise
+   and the glint are transforms (production audit 2026-11-15, MOT-15): no blur filter and no background-position is
+   animated, since either repaints on every frame. */
 .ch-brand__word.is-write {
   -webkit-mask-image: linear-gradient(90deg, #000 38%, transparent 62%);
   mask-image: linear-gradient(90deg, #000 38%, transparent 62%);
@@ -3989,7 +3990,7 @@ html[data-fw-theme='dark'] .ch-offline {
   mask-repeat: no-repeat;
   animation:
     ch-brand-write calc(var(--ch-dur-reveal) * 2.9) var(--ch-ease-io) calc(var(--ch-dur-reveal) * 1.05) both,
-    ch-brand-focus calc(var(--ch-dur-reveal) * 3.1) var(--ch-ease-io) calc(var(--ch-dur-reveal) * 1.05) both;
+    ch-brand-rise calc(var(--ch-dur-reveal) * 3.1) var(--ch-ease-io) calc(var(--ch-dur-reveal) * 1.05) both;
 }
 .ch-brand__mark.is-write {
   animation: ch-brand-wheel calc(var(--ch-dur-reveal) * 2.5) var(--ch-ease-spring-smooth) calc(var(--ch-dur-reveal) * 3) both;
@@ -3998,14 +3999,17 @@ html[data-fw-theme='dark'] .ch-offline {
   position: relative;
   overflow: hidden;
 }
+/* The glint is a band two and a half panels wide, slid across on a transform (the panel clips it): the same path the
+   band took as a background-position from 130% to -30%, as translateX from -78% to 18% of its own width. */
 .ch-brand:has(.ch-brand__line.is-write)::after {
   content: '';
   position: absolute;
-  inset: 0;
-  background: linear-gradient(105deg, transparent 35%, rgb(255 250 235 / 0.28) 50%, transparent 65%) no-repeat;
-  background-size: 250% 100%;
+  inset: 0 auto 0 0;
+  width: 250%;
+  background: linear-gradient(105deg, transparent 35%, rgb(255 250 235 / 0.28) 50%, transparent 65%);
   mix-blend-mode: soft-light;
   pointer-events: none;
+  transform: translateX(-78%);
   animation: ch-brand-glint calc(var(--ch-dur-reveal) * 2.2) var(--ch-ease-io) calc(var(--ch-dur-reveal) * 4.6) both;
 }
 /* Arriving from the welcome, the entrance holds on its first frame while the hand-off's curtain is up (lib/handoff.ts),
@@ -4025,13 +4029,11 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
     mask-position: 0 0;
   }
 }
-@keyframes ch-brand-focus {
+@keyframes ch-brand-rise {
   from {
-    filter: blur(3px);
     transform: translateY(3px);
   }
   to {
-    filter: none;
     transform: none;
   }
 }
@@ -4053,10 +4055,10 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
 }
 @keyframes ch-brand-glint {
   from {
-    background-position: 130% 0;
+    transform: translateX(-78%);
   }
   to {
-    background-position: -30% 0;
+    transform: translateX(18%);
   }
 }
 @media (prefers-reduced-motion: reduce) {

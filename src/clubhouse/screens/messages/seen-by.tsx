@@ -299,7 +299,8 @@ function SeenByBody({ api, m, compact }: { api: ChMessagesApi; m: ChMsg; compact
   const offline = typeof navigator !== "undefined" && navigator.onLine === false;
   // M6: a person moving from Not yet to Seen glides to their new place (one layout id across both sections, on smooth,
   // which keeps its velocity when retargeted); the meta and the section counts cross-fade on quick (M1's swap); a section
-  // left empty folds its height away on the same spring. All instant under reduced motion and Animations off.
+  // left empty fades out on quick, opacity only (audit 2026-11-15, MOT-15: no height is animated). All instant under
+  // reduced motion and Animations off.
   const fade = (key: string, text: string) => (
     <span className="ch-seen-swap">
       <AnimatePresence initial={false} mode="popLayout">
@@ -316,8 +317,8 @@ function SeenByBody({ api, m, compact }: { api: ChMessagesApi; m: ChMsg; compact
         className="ch-seen-sec"
         aria-label={`${title}, ${rows.length} ${rows.length === 1 ? "person" : "people"}`}
         style={{ overflow: "hidden" }}
-        exit={reduced ? undefined : { height: 0, opacity: 0 }}
-        transition={chSpring("smooth", reduced)}
+        exit={reduced ? undefined : { opacity: 0 }}
+        transition={chTween("quick", reduced)}
       >
         <h3 className="ch-seen-sec__h ch-num">
           <><span>{title}</span>{fade(String(rows.length), String(rows.length))}</>
