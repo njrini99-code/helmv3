@@ -1,8 +1,8 @@
 /**
  * @vitest-environment node
  *
- * Old addresses whose screen lives elsewhere in Clubhouse go there, and only
- * with Clubhouse on for the signed-in role and the target rebuilt for it.
+ * Old addresses whose screen lives elsewhere in Clubhouse go there, for the
+ * signed-in role, and only when the target is rebuilt for it.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -10,14 +10,13 @@ const redirect = vi.fn((href: string) => {
   throw new Error(`REDIRECT ${href}`);
 });
 let session: { coach?: object; player?: object } | null = { coach: {} };
-let flagOn = true;
 
 vi.mock('server-only', () => ({}));
 vi.mock('next/navigation', () => ({ redirect: (h: string) => redirect(h) }));
 let search = '';
 vi.mock('next/headers', () => ({ headers: async () => new Headers(search ? { 'x-helm-search': search } : {}) }));
 vi.mock('@/lib/auth/session', () => ({ getGolfSessionProfile: async () => session }));
-vi.mock('../gate', () => ({ isClubhouseFor: (role: string | null) => !!role && flagOn }));
+vi.mock('../gate', () => ({ isClubhouseFor: (role: string | null) => role === 'coach' || role === 'player' }));
 let briefOn = false;
 vi.mock('@/lib/coachhelm/v3/monday-brief/flag', () => ({ isMondayBriefEnabled: () => briefOn }));
 
@@ -27,7 +26,6 @@ const HUB = '/golf/dashboard/team-hub';
 beforeEach(() => {
   redirect.mockClear();
   session = { coach: {} };
-  flagOn = true;
   briefOn = false;
   search = '';
 });
@@ -42,10 +40,7 @@ describe('redirectToClubhouse', () => {
     await expect(redirectToClubhouse({ coach: `${HUB}?tab=tasks`, player: HUB })).rejects.toThrow(`REDIRECT ${HUB}`);
   });
 
-  it('leaves the Fairway page alone with the flag off, signed out, or with no target for the role', async () => {
-    flagOn = false;
-    await redirectToClubhouse({ coach: HUB });
-    flagOn = true;
+  it('stays put signed out, or with no target for the role', async () => {
     session = null;
     await redirectToClubhouse({ coach: HUB });
     session = { player: {} };
@@ -63,14 +58,12 @@ describe('redirectToClubhouse', () => {
 describe('30806 an old /roster/[id] link', () => {
   const PID = '0b6c1d2e-3f40-4a51-8b62-7c83d94e0f15';
 
-  it("opens the player's Stats for a coach and the roster for a player (a teammate has no page), only with Clubhouse on", async () => {
+  it("opens the player's Stats for a coach and the roster for a player (a teammate has no page)", async () => {
     const { default: RosterIdLayout } = await import('@/app/golf/(dashboard)/dashboard/roster/[id]/layout');
     const open = () => RosterIdLayout({ children: null, params: Promise.resolve({ id: PID }) });
     await expect(open()).rejects.toThrow(`REDIRECT /golf/dashboard/stats?player=${PID}`);
     session = { player: {} };
     await expect(open()).rejects.toThrow('REDIRECT /golf/dashboard/roster');
-    flagOn = false;
-    await open();
     expect(redirect).toHaveBeenCalledTimes(2);
   });
 });
@@ -116,7 +109,7 @@ describe('swap audit §14 aliases (D6, D8)', () => {
     await expect(IntelligenceLayout({ children: null })).rejects.toThrow('REDIRECT /golf/dashboard/coachhelm');
   });
 
-  it("the old qualifying workspace opens a coach on that qualifier's selection; an id that isn't one stays on Fairway", async () => {
+  it("the old qualifying workspace opens a coach on that qualifier's selection; an id that isn't one stays put", async () => {
     const { default: QualifyingWorkspaceLayout } = await import('@/app/golf/(dashboard)/dashboard/coachhelm/qualifying/[id]/layout');
     await expect(QualifyingWorkspaceLayout({ children: null, params: Promise.resolve({ id: QID }) })).rejects.toThrow(
       `REDIRECT /golf/dashboard/qualifiers/${QID}/selection`,
@@ -127,25 +120,8 @@ describe('swap audit §14 aliases (D6, D8)', () => {
   });
 });
 
-describe('an old address keeps its query when it moves (the proxy hands layouts x-helm-search; 100103 for tasks)', () => {
+describe('an old address keeps its query when it moves (the proxy hands layouts x-helm-search; tasks is a config redirect, alias-frame.test.ts)', () => {
   const TID = '6f1e2d3c-4b5a-4968-8776-5a4b3c2d1e0f';
-
-  it('a task notification opens that task on the Tasks tab, for a coach and a player', async () => {
-    const { default: TasksLayout } = await import('@/app/golf/(dashboard)/dashboard/tasks/layout');
-    search = `?task=${TID}`;
-    await expect(TasksLayout({ children: null })).rejects.toThrow(`REDIRECT ${HUB}?tab=tasks&task=${TID}`);
-    session = { player: {} };
-    await expect(TasksLayout({ children: null })).rejects.toThrow(`REDIRECT ${HUB}?tab=tasks&task=${TID}`);
-  });
-
-  it('with no task, or a value that is not an id, Tasks opens as before', async () => {
-    const { default: TasksLayout } = await import('@/app/golf/(dashboard)/dashboard/tasks/layout');
-    await expect(TasksLayout({ children: null })).rejects.toThrow(`REDIRECT ${HUB}?tab=tasks`);
-    search = '?task=' + encodeURIComponent('x"><script>');
-    await expect(TasksLayout({ children: null })).rejects.toThrow(new RegExp(`REDIRECT ${HUB}\\?tab=tasks$`));
-    session = { player: {} };
-    await expect(TasksLayout({ children: null })).rejects.toThrow(new RegExp(`REDIRECT ${HUB}\\?tab=tasks$`));
-  });
 
   it('/intelligence keeps ?player and turns view=chat into Ask; other views are dropped', async () => {
     const { default: IntelligenceLayout } = await import('@/app/golf/(dashboard)/dashboard/intelligence/layout');

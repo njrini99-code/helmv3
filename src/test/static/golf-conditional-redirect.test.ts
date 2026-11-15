@@ -61,9 +61,11 @@ describe('golf dashboard conditional redirects (React #310 guard)', () => {
       expect(offenders).toEqual([]);
     });
 
-    it(`${rel} renders FeatureUnavailable or an in-place notice`, () => {
+    // Since Fairway retired (2026-11-14) several of these pages hand the request straight to their Clubhouse route,
+    // which draws a role it does not serve in place (the coach-only and not-a-player states), never by redirecting.
+    it(`${rel} renders FeatureUnavailable, an in-place notice or its Clubhouse route`, () => {
       const src = readFileSync(resolve(DASHBOARD, rel), 'utf8');
-      expect(/FeatureUnavailable|NotPlayerState/.test(src)).toBe(true);
+      expect(/FeatureUnavailable|NotPlayerState|<Clubhouse\w+Route\b/.test(src)).toBe(true);
     });
   }
 });

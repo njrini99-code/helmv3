@@ -11,8 +11,6 @@ vi.mock('@/lib/server-error-logger', () => ({ logServerError }));
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
 const notifyDevPlanAssigned = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
 vi.mock('@/lib/notifications', () => ({ notifyDevPlanAssigned }));
-const clubhouse = vi.hoisted(() => ({ on: false }));
-vi.mock('@/clubhouse/gate', () => ({ isClubhouseForTeam: () => clubhouse.on }));
 const demo = vi.hoisted(() => ({ on: false }));
 vi.mock('@/lib/demo/golf-read-only', async (importOriginal) => {
   const real = await importOriginal<typeof import('@/lib/demo/golf-read-only')>();
@@ -117,7 +115,6 @@ const lastInsert = () => inserted[inserted.length - 1]!;
 
 beforeEach(() => {
   inserted.length = 0;
-  clubhouse.on = false;
   demo.on = false;
   vi.clearAllMocks();
   verifyPlayerAccessMock.mockResolvedValue({ allowed: true, reason: 'coach' });
@@ -243,25 +240,16 @@ describe('createFocusAreaFromInsightV2 (Clubhouse’s Assign as focus) keeps wri
 });
 
 describe('CH13-7 the "New focus area" notification goes where the player can see the focus area', () => {
-  it('Clubhouse on: Stats, Development tab (a rebuilt screen), not the Fairway address that redirects to a drill Clubhouse does not draw', async () => {
-    clubhouse.on = true;
+  it('Stats, Development tab (a rebuilt screen), not the old address that redirects to a drill Clubhouse does not draw', async () => {
     world({ coachTeam: 'team-coach', onCoachTeam: true });
     expect(await createFocusArea({ ...base, status: 'proposed' })).toMatchObject({ success: true });
     expect(notifyDevPlanAssigned).toHaveBeenCalledTimes(1);
     expect(notifyDevPlanAssigned).toHaveBeenCalledWith('user-1', 'jonah@example.com', 'Lag putting', 'putting', 'Coach Reyes', '/golf/dashboard/stats?tab=dev');
   });
-
-  it('Clubhouse off: no link is passed, so it is Fairway’s, as it always was', async () => {
-    clubhouse.on = false;
-    world({ coachTeam: 'team-coach', onCoachTeam: true });
-    await createFocusArea({ ...base, status: 'proposed' });
-    expect(notifyDevPlanAssigned).toHaveBeenCalledWith('user-1', 'jonah@example.com', 'Lag putting', 'putting', 'Coach Reyes', undefined);
-  });
 });
 
 describe('CH13-24 Assign as focus tells the player, as every coach proposal does', () => {
   it('Clubhouse’s Assign (V2) sends the "New focus area" notice', async () => {
-    clubhouse.on = true;
     world({ playerTeam: 'team-player' });
     expect(await createFocusAreaFromInsightV2({ playerId: 'player-1', insightId: 'insight-1', title: 'Lag putting', description: 'x', areaType: 'putting' })).toMatchObject({ success: true });
     expect(notifyDevPlanAssigned).toHaveBeenCalledTimes(1);
@@ -269,8 +257,7 @@ describe('CH13-24 Assign as focus tells the player, as every coach proposal does
   });
 
   it('the legacy insight path sends it too', async () => {
-    clubhouse.on = false;
-    world({ playerTeam: 'team-player', insightTeam: 'team-player' });
+      world({ playerTeam: 'team-player', insightTeam: 'team-player' });
     const args = { insight_id: 'insight-1', player_id: 'player-1', coach_id: 'coach-1', title: 'Work on putts', description: null, insight_type: 'stat_regression' };
     expect(await createFocusAreaFromInsight(args)).toMatchObject({ success: true });
     expect(notifyDevPlanAssigned).toHaveBeenCalledTimes(1);

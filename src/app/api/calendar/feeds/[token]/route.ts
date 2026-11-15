@@ -3,7 +3,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getValidTimezone, DEFAULT_TIMEZONE } from '@/lib/calendar/timezone';
 import { escapeICalText } from '@/lib/calendar/ical';
 import { feedChangeLines } from '@/lib/calendar/change-feed';
-import { isClubhouseForTeam } from '@/clubhouse/gate';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { logServerError, logServerException } from '@/lib/server-error-logger';
 import { CLASS_EVENT_TYPE } from '@/lib/calendar/class-events';
@@ -450,9 +449,8 @@ export async function GET(
 
     const feedName = typedFeed.name || 'Helm Golf Calendar';
     const feedEvents = await scopeMeetingsToFeedOwner(supabase, typedFeed, teamId, (events || []) as CalendarFeedEvent[]);
-    // P-14's change line is a Clubhouse feature: it rides the Clubhouse release flag (and its team allowlist), so with
-    // golf_clubhouse_ui off every subscribed feed is exactly what it was before change marks existed.
-    const changeLines = isClubhouseForTeam(teamId) ? feedChangeLines(feedEvents, { timeZone: feedTimezone, nowMs: now }) : undefined;
+    // P-14's change line ("Moved from 1:00 PM by …") leads a changed event's description while its mark is live.
+    const changeLines = feedChangeLines(feedEvents, { timeZone: feedTimezone, nowMs: now });
     const icalContent = generateICal(feedEvents, feedName, feedTimezone, changeLines);
 
     return new NextResponse(icalContent, {

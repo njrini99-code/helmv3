@@ -209,8 +209,8 @@ describe('dismiss_signal', () => {
     // The board remembers what it dismissed in its own state, and its Undo takes the signal from there.
     expect(board).toContain('if (normalise(res).success) setDismissed((d) => ({ ...d, [t.ins.id]: true }));');
     expect(board).toContain('const res = await writes.undo(t.ins.id, t.ins.lifecycle);');
-    // Nothing in Fairway's screens or the Clubhouse data loaders calls the restore.
-    for (const f of ['src/clubhouse/data/coachhelm.ts', 'src/components/golf/coachhelm/triage/TriageDesk.tsx']) expect(read(f)).not.toContain('reactivateInsight(');
+    // The Clubhouse data loaders never call the restore.
+    expect(read('src/clubhouse/data/coachhelm.ts')).not.toContain('reactivateInsight(');
   });
 
   it('that sentence is still the app’s one visibility rule: a dismissed signal is shown to nobody', () => {

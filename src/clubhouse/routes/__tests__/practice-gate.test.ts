@@ -3,10 +3,10 @@ import { join } from 'node:path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 /**
- * Practice is a Clubhouse page and Fairway has no screen for it. When the practice flags were retired the pages lost their
- * "flag off: Calendar" redirect; a user for whom Clubhouse is not on (a Fairway user) must still land on the Calendar.
+ * Practice is a Clubhouse page. A coach or a player gets it; a visitor with no dashboard role lands on the Calendar,
+ * which sends them to sign in (N-00 §0.2).
  */
-const state = vi.hoisted(() => ({ role: 'coach' as 'coach' | 'player' | null, on: false, redirected: [] as string[] }));
+const state = vi.hoisted(() => ({ role: 'coach' as 'coach' | 'player' | null, redirected: [] as string[] }));
 vi.mock('next/navigation', () => ({
   redirect: (to: string) => {
     state.redirected.push(to);
@@ -14,35 +14,22 @@ vi.mock('next/navigation', () => ({
   },
 }));
 vi.mock('@/lib/auth/get-golf-dashboard-role', () => ({ getGolfDashboardRole: async () => state.role }));
-vi.mock('../../gate', () => ({ isClubhouseFor: async (role: string | null) => state.on && (role === 'coach' || role === 'player') }));
 
 import { PRACTICE_FAIRWAY_FALLBACK, redirectUnlessClubhousePractice } from '../practice-gate';
 
 beforeEach(() => {
   state.role = 'coach';
-  state.on = false;
   state.redirected = [];
 });
 
-describe('Practice for a user who is not on Clubhouse', () => {
-  it('a Fairway coach goes to the Calendar', async () => {
+describe('Practice for a user with no dashboard role', () => {
+  it('a signed-out visitor (no role) goes to the Calendar, which sends them to sign in', async () => {
+    state.role = null;
     await expect(redirectUnlessClubhousePractice()).rejects.toThrow('NEXT_REDIRECT');
     expect(state.redirected).toEqual(['/golf/dashboard/calendar']);
     expect(PRACTICE_FAIRWAY_FALLBACK).toBe('/golf/dashboard/calendar');
   });
-  it('a Fairway player goes to the Calendar', async () => {
-    state.role = 'player';
-    await expect(redirectUnlessClubhousePractice()).rejects.toThrow('NEXT_REDIRECT');
-    expect(state.redirected).toEqual(['/golf/dashboard/calendar']);
-  });
-  it('a signed-out visitor (no role) goes to the Calendar too, which sends them to sign in', async () => {
-    state.role = null;
-    state.on = true;
-    await expect(redirectUnlessClubhousePractice()).rejects.toThrow('NEXT_REDIRECT');
-    expect(state.redirected).toEqual(['/golf/dashboard/calendar']);
-  });
-  it('a Clubhouse coach or player stays on the Practice page', async () => {
-    state.on = true;
+  it('a coach or player stays on the Practice page', async () => {
     await expect(redirectUnlessClubhousePractice()).resolves.toBeUndefined();
     state.role = 'player';
     await expect(redirectUnlessClubhousePractice()).resolves.toBeUndefined();

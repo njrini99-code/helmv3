@@ -28,10 +28,8 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const HOOK = 'src/hooks/golf/use-golf-messages.ts';
-const PANE = 'src/components/fairway/pages/messages/MessageThreadPane.tsx';
 
 const hookSource = readFileSync(join(process.cwd(), HOOK), 'utf-8');
-const paneSource = readFileSync(join(process.cwd(), PANE), 'utf-8');
 
 /** The thread fetch: the `golf_messages` select bounded to 200 rows. */
 function threadSelect(): string {
@@ -63,16 +61,5 @@ describe('useGolfMessages — the thread fetch carries has_attachments', () => {
     ]) {
       expect(select).toContain(column);
     }
-  });
-});
-
-describe('MessageThreadPane — the flag is what gates attachment signing', () => {
-  it('gates the attachment fetch on has_attachments', () => {
-    // This is the consumer that makes the column load-bearing. If this filter
-    // is ever rewritten to not depend on the flag, the select assertion above
-    // stops protecting anything and should be revisited rather than kept as
-    // decoration.
-    expect(paneSource).toContain('has_attachments');
-    expect(paneSource).toContain('getGolfMessageAttachments');
   });
 });

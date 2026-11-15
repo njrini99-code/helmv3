@@ -70,8 +70,8 @@ renders in Baseball and stays on legacy scales.
 `haptic(...)` from `@/lib/haptics` (raw `useReducedMotion`/`triggerHaptic` are
 lint errors on golf paths). Data renders final on mount: no count-up or draw-on.
 One exception (owner): CoachHelm chat visuals that arrive in a LIVE
-answer rise in and draw on (`src/components/golf/coachhelm/chat/EvidenceMotion.tsx`,
-spec in `docs/architecture/coachhelm-visual-playbook.md`); restored threads and
+answer rise in and draw on (spec in
+`docs/architecture/coachhelm-visual-playbook.md`); restored threads and
 reduced motion still render final, and numbers are never counted up.
 
 ### Hard-won invariants

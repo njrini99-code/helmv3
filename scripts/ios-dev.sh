@@ -5,8 +5,8 @@
 #   terminal 1:  npm run dev -- -H 0.0.0.0     (logs the port it picked)
 #   terminal 2:  npm run ios:dev               (same port: PORT, else this checkout's)
 #
-# The phone and the Mac must be on the same network. golf_clubhouse_ui is on in
-# development, so the phone gets Clubhouse. When `cap run` finishes, the
+# The phone and the Mac must be on the same network. The phone gets Clubhouse,
+# the only coach and player UI. When `cap run` finishes, the
 # tracked native files go back to production, so nothing here can be committed
 # or archived by accident (src/test/lib/capacitor-config.test.ts checks).
 set -euo pipefail

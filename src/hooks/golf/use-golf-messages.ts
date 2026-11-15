@@ -12,7 +12,7 @@ import { observeRealtimeChannel } from '@/lib/observability/supabase/realtime';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { heldTable } from '@/lib/supabase/held-table';
 import { readGolfPlayerProfiles } from '@/lib/golf/player-profiles';
-import { isGroupConversation } from '@/components/fairway/pages/messages/conversation-kind';
+import { isGroupConversation } from '@/lib/golf/conversation-kind';
 import {
   readCachedResource,
   writeCachedResourceIfCurrent,

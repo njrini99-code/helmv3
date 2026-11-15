@@ -4,7 +4,7 @@ import { ChevronDown, ChevronUp, Eye, ArrowUpRight, X } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useId, useState, useSyncExternalStore } from 'react';
-import { useCoachHelmChat } from '@/components/golf/coachhelm/chat/useCoachHelmChat';
+import { useCoachHelmChat } from '@/hooks/coachhelm/useCoachHelmChat';
 import { describeChatError } from '../data/coachhelm-chat-error';
 import { pendingApproval } from '../data/coachhelm-chat-thread';
 import { useDialogLifetime } from '../lib/dialog-lifetime';

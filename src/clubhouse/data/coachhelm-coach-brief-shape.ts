@@ -1,4 +1,4 @@
-import { TEAM_MARKER_MIN_N } from '@/components/golf/coachhelm/v3/StandingBar/types';
+import { TEAM_MARKER_MIN_N } from '@/lib/coachhelm/v3/standing/bar/types';
 import type { Goal } from '@/lib/coachhelm/v3/goals/types';
 import type { MondayBrief, MondayBriefRound } from '@/lib/coachhelm/v3/monday-brief/brief';
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';

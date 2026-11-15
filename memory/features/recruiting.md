@@ -59,13 +59,13 @@ change prospect writes, stage choices, or unsaved-draft dismissal policy.
   (`RecruitingView` holds the state and the writes; `RecruitingDesktop`,
   `RecruitingPhone`), loader `src/clubhouse/data/recruiting.ts`, pure rules
   `src/clubhouse/data/recruiting-shape.ts`, route `src/clubhouse/routes/recruiting.tsx`
-- `src/components/fairway/pages/recruiting/FairwayRecruitingPage.tsx`
-- `src/components/fairway/pages/recruiting/FairwayRecruitCard.tsx`
-- `src/components/fairway/pages/recruiting/FairwayRecruitFormSheet.tsx`
-- `src/components/fairway/pages/recruiting/FairwayRecruitDocuments.tsx`
-- `src/components/fairway/pages/recruiting/recruit-document-upload.ts` (prepare, `uploadToSignedUrl` from the browser
+- src/components/fairway/pages/recruiting/FairwayRecruitingPage.tsx (was removed with Fairway, 2026-11-14)
+- src/components/fairway/pages/recruiting/FairwayRecruitCard.tsx (was removed with Fairway, 2026-11-14)
+- src/components/fairway/pages/recruiting/FairwayRecruitFormSheet.tsx (was removed with Fairway, 2026-11-14)
+- src/components/fairway/pages/recruiting/FairwayRecruitDocuments.tsx (was removed with Fairway, 2026-11-14)
+- src/components/fairway/pages/recruiting/recruit-document-upload.ts (was removed with Fairway, 2026-11-14) (prepare, `uploadToSignedUrl` from the browser
   client, complete; its own pre-send refusals keep the 25 MB / document-type copy)
-- `src/components/fairway/pages/recruiting/recruit-status.ts`
+- src/components/fairway/pages/recruiting/recruit-status.ts (was removed with Fairway, 2026-11-14)
 
 ### Actions And Services
 
@@ -216,8 +216,8 @@ and one migration (film), written and not applied.
   until the film migration is applied);
   `src/test/golf/actions/recruit-document-upload.test.ts` and
   `recruiting-create.test.ts` for the server side
-- `src/components/fairway/pages/recruiting/FairwayRecruitingPage.test.tsx`
-- `src/components/fairway/pages/recruiting/FairwayRecruitDocuments.test.tsx`
+- src/components/fairway/pages/recruiting/FairwayRecruitingPage.test.tsx (was removed with Fairway, 2026-11-14)
+- src/components/fairway/pages/recruiting/FairwayRecruitDocuments.test.tsx (was removed with Fairway, 2026-11-14)
   (prepare, then `uploadToSignedUrl`, then complete; a 10 MB file never rides a
   server action; size and type refusals keep their copy)
 - RLS tests whenever team scoping or the document bucket policy changes.

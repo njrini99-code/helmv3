@@ -14,7 +14,7 @@ import { useSafariKeyboardFit } from '../../../shell/PhoneScreen';
 import { useRouter } from 'next/navigation';
 import { announceLanding } from '../../../shell/quick-chat/landing';
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
-import { useCoachHelmChat } from '@/components/golf/coachhelm/chat/useCoachHelmChat';
+import { useCoachHelmChat } from '@/hooks/coachhelm/useCoachHelmChat';
 import { CHAT_ERROR_DID_NOT_FINISH, describeChatError } from '../../../data/coachhelm-chat-error';
 import { titleFromQuestion, type ChAskConversation, type ChAskData, type ChAskLoad } from '../../../data/coachhelm-chat-shape';
 import { answerNeverCame, pendingApproval, type EvidenceFocus } from '../../../data/coachhelm-chat-thread';

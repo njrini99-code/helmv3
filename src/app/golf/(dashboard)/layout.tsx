@@ -2,16 +2,14 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { onboardedGolfRole, pickGolfDashboardRole } from '@/lib/auth/golf-dashboard-role';
-import { FairwayDashboardShell } from './FairwayDashboardShell';
 import { getCoachTeamSwitchContext } from '@/lib/golf/resolve-team';
 import { resolveCoachActiveTeamIdForRequest, getActivePlayerTeamMembership } from '@/lib/golf/dashboard-request-cache';
 import { resolveAdminPostLoginPath } from '@/lib/golf/admin-redirect';
-import { ThemeApplier } from '@/components/golf/theme/ThemeApplier';
 import type { GolfUserData } from '@/contexts/golf-user-context';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { resolveGolfCoachEntry } from '@/lib/golf/coach-entry-path';
-import { isClubhouseFor, tournamentsNavEnabled } from '@/clubhouse/gate';
+import { tagClubhouseRequest, tournamentsNavEnabled } from '@/clubhouse/gate';
 import { ClubhouseShell } from '@/clubhouse/shell/ClubhouseShell';
 import { SplashHide } from '@/clubhouse/shell/SplashHide';
 import { loadClubhouseShell } from '@/clubhouse/data/shell';
@@ -24,8 +22,8 @@ import { clockHint, phoneHint, railHint } from '@/clubhouse/lib/phone-hint';
  * This eliminates the client-side loading spinner and multi-stage
  * data-fetching waterfall that previously added 1.5–3s of latency.
  *
- * All interactive UI (sidebar, providers, nav) lives in FairwayDashboardShell
- * which is a client component receiving the resolved userData as props.
+ * All interactive UI (sidebar, providers, nav) lives in ClubhouseShell, a
+ * client component receiving the resolved userData as props.
  *
  * Auth strategy:
  * - Uses React.cache()-backed getGolfSessionProfile() so child pages that also
@@ -288,33 +286,18 @@ export default async function GolfDashboardLayout({
     return null;
   }
 
-  // 4. Render the client shell with resolved data — no loading spinner needed.
-  //    Fairway is now the only dashboard shell (AppShell rail + glass top bar +
-  //    hamburger drawer) — the legacy GolfDashboardShell fork was removed.
-  // Clubhouse (golf_clubhouse_ui): the from-scratch coach UI. A separate tree,
-  // never layered on Fairway; see docs/clubhouse/PROGRESS.md.
-  if ((await isClubhouseFor(userData.role))) {
-    const [shell, phone, folded, clock] = await Promise.all([loadClubhouseShell(userData.teamId, userData.role === 'player' ? userData.playerId : null, userData.role === 'coach' ? userData.coachId : null), phoneHint(), railHint(), clockHint()]);
-    return (
-      <>
-        {/* A15: the app's splash comes down on the first painted frame, not after hydration. */}
-        <SplashHide />
-        {/* Tournaments (golf_tournaments_v1) and Practice (golf_practice_plans) ride in the shell's data: the nav is drawn on the client, the flags are read here. */}
-        <ClubhouseShell userData={userData} shell={{ ...shell, ...(tournamentsNavEnabled() ? { tournaments: true } : {}) }} phone={phone} folded={folded} clock={clock}>
-          {children}
-        </ClubhouseShell>
-      </>
-    );
-  }
-
+  // 4. Render the Clubhouse shell with resolved data — no loading spinner needed. Clubhouse is the only coach and
+  //    player UI (Fairway retired, owner 2026-11-14). The request's server events are tagged ui=clubhouse.
+  tagClubhouseRequest();
+  const [shell, phone, folded, clock] = await Promise.all([loadClubhouseShell(userData.teamId, userData.role === 'player' ? userData.playerId : null, userData.role === 'coach' ? userData.coachId : null), phoneHint(), railHint(), clockHint()]);
   return (
     <>
-      <FairwayDashboardShell userData={userData}>
-        {/* Keeps the root-head theme boot hydrated + OS-followed at runtime,
-            including when the dashboard is entered by soft navigation. */}
-        <ThemeApplier />
+      {/* A15: the app's splash comes down on the first painted frame, not after hydration. */}
+      <SplashHide />
+      {/* Tournaments (golf_tournaments_v1) and Practice (golf_practice_plans) ride in the shell's data: the nav is drawn on the client, the flags are read here. */}
+      <ClubhouseShell userData={userData} shell={{ ...shell, ...(tournamentsNavEnabled() ? { tournaments: true } : {}) }} phone={phone} folded={folded} clock={clock}>
         {children}
-      </FairwayDashboardShell>
+      </ClubhouseShell>
     </>
   );
 }

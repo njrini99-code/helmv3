@@ -6,7 +6,6 @@ import {
   withRecoveryStart,
   type RawShot,
 } from '../golf-stats-calculator-shots';
-import { attachShotStrokesGained } from '@/components/golf/coachhelm/round-review/shot-strokes-gained';
 import { makeRawShot } from '@/test/fixtures/golf-shots';
 
 // A par 4: drive into the trees, punch out, wedge on, two putts (5 strokes).
@@ -73,12 +72,6 @@ describe('recovery tap (golf_shots.lie_after_recovery)', () => {
     expect(withRecoveryStart(withPenalty[2]!, withPenalty).lie_before).toBe('other');
     expect(withNextShotStart(withPenalty[0]!, withPenalty).lie_after).toBe('other');
     expect(withRecoveryStart(withPenalty[1]!, withPenalty).lie_before).toBe('other');
-    const reviewed = attachShotStrokesGained(withPenalty);
-    const engine = perShotSg(withPenalty);
-    // The penalty row itself is priced by each path's own penalty rule; compare the shots.
-    reviewed.forEach((s, i) => {
-      if (i !== 1) expect(s.sg).toBeCloseTo(engine[i]!, 6);
-    });
   });
 
   it('only a row flagged is_penalty clears the tap, as in the SQL', () => {
@@ -91,12 +84,5 @@ describe('recovery tap (golf_shots.lie_after_recovery)', () => {
     ];
     expect(withRecoveryStart(typedOnly[2]!, typedOnly).lie_before).toBe('recovery');
     expect(withNextShotStart(typedOnly[0]!, typedOnly).lie_after).toBe('recovery');
-  });
-
-  it('round review per-shot SG agrees with the Stats engine', () => {
-    const hole = blockedHole(true);
-    const reviewed = attachShotStrokesGained(hole);
-    const engine = perShotSg(hole);
-    reviewed.forEach((s, i) => expect(s.sg).toBeCloseTo(engine[i]!, 6));
   });
 });

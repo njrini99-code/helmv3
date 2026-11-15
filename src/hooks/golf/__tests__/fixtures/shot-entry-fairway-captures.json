@@ -1,0 +1,1857 @@
+{
+ "Shot entry parity: Clubhouse records what Fairway records > par 3, green in regulation, two putts with a read and a miss tag": [
+  {
+   "saved": [
+    {
+     "shotNumber": 1,
+     "shotType": "approach",
+     "clubType": "non_driver",
+     "lieBefore": "tee",
+     "distanceToHoleBefore": 170,
+     "distanceUnitBefore": "yards",
+     "result": "green",
+     "distanceToHoleAfter": 25,
+     "distanceUnitAfter": "feet",
+     "shotDistance": 162,
+     "isPenalty": false
+    },
+    {
+     "shotNumber": 2,
+     "shotType": "putting",
+     "clubType": "putter",
+     "lieBefore": "green",
+     "distanceToHoleBefore": 25,
+     "distanceUnitBefore": "feet",
+     "result": "green",
+     "distanceToHoleAfter": 3,
+     "distanceUnitAfter": "feet",
+     "shotDistance": 7,
+     "missDirection": "short",
+     "puttBreak": "left_to_right",
+     "puttSlope": "uphill",
+     "isPenalty": false,
+     "puttMissTags": [
+      "short"
+     ],
+     "puttDistanceFeet": 25
+    },
+    {
+     "shotNumber": 3,
+     "shotType": "putting",
+     "clubType": "putter",
+     "lieBefore": "green",
+     "distanceToHoleBefore": 3,
+     "distanceUnitBefore": "feet",
+     "result": "hole",
+     "distanceToHoleAfter": 0,
+     "distanceUnitAfter": "feet",
+     "shotDistance": 1,
+     "isPenalty": false,
+     "puttDistanceFeet": 3
+    }
+   ],
+   "completed": [
+    [
+     0,
+     {
+      "holeNumber": 1,
+      "par": 3,
+      "yardage": 170,
+      "score": 3,
+      "putts": 2,
+      "fairwayHit": null,
+      "greenInRegulation": true,
+      "drivingDistance": null,
+      "usedDriver": null,
+      "driveMissDirection": null,
+      "approachDistance": 170,
+      "approachLie": "tee",
+      "approachProximity": 25,
+      "approachMissDirection": null,
+      "scrambleAttempt": false,
+      "scrambleMade": false,
+      "sandSaveAttempt": false,
+      "sandSaveMade": false,
+      "penaltyStrokes": 0,
+      "firstPuttDistance": 25,
+      "firstPuttLeave": 3,
+      "firstPuttBreak": "left_to_right",
+      "firstPuttSlope": "uphill",
+      "firstPuttMissDirection": "short",
+      "holedOutDistance": null,
+      "holedOutType": null,
+      "shots": [
+       {
+        "shotNumber": 1,
+        "shotType": "approach",
+        "clubType": "non_driver",
+        "lieBefore": "tee",
+        "distanceToHoleBefore": 170,
+        "distanceUnitBefore": "yards",
+        "result": "green",
+        "distanceToHoleAfter": 25,
+        "distanceUnitAfter": "feet",
+        "shotDistance": 162,
+        "isPenalty": false
+       },
+       {
+        "shotNumber": 2,
+        "shotType": "putting",
+        "clubType": "putter",
+        "lieBefore": "green",
+        "distanceToHoleBefore": 25,
+        "distanceUnitBefore": "feet",
+        "result": "green",
+        "distanceToHoleAfter": 3,
+        "distanceUnitAfter": "feet",
+        "shotDistance": 7,
+        "missDirection": "short",
+        "puttBreak": "left_to_right",
+        "puttSlope": "uphill",
+        "isPenalty": false,
+        "puttMissTags": [
+         "short"
+        ],
+        "puttDistanceFeet": 25
+       },
+       {
+        "shotNumber": 3,
+        "shotType": "putting",
+        "clubType": "putter",
+        "lieBefore": "green",
+        "distanceToHoleBefore": 3,
+        "distanceUnitBefore": "feet",
+        "result": "hole",
+        "distanceToHoleAfter": 0,
+        "distanceUnitAfter": "feet",
+        "shotDistance": 1,
+        "isPenalty": false,
+        "puttDistanceFeet": 3
+       }
+      ]
+     }
+    ]
+   ],
+   "statsUpdates": [],
+   "autosaves": []
+  }
+ ],
+ "Shot entry parity: Clubhouse records what Fairway records > par 4, fairway missed left, bunker, up and down": [
+  {
+   "saved": [
+    {
+     "shotNumber": 1,
+     "shotType": "tee",
+     "clubType": "driver",
+     "lieBefore": "tee",
+     "distanceToHoleBefore": 400,
+     "distanceUnitBefore": "yards",
+     "result": "rough",
+     "distanceToHoleAfter": 160,
+     "distanceUnitAfter": "yards",
+     "shotDistance": 240,
+     "missDirection": "left",
+     "isPenalty": false
+    },
+    {
+     "shotNumber": 2,
+     "shotType": "approach",
+     "clubType": "non_driver",
+     "lieBefore": "rough",
+     "distanceToHoleBefore": 160,
+     "distanceUnitBefore": "yards",
+     "result": "sand",
+     "distanceToHoleAfter": 20,
+     "distanceUnitAfter": "yards",
+     "shotDistance": 146,
+     "missDirection": "short_right",
+     "isPenalty": false,
+     "approachMissDirection": "short_right",
+     "approachMissLieType": "bunker"
+    },
+    {
+     "shotNumber": 3,
+     "shotType": "around_green",
+     "clubType": "non_driver",
+     "lieBefore": "sand",
+     "distanceToHoleBefore": 20,
+     "distanceUnitBefore": "yards",
+     "result": "green",
+     "distanceToHoleAfter": 4,
+     "distanceUnitAfter": "feet",
+     "shotDistance": 19,
+     "isPenalty": false
+    },
+    {
+     "shotNumber": 4,
+     "shotType": "putting",
+     "clubType": "putter",
+     "lieBefore": "green",
+     "distanceToHoleBefore": 4,
+     "distanceUnitBefore": "feet",
+     "result": "hole",
+     "distanceToHoleAfter": 0,
+     "distanceUnitAfter": "feet",
+     "shotDistance": 1,
+     "isPenalty": false,
+     "puttDistanceFeet": 4
+    }
+   ],
+   "completed": [
+    [
+     0,
+     {
+      "holeNumber": 1,
+      "par": 4,
+      "yardage": 400,
+      "score": 4,
+      "putts": 1,
+      "fairwayHit": false,
+      "greenInRegulation": false,
+      "drivingDistance": 240,
+      "usedDriver": true,
+      "driveMissDirection": "left",
+      "approachDistance": 20,
+      "approachLie": "sand",
+      "approachProximity": 4,
+      "approachMissDirection": null,
+      "scrambleAttempt": true,
+      "scrambleMade": true,
+      "sandSaveAttempt": true,
+      "sandSaveMade": true,
+      "penaltyStrokes": 0,
+      "firstPuttDistance": 4,
+      "firstPuttLeave": null,
+      "firstPuttBreak": null,
+      "firstPuttSlope": null,
+      "firstPuttMissDirection": null,
+      "holedOutDistance": null,
+      "holedOutType": null,
+      "shots": [
+       {
+        "shotNumber": 1,
+        "shotType": "tee",
+        "clubType": "driver",
+        "lieBefore": "tee",
+        "distanceToHoleBefore": 400,
+        "distanceUnitBefore": "yards",
+        "result": "rough",
+        "distanceToHoleAfter": 160,
+        "distanceUnitAfter": "yards",
+        "shotDistance": 240,
+        "missDirection": "left",
+        "isPenalty": false
+       },
+       {
+        "shotNumber": 2,
+        "shotType": "approach",
+        "clubType": "non_driver",
+        "lieBefore": "rough",
+        "distanceToHoleBefore": 160,
+        "distanceUnitBefore": "yards",
+        "result": "sand",
+        "distanceToHoleAfter": 20,
+        "distanceUnitAfter": "yards",
+        "shotDistance": 146,
+        "missDirection": "short_right",
+        "isPenalty": false,
+        "approachMissDirection": "short_right",
+        "approachMissLieType": "bunker"
+       },
+       {
+        "shotNumber": 3,
+        "shotType": "around_green",
+        "clubType": "non_driver",
+        "lieBefore": "sand",
+        "distanceToHoleBefore": 20,
+        "distanceUnitBefore": "yards",
+        "result": "green",
+        "distanceToHoleAfter": 4,
+        "distanceUnitAfter": "feet",
+        "shotDistance": 19,
+        "isPenalty": false
+       },
+       {
+        "shotNumber": 4,
+        "shotType": "putting",
+        "clubType": "putter",
+        "lieBefore": "green",
+        "distanceToHoleBefore": 4,
+        "distanceUnitBefore": "feet",
+        "result": "hole",
+        "distanceToHoleAfter": 0,
+        "distanceUnitAfter": "feet",
+        "shotDistance": 1,
+        "isPenalty": false,
+        "puttDistanceFeet": 4
+       }
+      ]
+     }
+    ]
+   ],
+   "statsUpdates": [],
+   "autosaves": []
+  }
+ ],
+ "Shot entry parity: Clubhouse records what Fairway records > par 5, out of bounds off the tee (the entered shot), then a water hazard from the fairway": [
+  {
+   "saved": [
+    {
+     "shotNumber": 1,
+     "shotType": "tee",
+     "clubType": "driver",
+     "lieBefore": "tee",
+     "distanceToHoleBefore": 540,
+     "distanceUnitBefore": "yards",
+     "result": "other",
+     "distanceToHoleAfter": 280,
+     "distanceUnitAfter": "yards",
+     "shotDistance": 260,
+     "missDirection": "right",
+     "isPenalty": false
+    },
+    {
+     "shotNumber": 2,
+     "shotType": "penalty",
+     "clubType": "non_driver",
+     "lieBefore": "tee",
+     "distanceToHoleBefore": 540,
+     "distanceUnitBefore": "yards",
+     "result": "penalty",
+     "distanceToHoleAfter": 540,
+     "distanceUnitAfter": "yards",
+     "shotDistance": 0,
+     "isPenalty": true,
+     "penaltyType": "ob"
+    },
+    {
+     "shotNumber": 3,
+     "shotType": "tee",
+     "clubType": "non_driver",
+     "lieBefore": "tee",
+     "distanceToHoleBefore": 540,
+     "distanceUnitBefore": "yards",
+     "result": "fairway",
+     "distanceToHoleAfter": 250,
+     "distanceUnitAfter": "yards",
+     "shotDistance": 290,
+     "isPenalty": false
+    },
+    {
+     "shotNumber": 4,
+     "shotType": "penalty",
+     "clubType": "non_driver",
+     "lieBefore": "fairway",
+     "distanceToHoleBefore": 250,
+     "distanceUnitBefore": "yards",
+     "result": "penalty",
+     "distanceToHoleAfter": 250,
+     "distanceUnitAfter": "yards",
+     "shotDistance": 0,
+     "isPenalty": true,
+     "penaltyType": "water"
+    },
+    {
+     "shotNumber": 5,
+     "shotType": "approach",
+     "clubType": "non_driver",
+     "lieBefore": "fairway",
+     "distanceToHoleBefore": 250,
+     "distanceUnitBefore": "yards",
+     "result": "green",
+     "distanceToHoleAfter": 30,
+     "distanceUnitAfter": "feet",
+     "shotDistance": 240,
+     "isPenalty": false
+    },
+    {
+     "shotNumber": 6,
+     "shotType": "putting",
+     "clubType": "putter",
+     "lieBefore": "green",
+     "distanceToHoleBefore": 30,
+     "distanceUnitBefore": "feet",
+     "result": "green",
+     "distanceToHoleAfter": 2,
+     "distanceUnitAfter": "feet",
+     "shotDistance": 9,
+     "isPenalty": false,
+     "puttDistanceFeet": 30
+    },
+    {
+     "shotNumber": 7,
+     "shotType": "putting",
+     "clubType": "putter",
+     "lieBefore": "green",
+     "distanceToHoleBefore": 2,
+     "distanceUnitBefore": "feet",
+     "result": "hole",
+     "distanceToHoleAfter": 0,
+     "distanceUnitAfter": "feet",
+     "shotDistance": 1,
+     "isPenalty": false,
+     "puttDistanceFeet": 2
+    }
+   ],
+   "completed": [
+    [
+     0,
+     {
+      "holeNumber": 1,
+      "par": 5,
+      "yardage": 540,
+      "score": 7,
+      "putts": 2,
+      "fairwayHit": false,
+      "greenInRegulation": false,
+      "drivingDistance": 260,
+      "usedDriver": true,
+      "driveMissDirection": "right",
+      "approachDistance": 250,
+      "approachLie": "fairway",
+      "approachProximity": 30,
+      "approachMissDirection": null,
+      "scrambleAttempt": true,
+      "scrambleMade": false,
+      "sandSaveAttempt": false,
+      "sandSaveMade": false,
+      "penaltyStrokes": 2,
+      "firstPuttDistance": 30,
+      "firstPuttLeave": 2,
+      "firstPuttBreak": null,
+      "firstPuttSlope": null,
+      "firstPuttMissDirection": null,
+      "holedOutDistance": null,
+      "holedOutType": null,
+      "shots": [
+       {
+        "shotNumber": 1,
+        "shotType": "tee",
+        "clubType": "driver",
+        "lieBefore": "tee",
+        "distanceToHoleBefore": 540,
+        "distanceUnitBefore": "yards",
+        "result": "other",
+        "distanceToHoleAfter": 280,
+        "distanceUnitAfter": "yards",
+        "shotDistance": 260,
+        "missDirection": "right",
+        "isPenalty": false
+       },
+       {
+        "shotNumber": 2,
+        "shotType": "penalty",
+        "clubType": "non_driver",
+        "lieBefore": "tee",
+        "distanceToHoleBefore": 540,
+        "distanceUnitBefore": "yards",
+        "result": "penalty",
+        "distanceToHoleAfter": 540,
+        "distanceUnitAfter": "yards",
+        "shotDistance": 0,
+        "isPenalty": true,
+        "penaltyType": "ob"
+       },
+       {
+        "shotNumber": 3,
+        "shotType": "tee",
+        "clubType": "non_driver",
+        "lieBefore": "tee",
+        "distanceToHoleBefore": 540,
+        "distanceUnitBefore": "yards",
+        "result": "fairway",
+        "distanceToHoleAfter": 250,
+        "distanceUnitAfter": "yards",
+        "shotDistance": 290,
+        "isPenalty": false
+       },
+       {
+        "shotNumber": 4,
+        "shotType": "penalty",
+        "clubType": "non_driver",
+        "lieBefore": "fairway",
+        "distanceToHoleBefore": 250,
+        "distanceUnitBefore": "yards",
+        "result": "penalty",
+        "distanceToHoleAfter": 250,
+        "distanceUnitAfter": "yards",
+        "shotDistance": 0,
+        "isPenalty": true,
+        "penaltyType": "water"
+       },
+       {
+        "shotNumber": 5,
+        "shotType": "approach",
+        "clubType": "non_driver",
+        "lieBefore": "fairway",
+        "distanceToHoleBefore": 250,
+        "distanceUnitBefore": "yards",
+        "result": "green",
+        "distanceToHoleAfter": 30,
+        "distanceUnitAfter": "feet",
+        "shotDistance": 240,
+        "isPenalty": false
+       },
+       {
+        "shotNumber": 6,
+        "shotType": "putting",
+        "clubType": "putter",
+        "lieBefore": "green",
+        "distanceToHoleBefore": 30,
+        "distanceUnitBefore": "feet",
+        "result": "green",
+        "distanceToHoleAfter": 2,
+        "distanceUnitAfter": "feet",
+        "shotDistance": 9,
+        "isPenalty": false,
+        "puttDistanceFeet": 30
+       },
+       {
+        "shotNumber": 7,
+        "shotType": "putting",
+        "clubType": "putter",
+        "lieBefore": "green",
+        "distanceToHoleBefore": 2,
+        "distanceUnitBefore": "feet",
+        "result": "hole",
+        "distanceToHoleAfter": 0,
+        "distanceUnitAfter": "feet",
+        "shotDistance": 1,
+        "isPenalty": false,
+        "puttDistanceFeet": 2
+       }
+      ]
+     }
+    ]
+   ],
+   "statsUpdates": [],
+   "autosaves": []
+  }
+ ],
+ "Shot entry parity: Clubhouse records what Fairway records > a stroke hit from here and lost (not entered) is recorded with its penalty": [
+  {
+   "saved": [
+    {
+     "shotNumber": 1,
+     "shotType": "tee",
+     "clubType": "driver",
+     "lieBefore": "tee",
+     "distanceToHoleBefore": 410,
+     "distanceUnitBefore": "yards",
+     "result": "fairway",
+     "distanceToHoleAfter": 150,
+     "distanceUnitAfter": "yards",
+     "shotDistance": 260,
+     "isPenalty": false
+    },
+    {
+     "shotNumber": 2,
+     "shotType": "approach",
+     "clubType": "non_driver",
+     "lieBefore": "fairway",
+     "distanceToHoleBefore": 150,
+     "distanceUnitBefore": "yards",
+     "result": "other",
+     "distanceToHoleAfter": 150,
+     "distanceUnitAfter": "yards",
+     "shotDistance": 0,
+     "isPenalty": false
+    },
+    {
+     "shotNumber": 3,
+     "shotType": "penalty",
+     "clubType": "non_driver",
+     "lieBefore": "fairway",
+     "distanceToHoleBefore": 150,
+     "distanceUnitBefore": "yards",
+     "result": "penalty",
+     "distanceToHoleAfter": 150,
+     "distanceUnitAfter": "yards",
+     "shotDistance": 0,
+     "isPenalty": true,
+     "penaltyType": "lost"
+    },
+    {
+     "shotNumber": 4,
+     "shotType": "approach",
+     "clubType": "non_driver",
+     "lieBefore": "fairway",
+     "distanceToHoleBefore": 150,
+     "distanceUnitBefore": "yards",
+     "result": "green",
+     "distanceToHoleAfter": 12,
+     "distanceUnitAfter": "feet",
+     "shotDistance": 146,
+     "isPenalty": false
+    },
+    {
+     "shotNumber": 5,
+     "shotType": "putting",
+     "clubType": "putter",
+     "lieBefore": "green",
+     "distanceToHoleBefore": 12,
+     "distanceUnitBefore": "feet",
+     "result": "hole",
+     "distanceToHoleAfter": 0,
+     "distanceUnitAfter": "feet",
+     "shotDistance": 4,
+     "isPenalty": false,
+     "puttDistanceFeet": 12
+    }
+   ],
+   "completed": [
+    [
+     0,
+     {
+      "holeNumber": 1,
+      "par": 4,
+      "yardage": 410,
+      "score": 5,
+      "putts": 1,
+      "fairwayHit": true,
+      "greenInRegulation": false,
+      "drivingDistance": 260,
+      "usedDriver": true,
+      "driveMissDirection": null,
+      "approachDistance": 150,
+      "approachLie": "fairway",
+      "approachProximity": 12,
+      "approachMissDirection": null,
+      "scrambleAttempt": true,
+      "scrambleMade": false,
+      "sandSaveAttempt": false,
+      "sandSaveMade": false,
+      "penaltyStrokes": 1,
+      "firstPuttDistance": 12,
+      "firstPuttLeave": null,
+      "firstPuttBreak": null,
+      "firstPuttSlope": null,
+      "firstPuttMissDirection": null,
+      "holedOutDistance": null,
+      "holedOutType": null,
+      "shots": [
+       {
+        "shotNumber": 1,
+        "shotType": "tee",
+        "clubType": "driver",
+        "lieBefore": "tee",
+        "distanceToHoleBefore": 410,
+        "distanceUnitBefore": "yards",
+        "result": "fairway",
+        "distanceToHoleAfter": 150,
+        "distanceUnitAfter": "yards",
+        "shotDistance": 260,
+        "isPenalty": false
+       },
+       {
+        "shotNumber": 2,
+        "shotType": "approach",
+        "clubType": "non_driver",
+        "lieBefore": "fairway",
+        "distanceToHoleBefore": 150,
+        "distanceUnitBefore": "yards",
+        "result": "other",
+        "distanceToHoleAfter": 150,
+        "distanceUnitAfter": "yards",
+        "shotDistance": 0,
+        "isPenalty": false
+       },
+       {
+        "shotNumber": 3,
+        "shotType": "penalty",
+        "clubType": "non_driver",
+        "lieBefore": "fairway",
+        "distanceToHoleBefore": 150,
+        "distanceUnitBefore": "yards",
+        "result": "penalty",
+        "distanceToHoleAfter": 150,
+        "distanceUnitAfter": "yards",
+        "shotDistance": 0,
+        "isPenalty": true,
+        "penaltyType": "lost"
+       },
+       {
+        "shotNumber": 4,
+        "shotType": "approach",
+        "clubType": "non_driver",
+        "lieBefore": "fairway",
+        "distanceToHoleBefore": 150,
+        "distanceUnitBefore": "yards",
+        "result": "green",
+        "distanceToHoleAfter": 12,
+        "distanceUnitAfter": "feet",
+        "shotDistance": 146,
+        "isPenalty": false
+       },
+       {
+        "shotNumber": 5,
+        "shotType": "putting",
+        "clubType": "putter",
+        "lieBefore": "green",
+        "distanceToHoleBefore": 12,
+        "distanceUnitBefore": "feet",
+        "result": "hole",
+        "distanceToHoleAfter": 0,
+        "distanceUnitAfter": "feet",
+        "shotDistance": 4,
+        "isPenalty": false,
+        "puttDistanceFeet": 12
+       }
+      ]
+     }
+    ]
+   ],
+   "statsUpdates": [],
+   "autosaves": []
+  }
+ ],
+ "Shot entry parity: Clubhouse records what Fairway records > holed out from off the green": [
+  {
+   "saved": [
+    {
+     "shotNumber": 1,
+     "shotType": "tee",
+     "clubType": "non_driver",
+     "lieBefore": "tee",
+     "distanceToHoleBefore": 380,
+     "distanceUnitBefore": "yards",
+     "result": "fairway",
+     "distanceToHoleAfter": 140,
+     "distanceUnitAfter": "yards",
+     "shotDistance": 240,
+     "isPenalty": false
+    },
+    {
+     "shotNumber": 2,
+     "shotType": "approach",
+     "clubType": "non_driver",
+     "lieBefore": "fairway",
+     "distanceToHoleBefore": 140,
+     "distanceUnitBefore": "yards",
+     "result": "rough",
+     "distanceToHoleAfter": 15,
+     "distanceUnitAfter": "yards",
+     "shotDistance": 151,
+     "missDirection": "long_left",
+     "isPenalty": false,
+     "approachMissDirection": "long_left",
+     "approachMissLieType": "rough"
+    },
+    {
+     "shotNumber": 3,
+     "shotType": "around_green",
+     "clubType": "non_driver",
+     "lieBefore": "rough",
+     "distanceToHoleBefore": 15,
+     "distanceUnitBefore": "yards",
+     "result": "hole",
+     "distanceToHoleAfter": 0,
+     "distanceUnitAfter": "feet",
+     "shotDistance": 15,
+     "isPenalty": false
+    }
+   ],
+   "completed": [
+    [
+     0,
+     {
+      "holeNumber": 1,
+      "par": 4,
+      "yardage": 380,
+      "score": 3,
+      "putts": 0,
+      "fairwayHit": true,
+      "greenInRegulation": false,
+      "drivingDistance": 240,
+      "usedDriver": false,
+      "driveMissDirection": null,
+      "approachDistance": 15,
+      "approachLie": "rough",
+      "approachProximity": null,
+      "approachMissDirection": null,
+      "scrambleAttempt": true,
+      "scrambleMade": true,
+      "sandSaveAttempt": false,
+      "sandSaveMade": false,
+      "penaltyStrokes": 0,
+      "firstPuttDistance": null,
+      "firstPuttLeave": null,
+      "firstPuttBreak": null,
+      "firstPuttSlope": null,
+      "firstPuttMissDirection": null,
+      "holedOutDistance": 45,
+      "holedOutType": "around_green",
+      "shots": [
+       {
+        "shotNumber": 1,
+        "shotType": "tee",
+        "clubType": "non_driver",
+        "lieBefore": "tee",
+        "distanceToHoleBefore": 380,
+        "distanceUnitBefore": "yards",
+        "result": "fairway",
+        "distanceToHoleAfter": 140,
+        "distanceUnitAfter": "yards",
+        "shotDistance": 240,
+        "isPenalty": false
+       },
+       {
+        "shotNumber": 2,
+        "shotType": "approach",
+        "clubType": "non_driver",
+        "lieBefore": "fairway",
+        "distanceToHoleBefore": 140,
+        "distanceUnitBefore": "yards",
+        "result": "rough",
+        "distanceToHoleAfter": 15,
+        "distanceUnitAfter": "yards",
+        "shotDistance": 151,
+        "missDirection": "long_left",
+        "isPenalty": false,
+        "approachMissDirection": "long_left",
+        "approachMissLieType": "rough"
+       },
+       {
+        "shotNumber": 3,
+        "shotType": "around_green",
+        "clubType": "non_driver",
+        "lieBefore": "rough",
+        "distanceToHoleBefore": 15,
+        "distanceUnitBefore": "yards",
+        "result": "hole",
+        "distanceToHoleAfter": 0,
+        "distanceUnitAfter": "feet",
+        "shotDistance": 15,
+        "isPenalty": false
+       }
+      ]
+     }
+    ]
+   ],
+   "statsUpdates": [],
+   "autosaves": []
+  }
+ ],
+ "Shot entry parity: Clubhouse records what Fairway records > three putts with breaks, slopes and paired miss tags": [
+  {
+   "saved": [
+    {
+     "shotNumber": 1,
+     "shotType": "tee",
+     "clubType": "driver",
+     "lieBefore": "tee",
+     "distanceToHoleBefore": 400,
+     "distanceUnitBefore": "yards",
+     "result": "fairway",
+     "distanceToHoleAfter": 160,
+     "distanceUnitAfter": "yards",
+     "shotDistance": 240,
+     "isPenalty": false
+    },
+    {
+     "shotNumber": 2,
+     "shotType": "approach",
+     "clubType": "non_driver",
+     "lieBefore": "fairway",
+     "distanceToHoleBefore": 160,
+     "distanceUnitBefore": "yards",
+     "result": "green",
+     "distanceToHoleAfter": 40,
+     "distanceUnitAfter": "feet",
+     "shotDistance": 147,
+     "isPenalty": false
+    },
+    {
+     "shotNumber": 3,
+     "shotType": "putting",
+     "clubType": "putter",
+     "lieBefore": "green",
+     "distanceToHoleBefore": 40,
+     "distanceUnitBefore": "feet",
+     "result": "green",
+     "distanceToHoleAfter": 6,
+     "distanceUnitAfter": "feet",
+     "shotDistance": 11,
+     "missDirection": "long_high",
+     "puttBreak": "right_to_left",
+     "puttSlope": "downhill",
+     "isPenalty": false,
+     "puttMissTags": [
+      "long",
+      "high"
+     ],
+     "puttDistanceFeet": 40
+    },
+    {
+     "shotNumber": 4,
+     "shotType": "putting",
+     "clubType": "putter",
+     "lieBefore": "green",
+     "distanceToHoleBefore": 6,
+     "distanceUnitBefore": "feet",
+     "result": "green",
+     "distanceToHoleAfter": 2,
+     "distanceUnitAfter": "feet",
+     "shotDistance": 1,
+     "missDirection": "low_long",
+     "puttBreak": "multiple",
+     "isPenalty": false,
+     "puttMissTags": [
+      "low",
+      "long"
+     ],
+     "puttDistanceFeet": 6
+    },
+    {
+     "shotNumber": 5,
+     "shotType": "putting",
+     "clubType": "putter",
+     "lieBefore": "green",
+     "distanceToHoleBefore": 2,
+     "distanceUnitBefore": "feet",
+     "result": "hole",
+     "distanceToHoleAfter": 0,
+     "distanceUnitAfter": "feet",
+     "shotDistance": 1,
+     "isPenalty": false,
+     "puttDistanceFeet": 2
+    }
+   ],
+   "completed": [
+    [
+     0,
+     {
+      "holeNumber": 1,
+      "par": 4,
+      "yardage": 400,
+      "score": 5,
+      "putts": 3,
+      "fairwayHit": true,
+      "greenInRegulation": true,
+      "drivingDistance": 240,
+      "usedDriver": true,
+      "driveMissDirection": null,
+      "approachDistance": 160,
+      "approachLie": "fairway",
+      "approachProximity": 40,
+      "approachMissDirection": null,
+      "scrambleAttempt": false,
+      "scrambleMade": false,
+      "sandSaveAttempt": false,
+      "sandSaveMade": false,
+      "penaltyStrokes": 0,
+      "firstPuttDistance": 40,
+      "firstPuttLeave": 6,
+      "firstPuttBreak": "right_to_left",
+      "firstPuttSlope": "downhill",
+      "firstPuttMissDirection": "long_high",
+      "holedOutDistance": null,
+      "holedOutType": null,
+      "shots": [
+       {
+        "shotNumber": 1,
+        "shotType": "tee",
+        "clubType": "driver",
+        "lieBefore": "tee",
+        "distanceToHoleBefore": 400,
+        "distanceUnitBefore": "yards",
+        "result": "fairway",
+        "distanceToHoleAfter": 160,
+        "distanceUnitAfter": "yards",
+        "shotDistance": 240,
+        "isPenalty": false
+       },
+       {
+        "shotNumber": 2,
+        "shotType": "approach",
+        "clubType": "non_driver",
+        "lieBefore": "fairway",
+        "distanceToHoleBefore": 160,
+        "distanceUnitBefore": "yards",
+        "result": "green",
+        "distanceToHoleAfter": 40,
+        "distanceUnitAfter": "feet",
+        "shotDistance": 147,
+        "isPenalty": false
+       },
+       {
+        "shotNumber": 3,
+        "shotType": "putting",
+        "clubType": "putter",
+        "lieBefore": "green",
+        "distanceToHoleBefore": 40,
+        "distanceUnitBefore": "feet",
+        "result": "green",
+        "distanceToHoleAfter": 6,
+        "distanceUnitAfter": "feet",
+        "shotDistance": 11,
+        "missDirection": "long_high",
+        "puttBreak": "right_to_left",
+        "puttSlope": "downhill",
+        "isPenalty": false,
+        "puttMissTags": [
+         "long",
+         "high"
+        ],
+        "puttDistanceFeet": 40
+       },
+       {
+        "shotNumber": 4,
+        "shotType": "putting",
+        "clubType": "putter",
+        "lieBefore": "green",
+        "distanceToHoleBefore": 6,
+        "distanceUnitBefore": "feet",
+        "result": "green",
+        "distanceToHoleAfter": 2,
+        "distanceUnitAfter": "feet",
+        "shotDistance": 1,
+        "missDirection": "low_long",
+        "puttBreak": "multiple",
+        "isPenalty": false,
+        "puttMissTags": [
+         "low",
+         "long"
+        ],
+        "puttDistanceFeet": 6
+       },
+       {
+        "shotNumber": 5,
+        "shotType": "putting",
+        "clubType": "putter",
+        "lieBefore": "green",
+        "distanceToHoleBefore": 2,
+        "distanceUnitBefore": "feet",
+        "result": "hole",
+        "distanceToHoleAfter": 0,
+        "distanceUnitAfter": "feet",
+        "shotDistance": 1,
+        "isPenalty": false,
+        "puttDistanceFeet": 2
+       }
+      ]
+     }
+    ]
+   ],
+   "statsUpdates": [],
+   "autosaves": []
+  }
+ ],
+ "Shot entry parity: Clubhouse records what Fairway records > the last hole of a 9-hole round, finished with a tap in": [
+  {
+   "saved": [
+    {
+     "shotNumber": 1,
+     "shotType": "tee",
+     "clubType": "driver",
+     "lieBefore": "tee",
+     "distanceToHoleBefore": 360,
+     "distanceUnitBefore": "yards",
+     "result": "fairway",
+     "distanceToHoleAfter": 120,
+     "distanceUnitAfter": "yards",
+     "shotDistance": 240,
+     "isPenalty": false
+    },
+    {
+     "shotNumber": 2,
+     "shotType": "approach",
+     "clubType": "non_driver",
+     "lieBefore": "fairway",
+     "distanceToHoleBefore": 120,
+     "distanceUnitBefore": "yards",
+     "result": "green",
+     "distanceToHoleAfter": 9,
+     "distanceUnitAfter": "feet",
+     "shotDistance": 117,
+     "isPenalty": false
+    },
+    {
+     "shotNumber": 3,
+     "shotType": "putting",
+     "clubType": "putter",
+     "lieBefore": "green",
+     "distanceToHoleBefore": 9,
+     "distanceUnitBefore": "feet",
+     "result": "green",
+     "distanceToHoleAfter": 1,
+     "distanceUnitAfter": "feet",
+     "shotDistance": 3,
+     "isPenalty": false,
+     "puttDistanceFeet": 9
+    },
+    {
+     "shotNumber": 4,
+     "shotType": "putting",
+     "clubType": "putter",
+     "lieBefore": "green",
+     "distanceToHoleBefore": 1,
+     "distanceUnitBefore": "feet",
+     "result": "hole",
+     "distanceToHoleAfter": 0,
+     "distanceUnitAfter": "feet",
+     "shotDistance": 0,
+     "isPenalty": false,
+     "puttDistanceFeet": 1
+    }
+   ],
+   "completed": [
+    [
+     8,
+     {
+      "holeNumber": 9,
+      "par": 4,
+      "yardage": 360,
+      "score": 4,
+      "putts": 2,
+      "fairwayHit": true,
+      "greenInRegulation": true,
+      "drivingDistance": 240,
+      "usedDriver": true,
+      "driveMissDirection": null,
+      "approachDistance": 120,
+      "approachLie": "fairway",
+      "approachProximity": 9,
+      "approachMissDirection": null,
+      "scrambleAttempt": false,
+      "scrambleMade": false,
+      "sandSaveAttempt": false,
+      "sandSaveMade": false,
+      "penaltyStrokes": 0,
+      "firstPuttDistance": 9,
+      "firstPuttLeave": 1,
+      "firstPuttBreak": null,
+      "firstPuttSlope": null,
+      "firstPuttMissDirection": null,
+      "holedOutDistance": null,
+      "holedOutType": null,
+      "shots": [
+       {
+        "shotNumber": 1,
+        "shotType": "tee",
+        "clubType": "driver",
+        "lieBefore": "tee",
+        "distanceToHoleBefore": 360,
+        "distanceUnitBefore": "yards",
+        "result": "fairway",
+        "distanceToHoleAfter": 120,
+        "distanceUnitAfter": "yards",
+        "shotDistance": 240,
+        "isPenalty": false
+       },
+       {
+        "shotNumber": 2,
+        "shotType": "approach",
+        "clubType": "non_driver",
+        "lieBefore": "fairway",
+        "distanceToHoleBefore": 120,
+        "distanceUnitBefore": "yards",
+        "result": "green",
+        "distanceToHoleAfter": 9,
+        "distanceUnitAfter": "feet",
+        "shotDistance": 117,
+        "isPenalty": false
+       },
+       {
+        "shotNumber": 3,
+        "shotType": "putting",
+        "clubType": "putter",
+        "lieBefore": "green",
+        "distanceToHoleBefore": 9,
+        "distanceUnitBefore": "feet",
+        "result": "green",
+        "distanceToHoleAfter": 1,
+        "distanceUnitAfter": "feet",
+        "shotDistance": 3,
+        "isPenalty": false,
+        "puttDistanceFeet": 9
+       },
+       {
+        "shotNumber": 4,
+        "shotType": "putting",
+        "clubType": "putter",
+        "lieBefore": "green",
+        "distanceToHoleBefore": 1,
+        "distanceUnitBefore": "feet",
+        "result": "hole",
+        "distanceToHoleAfter": 0,
+        "distanceUnitAfter": "feet",
+        "shotDistance": 0,
+        "isPenalty": false,
+        "puttDistanceFeet": 1
+       }
+      ]
+     }
+    ]
+   ],
+   "statsUpdates": [],
+   "autosaves": []
+  }
+ ],
+ "Shot entry parity: Clubhouse records what Fairway records > a meters player: typed meters are stored in yards and feet": [
+  {
+   "saved": [
+    {
+     "shotNumber": 1,
+     "shotType": "tee",
+     "clubType": "driver",
+     "lieBefore": "tee",
+     "distanceToHoleBefore": 400,
+     "distanceUnitBefore": "yards",
+     "result": "fairway",
+     "distanceToHoleAfter": 153,
+     "distanceUnitAfter": "yards",
+     "shotDistance": 247,
+     "isPenalty": false
+    },
+    {
+     "shotNumber": 2,
+     "shotType": "approach",
+     "clubType": "non_driver",
+     "lieBefore": "fairway",
+     "distanceToHoleBefore": 153,
+     "distanceUnitBefore": "yards",
+     "result": "green",
+     "distanceToHoleAfter": 16,
+     "distanceUnitAfter": "feet",
+     "shotDistance": 148,
+     "isPenalty": false
+    },
+    {
+     "shotNumber": 3,
+     "shotType": "putting",
+     "clubType": "putter",
+     "lieBefore": "green",
+     "distanceToHoleBefore": 16,
+     "distanceUnitBefore": "feet",
+     "result": "green",
+     "distanceToHoleAfter": 5,
+     "distanceUnitAfter": "feet",
+     "shotDistance": 4,
+     "isPenalty": false,
+     "puttDistanceFeet": 16
+    },
+    {
+     "shotNumber": 4,
+     "shotType": "putting",
+     "clubType": "putter",
+     "lieBefore": "green",
+     "distanceToHoleBefore": 5,
+     "distanceUnitBefore": "feet",
+     "result": "hole",
+     "distanceToHoleAfter": 0,
+     "distanceUnitAfter": "feet",
+     "shotDistance": 2,
+     "isPenalty": false,
+     "puttDistanceFeet": 5
+    }
+   ],
+   "completed": [
+    [
+     0,
+     {
+      "holeNumber": 1,
+      "par": 4,
+      "yardage": 400,
+      "score": 4,
+      "putts": 2,
+      "fairwayHit": true,
+      "greenInRegulation": true,
+      "drivingDistance": 247,
+      "usedDriver": true,
+      "driveMissDirection": null,
+      "approachDistance": 153,
+      "approachLie": "fairway",
+      "approachProximity": 16,
+      "approachMissDirection": null,
+      "scrambleAttempt": false,
+      "scrambleMade": false,
+      "sandSaveAttempt": false,
+      "sandSaveMade": false,
+      "penaltyStrokes": 0,
+      "firstPuttDistance": 16,
+      "firstPuttLeave": 5,
+      "firstPuttBreak": null,
+      "firstPuttSlope": null,
+      "firstPuttMissDirection": null,
+      "holedOutDistance": null,
+      "holedOutType": null,
+      "shots": [
+       {
+        "shotNumber": 1,
+        "shotType": "tee",
+        "clubType": "driver",
+        "lieBefore": "tee",
+        "distanceToHoleBefore": 400,
+        "distanceUnitBefore": "yards",
+        "result": "fairway",
+        "distanceToHoleAfter": 153,
+        "distanceUnitAfter": "yards",
+        "shotDistance": 247,
+        "isPenalty": false
+       },
+       {
+        "shotNumber": 2,
+        "shotType": "approach",
+        "clubType": "non_driver",
+        "lieBefore": "fairway",
+        "distanceToHoleBefore": 153,
+        "distanceUnitBefore": "yards",
+        "result": "green",
+        "distanceToHoleAfter": 16,
+        "distanceUnitAfter": "feet",
+        "shotDistance": 148,
+        "isPenalty": false
+       },
+       {
+        "shotNumber": 3,
+        "shotType": "putting",
+        "clubType": "putter",
+        "lieBefore": "green",
+        "distanceToHoleBefore": 16,
+        "distanceUnitBefore": "feet",
+        "result": "green",
+        "distanceToHoleAfter": 5,
+        "distanceUnitAfter": "feet",
+        "shotDistance": 4,
+        "isPenalty": false,
+        "puttDistanceFeet": 16
+       },
+       {
+        "shotNumber": 4,
+        "shotType": "putting",
+        "clubType": "putter",
+        "lieBefore": "green",
+        "distanceToHoleBefore": 5,
+        "distanceUnitBefore": "feet",
+        "result": "hole",
+        "distanceToHoleAfter": 0,
+        "distanceUnitAfter": "feet",
+        "shotDistance": 2,
+        "isPenalty": false,
+        "puttDistanceFeet": 5
+       }
+      ]
+     }
+    ]
+   ],
+   "statsUpdates": [],
+   "autosaves": []
+  }
+ ],
+ "Shot entry parity: Clubhouse records what Fairway records > changing a shot mid-hole (before the hole is holed) writes the same history": [
+  {
+   "saved": [
+    {
+     "shotNumber": 1,
+     "shotType": "tee",
+     "clubType": "driver",
+     "lieBefore": "tee",
+     "distanceToHoleBefore": 400,
+     "distanceUnitBefore": "yards",
+     "result": "fairway",
+     "distanceToHoleAfter": 150,
+     "distanceUnitAfter": "yards",
+     "shotDistance": 250,
+     "isPenalty": false
+    },
+    {
+     "shotNumber": 2,
+     "shotType": "approach",
+     "clubType": "non_driver",
+     "lieBefore": "fairway",
+     "distanceToHoleBefore": 150,
+     "distanceUnitBefore": "yards",
+     "result": "green",
+     "distanceToHoleAfter": 30,
+     "distanceUnitAfter": "feet",
+     "shotDistance": 140,
+     "isPenalty": false
+    },
+    {
+     "shotNumber": 3,
+     "shotType": "putting",
+     "clubType": "putter",
+     "lieBefore": "green",
+     "distanceToHoleBefore": 30,
+     "distanceUnitBefore": "feet",
+     "result": "hole",
+     "distanceToHoleAfter": 0,
+     "distanceUnitAfter": "feet",
+     "shotDistance": 10,
+     "isPenalty": false,
+     "puttDistanceFeet": 30
+    }
+   ],
+   "completed": [
+    [
+     0,
+     {
+      "holeNumber": 1,
+      "par": 4,
+      "yardage": 400,
+      "score": 3,
+      "putts": 1,
+      "fairwayHit": true,
+      "greenInRegulation": true,
+      "drivingDistance": 245,
+      "usedDriver": true,
+      "driveMissDirection": null,
+      "approachDistance": 155,
+      "approachLie": "fairway",
+      "approachProximity": 30,
+      "approachMissDirection": null,
+      "scrambleAttempt": false,
+      "scrambleMade": false,
+      "sandSaveAttempt": false,
+      "sandSaveMade": false,
+      "penaltyStrokes": 0,
+      "firstPuttDistance": 30,
+      "firstPuttLeave": null,
+      "firstPuttBreak": null,
+      "firstPuttSlope": null,
+      "firstPuttMissDirection": null,
+      "holedOutDistance": null,
+      "holedOutType": null,
+      "shots": [
+       {
+        "shotNumber": 1,
+        "shotType": "tee",
+        "clubType": "driver",
+        "lieBefore": "tee",
+        "distanceToHoleBefore": 400,
+        "distanceUnitBefore": "yards",
+        "result": "fairway",
+        "distanceToHoleAfter": 155,
+        "distanceUnitAfter": "yards",
+        "shotDistance": 245,
+        "isPenalty": false
+       },
+       {
+        "shotNumber": 2,
+        "shotType": "approach",
+        "clubType": "non_driver",
+        "lieBefore": "fairway",
+        "distanceToHoleBefore": 155,
+        "distanceUnitBefore": "yards",
+        "result": "green",
+        "distanceToHoleAfter": 30,
+        "distanceUnitAfter": "feet",
+        "shotDistance": 145,
+        "isPenalty": false
+       },
+       {
+        "shotNumber": 3,
+        "shotType": "putting",
+        "clubType": "putter",
+        "lieBefore": "green",
+        "distanceToHoleBefore": 30,
+        "distanceUnitBefore": "feet",
+        "result": "hole",
+        "distanceToHoleAfter": 0,
+        "distanceUnitAfter": "feet",
+        "shotDistance": 10,
+        "isPenalty": false,
+        "puttDistanceFeet": 30
+       }
+      ]
+     }
+    ]
+   ],
+   "statsUpdates": [
+    [
+     0,
+     null
+    ]
+   ],
+   "autosaves": [
+    [
+     {
+      "shotNumber": 1,
+      "shotType": "tee",
+      "clubType": "driver",
+      "lieBefore": "tee",
+      "distanceToHoleBefore": 400,
+      "distanceUnitBefore": "yards",
+      "result": "fairway",
+      "distanceToHoleAfter": 155,
+      "distanceUnitAfter": "yards",
+      "shotDistance": 245,
+      "isPenalty": false
+     },
+     {
+      "shotNumber": 2,
+      "shotType": "approach",
+      "clubType": "non_driver",
+      "lieBefore": "fairway",
+      "distanceToHoleBefore": 155,
+      "distanceUnitBefore": "yards",
+      "result": "green",
+      "distanceToHoleAfter": 30,
+      "distanceUnitAfter": "feet",
+      "shotDistance": 145,
+      "isPenalty": false
+     }
+    ]
+   ]
+  }
+ ],
+ "Shot entry parity: Clubhouse records what Fairway records > going back to a finished hole and changing a shot recomputes the hole the same way": [
+  {
+   "saved": [],
+   "completed": [],
+   "statsUpdates": [
+    [
+     0,
+     {
+      "holeNumber": 1,
+      "par": 4,
+      "yardage": 400,
+      "score": 4,
+      "putts": 2,
+      "fairwayHit": true,
+      "greenInRegulation": true,
+      "drivingDistance": 250,
+      "usedDriver": true,
+      "driveMissDirection": null,
+      "approachDistance": 150,
+      "approachLie": "fairway",
+      "approachProximity": 12,
+      "approachMissDirection": null,
+      "scrambleAttempt": false,
+      "scrambleMade": false,
+      "sandSaveAttempt": false,
+      "sandSaveMade": false,
+      "penaltyStrokes": 0,
+      "firstPuttDistance": 12,
+      "firstPuttLeave": 3,
+      "firstPuttBreak": null,
+      "firstPuttSlope": null,
+      "firstPuttMissDirection": null,
+      "holedOutDistance": null,
+      "holedOutType": null,
+      "shots": [
+       {
+        "shotNumber": 1,
+        "shotType": "tee",
+        "clubType": "driver",
+        "lieBefore": "tee",
+        "distanceToHoleBefore": 400,
+        "distanceUnitBefore": "yards",
+        "result": "fairway",
+        "distanceToHoleAfter": 150,
+        "distanceUnitAfter": "yards",
+        "shotDistance": 250,
+        "isPenalty": false
+       },
+       {
+        "shotNumber": 2,
+        "shotType": "approach",
+        "clubType": "non_driver",
+        "lieBefore": "fairway",
+        "distanceToHoleBefore": 150,
+        "distanceUnitBefore": "yards",
+        "result": "green",
+        "distanceToHoleAfter": 12,
+        "distanceUnitAfter": "feet",
+        "shotDistance": 146,
+        "isPenalty": false
+       },
+       {
+        "shotNumber": 3,
+        "shotType": "putting",
+        "clubType": "putter",
+        "lieBefore": "green",
+        "distanceToHoleBefore": 12,
+        "distanceUnitBefore": "feet",
+        "result": "green",
+        "distanceToHoleAfter": 3,
+        "distanceUnitAfter": "feet",
+        "shotDistance": 3,
+        "isPenalty": false,
+        "puttDistanceFeet": 12
+       },
+       {
+        "shotNumber": 4,
+        "shotType": "putting",
+        "clubType": "putter",
+        "lieBefore": "green",
+        "distanceToHoleBefore": 3,
+        "distanceUnitBefore": "feet",
+        "result": "hole",
+        "distanceToHoleAfter": 0,
+        "distanceUnitAfter": "feet",
+        "shotDistance": 1,
+        "isPenalty": false,
+        "puttDistanceFeet": 3
+       }
+      ]
+     }
+    ]
+   ],
+   "autosaves": [
+    [
+     {
+      "shotNumber": 1,
+      "shotType": "tee",
+      "clubType": "driver",
+      "lieBefore": "tee",
+      "distanceToHoleBefore": 400,
+      "distanceUnitBefore": "yards",
+      "result": "fairway",
+      "distanceToHoleAfter": 150,
+      "distanceUnitAfter": "yards",
+      "shotDistance": 250,
+      "isPenalty": false
+     },
+     {
+      "shotNumber": 2,
+      "shotType": "approach",
+      "clubType": "non_driver",
+      "lieBefore": "fairway",
+      "distanceToHoleBefore": 150,
+      "distanceUnitBefore": "yards",
+      "result": "green",
+      "distanceToHoleAfter": 12,
+      "distanceUnitAfter": "feet",
+      "shotDistance": 146,
+      "isPenalty": false
+     },
+     {
+      "shotNumber": 3,
+      "shotType": "putting",
+      "clubType": "putter",
+      "lieBefore": "green",
+      "distanceToHoleBefore": 12,
+      "distanceUnitBefore": "feet",
+      "result": "green",
+      "distanceToHoleAfter": 3,
+      "distanceUnitAfter": "feet",
+      "shotDistance": 3,
+      "isPenalty": false,
+      "puttDistanceFeet": 12
+     },
+     {
+      "shotNumber": 4,
+      "shotType": "putting",
+      "clubType": "putter",
+      "lieBefore": "green",
+      "distanceToHoleBefore": 3,
+      "distanceUnitBefore": "feet",
+      "result": "hole",
+      "distanceToHoleAfter": 0,
+      "distanceUnitAfter": "feet",
+      "shotDistance": 1,
+      "isPenalty": false,
+      "puttDistanceFeet": 3
+     }
+    ]
+   ]
+  }
+ ],
+ "Shot entry parity: Clubhouse records what Fairway records > deleting a shot mid-hole, and undoing the last one, renumber the same way": [
+  {
+   "saved": [
+    {
+     "shotNumber": 1,
+     "shotType": "tee",
+     "clubType": "driver",
+     "lieBefore": "tee",
+     "distanceToHoleBefore": 400,
+     "distanceUnitBefore": "yards",
+     "result": "fairway",
+     "distanceToHoleAfter": 150,
+     "distanceUnitAfter": "yards",
+     "shotDistance": 250,
+     "isPenalty": false
+    },
+    {
+     "shotNumber": 2,
+     "shotType": "approach",
+     "clubType": "non_driver",
+     "lieBefore": "fairway",
+     "distanceToHoleBefore": 150,
+     "distanceUnitBefore": "yards",
+     "result": "rough",
+     "distanceToHoleAfter": 20,
+     "distanceUnitAfter": "yards",
+     "shotDistance": 130,
+     "missDirection": "left",
+     "isPenalty": false,
+     "approachMissDirection": "left",
+     "approachMissLieType": "rough"
+    },
+    {
+     "shotNumber": 3,
+     "shotType": "around_green",
+     "clubType": "non_driver",
+     "lieBefore": "rough",
+     "distanceToHoleBefore": 20,
+     "distanceUnitBefore": "yards",
+     "result": "green",
+     "distanceToHoleAfter": 8,
+     "distanceUnitAfter": "feet",
+     "shotDistance": 17,
+     "isPenalty": false
+    },
+    {
+     "shotNumber": 2,
+     "shotType": "approach",
+     "clubType": "non_driver",
+     "lieBefore": "fairway",
+     "distanceToHoleBefore": 150,
+     "distanceUnitBefore": "yards",
+     "result": "green",
+     "distanceToHoleAfter": 10,
+     "distanceUnitAfter": "feet",
+     "shotDistance": 147,
+     "isPenalty": false
+    },
+    {
+     "shotNumber": 3,
+     "shotType": "putting",
+     "clubType": "putter",
+     "lieBefore": "green",
+     "distanceToHoleBefore": 10,
+     "distanceUnitBefore": "feet",
+     "result": "hole",
+     "distanceToHoleAfter": 0,
+     "distanceUnitAfter": "feet",
+     "shotDistance": 3,
+     "isPenalty": false,
+     "puttDistanceFeet": 10
+    }
+   ],
+   "completed": [
+    [
+     0,
+     {
+      "holeNumber": 1,
+      "par": 4,
+      "yardage": 400,
+      "score": 3,
+      "putts": 1,
+      "fairwayHit": true,
+      "greenInRegulation": true,
+      "drivingDistance": 250,
+      "usedDriver": true,
+      "driveMissDirection": null,
+      "approachDistance": 150,
+      "approachLie": "fairway",
+      "approachProximity": 10,
+      "approachMissDirection": null,
+      "scrambleAttempt": false,
+      "scrambleMade": false,
+      "sandSaveAttempt": false,
+      "sandSaveMade": false,
+      "penaltyStrokes": 0,
+      "firstPuttDistance": 10,
+      "firstPuttLeave": null,
+      "firstPuttBreak": null,
+      "firstPuttSlope": null,
+      "firstPuttMissDirection": null,
+      "holedOutDistance": null,
+      "holedOutType": null,
+      "shots": [
+       {
+        "shotNumber": 1,
+        "shotType": "tee",
+        "clubType": "driver",
+        "lieBefore": "tee",
+        "distanceToHoleBefore": 400,
+        "distanceUnitBefore": "yards",
+        "result": "fairway",
+        "distanceToHoleAfter": 150,
+        "distanceUnitAfter": "yards",
+        "shotDistance": 250,
+        "isPenalty": false
+       },
+       {
+        "shotNumber": 2,
+        "shotType": "approach",
+        "clubType": "non_driver",
+        "lieBefore": "fairway",
+        "distanceToHoleBefore": 150,
+        "distanceUnitBefore": "yards",
+        "result": "green",
+        "distanceToHoleAfter": 10,
+        "distanceUnitAfter": "feet",
+        "shotDistance": 147,
+        "isPenalty": false
+       },
+       {
+        "shotNumber": 3,
+        "shotType": "putting",
+        "clubType": "putter",
+        "lieBefore": "green",
+        "distanceToHoleBefore": 10,
+        "distanceUnitBefore": "feet",
+        "result": "hole",
+        "distanceToHoleAfter": 0,
+        "distanceUnitAfter": "feet",
+        "shotDistance": 3,
+        "isPenalty": false,
+        "puttDistanceFeet": 10
+       }
+      ]
+     }
+    ]
+   ],
+   "statsUpdates": [
+    [
+     0,
+     null
+    ],
+    [
+     0,
+     null
+    ]
+   ],
+   "autosaves": [
+    [
+     {
+      "shotNumber": 1,
+      "shotType": "tee",
+      "clubType": "driver",
+      "lieBefore": "tee",
+      "distanceToHoleBefore": 400,
+      "distanceUnitBefore": "yards",
+      "result": "fairway",
+      "distanceToHoleAfter": 150,
+      "distanceUnitAfter": "yards",
+      "shotDistance": 250,
+      "isPenalty": false
+     },
+     {
+      "shotNumber": 2,
+      "shotType": "around_green",
+      "clubType": "non_driver",
+      "lieBefore": "fairway",
+      "distanceToHoleBefore": 150,
+      "distanceUnitBefore": "yards",
+      "result": "green",
+      "distanceToHoleAfter": 8,
+      "distanceUnitAfter": "feet",
+      "shotDistance": 147,
+      "isPenalty": false
+     }
+    ],
+    [
+     {
+      "shotNumber": 1,
+      "shotType": "tee",
+      "clubType": "driver",
+      "lieBefore": "tee",
+      "distanceToHoleBefore": 400,
+      "distanceUnitBefore": "yards",
+      "result": "fairway",
+      "distanceToHoleAfter": 150,
+      "distanceUnitAfter": "yards",
+      "shotDistance": 250,
+      "isPenalty": false
+     }
+    ]
+   ]
+  }
+ ]
+}

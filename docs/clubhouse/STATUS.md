@@ -9,7 +9,83 @@ wins; the stale ones found by this audit are listed at the end. `PROGRESS.md`
 keeps the full history (gates, decisions, questions, data gaps, verification
 log). What is left, and who has it: [QUEUE.md](QUEUE.md).
 
-## Current state (2026-11-07)
+## Current state (2026-11-14): Clubhouse is the only UI
+
+- The owner decided on 2026-11-14: "No allowlist, complete replacement of
+  fairway". Clubhouse is the only coach and player UI, for every team.
+- **Production is live on Clubhouse for every team.** Since 2026-11-15 01:44Z
+  deployment `dpl_zR7tzunviRbdW5WBTzD2BUMPbqPA` serves `main` `5d1f73de8d`
+  (#2522 and #2524), verified with `npm run release:status -- --strict`.
+  `HELM_CLUBHOUSE_TEAMS` is `*` in Vercel Production, so every team gets
+  Clubhouse, and the front door is on. 24 held migrations were applied to
+  production before that deploy; `supabase/migrations/HELD.md` (#2526) records
+  them.
+- **The retirement change** (`agent/retire-fairway`, below) lands after that
+  deploy has been watched; it deletes Fairway and the switches.
+- **Rollback until the retirement change lands:** turn `golf_clubhouse_ui`
+  off for production in `config/feature-flags.yml`, run
+  `npm run flags:generate` and deploy, or set `HELM_CLUBHOUSE_TEAMS` to an
+  unused team id and deploy. Promoting
+  `dpl_CeADrBdMKv2MkZMhfJRxRv6CBYAc` (2026-10-21, `d0f467a73`) is no longer
+  clean: the team-channel migrations (`20261110090200` to `20261110090500`)
+  were applied on 2026-11-15.
+- Fairway's coach and player screens are deleted: `FairwayDashboardShell`,
+  `src/components/fairway/pages/**`, the Fairway-only `src/components/golf/**`
+  (BaseballHelm's calendar and document previews stay) and the Fairway branch
+  of every dashboard page, layout and loading boundary. The old entrance pages
+  are deleted too; `/golf/forgot-password` stays for a signed-in visitor
+  (CH-15920).
+- `golf_clubhouse_ui`, `golf_clubhouse_front_door` and the
+  `HELM_CLUBHOUSE_TEAMS` allowlist (with its `check-required-env` rule) are
+  removed. `isClubhouseFor` is a role check that still tags `ui:clubhouse`, so
+  the monitoring below keeps working. The `HELM_CLUBHOUSE_TEAMS` value in the
+  Vercel environment is no longer read and can be deleted.
+- Old addresses: tasks, announcements, documents and travel go to their Team
+  Hub tabs, `my-qualifiers` to Qualifiers and `rounds/[id]/review` to the
+  round, all as `next.config.mjs` redirects. Addresses whose target depends on
+  the role keep their layout redirect (`src/clubhouse/routes/alias.ts`).
+- The service worker (`public/sw.js`) is registered from the Clubhouse session
+  (`shell/OfflineSync.tsx`), and its Background Sync message runs a sync pass.
+  Only Fairway's offline provider registered it before.
+- Nine Fairway-only features are retired; see "Retired by the owner
+  (2026-11-14)" below.
+- Rollback after the retirement change lands: there is no flag. Promote the
+  production deployment before it (`docs/setup/DEPLOY.md`) or revert the change
+  and deploy.
+- **Fairway is archived, not lost:** the tag `archive/fairway-2026-11-15`
+  points at `0d73e96a65`, the `main` this change starts from, and holds every
+  file it deletes. `git show archive/fairway-2026-11-15:<path>` reads one;
+  `git checkout archive/fairway-2026-11-15 -- <path>` brings one back.
+- **Expected, not a fault:** the 5-minute standings cron reports
+  `season-not-applied` until the numbers-day migrations (`20261024151000` and
+  its chain) are applied.
+- **Attendance privacy is done:** `20261017102000` was applied in production
+  on 2026-11-15, and #2526 removed `attendance-counts-rpc` and its Sentry
+  ignore.
+
+The "turn it on", "turn-on criteria" and allowlist rollback sections below are
+history.
+
+## Retired by the owner (2026-11-14)
+
+These Fairway-only features are not in Clubhouse and are not coming back. The
+data stays in the tables and the screens are gone. Production usage was
+verified by SQL on 2026-11-14: zero rows from any real team; the only rows are
+"Guilford College Men's Golf (Test Copy)" and Demo University.
+
+| Retired feature | What happens to the data |
+| --- | --- |
+| Travel expenses, budgets and receipts | Kept in its tables; no screen |
+| Document version history | Kept in its tables; no screen |
+| Task templates and reminders | Kept in its tables; no screen |
+| Adding a second team | Kept in its tables; no screen |
+| The stored round-review narrative and annotations | Kept in its tables; no screen |
+| The calendar conflict center and scheduling | Kept in its tables; no screen |
+| Per-player attendance notes and bulk check-in | Kept in its tables; no screen |
+| Logging a focus-area practice session, and rating or acknowledging an insight | Kept in its tables; no screen |
+| Signal triage | Kept in its tables; no screen |
+
+## Earlier state (2026-11-07)
 
 - The 13 redesign flags are retired (the redesign is the only version); the
   eight CoachHelm and
@@ -59,8 +135,8 @@ calls in the 2026-10-23 plan below.
   `20261027100000` (tournament rename and round course change pass the
   round guard; the bug is in functions already applied and goes live with
   this deploy). Then `20261001000000` (Q-120), then `20261017102000`
-  (attendance privacy, with its app change: remove the Sentry ignore and
-  `src/lib/golf/attendance-counts-rpc.ts`, then `db:types`), then
+  (attendance privacy, with its app change; done: applied in production
+  2026-11-15, the shim and its Sentry ignore removed in #2526), then
   `20261023130000` (anon surface grants). The rest of HELD.md's Tier 1
   follows in its order. On a separate day after the flip, the ones that move
   numbers: `20261017110000` (null putts), `20260930150000` and
@@ -164,8 +240,8 @@ deployed or applied by this plan; the owner said prepare only.
 - **The production calendar error** (Sentry `JAVASCRIPT-NEXTJS-1D3`) is the
   Oct 21 build calling `golf_event_attendance_counts` before
   `20261017102000` exists; the app falls back. #2340 (landed) ignores it
-  until the apply; the apply change removes that ignore and
-  `src/lib/golf/attendance-counts-rpc.ts`, then runs `db:types`.
+  until the apply. Done: applied in production 2026-11-15; #2526 removed the
+  ignore and the shim and ran `db:types`.
 - **Order.** Overnight on 10-23 the owner merged #2330, #2340, #2332,
   #2339 and #2337 as planned, and also #2328, #2333, #2334 and #2338
   (Next.js 16.4.2), which this plan had held until after the rollout; #2327

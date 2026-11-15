@@ -1,5 +1,5 @@
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
-import { fmtShortDate } from '@/components/golf/coachhelm/home/buildPlayerHubViewModel';
+import { fmtShortDate } from '@/lib/coachhelm/player-hub/buildPlayerHubViewModel';
 import type { InsightEvidence, InsightMovement, InsightUnit } from '@/lib/coachhelm/v2/insights/types';
 import { isPlaceholderCause } from '@/lib/coachhelm/reads/placeholder-cause';
 import { isNotTracedCause } from '@/lib/coachhelm/reads/cause-state';

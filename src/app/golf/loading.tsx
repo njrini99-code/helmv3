@@ -1,6 +1,3 @@
-import { FairwayShellSkeleton } from '@/components/fairway/app-shell/FairwayShellSkeleton';
-import { FairwayDashboardSkeleton } from '@/components/fairway/pages/dashboard/FairwayDashboardSkeleton';
-import { clubhouseLoadingFrame } from '@/clubhouse/gate';
 import { ClubhouseShellSkeleton } from '@/clubhouse/shell/ShellSkeleton';
 import { BootSkeleton } from '@/clubhouse/shell/BootSkeleton';
 
@@ -13,46 +10,26 @@ import { BootSkeleton } from '@/clubhouse/shell/BootSkeleton';
  * own layout's await — only the parent segment's can). It therefore paints on
  * essentially every cold entry into GolfHelm.
  *
- * It used to render the legacy `GenericPageSkeleton`: no rail, no top bar,
- * `max-w-5xl`, warm/cream tokens. The result was a visible chrome swap on
- * every load — generic centered card stack, then the real Fairway shell, then
- * the page. Rendering the shell SILHOUETTE plus the same dashboard skeleton
- * that `(dashboard)/loading.tsx` shows next means the hand-off changes only
- * what is INSIDE the chrome, never the chrome itself.
+ * It paints the Clubhouse shell silhouette and the boot skeleton, so the
+ * hand-off to the real shell changes only what is INSIDE the chrome, never the
+ * chrome itself (swap audit F-30). Clubhouse is the only coach and player UI
+ * (Fairway retired, owner 2026-11-14), so there is no other frame to choose.
  *
  * Blast radius: this also covers `/golf` (a redirect page), `/golf/admin/**`
  * while its own async layout resolves, and `/golf/(auth)/demo`. A route's own
  * `loading.tsx` sits inside that route's layout, so it does not cover an async
- * layout: with the Clubhouse front door on, a layout that awaits (welcome's)
- * paints this skeleton on a client navigation. The Clubhouse sign in reads
- * nothing from the request for that reason (`ClubhouseSignInRoute`).
- * Admin gets dashboard-shaped content for a moment rather than admin-shaped —
- * strictly better than the retired cream skeleton it replaces, and admin is
- * internal-only.
+ * layout: a layout that awaits (welcome's) paints this skeleton on a client
+ * navigation. The Clubhouse sign in reads nothing from the request for that
+ * reason (`ClubhouseSignInRoute`).
  */
 export default function GolfLoading() {
-  // With Clubhouse on, the cold entry paints Clubhouse's frame, never Fairway's (swap audit F-30). The role is not
-  // known above the dashboard layout; every dashboard role is coach or player. The frame comes from the gate so it
-  // never disagrees with the page: with a team allowlist (HELM_CLUBHOUSE_TEAMS) the team is not known yet either,
-  // and guessing would flash one UI and then swap to the other, so that case paints a neutral frame.
-  const frame = clubhouseLoadingFrame();
   // `data-ch-boot-skeleton`: a hard load of the Clubhouse sign in hides this fallback until its own markup is swapped
   // in (SkyScript's front-door boot), so it never opens on a dashboard skeleton.
   return (
     <div data-ch-boot-skeleton="" style={{ display: 'contents' }}>
-      {frame === 'clubhouse' ? (
-        <ClubhouseShellSkeleton>
-          <BootSkeleton />
-        </ClubhouseShellSkeleton>
-      ) : frame === 'neutral' ? (
-        <div className="min-h-dvh" style={{ background: 'Canvas', colorScheme: 'light dark' }} role="status" aria-busy="true" aria-live="polite" data-loading-frame="neutral">
-          <span className="sr-only">Loading</span>
-        </div>
-      ) : (
-        <FairwayShellSkeleton>
-          <FairwayDashboardSkeleton />
-        </FairwayShellSkeleton>
-      )}
+      <ClubhouseShellSkeleton>
+        <BootSkeleton />
+      </ClubhouseShellSkeleton>
     </div>
   );
 }

@@ -854,69 +854,10 @@ flags:
       has fallen; if players find either row noisy, turn it off and remove
       that prompt.
 
-  # Clubhouse: the from-scratch GolfHelm UI (src/clubhouse/) for coaches and
-  # players (isClubhouseFor). Parallel to Fairway, never layered on it.
-  # Status, turn-on and rollback: docs/clubhouse/STATUS.md. Tracker:
-  # docs/clubhouse/PROGRESS.md. Turning production on is an owner decision.
-  - feature_id: golf_clubhouse_ui
-    owner: golf/clubhouse
-    purpose: >-
-      Renders the Clubhouse shell and rebuilt screens (src/clubhouse) in
-      place of the Fairway dashboard shell for coaches and players. Routes
-      without a Clubhouse version redirect to the closest rebuilt screen;
-      retired ones (course management, the printable report, genome
-      compare) keep their redirects. HELM_CLUBHOUSE_TEAMS limits it to
-      listed teams. Status and rollout: docs/clubhouse/STATUS.md.
-    type: release
-    status: active
-    created_at: "2026-09-29"
-    expires_at: null
-    default: false
-    environment:
-      production: true
-      preview: true
-      development: true
-    kill_switch_behavior: null
-    cleanup_plan: >-
-      Not on the day production is turned on. Retire the Fairway shell and
-      this flag in their own reviewed change, only after every coach and
-      player route in docs/clubhouse/SWAP_AUDIT.md has a Clubhouse
-      destination, no local round recovery depends on Fairway, and an
-      observation window with a known rollback deployment has passed.
-
-  # Clubhouse front door: the owner's new sign-in page, welcome, sign-up and
-  # onboarding (src/clubhouse/screens/auth, P015). They sit outside the
-  # dashboard and a signed-out visitor has no role, so they are not behind
-  # golf_clubhouse_ui's per-role check. On in production; the current pages
-  # render exactly as before while it is off. The flag
-  # chooses the page that is drawn, never what signing in does: both pages call
-  # the same server actions and follow the same redirects.
-  - feature_id: golf_clubhouse_front_door
-    owner: golf/clubhouse
-    purpose: >-
-      Draws the Clubhouse entrance pages (the first page a visitor sees, the
-      greeting after it, and the pages that bring a new person in) in place of
-      the current ones. Presentation only: the same server actions and
-      redirects sit behind both.
-    type: release
-    status: active
-    created_at: "2026-09-30"
-    expires_at: null
-    default: false
-    environment:
-      production: true
-      preview: true
-      development: true
-    kill_switch_behavior: null
-    cleanup_plan: >-
-      When the owner turns production on and the old entrance pages are
-      retired, delete them, the layout branch that chooses between them, and
-      this flag in the same change.
-
   # Clubhouse Tournaments (P016, docs/clubhouse/pages/P016-tournaments/): the
   # nine /golf/dashboard/tournaments routes, their Clubhouse nav entry and the
-  # tournament server actions. Requires golf_clubhouse_ui (every route checks
-  # both, src/clubhouse/gate.ts isTournamentsFor). The data is six HELD
+  # tournament server actions (every route checks it with the role,
+  # src/clubhouse/gate.ts isTournamentsFor). The data is six HELD
   # migrations (20261024100000 to 100500, docs/clubhouse/held/data/
   # tournaments.md); until they are applied every route draws the "not set up
   # yet" state (CH-16302) and every action answers not_set_up, so preview and

@@ -53,7 +53,8 @@ test('canonical motion tokens stay bound to v3 motion library', () => {
 
   const TARGETS = [
     'src/components/ui/reveal.tsx',
-    'src/components/golf/dashboard/premium-components.tsx',
+    // `src/components/golf/dashboard/premium-components.tsx` was retired with
+    // Fairway (2026-11-14).
     // The legacy `PlayerCoachHelmDashboard.tsx` this target used to cover was
     // deleted in Wave W1 (2026-07-09, Fairway-unconditional cutover) — the
     // Fairway-only CoachHelm player surface (FairwayPlayerCoachHelm) is the

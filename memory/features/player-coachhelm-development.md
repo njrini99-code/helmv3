@@ -374,7 +374,7 @@ The player's "Your week" is part of it
   `target_metric` is free text by design (the modal offers "Custom
   metric…"); anything outside the shared catalog
   (`src/lib/coachhelm/focus-areas/catalog.ts`, re-exported for UI importers
-  by `src/components/fairway/pages/coachhelm/areaTypes.ts`) is legitimate
+  by src/components/fairway/pages/coachhelm/areaTypes.ts (was removed with Fairway, 2026-11-14)) is legitimate
   but manual, and the card must say "Tracked manually" rather than show an
   inert bar. Baselines are recovered only where provable (an area the
   windowed driver never touched, or the first snapshot value) — guessing one
@@ -923,7 +923,7 @@ a new maturation confirmation.
       since the card owns 100% of its own optimistic state and toast
       display.
     - Component tests:
-      `src/components/fairway/pages/coachhelm/FocusAreaCard.practiceLogWrite.test.tsx`
+      src/components/fairway/pages/coachhelm/FocusAreaCard.practiceLogWrite.test.tsx (was removed with Fairway, 2026-11-14)
       covers trigger/checkbox visibility (flag-off = handler absent, wrong
       role, non-actionable status), success, failure/rollback, and
       duplicate-submit (no second call while pending; a retry after failure

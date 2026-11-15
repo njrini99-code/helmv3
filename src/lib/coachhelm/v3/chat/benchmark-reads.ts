@@ -1,7 +1,7 @@
 import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
-import { TEAM_MARKER_MIN_N } from '@/components/golf/coachhelm/v3/StandingBar/types';
+import { TEAM_MARKER_MIN_N } from '@/lib/coachhelm/v3/standing/bar/types';
 import { METRIC_IDS as STANDING_METRIC_IDS } from '@/lib/coachhelm/v3/metrics/registry';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { isStandingTourComparable } from '@/lib/coachhelm/v3/standing/tour-basis';

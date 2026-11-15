@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef } from 'react';
-import { useCoachHelmChat } from '@/components/golf/coachhelm/chat/useCoachHelmChat';
+import { useCoachHelmChat } from '@/hooks/coachhelm/useCoachHelmChat';
 import type { AskBriefData } from '../../../data/coachhelm-chat-thread';
 import type { PlanPartData } from '../../coachhelm/plan/PlanCard';
 import { PlanIntake } from '../../coachhelm/plan/PlanIntake';

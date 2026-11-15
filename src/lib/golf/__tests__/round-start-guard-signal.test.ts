@@ -136,10 +136,6 @@ describe('NewRoundClient guard call sites', () => {
     resolve(process.cwd(), 'src/lib/golf/round-session/use-new-round-session.ts'),
     'utf8',
   ),
-  readFileSync(
-    resolve(process.cwd(), 'src/app/golf/(dashboard)/dashboard/rounds/new/new-round-client.tsx'),
-    'utf8',
-  ),
 ].join('\n');
 
   it('routes duplicate_completed_round through the info helper, not reportStartFailure/logError', () => {

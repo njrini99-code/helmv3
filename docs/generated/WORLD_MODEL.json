@@ -66,7 +66,7 @@
       },
       {
         "id": "clubhouse",
-        "name": "Clubhouse UI (flagged, off in production)",
+        "name": "Clubhouse UI (the coach and player UI)",
         "criticality": "medium",
         "owner": "product",
         "status": "active"
@@ -501,16 +501,6 @@
         "category": "routes"
       },
       {
-        "id": "routes:src/app/golf/(dashboard)/dashboard/analytics/coachhelm/**",
-        "pattern": "src/app/golf/(dashboard)/dashboard/analytics/coachhelm/**",
-        "category": "routes"
-      },
-      {
-        "id": "routes:src/app/golf/(dashboard)/dashboard/announcements/**",
-        "pattern": "src/app/golf/(dashboard)/dashboard/announcements/**",
-        "category": "routes"
-      },
-      {
         "id": "routes:src/app/golf/(dashboard)/dashboard/calendar/**",
         "pattern": "src/app/golf/(dashboard)/dashboard/calendar/**",
         "category": "routes"
@@ -531,16 +521,6 @@
         "category": "routes"
       },
       {
-        "id": "routes:src/app/golf/(dashboard)/dashboard/dev/**",
-        "pattern": "src/app/golf/(dashboard)/dashboard/dev/**",
-        "category": "routes"
-      },
-      {
-        "id": "routes:src/app/golf/(dashboard)/dashboard/documents/**",
-        "pattern": "src/app/golf/(dashboard)/dashboard/documents/**",
-        "category": "routes"
-      },
-      {
         "id": "routes:src/app/golf/(dashboard)/dashboard/intelligence/**",
         "pattern": "src/app/golf/(dashboard)/dashboard/intelligence/**",
         "category": "routes"
@@ -548,16 +528,6 @@
       {
         "id": "routes:src/app/golf/(dashboard)/dashboard/messages/**",
         "pattern": "src/app/golf/(dashboard)/dashboard/messages/**",
-        "category": "routes"
-      },
-      {
-        "id": "routes:src/app/golf/(dashboard)/dashboard/my-development/**",
-        "pattern": "src/app/golf/(dashboard)/dashboard/my-development/**",
-        "category": "routes"
-      },
-      {
-        "id": "routes:src/app/golf/(dashboard)/dashboard/my-qualifiers/**",
-        "pattern": "src/app/golf/(dashboard)/dashboard/my-qualifiers/**",
         "category": "routes"
       },
       {
@@ -583,11 +553,6 @@
       {
         "id": "routes:src/app/golf/(dashboard)/dashboard/rounds/**",
         "pattern": "src/app/golf/(dashboard)/dashboard/rounds/**",
-        "category": "routes"
-      },
-      {
-        "id": "routes:src/app/golf/(dashboard)/dashboard/rounds/[id]/review/**",
-        "pattern": "src/app/golf/(dashboard)/dashboard/rounds/[id]/review/**",
         "category": "routes"
       },
       {
@@ -621,11 +586,6 @@
         "category": "routes"
       },
       {
-        "id": "routes:src/app/golf/(dashboard)/dashboard/tasks/**",
-        "pattern": "src/app/golf/(dashboard)/dashboard/tasks/**",
-        "category": "routes"
-      },
-      {
         "id": "routes:src/app/golf/(dashboard)/dashboard/team-hub/**",
         "pattern": "src/app/golf/(dashboard)/dashboard/team-hub/**",
         "category": "routes"
@@ -633,11 +593,6 @@
       {
         "id": "routes:src/app/golf/(dashboard)/dashboard/team/**",
         "pattern": "src/app/golf/(dashboard)/dashboard/team/**",
-        "category": "routes"
-      },
-      {
-        "id": "routes:src/app/golf/(dashboard)/dashboard/travel/**",
-        "pattern": "src/app/golf/(dashboard)/dashboard/travel/**",
         "category": "routes"
       },
       {
@@ -898,183 +853,13 @@
         "category": "components"
       },
       {
-        "id": "components:src/components/fairway/controls/wheel-picker.*",
-        "pattern": "src/components/fairway/controls/wheel-picker.*",
-        "category": "components"
-      },
-      {
-        "id": "components:src/components/fairway/pages/calendar/**",
-        "pattern": "src/components/fairway/pages/calendar/**",
-        "category": "components"
-      },
-      {
-        "id": "components:src/components/fairway/pages/coachhelm/**",
-        "pattern": "src/components/fairway/pages/coachhelm/**",
-        "category": "components"
-      },
-      {
-        "id": "components:src/components/fairway/pages/dashboard/FairwayCoachDashboard.tsx",
-        "pattern": "src/components/fairway/pages/dashboard/FairwayCoachDashboard.tsx",
-        "category": "components"
-      },
-      {
-        "id": "components:src/components/fairway/pages/my-qualifiers/**",
-        "pattern": "src/components/fairway/pages/my-qualifiers/**",
-        "category": "components"
-      },
-      {
-        "id": "components:src/components/fairway/pages/qualifiers/**",
-        "pattern": "src/components/fairway/pages/qualifiers/**",
-        "category": "components"
-      },
-      {
-        "id": "components:src/components/fairway/pages/recruiting/**",
-        "pattern": "src/components/fairway/pages/recruiting/**",
-        "category": "components"
-      },
-      {
-        "id": "components:src/components/fairway/pages/rounds-new/**",
-        "pattern": "src/components/fairway/pages/rounds-new/**",
-        "category": "components"
-      },
-      {
-        "id": "components:src/components/fairway/pages/rounds-recover/**",
-        "pattern": "src/components/fairway/pages/rounds-recover/**",
-        "category": "components"
-      },
-      {
-        "id": "components:src/components/fairway/pages/rounds-tracking/**",
-        "pattern": "src/components/fairway/pages/rounds-tracking/**",
-        "category": "components"
-      },
-      {
-        "id": "components:src/components/fairway/pages/rounds/**",
-        "pattern": "src/components/fairway/pages/rounds/**",
-        "category": "components"
-      },
-      {
-        "id": "components:src/components/fairway/pages/tasks/**",
-        "pattern": "src/components/fairway/pages/tasks/**",
-        "category": "components"
-      },
-      {
-        "id": "components:src/components/fairway/pages/team-hub/**",
-        "pattern": "src/components/fairway/pages/team-hub/**",
-        "category": "components"
-      },
-      {
-        "id": "components:src/components/fairway/pages/team/**",
-        "pattern": "src/components/fairway/pages/team/**",
-        "category": "components"
-      },
-      {
-        "id": "components:src/components/fairway/pages/travel/**",
-        "pattern": "src/components/fairway/pages/travel/**",
-        "category": "components"
-      },
-      {
-        "id": "components:src/components/golf/PushPermissionSoftAsk.tsx",
-        "pattern": "src/components/golf/PushPermissionSoftAsk.tsx",
-        "category": "components"
-      },
-      {
-        "id": "components:src/components/golf/announcements/**",
-        "pattern": "src/components/golf/announcements/**",
-        "category": "components"
-      },
-      {
         "id": "components:src/components/golf/calendar/**",
         "pattern": "src/components/golf/calendar/**",
         "category": "components"
       },
       {
-        "id": "components:src/components/golf/coachhelm/**",
-        "pattern": "src/components/golf/coachhelm/**",
-        "category": "components"
-      },
-      {
-        "id": "components:src/components/golf/coachhelm/coach/**",
-        "pattern": "src/components/golf/coachhelm/coach/**",
-        "category": "components"
-      },
-      {
-        "id": "components:src/components/golf/coachhelm/insight-card/**",
-        "pattern": "src/components/golf/coachhelm/insight-card/**",
-        "category": "components"
-      },
-      {
-        "id": "components:src/components/golf/coachhelm/insights/**",
-        "pattern": "src/components/golf/coachhelm/insights/**",
-        "category": "components"
-      },
-      {
-        "id": "components:src/components/golf/coachhelm/player/**",
-        "pattern": "src/components/golf/coachhelm/player/**",
-        "category": "components"
-      },
-      {
-        "id": "components:src/components/golf/coachhelm/round-review/**",
-        "pattern": "src/components/golf/coachhelm/round-review/**",
-        "category": "components"
-      },
-      {
-        "id": "components:src/components/golf/coachhelm/settings/**",
-        "pattern": "src/components/golf/coachhelm/settings/**",
-        "category": "components"
-      },
-      {
-        "id": "components:src/components/golf/coachhelm/triage/**",
-        "pattern": "src/components/golf/coachhelm/triage/**",
-        "category": "components"
-      },
-      {
-        "id": "components:src/components/golf/coachhelm/v2/**",
-        "pattern": "src/components/golf/coachhelm/v2/**",
-        "category": "components"
-      },
-      {
-        "id": "components:src/components/golf/coachhelm/v3/GoalCreationModal/**",
-        "pattern": "src/components/golf/coachhelm/v3/GoalCreationModal/**",
-        "category": "components"
-      },
-      {
-        "id": "components:src/components/golf/coachhelm/v3/StandingBar/**",
-        "pattern": "src/components/golf/coachhelm/v3/StandingBar/**",
-        "category": "components"
-      },
-      {
         "id": "components:src/components/golf/documents/**",
         "pattern": "src/components/golf/documents/**",
-        "category": "components"
-      },
-      {
-        "id": "components:src/components/golf/messages/**",
-        "pattern": "src/components/golf/messages/**",
-        "category": "components"
-      },
-      {
-        "id": "components:src/components/golf/onboarding/**",
-        "pattern": "src/components/golf/onboarding/**",
-        "category": "components"
-      },
-      {
-        "id": "components:src/components/golf/roster/**",
-        "pattern": "src/components/golf/roster/**",
-        "category": "components"
-      },
-      {
-        "id": "components:src/components/golf/settings/**",
-        "pattern": "src/components/golf/settings/**",
-        "category": "components"
-      },
-      {
-        "id": "components:src/components/golf/settings/JoinTeamSection.tsx",
-        "pattern": "src/components/golf/settings/JoinTeamSection.tsx",
-        "category": "components"
-      },
-      {
-        "id": "components:src/components/golf/stats/**",
-        "pattern": "src/components/golf/stats/**",
         "category": "components"
       },
       {
@@ -1085,6 +870,11 @@
       {
         "id": "components:src/components/providers/CapacitorProvider.tsx",
         "pattern": "src/components/providers/CapacitorProvider.tsx",
+        "category": "components"
+      },
+      {
+        "id": "components:src/hooks/coachhelm/**",
+        "pattern": "src/hooks/coachhelm/**",
         "category": "components"
       },
       {
@@ -1217,41 +1007,6 @@
       {
         "id": "api:src/app/api/golf/rounds/**",
         "pattern": "src/app/api/golf/rounds/**",
-        "category": "api"
-      },
-      {
-        "id": "api:src/components/fairway/pages/announcements/**",
-        "pattern": "src/components/fairway/pages/announcements/**",
-        "category": "api"
-      },
-      {
-        "id": "api:src/components/fairway/pages/documents/**",
-        "pattern": "src/components/fairway/pages/documents/**",
-        "category": "api"
-      },
-      {
-        "id": "api:src/components/fairway/pages/hub/**",
-        "pattern": "src/components/fairway/pages/hub/**",
-        "category": "api"
-      },
-      {
-        "id": "api:src/components/fairway/pages/messages/**",
-        "pattern": "src/components/fairway/pages/messages/**",
-        "category": "api"
-      },
-      {
-        "id": "api:src/components/fairway/pages/roster/**",
-        "pattern": "src/components/fairway/pages/roster/**",
-        "category": "api"
-      },
-      {
-        "id": "api:src/components/fairway/pages/settings/**",
-        "pattern": "src/components/fairway/pages/settings/**",
-        "category": "api"
-      },
-      {
-        "id": "api:src/components/fairway/pages/team/**",
-        "pattern": "src/components/fairway/pages/team/**",
         "category": "api"
       }
     ],
@@ -2648,11 +2403,6 @@
       {
         "id": "tests:src/clubhouse/data/__tests__/stats-reads.test.ts",
         "pattern": "src/clubhouse/data/__tests__/stats-reads.test.ts",
-        "category": "tests"
-      },
-      {
-        "id": "tests:src/components/fairway/pages/team-hub/FairwayTeamHub.logic.test.ts",
-        "pattern": "src/components/fairway/pages/team-hub/FairwayTeamHub.logic.test.ts",
         "category": "tests"
       },
       {
@@ -9650,30 +9400,6 @@
     },
     {
       "source": "auth_onboarding_join",
-      "target": "components:src/components/golf/onboarding/**",
-      "kind": "feature_component",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/components/golf/onboarding/**"
-        }
-      ]
-    },
-    {
-      "source": "auth_onboarding_join",
-      "target": "components:src/components/golf/settings/JoinTeamSection.tsx",
-      "kind": "feature_component",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/components/golf/settings/JoinTeamSection.tsx"
-        }
-      ]
-    },
-    {
-      "source": "auth_onboarding_join",
       "target": "crm_outreach",
       "kind": "feature_relation",
       "evidence": [
@@ -13356,30 +13082,6 @@
     },
     {
       "source": "calendar_events",
-      "target": "components:src/components/fairway/controls/wheel-picker.*",
-      "kind": "feature_component",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/components/fairway/controls/wheel-picker.*"
-        }
-      ]
-    },
-    {
-      "source": "calendar_events",
-      "target": "components:src/components/fairway/pages/calendar/**",
-      "kind": "feature_component",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/components/fairway/pages/calendar/**"
-        }
-      ]
-    },
-    {
-      "source": "calendar_events",
       "target": "components:src/components/golf/calendar/**",
       "kind": "feature_component",
       "evidence": [
@@ -14882,78 +14584,6 @@
     },
     {
       "source": "coach_intelligence_triage",
-      "target": "components:src/components/fairway/pages/coachhelm/**",
-      "kind": "feature_component",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/components/fairway/pages/coachhelm/**"
-        }
-      ]
-    },
-    {
-      "source": "coach_intelligence_triage",
-      "target": "components:src/components/golf/coachhelm/coach/**",
-      "kind": "feature_component",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/components/golf/coachhelm/coach/**"
-        }
-      ]
-    },
-    {
-      "source": "coach_intelligence_triage",
-      "target": "components:src/components/golf/coachhelm/insights/**",
-      "kind": "feature_component",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/components/golf/coachhelm/insights/**"
-        }
-      ]
-    },
-    {
-      "source": "coach_intelligence_triage",
-      "target": "components:src/components/golf/coachhelm/settings/**",
-      "kind": "feature_component",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/components/golf/coachhelm/settings/**"
-        }
-      ]
-    },
-    {
-      "source": "coach_intelligence_triage",
-      "target": "components:src/components/golf/coachhelm/triage/**",
-      "kind": "feature_component",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/components/golf/coachhelm/triage/**"
-        }
-      ]
-    },
-    {
-      "source": "coach_intelligence_triage",
-      "target": "components:src/components/golf/coachhelm/v2/**",
-      "kind": "feature_component",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/components/golf/coachhelm/v2/**"
-        }
-      ]
-    },
-    {
-      "source": "coach_intelligence_triage",
       "target": "golf_round_lifecycle",
       "kind": "feature_relation",
       "evidence": [
@@ -15289,18 +14919,6 @@
           "kind": "rpc_call",
           "path": "src/test/api/cron/coachhelm-safety-net-reconcile.test.ts",
           "anchor": "record_round_coachhelm_terminal_state"
-        }
-      ]
-    },
-    {
-      "source": "coach_intelligence_triage",
-      "target": "routes:src/app/golf/(dashboard)/dashboard/analytics/coachhelm/**",
-      "kind": "feature_route",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/app/golf/(dashboard)/dashboard/analytics/coachhelm/**"
         }
       ]
     },
@@ -16310,6 +15928,31 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/__tests__/patternToInsightVocabulary.test.ts",
+          "anchor": "src/app/golf/actions/pattern-management"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/__tests__/patternToInsightVocabulary.test.ts",
+          "anchor": "src/lib/coachhelm/v2/insights/types"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/format-value.ts",
+          "anchor": "src/lib/coachhelm/v2/insights/types"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/patternToInsightVocabulary.ts",
+          "anchor": "src/app/golf/actions/pattern-management"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/patternToInsightVocabulary.ts",
+          "anchor": "src/lib/coachhelm/v2/insights/types"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/reads/__tests__/team-pool-line.test.ts",
           "anchor": "src/lib/coachhelm/v2/insights/types"
         },
@@ -16351,13 +15994,13 @@
     },
     {
       "source": "coachhelm_ai",
-      "target": "components:src/components/golf/coachhelm/**",
+      "target": "components:src/hooks/coachhelm/**",
       "kind": "feature_component",
       "evidence": [
         {
           "kind": "registry_glob",
           "path": "memory/registry.yml",
-          "pattern": "src/components/golf/coachhelm/**"
+          "pattern": "src/hooks/coachhelm/**"
         }
       ]
     },
@@ -16697,11 +16340,6 @@
         },
         {
           "kind": "import_graph",
-          "path": "src/app/golf/actions/insight-delivery-reads.ts",
-          "anchor": "src/components/golf/coachhelm/insight-card/tone-derivation"
-        },
-        {
-          "kind": "import_graph",
           "path": "src/app/golf/actions/insight-delivery.ts",
           "anchor": "src/lib/coachhelm/v3/themes/assemble"
         },
@@ -16912,8 +16550,23 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/player-hub/__tests__/buildPlayerHubViewModel.test.ts",
+          "anchor": "src/lib/coachhelm/v3/themes/types"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/player-hub/buildPlayerHubViewModel.ts",
+          "anchor": "src/lib/coachhelm/v3/themes/types"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/shared/__tests__/confidence-reason.test.ts",
           "anchor": "src/lib/coachhelm/v3/engine/generator-base"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/tone-derivation.ts",
+          "anchor": "src/lib/coachhelm/v3/standing/metric-config"
         }
       ]
     },
@@ -16926,6 +16579,18 @@
           "kind": "rpc_call",
           "path": "src/app/api/cron/v3/standing-refresh/route.ts",
           "anchor": "prune_stale_player_standing"
+        }
+      ]
+    },
+    {
+      "source": "coachhelm_ai",
+      "target": "refresh_division_cohort",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/app/api/cron/v3/standing-refresh/route.ts",
+          "anchor": "refresh_division_cohort"
         }
       ]
     },
@@ -16979,18 +16644,6 @@
           "kind": "registry_declaration",
           "path": "memory/registry.yml",
           "pattern": "observability.feature_keys"
-        }
-      ]
-    },
-    {
-      "source": "coachhelm_ai",
-      "target": "routes:src/app/golf/(dashboard)/dashboard/analytics/coachhelm/**",
-      "kind": "feature_route",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/app/golf/(dashboard)/dashboard/analytics/coachhelm/**"
         }
       ]
     },
@@ -18575,11 +18228,6 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/round-partial.ts",
-          "anchor": "src/lib/auth/get-golf-dashboard-role"
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/round-partial.ts",
           "anchor": "src/lib/auth/resilient-get-user"
         },
         {
@@ -18651,11 +18299,6 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/round-submit.ts",
           "anchor": "src/lib/supabase/untyped"
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/round-submit.ts",
-          "anchor": "src/lib/auth/get-golf-dashboard-role"
         },
         {
           "kind": "import_graph",
@@ -18761,23 +18404,6 @@
     },
     {
       "source": "golf_round_lifecycle",
-      "target": "clubhouse",
-      "kind": "feature_relation",
-      "evidence": [
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/round-partial.ts",
-          "anchor": "src/clubhouse/gate"
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/round-submit.ts",
-          "anchor": "src/clubhouse/gate"
-        }
-      ]
-    },
-    {
-      "source": "golf_round_lifecycle",
       "target": "coach_intelligence_triage",
       "kind": "feature_relation",
       "evidence": [
@@ -18790,11 +18416,6 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v2/post-round-trigger.ts",
           "anchor": "src/lib/coachhelm/v2/trigger-insights-bridge"
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/golf/surface-registry.test.ts",
-          "anchor": "src/components/fairway/pages/coachhelm/CoachHelmSubNav"
         }
       ]
     },
@@ -18842,54 +18463,6 @@
           "kind": "import_graph",
           "path": "src/lib/golf/scoring-trend.ts",
           "anchor": "src/lib/coachhelm/trend"
-        }
-      ]
-    },
-    {
-      "source": "golf_round_lifecycle",
-      "target": "components:src/components/fairway/pages/rounds-new/**",
-      "kind": "feature_component",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/components/fairway/pages/rounds-new/**"
-        }
-      ]
-    },
-    {
-      "source": "golf_round_lifecycle",
-      "target": "components:src/components/fairway/pages/rounds-recover/**",
-      "kind": "feature_component",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/components/fairway/pages/rounds-recover/**"
-        }
-      ]
-    },
-    {
-      "source": "golf_round_lifecycle",
-      "target": "components:src/components/fairway/pages/rounds-tracking/**",
-      "kind": "feature_component",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/components/fairway/pages/rounds-tracking/**"
-        }
-      ]
-    },
-    {
-      "source": "golf_round_lifecycle",
-      "target": "components:src/components/fairway/pages/rounds/**",
-      "kind": "feature_component",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/components/fairway/pages/rounds/**"
         }
       ]
     },
@@ -19325,6 +18898,18 @@
     },
     {
       "source": "golf_round_lifecycle",
+      "target": "qualifiers",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/qualifier-display.ts",
+          "anchor": "src/lib/coachhelm/v3/qualifying/ranking"
+        }
+      ]
+    },
+    {
+      "source": "golf_round_lifecycle",
       "target": "reclassify_golf_round",
       "kind": "feature_rpc",
       "evidence": [
@@ -19545,18 +19130,6 @@
     },
     {
       "source": "ios_native_shell",
-      "target": "components:src/components/golf/PushPermissionSoftAsk.tsx",
-      "kind": "feature_component",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/components/golf/PushPermissionSoftAsk.tsx"
-        }
-      ]
-    },
-    {
-      "source": "ios_native_shell",
       "target": "components:src/components/providers/CapacitorProvider.tsx",
       "kind": "feature_component",
       "evidence": [
@@ -19564,18 +19137,6 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/components/providers/CapacitorProvider.tsx"
-        }
-      ]
-    },
-    {
-      "source": "ios_native_shell",
-      "target": "routes:src/app/golf/(dashboard)/dashboard/dev/**",
-      "kind": "feature_route",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/app/golf/(dashboard)/dashboard/dev/**"
         }
       ]
     },
@@ -22112,11 +21673,6 @@
       "evidence": [
         {
           "kind": "import_graph",
-          "path": "src/app/golf/actions/development.ts",
-          "anchor": "src/clubhouse/gate"
-        },
-        {
-          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/analyst/__tests__/stats-parity.test.ts",
           "anchor": "src/clubhouse/lib/stats-signal"
         },
@@ -22211,11 +21767,6 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/brief/assemble.ts",
           "anchor": "src/lib/coachhelm/v2/insights/types"
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/coachhelm/v3/brief/assemble.ts",
-          "anchor": "src/components/fairway/pages/coachhelm/signals/patternToInsightVocabulary"
         },
         {
           "kind": "import_graph",
@@ -22441,6 +21992,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/brief/assemble.ts",
+          "anchor": "src/lib/coachhelm/patternToInsightVocabulary"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/chat/action-planners.ts",
           "anchor": "src/lib/coachhelm/focus-areas/duplicate-guard"
         },
@@ -22551,6 +22107,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/lifecycle/contradiction.ts",
+          "anchor": "src/lib/coachhelm/tone-derivation"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/lifecycle/flag.ts",
           "anchor": "src/lib/coachhelm/canary"
         },
@@ -22620,78 +22181,6 @@
           "kind": "registry_declaration",
           "path": "memory/registry.yml",
           "pattern": "observability.feature_keys"
-        }
-      ]
-    },
-    {
-      "source": "player_coachhelm_development",
-      "target": "components:src/components/fairway/pages/coachhelm/**",
-      "kind": "feature_component",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/components/fairway/pages/coachhelm/**"
-        }
-      ]
-    },
-    {
-      "source": "player_coachhelm_development",
-      "target": "components:src/components/golf/coachhelm/insight-card/**",
-      "kind": "feature_component",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/components/golf/coachhelm/insight-card/**"
-        }
-      ]
-    },
-    {
-      "source": "player_coachhelm_development",
-      "target": "components:src/components/golf/coachhelm/player/**",
-      "kind": "feature_component",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/components/golf/coachhelm/player/**"
-        }
-      ]
-    },
-    {
-      "source": "player_coachhelm_development",
-      "target": "components:src/components/golf/coachhelm/round-review/**",
-      "kind": "feature_component",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/components/golf/coachhelm/round-review/**"
-        }
-      ]
-    },
-    {
-      "source": "player_coachhelm_development",
-      "target": "components:src/components/golf/coachhelm/v3/GoalCreationModal/**",
-      "kind": "feature_component",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/components/golf/coachhelm/v3/GoalCreationModal/**"
-        }
-      ]
-    },
-    {
-      "source": "player_coachhelm_development",
-      "target": "components:src/components/golf/coachhelm/v3/StandingBar/**",
-      "kind": "feature_component",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/components/golf/coachhelm/v3/StandingBar/**"
         }
       ]
     },
@@ -23227,30 +22716,6 @@
     },
     {
       "source": "player_coachhelm_development",
-      "target": "routes:src/app/golf/(dashboard)/dashboard/my-development/**",
-      "kind": "feature_route",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/app/golf/(dashboard)/dashboard/my-development/**"
-        }
-      ]
-    },
-    {
-      "source": "player_coachhelm_development",
-      "target": "routes:src/app/golf/(dashboard)/dashboard/rounds/[id]/review/**",
-      "kind": "feature_route",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/app/golf/(dashboard)/dashboard/rounds/[id]/review/**"
-        }
-      ]
-    },
-    {
-      "source": "player_coachhelm_development",
       "target": "services:src/lib/coachhelm/v2/**",
       "kind": "feature_service",
       "evidence": [
@@ -23295,11 +22760,6 @@
       "target": "sg_scale_for_player",
       "kind": "feature_rpc",
       "evidence": [
-        {
-          "kind": "rpc_call",
-          "path": "src/components/golf/coachhelm/round-review/FilmstripReview.tsx",
-          "anchor": "sg_scale_for_player"
-        },
         {
           "kind": "rpc_call",
           "path": "src/lib/coachhelm/v3/generators/insight-angles/load-angle-data.ts",
@@ -23538,18 +22998,6 @@
     },
     {
       "source": "player_hub",
-      "target": "api:src/components/fairway/pages/hub/**",
-      "kind": "feature_api",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/components/fairway/pages/hub/**"
-        }
-      ]
-    },
-    {
-      "source": "player_hub",
       "target": "auth_onboarding_join",
       "kind": "feature_relation",
       "evidence": [
@@ -23697,6 +23145,11 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/player-hub-data.ts",
           "anchor": "src/lib/golf/resolve-team"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/player-hub-data.ts",
+          "anchor": "src/lib/golf/player-hub-types"
         },
         {
           "kind": "import_graph",
@@ -24299,18 +23752,6 @@
     },
     {
       "source": "qualifiers",
-      "target": "clubhouse",
-      "kind": "feature_relation",
-      "evidence": [
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/qualifier-setup.ts",
-          "anchor": "src/clubhouse/gate"
-        }
-      ]
-    },
-    {
-      "source": "qualifiers",
       "target": "components:src/clubhouse/data/qualifiers.ts",
       "kind": "feature_component",
       "evidence": [
@@ -24342,30 +23783,6 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/clubhouse/screens/qualifiers/**"
-        }
-      ]
-    },
-    {
-      "source": "qualifiers",
-      "target": "components:src/components/fairway/pages/my-qualifiers/**",
-      "kind": "feature_component",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/components/fairway/pages/my-qualifiers/**"
-        }
-      ]
-    },
-    {
-      "source": "qualifiers",
-      "target": "components:src/components/fairway/pages/qualifiers/**",
-      "kind": "feature_component",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/components/fairway/pages/qualifiers/**"
         }
       ]
     },
@@ -24466,18 +23883,6 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/app/golf/(dashboard)/dashboard/coachhelm/qualifying/**"
-        }
-      ]
-    },
-    {
-      "source": "qualifiers",
-      "target": "routes:src/app/golf/(dashboard)/dashboard/my-qualifiers/**",
-      "kind": "feature_route",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/app/golf/(dashboard)/dashboard/my-qualifiers/**"
         }
       ]
     },
@@ -24736,18 +24141,6 @@
     },
     {
       "source": "recruiting",
-      "target": "components:src/components/fairway/pages/recruiting/**",
-      "kind": "feature_component",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/components/fairway/pages/recruiting/**"
-        }
-      ]
-    },
-    {
-      "source": "recruiting",
       "target": "golf_recruit_documents",
       "kind": "feature_table",
       "evidence": [
@@ -24976,30 +24369,6 @@
     },
     {
       "source": "roster_team",
-      "target": "api:src/components/fairway/pages/roster/**",
-      "kind": "feature_api",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/components/fairway/pages/roster/**"
-        }
-      ]
-    },
-    {
-      "source": "roster_team",
-      "target": "api:src/components/fairway/pages/team/**",
-      "kind": "feature_api",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/components/fairway/pages/team/**"
-        }
-      ]
-    },
-    {
-      "source": "roster_team",
       "target": "auth_onboarding_join",
       "kind": "feature_relation",
       "evidence": [
@@ -25068,30 +24437,6 @@
         {
           "kind": "migration_schema",
           "path": "supabase/migrations/20260624000095_baseball_team_and_season_settings.sql"
-        }
-      ]
-    },
-    {
-      "source": "roster_team",
-      "target": "components:src/components/fairway/pages/dashboard/FairwayCoachDashboard.tsx",
-      "kind": "feature_component",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/components/fairway/pages/dashboard/FairwayCoachDashboard.tsx"
-        }
-      ]
-    },
-    {
-      "source": "roster_team",
-      "target": "components:src/components/golf/roster/**",
-      "kind": "feature_component",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/components/golf/roster/**"
         }
       ]
     },
@@ -25368,18 +24713,6 @@
     },
     {
       "source": "settings_preferences",
-      "target": "api:src/components/fairway/pages/settings/**",
-      "kind": "feature_api",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/components/fairway/pages/settings/**"
-        }
-      ]
-    },
-    {
-      "source": "settings_preferences",
       "target": "auth_onboarding_join",
       "kind": "feature_relation",
       "evidence": [
@@ -25476,30 +24809,6 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/clubhouse/styles/settings.css"
-        }
-      ]
-    },
-    {
-      "source": "settings_preferences",
-      "target": "components:src/components/golf/coachhelm/settings/**",
-      "kind": "feature_component",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/components/golf/coachhelm/settings/**"
-        }
-      ]
-    },
-    {
-      "source": "settings_preferences",
-      "target": "components:src/components/golf/settings/**",
-      "kind": "feature_component",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/components/golf/settings/**"
         }
       ]
     },
@@ -25756,54 +25065,6 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/shot-actions.ts",
           "anchor": "src/lib/auth/resilient-get-user"
-        }
-      ]
-    },
-    {
-      "source": "shot_tracking",
-      "target": "components:src/components/fairway/pages/rounds-new/**",
-      "kind": "feature_component",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/components/fairway/pages/rounds-new/**"
-        }
-      ]
-    },
-    {
-      "source": "shot_tracking",
-      "target": "components:src/components/fairway/pages/rounds-recover/**",
-      "kind": "feature_component",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/components/fairway/pages/rounds-recover/**"
-        }
-      ]
-    },
-    {
-      "source": "shot_tracking",
-      "target": "components:src/components/fairway/pages/rounds-tracking/**",
-      "kind": "feature_component",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/components/fairway/pages/rounds-tracking/**"
-        }
-      ]
-    },
-    {
-      "source": "shot_tracking",
-      "target": "components:src/components/fairway/pages/rounds/**",
-      "kind": "feature_component",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/components/fairway/pages/rounds/**"
         }
       ]
     },
@@ -26403,18 +25664,6 @@
     },
     {
       "source": "stats_analytics",
-      "target": "components:src/components/golf/stats/**",
-      "kind": "feature_component",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/components/golf/stats/**"
-        }
-      ]
-    },
-    {
-      "source": "stats_analytics",
       "target": "golf_division_cohort",
       "kind": "feature_table",
       "evidence": [
@@ -26911,54 +26160,6 @@
     },
     {
       "source": "team_access_control",
-      "target": "components:src/components/fairway/pages/team-hub/**",
-      "kind": "feature_component",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/components/fairway/pages/team-hub/**"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "components:src/components/fairway/pages/team/**",
-      "kind": "feature_component",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/components/fairway/pages/team/**"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "components:src/components/golf/roster/**",
-      "kind": "feature_component",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/components/golf/roster/**"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "components:src/components/golf/settings/**",
-      "kind": "feature_component",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/components/golf/settings/**"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
       "target": "golf_staff_invite_codes",
       "kind": "feature_table",
       "evidence": [
@@ -27366,30 +26567,6 @@
     },
     {
       "source": "team_communications",
-      "target": "api:src/components/fairway/pages/announcements/**",
-      "kind": "feature_api",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/components/fairway/pages/announcements/**"
-        }
-      ]
-    },
-    {
-      "source": "team_communications",
-      "target": "api:src/components/fairway/pages/messages/**",
-      "kind": "feature_api",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/components/fairway/pages/messages/**"
-        }
-      ]
-    },
-    {
-      "source": "team_communications",
       "target": "auth_onboarding_join",
       "kind": "feature_relation",
       "evidence": [
@@ -27513,30 +26690,6 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/clubhouse/styles/messages.css"
-        }
-      ]
-    },
-    {
-      "source": "team_communications",
-      "target": "components:src/components/golf/announcements/**",
-      "kind": "feature_component",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/components/golf/announcements/**"
-        }
-      ]
-    },
-    {
-      "source": "team_communications",
-      "target": "components:src/components/golf/messages/**",
-      "kind": "feature_component",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/components/golf/messages/**"
         }
       ]
     },
@@ -27748,18 +26901,6 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/unified-notifications.ts",
           "anchor": "src/lib/coachhelm/v3/insight-visibility"
-        }
-      ]
-    },
-    {
-      "source": "team_communications",
-      "target": "routes:src/app/golf/(dashboard)/dashboard/announcements/**",
-      "kind": "feature_route",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/app/golf/(dashboard)/dashboard/announcements/**"
         }
       ]
     },
@@ -28244,18 +27385,6 @@
     },
     {
       "source": "team_operations",
-      "target": "api:src/components/fairway/pages/documents/**",
-      "kind": "feature_api",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/components/fairway/pages/documents/**"
-        }
-      ]
-    },
-    {
-      "source": "team_operations",
       "target": "auth_onboarding_join",
       "kind": "feature_relation",
       "evidence": [
@@ -28353,42 +27482,6 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/clubhouse/screens/practice/**"
-        }
-      ]
-    },
-    {
-      "source": "team_operations",
-      "target": "components:src/components/fairway/pages/tasks/**",
-      "kind": "feature_component",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/components/fairway/pages/tasks/**"
-        }
-      ]
-    },
-    {
-      "source": "team_operations",
-      "target": "components:src/components/fairway/pages/team-hub/**",
-      "kind": "feature_component",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/components/fairway/pages/team-hub/**"
-        }
-      ]
-    },
-    {
-      "source": "team_operations",
-      "target": "components:src/components/fairway/pages/travel/**",
-      "kind": "feature_component",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/components/fairway/pages/travel/**"
         }
       ]
     },
@@ -28590,18 +27683,6 @@
     },
     {
       "source": "team_operations",
-      "target": "routes:src/app/golf/(dashboard)/dashboard/documents/**",
-      "kind": "feature_route",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/app/golf/(dashboard)/dashboard/documents/**"
-        }
-      ]
-    },
-    {
-      "source": "team_operations",
       "target": "routes:src/app/golf/(dashboard)/dashboard/practice/**",
       "kind": "feature_route",
       "evidence": [
@@ -28614,18 +27695,6 @@
     },
     {
       "source": "team_operations",
-      "target": "routes:src/app/golf/(dashboard)/dashboard/tasks/**",
-      "kind": "feature_route",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/app/golf/(dashboard)/dashboard/tasks/**"
-        }
-      ]
-    },
-    {
-      "source": "team_operations",
       "target": "routes:src/app/golf/(dashboard)/dashboard/team-hub/**",
       "kind": "feature_route",
       "evidence": [
@@ -28633,18 +27702,6 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/app/golf/(dashboard)/dashboard/team-hub/**"
-        }
-      ]
-    },
-    {
-      "source": "team_operations",
-      "target": "routes:src/app/golf/(dashboard)/dashboard/travel/**",
-      "kind": "feature_route",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/app/golf/(dashboard)/dashboard/travel/**"
         }
       ]
     },
@@ -28789,18 +27846,6 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/clubhouse/__tests__/player-home.test.tsx"
-        }
-      ]
-    },
-    {
-      "source": "team_operations",
-      "target": "tests:src/components/fairway/pages/team-hub/FairwayTeamHub.logic.test.ts",
-      "kind": "feature_test",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/components/fairway/pages/team-hub/FairwayTeamHub.logic.test.ts"
         }
       ]
     },

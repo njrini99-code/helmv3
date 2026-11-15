@@ -66,7 +66,6 @@ describe('date-only call sites do not regress to a naive new Date()', () => {
    * page. These entries pin the alignment, not just the formatting.
    */
   const SITES: Array<[string, string[]]> = [
-    ['src/components/fairway/pages/team/FairwayTeamInfo.tsx', ['due_date']],
     ['src/components/baseball/player-profile/PlayerProfileClient.tsx', ['due_date']],
     ['src/components/baseball/dev-plans/PlanDetail.tsx', ['target_date']],
     ['src/app/baseball/(dashboard)/dashboard/tasks/TasksClient.tsx', ['due_date']],

@@ -762,16 +762,6 @@
       "fixture": "Contextual module"
     },
     {
-      "file": "src/clubhouse/routes/front-door.tsx",
-      "group": "routes",
-      "exports": [
-        "FrontDoorProvider"
-      ],
-      "styles": [],
-      "examples": [],
-      "fixture": "Contextual module"
-    },
-    {
       "file": "src/clubhouse/routes/hub.tsx",
       "group": "routes",
       "exports": [
@@ -11585,16 +11575,6 @@
       "group": "shell",
       "exports": [
         "ClubhouseShell"
-      ],
-      "styles": [],
-      "examples": [],
-      "fixture": "Contextual module"
-    },
-    {
-      "file": "src/clubhouse/shell/ClubhouseSwitch.tsx",
-      "group": "shell",
-      "exports": [
-        "ClubhouseSwitch"
       ],
       "styles": [],
       "examples": [],

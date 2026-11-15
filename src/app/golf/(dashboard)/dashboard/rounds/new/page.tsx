@@ -1,13 +1,8 @@
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
-import NewRoundClient from './new-round-client';
-import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { FeatureUnavailable } from '@/components/fairway';
-import { isClubhouseFor } from '@/clubhouse/gate';
 import { getGolfDashboardRole } from '@/lib/auth/get-golf-dashboard-role';
 import { ClubhouseNewRoundRoute } from '@/clubhouse/routes/round-new';
-import { dataGapAsksForShotEntry } from '@/lib/coachhelm/data-gap/load-asks';
-import { dataPromptsV2ForShotEntry } from '@/lib/golf/data-prompts/flag';
 
 export default async function NewRoundPage() {
   const session = await getGolfSessionProfile();
@@ -35,32 +30,8 @@ export default async function NewRoundPage() {
     );
   }
 
-  // Clubhouse round entry (golf_clubhouse_ui): setup, then the round, over the same new-round engine.
-  // The role is the dashboard layout's (getGolfDashboardRole); Fairway below keeps the session's.
-  if ((await isClubhouseFor('player')) && (await getGolfDashboardRole()) === 'player') return <ClubhouseNewRoundRoute playerId={player.id} />;
-
-  // Note: unfinished / in-progress rounds are surfaced on the /rounds page
-  // (UnfinishedRoundsSection), not gated here — the New Round page deliberately
-  // does NOT fetch the in-progress round, because the in-flow resume prompt was
-  // never shown (its result was discarded). Starting a New Round lands straight
-  // on the course carousel.
-
-  // CoachHelm Slice 8a: the one-tap data-gap asks (undefined with
-  // coachhelm_data_gap_prompt_v1 off, so nothing is read or passed).
-  const dataGapAsks = await dataGapAsksForShotEntry(player.id);
-  // CoachHelm Slice 8b: course nudge and recovery tap, in the player's
-  // HELM_COACHHELM_TEAMS canary scope (false with the flag off).
-  const dataPromptsV2 = await dataPromptsV2ForShotEntry(player.id);
-
-  return (
-    <AnimatedPage>
-      <AnimatedItem>
-        <NewRoundClient
-          playerId={player.id}
-          dataGapAsks={dataGapAsks}
-          dataPromptsV2={dataPromptsV2}
-        />
-      </AnimatedItem>
-    </AnimatedPage>
-  );
+  // Setup, then the round, over the shared new-round engine. The role is the dashboard layout's
+  // (getGolfDashboardRole): a player row beside a coach one drawn as a coach gets the frame's not-rebuilt state.
+  if ((await getGolfDashboardRole()) === 'player') return <ClubhouseNewRoundRoute playerId={player.id} />;
+  return null;
 }

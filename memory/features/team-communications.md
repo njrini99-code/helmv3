@@ -230,7 +230,8 @@ React state, which dies with the component.
   show. Optimistic rows whose send failed are never written to the cache.
 - `loadGolfConversationRail(supabase, userId)` is the rail waterfall as a
   plain function. `useGolfSurfacePrewarm(userId, teamId)` (mounted in
-  FairwayDashboardShell) runs it once per (viewer, active team) on idle and
+  Fairway's dashboard shell until Fairway retired on 2026-11-14; nothing mounts
+  it now) runs it once per (viewer, active team) on idle and
   `router.prefetch`es Calendar always and Messages only WITH a team —
   `FairwayMessages` hard-blocks a teamless viewer with an empty state
   ("No team found"), so there is nothing to usefully warm, and warming it
@@ -238,8 +239,8 @@ React state, which dies with the component.
   a dynamic `import()` of `use-golf-messages.ts` so the shell's own bundle
   (every dashboard page) doesn't carry the whole messaging module.
 - Sign-out calls `clearAllCachedResources()` on BOTH paths that end a golf
-  session: `useGolfSignOut` (FairwayDashboardShell) and the idle-timeout
-  logout (`src/lib/auth/session-activity.ts`) — the latter was missed in the
+  session: Clubhouse's sign-out (`src/clubhouse/lib/sign-out.ts`) and the
+  idle-timeout logout (`src/lib/auth/session-activity.ts`) — the latter was missed in the
   original cut and is exactly the shared-device case (a team iPad left
   signed in) this cache exists to guard. `clearAllCachedResources()` also
   bumps a module epoch (`getCacheEpoch()`); every write that follows an

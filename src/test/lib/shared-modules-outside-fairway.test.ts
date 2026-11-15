@@ -1,14 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import * as oldHaptics from '@/lib/fairway/haptics';
 import * as sharedHaptics from '@/lib/native-haptics';
-import * as oldKind from '@/components/fairway/pages/messages/conversation-kind';
 import * as sharedKind from '@/lib/golf/conversation-kind';
 
 /**
  * C-26. The haptic layer and the conversation-kind rules are shared logic that lived under Fairway paths, so any
- * surface that is not Fairway had to import Fairway (or copy them) to use them. They now live in src/lib, and the old
- * paths re-export them: every existing importer, and every test mock of the old path, keeps working and gets the very
- * same functions.
+ * surface that is not Fairway had to import Fairway (or copy them) to use them. They now live in src/lib. The haptics'
+ * old path re-exports them; the conversation-kind one went with Fairway's pages (2026-11-14).
  */
 describe('shared modules live outside Fairway (C-26)', () => {
   it('@/lib/fairway/haptics re-exports @/lib/native-haptics, binding for binding', () => {
@@ -17,15 +15,6 @@ describe('shared modules live outside Fairway (C-26)', () => {
     expect(Object.keys(oldHaptics).sort()).toEqual(names);
     for (const name of names) {
       expect((oldHaptics as Record<string, unknown>)[name]).toBe((sharedHaptics as Record<string, unknown>)[name]);
-    }
-  });
-
-  it('the Fairway conversation-kind path re-exports @/lib/golf/conversation-kind, binding for binding', () => {
-    const names = Object.keys(sharedKind).sort();
-    expect(names).toEqual(['conversationDisplayName', 'conversationRecipientName', 'isGroupConversation']);
-    expect(Object.keys(oldKind).sort()).toEqual(names);
-    for (const name of names) {
-      expect((oldKind as Record<string, unknown>)[name]).toBe((sharedKind as Record<string, unknown>)[name]);
     }
   });
 

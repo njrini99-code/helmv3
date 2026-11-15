@@ -119,7 +119,7 @@ self.addEventListener('fetch', (event) => {
   // EVERY OTHER NAVIGATION IS LEFT ALONE. This is the important line.
   //
   // This worker is registered with `scope: '/'` from the golf dashboard
-  // (OfflineProvider), so it controls the ENTIRE origin — the marketing
+  // (the Clubhouse session's OfflineSync), so it controls the ENTIRE origin — the marketing
   // site, BaseballHelm, auth pages, all of it — even though only the golf
   // dashboard ever asked for offline support.
   //

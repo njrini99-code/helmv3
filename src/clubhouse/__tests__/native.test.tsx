@@ -21,7 +21,7 @@ vi.mock('@/app/golf/actions/coaching-philosophy', () => ({ revalidateCoachingPhi
 vi.mock('@/app/golf/actions/teams', () => ({ cancelJoinRequest: vi.fn(), createTeamJoinRequest: vi.fn(), regenerateJoinCode: vi.fn() }));
 vi.mock('@/app/golf/actions/insights-coachhelm', () => ({ updateTeamCoachHelmSettings: vi.fn() }));
 
-import { NativeSwipeBackBridge } from '@/components/golf/NativeSwipeBackBridge';
+import { NativeSwipeBackBridge } from '@/components/native/NativeSwipeBackBridge';
 import { haptic } from '../lib/haptics';
 import { PullToRefresh } from '../shell/PullToRefresh';
 import { createLiveWrites } from '../screens/settings/writes';

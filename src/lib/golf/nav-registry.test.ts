@@ -20,9 +20,10 @@
 //      (instant) swap, and every dynamic detail leaf as a forward push.
 // =============================================================================
 
-import { describe, it, expect } from 'vitest';
+import { beforeAll, describe, it, expect } from 'vitest';
 import { existsSync, readdirSync, readFileSync, statSync } from 'fs';
 import { join } from 'path';
+import { pathToFileURL } from 'url';
 import {
   GOLF_COACH_HUBS,
   GOLF_PLAYER_HUBS,
@@ -73,6 +74,22 @@ function routeExists(href: string): boolean {
     dirs = next;
   }
   return dirs.some((d) => dirHasRenderable(d));
+}
+
+// Fairway's redirect-only pages (Travel, Announcements, Tasks, Documents, My qualifiers) became next.config.mjs
+// redirects when Fairway retired (2026-11-14): such an href resolves when the redirect's destination does.
+let REDIRECTS: Array<{ source: string; destination: string }> = [];
+beforeAll(async () => {
+  // A computed specifier, so check:cycles (madge) does not walk from this test into next.config.mjs's build-only imports.
+  const { default: config } = (await import(pathToFileURL(join(process.cwd(), 'next.config.mjs')).href)) as { default: { redirects: () => Promise<Array<{ source: string; destination: string }>> } };
+  REDIRECTS = await config.redirects();
+});
+
+function hrefResolves(href: string): boolean {
+  if (routeExists(href)) return true;
+  const path = href.split('?')[0]!.split('#')[0]!;
+  const rule = REDIRECTS.find((r) => r.source === path);
+  return !!rule && routeExists(rule.destination);
 }
 
 function collectThroughGroups(dir: string, seg: string, out: string[]): void {
@@ -186,7 +203,7 @@ describe('golf nav-registry — Target IA (WAVE W2, 2026-07-09)', () => {
     ).toBe('/golf/dashboard/team-hub');
   });
 
-  describe('every hub sub-tab href resolves to a real page on disk', () => {
+  describe('every hub sub-tab href resolves to a real page on disk, directly or through a next.config redirect', () => {
     const allTabs = [
       ...GOLF_COACH_HUBS.flatMap((h) => h.tabs),
       ...GOLF_PLAYER_HUBS.flatMap((h) => h.tabs),
@@ -199,7 +216,7 @@ describe('golf nav-registry — Target IA (WAVE W2, 2026-07-09)', () => {
     it.each(allTabs.map((t) => [`${t.id} → ${t.href}`, t.href] as const))(
       '%s resolves',
       (_label, href) => {
-        expect(routeExists(href)).toBe(true);
+        expect(hrefResolves(href)).toBe(true);
       },
     );
   });

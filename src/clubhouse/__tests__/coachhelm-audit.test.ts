@@ -1,5 +1,5 @@
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
-import { deriveTone } from '@/components/golf/coachhelm/insight-card/tone-derivation';
+import { deriveTone } from '@/lib/coachhelm/tone-derivation';
 import { describe, expect, it } from 'vitest';
 import { drawnComparison, isNote, kindOf, staleFloor, staleSince } from '../data/coachhelm-classify';
 import { toChInsight } from '../data/coachhelm-map';

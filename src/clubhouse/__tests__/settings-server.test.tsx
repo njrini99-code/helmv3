@@ -89,11 +89,6 @@ vi.mock('next/navigation', () => ({
   },
 }));
 vi.mock('@/lib/redesign/flag', () => ({ fairwayScope: (c: string) => c }));
-vi.mock('@/components/fairway/pages/settings', () => ({
-  FairwaySettingsGeneral: () => <div data-fw="general" />,
-  FairwaySettingsNotifications: () => <div data-fw="notifications" />,
-  FairwaySettingsCoachingIntelligence: () => <div data-fw="coaching" />,
-}));
 vi.mock('@/components/fairway', () => ({
   FeatureUnavailable: () => <div data-fw="unavailable" />,
   Skeleton: () => <i data-fw="skeleton" />,
@@ -108,7 +103,6 @@ import NotificationPrefsPage from '@/app/golf/(dashboard)/dashboard/settings/not
 import CoachingIntelligenceLayout from '@/app/golf/(dashboard)/dashboard/settings/coaching-intelligence/layout';
 import SettingsLoading from '@/app/golf/(dashboard)/dashboard/settings/loading';
 import NotificationSettingsLoading from '@/app/golf/(dashboard)/dashboard/settings/notifications/loading';
-import CoachingIntelligenceLoading from '@/app/golf/(dashboard)/dashboard/settings/coaching-intelligence/loading';
 import { loadSettings } from '../data/settings';
 import { friendlyReason } from '../lib/use-action';
 import { ClubhouseSettingsRoute } from '../routes/settings';
@@ -461,14 +455,12 @@ describe('Settings · the route and the addresses that open it', () => {
     expect(props(await ClubhouseSettingsRoute({})).section).toBe('account');
   });
 
-  it('80102 /settings?section= opens that section for a coach or a player, and the Fairway page when Clubhouse is off', async () => {
+  it('80102 /settings?section= opens that section for a coach or a player', async () => {
     const el = await GolfSettingsPage({ searchParams: Promise.resolve({ section: 'notifications' }) });
     expect((el as ReactElement).type).toBe(ClubhouseSettingsRoute);
     expect(props(el).section).toBe('notifications');
     session.current = playerSession;
     expect(props(await GolfSettingsPage({ searchParams: Promise.resolve({}) })).section).toBeUndefined();
-    gate.on = false;
-    expect((await GolfSettingsPage({ searchParams: Promise.resolve({ section: 'notifications' }) }) as ReactElement).type).not.toBe(ClubhouseSettingsRoute);
   });
 
   it('80102 the old /settings/notifications link opens Notifications for a coach and a player', async () => {
@@ -494,22 +486,16 @@ describe('Settings · the route and the addresses that open it', () => {
     await expect(CoachingIntelligenceLayout({ children })).rejects.toThrow('redirect:/golf/login');
   });
 
-  it('80802 with Clubhouse off, the old coaching link still shows a player the coach-only notice', async () => {
-    gate.on = false;
-    session.current = playerSession;
-    const el = (await CoachingIntelligenceLayout({ children: <p>old page</p> })) as ReactElement;
-    expect(el.type).not.toBe(ClubhouseSettingsRoute);
-  });
 });
 
 describe('Settings · the loading files', () => {
+  // /settings/coaching-intelligence has no loading file of its own: its layout draws Settings directly.
   const skeletons = [
     ['/settings', SettingsLoading],
     ['/settings/notifications', NotificationSettingsLoading],
-    ['/settings/coaching-intelligence', CoachingIntelligenceLoading],
   ] as const;
 
-  it.each(skeletons)('CH-8401 %s shows the Settings skeleton inside Clubhouse and the Fairway one everywhere else', (_route, Loading) => {
+  it.each(skeletons)('CH-8401 %s shows the Settings skeleton', (_route, Loading) => {
     const inside = render(
       <ClubhouseMarker>
         <Loading />
@@ -517,10 +503,6 @@ describe('Settings · the loading files', () => {
     );
     expect(inside.container.querySelector('[data-ch-code="CH-8401"]')).not.toBeNull();
     expect(inside.container.querySelector('[data-fw]')).toBeNull();
-    inside.unmount();
-    const outside = render(<Loading />);
-    expect(outside.container.querySelector('[data-ch-code="CH-8401"]')).toBeNull();
-    expect(outside.container.querySelector('[data-fw]')).not.toBeNull();
   });
 });
 

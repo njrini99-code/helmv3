@@ -308,6 +308,49 @@ const nextConfig = {
         destination: '/golf/dashboard',
         permanent: false, // shim used redirect(), not permanentRedirect()
       },
+      // ─── Fairway retirement (owner, 2026-11-14) ─────────────────────────
+      // Fairway-era addresses whose screen is the same Clubhouse place for a
+      // coach and a player: their route folders only redirected
+      // (redirectToClubhouse), so they are config redirects now and old
+      // bookmarks, notifications and emails keep working. Addresses that go
+      // somewhere different per role (team, roster/[id], coachhelm/chat, …)
+      // keep their layout redirect, because config has no session.
+      // Not permanent: a 308 is cached hard by browsers.
+      {
+        // Tasks, Announcements, Documents and Travel are Team Hub tabs. A
+        // notification's ?task=<id> passes through, so Team Hub scrolls to it.
+        source: '/golf/dashboard/tasks',
+        destination: '/golf/dashboard/team-hub?tab=tasks',
+        permanent: false,
+      },
+      {
+        source: '/golf/dashboard/announcements',
+        destination: '/golf/dashboard/team-hub?tab=ann',
+        permanent: false,
+      },
+      {
+        source: '/golf/dashboard/documents',
+        destination: '/golf/dashboard/team-hub?tab=docs',
+        permanent: false,
+      },
+      {
+        source: '/golf/dashboard/travel',
+        destination: '/golf/dashboard/team-hub?tab=travel',
+        permanent: false,
+      },
+      {
+        // My qualifiers is retired (owner, 2026-11-11): one Qualifiers page,
+        // with the player's own listed first.
+        source: '/golf/dashboard/my-qualifiers',
+        destination: '/golf/dashboard/qualifiers',
+        permanent: false,
+      },
+      {
+        // A round's review is the round page.
+        source: '/golf/dashboard/rounds/:id/review',
+        destination: '/golf/dashboard/rounds/:id',
+        permanent: false,
+      },
       {
         source: '/golf/dashboard/my-insights',
         destination: '/golf/dashboard/coachhelm',

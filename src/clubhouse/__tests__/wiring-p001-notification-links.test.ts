@@ -4,12 +4,14 @@
  * P001 wiring: every address a notification row (and its push) can carry, for each role that receives it, lands on a
  * Clubhouse screen, and the query that names its item is read by that screen. The addresses are production's: the
  * distinct `action_url` shapes in `notifications` and `golf_calendar_notifications` (read-only aggregate, 2026-10-17)
- * and every writer under src/lib and src/app that sets one. An old address is followed through its route's own layout
- * (redirectToClubhouse), so a changed alias target fails here.
+ * and every writer under src/lib and src/app that sets one. An old address is followed through next.config.mjs's
+ * redirects (the addresses that go to one place for both roles, Fairway retirement 2026-11-14) and then its route's own
+ * layout (redirectToClubhouse), so a changed alias target fails here.
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { pathToFileURL } from 'node:url';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const redirect = vi.fn((href: string) => {
   throw new Error(`REDIRECT ${href}`);
@@ -36,14 +38,41 @@ type Role = 'coach' | 'player';
 /** Each layout that moves an old address, by its first segment. */
 type Layout = (p: { children: null; params?: Promise<{ id: string }> }) => Promise<unknown>;
 const LAYOUTS: Record<string, () => Promise<{ default: unknown }>> = {
-  announcements: () => import('@/app/golf/(dashboard)/dashboard/announcements/layout'),
-  tasks: () => import('@/app/golf/(dashboard)/dashboard/tasks/layout'),
   team: () => import('@/app/golf/(dashboard)/dashboard/team/layout'),
-  'rounds-review': () => import('@/app/golf/(dashboard)/dashboard/rounds/[id]/review/layout'),
 };
 
-/** Where an address ends up for a role: itself when rebuilt, else wherever its layout sends it (null: nowhere). */
-async function land(href: string, r: Role): Promise<string | null> {
+/** next.config.mjs's plain redirects (a `:param` source, no pattern): the ones a notification address can meet. */
+let RULES: Array<{ source: string; destination: string }> = [];
+beforeAll(async () => {
+  // A computed specifier, so check:cycles (madge) does not walk from this test into next.config.mjs's build-only imports.
+  const { default: config } = (await import(pathToFileURL(join(process.cwd(), 'next.config.mjs')).href)) as { default: { redirects: () => Promise<Array<{ source: string; destination: string }>> } };
+  RULES = (await config.redirects()).filter((r) => r.source.startsWith('/golf/dashboard/') && !/[(*]/.test(r.source));
+});
+
+/** An address after next.config's redirects: params filled in, the request's query passed through (the destination's own keys win). */
+function viaConfig(href: string): string {
+  const url = new URL(href, 'https://x.invalid');
+  for (const rule of RULES) {
+    const names: string[] = [];
+    const re = new RegExp(`^${rule.source.replace(/:(\w+)/g, (_, n: string) => (names.push(n), '([^/]+)'))}$`);
+    const m = re.exec(url.pathname);
+    if (!m) continue;
+    let dest = rule.destination;
+    names.forEach((n, i) => (dest = dest.replace(`:${n}`, m[i + 1]!)));
+    const d = new URL(dest, 'https://x.invalid');
+    const q = new URLSearchParams(d.search);
+    url.searchParams.forEach((v, k) => {
+      if (!q.has(k)) q.append(k, v);
+    });
+    const qs = q.toString();
+    return `${d.pathname}${qs ? `?${qs}` : ''}`;
+  }
+  return href;
+}
+
+/** Where an address ends up for a role: itself when rebuilt, else wherever config or its layout sends it (null: nowhere). */
+async function land(address: string, r: Role): Promise<string | null> {
+  const href = viaConfig(address);
   const url = new URL(href, 'https://x.invalid');
   const path = url.pathname;
   if (isRebuilt(path, r)) return href;
@@ -51,14 +80,13 @@ async function land(href: string, r: Role): Promise<string | null> {
   role = r;
   search = url.search.replace(/^\?/, '');
   const seg = path.replace('/golf/dashboard/', '');
-  const key = /^rounds\/[^/]+\/review$/.test(seg) ? 'rounds-review' : seg;
+  const key = seg;
   const load = LAYOUTS[key];
   if (!load) throw new Error(`no layout registered in this test for ${path}`);
   redirect.mockClear();
   const layout = (await load()).default as Layout;
-  const params = key === 'rounds-review' ? Promise.resolve({ id: seg.split('/')[1]! }) : undefined;
   try {
-    await layout({ children: null, params });
+    await layout({ children: null });
   } catch (e) {
     const m = /^REDIRECT (.+)$/.exec((e as Error).message);
     if (m) return m[1]!;
@@ -128,7 +156,7 @@ describe('P001 the query a notification carries is read by its screen', () => {
     expect(parseHubTab('tasks', 'coach')).toBe('tasks');
     expect(parseHubTab('tasks', 'player')).toBe('tasks');
     const page = readFileSync(join(DASH, 'team-hub/page.tsx'), 'utf8');
-    expect(page).toMatch(/<ClubhouseHubRoute tab=\{legacyTab\} task=/);
+    expect(page).toMatch(/<ClubhouseHubRoute tab=\{tab\} task=/);
   });
 
   it('Settings opens the section a link names, for the role it is sent to', () => {

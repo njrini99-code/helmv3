@@ -1,7 +1,7 @@
 'use client';
 
 import { lazy, Suspense, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import type { UseCoachHelmChatResult } from '@/components/golf/coachhelm/chat/useCoachHelmChat';
+import type { UseCoachHelmChatResult } from '@/hooks/coachhelm/useCoachHelmChat';
 import { haptic } from '../../lib/haptics';
 import { useChPhone } from '../../lib/use-phone';
 import { Keys } from '../command/Keys';

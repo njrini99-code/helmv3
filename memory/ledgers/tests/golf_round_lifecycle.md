@@ -154,7 +154,7 @@
   width survives on the span, and the viewBox stretches to the column. This is
   the failure mode to watch for in source-string tests generally — pinning the
   markup nearest the symptom rather than the element that controls it.
-- `src/components/fairway/pages/rounds/FairwayRoundDetail.test.tsx` — the
+- `src/components/fairway/pages/rounds/FairwayRoundDetail.test.tsx` (was removed with Fairway, 2026-11-14) — the
   end-dot assertion matches by `data-slot` instead of tag name. The dot is a
   round-capped stroke rather than a `<circle>` now (fill geometry distorts under
   `preserveAspectRatio="none"`, stroke does not), so the test pins the behaviour

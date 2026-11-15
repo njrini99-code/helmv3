@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { deriveTone, isImprovement } from '@/components/golf/coachhelm/insight-card/tone-derivation';
+import { deriveTone, isImprovement } from '@/lib/coachhelm/tone-derivation';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import type { InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
 import { buildDiagnosis } from '@/lib/coachhelm/v3/engine/generator-base';

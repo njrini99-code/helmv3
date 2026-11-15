@@ -39,14 +39,12 @@ async function incomingSearch(): Promise<URLSearchParams> {
 }
 
 /**
- * An old address whose screen lives elsewhere in Clubhouse (Tasks, Announcements,
- * Documents and Travel are Team Hub tabs; a player's page is their Stats profile;
- * the review is /rounds/[id]). With Clubhouse on for the signed-in role, the
- * address goes to that screen, so a notification or bookmark never opens a
- * Fairway page inside Clubhouse. Otherwise nothing happens and the Fairway page
- * renders. Call it from the route's layout, before its loading skeleton. The
- * role is the dashboard layout's (getGolfDashboardRole); a function target is
- * given the old address's query, so `?task=` or `?player=` survives the move.
+ * An old address whose screen lives elsewhere in Clubhouse and goes somewhere different per role (a coach's Team page
+ * is Settings' Team section, a player's its Golf section; a coach's link to a player is that player's Stats profile).
+ * Addresses that go to the same place for both roles are `next.config.mjs` redirects instead (Fairway retirement,
+ * 2026-11-14). Call it from the route's layout, before its loading skeleton. The role is the dashboard layout's
+ * (getGolfDashboardRole); a role with no target stays on the address (its own page, or the frame's coach-only state). A
+ * function target is given the old address's query, so `?player=` or `?c=` survives the move.
  */
 export async function redirectToClubhouse(target: Partial<Record<'coach' | 'player', AliasTarget>>): Promise<void> {
   const role = await getGolfDashboardRole();

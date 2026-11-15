@@ -9,7 +9,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createFakeSupabase, type FakeSupabase } from '@/test/fixtures/fake-supabase';
 
 let fake: FakeSupabase;
-const clubhouse = vi.hoisted(() => ({ on: true }));
 const access = vi.hoisted(() => ({ result: { allowed: true, reason: 'coach' } as { allowed: boolean; reason?: string } }));
 
 vi.mock('@/lib/supabase/server', () => ({ createClient: vi.fn(async () => fake) }));
@@ -18,7 +17,6 @@ vi.mock('@/lib/server-error-logger', () => ({ logServerError: vi.fn(async () => 
 vi.mock('@/lib/admin/observed-action', () => ({
   withAdminObserved: <T extends (...args: never[]) => unknown>(_name: string, _options: unknown, action: T) => action,
 }));
-vi.mock('@/clubhouse/gate', () => ({ isClubhouseFor: vi.fn(() => clubhouse.on) }));
 vi.mock('@/lib/auth/verify-player-access', () => ({ verifyTeamAccess: vi.fn(async () => access.result) }));
 // The HELD gate opens for the dashboard layout's role (golf-dashboard-role.ts, computed for real from these profiles).
 const profiles = vi.hoisted(() => ({
@@ -51,7 +49,6 @@ function world(over: { selection_state?: string; entries?: string[]; members?: s
 }
 
 beforeEach(() => {
-  clubhouse.on = true;
   profiles.coach = { onboarding_completed: true };
   profiles.player = null;
   vi.mocked(getGolfSessionProfile).mockClear();
@@ -60,22 +57,8 @@ beforeEach(() => {
   world();
 });
 
-describe('HELD gate (D-61)', () => {
-  it('92302 refuses both actions before any read while the Clubhouse UI is off', async () => {
-    clubhouse.on = false;
-    const from = vi.spyOn(fake, 'from');
-    const refusal = { success: false, error: 'Editing a qualifier’s setup isn’t available yet.' };
-    expect(await setQualifierSquadSize(Q, { total: 6, coachPicks: 2 })).toEqual(refusal);
-    expect(await setQualifierEntrants(Q, [p(1), p(3)])).toEqual(refusal);
-    expect(from).not.toHaveBeenCalled();
-    expect(verifyTeamAccess).not.toHaveBeenCalled();
-    const row = (await fake.from('golf_qualifiers').select('*').eq('id', Q).single()).data as { selection_slots_total: number };
-    expect(row.selection_slots_total).toBe(5);
-    // Off means no read at all, the session's included.
-    expect(getGolfSessionProfile).not.toHaveBeenCalled();
-  });
-
-  it('refuses a dual-profile user the layout draws the player shell for, before any read', async () => {
+describe('the coach gate (D-61)', () => {
+  it('92302 refuses a dual-profile user the layout draws the player shell for, before any read', async () => {
     // A coach row never onboarded beside an onboarded player profile: session.role says coach, the dashboard is the player's.
     profiles.coach = { onboarding_completed: false };
     profiles.player = { onboarding_completed: true };

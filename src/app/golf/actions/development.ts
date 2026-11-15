@@ -9,7 +9,6 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { notifyDevPlanAssigned } from '@/lib/notifications';
-import { isClubhouseForTeam } from '@/clubhouse/gate';
 import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
 import { verifyPlayerAccess } from '@/lib/auth/verify-player-access';
@@ -1406,10 +1405,9 @@ async function notifyPlayerOfProposedFocus(
           title,
           areaType,
           coachName?.trim() || 'Your Coach',
-          // Fairway's link redirects to a Development drill Clubhouse does not draw: send a Clubhouse player to the
-          // screen that is rebuilt, where the focus area and its Accept and Decline are. Decided by the PLAYER's team:
-          // the session here is the coach's, so isClubhouseFor would answer for the wrong user under an allowlist.
-          isClubhouseForTeam(await resolvePlayerTeamId(supabase, playerId)) ? CLUBHOUSE_DEV_PLAN_PATH : undefined
+          // The default link redirects to a Development drill Clubhouse does not draw: send the player to the screen
+          // where the focus area and its Accept and Decline are.
+          CLUBHOUSE_DEV_PLAN_PATH
         );
       }
     }

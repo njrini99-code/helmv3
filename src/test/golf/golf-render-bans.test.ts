@@ -72,8 +72,8 @@ const RETIRED = [
 const RETIRED_SET = new Set(RETIRED);
 const RETIRED_PATH = new RegExp(`/(${[...RETIRED, 'glass-surface'].join('|')})(\\.tsx?)?$`);
 
-/** Retired components are banned under the golf routes and Fairway pages only. */
-const RETIRED_SCOPE = ['src/app/golf/', 'src/components/fairway/pages/'];
+/** Retired components are banned under the golf routes (Fairway's pages, also in scope, were retired on 2026-11-14). */
+const RETIRED_SCOPE = ['src/app/golf/'];
 
 type RuleId =
   | 'toFixed'

@@ -1,11 +1,9 @@
-import { isClubhouseFrontDoor } from '@/clubhouse/gate';
 import { ClubhouseJoinInvalidRoute, ClubhouseJoinTeamRoute } from '@/clubhouse/routes/auth';
 import { createClient } from '@/lib/supabase/server';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { redirect } from 'next/navigation';
 import { resolveGolfCoachEntry } from '@/lib/golf/coach-entry-path';
-import { GolfJoinTeamClient } from './golf-join-team-client';
 
 export const metadata = {
   title: 'Join Team',
@@ -108,37 +106,8 @@ export default async function GolfJoinTeamPage({ params }: PageProps) {
   }
 
   if (teamError || !team) {
-    // golf_clubhouse_front_door chooses the page that is drawn; everything above, and what is decided, is the same.
-    if (isClubhouseFrontDoor()) return <ClubhouseJoinInvalidRoute />;
-    return (
-      <div className="min-h-dvh bg-auth-golf relative">
-        {/* Floating Orbs */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="auth-orb auth-orb-1 w-[400px] h-[400px] sm:w-[500px] sm:h-[500px] -top-24 -right-24 bg-gradient-to-br from-primary-400/40 to-primary-500/25" />
-          <div className="auth-orb auth-orb-2 w-[350px] h-[350px] sm:w-[400px] sm:h-[400px] -bottom-20 -left-20 bg-gradient-to-tr from-primary-400/25 to-primary-400/15" />
-        </div>
-
-        <div className="relative min-h-dvh flex items-center justify-center p-4 sm:p-6 pb-[calc(1rem+env(safe-area-inset-bottom))]">
-          <div className="max-w-md w-full auth-glass-card rounded-fw-lg p-6 sm:p-8 text-center">
-            <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-warm-900 mb-2">Invalid Invite Code</h1>
-            <p className="text-warm-600 mt-2 text-sm sm:text-base mb-6">
-              This team invitation code is invalid or does not exist.
-            </p>
-            <a
-              href="/golf/dashboard"
-              className="inline-block px-6 py-2.5 bg-accent-fill text-text-on-accent-fill font-semibold rounded-fw-sm hover:bg-accent-fill-hover transition-colors shadow-lg shadow-primary-900/10"
-            >
-              Go to Dashboard
-            </a>
-          </div>
-        </div>
-      </div>
-    );
+    // Everything above, and what is decided, is read before anything is drawn.
+    return <ClubhouseJoinInvalidRoute />;
   }
 
   // The code is now known to resolve, so it is safe to carry into onboarding.
@@ -162,42 +131,20 @@ export default async function GolfJoinTeamPage({ params }: PageProps) {
       }
     : undefined;
 
-  if (isClubhouseFrontDoor()) {
-    return (
-      <ClubhouseJoinTeamRoute
-        code={code}
-        playerId={player.id}
-        playerName={`${player.first_name} ${player.last_name}`}
-        playerYear={player.graduation_year ? String(player.graduation_year) : 'freshman'}
-        email={user.email ?? null}
-        team={{
-          id: team.id,
-          name: team.name,
-          season: team.season,
-          organization: organization
-            ? { name: organization.name, city: organization.location_city, state: organization.location_state, logoUrl: organization.logo_url }
-            : undefined,
-        }}
-      />
-    );
-  }
-
   return (
-    <GolfJoinTeamClient
-      inviteCode={code}
+    <ClubhouseJoinTeamRoute
+      code={code}
       playerId={player.id}
       playerName={`${player.first_name} ${player.last_name}`}
       playerYear={player.graduation_year ? String(player.graduation_year) : 'freshman'}
+      email={user.email ?? null}
       team={{
         id: team.id,
         name: team.name,
         season: team.season,
-        organization: organization ? {
-          name: organization.name,
-          city: organization.location_city,
-          state: organization.location_state,
-          logoUrl: organization.logo_url,
-        } : undefined,
+        organization: organization
+          ? { name: organization.name, city: organization.location_city, state: organization.location_state, logoUrl: organization.logo_url }
+          : undefined,
       }}
     />
   );

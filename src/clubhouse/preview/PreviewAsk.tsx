@@ -3,7 +3,7 @@
 import { revealMode, setRevealMode, setWaitLight } from '../screens/coachhelm/chat/reveal';
 import type { UIMessage } from 'ai';
 import { useEffect, useMemo, useState } from 'react';
-import { useCoachHelmChat, type UseCoachHelmChatOptions, type UseCoachHelmChatResult } from '@/components/golf/coachhelm/chat/useCoachHelmChat';
+import { useCoachHelmChat, type UseCoachHelmChatOptions, type UseCoachHelmChatResult } from '@/hooks/coachhelm/useCoachHelmChat';
 import { pendingDecisionKeys } from '@/lib/coachhelm/v3/chat/engine/protocol';
 import { askScript, installScriptedChat, isAskPace, SCRIPTED_CHAT_ENDPOINT, type AskScript } from './ask-script';
 import type { ChAskData, ChAskLoad } from '../data/coachhelm-chat-shape';

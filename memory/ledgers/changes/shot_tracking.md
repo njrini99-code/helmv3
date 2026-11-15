@@ -294,7 +294,7 @@
   already builds — instead of falling through to the generic fallback that
   throws/toasts `result.error` (the bare key `'hole_invalid'`) verbatim.
   `new-round-client.tsx`'s throw reaches `FairwaySaveRoundModal`
-  (`src/components/fairway/pages/rounds-new/FairwaySaveRoundModal.tsx`),
+  (src/components/fairway/pages/rounds-new/FairwaySaveRoundModal.tsx (was removed with Fairway, 2026-11-14)),
   which renders `err.message` directly in the exit-round sheet;
   `continue-round-client.tsx`'s toast rendered `result.error` the same way.
 - Why: `hole_invalid` is a new result shape this same review pass introduced
@@ -311,8 +311,8 @@
   diagnostic string with a prefix rather than the bare `result.error`
   verbatim.
 - Tests:
-  `src/app/golf/(dashboard)/dashboard/rounds/new/new-round-client.hole-invalid.test.ts`,
-  `src/app/golf/(dashboard)/dashboard/rounds/continue/[id]/continue-round-client.hole-invalid.test.ts`
+  `src/lib/golf/round-session/__tests__/use-new-round-session.hole-invalid.test.ts`,
+  `src/lib/golf/round-session/__tests__/use-continue-round-session.hole-invalid.test.ts`
   — source-inspection wiring contracts, matching the sibling
   `recovery`/`round-missing` tests for these two files.
 - Verified: `npm run typecheck` (0), `npm run lint` (0), and
@@ -466,9 +466,9 @@
   `npm run docs:path-drift` (0, 0 vs baseline 0), and `npx vitest run` over
   every touched/added test file plus
   `src/app/golf/(dashboard)/dashboard/rounds/`, `src/app/golf/actions/`,
-  `src/components/fairway/pages/rounds-new/`,
-  `src/components/fairway/pages/rounds-recover/`,
-  `src/components/fairway/pages/rounds-tracking/`, `src/hooks/golf/`,
+  `src/components/fairway/pages/rounds-new/` (was removed with Fairway, 2026-11-14),
+  `src/components/fairway/pages/rounds-recover/` (was removed with Fairway, 2026-11-14),
+  `src/components/fairway/pages/rounds-tracking/` (was removed with Fairway, 2026-11-14), `src/hooks/golf/`,
   `src/lib/golf/`, `src/lib/offline/`, `src/lib/admin/`, `src/lib/auth/`,
   and `src/lib/utils/` (278 files, 3274 tests, 0 failures).
   `npm run build` deliberately not run (worktree has no `.env.local`; CI
@@ -539,9 +539,9 @@
 - Verified for the merge commit, each captured to a file, exit code checked:
   `npm run typecheck` (0), `npm run lint` (0), `npx vitest run --project
   unit --project unit-dom` over `src/app/golf/(dashboard)/dashboard/rounds/`,
-  `src/app/golf/actions/`, `src/components/fairway/pages/rounds-new/`,
-  `src/components/fairway/pages/rounds-recover/`,
-  `src/components/fairway/pages/rounds-tracking/`, `src/hooks/golf/`,
+  `src/app/golf/actions/`, `src/components/fairway/pages/rounds-new/` (was removed with Fairway, 2026-11-14),
+  `src/components/fairway/pages/rounds-recover/` (was removed with Fairway, 2026-11-14),
+  `src/components/fairway/pages/rounds-tracking/` (was removed with Fairway, 2026-11-14), `src/hooks/golf/`,
   `src/lib/golf/`, `src/lib/offline/`, `src/lib/utils/` and `src/lib/auth/`
   (205 files, 2281 passed, 4 skipped — the C4 block — 0 failed),
   `node scripts/knowledge/document-inventory.mjs --check` (0),

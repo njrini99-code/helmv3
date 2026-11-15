@@ -31,12 +31,11 @@ vi.mock('../screens/auth/SceneMount', async () => {
     SceneMount: ({ camera, play }: { camera?: string; play?: boolean }) => (useLocalHour() === null ? null : <div data-testid="scene" data-camera={camera} data-play={String(!!play)} />),
   };
 });
-const flag = vi.hoisted(() => ({ on: true }));
-vi.mock('@/clubhouse/gate', () => ({ isClubhouseFrontDoor: () => flag.on, isClubhouseFor: () => true }));
+vi.mock('@/clubhouse/gate', () => ({ isClubhouseFor: () => true }));
 vi.mock('@/clubhouse/routes/auth', () => ({ ClubhouseSignInRoute: () => <p>The Clubhouse sign in</p>, ClubhouseWelcomeRoute: () => <p>The Clubhouse welcome</p> }));
 
-import LoginLayout from '@/app/golf/(auth)/login/layout';
-import WelcomeLayout from '@/app/golf/(auth)/welcome/layout';
+import LoginPage from '@/app/golf/(auth)/login/page';
+import WelcomePage from '@/app/golf/(auth)/welcome/page';
 import { STALE_BUNDLE_RELOAD_KEY } from '@/lib/auth/golf-sign-in-logic';
 import { PREVIEW_AUTH_NOW, PREVIEW_WELCOME_CAUGHT_UP, PREVIEW_WELCOME_COACH, PREVIEW_WELCOME_FAILED, PREVIEW_WELCOME_FIRST, PREVIEW_WELCOME_NO_NAME, PREVIEW_WELCOME_PLAYER } from '../preview/fixtures-auth';
 import { SignIn } from '../screens/auth/SignIn';
@@ -66,7 +65,6 @@ const at = (path: string) => window.history.replaceState({}, '', path);
 beforeEach(() => {
   setMedia();
   native.is = false;
-  flag.on = true;
   sessionStorage.clear();
   localStorage.clear();
   at('/golf/login');
@@ -623,27 +621,13 @@ describe('the sign-in micro-motion', () => {
   });
 });
 
-describe('the front door flag chooses the page, and only the page', () => {
-  it('flag off: today pages render untouched', () => {
-    flag.on = false;
-    render(LoginLayout({ children: <p>Today login page</p> }));
-    expect(screen.getByText('Today login page')).toBeInTheDocument();
-    expect(screen.queryByText('The Clubhouse sign in')).toBeNull();
-    cleanup();
-    render(WelcomeLayout({ children: <p>Today welcome page</p> }));
-    expect(screen.getByText('Today welcome page')).toBeInTheDocument();
-    expect(screen.queryByText('The Clubhouse welcome')).toBeNull();
-  });
-
-  it('flag on: the Clubhouse pages render in their place', () => {
-    flag.on = true;
-    render(LoginLayout({ children: <p>Today login page</p> }));
+describe('the sign in and the welcome are Clubhouse’s (the old entrance pages were retired, 2026-11-14)', () => {
+  it('/golf/login and /golf/welcome draw the Clubhouse pages', () => {
+    render(LoginPage());
     expect(screen.getByText('The Clubhouse sign in')).toBeInTheDocument();
-    expect(screen.queryByText('Today login page')).toBeNull();
     cleanup();
-    render(WelcomeLayout({ children: <p>Today welcome page</p> }));
+    render(WelcomePage());
     expect(screen.getByText('The Clubhouse welcome')).toBeInTheDocument();
-    expect(screen.queryByText('Today welcome page')).toBeNull();
   });
 });
 

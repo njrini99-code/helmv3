@@ -1,12 +1,11 @@
 // =============================================================================
-// Player round pages follow the dashboard layout's role for Clubhouse.
+// Player round pages follow the dashboard layout's role.
 //
-// Round entry and recovery are the player's Clubhouse screens. Each draws its Clubhouse route only when the gate is on for that role
-// AND the dashboard layout's role (getGolfDashboardRole, computed for real here
-// from the session's profiles) is that role. A user with both profiles whose
-// dashboard is the coach's keeps the Fairway branch, as with the gate off.
-// The pages' own player-profile checks are unchanged. Recruiting (coach) has
-// its own case in ../../recruiting/__tests__.
+// Round entry and recovery are the player's Clubhouse screens. Each draws its Clubhouse route only when the dashboard
+// layout's role (getGolfDashboardRole, computed for real here from the session's profiles) is the player's. A user with
+// both profiles whose dashboard is the coach's gets nothing from the page: the Clubhouse frame shows a coach its
+// not-rebuilt state for these addresses (src/clubhouse/shell/nav.ts). The pages' own player-profile checks are
+// unchanged. Recruiting (coach) has its own case in ../../recruiting/__tests__.
 // =============================================================================
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -15,7 +14,6 @@ type Profile = { id: string; onboarding_completed: boolean } | null;
 
 const mocks = vi.hoisted(() => ({
   session: { userId: 'u-1', role: 'player' as 'coach' | 'player', coach: null as Profile, player: null as Profile },
-  clubhouse: true,
   redirect: vi.fn((path: string) => {
     throw new Error(`REDIRECT:${path}`);
   }),
@@ -23,9 +21,6 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('next/navigation', () => ({ redirect: mocks.redirect }));
 vi.mock('@/lib/auth/session', () => ({ getGolfSessionProfile: vi.fn(async () => mocks.session) }));
-vi.mock('@/clubhouse/gate', () => ({
-  isClubhouseFor: vi.fn(async (role: string | null | undefined) => (role === 'coach' || role === 'player') && mocks.clubhouse),
-}));
 
 function ClubhouseNewRoundRoute() {
   return null;
@@ -33,22 +28,9 @@ function ClubhouseNewRoundRoute() {
 function ClubhouseRoundRecoverRoute() {
   return null;
 }
-function NewRoundClient() {
-  return null;
-}
-function FairwayRecoverRound() {
-  return null;
-}
 vi.mock('@/clubhouse/routes/round-new', () => ({ ClubhouseNewRoundRoute }));
 vi.mock('@/clubhouse/routes/round-recover', () => ({ ClubhouseRoundRecoverRoute }));
-vi.mock('../new/new-round-client', () => ({ default: NewRoundClient }));
-vi.mock('@/components/golf/layout/AnimatedPage', () => ({
-  AnimatedPage: ({ children }: { children: unknown }) => children,
-  AnimatedItem: ({ children }: { children: unknown }) => children,
-}));
-vi.mock('@/components/fairway/pages/rounds-recover', () => ({ FairwayRecoverRound }));
 vi.mock('@/components/fairway', () => ({ FeatureUnavailable: () => null }));
-vi.mock('@/lib/redesign/flag', () => ({ fairwayScope: (s: string) => s }));
 
 import NewRoundPage from '../new/page';
 import RecoverRoundPage from '../recover/page';
@@ -65,7 +47,6 @@ function dualCoachDashboard() {
 }
 
 beforeEach(() => {
-  mocks.clubhouse = true;
   mocks.redirect.mockClear();
 });
 
@@ -76,19 +57,10 @@ describe('player round pages', () => {
     expect(((await RecoverRoundPage()) as El).type).toBe(ClubhouseRoundRecoverRoute);
   });
 
-  it('a dual-profile user on the coach dashboard keeps the Fairway pages', async () => {
+  it('a dual-profile user on the coach dashboard gets neither player screen (the frame shows its not-rebuilt state)', async () => {
     dualCoachDashboard();
-    const newRound = (await NewRoundPage()) as El;
-    expect(((newRound.props.children as El).props.children as El).type).toBe(NewRoundClient);
-    const recover = (await RecoverRoundPage()) as El;
-    expect(recover.type).not.toBe(ClubhouseRoundRecoverRoute);
-    expect((recover.props.children as El).type).toBe(FairwayRecoverRound);
-  });
-
-  it('with the gate off, the player dashboard keeps the Fairway pages', async () => {
-    dualPlayerDashboard();
-    mocks.clubhouse = false;
-    expect(((((await NewRoundPage()) as El).props.children as El).props.children as El).type).toBe(NewRoundClient);
-    expect((((await RecoverRoundPage()) as El).props.children as El).type).toBe(FairwayRecoverRound);
+    expect(await NewRoundPage()).toBeNull();
+    expect(await RecoverRoundPage()).toBeNull();
+    expect(mocks.redirect).not.toHaveBeenCalled();
   });
 });

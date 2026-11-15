@@ -1,8 +1,8 @@
 # Clubhouse UI guidance
 
 Root `AGENTS.md` remains the operating guide. This file covers the Clubhouse
-exception for agents working in this tree (Clubhouse is off in production and on in
-preview and development; Fairway serves coaches and players live). Start with
+exception for agents working in this tree (Clubhouse is the only coach and player
+UI; the owner retired Fairway's screens on 2026-11-14). Start with
 [`docs/clubhouse/STATUS.md`](../../docs/clubhouse/STATUS.md): current state, the
 release branch, how to turn it on and roll it back, remaining work and open
 owner decisions. Read `.claude/rules/clubhouse.md` for the scoped rules,
@@ -44,8 +44,8 @@ copy any other version; an old address opens the current page.
 - A player's CoachHelm Board: Your week, `screens/coachhelm/file/YourWeek.tsx`
   (preview `coachhelm-player`). The older player board is gone.
 - Qualifiers: players have one Qualifiers page, the qualifiers they are entered
-  in first. "My qualifiers" is gone in Clubhouse; `/my-qualifiers` and the
-  `my-qualifiers` preview open Qualifiers. Fairway keeps its own page.
+  in first. "My qualifiers" is gone; `/my-qualifiers` (a `next.config.mjs`
+  redirect) and the `my-qualifiers` preview open Qualifiers.
 - CoachHelm chat: direction A only
   (`docs/clubhouse/coachhelm-chat-v3/LOOK.md`).
 - Stills in any `shots/test-pass` folder were taken before the fixes. They are

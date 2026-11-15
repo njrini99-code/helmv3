@@ -69,7 +69,7 @@ describe("SkyScript, front door: the sign in never opens on the dashboard's skel
 
   it('hides the route skeleton and paints the hour sky until the document has been read', () => {
     vi.setSystemTime(new Date(2026, 9, 15, 23, 10));
-    new Function(skyBoot(true))();
+    new Function(skyBoot())();
     expect(root.hasAttribute('data-ch-au-boot')).toBe(true);
     expect(root.style.getPropertyValue('--ch-au-boot-sky')).toBe(root.style.getPropertyValue('--ch-au-wash-bg'));
     expect(cover()?.textContent).toContain('[data-ch-boot-skeleton]{visibility:hidden');
@@ -78,17 +78,15 @@ describe("SkyScript, front door: the sign in never opens on the dashboard's skel
     expect(cover()).toBeNull();
   });
 
-  it('does nothing of the kind for the Fairway sign in, or on any other page', () => {
-    new Function(SKY_BOOT)();
-    expect(root.hasAttribute('data-ch-au-boot')).toBe(false);
+  it('does nothing of the kind on any other page', () => {
     window.history.replaceState(null, '', '/golf/dashboard');
-    new Function(skyBoot(true))();
+    new Function(skyBoot())();
     expect(root.hasAttribute('data-ch-au-boot')).toBe(false);
     expect(cover()).toBeNull();
   });
 
   it('clears with the rest once React has the hour', () => {
-    new Function(skyBoot(true))();
+    new Function(skyBoot())();
     clearSkyBoot();
     expect(root.hasAttribute('data-ch-au-boot')).toBe(false);
     expect(cover()).toBeNull();

@@ -194,7 +194,7 @@ archived ──(re-emitted)──► tentative | detected   (same gate)
   are one observation. Rule 1's healthy band is **direction-aware**
   (2026-09-22): a player at least as good as `comparison_value` per the
   metric's polarity (`isNegativePolarityMetric`,
-  `src/components/golf/coachhelm/insight-card/tone-derivation.ts` — the same
+  `src/lib/coachhelm/tone-derivation.ts` — the same
   table insight-card tone uses, not a second one) is always healthy
   regardless of gap size; only the adverse direction (still behind) is
   gated by the 20% closeness threshold. A symmetric `|gap| ≤ 20%` used to
@@ -288,7 +288,7 @@ unchanged by this note — this is a copy fix only. Everywhere the count
 reaches a coach (Fairway effectiveness page, trust chip tooltips,
 aria-labels), the label reads "Delivered", never "Shown", with a short hint
 that it counts delivery, not a confirmed view
-(`src/components/fairway/pages/coachhelm/FairwayEffectiveness.tsx`).
+(src/components/fairway/pages/coachhelm/FairwayEffectiveness.tsx).
 
 A real "viewed" signal — a client-reported, debounced, in-viewport
 confirmation distinct from delivery — is deferred future work (Package
@@ -1233,7 +1233,7 @@ DB-synced baseline — `getExpectedStrokes` in
 `public.sg_expected_strokes()`) — rather than inventing a second one.
 `src/lib/golf/strokes-gained.ts` has numerically similar tables but is
 quarantined dead code (see the warning in
-`src/components/golf/coachhelm/round-review/shot-strokes-gained.ts`) and
+src/components/golf/coachhelm/round-review/shot-strokes-gained.ts) and
 must never be imported for real computation. On the green,
 `distanceFeet` is passed straight through (no feet→yards round trip); an
 unmapped lie (`'water'`, `'recovery'`, `'other'`, anything not in the
@@ -2341,7 +2341,7 @@ read or written.
    label is built beside the value (`cohortAnchorLabel`) so the triple still
    cannot disagree.
 3. Add a row to the `SOURCE_LABELS` map at
-   `src/components/golf/coachhelm/insights/EvidencePanel.tsx` for user-facing
+   src/components/golf/coachhelm/insights/EvidencePanel.tsx for user-facing
    rendering.
 4. Update this doc.
 

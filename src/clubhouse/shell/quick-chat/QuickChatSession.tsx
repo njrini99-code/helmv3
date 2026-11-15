@@ -4,7 +4,7 @@ import { ArrowUpRight, SquarePen, X } from 'lucide-react';
 import { useGolfUserOptional } from '@/contexts/golf-user-context';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { useCoachHelmChat } from '@/components/golf/coachhelm/chat/useCoachHelmChat';
+import { useCoachHelmChat } from '@/hooks/coachhelm/useCoachHelmChat';
 import type { ChatUIMessage } from '@/lib/coachhelm/v3/chat/engine/protocol';
 import { haptic } from '../../lib/haptics';
 import { useChMotionMode } from '../../lib/reduced-motion';

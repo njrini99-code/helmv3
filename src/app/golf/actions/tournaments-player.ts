@@ -32,7 +32,7 @@ function refuse<T>(code: TourRefusalCode): ActionResult<T> {
 async function saveTournamentReflectionImpl(tournamentId: string, text: string): Promise<ActionResult<{ savedAt: string }>> {
   const parsed = body.safeParse(text);
   if (!isUuid(tournamentId) || !parsed.success) return refuse('invalid');
-  if (!isFlagEnabled('golf_tournaments_v1') || !isFlagEnabled('golf_clubhouse_ui')) return refuse('off');
+  if (!isFlagEnabled('golf_tournaments_v1')) return refuse('off');
   if ((await getGolfDashboardRole()) !== 'player') return refuse('off');
   const session = await getGolfSessionProfile();
   if (!session?.player) return refuse('not_signed_in');

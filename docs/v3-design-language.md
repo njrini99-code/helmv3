@@ -281,7 +281,7 @@ These are roadmap, not blockers. The classes + variants already do the work; the
 ### Foundation
 - **`src/lib/coachhelm/v3/motion.ts`** — canonical motion library (8 variants + 4 durations + 2 easing curves + stagger helper)
 - **`src/app/globals.css`** — `.surface-lift` (Liquid Glass tier), `.surface-hairline`, `.v3-lift`, CSS motion vars (`--v3-ease-*`, `--v3-duration-*`)
-- **`src/components/golf/layout/SmoothScrollMount.tsx`** — Lenis smooth-scroll mount, gated on coarse-pointer + reduced-motion
+- **src/components/golf/layout/SmoothScrollMount.tsx** — Lenis smooth-scroll mount, gated on coarse-pointer + reduced-motion
 - **Mounted Lenis** at the dashboard layout root
 
 ### Surface refactors (every v3 surface now speaks the canonical vocabulary)

@@ -1,5 +1,4 @@
 # Feature: Calendar And Events
-<!-- schema-drift-absent: golf_clubhouse_ui -->
 
 <!-- schema-drift-banner: hand-written above/below; do not auto-band this file -->
 
@@ -88,7 +87,7 @@ The route is shared by coaches and players, but permissions and actions differ. 
 
 ### Components
 
-- `src/components/fairway/pages/calendar/FairwayCalendar.tsx`
+- src/components/fairway/pages/calendar/FairwayCalendar.tsx (was removed with Fairway, 2026-11-14)
 - `src/components/golf/calendar/PremiumCalendarClient.tsx`
 - `src/components/golf/calendar/MonthView.tsx`
 - `src/components/golf/calendar/WeekView.tsx`
@@ -308,7 +307,7 @@ legacy `is_recurring` flag in sync for older consumers.
 
 - Time fields (event editor start/end, busy-time editor) are the iOS Clock
   drum on desktop and mobile alike (owner request, 2026-09-10):
-  `TimeWheel` in `src/components/fairway/controls/wheel-picker.tsx` — hour ·
+  `TimeWheel` in src/components/fairway/controls/wheel-picker.tsx (was removed with Fairway, 2026-11-14) — hour ·
   minute · AM/PM columns, one continuous selection band, snap-on-settle,
   keyboard listbox per column. Minutes are offered at 1-minute granularity
   (the old list stepped by 15). `TimeChooser` (EventWhenFields.tsx) still
@@ -551,7 +550,7 @@ for coaches and players instead of `FairwayCalendar`. Contract differences:
 - Loader: `src/clubhouse/data/calendar.ts` reads the anchor's month window (padded two weeks back, six ahead), not ±3 months. Times resolve in the team timezone server-side; all-day rows keep their stored date. Attendance (`golf_event_attendance`) is chunked and paginated.
 - State is URL-driven: `?view=day|week|month|agenda&date=YYYY-MM-DD&event=<id>`.
 - Writes reuse the existing actions unchanged (`createGolfEvent`, `updateGolfEvent`, `deleteGolfEvent`, `createRecurringEvent`, `editRecurringEvent`, `deleteRecurringEvent`, `respondToEvent`, `markAttendance`, `getAttendanceReport`, `getCalendarFeeds`, `createCalendarFeed`), passing the team zone's offset for the event date as `timezoneOffset`.
-- Change marks (P-14, held until migration `20261025080000_golf_events_change_marks.sql` is applied): `golf_events.metadata.change` is written only by that migration's change-mark trigger (clients cannot write it); the Calendar, Home and the iCal team feed read it for 72 hours after the last edit or until the event ends. Version B: nothing is pushed to players; the coach's Message players button prefills Messages. Words come from `src/lib/calendar/change-mark.ts`; the feed leads an event's DESCRIPTION with `feedLine` while the mark is live (`src/lib/calendar/change-feed.ts`), and only while Clubhouse is on for the feed's team (`isClubhouseForTeam`: `golf_clubhouse_ui` and the `HELM_CLUBHOUSE_TEAMS` allowlist); with it off the feed is exactly as before change marks. Device-only Got it is the `ch_marks` cookie.
+- Change marks (P-14, held until migration `20261025080000_golf_events_change_marks.sql` is applied): `golf_events.metadata.change` is written only by that migration's change-mark trigger (clients cannot write it); the Calendar, Home and the iCal team feed read it for 72 hours after the last edit or until the event ends. Version B: nothing is pushed to players; the coach's Message players button prefills Messages. Words come from `src/lib/calendar/change-mark.ts`; the feed leads an event's DESCRIPTION with `feedLine` while the mark is live (`src/lib/calendar/change-feed.ts`), for every team (the Clubhouse team check went with Fairway, 2026-11-14). Device-only Got it is the `ch_marks` cookie.
 - Players never see a teammate's class, matching `attributeClassEvents`. Overlaps shown to coaches are computed from the loaded events and classes, not the conflict inbox.
 - `?new=1` opens the event editor once (Home's "New event"); the param is dropped from the URL after it opens.
 - `?new=1&with=<playerId>` (Roster's Plan 1:1, D-52; `golf_players.id`, coaches only):

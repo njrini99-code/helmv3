@@ -24,7 +24,7 @@
  * (02 §7; the floors Slice 1 uses, PR #2219 `v3/support/families.ts`), and,
  * once Slice 1 writes `evidence.support`, q <= 0.10.
  */
-import { isNegativePolarityMetric } from '@/components/golf/coachhelm/insight-card/tone-derivation';
+import { isNegativePolarityMetric } from '@/lib/coachhelm/tone-derivation';
 import type { ConflictRecord, LifecycleReadRow } from './types';
 
 /** BH q for a supported read (02 §5). */

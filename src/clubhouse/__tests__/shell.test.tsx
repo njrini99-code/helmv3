@@ -1035,13 +1035,13 @@ describe('Shell · phone chrome', () => {
     expect(title.textContent).toBe('Notifications');
     expect(title.firstElementChild!.className).toBe('ch-sr-only');
     view.unmount();
-    // My qualifiers is retired (it opens Qualifiers): a coach there gets the not-rebuilt notice under the plain bar, once the alias has
+    // Team is an old address (it opens Settings): a coach there gets the not-rebuilt notice under the plain bar, once the alias has
     // had its CH_ALIAS_WAIT_MS to redirect (A30: an old address on its way somewhere draws a blank canvas first).
     vi.useFakeTimers();
     try {
       render(
-        <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/my-qualifiers">
-          <p>My qualifiers body</p>
+        <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/team">
+          <p>Team body</p>
         </ClubhouseFrame>,
       );
       expect(code('CH-1301')).toBeNull();
@@ -1240,13 +1240,13 @@ describe('Shell · behaviour contracts (P001)', () => {
     expect(code('CH-1808')).not.toBeNull();
     expect(document.getElementById('ch-content')!.textContent).toMatch(/Roster body/);
     unmount();
-    // Dev is a real dashboard folder rebuilt for neither role: a player on that address gets the notice.
+    // rounds/continue is a real dashboard folder with no screen of its own for either role: a player on that address gets the notice.
     const second = render(
-      <ClubhouseFrame userData={player} shell={shell} pathname="/golf/dashboard/dev/haptics">
-        <p>Dev body</p>
+      <ClubhouseFrame userData={player} shell={shell} pathname="/golf/dashboard/rounds/continue">
+        <p>Continue body</p>
       </ClubhouseFrame>,
     );
-    expect(screen.queryByText('Dev body')).toBeNull();
+    expect(screen.queryByText('Continue body')).toBeNull();
     expect(code('CH-1301')).not.toBeNull();
     second.unmount();
     // F-0025: a mistyped address is no dashboard folder at all: its segment (the not-found page, CH-1306) renders.
@@ -1294,10 +1294,10 @@ describe('Shell · behaviour contracts (P001)', () => {
     );
     expect(screen.getByRole('heading', { level: 1 }).textContent).toMatch(/^Only coaches use /);
     old.unmount();
-    // A coach on an unbuilt address still reads the plain notice.
+    // A coach on an address rebuilt for players only (Classes) still reads the plain notice.
     render(
-      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/dev/haptics">
-        <p>Dev body</p>
+      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/classes">
+        <p>Classes body</p>
       </ClubhouseFrame>,
     );
     expect(screen.getByRole('heading', { level: 1 }).textContent).toMatch(/isn.t available here$/);

@@ -21,7 +21,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const mocks = vi.hoisted(() => ({
   getGolfSessionProfile: vi.fn(),
   getWhatsNewForCoach: vi.fn(),
-  isClubhouseFor: vi.fn(async (_role: string) => false),
   redirect: vi.fn((path: string) => {
     throw new Error(`REDIRECT:${path}`);
   }),
@@ -29,7 +28,6 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('next/navigation', () => ({ redirect: mocks.redirect }));
 
-vi.mock('@/clubhouse/gate', () => ({ isClubhouseFor: mocks.isClubhouseFor }));
 function ClubhouseWhatsNewRouteStub() {
   return null;
 }
@@ -43,13 +41,6 @@ vi.mock('@/app/golf/actions/whats-new', () => ({
   getWhatsNewForCoach: mocks.getWhatsNewForCoach,
 }));
 
-function FairwayWhatsNewStub() {
-  return null;
-}
-vi.mock('@/components/fairway/pages/whats-new', () => ({
-  FairwayWhatsNew: FairwayWhatsNewStub,
-}));
-
 function FeatureUnavailableStub() {
   return null;
 }
@@ -59,14 +50,6 @@ vi.mock('@/components/fairway', () => ({
 
 import WhatsNewPage from '../page';
 import type { ReactElement } from 'react';
-
-/** Unwraps the (possibly `<div>`-wrapped) page result down to its innermost element. */
-function innermost(element: ReactElement): ReactElement {
-  const children = (element.props as { children?: unknown }).children;
-  return children && typeof children === 'object' && 'type' in (children as object)
-    ? (children as ReactElement)
-    : element;
-}
 
 describe('WhatsNewPage — #201 player-facing crash / lost redirect message', () => {
   beforeEach(() => {
@@ -115,33 +98,12 @@ describe('WhatsNewPage — #201 player-facing crash / lost redirect message', ()
     expect(props.message).toContain('complete onboarding');
   });
 
-  it('fetches and renders the real feed for a coach session (unchanged happy path)', async () => {
-    mocks.getGolfSessionProfile.mockResolvedValue({
-      userId: 'coach-1',
-      role: 'coach',
-      coach: { id: 'coach-1' },
-      player: null,
-    });
-    mocks.getWhatsNewForCoach.mockResolvedValue({
-      success: true,
-      items: [],
-      truncated: false,
-    });
+  it('renders the Clubhouse What’s new for a coach (the route reads its own week), and the page reads no feed itself', async () => {
+    mocks.getGolfSessionProfile.mockResolvedValue({ userId: 'coach-1', role: 'coach', coach: { id: 'coach-1' }, player: null });
 
     const element = (await WhatsNewPage()) as ReactElement;
 
     expect(mocks.redirect).not.toHaveBeenCalled();
-    expect(mocks.getWhatsNewForCoach).toHaveBeenCalledTimes(1);
-    expect(innermost(element).type).toBe(FairwayWhatsNewStub);
-  });
-
-  it('renders the Clubhouse What’s new for a coach with Clubhouse on, without reading the Fairway feed', async () => {
-    mocks.getGolfSessionProfile.mockResolvedValue({ userId: 'coach-1', role: 'coach', coach: { id: 'coach-1' }, player: null });
-    mocks.isClubhouseFor.mockResolvedValueOnce(true);
-
-    const element = (await WhatsNewPage()) as ReactElement;
-
-    expect(mocks.isClubhouseFor).toHaveBeenCalledWith('coach');
     expect(element.type).toBe(ClubhouseWhatsNewRouteStub);
     expect(mocks.getWhatsNewForCoach).not.toHaveBeenCalled();
   });

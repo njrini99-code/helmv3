@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, cleanup } from '@testing-library/react';
 
 /**
@@ -64,5 +64,50 @@ describe('Clubhouse OfflineSync', () => {
     expect(engine.syncAll).toHaveBeenCalledTimes(1);
     unmount();
     expect(engine.stopAutoSync).toHaveBeenCalledTimes(1);
+  });
+
+  // Fairway retirement (2026-11-14): only Fairway's OfflineProvider registered public/sw.js, so a device that first
+  // opened the app under Clubhouse had no offline page, no cached dashboard and no Background Sync wake-up. The
+  // Clubhouse session now registers it and turns the worker's SYNC_REQUESTED message into a sync pass.
+  describe('service worker', () => {
+    const messageListeners: Array<(event: MessageEvent) => void> = [];
+    const registration = { addEventListener: vi.fn() };
+    const serviceWorker = {
+      register: vi.fn(async () => registration),
+      getRegistrations: vi.fn(async () => []),
+      addEventListener: vi.fn((type: string, fn: (event: MessageEvent) => void) => {
+        if (type === 'message') messageListeners.push(fn);
+      }),
+      removeEventListener: vi.fn(),
+      controller: null,
+    };
+
+    beforeEach(() => {
+      messageListeners.length = 0;
+      // The hook registers in production builds only (a dev service worker keeps a cache that never invalidates).
+      vi.stubEnv('NODE_ENV', 'production');
+      vi.stubGlobal('caches', { keys: vi.fn(async () => []), delete: vi.fn(async () => true) });
+      Object.defineProperty(window.navigator, 'serviceWorker', { value: serviceWorker, configurable: true });
+    });
+
+    afterEach(() => {
+      cleanup();
+      vi.unstubAllEnvs();
+      vi.unstubAllGlobals();
+      Reflect.deleteProperty(window.navigator, 'serviceWorker');
+    });
+
+    it('registers /sw.js for the whole site when the session starts', async () => {
+      render(<OfflineSync />);
+      await vi.waitFor(() => expect(serviceWorker.register).toHaveBeenCalledWith('/sw.js', { scope: '/' }));
+    });
+
+    it("runs a sync pass when the worker's Background Sync asks for one", async () => {
+      render(<OfflineSync />);
+      await vi.waitFor(() => expect(messageListeners.length).toBeGreaterThan(0));
+      engine.syncAll.mockClear();
+      for (const listener of messageListeners) listener(new MessageEvent('message', { data: { type: 'SYNC_REQUESTED', tag: 'sync-golf-data' } }));
+      expect(engine.syncAll).toHaveBeenCalledTimes(1);
+    });
   });
 });

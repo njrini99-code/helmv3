@@ -1,10 +1,6 @@
 import { redirect } from 'next/navigation';
 import { getGolfSessionProfile } from '@/lib/auth/session';
-import { getWhatsNewForCoach } from '@/app/golf/actions/whats-new';
-import { fairwayScope } from '@/lib/redesign/flag';
-import { FairwayWhatsNew } from '@/components/fairway/pages/whats-new';
 import { FeatureUnavailable } from '@/components/fairway';
-import { isClubhouseFor } from '@/clubhouse/gate';
 import { ClubhouseWhatsNewRoute } from '@/clubhouse/routes/whats-new';
 
 // ============================================================================
@@ -54,26 +50,6 @@ export default async function WhatsNewPage() {
     );
   }
 
-  // Clubhouse What's new (golf_clubhouse_ui): the coach's week of CoachHelm activity.
-  if (await isClubhouseFor('coach')) return <ClubhouseWhatsNewRoute />;
-
-  const result = await getWhatsNewForCoach();
-
-  return (
-    <div className={fairwayScope('min-h-full bg-canvas')}>
-      <FairwayWhatsNew
-        success={result.success}
-        error={result.error}
-        items={result.items}
-        truncated={result.truncated}
-        // Pins both the server render and the client hydration to ONE zone.
-        // Without it each side used its own runtime default and the feed threw
-        // React #418 (text mismatch) on every load.
-        timeZone={result.timeZone}
-        // Stamped once on the server; the client seeds both freshness clocks
-        // from it so hydration markup matches. See the component's note.
-        serverNowIso={new Date().toISOString()}
-      />
-    </div>
-  );
+  // Clubhouse What's new: the coach's week of CoachHelm activity.
+  return <ClubhouseWhatsNewRoute />;
 }

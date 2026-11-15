@@ -3,13 +3,14 @@ import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 /**
- * Clubhouse Stats against production's (Fairway's) stats, on the same rows (P004 team, P005 player). Both pipelines read one
- * evaluating fake (supabase-eval-fake.ts): Clubhouse's loaders as they run, and production's own code (the Fairway Team
- * stats page and getDetailedStats, see stats-parity-harness.ts). Every metric either matches at the precision the screen
- * shows, or the test names the rule that makes it differ on purpose (docs/clubhouse/pages/P004-stats-team/CONTRACT.md,
- * "Parity with production").
+ * Clubhouse Stats against production's (Fairway's) stats, on the same rows (P004 team, P005 player). Clubhouse's loaders read
+ * one evaluating fake (supabase-eval-fake.ts) as they run; production is getDetailedStats over the same fake, and the Fairway
+ * Team stats page's figures for each fixture, recorded from that page before it was retired (2026-11-14, see
+ * stats-parity-harness.ts). Every metric either matches at the precision the screen shows, or the test names the rule that
+ * makes it differ on purpose (docs/clubhouse/pages/P004-stats-team/CONTRACT.md, "Parity with production").
  *
- * The real-data pass at the bottom runs only when CH_STATS_REALDATA names a read-only dump (one JSON file per table).
+ * The real-data pass at the bottom runs only when CH_STATS_REALDATA names a read-only dump (one JSON file per table). The
+ * Fairway Team stats page is gone, so that pass pairs each player against getDetailedStats and the Standing strip only.
  */
 
 vi.mock('server-only', () => ({}));
@@ -40,26 +41,17 @@ vi.mock('@/app/golf/actions/stats-data', async (importOriginal) => ({
   }),
 }));
 // The Fairway Team stats page's own reads that feed no compared figure, and its gates.
-vi.mock('@/clubhouse/routes/alias', () => ({ redirectToClubhouse: vi.fn(async () => undefined) }));
-vi.mock('@/clubhouse/gate', () => ({ isClubhouseFor: vi.fn(async () => false) }));
-vi.mock('@/lib/auth/get-golf-dashboard-role', () => ({ getGolfDashboardRole: vi.fn(async () => 'coach') }));
-vi.mock('@/clubhouse/routes/stats', () => ({ ClubhouseStatsRoute: () => null }));
 vi.mock('@/lib/golf/resolve-team-server', async () => {
   const { parityState } = await import('./parity-state');
   return { resolveCoachTeamIdWithCookie: vi.fn(async () => parityState.teamId) };
 });
-vi.mock('@/app/golf/actions/stats-intelligence', () => ({ getTeamStatsIntelligence: vi.fn(async () => ({ success: false })) }));
-vi.mock('@/app/golf/actions/stats-leak-maps', () => ({ getTeamLeakMaps: vi.fn(async () => ({ success: false })) }));
-vi.mock('@/lib/coachhelm/v3/standing/loader', () => ({ loadPlayersStandingMap: vi.fn(async () => new Map()) }));
-vi.mock('@/components/golf/stats/team-board/TeamStatsBoard', () => ({ TeamStatsBoard: Object.assign(() => null, { parityBoard: true }) }));
-vi.mock('@/components/fairway', () => ({ ViewHeader: () => null, EmptyState: () => null, Button: () => null }));
 import { filterFor, type ChFilter } from '../data/stats-filter';
 import { parityState } from './parity-state';
 import { teamFiguresOver } from '../data/player-figures';
 import { loadSeasonRounds, seasonStartDate } from '../data/season';
 import { loadSince } from '../data/stats-common';
 import type { EvalDb, Row } from './supabase-eval-fake';
-import { clubhousePlayer, clubhouseTeam, fairwayDetail, fairwayTeam, holeRoundIds, playerPairs, sameOnScreen, standingPairs, subsetDb, teamPairs, teamWindowRoundIds, type Pair } from './stats-parity-harness';
+import { clubhousePlayer, clubhouseTeam, fairwayDetail, fairwayTeam, holeRoundIds, playerPairs, sameOnScreen, standingPairs, subsetDb, teamWindowRoundIds, type Pair } from './stats-parity-harness';
 
 const range = (f: ChFilter, holes: ChFilter['holes']): ChFilter => ({ ...f, from: '2000-01-01', holes });
 
@@ -357,21 +349,10 @@ describe.runIf(!!DUMP)('real data: every team and player, both pipelines (read-o
     const members = db.tables.golf_team_members!.filter((m) => m.status === 'active');
     const teams = [...new Set(members.map((m) => m.team_id as string))];
     const pairs: Pair[] = [];
-    const only = process.env.CH_STATS_REALDATA_ONLY; // 'team' | 'player'
+    // The Fairway Team stats page was retired (2026-11-14): a dump has no recorded team figures, so the team pass is gone
+    // and each player is paired against getDetailedStats and the Standing strip.
+    const only = process.env.CH_STATS_REALDATA_ONLY; // 'team' skips the players too
     for (const teamId of teams) {
-      if (only !== 'player') {
-        const fwAll = await fairwayTeam(db, teamId);
-        // Equalized: every round of the career, as the Fairway page reads them.
-        pairs.push(...teamPairs(await clubhouseTeam(db, teamId, range(filterFor('last10'), '18')), fwAll, { scope: `career18:${teamId}`, rates: false, scoring: true, sg: false }));
-        pairs.push(...teamPairs(await clubhouseTeam(db, teamId, range(filterFor('last10'), 'all')), fwAll, { scope: `careerAll:${teamId}`, rates: true, scoring: false, sg: true }));
-        // Clubhouse's own windows, against the Fairway page over exactly the rounds each window counts.
-        for (const w of ['last10', 'season'] as const) {
-          const ch = await clubhouseTeam(db, teamId, filterFor(w));
-          const windowIds = await teamWindowRoundIds(db, teamId, filterFor(w));
-          const fw = await fairwayTeam(subsetDb(db, windowIds), teamId);
-          pairs.push(...teamPairs(ch, fw, { scope: `${w}:${teamId}`, rates: true, scoring: true, sg: true }));
-        }
-      }
       if (only !== 'team') {
         for (const m of members.filter((x) => x.team_id === teamId)) {
           const pid = m.player_id as string;
@@ -380,8 +361,7 @@ describe.runIf(!!DUMP)('real data: every team and player, both pipelines (read-o
             if (!prof || !prof.win.holeRounds) continue;
             const ids = holeRoundIds(db, prof);
             const s = await fairwayDetail(db, pid, ids);
-            const fw = await fairwayTeam(subsetDb(db, ids), teamId);
-            pairs.push(...playerPairs(prof, s, `${name}:${teamId}:${pid}`, fw.players.find((p) => p.id === pid)));
+            pairs.push(...playerPairs(prof, s, `${name}:${teamId}:${pid}`));
           }
           // The Standing strip is career-wide and both lengths.
           const career = await clubhousePlayer(db, teamId, pid, range(filterFor('last10'), 'all'));

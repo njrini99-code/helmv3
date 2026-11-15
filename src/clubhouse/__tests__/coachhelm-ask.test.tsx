@@ -58,7 +58,7 @@ vi.mock('../screens/coachhelm/chat/EvidencePanel', () => ({
   ),
 }));
 
-import type { UseCoachHelmChatOptions, UseCoachHelmChatResult } from '@/components/golf/coachhelm/chat/useCoachHelmChat';
+import type { UseCoachHelmChatOptions, UseCoachHelmChatResult } from '@/hooks/coachhelm/useCoachHelmChat';
 import type { ChAskData, ChAskLoad } from '../data/coachhelm-chat-shape';
 import { Ask, type ChAskChat } from '../screens/coachhelm/chat/Ask';
 import { AskSkeleton } from '../screens/coachhelm/chat/AskSkeleton';

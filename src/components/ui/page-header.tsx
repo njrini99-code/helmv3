@@ -51,7 +51,7 @@ import { deriveBreadcrumbItems } from '@/components/ui/breadcrumb';
 import { motion, useReducedMotion } from 'motion/react';
 import { ChevronLeft, ChevronRight, Plus, Menu, Globe } from 'lucide-react';
 import { startOfWeek, endOfWeek, format } from 'date-fns';
-import { MobileMenuButton } from '@/components/golf/MobileMenuButton';
+import { MobileMenuButton } from '@/components/shared/MobileMenuButton';
 import { IconChevronLeft } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { triggerHaptic, isNativeApp } from '@/lib/utils/capacitor';

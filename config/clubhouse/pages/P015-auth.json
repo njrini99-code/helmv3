@@ -49,7 +49,6 @@
       "src/clubhouse/screens/onboard",
       "src/clubhouse/data/onboard.ts",
       "src/clubhouse/routes/onboard.tsx",
-      "src/clubhouse/routes/front-door.tsx",
       "src/clubhouse/styles/onboard.css",
       "src/clubhouse/styles/onboard-tokens.css",
       "src/clubhouse/data/welcome-shape.ts"

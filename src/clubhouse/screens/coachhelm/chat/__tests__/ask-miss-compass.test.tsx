@@ -30,7 +30,7 @@ vi.mock('../Thread', async () => {
   };
 });
 
-import type { UseCoachHelmChatOptions, UseCoachHelmChatResult } from '@/components/golf/coachhelm/chat/useCoachHelmChat';
+import type { UseCoachHelmChatOptions, UseCoachHelmChatResult } from '@/hooks/coachhelm/useCoachHelmChat';
 import type { ChAskData, ChAskLoad } from '../../../../data/coachhelm-chat-shape';
 import { ASK_MSGS_ANSWER } from '../../../../preview/fixtures-ask-thread';
 import { PREVIEW_ASK_DATA } from '../../../../preview/fixtures-ask';

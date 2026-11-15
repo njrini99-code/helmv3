@@ -32,11 +32,10 @@ const read = (p: string) => readFileSync(join(REPO, p), 'utf8');
 const SERVER_SPECIAL_CHAR = /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/;
 
 describe('signup password errors stay honest', () => {
-  it('neither signup form swallows a specific server password message', () => {
-    for (const form of [
-      'src/components/auth/golf-sign-up-form.tsx',
-      'src/components/auth/baseball-sign-up-form.tsx',
-    ]) {
+  // The golf sign-up form was retired with the old entrance pages (2026-11-14); Clubhouse's sign-up shows the server's
+  // own message.
+  it('the signup form does not swallow a specific server password message', () => {
+    for (const form of ['src/components/auth/baseball-sign-up-form.tsx']) {
       const src = read(form);
       // The exact branch that caused the unwinnable loop. `weak password` (the
       // raw GoTrue string) is fine to translate; a bare `password` is not.

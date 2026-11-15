@@ -35,19 +35,10 @@ vi.mock('@/app/golf/actions/stats-data', async (importOriginal) => ({
   }),
 }));
 // The Fairway Team stats page's own reads that feed no compared figure, and its gates.
-vi.mock('@/clubhouse/routes/alias', () => ({ redirectToClubhouse: vi.fn(async () => undefined) }));
-vi.mock('@/clubhouse/gate', () => ({ isClubhouseFor: vi.fn(async () => false) }));
-vi.mock('@/lib/auth/get-golf-dashboard-role', () => ({ getGolfDashboardRole: vi.fn(async () => 'coach') }));
-vi.mock('@/clubhouse/routes/stats', () => ({ ClubhouseStatsRoute: () => null }));
 vi.mock('@/lib/golf/resolve-team-server', async () => {
   const { parityState } = await import('./parity-state');
   return { resolveCoachTeamIdWithCookie: vi.fn(async () => parityState.teamId) };
 });
-vi.mock('@/app/golf/actions/stats-intelligence', () => ({ getTeamStatsIntelligence: vi.fn(async () => ({ success: false })) }));
-vi.mock('@/app/golf/actions/stats-leak-maps', () => ({ getTeamLeakMaps: vi.fn(async () => ({ success: false })) }));
-vi.mock('@/lib/coachhelm/v3/standing/loader', () => ({ loadPlayersStandingMap: vi.fn(async () => new Map()) }));
-vi.mock('@/components/golf/stats/team-board/TeamStatsBoard', () => ({ TeamStatsBoard: Object.assign(() => null, { parityBoard: true }) }));
-vi.mock('@/components/fairway', () => ({ ViewHeader: () => null, EmptyState: () => null, Button: () => null }));
 
 import { aggregateCountableRounds, type CountableRoundRow } from '@/lib/golf/countable-round-stats';
 import { filterFor, withSpan, type ChFilter } from '../data/stats-filter';

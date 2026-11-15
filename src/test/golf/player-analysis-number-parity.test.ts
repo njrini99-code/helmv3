@@ -33,11 +33,13 @@ import { formatMetric, formatMetricText } from '@/lib/golf/metrics/display-regis
 import { computeFormScore } from '@/lib/golf/form-score';
 import { computePressureGap } from '@/lib/golf/metrics/pressure-gap';
 import pressureDelta from '@/lib/coachhelm/v3/genome/dimensions/pressure-delta';
-import {
-  buildPlayerDetailModel,
-  type PlayerDetailInputs,
-  type RawRound,
-} from '@/components/fairway/pages/player-detail/buildPlayerDetailModel';
+
+/** A round row as the player page read it (the Fairway player page was retired, 2026-11-14; the fixture keeps its shape). */
+interface RawRound extends CountableRoundRow {
+  course_name: string | null;
+  score_to_par: number | null;
+  round_type: string | null;
+}
 
 const ROOT = resolve(__dirname, '../../..');
 
@@ -136,19 +138,6 @@ const STATS: RoundStatsCacheRow[] = [
 ];
 const STATS_BY_ID = new Map(STATS.map((s) => [s.round_id, s] as const));
 
-function detailInputs(rounds: RawRound[]): PlayerDetailInputs {
-  return {
-    firstName: 'Cole',
-    seasonYear: 2026,
-    rounds: { ok: true, value: rounds },
-    roundStats: { ok: true, value: STATS },
-    genome: { ok: true, value: null },
-    insights: { ok: true, value: [] },
-    focusAreas: { ok: true, value: [] },
-    goals: { ok: true, value: [] },
-  };
-}
-
 // ---------------------------------------------------------------------------
 // Source helpers for the static half of the contract
 // ---------------------------------------------------------------------------
@@ -196,16 +185,6 @@ describe('a partial or implausible round affects nothing', () => {
     // Teeth: without the countable filter the partial round moves the number.
     expect(computeCompositeRating(ALL.map(withCanonicalRoundTotal)).rating).not.toBe(b.rating);
   });
-
-  it('player page model: every scope ledger, the verdict and the best round are unchanged', () => {
-    const withNoise = buildPlayerDetailModel(detailInputs(ALL));
-    const clean = buildPlayerDetailModel(detailInputs(CLEAN));
-    expect(withNoise.excludedRounds).toBe(2);
-    expect(withNoise.scopes.map((s) => s.ledger)).toEqual(clean.scopes.map((s) => s.ledger));
-    expect(withNoise.verdict).toEqual(clean.verdict);
-    expect(withNoise.bestRoundId).toBe(clean.bestRoundId);
-    expect(withNoise.waterfall).toEqual(clean.waterfall);
-  });
 });
 
 // ---------------------------------------------------------------------------
@@ -213,20 +192,6 @@ describe('a partial or implausible round affects nothing', () => {
 // ---------------------------------------------------------------------------
 
 describe('one metric, one number', () => {
-  it('player page scoring average equals formatMetric over the canonical aggregate, per scope', () => {
-    const model = buildPlayerDetailModel(detailInputs(ALL));
-    const rows18 = filterCountableRounds(ALL).filter((r) => (r.holes_played ?? 18) === 18);
-    const slices: Record<string, CountableRoundRow[]> = {
-      last5: rows18.slice(0, 5),
-      last10: rows18.slice(0, 10),
-      season: rows18.filter((r) => r.round_date.startsWith('2026')),
-    };
-    for (const scope of model.scopes) {
-      const printed = scope.ledger.find((l) => l.key === 'scoring')?.value;
-      const canonical = aggregateCountableRounds(slices[scope.key] ?? [], STATS_BY_ID).scoringAverage;
-      expect(printed, scope.key).toBe(formatMetricText('scoring_average', canonical));
-    }
-  });
 
   it('every aggregating loader reads the one countable-round rule', () => {
     const loaders = [
@@ -234,9 +199,6 @@ describe('one metric, one number', () => {
       'src/app/golf/actions/stats-data.ts', // Stats
       'src/app/golf/actions/dashboard-data.ts', // Home
       'src/app/golf/actions/coachhelm-data.ts', // Genome / Scouting / Deep dive
-      'src/app/golf/(dashboard)/dashboard/roster/page.tsx', // Roster
-      'src/app/golf/(dashboard)/dashboard/stats/team/page.tsx', // Team stats (Brief)
-      'src/components/fairway/pages/player-detail/buildPlayerDetailModel.ts', // Player page
     ];
     for (const rel of loaders) {
       const code = stripComments(source(rel));
@@ -276,21 +238,6 @@ describe('one metric, one number', () => {
     expect(fp).toMatch(/\.in\('severity', \['critical', 'high'\]\)/);
     expect(data).toMatch(/\.in\('severity', \['critical', 'high'\]\)/);
     expect(data).toMatch(/computeFormScore\(/);
-
-    // Scouting prints no second 0–100 score: the live tab never reads compositeRating.
-    for (const rel of [
-      'src/components/fairway/pages/scouting/ScoutingReport.tsx',
-      'src/components/fairway/pages/scouting/scouting-model.ts',
-      'src/app/golf/(dashboard)/dashboard/players/[playerId]/game/PlayerDeepDiveTabs.tsx',
-    ]) {
-      expect(stripComments(source(rel)), rel).not.toMatch(/compositeRating/);
-    }
-    // The Fingerprint Form text comes from form-score, never the old linear formula.
-    const model = stripComments(
-      source('src/components/fairway/pages/player-game/fingerprint/fingerprint-model.ts'),
-    );
-    expect(model).toMatch(/describeFormFormula/);
-    expect(model).not.toMatch(/80 − 3/);
   });
 
   it('Pressure gap: Fingerprint and Genome pressure_delta read one definition (FP-06)', () => {
@@ -338,21 +285,11 @@ describe('one metric, one number', () => {
     // 90 days; Stats and Fingerprint read the all-rounds cache. Different
     // windows are fine when the window is printed.
     expect(formatMetric('scrambling_pct', 55, { window: 'last_90_days' }).windowChip).toBe('Last 90 days');
-    const card = stripComments(source('src/components/golf/coachhelm/player/ShotAnalysisCard.tsx'));
-    expect(card).toMatch(/SCRAMBLE_WINDOW = 'last_90_days'/);
-    expect(card).toMatch(/formatMetric\('scrambling_pct', resolvedScrambleRate, \{ window: SCRAMBLE_WINDOW \}\)/);
-    expect(card).toMatch(/scramble\.windowChip/);
   });
   it('Team board and Stats print strokes gained through formatMetric (W9/W13)', () => {
     // Both helpers are one-line wrappers over the registry, so the board, the
     // Stats spine and the player page print SG identically: 2 dp, the true
     // minus sign, no "E" and no "−0.00" for a near-zero value.
-    for (const rel of [
-      'src/components/golf/stats/team-board/buildTeamBoardViewModel.ts',
-      'src/components/golf/stats/spine-stage/buildStatsViewModel.ts',
-    ]) {
-      expect(stripComments(source(rel)), rel).toMatch(/formatMetricText\('sg_total', finite\(value\)\)/);
-    }
     expect(formatMetricText('sg_total', -1.6)).toBe('\u22121.60');
     expect(formatMetricText('sg_total', -0.004)).toBe('0.00');
     expect(formatMetricText('sg_total', 0)).toBe('0.00');
@@ -365,15 +302,8 @@ describe('one metric, one number', () => {
 
 describe('no 15–20 ft or 20+ ft band on player-analysis surfaces', () => {
   const SURFACES = [
+    // The Fairway player page, print report, genome views and deep dive were retired with Fairway (2026-11-14).
     'src/app/golf/actions/player-fingerprint.ts',
-    'src/components/fairway/pages/player-game/FairwayPlayerGameFingerprint.tsx',
-    'src/app/golf/(dashboard)/dashboard/players/[playerId]/game/print/page.tsx',
-    'src/app/golf/(dashboard)/dashboard/players/[playerId]/game/print/MetricPill.tsx',
-    'src/app/golf/(dashboard)/dashboard/players/[playerId]/game/PlayerDeepDiveTabs.tsx',
-    'src/components/fairway/pages/coachhelm/GenomeDetailView.tsx',
-    'src/components/fairway/pages/coachhelm/GenomeCompareView.tsx',
-    'src/components/golf/coachhelm/home/DeepDiveDrill.tsx',
-    'src/components/golf/coachhelm/player/ShotAnalysisCard.tsx',
   ];
   const BANNED = /15[-–_ ]?20\s*(ft|_?ft)?|20[_ ]?\+\s*ft|20_plus/;
 
@@ -381,23 +311,5 @@ describe('no 15–20 ft or 20+ ft band on player-analysis surfaces', () => {
     const code = stripComments(source(rel));
     const hit = code.match(BANNED);
     expect(hit?.[0] ?? null, `${rel} prints a legacy band`).toBeNull();
-  });
-
-  it.each([
-    'src/components/golf/stats/spine-stage/StatsBento.tsx',
-    'src/components/golf/stats/spine-stage/PuttingDrill.tsx',
-    'src/components/golf/stats/round-report/buildRoundStatReport.ts',
-  ])('%s: no legacy "15–20 ft / 20+ ft" pair; any 15–20 ft row sits in a contiguous 5 ft ladder (W9)', (rel) => {
-    // The legacy fault was a 15–20 ft band beside an open "20+ ft" bucket.
-    // The Stats drill and round report keep a fine 5 ft ladder
-    // (…15–20, 20–25, 25–30…), which is contiguous and allowed.
-    const code = stripComments(source(rel));
-    expect(code.match(/['"`][^'"`]*20\s*\+\s*ft[^'"`]*['"`]/)?.[0] ?? null, rel).toBeNull();
-    const labels = [...code.matchAll(/'(?:Make )?(\d+)-(\d+)ft'/g)].map((m) => [Number(m[1]), Number(m[2])] as const);
-    for (const [lo, hi] of labels) {
-      if (lo === 15 && hi === 20) {
-        expect(labels.some(([a]) => a === 20), `${rel} has 15–20 ft without a 20–25 ft band`).toBe(true);
-      }
-    }
   });
 });

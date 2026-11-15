@@ -28,7 +28,7 @@ import type { InsightCategory } from '@/lib/coachhelm/v2/insights/types';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import type { AssembledEvidence } from '@/lib/coachhelm/v3/themes/types';
 import { sanitizeProse } from '@/lib/coachhelm/v3/themes/assemble';
-import { toCoachVoice } from '@/components/fairway/pages/coachhelm/signals/patternToInsightVocabulary';
+import { toCoachVoice } from '@/lib/coachhelm/patternToInsightVocabulary';
 
 /** The Brief's category shape — just the two fields this module needs. */
 export interface BriefCategoryDef {

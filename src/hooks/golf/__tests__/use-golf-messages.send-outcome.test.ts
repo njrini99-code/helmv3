@@ -34,8 +34,8 @@ const strip = (source: string) =>
     .join('\n');
 
 const hook = strip(read('src/hooks/golf/use-golf-messages.ts'));
-const page = strip(read('src/components/fairway/pages/messages/FairwayMessages.tsx'));
-const pane = strip(read('src/components/fairway/pages/messages/MessageThreadPane.tsx'));
+// Clubhouse Messages' send path (Fairway's inbox was retired, 2026-11-14).
+const page = strip(read('src/clubhouse/screens/messages/api/use-thread-api.ts'));
 
 describe('the classifier itself — the part that could be subtly wrong', () => {
   /** The same expression the hook uses, exercised against real engine wording. */
@@ -105,18 +105,9 @@ describe('G-20b — the hook records which outcome it was', () => {
   });
 });
 
-describe('G-20b — the two places the user reads it cannot disagree', () => {
+describe('G-20b — what the user reads agrees with the hook', () => {
   it('the toast branches on the same classifier the hook uses', () => {
     expect(page).toContain('isTransientNetworkErrorMessage(');
-    expect(page).toMatch(/Couldn’t confirm this send/);
-  });
-
-  it('the failed row says "Not confirmed" when the commit is unknown', () => {
-    expect(pane).toContain("sendOutcome === 'unknown'");
-    expect(pane).toContain("'Not confirmed'");
-  });
-
-  it('and keeps the definite wording when the server actually refused', () => {
-    expect(pane).toContain("'Not sent'");
+    expect(page).toMatch(/Couldn’t confirm this/);
   });
 });

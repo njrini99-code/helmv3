@@ -1,35 +1,6 @@
-import { HelmMark } from '@/components/brand/HelmMark';
+import { GateLoading } from '@/clubhouse/screens/auth/GateLoading';
 
-/**
- * Loading state for /golf/login.
- *
- * Mirrors AuthCanvas (src/components/auth/golf-auth-canvas.tsx) so nothing
- * jumps when the page replaces it: a flat `bg-canvas`, the app mark in the
- * same position, and a quiet placeholder for the grouped fields and button.
- * There is no illustrated scene and no card.
- */
+/** Route Suspense fallback for /golf/login: the sign-in room, never a skeleton of another page. */
 export default function Loading() {
-  return (
-    <div
-      role="status"
-      aria-busy="true"
-      aria-live="polite"
-      className="flex min-h-[100dvh] flex-col bg-canvas"
-      style={{
-        paddingTop: 'env(safe-area-inset-top)',
-        paddingLeft: 'max(16px, env(safe-area-inset-left))',
-        paddingRight: 'max(16px, env(safe-area-inset-right))',
-      }}
-    >
-      <span className="sr-only">Loading sign-in</span>
-      <div className="h-11 shrink-0" />
-      <div className="mx-auto flex w-full max-w-[400px] flex-col items-center pt-[clamp(16px,9vh,88px)]">
-        <HelmMark sport="golf" size={60} className="h-[60px] w-[60px]" priority />
-        <div className="mt-5 h-[34px]" />
-        <div className="mt-1.5 h-5" />
-        <div className="mt-8 h-[104px] w-full rounded-fw-md bg-surface" />
-        <div className="mt-6 h-[50px] w-full rounded-fw-sm bg-accent-fill opacity-40" />
-      </div>
-    </div>
-  );
+  return <GateLoading label="Sign in" title="Sign in" line="Opening…" />;
 }

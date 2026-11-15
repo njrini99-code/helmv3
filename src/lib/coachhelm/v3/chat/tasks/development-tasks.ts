@@ -19,9 +19,9 @@
  * Permission is the action's own, made first in `plan` with the same exported function the action calls
  * (`verifyPlayerAccess`, `verifyInsightAccess`), so no card is shown to someone the action would refuse.
  *
- * A focus area's value shows on the player's own page ("Now 31" on the plan board, `HubPlanBoard.tsx`; `current` in
- * Clubhouse's `stats-player.ts`). A progress note is stored with its entry and the focus area card draws the entry's
- * value and date only (`FocusAreaCard.tsx`), so the card says the note's words are not shown. Where the app measures the
+ * A focus area's value shows on the player's own page (`current` in Clubhouse's `stats-player.ts`, drawn by the focus
+ * area track on Stats). A progress note is stored with its entry and no player page reads the entries' notes, so the card
+ * says the note's words are not shown. Where the app measures the
  * area's metric from rounds (`isTrackableFocusMetric`), its own driver writes the value on page view and nightly
  * (`lib/golf/progress-drivers.ts`), and the card says a typed value can be replaced.
  *
@@ -448,7 +448,7 @@ export const logFocusProgress: TaskTool<ProgressInput, StoredProposal> = {
     if (!Number.isFinite(value)) throw new Error('The value must be a number.');
     if (!note && value === row.current_value) throw new Error(`That focus area is already at ${value}.`);
     const tracked = isTrackableFocusMetric(row.target_metric);
-    const sees = `The value ${value} on this focus area on their own page.${note ? ' The note is saved with the entry; the focus area card shows an entry’s value and date, not its note.' : ''} ${NO_NOTICE}`;
+    const sees = `The value ${value} on this focus area on their own page.${note ? ' The note is saved with the entry; their pages show the value, not the note.' : ''} ${NO_NOTICE}`;
     const facts: ProposalFact[] = [
       { label: 'Player', value: player.name },
       { label: 'Focus area', value: row.title },

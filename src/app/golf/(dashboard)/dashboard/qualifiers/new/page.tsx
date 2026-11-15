@@ -1,16 +1,7 @@
-import { createClient } from '@/lib/supabase/server';
-import { isClubhouseFor } from '@/clubhouse/gate';
-import { ClubhouseQualifiersRoute } from '@/clubhouse/routes/qualifiers';
-import { logServerError } from '@/lib/server-error-logger';
-import { describeError } from '@/lib/utils/describe-error';
-import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import { Metadata } from 'next';
-import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
-import { fairwayScope } from '@/lib/redesign/flag';
-import { FairwayNewQualifier } from '@/components/fairway/pages/qualifiers/FairwayNewQualifier';
-import { FeatureUnavailable } from '@/components/fairway';
-import { getGolfDashboardRole } from '@/lib/auth/get-golf-dashboard-role';
+import { ClubhouseQualifiersRoute } from '@/clubhouse/routes/qualifiers';
+import { getGolfSessionProfile } from '@/lib/auth/session';
 
 export const metadata: Metadata = {
   title: 'Create Qualifier',
@@ -20,68 +11,6 @@ export const metadata: Metadata = {
 export default async function NewQualifierPage() {
   const session = await getGolfSessionProfile();
   if (!session) redirect('/golf/login');
-
-  // Clubhouse Qualifiers (golf_clubhouse_ui): coaches and players, rendered in place (D-23, D-30).
-  if ((await isClubhouseFor(await getGolfDashboardRole()))) return <ClubhouseQualifiersRoute view="new" />;
-
-  const { role, coach } = session;
-  // Renders in place rather than redirecting to /qualifiers — see
-  // stats/page.tsx for why a conditional `redirect()` out of an RSC page
-  // produced React #310 on this route.
-  if (role !== 'coach') {
-    return (
-      <FeatureUnavailable
-        title="Create Qualifier"
-        message="Only coaches create qualifiers. You can see the ones your coach has scheduled on the Qualifiers page."
-        actionHref="/golf/dashboard/qualifiers"
-        actionLabel="View Qualifiers"
-      />
-    );
-  }
-
-  const supabase = await createClient();
-
-  type RosterPlayer = { id: string; first_name: string; last_name: string; avatar_url: string | null };
-  let players: RosterPlayer[] = [];
-
-  if (coach?.organization_id) {
-    const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
-
-    if (teamId) {
-      const { data: teamMembersData, error: teamMembersError } = await supabase
-        .from('golf_team_members')
-        .select(`
-          player:golf_players!inner (
-            id,
-            first_name,
-            last_name,
-            avatar_url
-          )
-        `)
-        .eq('team_id', teamId)
-        .eq('status', 'active');
-
-      // The error is READ. Discarded, a failed read produced the same `[]` an
-      // empty roster produces: the picker said "No active players on your
-      // roster" and the coach created a qualifier with nobody entered.
-      if (teamMembersError) {
-        await logServerError(
-          `[new qualifier] roster read failed for team ${teamId}; the picker would claim the roster is empty: ${describeError(teamMembersError)}`,
-          { action: 'golf.newQualifierPage.roster', featureArea: 'qualifiers' },
-        );
-        throw new Error('Failed to load the roster');
-      }
-
-      players = (teamMembersData || [])
-        .map(tm => tm.player)
-        .filter((p): p is RosterPlayer => p !== null && !!p.first_name && !!p.last_name)
-        .sort((a, b) => a.last_name.localeCompare(b.last_name) || a.first_name.localeCompare(b.first_name));
-    }
-  }
-
-  return (
-    <div className={fairwayScope('min-h-full bg-canvas')}>
-      <FairwayNewQualifier players={players} />
-    </div>
-  );
+  // Clubhouse Qualifiers: a coach's form; a player gets the coach-only state (D-23, D-30).
+  return <ClubhouseQualifiersRoute view="new" />;
 }

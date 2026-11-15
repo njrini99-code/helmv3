@@ -2,10 +2,10 @@ import { redirect } from 'next/navigation';
 import { checkSuperAdminAccess } from '@/lib/admin/require-super-admin';
 import { fetchBridgeErrorBadge } from '@/lib/admin/data/overview';
 import { fetchFeatureHealthRedCount } from '@/lib/admin/data/feature-health';
-import { AdminNativeGuard } from '@/components/golf/AdminNativeGuard';
+import { AdminNativeGuard } from '@/components/native/AdminNativeGuard';
 import { AdminMotionProvider } from './_motion-provider';
 import { AdminShell } from './_components/AdminShell';
-import { ThemeApplier } from '@/components/golf/theme/ThemeApplier';
+import { ThemeApplier } from '@/components/theme/ThemeApplier';
 
 export const dynamic = 'force-dynamic';
 
