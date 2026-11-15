@@ -59,7 +59,7 @@ const ALLOW: Record<keyof typeof GROUPS, Record<string, number>> = {
     'screens/stats/StatsTeamPhone.tsx': 4,
     'styles/coachhelm-ask.css': 4,
     'styles/coachhelm-views.css': 2,
-    'styles/coachhelm.css': 3,
+    'styles/coachhelm.css': 2,
     'styles/hub.css': 15,
     'styles/stats.css': 11,
   },

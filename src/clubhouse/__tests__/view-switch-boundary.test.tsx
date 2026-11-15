@@ -20,7 +20,7 @@ vi.mock('../lib/haptics', () => ({ haptic: vi.fn() }));
 vi.mock('../lib/use-phone', () => ({ useChPhone: () => false, CH_PHONE_QUERY: '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' }));
 
 import { PLAYER_HELM_HREF, type PlayerHelmView } from '../data/coachhelm-views-shape';
-import { PlayerHelmTabs } from '../screens/coachhelm/views/PlayerHelmTabs';
+import { PlayerHelmTabs, playerHelmTabHref, type PlayerHelmTab } from '../screens/coachhelm/views/PlayerHelmTabs';
 import { dimmedAt, resetViewSwitchForTests, useViewSwitch } from '../screens/coachhelm/use-view-switch';
 
 function deferred<T>() {
@@ -90,7 +90,7 @@ describe('rapid switching between the player’s views', () => {
 
   function View({ view, read }: { view: PlayerHelmView; read: Promise<string> }) {
     const text = use(read);
-    const sw = useViewSwitch<PlayerHelmView>(view, (v) => PLAYER_HELM_HREF[v]);
+    const sw = useViewSwitch<PlayerHelmTab>(view, (v) => playerHelmTabHref(v));
     drawn.push(view);
     return (
       <main data-testid="view" data-view={view} aria-busy={sw.pending || undefined} {...sw.enter}>
@@ -182,7 +182,7 @@ describe('the view that lands from a switch', () => {
   const order: PlayerHelmView[] = ['board', 'standing', 'deep-dive'];
   function View({ view, read }: { view: PlayerHelmView; read: Promise<string> }) {
     const text = use(read);
-    const sw = useViewSwitch<PlayerHelmView>(view, (v) => PLAYER_HELM_HREF[v]);
+    const sw = useViewSwitch<PlayerHelmTab>(view, (v) => playerHelmTabHref(v));
     return (
       <main data-testid="view" data-view={view} aria-busy={sw.pending || undefined} {...sw.enter}>
         <PlayerHelmTabs active={sw.shown} onGo={sw.go} />
@@ -257,11 +257,13 @@ describe('the view that lands from a switch', () => {
     expect(main().hasAttribute('data-ch-enter')).toBe(false);
   });
 
-  it('starts from the dim’s own curve: full at the tap, 0.55 once the quick beat has run, never lighter later', () => {
+  // MOTION-AND-VISUAL 3.9: the dim waits the busy delay (150 ms, useBusy), then runs the quick beat to 0.55.
+  it('starts from the dim’s own curve: full until the busy delay, 0.55 once the quick beat has run after it, never lighter later', () => {
     expect(dimmedAt(0)).toBe(1);
-    expect(dimmedAt(90)).toBeLessThan(0.6);
-    expect(dimmedAt(90)).toBeGreaterThan(0.55);
-    expect(dimmedAt(180)).toBeCloseTo(0.55, 5);
+    expect(dimmedAt(150)).toBe(1);
+    expect(dimmedAt(240)).toBeLessThan(0.6);
+    expect(dimmedAt(240)).toBeGreaterThan(0.55);
+    expect(dimmedAt(330)).toBeCloseTo(0.55, 5);
     expect(dimmedAt(5000)).toBeCloseTo(0.55, 5);
   });
 });

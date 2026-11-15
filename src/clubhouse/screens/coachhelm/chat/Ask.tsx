@@ -32,8 +32,7 @@ import { conversationHref, HistoryDrawer, HistoryPanel } from './History';
 import { AskHomeV2 } from './Home';
 import { AskInputsFailed, AskNoRoster, AskThreadFailed, AskUnavailable } from './States';
 import { useViewSwitch } from '../use-view-switch';
-import { PLAYER_HELM_HREF } from '../../../data/coachhelm-views-shape';
-import { PlayerHelmTabs } from '../views/PlayerHelmTabs';
+import { PlayerHelmTabs, playerHelmTabHref, type PlayerHelmTab } from '../views/PlayerHelmTabs';
 import { COACHHELM_HREF, CoachHelmTabs, type CoachHelmView } from './SubTabs';
 import { AskThread } from './Thread';
 import { MissCompassGate, type MissCompassGateValue } from './studio/compass-gate';
@@ -76,18 +75,12 @@ function TeamLabel({ name }: { name: string }) {
   );
 }
 
-/** A player's Ask is a view of their CoachHelm: the same strip, so Your week, Standing and Deep dive are one tap away. */
-function PlayerAskTabs() {
-  const router = useRouter();
-  return <PlayerHelmTabs active="ask" onGo={(v) => router.push(PLAYER_HELM_HREF[v])} />;
-}
-
 /** The frame the states without a chat share: the sub-tab strip (so the Board is one tap away) over the state. */
 function AskFrame({ team, children }: { team?: string; children: ReactNode }) {
   const phone = useChPhone();
   const sw = useViewSwitch<CoachHelmView>('ask', (v) => COACHHELM_HREF[v]);
   return (
-    <main className={'ch-ask is-plain' + (phone ? ' is-phone' : '')} aria-label="Ask CoachHelm" aria-busy={sw.pending || undefined} data-ch-code="CH-13820" {...sw.enter}>
+    <main className={'ch-ask is-plain' + (phone ? ' is-phone' : '')} aria-label="Ask CoachHelm" aria-busy={sw.pending || undefined} data-ch-busy={sw.busy} data-ch-code="CH-13820" {...sw.enter}>
       {phone && <PhoneTop start title="CoachHelm" />}
       <div className="ch-ask-top">
         <CoachHelmTabs active={sw.shown} onGo={sw.go} />
@@ -137,8 +130,12 @@ export function Ask({ load, chat = useCoachHelmChat, initial, slashFlags }: { sl
 function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; useChatImpl: ChAskChat; initial?: ChAskInitial; slashFlags?: { plans: boolean; lineup: boolean } }) {
   const phone = useChPhone();
   const router = useRouter();
-  // A switch to the Board moves the strip at once and dims the chat (aria-busy) until the Board is ready.
-  const sw = useViewSwitch<CoachHelmView>('ask', (v) => COACHHELM_HREF[v]);
+  // A switch to the Board moves the strip at once, marks the chat busy and, after the busy delay, dims it until the Board is ready.
+  // A player's Ask is a view of their CoachHelm: the same strip, so Your week, Standing and Deep dive are one tap away, through the
+  // same switch (P1-57: the tab takes the selection on the tap and the chat dims, as on every other view).
+  const coachSw = useViewSwitch<CoachHelmView>('ask', (v) => COACHHELM_HREF[v]);
+  const playerSw = useViewSwitch<PlayerHelmTab>('ask', (v) => playerHelmTabHref(v));
+  const sw = data.role === 'player' ? playerSw : coachSw;
   const online = useOnline();
   const refuseOffline = useRefuseOffline();
   // The chats this visit started and the server's list does not hold yet. The list itself is the server's (`data.conversations`), read
@@ -392,7 +389,7 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
 
   return (
     <MissCompassGate.Provider value={compass}>
-    <main ref={askRoot} className={'ch-ask ch-ak-root' +(phone ? ' is-phone' : '') + (showHome ? ' is-home' : '')} aria-label="Ask CoachHelm" aria-busy={sw.pending || chatSw.pending || undefined} data-switch={sw.pending ? 'view' : chatSw.pending ? 'chat' : undefined} data-ch-code="CH-13820" {...sw.enter}>
+    <main ref={askRoot} className={'ch-ask ch-ak-root' +(phone ? ' is-phone' : '') + (showHome ? ' is-home' : '')} aria-label="Ask CoachHelm" aria-busy={sw.pending || chatSw.pending || undefined} data-switch={sw.pending ? 'view' : chatSw.pending ? 'chat' : undefined} data-ch-busy={sw.busy ?? chatSw.busy} data-ch-code="CH-13820" {...sw.enter}>
       {phone && (
         <>
           <PhoneTop
@@ -426,7 +423,7 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
         </>
       )}
       <div className="ch-ask-top">
-        {player ? <PlayerAskTabs /> : <CoachHelmTabs active={sw.shown} onGo={sw.go} />}
+        {player ? <PlayerHelmTabs active={playerSw.shown} onGo={playerSw.go} /> : <CoachHelmTabs active={coachSw.shown} onGo={coachSw.go} />}
         {/* Desktop keeps the meter beside the tabs in a thread. On the phone it sat off screen in the tab row and its height
             opened an empty band above and below the tabs; the phone shows it on Ask's home only. */}
         {player && data.allowance && !showHome && !phone && <AllowanceMeter bucket={data.allowance} />}

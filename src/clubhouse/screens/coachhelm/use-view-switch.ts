@@ -3,6 +3,8 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState, useTransition, type CSSProperties } from 'react';
 import { fetchAhead, prefetchAllowed, whenIdle } from '../../shell/use-prefetch-tabs';
+import { CH_BUSY } from '../../lib/motion';
+import { useBusy } from '../../lib/use-busy';
 
 /**
  * A switch between views of the CoachHelm page (Board, Ask, Standing, Deep dive), each its own address. The same
@@ -63,7 +65,11 @@ export function useViewSwitch<V extends string>(active: V, hrefOf: (view: V) => 
       inFlight = null;
     }
   }, [pending]);
-  return { shown, pending, go, enter };
+  // The dim is the wait's visible half (MOTION-AND-VISUAL 3.9, lib/use-busy.ts): `pending` marks the page busy and stops its taps
+  // from the tap on, and `busy` dims what is changing only once the switch has taken the busy delay, holding it at least the busy
+  // hold, so a view that lands within 150 ms swaps with no dim at all. The owner sets `data-ch-busy={sw.busy}` beside `aria-busy`.
+  const busy = useBusy(pending) === 'skeleton' ? ('skeleton' as const) : undefined;
+  return { shown, pending, busy, go, enter };
 }
 
 /** The switch the tap started: where it goes and when the tap was, for the view that lands (one at a time, as the tabs are). */
@@ -78,7 +84,8 @@ const DIM_TO = 0.55;
 
 /** The opacity the dimming view had reached `ms` after the tap: where the view that replaces it starts. */
 export function dimmedAt(ms: number): number {
-  const x = Math.min(1, Math.max(0, ms / DIM_MS));
+  // The dim starts once the busy delay has passed (useBusy), so a view that lands sooner starts at full opacity.
+  const x = Math.min(1, Math.max(0, (ms - CH_BUSY.delay) / DIM_MS));
   return 1 - (1 - DIM_TO) * (1 - (1 - x) ** 5);
 }
 
