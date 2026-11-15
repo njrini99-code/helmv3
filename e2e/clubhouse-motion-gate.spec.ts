@@ -27,7 +27,7 @@ test.skip(process.env.CH_QUALITY !== '1', 'Use CH_QUALITY=1 with playwright.club
 const WATCH_MS = 2500;
 
 /** Injected before any page script: every Animation the document holds on any frame, deduped by object. */
-function recorder(watchMs: number) {
+function recorder() {
   const w = window as unknown as { __chMotion: unknown[] };
   if (w.__chMotion) return;
   w.__chMotion = [];
@@ -61,7 +61,8 @@ function recorder(watchMs: number) {
         pseudo: effect?.pseudoElement ?? null,
       });
     }
-    if (performance.now() - t0 < watchMs) requestAnimationFrame(tick);
+    // Runs until record() stops it, so a slow hydration on a CI runner cannot push an entrance out of the window.
+    if (!(window as unknown as { __chMotionStop?: boolean }).__chMotionStop) requestAnimationFrame(tick);
   };
   requestAnimationFrame(tick);
 }
@@ -106,13 +107,19 @@ async function watch(page: Page, ms: number, act: () => Promise<void>): Promise<
 }
 
 async function record(page: Page, url: string, tap: string | undefined): Promise<MotionRow[]> {
-  await page.addInitScript(recorder, WATCH_MS);
+  await page.addInitScript(recorder);
   const response = await page.goto(url, { waitUntil: 'load' }).catch(() => page.goto(url, { waitUntil: 'load' }));
   expect(response?.status(), `${url} did not render`).toBe(200);
   if (tap) await page.locator(tap).first().click();
+  // The window is measured from hydration, not from the first byte: what a screen does as it opens happens after the
+  // client takes over, and a CI runner hydrates seconds later than a Mac.
   await page.locator('.ch-root[data-hydrated]').first().waitFor({ state: 'attached', timeout: 30_000 }).catch(() => {});
   await page.waitForTimeout(WATCH_MS);
-  return page.evaluate(() => (window as unknown as { __chMotion: MotionRow[] }).__chMotion);
+  return page.evaluate(() => {
+    const w = window as unknown as { __chMotion: MotionRow[]; __chMotionStop?: boolean };
+    w.__chMotionStop = true;
+    return w.__chMotion;
+  });
 }
 
 let tokens: Set<number>;

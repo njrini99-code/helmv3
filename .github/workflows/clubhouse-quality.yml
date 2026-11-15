@@ -114,22 +114,28 @@ jobs:
         run: >-
           ./node_modules/.bin/playwright test --config playwright.clubhouse.config.ts
           --project chromium-no-preference --project chromium-reduce --project webkit-no-preference --project webkit-reduce
+          --output test-results/clubhouse-quality/smoke
       # Boxes leaving their card, clipped text, nested cards, small type and targets, contrast, page edge: at 390x844 in WebKit and
       # 1440x900 in Chromium, light and dark, on stress fixtures. A known failure is marked with its bug and must keep failing until fixed.
+      # Each step keeps its own output folder: Playwright empties its output folder when it starts, so a shared one kept
+      # only the last step's evidence. The gate runs even when the smoke fails (it is a separate question).
       - name: Presentation gate
-        if: ${{ !inputs.visual }}
+        if: ${{ !cancelled() && !inputs.visual }}
         timeout-minutes: 40
         env:
           CH_GATE_REPORT: test-results/clubhouse-quality/gate-report.jsonl
-        run: ./node_modules/.bin/playwright test --config playwright.clubhouse.config.ts --project gate-phone --project gate-desktop
+        run: ./node_modules/.bin/playwright test --config playwright.clubhouse.config.ts --project gate-phone --project gate-desktop --output test-results/clubhouse-quality/gate
       # Motion is a release gate (owner): what animates on every phone gate screen, from its first frame, with and
       # without Reduce Motion, against D-64 (e2e/clubhouse-motion-gate.spec.ts; known breaks may only shrink).
       - name: Motion gate (WebKit, phone)
         if: ${{ !cancelled() && !inputs.visual }}
+        # Advisory for its first week on main: its known list was recorded on a Mac, and a week of Linux runs shows
+        # whether timing moves any entry. Then remove this line so a new break fails the job.
+        continue-on-error: true
         timeout-minutes: 20
         env:
           CH_MOTION_REPORT: test-results/clubhouse-quality/motion-report.jsonl
-        run: ./node_modules/.bin/playwright test --config playwright.clubhouse.config.ts --project motion-phone
+        run: ./node_modules/.bin/playwright test --config playwright.clubhouse.config.ts --project motion-phone --output test-results/clubhouse-quality/motion
       # Pixel regression (advisory). Nightly on main renders the baselines; a PR or dispatch run compares against the
       # newest nightly set from main, so both sides are the same Linux image and browser build.
       - name: Render pixel baselines (nightly on main)
@@ -138,7 +144,7 @@ jobs:
         env:
           CH_PIXELS: '1'
           CH_VISUAL_BASELINES: ${{ github.workspace }}/.helm/screenshots/clubhouse/pixel-baselines
-        run: ./node_modules/.bin/playwright test --config playwright.clubhouse.config.ts --project pixels-phone --project pixels-desktop --update-snapshots=all
+        run: ./node_modules/.bin/playwright test --config playwright.clubhouse.config.ts --project pixels-phone --project pixels-desktop --update-snapshots=all --output test-results/clubhouse-quality/pixels
       - name: Upload pixel baselines
         if: ${{ !cancelled() && github.event_name == 'schedule' }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
@@ -168,7 +174,7 @@ jobs:
         env:
           CH_PIXELS: '1'
           CH_VISUAL_BASELINES: ${{ github.workspace }}/.helm/screenshots/clubhouse/pixel-baselines
-        run: ./node_modules/.bin/playwright test --config playwright.clubhouse.config.ts --project pixels-phone --project pixels-desktop
+        run: ./node_modules/.bin/playwright test --config playwright.clubhouse.config.ts --project pixels-phone --project pixels-desktop --output test-results/clubhouse-quality/pixels
       # Every screen that needs no session: the public pages of all three products and every Clubhouse fixture state
       # (scripts/screens/sweep.mjs, its own next dev with the env blanked). Mock data only, so the gallery is safe to upload.
       - name: Every public and fixture screen (gallery)

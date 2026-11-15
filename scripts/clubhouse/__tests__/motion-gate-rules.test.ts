@@ -18,8 +18,17 @@ describe('motionTokens', () => {
 });
 
 describe('judgeMotion', () => {
-  it('passes a token-timed opacity or transform change after the screen opened', () => {
-    expect(judgeMotion([row(), row({ props: ['transform'], duration: 260 })], { reduced: false, tokens })).toEqual([]);
+  it('passes a token-timed opacity or transform change on an interaction', () => {
+    expect(judgeMotion([row(), row({ props: ['transform'], duration: 260 })], { reduced: false, tokens, phase: 'interaction' })).toEqual([]);
+  });
+  it('counts any finite animation while a screen opens on its own as first paint, whenever hydration lands', () => {
+    expect(judgeMotion([row({ at: 2400, kind: 'CSSAnimation', name: 'ch-qc-fade', target: 'ul.qc-starts' })], { reduced: false, tokens })[0]).toMatch(/^first-paint: ul\.qc-starts/);
+  });
+  it('ignores the Next dev overlay, treats 1 ms as an instant swap, and lets a JS spring run its physics length', () => {
+    expect(judgeMotion([row({ target: 'nextjs-portal', props: ['letter-spacing'] })], { reduced: true, tokens })).toEqual([]);
+    expect(judgeMotion([row({ duration: 1, name: 'ch-fade', kind: 'CSSAnimation' })], { reduced: true, tokens })).toEqual([]);
+    expect(judgeMotion([row({ kind: 'Animation', name: '', duration: 350 })], { reduced: false, tokens, phase: 'interaction' })).toEqual([]);
+    expect(judgeMotion([row({ kind: 'Animation', name: '', duration: 350 })], { reduced: true, tokens })[0]).toMatch(/^reduced: /);
   });
   it('passes the whole-page crossfade on first paint and a loop on any frame', () => {
     expect(judgeMotion([
@@ -30,11 +39,13 @@ describe('judgeMotion', () => {
   it('fails a layout property, an off-token duration, a first-paint entrance and a stagger', () => {
     const out = judgeMotion([
       row({ props: ['height'], target: 'div.ch-acc' }),
-      row({ duration: 137, target: 'div.ch-odd' }),
+      row({ duration: 137, target: 'div.ch-odd', kind: 'CSSAnimation', name: 'ch-odd-in' }),
       row({ at: 40, kind: 'CSSAnimation', name: 'ch-rise', props: ['opacity', 'transform'], target: 'li.ch-row', delay: 80 }),
     ], { reduced: false, tokens });
     expect(out.some((b) => /^layout: div\.ch-acc .* height$/.test(b))).toBe(true);
     expect(out.some((b) => /^token: div\.ch-odd .* 137 ms/.test(b))).toBe(true);
+    // An interrupted transition is shortened by the browser, so its length is not judged at run time.
+    expect(judgeMotion([row({ duration: 155, name: 'background-color', props: ['background-color'] })], { reduced: false, tokens, phase: 'interaction' })).toEqual([]);
     expect(out.some((b) => /^first-paint: li\.ch-row ch-rise .*stagger/.test(b))).toBe(true);
   });
   it('fails anything that runs under Reduce Motion, loops included', () => {

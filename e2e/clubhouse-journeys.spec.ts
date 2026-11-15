@@ -232,7 +232,10 @@ async function openChat(page: Page) {
 async function send(thread: Locator, text: string) {
   await thread.getByRole('textbox', { name: `Message ${chat()}` }).fill(text);
   await thread.getByRole('button', { name: 'Send', exact: true }).click();
-  await expect(thread.getByText(text, { exact: true })).toBeVisible({ timeout: 60_000 });
+  // Messages v2 animates a send with an aria-hidden copy of the bubble (`data-ch-send-ghost`) that flies into place, so
+  // the text is briefly on the page twice. The message is the real bubble; the ghost must then be gone.
+  await expect(thread.locator('[data-ch-bubble]').filter({ hasText: text })).toBeVisible({ timeout: 60_000 });
+  await expect(thread.locator('[data-ch-send-ghost]'), 'the send animation cleaned up its ghost').toHaveCount(0, { timeout: 10_000 });
 }
 
 test('Messages: a coach sends to the team chat', async ({ page }) => {
