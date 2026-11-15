@@ -592,6 +592,8 @@ async function fetchDocumentUploaded(ctx: SourceCtx): Promise<ActivityItem[]> {
   let q = ctx.admin
     .from('golf_documents')
     .select('id, created_at, team_id, title, category, uploaded_by, golf_teams(name)')
+    // An upload is a file: a published practice plan (N-00 010400, file_url NULL) is not one (N-10 shim).
+    .not('file_url', 'is', null)
     .order('created_at', { ascending: false })
     .limit(ctx.limit);
   if (ctx.cursor) q = q.lt('created_at', ctx.cursor);

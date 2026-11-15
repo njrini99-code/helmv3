@@ -49,8 +49,10 @@ export interface RawShot {
   putt_made?: boolean | null;
   is_penalty?: boolean | null;
   penalty_type?: string | null;
-  /** Recovery tap: true when the player marked the next shot blocked (punch
-   *  out), false when clear, null/absent when not asked. */
+  /** Recovery tap: true when the player marked the next shot "Recovery /
+   *  layup" (it could not go at the green; saved as "Blocked or punch out"
+   *  before 2026-11-12, same meaning), false when clear, null/absent when not
+   *  asked. */
   lie_after_recovery?: boolean | null;
   // Extended detail fields from putt_details table
   putt_miss_tags?: string[] | null;

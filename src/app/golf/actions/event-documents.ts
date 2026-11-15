@@ -94,7 +94,8 @@ async function getEventDocumentsImpl(
       document: EventDocumentRow['document'] | null;
     };
     const rows = ((data ?? []) as unknown as Row[])
-      .filter((r): r is Row & { document: NonNullable<Row['document']> } => r.document !== null)
+      // A practice-plan row (N-00 010400: practice_plan_id set, file_url NULL) has no file to list or open (N-10 shim).
+      .filter((r): r is Row & { document: NonNullable<Row['document']> } => r.document !== null && r.document.file_url != null)
       .map((r) => ({
         document: r.document,
         attachedAt: r.attached_at,
@@ -154,10 +155,12 @@ async function attachDocumentToEventImpl(
     // gives us a clean user-facing error message.
     const [{ data: eventRow }, { data: docRow }] = await Promise.all([
       supabase.from('golf_events').select('team_id').eq('id', eventId).maybeSingle(),
-      supabase.from('golf_documents').select('team_id').eq('id', documentId).maybeSingle(),
+      supabase.from('golf_documents').select('team_id, file_url').eq('id', documentId).maybeSingle(),
     ]);
     if (!eventRow) return { success: false, error: 'Event not found' };
     if (!docRow) return { success: false, error: 'Document not found' };
+    // A practice plan filed in Documents has no file (N-00 010400): an event attaches files only (N-10 shim).
+    if (docRow.file_url == null) return { success: false, error: 'A practice plan isn’t a file, so it can’t be attached to an event.' };
     if (eventRow.team_id !== docRow.team_id) {
       return { success: false, error: 'Document is on a different team and cannot be attached' };
     }

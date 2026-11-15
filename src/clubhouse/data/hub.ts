@@ -324,7 +324,8 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
     clockRead,
     supabase.from('golf_teams').select('name').eq('id', input.teamId).maybeSingle(),
     rosterRead,
-    getDocuments(input.teamId).catch((err: unknown) => ({ data: null, error: err instanceof Error ? err.message : 'failed' })),
+    // Team Hub draws practice-plan rows in their folders (folders() below), so it is the one reader that asks for them.
+    getDocuments(input.teamId, { plans: true }).catch((err: unknown) => ({ data: null, error: err instanceof Error ? err.message : 'failed' })),
     // A page past the six shown: another team's items are left out below (coach audit 13 Nov 2026, §7), and this team's
     // newest six may sit under them.
     getUnifiedNotifications({ limit: HUB_UPDATES_PAGE }).catch(() => ({ success: false as const, error: 'failed' })),

@@ -39,7 +39,7 @@ function chain(result: () => Result) {
     selects.push(cols);
     return c;
   });
-  for (const m of ['eq', 'in', 'order', 'limit']) c[m] = vi.fn(() => c);
+  for (const m of ['eq', 'in', 'not', 'order', 'limit']) c[m] = vi.fn(() => c);
   c.single = vi.fn(async () => result());
   c.maybeSingle = vi.fn(async () => result());
   c.then = (resolve: (v: unknown) => void, reject: (e: unknown) => void) => Promise.resolve(result()).then(resolve, reject);
@@ -50,7 +50,7 @@ function chain(result: () => Result) {
 const embedFails = (cols: string): Result | null =>
   /uploaded_by\s*\(/.test(cols) ? { data: null, error: { code: 'PGRST200', message: "Could not find a relationship between 'golf_documents' and 'uploaded_by'" } } : null;
 
-const doc = { id: DOC_ID, team_id: TEAM_ID, is_public: true, uploaded_by: UPLOADER, title: 'Travel waiver' };
+const doc = { id: DOC_ID, team_id: TEAM_ID, is_public: true, uploaded_by: UPLOADER, title: 'Travel waiver', file_url: 'https://storage.example/travel-waiver.pdf' };
 const version = (n: number) => ({ id: `v${n}`, document_id: DOC_ID, version_number: n, uploaded_by: UPLOADER, created_at: `2026-09-0${n}T12:00:00Z`, file_size: 100 * n });
 
 beforeEach(() => {
@@ -65,7 +65,7 @@ beforeEach(() => {
     }
     if (table === 'golf_documents') {
       let cols = '';
-      const c = chain(() => embedFails(cols) ?? { data: cols.includes('golf_document_versions') ? { ...doc, versions: [version(1), version(2)] } : cols === 'team_id, is_public' ? doc : [doc], error: null });
+      const c = chain(() => embedFails(cols) ?? { data: cols.includes('golf_document_versions') ? { ...doc, versions: [version(1), version(2)] } : cols.startsWith('team_id, is_public') ? doc : [doc], error: null });
       const select = c.select as (s: string) => unknown;
       c.select = vi.fn((s: string) => {
         cols = s;

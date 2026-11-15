@@ -171,6 +171,16 @@ Player Team Hub
 - Files attached to an announcement must be the team's own documents, checked
   before the announcement is written; a post whose file links fail reports
   `attachmentsError` beside the id (`announcements.ts`).
+- A `golf_documents` row with no `file_url` is a published practice plan
+  (N-00 `20261026010400`), not a file. Every reader that lists, attaches,
+  opens or signs files leaves it out or refuses it without throwing (the N-10
+  reader shim): `getDocuments` returns files only unless the caller passes
+  `{ plans: true }` (only Team Hub does, and opens a plan row as its plan);
+  event attachments, the announcement picker, check and detail, Ask's
+  documents list and the admin upload feed filter `file_url IS NOT NULL`;
+  `getPreviewUrl` answers `noContent`, `getDocument` and `getTextFileContent`
+  say it is a plan. Pinned by
+  `src/app/golf/actions/__tests__/documents-plan-rows.test.ts`.
 - A player reads a teammate's display columns (name, avatar, class year,
   handicap) only through `readGolfPlayerProfiles` (`src/lib/golf/player-profiles.ts`,
   the player-profiles database function), never a `golf_players` table read or

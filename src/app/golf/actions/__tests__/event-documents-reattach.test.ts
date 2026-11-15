@@ -43,7 +43,7 @@ const client = {
   auth: { getUser: async () => ({ data: { user: { id: 'coach-user' } }, error: null }) },
   from: (table: string) => {
     if (table === 'golf_events') return single({ team_id: 'team-1' });
-    if (table === 'golf_documents') return single({ team_id: 'team-1' });
+    if (table === 'golf_documents') return single({ team_id: 'team-1', file_url: 'https://storage.example/doc-1.pdf' });
     if (table === 'golf_coaches') return single(world.isCoach ? { id: 'coach-1' } : null);
     if (table === 'golf_event_documents') return eventDocuments();
     throw new Error(`unexpected table ${table}`);

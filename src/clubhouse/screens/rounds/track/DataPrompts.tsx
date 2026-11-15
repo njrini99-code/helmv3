@@ -3,6 +3,7 @@
 import { createContext, useContext, useId, type ReactNode } from 'react';
 import { formatFeet, type DistancePreference } from '@/lib/golf/distance-units';
 import { PUTT_MISS_OPTIONS } from '@/lib/coachhelm/data-gap/asks';
+import { RECOVERY_CHOICES, recoveryHint, recoverySavedLine } from '@/lib/golf/data-prompts/recovery';
 import { haptic } from '../../../lib/haptics';
 import { PUTT_TAGS } from './labels';
 import type { ChPuttPromptView, ChRecoveryPromptView } from './use-data-prompts';
@@ -88,15 +89,10 @@ export function PuttMissPrompt({ prompt, pref }: { prompt: ChPuttPromptView; pre
   );
 }
 
-const RECOVERY_CHOICES: ReadonlyArray<{ value: boolean; label: string }> = [
-  { value: false, label: 'Clear shot' },
-  { value: true, label: 'Blocked or punch out' },
-];
-
 /**
- * CH-11961: after a tee shot into the rough or an 'other' lie, "Next shot from there?" with Clear shot and Blocked or punch
- * out. The answer sits on the tee shot (`lie_after_recovery`), beside its lie; the row stays as the receipt until the next
- * shot is recorded.
+ * CH-11961: after a tee shot into the rough or an 'other' lie, "Next shot from there?" with Clear shot and Recovery / layup
+ * (`RECOVERY_CHOICES`, shared with Fairway). The answer sits on the tee shot (`lie_after_recovery`), beside its lie; the row
+ * stays as the receipt until the next shot is recorded.
  */
 export function RecoveryPrompt({ prompt }: { prompt: ChRecoveryPromptView }) {
   const { saved, result } = prompt;
@@ -106,7 +102,7 @@ export function RecoveryPrompt({ prompt }: { prompt: ChRecoveryPromptView }) {
       label="Next shot from there?"
       onSkip={saved === null ? prompt.onSkip : undefined}
       skipLabel="Skip the recovery question"
-      line={saved === null ? (result === 'other' ? 'Tee shot, other lie' : 'Tee shot, rough') : saved ? 'Saved: a recovery shot' : 'Saved: a clear shot'}
+      line={saved === null ? recoveryHint(result) : recoverySavedLine(saved)}
     >
       <div className="ch-rt-tags" role="group" aria-label="Next shot from where the tee shot finished">
         {RECOVERY_CHOICES.map(({ value, label }) => (

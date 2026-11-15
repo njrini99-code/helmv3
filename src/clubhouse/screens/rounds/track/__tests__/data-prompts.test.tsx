@@ -133,6 +133,11 @@ describe('CH-11961 the recovery tap (chs-23, coachhelm_data_prompts_v2)', () => 
   it('asks after a tee shot into the rough, not after one on the fairway', () => {
     setup({ initialShots: [TEE_ROUGH], initialShotNumber: 2, recoveryPrompt: true });
     expect(code('CH-11961')!.textContent).toContain('Tee shot, rough');
+    // Says when Recovery / layup applies, so a strategic layup from a clean lie stays a clear shot.
+    expect(code('CH-11961')!.textContent).toContain('Recovery / layup only if you couldn’t go at the green');
+    expect(screen.getByRole('button', { name: 'Clear shot' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Recovery / layup' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /punch out/i })).toBeNull();
     expect(screen.getByText('Next shot from there?')).toBeTruthy();
     cleanup();
     setup({ initialShots: [TEE], initialShotNumber: 2, recoveryPrompt: true });
@@ -142,9 +147,9 @@ describe('CH-11961 the recovery tap (chs-23, coachhelm_data_prompts_v2)', () => 
   it('stores the answer on the tee shot through the hole save, and keeps the receipt', async () => {
     const { onAutoSave, user } = setup({ initialShots: [TEE_OTHER], initialShotNumber: 2, recoveryPrompt: true });
     expect(code('CH-11961')!.textContent).toContain('Tee shot, other lie');
-    await user.click(screen.getByRole('button', { name: 'Blocked or punch out' }));
+    await user.click(screen.getByRole('button', { name: 'Recovery / layup' }));
     expect(haptic).toHaveBeenCalledWith('select');
-    expect(code('CH-11961')!.textContent).toContain('Saved: a recovery shot');
+    expect(code('CH-11961')!.textContent).toContain('Saved: a recovery or layup');
     const saved = (onAutoSave.mock.calls.at(-1) as unknown[])[0] as ShotRecord[];
     expect(saved[0]).toMatchObject({ shotNumber: 1, lieAfterRecovery: true });
   });

@@ -362,6 +362,8 @@ async function createEnrichedAnnouncementImpl(input: {
         .from('golf_documents')
         .select('id')
         .eq('team_id', teamId)
+        // Files only: a practice-plan row (N-00 010400, file_url NULL) is not an attachment, so it fails this check (N-10 shim).
+        .not('file_url', 'is', null)
         .in('id', validated.documentIds);
       if (ownDocsError) {
         await logServerError(
@@ -1175,7 +1177,9 @@ async function getAnnouncementDetailImpl(
       const { data, error: docDetailsError } = await supabase
         .from('golf_documents')
         .select('id, title, file_url, file_type, file_size')
-        .in('id', docIds);
+        .in('id', docIds)
+        // A practice-plan row has no file to show or open (N-10 shim).
+        .not('file_url', 'is', null);
 
       if (docDetailsError) {
         await logServerError(

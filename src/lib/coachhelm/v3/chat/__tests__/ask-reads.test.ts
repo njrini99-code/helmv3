@@ -46,7 +46,14 @@ describe('get_documents', () => {
     const env = await getDocuments(sb, ctx, { limit: 30 });
     expect(env.coverage).toBe('complete');
     expect(env.detail).toMatchObject({ documents: [{ title: 'Hargrove plan', folder: 'November', players_can_see: false }], folders: ['November'] });
-    expect(JSON.stringify(seen)).not.toContain('file_url');
+    // The file itself is never selected; `file_url` is only the filter that keeps practice-plan rows out (below).
+    expect(JSON.stringify(seen.filter((c) => c.method === 'select'))).not.toContain('file_url');
+  });
+
+  it('lists files only: a practice-plan row (no file, N-00 010400) is read as a plan by get_practice, not as a document (N-10 shim)', async () => {
+    const { sb, seen } = sbWith({ golf_documents: { data: [] } });
+    await getDocuments(sb, ctx, { limit: 30 });
+    expect(seen).toContainEqual({ table: 'golf_documents', method: 'not', args: ['file_url', 'is', null] });
   });
 
   it('says "could not read" for a failed read, never an empty folder', async () => {
