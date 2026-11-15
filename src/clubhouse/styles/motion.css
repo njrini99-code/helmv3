@@ -1,0 +1,49 @@
+/* Every keyframe Clubhouse keeps (MOTION-AND-VISUAL 3.1, 3.12). Three things move: the page, an overlay and the control
+   under the finger; content never moves on its own, first paint is still, and the one loop is the working indicator while
+   work runs. A stylesheet holds no @keyframes of its own: what still needs one names it here, and everything else is a
+   transition (the motion gate, src/clubhouse/__tests__/motion-gate.test.ts, counts keyframes and loops per file).
+   Loaded with tokens.css and base.css wherever Clubhouse draws (ClubhouseFrame, AuthFrame, the shell's skeleton and error
+   frames, and ui/Spinner for a page with its own sheets). Opacity, transform and path length only. */
+
+/* Late content crossfades in, and Reduce Motion's fade (3.5, 3.11): on the quick beat. */
+@keyframes ch-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Something leaving, faded out where it stands (with `forwards`, until its owner takes it away). */
+@keyframes ch-out {
+  to {
+    opacity: 0;
+  }
+}
+
+/* A side pane a tap opens, from the trailing edge, and back out to it (Ask's plan pane). */
+@keyframes ch-slide-in {
+  from {
+    transform: translateX(100%);
+  }
+}
+@keyframes ch-slide-out {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+/* A countdown that is a real clock (Ask's Undo window): the ring drains over the time left. Its length is the ring's own
+   dash length, `--ch-drain` (100 for a pathLength of 100). */
+@keyframes ch-drain {
+  to {
+    stroke-dashoffset: var(--ch-drain, 100);
+  }
+}
+
+/* The CoachHelm wheel while CoachHelm works (CoachMark, owner #2410): one spoke, then a hold, on the working beat
+   (--ch-dur-typing; CoachMark's TURN_MS). */
+@keyframes ch-th-turn {
+  70%,
+  100% {
+    transform: rotate(45deg);
+  }
+}

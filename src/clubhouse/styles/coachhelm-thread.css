@@ -31,28 +31,9 @@
   height: 1px;
 }
 
-/* A new turn rises in on the reveal beat (opacity and transform only, so nothing below it moves); the ones a thread opened
-   with do not. Streamed paragraphs only fade, so the text being read never moves (2026-10-29). */
-@keyframes ch-th-in {
-  from {
-    opacity: 0;
-  }
-}
-@keyframes ch-th-rise {
-  from {
-    opacity: 0;
-    transform: translateY(var(--ch-reveal-rise));
-  }
-}
-.ch-th-turn.is-new {
-  animation: ch-th-rise var(--ch-dur-release) var(--ch-ease) backwards;
-}
-/* While an answer streams, AskProse marks its block `data-streaming`; each paragraph or list fades in as it mounts, on the
-   base beat, opacity only, so it never moves the text being read. A finished or reloaded answer carries no mark and draws
-   still. Animations off zeroes the beat (visual pass 2026-10-28, rubric P013 checklist). */
-.ch-th-prose[data-streaming] > * {
-  animation: ch-th-in var(--ch-dur-base) var(--ch-ease) backwards;
-}
+/* A new turn and a streamed paragraph draw still (MOTION-AND-VISUAL 3.5): the question's arrival is the thread's own
+   (chat/Thread.tsx, MO-3-4) and the answer crossfades once (coachhelm-ask-v2.css); words are released at the backlog's rate,
+   with no per-burst fade. */
 
 /* The coach's line: the same green bubble Messages uses for your own, tail at the lower right */
 .ch-th-user {
@@ -106,16 +87,10 @@
 .ch-th-mk-hub {
   fill: var(--ch-green-fill-700);
 }
-/* Working: the wheel turns one spoke, then holds, on the shared loop beat; transform only. CoachMark lets the last turn
-   finish before it stops, so it always comes to rest on a spoke. */
-@keyframes ch-th-turn {
-  70%,
-  100% {
-    transform: rotate(45deg);
-  }
-}
+/* Working: the wheel turns one spoke, then holds, on the working beat (the one loop, 3.1; @keyframes in motion.css);
+   transform only. CoachMark lets the last turn finish before it stops, so it always comes to rest on a spoke. */
 .ch-th-mark.is-working .ch-th-mk {
-  animation: ch-th-turn var(--ch-dur-shimmer) var(--ch-ease-io) infinite;
+  animation: ch-th-turn var(--ch-dur-typing) var(--ch-ease-typing) infinite;
 }
 @media (prefers-reduced-motion: reduce) {
   .ch-th-mark.is-working .ch-th-mk {
@@ -160,7 +135,7 @@
   color: var(--ch-text-secondary);
 }
 /* The live words (the current step, "Reading your program"): secondary ink, still, always readable. The work is shown by the turning
-   wheel and the current step's dot, on the compositor; the old shimmer repainted the text every frame (2026-10-29). */
+   wheel, on the compositor; the old shimmer repainted the text every frame (2026-10-29). */
 .ch-th-live {
   color: var(--ch-text-secondary);
 }
@@ -168,47 +143,6 @@
   .ch-th-live {
     color: var(--ch-text-primary);
   }
-}
-/* The current step's marker: a dot in the check's 14px box, so the labels line up; it breathes in scale and opacity. */
-.ch-th-dot {
-  flex: none;
-  width: 14px;
-  height: 14px;
-  display: grid;
-  place-items: center;
-}
-.ch-th-dot::before {
-  content: '';
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--ch-green-600);
-  animation: ch-th-dot var(--ch-dur-shimmer) var(--ch-ease-io) infinite;
-}
-@keyframes ch-th-dot {
-  50% {
-    opacity: 0.4;
-    transform: scale(0.6);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .ch-th-dot::before {
-    animation: none;
-  }
-}
-[data-ui='clubhouse'][data-motion='off'] .ch-th-dot::before,
-[data-motion='off'] [data-ui='clubhouse'] .ch-th-dot::before {
-  animation: none;
-}
-/* A new step slides in from just above its place (transform and opacity) and the list grows by one row. */
-@keyframes ch-th-step {
-  from {
-    opacity: 0;
-    transform: translateY(-4px);
-  }
-}
-.ch-th-steps li.is-in {
-  animation: ch-th-step var(--ch-dur-base) var(--ch-ease) backwards;
 }
 .ch-th-note {
   max-width: 68ch;
@@ -1395,12 +1329,6 @@ a.ch-th-reads__r:focus-visible {
 .ch-th-evp__small {
   font: var(--ch-type-13);
   color: var(--ch-text-tertiary);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .ch-th-turn.is-new {
-    animation: none;
-  }
 }
 
 /* The Mobile clubhouse pass (2026-10-08): on the phone a failed answer is a flush notice like every other one, the
