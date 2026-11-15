@@ -88,13 +88,19 @@ export interface ChHalves {
 export const MIN_TREND_PLAYERS = 3;
 /** The whole rounds a player needs in each half to count in a team trend's like-for-like change. */
 export const MIN_TREND_HALF_ROUNDS = 2;
+/**
+ * The points with a value a trend needs before it reads a change: two a half (prod audit 2026-11-15, CH-10). With three, the middle
+ * point sat in neither half, so "better over these weeks" was the last week against the first.
+ */
+export const MIN_TREND_POINTS = 4;
 
 /**
  * A trend's newer half against its older half, from the rounds behind it (A1). `groups` are the rounds behind each point of the
  * trend, oldest first (a week's, a day's); the points with a value split as the form line's halves do (`halvesChange`: with an odd
  * count the middle point is in neither half). The change is the newer half's rounds' mean less the older half's, per 18 holes, and
  * its standard error is those rounds' own (`windowChangeSe`): a week's mean of eight rounds is never read as a single round, whose
- * spread would leave nearly every team trend at "No clear change". Null under three points with a value.
+ * spread would leave nearly every team trend at "No clear change". Null under `MIN_TREND_POINTS` (four) points with a value, so
+ * each half rests on two (CH-10).
  *
  * A team trend passes `playerOf`, and then compares each player with themselves (prod audit 2026-11-15, NP-01): "Down 5.5 strokes a
  * round, newer half vs older half" set five one-player days against seven-round qualifier days, so it measured who played, not how
@@ -108,7 +114,7 @@ export function roundHalves<T extends HoleCount>(
   playerOf?: (r: T) => string,
 ): ChHalves | null {
   const known = groups.filter((g) => g.some((r) => pick(r) != null));
-  if (known.length < 3) return null;
+  if (known.length < MIN_TREND_POINTS) return null;
   const half = Math.floor(known.length / 2);
   const older = known.slice(0, half).flat();
   const newer = known.slice(known.length - half).flat();
