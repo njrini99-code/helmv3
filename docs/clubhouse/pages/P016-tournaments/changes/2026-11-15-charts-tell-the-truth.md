@@ -22,6 +22,8 @@ Held items:     none
 - Compare (`compare/CompareGrid.tsx` Strip): better is to the right in every
   row, so a lower-is-better row runs high to low, and each metric says
   "better to the right" (CH-14).
+- Compare timeline: a practice round's dot is ink-500, not ink-400, which read
+  2.7:1 on the ivory band, under the 3:1 a chart mark needs.
 
 ### Why
 

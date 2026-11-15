@@ -393,13 +393,15 @@
 .ch-tour-cmp-tl__yk.is-bottom {
   bottom: 5px;
 }
+/* A practice round is the quiet dot, but still a mark the eye must find: ink-400 read 2.7:1 on the ivory band, under the 3:1 a
+   chart mark needs (stats and charts audit, checked on #2542's ivory). */
 .ch-tour-cmp-tl__dot {
   position: absolute;
   width: 7px;
   height: 7px;
   margin: -3.5px 0 0 -3.5px;
   border-radius: 50%;
-  background: var(--ch-ink-400);
+  background: var(--ch-ink-500);
 }
 .ch-tour-cmp-tl__dot.is-event {
   width: 9px;
