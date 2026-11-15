@@ -1,5 +1,7 @@
 'use client';
 
+import { RefreshNotice } from '../../../ui/RefreshNotice';
+import { FAILURE_COPY } from '../../../ui/Notices';
 import { ArrowDown, ArrowUp, ChevronRight, Copy, Flag, Coffee, LayoutGrid, Ellipsis, Plus, Printer, ShipWheel, Trash2, User, Users, type LucideIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
@@ -768,6 +770,8 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
 
   const stepBody = step === 'blocks' ? blocksStep : step === 'groups' ? groupsStep : step === 'drills' ? drillsStep : reviewStep;
   const railStep = step === 'blocks' || step === 'drills';
+  // Part of the bank didn't read (GAP-S-28): said above the list, never drawn as a short bank.
+  const bankNotice = data.drillsFailed ? <RefreshNotice code="CH-13286" title="Some drills didn’t load" body={FAILURE_COPY.load(['part of your drill bank'])} /> : null;
 
   const sheets = (
     <>
@@ -777,6 +781,7 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
         </PracticeSheet>
       )}
       <Modal open={bankOpen} title="Add drill" detent={0.8} onClose={() => setBankOpen(false)}>
+        {bankNotice}
         <BankList drills={drills} pickLabel="Use" onPick={pickDrill} onNew={() => setNewDrill(true)} />
       </Modal>
       <NewDrillSheet
@@ -974,6 +979,7 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
         {railStep && (
           <aside className="ch-prb-rail" aria-label="Drills">
             <h2>Drills</h2>
+            {bankNotice}
             <BankList drills={drills} pickLabel={slot || activeBlock ? 'Use' : 'Pick a block first, then'} onPick={pickDrill} onNew={() => setNewDrill(true)} />
           </aside>
         )}

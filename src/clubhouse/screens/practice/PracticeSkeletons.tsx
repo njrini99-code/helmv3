@@ -502,3 +502,54 @@ export function PlayerPracticePlanSkeleton() {
     </main>
   );
 }
+
+/**
+ * Practice › Plan format in waiting (GAP-S-16): the way back and the title on a Mac (on a phone the bar holds both), then the
+ * format's two cards, the upload card and It learns as you go, in the page's own columns. It was CoachHelm's skeleton, another page.
+ */
+export function PlanFormatSkeleton() {
+  return (
+    <main className="ch-page ch-cpv ch-cpv-fmt" data-ch="plan-format" aria-busy="true" aria-label="Loading plan format">
+      <span className="ch-backlink ch-prc-sk-desk ch-prc-sk-still" aria-hidden="true">
+        <SkelLine line={18} bar={12} width={70} />
+      </span>
+      <header className="ch-prc-h ch-prc-sk-desk" aria-hidden="true">
+        <div>
+          <SkelLine line={47.5} bar={36} width={232} />
+        </div>
+      </header>
+      <div className="ch-cpv-fmt__cols" aria-hidden="true">
+        <section className="art fintro">
+          <header className="art-h">
+            <Skeleton width={36} height={36} radius={10} />
+            <div className="hd">
+              <SkelLine line={20} bar={13} width={210} />
+              <SkelLine line={18} bar={11} width="86%" />
+            </div>
+          </header>
+          <div className="acts is-pad">
+            <Skeleton width="100%" height={48} radius={12} />
+          </div>
+          <div className="fhint">
+            <SkelLine line={18} bar={11} width="64%" />
+          </div>
+        </section>
+        <section className="art">
+          <header className="art-h">
+            <div className="hd">
+              <SkelLine line={20} bar={13} width={150} />
+            </div>
+          </header>
+          <div className="lrn">
+            {[236, 206, 186].map((w) => (
+              <div className="r" key={w}>
+                <Skeleton width={20} height={20} radius={6} />
+                <SkelLine line={20} bar={12} width={w} />
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
+    </main>
+  );
+}

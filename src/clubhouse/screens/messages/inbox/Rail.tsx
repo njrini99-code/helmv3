@@ -93,13 +93,18 @@ export function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) 
         ) : (api.convsLoading && !api.convs.length) || api.annLoading ? (
           <InboxSkeleton layout="rail" labelled={!!api.pins?.ids.length} />
         ) : firstRun ? null : !api.convs.length ? (
-          <EmptyState
-            code="CH-7301"
-            kind="first-run"
-            compact
-            icon={MessageSquare}
-            title="No conversations yet"
-          />
+          <>
+            <EmptyState
+              code="CH-7301"
+              kind="first-run"
+              compact
+              icon={MessageSquare}
+              title="No conversations yet"
+            />
+            {/* An announcements-only inbox (most players) and a failed announcements read (GAP-S-01, CH-7206) both
+                draw under the empty conversation list, never behind it. */}
+            {filter !== "groups" && <AnnouncementsSection api={api} q={q} />}
+          </>
         ) : (
           <>
             <PinnedAndRecent

@@ -10,6 +10,7 @@ import { practiceTables, type PracticePlanRow, type PracticePlanVersionRow, type
 import { isPracticeMissing } from '@/lib/golf/practice-errors';
 import { profilesById, readGolfPlayerProfiles } from '@/lib/golf/player-profiles';
 import { isoDay, formatWith } from '../lib/dates';
+import { chLogServer } from '../lib/track-server';
 import { editedAfterPublish, loadPlayerPractice } from './practice-plan';
 import { blockDaySegs, keyOfDrill } from '../screens/practice/builder/builder-model';
 import type { ChBankDrill, ChBuilderData, ChPlayerPracticeHome, ChPracticeEvent, ChPracticeHome, ChPracticeLoad, ChPracticeRow, ChPracticeState, ChPracticeTile, ChPracticeUpNext } from './practice-home-shape';
@@ -69,7 +70,8 @@ function scheduleRows(body: PlanBodyV2, start: Date, zone: string): ChPracticeUp
 async function daySegs(sb: Sb, teamId: string, body: PlanBodyV2): Promise<NonNullable<ChPracticeUpNext['day']>> {
   const blocks = body.variants.main.blocks;
   const named = blocks.some((b) => (b.kind === 'team' && b.drill) || (b.kind === 'stations' && b.stations.some((st) => st.drill)));
-  const kinds = named ? new Map((await drillBank(sb, teamId).catch(() => [])).map((d) => [d.ref, d.kind])) : new Map<string, ChBankDrill['kind']>();
+  // Only the strip's colours ride on the bank: a bank that won't read leaves the strip plain (drillBank logs it).
+  const kinds = named ? new Map((await drillBank(sb, teamId).then((b) => b.drills, () => [] as ChBankDrill[])).map((d) => [d.ref, d.kind])) : new Map<string, ChBankDrill['kind']>();
   return blocks.flatMap((b) => blockDaySegs(b, (d) => (d ? (kinds.get(keyOfDrill(d)) ?? 'plain') : 'plain'))).map(({ min, tone }) => ({ min, tone }));
 }
 
@@ -231,6 +233,8 @@ export async function loadPlayerPracticeHome(teamId: string, playerId: string, n
   let next: ChPlayerPracticeHome['next'] = null;
   if (first) {
     const mine = await loadPlayerPractice(first.row.id, playerId, now);
+    // The next practice is the page's lead: a read of it that failed fails the page, never "no practice coming up".
+    if (mine.status === 'failed') return { status: 'failed' };
     if (mine.status === 'ready') next = { planHref: first.row.href, title: mine.data.title, when: mine.data.when, context: mine.data.context, focus: mine.data.focus, group: mine.data.group, stops: mine.data.stops };
   }
   const week = weekTiles(rows.map((r) => ({ event: r.event, state: r.row.state, href: r.row.href, eventId: null })), now, zone);
@@ -248,17 +252,26 @@ const LIB_AREA: Record<string, { area: string; kind: ChBankDrill['kind'] }> = {
 };
 const AREA_LABEL: Record<string, string> = { putting: 'Putting', short_game: TERMS.shortGame.long, bunker: 'Bunker', approach: 'Approach', tee: 'Tee', course: 'Course', fitness: 'Fitness', mental: 'Mental' };
 
-/** Your drills, then GolfHelm's. A team bank that isn't there yet leaves the library. */
-async function drillBank(sb: Sb, teamId: string): Promise<ChBankDrill[]> {
+/**
+ * Your drills, then GolfHelm's. A team bank that isn't there yet leaves the library. A read that fails leaves what did
+ * read and sets `failed` (GAP-S-28), so the builder says the bank is short instead of drawing it as a short bank.
+ */
+async function drillBank(sb: Sb, teamId: string): Promise<{ drills: ChBankDrill[]; failed: boolean }> {
   const [team, lib] = await Promise.all([
     practiceTables(sb).from('golf_team_drills').select('id, name, area, kind, minutes').eq('team_id', teamId).is('archived_at', null).order('name').limit(200),
     sb.from('golf_drills').select('id, title, category, duration_min').order('title').limit(200),
   ]);
+  const teamFailed = !!team.error && !isPracticeMissing(team.error.code);
+  if (teamFailed) chLogServer('practice.home', 'team drills', team.error, 'practice_plans');
+  if (lib.error) chLogServer('practice.home', 'library drills', lib.error, 'practice_plans');
   const own = team.error ? [] : ((team.data ?? []) as Array<Pick<TeamDrillRow, 'id' | 'name' | 'area' | 'kind' | 'minutes'>>);
-  return [
-    ...own.map((d): ChBankDrill => ({ ref: `team:${d.id}`, name: d.name, area: AREA_LABEL[d.area] ?? d.area, kind: d.kind, minutes: d.minutes, source: 'Your bank' })),
-    ...(lib.error ? [] : (lib.data ?? [])).map((d): ChBankDrill => ({ ref: `lib:${d.id}`, name: d.title, area: LIB_AREA[d.category ?? '']?.area ?? 'Course', kind: LIB_AREA[d.category ?? '']?.kind ?? 'skill', minutes: d.duration_min ?? 15, source: 'GolfHelm' })),
-  ];
+  return {
+    failed: teamFailed || !!lib.error,
+    drills: [
+      ...own.map((d): ChBankDrill => ({ ref: `team:${d.id}`, name: d.name, area: AREA_LABEL[d.area] ?? d.area, kind: d.kind, minutes: d.minutes, source: 'Your bank' })),
+      ...(lib.error ? [] : (lib.data ?? [])).map((d): ChBankDrill => ({ ref: `lib:${d.id}`, name: d.title, area: LIB_AREA[d.category ?? '']?.area ?? 'Course', kind: LIB_AREA[d.category ?? '']?.kind ?? 'skill', minutes: d.duration_min ?? 15, source: 'GolfHelm' })),
+    ],
+  };
 }
 
 const SG_NAMES: Record<string, string> = { tee: 'Off the tee', approach: 'Approach', short: TERMS.shortGame.long, putting: 'Putting' };
@@ -279,23 +292,36 @@ async function helperFacts(sb: Sb, teamId: string, after: Date, zone: string): P
 }
 
 /** A coach's plan, as the builder edits it: its draft body, the Why lines, the event's window, the roster and the bank. RLS answers coaches of the plan's team only. */
-export async function loadPlanForBuilder(planId: string): Promise<{ status: 'ready'; data: ChBuilderData } | { status: 'gone' } | { status: 'unavailable' }> {
+/**
+ * `gone` only when the plan (or its event) answered with no row; a read that failed is `failed` (GAP-S-03), so the
+ * builder never tells a coach their plan was removed because of a network blip.
+ */
+export async function loadPlanForBuilder(planId: string): Promise<{ status: 'ready'; data: ChBuilderData } | { status: 'gone' } | { status: 'unavailable' } | { status: 'failed' }> {
   const sb = await createClient();
   const { data, error } = await practiceTables(sb).from('golf_practice_plans').select('*').eq('id', planId).maybeSingle();
-  if (error) return isPracticeMissing(error.code) ? { status: 'unavailable' } : { status: 'gone' };
+  if (error) {
+    if (isPracticeMissing(error.code)) return { status: 'unavailable' };
+    chLogServer('practice.builder', 'plan', error, 'practice_plans');
+    return { status: 'failed' };
+  }
   const row = data as PlanRow | null;
   const body = row ? parsePlanBody(row.body) : null;
   if (!row || !body || !row.event_id) return { status: 'gone' };
   const { data: event, error: eventError } = await sb.from('golf_events').select('id, title, start_time, end_time, location, all_day, recurrence_rule, parent_event_id').eq('id', row.event_id).maybeSingle();
-  if (eventError || !event) return { status: 'gone' };
+  if (eventError) {
+    chLogServer('practice.builder', 'event', eventError, 'practice_plans');
+    return { status: 'failed' };
+  }
+  if (!event) return { status: 'gone' };
   // What players have now, for What changed on Republish. A version that won't read leaves the plain sheet.
   const { data: live } = row.status === 'published' && row.published_version != null ? await practiceTables(sb).from('golf_practice_plan_versions').select('body').eq('plan_id', row.id).eq('version', row.published_version).maybeSingle() : { data: null };
   const team = await teamBasics(sb, row.team_id);
   const roster = await activeRoster(sb, row.team_id);
-  if (!team || !roster) return { status: 'gone' };
+  // The team and roster reads answer for a plan that exists, so a null here is a failed read, not a removed plan.
+  if (!team || !roster) return { status: 'failed' };
   const start = new Date(event.start_time);
   const helperOn = true;
-  const [drills, facts, coaches, filed] = await Promise.all([
+  const [bank, facts, coaches, filed] = await Promise.all([
     drillBank(sb, row.team_id),
     helperOn ? helperFacts(sb, row.team_id, start, team.zone) : Promise.resolve([]),
     team.org ? sb.from('golf_coaches').select('full_name').eq('organization_id', team.org) : Promise.resolve({ data: [] as Array<{ full_name: string | null }>, error: null }),
@@ -325,7 +351,8 @@ export async function loadPlanForBuilder(planId: string): Promise<{ status: 'rea
       body,
       why: (row.coach_why ?? {}) as Record<string, PlanWhy>,
       step: row.step === 'groups' || row.step === 'drills' || row.step === 'review' ? row.step : 'blocks',
-      drills,
+      drills: bank.drills,
+      drillsFailed: bank.failed,
       folder: filed.error ? null : ((filed.data as { folder?: string | null } | null)?.folder ?? null),
       helperOn,
       facts,

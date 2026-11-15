@@ -18,12 +18,25 @@ export interface CoachPlanExtras {
   start: Date | null;
   zone: string;
 }
-export type PlanPageLoad = { status: 'ready'; plan: PlanSheetModel; stops?: ReturnType<typeof toPlayerPlan>; coach?: CoachPlanExtras } | { status: 'gone' } | { status: 'unavailable' };
+/**
+ * `gone` only when a read answered and there is no such plan (or it is not this viewer's); `failed` when a read itself
+ * failed (GAP-S-03). A network blip never tells a coach their plan was deleted. `formatFailed`: the team's sheet format
+ * didn't read, so the sheet is in the standard format and the page says so (it never changes format quietly).
+ */
+export type PlanPageLoad = { status: 'ready'; plan: PlanSheetModel; stops?: ReturnType<typeof toPlayerPlan>; coach?: CoachPlanExtras; formatFailed?: boolean } | { status: 'gone' } | { status: 'unavailable' } | { status: 'failed' };
 
+/** A read that failed, as opposed to one that answered with nothing. */
+const FAILED = 'failed' as const;
+
+/** The plan's event, team and names. null: there is no event (the plan is gone); 'failed': a read failed (GAP-S-03). */
 async function context(sb: Awaited<ReturnType<typeof createClient>>, eventId: string | null) {
   if (!eventId) return null;
   const { data: event, error: eventError } = await sb.from('golf_events').select('start_time, end_time, team_id, location').eq('id', eventId).maybeSingle();
-  if (eventError || !event) return null;
+  if (eventError) {
+    chLogServer('practice.plan', 'event', eventError, 'practice_plans');
+    return FAILED;
+  }
+  if (!event) return null;
   // Names come through golf_player_profiles, never a golf_players embed: a player's sheet names their group-mates, and a
   // player may not read a teammate's golf_players row once 20261017005000 is applied (every mate would read "—"). The
   // profiles are the team's, read beside the roster; only active members are kept, so a coach's "seen N of M" counts
@@ -33,7 +46,10 @@ async function context(sb: Awaited<ReturnType<typeof createClient>>, eventId: st
     sb.from('golf_team_members').select('player_id').eq('team_id', event.team_id).eq('status', 'active'),
     readGolfPlayerProfiles(sb, { teamIds: [event.team_id] }),
   ]);
-  if (teamError || membersError || profiles.error) return null;
+  if (teamError || membersError || profiles.error) {
+    chLogServer('practice.plan', 'team context', teamError ?? membersError ?? profiles.error ?? { message: 'context failed' }, 'practice_plans');
+    return FAILED;
+  }
   const { data: coaches } = team?.organization_id ? await sb.from('golf_coaches').select('full_name').eq('organization_id', team.organization_id) : { data: [] };
   const active = new Set((members ?? []).map((m) => m.player_id).filter((id): id is string => !!id));
   const names = new Map<string, string>();
@@ -52,27 +68,40 @@ const stateWord = (r: PracticePlanRow, zone: string, publishedAt: string | null)
   return publishedAt ? `Published ${formatWith(new Date(publishedAt), { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true, timeZone: zone })}` : 'Published';
 };
 
-/** The team's format, for the sheet (S-FMT). A missing table, or none set, is the standard sheet. */
-async function readFormat(sb: Awaited<ReturnType<typeof createClient>>, teamId: string): Promise<PlanSheetFormat | null> {
+/**
+ * The team's format, for the sheet (S-FMT). A missing table, or none set, is the standard sheet. A read that fails is
+ * also drawn in the standard format, but `failed` says so, so the page can tell the coach (GAP-S-03) instead of
+ * quietly changing the plan's format.
+ */
+async function readFormat(sb: Awaited<ReturnType<typeof createClient>>, teamId: string): Promise<{ format: PlanSheetFormat | null; failed: boolean }> {
   const { data, error } = await practiceTables(sb).from('golf_practice_plan_formats').select('name, sections').eq('team_id', teamId).maybeSingle();
-  if (error || !data) return null;
-  return sheetFormat(data as { name: string; sections: Array<{ key: string; name: string }> });
+  if (error && !isPracticeMissing(error.code)) {
+    chLogServer('practice.plan', 'format', error, 'practice_plans');
+    return { format: null, failed: true };
+  }
+  if (error || !data) return { format: null, failed: false };
+  return { format: sheetFormat(data as { name: string; sections: Array<{ key: string; name: string }> }), failed: false };
 }
 
 /** A coach's copy: the draft body and the Why lines from the coach-only column. */
 export async function loadCoachPlan(planId: string): Promise<PlanPageLoad> {
   const sb = await createClient();
   const { data, error } = await practiceTables(sb).from('golf_practice_plans').select('*').eq('id', planId).maybeSingle();
-  if (error) return isPracticeMissing(error.code) ? { status: 'unavailable' } : { status: 'gone' };
+  if (error) {
+    if (isPracticeMissing(error.code)) return { status: 'unavailable' };
+    chLogServer('practice.plan', 'plan', error, 'practice_plans');
+    return { status: 'failed' };
+  }
   const row = data as PracticePlanRow | null;
   const body: PlanBodyV2 | null = row ? parsePlanBody(row.body) : null;
   if (!row || !body) return { status: 'gone' };
   const ctx = await context(sb, row.event_id);
+  if (ctx === FAILED) return { status: 'failed' };
   if (!ctx) return { status: 'gone' };
   const opens = row.status === 'published' ? await practiceTables(sb).from('golf_practice_plan_opens').select('player_id').eq('plan_id', planId) : null;
   const seen = opens && !opens.error ? { names: ((opens.data ?? []) as Array<{ player_id: string }>).map((o) => ctx.names.get(o.player_id)).filter((n): n is string => !!n), of: ctx.names.size } : null;
   const zone = ctx.team?.timezone ?? 'America/New_York';
-  const [format, live] = await Promise.all([
+  const [{ format, failed: formatFailed }, live] = await Promise.all([
     readFormat(sb, ctx.event.team_id),
     row.status === 'published' && row.published_version != null ? practiceTables(sb).from('golf_practice_plan_versions').select('published_at').eq('plan_id', planId).eq('version', row.published_version).maybeSingle() : Promise.resolve({ data: null, error: null }),
   ]);
@@ -81,20 +110,25 @@ export async function loadCoachPlan(planId: string): Promise<PlanPageLoad> {
   if (live.error) chLogServer('practice.plan', 'published at', live.error, 'practice_plans');
   const publishedAt = live.error ? null : ((live.data as { published_at: string } | null)?.published_at ?? null);
   const coach: CoachPlanExtras = { body, zone, start: new Date(ctx.event.start_time), status: { planId, title: row.title ?? 'Practice plan', version: row.version, status: row.status === 'published' ? 'published' : 'draft', edited: editedAfterPublish(row), seen } };
-  return { status: 'ready', coach, plan: toSheetModel({ body, why: (row.coach_why ?? {}) as Record<string, PlanWhy>, title: row.title ?? 'Practice plan', team: ctx.team?.name ?? '', start: new Date(ctx.event.start_time), end: ctx.event.end_time ? new Date(ctx.event.end_time) : null, zone: ctx.team?.timezone ?? 'America/New_York', coaches: ctx.coaches, names: ctx.names, state: stateWord(row, zone, publishedAt), format }, 'coach') };
+  return { status: 'ready', coach, formatFailed, plan: toSheetModel({ body, why: (row.coach_why ?? {}) as Record<string, PlanWhy>, title: row.title ?? 'Practice plan', team: ctx.team?.name ?? '', start: new Date(ctx.event.start_time), end: ctx.event.end_time ? new Date(ctx.event.end_time) : null, zone: ctx.team?.timezone ?? 'America/New_York', coaches: ctx.coaches, names: ctx.names, state: stateWord(row, zone, publishedAt), format }, 'coach') };
 }
 
 /**
  * The live version a player may read, with their own Own work lines. RLS holds the version to the live one of their team, and `golf_practice_plans` answers coaches only,
  * so the title and event come from the version row. A draft id, or a plan taken down, gets nothing.
  */
-async function liveVersionFor(sb: Awaited<ReturnType<typeof createClient>>, planId: string, playerId: string): Promise<{ status: 'ready'; row: PracticePlanVersionRow; body: PlanBodyV2; ctx: NonNullable<Awaited<ReturnType<typeof context>>> } | { status: 'gone' } | { status: 'unavailable' }> {
+async function liveVersionFor(sb: Awaited<ReturnType<typeof createClient>>, planId: string, playerId: string): Promise<{ status: 'ready'; row: PracticePlanVersionRow; body: PlanBodyV2; ctx: Exclude<NonNullable<Awaited<ReturnType<typeof context>>>, typeof FAILED> } | { status: 'gone' } | { status: 'unavailable' } | { status: 'failed' }> {
   const { data, error } = await practiceTables(sb).from('golf_practice_plan_versions').select('plan_id, version, title, event_id, body, published_at').eq('plan_id', planId).eq('is_live', true).maybeSingle();
-  if (error) return isPracticeMissing(error.code) ? { status: 'unavailable' } : { status: 'gone' };
+  if (error) {
+    if (isPracticeMissing(error.code)) return { status: 'unavailable' };
+    chLogServer('practice.plan', 'live version', error, 'practice_plans');
+    return { status: 'failed' };
+  }
   const row = data as PracticePlanVersionRow | null;
   const parsed = row ? parseVersionBody(row.body) : null;
   if (!row || !parsed) return { status: 'gone' };
   const ctx = await context(sb, row.event_id);
+  if (ctx === FAILED) return { status: 'failed' };
   if (!ctx) return { status: 'gone' };
   // No lines to read leaves an Own work stop with its title; the plan still opens.
   const { data: lines, error: linesError } = await practiceTables(sb).from('golf_practice_plan_lines').select('block_id, line').eq('plan_id', planId).eq('version', row.version).eq('player_id', playerId);
@@ -109,12 +143,12 @@ export async function loadPlayerPlan(planId: string, playerId: string): Promise<
   if (live.status !== 'ready') return live;
   const { row, body, ctx } = live;
   const start = new Date(ctx.event.start_time);
-  const format = await readFormat(sb, ctx.event.team_id);
-  return { status: 'ready', plan: toSheetModel({ body, title: row.title || 'Practice plan', team: ctx.team?.name ?? '', start, end: ctx.event.end_time ? new Date(ctx.event.end_time) : null, zone: ctx.team?.timezone ?? 'America/New_York', coaches: ctx.coaches, names: ctx.names, state: `Published ${formatWith(new Date(row.published_at), { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true, timeZone: ctx.team?.timezone ?? 'America/New_York' })}`, format }, 'player', playerId), stops: toPlayerPlan(body, playerId, start) };
+  const { format, failed: formatFailed } = await readFormat(sb, ctx.event.team_id);
+  return { status: 'ready', formatFailed, plan: toSheetModel({ body, title: row.title || 'Practice plan', team: ctx.team?.name ?? '', start, end: ctx.event.end_time ? new Date(ctx.event.end_time) : null, zone: ctx.team?.timezone ?? 'America/New_York', coaches: ctx.coaches, names: ctx.names, state: `Published ${formatWith(new Date(row.published_at), { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true, timeZone: ctx.team?.timezone ?? 'America/New_York' })}`, format }, 'player', playerId), stops: toPlayerPlan(body, playerId, start) };
 }
 
 /** A player's Practice page: their own stops only, from the live version. Now and Next by the clock, in the team's zone. */
-export async function loadPlayerPractice(planId: string, playerId: string, now: Date = new Date()): Promise<{ status: 'ready'; data: PlayerPracticeData } | { status: 'gone' } | { status: 'unavailable' }> {
+export async function loadPlayerPractice(planId: string, playerId: string, now: Date = new Date()): Promise<{ status: 'ready'; data: PlayerPracticeData } | { status: 'gone' } | { status: 'unavailable' } | { status: 'failed' }> {
   const sb = await createClient();
   const live = await liveVersionFor(sb, planId, playerId);
   if (live.status !== 'ready') return live;

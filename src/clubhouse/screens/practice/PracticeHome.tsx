@@ -123,7 +123,7 @@ const UP_NEXT_ROWS = 4;
  * bar's plus. With no plan ever made, one card with the ways to start (S-PRC.home-first-run), and no empty headers. New plan makes the
  * practice too when there is none to plan (Q7, owner, 12 Nov), so it is always there; the calendar stays a quiet link.
  */
-export function PracticeHome({ data, openNew = false, previewSheet = false, template = null, newEvent = null }: { newEvent?: string | null; template?: { name: string; body: PlanBodyV2 } | null; data: ChPracticeHome; openNew?: boolean; previewSheet?: boolean }) {
+export function PracticeHome({ data, openNew = false, previewSheet = false, template = null, templateFailed = false, newEvent = null }: { newEvent?: string | null; template?: { name: string; body: PlanBodyV2 } | null; templateFailed?: boolean; data: ChPracticeHome; openNew?: boolean; previewSheet?: boolean }) {
   const phone = useChPhone();
   const [sheet, setSheet] = useState<{ event: string | null; start?: NewPlanStart } | null>(openNew ? { event: newEvent } : null);
   const [pastOpen, setPastOpen] = useState(false);
@@ -302,7 +302,7 @@ export function PracticeHome({ data, openNew = false, previewSheet = false, temp
           <Icon icon={ChevronRight} size={16} />
         </Link>
       )}
-      <NewPlanSheet key={`${sheet?.event ?? 'new'}:${sheet?.start ?? ''}`} template={template} open={!!sheet} onClose={() => setSheet(null)} events={data.open} copies={data.copies} roster={data.roster} zone={data.zone} initialEvent={sheet?.event} initialStart={sheet?.start} preview={previewSheet} />
+      <NewPlanSheet key={`${sheet?.event ?? 'new'}:${sheet?.start ?? ''}`} template={template} templateFailed={templateFailed} open={!!sheet} onClose={() => setSheet(null)} events={data.open} copies={data.copies} roster={data.roster} zone={data.zone} initialEvent={sheet?.event} initialStart={sheet?.start} preview={previewSheet} />
     </main>
   );
 }
