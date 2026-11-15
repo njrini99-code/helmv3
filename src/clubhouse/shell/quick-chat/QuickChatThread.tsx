@@ -307,7 +307,7 @@ export function QuickChatThread({ chat: useChatImpl, conversationId, initialMess
   return (
     <>
       {/* A link's own click is caught on its way down (openLink); the link stays the control. */}
-      <div className="qc__body" ref={setBody} data-qc-rise="" onClickCapture={openLink}>
+      <div className="qc__body" ref={setBody} onClickCapture={openLink}>
         <p className="ch-sr-only" role="status">
           {landedLine}
         </p>
@@ -400,7 +400,7 @@ export function QuickChatThread({ chat: useChatImpl, conversationId, initialMess
         </div>
       </div>
       <div className="qc__foot">
-        <div className="qc__comp" data-qc-rise="">
+        <div className="qc__comp">
           {!online && <p className="qc-offline">You’re offline. Your words stay here until you’re back.</p>}
           {(chip || chipHeld) && (
             <div className="qc-ctx">

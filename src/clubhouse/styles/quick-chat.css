@@ -157,10 +157,10 @@ html[data-fw-theme='dark'] .ch-qck.is-desk .hkey__disc { background: rgb(107 187
    --------------------------------------------------------------------------------------------------------------- */
 
 /* Moment 1. The frame: a sheet hung from the bar on the phone, a panel anchored to the key on a desk. Its size never
-   changes while it is open; the pour is a transform from the key's centre (useQcMotion). */
+   changes while it is open; it opens from 96% at the key's centre, transform and opacity only (useQcMotion, S3.5). */
 .ch-qcs .qc { position: fixed; z-index: calc(var(--ch-z-popover) + 1); top: var(--ch-qc-top, 62px); display: flex; flex-direction: column; overflow: hidden; outline: 0; background: var(--ch-qc-a-pglass); -webkit-backdrop-filter: blur(var(--ch-glass-blur)); backdrop-filter: blur(var(--ch-glass-blur)); box-shadow: var(--ch-qc-shadow-14); }
 /* On the phone the sheet is nearly the whole screen: its ground is solid. Glass there let words of the page read through its
-   foot, and a backdrop blur is re-sampled on every frame the sheet scales; the pour is cheaper without it. A desk keeps the glass. */
+   foot, and a backdrop blur is re-sampled on every frame the sheet scales; the open is cheaper without it. A desk keeps the glass. */
 .ch-qcs.is-phone .qc { background: var(--ch-bg-page); -webkit-backdrop-filter: none; backdrop-filter: none; left: max(8px, env(safe-area-inset-left)); right: max(8px, env(safe-area-inset-right)); bottom: calc(8px + env(safe-area-inset-bottom)); border-radius: var(--ch-radius-panel-phone); }
 .ch-qcs.is-desk .qc { right: 14px; width: min(432px, calc(100vw - 28px)); height: min(640px, calc(100dvh - var(--ch-qc-top, 62px) - 22px)); min-height: min(360px, calc(100dvh - var(--ch-qc-top, 62px) - 22px)); border-radius: var(--ch-radius-panel); }
 @media (prefers-reduced-transparency: reduce) { .ch-qcs .qc { background: var(--ch-card-bg); -webkit-backdrop-filter: none; backdrop-filter: none; } }
@@ -252,7 +252,7 @@ html[data-fw-theme='dark'] .ch-qck.is-desk .hkey__disc { background: rgb(107 187
 [data-ui='clubhouse'] .ch-landmark { position: absolute; inset: 0; z-index: 0; border-radius: inherit; background: var(--ch-accent-tint); opacity: 0; pointer-events: none; }
 [data-ui='clubhouse'] .ch-landtag { margin-left: 8px; vertical-align: middle; }
 
-/* The key's own field: focused inside the tap so the phone's keyboard rises with the pour (MO-1-3), then the composer
+/* The key's own field: focused inside the tap so the phone's keyboard rises with the open (MO-1-3), then the composer
    takes the focus. Never seen, never tabbed to; the 16 role, and the field floor (controls.css: every phone field is at
    least 16px) keeps iOS from zooming. */
 .ch-qck .ch-qc-kbd { position: absolute; left: 0; top: 0; width: 1px; height: 1px; padding: 0; border: 0; opacity: 0; pointer-events: none; font: var(--ch-type-16); letter-spacing: var(--ch-track-16); }

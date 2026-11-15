@@ -23,7 +23,7 @@ import { usePanelHistory } from './use-panel-history';
 import { dragCloses, useQcMotion } from './useQcMotion';
 
 const ASK_HOME = '/golf/dashboard/coachhelm?view=ask';
-/** The keyboard's height once it has been seen this session, so the next open pours with the composer already in place (MO-1-3). */
+/** The keyboard's height once it has been seen this session, so the next open arrives with the composer already in place (MO-1-3). */
 let knownKeyboard = 0;
 
 /**
@@ -48,7 +48,7 @@ export function inertOthers(keep: readonly Element[]): () => void {
 }
 
 /**
- * The quick chat's frame (QUICK-CHAT.md, Moment 1): the panel that pours out of the key, its scrim, its header, every
+ * The quick chat's frame (QUICK-CHAT.md, Moment 1): the popover that opens from the key (96% to whole over 260 ms, S3.5), its scrim, its header, every
  * way of closing it, and what the page behind does meanwhile. The conversation inside is `QuickChatThread`, mounted
  * once on `warm` and never keyed by path: the stream route aborts when its request goes, so a remount per path would
  * end the run (wiring QW1).
@@ -94,7 +94,7 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
     };
   }, [live, teamId]);
 
-  // The panel hangs 6px under the bar on both layouts; the pour's origin is the key's centre.
+  // The panel hangs 6px under the bar on both layouts; it opens from the key's centre.
   const place = useCallback(() => {
     const el = panel.current;
     const key = keyRef.current?.getBoundingClientRect();
@@ -138,7 +138,7 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
       const fine = !phone && window.matchMedia('(pointer: fine)').matches;
       ride(summoned && knownKeyboard ? knownKeyboard : undefined);
       motion.open(el, scrim.current, origin, () => {
-        // MQ-1-8: the page is live through the pour and inert from its last frame.
+        // MQ-1-8: the page is live through the open and inert from its last frame.
         releaseInert.current?.();
         const wrapper = el.closest('.ch-qcs');
         releaseInert.current = inertOthers([...(wrapper ? [wrapper] : [el]), ...(keyRef.current ? [keyRef.current] : [])]);
@@ -290,10 +290,11 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
       <div ref={scrim} className="scrim" hidden={!shown} onClick={onClose} aria-hidden="true" />
       {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- the dialog keeps Tab inside itself (AC-QC-PNL-08) */}
       <section id="ch-qc-panel" ref={panel} className="qc" role="dialog" aria-modal="true" aria-label="CoachHelm" tabIndex={-1} hidden={!shown} data-ch-qc-panel="" onKeyDown={onPanelKey}>
-        <header className="qc__h" data-qc-rise="" data-qc-drag="" {...handle}>
-          {/* The chat's mark, at rest. While CoachHelm works the island's line carries the ball, thinking, and this one steps back with the name. */}
+        <header className="qc__h" data-qc-drag="" {...handle}>
+          {/* The chat's mark, at rest. While CoachHelm works the island's line carries the ball, thinking, and this one steps back with the name.
+              Its rings play once as the panel opens and once more when the work ends and the mark comes back with the answer (MAC-15). */}
           <span className="qc__mark">
-            <BallMark state="rest" on="paper" />
+            <BallMark state="rest" on="paper" news={session?.busy ? 'working' : 'idle'} />
           </span>
           <b className="qc__ttl">CoachHelm</b>
           {/* The activity island's place: one line here while CoachHelm works, opening over the body; empty otherwise. */}

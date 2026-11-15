@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import '../../../styles/coachhelm-ball.css';
 
 /** A dimple on the 24-unit drawing: centre, half-width along its radius, half-height across it, and the turn that points it at the centre. */
@@ -31,15 +31,30 @@ export type BallState = 'thinking' | 'rest' | 'still';
  * CoachHelm's mark in the chat: a golf ball (owner, 11 Nov). No wheel, sparkle, robot or wand.
  *
  * `thinking`: the ball breathes, its shell thins and its dimples stand as points of light that drift out past its edge,
- * then it forms again. `rest`: the ball is still and two slow, faint rings leave it. `still`: the ball alone. When the
- * work is done the ball is not kept: `leaving` sends it off on the quick beat and whoever mounted it takes it away, so
- * nothing stands beside a finished answer.
+ * then it forms again; it loops only for as long as it is `thinking`, which is CoachHelm working. `rest`: the ball is still;
+ * two slow, faint rings leave it once when it arrives and once each time `news` changes, then it rests (audit 2026-11-15,
+ * MAC-15, H393-007: the rings no longer ripple forever). `still`: the ball alone. When the work is done the ball is not
+ * kept: `leaving` sends it off on the quick beat and whoever mounted it takes it away, so nothing stands beside a finished
+ * answer.
  *
  * Everything that moves is its own layer, moved by transform and opacity only (styles/coachhelm-ball.css). A ball that
  * stops thinking finishes the breath it is in, so it is whole when it stops and nothing snaps. Reduced motion and
  * Animations off draw a still ball in every state.
  */
-export function BallMark({ state = 'still', on = 'green', size = 'md', leaving = false }: { state?: BallState; /** The surface under it: the deep green of the island, or the page's paper. */ on?: 'green' | 'paper'; /** 20, 24 or 28 px. */ size?: 'sm' | 'md' | 'lg'; leaving?: boolean }) {
+export function BallMark({
+  state = 'still',
+  on = 'green',
+  size = 'md',
+  leaving = false,
+  news,
+}: {
+  state?: BallState;
+  /** The surface under it: the deep green of the island, or the page's paper. */ on?: 'green' | 'paper';
+  /** 20, 24 or 28 px. */ size?: 'sm' | 'md' | 'lg';
+  leaving?: boolean;
+  /** At rest: something new for the ball (an answer that landed). A change draws the rings again, so they play once more. */
+  news?: string | number;
+}) {
   const [breathing, setBreathing] = useState(state === 'thinking');
   if (state === 'thinking' && !breathing) setBreathing(true);
   useEffect(() => {
@@ -53,10 +68,11 @@ export function BallMark({ state = 'still', on = 'green', size = 'md', leaving =
   return (
     <span className={`ch-ball is-${shown}` + (on === 'paper' ? ' is-paper' : '') + (size === 'md' ? '' : ` is-${size}`) + (leaving ? ' is-leaving' : '')} aria-hidden="true">
       {shown === 'rest' && (
-        <>
+        // Keyed by the news: new rings are new elements, so each arrival or piece of news plays them once and no more.
+        <Fragment key={news ?? 'arrived'}>
           <i className="ch-ball__rip" />
           <i className="ch-ball__rip is-late" />
-        </>
+        </Fragment>
       )}
       <span
         className="ch-ball__orb"

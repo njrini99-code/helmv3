@@ -69,7 +69,9 @@
 }
 
 /* Thinking: the ball breathes in; as it does its shell thins and the dimples are left standing as points of light, which
-   drift out past its edge ring by ring; then the ball forms again around them. One loop on the live beat. */
+   drift out past its edge ring by ring; then the ball forms again around them. One loop on the live beat, and only while
+   CoachHelm is working: `thinking` is the busy state (the island's lead while a turn is live), so the loop ends with the
+   work (S3.1: no infinite ambient loops). */
 .ch-ball.is-thinking .ch-ball__orb {
   animation: ch-ball-breathe var(--ch-dur-live) var(--ch-ease-io) infinite;
 }
@@ -160,9 +162,11 @@
   }
 }
 
-/* At rest: the ball is still. Two rings leave it, slowly, half a loop apart, and are gone before they reach anything. */
+/* At rest: the ball is still. When it arrives, or has news (BallMark's `news`), two rings leave it, slowly, half a loop
+   apart, once, and are gone before they reach anything; then nothing moves (audit 2026-11-15, MAC-15, H393-007: no
+   ambient loop at rest). The rings are drawn again, and play again, only on the next arrival or news. */
 .ch-ball.is-rest .ch-ball__rip {
-  animation: ch-ball-ripple calc(var(--ch-dur-live) * 2) var(--ch-ease) infinite;
+  animation: ch-ball-ripple calc(var(--ch-dur-live) * 2) var(--ch-ease) 1;
 }
 .ch-ball.is-rest .ch-ball__rip.is-late {
   animation-delay: var(--ch-dur-live);
