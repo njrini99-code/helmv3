@@ -17,6 +17,7 @@ vi.mock('@/app/golf/actions/team-switcher', () => ({ setActiveTeam }));
 
 import { ToastProvider } from '../../ui/Toast';
 import { Sidebar } from '../Sidebar';
+import { expectLabelInName } from '../../__tests__/label-in-name';
 import type { ChShellData } from '../../data/shell';
 
 const coach = { role: 'coach', name: 'Maya Reyes', teamName: 'Varsity' } as unknown as GolfUserData;
@@ -34,7 +35,7 @@ function mount(teamSwitch: Parameters<typeof Sidebar>[0]['teamSwitch'] = null) {
   );
 }
 
-const trigger = () => screen.getByRole('button', { name: 'Maya Reyes. Account' });
+const trigger = () => screen.getByRole('button', { name: 'Maya Reyes, Head coach · Varsity' });
 const open = () => act(() => void fireEvent.click(trigger()));
 const menu = () => screen.getByRole('menu', { name: 'Account' });
 const rows = () => Array.from(menu().querySelectorAll('[role="menuitem"],[role="menuitemradio"]')).map((r) => r.textContent);
@@ -46,6 +47,16 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('the sidebar identity is the account menu (B11)', () => {
+  it('F-0011: its name is the words on it, the person and their role, and stays when the folded rail hides them', () => {
+    mount();
+    const key = trigger();
+    // No aria-label for the face (initials, name, role) to disagree with (WCAG 2.5.3, axe label-content-name-mismatch).
+    expect(key).not.toHaveAttribute('aria-label');
+    expectLabelInName(key, 'Maya Reyes Head coach · Varsity');
+    // The name is its own text, not the drawn block's: the folded rail hides that block (shell.css) and the key keeps its name.
+    expect(key.querySelector('.ch-identity__txt')).toHaveAttribute('aria-hidden', 'true');
+  });
+
   it('keeps the identity block when closed, and opens a menu of Settings, Help and Sign out', async () => {
     mount();
     const key = trigger();

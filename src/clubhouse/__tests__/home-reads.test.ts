@@ -56,13 +56,13 @@ afterEach(() => {
 });
 
 describe('Home reads: how deep', () => {
-  it('coach: the timezone, roster, team, team chat, events and what’s waiting (join requests, this week’s replies, tasks) go together; the rounds, the Tour’s marks and the replies follow; only the newest rounds’ cards and the four parts’ cache wait for the rounds (three round trips, not five)', async () => {
+  it('coach: the timezone, roster, team, team chat, events (with the trips and the events past the week, F-0001, F-0006) and what’s waiting (join requests, this week’s replies, tasks) go together; the rounds, the Tour’s marks and the replies follow; only the newest rounds’ cards and the four parts’ cache wait for the rounds (three round trips, not five)', async () => {
     const waves = readWaves();
     tables.gate = waves.gate;
     tables.current = base();
     const { result, waves: depth } = await waves.run(loadCoachHome({ teamId: 't1', coachName: 'Dana Whitfield' }));
     expect(depth).toEqual([
-      ['golf_conversations', 'golf_events', 'golf_events', 'golf_events', 'golf_tasks', 'golf_team_join_requests', 'golf_team_members', 'golf_team_settings', 'golf_teams'],
+      ['golf_conversations', 'golf_events', 'golf_events', 'golf_events', 'golf_events', 'golf_tasks', 'golf_team_join_requests', 'golf_team_members', 'golf_team_settings', 'golf_teams', 'golf_travel_itineraries'],
       ['golf_event_attendance', 'golf_event_attendance', 'golf_pga_standards', 'golf_rounds'],
       ['golf_holes', 'golf_round_stats_cache'],
     ]);
@@ -77,14 +77,14 @@ describe('Home reads: how deep', () => {
     tables.current = { ...base(), golf_team_members: { data: [] } };
     const { result, waves: depth } = await waves.run(loadCoachHome({ teamId: 't1', coachName: 'Dana' }));
     expect(depth).toEqual([
-      ['golf_conversations', 'golf_events', 'golf_events', 'golf_events', 'golf_tasks', 'golf_team_join_requests', 'golf_team_members', 'golf_team_settings', 'golf_teams'],
+      ['golf_conversations', 'golf_events', 'golf_events', 'golf_events', 'golf_events', 'golf_tasks', 'golf_team_join_requests', 'golf_team_members', 'golf_team_settings', 'golf_teams', 'golf_travel_itineraries'],
       ['golf_event_attendance', 'golf_event_attendance', 'golf_pga_standards'],
     ]);
     expect(result.leaderboard.rosterSize).toBe(0);
     expect(result.latestRounds.rounds).toEqual([]);
   });
 
-  it('player: the week, rounds, player and team go together; the cards, the legs, the Tour’s averages and the coach each start when their own read answered (two round trips, not four)', async () => {
+  it('player: the week (with the trips and the events past it), rounds, player and team go together; the cards, the legs, the Tour’s averages and the coach each start when their own read answered (two round trips, not four)', async () => {
     const waves = readWaves();
     tables.gate = waves.gate;
     tables.current = base();
@@ -92,7 +92,7 @@ describe('Home reads: how deep', () => {
     // The player's own replies go with the events (Decision B, `mine`), and their task assignments with them (From your
     // coach); the reply counts follow the events as before.
     expect(depth).toEqual([
-      ['golf_event_attendance', 'golf_events', 'golf_events', 'golf_players', 'golf_rounds', 'golf_task_assignments', 'golf_team_settings', 'golf_teams'],
+      ['golf_event_attendance', 'golf_events', 'golf_events', 'golf_events', 'golf_players', 'golf_rounds', 'golf_task_assignments', 'golf_team_settings', 'golf_teams', 'golf_travel_itineraries'],
       ['golf_coaches', 'golf_event_attendance', 'golf_holes', 'golf_pga_standards', 'golf_round_stats_cache'],
     ]);
     expect(result.coachUserId).toBe('u1');

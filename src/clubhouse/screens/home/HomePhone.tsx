@@ -47,6 +47,7 @@ import { CALENDAR, eventHref, whenLabel } from './event-links';
 import { plural } from '../../lib/plural';
 import { ClassHomeLine } from './ClassHomeLine';
 import { HomeSpanSwitch } from './HomeSpanSwitch';
+import { NextBeyond } from './NextBeyond';
 const newEventHref = (type?: ChHomeEvent['type']) => `${CALENDAR}?new=1${type ? `&type=${type}` : ''}`;
 
 /**
@@ -63,7 +64,8 @@ export function HomePhone({ data, now: frozen, live }: { data: ChCoachHome; now?
   const now = useMemo(() => (frozen ? new Date(frozen) : ticking), [frozen, ticking]);
   const [open, setOpen] = useState<ChLatestRound | null>(null);
   const { phone } = data;
-  const nothingAhead = !data.week.error && !phone.next && data.week.days.every((d) => d.eventCount === 0);
+  // Nothing on this week: no event, and no day on the road (F-0001).
+  const nothingAhead = !data.week.error && !phone.next && data.week.days.every((d) => d.eventCount === 0 && !d.trip);
   // Two or more failed reads are told once under the greeting, with one Try again; each part keeps its title (CH-1209).
   const failed = coachFailedParts(data, true);
   const covered = failed.length > 1;
@@ -145,10 +147,11 @@ export function HomePhone({ data, now: frozen, live }: { data: ChCoachHome; now?
 
 type DayProps = { rounds: ChLatestRound[]; now: Date | null; today: string | null; onOpenRound: (r: ChLatestRound) => void };
 
-/** Up next's place: the day card, or how to add the first event. */
+/** Up next's place: the day card; with nothing left this week, the next thing after it (F-0006); else how to add the first event. */
 function Day({ phone, rounds, now, today, onOpenRound, years }: DayProps & { phone: ChCoachHome['phone']; years?: Record<string, ChYearKey> }) {
   const phase = dayPhase(phone.next, phone.today, rounds, now, today);
-  return phase ? <DayCard years={years} phase={phase} now={now} today={today} onOpenRound={onOpenRound} /> : <NoEvents />;
+  if (phase) return <DayCard years={years} phase={phase} now={now} today={today} onOpenRound={onOpenRound} />;
+  return phone.after ? <NextBeyond e={phone.after} /> : <NoEvents />;
 }
 
 /**
@@ -485,8 +488,10 @@ export function WeekDays({ days, note }: { days: ChCoachHome['week']['days']; no
           num: d.dayOfMonth,
           isToday: d.isToday,
           dots: d.eventCount,
+          // A day on the road wears Team Hub's gold travel dot (F-0001), and says so in words.
+          flag: d.trip ? 'trip' : undefined,
           mark: d.hasCompetition ? TYPE_ICON[d.competitionType ?? 'tournament'] : undefined,
-          label: `${d.weekday} ${d.dayOfMonth}${d.isToday ? ', today' : ''}${d.hasCompetition ? ', competition' : ''}, ${plural(d.eventCount, 'event')}`,
+          label: `${d.weekday} ${d.dayOfMonth}${d.isToday ? ', today' : ''}${d.hasCompetition ? ', competition' : ''}, ${plural(d.eventCount, 'event')}${d.trip ? `, on the road (${d.trip})` : ''}`,
           href: `${CALENDAR}?view=day&date=${d.date}`,
         }))}
       />

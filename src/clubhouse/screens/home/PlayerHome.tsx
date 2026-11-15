@@ -20,6 +20,7 @@ import { TYPE_LABEL } from '../calendar/model';
 import { TYPE_ICON } from '../calendar/views';
 import { CoachAsks, MineBadge } from './CoachAsks';
 import { Countdown } from './Countdown';
+import { countdownTo } from './event-links';
 import { eventHref, whenLabel } from './HomePhone';
 import { LatestRound } from './LatestRound';
 import { noRoundsYet, playerFailedParts } from './model';
@@ -157,7 +158,7 @@ function DeskNext({ e, frozen }: { e: ChHomeEvent; frozen?: string }) {
       <span className="ch-ph-next__m ch-num">{[t(e.rangeLabel), e.location].filter(Boolean).join(' · ')}</span>
       {was && <span className="ch-ph-next__m ch-num">{was}</span>}
       <MineBadge mine={e.mine} />
-      {!e.allDay && <Countdown to={e.startIso} frozen={frozen} />}
+      {countdownTo(e) && <Countdown to={countdownTo(e)!} frozen={frozen} lead={e.trip ? 'Leaves in' : undefined} />}
       <LinkPending />
     </Link>
   );
@@ -168,7 +169,8 @@ function DeskNext({ e, frozen }: { e: ChHomeEvent; frozen?: string }) {
  * the loaded page keeps the week and shows the welcome in place of the rounds (NoRoundsYet).
  */
 export function isPlayerFirstRun(data: ChPlayerHome): boolean {
-  return noRoundsYet(data) && !data.week.error && !data.next && data.week.days.every((d) => d.eventCount === 0);
+  // A day on the road (F-0001) or an event after this week (F-0006) is on the schedule too.
+  return noRoundsYet(data) && !data.week.error && !data.next && !data.after && data.week.days.every((d) => d.eventCount === 0 && !d.trip);
 }
 
 /** The v2 first-run page empty state (gh-states.jsx, EMPTY.home.player; D-71). */

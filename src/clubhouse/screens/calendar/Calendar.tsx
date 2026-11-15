@@ -20,7 +20,7 @@ import { Swap } from '../../ui/Swap';
 import { useNow } from '../../lib/use-now';
 import { haptic } from '../../lib/haptics';
 import { chReport, chTrail } from '../../lib/track';
-import { addDays, addMonths, CAL_HH, daylightOn, dayNum, dowOf, fmtHour, type ChDaylight, findOverlaps, focusHour, monthCells, monthKey, monthName, viewTitle, weekDates, yearOf, type ChCalEvent, type ChCalPerson, type ChCalType, type ChCalView } from './model';
+import { addDays, addMonths, CAL_HH, daylightOn, zonedNow, dayNum, dowOf, fmtHour, type ChDaylight, findOverlaps, focusHour, monthCells, monthKey, monthName, viewTitle, weekDates, yearOf, type ChCalEvent, type ChCalPerson, type ChCalType, type ChCalView } from './model';
 import { AgendaView, MonthView, TimeGrid, type ChMoveTarget, type ChNow } from './views';
 import { barPill, barSpan, daysBetween, respan, type ChBarTarget } from './drag-model';
 import { updateGolfEvent } from '@/app/golf/actions/calendar-events';
@@ -53,12 +53,6 @@ import { useCalendarLive } from './live';
 import { chFocusQuietly } from '../../lib/focus-quietly';
 import { usePageKeys, type ChPageKey } from '../../shell/command/page-keys';
 import { plural, pluralWord } from '../../lib/plural';
-
-function zonedNow(timeZone: string, d: Date): ChNow {
-  const p: Record<string, string> = {};
-  for (const x of new Intl.DateTimeFormat('en-US', { timeZone, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).formatToParts(d)) p[x.type] = x.value;
-  return { date: `${p.year}-${p.month}-${p.day}`, hour: (Number(p.hour) % 24) + Number(p.minute) / 60, ms: d.getTime() };
-}
 
 /**
  * P006-B1: T or Today puts now (or the next event) about 30% down the canvas; the page itself opens at its top. A step
@@ -1237,7 +1231,13 @@ function CalendarBody({
         <div className="ch-cal-mast__l">
           <button ref={jumpBtn} type="button" className="ch-cal-title" onClick={() => setJump(!jump)} aria-expanded={jump} aria-haspopup="dialog" aria-label={`${title.main}${title.year ? ` ${title.year}` : ''}. Jump to a date`}>
             <h1>{title.main}</h1>
-            {title.year && <span className="ch-cal-title__yr">{title.year}</span>}
+            {/* F-0011: the space is not drawn (the title is a flex row) but keeps "October 2026" apart for the name to match it. */}
+            {title.year && (
+              <>
+                {' '}
+                <span className="ch-cal-title__yr">{title.year}</span>
+              </>
+            )}
             <Icon icon={ChevronDown} size={16} />
           </button>
           <div className="ch-cal-sub">

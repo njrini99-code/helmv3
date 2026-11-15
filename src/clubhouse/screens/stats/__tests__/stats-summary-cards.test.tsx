@@ -11,6 +11,7 @@ import { PREVIEW_PLAYER_SHS, PREVIEW_PLAYER_SHS_SELF } from '../../../preview/fi
 import { SummaryCard } from '../SummaryCard';
 import { StatsPlayer } from '../StatsPlayer';
 import { asDesktop, asPhone, browserBack, card, detailShown, painted, resetAddress, showPlayer, tree } from './_shs-harness';
+import { accessibleName, expectLabelInName } from '../../../__tests__/label-in-name';
 
 beforeEach(() => {
   hapticSpy.mockClear();
@@ -186,5 +187,17 @@ describe('At a glance', () => {
     showPlayer(PREVIEW_PLAYER_SHS_SELF);
     await painted('scoring');
     expect([...document.querySelectorAll('[data-ch="stats-glance"] .t')].map((t) => t.textContent)).toEqual(['Greens', 'Fairways', 'Scrambling', 'Putts', 'Birdies', 'Bogeys']);
+  });
+
+  /** F-0011 (WCAG 2.5.3, axe label-content-name-mismatch): the tiles' aria-labels read "Greens 62%, …" while the tile shows "Greens62%…". */
+  it('F-0011: each tile is named by what it shows, its label, figure and line in order, then where it goes', async () => {
+    showPlayer(PREVIEW_PLAYER_SHS_SELF);
+    await painted('scoring');
+    for (const tile of document.querySelectorAll<HTMLElement>('[data-ch="stats-glance"]')) {
+      expect(tile).not.toHaveAttribute('aria-label');
+      const t = tile.querySelector('.t')!.textContent!;
+      expectLabelInName(tile, `${t} ${tile.querySelector('.v')!.textContent}`);
+      expect(accessibleName(tile)).toMatch(new RegExp(`^${t} .+ ${tile.querySelector('.m')!.textContent}\\. Open `));
+    }
   });
 });

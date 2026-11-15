@@ -130,7 +130,8 @@ describe('100101 Team Hub · Home’s widgets', () => {
   it('the week steps by day with the arrow keys, and an event that takes replies lets a player answer in place', async () => {
     const { user, w } = show(PREVIEW_HUB_PLAYER);
     const week = screen.getByRole('region', { name: 'Next 7 days' });
-    const today = within(week).getByRole('button', { name: /^Today, Tue 14/ });
+    // F-0011: today's name opens with its face, "Today 14".
+    const today = within(week).getByRole('button', { name: /^Today 14, Tue: / });
     expect(today.getAttribute('aria-pressed')).toBe('true');
     today.focus();
     await user.keyboard('{ArrowRight}{ArrowRight}');

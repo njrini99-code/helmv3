@@ -5102,7 +5102,8 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
 .ch-hm[data-ch-crh='on'] .ch-hm-week {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 4px;
+  /* The strip's gap, which gives way before a day goes under 44 (F-0017; ui.css .ch-wks). */
+  --ch-wks-gap-max: 4px;
   padding: 8px 8px 6px;
 }
 .ch-hm[data-ch-crh='on'] .ch-hm-sec:has(> .ch-hm-week) {
@@ -5520,6 +5521,8 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   }
   /* The names are the links (06 §11.2): they read as links without the row being one. */
   .ch-h-main[data-ch-crh='on'] .ch-hm-legs__a {
+    /* 18 tall was under the pointer's 24 (F-0018, WCAG 2.5.8). The link is inline: block padding grows its box, not the line. */
+    padding-block: 4px;
     border-radius: var(--ch-radius-xs);
     color: var(--ch-text-primary);
     font: var(--ch-type-14);

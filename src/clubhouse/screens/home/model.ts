@@ -108,7 +108,10 @@ function manyFlagged(flagged: ChSublineRow[]): string {
   const since = (rows: ChSublineRow[]) => Math.min(...rows.map((r) => r.quietDays ?? Infinity));
   if (ranked.every((r) => r.status !== 'slipping')) {
     const longest = ranked[0]!;
-    return `${ranked.length} players haven’t posted a round in ${since(ranked)}+ days, ${firstName(longest.name)} the longest at ${longest.quietDays}.`;
+    const floor = since(ranked);
+    // F-0016: a longest is named only when one player is strictly longest; all tied, the team's line says the one figure.
+    if (longest.quietDays === floor) return `${ranked.length} players haven’t posted a round in ${floor} days.`;
+    return `${ranked.length} players haven’t posted a round in ${floor}+ days, ${firstName(longest.name)} the longest at ${longest.quietDays}.`;
   }
   const lead = list(ranked.slice(0, 2).map(reason));
   const rest = ranked.slice(2);

@@ -38,6 +38,11 @@
           "namespace": "mcp__plugin_supabase_supabase__*",
           "disposition": "ALTERNATIVE",
           "reason": "Use if installed, connected, and suitable for the task. This namespace is not permanently disabled. Current permissions are in .claude/settings.json; historical connectivity must be rechecked."
+        },
+        {
+          "namespace": "mcp__supabase-staging-ro__*",
+          "disposition": "ALTERNATIVE",
+          "reason": "Staging, \"PROSP DATA\" (ybmwektreyrwjscxlogv), read-only: what a Vercel preview or local dev shows. The only Supabase server an audit session uses (HELM_AUDIT=1, .claude/audit.mcp.json); it cannot reach production."
         }
       ]
     },

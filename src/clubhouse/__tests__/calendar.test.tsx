@@ -1124,12 +1124,13 @@ describe('Calendar · phone (v2, Coach - Calendar - Mobile.html)', () => {
     expect(screen.getByRole('heading', { level: 2, name: 'October' })).toBeTruthy();
     const strip = screen.getByRole('list', { name: 'This week' });
     expect(within(strip).getAllByRole('button')).toHaveLength(7);
-    expect(within(strip).getByRole('button', { name: /^Wed 14/ }).getAttribute('aria-pressed')).toBe('true');
+    // F-0011: each day's name opens with its face, the weekday's letter and the date.
+    expect(within(strip).getByRole('button', { name: /^W 14, Wed 14/ }).getAttribute('aria-pressed')).toBe('true');
     expect(live('.ch-calm-dayk')!.textContent).toMatch(/Wed 14 October/);
     expect(screen.getByRole('button', { name: /^Short-game block, 3:30 PM to 5:00 PM/ })).toBeTruthy();
     // Coaches see a class in its slot, with its owner.
     expect(screen.getByRole('button', { name: /^Priya · STAT 201/ })).toBeTruthy();
-    await user.click(within(strip).getByRole('button', { name: /^Thu 15/ }));
+    await user.click(within(strip).getByRole('button', { name: /^T 15, Thu 15/ }));
     expect(hapticSpy).toHaveBeenCalledWith('select');
     expect(live('.ch-calm-dayk')!.textContent).toMatch(/Thu 15 October/);
     expect(screen.getByRole('button', { name: /^Travel briefing/ })).toBeTruthy();
@@ -1164,7 +1165,7 @@ describe('Calendar · phone (v2, Coach - Calendar - Mobile.html)', () => {
       wrap(cal());
       expect(screen.queryByRole('button', { name: 'Today' })).toBeNull();
       const strip = screen.getByRole('list', { name: 'This week' });
-      await user.click(within(strip).getByRole('button', { name: /^Thu 15/ }));
+      await user.click(within(strip).getByRole('button', { name: /^T 15, Thu 15/ }));
       await user.click(screen.getByRole('button', { name: 'Today' }));
       expect(live('.ch-calm-dayk')!.textContent).toMatch(/Wed 14 October/);
       expect(screen.queryByRole('button', { name: 'Today' })).toBeNull();
@@ -1340,7 +1341,7 @@ describe('Calendar · phone (v2, Coach - Calendar - Mobile.html)', () => {
     const strip = screen.getByRole('list', { name: 'This week' });
     expect(strip.style.getPropertyValue('--ch-wks-at')).toBe('3');
     expect(screen.getByRole('heading', { level: 3, name: 'Wed 14 October' })).toBeTruthy();
-    await user.click(within(strip).getByRole('button', { name: /^Thu 15/ }));
+    await user.click(within(strip).getByRole('button', { name: /^T 15, Thu 15/ }));
     expect(strip.style.getPropertyValue('--ch-wks-at')).toBe('4');
     expect(live('.ch-calm-dayk')!.textContent).toMatch(/Thu 15 October/);
     // The day that left is hidden from assistive tech while it fades.
@@ -1369,7 +1370,7 @@ describe('Calendar · phone (v2, Coach - Calendar - Mobile.html)', () => {
   it('CH-6308 a day with nothing on it says so', async () => {
     const user = userEvent.setup();
     wrap(cal());
-    await user.click(within(screen.getByRole('list', { name: 'This week' })).getByRole('button', { name: /^Sun 11/ }));
+    await user.click(within(screen.getByRole('list', { name: 'This week' })).getByRole('button', { name: /^S 11, Sun 11/ }));
     await expectCode('CH-6308', /Nothing on this day/);
     // The coach's empty day has its own New event (the neighbouring days drawn for the swipe have none), and no
     // "0 events" over the empty state.
@@ -2609,10 +2610,10 @@ describe('Calendar · a player’s own week (wave 7)', () => {
       const user = userEvent.setup();
       wrap(PREVIEW_CALENDAR_PLAYER);
       const strip = screen.getByRole('list', { name: 'This week' });
-      const sat = within(strip).getByRole('button', { name: /^Sat 17/ });
+      const sat = within(strip).getByRole('button', { name: /^S 17, Sat 17/ });
       expect(sat.getAttribute('aria-label')).toMatch(/, needs your reply$/);
       expect(sat.querySelector('.is-reply')).not.toBeNull();
-      const wed = within(strip).getByRole('button', { name: /^Wed 14/ });
+      const wed = within(strip).getByRole('button', { name: /^W 14, Wed 14/ });
       expect(wed.getAttribute('aria-label')).not.toMatch(/reply/);
       expect(wed.querySelector('.is-reply')).toBeNull();
       // The player's own class, on the phone, without their own name.

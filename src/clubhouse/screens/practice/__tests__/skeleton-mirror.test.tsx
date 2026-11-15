@@ -53,16 +53,17 @@ describe('Practice in waiting mirrors the loaded pages', () => {
     expect(container.querySelectorAll('.ch-skel').length).toBeGreaterThan(8);
   });
 
-  it('the coach’s tab: the head and its two keys, the week, the tabs, Up next beside the plans, and Plan format last on a phone', () => {
+  it('the coach’s tab: the head and its two keys, the tabs, the week, Up next beside the plans, and Plan format last on a phone', () => {
     const { container } = render(<PracticeHomeSkeleton />);
     const main = container.querySelector('main.ch-page.ch-prc')!;
-    expect(classes(main.children)).toEqual(['ch-prc-h', '', 'ch-prc-tabs ch-prc-sk-desk', 'ch-prc-home has-plans', 'ch-prc-open ch-prc-sk-phone ch-prc-sk-still']);
+    // The tabs sit under the head at both widths, where Drills, Groups and Templates draw them, so they never move between tabs.
+    expect(classes(main.children)).toEqual(['ch-prc-h', 'ch-prc-tabs ch-prc-sk-desk', 'ch-prc-tabs ch-prc-sk-phone', '', 'ch-prc-home has-plans', 'ch-prc-open ch-prc-sk-phone ch-prc-sk-still']);
     // Plan format and New plan, on a Mac only: a phone has them in its bar and at the page's foot.
     expect(classes(main.querySelectorAll('.ch-prc-h > *'))).toEqual(['', 'ch-prc-h__a ch-prc-sk-desk']);
     expect(main.querySelectorAll('.ch-prc-h__a > .ch-skel').length).toBe(2);
     expect(main.querySelectorAll('.ch-prc-week > .ch-prc-tile').length).toBe(7);
-    // On a phone the tabs sit over the plans, under Up next.
-    expect(classes(main.querySelector('.ch-prc-home')!.children)).toEqual(['ch-prc-card ch-prc-next', 'ch-prc-tabs ch-prc-sk-phone', 'ch-prc-home__plans']);
+    // Up next, then the plans: nothing rides between them at either width.
+    expect(classes(main.querySelector('.ch-prc-home')!.children)).toEqual(['ch-prc-card ch-prc-next', 'ch-prc-home__plans']);
     // Up next in the card's own order: the label and state, the name, when, the day strip, its key, four blocks, "and N more", the key.
     expect(classes(main.querySelector('.ch-prc-next')!.children)).toEqual(['ch-prc-next__k', 'ch-prc-sk-next', 'ch-prc-next__w ch-prc-sk-facts', 'ch-prc-day', 'ch-prc-sk-mix', 'ch-prc-next__rows', 'ch-prc-next__more', 'ch-prc-next__a']);
     expect(main.querySelectorAll('.ch-prc-next__rows > li').length).toBe(4);

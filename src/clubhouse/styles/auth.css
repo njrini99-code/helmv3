@@ -846,6 +846,9 @@
 .ch-au-legal a {
   display: inline-flex;
   align-items: center;
+  /* "Terms" was 43 wide (F-0023): a short word keeps a 44 square, its words centred in it. */
+  justify-content: center;
+  min-width: 44px;
   min-height: 44px;
   margin: -16px 0;
   padding: 0 6px;
@@ -858,10 +861,11 @@
 .ch-au-foot > span:not(.ch-au-legal) a {
   position: relative;
 }
+/* Half of 44 each way from the line's middle, or 14 past a taller line (F-0023: it measured 42 tall at a small size). */
 .ch-au-foot > span:not(.ch-au-legal) a::after {
   content: '';
   position: absolute;
-  inset: -14px -8px;
+  inset: min(-14px, calc(50% - 22px)) -8px;
 }
 .ch-au-legal a {
   position: relative;

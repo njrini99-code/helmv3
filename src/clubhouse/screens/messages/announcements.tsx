@@ -10,6 +10,7 @@ import { InlineNotice } from '../../ui/Notices';
 import { Skeleton } from '../../ui/States';
 import { useToast } from '../../ui/Toast';
 import { haptic } from '../../lib/haptics';
+import { zoneFormat } from '../../lib/zone-format';
 import { chTrail } from '../../lib/track';
 import { clock, dayLabel, needsMyAck, railTime, type ChAnnouncement, type ChAnnouncementDetail } from './model';
 import type { ChMessagesApi } from './MessagesView';
@@ -117,10 +118,12 @@ export function AnnouncementsSection({ api, q }: { api: ChMessagesApi; q: string
 }
 
 /** The letterhead's date: "Wednesday 14 October", in the team's zone, the year only when it isn't this one. */
-function letterDate(iso: string, timeZone: string): string {
+export function letterDate(iso: string, timeZone: string): string {
   const d = new Date(iso);
-  const sameYear = new Intl.DateTimeFormat('en-GB', { timeZone, year: 'numeric' }).format(d) === new Intl.DateTimeFormat('en-GB', { timeZone, year: 'numeric' }).format(new Date());
-  return new Intl.DateTimeFormat('en-GB', { timeZone, weekday: 'long', day: 'numeric', month: 'long', ...(sameYear ? {} : { year: 'numeric' }) }).format(d).replace(',', '');
+  const year = zoneFormat('en-GB', timeZone, 'year', { year: 'numeric' });
+  const sameYear = year.format(d) === year.format(new Date());
+  const fmt = sameYear ? zoneFormat('en-GB', timeZone, 'letter', { weekday: 'long', day: 'numeric', month: 'long' }) : zoneFormat('en-GB', timeZone, 'letter-year', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  return fmt.format(d).replace(',', '');
 }
 
 export function AnnouncementPane({ api, a, onBack }: { api: ChMessagesApi; a: ChAnnouncement; onBack: () => void }) {

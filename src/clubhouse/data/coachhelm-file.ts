@@ -306,6 +306,31 @@ export async function loadPlayerYourWeek(input: { playerId: string }): Promise<{
     const at = new Map(ids.map((id, i) => [id, i]));
     return [...list].sort((a, b) => (at.get(a.base.id) ?? 0) - (at.get(b.base.id) ?? 0));
   };
+  // Everything that needs only the player, not the feed's list, starts now and runs beside the feed instead of after it: the team and its
+  // zone, then the standings, the field, the penalties, the focus and the rounds together. Only the proposals need the list (their
+  // titles). A feed that comes back not ready leaves these unawaited (marked handled here); awaiting one still throws, as it always did.
+  const base = (async () => {
+    const supabase = await createClient();
+    const team = await playerTeam(supabase, playerId);
+    const teamId = team?.teamId ?? null;
+    const zone = teamId ? await loadTeamZone(supabase, teamId, 'coachhelm') : 'America/New_York';
+    return { supabase, teamId, zone };
+  })();
+  const rest = base.then(async ({ supabase, teamId, zone }) => {
+    const [rowsRead, standing, field, toGo, penalties, last, sgRounds] = await Promise.all([
+      readStandingRows(playerId),
+      loadPlayerStanding({ playerId, feed: () => Promise.resolve([]) }),
+      newestDay(supabase, playerId).then((d) => (teamId && d ? loadFileField({ teamId, playerId, lastRound: d }, { role: 'player' }, zone) : null)),
+      roundsToGo(supabase, playerId),
+      loadFilePenalties(supabase, playerId, zone),
+      latestFocus(supabase, playerId),
+      // Their own rounds only: no teammate's round is read for a player's page.
+      loadFileSgRounds(supabase, { playerId, teamId: null }).catch((err: unknown) => (log('sg', err), null)),
+    ]);
+    return { rowsRead, standing, field, toGo, penalties, last, sgRounds };
+  });
+  base.catch(() => {});
+  rest.catch(() => {});
   const { load, raw } = await playerDiveCore(
     { playerId },
     {
@@ -317,21 +342,11 @@ export async function loadPlayerYourWeek(input: { playerId: string }): Promise<{
   );
   if (load.status !== 'ready') return { load };
   try {
-    const supabase = await createClient();
-    const team = await playerTeam(supabase, playerId);
-    const teamId = team?.teamId ?? null;
-    const zone = teamId ? await loadTeamZone(supabase, teamId, 'coachhelm') : 'America/New_York';
     const list = byFeed(load.data.list, [...raw.keys()]);
-    const [proposals, rowsRead, standing, field, toGo, penalties, last, sgRounds] = await Promise.all([
+    const { supabase, teamId, zone } = await base;
+    const [proposals, { rowsRead, standing, field, toGo, penalties, last, sgRounds }] = await Promise.all([
       loadProposals(supabase, playerId, teamId, list.map((d) => ({ id: d.base.id, title: d.base.title })), true),
-      readStandingRows(playerId),
-      loadPlayerStanding({ playerId, feed: () => Promise.resolve([]) }),
-      newestDay(supabase, playerId).then((d) => (teamId && d ? loadFileField({ teamId, playerId, lastRound: d }, { role: 'player' }, zone) : null)),
-      roundsToGo(supabase, playerId),
-      loadFilePenalties(supabase, playerId, zone),
-      latestFocus(supabase, playerId),
-      // Their own rounds only: no teammate's round is read for a player's page.
-      loadFileSgRounds(supabase, { playerId, teamId: null }).catch((err: unknown) => (log('sg', err), null)),
+      rest,
     ]);
     const rows = rowsRead.ok ? rowsRead.rows : [];
     const st = standing.status === 'ready' ? standing.data : null;

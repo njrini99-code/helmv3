@@ -406,11 +406,14 @@ export function RosterRowCrh({
   return (
     <GroupRow twoLine className="ch-rsx-grow">
       <PlayerPeek player={rosterPeek(p)}>
-        <button type="button" className="ch-rsm-row ch-rsx-row" data-ch-roster-row="" data-flip={p.id} aria-label={label} data-ch-code="CH-3806" onClick={() => onOpen(p.id)} {...hold}>
+        <button type="button" className="ch-rsm-row ch-rsx-row" data-ch-roster-row="" data-flip={p.id} data-ch-code="CH-3806" onClick={() => onOpen(p.id)} {...hold}>
+          {/* F-0011 (WCAG 2.5.3): named by its own words, opening with the player it shows, in place of an aria-label that the
+              drawn row (the coin's initials, "74.1", "3.2 hcp") never matched; the drawn text stays out of the name. */}
+          <span className="ch-sr-only">{label}</span>
           <span className={kind === 'injured' ? 'ch-rsx-coin is-dim' : 'ch-rsx-coin'}>
             <Avatar name={p.name} id={p.id} size="md" year={yearKeyOf(p.gradYear, clock)} dim={kind !== 'active'} />
           </span>
-          <span className="ch-rsx-row__b">
+          <span className="ch-rsx-row__b" aria-hidden="true">
             <b>{p.name}</b>
             {kind === 'injured' ? (
               <span className="ch-rsx-inj">
@@ -424,7 +427,7 @@ export function RosterRowCrh({
             )}
           </span>
           {kind === 'active' && (p.trend.length >= 3 ? <FormBars data={p.trend} mean={mean} /> : p.trend.length > 0 ? <FormStubs /> : null)}
-          <span className="ch-rsm-row__v ch-rsx-row__v" data-sort={bySg ? 'sg' : undefined}>
+          <span className="ch-rsm-row__v ch-rsx-row__v" data-sort={bySg ? 'sg' : undefined} aria-hidden="true">
             <b className={`ch-num ${bySg ? (sg == null ? 'is-none' : changeTone(sg, false)) : p.avg == null ? 'is-none' : ''}`.trim()}>{bySg ? (sg == null ? <NoData /> : formatSigned(sg)) : p.avg == null ? <NoData /> : formatFixed(p.avg)}</b>
             <span className="ch-num">{bySg ? 'SG / rd' : `${formatHcp(p.handicap)} ${TERMS.handicap.short}`}</span>
           </span>

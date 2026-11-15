@@ -351,7 +351,11 @@ export function StatsPlayerPhoneShs({
       {coach ? (
         <PhoneTop title="Player stats" heading={false} back={{ label: 'Team', onBack: () => (window.history.length > 1 && document.referrer.startsWith(window.location.origin) ? window.history.back() : onBackToTeam()) }} action={<PhoneIconAction icon={Share} label={`Share ${first}’s stats`} onClick={() => void share()} />} />
       ) : (
-        <PhoneTop title="My stats" heading={false} start />
+        <>
+          <PhoneTop title="My stats" heading={false} start />
+          {/* F-0020: the bar's title is plain text (the page brings its own), so the page's one h1 is here, as Team stats'. */}
+          <h1 className="ch-sr-only">My stats</h1>
+        </>
       )}
 
       {/* While a detail is open the summary is out of reach of the keyboard and VoiceOver. */}
@@ -433,7 +437,7 @@ function FirstRunCard() {
       <span className="ch-shs-empty__ic">
         <Icon icon={Flag} size={22} />
       </span>
-      <h3 className="ch-shs-empty__t">Your stats start with your first round</h3>
+      <h2 className="ch-shs-empty__t">Your stats start with your first round</h2>
       <p>Finish a round with shot tracking and this page fills in: your scoring average, strokes gained, greens, scrambling and putting, each against the Tour.</p>
     </section>
   );
@@ -589,18 +593,20 @@ function Glance({ data, onOpen }: { data: ChPlayerProfile; onOpen: (id: StatsDet
           type="button"
           className="ch-shs-gc"
           data-ch="stats-glance"
-          aria-label={`${t.label} ${t.value == null ? 'no value' : `${t.value}${t.unit}`}, ${t.meta}. Open ${DETAIL_TITLE[t.go]}`}
           onClick={() => {
             haptic('select');
             onOpen(t.go);
           }}
         >
-          <span className="t">{t.label}</span>
+          {/* F-0011 (WCAG 2.5.3): named by what it shows, in order, then where it goes; the spaces between the parts are not
+              drawn (the tile is a grid) but keep them apart in the name. */}
+          <span className="t">{t.label}</span>{' '}
           <span className={'v' + (t.value == null ? ' ch-shs-none' : '')}>
             {t.value ?? <NoData />}
             {t.value != null && t.unit && <small>{t.unit}</small>}
-          </span>
+          </span>{' '}
           <span className="m ch-num">{t.meta}</span>
+          <span className="ch-sr-only">{`. Open ${DETAIL_TITLE[t.go]}`}</span>
         </button>
       ))}
     </div>

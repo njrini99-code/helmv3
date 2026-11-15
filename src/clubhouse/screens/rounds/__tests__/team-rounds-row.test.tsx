@@ -44,7 +44,7 @@ describe('Team rounds · the phone row keeps one structure', () => {
   it('a long tee name gives way before the chip beside it takes a third line', () => {
     show();
     // Eli Brooks at Carolina GC, from the Championship tees: the name is its own item, so it can end in an ellipsis.
-    const row = screen.getByRole('link', { name: /^Eli Brooks, Sep 26, Carolina GC/ });
+    const row = screen.getByRole('link', { name: /^Sep 26 Eli Brooks Carolina GC/ });
     const kind = row.querySelector('.ch-trd-meta__kind')!;
     expect(kind.querySelector('.ch-trd-meta__tee > .ch-trd-meta__teen')!.textContent).toBe('Championship tees');
     expect(kind.querySelectorAll('.ch-rd-pill')).toHaveLength(1);

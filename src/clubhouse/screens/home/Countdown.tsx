@@ -7,9 +7,10 @@ import { plural } from '../../lib/plural';
  * Time to an event in its two largest units (Player - Home.html `Countdown`; owner item E): days and hours a day or
  * more out ("1d 18h"), hours and minutes inside a day ("18h 02m"), and the seconds only inside the last hour
  * ("4m 09s"). The leading figure is never zero-padded. Reserves both wells until the clock is known (no hydration
- * jump), and disappears once the event starts. `frozen` (ISO) stops the clock for previews.
+ * jump), and disappears once the event starts. `frozen` (ISO) stops the clock for previews. `lead` is what a screen reader
+ * hears first: a trip "Leaves in" (F-0001).
  */
-export function Countdown({ to, frozen }: { to: string; frozen?: string }) {
+export function Countdown({ to, frozen, lead = 'Starts in' }: { to: string; frozen?: string; lead?: string }) {
   const [now, setNow] = useState<number | null>(frozen ? Date.parse(frozen) : null);
   useEffect(() => {
     if (frozen) return;
@@ -32,7 +33,7 @@ export function Countdown({ to, frozen }: { to: string; frozen?: string }) {
   // The seconds tick visually only; a screen reader hears the larger units once.
   const label = d > 0 ? `${said(d, 'day')} and ${said(h, 'hour')}` : h > 0 ? `${said(h, 'hour')} and ${said(m, 'minute')}` : m > 0 ? said(m, 'minute') : 'less than a minute';
   return (
-    <span className="ch-cd" role="timer" aria-label={`Starts in ${label}`}>
+    <span className="ch-cd" role="timer" aria-label={`${lead} ${label}`}>
       {parts.map(([v, s], i) => (
         <span key={s} aria-hidden="true">
           <b className="ch-num">{i ? String(v).padStart(2, '0') : v}</b>

@@ -14,13 +14,18 @@ import { Icon } from '../../ui/Icon';
 import { Tooltip } from '../../ui/Tooltip';
 
 import { dateOf, TYPE_LABEL } from './labels';
+import { zoneFormat } from '../../lib/zone-format';
 import { usePressPrefetch } from '../../shell/use-prefetch-tabs';
 
 export { dateOf, TYPE_LABEL };
-const fmt = (o: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', ...o });
-export const monthLabel = (iso: string) => fmt({ month: 'long', year: 'numeric' }).format(dateOf(iso));
-export const shortDay = (iso: string) => fmt({ month: 'short', day: 'numeric' }).format(dateOf(iso));
-const dow = (iso: string) => fmt({ weekday: 'short' }).format(dateOf(iso));
+// A calendar day is read in UTC (the noon-UTC convention). Each kind is built once (lib/zone-format.ts): a book of rounds labels
+// every row, and a formatter per label was most of the list's first render (F-0010).
+const MONTH_YEAR = { month: 'long', year: 'numeric' } as const;
+const MONTH_DAY = { month: 'short', day: 'numeric' } as const;
+export const monthLabel = (iso: string) => zoneFormat('en-US', 'UTC', 'month-year', MONTH_YEAR).format(dateOf(iso));
+export const shortDay = (iso: string) => zoneFormat('en-US', 'UTC', 'month-day', MONTH_DAY).format(dateOf(iso));
+const dow = (iso: string) => zoneFormat('en-US', 'UTC', 'weekday', { weekday: 'short' }).format(dateOf(iso));
+const monthShort = (iso: string) => zoneFormat('en-US', 'UTC', 'month', { month: 'short' }).format(dateOf(iso));
 
 /**
  * The tee's colour as a dot. `slot`: a list whose rows line up on the dot keeps its place when the tee's colour isn't known
@@ -306,7 +311,7 @@ export function Ribbon({ rounds, avg, compact = false }: { rounds: ChRoundsSeaso
                     {dateOf(x.date).getUTCDate()}
                   </text>
                   <text x={cx} y={H - 5} textAnchor="middle" className="ch-rd-rib__t">
-                    {fmt({ month: 'short' }).format(dateOf(x.date))}
+                    {monthShort(x.date)}
                   </text>
                 </>
               )}

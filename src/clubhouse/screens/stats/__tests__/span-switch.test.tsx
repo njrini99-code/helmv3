@@ -60,16 +60,17 @@ describe('the address for a span', () => {
 });
 
 describe('Home’s switch', () => {
-  it('shows the span the page was read on, and the season by default', () => {
+  it('shows the span the page was read on, and the default by default: "Last 10", what Team scoring reads (F-0002, never "This season")', () => {
     render(shell(<HomeSpanSwitch span="season" />));
-    expect(radio('This season')!.getAttribute('aria-checked')).toBe('true');
+    expect(radio('This season')).toBeNull();
+    expect(radio('Last 10')!.getAttribute('aria-checked')).toBe('true');
     expect(radio('All time')!.getAttribute('aria-checked')).toBe('false');
     cleanup();
     render(shell(<HomeSpanSwitch span="all" />));
     expect(radio('All time')!.getAttribute('aria-checked')).toBe('true');
   });
 
-  it('choosing All time goes to ?range=all on this page, keeping its other params; choosing the season goes back without it', async () => {
+  it('choosing All time goes to ?range=all on this page, keeping its other params; choosing Last 10 goes back without it', async () => {
     const user = userEvent.setup();
     window.history.replaceState(null, '', '/golf/dashboard?tab=x');
     const { rerender } = render(shell(<HomeSpanSwitch span="season" />));
@@ -78,7 +79,7 @@ describe('Home’s switch', () => {
     // The page answers on the new address; the same switch, now on All time.
     window.history.replaceState(null, '', '/golf/dashboard?tab=x&range=all');
     rerender(shell(<HomeSpanSwitch span="all" />));
-    await user.click(radio('This season')!);
+    await user.click(radio('Last 10')!);
     expect(lastPush()).toEqual(['/golf/dashboard?tab=x', { scroll: false }]);
   });
 });
@@ -151,7 +152,8 @@ describe('Coach Home’s Team scoring card', () => {
   it('names the window it shows: each player’s last 10 by default, every round on All time', () => {
     render(shell(<Form form={form} />));
     expect(screen.getByText(/each player’s last 10/)).not.toBeNull();
-    expect(radio('This season')!.getAttribute('aria-checked')).toBe('true');
+    // F-0002: the pill names the same window as the figure under it.
+    expect(radio('Last 10')!.getAttribute('aria-checked')).toBe('true');
     cleanup();
     render(shell(<Form form={{ ...form, span: 'all' }} />));
     expect(screen.getByText(/every round, all time/)).not.toBeNull();

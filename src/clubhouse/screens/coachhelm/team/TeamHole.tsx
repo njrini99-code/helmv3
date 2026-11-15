@@ -95,9 +95,14 @@ export function TeamHole({
     ).map((l) => [l.id, l]),
   );
   const label = STATIONS.map((s) => `${STATION_NAME[s].toLowerCase()} ${stations[s].team == null ? 'not measured' : formatSigned(stations[s].team)}`).join(', ');
+  // The live hole holds its stations' buttons, so it is a named group: an image's children are hidden from a screen reader (F-0007).
+  // The empty hole has nothing to press and stays one image that says what it shows.
+  const named = bare
+    ? { role: 'img', 'aria-label': `A golf hole showing where the team loses strokes to Tour: ${label} a round.` }
+    : { role: 'group', 'aria-label': 'Where the team loses strokes to Tour, by part of the hole' };
   return (
     <div className="holebox">
-    <svg ref={svg} className="holesvg" viewBox={`0 0 ${H.w} ${H.h}`} role="img" aria-label={`A golf hole showing where the team loses strokes to Tour: ${label} a round.`}>
+    <svg ref={svg} className="holesvg" viewBox={`0 0 ${H.w} ${H.h}`} {...named}>
       <path className="fair" d={H.path} strokeWidth={H.fw} />
       <path className="mow" d={H.path} strokeWidth={H.fw * 0.42} />
       <ellipse className="fringe" {...H.fringe} />
@@ -133,7 +138,8 @@ export function TeamHole({
                 role="button"
                 tabIndex={0}
                 aria-pressed={station === s}
-                aria-label={`${STATION_NAME[s]}, ${v == null ? 'not measured' : `${formatSigned(v)} a round`}`}
+                // Starts with the words drawn on it, the short name and the figure, so a voice user can say what they see (label in name).
+                aria-label={`${STATION_SHORT[s]}, ${v == null ? 'Not measured' : `${formatSigned(v)} a round`}${STATION_SHORT[s] === STATION_NAME[s] ? '' : `, ${STATION_NAME[s].toLowerCase()}`}`}
                 onClick={() => onStation(s)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
@@ -173,7 +179,7 @@ export function TeamHole({
                   data-ch-team-more={s}
                   role="button"
                   tabIndex={0}
-                  aria-label={`${here.length - shown.length} more at ${STATION_NAME[s]}`}
+                  aria-label={`+${here.length - shown.length} more at ${STATION_SHORT[s]}`}
                   onClick={() => onStation(s)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {

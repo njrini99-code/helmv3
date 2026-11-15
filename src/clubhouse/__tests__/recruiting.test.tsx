@@ -408,7 +408,8 @@ describe('Recruiting · desktop', () => {
     const group = screen.getByRole('group', { name: 'Filter by stage' });
     expect(group.getAttribute('data-ch-code')).toBe('CH-14801');
     // P014 finding #4 (intentional change): the share of the list is no longer drawn; the count and its label carry it.
-    for (const name of ['Watched, 3 prospects', 'Recruiting, 3 prospects', 'Offered, 1 prospect', 'Committed, 1 prospect']) {
+    // F-0011: a stage is named by the word it shows, then its count, then its line when it draws one.
+    for (const name of [/^Watched, 3 prospects\b/, /^Recruiting, 3 prospects\b/, /^Offered, 1 prospect\b/, /^Committed, 1 prospect\b/]) {
       const b = within(group).getByRole('button', { name });
       expect(b.getAttribute('aria-pressed')).toBe('false');
       expect(b.textContent).not.toContain('% of list');
@@ -432,7 +433,7 @@ describe('Recruiting · desktop', () => {
   it('CH-14801 CH-14701 a stage is a filter: pressing it shows only those prospects, "Show all 8" and pressing it again undo it, and the counts ignore the search', async () => {
     const user = userEvent.setup();
     wrap();
-    const offered = screen.getByRole('button', { name: 'Offered, 1 prospect' });
+    const offered = screen.getByRole('button', { name: /^Offered, 1 prospect\b/ });
     await user.click(offered);
     expect(offered.getAttribute('aria-pressed')).toBe('true');
     expect(hapticSpy).toHaveBeenCalledWith('select');
@@ -442,13 +443,13 @@ describe('Recruiting · desktop', () => {
     await user.click(screen.getByRole('button', { name: /^Show all/ }));
     expect(rowNames()).toHaveLength(8);
     expect(localStorage.getItem('ch-recruiting-stage')).toBeNull();
-    await user.click(screen.getByRole('button', { name: 'Watched, 3 prospects' }));
+    await user.click(screen.getByRole('button', { name: /^Watched, 3 prospects\b/ }));
     expect(rowNames()).toEqual(['Owen Park', 'Jack Whitfield', 'Ben Adler']);
-    await user.click(screen.getByRole('button', { name: 'Watched, 3 prospects' }));
+    await user.click(screen.getByRole('button', { name: /^Watched, 3 prospects\b/ }));
     expect(rowNames()).toHaveLength(8);
     // A search narrows the list and leaves the pipeline's counts alone.
     await user.type(screen.getByRole('searchbox', { name: 'Search prospects' }), 'tampa');
-    expect(screen.getByRole('button', { name: 'Watched, 3 prospects' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^Watched, 3 prospects\b/ })).toBeTruthy();
     expect(screen.getByText('8 prospects · 1 committed')).toBeTruthy();
   });
 
@@ -516,7 +517,7 @@ describe('Recruiting · desktop', () => {
     expect(code('CH-14302')?.textContent).toContain('Search looks at names, hometowns, states, email and notes. Try another word, or look across every stage.');
     expect(panel('Owen Park')).toBeTruthy();
     expect(screen.queryByRole('table')).toBeNull();
-    expect(screen.getByRole('button', { name: 'Offered, 1 prospect' }).getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByRole('button', { name: /^Offered, 1 prospect\b/ }).getAttribute('aria-pressed')).toBe('true');
     await user.click(screen.getByRole('button', { name: 'Search all stages' }));
     // The search is kept; only the stage goes.
     expect(code('CH-14302')?.textContent).toContain('No prospects match “Tampa”');
@@ -529,7 +530,7 @@ describe('Recruiting · desktop', () => {
   it('CH-14302 a stage with nobody in it says so, with a way to show every stage', async () => {
     const user = userEvent.setup();
     wrap({ ...PREVIEW_RECRUITING, prospects: PREVIEW_PROSPECTS.filter((p) => p.stage !== 'offered') });
-    await user.click(screen.getByRole('button', { name: 'Offered, 0 prospects' }));
+    await user.click(screen.getByRole('button', { name: /^Offered, 0 prospects\b/ }));
     expect(code('CH-14302')?.textContent).toContain('No prospects in Offered');
     await user.click(screen.getByRole('button', { name: 'Show all stages' }));
     expect(rowNames()).toHaveLength(7);
@@ -636,8 +637,8 @@ describe('Recruiting · desktop', () => {
     expect(w.update).toHaveBeenCalledWith('p-mason', { status: 'committed' });
     // Before the answer: moved everywhere.
     expect(stageOf('Mason Reilly')).toBe('Committed');
-    expect(screen.getByRole('button', { name: 'Committed, 2 prospects' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Offered, 0 prospects' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^Committed, 2 prospects\b/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^Offered, 0 prospects\b/ })).toBeTruthy();
     expect(within(panel('Mason Reilly')).getByRole('radio', { name: 'Committed' }).getAttribute('aria-checked')).toBe('true');
     expect(code('CH-14803')?.querySelector('[role="radiogroup"]')).not.toBeNull();
     // Nothing is announced until it has saved.
@@ -664,8 +665,8 @@ describe('Recruiting · desktop', () => {
     expect(hapticSpy).toHaveBeenCalledWith('error');
     // Back where they were, everywhere.
     expect(stageOf('Mason Reilly')).toBe('Offered');
-    expect(screen.getByRole('button', { name: 'Offered, 1 prospect' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Committed, 1 prospect' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^Offered, 1 prospect\b/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^Committed, 1 prospect\b/ })).toBeTruthy();
     expect(within(panel('Mason Reilly')).getByRole('radio', { name: 'Offered' }).getAttribute('aria-checked')).toBe('true');
     expect(within(panel('Mason Reilly')).getByText('Added Aug 12 · Updated 2 days ago')).toBeTruthy();
     expect(report).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ action: 'recruiting.stage' }));
@@ -755,7 +756,7 @@ describe('Recruiting · desktop', () => {
     await expectCode('CH-14907', /Mason Reilly deleted/);
     // The counts follow and the next prospect opens.
     expect(screen.getByText('7 prospects · 1 committed')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Offered, 0 prospects' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^Offered, 0 prospects\b/ })).toBeTruthy();
     expect(panel('Caleb Nguyen')).toBeTruthy();
   });
 
@@ -832,7 +833,7 @@ describe('Recruiting · desktop', () => {
     await waitFor(() => expect(document.querySelector('dialog[open]')).toBeNull());
     expect(rowNames()[0]).toBe('Ellie Morrow');
     expect(panel('Ellie Morrow')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Watched, 4 prospects' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^Watched, 4 prospects\b/ })).toBeTruthy();
     expect(screen.getByText('9 prospects · 1 committed')).toBeTruthy();
   });
 
@@ -1156,7 +1157,7 @@ describe('Recruiting · phone', () => {
     expect(top().getByRole('button', { name: 'New prospect' })).toBeTruthy();
     expect(screen.getByRole('searchbox', { name: 'Search prospects' })).toBeTruthy();
     const group = screen.getByRole('group', { name: 'Filter by stage' });
-    expect(within(group).getByRole('button', { name: 'Watched, 3 prospects' })).toBeTruthy();
+    expect(within(group).getByRole('button', { name: /^Watched, 3 prospects\b/ })).toBeTruthy();
     // The compact timeline has no blurbs and no shares.
     expect(group.textContent).not.toContain('% of list');
     expect(screen.getByText('8 prospects')).toBeTruthy();

@@ -19,6 +19,7 @@ import { PhoneChromeProvider } from '../../../shell/phone-chrome';
 import { ToastProvider } from '../../../ui/Toast';
 import { TeamRounds } from '../TeamRounds';
 import type { ChTeamRounds } from '../../../data/team-rounds-shape';
+import { expectLabelInName } from '../../../__tests__/label-in-name';
 
 const show = (data: ChTeamRounds, onPhone = false) => {
   phone.on = onPhone;
@@ -109,5 +110,18 @@ describe('Team rounds · where the season ends', () => {
     fireEvent.click(screen.getByRole('radio', { name: 'By player' }));
     expect(screen.getByRole('table', { name: 'Team rounds' }).className).toContain('is-by-player');
     expect(screen.queryByText(LINE)).toBeNull();
+  });
+});
+
+/** F-0011 (WCAG 2.5.3, axe label-content-name-mismatch): the phone's month lists named each round in another order than its row shows it. */
+describe('Team rounds · a phone row is named by what it shows', () => {
+  it('opens with the day and the player, as the row reads, with no aria-label to disagree', () => {
+    show(PREVIEW_TEAM_ROUNDS, true);
+    const rows = document.querySelectorAll<HTMLElement>('.ch-trd .ch-lgr__row.is-link');
+    expect(rows.length).toBeGreaterThan(0);
+    for (const row of rows) {
+      expect(row).not.toHaveAttribute('aria-label');
+      expectLabelInName(row, `${row.querySelector('.ch-lgr__lead')!.textContent} ${row.querySelector('.ch-lgr__title')!.textContent}`);
+    }
   });
 });

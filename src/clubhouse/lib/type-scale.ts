@@ -6,15 +6,18 @@
 
 /** iOS's body size at the default Text Size (`-apple-system-body`). */
 export const DEFAULT_BODY_PX = 17;
-/** The smallest step followed: below it Clubhouse's 12px floor would break. */
-export const MIN_BODY_PX = 14;
 /** The largest step followed (XXL); larger sizes cap here. */
 export const MAX_BODY_PX = 23;
 
-/** A body size read from `-apple-system-body` as a scale: null at the default (or unreadable), else clamped to 14 to 23px. */
+/**
+ * A body size read from `-apple-system-body` as a scale: null at or under the default (or unreadable), else up to XXL.
+ * Text Size is followed upward only (F-0014, CR-03: phone text is never under 12px, and 12 is a step): any scale under 1
+ * draws the 12 step under 12px. A smaller setting once followed down to 14px (x14/17 = 0.824) drew the 12, 13 and 14
+ * steps at 9.9, 10.7 and 11.5px; a Mac's WebKit under a touch emulation (13px body) took the same path.
+ */
 export function typeScaleFor(bodyPx: number): number | null {
-  if (!Number.isFinite(bodyPx) || bodyPx === DEFAULT_BODY_PX) return null;
-  return Math.max(MIN_BODY_PX / DEFAULT_BODY_PX, Math.min(MAX_BODY_PX / DEFAULT_BODY_PX, bodyPx / DEFAULT_BODY_PX));
+  if (!Number.isFinite(bodyPx) || bodyPx <= DEFAULT_BODY_PX) return null;
+  return Math.min(MAX_BODY_PX / DEFAULT_BODY_PX, bodyPx / DEFAULT_BODY_PX);
 }
 
 /** The value written to `--ch-type-scale`, to three places. */

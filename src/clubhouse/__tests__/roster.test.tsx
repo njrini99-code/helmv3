@@ -313,6 +313,16 @@ describe('Roster · loading, haptics, accessibility', () => {
     const panel = screen.getByRole('complementary', { name: theo.name });
     expect(within(panel).getByRole('link', { name: 'Schedule 1:1' }).getAttribute('href')).toBe(`/golf/dashboard/calendar?new=1&with=${theo.id}`);
   });
+
+  it('one primary on the desk: the panel’s Message is secondary beside the head’s Invite players (CR-07)', async () => {
+    const user = userEvent.setup();
+    wrap(roster());
+    await openPeek(user);
+    const panel = screen.getByRole('complementary', { name: theo.name });
+    expect(within(panel).getByRole('link', { name: 'Message' }).className).not.toMatch(/ch-btn--primary/);
+    const primaries = [...document.querySelectorAll('.ch-btn--primary')].map((b) => b.textContent);
+    expect(primaries).toEqual(['Invite players']);
+  });
 });
 
 describe('Roster · phone (docs/clubhouse/phone/roster.md)', () => {

@@ -62,25 +62,13 @@ const ALLOW_DATES: Record<string, number> = {
   'data/stats-common.ts': 1,
   'data/welcome-shape.ts': 3,
   'data/whats-new-shape.ts': 3,
-  'lib/light.ts': 1,
-  'lib/sun.ts': 1,
-  'screens/calendar/Calendar.tsx': 1,
-  'screens/calendar/model.ts': 1,
   'screens/home/DayCard.tsx': 3,
   'screens/home/HomePhone.tsx': 1,
   'screens/home/event-links.ts': 1,
   'screens/home/nudge-draft.ts': 1,
   'screens/home/use-day-rollover.ts': 1,
-  'screens/messages/announcements.tsx': 2,
-  'screens/messages/inbox/model.ts': 2,
-  'screens/messages/model-time.ts': 6,
   'screens/qualifiers/CoursePicker.tsx': 1,
-  'screens/qualifiers/QualifierSections.tsx': 2,
-  'screens/qualifiers/model.ts': 2,
-  'screens/rounds/RoundReview.tsx': 1,
-  'screens/rounds/card/card-model.ts': 1,
   'screens/rounds/entry/session.ts': 1,
-  'screens/rounds/parts.tsx': 1,
   'screens/rounds/setup/AddCourseSheet.tsx': 2,
   'screens/rounds/setup/CoursePicker.tsx': 2,
   'screens/rounds/setup/HoleConfig.tsx': 2,
@@ -92,7 +80,7 @@ const ALLOW_DATES: Record<string, number> = {
 
 describe('dates format in lib/dates (CONS-16)', () => {
   it('no new local date formatting', () => {
-    const found = hits(/toLocale(Date|Time)?String\(|new Intl\.DateTimeFormat\(|Intl\.RelativeTimeFormat/, walk(undefined, /\.tsx?$/)).filter((h) => h.file !== 'lib/dates.ts');
+    const found = hits(/toLocale(Date|Time)?String\(|new Intl\.DateTimeFormat\(|Intl\.RelativeTimeFormat/, walk(undefined, /\.tsx?$/)).filter((h) => h.file !== 'lib/dates.ts' && h.file !== 'lib/zone-format.ts');
     const r = ratchet(found, ALLOW_DATES);
     expect(r.over).toEqual([]);
     expect(r.stale).toEqual([]);

@@ -168,7 +168,8 @@ describe('the landing', () => {
     const none = [...container.querySelectorAll('.ch-prc-tile__none')];
     expect(none.length).toBeGreaterThan(0);
     for (const n of none) {
-      expect(n.querySelector('[aria-hidden="true"]')!.textContent).toBe('–');
+      // F-0026 (audit 2026-11-13): the shared no-data mark (NO_DATA, an em dash), not an en dash.
+      expect(n.querySelector('[aria-hidden="true"]')!.textContent).toBe('—');
       expect(n.querySelector('.ch-sr-only')!.textContent).toBe('No practice');
     }
   });

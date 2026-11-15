@@ -138,7 +138,8 @@ function Hero({
         <span>
           {sgBaseline(data.team.sgTour ?? null).why} Players stand where they lose most. Hollow: fewer than 5 rounds.
         </span>
-        {!phone && <span>Tap a spot</span>}
+        {/* One verb for a mouse, a trackpad and an iPad that gets the desk layout (F-0024: "Tap" read wrong on a desk). */}
+        {!phone && <span>Choose a spot</span>}
       </div>
     </section>
   );

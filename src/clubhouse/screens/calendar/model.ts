@@ -1,4 +1,7 @@
 import { sunTimes, type LatLng } from '../../lib/sun';
+import { zoneFormat } from '../../lib/zone-format';
+import { zonedWallTime } from '../../lib/dates';
+import type { ChNow } from './views';
 import type { ChClock } from '../../lib/clock-cookie';
 import { clockFromHour } from '../../lib/clock-format';
 import type { ChAvailability } from '../../data/availability';
@@ -137,10 +140,15 @@ export interface ChDaylight {
   golden: number | null;
 }
 
+/** The team's day and hour at an instant. The formatter behind it is kept per zone (lib/zone-format.ts), not built per tick. */
+export function zonedNow(timeZone: string, d: Date): ChNow {
+  return { ...zonedWallTime(d, timeZone), ms: d.getTime() };
+}
+
 /** Sunrise, sunset and the start of golden hour for a calendar day, from the global light's sun (lib/sun.ts sunTimes). */
 export function daylightOn(date: string, place: LatLng, timeZone: string): ChDaylight {
   const t = sunTimes(date, place, timeZone);
-  const fmt = new Intl.DateTimeFormat('en-US', { timeZone, hourCycle: 'h23', hour: '2-digit', minute: '2-digit' });
+  const fmt = zoneFormat('en-US', timeZone, 'hm24', { hourCycle: 'h23', hour: '2-digit', minute: '2-digit' });
   const hour = (ms: number | null) => {
     if (ms === null) return null;
     const p = Object.fromEntries(fmt.formatToParts(ms).map((x) => [x.type, x.value]));

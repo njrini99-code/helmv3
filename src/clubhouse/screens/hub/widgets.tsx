@@ -305,7 +305,8 @@ export function WeekTile({ week, role, rsvps, replies, isPending, onReply, cover
               isToday: i === 0,
               dots: d.events.length,
               flag: d.trip ? 'trip' : undefined,
-              label: `${i === 0 ? 'Today, ' : ''}${d.weekday} ${d.day}: ${d.events.length ? plural(d.events.length, 'event') : 'nothing on'}${d.trip ? `, on the road (${d.trip})` : ''}`,
+              // F-0011: the name opens with the face, "Today 14" or "Wed 15" (WeekStrip's weekDayName).
+              label: `${i === 0 ? `Today ${d.day}, ${d.weekday}` : `${d.weekday} ${d.day}`}: ${d.events.length ? plural(d.events.length, 'event') : 'nothing on'}${d.trip ? `, on the road (${d.trip})` : ''}`,
             }))}
             selected={day.date}
             onSelect={(date) => pick(days.findIndex((d) => d.date === date))}

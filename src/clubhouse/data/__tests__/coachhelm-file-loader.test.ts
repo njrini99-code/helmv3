@@ -72,6 +72,8 @@ vi.mock('../coachhelm-player', () => ({ coachDiveCore: dive.coach, loadCoachPlay
 vi.mock('../coachhelm-standing', () => ({ loadPlayerStanding: vi.fn(async () => ({ status: 'failed' })), readStandingRows: vi.fn(async () => ({ ok: true, rows: [] })) }));
 vi.mock('../season', async (orig) => ({ ...(await orig<typeof import('../season')>()), loadTeamZone: vi.fn(async () => 'America/New_York') }));
 
+import { roundsToGo } from '../coachhelm';
+import { readStandingRows } from '../coachhelm-standing';
 import { loadCoachPlayerFile, loadFileField, loadFileIntent, loadFilePlan, loadPlayerYourWeek } from '../coachhelm-file';
 import type { ChCoachPlayerScope } from '../coachhelm-player';
 
@@ -243,6 +245,30 @@ describe('the player Your week (S-BOARD 6 to 8, W-LNS-15)', () => {
     expect(Object.keys(load.data.cards)).not.toContain('intent');
     expect(Object.keys(load.data.cards)).not.toContain('track');
     expect(load.data.cards.field?.dots).toBeNull();
+  });
+
+  it('F-0013 its own reads start beside the feed, not after it: the standings and the rounds are in flight while the feed is still loading', async () => {
+    db.tables.golf_rounds = { data: [], error: null };
+    vi.mocked(roundsToGo).mockClear();
+    vi.mocked(readStandingRows).mockClear();
+    let landed!: () => void;
+    dive.player.mockImplementation(() => new Promise((resolve) => (landed = () => resolve({ load: ready, raw: new Map() }))));
+    const pending = loadPlayerYourWeek({ playerId: 'p1' });
+    // The gate answers first; then the feed is asked, and the reads that need only the player are sent with it.
+    await vi.waitFor(() => expect(dive.player).toHaveBeenCalled());
+    await vi.waitFor(() => expect(roundsToGo).toHaveBeenCalled());
+    expect(readStandingRows).toHaveBeenCalledTimes(1);
+    expect(db.calls.map((c) => c.table)).toContain('golf_rounds');
+    // Nothing is drawn until the feed lands, and what the feed lands on is still the page.
+    landed();
+    const { load } = await pending;
+    expect(load.status).toBe('ready');
+  });
+
+  it('F-0013 a feed that is not ready is that page, and the reads started beside it change nothing', async () => {
+    dive.player.mockResolvedValue({ load: { status: 'failed' }, raw: new Map() });
+    const { load } = await loadPlayerYourWeek({ playerId: 'p1' });
+    expect(load).toEqual({ status: 'failed' });
   });
 
   it('with no coach name to hand the plan says Your coach', async () => {

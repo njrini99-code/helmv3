@@ -18,7 +18,11 @@ export function spanHref(pathname: string, search: string, span: ChSpan): string
 /**
  * Home's switch, in the numbers' own card. The choice lives in the address (`?range=all`), so it survives a reload and can be shared;
  * the page reads again on the server for the new basis. The pill moves with the tap and stays on the choice while the page loads.
+ * The default is named for what Team scoring reads, each player's last ten rounds across seasons (Q-122), as Stats names that window
+ * ("Last 10"); "This season" named a window the figure never used (F-0002, ruling 2026-11-13).
  */
+const HOME_SPAN_LABELS = { season: 'Last 10' } as const;
+
 export function HomeSpanSwitch({ span }: { span: ChSpan }) {
   const router = useRouter();
   const pushOnce = usePushOnce(router);
@@ -27,6 +31,7 @@ export function HomeSpanSwitch({ span }: { span: ChSpan }) {
   return (
     <SpanSwitch
       hook="home-span"
+      labels={HOME_SPAN_LABELS}
       value={pending && chosen ? chosen : span}
       onChange={(v) => {
         setChosen(v);

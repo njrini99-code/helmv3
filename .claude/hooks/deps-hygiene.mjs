@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 // .claude/hooks/deps-hygiene.mjs — SessionStart + PostToolUse(Bash). ADVISORY ONLY.
 //
-// PostToolUse on purpose: the repo's owner grant is "no PreToolUse hook" (a test and the
-// enforcement inventory treat any PreToolUse hook as a blocking mechanism), so this
-// hook reports right after the command instead of before it.
+// PostToolUse on purpose: the repo's owner grant is "no PreToolUse hook" outside an audit
+// session (a test and the enforcement inventory treat any PreToolUse hook as a blocking
+// mechanism; the one allowed is the audit-only no-prod-in-audit.mjs), so this hook reports
+// right after the command instead of before it.
 //
 // Why: most worktrees do not own a node_modules, they symlink the canonical
 // checkout's (scripts/lib/create-workspace.mjs, "deps: symlinked"). That makes

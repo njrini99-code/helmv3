@@ -125,16 +125,22 @@ export function lastTenFloor(now = new Date()): string {
   return d.toISOString().slice(0, 10);
 }
 
-/** Newest first. `error` is true when any page failed; rounds then holds what loaded before it. */
+/** How many id chunks are read at once: the 200-id slices of a big roster go side by side, not one after another (F-0013). */
+export const SEASON_CHUNKS_AT_ONCE = 4;
+
+/** Newest first. `error` is true when any page failed; rounds then holds nothing (a partial season is never drawn as a whole one). */
 export async function loadSeasonRounds(
   supabase: Supabase,
   playerIds: string[],
   opts: { surface: string; since?: string | null },
 ): Promise<{ rounds: ChRound[]; error: boolean }> {
   const since = opts.since === undefined ? seasonStartDate() : opts.since;
-  const rounds: ChRound[] = [];
-  for (const ids of chunkIds(playerIds)) {
-    const res = await fetchAllRowsResult<ChRound>(
+  // Each chunk is paged on its own (PostgREST sends at most 1000 rows per request, `fetchAllRowsResult` asks for the next page until a
+  // short one), so the row cap holds per chunk however many chunks are in flight. The slices are independent reads: a few at a time,
+  // answered in order, so what the caller sees is what the sequential loop gave.
+  const chunks = chunkIds(playerIds);
+  const read = (ids: string[]) =>
+    fetchAllRowsResult<ChRound>(
       (from, to) => {
         let q = supabase
           .from('golf_rounds')
@@ -149,6 +155,22 @@ export async function loadSeasonRounds(
       undefined,
       { table: 'golf_rounds', action: `clubhouse.${opts.surface}`, feature: 'coach_dashboard', sport: 'golf' },
     );
+  const answers: Array<Awaited<ReturnType<typeof read>> | undefined> = new Array(chunks.length);
+  let next = 0;
+  let failed = false;
+  const lane = async () => {
+    // Slices are taken in order, so when a read fails every slice before it has been started; the ones after it are not.
+    while (!failed && next < chunks.length) {
+      const at = next++;
+      const res = await read(chunks[at]!);
+      answers[at] = res;
+      if (res.error) failed = true;
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(SEASON_CHUNKS_AT_ONCE, chunks.length) }, lane));
+  const rounds: ChRound[] = [];
+  for (const res of answers) {
+    if (!res) continue;
     if (res.error) {
       chLogServer(opts.surface, 'rounds', res.error);
       return { rounds: [], error: true };

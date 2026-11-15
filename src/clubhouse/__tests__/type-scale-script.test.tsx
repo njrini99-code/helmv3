@@ -67,16 +67,21 @@ describe('TypeScaleScript: the first frame is already at the iPhone’s Text Siz
     expect(stamped()).toBe(want == null ? '' : typeScaleValue(want));
   });
 
-  it('clamps below the smallest step and above XXL as the library does', () => {
-    for (const px of [12, 26]) {
-      restore = device(px);
-      boot();
-      expect(stamped()).toBe(typeScaleValue(readDynamicTypeScale(document)!));
-      restore();
-      restore = null;
-      vi.restoreAllMocks();
-      root.style.removeProperty('--ch-type-scale');
-    }
+  it('caps above XXL as the library does', () => {
+    restore = device(26);
+    boot();
+    expect(stamped()).toBe(typeScaleValue(readDynamicTypeScale(document)!));
+    expect(stamped()).toBe(typeScaleValue(23 / 17));
+  });
+
+  // F-0014 (audit 13 Nov 2026, CR-03): below the default Text Size the scale was clamped to 14/17, so the 12, 13 and 14
+  // steps drew at 9.9, 10.7 and 11.5px on every phone page. A Mac's WebKit (13px body) under a touch emulation took the
+  // same path. Text Size is followed upward only: phone text never goes under its step.
+  it.each([12, 13, 14, 15, 16])('stamps nothing below the default Text Size (%ipx body), so no step draws under its size', (px) => {
+    restore = device(px);
+    boot();
+    expect(stamped()).toBe('');
+    expect(readDynamicTypeScale(document)).toBeNull();
   });
 
   it('hydration changes nothing: the hook writes the value the script stamped', () => {

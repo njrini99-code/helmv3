@@ -262,7 +262,7 @@ const RAW_LONGHAND: Record<string, number> = {
   'styles/onboard.css': 22,
   'styles/qualifiers.css': 51,
   'styles/recruiting.css': 18,
-  'styles/roster.css': 8,
+  'styles/roster.css': 7,
   'styles/rounds-recover.css': 2,
   'styles/rounds-setup.css': 15,
   'styles/rounds-track.css': 27,

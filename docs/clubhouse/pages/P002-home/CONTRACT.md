@@ -45,6 +45,19 @@ span; an event active today remains in Today and Up next. The timed countdown
 reserves its space before the client clock is available. No schema or event
 write changes.
 
+Trips, 2026-11-13 (audit F-0001): a team trip with no calendar event of its own
+(Team Hub's Plan trip makes the event optional) is on Home as Team Hub has it.
+Its days carry the week strip's gold travel mark and say "on the road (name)"
+in words; from leaving to coming home it is an all-day row in Today and Up
+next, saying when it leaves (counting down to a saved departure time) and "On
+the road · back Sun" while the team is away, and it opens on Team Hub's Travel.
+A trip whose event is on the calendar is drawn once, as that event; its days
+keep the mark. While away, Up next gives way to an event still ahead today. A
+test trip is never shown, and a failed trips read is logged and leaves the week
+as its events say. With nothing left this week, Up next names the next event
+or trip after it (20417); a player is never told of a meeting past the loaded
+week, since their own replies reach only that window.
+
 ## 01 — Default / core UI
 
 Status: DEFINED
@@ -70,7 +83,7 @@ Home.
 | --- | --- | --- | --- |
 | 20101 | — | `COACH_HOME_READY` | Coach Home opens with the date, the greeting and the brief, Up next beside the hero, Today and the team's scoring form, the team's four parts and the latest round, all read on the server for the first paint; a team with nothing yet gets the first-run page. The leaderboard and the week are not on Home (Roster, Stats and Calendar). |
 | 20102 | — | `PLAYER_HOME_READY` | Player Home opens with the date and the greeting (no brief line: owner, 2026-10-06), Message coach, the week beside Up next and Your latest round in one sheet, then Scoring and the four parts of the game, all read on the server for the first paint; a new player gets the first-run page (CH-2312), and on a phone the same data is drawn as the phone Home (21901). |
-| 20103 | — | `LINKS_OPEN_WHAT_THEY_NAME` | Every link out of Home opens the thing it names: Message team the team chat (?conversation=) or Messages when the chat did not load, Up next and a Today row that event in Calendar (?date=&event=), a week day Calendar's day view (?view=day&date=), New event, Plan, Add event and the quick event types the editor (?new=1, with &type=), a leaderboard row and a latest round's stats link that player's stats (?player=), My stats the player's own stats, Message coach the coach's thread (?user=), the first run's Invite players Roster with its invite sheet open (/golf/dashboard/roster?invite=1), each part of the coach's "Waiting on you" the screen that holds it (join requests Roster, replies that event in Calendar when one event holds them and Calendar when more do, overdue tasks Team Hub's Tasks ?tab=tasks, posts awaiting acknowledgement its Announcements ?tab=ann), a name in the team's four parts that player's Game tab on Stats on the same Last 10 (?player=&tab=game) and Team stats Stats, the coach's Next row Nudge Messages prefilled for who hasn't replied (the phone day card's own link, never sent), and CoachHelm in the player peek and the phone's round sheet that player's deep dive (/golf/dashboard/coachhelm?view=deep-dive&player=); a link to a screen not yet rebuilt for the viewer's role is not drawn. |
+| 20103 | — | `LINKS_OPEN_WHAT_THEY_NAME` | Every link out of Home opens the thing it names: Message team the team chat (?conversation=) or Messages when the chat did not load, Up next and a Today row that event in Calendar (?date=&event=), or a trip with no event of its own that trip on Team Hub's Travel (/golf/dashboard/team-hub?tab=travel&trip=), and Up next's "Nothing else this week" card the next event or trip it names, a week day Calendar's day view (?view=day&date=), New event, Plan, Add event and the quick event types the editor (?new=1, with &type=), a leaderboard row and a latest round's stats link that player's stats (?player=), My stats the player's own stats, Message coach the coach's thread (?user=), the first run's Invite players Roster with its invite sheet open (/golf/dashboard/roster?invite=1), each part of the coach's "Waiting on you" the screen that holds it (join requests Roster, replies that event in Calendar when one event holds them and Calendar when more do, overdue tasks Team Hub's Tasks ?tab=tasks, posts awaiting acknowledgement its Announcements ?tab=ann), a name in the team's four parts that player's Game tab on Stats on the same Last 10 (?player=&tab=game) and Team stats Stats, the coach's Next row Nudge Messages prefilled for who hasn't replied (the phone day card's own link, never sent), and CoachHelm in the player peek and the phone's round sheet that player's deep dive (/golf/dashboard/coachhelm?view=deep-dive&player=); a link to a screen not yet rebuilt for the viewer's role is not drawn. |
 | 20104 | — | `COACH_QUEUE_COUNTS_AS_ITS_SCREEN` | Coach Home's "Waiting on you" (under the head on desktop, in the phone's hero, and on the first run) counts each part with the read and rule of the screen that holds it, so the two show one number: pending join requests as the sidebar's Roster badge counts them, replies missing on this week's events that still take one as Team Hub's RSVPs count "no reply" (rsvpQueue), overdue tasks as Team Hub's Tasks (taskStatus, overdueTaskCount) and posts awaiting an acknowledgement as its Announcements (unackedPostCount). Only parts above zero are drawn, in that order; with nothing waiting the row is not drawn. Each part reads on its own: one that fails is null, logged and left out, never 0 (CH-2220). |
 | 20105 | — | `TEAM_PARTS_ON_THE_FORMS_LAST_10` | Coach Home's four parts (The team's game; under the team's form on desktop, after Team scoring on the phone) read the form's own Last 10 rounds of the active roster, hole-level only (Q-123): strokes gained per round in each part is Team Stats' own team figure (teamStrokesGained): the rounds of the players who have 3 rounds with strokes gained in that window, so a player's first round or two moves it neither here nor on Stats (no player at that floor: none), its change against the same players' previous ten (Q-112) coloured only when it clears its standard error, the part's plain stat (Fairways, Greens, Up and down, Putts) with the Tour's mark from the team's tour, and who gains and loses most from Team Stats' ranking (ties share a place and are named together; one ranked player, or everyone in one place, loses nothing). No other player's round reaches the figures. |
 
@@ -130,8 +143,12 @@ failed. Both roles: nothing on the calendar today (20401), no rounds this season
 (20402), and the newest round posted as a total (20403). Coach Home: no players
 (20404), players but no 18-hole rounds (20405), a player with fewer than three
 rounds reads Early read (20406), nothing ahead on the phone, with quick adds
-(20409), a coach with no team (20407) and a team with nothing yet (20408).
+(20409), nothing left this week but an event or trip after it, named in Up next
+on the phone and in the desk's hero (20417), a coach with no team (20407) and a
+team with nothing yet (20408).
 Player Home: nothing ahead in the player's wording, with no quick adds (20409),
+nothing left this week but something after it (20417, never a meeting past the
+loaded week),
 fewer than two rounds for the Scoring line (20410), nothing to break down
 (20411), a new player (20412) and a player on no team (20413). The no-team and
 first-run states are the v2 page empty state (D-71). Which viewer meets which is
@@ -147,7 +164,7 @@ the route's decision (20802).
 | 20406 | CH-2306 | `A_PLAYER_HAS_FEWER_THAN_THREE_ROUNDS` | A player has fewer than three rounds |
 | 20407 | CH-2307 | `A_COACH_WITH_NO_ACTIVE_TEAM` | A coach with no active team |
 | 20408 | CH-2308 | `A_TEAM_WITH_NOTHING_YET_NO_PLAYERS` | A team with nobody on it yet: no players, no rounds, and every read answered (events or not: it rests on the people, not the calendar) |
-| 20409 | CH-2309 | `NOTHING_ON_THE_CALENDAR_AHEAD` | Nothing on the calendar ahead (phone). A player: "Your coach’s practices and events will show here with a countdown.", no quick adds |
+| 20409 | CH-2309 | `NOTHING_ON_THE_CALENDAR_AHEAD` | Nothing on the calendar ahead, this week or after it: no event and no trip (phone). A player: "Your coach’s practices and events will show here with a countdown.", no quick adds |
 | 20410 | CH-2310 | `FEWER_THAN_TWO_18_HOLE_ROUNDS` | Fewer than two 18-hole rounds (player Home Scoring) |
 | 20411 | CH-2311 | `NO_FAIRWAYS_GREENS_SCRAMBLING_OR_PUTTS_LOGGED` | No fairways, greens, scrambling or putts logged (player Home) |
 | 20412 | CH-2312 | `A_NEW_PLAYER_NO_ROUNDS_NOTHING_ON` | A new player: no rounds, every read answered (v2 first-run, D-71) |
@@ -155,6 +172,7 @@ the route's decision (20802).
 | 20414 | CH-2314 | `NO_ROUND_IN_THE_TEAMS_LAST_10` | No round in the team's last 10 has hole scores (coach Home, the team's four parts) |
 | 20415 | CH-2315 | `ROUNDS_WITH_HOLE_SCORES_BUT_NO_PLAYER` | Rounds with hole scores, but no player with 3 of them (coach Home, the team's four parts) |
 | 20416 | CH-2370 | `NOBODY_ON_THE_TEAM_HAS_A_CLASS` | Nobody on the team has a class today (the sheet is open) |
+| 20417 | CH-2316 | `NOTHING_LEFT_THIS_WEEK_BUT_AN_EVENT` | Nothing left this week, but an event or a trip after it (F-0006; a player is not told of a meeting past the loaded week) |
 
 ## 05 — Validation
 
@@ -470,7 +488,7 @@ CH-1842, 11825 CH-1816.
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 21801 | CH-2801 | `N_OPENS_A_NEW_EVENT_FROM_ANYWHERE` | N opens a new event from anywhere on Home, but never while typing or inside a dialog |
-| 21802 | CH-2802 | `EACH_DAY_IN_THE_WEEK_STRIP_IS` | Each day in the week strip is read as words ("Tuesday 14, 4 events", "competition, 1 event"); today is marked |
+| 21802 | CH-2802 | `EACH_DAY_IN_THE_WEEK_STRIP_IS` | Each day in the week strip is read as words ("Tuesday 14, 4 events", "competition, 1 event", "on the road (Fall Invitational)"); today is marked |
 | 21803 | CH-2803 | `THE_LEADERBOARD_AND_BOTH_NINES_OF_THE` | The leaderboard and both nines of the scorecard are tables: every value sits in a cell under a column header |
 | 21804 | CH-2804 | `THE_ROUND_PAGER_ANNOUNCES_2_OF_3` | The round pager announces "2 of 3"; each form line has a text equivalent ("last 7 rounds: 72, 71…") |
 | 21805 | CH-2805 | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_STATE` | No axe violations in any preview state, 1280px and 390px |

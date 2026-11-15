@@ -145,7 +145,7 @@ describe('Tournaments home, phone', () => {
   it('lists later events under the card as Coming up', () => {
     const c = draw(ready, { phone: true });
     expect(within(c).getByRole('heading', { name: 'Coming up' })).toBeInTheDocument();
-    expect(within(c).getByRole('link', { name: 'Holly Ridge Classic, Nov 2 – 3' })).toBeInTheDocument();
+    expect(within(c).getByRole('link', { name: /^2 Nov Holly Ridge Classic\b/ })).toBeInTheDocument();
   });
 });
 

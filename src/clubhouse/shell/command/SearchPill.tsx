@@ -19,7 +19,6 @@ export function SearchPill() {
     <button
       type="button"
       className="ch-topbar__search"
-      aria-label="Search Clubhouse"
       aria-haspopup="dialog"
       aria-keyshortcuts={apple ? 'Meta+K' : 'Control+K'}
       onClick={(e) => {
@@ -29,7 +28,9 @@ export function SearchPill() {
       }}
     >
       <Icon icon={Search} size={15} />
-      <span className="ch-topbar__search-t">Search</span>
+      {/* F-0011 (WCAG 2.5.3): named by the word it shows, Search, then what it searches; an aria-label left out the key caps beside it. */}
+      <span className="ch-topbar__search-t">Search</span>{' '}
+      <span className="ch-sr-only">Clubhouse</span>
       <Keys keys={[modKey(apple), 'K']} />
     </button>
   );

@@ -66,6 +66,8 @@ describe('Home calendar completeness', () => {
     // Enforce the database contract too: a shaping-only fix cannot recover a row
     // that an old start_time lower bound prevented the database from returning.
     tables.current.golf_events = (filters) => {
+      // The read past the widest window (F-0006, the one with a limit) asks from its own start; the week's read never does.
+      if (filters.some(([op]) => op === 'limit')) return { data: [] };
       expect(filters.some(([op]) => op === 'gte')).toBe(false);
       expect(filters.find(([op]) => op === 'or')?.[1][0]).toMatch(/start_time\.gte\..*,end_time\.gte\./);
       return { data: [tournament] };
@@ -93,6 +95,7 @@ describe('Home calendar completeness', () => {
     const ranges: unknown[][] = [];
     tables.current = {
       golf_events: (filters) => {
+        if (filters.some(([op]) => op === 'limit')) return { data: [] };
         const range = filters.find(([op]) => op === 'range')![1];
         ranges.push(range);
         return { data: events.slice(Number(range[0]), Number(range[1]) + 1) };
@@ -108,7 +111,7 @@ describe('Home calendar completeness', () => {
   it('does not expose a partial first page as a complete week if a later page fails', async () => {
     const events = Array.from({ length: 1000 }, (_, i) => event(`e${i}`, '2026-10-01T00:00:00Z'));
     tables.current = {
-      golf_events: (filters) => Number(filters.find(([op]) => op === 'range')![1][0]) === 0
+      golf_events: (filters) => filters.some(([op]) => op === 'limit') ? { data: [] } : Number(filters.find(([op]) => op === 'range')![1][0]) === 0
         ? { data: events }
         : { error: { message: 'Second page unavailable' } },
       golf_event_attendance: { data: [] },

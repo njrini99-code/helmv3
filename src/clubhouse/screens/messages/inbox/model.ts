@@ -1,5 +1,5 @@
 import type { ChClock } from '../../../lib/clock-cookie';
-import { dayDiff, parts, clock } from '../model-time';
+import { dayDiff, parts, clock, monthDay, weekdayShort } from '../model-time';
 import type { ChConv } from '../model';
 import { firstName } from '../../../lib/names';
 import { PIN_LIMIT } from '../pin-limit';
@@ -20,8 +20,8 @@ export function railTime(iso: string | null, now: string, timeZone: string, hour
   const d = dayDiff(parts(now, timeZone), parts(iso, timeZone));
   if (d <= 0) return clock(iso, timeZone, hours);
   if (d === 1) return 'Yesterday';
-  if (d < 7) return new Intl.DateTimeFormat('en-US', { timeZone, weekday: 'short' }).format(new Date(iso));
-  return new Intl.DateTimeFormat('en-US', { timeZone, month: 'short', day: 'numeric' }).format(new Date(iso));
+  if (d < 7) return weekdayShort(iso, timeZone);
+  return monthDay(iso, timeZone);
 }
 
 /** Whether a conversation reads as unread: something new in it, or marked unread by the viewer. */

@@ -45,10 +45,11 @@ asserted here — see `.claude/rules/database.md`.
 | WorktreeRemove | `(all tools)` | `.claude/hooks/worktree-remove.mjs` | yes | no — records/reports only |
 | UserPromptSubmit | `(all tools)` | `.claude/hooks/route-prompt.mjs` | yes | no — records/reports only |
 | PreCompact | `(all tools)` | `.claude/hooks/save-session-state.mjs` | yes | no — records/reports only |
+| PreToolUse | `mcp__.*` | `.claude/hooks/no-prod-in-audit.mjs` | yes | yes |
 | PostToolUse | `Write\|Edit` | `.claude/hooks/format-on-edit.mjs` | yes | no — records/reports only |
 | PostToolUse | `Bash` | `.claude/hooks/deps-hygiene.mjs` | yes | no — records/reports only |
 
-No hook can refuse a tool call; every wired hook observes or reports.
+Exactly one hook can refuse a tool call: `no-prod-in-audit.mjs` under matcher `mcp__.*`. Every other wired hook observes.
 
 ## Permission rules
 
@@ -72,7 +73,7 @@ This table reports hard refusal only; an UNENFORCED row does not grant task auth
 | A write into the canonical checkout via Write/Edit/MultiEdit is refused | NONE | — | NOT A GOAL — AGENTS.md allows authorized edits in canonical; parallel sessions use worktrees |
 | A write into the canonical checkout via Bash is refused | NONE | — | UNENFORCED — authorized edits are allowed in the owned checkout |
 | Destructive SQL (DROP TABLE / TRUNCATE / unqualified DELETE) is refused before it runs | NONE | — | UNENFORCED — guard-sql.sh was deleted 2026-08-27 |
-| An MCP tool call can be refused by a hook | NONE | — | UNENFORCED — no hook matcher mentions mcp__; permission rules are the only MCP control |
+| An MCP tool call can be refused by a hook | no-prod-in-audit.mjs | .claude/settings.json | WIRED |
 | A recursive rm outside the project is refused | NONE | — | UNENFORCED |
 | `rm -rf .next` is refused | NONE | — | UNENFORCED — advisory only (it wedges Turbopack) |
 | A governed edit without loaded feature context is prevented | NONE | — | NOT ENFORCED BY DESIGN — AGENTS.md "Context" asks for it; no hook detects or prevents it |

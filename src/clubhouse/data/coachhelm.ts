@@ -272,7 +272,7 @@ export type TourRead = { baseline: ChTourBaseline | null; error: boolean };
  * The Tour's values for the team's own tour (Q-88: the Tour is the only benchmark): the LPGA's for a women's team, never the men's.
  * Without the team's row its tour is unknown, so no benchmark is claimed and a college comparison is left undrawn.
  */
-async function tourBaselineOf(supabase: Supabase, team: { gender: string | null } | null): Promise<TourRead> {
+export async function tourBaselineOf(supabase: Supabase, team: { gender: string | null } | null): Promise<TourRead> {
   if (!team) return { baseline: null, error: false };
   const tour = tourForGender(team.gender);
   const { values, error } = await readTourValues(supabase, tour);

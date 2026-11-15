@@ -11,6 +11,7 @@ import type { ChDiveTheme } from '../../../data/coachhelm-dive-shape';
 import { useChSessionState } from '../../../lib/session-state';
 import { useChReducedMotion } from '../../../lib/reduced-motion';
 import { CH_DUR } from '../../../lib/motion';
+import { chDialogOpener } from '../../../lib/dialog-lifetime';
 import { useOverlayScrollLock } from '../../../lib/overlay-scroll';
 import { Button } from '../../../ui/Button';
 import { Icon } from '../../../ui/Icon';
@@ -166,7 +167,8 @@ function StoryViewer({
   };
   const next = () => (i < stories.length - 1 ? setI(i + 1) : leave());
   useEffect(() => {
-    opener.current = document.activeElement as HTMLElement | null;
+    // F-0012: the tile a Safari tap pressed, which it never focused; the sheets' own rule (lib/dialog-lifetime.ts).
+    opener.current = chDialogOpener();
     // The viewer takes focus, not its Close: a screen reader lands on the story, and no ring shows on a button nobody chose.
     box.current?.focus({ preventScroll: true });
     return () => opener.current?.focus?.({ preventScroll: true });

@@ -44,19 +44,15 @@ function Head({ title, line, keys }: { title: { phone: number; desk: number }; l
 }
 
 /** Plans · Drills · Groups · Templates in waiting: the well at its loaded size, hugging its labels on a Mac and the page's width on a phone. */
-function Tabs({ only }: { only?: 'desk' | 'phone' }) {
+function Tabs() {
   return (
     <>
-      {only !== 'phone' && (
-        <div className="ch-prc-tabs ch-prc-sk-desk" aria-hidden="true">
-          <Skeleton width={319} height={38} radius={16} />
-        </div>
-      )}
-      {only !== 'desk' && (
-        <div className="ch-prc-tabs ch-prc-sk-phone" aria-hidden="true">
-          <Skeleton width="100%" height={44} radius={16} />
-        </div>
-      )}
+      <div className="ch-prc-tabs ch-prc-sk-desk" aria-hidden="true">
+        <Skeleton width={319} height={38} radius={16} />
+      </div>
+      <div className="ch-prc-tabs ch-prc-sk-phone" aria-hidden="true">
+        <Skeleton width="100%" height={44} radius={16} />
+      </div>
     </>
   );
 }
@@ -115,15 +111,16 @@ function Plans({ rows }: { rows: number }) {
   );
 }
 
-/** Practice, the coach's tab, in waiting: the head and its keys, the week, the tabs, Up next with a plan of four blocks, then the plans. */
+/** Practice, the coach's tab, in waiting: the head and its keys, the tabs, the week, Up next with a plan of four blocks, then the plans. */
 export function PracticeHomeSkeleton() {
   return (
     <main className="ch-page ch-prc" data-ch="practice" aria-busy="true" aria-label="Loading practice">
       <Head title={{ phone: 106, desk: 137 }} line={161} keys={[108, 115]} />
+      {/* The tabs under the head, as on every tab's page and as the loaded Plans tab draws them. */}
+      <Tabs />
       <section aria-hidden="true">
         <Week />
       </section>
-      <Tabs only="desk" />
       <div className="ch-prc-home has-plans">
         <section className="ch-prc-card ch-prc-next" aria-hidden="true">
           <div className="ch-prc-next__k">
@@ -164,7 +161,6 @@ export function PracticeHomeSkeleton() {
             <Skeleton width={121} height={36} radius={12} />
           </div>
         </section>
-        <Tabs only="phone" />
         <div className="ch-prc-home__plans">
           <Plans rows={2} />
         </div>
@@ -233,7 +229,7 @@ function PlayerCard() {
 /** Practice, the player's tab, in waiting: their next practice (the card, three stops and Open plan), the week, then their plans. */
 export function PlayerPracticeHomeSkeleton() {
   return (
-    <main className="ch-page ch-prc" data-ch="practice" aria-busy="true" aria-label="Loading practice">
+    <main className="ch-page ch-prc ch-prc--ply" data-ch="practice" aria-busy="true" aria-label="Loading practice">
       <Head title={{ phone: 106, desk: 137 }} line={64} />
       <div className="ch-cpv ch-cpv-ply ch-prc-today" aria-hidden="true">
         <PlayerCard />
