@@ -12,6 +12,7 @@ Held items:     none
 ### Changed
 
 - The desktop detail pane has no fill or shadow (STATS-D-05), so its cards are the only cards; its title and cards align to the column edges.
+- The pane also carries the pushed screen's class, which painted a second page gradient and an edge shadow from the pane's top down; the after shots showed the seam, and the pane now clears both.
 
 ### Why
 

@@ -2606,7 +2606,10 @@ p.ch-shs-mini-cap {
   position: sticky;
   top: min(var(--ch-shs-pane-rest), calc(var(--ch-shs-port-h, 100dvh) - var(--ch-shs-pane-h, 0px) - var(--ch-space-4)));
   scroll-margin-top: var(--ch-shs-pane-rest);
-  /* A plain column, not a card (STATS-D-05): its cards are the only cards, so nothing is a card in a card. */
+  /* A plain column, not a card (STATS-D-05): its cards are the only cards, so nothing is a card in a card. It also wears
+     .ch-shs-screen (the pushed screen's page paint and edge shadow), which on the desk would start a second page under it. */
+  background: none;
+  box-shadow: none;
 }
 .ch-shs-desk__dett {
   margin: 0;
