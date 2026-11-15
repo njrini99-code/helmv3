@@ -17,7 +17,7 @@ import { PP_PLAN_PART } from '../../../../preview/fixtures-practice-plan';
 import { PlanCard, type PlanPartData } from '../PlanCard';
 
 /** MOTION-AND-VISUAL 3.10: a stepper's change is a selection tick (D-70), through lib/haptics.ts. */
-describe("the plan block sheet's length stepper", () => {
+describe("the length stepper on the plan block sheet", () => {
   beforeEach(() => {
     hapticSpy.mockClear();
     // jsdom has no modal dialog.

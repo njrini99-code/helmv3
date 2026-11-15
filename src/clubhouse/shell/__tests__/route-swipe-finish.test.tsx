@@ -73,7 +73,7 @@ function swipe(x: number) {
   let t = 1000;
   touch('touchstart', 8, t);
   for (let i = 1; i <= 4; i++) touch('touchmove', 8 + ((x - 8) * i) / 4, (t += 120));
-  touch('touchend', 0, (t += 300));
+  touch('touchend', 0, t + 300);
 }
 
 const W = () => window.innerWidth;
@@ -121,7 +121,7 @@ describe('a pushed route page let go by the back swipe (MOTION-AND-VISUAL 3.3)',
     touch('touchmove', 20, (t += 16));
     touch('touchmove', W() * 0.7, (t += 16));
     touch('touchmove', W() * 0.3, (t += 16));
-    touch('touchmove', W() * 0.8, (t += 16));
+    touch('touchmove', W() * 0.8, t + 16);
     expect(haptics.haptic).not.toHaveBeenCalled();
   });
 });
