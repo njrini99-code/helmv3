@@ -353,11 +353,11 @@
   text-decoration: none;
 }
 .ch-tour-pl-row[data-ch-pressed] {
-  background: var(--ch-press-well);
+  background: var(--ch-sel);
 }
 @media (hover: hover) {
   .ch-tour-pl-row:active {
-    background: var(--ch-press-well);
+    background: var(--ch-sel);
   }
 }
 .ch-tour-pl .ch-tour-pl-row:focus-visible {

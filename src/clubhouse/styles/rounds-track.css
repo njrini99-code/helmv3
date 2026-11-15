@@ -1111,11 +1111,11 @@ path.ch-rt-map__shot {
   outline-offset: 2px;
 }
 .ch-rt-read__h[data-ch-pressed] {
-  background-image: linear-gradient(var(--ch-ledger-row-press), var(--ch-ledger-row-press));
+  background-image: linear-gradient(var(--ch-sel), var(--ch-sel));
 }
 @media (hover: hover) {
   .ch-rt-read__h:active {
-    background-image: linear-gradient(var(--ch-ledger-row-press), var(--ch-ledger-row-press));
+    background-image: linear-gradient(var(--ch-sel), var(--ch-sel));
   }
 }
 
@@ -3646,13 +3646,13 @@ path.ch-rt-map__shot {
 .ch-rt-opt[data-ch-pressed]:not(:disabled),
 .ch-rt-xopt[data-ch-pressed]:not(:disabled),
 .ch-rt-rs[data-ch-pressed]:not(:disabled) {
-  background-image: linear-gradient(var(--ch-ledger-row-press), var(--ch-ledger-row-press));
+  background-image: linear-gradient(var(--ch-sel), var(--ch-sel));
 }
 @media (hover: hover) {
   .ch-rt-opt:active:not(:disabled),
   .ch-rt-xopt:active:not(:disabled),
   .ch-rt-rs:active:not(:disabled) {
-    background-image: linear-gradient(var(--ch-ledger-row-press), var(--ch-ledger-row-press));
+    background-image: linear-gradient(var(--ch-sel), var(--ch-sel));
   }
 }
 

@@ -1035,11 +1035,11 @@
 }
 /* As a ledger row (CH-1606): the tint waits a beat, so a drag or a scroll that starts on a row never flashes it. */
 .ch-more__row[data-ch-pressed] {
-  background: var(--ch-bg-hover);
+  background: var(--ch-sel);
 }
 @media (hover: hover) {
   .ch-more__row:active {
-    background: var(--ch-bg-hover);
+    background: var(--ch-sel);
   }
 }
 .ch-more__ic {
@@ -3199,11 +3199,11 @@ html[data-fw-theme='dark'] .ch-offline {
     pointer-events: none;
   }
   .ch-more__row[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-more__row:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
   .ch-more__ic,

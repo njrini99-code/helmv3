@@ -1918,7 +1918,7 @@ html[data-fw-theme='dark'] .ch-cpv-vz {
 /* A press answers on every control, and the folder list fades in (MOT-31, M-ASK-17). */
 .ch-cpv .fr[data-ch-pressed],
 .ch-cpv .saverow[data-ch-pressed] {
-  background-color: var(--ch-press-wash, var(--ch-well-bg-flat));
+  background-color: var(--ch-sel);
 }
 .ch-cpv .flist { animation: ch-fade var(--ch-dur-quick) var(--ch-ease) backwards; }
 @media (hover: hover) {

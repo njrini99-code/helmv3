@@ -1778,11 +1778,11 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
     bottom: 0;
   }
   .ch-rsu[data-ui='clubhouse'] .ch-rsu-qual[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-rsu[data-ui='clubhouse'] .ch-rsu-qual:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
   .ch-rsu[data-ui='clubhouse'] .ch-rsu-qual__ic {
@@ -1959,12 +1959,12 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
   }
   .ch-rsu[data-ui='clubhouse'] .ch-rsu-crs:not(.is-skel)[data-ch-pressed],
   .ch-rsu[data-ui='clubhouse'] .ch-rsu-tee:not(.is-skel):not(:disabled)[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-rsu[data-ui='clubhouse'] .ch-rsu-crs:not(.is-skel):active,
     .ch-rsu[data-ui='clubhouse'] .ch-rsu-tee:not(.is-skel):not(:disabled):active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
   .ch-rsu[data-ui='clubhouse'] .ch-rsu-crs.is-skel,

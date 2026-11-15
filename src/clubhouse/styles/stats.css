@@ -801,12 +801,12 @@
 }
 /* A press deepens the row's tint over the press beat (the shell's CH-1606: a row never scales). */
 .ch-lg__r:has(.ch-lg__a[data-ch-pressed]) {
-  background: var(--ch-ledger-row-press);
+  background: var(--ch-sel);
   transition-duration: var(--ch-dur-press);
 }
 @media (hover: hover) {
   .ch-lg__r:has(.ch-lg__a:active) {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
     transition-duration: var(--ch-dur-press);
   }
 }
@@ -2581,11 +2581,11 @@
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-spm-round.is-link[data-ch-pressed] {
-    background-color: var(--ch-ledger-row-press);
+    background-color: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-spm-round.is-link:active {
-      background-color: var(--ch-ledger-row-press);
+      background-color: var(--ch-sel);
     }
   }
   .ch-spm-round.is-link:focus-visible {
@@ -3961,11 +3961,11 @@
   }
   /* The tint waits a beat after the finger lands, so a scroll that starts on a row never flashes it (CH-1606). */
   .ch-stm .ch-stm-row[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-stm .ch-stm-row:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
   .ch-stm .ch-stm-row:focus-visible {
@@ -4001,11 +4001,11 @@
   /* All N rounds and the Message key answer a press as a ghost button and a key do: a tint, and the shrink every
      button takes (`data-ch-press`, CH-1606). */
   .ch-stm .ch-spm-more[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-stm .ch-spm-more:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
   .ch-stm .ch-spm-head__msg {
@@ -4095,11 +4095,11 @@
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-stm .ch-gd.is-phone .ch-gm-how > summary[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-stm .ch-gd.is-phone .ch-gm-how > summary:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
   .ch-stm .ch-gd.is-phone .ch-gm__body {
@@ -4724,11 +4724,11 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   }
   /* The press tint waits a beat, as a row's does (CH-1606); the chosen row has nothing to change. */
   .ch-stm.is-team .ch-stm-leg:not([data-active])[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-stm.is-team .ch-stm-leg:not([data-active]):active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
   .ch-stm.is-team .ch-stm-leg:focus-visible {
@@ -7692,10 +7692,10 @@ html[data-fw-theme='dark'] .ch-sv-mix .is-double {
 /* B6 (last, so a fill set by a state rule above still takes the tint): a filter chip shows a quick tap
    (lib/press.ts), the row-press tint over its fill. */
 .ch-sf__chip[data-ch-pressed] {
-  background-image: linear-gradient(var(--ch-ledger-row-press), var(--ch-ledger-row-press));
+  background-image: linear-gradient(var(--ch-sel), var(--ch-sel));
 }
 @media (hover: hover) {
   .ch-sf__chip:active {
-    background-image: linear-gradient(var(--ch-ledger-row-press), var(--ch-ledger-row-press));
+    background-image: linear-gradient(var(--ch-sel), var(--ch-sel));
   }
 }

@@ -367,12 +367,12 @@
 }
 /* CH-09601: a pressed row deepens to the row press tint over the press beat; it never scales. */
 .ch-qf-grid.is-ledger .ch-qf-card[data-ch-pressed] {
-  background: var(--ch-ledger-row-press);
+  background: var(--ch-sel);
   transition-duration: var(--ch-dur-press);
 }
 @media (hover: hover) {
   .ch-qf-grid.is-ledger .ch-qf-card:active {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
     transition-duration: var(--ch-dur-press);
   }
 }
@@ -2017,11 +2017,11 @@
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   button.ch-qfm-lb__row[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     button.ch-qfm-lb__row:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
   .ch-qfm-lb__row:focus-visible {
@@ -2170,12 +2170,12 @@
     pointer-events: none;
   }
   .ch-qfm-chip[data-ch-pressed]:not(:disabled):not([aria-pressed='true']) {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
     transition-duration: var(--ch-dur-press);
   }
   @media (hover: hover) {
     .ch-qfm-chip:active:not(:disabled):not([aria-pressed='true']) {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
       transition-duration: var(--ch-dur-press);
     }
   }
@@ -2283,11 +2283,11 @@
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-qf--form .ch-qf-prow[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-qf--form .ch-qf-prow:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
   .ch-qf--form .ch-qf-prow.is-locked[data-ch-pressed] {
@@ -2356,12 +2356,12 @@
     touch-action: manipulation;
   }
   .ch-qfs-opt[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
     transition-duration: var(--ch-dur-press);
   }
   @media (hover: hover) {
     .ch-qfs-opt:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
       transition-duration: var(--ch-dur-press);
     }
   }
@@ -2866,12 +2866,12 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
   /* CH-09601: a press deepens a row's tint, and the live qualifier's title deepens to forest, over the press beat.
      Nothing scales (the shell's CH-1606). */
   .ch-qf--list[data-canopy] .ch-qf-grid.is-ledger .ch-qf-card[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
     transition-duration: var(--ch-dur-press);
   }
   @media (hover: hover) {
     .ch-qf--list[data-canopy] .ch-qf-grid.is-ledger .ch-qf-card:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
       transition-duration: var(--ch-dur-press);
     }
   }
@@ -2976,12 +2976,12 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
     }
   }
   .ch-qf[data-canopy] .ch-qf-rowbtn[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
     transition-duration: var(--ch-dur-press);
   }
   @media (hover: hover) {
     .ch-qf[data-canopy] .ch-qf-rowbtn:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
       transition-duration: var(--ch-dur-press);
     }
   }

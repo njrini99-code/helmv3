@@ -931,12 +931,12 @@
   }
   /* A press deepens a row's tint over the press beat (the shell's CH-1606: a row never scales). */
   main[data-canopy] .ch-hd-it[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
     transition-duration: var(--ch-dur-press);
   }
   @media (hover: hover) {
     main[data-canopy] .ch-hd-it:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
       transition-duration: var(--ch-dur-press);
     }
   }
@@ -955,12 +955,12 @@
     }
   }
   main[data-canopy] :is(.ch-hd-r, .ch-hd-where__i).is-link[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
     transition-duration: var(--ch-dur-press);
   }
   @media (hover: hover) {
     main[data-canopy] :is(.ch-hd-r, .ch-hd-where__i).is-link:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
       transition-duration: var(--ch-dur-press);
     }
   }
@@ -980,12 +980,12 @@
     }
   }
   main[data-canopy] .ch-hd-plan__i.is-link[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
     transition-duration: var(--ch-dur-press);
   }
   @media (hover: hover) {
     main[data-canopy] .ch-hd-plan__i.is-link:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
       transition-duration: var(--ch-dur-press);
     }
   }
@@ -1040,11 +1040,11 @@
     border-top-color: var(--ch-ledger-rule-soft);
   }
   :is(.ch-hl.is-phone) .ch-hd-it[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     :is(.ch-hl.is-phone) .ch-hd-it:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
   :is(.ch-hl.is-phone) .ch-hd-sk__it {
@@ -1130,11 +1130,11 @@
     border-top-color: var(--ch-ledger-rule-soft);
   }
   .ch-hd-r.is-link[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-hd-r.is-link:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
   .ch-hd-dx {
@@ -1160,11 +1160,11 @@
     box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
   }
   .ch-hd-plan__i.is-link[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-hd-plan__i.is-link:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
 

@@ -150,7 +150,7 @@
 .ch-hf .r { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 64px; padding: 8px 16px; border: 0; background: none; text-align: left; width: 100%; cursor: pointer; color: var(--ch-hf-a-ink); }
 .ch-hf .r + .r::before { content: ""; position: absolute; top: 0; left: 16px; right: 0; height: var(--ch-hairline-w); background: var(--ch-hf-a-sep); }
 .ch-hf .r { transition: background-color 0s; }
-.ch-hf .r[data-ch-pressed] { background: var(--ch-hf-a-press); }
+.ch-hf .r[data-ch-pressed] { background: var(--ch-sel); }
 .ch-hf .r.is-sel { background: var(--ch-hf-a-press); }
 .ch-hf .r.static[data-ch-pressed] { background: none; }
 .ch-hf .r__t { display: flex; flex-direction: column; gap: 2px; min-width: 0; }

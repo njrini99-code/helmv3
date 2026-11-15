@@ -146,11 +146,11 @@
   }
 }
 .ch-ms-row[data-ch-pressed] {
-  background: rgb(28 25 18 / 0.07);
+  background: var(--ch-sel);
 }
 @media (hover: hover) {
   .ch-ms-row:active {
-    background: rgb(28 25 18 / 0.07);
+    background: var(--ch-sel);
   }
 }
 .ch-ms-row:focus-visible {
@@ -307,11 +307,11 @@
   }
 }
 .ch-ms-row[data-ch-pressed] {
-  background: rgb(28 25 18 / 0.08);
+  background: var(--ch-sel);
 }
 @media (hover: hover) {
   .ch-ms-row:active {
-    background: rgb(28 25 18 / 0.08);
+    background: var(--ch-sel);
   }
 }
 .ch-ms-grp {
@@ -1563,11 +1563,11 @@
     }
   }
   .ch-msp .ch-ms-row[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-msp .ch-ms-row:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
   .ch-msp .ch-ms-row.is-sel {
@@ -1899,12 +1899,12 @@
     transition: background-color var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
   }
   .ch-msp-tile[data-ch-pressed]:not(:disabled) {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
     transition-duration: var(--ch-dur-press);
   }
   @media (hover: hover) {
     .ch-msp-tile:active:not(:disabled) {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
       transition-duration: var(--ch-dur-press);
     }
   }
@@ -2000,11 +2000,11 @@
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-msp-row.is-btn[data-ch-pressed]:not(:disabled) {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-msp-row.is-btn:active:not(:disabled) {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
   .ch-msp-row__b {
@@ -2141,11 +2141,11 @@
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-msp-danger[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-msp-danger:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
 
@@ -2325,11 +2325,11 @@
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-msp-ann .ch-ms-ann__sec > .ch-ms-bub--file[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-msp-ann .ch-ms-ann__sec > .ch-ms-bub--file:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
   .ch-msp-ann .ch-ms-ann__sec > .ch-ms-bub--file + .ch-ms-bub--file::before {
@@ -2708,11 +2708,11 @@
   }
 }
 html[data-fw-theme='dark'] .ch-ms-row[data-ch-pressed] {
-  background: rgb(237 231 216 / 0.07);
+  background: var(--ch-sel);
 }
 @media (hover: hover) {
   html[data-fw-theme='dark'] .ch-ms-row:active {
-    background: rgb(237 231 216 / 0.07);
+    background: var(--ch-sel);
   }
 }
 html[data-fw-theme='dark'] .ch-ms-row.is-sel {
@@ -2745,11 +2745,11 @@ html[data-fw-theme='dark'] .ch-ms-grp.is-ann.is-urgent {
     }
   }
   html[data-fw-theme='dark'] .ch-msp .ch-ms-row[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     html[data-fw-theme='dark'] .ch-msp .ch-ms-row:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
   html[data-fw-theme='dark'] .ch-msp .ch-ms-row.is-sel {
@@ -3203,7 +3203,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   color: var(--ch-text-secondary);
 }
 [data-ch-ms-v2] .ch-ms-row[data-ch-pressed] {
-  background: color-mix(in srgb, var(--ch-ink-900) 5%, transparent);
+  background: var(--ch-sel);
 }
 [data-ch-ms-v2] .ch-ms-row .ch-ms-row__mute {
   flex: none;

@@ -1412,11 +1412,11 @@
   }
 }
 .ch-ox-nextstep[data-ch-pressed] {
-  background: var(--ch-ledger-row-press);
+  background: var(--ch-sel);
 }
 @media (hover: hover) {
   .ch-ox-nextstep:active {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
 }
 .ch-ox-nextstep:focus-visible {

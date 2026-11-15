@@ -3237,11 +3237,11 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
   }
   .ch-calm-ev[data-ch-pressed],
   .ch-calm-ev.is-sel {
-    background-color: var(--ch-ledger-row-press);
+    background-color: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-calm-ev:active {
-      background-color: var(--ch-ledger-row-press);
+      background-color: var(--ch-sel);
     }
   }
   .ch-calm-ev:focus-visible {
@@ -3466,11 +3466,11 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-calm-month__c[data-ch-pressed] {
-    background-color: var(--ch-ledger-row-press);
+    background-color: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-calm-month__c:active {
-      background-color: var(--ch-ledger-row-press);
+      background-color: var(--ch-sel);
     }
   }
   .ch-calm-month__c:focus-visible {
@@ -3612,12 +3612,12 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
   }
   .ch-calm .ch-ag__row[data-ch-pressed],
   .ch-calm .ch-ag__row.is-sel {
-    background-color: var(--ch-ledger-row-press);
+    background-color: var(--ch-sel);
     box-shadow: none;
   }
   @media (hover: hover) {
     .ch-calm .ch-ag__row:active {
-      background-color: var(--ch-ledger-row-press);
+      background-color: var(--ch-sel);
       box-shadow: none;
     }
   }
@@ -3829,12 +3829,12 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
   }
   /* A press deepens an agenda row's tint over the press beat (the shell's CH-1606: a row never scales). */
   .ch-cal[data-canopy] .ch-ag__row[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
     transition-duration: var(--ch-dur-press);
   }
   @media (hover: hover) {
     .ch-cal[data-canopy] .ch-ag__row:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
       transition-duration: var(--ch-dur-press);
     }
   }
@@ -4061,12 +4061,12 @@ html[data-fw-theme='dark'] .ch-ev--busy::after {
   }
   html[data-fw-theme='dark'] .ch-calm .ch-ag__row[data-ch-pressed],
   html[data-fw-theme='dark'] .ch-calm .ch-ag__row.is-sel {
-    background-color: var(--ch-ledger-row-press);
+    background-color: var(--ch-sel);
     box-shadow: none;
   }
   @media (hover: hover) {
     html[data-fw-theme='dark'] .ch-calm .ch-ag__row:active {
-      background-color: var(--ch-ledger-row-press);
+      background-color: var(--ch-sel);
       box-shadow: none;
     }
   }

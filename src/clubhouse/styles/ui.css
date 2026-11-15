@@ -839,11 +839,11 @@
   }
 }
 .ch-lgr__row.is-link[data-ch-pressed] {
-  background: var(--ch-ledger-row-press);
+  background: var(--ch-sel);
 }
 @media (hover: hover) {
   .ch-lgr__row.is-link:active {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
 }
 .ch-lgr__row.is-link:focus-visible {
@@ -1992,11 +1992,11 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   cursor: pointer;
 }
 :is(button, a).ch-wks__d[data-ch-pressed]:not(.is-on) {
-  background-color: var(--ch-ledger-row-press);
+  background-color: var(--ch-sel);
 }
 @media (hover: hover) {
   :is(button, a).ch-wks__d:active:not(.is-on) {
-    background-color: var(--ch-ledger-row-press);
+    background-color: var(--ch-sel);
   }
 }
 @media (hover: hover) {
@@ -2364,7 +2364,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   content: '';
 }
 .ch-group__row[data-ch-pressed] {
-  background: color-mix(in srgb, var(--ch-ink-900) 5%, transparent);
+  background: var(--ch-sel);
 }
 
 /* The last five rounds as bars (ui/FormLine FormBars): green beat the team average, amber more than 2 over, ink otherwise. */
@@ -2440,7 +2440,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   content: '';
 }
 [data-ch-crh='on'] .ch-group__row[data-ch-pressed] {
-  background: color-mix(in srgb, var(--ch-ink-900) 5%, transparent);
+  background: var(--ch-sel);
 }
 [data-ch-crh='on'] .ch-avatar[data-year='sr'] {
   --y: var(--ch-yr-sr);

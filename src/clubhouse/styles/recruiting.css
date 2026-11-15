@@ -984,11 +984,11 @@
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-recm-sort[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-recm-sort:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
   /* The prospects: rows on seams under a hairline, with no card. */
@@ -1023,11 +1023,11 @@
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-recm-row[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-recm-row:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
   .ch-recm-row:focus-visible {
@@ -1201,11 +1201,11 @@
     bottom: 0;
   }
   .ch-recm-stagerow[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-recm-stagerow:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
   .ch-recm-stagerow:focus-visible {
@@ -1276,11 +1276,11 @@
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-recm-det .ch-rec-empty__a[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-recm-det .ch-rec-empty__a:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
   /* 44px tall on the heading's line; it sits above the first row, so its reach is not cut by the row under it. */
@@ -1294,11 +1294,11 @@
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-recm-det .ch-rec-link[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-recm-det .ch-rec-link:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
   .ch-recm-det .ch-rec-notes {
@@ -1335,11 +1335,11 @@
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-recm-det .ch-rec-doc__open[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-recm-det .ch-rec-doc__open:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
   .ch-recm-det .ch-rec-doc__t {
@@ -1353,11 +1353,11 @@
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-recm-det .ch-rec-doc__x[data-ch-pressed] {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
   }
   @media (hover: hover) {
     .ch-recm-det .ch-rec-doc__x:active {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
     }
   }
   .ch-recm-det .ch-rec-note {
@@ -1688,12 +1688,12 @@
   }
   /* A press deepens the row's tint over the press beat (the shell's CH-1606: a row never scales). */
   .ch-rec[data-canopy] .ch-rec-tb tbody tr .ch-rec-tb__name[data-ch-pressed]::before {
-    background: var(--ch-ledger-row-press);
+    background: var(--ch-sel);
     transition-duration: var(--ch-dur-press);
   }
   @media (hover: hover) {
     .ch-rec[data-canopy] .ch-rec-tb tbody tr .ch-rec-tb__name:active::before {
-      background: var(--ch-ledger-row-press);
+      background: var(--ch-sel);
       transition-duration: var(--ch-dur-press);
     }
   }
@@ -1857,11 +1857,11 @@
 }
 /* A press tints the pick a beat after the finger lands, as a Ledger row does (CH-1606). */
 .ch-rec-cal__pick[data-ch-pressed] {
-  background-color: var(--ch-ledger-row-press);
+  background-color: var(--ch-sel);
 }
 @media (hover: hover) {
   .ch-rec-cal__pick:active {
-    background-color: var(--ch-ledger-row-press);
+    background-color: var(--ch-sel);
   }
 }
 .ch-rec-cal__pick:focus-visible {
