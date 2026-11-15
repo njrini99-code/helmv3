@@ -13,7 +13,8 @@ Held items:     none
 
 ### Changed
 
-- `data/calendar.ts`: the team list an event offers as invitees reads each member’s `is_test` and leaves test players out, as Ask’s roster does.
+- `data/calendar.ts`: the team list an event offers as invitees reads each
+  member’s `is_test` and leaves test players out, as Ask’s roster does.
 
 ### Why
 
