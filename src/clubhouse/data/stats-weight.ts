@@ -3,6 +3,7 @@ import { formStatus, MIN_SG_ROUNDS, TREND_LENGTH, type ChPlayerSeason, type ChRo
 import { hasHoleScores, holeRounds } from './round-scope';
 import { per18, roundKind, type ChRoundKind } from './stats-filter';
 import { changeSe, MIN_TREND_POINTS, type SpreadKind } from '../lib/stats-signal';
+import type { ChFigureSet } from './figure-window';
 
 export { MIN_TREND_POINTS } from '../lib/stats-signal';
 
@@ -236,6 +237,35 @@ export function summarizeWindow(rounds: ChRound[]): ChWindowSeason {
  * the window the scores are restated over all the window's rounds, so the Game detail's scoring average and best round are the
  * headline's and the Rounds tab's (the hole counts stay the calculator's).
  */
+/**
+ * Launch readiness 2026-11-15, DF-C-02: the desktop comparisons read greens, fairways, scrambling, sand saves and putts from each round's
+ * stats row (`figure-window.ts`, one source per rate), while the phone tiles, Game detail and the "saves N in 100" line read the shot
+ * calculator's own count of the same holes, so one player's page could show two greens figures. The calculator's rates and the counts
+ * printed beside them are restated from the figure set over the same window. Its shot-level splits (by par, by club, miss directions,
+ * putts by distance) stay its own: no stats row holds them.
+ */
+export function withRoundRates(s: GolfStats, set: Pick<ChFigureSet, 'gir' | 'fairways' | 'scrambling' | 'sand' | 'putts' | 'threePutts'>): GolfStats {
+  return {
+    ...s,
+    girTotal: set.gir.made,
+    girOpportunities: set.gir.chances,
+    girPercentage: set.gir.pct,
+    // Greens a round, per 18 holes: every hole is a chance at a green.
+    girPerRound: set.gir.pct == null ? null : (set.gir.pct * 18) / 100,
+    fairwaysHit: set.fairways.made,
+    fairwayOpportunities: set.fairways.chances,
+    fairwayPercentage: set.fairways.pct,
+    scramblesMade: set.scrambling.made,
+    scrambleAttempts: set.scrambling.chances,
+    scramblingPercentage: set.scrambling.pct,
+    sandSavesMade: set.sand.made,
+    sandSaveAttempts: set.sand.chances,
+    sandSavePercentage: set.sand.pct,
+    puttsPerRound: set.putts.value,
+    threePuttsPerRound: set.threePutts.value,
+  };
+}
+
 export function perEighteen(s: GolfStats, rounds: ChRound[]): GolfStats {
   // A nine-hole round always has its holes (only an 18-hole total can be posted without them), so the calculator read it.
   const nine = rounds.some((r) => (r.holes_played ?? 18) !== 18) && s.holesPlayed > 0;

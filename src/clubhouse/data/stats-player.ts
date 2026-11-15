@@ -36,7 +36,8 @@ import { sgMixOf, type ChSgMix } from './stats-sg-mix';
 import { holeRounds } from './round-scope';
 import { floorRate } from '../lib/stats-signal';
 import { effectiveWindow, filterFor, roundKind, type ChFilter, type ChFilterOptions, type ChLast } from './stats-filter';
-import { bigNumberRate, effectiveCount, perEighteen, summarizeWindow, weightedMean, windowChangeSe, type ChWindowSeason } from './stats-weight';
+import { bigNumberRate, effectiveCount, perEighteen, summarizeWindow, weightedMean, windowChangeSe, withRoundRates, type ChWindowSeason } from './stats-weight';
+import { figureSetOver } from './figure-window';
 import { approachBands, inStatsContext, loadApproachShots, loadHoles, loadSpray, statsActionContext, type ChApproachBand, type ChSpray } from './stats-detail';
 import {
   openingDelta,
@@ -473,7 +474,9 @@ export async function loadPlayerProfile(input: {
   // a round posted as a total only: restated (stats-weight).
   const perRoundStats = detailFailed || !detail.stats ? null : perEighteen(detail.stats, winRounds);
   // GameMore's by-type row compares practice with tournament play, so its Practice cell keeps the uncut window on purpose.
-  const s = perRoundStats && practiceCut(f) ? withPracticeRow(perRoundStats, roundsInFilter(allMine, f, start)) : perRoundStats;
+  const practiceRow = perRoundStats && practiceCut(f) ? withPracticeRow(perRoundStats, roundsInFilter(allMine, f, start)) : perRoundStats;
+  // DF-C-02: the rates every layout prints (desktop comparisons, phone tiles, Game detail) are the round stats rows', one source.
+  const s = practiceRow ? withRoundRates(practiceRow, figureSetOver(winRounds, cacheOwn.byRound)) : null;
 
   // Strokes gained against the previous 10 matching rounds; only the newest-ten cut has one (not a range, not picked rounds).
   const prevList = previousInFilter(mine, f, start);
