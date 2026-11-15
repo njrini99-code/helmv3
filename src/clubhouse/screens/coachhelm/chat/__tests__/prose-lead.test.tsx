@@ -1,7 +1,8 @@
 import { render } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { parseProse } from '../../../../data/coachhelm-chat-thread';
 import { AskProse, afterSecondSentence, splitLead } from '../Prose';
+import { revealMode, setRevealMode } from '../reveal';
 
 /**
  * #16 (owner's preview, 11 Nov): the model writes its answer as one paragraph, and the leaf sets its first paragraph at the
@@ -72,5 +73,27 @@ describe('AskProse', () => {
     expect(lead.container.querySelectorAll('.ch-th-p')).toHaveLength(2);
     const body = render(<AskProse text={ANSWER} playersByName={{}} />);
     expect(body.container.querySelectorAll('.ch-th-p')).toHaveLength(1);
+  });
+});
+
+/** MOTION-AND-VISUAL 3.5: smooth streaming keeps its per-word fade (the frame clock releases each word); burst mode has no fade. */
+describe('AskProse · streaming words', () => {
+  const was = revealMode();
+  afterEach(() => setRevealMode(was));
+  it('smooth: each streaming word is its own box that fades in once', () => {
+    setRevealMode('smooth');
+    const { container } = render(<AskProse text="Two words" playersByName={{}} streaming />);
+    expect([...container.querySelectorAll('.w')].map((w) => w.textContent)).toEqual(['Two', 'words']);
+  });
+  it('burst: a flush paints as plain text, with no per-burst fade', () => {
+    setRevealMode('burst');
+    const { container } = render(<AskProse text="Two words" playersByName={{}} streaming />);
+    expect(container.querySelector('.w')).toBeNull();
+    expect(container.textContent).toContain('Two words');
+  });
+  it('a finished answer draws still in either mode', () => {
+    setRevealMode('smooth');
+    const { container } = render(<AskProse text="Two words" playersByName={{}} />);
+    expect(container.querySelector('.w')).toBeNull();
   });
 });
