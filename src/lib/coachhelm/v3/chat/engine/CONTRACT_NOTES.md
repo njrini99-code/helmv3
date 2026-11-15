@@ -445,9 +445,9 @@ Nothing else of CONTEXT's depends on the shell: the notes and the two event task
     (tools 11,349, rules 1,707, golf and data map 6,820), quick chat 19,384, player 7,497. The whole-prefix ceiling in `registry-size.test.ts` is
     21,000 by the lead's decision (K2's 19,000 is superseded); TOOLS's own tools and rules keep their 12,000 (11,836).
     K2's lever (a) is taken: the rules no longer list which read answers which question and point at the data map.
-20. `find_in_app` stays registered for every coach and player. ENGINE drops it by name in the route when Clubhouse is
-    not on for the team (`isClubhouseForTeam`), which gives two byte-stable tool lists. Both policies read correctly
-    without it ("If you have find_in_app ... If you do not have it, name the screen in words").
+20. `find_in_app` stays registered for every coach and player, and the route sends it to everyone: the Clubhouse team
+    check that dropped it went with Fairway (2026-11-14), so there is one byte-stable tool list. Both policies still
+    read correctly without it ("If you have find_in_app ... If you do not have it, name the screen in words").
 21. Task results: rule 4 of the coach's Tasks rules now names what the loop sends (`Committed`, `Partly done`,
     `Failed`, and the three results that say nothing was written). No rule mentions a held result.
 22. Code (E8, `code_execution`): the coach's rules carry four sentences, worded "If you have code_execution", so the
@@ -467,9 +467,8 @@ E12. `roundReview` and `tournaments` are bound in the route (TOOLS item 12). Coa
      (`{ kind, players, counting, holes }`, `TourFormat`), not a string. The type and the two fixture lines in
      `registry-readers.test.ts` say so now; `get_tournaments` passes it through to `detail.format` unchanged.
 
-E13. `find_in_app` is dropped by name in the route when Clubhouse is not on for the coach's team
-     (`isClubhouseForTeam`), and the browser's `screen` is ignored then too (CONTEXT C7). The registry still registers it.
-     A player only reaches this route with Clubhouse on (`isClubhouseFor('player')`), so a player's list always has it.
+E13. `find_in_app` was dropped by name in the route when Clubhouse was not on for the coach's team. That check went
+     with Fairway (2026-11-14): every coach and player gets it, and the browser's `screen` is always read (CONTEXT C7).
 
 E14. `ToolResult.progress_detail?: string` and `ToolResult.progress_picture?: unknown` (was ENGINE item 12). The engine
      sends them on `read_finished` as `detail` and `picture`, and the stored `data-progress` part carries both, in the

@@ -127,7 +127,7 @@ Tables:   golf_player_classes (id, class_name stored as "CODE - Name", instructo
           the class events the sync writes), golf_team_settings (timezone), golf_event_attendance (only when the
           week has a meeting and the count function is not deployed: which meetings invite anyone, D2-8); the
           server actions also read golf_players and golf_team_members
-RPCs:     golf_event_attendance_counts (held migration 20261017102000), only when the week has a meeting
+RPCs:     golf_event_attendance_counts (migration 20261017102000, applied in production 2026-11-15), only when the week has a meeting
 Storage:  none by this page (a screenshot goes to the vision action in slices)
 Realtime: none
 Cache:    none; the page is force-dynamic, and a change that lands updates the list in place without reading again

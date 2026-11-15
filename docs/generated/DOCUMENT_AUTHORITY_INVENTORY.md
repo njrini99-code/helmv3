@@ -953,7 +953,7 @@ them would bury everything above.
 | `docs/clubhouse/QUEUE.md` | current | - | - | - | - |
 | `docs/clubhouse/RELEASE_CANDIDATE.md` | current | - | - | yes | - |
 | `docs/clubhouse/SCREENS.md` | current | - | - | - | - |
-| `docs/clubhouse/STATUS.md` | current | - | - | yes | 1 |
+| `docs/clubhouse/STATUS.md` | current | - | - | yes | - |
 | `docs/clubhouse/UI_OWNERSHIP.md` | current | - | - | yes | - |
 | `docs/clubhouse/UX_OPTIMIZATION.md` | current | - | - | - | - |
 | `docs/clubhouse/ask-v2/GAP.md` | current | - | - | - | 2 |

@@ -10,7 +10,7 @@ vi.mock('@/app/golf/actions/practice-plans', () => ({ savePracticePlan: vi.fn(),
 vi.mock('@/app/golf/actions/coachhelm-practice-plans', () => ({ savePracticePlanDraft: vi.fn(), undoPracticePlanDraft: vi.fn(), listPlanFolders: async () => ({ folders: [] }) }));
 vi.mock('@/app/golf/actions/practice-publish', () => ({ publishPracticePlan: vi.fn() }));
 vi.mock('@/app/golf/actions/practice-library', () => ({ createTeamDrill: vi.fn() }));
-vi.mock('@/components/golf/coachhelm/chat/useCoachHelmChat', () => ({ useCoachHelmChat: () => ({ messages: [], busy: false, error: undefined, send: vi.fn() }) }));
+vi.mock('@/hooks/coachhelm/useCoachHelmChat', () => ({ useCoachHelmChat: () => ({ messages: [], busy: false, error: undefined, send: vi.fn() }) }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: nav.push, refresh: vi.fn(), replace: vi.fn(), back: vi.fn() }), usePathname: () => '/golf/dashboard/practice', useSearchParams: () => new URLSearchParams() }));
 vi.mock('../../../../lib/haptics', () => ({ haptic: vi.fn() }));
 vi.mock('../../../../lib/track', () => ({ chReport: vi.fn(), chTrail: vi.fn(), chTagSession: vi.fn() }));

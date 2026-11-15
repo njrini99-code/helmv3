@@ -12,9 +12,21 @@ log). What is left, and who has it: [QUEUE.md](QUEUE.md).
 ## Current state (2026-11-14): Clubhouse is the only UI
 
 - The owner decided on 2026-11-14: "No allowlist, complete replacement of
-  fairway". Clubhouse is the only coach and player UI, for every team. It went
-  to every team in production from `main` in its own deploy; the retirement
-  change (`agent/retire-fairway`) lands after that deploy has been watched.
+  fairway". Clubhouse is the only coach and player UI, for every team.
+- **Production is live on Clubhouse for every team.** Since 2026-11-15 01:44Z
+  deployment `dpl_zR7tzunviRbdW5WBTzD2BUMPbqPA` serves `main` `5d1f73de8d`
+  (#2522 and #2524), verified with `npm run release:status -- --strict`.
+  `HELM_CLUBHOUSE_TEAMS` is `*` in Vercel Production, so every team gets
+  Clubhouse, and the front door is on. 24 held migrations were applied to
+  production before that deploy; `supabase/migrations/HELD.md` (#2526) records
+  them.
+- **The retirement change** (`agent/retire-fairway`, below) lands after that
+  deploy has been watched; it deletes Fairway and the switches.
+- **Rollback until the retirement change lands:** promote
+  `dpl_CeADrBdMKv2MkZMhfJRxRv6CBYAc` (2026-10-21, `d0f467a73`). Promoting it
+  stops being clean once the team-channel migrations
+  (`20261110090200` to `20261110090500`) are applied, and once a practice plan
+  draft is saved (Documents rows with no file; RELEASE_DAY_RUNBOOK section 6).
 - Fairway's coach and player screens are deleted: `FairwayDashboardShell`,
   `src/components/fairway/pages/**`, the Fairway-only `src/components/golf/**`
   (BaseballHelm's calendar and document previews stay) and the Fairway branch
@@ -35,8 +47,15 @@ log). What is left, and who has it: [QUEUE.md](QUEUE.md).
   Only Fairway's offline provider registered it before.
 - Nine Fairway-only features are retired; see "Retired by the owner
   (2026-11-14)" below.
-- Rollback: there is no flag. Promote an earlier production deployment
-  (`docs/setup/DEPLOY.md`) or revert the retirement change and deploy.
+- Rollback after the retirement change lands: there is no flag. Promote the
+  production deployment before it (`docs/setup/DEPLOY.md`) or revert the change
+  and deploy.
+- **Expected, not a fault:** the 5-minute standings cron reports
+  `season-not-applied` until the numbers-day migrations (`20261024151000` and
+  its chain) are applied.
+- **Attendance privacy is done:** `20261017102000` was applied in production
+  on 2026-11-15, and #2526 removed `attendance-counts-rpc` and its Sentry
+  ignore.
 
 The "turn it on", "turn-on criteria" and allowlist rollback sections below are
 history.
@@ -110,8 +129,8 @@ calls in the 2026-10-23 plan below.
   `20261027100000` (tournament rename and round course change pass the
   round guard; the bug is in functions already applied and goes live with
   this deploy). Then `20261001000000` (Q-120), then `20261017102000`
-  (attendance privacy, with its app change: remove the Sentry ignore and
-  `src/lib/golf/attendance-counts-rpc.ts`, then `db:types`), then
+  (attendance privacy, with its app change; done: applied in production
+  2026-11-15, the shim and its Sentry ignore removed in #2526), then
   `20261023130000` (anon surface grants). The rest of HELD.md's Tier 1
   follows in its order. On a separate day after the flip, the ones that move
   numbers: `20261017110000` (null putts), `20260930150000` and
@@ -215,8 +234,8 @@ deployed or applied by this plan; the owner said prepare only.
 - **The production calendar error** (Sentry `JAVASCRIPT-NEXTJS-1D3`) is the
   Oct 21 build calling `golf_event_attendance_counts` before
   `20261017102000` exists; the app falls back. #2340 (landed) ignores it
-  until the apply; the apply change removes that ignore and
-  `src/lib/golf/attendance-counts-rpc.ts`, then runs `db:types`.
+  until the apply. Done: applied in production 2026-11-15; #2526 removed the
+  ignore and the shim and ran `db:types`.
 - **Order.** Overnight on 10-23 the owner merged #2330, #2340, #2332,
   #2339 and #2337 as planned, and also #2328, #2333, #2334 and #2338
   (Next.js 16.4.2), which this plan had held until after the rollout; #2327
