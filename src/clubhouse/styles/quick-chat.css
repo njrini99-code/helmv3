@@ -49,7 +49,8 @@ html[data-fw-theme='dark'] .ch-qcs {
 .ch-qck .hkey__mark { position: relative; width: 24px; height: 24px; }
 .ch-qck .hkey__mark .wheel, .ch-qck .qc__mark .wheel { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; transform-origin: 12px 12px; }
 .ch-qck .hkey__mark .ball, .ch-qck .qc__mark .ball { fill: currentColor; }
-.ch-qck .hkey.is-working .hkey__mark .wheel { animation: ch-spinner-turn var(--ch-dur-live) var(--ch-ease) infinite; }
+/* While CoachHelm works, the wheel turns one spoke and holds, on the working beat (CoachMark's turn, motion.css). */
+.ch-qck .hkey.is-working .hkey__mark .wheel { animation: ch-th-turn var(--ch-dur-typing) var(--ch-ease-typing) infinite; }
 .ch-qck.is-reduce .hkey.is-working .hkey__mark .wheel { animation: none; }
 .ch-qck .hkey__flag { position: absolute; top: 7px; right: 7px; width: 9px; height: 9px; border-radius: 50%; background: var(--ch-qc-a-champ); box-shadow: 0 0 0 2px var(--ch-qc-a-frame); transform: scale(0); }
 .ch-qck .hkey.has-flag .hkey__flag { transform: scale(1); }
@@ -92,7 +93,7 @@ html[data-fw-theme='dark'] .ch-qck.is-desk .hkey__disc { background: rgb(107 187
 .ch-qck .live { position: absolute; z-index: var(--ch-z-panel); height: 36px; right: 0; top: calc(50% - 18px); display: flex; align-items: center; gap: 8px; padding: 0 12px 0 12px; border: 0; border-radius: var(--ch-radius-xl); background: var(--ch-qc-live-bg); color: var(--ch-qc-a-frame-ink); box-shadow: inset 0 0 0 var(--ch-hairline-w) rgb(220 205 166 / 0.28); font: var(--ch-type-14-strong);  white-space: nowrap; cursor: pointer; transform-origin: 100% 50%; }
 .ch-qck .live[hidden] { display: none !important; }
 .ch-qck .live__ic { position: relative; width: 18px; height: 18px; display: grid; place-items: center; }
-.ch-qck .live__spin { width: 16px; height: 16px; border-radius: 50%; border: 2px solid rgb(244 238 221 / 0.25); border-top-color: var(--ch-on-green-ink); animation: ch-spinner-turn var(--ch-dur-sweep) linear infinite; }
+.ch-qck .live__spin { width: 16px; height: 16px; border-radius: 50%; border: 2px solid rgb(244 238 221 / 0.25); border-top-color: var(--ch-on-green-ink); animation: ch-spinner-turn var(--ch-dur-typing) linear infinite; }
 .ch-qck.is-reduce .live__spin { animation: none; border-top-color: rgb(244 238 221 / 0.25); }
 .ch-qck .live__dot { width: 9px; height: 9px; border-radius: 50%; background: var(--ch-qc-a-champ); }
 .ch-qck .live__ok { width: 18px; height: 18px; border-radius: 50%; background: var(--ch-qc-live-ok); color: var(--ch-qc-live-ok-ink); display: grid; place-items: center; }
@@ -196,8 +197,8 @@ html[data-fw-theme='dark'] .ch-qck.is-desk .hkey__disc { background: rgb(107 187
 .ch-qcs .qc__body .qc__inner { position: relative; min-height: 100%; }
 /* The starts sit on the composer they feed, at the foot of the open page; the one that is tapped rises to its top as the question. */
 .ch-qcs .qc__inner > .qc-starts:not(.is-leaving) { margin-top: auto; }
-.ch-qcs .qc__inner[data-late], .ch-qcs .qc-starts[data-late] { animation: ch-qc-fade var(--ch-dur-quick) var(--ch-ease) backwards; }
-@keyframes ch-qc-fade { from { opacity: 0; } }
+/* Late content crossfades in on the quick beat, with no rise (MOTION-AND-VISUAL 3.5; motion.css ch-in). */
+.ch-qcs .qc__inner[data-late], .ch-qcs .qc-starts[data-late] { animation: ch-in var(--ch-dur-quick) var(--ch-ease-out) backwards; }
 /* The capture browser has no keyboard: the preview draws where one would be. Never in the app. */
 .ch-qcs .qc-kbd-stand-in { position: fixed; left: 0; right: 0; bottom: 0; z-index: var(--ch-z-overlay); display: grid; place-items: center; background: var(--ch-well-bg-flat); box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-border-hairline); }
 
@@ -212,12 +213,11 @@ html[data-fw-theme='dark'] .ch-qck.is-desk .hkey__disc { background: rgb(107 187
 .ch-qcs button.qc-start[data-ch-pressed] { background: var(--ch-accent-tint); }
 @media (hover: hover) { .ch-qcs button.qc-start:hover .qc-start__go { color: var(--ch-accent); } }
 /* MO-2-3: on the first send the starts step back over the quick beat; the one that was tapped has become the question. */
-.ch-qcs .qc-starts.is-leaving { position: absolute; inset: auto 0 0; pointer-events: none; animation: ch-qc-leave var(--ch-dur-quick) var(--ch-ease) forwards; }
+.ch-qcs .qc-starts.is-leaving { position: absolute; inset: auto 0 0; pointer-events: none; animation: ch-out var(--ch-dur-quick) var(--ch-ease-out) forwards; }
 .ch-qcs .qc-starts.is-leaving [data-from] { visibility: hidden; }
-@keyframes ch-qc-leave { to { opacity: 0; } }
 .ch-qcs.is-reduce .qc-starts.is-leaving { display: none; }
 /* `ST-9.qc.today`: a quiet rule over the last page of a thread from earlier today. */
-.ch-qcs .qc-rule { position: sticky; top: -16px; z-index: 1; display: flex; align-items: center; gap: 12px; margin: -16px 0 4px; padding: 12px 0 8px; background: var(--ch-card-bg); font: var(--ch-type-12-medium); letter-spacing: var(--ch-track-12); color: var(--ch-text-secondary); animation: ch-qc-fade var(--ch-dur-quick) var(--ch-ease) backwards; }
+.ch-qcs .qc-rule { position: sticky; top: -16px; z-index: 1; display: flex; align-items: center; gap: 12px; margin: -16px 0 4px; padding: 12px 0 8px; background: var(--ch-card-bg); font: var(--ch-type-12-medium); letter-spacing: var(--ch-track-12); color: var(--ch-text-secondary); }
 .ch-qcs .qc-rule::before, .ch-qcs .qc-rule::after { content: ''; flex: 1; height: var(--ch-hairline-w); background: var(--ch-border-hairline); }
 
 /* `ST-1.context`: one chip on its own row above the capsule, its leading edge on the field's text. */

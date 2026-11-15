@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import '../../../styles/coachhelm-ball.css';
 
 /** A dimple on the 24-unit drawing: centre, half-width along its radius, half-height across it, and the turn that points it at the centre. */
@@ -20,8 +20,8 @@ const RINGS: ReadonlyArray<ReadonlyArray<Dimple>> = [
 const ALL = RINGS.flat();
 /** The points of light leave in three waves, from the middle out: the pole with the first ring, then each ring beyond. */
 const WAVES = [{ id: 'a', dimples: [...RINGS[0]!, ...RINGS[1]!] }, { id: 'b', dimples: RINGS[2]! }, { id: 'c', dimples: RINGS[3]! }] as const;
-/** One thinking loop (`--ch-dur-live`), and a little over: how long a ball that has stopped thinking may take to finish its breath. */
-const LOOP_MS = 2900;
+/** One working beat (`--ch-dur-typing`, 1200 ms), and a little over: how long a ball that has stopped thinking may take to finish its beat. */
+const LOOP_MS = 1300;
 
 const dimple = (d: Dimple, className?: string) => <ellipse key={`${d[0]}-${d[1]}`} className={className} cx={d[0]} cy={d[1]} rx={d[2]} ry={d[3]} transform={`rotate(${d[4]} ${d[0]} ${d[1]})`} />;
 
@@ -30,15 +30,14 @@ export type BallState = 'thinking' | 'rest' | 'still';
 /**
  * CoachHelm's mark in the chat: a golf ball (owner, 11 Nov). No wheel, sparkle, robot or wand.
  *
- * `thinking`: the ball breathes, its shell thins and its dimples stand as points of light that drift out past its edge,
- * then it forms again; it loops only for as long as it is `thinking`, which is CoachHelm working. `rest`: the ball is still;
- * two slow, faint rings leave it once when it arrives and once each time `news` changes, then it rests (audit 2026-11-15,
- * MAC-15, H393-007: the rings no longer ripple forever). `still`: the ball alone. When the work is done the ball is not
- * kept: `leaving` sends it off on the quick beat and whoever mounted it takes it away, so nothing stands beside a finished
- * answer.
+ * `thinking`: the working indicator (MOTION-AND-VISUAL 3.1, 3.9): its dimples stand as points of light, in three waves
+ * from the middle out, on the working beat's opacity cycle; it loops only for as long as it is `thinking`, which is
+ * CoachHelm working. `rest` and `still`: the ball alone, still; nothing ripples at rest or on news (3.12; audit
+ * 2026-11-15, MAC-15, H393-007). When the work is done the ball is not kept: `leaving` fades it on the quick beat and
+ * whoever mounted it takes it away, so nothing stands beside a finished answer.
  *
- * Everything that moves is its own layer, moved by transform and opacity only (styles/coachhelm-ball.css). A ball that
- * stops thinking finishes the breath it is in, so it is whole when it stops and nothing snaps. Reduced motion and
+ * The points of light are their own layers, moved by opacity only (styles/coachhelm-ball.css). A ball that stops thinking
+ * finishes the beat it is in (the first wave's cycle ends with every wave dark), so nothing snaps. Reduced motion and
  * Animations off draw a still ball in every state.
  */
 export function BallMark({
@@ -46,14 +45,11 @@ export function BallMark({
   on = 'green',
   size = 'md',
   leaving = false,
-  news,
 }: {
   state?: BallState;
   /** The surface under it: the deep green of the island, or the page's paper. */ on?: 'green' | 'paper';
   /** 20, 24 or 28 px. */ size?: 'sm' | 'md' | 'lg';
   leaving?: boolean;
-  /** At rest: something new for the ball (an answer that landed). A change draws the rings again, so they play once more. */
-  news?: string | number;
 }) {
   const [breathing, setBreathing] = useState(state === 'thinking');
   if (state === 'thinking' && !breathing) setBreathing(true);
@@ -67,17 +63,11 @@ export function BallMark({
 
   return (
     <span className={`ch-ball is-${shown}` + (on === 'paper' ? ' is-paper' : '') + (size === 'md' ? '' : ` is-${size}`) + (leaving ? ' is-leaving' : '')} aria-hidden="true">
-      {shown === 'rest' && (
-        // Keyed by the news: new rings are new elements, so each arrival or piece of news plays them once and no more.
-        <Fragment key={news ?? 'arrived'}>
-          <i className="ch-ball__rip" />
-          <i className="ch-ball__rip is-late" />
-        </Fragment>
-      )}
       <span
         className="ch-ball__orb"
         onAnimationIteration={(e) => {
-          if (e.animationName === 'ch-ball-breathe' && state !== 'thinking') setBreathing(false);
+          // The first wave's beat ends with all three dark: the place to stop.
+          if (e.animationName === 'ch-working' && (e.target as Element).classList.contains('is-a') && state !== 'thinking') setBreathing(false);
         }}
       >
         <span className="ch-ball__body">

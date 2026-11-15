@@ -7,8 +7,8 @@ import { describe, expect, it } from 'vitest';
  * - MOT-14: Ask keeps one moving progress sign while it works, the island's turning ring on the running step
  *   (`.mk .arc`). The text shimmer, the breathing dots, the skeleton sweep, the sending capsule, the artifact scan, the open
  *   slot's pulse and the island's passing light are gone; what they marked is drawn still.
- * - MAC-15 / H393-007: the CoachHelm ball's rings play once on arrival or news, then rest. Its only loops are its thinking
- *   state, which is CoachHelm working.
+ * - MAC-15 / H393-007, then MOTION-AND-VISUAL 3.1 and 3.12 (owner, 15 Nov): the CoachHelm ball has no rings at all. Its
+ *   only loop is its thinking state, which is CoachHelm working: the working indicator on the working beat.
  * - MOT-15: no keyframe in these files animates `filter` or `background-position`.
  */
 const read = (f: string) => readFileSync(join(__dirname, '..', 'styles', f), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
@@ -48,10 +48,12 @@ describe('ambient loops (production audit 2026-11-15)', () => {
     expect(rules(ask).find((r) => r.sel === '.ch-ak-live')?.body).not.toMatch(/animation/);
   });
 
-  it('the ball’s rings play once; it loops only while thinking', () => {
-    const rip = rules(ball).find((r) => r.sel === '.ch-ball.is-rest .ch-ball__rip');
-    expect(rip?.body).toMatch(/animation: ch-ball-ripple .* 1;/);
-    for (const r of rules(ball).filter((x) => /\binfinite\b/.test(x.body))) expect(r.sel.startsWith('.ch-ball.is-thinking'), r.sel).toBe(true);
+  it('the ball has no rings and no keyframes of its own; it loops only while thinking, on the working beat', () => {
+    expect(ball).not.toMatch(/ch-ball__rip|ch-ball-ripple/);
+    expect(names(ball)).toEqual([]);
+    const loops = rules(ball).filter((x) => /\binfinite\b/.test(x.body));
+    expect(loops.map((r) => r.sel)).toEqual(['.ch-ball.is-thinking .ch-ball__dots']);
+    expect(loops[0]!.body).toMatch(/animation: ch-working var\(--ch-dur-typing\) var\(--ch-ease-typing\) infinite;/);
   });
 
   it('no keyframe here animates filter or background-position', () => {

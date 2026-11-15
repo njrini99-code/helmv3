@@ -47,3 +47,26 @@
     transform: rotate(45deg);
   }
 }
+
+/* The working indicator, the one loop (3.1, 3.9): three dots on a 1.2 s opacity cycle (--ch-dur-typing on
+   --ch-ease-typing), each a step behind the last (--ch-dur-typing-step), and only while work runs. Opacity only. Dots
+   rest at --ch-working-dim (0.4); a mark whose dots should vanish between beats sets it to 0 (the CoachHelm ball). Under
+   Reduce Motion and Animations off every user stops it, and the dots stand still. */
+@keyframes ch-working {
+  0%,
+  60%,
+  100% {
+    opacity: var(--ch-working-dim, 0.4);
+  }
+  28% {
+    opacity: 1;
+  }
+}
+
+/* A busy ring's turn while work runs (ui/Spinner, Ask's working ring, Quick chat's): one turn per working beat. Still
+   under Reduce Motion (3.11: the working sign is static) and under Animations off (--ch-dur-typing is 0). */
+@keyframes ch-spinner-turn {
+  to {
+    rotate: 360deg;
+  }
+}

@@ -3234,26 +3234,14 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   height: 5px;
   border-radius: 50%;
   background: var(--ch-typing-dot);
-  /* M-MSG-30: a 1200 ms cycle, 160 ms apart. */
-  animation: ch-msv-typing var(--ch-dur-typing) var(--ch-ease-typing) infinite;
+  /* M-MSG-30: the working indicator, a 1200 ms opacity cycle, 160 ms apart (MOTION-AND-VISUAL 3.9; motion.css). */
+  animation: ch-working var(--ch-dur-typing) var(--ch-ease-typing) infinite;
 }
 [data-ch-ms-v2] .ch-ms-typing-mini i:nth-child(2) {
   animation-delay: var(--ch-dur-typing-step);
 }
 [data-ch-ms-v2] .ch-ms-typing-mini i:nth-child(3) {
   animation-delay: calc(var(--ch-dur-typing-step) * 2);
-}
-@keyframes ch-msv-typing {
-  0%,
-  60%,
-  100% {
-    transform: translateY(0);
-    opacity: 0.4;
-  }
-  28% {
-    transform: translateY(-3px);
-    opacity: 1;
-  }
 }
 /* A photo on its way: a static block (MOTION-AND-VISUAL 3.9, no pulse) that waits the busy delay (shell.css ch-busy-wait). */
 [data-ch-ms-v2] .ch-msv-sk {
@@ -3476,8 +3464,8 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   border-bottom-left-radius: var(--ch-radius-tail);
   background: var(--ch-bubble-theirs-bg);
   filter: var(--ch-bubble-theirs-shadow);
-  transform-origin: 0% 100%;
-  animation: ch-msv-typing-pop var(--ch-dur-spring-pop) var(--ch-ease-spring-pop) both;
+  /* Late content: it crossfades in on the quick beat, with no pop (MOTION-AND-VISUAL 3.5). */
+  animation: ch-in var(--ch-dur-quick) var(--ch-ease-out) backwards;
 }
 [data-ch-ms-v2] .ch-msv-typing.has-name {
   flex-direction: column;
@@ -3494,20 +3482,14 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   height: 7px;
   border-radius: 50%;
   background: var(--ch-typing-dot);
-  /* M-MSG-30: a 1200 ms cycle, 160 ms apart. */
-  animation: ch-msv-typing var(--ch-dur-typing) var(--ch-ease-typing) infinite;
+  /* M-MSG-30: the working indicator, a 1200 ms opacity cycle, 160 ms apart (MOTION-AND-VISUAL 3.9; motion.css). */
+  animation: ch-working var(--ch-dur-typing) var(--ch-ease-typing) infinite;
 }
 [data-ch-ms-v2] .ch-msv-typing__dots i:nth-child(2) {
   animation-delay: var(--ch-dur-typing-step);
 }
 [data-ch-ms-v2] .ch-msv-typing__dots i:nth-child(3) {
   animation-delay: calc(var(--ch-dur-typing-step) * 2);
-}
-@keyframes ch-msv-typing-pop {
-  from {
-    opacity: 0;
-    transform: scale(0.5);
-  }
 }
 /* Drag for times: a 52 x k column off the right edge, revealed by the thread's move. Desktop shows it on hover. */
 [data-ch-ms-v2] .ch-msv-time {
