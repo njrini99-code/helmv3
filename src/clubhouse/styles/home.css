@@ -217,25 +217,16 @@
   border-radius: 50%;
   background: var(--ch-green-400);
 }
-/* Today: a frosted key lifted out of the well (owner, 2026-10-06: more contrast and blur). A bright translucent face
-   over a backdrop blur, a crisp edge, a lit top and a real lift; radius concentric with the well's 4px inset. */
+/* Today: a key lifted out of the well, the ivory card on the card elevation, radius concentric with the well's 4px inset.
+   Opaque, with no blur (MOT-16: blur is for chrome over scrolling content, and nothing scrolls under this key). */
 .ch-h-day--today {
   border-radius: var(--ch-radius-md);
-  background: linear-gradient(180deg, rgb(255 255 255 / 0.94), rgb(251 249 244 / 0.8));
-  -webkit-backdrop-filter: blur(calc(var(--ch-glass-blur) * 0.7)) saturate(1.4);
-  backdrop-filter: blur(calc(var(--ch-glass-blur) * 0.7)) saturate(1.4);
-  box-shadow: var(--ch-key-frost-shadow);
+  background: var(--ch-card-bg);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-h-day--today .ch-h-day__n {
   color: var(--ch-forest-800);
   font-weight: 700;
-}
-@media (prefers-reduced-transparency: reduce) {
-  .ch-h-day--today {
-    background: #fff;
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
 }
 .ch-h-day--today .ch-h-day__d,
 .ch-h-day--event .ch-h-day__n {
@@ -3549,17 +3540,9 @@
    into the ground at night. The frosted today key becomes a faint lit glass, white lit tops drop to a whisper, the
    forest ink on themed surfaces becomes the Ledger's night ink, and the parchment's brown rules take the champagne
    rule. The green surfaces (the scoreboard, Up next, the countdown) are green in both themes and keep their inks. */
-html[data-fw-theme='dark'] .ch-h-day--today {
-  background: linear-gradient(180deg, rgb(255 255 255 / 0.14), rgb(255 255 255 / 0.08));
-}
 html[data-fw-theme='dark'] .ch-h-day--today .ch-h-day__n,
 html[data-fw-theme='dark'] .ch-h-agenda__row.is-next .ch-h-agenda__a {
   color: var(--ch-ledger-ink);
-}
-@media (prefers-reduced-transparency: reduce) {
-  html[data-fw-theme='dark'] .ch-h-day--today {
-    background: var(--ch-ivory-200);
-  }
 }
 html[data-fw-theme='dark'] .ch-h-nine__par {
   border-bottom-color: var(--ch-border-subtle);
@@ -4510,16 +4493,6 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   }
 }
 
-/* Row 50: the attribute half of the today tile's solid fallback above (WebKit has no media query; the app's bridge sets
-   html[data-reduce-transparency]). */
-:root[data-reduce-transparency] .ch-h-day--today {
-  background: #fff;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-}
-:root[data-reduce-transparency][data-fw-theme='dark'] .ch-h-day--today {
-  background: var(--ch-ivory-200);
-}
 
 /* P-14 change marks on Home. Up next wears the badge in its kicker and the old value struck under its range, in the card's
    own muted ink (the card is light or lit by theme, so the struck value takes whatever the line beside it takes). */

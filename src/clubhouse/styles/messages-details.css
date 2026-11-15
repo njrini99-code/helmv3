@@ -297,7 +297,6 @@
   background: var(--ch-bubble-theirs-bg);
   color: var(--ch-text-primary);
   box-shadow: none;
-  filter: var(--ch-bubble-theirs-shadow);
 }
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   [data-ch-ms-v2] .ch-msd-poll {
@@ -693,7 +692,6 @@
 [data-ch-ms-v2] .ch-msd-file.is-mine {
   background: var(--ch-bubble-mine-fill);
   color: var(--ch-bubble-mine-ink);
-  filter: var(--ch-bubble-mine-shadow);
 }
 [data-ch-ms-v2] .ch-msd-file.is-mine .ch-msd-file__ic {
   background: rgb(255 255 255 / 0.14);

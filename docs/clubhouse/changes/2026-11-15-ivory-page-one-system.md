@@ -6,7 +6,7 @@ PR/commit: branch claude/project-thread-d9q2qs (QUEUE look-01 to look-03)
 Contract IDs: none changed
 Actions: none changed
 Data impact: none
-Held items: Nick's open calls: red for scores (PL-HOME-05), Wave 3 designs F and J
+Held items: Wave 3 designs F and J; red for scores (PL-HOME-05) was settled the same day by MOTION-AND-VISUAL 4.7 (2026-11-15-colour-roles.md)
 ```
 
 ### Changed

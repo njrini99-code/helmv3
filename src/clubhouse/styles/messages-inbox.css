@@ -69,25 +69,25 @@
   color: var(--ch-text-placeholder);
   opacity: 1;
 }
+/* New (MSG-L-01): a bare 44 glyph key like iOS Messages' compose, the accent glyph on no fill and no shadow; a wash on a
+   fine-pointer hover. */
 [data-ch-ms-v2] .ch-inb .ch-msv-new {
-  position: relative;
   display: grid;
   flex: none;
   place-items: center;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   padding: 0;
   border: 0;
-  border-radius: 50%;
-  background: var(--ch-card-bg);
-  box-shadow: var(--ch-card-shadow);
+  border-radius: var(--ch-radius-full);
+  background: transparent;
+  box-shadow: none;
   color: var(--ch-accent-ink);
 }
-/* A 44 target on the 40 key (MSG-010). */
-[data-ch-ms-v2] .ch-inb .ch-msv-new::before {
-  position: absolute;
-  inset: calc(-1 * var(--ch-space-0_5));
-  content: '';
+@media (hover: hover) and (pointer: fine) {
+  [data-ch-ms-v2] .ch-inb .ch-msv-new:hover {
+    background: var(--ch-press-wash);
+  }
 }
 
 /* ------------------------------------------------------------------------------------------------------------------

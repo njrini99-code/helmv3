@@ -15,6 +15,8 @@
   min-width: 0;
   margin: 8px 8px 8px 0;
   overflow: auto;
+  /* The page never shifts sideways when a scrollbar comes or goes (SYS-09). */
+  scrollbar-gutter: stable;
   overscroll-behavior: contain;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-page-paint);
@@ -2536,19 +2538,21 @@ html[data-ch-ua-pop] .ch-pscreen::after {
     border-bottom: 0;
   }
   /* The sheet's lip: two green corner pieces under the bar, so the parchment below reads as a sheet with rounded top
-     corners set into the green; the middle is open, so content scrolls up under the bar as before. */
+     corners set into the green; the middle is open, so content scrolls up under the bar as before. 20px, the sheet radius
+     (MOTION-AND-VISUAL 4.1 and 4.5, which keep the lip the audit's CHROME-P-09 asked to drop). */
   [data-ui='clubhouse'] .ch-topbar::after,
   [data-ui='clubhouse'] .ch-pbar::after {
+    --ch-lip: var(--ch-radius-xl);
     position: absolute;
     right: 0;
-    bottom: -16px;
+    bottom: calc(-1 * var(--ch-lip));
     left: 0;
-    height: 16px;
+    height: var(--ch-lip);
     background: var(--ch-frame);
-    -webkit-mask: radial-gradient(16px at 16px 16px, transparent 97%, #000 100%) left top / 16px 16px no-repeat,
-      radial-gradient(16px at 0 16px, transparent 97%, #000 100%) right top / 16px 16px no-repeat;
-    mask: radial-gradient(16px at 16px 16px, transparent 97%, #000 100%) left top / 16px 16px no-repeat,
-      radial-gradient(16px at 0 16px, transparent 97%, #000 100%) right top / 16px 16px no-repeat;
+    -webkit-mask: radial-gradient(var(--ch-lip) at var(--ch-lip) var(--ch-lip), transparent 97%, #000 100%) left top / var(--ch-lip) var(--ch-lip) no-repeat,
+      radial-gradient(var(--ch-lip) at 0 var(--ch-lip), transparent 97%, #000 100%) right top / var(--ch-lip) var(--ch-lip) no-repeat;
+    mask: radial-gradient(var(--ch-lip) at var(--ch-lip) var(--ch-lip), transparent 97%, #000 100%) left top / var(--ch-lip) var(--ch-lip) no-repeat,
+      radial-gradient(var(--ch-lip) at 0 var(--ch-lip), transparent 97%, #000 100%) right top / var(--ch-lip) var(--ch-lip) no-repeat;
     content: '';
     pointer-events: none;
   }
@@ -2623,16 +2627,17 @@ html[data-ch-ua-pop] .ch-pscreen::after {
     visibility: visible;
   }
   .ch-ptr::after {
+    --ch-lip: var(--ch-radius-xl);
     position: absolute;
     right: 0;
-    bottom: -16px;
+    bottom: calc(-1 * var(--ch-lip));
     left: 0;
-    height: 16px;
+    height: var(--ch-lip);
     background: inherit;
-    -webkit-mask: radial-gradient(16px at 16px 16px, transparent 97%, #000 100%) left top / 16px 16px no-repeat,
-      radial-gradient(16px at 0 16px, transparent 97%, #000 100%) right top / 16px 16px no-repeat;
-    mask: radial-gradient(16px at 16px 16px, transparent 97%, #000 100%) left top / 16px 16px no-repeat,
-      radial-gradient(16px at 0 16px, transparent 97%, #000 100%) right top / 16px 16px no-repeat;
+    -webkit-mask: radial-gradient(var(--ch-lip) at var(--ch-lip) var(--ch-lip), transparent 97%, #000 100%) left top / var(--ch-lip) var(--ch-lip) no-repeat,
+      radial-gradient(var(--ch-lip) at 0 var(--ch-lip), transparent 97%, #000 100%) right top / var(--ch-lip) var(--ch-lip) no-repeat;
+    mask: radial-gradient(var(--ch-lip) at var(--ch-lip) var(--ch-lip), transparent 97%, #000 100%) left top / var(--ch-lip) var(--ch-lip) no-repeat,
+      radial-gradient(var(--ch-lip) at 0 var(--ch-lip), transparent 97%, #000 100%) right top / var(--ch-lip) var(--ch-lip) no-repeat;
     content: '';
   }
   /* UIActivityIndicatorView's eight spokes, in the bar's ivory: they come in one by one as the sheet comes down (set
@@ -3429,16 +3434,17 @@ html[data-fw-theme='dark'] .ch-offline {
   }
   /* Its own lip, as the bar's (the phone chassis): the parchment meets the green in rounded corners below the strip. */
   .ch-strip::after {
+    --ch-lip: var(--ch-radius-xl);
     position: absolute;
     right: 0;
-    bottom: -16px;
+    bottom: calc(-1 * var(--ch-lip));
     left: 0;
-    height: 16px;
+    height: var(--ch-lip);
     background: inherit;
-    -webkit-mask: radial-gradient(16px at 16px 16px, transparent 97%, #000 100%) left top / 16px 16px no-repeat,
-      radial-gradient(16px at 0 16px, transparent 97%, #000 100%) right top / 16px 16px no-repeat;
-    mask: radial-gradient(16px at 16px 16px, transparent 97%, #000 100%) left top / 16px 16px no-repeat,
-      radial-gradient(16px at 0 16px, transparent 97%, #000 100%) right top / 16px 16px no-repeat;
+    -webkit-mask: radial-gradient(var(--ch-lip) at var(--ch-lip) var(--ch-lip), transparent 97%, #000 100%) left top / var(--ch-lip) var(--ch-lip) no-repeat,
+      radial-gradient(var(--ch-lip) at 0 var(--ch-lip), transparent 97%, #000 100%) right top / var(--ch-lip) var(--ch-lip) no-repeat;
+    mask: radial-gradient(var(--ch-lip) at var(--ch-lip) var(--ch-lip), transparent 97%, #000 100%) left top / var(--ch-lip) var(--ch-lip) no-repeat,
+      radial-gradient(var(--ch-lip) at 0 var(--ch-lip), transparent 97%, #000 100%) right top / var(--ch-lip) var(--ch-lip) no-repeat;
     content: '';
     pointer-events: none;
   }

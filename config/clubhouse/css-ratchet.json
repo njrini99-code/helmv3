@@ -94,7 +94,7 @@
     "svg-overflow-visible": 0,
     "crh-negative-margin": 0,
     "raw-radius": 0,
-    "raw-shadow": 23,
+    "raw-shadow": 21,
     "raw-motion": 0,
     "keyframes": 3
   },
@@ -234,7 +234,7 @@
     "keyframes": 0
   },
   "src/clubhouse/styles/home.css": {
-    "hex": 28,
+    "hex": 26,
     "svg-overflow-visible": 3,
     "crh-negative-margin": 3,
     "raw-radius": 1,
@@ -364,7 +364,7 @@
     "svg-overflow-visible": 0,
     "crh-negative-margin": 2,
     "raw-radius": 0,
-    "raw-shadow": 44,
+    "raw-shadow": 43,
     "raw-motion": 1,
     "keyframes": 1
   },

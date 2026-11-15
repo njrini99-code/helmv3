@@ -19367,7 +19367,6 @@
         "ch-msv-member__b",
         "ch-msv-member__to",
         "ch-msv-members__h",
-        "ch-msv-new",
         "ch-msv-newpane",
         "ch-msv-newpane__bar",
         "ch-msv-newpane__in",
@@ -21326,7 +21325,6 @@
         "ch-rs-inv__code",
         "ch-rs-inv__link",
         "ch-rs-ldr",
-        "ch-rs-ldr__bars",
         "ch-rs-ldr__k",
         "ch-rs-ldr__p",
         "ch-rs-ldr__v",
@@ -23048,6 +23046,16 @@
           "scope": "@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) → .ch-topbar:has(.ch-qck) .ch-pbar__title"
         },
         {
+          "name": "--ch-lip",
+          "value": "var(--ch-radius-xl)",
+          "scope": "@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) → [data-ui='clubhouse'] .ch-topbar::after,\n  [data-ui='clubhouse'] .ch-pbar::after"
+        },
+        {
+          "name": "--ch-lip",
+          "value": "var(--ch-radius-xl)",
+          "scope": "@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) → .ch-ptr::after"
+        },
+        {
           "name": "--ch-medallion-rings",
           "value": "rgb(107 187 140 / 0.12)",
           "scope": "html[data-fw-theme='dark'] .ch-empty-page,\nhtml[data-fw-theme='dark'] .ch-es--page"
@@ -23056,6 +23064,11 @@
           "name": "--ch-medallion-rings",
           "value": "rgb(239 133 118 / 0.12)",
           "scope": "html[data-fw-theme='dark'] .ch-empty-page--danger"
+        },
+        {
+          "name": "--ch-lip",
+          "value": "var(--ch-radius-xl)",
+          "scope": "@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) → .ch-strip::after"
         },
         {
           "name": "--ch-sidebar-w",
@@ -25455,11 +25468,6 @@
           "scope": "[data-ui='clubhouse']"
         },
         {
-          "name": "--ch-key-frost-shadow",
-          "value": "inset 0 1px 0 #fff, 0 0 0 1px rgb(28 25 18 / 0.08), 0 2px 4px rgb(28 25 18 / 0.12), 0 10px 20px -10px rgb(28 25 18 / 0.4)",
-          "scope": "[data-ui='clubhouse']"
-        },
-        {
           "name": "--ch-key-raised-shadow",
           "value": "var(--ch-elevation-control), 0 0 0 1px rgb(28 25 18 / 0.05), 0 6px 12px -8px rgb(28 25 18 / 0.3)",
           "scope": "[data-ui='clubhouse']"
@@ -26910,16 +26918,6 @@
           "scope": "[data-ui='clubhouse']"
         },
         {
-          "name": "--ch-bubble-theirs-shadow",
-          "value": "drop-shadow(0 0 0.5px rgb(28 27 24 / 0.24)) drop-shadow(0 1px 2px rgb(28 25 18 / 0.05)) drop-shadow(0 6px 8px rgb(28 25 18 / 0.06))",
-          "scope": "[data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-bubble-mine-shadow",
-          "value": "drop-shadow(0 1px 1px rgb(11 58 37 / 0.22)) drop-shadow(0 6px 10px rgb(11 58 37 / 0.2))",
-          "scope": "[data-ui='clubhouse']"
-        },
-        {
           "name": "--ch-shadow-float",
           "value": "0 0 0 0.5px rgb(28 25 18 / 0.1), 0 8px 24px -6px rgb(28 25 18 / 0.22), 0 2px 6px rgb(28 25 18 / 0.08)",
           "scope": "[data-ui='clubhouse']"
@@ -27385,11 +27383,6 @@
           "scope": "[data-ui='clubhouse']"
         },
         {
-          "name": "--ch-phone-composer-bg",
-          "value": "rgb(250 247 239 / 0.94)",
-          "scope": "[data-ui='clubhouse']"
-        },
-        {
           "name": "--ch-avatar-neutral-bg",
           "value": "#d9e4d8",
           "scope": "[data-ui='clubhouse']"
@@ -27772,16 +27765,6 @@
         {
           "name": "--ch-poll-bar-on",
           "value": "rgb(124 199 155 / 0.24)",
-          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-bubble-theirs-shadow",
-          "value": "drop-shadow(0 0.5px 0.5px rgb(0 0 0 / 0.4)) drop-shadow(0 3px 6px rgb(0 0 0 / 0.3))",
-          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-bubble-mine-shadow",
-          "value": "drop-shadow(0 1px 1px rgb(0 0 0 / 0.4)) drop-shadow(0 6px 10px rgb(0 0 0 / 0.35))",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
@@ -28545,11 +28528,6 @@
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
-          "name": "--ch-key-frost-shadow",
-          "value": "inset 0 1px 0 rgb(255 255 255 / 0.07), 0 0 0 1px rgb(255 255 255 / 0.07), 0 2px 4px rgb(0 0 0 / 0.4), 0 10px 20px -10px rgb(0 0 0 / 0.6)",
-          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
-        },
-        {
           "name": "--ch-key-raised-shadow",
           "value": "var(--ch-elevation-control), 0 0 0 1px rgb(255 255 255 / 0.06), 0 6px 12px -8px rgb(0 0 0 / 0.6)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
@@ -28877,11 +28855,6 @@
         {
           "name": "--ch-phone-tabbar-shelf-edge",
           "value": "inset 0 1px 0 rgb(255 255 255 / 0.07)",
-          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-phone-composer-bg",
-          "value": "rgb(33 39 34 / 0.94)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
@@ -29335,11 +29308,6 @@
           "scope": "@media (prefers-reduced-transparency: reduce) → [data-ui='clubhouse']"
         },
         {
-          "name": "--ch-phone-composer-bg",
-          "value": "var(--ch-bg-surface)",
-          "scope": "@media (prefers-reduced-transparency: reduce) → [data-ui='clubhouse']"
-        },
-        {
           "name": "--ch-glass-bg",
           "value": "var(--ch-bg-page)",
           "scope": "@media (prefers-reduced-transparency: reduce) → html[data-fw-theme='dark'] [data-ui='clubhouse']"
@@ -29370,11 +29338,6 @@
           "scope": "@media (prefers-reduced-transparency: reduce) → html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
-          "name": "--ch-phone-composer-bg",
-          "value": "var(--ch-bg-surface)",
-          "scope": "@media (prefers-reduced-transparency: reduce) → html[data-fw-theme='dark'] [data-ui='clubhouse']"
-        },
-        {
           "name": "--ch-glass-bg",
           "value": "var(--ch-bg-page)",
           "scope": ":root[data-reduce-transparency] [data-ui='clubhouse'],\n:root[data-reduce-transparency][data-fw-theme='dark'] [data-ui='clubhouse']"
@@ -29402,11 +29365,6 @@
         {
           "name": "--ch-phone-tabbar-bg",
           "value": "var(--ch-phone-tabbar-shelf-bg)",
-          "scope": ":root[data-reduce-transparency] [data-ui='clubhouse'],\n:root[data-reduce-transparency][data-fw-theme='dark'] [data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-phone-composer-bg",
-          "value": "var(--ch-bg-surface)",
           "scope": ":root[data-reduce-transparency] [data-ui='clubhouse'],\n:root[data-reduce-transparency][data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {

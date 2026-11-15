@@ -2606,13 +2606,11 @@ p.ch-shs-mini-cap {
   position: sticky;
   top: min(var(--ch-shs-pane-rest), calc(var(--ch-shs-port-h, 100dvh) - var(--ch-shs-pane-h, 0px) - var(--ch-space-4)));
   scroll-margin-top: var(--ch-shs-pane-rest);
-  border-radius: var(--ch-radius-lg);
-  background: var(--ch-shs-s-bg);
-  box-shadow: var(--ch-stats-redesign-shadow-1);
+  /* A plain column, not a card (STATS-D-05): its cards are the only cards, so nothing is a card in a card. */
 }
 .ch-shs-desk__dett {
   margin: 0;
-  padding: var(--ch-space-4) var(--ch-space-4) 0;
+  padding: var(--ch-space-4) 0 0;
   font: var(--ch-type-title);
   font-variation-settings: 'wdth' 92;
   letter-spacing: -0.02em;
@@ -2626,7 +2624,7 @@ p.ch-shs-mini-cap {
   scroll-margin-top: var(--ch-shs-pane-rest);
 }
 .ch-shs-desk__det .ch-shs-d-sheet {
-  padding: var(--ch-space-2) var(--ch-space-4) var(--ch-space-5);
+  padding: var(--ch-space-2) 0 var(--ch-space-5);
 }
 /* Team putting in the pane: the phone's panel (a bar per band, the Tour rate as a mark), whose own rules live in the phone's
    stylesheet block and so never reached a desk. Drawn here in the redesign's inks, like the leg bars beside it. */

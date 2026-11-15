@@ -1,9 +1,9 @@
 /*
  * Messages v2, package C: overlays (docs/clubhouse/messages-v2/SPEC.md MSG-224, 312, 401-410; MOTION.md HOLD, RX, TEAM, ATT).
  * Loaded after messages.css by the overlay components. New classes carry the `ch-mso-` prefix so this sheet and messages.css
- * never anchor the same class (scripts/clubhouse/css-owners.mjs). Blur, saturate and the scrim come from the Messages tokens
- * (`--ch-glass-blur-msg` 24, `--ch-glass-saturate-msg` 170%, `--ch-scrim-blur-msg` 14, `--ch-scrim-saturate-msg` 120%), each
- * falling back to the shared glass so Reduce Transparency and Increase Contrast flatten them. Corners are the four radius steps
+ * never anchor the same class (scripts/clubhouse/css-owners.mjs). Blur and saturate are the one glass (`--ch-glass-blur`,
+ * `--ch-glass-saturate`, MOTION-AND-VISUAL 4.1) and the scrim its Messages tokens, so Reduce Transparency and Increase
+ * Contrast flatten them. Corners are the four radius steps
  * (the artifact's 18 / 15 / 22 / 10 land on the nearest step, a tie rounding up: 20 / 16 / 20 / 12).
  */
 
@@ -20,8 +20,8 @@
   border-radius: var(--ch-radius-xl);
   background: var(--ch-glass-strong);
   box-shadow: var(--ch-shadow-float);
-  -webkit-backdrop-filter: blur(var(--ch-glass-blur-msg, var(--ch-glass-blur))) saturate(var(--ch-glass-saturate-msg, var(--ch-glass-saturate)));
-  backdrop-filter: blur(var(--ch-glass-blur-msg, var(--ch-glass-blur))) saturate(var(--ch-glass-saturate-msg, var(--ch-glass-saturate)));
+  -webkit-backdrop-filter: blur(var(--ch-glass-blur)) saturate(var(--ch-glass-saturate));
+  backdrop-filter: blur(var(--ch-glass-blur)) saturate(var(--ch-glass-saturate));
 }
 .ch-mso-menu > button {
   display: flex;
@@ -200,8 +200,8 @@
   border-radius: var(--ch-radius-full);
   background: var(--ch-glass-strong);
   box-shadow: var(--ch-shadow-float);
-  -webkit-backdrop-filter: blur(var(--ch-glass-blur-msg, var(--ch-glass-blur))) saturate(var(--ch-glass-saturate-msg, var(--ch-glass-saturate)));
-  backdrop-filter: blur(var(--ch-glass-blur-msg, var(--ch-glass-blur))) saturate(var(--ch-glass-saturate-msg, var(--ch-glass-saturate)));
+  -webkit-backdrop-filter: blur(var(--ch-glass-blur)) saturate(var(--ch-glass-saturate));
+  backdrop-filter: blur(var(--ch-glass-blur)) saturate(var(--ch-glass-saturate));
 }
 .ch-mso-rbar > button {
   position: relative;
@@ -414,8 +414,8 @@
   border-radius: var(--ch-radius-xl);
   background: var(--ch-glass-strong);
   box-shadow: var(--ch-shadow-float);
-  -webkit-backdrop-filter: blur(var(--ch-glass-blur-msg, var(--ch-glass-blur))) saturate(var(--ch-glass-saturate-msg, var(--ch-glass-saturate)));
-  backdrop-filter: blur(var(--ch-glass-blur-msg, var(--ch-glass-blur))) saturate(var(--ch-glass-saturate-msg, var(--ch-glass-saturate)));
+  -webkit-backdrop-filter: blur(var(--ch-glass-blur)) saturate(var(--ch-glass-saturate));
+  backdrop-filter: blur(var(--ch-glass-blur)) saturate(var(--ch-glass-saturate));
   transform-origin: 18px 100%;
 }
 .ch-msv-attach.is-closing {
@@ -507,9 +507,19 @@
   color: var(--ch-text-tertiary);
   font: var(--ch-type-footnote);
 }
-/* A pill with no face in it (Delivered, a direct thread's receipt, a player's count) keeps the text's inset. */
+/* A pill with no face in it (Delivered, a player's count) keeps the text's inset. */
 .ch-msv-seen:not(:has(.ch-msv-faces)) {
   padding-left: var(--ch-ms-px-9);
+}
+/* A direct thread's receipt is no pill (DM-05): plain tertiary caption text, right-aligned under the message like
+   iMessage's Read line. */
+.ch-msv-seen.is-dm {
+  margin-top: 4px;
+  padding: 0 2px;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  font: var(--ch-type-caption);
 }
 button.ch-msv-seen {
   cursor: pointer;

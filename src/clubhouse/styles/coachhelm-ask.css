@@ -1001,10 +1001,9 @@ body.keyboard-open .ch-ask-hist.is-drawer {
     display: flex;
     flex-direction: column;
   }
+  /* The tray paints the page colour, with no rule over it (ASK-P-13): the composer's own capsule is the only edge. */
   .ch-ask-dock {
     padding: 8px var(--ch-page-x-phone) 8px;
-    box-shadow: 0 -1px 0 var(--ch-border-hairline);
-    background: var(--ch-phone-composer-bg);
   }
   .ch-ask-cmp__box {
     border-radius: var(--ch-radius-xl);
@@ -1184,13 +1183,6 @@ body.keyboard-open .ch-ask-hist.is-drawer {
   }
   .ch-ask-nothing__ic {
     background: var(--ch-ledger-row-hover);
-  }
-  /* On the phone the dock sits under a soft rule instead of the wash. */
-  .ch-ask-dock {
-    box-shadow: 0 -1px 0 var(--ch-ledger-rule-soft);
-  }
-  .ch-ask-dock::before {
-    display: none;
   }
 }
 

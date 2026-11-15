@@ -731,7 +731,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
 /* E-LOCKP: the announcement on a player's lock screen; the banner drops in 200ms after the card (M-ASK-57). */
 .ch-ak-lock { display: grid; justify-items: center; gap: 8px; margin: 12px 16px 4px; padding: 12px; border-radius: var(--ch-radius-lg); background: linear-gradient(165deg, var(--ch-ak-ak-feature), var(--ch-frame)); }
 .ch-ak-lock .tm b { font: var(--ch-type-28-strong); letter-spacing: var(--ch-track-28); color: var(--ch-on-green-ink); }
-.ch-ak-lock .ban { display: flex; gap: 8px; width: 100%; padding: 8px 12px; border-radius: var(--ch-radius-lg); background: rgb(253 251 247 / 0.9); color: var(--ch-text-secondary); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+.ch-ak-lock .ban { display: flex; gap: 8px; width: 100%; padding: 8px 12px; border-radius: var(--ch-radius-lg); background: rgb(253 251 247 / 0.9); color: var(--ch-text-secondary); -webkit-backdrop-filter: blur(var(--ch-glass-blur)) saturate(var(--ch-glass-saturate)); backdrop-filter: blur(var(--ch-glass-blur)) saturate(var(--ch-glass-saturate)); }
 .ch-ak-lock .app { display: grid; place-items: center; flex: none; width: 26px; height: 26px; border-radius: var(--ch-radius-sm); background: var(--ch-green-fill-600); color: var(--ch-on-green-plate); }
 .ch-ak-lock .tx { display: grid; gap: 1px; min-width: 0; }
 .ch-ak-lock small { display: flex; justify-content: space-between; gap: 8px; font: var(--ch-type-12); }
@@ -798,7 +798,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
 
 /* S-ASK.jump: 40 glass, right 16, 12 above the composer (CP-7). */
 .ch-ak-root .ch-ask-main { position: relative; }
-.ch-ak-root .ch-ak-jump { position: absolute; z-index: var(--ch-z-sticky); right: 16px; display: grid; place-items: center; width: 40px; height: 40px; border: 0; border-radius: 50%; background: var(--ch-glass-strong); -webkit-backdrop-filter: blur(24px) saturate(170%); backdrop-filter: blur(24px) saturate(170%); box-shadow: var(--ch-shadow-float); color: var(--ch-text-primary); cursor: pointer; }
+.ch-ak-root .ch-ak-jump { position: absolute; z-index: var(--ch-z-sticky); right: 16px; display: grid; place-items: center; width: 40px; height: 40px; border: 0; border-radius: 50%; background: var(--ch-glass-strong); -webkit-backdrop-filter: blur(var(--ch-glass-blur)) saturate(var(--ch-glass-saturate)); backdrop-filter: blur(var(--ch-glass-blur)) saturate(var(--ch-glass-saturate)); box-shadow: var(--ch-shadow-float); color: var(--ch-text-primary); cursor: pointer; }
 .ch-ak-root .ch-ak-jump::after { content: ''; position: absolute; inset: -2px; }
 
 /* E-QCARD: head with its tile and count; Back stays on the first question, disabled; the free line closes the last. */

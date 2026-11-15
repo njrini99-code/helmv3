@@ -22,7 +22,6 @@
   font: var(--ch-type-13-strong);
   line-height: var(--ch-lead-tight);
   white-space: nowrap;
-  text-shadow: 0 1px 0 rgb(255 255 255 / 0.6);
   cursor: pointer;
   touch-action: manipulation;
   /* The label's ink swaps in one step as the pill crosses it, not fading through the glide (a colour halfway measures under 4.5:1 on either
@@ -54,7 +53,6 @@
 .ch-seg__b.is-on {
   color: var(--ch-seg-on-ink);
   font-weight: 600;
-  text-shadow: 0 1px 0 rgb(0 0 0 / 0.18);
 }
 /* CH-1617: pressed, an option that isn't chosen takes the Ledger's press tint over the press beat, after the beat UIKit
    waits so a scroll that starts on it never flashes it; letting go clears it at once. It never scales (lib/press.ts):
@@ -75,7 +73,6 @@
 }
 .ch-seg__b:disabled {
   color: var(--ch-ink-400);
-  text-shadow: none;
   cursor: not-allowed;
 }
 /* A form field's choice: the well takes the row and the options share it equally. */
@@ -1240,7 +1237,6 @@
   box-shadow: var(--ch-seg-on-shadow);
   color: var(--ch-seg-on-ink);
   font-weight: 600;
-  text-shadow: 0 1px 0 rgb(0 0 0 / 0.18);
 }
 .ch-df-day.is-on.is-today::after {
   background: var(--ch-seg-on-ink);
@@ -1325,7 +1321,6 @@
   box-shadow: var(--ch-seg-on-shadow);
   color: var(--ch-seg-on-ink);
   font-weight: 600;
-  text-shadow: 0 1px 0 rgb(0 0 0 / 0.18);
 }
 .ch-tf__row:disabled {
   color: var(--ch-ink-400);
@@ -1360,12 +1355,9 @@
 
 /* ── Dark: "Clubhouse at night" (owner, 2026-10-08) ──────────────────────────────────────────────────────────────────
    Wells, fields and switches ride the tokens. The paper literals turn to night ones: the menu and modal are a raised
-   surface over the page with a lit hover, the modal's backdrop takes more weight, the segmented labels' white
-   letterpress edge becomes a shadow, the green focus rings and halos take the light green, and the slider's track the
-   ground's own rule. */
-:where(html[data-fw-theme='dark']) .ch-seg__b {
-  text-shadow: 0 1px 0 rgb(0 0 0 / 0.35);
-}
+   surface over the page with a lit hover, the modal's backdrop takes more weight, the green focus rings and halos take
+   the light green, and the slider's track the ground's own rule. Labels carry no letterpress edge in either theme
+   (SYS-05). */
 @media (hover: hover) {
   html[data-fw-theme='dark'] .ch-search__x:hover {
     background: rgb(237 231 216 / 0.08);
