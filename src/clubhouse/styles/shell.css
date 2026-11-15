@@ -3091,8 +3091,10 @@ html[data-fw-theme='dark'] .ch-offline {
    section switcher always shows, over a page's large title too, whether the shell draws it (.ch-topbar__ptitle) or the
    page's own bar holds it (.ch-sw in a .ch-pbar__title: Roster, Settings, Qualifiers, Recruiting) (owner, 2026-10-16:
    on Stats the switcher seemed gone while "Team stats" was in view). A pushed page that opens with its own large title does not also
-   show its name in the bar: while the large title is in view the bar's pushed title is hidden, and as it scrolls up
-   under the bar (the bar is marked data-large-title="tucked") it fades in, on opacity and a 3px rise only. The :has()
+   show its name in the bar: the bar's pushed title is hidden at rest and fades in from 36 to 52px of the page's scroll,
+   in opacity only, as the large title goes under the bar (MOTION-AND-VISUAL 3.3; production audit S4.3). Scroll-driven
+   where Safari has a scroll timeline (26 and later), the same fade from shell/large-title.tsx before that; no curve and
+   no script per frame, and the same under Reduce Motion (the person's own scroll drives it). The :has()
    list is CH_LARGE_TITLES and must stay in step with it; it holds from the first paint. The bar's title keeps its
    place in the accessibility tree and stays the focus target for a pushed page. Pages with no large title, the green
    hero's bar and desktop are untouched. The scroll edge: a soft shade under the bar once content has scrolled under
@@ -3132,10 +3134,25 @@ html[data-fw-theme='dark'] .ch-offline {
           .ch-large-title
         ):not(.ch-sr-only, .ch-pscreen *, dialog *)
     )
-    .ch-topbar:not([data-large-title='tucked'])
+    .ch-topbar
     :is(.ch-topbar__pslot > .ch-pbar__title, .ch-topbar__pstand .ch-pbar__title):not(:has(.ch-sw)) {
     opacity: 0;
-    translate: 0 3px;
+    transition: none;
+  }
+  @supports (animation-timeline: scroll()) {
+    [data-ui='clubhouse']:not([data-phone-hero]):has(
+        #ch-canvas
+          :is(
+            .ch-large-title
+          ):not(.ch-sr-only, .ch-pscreen *, dialog *)
+      )
+      .ch-topbar
+      :is(.ch-topbar__pslot > .ch-pbar__title, .ch-topbar__pstand .ch-pbar__title):not(:has(.ch-sw)) {
+      --ch-lt-to: 1;
+      animation: ch-lt-under linear both;
+      animation-timeline: scroll(root block);
+      animation-range: 36px 52px;
+    }
   }
   [data-ui='clubhouse'] .ch-topbar::before {
     position: absolute;
@@ -4431,9 +4448,11 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
     display: none;
   }
 }
+/* One keyframe for both ends of the collapse (MOTION-AND-VISUAL 3.3): the large title from its own 1 to 0.1, and the bar's
+   title from its resting 0 to --ch-lt-to: 1. */
 @keyframes ch-lt-under {
   to {
-    opacity: 0.1;
+    opacity: var(--ch-lt-to, 0.1);
   }
 }
 
