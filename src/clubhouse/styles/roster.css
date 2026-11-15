@@ -1757,12 +1757,10 @@ a.ch-rs-peek__dev:focus-visible,
   }
   .ch-rsm-banner[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
-    transition-delay: var(--ch-dur-press-delay);
   }
   @media (hover: hover) {
     .ch-rsm-banner:active {
       background: var(--ch-ledger-row-press);
-      transition-delay: var(--ch-dur-press-delay);
     }
   }
   .ch-rsm-banner[data-ch-pressed]::after {

@@ -89,7 +89,9 @@ describe('CH-1617 choices and the feature card answer a press without scaling', 
     it(`${selector} tints after the press delay`, () => {
       const r = withProp(controls, selector, 'background');
       expect(r).toMatch(/background:\s*var\(--ch-ledger-row-press\)/);
-      expect(r).toMatch(/transition-delay:\s*var\(--ch-dur-press-delay\)/);
+      // MOTION-AND-VISUAL 3.2 and 3.8: the 50ms delay lives in lib/press.ts, which sets [data-ch-pressed] after it; the
+      // CSS delay token is gone, so the rule carries none.
+      expect(r).not.toMatch(/transition-delay/);
       expect(r).not.toMatch(/scale|transform/);
     });
 

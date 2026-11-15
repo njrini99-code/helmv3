@@ -493,12 +493,10 @@
 }
 .ch-hb-reads--open[data-ch-pressed] {
   background-color: var(--ch-ledger-row-press);
-  transition-delay: var(--ch-dur-press-delay);
 }
 @media (hover: hover) {
   .ch-hb-reads--open:active {
     background-color: var(--ch-ledger-row-press);
-    transition-delay: var(--ch-dur-press-delay);
   }
 }
 .ch-hb-reads--open[aria-expanded='true'] svg {

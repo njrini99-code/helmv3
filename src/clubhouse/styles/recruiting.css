@@ -1858,12 +1858,10 @@
 /* A press tints the pick a beat after the finger lands, as a Ledger row does (CH-1606). */
 .ch-rec-cal__pick[data-ch-pressed] {
   background-color: var(--ch-ledger-row-press);
-  transition-delay: var(--ch-dur-press-delay);
 }
 @media (hover: hover) {
   .ch-rec-cal__pick:active {
     background-color: var(--ch-ledger-row-press);
-    transition-delay: var(--ch-dur-press-delay);
   }
 }
 .ch-rec-cal__pick:focus-visible {

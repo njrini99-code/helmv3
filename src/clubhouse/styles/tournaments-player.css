@@ -156,13 +156,11 @@
 .ch-tour-pl-next__open[data-ch-pressed],
 .ch-tour-pl-next__then[data-ch-pressed] {
   opacity: 0.55;
-  transition-delay: var(--ch-dur-press-delay);
 }
 @media (hover: hover) {
   .ch-tour-pl-next__open:active,
   .ch-tour-pl-next__then:active {
     opacity: 0.55;
-    transition-delay: var(--ch-dur-press-delay);
   }
 }
 .ch-tour-pl .ch-tour-pl-next__open:focus-visible,

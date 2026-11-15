@@ -840,12 +840,10 @@
 }
 .ch-lgr__row.is-link[data-ch-pressed] {
   background: var(--ch-ledger-row-press);
-  transition-delay: var(--ch-dur-press-delay);
 }
 @media (hover: hover) {
   .ch-lgr__row.is-link:active {
     background: var(--ch-ledger-row-press);
-    transition-delay: var(--ch-dur-press-delay);
   }
 }
 .ch-lgr__row.is-link:focus-visible {
@@ -989,12 +987,10 @@
 }
 .ch-feat.is-link[data-ch-pressed]::after {
   opacity: 1;
-  transition-delay: var(--ch-dur-press-delay);
 }
 @media (hover: hover) {
   .ch-feat.is-link:active::after {
     opacity: 1;
-    transition-delay: var(--ch-dur-press-delay);
   }
 }
 /* The card as a button (FeatureCard onClick): the card's own face, not the browser's button. */

@@ -1068,12 +1068,10 @@ body.keyboard-open .ch-ask-hist.is-drawer {
   }
   .ch-ask-card[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
-    transition-delay: var(--ch-dur-press-delay);
   }
   @media (hover: hover) {
     .ch-ask-card:active {
       background: var(--ch-ledger-row-press);
-      transition-delay: var(--ch-dur-press-delay);
     }
   }
   .ch-ask-card:focus-visible {

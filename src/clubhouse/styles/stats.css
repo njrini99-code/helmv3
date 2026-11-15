@@ -3962,12 +3962,10 @@
   /* The tint waits a beat after the finger lands, so a scroll that starts on a row never flashes it (CH-1606). */
   .ch-stm .ch-stm-row[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
-    transition-delay: var(--ch-dur-press-delay);
   }
   @media (hover: hover) {
     .ch-stm .ch-stm-row:active {
       background: var(--ch-ledger-row-press);
-      transition-delay: var(--ch-dur-press-delay);
     }
   }
   .ch-stm .ch-stm-row:focus-visible {
@@ -4004,12 +4002,10 @@
      button takes (`data-ch-press`, CH-1606). */
   .ch-stm .ch-spm-more[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
-    transition-delay: var(--ch-dur-press-delay);
   }
   @media (hover: hover) {
     .ch-stm .ch-spm-more:active {
       background: var(--ch-ledger-row-press);
-      transition-delay: var(--ch-dur-press-delay);
     }
   }
   .ch-stm .ch-spm-head__msg {
@@ -4017,12 +4013,10 @@
   }
   .ch-stm .ch-spm-head__msg[data-ch-pressed] {
     background: var(--ch-green-50);
-    transition-delay: var(--ch-dur-press-delay);
   }
   @media (hover: hover) {
     .ch-stm .ch-spm-head__msg:active {
       background: var(--ch-green-50);
-      transition-delay: var(--ch-dur-press-delay);
     }
   }
   .ch-stm .ch-spm-dev li + li {
@@ -4102,12 +4096,10 @@
   }
   .ch-stm .ch-gd.is-phone .ch-gm-how > summary[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
-    transition-delay: var(--ch-dur-press-delay);
   }
   @media (hover: hover) {
     .ch-stm .ch-gd.is-phone .ch-gm-how > summary:active {
       background: var(--ch-ledger-row-press);
-      transition-delay: var(--ch-dur-press-delay);
     }
   }
   .ch-stm .ch-gd.is-phone .ch-gm__body {
@@ -4733,12 +4725,10 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   /* The press tint waits a beat, as a row's does (CH-1606); the chosen row has nothing to change. */
   .ch-stm.is-team .ch-stm-leg:not([data-active])[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
-    transition-delay: var(--ch-dur-press-delay);
   }
   @media (hover: hover) {
     .ch-stm.is-team .ch-stm-leg:not([data-active]):active {
       background: var(--ch-ledger-row-press);
-      transition-delay: var(--ch-dur-press-delay);
     }
   }
   .ch-stm.is-team .ch-stm-leg:focus-visible {
