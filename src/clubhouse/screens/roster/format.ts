@@ -197,25 +197,39 @@ export function teamCardFigures(players: ChRosterPlayer[], statsError = false): 
 export type RosterLeader = { kind: 'low' | 'heater' | 'look'; player: ChRosterPlayer; value: number };
 
 /**
- * The leader cards, in order: Low average, On a heater (best mean of the last three), Needs a look. Only active players with three
- * counting rounds count. Needs a look is the lowest strokes gained among players carrying a warning or loss note; missing strokes
- * gained hides that card, and nobody with the note hides it too.
+ * The leader cards, in order: Lowest average (season, three or more counting rounds), Best last 3 (the mean of the last
+ * three), Needs a look. Only active players with three counting rounds count, the same floor the list ranks by (sort.ts).
+ * Needs a look is the lowest strokes gained among players carrying a warning or loss note; missing strokes gained hides
+ * that card, and nobody with the note hides it too. A player takes one card at most (prod audit 2026-11-15, ROSTER-01: all
+ * three cards named the same player, so one coach read "lowest average" and "needs a look" about one name): each later card
+ * skips whoever another card already named (Needs a look is chosen before Best last 3).
  */
 export function leaderPicks(players: ChRosterPlayer[], statsError = false): RosterLeader[] {
   // Display only: the caller already shows the failed notice, so no leaders is the honest card.
   const pool = statsError ? [] : players.filter((p) => p.status === 'active' && p.rounds >= ROSTER_EARLY_FLOOR);
   const out: RosterLeader[] = [];
+  const taken = new Set<string>();
+  const free = (p: ChRosterPlayer) => !taken.has(p.id);
   const low = pool.filter((p) => p.avg != null).sort((a, b) => a.avg! - b.avg!)[0];
-  if (low) out.push({ kind: 'low', player: low, value: low.avg! });
-  const lastThree = (p: ChRosterPlayer) => p.trend.slice(-3).reduce((a, b) => a + b, 0) / 3;
-  const hot = pool.filter((p) => p.trend.length >= 3).sort((a, b) => lastThree(a) - lastThree(b))[0];
-  if (hot) out.push({ kind: 'heater', player: hot, value: lastThree(hot) });
+  if (low) {
+    out.push({ kind: 'low', player: low, value: low.avg! });
+    taken.add(low.id);
+  }
+  // Needs a look is chosen before Best last 3, so a player who needs attention is never spent on the good-news card; the
+  // cards still read in their fixed order.
   const look = pool
-    .filter((p) => (p.attention?.tone === 'warning' || p.attention?.tone === 'loss') && p.sgPerRound != null)
+    .filter((p) => free(p) && (p.attention?.tone === 'warning' || p.attention?.tone === 'loss') && p.sgPerRound != null)
     .sort((a, b) => a.sgPerRound! - b.sgPerRound!)[0];
+  if (look) taken.add(look.id);
+  const lastThree = (p: ChRosterPlayer) => p.trend.slice(-3).reduce((a, b) => a + b, 0) / 3;
+  const hot = pool.filter((p) => free(p) && p.trend.length >= 3).sort((a, b) => lastThree(a) - lastThree(b))[0];
+  if (hot) out.push({ kind: 'heater', player: hot, value: lastThree(hot) });
   if (look) out.push({ kind: 'look', player: look, value: look.sgPerRound! });
   return out;
 }
+
+/** True while a player is under the early floor: their average is an early read, ranked after everyone with a place. */
+export const isEarlyRead = (p: Pick<ChRosterPlayer, 'rounds'>): boolean => p.rounds < ROSTER_EARLY_FLOOR;
 
 /** The last five rounds' range on one scale for the whole list: bars draw the same five they colour (R10). */
 export const lastFive = (trend: readonly number[]): readonly number[] => trend.slice(-5);
