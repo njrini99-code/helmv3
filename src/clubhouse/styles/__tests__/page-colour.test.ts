@@ -127,7 +127,9 @@ describe('the page: ivory light over a deeper linen', () => {
   it('a page copy that slides during a push or a pop paints the page, so no flat band crosses the screen', () => {
     const copies: string[] = [];
     shell.walkRules(/\.ch-frame-(route|popping|under)/, (rule) => {
-      rule.walkDecls('background', (d) => copies.push(d.value.trim()));
+      rule.walkDecls('background', (d) => {
+        copies.push(d.value.trim());
+      });
     });
     expect(copies.length).toBeGreaterThanOrEqual(4);
     for (const v of copies) expect(v).toBe('var(--ch-page-paint)');

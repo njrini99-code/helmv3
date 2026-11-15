@@ -405,7 +405,6 @@ describe('the change panel for several fields', () => {
 
 describe('contrast and the banned stripe (P-14 7.3)', () => {
   const STYLES = join(process.cwd(), 'src/clubhouse/styles');
-  const tokens = readFileSync(join(STYLES, 'tokens.css'), 'utf8');
   type RGB = [number, number, number];
   const hex = (h: string): RGB => [0, 2, 4].map((i) => parseInt(h.replace('#', '').slice(i, i + 2), 16)) as RGB;
   const lum = (c: RGB) => {
